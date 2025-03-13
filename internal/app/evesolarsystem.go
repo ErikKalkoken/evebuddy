@@ -1,8 +1,11 @@
 package app
 
 import (
+	"fmt"
 	"math"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -21,6 +24,20 @@ func (t SolarSystemSecurityType) ToImportance() widget.Importance {
 		return widget.DangerImportance
 	}
 	return widget.MediumImportance
+}
+
+func (t SolarSystemSecurityType) ToColorName() fyne.ThemeColorName {
+	switch t {
+	case SuperHighSec:
+		return theme.ColorNamePrimary
+	case HighSec:
+		return theme.ColorNameSuccess
+	case LowSec:
+		return theme.ColorNameWarning
+	case NullSec:
+		return theme.ColorNameError
+	}
+	return theme.ColorNameForeground
 }
 
 const (
@@ -52,4 +69,19 @@ func (es EveSolarSystem) SecurityType() SolarSystemSecurityType {
 
 func (es EveSolarSystem) ToEveEntity() *EveEntity {
 	return &EveEntity{ID: es.ID, Name: es.Name, Category: EveEntitySolarSystem}
+}
+
+func (es EveSolarSystem) Display() []*widget.TextSegment {
+	return []*widget.TextSegment{
+		{
+			Text: fmt.Sprintf("%.1f  ", es.SecurityStatus),
+			Style: widget.RichTextStyle{
+				ColorName: es.SecurityType().ToColorName(),
+				Inline:    true,
+			},
+		},
+		{
+			Text: es.Name,
+		},
+	}
 }

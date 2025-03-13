@@ -31,7 +31,7 @@ const (
 type InfoVariant uint
 
 const (
-	Unknown InfoVariant = iota
+	None InfoVariant = iota
 	Alliance
 	Character
 	Corporation
@@ -50,7 +50,7 @@ var eveEntityCategory2InfoVariant = map[app.EveEntityCategory]InfoVariant{
 func eveEntity2InfoVariant(ee *app.EveEntity) InfoVariant {
 	v, ok := eveEntityCategory2InfoVariant[ee.Category]
 	if !ok {
-		return Unknown
+		return None
 	}
 	return v
 
@@ -139,7 +139,7 @@ func (iw InfoWindow) showZoomWindow(title string, id int32, load func(int32, int
 	w2.Show()
 }
 
-func historyItem2EntityItem(hi app.MembershipHistoryItem) EntityItem {
+func historyItem2EntityItem(hi app.MembershipHistoryItem) entityItem {
 	var endDateStr string
 	if !hi.EndDate.IsZero() {
 		endDateStr = hi.EndDate.Format(dateFormat)

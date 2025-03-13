@@ -185,10 +185,12 @@ func (a *corporationArea) load(corporationID int32) error {
 		oldest := slices.MinFunc(history, func(a, b app.MembershipHistoryItem) int {
 			return a.StartDate.Compare(b.StartDate)
 		})
-		items = append(items, EntityItem{
-			Category: "Corporation Founded",
-			Text:     fmt.Sprintf("**%s**", oldest.StartDate.Format(dateFormat)),
-		})
+		items = append(items, NewEntityItem(
+			0,
+			"Corporation Founded",
+			fmt.Sprintf("**%s**", oldest.StartDate.Format(dateFormat)),
+			None,
+		))
 		historyList := NewEntityListFromItems(a.iw.Show, items...)
 		a.tabs.Append(container.NewTabItem("Alliance History", historyList))
 		a.tabs.Refresh()

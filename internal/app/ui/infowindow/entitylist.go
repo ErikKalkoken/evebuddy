@@ -1,7 +1,6 @@
 package infowindow
 
 import (
-	"fmt"
 	"slices"
 
 	"fyne.io/fyne/v2"
@@ -15,53 +14,60 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
-type EntityItem struct {
-	ID       int64
-	Category string
-	Text     string
-	Variant  InfoVariant
+type entityItem struct {
+	ID           int64
+	Category     string
+	TextSegments []*widget.TextSegment
+	Variant      InfoVariant
 }
 
-func NewEntityItemFromEveSolarSystem(o *app.EveSolarSystem) EntityItem {
-	return NewEntityItemFromEveEntity(
-		o.ToEveEntity(),
-		fmt.Sprintf("%.1f %s", o.SecurityStatus, o.Name),
-	)
+func NewEntityItem(id int64, category, text string, v InfoVariant) entityItem {
+	return entityItem{
+		ID:           id,
+		Category:     category,
+		TextSegments: []*widget.TextSegment{{Text: text}},
+		Variant:      v,
+	}
 }
 
-func NewEntityItemFromEveEntity(ee *app.EveEntity, text string) EntityItem {
+func NewEntityItemFromEveSolarSystem(o *app.EveSolarSystem) entityItem {
+	ee := o.ToEveEntity()
+	return entityItem{
+		ID:           int64(ee.ID),
+		Category:     ee.CategoryDisplay(),
+		TextSegments: o.Display(),
+		Variant:      eveEntity2InfoVariant(ee),
+	}
+}
+
+func NewEntityItemFromEveEntity(ee *app.EveEntity, text string) entityItem {
 	if text == "" {
 		text = ee.Name
 	}
-	return EntityItem{
-		ID:       int64(ee.ID),
-		Category: ee.CategoryDisplay(),
-		Text:     text,
-		Variant:  eveEntity2InfoVariant(ee),
-	}
+	return NewEntityItem(int64(ee.ID), ee.CategoryDisplay(), text, eveEntity2InfoVariant(ee))
 }
 
 // EntitiyList is a list widget for showing entities.
 type EntitiyList struct {
 	widget.BaseWidget
 
-	items    []EntityItem
+	items    []entityItem
 	showInfo func(InfoVariant, int64)
 }
 
 func NewEntityListFromEntities(show func(InfoVariant, int64), s ...*app.EveEntity) *EntitiyList {
-	items := slices.Collect(xiter.MapSlice(s, func(ee *app.EveEntity) EntityItem {
+	items := slices.Collect(xiter.MapSlice(s, func(ee *app.EveEntity) entityItem {
 		return NewEntityItemFromEveEntity(ee, "")
 	}))
 	return NewEntityListFromItems(show, items...)
 }
 
 func NewEntityList(show func(InfoVariant, int64)) *EntitiyList {
-	items := make([]EntityItem, 0)
+	items := make([]entityItem, 0)
 	return NewEntityListFromItems(show, items...)
 }
 
-func NewEntityListFromItems(show func(InfoVariant, int64), items ...EntityItem) *EntitiyList {
+func NewEntityListFromItems(show func(InfoVariant, int64), items ...entityItem) *EntitiyList {
 	w := &EntitiyList{
 		items:    items,
 		showInfo: show,
@@ -70,7 +76,7 @@ func NewEntityListFromItems(show func(InfoVariant, int64), items ...EntityItem) 
 	return w
 }
 
-func (w *EntitiyList) Set(items ...EntityItem) {
+func (w *EntitiyList) Set(items ...entityItem) {
 	w.items = items
 	w.Refresh()
 }
@@ -107,13 +113,17 @@ func (w *EntitiyList) CreateRenderer() fyne.WidgetRenderer {
 			icon := border1[1]
 			category := border2[0].(*fyne.Container).Objects[0].(*iwidget.Label)
 			category.SetText(it.Category)
-			if it.Variant == Unknown {
+			if it.Variant == None {
 				icon.Hide()
 			} else {
 				icon.Show()
 			}
 			text := border2[1].(*fyne.Container).Objects[0].(*widget.RichText)
-			text.ParseMarkdown(it.Text)
+			segments := make([]widget.RichTextSegment, len(it.TextSegments))
+			for i, v := range it.TextSegments {
+				segments[i] = v
+			}
+			text.Segments = segments
 			text.Refresh()
 		},
 	)
@@ -124,7 +134,7 @@ func (w *EntitiyList) CreateRenderer() fyne.WidgetRenderer {
 			return
 		}
 		it := w.items[id]
-		if it.Variant == Unknown {
+		if it.Variant == None {
 			return
 		}
 		w.showInfo(it.Variant, it.ID)

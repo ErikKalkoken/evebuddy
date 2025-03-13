@@ -121,13 +121,13 @@ func (a *solarSystemArea) load(solarSystemID int32) error {
 		a.tabs.Append(container.NewTabItem("Stations", x))
 	}
 	if len(o.Structures) > 0 {
-		xx := slices.Collect(xiter.MapSlice(o.Structures, func(x *app.EveLocation) EntityItem {
-			return EntityItem{
-				ID:       x.ID,
-				Text:     x.Name,
-				Category: "Structure",
-				Variant:  Location,
-			}
+		xx := slices.Collect(xiter.MapSlice(o.Structures, func(x *app.EveLocation) entityItem {
+			return NewEntityItem(
+				x.ID,
+				x.Name,
+				"Structure",
+				Location,
+			)
 		}))
 		structures := NewEntityListFromItems(a.iw.Show, xx...)
 		note := widget.NewLabel("Only contains structures known through characters")
