@@ -15,28 +15,29 @@ import (
 )
 
 type entityItem struct {
-	ID           int64
-	Category     string
-	TextSegments []*widget.TextSegment
-	Variant      InfoVariant
+	id           int64
+	category     string
+	text         string                   // text in markdown
+	textSegments []widget.RichTextSegment // takes precendence over text when not empty
+	variant      InfoVariant
 }
 
 func NewEntityItem(id int64, category, text string, v InfoVariant) entityItem {
 	return entityItem{
-		ID:           id,
-		Category:     category,
-		TextSegments: []*widget.TextSegment{{Text: text}},
-		Variant:      v,
+		id:       id,
+		category: category,
+		text:     text,
+		variant:  v,
 	}
 }
 
 func NewEntityItemFromEveSolarSystem(o *app.EveSolarSystem) entityItem {
 	ee := o.ToEveEntity()
 	return entityItem{
-		ID:           int64(ee.ID),
-		Category:     ee.CategoryDisplay(),
-		TextSegments: o.Display(),
-		Variant:      eveEntity2InfoVariant(ee),
+		id:           int64(ee.ID),
+		category:     ee.CategoryDisplay(),
+		textSegments: o.Display(),
+		variant:      eveEntity2InfoVariant(ee),
 	}
 }
 
@@ -112,18 +113,18 @@ func (w *EntitiyList) CreateRenderer() fyne.WidgetRenderer {
 			border2 := border1[0].(*fyne.Container).Objects
 			icon := border1[1]
 			category := border2[0].(*fyne.Container).Objects[0].(*iwidget.Label)
-			category.SetText(it.Category)
-			if it.Variant == None {
+			category.SetText(it.category)
+			if it.variant == None {
 				icon.Hide()
 			} else {
 				icon.Show()
 			}
 			text := border2[1].(*fyne.Container).Objects[0].(*widget.RichText)
-			segments := make([]widget.RichTextSegment, len(it.TextSegments))
-			for i, v := range it.TextSegments {
-				segments[i] = v
+			if len(it.textSegments) != 0 {
+				text.Segments = it.textSegments
+			} else {
+				text.ParseMarkdown(it.text)
 			}
-			text.Segments = segments
 			text.Refresh()
 		},
 	)
@@ -134,10 +135,10 @@ func (w *EntitiyList) CreateRenderer() fyne.WidgetRenderer {
 			return
 		}
 		it := w.items[id]
-		if it.Variant == None {
+		if it.variant == None {
 			return
 		}
-		w.showInfo(it.Variant, it.ID)
+		w.showInfo(it.variant, it.id)
 	}
 	return widget.NewSimpleRenderer(l)
 }

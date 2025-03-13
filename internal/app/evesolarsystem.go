@@ -70,16 +70,16 @@ func (es EveSolarSystem) ToEveEntity() *EveEntity {
 	return &EveEntity{ID: es.ID, Name: es.Name, Category: EveEntitySolarSystem}
 }
 
-func (es EveSolarSystem) Display() []*widget.TextSegment {
-	return []*widget.TextSegment{
-		{
+func (es EveSolarSystem) Display() []widget.RichTextSegment {
+	return []widget.RichTextSegment{
+		&widget.TextSegment{
 			Text: fmt.Sprintf("%.1f  ", es.SecurityStatus),
 			Style: widget.RichTextStyle{
 				ColorName: es.SecurityType().ToColorName(),
 				Inline:    true,
 			},
 		},
-		{
+		&widget.TextSegment{
 			Text: es.Name,
 		},
 	}

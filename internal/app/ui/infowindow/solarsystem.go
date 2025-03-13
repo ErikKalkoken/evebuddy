@@ -3,7 +3,6 @@ package infowindow
 import (
 	"context"
 	"fmt"
-	"image/color"
 	"log/slog"
 	"slices"
 
@@ -33,7 +32,7 @@ type solarSystemArea struct {
 	constellation *kxwidget.TappableLabel
 	logo          *canvas.Image
 	name          *widget.Label
-	security      *widget.Label
+	security      *widget.RichText
 	tabs          *container.AppTabs
 }
 
@@ -52,7 +51,7 @@ func newSolarSystemArea(iw InfoWindow, solarSystemID int32, w fyne.Window) *sola
 		iw:            iw,
 		logo:          logo,
 		name:          name,
-		security:      widget.NewLabel(""),
+		security:      widget.NewRichText(),
 		tabs:          container.NewAppTabs(),
 		w:             w,
 	}
@@ -111,16 +110,20 @@ func (a *solarSystemArea) load(solarSystemID int32) error {
 	a.constellation.OnTapped = func() {
 		a.iw.ShowEveEntity(o.System.Constellation.ToEveEntity())
 	}
-	a.security.Text = fmt.Sprintf("%.1f", o.System.SecurityStatus)
-	a.security.Importance = o.System.SecurityType().ToImportance()
+	a.security.Segments = o.System.Display()
 	a.security.Refresh()
 
-	systemsTab := container.NewTabItem("Adjacent Solar Systems", canvas.NewRectangle(color.Transparent))
+	systemsLabel := widget.NewLabel("Loading...")
+	systemsTab := container.NewTabItem("Adjacent Solar Systems", systemsLabel)
 	a.tabs.Append(systemsTab)
 
 	go func() {
 		as, err := o.GetAdjacentSystems(ctx)
 		if err != nil {
+			slog.Error("solar system info: Failed to load adjacent systems", "solarSystem", solarSystemID, "error", err)
+			systemsLabel.Text = ihumanize.Error(err)
+			systemsLabel.Importance = widget.DangerImportance
+			systemsLabel.Refresh()
 			return
 		}
 		xx := slices.Collect(xiter.MapSlice(as, NewEntityItemFromEveSolarSystem))

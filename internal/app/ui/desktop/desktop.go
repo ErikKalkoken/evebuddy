@@ -2,7 +2,6 @@
 package desktop
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"path/filepath"
@@ -108,25 +107,6 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 					"This is a test snack bar at %s",
 					time.Now().Format("15:04:05.999999999"),
 				))
-			})
-		u.Window.Canvas().AddShortcut(
-			&desktop.CustomShortcut{
-				KeyName:  fyne.KeyC,
-				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierControl,
-			},
-			func(fyne.Shortcut) {
-				iw := infowindow.New(u.EveUniverseService, u.EveImageService, u.Snackbar)
-				ee, _ := u.EveUniverseService.GetOrCreateEveEntityESI(context.Background(), 93330670)
-				iw.ShowEveEntity(ee)
-			})
-		u.Window.Canvas().AddShortcut(
-			&desktop.CustomShortcut{
-				KeyName:  fyne.KeyL,
-				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierControl,
-			},
-			func(fyne.Shortcut) {
-				iw := infowindow.New(u.EveUniverseService, u.EveImageService, u.Snackbar)
-				iw.ShowLocation(1022167642188)
 			})
 	}
 	u.OnAppStopped = func() {
@@ -382,29 +362,88 @@ func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 	// File menu
 	fileMenu := fyne.NewMenu("File")
 
+	// Info menu
+	characterItem := fyne.NewMenuItem("Current character...", func() {
+		characterID := u.CharacterID()
+		if characterID == 0 {
+			u.Snackbar.Show("No character selected")
+			return
+		}
+		u.ShowInfoWindow(infowindow.Character, int64(characterID))
+	})
+	characterItem.Shortcut = &desktop.CustomShortcut{
+		KeyName:  fyne.KeyC,
+		Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
+	}
+	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, characterItem)
+
+	locationItem := fyne.NewMenuItem("Current location...", func() {
+		c := u.CurrentCharacter()
+		if c == nil || c.Location == nil {
+			u.Snackbar.Show("No character selected")
+			return
+		}
+		u.ShowInfoWindow(infowindow.Location, c.Location.ID)
+	})
+	locationItem.Shortcut = &desktop.CustomShortcut{
+		KeyName:  fyne.KeyL,
+		Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
+	}
+	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, locationItem)
+
+	shipItem := fyne.NewMenuItem("Current ship...", func() {
+		c := u.CurrentCharacter()
+		if c == nil || c.Ship == nil {
+			u.Snackbar.Show("No character selected")
+			return
+		}
+		u.ShowTypeInfoWindow(c.Ship.ID, c.ID, ui.DescriptionTab)
+	})
+	shipItem.Shortcut = &desktop.CustomShortcut{
+		KeyName:  fyne.KeyS,
+		Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
+	}
+	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, shipItem)
+
+	infoMenu := fyne.NewMenu(
+		"Info",
+		characterItem,
+		locationItem,
+		shipItem,
+	)
+
 	// Tools menu
 	settingsItem := fyne.NewMenuItem("Settings...", u.showSettingsWindow)
-	settingsItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyComma, Modifier: fyne.KeyModifierControl}
+	settingsItem.Shortcut = &desktop.CustomShortcut{
+		KeyName:  fyne.KeyComma,
+		Modifier: fyne.KeyModifierControl,
+	}
 	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, settingsItem)
 
 	charactersItem := fyne.NewMenuItem("Manage characters...", u.showAccountWindow)
-	charactersItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyC, Modifier: fyne.KeyModifierAlt}
+	charactersItem.Shortcut = &desktop.CustomShortcut{
+		KeyName:  fyne.KeyC,
+		Modifier: fyne.KeyModifierAlt,
+	}
 	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, charactersItem)
 
 	statusItem := fyne.NewMenuItem("Update status...", u.ShowUpdateStatusWindow)
-	statusItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyU, Modifier: fyne.KeyModifierAlt}
+	statusItem.Shortcut = &desktop.CustomShortcut{
+		KeyName:  fyne.KeyU,
+		Modifier: fyne.KeyModifierAlt,
+	}
 	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, statusItem)
 
-	u.enableMenuShortcuts()
-
-	// Help menu
-	toolsMenu := fyne.NewMenu("Tools",
+	toolsMenu := fyne.NewMenu(
+		"Tools",
 		charactersItem,
 		fyne.NewMenuItemSeparator(),
 		statusItem,
 		fyne.NewMenuItemSeparator(),
 		settingsItem,
 	)
+
+	// Help menu
 	website := fyne.NewMenuItem("Website", func() {
 		if err := u.FyneApp.OpenURL(u.WebsiteRootURL()); err != nil {
 			slog.Error("open main website", "error", err)
@@ -420,9 +459,8 @@ func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 		website.Disabled = true
 		report.Disabled = true
 	}
-
-	// Help menu
-	helpMenu := fyne.NewMenu("Help",
+	helpMenu := fyne.NewMenu(
+		"Help",
 		website,
 		report,
 		fyne.NewMenuItemSeparator(),
@@ -433,7 +471,8 @@ func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 		}),
 	)
 
-	main := fyne.NewMainMenu(fileMenu, toolsMenu, helpMenu)
+	u.enableMenuShortcuts()
+	main := fyne.NewMainMenu(fileMenu, infoMenu, toolsMenu, helpMenu)
 	return main
 }
 
