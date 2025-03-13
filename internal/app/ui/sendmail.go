@@ -139,7 +139,7 @@ func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEnti
 			name := widget.NewLabel("Template")
 			name.Truncation = fyne.TextTruncateClip
 			category := iwidget.NewLabelWithSize("Template", theme.SizeNameCaptionText)
-			icon := iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(DefaultIconUnitSize))
+			icon := iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(app.DefaultIconUnitSize))
 			return container.NewBorder(
 				nil,
 				nil,

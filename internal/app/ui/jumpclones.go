@@ -81,7 +81,7 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 		func(branch bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(
 				icon.Characterplaceholder64Jpeg,
-				fyne.NewSquareSize(DefaultIconUnitSize),
+				fyne.NewSquareSize(app.DefaultIconUnitSize),
 			)
 			main := widget.NewLabel("Template")
 			main.Truncation = fyne.TextTruncateEllipsis
@@ -132,7 +132,7 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 				spacer.Show()
 			} else {
 				appwidget.RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
-					return a.u.EveImageService.InventoryTypeIcon(n.ImplantTypeID, DefaultIconPixelSize)
+					return a.u.EveImageService.InventoryTypeIcon(n.ImplantTypeID, app.DefaultIconPixelSize)
 				})
 				main.SetText(n.ImplantTypeName)
 				iconInfo.OnTapped = func() {

@@ -31,7 +31,7 @@ func (e walletJournalEntry) hasReason() bool {
 }
 
 func (e walletJournalEntry) refTypeOutput() string {
-	return Titler.String(strings.ReplaceAll(e.refType, "_", " "))
+	return app.Titler.String(strings.ReplaceAll(e.refType, "_", " "))
 }
 
 func (e walletJournalEntry) descriptionWithReason() string {

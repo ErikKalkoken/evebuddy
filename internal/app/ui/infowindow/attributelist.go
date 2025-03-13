@@ -85,7 +85,7 @@ func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
 			case float32:
 				s = fmt.Sprintf("%.1f %%", x*100)
 			case time.Time:
-				s = x.Format(dateFormat)
+				s = x.Format(app.DateTimeDefaultFormat)
 			case int:
 				s = humanize.Comma(int64(x))
 			case bool:

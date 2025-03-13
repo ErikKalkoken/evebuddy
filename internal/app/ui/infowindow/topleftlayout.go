@@ -1,4 +1,4 @@
-package ui
+package infowindow
 
 import "fyne.io/fyne/v2"
 

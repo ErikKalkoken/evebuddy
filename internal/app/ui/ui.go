@@ -34,11 +34,7 @@ import (
 
 // Base UI constants
 const (
-	DefaultIconPixelSize = 64
-	DefaultIconUnitSize  = 32
-	MyFloatFormat        = "#,###.##"
-	infoWindowWidth      = 600
-	infoWindowHeight     = 500
+	MyFloatFormat = "#,###.##"
 )
 
 // update info
@@ -184,7 +180,7 @@ func (u *BaseUI) Init() {
 	u.AccountArea.Refresh()
 	var c *app.Character
 	var err error
-	u.infoWindow = infowindow.New(u.EveUniverseService, u.EveImageService, u.Snackbar)
+	u.infoWindow = infowindow.New(u.CharacterID, u.CharacterService, u.EveUniverseService, u.EveImageService, u.Window)
 	ctx := context.Background()
 	if cID := u.FyneApp.Preferences().Int(settingLastCharacterID); cID != 0 {
 		c, err = u.CharacterService.GetCharacter(ctx, int32(cID))
@@ -505,26 +501,12 @@ func (u *BaseUI) ShowUpdateStatusWindow() {
 	w.Show()
 }
 
-func (u *BaseUI) ShowLocationInfoWindow(locationID int64) {
-	iw := infowindow.New(u.EveUniverseService, u.EveImageService, u.Snackbar)
-	iw.ShowLocation(locationID)
+func (u *BaseUI) ShowLocationInfoWindow(id int64) {
+	u.infoWindow.Show(infowindow.Location, id)
 }
 
-func (u *BaseUI) ShowTypeInfoWindow(typeID int32) {
-	iw, err := NewItemInfoArea(u.CharacterService, u.EveImageService, u.EveUniverseService, typeID, u.CharacterID(), u.Window)
-	if err != nil {
-		t := "Failed to open info window"
-		slog.Error(t, "err", err)
-		iwidget.ShowErrorDialog(t, err, u.Window)
-		return
-	}
-	if iw == nil {
-		return
-	}
-	w := u.FyneApp.NewWindow(u.MakeWindowTitle(iw.MakeTitle("Information")))
-	w.SetContent(iw.Content)
-	w.Resize(fyne.Size{Width: infoWindowWidth, Height: infoWindowHeight})
-	w.Show()
+func (u *BaseUI) ShowTypeInfoWindow(id int32) {
+	u.infoWindow.Show(infowindow.InventoryType, int64(id))
 }
 
 func (u *BaseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
@@ -545,7 +527,7 @@ func (u *BaseUI) AvailableUpdate() (github.VersionInfo, error) {
 }
 
 func (u *BaseUI) UpdateAvatar(id int32, setIcon func(fyne.Resource)) {
-	r, err := u.EveImageService.CharacterPortrait(id, DefaultIconPixelSize)
+	r, err := u.EveImageService.CharacterPortrait(id, app.DefaultIconPixelSize)
 	if err != nil {
 		slog.Error("Failed to fetch character portrait", "characterID", id, "err", err)
 		r = icon.Characterplaceholder64Jpeg

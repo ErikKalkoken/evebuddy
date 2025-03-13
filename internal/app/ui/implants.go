@@ -79,7 +79,7 @@ func (a *ImplantsArea) makeImplantList() *widget.List {
 			slot.SetText(fmt.Sprintf("Slot %d", o.SlotNum))
 			iconMain := row[1].(*canvas.Image)
 			appwidget.RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
-				return a.u.EveImageService.InventoryTypeIcon(o.EveType.ID, DefaultIconPixelSize)
+				return a.u.EveImageService.InventoryTypeIcon(o.EveType.ID, app.DefaultIconPixelSize)
 			})
 			iconInfo := row[2].(*kxwidget.TappableIcon)
 			iconInfo.OnTapped = func() {

@@ -42,11 +42,11 @@ func newCorporationArea(iw InfoWindow, corporationID int32, w fyne.Window) *corp
 	name.Truncation = fyne.TextTruncateEllipsis
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Truncation = fyne.TextTruncateEllipsis
-	s := float32(defaultIconPixelSize) * logoZoomFactor
+	s := float32(app.DefaultIconPixelSize) * logoZoomFactor
 	logo := iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(s))
 	a := &corporationArea{
 		alliance:     alliance,
-		allianceLogo: iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(defaultIconUnitSize)),
+		allianceLogo: iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(app.DefaultIconUnitSize)),
 		name:         name,
 		logo:         logo,
 		hq:           hq,
@@ -86,7 +86,7 @@ func newCorporationArea(iw InfoWindow, corporationID int32, w fyne.Window) *corp
 func (a *corporationArea) load(corporationID int32) error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.iw.eis.CorporationLogo(corporationID, defaultIconPixelSize)
+		r, err := a.iw.eis.CorporationLogo(corporationID, app.DefaultIconPixelSize)
 		if err != nil {
 			slog.Error("corporation info: Failed to load logo", "corporationID", corporationID, "error", err)
 			return
@@ -105,7 +105,7 @@ func (a *corporationArea) load(corporationID int32) error {
 			a.iw.ShowEveEntity(o.Alliance)
 		}
 		go func() {
-			r, err := a.iw.eis.AllianceLogo(o.Alliance.ID, defaultIconPixelSize)
+			r, err := a.iw.eis.AllianceLogo(o.Alliance.ID, app.DefaultIconPixelSize)
 			if err != nil {
 				slog.Error("corporation info: Failed to load alliance logo", "allianceID", o.Alliance.ID, "error", err)
 				return
@@ -188,7 +188,7 @@ func (a *corporationArea) load(corporationID int32) error {
 		items = append(items, NewEntityItem(
 			0,
 			"Corporation Founded",
-			fmt.Sprintf("**%s**", oldest.StartDate.Format(dateFormat)),
+			fmt.Sprintf("**%s**", oldest.StartDate.Format(app.DateTimeDefaultFormat)),
 			None,
 		))
 		historyList := NewEntityListFromItems(a.iw.Show, items...)

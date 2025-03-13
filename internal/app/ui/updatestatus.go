@@ -141,7 +141,7 @@ func (a *UpdateStatusArea) makeEntityList() *widget.List {
 			return len(a.sectionEntities)
 		},
 		func() fyne.CanvasObject {
-			icon := iwidget.NewImageFromResource(icon.QuestionmarkSvg, fyne.NewSquareSize(DefaultIconUnitSize))
+			icon := iwidget.NewImageFromResource(icon.QuestionmarkSvg, fyne.NewSquareSize(app.DefaultIconUnitSize))
 			name := widget.NewLabel("Template")
 			status := widget.NewLabel("Template")
 			pb := widget.NewActivity()

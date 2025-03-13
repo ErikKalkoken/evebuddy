@@ -3,11 +3,21 @@
 // All entity types are defined in this package.
 package app
 
-import "time"
+import (
+	"time"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+)
 
 const (
 	DateTimeDefaultFormat = "2006.01.02 15:04"
+	DefaultIconPixelSize  = 64
+	DefaultIconUnitSize   = 32
 )
+
+// Titler converts a string into a title for english language.
+var Titler = cases.Title(language.English)
 
 // EntityShort is a short representation of an entity.
 type EntityShort[T comparable] struct {

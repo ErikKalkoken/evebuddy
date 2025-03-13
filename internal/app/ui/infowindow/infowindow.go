@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/dustin/go-humanize"
 
@@ -17,15 +18,12 @@ import (
 )
 
 const (
-	defaultIconPixelSize = 64
-	defaultIconUnitSize  = 32
-	renderIconPixelSize  = 256
-	renderIconUnitSize   = 128
-	logoZoomFactor       = 1.3
-	zoomImagePixelSize   = 512
-	infoWindowWidth      = 600
-	infoWindowHeight     = 500
-	dateFormat           = "2006.01.02 15:04"
+	renderIconPixelSize = 256
+	renderIconUnitSize  = 128
+	logoZoomFactor      = 1.3
+	zoomImagePixelSize  = 512
+	infoWindowWidth     = 600
+	infoWindowHeight    = 500
 )
 
 type InfoVariant uint
@@ -35,16 +33,18 @@ const (
 	Alliance
 	Character
 	Corporation
+	InventoryType
 	Location
 	SolarSystem
 )
 
 var eveEntityCategory2InfoVariant = map[app.EveEntityCategory]InfoVariant{
-	app.EveEntityAlliance:    Alliance,
-	app.EveEntityCharacter:   Character,
-	app.EveEntityCorporation: Corporation,
-	app.EveEntitySolarSystem: SolarSystem,
-	app.EveEntityStation:     Location,
+	app.EveEntityAlliance:      Alliance,
+	app.EveEntityCharacter:     Character,
+	app.EveEntityCorporation:   Corporation,
+	app.EveEntitySolarSystem:   SolarSystem,
+	app.EveEntityStation:       Location,
+	app.EveEntityInventoryType: InventoryType,
 }
 
 func eveEntity2InfoVariant(ee *app.EveEntity) InfoVariant {
@@ -63,19 +63,29 @@ func eveEntitySupportedCategories() []app.EveEntityCategory {
 
 // InfoWindow represents a dedicated window for showing information similar to the in-game info windows.
 type InfoWindow struct {
-	eus *eveuniverse.EveUniverseService
-	eis app.EveImageService
-	sb  *iwidget.Snackbar
+	cs                 *character.CharacterService
+	currentCharacterID func() int32
+	eus                *eveuniverse.EveUniverseService
+	eis                app.EveImageService
+	w                  fyne.Window // parent window, e.g. for displaying error dialogs
 }
 
 // New returns a configured InfoWindow.
-func New(eus *eveuniverse.EveUniverseService, eis app.EveImageService, sb *iwidget.Snackbar) InfoWindow {
-	w := InfoWindow{
-		eus: eus,
-		eis: eis,
-		sb:  sb,
+func New(
+	currentCharacterID func() int32,
+	cs *character.CharacterService,
+	eus *eveuniverse.EveUniverseService,
+	eis app.EveImageService,
+	w fyne.Window,
+) InfoWindow {
+	iw := InfoWindow{
+		currentCharacterID: currentCharacterID,
+		cs:                 cs,
+		eus:                eus,
+		eis:                eis,
+		w:                  w,
 	}
-	return w
+	return iw
 }
 
 func (iw InfoWindow) Show(t InfoVariant, id int64) {
@@ -95,28 +105,38 @@ func (iw InfoWindow) Show(t InfoVariant, id int64) {
 			a := newCorporationArea(iw, int32(id), w)
 			return a.Content
 		})
+	case InventoryType:
+		showWindow("Information", func(w fyne.Window) fyne.CanvasObject {
+			// TODO: Restructure, so that window is first drawn empty and content loaded in background (as other info windo)
+			a, err := NewInventoryTypeArea(iw, int32(id), iw.currentCharacterID(), w)
+			if err != nil {
+				panic(err)
+			}
+			w.SetTitle(a.MakeTitle("Information"))
+			return a.Content
+		})
 	case SolarSystem:
 		showWindow("Solar System", func(w fyne.Window) fyne.CanvasObject {
 			a := newSolarSystemArea(iw, int32(id), w)
 			return a.Content
 		})
 	case Location:
-		iw.ShowLocation(id)
+		showWindow("Location", func(w fyne.Window) fyne.CanvasObject {
+			a := newLocationArea(iw, id, w)
+			return a.Content
+		})
 	default:
-		iw.sb.Show("Can't show info window for unknown category")
+		iwidget.ShowErrorDialog(
+			"Can't show info window for unknown category",
+			fmt.Errorf("infowindow: undefined category"),
+			iw.w,
+		)
 	}
 }
 
 // Show shows a new info window for an EveEntity.
 func (iw InfoWindow) ShowEveEntity(ee *app.EveEntity) {
 	iw.Show(eveEntity2InfoVariant(ee), int64(ee.ID))
-}
-
-func (iw InfoWindow) ShowLocation(id int64) {
-	showWindow("Location", func(w fyne.Window) fyne.CanvasObject {
-		a := newLocationArea(iw, id, w)
-		return a.Content
-	})
 }
 
 func showWindow(category string, create func(w fyne.Window) fyne.CanvasObject) {
@@ -142,7 +162,7 @@ func (iw InfoWindow) showZoomWindow(title string, id int32, load func(int32, int
 func historyItem2EntityItem(hi app.MembershipHistoryItem) entityItem {
 	var endDateStr string
 	if !hi.EndDate.IsZero() {
-		endDateStr = hi.EndDate.Format(dateFormat)
+		endDateStr = hi.EndDate.Format(app.DateTimeDefaultFormat)
 	} else {
 		endDateStr = "this day"
 	}
@@ -152,13 +172,13 @@ func historyItem2EntityItem(hi app.MembershipHistoryItem) entityItem {
 	}
 	var text string
 	if false && hi.IsOldest {
-		text = fmt.Sprintf("Founded   **%s**", hi.StartDate.Format(dateFormat))
+		text = fmt.Sprintf("Founded   **%s**", hi.StartDate.Format(app.DateTimeDefaultFormat))
 	} else {
 		text = fmt.Sprintf(
 			"%s%s   **%s** to **%s** (%s days)",
 			hi.OrganizationName(),
 			closed,
-			hi.StartDate.Format(dateFormat),
+			hi.StartDate.Format(app.DateTimeDefaultFormat),
 			endDateStr,
 			humanize.Comma(int64(hi.Days)),
 		)

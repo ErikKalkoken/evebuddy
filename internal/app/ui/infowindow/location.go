@@ -9,8 +9,10 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -21,18 +23,21 @@ import (
 type locationArea struct {
 	Content fyne.CanvasObject
 
-	name            *widget.Label
-	corporationLogo *canvas.Image
 	corporation     *kxwidget.TappableLabel
-	typeImage       *kxwidget.TappableImage
-	tabs            *container.AppTabs
+	corporationLogo *canvas.Image
 	iw              InfoWindow
+	name            *widget.Label
+	tabs            *container.AppTabs
+	typeImage       *kxwidget.TappableImage
+	typeInfo        *kxwidget.TappableLabel
 	w               fyne.Window
 }
 
 func newLocationArea(iw InfoWindow, locationID int64, w fyne.Window) *locationArea {
 	name := widget.NewLabel("Loading...")
 	name.Truncation = fyne.TextTruncateEllipsis
+	typeInfo := kxwidget.NewTappableLabel("", nil)
+	typeInfo.Truncation = fyne.TextTruncateEllipsis
 	corporation := kxwidget.NewTappableLabel("", nil)
 	corporation.Truncation = fyne.TextTruncateEllipsis
 	typeImage := kxwidget.NewTappableImage(icon.BlankSvg, nil)
@@ -40,16 +45,21 @@ func newLocationArea(iw InfoWindow, locationID int64, w fyne.Window) *locationAr
 	typeImage.SetMinSize(fyne.NewSquareSize(renderIconUnitSize))
 	a := &locationArea{
 		corporation:     corporation,
-		corporationLogo: iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(defaultIconUnitSize)),
+		corporationLogo: iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(app.DefaultIconUnitSize)),
 		iw:              iw,
 		name:            name,
+		typeInfo:        typeInfo,
 		typeImage:       typeImage,
 		tabs:            container.NewAppTabs(),
 		w:               w,
 	}
 
+	p := theme.Padding()
 	main := container.New(layout.NewCustomPaddedVBoxLayout(0),
-		a.name,
+		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
+			a.name,
+			a.typeInfo,
+		),
 		container.NewBorder(
 			nil,
 			nil,
@@ -88,6 +98,10 @@ func (a *locationArea) load(locationID int64) error {
 		a.typeImage.SetResource(r)
 	}()
 	a.name.SetText(o.Name)
+	a.typeInfo.SetText(o.Type.Name)
+	a.typeInfo.OnTapped = func() {
+		a.iw.ShowEveEntity(o.Type.ToEveEntity())
+	}
 	a.corporation.SetText(o.Owner.Name)
 	a.corporation.OnTapped = func() {
 		a.iw.ShowEveEntity(o.Owner)
@@ -111,7 +125,7 @@ func (a *locationArea) load(locationID int64) error {
 	a.tabs.Select(locationTab)
 	a.tabs.Refresh()
 	go func() {
-		r, err := a.iw.eis.CorporationLogo(o.Owner.ID, defaultIconPixelSize)
+		r, err := a.iw.eis.CorporationLogo(o.Owner.ID, app.DefaultIconPixelSize)
 		if err != nil {
 			slog.Error("location info: Failed to load corp logo", "owner", o.Owner, "error", err)
 			return

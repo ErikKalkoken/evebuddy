@@ -43,7 +43,7 @@ func newSolarSystemArea(iw InfoWindow, solarSystemID int32, w fyne.Window) *sola
 	constellation.Truncation = fyne.TextTruncateEllipsis
 	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateEllipsis
-	s := float32(defaultIconPixelSize) * logoZoomFactor
+	s := float32(app.DefaultIconPixelSize) * logoZoomFactor
 	logo := iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(s))
 	a := &solarSystemArea{
 		region:        region,
@@ -93,7 +93,7 @@ func (a *solarSystemArea) load(solarSystemID int32) error {
 		if err != nil {
 			return
 		}
-		r, err := a.iw.eis.InventoryTypeIcon(id, defaultIconPixelSize)
+		r, err := a.iw.eis.InventoryTypeIcon(id, app.DefaultIconPixelSize)
 		if err != nil {
 			slog.Error("solar system info: Failed to load logo", "solarSystem", solarSystemID, "error", err)
 			return

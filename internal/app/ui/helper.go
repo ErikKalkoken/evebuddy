@@ -1,38 +1,19 @@
 package ui
 
 import (
-	"fmt"
 	"regexp"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
-
-// Titler converts a string into a title for english language.
-var Titler = cases.Title(language.English)
 
 func EntityNameOrFallback[T int | int32 | int64](e *app.EntityShort[T], fallback string) string {
 	if e == nil {
 		return fallback
 	}
 	return e.Name
-}
-
-func SkillDisplayName[N int | int32 | int64 | uint | uint32 | uint64](name string, level N) string {
-	return fmt.Sprintf("%s %s", name, ihumanize.RomanLetter(level))
-}
-
-func BoolIconResource(ok bool) fyne.Resource {
-	if ok {
-		return theme.NewSuccessThemedResource(theme.ConfirmIcon())
-	}
-	return theme.NewErrorThemedResource(theme.CancelIcon())
 }
 
 // NewCustomHyperlink returns a new hyperlink with a custom action.

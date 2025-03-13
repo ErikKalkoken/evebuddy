@@ -74,7 +74,7 @@ func (a *SkillqueueArea) makeSkillQueue() *widget.List {
 			value string
 			wrap  bool
 		}{
-			{"Name", SkillDisplayName(q.SkillName, q.FinishedLevel), false},
+			{"Name", app.SkillDisplayName(q.SkillName, q.FinishedLevel), false},
 			{"Group", q.GroupName, false},
 			{"Description", q.SkillDescription, true},
 			{"Start date", timeFormattedOrFallback(q.StartDate, app.DateTimeDefaultFormat, "?"), false},

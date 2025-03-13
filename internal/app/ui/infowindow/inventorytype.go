@@ -1,4 +1,4 @@
-package ui
+package infowindow
 
 import (
 	"context"
@@ -21,144 +21,15 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
-	"github.com/ErikKalkoken/evebuddy/internal/humanize"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-type attributeGroup string
-
-func (ag attributeGroup) DisplayName() string {
-	return Titler.String(string(ag))
-}
-
-// groups of attributes to display on the attributes and fitting tab
-const (
-	attributeGroupArmor                 attributeGroup = "armor"
-	attributeGroupCapacitor             attributeGroup = "capacitor"
-	attributeGroupElectronicResistances attributeGroup = "electronic resistances"
-	attributeGroupFitting               attributeGroup = "fitting"
-	attributeGroupFighter               attributeGroup = "fighter squadron facilities"
-	attributeGroupJumpDrive             attributeGroup = "jump drive systems"
-	attributeGroupMiscellaneous         attributeGroup = "miscellaneous"
-	attributeGroupPropulsion            attributeGroup = "propulsion"
-	attributeGroupShield                attributeGroup = "shield"
-	attributeGroupStructure             attributeGroup = "structure"
-	attributeGroupTargeting             attributeGroup = "targeting"
-)
-
-// attribute groups to show in order on attributes tab
-var attributeGroups = []attributeGroup{
-	attributeGroupStructure,
-	attributeGroupArmor,
-	attributeGroupShield,
-	attributeGroupElectronicResistances,
-	attributeGroupCapacitor,
-	attributeGroupTargeting,
-	attributeGroupFighter,
-	attributeGroupJumpDrive,
-	attributeGroupPropulsion,
-	attributeGroupMiscellaneous,
-}
-
-// assignment of attributes to groups
-var attributeGroupsMap = map[attributeGroup][]int32{
-	attributeGroupStructure: {
-		app.EveDogmaAttributeStructureHitpoints,
-		app.EveDogmaAttributeCapacity,
-		app.EveDogmaAttributeDroneCapacity,
-		app.EveDogmaAttributeDroneBandwidth,
-		app.EveDogmaAttributeMass,
-		app.EveDogmaAttributeInertiaModifier,
-		app.EveDogmaAttributeStructureEMDamageResistance,
-		app.EveDogmaAttributeStructureThermalDamageResistance,
-		app.EveDogmaAttributeStructureKineticDamageResistance,
-		app.EveDogmaAttributeStructureExplosiveDamageResistance,
-	},
-	attributeGroupArmor: {
-		app.EveDogmaAttributeArmorHitpoints,
-		app.EveDogmaAttributeArmorEMDamageResistance,
-		app.EveDogmaAttributeArmorThermalDamageResistance,
-		app.EveDogmaAttributeArmorKineticDamageResistance,
-		app.EveDogmaAttributeArmorExplosiveDamageResistance,
-	},
-	attributeGroupShield: {
-		app.EveDogmaAttributeShieldCapacity,
-		app.EveDogmaAttributeShieldRechargeTime,
-		app.EveDogmaAttributeShieldEMDamageResistance,
-		app.EveDogmaAttributeShieldThermalDamageResistance,
-		app.EveDogmaAttributeShieldKineticDamageResistance,
-		app.EveDogmaAttributeShieldExplosiveDamageResistance,
-	},
-	attributeGroupElectronicResistances: {
-		app.EveDogmaAttributeCargoScanResistance,
-		app.EveDogmaAttributeCapacitorWarfareResistance,
-		app.EveDogmaAttributeSensorWarfareResistance,
-		app.EveDogmaAttributeWeaponDisruptionResistance,
-		app.EveDogmaAttributeTargetPainterResistance,
-		app.EveDogmaAttributeStasisWebifierResistance,
-		app.EveDogmaAttributeRemoteLogisticsImpedance,
-		app.EveDogmaAttributeRemoteElectronicAssistanceImpedance,
-		app.EveDogmaAttributeECMResistance,
-		app.EveDogmaAttributeCapacitorWarfareResistanceBonus,
-		app.EveDogmaAttributeStasisWebifierResistanceBonus,
-	},
-	attributeGroupCapacitor: {
-		app.EveDogmaAttributeCapacitorCapacity,
-		app.EveDogmaAttributeCapacitorRechargeTime,
-	},
-	attributeGroupTargeting: {
-		app.EveDogmaAttributeMaximumTargetingRange,
-		app.EveDogmaAttributeMaximumLockedTargets,
-		app.EveDogmaAttributeSignatureRadius,
-		app.EveDogmaAttributeScanResolution,
-		app.EveDogmaAttributeRADARSensorStrength,
-		app.EveDogmaAttributeLadarSensorStrength,
-		app.EveDogmaAttributeMagnetometricSensorStrength,
-		app.EveDogmaAttributeGravimetricSensorStrength,
-	},
-	attributeGroupPropulsion: {
-		app.EveDogmaAttributeMaxVelocity,
-		app.EveDogmaAttributeShipWarpSpeed,
-	},
-	attributeGroupJumpDrive: {
-		app.EveDogmaAttributeJumpDriveCapacitorNeed,
-		app.EveDogmaAttributeMaximumJumpRange,
-		app.EveDogmaAttributeJumpDriveFuelNeed,
-		app.EveDogmaAttributeJumpDriveConsumptionAmount,
-		app.EveDogmaAttributeFuelBayCapacity,
-	},
-	attributeGroupFighter: {
-		app.EveDogmaAttributeFighterHangarCapacity,
-		app.EveDogmaAttributeFighterSquadronLaunchTubes,
-		app.EveDogmaAttributeLightFighterSquadronLimit,
-		app.EveDogmaAttributeSupportFighterSquadronLimit,
-		app.EveDogmaAttributeHeavyFighterSquadronLimit,
-	},
-	attributeGroupFitting: {
-		app.EveDogmaAttributeCPUOutput,
-		app.EveDogmaAttributeCPUusage,
-		app.EveDogmaAttributePowergridOutput,
-		app.EveDogmaAttributeCalibration,
-		app.EveDogmaAttributeRigSlots,
-		app.EveDogmaAttributeLauncherHardpoints,
-		app.EveDogmaAttributeTurretHardpoints,
-		app.EveDogmaAttributeHighSlots,
-		app.EveDogmaAttributeMediumSlots,
-		app.EveDogmaAttributeLowSlots,
-		app.EveDogmaAttributeRigSlots,
-	},
-	attributeGroupMiscellaneous: {
-		app.EveDogmaAttributeImplantSlot,
-		app.EveDogmaAttributeCharismaModifier,
-		app.EveDogmaAttributeIntelligenceModifier,
-		app.EveDogmaAttributeMemoryModifier,
-		app.EveDogmaAttributePerceptionModifier,
-		app.EveDogmaAttributeWillpowerModifier,
-		app.EveDogmaAttributePrimaryAttribute,
-		app.EveDogmaAttributeSecondaryAttribute,
-		app.EveDogmaAttributeTrainingTimeMultiplier,
-		app.EveDogmaAttributeTechLevel,
-	},
+type attributeRow struct {
+	icon    fyne.Resource
+	label   string
+	value   string
+	isTitle bool
 }
 
 type requiredSkill struct {
@@ -170,16 +41,8 @@ type requiredSkill struct {
 	trainedLevel  int
 }
 
-type attributeRow struct {
-	icon    fyne.Resource
-	label   string
-	value   string
-	isTitle bool
-}
-
-// ItemInfoArea represents a UI component to display information about Eve Online items;
-// similar to the info window in the game client.
-type ItemInfoArea struct {
+// inventoryTypeArea represents a UI component to display information about Eve Online inventory types
+type inventoryTypeArea struct {
 	Content fyne.CanvasObject
 
 	attributesData []attributeRow
@@ -191,33 +54,19 @@ type ItemInfoArea struct {
 	requiredSkills []requiredSkill
 	techLevel      int
 
-	eis app.EveImageService
-	eus *eveuniverse.EveUniverseService
-	cs  *character.CharacterService
-	w   fyne.Window
+	iw InfoWindow
+	w  fyne.Window
 }
 
-// TODO: Restructure, so that window is first drawn empty and content loaded in background (same as character info windo)
-func NewItemInfoArea(
-	cs *character.CharacterService,
-	eis app.EveImageService,
-	eus *eveuniverse.EveUniverseService,
-	typeID, characterID int32,
-	w fyne.Window,
-) (*ItemInfoArea, error) {
+func NewInventoryTypeArea(iw InfoWindow, typeID, characterID int32, w fyne.Window) (*inventoryTypeArea, error) {
 	ctx := context.Background()
-	a := &ItemInfoArea{
-		cs:  cs,
-		eis: eis,
-		eus: eus,
-		w:   w,
-	}
-	et, err := eus.GetEveType(ctx, typeID)
+	a := &inventoryTypeArea{iw: iw, w: w}
+	et, err := iw.eus.GetEveType(ctx, typeID)
 	if err != nil {
 		return nil, err
 	}
 	a.et = et
-	owner, err := eus.GetOrCreateEveEntityESI(ctx, characterID)
+	owner, err := iw.eus.GetOrCreateEveEntityESI(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +74,7 @@ func NewItemInfoArea(
 	if a.et == nil {
 		return nil, nil
 	}
-	p, err := eus.GetEveMarketPrice(ctx, a.et.ID)
+	p, err := iw.eus.GetEveMarketPrice(ctx, a.et.ID)
 	if errors.Is(err, eveuniverse.ErrNotFound) {
 		p = nil
 	} else if err != nil {
@@ -235,7 +84,7 @@ func NewItemInfoArea(
 	} else {
 		a.price = nil
 	}
-	oo, err := eus.ListEveTypeDogmaAttributesForType(ctx, a.et.ID)
+	oo, err := iw.eus.ListEveTypeDogmaAttributesForType(ctx, a.et.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +106,7 @@ func NewItemInfoArea(
 	return a, nil
 }
 
-func (a *ItemInfoArea) MakeTitle(suffix string) string {
+func (a *inventoryTypeArea) MakeTitle(suffix string) string {
 	return fmt.Sprintf("%s: %s", a.et.Group.Name, suffix)
 }
 
@@ -274,7 +123,7 @@ func calcLevels(attributes map[int32]*app.EveTypeDogmaAttribute) (int, int) {
 	return tech, meta
 }
 
-func (a *ItemInfoArea) calcAttributesData(ctx context.Context, attributes map[int32]*app.EveTypeDogmaAttribute) []attributeRow {
+func (a *inventoryTypeArea) calcAttributesData(ctx context.Context, attributes map[int32]*app.EveTypeDogmaAttribute) []attributeRow {
 	droneCapacity, ok := attributes[app.EveDogmaAttributeDroneCapacity]
 	hasDrones := ok && droneCapacity.Value > 0
 
@@ -329,7 +178,7 @@ func (a *ItemInfoArea) calcAttributesData(ctx context.Context, attributes map[in
 				x := attributes[app.EveDogmaAttributeWarpSpeedMultiplier]
 				value = value * x.Value
 			}
-			v, substituteIcon := a.eus.FormatValue(ctx, value, o.DogmaAttribute.Unit)
+			v, substituteIcon := a.iw.eus.FormatValue(ctx, value, o.DogmaAttribute.Unit)
 			var iconID int32
 			if substituteIcon != 0 {
 				iconID = substituteIcon
@@ -346,9 +195,9 @@ func (a *ItemInfoArea) calcAttributesData(ctx context.Context, attributes map[in
 	}
 	data := make([]attributeRow, 0)
 	if a.et.Volume > 0 {
-		v, _ := a.eus.FormatValue(ctx, a.et.Volume, app.EveUnitVolume)
+		v, _ := a.iw.eus.FormatValue(ctx, a.et.Volume, app.EveUnitVolume)
 		if a.et.Volume != a.et.PackagedVolume {
-			v2, _ := a.eus.FormatValue(ctx, a.et.PackagedVolume, app.EveUnitVolume)
+			v2, _ := a.iw.eus.FormatValue(ctx, a.et.PackagedVolume, app.EveUnitVolume)
 			v += fmt.Sprintf(" (%s Packaged)", v2)
 		}
 		r := attributeRow{
@@ -381,7 +230,7 @@ func (a *ItemInfoArea) calcAttributesData(ctx context.Context, attributes map[in
 	return data
 }
 
-func (a *ItemInfoArea) calcFittingData(ctx context.Context, attributes map[int32]*app.EveTypeDogmaAttribute) []attributeRow {
+func (a *inventoryTypeArea) calcFittingData(ctx context.Context, attributes map[int32]*app.EveTypeDogmaAttribute) []attributeRow {
 	data := make([]attributeRow, 0)
 	for _, da := range attributeGroupsMap[attributeGroupFitting] {
 		o, ok := attributes[da]
@@ -390,7 +239,7 @@ func (a *ItemInfoArea) calcFittingData(ctx context.Context, attributes map[int32
 		}
 		iconID := o.DogmaAttribute.IconID
 		r, _ := eveicon.GetResourceByIconID(iconID)
-		v, _ := a.eus.FormatValue(ctx, o.Value, o.DogmaAttribute.Unit)
+		v, _ := a.iw.eus.FormatValue(ctx, o.Value, o.DogmaAttribute.Unit)
 		data = append(data, attributeRow{
 			icon:  r,
 			label: o.DogmaAttribute.DisplayName,
@@ -400,7 +249,7 @@ func (a *ItemInfoArea) calcFittingData(ctx context.Context, attributes map[int32
 	return data
 }
 
-func (a *ItemInfoArea) calcRequiredSkills(ctx context.Context, characterID int32, attributes map[int32]*app.EveTypeDogmaAttribute) ([]requiredSkill, error) {
+func (a *inventoryTypeArea) calcRequiredSkills(ctx context.Context, characterID int32, attributes map[int32]*app.EveTypeDogmaAttribute) ([]requiredSkill, error) {
 	skills := make([]requiredSkill, 0)
 	skillAttributes := []struct {
 		id    int32
@@ -424,7 +273,7 @@ func (a *ItemInfoArea) calcRequiredSkills(ctx context.Context, characterID int32
 			continue
 		}
 		requiredLevel := int(daLevel.Value)
-		et, err := a.eus.GetEveType(ctx, typeID)
+		et, err := a.iw.eus.GetEveType(ctx, typeID)
 		if err != nil {
 			return nil, err
 		}
@@ -434,7 +283,7 @@ func (a *ItemInfoArea) calcRequiredSkills(ctx context.Context, characterID int32
 			name:          et.Name,
 			typeID:        typeID,
 		}
-		cs, err := a.cs.GetCharacterSkill(ctx, characterID, typeID)
+		cs, err := a.iw.cs.GetCharacterSkill(ctx, characterID, typeID)
 		if errors.Is(err, character.ErrNotFound) {
 			// do nothing
 		} else if err != nil {
@@ -448,46 +297,46 @@ func (a *ItemInfoArea) calcRequiredSkills(ctx context.Context, characterID int32
 	return skills, nil
 }
 
-func (a *ItemInfoArea) makeContent() fyne.CanvasObject {
+func (a *inventoryTypeArea) makeContent() fyne.CanvasObject {
 	top := a.makeTop()
 	t := container.NewTabItem("Description", a.makeDescriptionTab())
 	tabs := container.NewAppTabs(t)
-	if len(a.attributesData) > 0 && a.et.Group.Category.ID != app.EveCategoryStation {
-		tabs.Append(container.NewTabItem("Attributes", a.makeAttributesTab()))
+	var attributeTab, requirementsTab *container.TabItem
+	if len(a.attributesData) > 0 {
+		attributeTab = container.NewTabItem("Attributes", a.makeAttributesTab())
+		tabs.Append(attributeTab)
 	}
 	if len(a.fittingData) > 0 {
 		tabs.Append(container.NewTabItem("Fittings", a.makeFittingsTab()))
 	}
 	if len(a.requiredSkills) > 0 {
-		t := container.NewTabItem("Requirements", a.makeRequirementsTab())
-		tabs.Append(t)
+		requirementsTab = container.NewTabItem("Requirements", a.makeRequirementsTab())
+		tabs.Append(requirementsTab)
 	}
 	if a.price != nil {
 		tabs.Append(container.NewTabItem("Market", a.makeMarketTab()))
+	}
+	// Select selected tab
+	if requirementsTab != nil && a.et.Group.Category.ID == app.EveCategorySkill {
+		tabs.Select(requirementsTab)
+	} else if attributeTab != nil {
+		tabs.Select(attributeTab)
 	}
 	c := container.NewBorder(top, nil, nil, nil, tabs)
 	return c
 }
 
-func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
+func (a *inventoryTypeArea) makeTop() fyne.CanvasObject {
 	typeIcon := container.New(&topLeftLayout{})
 	if a.et.HasRender() {
 		size := 128
-		r, err := a.eis.InventoryTypeRender(a.et.ID, size)
+		r, err := a.iw.eis.InventoryTypeRender(a.et.ID, size)
 		if err != nil {
 			slog.Error("Failed to load inventory type render", "typeID", a.et.ID, "error", err)
 			r = theme.BrokenImageIcon()
 		}
 		render := kxwidget.NewTappableImage(r, func() {
-			w := fyne.CurrentApp().NewWindow(a.MakeTitle("Render"))
-			size := 512
-			s := float32(size) / w.Canvas().Scale()
-			i := appwidget.NewImageResourceAsync(icon.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
-				return a.eis.InventoryTypeRender(a.et.ID, size)
-			})
-			p := theme.Padding()
-			w.SetContent(container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), i))
-			w.Show()
+			go a.iw.showZoomWindow(a.et.Name, a.et.ID, a.iw.eis.InventoryTypeRender, a.w)
 		})
 		render.SetFillMode(canvas.ImageFillContain)
 		s := float32(size)
@@ -510,28 +359,28 @@ func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
 			typeIcon.Add(container.NewPadded(marker))
 		}
 	} else {
-		s := float32(DefaultIconPixelSize) * 1.3
+		s := float32(app.DefaultIconPixelSize) * logoZoomFactor
 		icon := appwidget.NewImageResourceAsync(icon.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
 			if a.et.IsSKIN() {
-				return a.eis.InventoryTypeSKIN(a.et.ID, DefaultIconPixelSize)
+				return a.iw.eis.InventoryTypeSKIN(a.et.ID, app.DefaultIconPixelSize)
 			} else if a.et.IsBlueprint() {
-				return a.eis.InventoryTypeBPO(a.et.ID, DefaultIconPixelSize)
+				return a.iw.eis.InventoryTypeBPO(a.et.ID, app.DefaultIconPixelSize)
 			} else {
-				return a.eis.InventoryTypeIcon(a.et.ID, DefaultIconPixelSize)
+				return a.iw.eis.InventoryTypeIcon(a.et.ID, app.DefaultIconPixelSize)
 			}
 		})
 		typeIcon.Add(icon)
 	}
-	ownerIcon := iwidget.NewImageFromResource(icon.QuestionmarkSvg, fyne.NewSquareSize(DefaultIconUnitSize))
+	ownerIcon := iwidget.NewImageFromResource(icon.QuestionmarkSvg, fyne.NewSquareSize(app.DefaultIconUnitSize))
 	ownerName := widget.NewLabel("")
 	ownerName.Wrapping = fyne.TextWrapWord
 	if a.owner != nil {
 		appwidget.RefreshImageResourceAsync(ownerIcon, func() (fyne.Resource, error) {
 			switch a.owner.Category {
 			case app.EveEntityCharacter:
-				return a.eis.CharacterPortrait(a.owner.ID, DefaultIconPixelSize)
+				return a.iw.eis.CharacterPortrait(a.owner.ID, app.DefaultIconPixelSize)
 			case app.EveEntityCorporation:
-				return a.eis.CorporationLogo(a.owner.ID, DefaultIconPixelSize)
+				return a.iw.eis.CorporationLogo(a.owner.ID, app.DefaultIconPixelSize)
 			default:
 				panic("Unexpected owner type")
 			}
@@ -548,7 +397,7 @@ func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
 			break
 		}
 	}
-	checkIcon := widget.NewIcon(BoolIconResource(hasRequiredSkills))
+	checkIcon := widget.NewIcon(boolIconResource(hasRequiredSkills))
 	if a.owner != nil && !a.owner.IsCharacter() || len(a.requiredSkills) == 0 {
 		checkIcon.Hide()
 	}
@@ -571,22 +420,26 @@ func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
 			)))
 }
 
-func (a *ItemInfoArea) makeDescriptionTab() fyne.CanvasObject {
-	description := widget.NewLabel(a.et.DescriptionPlain())
+func (a *inventoryTypeArea) makeDescriptionTab() fyne.CanvasObject {
+	s := a.et.DescriptionPlain()
+	if s == "" {
+		s = a.et.Name
+	}
+	description := widget.NewLabel(s)
 	description.Wrapping = fyne.TextWrapWord
 	return container.NewVScroll(description)
 }
 
-func (a *ItemInfoArea) makeMarketTab() fyne.CanvasObject {
+func (a *inventoryTypeArea) makeMarketTab() fyne.CanvasObject {
 	c := container.NewHBox(
 		widget.NewLabel("Average price"),
 		layout.NewSpacer(),
-		widget.NewLabel(humanize.Number(a.price.AveragePrice, 1)),
+		widget.NewLabel(ihumanize.Number(a.price.AveragePrice, 1)),
 	)
 	return container.NewVScroll(c)
 }
 
-func (a *ItemInfoArea) makeAttributesTab() fyne.CanvasObject {
+func (a *inventoryTypeArea) makeAttributesTab() fyne.CanvasObject {
 	list := widget.NewList(
 		func() int {
 			return len(a.attributesData)
@@ -610,7 +463,7 @@ func (a *ItemInfoArea) makeAttributesTab() fyne.CanvasObject {
 	return list
 }
 
-func (a *ItemInfoArea) makeFittingsTab() fyne.CanvasObject {
+func (a *inventoryTypeArea) makeFittingsTab() fyne.CanvasObject {
 	l := widget.NewList(
 		func() int {
 			return len(a.fittingData)
@@ -630,7 +483,7 @@ func (a *ItemInfoArea) makeFittingsTab() fyne.CanvasObject {
 	return l
 }
 
-func (a *ItemInfoArea) makeRequirementsTab() fyne.CanvasObject {
+func (a *inventoryTypeArea) makeRequirementsTab() fyne.CanvasObject {
 	l := widget.NewList(
 		func() int {
 			return len(a.requiredSkills)
@@ -651,7 +504,7 @@ func (a *ItemInfoArea) makeRequirementsTab() fyne.CanvasObject {
 			text := row[2].(*widget.Label)
 			level := row[3].(*appwidget.SkillLevel)
 			icon := row[4].(*widget.Icon)
-			skill.SetText(SkillDisplayName(o.name, o.requiredLevel))
+			skill.SetText(app.SkillDisplayName(o.name, o.requiredLevel))
 			if o.activeLevel == 0 && o.trainedLevel == 0 {
 				text.Text = "Skill not injected"
 				text.Importance = widget.DangerImportance
@@ -660,7 +513,7 @@ func (a *ItemInfoArea) makeRequirementsTab() fyne.CanvasObject {
 				level.Hide()
 				icon.Hide()
 			} else if o.activeLevel >= o.requiredLevel {
-				icon.SetResource(BoolIconResource(true))
+				icon.SetResource(boolIconResource(true))
 				icon.Show()
 				text.Hide()
 				level.Hide()
@@ -674,9 +527,16 @@ func (a *ItemInfoArea) makeRequirementsTab() fyne.CanvasObject {
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
-		// r := a.requiredSkills[id]
-		// a.u.ShowTypeInfoWindow(r.typeID, a.owner.ID)
+		r := a.requiredSkills[id]
+		a.iw.Show(InventoryType, int64(r.typeID))
 		l.UnselectAll()
 	}
 	return l
+}
+
+func boolIconResource(ok bool) fyne.Resource {
+	if ok {
+		return theme.NewSuccessThemedResource(theme.ConfirmIcon())
+	}
+	return theme.NewErrorThemedResource(theme.CancelIcon())
 }

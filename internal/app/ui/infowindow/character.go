@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -54,7 +55,7 @@ func newCharacterArea(iw InfoWindow, characterID int32, w fyne.Window) *characte
 	a := &characterArea{
 		alliance:        alliance,
 		corporation:     corporation,
-		corporationLogo: iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(defaultIconUnitSize)),
+		corporationLogo: iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(app.DefaultIconUnitSize)),
 		iw:              iw,
 		membership:      widget.NewLabel(""),
 		name:            name,
@@ -148,7 +149,7 @@ func (a *characterArea) load(characterID int32) error {
 	}
 	a.tabs.Refresh()
 	go func() {
-		r, err := a.iw.eis.CorporationLogo(c.Corporation.ID, defaultIconPixelSize)
+		r, err := a.iw.eis.CorporationLogo(c.Corporation.ID, app.DefaultIconPixelSize)
 		if err != nil {
 			slog.Error("character info: Failed to load corp logo", "charaterID", characterID, "error", err)
 			return

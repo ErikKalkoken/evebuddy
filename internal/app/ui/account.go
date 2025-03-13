@@ -18,6 +18,7 @@ import (
 	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -97,7 +98,7 @@ func (a *AccountArea) makeCharacterList() *widget.List {
 		func() fyne.CanvasObject {
 			portrait := iwidget.NewImageFromResource(
 				icon.Characterplaceholder64Jpeg,
-				fyne.NewSquareSize(DefaultIconUnitSize),
+				fyne.NewSquareSize(app.DefaultIconUnitSize),
 			)
 			name := widget.NewLabel("Template")
 			button := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {})

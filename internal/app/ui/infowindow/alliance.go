@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
@@ -33,8 +34,8 @@ func newAlliancArea(iw InfoWindow, allianceID int32, w fyne.Window) *allianceAre
 	name.Truncation = fyne.TextTruncateEllipsis
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Truncation = fyne.TextTruncateEllipsis
-	logo := iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(defaultIconUnitSize))
-	s := float32(defaultIconPixelSize) * logoZoomFactor
+	logo := iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(app.DefaultIconUnitSize))
+	s := float32(app.DefaultIconPixelSize) * logoZoomFactor
 	logo.SetMinSize(fyne.NewSquareSize(s))
 	a := &allianceArea{
 		iw:   iw,
@@ -63,7 +64,7 @@ func newAlliancArea(iw InfoWindow, allianceID int32, w fyne.Window) *allianceAre
 func (a *allianceArea) load(allianceID int32) error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.iw.eis.AllianceLogo(allianceID, defaultIconPixelSize)
+		r, err := a.iw.eis.AllianceLogo(allianceID, app.DefaultIconPixelSize)
 		if err != nil {
 			slog.Error("alliance info: Failed to load logo", "allianceID", allianceID, "error", err)
 			return

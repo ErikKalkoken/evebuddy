@@ -1,6 +1,12 @@
 package app
 
-import "github.com/ErikKalkoken/evebuddy/internal/optional"
+import (
+	"fmt"
+
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+)
 
 type CharacterShipAbility struct {
 	Type   EntityShort[int32]
@@ -15,6 +21,10 @@ type CharacterSkill struct {
 	ID                 int64
 	SkillPointsInSkill int
 	TrainedSkillLevel  int
+}
+
+func SkillDisplayName[N int | int32 | int64 | uint | uint32 | uint64](name string, level N) string {
+	return fmt.Sprintf("%s %s", name, ihumanize.RomanLetter(level))
 }
 
 type ListCharacterSkillGroupProgress struct {
