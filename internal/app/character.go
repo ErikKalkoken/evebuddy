@@ -20,6 +20,8 @@ type Character struct {
 	TotalSP           optional.Optional[int]
 	UnallocatedSP     optional.Optional[int]
 	WalletBalance     optional.Optional[float64]
+	// Calculated fields
+	NextCloneJump optional.Optional[time.Time] // zero time == now
 }
 
 // A shortened version of Character.

@@ -17,22 +17,18 @@ func (s *CharacterService) ListCharacterJumpClones(ctx context.Context, characte
 	return s.st.ListCharacterJumpClones(ctx, characterID)
 }
 
-// CharacterNextCloneJump returns when the next clone jump is available.
+// calcCharacterNextCloneJump returns when the next clone jump is available.
 // It returns a zero time when a jump is available now.
-func (s *CharacterService) CharacterNextCloneJump(ctx context.Context, characterID int32) (time.Time, error) {
+func (s *CharacterService) calcCharacterNextCloneJump(ctx context.Context, c *app.Character) (time.Time, error) {
 	var z time.Time
 
-	c, err := s.GetCharacter(ctx, characterID)
-	if err != nil {
-		return z, err
-	}
 	if c.LastCloneJumpAt.IsEmpty() {
-		return z, fmt.Errorf("next clone jump: missing last clone jump date: character ID %d", characterID)
+		return z, fmt.Errorf("next clone jump: missing last clone jump date: character ID %d", c.ID)
 	}
-	lastJump := c.LastCloneJumpAt.ValueOrZero()
+	lastJump := c.LastCloneJumpAt.MustValue()
 
 	var skillLevel int
-	sk, err := s.GetCharacterSkill(ctx, characterID, app.EveTypeInfomorphSynchronizing)
+	sk, err := s.GetCharacterSkill(ctx, c.ID, app.EveTypeInfomorphSynchronizing)
 	if errors.Is(err, ErrNotFound) {
 		skillLevel = 0
 	} else if err != nil {

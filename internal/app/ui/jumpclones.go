@@ -227,10 +227,19 @@ func (a *JumpClonesArea) makeTopText(total int) (string, widget.Importance) {
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
-	lastJump := "?"
-	if !c.LastCloneJumpAt.IsEmpty() {
-		lastJump = humanize.Time(c.LastCloneJumpAt.ValueOrZero())
+	var nextJump, lastJump string
+	if c.NextCloneJump.IsEmpty() {
+		nextJump = "?"
+	} else if c.NextCloneJump.MustValue().IsZero() {
+		nextJump = "NOW"
+	} else {
+		nextJump = humanize.Time(c.NextCloneJump.MustValue())
 	}
-	s := fmt.Sprintf("%d clones • Last jump %s", total, lastJump)
+	if x := c.LastCloneJumpAt.ValueOrZero(); x.IsZero() {
+		lastJump = "?"
+	} else {
+		lastJump = humanize.Time(x)
+	}
+	s := fmt.Sprintf("%d clones • Next jump %s [Last jump %s]", total, nextJump, lastJump)
 	return s, widget.MediumImportance
 }
