@@ -237,8 +237,10 @@ func (a *JumpClonesArea) makeTopText(total int) (string, widget.Importance) {
 	} else {
 		nextJump = ihumanize.Duration(time.Until(c.NextCloneJump.MustValue()))
 	}
-	if x := c.LastCloneJumpAt.ValueOrZero(); x.IsZero() {
+	if c.LastCloneJumpAt.IsEmpty() {
 		lastJump = "?"
+	} else if x := c.NextCloneJump.MustValue(); x.IsZero() {
+		lastJump = "Never"
 	} else {
 		lastJump = humanize.Time(x)
 	}
