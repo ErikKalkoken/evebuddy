@@ -28,6 +28,7 @@ type Character struct {
 	UnallocatedSp     sql.NullInt64
 	WalletBalance     sql.NullFloat64
 	IsTrainingWatched bool
+	LastCloneJumpAt   sql.NullTime
 }
 
 type CharacterAsset struct {

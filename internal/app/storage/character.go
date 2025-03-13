@@ -159,10 +159,21 @@ func (st *Storage) UpdateCharacterIsTrainingWatched(ctx context.Context, charact
 	return nil
 }
 
-func (st *Storage) UpdateCharacterLastLoginAt(ctx context.Context, characterID int32, v optional.Optional[time.Time]) error {
+func (st *Storage) UpdateCharacterLastCloneJump(ctx context.Context, characterID int32, v time.Time) error {
+	arg := queries.UpdateCharacterLastCloneJumpParams{
+		ID:              int64(characterID),
+		LastCloneJumpAt: NewNullTimeFromTime(v),
+	}
+	if err := st.q.UpdateCharacterLastCloneJump(ctx, arg); err != nil {
+		return fmt.Errorf("update last clone jump for character %d: %w", characterID, err)
+	}
+	return nil
+}
+
+func (st *Storage) UpdateCharacterLastLoginAt(ctx context.Context, characterID int32, v time.Time) error {
 	arg := queries.UpdateCharacterLastLoginAtParams{
 		ID:          int64(characterID),
-		LastLoginAt: optional.ToNullTime(v),
+		LastLoginAt: NewNullTimeFromTime(v),
 	}
 	if err := st.q.UpdateCharacterLastLoginAt(ctx, arg); err != nil {
 		return fmt.Errorf("update last login for character %d: %w", characterID, err)
@@ -275,6 +286,7 @@ func (st *Storage) characterFromDBModel(
 		EveCharacter:      eveCharacterFromDBModel(eveCharacter, corporation, race, alliance, faction),
 		ID:                int32(character.ID),
 		IsTrainingWatched: character.IsTrainingWatched,
+		LastCloneJumpAt:   optional.FromNullTime(character.LastCloneJumpAt),
 		LastLoginAt:       optional.FromNullTime(character.LastLoginAt),
 		TotalSP:           optional.FromNullInt64ToInteger[int](character.TotalSp),
 		UnallocatedSP:     optional.FromNullInt64ToInteger[int](character.UnallocatedSp),

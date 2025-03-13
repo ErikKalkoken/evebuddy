@@ -12,11 +12,11 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
-
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -178,7 +178,7 @@ func (a *JumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error
 		return tree, nil
 	}
 	ctx := context.Background()
-	clones, err := a.u.CharacterService.ListCharacterJumpClones(ctx, a.u.CharacterID())
+	clones, err := a.u.CharacterService.ListCharacterJumpClones(ctx, a.u.CurrentCharacterID())
 	if err != nil {
 		return tree, err
 	}
@@ -219,12 +219,18 @@ func (a *JumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error
 }
 
 func (a *JumpClonesArea) makeTopText(total int) (string, widget.Importance) {
-	if !a.u.HasCharacter() {
+	c := a.u.CurrentCharacter()
+	if c == nil {
 		return "No character", widget.LowImportance
 	}
-	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionJumpClones)
+	hasData := a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionJumpClones)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
-	return fmt.Sprintf("%d clones", total), widget.MediumImportance
+	lastJump := "?"
+	if !c.LastCloneJumpAt.IsEmpty() {
+		lastJump = humanize.Time(c.LastCloneJumpAt.ValueOrZero())
+	}
+	s := fmt.Sprintf("%d clones • Last jump %s", total, lastJump)
+	return s, widget.MediumImportance
 }

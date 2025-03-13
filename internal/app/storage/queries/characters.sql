@@ -80,6 +80,14 @@ SELECT
 FROM
     characters;
 
+-- name: UpdateCharacterLastCloneJump :exec
+UPDATE
+    characters
+SET
+    last_clone_jump_at = ?
+WHERE
+    id = ?;
+
 -- name: UpdateCharacterHomeId :exec
 UPDATE
     characters

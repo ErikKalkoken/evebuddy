@@ -31,8 +31,8 @@ func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg
 			return clones, nil
 		},
 		func(ctx context.Context, characterID int32, data any) error {
-			var home optional.Optional[int64]
 			clones := data.(esi.GetCharactersCharacterIdClonesOk)
+			var home optional.Optional[int64]
 			if clones.HomeLocation.LocationId != 0 {
 				_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, clones.HomeLocation.LocationId)
 				if err != nil {
@@ -41,6 +41,9 @@ func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg
 				home.Set(clones.HomeLocation.LocationId)
 			}
 			if err := s.st.UpdateCharacterHome(ctx, characterID, home); err != nil {
+				return err
+			}
+			if err := s.st.UpdateCharacterLastCloneJump(ctx, characterID, clones.LastCloneJumpDate); err != nil {
 				return err
 			}
 			args := make([]storage.CreateCharacterJumpCloneParams, len(clones.JumpClones))

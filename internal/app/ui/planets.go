@@ -122,7 +122,7 @@ func (a *PlanetArea) updateEntries() error {
 		a.planets = make([]*app.CharacterPlanet, 0)
 		return nil
 	}
-	characterID := a.u.CharacterID()
+	characterID := a.u.CurrentCharacterID()
 	var err error
 	a.planets, err = a.u.CharacterService.ListCharacterPlanets(context.TODO(), characterID)
 	if err != nil {

@@ -301,7 +301,7 @@ func (a *AssetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 	if !a.u.HasCharacter() {
 		return tree, nil
 	}
-	characterID := a.u.CharacterID()
+	characterID := a.u.CurrentCharacterID()
 	assets, err := a.u.CharacterService.ListCharacterAssets(ctx, characterID)
 	if err != nil {
 		return tree, err

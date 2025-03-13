@@ -253,13 +253,28 @@ func TestUpdateCharacterFields(t *testing.T) {
 		}
 
 	})
+	t.Run("can update last close jump", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCharacter()
+		x := time.Now().Add(1 * time.Hour)
+		// when
+		err := r.UpdateCharacterLastCloneJump(ctx, c1.ID, x)
+		// then
+		if assert.NoError(t, err) {
+			c2, err := r.GetCharacter(ctx, c1.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, x.UTC(), c2.LastCloneJumpAt.ValueOrZero().UTC())
+			}
+		}
+	})
 	t.Run("can update last login", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacter()
 		x := time.Now().Add(1 * time.Hour)
 		// when
-		err := r.UpdateCharacterLastLoginAt(ctx, c1.ID, optional.New(x))
+		err := r.UpdateCharacterLastLoginAt(ctx, c1.ID, x)
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetCharacter(ctx, c1.ID)

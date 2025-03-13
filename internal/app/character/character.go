@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log/slog"
 	"slices"
-	"time"
 
 	"fyne.io/fyne/v2/data/binding"
 
@@ -217,11 +216,7 @@ func (s *CharacterService) updateCharacterOnlineESI(ctx context.Context, arg Upd
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			online := data.(esi.GetCharactersCharacterIdOnlineOk)
-			var x optional.Optional[time.Time]
-			if !online.LastLogin.IsZero() {
-				x.Set(online.LastLogin)
-			}
-			if err := s.st.UpdateCharacterLastLoginAt(ctx, characterID, x); err != nil {
+			if err := s.st.UpdateCharacterLastLoginAt(ctx, characterID, online.LastLogin); err != nil {
 				return err
 			}
 			return nil

@@ -13,6 +13,7 @@ type Character struct {
 	Home              *EveLocation
 	ID                int32
 	IsTrainingWatched bool
+	LastCloneJumpAt   optional.Optional[time.Time]
 	LastLoginAt       optional.Optional[time.Time]
 	Location          *EveLocation
 	Ship              *EveType

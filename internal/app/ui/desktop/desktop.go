@@ -364,7 +364,7 @@ func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 
 	// Info menu
 	characterItem := fyne.NewMenuItem("Current character...", func() {
-		characterID := u.CharacterID()
+		characterID := u.CurrentCharacterID()
 		if characterID == 0 {
 			u.Snackbar.Show("ERROR: No character selected")
 			return

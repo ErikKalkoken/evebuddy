@@ -141,7 +141,7 @@ func (a *AccountArea) makeCharacterList() *widget.List {
 			return
 		}
 		c := a.characters[id]
-		if err := a.u.LoadCharacter(c.id); err != nil {
+		if err := a.u.loadCharacter(c.id); err != nil {
 			slog.Error("load current character", "char", c, "err", err)
 			return
 		}
@@ -175,7 +175,7 @@ func (a *AccountArea) showDeleteDialog(c accountCharacter) {
 				)
 				m.OnSuccess = func() {
 					a.snackbar.Show(fmt.Sprintf("Character %s deleted", c.name))
-					if a.u.CharacterID() == c.id {
+					if a.u.CurrentCharacterID() == c.id {
 						a.u.SetAnyCharacter()
 					}
 					a.u.RefreshCrossPages()
@@ -241,7 +241,7 @@ func (a *AccountArea) ShowAddCharacterDialog() {
 			a.Refresh()
 			go a.u.UpdateCharacterAndRefreshIfNeeded(context.Background(), characterID, false)
 			if !a.u.HasCharacter() {
-				a.u.LoadCharacter(characterID)
+				a.u.loadCharacter(characterID)
 			}
 			a.u.RefreshCrossPages()
 			a.u.RefreshStatus()

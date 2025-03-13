@@ -175,7 +175,7 @@ func (u *BaseUI) Init() {
 	u.AccountArea.Refresh()
 	var c *app.Character
 	var err error
-	u.infoWindow = infowindow.New(u.CharacterID, u.CharacterService, u.EveUniverseService, u.EveImageService, u.Window)
+	u.infoWindow = infowindow.New(u.CurrentCharacterID, u.CharacterService, u.EveUniverseService, u.EveImageService, u.Window)
 	ctx := context.Background()
 	if cID := u.FyneApp.Preferences().Int(settingLastCharacterID); cID != 0 {
 		c, err = u.CharacterService.GetCharacter(ctx, int32(cID))
@@ -196,7 +196,7 @@ func (u *BaseUI) Init() {
 	if c == nil {
 		return
 	}
-	u.SetCharacter(c)
+	u.setCharacter(c)
 	if u.OnInit != nil {
 		u.OnInit(c)
 	}
@@ -240,7 +240,7 @@ func (u *BaseUI) ShowAndRun() {
 			time.Sleep(250 * time.Millisecond) // FIXME: Workaround for occasional progess bar panic
 			u.RefreshCrossPages()
 			if u.HasCharacter() {
-				u.SetCharacter(u.character)
+				u.setCharacter(u.character)
 			} else {
 				u.ResetCharacter()
 			}
@@ -284,8 +284,8 @@ func (u *BaseUI) ShowAndRun() {
 	}
 }
 
-// CharacterID returns the ID of the current character or 0 if non it set.
-func (u *BaseUI) CharacterID() int32 {
+// CurrentCharacterID returns the ID of the current character or 0 if non it set.
+func (u *BaseUI) CurrentCharacterID() int32 {
 	if u.character == nil {
 		return 0
 	}
@@ -300,13 +300,26 @@ func (u *BaseUI) HasCharacter() bool {
 	return u.character != nil
 }
 
-func (u *BaseUI) LoadCharacter(id int32) error {
+func (u *BaseUI) loadCharacter(id int32) error {
 	c, err := u.CharacterService.GetCharacter(context.Background(), id)
 	if err != nil {
 		return fmt.Errorf("load character ID %d: %w", id, err)
 	}
-	u.SetCharacter(c)
+	u.setCharacter(c)
 	return nil
+}
+
+// reloadCurrentCharacter reloads the current character from storage.
+func (u *BaseUI) reloadCurrentCharacter() {
+	id := u.CurrentCharacterID()
+	if id == 0 {
+		return
+	}
+	var err error
+	u.character, err = u.CharacterService.GetCharacter(context.Background(), id)
+	if err != nil {
+		slog.Error("reload character", "characterID", id, "error", err)
+	}
 }
 
 // RefreshStatus refreshed all status information pages.
@@ -402,7 +415,7 @@ func (u *BaseUI) ResetCharacter() {
 	u.RefreshStatus()
 }
 
-func (u *BaseUI) SetCharacter(c *app.Character) {
+func (u *BaseUI) setCharacter(c *app.Character) {
 	u.character = c
 	u.FyneApp.Preferences().SetInt(settingLastCharacterID, int(c.ID))
 	u.RefreshCharacter()
@@ -420,7 +433,7 @@ func (u *BaseUI) SetAnyCharacter() error {
 	} else if err != nil {
 		return err
 	}
-	u.SetCharacter(c)
+	u.setCharacter(c)
 	return nil
 }
 
@@ -568,7 +581,7 @@ func (u *BaseUI) WebsiteRootURL() *url.URL {
 }
 
 func (u *BaseUI) MakeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
-	characterID := u.CharacterID()
+	characterID := u.CurrentCharacterID()
 	cc := u.StatusCacheService.ListCharacters()
 	items := make([]*fyne.MenuItem, 0)
 	if len(cc) == 0 {
@@ -580,7 +593,7 @@ func (u *BaseUI) MakeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 	var wg sync.WaitGroup
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
-			err := u.LoadCharacter(c.ID)
+			err := u.loadCharacter(c.ID)
 			if err != nil {
 				slog.Error("make character switch menu", "error", err)
 				u.Snackbar.Show("ERROR: Failed to switch character")
@@ -750,8 +763,11 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
 		return
 	}
-	isShown := characterID == u.CharacterID()
+	isShown := characterID == u.CurrentCharacterID()
 	needsRefresh := hasChanged || forceUpdate
+	if isShown && needsRefresh {
+		u.reloadCurrentCharacter()
+	}
 	switch s {
 	case app.SectionAssets:
 		if needsRefresh {
