@@ -3,6 +3,7 @@ package infowindow
 import (
 	"context"
 	"fmt"
+	"image/color"
 	"log/slog"
 	"slices"
 
@@ -89,7 +90,11 @@ func (a *solarSystemArea) load(solarSystemID int32) error {
 		return err
 	}
 	go func() {
-		r, err := a.iw.eis.InventoryTypeIcon(o.StarTypeID, defaultIconPixelSize)
+		id, err := o.GetStarTypeID(ctx)
+		if err != nil {
+			return
+		}
+		r, err := a.iw.eis.InventoryTypeIcon(id, defaultIconPixelSize)
 		if err != nil {
 			slog.Error("solar system info: Failed to load logo", "solarSystem", solarSystemID, "error", err)
 			return
@@ -110,16 +115,22 @@ func (a *solarSystemArea) load(solarSystemID int32) error {
 	a.security.Importance = o.System.SecurityType().ToImportance()
 	a.security.Refresh()
 
-	if len(o.AdjacentSystems) > 0 {
-		xx := slices.Collect(xiter.MapSlice(o.AdjacentSystems, NewEntityItemFromEveSolarSystem))
-		x := NewEntityListFromItems(a.iw.Show, xx...)
-		a.tabs.Append(container.NewTabItem("Adjacent Solar Systems", x))
-	}
+	systemsTab := container.NewTabItem("Adjacent Solar Systems", canvas.NewRectangle(color.Transparent))
+	a.tabs.Append(systemsTab)
 
-	if len(o.Stations) > 0 {
-		x := NewEntityListFromEntities(a.iw.Show, o.Stations...)
-		a.tabs.Append(container.NewTabItem("Stations", x))
-	}
+	go func() {
+		as, err := o.GetAdjacentSystems(ctx)
+		if err != nil {
+			return
+		}
+		xx := slices.Collect(xiter.MapSlice(as, NewEntityItemFromEveSolarSystem))
+		systemsTab.Content = NewEntityListFromItems(a.iw.Show, xx...)
+		a.tabs.Refresh()
+	}()
+
+	stations := NewEntityListFromEntities(a.iw.Show, o.Stations...)
+	a.tabs.Append(container.NewTabItem("Stations", stations))
+
 	if len(o.Structures) > 0 {
 		xx := slices.Collect(xiter.MapSlice(o.Structures, func(x *app.EveLocation) entityItem {
 			return NewEntityItem(
