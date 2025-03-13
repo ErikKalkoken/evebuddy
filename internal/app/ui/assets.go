@@ -260,7 +260,7 @@ func (a *AssetsArea) makeAssetGrid() *widget.GridWrap {
 				}
 			}
 		} else {
-			a.u.ShowTypeInfoWindow(ca.EveType.ID, a.u.CharacterID(), DescriptionTab)
+			a.u.ShowTypeInfoWindow(ca.EveType.ID)
 		}
 	}
 	return g

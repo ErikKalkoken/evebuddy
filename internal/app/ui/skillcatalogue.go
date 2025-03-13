@@ -179,7 +179,7 @@ func (a *SkillCatalogueArea) makeSkillsGrid() fyne.CanvasObject {
 				return
 			}
 			skill := a.skills[id]
-			a.u.ShowTypeInfoWindow(skill.id, a.u.CharacterID(), DescriptionTab)
+			a.u.ShowTypeInfoWindow(skill.id)
 		}
 	}
 	return makeGridOrList(a.u.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)

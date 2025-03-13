@@ -346,7 +346,7 @@ func (a *ContractsArea) showContract(c *app.CharacterContract) {
 		}
 		makeItem := func(it *app.CharacterContractItem) fyne.CanvasObject {
 			x := NewCustomHyperlink(it.Type.Name, func() {
-				a.u.ShowTypeInfoWindow(it.Type.ID, c.CharacterID, 0)
+				a.u.ShowTypeInfoWindow(it.Type.ID)
 			})
 			return container.NewHBox(
 				x,

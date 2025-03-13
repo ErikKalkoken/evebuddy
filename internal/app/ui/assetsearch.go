@@ -118,14 +118,14 @@ func NewAssetSearchArea(u *BaseUI) *AssetSearchArea {
 	}
 	if a.u.IsMobile() {
 		a.body = makeDataTableForMobile(headers, &a.assetsFiltered, makeDataLabel, func(r *assetSearchRow) {
-			a.u.ShowTypeInfoWindow(r.typeID, a.u.CharacterID(), DescriptionTab)
+			a.u.ShowTypeInfoWindow(r.typeID)
 		})
 	} else {
 		// can't use helper here, because we also need sort
 		a.body = a.makeTable(headers, makeDataLabel, func(col int, r *assetSearchRow) {
 			switch col {
 			case 0:
-				a.u.ShowTypeInfoWindow(r.typeID, a.u.CharacterID(), DescriptionTab)
+				a.u.ShowTypeInfoWindow(r.typeID)
 			case 2:
 				a.u.ShowInfoWindow(infowindow.Location, r.locationID)
 			case 3:

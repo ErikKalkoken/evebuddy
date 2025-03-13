@@ -77,7 +77,7 @@ func NewWalletTransactionArea(u *BaseUI) *WalletTransactionArea {
 		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(column int, r *app.CharacterWalletTransaction) {
 			switch column {
 			case 2:
-				a.u.ShowTypeInfoWindow(r.EveType.ID, a.u.CharacterID(), DescriptionTab)
+				a.u.ShowTypeInfoWindow(r.EveType.ID)
 			case 5:
 				a.u.ShowEveEntityInfoWindow(r.Client)
 			case 6:
@@ -86,7 +86,7 @@ func NewWalletTransactionArea(u *BaseUI) *WalletTransactionArea {
 		})
 	} else {
 		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, func(r *app.CharacterWalletTransaction) {
-			a.u.ShowTypeInfoWindow(r.EveType.ID, a.u.CharacterID(), DescriptionTab)
+			a.u.ShowTypeInfoWindow(r.EveType.ID)
 		})
 	}
 	top := container.NewVBox(a.top, widget.NewSeparator())

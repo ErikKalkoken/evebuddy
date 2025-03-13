@@ -397,7 +397,7 @@ func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 			u.Snackbar.Show("No character selected")
 			return
 		}
-		u.ShowTypeInfoWindow(c.Ship.ID, c.ID, ui.DescriptionTab)
+		u.ShowTypeInfoWindow(c.Ship.ID)
 	})
 	shipItem.Shortcut = &desktop.CustomShortcut{
 		KeyName:  fyne.KeyS,

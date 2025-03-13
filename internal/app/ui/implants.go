@@ -83,7 +83,7 @@ func (a *ImplantsArea) makeImplantList() *widget.List {
 			})
 			iconInfo := row[2].(*kxwidget.TappableIcon)
 			iconInfo.OnTapped = func() {
-				a.u.ShowTypeInfoWindow(o.EveType.ID, a.u.CharacterID(), DescriptionTab)
+				a.u.ShowTypeInfoWindow(o.EveType.ID)
 			}
 		})
 

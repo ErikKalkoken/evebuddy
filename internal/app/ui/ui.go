@@ -505,16 +505,13 @@ func (u *BaseUI) ShowUpdateStatusWindow() {
 	w.Show()
 }
 
-func (u *BaseUI) ShowTypeInfoWindow(typeID, characterID int32, selectTab TypeWindowTab) {
-	u.showItemWindow(NewItemInfoArea(u, typeID, characterID, selectTab))
-}
-
 func (u *BaseUI) ShowLocationInfoWindow(locationID int64) {
 	iw := infowindow.New(u.EveUniverseService, u.EveImageService, u.Snackbar)
 	iw.ShowLocation(locationID)
 }
 
-func (u *BaseUI) showItemWindow(iw *ItemInfoArea, err error) {
+func (u *BaseUI) ShowTypeInfoWindow(typeID int32) {
+	iw, err := NewItemInfoArea(u.CharacterService, u.EveImageService, u.EveUniverseService, typeID, u.CharacterID(), u.Window)
 	if err != nil {
 		t := "Failed to open info window"
 		slog.Error(t, "err", err)
@@ -525,7 +522,6 @@ func (u *BaseUI) showItemWindow(iw *ItemInfoArea, err error) {
 		return
 	}
 	w := u.FyneApp.NewWindow(u.MakeWindowTitle(iw.MakeTitle("Information")))
-	iw.Window = w
 	w.SetContent(iw.Content)
 	w.Resize(fyne.Size{Width: infoWindowWidth, Height: infoWindowHeight})
 	w.Show()

@@ -96,7 +96,7 @@ func NewLocationsArea(u *BaseUI) *LocationsArea {
 			case 2:
 				a.u.ShowInfoWindow(infowindow.SolarSystem, int64(r.solarSystem.ID))
 			case 5:
-				a.u.ShowTypeInfoWindow(r.ship.ID, a.u.CharacterID(), DescriptionTab)
+				a.u.ShowTypeInfoWindow(r.ship.ID)
 			}
 		})
 	} else {

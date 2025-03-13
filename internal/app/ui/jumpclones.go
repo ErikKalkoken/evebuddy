@@ -136,7 +136,7 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 				})
 				main.SetText(n.ImplantTypeName)
 				iconInfo.OnTapped = func() {
-					a.u.ShowTypeInfoWindow(n.ImplantTypeID, a.u.CharacterID(), DescriptionTab)
+					a.u.ShowTypeInfoWindow(n.ImplantTypeID)
 				}
 				prefix.Hide()
 				spacer.Hide()
