@@ -169,7 +169,7 @@ func (a *ColoniesArea) updateEntries() error {
 			r.dueImportance = widget.WarningImportance
 			r.isExpired = true
 		} else {
-			r.due = due.Format(app.TimeDefaultFormat)
+			r.due = due.Format(app.DateTimeDefaultFormat)
 		}
 		rows[i] = r
 	}

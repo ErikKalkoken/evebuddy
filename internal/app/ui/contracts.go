@@ -83,12 +83,12 @@ func NewContractsArea(u *BaseUI) *ContractsArea {
 		case 4:
 			text = o.StatusDisplay()
 		case 5:
-			text = o.DateIssued.Format(app.TimeDefaultFormat)
+			text = o.DateIssued.Format(app.DateTimeDefaultFormat)
 		case 6:
 			if o.DateAccepted.IsEmpty() {
 				text = ""
 			} else {
-				text = o.DateAccepted.MustValue().Format(app.TimeDefaultFormat)
+				text = o.DateAccepted.MustValue().Format(app.DateTimeDefaultFormat)
 			}
 		case 7:
 			if o.IsExpired() {
@@ -222,7 +222,7 @@ func (a *ContractsArea) showContract(c *app.CharacterContract) {
 	w := a.u.FyneApp.NewWindow("Contract")
 	makeExpiresString := func(c *app.CharacterContract) string {
 		t := c.DateExpiredEffective()
-		ts := t.Format(app.TimeDefaultFormat)
+		ts := t.Format(app.DateTimeDefaultFormat)
 		var ds string
 		if c.IsExpired() {
 			ds = "EXPIRED"
@@ -259,7 +259,7 @@ func (a *ContractsArea) showContract(c *app.CharacterContract) {
 		f.Append("Status", widget.NewLabel(c.StatusDisplay()))
 		f.Append("Location", makeLocation(c.StartLocation))
 		if c.Type == app.ContractTypeCourier || c.Type == app.ContractTypeItemExchange {
-			f.Append("Date Issued", widget.NewLabel(c.DateIssued.Format(app.TimeDefaultFormat)))
+			f.Append("Date Issued", widget.NewLabel(c.DateIssued.Format(app.DateTimeDefaultFormat)))
 			f.Append("Expiration Date", widget.NewLabel(makeExpiresString(c)))
 		}
 		return f

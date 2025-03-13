@@ -36,7 +36,7 @@ func NewWalletTransactionArea(u *BaseUI) *WalletTransactionArea {
 		var text string
 		switch col {
 		case 0:
-			text = r.Date.Format(app.TimeDefaultFormat)
+			text = r.Date.Format(app.DateTimeDefaultFormat)
 		case 1:
 			align = fyne.TextAlignTrailing
 			text = humanize.Comma(int64(r.Quantity))

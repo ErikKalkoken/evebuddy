@@ -72,7 +72,7 @@ func NewWalletJournalArea(u *BaseUI) *WalletJournalArea {
 		var text string
 		switch col {
 		case 0:
-			text = w.date.Format(app.TimeDefaultFormat)
+			text = w.date.Format(app.DateTimeDefaultFormat)
 		case 1:
 			text = w.refTypeOutput()
 		case 2:

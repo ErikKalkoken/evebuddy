@@ -50,7 +50,7 @@ func NewMailHeader(show func(*app.EveEntity)) *MailHeader {
 }
 
 func (w *MailHeader) Set(eis app.EveImageService, from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
-	w.timestamp.Text = timestamp.Format(app.TimeDefaultFormat)
+	w.timestamp.Text = timestamp.Format(app.DateTimeDefaultFormat)
 	rr := slices.Collect(xiter.MapSlice(recipients, func(x *app.EveEntity) string {
 		return x.Name
 	}))

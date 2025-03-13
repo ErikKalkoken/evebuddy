@@ -29,7 +29,7 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 		out := fmt.Sprintf(
 			"A bill of **%s** ISK, due **%s** was payed.",
 			humanize.Commaf(float64(data.Amount)),
-			fromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
+			fromLDAPTime(data.DueDate).Format(app.DateTimeDefaultFormat),
 		)
 		body.Set(out)
 
@@ -46,7 +46,7 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 				"Transfer additional funds to the selected wallet "+
 				"division in order to meet your pending automatic bills.",
 			billTypeName(data.BillTypeID),
-			fromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
+			fromLDAPTime(data.DueDate).Format(app.DateTimeDefaultFormat),
 		)
 		body.Set(out)
 
@@ -93,10 +93,10 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 		body.Set(fmt.Sprintf(
 			"A bill of **%s** ISK, due **%s** owed by %s to %s was issued on %s. This bill is for %s.",
 			humanize.Commaf(data.Amount),
-			fromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
+			fromLDAPTime(data.DueDate).Format(app.DateTimeDefaultFormat),
 			makeEveEntityProfileLink(entities[data.DebtorID]),
 			makeEveEntityProfileLink(entities[data.CreditorID]),
-			fromLDAPTime(data.CurrentDate).Format(app.TimeDefaultFormat),
+			fromLDAPTime(data.CurrentDate).Format(app.DateTimeDefaultFormat),
 			billPurpose,
 		))
 
@@ -113,7 +113,7 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 		out := fmt.Sprintf("Maintenance bill for Infrastructure Hub in %s expires at %s, "+
 			"if not paid in time this Infrastructure Hub will self-destruct.",
 			makeSolarSystemLink(solarSystem),
-			fromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
+			fromLDAPTime(data.DueDate).Format(app.DateTimeDefaultFormat),
 		)
 		body.Set(out)
 

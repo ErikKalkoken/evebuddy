@@ -260,9 +260,9 @@ func (s *EveNotificationService) renderStructureItemsMovedToSafety(ctx context.C
 			"They will be moved automatically to %s by %s.",
 		name,
 		makeSolarSystemLink(solarSystem),
-		fromLDAPTime(data.AssetSafetyMinimumTimestamp).Format(app.TimeDefaultFormat),
+		fromLDAPTime(data.AssetSafetyMinimumTimestamp).Format(app.DateTimeDefaultFormat),
 		station.Name,
-		fromLDAPTime(data.AssetSafetyFullTimestamp).Format(app.TimeDefaultFormat),
+		fromLDAPTime(data.AssetSafetyFullTimestamp).Format(app.DateTimeDefaultFormat),
 	))
 	return title, body, nil
 }
@@ -285,7 +285,7 @@ func (s *EveNotificationService) renderStructureLostArmor(ctx context.Context, t
 	body.Set(fmt.Sprintf(
 		"%s has lost it's armor. Hull timer ends at **%s**.",
 		o.intro,
-		fromLDAPTime(data.Timestamp).Format(app.TimeDefaultFormat),
+		fromLDAPTime(data.Timestamp).Format(app.DateTimeDefaultFormat),
 	))
 	return title, body, nil
 }
@@ -309,7 +309,7 @@ func (s *EveNotificationService) renderStructureLostShields(ctx context.Context,
 		"%s has lost it's shields and is now in reinforcement state. "+
 			"It will exit reinforcement at **%s** and will then be vulnerable for 15 minutes.",
 		o.intro,
-		fromLDAPTime(data.Timestamp).Format(app.TimeDefaultFormat),
+		fromLDAPTime(data.Timestamp).Format(app.DateTimeDefaultFormat),
 	))
 	return title, body, nil
 }
@@ -430,7 +430,7 @@ func (s *EveNotificationService) renderStructureUnanchoring(ctx context.Context,
 	body.Set(fmt.Sprintf(
 		"%s has started un-anchoring. It will be fully un-anchored at: %s",
 		o.intro,
-		due.Format(app.TimeDefaultFormat),
+		due.Format(app.DateTimeDefaultFormat),
 	))
 	return title, body, nil
 }

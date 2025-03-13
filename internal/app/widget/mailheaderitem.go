@@ -48,7 +48,7 @@ func NewMailHeaderItem(eis app.EveImageService) *MailHeaderItem {
 func (w *MailHeaderItem) Set(from *app.EveEntity, subject string, timestamp time.Time, isRead bool) {
 	w.from.Text = from.Name
 	w.from.TextStyle = fyne.TextStyle{Bold: !isRead}
-	w.timestamp.Text = timestamp.Format(app.TimeDefaultFormat)
+	w.timestamp.Text = timestamp.Format(app.VariableDateFormat(timestamp))
 	w.timestamp.TextStyle = fyne.TextStyle{Bold: !isRead}
 	w.subject.Text = subject
 	w.subject.TextStyle = fyne.TextStyle{Bold: !isRead}

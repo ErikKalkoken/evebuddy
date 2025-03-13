@@ -57,8 +57,8 @@ func (s *EveNotificationService) renderMoonMining(ctx context.Context, type_ Typ
 			"The chunk will be ready on location at %s, "+
 			"and will fracture automatically on %s.\n\n%s",
 			o.text,
-			fromLDAPTime(data.ReadyTime).Format(app.TimeDefaultFormat),
-			fromLDAPTime(data.AutoTime).Format(app.TimeDefaultFormat),
+			fromLDAPTime(data.ReadyTime).Format(app.DateTimeDefaultFormat),
+			fromLDAPTime(data.AutoTime).Format(app.DateTimeDefaultFormat),
 			ores,
 		)
 		body.Set(out)
@@ -81,7 +81,7 @@ func (s *EveNotificationService) renderMoonMining(ctx context.Context, type_ Typ
 			"is finished and the chunk is ready to be shot at.\n\n"+
 			"The chunk will automatically fracture on %s.\n\n%s",
 			o.text,
-			fromLDAPTime(data.AutoTime).Format(app.TimeDefaultFormat),
+			fromLDAPTime(data.AutoTime).Format(app.DateTimeDefaultFormat),
 			ores,
 		)
 		body.Set(out)
