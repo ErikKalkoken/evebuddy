@@ -34,8 +34,8 @@ func newAlliancArea(iw InfoWindow, allianceID int32, w fyne.Window) *allianceAre
 	name.Truncation = fyne.TextTruncateEllipsis
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Truncation = fyne.TextTruncateEllipsis
-	logo := iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(app.DefaultIconUnitSize))
-	s := float32(app.DefaultIconPixelSize) * logoZoomFactor
+	logo := iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
+	s := float32(app.IconPixelSize) * logoZoomFactor
 	logo.SetMinSize(fyne.NewSquareSize(s))
 	a := &allianceArea{
 		iw:   iw,
@@ -64,7 +64,7 @@ func newAlliancArea(iw InfoWindow, allianceID int32, w fyne.Window) *allianceAre
 func (a *allianceArea) load(allianceID int32) error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.iw.eis.AllianceLogo(allianceID, app.DefaultIconPixelSize)
+		r, err := a.iw.eis.AllianceLogo(allianceID, app.IconPixelSize)
 		if err != nil {
 			slog.Error("alliance info: Failed to load logo", "allianceID", allianceID, "error", err)
 			return

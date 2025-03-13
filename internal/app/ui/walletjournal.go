@@ -72,12 +72,12 @@ func NewWalletJournalArea(u *BaseUI) *WalletJournalArea {
 		var text string
 		switch col {
 		case 0:
-			text = w.date.Format(app.DateTimeDefaultFormat)
+			text = w.date.Format(app.DateTimeFormat)
 		case 1:
 			text = w.refTypeOutput()
 		case 2:
 			align = fyne.TextAlignTrailing
-			text = humanize.FormatFloat(MyFloatFormat, w.amount)
+			text = humanize.FormatFloat(app.FloatFormat, w.amount)
 			switch {
 			case w.amount < 0:
 				importance = widget.DangerImportance
@@ -88,7 +88,7 @@ func NewWalletJournalArea(u *BaseUI) *WalletJournalArea {
 			}
 		case 3:
 			align = fyne.TextAlignTrailing
-			text = humanize.FormatFloat(MyFloatFormat, w.balance)
+			text = humanize.FormatFloat(app.FloatFormat, w.balance)
 		case 4:
 			text = w.descriptionWithReason()
 		}

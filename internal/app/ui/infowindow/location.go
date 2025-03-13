@@ -45,7 +45,7 @@ func newLocationArea(iw InfoWindow, locationID int64, w fyne.Window) *locationAr
 	typeImage.SetMinSize(fyne.NewSquareSize(renderIconUnitSize))
 	a := &locationArea{
 		corporation:     corporation,
-		corporationLogo: iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(app.DefaultIconUnitSize)),
+		corporationLogo: iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		iw:              iw,
 		name:            name,
 		typeInfo:        typeInfo,
@@ -125,7 +125,7 @@ func (a *locationArea) load(locationID int64) error {
 	a.tabs.Select(locationTab)
 	a.tabs.Refresh()
 	go func() {
-		r, err := a.iw.eis.CorporationLogo(o.Owner.ID, app.DefaultIconPixelSize)
+		r, err := a.iw.eis.CorporationLogo(o.Owner.ID, app.IconPixelSize)
 		if err != nil {
 			slog.Error("location info: Failed to load corp logo", "owner", o.Owner, "error", err)
 			return

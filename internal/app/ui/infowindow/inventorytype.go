@@ -359,28 +359,28 @@ func (a *inventoryTypeArea) makeTop() fyne.CanvasObject {
 			typeIcon.Add(container.NewPadded(marker))
 		}
 	} else {
-		s := float32(app.DefaultIconPixelSize) * logoZoomFactor
+		s := float32(app.IconPixelSize) * logoZoomFactor
 		icon := appwidget.NewImageResourceAsync(icon.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
 			if a.et.IsSKIN() {
-				return a.iw.eis.InventoryTypeSKIN(a.et.ID, app.DefaultIconPixelSize)
+				return a.iw.eis.InventoryTypeSKIN(a.et.ID, app.IconPixelSize)
 			} else if a.et.IsBlueprint() {
-				return a.iw.eis.InventoryTypeBPO(a.et.ID, app.DefaultIconPixelSize)
+				return a.iw.eis.InventoryTypeBPO(a.et.ID, app.IconPixelSize)
 			} else {
-				return a.iw.eis.InventoryTypeIcon(a.et.ID, app.DefaultIconPixelSize)
+				return a.iw.eis.InventoryTypeIcon(a.et.ID, app.IconPixelSize)
 			}
 		})
 		typeIcon.Add(icon)
 	}
-	ownerIcon := iwidget.NewImageFromResource(icon.QuestionmarkSvg, fyne.NewSquareSize(app.DefaultIconUnitSize))
+	ownerIcon := iwidget.NewImageFromResource(icon.QuestionmarkSvg, fyne.NewSquareSize(app.IconUnitSize))
 	ownerName := widget.NewLabel("")
 	ownerName.Wrapping = fyne.TextWrapWord
 	if a.owner != nil {
 		appwidget.RefreshImageResourceAsync(ownerIcon, func() (fyne.Resource, error) {
 			switch a.owner.Category {
 			case app.EveEntityCharacter:
-				return a.iw.eis.CharacterPortrait(a.owner.ID, app.DefaultIconPixelSize)
+				return a.iw.eis.CharacterPortrait(a.owner.ID, app.IconPixelSize)
 			case app.EveEntityCorporation:
-				return a.iw.eis.CorporationLogo(a.owner.ID, app.DefaultIconPixelSize)
+				return a.iw.eis.CorporationLogo(a.owner.ID, app.IconPixelSize)
 			default:
 				panic("Unexpected owner type")
 			}

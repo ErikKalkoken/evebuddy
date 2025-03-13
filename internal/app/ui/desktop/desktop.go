@@ -366,7 +366,7 @@ func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 	characterItem := fyne.NewMenuItem("Current character...", func() {
 		characterID := u.CharacterID()
 		if characterID == 0 {
-			u.Snackbar.Show("No character selected")
+			u.Snackbar.Show("ERROR: No character selected")
 			return
 		}
 		u.ShowInfoWindow(infowindow.Character, int64(characterID))
@@ -379,8 +379,12 @@ func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 
 	locationItem := fyne.NewMenuItem("Current location...", func() {
 		c := u.CurrentCharacter()
-		if c == nil || c.Location == nil {
-			u.Snackbar.Show("No character selected")
+		if c == nil {
+			u.Snackbar.Show("ERROR: No character selected")
+			return
+		}
+		if c.Location == nil {
+			u.Snackbar.Show("ERROR: Missing location for current character.")
 			return
 		}
 		u.ShowInfoWindow(infowindow.Location, c.Location.ID)
@@ -393,8 +397,12 @@ func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 
 	shipItem := fyne.NewMenuItem("Current ship...", func() {
 		c := u.CurrentCharacter()
-		if c == nil || c.Ship == nil {
-			u.Snackbar.Show("No character selected")
+		if c == nil {
+			u.Snackbar.Show("ERROR: No character selected")
+			return
+		}
+		if c.Ship == nil {
+			u.Snackbar.Show("ERROR: Missing ship for current character.")
 			return
 		}
 		u.ShowTypeInfoWindow(c.Ship.ID)

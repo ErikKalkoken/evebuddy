@@ -10,10 +10,12 @@ import (
 	"golang.org/x/text/language"
 )
 
+// Default formats and sizes
 const (
-	DateTimeDefaultFormat = "2006.01.02 15:04"
-	DefaultIconPixelSize  = 64
-	DefaultIconUnitSize   = 32
+	DateTimeFormat = "2006.01.02 15:04"
+	FloatFormat    = "#,###.##"
+	IconPixelSize  = 64
+	IconUnitSize   = 32
 )
 
 // Titler converts a string into a title for english language.

@@ -162,7 +162,7 @@ func (iw InfoWindow) showZoomWindow(title string, id int32, load func(int32, int
 func historyItem2EntityItem(hi app.MembershipHistoryItem) entityItem {
 	var endDateStr string
 	if !hi.EndDate.IsZero() {
-		endDateStr = hi.EndDate.Format(app.DateTimeDefaultFormat)
+		endDateStr = hi.EndDate.Format(app.DateTimeFormat)
 	} else {
 		endDateStr = "this day"
 	}
@@ -172,13 +172,13 @@ func historyItem2EntityItem(hi app.MembershipHistoryItem) entityItem {
 	}
 	var text string
 	if false && hi.IsOldest {
-		text = fmt.Sprintf("Founded   **%s**", hi.StartDate.Format(app.DateTimeDefaultFormat))
+		text = fmt.Sprintf("Founded   **%s**", hi.StartDate.Format(app.DateTimeFormat))
 	} else {
 		text = fmt.Sprintf(
 			"%s%s   **%s** to **%s** (%s days)",
 			hi.OrganizationName(),
 			closed,
-			hi.StartDate.Format(app.DateTimeDefaultFormat),
+			hi.StartDate.Format(app.DateTimeFormat),
 			endDateStr,
 			humanize.Comma(int64(hi.Days)),
 		)

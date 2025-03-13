@@ -98,7 +98,7 @@ func (a *AccountArea) makeCharacterList() *widget.List {
 		func() fyne.CanvasObject {
 			portrait := iwidget.NewImageFromResource(
 				icon.Characterplaceholder64Jpeg,
-				fyne.NewSquareSize(app.DefaultIconUnitSize),
+				fyne.NewSquareSize(app.IconUnitSize),
 			)
 			name := widget.NewLabel("Template")
 			button := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {})

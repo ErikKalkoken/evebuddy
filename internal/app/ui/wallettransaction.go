@@ -36,7 +36,7 @@ func NewWalletTransactionArea(u *BaseUI) *WalletTransactionArea {
 		var text string
 		switch col {
 		case 0:
-			text = r.Date.Format(app.DateTimeDefaultFormat)
+			text = r.Date.Format(app.DateTimeFormat)
 		case 1:
 			align = fyne.TextAlignTrailing
 			text = humanize.Comma(int64(r.Quantity))
@@ -44,11 +44,11 @@ func NewWalletTransactionArea(u *BaseUI) *WalletTransactionArea {
 			text = r.EveType.Name
 		case 3:
 			align = fyne.TextAlignTrailing
-			text = humanize.FormatFloat(MyFloatFormat, r.UnitPrice)
+			text = humanize.FormatFloat(app.FloatFormat, r.UnitPrice)
 		case 4:
 			total := r.UnitPrice * float64(r.Quantity)
 			align = fyne.TextAlignTrailing
-			text = humanize.FormatFloat(MyFloatFormat, total)
+			text = humanize.FormatFloat(app.FloatFormat, total)
 			switch {
 			case total < 0:
 				importance = widget.DangerImportance

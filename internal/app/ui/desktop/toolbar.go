@@ -25,7 +25,7 @@ type toolbarArea struct {
 func newToolbarArea(u *DesktopUI) *toolbarArea {
 	i := kwidget.NewTappableImageWithMenu(icon.Characterplaceholder64Jpeg, fyne.NewMenu(""))
 	i.SetFillMode(canvas.ImageFillContain)
-	i.SetMinSize(fyne.NewSquareSize(app.DefaultIconUnitSize))
+	i.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
 	a := &toolbarArea{
 		icon: i,
 		name: widget.NewLabel(""),

@@ -78,7 +78,7 @@ func (w *Planet) Set(cp *app.CharacterPlanet) {
 		deadline = "?"
 		w.post.Hide()
 	} else {
-		deadline = expires.Format(app.DateTimeDefaultFormat)
+		deadline = expires.Format(app.DateTimeFormat)
 		if expires.Before(time.Now()) {
 			isExpired = true
 		}

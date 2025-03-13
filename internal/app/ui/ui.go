@@ -32,11 +32,6 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-// Base UI constants
-const (
-	MyFloatFormat = "#,###.##"
-)
-
 // update info
 const (
 	githubOwner        = "ErikKalkoken"
@@ -527,7 +522,7 @@ func (u *BaseUI) AvailableUpdate() (github.VersionInfo, error) {
 }
 
 func (u *BaseUI) UpdateAvatar(id int32, setIcon func(fyne.Resource)) {
-	r, err := u.EveImageService.CharacterPortrait(id, app.DefaultIconPixelSize)
+	r, err := u.EveImageService.CharacterPortrait(id, app.IconPixelSize)
 	if err != nil {
 		slog.Error("Failed to fetch character portrait", "characterID", id, "err", err)
 		r = icon.Characterplaceholder64Jpeg

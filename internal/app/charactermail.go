@@ -77,7 +77,7 @@ func (cm CharacterMail) Header() string {
 			"Sent: %s\n"+
 			"To: %s",
 		cm.From.Name,
-		cm.Timestamp.Format(DateTimeDefaultFormat),
+		cm.Timestamp.Format(DateTimeFormat),
 		strings.Join(names, ", "),
 	)
 	return header
