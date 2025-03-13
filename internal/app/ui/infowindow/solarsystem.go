@@ -116,9 +116,8 @@ func (a *solarSystemArea) load(solarSystemID int32) error {
 	systemsLabel := widget.NewLabel("Loading...")
 	systemsTab := container.NewTabItem("Adjacent Solar Systems", systemsLabel)
 	a.tabs.Append(systemsTab)
-
 	go func() {
-		as, err := o.GetAdjacentSystems(ctx)
+		ss, err := o.GetAdjacentSystems(ctx)
 		if err != nil {
 			slog.Error("solar system info: Failed to load adjacent systems", "solarSystem", solarSystemID, "error", err)
 			systemsLabel.Text = ihumanize.Error(err)
@@ -126,8 +125,25 @@ func (a *solarSystemArea) load(solarSystemID int32) error {
 			systemsLabel.Refresh()
 			return
 		}
-		xx := slices.Collect(xiter.MapSlice(as, NewEntityItemFromEveSolarSystem))
+		xx := slices.Collect(xiter.MapSlice(ss, NewEntityItemFromEveSolarSystem))
 		systemsTab.Content = NewEntityListFromItems(a.iw.Show, xx...)
+		a.tabs.Refresh()
+	}()
+
+	planetsLabel := widget.NewLabel("Loading...")
+	planetsTab := container.NewTabItem("Planets", planetsLabel)
+	a.tabs.Append(planetsTab)
+	go func() {
+		pp, err := o.GetPlanets(ctx)
+		if err != nil {
+			slog.Error("solar system info: Failed to load planets", "solarSystem", solarSystemID, "error", err)
+			planetsLabel.Text = ihumanize.Error(err)
+			planetsLabel.Importance = widget.DangerImportance
+			planetsLabel.Refresh()
+			return
+		}
+		xx := slices.Collect(xiter.MapSlice(pp, NewEntityItemFromEvePlanet))
+		planetsTab.Content = NewEntityListFromItems(a.iw.Show, xx...)
 		a.tabs.Refresh()
 	}()
 

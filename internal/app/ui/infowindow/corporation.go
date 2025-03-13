@@ -189,7 +189,7 @@ func (a *corporationArea) load(corporationID int32) error {
 			0,
 			"Corporation Founded",
 			fmt.Sprintf("**%s**", oldest.StartDate.Format(app.DateTimeFormat)),
-			None,
+			NotSupported,
 		))
 		historyList := NewEntityListFromItems(a.iw.Show, items...)
 		a.tabs.Append(container.NewTabItem("Alliance History", historyList))

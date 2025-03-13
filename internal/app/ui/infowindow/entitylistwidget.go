@@ -19,15 +19,24 @@ type entityItem struct {
 	category     string
 	text         string                   // text in markdown
 	textSegments []widget.RichTextSegment // takes precendence over text when not empty
-	variant      InfoVariant
+	infoVariant  InfoVariant
 }
 
 func NewEntityItem(id int64, category, text string, v InfoVariant) entityItem {
 	return entityItem{
-		id:       id,
-		category: category,
-		text:     text,
-		variant:  v,
+		id:          id,
+		category:    category,
+		text:        text,
+		infoVariant: v,
+	}
+}
+
+func NewEntityItemFromEvePlanet(o *app.EvePlanet) entityItem {
+	return entityItem{
+		id:          int64(o.ID),
+		category:    "Planet",
+		text:        o.Name,
+		infoVariant: NotSupported,
 	}
 }
 
@@ -37,7 +46,7 @@ func NewEntityItemFromEveSolarSystem(o *app.EveSolarSystem) entityItem {
 		id:           int64(ee.ID),
 		category:     ee.CategoryDisplay(),
 		textSegments: o.Display(),
-		variant:      eveEntity2InfoVariant(ee),
+		infoVariant:  eveEntity2InfoVariant(ee),
 	}
 }
 
@@ -114,7 +123,7 @@ func (w *EntitiyList) CreateRenderer() fyne.WidgetRenderer {
 			icon := border1[1]
 			category := border2[0].(*fyne.Container).Objects[0].(*iwidget.Label)
 			category.SetText(it.category)
-			if it.variant == None {
+			if it.infoVariant == NotSupported {
 				icon.Hide()
 			} else {
 				icon.Show()
@@ -135,10 +144,10 @@ func (w *EntitiyList) CreateRenderer() fyne.WidgetRenderer {
 			return
 		}
 		it := w.items[id]
-		if it.variant == None {
+		if it.infoVariant == NotSupported {
 			return
 		}
-		w.showInfo(it.variant, it.id)
+		w.showInfo(it.infoVariant, it.id)
 	}
 	return widget.NewSimpleRenderer(l)
 }

@@ -7,8 +7,15 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/antihax/goesi/esi"
 	"golang.org/x/sync/errgroup"
 )
+
+type planet struct {
+	asteroidBeltIDs []int32
+	moonIDs         []int32
+	planetID        int32
+}
 
 type SolarSystemPlus struct {
 	System     *app.EveSolarSystem
@@ -16,6 +23,7 @@ type SolarSystemPlus struct {
 	Structures []*app.EveLocation
 	StarID     int32
 
+	planets   []planet
 	stargates []int32
 	eus       *EveUniverseService
 }
@@ -57,6 +65,28 @@ func (o SolarSystemPlus) GetAdjacentSystems(ctx context.Context) ([]*app.EveSola
 	return systems, nil
 }
 
+func (o SolarSystemPlus) GetPlanets(ctx context.Context) ([]*app.EvePlanet, error) {
+	planets := make([]*app.EvePlanet, len(o.planets))
+	g := new(errgroup.Group)
+	for i, p := range o.planets {
+		g.Go(func() error {
+			st, err := o.eus.GetOrCreateEvePlanetESI(ctx, p.planetID)
+			if err != nil {
+				return err
+			}
+			planets[i] = st
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	slices.SortFunc(planets, func(a, b *app.EvePlanet) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
+	return planets, nil
+}
+
 func (o SolarSystemPlus) GetStarTypeID(ctx context.Context) (int32, error) {
 	x2, _, err := o.eus.esiClient.ESI.UniverseApi.GetUniverseStarsStarId(ctx, o.StarID, nil)
 	if err != nil {
@@ -76,6 +106,13 @@ func (s *EveUniverseService) GetOrCreateEveSolarSystemESIPlus(ctx context.Contex
 	if err != nil {
 		return r, err
 	}
+	r.planets = slices.Collect(xiter.MapSlice(x.Planets, func(p esi.GetUniverseSystemsSystemIdPlanet) planet {
+		return planet{
+			asteroidBeltIDs: p.AsteroidBelts,
+			moonIDs:         p.Moons,
+			planetID:        p.PlanetId,
+		}
+	}))
 	r.stargates = x.Stargates
 	r.StarID = x.StarId
 	_, err = s.AddMissingEveEntities(ctx, slices.Concat(

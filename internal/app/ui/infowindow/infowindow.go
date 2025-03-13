@@ -29,7 +29,7 @@ const (
 type InfoVariant uint
 
 const (
-	None InfoVariant = iota
+	NotSupported InfoVariant = iota
 	Alliance
 	Character
 	Corporation
@@ -50,7 +50,7 @@ var eveEntityCategory2InfoVariant = map[app.EveEntityCategory]InfoVariant{
 func eveEntity2InfoVariant(ee *app.EveEntity) InfoVariant {
 	v, ok := eveEntityCategory2InfoVariant[ee.Category]
 	if !ok {
-		return None
+		return NotSupported
 	}
 	return v
 

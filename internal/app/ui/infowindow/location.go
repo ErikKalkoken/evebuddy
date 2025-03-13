@@ -109,11 +109,13 @@ func (a *locationArea) load(locationID int64) error {
 	a.typeImage.OnTapped = func() {
 		go a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.eis.InventoryTypeRender, a.w)
 	}
-	if s := o.Type.Description; s != "" {
-		description := widget.NewLabel(o.Type.Description)
-		description.Wrapping = fyne.TextWrapWord
-		a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(description)))
+	description := o.Type.Description
+	if description == "" {
+		description = o.Type.Name
 	}
+	desc := widget.NewLabel(description)
+	desc.Wrapping = fyne.TextWrapWord
+	a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
 	el := NewEntityListFromItems(
 		a.iw.Show,
 		NewEntityItemFromEveEntity(o.SolarSystem.Constellation.Region.ToEveEntity(), ""),
