@@ -104,7 +104,6 @@ SET
 WHERE
     id = ?;
 
-
 -- name: UpdateCharacterLastLoginAt :exec
 UPDATE
     characters
@@ -166,10 +165,11 @@ INSERT INTO
         unallocated_sp,
         wallet_balance,
         asset_value,
-        is_training_watched
+        is_training_watched,
+        last_clone_jump_at
     )
 VALUES
-    (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10) ON CONFLICT(id) DO
+    (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11) ON CONFLICT(id) DO
 UPDATE
 SET
     home_id = ?2,
@@ -180,6 +180,7 @@ SET
     unallocated_sp = ?7,
     wallet_balance = ?8,
     asset_value = ?9,
-    is_training_watched = ?10
+    is_training_watched = ?10,
+    last_clone_jump_at = ?11
 WHERE
     id = ?1;

@@ -65,15 +65,17 @@ func TestCharacter(t *testing.T) {
 		location := factory.CreateLocationStructure()
 		ship := factory.CreateEveType()
 		login := time.Now()
+		cloneJump := time.Now()
 		arg := storage.UpdateOrCreateCharacterParams{
-			ID:            character.ID,
-			AssetValue:    optional.New(3.4),
-			HomeID:        optional.New(home.ID),
-			LastLoginAt:   optional.New(login),
-			LocationID:    optional.New(location.ID),
-			ShipID:        optional.New(ship.ID),
-			TotalSP:       optional.New(123),
-			WalletBalance: optional.New(1.2),
+			ID:              character.ID,
+			AssetValue:      optional.New(3.4),
+			HomeID:          optional.New(home.ID),
+			LastCloneJumpAt: optional.New(cloneJump),
+			LastLoginAt:     optional.New(login),
+			LocationID:      optional.New(location.ID),
+			ShipID:          optional.New(ship.ID),
+			TotalSP:         optional.New(123),
+			WalletBalance:   optional.New(1.2),
 		}
 		// when
 		err := r.UpdateOrCreateCharacter(ctx, arg)
@@ -82,6 +84,7 @@ func TestCharacter(t *testing.T) {
 			r, err := r.GetCharacter(ctx, arg.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, home, r.Home)
+				assert.Equal(t, cloneJump.UTC(), r.LastCloneJumpAt.ValueOrZero().UTC())
 				assert.Equal(t, login.UTC(), r.LastLoginAt.ValueOrZero().UTC())
 				assert.Equal(t, location, r.Location)
 				assert.Equal(t, ship, r.Ship)

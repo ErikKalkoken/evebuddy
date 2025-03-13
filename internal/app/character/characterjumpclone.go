@@ -2,7 +2,10 @@ package character
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -12,6 +15,37 @@ import (
 
 func (s *CharacterService) ListCharacterJumpClones(ctx context.Context, characterID int32) ([]*app.CharacterJumpClone, error) {
 	return s.st.ListCharacterJumpClones(ctx, characterID)
+}
+
+// CharacterNextCloneJump returns when the next clone jump is available.
+// It returns a zero time when a jump is available now.
+func (s *CharacterService) CharacterNextCloneJump(ctx context.Context, characterID int32) (time.Time, error) {
+	var z time.Time
+
+	c, err := s.GetCharacter(ctx, characterID)
+	if err != nil {
+		return z, err
+	}
+	if c.LastCloneJumpAt.IsEmpty() {
+		return z, fmt.Errorf("next clone jump: missing last clone jump date: character ID %d", characterID)
+	}
+	lastJump := c.LastCloneJumpAt.ValueOrZero()
+
+	var skillLevel int
+	sk, err := s.GetCharacterSkill(ctx, characterID, app.EveTypeInfomorphSynchronizing)
+	if errors.Is(err, ErrNotFound) {
+		skillLevel = 0
+	} else if err != nil {
+		return z, err
+	} else {
+		skillLevel = sk.ActiveSkillLevel
+	}
+
+	nextJump := lastJump.Add(time.Duration(24-skillLevel) * time.Hour)
+	if nextJump.Before(time.Now()) {
+		return z, nil
+	}
+	return nextJump, nil
 }
 
 // TODO: Consolidate with updating home in separate function

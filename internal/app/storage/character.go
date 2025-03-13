@@ -242,6 +242,7 @@ type UpdateOrCreateCharacterParams struct {
 	ID                int32
 	IsTrainingWatched bool
 	HomeID            optional.Optional[int64]
+	LastCloneJumpAt   optional.Optional[time.Time]
 	LastLoginAt       optional.Optional[time.Time]
 	LocationID        optional.Optional[int64]
 	ShipID            optional.Optional[int32]
@@ -256,6 +257,7 @@ func (st *Storage) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCrea
 		AssetValue:        optional.ToNullFloat64(arg.AssetValue),
 		IsTrainingWatched: arg.IsTrainingWatched,
 		HomeID:            optional.ToNullInt64(arg.HomeID),
+		LastCloneJumpAt:   optional.ToNullTime(arg.LastCloneJumpAt),
 		LastLoginAt:       optional.ToNullTime(arg.LastLoginAt),
 		LocationID:        optional.ToNullInt64(arg.LocationID),
 		ShipID:            optional.ToNullInt64(arg.ShipID),

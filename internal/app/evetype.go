@@ -9,10 +9,11 @@ import (
 const (
 	EveTypeAssetSafetyWrap             = 60
 	EveTypeIHUB                        = 32458
+	EveTypeInfomorphSynchronizing      = 33399
 	EveTypeInterplanetaryConsolidation = 2495
+	EveTypePlanetTemperate             = 11
 	EveTypeSolarSystem                 = 5
 	EveTypeTCU                         = 32226
-	EveTypePlanetTemperate             = 11
 )
 
 // EveType is a type in Eve Online.
