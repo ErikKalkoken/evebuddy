@@ -104,10 +104,7 @@ func (a *locationArea) load(locationID int64) error {
 		a.iw.Show,
 		NewEntityItemFromEveEntity(o.SolarSystem.Constellation.Region.ToEveEntity(), ""),
 		NewEntityItemFromEveEntity(o.SolarSystem.Constellation.ToEveEntity(), ""),
-		NewEntityItemFromEveEntity(
-			o.SolarSystem.ToEveEntity(),
-			fmt.Sprintf("%.1f %s", o.SolarSystem.SecurityStatus, o.SolarSystem.Name),
-		),
+		NewEntityItemFromEveSolarSystem(o.SolarSystem),
 	)
 	locationTab := container.NewTabItem("Location", el)
 	a.tabs.Append(locationTab)

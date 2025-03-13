@@ -84,17 +84,12 @@ func newSolarSystemArea(iw InfoWindow, solarSystemID int32, w fyne.Window) *sola
 
 func (a *solarSystemArea) load(solarSystemID int32) error {
 	ctx := context.Background()
-	o, err := a.iw.eus.GetOrCreateEveSolarSystemESI2(ctx, solarSystemID)
+	o, err := a.iw.eus.GetOrCreateEveSolarSystemESIPlus(ctx, solarSystemID)
 	if err != nil {
 		return err
 	}
 	go func() {
-		typ, err := a.iw.eus.GetStarTypeESI(ctx, o.StarID)
-		if err != nil {
-			slog.Error("solar system info: Failed to load star", "solarSystem", solarSystemID, "error", err)
-			return
-		}
-		r, err := a.iw.eis.InventoryTypeIcon(typ.ID, defaultIconPixelSize)
+		r, err := a.iw.eis.InventoryTypeIcon(o.StarTypeID, defaultIconPixelSize)
 		if err != nil {
 			slog.Error("solar system info: Failed to load logo", "solarSystem", solarSystemID, "error", err)
 			return
@@ -115,9 +110,15 @@ func (a *solarSystemArea) load(solarSystemID int32) error {
 	a.security.Importance = o.System.SecurityType().ToImportance()
 	a.security.Refresh()
 
+	if len(o.AdjacentSystems) > 0 {
+		xx := slices.Collect(xiter.MapSlice(o.AdjacentSystems, NewEntityItemFromEveSolarSystem))
+		x := NewEntityListFromItems(a.iw.Show, xx...)
+		a.tabs.Append(container.NewTabItem("Adjacent Solar Systems", x))
+	}
+
 	if len(o.Stations) > 0 {
-		stations := NewEntityListFromEntities(a.iw.Show, o.Stations...)
-		a.tabs.Append(container.NewTabItem("Stations", stations))
+		x := NewEntityListFromEntities(a.iw.Show, o.Stations...)
+		a.tabs.Append(container.NewTabItem("Stations", x))
 	}
 	if len(o.Structures) > 0 {
 		xx := slices.Collect(xiter.MapSlice(o.Structures, func(x *app.EveLocation) EntityItem {

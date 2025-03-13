@@ -1,6 +1,7 @@
 package infowindow
 
 import (
+	"fmt"
 	"slices"
 
 	"fyne.io/fyne/v2"
@@ -19,6 +20,13 @@ type EntityItem struct {
 	Category string
 	Text     string
 	Variant  InfoVariant
+}
+
+func NewEntityItemFromEveSolarSystem(o *app.EveSolarSystem) EntityItem {
+	return NewEntityItemFromEveEntity(
+		o.ToEveEntity(),
+		fmt.Sprintf("%.1f %s", o.SecurityStatus, o.Name),
+	)
 }
 
 func NewEntityItemFromEveEntity(ee *app.EveEntity, text string) EntityItem {
