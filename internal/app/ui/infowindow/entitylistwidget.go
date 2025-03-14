@@ -18,8 +18,8 @@ import (
 type entityItem struct {
 	id           int64
 	category     string
-	text         string                   // text in markdown
-	textSegments []widget.RichTextSegment // takes precendence over text when not empty
+	text         string               // text in markdown
+	textSegments []widget.TextSegment // takes precendence over text when not empty
 	infoVariant  InfoVariant
 }
 
