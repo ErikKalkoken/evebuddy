@@ -152,25 +152,19 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 }
 
 func (a *JumpClonesArea) Redraw() {
-	var t string
-	var i widget.Importance
-	var clonesCount int
 	tree, err := a.newTreeData()
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
-		t = "ERROR"
-		i = widget.DangerImportance
+		a.top.Text = "ERROR"
+		a.top.Importance = widget.DangerImportance
+		a.top.Refresh()
 	} else {
-		clonesCount = len(tree.ChildUIDs(""))
-		t, i = a.makeTopText(clonesCount)
+		a.RefreshTop()
 	}
 	a.treeData = tree
-	a.top.Text = t
-	a.top.Importance = i
-	a.top.Refresh()
 	a.treeWidget.Refresh()
 	if a.OnReDraw != nil {
-		a.OnReDraw(clonesCount)
+		a.OnReDraw(a.ClonesCount())
 	}
 }
 
@@ -220,30 +214,51 @@ func (a *JumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error
 	return tree, err
 }
 
-func (a *JumpClonesArea) makeTopText(total int) (string, widget.Importance) {
-	c := a.u.CurrentCharacter()
-	if c == nil {
-		return "No character", widget.LowImportance
+func (a *JumpClonesArea) RefreshTop() {
+	s, i := func() (string, widget.Importance) {
+		c := a.u.CurrentCharacter()
+		if c == nil {
+			return "No character", widget.LowImportance
+		}
+		hasData := a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionJumpClones)
+		if !hasData {
+			return "Waiting for character data to be loaded...", widget.WarningImportance
+		}
+		var nextJump, lastJump string
+		if c.NextCloneJump.IsEmpty() {
+			nextJump = "?"
+		} else if c.NextCloneJump.MustValue().IsZero() {
+			nextJump = "NOW"
+		} else {
+			nextJump = ihumanize.Duration(time.Until(c.NextCloneJump.MustValue()))
+		}
+		if x := c.LastCloneJumpAt.ValueOrZero(); x.IsZero() {
+			lastJump = "?"
+		} else {
+			lastJump = humanize.Time(x)
+		}
+
+		s := fmt.Sprintf("%d clones • Next available jump: %s • Last jump: %s", a.ClonesCount(), nextJump, lastJump)
+		return s, widget.MediumImportance
+	}()
+	a.top.Text = s
+	a.top.Importance = i
+	a.top.Refresh()
+}
+
+func (a *JumpClonesArea) ClonesCount() int {
+	if a.treeData == nil {
+		return 0
 	}
-	hasData := a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionJumpClones)
-	if !hasData {
-		return "Waiting for character data to be loaded...", widget.WarningImportance
-	}
-	var nextJump, lastJump string
-	if c.NextCloneJump.IsEmpty() {
-		nextJump = "?"
-	} else if c.NextCloneJump.MustValue().IsZero() {
-		nextJump = "NOW"
-	} else {
-		nextJump = ihumanize.Duration(time.Until(c.NextCloneJump.MustValue()))
-	}
-	if c.LastCloneJumpAt.IsEmpty() {
-		lastJump = "?"
-	} else if x := c.NextCloneJump.MustValue(); x.IsZero() {
-		lastJump = "Never"
-	} else {
-		lastJump = humanize.Time(x)
-	}
-	s := fmt.Sprintf("%d clones • Next available jump: %s • Last jump: %s", total, nextJump, lastJump)
-	return s, widget.MediumImportance
+	return len(a.treeData.ChildUIDs(""))
+}
+
+func (a *JumpClonesArea) StartUpdateTicker() {
+	ticker := time.NewTicker(time.Second * 10)
+	go func() {
+		for {
+			a.RefreshTop()
+			<-ticker.C
+		}
+	}()
 }

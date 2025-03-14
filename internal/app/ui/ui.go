@@ -233,9 +233,6 @@ func (u *BaseUI) ShowAndRun() {
 		if u.IsOffline {
 			slog.Info("Started in offline mode")
 		}
-		if u.IsUpdateTickerDisabled {
-			slog.Info("Update ticker disabled")
-		}
 		go func() {
 			time.Sleep(250 * time.Millisecond) // FIXME: Workaround for occasional progess bar panic
 			u.RefreshCrossPages()
@@ -253,7 +250,10 @@ func (u *BaseUI) ShowAndRun() {
 				u.startUpdateTickerGeneralSections()
 				u.startUpdateTickerCharacters()
 			}()
+		} else {
+			slog.Info("Update ticker disabled")
 		}
+		go u.JumpClonesArea.StartUpdateTicker()
 		if u.OnAppFirstStarted != nil {
 			u.OnAppFirstStarted()
 		}
