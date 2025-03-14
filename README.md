@@ -26,7 +26,7 @@ A companion app for Eve Online players available on Windows, Linux, macOS and An
 
 ## Description
 
-EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) players. It has three key features:
+EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) players available for desktop and mobile. It has three key features:
 
 - Give you access to your characters without having to log into the Eve client or switching your current Eve character
 - Provide you with helpful functions, that the Eve client is lacking, like asset search across all your characters
@@ -43,7 +43,7 @@ A more detailed overview of the provided features:
 
 - Information about each character:
   - Assets: Browse through your assets at all your locations
-  - Character: Current clone, jump clones, and more...
+  - Clones: Current augmentations, jump clones & jump cooltime timer
   - Mails: Full mail client for receiving and sending Eve mails
   - Communications: Browse through all communications
   - Planets: Status of PI colonies
@@ -56,7 +56,7 @@ A more detailed overview of the provided features:
   - Wealth: Charts showing wealth distribution across all characters
 - Can minimize to system tray and show indicator for new mail (desktop only)
 - Get notified about important events (e.g. structure attacked, training queue expired)
-- Desktop & mobile version
+- Available for desktop (Windows, macOS, Linux) and mobile (Android)
 - Automatic dark and light theme
 - Offline mode
 
@@ -165,6 +165,14 @@ You find the latest packages for download on the [releases page](https://github.
    1. Select "Install anyway"
 1. Enable unrestriced background usage for EVE Buddy in settings. For a guide please see [How to prevent apps from 'sleeping' in the background on Android](https://www.androidpolice.com/prevent-apps-from-sleeping-in-the-background-on-android/)
 1. Select "Unrestricted" under "App battery usage" / "App background usage"
+
+To enable notifications:
+
+1. Go to settings and enable what kind of notifications you want to receive (e.g. mails)
+1. Send a test notification (via menu in settings)
+1. When asked: Allow EVE buddy to send Android notifications
+
+You should now see a test notification.
 
 > [!NOTE]
 > EVE Buddy needs unrestricted background usage in order to function proberbly. The reason is that Android otherwise  automatically suspends apps when you switch to another app. Then you can no longer add new characters, because it requires you to swich to your browser app, but EVE Buddy needs to keep running for the process to work. Also EVE Buddy needs to keep running in order to pick up events for notifications.
