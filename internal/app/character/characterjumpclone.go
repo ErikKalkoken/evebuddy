@@ -2,7 +2,10 @@ package character
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -12,6 +15,33 @@ import (
 
 func (s *CharacterService) ListCharacterJumpClones(ctx context.Context, characterID int32) ([]*app.CharacterJumpClone, error) {
 	return s.st.ListCharacterJumpClones(ctx, characterID)
+}
+
+// calcCharacterNextCloneJump returns when the next clone jump is available.
+// It returns a zero time when a jump is available now.
+func (s *CharacterService) calcCharacterNextCloneJump(ctx context.Context, c *app.Character) (time.Time, error) {
+	var z time.Time
+
+	if c.LastCloneJumpAt.IsEmpty() {
+		return z, fmt.Errorf("next clone jump: missing last clone jump date: character ID %d", c.ID)
+	}
+	lastJump := c.LastCloneJumpAt.MustValue()
+
+	var skillLevel int
+	sk, err := s.GetCharacterSkill(ctx, c.ID, app.EveTypeInfomorphSynchronizing)
+	if errors.Is(err, ErrNotFound) {
+		skillLevel = 0
+	} else if err != nil {
+		return z, err
+	} else {
+		skillLevel = sk.ActiveSkillLevel
+	}
+
+	nextJump := lastJump.Add(time.Duration(24-skillLevel) * time.Hour)
+	if nextJump.Before(time.Now()) {
+		return z, nil
+	}
+	return nextJump, nil
 }
 
 // TODO: Consolidate with updating home in separate function
@@ -31,8 +61,8 @@ func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg
 			return clones, nil
 		},
 		func(ctx context.Context, characterID int32, data any) error {
-			var home optional.Optional[int64]
 			clones := data.(esi.GetCharactersCharacterIdClonesOk)
+			var home optional.Optional[int64]
 			if clones.HomeLocation.LocationId != 0 {
 				_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, clones.HomeLocation.LocationId)
 				if err != nil {
@@ -41,6 +71,9 @@ func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg
 				home.Set(clones.HomeLocation.LocationId)
 			}
 			if err := s.st.UpdateCharacterHome(ctx, characterID, home); err != nil {
+				return err
+			}
+			if err := s.st.UpdateCharacterLastCloneJump(ctx, characterID, optional.New(clones.LastCloneJumpDate)); err != nil {
 				return err
 			}
 			args := make([]storage.CreateCharacterJumpCloneParams, len(clones.JumpClones))

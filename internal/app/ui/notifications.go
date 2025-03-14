@@ -168,7 +168,7 @@ func (a *NotificationsArea) Refresh() {
 	a.notificationList.UnselectAll()
 	a.notificationsTop.SetText("")
 	var counts map[evenotification.Group]int
-	if characterID := a.u.CharacterID(); characterID != 0 {
+	if characterID := a.u.CurrentCharacterID(); characterID != 0 {
 		var err error
 		counts, err = a.u.CharacterService.CountCharacterNotificationUnreads(context.TODO(), characterID)
 		if err != nil {
@@ -212,7 +212,7 @@ func (a *NotificationsArea) Refresh() {
 }
 
 func (a *NotificationsArea) makeGroupTopText() (string, widget.Importance) {
-	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionImplants)
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for data to load...", widget.WarningImportance
 	}
@@ -225,7 +225,7 @@ func (a *NotificationsArea) ResetGroups() {
 
 func (a *NotificationsArea) SetGroup(nc evenotification.Group) {
 	ctx := context.Background()
-	characterID := a.u.CharacterID()
+	characterID := a.u.CurrentCharacterID()
 	var notifications []*app.CharacterNotification
 	var err error
 	switch nc {

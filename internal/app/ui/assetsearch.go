@@ -69,7 +69,7 @@ func NewAssetSearchArea(u *BaseUI) *AssetSearchArea {
 		assetsFiltered: make([]*assetSearchRow, 0),
 		searchEntry:    widget.NewEntry(),
 		found:          widget.NewLabel(""),
-		total:          makeTopLabel(),
+		total:          MakeTopLabel(),
 		u:              u,
 	}
 	a.searchEntry.ActionItem = widget.NewIcon(theme.SearchIcon())

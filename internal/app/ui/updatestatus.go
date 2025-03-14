@@ -68,12 +68,12 @@ type UpdateStatusArea struct {
 
 func NewUpdateStatusArea(u *BaseUI) *UpdateStatusArea {
 	a := &UpdateStatusArea{
-		charactersTop:     makeTopLabel(),
+		charactersTop:     MakeTopLabel(),
 		details:           make([]detailsItem, 0),
-		detailsTop:        makeTopLabel(),
+		detailsTop:        MakeTopLabel(),
 		sectionEntities:   make([]sectionEntity, 0),
 		sections:          make([]app.SectionStatus, 0),
-		sectionsTop:       makeTopLabel(),
+		sectionsTop:       MakeTopLabel(),
 		selectedEntityID:  -1,
 		selectedSectionID: -1,
 		u:                 u,

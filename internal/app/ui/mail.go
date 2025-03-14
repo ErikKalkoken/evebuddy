@@ -218,7 +218,7 @@ func (a *MailArea) Folders() []FolderNode {
 }
 
 func (a *MailArea) Refresh() {
-	characterID := a.u.CharacterID()
+	characterID := a.u.CurrentCharacterID()
 	folderAll, err := a.updateFolderData(characterID)
 	if err != nil {
 		t := "Failed to build folder tree"
@@ -500,7 +500,7 @@ func (a *MailArea) makeFolderTopText(f FolderNode) (string, widget.Importance) {
 	if !a.u.HasCharacter() {
 		return "No Character", widget.LowImportance
 	}
-	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionSkillqueue)
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionSkillqueue)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
@@ -602,7 +602,7 @@ func (a *MailArea) clearMail() {
 
 func (a *MailArea) setMail(mailID int32) {
 	ctx := context.TODO()
-	characterID := a.u.CharacterID()
+	characterID := a.u.CurrentCharacterID()
 	var err error
 	a.mail, err = a.u.CharacterService.GetCharacterMail(ctx, characterID, mailID)
 	if err != nil {

@@ -159,6 +159,17 @@ func (st *Storage) UpdateCharacterIsTrainingWatched(ctx context.Context, charact
 	return nil
 }
 
+func (st *Storage) UpdateCharacterLastCloneJump(ctx context.Context, characterID int32, v optional.Optional[time.Time]) error {
+	arg := queries.UpdateCharacterLastCloneJumpParams{
+		ID:              int64(characterID),
+		LastCloneJumpAt: optional.ToNullTime(v),
+	}
+	if err := st.q.UpdateCharacterLastCloneJump(ctx, arg); err != nil {
+		return fmt.Errorf("update last clone jump for character %d: %w", characterID, err)
+	}
+	return nil
+}
+
 func (st *Storage) UpdateCharacterLastLoginAt(ctx context.Context, characterID int32, v optional.Optional[time.Time]) error {
 	arg := queries.UpdateCharacterLastLoginAtParams{
 		ID:          int64(characterID),
@@ -231,6 +242,7 @@ type UpdateOrCreateCharacterParams struct {
 	ID                int32
 	IsTrainingWatched bool
 	HomeID            optional.Optional[int64]
+	LastCloneJumpAt   optional.Optional[time.Time]
 	LastLoginAt       optional.Optional[time.Time]
 	LocationID        optional.Optional[int64]
 	ShipID            optional.Optional[int32]
@@ -245,6 +257,7 @@ func (st *Storage) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCrea
 		AssetValue:        optional.ToNullFloat64(arg.AssetValue),
 		IsTrainingWatched: arg.IsTrainingWatched,
 		HomeID:            optional.ToNullInt64(arg.HomeID),
+		LastCloneJumpAt:   optional.ToNullTime(arg.LastCloneJumpAt),
 		LastLoginAt:       optional.ToNullTime(arg.LastLoginAt),
 		LocationID:        optional.ToNullInt64(arg.LocationID),
 		ShipID:            optional.ToNullInt64(arg.ShipID),
@@ -275,6 +288,7 @@ func (st *Storage) characterFromDBModel(
 		EveCharacter:      eveCharacterFromDBModel(eveCharacter, corporation, race, alliance, faction),
 		ID:                int32(character.ID),
 		IsTrainingWatched: character.IsTrainingWatched,
+		LastCloneJumpAt:   optional.FromNullTime(character.LastCloneJumpAt),
 		LastLoginAt:       optional.FromNullTime(character.LastLoginAt),
 		TotalSP:           optional.FromNullInt64ToInteger[int](character.TotalSp),
 		UnallocatedSP:     optional.FromNullInt64ToInteger[int](character.UnallocatedSp),

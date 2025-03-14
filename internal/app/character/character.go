@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log/slog"
 	"slices"
-	"time"
 
 	"fyne.io/fyne/v2/data/binding"
 
@@ -75,12 +74,22 @@ func (s *CharacterService) DisableAllTrainingWatchers(ctx context.Context) error
 	return s.st.DisableAllTrainingWatchers(ctx)
 }
 
+// GetCharacter returns a character from storage and updates calculated fields.
 func (s *CharacterService) GetCharacter(ctx context.Context, id int32) (*app.Character, error) {
-	o, err := s.st.GetCharacter(ctx, id)
+	c, err := s.st.GetCharacter(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	}
-	return o, err
+	if err != nil {
+		return nil, err
+	}
+	x, err := s.calcCharacterNextCloneJump(ctx, c)
+	if err != nil {
+		slog.Error("get character: next clone jump", "characterID", id, "error", err)
+	} else {
+		c.NextCloneJump = optional.New(x)
+	}
+	return c, nil
 }
 
 func (s *CharacterService) GetAnyCharacter(ctx context.Context) (*app.Character, error) {
@@ -217,11 +226,7 @@ func (s *CharacterService) updateCharacterOnlineESI(ctx context.Context, arg Upd
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			online := data.(esi.GetCharactersCharacterIdOnlineOk)
-			var x optional.Optional[time.Time]
-			if !online.LastLogin.IsZero() {
-				x.Set(online.LastLogin)
-			}
-			if err := s.st.UpdateCharacterLastLoginAt(ctx, characterID, x); err != nil {
+			if err := s.st.UpdateCharacterLastLoginAt(ctx, characterID, optional.New(online.LastLogin)); err != nil {
 				return err
 			}
 			return nil

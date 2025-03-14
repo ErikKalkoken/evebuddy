@@ -162,7 +162,7 @@ func (a *ShipsArea) updateEntries() error {
 		a.flyableSelect.SetOptions([]string{})
 		return nil
 	}
-	characterID := a.u.CharacterID()
+	characterID := a.u.CurrentCharacterID()
 	search := fmt.Sprintf("%%%s%%", a.searchBox.Text)
 	oo, err := a.u.CharacterService.ListCharacterShipsAbilities(context.Background(), characterID, search)
 	if err != nil {
@@ -211,7 +211,7 @@ func (a *ShipsArea) makeTopText() (string, widget.Importance, bool, error) {
 	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance, false, nil
 	}
-	characterID := a.u.CharacterID()
+	characterID := a.u.CurrentCharacterID()
 	hasData := a.u.StatusCacheService.CharacterSectionExists(characterID, app.SectionSkills)
 	if !hasData {
 		return "Waiting for skills to be loaded...", widget.WarningImportance, false, nil

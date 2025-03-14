@@ -44,7 +44,7 @@ type OverviewArea struct {
 func NewOverviewArea(u *BaseUI) *OverviewArea {
 	a := OverviewArea{
 		rows: make([]overviewCharacter, 0),
-		top:  makeTopLabel(),
+		top:  MakeTopLabel(),
 		u:    u,
 	}
 	top := container.NewVBox(a.top, widget.NewSeparator())

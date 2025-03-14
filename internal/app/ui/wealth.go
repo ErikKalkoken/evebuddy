@@ -36,7 +36,7 @@ type WealthArea struct {
 
 func NewWealthArea(u *BaseUI) *WealthArea {
 	a := &WealthArea{
-		top: makeTopLabel(),
+		top: MakeTopLabel(),
 		u:   u,
 	}
 	a.charts = a.makeCharts()

@@ -65,15 +65,17 @@ func TestCharacter(t *testing.T) {
 		location := factory.CreateLocationStructure()
 		ship := factory.CreateEveType()
 		login := time.Now()
+		cloneJump := time.Now()
 		arg := storage.UpdateOrCreateCharacterParams{
-			ID:            character.ID,
-			AssetValue:    optional.New(3.4),
-			HomeID:        optional.New(home.ID),
-			LastLoginAt:   optional.New(login),
-			LocationID:    optional.New(location.ID),
-			ShipID:        optional.New(ship.ID),
-			TotalSP:       optional.New(123),
-			WalletBalance: optional.New(1.2),
+			ID:              character.ID,
+			AssetValue:      optional.New(3.4),
+			HomeID:          optional.New(home.ID),
+			LastCloneJumpAt: optional.New(cloneJump),
+			LastLoginAt:     optional.New(login),
+			LocationID:      optional.New(location.ID),
+			ShipID:          optional.New(ship.ID),
+			TotalSP:         optional.New(123),
+			WalletBalance:   optional.New(1.2),
 		}
 		// when
 		err := r.UpdateOrCreateCharacter(ctx, arg)
@@ -82,6 +84,7 @@ func TestCharacter(t *testing.T) {
 			r, err := r.GetCharacter(ctx, arg.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, home, r.Home)
+				assert.Equal(t, cloneJump.UTC(), r.LastCloneJumpAt.ValueOrZero().UTC())
 				assert.Equal(t, login.UTC(), r.LastLoginAt.ValueOrZero().UTC())
 				assert.Equal(t, location, r.Location)
 				assert.Equal(t, ship, r.Ship)
@@ -252,6 +255,46 @@ func TestUpdateCharacterFields(t *testing.T) {
 			}
 		}
 
+	})
+	t.Run("can update last clone jump with a time", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCharacter()
+		x := time.Now().Add(1 * time.Hour)
+		// when
+		err := r.UpdateCharacterLastCloneJump(ctx, c1.ID, optional.New(x))
+		// then
+		if assert.NoError(t, err) {
+			c2, err := r.GetCharacter(ctx, c1.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, x.UTC(), c2.LastCloneJumpAt.ValueOrZero().UTC())
+			}
+		}
+	})
+	t.Run("can update last clone jump with zero time", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCharacter()
+		x := time.Time{}
+		// when
+		err := r.UpdateCharacterLastCloneJump(ctx, c1.ID, optional.New(x))
+		// then
+		if assert.NoError(t, err) {
+			c2, err := r.GetCharacter(ctx, c1.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, x, c2.LastCloneJumpAt.MustValue())
+			}
+		}
+	})
+	t.Run("should return empty when last clone jump not updated", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCharacter()
+		// when
+		c2, err := r.GetCharacter(ctx, c1.ID)
+		if assert.NoError(t, err) {
+			assert.True(t, c2.LastCloneJumpAt.IsEmpty())
+		}
 	})
 	t.Run("can update last login", func(t *testing.T) {
 		// given

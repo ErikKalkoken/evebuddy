@@ -44,7 +44,7 @@ type ColoniesArea struct {
 func NewColoniesArea(u *BaseUI) *ColoniesArea {
 	a := ColoniesArea{
 		rows: make([]colonyRow, 0),
-		top:  makeTopLabel(),
+		top:  MakeTopLabel(),
 		u:    u,
 	}
 	headers := []headerDef{

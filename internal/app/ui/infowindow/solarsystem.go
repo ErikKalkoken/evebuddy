@@ -110,8 +110,7 @@ func (a *solarSystemArea) load(solarSystemID int32) error {
 	a.constellation.OnTapped = func() {
 		a.iw.ShowEveEntity(o.System.Constellation.ToEveEntity())
 	}
-	a.security.Segments = o.System.Display()
-	a.security.Refresh()
+	iwidget.SetRichText(a.security, o.System.DisplayRichText()...)
 
 	systemsLabel := widget.NewLabel("Loading...")
 	systemsTab := container.NewTabItem("Adjacent Solar Systems", systemsLabel)

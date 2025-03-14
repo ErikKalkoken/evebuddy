@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -56,7 +57,7 @@ func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
 			value := widget.NewLabel("Value")
 			value.Truncation = fyne.TextTruncateEllipsis
 			value.Alignment = fyne.TextAlignTrailing
-			icon := widget.NewIcon(theme.InfoIcon())
+			icon := kxwidget.NewTappableIcon(theme.InfoIcon(), nil)
 			label := widget.NewLabel("Label")
 			return container.NewBorder(nil, nil, label, icon, value)
 		},
@@ -69,14 +70,17 @@ func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
 			label := border[1].(*widget.Label)
 			label.SetText(it.Label)
 			value := border[0].(*widget.Label)
-			icon := border[2]
+			icon := border[2].(*kxwidget.TappableIcon)
 			icon.Hide()
 			var s string
 			var i widget.Importance
 			switch x := it.Value.(type) {
 			case *app.EveEntity:
 				s = x.Name
-				if slices.Contains(eveEntitySupportedCategories(), x.Category) {
+				if slices.Contains(eveEntitySupportedCategories(), x.Category) && w.ShowInfoWindow != nil {
+					icon.OnTapped = func() {
+						w.ShowInfoWindow(x)
+					}
 					icon.Show()
 				}
 			case *url.URL:
@@ -112,10 +116,6 @@ func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
 		}
 		it := w.items[id]
 		switch x := it.Value.(type) {
-		case *app.EveEntity:
-			if slices.Contains(eveEntitySupportedCategories(), x.Category) && w.ShowInfoWindow != nil {
-				w.ShowInfoWindow(x)
-			}
 		case *url.URL:
 			w.openURL(x)
 			// TODO

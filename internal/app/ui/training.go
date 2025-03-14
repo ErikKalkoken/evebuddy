@@ -35,7 +35,7 @@ type TrainingArea struct {
 func NewTrainingArea(u *BaseUI) *TrainingArea {
 	a := TrainingArea{
 		rows: make([]trainingCharacter, 0),
-		top:  makeTopLabel(),
+		top:  MakeTopLabel(),
 		u:    u,
 	}
 	headers := []headerDef{

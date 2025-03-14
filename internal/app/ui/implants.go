@@ -32,7 +32,7 @@ type ImplantsArea struct {
 func NewImplantsArea(u *BaseUI) *ImplantsArea {
 	a := ImplantsArea{
 		implants: make([]*app.CharacterImplant, 0),
-		top:      makeTopLabel(),
+		top:      MakeTopLabel(),
 		u:        u,
 	}
 	a.list = a.makeImplantList()
@@ -113,7 +113,7 @@ func (a *ImplantsArea) updateImplants() error {
 		a.implants = make([]*app.CharacterImplant, 0)
 		return nil
 	}
-	implants, err := a.u.CharacterService.ListCharacterImplants(context.TODO(), a.u.CharacterID())
+	implants, err := a.u.CharacterService.ListCharacterImplants(context.TODO(), a.u.CurrentCharacterID())
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (a *ImplantsArea) updateImplants() error {
 }
 
 func (a *ImplantsArea) makeTopText() (string, widget.Importance) {
-	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionImplants)
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

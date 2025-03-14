@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -56,6 +57,9 @@ const (
 	ssoClientID         = "11ae857fe4d149b2be60d875649c05f1"
 	userAgent           = "EveBuddy kalkoken87@gmail.com"
 )
+
+// Resonses from these URLs will never be logged.
+var blacklistedURLs = []string{"login.eveonline.com/v2/oauth/token"}
 
 // define flags
 var (
@@ -200,11 +204,7 @@ func main() {
 		MarkCachedResponses: true,
 	}
 	rhc.Logger = slog.Default()
-	rhc.ResponseLogHook = func(l retryablehttp.Logger, r *http.Response) {
-		if r.StatusCode >= 400 {
-			slog.Warn("HTTP error response", "method", r.Request.Method, "url", r.Request.URL, "status", r.Status)
-		}
-	}
+	rhc.ResponseLogHook = logResponse
 
 	// Initialize shared ESI client
 	esiClient := goesi.NewAPIClient(rhc.StandardClient(), userAgent)
@@ -279,4 +279,38 @@ func setupCrashFile(logDir string) (path string) {
 	}
 	crashFile.Close()
 	return
+}
+
+// logResponse is a callback for retryable logger, which is called for every respose.
+// It logs all HTTP erros and also the complete response when log level is DEBUG.
+func logResponse(l retryablehttp.Logger, r *http.Response) {
+	if r.StatusCode >= 400 {
+		slog.Warn("HTTP error response", "method", r.Request.Method, "url", r.Request.URL, "status", r.Status)
+	}
+	if !slog.Default().Enabled(context.Background(), slog.LevelDebug) {
+		return
+	}
+	var respBody string
+	if slices.ContainsFunc(blacklistedURLs, func(x string) bool {
+		return strings.Contains(r.Request.URL.String(), x)
+	}) {
+		respBody = "xxxxx"
+	} else if r.Body != nil {
+		body, err := io.ReadAll(r.Body)
+		if err == nil {
+			respBody = string(body)
+			r.Body = io.NopCloser(bytes.NewBuffer(body))
+		}
+	}
+	slog.Debug(
+		"HTTP response",
+		"method", r.Request.Method,
+		"url", r.Request.URL,
+		"status",
+		r.StatusCode,
+		"header",
+		r.Header,
+		"body",
+		respBody,
+	)
 }

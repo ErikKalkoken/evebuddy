@@ -50,7 +50,7 @@ type ContractsArea struct {
 func NewContractsArea(u *BaseUI) *ContractsArea {
 	a := ContractsArea{
 		contracts: make([]*app.CharacterContract, 0),
-		top:       makeTopLabel(),
+		top:       MakeTopLabel(),
 		u:         u,
 	}
 	headers := []headerDef{
@@ -209,7 +209,7 @@ func (a *ContractsArea) updateEntries() error {
 		a.contracts = make([]*app.CharacterContract, 0)
 		return nil
 	}
-	characterID := a.u.CharacterID()
+	characterID := a.u.CurrentCharacterID()
 	var err error
 	a.contracts, err = a.u.CharacterService.ListCharacterContracts(context.TODO(), characterID)
 	if err != nil {

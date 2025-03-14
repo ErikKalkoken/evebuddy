@@ -36,7 +36,7 @@ func (q *Queries) DisableAllTrainingWatchers(ctx context.Context) error {
 
 const getCharacter = `-- name: GetCharacter :one
 SELECT
-    cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance, cc.is_training_watched,
+    cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance, cc.is_training_watched, cc.last_clone_jump_at,
     ec.alliance_id, ec.birthday, ec.corporation_id, ec.description, ec.gender, ec.faction_id, ec.id, ec.name, ec.race_id, ec.security_status, ec.title,
     eec.id, eec.category, eec.name,
     er.id, er.description, er.name,
@@ -86,6 +86,7 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 		&i.Character.UnallocatedSp,
 		&i.Character.WalletBalance,
 		&i.Character.IsTrainingWatched,
+		&i.Character.LastCloneJumpAt,
 		&i.EveCharacter.AllianceID,
 		&i.EveCharacter.Birthday,
 		&i.EveCharacter.CorporationID,
@@ -162,7 +163,7 @@ func (q *Queries) ListCharacterIDs(ctx context.Context) ([]int64, error) {
 
 const listCharacters = `-- name: ListCharacters :many
 SELECT
-    DISTINCT cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance, cc.is_training_watched,
+    DISTINCT cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance, cc.is_training_watched, cc.last_clone_jump_at,
     ec.alliance_id, ec.birthday, ec.corporation_id, ec.description, ec.gender, ec.faction_id, ec.id, ec.name, ec.race_id, ec.security_status, ec.title,
     eec.id, eec.category, eec.name,
     er.id, er.description, er.name,
@@ -218,6 +219,7 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 			&i.Character.UnallocatedSp,
 			&i.Character.WalletBalance,
 			&i.Character.IsTrainingWatched,
+			&i.Character.LastCloneJumpAt,
 			&i.EveCharacter.AllianceID,
 			&i.EveCharacter.Birthday,
 			&i.EveCharacter.CorporationID,
@@ -352,6 +354,25 @@ func (q *Queries) UpdateCharacterIsTrainingWatched(ctx context.Context, arg Upda
 	return err
 }
 
+const updateCharacterLastCloneJump = `-- name: UpdateCharacterLastCloneJump :exec
+UPDATE
+    characters
+SET
+    last_clone_jump_at = ?
+WHERE
+    id = ?
+`
+
+type UpdateCharacterLastCloneJumpParams struct {
+	LastCloneJumpAt sql.NullTime
+	ID              int64
+}
+
+func (q *Queries) UpdateCharacterLastCloneJump(ctx context.Context, arg UpdateCharacterLastCloneJumpParams) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterLastCloneJump, arg.LastCloneJumpAt, arg.ID)
+	return err
+}
+
 const updateCharacterLastLoginAt = `-- name: UpdateCharacterLastLoginAt :exec
 UPDATE
     characters
@@ -461,10 +482,11 @@ INSERT INTO
         unallocated_sp,
         wallet_balance,
         asset_value,
-        is_training_watched
+        is_training_watched,
+        last_clone_jump_at
     )
 VALUES
-    (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10) ON CONFLICT(id) DO
+    (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11) ON CONFLICT(id) DO
 UPDATE
 SET
     home_id = ?2,
@@ -475,7 +497,8 @@ SET
     unallocated_sp = ?7,
     wallet_balance = ?8,
     asset_value = ?9,
-    is_training_watched = ?10
+    is_training_watched = ?10,
+    last_clone_jump_at = ?11
 WHERE
     id = ?1
 `
@@ -491,6 +514,7 @@ type UpdateOrCreateCharacterParams struct {
 	WalletBalance     sql.NullFloat64
 	AssetValue        sql.NullFloat64
 	IsTrainingWatched bool
+	LastCloneJumpAt   sql.NullTime
 }
 
 func (q *Queries) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCreateCharacterParams) error {
@@ -505,6 +529,7 @@ func (q *Queries) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCreat
 		arg.WalletBalance,
 		arg.AssetValue,
 		arg.IsTrainingWatched,
+		arg.LastCloneJumpAt,
 	)
 	return err
 }
