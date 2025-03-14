@@ -58,7 +58,7 @@ const (
 	userAgent           = "EveBuddy kalkoken87@gmail.com"
 )
 
-// Resonses from these URLs will never be logged
+// Resonses from these URLs will never be logged.
 var blacklistedURLs = []string{"login.eveonline.com/v2/oauth/token"}
 
 // define flags
@@ -291,8 +291,10 @@ func logResponse(l retryablehttp.Logger, r *http.Response) {
 		return
 	}
 	var respBody string
-	if slices.Contains(blacklistedURLs, r.Request.URL.String()) {
-		respBody = "REDACTED"
+	if slices.ContainsFunc(blacklistedURLs, func(x string) bool {
+		return strings.Contains(r.Request.URL.String(), x)
+	}) {
+		respBody = "xxxxx"
 	} else if r.Body != nil {
 		body, err := io.ReadAll(r.Body)
 		if err == nil {
