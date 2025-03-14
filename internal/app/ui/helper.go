@@ -49,3 +49,8 @@ func makeGridOrList(isMobile bool, length func() int, makeCreateItem func(trunc 
 	}
 	return w
 }
+
+func SetRichText(w *widget.RichText, t ...widget.RichTextSegment) {
+	w.Segments = t
+	w.Refresh()
+}

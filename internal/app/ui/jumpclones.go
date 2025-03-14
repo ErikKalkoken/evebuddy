@@ -54,15 +54,17 @@ type JumpClonesArea struct {
 	Content  *fyne.Container
 	OnReDraw func(clonesCount int)
 
-	top        *widget.Label
+	top        *widget.RichText
 	treeData   *fynetree.FyneTree[jumpCloneNode]
 	treeWidget *widget.Tree
 	u          *BaseUI
 }
 
 func NewJumpClonesArea(u *BaseUI) *JumpClonesArea {
+	ntop := widget.NewRichText()
+	ntop.Truncation = fyne.TextTruncateEllipsis
 	a := JumpClonesArea{
-		top:      makeTopLabel(),
+		top:      ntop,
 		treeData: fynetree.New[jumpCloneNode](),
 		u:        u,
 	}
@@ -155,9 +157,13 @@ func (a *JumpClonesArea) Redraw() {
 	tree, err := a.newTreeData()
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
-		a.top.Text = "ERROR"
-		a.top.Importance = widget.DangerImportance
-		a.top.Refresh()
+		SetRichText(a.top, &widget.TextSegment{
+			Text: "ERROR: " + ihumanize.Error(err),
+			Style: widget.RichTextStyle{
+				ColorName: theme.ColorNameError,
+				TextStyle: fyne.TextStyle{Bold: true},
+			}})
+
 	} else {
 		a.RefreshTop()
 	}
@@ -215,35 +221,41 @@ func (a *JumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error
 }
 
 func (a *JumpClonesArea) RefreshTop() {
-	s, i := func() (string, widget.Importance) {
-		c := a.u.CurrentCharacter()
-		if c == nil {
-			return "No character", widget.LowImportance
-		}
-		hasData := a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionJumpClones)
-		if !hasData {
-			return "Waiting for character data to be loaded...", widget.WarningImportance
-		}
-		var nextJump, lastJump string
-		if c.NextCloneJump.IsEmpty() {
-			nextJump = "?"
-		} else if c.NextCloneJump.MustValue().IsZero() {
-			nextJump = "NOW"
-		} else {
-			nextJump = ihumanize.Duration(time.Until(c.NextCloneJump.MustValue()))
-		}
-		if x := c.LastCloneJumpAt.ValueOrZero(); x.IsZero() {
-			lastJump = "?"
-		} else {
-			lastJump = humanize.Time(x)
-		}
-
-		s := fmt.Sprintf("%d clones • Next available jump: %s • Last jump: %s", a.ClonesCount(), nextJump, lastJump)
-		return s, widget.MediumImportance
-	}()
-	a.top.Text = s
-	a.top.Importance = i
-	a.top.Refresh()
+	s := &widget.TextSegment{
+		Text: "",
+		Style: widget.RichTextStyle{
+			ColorName: theme.ColorNameForeground,
+			TextStyle: fyne.TextStyle{Bold: true},
+		},
+	}
+	c := a.u.CurrentCharacter()
+	if c == nil {
+		s.Text = "No character"
+		s.Style.ColorName = theme.ColorNameDisabled
+		SetRichText(a.top, s)
+		return
+	}
+	hasData := a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionJumpClones)
+	if !hasData {
+		s.Text = "Waiting for character data to be loaded..."
+		s.Style.ColorName = theme.ColorNameWarning
+		SetRichText(a.top, s)
+	}
+	var nextJump, lastJump string
+	if c.NextCloneJump.IsEmpty() {
+		nextJump = "?"
+	} else if c.NextCloneJump.MustValue().IsZero() {
+		nextJump = "NOW"
+	} else {
+		nextJump = ihumanize.Duration(time.Until(c.NextCloneJump.MustValue()))
+	}
+	if x := c.LastCloneJumpAt.ValueOrZero(); x.IsZero() {
+		lastJump = "?"
+	} else {
+		lastJump = humanize.Time(x)
+	}
+	s.Text = fmt.Sprintf("%d clones • Next available jump: %s • Last jump: %s", a.ClonesCount(), nextJump, lastJump)
+	SetRichText(a.top, s)
 }
 
 func (a *JumpClonesArea) ClonesCount() int {
