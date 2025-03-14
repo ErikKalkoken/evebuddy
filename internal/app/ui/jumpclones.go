@@ -157,7 +157,7 @@ func (a *JumpClonesArea) Redraw() {
 	tree, err := a.newTreeData()
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
-		SetRichText(a.top, &widget.TextSegment{
+		iwidget.SetRichText(a.top, &widget.TextSegment{
 			Text: "ERROR: " + ihumanize.Error(err),
 			Style: widget.RichTextStyle{
 				ColorName: theme.ColorNameError,
@@ -236,14 +236,14 @@ func (a *JumpClonesArea) RefreshTop() {
 	if c == nil {
 		s.Text = "No character"
 		s.Style.ColorName = theme.ColorNameDisabled
-		SetRichText(a.top, s)
+		iwidget.SetRichText(a.top, s)
 		return
 	}
 	hasData := a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionJumpClones)
 	if !hasData {
 		s.Text = "Waiting for character data to be loaded..."
 		s.Style.ColorName = theme.ColorNameWarning
-		SetRichText(a.top, s)
+		iwidget.SetRichText(a.top, s)
 	}
 	var nextJumpColor fyne.ThemeColorName
 	var nextJump, lastJump string
@@ -262,7 +262,7 @@ func (a *JumpClonesArea) RefreshTop() {
 	} else {
 		lastJump = humanize.Time(x)
 	}
-	SetRichText(
+	iwidget.SetRichText(
 		a.top,
 		&widget.TextSegment{
 			Text:  fmt.Sprintf("%d clones • Next available jump: ", a.ClonesCount()),

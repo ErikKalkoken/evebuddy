@@ -50,12 +50,6 @@ func makeGridOrList(isMobile bool, length func() int, makeCreateItem func(trunc 
 	return w
 }
 
-// SetRichText sets the content of a RichtText widget and refreshes it.
-func SetRichText(w *widget.RichText, t ...widget.RichTextSegment) {
-	w.Segments = t
-	w.Refresh()
-}
-
 // MakeTopLabel returns a new empty label meant for the top bar on a screen.
 func MakeTopLabel() *widget.Label {
 	l := widget.NewLabel("")

@@ -70,7 +70,7 @@ func (es EveSolarSystem) ToEveEntity() *EveEntity {
 	return &EveEntity{ID: es.ID, Name: es.Name, Category: EveEntitySolarSystem}
 }
 
-func (es EveSolarSystem) Display() []widget.RichTextSegment {
+func (es EveSolarSystem) DisplayRichText() []widget.RichTextSegment {
 	return []widget.RichTextSegment{
 		&widget.TextSegment{
 			Text: fmt.Sprintf("%.1f  ", es.SecurityStatus),

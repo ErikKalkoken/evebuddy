@@ -46,7 +46,7 @@ func NewEntityItemFromEveSolarSystem(o *app.EveSolarSystem) entityItem {
 	return entityItem{
 		id:           int64(ee.ID),
 		category:     ee.CategoryDisplay(),
-		textSegments: o.Display(),
+		textSegments: o.DisplayRichText(),
 		infoVariant:  eveEntity2InfoVariant(ee),
 	}
 }
@@ -135,11 +135,10 @@ func (w *EntitiyList) CreateRenderer() fyne.WidgetRenderer {
 			}
 			text := border2[1].(*fyne.Container).Objects[0].(*widget.RichText)
 			if len(it.textSegments) != 0 {
-				text.Segments = it.textSegments
+				iwidget.SetRichText(text, it.textSegments...)
 			} else {
 				text.ParseMarkdown(it.text)
 			}
-			text.Refresh()
 		},
 	)
 	l.HideSeparators = true
