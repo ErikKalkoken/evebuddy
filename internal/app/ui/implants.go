@@ -32,7 +32,7 @@ type ImplantsArea struct {
 func NewImplantsArea(u *BaseUI) *ImplantsArea {
 	a := ImplantsArea{
 		implants: make([]*app.CharacterImplant, 0),
-		top:      makeTopLabel(),
+		top:      MakeTopLabel(),
 		u:        u,
 	}
 	a.list = a.makeImplantList()

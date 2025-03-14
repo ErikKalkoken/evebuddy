@@ -56,7 +56,7 @@ type WalletJournalArea struct {
 func NewWalletJournalArea(u *BaseUI) *WalletJournalArea {
 	a := WalletJournalArea{
 		rows: make([]walletJournalEntry, 0),
-		top:  makeTopLabel(),
+		top:  MakeTopLabel(),
 		u:    u,
 	}
 	var headers = []headerDef{

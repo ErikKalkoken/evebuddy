@@ -31,7 +31,7 @@ type SkillqueueArea struct {
 
 func NewSkillqueueArea(u *BaseUI) *SkillqueueArea {
 	a := SkillqueueArea{
-		total: makeTopLabel(),
+		total: MakeTopLabel(),
 		u:     u,
 	}
 	list := a.makeSkillQueue()

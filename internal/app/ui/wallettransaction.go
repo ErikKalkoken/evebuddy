@@ -26,7 +26,7 @@ type WalletTransactionArea struct {
 
 func NewWalletTransactionArea(u *BaseUI) *WalletTransactionArea {
 	a := WalletTransactionArea{
-		top:  makeTopLabel(),
+		top:  MakeTopLabel(),
 		rows: make([]*app.CharacterWalletTransaction, 0),
 		u:    u,
 	}

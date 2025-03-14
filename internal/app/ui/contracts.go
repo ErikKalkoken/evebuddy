@@ -50,7 +50,7 @@ type ContractsArea struct {
 func NewContractsArea(u *BaseUI) *ContractsArea {
 	a := ContractsArea{
 		contracts: make([]*app.CharacterContract, 0),
-		top:       makeTopLabel(),
+		top:       MakeTopLabel(),
 		u:         u,
 	}
 	headers := []headerDef{

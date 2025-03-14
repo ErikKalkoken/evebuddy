@@ -48,7 +48,7 @@ func NewAccountArea(u *BaseUI) *AccountArea {
 	a := &AccountArea{
 		characters: make([]accountCharacter, 0),
 		snackbar:   u.Snackbar,
-		title:      makeTopLabel(),
+		title:      MakeTopLabel(),
 		window:     u.Window,
 		u:          u,
 	}

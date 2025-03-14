@@ -32,7 +32,7 @@ type PlanetArea struct {
 func NewPlanetArea(u *BaseUI) *PlanetArea {
 	a := PlanetArea{
 		planets: make([]*app.CharacterPlanet, 0),
-		top:     makeTopLabel(),
+		top:     MakeTopLabel(),
 		u:       u,
 	}
 	a.list = a.makeList()

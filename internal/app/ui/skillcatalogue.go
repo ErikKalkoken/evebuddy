@@ -58,7 +58,7 @@ func NewSkillCatalogueArea(u *BaseUI) *SkillCatalogueArea {
 		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
 		levelUnTrained: theme.NewDisabledResource(theme.MediaStopIcon()),
 		skills:         make([]skillTrained, 0),
-		total:          makeTopLabel(),
+		total:          MakeTopLabel(),
 		u:              u,
 	}
 	a.groupsGrid = a.makeGroupsGrid()

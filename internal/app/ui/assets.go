@@ -90,7 +90,7 @@ func NewAssetsArea(u *BaseUI) *AssetsArea {
 		assetsBottom:  widget.NewLabel(""),
 		locationPath:  lp,
 		locationsData: fynetree.New[locationDataNode](),
-		locationsTop:  makeTopLabel(),
+		locationsTop:  MakeTopLabel(),
 		u:             u,
 	}
 	a.locationsWidget = a.makeLocationsTree()

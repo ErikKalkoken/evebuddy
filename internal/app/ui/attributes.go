@@ -41,7 +41,7 @@ type Attributes struct {
 func NewAttributes(u *BaseUI) *Attributes {
 	a := Attributes{
 		attributes: make([]attribute, 0),
-		top:        makeTopLabel(),
+		top:        MakeTopLabel(),
 		u:          u,
 	}
 	list := a.makeAttributeList()

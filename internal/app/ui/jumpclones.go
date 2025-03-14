@@ -62,7 +62,7 @@ type JumpClonesArea struct {
 
 func NewJumpClonesArea(u *BaseUI) *JumpClonesArea {
 	ntop := widget.NewRichText()
-	ntop.Truncation = fyne.TextTruncateEllipsis
+	ntop.Wrapping = fyne.TextWrapWord
 	a := JumpClonesArea{
 		top:      ntop,
 		treeData: fynetree.New[jumpCloneNode](),
