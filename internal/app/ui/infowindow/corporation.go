@@ -188,7 +188,7 @@ func (a *corporationArea) load(corporationID int32) error {
 		items = append(items, NewEntityItem(
 			0,
 			"Corporation Founded",
-			fmt.Sprintf("**%s**", oldest.StartDate.Format(app.DateTimeFormat)),
+			fmt.Sprintf("**%s**", oldest.StartDate.Format(app.DateFormat)),
 			NotSupported,
 		))
 		historyList := NewEntityListFromItems(a.iw.Show, items...)

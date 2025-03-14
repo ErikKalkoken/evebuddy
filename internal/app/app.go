@@ -13,6 +13,7 @@ import (
 // Default formats and sizes
 const (
 	DateTimeFormat = "2006.01.02 15:04"
+	DateFormat     = "2006.01.02"
 	FloatFormat    = "#,###.##"
 	IconPixelSize  = 64
 	IconUnitSize   = 32
