@@ -17,6 +17,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	"github.com/dustin/go-humanize"
 	"github.com/icrowley/fake"
 	"golang.org/x/sync/singleflight"
@@ -25,7 +26,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
-	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 )
 
 // The DesktopUI is the root object of the DesktopUI and contains all DesktopUI areas.
@@ -413,8 +413,17 @@ func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 	}
 	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, shipItem)
 
+	searchItem := fyne.NewMenuItem("Search New Eden...", u.ShowSearchDialog)
+	searchItem.Shortcut = &desktop.CustomShortcut{
+		KeyName:  fyne.KeyS,
+		Modifier: fyne.KeyModifierAlt,
+	}
+	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, searchItem)
+
 	infoMenu := fyne.NewMenu(
 		"Info",
+		searchItem,
+		fyne.NewMenuItemSeparator(),
 		characterItem,
 		locationItem,
 		shipItem,

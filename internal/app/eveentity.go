@@ -1,6 +1,8 @@
 package app
 
 import (
+	"cmp"
+
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -87,4 +89,8 @@ func (ee EveEntity) CategoryDisplay() string {
 
 func (ee EveEntity) IsCharacter() bool {
 	return ee.Category == EveEntityCharacter
+}
+
+func (ee *EveEntity) Compare(other *EveEntity) int {
+	return cmp.Compare(ee.Name, other.Name)
 }
