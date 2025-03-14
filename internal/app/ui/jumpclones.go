@@ -221,12 +221,16 @@ func (a *JumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error
 }
 
 func (a *JumpClonesArea) RefreshTop() {
+	boldTextStyle := fyne.TextStyle{Bold: true}
+	defaultStyle := widget.RichTextStyle{
+		ColorName: theme.ColorNameForeground,
+		TextStyle: boldTextStyle,
+	}
+	defaultStyleInline := defaultStyle
+	defaultStyleInline.Inline = true
 	s := &widget.TextSegment{
-		Text: "",
-		Style: widget.RichTextStyle{
-			ColorName: theme.ColorNameForeground,
-			TextStyle: fyne.TextStyle{Bold: true},
-		},
+		Text:  "",
+		Style: defaultStyle,
 	}
 	c := a.u.CurrentCharacter()
 	if c == nil {
@@ -241,21 +245,42 @@ func (a *JumpClonesArea) RefreshTop() {
 		s.Style.ColorName = theme.ColorNameWarning
 		SetRichText(a.top, s)
 	}
+	var nextJumpColor fyne.ThemeColorName
 	var nextJump, lastJump string
 	if c.NextCloneJump.IsEmpty() {
 		nextJump = "?"
+		nextJumpColor = theme.ColorNameForeground
 	} else if c.NextCloneJump.MustValue().IsZero() {
 		nextJump = "NOW"
+		nextJumpColor = theme.ColorNameSuccess
 	} else {
 		nextJump = ihumanize.Duration(time.Until(c.NextCloneJump.MustValue()))
+		nextJumpColor = theme.ColorNameError
 	}
 	if x := c.LastCloneJumpAt.ValueOrZero(); x.IsZero() {
 		lastJump = "?"
 	} else {
 		lastJump = humanize.Time(x)
 	}
-	s.Text = fmt.Sprintf("%d clones • Next available jump: %s • Last jump: %s", a.ClonesCount(), nextJump, lastJump)
-	SetRichText(a.top, s)
+	SetRichText(
+		a.top,
+		&widget.TextSegment{
+			Text:  fmt.Sprintf("%d clones • Next available jump: ", a.ClonesCount()),
+			Style: defaultStyleInline,
+		},
+		&widget.TextSegment{
+			Text: nextJump,
+			Style: widget.RichTextStyle{
+				ColorName: nextJumpColor,
+				TextStyle: boldTextStyle,
+				Inline:    true,
+			},
+		},
+		&widget.TextSegment{
+			Text:  fmt.Sprintf(" • Last jump: %s", lastJump),
+			Style: defaultStyle,
+		},
+	)
 }
 
 func (a *JumpClonesArea) ClonesCount() int {
@@ -266,7 +291,7 @@ func (a *JumpClonesArea) ClonesCount() int {
 }
 
 func (a *JumpClonesArea) StartUpdateTicker() {
-	ticker := time.NewTicker(time.Second * 10)
+	ticker := time.NewTicker(time.Second * 15)
 	go func() {
 		for {
 			a.RefreshTop()
