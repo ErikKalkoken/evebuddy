@@ -49,16 +49,18 @@ type SearchArea struct {
 	note       *widget.Label
 	resultTree *fynetree.FyneTree[resultNode]
 	tree       *widget.Tree
+	message    *widget.Label
 	u          *BaseUI
 	w          fyne.Window
 }
 
 func NewSearchArea(u *BaseUI) *SearchArea {
 	a := &SearchArea{
+		entry:      widget.NewEntry(),
 		indicator:  widget.NewProgressBarInfinite(),
+		message:    widget.NewLabel(""),
 		note:       widget.NewLabel(""),
 		resultTree: fynetree.New[resultNode](),
-		entry:      widget.NewEntry(),
 		u:          u,
 		w:          u.Window,
 	}
@@ -84,7 +86,7 @@ func NewSearchArea(u *BaseUI) *SearchArea {
 		nil,
 		nil,
 		nil,
-		a.tree,
+		container.NewStack(a.tree, container.NewCenter(a.message)),
 	)
 	a.Content = c
 	return a
@@ -181,7 +183,13 @@ func (a *SearchArea) doSearch(search string) {
 		d2.Show()
 		return
 	}
+	if len(results) == 0 {
+		a.message.SetText("No results")
+		a.message.Show()
+		return
+	}
 	categories := []character.SearchCategory{
+		character.SearchAgent,
 		character.SearchAlliance,
 		character.SearchCharacter,
 		character.SearchCorporation,
@@ -213,18 +221,19 @@ func (a *SearchArea) doSearch(search string) {
 	if categoriesFound == 1 {
 		a.tree.OpenAllBranches()
 	}
-	if total < 500 {
-		a.note.Hide()
-	} else {
+	if total == 500 {
 		a.note.SetText(fmt.Sprintf(
 			"Search for \"%s\" exceeded the server limit of 500 results "+
 				"and may not contain the items you are looking for.",
 			search,
 		))
+		a.note.Show()
 	}
 }
 
 func (a *SearchArea) clearTree() {
 	a.resultTree = fynetree.New[resultNode]()
 	a.tree.Refresh()
+	a.message.Hide()
+	a.note.Hide()
 }

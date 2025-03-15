@@ -3,10 +3,12 @@ package character
 import (
 	"context"
 	"log/slog"
+	"maps"
 	"slices"
 	"strings"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -15,6 +17,7 @@ import (
 type SearchCategory string
 
 const (
+	SearchAgent         SearchCategory = "agent"
 	SearchAlliance      SearchCategory = "alliance"
 	SearchCharacter     SearchCategory = "character"
 	SearchCorporation   SearchCategory = "corporation"
@@ -39,6 +42,7 @@ func (s *CharacterService) SearchESI(ctx context.Context, characterID int32, sea
 		return nil, 0, err
 	}
 	categories := []SearchCategory{
+		SearchAgent,
 		SearchAlliance,
 		SearchCharacter,
 		SearchCorporation,
@@ -55,14 +59,14 @@ func (s *CharacterService) SearchESI(ctx context.Context, characterID int32, sea
 	if err != nil {
 		return nil, 0, err
 	}
-	ids := slices.Concat(x.Alliance, x.Character, x.Corporation, x.Faction, x.InventoryType, x.SolarSystem, x.Station)
+	ids := slices.Concat(x.Agent, x.Alliance, x.Character, x.Corporation, x.Faction, x.InventoryType, x.SolarSystem, x.Station)
 	eeMap, err := s.EveUniverseService.ToEveEntities(ctx, ids)
 	if err != nil {
 		slog.Error("SearchESI: resolve IDs to eve entities", "error", err)
 		return nil, 0, err
 	}
-	r := make(map[SearchCategory][]*app.EveEntity)
-	for c, ids := range map[SearchCategory][]int32{
+	categoryMap := map[SearchCategory][]int32{
+		SearchAgent:         x.Agent,
 		SearchAlliance:      x.Alliance,
 		SearchCharacter:     x.Character,
 		SearchCorporation:   x.Corporation,
@@ -70,7 +74,12 @@ func (s *CharacterService) SearchESI(ctx context.Context, characterID int32, sea
 		SearchInventoryType: x.InventoryType,
 		SearchSolarSystem:   x.SolarSystem,
 		SearchStation:       x.Station,
-	} {
+	}
+	if !set.NewFromSlice(categories).Equal(set.Collect(maps.Keys(categoryMap))) {
+		panic("SearchESI: search categories do not match")
+	}
+	r := make(map[SearchCategory][]*app.EveEntity)
+	for c, ids := range categoryMap {
 		for _, id := range ids {
 			r[c] = append(r[c], eeMap[id])
 		}
