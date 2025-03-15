@@ -52,17 +52,17 @@ func TestEveEntityUpdateOrCreate(t *testing.T) {
 }
 
 func TestEveEntity(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, err := r.CreateEveEntity(ctx, 42, "Dummy", app.EveEntityAlliance)
+		_, err := st.CreateEveEntity(ctx, 42, "Dummy", app.EveEntityAlliance)
 		// then
 		if assert.NoError(t, err) {
-			e, err := r.GetEveEntity(ctx, 42)
+			e, err := st.GetEveEntity(ctx, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, e.ID, int32(42))
 				assert.Equal(t, e.Name, "Dummy")
@@ -81,7 +81,7 @@ func TestEveEntity(t *testing.T) {
 				Category: app.EveEntityCharacter,
 			})
 		// when
-		e2, err := r.GetEveEntity(ctx, e1.ID)
+		e2, err := st.GetEveEntity(ctx, e1.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, e1.ID, e2.ID)
@@ -90,7 +90,7 @@ func TestEveEntity(t *testing.T) {
 		}
 	})
 	t.Run("should return error when no object found 1", func(t *testing.T) {
-		_, err := r.GetEveEntity(ctx, 99)
+		_, err := st.GetEveEntity(ctx, 99)
 		assert.ErrorIs(t, err, storage.ErrNotFound)
 	})
 	t.Run("should return objs with matching names in order", func(t *testing.T) {
@@ -101,7 +101,7 @@ func TestEveEntity(t *testing.T) {
 		factory.CreateEveEntityCharacter(app.EveEntity{Name: "charlie"})
 		factory.CreateEveEntityCharacter(app.EveEntity{Name: "other"})
 		// when
-		ee, err := r.ListEveEntitiesByPartialName(ctx, "%ALPHA%")
+		ee, err := st.ListEveEntitiesByPartialName(ctx, "%ALPHA%")
 		// then
 		if assert.NoError(t, err) {
 			var got []string
@@ -119,7 +119,7 @@ func TestEveEntity(t *testing.T) {
 		factory.CreateEveEntity(app.EveEntity{ID: 2})
 		factory.CreateEveEntity(app.EveEntity{ID: 3})
 		// when
-		ee, err := r.ListEveEntitiesForIDs(ctx, []int32{2, 3})
+		ee, err := st.ListEveEntitiesForIDs(ctx, []int32{2, 3})
 		// then
 		if assert.NoError(t, err) {
 			got := slices.Collect(xiter.MapSlice(ee, func(a *app.EveEntity) int32 {
@@ -129,11 +129,34 @@ func TestEveEntity(t *testing.T) {
 			assert.ElementsMatch(t, want, got)
 		}
 	})
+	t.Run("should return objs with matching ids and chunking", func(t *testing.T) {
+		// given
+		old := st.MaxListEveEntitiesForIDs
+		st.MaxListEveEntitiesForIDs = 2
+		defer func() {
+			st.MaxListEveEntitiesForIDs = old
+		}()
+		testutil.TruncateTables(db)
+		factory.CreateEveEntity(app.EveEntity{ID: 1})
+		factory.CreateEveEntity(app.EveEntity{ID: 2})
+		factory.CreateEveEntity(app.EveEntity{ID: 3})
+		factory.CreateEveEntity(app.EveEntity{ID: 4})
+		// when
+		ee, err := st.ListEveEntitiesForIDs(ctx, []int32{2, 3, 4})
+		// then
+		if assert.NoError(t, err) {
+			got := slices.Collect(xiter.MapSlice(ee, func(a *app.EveEntity) int32 {
+				return a.ID
+			}))
+			want := []int32{2, 3, 4}
+			assert.ElementsMatch(t, want, got)
+		}
+	})
 	t.Run("should not store with invalid ID 1", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, err := r.CreateEveEntity(ctx, 0, "Dummy", app.EveEntityAlliance)
+		_, err := st.CreateEveEntity(ctx, 0, "Dummy", app.EveEntityAlliance)
 		// then
 		assert.Error(t, err)
 	})
@@ -141,7 +164,7 @@ func TestEveEntity(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, err := r.GetOrCreateEveEntity(ctx, 0, "Dummy", app.EveEntityAlliance)
+		_, err := st.GetOrCreateEveEntity(ctx, 0, "Dummy", app.EveEntityAlliance)
 		// then
 		assert.Error(t, err)
 	})

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
@@ -148,15 +149,20 @@ func (st *Storage) ListEveEntitiesByName(ctx context.Context, name string) ([]*a
 }
 
 func (st *Storage) ListEveEntitiesForIDs(ctx context.Context, ids []int32) ([]*app.EveEntity, error) {
-	ee, err := st.q.ListEveEntitiesForIDs(ctx, convertNumericSlice[int64](ids))
-	if err != nil {
-		return nil, fmt.Errorf("list eve entities for %d ids: %w", len(ids), err)
+	ids2 := convertNumericSlice[int64](ids)
+	ee := make([]queries.EveEntity, 0)
+	for idsChunk := range slices.Chunk(ids2, st.MaxListEveEntitiesForIDs) {
+		r, err := st.q.ListEveEntitiesForIDs(ctx, idsChunk)
+		if err != nil {
+			return nil, fmt.Errorf("list eve entities for %d ids: %w", len(idsChunk), err)
+		}
+		ee = slices.Concat(ee, r)
 	}
-	ee2 := make([]*app.EveEntity, len(ee))
+	oo := make([]*app.EveEntity, len(ee))
 	for i, e := range ee {
-		ee2[i] = eveEntityFromDBModel(e)
+		oo[i] = eveEntityFromDBModel(e)
 	}
-	return ee2, nil
+	return oo, nil
 }
 
 // MissingEveEntityIDs returns the IDs, which are have no respective EveEntity in the database.

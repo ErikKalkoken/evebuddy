@@ -51,12 +51,9 @@ func (s *EveUniverseService) GetEveAllianceCorporationsESI(ctx context.Context, 
 	if err != nil {
 		return nil, err
 	}
-	oo := make([]*app.EveEntity, len(ids))
-	for i, id := range ids {
-		oo[i], err = s.GetEveEntity(ctx, id)
-		if err != nil {
-			return nil, err
-		}
+	oo, err := s.st.ListEveEntitiesForIDs(ctx, ids)
+	if err != nil {
+		return nil, err
 	}
 	slices.SortFunc(oo, func(a, b *app.EveEntity) int {
 		return strings.Compare(a.Name, b.Name)

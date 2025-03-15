@@ -20,13 +20,19 @@ var ErrNotFound = errors.New("object not found")
 var embedMigrations embed.FS
 
 type Storage struct {
-	q  *queries.Queries
+	MaxListEveEntitiesForIDs int // Max IDs per SQL query
+
 	db *sql.DB
+	q  *queries.Queries
 }
 
 // New returns a new storage object.
 func New(db *sql.DB) *Storage {
-	r := &Storage{q: queries.New(db), db: db}
+	r := &Storage{
+		db:                       db,
+		MaxListEveEntitiesForIDs: 1000,
+		q:                        queries.New(db),
+	}
 	return r
 }
 

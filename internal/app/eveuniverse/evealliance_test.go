@@ -48,4 +48,22 @@ func TestGetEveAllianceCorporationsESI(t *testing.T) {
 			assert.Equal(t, want, got)
 		}
 	})
+	t.Run("should return empty list when there are no corporations", func(t *testing.T) {
+		// given
+		const allianceID = 42
+		testutil.TruncateTables(db)
+		factory.CreateEveEntityAlliance(app.EveEntity{ID: allianceID})
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/alliances/%d/corporations/", allianceID),
+			httpmock.NewJsonResponderOrPanic(200, []int32{}),
+		)
+		// when
+		oo, err := s.GetEveAllianceCorporationsESI(ctx, allianceID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Len(t, oo, 0)
+		}
+	})
 }
