@@ -364,7 +364,14 @@ func (u *DesktopUI) showSearchWindow() {
 		u.searchWindow.Show()
 		return
 	}
-	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Search New Eden"))
+	c := u.CurrentCharacter()
+	var n string
+	if c != nil {
+		n = c.EveCharacter.Name
+	} else {
+		n = "No Character"
+	}
+	w := u.FyneApp.NewWindow(u.MakeWindowTitle(fmt.Sprintf("Search New Eden [%s]", n)))
 	u.searchWindow = w
 	w.SetOnClosed(func() {
 		u.searchWindow = nil

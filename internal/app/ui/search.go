@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -13,7 +14,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -111,7 +111,7 @@ func (a *SearchArea) makeTree() *widget.Tree {
 		},
 		func(b bool) fyne.CanvasObject {
 			name := widget.NewLabel("Template")
-			image := container.NewPadded(iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)))
+			image := container.NewPadded(iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(app.IconUnitSize)))
 			info := iwidget.NewIconButton(theme.InfoIcon(), nil)
 			return container.NewBorder(
 				nil,
@@ -128,19 +128,46 @@ func (a *SearchArea) makeTree() *widget.Tree {
 			}
 			border := co.(*fyne.Container).Objects
 			border[0].(*widget.Label).SetText(v.String())
+			image := border[1].(*fyne.Container).Objects[0].(*canvas.Image)
 			info := border[2].(*iwidget.IconButton)
 			if v.isCategory() {
 				info.Hide()
+				image.Hide()
 				return
 			}
-			image := border[1].(*fyne.Container).Objects[0].(*canvas.Image)
-			appwidget.RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
-				c := v.ee.Category.ToEveImage()
-				if c == "" {
-					return icon.BlankSvg, nil
-				}
-				return a.u.EveImageService.EntityIcon(v.ee.ID, c, app.IconPixelSize)
-			})
+			if imageCategory := v.ee.Category.ToEveImage(); imageCategory != "" {
+				go func() {
+					image.Show()
+					ctx := context.Background()
+					res, err := func() (fyne.Resource, error) {
+						switch v.ee.Category {
+						case app.EveEntityInventoryType:
+							et, err := a.u.EveUniverseService.GetOrCreateEveTypeESI(ctx, v.ee.ID)
+							if err != nil {
+								return nil, err
+							}
+							switch et.Group.Category.ID {
+							case app.EveCategorySKINs:
+								return a.u.EveImageService.InventoryTypeSKIN(et.ID, app.IconPixelSize)
+							case app.EveCategoryBlueprint:
+								return a.u.EveImageService.InventoryTypeBPO(et.ID, app.IconPixelSize)
+							default:
+								return a.u.EveImageService.InventoryTypeIcon(et.ID, app.IconPixelSize)
+							}
+						default:
+							return a.u.EveImageService.EntityIcon(v.ee.ID, imageCategory, app.IconPixelSize)
+						}
+					}()
+					if err != nil {
+						res = theme.BrokenImageIcon()
+						slog.Error("failed to load image", "error", err)
+					}
+					image.Resource = res
+					image.Refresh()
+				}()
+			} else {
+				image.Hide()
+			}
 			if supportedCategories.Contains(v.ee.Category) {
 				info.OnTapped = func() {
 					iw := infowindow.New(a.u.CurrentCharacterID, a.u.CharacterService, a.u.EveUniverseService, a.u.EveImageService, a.w)
@@ -150,7 +177,6 @@ func (a *SearchArea) makeTree() *widget.Tree {
 			} else {
 				info.Hide()
 			}
-
 		},
 	)
 	t.OnSelected = func(uid widget.TreeNodeID) {

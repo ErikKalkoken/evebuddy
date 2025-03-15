@@ -304,7 +304,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 
 	// info destination
 	searchNav := iwidget.NewNavigator(
-		iwidget.NewAppBar("Search", u.SearchArea.Content),
+		newCharacterAppBar("Search", u.SearchArea.Content),
 	)
 
 	// more destination
