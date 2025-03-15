@@ -19,6 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 // TODO: Mobile: Add column sort
@@ -59,7 +60,7 @@ type AssetSearchArea struct {
 	characterNames  map[int32]string
 	colSort         []assetSortDir
 	found           *widget.Label
-	searchEntry     *widget.Entry
+	entry           *widget.Entry
 	total           *widget.Label
 	u               *BaseUI
 }
@@ -67,23 +68,23 @@ type AssetSearchArea struct {
 func NewAssetSearchArea(u *BaseUI) *AssetSearchArea {
 	a := &AssetSearchArea{
 		assetsFiltered: make([]*assetSearchRow, 0),
-		searchEntry:    widget.NewEntry(),
+		entry:          widget.NewEntry(),
 		found:          widget.NewLabel(""),
 		total:          MakeTopLabel(),
 		u:              u,
 	}
-	a.searchEntry.ActionItem = widget.NewIcon(theme.SearchIcon())
-	a.searchEntry.OnChanged = func(s string) {
-		a.processData(-1)
-	}
-	a.total.TextStyle.Bold = true
-	a.found.Hide()
-	reset := widget.NewButton("Reset", func() {
+	a.entry.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.resetSearch()
 	})
+	a.entry.OnChanged = func(s string) {
+		a.processData(-1)
+	}
+	a.entry.PlaceHolder = "Search assets"
+	a.total.TextStyle.Bold = true
+	a.found.Hide()
 	topBox := container.NewVBox(
 		container.NewBorder(nil, nil, nil, a.found, a.total),
-		container.NewBorder(nil, nil, nil, reset, a.searchEntry),
+		a.entry,
 		widget.NewSeparator(),
 	)
 	var headers = []headerDef{
@@ -138,7 +139,7 @@ func NewAssetSearchArea(u *BaseUI) *AssetSearchArea {
 }
 
 func (a *AssetSearchArea) Focus() {
-	a.u.Window.Canvas().Focus(a.searchEntry)
+	a.u.Window.Canvas().Focus(a.entry)
 }
 
 func (a *AssetSearchArea) makeTable(
@@ -230,7 +231,7 @@ func (a *AssetSearchArea) processData(sortCol int) {
 		}
 	}
 	rows := make([]*assetSearchRow, 0)
-	search := a.searchEntry.Text
+	search := a.entry.Text
 	for _, r := range a.assets {
 		var matches bool
 		if search == "" {
@@ -282,7 +283,7 @@ func (a *AssetSearchArea) resetSearch() {
 	for i := range a.colSort {
 		a.colSort[i] = sortOff
 	}
-	a.searchEntry.SetText("")
+	a.entry.SetText("")
 	a.processData(-1)
 }
 

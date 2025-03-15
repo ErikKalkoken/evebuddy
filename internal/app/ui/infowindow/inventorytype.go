@@ -61,7 +61,7 @@ type inventoryTypeArea struct {
 func NewInventoryTypeArea(iw InfoWindow, typeID, characterID int32, w fyne.Window) (*inventoryTypeArea, error) {
 	ctx := context.Background()
 	a := &inventoryTypeArea{iw: iw, w: w}
-	et, err := iw.eus.GetEveType(ctx, typeID)
+	et, err := iw.eus.GetOrCreateEveTypeESI(ctx, typeID)
 	if err != nil {
 		return nil, err
 	}

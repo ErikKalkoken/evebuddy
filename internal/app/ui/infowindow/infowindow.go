@@ -2,12 +2,14 @@ package infowindow
 
 import (
 	"fmt"
+	"log/slog"
 	"maps"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
@@ -114,7 +116,10 @@ func (iw InfoWindow) Show(t InfoVariant, id int64) {
 			// TODO: Restructure, so that window is first drawn empty and content loaded in background (as other info windo)
 			a, err := NewInventoryTypeArea(iw, int32(id), iw.currentCharacterID(), w)
 			if err != nil {
-				panic(err)
+				slog.Error("show type", "error", err)
+				l := widget.NewLabel(fmt.Sprintf("ERROR: Can not create info window: %s", err))
+				l.Importance = widget.DangerImportance
+				return l
 			}
 			w.SetTitle(a.MakeTitle("Information"))
 			return a.Content
