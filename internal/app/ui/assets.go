@@ -23,7 +23,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type locationNodeType uint
@@ -77,7 +76,7 @@ type AssetsArea struct {
 	assetsBottom     *widget.Label
 	locationPath     *widget.Label
 	locationsTop     *widget.Label
-	locations        *iwidget.Tree[locationNode]
+	locations        *fynetree.Tree[locationNode]
 	selectedLocation optional.Optional[locationNode]
 	u                *BaseUI
 }
@@ -116,14 +115,14 @@ func NewAssetsArea(u *BaseUI) *AssetsArea {
 	return &a
 }
 
-func (a *AssetsArea) makeLocationsTree() *iwidget.Tree[locationNode] {
+func (a *AssetsArea) makeLocationsTree() *fynetree.Tree[locationNode] {
 	makeNameWithCount := func(name string, count int) string {
 		if count == 0 {
 			return name
 		}
 		return fmt.Sprintf("%s (%s)", name, humanize.Comma(int64(count)))
 	}
-	t := iwidget.NewTree[locationNode](
+	t := fynetree.NewTree(
 		func(branch bool) fyne.CanvasObject {
 			iconInfo := kxwidget.NewTappableIcon(theme.InfoIcon(), nil)
 			main := widget.NewLabel("Location")
@@ -280,9 +279,9 @@ func (a *AssetsArea) Redraw() {
 	}
 }
 
-func (a *AssetsArea) newLocationData() (*fynetree.FyneTree[locationNode], error) {
+func (a *AssetsArea) newLocationData() (*fynetree.TreeData[locationNode], error) {
 	ctx := context.TODO()
-	tree := fynetree.New[locationNode]()
+	tree := fynetree.NewTreeData[locationNode]()
 	if !a.u.HasCharacter() {
 		return tree, nil
 	}

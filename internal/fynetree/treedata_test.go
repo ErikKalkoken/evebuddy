@@ -20,7 +20,7 @@ func (n myNode) UID() widget.TreeNodeID {
 func TestFyneTree(t *testing.T) {
 	t.Parallel()
 	t.Run("can create tree", func(t *testing.T) {
-		tree := fynetree.New[myNode]()
+		tree := fynetree.NewTreeData[myNode]()
 		n1 := tree.MustAdd("", myNode{"1", "Alpha"})
 		n11 := tree.MustAdd(n1, myNode{"11", "one"})
 		n12 := tree.MustAdd(n1, myNode{"12", "two"})
@@ -49,7 +49,7 @@ func TestFyneTree(t *testing.T) {
 func TestFyneTreeAdd(t *testing.T) {
 	t.Parallel()
 	t.Run("can add a node 1", func(t *testing.T) {
-		tree := fynetree.New[myNode]()
+		tree := fynetree.NewTreeData[myNode]()
 		n := myNode{"1", "Alpha"}
 		uid, err := tree.Add("", n)
 		if assert.NoError(t, err) {
@@ -57,24 +57,24 @@ func TestFyneTreeAdd(t *testing.T) {
 		}
 	})
 	t.Run("can add a node 2", func(t *testing.T) {
-		tree := fynetree.New[myNode]()
+		tree := fynetree.NewTreeData[myNode]()
 		n := myNode{"1", "Alpha"}
 		uid := tree.MustAdd("", n)
 		assert.Equal(t, n, tree.MustNode(uid))
 	})
 	t.Run("should return error when node parent UID does not exist", func(t *testing.T) {
-		tree := fynetree.New[myNode]()
+		tree := fynetree.NewTreeData[myNode]()
 		_, err := tree.Add("invalid", myNode{"1", "Alpha"})
 		assert.Error(t, err)
 	})
 	t.Run("should return error when node UID already exists", func(t *testing.T) {
-		tree := fynetree.New[myNode]()
+		tree := fynetree.NewTreeData[myNode]()
 		tree.MustAdd("", myNode{"1", "Alpha"})
 		_, err := tree.Add("", myNode{"1", "Bravo"})
 		assert.Error(t, err)
 	})
 	t.Run("should panic when node node can not be added", func(t *testing.T) {
-		tree := fynetree.New[myNode]()
+		tree := fynetree.NewTreeData[myNode]()
 		assert.Panics(t, func() {
 			tree.MustAdd("invalid", myNode{"1", "Alpha"})
 		})
@@ -84,25 +84,14 @@ func TestFyneTreeAdd(t *testing.T) {
 func TestFyneTreeValue(t *testing.T) {
 	t.Parallel()
 	t.Run("can return a node", func(t *testing.T) {
-		tree := fynetree.New[myNode]()
+		tree := fynetree.NewTreeData[myNode]()
 		n1 := myNode{"1", "Alpha"}
 		uid := tree.MustAdd("", n1)
 		n2 := tree.MustNode(uid)
 		assert.Equal(t, n1, n2)
 	})
-	// t.Run("should return value when node exists", func(t *testing.T) {
-	// 	tree := fynetree.New[myNode]()
-	// 	uid := tree.MustAdd("", myNode{"1", "Alpha"})
-	// 	v := tree.ValueWithFallback(uid, "Fallback")
-	// 	assert.Equal(t, "Alpha", v)
-	// })
-	// t.Run("should return fallback when a node does not exist", func(t *testing.T) {
-	// 	tree := fynetree.New[myNode]()
-	// 	v := tree.ValueWithFallback("invalid", "Fallback")
-	// 	assert.Equal(t, "Fallback", v)
-	// })
 	t.Run("should return node when it exists", func(t *testing.T) {
-		tree := fynetree.New[myNode]()
+		tree := fynetree.NewTreeData[myNode]()
 		n1 := myNode{"1", "Alpha"}
 		uid := tree.MustAdd("", n1)
 		n2, ok := tree.Node(uid)
@@ -111,26 +100,26 @@ func TestFyneTreeValue(t *testing.T) {
 
 	})
 	t.Run("should report when node does not exist", func(t *testing.T) {
-		tree := fynetree.New[myNode]()
+		tree := fynetree.NewTreeData[myNode]()
 		_, ok := tree.Node("invalid")
 		assert.False(t, ok)
 	})
 	t.Run("should panic when node does not exist", func(t *testing.T) {
-		tree := fynetree.New[myNode]()
+		tree := fynetree.NewTreeData[myNode]()
 		assert.Panics(t, func() {
 			tree.MustNode("invalid")
 
 		})
 	})
 	t.Run("can return parent of a top node", func(t *testing.T) {
-		tree := fynetree.New[myNode]()
+		tree := fynetree.NewTreeData[myNode]()
 		uid := tree.MustAdd("", myNode{"1", "Alpha"})
 		p, ok := tree.Parent(uid)
 		assert.True(t, ok)
 		assert.Equal(t, "", p)
 	})
 	t.Run("can return parent of a random node", func(t *testing.T) {
-		tree := fynetree.New[myNode]()
+		tree := fynetree.NewTreeData[myNode]()
 		uid1 := tree.MustAdd("", myNode{"1", "Alpha"})
 		uid2 := tree.MustAdd(uid1, myNode{"2", "Bravo"})
 		p, ok := tree.Parent(uid2)
@@ -138,7 +127,7 @@ func TestFyneTreeValue(t *testing.T) {
 		assert.Equal(t, uid1, p)
 	})
 	t.Run("can report when a parent does not exist", func(t *testing.T) {
-		tree := fynetree.New[myNode]()
+		tree := fynetree.NewTreeData[myNode]()
 		_, ok := tree.Parent("1")
 		assert.False(t, ok)
 	})
@@ -147,7 +136,7 @@ func TestFyneTreeValue(t *testing.T) {
 func TestFyneTreePath(t *testing.T) {
 	t.Parallel()
 	t.Run("should return path for an existing node", func(t *testing.T) {
-		tree := fynetree.New[myNode]()
+		tree := fynetree.NewTreeData[myNode]()
 		uid1 := tree.MustAdd("", myNode{"1", "Alpha"})
 		uid2 := tree.MustAdd(uid1, myNode{"2", "Bravo"})
 		uid3 := tree.MustAdd(uid2, myNode{"3", "Charlie"})
@@ -155,12 +144,12 @@ func TestFyneTreePath(t *testing.T) {
 		assert.Equal(t, []widget.TreeNodeID{uid1, uid2}, p)
 	})
 	t.Run("should return empty array for root node", func(t *testing.T) {
-		tree := fynetree.New[myNode]()
+		tree := fynetree.NewTreeData[myNode]()
 		p := tree.Path("")
 		assert.Equal(t, []widget.TreeNodeID{}, p)
 	})
 	t.Run("should return empty array for a top node", func(t *testing.T) {
-		tree := fynetree.New[myNode]()
+		tree := fynetree.NewTreeData[myNode]()
 		uid := tree.MustAdd("", myNode{"1", "Alpha"})
 		p := tree.Path(uid)
 		assert.Equal(t, []widget.TreeNodeID{}, p)

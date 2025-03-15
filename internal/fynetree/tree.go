@@ -1,28 +1,26 @@
-package widget
+package fynetree
 
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 )
 
-// Tree is a simplified tree widget that is defined with a Fynetree.
-type Tree[T fynetree.TreeNode] struct {
+// Tree is a simplified tree widget for the Fyne GUI toolkit.
+type Tree[T TreeNode] struct {
 	widget.BaseWidget
 
 	OnSelected func(n T)
 
-	data *fynetree.FyneTree[T]
+	data *TreeData[T]
 	tree *widget.Tree
 }
 
-func NewTree[T fynetree.TreeNode](
+func NewTree[T TreeNode](
 	create func(b bool) fyne.CanvasObject,
 	update func(n T, b bool, co fyne.CanvasObject),
 ) *Tree[T] {
 	w := &Tree[T]{
-		data: fynetree.New[T](),
+		data: NewTreeData[T](),
 	}
 	w.tree = widget.NewTree(
 		func(uid widget.TreeNodeID) []widget.TreeNodeID {
@@ -54,16 +52,16 @@ func NewTree[T fynetree.TreeNode](
 }
 
 func (w *Tree[T]) Clear() {
-	w.data = fynetree.New[T]()
+	w.data = NewTreeData[T]()
 	w.Refresh()
 }
 
-func (w *Tree[T]) Set(data *fynetree.FyneTree[T]) {
+func (w *Tree[T]) Set(data *TreeData[T]) {
 	w.data = data
 	w.Refresh()
 }
 
-func (w *Tree[T]) Data() *fynetree.FyneTree[T] {
+func (w *Tree[T]) Data() *TreeData[T] {
 	return w.data
 }
 

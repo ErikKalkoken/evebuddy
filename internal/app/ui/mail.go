@@ -100,7 +100,7 @@ type MailArea struct {
 
 	body          *widget.Label
 	folderSection fyne.CanvasObject
-	folders       *iwidget.Tree[FolderNode]
+	folders       *fynetree.Tree[FolderNode]
 	header        *appwidget.MailHeader
 	headerList    *widget.List
 	headers       []*app.CharacterMailHeader
@@ -154,8 +154,8 @@ func NewMailArea(u *BaseUI) *MailArea {
 	return a
 }
 
-func (a *MailArea) makeFolderTree() *iwidget.Tree[FolderNode] {
-	tree := iwidget.NewTree[FolderNode](
+func (a *MailArea) makeFolderTree() *fynetree.Tree[FolderNode] {
+	tree := fynetree.NewTree(
 		func(isBranch bool) fyne.CanvasObject {
 			return container.NewHBox(
 				widget.NewIcon(icon.BlankSvg),
@@ -232,7 +232,7 @@ func (a *MailArea) Refresh() {
 }
 
 func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
-	tree := fynetree.New[FolderNode]()
+	tree := fynetree.NewTreeData[FolderNode]()
 	if characterID == 0 {
 		a.folders.Clear()
 		return emptyFolder, nil

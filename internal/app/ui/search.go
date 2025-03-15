@@ -47,7 +47,7 @@ type SearchArea struct {
 	indicator *widget.ProgressBarInfinite
 	entry     *widget.Entry
 	note      *widget.Label
-	tree      *iwidget.Tree[resultNode]
+	tree      *fynetree.Tree[resultNode]
 	message   *widget.Label
 	u         *BaseUI
 	w         fyne.Window
@@ -98,9 +98,9 @@ func (a *SearchArea) Focus() {
 	a.w.Canvas().Focus(a.entry)
 }
 
-func (a *SearchArea) makeTree() *iwidget.Tree[resultNode] {
+func (a *SearchArea) makeTree() *fynetree.Tree[resultNode] {
 	supportedCategories := infowindow.SupportedEveEntities()
-	t := iwidget.NewTree(
+	t := fynetree.NewTree(
 		func(b bool) fyne.CanvasObject {
 			name := widget.NewLabel("Template")
 			image := container.NewPadded(iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(app.IconUnitSize)))
@@ -208,7 +208,7 @@ func (a *SearchArea) doSearch(search string) {
 		character.SearchSolarSystem,
 		character.SearchStation,
 	}
-	t := fynetree.New[resultNode]()
+	t := fynetree.NewTreeData[resultNode]()
 	var categoriesFound int
 	for _, c := range categories {
 		_, ok := results[c]

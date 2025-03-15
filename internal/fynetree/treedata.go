@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	RootUID = ""
+	RootUID widget.TreeNodeID = ""
 )
 
 // TreeNode represents a node in a Fyne tree.
@@ -17,65 +17,61 @@ type TreeNode interface {
 	UID() widget.TreeNodeID
 }
 
-// FyneTree is a type that holds all data needed to render a Fyne tree widget.
+// TreeData is a type that holds all data needed to render a Fyne tree widget.
 //
 // It is designed to make it easier to construct the data for tree widgets
 // and it's method are supposed to be used directly inside the functions
 // for creating and updating a fyne tree.
 //
-// It is not recommended to update an existing tree, while it is being used by a tree widget.
-// This can lead to data races. Instead, create and update a new object
-// and then replace the old object once the update is complete.
-//
-// Nodes can be of any type.
-//
-// Nodes that have child nodes are reported as branches.
+// Please note that nodes that have child nodes are always reported as branches.
 // This means there can not be any empty branch nodes.
-type FyneTree[T TreeNode] struct {
+//
+// This type is not thread safe.
+type TreeData[T TreeNode] struct {
 	ids     map[widget.TreeNodeID][]widget.TreeNodeID
 	parents map[widget.TreeNodeID]widget.TreeNodeID
-	values  map[widget.TreeNodeID]T
+	nodes   map[widget.TreeNodeID]T
 }
 
-// New returns a new FyneTree object.
-func New[T TreeNode]() *FyneTree[T] {
-	t := &FyneTree[T]{
+// NewTreeData returns a new TreeData object.
+func NewTreeData[T TreeNode]() *TreeData[T] {
+	t := &TreeData[T]{
 		ids:     make(map[widget.TreeNodeID][]widget.TreeNodeID),
 		parents: make(map[widget.TreeNodeID]widget.TreeNodeID),
-		values:  make(map[widget.TreeNodeID]T),
+		nodes:   make(map[widget.TreeNodeID]T),
 	}
 	return t
 }
 
 // Add adds a node safely. It returns it's UID or an error if the node can not be added.
 //
-// Use "" as parentUID for adding nodes at the top level.
+// Use [RootUID] as parentUID for adding nodes at the top level.
 // Nodes will be rendered in the same order as they are added.
-func (t *FyneTree[T]) Add(parentUID widget.TreeNodeID, node T) (widget.TreeNodeID, error) {
+func (t *TreeData[T]) Add(parentUID widget.TreeNodeID, node T) (widget.TreeNodeID, error) {
 	if parentUID != "" {
-		_, found := t.values[parentUID]
+		_, found := t.nodes[parentUID]
 		if !found {
 			return "", fmt.Errorf("parent node does not exist: %s", parentUID)
 		}
 	}
 	uid := node.UID()
-	_, found := t.values[uid]
+	_, found := t.nodes[uid]
 	if found {
 		return "", fmt.Errorf("this node already exists: %+v", node)
 	}
 	t.ids[parentUID] = append(t.ids[parentUID], uid)
-	t.values[uid] = node
+	t.nodes[uid] = node
 	t.parents[uid] = parentUID
 	return uid, nil
 }
 
 // ChildUIDs returns the child UIDs of a node.
-func (t *FyneTree[T]) ChildUIDs(uid widget.TreeNodeID) []widget.TreeNodeID {
+func (t *TreeData[T]) ChildUIDs(uid widget.TreeNodeID) []widget.TreeNodeID {
 	return t.ids[uid]
 }
 
 // FIXME: Method does not return full tree
-func (t *FyneTree[T]) Flat() []T {
+func (t *TreeData[T]) Flat() []T {
 	var s []T
 	uid := ""
 	for _, id := range t.ChildUIDs(uid) {
@@ -85,13 +81,13 @@ func (t *FyneTree[T]) Flat() []T {
 }
 
 // IsBranch reports wether a node is a branch.
-func (t *FyneTree[T]) IsBranch(uid widget.TreeNodeID) bool {
+func (t *TreeData[T]) IsBranch(uid widget.TreeNodeID) bool {
 	_, found := t.ids[uid]
 	return found
 }
 
-// MustAdd is like Add, but panics if adding fails.
-func (t *FyneTree[T]) MustAdd(parentUID widget.TreeNodeID, node T) widget.TreeNodeID {
+// MustAdd adds a node or panics if the node can not be added.
+func (t *TreeData[T]) MustAdd(parentUID widget.TreeNodeID, node T) widget.TreeNodeID {
 	uid, err := t.Add(parentUID, node)
 	if err != nil {
 		panic(err)
@@ -99,9 +95,9 @@ func (t *FyneTree[T]) MustAdd(parentUID widget.TreeNodeID, node T) widget.TreeNo
 	return uid
 }
 
-// MustNode returns the value of a node or panics if the node does not exist.
+// MustNode returns a node or panics if the node does not exist.
 // This method mainly exists to simplify test code and should not be used in production code.
-func (t *FyneTree[T]) MustNode(uid widget.TreeNodeID) T {
+func (t *TreeData[T]) MustNode(uid widget.TreeNodeID) T {
 	v, ok := t.Node(uid)
 	if !ok {
 		panic(fmt.Sprintf("node %s does not exist", uid))
@@ -110,7 +106,7 @@ func (t *FyneTree[T]) MustNode(uid widget.TreeNodeID) T {
 }
 
 // Path returns the UIDs of nodes between a given node and the root.
-func (t *FyneTree[T]) Path(uid widget.TreeNodeID) []widget.TreeNodeID {
+func (t *TreeData[T]) Path(uid widget.TreeNodeID) []widget.TreeNodeID {
 	path := make([]widget.TreeNodeID, 0)
 	for {
 		uid = t.parents[uid]
@@ -124,37 +120,28 @@ func (t *FyneTree[T]) Path(uid widget.TreeNodeID) []widget.TreeNodeID {
 }
 
 // Parent returns the UID of the parent node.
-func (t *FyneTree[T]) Parent(uid widget.TreeNodeID) (parent widget.TreeNodeID, ok bool) {
+func (t *TreeData[T]) Parent(uid widget.TreeNodeID) (parent widget.TreeNodeID, ok bool) {
 	parent, ok = t.parents[uid]
 	return
 }
 
 // Size returns the number of nodes in the tree
-func (t *FyneTree[T]) Size() int {
-	return len(t.values)
+func (t *TreeData[T]) Size() int {
+	return len(t.nodes)
 }
 
-// Node returns a node and reports whether it exists
+// Node returns a node by UID and reports whether it exists.
 //
 // Note that when using this method with a Fyne widget it is possible,
 // that a UID forwarded by the widget no longer exists due to race conditions.
 // It is therefore recommended to always check the ok value.
-func (t *FyneTree[T]) Node(uid widget.TreeNodeID) (node T, ok bool) {
+func (t *TreeData[T]) Node(uid widget.TreeNodeID) (node T, ok bool) {
 	node, ok = t.node(uid)
 	return
 }
 
-// // Value returns the value of a node or a fallback value.
-// func (t *FyneTree[T]) ValueWithFallback(uid widget.TreeNodeID, fallback T) T {
-// 	v, ok := t.value(uid)
-// 	if !ok {
-// 		return fallback
-// 	}
-// 	return v
-// }
-
-// Value returns the node of a node and a test flag reporting wether the node exists.
-func (t *FyneTree[T]) node(uid widget.TreeNodeID) (T, bool) {
-	v, ok := t.values[uid]
+// node returns a node by UID and reports whether it exists.
+func (t *TreeData[T]) node(uid widget.TreeNodeID) (T, bool) {
+	v, ok := t.nodes[uid]
 	return v, ok
 }

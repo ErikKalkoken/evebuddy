@@ -55,7 +55,7 @@ type JumpClonesArea struct {
 	OnReDraw func(clonesCount int)
 
 	top  *widget.RichText
-	tree *iwidget.Tree[jumpCloneNode]
+	tree *fynetree.Tree[jumpCloneNode]
 	u    *BaseUI
 }
 
@@ -72,8 +72,8 @@ func NewJumpClonesArea(u *BaseUI) *JumpClonesArea {
 	return &a
 }
 
-func (a *JumpClonesArea) makeTree() *iwidget.Tree[jumpCloneNode] {
-	t := iwidget.NewTree(
+func (a *JumpClonesArea) makeTree() *fynetree.Tree[jumpCloneNode] {
+	t := fynetree.NewTree(
 		func(branch bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(
 				icon.Characterplaceholder64Jpeg,
@@ -161,8 +161,8 @@ func (a *JumpClonesArea) Redraw() {
 	}
 }
 
-func (a *JumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error) {
-	tree := fynetree.New[jumpCloneNode]()
+func (a *JumpClonesArea) newTreeData() (*fynetree.TreeData[jumpCloneNode], error) {
+	tree := fynetree.NewTreeData[jumpCloneNode]()
 	if !a.u.HasCharacter() {
 		return tree, nil
 	}
