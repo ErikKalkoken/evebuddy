@@ -72,7 +72,7 @@ func (st *Storage) MissingEveTypes(ctx context.Context, ids []int32) ([]int32, e
 	if err != nil {
 		return nil, err
 	}
-	current := set.NewFromSlice(convertNumericSlice[int64, int32](currentIDs))
+	current := set.NewFromSlice(convertNumericSlice[int32](currentIDs))
 	incoming := set.NewFromSlice(ids)
 	missing := incoming.Difference(current)
 	return missing.ToSlice(), nil

@@ -14,7 +14,7 @@ import (
 func (st *Storage) DeleteCharacterSkills(ctx context.Context, characterID int32, eveTypeIDs []int32) error {
 	arg := queries.DeleteCharacterSkillsParams{
 		CharacterID: int64(characterID),
-		EveTypeIds:  convertNumericSlice[int32, int64](eveTypeIDs),
+		EveTypeIds:  convertNumericSlice[int64](eveTypeIDs),
 	}
 	err := st.q.DeleteCharacterSkills(ctx, arg)
 	if err != nil {
@@ -44,7 +44,7 @@ func (st *Storage) ListCharacterSkillIDs(ctx context.Context, characterID int32)
 	if err != nil {
 		return nil, fmt.Errorf("list skill ids for character %d: %w", characterID, err)
 	}
-	ids2 := set.NewFromSlice(convertNumericSlice[int64, int32](ids1))
+	ids2 := set.NewFromSlice(convertNumericSlice[int32](ids1))
 	return ids2, nil
 }
 

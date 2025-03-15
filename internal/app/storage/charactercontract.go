@@ -170,7 +170,7 @@ func (st *Storage) ListCharacterContractIDs(ctx context.Context, characterID int
 	if err != nil {
 		return nil, fmt.Errorf("list contract ids for character %d: %w", characterID, err)
 	}
-	return convertNumericSlice[int64, int32](ids), nil
+	return convertNumericSlice[int32](ids), nil
 }
 
 func (st *Storage) ListCharacterContracts(ctx context.Context, characterID int32) ([]*app.CharacterContract, error) {

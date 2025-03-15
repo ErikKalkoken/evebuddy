@@ -131,7 +131,7 @@ func (st *Storage) ListEveEntityIDs(ctx context.Context) (set.Set[int32], error)
 	if err != nil {
 		return nil, fmt.Errorf("list eve entity id: %w", err)
 	}
-	ids2 := set.NewFromSlice(convertNumericSlice[int64, int32](ids))
+	ids2 := set.NewFromSlice(convertNumericSlice[int32](ids))
 	return ids2, nil
 }
 
@@ -148,7 +148,7 @@ func (st *Storage) ListEveEntitiesByName(ctx context.Context, name string) ([]*a
 }
 
 func (st *Storage) ListEveEntitiesForIDs(ctx context.Context, ids []int32) ([]*app.EveEntity, error) {
-	ee, err := st.q.ListEveEntitiesForIDs(ctx, convertNumericSlice[int32, int64](ids))
+	ee, err := st.q.ListEveEntitiesForIDs(ctx, convertNumericSlice[int64](ids))
 	if err != nil {
 		return nil, fmt.Errorf("list eve entities for %d ids: %w", len(ids), err)
 	}

@@ -97,7 +97,7 @@ func (st *Storage) ListEveCharacterIDs(ctx context.Context) (set.Set[int32], err
 	if err != nil {
 		return nil, fmt.Errorf("list EveCharacterIDs: %w", err)
 	}
-	ids2 := set.NewFromSlice(convertNumericSlice[int64, int32](ids))
+	ids2 := set.NewFromSlice(convertNumericSlice[int32](ids))
 	return ids2, nil
 }
 
