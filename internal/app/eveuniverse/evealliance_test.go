@@ -36,7 +36,7 @@ func TestGetEveAllianceCorporationsESI(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/alliances/%d/corporations/", allianceID),
-			httpmock.NewJsonResponderOrPanic(200, []int32{101, 102}),
+			httpmock.NewJsonResponderOrPanic(200, []int32{102, 103}),
 		)
 		// when
 		oo, err := s.GetEveAllianceCorporationsESI(ctx, allianceID)
@@ -45,7 +45,7 @@ func TestGetEveAllianceCorporationsESI(t *testing.T) {
 			got := slices.Collect(xiter.MapSlice(oo, func(a *app.EveEntity) int32 {
 				return a.ID
 			}))
-			want := []int32{102, 101}
+			want := []int32{103, 102}
 			assert.Equal(t, want, got)
 		}
 	})
