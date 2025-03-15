@@ -63,6 +63,10 @@ func (w *Tree[T]) Set(data *fynetree.FyneTree[T]) {
 	w.Refresh()
 }
 
+func (w *Tree[T]) Data() *fynetree.FyneTree[T] {
+	return w.data
+}
+
 func (w *Tree[T]) OpenAllBranches() {
 	w.tree.OpenAllBranches()
 }
@@ -81,6 +85,18 @@ func (w *Tree[T]) CloseBranch(n T) {
 
 func (w *Tree[T]) ToggleBranch(n T) {
 	w.tree.ToggleBranch(n.UID())
+}
+
+func (w *Tree[T]) ScrollToTop() {
+	w.tree.ScrollToTop()
+}
+
+func (w *Tree[T]) ScrollTo(n T) {
+	w.tree.ScrollTo(n.UID())
+}
+
+func (w *Tree[T]) Select(n T) {
+	w.tree.Select(n.UID())
 }
 
 func (w *Tree[T]) UnselectAll() {

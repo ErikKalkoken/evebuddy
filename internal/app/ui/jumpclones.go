@@ -54,34 +54,26 @@ type JumpClonesArea struct {
 	Content  *fyne.Container
 	OnReDraw func(clonesCount int)
 
-	top        *widget.RichText
-	treeData   *fynetree.FyneTree[jumpCloneNode]
-	treeWidget *widget.Tree
-	u          *BaseUI
+	top  *widget.RichText
+	tree *iwidget.Tree[jumpCloneNode]
+	u    *BaseUI
 }
 
 func NewJumpClonesArea(u *BaseUI) *JumpClonesArea {
 	ntop := widget.NewRichText()
 	ntop.Wrapping = fyne.TextWrapWord
 	a := JumpClonesArea{
-		top:      ntop,
-		treeData: fynetree.New[jumpCloneNode](),
-		u:        u,
+		top: ntop,
+		u:   u,
 	}
-	a.treeWidget = a.makeTree()
+	a.tree = a.makeTree()
 	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.Content = container.NewBorder(top, nil, nil, nil, a.treeWidget)
+	a.Content = container.NewBorder(top, nil, nil, nil, a.tree)
 	return &a
 }
 
-func (a *JumpClonesArea) makeTree() *widget.Tree {
-	t := widget.NewTree(
-		func(uid widget.TreeNodeID) []widget.TreeNodeID {
-			return a.treeData.ChildUIDs(uid)
-		},
-		func(uid widget.TreeNodeID) bool {
-			return a.treeData.IsBranch(uid)
-		},
+func (a *JumpClonesArea) makeTree() *iwidget.Tree[jumpCloneNode] {
+	t := iwidget.NewTree(
 		func(branch bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(
 				icon.Characterplaceholder64Jpeg,
@@ -101,11 +93,7 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 				main,
 			)
 		},
-		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
-			n, ok := a.treeData.Node(uid)
-			if !ok {
-				return
-			}
+		func(n jumpCloneNode, b bool, co fyne.CanvasObject) {
 			border := co.(*fyne.Container).Objects
 			main := border[0].(*widget.Label)
 			hbox := border[1].(*fyne.Container).Objects
@@ -147,7 +135,7 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 			}
 		},
 	)
-	t.OnSelected = func(uid widget.TreeNodeID) {
+	t.OnSelected = func(n jumpCloneNode) {
 		defer t.UnselectAll()
 	}
 	return t
@@ -167,8 +155,7 @@ func (a *JumpClonesArea) Redraw() {
 	} else {
 		a.RefreshTop()
 	}
-	a.treeData = tree
-	a.treeWidget.Refresh()
+	a.tree.Set(tree)
 	if a.OnReDraw != nil {
 		a.OnReDraw(a.ClonesCount())
 	}
@@ -284,10 +271,7 @@ func (a *JumpClonesArea) RefreshTop() {
 }
 
 func (a *JumpClonesArea) ClonesCount() int {
-	if a.treeData == nil {
-		return 0
-	}
-	return len(a.treeData.ChildUIDs(""))
+	return len(a.tree.Data().ChildUIDs(""))
 }
 
 func (a *JumpClonesArea) StartUpdateTicker() {
