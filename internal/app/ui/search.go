@@ -10,13 +10,12 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 type resultNode struct {
@@ -182,25 +181,24 @@ func (a *SearchArea) doSearch(search string) {
 		d2.Show()
 		return
 	}
-	categories := []app.EveEntityCategory{
-		app.EveEntityAlliance,
-		app.EveEntityCharacter,
-		app.EveEntityCorporation,
-		app.EveEntityFaction,
-		app.EveEntityInventoryType,
-		app.EveEntitySolarSystem,
-		app.EveEntityStation,
+	categories := []character.SearchCategory{
+		character.SearchAlliance,
+		character.SearchCharacter,
+		character.SearchCorporation,
+		character.SearchFaction,
+		character.SearchInventoryType,
+		character.SearchSolarSystem,
+		character.SearchStation,
 	}
 	t := fynetree.New[resultNode]()
 	var categoriesFound int
-	titler := cases.Title(language.English)
 	for _, c := range categories {
 		_, ok := results[c]
 		if !ok {
 			continue
 		}
 		categoriesFound++
-		n := resultNode{category: titler.String(fmt.Sprintf("%s (%d)", c.String(), len(results[c])))}
+		n := resultNode{category: fmt.Sprintf("%s (%d)", c.String(), len(results[c]))}
 		parentUID, err := t.Add("", n.UID(), n)
 		if err != nil {
 			panic(err)
