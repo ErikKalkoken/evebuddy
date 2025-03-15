@@ -12,13 +12,18 @@ func (s *EveUniverseService) GetEveCorporationESI(ctx context.Context, corporati
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.ToEveEntities(ctx, []int32{corporationID, x.CeoId, x.CreatorId, x.AllianceId, x.FactionId, x.HomeStationId})
+	eeMap, err := s.ToEveEntities(ctx, []int32{corporationID, x.CeoId, x.CreatorId, x.AllianceId, x.FactionId, x.HomeStationId})
 	if err != nil {
 		return nil, err
 	}
 	o := &app.EveCorporation{
+		Alliance:    eeMap[x.AllianceId],
+		Ceo:         eeMap[x.CeoId],
+		Creator:     eeMap[x.CreatorId],
+		Faction:     eeMap[x.FactionId],
 		DateFounded: x.DateFounded,
 		Description: x.Description,
+		HomeStation: eeMap[x.HomeStationId],
 		ID:          corporationID,
 		MemberCount: int(x.MemberCount),
 		Name:        x.Name,
@@ -28,28 +33,6 @@ func (s *EveUniverseService) GetEveCorporationESI(ctx context.Context, corporati
 		URL:         x.Url,
 		WarEligible: x.WarEligible,
 		Timestamp:   time.Now().UTC(),
-	}
-	if x.CeoId != 0 && x.CeoId != 1 {
-		o.Ceo, err = s.GetEveEntity(ctx, x.CeoId)
-		if err != nil {
-			return nil, err
-		}
-	}
-	o.Creator, err = s.getValidEveEntity(ctx, x.CreatorId)
-	if err != nil {
-		return nil, err
-	}
-	o.Alliance, err = s.getValidEveEntity(ctx, x.AllianceId)
-	if err != nil {
-		return nil, err
-	}
-	o.Faction, err = s.getValidEveEntity(ctx, x.FactionId)
-	if err != nil {
-		return nil, err
-	}
-	o.HomeStation, err = s.getValidEveEntity(ctx, x.HomeStationId)
-	if err != nil {
-		return nil, err
 	}
 	return o, nil
 }
