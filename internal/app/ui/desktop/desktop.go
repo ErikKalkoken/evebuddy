@@ -45,6 +45,7 @@ type DesktopUI struct {
 
 	menuItemsWithShortcut []*fyne.MenuItem
 	accountWindow         fyne.Window
+	searchWindow          fyne.Window
 	settingsWindow        fyne.Window
 }
 
@@ -358,6 +359,21 @@ func (u *DesktopUI) showAccountWindow() {
 	}
 }
 
+func (u *DesktopUI) showSearchWindow() {
+	if u.searchWindow != nil {
+		u.searchWindow.Show()
+		return
+	}
+	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Search New Eden"))
+	u.searchWindow = w
+	w.SetOnClosed(func() {
+		u.searchWindow = nil
+	})
+	w.Resize(fyne.Size{Width: 500, Height: 300})
+	w.SetContent(u.SearchArea.Content)
+	w.Show()
+}
+
 func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 	// File menu
 	fileMenu := fyne.NewMenu("File")
@@ -413,7 +429,7 @@ func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 	}
 	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, shipItem)
 
-	searchItem := fyne.NewMenuItem("Search New Eden...", u.ShowSearchDialog)
+	searchItem := fyne.NewMenuItem("Search New Eden...", u.showSearchWindow)
 	searchItem.Shortcut = &desktop.CustomShortcut{
 		KeyName:  fyne.KeyS,
 		Modifier: fyne.KeyModifierAlt,

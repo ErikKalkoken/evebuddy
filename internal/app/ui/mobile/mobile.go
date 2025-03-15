@@ -303,17 +303,9 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 	}
 
 	// info destination
-	var infoNav *iwidget.Navigator
-	infoList := iwidget.NewNavList(
-		iwidget.NewListItemWithIcon(
-			"Search",
-			theme.SearchIcon(),
-			func() {
-				u.ShowSearchDialog()
-			},
-		),
+	searchNav := iwidget.NewNavigator(
+		iwidget.NewAppBar("Search", u.SearchArea.Content),
 	)
-	infoNav = iwidget.NewNavigator(iwidget.NewAppBar("Info", infoList))
 
 	// more destination
 	var moreNav *iwidget.Navigator
@@ -416,9 +408,9 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		crossNav.PopAll()
 	}
 
-	infoDest := iwidget.NewDestinationDef("Info", theme.NewThemedResource(icon.InformationSvg), infoNav)
-	infoDest.OnSelectedAgain = func() {
-		infoNav.PopAll()
+	searchDest := iwidget.NewDestinationDef("Search", theme.SearchIcon(), searchNav)
+	searchDest.OnSelectedAgain = func() {
+		searchNav.PopAll()
 	}
 
 	moreDest := iwidget.NewDestinationDef("More", theme.MenuIcon(), moreNav)
@@ -426,7 +418,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		moreNav.PopAll()
 	}
 
-	navBar = iwidget.NewNavBar(characterDest, crossDest, infoDest, moreDest)
+	navBar = iwidget.NewNavBar(characterDest, crossDest, searchDest, moreDest)
 	characterNav.NavBar = navBar
 
 	u.OnRefreshStatus = func() {

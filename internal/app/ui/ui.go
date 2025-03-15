@@ -95,6 +95,7 @@ type BaseUI struct {
 	NotificationsArea     *NotificationsArea
 	OverviewArea          *OverviewArea
 	PlanetArea            *PlanetArea
+	SearchArea            *SearchArea
 	SettingsArea          *SettingsArea
 	ShipsArea             *ShipsArea
 	SkillCatalogueArea    *SkillCatalogueArea
@@ -148,6 +149,7 @@ func NewBaseUI(fyneApp fyne.App) *BaseUI {
 	u.NotificationsArea = NewNotificationsArea(u)
 	u.OverviewArea = NewOverviewArea(u)
 	u.PlanetArea = NewPlanetArea(u)
+	u.SearchArea = NewSearchArea(u)
 	u.SettingsArea = NewSettingsArea(u)
 	u.ShipsArea = newShipArea(u)
 	u.SkillCatalogueArea = NewSkillCatalogueArea(u)
