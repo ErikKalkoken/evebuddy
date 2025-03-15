@@ -75,8 +75,6 @@ func (eec EveEntityCategory) ToEveImage() string {
 	}
 }
 
-var titler = cases.Title(language.English)
-
 // An EveEntity in EveOnline.
 type EveEntity struct {
 	Category EveEntityCategory
@@ -85,6 +83,7 @@ type EveEntity struct {
 }
 
 func (ee EveEntity) CategoryDisplay() string {
+	titler := cases.Title(language.English)
 	return titler.String(ee.Category.String())
 }
 

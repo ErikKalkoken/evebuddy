@@ -18,8 +18,9 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
@@ -363,7 +364,8 @@ func (a *SettingsArea) showDeleteFileDialog(name, path string) {
 				slog.Error("delete "+name, "path", path, "error", err)
 				a.snackbar.Show("ERROR: Failed to delete " + name)
 			} else {
-				a.snackbar.Show(app.Titler.String(name) + " deleted")
+				titler := cases.Title(language.English)
+				a.snackbar.Show(titler.String(name) + " deleted")
 			}
 		}, a.window)
 	d.Show()

@@ -14,6 +14,8 @@ import (
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type resultNode struct {
@@ -166,13 +168,14 @@ func (a *SearchArea) doSearch(search string) {
 	}
 	t := fynetree.New[resultNode]()
 	var categoriesFound int
+	titler := cases.Title(language.English)
 	for _, c := range categories {
 		_, ok := results[c]
 		if !ok {
 			continue
 		}
 		categoriesFound++
-		n := resultNode{category: app.Titler.String(fmt.Sprintf("%s (%d)", c.String(), len(results[c])))}
+		n := resultNode{category: titler.String(fmt.Sprintf("%s (%d)", c.String(), len(results[c])))}
 		parentUID, err := t.Add("", n.UID(), n)
 		if err != nil {
 			panic(err)

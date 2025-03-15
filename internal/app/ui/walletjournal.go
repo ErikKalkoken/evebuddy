@@ -12,6 +12,8 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -31,7 +33,8 @@ func (e walletJournalEntry) hasReason() bool {
 }
 
 func (e walletJournalEntry) refTypeOutput() string {
-	return app.Titler.String(strings.ReplaceAll(e.refType, "_", " "))
+	titler := cases.Title(language.English)
+	return titler.String(strings.ReplaceAll(e.refType, "_", " "))
 }
 
 func (e walletJournalEntry) descriptionWithReason() string {
