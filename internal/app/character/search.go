@@ -21,6 +21,7 @@ func (s *CharacterService) SearchESI(ctx context.Context, characterID int32, sea
 		"alliance",
 		"character",
 		"corporation",
+		"faction",
 		"inventory_type",
 		"solar_system",
 		"station",
@@ -30,7 +31,7 @@ func (s *CharacterService) SearchESI(ctx context.Context, characterID int32, sea
 	if err != nil {
 		return nil, 0, err
 	}
-	ids := slices.Concat(x.Alliance, x.Character, x.Corporation, x.InventoryType, x.SolarSystem, x.Station)
+	ids := slices.Concat(x.Alliance, x.Character, x.Corporation, x.Faction, x.InventoryType, x.SolarSystem, x.Station)
 	oo, err := s.EveUniverseService.ToEveEntities(ctx, ids)
 	if err != nil {
 		slog.Error("SearchESI: resolve IDs to eve entities", "error", err)

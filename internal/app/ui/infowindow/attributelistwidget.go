@@ -3,7 +3,6 @@ package infowindow
 import (
 	"fmt"
 	"net/url"
-	"slices"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -49,6 +48,7 @@ func (w *AttributeList) Set(items []AtributeItem) {
 }
 
 func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
+	supportedCategories := SupportedEveEntities()
 	l := widget.NewList(
 		func() int {
 			return len(w.items)
@@ -77,7 +77,7 @@ func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
 			switch x := it.Value.(type) {
 			case *app.EveEntity:
 				s = x.Name
-				if slices.Contains(eveEntitySupportedCategories(), x.Category) && w.ShowInfoWindow != nil {
+				if supportedCategories.Contains(x.Category) && w.ShowInfoWindow != nil {
 					icon.OnTapped = func() {
 						w.ShowInfoWindow(x)
 					}

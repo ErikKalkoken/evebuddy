@@ -372,6 +372,8 @@ func (u *DesktopUI) showSearchWindow() {
 	w.Resize(fyne.Size{Width: 500, Height: 300})
 	w.SetContent(u.SearchArea.Content)
 	w.Show()
+	u.SearchArea.SetWindow(w)
+	u.SearchArea.Focus()
 }
 
 func (u *DesktopUI) makeMenu() *fyne.MainMenu {

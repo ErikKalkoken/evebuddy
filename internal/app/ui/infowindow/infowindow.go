@@ -3,7 +3,6 @@ package infowindow
 import (
 	"fmt"
 	"maps"
-	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -12,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/dustin/go-humanize"
 
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -56,8 +56,8 @@ func eveEntity2InfoVariant(ee *app.EveEntity) InfoVariant {
 
 }
 
-func eveEntitySupportedCategories() []app.EveEntityCategory {
-	return slices.Collect(maps.Keys(eveEntityCategory2InfoVariant))
+func SupportedEveEntities() set.Set[app.EveEntityCategory] {
+	return set.Collect(maps.Keys(eveEntityCategory2InfoVariant))
 
 }
 
@@ -86,6 +86,10 @@ func New(
 		w:                  w,
 	}
 	return iw
+}
+
+func (iw *InfoWindow) SetWindow(w fyne.Window) {
+	iw.w = w
 }
 
 func (iw InfoWindow) Show(t InfoVariant, id int64) {

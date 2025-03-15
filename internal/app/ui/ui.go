@@ -105,7 +105,6 @@ type BaseUI struct {
 	WalletTransactionArea *WalletTransactionArea
 	WealthArea            *WealthArea
 
-	infoWindow   infowindow.InfoWindow
 	character    *app.Character
 	isForeground atomic.Bool // whether the app is currently shown in the foreground
 	isMobile     bool
@@ -177,7 +176,6 @@ func (u *BaseUI) Init() {
 	u.AccountArea.Refresh()
 	var c *app.Character
 	var err error
-	u.infoWindow = infowindow.New(u.CurrentCharacterID, u.CharacterService, u.EveUniverseService, u.EveImageService, u.Window)
 	ctx := context.Background()
 	if cID := u.FyneApp.Preferences().Int(settingLastCharacterID); cID != 0 {
 		c, err = u.CharacterService.GetCharacter(ctx, int32(cID))
@@ -512,19 +510,21 @@ func (u *BaseUI) ShowUpdateStatusWindow() {
 }
 
 func (u *BaseUI) ShowLocationInfoWindow(id int64) {
-	u.infoWindow.Show(infowindow.Location, id)
+	u.ShowInfoWindow(infowindow.Location, id)
 }
 
 func (u *BaseUI) ShowTypeInfoWindow(id int32) {
-	u.infoWindow.Show(infowindow.InventoryType, int64(id))
+	u.ShowInfoWindow(infowindow.InventoryType, int64(id))
 }
 
 func (u *BaseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
-	u.infoWindow.ShowEveEntity(o)
+	iw := infowindow.New(u.CurrentCharacterID, u.CharacterService, u.EveUniverseService, u.EveImageService, u.Window)
+	iw.ShowEveEntity(o)
 }
 
 func (u *BaseUI) ShowInfoWindow(v infowindow.InfoVariant, id int64) {
-	u.infoWindow.Show(v, id)
+	iw := infowindow.New(u.CurrentCharacterID, u.CharacterService, u.EveUniverseService, u.EveImageService, u.Window)
+	iw.Show(v, id)
 }
 
 func (u *BaseUI) AvailableUpdate() (github.VersionInfo, error) {

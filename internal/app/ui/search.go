@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -50,6 +51,7 @@ type SearchArea struct {
 	resultTree *fynetree.FyneTree[resultNode]
 	tree       *widget.Tree
 	u          *BaseUI
+	w          fyne.Window
 }
 
 func NewSearchArea(u *BaseUI) *SearchArea {
@@ -59,6 +61,7 @@ func NewSearchArea(u *BaseUI) *SearchArea {
 		resultTree: fynetree.New[resultNode](),
 		entry:      widget.NewEntry(),
 		u:          u,
+		w:          u.Window,
 	}
 	a.tree = a.makeTree()
 	a.entry.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
@@ -88,7 +91,16 @@ func NewSearchArea(u *BaseUI) *SearchArea {
 	return a
 }
 
+func (a *SearchArea) SetWindow(w fyne.Window) {
+	a.w = w
+}
+
+func (a *SearchArea) Focus() {
+	a.w.Canvas().Focus(a.entry)
+}
+
 func (a *SearchArea) makeTree() *widget.Tree {
+	supportedCategories := infowindow.SupportedEveEntities()
 	t := widget.NewTree(
 		func(uid widget.TreeNodeID) []widget.TreeNodeID {
 			return a.resultTree.ChildUIDs(uid)
@@ -99,11 +111,12 @@ func (a *SearchArea) makeTree() *widget.Tree {
 		func(b bool) fyne.CanvasObject {
 			name := widget.NewLabel("Template")
 			image := container.NewPadded(iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)))
+			info := iwidget.NewIconButton(theme.InfoIcon(), nil)
 			return container.NewBorder(
 				nil,
 				nil,
 				image,
-				nil,
+				info,
 				name,
 			)
 		},
@@ -114,17 +127,29 @@ func (a *SearchArea) makeTree() *widget.Tree {
 			}
 			border := co.(*fyne.Container).Objects
 			border[0].(*widget.Label).SetText(v.String())
+			info := border[2].(*iwidget.IconButton)
 			if v.isCategory() {
+				info.Hide()
 				return
 			}
 			image := border[1].(*fyne.Container).Objects[0].(*canvas.Image)
 			appwidget.RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
 				c := v.ee.Category.ToEveImage()
 				if c == "" {
-					return icon.Questionmark32Png, nil
+					return icon.BlankSvg, nil
 				}
 				return a.u.EveImageService.EntityIcon(v.ee.ID, c, app.IconPixelSize)
 			})
+			if supportedCategories.Contains(v.ee.Category) {
+				info.OnTapped = func() {
+					iw := infowindow.New(a.u.CurrentCharacterID, a.u.CharacterService, a.u.EveUniverseService, a.u.EveImageService, a.w)
+					iw.ShowEveEntity(v.ee)
+				}
+				info.Show()
+			} else {
+				info.Hide()
+			}
+
 		},
 	)
 	t.OnSelected = func(uid widget.TreeNodeID) {
@@ -134,9 +159,8 @@ func (a *SearchArea) makeTree() *widget.Tree {
 			return
 		}
 		if v.isCategory() {
-			return
+			t.OpenBranch(uid)
 		}
-		a.u.ShowEveEntityInfoWindow(v.ee)
 	}
 	return t
 }
@@ -162,6 +186,7 @@ func (a *SearchArea) doSearch(search string) {
 		app.EveEntityAlliance,
 		app.EveEntityCharacter,
 		app.EveEntityCorporation,
+		app.EveEntityFaction,
 		app.EveEntityInventoryType,
 		app.EveEntitySolarSystem,
 		app.EveEntityStation,

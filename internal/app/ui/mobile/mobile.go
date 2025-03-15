@@ -409,8 +409,8 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 	}
 
 	searchDest := iwidget.NewDestinationDef("Search", theme.SearchIcon(), searchNav)
-	searchDest.OnSelectedAgain = func() {
-		searchNav.PopAll()
+	searchDest.OnSelected = func() {
+		u.SearchArea.Focus()
 	}
 
 	moreDest := iwidget.NewDestinationDef("More", theme.MenuIcon(), moreNav)
