@@ -44,25 +44,23 @@ func (sn resultNode) String() string {
 type SearchArea struct {
 	Content fyne.CanvasObject
 
-	indicator  *widget.ProgressBarInfinite
-	entry      *widget.Entry
-	note       *widget.Label
-	resultTree *fynetree.FyneTree[resultNode]
-	tree       *widget.Tree
-	message    *widget.Label
-	u          *BaseUI
-	w          fyne.Window
+	indicator *widget.ProgressBarInfinite
+	entry     *widget.Entry
+	note      *widget.Label
+	tree      *iwidget.Tree[resultNode]
+	message   *widget.Label
+	u         *BaseUI
+	w         fyne.Window
 }
 
 func NewSearchArea(u *BaseUI) *SearchArea {
 	a := &SearchArea{
-		entry:      widget.NewEntry(),
-		indicator:  widget.NewProgressBarInfinite(),
-		message:    widget.NewLabel(""),
-		note:       widget.NewLabel(""),
-		resultTree: fynetree.New[resultNode](),
-		u:          u,
-		w:          u.Window,
+		entry:     widget.NewEntry(),
+		indicator: widget.NewProgressBarInfinite(),
+		message:   widget.NewLabel(""),
+		note:      widget.NewLabel(""),
+		u:         u,
+		w:         u.Window,
 	}
 	a.tree = a.makeTree()
 	a.entry.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
@@ -100,15 +98,9 @@ func (a *SearchArea) Focus() {
 	a.w.Canvas().Focus(a.entry)
 }
 
-func (a *SearchArea) makeTree() *widget.Tree {
+func (a *SearchArea) makeTree() *iwidget.Tree[resultNode] {
 	supportedCategories := infowindow.SupportedEveEntities()
-	t := widget.NewTree(
-		func(uid widget.TreeNodeID) []widget.TreeNodeID {
-			return a.resultTree.ChildUIDs(uid)
-		},
-		func(uid widget.TreeNodeID) bool {
-			return a.resultTree.IsBranch(uid)
-		},
+	t := iwidget.NewTree(
 		func(b bool) fyne.CanvasObject {
 			name := widget.NewLabel("Template")
 			image := container.NewPadded(iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(app.IconUnitSize)))
@@ -121,28 +113,24 @@ func (a *SearchArea) makeTree() *widget.Tree {
 				name,
 			)
 		},
-		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
-			v, ok := a.resultTree.Node(uid)
-			if !ok {
-				return
-			}
+		func(n resultNode, b bool, co fyne.CanvasObject) {
 			border := co.(*fyne.Container).Objects
-			border[0].(*widget.Label).SetText(v.String())
+			border[0].(*widget.Label).SetText(n.String())
 			image := border[1].(*fyne.Container).Objects[0].(*canvas.Image)
 			info := border[2].(*iwidget.IconButton)
-			if v.isCategory() {
+			if n.isCategory() {
 				info.Hide()
 				image.Hide()
 				return
 			}
-			if imageCategory := v.ee.Category.ToEveImage(); imageCategory != "" {
+			if imageCategory := n.ee.Category.ToEveImage(); imageCategory != "" {
 				go func() {
 					image.Show()
 					ctx := context.Background()
 					res, err := func() (fyne.Resource, error) {
-						switch v.ee.Category {
+						switch n.ee.Category {
 						case app.EveEntityInventoryType:
-							et, err := a.u.EveUniverseService.GetOrCreateEveTypeESI(ctx, v.ee.ID)
+							et, err := a.u.EveUniverseService.GetOrCreateEveTypeESI(ctx, n.ee.ID)
 							if err != nil {
 								return nil, err
 							}
@@ -155,7 +143,7 @@ func (a *SearchArea) makeTree() *widget.Tree {
 								return a.u.EveImageService.InventoryTypeIcon(et.ID, app.IconPixelSize)
 							}
 						default:
-							return a.u.EveImageService.EntityIcon(v.ee.ID, imageCategory, app.IconPixelSize)
+							return a.u.EveImageService.EntityIcon(n.ee.ID, imageCategory, app.IconPixelSize)
 						}
 					}()
 					if err != nil {
@@ -168,10 +156,10 @@ func (a *SearchArea) makeTree() *widget.Tree {
 			} else {
 				image.Hide()
 			}
-			if supportedCategories.Contains(v.ee.Category) {
+			if supportedCategories.Contains(n.ee.Category) {
 				info.OnTapped = func() {
 					iw := infowindow.New(a.u.CurrentCharacterID, a.u.CharacterService, a.u.EveUniverseService, a.u.EveImageService, a.w)
-					iw.ShowEveEntity(v.ee)
+					iw.ShowEveEntity(n.ee)
 				}
 				info.Show()
 			} else {
@@ -179,14 +167,10 @@ func (a *SearchArea) makeTree() *widget.Tree {
 			}
 		},
 	)
-	t.OnSelected = func(uid widget.TreeNodeID) {
+	t.OnSelected = func(n resultNode) {
 		defer t.UnselectAll()
-		v, ok := a.resultTree.Node(uid)
-		if !ok {
-			return
-		}
-		if v.isCategory() {
-			t.OpenBranch(uid)
+		if n.isCategory() {
+			t.ToggleBranch(n)
 		}
 	}
 	return t
@@ -242,8 +226,7 @@ func (a *SearchArea) doSearch(search string) {
 			t.Add(parentUID, n)
 		}
 	}
-	a.resultTree = t
-	a.tree.Refresh()
+	a.tree.Set(t)
 	if categoriesFound == 1 {
 		a.tree.OpenAllBranches()
 	}
@@ -258,8 +241,7 @@ func (a *SearchArea) doSearch(search string) {
 }
 
 func (a *SearchArea) clearTree() {
-	a.resultTree = fynetree.New[resultNode]()
-	a.tree.Refresh()
+	a.tree.Clear()
 	a.message.Hide()
 	a.note.Hide()
 }
