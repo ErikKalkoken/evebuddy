@@ -49,7 +49,7 @@ func (s *EveUniverseService) GetOrCreateEveEntityESI(ctx context.Context, id int
 }
 
 // ToEveEntities returns the resolved EveEntities for a list of valid entity IDs.
-// ID 0 will be resolved to a zero value EveEntity object
+// ID 0 will be resolved to a zero value EveEntity object.
 // Will return an error if any ID can not be resolved.
 func (s *EveUniverseService) ToEveEntities(ctx context.Context, ids []int32) (map[int32]*app.EveEntity, error) {
 	r := make(map[int32]*app.EveEntity)

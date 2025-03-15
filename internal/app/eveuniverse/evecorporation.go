@@ -12,7 +12,7 @@ func (s *EveUniverseService) GetEveCorporationESI(ctx context.Context, corporati
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.AddMissingEveEntities(ctx, []int32{corporationID, x.CeoId, x.CreatorId, x.AllianceId, x.FactionId, x.HomeStationId})
+	_, err = s.ToEveEntities(ctx, []int32{corporationID, x.CeoId, x.CreatorId, x.AllianceId, x.FactionId, x.HomeStationId})
 	if err != nil {
 		return nil, err
 	}

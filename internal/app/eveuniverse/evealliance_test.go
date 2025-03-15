@@ -6,13 +6,14 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/antihax/goesi"
+	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
-	"github.com/antihax/goesi"
-	"github.com/jarcoal/httpmock"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestGetEveAllianceCorporationsESI(t *testing.T) {
