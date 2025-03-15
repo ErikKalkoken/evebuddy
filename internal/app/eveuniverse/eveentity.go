@@ -48,8 +48,6 @@ func (s *EveUniverseService) GetOrCreateEveEntityESI(ctx context.Context, id int
 	return s.st.GetEveEntity(ctx, id)
 }
 
-// TODO: Reduce DB calls with AddMissingEveEntities
-
 // ToEveEntities returns the resolved EveEntities for a list of valid entity IDs.
 // ID 0 will be resolved to a zero value EveEntity object
 // Will return an error if any ID can not be resolved.
@@ -60,15 +58,16 @@ func (s *EveUniverseService) ToEveEntities(ctx context.Context, ids []int32) (ma
 		r[0] = &app.EveEntity{}
 		ids2.Remove(0)
 	}
-	if _, err := s.AddMissingEveEntities(ctx, ids2.ToSlice()); err != nil {
+	ids3 := ids2.ToSlice()
+	if _, err := s.AddMissingEveEntities(ctx, ids3); err != nil {
 		return nil, err
 	}
-	for id := range ids2.Values() {
-		x, err := s.GetEveEntity(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-		r[id] = x
+	oo, err := s.st.ListEveEntitiesForIDs(ctx, ids3)
+	if err != nil {
+		return nil, err
+	}
+	for _, o := range oo {
+		r[o.ID] = o
 	}
 	return r, nil
 }

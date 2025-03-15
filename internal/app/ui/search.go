@@ -194,7 +194,8 @@ func (a *SearchArea) doSearch(search string) {
 		a.note.Hide()
 	} else {
 		a.note.SetText(fmt.Sprintf(
-			"More then 500 sesarch results where returned for \"%s\". Please be more specific.",
+			"Search for \"%s\" exceeded the server limit of 500 results "+
+				"and may not contain the items you are looking for.",
 			search,
 		))
 	}

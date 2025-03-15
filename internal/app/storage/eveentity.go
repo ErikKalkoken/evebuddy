@@ -49,33 +49,6 @@ func (st *Storage) CreateEveEntity(ctx context.Context, id int32, name string, c
 	return e, nil
 }
 
-func (st *Storage) GetEveEntity(ctx context.Context, id int32) (*app.EveEntity, error) {
-	e, err := st.q.GetEveEntity(ctx, int64(id))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
-		}
-		return nil, fmt.Errorf("get eve entity for id %d: %w", id, err)
-	}
-	return eveEntityFromDBModel(e), nil
-}
-
-func (st *Storage) ListEveEntityByNameAndCategory(ctx context.Context, name string, category app.EveEntityCategory) ([]*app.EveEntity, error) {
-	var ee2 []*app.EveEntity
-	arg := queries.ListEveEntityByNameAndCategoryParams{
-		Name:     name,
-		Category: eveEntityDBModelCategoryFromCategory(category),
-	}
-	ee, err := st.q.ListEveEntityByNameAndCategory(ctx, arg)
-	if err != nil {
-		return ee2, fmt.Errorf("get eve entity by name %s and category %s: %w", name, category, err)
-	}
-	for _, e := range ee {
-		ee2 = append(ee2, eveEntityFromDBModel(e))
-	}
-	return ee2, nil
-}
-
 func (st *Storage) GetOrCreateEveEntity(ctx context.Context, id int32, name string, category app.EveEntityCategory) (*app.EveEntity, error) {
 	label, err := func() (*app.EveEntity, error) {
 		var e queries.EveEntity
@@ -114,6 +87,33 @@ func (st *Storage) GetOrCreateEveEntity(ctx context.Context, id int32, name stri
 	return label, nil
 }
 
+func (st *Storage) GetEveEntity(ctx context.Context, id int32) (*app.EveEntity, error) {
+	e, err := st.q.GetEveEntity(ctx, int64(id))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = ErrNotFound
+		}
+		return nil, fmt.Errorf("get eve entity for id %d: %w", id, err)
+	}
+	return eveEntityFromDBModel(e), nil
+}
+
+func (st *Storage) ListEveEntityByNameAndCategory(ctx context.Context, name string, category app.EveEntityCategory) ([]*app.EveEntity, error) {
+	var ee2 []*app.EveEntity
+	arg := queries.ListEveEntityByNameAndCategoryParams{
+		Name:     name,
+		Category: eveEntityDBModelCategoryFromCategory(category),
+	}
+	ee, err := st.q.ListEveEntityByNameAndCategory(ctx, arg)
+	if err != nil {
+		return ee2, fmt.Errorf("get eve entity by name %s and category %s: %w", name, category, err)
+	}
+	for _, e := range ee {
+		ee2 = append(ee2, eveEntityFromDBModel(e))
+	}
+	return ee2, nil
+}
+
 func (st *Storage) ListEveEntitiesByPartialName(ctx context.Context, partial string) ([]*app.EveEntity, error) {
 	ee, err := st.q.ListEveEntitiesByPartialName(ctx, fmt.Sprintf("%%%s%%", partial))
 	if err != nil {
@@ -139,6 +139,18 @@ func (st *Storage) ListEveEntitiesByName(ctx context.Context, name string) ([]*a
 	ee, err := st.q.ListEveEntitiesByName(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("list eve entities by name %s: %w", name, err)
+	}
+	ee2 := make([]*app.EveEntity, len(ee))
+	for i, e := range ee {
+		ee2[i] = eveEntityFromDBModel(e)
+	}
+	return ee2, nil
+}
+
+func (st *Storage) ListEveEntitiesForIDs(ctx context.Context, ids []int32) ([]*app.EveEntity, error) {
+	ee, err := st.q.ListEveEntitiesForIDs(ctx, convertNumericSlice[int32, int64](ids))
+	if err != nil {
+		return nil, fmt.Errorf("list eve entities for %d ids: %w", len(ids), err)
 	}
 	ee2 := make([]*app.EveEntity, len(ee))
 	for i, e := range ee {

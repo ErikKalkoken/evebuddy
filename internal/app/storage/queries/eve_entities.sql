@@ -14,6 +14,12 @@ SELECT *
 FROM eve_entities
 WHERE id = ?;
 
+-- name: ListEveEntitiesForIDs :many
+SELECT *
+FROM eve_entities
+WHERE id IN (sqlc.slice('ids'));
+
+
 -- name: ListEveEntityByNameAndCategory :many
 SELECT *
 FROM eve_entities

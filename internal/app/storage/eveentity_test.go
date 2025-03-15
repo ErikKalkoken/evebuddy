@@ -3,6 +3,7 @@ package storage_test
 import (
 	"context"
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 func TestEveEntityUpdateOrCreate(t *testing.T) {
@@ -108,6 +110,23 @@ func TestEveEntity(t *testing.T) {
 			}
 			want := []string{"X_alpha1", "Y_alpha2"}
 			assert.Equal(t, want, got)
+		}
+	})
+	t.Run("should return objs with matching ids", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		factory.CreateEveEntity(app.EveEntity{ID: 1})
+		factory.CreateEveEntity(app.EveEntity{ID: 2})
+		factory.CreateEveEntity(app.EveEntity{ID: 3})
+		// when
+		ee, err := r.ListEveEntitiesForIDs(ctx, []int32{2, 3})
+		// then
+		if assert.NoError(t, err) {
+			got := slices.Collect(xiter.MapSlice(ee, func(a *app.EveEntity) int32 {
+				return a.ID
+			}))
+			want := []int32{2, 3}
+			assert.ElementsMatch(t, want, got)
 		}
 	})
 	t.Run("should not store with invalid ID 1", func(t *testing.T) {

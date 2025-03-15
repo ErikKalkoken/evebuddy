@@ -8,6 +8,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
+// SearchESI performs a name search for items on the ESI server
+// and returns the results by EveEntity category and sorted by name.
+// It also returns the total number of results.
+// A total of 500 indicates that we exceeded the server limit.
 func (s *CharacterService) SearchESI(ctx context.Context, characterID int32, search string) (map[app.EveEntityCategory][]*app.EveEntity, int, error) {
 	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
