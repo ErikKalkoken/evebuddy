@@ -8,6 +8,15 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+const (
+	RootUID = ""
+)
+
+// TreeNode represents a node in a Fyne tree.
+type TreeNode interface {
+	UID() widget.TreeNodeID
+}
+
 // FyneTree is a type that holds all data needed to render a Fyne tree widget.
 //
 // It is designed to make it easier to construct the data for tree widgets
@@ -22,14 +31,14 @@ import (
 //
 // Nodes that have child nodes are reported as branches.
 // This means there can not be any empty branch nodes.
-type FyneTree[T any] struct {
+type FyneTree[T TreeNode] struct {
 	ids     map[widget.TreeNodeID][]widget.TreeNodeID
 	parents map[widget.TreeNodeID]widget.TreeNodeID
 	values  map[widget.TreeNodeID]T
 }
 
 // New returns a new FyneTree object.
-func New[T any]() *FyneTree[T] {
+func New[T TreeNode]() *FyneTree[T] {
 	t := &FyneTree[T]{
 		ids:     make(map[widget.TreeNodeID][]widget.TreeNodeID),
 		parents: make(map[widget.TreeNodeID]widget.TreeNodeID),
@@ -42,19 +51,20 @@ func New[T any]() *FyneTree[T] {
 //
 // Use "" as parentUID for adding nodes at the top level.
 // Nodes will be rendered in the same order as they are added.
-func (t *FyneTree[T]) Add(parentUID widget.TreeNodeID, uid widget.TreeNodeID, value T) (widget.TreeNodeID, error) {
+func (t *FyneTree[T]) Add(parentUID widget.TreeNodeID, node T) (widget.TreeNodeID, error) {
 	if parentUID != "" {
 		_, found := t.values[parentUID]
 		if !found {
 			return "", fmt.Errorf("parent node does not exist: %s", parentUID)
 		}
 	}
+	uid := node.UID()
 	_, found := t.values[uid]
 	if found {
-		return "", fmt.Errorf("this node already exists: %v", uid)
+		return "", fmt.Errorf("this node already exists: %+v", node)
 	}
 	t.ids[parentUID] = append(t.ids[parentUID], uid)
-	t.values[uid] = value
+	t.values[uid] = node
 	t.parents[uid] = parentUID
 	return uid, nil
 }
@@ -69,7 +79,7 @@ func (t *FyneTree[T]) Flat() []T {
 	var s []T
 	uid := ""
 	for _, id := range t.ChildUIDs(uid) {
-		s = append(s, t.MustValue(id))
+		s = append(s, t.MustNode(id))
 	}
 	return s
 }
@@ -81,20 +91,20 @@ func (t *FyneTree[T]) IsBranch(uid widget.TreeNodeID) bool {
 }
 
 // MustAdd is like Add, but panics if adding fails.
-func (t *FyneTree[T]) MustAdd(parentUID widget.TreeNodeID, uid widget.TreeNodeID, value T) widget.TreeNodeID {
-	uid, err := t.Add(parentUID, uid, value)
+func (t *FyneTree[T]) MustAdd(parentUID widget.TreeNodeID, node T) widget.TreeNodeID {
+	uid, err := t.Add(parentUID, node)
 	if err != nil {
 		panic(err)
 	}
 	return uid
 }
 
-// MustValue returns the value of a node or panics if the node does not exist.
+// MustNode returns the value of a node or panics if the node does not exist.
 // This method mainly exists to simplify test code and should not be used in production code.
-func (t *FyneTree[T]) MustValue(uid widget.TreeNodeID) T {
-	v, ok := t.Value(uid)
+func (t *FyneTree[T]) MustNode(uid widget.TreeNodeID) T {
+	v, ok := t.Node(uid)
 	if !ok {
-		panic("node does not exist")
+		panic(fmt.Sprintf("node %s does not exist", uid))
 	}
 	return v
 }
@@ -124,27 +134,27 @@ func (t *FyneTree[T]) Size() int {
 	return len(t.values)
 }
 
-// Value returns the value of a node and reports wether the node exists
+// Node returns a node and reports whether it exists
 //
 // Note that when using this method with a Fyne widget it is possible,
 // that a UID forwarded by the widget no longer exists due to race conditions.
 // It is therefore recommended to always check the ok value.
-func (t *FyneTree[T]) Value(uid widget.TreeNodeID) (value T, ok bool) {
-	value, ok = t.value(uid)
+func (t *FyneTree[T]) Node(uid widget.TreeNodeID) (node T, ok bool) {
+	node, ok = t.node(uid)
 	return
 }
 
-// Value returns the value of a node or a fallback value.
-func (t *FyneTree[T]) ValueWithFallback(uid widget.TreeNodeID, fallback T) T {
-	v, ok := t.value(uid)
-	if !ok {
-		return fallback
-	}
-	return v
-}
+// // Value returns the value of a node or a fallback value.
+// func (t *FyneTree[T]) ValueWithFallback(uid widget.TreeNodeID, fallback T) T {
+// 	v, ok := t.value(uid)
+// 	if !ok {
+// 		return fallback
+// 	}
+// 	return v
+// }
 
-// Value returns the value of a node and a test flag reporting wether the node exists.
-func (t *FyneTree[T]) value(uid widget.TreeNodeID) (T, bool) {
+// Value returns the node of a node and a test flag reporting wether the node exists.
+func (t *FyneTree[T]) node(uid widget.TreeNodeID) (T, bool) {
 	v, ok := t.values[uid]
 	return v, ok
 }

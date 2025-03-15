@@ -171,7 +171,7 @@ func (a *MailArea) makeFolderTree() *widget.Tree {
 			)
 		},
 		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
-			node, ok := a.folderData.Value(uid)
+			node, ok := a.folderData.Node(uid)
 			if !ok {
 				return
 			}
@@ -193,7 +193,7 @@ func (a *MailArea) makeFolderTree() *widget.Tree {
 		},
 	)
 	tree.OnSelected = func(uid string) {
-		node, ok := a.folderData.Value((uid))
+		node, ok := a.folderData.Node((uid))
 		if !ok {
 			tree.UnselectAll()
 			return
@@ -274,7 +274,7 @@ func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
 		ObjID:       app.MailLabelUnread,
 		UnreadCount: totalUnreadCount,
 	}
-	tree.MustAdd("", folderUnread.UID(), folderUnread)
+	tree.MustAdd(fynetree.RootUID, folderUnread)
 
 	// Add default folders
 	defaultFolders := []struct {
@@ -300,7 +300,7 @@ func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
 			ObjID:       o.labelID,
 			UnreadCount: u,
 		}
-		tree.MustAdd("", n.UID(), n)
+		tree.MustAdd(fynetree.RootUID, n)
 	}
 
 	// Add custom labels
@@ -315,7 +315,7 @@ func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
 			Name:        "Labels",
 			UnreadCount: totalLabelsUnreadCount,
 		}
-		uid := tree.MustAdd("", n.UID(), n)
+		uid := tree.MustAdd(fynetree.RootUID, n)
 		for _, l := range labels {
 			u, ok := labelUnreadCounts[l.LabelID]
 			if !ok {
@@ -329,7 +329,7 @@ func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
 				UnreadCount: u,
 				Type:        folderNodeLabel,
 			}
-			tree.MustAdd(uid, n.UID(), n)
+			tree.MustAdd(uid, n)
 		}
 	}
 
@@ -345,7 +345,7 @@ func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
 			Name:        "Mailing Lists",
 			UnreadCount: totalListUnreadCount,
 		}
-		uid := tree.MustAdd("", n.UID(), n)
+		uid := tree.MustAdd(fynetree.RootUID, n)
 		for _, l := range lists {
 			u, ok := listUnreadCounts[l.ID]
 			if !ok {
@@ -359,7 +359,7 @@ func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
 				UnreadCount: u,
 				Type:        folderNodeList,
 			}
-			tree.MustAdd(uid, n.UID(), n)
+			tree.MustAdd(uid, n)
 		}
 	}
 	// Add all folder
@@ -371,7 +371,7 @@ func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
 		ObjID:       app.MailLabelAll,
 		UnreadCount: totalUnreadCount,
 	}
-	tree.MustAdd("", folderAll.UID(), folderAll)
+	tree.MustAdd(fynetree.RootUID, folderAll)
 
 	a.folderData = tree
 	return folderAll, nil

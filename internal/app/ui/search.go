@@ -122,7 +122,7 @@ func (a *SearchArea) makeTree() *widget.Tree {
 			)
 		},
 		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
-			v, ok := a.resultTree.Value(uid)
+			v, ok := a.resultTree.Node(uid)
 			if !ok {
 				return
 			}
@@ -181,7 +181,7 @@ func (a *SearchArea) makeTree() *widget.Tree {
 	)
 	t.OnSelected = func(uid widget.TreeNodeID) {
 		defer t.UnselectAll()
-		v, ok := a.resultTree.Value(uid)
+		v, ok := a.resultTree.Node(uid)
 		if !ok {
 			return
 		}
@@ -233,13 +233,13 @@ func (a *SearchArea) doSearch(search string) {
 		}
 		categoriesFound++
 		n := resultNode{category: fmt.Sprintf("%s (%d)", c.String(), len(results[c]))}
-		parentUID, err := t.Add("", n.UID(), n)
+		parentUID, err := t.Add(fynetree.RootUID, n)
 		if err != nil {
 			panic(err)
 		}
 		for _, o := range results[c] {
 			n := resultNode{ee: o}
-			t.Add(parentUID, n.UID(), n)
+			t.Add(parentUID, n)
 		}
 	}
 	a.resultTree = t

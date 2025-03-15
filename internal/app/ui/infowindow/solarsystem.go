@@ -113,7 +113,7 @@ func (a *solarSystemArea) load(solarSystemID int32) error {
 	iwidget.SetRichText(a.security, o.System.DisplayRichText()...)
 
 	systemsLabel := widget.NewLabel("Loading...")
-	systemsTab := container.NewTabItem("Adjacent Solar Systems", systemsLabel)
+	systemsTab := container.NewTabItem("Stargates", systemsLabel)
 	a.tabs.Append(systemsTab)
 	go func() {
 		ss, err := o.GetAdjacentSystems(ctx)

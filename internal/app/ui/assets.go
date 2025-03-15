@@ -146,7 +146,7 @@ func (a *AssetsArea) makeLocationsTree() *widget.Tree {
 			)
 		},
 		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
-			n, ok := a.locationsData.Value(uid)
+			n, ok := a.locationsData.Node(uid)
 			if !ok {
 				return
 			}
@@ -179,7 +179,7 @@ func (a *AssetsArea) makeLocationsTree() *widget.Tree {
 		},
 	)
 	t.OnSelected = func(uid widget.TreeNodeID) {
-		n, ok := a.locationsData.Value(uid)
+		n, ok := a.locationsData.Node(uid)
 		if !ok {
 			return
 		}
@@ -249,7 +249,7 @@ func (a *AssetsArea) makeAssetGrid() *widget.GridWrap {
 			}
 			location := a.selectedLocation.ValueOrZero()
 			for _, uid := range a.locationsData.ChildUIDs(location.UID()) {
-				n, ok := a.locationsData.Value(uid)
+				n, ok := a.locationsData.Node(uid)
 				if !ok {
 					continue
 				}
@@ -331,7 +331,7 @@ func (a *AssetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 		} else {
 			location.IsUnknown = true
 		}
-		locationUID := tree.MustAdd("", location.UID(), location)
+		locationUID := tree.MustAdd(fynetree.RootUID, location)
 
 		topAssets := ln.Nodes()
 		slices.SortFunc(topAssets, func(a assetcollection.AssetNode, b assetcollection.AssetNode) int {
@@ -368,7 +368,7 @@ func (a *AssetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 			Count:       shipCount,
 			Type:        nodeShipHangar,
 		}
-		shipsUID := tree.MustAdd(locationUID, shipHangar.UID(), shipHangar)
+		shipsUID := tree.MustAdd(locationUID, shipHangar)
 		for _, an := range ships {
 			ship := an.Asset
 			ldn := locationDataNode{
@@ -377,7 +377,7 @@ func (a *AssetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 				Name:        ship.DisplayName2(),
 				Type:        nodeShip,
 			}
-			shipUID := tree.MustAdd(shipsUID, ldn.UID(), ldn)
+			shipUID := tree.MustAdd(shipsUID, ldn)
 			cargo := make([]assetcollection.AssetNode, 0)
 			fuel := make([]assetcollection.AssetNode, 0)
 			for _, an2 := range an.Nodes() {
@@ -394,7 +394,7 @@ func (a *AssetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 				Count:       len(cargo),
 				Type:        nodeCargoBay,
 			}
-			tree.MustAdd(shipUID, cln.UID(), cln)
+			tree.MustAdd(shipUID, cln)
 			if ship.EveType.HasFuelBay() {
 				ldn := locationDataNode{
 					CharacterID: characterID,
@@ -403,7 +403,7 @@ func (a *AssetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 					Count:       len(fuel),
 					Type:        nodeFuelBay,
 				}
-				tree.MustAdd(shipUID, ldn.UID(), ldn)
+				tree.MustAdd(shipUID, ldn)
 			}
 		}
 
@@ -414,7 +414,7 @@ func (a *AssetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 			Count:       itemCount,
 			Type:        nodeItemHangar,
 		}
-		itemsUID := tree.MustAdd(locationUID, itemHangar.UID(), itemHangar)
+		itemsUID := tree.MustAdd(locationUID, itemHangar)
 		for _, an := range itemContainers {
 			ldn := locationDataNode{
 				CharacterID: characterID,
@@ -423,7 +423,7 @@ func (a *AssetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 				Count:       len(an.Nodes()),
 				Type:        nodeContainer,
 			}
-			tree.MustAdd(itemsUID, ldn.UID(), ldn)
+			tree.MustAdd(itemsUID, ldn)
 		}
 
 		if len(assetSafety) > 0 {
@@ -435,7 +435,7 @@ func (a *AssetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 				Count:       len(an.Nodes()),
 				Type:        nodeAssetSafety,
 			}
-			tree.MustAdd(locationUID, ldn.UID(), ldn)
+			tree.MustAdd(locationUID, ldn)
 		}
 	}
 	return tree, nil
@@ -523,7 +523,7 @@ func (a *AssetsArea) selectLocation(location locationDataNode) error {
 func (a *AssetsArea) updateLocationPath(location locationDataNode) {
 	path := make([]locationDataNode, 0)
 	for _, uid := range a.locationsData.Path(location.UID()) {
-		n, ok := a.locationsData.Value(uid)
+		n, ok := a.locationsData.Node(uid)
 		if !ok {
 			continue
 		}

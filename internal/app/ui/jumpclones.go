@@ -102,7 +102,7 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 			)
 		},
 		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
-			n, ok := a.treeData.Value(uid)
+			n, ok := a.treeData.Node(uid)
 			if !ok {
 				return
 			}
@@ -206,7 +206,7 @@ func (a *JumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error
 			n.LocationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
 			n.IsUnknown = true
 		}
-		uid := tree.MustAdd("", n.UID(), n)
+		uid := tree.MustAdd(fynetree.RootUID, n)
 		for _, i := range c.Implants {
 			n := jumpCloneNode{
 				ImplantTypeDescription: i.EveType.DescriptionPlain(),
@@ -214,7 +214,7 @@ func (a *JumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error
 				ImplantTypeName:        i.EveType.Name,
 				JumpCloneID:            c.JumpCloneID,
 			}
-			tree.MustAdd(uid, n.UID(), n)
+			tree.MustAdd(uid, n)
 		}
 	}
 	return tree, err
