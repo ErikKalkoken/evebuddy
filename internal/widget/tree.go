@@ -19,8 +19,8 @@ type Tree[T TreeNode] struct {
 
 // NewTree returns a new [Tree] object.
 func NewTree[T TreeNode](
-	create func(b bool) fyne.CanvasObject,
-	update func(n T, b bool, co fyne.CanvasObject),
+	create func(isBranch bool) fyne.CanvasObject,
+	update func(n T, isBranch bool, co fyne.CanvasObject),
 ) *Tree[T] {
 	w := &Tree[T]{
 		data: NewTreeData[T](),
@@ -33,12 +33,12 @@ func NewTree[T TreeNode](
 			return w.data.IsBranch(uid)
 		},
 		create,
-		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
+		func(uid widget.TreeNodeID, isBranch bool, co fyne.CanvasObject) {
 			n, ok := w.data.Node(uid)
 			if !ok {
 				return
 			}
-			update(n, b, co)
+			update(n, isBranch, co)
 		},
 	)
 	w.tree.OnSelected = func(uid widget.TreeNodeID) {

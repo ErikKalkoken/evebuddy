@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -32,12 +33,18 @@ type SearchArea struct {
 	categories    *widget.CheckGroup
 	entry         *widget.Entry
 	indicator     *widget.ProgressBarInfinite
+	recent        *widget.List
+	recentPage    *fyne.Container
 	resultCount   *widget.Label
 	results       *iwidget.Tree[resultNode]
+	resultsPage   *fyne.Container
 	searchOptions *widget.Accordion
 	strict        *kxwidget.Switch
 	u             *BaseUI
 	w             fyne.Window
+
+	mu          sync.RWMutex
+	recentItems []*app.EveEntity
 }
 
 func NewSearchArea(u *BaseUI) *SearchArea {
@@ -114,11 +121,10 @@ func NewSearchArea(u *BaseUI) *SearchArea {
 	)
 	updateSearchOptionsTitle()
 
-	c := container.NewBorder(
+	a.recent = a.makeRecentSelected()
+
+	a.resultsPage = container.NewBorder(
 		container.NewVBox(
-			a.entry,
-			a.searchOptions,
-			widget.NewSeparator(),
 			a.indicator,
 			a.resultCount,
 		),
@@ -127,6 +133,25 @@ func NewSearchArea(u *BaseUI) *SearchArea {
 		nil,
 		a.results,
 	)
+	a.recentPage = container.NewBorder(
+		widget.NewLabel("Recent searches"),
+		nil,
+		nil,
+		nil,
+		a.recent,
+	)
+	c := container.NewBorder(
+		container.NewVBox(
+			a.entry,
+			a.searchOptions,
+			widget.NewSeparator(),
+		),
+		nil,
+		nil,
+		nil,
+		container.NewStack(a.recentPage, a.resultsPage),
+	)
+	a.showRecent()
 	a.Content = c
 	return a
 }
@@ -147,10 +172,13 @@ func (a *SearchArea) SetWindow(w fyne.Window) {
 func (a *SearchArea) makeResults() *iwidget.Tree[resultNode] {
 	supportedCategories := infowindow.SupportedEveEntities()
 	t := iwidget.NewTree(
-		func(b bool) fyne.CanvasObject {
+		func(isBranch bool) fyne.CanvasObject {
+			if isBranch {
+				return widget.NewLabel("Template")
+			}
 			name := widget.NewLabel("Template")
 			image := container.NewPadded(iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(app.IconUnitSize)))
-			info := iwidget.NewIconButton(theme.InfoIcon(), nil)
+			info := widget.NewIcon(theme.InfoIcon())
 			return container.NewBorder(
 				nil,
 				nil,
@@ -159,16 +187,15 @@ func (a *SearchArea) makeResults() *iwidget.Tree[resultNode] {
 				name,
 			)
 		},
-		func(n resultNode, b bool, co fyne.CanvasObject) {
+		func(n resultNode, isBranch bool, co fyne.CanvasObject) {
+			if isBranch {
+				co.(*widget.Label).SetText(n.String())
+				return
+			}
 			border := co.(*fyne.Container).Objects
 			border[0].(*widget.Label).SetText(n.String())
 			image := border[1].(*fyne.Container).Objects[0].(*canvas.Image)
-			info := border[2].(*iwidget.IconButton)
-			if n.isCategory() {
-				info.Hide()
-				image.Hide()
-				return
-			}
+			info := border[2].(*widget.Icon)
 			if imageCategory := n.ee.Category.ToEveImage(); imageCategory != "" {
 				go func() {
 					image.Show()
@@ -203,10 +230,6 @@ func (a *SearchArea) makeResults() *iwidget.Tree[resultNode] {
 				image.Hide()
 			}
 			if supportedCategories.Contains(n.ee.Category) {
-				info.OnTapped = func() {
-					iw := infowindow.New(a.u.CurrentCharacterID, a.u.CharacterService, a.u.EveUniverseService, a.u.EveImageService, a.w)
-					iw.ShowEveEntity(n.ee)
-				}
 				info.Show()
 			} else {
 				info.Hide()
@@ -217,14 +240,58 @@ func (a *SearchArea) makeResults() *iwidget.Tree[resultNode] {
 		defer t.UnselectAll()
 		if n.isCategory() {
 			t.ToggleBranch(n)
+			return
 		}
+		if !supportedCategories.Contains(n.ee.Category) {
+			return
+		}
+		iw := infowindow.New(a.u.CurrentCharacterID, a.u.CharacterService, a.u.EveUniverseService, a.u.EveImageService, a.w)
+		iw.ShowEveEntity(n.ee)
+		a.mu.Lock()
+		a.recentItems = slices.Insert(a.recentItems, 0, n.ee)
+		a.mu.Unlock()
+		a.recent.Refresh()
 	}
 	return t
+}
+
+func (a *SearchArea) makeRecentSelected() *widget.List {
+	l := widget.NewList(
+		func() int {
+			a.mu.RLock()
+			defer a.mu.RUnlock()
+			return len(a.recentItems)
+		},
+		func() fyne.CanvasObject {
+			return widget.NewLabel("Template")
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			a.mu.RLock()
+			defer a.mu.RUnlock()
+			if id >= len(a.recentItems) {
+				return
+			}
+			it := a.recentItems[id]
+			co.(*widget.Label).SetText(it.Name)
+		},
+	)
+	return l
 }
 
 func (a *SearchArea) clearResults() {
 	a.results.Clear()
 	a.resultCount.Hide()
+	a.showRecent()
+}
+
+func (a *SearchArea) showResults() {
+	a.recentPage.Hide()
+	a.resultsPage.Show()
+}
+
+func (a *SearchArea) showRecent() {
+	a.resultsPage.Hide()
+	a.recentPage.Show()
 }
 
 func (a *SearchArea) doSearch(search string) {
@@ -232,6 +299,7 @@ func (a *SearchArea) doSearch(search string) {
 	if search == "" {
 		return
 	}
+	a.showResults()
 	a.indicator.Show()
 	a.indicator.Start()
 	defer func() {
