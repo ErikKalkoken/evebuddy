@@ -29,7 +29,7 @@ const (
 type SearchArea struct {
 	Content fyne.CanvasObject
 
-	categories          *widget.CheckGroup
+	categories          *iwidget.FilterChipGroup
 	entry               *widget.Entry
 	indicator           *widget.ProgressBarInfinite
 	recent              *widget.List
@@ -76,9 +76,8 @@ func NewSearchArea(u *BaseUI) *SearchArea {
 		a.searchOptions.Items[0].Title = s
 		a.searchOptions.Refresh()
 	}
-	a.categories = widget.NewCheckGroup(defaultCategories, nil)
-	a.categories.Horizontal = true
-	a.categories.Selected = defaultCategories
+	a.categories = iwidget.NewFilterChipGroup(defaultCategories, nil)
+	a.categories.Selected = slices.Clone(defaultCategories)
 	a.categories.OnChanged = func(s []string) {
 		updateSearchOptionsTitle()
 	}
@@ -366,7 +365,7 @@ var searchCategory2optionMap = map[character.SearchCategory]string{
 func searchCategory2option(c character.SearchCategory) string {
 	x, ok := searchCategory2optionMap[c]
 	if !ok {
-		panic(fmt.Sprintf("searchCategory2option: %s not found", c))
+		panic(fmt.Sprintf("searchCategory2option: \"%s\" not found", c))
 	}
 	return x
 }
@@ -377,7 +376,7 @@ func option2searchCategory(o string) character.SearchCategory {
 			return k
 		}
 	}
-	panic(fmt.Sprintf("option2searchCategory: %s not found", o))
+	panic(fmt.Sprintf("option2searchCategory: \"%s\" not found", o))
 }
 
 func makeOptions() []string {
