@@ -20,11 +20,13 @@ const (
 	SearchAgent         SearchCategory = "agent"
 	SearchAlliance      SearchCategory = "alliance"
 	SearchCharacter     SearchCategory = "character"
+	SearchConstellation SearchCategory = "constellation"
 	SearchCorporation   SearchCategory = "corporation"
 	SearchFaction       SearchCategory = "faction"
-	SearchInventoryType SearchCategory = "inventory_type"
+	SearchRegion        SearchCategory = "region"
 	SearchSolarSystem   SearchCategory = "solar_system"
 	SearchStation       SearchCategory = "station"
+	SearchType          SearchCategory = "inventory_type"
 )
 
 func (x SearchCategory) String() string {
@@ -38,11 +40,13 @@ func SearchCategories() []SearchCategory {
 		SearchAgent,
 		SearchAlliance,
 		SearchCharacter,
+		SearchConstellation,
 		SearchCorporation,
 		SearchFaction,
-		SearchInventoryType,
+		SearchRegion,
 		SearchSolarSystem,
 		SearchStation,
+		SearchType,
 	}
 }
 
@@ -50,7 +54,12 @@ func SearchCategories() []SearchCategory {
 // and returns the results by EveEntity category and sorted by name.
 // It also returns the total number of results.
 // A total of 500 indicates that we exceeded the server limit.
-func (s *CharacterService) SearchESI(ctx context.Context, characterID int32, search string, categories []SearchCategory, strict bool) (map[SearchCategory][]*app.EveEntity, int, error) {
+func (s *CharacterService) SearchESI(
+	ctx context.Context,
+	characterID int32,
+	search string,
+	categories []SearchCategory, strict bool,
+) (map[SearchCategory][]*app.EveEntity, int, error) {
 	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return nil, 0, err
@@ -59,13 +68,29 @@ func (s *CharacterService) SearchESI(ctx context.Context, characterID int32, sea
 	cc := slices.Collect(xiter.MapSlice(categories, func(a SearchCategory) string {
 		return string(a)
 	}))
-	x, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(ctx, cc, characterID, search, &esi.GetCharactersCharacterIdSearchOpts{
-		Strict: esioptional.NewBool(strict),
-	})
+	x, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(
+		ctx,
+		cc,
+		characterID,
+		search,
+		&esi.GetCharactersCharacterIdSearchOpts{
+			Strict: esioptional.NewBool(strict),
+		})
 	if err != nil {
 		return nil, 0, err
 	}
-	ids := slices.Concat(x.Agent, x.Alliance, x.Character, x.Corporation, x.Faction, x.InventoryType, x.SolarSystem, x.Station)
+	ids := slices.Concat(
+		x.Agent,
+		x.Alliance,
+		x.Character,
+		x.Corporation,
+		x.Constellation,
+		x.Faction,
+		x.InventoryType,
+		x.SolarSystem,
+		x.Station,
+		x.Region,
+	)
 	eeMap, err := s.EveUniverseService.ToEveEntities(ctx, ids)
 	if err != nil {
 		slog.Error("SearchESI: resolve IDs to eve entities", "error", err)
@@ -75,11 +100,13 @@ func (s *CharacterService) SearchESI(ctx context.Context, characterID int32, sea
 		SearchAgent:         x.Agent,
 		SearchAlliance:      x.Alliance,
 		SearchCharacter:     x.Character,
+		SearchConstellation: x.Constellation,
 		SearchCorporation:   x.Corporation,
 		SearchFaction:       x.Faction,
-		SearchInventoryType: x.InventoryType,
+		SearchRegion:        x.Region,
 		SearchSolarSystem:   x.SolarSystem,
 		SearchStation:       x.Station,
+		SearchType:          x.InventoryType,
 	}
 	r := make(map[SearchCategory][]*app.EveEntity)
 	for c, ids := range categoryMap {

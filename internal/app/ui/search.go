@@ -178,14 +178,7 @@ func (a *SearchArea) makeResults() *iwidget.Tree[resultNode] {
 			}
 			name := widget.NewLabel("Template")
 			image := container.NewPadded(iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(app.IconUnitSize)))
-			info := widget.NewIcon(theme.InfoIcon())
-			return container.NewBorder(
-				nil,
-				nil,
-				image,
-				info,
-				name,
-			)
+			return container.NewBorder(nil, nil, image, nil, name)
 		},
 		func(n resultNode, isBranch bool, co fyne.CanvasObject) {
 			if isBranch {
@@ -193,9 +186,17 @@ func (a *SearchArea) makeResults() *iwidget.Tree[resultNode] {
 				return
 			}
 			border := co.(*fyne.Container).Objects
-			border[0].(*widget.Label).SetText(n.String())
+
+			name := border[0].(*widget.Label)
+			name.Text = n.String()
+			var i widget.Importance
+			if !supportedCategories.Contains(n.ee.Category) {
+				i = widget.LowImportance
+			}
+			name.Importance = i
+			name.Refresh()
+
 			image := border[1].(*fyne.Container).Objects[0].(*canvas.Image)
-			info := border[2].(*widget.Icon)
 			if imageCategory := n.ee.Category.ToEveImage(); imageCategory != "" {
 				go func() {
 					image.Show()
@@ -228,11 +229,6 @@ func (a *SearchArea) makeResults() *iwidget.Tree[resultNode] {
 				}()
 			} else {
 				image.Hide()
-			}
-			if supportedCategories.Contains(n.ee.Category) {
-				info.Show()
-			} else {
-				info.Hide()
 			}
 		},
 	)
@@ -365,15 +361,21 @@ var searchCategory2optionMap = map[character.SearchCategory]string{
 	character.SearchAgent:         "Agents",
 	character.SearchAlliance:      "Alliances",
 	character.SearchCharacter:     "Characters",
+	character.SearchConstellation: "Constellations",
 	character.SearchCorporation:   "Corporations",
 	character.SearchFaction:       "Factions",
-	character.SearchInventoryType: "Types",
+	character.SearchRegion:        "Regions",
 	character.SearchSolarSystem:   "Systems",
 	character.SearchStation:       "Stations",
+	character.SearchType:          "Types",
 }
 
 func searchCategory2option(c character.SearchCategory) string {
-	return searchCategory2optionMap[c]
+	x, ok := searchCategory2optionMap[c]
+	if !ok {
+		panic(fmt.Sprintf("searchCategory2option: %s not found", c))
+	}
+	return x
 }
 
 func option2searchCategory(o string) character.SearchCategory {
@@ -382,7 +384,7 @@ func option2searchCategory(o string) character.SearchCategory {
 			return k
 		}
 	}
-	panic("not found")
+	panic(fmt.Sprintf("option2searchCategory: %s not found", o))
 }
 
 func makeOptions() []string {
