@@ -74,6 +74,12 @@ func TestFyneTreeAdd(t *testing.T) {
 		_, err := tree.Add("", myNode{"1", "Bravo"})
 		assert.Error(t, err)
 	})
+	t.Run("should return error when node UID is root", func(t *testing.T) {
+		tree := iwidget.NewTreeData[myNode]()
+		tree.MustAdd("", myNode{"1", "Alpha"})
+		_, err := tree.Add("", myNode{"", "Bravo"})
+		assert.Error(t, err)
+	})
 	t.Run("should panic when node node can not be added", func(t *testing.T) {
 		tree := iwidget.NewTreeData[myNode]()
 		assert.Panics(t, func() {
@@ -82,7 +88,7 @@ func TestFyneTreeAdd(t *testing.T) {
 	})
 }
 
-func TestFyneTreeValue(t *testing.T) {
+func TestGetNode(t *testing.T) {
 	t.Parallel()
 	t.Run("can return a node", func(t *testing.T) {
 		tree := iwidget.NewTreeData[myNode]()

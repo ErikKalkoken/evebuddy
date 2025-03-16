@@ -20,7 +20,9 @@ type TreeNode interface {
 
 // TreeData is a type that holds all data needed to render a Fyne tree widget.
 //
-// It is designed to make it easier to construct tree data structures for a widget.
+// It is designed to make it easier to construct tree data structures for a widget
+// by hiding some of the complexity behind a simplery API and by performing sanity checks.
+//
 // Trees are constructed by adding nodes, which can contain any data
 // as long as it complies with the [TreeNode] interface.
 //
@@ -56,6 +58,9 @@ func (t *TreeData[T]) Add(parentUID widget.TreeNodeID, node T) (widget.TreeNodeI
 		}
 	}
 	uid := node.UID()
+	if uid == "" {
+		return "", fmt.Errorf("UID() must not return zero value: %+v", node)
+	}
 	_, found := t.nodes[uid]
 	if found {
 		return "", fmt.Errorf("this node already exists: %+v", node)
