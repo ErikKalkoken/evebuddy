@@ -412,6 +412,9 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 	searchDest.OnSelected = func() {
 		u.SearchArea.Focus()
 	}
+	searchDest.OnSelectedAgain = func() {
+		u.SearchArea.Reset()
+	}
 
 	moreDest := iwidget.NewDestinationDef("More", theme.MenuIcon(), moreNav)
 	moreDest.OnSelectedAgain = func() {

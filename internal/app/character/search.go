@@ -3,13 +3,13 @@ package character
 import (
 	"context"
 	"log/slog"
-	"maps"
 	"slices"
 	"strings"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/antihax/goesi/esi"
+	esioptional "github.com/antihax/goesi/optional"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -32,16 +32,9 @@ func (x SearchCategory) String() string {
 	return titler.String(strings.ReplaceAll(string(x), "_", " "))
 }
 
-// SearchESI performs a name search for items on the ESI server
-// and returns the results by EveEntity category and sorted by name.
-// It also returns the total number of results.
-// A total of 500 indicates that we exceeded the server limit.
-func (s *CharacterService) SearchESI(ctx context.Context, characterID int32, search string) (map[SearchCategory][]*app.EveEntity, int, error) {
-	token, err := s.getValidCharacterToken(ctx, characterID)
-	if err != nil {
-		return nil, 0, err
-	}
-	categories := []SearchCategory{
+// SearchCategories returns all available search categories
+func SearchCategories() []SearchCategory {
+	return []SearchCategory{
 		SearchAgent,
 		SearchAlliance,
 		SearchCharacter,
@@ -51,11 +44,24 @@ func (s *CharacterService) SearchESI(ctx context.Context, characterID int32, sea
 		SearchSolarSystem,
 		SearchStation,
 	}
+}
+
+// SearchESI performs a name search for items on the ESI server
+// and returns the results by EveEntity category and sorted by name.
+// It also returns the total number of results.
+// A total of 500 indicates that we exceeded the server limit.
+func (s *CharacterService) SearchESI(ctx context.Context, characterID int32, search string, categories []SearchCategory, strict bool) (map[SearchCategory][]*app.EveEntity, int, error) {
+	token, err := s.getValidCharacterToken(ctx, characterID)
+	if err != nil {
+		return nil, 0, err
+	}
 	ctx = contextWithESIToken(ctx, token.AccessToken)
 	cc := slices.Collect(xiter.MapSlice(categories, func(a SearchCategory) string {
 		return string(a)
 	}))
-	x, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(ctx, cc, characterID, search, nil)
+	x, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(ctx, cc, characterID, search, &esi.GetCharactersCharacterIdSearchOpts{
+		Strict: esioptional.NewBool(strict),
+	})
 	if err != nil {
 		return nil, 0, err
 	}
@@ -74,9 +80,6 @@ func (s *CharacterService) SearchESI(ctx context.Context, characterID int32, sea
 		SearchInventoryType: x.InventoryType,
 		SearchSolarSystem:   x.SolarSystem,
 		SearchStation:       x.Station,
-	}
-	if !set.NewFromSlice(categories).Equal(set.Collect(maps.Keys(categoryMap))) {
-		panic("SearchESI: search categories do not match")
 	}
 	r := make(map[SearchCategory][]*app.EveEntity)
 	for c, ids := range categoryMap {

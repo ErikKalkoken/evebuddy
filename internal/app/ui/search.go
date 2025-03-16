@@ -4,18 +4,21 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 type resultNode struct {
@@ -45,61 +48,88 @@ func (sn resultNode) String() string {
 type SearchArea struct {
 	Content fyne.CanvasObject
 
-	indicator *widget.ProgressBarInfinite
-	entry     *widget.Entry
-	note      *widget.Label
-	tree      *iwidget.Tree[resultNode]
-	message   *widget.Label
-	u         *BaseUI
-	w         fyne.Window
+	categories    *widget.CheckGroup
+	entry         *widget.Entry
+	indicator     *widget.ProgressBarInfinite
+	resultCount   *widget.Label
+	results       *iwidget.Tree[resultNode]
+	searchOptions *widget.Accordion
+	strict        *kxwidget.Switch
+	u             *BaseUI
+	w             fyne.Window
 }
 
 func NewSearchArea(u *BaseUI) *SearchArea {
 	a := &SearchArea{
-		entry:     widget.NewEntry(),
-		indicator: widget.NewProgressBarInfinite(),
-		message:   widget.NewLabel(""),
-		note:      widget.NewLabel(""),
-		u:         u,
-		w:         u.Window,
+		entry:       widget.NewEntry(),
+		indicator:   widget.NewProgressBarInfinite(),
+		resultCount: widget.NewLabel(""),
+		u:           u,
+		w:           u.Window,
 	}
-	a.tree = a.makeTree()
+
+	options := makeOptions()
+	a.categories = widget.NewCheckGroup(options, nil)
+	a.categories.Horizontal = true
+	a.categories.Selected = options
+
+	a.strict = kxwidget.NewSwitch(nil)
+	a.resultCount = widget.NewLabel("")
+	a.resultCount.Hide()
+
+	a.results = a.makeResults()
 	a.entry.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.entry.SetText("")
-		a.clearTree()
+		a.Reset()
 	})
 	a.entry.PlaceHolder = "Search New Eden"
 	a.entry.OnSubmitted = func(s string) {
 		go a.doSearch(s)
 	}
-	a.note.Importance = widget.WarningImportance
-	a.note.Wrapping = fyne.TextWrapWord
 	a.indicator.Hide()
 
+	a.searchOptions = widget.NewAccordion(
+		widget.NewAccordionItem(
+			"Search options",
+			container.NewVBox(
+				container.NewHScroll(a.categories),
+				container.NewHBox(a.strict, widget.NewLabel("strict search")),
+			),
+		),
+	)
 	c := container.NewBorder(
 		container.NewVBox(
 			a.entry,
+			a.searchOptions,
+			widget.NewSeparator(),
 			a.indicator,
-			a.note,
+			a.resultCount,
 		),
 		nil,
 		nil,
 		nil,
-		container.NewStack(a.tree, container.NewCenter(a.message)),
+		a.results,
 	)
 	a.Content = c
 	return a
-}
-
-func (a *SearchArea) SetWindow(w fyne.Window) {
-	a.w = w
 }
 
 func (a *SearchArea) Focus() {
 	a.w.Canvas().Focus(a.entry)
 }
 
-func (a *SearchArea) makeTree() *iwidget.Tree[resultNode] {
+func (a *SearchArea) Reset() {
+	a.entry.SetText("")
+	a.clearResults()
+	a.categories.SetSelected(makeOptions())
+	a.strict.SetState(false)
+	a.searchOptions.CloseAll()
+}
+
+func (a *SearchArea) SetWindow(w fyne.Window) {
+	a.w = w
+}
+
+func (a *SearchArea) makeResults() *iwidget.Tree[resultNode] {
 	supportedCategories := infowindow.SupportedEveEntities()
 	t := iwidget.NewTree(
 		func(b bool) fyne.CanvasObject {
@@ -177,8 +207,13 @@ func (a *SearchArea) makeTree() *iwidget.Tree[resultNode] {
 	return t
 }
 
+func (a *SearchArea) clearResults() {
+	a.results.Clear()
+	a.resultCount.Hide()
+}
+
 func (a *SearchArea) doSearch(search string) {
-	a.clearTree()
+	a.clearResults()
 	if search == "" {
 		return
 	}
@@ -188,26 +223,36 @@ func (a *SearchArea) doSearch(search string) {
 		a.indicator.Stop()
 		a.indicator.Hide()
 	}()
-	results, total, err := a.u.CharacterService.SearchESI(context.Background(), a.u.CurrentCharacterID(), search)
+	categories := slices.Collect(xiter.MapSlice(a.categories.Selected, func(o string) character.SearchCategory {
+		return option2searchCategory(o)
+	}))
+	results, total, err := a.u.CharacterService.SearchESI(
+		context.Background(),
+		a.u.CurrentCharacterID(),
+		search,
+		categories,
+		a.strict.On,
+	)
 	if err != nil {
 		d2 := iwidget.NewErrorDialog("Search failed", err, a.u.Window)
 		d2.Show()
 		return
 	}
-	if len(results) == 0 {
-		a.message.SetText("No results")
-		a.message.Show()
-		return
+	if total == 500 {
+		a.resultCount.Importance = widget.WarningImportance
+		a.resultCount.Wrapping = fyne.TextWrapWord
+		a.resultCount.SetText(fmt.Sprintf(
+			"Search for \"%s\" exceeded the server limit of 500 results "+
+				"and may not contain the items you are looking for.",
+			search,
+		))
+	} else {
+		a.resultCount.Importance = widget.MediumImportance
+		a.resultCount.SetText(fmt.Sprintf("%d Results", total))
 	}
-	categories := []character.SearchCategory{
-		character.SearchAgent,
-		character.SearchAlliance,
-		character.SearchCharacter,
-		character.SearchCorporation,
-		character.SearchFaction,
-		character.SearchInventoryType,
-		character.SearchSolarSystem,
-		character.SearchStation,
+	a.resultCount.Show()
+	if total == 0 {
+		return
 	}
 	t := iwidget.NewTreeData[resultNode]()
 	var categoriesFound int
@@ -227,22 +272,40 @@ func (a *SearchArea) doSearch(search string) {
 			t.Add(parentUID, n)
 		}
 	}
-	a.tree.Set(t)
+	a.results.Set(t)
 	if categoriesFound == 1 {
-		a.tree.OpenAllBranches()
-	}
-	if total == 500 {
-		a.note.SetText(fmt.Sprintf(
-			"Search for \"%s\" exceeded the server limit of 500 results "+
-				"and may not contain the items you are looking for.",
-			search,
-		))
-		a.note.Show()
+		a.results.OpenAllBranches()
 	}
 }
 
-func (a *SearchArea) clearTree() {
-	a.tree.Clear()
-	a.message.Hide()
-	a.note.Hide()
+var searchCategory2optionMap = map[character.SearchCategory]string{
+	character.SearchAgent:         "Agents",
+	character.SearchAlliance:      "Alliances",
+	character.SearchCharacter:     "Characters",
+	character.SearchCorporation:   "Corporations",
+	character.SearchFaction:       "Factions",
+	character.SearchInventoryType: "Types",
+	character.SearchSolarSystem:   "Systems",
+	character.SearchStation:       "Stations",
+}
+
+func searchCategory2option(c character.SearchCategory) string {
+	return searchCategory2optionMap[c]
+}
+
+func option2searchCategory(o string) character.SearchCategory {
+	for k, v := range searchCategory2optionMap {
+		if v == o {
+			return k
+		}
+	}
+	panic("not found")
+}
+
+func makeOptions() []string {
+	options := slices.Collect(xiter.MapSlice(character.SearchCategories(), func(c character.SearchCategory) string {
+		return searchCategory2option(c)
+	}))
+	slices.Sort(options)
+	return options
 }
