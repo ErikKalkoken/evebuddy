@@ -3,12 +3,10 @@ package ui
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"slices"
 	"sync"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -17,8 +15,9 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
@@ -30,18 +29,19 @@ const (
 type SearchArea struct {
 	Content fyne.CanvasObject
 
-	categories    *widget.CheckGroup
-	entry         *widget.Entry
-	indicator     *widget.ProgressBarInfinite
-	recent        *widget.List
-	recentPage    *fyne.Container
-	resultCount   *widget.Label
-	results       *iwidget.Tree[resultNode]
-	resultsPage   *fyne.Container
-	searchOptions *widget.Accordion
-	strict        *kxwidget.Switch
-	u             *BaseUI
-	w             fyne.Window
+	categories          *widget.CheckGroup
+	entry               *widget.Entry
+	indicator           *widget.ProgressBarInfinite
+	recent              *widget.List
+	recentPage          *fyne.Container
+	resultCount         *widget.Label
+	results             *iwidget.Tree[resultNode]
+	resultsPage         *fyne.Container
+	searchOptions       *widget.Accordion
+	strict              *kxwidget.Switch
+	supportedCategories set.Set[app.EveEntityCategory]
+	u                   *BaseUI
+	w                   fyne.Window
 
 	mu          sync.RWMutex
 	recentItems []*app.EveEntity
@@ -49,11 +49,12 @@ type SearchArea struct {
 
 func NewSearchArea(u *BaseUI) *SearchArea {
 	a := &SearchArea{
-		entry:       widget.NewEntry(),
-		indicator:   widget.NewProgressBarInfinite(),
-		resultCount: widget.NewLabel(""),
-		u:           u,
-		w:           u.Window,
+		entry:               widget.NewEntry(),
+		indicator:           widget.NewProgressBarInfinite(),
+		resultCount:         widget.NewLabel(""),
+		supportedCategories: infowindow.SupportedEveEntities(),
+		u:                   u,
+		w:                   u.Window,
 	}
 
 	defaultStrict := false
@@ -133,8 +134,15 @@ func NewSearchArea(u *BaseUI) *SearchArea {
 		nil,
 		a.results,
 	)
+	clearRecent := widget.NewHyperlink("Clear", nil)
+	clearRecent.OnTapped = func() {
+		a.mu.Lock()
+		a.recentItems = make([]*app.EveEntity, 0)
+		a.mu.Unlock()
+		a.recent.Refresh()
+	}
 	a.recentPage = container.NewBorder(
-		widget.NewLabel("Recent searches"),
+		container.NewHBox(widget.NewLabel("Recent searches"), layout.NewSpacer(), clearRecent),
 		nil,
 		nil,
 		nil,
@@ -170,66 +178,23 @@ func (a *SearchArea) SetWindow(w fyne.Window) {
 }
 
 func (a *SearchArea) makeResults() *iwidget.Tree[resultNode] {
-	supportedCategories := infowindow.SupportedEveEntities()
 	t := iwidget.NewTree(
 		func(isBranch bool) fyne.CanvasObject {
 			if isBranch {
 				return widget.NewLabel("Template")
 			}
-			name := widget.NewLabel("Template")
-			image := container.NewPadded(iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(app.IconUnitSize)))
-			return container.NewBorder(nil, nil, image, nil, name)
+			return appwidget.NewSearchResult(
+				a.u.EveImageService,
+				a.u.EveUniverseService,
+				a.supportedCategories,
+			)
 		},
 		func(n resultNode, isBranch bool, co fyne.CanvasObject) {
 			if isBranch {
 				co.(*widget.Label).SetText(n.String())
 				return
 			}
-			border := co.(*fyne.Container).Objects
-
-			name := border[0].(*widget.Label)
-			name.Text = n.String()
-			var i widget.Importance
-			if !supportedCategories.Contains(n.ee.Category) {
-				i = widget.LowImportance
-			}
-			name.Importance = i
-			name.Refresh()
-
-			image := border[1].(*fyne.Container).Objects[0].(*canvas.Image)
-			if imageCategory := n.ee.Category.ToEveImage(); imageCategory != "" {
-				go func() {
-					image.Show()
-					ctx := context.Background()
-					res, err := func() (fyne.Resource, error) {
-						switch n.ee.Category {
-						case app.EveEntityInventoryType:
-							et, err := a.u.EveUniverseService.GetOrCreateEveTypeESI(ctx, n.ee.ID)
-							if err != nil {
-								return nil, err
-							}
-							switch et.Group.Category.ID {
-							case app.EveCategorySKINs:
-								return a.u.EveImageService.InventoryTypeSKIN(et.ID, app.IconPixelSize)
-							case app.EveCategoryBlueprint:
-								return a.u.EveImageService.InventoryTypeBPO(et.ID, app.IconPixelSize)
-							default:
-								return a.u.EveImageService.InventoryTypeIcon(et.ID, app.IconPixelSize)
-							}
-						default:
-							return a.u.EveImageService.EntityIcon(n.ee.ID, imageCategory, app.IconPixelSize)
-						}
-					}()
-					if err != nil {
-						res = theme.BrokenImageIcon()
-						slog.Error("failed to load image", "error", err)
-					}
-					image.Resource = res
-					image.Refresh()
-				}()
-			} else {
-				image.Hide()
-			}
+			co.(*appwidget.SearchResult).Set(n.ee)
 		},
 	)
 	t.OnSelected = func(n resultNode) {
@@ -238,17 +203,30 @@ func (a *SearchArea) makeResults() *iwidget.Tree[resultNode] {
 			t.ToggleBranch(n)
 			return
 		}
-		if !supportedCategories.Contains(n.ee.Category) {
-			return
-		}
-		iw := infowindow.New(a.u.CurrentCharacterID, a.u.CharacterService, a.u.EveUniverseService, a.u.EveImageService, a.w)
-		iw.ShowEveEntity(n.ee)
+		a.showSupportedResult(n.ee)
 		a.mu.Lock()
+		a.recentItems = slices.DeleteFunc(a.recentItems, func(a *app.EveEntity) bool {
+			return a.ID == n.ee.ID
+		})
 		a.recentItems = slices.Insert(a.recentItems, 0, n.ee)
 		a.mu.Unlock()
 		a.recent.Refresh()
 	}
 	return t
+}
+
+func (a *SearchArea) showSupportedResult(o *app.EveEntity) {
+	if !a.supportedCategories.Contains(o.Category) {
+		return
+	}
+	iw := infowindow.New(
+		a.u.CurrentCharacterID,
+		a.u.CharacterService,
+		a.u.EveUniverseService,
+		a.u.EveImageService,
+		a.w,
+	)
+	iw.ShowEveEntity(o)
 }
 
 func (a *SearchArea) makeRecentSelected() *widget.List {
@@ -259,7 +237,11 @@ func (a *SearchArea) makeRecentSelected() *widget.List {
 			return len(a.recentItems)
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("Template")
+			return appwidget.NewSearchResult(
+				a.u.EveImageService,
+				a.u.EveUniverseService,
+				infowindow.SupportedEveEntities(),
+			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			a.mu.RLock()
@@ -268,9 +250,20 @@ func (a *SearchArea) makeRecentSelected() *widget.List {
 				return
 			}
 			it := a.recentItems[id]
-			co.(*widget.Label).SetText(it.Name)
+			co.(*appwidget.SearchResult).Set(it)
 		},
 	)
+	l.OnSelected = func(id widget.ListItemID) {
+		a.mu.RLock()
+		defer l.UnselectAll()
+		if id >= len(a.recentItems) {
+			a.mu.RUnlock()
+			return
+		}
+		it := a.recentItems[id]
+		a.mu.RUnlock()
+		a.showSupportedResult(it)
+	}
 	return l
 }
 

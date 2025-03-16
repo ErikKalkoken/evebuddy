@@ -376,7 +376,7 @@ func (u *DesktopUI) showSearchWindow() {
 	w.SetOnClosed(func() {
 		u.searchWindow = nil
 	})
-	w.Resize(fyne.Size{Width: 500, Height: 300})
+	w.Resize(fyne.Size{Width: 700, Height: 400})
 	w.SetContent(u.SearchArea.Content)
 	w.Show()
 	u.SearchArea.SetWindow(w)
