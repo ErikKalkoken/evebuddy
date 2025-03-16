@@ -20,9 +20,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type locationNodeType uint
@@ -76,7 +76,7 @@ type AssetsArea struct {
 	assetsBottom     *widget.Label
 	locationPath     *widget.Label
 	locationsTop     *widget.Label
-	locations        *fynetree.Tree[locationNode]
+	locations        *iwidget.Tree[locationNode]
 	selectedLocation optional.Optional[locationNode]
 	u                *BaseUI
 }
@@ -115,14 +115,14 @@ func NewAssetsArea(u *BaseUI) *AssetsArea {
 	return &a
 }
 
-func (a *AssetsArea) makeLocationsTree() *fynetree.Tree[locationNode] {
+func (a *AssetsArea) makeLocationsTree() *iwidget.Tree[locationNode] {
 	makeNameWithCount := func(name string, count int) string {
 		if count == 0 {
 			return name
 		}
 		return fmt.Sprintf("%s (%s)", name, humanize.Comma(int64(count)))
 	}
-	t := fynetree.NewTree(
+	t := iwidget.NewTree(
 		func(branch bool) fyne.CanvasObject {
 			iconInfo := kxwidget.NewTappableIcon(theme.InfoIcon(), nil)
 			main := widget.NewLabel("Location")
@@ -279,9 +279,9 @@ func (a *AssetsArea) Redraw() {
 	}
 }
 
-func (a *AssetsArea) newLocationData() (*fynetree.TreeData[locationNode], error) {
+func (a *AssetsArea) newLocationData() (*iwidget.TreeData[locationNode], error) {
 	ctx := context.TODO()
-	tree := fynetree.NewTreeData[locationNode]()
+	tree := iwidget.NewTreeData[locationNode]()
 	if !a.u.HasCharacter() {
 		return tree, nil
 	}
@@ -315,7 +315,7 @@ func (a *AssetsArea) newLocationData() (*fynetree.TreeData[locationNode], error)
 		} else {
 			location.IsUnknown = true
 		}
-		locationUID := tree.MustAdd(fynetree.RootUID, location)
+		locationUID := tree.MustAdd(iwidget.RootUID, location)
 
 		topAssets := ln.Nodes()
 		slices.SortFunc(topAssets, func(a assetcollection.AssetNode, b assetcollection.AssetNode) int {

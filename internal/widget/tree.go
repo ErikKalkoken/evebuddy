@@ -1,11 +1,13 @@
-package fynetree
+package widget
 
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
 )
 
-// Tree is a simplified tree widget for the Fyne GUI toolkit.
+// Tree is a simpler to use tree widget for the Fyne GUI toolkit.
+//
+// The main difference is that it's data is defined through the [TreeData] API.
 type Tree[T TreeNode] struct {
 	widget.BaseWidget
 
@@ -15,6 +17,7 @@ type Tree[T TreeNode] struct {
 	tree *widget.Tree
 }
 
+// NewTree returns a new [Tree] object.
 func NewTree[T TreeNode](
 	create func(b bool) fyne.CanvasObject,
 	update func(n T, b bool, co fyne.CanvasObject),
@@ -51,16 +54,19 @@ func NewTree[T TreeNode](
 	return w
 }
 
+// Clear removes all nodes from the tree.
 func (w *Tree[T]) Clear() {
 	w.data = NewTreeData[T]()
 	w.Refresh()
 }
 
+// Set updates the all nodes of a tree.
 func (w *Tree[T]) Set(data *TreeData[T]) {
 	w.data = data
 	w.Refresh()
 }
 
+// Data returns the tree data for a tree.
 func (w *Tree[T]) Data() *TreeData[T] {
 	return w.data
 }

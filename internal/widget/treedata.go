@@ -1,5 +1,5 @@
 // Package fynetree contains a type that makes using Fyne tree widgets easier.
-package fynetree
+package widget
 
 import (
 	"fmt"
@@ -12,16 +12,17 @@ const (
 	RootUID widget.TreeNodeID = ""
 )
 
-// TreeNode represents a node in a Fyne tree.
+// TreeNode is the interface for a node in a Fyne tree.
 type TreeNode interface {
+	// UID returns a unique ID for a node.
 	UID() widget.TreeNodeID
 }
 
 // TreeData is a type that holds all data needed to render a Fyne tree widget.
 //
-// It is designed to make it easier to construct the data for tree widgets
-// and it's method are supposed to be used directly inside the functions
-// for creating and updating a fyne tree.
+// It is designed to make it easier to construct tree data structures for a widget.
+// Trees are constructed by adding nodes, which can contain any data
+// as long as it complies with the [TreeNode] interface.
 //
 // Please note that nodes that have child nodes are always reported as branches.
 // This means there can not be any empty branch nodes.

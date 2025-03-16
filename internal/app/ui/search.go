@@ -10,16 +10,17 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
-	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type resultNode struct {
-	category string
+	category character.SearchCategory
+	count    int
 	ee       *app.EveEntity
 }
 
@@ -29,14 +30,14 @@ func (sn resultNode) isCategory() bool {
 
 func (sn resultNode) UID() widget.TreeNodeID {
 	if sn.isCategory() {
-		return "C_" + sn.category
+		return "C_" + string(sn.category)
 	}
 	return fmt.Sprintf("EE_%d", sn.ee.ID)
 }
 
 func (sn resultNode) String() string {
 	if sn.isCategory() {
-		return sn.category
+		return fmt.Sprintf("%s (%d)", sn.category.String(), sn.count)
 	}
 	return sn.ee.Name
 }
@@ -47,7 +48,7 @@ type SearchArea struct {
 	indicator *widget.ProgressBarInfinite
 	entry     *widget.Entry
 	note      *widget.Label
-	tree      *fynetree.Tree[resultNode]
+	tree      *iwidget.Tree[resultNode]
 	message   *widget.Label
 	u         *BaseUI
 	w         fyne.Window
@@ -98,9 +99,9 @@ func (a *SearchArea) Focus() {
 	a.w.Canvas().Focus(a.entry)
 }
 
-func (a *SearchArea) makeTree() *fynetree.Tree[resultNode] {
+func (a *SearchArea) makeTree() *iwidget.Tree[resultNode] {
 	supportedCategories := infowindow.SupportedEveEntities()
-	t := fynetree.NewTree(
+	t := iwidget.NewTree(
 		func(b bool) fyne.CanvasObject {
 			name := widget.NewLabel("Template")
 			image := container.NewPadded(iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(app.IconUnitSize)))
@@ -208,7 +209,7 @@ func (a *SearchArea) doSearch(search string) {
 		character.SearchSolarSystem,
 		character.SearchStation,
 	}
-	t := fynetree.NewTreeData[resultNode]()
+	t := iwidget.NewTreeData[resultNode]()
 	var categoriesFound int
 	for _, c := range categories {
 		_, ok := results[c]
@@ -216,8 +217,8 @@ func (a *SearchArea) doSearch(search string) {
 			continue
 		}
 		categoriesFound++
-		n := resultNode{category: fmt.Sprintf("%s (%d)", c.String(), len(results[c]))}
-		parentUID, err := t.Add(fynetree.RootUID, n)
+		n := resultNode{category: c, count: len(results[c])}
+		parentUID, err := t.Add(iwidget.RootUID, n)
 		if err != nil {
 			panic(err)
 		}

@@ -19,7 +19,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
-	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -55,7 +54,7 @@ type JumpClonesArea struct {
 	OnReDraw func(clonesCount int)
 
 	top  *widget.RichText
-	tree *fynetree.Tree[jumpCloneNode]
+	tree *iwidget.Tree[jumpCloneNode]
 	u    *BaseUI
 }
 
@@ -72,8 +71,8 @@ func NewJumpClonesArea(u *BaseUI) *JumpClonesArea {
 	return &a
 }
 
-func (a *JumpClonesArea) makeTree() *fynetree.Tree[jumpCloneNode] {
-	t := fynetree.NewTree(
+func (a *JumpClonesArea) makeTree() *iwidget.Tree[jumpCloneNode] {
+	t := iwidget.NewTree(
 		func(branch bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(
 				icon.Characterplaceholder64Jpeg,
@@ -161,8 +160,8 @@ func (a *JumpClonesArea) Redraw() {
 	}
 }
 
-func (a *JumpClonesArea) newTreeData() (*fynetree.TreeData[jumpCloneNode], error) {
-	tree := fynetree.NewTreeData[jumpCloneNode]()
+func (a *JumpClonesArea) newTreeData() (*iwidget.TreeData[jumpCloneNode], error) {
+	tree := iwidget.NewTreeData[jumpCloneNode]()
 	if !a.u.HasCharacter() {
 		return tree, nil
 	}
@@ -193,7 +192,7 @@ func (a *JumpClonesArea) newTreeData() (*fynetree.TreeData[jumpCloneNode], error
 			n.LocationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
 			n.IsUnknown = true
 		}
-		uid := tree.MustAdd(fynetree.RootUID, n)
+		uid := tree.MustAdd(iwidget.RootUID, n)
 		for _, i := range c.Implants {
 			n := jumpCloneNode{
 				ImplantTypeDescription: i.EveType.DescriptionPlain(),
