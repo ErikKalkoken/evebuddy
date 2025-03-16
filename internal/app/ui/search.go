@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -21,29 +22,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
-type resultNode struct {
-	category character.SearchCategory
-	count    int
-	ee       *app.EveEntity
-}
-
-func (sn resultNode) isCategory() bool {
-	return sn.ee == nil
-}
-
-func (sn resultNode) UID() widget.TreeNodeID {
-	if sn.isCategory() {
-		return "C_" + string(sn.category)
-	}
-	return fmt.Sprintf("EE_%d", sn.ee.ID)
-}
-
-func (sn resultNode) String() string {
-	if sn.isCategory() {
-		return fmt.Sprintf("%s (%d)", sn.category.String(), sn.count)
-	}
-	return sn.ee.Name
-}
+const (
+	maxSearchResults = 500 // max results returned from the server
+)
 
 type SearchArea struct {
 	Content fyne.CanvasObject
@@ -68,15 +49,39 @@ func NewSearchArea(u *BaseUI) *SearchArea {
 		w:           u.Window,
 	}
 
-	options := makeOptions()
-	a.categories = widget.NewCheckGroup(options, nil)
+	defaultStrict := false
+	defaultCategories := makeOptions()
+	updateSearchOptionsTitle := func() {
+		isDefault := func() bool {
+			if a.strict.On != defaultStrict {
+				return false
+			}
+			if slices.Compare(a.categories.Selected, defaultCategories) != 0 {
+				return false
+			}
+			return true
+		}()
+		s := "Search options"
+		if !isDefault {
+			s += " (changed)"
+		}
+		a.searchOptions.Items[0].Title = s
+		a.searchOptions.Refresh()
+	}
+	a.categories = widget.NewCheckGroup(defaultCategories, nil)
 	a.categories.Horizontal = true
-	a.categories.Selected = options
+	a.categories.Selected = defaultCategories
+	a.categories.OnChanged = func(s []string) {
+		updateSearchOptionsTitle()
+	}
 
 	a.strict = kxwidget.NewSwitch(nil)
+	a.strict.On = defaultStrict
+	a.strict.OnChanged = func(on bool) {
+		updateSearchOptionsTitle()
+	}
 	a.resultCount = widget.NewLabel("")
 	a.resultCount.Hide()
-
 	a.results = a.makeResults()
 	a.entry.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.Reset()
@@ -89,13 +94,26 @@ func NewSearchArea(u *BaseUI) *SearchArea {
 
 	a.searchOptions = widget.NewAccordion(
 		widget.NewAccordionItem(
-			"Search options",
+			"",
 			container.NewVBox(
 				container.NewHScroll(a.categories),
-				container.NewHBox(a.strict, widget.NewLabel("strict search")),
+				container.New(
+					layout.NewCustomPaddedHBoxLayout(0),
+					a.strict,
+					kxwidget.NewTappableLabel("Strict search", func() {
+						a.strict.SetState(!a.strict.On)
+					})),
+				widget.NewButton("Reset", func() {
+					a.categories.SetSelected(defaultCategories)
+					a.strict.SetState(false)
+					a.searchOptions.CloseAll()
+					updateSearchOptionsTitle()
+				}),
 			),
 		),
 	)
+	updateSearchOptionsTitle()
+
 	c := container.NewBorder(
 		container.NewVBox(
 			a.entry,
@@ -120,9 +138,6 @@ func (a *SearchArea) Focus() {
 func (a *SearchArea) Reset() {
 	a.entry.SetText("")
 	a.clearResults()
-	a.categories.SetSelected(makeOptions())
-	a.strict.SetState(false)
-	a.searchOptions.CloseAll()
 }
 
 func (a *SearchArea) SetWindow(w fyne.Window) {
@@ -238,7 +253,7 @@ func (a *SearchArea) doSearch(search string) {
 		d2.Show()
 		return
 	}
-	if total == 500 {
+	if total == maxSearchResults {
 		a.resultCount.Importance = widget.WarningImportance
 		a.resultCount.Wrapping = fyne.TextWrapWord
 		a.resultCount.SetText(fmt.Sprintf(
@@ -308,4 +323,28 @@ func makeOptions() []string {
 	}))
 	slices.Sort(options)
 	return options
+}
+
+type resultNode struct {
+	category character.SearchCategory
+	count    int
+	ee       *app.EveEntity
+}
+
+func (sn resultNode) isCategory() bool {
+	return sn.ee == nil
+}
+
+func (sn resultNode) UID() widget.TreeNodeID {
+	if sn.isCategory() {
+		return "C_" + string(sn.category)
+	}
+	return fmt.Sprintf("EE_%d", sn.ee.ID)
+}
+
+func (sn resultNode) String() string {
+	if sn.isCategory() {
+		return fmt.Sprintf("%s (%d)", sn.category.String(), sn.count)
+	}
+	return sn.ee.Name
 }
