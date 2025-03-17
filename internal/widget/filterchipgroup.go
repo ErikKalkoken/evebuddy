@@ -6,12 +6,15 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	ilayout "github.com/ErikKalkoken/evebuddy/internal/layout"
 )
 
-// FilterCheckGround represents a group of [FilterChip].
+// FilterCheckGround represents a group of filter chips.
+// Filter chips use tags or descriptive words to filter content.
 type FilterChipGroup struct {
 	widget.DisableableWidget
 
@@ -22,12 +25,13 @@ type FilterChipGroup struct {
 
 	options   []string
 	optionMap map[string]bool
-	chips     []*FilterChip
+	chips     []*filterChip
 }
 
+// NewFilterChipGroup returns a new [FilterChipGroup].
 func NewFilterChipGroup(options []string, changed func([]string)) *FilterChipGroup {
 	w := &FilterChipGroup{
-		chips:     make([]*FilterChip, 0),
+		chips:     make([]*filterChip, 0),
 		OnChanged: changed,
 		options:   options,
 		Selected:  make([]string, 0),
@@ -39,7 +43,7 @@ func NewFilterChipGroup(options []string, changed func([]string)) *FilterChipGro
 			panic("Empty strings are not allowed as options")
 		}
 		w.optionMap[o] = true
-		w.chips = append(w.chips, NewFilterChip(o, func(selected bool) {
+		w.chips = append(w.chips, newFilterChip(o, func(selected bool) {
 			w.toggleOption(o, selected)
 			if w.OnChanged != nil {
 				w.OnChanged(slices.Clone(w.Selected))
@@ -65,6 +69,7 @@ func (w *FilterChipGroup) toggleOption(o string, selected bool) {
 	}
 }
 
+// SetSelected updates the selected options.
 func (w *FilterChipGroup) SetSelected(s []string) {
 	w.mu.Lock()
 	w.Selected = slices.Clone(s)
@@ -72,6 +77,8 @@ func (w *FilterChipGroup) SetSelected(s []string) {
 	w.Refresh()
 
 }
+
+// Options returns the options.
 func (w *FilterChipGroup) Options() []string {
 	return slices.Clone(w.options)
 }
@@ -106,10 +113,10 @@ func (w *FilterChipGroup) Refresh() {
 
 func (w *FilterChipGroup) CreateRenderer() fyne.WidgetRenderer {
 	w.update()
-	// p := w.Theme().Size(theme.SizeNamePadding)
-	box := container.New(ilayout.NewRowWrapLayout())
+	p := w.Theme().Size(theme.SizeNamePadding)
+	box := container.New(ilayout.NewRowWrapLayoutWithCustomPadding(2*p, 2*p))
 	for _, c := range w.chips {
 		box.Add(c)
 	}
-	return widget.NewSimpleRenderer(box)
+	return widget.NewSimpleRenderer(container.New(layout.NewCustomPaddedLayout(2*p, 2*p, 0, 0), box))
 }

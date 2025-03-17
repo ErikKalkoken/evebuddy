@@ -16,7 +16,7 @@ import (
 // TODO: Add focus feature
 
 // Filter chips use tags or descriptive words to filter content.
-type FilterChip struct {
+type filterChip struct {
 	widget.DisableableWidget
 
 	Text       string
@@ -34,14 +34,14 @@ type FilterChip struct {
 	mu         sync.RWMutex
 }
 
-var _ fyne.Widget = (*FilterChip)(nil)
-var _ fyne.Tappable = (*FilterChip)(nil)
-var _ desktop.Hoverable = (*FilterChip)(nil)
-var _ fyne.Disableable = (*FilterChip)(nil)
+var _ fyne.Widget = (*filterChip)(nil)
+var _ fyne.Tappable = (*filterChip)(nil)
+var _ desktop.Hoverable = (*filterChip)(nil)
+var _ fyne.Disableable = (*filterChip)(nil)
 
-// NewFilterChip returns a new FilterChip object.
-func NewFilterChip(text string, changed func(selected bool)) *FilterChip {
-	w := &FilterChip{
+// newFilterChip returns a new filterChip object.
+func newFilterChip(text string, changed func(selected bool)) *filterChip {
+	w := &filterChip{
 		label:     widget.NewLabel(text),
 		OnChanged: changed,
 		Text:      text,
@@ -51,22 +51,21 @@ func NewFilterChip(text string, changed func(selected bool)) *FilterChip {
 	w.iconPadded = container.New(layout.NewCustomPaddedLayout(0, 0, p, 0), w.icon)
 	w.iconPadded.Hide()
 	w.bg = canvas.NewRectangle(color.Transparent)
-	w.bg.StrokeColor = theme.Color(theme.ColorNameInputBorder)
-	w.bg.StrokeWidth = 1
+	w.bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder) * 2
 	w.bg.CornerRadius = theme.Size(theme.SizeNameInputRadius)
 	w.ExtendBaseWidget(w)
 	return w
 }
 
 // Selected reports whether the widget is selected.
-func (w *FilterChip) Selected() bool {
+func (w *filterChip) Selected() bool {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 	return w.IsSelected
 }
 
 // SetSelected sets the selected state.
-func (w *FilterChip) SetSelected(v bool) {
+func (w *filterChip) SetSelected(v bool) {
 	w.mu.Lock()
 	old := w.IsSelected
 	w.IsSelected = v
@@ -77,7 +76,7 @@ func (w *FilterChip) SetSelected(v bool) {
 	w.Refresh()
 }
 
-func (w *FilterChip) Refresh() {
+func (w *filterChip) Refresh() {
 	w.updateState()
 	w.bg.Refresh()
 	w.label.Refresh()
@@ -85,7 +84,7 @@ func (w *FilterChip) Refresh() {
 	w.BaseWidget.Refresh()
 }
 
-func (w *FilterChip) updateState() {
+func (w *filterChip) updateState() {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 	th := w.Theme()
@@ -104,8 +103,10 @@ func (w *FilterChip) updateState() {
 		w.iconPadded.Show()
 		if w.Disabled() {
 			w.bg.FillColor = th.Color(theme.ColorNameDisabledButton, v)
+			w.bg.StrokeColor = th.Color(theme.ColorNameDisabledButton, v)
 		} else {
 			w.bg.FillColor = th.Color(theme.ColorNameButton, v)
+			w.bg.StrokeColor = th.Color(theme.ColorNameButton, v)
 		}
 	} else {
 		w.iconPadded.Hide()
@@ -113,13 +114,13 @@ func (w *FilterChip) updateState() {
 	}
 }
 
-func (w *FilterChip) MinSize() fyne.Size {
+func (w *filterChip) MinSize() fyne.Size {
 	w.ExtendBaseWidget(w)
 	w.minSize = w.BaseWidget.MinSize()
 	return w.minSize
 }
 
-func (w *FilterChip) Tapped(pe *fyne.PointEvent) {
+func (w *filterChip) Tapped(pe *fyne.PointEvent) {
 	if w.Disabled() {
 		return
 	}
@@ -138,18 +139,18 @@ func (w *FilterChip) Tapped(pe *fyne.PointEvent) {
 	w.SetSelected(!w.IsSelected)
 }
 
-func (w *FilterChip) Cursor() desktop.Cursor {
+func (w *filterChip) Cursor() desktop.Cursor {
 	if w.hovered {
 		return desktop.PointerCursor
 	}
 	return desktop.DefaultCursor
 }
 
-func (w *FilterChip) MouseIn(me *desktop.MouseEvent) {
+func (w *filterChip) MouseIn(me *desktop.MouseEvent) {
 	w.MouseMoved(me)
 }
 
-func (w *FilterChip) MouseMoved(me *desktop.MouseEvent) {
+func (w *filterChip) MouseMoved(me *desktop.MouseEvent) {
 	if w.Disabled() {
 		return
 	}
@@ -162,14 +163,14 @@ func (w *FilterChip) MouseMoved(me *desktop.MouseEvent) {
 	}
 }
 
-func (w *FilterChip) MouseOut() {
+func (w *filterChip) MouseOut() {
 	if w.hovered {
 		w.hovered = false
 		w.Refresh()
 	}
 }
 
-func (w *FilterChip) CreateRenderer() fyne.WidgetRenderer {
+func (w *filterChip) CreateRenderer() fyne.WidgetRenderer {
 	w.updateState()
 	p := theme.Padding()
 	c := container.NewHBox(container.NewStack(

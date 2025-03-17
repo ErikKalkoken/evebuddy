@@ -6,7 +6,9 @@ import (
 )
 
 type rowWrapLayout struct {
-	rowCount int
+	rowCount          int
+	horizontalPadding float32
+	verticalPadding   float32
 }
 
 // NewRowWrapLayout returns a layout that dynamically arranges objects
@@ -16,7 +18,17 @@ type rowWrapLayout struct {
 //
 // Since: 2.7
 func NewRowWrapLayout() fyne.Layout {
-	return &rowWrapLayout{}
+	return &rowWrapLayout{
+		horizontalPadding: theme.Padding(),
+		verticalPadding:   theme.Padding(),
+	}
+}
+
+func NewRowWrapLayoutWithCustomPadding(horizontal, vertical float32) fyne.Layout {
+	return &rowWrapLayout{
+		horizontalPadding: horizontal,
+		verticalPadding:   vertical,
+	}
 }
 
 var _ fyne.Layout = (*rowWrapLayout)(nil)
@@ -37,7 +49,7 @@ func (l *rowWrapLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 			w = size.Width
 		}
 	}
-	s := fyne.NewSize(w, rowHeight*float32(rows)+theme.Padding()*float32(rows-1))
+	s := fyne.NewSize(w, rowHeight*float32(rows)+l.verticalPadding*float32(rows-1))
 	return s
 }
 
@@ -45,7 +57,6 @@ func (l *rowWrapLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.S
 	if len(objects) == 0 {
 		return
 	}
-	padding := theme.Padding()
 	rowHeight := objects[0].MinSize().Height
 	pos := fyne.NewPos(0, 0)
 	rows := 1
@@ -55,9 +66,9 @@ func (l *rowWrapLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.S
 		}
 		size := o.MinSize()
 		o.Resize(size)
-		w := size.Width + padding
+		w := size.Width + l.horizontalPadding
 		if pos.X+w > containerSize.Width {
-			pos = fyne.NewPos(0, float32(rows)*(rowHeight+padding))
+			pos = fyne.NewPos(0, float32(rows)*(rowHeight+l.verticalPadding))
 			rows++
 		}
 		o.Move(pos)
