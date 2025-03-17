@@ -66,20 +66,23 @@ func (es EveSolarSystem) SecurityType() SolarSystemSecurityType {
 	return NullSec
 }
 
+func (es EveSolarSystem) SecurityStatusDisplay() string {
+	return fmt.Sprintf("%.1f", es.SecurityStatus)
+}
 func (es EveSolarSystem) ToEveEntity() *EveEntity {
 	return &EveEntity{ID: es.ID, Name: es.Name, Category: EveEntitySolarSystem}
 }
 
-func (es EveSolarSystem) DisplayRichText() []widget.RichTextSegment {
-	return []widget.RichTextSegment{
-		&widget.TextSegment{
-			Text: fmt.Sprintf("%.1f  ", es.SecurityStatus),
+func (es EveSolarSystem) DisplayRichText() []widget.TextSegment {
+	return []widget.TextSegment{
+		{
+			Text: fmt.Sprintf("%s  ", es.SecurityStatusDisplay()),
 			Style: widget.RichTextStyle{
 				ColorName: es.SecurityType().ToColorName(),
 				Inline:    true,
 			},
 		},
-		&widget.TextSegment{
+		{
 			Text: es.Name,
 		},
 	}

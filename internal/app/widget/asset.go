@@ -5,10 +5,11 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	ilayout "github.com/ErikKalkoken/evebuddy/internal/layout"
 	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -25,10 +26,7 @@ type Asset struct {
 }
 
 func NewAsset(iconLoader func(image *canvas.Image, ca *app.CharacterAsset)) *Asset {
-	icon := iwidgets.NewImageFromResource(
-		theme.NewDisabledResource(theme.BrokenImageIcon()),
-		fyne.NewSquareSize(typeIconSize),
-	)
+	icon := iwidgets.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(typeIconSize))
 	w := &Asset{
 		icon:       icon,
 		label:      NewAssetLabel(),
@@ -55,7 +53,7 @@ func (o *Asset) CreateRenderer() fyne.WidgetRenderer {
 	customVBox := layout.NewCustomPaddedVBoxLayout(0)
 	c := container.NewPadded(container.New(
 		customVBox,
-		container.New(&bottomRightLayout{}, o.icon, o.badge),
+		container.New(ilayout.NewBottomRightLayout(), o.icon, o.badge),
 		o.label,
 	))
 	return widget.NewSimpleRenderer(c)

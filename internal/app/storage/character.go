@@ -133,7 +133,7 @@ func (st *Storage) ListCharacterIDs(ctx context.Context) (set.Set[int32], error)
 	if err != nil {
 		return nil, fmt.Errorf("list character IDs: %w", err)
 	}
-	ids2 := set.NewFromSlice(convertNumericSlice[int64, int32](ids))
+	ids2 := set.NewFromSlice(convertNumericSlice[int32](ids))
 	return ids2, nil
 }
 

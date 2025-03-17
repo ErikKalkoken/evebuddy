@@ -61,13 +61,10 @@ func NewAccountArea(u *BaseUI) *AccountArea {
 	if a.u.IsOffline {
 		add.Disable()
 	}
-	close := widget.NewButtonWithIcon("Close", theme.CancelIcon(), func() {
-		a.window.Close()
-	})
 	if a.u.IsDesktop() {
 		a.Content = container.NewBorder(
 			a.title,
-			container.NewHBox(layout.NewSpacer(), close, add, layout.NewSpacer()),
+			container.NewHBox(layout.NewSpacer(), add, layout.NewSpacer()),
 			nil,
 			nil,
 			a.list,

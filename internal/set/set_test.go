@@ -2,6 +2,7 @@ package set_test
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/set"
@@ -233,5 +234,13 @@ func TestPop(t *testing.T) {
 		s := set.New[int]()
 		_, err := s.Pop()
 		assert.ErrorIs(t, err, set.ErrNotFound)
+	})
+}
+
+func TestCollect(t *testing.T) {
+	t.Parallel()
+	t.Run("can create a new set from an iterable", func(t *testing.T) {
+		x := set.Collect(slices.Values([]int{1, 2, 3}))
+		assert.True(t, set.New(1, 2, 3).Equal(x))
 	})
 }

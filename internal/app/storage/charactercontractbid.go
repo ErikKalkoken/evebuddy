@@ -64,7 +64,7 @@ func (st *Storage) ListCharacterContractBidIDs(ctx context.Context, contractID i
 	if err != nil {
 		return nil, fmt.Errorf("list bid IDs for contract %d: %w", contractID, err)
 	}
-	return set.NewFromSlice(convertNumericSlice[int64, int32](ids)), err
+	return set.NewFromSlice(convertNumericSlice[int32](ids)), err
 }
 
 func characterContractBidFromDBModel(o queries.CharacterContractBid, e queries.EveEntity) *app.CharacterContractBid {

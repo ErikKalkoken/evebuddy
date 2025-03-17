@@ -1,6 +1,8 @@
 package app
 
 import (
+	"cmp"
+
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -55,6 +57,7 @@ func (eec EveEntityCategory) String() string {
 }
 
 // ToEveImage returns the corresponding category string for the EveImage service.
+// Will return an empty string when category is not supported.
 func (eec EveEntityCategory) ToEveImage() string {
 	switch eec {
 	case EveEntityAlliance:
@@ -68,11 +71,9 @@ func (eec EveEntityCategory) ToEveImage() string {
 	case EveEntityInventoryType:
 		return "inventory_type"
 	default:
-		return "invalid"
+		return ""
 	}
 }
-
-var titler = cases.Title(language.English)
 
 // An EveEntity in EveOnline.
 type EveEntity struct {
@@ -82,9 +83,14 @@ type EveEntity struct {
 }
 
 func (ee EveEntity) CategoryDisplay() string {
+	titler := cases.Title(language.English)
 	return titler.String(ee.Category.String())
 }
 
 func (ee EveEntity) IsCharacter() bool {
 	return ee.Category == EveEntityCharacter
+}
+
+func (ee *EveEntity) Compare(other *EveEntity) int {
+	return cmp.Compare(ee.Name, other.Name)
 }

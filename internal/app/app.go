@@ -5,9 +5,6 @@ package app
 
 import (
 	"time"
-
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 // Default formats and sizes
@@ -18,9 +15,6 @@ const (
 	IconPixelSize  = 64
 	IconUnitSize   = 32
 )
-
-// Titler converts a string into a title for english language.
-var Titler = cases.Title(language.English)
 
 // EntityShort is a short representation of an entity.
 type EntityShort[T comparable] struct {

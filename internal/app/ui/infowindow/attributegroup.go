@@ -1,6 +1,10 @@
 package infowindow
 
-import "github.com/ErikKalkoken/evebuddy/internal/app"
+import (
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+)
 
 // attributeGroup represents a group of dogma attributes.
 //
@@ -8,7 +12,8 @@ import "github.com/ErikKalkoken/evebuddy/internal/app"
 type attributeGroup string
 
 func (ag attributeGroup) DisplayName() string {
-	return app.Titler.String(string(ag))
+	titler := cases.Title(language.English)
+	return titler.String(string(ag))
 }
 
 const (

@@ -2,16 +2,18 @@ package infowindow
 
 import (
 	"fmt"
+	"log/slog"
 	"maps"
-	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/dustin/go-humanize"
 
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -56,8 +58,8 @@ func eveEntity2InfoVariant(ee *app.EveEntity) InfoVariant {
 
 }
 
-func eveEntitySupportedCategories() []app.EveEntityCategory {
-	return slices.Collect(maps.Keys(eveEntityCategory2InfoVariant))
+func SupportedEveEntities() set.Set[app.EveEntityCategory] {
+	return set.Collect(maps.Keys(eveEntityCategory2InfoVariant))
 
 }
 
@@ -88,6 +90,10 @@ func New(
 	return iw
 }
 
+func (iw *InfoWindow) SetWindow(w fyne.Window) {
+	iw.w = w
+}
+
 func (iw InfoWindow) Show(t InfoVariant, id int64) {
 	switch t {
 	case Alliance:
@@ -110,7 +116,10 @@ func (iw InfoWindow) Show(t InfoVariant, id int64) {
 			// TODO: Restructure, so that window is first drawn empty and content loaded in background (as other info windo)
 			a, err := NewInventoryTypeArea(iw, int32(id), iw.currentCharacterID(), w)
 			if err != nil {
-				panic(err)
+				slog.Error("show type", "error", err)
+				l := widget.NewLabel(fmt.Sprintf("ERROR: Can not create info window: %s", err))
+				l.Importance = widget.DangerImportance
+				return l
 			}
 			w.SetTitle(a.MakeTitle("Information"))
 			return a.Content

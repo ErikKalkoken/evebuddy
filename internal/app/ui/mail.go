@@ -19,7 +19,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -86,6 +85,8 @@ func (f FolderNode) icon() fyne.Resource {
 	return theme.FolderIcon()
 }
 
+var emptyFolder = FolderNode{}
+
 // MailArea is the UI area showing the mail folders.
 type MailArea struct {
 	Content       fyne.CanvasObject
@@ -97,16 +98,15 @@ type MailArea struct {
 	OnSendMessage func(character *app.Character, mode SendMailMode, mail *app.CharacterMail)
 
 	body          *widget.Label
-	folderData    *fynetree.FyneTree[FolderNode]
 	folderSection fyne.CanvasObject
-	folderTree    *widget.Tree
+	folders       *iwidget.Tree[FolderNode]
 	header        *appwidget.MailHeader
 	headerList    *widget.List
 	headers       []*app.CharacterMailHeader
 	headerTop     *widget.Label
 	folderDefault FolderNode
 	lastSelected  widget.ListItemID
-	lastUID       string
+	lastFolder    FolderNode
 	mail          *app.CharacterMail
 	subject       *iwidget.Label
 	toolbar       *widget.Toolbar
@@ -115,13 +115,12 @@ type MailArea struct {
 
 func NewMailArea(u *BaseUI) *MailArea {
 	a := &MailArea{
-		body:       widget.NewLabel(""),
-		folderData: fynetree.New[FolderNode](),
-		header:     appwidget.NewMailHeader(u.ShowEveEntityInfoWindow),
-		headers:    make([]*app.CharacterMailHeader, 0),
-		headerTop:  widget.NewLabel(""),
-		subject:    iwidget.NewLabelWithSize("", theme.SizeNameSubHeadingText),
-		u:          u,
+		body:      widget.NewLabel(""),
+		header:    appwidget.NewMailHeader(u.ShowEveEntityInfoWindow),
+		headers:   make([]*app.CharacterMailHeader, 0),
+		headerTop: widget.NewLabel(""),
+		subject:   iwidget.NewLabelWithSize("", theme.SizeNameSubHeadingText),
+		u:         u,
 	}
 
 	// Mail
@@ -137,13 +136,13 @@ func NewMailArea(u *BaseUI) *MailArea {
 	a.Headers = container.NewBorder(a.headerTop, nil, nil, nil, a.headerList)
 
 	// Folders
-	a.folderTree = a.makeFolderTree()
+	a.folders = a.makeFolderTree()
 	r, f := a.MakeComposeMessageAction()
 	newButton := widget.NewButtonWithIcon("Compose", r, f)
 	newButton.Importance = widget.HighImportance
 	top := container.NewHBox(layout.NewSpacer(), container.NewPadded(newButton), layout.NewSpacer())
 
-	a.folderSection = container.NewBorder(top, nil, nil, nil, a.folderTree)
+	a.folderSection = container.NewBorder(top, nil, nil, nil, a.folders)
 
 	// Combine sections
 	split1 := container.NewHSplit(a.Headers, detailWithToolbar)
@@ -154,14 +153,8 @@ func NewMailArea(u *BaseUI) *MailArea {
 	return a
 }
 
-func (a *MailArea) makeFolderTree() *widget.Tree {
-	tree := widget.NewTree(
-		func(uid widget.TreeNodeID) []widget.TreeNodeID {
-			return a.folderData.ChildUIDs(uid)
-		},
-		func(uid widget.TreeNodeID) bool {
-			return a.folderData.IsBranch(uid)
-		},
+func (a *MailArea) makeFolderTree() *iwidget.Tree[FolderNode] {
+	tree := iwidget.NewTree(
 		func(isBranch bool) fyne.CanvasObject {
 			return container.NewHBox(
 				widget.NewIcon(icon.BlankSvg),
@@ -170,51 +163,42 @@ func (a *MailArea) makeFolderTree() *widget.Tree {
 				kwidget.NewBadge("999"),
 			)
 		},
-		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
-			node, ok := a.folderData.Value(uid)
-			if !ok {
-				return
-			}
+		func(n FolderNode, b bool, co fyne.CanvasObject) {
 			hbox := co.(*fyne.Container).Objects
 			icon := hbox[0].(*widget.Icon)
-			icon.SetResource(node.icon())
+			icon.SetResource(n.icon())
 			label := hbox[1].(*widget.Label)
 			badge := hbox[3].(*kwidget.Badge)
-			if node.UnreadCount == 0 {
+			if n.UnreadCount == 0 {
 				label.TextStyle.Bold = false
 				badge.Hide()
 			} else {
 				label.TextStyle.Bold = true
-				badge.SetText(strconv.Itoa(node.UnreadCount))
+				badge.SetText(strconv.Itoa(n.UnreadCount))
 				badge.Show()
 			}
-			label.Text = node.Name
+			label.Text = n.Name
 			label.Refresh()
 		},
 	)
-	tree.OnSelected = func(uid string) {
-		node, ok := a.folderData.Value((uid))
-		if !ok {
+	tree.OnSelected = func(n FolderNode) {
+		if n.isBranch() {
 			tree.UnselectAll()
 			return
 		}
-		if node.isBranch() {
-			tree.UnselectAll()
-			return
-		}
-		a.lastUID = uid
-		a.SetFolder(node)
+		a.lastFolder = n
+		a.SetFolder(n)
 	}
 	return tree
 }
 
 func (a *MailArea) Redraw() {
-	a.lastUID = ""
+	a.lastFolder = emptyFolder
 	a.Refresh()
 }
 
 func (a *MailArea) Folders() []FolderNode {
-	return a.folderData.Flat()
+	return a.folders.Data().Flat()
 }
 
 func (a *MailArea) Refresh() {
@@ -230,15 +214,15 @@ func (a *MailArea) Refresh() {
 	if a.OnRefresh != nil {
 		a.OnRefresh(folderAll.UnreadCount)
 	}
-	a.folderTree.Refresh()
+	a.folders.Refresh()
 	if folderAll.IsEmpty() {
 		a.clearFolder()
 		return
 	}
-	if a.lastUID == "" {
-		a.folderTree.UnselectAll()
-		a.folderTree.ScrollToTop()
-		a.folderTree.Select(folderAll.UID())
+	if a.lastFolder == emptyFolder {
+		a.folders.UnselectAll()
+		a.folders.ScrollToTop()
+		a.folders.Select(folderAll)
 		a.SetFolder(folderAll)
 	} else {
 		a.headerRefresh()
@@ -247,21 +231,21 @@ func (a *MailArea) Refresh() {
 }
 
 func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
-	tree := fynetree.New[FolderNode]()
+	tree := iwidget.NewTreeData[FolderNode]()
 	if characterID == 0 {
-		a.folderData = tree
-		return FolderNode{}, nil
+		a.folders.Clear()
+		return emptyFolder, nil
 	}
-	ctx := context.TODO()
+	ctx := context.Background()
 	labelUnreadCounts, err := a.u.CharacterService.GetCharacterMailLabelUnreadCounts(ctx, characterID)
 	if err != nil {
-		a.folderData = tree
-		return FolderNode{}, err
+		a.folders.Clear()
+		return emptyFolder, err
 	}
 	listUnreadCounts, err := a.u.CharacterService.GetCharacterMailListUnreadCounts(ctx, characterID)
 	if err != nil {
-		a.folderData = tree
-		return FolderNode{}, err
+		a.folders.Clear()
+		return emptyFolder, err
 	}
 	totalUnreadCount, totalLabelsUnreadCount, totalListUnreadCount := calcUnreadTotals(labelUnreadCounts, listUnreadCounts)
 
@@ -274,7 +258,7 @@ func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
 		ObjID:       app.MailLabelUnread,
 		UnreadCount: totalUnreadCount,
 	}
-	tree.MustAdd("", folderUnread.UID(), folderUnread)
+	tree.MustAdd(iwidget.RootUID, folderUnread)
 
 	// Add default folders
 	defaultFolders := []struct {
@@ -300,7 +284,7 @@ func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
 			ObjID:       o.labelID,
 			UnreadCount: u,
 		}
-		tree.MustAdd("", n.UID(), n)
+		tree.MustAdd(iwidget.RootUID, n)
 	}
 
 	// Add custom labels
@@ -315,7 +299,7 @@ func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
 			Name:        "Labels",
 			UnreadCount: totalLabelsUnreadCount,
 		}
-		uid := tree.MustAdd("", n.UID(), n)
+		uid := tree.MustAdd(iwidget.RootUID, n)
 		for _, l := range labels {
 			u, ok := labelUnreadCounts[l.LabelID]
 			if !ok {
@@ -329,7 +313,7 @@ func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
 				UnreadCount: u,
 				Type:        folderNodeLabel,
 			}
-			tree.MustAdd(uid, n.UID(), n)
+			tree.MustAdd(uid, n)
 		}
 	}
 
@@ -345,7 +329,7 @@ func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
 			Name:        "Mailing Lists",
 			UnreadCount: totalListUnreadCount,
 		}
-		uid := tree.MustAdd("", n.UID(), n)
+		uid := tree.MustAdd(iwidget.RootUID, n)
 		for _, l := range lists {
 			u, ok := listUnreadCounts[l.ID]
 			if !ok {
@@ -359,7 +343,7 @@ func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
 				UnreadCount: u,
 				Type:        folderNodeList,
 			}
-			tree.MustAdd(uid, n.UID(), n)
+			tree.MustAdd(uid, n)
 		}
 	}
 	// Add all folder
@@ -371,9 +355,9 @@ func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
 		ObjID:       app.MailLabelAll,
 		UnreadCount: totalUnreadCount,
 	}
-	tree.MustAdd("", folderAll.UID(), folderAll)
+	tree.MustAdd(iwidget.RootUID, folderAll)
 
-	a.folderData = tree
+	a.folders.Set(tree)
 	return folderAll, nil
 }
 

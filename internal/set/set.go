@@ -11,6 +11,8 @@ import (
 var ErrNotFound = errors.New("not found")
 
 // Set is a container for a set of values.
+//
+// Sets are not thread safe.
 type Set[T comparable] map[T]struct{}
 
 // New returns a new Set.
@@ -25,6 +27,15 @@ func New[T comparable](vals ...T) Set[T] {
 // NewFromSlice returns a new set from the elements of a slice.
 func NewFromSlice[T comparable](slice []T) Set[T] {
 	return New(slice...)
+}
+
+// Collect creates a new set from an iterable.
+func Collect[T comparable](seq iter.Seq[T]) Set[T] {
+	s := New[T]()
+	for v := range seq {
+		s.Add(v)
+	}
+	return s
 }
 
 // Add adds an element to the set

@@ -39,7 +39,7 @@ func (st *Storage) CreateCharacterPlanet(ctx context.Context, arg CreateCharacte
 func (st *Storage) DeleteCharacterPlanet(ctx context.Context, characterID int32, planetIDs []int32) error {
 	arg := queries.DeleteCharacterPlanetsParams{
 		CharacterID:  int64(characterID),
-		EvePlanetIds: convertNumericSlice[int32, int64](planetIDs),
+		EvePlanetIds: convertNumericSlice[int64](planetIDs),
 	}
 	if err := st.q.DeleteCharacterPlanets(ctx, arg); err != nil {
 		return fmt.Errorf("delete character planets: %+v: %w", arg, err)

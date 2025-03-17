@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
@@ -49,33 +50,6 @@ func (st *Storage) CreateEveEntity(ctx context.Context, id int32, name string, c
 	return e, nil
 }
 
-func (st *Storage) GetEveEntity(ctx context.Context, id int32) (*app.EveEntity, error) {
-	e, err := st.q.GetEveEntity(ctx, int64(id))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
-		}
-		return nil, fmt.Errorf("get eve entity for id %d: %w", id, err)
-	}
-	return eveEntityFromDBModel(e), nil
-}
-
-func (st *Storage) ListEveEntityByNameAndCategory(ctx context.Context, name string, category app.EveEntityCategory) ([]*app.EveEntity, error) {
-	var ee2 []*app.EveEntity
-	arg := queries.ListEveEntityByNameAndCategoryParams{
-		Name:     name,
-		Category: eveEntityDBModelCategoryFromCategory(category),
-	}
-	ee, err := st.q.ListEveEntityByNameAndCategory(ctx, arg)
-	if err != nil {
-		return ee2, fmt.Errorf("get eve entity by name %s and category %s: %w", name, category, err)
-	}
-	for _, e := range ee {
-		ee2 = append(ee2, eveEntityFromDBModel(e))
-	}
-	return ee2, nil
-}
-
 func (st *Storage) GetOrCreateEveEntity(ctx context.Context, id int32, name string, category app.EveEntityCategory) (*app.EveEntity, error) {
 	label, err := func() (*app.EveEntity, error) {
 		var e queries.EveEntity
@@ -114,6 +88,33 @@ func (st *Storage) GetOrCreateEveEntity(ctx context.Context, id int32, name stri
 	return label, nil
 }
 
+func (st *Storage) GetEveEntity(ctx context.Context, id int32) (*app.EveEntity, error) {
+	e, err := st.q.GetEveEntity(ctx, int64(id))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = ErrNotFound
+		}
+		return nil, fmt.Errorf("get eve entity for id %d: %w", id, err)
+	}
+	return eveEntityFromDBModel(e), nil
+}
+
+func (st *Storage) ListEveEntityByNameAndCategory(ctx context.Context, name string, category app.EveEntityCategory) ([]*app.EveEntity, error) {
+	var ee2 []*app.EveEntity
+	arg := queries.ListEveEntityByNameAndCategoryParams{
+		Name:     name,
+		Category: eveEntityDBModelCategoryFromCategory(category),
+	}
+	ee, err := st.q.ListEveEntityByNameAndCategory(ctx, arg)
+	if err != nil {
+		return ee2, fmt.Errorf("get eve entity by name %s and category %s: %w", name, category, err)
+	}
+	for _, e := range ee {
+		ee2 = append(ee2, eveEntityFromDBModel(e))
+	}
+	return ee2, nil
+}
+
 func (st *Storage) ListEveEntitiesByPartialName(ctx context.Context, partial string) ([]*app.EveEntity, error) {
 	ee, err := st.q.ListEveEntitiesByPartialName(ctx, fmt.Sprintf("%%%s%%", partial))
 	if err != nil {
@@ -131,7 +132,7 @@ func (st *Storage) ListEveEntityIDs(ctx context.Context) (set.Set[int32], error)
 	if err != nil {
 		return nil, fmt.Errorf("list eve entity id: %w", err)
 	}
-	ids2 := set.NewFromSlice(convertNumericSlice[int64, int32](ids))
+	ids2 := set.NewFromSlice(convertNumericSlice[int32](ids))
 	return ids2, nil
 }
 
@@ -145,6 +146,23 @@ func (st *Storage) ListEveEntitiesByName(ctx context.Context, name string) ([]*a
 		ee2[i] = eveEntityFromDBModel(e)
 	}
 	return ee2, nil
+}
+
+func (st *Storage) ListEveEntitiesForIDs(ctx context.Context, ids []int32) ([]*app.EveEntity, error) {
+	ids2 := convertNumericSlice[int64](ids)
+	ee := make([]queries.EveEntity, 0)
+	for idsChunk := range slices.Chunk(ids2, st.MaxListEveEntitiesForIDs) {
+		r, err := st.q.ListEveEntitiesForIDs(ctx, idsChunk)
+		if err != nil {
+			return nil, fmt.Errorf("list eve entities for %d ids: %w", len(idsChunk), err)
+		}
+		ee = slices.Concat(ee, r)
+	}
+	oo := make([]*app.EveEntity, len(ee))
+	for i, e := range ee {
+		oo[i] = eveEntityFromDBModel(e)
+	}
+	return oo, nil
 }
 
 // MissingEveEntityIDs returns the IDs, which are have no respective EveEntity in the database.

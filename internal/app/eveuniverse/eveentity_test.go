@@ -246,7 +246,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	})
 }
 
-func TestResolveEveEntities(t *testing.T) {
+func TestToEveEntities(t *testing.T) {
 	ctx := context.Background()
 	db, st, factory := testutil.New()
 	defer db.Close()
@@ -254,29 +254,29 @@ func TestResolveEveEntities(t *testing.T) {
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
 	s := eveuniverse.New(st, client)
-	t.Run("should resolve EveEntity", func(t *testing.T) {
+	t.Run("should resolve normal IDs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		e1 := factory.CreateEveEntity()
+		e2 := factory.CreateEveEntity()
+		// when
+		oo, err := s.ToEveEntities(ctx, []int32{e1.ID, e2.ID})
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, map[int32]*app.EveEntity{e1.ID: e1, e2.ID: e2}, oo)
+		}
+	})
+	t.Run("should ignore ID 0", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		e1 := factory.CreateEveEntity()
 		// when
-		r, err := s.ToEveEntities(ctx, []int32{e1.ID})
+		oo, err := s.ToEveEntities(ctx, []int32{0, e1.ID})
 		// then
 		if assert.NoError(t, err) {
-			assert.Len(t, r, 1)
-			assert.Equal(t, *e1, *r[e1.ID])
-		}
-	})
-	t.Run("should return zero value for ID 0", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		httpmock.Reset()
-		// when
-		r, err := s.ToEveEntities(ctx, []int32{0})
-		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, r, 1)
-			assert.Equal(t, app.EveEntity{}, *r[0])
+			assert.Equal(t, map[int32]*app.EveEntity{e1.ID: e1}, oo)
 		}
 	})
 }

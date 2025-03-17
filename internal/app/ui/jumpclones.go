@@ -19,7 +19,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
-	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -54,34 +53,26 @@ type JumpClonesArea struct {
 	Content  *fyne.Container
 	OnReDraw func(clonesCount int)
 
-	top        *widget.RichText
-	treeData   *fynetree.FyneTree[jumpCloneNode]
-	treeWidget *widget.Tree
-	u          *BaseUI
+	top  *widget.RichText
+	tree *iwidget.Tree[jumpCloneNode]
+	u    *BaseUI
 }
 
 func NewJumpClonesArea(u *BaseUI) *JumpClonesArea {
 	ntop := widget.NewRichText()
 	ntop.Wrapping = fyne.TextWrapWord
 	a := JumpClonesArea{
-		top:      ntop,
-		treeData: fynetree.New[jumpCloneNode](),
-		u:        u,
+		top: ntop,
+		u:   u,
 	}
-	a.treeWidget = a.makeTree()
+	a.tree = a.makeTree()
 	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.Content = container.NewBorder(top, nil, nil, nil, a.treeWidget)
+	a.Content = container.NewBorder(top, nil, nil, nil, a.tree)
 	return &a
 }
 
-func (a *JumpClonesArea) makeTree() *widget.Tree {
-	t := widget.NewTree(
-		func(uid widget.TreeNodeID) []widget.TreeNodeID {
-			return a.treeData.ChildUIDs(uid)
-		},
-		func(uid widget.TreeNodeID) bool {
-			return a.treeData.IsBranch(uid)
-		},
+func (a *JumpClonesArea) makeTree() *iwidget.Tree[jumpCloneNode] {
+	t := iwidget.NewTree(
 		func(branch bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(
 				icon.Characterplaceholder64Jpeg,
@@ -101,11 +92,7 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 				main,
 			)
 		},
-		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
-			n, ok := a.treeData.Value(uid)
-			if !ok {
-				return
-			}
+		func(n jumpCloneNode, b bool, co fyne.CanvasObject) {
 			border := co.(*fyne.Container).Objects
 			main := border[0].(*widget.Label)
 			hbox := border[1].(*fyne.Container).Objects
@@ -147,7 +134,7 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 			}
 		},
 	)
-	t.OnSelected = func(uid widget.TreeNodeID) {
+	t.OnSelected = func(n jumpCloneNode) {
 		defer t.UnselectAll()
 	}
 	return t
@@ -157,7 +144,7 @@ func (a *JumpClonesArea) Redraw() {
 	tree, err := a.newTreeData()
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
-		iwidget.SetRichText(a.top, &widget.TextSegment{
+		iwidget.SetRichText(a.top, widget.TextSegment{
 			Text: "ERROR: " + ihumanize.Error(err),
 			Style: widget.RichTextStyle{
 				ColorName: theme.ColorNameError,
@@ -167,15 +154,14 @@ func (a *JumpClonesArea) Redraw() {
 	} else {
 		a.RefreshTop()
 	}
-	a.treeData = tree
-	a.treeWidget.Refresh()
+	a.tree.Set(tree)
 	if a.OnReDraw != nil {
 		a.OnReDraw(a.ClonesCount())
 	}
 }
 
-func (a *JumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error) {
-	tree := fynetree.New[jumpCloneNode]()
+func (a *JumpClonesArea) newTreeData() (*iwidget.TreeData[jumpCloneNode], error) {
+	tree := iwidget.NewTreeData[jumpCloneNode]()
 	if !a.u.HasCharacter() {
 		return tree, nil
 	}
@@ -206,7 +192,7 @@ func (a *JumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error
 			n.LocationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
 			n.IsUnknown = true
 		}
-		uid := tree.MustAdd("", n.UID(), n)
+		uid := tree.MustAdd(iwidget.RootUID, n)
 		for _, i := range c.Implants {
 			n := jumpCloneNode{
 				ImplantTypeDescription: i.EveType.DescriptionPlain(),
@@ -214,7 +200,7 @@ func (a *JumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error
 				ImplantTypeName:        i.EveType.Name,
 				JumpCloneID:            c.JumpCloneID,
 			}
-			tree.MustAdd(uid, n.UID(), n)
+			tree.MustAdd(uid, n)
 		}
 	}
 	return tree, err
@@ -228,7 +214,7 @@ func (a *JumpClonesArea) RefreshTop() {
 	}
 	defaultStyleInline := defaultStyle
 	defaultStyleInline.Inline = true
-	s := &widget.TextSegment{
+	s := widget.TextSegment{
 		Text:  "",
 		Style: defaultStyle,
 	}
@@ -264,11 +250,11 @@ func (a *JumpClonesArea) RefreshTop() {
 	}
 	iwidget.SetRichText(
 		a.top,
-		&widget.TextSegment{
+		widget.TextSegment{
 			Text:  fmt.Sprintf("%d clones • Next available jump: ", a.ClonesCount()),
 			Style: defaultStyleInline,
 		},
-		&widget.TextSegment{
+		widget.TextSegment{
 			Text: nextJump,
 			Style: widget.RichTextStyle{
 				ColorName: nextJumpColor,
@@ -276,7 +262,7 @@ func (a *JumpClonesArea) RefreshTop() {
 				Inline:    true,
 			},
 		},
-		&widget.TextSegment{
+		widget.TextSegment{
 			Text:  fmt.Sprintf(" • Last jump: %s", lastJump),
 			Style: defaultStyle,
 		},
@@ -284,10 +270,7 @@ func (a *JumpClonesArea) RefreshTop() {
 }
 
 func (a *JumpClonesArea) ClonesCount() int {
-	if a.treeData == nil {
-		return 0
-	}
-	return len(a.treeData.ChildUIDs(""))
+	return len(a.tree.Data().ChildUIDs(""))
 }
 
 func (a *JumpClonesArea) StartUpdateTicker() {

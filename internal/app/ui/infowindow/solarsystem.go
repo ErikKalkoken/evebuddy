@@ -32,7 +32,7 @@ type solarSystemArea struct {
 	constellation *kxwidget.TappableLabel
 	logo          *canvas.Image
 	name          *widget.Label
-	security      *widget.RichText
+	security      *widget.Label
 	tabs          *container.AppTabs
 }
 
@@ -51,7 +51,7 @@ func newSolarSystemArea(iw InfoWindow, solarSystemID int32, w fyne.Window) *sola
 		iw:            iw,
 		logo:          logo,
 		name:          name,
-		security:      widget.NewRichText(),
+		security:      widget.NewLabel(""),
 		tabs:          container.NewAppTabs(),
 		w:             w,
 	}
@@ -110,10 +110,12 @@ func (a *solarSystemArea) load(solarSystemID int32) error {
 	a.constellation.OnTapped = func() {
 		a.iw.ShowEveEntity(o.System.Constellation.ToEveEntity())
 	}
-	iwidget.SetRichText(a.security, o.System.DisplayRichText()...)
+	a.security.Text = o.System.SecurityStatusDisplay()
+	a.security.Importance = o.System.SecurityType().ToImportance()
+	a.security.Refresh()
 
 	systemsLabel := widget.NewLabel("Loading...")
-	systemsTab := container.NewTabItem("Adjacent Solar Systems", systemsLabel)
+	systemsTab := container.NewTabItem("Stargates", systemsLabel)
 	a.tabs.Append(systemsTab)
 	go func() {
 		ss, err := o.GetAdjacentSystems(ctx)

@@ -57,7 +57,7 @@ func (s *EveUniverseService) makeMembershipHistory(ctx context.Context, items []
 	ids := slices.Collect(xiter.MapSlice(items, func(x organizationHistoryItem) int32 {
 		return x.OrganizationID
 	}))
-	_, err := s.AddMissingEveEntities(ctx, ids)
+	eeMap, err := s.ToEveEntities(ctx, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -78,21 +78,15 @@ func (s *EveUniverseService) makeMembershipHistory(ctx context.Context, items []
 			endDate2 = s.Now()
 		}
 		days := int(endDate2.Sub(it.StartDate) / (time.Hour * 24))
-		o := app.MembershipHistoryItem{
-			Days:      days,
-			EndDate:   endDate,
-			IsDeleted: it.IsDeleted,
-			IsOldest:  i == 0,
-			RecordID:  it.RecordID,
-			StartDate: it.StartDate,
+		oo[i] = app.MembershipHistoryItem{
+			Days:         days,
+			EndDate:      endDate,
+			IsDeleted:    it.IsDeleted,
+			IsOldest:     i == 0,
+			RecordID:     it.RecordID,
+			StartDate:    it.StartDate,
+			Organization: eeMap[it.OrganizationID],
 		}
-		if it.OrganizationID != 0 {
-			o.Organization, err = s.GetEveEntity(ctx, it.OrganizationID)
-			if err != nil {
-				return nil, err
-			}
-		}
-		oo[i] = o
 	}
 	slices.SortFunc(oo, func(a, b app.MembershipHistoryItem) int {
 		return -cmp.Compare(a.RecordID, b.RecordID)

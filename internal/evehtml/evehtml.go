@@ -15,11 +15,13 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 )
 
-var bodyPolicy = bluemonday.StrictPolicy()
+var reHorizontalRuler = regexp.MustCompile(`(--+)`)
+var reLinks = regexp.MustCompile(`(\[\w*\]\(.*\))(\n\n)`)
 
 // ToPlain converts custom Eve Online HTML text to plain text and returns it.
 func ToPlain(xml string) string {
 	t := strings.ReplaceAll(xml, "<br>", "\n")
+	bodyPolicy := bluemonday.StrictPolicy()
 	b := html.UnescapeString(bodyPolicy.Sanitize(t))
 	return b
 }
@@ -28,8 +30,7 @@ func ToPlain(xml string) string {
 func ToMarkdown(xml string) string {
 	t := strings.ReplaceAll(xml, "<loc>", "")
 	t = strings.ReplaceAll(t, "</loc>", "")
-	var re = regexp.MustCompile(`(--+)`)
-	t = re.ReplaceAllString(t, `<br><hr><br>`)
+	t = reHorizontalRuler.ReplaceAllString(t, `<br><hr><br>`)
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(t))
 	if err != nil {
 		log.Fatal(err)
@@ -75,12 +76,12 @@ func ToMarkdown(xml string) string {
 
 // patchLinks will apply a workaround to address fyne issue #4340
 func patchLinks(s string) string {
-	r := regexp.MustCompile(`(\[\w*\]\(.*\))(\n\n)`)
-	return string(r.ReplaceAll([]byte(s), []byte("$1 $2")))
+	return string(reLinks.ReplaceAll([]byte(s), []byte("$1 $2")))
 }
 
 // Strip removes all XML/HTML from a given string and return the result.
 func Strip(xml string) string {
+	bodyPolicy := bluemonday.StrictPolicy()
 	b := html.UnescapeString(bodyPolicy.Sanitize(xml))
 	return b
 }

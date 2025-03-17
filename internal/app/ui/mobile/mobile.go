@@ -302,6 +302,11 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		crossList.Refresh()
 	}
 
+	// info destination
+	searchNav := iwidget.NewNavigator(
+		newCharacterAppBar("Search", u.SearchArea.Content),
+	)
+
 	// more destination
 	var moreNav *iwidget.Navigator
 	makeSettingsMenu := func(actions []ui.SettingAction) (fyne.Resource, *fyne.Menu) {
@@ -397,15 +402,26 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 	characterDest.OnSelectedAgain = func() {
 		characterNav.PopAll()
 	}
+
 	crossDest := iwidget.NewDestinationDef("Characters", theme.NewThemedResource(icon.AccountMultipleSvg), crossNav)
 	crossDest.OnSelectedAgain = func() {
 		crossNav.PopAll()
 	}
+
+	searchDest := iwidget.NewDestinationDef("Search", theme.SearchIcon(), searchNav)
+	searchDest.OnSelected = func() {
+		u.SearchArea.Focus()
+	}
+	searchDest.OnSelectedAgain = func() {
+		u.SearchArea.Reset()
+	}
+
 	moreDest := iwidget.NewDestinationDef("More", theme.MenuIcon(), moreNav)
 	moreDest.OnSelectedAgain = func() {
 		moreNav.PopAll()
 	}
-	navBar = iwidget.NewNavBar(characterDest, crossDest, moreDest)
+
+	navBar = iwidget.NewNavBar(characterDest, crossDest, searchDest, moreDest)
 	characterNav.NavBar = navBar
 
 	u.OnRefreshStatus = func() {

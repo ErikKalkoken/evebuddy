@@ -17,6 +17,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	"github.com/dustin/go-humanize"
 	"github.com/icrowley/fake"
 	"golang.org/x/sync/singleflight"
@@ -25,7 +26,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
-	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 )
 
 // The DesktopUI is the root object of the DesktopUI and contains all DesktopUI areas.
@@ -45,6 +45,7 @@ type DesktopUI struct {
 
 	menuItemsWithShortcut []*fyne.MenuItem
 	accountWindow         fyne.Window
+	searchWindow          fyne.Window
 	settingsWindow        fyne.Window
 }
 
@@ -358,6 +359,30 @@ func (u *DesktopUI) showAccountWindow() {
 	}
 }
 
+func (u *DesktopUI) showSearchWindow() {
+	if u.searchWindow != nil {
+		u.searchWindow.Show()
+		return
+	}
+	c := u.CurrentCharacter()
+	var n string
+	if c != nil {
+		n = c.EveCharacter.Name
+	} else {
+		n = "No Character"
+	}
+	w := u.FyneApp.NewWindow(u.MakeWindowTitle(fmt.Sprintf("Search New Eden [%s]", n)))
+	u.searchWindow = w
+	w.SetOnClosed(func() {
+		u.searchWindow = nil
+	})
+	w.Resize(fyne.Size{Width: 700, Height: 400})
+	w.SetContent(u.SearchArea.Content)
+	w.Show()
+	u.SearchArea.SetWindow(w)
+	u.SearchArea.Focus()
+}
+
 func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 	// File menu
 	fileMenu := fyne.NewMenu("File")
@@ -413,8 +438,17 @@ func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 	}
 	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, shipItem)
 
+	searchItem := fyne.NewMenuItem("Search New Eden...", u.showSearchWindow)
+	searchItem.Shortcut = &desktop.CustomShortcut{
+		KeyName:  fyne.KeyS,
+		Modifier: fyne.KeyModifierAlt,
+	}
+	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, searchItem)
+
 	infoMenu := fyne.NewMenu(
 		"Info",
+		searchItem,
+		fyne.NewMenuItemSeparator(),
 		characterItem,
 		locationItem,
 		shipItem,

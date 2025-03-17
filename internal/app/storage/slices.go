@@ -1,10 +1,12 @@
 package storage
 
+import "golang.org/x/exp/constraints"
+
 // convertNumericSlice converts the type of a numeric slice and returns the new one.
-func convertNumericSlice[T int64 | int32 | int, V int64 | int32 | int](s []T) []V {
-	s2 := make([]V, len(s))
+func convertNumericSlice[Y constraints.Integer, X constraints.Integer](s []X) []Y {
+	s2 := make([]Y, len(s))
 	for i, v := range s {
-		s2[i] = V(v)
+		s2[i] = Y(v)
 	}
 	return s2
 }
