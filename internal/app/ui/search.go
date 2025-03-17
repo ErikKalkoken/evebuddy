@@ -103,7 +103,7 @@ func NewSearchArea(u *BaseUI) *SearchArea {
 		widget.NewAccordionItem(
 			"",
 			container.NewVBox(
-				container.NewHScroll(a.categories),
+				a.categories,
 				container.New(
 					layout.NewCustomPaddedHBoxLayout(0),
 					a.strict,
@@ -113,7 +113,6 @@ func NewSearchArea(u *BaseUI) *SearchArea {
 				widget.NewButton("Reset", func() {
 					a.categories.SetSelected(defaultCategories)
 					a.strict.SetState(false)
-					a.searchOptions.CloseAll()
 					updateSearchOptionsTitle()
 				}),
 			),
