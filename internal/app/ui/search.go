@@ -64,7 +64,7 @@ func NewSearchArea(u *BaseUI) *SearchArea {
 			if a.strict.On != defaultStrict {
 				return false
 			}
-			if slices.Compare(a.categories.Selected, defaultCategories) != 0 {
+			if !set.NewFromSlice(a.categories.Selected).Equal(set.NewFromSlice(defaultCategories)) {
 				return false
 			}
 			return true

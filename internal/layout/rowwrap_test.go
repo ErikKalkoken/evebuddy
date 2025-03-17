@@ -10,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"github.com/stretchr/testify/assert"
 
-	ilayout "example/fyne-playground/layout"
+	ilayout "github.com/ErikKalkoken/evebuddy/internal/layout"
 )
 
 func TestRowWrapLayout_Layout(t *testing.T) {

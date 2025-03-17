@@ -9,6 +9,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	ilayout "github.com/ErikKalkoken/evebuddy/internal/layout"
 	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -52,7 +53,7 @@ func (o *Asset) CreateRenderer() fyne.WidgetRenderer {
 	customVBox := layout.NewCustomPaddedVBoxLayout(0)
 	c := container.NewPadded(container.New(
 		customVBox,
-		container.New(&bottomRightLayout{}, o.icon, o.badge),
+		container.New(ilayout.NewBottomRightLayout(), o.icon, o.badge),
 		o.label,
 	))
 	return widget.NewSimpleRenderer(c)

@@ -22,6 +22,7 @@ import (
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	ilayout "github.com/ErikKalkoken/evebuddy/internal/layout"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -327,7 +328,7 @@ func (a *inventoryTypeArea) makeContent() fyne.CanvasObject {
 }
 
 func (a *inventoryTypeArea) makeTop() fyne.CanvasObject {
-	typeIcon := container.New(&topLeftLayout{})
+	typeIcon := container.New(ilayout.NewTopLeftLayout())
 	if a.et.HasRender() {
 		size := 128
 		r, err := a.iw.eis.InventoryTypeRender(a.et.ID, size)
