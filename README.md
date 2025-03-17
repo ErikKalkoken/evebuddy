@@ -56,6 +56,7 @@ A more detailed overview of the provided features:
   - Wealth: Charts showing wealth distribution across all characters
 - Can minimize to system tray and show indicator for new mail (desktop only)
 - Get notified about important events (e.g. structure attacked, training queue expired)
+- Ability to search New Eden (similar to in-game search bar)
 - Available for desktop (Windows, macOS, Linux) and mobile (Android)
 - Automatic dark and light theme
 - Offline mode
