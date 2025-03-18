@@ -65,6 +65,7 @@ func SupportedEveEntities() set.Set[app.EveEntityCategory] {
 
 // InfoWindow represents a dedicated window for showing information similar to the in-game info windows.
 type InfoWindow struct {
+	isDeveloperMode    bool
 	cs                 *character.CharacterService
 	currentCharacterID func() int32
 	eus                *eveuniverse.EveUniverseService
@@ -78,9 +79,11 @@ func New(
 	cs *character.CharacterService,
 	eus *eveuniverse.EveUniverseService,
 	eis app.EveImageService,
+	isDeveloperMode bool,
 	w fyne.Window,
 ) InfoWindow {
 	iw := InfoWindow{
+		isDeveloperMode:    isDeveloperMode,
 		currentCharacterID: currentCharacterID,
 		cs:                 cs,
 		eus:                eus,

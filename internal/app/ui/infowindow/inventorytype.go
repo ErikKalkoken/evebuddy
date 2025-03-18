@@ -31,6 +31,7 @@ type attributeRow struct {
 	label   string
 	value   string
 	isTitle bool
+	action  func(v string)
 }
 
 type requiredSkill struct {
@@ -50,7 +51,7 @@ type inventoryTypeArea struct {
 	et             *app.EveType
 	fittingData    []attributeRow
 	metaLevel      int
-	owner          *app.EveEntity
+	character      *app.EveEntity
 	price          *app.EveMarketPrice
 	requiredSkills []requiredSkill
 	techLevel      int
@@ -71,7 +72,7 @@ func NewInventoryTypeArea(iw InfoWindow, typeID, characterID int32, w fyne.Windo
 	if err != nil {
 		return nil, err
 	}
-	a.owner = owner
+	a.character = owner
 	if a.et == nil {
 		return nil, nil
 	}
@@ -124,7 +125,10 @@ func calcLevels(attributes map[int32]*app.EveTypeDogmaAttribute) (int, int) {
 	return tech, meta
 }
 
-func (a *inventoryTypeArea) calcAttributesData(ctx context.Context, attributes map[int32]*app.EveTypeDogmaAttribute) []attributeRow {
+func (a *inventoryTypeArea) calcAttributesData(
+	ctx context.Context,
+	attributes map[int32]*app.EveTypeDogmaAttribute,
+) []attributeRow {
 	droneCapacity, ok := attributes[app.EveDogmaAttributeDroneCapacity]
 	hasDrones := ok && droneCapacity.Value > 0
 
@@ -194,7 +198,7 @@ func (a *inventoryTypeArea) calcAttributesData(ctx context.Context, attributes m
 			})
 		}
 	}
-	data := make([]attributeRow, 0)
+	rows := make([]attributeRow, 0)
 	if a.et.Volume > 0 {
 		v, _ := a.iw.eus.FormatValue(ctx, a.et.Volume, app.EveUnitVolume)
 		if a.et.Volume != a.et.PackagedVolume {
@@ -223,12 +227,22 @@ func (a *inventoryTypeArea) calcAttributesData(ctx context.Context, attributes m
 	for _, ag := range attributeGroups {
 		if len(groupedRows[ag]) > 0 {
 			if usedGroupsCount > 1 {
-				data = append(data, attributeRow{label: ag.DisplayName(), isTitle: true})
+				rows = append(rows, attributeRow{label: ag.DisplayName(), isTitle: true})
 			}
-			data = append(data, groupedRows[ag]...)
+			rows = append(rows, groupedRows[ag]...)
 		}
 	}
-	return data
+	if a.iw.isDeveloperMode {
+		rows = append(rows, attributeRow{label: "Developer Mode", isTitle: true})
+		rows = append(rows, attributeRow{
+			label: "EVE ID",
+			value: fmt.Sprint(a.et.ID),
+			action: func(v string) {
+				a.w.Clipboard().SetContent(v)
+			},
+		})
+	}
+	return rows
 }
 
 func (a *inventoryTypeArea) calcFittingData(ctx context.Context, attributes map[int32]*app.EveTypeDogmaAttribute) []attributeRow {
@@ -372,24 +386,19 @@ func (a *inventoryTypeArea) makeTop() fyne.CanvasObject {
 		})
 		typeIcon.Add(icon)
 	}
-	ownerIcon := iwidget.NewImageFromResource(icons.QuestionmarkSvg, fyne.NewSquareSize(app.IconUnitSize))
-	ownerName := widget.NewLabel("")
-	ownerName.Wrapping = fyne.TextWrapWord
-	if a.owner != nil {
-		appwidget.RefreshImageResourceAsync(ownerIcon, func() (fyne.Resource, error) {
-			switch a.owner.Category {
-			case app.EveEntityCharacter:
-				return a.iw.eis.CharacterPortrait(a.owner.ID, app.IconPixelSize)
-			case app.EveEntityCorporation:
-				return a.iw.eis.CorporationLogo(a.owner.ID, app.IconPixelSize)
-			default:
-				panic("Unexpected owner type")
-			}
+	characterIcon := iwidget.NewImageFromResource(icons.QuestionmarkSvg, fyne.NewSquareSize(app.IconUnitSize))
+	characterName := kxwidget.NewTappableLabel("", func() {
+		a.iw.ShowEveEntity(a.character)
+	})
+	characterName.Wrapping = fyne.TextWrapWord
+	if a.character != nil {
+		appwidget.RefreshImageResourceAsync(characterIcon, func() (fyne.Resource, error) {
+			return a.iw.eis.CharacterPortrait(a.character.ID, app.IconPixelSize)
 		})
-		ownerName.SetText(a.owner.Name)
+		characterName.SetText(a.character.Name)
 	} else {
-		ownerIcon.Hide()
-		ownerName.Hide()
+		characterIcon.Hide()
+		characterName.Hide()
 	}
 	hasRequiredSkills := true
 	for _, o := range a.requiredSkills {
@@ -399,7 +408,7 @@ func (a *inventoryTypeArea) makeTop() fyne.CanvasObject {
 		}
 	}
 	checkIcon := widget.NewIcon(boolIconResource(hasRequiredSkills))
-	if a.owner != nil && !a.owner.IsCharacter() || len(a.requiredSkills) == 0 {
+	if a.character != nil && !a.character.IsCharacter() || len(a.requiredSkills) == 0 {
 		checkIcon.Hide()
 	}
 	title := widget.NewLabel("")
@@ -415,9 +424,9 @@ func (a *inventoryTypeArea) makeTop() fyne.CanvasObject {
 			container.NewBorder(
 				nil,
 				nil,
-				container.NewHBox(checkIcon, ownerIcon),
+				container.NewHBox(checkIcon, characterIcon),
 				nil,
-				ownerName,
+				characterName,
 			)))
 }
 
@@ -448,8 +457,11 @@ func (a *inventoryTypeArea) makeAttributesTab() fyne.CanvasObject {
 		func() fyne.CanvasObject {
 			return appwidget.NewTypeAttributeItem()
 		},
-		func(lii widget.ListItemID, co fyne.CanvasObject) {
-			r := a.attributesData[lii]
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(a.attributesData) {
+				return
+			}
+			r := a.attributesData[id]
 			item := co.(*appwidget.TypeAttributeItem)
 			if r.isTitle {
 				item.SetTitle(r.label)
@@ -459,7 +471,14 @@ func (a *inventoryTypeArea) makeAttributesTab() fyne.CanvasObject {
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {
-		list.UnselectAll()
+		defer list.UnselectAll()
+		if id >= len(a.attributesData) {
+			return
+		}
+		r := a.attributesData[id]
+		if r.action != nil {
+			r.action(r.value)
+		}
 	}
 	return list
 }

@@ -222,6 +222,7 @@ func (a *SearchArea) showSupportedResult(o *app.EveEntity) {
 		a.u.CharacterService,
 		a.u.EveUniverseService,
 		a.u.EveImageService,
+		a.u.FyneApp.Preferences().Bool(settingDeveloperMode),
 		a.w,
 	)
 	iw.ShowEveEntity(o)

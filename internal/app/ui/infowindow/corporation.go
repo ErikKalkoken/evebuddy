@@ -131,7 +131,7 @@ func (a *corporationArea) load(corporationID int32) error {
 	} else {
 		a.hq.Hide()
 	}
-	attributes := make([]AtributeItem, 0)
+	attributes := make([]AttributeItem, 0)
 	if o.Ceo != nil {
 		attributes = append(attributes, NewAtributeItem("CEO", o.Ceo))
 	}
@@ -163,9 +163,15 @@ func (a *corporationArea) load(corporationID int32) error {
 			attributes = append(attributes, NewAtributeItem("URL", u))
 		}
 	}
-	attributeList := NewAttributeList()
+	if a.iw.isDeveloperMode {
+		x := NewAtributeItem("EVE ID", o.ID)
+		x.Action = func(_ any) {
+			a.w.Clipboard().SetContent(fmt.Sprint(o.ID))
+		}
+		attributes = append(attributes, x)
+	}
+	attributeList := NewAttributeList(attributes...)
 	attributeList.ShowInfoWindow = a.iw.ShowEveEntity
-	attributeList.Set(attributes)
 	attributesTab := container.NewTabItem("Attributes", attributeList)
 	a.tabs.Append(attributesTab)
 	a.tabs.Select(attributesTab)

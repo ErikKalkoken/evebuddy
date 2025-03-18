@@ -518,12 +518,12 @@ func (u *BaseUI) ShowTypeInfoWindow(id int32) {
 }
 
 func (u *BaseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
-	iw := infowindow.New(u.CurrentCharacterID, u.CharacterService, u.EveUniverseService, u.EveImageService, u.Window)
+	iw := infowindow.New(u.CurrentCharacterID, u.CharacterService, u.EveUniverseService, u.EveImageService, u.FyneApp.Preferences().Bool(settingDeveloperMode), u.Window)
 	iw.ShowEveEntity(o)
 }
 
 func (u *BaseUI) ShowInfoWindow(v infowindow.InfoVariant, id int64) {
-	iw := infowindow.New(u.CurrentCharacterID, u.CharacterService, u.EveUniverseService, u.EveImageService, u.Window)
+	iw := infowindow.New(u.CurrentCharacterID, u.CharacterService, u.EveUniverseService, u.EveImageService, u.FyneApp.Preferences().Bool(settingDeveloperMode), u.Window)
 	iw.Show(v, id)
 }
 

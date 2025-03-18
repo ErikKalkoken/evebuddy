@@ -79,7 +79,7 @@ func (a *allianceArea) load(allianceID int32) error {
 	a.name.SetText(o.Name)
 
 	// Attributes
-	attributes := make([]AtributeItem, 0)
+	attributes := make([]AttributeItem, 0)
 	if o.ExecutorCorporation != nil {
 		attributes = append(attributes, NewAtributeItem("Executor", o.ExecutorCorporation))
 	}
@@ -98,9 +98,15 @@ func (a *allianceArea) load(allianceID int32) error {
 	if o.Faction != nil {
 		attributes = append(attributes, NewAtributeItem("Faction", o.Faction))
 	}
-	attributeList := NewAttributeList()
+	if a.iw.isDeveloperMode {
+		x := NewAtributeItem("EVE ID", o.ID)
+		x.Action = func(_ any) {
+			a.w.Clipboard().SetContent(fmt.Sprint(o.ID))
+		}
+		attributes = append(attributes, x)
+	}
+	attributeList := NewAttributeList(attributes...)
 	attributeList.ShowInfoWindow = a.iw.ShowEveEntity
-	attributeList.Set(attributes)
 	a.tabs.Append(container.NewTabItem("Attributes", attributeList))
 
 	// Members
