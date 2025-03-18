@@ -23,7 +23,7 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 )
@@ -122,10 +122,10 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 		go u.statusBarArea.refreshCharacterCount()
 	}
 	u.ShowMailIndicator = func() {
-		u.DeskApp.SetSystemTrayIcon(icon.IconmarkedPng)
+		u.DeskApp.SetSystemTrayIcon(icons.IconmarkedPng)
 	}
 	u.HideMailIndicator = func() {
-		u.DeskApp.SetSystemTrayIcon(icon.IconPng)
+		u.DeskApp.SetSystemTrayIcon(icons.IconPng)
 	}
 
 	makeTitleWithCount := func(title string, count int) string {
@@ -136,12 +136,12 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 	}
 
 	assetTab := container.NewTabItemWithIcon("Assets",
-		theme.NewThemedResource(icon.Inventory2Svg), container.NewAppTabs(
+		theme.NewThemedResource(icons.Inventory2Svg), container.NewAppTabs(
 			container.NewTabItem("Assets", u.AssetsArea.Content),
 		))
 
 	planetTab := container.NewTabItemWithIcon("Colonies",
-		theme.NewThemedResource(icon.EarthSvg), container.NewAppTabs(
+		theme.NewThemedResource(icons.EarthSvg), container.NewAppTabs(
 			container.NewTabItem("Colonies", u.PlanetArea.Content),
 		))
 	u.PlanetArea.OnRefresh = func(_, expired int) {
@@ -161,13 +161,13 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 	u.MailArea.OnSendMessage = u.showSendMailWindow
 
 	clonesTab := container.NewTabItemWithIcon("Clones",
-		theme.NewThemedResource(icon.HeadSnowflakeSvg), container.NewAppTabs(
+		theme.NewThemedResource(icons.HeadSnowflakeSvg), container.NewAppTabs(
 			container.NewTabItem("Current Clone", u.ImplantsArea.Content),
 			container.NewTabItem("Jump Clones", u.JumpClonesArea.Content),
 		))
 
 	contractTab := container.NewTabItemWithIcon("Contracts",
-		theme.NewThemedResource(icon.FileSignSvg), container.NewAppTabs(
+		theme.NewThemedResource(icons.FileSignSvg), container.NewAppTabs(
 			container.NewTabItem("Contracts", u.ContractsArea.Content),
 		))
 
@@ -187,11 +187,11 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 		u.AssetSearchArea.Focus()
 	}
 	u.overviewTab = container.NewTabItemWithIcon("Characters",
-		theme.NewThemedResource(icon.GroupSvg), overviewTabs,
+		theme.NewThemedResource(icons.GroupSvg), overviewTabs,
 	)
 
 	skillTab := container.NewTabItemWithIcon("Skills",
-		theme.NewThemedResource(icon.SchoolSvg), container.NewAppTabs(
+		theme.NewThemedResource(icons.SchoolSvg), container.NewAppTabs(
 			container.NewTabItem("Training Queue", u.SkillqueueArea.Content),
 			container.NewTabItem("Skill Catalogue", u.SkillCatalogueArea.Content),
 			container.NewTabItem("Ships", u.ShipsArea.Content),
@@ -203,7 +203,7 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 	}
 
 	walletTab := container.NewTabItemWithIcon("Wallet",
-		theme.NewThemedResource(icon.AttachmoneySvg), container.NewAppTabs(
+		theme.NewThemedResource(icons.AttachmoneySvg), container.NewAppTabs(
 			container.NewTabItem("Transactions", u.WalletJournalArea.Content),
 			container.NewTabItem("Market Transactions", u.WalletTransactionArea.Content),
 		))

@@ -18,7 +18,7 @@ import (
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -152,7 +152,7 @@ func (w *EveEntityEntry) update() {
 			badge.OnTapped = func() {
 				s := fmt.Sprintf("%s (%s)", ee.Name, ee.CategoryDisplay())
 				nameItem := fyne.NewMenuItem(s, nil)
-				nameItem.Icon = icon.Questionmark32Png
+				nameItem.Icon = icons.Questionmark32Png
 				if ee.Category == app.EveEntityCharacter && w.ShowInfoWindow != nil {
 					nameItem.Action = func() {
 						w.ShowInfoWindow(ee)
@@ -167,7 +167,7 @@ func (w *EveEntityEntry) update() {
 				pm := widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(badge))
 				pm.ShowAtRelativePosition(fyne.Position{}, badge)
 				go func() {
-					res, err := FetchEveEntityAvatar(w.eis, ee, icon.Questionmark32Png)
+					res, err := FetchEveEntityAvatar(w.eis, ee, icons.Questionmark32Png)
 					if err != nil {
 						slog.Error("fetch eve entity avatar", "error", err)
 						return
@@ -227,7 +227,7 @@ func newEveEntityBadge(ee *app.EveEntity, eis app.EveImageService, onTapped func
 	w := &eveEntityBadge{
 		ee:           ee,
 		eis:          eis,
-		fallbackIcon: icon.Questionmark32Png,
+		fallbackIcon: icons.Questionmark32Png,
 		OnTapped:     onTapped,
 	}
 	w.ExtendBaseWidget(w)

@@ -40,26 +40,26 @@ const (
 
 // locationNode is a node in the location tree.
 type locationNode struct {
-	CharacterID         int32
-	ContainerID         int64
-	Name                string
-	Count               int
-	IsUnknown           bool
-	SystemName          string
-	SystemSecurityValue float32
-	SystemSecurityType  app.SolarSystemSecurityType
-	Type                locationNodeType
+	characterID         int32
+	containerID         int64
+	name                string
+	count               int
+	isUnknown           bool
+	systemName          string
+	systemSecurityValue float32
+	systemSecurityType  app.SolarSystemSecurityType
+	type_               locationNodeType
 }
 
 func (n locationNode) UID() widget.TreeNodeID {
-	if n.CharacterID == 0 || n.ContainerID == 0 || n.Type == 0 {
-		panic("some IDs are not set")
+	if n.characterID == 0 || n.containerID == 0 || n.type_ == 0 {
+		panic("locationNode: some IDs are not set")
 	}
-	return fmt.Sprintf("%d-%d-%d", n.CharacterID, n.ContainerID, n.Type)
+	return fmt.Sprintf("%d-%d-%d", n.characterID, n.containerID, n.type_)
 }
 
 func (n locationNode) IsRoot() bool {
-	return n.Type == nodeLocation
+	return n.type_ == nodeLocation
 }
 
 // AssetsArea is the UI area that shows the skillqueue
@@ -123,7 +123,7 @@ func (a *AssetsArea) makeLocationsTree() *iwidget.Tree[locationNode] {
 		return fmt.Sprintf("%s (%s)", name, humanize.Comma(int64(count)))
 	}
 	t := iwidget.NewTree(
-		func(branch bool) fyne.CanvasObject {
+		func(isBranch bool) fyne.CanvasObject {
 			iconInfo := kxwidget.NewTappableIcon(theme.InfoIcon(), nil)
 			main := widget.NewLabel("Location")
 			main.Truncation = fyne.TextTruncateEllipsis
@@ -137,17 +137,17 @@ func (a *AssetsArea) makeLocationsTree() *iwidget.Tree[locationNode] {
 				main,
 			)
 		},
-		func(n locationNode, b bool, co fyne.CanvasObject) {
+		func(n locationNode, isBranch bool, co fyne.CanvasObject) {
 			row := co.(*fyne.Container).Objects
 			label := row[0].(*widget.Label)
 			spacer := row[1].(*fyne.Container).Objects[0]
 			prefix := row[1].(*fyne.Container).Objects[1].(*widget.Label)
 			infoIcon := row[2].(*kxwidget.TappableIcon)
-			label.SetText(makeNameWithCount(n.Name, n.Count))
+			label.SetText(makeNameWithCount(n.name, n.count))
 			if n.IsRoot() {
-				if !n.IsUnknown {
-					prefix.Text = fmt.Sprintf("%.1f", n.SystemSecurityValue)
-					prefix.Importance = n.SystemSecurityType.ToImportance()
+				if !n.isUnknown {
+					prefix.Text = fmt.Sprintf("%.1f", n.systemSecurityValue)
+					prefix.Importance = n.systemSecurityType.ToImportance()
 				} else {
 					prefix.Text = "?"
 					prefix.Importance = widget.LowImportance
@@ -155,7 +155,7 @@ func (a *AssetsArea) makeLocationsTree() *iwidget.Tree[locationNode] {
 				prefix.Refresh()
 				prefix.Show()
 				infoIcon.OnTapped = func() {
-					a.u.ShowLocationInfoWindow(n.ContainerID)
+					a.u.ShowLocationInfoWindow(n.containerID)
 				}
 				infoIcon.Show()
 				spacer.Show()
@@ -167,7 +167,7 @@ func (a *AssetsArea) makeLocationsTree() *iwidget.Tree[locationNode] {
 		},
 	)
 	t.OnSelected = func(n locationNode) {
-		if n.Type == nodeLocation {
+		if n.type_ == nodeLocation {
 			t.OpenBranch(n)
 			t.UnselectAll()
 			return
@@ -237,7 +237,7 @@ func (a *AssetsArea) makeAssetGrid() *widget.GridWrap {
 				if !ok {
 					continue
 				}
-				if n.ContainerID == ca.ItemID {
+				if n.containerID == ca.ItemID {
 					if err := a.selectLocation(n); err != nil {
 						slog.Warn("failed to select location", "error", "err")
 					}
@@ -302,18 +302,18 @@ func (a *AssetsArea) newLocationData() (*iwidget.TreeData[locationNode], error) 
 	for _, ln := range locationNodes {
 		el := ln.Location
 		location := locationNode{
-			CharacterID: characterID,
-			ContainerID: el.ID,
-			Type:        nodeLocation,
-			Name:        el.DisplayName(),
-			Count:       len(ln.Nodes()),
+			characterID: characterID,
+			containerID: el.ID,
+			type_:       nodeLocation,
+			name:        el.DisplayName(),
+			count:       len(ln.Nodes()),
 		}
 		if el.SolarSystem != nil {
-			location.SystemName = el.SolarSystem.Name
-			location.SystemSecurityValue = float32(el.SolarSystem.SecurityStatus)
-			location.SystemSecurityType = el.SolarSystem.SecurityType()
+			location.systemName = el.SolarSystem.Name
+			location.systemSecurityValue = float32(el.SolarSystem.SecurityStatus)
+			location.systemSecurityType = el.SolarSystem.SecurityType()
 		} else {
-			location.IsUnknown = true
+			location.isUnknown = true
 		}
 		locationUID := tree.MustAdd(iwidget.RootUID, location)
 
@@ -346,20 +346,20 @@ func (a *AssetsArea) newLocationData() (*iwidget.TreeData[locationNode], error) 
 		}
 
 		shipHangar := locationNode{
-			CharacterID: characterID,
-			ContainerID: el.ID,
-			Name:        "Ship Hangar",
-			Count:       shipCount,
-			Type:        nodeShipHangar,
+			characterID: characterID,
+			containerID: el.ID,
+			name:        "Ship Hangar",
+			count:       shipCount,
+			type_:       nodeShipHangar,
 		}
 		shipsUID := tree.MustAdd(locationUID, shipHangar)
 		for _, an := range ships {
 			ship := an.Asset
 			ldn := locationNode{
-				CharacterID: characterID,
-				ContainerID: an.Asset.ItemID,
-				Name:        ship.DisplayName2(),
-				Type:        nodeShip,
+				characterID: characterID,
+				containerID: an.Asset.ItemID,
+				name:        ship.DisplayName2(),
+				type_:       nodeShip,
 			}
 			shipUID := tree.MustAdd(shipsUID, ldn)
 			cargo := make([]assetcollection.AssetNode, 0)
@@ -372,40 +372,40 @@ func (a *AssetsArea) newLocationData() (*iwidget.TreeData[locationNode], error) 
 				}
 			}
 			cln := locationNode{
-				CharacterID: characterID,
-				ContainerID: ship.ItemID,
-				Name:        "Cargo Bay",
-				Count:       len(cargo),
-				Type:        nodeCargoBay,
+				characterID: characterID,
+				containerID: ship.ItemID,
+				name:        "Cargo Bay",
+				count:       len(cargo),
+				type_:       nodeCargoBay,
 			}
 			tree.MustAdd(shipUID, cln)
 			if ship.EveType.HasFuelBay() {
 				ldn := locationNode{
-					CharacterID: characterID,
-					ContainerID: an.Asset.ItemID,
-					Name:        "Fuel Bay",
-					Count:       len(fuel),
-					Type:        nodeFuelBay,
+					characterID: characterID,
+					containerID: an.Asset.ItemID,
+					name:        "Fuel Bay",
+					count:       len(fuel),
+					type_:       nodeFuelBay,
 				}
 				tree.MustAdd(shipUID, ldn)
 			}
 		}
 
 		itemHangar := locationNode{
-			CharacterID: characterID,
-			ContainerID: el.ID,
-			Name:        "Item Hangar",
-			Count:       itemCount,
-			Type:        nodeItemHangar,
+			characterID: characterID,
+			containerID: el.ID,
+			name:        "Item Hangar",
+			count:       itemCount,
+			type_:       nodeItemHangar,
 		}
 		itemsUID := tree.MustAdd(locationUID, itemHangar)
 		for _, an := range itemContainers {
 			ldn := locationNode{
-				CharacterID: characterID,
-				ContainerID: an.Asset.ItemID,
-				Name:        an.Asset.DisplayName(),
-				Count:       len(an.Nodes()),
-				Type:        nodeContainer,
+				characterID: characterID,
+				containerID: an.Asset.ItemID,
+				name:        an.Asset.DisplayName(),
+				count:       len(an.Nodes()),
+				type_:       nodeContainer,
 			}
 			tree.MustAdd(itemsUID, ldn)
 		}
@@ -413,11 +413,11 @@ func (a *AssetsArea) newLocationData() (*iwidget.TreeData[locationNode], error) 
 		if len(assetSafety) > 0 {
 			an := assetSafety[0]
 			ldn := locationNode{
-				CharacterID: characterID,
-				ContainerID: an.Asset.ItemID,
-				Name:        "Asset Safety",
-				Count:       len(an.Nodes()),
-				Type:        nodeAssetSafety,
+				characterID: characterID,
+				containerID: an.Asset.ItemID,
+				name:        "Asset Safety",
+				count:       len(an.Nodes()),
+				type_:       nodeAssetSafety,
 			}
 			tree.MustAdd(locationUID, ldn)
 		}
@@ -454,7 +454,7 @@ func (a *AssetsArea) selectLocation(location locationNode) error {
 	a.locations.ScrollTo(location)
 	a.locations.Select(location)
 	var f func(context.Context, int32, int64) ([]*app.CharacterAsset, error)
-	switch location.Type {
+	switch location.type_ {
 	case nodeShipHangar:
 		f = a.u.CharacterService.ListCharacterAssetsInShipHangar
 	case nodeItemHangar:
@@ -462,11 +462,11 @@ func (a *AssetsArea) selectLocation(location locationNode) error {
 	default:
 		f = a.u.CharacterService.ListCharacterAssetsInLocation
 	}
-	assets, err := f(context.TODO(), location.CharacterID, location.ContainerID)
+	assets, err := f(context.TODO(), location.characterID, location.containerID)
 	if err != nil {
 		return err
 	}
-	switch location.Type {
+	switch location.type_ {
 	case nodeItemHangar:
 		containers := make([]*app.CharacterAsset, 0)
 		items := make([]*app.CharacterAsset, 0)
@@ -520,7 +520,7 @@ func (a *AssetsArea) updateLocationPath(location locationNode) {
 	path = append(path, location)
 	parts := make([]string, 0)
 	for _, n := range path {
-		parts = append(parts, n.Name)
+		parts = append(parts, n.name)
 	}
 	a.locationPath.SetText(strings.Join(parts, " ＞ "))
 }

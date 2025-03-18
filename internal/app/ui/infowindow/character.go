@@ -16,7 +16,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -47,7 +47,7 @@ func newCharacterArea(iw InfoWindow, characterID int32, w fyne.Window) *characte
 	name.Truncation = fyne.TextTruncateEllipsis
 	corporation := kxwidget.NewTappableLabel("", nil)
 	corporation.Truncation = fyne.TextTruncateEllipsis
-	portrait := kxwidget.NewTappableImage(icon.Characterplaceholder64Jpeg, nil)
+	portrait := kxwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
 	portrait.SetMinSize(fyne.NewSquareSize(128))
 	title := widget.NewLabel("")
@@ -55,7 +55,7 @@ func newCharacterArea(iw InfoWindow, characterID int32, w fyne.Window) *characte
 	a := &characterArea{
 		alliance:        alliance,
 		corporation:     corporation,
-		corporationLogo: iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		corporationLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		iw:              iw,
 		membership:      widget.NewLabel(""),
 		name:            name,

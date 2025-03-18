@@ -20,7 +20,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -94,7 +94,7 @@ func (a *AccountArea) makeCharacterList() *widget.List {
 		},
 		func() fyne.CanvasObject {
 			portrait := iwidget.NewImageFromResource(
-				icon.Characterplaceholder64Jpeg,
+				icons.Characterplaceholder64Jpeg,
 				fyne.NewSquareSize(app.IconUnitSize),
 			)
 			name := widget.NewLabel("Template")

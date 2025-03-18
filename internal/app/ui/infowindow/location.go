@@ -13,7 +13,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -40,12 +40,12 @@ func newLocationArea(iw InfoWindow, locationID int64, w fyne.Window) *locationAr
 	typeInfo.Truncation = fyne.TextTruncateEllipsis
 	corporation := kxwidget.NewTappableLabel("", nil)
 	corporation.Truncation = fyne.TextTruncateEllipsis
-	typeImage := kxwidget.NewTappableImage(icon.BlankSvg, nil)
+	typeImage := kxwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeImage.SetFillMode(canvas.ImageFillContain)
 	typeImage.SetMinSize(fyne.NewSquareSize(renderIconUnitSize))
 	a := &locationArea{
 		corporation:     corporation,
-		corporationLogo: iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		corporationLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		iw:              iw,
 		name:            name,
 		typeInfo:        typeInfo,

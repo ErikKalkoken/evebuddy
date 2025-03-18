@@ -18,7 +18,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -361,7 +361,7 @@ func (a *inventoryTypeArea) makeTop() fyne.CanvasObject {
 		}
 	} else {
 		s := float32(app.IconPixelSize) * logoZoomFactor
-		icon := appwidget.NewImageResourceAsync(icon.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
+		icon := appwidget.NewImageResourceAsync(icons.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
 			if a.et.IsSKIN() {
 				return a.iw.eis.InventoryTypeSKIN(a.et.ID, app.IconPixelSize)
 			} else if a.et.IsBlueprint() {
@@ -372,7 +372,7 @@ func (a *inventoryTypeArea) makeTop() fyne.CanvasObject {
 		})
 		typeIcon.Add(icon)
 	}
-	ownerIcon := iwidget.NewImageFromResource(icon.QuestionmarkSvg, fyne.NewSquareSize(app.IconUnitSize))
+	ownerIcon := iwidget.NewImageFromResource(icons.QuestionmarkSvg, fyne.NewSquareSize(app.IconUnitSize))
 	ownerName := widget.NewLabel("")
 	ownerName.Wrapping = fyne.TextWrapWord
 	if a.owner != nil {
@@ -495,7 +495,7 @@ func (a *inventoryTypeArea) makeRequirementsTab() fyne.CanvasObject {
 				layout.NewSpacer(),
 				widget.NewLabel("Check"),
 				appwidget.NewSkillLevel(),
-				widget.NewIcon(icon.QuestionmarkSvg),
+				widget.NewIcon(icons.QuestionmarkSvg),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
