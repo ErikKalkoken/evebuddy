@@ -15,7 +15,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
@@ -42,7 +42,7 @@ func NewMailHeader(show func(*app.EveEntity)) *MailHeader {
 		showInfo:   show,
 		timestamp:  widget.NewLabel(""),
 	}
-	w.icon = kxwidget.NewTappableImage(icon.BlankSvg, nil)
+	w.icon = kxwidget.NewTappableImage(icons.BlankSvg, nil)
 	w.icon.SetFillMode(canvas.ImageFillContain)
 	w.icon.SetMinSize(fyne.NewSquareSize(32))
 	w.ExtendBaseWidget(w)
@@ -69,10 +69,10 @@ func (w *MailHeader) Set(eis app.EveImageService, from *app.EveEntity, timestamp
 	}
 	w.Refresh()
 	go func() {
-		res, err := FetchEveEntityAvatar(eis, from, icon.BlankSvg)
+		res, err := FetchEveEntityAvatar(eis, from, icons.BlankSvg)
 		if err != nil {
 			slog.Error("fetch eve entity avatar", "error", err)
-			res = icon.Questionmark32Png
+			res = icons.Questionmark32Png
 		}
 		w.icon.SetResource(res)
 	}()
@@ -84,7 +84,7 @@ func (w *MailHeader) Clear() {
 	w.recipients.Text = ""
 	w.recipients.OnTapped = nil
 	w.timestamp.Text = ""
-	w.icon.SetResource(icon.BlankSvg)
+	w.icon.SetResource(icons.BlankSvg)
 	w.icon.OnTapped = nil
 	w.Refresh()
 }

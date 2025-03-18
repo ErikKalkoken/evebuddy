@@ -12,7 +12,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -35,7 +35,7 @@ func NewSearchResult(
 		eus:                 eus,
 		supportedCategories: supportedCategories,
 		name:                widget.NewLabel(""),
-		image:               iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		image:               iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -51,7 +51,7 @@ func (w *SearchResult) Set(o *app.EveEntity) {
 	w.name.Refresh()
 	imageCategory := o.Category.ToEveImage()
 	if imageCategory == "" {
-		w.image.Resource = icon.BlankSvg
+		w.image.Resource = icons.BlankSvg
 		w.image.Refresh()
 		return
 	}

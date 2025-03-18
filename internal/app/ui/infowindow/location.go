@@ -13,7 +13,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -40,12 +40,12 @@ func newLocationArea(iw InfoWindow, locationID int64, w fyne.Window) *locationAr
 	typeInfo.Truncation = fyne.TextTruncateEllipsis
 	corporation := kxwidget.NewTappableLabel("", nil)
 	corporation.Truncation = fyne.TextTruncateEllipsis
-	typeImage := kxwidget.NewTappableImage(icon.BlankSvg, nil)
+	typeImage := kxwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeImage.SetFillMode(canvas.ImageFillContain)
 	typeImage.SetMinSize(fyne.NewSquareSize(renderIconUnitSize))
 	a := &locationArea{
 		corporation:     corporation,
-		corporationLogo: iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		corporationLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		iw:              iw,
 		name:            name,
 		typeInfo:        typeInfo,
@@ -116,6 +116,16 @@ func (a *locationArea) load(locationID int64) error {
 	desc := widget.NewLabel(description)
 	desc.Wrapping = fyne.TextWrapWord
 	a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
+	if a.iw.isDeveloperMode {
+		x := NewAtributeItem("EVE ID", o.ID)
+		x.Action = func(_ any) {
+			a.w.Clipboard().SetContent(fmt.Sprint(o.ID))
+		}
+		attributeList := NewAttributeList([]AttributeItem{x}...)
+		attributeList.ShowInfoWindow = a.iw.ShowEveEntity
+		attributesTab := container.NewTabItem("Attributes", attributeList)
+		a.tabs.Append(attributesTab)
+	}
 	el := NewEntityListFromItems(
 		a.iw.Show,
 		NewEntityItemFromEveEntity(o.SolarSystem.Constellation.Region.ToEveEntity(), ""),

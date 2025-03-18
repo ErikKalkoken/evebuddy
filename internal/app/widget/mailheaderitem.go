@@ -12,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -36,7 +36,7 @@ func NewMailHeaderItem(eis app.EveImageService) *MailHeaderItem {
 	w := &MailHeaderItem{
 		eis:          eis,
 		from:         from,
-		FallbackIcon: icon.Questionmark32Png,
+		FallbackIcon: icons.Questionmark32Png,
 		subject:      subject,
 		timestamp:    widget.NewLabel(""),
 	}

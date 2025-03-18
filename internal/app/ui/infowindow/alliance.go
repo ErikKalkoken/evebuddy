@@ -10,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -34,7 +34,7 @@ func newAlliancArea(iw InfoWindow, allianceID int32, w fyne.Window) *allianceAre
 	name.Truncation = fyne.TextTruncateEllipsis
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Truncation = fyne.TextTruncateEllipsis
-	logo := iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
+	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
 	s := float32(app.IconPixelSize) * logoZoomFactor
 	logo.SetMinSize(fyne.NewSquareSize(s))
 	a := &allianceArea{
@@ -79,7 +79,7 @@ func (a *allianceArea) load(allianceID int32) error {
 	a.name.SetText(o.Name)
 
 	// Attributes
-	attributes := make([]AtributeItem, 0)
+	attributes := make([]AttributeItem, 0)
 	if o.ExecutorCorporation != nil {
 		attributes = append(attributes, NewAtributeItem("Executor", o.ExecutorCorporation))
 	}
@@ -98,9 +98,15 @@ func (a *allianceArea) load(allianceID int32) error {
 	if o.Faction != nil {
 		attributes = append(attributes, NewAtributeItem("Faction", o.Faction))
 	}
-	attributeList := NewAttributeList()
+	if a.iw.isDeveloperMode {
+		x := NewAtributeItem("EVE ID", o.ID)
+		x.Action = func(_ any) {
+			a.w.Clipboard().SetContent(fmt.Sprint(o.ID))
+		}
+		attributes = append(attributes, x)
+	}
+	attributeList := NewAttributeList(attributes...)
 	attributeList.ShowInfoWindow = a.iw.ShowEveEntity
-	attributeList.Set(attributes)
 	a.tabs.Append(container.NewTabItem("Attributes", attributeList))
 
 	// Members

@@ -13,14 +13,13 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// TODO: Add focus feature
-
+// FilterChip represents a filter chip widget
 // Filter chips use tags or descriptive words to filter content.
-type filterChip struct {
+type FilterChip struct {
 	widget.DisableableWidget
 
-	Text       string
-	IsSelected bool
+	Text     string
+	Selected bool
 
 	// OnChanged is called when the state changed
 	OnChanged func(selected bool)
@@ -31,17 +30,19 @@ type filterChip struct {
 	icon       *widget.Icon
 	label      *widget.Label
 	bg         *canvas.Rectangle
+	focused    bool
 	mu         sync.RWMutex
 }
 
-var _ fyne.Widget = (*filterChip)(nil)
-var _ fyne.Tappable = (*filterChip)(nil)
-var _ desktop.Hoverable = (*filterChip)(nil)
-var _ fyne.Disableable = (*filterChip)(nil)
+var _ desktop.Hoverable = (*FilterChip)(nil)
+var _ fyne.Disableable = (*FilterChip)(nil)
+var _ fyne.Focusable = (*FilterChip)(nil)
+var _ fyne.Tappable = (*FilterChip)(nil)
+var _ fyne.Widget = (*FilterChip)(nil)
 
-// newFilterChip returns a new filterChip object.
-func newFilterChip(text string, changed func(selected bool)) *filterChip {
-	w := &filterChip{
+// NewFilterChip returns a new [FilterChip] object.
+func NewFilterChip(text string, changed func(selected bool)) *FilterChip {
+	w := &FilterChip{
 		label:     widget.NewLabel(text),
 		OnChanged: changed,
 		Text:      text,
@@ -57,26 +58,22 @@ func newFilterChip(text string, changed func(selected bool)) *filterChip {
 	return w
 }
 
-// Selected reports whether the widget is selected.
-func (w *filterChip) Selected() bool {
-	w.mu.RLock()
-	defer w.mu.RUnlock()
-	return w.IsSelected
-}
-
-// SetSelected sets the selected state.
-func (w *filterChip) SetSelected(v bool) {
+// SetSelected sets the state.
+func (w *FilterChip) SetSelected(v bool) {
 	w.mu.Lock()
-	old := w.IsSelected
-	w.IsSelected = v
+	if w.Selected == v {
+		w.mu.Unlock()
+		return
+	}
+	w.Selected = v
 	w.mu.Unlock()
-	if w.OnChanged != nil && old != v {
+	if w.OnChanged != nil {
 		w.OnChanged(v)
 	}
 	w.Refresh()
 }
 
-func (w *filterChip) Refresh() {
+func (w *FilterChip) Refresh() {
 	w.updateState()
 	w.bg.Refresh()
 	w.label.Refresh()
@@ -84,12 +81,14 @@ func (w *filterChip) Refresh() {
 	w.BaseWidget.Refresh()
 }
 
-func (w *filterChip) updateState() {
-	w.mu.RLock()
-	defer w.mu.RUnlock()
+func (w *FilterChip) updateState() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
 	w.label.Text = w.Text
+
 	if w.Disabled() {
 		w.label.Importance = widget.LowImportance
 		w.icon.Resource = theme.NewDisabledResource(theme.ConfirmIcon())
@@ -99,7 +98,7 @@ func (w *filterChip) updateState() {
 		w.icon.Resource = theme.ConfirmIcon()
 		w.bg.StrokeColor = th.Color(theme.ColorNameInputBorder, v)
 	}
-	if w.IsSelected {
+	if w.Selected {
 		w.iconPadded.Show()
 		if w.Disabled() {
 			w.bg.FillColor = th.Color(theme.ColorNameDisabledButton, v)
@@ -112,15 +111,19 @@ func (w *filterChip) updateState() {
 		w.iconPadded.Hide()
 		w.bg.FillColor = color.Transparent
 	}
+
+	if w.focused {
+		w.bg.StrokeColor = th.Color(theme.ColorNameFocus, v)
+	}
 }
 
-func (w *filterChip) MinSize() fyne.Size {
+func (w *FilterChip) MinSize() fyne.Size {
 	w.ExtendBaseWidget(w)
 	w.minSize = w.BaseWidget.MinSize()
 	return w.minSize
 }
 
-func (w *filterChip) Tapped(pe *fyne.PointEvent) {
+func (w *FilterChip) Tapped(pe *fyne.PointEvent) {
 	if w.Disabled() {
 		return
 	}
@@ -136,21 +139,21 @@ func (w *filterChip) Tapped(pe *fyne.PointEvent) {
 	// 		}
 	// 	}
 	// }
-	w.SetSelected(!w.IsSelected)
+	w.SetSelected(!w.Selected)
 }
 
-func (w *filterChip) Cursor() desktop.Cursor {
+func (w *FilterChip) Cursor() desktop.Cursor {
 	if w.hovered {
 		return desktop.PointerCursor
 	}
 	return desktop.DefaultCursor
 }
 
-func (w *filterChip) MouseIn(me *desktop.MouseEvent) {
+func (w *FilterChip) MouseIn(me *desktop.MouseEvent) {
 	w.MouseMoved(me)
 }
 
-func (w *filterChip) MouseMoved(me *desktop.MouseEvent) {
+func (w *FilterChip) MouseMoved(me *desktop.MouseEvent) {
 	if w.Disabled() {
 		return
 	}
@@ -163,14 +166,42 @@ func (w *filterChip) MouseMoved(me *desktop.MouseEvent) {
 	}
 }
 
-func (w *filterChip) MouseOut() {
+func (w *FilterChip) MouseOut() {
 	if w.hovered {
 		w.hovered = false
 		w.Refresh()
 	}
 }
 
-func (w *filterChip) CreateRenderer() fyne.WidgetRenderer {
+// FocusGained is called when the Check has been given focus.
+func (w *FilterChip) FocusGained() {
+	if w.Disabled() {
+		return
+	}
+	w.focused = true
+	w.Refresh()
+}
+
+// FocusLost is called when the Check has had focus removed.
+func (w *FilterChip) FocusLost() {
+	w.focused = false
+	w.Refresh()
+}
+
+// TypedRune receives text input events when the Check is focused.
+func (w *FilterChip) TypedRune(r rune) {
+	if w.Disabled() {
+		return
+	}
+	if r == ' ' {
+		w.SetSelected(!w.Selected)
+	}
+}
+
+// TypedKey receives key input events when the Check is focused.
+func (w *FilterChip) TypedKey(key *fyne.KeyEvent) {}
+
+func (w *FilterChip) CreateRenderer() fyne.WidgetRenderer {
 	w.updateState()
 	p := theme.Padding()
 	c := container.NewHBox(container.NewStack(

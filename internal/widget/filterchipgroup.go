@@ -23,27 +23,24 @@ type FilterChipGroup struct {
 	mu       sync.RWMutex
 	Selected []string
 
-	options   []string
-	optionMap map[string]bool
-	chips     []*filterChip
+	options []string
+	chips   []*FilterChip
 }
 
 // NewFilterChipGroup returns a new [FilterChipGroup].
 func NewFilterChipGroup(options []string, changed func([]string)) *FilterChipGroup {
 	w := &FilterChipGroup{
-		chips:     make([]*filterChip, 0),
+		chips:     make([]*FilterChip, 0),
 		OnChanged: changed,
 		options:   options,
 		Selected:  make([]string, 0),
 	}
 	w.ExtendBaseWidget(w)
-	w.optionMap = make(map[string]bool)
 	for _, o := range options {
 		if o == "" {
 			panic("Empty strings are not allowed as options")
 		}
-		w.optionMap[o] = true
-		w.chips = append(w.chips, newFilterChip(o, func(selected bool) {
+		w.chips = append(w.chips, NewFilterChip(o, func(selected bool) {
 			w.toggleOption(o, selected)
 			if w.OnChanged != nil {
 				w.OnChanged(slices.Clone(w.Selected))
@@ -84,12 +81,17 @@ func (w *FilterChipGroup) Options() []string {
 }
 
 func (w *FilterChipGroup) update() {
+	optionMap := make(map[string]bool)
+	for _, v := range w.options {
+		optionMap[v] = true
+	}
 	w.mu.RLock()
+	defer w.mu.RUnlock()
 	for _, v := range w.Selected {
 		if v == "" {
 			panic("Empty string in Selected")
 		}
-		if !w.optionMap[v] {
+		if !optionMap[v] {
 			panic("Invalid value in Selected: " + v)
 		}
 	}
@@ -97,9 +99,8 @@ func (w *FilterChipGroup) update() {
 	for _, v := range w.Selected {
 		selected[v] = true
 	}
-	w.mu.RUnlock()
 	for i, v := range w.options {
-		w.chips[i].IsSelected = selected[v]
+		w.chips[i].Selected = selected[v]
 	}
 }
 

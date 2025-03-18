@@ -70,6 +70,7 @@ const (
 	settingNotifyTrainingEarliest             = "settingNotifyTrainingEarliest"
 	settingNotifyTrainingEnabled              = "settingNotifyTrainingEnabled"
 	settingNotifyTrainingEnabledDefault       = false
+	settingDeveloperMode                      = "developer-mode"
 )
 
 // SettingKeys returns all setting keys. Mostly to know what to delete.
@@ -232,16 +233,28 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 		},
 		a.currentWindow,
 	)
+	developerMode := iwidget.NewSettingItemSwitch(
+		"Developer Mode",
+		"App shows addditional technical information like Character IDs",
+		func() bool {
+			return a.u.FyneApp.Preferences().Bool(settingDeveloperMode)
+		},
+		func(b bool) {
+			a.u.FyneApp.Preferences().SetBool(settingDeveloperMode, b)
+		},
+	)
+
 	items := []iwidget.SettingItem{
 		iwidget.NewSettingItemHeading("Application"),
 		logLevel,
+		developerMode,
 		iwidget.NewSettingItemSeperator(),
 		iwidget.NewSettingItemHeading("EVE Online"),
 		maxMail,
 		maxWallet,
 	}
 
-	sysTray := iwidget.NewSettingItemSwitch(
+	systray := iwidget.NewSettingItemSwitch(
 		"Close button",
 		"App will minimize to system tray when closed (requires restart)",
 		func() bool {
@@ -255,7 +268,7 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 		},
 	)
 	if a.u.IsDesktop() {
-		items = slices.Insert(items, 2, sysTray)
+		items = slices.Insert(items, 2, systray)
 	}
 
 	list := iwidget.NewSettingList(items)
@@ -299,7 +312,8 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 			logLevel.Setter(SettingLogLevelDefault)
 			maxMail.Setter(settingMaxMailsDefault)
 			maxWallet.Setter(settingMaxWalletTransactionsDefault)
-			sysTray.Setter(SettingSysTrayEnabledDefault)
+			systray.Setter(SettingSysTrayEnabledDefault)
+			developerMode.Setter(false)
 			list.Refresh()
 		},
 	}

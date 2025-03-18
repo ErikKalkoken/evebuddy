@@ -108,11 +108,11 @@ func NewSearchArea(u *BaseUI) *SearchArea {
 					layout.NewCustomPaddedHBoxLayout(0),
 					a.strict,
 					kxwidget.NewTappableLabel("Strict search", func() {
-						a.strict.SetState(!a.strict.On)
+						a.strict.SetOn(!a.strict.On)
 					})),
 				widget.NewButton("Reset", func() {
 					a.categories.SetSelected(defaultCategories)
-					a.strict.SetState(false)
+					a.strict.SetOn(false)
 					updateSearchOptionsTitle()
 				}),
 			),
@@ -222,6 +222,7 @@ func (a *SearchArea) showSupportedResult(o *app.EveEntity) {
 		a.u.CharacterService,
 		a.u.EveUniverseService,
 		a.u.EveImageService,
+		a.u.FyneApp.Preferences().Bool(settingDeveloperMode),
 		a.w,
 	)
 	iw.ShowEveEntity(o)

@@ -14,7 +14,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
@@ -43,10 +43,10 @@ func newCorporationArea(iw InfoWindow, corporationID int32, w fyne.Window) *corp
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Truncation = fyne.TextTruncateEllipsis
 	s := float32(app.IconPixelSize) * logoZoomFactor
-	logo := iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(s))
+	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(s))
 	a := &corporationArea{
 		alliance:     alliance,
-		allianceLogo: iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		allianceLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		name:         name,
 		logo:         logo,
 		hq:           hq,
@@ -131,7 +131,7 @@ func (a *corporationArea) load(corporationID int32) error {
 	} else {
 		a.hq.Hide()
 	}
-	attributes := make([]AtributeItem, 0)
+	attributes := make([]AttributeItem, 0)
 	if o.Ceo != nil {
 		attributes = append(attributes, NewAtributeItem("CEO", o.Ceo))
 	}
@@ -163,9 +163,15 @@ func (a *corporationArea) load(corporationID int32) error {
 			attributes = append(attributes, NewAtributeItem("URL", u))
 		}
 	}
-	attributeList := NewAttributeList()
+	if a.iw.isDeveloperMode {
+		x := NewAtributeItem("EVE ID", o.ID)
+		x.Action = func(_ any) {
+			a.w.Clipboard().SetContent(fmt.Sprint(o.ID))
+		}
+		attributes = append(attributes, x)
+	}
+	attributeList := NewAttributeList(attributes...)
 	attributeList.ShowInfoWindow = a.iw.ShowEveEntity
-	attributeList.Set(attributes)
 	attributesTab := container.NewTabItem("Attributes", attributeList)
 	a.tabs.Append(attributesTab)
 	a.tabs.Select(attributesTab)

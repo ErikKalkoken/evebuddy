@@ -16,7 +16,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -47,7 +47,7 @@ func newCharacterArea(iw InfoWindow, characterID int32, w fyne.Window) *characte
 	name.Truncation = fyne.TextTruncateEllipsis
 	corporation := kxwidget.NewTappableLabel("", nil)
 	corporation.Truncation = fyne.TextTruncateEllipsis
-	portrait := kxwidget.NewTappableImage(icon.Characterplaceholder64Jpeg, nil)
+	portrait := kxwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
 	portrait.SetMinSize(fyne.NewSquareSize(128))
 	title := widget.NewLabel("")
@@ -55,7 +55,7 @@ func newCharacterArea(iw InfoWindow, characterID int32, w fyne.Window) *characte
 	a := &characterArea{
 		alliance:        alliance,
 		corporation:     corporation,
-		corporationLogo: iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		corporationLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		iw:              iw,
 		membership:      widget.NewLabel(""),
 		name:            name,
@@ -113,43 +113,60 @@ func (a *characterArea) load(characterID int32) error {
 		}
 		a.portrait.SetResource(r)
 	}()
-	c, err := a.iw.eus.GetEveCharacterESI(ctx, characterID)
+	o, err := a.iw.eus.GetEveCharacterESI(ctx, characterID)
 	if err != nil {
 		return err
 	}
-	a.name.SetText(c.Name)
-	if c.HasAlliance() {
-		a.alliance.SetText(c.Alliance.Name)
+	a.name.SetText(o.Name)
+	if o.HasAlliance() {
+		a.alliance.SetText(o.Alliance.Name)
 		a.alliance.OnTapped = func() {
-			a.iw.ShowEveEntity(c.Alliance)
+			a.iw.ShowEveEntity(o.Alliance)
 		}
 	} else {
 		a.alliance.Hide()
 	}
-	a.security.SetText(fmt.Sprintf("Security Status: %.1f", c.SecurityStatus))
-	a.corporation.SetText(fmt.Sprintf("Member of %s", c.Corporation.Name))
+	a.security.SetText(fmt.Sprintf("Security Status: %.1f", o.SecurityStatus))
+	a.corporation.SetText(fmt.Sprintf("Member of %s", o.Corporation.Name))
 	a.corporation.OnTapped = func() {
-		a.iw.ShowEveEntity(c.Corporation)
+		a.iw.ShowEveEntity(o.Corporation)
 	}
 	a.portrait.OnTapped = func() {
-		go a.iw.showZoomWindow(c.Name, characterID, a.iw.eis.CharacterPortrait, a.w)
+		go a.iw.showZoomWindow(o.Name, characterID, a.iw.eis.CharacterPortrait, a.w)
 	}
-	if s := c.DescriptionPlain(); s != "" {
+	if s := o.DescriptionPlain(); s != "" {
 		bio := widget.NewLabel(s)
 		bio.Wrapping = fyne.TextWrapWord
 		a.tabs.Append(container.NewTabItem("Bio", container.NewVScroll(bio)))
 	}
-	desc := widget.NewLabel(c.RaceDescription())
-	desc.Wrapping = fyne.TextWrapWord
-	a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
-	if c.Title != "" {
-		a.title.SetText("Title: " + c.Title)
+	if o.Title != "" {
+		a.title.SetText("Title: " + o.Title)
 	} else {
 		a.title.Hide()
 	}
+
+	desc := widget.NewLabel(o.RaceDescription())
+	desc.Wrapping = fyne.TextWrapWord
+	a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
+
+	attributes := []AttributeItem{
+		NewAtributeItem("Corporation", o.Corporation),
+		NewAtributeItem("Race", o.Race.Name),
+	}
+	if a.iw.isDeveloperMode {
+		x := NewAtributeItem("EVE ID", o.ID)
+		x.Action = func(_ any) {
+			a.w.Clipboard().SetContent(fmt.Sprint(o.ID))
+		}
+		attributes = append(attributes, x)
+	}
+	attributeList := NewAttributeList(attributes...)
+	attributeList.ShowInfoWindow = a.iw.ShowEveEntity
+	attributesTab := container.NewTabItem("Attributes", attributeList)
+	a.tabs.Append(attributesTab)
 	a.tabs.Refresh()
 	go func() {
-		r, err := a.iw.eis.CorporationLogo(c.Corporation.ID, app.IconPixelSize)
+		r, err := a.iw.eis.CorporationLogo(o.Corporation.ID, app.IconPixelSize)
 		if err != nil {
 			slog.Error("character info: Failed to load corp logo", "charaterID", characterID, "error", err)
 			return

@@ -15,7 +15,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -130,7 +130,7 @@ func MakeSendMailPage(
 func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEntity), w fyne.Window) {
 	var modal *widget.PopUp
 	items := make([]*app.EveEntity, 0)
-	fallbackIcon := icon.Questionmark32Png
+	fallbackIcon := icons.Questionmark32Png
 	list := widget.NewList(
 		func() int {
 			return len(items)
@@ -139,7 +139,7 @@ func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEnti
 			name := widget.NewLabel("Template")
 			name.Truncation = fyne.TextTruncateClip
 			category := iwidget.NewLabelWithSize("Template", theme.SizeNameCaptionText)
-			icon := iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(app.IconUnitSize))
+			icon := iwidget.NewImageFromResource(icons.Questionmark32Png, fyne.NewSquareSize(app.IconUnitSize))
 			return container.NewBorder(
 				nil,
 				nil,

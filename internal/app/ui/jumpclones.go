@@ -16,7 +16,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -24,28 +24,28 @@ import (
 )
 
 type jumpCloneNode struct {
-	ImplantCount           int
-	ImplantTypeID          int32
-	ImplantTypeName        string
-	ImplantTypeDescription string
-	IsUnknown              bool
-	JumpCloneID            int32
-	JumpCloneName          string
-	LocationID             int64
-	LocationName           string
-	SystemSecurityValue    float32
-	SystemSecurityType     app.SolarSystemSecurityType
+	implantCount           int
+	implantTypeID          int32
+	implantTypeName        string
+	implantTypeDescription string
+	isUnknown              bool
+	jumpCloneID            int32
+	jumpCloneName          string
+	locationID             int64
+	locationName           string
+	systemSecurityValue    float32
+	systemSecurityType     app.SolarSystemSecurityType
 }
 
 func (n jumpCloneNode) IsRoot() bool {
-	return n.ImplantTypeID == 0
+	return n.implantTypeID == 0
 }
 
 func (n jumpCloneNode) UID() widget.TreeNodeID {
-	if n.JumpCloneID == 0 {
+	if n.jumpCloneID == 0 {
 		panic("some IDs are not set")
 	}
-	return fmt.Sprintf("%d-%d", n.JumpCloneID, n.ImplantTypeID)
+	return fmt.Sprintf("%d-%d", n.jumpCloneID, n.implantTypeID)
 }
 
 // JumpClonesArea is the UI area that shows the skillqueue
@@ -75,7 +75,7 @@ func (a *JumpClonesArea) makeTree() *iwidget.Tree[jumpCloneNode] {
 	t := iwidget.NewTree(
 		func(branch bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(
-				icon.Characterplaceholder64Jpeg,
+				icons.Characterplaceholder64Jpeg,
 				fyne.NewSquareSize(app.IconUnitSize),
 			)
 			main := widget.NewLabel("Template")
@@ -103,18 +103,18 @@ func (a *JumpClonesArea) makeTree() *iwidget.Tree[jumpCloneNode] {
 			if n.IsRoot() {
 				iconMain.Resource = eveicon.GetResourceByName(eveicon.CloningCenter)
 				iconMain.Refresh()
-				if !n.IsUnknown {
+				if !n.isUnknown {
 					iconInfo.OnTapped = func() {
-						a.u.ShowLocationInfoWindow(n.LocationID)
+						a.u.ShowLocationInfoWindow(n.locationID)
 					}
 					iconInfo.Show()
 				} else {
 					iconInfo.Hide()
 				}
-				main.SetText(n.LocationName)
-				if !n.IsUnknown {
-					prefix.Text = fmt.Sprintf("%.1f", n.SystemSecurityValue)
-					prefix.Importance = n.SystemSecurityType.ToImportance()
+				main.SetText(n.locationName)
+				if !n.isUnknown {
+					prefix.Text = fmt.Sprintf("%.1f", n.systemSecurityValue)
+					prefix.Importance = n.systemSecurityType.ToImportance()
 				} else {
 					prefix.Text = "?"
 					prefix.Importance = widget.LowImportance
@@ -123,11 +123,11 @@ func (a *JumpClonesArea) makeTree() *iwidget.Tree[jumpCloneNode] {
 				spacer.Show()
 			} else {
 				appwidget.RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
-					return a.u.EveImageService.InventoryTypeIcon(n.ImplantTypeID, app.IconPixelSize)
+					return a.u.EveImageService.InventoryTypeIcon(n.implantTypeID, app.IconPixelSize)
 				})
-				main.SetText(n.ImplantTypeName)
+				main.SetText(n.implantTypeName)
 				iconInfo.OnTapped = func() {
-					a.u.ShowTypeInfoWindow(n.ImplantTypeID)
+					a.u.ShowTypeInfoWindow(n.implantTypeID)
 				}
 				prefix.Hide()
 				spacer.Hide()
@@ -172,10 +172,10 @@ func (a *JumpClonesArea) newTreeData() (*iwidget.TreeData[jumpCloneNode], error)
 	}
 	for _, c := range clones {
 		n := jumpCloneNode{
-			ImplantCount:  len(c.Implants),
-			JumpCloneID:   c.JumpCloneID,
-			JumpCloneName: c.Name,
-			LocationID:    c.Location.ID,
+			implantCount:  len(c.Implants),
+			jumpCloneID:   c.JumpCloneID,
+			jumpCloneName: c.Name,
+			locationID:    c.Location.ID,
 		}
 		// TODO: Refactor to use same location method for all unknown location cases
 		if c.Location != nil {
@@ -183,22 +183,22 @@ func (a *JumpClonesArea) newTreeData() (*iwidget.TreeData[jumpCloneNode], error)
 			if err != nil {
 				slog.Error("get location for jump clone", "error", err)
 			} else {
-				n.LocationName = loc.Name
-				n.SystemSecurityValue = float32(loc.SolarSystem.SecurityStatus)
-				n.SystemSecurityType = loc.SolarSystem.SecurityType()
+				n.locationName = loc.Name
+				n.systemSecurityValue = float32(loc.SolarSystem.SecurityStatus)
+				n.systemSecurityType = loc.SolarSystem.SecurityType()
 			}
 		}
-		if n.LocationName == "" {
-			n.LocationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
-			n.IsUnknown = true
+		if n.locationName == "" {
+			n.locationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
+			n.isUnknown = true
 		}
 		uid := tree.MustAdd(iwidget.RootUID, n)
 		for _, i := range c.Implants {
 			n := jumpCloneNode{
-				ImplantTypeDescription: i.EveType.DescriptionPlain(),
-				ImplantTypeID:          i.EveType.ID,
-				ImplantTypeName:        i.EveType.Name,
-				JumpCloneID:            c.JumpCloneID,
+				implantTypeDescription: i.EveType.DescriptionPlain(),
+				implantTypeID:          i.EveType.ID,
+				implantTypeName:        i.EveType.Name,
+				jumpCloneID:            c.JumpCloneID,
 			}
 			tree.MustAdd(uid, n)
 		}

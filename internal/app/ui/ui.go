@@ -23,7 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
@@ -518,12 +518,12 @@ func (u *BaseUI) ShowTypeInfoWindow(id int32) {
 }
 
 func (u *BaseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
-	iw := infowindow.New(u.CurrentCharacterID, u.CharacterService, u.EveUniverseService, u.EveImageService, u.Window)
+	iw := infowindow.New(u.CurrentCharacterID, u.CharacterService, u.EveUniverseService, u.EveImageService, u.FyneApp.Preferences().Bool(settingDeveloperMode), u.Window)
 	iw.ShowEveEntity(o)
 }
 
 func (u *BaseUI) ShowInfoWindow(v infowindow.InfoVariant, id int64) {
-	iw := infowindow.New(u.CurrentCharacterID, u.CharacterService, u.EveUniverseService, u.EveImageService, u.Window)
+	iw := infowindow.New(u.CurrentCharacterID, u.CharacterService, u.EveUniverseService, u.EveImageService, u.FyneApp.Preferences().Bool(settingDeveloperMode), u.Window)
 	iw.Show(v, id)
 }
 
@@ -540,12 +540,12 @@ func (u *BaseUI) UpdateAvatar(id int32, setIcon func(fyne.Resource)) {
 	r, err := u.EveImageService.CharacterPortrait(id, app.IconPixelSize)
 	if err != nil {
 		slog.Error("Failed to fetch character portrait", "characterID", id, "err", err)
-		r = icon.Characterplaceholder64Jpeg
+		r = icons.Characterplaceholder64Jpeg
 	}
 	r2, err := fynetools.MakeAvatar(r)
 	if err != nil {
 		slog.Error("Failed to make avatar", "characterID", id, "err", err)
-		r2 = icon.Characterplaceholder64Jpeg
+		r2 = icons.Characterplaceholder64Jpeg
 	}
 	setIcon(r2)
 }
@@ -604,7 +604,7 @@ func (u *BaseUI) MakeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 		if c.ID == characterID {
 			continue
 		}
-		it.Icon, _ = fynetools.MakeAvatar(icon.Characterplaceholder64Jpeg)
+		it.Icon, _ = fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)
 		wg.Add(1)
 		go u.UpdateAvatar(c.ID, func(r fyne.Resource) {
 			defer wg.Done()

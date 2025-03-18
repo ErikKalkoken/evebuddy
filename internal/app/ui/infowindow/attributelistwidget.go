@@ -15,13 +15,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
-type AtributeItem struct {
-	Label string
-	Value any
+type AttributeItem struct {
+	Label  string
+	Value  any
+	Action func(v any)
 }
 
-func NewAtributeItem(label string, value any) AtributeItem {
-	return AtributeItem{Label: label, Value: value}
+func NewAtributeItem(label string, value any) AttributeItem {
+	return AttributeItem{Label: label, Value: value}
 }
 
 type AttributeList struct {
@@ -29,20 +30,20 @@ type AttributeList struct {
 
 	ShowInfoWindow func(*app.EveEntity)
 
-	items   []AtributeItem
+	items   []AttributeItem
 	openURL func(*url.URL) error
 }
 
-func NewAttributeList() *AttributeList {
+func NewAttributeList(items ...AttributeItem) *AttributeList {
 	w := &AttributeList{
-		items:   make([]AtributeItem, 0),
+		items:   items,
 		openURL: fyne.CurrentApp().OpenURL,
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
-func (w *AttributeList) Set(items []AtributeItem) {
+func (w *AttributeList) Set(items []AttributeItem) {
 	w.items = items
 	w.Refresh()
 }
@@ -122,6 +123,9 @@ func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
 			// if err != nil {
 			// 	a.u.Snackbar.Show(fmt.Sprintf("ERROR: Failed to open URL: %s", ihumanize.Error(err)))
 			// }
+		}
+		if it.Action != nil {
+			it.Action(it.Value)
 		}
 	}
 	return widget.NewSimpleRenderer(l)

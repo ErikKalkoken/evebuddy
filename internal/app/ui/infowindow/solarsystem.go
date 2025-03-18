@@ -13,7 +13,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -44,7 +44,7 @@ func newSolarSystemArea(iw InfoWindow, solarSystemID int32, w fyne.Window) *sola
 	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateEllipsis
 	s := float32(app.IconPixelSize) * logoZoomFactor
-	logo := iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(s))
+	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(s))
 	a := &solarSystemArea{
 		region:        region,
 		constellation: constellation,
@@ -117,6 +117,16 @@ func (a *solarSystemArea) load(solarSystemID int32) error {
 	systemsLabel := widget.NewLabel("Loading...")
 	systemsTab := container.NewTabItem("Stargates", systemsLabel)
 	a.tabs.Append(systemsTab)
+	if a.iw.isDeveloperMode {
+		x := NewAtributeItem("EVE ID", o.System.ID)
+		x.Action = func(_ any) {
+			a.w.Clipboard().SetContent(fmt.Sprint(o.System.ID))
+		}
+		attributeList := NewAttributeList([]AttributeItem{x}...)
+		attributeList.ShowInfoWindow = a.iw.ShowEveEntity
+		attributesTab := container.NewTabItem("Attributes", attributeList)
+		a.tabs.Append(attributesTab)
+	}
 	go func() {
 		ss, err := o.GetAdjacentSystems(ctx)
 		if err != nil {
