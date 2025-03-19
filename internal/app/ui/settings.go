@@ -277,7 +277,7 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 		"Clear cache",
 		func() {
 			w := a.currentWindow()
-			d := iwidget.NewConfirmDialog(
+			a.u.ShowConfirmDialog(
 				"Clear Cache",
 				"Are you sure you want to clear the cache?",
 				"Clear",
@@ -304,7 +304,6 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 					}
 					m.Start()
 				}, w)
-			d.Show()
 		}}
 	reset := SettingAction{
 		Label: "Reset to defaults",
@@ -354,7 +353,7 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 }
 
 func (a *SettingsArea) showDeleteFileDialog(name, path string) {
-	d := iwidget.NewConfirmDialog(
+	a.u.ShowConfirmDialog(
 		"Delete File",
 		fmt.Sprintf("Are you sure you want to permanently delete this file?\n\n%s", name),
 		"Delete",
@@ -382,7 +381,6 @@ func (a *SettingsArea) showDeleteFileDialog(name, path string) {
 				a.snackbar.Show(titler.String(name) + " deleted")
 			}
 		}, a.window)
-	d.Show()
 }
 
 func (a *SettingsArea) showExportFileDialog(path string) {
@@ -392,7 +390,7 @@ func (a *SettingsArea) showExportFileDialog(path string) {
 		a.snackbar.Show("No file to export: " + filename)
 		return
 	} else if err != nil {
-		iwidget.ShowErrorDialog("Failed to open "+filename, err, a.window)
+		a.u.ShowErrorDialog("Failed to open "+filename, err, a.window)
 		return
 	}
 	d := dialog.NewFileSave(
@@ -412,7 +410,7 @@ func (a *SettingsArea) showExportFileDialog(path string) {
 				return nil
 			}()
 			if err2 != nil {
-				iwidget.ShowErrorDialog("Failed to export "+filename, err, a.window)
+				a.u.ShowErrorDialog("Failed to export "+filename, err, a.window)
 			}
 		}, a.window,
 	)
@@ -505,14 +503,14 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 			if on {
 				err := a.u.CharacterService.EnableAllTrainingWatchers(ctx)
 				if err != nil {
-					iwidget.ShowErrorDialog("failed to enable training notification", err, a.currentWindow())
+					a.u.ShowErrorDialog("failed to enable training notification", err, a.currentWindow())
 				} else {
 					a.u.FyneApp.Preferences().SetBool(settingNotifyTrainingEnabled, true)
 				}
 			} else {
 				err := a.u.CharacterService.DisableAllTrainingWatchers(ctx)
 				if err != nil {
-					iwidget.ShowErrorDialog("failed to disable training notification", err, a.currentWindow())
+					a.u.ShowErrorDialog("failed to disable training notification", err, a.currentWindow())
 				} else {
 					a.u.FyneApp.Preferences().SetBool(settingNotifyTrainingEnabled, false)
 				}

@@ -14,10 +14,12 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -28,6 +30,7 @@ import (
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -64,17 +67,19 @@ type BaseUI struct {
 	// Clears all caches
 	ClearCache func()
 
-	HideMailIndicator  func()
-	OnAppFirstStarted  func()
-	OnAppStopped       func()
-	OnAppTerminated    func()
-	OnInit             func(*app.Character)
-	OnRefreshCharacter func(*app.Character)
-	OnRefreshCross     func()
-	OnRefreshStatus    func()
-	OnSetCharacter     func(int32)
-	OnShowAndRun       func()
-	ShowMailIndicator  func()
+	HideMailIndicator    func()
+	OnAppFirstStarted    func()
+	OnAppStopped         func()
+	OnAppTerminated      func()
+	OnInit               func(*app.Character)
+	OnRefreshCharacter   func(*app.Character)
+	OnRefreshCross       func()
+	OnRefreshStatus      func()
+	OnSetCharacter       func(int32)
+	OnShowAndRun         func()
+	ShowMailIndicator    func()
+	EnableMenuShortcuts  func()
+	DisableMenuShortcuts func()
 
 	DeskApp  desktop.App
 	FyneApp  fyne.App
@@ -952,5 +957,48 @@ func (u *BaseUI) notifyExpiredExtractionsIfNeeded(ctx context.Context, character
 				slog.Error("notify expired extractions", "characterID", characterID, "error", err)
 			}
 		}()
+	}
+}
+
+func (u *BaseUI) ShowInformationDialog(title, message string, parent fyne.Window) {
+	d := dialog.NewInformation(title, message, parent)
+	kxdialog.AddDialogKeyHandler(d, parent)
+	u.disableShortcutsInDialog(d)
+	d.Show()
+}
+
+func (u *BaseUI) ShowConfirmDialog(title, message, confirm string, callback func(bool), parent fyne.Window) {
+	d := dialog.NewConfirm(title, message, callback, parent)
+	d.SetConfirmImportance(widget.DangerImportance)
+	d.SetConfirmText(confirm)
+	d.SetDismissText("Cancel")
+	kxdialog.AddDialogKeyHandler(d, parent)
+	u.disableShortcutsInDialog(d)
+	d.Show()
+}
+
+func (u *BaseUI) NewErrorDialog(message string, err error, parent fyne.Window) dialog.Dialog {
+	text := widget.NewLabel(fmt.Sprintf("%s\n\n%s", message, humanize.Error(err)))
+	text.Wrapping = fyne.TextWrapWord
+	text.Importance = widget.DangerImportance
+	x := container.NewVScroll(text)
+	x.SetMinSize(fyne.Size{Width: 400, Height: 100})
+	d := dialog.NewCustom("Error", "OK", x, parent)
+	kxdialog.AddDialogKeyHandler(d, parent)
+	u.disableShortcutsInDialog(d)
+	return d
+}
+
+func (u *BaseUI) ShowErrorDialog(message string, err error, parent fyne.Window) {
+	d := u.NewErrorDialog(message, err, parent)
+	d.Show()
+}
+
+func (u *BaseUI) disableShortcutsInDialog(d dialog.Dialog) {
+	if u.DisableMenuShortcuts != nil && u.EnableMenuShortcuts != nil {
+		u.DisableMenuShortcuts()
+		d.SetOnClosed(func() {
+			u.EnableMenuShortcuts()
+		})
 	}
 }

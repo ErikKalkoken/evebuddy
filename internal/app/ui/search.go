@@ -285,7 +285,7 @@ func (a *SearchArea) showRecent() {
 
 func (a *SearchArea) doSearch(search string) {
 	if a.u.IsOffline {
-		iwidget.ShowInformationDialog(
+		a.u.ShowInformationDialog(
 			"Offline",
 			"Can't search when offline",
 			a.w,
@@ -314,8 +314,7 @@ func (a *SearchArea) doSearch(search string) {
 		a.strict.On,
 	)
 	if err != nil {
-		d2 := iwidget.NewErrorDialog("Search failed", err, a.u.Window)
-		d2.Show()
+		a.u.ShowErrorDialog("Search failed", err, a.u.Window)
 		return
 	}
 	if total == maxSearchResults {

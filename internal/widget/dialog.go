@@ -13,29 +13,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
-// NewConfirmDialog returns a new pre-configured confirm dialog.
-func NewConfirmDialog(title, message, confirm string, callback func(bool), parent fyne.Window) dialog.Dialog {
-	d := dialog.NewConfirm(title, message, callback, parent)
-	d.SetConfirmImportance(widget.DangerImportance)
-	d.SetConfirmText(confirm)
-	d.SetDismissText("Cancel")
-	kxdialog.AddDialogKeyHandler(d, parent)
-	return d
-}
-
-func NewInformationDialog(title, message string, parent fyne.Window) dialog.Dialog {
+func ShowInformationDialog(title, message string, parent fyne.Window) {
 	d := dialog.NewInformation(title, message, parent)
 	kxdialog.AddDialogKeyHandler(d, parent)
-	return d
-}
-
-func ShowInformationDialog(title, message string, parent fyne.Window) {
-	d := NewInformationDialog(title, message, parent)
 	d.Show()
 }
 
-// NewErrorDialog returns a new custom error dialog.
-func NewErrorDialog(message string, err error, parent fyne.Window) dialog.Dialog {
+// ShowErrorDialog shows a new custom error dialog.
+func ShowErrorDialog(message string, err error, parent fyne.Window) {
 	text := widget.NewLabel(fmt.Sprintf("%s\n\n%s", message, humanize.Error(err)))
 	text.Wrapping = fyne.TextWrapWord
 	text.Importance = widget.DangerImportance
@@ -43,11 +28,5 @@ func NewErrorDialog(message string, err error, parent fyne.Window) dialog.Dialog
 	x.SetMinSize(fyne.Size{Width: 400, Height: 100})
 	d := dialog.NewCustom("Error", "OK", x, parent)
 	kxdialog.AddDialogKeyHandler(d, parent)
-	return d
-}
-
-// ShowErrorDialog shows a new custom error dialog.
-func ShowErrorDialog(message string, err error, parent fyne.Window) {
-	d := NewErrorDialog(message, err, parent)
 	d.Show()
 }

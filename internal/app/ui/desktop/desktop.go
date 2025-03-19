@@ -127,6 +127,8 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 	u.HideMailIndicator = func() {
 		u.DeskApp.SetSystemTrayIcon(icons.IconPng)
 	}
+	u.EnableMenuShortcuts = u.enableMenuShortcuts
+	u.DisableMenuShortcuts = u.disableMenuShortcuts
 
 	makeTitleWithCount := func(title string, count int) string {
 		if count > 0 {
