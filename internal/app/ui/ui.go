@@ -60,7 +60,7 @@ type BaseUI struct {
 	// Paths to user data (for information only)
 	DataPaths map[string]string
 	// Run the app in offline mode
-	IsOffline bool
+	isOffline bool
 	// Whether to disable update tickers (useful for debugging)
 	IsUpdateTickerDisabled bool
 
@@ -120,10 +120,11 @@ type BaseUI struct {
 // NewBaseUI constructs and returns a new BaseUI.
 //
 // Note:Types embedding BaseUI should define callbacks instead of overwriting methods.
-func NewBaseUI(fyneApp fyne.App) *BaseUI {
+func NewBaseUI(fyneApp fyne.App, isOffline bool) *BaseUI {
 	u := &BaseUI{
-		FyneApp:  fyneApp,
-		isMobile: fyne.CurrentDevice().IsMobile(),
+		FyneApp:   fyneApp,
+		isMobile:  fyne.CurrentDevice().IsMobile(),
+		isOffline: isOffline,
 	}
 	u.Window = fyneApp.NewWindow(u.AppName())
 
@@ -172,6 +173,14 @@ func (u *BaseUI) AppName() string {
 		return "EVE Buddy"
 	}
 	return name
+}
+
+func (u *BaseUI) IsDeveloperMode() bool {
+	return u.FyneApp.Preferences().Bool(settingDeveloperMode)
+}
+
+func (u *BaseUI) IsOffline() bool {
+	return u.isOffline
 }
 
 // Init initialized the app.
@@ -235,7 +244,7 @@ func (u *BaseUI) ShowAndRun() {
 		}
 		// First app start
 		slog.Info("App started")
-		if u.IsOffline {
+		if u.isOffline {
 			slog.Info("Started in offline mode")
 		}
 		go func() {
@@ -249,7 +258,7 @@ func (u *BaseUI) ShowAndRun() {
 			u.RefreshStatus()
 		}()
 		u.Snackbar.Start()
-		if !u.IsOffline && !u.IsUpdateTickerDisabled {
+		if !u.isOffline && !u.IsUpdateTickerDisabled {
 			u.isForeground.Store(true)
 			go func() {
 				u.startUpdateTickerGeneralSections()
@@ -528,12 +537,10 @@ func (u *BaseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
 
 func (u *BaseUI) ShowInfoWindow(v infowindow.InfoVariant, id int64) {
 	iw := infowindow.New(
-		u.CurrentCharacterID,
+		u,
 		u.CharacterService,
 		u.EveUniverseService,
 		u.EveImageService,
-		u.FyneApp.Preferences().Bool(settingDeveloperMode),
-		u.IsOffline,
 		u.Window,
 	)
 	iw.Show(v, id)
@@ -722,7 +729,7 @@ func (u *BaseUI) notifyCharactersIfNeeded(ctx context.Context) error {
 // UpdateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
 // and refreshes the UI accordingly.
 func (u *BaseUI) UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool) {
-	if u.IsOffline {
+	if u.isOffline {
 		return
 	}
 	var sections []app.CharacterSection

@@ -134,7 +134,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 			<-clockTicker.C
 		}
 	}()
-	if a.u.IsOffline {
+	if a.u.IsOffline() {
 		a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
 		a.refreshUpdateStatus()
 		return

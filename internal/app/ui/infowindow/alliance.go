@@ -97,7 +97,7 @@ func (a *allianceArea) load(allianceID int32) error {
 	if o.Faction != nil {
 		attributes = append(attributes, NewAtributeItem("Faction", o.Faction))
 	}
-	if a.iw.isDeveloperMode {
+	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
 			a.w.Clipboard().SetContent(fmt.Sprint(o.ID))

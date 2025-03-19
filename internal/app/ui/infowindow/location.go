@@ -116,7 +116,7 @@ func (a *locationArea) load(locationID int64) error {
 	desc := widget.NewLabel(description)
 	desc.Wrapping = fyne.TextWrapWord
 	a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
-	if a.iw.isDeveloperMode {
+	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
 			a.w.Clipboard().SetContent(fmt.Sprint(o.ID))

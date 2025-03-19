@@ -58,7 +58,7 @@ func NewAccountArea(u *BaseUI) *AccountArea {
 		a.ShowAddCharacterDialog()
 	})
 	add.Importance = widget.HighImportance
-	if a.u.IsOffline {
+	if a.u.isOffline {
 		add.Disable()
 	}
 	if a.u.IsDesktop() {

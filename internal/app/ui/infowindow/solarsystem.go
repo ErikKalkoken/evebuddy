@@ -117,7 +117,7 @@ func (a *solarSystemArea) load(solarSystemID int32) error {
 	systemsLabel := widget.NewLabel("Loading...")
 	systemsTab := container.NewTabItem("Stargates", systemsLabel)
 	a.tabs.Append(systemsTab)
-	if a.iw.isDeveloperMode {
+	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.System.ID)
 		x.Action = func(_ any) {
 			a.w.Clipboard().SetContent(fmt.Sprint(o.System.ID))

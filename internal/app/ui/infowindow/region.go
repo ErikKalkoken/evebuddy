@@ -75,7 +75,7 @@ func (a *regionArea) load(constellationID int32) error {
 	desc := widget.NewLabel(o.DescriptionPlain())
 	desc.Wrapping = fyne.TextWrapWord
 	a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
-	if a.iw.isDeveloperMode {
+	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", fmt.Sprint(o.ID))
 		x.Action = func(v any) {
 			a.w.Clipboard().SetContent(v.(string))

@@ -592,7 +592,7 @@ func (a *MailArea) setMail(mailID int32) {
 		a.u.Snackbar.Show("ERROR: Failed to fetch mail")
 		return
 	}
-	if !a.u.IsOffline && !a.mail.IsRead {
+	if !a.u.isOffline && !a.mail.IsRead {
 		go func() {
 			err = a.u.CharacterService.UpdateMailRead(ctx, characterID, a.mail.MailID)
 			if err != nil {

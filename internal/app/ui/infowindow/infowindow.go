@@ -26,35 +26,38 @@ const (
 	infoWindowHeight    = 500
 )
 
+type UI interface {
+	CurrentCharacterID() int32
+	IsDeveloperMode() bool
+	IsOffline() bool
+	ShowInformationDialog(title, message string, parent fyne.Window)
+	ShowErrorDialog(message string, err error, parent fyne.Window)
+}
+
 // InfoWindow represents a dedicated window for showing information similar to the in-game info windows.
 type InfoWindow struct {
 	cs                 *character.CharacterService
 	currentCharacterID func() int32
 	eis                app.EveImageService
 	eus                *eveuniverse.EveUniverseService
-	isDeveloperMode    bool
-	isOffline          bool
+	u                  UI
 	w                  fyne.Window // parent window, e.g. for displaying error dialogs
 }
 
 // New returns a configured InfoWindow.
 func New(
-	currentCharacterID func() int32,
+	u UI,
 	cs *character.CharacterService,
 	eus *eveuniverse.EveUniverseService,
 	eis app.EveImageService,
-	isDeveloperMode bool,
-	isOffline bool,
 	w fyne.Window,
 ) InfoWindow {
 	iw := InfoWindow{
-		isDeveloperMode:    isDeveloperMode,
-		isOffline:          isOffline,
-		currentCharacterID: currentCharacterID,
-		cs:                 cs,
-		eus:                eus,
-		eis:                eis,
-		w:                  w,
+		cs:  cs,
+		eus: eus,
+		eis: eis,
+		u:   u,
+		w:   w,
 	}
 	return iw
 }
@@ -64,8 +67,8 @@ func (iw *InfoWindow) SetWindow(w fyne.Window) {
 }
 
 func (iw InfoWindow) Show(t InfoVariant, id int64) {
-	if iw.isOffline {
-		iwidget.ShowInformationDialog(
+	if iw.u.IsOffline() {
+		iw.u.ShowInformationDialog(
 			"Offline",
 			"Can't show info window when offline",
 			iw.w,
@@ -122,7 +125,7 @@ func (iw InfoWindow) Show(t InfoVariant, id int64) {
 			return a.Content
 		})
 	default:
-		iwidget.ShowInformationDialog(
+		iw.u.ShowInformationDialog(
 			"Warning",
 			"Can't show info window for unknown category",
 			iw.w,
@@ -146,7 +149,7 @@ func (iw InfoWindow) showZoomWindow(title string, id int32, load func(int32, int
 	s := float32(zoomImagePixelSize) / w.Canvas().Scale()
 	r, err := load(id, zoomImagePixelSize)
 	if err != nil {
-		iwidget.ShowErrorDialog("Failed to load image", err, w)
+		iw.u.ShowErrorDialog("Failed to load image", err, w)
 	}
 	i := iwidget.NewImageFromResource(r, fyne.NewSquareSize(s))
 	p := theme.Padding()

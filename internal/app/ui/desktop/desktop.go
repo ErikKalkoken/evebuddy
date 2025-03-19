@@ -499,7 +499,7 @@ func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 			slog.Error("open issue website", "error", err)
 		}
 	})
-	if u.IsOffline {
+	if u.IsOffline() {
 		website.Disabled = true
 		report.Disabled = true
 	}

@@ -163,7 +163,7 @@ func (a *corporationArea) load(corporationID int32) error {
 			attributes = append(attributes, NewAtributeItem("URL", u))
 		}
 	}
-	if a.iw.isDeveloperMode {
+	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
 			a.w.Clipboard().SetContent(fmt.Sprint(o.ID))

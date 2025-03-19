@@ -232,7 +232,7 @@ func (a *inventoryTypeArea) calcAttributesData(
 			rows = append(rows, groupedRows[ag]...)
 		}
 	}
-	if a.iw.isDeveloperMode {
+	if a.iw.u.IsDeveloperMode() {
 		rows = append(rows, attributeRow{label: "Developer Mode", isTitle: true})
 		rows = append(rows, attributeRow{
 			label: "EVE ID",

@@ -218,12 +218,10 @@ func (a *SearchArea) showSupportedResult(o *app.EveEntity) {
 		return
 	}
 	iw := infowindow.New(
-		a.u.CurrentCharacterID,
+		a.u,
 		a.u.CharacterService,
 		a.u.EveUniverseService,
 		a.u.EveImageService,
-		a.u.FyneApp.Preferences().Bool(settingDeveloperMode),
-		a.u.IsOffline,
 		a.w,
 	)
 	iw.ShowEveEntity(o)
@@ -284,7 +282,7 @@ func (a *SearchArea) showRecent() {
 }
 
 func (a *SearchArea) doSearch(search string) {
-	if a.u.IsOffline {
+	if a.u.isOffline {
 		a.u.ShowInformationDialog(
 			"Offline",
 			"Can't search when offline",

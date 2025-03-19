@@ -86,7 +86,7 @@ func (a *constellationArea) load(constellationID int32) error {
 		a.iw.ShowEveEntity(o.Region.ToEveEntity())
 	}
 
-	if a.iw.isDeveloperMode {
+	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", fmt.Sprint(o.ID))
 		x.Action = func(v any) {
 			a.w.Clipboard().SetContent(v.(string))
