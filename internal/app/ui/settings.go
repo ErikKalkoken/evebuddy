@@ -415,6 +415,7 @@ func (a *SettingsArea) showExportFileDialog(path string) {
 		}, a.window,
 	)
 	d.SetFileName(filename)
+	a.u.ModifyShortcutsForDialog(d, a.window)
 	d.Show()
 }
 
@@ -658,6 +659,7 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 				c := container.NewBorder(nil, container.NewVBox(hint, buttons), nil, nil, p.content)
 				w := a.currentWindow()
 				d = dialog.NewCustomWithoutButtons(title, c, w)
+				a.u.ModifyShortcutsForDialog(d, w)
 				d.Show()
 				_, s := w.Canvas().InteractiveArea()
 				d.Resize(fyne.NewSize(s.Width*0.8, s.Height*0.8))

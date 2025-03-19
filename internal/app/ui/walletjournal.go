@@ -9,7 +9,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 	"golang.org/x/text/cases"
@@ -99,8 +98,7 @@ func NewWalletJournalArea(u *BaseUI) *WalletJournalArea {
 	}
 	showReasonDialog := func(r walletJournalEntry) {
 		if r.hasReason() {
-			dlg := dialog.NewCustom("Reason", "OK", widget.NewLabel(r.reason), a.u.Window)
-			dlg.Show()
+			a.u.ShowInformationDialog("Reason", r.reason, a.u.Window)
 		}
 	}
 	if a.u.IsDesktop() {

@@ -15,7 +15,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -224,7 +223,7 @@ func (a *AccountArea) ShowAddCharacterDialog() {
 		content,
 		a.window,
 	)
-	kxdialog.AddDialogKeyHandler(d1, a.window)
+	a.u.ModifyShortcutsForDialog(d1, a.window)
 	d1.SetOnClosed(cancel)
 	go func() {
 		err := func() error {

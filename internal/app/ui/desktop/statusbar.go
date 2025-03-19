@@ -13,7 +13,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
@@ -88,6 +87,7 @@ func newStatusBarArea(u *DesktopUI) *statusBarArea {
 func (a *statusBarArea) showClockDialog() {
 	content := widget.NewRichTextFromMarkdown("")
 	d := dialog.NewCustom("EVE Clock", "Close", content, a.u.Window)
+	a.u.ModifyShortcutsForDialog(d, a.u.Window)
 	stop := make(chan struct{})
 	timer := time.NewTicker(1 * time.Second)
 	go func() {
@@ -121,6 +121,7 @@ func (a *statusBarArea) showEveStatusDialog() {
 	lb.Wrapping = fyne.TextWrapWord
 	lb.Importance = i
 	d := dialog.NewCustom("ESI status", "OK", lb, a.u.Window)
+	a.u.ModifyShortcutsForDialog(d, a.u.Window)
 	d.Show()
 	d.Resize(fyne.Size{Width: 400, Height: 200})
 }
@@ -194,7 +195,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 				}
 			}, a.u.Window,
 			)
-			kxdialog.AddDialogKeyHandler(d, a.u.Window)
+			a.u.ModifyShortcutsForDialog(d, a.u.Window)
 			d.Show()
 		})
 		a.newVersionHint.Add(widget.NewSeparator())

@@ -17,7 +17,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	"github.com/dustin/go-humanize"
 	"github.com/icrowley/fake"
 	"golang.org/x/sync/singleflight"
@@ -541,11 +540,7 @@ func (u *DesktopUI) disableMenuShortcuts() {
 
 func (u *DesktopUI) showAboutDialog() {
 	d := dialog.NewCustom("About", "Close", u.MakeAboutPage(), u.Window)
-	kxdialog.AddDialogKeyHandler(d, u.Window)
-	u.disableMenuShortcuts()
-	d.SetOnClosed(func() {
-		u.enableMenuShortcuts()
-	})
+	u.ModifyShortcutsForDialog(d, u.Window)
 	d.Show()
 }
 
@@ -567,11 +562,7 @@ func (u *DesktopUI) showUserDataDialog() {
 		f.Append(it.name, makePathEntry(u.Window.Clipboard(), it.path))
 	}
 	d := dialog.NewCustom("User data", "Close", f, u.Window)
-	kxdialog.AddDialogKeyHandler(d, u.Window)
-	u.disableMenuShortcuts()
-	d.SetOnClosed(func() {
-		u.enableMenuShortcuts()
-	})
+	u.ModifyShortcutsForDialog(d, u.Window)
 	d.Show()
 }
 

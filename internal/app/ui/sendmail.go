@@ -9,7 +9,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -87,8 +86,7 @@ func MakeSendMailPage(
 	// sendAction tries to send the current mail and reports whether it was successful
 	sendAction := func() bool {
 		showErrorDialog := func(message string) {
-			d := dialog.NewInformation("Failed to send mail", message, w)
-			d.Show()
+			u.ShowInformationDialog("Failed to send mail", message, w)
 		}
 		if to.IsEmpty() {
 			showErrorDialog("A mail needs to have at least one recipient.")
@@ -177,8 +175,7 @@ func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEnti
 	}
 	showErrorDialog := func(search string, err error) {
 		slog.Error("Failed to resolve names", "search", search, "error", err)
-		d := dialog.NewInformation("Something went wrong", err.Error(), w)
-		d.Show()
+		u.ShowErrorDialog("Something went wrong", err, w)
 	}
 	entry := widget.NewEntry()
 	entry.PlaceHolder = "Type to start searching..."

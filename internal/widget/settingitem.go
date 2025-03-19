@@ -192,6 +192,7 @@ func makeSettingDialog(
 		nil,
 		setting,
 	)
+	// TODO: add modify shortcuts
 	d = dialog.NewCustomWithoutButtons(label, c, w)
 	_, s := w.Canvas().InteractiveArea()
 	var width float32

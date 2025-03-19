@@ -969,8 +969,7 @@ func (u *BaseUI) notifyExpiredExtractionsIfNeeded(ctx context.Context, character
 
 func (u *BaseUI) ShowInformationDialog(title, message string, parent fyne.Window) {
 	d := dialog.NewInformation(title, message, parent)
-	kxdialog.AddDialogKeyHandler(d, parent)
-	u.disableShortcutsInDialog(d)
+	u.ModifyShortcutsForDialog(d, parent)
 	d.Show()
 }
 
@@ -979,8 +978,7 @@ func (u *BaseUI) ShowConfirmDialog(title, message, confirm string, callback func
 	d.SetConfirmImportance(widget.DangerImportance)
 	d.SetConfirmText(confirm)
 	d.SetDismissText("Cancel")
-	kxdialog.AddDialogKeyHandler(d, parent)
-	u.disableShortcutsInDialog(d)
+	u.ModifyShortcutsForDialog(d, parent)
 	d.Show()
 }
 
@@ -991,8 +989,7 @@ func (u *BaseUI) NewErrorDialog(message string, err error, parent fyne.Window) d
 	x := container.NewVScroll(text)
 	x.SetMinSize(fyne.Size{Width: 400, Height: 100})
 	d := dialog.NewCustom("Error", "OK", x, parent)
-	kxdialog.AddDialogKeyHandler(d, parent)
-	u.disableShortcutsInDialog(d)
+	u.ModifyShortcutsForDialog(d, parent)
 	return d
 }
 
@@ -1001,7 +998,9 @@ func (u *BaseUI) ShowErrorDialog(message string, err error, parent fyne.Window) 
 	d.Show()
 }
 
-func (u *BaseUI) disableShortcutsInDialog(d dialog.Dialog) {
+// ModifyShortcutsForDialog modifies the shortcuts for a dialog.
+func (u *BaseUI) ModifyShortcutsForDialog(d dialog.Dialog, w fyne.Window) {
+	kxdialog.AddDialogKeyHandler(d, w)
 	if u.DisableMenuShortcuts != nil && u.EnableMenuShortcuts != nil {
 		u.DisableMenuShortcuts()
 		d.SetOnClosed(func() {

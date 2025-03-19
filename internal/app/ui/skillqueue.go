@@ -100,11 +100,12 @@ func (a *SkillqueueArea) makeSkillQueue() *widget.List {
 		}
 		s := container.NewScroll(form)
 		s.SetMinSize(fyne.NewSize(500, 300))
-		dlg := dialog.NewCustom("Skill Details", "OK", s, a.u.Window)
-		dlg.SetOnClosed(func() {
+		d := dialog.NewCustom("Skill Details", "OK", s, a.u.Window)
+		a.u.ModifyShortcutsForDialog(d, a.u.Window)
+		d.SetOnClosed(func() {
 			list.UnselectAll()
 		})
-		dlg.Show()
+		d.Show()
 	}
 	return list
 }

@@ -36,12 +36,11 @@ type UI interface {
 
 // InfoWindow represents a dedicated window for showing information similar to the in-game info windows.
 type InfoWindow struct {
-	cs                 *character.CharacterService
-	currentCharacterID func() int32
-	eis                app.EveImageService
-	eus                *eveuniverse.EveUniverseService
-	u                  UI
-	w                  fyne.Window // parent window, e.g. for displaying error dialogs
+	cs  *character.CharacterService
+	eis app.EveImageService
+	eus *eveuniverse.EveUniverseService
+	u   UI
+	w   fyne.Window // parent window, e.g. for displaying error dialogs
 }
 
 // New returns a configured InfoWindow.
@@ -99,7 +98,7 @@ func (iw InfoWindow) Show(t InfoVariant, id int64) {
 	case InventoryType:
 		showWindow("Information", func(w fyne.Window) fyne.CanvasObject {
 			// TODO: Restructure, so that window is first drawn empty and content loaded in background (as other info windo)
-			a, err := NewInventoryTypeArea(iw, int32(id), iw.currentCharacterID(), w)
+			a, err := NewInventoryTypeArea(iw, int32(id), iw.u.CurrentCharacterID(), w)
 			if err != nil {
 				slog.Error("show type", "error", err)
 				l := widget.NewLabel(fmt.Sprintf("ERROR: Can not create info window: %s", err))
