@@ -11,7 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
-func (eu *EveUniverseService) GetEveType(ctx context.Context, id int32) (*app.EveType, error) {
+func (eu *EveUniverseService) GetType(ctx context.Context, id int32) (*app.EveType, error) {
 	x, err := eu.st.GetEveType(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
@@ -89,7 +89,7 @@ func (eu *EveUniverseService) createEveGroupFromESI(ctx context.Context, id int3
 	return y.(*app.EveGroup), nil
 }
 
-func (eu *EveUniverseService) GetOrCreateEveTypeESI(ctx context.Context, id int32) (*app.EveType, error) {
+func (eu *EveUniverseService) GetOrCreateTypeESI(ctx context.Context, id int32) (*app.EveType, error) {
 	x, err := eu.st.GetEveType(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveTypeFromESI(ctx, id)
@@ -144,7 +144,7 @@ func (eu *EveUniverseService) createEveTypeFromESI(ctx context.Context, id int32
 				}(ctx, int32(o.Value))
 			case app.EveUnitTypeID:
 				go func(ctx context.Context, typeID int32) {
-					_, err := eu.GetOrCreateEveTypeESI(ctx, typeID)
+					_, err := eu.GetOrCreateTypeESI(ctx, typeID)
 					if err != nil {
 						slog.Error("Failed to fetch eve type %d", "ID", typeID, "err", err)
 					}
@@ -188,7 +188,7 @@ func (eu *EveUniverseService) AddMissingEveTypes(ctx context.Context, ids []int3
 	slices.Sort(missingIDs)
 	slog.Info("Trying to fetch missing EveTypes from ESI", "count", len(missingIDs))
 	for _, id := range missingIDs {
-		_, err := eu.GetOrCreateEveTypeESI(ctx, id)
+		_, err := eu.GetOrCreateTypeESI(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -212,7 +212,7 @@ func (eu *EveUniverseService) UpdateEveCategoryWithChildrenESI(ctx context.Conte
 			typeIDs = slices.Concat(typeIDs, r2.Types)
 		}
 		for _, id := range typeIDs {
-			_, err := eu.GetOrCreateEveTypeESI(ctx, id)
+			_, err := eu.GetOrCreateTypeESI(ctx, id)
 			if err != nil {
 				return nil, err
 			}
@@ -229,7 +229,7 @@ func (eu *EveUniverseService) UpdateEveShipSkills(ctx context.Context) error {
 	return eu.st.UpdateEveShipSkills(ctx)
 }
 
-func (eu *EveUniverseService) ListEveTypeDogmaAttributesForType(
+func (eu *EveUniverseService) ListTypeDogmaAttributesForType(
 	ctx context.Context,
 	typeID int32,
 ) ([]*app.EveTypeDogmaAttribute, error) {

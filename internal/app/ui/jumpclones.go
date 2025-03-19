@@ -179,7 +179,7 @@ func (a *JumpClonesArea) newTreeData() (*iwidget.TreeData[jumpCloneNode], error)
 		}
 		// TODO: Refactor to use same location method for all unknown location cases
 		if c.Location != nil {
-			loc, err := a.u.EveUniverseService().GetEveLocation(ctx, c.Location.ID)
+			loc, err := a.u.EveUniverseService().GetLocation(ctx, c.Location.ID)
 			if err != nil {
 				slog.Error("get location for jump clone", "error", err)
 			} else {

@@ -94,7 +94,7 @@ func (a *corporationArea) load(corporationID int32) error {
 		a.logo.Resource = r
 		a.logo.Refresh()
 	}()
-	o, err := a.iw.u.EveUniverseService().GetEveCorporationESI(ctx, corporationID)
+	o, err := a.iw.u.EveUniverseService().GetCorporationESI(ctx, corporationID)
 	if err != nil {
 		return err
 	}

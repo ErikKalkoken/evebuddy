@@ -25,7 +25,7 @@ func TestGetOrCreateEveSchematicESI(t *testing.T) {
 		httpmock.Reset()
 		x1 := factory.CreateEveSchematic()
 		// when
-		x2, err := s.GetOrCreateEveSchematicESI(ctx, x1.ID)
+		x2, err := s.GetOrCreateSchematicESI(ctx, x1.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, x1, x2)
@@ -44,7 +44,7 @@ func TestGetOrCreateEveSchematicESI(t *testing.T) {
 			}))
 
 		// when
-		x1, err := s.GetOrCreateEveSchematicESI(ctx, 3)
+		x1, err := s.GetOrCreateSchematicESI(ctx, 3)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(3), x1.ID)

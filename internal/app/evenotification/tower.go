@@ -82,7 +82,7 @@ type towerInfo struct {
 }
 
 func (s *EveNotificationService) makeTowerBaseText(ctx context.Context, moonID, typeID int32) (towerInfo, error) {
-	structureType, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, typeID)
+	structureType, err := s.EveUniverseService.GetOrCreateTypeESI(ctx, typeID)
 	if err != nil {
 		return towerInfo{}, err
 	}

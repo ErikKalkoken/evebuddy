@@ -144,7 +144,7 @@ func (s *CharacterService) updateCharacterNotificationsESI(ctx context.Context, 
 					senderIDs.Add(n.SenderId)
 				}
 			}
-			_, err = s.EveUniverseService.AddMissingEveEntities(ctx, senderIDs.ToSlice())
+			_, err = s.EveUniverseService.AddMissingEntities(ctx, senderIDs.ToSlice())
 			if err != nil {
 				return err
 			}

@@ -24,7 +24,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
@@ -103,17 +102,17 @@ type BaseUI struct {
 	WalletTransactionArea *WalletTransactionArea
 	WealthArea            *WealthArea
 
-	cs           *character.CharacterService
 	character    *app.Character
-	ess          app.ESIStatusService
+	cs           *character.CharacterService
 	eis          app.EveImageService
-	eus          *eveuniverse.EveUniverseService
+	ess          app.ESIStatusService
+	eus          app.EveUniverseService
 	isForeground atomic.Bool // whether the app is currently shown in the foreground
 	isMobile     bool
 	isOffline    bool // Run the app in offline mode
 	memcache     app.CacheService
-	statusWindow fyne.Window
 	scs          app.StatusCacheService
+	statusWindow fyne.Window
 	wasStarted   atomic.Bool // whether the app has already been started at least once
 }
 
@@ -125,7 +124,7 @@ func NewBaseUI(
 	cs *character.CharacterService,
 	eis app.EveImageService,
 	ess app.ESIStatusService,
-	eus *eveuniverse.EveUniverseService,
+	eus app.EveUniverseService,
 	scs app.StatusCacheService,
 	memCache app.CacheService,
 	isOffline bool,
@@ -194,7 +193,7 @@ func (u *BaseUI) EveImageService() app.EveImageService {
 	return u.eis
 }
 
-func (u *BaseUI) EveUniverseService() *eveuniverse.EveUniverseService {
+func (u *BaseUI) EveUniverseService() app.EveUniverseService {
 	return u.eus
 }
 

@@ -63,12 +63,12 @@ type inventoryTypeArea struct {
 func NewInventoryTypeArea(iw InfoWindow, typeID, characterID int32, w fyne.Window) (*inventoryTypeArea, error) {
 	ctx := context.Background()
 	a := &inventoryTypeArea{iw: iw, w: w}
-	et, err := iw.u.EveUniverseService().GetOrCreateEveTypeESI(ctx, typeID)
+	et, err := iw.u.EveUniverseService().GetOrCreateTypeESI(ctx, typeID)
 	if err != nil {
 		return nil, err
 	}
 	a.et = et
-	owner, err := iw.u.EveUniverseService().GetOrCreateEveEntityESI(ctx, characterID)
+	owner, err := iw.u.EveUniverseService().GetOrCreateEntityESI(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func NewInventoryTypeArea(iw InfoWindow, typeID, characterID int32, w fyne.Windo
 	if a.et == nil {
 		return nil, nil
 	}
-	p, err := iw.u.EveUniverseService().GetEveMarketPrice(ctx, a.et.ID)
+	p, err := iw.u.EveUniverseService().GetMarketPrice(ctx, a.et.ID)
 	if errors.Is(err, eveuniverse.ErrNotFound) {
 		p = nil
 	} else if err != nil {
@@ -86,7 +86,7 @@ func NewInventoryTypeArea(iw InfoWindow, typeID, characterID int32, w fyne.Windo
 	} else {
 		a.price = nil
 	}
-	oo, err := iw.u.EveUniverseService().ListEveTypeDogmaAttributesForType(ctx, a.et.ID)
+	oo, err := iw.u.EveUniverseService().ListTypeDogmaAttributesForType(ctx, a.et.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +183,7 @@ func (a *inventoryTypeArea) calcAttributesData(
 				x := attributes[app.EveDogmaAttributeWarpSpeedMultiplier]
 				value = value * x.Value
 			}
-			v, substituteIcon := a.iw.u.EveUniverseService().FormatValue(ctx, value, o.DogmaAttribute.Unit)
+			v, substituteIcon := a.iw.u.EveUniverseService().FormatDogmaValue(ctx, value, o.DogmaAttribute.Unit)
 			var iconID int32
 			if substituteIcon != 0 {
 				iconID = substituteIcon
@@ -200,9 +200,9 @@ func (a *inventoryTypeArea) calcAttributesData(
 	}
 	rows := make([]attributeRow, 0)
 	if a.et.Volume > 0 {
-		v, _ := a.iw.u.EveUniverseService().FormatValue(ctx, a.et.Volume, app.EveUnitVolume)
+		v, _ := a.iw.u.EveUniverseService().FormatDogmaValue(ctx, a.et.Volume, app.EveUnitVolume)
 		if a.et.Volume != a.et.PackagedVolume {
-			v2, _ := a.iw.u.EveUniverseService().FormatValue(ctx, a.et.PackagedVolume, app.EveUnitVolume)
+			v2, _ := a.iw.u.EveUniverseService().FormatDogmaValue(ctx, a.et.PackagedVolume, app.EveUnitVolume)
 			v += fmt.Sprintf(" (%s Packaged)", v2)
 		}
 		r := attributeRow{
@@ -254,7 +254,7 @@ func (a *inventoryTypeArea) calcFittingData(ctx context.Context, attributes map[
 		}
 		iconID := o.DogmaAttribute.IconID
 		r, _ := eveicon.GetResourceByIconID(iconID)
-		v, _ := a.iw.u.EveUniverseService().FormatValue(ctx, o.Value, o.DogmaAttribute.Unit)
+		v, _ := a.iw.u.EveUniverseService().FormatDogmaValue(ctx, o.Value, o.DogmaAttribute.Unit)
 		data = append(data, attributeRow{
 			icon:  r,
 			label: o.DogmaAttribute.DisplayName,
@@ -288,7 +288,7 @@ func (a *inventoryTypeArea) calcRequiredSkills(ctx context.Context, characterID 
 			continue
 		}
 		requiredLevel := int(daLevel.Value)
-		et, err := a.iw.u.EveUniverseService().GetEveType(ctx, typeID)
+		et, err := a.iw.u.EveUniverseService().GetType(ctx, typeID)
 		if err != nil {
 			return nil, err
 		}

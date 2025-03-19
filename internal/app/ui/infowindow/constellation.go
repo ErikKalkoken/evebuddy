@@ -76,7 +76,7 @@ func newConstellationArea(iw InfoWindow, constellationID int32, w fyne.Window) *
 
 func (a *constellationArea) load(constellationID int32) error {
 	ctx := context.Background()
-	o, err := a.iw.u.EveUniverseService().GetOrCreateEveConstellationESI(ctx, constellationID)
+	o, err := a.iw.u.EveUniverseService().GetOrCreateConstellationESI(ctx, constellationID)
 	if err != nil {
 		return err
 	}

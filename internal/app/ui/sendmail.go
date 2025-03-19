@@ -190,7 +190,7 @@ func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEnti
 		}
 		ctx := context.Background()
 		var err error
-		items, err = u.EveUniverseService().ListEveEntitiesByPartialName(ctx, search)
+		items, err = u.EveUniverseService().ListEntitiesByPartialName(ctx, search)
 		if err != nil {
 			showErrorDialog(search, err)
 			return
@@ -209,7 +209,7 @@ func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEnti
 			if len(missingIDs) == 0 {
 				return // no need to update when not changed
 			}
-			items, err = u.EveUniverseService().ListEveEntitiesByPartialName(ctx, search)
+			items, err = u.EveUniverseService().ListEntitiesByPartialName(ctx, search)
 			if err != nil {
 				showErrorDialog(search, err)
 				return

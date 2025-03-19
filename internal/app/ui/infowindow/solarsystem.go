@@ -84,12 +84,89 @@ func newSolarSystemArea(iw InfoWindow, solarSystemID int32, w fyne.Window) *sola
 
 func (a *solarSystemArea) load(solarSystemID int32) error {
 	ctx := context.Background()
-	o, err := a.iw.u.EveUniverseService().GetOrCreateEveSolarSystemESIPlus(ctx, solarSystemID)
+	o, err := a.iw.u.EveUniverseService().GetOrCreateSolarSystemESI(ctx, solarSystemID)
 	if err != nil {
 		return err
 	}
+	a.name.SetText(o.Name)
+	a.region.SetText(o.Constellation.Region.Name)
+	a.region.OnTapped = func() {
+		a.iw.ShowEveEntity(o.Constellation.Region.ToEveEntity())
+	}
+	a.constellation.SetText(o.Constellation.Name)
+	a.constellation.OnTapped = func() {
+		a.iw.ShowEveEntity(o.Constellation.ToEveEntity())
+	}
+	a.security.Text = o.SecurityStatusDisplay()
+	a.security.Importance = o.SecurityType().ToImportance()
+	a.security.Refresh()
+
+	systemsLabel := widget.NewLabel("Loading...")
+	systemsTab := container.NewTabItem("Stargates", systemsLabel)
+	a.tabs.Append(systemsTab)
+
+	planetsLabel := widget.NewLabel("Loading...")
+	planetsTab := container.NewTabItem("Planets", planetsLabel)
+	a.tabs.Append(planetsTab)
+
+	stationsLabel := widget.NewLabel("Loading...")
+	stationsTab := container.NewTabItem("Stations", stationsLabel)
+	a.tabs.Append(stationsTab)
+
+	structuresLabel := widget.NewLabel("Loading...")
+	structuresTab := container.NewTabItem("Structures", structuresLabel)
+	a.tabs.Append(structuresTab)
+
+	if a.iw.u.IsDeveloperMode() {
+		x := NewAtributeItem("EVE ID", fmt.Sprint(solarSystemID))
+		x.Action = func(v any) {
+			a.w.Clipboard().SetContent(v.(string))
+		}
+		attributeList := NewAttributeList([]AttributeItem{x}...)
+		attributeList.ShowInfoWindow = a.iw.ShowEveEntity
+		attributesTab := container.NewTabItem("Attributes", attributeList)
+		a.tabs.Append(attributesTab)
+	}
+
+	a.tabs.Refresh()
+
 	go func() {
-		id, err := o.GetStarTypeID(ctx)
+		starID, planets, stargateIDs, stations, structures, err := a.iw.u.EveUniverseService().GetSolarSystemInfoESI(ctx, solarSystemID)
+		if err != nil {
+			slog.Error("solar system info: Failed to load system info", "solarSystem", solarSystemID, "error", err)
+			stationsLabel.Text = ihumanize.Error(err)
+			stationsLabel.Importance = widget.DangerImportance
+			stationsLabel.Refresh()
+			return
+
+		}
+
+		stationsTab.Content = NewEntityListFromEntities(a.iw.Show, stations...)
+		a.tabs.Refresh()
+
+		if len(structures) > 0 {
+			oo := slices.Collect(xiter.MapSlice(structures, func(x *app.EveLocation) entityItem {
+				return NewEntityItem(
+					x.ID,
+					x.Name,
+					"Structure",
+					Location,
+				)
+			}))
+			xx := NewEntityListFromItems(a.iw.Show, oo...)
+			note := widget.NewLabel("Only contains structures known through characters")
+			note.Importance = widget.LowImportance
+			structuresTab.Content = container.NewBorder(
+				nil,
+				note,
+				nil,
+				nil,
+				xx,
+			)
+			a.tabs.Refresh()
+		}
+
+		id, err := a.iw.u.EveUniverseService().GetStarTypeID(ctx, starID)
 		if err != nil {
 			return
 		}
@@ -100,87 +177,35 @@ func (a *solarSystemArea) load(solarSystemID int32) error {
 		}
 		a.logo.Resource = r
 		a.logo.Refresh()
+
+		go func() {
+			ss, err := a.iw.u.EveUniverseService().GetSolarSystemsESI(ctx, stargateIDs)
+			if err != nil {
+				slog.Error("solar system info: Failed to load adjacent systems", "solarSystem", solarSystemID, "error", err)
+				systemsLabel.Text = ihumanize.Error(err)
+				systemsLabel.Importance = widget.DangerImportance
+				systemsLabel.Refresh()
+				return
+			}
+			xx := slices.Collect(xiter.MapSlice(ss, NewEntityItemFromEveSolarSystem))
+			systemsTab.Content = NewEntityListFromItems(a.iw.Show, xx...)
+			a.tabs.Refresh()
+		}()
+
+		go func() {
+			pp, err := a.iw.u.EveUniverseService().GetPlanets(ctx, planets)
+			if err != nil {
+				slog.Error("solar system info: Failed to load planets", "solarSystem", solarSystemID, "error", err)
+				planetsLabel.Text = ihumanize.Error(err)
+				planetsLabel.Importance = widget.DangerImportance
+				planetsLabel.Refresh()
+				return
+			}
+			xx := slices.Collect(xiter.MapSlice(pp, NewEntityItemFromEvePlanet))
+			planetsTab.Content = NewEntityListFromItems(a.iw.Show, xx...)
+			a.tabs.Refresh()
+		}()
+
 	}()
-	a.name.SetText(o.System.Name)
-	a.region.SetText(o.System.Constellation.Region.Name)
-	a.region.OnTapped = func() {
-		a.iw.ShowEveEntity(o.System.Constellation.Region.ToEveEntity())
-	}
-	a.constellation.SetText(o.System.Constellation.Name)
-	a.constellation.OnTapped = func() {
-		a.iw.ShowEveEntity(o.System.Constellation.ToEveEntity())
-	}
-	a.security.Text = o.System.SecurityStatusDisplay()
-	a.security.Importance = o.System.SecurityType().ToImportance()
-	a.security.Refresh()
-
-	systemsLabel := widget.NewLabel("Loading...")
-	systemsTab := container.NewTabItem("Stargates", systemsLabel)
-	a.tabs.Append(systemsTab)
-	if a.iw.u.IsDeveloperMode() {
-		x := NewAtributeItem("EVE ID", o.System.ID)
-		x.Action = func(_ any) {
-			a.w.Clipboard().SetContent(fmt.Sprint(o.System.ID))
-		}
-		attributeList := NewAttributeList([]AttributeItem{x}...)
-		attributeList.ShowInfoWindow = a.iw.ShowEveEntity
-		attributesTab := container.NewTabItem("Attributes", attributeList)
-		a.tabs.Append(attributesTab)
-	}
-	go func() {
-		ss, err := o.GetAdjacentSystems(ctx)
-		if err != nil {
-			slog.Error("solar system info: Failed to load adjacent systems", "solarSystem", solarSystemID, "error", err)
-			systemsLabel.Text = ihumanize.Error(err)
-			systemsLabel.Importance = widget.DangerImportance
-			systemsLabel.Refresh()
-			return
-		}
-		xx := slices.Collect(xiter.MapSlice(ss, NewEntityItemFromEveSolarSystem))
-		systemsTab.Content = NewEntityListFromItems(a.iw.Show, xx...)
-		a.tabs.Refresh()
-	}()
-
-	planetsLabel := widget.NewLabel("Loading...")
-	planetsTab := container.NewTabItem("Planets", planetsLabel)
-	a.tabs.Append(planetsTab)
-	go func() {
-		pp, err := o.GetPlanets(ctx)
-		if err != nil {
-			slog.Error("solar system info: Failed to load planets", "solarSystem", solarSystemID, "error", err)
-			planetsLabel.Text = ihumanize.Error(err)
-			planetsLabel.Importance = widget.DangerImportance
-			planetsLabel.Refresh()
-			return
-		}
-		xx := slices.Collect(xiter.MapSlice(pp, NewEntityItemFromEvePlanet))
-		planetsTab.Content = NewEntityListFromItems(a.iw.Show, xx...)
-		a.tabs.Refresh()
-	}()
-
-	stations := NewEntityListFromEntities(a.iw.Show, o.Stations...)
-	a.tabs.Append(container.NewTabItem("Stations", stations))
-
-	if len(o.Structures) > 0 {
-		xx := slices.Collect(xiter.MapSlice(o.Structures, func(x *app.EveLocation) entityItem {
-			return NewEntityItem(
-				x.ID,
-				x.Name,
-				"Structure",
-				Location,
-			)
-		}))
-		structures := NewEntityListFromItems(a.iw.Show, xx...)
-		note := widget.NewLabel("Only contains structures known through characters")
-		note.Importance = widget.LowImportance
-		a.tabs.Append(container.NewTabItem("Structures", container.NewBorder(
-			nil,
-			note,
-			nil,
-			nil,
-			structures,
-		)))
-	}
-	a.tabs.Refresh()
 	return nil
 }

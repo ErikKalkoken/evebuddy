@@ -1430,7 +1430,7 @@ func (f Factory) CreateLocationStructure(args ...storage.UpdateOrCreateLocationP
 	if err != nil {
 		panic(err)
 	}
-	x, err := f.st.GetEveLocation(ctx, arg.ID)
+	x, err := f.st.GetLocation(ctx, arg.ID)
 	if err != nil {
 		panic(err)
 	}

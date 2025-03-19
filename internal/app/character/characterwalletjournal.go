@@ -67,7 +67,7 @@ func (s *CharacterService) updateCharacterWalletJournalEntryESI(ctx context.Cont
 					ids.Add(e.TaxReceiverId)
 				}
 			}
-			_, err = s.EveUniverseService.AddMissingEveEntities(ctx, ids.ToSlice())
+			_, err = s.EveUniverseService.AddMissingEntities(ctx, ids.ToSlice())
 			if err != nil {
 				return err
 			}

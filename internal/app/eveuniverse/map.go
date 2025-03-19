@@ -12,29 +12,23 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type planet struct {
-	asteroidBeltIDs []int32
-	moonIDs         []int32
-	planetID        int32
-}
+// type SolarSystemPlus struct {
+// 	System     *app.EveSolarSystem
+// 	Stations   []*app.EveEntity
+// 	Structures []*app.EveLocation
+// 	StarID     int32
 
-type SolarSystemPlus struct {
-	System     *app.EveSolarSystem
-	Stations   []*app.EveEntity
-	Structures []*app.EveLocation
-	StarID     int32
+// 	planets   []planet
+// 	stargates []int32
+// 	eus       *EveUniverseService
+// }
 
-	planets   []planet
-	stargates []int32
-	eus       *EveUniverseService
-}
-
-func (o SolarSystemPlus) GetAdjacentSystems(ctx context.Context) ([]*app.EveSolarSystem, error) {
+func (s *EveUniverseService) GetSolarSystemsESI(ctx context.Context, stargateIDs []int32) ([]*app.EveSolarSystem, error) {
 	g := new(errgroup.Group)
-	systemIDs := make([]int32, len(o.stargates))
-	for i, id := range o.stargates {
+	systemIDs := make([]int32, len(stargateIDs))
+	for i, id := range stargateIDs {
 		g.Go(func() error {
-			x, _, err := o.eus.esiClient.ESI.UniverseApi.GetUniverseStargatesStargateId(ctx, id, nil)
+			x, _, err := s.esiClient.ESI.UniverseApi.GetUniverseStargatesStargateId(ctx, id, nil)
 			if err != nil {
 				return err
 			}
@@ -49,7 +43,7 @@ func (o SolarSystemPlus) GetAdjacentSystems(ctx context.Context) ([]*app.EveSola
 	systems := make([]*app.EveSolarSystem, len(systemIDs))
 	for i, id := range systemIDs {
 		g.Go(func() error {
-			st, err := o.eus.GetOrCreateEveSolarSystemESI(ctx, id)
+			st, err := s.GetOrCreateSolarSystemESI(ctx, id)
 			if err != nil {
 				return err
 			}
@@ -66,85 +60,77 @@ func (o SolarSystemPlus) GetAdjacentSystems(ctx context.Context) ([]*app.EveSola
 	return systems, nil
 }
 
-func (o SolarSystemPlus) GetPlanets(ctx context.Context) ([]*app.EvePlanet, error) {
-	planets := make([]*app.EvePlanet, len(o.planets))
+func (s *EveUniverseService) GetPlanets(ctx context.Context, planets []app.EveSolarSystemPlanet) ([]*app.EvePlanet, error) {
+	oo := make([]*app.EvePlanet, len(planets))
 	g := new(errgroup.Group)
-	for i, p := range o.planets {
+	for i, p := range planets {
 		g.Go(func() error {
-			st, err := o.eus.GetOrCreateEvePlanetESI(ctx, p.planetID)
+			st, err := s.GetOrCreatePlanetESI(ctx, p.PlanetID)
 			if err != nil {
 				return err
 			}
-			planets[i] = st
+			oo[i] = st
 			return nil
 		})
 	}
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
-	slices.SortFunc(planets, func(a, b *app.EvePlanet) int {
+	slices.SortFunc(oo, func(a, b *app.EvePlanet) int {
 		return cmp.Compare(a.Name, b.Name)
 	})
-	return planets, nil
+	return oo, nil
 }
 
-func (o SolarSystemPlus) GetStarTypeID(ctx context.Context) (int32, error) {
-	x2, _, err := o.eus.esiClient.ESI.UniverseApi.GetUniverseStarsStarId(ctx, o.StarID, nil)
+func (s *EveUniverseService) GetStarTypeID(ctx context.Context, id int32) (int32, error) {
+	x2, _, err := s.esiClient.ESI.UniverseApi.GetUniverseStarsStarId(ctx, id, nil)
 	if err != nil {
 		return 0, err
 	}
 	return x2.TypeId, nil
 }
 
-func (s *EveUniverseService) GetOrCreateEveSolarSystemESIPlus(ctx context.Context, solarSystemID int32) (SolarSystemPlus, error) {
-	r := SolarSystemPlus{eus: s}
-	o, err := s.GetOrCreateEveSolarSystemESI(ctx, solarSystemID)
-	if err != nil {
-		return SolarSystemPlus{}, err
-	}
-	r.System = o
+func (s *EveUniverseService) GetSolarSystemInfoESI(ctx context.Context, solarSystemID int32) (int32, []app.EveSolarSystemPlanet, []int32, []*app.EveEntity, []*app.EveLocation, error) {
 	x, _, err := s.esiClient.ESI.UniverseApi.GetUniverseSystemsSystemId(ctx, solarSystemID, nil)
 	if err != nil {
-		return r, err
+		return 0, nil, nil, nil, nil, err
 	}
-	r.planets = slices.Collect(xiter.MapSlice(x.Planets, func(p esi.GetUniverseSystemsSystemIdPlanet) planet {
-		return planet{
-			asteroidBeltIDs: p.AsteroidBelts,
-			moonIDs:         p.Moons,
-			planetID:        p.PlanetId,
+	planets := slices.Collect(xiter.MapSlice(x.Planets, func(p esi.GetUniverseSystemsSystemIdPlanet) app.EveSolarSystemPlanet {
+		return app.EveSolarSystemPlanet{
+			AsteroidBeltIDs: p.AsteroidBelts,
+			MoonIDs:         p.Moons,
+			PlanetID:        p.PlanetId,
 		}
 	}))
-	r.stargates = x.Stargates
-	r.StarID = x.StarId
-	_, err = s.AddMissingEveEntities(ctx, slices.Concat(
-		[]int32{solarSystemID, o.Constellation.ID, o.Constellation.Region.ID},
+	_, err = s.AddMissingEntities(ctx, slices.Concat(
+		[]int32{solarSystemID, x.ConstellationId},
 		x.Stations,
 	))
 	if err != nil {
-		return r, err
+		return 0, nil, nil, nil, nil, err
 	}
-	r.Stations = make([]*app.EveEntity, len(x.Stations))
+	stations := make([]*app.EveEntity, len(x.Stations))
 	for i, id := range x.Stations {
 		st, err := s.getValidEveEntity(ctx, id)
 		if err != nil {
-			return r, err
+			return 0, nil, nil, nil, nil, err
 		}
-		r.Stations[i] = st
+		stations[i] = st
 	}
-	slices.SortFunc(r.Stations, func(a, b *app.EveEntity) int {
+	slices.SortFunc(stations, func(a, b *app.EveEntity) int {
 		return a.Compare(b)
 	})
 	xx, err := s.st.ListEveLocationInSolarSystem(ctx, solarSystemID)
 	if err != nil {
-		return r, err
+		return 0, nil, nil, nil, nil, err
 	}
-	r.Structures = slices.Collect(xiter.FilterSlice(xx, func(x *app.EveLocation) bool {
+	structures := slices.Collect(xiter.FilterSlice(xx, func(x *app.EveLocation) bool {
 		return x.Variant() == app.EveLocationStructure
 	}))
-	return r, nil
+	return x.StarId, planets, x.Stargates, stations, structures, nil
 }
 
-func (s *EveUniverseService) GetEveRegionConstellationsESI(ctx context.Context, id int32) ([]*app.EveEntity, error) {
+func (s *EveUniverseService) GetRegionConstellationsESI(ctx context.Context, id int32) ([]*app.EveEntity, error) {
 	region, _, err := s.esiClient.ESI.UniverseApi.GetUniverseRegionsRegionId(ctx, id, nil)
 	if err != nil {
 		return nil, err
@@ -169,7 +155,7 @@ func (s *EveUniverseService) GetConstellationSolarSytemsESI(ctx context.Context,
 	systems := make([]*app.EveSolarSystem, len(o.Systems))
 	for i, id := range o.Systems {
 		g.Go(func() error {
-			st, err := s.GetOrCreateEveSolarSystemESI(ctx, id)
+			st, err := s.GetOrCreateSolarSystemESI(ctx, id)
 			if err != nil {
 				return err
 			}

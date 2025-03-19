@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/dustin/go-humanize"
 
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -30,7 +29,7 @@ type UI interface {
 	CharacterService() *character.CharacterService
 	CurrentCharacterID() int32
 	EveImageService() app.EveImageService
-	EveUniverseService() *eveuniverse.EveUniverseService
+	EveUniverseService() app.EveUniverseService
 	IsDeveloperMode() bool
 	IsOffline() bool
 	ShowErrorDialog(message string, err error, parent fyne.Window)

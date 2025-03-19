@@ -89,11 +89,11 @@ type orbitalInfo struct {
 }
 
 func (s *EveNotificationService) makeOrbitalBaseText(ctx context.Context, planetID, typeID int32) (orbitalInfo, error) {
-	structureType, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, typeID)
+	structureType, err := s.EveUniverseService.GetOrCreateTypeESI(ctx, typeID)
 	if err != nil {
 		return orbitalInfo{}, err
 	}
-	planet, err := s.EveUniverseService.GetOrCreateEvePlanetESI(ctx, planetID)
+	planet, err := s.EveUniverseService.GetOrCreatePlanetESI(ctx, planetID)
 	if err != nil {
 		return orbitalInfo{}, err
 	}

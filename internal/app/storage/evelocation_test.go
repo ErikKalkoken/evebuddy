@@ -32,7 +32,7 @@ func TestLocation(t *testing.T) {
 		err := r.UpdateOrCreateEveLocation(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetEveLocation(ctx, 42)
+			x, err := r.GetLocation(ctx, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "Alpha", x.Name)
 				assert.Equal(t, updatedAt.UTC(), x.UpdatedAt.UTC())
@@ -58,7 +58,7 @@ func TestLocation(t *testing.T) {
 		err := r.UpdateOrCreateEveLocation(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetEveLocation(ctx, 42)
+			x, err := r.GetLocation(ctx, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "Alpha", x.Name)
 				assert.Equal(t, owner, x.Owner)
@@ -73,7 +73,7 @@ func TestLocation(t *testing.T) {
 		testutil.TruncateTables(db)
 		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 42, Name: "Alpha"})
 		// when
-		x, err := r.GetEveLocation(ctx, 42)
+		x, err := r.GetLocation(ctx, 42)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, "Alpha", x.Name)
@@ -99,7 +99,7 @@ func TestLocation(t *testing.T) {
 		err := r.UpdateOrCreateEveLocation(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetEveLocation(ctx, 42)
+			x, err := r.GetLocation(ctx, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "Alpha", x.Name)
 				assert.Equal(t, owner, x.Owner)

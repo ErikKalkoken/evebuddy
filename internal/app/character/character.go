@@ -4,16 +4,61 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net/http"
 	"slices"
 
 	"fyne.io/fyne/v2/data/binding"
+	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
+	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
 )
+
+var (
+	ErrAborted  = errors.New("process aborted prematurely")
+	ErrNotFound = errors.New("object not found")
+)
+
+// CharacterService provides access to all managed Eve Online characters both online and from local storage.
+type CharacterService struct {
+	EveNotificationService *evenotification.EveNotificationService
+	EveUniverseService     app.EveUniverseService
+	StatusCacheService     app.StatusCacheService
+	SSOService             *sso.SSOService
+
+	esiClient  *goesi.APIClient
+	httpClient *http.Client
+	sfg        *singleflight.Group
+	st         *storage.Storage
+}
+
+// New creates a new Characters service and returns it.
+// When nil is passed for any parameter a new default instance will be created for it (except for storage).
+func New(
+	st *storage.Storage,
+	httpClient *http.Client,
+	esiClient *goesi.APIClient,
+
+) *CharacterService {
+	if httpClient == nil {
+		httpClient = http.DefaultClient
+	}
+	if esiClient == nil {
+		esiClient = goesi.NewAPIClient(httpClient, "")
+	}
+	ct := &CharacterService{
+		st:         st,
+		esiClient:  esiClient,
+		httpClient: httpClient,
+		sfg:        new(singleflight.Group),
+	}
+	return ct
+}
 
 func (s *CharacterService) DeleteCharacter(ctx context.Context, id int32) error {
 	if err := s.st.DeleteCharacter(ctx, id); err != nil {
@@ -161,7 +206,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 	if myCharacter.Ship != nil {
 		arg.ShipID = optional.New(myCharacter.Ship.ID)
 	}
-	if _, err := s.EveUniverseService.GetOrCreateEveCharacterESI(ctx, token.CharacterID); err != nil {
+	if _, err := s.EveUniverseService.GetOrCreateCharacterESI(ctx, token.CharacterID); err != nil {
 		return 0, err
 	}
 	if err := s.st.UpdateOrCreateCharacter(ctx, arg); err != nil {
@@ -200,7 +245,7 @@ func (s *CharacterService) updateCharacterLocationESI(ctx context.Context, arg U
 			default:
 				locationID = int64(location.SolarSystemId)
 			}
-			_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, locationID)
+			_, err := s.EveUniverseService.GetOrCreateLocationESI(ctx, locationID)
 			if err != nil {
 				return err
 			}
@@ -248,7 +293,7 @@ func (s *CharacterService) updateCharacterShipESI(ctx context.Context, arg Updat
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			ship := data.(esi.GetCharactersCharacterIdShipOk)
-			_, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, ship.ShipTypeId)
+			_, err := s.EveUniverseService.GetOrCreateTypeESI(ctx, ship.ShipTypeId)
 			if err != nil {
 				return err
 			}
@@ -299,7 +344,7 @@ func (s *CharacterService) AddEveEntitiesFromCharacterSearchESI(ctx context.Cont
 		return nil, err
 	}
 	ids := slices.Concat(r.Alliance, r.Character, r.Corporation)
-	missingIDs, err := s.EveUniverseService.AddMissingEveEntities(ctx, ids)
+	missingIDs, err := s.EveUniverseService.AddMissingEntities(ctx, ids)
 	if err != nil {
 		slog.Error("Failed to fetch missing IDs", "error", err)
 		return nil, err

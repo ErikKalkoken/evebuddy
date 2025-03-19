@@ -34,14 +34,14 @@ func (s *EveUniverseService) getValidEveEntity(ctx context.Context, id int32) (*
 	return s.GetEveEntity(ctx, id)
 }
 
-func (s *EveUniverseService) GetOrCreateEveEntityESI(ctx context.Context, id int32) (*app.EveEntity, error) {
+func (s *EveUniverseService) GetOrCreateEntityESI(ctx context.Context, id int32) (*app.EveEntity, error) {
 	o, err := s.st.GetEveEntity(ctx, id)
 	if err == nil {
 		return o, nil
 	} else if !errors.Is(err, storage.ErrNotFound) {
 		return nil, err
 	}
-	_, err = s.AddMissingEveEntities(ctx, []int32{id})
+	_, err = s.AddMissingEntities(ctx, []int32{id})
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (s *EveUniverseService) ToEveEntities(ctx context.Context, ids []int32) (ma
 		return r, nil
 	}
 	ids3 := ids2.ToSlice()
-	if _, err := s.AddMissingEveEntities(ctx, ids3); err != nil {
+	if _, err := s.AddMissingEntities(ctx, ids3); err != nil {
 		return nil, err
 	}
 	oo, err := s.st.ListEveEntitiesForIDs(ctx, ids3)
@@ -72,11 +72,11 @@ func (s *EveUniverseService) ToEveEntities(ctx context.Context, ids []int32) (ma
 	return r, nil
 }
 
-// AddMissingEveEntities adds EveEntities from ESI for IDs missing in the database
+// AddMissingEntities adds EveEntities from ESI for IDs missing in the database
 // and returns which IDs where indeed missing.
 //
 // Invalid IDs (e.g. 0, 1) will be ignored.
-func (s *EveUniverseService) AddMissingEveEntities(ctx context.Context, ids []int32) ([]int32, error) {
+func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids []int32) ([]int32, error) {
 	// Filter out known invalid IDs before continuing
 	var badIDs, missingIDs []int32
 	err := func() error {
@@ -167,7 +167,7 @@ func (s *EveUniverseService) resolveIDs(ctx context.Context, ids []int32) ([]esi
 	return ee, []int32{}, nil
 }
 
-func (s *EveUniverseService) ListEveEntitiesByPartialName(ctx context.Context, partial string) ([]*app.EveEntity, error) {
+func (s *EveUniverseService) ListEntitiesByPartialName(ctx context.Context, partial string) ([]*app.EveEntity, error) {
 	return s.st.ListEveEntitiesByPartialName(ctx, partial)
 }
 

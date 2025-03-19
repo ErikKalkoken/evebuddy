@@ -72,7 +72,7 @@ func TestEveLocationOther(t *testing.T) {
 			}),
 		)
 		// when
-		x1, err := eu.GetOrCreateEveLocationESI(ctx, stationID)
+		x1, err := eu.GetOrCreateLocationESI(ctx, stationID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int64(stationID), x1.ID)
@@ -80,7 +80,7 @@ func TestEveLocationOther(t *testing.T) {
 			assert.Equal(t, owner, x1.Owner)
 			assert.Equal(t, system, x1.SolarSystem)
 			assert.Equal(t, myType, x1.Type)
-			x2, err := r.GetEveLocation(ctx, stationID)
+			x2, err := r.GetLocation(ctx, stationID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -93,7 +93,7 @@ func TestEveLocationOther(t *testing.T) {
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeSolarSystem})
 		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000148})
 		// when
-		x1, err := eu.GetOrCreateEveLocationESI(ctx, int64(system.ID))
+		x1, err := eu.GetOrCreateLocationESI(ctx, int64(system.ID))
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int64(system.ID), x1.ID)
@@ -101,7 +101,7 @@ func TestEveLocationOther(t *testing.T) {
 			assert.Nil(t, x1.Owner)
 			assert.Equal(t, system, x1.SolarSystem)
 			assert.Equal(t, myType, x1.Type)
-			x2, err := r.GetEveLocation(ctx, int64(system.ID))
+			x2, err := r.GetLocation(ctx, int64(system.ID))
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -122,7 +122,7 @@ func TestLocationStructures(t *testing.T) {
 		httpmock.Reset()
 		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: structureID, Name: "Alpha"})
 		// when
-		x, err := eu.GetOrCreateEveLocationESI(context.Background(), structureID)
+		x, err := eu.GetOrCreateLocationESI(context.Background(), structureID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, "Alpha", x.Name)
@@ -151,7 +151,7 @@ func TestLocationStructures(t *testing.T) {
 		)
 		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
 		// when
-		x1, err := eu.GetOrCreateEveLocationESI(ctx, structureID)
+		x1, err := eu.GetOrCreateLocationESI(ctx, structureID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int64(structureID), x1.ID)
@@ -159,7 +159,7 @@ func TestLocationStructures(t *testing.T) {
 			assert.Equal(t, owner, x1.Owner)
 			assert.Equal(t, system, x1.SolarSystem)
 			assert.Equal(t, myType, x1.Type)
-			x2, err := r.GetEveLocation(ctx, structureID)
+			x2, err := r.GetLocation(ctx, structureID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -170,7 +170,7 @@ func TestLocationStructures(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		// when
-		_, err := eu.GetOrCreateEveLocationESI(context.Background(), structureID)
+		_, err := eu.GetOrCreateLocationESI(context.Background(), structureID)
 		// then
 		assert.Error(t, err)
 	})
@@ -187,7 +187,7 @@ func TestLocationStructures(t *testing.T) {
 		)
 		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
 		// when
-		x1, err := eu.GetOrCreateEveLocationESI(ctx, structureID)
+		x1, err := eu.GetOrCreateLocationESI(ctx, structureID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int64(structureID), x1.ID)
@@ -195,7 +195,7 @@ func TestLocationStructures(t *testing.T) {
 			assert.Nil(t, x1.Owner)
 			assert.Nil(t, x1.SolarSystem)
 			assert.Nil(t, x1.Type)
-			x2, err := r.GetEveLocation(ctx, structureID)
+			x2, err := r.GetLocation(ctx, structureID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -214,7 +214,7 @@ func TestLocationStructures(t *testing.T) {
 		)
 		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
 		// when
-		_, err := eu.GetOrCreateEveLocationESI(ctx, structureID)
+		_, err := eu.GetOrCreateLocationESI(ctx, structureID)
 		// then
 		assert.Error(t, err)
 	})

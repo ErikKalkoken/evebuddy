@@ -39,7 +39,7 @@ func TestGetEveAllianceCorporationsESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []int32{102, 103}),
 		)
 		// when
-		oo, err := s.GetEveAllianceCorporationsESI(ctx, allianceID)
+		oo, err := s.GetAllianceCorporationsESI(ctx, allianceID)
 		// then
 		if assert.NoError(t, err) {
 			got := slices.Collect(xiter.MapSlice(oo, func(a *app.EveEntity) int32 {
@@ -61,7 +61,7 @@ func TestGetEveAllianceCorporationsESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []int32{}),
 		)
 		// when
-		oo, err := s.GetEveAllianceCorporationsESI(ctx, allianceID)
+		oo, err := s.GetAllianceCorporationsESI(ctx, allianceID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, oo, 0)

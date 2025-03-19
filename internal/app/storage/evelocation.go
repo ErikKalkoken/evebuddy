@@ -40,7 +40,7 @@ func (st *Storage) UpdateOrCreateEveLocation(ctx context.Context, arg UpdateOrCr
 	return nil
 }
 
-func (st *Storage) GetEveLocation(ctx context.Context, id int64) (*app.EveLocation, error) {
+func (st *Storage) GetLocation(ctx context.Context, id int64) (*app.EveLocation, error) {
 	o, err := st.q.GetLocation(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

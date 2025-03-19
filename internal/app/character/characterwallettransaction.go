@@ -58,18 +58,18 @@ func (s *CharacterService) updateCharacterWalletTransactionESI(ctx context.Conte
 					ids.Add(e.ClientId)
 				}
 			}
-			_, err = s.EveUniverseService.AddMissingEveEntities(ctx, ids.ToSlice())
+			_, err = s.EveUniverseService.AddMissingEntities(ctx, ids.ToSlice())
 			if err != nil {
 				return err
 			}
 
 			for _, o := range newEntries {
-				_, err = s.EveUniverseService.GetOrCreateEveTypeESI(ctx, o.TypeId)
+				_, err = s.EveUniverseService.GetOrCreateTypeESI(ctx, o.TypeId)
 				if err != nil {
 					slog.Error("get or create wallet journal type", "record", o, "error", err)
 					continue
 				}
-				_, err = s.EveUniverseService.GetOrCreateEveLocationESI(ctx, o.LocationId)
+				_, err = s.EveUniverseService.GetOrCreateLocationESI(ctx, o.LocationId)
 				if err != nil {
 					slog.Error("get or create wallet journal location", "record", o, "error", err)
 					continue

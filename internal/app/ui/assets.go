@@ -290,7 +290,7 @@ func (a *AssetsArea) newLocationData() (*iwidget.TreeData[locationNode], error) 
 	if err != nil {
 		return tree, err
 	}
-	oo, err := a.u.EveUniverseService().ListEveLocations(ctx)
+	oo, err := a.u.EveUniverseService().ListLocations(ctx)
 	if err != nil {
 		return tree, err
 	}

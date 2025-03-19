@@ -64,7 +64,7 @@ func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg
 			clones := data.(esi.GetCharactersCharacterIdClonesOk)
 			var home optional.Optional[int64]
 			if clones.HomeLocation.LocationId != 0 {
-				_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, clones.HomeLocation.LocationId)
+				_, err := s.EveUniverseService.GetOrCreateLocationESI(ctx, clones.HomeLocation.LocationId)
 				if err != nil {
 					return err
 				}
@@ -78,7 +78,7 @@ func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg
 			}
 			args := make([]storage.CreateCharacterJumpCloneParams, len(clones.JumpClones))
 			for i, jc := range clones.JumpClones {
-				_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, jc.LocationId)
+				_, err := s.EveUniverseService.GetOrCreateLocationESI(ctx, jc.LocationId)
 				if err != nil {
 					return err
 				}

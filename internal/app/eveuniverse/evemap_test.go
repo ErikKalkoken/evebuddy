@@ -28,7 +28,7 @@ func TestGetOrCreateEveRegionESI(t *testing.T) {
 		httpmock.Reset()
 		factory.CreateEveRegion(storage.CreateEveRegionParams{ID: 6})
 		// when
-		x1, err := s.GetOrCreateEveRegionESI(ctx, 6)
+		x1, err := s.GetOrCreateRegionESI(ctx, 6)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(6), x1.ID)
@@ -53,7 +53,7 @@ func TestGetOrCreateEveRegionESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		x1, err := s.GetOrCreateEveRegionESI(ctx, 10000042)
+		x1, err := s.GetOrCreateRegionESI(ctx, 10000042)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(10000042), x1.ID)
@@ -80,7 +80,7 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 		httpmock.Reset()
 		factory.CreateEveConstellation(storage.CreateEveConstellationParams{ID: 25})
 		// when
-		x1, err := s.GetOrCreateEveConstellationESI(ctx, 25)
+		x1, err := s.GetOrCreateConstellationESI(ctx, 25)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(25), x1.ID)
@@ -111,7 +111,7 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		x1, err := s.GetOrCreateEveConstellationESI(ctx, 20000009)
+		x1, err := s.GetOrCreateConstellationESI(ctx, 20000009)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(20000009), x1.ID)
@@ -139,7 +139,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 		httpmock.Reset()
 		factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 587})
 		// when
-		x1, err := s.GetOrCreateEveSolarSystemESI(ctx, 587)
+		x1, err := s.GetOrCreateSolarSystemESI(ctx, 587)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(587), x1.ID)
@@ -183,7 +183,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		x1, err := s.GetOrCreateEveSolarSystemESI(ctx, 30000003)
+		x1, err := s.GetOrCreateSolarSystemESI(ctx, 30000003)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(30000003), x1.ID)
@@ -286,7 +286,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data3).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		x1, err := s.GetOrCreateEveSolarSystemESI(ctx, 30000003)
+		x1, err := s.GetOrCreateSolarSystemESI(ctx, 30000003)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(30000003), x1.ID)
@@ -314,7 +314,7 @@ func TestGetOrCreateEvePlanetESI(t *testing.T) {
 		httpmock.Reset()
 		factory.CreateEvePlanet(storage.CreateEvePlanetParams{ID: 25})
 		// when
-		x1, err := s.GetOrCreateEvePlanetESI(ctx, 25)
+		x1, err := s.GetOrCreatePlanetESI(ctx, 25)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(25), x1.ID)
@@ -342,7 +342,7 @@ func TestGetOrCreateEvePlanetESI(t *testing.T) {
 			"https://esi.evetech.net/v1/universe/planets/40000046/",
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		x1, err := s.GetOrCreateEvePlanetESI(ctx, 40000046)
+		x1, err := s.GetOrCreatePlanetESI(ctx, 40000046)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(40000046), x1.ID)

@@ -30,7 +30,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateEveCharacter()
 		// when
-		x1, err := s.GetOrCreateEveCharacterESI(ctx, c.ID)
+		x1, err := s.GetOrCreateCharacterESI(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c.ID, x1.ID)
@@ -60,7 +60,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/", characterID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		x1, err := s.GetOrCreateEveCharacterESI(ctx, characterID)
+		x1, err := s.GetOrCreateCharacterESI(ctx, characterID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, characterID, x1.ID)

@@ -179,7 +179,7 @@ func (s *EveNotificationService) renderStructureImpendingAbandonmentAssetsAtRisk
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	solarSystem, err := s.EveUniverseService.GetOrCreateEveSolarSystemESI(ctx, data.SolarSystemID)
+	solarSystem, err := s.EveUniverseService.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
 	if err != nil {
 		return title, body, err
 	}
@@ -210,11 +210,11 @@ func (s *EveNotificationService) renderStructureItemsDelivered(ctx context.Conte
 	if err != nil {
 		return title, body, err
 	}
-	solarSystem, err := s.EveUniverseService.GetOrCreateEveSolarSystemESI(ctx, data.SolarsystemID)
+	solarSystem, err := s.EveUniverseService.GetOrCreateSolarSystemESI(ctx, data.SolarsystemID)
 	if err != nil {
 		return title, body, err
 	}
-	structure, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, data.StructureID)
+	structure, err := s.EveUniverseService.GetOrCreateLocationESI(ctx, data.StructureID)
 	if err != nil {
 		return title, body, err
 	}
@@ -244,11 +244,11 @@ func (s *EveNotificationService) renderStructureItemsMovedToSafety(ctx context.C
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	solarSystem, err := s.EveUniverseService.GetOrCreateEveSolarSystemESI(ctx, data.SolarSystemID)
+	solarSystem, err := s.EveUniverseService.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
 	if err != nil {
 		return title, body, err
 	}
-	station, err := s.EveUniverseService.GetOrCreateEveEntityESI(ctx, data.NewStationID)
+	station, err := s.EveUniverseService.GetOrCreateEntityESI(ctx, data.NewStationID)
 	if err != nil {
 		return title, body, err
 	}
@@ -450,7 +450,7 @@ func (s *EveNotificationService) renderStructureUnderAttack(ctx context.Context,
 		o.name,
 		o.solarSystem.Name,
 	))
-	attackChar, err := s.EveUniverseService.GetOrCreateEveEntityESI(ctx, data.CharID)
+	attackChar, err := s.EveUniverseService.GetOrCreateEntityESI(ctx, data.CharID)
 	if err != nil {
 		return title, body, err
 	}
@@ -510,11 +510,11 @@ type structureInfo struct {
 }
 
 func (s *EveNotificationService) makeStructureBaseText(ctx context.Context, typeID, solarSystemID int32, structureID int64, structureName string) (structureInfo, error) {
-	structureType, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, typeID)
+	structureType, err := s.EveUniverseService.GetOrCreateTypeESI(ctx, typeID)
 	if err != nil {
 		return structureInfo{}, err
 	}
-	solarSystem, err := s.EveUniverseService.GetOrCreateEveSolarSystemESI(ctx, solarSystemID)
+	solarSystem, err := s.EveUniverseService.GetOrCreateSolarSystemESI(ctx, solarSystemID)
 	if err != nil {
 		return structureInfo{}, err
 	}
@@ -522,7 +522,7 @@ func (s *EveNotificationService) makeStructureBaseText(ctx context.Context, type
 	var owner *app.EveEntity
 	isUpwellStructure := structureType.Group.Category.ID == app.EveCategoryStructure
 	if isUpwellStructure {
-		structure, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, structureID)
+		structure, err := s.EveUniverseService.GetOrCreateLocationESI(ctx, structureID)
 		if err != nil {
 			return structureInfo{}, err
 		}

@@ -71,7 +71,7 @@ func (a *allianceArea) load(allianceID int32) error {
 		a.logo.Resource = r
 		a.logo.Refresh()
 	}()
-	o, err := a.iw.u.EveUniverseService().GetEveAllianceESI(ctx, allianceID)
+	o, err := a.iw.u.EveUniverseService().GetAllianceESI(ctx, allianceID)
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func (a *allianceArea) load(allianceID int32) error {
 
 	// Members
 	go func() {
-		members, err := a.iw.u.EveUniverseService().GetEveAllianceCorporationsESI(ctx, allianceID)
+		members, err := a.iw.u.EveUniverseService().GetAllianceCorporationsESI(ctx, allianceID)
 		if err != nil {
 			slog.Error("alliance info: Failed to load corporations", "allianceID", allianceID, "error", err)
 			return

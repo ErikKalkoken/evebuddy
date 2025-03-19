@@ -85,7 +85,7 @@ func newLocationArea(iw InfoWindow, locationID int64, w fyne.Window) *locationAr
 
 func (a *locationArea) load(locationID int64) error {
 	ctx := context.Background()
-	o, err := a.iw.u.EveUniverseService().GetOrCreateEveLocationESI(ctx, locationID)
+	o, err := a.iw.u.EveUniverseService().GetOrCreateLocationESI(ctx, locationID)
 	if err != nil {
 		return err
 	}

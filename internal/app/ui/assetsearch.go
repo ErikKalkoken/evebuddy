@@ -329,7 +329,7 @@ func (a *AssetSearchArea) loadData() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	locations, err := a.u.EveUniverseService().ListEveLocations(ctx)
+	locations, err := a.u.EveUniverseService().ListLocations(ctx)
 	if err != nil {
 		return false, err
 	}

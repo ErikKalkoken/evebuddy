@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -20,7 +19,7 @@ import (
 type SearchResult struct {
 	widget.BaseWidget
 	eis                 app.EveImageService
-	eus                 *eveuniverse.EveUniverseService
+	eus                 app.EveUniverseService
 	name                *widget.Label
 	image               *canvas.Image
 	supportedCategories set.Set[app.EveEntityCategory]
@@ -28,7 +27,7 @@ type SearchResult struct {
 
 func NewSearchResult(
 	eis app.EveImageService,
-	eus *eveuniverse.EveUniverseService,
+	eus app.EveUniverseService,
 	supportedCategories set.Set[app.EveEntityCategory]) *SearchResult {
 	w := &SearchResult{
 		eis:                 eis,
@@ -60,7 +59,7 @@ func (w *SearchResult) Set(o *app.EveEntity) {
 		res, err := func() (fyne.Resource, error) {
 			switch o.Category {
 			case app.EveEntityInventoryType:
-				et, err := w.eus.GetOrCreateEveTypeESI(ctx, o.ID)
+				et, err := w.eus.GetOrCreateTypeESI(ctx, o.ID)
 				if err != nil {
 					return nil, err
 				}
