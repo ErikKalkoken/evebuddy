@@ -50,7 +50,8 @@ func newRegionArea(iw InfoWindow, regionID int32, w fyne.Window) *regionArea {
 			widget.NewLabel("Region"),
 		),
 	)
-	a.Content = container.NewBorder(main, nil, nil, nil, a.tabs)
+	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, main)
+	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
 		err := a.load(regionID)

@@ -40,7 +40,7 @@ func newConstellationArea(iw InfoWindow, constellationID int32, w fyne.Window) *
 	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateEllipsis
 	s := float32(app.IconPixelSize) * logoZoomFactor
-	logo := iwidget.NewImageFromResource(icons.Region64Png, fyne.NewSquareSize(s))
+	logo := iwidget.NewImageFromResource(icons.Constellation64Png, fyne.NewSquareSize(s))
 	a := &constellationArea{
 		iw:     iw,
 		logo:   logo,
