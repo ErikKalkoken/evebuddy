@@ -313,7 +313,7 @@ func (a *AssetSearchArea) Refresh() {
 
 func (a *AssetSearchArea) loadData() (bool, error) {
 	ctx := context.TODO()
-	cc, err := a.u.CharacterService.ListCharactersShort(ctx)
+	cc, err := a.u.CharacterService().ListCharactersShort(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -325,11 +325,11 @@ func (a *AssetSearchArea) loadData() (bool, error) {
 		m2[o.ID] = o.Name
 	}
 	a.characterNames = m2
-	assets, err := a.u.CharacterService.ListAllCharacterAssets(ctx)
+	assets, err := a.u.CharacterService().ListAllCharacterAssets(ctx)
 	if err != nil {
 		return false, err
 	}
-	locations, err := a.u.EveUniverseService.ListEveLocations(ctx)
+	locations, err := a.u.EveUniverseService().ListEveLocations(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -387,10 +387,10 @@ func (a *AssetSearchArea) updateFoundInfo() {
 }
 
 func (a *AssetSearchArea) characterCount() int {
-	cc := a.u.StatusCacheService.ListCharacters()
+	cc := a.u.StatusCacheService().ListCharacters()
 	validCount := 0
 	for _, c := range cc {
-		if a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionAssets) {
+		if a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionAssets) {
 			validCount++
 		}
 	}

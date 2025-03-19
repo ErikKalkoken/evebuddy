@@ -117,7 +117,7 @@ func (a *SkillCatalogueArea) makeGroupsGrid() fyne.CanvasObject {
 				unselectAll()
 				return
 			}
-			oo, err := a.u.CharacterService.ListCharacterSkillProgress(
+			oo, err := a.u.CharacterService().ListCharacterSkillProgress(
 				context.TODO(), a.u.CurrentCharacterID(), group.id,
 			)
 			if err != nil {
@@ -198,7 +198,7 @@ func (a *SkillCatalogueArea) Redraw() {
 
 func (a *SkillCatalogueArea) Refresh() {
 	t, i, err := func() (string, widget.Importance, error) {
-		exists := a.u.StatusCacheService.GeneralSectionExists(app.SectionEveCategories)
+		exists := a.u.StatusCacheService().GeneralSectionExists(app.SectionEveCategories)
 		if !exists {
 			return "Waiting for universe data to be loaded...", widget.WarningImportance, nil
 		}
@@ -232,7 +232,7 @@ func (a *SkillCatalogueArea) updateGroups() error {
 	if !a.u.HasCharacter() {
 		return nil
 	}
-	gg, err := a.u.CharacterService.ListCharacterSkillGroupsProgress(context.TODO(), a.u.CurrentCharacterID())
+	gg, err := a.u.CharacterService().ListCharacterSkillGroupsProgress(context.TODO(), a.u.CurrentCharacterID())
 	if err != nil {
 		return err
 	}

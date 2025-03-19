@@ -210,24 +210,24 @@ func main() {
 	esiClient := goesi.NewAPIClient(rhc.StandardClient(), userAgent)
 
 	// Init StatusCache service
-	sc := statuscache.New(memCache)
-	if err := sc.InitCache(context.TODO(), st); err != nil {
+	scs := statuscache.New(memCache)
+	if err := scs.InitCache(context.TODO(), st); err != nil {
 		slog.Error("Failed to init cache", "error", err)
 		os.Exit(1)
 	}
 	// Init EveUniverse service
-	eu := eveuniverse.New(st, esiClient)
-	eu.StatusCacheService = sc
+	eus := eveuniverse.New(st, esiClient)
+	eus.StatusCacheService = scs
 
 	// Init EveNotification service
 	en := evenotification.New()
-	en.EveUniverseService = eu
+	en.EveUniverseService = eus
 
 	// Init Character service
 	cs := character.New(st, rhc.StandardClient(), esiClient)
 	cs.EveNotificationService = en
-	cs.EveUniverseService = eu
-	cs.StatusCacheService = sc
+	cs.EveUniverseService = eus
+	cs.StatusCacheService = scs
 	ssoService := sso.New(ssoClientID, rhc.StandardClient())
 	ssoService.OpenURL = fyneApp.OpenURL
 	cs.SSOService = ssoService
@@ -235,17 +235,11 @@ func main() {
 	// Init UI
 	ess := esistatus.New(esiClient)
 	eis := eveimage.New(pc, rhc.StandardClient(), *offlineFlag)
-	bu := ui.NewBaseUI(fyneApp, *offlineFlag)
+	bu := ui.NewBaseUI(fyneApp, cs, eis, ess, eus, scs, memCache, *offlineFlag)
 	bu.ClearCache = func() {
 		pc.Clear()
 		memCache.Clear()
 	}
-	bu.CharacterService = cs
-	bu.ESIStatusService = ess
-	bu.EveImageService = eis
-	bu.EveUniverseService = eu
-	bu.MemCache = memCache
-	bu.StatusCacheService = sc
 	bu.IsUpdateTickerDisabled = *disableUpdatesFlag
 	bu.DataPaths = map[string]string{
 		"db":        dbPath,

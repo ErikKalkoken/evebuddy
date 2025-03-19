@@ -103,7 +103,7 @@ func (a *ShipsArea) makeShipsGrid() *widget.GridWrap {
 			return len(a.ships)
 		},
 		func() fyne.CanvasObject {
-			return appwidget.NewShipItem(a.u.EveImageService, a.u.MemCache, icons.QuestionmarkSvg)
+			return appwidget.NewShipItem(a.u.EveImageService(), a.u.MemCache(), icons.QuestionmarkSvg)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.ships) {
@@ -126,7 +126,7 @@ func (a *ShipsArea) makeShipsGrid() *widget.GridWrap {
 
 func (a *ShipsArea) Refresh() {
 	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
-		exists := a.u.StatusCacheService.GeneralSectionExists(app.SectionEveCategories)
+		exists := a.u.StatusCacheService().GeneralSectionExists(app.SectionEveCategories)
 		if !exists {
 			return "Waiting for universe data to be loaded...", widget.WarningImportance, false, nil
 		}
@@ -163,7 +163,7 @@ func (a *ShipsArea) updateEntries() error {
 	}
 	characterID := a.u.CurrentCharacterID()
 	search := fmt.Sprintf("%%%s%%", a.searchBox.Text)
-	oo, err := a.u.CharacterService.ListCharacterShipsAbilities(context.Background(), characterID, search)
+	oo, err := a.u.CharacterService().ListCharacterShipsAbilities(context.Background(), characterID, search)
 	if err != nil {
 		return err
 	}
@@ -211,11 +211,11 @@ func (a *ShipsArea) makeTopText() (string, widget.Importance, bool, error) {
 		return "No character", widget.LowImportance, false, nil
 	}
 	characterID := a.u.CurrentCharacterID()
-	hasData := a.u.StatusCacheService.CharacterSectionExists(characterID, app.SectionSkills)
+	hasData := a.u.StatusCacheService().CharacterSectionExists(characterID, app.SectionSkills)
 	if !hasData {
 		return "Waiting for skills to be loaded...", widget.WarningImportance, false, nil
 	}
-	oo, err := a.u.CharacterService.ListCharacterShipsAbilities(context.Background(), characterID, "%%")
+	oo, err := a.u.CharacterService().ListCharacterShipsAbilities(context.Background(), characterID, "%%")
 	if err != nil {
 		return "", 0, false, err
 	}

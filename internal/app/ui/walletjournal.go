@@ -134,7 +134,7 @@ func (a *WalletJournalArea) makeTopText() (string, widget.Importance) {
 		return "No character", widget.LowImportance
 	}
 	c := a.u.CurrentCharacter()
-	hasData := a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionWalletJournal)
+	hasData := a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionWalletJournal)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
@@ -153,7 +153,7 @@ func (a *WalletJournalArea) updateEntries() error {
 		return nil
 	}
 	characterID := a.u.CurrentCharacterID()
-	ww, err := a.u.CharacterService.ListCharacterWalletJournalEntries(context.TODO(), characterID)
+	ww, err := a.u.CharacterService().ListCharacterWalletJournalEntries(context.TODO(), characterID)
 	if err != nil {
 		return err
 	}

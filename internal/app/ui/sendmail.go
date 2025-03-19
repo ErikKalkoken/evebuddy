@@ -37,7 +37,7 @@ func MakeSendMailPage(
 ) (fyne.CanvasObject, fyne.Resource, func() bool) {
 	const labelWith = 45
 
-	from := appwidget.NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.EveImageService)
+	from := appwidget.NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.EveImageService())
 	from.ShowInfoWindow = u.ShowEveEntityInfoWindow
 	from.Set([]*app.EveEntity{{ID: character.ID, Name: character.EveCharacter.Name, Category: app.EveEntityCharacter}})
 	from.Disable()
@@ -48,7 +48,7 @@ func MakeSendMailPage(
 			to.Add(ee)
 		}, w)
 	})
-	to = appwidget.NewEveEntityEntry(toButton, labelWith, u.EveImageService)
+	to = appwidget.NewEveEntityEntry(toButton, labelWith, u.EveImageService())
 	to.ShowInfoWindow = u.ShowEveEntityInfoWindow
 	to.Placeholder = "Tap To-Button to add recipients..."
 
@@ -101,7 +101,7 @@ func MakeSendMailPage(
 			return false
 		}
 		ctx := context.Background()
-		_, err := u.CharacterService.SendCharacterMail(
+		_, err := u.CharacterService().SendCharacterMail(
 			ctx,
 			character.ID,
 			subject.Text,
@@ -155,7 +155,7 @@ func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEnti
 			row[0].(*widget.Label).SetText(ee.Name)
 			image := row[1].(*canvas.Image)
 			appwidget.RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
-				res, err := appwidget.FetchEveEntityAvatar(u.EveImageService, ee, fallbackIcon)
+				res, err := appwidget.FetchEveEntityAvatar(u.EveImageService(), ee, fallbackIcon)
 				if err != nil {
 					return fallbackIcon, err
 				}
@@ -190,14 +190,14 @@ func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEnti
 		}
 		ctx := context.Background()
 		var err error
-		items, err = u.EveUniverseService.ListEveEntitiesByPartialName(ctx, search)
+		items, err = u.EveUniverseService().ListEveEntitiesByPartialName(ctx, search)
 		if err != nil {
 			showErrorDialog(search, err)
 			return
 		}
 		list.Refresh()
 		go func() {
-			missingIDs, err := u.CharacterService.AddEveEntitiesFromCharacterSearchESI(
+			missingIDs, err := u.CharacterService().AddEveEntitiesFromCharacterSearchESI(
 				ctx,
 				characterID,
 				search,
@@ -209,7 +209,7 @@ func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEnti
 			if len(missingIDs) == 0 {
 				return // no need to update when not changed
 			}
-			items, err = u.EveUniverseService.ListEveEntitiesByPartialName(ctx, search)
+			items, err = u.EveUniverseService().ListEveEntitiesByPartialName(ctx, search)
 			if err != nil {
 				showErrorDialog(search, err)
 				return

@@ -124,7 +124,7 @@ func (a *NotificationsArea) makeNotificationList() *widget.List {
 			return len(a.notifications)
 		},
 		func() fyne.CanvasObject {
-			return appwidget.NewMailHeaderItem(a.u.EveImageService)
+			return appwidget.NewMailHeaderItem(a.u.EveImageService())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.notifications) {
@@ -170,7 +170,7 @@ func (a *NotificationsArea) Refresh() {
 	var counts map[evenotification.Group]int
 	if characterID := a.u.CurrentCharacterID(); characterID != 0 {
 		var err error
-		counts, err = a.u.CharacterService.CountCharacterNotificationUnreads(context.TODO(), characterID)
+		counts, err = a.u.CharacterService().CountCharacterNotificationUnreads(context.TODO(), characterID)
 		if err != nil {
 			slog.Error("Failed to fetch notification unread counts", "error", err)
 		}
@@ -212,7 +212,7 @@ func (a *NotificationsArea) Refresh() {
 }
 
 func (a *NotificationsArea) makeGroupTopText() (string, widget.Importance) {
-	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
+	hasData := a.u.StatusCacheService().CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for data to load...", widget.WarningImportance
 	}
@@ -230,12 +230,12 @@ func (a *NotificationsArea) SetGroup(nc evenotification.Group) {
 	var err error
 	switch nc {
 	case evenotification.All:
-		notifications, err = a.u.CharacterService.ListCharacterNotificationsAll(ctx, characterID)
+		notifications, err = a.u.CharacterService().ListCharacterNotificationsAll(ctx, characterID)
 	case evenotification.Unread:
-		notifications, err = a.u.CharacterService.ListCharacterNotificationsUnread(ctx, characterID)
+		notifications, err = a.u.CharacterService().ListCharacterNotificationsUnread(ctx, characterID)
 	default:
 		types := evenotification.GroupTypes[nc]
-		notifications, err = a.u.CharacterService.ListCharacterNotificationsTypes(ctx, characterID, types)
+		notifications, err = a.u.CharacterService().ListCharacterNotificationsTypes(ctx, characterID, types)
 	}
 	a.notifications = notifications
 	var top string
@@ -269,7 +269,7 @@ func (a *NotificationsArea) setDetail(n *app.CharacterNotification) {
 	subject.Wrapping = fyne.TextWrapWord
 	a.Detail.Add(subject)
 	h := appwidget.NewMailHeader(a.u.ShowEveEntityInfoWindow)
-	h.Set(a.u.EveImageService, n.Sender, n.Timestamp, a.u.CurrentCharacter().EveCharacter.ToEveEntity())
+	h.Set(a.u.EveImageService(), n.Sender, n.Timestamp, a.u.CurrentCharacter().EveCharacter.ToEveEntity())
 	a.Detail.Add(h)
 	body := widget.NewRichTextFromMarkdown(markdownStripLinks(n.Body.ValueOrZero()))
 	body.Wrapping = fyne.TextWrapWord

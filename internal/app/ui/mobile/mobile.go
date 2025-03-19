@@ -457,7 +457,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		tickerUpdateStatus := time.NewTicker(5 * time.Second)
 		go func() {
 			for {
-				x := u.StatusCacheService.Summary()
+				x := u.StatusCacheService().Summary()
 				u.navItemUpdateStatus.Supporting = x.Display()
 				toolsList.Refresh()
 				<-tickerUpdateStatus.C

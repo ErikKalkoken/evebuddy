@@ -236,12 +236,12 @@ func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
 		return emptyFolder, nil
 	}
 	ctx := context.Background()
-	labelUnreadCounts, err := a.u.CharacterService.GetCharacterMailLabelUnreadCounts(ctx, characterID)
+	labelUnreadCounts, err := a.u.CharacterService().GetCharacterMailLabelUnreadCounts(ctx, characterID)
 	if err != nil {
 		a.folders.Clear()
 		return emptyFolder, err
 	}
-	listUnreadCounts, err := a.u.CharacterService.GetCharacterMailListUnreadCounts(ctx, characterID)
+	listUnreadCounts, err := a.u.CharacterService().GetCharacterMailListUnreadCounts(ctx, characterID)
 	if err != nil {
 		a.folders.Clear()
 		return emptyFolder, err
@@ -287,7 +287,7 @@ func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
 	}
 
 	// Add custom labels
-	labels, err := a.u.CharacterService.ListCharacterMailLabelsOrdered(ctx, characterID)
+	labels, err := a.u.CharacterService().ListCharacterMailLabelsOrdered(ctx, characterID)
 	if err != nil {
 		return FolderNode{}, err
 	}
@@ -317,7 +317,7 @@ func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
 	}
 
 	// Add mailing lists
-	lists, err := a.u.CharacterService.ListCharacterMailLists(ctx, characterID)
+	lists, err := a.u.CharacterService().ListCharacterMailLists(ctx, characterID)
 	if err != nil {
 		return FolderNode{}, err
 	}
@@ -381,7 +381,7 @@ func (a *MailArea) makeHeaderList() *widget.List {
 			return len(a.headers)
 		},
 		func() fyne.CanvasObject {
-			return appwidget.NewMailHeaderItem(a.u.EveImageService)
+			return appwidget.NewMailHeaderItem(a.u.EveImageService())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.headers) {
@@ -456,13 +456,13 @@ func (a *MailArea) updateHeaders() (FolderNode, error) {
 	var err error
 	switch folder.Category {
 	case nodeCategoryLabel:
-		headers, err = a.u.CharacterService.ListCharacterMailHeadersForLabelOrdered(
+		headers, err = a.u.CharacterService().ListCharacterMailHeadersForLabelOrdered(
 			ctx,
 			folder.CharacterID,
 			folder.ObjID,
 		)
 	case nodeCategoryList:
-		headers, err = a.u.CharacterService.ListCharacterMailHeadersForListOrdered(
+		headers, err = a.u.CharacterService().ListCharacterMailHeadersForListOrdered(
 			ctx,
 			folder.CharacterID,
 			folder.ObjID,
@@ -483,7 +483,7 @@ func (a *MailArea) makeFolderTopText(f FolderNode) (string, widget.Importance) {
 	if !a.u.HasCharacter() {
 		return "No Character", widget.LowImportance
 	}
-	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionSkillqueue)
+	hasData := a.u.StatusCacheService().CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionSkillqueue)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
@@ -523,7 +523,7 @@ func (a *MailArea) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 					"Deleting mail...",
 					"",
 					func() error {
-						return a.u.CharacterService.DeleteCharacterMail(context.TODO(), a.mail.CharacterID, a.mail.MailID)
+						return a.u.CharacterService().DeleteCharacterMail(context.TODO(), a.mail.CharacterID, a.mail.MailID)
 					},
 					a.u.Window,
 				)
@@ -586,7 +586,7 @@ func (a *MailArea) setMail(mailID int32) {
 	ctx := context.TODO()
 	characterID := a.u.CurrentCharacterID()
 	var err error
-	a.mail, err = a.u.CharacterService.GetCharacterMail(ctx, characterID, mailID)
+	a.mail, err = a.u.CharacterService().GetCharacterMail(ctx, characterID, mailID)
 	if err != nil {
 		slog.Error("Failed to fetch mail", "mailID", mailID, "error", err)
 		a.u.Snackbar.Show("ERROR: Failed to fetch mail")
@@ -594,7 +594,7 @@ func (a *MailArea) setMail(mailID int32) {
 	}
 	if !a.u.isOffline && !a.mail.IsRead {
 		go func() {
-			err = a.u.CharacterService.UpdateMailRead(ctx, characterID, a.mail.MailID)
+			err = a.u.CharacterService().UpdateMailRead(ctx, characterID, a.mail.MailID)
 			if err != nil {
 				slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", a.mail.MailID, "error", err)
 				a.u.Snackbar.Show("ERROR: Failed to mark mail as read")
@@ -606,7 +606,7 @@ func (a *MailArea) setMail(mailID int32) {
 		}()
 	}
 	a.subject.SetText(a.mail.Subject)
-	a.header.Set(a.u.EveImageService, a.mail.From, a.mail.Timestamp, a.mail.Recipients...)
+	a.header.Set(a.u.EveImageService(), a.mail.From, a.mail.Timestamp, a.mail.Recipients...)
 	a.body.SetText(a.mail.BodyPlain())
 	a.toolbar.Show()
 }

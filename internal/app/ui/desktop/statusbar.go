@@ -150,7 +150,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 	esiStatusTicker := time.NewTicker(esiStatusUpdateTicker)
 	go func() {
 		for {
-			x, err := a.u.ESIStatusService.Fetch(context.TODO())
+			x, err := a.u.ESIStatusService().Fetch(context.TODO())
 			var t, errorMessage string
 			var s eveStatus
 			if err != nil {
@@ -204,12 +204,12 @@ func (a *statusBarArea) StartUpdateTicker() {
 }
 
 func (a *statusBarArea) refreshCharacterCount() {
-	x := a.u.StatusCacheService.ListCharacters()
+	x := a.u.StatusCacheService().ListCharacters()
 	a.characterCount.SetText(strconv.Itoa(len(x)))
 }
 
 func (a *statusBarArea) refreshUpdateStatus() {
-	x := a.u.StatusCacheService.Summary()
+	x := a.u.StatusCacheService().Summary()
 	a.updateStatus.SetTextAndImportance(x.Display(), x.Status().ToImportance())
 }
 

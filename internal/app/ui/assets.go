@@ -201,13 +201,13 @@ func (a *AssetsArea) makeAssetGrid() *widget.GridWrap {
 				appwidget.RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
 					switch ca.Variant() {
 					case app.VariantSKIN:
-						return a.u.EveImageService.InventoryTypeSKIN(ca.EveType.ID, app.IconPixelSize)
+						return a.u.EveImageService().InventoryTypeSKIN(ca.EveType.ID, app.IconPixelSize)
 					case app.VariantBPO:
-						return a.u.EveImageService.InventoryTypeBPO(ca.EveType.ID, app.IconPixelSize)
+						return a.u.EveImageService().InventoryTypeBPO(ca.EveType.ID, app.IconPixelSize)
 					case app.VariantBPC:
-						return a.u.EveImageService.InventoryTypeBPC(ca.EveType.ID, app.IconPixelSize)
+						return a.u.EveImageService().InventoryTypeBPC(ca.EveType.ID, app.IconPixelSize)
 					default:
-						return a.u.EveImageService.InventoryTypeIcon(ca.EveType.ID, app.IconPixelSize)
+						return a.u.EveImageService().InventoryTypeIcon(ca.EveType.ID, app.IconPixelSize)
 					}
 				})
 			})
@@ -286,11 +286,11 @@ func (a *AssetsArea) newLocationData() (*iwidget.TreeData[locationNode], error) 
 		return tree, nil
 	}
 	characterID := a.u.CurrentCharacterID()
-	assets, err := a.u.CharacterService.ListCharacterAssets(ctx, characterID)
+	assets, err := a.u.CharacterService().ListCharacterAssets(ctx, characterID)
 	if err != nil {
 		return tree, err
 	}
-	oo, err := a.u.EveUniverseService.ListEveLocations(ctx)
+	oo, err := a.u.EveUniverseService().ListEveLocations(ctx)
 	if err != nil {
 		return tree, err
 	}
@@ -430,7 +430,7 @@ func (a *AssetsArea) makeTopText(total int) (string, widget.Importance, error) {
 	if c == nil {
 		return "No character", widget.LowImportance, nil
 	}
-	hasData := a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionAssets)
+	hasData := a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionAssets)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
 	}
@@ -456,11 +456,11 @@ func (a *AssetsArea) selectLocation(location locationNode) error {
 	var f func(context.Context, int32, int64) ([]*app.CharacterAsset, error)
 	switch location.type_ {
 	case nodeShipHangar:
-		f = a.u.CharacterService.ListCharacterAssetsInShipHangar
+		f = a.u.CharacterService().ListCharacterAssetsInShipHangar
 	case nodeItemHangar:
-		f = a.u.CharacterService.ListCharacterAssetsInItemHangar
+		f = a.u.CharacterService().ListCharacterAssetsInItemHangar
 	default:
-		f = a.u.CharacterService.ListCharacterAssetsInLocation
+		f = a.u.CharacterService().ListCharacterAssetsInLocation
 	}
 	assets, err := f(context.TODO(), location.characterID, location.containerID)
 	if err != nil {
@@ -532,7 +532,7 @@ func (a *AssetsArea) updateLocationPath(location locationNode) {
 // 	}
 // 	title := fmt.Sprintf("%s%s(%s): Contents", ca.EveType.Name, name, ca.EveType.Group.Name)
 // 	w := u.fyneApp.NewWindow(u.makeWindowTitle(title))
-// 	oo, err := u.CharacterService.ListCharacterAssetsInLocation(context.TODO(), ca.CharacterID, ca.ItemID)
+// 	oo, err := u.CharacterService().ListCharacterAssetsInLocation(context.TODO(), ca.CharacterID, ca.ItemID)
 // 	if err != nil {
 // 		panic(err)
 // 	}

@@ -99,12 +99,12 @@ func (a *PlanetArea) makeTopText() (string, widget.Importance) {
 		return "No character", widget.LowImportance
 	}
 	c := a.u.CurrentCharacter()
-	hasData := a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionPlanets)
+	hasData := a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionPlanets)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
 	var max string
-	s, err := a.u.CharacterService.GetCharacterSkill(context.Background(), c.ID, app.EveTypeInterplanetaryConsolidation)
+	s, err := a.u.CharacterService().GetCharacterSkill(context.Background(), c.ID, app.EveTypeInterplanetaryConsolidation)
 	if errors.Is(err, character.ErrNotFound) {
 		max = "1"
 	} else if err != nil {
@@ -124,7 +124,7 @@ func (a *PlanetArea) updateEntries() error {
 	}
 	characterID := a.u.CurrentCharacterID()
 	var err error
-	a.planets, err = a.u.CharacterService.ListCharacterPlanets(context.TODO(), characterID)
+	a.planets, err = a.u.CharacterService().ListCharacterPlanets(context.TODO(), characterID)
 	if err != nil {
 		return err
 	}

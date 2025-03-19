@@ -104,7 +104,7 @@ func (a *TrainingArea) updateCharacters() (optional.Optional[int], error) {
 	var totalSP optional.Optional[int]
 	var err error
 	ctx := context.TODO()
-	mycc, err := a.u.CharacterService.ListCharacters(ctx)
+	mycc, err := a.u.CharacterService().ListCharacters(ctx)
 	if err != nil {
 		return totalSP, err
 	}
@@ -119,7 +119,7 @@ func (a *TrainingArea) updateCharacters() (optional.Optional[int], error) {
 		cc[i] = c
 	}
 	for i, c := range cc {
-		v, err := a.u.CharacterService.GetCharacterTotalTrainingTime(ctx, c.id)
+		v, err := a.u.CharacterService().GetCharacterTotalTrainingTime(ctx, c.id)
 		if err != nil {
 			return totalSP, err
 		}

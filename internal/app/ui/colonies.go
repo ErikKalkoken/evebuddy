@@ -135,14 +135,14 @@ func (a *ColoniesArea) makeTopText() (string, widget.Importance) {
 }
 
 func (a *ColoniesArea) updateEntries() error {
-	pp, err := a.u.CharacterService.ListAllCharacterPlanets(context.TODO())
+	pp, err := a.u.CharacterService().ListAllCharacterPlanets(context.TODO())
 	if err != nil {
 		return err
 	}
 	rows := make([]colonyRow, len(pp))
 	for i, p := range pp {
 		r := colonyRow{
-			character:          a.u.StatusCacheService.CharacterName(p.CharacterID),
+			character:          a.u.StatusCacheService().CharacterName(p.CharacterID),
 			characterID:        p.CharacterID,
 			planet:             p.EvePlanet.Name,
 			planetType:         p.EvePlanet.TypeDisplay(),

@@ -123,7 +123,7 @@ func (a *JumpClonesArea) makeTree() *iwidget.Tree[jumpCloneNode] {
 				spacer.Show()
 			} else {
 				appwidget.RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
-					return a.u.EveImageService.InventoryTypeIcon(n.implantTypeID, app.IconPixelSize)
+					return a.u.EveImageService().InventoryTypeIcon(n.implantTypeID, app.IconPixelSize)
 				})
 				main.SetText(n.implantTypeName)
 				iconInfo.OnTapped = func() {
@@ -166,7 +166,7 @@ func (a *JumpClonesArea) newTreeData() (*iwidget.TreeData[jumpCloneNode], error)
 		return tree, nil
 	}
 	ctx := context.Background()
-	clones, err := a.u.CharacterService.ListCharacterJumpClones(ctx, a.u.CurrentCharacterID())
+	clones, err := a.u.CharacterService().ListCharacterJumpClones(ctx, a.u.CurrentCharacterID())
 	if err != nil {
 		return tree, err
 	}
@@ -179,7 +179,7 @@ func (a *JumpClonesArea) newTreeData() (*iwidget.TreeData[jumpCloneNode], error)
 		}
 		// TODO: Refactor to use same location method for all unknown location cases
 		if c.Location != nil {
-			loc, err := a.u.EveUniverseService.GetEveLocation(ctx, c.Location.ID)
+			loc, err := a.u.EveUniverseService().GetEveLocation(ctx, c.Location.ID)
 			if err != nil {
 				slog.Error("get location for jump clone", "error", err)
 			} else {
@@ -225,7 +225,7 @@ func (a *JumpClonesArea) RefreshTop() {
 		iwidget.SetRichText(a.top, s)
 		return
 	}
-	hasData := a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionJumpClones)
+	hasData := a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionJumpClones)
 	if !hasData {
 		s.Text = "Waiting for character data to be loaded..."
 		s.Style.ColorName = theme.ColorNameWarning

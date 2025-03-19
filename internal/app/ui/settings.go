@@ -502,14 +502,14 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 		func(on bool) {
 			ctx := context.Background()
 			if on {
-				err := a.u.CharacterService.EnableAllTrainingWatchers(ctx)
+				err := a.u.CharacterService().EnableAllTrainingWatchers(ctx)
 				if err != nil {
 					a.u.ShowErrorDialog("failed to enable training notification", err, a.currentWindow())
 				} else {
 					a.u.FyneApp.Preferences().SetBool(settingNotifyTrainingEnabled, true)
 				}
 			} else {
-				err := a.u.CharacterService.DisableAllTrainingWatchers(ctx)
+				err := a.u.CharacterService().DisableAllTrainingWatchers(ctx)
 				if err != nil {
 					a.u.ShowErrorDialog("failed to disable training notification", err, a.currentWindow())
 				} else {

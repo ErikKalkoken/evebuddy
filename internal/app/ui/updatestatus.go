@@ -229,13 +229,13 @@ func (a *UpdateStatusArea) Refresh() {
 
 func (a *UpdateStatusArea) refreshEntityList() error {
 	entities := make([]sectionEntity, 0)
-	cc := a.u.StatusCacheService.ListCharacters()
+	cc := a.u.StatusCacheService().ListCharacters()
 	for _, c := range cc {
-		ss := a.u.StatusCacheService.CharacterSectionSummary(c.ID)
+		ss := a.u.StatusCacheService().CharacterSectionSummary(c.ID)
 		o := sectionEntity{id: c.ID, name: c.Name, ss: ss}
 		entities = append(entities, o)
 	}
-	ss := a.u.StatusCacheService.GeneralSectionSummary()
+	ss := a.u.StatusCacheService().GeneralSectionSummary()
 	o := sectionEntity{
 		id:   app.GeneralSectionEntityID,
 		name: app.GeneralSectionEntityName,
@@ -306,7 +306,7 @@ func (a *UpdateStatusArea) refreshSections() {
 		return
 	}
 	se := a.sectionEntities[a.selectedEntityID]
-	a.sections = a.u.StatusCacheService.SectionList(se.id)
+	a.sections = a.u.StatusCacheService().SectionList(se.id)
 	a.sectionList.Refresh()
 	a.sectionsTop.SetText(fmt.Sprintf("%s: All sections", se.name))
 }

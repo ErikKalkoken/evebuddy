@@ -51,22 +51,16 @@ const (
 
 // BaseUI represents the core UI logic and is used by both the desktop and mobile UI.
 type BaseUI struct {
-	CharacterService   *character.CharacterService
-	ESIStatusService   app.ESIStatusService
-	EveImageService    app.EveImageService
-	EveUniverseService *eveuniverse.EveUniverseService
-	MemCache           app.CacheService
-	StatusCacheService app.StatusCacheService
 	// Paths to user data (for information only)
 	DataPaths map[string]string
-	// Run the app in offline mode
-	isOffline bool
 	// Whether to disable update tickers (useful for debugging)
 	IsUpdateTickerDisabled bool
 
 	// Clears all caches
 	ClearCache func()
 
+	DisableMenuShortcuts func()
+	EnableMenuShortcuts  func()
 	HideMailIndicator    func()
 	OnAppFirstStarted    func()
 	OnAppStopped         func()
@@ -78,8 +72,6 @@ type BaseUI struct {
 	OnSetCharacter       func(int32)
 	OnShowAndRun         func()
 	ShowMailIndicator    func()
-	EnableMenuShortcuts  func()
-	DisableMenuShortcuts func()
 
 	DeskApp  desktop.App
 	FyneApp  fyne.App
@@ -110,21 +102,43 @@ type BaseUI struct {
 	WalletTransactionArea *WalletTransactionArea
 	WealthArea            *WealthArea
 
+	cs           *character.CharacterService
 	character    *app.Character
+	ess          app.ESIStatusService
+	eis          app.EveImageService
+	eus          *eveuniverse.EveUniverseService
 	isForeground atomic.Bool // whether the app is currently shown in the foreground
 	isMobile     bool
+	isOffline    bool // Run the app in offline mode
+	memcache     app.CacheService
 	statusWindow fyne.Window
+	scs          app.StatusCacheService
 	wasStarted   atomic.Bool // whether the app has already been started at least once
 }
 
 // NewBaseUI constructs and returns a new BaseUI.
 //
 // Note:Types embedding BaseUI should define callbacks instead of overwriting methods.
-func NewBaseUI(fyneApp fyne.App, isOffline bool) *BaseUI {
+func NewBaseUI(
+	fyneApp fyne.App,
+	cs *character.CharacterService,
+	eis app.EveImageService,
+	ess app.ESIStatusService,
+	eus *eveuniverse.EveUniverseService,
+	scs app.StatusCacheService,
+	memCache app.CacheService,
+	isOffline bool,
+) *BaseUI {
 	u := &BaseUI{
+		cs:        cs,
 		FyneApp:   fyneApp,
 		isMobile:  fyne.CurrentDevice().IsMobile(),
 		isOffline: isOffline,
+		ess:       ess,
+		eis:       eis,
+		eus:       eus,
+		memcache:  memCache,
+		scs:       scs,
 	}
 	u.Window = fyneApp.NewWindow(u.AppName())
 
@@ -166,6 +180,30 @@ func NewBaseUI(fyneApp fyne.App, isOffline bool) *BaseUI {
 	return u
 }
 
+func (u *BaseUI) CharacterService() *character.CharacterService {
+	return u.cs
+}
+
+func (u *BaseUI) ESIStatusService() app.ESIStatusService {
+	return u.ess
+}
+
+func (u *BaseUI) EveImageService() app.EveImageService {
+	return u.eis
+}
+
+func (u *BaseUI) EveUniverseService() *eveuniverse.EveUniverseService {
+	return u.eus
+}
+
+func (u *BaseUI) MemCache() app.CacheService {
+	return u.memcache
+}
+
+func (u *BaseUI) StatusCacheService() app.StatusCacheService {
+	return u.scs
+}
+
 func (u *BaseUI) AppName() string {
 	info := u.FyneApp.Metadata()
 	name := info.Name
@@ -192,7 +230,7 @@ func (u *BaseUI) Init() {
 	var err error
 	ctx := context.Background()
 	if cID := u.FyneApp.Preferences().Int(settingLastCharacterID); cID != 0 {
-		c, err = u.CharacterService.GetCharacter(ctx, int32(cID))
+		c, err = u.CharacterService().GetCharacter(ctx, int32(cID))
 		if err != nil {
 			if !errors.Is(err, character.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
@@ -200,7 +238,7 @@ func (u *BaseUI) Init() {
 		}
 	}
 	if c == nil {
-		c, err = u.CharacterService.GetAnyCharacter(ctx)
+		c, err = u.CharacterService().GetAnyCharacter(ctx)
 		if err != nil {
 			if !errors.Is(err, character.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
@@ -315,7 +353,7 @@ func (u *BaseUI) HasCharacter() bool {
 }
 
 func (u *BaseUI) loadCharacter(id int32) error {
-	c, err := u.CharacterService.GetCharacter(context.Background(), id)
+	c, err := u.CharacterService().GetCharacter(context.Background(), id)
 	if err != nil {
 		return fmt.Errorf("load character ID %d: %w", id, err)
 	}
@@ -330,7 +368,7 @@ func (u *BaseUI) reloadCurrentCharacter() {
 		return
 	}
 	var err error
-	u.character, err = u.CharacterService.GetCharacter(context.Background(), id)
+	u.character, err = u.CharacterService().GetCharacter(context.Background(), id)
 	if err != nil {
 		slog.Error("reload character", "characterID", id, "error", err)
 	}
@@ -440,7 +478,7 @@ func (u *BaseUI) setCharacter(c *app.Character) {
 }
 
 func (u *BaseUI) SetAnyCharacter() error {
-	c, err := u.CharacterService.GetAnyCharacter(context.Background())
+	c, err := u.CharacterService().GetAnyCharacter(context.Background())
 	if errors.Is(err, character.ErrNotFound) {
 		u.ResetCharacter()
 		return nil
@@ -538,9 +576,9 @@ func (u *BaseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
 func (u *BaseUI) ShowInfoWindow(v infowindow.InfoVariant, id int64) {
 	iw := infowindow.New(
 		u,
-		u.CharacterService,
-		u.EveUniverseService,
-		u.EveImageService,
+		u.CharacterService(),
+		u.EveUniverseService(),
+		u.EveImageService(),
 		u.Window,
 	)
 	iw.Show(v, id)
@@ -556,7 +594,7 @@ func (u *BaseUI) AvailableUpdate() (github.VersionInfo, error) {
 }
 
 func (u *BaseUI) UpdateAvatar(id int32, setIcon func(fyne.Resource)) {
-	r, err := u.EveImageService.CharacterPortrait(id, app.IconPixelSize)
+	r, err := u.EveImageService().CharacterPortrait(id, app.IconPixelSize)
 	if err != nil {
 		slog.Error("Failed to fetch character portrait", "characterID", id, "err", err)
 		r = icons.Characterplaceholder64Jpeg
@@ -576,7 +614,7 @@ func (u *BaseUI) UpdateMailIndicator() {
 	if !u.FyneApp.Preferences().BoolWithFallback(SettingSysTrayEnabled, SettingSysTrayEnabledDefault) {
 		return
 	}
-	n, err := u.CharacterService.GetAllCharacterMailUnreadCount(context.Background())
+	n, err := u.CharacterService().GetAllCharacterMailUnreadCount(context.Background())
 	if err != nil {
 		slog.Error("update mail indicator", "error", err)
 		return
@@ -603,7 +641,7 @@ func (u *BaseUI) WebsiteRootURL() *url.URL {
 
 func (u *BaseUI) MakeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 	characterID := u.CurrentCharacterID()
-	cc := u.StatusCacheService.ListCharacters()
+	cc := u.StatusCacheService().ListCharacters()
 	items := make([]*fyne.MenuItem, 0)
 	if len(cc) == 0 {
 		it := fyne.NewMenuItem("No characters", nil)
@@ -667,7 +705,7 @@ func (u *BaseUI) UpdateGeneralSectionsAndRefreshIfNeeded(forceUpdate bool) {
 }
 
 func (u *BaseUI) UpdateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
-	hasChanged, err := u.EveUniverseService.UpdateSection(ctx, section, forceUpdate)
+	hasChanged, err := u.EveUniverseService().UpdateSection(ctx, section, forceUpdate)
 	if err != nil {
 		slog.Error("Failed to update general section", "section", section, "err", err)
 		return
@@ -702,7 +740,7 @@ func (u *BaseUI) startUpdateTickerCharacters() {
 }
 
 func (u *BaseUI) updateCharactersIfNeeded(ctx context.Context) error {
-	cc, err := u.CharacterService.ListCharactersShort(ctx)
+	cc, err := u.CharacterService().ListCharactersShort(ctx)
 	if err != nil {
 		return err
 	}
@@ -714,7 +752,7 @@ func (u *BaseUI) updateCharactersIfNeeded(ctx context.Context) error {
 }
 
 func (u *BaseUI) notifyCharactersIfNeeded(ctx context.Context) error {
-	cc, err := u.CharacterService.ListCharactersShort(ctx)
+	cc, err := u.CharacterService().ListCharactersShort(ctx)
 	if err != nil {
 		return err
 	}
@@ -772,7 +810,7 @@ func (u *BaseUI) UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 // All UI areas showing data based on character sections needs to be included
 // to make sure they are refreshed when data changes.
 func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s app.CharacterSection, forceUpdate bool) {
-	hasChanged, err := u.CharacterService.UpdateSectionIfNeeded(
+	hasChanged, err := u.CharacterService().UpdateSectionIfNeeded(
 		ctx, character.UpdateSectionParams{
 			CharacterID:           characterID,
 			Section:               s,
@@ -792,7 +830,7 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	switch s {
 	case app.SectionAssets:
 		if needsRefresh {
-			v, err := u.CharacterService.UpdateCharacterAssetTotalValue(ctx, characterID)
+			v, err := u.CharacterService().UpdateCharacterAssetTotalValue(ctx, characterID)
 			if err != nil {
 				slog.Error("update asset total value", "characterID", characterID, "err", err)
 			}
@@ -816,7 +854,7 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyContractsEnabled, settingNotifyCommunicationsEnabledDefault) {
 			go func() {
 				earliest := calcNotifyEarliest(u.FyneApp.Preferences(), settingNotifyContractsEarliest)
-				if err := u.CharacterService.NotifyUpdatedContracts(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
+				if err := u.CharacterService().NotifyUpdatedContracts(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
 					slog.Error("notify contract update", "error", err)
 				}
 			}()
@@ -865,7 +903,7 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault) {
 			go func() {
 				earliest := calcNotifyEarliest(u.FyneApp.Preferences(), settingNotifyMailsEarliest)
-				if err := u.CharacterService.NotifyMails(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
+				if err := u.CharacterService().NotifyMails(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
 					slog.Error("notify mails", "characterID", characterID, "error", err)
 				}
 			}()
@@ -878,7 +916,7 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			go func() {
 				earliest := calcNotifyEarliest(u.FyneApp.Preferences(), settingNotifyCommunicationsEarliest)
 				typesEnabled := set.NewFromSlice(u.FyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
-				if err := u.CharacterService.NotifyCommunications(ctx, characterID, earliest, typesEnabled, u.sendDesktopNotification); err != nil {
+				if err := u.CharacterService().NotifyCommunications(ctx, characterID, earliest, typesEnabled, u.sendDesktopNotification); err != nil {
 					slog.Error("notify communications", "characterID", characterID, "error", err)
 				}
 			}()
@@ -894,7 +932,7 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionSkillqueue:
 		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
-			err := u.CharacterService.EnableTrainingWatcher(ctx, characterID)
+			err := u.CharacterService().EnableTrainingWatcher(ctx, characterID)
 			if err != nil {
 				slog.Error("Failed to enable training watcher", "characterID", characterID, "error", err)
 			}
@@ -949,7 +987,7 @@ func (u *BaseUI) notifyExpiredTrainingIfneeded(ctx context.Context, characerID i
 	if u.FyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
 		go func() {
 			// earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyTrainingEarliest)
-			if err := u.CharacterService.NotifyExpiredTraining(ctx, characerID, u.sendDesktopNotification); err != nil {
+			if err := u.CharacterService().NotifyExpiredTraining(ctx, characerID, u.sendDesktopNotification); err != nil {
 				slog.Error("notify expired training", "error", err)
 			}
 		}()
@@ -960,7 +998,7 @@ func (u *BaseUI) notifyExpiredExtractionsIfNeeded(ctx context.Context, character
 	if u.FyneApp.Preferences().BoolWithFallback(settingNotifyPIEnabled, settingNotifyPIEnabledDefault) {
 		go func() {
 			earliest := calcNotifyEarliest(u.FyneApp.Preferences(), settingNotifyPIEarliest)
-			if err := u.CharacterService.NotifyExpiredExtractions(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
+			if err := u.CharacterService().NotifyExpiredExtractions(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
 				slog.Error("notify expired extractions", "characterID", characterID, "error", err)
 			}
 		}()

@@ -133,7 +133,7 @@ func (a *LocationsArea) Refresh() {
 func (a *LocationsArea) updateCharacters() (int, error) {
 	var err error
 	ctx := context.TODO()
-	mycc, err := a.u.CharacterService.ListCharacters(ctx)
+	mycc, err := a.u.CharacterService().ListCharacters(ctx)
 	if err != nil {
 		return 0, err
 	}

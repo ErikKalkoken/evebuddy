@@ -79,7 +79,7 @@ func (a *ImplantsArea) makeImplantList() *widget.List {
 			slot.SetText(fmt.Sprintf("Slot %d", o.SlotNum))
 			iconMain := row[1].(*canvas.Image)
 			appwidget.RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
-				return a.u.EveImageService.InventoryTypeIcon(o.EveType.ID, app.IconPixelSize)
+				return a.u.EveImageService().InventoryTypeIcon(o.EveType.ID, app.IconPixelSize)
 			})
 			iconInfo := row[2].(*kxwidget.TappableIcon)
 			iconInfo.OnTapped = func() {
@@ -113,7 +113,7 @@ func (a *ImplantsArea) updateImplants() error {
 		a.implants = make([]*app.CharacterImplant, 0)
 		return nil
 	}
-	implants, err := a.u.CharacterService.ListCharacterImplants(context.TODO(), a.u.CurrentCharacterID())
+	implants, err := a.u.CharacterService().ListCharacterImplants(context.TODO(), a.u.CurrentCharacterID())
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (a *ImplantsArea) updateImplants() error {
 }
 
 func (a *ImplantsArea) makeTopText() (string, widget.Importance) {
-	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
+	hasData := a.u.StatusCacheService().CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

@@ -182,8 +182,8 @@ func (a *SearchArea) makeResults() *iwidget.Tree[resultNode] {
 				return widget.NewLabel("Template")
 			}
 			return appwidget.NewSearchResult(
-				a.u.EveImageService,
-				a.u.EveUniverseService,
+				a.u.EveImageService(),
+				a.u.EveUniverseService(),
 				a.supportedCategories,
 			)
 		},
@@ -219,9 +219,9 @@ func (a *SearchArea) showSupportedResult(o *app.EveEntity) {
 	}
 	iw := infowindow.New(
 		a.u,
-		a.u.CharacterService,
-		a.u.EveUniverseService,
-		a.u.EveImageService,
+		a.u.CharacterService(),
+		a.u.EveUniverseService(),
+		a.u.EveImageService(),
 		a.w,
 	)
 	iw.ShowEveEntity(o)
@@ -236,8 +236,8 @@ func (a *SearchArea) makeRecentSelected() *widget.List {
 		},
 		func() fyne.CanvasObject {
 			return appwidget.NewSearchResult(
-				a.u.EveImageService,
-				a.u.EveUniverseService,
+				a.u.EveImageService(),
+				a.u.EveUniverseService(),
 				infowindow.SupportedEveEntities(),
 			)
 		},
@@ -304,7 +304,7 @@ func (a *SearchArea) doSearch(search string) {
 	categories := slices.Collect(xiter.MapSlice(a.categories.Selected, func(o string) character.SearchCategory {
 		return option2searchCategory(o)
 	}))
-	results, total, err := a.u.CharacterService.SearchESI(
+	results, total, err := a.u.CharacterService().SearchESI(
 		context.Background(),
 		a.u.CurrentCharacterID(),
 		search,

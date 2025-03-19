@@ -58,8 +58,7 @@ func TestOverviewUpdateCharacters(t *testing.T) {
 }
 
 func newUI(st *storage.Storage) *BaseUI {
-	u := &BaseUI{}
-	u.CharacterService = newCharacterService(st)
+	u := &BaseUI{cs: newCharacterService(st)}
 	return u
 }
 
