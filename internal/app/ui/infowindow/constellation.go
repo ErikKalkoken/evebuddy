@@ -22,33 +22,40 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-type constellationArea struct {
-	Content fyne.CanvasObject
+type constellationInfo struct {
+	widget.BaseWidget
 
 	iw InfoWindow
 	w  fyne.Window
 
+	id     int32
 	region *kxwidget.TappableLabel
 	logo   *canvas.Image
 	name   *widget.Label
 	tabs   *container.AppTabs
 }
 
-func newConstellationArea(iw InfoWindow, constellationID int32, w fyne.Window) *constellationArea {
+func newConstellationInfo(iw InfoWindow, constellationID int32, w fyne.Window) *constellationInfo {
 	region := kxwidget.NewTappableLabel("", nil)
 	region.Truncation = fyne.TextTruncateEllipsis
 	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateEllipsis
 	s := float32(app.IconPixelSize) * logoZoomFactor
 	logo := iwidget.NewImageFromResource(icons.Constellation64Png, fyne.NewSquareSize(s))
-	a := &constellationArea{
+	a := &constellationInfo{
 		iw:     iw,
+		id:     constellationID,
 		logo:   logo,
 		name:   name,
 		region: region,
 		tabs:   container.NewAppTabs(),
 		w:      w,
 	}
+	a.ExtendBaseWidget(a)
+	return a
+}
+
+func (a *constellationInfo) CreateRenderer() fyne.WidgetRenderer {
 	colums := kxlayout.NewColumns(120)
 	p := theme.Padding()
 	main := container.NewVBox(
@@ -60,21 +67,21 @@ func newConstellationArea(iw InfoWindow, constellationID int32, w fyne.Window) *
 			container.New(colums, widget.NewLabel("Region"), a.region),
 		))
 	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, main)
-	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
+	c := container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
-		err := a.load(constellationID)
+		err := a.load(a.id)
 		if err != nil {
-			slog.Error("constellation info update failed", "solarSystem", constellationID, "error", err)
+			slog.Error("constellation info update failed", "solarSystem", a.id, "error", err)
 			a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", ihumanize.Error(err))
 			a.name.Importance = widget.DangerImportance
 			a.name.Refresh()
 		}
 	}()
-	return a
+	return widget.NewSimpleRenderer(c)
 }
 
-func (a *constellationArea) load(constellationID int32) error {
+func (a *constellationInfo) load(constellationID int32) error {
 	ctx := context.Background()
 	o, err := a.iw.u.EveUniverseService().GetOrCreateConstellationESI(ctx, constellationID)
 	if err != nil {

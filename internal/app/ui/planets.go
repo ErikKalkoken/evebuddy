@@ -17,11 +17,10 @@ import (
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 )
 
-// PlanetArea is the UI area that shows the skillqueue
-type PlanetArea struct {
-	Content *fyne.Container
+type CharacterPlanets struct {
+	widget.BaseWidget
 
-	OnRefresh func(total, expired int)
+	OnUpdate func(total, expired int)
 
 	planets []*app.CharacterPlanet
 	list    *widget.List
@@ -29,19 +28,24 @@ type PlanetArea struct {
 	u       *BaseUI
 }
 
-func NewPlanetArea(u *BaseUI) *PlanetArea {
-	a := PlanetArea{
+func NewCharacterPlanets(u *BaseUI) *CharacterPlanets {
+	a := &CharacterPlanets{
 		planets: make([]*app.CharacterPlanet, 0),
 		top:     MakeTopLabel(),
 		u:       u,
 	}
+	a.ExtendBaseWidget(a)
 	a.list = a.makeList()
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.Content = container.NewBorder(top, nil, nil, nil, a.list)
-	return &a
+	return a
 }
 
-func (a *PlanetArea) makeList() *widget.List {
+func (a *CharacterPlanets) CreateRenderer() fyne.WidgetRenderer {
+	top := container.NewVBox(a.top, widget.NewSeparator())
+	c := container.NewBorder(top, nil, nil, nil, a.list)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *CharacterPlanets) makeList() *widget.List {
 	t := widget.NewList(
 		func() int {
 			return len(a.planets)
@@ -69,7 +73,7 @@ func (a *PlanetArea) makeList() *widget.List {
 	return t
 }
 
-func (a *PlanetArea) Refresh() {
+func (a *CharacterPlanets) Update() {
 	var t string
 	var i widget.Importance
 	if err := a.updateEntries(); err != nil {
@@ -83,18 +87,18 @@ func (a *PlanetArea) Refresh() {
 	a.top.Importance = i
 	a.top.Refresh()
 	a.list.Refresh()
-	if a.OnRefresh != nil {
+	if a.OnUpdate != nil {
 		var expiredCount int
 		for _, p := range a.planets {
 			if t := p.ExtractionsExpiryTime(); !t.IsZero() && t.Before(time.Now()) {
 				expiredCount++
 			}
 		}
-		a.OnRefresh(len(a.planets), expiredCount)
+		a.OnUpdate(len(a.planets), expiredCount)
 	}
 }
 
-func (a *PlanetArea) makeTopText() (string, widget.Importance) {
+func (a *CharacterPlanets) makeTopText() (string, widget.Importance) {
 	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance
 	}
@@ -117,7 +121,7 @@ func (a *PlanetArea) makeTopText() (string, widget.Importance) {
 	return t, widget.MediumImportance
 }
 
-func (a *PlanetArea) updateEntries() error {
+func (a *CharacterPlanets) updateEntries() error {
 	if !a.u.HasCharacter() {
 		a.planets = make([]*app.CharacterPlanet, 0)
 		return nil

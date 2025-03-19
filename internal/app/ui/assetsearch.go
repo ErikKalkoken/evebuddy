@@ -49,9 +49,8 @@ type assetSearchRow struct {
 	typeName        string
 }
 
-// AssetSearchArea is the UI area that shows the skillqueue
-type AssetSearchArea struct {
-	Content *fyne.Container
+type AllAssetSearch struct {
+	widget.BaseWidget
 
 	assetCollection assetcollection.AssetCollection
 	assets          []*assetSearchRow
@@ -65,14 +64,15 @@ type AssetSearchArea struct {
 	u               *BaseUI
 }
 
-func NewAssetSearchArea(u *BaseUI) *AssetSearchArea {
-	a := &AssetSearchArea{
+func NewAssetSearch(u *BaseUI) *AllAssetSearch {
+	a := &AllAssetSearch{
 		assetsFiltered: make([]*assetSearchRow, 0),
 		entry:          widget.NewEntry(),
 		found:          widget.NewLabel(""),
 		total:          MakeTopLabel(),
 		u:              u,
 	}
+	a.ExtendBaseWidget(a)
 	a.entry.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.resetSearch()
 	})
@@ -82,11 +82,6 @@ func NewAssetSearchArea(u *BaseUI) *AssetSearchArea {
 	a.entry.PlaceHolder = "Search assets"
 	a.total.TextStyle.Bold = true
 	a.found.Hide()
-	topBox := container.NewVBox(
-		container.NewBorder(nil, nil, nil, a.found, a.total),
-		a.entry,
-		widget.NewSeparator(),
-	)
 	var headers = []headerDef{
 		{"Item", 300},
 		{"Class", 200},
@@ -134,15 +129,24 @@ func NewAssetSearchArea(u *BaseUI) *AssetSearchArea {
 			}
 		})
 	}
-	a.Content = container.NewBorder(topBox, nil, nil, nil, a.body)
 	return a
 }
 
-func (a *AssetSearchArea) Focus() {
+func (a *AllAssetSearch) CreateRenderer() fyne.WidgetRenderer {
+	topBox := container.NewVBox(
+		container.NewBorder(nil, nil, nil, a.found, a.total),
+		a.entry,
+		widget.NewSeparator(),
+	)
+	c := container.NewBorder(topBox, nil, nil, nil, a.body)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *AllAssetSearch) Focus() {
 	a.u.Window.Canvas().Focus(a.entry)
 }
 
-func (a *AssetSearchArea) makeTable(
+func (a *AllAssetSearch) makeTable(
 	headers []headerDef,
 	makeDataLabel func(int, *assetSearchRow) (string, fyne.TextAlign, widget.Importance),
 	onSelected func(int, *assetSearchRow),
@@ -209,7 +213,7 @@ func (a *AssetSearchArea) makeTable(
 	return t
 }
 
-func (a *AssetSearchArea) processData(sortCol int) {
+func (a *AllAssetSearch) processData(sortCol int) {
 	var order assetSortDir
 	if sortCol >= 0 {
 		order = a.colSort[sortCol]
@@ -279,7 +283,7 @@ func (a *AssetSearchArea) processData(sortCol int) {
 	}
 }
 
-func (a *AssetSearchArea) resetSearch() {
+func (a *AllAssetSearch) resetSearch() {
 	for i := range a.colSort {
 		a.colSort[i] = sortOff
 	}
@@ -287,7 +291,7 @@ func (a *AssetSearchArea) resetSearch() {
 	a.processData(-1)
 }
 
-func (a *AssetSearchArea) Refresh() {
+func (a *AllAssetSearch) Update() {
 	var t string
 	var i widget.Importance
 	characterCount := a.characterCount()
@@ -311,7 +315,7 @@ func (a *AssetSearchArea) Refresh() {
 	a.body.Refresh()
 }
 
-func (a *AssetSearchArea) loadData() (bool, error) {
+func (a *AllAssetSearch) loadData() (bool, error) {
 	ctx := context.TODO()
 	cc, err := a.u.CharacterService().ListCharactersShort(ctx)
 	if err != nil {
@@ -377,7 +381,7 @@ func (a *AssetSearchArea) loadData() (bool, error) {
 	return true, nil
 }
 
-func (a *AssetSearchArea) updateFoundInfo() {
+func (a *AllAssetSearch) updateFoundInfo() {
 	if c := len(a.assetsFiltered); c < len(a.assets) {
 		a.found.SetText(fmt.Sprintf("%d found", c))
 		a.found.Show()
@@ -386,7 +390,7 @@ func (a *AssetSearchArea) updateFoundInfo() {
 	}
 }
 
-func (a *AssetSearchArea) characterCount() int {
+func (a *AllAssetSearch) characterCount() int {
 	cc := a.u.StatusCacheService().ListCharacters()
 	validCount := 0
 	for _, c := range cc {
@@ -397,7 +401,7 @@ func (a *AssetSearchArea) characterCount() int {
 	return validCount
 }
 
-func (a *AssetSearchArea) makeTopText(c int) (string, widget.Importance) {
+func (a *AllAssetSearch) makeTopText(c int) (string, widget.Importance) {
 	it := humanize.Comma(int64(len(a.assets)))
 	text := fmt.Sprintf("%d characters • %s items", c, it)
 	return text, widget.MediumImportance

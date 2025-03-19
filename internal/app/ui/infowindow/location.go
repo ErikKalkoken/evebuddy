@@ -19,10 +19,11 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
-// locationArea represents an area that shows public information about a character.
-type locationArea struct {
-	Content fyne.CanvasObject
+// locationInfo shows public information about a character.
+type locationInfo struct {
+	widget.BaseWidget
 
+	id              int64
 	corporation     *kxwidget.TappableLabel
 	corporationLogo *canvas.Image
 	iw              InfoWindow
@@ -33,7 +34,7 @@ type locationArea struct {
 	w               fyne.Window
 }
 
-func newLocationArea(iw InfoWindow, locationID int64, w fyne.Window) *locationArea {
+func newLocationInfo(iw InfoWindow, locationID int64, w fyne.Window) *locationInfo {
 	name := widget.NewLabel("Loading...")
 	name.Truncation = fyne.TextTruncateEllipsis
 	typeInfo := kxwidget.NewTappableLabel("", nil)
@@ -43,7 +44,8 @@ func newLocationArea(iw InfoWindow, locationID int64, w fyne.Window) *locationAr
 	typeImage := kxwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeImage.SetFillMode(canvas.ImageFillContain)
 	typeImage.SetMinSize(fyne.NewSquareSize(renderIconUnitSize))
-	a := &locationArea{
+	a := &locationInfo{
+		id:              locationID,
 		corporation:     corporation,
 		corporationLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		iw:              iw,
@@ -53,7 +55,11 @@ func newLocationArea(iw InfoWindow, locationID int64, w fyne.Window) *locationAr
 		tabs:            container.NewAppTabs(),
 		w:               w,
 	}
+	a.ExtendBaseWidget(a)
+	return a
+}
 
+func (a *locationInfo) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	main := container.New(layout.NewCustomPaddedVBoxLayout(0),
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
@@ -69,21 +75,20 @@ func newLocationArea(iw InfoWindow, locationID int64, w fyne.Window) *locationAr
 		),
 	)
 	top := container.NewBorder(nil, nil, container.NewVBox(a.typeImage), nil, main)
-	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
-
+	c := container.NewBorder(top, nil, nil, nil, a.tabs)
 	go func() {
-		err := a.load(locationID)
+		err := a.load(a.id)
 		if err != nil {
-			slog.Error("location info update failed", "characterID", locationID, "error", err)
+			slog.Error("location info update failed", "locationID", a.id, "error", err)
 			a.name.Text = fmt.Sprintf("ERROR: Failed to load character: %s", ihumanize.Error(err))
 			a.name.Importance = widget.DangerImportance
 			a.name.Refresh()
 		}
 	}()
-	return a
+	return widget.NewSimpleRenderer(c)
 }
 
-func (a *locationArea) load(locationID int64) error {
+func (a *locationInfo) load(locationID int64) error {
 	ctx := context.Background()
 	o, err := a.iw.u.EveUniverseService().GetOrCreateLocationESI(ctx, locationID)
 	if err != nil {

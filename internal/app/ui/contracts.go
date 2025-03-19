@@ -36,9 +36,8 @@ type contractEntry struct {
 // 	return s
 // }
 
-// ContractsArea is the UI area that shows the skillqueue
-type ContractsArea struct {
-	Content *fyne.Container
+type CharacterContracts struct {
+	widget.BaseWidget
 
 	contracts []*app.CharacterContract
 	body      fyne.CanvasObject
@@ -46,12 +45,13 @@ type ContractsArea struct {
 	u         *BaseUI
 }
 
-func NewContractsArea(u *BaseUI) *ContractsArea {
-	a := ContractsArea{
+func NewCharacterContracts(u *BaseUI) *CharacterContracts {
+	a := &CharacterContracts{
 		contracts: make([]*app.CharacterContract, 0),
 		top:       MakeTopLabel(),
 		u:         u,
 	}
+	a.ExtendBaseWidget(a)
 	headers := []headerDef{
 		{"Contract", 300},
 		{"Type", 120},
@@ -115,9 +115,13 @@ func NewContractsArea(u *BaseUI) *ContractsArea {
 	} else {
 		a.body = makeDataTableForMobile(headers, &a.contracts, makeDataLabel, a.showContract)
 	}
+	return a
+}
+
+func (a *CharacterContracts) CreateRenderer() fyne.WidgetRenderer {
 	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
-	return &a
+	c := container.NewBorder(top, nil, nil, nil, a.body)
+	return widget.NewSimpleRenderer(c)
 }
 
 // func (a *ContractsArea) makeTable() *widget.Table {
@@ -173,7 +177,7 @@ func NewContractsArea(u *BaseUI) *ContractsArea {
 // 	return t
 // }
 
-func (a *ContractsArea) Refresh() {
+func (a *CharacterContracts) Update() {
 	var t string
 	var i widget.Importance
 	if err := a.updateEntries(); err != nil {
@@ -189,7 +193,7 @@ func (a *ContractsArea) Refresh() {
 	a.body.Refresh()
 }
 
-func (a *ContractsArea) makeTopText() (string, widget.Importance) {
+func (a *CharacterContracts) makeTopText() (string, widget.Importance) {
 	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance
 	}
@@ -203,7 +207,7 @@ func (a *ContractsArea) makeTopText() (string, widget.Importance) {
 	return s, widget.MediumImportance
 }
 
-func (a *ContractsArea) updateEntries() error {
+func (a *CharacterContracts) updateEntries() error {
 	if !a.u.HasCharacter() {
 		a.contracts = make([]*app.CharacterContract, 0)
 		return nil
@@ -217,7 +221,7 @@ func (a *ContractsArea) updateEntries() error {
 	return nil
 }
 
-func (a *ContractsArea) showContract(c *app.CharacterContract) {
+func (a *CharacterContracts) showContract(c *app.CharacterContract) {
 	w := a.u.FyneApp.NewWindow("Contract")
 	makeExpiresString := func(c *app.CharacterContract) string {
 		t := c.DateExpiredEffective()

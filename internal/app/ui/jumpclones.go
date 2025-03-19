@@ -48,9 +48,9 @@ func (n jumpCloneNode) UID() widget.TreeNodeID {
 	return fmt.Sprintf("%d-%d", n.jumpCloneID, n.implantTypeID)
 }
 
-// JumpClonesArea is the UI area that shows the skillqueue
-type JumpClonesArea struct {
-	Content  *fyne.Container
+type CharacterJumpClones struct {
+	widget.BaseWidget
+
 	OnReDraw func(clonesCount int)
 
 	top  *widget.RichText
@@ -58,20 +58,25 @@ type JumpClonesArea struct {
 	u    *BaseUI
 }
 
-func NewJumpClonesArea(u *BaseUI) *JumpClonesArea {
+func NewCharacterJumpClones(u *BaseUI) *CharacterJumpClones {
 	ntop := widget.NewRichText()
 	ntop.Wrapping = fyne.TextWrapWord
-	a := JumpClonesArea{
+	a := &CharacterJumpClones{
 		top: ntop,
 		u:   u,
 	}
+	a.ExtendBaseWidget(a)
 	a.tree = a.makeTree()
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.Content = container.NewBorder(top, nil, nil, nil, a.tree)
-	return &a
+	return a
 }
 
-func (a *JumpClonesArea) makeTree() *iwidget.Tree[jumpCloneNode] {
+func (a *CharacterJumpClones) CreateRenderer() fyne.WidgetRenderer {
+	top := container.NewVBox(a.top, widget.NewSeparator())
+	c := container.NewBorder(top, nil, nil, nil, a.tree)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *CharacterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 	t := iwidget.NewTree(
 		func(branch bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(
@@ -140,7 +145,7 @@ func (a *JumpClonesArea) makeTree() *iwidget.Tree[jumpCloneNode] {
 	return t
 }
 
-func (a *JumpClonesArea) Redraw() {
+func (a *CharacterJumpClones) Update() {
 	tree, err := a.newTreeData()
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
@@ -160,7 +165,7 @@ func (a *JumpClonesArea) Redraw() {
 	}
 }
 
-func (a *JumpClonesArea) newTreeData() (*iwidget.TreeData[jumpCloneNode], error) {
+func (a *CharacterJumpClones) newTreeData() (*iwidget.TreeData[jumpCloneNode], error) {
 	tree := iwidget.NewTreeData[jumpCloneNode]()
 	if !a.u.HasCharacter() {
 		return tree, nil
@@ -206,7 +211,7 @@ func (a *JumpClonesArea) newTreeData() (*iwidget.TreeData[jumpCloneNode], error)
 	return tree, err
 }
 
-func (a *JumpClonesArea) RefreshTop() {
+func (a *CharacterJumpClones) RefreshTop() {
 	boldTextStyle := fyne.TextStyle{Bold: true}
 	defaultStyle := widget.RichTextStyle{
 		ColorName: theme.ColorNameForeground,
@@ -269,11 +274,11 @@ func (a *JumpClonesArea) RefreshTop() {
 	)
 }
 
-func (a *JumpClonesArea) ClonesCount() int {
+func (a *CharacterJumpClones) ClonesCount() int {
 	return len(a.tree.Data().ChildUIDs(""))
 }
 
-func (a *JumpClonesArea) StartUpdateTicker() {
+func (a *CharacterJumpClones) StartUpdateTicker() {
 	ticker := time.NewTicker(time.Second * 15)
 	go func() {
 		for {

@@ -65,9 +65,9 @@ type BaseUI struct {
 	OnAppStopped         func()
 	OnAppTerminated      func()
 	OnInit               func(*app.Character)
-	OnRefreshCharacter   func(*app.Character)
+	OnUpdateCharacter    func(*app.Character)
 	OnRefreshCross       func()
-	OnRefreshStatus      func()
+	OnUpdateStatus       func()
 	OnSetCharacter       func(int32)
 	OnShowAndRun         func()
 	ShowMailIndicator    func()
@@ -78,29 +78,28 @@ type BaseUI struct {
 	InfoWindow infowindow.InfoWindow
 	Window     fyne.Window
 
-	AccountArea           *AccountArea
-	AssetsArea            *AssetsArea
-	AssetSearchArea       *AssetSearchArea
-	AttributesArea        *Attributes
-	BiographyArea         *BiographyArea
-	ColoniesArea          *ColoniesArea
-	ContractsArea         *ContractsArea
-	ImplantsArea          *ImplantsArea
-	JumpClonesArea        *JumpClonesArea
-	LocationsArea         *LocationsArea
-	MailArea              *MailArea
-	NotificationsArea     *NotificationsArea
-	OverviewArea          *OverviewArea
-	PlanetArea            *PlanetArea
-	SearchArea            *SearchArea
-	SettingsArea          *SettingsArea
-	ShipsArea             *ShipsArea
-	SkillCatalogueArea    *SkillCatalogueArea
-	SkillqueueArea        *SkillqueueArea
-	TrainingArea          *TrainingArea
-	WalletJournalArea     *WalletJournalArea
-	WalletTransactionArea *WalletTransactionArea
-	WealthArea            *WealthArea
+	ManagerCharacters          *ManageCharacters
+	AllAssetSearch             *AllAssetSearch
+	CharacterAssets            *CharacterAssets
+	CharacterAttributes        *CharacterAttributes
+	CharacterCommunications    *CharacterCommunications
+	CharacterContracts         *CharacterContracts
+	CharacterImplants          *CharacterImplants
+	CharacterJumpClones        *CharacterJumpClones
+	CharacterMail              *CharacterMail
+	CharacterOverview          *CharacterOverview
+	CharacterPlanets           *CharacterPlanets
+	CharacterShips             *CharacterShips
+	CharacterSkillCatalogue    *CharacterSkillCatalogue
+	CharacterSkillQueue        *CharacterSkillQueue
+	CharacterWalletJournal     *CharacterWalletJournal
+	CharacterWalletTransaction *CharacterWalletTransaction
+	ColonyOverview             *ColonyOverview
+	LocationOverview           *LocationOverview
+	GameSearch                 *GameSearch
+	Settings                   *Settings
+	TrainingOverview           *TrainingOverview
+	WealthOverview             *WealthOverview
 
 	character    *app.Character
 	cs           *character.CharacterService
@@ -155,29 +154,28 @@ func NewBaseUI(
 	u.Snackbar = iwidget.NewSnackbar(u.Window)
 	u.InfoWindow = infowindow.New(u, u.Window)
 
-	u.AccountArea = NewAccountArea(u)
-	u.AssetsArea = NewAssetsArea(u)
-	u.AssetSearchArea = NewAssetSearchArea(u)
-	u.AttributesArea = NewAttributes(u)
-	u.BiographyArea = NewBiographyArea(u)
-	u.ColoniesArea = NewColoniesArea(u)
-	u.ContractsArea = NewContractsArea(u)
-	u.ImplantsArea = NewImplantsArea(u)
-	u.JumpClonesArea = NewJumpClonesArea(u)
-	u.LocationsArea = NewLocationsArea(u)
-	u.MailArea = NewMailArea(u)
-	u.NotificationsArea = NewNotificationsArea(u)
-	u.OverviewArea = NewOverviewArea(u)
-	u.PlanetArea = NewPlanetArea(u)
-	u.SearchArea = NewSearchArea(u)
-	u.SettingsArea = NewSettingsArea(u)
-	u.ShipsArea = newShipArea(u)
-	u.SkillCatalogueArea = NewSkillCatalogueArea(u)
-	u.SkillqueueArea = NewSkillqueueArea(u)
-	u.TrainingArea = NewTrainingArea(u)
-	u.WalletJournalArea = NewWalletJournalArea(u)
-	u.WalletTransactionArea = NewWalletTransactionArea(u)
-	u.WealthArea = NewWealthArea(u)
+	u.ManagerCharacters = NewManageCharacters(u)
+	u.CharacterAssets = NewCharacterAssets(u)
+	u.AllAssetSearch = NewAssetSearch(u)
+	u.CharacterAttributes = NewCharacterAttributes(u)
+	u.ColonyOverview = NewColonies(u)
+	u.CharacterContracts = NewCharacterContracts(u)
+	u.CharacterImplants = NewCharacterImplants(u)
+	u.CharacterJumpClones = NewCharacterJumpClones(u)
+	u.LocationOverview = NewLocations(u)
+	u.CharacterMail = NewCharacterMail(u)
+	u.CharacterCommunications = NewCharacterCommunications(u)
+	u.CharacterOverview = NewCharacterOverview(u)
+	u.CharacterPlanets = NewCharacterPlanets(u)
+	u.GameSearch = NewGameSearch(u)
+	u.Settings = NewSettings(u)
+	u.CharacterShips = NewCharacterShips(u)
+	u.CharacterSkillCatalogue = NewCharacterSkillCatalogue(u)
+	u.CharacterSkillQueue = NewCharacterSkillQueue(u)
+	u.TrainingOverview = NewTrainingOverview(u)
+	u.CharacterWalletJournal = NewCharacterWalletJournal(u)
+	u.CharacterWalletTransaction = NewCharacterWalletTransaction(u)
+	u.WealthOverview = NewWealthOverview(u)
 	return u
 }
 
@@ -226,7 +224,7 @@ func (u *BaseUI) IsOffline() bool {
 // It is meant for initialization logic that requires all services to be initialized and available.
 // It should be called directly after the app was created and before the Fyne loop is started.
 func (u *BaseUI) Init() {
-	u.AccountArea.Refresh()
+	u.ManagerCharacters.Refresh()
 	var c *app.Character
 	var err error
 	ctx := context.Background()
@@ -294,7 +292,7 @@ func (u *BaseUI) ShowAndRun() {
 			} else {
 				u.ResetCharacter()
 			}
-			u.RefreshStatus()
+			u.UpdateStatus()
 		}()
 		u.Snackbar.Start()
 		if !u.isOffline && !u.IsUpdateTickerDisabled {
@@ -306,7 +304,7 @@ func (u *BaseUI) ShowAndRun() {
 		} else {
 			slog.Info("Update ticker disabled")
 		}
-		go u.JumpClonesArea.StartUpdateTicker()
+		go u.CharacterJumpClones.StartUpdateTicker()
 		if u.OnAppFirstStarted != nil {
 			u.OnAppFirstStarted()
 		}
@@ -375,41 +373,40 @@ func (u *BaseUI) reloadCurrentCharacter() {
 	}
 }
 
-// RefreshStatus refreshed all status information pages.
-func (u *BaseUI) RefreshStatus() {
-	if u.OnRefreshStatus == nil {
+// UpdateStatus refreshed all status information pages.
+func (u *BaseUI) UpdateStatus() {
+	if u.OnUpdateStatus == nil {
 		return
 	}
-	go u.OnRefreshStatus()
+	go u.OnUpdateStatus()
 }
 
-// RefreshCharacter refreshes all pages for the current character.
-func (u *BaseUI) RefreshCharacter() {
+// UpdateCharacter updates all pages for the current character.
+func (u *BaseUI) UpdateCharacter() {
 	ff := map[string]func(){
-		"assets":            u.AssetsArea.Redraw,
-		"attributes":        u.AttributesArea.Refresh,
-		"bio":               u.BiographyArea.Refresh,
-		"contracts":         u.ContractsArea.Refresh,
-		"implants":          u.ImplantsArea.Refresh,
-		"jumpClones":        u.JumpClonesArea.Redraw,
-		"mail":              u.MailArea.Redraw,
-		"notifications":     u.NotificationsArea.Refresh,
-		"planets":           u.PlanetArea.Refresh,
-		"ships":             u.ShipsArea.Refresh,
-		"skillCatalogue":    u.SkillCatalogueArea.Redraw,
-		"skillqueue":        u.SkillqueueArea.Refresh,
-		"walletJournal":     u.WalletJournalArea.Refresh,
-		"walletTransaction": u.WalletTransactionArea.Refresh,
+		"assets":            u.CharacterAssets.Update,
+		"attributes":        u.CharacterAttributes.Update,
+		"contracts":         u.CharacterContracts.Update,
+		"implants":          u.CharacterImplants.Update,
+		"jumpClones":        u.CharacterJumpClones.Update,
+		"mail":              u.CharacterMail.Update,
+		"notifications":     u.CharacterCommunications.Update,
+		"planets":           u.CharacterPlanets.Update,
+		"ships":             u.CharacterShips.Update,
+		"skillCatalogue":    u.CharacterSkillCatalogue.Update,
+		"skillqueue":        u.CharacterSkillQueue.Update,
+		"walletJournal":     u.CharacterWalletJournal.Update,
+		"walletTransaction": u.CharacterWalletTransaction.Update,
 	}
 	c := u.CurrentCharacter()
 	if c != nil {
-		slog.Debug("Refreshing character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
+		slog.Debug("Updating character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
 	} else {
-		slog.Debug("Refreshing without character")
+		slog.Debug("Updating without character")
 	}
-	if u.OnRefreshCharacter != nil {
-		ff["OnRefreshCharacter"] = func() {
-			u.OnRefreshCharacter(c)
+	if u.OnUpdateCharacter != nil {
+		ff["OnUpdateCharacter"] = func() {
+			u.OnUpdateCharacter(c)
 		}
 	}
 	runFunctionsWithProgressModal("Loading character", ff, u.Window)
@@ -421,12 +418,12 @@ func (u *BaseUI) RefreshCharacter() {
 // RefreshCrossPages refreshed all pages that contain information about multiple characters.
 func (u *BaseUI) RefreshCrossPages() {
 	ff := map[string]func(){
-		"assetSearch": u.AssetSearchArea.Refresh,
-		"colony":      u.ColoniesArea.Refresh,
-		"locations":   u.LocationsArea.Refresh,
-		"overview":    u.OverviewArea.Refresh,
-		"training":    u.TrainingArea.Refresh,
-		"wealth":      u.WealthArea.Refresh,
+		"assetSearch": u.AllAssetSearch.Update,
+		"colony":      u.ColonyOverview.Update,
+		"locations":   u.LocationOverview.Update,
+		"overview":    u.CharacterOverview.Update,
+		"training":    u.TrainingOverview.Update,
+		"wealth":      u.WealthOverview.Update,
 	}
 	if u.OnRefreshCross != nil {
 		ff["onRefreshCross"] = u.OnRefreshCross
@@ -464,15 +461,15 @@ func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Wi
 func (u *BaseUI) ResetCharacter() {
 	u.character = nil
 	u.FyneApp.Preferences().SetInt(settingLastCharacterID, 0)
-	u.RefreshCharacter()
-	u.RefreshStatus()
+	u.UpdateCharacter()
+	u.UpdateStatus()
 }
 
 func (u *BaseUI) setCharacter(c *app.Character) {
 	u.character = c
 	u.FyneApp.Preferences().SetInt(settingLastCharacterID, int(c.ID))
-	u.RefreshCharacter()
-	u.RefreshStatus()
+	u.UpdateCharacter()
+	u.UpdateStatus()
 	if u.OnSetCharacter != nil {
 		u.OnSetCharacter(c.ID)
 	}
@@ -548,9 +545,9 @@ func (u *BaseUI) ShowUpdateStatusWindow() {
 		return
 	}
 	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Update Status"))
-	a := NewUpdateStatusArea(u)
-	a.Refresh()
-	w.SetContent(a.Content)
+	a := NewUpdateStatus(u)
+	a.Update()
+	w.SetContent(a)
 	w.Resize(fyne.Size{Width: 1100, Height: 500})
 	ctx, cancel := context.WithCancel(context.Background())
 	a.StartTicker(ctx)
@@ -707,8 +704,8 @@ func (u *BaseUI) UpdateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 	switch section {
 	case app.SectionEveCategories:
 		if hasChanged {
-			u.ShipsArea.Refresh()
-			u.SkillCatalogueArea.Refresh()
+			u.CharacterShips.Update()
+			u.CharacterSkillCatalogue.Refresh()
 		}
 	case app.SectionEveCharacters, app.SectionEveMarketPrices:
 		// nothing to refresh
@@ -831,19 +828,19 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			if isShown {
 				u.character.AssetValue.Set(v)
 			}
-			u.AssetSearchArea.Refresh()
-			u.WealthArea.Refresh()
+			u.AllAssetSearch.Update()
+			u.WealthOverview.Update()
 		}
 		if isShown && needsRefresh {
-			u.AssetsArea.Redraw()
+			u.CharacterAssets.Update()
 		}
 	case app.SectionAttributes:
 		if isShown && needsRefresh {
-			u.AttributesArea.Refresh()
+			u.CharacterAttributes.Update()
 		}
 	case app.SectionContracts:
 		if isShown && needsRefresh {
-			u.ContractsArea.Refresh()
+			u.CharacterContracts.Update()
 		}
 		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyContractsEnabled, settingNotifyCommunicationsEnabledDefault) {
 			go func() {
@@ -855,43 +852,43 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionImplants:
 		if isShown && needsRefresh {
-			u.ImplantsArea.Refresh()
+			u.CharacterImplants.Update()
 		}
 	case app.SectionJumpClones:
 		if isShown && needsRefresh {
-			u.JumpClonesArea.Redraw()
+			u.CharacterJumpClones.Update()
 		}
 		if needsRefresh {
-			u.OverviewArea.Refresh()
+			u.CharacterOverview.Update()
 		}
 	case app.SectionLocation,
 		app.SectionOnline,
 		app.SectionShip:
 		if needsRefresh {
-			u.LocationsArea.Refresh()
+			u.LocationOverview.Update()
 		}
 	case app.SectionPlanets:
 		if isShown && needsRefresh {
-			u.PlanetArea.Refresh()
+			u.CharacterPlanets.Update()
 		}
 		if needsRefresh {
-			u.ColoniesArea.Refresh()
+			u.ColonyOverview.Update()
 			u.notifyExpiredExtractionsIfNeeded(ctx, characterID)
 		}
 	case app.SectionMailLabels,
 		app.SectionMailLists:
 		if isShown && needsRefresh {
-			u.MailArea.Refresh()
+			u.CharacterMail.Update()
 		}
 		if needsRefresh {
-			u.OverviewArea.Refresh()
+			u.CharacterOverview.Update()
 		}
 	case app.SectionMails:
 		if isShown && needsRefresh {
-			u.MailArea.Refresh()
+			u.CharacterMail.Update()
 		}
 		if needsRefresh {
-			go u.OverviewArea.Refresh()
+			go u.CharacterOverview.Update()
 			go u.UpdateMailIndicator()
 		}
 		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault) {
@@ -904,7 +901,7 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionNotifications:
 		if isShown && needsRefresh {
-			u.NotificationsArea.Refresh()
+			u.CharacterCommunications.Update()
 		}
 		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault) {
 			go func() {
@@ -917,12 +914,12 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionSkills:
 		if isShown && needsRefresh {
-			u.SkillCatalogueArea.Refresh()
-			u.ShipsArea.Refresh()
-			u.PlanetArea.Refresh()
+			u.CharacterSkillCatalogue.Refresh()
+			u.CharacterShips.Update()
+			u.CharacterPlanets.Update()
 		}
 		if needsRefresh {
-			u.TrainingArea.Refresh()
+			u.TrainingOverview.Update()
 		}
 	case app.SectionSkillqueue:
 		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
@@ -932,24 +929,24 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			}
 		}
 		if isShown {
-			u.SkillqueueArea.Refresh()
+			u.CharacterSkillQueue.Update()
 		}
 		if needsRefresh {
-			u.TrainingArea.Refresh()
+			u.TrainingOverview.Update()
 			u.notifyExpiredTrainingIfneeded(ctx, characterID)
 		}
 	case app.SectionWalletBalance:
 		if needsRefresh {
-			u.OverviewArea.Refresh()
-			u.WealthArea.Refresh()
+			u.CharacterOverview.Update()
+			u.WealthOverview.Update()
 		}
 	case app.SectionWalletJournal:
 		if isShown && needsRefresh {
-			u.WalletJournalArea.Refresh()
+			u.CharacterWalletJournal.Update()
 		}
 	case app.SectionWalletTransactions:
 		if isShown && needsRefresh {
-			u.WalletTransactionArea.Refresh()
+			u.CharacterWalletTransaction.Update()
 		}
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the update ticker: %s", s))

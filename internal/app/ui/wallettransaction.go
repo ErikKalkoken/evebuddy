@@ -14,9 +14,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 )
 
-// WalletTransactionArea is the UI area that shows the skillqueue
-type WalletTransactionArea struct {
-	Content fyne.CanvasObject
+type CharacterWalletTransaction struct {
+	widget.BaseWidget
 
 	rows []*app.CharacterWalletTransaction
 	body fyne.CanvasObject
@@ -24,12 +23,13 @@ type WalletTransactionArea struct {
 	u    *BaseUI
 }
 
-func NewWalletTransactionArea(u *BaseUI) *WalletTransactionArea {
-	a := WalletTransactionArea{
+func NewCharacterWalletTransaction(u *BaseUI) *CharacterWalletTransaction {
+	a := &CharacterWalletTransaction{
 		top:  MakeTopLabel(),
 		rows: make([]*app.CharacterWalletTransaction, 0),
 		u:    u,
 	}
+	a.ExtendBaseWidget(a)
 	makeDataLabel := func(col int, r *app.CharacterWalletTransaction) (string, fyne.TextAlign, widget.Importance) {
 		var align fyne.TextAlign
 		var importance widget.Importance
@@ -89,12 +89,16 @@ func NewWalletTransactionArea(u *BaseUI) *WalletTransactionArea {
 			a.u.ShowTypeInfoWindow(r.EveType.ID)
 		})
 	}
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
-	return &a
+	return a
 }
 
-func (a *WalletTransactionArea) Refresh() {
+func (a *CharacterWalletTransaction) CreateRenderer() fyne.WidgetRenderer {
+	top := container.NewVBox(a.top, widget.NewSeparator())
+	c := container.NewBorder(top, nil, nil, nil, a.body)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *CharacterWalletTransaction) Update() {
 	var t string
 	var i widget.Importance
 	if err := a.updateEntries(); err != nil {
@@ -110,7 +114,7 @@ func (a *WalletTransactionArea) Refresh() {
 	a.body.Refresh()
 }
 
-func (a *WalletTransactionArea) makeTopText() (string, widget.Importance) {
+func (a *CharacterWalletTransaction) makeTopText() (string, widget.Importance) {
 	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance
 	}
@@ -124,7 +128,7 @@ func (a *WalletTransactionArea) makeTopText() (string, widget.Importance) {
 	return s, widget.MediumImportance
 }
 
-func (a *WalletTransactionArea) updateEntries() error {
+func (a *CharacterWalletTransaction) updateEntries() error {
 	if !a.u.HasCharacter() {
 		a.rows = make([]*app.CharacterWalletTransaction, 0)
 		return nil

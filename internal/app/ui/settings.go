@@ -124,13 +124,14 @@ type SettingAction struct {
 	Action func()
 }
 
-type SettingsArea struct {
-	Content                      fyne.CanvasObject
+type Settings struct {
+	widget.BaseWidget
+
 	NotificationActions          []SettingAction
-	NotificationSettings         fyne.CanvasObject
+	NotificationSettings         fyne.CanvasObject // TODO: Refactor into widget
 	GeneralActions               []SettingAction
-	GeneralContent               fyne.CanvasObject
-	CommunicationGroupContent    fyne.CanvasObject
+	GeneralContent               fyne.CanvasObject // TODO: Refactor into widget
+	CommunicationGroupContent    fyne.CanvasObject // TODO: Refactor into widget
 	OnCommunicationGroupSelected func(title string, content fyne.CanvasObject, actions []SettingAction)
 
 	snackbar *iwidget.Snackbar
@@ -138,15 +139,19 @@ type SettingsArea struct {
 	window   fyne.Window
 }
 
-func NewSettingsArea(u *BaseUI) *SettingsArea {
-	a := &SettingsArea{
+func NewSettings(u *BaseUI) *Settings {
+	a := &Settings{
 		snackbar: u.Snackbar,
 		u:        u,
 		window:   u.Window,
 	}
+	a.ExtendBaseWidget(a)
 	a.GeneralContent, a.GeneralActions = a.makeGeneralSettingsPage()
 	a.NotificationSettings, a.NotificationActions = a.makeNotificationPage()
+	return a
+}
 
+func (a *Settings) CreateRenderer() fyne.WidgetRenderer {
 	makeSettingsPage := func(title string, content fyne.CanvasObject, actions []SettingAction) fyne.CanvasObject {
 		t := widget.NewLabel(title)
 		t.TextStyle.Bold = true
@@ -163,27 +168,25 @@ func NewSettingsArea(u *BaseUI) *SettingsArea {
 			container.NewScroll(content),
 		)
 	}
-
 	tabs := container.NewAppTabs(
 		container.NewTabItem("General", makeSettingsPage("General", a.GeneralContent, a.GeneralActions)),
 		container.NewTabItem("Notifications", makeSettingsPage("Notifications", a.NotificationSettings, a.NotificationActions)),
 	)
 	tabs.SetTabLocation(container.TabLocationLeading)
-	a.Content = tabs
-	return a
+	return widget.NewSimpleRenderer(tabs)
 }
 
-func (a *SettingsArea) SetWindow(w fyne.Window) {
+func (a *Settings) SetWindow(w fyne.Window) {
 	a.window = w
 	a.snackbar = iwidget.NewSnackbar(w)
 	a.snackbar.Start()
 }
 
-func (a *SettingsArea) currentWindow() fyne.Window {
+func (a *Settings) currentWindow() fyne.Window {
 	return a.window
 }
 
-func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction) {
+func (a *Settings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction) {
 	logLevel := iwidget.NewSettingItemOptions(
 		"Log level",
 		"Set current log level",
@@ -352,7 +355,7 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 	return list, actions
 }
 
-func (a *SettingsArea) showDeleteFileDialog(name, path string) {
+func (a *Settings) showDeleteFileDialog(name, path string) {
 	a.u.ShowConfirmDialog(
 		"Delete File",
 		fmt.Sprintf("Are you sure you want to permanently delete this file?\n\n%s", name),
@@ -383,7 +386,7 @@ func (a *SettingsArea) showDeleteFileDialog(name, path string) {
 		}, a.window)
 }
 
-func (a *SettingsArea) showExportFileDialog(path string) {
+func (a *Settings) showExportFileDialog(path string) {
 	filename := filepath.Base(path)
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -419,7 +422,7 @@ func (a *SettingsArea) showExportFileDialog(path string) {
 	d.Show()
 }
 
-func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
+func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 	groupsAndTypes := make(map[evenotification.Group][]evenotification.Type)
 	for _, n := range evenotification.SupportedGroups() {
 		c := evenotification.Type2group[n]

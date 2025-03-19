@@ -22,9 +22,8 @@ type trainingCharacter struct {
 	unallocatedSP optional.Optional[int]
 }
 
-// TrainingArea is the UI area that shows an overview of all the user's characters.
-type TrainingArea struct {
-	Content *fyne.Container
+type TrainingOverview struct {
+	widget.BaseWidget
 
 	body fyne.CanvasObject
 	rows []trainingCharacter
@@ -32,12 +31,13 @@ type TrainingArea struct {
 	u    *BaseUI
 }
 
-func NewTrainingArea(u *BaseUI) *TrainingArea {
-	a := TrainingArea{
+func NewTrainingOverview(u *BaseUI) *TrainingOverview {
+	a := &TrainingOverview{
 		rows: make([]trainingCharacter, 0),
 		top:  MakeTopLabel(),
 		u:    u,
 	}
+	a.ExtendBaseWidget(a)
 	headers := []headerDef{
 		{"Name", 250},
 		{"SP", 100},
@@ -72,12 +72,16 @@ func NewTrainingArea(u *BaseUI) *TrainingArea {
 	} else {
 		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, nil)
 	}
-	top2 := container.NewVBox(a.top, widget.NewSeparator())
-	a.Content = container.NewBorder(top2, nil, nil, nil, a.body)
-	return &a
+	return a
 }
 
-func (a *TrainingArea) Refresh() {
+func (a *TrainingOverview) CreateRenderer() fyne.WidgetRenderer {
+	top2 := container.NewVBox(a.top, widget.NewSeparator())
+	c := container.NewBorder(top2, nil, nil, nil, a.body)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *TrainingOverview) Update() {
 	t, i, err := func() (string, widget.Importance, error) {
 		totalSP, err := a.updateCharacters()
 		if err != nil {
@@ -100,7 +104,7 @@ func (a *TrainingArea) Refresh() {
 	a.body.Refresh()
 }
 
-func (a *TrainingArea) updateCharacters() (optional.Optional[int], error) {
+func (a *TrainingOverview) updateCharacters() (optional.Optional[int], error) {
 	var totalSP optional.Optional[int]
 	var err error
 	ctx := context.TODO()

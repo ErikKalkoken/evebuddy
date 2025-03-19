@@ -43,11 +43,10 @@ func (e walletJournalEntry) descriptionWithReason() string {
 	return fmt.Sprintf("[r] %s", e.description)
 }
 
-// WalletJournalArea is the UI area that shows the skillqueue
-type WalletJournalArea struct {
-	Content *fyne.Container
+type CharacterWalletJournal struct {
+	widget.BaseWidget
 
-	OnRefresh func(balance string)
+	OnUpdate func(balance string)
 
 	rows []walletJournalEntry
 	body fyne.CanvasObject
@@ -55,12 +54,13 @@ type WalletJournalArea struct {
 	u    *BaseUI
 }
 
-func NewWalletJournalArea(u *BaseUI) *WalletJournalArea {
-	a := WalletJournalArea{
+func NewCharacterWalletJournal(u *BaseUI) *CharacterWalletJournal {
+	a := &CharacterWalletJournal{
 		rows: make([]walletJournalEntry, 0),
 		top:  MakeTopLabel(),
 		u:    u,
 	}
+	a.ExtendBaseWidget(a)
 	var headers = []headerDef{
 		{"Date", 150},
 		{"Type", 150},
@@ -108,12 +108,16 @@ func NewWalletJournalArea(u *BaseUI) *WalletJournalArea {
 	} else {
 		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, showReasonDialog)
 	}
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
-	return &a
+	return a
 }
 
-func (a *WalletJournalArea) Refresh() {
+func (a *CharacterWalletJournal) CreateRenderer() fyne.WidgetRenderer {
+	top := container.NewVBox(a.top, widget.NewSeparator())
+	c := container.NewBorder(top, nil, nil, nil, a.body)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *CharacterWalletJournal) Update() {
 	var t string
 	var i widget.Importance
 	if err := a.updateEntries(); err != nil {
@@ -129,7 +133,7 @@ func (a *WalletJournalArea) Refresh() {
 	a.body.Refresh()
 }
 
-func (a *WalletJournalArea) makeTopText() (string, widget.Importance) {
+func (a *CharacterWalletJournal) makeTopText() (string, widget.Importance) {
 	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance
 	}
@@ -141,13 +145,13 @@ func (a *WalletJournalArea) makeTopText() (string, widget.Importance) {
 	b := ihumanize.OptionalFloat(c.WalletBalance, 1, "?")
 	t := humanize.Comma(int64(len(a.rows)))
 	s := fmt.Sprintf("Balance: %s • Entries: %s", b, t)
-	if a.OnRefresh != nil {
-		a.OnRefresh(b)
+	if a.OnUpdate != nil {
+		a.OnUpdate(b)
 	}
 	return s, widget.MediumImportance
 }
 
-func (a *WalletJournalArea) updateEntries() error {
+func (a *CharacterWalletJournal) updateEntries() error {
 	if !a.u.HasCharacter() {
 		a.rows = make([]walletJournalEntry, 0)
 		return nil

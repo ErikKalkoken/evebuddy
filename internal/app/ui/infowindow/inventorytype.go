@@ -43,10 +43,11 @@ type requiredSkill struct {
 	trainedLevel  int
 }
 
-// inventoryTypeArea represents a UI component to display information about Eve Online inventory types
-type inventoryTypeArea struct {
-	Content fyne.CanvasObject
+// inventoryTypeInfo displays information about Eve Online inventory types
+type inventoryTypeInfo struct {
+	widget.BaseWidget
 
+	id             int32
 	attributesData []attributeRow
 	et             *app.EveType
 	fittingData    []attributeRow
@@ -60,9 +61,10 @@ type inventoryTypeArea struct {
 	w  fyne.Window
 }
 
-func NewInventoryTypeArea(iw InfoWindow, typeID, characterID int32, w fyne.Window) (*inventoryTypeArea, error) {
+func NewInventoryTypeInfo(iw InfoWindow, typeID, characterID int32, w fyne.Window) (*inventoryTypeInfo, error) {
 	ctx := context.Background()
-	a := &inventoryTypeArea{iw: iw, w: w}
+	a := &inventoryTypeInfo{iw: iw, w: w, id: typeID}
+	a.ExtendBaseWidget(a)
 	et, err := iw.u.EveUniverseService().GetOrCreateTypeESI(ctx, typeID)
 	if err != nil {
 		return nil, err
@@ -104,11 +106,39 @@ func NewInventoryTypeArea(iw InfoWindow, typeID, characterID int32, w fyne.Windo
 		a.requiredSkills = skills
 	}
 	a.techLevel, a.metaLevel = calcLevels(attributes)
-	a.Content = a.makeContent()
 	return a, nil
 }
 
-func (a *inventoryTypeArea) MakeTitle(suffix string) string {
+func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
+	top := a.makeTop()
+	t := container.NewTabItem("Description", a.makeDescriptionTab())
+	tabs := container.NewAppTabs(t)
+	var attributeTab, requirementsTab *container.TabItem
+	if len(a.attributesData) > 0 {
+		attributeTab = container.NewTabItem("Attributes", a.makeAttributesTab())
+		tabs.Append(attributeTab)
+	}
+	if len(a.fittingData) > 0 {
+		tabs.Append(container.NewTabItem("Fittings", a.makeFittingsTab()))
+	}
+	if len(a.requiredSkills) > 0 {
+		requirementsTab = container.NewTabItem("Requirements", a.makeRequirementsTab())
+		tabs.Append(requirementsTab)
+	}
+	if a.price != nil {
+		tabs.Append(container.NewTabItem("Market", a.makeMarketTab()))
+	}
+	// Select selected tab
+	if requirementsTab != nil && a.et.Group.Category.ID == app.EveCategorySkill {
+		tabs.Select(requirementsTab)
+	} else if attributeTab != nil {
+		tabs.Select(attributeTab)
+	}
+	c := container.NewBorder(top, nil, nil, nil, tabs)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *inventoryTypeInfo) MakeTitle(suffix string) string {
 	return fmt.Sprintf("%s: %s", a.et.Group.Name, suffix)
 }
 
@@ -125,7 +155,7 @@ func calcLevels(attributes map[int32]*app.EveTypeDogmaAttribute) (int, int) {
 	return tech, meta
 }
 
-func (a *inventoryTypeArea) calcAttributesData(
+func (a *inventoryTypeInfo) calcAttributesData(
 	ctx context.Context,
 	attributes map[int32]*app.EveTypeDogmaAttribute,
 ) []attributeRow {
@@ -245,7 +275,7 @@ func (a *inventoryTypeArea) calcAttributesData(
 	return rows
 }
 
-func (a *inventoryTypeArea) calcFittingData(ctx context.Context, attributes map[int32]*app.EveTypeDogmaAttribute) []attributeRow {
+func (a *inventoryTypeInfo) calcFittingData(ctx context.Context, attributes map[int32]*app.EveTypeDogmaAttribute) []attributeRow {
 	data := make([]attributeRow, 0)
 	for _, da := range attributeGroupsMap[attributeGroupFitting] {
 		o, ok := attributes[da]
@@ -264,7 +294,7 @@ func (a *inventoryTypeArea) calcFittingData(ctx context.Context, attributes map[
 	return data
 }
 
-func (a *inventoryTypeArea) calcRequiredSkills(ctx context.Context, characterID int32, attributes map[int32]*app.EveTypeDogmaAttribute) ([]requiredSkill, error) {
+func (a *inventoryTypeInfo) calcRequiredSkills(ctx context.Context, characterID int32, attributes map[int32]*app.EveTypeDogmaAttribute) ([]requiredSkill, error) {
 	skills := make([]requiredSkill, 0)
 	skillAttributes := []struct {
 		id    int32
@@ -312,36 +342,7 @@ func (a *inventoryTypeArea) calcRequiredSkills(ctx context.Context, characterID 
 	return skills, nil
 }
 
-func (a *inventoryTypeArea) makeContent() fyne.CanvasObject {
-	top := a.makeTop()
-	t := container.NewTabItem("Description", a.makeDescriptionTab())
-	tabs := container.NewAppTabs(t)
-	var attributeTab, requirementsTab *container.TabItem
-	if len(a.attributesData) > 0 {
-		attributeTab = container.NewTabItem("Attributes", a.makeAttributesTab())
-		tabs.Append(attributeTab)
-	}
-	if len(a.fittingData) > 0 {
-		tabs.Append(container.NewTabItem("Fittings", a.makeFittingsTab()))
-	}
-	if len(a.requiredSkills) > 0 {
-		requirementsTab = container.NewTabItem("Requirements", a.makeRequirementsTab())
-		tabs.Append(requirementsTab)
-	}
-	if a.price != nil {
-		tabs.Append(container.NewTabItem("Market", a.makeMarketTab()))
-	}
-	// Select selected tab
-	if requirementsTab != nil && a.et.Group.Category.ID == app.EveCategorySkill {
-		tabs.Select(requirementsTab)
-	} else if attributeTab != nil {
-		tabs.Select(attributeTab)
-	}
-	c := container.NewBorder(top, nil, nil, nil, tabs)
-	return c
-}
-
-func (a *inventoryTypeArea) makeTop() fyne.CanvasObject {
+func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 	typeIcon := container.New(ilayout.NewTopLeftLayout())
 	if a.et.HasRender() {
 		size := 128
@@ -430,7 +431,7 @@ func (a *inventoryTypeArea) makeTop() fyne.CanvasObject {
 			)))
 }
 
-func (a *inventoryTypeArea) makeDescriptionTab() fyne.CanvasObject {
+func (a *inventoryTypeInfo) makeDescriptionTab() fyne.CanvasObject {
 	s := a.et.DescriptionPlain()
 	if s == "" {
 		s = a.et.Name
@@ -440,7 +441,7 @@ func (a *inventoryTypeArea) makeDescriptionTab() fyne.CanvasObject {
 	return container.NewVScroll(description)
 }
 
-func (a *inventoryTypeArea) makeMarketTab() fyne.CanvasObject {
+func (a *inventoryTypeInfo) makeMarketTab() fyne.CanvasObject {
 	c := container.NewHBox(
 		widget.NewLabel("Average price"),
 		layout.NewSpacer(),
@@ -449,7 +450,7 @@ func (a *inventoryTypeArea) makeMarketTab() fyne.CanvasObject {
 	return container.NewVScroll(c)
 }
 
-func (a *inventoryTypeArea) makeAttributesTab() fyne.CanvasObject {
+func (a *inventoryTypeInfo) makeAttributesTab() fyne.CanvasObject {
 	list := widget.NewList(
 		func() int {
 			return len(a.attributesData)
@@ -483,7 +484,7 @@ func (a *inventoryTypeArea) makeAttributesTab() fyne.CanvasObject {
 	return list
 }
 
-func (a *inventoryTypeArea) makeFittingsTab() fyne.CanvasObject {
+func (a *inventoryTypeInfo) makeFittingsTab() fyne.CanvasObject {
 	l := widget.NewList(
 		func() int {
 			return len(a.fittingData)
@@ -503,7 +504,7 @@ func (a *inventoryTypeArea) makeFittingsTab() fyne.CanvasObject {
 	return l
 }
 
-func (a *inventoryTypeArea) makeRequirementsTab() fyne.CanvasObject {
+func (a *inventoryTypeInfo) makeRequirementsTab() fyne.CanvasObject {
 	l := widget.NewList(
 		func() int {
 			return len(a.requiredSkills)

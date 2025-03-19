@@ -36,9 +36,8 @@ type skillTrained struct {
 	trainedLevel int
 }
 
-// SkillCatalogueArea is the UI area that shows the skill catalogue
-type SkillCatalogueArea struct {
-	Content fyne.CanvasObject
+type CharacterSkillCatalogue struct {
+	widget.BaseWidget
 
 	groups         []skillGroupProgress
 	groupsGrid     fyne.CanvasObject
@@ -51,8 +50,8 @@ type SkillCatalogueArea struct {
 	u              *BaseUI
 }
 
-func NewSkillCatalogueArea(u *BaseUI) *SkillCatalogueArea {
-	a := &SkillCatalogueArea{
+func NewCharacterSkillCatalogue(u *BaseUI) *CharacterSkillCatalogue {
+	a := &CharacterSkillCatalogue{
 		groups:         make([]skillGroupProgress, 0),
 		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),
 		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
@@ -61,14 +60,19 @@ func NewSkillCatalogueArea(u *BaseUI) *SkillCatalogueArea {
 		total:          MakeTopLabel(),
 		u:              u,
 	}
+	a.ExtendBaseWidget(a)
 	a.groupsGrid = a.makeGroupsGrid()
 	a.skillsGrid = a.makeSkillsGrid()
-	s := container.NewVSplit(a.groupsGrid, a.skillsGrid)
-	a.Content = container.NewBorder(a.total, nil, nil, nil, s)
 	return a
 }
 
-func (a *SkillCatalogueArea) makeGroupsGrid() fyne.CanvasObject {
+func (a *CharacterSkillCatalogue) CreateRenderer() fyne.WidgetRenderer {
+	s := container.NewVSplit(a.groupsGrid, a.skillsGrid)
+	c := container.NewBorder(a.total, nil, nil, nil, s)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *CharacterSkillCatalogue) makeGroupsGrid() fyne.CanvasObject {
 	length := func() int {
 		return len(a.groups)
 	}
@@ -143,7 +147,7 @@ func (a *SkillCatalogueArea) makeGroupsGrid() fyne.CanvasObject {
 	return makeGridOrList(a.u.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
 }
 
-func (a *SkillCatalogueArea) makeSkillsGrid() fyne.CanvasObject {
+func (a *CharacterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 	length := func() int {
 		return len(a.skills)
 	}
@@ -185,7 +189,7 @@ func (a *SkillCatalogueArea) makeSkillsGrid() fyne.CanvasObject {
 	return makeGridOrList(a.u.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
 }
 
-func (a *SkillCatalogueArea) Redraw() {
+func (a *CharacterSkillCatalogue) Update() {
 	switch x := a.groupsGrid.(type) {
 	case *widget.GridWrap:
 		x.UnselectAll()
@@ -196,7 +200,7 @@ func (a *SkillCatalogueArea) Redraw() {
 	a.Refresh()
 }
 
-func (a *SkillCatalogueArea) Refresh() {
+func (a *CharacterSkillCatalogue) Refresh() {
 	t, i, err := func() (string, widget.Importance, error) {
 		exists := a.u.StatusCacheService().GeneralSectionExists(app.SectionEveCategories)
 		if !exists {
@@ -217,7 +221,7 @@ func (a *SkillCatalogueArea) Refresh() {
 	a.total.Refresh()
 }
 
-func (a *SkillCatalogueArea) makeTopText() (string, widget.Importance, error) {
+func (a *CharacterSkillCatalogue) makeTopText() (string, widget.Importance, error) {
 	if !a.u.HasCharacter() {
 		return "No Character", widget.LowImportance, nil
 	}
@@ -228,7 +232,7 @@ func (a *SkillCatalogueArea) makeTopText() (string, widget.Importance, error) {
 	return t, widget.MediumImportance, nil
 }
 
-func (a *SkillCatalogueArea) updateGroups() error {
+func (a *CharacterSkillCatalogue) updateGroups() error {
 	if !a.u.HasCharacter() {
 		return nil
 	}

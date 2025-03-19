@@ -41,7 +41,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 	var characterNav *iwidget.Navigator
 	mailMenu := fyne.NewMenu("")
 	communicationsMenu := fyne.NewMenu("")
-	u.MailArea.OnSendMessage = func(character *app.Character, mode ui.SendMailMode, mail *app.CharacterMail) {
+	u.CharacterMail.OnSendMessage = func(character *app.Character, mode ui.SendMailMode, mail *app.CharacterMail) {
 		page, sendIcon, sendAction := ui.MakeSendMailPage(bui, character, mode, mail, u.Window)
 		if mode != ui.SendMailNew {
 			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
@@ -62,15 +62,15 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		"Mail",
 		theme.MailComposeIcon(),
 		func() {
-			u.MailArea.OnSelected = func() {
+			u.CharacterMail.OnSelected = func() {
 				characterNav.PushHideNavBar(
 					newCharacterAppBar(
 						"Mail",
-						u.MailArea.Detail,
-						iwidget.NewIconButton(u.MailArea.MakeReplyAction()),
-						iwidget.NewIconButton(u.MailArea.MakeReplyAllAction()),
-						iwidget.NewIconButton(u.MailArea.MakeForwardAction()),
-						iwidget.NewIconButton(u.MailArea.MakeDeleteAction(func() {
+						u.CharacterMail.Detail,
+						iwidget.NewIconButton(u.CharacterMail.MakeReplyAction()),
+						iwidget.NewIconButton(u.CharacterMail.MakeReplyAllAction()),
+						iwidget.NewIconButton(u.CharacterMail.MakeForwardAction()),
+						iwidget.NewIconButton(u.CharacterMail.MakeDeleteAction(func() {
 							characterNav.Pop()
 						})),
 					),
@@ -79,9 +79,9 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 			characterNav.Push(
 				newCharacterAppBar(
 					"Mail",
-					u.MailArea.Headers,
+					u.CharacterMail.Headers,
 					iwidget.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
-					iwidget.NewIconButton(u.MailArea.MakeComposeMessageAction()),
+					iwidget.NewIconButton(u.CharacterMail.MakeComposeMessageAction()),
 				))
 		},
 	)
@@ -89,15 +89,15 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		"Communications",
 		theme.NewThemedResource(icons.MessageSvg),
 		func() {
-			u.NotificationsArea.OnSelected = func() {
+			u.CharacterCommunications.OnSelected = func() {
 				characterNav.PushHideNavBar(
-					newCharacterAppBar("Communications", u.NotificationsArea.Detail),
+					newCharacterAppBar("Communications", u.CharacterCommunications.Detail),
 				)
 			}
 			characterNav.Push(
 				newCharacterAppBar(
 					"Communications",
-					u.NotificationsArea.Notifications,
+					u.CharacterCommunications.Notifications,
 					iwidget.NewIconButtonWithMenu(theme.FolderIcon(), communicationsMenu),
 				),
 			)
@@ -107,17 +107,17 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
-			u.AssetsArea.OnSelected = func() {
-				characterNav.Push(newCharacterAppBar("Assets", u.AssetsArea.LocationAssets))
+			u.CharacterAssets.OnSelected = func() {
+				characterNav.Push(newCharacterAppBar("Assets", u.CharacterAssets.LocationAssets))
 			}
-			characterNav.Push(newCharacterAppBar("Assets", container.NewHScroll(u.AssetsArea.Locations)))
+			characterNav.Push(newCharacterAppBar("Assets", container.NewHScroll(u.CharacterAssets.Locations)))
 		},
 	)
 	navItemColonies1 := iwidget.NewListItemWithIcon(
 		"Colonies",
 		theme.NewThemedResource(icons.EarthSvg),
 		func() {
-			characterNav.Push(newCharacterAppBar("Colonies", u.PlanetArea.Content))
+			characterNav.Push(newCharacterAppBar("Colonies", u.CharacterPlanets))
 		},
 	)
 	navItemSkills := iwidget.NewListItemWithIcon(
@@ -130,15 +130,19 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 					iwidget.NewNavList(
 						iwidget.NewListItemWithNavigator(
 							characterNav,
-							newCharacterAppBar("Training Queue", u.SkillqueueArea.Content),
+							newCharacterAppBar("Training Queue", u.CharacterSkillQueue),
 						),
 						iwidget.NewListItemWithNavigator(
 							characterNav,
-							newCharacterAppBar("Skill Catalogue", u.SkillCatalogueArea.Content),
+							newCharacterAppBar("Skill Catalogue", u.CharacterSkillCatalogue),
 						),
 						iwidget.NewListItemWithNavigator(
 							characterNav,
-							newCharacterAppBar("Ships", u.ShipsArea.Content),
+							newCharacterAppBar("Ships", u.CharacterShips),
+						),
+						iwidget.NewListItemWithNavigator(
+							characterNav,
+							newCharacterAppBar("Attributes", u.CharacterAttributes),
 						),
 					),
 				))
@@ -152,8 +156,8 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 				newCharacterAppBar(
 					"Wallet",
 					container.NewAppTabs(
-						container.NewTabItem("Transactions", u.WalletJournalArea.Content),
-						container.NewTabItem("Market Transactions", u.WalletTransactionArea.Content),
+						container.NewTabItem("Transactions", u.CharacterWalletJournal),
+						container.NewTabItem("Market Transactions", u.CharacterWalletTransaction),
 					),
 				))
 		},
@@ -167,8 +171,8 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 				newCharacterAppBar(
 					"Clones",
 					container.NewAppTabs(
-						container.NewTabItem("Current Clone", u.ImplantsArea.Content),
-						container.NewTabItem("Jump Clones", u.JumpClonesArea.Content),
+						container.NewTabItem("Current Clone", u.CharacterImplants),
+						container.NewTabItem("Jump Clones", u.CharacterJumpClones),
 					),
 				))
 		},
@@ -183,24 +187,24 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 			"Contracts",
 			theme.NewThemedResource(icons.FileSignSvg),
 			func() {
-				characterNav.Push(newCharacterAppBar("Contracts", u.ContractsArea.Content))
+				characterNav.Push(newCharacterAppBar("Contracts", u.CharacterContracts))
 			},
 		),
 		navItemSkills,
 		navItemWallet,
 	)
 
-	u.AssetsArea.OnRedraw = func(s string) {
+	u.CharacterAssets.OnRedraw = func(s string) {
 		navItemAssets.Supporting = s
 		characterList.Refresh()
 	}
 
-	u.JumpClonesArea.OnReDraw = func(clonesCount int) {
+	u.CharacterJumpClones.OnReDraw = func(clonesCount int) {
 		navItemClones.Supporting = fmt.Sprintf("%d jump clones", clonesCount)
 		characterList.Refresh()
 	}
 
-	u.PlanetArea.OnRefresh = func(total, expired int) {
+	u.CharacterPlanets.OnUpdate = func(total, expired int) {
 		var s string
 		if total > 0 {
 			s = fmt.Sprintf("%d colonies", total)
@@ -212,7 +216,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		characterList.Refresh()
 	}
 
-	u.MailArea.OnRefresh = func(count int) {
+	u.CharacterMail.OnUpdate = func(count int) {
 		s := ""
 		if count > 0 {
 			s = fmt.Sprintf("%s unread", humanize.Comma(int64(count)))
@@ -221,7 +225,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		characterList.Refresh()
 	}
 
-	u.NotificationsArea.OnRefresh = func(count int) {
+	u.CharacterCommunications.OnUpdate = func(count int) {
 		s := ""
 		if count > 0 {
 			s = fmt.Sprintf("%s unread", humanize.Comma(int64(count)))
@@ -230,12 +234,12 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		characterList.Refresh()
 	}
 
-	u.SkillqueueArea.OnRefresh = func(_, status string) {
+	u.CharacterSkillQueue.OnUpdate = func(_, status string) {
 		navItemSkills.Supporting = status
 		characterList.Refresh()
 	}
 
-	u.WalletJournalArea.OnRefresh = func(b string) {
+	u.CharacterWalletJournal.OnUpdate = func(b string) {
 		navItemWallet.Supporting = "Balance: " + b
 		characterList.Refresh()
 	}
@@ -249,14 +253,14 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		"Wealth",
 		theme.NewThemedResource(icons.GoldSvg),
 		func() {
-			crossNav.Push(iwidget.NewAppBar("Wealth", u.WealthArea.Content))
+			crossNav.Push(iwidget.NewAppBar("Wealth", u.WealthOverview))
 		},
 	)
 	navItemColonies2 := iwidget.NewListItemWithIcon(
 		"Colonies",
 		theme.NewThemedResource(icons.EarthSvg),
 		func() {
-			crossNav.Push(iwidget.NewAppBar("Colonies", u.ColoniesArea.Content))
+			crossNav.Push(iwidget.NewAppBar("Colonies", u.ColonyOverview))
 		},
 	)
 	crossList := iwidget.NewNavList(
@@ -264,47 +268,47 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 			"Overview",
 			theme.NewThemedResource(icons.AccountMultipleSvg),
 			func() {
-				crossNav.Push(iwidget.NewAppBar("Overview", u.OverviewArea.Content))
+				crossNav.Push(iwidget.NewAppBar("Overview", u.CharacterOverview))
 			},
 		),
 		iwidget.NewListItemWithIcon(
 			"Asset Search",
 			theme.NewThemedResource(icons.Inventory2Svg),
 			func() {
-				crossNav.Push(iwidget.NewAppBar("Asset Search", u.AssetSearchArea.Content))
-				u.AssetSearchArea.Focus()
+				crossNav.Push(iwidget.NewAppBar("Asset Search", u.AllAssetSearch))
+				u.AllAssetSearch.Focus()
 			},
 		),
 		iwidget.NewListItemWithIcon(
 			"Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),
 			func() {
-				crossNav.Push(iwidget.NewAppBar("Locations", u.LocationsArea.Content))
+				crossNav.Push(iwidget.NewAppBar("Locations", u.LocationOverview))
 			},
 		),
 		iwidget.NewListItemWithIcon(
 			"Training",
 			theme.NewThemedResource(icons.SchoolSvg),
 			func() {
-				crossNav.Push(iwidget.NewAppBar("Training", u.TrainingArea.Content))
+				crossNav.Push(iwidget.NewAppBar("Training", u.TrainingOverview))
 			},
 		),
 		navItemColonies2,
 		navItemWealth,
 	)
 	crossNav = iwidget.NewNavigator(iwidget.NewAppBar("Characters", crossList))
-	u.ColoniesArea.OnRefresh = func(top string) {
+	u.ColonyOverview.OnUpdate = func(top string) {
 		navItemColonies2.Supporting = top
 		crossList.Refresh()
 	}
-	u.WealthArea.OnRefresh = func(total string) {
+	u.WealthOverview.OnUpdate = func(total string) {
 		navItemWealth.Supporting = total
 		crossList.Refresh()
 	}
 
 	// info destination
 	searchNav := iwidget.NewNavigator(
-		newCharacterAppBar("Search", u.SearchArea.Content),
+		newCharacterAppBar("Search", u.GameSearch),
 	)
 
 	// more destination
@@ -329,10 +333,10 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		func() {
 			moreNav.Push(iwidget.NewAppBar(
 				"Manage characters",
-				u.AccountArea.Content,
+				u.ManagerCharacters,
 				iwidget.NewIconButton(
 					theme.NewPrimaryThemedResource(theme.ContentAddIcon()),
-					u.AccountArea.ShowAddCharacterDialog,
+					u.ManagerCharacters.ShowAddCharacterDialog,
 				),
 			))
 		},
@@ -342,15 +346,15 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		func() {
 			moreNav.Push(iwidget.NewAppBar(
 				"General",
-				u.SettingsArea.GeneralContent,
-				iwidget.NewIconButtonWithMenu(makeSettingsMenu(u.SettingsArea.GeneralActions)),
+				u.Settings.GeneralContent,
+				iwidget.NewIconButtonWithMenu(makeSettingsMenu(u.Settings.GeneralActions)),
 			))
 		},
 	)
 	navItemNotificationSettings := iwidget.NewListItem(
 		"Notifications",
 		func() {
-			u.SettingsArea.OnCommunicationGroupSelected = func(
+			u.Settings.OnCommunicationGroupSelected = func(
 				title string, content fyne.CanvasObject, actions []ui.SettingAction,
 			) {
 				moreNav.Push(iwidget.NewAppBar(
@@ -361,8 +365,8 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 			}
 			moreNav.Push(iwidget.NewAppBar(
 				"Notifications",
-				u.SettingsArea.NotificationSettings,
-				iwidget.NewIconButtonWithMenu(makeSettingsMenu(u.SettingsArea.NotificationActions)),
+				u.Settings.NotificationSettings,
+				iwidget.NewIconButtonWithMenu(makeSettingsMenu(u.Settings.NotificationActions)),
 			))
 		},
 	)
@@ -392,7 +396,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		u.navItemUpdateStatus,
 		navItemAbout,
 	)
-	u.AccountArea.OnRefresh = func(characterCount int) {
+	u.ManagerCharacters.OnUpdate = func(characterCount int) {
 		navItemManageCharacters.Supporting = fmt.Sprintf("%d characters", characterCount)
 	}
 	moreNav = iwidget.NewNavigator(iwidget.NewAppBar("More", toolsList))
@@ -410,10 +414,10 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 
 	searchDest := iwidget.NewDestinationDef("Search", theme.SearchIcon(), searchNav)
 	searchDest.OnSelected = func() {
-		u.SearchArea.Focus()
+		u.GameSearch.Focus()
 	}
 	searchDest.OnSelectedAgain = func() {
-		u.SearchArea.Reset()
+		u.GameSearch.Reset()
 	}
 
 	moreDest := iwidget.NewDestinationDef("More", theme.MenuIcon(), moreNav)
@@ -424,12 +428,12 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 	navBar = iwidget.NewNavBar(characterDest, crossDest, searchDest, moreDest)
 	characterNav.NavBar = navBar
 
-	u.OnRefreshStatus = func() {
+	u.OnUpdateStatus = func() {
 		go func() {
 			characterSelector.SetMenuItems(u.MakeCharacterSwitchMenu(characterSelector.Refresh))
 		}()
 	}
-	u.OnRefreshCharacter = func(c *app.Character) {
+	u.OnUpdateCharacter = func(c *app.Character) {
 		mailMenu.Items = u.makeMailMenu()
 		mailMenu.Refresh()
 		communicationsMenu.Items = u.makeCommunicationsMenu()
@@ -447,8 +451,8 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		go u.UpdateAvatar(id, func(r fyne.Resource) {
 			characterSelector.SetIcon(r)
 		})
-		u.MailArea.ResetFolders()
-		u.NotificationsArea.ResetGroups()
+		u.CharacterMail.ResetFolders()
+		u.CharacterCommunications.ResetGroups()
 		characterNav.PopAll()
 		navBar.Select(0)
 	}
@@ -493,13 +497,13 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 func (u *MobileUI) makeMailMenu() []*fyne.MenuItem {
 	// current := u.MailArea.CurrentFolder.ValueOrZero()
 	items1 := make([]*fyne.MenuItem, 0)
-	for _, f := range u.MailArea.Folders() {
+	for _, f := range u.CharacterMail.Folders() {
 		s := f.Name
 		if f.UnreadCount > 0 {
 			s += fmt.Sprintf(" (%d)", f.UnreadCount)
 		}
 		it := fyne.NewMenuItem(s, func() {
-			u.MailArea.SetFolder(f)
+			u.CharacterMail.SetFolder(f)
 		})
 		// if f == current {
 		// 	it.Disabled = true
@@ -511,13 +515,13 @@ func (u *MobileUI) makeMailMenu() []*fyne.MenuItem {
 
 func (u *MobileUI) makeCommunicationsMenu() []*fyne.MenuItem {
 	items2 := make([]*fyne.MenuItem, 0)
-	for _, f := range u.NotificationsArea.Groups {
+	for _, f := range u.CharacterCommunications.Groups {
 		s := f.Name
 		if f.UnreadCount > 0 {
 			s += fmt.Sprintf(" (%d)", f.UnreadCount)
 		}
 		it := fyne.NewMenuItem(s, func() {
-			u.NotificationsArea.SetGroup(f.Group)
+			u.CharacterCommunications.SetGroup(f.Group)
 		})
 		items2 = append(items2, it)
 	}

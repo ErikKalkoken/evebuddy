@@ -20,9 +20,10 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-type regionArea struct {
-	Content fyne.CanvasObject
+type regionInfo struct {
+	widget.BaseWidget
 
+	id int32
 	iw InfoWindow
 	w  fyne.Window
 
@@ -31,18 +32,23 @@ type regionArea struct {
 	tabs *container.AppTabs
 }
 
-func newRegionArea(iw InfoWindow, regionID int32, w fyne.Window) *regionArea {
+func newRegionInfo(iw InfoWindow, regionID int32, w fyne.Window) *regionInfo {
 	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateEllipsis
 	s := float32(app.IconPixelSize) * logoZoomFactor
 	logo := iwidget.NewImageFromResource(icons.Region64Png, fyne.NewSquareSize(s))
-	a := &regionArea{
+	a := &regionInfo{
 		iw:   iw,
 		logo: logo,
 		name: name,
 		tabs: container.NewAppTabs(),
 		w:    w,
 	}
+	a.ExtendBaseWidget(a)
+	return a
+}
+
+func (a *regionInfo) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	main := container.NewVBox(
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
@@ -51,21 +57,21 @@ func newRegionArea(iw InfoWindow, regionID int32, w fyne.Window) *regionArea {
 		),
 	)
 	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, main)
-	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
+	c := container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
-		err := a.load(regionID)
+		err := a.load(a.id)
 		if err != nil {
-			slog.Error("region info update failed", "solarSystem", regionID, "error", err)
+			slog.Error("region info update failed", "solarSystem", a.id, "error", err)
 			a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", ihumanize.Error(err))
 			a.name.Importance = widget.DangerImportance
 			a.name.Refresh()
 		}
 	}()
-	return a
+	return widget.NewSimpleRenderer(c)
 }
 
-func (a *regionArea) load(constellationID int32) error {
+func (a *regionInfo) load(constellationID int32) error {
 	ctx := context.Background()
 	o, err := a.iw.u.EveUniverseService().GetOrCreateRegionESI(ctx, constellationID)
 	if err != nil {

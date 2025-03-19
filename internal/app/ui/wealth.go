@@ -25,30 +25,35 @@ const (
 	chartHeight   = chartBaseSize / 1.618
 )
 
-type WealthArea struct {
-	Content   fyne.CanvasObject
-	OnRefresh func(total string)
+type WealthOverview struct {
+	widget.BaseWidget
+
+	OnUpdate func(total string)
 
 	charts *fyne.Container
 	top    *widget.Label
 	u      *BaseUI
 }
 
-func NewWealthArea(u *BaseUI) *WealthArea {
-	a := &WealthArea{
+func NewWealthOverview(u *BaseUI) *WealthOverview {
+	a := &WealthOverview{
 		top: MakeTopLabel(),
 		u:   u,
 	}
+	a.ExtendBaseWidget(a)
 	a.charts = a.makeCharts()
-	cs := container.NewScroll(a.charts)
-	a.Content = container.NewBorder(
-		container.NewVBox(a.top, widget.NewSeparator()), nil, nil, nil,
-		cs,
-	)
 	return a
 }
 
-func (a *WealthArea) makeCharts() *fyne.Container {
+func (a *WealthOverview) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewBorder(
+		container.NewVBox(a.top, widget.NewSeparator()), nil, nil, nil,
+		container.NewScroll(a.charts),
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *WealthOverview) makeCharts() *fyne.Container {
 	makePlaceholder := func() fyne.CanvasObject {
 		x := iwidget.NewImageFromResource(theme.BrokenImageIcon(), fyne.NewSize(chartWidth, chartHeight))
 		return container.NewPadded(x)
@@ -63,7 +68,7 @@ func (a *WealthArea) makeCharts() *fyne.Container {
 	return c
 }
 
-func (a *WealthArea) Refresh() {
+func (a *WealthOverview) Update() {
 	data, characters, err := a.compileData()
 	if err != nil {
 		slog.Error("Failed to fetch data for charts", "err", err)
@@ -135,9 +140,9 @@ func (a *WealthArea) Refresh() {
 	a.top.Importance = widget.MediumImportance
 	a.top.Refresh()
 
-	if a.OnRefresh != nil {
+	if a.OnUpdate != nil {
 		s := fmt.Sprintf("Wallet: %s • Assets: %s", ihumanize.Number(totalWallet, 1), ihumanize.Number(totalAssets, 1))
-		a.OnRefresh(s)
+		a.OnUpdate(s)
 	}
 }
 
@@ -148,7 +153,7 @@ type dataRow struct {
 	total  float64
 }
 
-func (a *WealthArea) compileData() ([]dataRow, int, error) {
+func (a *WealthOverview) compileData() ([]dataRow, int, error) {
 	ctx := context.TODO()
 	cc, err := a.u.CharacterService().ListCharacters(ctx)
 	if err != nil {

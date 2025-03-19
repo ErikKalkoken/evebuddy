@@ -29,11 +29,11 @@ type accountCharacter struct {
 	hasTokenWithScope bool
 }
 
-// AccountArea is the UI area for managing of characters.
-type AccountArea struct {
-	Content           fyne.CanvasObject
+type ManageCharacters struct {
+	widget.BaseWidget
+
 	OnSelectCharacter func()
-	OnRefresh         func(characterCount int)
+	OnUpdate          func(characterCount int)
 
 	snackbar   *iwidget.Snackbar
 	characters []accountCharacter
@@ -43,16 +43,21 @@ type AccountArea struct {
 	u          *BaseUI
 }
 
-func NewAccountArea(u *BaseUI) *AccountArea {
-	a := &AccountArea{
+func NewManageCharacters(u *BaseUI) *ManageCharacters {
+	a := &ManageCharacters{
 		characters: make([]accountCharacter, 0),
 		snackbar:   u.Snackbar,
 		title:      MakeTopLabel(),
 		window:     u.Window,
 		u:          u,
 	}
-
+	a.ExtendBaseWidget(a)
 	a.list = a.makeCharacterList()
+	return a
+}
+
+func (a *ManageCharacters) CreateRenderer() fyne.WidgetRenderer {
+	var c fyne.CanvasObject
 	add := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		a.ShowAddCharacterDialog()
 	})
@@ -61,7 +66,7 @@ func NewAccountArea(u *BaseUI) *AccountArea {
 		add.Disable()
 	}
 	if a.u.IsDesktop() {
-		a.Content = container.NewBorder(
+		c = container.NewBorder(
 			a.title,
 			container.NewHBox(layout.NewSpacer(), add, layout.NewSpacer()),
 			nil,
@@ -69,7 +74,7 @@ func NewAccountArea(u *BaseUI) *AccountArea {
 			a.list,
 		)
 	} else {
-		a.Content = container.NewBorder(
+		c = container.NewBorder(
 			a.title,
 			nil,
 			nil,
@@ -77,16 +82,16 @@ func NewAccountArea(u *BaseUI) *AccountArea {
 			a.list,
 		)
 	}
-	return a
+	return widget.NewSimpleRenderer(c)
 }
 
-func (a *AccountArea) SetWindow(w fyne.Window) {
+func (a *ManageCharacters) SetWindow(w fyne.Window) {
 	a.window = w
 	a.snackbar = iwidget.NewSnackbar(w)
 	a.snackbar.Start()
 }
 
-func (a *AccountArea) makeCharacterList() *widget.List {
+func (a *ManageCharacters) makeCharacterList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.characters)
@@ -141,7 +146,7 @@ func (a *AccountArea) makeCharacterList() *widget.List {
 			slog.Error("load current character", "char", c, "err", err)
 			return
 		}
-		a.u.RefreshStatus()
+		a.u.UpdateStatus()
 		if a.OnSelectCharacter != nil {
 			a.OnSelectCharacter()
 		}
@@ -149,7 +154,7 @@ func (a *AccountArea) makeCharacterList() *widget.List {
 	return l
 }
 
-func (a *AccountArea) showDeleteDialog(c accountCharacter) {
+func (a *ManageCharacters) showDeleteDialog(c accountCharacter) {
 	a.u.ShowConfirmDialog(
 		"Delete Character",
 		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", c.name),
@@ -175,7 +180,7 @@ func (a *AccountArea) showDeleteDialog(c accountCharacter) {
 						a.u.SetAnyCharacter()
 					}
 					a.u.RefreshCrossPages()
-					a.u.RefreshStatus()
+					a.u.UpdateStatus()
 				}
 				m.OnError = func(err error) {
 					slog.Error("Failed to delete character", "characterID", c.id)
@@ -188,7 +193,7 @@ func (a *AccountArea) showDeleteDialog(c accountCharacter) {
 	)
 }
 
-func (a *AccountArea) Refresh() {
+func (a *ManageCharacters) Refresh() {
 	cc, err := a.u.CharacterService().ListCharactersShort(context.TODO())
 	if err != nil {
 		slog.Error("account refresh", "error", err)
@@ -207,12 +212,12 @@ func (a *AccountArea) Refresh() {
 	a.list.Refresh()
 	characterCount := len(a.characters)
 	a.title.SetText(fmt.Sprintf("Characters (%d)", characterCount))
-	if a.OnRefresh != nil {
-		a.OnRefresh(characterCount)
+	if a.OnUpdate != nil {
+		a.OnUpdate(characterCount)
 	}
 }
 
-func (a *AccountArea) ShowAddCharacterDialog() {
+func (a *ManageCharacters) ShowAddCharacterDialog() {
 	cancelCTX, cancel := context.WithCancel(context.TODO())
 	s := "Please follow instructions in your browser to add a new character."
 	infoText := binding.BindString(&s)
@@ -239,7 +244,7 @@ func (a *AccountArea) ShowAddCharacterDialog() {
 				a.u.loadCharacter(characterID)
 			}
 			a.u.RefreshCrossPages()
-			a.u.RefreshStatus()
+			a.u.UpdateStatus()
 			return nil
 		}()
 		d1.Hide()

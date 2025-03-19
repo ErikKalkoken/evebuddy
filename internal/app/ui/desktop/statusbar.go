@@ -37,10 +37,10 @@ const (
 	eveStatusError
 )
 
-// statusBarArea is the UI area showing the current status aka status bar.
-type statusBarArea struct {
+type StatusBar struct {
+	widget.BaseWidget
+
 	characterCount *appwidget.StatusBarItem
-	content        *fyne.Container
 	eveClock       *appwidget.StatusBarItem
 	eveStatus      *appwidget.StatusBarItem
 	eveStatusError string
@@ -50,12 +50,13 @@ type statusBarArea struct {
 	updateStatus   *appwidget.StatusBarItem
 }
 
-func newStatusBarArea(u *DesktopUI) *statusBarArea {
-	a := &statusBarArea{
+func NewStatusBar(u *DesktopUI) *StatusBar {
+	a := &StatusBar{
 		infoText:       widget.NewLabel(""),
 		newVersionHint: container.NewHBox(),
 		u:              u,
 	}
+	a.ExtendBaseWidget(a)
 	a.characterCount = appwidget.NewStatusBarItem(theme.AccountIcon(), "?", func() {
 		u.showAccountWindow()
 	})
@@ -68,7 +69,11 @@ func newStatusBarArea(u *DesktopUI) *statusBarArea {
 		a.showClockDialog,
 	)
 	a.eveStatus = appwidget.NewStatusBarItem(theme.MediaRecordIcon(), "?", a.showEveStatusDialog)
-	a.content = container.NewVBox(widget.NewSeparator(), container.NewHBox(
+	return a
+}
+
+func (a *StatusBar) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewVBox(widget.NewSeparator(), container.NewHBox(
 		a.infoText,
 		layout.NewSpacer(),
 		a.newVersionHint,
@@ -81,10 +86,10 @@ func newStatusBarArea(u *DesktopUI) *statusBarArea {
 		widget.NewSeparator(),
 		a.eveStatus,
 	))
-	return a
+	return widget.NewSimpleRenderer(c)
 }
 
-func (a *statusBarArea) showClockDialog() {
+func (a *StatusBar) showClockDialog() {
 	content := widget.NewRichTextFromMarkdown("")
 	d := dialog.NewCustom("EVE Clock", "Close", content, a.u.Window)
 	a.u.ModifyShortcutsForDialog(d, a.u.Window)
@@ -107,7 +112,7 @@ func (a *statusBarArea) showClockDialog() {
 	d.Show()
 }
 
-func (a *statusBarArea) showEveStatusDialog() {
+func (a *StatusBar) showEveStatusDialog() {
 	var i widget.Importance
 	var text string
 	if a.eveStatusError == "" {
@@ -126,7 +131,7 @@ func (a *statusBarArea) showEveStatusDialog() {
 	d.Resize(fyne.Size{Width: 400, Height: 200})
 }
 
-func (a *statusBarArea) StartUpdateTicker() {
+func (a *StatusBar) StartUpdateTicker() {
 	clockTicker := time.NewTicker(clockUpdateTicker)
 	go func() {
 		for {
@@ -137,13 +142,13 @@ func (a *statusBarArea) StartUpdateTicker() {
 	}()
 	if a.u.IsOffline() {
 		a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
-		a.refreshUpdateStatus()
+		a.updateUpdateStatus()
 		return
 	}
 	updateTicker := time.NewTicker(characterUpdateStatusTicker)
 	go func() {
 		for {
-			a.refreshUpdateStatus()
+			a.updateUpdateStatus()
 			<-updateTicker.C
 		}
 	}()
@@ -203,17 +208,17 @@ func (a *statusBarArea) StartUpdateTicker() {
 	}()
 }
 
-func (a *statusBarArea) refreshCharacterCount() {
+func (a *StatusBar) updateCharacterCount() {
 	x := a.u.StatusCacheService().ListCharacters()
 	a.characterCount.SetText(strconv.Itoa(len(x)))
 }
 
-func (a *statusBarArea) refreshUpdateStatus() {
+func (a *StatusBar) updateUpdateStatus() {
 	x := a.u.StatusCacheService().Summary()
 	a.updateStatus.SetTextAndImportance(x.Display(), x.Status().ToImportance())
 }
 
-func (a *statusBarArea) setEveStatus(status eveStatus, title, errorMessage string) {
+func (a *StatusBar) setEveStatus(status eveStatus, title, errorMessage string) {
 	a.eveStatusError = errorMessage
 	r1 := theme.MediaRecordIcon()
 	var r2 fyne.Resource
@@ -231,19 +236,19 @@ func (a *statusBarArea) setEveStatus(status eveStatus, title, errorMessage strin
 	a.eveStatus.SetText(title)
 }
 
-func (s *statusBarArea) SetInfo(text string) {
+func (s *StatusBar) SetInfo(text string) {
 	s.setInfo(text, widget.MediumImportance)
 }
 
-func (s *statusBarArea) SetError(text string) {
+func (s *StatusBar) SetError(text string) {
 	s.setInfo(text, widget.DangerImportance)
 }
 
-func (s *statusBarArea) ClearInfo() {
+func (s *StatusBar) ClearInfo() {
 	s.SetInfo("")
 }
 
-func (s *statusBarArea) setInfo(text string, importance widget.Importance) {
+func (s *StatusBar) setInfo(text string, importance widget.Importance) {
 	s.infoText.Text = text
 	s.infoText.Importance = importance
 	s.infoText.Refresh()

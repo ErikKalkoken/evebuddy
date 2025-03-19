@@ -19,9 +19,8 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
-// ImplantsArea is the UI area that shows the skillqueue
-type ImplantsArea struct {
-	Content *fyne.Container
+type CharacterImplants struct {
+	widget.BaseWidget
 
 	implants []*app.CharacterImplant
 	list     *widget.List
@@ -29,19 +28,24 @@ type ImplantsArea struct {
 	u        *BaseUI
 }
 
-func NewImplantsArea(u *BaseUI) *ImplantsArea {
-	a := ImplantsArea{
+func NewCharacterImplants(u *BaseUI) *CharacterImplants {
+	a := &CharacterImplants{
 		implants: make([]*app.CharacterImplant, 0),
 		top:      MakeTopLabel(),
 		u:        u,
 	}
+	a.ExtendBaseWidget(a)
 	a.list = a.makeImplantList()
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.Content = container.NewBorder(top, nil, nil, nil, a.list)
-	return &a
+	return a
 }
 
-func (a *ImplantsArea) makeImplantList() *widget.List {
+func (a *CharacterImplants) CreateRenderer() fyne.WidgetRenderer {
+	top := container.NewVBox(a.top, widget.NewSeparator())
+	c := container.NewBorder(top, nil, nil, nil, a.list)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *CharacterImplants) makeImplantList() *widget.List {
 	p := theme.Padding()
 	l := widget.NewList(
 		func() int {
@@ -93,7 +97,7 @@ func (a *ImplantsArea) makeImplantList() *widget.List {
 	return l
 }
 
-func (a *ImplantsArea) Refresh() {
+func (a *CharacterImplants) Update() {
 	var t string
 	var i widget.Importance
 	if err := a.updateImplants(); err != nil {
@@ -108,7 +112,7 @@ func (a *ImplantsArea) Refresh() {
 	a.top.Refresh()
 }
 
-func (a *ImplantsArea) updateImplants() error {
+func (a *CharacterImplants) updateImplants() error {
 	if !a.u.HasCharacter() {
 		a.implants = make([]*app.CharacterImplant, 0)
 		return nil
@@ -122,7 +126,7 @@ func (a *ImplantsArea) updateImplants() error {
 	return nil
 }
 
-func (a *ImplantsArea) makeTopText() (string, widget.Importance) {
+func (a *CharacterImplants) makeTopText() (string, widget.Importance) {
 	hasData := a.u.StatusCacheService().CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance

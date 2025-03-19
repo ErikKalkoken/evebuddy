@@ -29,27 +29,33 @@ func (a attribute) isText() bool {
 	return a.points == 0
 }
 
-// Attributes is the UI area that shows the skillqueue
-type Attributes struct {
-	Content fyne.CanvasObject
+// CharacterAttributes shows the attributes for the current character.
+type CharacterAttributes struct {
+	widget.BaseWidget
 
 	attributes []attribute
+	list       *widget.List
 	top        *widget.Label
 	u          *BaseUI
 }
 
-func NewAttributes(u *BaseUI) *Attributes {
-	a := Attributes{
+func NewCharacterAttributes(u *BaseUI) *CharacterAttributes {
+	w := &CharacterAttributes{
 		attributes: make([]attribute, 0),
 		top:        MakeTopLabel(),
 		u:          u,
 	}
-	list := a.makeAttributeList()
-	a.Content = container.NewBorder(container.NewVBox(a.top, widget.NewSeparator()), nil, nil, nil, list)
-	return &a
+	w.list = w.makeAttributeList()
+	w.ExtendBaseWidget(w)
+	return w
 }
 
-func (a *Attributes) makeAttributeList() *widget.List {
+func (a *CharacterAttributes) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewBorder(container.NewVBox(a.top, widget.NewSeparator()), nil, nil, nil, a.list)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *CharacterAttributes) makeAttributeList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.attributes)
@@ -92,7 +98,7 @@ func (a *Attributes) makeAttributeList() *widget.List {
 	return l
 }
 
-func (a *Attributes) Refresh() {
+func (a *CharacterAttributes) Update() {
 	var t string
 	var i widget.Importance
 	total, err := a.updateData()
@@ -108,7 +114,7 @@ func (a *Attributes) Refresh() {
 	a.top.Refresh()
 }
 
-func (a *Attributes) makeTopText(total int) (string, widget.Importance) {
+func (a *CharacterAttributes) makeTopText(total int) (string, widget.Importance) {
 	hasData := a.u.StatusCacheService().CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionAttributes)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
@@ -116,7 +122,7 @@ func (a *Attributes) makeTopText(total int) (string, widget.Importance) {
 	return fmt.Sprintf("Total points: %d", total), widget.MediumImportance
 }
 
-func (a *Attributes) updateData() (int, error) {
+func (a *CharacterAttributes) updateData() (int, error) {
 	if !a.u.HasCharacter() {
 		a.attributes = make([]attribute, 0)
 		return 0, nil

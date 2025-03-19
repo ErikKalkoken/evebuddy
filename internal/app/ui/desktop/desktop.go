@@ -28,16 +28,13 @@ import (
 )
 
 // The DesktopUI is the root object of the DesktopUI and contains all DesktopUI areas.
-//
-// Each DesktopUI area holds a pointer of the DesktopUI instance, so that areas can
-// call methods on other DesktopUI areas and access shared variables in the DesktopUI.
 type DesktopUI struct {
 	*ui.BaseUI
 
 	sfg *singleflight.Group
 
-	statusBarArea *statusBarArea
-	toolbarArea   *toolbarArea
+	statusBar *StatusBar
+	toolbar   *Toolbar
 
 	overviewTab *container.TabItem
 	tabs        *container.AppTabs
@@ -91,7 +88,7 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 				u.Window.Resize(fyne.NewSize(s.Width, s.Height))
 			}()
 		}
-		go u.statusBarArea.StartUpdateTicker()
+		go u.statusBar.StartUpdateTicker()
 		u.Window.Canvas().AddShortcut(
 			&desktop.CustomShortcut{
 				KeyName:  fyne.KeyS,
@@ -112,13 +109,13 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 	u.OnAppStopped = func() {
 		u.saveAppState()
 	}
-	u.OnRefreshCharacter = func(c *app.Character) {
+	u.OnUpdateCharacter = func(c *app.Character) {
 		go u.toogleTabs(c != nil)
 	}
-	u.OnRefreshStatus = func() {
-		go u.toolbarArea.refresh()
-		go u.statusBarArea.refreshUpdateStatus()
-		go u.statusBarArea.refreshCharacterCount()
+	u.OnUpdateStatus = func() {
+		go u.toolbar.Update()
+		go u.statusBar.updateUpdateStatus()
+		go u.statusBar.updateCharacterCount()
 	}
 	u.ShowMailIndicator = func() {
 		u.DeskApp.SetSystemTrayIcon(icons.IconmarkedPng)
@@ -138,54 +135,54 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 
 	assetTab := container.NewTabItemWithIcon("Assets",
 		theme.NewThemedResource(icons.Inventory2Svg), container.NewAppTabs(
-			container.NewTabItem("Assets", u.AssetsArea.Content),
+			container.NewTabItem("Assets", u.CharacterAssets),
 		))
 
 	planetTab := container.NewTabItemWithIcon("Colonies",
 		theme.NewThemedResource(icons.EarthSvg), container.NewAppTabs(
-			container.NewTabItem("Colonies", u.PlanetArea.Content),
+			container.NewTabItem("Colonies", u.CharacterPlanets),
 		))
-	u.PlanetArea.OnRefresh = func(_, expired int) {
+	u.CharacterPlanets.OnUpdate = func(_, expired int) {
 		planetTab.Text = makeTitleWithCount("Colonies", expired)
 		u.tabs.Refresh()
 	}
 
-	mailTab := container.NewTabItemWithIcon("",
+	mailTab := container.NewTabItemWithIcon("Mail",
 		theme.MailComposeIcon(), container.NewAppTabs(
-			container.NewTabItem("Mail", u.MailArea.Content),
-			container.NewTabItem("Communications", u.NotificationsArea.Content),
+			container.NewTabItem("Mail", u.CharacterMail),
+			container.NewTabItem("Communications", u.CharacterCommunications),
 		))
-	u.MailArea.OnRefresh = func(count int) {
+	u.CharacterMail.OnUpdate = func(count int) {
 		mailTab.Text = makeTitleWithCount("Comm.", count)
 		u.tabs.Refresh()
 	}
-	u.MailArea.OnSendMessage = u.showSendMailWindow
+	u.CharacterMail.OnSendMessage = u.showSendMailWindow
 
 	clonesTab := container.NewTabItemWithIcon("Clones",
 		theme.NewThemedResource(icons.HeadSnowflakeSvg), container.NewAppTabs(
-			container.NewTabItem("Current Clone", u.ImplantsArea.Content),
-			container.NewTabItem("Jump Clones", u.JumpClonesArea.Content),
+			container.NewTabItem("Current Clone", u.CharacterImplants),
+			container.NewTabItem("Jump Clones", u.CharacterJumpClones),
 		))
 
 	contractTab := container.NewTabItemWithIcon("Contracts",
 		theme.NewThemedResource(icons.FileSignSvg), container.NewAppTabs(
-			container.NewTabItem("Contracts", u.ContractsArea.Content),
+			container.NewTabItem("Contracts", u.CharacterContracts),
 		))
 
-	overviewAssets := container.NewTabItem("Assets", u.AssetSearchArea.Content)
+	overviewAssets := container.NewTabItem("Assets", u.AllAssetSearch)
 	overviewTabs := container.NewAppTabs(
-		container.NewTabItem("Overview", u.OverviewArea.Content),
-		container.NewTabItem("Locations", u.LocationsArea.Content),
-		container.NewTabItem("Training", u.TrainingArea.Content),
+		container.NewTabItem("Overview", u.CharacterOverview),
+		container.NewTabItem("Locations", u.LocationOverview),
+		container.NewTabItem("Training", u.TrainingOverview),
 		overviewAssets,
-		container.NewTabItem("Colonies", u.ColoniesArea.Content),
-		container.NewTabItem("Wealth", u.WealthArea.Content),
+		container.NewTabItem("Colonies", u.ColonyOverview),
+		container.NewTabItem("Wealth", u.WealthOverview),
 	)
 	overviewTabs.OnSelected = func(ti *container.TabItem) {
 		if ti != overviewAssets {
 			return
 		}
-		u.AssetSearchArea.Focus()
+		u.AllAssetSearch.Focus()
 	}
 	u.overviewTab = container.NewTabItemWithIcon("Characters",
 		theme.NewThemedResource(icons.GroupSvg), overviewTabs,
@@ -193,20 +190,20 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 
 	skillTab := container.NewTabItemWithIcon("Skills",
 		theme.NewThemedResource(icons.SchoolSvg), container.NewAppTabs(
-			container.NewTabItem("Training Queue", u.SkillqueueArea.Content),
-			container.NewTabItem("Skill Catalogue", u.SkillCatalogueArea.Content),
-			container.NewTabItem("Ships", u.ShipsArea.Content),
-			container.NewTabItem("Attributes", u.AttributesArea.Content),
+			container.NewTabItem("Training Queue", u.CharacterSkillQueue),
+			container.NewTabItem("Skill Catalogue", u.CharacterSkillCatalogue),
+			container.NewTabItem("Ships", u.CharacterShips),
+			container.NewTabItem("Attributes", u.CharacterAttributes),
 		))
-	u.SkillqueueArea.OnRefresh = func(status, _ string) {
+	u.CharacterSkillQueue.OnUpdate = func(status, _ string) {
 		skillTab.Text = fmt.Sprintf("Skills (%s)", status)
 		u.tabs.Refresh()
 	}
 
 	walletTab := container.NewTabItemWithIcon("Wallet",
 		theme.NewThemedResource(icons.AttachmoneySvg), container.NewAppTabs(
-			container.NewTabItem("Transactions", u.WalletJournalArea.Content),
-			container.NewTabItem("Market Transactions", u.WalletTransactionArea.Content),
+			container.NewTabItem("Transactions", u.CharacterWalletJournal),
+			container.NewTabItem("Market Transactions", u.CharacterWalletTransaction),
 		))
 
 	u.tabs = container.NewAppTabs(
@@ -221,9 +218,9 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 	)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
-	u.toolbarArea = newToolbarArea(u)
-	u.statusBarArea = newStatusBarArea(u)
-	mainContent := container.NewBorder(u.toolbarArea.content, u.statusBarArea.content, nil, nil, u.tabs)
+	u.toolbar = NewToolbar(u)
+	u.statusBar = NewStatusBar(u)
+	mainContent := container.NewBorder(u.toolbar, u.statusBar, nil, nil, u.tabs)
 	u.Window.SetContent(mainContent)
 
 	// system tray menu
@@ -316,8 +313,8 @@ func (u *DesktopUI) showSettingsWindow() {
 		return
 	}
 	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Settings"))
-	u.SettingsArea.SetWindow(w)
-	w.SetContent(u.SettingsArea.Content)
+	u.Settings.SetWindow(w)
+	w.SetContent(u.Settings)
 	w.Resize(fyne.Size{Width: 700, Height: 500})
 	w.SetOnClosed(func() {
 		u.settingsWindow = nil
@@ -352,10 +349,10 @@ func (u *DesktopUI) showAccountWindow() {
 		u.accountWindow = nil
 	})
 	w.Resize(fyne.Size{Width: 500, Height: 300})
-	w.SetContent(u.AccountArea.Content)
-	u.AccountArea.SetWindow(w)
+	w.SetContent(u.ManagerCharacters)
+	u.ManagerCharacters.SetWindow(w)
 	w.Show()
-	u.AccountArea.OnSelectCharacter = func() {
+	u.ManagerCharacters.OnSelectCharacter = func() {
 		w.Hide()
 	}
 }
@@ -378,10 +375,10 @@ func (u *DesktopUI) showSearchWindow() {
 		u.searchWindow = nil
 	})
 	w.Resize(fyne.Size{Width: 700, Height: 400})
-	w.SetContent(u.SearchArea.Content)
+	w.SetContent(u.GameSearch)
 	w.Show()
-	u.SearchArea.SetWindow(w)
-	u.SearchArea.Focus()
+	u.GameSearch.SetWindow(w)
+	u.GameSearch.Focus()
 }
 
 func (u *DesktopUI) makeMenu() *fyne.MainMenu {

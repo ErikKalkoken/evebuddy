@@ -22,12 +22,13 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-type solarSystemArea struct {
-	Content fyne.CanvasObject
+type solarSystemInfo struct {
+	widget.BaseWidget
 
 	iw InfoWindow
 	w  fyne.Window
 
+	id            int32
 	region        *kxwidget.TappableLabel
 	constellation *kxwidget.TappableLabel
 	logo          *canvas.Image
@@ -36,7 +37,7 @@ type solarSystemArea struct {
 	tabs          *container.AppTabs
 }
 
-func newSolarSystemArea(iw InfoWindow, solarSystemID int32, w fyne.Window) *solarSystemArea {
+func newSolarSystemInfo(iw InfoWindow, id int32, w fyne.Window) *solarSystemInfo {
 	region := kxwidget.NewTappableLabel("", nil)
 	region.Truncation = fyne.TextTruncateEllipsis
 	constellation := kxwidget.NewTappableLabel("", nil)
@@ -45,7 +46,8 @@ func newSolarSystemArea(iw InfoWindow, solarSystemID int32, w fyne.Window) *sola
 	name.Truncation = fyne.TextTruncateEllipsis
 	s := float32(app.IconPixelSize) * logoZoomFactor
 	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(s))
-	a := &solarSystemArea{
+	a := &solarSystemInfo{
+		id:            id,
 		region:        region,
 		constellation: constellation,
 		iw:            iw,
@@ -55,6 +57,12 @@ func newSolarSystemArea(iw InfoWindow, solarSystemID int32, w fyne.Window) *sola
 		tabs:          container.NewAppTabs(),
 		w:             w,
 	}
+	a.ExtendBaseWidget(a)
+
+	return a
+}
+
+func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
 	colums := kxlayout.NewColumns(120)
 	p := theme.Padding()
 	main := container.NewVBox(
@@ -68,21 +76,21 @@ func newSolarSystemArea(iw InfoWindow, solarSystemID int32, w fyne.Window) *sola
 			container.New(colums, widget.NewLabel("Security"), a.security),
 		))
 	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, main)
-	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
+	c := container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
-		err := a.load(solarSystemID)
+		err := a.load(a.id)
 		if err != nil {
-			slog.Error("solar system info update failed", "solarSystem", solarSystemID, "error", err)
+			slog.Error("solar system info update failed", "solarSystem", a.id, "error", err)
 			a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", ihumanize.Error(err))
 			a.name.Importance = widget.DangerImportance
 			a.name.Refresh()
 		}
 	}()
-	return a
+	return widget.NewSimpleRenderer(c)
 }
 
-func (a *solarSystemArea) load(solarSystemID int32) error {
+func (a *solarSystemInfo) load(solarSystemID int32) error {
 	ctx := context.Background()
 	o, err := a.iw.u.EveUniverseService().GetOrCreateSolarSystemESI(ctx, solarSystemID)
 	if err != nil {

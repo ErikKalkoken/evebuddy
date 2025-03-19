@@ -26,8 +26,8 @@ const (
 	maxSearchResults = 500 // max results returned from the server
 )
 
-type SearchArea struct {
-	Content fyne.CanvasObject
+type GameSearch struct {
+	widget.BaseWidget
 
 	categories          *iwidget.FilterChipGroup
 	entry               *widget.Entry
@@ -47,8 +47,8 @@ type SearchArea struct {
 	recentItems []*app.EveEntity
 }
 
-func NewSearchArea(u *BaseUI) *SearchArea {
-	a := &SearchArea{
+func NewGameSearch(u *BaseUI) *GameSearch {
+	a := &GameSearch{
 		entry:               widget.NewEntry(),
 		indicator:           widget.NewProgressBarInfinite(),
 		resultCount:         widget.NewLabel(""),
@@ -56,6 +56,7 @@ func NewSearchArea(u *BaseUI) *SearchArea {
 		u:                   u,
 		w:                   u.Window,
 	}
+	a.ExtendBaseWidget(a)
 
 	defaultStrict := false
 	defaultCategories := makeOptions()
@@ -146,6 +147,11 @@ func NewSearchArea(u *BaseUI) *SearchArea {
 		nil,
 		a.recent,
 	)
+	a.showRecent()
+	return a
+}
+
+func (a *GameSearch) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
 		container.NewVBox(
 			a.entry,
@@ -157,25 +163,23 @@ func NewSearchArea(u *BaseUI) *SearchArea {
 		nil,
 		container.NewStack(a.recentPage, a.resultsPage),
 	)
-	a.showRecent()
-	a.Content = c
-	return a
+	return widget.NewSimpleRenderer(c)
 }
 
-func (a *SearchArea) Focus() {
+func (a *GameSearch) Focus() {
 	a.w.Canvas().Focus(a.entry)
 }
 
-func (a *SearchArea) Reset() {
+func (a *GameSearch) Reset() {
 	a.entry.SetText("")
 	a.clearResults()
 }
 
-func (a *SearchArea) SetWindow(w fyne.Window) {
+func (a *GameSearch) SetWindow(w fyne.Window) {
 	a.w = w
 }
 
-func (a *SearchArea) makeResults() *iwidget.Tree[resultNode] {
+func (a *GameSearch) makeResults() *iwidget.Tree[resultNode] {
 	t := iwidget.NewTree(
 		func(isBranch bool) fyne.CanvasObject {
 			if isBranch {
@@ -213,14 +217,14 @@ func (a *SearchArea) makeResults() *iwidget.Tree[resultNode] {
 	return t
 }
 
-func (a *SearchArea) showSupportedResult(o *app.EveEntity) {
+func (a *GameSearch) showSupportedResult(o *app.EveEntity) {
 	if !a.supportedCategories.Contains(o.Category) {
 		return
 	}
 	a.u.InfoWindow.ShowEveEntity(o)
 }
 
-func (a *SearchArea) makeRecentSelected() *widget.List {
+func (a *GameSearch) makeRecentSelected() *widget.List {
 	l := widget.NewList(
 		func() int {
 			a.mu.RLock()
@@ -258,23 +262,23 @@ func (a *SearchArea) makeRecentSelected() *widget.List {
 	return l
 }
 
-func (a *SearchArea) clearResults() {
+func (a *GameSearch) clearResults() {
 	a.results.Clear()
 	a.resultCount.Hide()
 	a.showRecent()
 }
 
-func (a *SearchArea) showResults() {
+func (a *GameSearch) showResults() {
 	a.recentPage.Hide()
 	a.resultsPage.Show()
 }
 
-func (a *SearchArea) showRecent() {
+func (a *GameSearch) showRecent() {
 	a.resultsPage.Hide()
 	a.recentPage.Show()
 }
 
-func (a *SearchArea) doSearch(search string) {
+func (a *GameSearch) doSearch(search string) {
 	if a.u.isOffline {
 		a.u.ShowInformationDialog(
 			"Offline",

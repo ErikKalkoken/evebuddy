@@ -62,11 +62,11 @@ func (n locationNode) IsRoot() bool {
 	return n.type_ == nodeLocation
 }
 
-// AssetsArea is the UI area that shows the skillqueue
-type AssetsArea struct {
-	Content        fyne.CanvasObject
-	Locations      fyne.CanvasObject
-	LocationAssets fyne.CanvasObject
+type CharacterAssets struct {
+	widget.BaseWidget
+
+	Locations      fyne.CanvasObject // TODO: Refactor into own widget
+	LocationAssets fyne.CanvasObject // TODO: Refactor into own widget
 	OnSelected     func()
 	OnRedraw       func(string)
 
@@ -81,16 +81,17 @@ type AssetsArea struct {
 	u                *BaseUI
 }
 
-func NewAssetsArea(u *BaseUI) *AssetsArea {
+func NewCharacterAssets(u *BaseUI) *CharacterAssets {
 	lp := widget.NewLabel("")
 	lp.Wrapping = fyne.TextWrapWord
-	a := AssetsArea{
+	a := &CharacterAssets{
 		assets:       make([]*app.CharacterAsset, 0),
 		assetsBottom: widget.NewLabel(""),
 		locationPath: lp,
 		locationsTop: MakeTopLabel(),
 		u:            u,
 	}
+	a.ExtendBaseWidget(a)
 	a.locations = a.makeLocationsTree()
 	a.Locations = container.NewBorder(
 		container.NewVBox(a.locationsTop, widget.NewSeparator()),
@@ -99,23 +100,24 @@ func NewAssetsArea(u *BaseUI) *AssetsArea {
 		nil,
 		a.locations,
 	)
-
 	a.assetGrid = a.makeAssetGrid()
-	gridTop := a.locationPath
 	a.LocationAssets = container.NewBorder(
-		container.NewVBox(gridTop, widget.NewSeparator()),
+		container.NewVBox(a.locationPath, widget.NewSeparator()),
 		container.NewVBox(widget.NewSeparator(), a.assetsBottom),
 		nil,
 		nil,
 		a.assetGrid,
 	)
-	main := container.NewHSplit(a.Locations, a.LocationAssets)
-	main.SetOffset(0.33)
-	a.Content = main
-	return &a
+	return a
 }
 
-func (a *AssetsArea) makeLocationsTree() *iwidget.Tree[locationNode] {
+func (a *CharacterAssets) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewHSplit(a.Locations, a.LocationAssets)
+	c.SetOffset(0.33)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *CharacterAssets) makeLocationsTree() *iwidget.Tree[locationNode] {
 	makeNameWithCount := func(name string, count int) string {
 		if count == 0 {
 			return name
@@ -183,7 +185,7 @@ func (a *AssetsArea) makeLocationsTree() *iwidget.Tree[locationNode] {
 	return t
 }
 
-func (a *AssetsArea) clearAssets() error {
+func (a *CharacterAssets) clearAssets() error {
 	a.assets = make([]*app.CharacterAsset, 0)
 	a.assetGrid.Refresh()
 	a.locationPath.SetText("")
@@ -191,7 +193,7 @@ func (a *AssetsArea) clearAssets() error {
 	return nil
 }
 
-func (a *AssetsArea) makeAssetGrid() *widget.GridWrap {
+func (a *CharacterAssets) makeAssetGrid() *widget.GridWrap {
 	g := widget.NewGridWrap(
 		func() int {
 			return len(a.assets)
@@ -250,7 +252,7 @@ func (a *AssetsArea) makeAssetGrid() *widget.GridWrap {
 	return g
 }
 
-func (a *AssetsArea) Redraw() {
+func (a *CharacterAssets) Update() {
 	a.locations.CloseAllBranches()
 	a.locations.ScrollToTop()
 	t, i, err := func() (string, widget.Importance, error) {
@@ -279,7 +281,7 @@ func (a *AssetsArea) Redraw() {
 	}
 }
 
-func (a *AssetsArea) newLocationData() (*iwidget.TreeData[locationNode], error) {
+func (a *CharacterAssets) newLocationData() (*iwidget.TreeData[locationNode], error) {
 	ctx := context.TODO()
 	tree := iwidget.NewTreeData[locationNode]()
 	if !a.u.HasCharacter() {
@@ -425,7 +427,7 @@ func (a *AssetsArea) newLocationData() (*iwidget.TreeData[locationNode], error) 
 	return tree, nil
 }
 
-func (a *AssetsArea) makeTopText(total int) (string, widget.Importance, error) {
+func (a *CharacterAssets) makeTopText(total int) (string, widget.Importance, error) {
 	c := a.u.CurrentCharacter()
 	if c == nil {
 		return "No character", widget.LowImportance, nil
@@ -439,7 +441,7 @@ func (a *AssetsArea) makeTopText(total int) (string, widget.Importance, error) {
 	return text, widget.MediumImportance, nil
 }
 
-func (a *AssetsArea) selectLocation(location locationNode) error {
+func (a *CharacterAssets) selectLocation(location locationNode) error {
 	a.assets = make([]*app.CharacterAsset, 0)
 	a.assetGrid.Refresh()
 	a.selectedLocation.Set(location)
@@ -508,7 +510,7 @@ func (a *AssetsArea) selectLocation(location locationNode) error {
 	return nil
 }
 
-func (a *AssetsArea) updateLocationPath(location locationNode) {
+func (a *CharacterAssets) updateLocationPath(location locationNode) {
 	path := make([]locationNode, 0)
 	for _, uid := range a.locations.Data().Path(location.UID()) {
 		n, ok := a.locations.Data().Node(uid)

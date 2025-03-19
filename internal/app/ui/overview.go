@@ -31,9 +31,8 @@ type overviewCharacter struct {
 	walletBalance optional.Optional[float64]
 }
 
-// OverviewArea is the UI area that shows an overview of all the user's characters.
-type OverviewArea struct {
-	Content fyne.CanvasObject
+type CharacterOverview struct {
+	widget.BaseWidget
 
 	rows []overviewCharacter
 	body fyne.CanvasObject
@@ -41,13 +40,13 @@ type OverviewArea struct {
 	u    *BaseUI
 }
 
-func NewOverviewArea(u *BaseUI) *OverviewArea {
-	a := OverviewArea{
+func NewCharacterOverview(u *BaseUI) *CharacterOverview {
+	a := &CharacterOverview{
 		rows: make([]overviewCharacter, 0),
 		top:  MakeTopLabel(),
 		u:    u,
 	}
-	top := container.NewVBox(a.top, widget.NewSeparator())
+	a.ExtendBaseWidget(a)
 	headers := []headerDef{
 		{"Name", 250},
 		{"Corporation", 250},
@@ -125,11 +124,16 @@ func NewOverviewArea(u *BaseUI) *OverviewArea {
 			u.ShowEveEntityInfoWindow(&app.EveEntity{ID: oc.id, Name: oc.name, Category: app.EveEntityCharacter})
 		})
 	}
-	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
-	return &a
+	return a
 }
 
-func (a *OverviewArea) Refresh() {
+func (a *CharacterOverview) CreateRenderer() fyne.WidgetRenderer {
+	top := container.NewVBox(a.top, widget.NewSeparator())
+	c := container.NewBorder(top, nil, nil, nil, a.body)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *CharacterOverview) Update() {
 	t, i, err := func() (string, widget.Importance, error) {
 		totals, err := a.updateCharacters()
 		if err != nil {
@@ -166,7 +170,7 @@ type overviewTotals struct {
 	assets optional.Optional[float64]
 }
 
-func (a *OverviewArea) updateCharacters() (overviewTotals, error) {
+func (a *CharacterOverview) updateCharacters() (overviewTotals, error) {
 	var totals overviewTotals
 	var err error
 	ctx := context.Background()

@@ -33,11 +33,8 @@ func (c locationCharacter) systemSecurityDisplay() string {
 	return fmt.Sprintf("%.1f", c.systemSecurity.ValueOrZero())
 }
 
-// LocationsArea is the UI area that shows an overview of all the user's characters.
-//
-// It generates output which is customized for either desktop or mobile.
-type LocationsArea struct {
-	Content fyne.CanvasObject
+type LocationOverview struct {
+	widget.BaseWidget
 
 	rows []locationCharacter
 	body fyne.CanvasObject
@@ -45,15 +42,13 @@ type LocationsArea struct {
 	u    *BaseUI
 }
 
-func NewLocationsArea(u *BaseUI) *LocationsArea {
-	a := LocationsArea{
+func NewLocations(u *BaseUI) *LocationOverview {
+	a := &LocationOverview{
 		rows: make([]locationCharacter, 0),
-		top:  widget.NewLabel(""),
+		top:  MakeTopLabel(),
 		u:    u,
 	}
-	a.top.TextStyle.Bold = true
-
-	top := container.NewVBox(a.top, widget.NewSeparator())
+	a.ExtendBaseWidget(a)
 
 	headers := []headerDef{
 		{"Name", 200},
@@ -104,11 +99,16 @@ func NewLocationsArea(u *BaseUI) *LocationsArea {
 			a.u.ShowInfoWindow(infowindow.Location, int64(r.location.ID))
 		})
 	}
-	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
-	return &a
+	return a
 }
 
-func (a *LocationsArea) Refresh() {
+func (a *LocationOverview) CreateRenderer() fyne.WidgetRenderer {
+	top := container.NewVBox(a.top, widget.NewSeparator())
+	c := container.NewBorder(top, nil, nil, nil, a.body)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *LocationOverview) Update() {
 	t, i, err := func() (string, widget.Importance, error) {
 		locations, err := a.updateCharacters()
 		if err != nil {
@@ -130,7 +130,7 @@ func (a *LocationsArea) Refresh() {
 	a.body.Refresh()
 }
 
-func (a *LocationsArea) updateCharacters() (int, error) {
+func (a *LocationOverview) updateCharacters() (int, error) {
 	var err error
 	ctx := context.TODO()
 	mycc, err := a.u.CharacterService().ListCharacters(ctx)

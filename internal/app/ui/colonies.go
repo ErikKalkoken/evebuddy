@@ -30,10 +30,10 @@ type colonyRow struct {
 	characterID        int32
 }
 
-// ColoniesArea is the UI area that shows the skillqueue
-type ColoniesArea struct {
-	Content   fyne.CanvasObject
-	OnRefresh func(top string)
+type ColonyOverview struct {
+	widget.BaseWidget
+
+	OnUpdate func(top string)
 
 	body fyne.CanvasObject
 	rows []colonyRow
@@ -41,12 +41,13 @@ type ColoniesArea struct {
 	u    *BaseUI
 }
 
-func NewColoniesArea(u *BaseUI) *ColoniesArea {
-	a := ColoniesArea{
+func NewColonies(u *BaseUI) *ColonyOverview {
+	a := &ColonyOverview{
 		rows: make([]colonyRow, 0),
 		top:  MakeTopLabel(),
 		u:    u,
 	}
+	a.ExtendBaseWidget(a)
 	headers := []headerDef{
 		{"Planet", 150},
 		{"Sec.", 50},
@@ -96,12 +97,16 @@ func NewColoniesArea(u *BaseUI) *ColoniesArea {
 	} else {
 		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, nil)
 	}
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
-	return &a
+	return a
 }
 
-func (a *ColoniesArea) Refresh() {
+func (a *ColonyOverview) CreateRenderer() fyne.WidgetRenderer {
+	top := container.NewVBox(a.top, widget.NewSeparator())
+	c := container.NewBorder(top, nil, nil, nil, a.body)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *ColonyOverview) Update() {
 	var t string
 	var i widget.Importance
 	if err := a.updateEntries(); err != nil {
@@ -115,12 +120,12 @@ func (a *ColoniesArea) Refresh() {
 	a.top.Importance = i
 	a.top.Refresh()
 	a.body.Refresh()
-	if a.OnRefresh != nil {
-		a.OnRefresh(t)
+	if a.OnUpdate != nil {
+		a.OnUpdate(t)
 	}
 }
 
-func (a *ColoniesArea) makeTopText() (string, widget.Importance) {
+func (a *ColonyOverview) makeTopText() (string, widget.Importance) {
 	var expiredCount int
 	for _, c := range a.rows {
 		if c.isExpired {
@@ -134,7 +139,7 @@ func (a *ColoniesArea) makeTopText() (string, widget.Importance) {
 	return s, widget.MediumImportance
 }
 
-func (a *ColoniesArea) updateEntries() error {
+func (a *ColonyOverview) updateEntries() error {
 	pp, err := a.u.CharacterService().ListAllCharacterPlanets(context.TODO())
 	if err != nil {
 		return err

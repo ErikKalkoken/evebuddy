@@ -28,14 +28,14 @@ type NotificationGroup struct {
 	UnreadCount int
 }
 
-// NotificationsArea is the UI area that shows the skillqueue
-type NotificationsArea struct {
-	Content       fyne.CanvasObject
+type CharacterCommunications struct {
+	widget.BaseWidget
+
 	Detail        *fyne.Container
 	Notifications fyne.CanvasObject
 	Toolbar       *widget.Toolbar
 	OnSelected    func()
-	OnRefresh     func(count int)
+	OnUpdate      func(count int)
 
 	Groups           []NotificationGroup
 	groupList        *widget.List
@@ -47,19 +47,24 @@ type NotificationsArea struct {
 	u                *BaseUI
 }
 
-func NewNotificationsArea(u *BaseUI) *NotificationsArea {
-	a := NotificationsArea{
+func NewCharacterCommunications(u *BaseUI) *CharacterCommunications {
+	a := &CharacterCommunications{
 		Groups:           make([]NotificationGroup, 0),
 		notifications:    make([]*app.CharacterNotification, 0),
 		notificationsTop: widget.NewLabel(""),
 		groupsTop:        widget.NewLabel(""),
 		u:                u,
 	}
+	a.ExtendBaseWidget(a)
 	a.Toolbar = a.makeToolbar()
 	a.Toolbar.Hide()
 	a.Detail = container.NewVBox()
 	a.notificationList = a.makeNotificationList()
 	a.Notifications = container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList)
+	return a
+}
+
+func (a *CharacterCommunications) CreateRenderer() fyne.WidgetRenderer {
 	split1 := container.NewHSplit(
 		a.Notifications,
 		container.NewBorder(a.Toolbar, nil, nil, nil, a.Detail),
@@ -71,11 +76,10 @@ func NewNotificationsArea(u *BaseUI) *NotificationsArea {
 		split1,
 	)
 	split2.Offset = 0.15
-	a.Content = split2
-	return &a
+	return widget.NewSimpleRenderer(split2)
 }
 
-func (a *NotificationsArea) makeGroupList() *widget.List {
+func (a *CharacterCommunications) makeGroupList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.Groups)
@@ -118,7 +122,7 @@ func (a *NotificationsArea) makeGroupList() *widget.List {
 	return l
 }
 
-func (a *NotificationsArea) makeNotificationList() *widget.List {
+func (a *CharacterCommunications) makeNotificationList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.notifications)
@@ -149,7 +153,7 @@ func (a *NotificationsArea) makeNotificationList() *widget.List {
 	return l
 }
 
-func (a *NotificationsArea) makeToolbar() *widget.Toolbar {
+func (a *CharacterCommunications) makeToolbar() *widget.Toolbar {
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
 			if a.current == nil {
@@ -161,7 +165,7 @@ func (a *NotificationsArea) makeToolbar() *widget.Toolbar {
 	return toolbar
 }
 
-func (a *NotificationsArea) Refresh() {
+func (a *CharacterCommunications) Update() {
 	a.clearDetail()
 	a.notifications = make([]*app.CharacterNotification, 0)
 	a.notificationList.Refresh()
@@ -206,12 +210,12 @@ func (a *NotificationsArea) Refresh() {
 	a.groupList.UnselectAll()
 	a.groupsTop.Text, a.groupsTop.Importance = a.makeGroupTopText()
 	a.groupsTop.Refresh()
-	if a.OnRefresh != nil {
-		a.OnRefresh(unreadTotal)
+	if a.OnUpdate != nil {
+		a.OnUpdate(unreadTotal)
 	}
 }
 
-func (a *NotificationsArea) makeGroupTopText() (string, widget.Importance) {
+func (a *CharacterCommunications) makeGroupTopText() (string, widget.Importance) {
 	hasData := a.u.StatusCacheService().CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for data to load...", widget.WarningImportance
@@ -219,11 +223,11 @@ func (a *NotificationsArea) makeGroupTopText() (string, widget.Importance) {
 	return fmt.Sprintf("%d groups", len(a.Groups)), widget.MediumImportance
 }
 
-func (a *NotificationsArea) ResetGroups() {
+func (a *CharacterCommunications) ResetGroups() {
 	a.SetGroup(evenotification.Unread)
 }
 
-func (a *NotificationsArea) SetGroup(nc evenotification.Group) {
+func (a *CharacterCommunications) SetGroup(nc evenotification.Group) {
 	ctx := context.Background()
 	characterID := a.u.CurrentCharacterID()
 	var notifications []*app.CharacterNotification
@@ -253,14 +257,14 @@ func (a *NotificationsArea) SetGroup(nc evenotification.Group) {
 	a.Notifications.Refresh()
 }
 
-func (a *NotificationsArea) clearDetail() {
+func (a *CharacterCommunications) clearDetail() {
 	a.Detail.RemoveAll()
 	a.Toolbar.Hide()
 	a.current = nil
 }
 
 // TODO: Refactor to avoid recreating the container every time
-func (a *NotificationsArea) setDetail(n *app.CharacterNotification) {
+func (a *CharacterCommunications) setDetail(n *app.CharacterNotification) {
 	if n.RecipientName == "" && a.u.HasCharacter() {
 		n.RecipientName = a.u.CurrentCharacter().EveCharacter.Name
 	}

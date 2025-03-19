@@ -67,28 +67,24 @@ func (iw InfoWindow) Show(t InfoVariant, id int64) {
 	switch t {
 	case Alliance:
 		showWindow("Alliance", func(w fyne.Window) fyne.CanvasObject {
-			a := newAlliancArea(iw, int32(id), w)
-			return a.Content
+			return newAllianceInfo(iw, int32(id), w)
 		})
 	case Character:
 		showWindow("Character", func(w fyne.Window) fyne.CanvasObject {
-			a := newCharacterArea(iw, int32(id), w)
-			return a.Content
+			return newCharacterInfo(iw, int32(id), w)
 		})
 	case Constellation:
 		showWindow("Constellation", func(w fyne.Window) fyne.CanvasObject {
-			a := newConstellationArea(iw, int32(id), w)
-			return a.Content
+			return newConstellationInfo(iw, int32(id), w)
 		})
 	case Corporation:
 		showWindow("Corporation", func(w fyne.Window) fyne.CanvasObject {
-			a := newCorporationArea(iw, int32(id), w)
-			return a.Content
+			return newCorporationInfo(iw, int32(id), w)
 		})
 	case InventoryType:
 		showWindow("Information", func(w fyne.Window) fyne.CanvasObject {
 			// TODO: Restructure, so that window is first drawn empty and content loaded in background (as other info windo)
-			a, err := NewInventoryTypeArea(iw, int32(id), iw.u.CurrentCharacterID(), w)
+			a, err := NewInventoryTypeInfo(iw, int32(id), iw.u.CurrentCharacterID(), w)
 			if err != nil {
 				slog.Error("show type", "error", err)
 				l := widget.NewLabel(fmt.Sprintf("ERROR: Can not create info window: %s", err))
@@ -96,22 +92,19 @@ func (iw InfoWindow) Show(t InfoVariant, id int64) {
 				return l
 			}
 			w.SetTitle(a.MakeTitle("Information"))
-			return a.Content
+			return a
 		})
 	case Region:
 		showWindow("Region", func(w fyne.Window) fyne.CanvasObject {
-			a := newRegionArea(iw, int32(id), w)
-			return a.Content
+			return newRegionInfo(iw, int32(id), w)
 		})
 	case SolarSystem:
 		showWindow("Solar System", func(w fyne.Window) fyne.CanvasObject {
-			a := newSolarSystemArea(iw, int32(id), w)
-			return a.Content
+			return newSolarSystemInfo(iw, int32(id), w)
 		})
 	case Location:
 		showWindow("Location", func(w fyne.Window) fyne.CanvasObject {
-			a := newLocationArea(iw, id, w)
-			return a.Content
+			return newLocationInfo(iw, id, w)
 		})
 	default:
 		iw.u.ShowInformationDialog(

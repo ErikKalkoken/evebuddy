@@ -22,9 +22,9 @@ const (
 	flyableCanNot = "Can Not Fly"
 )
 
-// ShipsArea is the UI area that shows the skillqueue
-type ShipsArea struct {
-	Content         *fyne.Container
+type CharacterShips struct {
+	widget.BaseWidget
+
 	flyableSelect   *widget.Select
 	flyableSelected string
 	grid            *widget.GridWrap
@@ -37,15 +37,16 @@ type ShipsArea struct {
 	u               *BaseUI
 }
 
-func newShipArea(u *BaseUI) *ShipsArea {
-	a := ShipsArea{
+func NewCharacterShips(u *BaseUI) *CharacterShips {
+	a := &CharacterShips{
 		ships:     make([]*app.CharacterShipAbility, 0),
 		top:       widget.NewLabel(""),
 		foundText: widget.NewLabel(""),
 		u:         u,
 	}
-	a.top.TextStyle.Bold = true
+	a.ExtendBaseWidget(a)
 
+	a.top.TextStyle.Bold = true
 	a.searchBox = widget.NewEntry()
 	a.searchBox.SetPlaceHolder("Filter by ship name")
 	a.searchBox.OnChanged = func(s string) {
@@ -80,24 +81,31 @@ func newShipArea(u *BaseUI) *ShipsArea {
 	a.flyableSelect.PlaceHolder = "(Flyable)"
 
 	a.grid = a.makeShipsGrid()
-	b := widget.NewButton("Reset", func() {
-		a.reset()
-	})
-	top := container.NewHBox(a.top, a.foundText, layout.NewSpacer(), b)
-	entries := container.NewBorder(nil, nil, nil, container.NewHBox(a.groupSelect, a.flyableSelect), a.searchBox)
-	topBox := container.NewVBox(top, widget.NewSeparator(), entries)
-	a.Content = container.NewBorder(topBox, nil, nil, nil, a.grid)
-	return &a
+	return a
 }
 
-func (a *ShipsArea) reset() {
+func (a *CharacterShips) CreateRenderer() fyne.WidgetRenderer {
+	top := container.NewHBox(
+		a.top,
+		a.foundText,
+		layout.NewSpacer(),
+		widget.NewButton("Reset", func() {
+			a.reset()
+		}))
+	entries := container.NewBorder(nil, nil, nil, container.NewHBox(a.groupSelect, a.flyableSelect), a.searchBox)
+	topBox := container.NewVBox(top, widget.NewSeparator(), entries)
+	c := container.NewBorder(topBox, nil, nil, nil, a.grid)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *CharacterShips) reset() {
 	a.searchBox.SetText("")
 	a.groupSelect.ClearSelected()
 	a.flyableSelect.ClearSelected()
 	a.foundText.Hide()
 }
 
-func (a *ShipsArea) makeShipsGrid() *widget.GridWrap {
+func (a *CharacterShips) makeShipsGrid() *widget.GridWrap {
 	g := widget.NewGridWrap(
 		func() int {
 			return len(a.ships)
@@ -124,7 +132,7 @@ func (a *ShipsArea) makeShipsGrid() *widget.GridWrap {
 	return g
 }
 
-func (a *ShipsArea) Refresh() {
+func (a *CharacterShips) Update() {
 	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
 		exists := a.u.StatusCacheService().GeneralSectionExists(app.SectionEveCategories)
 		if !exists {
@@ -152,7 +160,7 @@ func (a *ShipsArea) Refresh() {
 	a.reset()
 }
 
-func (a *ShipsArea) updateEntries() error {
+func (a *CharacterShips) updateEntries() error {
 	if !a.u.HasCharacter() {
 		a.ships = make([]*app.CharacterShipAbility, 0)
 		a.grid.Refresh()
@@ -206,7 +214,7 @@ func (a *ShipsArea) updateEntries() error {
 	return nil
 }
 
-func (a *ShipsArea) makeTopText() (string, widget.Importance, bool, error) {
+func (a *CharacterShips) makeTopText() (string, widget.Importance, bool, error) {
 	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance, false, nil
 	}
