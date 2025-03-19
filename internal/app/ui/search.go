@@ -217,14 +217,7 @@ func (a *SearchArea) showSupportedResult(o *app.EveEntity) {
 	if !a.supportedCategories.Contains(o.Category) {
 		return
 	}
-	iw := infowindow.New(
-		a.u,
-		a.u.CharacterService(),
-		a.u.EveUniverseService(),
-		a.u.EveImageService(),
-		a.w,
-	)
-	iw.ShowEveEntity(o)
+	a.u.InfoWindow.ShowEveEntity(o)
 }
 
 func (a *SearchArea) makeRecentSelected() *widget.List {

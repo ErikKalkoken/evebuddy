@@ -85,12 +85,12 @@ func newLocationArea(iw InfoWindow, locationID int64, w fyne.Window) *locationAr
 
 func (a *locationArea) load(locationID int64) error {
 	ctx := context.Background()
-	o, err := a.iw.eus.GetOrCreateEveLocationESI(ctx, locationID)
+	o, err := a.iw.u.EveUniverseService().GetOrCreateEveLocationESI(ctx, locationID)
 	if err != nil {
 		return err
 	}
 	go func() {
-		r, err := a.iw.eis.InventoryTypeRender(o.Type.ID, renderIconPixelSize)
+		r, err := a.iw.u.EveImageService().InventoryTypeRender(o.Type.ID, renderIconPixelSize)
 		if err != nil {
 			slog.Error("location info: Failed to load portrait", "location", o, "error", err)
 			return
@@ -107,7 +107,7 @@ func (a *locationArea) load(locationID int64) error {
 		a.iw.ShowEveEntity(o.Owner)
 	}
 	a.typeImage.OnTapped = func() {
-		go a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.eis.InventoryTypeRender, a.w)
+		go a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.u.EveImageService().InventoryTypeRender, a.w)
 	}
 	description := o.Type.Description
 	if description == "" {
@@ -137,7 +137,7 @@ func (a *locationArea) load(locationID int64) error {
 	a.tabs.Select(locationTab)
 	a.tabs.Refresh()
 	go func() {
-		r, err := a.iw.eis.CorporationLogo(o.Owner.ID, app.IconPixelSize)
+		r, err := a.iw.u.EveImageService().CorporationLogo(o.Owner.ID, app.IconPixelSize)
 		if err != nil {
 			slog.Error("location info: Failed to load corp logo", "owner", o.Owner, "error", err)
 			return

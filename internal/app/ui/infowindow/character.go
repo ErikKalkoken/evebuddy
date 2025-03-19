@@ -106,14 +106,14 @@ func newCharacterArea(iw InfoWindow, characterID int32, w fyne.Window) *characte
 func (a *characterArea) load(characterID int32) error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.iw.eis.CharacterPortrait(characterID, 256)
+		r, err := a.iw.u.EveImageService().CharacterPortrait(characterID, 256)
 		if err != nil {
 			slog.Error("character info: Failed to load portrait", "charaterID", characterID, "error", err)
 			return
 		}
 		a.portrait.SetResource(r)
 	}()
-	o, err := a.iw.eus.GetEveCharacterESI(ctx, characterID)
+	o, err := a.iw.u.EveUniverseService().GetEveCharacterESI(ctx, characterID)
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (a *characterArea) load(characterID int32) error {
 		a.iw.ShowEveEntity(o.Corporation)
 	}
 	a.portrait.OnTapped = func() {
-		go a.iw.showZoomWindow(o.Name, characterID, a.iw.eis.CharacterPortrait, a.w)
+		go a.iw.showZoomWindow(o.Name, characterID, a.iw.u.EveImageService().CharacterPortrait, a.w)
 	}
 	if s := o.DescriptionPlain(); s != "" {
 		bio := widget.NewLabel(s)
@@ -166,7 +166,7 @@ func (a *characterArea) load(characterID int32) error {
 	a.tabs.Append(attributesTab)
 	a.tabs.Refresh()
 	go func() {
-		r, err := a.iw.eis.CorporationLogo(o.Corporation.ID, app.IconPixelSize)
+		r, err := a.iw.u.EveImageService().CorporationLogo(o.Corporation.ID, app.IconPixelSize)
 		if err != nil {
 			slog.Error("character info: Failed to load corp logo", "charaterID", characterID, "error", err)
 			return
@@ -175,7 +175,7 @@ func (a *characterArea) load(characterID int32) error {
 		a.corporationLogo.Refresh()
 	}()
 	go func() {
-		history, err := a.iw.eus.GetCharacterCorporationHistory(ctx, characterID)
+		history, err := a.iw.u.EveUniverseService().GetCharacterCorporationHistory(ctx, characterID)
 		if err != nil {
 			slog.Error("character info: Failed to load corporation history", "charaterID", characterID, "error", err)
 			return

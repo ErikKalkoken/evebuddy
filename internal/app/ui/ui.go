@@ -73,10 +73,11 @@ type BaseUI struct {
 	OnShowAndRun         func()
 	ShowMailIndicator    func()
 
-	DeskApp  desktop.App
-	FyneApp  fyne.App
-	Snackbar *iwidget.Snackbar
-	Window   fyne.Window
+	DeskApp    desktop.App
+	FyneApp    fyne.App
+	Snackbar   *iwidget.Snackbar
+	InfoWindow infowindow.InfoWindow
+	Window     fyne.Window
 
 	AccountArea           *AccountArea
 	AssetsArea            *AssetsArea
@@ -153,6 +154,7 @@ func NewBaseUI(
 	}
 
 	u.Snackbar = iwidget.NewSnackbar(u.Window)
+	u.InfoWindow = infowindow.New(u, u.Window)
 
 	u.AccountArea = NewAccountArea(u)
 	u.AssetsArea = NewAssetsArea(u)
@@ -562,26 +564,19 @@ func (u *BaseUI) ShowUpdateStatusWindow() {
 }
 
 func (u *BaseUI) ShowLocationInfoWindow(id int64) {
-	u.ShowInfoWindow(infowindow.Location, id)
+	u.InfoWindow.Show(infowindow.Location, id)
 }
 
 func (u *BaseUI) ShowTypeInfoWindow(id int32) {
-	u.ShowInfoWindow(infowindow.InventoryType, int64(id))
+	u.InfoWindow.Show(infowindow.InventoryType, int64(id))
 }
 
 func (u *BaseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
-	u.ShowInfoWindow(infowindow.EveEntity2InfoVariant(o), int64(o.ID))
+	u.InfoWindow.Show(infowindow.EveEntity2InfoVariant(o), int64(o.ID))
 }
 
 func (u *BaseUI) ShowInfoWindow(v infowindow.InfoVariant, id int64) {
-	iw := infowindow.New(
-		u,
-		u.CharacterService(),
-		u.EveUniverseService(),
-		u.EveImageService(),
-		u.Window,
-	)
-	iw.Show(v, id)
+	u.InfoWindow.Show(v, id)
 }
 
 func (u *BaseUI) AvailableUpdate() (github.VersionInfo, error) {

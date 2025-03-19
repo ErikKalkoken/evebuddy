@@ -84,7 +84,7 @@ func newSolarSystemArea(iw InfoWindow, solarSystemID int32, w fyne.Window) *sola
 
 func (a *solarSystemArea) load(solarSystemID int32) error {
 	ctx := context.Background()
-	o, err := a.iw.eus.GetOrCreateEveSolarSystemESIPlus(ctx, solarSystemID)
+	o, err := a.iw.u.EveUniverseService().GetOrCreateEveSolarSystemESIPlus(ctx, solarSystemID)
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func (a *solarSystemArea) load(solarSystemID int32) error {
 		if err != nil {
 			return
 		}
-		r, err := a.iw.eis.InventoryTypeIcon(id, app.IconPixelSize)
+		r, err := a.iw.u.EveImageService().InventoryTypeIcon(id, app.IconPixelSize)
 		if err != nil {
 			slog.Error("solar system info: Failed to load logo", "solarSystem", solarSystemID, "error", err)
 			return

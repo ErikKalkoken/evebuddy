@@ -86,7 +86,7 @@ func newCorporationArea(iw InfoWindow, corporationID int32, w fyne.Window) *corp
 func (a *corporationArea) load(corporationID int32) error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.iw.eis.CorporationLogo(corporationID, app.IconPixelSize)
+		r, err := a.iw.u.EveImageService().CorporationLogo(corporationID, app.IconPixelSize)
 		if err != nil {
 			slog.Error("corporation info: Failed to load logo", "corporationID", corporationID, "error", err)
 			return
@@ -94,7 +94,7 @@ func (a *corporationArea) load(corporationID int32) error {
 		a.logo.Resource = r
 		a.logo.Refresh()
 	}()
-	o, err := a.iw.eus.GetEveCorporationESI(ctx, corporationID)
+	o, err := a.iw.u.EveUniverseService().GetEveCorporationESI(ctx, corporationID)
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func (a *corporationArea) load(corporationID int32) error {
 			a.iw.ShowEveEntity(o.Alliance)
 		}
 		go func() {
-			r, err := a.iw.eis.AllianceLogo(o.Alliance.ID, app.IconPixelSize)
+			r, err := a.iw.u.EveImageService().AllianceLogo(o.Alliance.ID, app.IconPixelSize)
 			if err != nil {
 				slog.Error("corporation info: Failed to load alliance logo", "allianceID", o.Alliance.ID, "error", err)
 				return
@@ -176,7 +176,7 @@ func (a *corporationArea) load(corporationID int32) error {
 	a.tabs.Append(attributesTab)
 	a.tabs.Select(attributesTab)
 	go func() {
-		history, err := a.iw.eus.GetCorporationAllianceHistory(ctx, corporationID)
+		history, err := a.iw.u.EveUniverseService().GetCorporationAllianceHistory(ctx, corporationID)
 		if err != nil {
 			slog.Error("corporation info: Failed to load alliance history", "corporationID", corporationID, "error", err)
 			return

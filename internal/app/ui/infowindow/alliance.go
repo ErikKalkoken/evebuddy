@@ -63,7 +63,7 @@ func newAlliancArea(iw InfoWindow, allianceID int32, w fyne.Window) *allianceAre
 func (a *allianceArea) load(allianceID int32) error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.iw.eis.AllianceLogo(allianceID, app.IconPixelSize)
+		r, err := a.iw.u.EveImageService().AllianceLogo(allianceID, app.IconPixelSize)
 		if err != nil {
 			slog.Error("alliance info: Failed to load logo", "allianceID", allianceID, "error", err)
 			return
@@ -71,7 +71,7 @@ func (a *allianceArea) load(allianceID int32) error {
 		a.logo.Resource = r
 		a.logo.Refresh()
 	}()
-	o, err := a.iw.eus.GetEveAllianceESI(ctx, allianceID)
+	o, err := a.iw.u.EveUniverseService().GetEveAllianceESI(ctx, allianceID)
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func (a *allianceArea) load(allianceID int32) error {
 
 	// Members
 	go func() {
-		members, err := a.iw.eus.GetEveAllianceCorporationsESI(ctx, allianceID)
+		members, err := a.iw.u.EveUniverseService().GetEveAllianceCorporationsESI(ctx, allianceID)
 		if err != nil {
 			slog.Error("alliance info: Failed to load corporations", "allianceID", allianceID, "error", err)
 			return

@@ -27,37 +27,28 @@ const (
 )
 
 type UI interface {
+	CharacterService() *character.CharacterService
 	CurrentCharacterID() int32
+	EveImageService() app.EveImageService
+	EveUniverseService() *eveuniverse.EveUniverseService
 	IsDeveloperMode() bool
 	IsOffline() bool
-	ShowInformationDialog(title, message string, parent fyne.Window)
 	ShowErrorDialog(message string, err error, parent fyne.Window)
+	ShowInformationDialog(title, message string, parent fyne.Window)
 }
 
 // InfoWindow represents a dedicated window for showing information similar to the in-game info windows.
 type InfoWindow struct {
-	cs  *character.CharacterService
-	eis app.EveImageService
-	eus *eveuniverse.EveUniverseService
-	u   UI
-	w   fyne.Window // parent window, e.g. for displaying error dialogs
+	u UI
+	w fyne.Window // parent window, e.g. for displaying error dialogs
 }
 
 // New returns a configured InfoWindow.
 func New(
 	u UI,
-	cs *character.CharacterService,
-	eus *eveuniverse.EveUniverseService,
-	eis app.EveImageService,
 	w fyne.Window,
 ) InfoWindow {
-	iw := InfoWindow{
-		cs:  cs,
-		eus: eus,
-		eis: eis,
-		u:   u,
-		w:   w,
-	}
+	iw := InfoWindow{u: u, w: w}
 	return iw
 }
 

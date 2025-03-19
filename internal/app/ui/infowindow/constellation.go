@@ -76,7 +76,7 @@ func newConstellationArea(iw InfoWindow, constellationID int32, w fyne.Window) *
 
 func (a *constellationArea) load(constellationID int32) error {
 	ctx := context.Background()
-	o, err := a.iw.eus.GetOrCreateEveConstellationESI(ctx, constellationID)
+	o, err := a.iw.u.EveUniverseService().GetOrCreateEveConstellationESI(ctx, constellationID)
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (a *constellationArea) load(constellationID int32) error {
 	a.tabs.Append(solarSystems)
 	a.tabs.Refresh()
 	go func() {
-		oo, err := a.iw.eus.GetConstellationSolarSytemsESI(ctx, o.ID)
+		oo, err := a.iw.u.EveUniverseService().GetConstellationSolarSytemsESI(ctx, o.ID)
 		if err != nil {
 			slog.Error("constellation info: Failed to load constellations", "region", o.ID, "error", err)
 			sLabel.Text = ihumanize.Error(err)

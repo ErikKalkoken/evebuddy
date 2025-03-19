@@ -63,12 +63,12 @@ type inventoryTypeArea struct {
 func NewInventoryTypeArea(iw InfoWindow, typeID, characterID int32, w fyne.Window) (*inventoryTypeArea, error) {
 	ctx := context.Background()
 	a := &inventoryTypeArea{iw: iw, w: w}
-	et, err := iw.eus.GetOrCreateEveTypeESI(ctx, typeID)
+	et, err := iw.u.EveUniverseService().GetOrCreateEveTypeESI(ctx, typeID)
 	if err != nil {
 		return nil, err
 	}
 	a.et = et
-	owner, err := iw.eus.GetOrCreateEveEntityESI(ctx, characterID)
+	owner, err := iw.u.EveUniverseService().GetOrCreateEveEntityESI(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func NewInventoryTypeArea(iw InfoWindow, typeID, characterID int32, w fyne.Windo
 	if a.et == nil {
 		return nil, nil
 	}
-	p, err := iw.eus.GetEveMarketPrice(ctx, a.et.ID)
+	p, err := iw.u.EveUniverseService().GetEveMarketPrice(ctx, a.et.ID)
 	if errors.Is(err, eveuniverse.ErrNotFound) {
 		p = nil
 	} else if err != nil {
@@ -86,7 +86,7 @@ func NewInventoryTypeArea(iw InfoWindow, typeID, characterID int32, w fyne.Windo
 	} else {
 		a.price = nil
 	}
-	oo, err := iw.eus.ListEveTypeDogmaAttributesForType(ctx, a.et.ID)
+	oo, err := iw.u.EveUniverseService().ListEveTypeDogmaAttributesForType(ctx, a.et.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +183,7 @@ func (a *inventoryTypeArea) calcAttributesData(
 				x := attributes[app.EveDogmaAttributeWarpSpeedMultiplier]
 				value = value * x.Value
 			}
-			v, substituteIcon := a.iw.eus.FormatValue(ctx, value, o.DogmaAttribute.Unit)
+			v, substituteIcon := a.iw.u.EveUniverseService().FormatValue(ctx, value, o.DogmaAttribute.Unit)
 			var iconID int32
 			if substituteIcon != 0 {
 				iconID = substituteIcon
@@ -200,9 +200,9 @@ func (a *inventoryTypeArea) calcAttributesData(
 	}
 	rows := make([]attributeRow, 0)
 	if a.et.Volume > 0 {
-		v, _ := a.iw.eus.FormatValue(ctx, a.et.Volume, app.EveUnitVolume)
+		v, _ := a.iw.u.EveUniverseService().FormatValue(ctx, a.et.Volume, app.EveUnitVolume)
 		if a.et.Volume != a.et.PackagedVolume {
-			v2, _ := a.iw.eus.FormatValue(ctx, a.et.PackagedVolume, app.EveUnitVolume)
+			v2, _ := a.iw.u.EveUniverseService().FormatValue(ctx, a.et.PackagedVolume, app.EveUnitVolume)
 			v += fmt.Sprintf(" (%s Packaged)", v2)
 		}
 		r := attributeRow{
@@ -254,7 +254,7 @@ func (a *inventoryTypeArea) calcFittingData(ctx context.Context, attributes map[
 		}
 		iconID := o.DogmaAttribute.IconID
 		r, _ := eveicon.GetResourceByIconID(iconID)
-		v, _ := a.iw.eus.FormatValue(ctx, o.Value, o.DogmaAttribute.Unit)
+		v, _ := a.iw.u.EveUniverseService().FormatValue(ctx, o.Value, o.DogmaAttribute.Unit)
 		data = append(data, attributeRow{
 			icon:  r,
 			label: o.DogmaAttribute.DisplayName,
@@ -288,7 +288,7 @@ func (a *inventoryTypeArea) calcRequiredSkills(ctx context.Context, characterID 
 			continue
 		}
 		requiredLevel := int(daLevel.Value)
-		et, err := a.iw.eus.GetEveType(ctx, typeID)
+		et, err := a.iw.u.EveUniverseService().GetEveType(ctx, typeID)
 		if err != nil {
 			return nil, err
 		}
@@ -298,7 +298,7 @@ func (a *inventoryTypeArea) calcRequiredSkills(ctx context.Context, characterID 
 			name:          et.Name,
 			typeID:        typeID,
 		}
-		cs, err := a.iw.cs.GetCharacterSkill(ctx, characterID, typeID)
+		cs, err := a.iw.u.CharacterService().GetCharacterSkill(ctx, characterID, typeID)
 		if errors.Is(err, character.ErrNotFound) {
 			// do nothing
 		} else if err != nil {
@@ -345,13 +345,13 @@ func (a *inventoryTypeArea) makeTop() fyne.CanvasObject {
 	typeIcon := container.New(ilayout.NewTopLeftLayout())
 	if a.et.HasRender() {
 		size := 128
-		r, err := a.iw.eis.InventoryTypeRender(a.et.ID, size)
+		r, err := a.iw.u.EveImageService().InventoryTypeRender(a.et.ID, size)
 		if err != nil {
 			slog.Error("Failed to load inventory type render", "typeID", a.et.ID, "error", err)
 			r = theme.BrokenImageIcon()
 		}
 		render := kxwidget.NewTappableImage(r, func() {
-			go a.iw.showZoomWindow(a.et.Name, a.et.ID, a.iw.eis.InventoryTypeRender, a.w)
+			go a.iw.showZoomWindow(a.et.Name, a.et.ID, a.iw.u.EveImageService().InventoryTypeRender, a.w)
 		})
 		render.SetFillMode(canvas.ImageFillContain)
 		s := float32(size)
@@ -377,11 +377,11 @@ func (a *inventoryTypeArea) makeTop() fyne.CanvasObject {
 		s := float32(app.IconPixelSize) * logoZoomFactor
 		icon := appwidget.NewImageResourceAsync(icons.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
 			if a.et.IsSKIN() {
-				return a.iw.eis.InventoryTypeSKIN(a.et.ID, app.IconPixelSize)
+				return a.iw.u.EveImageService().InventoryTypeSKIN(a.et.ID, app.IconPixelSize)
 			} else if a.et.IsBlueprint() {
-				return a.iw.eis.InventoryTypeBPO(a.et.ID, app.IconPixelSize)
+				return a.iw.u.EveImageService().InventoryTypeBPO(a.et.ID, app.IconPixelSize)
 			} else {
-				return a.iw.eis.InventoryTypeIcon(a.et.ID, app.IconPixelSize)
+				return a.iw.u.EveImageService().InventoryTypeIcon(a.et.ID, app.IconPixelSize)
 			}
 		})
 		typeIcon.Add(icon)
@@ -393,7 +393,7 @@ func (a *inventoryTypeArea) makeTop() fyne.CanvasObject {
 	characterName.Wrapping = fyne.TextWrapWord
 	if a.character != nil {
 		appwidget.RefreshImageResourceAsync(characterIcon, func() (fyne.Resource, error) {
-			return a.iw.eis.CharacterPortrait(a.character.ID, app.IconPixelSize)
+			return a.iw.u.EveImageService().CharacterPortrait(a.character.ID, app.IconPixelSize)
 		})
 		characterName.SetText(a.character.Name)
 	} else {
