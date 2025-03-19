@@ -14,13 +14,24 @@ import (
 )
 
 // NewConfirmDialog returns a new pre-configured confirm dialog.
-func NewConfirmDialog(title, message, confirm string, callback func(bool), parent fyne.Window) *dialog.ConfirmDialog {
+func NewConfirmDialog(title, message, confirm string, callback func(bool), parent fyne.Window) dialog.Dialog {
 	d := dialog.NewConfirm(title, message, callback, parent)
 	d.SetConfirmImportance(widget.DangerImportance)
 	d.SetConfirmText(confirm)
 	d.SetDismissText("Cancel")
 	kxdialog.AddDialogKeyHandler(d, parent)
 	return d
+}
+
+func NewInformationDialog(title, message string, parent fyne.Window) dialog.Dialog {
+	d := dialog.NewInformation(title, message, parent)
+	kxdialog.AddDialogKeyHandler(d, parent)
+	return d
+}
+
+func ShowInformationDialog(title, message string, parent fyne.Window) {
+	d := NewInformationDialog(title, message, parent)
+	d.Show()
 }
 
 // NewErrorDialog returns a new custom error dialog.

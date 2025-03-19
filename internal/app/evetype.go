@@ -34,7 +34,6 @@ type EveType struct {
 	Volume         float32
 }
 
-// BodyPlain returns a mail's body as plain text.
 func (et EveType) DescriptionPlain() string {
 	return evehtml.ToPlain(et.Description)
 }

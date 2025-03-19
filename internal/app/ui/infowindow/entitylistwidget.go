@@ -47,15 +47,19 @@ func NewEntityItemFromEveSolarSystem(o *app.EveSolarSystem) entityItem {
 		id:           int64(ee.ID),
 		category:     ee.CategoryDisplay(),
 		textSegments: o.DisplayRichText(),
-		infoVariant:  eveEntity2InfoVariant(ee),
+		infoVariant:  EveEntity2InfoVariant(ee),
 	}
 }
 
-func NewEntityItemFromEveEntity(ee *app.EveEntity, text string) entityItem {
+func NewEntityItemFromEveEntity(ee *app.EveEntity) entityItem {
+	return NewEntityItem(int64(ee.ID), ee.CategoryDisplay(), ee.Name, EveEntity2InfoVariant(ee))
+}
+
+func NewEntityItemFromEveEntityWithText(ee *app.EveEntity, text string) entityItem {
 	if text == "" {
 		text = ee.Name
 	}
-	return NewEntityItem(int64(ee.ID), ee.CategoryDisplay(), text, eveEntity2InfoVariant(ee))
+	return NewEntityItem(int64(ee.ID), ee.CategoryDisplay(), text, EveEntity2InfoVariant(ee))
 }
 
 // EntitiyList is a list widget for showing entities.
@@ -68,7 +72,7 @@ type EntitiyList struct {
 
 func NewEntityListFromEntities(show func(InfoVariant, int64), s ...*app.EveEntity) *EntitiyList {
 	items := slices.Collect(xiter.MapSlice(s, func(ee *app.EveEntity) entityItem {
-		return NewEntityItemFromEveEntity(ee, "")
+		return NewEntityItemFromEveEntityWithText(ee, "")
 	}))
 	return NewEntityListFromItems(show, items...)
 }

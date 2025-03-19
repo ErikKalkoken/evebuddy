@@ -34,22 +34,26 @@ const (
 	NotSupported InfoVariant = iota
 	Alliance
 	Character
+	Constellation
 	Corporation
 	InventoryType
 	Location
+	Region
 	SolarSystem
 )
 
 var eveEntityCategory2InfoVariant = map[app.EveEntityCategory]InfoVariant{
 	app.EveEntityAlliance:      Alliance,
 	app.EveEntityCharacter:     Character,
+	app.EveEntityConstellation: Constellation,
 	app.EveEntityCorporation:   Corporation,
+	app.EveEntityRegion:        Region,
 	app.EveEntitySolarSystem:   SolarSystem,
 	app.EveEntityStation:       Location,
 	app.EveEntityInventoryType: InventoryType,
 }
 
-func eveEntity2InfoVariant(ee *app.EveEntity) InfoVariant {
+func EveEntity2InfoVariant(ee *app.EveEntity) InfoVariant {
 	v, ok := eveEntityCategory2InfoVariant[ee.Category]
 	if !ok {
 		return NotSupported
@@ -65,11 +69,12 @@ func SupportedEveEntities() set.Set[app.EveEntityCategory] {
 
 // InfoWindow represents a dedicated window for showing information similar to the in-game info windows.
 type InfoWindow struct {
-	isDeveloperMode    bool
 	cs                 *character.CharacterService
 	currentCharacterID func() int32
-	eus                *eveuniverse.EveUniverseService
 	eis                app.EveImageService
+	eus                *eveuniverse.EveUniverseService
+	isDeveloperMode    bool
+	isOffline          bool
 	w                  fyne.Window // parent window, e.g. for displaying error dialogs
 }
 
@@ -80,10 +85,12 @@ func New(
 	eus *eveuniverse.EveUniverseService,
 	eis app.EveImageService,
 	isDeveloperMode bool,
+	isOffline bool,
 	w fyne.Window,
 ) InfoWindow {
 	iw := InfoWindow{
 		isDeveloperMode:    isDeveloperMode,
+		isOffline:          isOffline,
 		currentCharacterID: currentCharacterID,
 		cs:                 cs,
 		eus:                eus,
@@ -98,6 +105,14 @@ func (iw *InfoWindow) SetWindow(w fyne.Window) {
 }
 
 func (iw InfoWindow) Show(t InfoVariant, id int64) {
+	if iw.isOffline {
+		iwidget.ShowInformationDialog(
+			"Offline",
+			"Can't show info window when offline",
+			iw.w,
+		)
+		return
+	}
 	switch t {
 	case Alliance:
 		showWindow("Alliance", func(w fyne.Window) fyne.CanvasObject {
@@ -107,6 +122,11 @@ func (iw InfoWindow) Show(t InfoVariant, id int64) {
 	case Character:
 		showWindow("Character", func(w fyne.Window) fyne.CanvasObject {
 			a := newCharacterArea(iw, int32(id), w)
+			return a.Content
+		})
+	case Constellation:
+		showWindow("Constellation", func(w fyne.Window) fyne.CanvasObject {
+			a := newConstellationArea(iw, int32(id), w)
 			return a.Content
 		})
 	case Corporation:
@@ -127,6 +147,11 @@ func (iw InfoWindow) Show(t InfoVariant, id int64) {
 			w.SetTitle(a.MakeTitle("Information"))
 			return a.Content
 		})
+	case Region:
+		showWindow("Region", func(w fyne.Window) fyne.CanvasObject {
+			a := newRegionArea(iw, int32(id), w)
+			return a.Content
+		})
 	case SolarSystem:
 		showWindow("Solar System", func(w fyne.Window) fyne.CanvasObject {
 			a := newSolarSystemArea(iw, int32(id), w)
@@ -138,9 +163,9 @@ func (iw InfoWindow) Show(t InfoVariant, id int64) {
 			return a.Content
 		})
 	default:
-		iwidget.ShowErrorDialog(
+		iwidget.ShowInformationDialog(
+			"Warning",
 			"Can't show info window for unknown category",
-			fmt.Errorf("infowindow: undefined category"),
 			iw.w,
 		)
 	}
@@ -148,7 +173,7 @@ func (iw InfoWindow) Show(t InfoVariant, id int64) {
 
 // Show shows a new info window for an EveEntity.
 func (iw InfoWindow) ShowEveEntity(ee *app.EveEntity) {
-	iw.Show(eveEntity2InfoVariant(ee), int64(ee.ID))
+	iw.Show(EveEntity2InfoVariant(ee), int64(ee.ID))
 }
 
 func showWindow(category string, create func(w fyne.Window) fyne.CanvasObject) {
@@ -190,5 +215,5 @@ func historyItem2EntityItem(hi app.MembershipHistoryItem) entityItem {
 		endDateStr,
 		humanize.Comma(int64(hi.Days)),
 	)
-	return NewEntityItemFromEveEntity(hi.Organization, text)
+	return NewEntityItemFromEveEntityWithText(hi.Organization, text)
 }

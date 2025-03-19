@@ -1,7 +1,7 @@
 generate: bundle queries
 
 bundle:
-	fyne bundle --package icon --prefix "" resources/app > internal/app/icon/resource.go
+	fyne bundle --package icons --prefix "" resources/app > internal/app/icons/resource.go
 	fyne bundle --package widget --prefix icon resources/widget > internal/widget/resource.go
 	fyne bundle --package eveimage resources/eveimage > internal/eveimage/resource.go
 	fyne bundle --package eveicon resources/eveicon > internal/eveicon/resource.go

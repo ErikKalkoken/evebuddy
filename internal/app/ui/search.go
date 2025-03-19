@@ -223,6 +223,7 @@ func (a *SearchArea) showSupportedResult(o *app.EveEntity) {
 		a.u.EveUniverseService,
 		a.u.EveImageService,
 		a.u.FyneApp.Preferences().Bool(settingDeveloperMode),
+		a.u.IsOffline,
 		a.w,
 	)
 	iw.ShowEveEntity(o)
@@ -283,6 +284,14 @@ func (a *SearchArea) showRecent() {
 }
 
 func (a *SearchArea) doSearch(search string) {
+	if a.u.IsOffline {
+		iwidget.ShowInformationDialog(
+			"Offline",
+			"Can't search when offline",
+			a.w,
+		)
+		return
+	}
 	a.clearResults()
 	if search == "" {
 		return

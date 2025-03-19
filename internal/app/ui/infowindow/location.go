@@ -128,8 +128,8 @@ func (a *locationArea) load(locationID int64) error {
 	}
 	el := NewEntityListFromItems(
 		a.iw.Show,
-		NewEntityItemFromEveEntity(o.SolarSystem.Constellation.Region.ToEveEntity(), ""),
-		NewEntityItemFromEveEntity(o.SolarSystem.Constellation.ToEveEntity(), ""),
+		NewEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.Region.ToEveEntity(), ""),
+		NewEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.ToEveEntity(), ""),
 		NewEntityItemFromEveSolarSystem(o.SolarSystem),
 	)
 	locationTab := container.NewTabItem("Location", el)

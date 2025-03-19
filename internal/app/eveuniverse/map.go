@@ -3,6 +3,7 @@ package eveuniverse
 import (
 	"cmp"
 	"context"
+	"maps"
 	"slices"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -131,7 +132,7 @@ func (s *EveUniverseService) GetOrCreateEveSolarSystemESIPlus(ctx context.Contex
 		r.Stations[i] = st
 	}
 	slices.SortFunc(r.Stations, func(a, b *app.EveEntity) int {
-		return cmp.Compare(a.Name, b.Name)
+		return a.Compare(b)
 	})
 	xx, err := s.st.ListEveLocationInSolarSystem(ctx, solarSystemID)
 	if err != nil {
@@ -141,4 +142,46 @@ func (s *EveUniverseService) GetOrCreateEveSolarSystemESIPlus(ctx context.Contex
 		return x.Variant() == app.EveLocationStructure
 	}))
 	return r, nil
+}
+
+func (s *EveUniverseService) GetEveRegionConstellationsESI(ctx context.Context, id int32) ([]*app.EveEntity, error) {
+	region, _, err := s.esiClient.ESI.UniverseApi.GetUniverseRegionsRegionId(ctx, id, nil)
+	if err != nil {
+		return nil, err
+	}
+	xx, err := s.ToEveEntities(ctx, region.Constellations)
+	if err != nil {
+		return nil, err
+	}
+	oo := slices.Collect(maps.Values(xx))
+	slices.SortFunc(oo, func(a, b *app.EveEntity) int {
+		return a.Compare(b)
+	})
+	return oo, nil
+}
+
+func (s *EveUniverseService) GetConstellationSolarSytemsESI(ctx context.Context, id int32) ([]*app.EveSolarSystem, error) {
+	o, _, err := s.esiClient.ESI.UniverseApi.GetUniverseConstellationsConstellationId(ctx, id, nil)
+	if err != nil {
+		return nil, err
+	}
+	g := new(errgroup.Group)
+	systems := make([]*app.EveSolarSystem, len(o.Systems))
+	for i, id := range o.Systems {
+		g.Go(func() error {
+			st, err := s.GetOrCreateEveSolarSystemESI(ctx, id)
+			if err != nil {
+				return err
+			}
+			systems[i] = st
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	slices.SortFunc(systems, func(a, b *app.EveSolarSystem) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
+	return systems, nil
 }

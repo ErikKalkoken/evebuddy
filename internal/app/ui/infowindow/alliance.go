@@ -34,9 +34,8 @@ func newAlliancArea(iw InfoWindow, allianceID int32, w fyne.Window) *allianceAre
 	name.Truncation = fyne.TextTruncateEllipsis
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Truncation = fyne.TextTruncateEllipsis
-	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
 	s := float32(app.IconPixelSize) * logoZoomFactor
-	logo.SetMinSize(fyne.NewSquareSize(s))
+	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(s))
 	a := &allianceArea{
 		iw:   iw,
 		name: name,
