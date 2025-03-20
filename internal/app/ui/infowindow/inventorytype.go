@@ -16,7 +16,6 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
@@ -329,7 +328,7 @@ func (a *inventoryTypeInfo) calcRequiredSkills(ctx context.Context, characterID 
 			typeID:        typeID,
 		}
 		cs, err := a.iw.u.CharacterService().GetCharacterSkill(ctx, characterID, typeID)
-		if errors.Is(err, character.ErrNotFound) {
+		if errors.Is(err, app.ErrNotFound) {
 			// do nothing
 		} else if err != nil {
 			return nil, err

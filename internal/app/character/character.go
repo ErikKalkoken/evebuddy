@@ -20,8 +20,7 @@ import (
 )
 
 var (
-	ErrAborted  = errors.New("process aborted prematurely")
-	ErrNotFound = errors.New("object not found")
+	ErrAborted = errors.New("process aborted prematurely")
 )
 
 // CharacterService provides access to all managed Eve Online characters both online and from local storage.
@@ -123,7 +122,7 @@ func (s *CharacterService) DisableAllTrainingWatchers(ctx context.Context) error
 func (s *CharacterService) GetCharacter(ctx context.Context, id int32) (*app.Character, error) {
 	c, err := s.st.GetCharacter(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
-		return nil, ErrNotFound
+		return nil, app.ErrNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -140,7 +139,7 @@ func (s *CharacterService) GetCharacter(ctx context.Context, id int32) (*app.Cha
 func (s *CharacterService) GetAnyCharacter(ctx context.Context) (*app.Character, error) {
 	o, err := s.st.GetAnyCharacter(ctx)
 	if errors.Is(err, storage.ErrNotFound) {
-		return nil, ErrNotFound
+		return nil, app.ErrNotFound
 	}
 	return o, err
 }

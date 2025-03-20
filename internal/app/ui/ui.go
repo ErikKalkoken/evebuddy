@@ -23,7 +23,6 @@ import (
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
@@ -237,7 +236,7 @@ func (u *BaseUI) Init() {
 	if cID := u.app.Preferences().Int(settingLastCharacterID); cID != 0 {
 		c, err = u.CharacterService().GetCharacter(ctx, int32(cID))
 		if err != nil {
-			if !errors.Is(err, character.ErrNotFound) {
+			if !errors.Is(err, app.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
 			}
 		}
@@ -245,7 +244,7 @@ func (u *BaseUI) Init() {
 	if c == nil {
 		c, err = u.CharacterService().GetAnyCharacter(ctx)
 		if err != nil {
-			if !errors.Is(err, character.ErrNotFound) {
+			if !errors.Is(err, app.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
 			}
 		}
@@ -484,7 +483,7 @@ func (u *BaseUI) setCharacter(c *app.Character) {
 
 func (u *BaseUI) SetAnyCharacter() error {
 	c, err := u.CharacterService().GetAnyCharacter(context.Background())
-	if errors.Is(err, character.ErrNotFound) {
+	if errors.Is(err, app.ErrNotFound) {
 		u.resetCharacter()
 		return nil
 	} else if err != nil {

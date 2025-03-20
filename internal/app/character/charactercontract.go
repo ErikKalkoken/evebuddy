@@ -29,7 +29,7 @@ func (s *CharacterService) GetCharacterContractTopBid(ctx context.Context, contr
 		return nil, err
 	}
 	if len(bids) == 0 {
-		return nil, ErrNotFound
+		return nil, app.ErrNotFound
 	}
 	var max float32
 	var top *app.CharacterContractBid

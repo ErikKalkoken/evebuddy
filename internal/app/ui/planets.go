@@ -13,7 +13,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 )
 
@@ -109,7 +108,7 @@ func (a *CharacterPlanets) makeTopText() (string, widget.Importance) {
 	}
 	var max string
 	s, err := a.u.CharacterService().GetCharacterSkill(context.Background(), c.ID, app.EveTypeInterplanetaryConsolidation)
-	if errors.Is(err, character.ErrNotFound) {
+	if errors.Is(err, app.ErrNotFound) {
 		max = "1"
 	} else if err != nil {
 		max = "?"

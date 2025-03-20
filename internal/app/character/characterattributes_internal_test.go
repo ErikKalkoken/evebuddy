@@ -68,7 +68,7 @@ func TestGetCharacterAttributes(t *testing.T) {
 		// when
 		_, err := cs.GetCharacterAttributes(ctx, 42)
 		// then
-		assert.ErrorIs(t, err, ErrNotFound)
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 	t.Run("should return obj when found", func(t *testing.T) {
 		// given

@@ -13,7 +13,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -129,7 +128,7 @@ func (a *CharacterAttributes) updateData() (int, error) {
 	}
 	ctx := context.TODO()
 	ca, err := a.u.CharacterService().GetCharacterAttributes(ctx, a.u.CurrentCharacterID())
-	if errors.Is(err, character.ErrNotFound) {
+	if errors.Is(err, app.ErrNotFound) {
 		a.attributes = make([]attribute, 0)
 		return 0, nil
 	} else if err != nil {

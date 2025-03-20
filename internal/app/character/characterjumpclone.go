@@ -29,7 +29,7 @@ func (s *CharacterService) calcCharacterNextCloneJump(ctx context.Context, c *ap
 
 	var skillLevel int
 	sk, err := s.GetCharacterSkill(ctx, c.ID, app.EveTypeInfomorphSynchronizing)
-	if errors.Is(err, ErrNotFound) {
+	if errors.Is(err, app.ErrNotFound) {
 		skillLevel = 0
 	} else if err != nil {
 		return z, err

@@ -15,7 +15,7 @@ import (
 func (s *CharacterService) GetCharacterSkill(ctx context.Context, characterID, typeID int32) (*app.CharacterSkill, error) {
 	o, err := s.st.GetCharacterSkill(ctx, characterID, typeID)
 	if errors.Is(err, storage.ErrNotFound) {
-		return nil, ErrNotFound
+		return nil, app.ErrNotFound
 	}
 	return o, err
 }

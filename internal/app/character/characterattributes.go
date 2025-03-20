@@ -12,7 +12,7 @@ import (
 func (s *CharacterService) GetCharacterAttributes(ctx context.Context, characterID int32) (*app.CharacterAttributes, error) {
 	o, err := s.st.GetCharacterAttributes(ctx, characterID)
 	if errors.Is(err, storage.ErrNotFound) {
-		return nil, ErrNotFound
+		return nil, app.ErrNotFound
 	}
 	return o, err
 }

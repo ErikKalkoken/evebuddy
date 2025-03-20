@@ -4,6 +4,7 @@
 package app
 
 import (
+	"errors"
 	"time"
 )
 
@@ -28,6 +29,8 @@ type Position struct {
 	Y float64
 	Z float64
 }
+
+var ErrNotFound = errors.New("object not found")
 
 // VariableDateFormat returns a variable dateformat.
 func VariableDateFormat(t time.Time) string {
