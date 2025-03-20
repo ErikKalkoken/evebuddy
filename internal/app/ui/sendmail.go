@@ -19,102 +19,126 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-func MakeSendMailPage(
-	u app.UI,
-	character *app.Character,
-	mode app.SendMailMode,
-	mail *app.CharacterMail,
-	w fyne.Window,
-) (fyne.CanvasObject, fyne.Resource, func() bool) {
-	const labelWith = 45
+const labelWith = 45
 
-	from := appwidget.NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.EveImageService())
-	from.ShowInfoWindow = u.ShowEveEntityInfoWindow
-	from.Set([]*app.EveEntity{{ID: character.ID, Name: character.EveCharacter.Name, Category: app.EveEntityCharacter}})
-	from.Disable()
+type SendMail struct {
+	widget.BaseWidget
 
-	var to *appwidget.EveEntityEntry
+	body      *widget.Entry
+	character *app.Character
+	from      *appwidget.EveEntityEntry
+	subject   *widget.Entry
+	to        *appwidget.EveEntityEntry
+	u         app.UI
+}
+
+func NewSendMail(u app.UI, c *app.Character, mode app.SendMailMode, m *app.CharacterMail) *SendMail {
+	a := &SendMail{
+		character: c,
+		u:         u,
+	}
+	a.ExtendBaseWidget(a)
+
+	a.from = appwidget.NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.EveImageService())
+	a.from.ShowInfoWindow = u.ShowEveEntityInfoWindow
+	a.from.Set([]*app.EveEntity{{ID: c.ID, Name: c.EveCharacter.Name, Category: app.EveEntityCharacter}})
+	a.from.Disable()
+
 	toButton := widget.NewButton("To", func() {
-		showAddDialog(u, character.ID, func(ee *app.EveEntity) {
-			to.Add(ee)
-		}, w)
+		showAddDialog(u, c.ID, func(ee *app.EveEntity) {
+			a.to.Add(ee)
+		}, u.MainWindow())
 	})
-	to = appwidget.NewEveEntityEntry(toButton, labelWith, u.EveImageService())
-	to.ShowInfoWindow = u.ShowEveEntityInfoWindow
-	to.Placeholder = "Tap To-Button to add recipients..."
+	a.to = appwidget.NewEveEntityEntry(toButton, labelWith, u.EveImageService())
+	a.to.ShowInfoWindow = u.ShowEveEntityInfoWindow
+	a.to.Placeholder = "Tap To-Button to add recipients..."
 
-	subject := widget.NewEntry()
-	subject.PlaceHolder = "Subject"
+	a.subject = widget.NewEntry()
+	a.subject.PlaceHolder = "Subject"
 
-	body := widget.NewEntry()
-	body.MultiLine = true
-	body.SetMinRowsVisible(14)
-	body.PlaceHolder = "Compose message"
+	a.body = widget.NewEntry()
+	a.body.MultiLine = true
+	a.body.SetMinRowsVisible(14)
+	a.body.PlaceHolder = "Compose message"
 
-	if mail != nil {
+	if m != nil {
 		const sep = "\n\n--------------------------------\n"
 		switch mode {
 		case app.SendMailReply:
-			to.Set([]*app.EveEntity{mail.From})
-			subject.SetText(fmt.Sprintf("Re: %s", mail.Subject))
-			body.SetText(sep + mail.String())
+			a.to.Set([]*app.EveEntity{m.From})
+			a.subject.SetText(fmt.Sprintf("Re: %s", m.Subject))
+			a.body.SetText(sep + m.String())
 		case app.SendMailReplyAll:
-			oo := slices.Concat([]*app.EveEntity{mail.From}, mail.Recipients)
+			oo := slices.Concat([]*app.EveEntity{m.From}, m.Recipients)
 			oo = slices.DeleteFunc(oo, func(o *app.EveEntity) bool {
-				return o.ID == character.EveCharacter.ID
+				return o.ID == c.EveCharacter.ID
 			})
-			to.Set(oo)
-			subject.SetText(fmt.Sprintf("Re: %s", mail.Subject))
-			body.SetText(sep + mail.String())
+			a.to.Set(oo)
+			a.subject.SetText(fmt.Sprintf("Re: %s", m.Subject))
+			a.body.SetText(sep + m.String())
 		case app.SendMailForward:
-			subject.SetText(fmt.Sprintf("Fw: %s", mail.Subject))
-			body.SetText(sep + mail.String())
+			a.subject.SetText(fmt.Sprintf("Fw: %s", m.Subject))
+			a.body.SetText(sep + m.String())
 		default:
 			panic(fmt.Errorf("undefined mode for create message: %v", mode))
 		}
 	}
-
-	// sendAction tries to send the current mail and reports whether it was successful
-	sendAction := func() bool {
-		showErrorDialog := func(message string) {
-			u.ShowInformationDialog("Failed to send mail", message, w)
-		}
-		if to.IsEmpty() {
-			showErrorDialog("A mail needs to have at least one recipient.")
-			return false
-		}
-		if subject.Text == "" {
-			showErrorDialog("The subject can not be empty.")
-			return false
-		}
-		if body.Text == "" {
-			showErrorDialog("The message can not be empty.")
-			return false
-		}
-		ctx := context.Background()
-		_, err := u.CharacterService().SendCharacterMail(
-			ctx,
-			character.ID,
-			subject.Text,
-			to.Items(),
-			body.Text,
-		)
-		if err != nil {
-			showErrorDialog(err.Error())
-			return false
-		}
-		u.ShowSnackbar(fmt.Sprintf("Your mail to %s has been sent.", to))
-		return true
-	}
-	page := container.NewBorder(
-		container.NewVBox(from, to, subject),
-		nil,
-		nil,
-		nil,
-		body,
-	)
-	return page, theme.MailSendIcon(), sendAction
+	return a
 }
+
+func (a *SendMail) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewBorder(
+		container.NewVBox(a.from, a.to, a.subject),
+		nil,
+		nil,
+		nil,
+		a.body,
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+// sendAction tries to send the current mail and reports whether it was successful
+func (a *SendMail) SendAction() bool {
+	showErrorDialog := func(message string) {
+		a.u.ShowInformationDialog("Failed to send mail", message, a.u.MainWindow())
+	}
+	if a.to.IsEmpty() {
+		showErrorDialog("A mail needs to have at least one recipient.")
+		return false
+	}
+	if a.subject.Text == "" {
+		showErrorDialog("The subject can not be empty.")
+		return false
+	}
+	if a.body.Text == "" {
+		showErrorDialog("The message can not be empty.")
+		return false
+	}
+	ctx := context.Background()
+	_, err := a.u.CharacterService().SendCharacterMail(
+		ctx,
+		a.character.ID,
+		a.subject.Text,
+		a.to.Items(),
+		a.body.Text,
+	)
+	if err != nil {
+		showErrorDialog(err.Error())
+		return false
+	}
+	a.u.ShowSnackbar(fmt.Sprintf("Your mail to %s has been sent.", a.to))
+	return true
+}
+
+// func MakeSendMailPage(
+// 	u app.UI,
+// 	character *app.Character,
+// 	mode app.SendMailMode,
+// 	mail *app.CharacterMail,
+// 	w fyne.Window,
+// ) (fyne.CanvasObject, fyne.Resource, func() bool) {
+
+// }
 
 func showAddDialog(u app.UI, characterID int32, onSelected func(ee *app.EveEntity), w fyne.Window) {
 	var modal *widget.PopUp
