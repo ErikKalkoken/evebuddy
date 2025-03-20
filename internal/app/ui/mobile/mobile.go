@@ -347,15 +347,15 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		func() {
 			moreNav.Push(iwidget.NewAppBar(
 				"General",
-				u.Settings.GeneralContent,
-				iwidget.NewIconButtonWithMenu(makeSettingsMenu(u.Settings.GeneralActions)),
+				u.UserSettings.GeneralContent,
+				iwidget.NewIconButtonWithMenu(makeSettingsMenu(u.UserSettings.GeneralActions)),
 			))
 		},
 	)
 	navItemNotificationSettings := iwidget.NewListItem(
 		"Notifications",
 		func() {
-			u.Settings.OnCommunicationGroupSelected = func(
+			u.UserSettings.OnCommunicationGroupSelected = func(
 				title string, content fyne.CanvasObject, actions []ui.SettingAction,
 			) {
 				moreNav.Push(iwidget.NewAppBar(
@@ -366,8 +366,8 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 			}
 			moreNav.Push(iwidget.NewAppBar(
 				"Notifications",
-				u.Settings.NotificationSettings,
-				iwidget.NewIconButtonWithMenu(makeSettingsMenu(u.Settings.NotificationActions)),
+				u.UserSettings.NotificationSettings,
+				iwidget.NewIconButtonWithMenu(makeSettingsMenu(u.UserSettings.NotificationActions)),
 			))
 		},
 	)

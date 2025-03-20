@@ -56,7 +56,7 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 		panic("Could not start in desktop mode")
 	}
 	u.OnInit = func(_ *app.Character) {
-		index := u.App().Preferences().IntWithFallback(ui.SettingTabsMainID, -1)
+		index := u.Settings().TabsMainID()
 		if index != -1 {
 			u.tabs.SelectIndex(index)
 			for i, o := range u.tabs.Items {
@@ -74,9 +74,7 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 		go u.UpdateMailIndicator()
 	}
 	u.OnShowAndRun = func() {
-		width := float32(u.App().Preferences().FloatWithFallback(ui.SettingWindowWidth, ui.SettingWindowHeightDefault))
-		height := float32(u.App().Preferences().FloatWithFallback(ui.SettingWindowHeight, ui.SettingWindowHeightDefault))
-		u.MainWindow().Resize(fyne.NewSize(width, height))
+		u.MainWindow().Resize(u.Settings().WindowSize())
 	}
 	u.OnAppFirstStarted = func() {
 		// FIXME: Workaround to mitigate a bug that causes the window to sometimes render
@@ -225,7 +223,7 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 	u.MainWindow().SetContent(mainContent)
 
 	// system tray menu
-	if u.App().Preferences().BoolWithFallback(ui.SettingSysTrayEnabled, ui.SettingSysTrayEnabledDefault) {
+	if u.Settings().SysTrayEnabled() {
 		name := u.AppName()
 		item := fyne.NewMenuItem(name, nil)
 		item.Disabled = true
@@ -254,14 +252,11 @@ func (u *DesktopUI) saveAppState() {
 	if u.MainWindow() == nil || u.App() == nil {
 		slog.Warn("Failed to save app state")
 	}
-	s := u.MainWindow().Canvas().Size()
-	u.App().Preferences().SetFloat(ui.SettingWindowWidth, float64(s.Width))
-	u.App().Preferences().SetFloat(ui.SettingWindowHeight, float64(s.Height))
+	u.Settings().SetWindowSize(u.MainWindow().Canvas().Size())
 	if u.tabs == nil {
 		slog.Warn("Failed to save tabs in app state")
 	}
-	index := u.tabs.SelectedIndex()
-	u.App().Preferences().SetInt(ui.SettingTabsMainID, index)
+	u.Settings().SetTabsMainID(u.tabs.SelectedIndex())
 	for i, o := range u.tabs.Items {
 		tabs, ok := o.Content.(*container.AppTabs)
 		if !ok {
@@ -298,10 +293,9 @@ func (u *DesktopUI) toogleTabs(enabled bool) {
 }
 
 func (u *DesktopUI) ResetDesktopSettings() {
-	u.App().Preferences().SetBool(ui.SettingSysTrayEnabled, ui.SettingSysTrayEnabledDefault)
-	u.App().Preferences().SetBool(ui.SettingSysTrayEnabled, ui.SettingSysTrayEnabledDefault)
-	u.App().Preferences().SetInt(ui.SettingTabsMainID, 0)
-	u.App().Preferences().SetFloat(ui.SettingWindowHeight, ui.SettingWindowHeightDefault)
+	u.Settings().ResetTabsMainID()
+	u.Settings().ResetWindowSize()
+	u.Settings().ResetSysTrayEnabled()
 }
 
 func makeSubTabsKey(i int) string {
@@ -314,8 +308,8 @@ func (u *DesktopUI) showSettingsWindow() {
 		return
 	}
 	w := u.App().NewWindow(u.MakeWindowTitle("Settings"))
-	u.Settings.SetWindow(w)
-	w.SetContent(u.Settings)
+	u.UserSettings.SetWindow(w)
+	w.SetContent(u.UserSettings)
 	w.Resize(fyne.Size{Width: 700, Height: 500})
 	w.SetOnClosed(func() {
 		u.settingsWindow = nil

@@ -24,82 +24,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-// TODO: Add settings API to allow this widget to be moved into own package
 // TODO: Improve switch API to allow switch not to be set on error
 
-// Exported settings
-const (
-	SettingLogLevel              = "logLevel"
-	SettingLogLevelDefault       = "info"
-	SettingSysTrayEnabled        = "settingSysTrayEnabled"
-	SettingSysTrayEnabledDefault = false
-	SettingTabsMainID            = "tabs-main-id"
-	SettingWindowHeight          = "window-height"
-	SettingWindowHeightDefault   = 600
-	SettingWindowWidth           = "window-width"
-	SettingWindowWidthDefault    = 1000
-)
-
-// Local settings
-const (
-	settingLastCharacterID                    = "settingLastCharacterID"
-	settingMaxMails                           = "settingMaxMails"
-	settingMaxMailsDefault                    = 1_000
-	settingMaxMailsMax                        = 10_000
-	settingMaxWalletTransactions              = "settingMaxWalletTransactions"
-	settingMaxWalletTransactionsDefault       = 1_000
-	settingMaxWalletTransactionsMax           = 10_000
-	settingNotificationsTypesEnabled          = "settingNotificationsTypesEnabled"
-	settingNotifyCommunicationsEarliest       = "settingNotifyCommunicationsEarliest"
-	settingNotifyCommunicationsEnabled        = "settingNotifyCommunicationsEnabled"
-	settingNotifyCommunicationsEnabledDefault = false
-	settingNotifyContractsEarliest            = "settingNotifyContractsEarliest"
-	settingNotifyContractsEnabled             = "settingNotifyContractsEnabled"
-	settingNotifyContractsEnabledDefault      = false
-	settingNotifyMailsEarliest                = "settingNotifyMailsEarliest"
-	settingNotifyMailsEnabled                 = "settingNotifyMailsEnabled"
-	settingNotifyMailsEnabledDefault          = false
-	settingNotifyPIEarliest                   = "settingNotifyPIEarliest"
-	settingNotifyPIEnabled                    = "settingNotifyPIEnabled"
-	settingNotifyPIEnabledDefault             = false
-	settingNotifyTimeoutHours                 = "settingNotifyTimeoutHours"
-	settingNotifyTimeoutHoursDefault          = 30 * 24
-	settingNotifyTimeoutHoursMax              = 90 * 24
-	settingNotifyTrainingEarliest             = "settingNotifyTrainingEarliest"
-	settingNotifyTrainingEnabled              = "settingNotifyTrainingEnabled"
-	settingNotifyTrainingEnabledDefault       = false
-	settingDeveloperMode                      = "developer-mode"
-)
-
-// SettingKeys returns all setting keys. Mostly to know what to delete.
-func SettingKeys() []string {
-	return []string{
-		settingLastCharacterID,
-		settingMaxMails,
-		settingMaxWalletTransactions,
-		settingNotificationsTypesEnabled,
-		settingNotifyCommunicationsEarliest,
-		settingNotifyCommunicationsEnabled,
-		settingNotifyContractsEarliest,
-		settingNotifyContractsEnabled,
-		settingNotifyMailsEarliest,
-		settingNotifyMailsEnabled,
-		settingNotifyPIEarliest,
-		settingNotifyPIEnabled,
-		settingNotifyTimeoutHours,
-		settingNotifyTrainingEarliest,
-		settingNotifyTrainingEnabled,
-		SettingSysTrayEnabled,
-		SettingTabsMainID,
-		SettingWindowHeight,
-		SettingWindowWidth,
-	}
-}
-
+// TODO: Refactor log level into settings type to remove dependency
 var logLevelName2Level = map[string]slog.Level{
 	"debug":   slog.LevelDebug,
 	"error":   slog.LevelError,
@@ -126,7 +56,7 @@ type SettingAction struct {
 	Action func()
 }
 
-type Settings struct {
+type UserSettings struct {
 	widget.BaseWidget
 
 	NotificationActions          []SettingAction
@@ -142,8 +72,8 @@ type Settings struct {
 	window       fyne.Window
 }
 
-func NewSettings(u app.UI) *Settings {
-	a := &Settings{
+func NewSettings(u app.UI) *UserSettings {
+	a := &UserSettings{
 		showSnackbar: u.ShowSnackbar,
 		u:            u,
 		window:       u.MainWindow(),
@@ -154,7 +84,7 @@ func NewSettings(u app.UI) *Settings {
 	return a
 }
 
-func (a *Settings) CreateRenderer() fyne.WidgetRenderer {
+func (a *UserSettings) CreateRenderer() fyne.WidgetRenderer {
 	makeSettingsPage := func(title string, content fyne.CanvasObject, actions []SettingAction) fyne.CanvasObject {
 		t := widget.NewLabel(title)
 		t.TextStyle.Bold = true
@@ -179,7 +109,7 @@ func (a *Settings) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(tabs)
 }
 
-func (a *Settings) SetWindow(w fyne.Window) {
+func (a *UserSettings) SetWindow(w fyne.Window) {
 	a.window = w
 	if a.snackbar != nil {
 		a.snackbar.Stop()
@@ -191,57 +121,52 @@ func (a *Settings) SetWindow(w fyne.Window) {
 	}
 }
 
-func (a *Settings) currentWindow() fyne.Window {
+func (a *UserSettings) currentWindow() fyne.Window {
 	return a.window
 }
 
-func (a *Settings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction) {
+func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction) {
 	logLevel := iwidget.NewSettingItemOptions(
 		"Log level",
 		"Set current log level",
 		LogLevelNames(),
-		SettingLogLevelDefault,
+		a.u.Settings().LogLevelDefault(),
 		func() string {
-			return a.u.App().Preferences().StringWithFallback(
-				SettingLogLevel,
-				SettingLogLevelDefault,
-			)
+			return a.u.Settings().LogLevel()
 		},
 		func(s string) {
-			a.u.App().Preferences().SetString(SettingLogLevel, s)
+			a.u.Settings().SetLogLevel(s)
 			slog.SetLogLoggerLevel(LogLevelName2Level(s))
 		},
 		a.currentWindow,
 	)
+	vMin, vMax, vDef := a.u.Settings().MaxMailsPresets()
 	maxMail := iwidget.NewSettingItemSlider(
 		"Maximum mails",
 		"Max number of mails downloaded. 0 = unlimited.",
-		0,
-		settingMaxMailsMax,
-		settingMaxMailsDefault,
+		float64(vMin),
+		float64(vMax),
+		float64(vDef),
 		func() float64 {
-			return float64(a.u.App().Preferences().IntWithFallback(
-				settingMaxMails,
-				settingMaxMailsDefault))
+			return float64(a.u.Settings().MaxMails())
 		},
 		func(v float64) {
-			a.u.App().Preferences().SetInt(settingMaxMails, int(v))
+			a.u.Settings().SetMaxMails(int(v))
 		},
 		a.currentWindow,
 	)
+	vMin, vMax, vDef = a.u.Settings().MaxWalletTransactionsPresets()
 	maxWallet := iwidget.NewSettingItemSlider(
 		"Maximum wallet transaction",
 		"Max wallet transactions downloaded. 0 = unlimited.",
-		0,
-		settingMaxWalletTransactionsMax,
-		settingMaxWalletTransactionsDefault,
+		float64(vMin),
+		float64(vMax),
+		float64(vDef),
 		func() float64 {
-			return float64(a.u.App().Preferences().IntWithFallback(
-				settingMaxWalletTransactions,
-				settingMaxWalletTransactionsDefault))
+			return float64(a.u.Settings().MaxWalletTransactions())
 		},
 		func(v float64) {
-			a.u.App().Preferences().SetInt(settingMaxWalletTransactions, int(v))
+			a.u.Settings().SetMaxWalletTransactions(int(v))
 		},
 		a.currentWindow,
 	)
@@ -249,10 +174,10 @@ func (a *Settings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction
 		"Developer Mode",
 		"App shows addditional technical information like Character IDs",
 		func() bool {
-			return a.u.App().Preferences().Bool(settingDeveloperMode)
+			return a.u.Settings().DeveloperMode()
 		},
-		func(b bool) {
-			a.u.App().Preferences().SetBool(settingDeveloperMode, b)
+		func(v bool) {
+			a.u.Settings().SetDeveloperMode(v)
 		},
 	)
 
@@ -270,13 +195,10 @@ func (a *Settings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction
 		"Close button",
 		"App will minimize to system tray when closed (requires restart)",
 		func() bool {
-			return a.u.App().Preferences().BoolWithFallback(
-				SettingSysTrayEnabled,
-				SettingSysTrayEnabledDefault,
-			)
+			return a.u.Settings().SysTrayEnabled()
 		},
-		func(b bool) {
-			a.u.App().Preferences().SetBool(SettingSysTrayEnabled, b)
+		func(v bool) {
+			a.u.Settings().SetSysTrayEnabled(v)
 		},
 	)
 	if a.u.IsDesktop() {
@@ -320,11 +242,11 @@ func (a *Settings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction
 	reset := SettingAction{
 		Label: "Reset to defaults",
 		Action: func() {
-			logLevel.Setter(SettingLogLevelDefault)
-			maxMail.Setter(settingMaxMailsDefault)
-			maxWallet.Setter(settingMaxWalletTransactionsDefault)
-			systray.Setter(SettingSysTrayEnabledDefault)
-			developerMode.Setter(false)
+			a.u.Settings().ResetDeveloperMode()
+			a.u.Settings().ResetLogLevel()
+			a.u.Settings().ResetMaxMails()
+			a.u.Settings().ResetMaxWalletTransactions()
+			a.u.Settings().ResetSysTrayEnabled()
 			list.Refresh()
 		},
 	}
@@ -357,14 +279,15 @@ func (a *Settings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction
 		actions = append(actions, SettingAction{
 			Label: "Resets main window size to defaults",
 			Action: func() {
-				a.u.MainWindow().Resize(fyne.NewSize(SettingWindowWidthDefault, SettingWindowHeightDefault))
+				a.u.Settings().ResetWindowSize()
+				a.u.MainWindow().Resize(a.u.Settings().WindowSize())
 			},
 		})
 	}
 	return list, actions
 }
 
-func (a *Settings) showDeleteFileDialog(name, path string) {
+func (a *UserSettings) showDeleteFileDialog(name, path string) {
 	a.u.ShowConfirmDialog(
 		"Delete File",
 		fmt.Sprintf("Are you sure you want to permanently delete this file?\n\n%s", name),
@@ -395,7 +318,7 @@ func (a *Settings) showDeleteFileDialog(name, path string) {
 		}, a.window)
 }
 
-func (a *Settings) showExportFileDialog(path string) {
+func (a *UserSettings) showExportFileDialog(path string) {
 	filename := filepath.Base(path)
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -431,7 +354,7 @@ func (a *Settings) showExportFileDialog(path string) {
 	d.Show()
 }
 
-func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
+func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 	groupsAndTypes := make(map[app.NotificationGroup][]evenotification.Type)
 	for _, n := range evenotification.SupportedGroups() {
 		c := evenotification.Type2group[n]
@@ -445,24 +368,19 @@ func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 		slices.Sort(groupsAndTypes[g])
 	}
 	slices.Sort(groups)
-	typesEnabled := set.NewFromSlice(a.u.App().Preferences().StringList(settingNotificationsTypesEnabled))
+	typesEnabled := a.u.Settings().NotificationTypesEnabled()
 
 	// add global items
 	notifyCommunications := iwidget.NewSettingItemSwitch(
 		"Notify communications",
 		"Whether to notify new communications",
 		func() bool {
-			return a.u.App().Preferences().BoolWithFallback(
-				settingNotifyCommunicationsEnabled,
-				settingNotifyCommunicationsEnabledDefault,
-			)
+			return a.u.Settings().NotifyCommunicationsEnabled()
 		},
 		func(on bool) {
-			a.u.App().Preferences().SetBool(settingNotifyCommunicationsEnabled, on)
+			a.u.Settings().SetNotifyCommunicationsEnabled(on)
 			if on {
-				a.u.App().Preferences().SetString(
-					settingNotifyCommunicationsEarliest,
-					time.Now().Format(time.RFC3339))
+				a.u.Settings().SetNotifyCommunicationsEarliest(time.Now())
 			}
 		},
 	)
@@ -470,17 +388,12 @@ func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 		"Notify mails",
 		"Whether to notify new mails",
 		func() bool {
-			return a.u.App().Preferences().BoolWithFallback(
-				settingNotifyMailsEnabled,
-				settingNotifyMailsEnabledDefault,
-			)
+			return a.u.Settings().NotifyMailsEnabled()
 		},
 		func(on bool) {
-			a.u.App().Preferences().SetBool(settingNotifyMailsEnabled, on)
+			a.u.Settings().SetNotifyMailsEnabled(on)
 			if on {
-				a.u.App().Preferences().SetString(
-					settingNotifyMailsEarliest,
-					time.Now().Format(time.RFC3339))
+				a.u.Settings().SetNotifyMailsEarliest(time.Now())
 			}
 		},
 	)
@@ -488,17 +401,12 @@ func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 		"Planetary Industry",
 		"Whether to notify about expired extractions",
 		func() bool {
-			return a.u.App().Preferences().BoolWithFallback(
-				settingNotifyPIEnabled,
-				settingNotifyPIEnabledDefault,
-			)
+			return a.u.Settings().NotifyPIEnabled()
 		},
 		func(on bool) {
-			a.u.App().Preferences().SetBool(settingNotifyPIEnabled, on)
+			a.u.Settings().SetNotifyPIEnabled(on)
 			if on {
-				a.u.App().Preferences().SetString(
-					settingNotifyPIEarliest,
-					time.Now().Format(time.RFC3339))
+				a.u.Settings().SetNotifyPIEarliest(time.Now())
 			}
 		},
 	)
@@ -506,10 +414,7 @@ func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 		"Notify Training",
 		"Whether to notify abouthen skillqueue is empty",
 		func() bool {
-			return a.u.App().Preferences().BoolWithFallback(
-				settingNotifyTrainingEnabled,
-				settingNotifyTrainingEnabledDefault,
-			)
+			return a.u.Settings().NotifyTrainingEnabled()
 		},
 		func(on bool) {
 			ctx := context.Background()
@@ -518,14 +423,14 @@ func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 				if err != nil {
 					a.u.ShowErrorDialog("failed to enable training notification", err, a.currentWindow())
 				} else {
-					a.u.App().Preferences().SetBool(settingNotifyTrainingEnabled, true)
+					a.u.Settings().SetNotifyTrainingEnabled(on)
 				}
 			} else {
 				err := a.u.CharacterService().DisableAllTrainingWatchers(ctx)
 				if err != nil {
 					a.u.ShowErrorDialog("failed to disable training notification", err, a.currentWindow())
 				} else {
-					a.u.App().Preferences().SetBool(settingNotifyTrainingEnabled, false)
+					a.u.Settings().SetNotifyCommunicationsEnabled(false)
 				}
 			}
 		},
@@ -534,34 +439,27 @@ func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 		"Notify Contracts",
 		"Whether to notify when contract status changes",
 		func() bool {
-			return a.u.App().Preferences().BoolWithFallback(
-				settingNotifyContractsEnabled,
-				settingNotifyCommunicationsEnabledDefault,
-			)
+			return a.u.Settings().NotifyContractsEnabled()
 		},
 		func(on bool) {
-			a.u.App().Preferences().SetBool(settingNotifyContractsEnabled, on)
+			a.u.Settings().SetNotifyContractsEnabled(on)
 			if on {
-				a.u.App().Preferences().SetString(
-					settingNotifyContractsEarliest,
-					time.Now().Format(time.RFC3339))
+				a.u.Settings().SetNotifyContractsEarliest(time.Now())
 			}
 		},
 	)
+	vMin, vMax, vDef := a.u.Settings().NotifyTimeoutHoursPresets()
 	notifTimeout := iwidget.NewSettingItemSlider(
 		"Notify Timeout",
 		"Events older then this value in hours will not be notified",
-		1,
-		settingNotifyTimeoutHoursMax,
-		settingNotifyTimeoutHoursDefault,
+		float64(vMin),
+		float64(vMax),
+		float64(vDef),
 		func() float64 {
-			return float64(a.u.App().Preferences().IntWithFallback(
-				settingNotifyTimeoutHours,
-				settingNotifyTimeoutHoursDefault,
-			))
+			return float64(a.u.Settings().NotifyTimeoutHours())
 		},
 		func(v float64) {
-			a.u.App().Preferences().SetInt(settingNotifyTimeoutHours, int(v))
+			a.u.Settings().SetNotifyTimeoutHours(int(v))
 		},
 		a.currentWindow,
 	)
@@ -602,9 +500,7 @@ func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 						} else {
 							typesEnabled.Remove(ntStr)
 						}
-						a.u.App().Preferences().SetStringList(
-							settingNotificationsTypesEnabled,
-							typesEnabled.ToSlice())
+						a.u.Settings().SetNotificationTypesEnabled(typesEnabled)
 					},
 				)
 				items2 = append(items2, it)
@@ -685,21 +581,19 @@ func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 	reset := SettingAction{
 		Label: "Reset to defaults",
 		Action: func() {
-			typesEnabled.Clear()
 			notifyCommunications.Setter(settingNotifyCommunicationsEnabledDefault)
 			notifyMails.Setter(settingNotifyMailsEnabledDefault)
 			notifyPI.Setter(settingNotifyPIEnabledDefault)
 			notifyTraining.Setter(settingNotifyTrainingEnabledDefault)
 			notifyContracts.Setter(settingNotifyTrainingEnabledDefault)
-			notifTimeout.Setter(settingNotifyTimeoutHoursDefault)
+			a.u.Settings().ResetNotifyTimeoutHours()
+			typesEnabled.Clear()
+			a.u.Settings().ResetNotificationTypesEnabled()
 			list.Refresh()
 		},
 	}
 	updateTypes := func() {
-		a.u.App().Preferences().SetStringList(
-			settingNotificationsTypesEnabled,
-			typesEnabled.ToSlice(),
-		)
+		a.u.Settings().SetNotificationTypesEnabled(typesEnabled)
 		list.Refresh()
 	}
 	none := SettingAction{

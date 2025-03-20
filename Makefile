@@ -28,3 +28,6 @@ install-android:
 
 interface:
 	ifacemaker -s BaseUI -i UI -p app -f internal/app/ui/ui.go
+
+settings:
+	ifacemaker -s AppSettings -i Settings -p app -f internal/app/ui/appsettings.go -o internal/app/settings.go

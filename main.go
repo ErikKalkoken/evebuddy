@@ -107,7 +107,8 @@ func main() {
 
 	// set log level from settings
 	if *logLevelFlag == "" {
-		ln := fyneApp.Preferences().StringWithFallback(ui.SettingLogLevel, ui.SettingLogLevelDefault)
+		s := ui.NewAppSettings(fyneApp.Preferences())
+		ln := s.LogLevel()
 		l := ui.LogLevelName2Level(ln)
 		if l != logLevelDefault {
 			slog.Info("Setting log level", "level", ln)
