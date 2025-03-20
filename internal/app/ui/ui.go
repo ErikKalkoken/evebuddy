@@ -25,6 +25,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/cross"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
@@ -68,7 +69,7 @@ type BaseUI struct {
 	ShowMailIndicator    func()
 
 	ManagerCharacters          *ManageCharacters
-	AllAssetSearch             *AllAssetSearch
+	AllAssetSearch             *cross.AllAssetSearch
 	CharacterAssets            *character.CharacterAssets
 	CharacterAttributes        *character.CharacterAttributes
 	CharacterCommunications    *character.CharacterCommunications
@@ -76,19 +77,19 @@ type BaseUI struct {
 	CharacterImplants          *character.CharacterImplants
 	CharacterJumpClones        *character.CharacterJumpClones
 	CharacterMail              *character.CharacterMail
-	CharacterOverview          *CharacterOverview
+	CharacterOverview          *cross.CharacterOverview
 	CharacterPlanets           *character.CharacterPlanets
 	CharacterShips             *character.CharacterShips
 	CharacterSkillCatalogue    *character.CharacterSkillCatalogue
 	CharacterSkillQueue        *character.CharacterSkillQueue
 	CharacterWalletJournal     *character.CharacterWalletJournal
 	CharacterWalletTransaction *character.CharacterWalletTransaction
-	ColonyOverview             *ColonyOverview
-	LocationOverview           *LocationOverview
+	ColonyOverview             *cross.ColonyOverview
+	LocationOverview           *cross.LocationOverview
 	GameSearch                 *GameSearch
 	Settings                   *Settings
-	TrainingOverview           *TrainingOverview
-	WealthOverview             *WealthOverview
+	TrainingOverview           *cross.TrainingOverview
+	WealthOverview             *cross.WealthOverview
 
 	app              fyne.App
 	character        *app.Character
@@ -150,26 +151,26 @@ func NewBaseUI(
 
 	u.ManagerCharacters = NewManageCharacters(u)
 	u.CharacterAssets = character.NewCharacterAssets(u)
-	u.AllAssetSearch = NewAssetSearch(u)
+	u.AllAssetSearch = cross.NewAssetSearch(u)
 	u.CharacterAttributes = character.NewCharacterAttributes(u)
-	u.ColonyOverview = NewColonies(u)
+	u.ColonyOverview = cross.NewColonies(u)
 	u.CharacterContracts = character.NewCharacterContracts(u)
 	u.CharacterImplants = character.NewCharacterImplants(u)
 	u.CharacterJumpClones = character.NewCharacterJumpClones(u)
-	u.LocationOverview = NewLocations(u)
+	u.LocationOverview = cross.NewLocations(u)
 	u.CharacterMail = character.NewCharacterMail(u)
 	u.CharacterCommunications = character.NewCharacterCommunications(u)
-	u.CharacterOverview = NewCharacterOverview(u)
+	u.CharacterOverview = cross.NewCharacterOverview(u)
 	u.CharacterPlanets = character.NewCharacterPlanets(u)
 	u.GameSearch = NewGameSearch(u)
 	u.Settings = NewSettings(u)
 	u.CharacterShips = character.NewCharacterShips(u)
 	u.CharacterSkillCatalogue = character.NewCharacterSkillCatalogue(u)
 	u.CharacterSkillQueue = character.NewCharacterSkillQueue(u)
-	u.TrainingOverview = NewTrainingOverview(u)
+	u.TrainingOverview = cross.NewTrainingOverview(u)
 	u.CharacterWalletJournal = character.NewCharacterWalletJournal(u)
 	u.CharacterWalletTransaction = character.NewCharacterWalletTransaction(u)
-	u.WealthOverview = NewWealthOverview(u)
+	u.WealthOverview = cross.NewWealthOverview(u)
 	return u
 }
 
