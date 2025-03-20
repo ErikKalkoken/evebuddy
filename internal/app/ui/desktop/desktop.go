@@ -24,6 +24,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
 )
 
 // The DesktopUI is the root object of the DesktopUI and contains all DesktopUI areas.
@@ -322,18 +323,18 @@ func (u *DesktopUI) showSettingsWindow() {
 	w.Show()
 }
 
-func (u *DesktopUI) showSendMailWindow(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-	title := u.MakeWindowTitle(fmt.Sprintf("New message [%s]", character.EveCharacter.Name))
+func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
+	title := u.MakeWindowTitle(fmt.Sprintf("New message [%s]", c.EveCharacter.Name))
 	w := u.App().NewWindow(title)
-	page := ui.NewSendMail(u, character, mode, mail)
+	page := character.NewSendMail(u, c, mode, mail)
 	send := widget.NewButtonWithIcon("Send", theme.MailSendIcon(), func() {
 		if page.SendAction() {
 			w.Hide()
 		}
 	})
 	send.Importance = widget.HighImportance
-	c := container.NewBorder(nil, container.NewHBox(send), nil, nil, page)
-	w.SetContent(c)
+	x := container.NewBorder(nil, container.NewHBox(send), nil, nil, page)
+	w.SetContent(x)
 	w.Resize(fyne.NewSize(600, 500))
 	w.Show()
 }
