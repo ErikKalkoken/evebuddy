@@ -19,10 +19,10 @@ type Toolbar struct {
 
 	icon *kwidget.TappableImage
 	name *widget.Label
-	u    *DesktopUI
+	u    app.UI
 }
 
-func NewToolbar(u *DesktopUI) *Toolbar {
+func NewToolbar(u app.UI) *Toolbar {
 	i := kwidget.NewTappableImageWithMenu(icons.Characterplaceholder64Jpeg, fyne.NewMenu(""))
 	i.SetFillMode(canvas.ImageFillContain)
 	i.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))

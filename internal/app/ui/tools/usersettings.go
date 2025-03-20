@@ -1,4 +1,4 @@
-package ui
+package tools
 
 import (
 	"context"
@@ -28,20 +28,15 @@ import (
 
 // TODO: Improve switch API to allow switch not to be set on error
 
-type SettingAction struct {
-	Label  string
-	Action func()
-}
-
 type UserSettings struct {
 	widget.BaseWidget
 
-	NotificationActions          []SettingAction
+	NotificationActions          []app.SettingAction
 	NotificationSettings         fyne.CanvasObject // TODO: Refactor into widget
-	GeneralActions               []SettingAction
+	GeneralActions               []app.SettingAction
 	GeneralContent               fyne.CanvasObject // TODO: Refactor into widget
 	CommunicationGroupContent    fyne.CanvasObject // TODO: Refactor into widget
-	OnCommunicationGroupSelected func(title string, content fyne.CanvasObject, actions []SettingAction)
+	OnCommunicationGroupSelected func(title string, content fyne.CanvasObject, actions []app.SettingAction)
 
 	showSnackbar func(string)
 	snackbar     *iwidget.Snackbar
@@ -62,7 +57,7 @@ func NewSettings(u app.UI) *UserSettings {
 }
 
 func (a *UserSettings) CreateRenderer() fyne.WidgetRenderer {
-	makeSettingsPage := func(title string, content fyne.CanvasObject, actions []SettingAction) fyne.CanvasObject {
+	makeSettingsPage := func(title string, content fyne.CanvasObject, actions []app.SettingAction) fyne.CanvasObject {
 		t := widget.NewLabel(title)
 		t.TextStyle.Bold = true
 		items := make([]*fyne.MenuItem, 0)
@@ -102,7 +97,7 @@ func (a *UserSettings) currentWindow() fyne.Window {
 	return a.window
 }
 
-func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction) {
+func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []app.SettingAction) {
 	logLevel := iwidget.NewSettingItemOptions(
 		"Log level",
 		"Set current log level",
@@ -185,9 +180,9 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 
 	list := iwidget.NewSettingList(items)
 
-	clear := SettingAction{
-		"Clear cache",
-		func() {
+	clear := app.SettingAction{
+		Label: "Clear cache",
+		Action: func() {
 			w := a.currentWindow()
 			a.u.ShowConfirmDialog(
 				"Clear Cache",
@@ -217,7 +212,7 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 					m.Start()
 				}, w)
 		}}
-	reset := SettingAction{
+	reset := app.SettingAction{
 		Label: "Reset to defaults",
 		Action: func() {
 			a.u.Settings().ResetDeveloperMode()
@@ -228,33 +223,33 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 			list.Refresh()
 		},
 	}
-	exportAppLog := SettingAction{
+	exportAppLog := app.SettingAction{
 		Label: "Export application log",
 		Action: func() {
 			a.showExportFileDialog(a.u.DataPaths()["log"])
 		},
 	}
-	exportCrashLog := SettingAction{
+	exportCrashLog := app.SettingAction{
 		Label: "Export crash log",
 		Action: func() {
 			a.showExportFileDialog(a.u.DataPaths()["crashfile"])
 		},
 	}
-	deleteAppLog := SettingAction{
+	deleteAppLog := app.SettingAction{
 		Label: "Delete application log",
 		Action: func() {
 			a.showDeleteFileDialog("application log", a.u.DataPaths()["log"]+"*")
 		},
 	}
-	deleteCrashLog := SettingAction{
+	deleteCrashLog := app.SettingAction{
 		Label: "Delete creash log",
 		Action: func() {
 			a.showDeleteFileDialog("crash log", a.u.DataPaths()["crashfile"])
 		},
 	}
-	actions := []SettingAction{reset, clear, exportAppLog, exportCrashLog, deleteAppLog, deleteCrashLog}
+	actions := []app.SettingAction{reset, clear, exportAppLog, exportCrashLog, deleteAppLog, deleteCrashLog}
 	if a.u.IsDesktop() {
-		actions = append(actions, SettingAction{
+		actions = append(actions, app.SettingAction{
 			Label: "Resets main window size to defaults",
 			Action: func() {
 				a.u.Settings().ResetWindowSize()
@@ -332,7 +327,7 @@ func (a *UserSettings) showExportFileDialog(path string) {
 	d.Show()
 }
 
-func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
+func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []app.SettingAction) {
 	groupsAndTypes := make(map[app.NotificationGroup][]evenotification.Type)
 	for _, n := range evenotification.SupportedGroups() {
 		c := evenotification.Type2group[n]
@@ -457,7 +452,7 @@ func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 	const groupHint = "Choose which communications to notfy about"
 	type groupPage struct {
 		content fyne.CanvasObject
-		actions []SettingAction
+		actions []app.SettingAction
 	}
 	groupPages := make(map[app.NotificationGroup]groupPage) // for pre-constructing group pages
 	for _, g := range groups {
@@ -484,7 +479,7 @@ func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 				items2 = append(items2, it)
 			}
 			list2 := iwidget.NewSettingList(items2)
-			enableAll := SettingAction{
+			enableAll := app.SettingAction{
 				Label: "Enable all",
 				Action: func() {
 					for _, it := range items2 {
@@ -493,7 +488,7 @@ func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 					list2.Refresh()
 				},
 			}
-			disableAll := SettingAction{
+			disableAll := app.SettingAction{
 				Label: "Disable all",
 				Action: func() {
 					for _, it := range items2 {
@@ -504,7 +499,7 @@ func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 			}
 			return groupPage{
 				content: list2,
-				actions: []SettingAction{enableAll, disableAll},
+				actions: []app.SettingAction{enableAll, disableAll},
 			}
 		}()
 
@@ -556,15 +551,15 @@ func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 	}
 
 	list := iwidget.NewSettingList(items)
-	reset := SettingAction{
+	reset := app.SettingAction{
 		Label: "Reset to defaults",
 		Action: func() {
-			notifyCommunications.Setter(settingNotifyCommunicationsEnabledDefault)
-			notifyMails.Setter(settingNotifyMailsEnabledDefault)
-			notifyPI.Setter(settingNotifyPIEnabledDefault)
-			notifyTraining.Setter(settingNotifyTrainingEnabledDefault)
-			notifyContracts.Setter(settingNotifyTrainingEnabledDefault)
+			a.u.Settings().ResetNotifyCommunicationsEnabled()
+			a.u.Settings().ResetNotifyContractsEnabled()
+			a.u.Settings().ResetNotifyMailsEnabled()
+			a.u.Settings().ResetNotifyPIEnabled()
 			a.u.Settings().ResetNotifyTimeoutHours()
+			a.u.Settings().ResetNotifyTrainingEnabled()
 			typesEnabled.Clear()
 			a.u.Settings().ResetNotificationTypesEnabled()
 			list.Refresh()
@@ -574,14 +569,14 @@ func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 		a.u.Settings().SetNotificationTypesEnabled(typesEnabled)
 		list.Refresh()
 	}
-	none := SettingAction{
+	none := app.SettingAction{
 		Label: "Disable all communication groups",
 		Action: func() {
 			typesEnabled.Clear()
 			updateTypes()
 		},
 	}
-	all := SettingAction{
+	all := app.SettingAction{
 		Label: "Enable all communication groups",
 		Action: func() {
 			for _, nt := range evenotification.SupportedGroups() {
@@ -590,12 +585,12 @@ func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 			updateTypes()
 		},
 	}
-	send := SettingAction{
+	send := app.SettingAction{
 		Label: "Send test notification",
 		Action: func() {
 			n := fyne.NewNotification("Test", "This is a test notification from EVE Buddy.")
 			a.u.App().SendNotification(n)
 		},
 	}
-	return list, []SettingAction{reset, all, none, send}
+	return list, []app.SettingAction{reset, all, none, send}
 }

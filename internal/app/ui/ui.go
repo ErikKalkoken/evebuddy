@@ -87,7 +87,7 @@ type BaseUI struct {
 	ColonyOverview             *cross.ColonyOverview
 	LocationOverview           *cross.LocationOverview
 	GameSearch                 *tools.GameSearch
-	UserSettings               *UserSettings
+	UserSettings               *tools.UserSettings
 	TrainingOverview           *cross.TrainingOverview
 	WealthOverview             *cross.WealthOverview
 
@@ -165,7 +165,7 @@ func NewBaseUI(
 	u.CharacterOverview = cross.NewCharacterOverview(u)
 	u.CharacterPlanets = character.NewCharacterPlanets(u)
 	u.GameSearch = tools.NewGameSearch(u)
-	u.UserSettings = NewSettings(u)
+	u.UserSettings = tools.NewSettings(u)
 	u.CharacterShips = character.NewCharacterShips(u)
 	u.CharacterSkillCatalogue = character.NewCharacterSkillCatalogue(u)
 	u.CharacterSkillQueue = character.NewCharacterSkillQueue(u)
