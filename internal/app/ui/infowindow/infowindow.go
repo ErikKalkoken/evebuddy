@@ -42,10 +42,7 @@ type InfoWindow struct {
 }
 
 // New returns a configured InfoWindow.
-func New(
-	u UI,
-	w fyne.Window,
-) InfoWindow {
+func New(u UI, w fyne.Window) InfoWindow {
 	iw := InfoWindow{u: u, w: w}
 	return iw
 }
@@ -54,7 +51,21 @@ func (iw *InfoWindow) SetWindow(w fyne.Window) {
 	iw.w = w
 }
 
-func (iw InfoWindow) Show(t InfoVariant, id int64) {
+// Show shows a new info window for an EveEntity.
+func (iw InfoWindow) ShowEveEntity(ee *app.EveEntity) {
+	iw.show(eveEntity2InfoVariant(ee), int64(ee.ID))
+}
+
+// Show shows a new info window for an EveEntity.
+func (iw InfoWindow) Show(c app.EveEntityCategory, id int32) {
+	iw.show(eveEntity2InfoVariant(&app.EveEntity{Category: c}), int64(id))
+}
+
+func (iw InfoWindow) ShowLocation(id int64) {
+	iw.show(infoLocation, id)
+}
+
+func (iw InfoWindow) show(t infoVariant, id int64) {
 	if iw.u.IsOffline() {
 		iw.u.ShowInformationDialog(
 			"Offline",
@@ -64,23 +75,23 @@ func (iw InfoWindow) Show(t InfoVariant, id int64) {
 		return
 	}
 	switch t {
-	case Alliance:
+	case infoAlliance:
 		showWindow("Alliance", func(w fyne.Window) fyne.CanvasObject {
 			return newAllianceInfo(iw, int32(id), w)
 		})
-	case Character:
+	case infoCharacter:
 		showWindow("Character", func(w fyne.Window) fyne.CanvasObject {
 			return newCharacterInfo(iw, int32(id), w)
 		})
-	case Constellation:
+	case infoConstellation:
 		showWindow("Constellation", func(w fyne.Window) fyne.CanvasObject {
 			return newConstellationInfo(iw, int32(id), w)
 		})
-	case Corporation:
+	case infoCorporation:
 		showWindow("Corporation", func(w fyne.Window) fyne.CanvasObject {
 			return newCorporationInfo(iw, int32(id), w)
 		})
-	case InventoryType:
+	case infoInventoryType:
 		showWindow("Information", func(w fyne.Window) fyne.CanvasObject {
 			// TODO: Restructure, so that window is first drawn empty and content loaded in background (as other info windo)
 			a, err := NewInventoryTypeInfo(iw, int32(id), iw.u.CurrentCharacterID(), w)
@@ -93,15 +104,15 @@ func (iw InfoWindow) Show(t InfoVariant, id int64) {
 			w.SetTitle(a.MakeTitle("Information"))
 			return a
 		})
-	case Region:
+	case infoRegion:
 		showWindow("Region", func(w fyne.Window) fyne.CanvasObject {
 			return newRegionInfo(iw, int32(id), w)
 		})
-	case SolarSystem:
+	case infoSolarSystem:
 		showWindow("Solar System", func(w fyne.Window) fyne.CanvasObject {
 			return newSolarSystemInfo(iw, int32(id), w)
 		})
-	case Location:
+	case infoLocation:
 		showWindow("Location", func(w fyne.Window) fyne.CanvasObject {
 			return newLocationInfo(iw, id, w)
 		})
@@ -112,11 +123,6 @@ func (iw InfoWindow) Show(t InfoVariant, id int64) {
 			iw.w,
 		)
 	}
-}
-
-// Show shows a new info window for an EveEntity.
-func (iw InfoWindow) ShowEveEntity(ee *app.EveEntity) {
-	iw.Show(EveEntity2InfoVariant(ee), int64(ee.ID))
 }
 
 func showWindow(category string, create func(w fyne.Window) fyne.CanvasObject) {

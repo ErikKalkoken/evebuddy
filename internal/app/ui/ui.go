@@ -560,19 +560,19 @@ func (u *BaseUI) ShowUpdateStatusWindow() {
 }
 
 func (u *BaseUI) ShowLocationInfoWindow(id int64) {
-	u.InfoWindow.Show(infowindow.Location, id)
+	u.InfoWindow.ShowLocation(id)
 }
 
 func (u *BaseUI) ShowTypeInfoWindow(id int32) {
-	u.InfoWindow.Show(infowindow.InventoryType, int64(id))
+	u.InfoWindow.Show(app.EveEntityInventoryType, id)
 }
 
 func (u *BaseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
-	u.InfoWindow.Show(infowindow.EveEntity2InfoVariant(o), int64(o.ID))
+	u.InfoWindow.ShowEveEntity(o)
 }
 
-func (u *BaseUI) ShowInfoWindow(v infowindow.InfoVariant, id int64) {
-	u.InfoWindow.Show(v, id)
+func (u *BaseUI) ShowInfoWindow(c app.EveEntityCategory, id int32) {
+	u.InfoWindow.Show(c, id)
 }
 
 func (u *BaseUI) AvailableUpdate() (github.VersionInfo, error) {

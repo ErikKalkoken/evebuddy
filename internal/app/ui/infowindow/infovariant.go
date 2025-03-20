@@ -7,35 +7,35 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
-type InfoVariant uint
+type infoVariant uint
 
 const (
-	NotSupported InfoVariant = iota
-	Alliance
-	Character
-	Constellation
-	Corporation
-	InventoryType
-	Location
-	Region
-	SolarSystem
+	infoNotSupported infoVariant = iota
+	infoAlliance
+	infoCharacter
+	infoConstellation
+	infoCorporation
+	infoInventoryType
+	infoLocation
+	infoRegion
+	infoSolarSystem
 )
 
-var eveEntityCategory2InfoVariant = map[app.EveEntityCategory]InfoVariant{
-	app.EveEntityAlliance:      Alliance,
-	app.EveEntityCharacter:     Character,
-	app.EveEntityConstellation: Constellation,
-	app.EveEntityCorporation:   Corporation,
-	app.EveEntityRegion:        Region,
-	app.EveEntitySolarSystem:   SolarSystem,
-	app.EveEntityStation:       Location,
-	app.EveEntityInventoryType: InventoryType,
+var eveEntityCategory2InfoVariant = map[app.EveEntityCategory]infoVariant{
+	app.EveEntityAlliance:      infoAlliance,
+	app.EveEntityCharacter:     infoCharacter,
+	app.EveEntityConstellation: infoConstellation,
+	app.EveEntityCorporation:   infoCorporation,
+	app.EveEntityRegion:        infoRegion,
+	app.EveEntitySolarSystem:   infoSolarSystem,
+	app.EveEntityStation:       infoLocation,
+	app.EveEntityInventoryType: infoInventoryType,
 }
 
-func EveEntity2InfoVariant(ee *app.EveEntity) InfoVariant {
+func eveEntity2InfoVariant(ee *app.EveEntity) infoVariant {
 	v, ok := eveEntityCategory2InfoVariant[ee.Category]
 	if !ok {
-		return NotSupported
+		return infoNotSupported
 	}
 	return v
 

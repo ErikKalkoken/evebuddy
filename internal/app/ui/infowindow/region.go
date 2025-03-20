@@ -107,7 +107,7 @@ func (a *regionInfo) load(constellationID int32) error {
 			return
 		}
 		xx := slices.Collect(xiter.MapSlice(oo, NewEntityItemFromEveEntity))
-		constellations.Content = NewEntityListFromItems(a.iw.Show, xx...)
+		constellations.Content = NewEntityListFromItems(a.iw.show, xx...)
 		a.tabs.Refresh()
 		a.tabs.Refresh()
 	}()

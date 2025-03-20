@@ -132,7 +132,7 @@ func (a *locationInfo) load(locationID int64) error {
 		a.tabs.Append(attributesTab)
 	}
 	el := NewEntityListFromItems(
-		a.iw.Show,
+		a.iw.show,
 		NewEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.Region.ToEveEntity(), ""),
 		NewEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.ToEveEntity(), ""),
 		NewEntityItemFromEveSolarSystem(o.SolarSystem),

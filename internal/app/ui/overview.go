@@ -12,7 +12,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -104,18 +103,18 @@ func NewCharacterOverview(u *BaseUI) *CharacterOverview {
 		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(c int, oc overviewCharacter) {
 			switch c {
 			case 0:
-				u.ShowInfoWindow(infowindow.Character, int64(oc.id))
+				u.ShowInfoWindow(app.EveEntityCharacter, oc.id)
 			case 1:
 				if oc.corporation != nil {
-					u.ShowInfoWindow(infowindow.Corporation, int64(oc.corporation.ID))
+					u.ShowInfoWindow(app.EveEntityCorporation, oc.corporation.ID)
 				}
 			case 2:
 				if oc.alliance != nil {
-					u.ShowInfoWindow(infowindow.Alliance, int64(oc.alliance.ID))
+					u.ShowInfoWindow(app.EveEntityAlliance, oc.alliance.ID)
 				}
 			case 8:
 				if oc.home != nil {
-					u.ShowInfoWindow(infowindow.Location, int64(oc.home.ID))
+					u.ShowLocationInfoWindow(oc.home.ID)
 				}
 			}
 		})

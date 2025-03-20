@@ -195,7 +195,7 @@ func (a *characterInfo) load(characterID int32) error {
 		duration := humanize.RelTime(current.StartDate, time.Now(), "", "")
 		a.membership.SetText(fmt.Sprintf("for %s", duration))
 		items := slices.Collect(xiter.MapSlice(history, historyItem2EntityItem))
-		historyList := NewEntityListFromItems(a.iw.Show, items...)
+		historyList := NewEntityListFromItems(a.iw.show, items...)
 		a.tabs.Append(container.NewTabItem("Employment History", historyList))
 		a.tabs.Refresh()
 	}()

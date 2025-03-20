@@ -10,7 +10,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
@@ -85,18 +84,18 @@ func NewLocations(u *BaseUI) *LocationOverview {
 		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(c int, r locationCharacter) {
 			switch c {
 			case 0:
-				a.u.ShowInfoWindow(infowindow.Character, int64(r.id))
+				a.u.ShowInfoWindow(app.EveEntityCharacter, r.id)
 			case 1:
-				a.u.ShowInfoWindow(infowindow.Location, int64(r.location.ID))
+				a.u.ShowLocationInfoWindow(r.location.ID)
 			case 2:
-				a.u.ShowInfoWindow(infowindow.SolarSystem, int64(r.solarSystem.ID))
+				a.u.ShowInfoWindow(app.EveEntitySolarSystem, r.solarSystem.ID)
 			case 5:
 				a.u.ShowTypeInfoWindow(r.ship.ID)
 			}
 		})
 	} else {
 		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, func(r locationCharacter) {
-			a.u.ShowInfoWindow(infowindow.Location, int64(r.location.ID))
+			a.u.ShowLocationInfoWindow(r.location.ID)
 		})
 	}
 	return a

@@ -2,10 +2,14 @@ package app
 
 import (
 	"context"
+	"net/url"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/dialog"
+
+	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
@@ -133,4 +137,47 @@ type CharacterService interface {
 	UpdateMailRead(ctx context.Context, characterID, mailID int32) error
 	UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText binding.ExternalString) (int32, error)
 	UpdateSectionIfNeeded(ctx context.Context, arg CharacterUpdateSectionParams) (bool, error)
+}
+
+type UI interface {
+	AppName() string
+	AvailableUpdate() (github.VersionInfo, error)
+	CharacterService() CharacterService
+	CurrentCharacter() *Character
+	CurrentCharacterID() int32
+	ESIStatusService() ESIStatusService
+	EveImageService() EveImageService
+	EveUniverseService() EveUniverseService
+	HasCharacter() bool
+	IsDesktop() bool
+	IsDeveloperMode() bool
+	IsMobile() bool
+	IsOffline() bool
+	MakeAboutPage() fyne.CanvasObject
+	MakeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem
+	MakeWindowTitle(subTitle string) string
+	MemCache() CacheService
+	ModifyShortcutsForDialog(d dialog.Dialog, w fyne.Window)
+	NewErrorDialog(message string, err error, parent fyne.Window) dialog.Dialog
+	RefreshCrossPages()
+	ResetCharacter()
+	SetAnyCharacter() error
+	ShowConfirmDialog(title, message, confirm string, callback func(bool), parent fyne.Window)
+	ShowErrorDialog(message string, err error, parent fyne.Window)
+	ShowEveEntityInfoWindow(o *EveEntity)
+	ShowInformationDialog(title, message string, parent fyne.Window)
+	ShowInfoWindow(c EveEntityCategory, id int32)
+	ShowLocationInfoWindow(id int64)
+	ShowTypeInfoWindow(id int32)
+	ShowUpdateStatusWindow()
+	StatusCacheService() StatusCacheService
+	UpdateAvatar(id int32, setIcon func(fyne.Resource))
+	UpdateCharacter()
+	UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool)
+	UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s CharacterSection, forceUpdate bool)
+	UpdateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section GeneralSection, forceUpdate bool)
+	UpdateGeneralSectionsAndRefreshIfNeeded(forceUpdate bool)
+	UpdateMailIndicator()
+	UpdateStatus()
+	WebsiteRootURL() *url.URL
 }

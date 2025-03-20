@@ -24,7 +24,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 )
 
 // The DesktopUI is the root object of the DesktopUI and contains all DesktopUI areas.
@@ -392,7 +391,7 @@ func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 			u.Snackbar.Show("ERROR: No character selected")
 			return
 		}
-		u.ShowInfoWindow(infowindow.Character, int64(characterID))
+		u.ShowInfoWindow(app.EveEntityCharacter, characterID)
 	})
 	characterItem.Shortcut = &desktop.CustomShortcut{
 		KeyName:  fyne.KeyC,
@@ -410,7 +409,7 @@ func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 			u.Snackbar.Show("ERROR: Missing location for current character.")
 			return
 		}
-		u.ShowInfoWindow(infowindow.Location, c.Location.ID)
+		u.ShowLocationInfoWindow(c.Location.ID)
 	})
 	locationItem.Shortcut = &desktop.CustomShortcut{
 		KeyName:  fyne.KeyL,

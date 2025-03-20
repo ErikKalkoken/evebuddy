@@ -11,7 +11,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 )
 
 type CharacterWalletTransaction struct {
@@ -81,7 +80,7 @@ func NewCharacterWalletTransaction(u *BaseUI) *CharacterWalletTransaction {
 			case 5:
 				a.u.ShowEveEntityInfoWindow(r.Client)
 			case 6:
-				a.u.ShowInfoWindow(infowindow.Location, r.Location.ID)
+				a.u.ShowLocationInfoWindow(r.Location.ID)
 			}
 		})
 	} else {

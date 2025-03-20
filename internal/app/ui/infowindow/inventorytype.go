@@ -549,7 +549,7 @@ func (a *inventoryTypeInfo) makeRequirementsTab() fyne.CanvasObject {
 	)
 	l.OnSelected = func(id widget.ListItemID) {
 		r := a.requiredSkills[id]
-		a.iw.Show(InventoryType, int64(r.typeID))
+		a.iw.show(infoInventoryType, int64(r.typeID))
 		l.UnselectAll()
 	}
 	return l

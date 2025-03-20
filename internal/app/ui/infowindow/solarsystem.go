@@ -149,7 +149,7 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 
 		}
 
-		stationsTab.Content = NewEntityListFromEntities(a.iw.Show, stations...)
+		stationsTab.Content = NewEntityListFromEntities(a.iw.show, stations...)
 		a.tabs.Refresh()
 
 		oo := slices.Collect(xiter.MapSlice(structures, func(x *app.EveLocation) entityItem {
@@ -157,10 +157,10 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 				x.ID,
 				x.Name,
 				"Structure",
-				Location,
+				infoLocation,
 			)
 		}))
-		xx := NewEntityListFromItems(a.iw.Show, oo...)
+		xx := NewEntityListFromItems(a.iw.show, oo...)
 		note := widget.NewLabel("Only contains structures known through characters")
 		note.Importance = widget.LowImportance
 		structuresTab.Content = container.NewBorder(
@@ -194,7 +194,7 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 				return
 			}
 			xx := slices.Collect(xiter.MapSlice(ss, NewEntityItemFromEveSolarSystem))
-			systemsTab.Content = NewEntityListFromItems(a.iw.Show, xx...)
+			systemsTab.Content = NewEntityListFromItems(a.iw.show, xx...)
 			a.tabs.Refresh()
 		}()
 
@@ -208,7 +208,7 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 				return
 			}
 			xx := slices.Collect(xiter.MapSlice(pp, NewEntityItemFromEvePlanet))
-			planetsTab.Content = NewEntityListFromItems(a.iw.Show, xx...)
+			planetsTab.Content = NewEntityListFromItems(a.iw.show, xx...)
 			a.tabs.Refresh()
 		}()
 

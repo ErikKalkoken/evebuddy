@@ -17,7 +17,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -121,11 +120,11 @@ func NewAssetSearch(u *BaseUI) *AllAssetSearch {
 		a.body = a.makeTable(headers, makeDataLabel, func(col int, r *assetSearchRow) {
 			switch col {
 			case 0:
-				a.u.ShowTypeInfoWindow(r.typeID)
+				a.u.ShowInfoWindow(app.EveEntityInventoryType, r.typeID)
 			case 2:
-				a.u.ShowInfoWindow(infowindow.Location, r.locationID)
+				a.u.ShowLocationInfoWindow(r.locationID)
 			case 3:
-				a.u.ShowInfoWindow(infowindow.Character, int64(r.characterID))
+				a.u.ShowInfoWindow(app.EveEntityCharacter, r.characterID)
 			}
 		})
 	}

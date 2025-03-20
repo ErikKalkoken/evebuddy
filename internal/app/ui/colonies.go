@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 )
 
 type colonyRow struct {
@@ -89,9 +88,9 @@ func NewColonies(u *BaseUI) *ColonyOverview {
 		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(col int, r colonyRow) {
 			switch col {
 			case 0, 1, 2, 3, 4, 5, 6:
-				a.u.ShowInfoWindow(infowindow.SolarSystem, int64(r.solarSystemID))
+				a.u.ShowInfoWindow(app.EveEntitySolarSystem, r.solarSystemID)
 			case 7:
-				a.u.ShowInfoWindow(infowindow.Character, int64(r.characterID))
+				a.u.ShowInfoWindow(app.EveEntityCharacter, r.characterID)
 			}
 		})
 	} else {

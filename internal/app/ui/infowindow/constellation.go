@@ -118,7 +118,7 @@ func (a *constellationInfo) load(constellationID int32) error {
 			return
 		}
 		xx := slices.Collect(xiter.MapSlice(oo, NewEntityItemFromEveSolarSystem))
-		solarSystems.Content = NewEntityListFromItems(a.iw.Show, xx...)
+		solarSystems.Content = NewEntityListFromItems(a.iw.show, xx...)
 		a.tabs.Refresh()
 	}()
 	return nil
