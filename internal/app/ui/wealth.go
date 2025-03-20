@@ -83,7 +83,7 @@ func (a *WealthOverview) Update() {
 		a.top.Refresh()
 		return
 	}
-	cb := chartbuilder.New(a.u.Window)
+	cb := chartbuilder.New(a.u.MainWindow())
 	cb.ForegroundColor = theme.Color(theme.ColorNameForeground)
 	cb.BackgroundColor = theme.Color(theme.ColorNameBackground)
 	f := theme.DefaultTextFont().Content()

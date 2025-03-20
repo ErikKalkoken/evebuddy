@@ -49,7 +49,7 @@ func NewManageCharacters(u *BaseUI) *ManageCharacters {
 		characters:   make([]accountCharacter, 0),
 		showSnackbar: u.ShowSnackbar,
 		title:        MakeTopLabel(),
-		window:       u.Window,
+		window:       u.MainWindow(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)

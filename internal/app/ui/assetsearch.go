@@ -142,7 +142,7 @@ func (a *AllAssetSearch) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *AllAssetSearch) Focus() {
-	a.u.Window.Canvas().Focus(a.entry)
+	a.u.MainWindow().Canvas().Focus(a.entry)
 }
 
 func (a *AllAssetSearch) makeTable(

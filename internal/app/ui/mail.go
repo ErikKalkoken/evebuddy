@@ -208,7 +208,7 @@ func (a *CharacterMail) update() {
 	if err != nil {
 		t := "Failed to build folder tree"
 		slog.Error(t, "character", characterID, "error", err)
-		a.u.ShowErrorDialog(t, err, a.u.Window)
+		a.u.ShowErrorDialog(t, err, a.u.MainWindow())
 		return
 	}
 	if a.OnUpdate != nil {
@@ -526,7 +526,7 @@ func (a *CharacterMail) MakeDeleteAction(onSuccess func()) (fyne.Resource, func(
 					func() error {
 						return a.u.CharacterService().DeleteCharacterMail(context.TODO(), a.mail.CharacterID, a.mail.MailID)
 					},
-					a.u.Window,
+					a.u.MainWindow(),
 				)
 				m.OnSuccess = func() {
 					a.headerRefresh()
@@ -540,7 +540,7 @@ func (a *CharacterMail) MakeDeleteAction(onSuccess func()) (fyne.Resource, func(
 					a.u.ShowSnackbar(fmt.Sprintf("Failed to delete mail: %s", humanize.Error(err)))
 				}
 				m.Start()
-			}, a.u.Window)
+			}, a.u.MainWindow())
 	}
 }
 
@@ -568,7 +568,7 @@ func (a *CharacterMail) makeToolbar() *widget.Toolbar {
 		widget.NewToolbarAction(a.MakeReplyAllAction()),
 		widget.NewToolbarAction(a.MakeForwardAction()),
 		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
-			a.u.Window.Clipboard().SetContent(a.mail.String())
+			a.u.MainWindow().Clipboard().SetContent(a.mail.String())
 		}),
 		widget.NewToolbarSpacer(),
 		widget.NewToolbarAction(a.MakeDeleteAction(nil)),

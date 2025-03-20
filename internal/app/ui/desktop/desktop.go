@@ -50,11 +50,12 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 		sfg:    new(singleflight.Group),
 		BaseUI: bui,
 	}
-	if u.DeskApp == nil {
+	deskApp, ok := u.App().(desktop.App)
+	if !ok {
 		panic("Could not start in desktop mode")
 	}
 	u.OnInit = func(_ *app.Character) {
-		index := u.FyneApp.Preferences().IntWithFallback(ui.SettingTabsMainID, -1)
+		index := u.App().Preferences().IntWithFallback(ui.SettingTabsMainID, -1)
 		if index != -1 {
 			u.tabs.SelectIndex(index)
 			for i, o := range u.tabs.Items {
@@ -63,7 +64,7 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 					continue
 				}
 				key := makeSubTabsKey(i)
-				index := u.FyneApp.Preferences().IntWithFallback(key, -1)
+				index := u.App().Preferences().IntWithFallback(key, -1)
 				if index != -1 {
 					tabs.SelectIndex(index)
 				}
@@ -72,9 +73,9 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 		go u.UpdateMailIndicator()
 	}
 	u.OnShowAndRun = func() {
-		width := float32(u.FyneApp.Preferences().FloatWithFallback(ui.SettingWindowWidth, ui.SettingWindowHeightDefault))
-		height := float32(u.FyneApp.Preferences().FloatWithFallback(ui.SettingWindowHeight, ui.SettingWindowHeightDefault))
-		u.Window.Resize(fyne.NewSize(width, height))
+		width := float32(u.App().Preferences().FloatWithFallback(ui.SettingWindowWidth, ui.SettingWindowHeightDefault))
+		height := float32(u.App().Preferences().FloatWithFallback(ui.SettingWindowHeight, ui.SettingWindowHeightDefault))
+		u.MainWindow().Resize(fyne.NewSize(width, height))
 	}
 	u.OnAppFirstStarted = func() {
 		// FIXME: Workaround to mitigate a bug that causes the window to sometimes render
@@ -82,13 +83,13 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 		if runtime.GOOS == "linux" {
 			go func() {
 				time.Sleep(500 * time.Millisecond)
-				s := u.Window.Canvas().Size()
-				u.Window.Resize(fyne.NewSize(s.Width-0.2, s.Height-0.2))
-				u.Window.Resize(fyne.NewSize(s.Width, s.Height))
+				s := u.MainWindow().Canvas().Size()
+				u.MainWindow().Resize(fyne.NewSize(s.Width-0.2, s.Height-0.2))
+				u.MainWindow().Resize(fyne.NewSize(s.Width, s.Height))
 			}()
 		}
 		go u.statusBar.StartUpdateTicker()
-		u.Window.Canvas().AddShortcut(
+		u.MainWindow().Canvas().AddShortcut(
 			&desktop.CustomShortcut{
 				KeyName:  fyne.KeyS,
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierControl,
@@ -117,10 +118,10 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 		go u.statusBar.updateCharacterCount()
 	}
 	u.ShowMailIndicator = func() {
-		u.DeskApp.SetSystemTrayIcon(icons.IconmarkedPng)
+		deskApp.SetSystemTrayIcon(icons.IconmarkedPng)
 	}
 	u.HideMailIndicator = func() {
-		u.DeskApp.SetSystemTrayIcon(icons.IconPng)
+		deskApp.SetSystemTrayIcon(icons.IconPng)
 	}
 	u.EnableMenuShortcuts = u.enableMenuShortcuts
 	u.DisableMenuShortcuts = u.disableMenuShortcuts
@@ -220,10 +221,10 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 	u.toolbar = NewToolbar(u)
 	u.statusBar = NewStatusBar(u)
 	mainContent := container.NewBorder(u.toolbar, u.statusBar, nil, nil, u.tabs)
-	u.Window.SetContent(mainContent)
+	u.MainWindow().SetContent(mainContent)
 
 	// system tray menu
-	if u.FyneApp.Preferences().BoolWithFallback(ui.SettingSysTrayEnabled, ui.SettingSysTrayEnabledDefault) {
+	if u.App().Preferences().BoolWithFallback(ui.SettingSysTrayEnabled, ui.SettingSysTrayEnabledDefault) {
 		name := u.AppName()
 		item := fyne.NewMenuItem(name, nil)
 		item.Disabled = true
@@ -232,34 +233,34 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 			item,
 			fyne.NewMenuItemSeparator(),
 			fyne.NewMenuItem(fmt.Sprintf("Open %s", name), func() {
-				u.Window.Show()
+				u.MainWindow().Show()
 			}),
 		)
-		u.DeskApp.SetSystemTrayMenu(m)
-		u.Window.SetCloseIntercept(func() {
-			u.Window.Hide()
+		deskApp.SetSystemTrayMenu(m)
+		u.MainWindow().SetCloseIntercept(func() {
+			u.MainWindow().Hide()
 		})
 	}
 	u.HideMailIndicator() // init system tray icon
 
 	menu := u.makeMenu()
-	u.Window.SetMainMenu(menu)
-	u.Window.SetMaster()
+	u.MainWindow().SetMainMenu(menu)
+	u.MainWindow().SetMaster()
 	return u
 }
 
 func (u *DesktopUI) saveAppState() {
-	if u.Window == nil || u.FyneApp == nil {
+	if u.MainWindow() == nil || u.App() == nil {
 		slog.Warn("Failed to save app state")
 	}
-	s := u.Window.Canvas().Size()
-	u.FyneApp.Preferences().SetFloat(ui.SettingWindowWidth, float64(s.Width))
-	u.FyneApp.Preferences().SetFloat(ui.SettingWindowHeight, float64(s.Height))
+	s := u.MainWindow().Canvas().Size()
+	u.App().Preferences().SetFloat(ui.SettingWindowWidth, float64(s.Width))
+	u.App().Preferences().SetFloat(ui.SettingWindowHeight, float64(s.Height))
 	if u.tabs == nil {
 		slog.Warn("Failed to save tabs in app state")
 	}
 	index := u.tabs.SelectedIndex()
-	u.FyneApp.Preferences().SetInt(ui.SettingTabsMainID, index)
+	u.App().Preferences().SetInt(ui.SettingTabsMainID, index)
 	for i, o := range u.tabs.Items {
 		tabs, ok := o.Content.(*container.AppTabs)
 		if !ok {
@@ -267,7 +268,7 @@ func (u *DesktopUI) saveAppState() {
 		}
 		key := makeSubTabsKey(i)
 		index := tabs.SelectedIndex()
-		u.FyneApp.Preferences().SetInt(key, index)
+		u.App().Preferences().SetInt(key, index)
 	}
 	slog.Info("Saved app state")
 }
@@ -296,10 +297,10 @@ func (u *DesktopUI) toogleTabs(enabled bool) {
 }
 
 func (u *DesktopUI) ResetDesktopSettings() {
-	u.FyneApp.Preferences().SetBool(ui.SettingSysTrayEnabled, ui.SettingSysTrayEnabledDefault)
-	u.FyneApp.Preferences().SetBool(ui.SettingSysTrayEnabled, ui.SettingSysTrayEnabledDefault)
-	u.FyneApp.Preferences().SetInt(ui.SettingTabsMainID, 0)
-	u.FyneApp.Preferences().SetFloat(ui.SettingWindowHeight, ui.SettingWindowHeightDefault)
+	u.App().Preferences().SetBool(ui.SettingSysTrayEnabled, ui.SettingSysTrayEnabledDefault)
+	u.App().Preferences().SetBool(ui.SettingSysTrayEnabled, ui.SettingSysTrayEnabledDefault)
+	u.App().Preferences().SetInt(ui.SettingTabsMainID, 0)
+	u.App().Preferences().SetFloat(ui.SettingWindowHeight, ui.SettingWindowHeightDefault)
 }
 
 func makeSubTabsKey(i int) string {
@@ -311,7 +312,7 @@ func (u *DesktopUI) showSettingsWindow() {
 		u.settingsWindow.Show()
 		return
 	}
-	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Settings"))
+	w := u.App().NewWindow(u.MakeWindowTitle("Settings"))
 	u.Settings.SetWindow(w)
 	w.SetContent(u.Settings)
 	w.Resize(fyne.Size{Width: 700, Height: 500})
@@ -323,7 +324,7 @@ func (u *DesktopUI) showSettingsWindow() {
 
 func (u *DesktopUI) showSendMailWindow(character *app.Character, mode ui.SendMailMode, mail *app.CharacterMail) {
 	title := u.MakeWindowTitle(fmt.Sprintf("New message [%s]", character.EveCharacter.Name))
-	w := u.FyneApp.NewWindow(title)
+	w := u.App().NewWindow(title)
 	page, icon, action := ui.MakeSendMailPage(u.BaseUI, character, mode, mail, w)
 	send := widget.NewButtonWithIcon("Send", icon, func() {
 		if action() {
@@ -342,7 +343,7 @@ func (u *DesktopUI) showAccountWindow() {
 		u.accountWindow.Show()
 		return
 	}
-	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Characters"))
+	w := u.App().NewWindow(u.MakeWindowTitle("Characters"))
 	u.accountWindow = w
 	w.SetOnClosed(func() {
 		u.accountWindow = nil
@@ -368,7 +369,7 @@ func (u *DesktopUI) showSearchWindow() {
 	} else {
 		n = "No Character"
 	}
-	w := u.FyneApp.NewWindow(u.MakeWindowTitle(fmt.Sprintf("Search New Eden [%s]", n)))
+	w := u.App().NewWindow(u.MakeWindowTitle(fmt.Sprintf("Search New Eden [%s]", n)))
 	u.searchWindow = w
 	w.SetOnClosed(func() {
 		u.searchWindow = nil
@@ -484,13 +485,13 @@ func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 
 	// Help menu
 	website := fyne.NewMenuItem("Website", func() {
-		if err := u.FyneApp.OpenURL(u.WebsiteRootURL()); err != nil {
+		if err := u.App().OpenURL(u.WebsiteRootURL()); err != nil {
 			slog.Error("open main website", "error", err)
 		}
 	})
 	report := fyne.NewMenuItem("Report a bug", func() {
 		url := u.WebsiteRootURL().JoinPath("issues")
-		if err := u.FyneApp.OpenURL(url); err != nil {
+		if err := u.App().OpenURL(url); err != nil {
 			slog.Error("open issue website", "error", err)
 		}
 	})
@@ -523,20 +524,20 @@ func (u *DesktopUI) enableMenuShortcuts() {
 		}
 	}
 	for _, mi := range u.menuItemsWithShortcut {
-		u.Window.Canvas().AddShortcut(addShortcutFromMenuItem(mi))
+		u.MainWindow().Canvas().AddShortcut(addShortcutFromMenuItem(mi))
 	}
 }
 
 // disableMenuShortcuts disabled all registered menu shortcuts.
 func (u *DesktopUI) disableMenuShortcuts() {
 	for _, mi := range u.menuItemsWithShortcut {
-		u.Window.Canvas().RemoveShortcut(mi.Shortcut)
+		u.MainWindow().Canvas().RemoveShortcut(mi.Shortcut)
 	}
 }
 
 func (u *DesktopUI) showAboutDialog() {
-	d := dialog.NewCustom("About", "Close", u.MakeAboutPage(), u.Window)
-	u.ModifyShortcutsForDialog(d, u.Window)
+	d := dialog.NewCustom("About", "Close", u.MakeAboutPage(), u.MainWindow())
+	u.ModifyShortcutsForDialog(d, u.MainWindow())
 	d.Show()
 }
 
@@ -547,18 +548,18 @@ func (u *DesktopUI) showUserDataDialog() {
 		path string
 	}
 	items := make([]item, 0)
-	for n, p := range u.DataPaths {
+	for n, p := range u.DataPaths() {
 		items = append(items, item{n, p})
 	}
-	items = append(items, item{"settings", u.FyneApp.Storage().RootURI().Path()})
+	items = append(items, item{"settings", u.App().Storage().RootURI().Path()})
 	slices.SortFunc(items, func(a, b item) int {
 		return strings.Compare(a.name, b.name)
 	})
 	for _, it := range items {
-		f.Append(it.name, makePathEntry(u.Window.Clipboard(), it.path))
+		f.Append(it.name, makePathEntry(u.MainWindow().Clipboard(), it.path))
 	}
-	d := dialog.NewCustom("User data", "Close", f, u.Window)
-	u.ModifyShortcutsForDialog(d, u.Window)
+	d := dialog.NewCustom("User data", "Close", f, u.MainWindow())
+	u.ModifyShortcutsForDialog(d, u.MainWindow())
 	d.Show()
 }
 

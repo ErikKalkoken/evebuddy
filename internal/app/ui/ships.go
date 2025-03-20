@@ -54,7 +54,7 @@ func NewCharacterShips(u *BaseUI) *CharacterShips {
 			return
 		}
 		if err := a.updateEntries(); err != nil {
-			a.u.ShowErrorDialog("Failed to update ships", err, a.u.Window)
+			a.u.ShowErrorDialog("Failed to update ships", err, a.u.MainWindow())
 		}
 		a.grid.Refresh()
 		a.grid.ScrollToTop()
@@ -63,7 +63,7 @@ func NewCharacterShips(u *BaseUI) *CharacterShips {
 	a.groupSelect = widget.NewSelect([]string{}, func(s string) {
 		a.groupSelected = s
 		if err := a.updateEntries(); err != nil {
-			a.u.ShowErrorDialog("Failed to update ships", err, a.u.Window)
+			a.u.ShowErrorDialog("Failed to update ships", err, a.u.MainWindow())
 		}
 		a.grid.Refresh()
 		a.grid.ScrollToTop()
@@ -73,7 +73,7 @@ func NewCharacterShips(u *BaseUI) *CharacterShips {
 	a.flyableSelect = widget.NewSelect([]string{}, func(s string) {
 		a.flyableSelected = s
 		if err := a.updateEntries(); err != nil {
-			a.u.ShowErrorDialog("Failed to update ships", err, a.u.Window)
+			a.u.ShowErrorDialog("Failed to update ships", err, a.u.MainWindow())
 		}
 		a.grid.Refresh()
 		a.grid.ScrollToTop()

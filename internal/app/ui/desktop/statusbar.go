@@ -91,8 +91,8 @@ func (a *StatusBar) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *StatusBar) showClockDialog() {
 	content := widget.NewRichTextFromMarkdown("")
-	d := dialog.NewCustom("EVE Clock", "Close", content, a.u.Window)
-	a.u.ModifyShortcutsForDialog(d, a.u.Window)
+	d := dialog.NewCustom("EVE Clock", "Close", content, a.u.MainWindow())
+	a.u.ModifyShortcutsForDialog(d, a.u.MainWindow())
 	stop := make(chan struct{})
 	timer := time.NewTicker(1 * time.Second)
 	go func() {
@@ -125,8 +125,8 @@ func (a *StatusBar) showEveStatusDialog() {
 	lb := widget.NewLabel(text)
 	lb.Wrapping = fyne.TextWrapWord
 	lb.Importance = i
-	d := dialog.NewCustom("ESI status", "OK", lb, a.u.Window)
-	a.u.ModifyShortcutsForDialog(d, a.u.Window)
+	d := dialog.NewCustom("ESI status", "OK", lb, a.u.MainWindow())
+	a.u.ModifyShortcutsForDialog(d, a.u.MainWindow())
 	d.Show()
 	d.Resize(fyne.Size{Width: 400, Height: 200})
 }
@@ -195,12 +195,12 @@ func (a *StatusBar) StartUpdateTicker() {
 				if !ok {
 					return
 				}
-				if err := a.u.FyneApp.OpenURL(u); err != nil {
-					a.u.ShowErrorDialog("Failed to open download page", err, a.u.Window)
+				if err := a.u.App().OpenURL(u); err != nil {
+					a.u.ShowErrorDialog("Failed to open download page", err, a.u.MainWindow())
 				}
-			}, a.u.Window,
+			}, a.u.MainWindow(),
 			)
-			a.u.ModifyShortcutsForDialog(d, a.u.Window)
+			a.u.ModifyShortcutsForDialog(d, a.u.MainWindow())
 			d.Show()
 		})
 		a.newVersionHint.Add(widget.NewSeparator())

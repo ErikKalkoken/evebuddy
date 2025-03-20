@@ -145,7 +145,7 @@ func NewSettings(u *BaseUI) *Settings {
 	a := &Settings{
 		showSnackbar: u.ShowSnackbar,
 		u:            u,
-		window:       u.Window,
+		window:       u.MainWindow(),
 	}
 	a.ExtendBaseWidget(a)
 	a.GeneralContent, a.GeneralActions = a.makeGeneralSettingsPage()
@@ -201,13 +201,13 @@ func (a *Settings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction
 		LogLevelNames(),
 		SettingLogLevelDefault,
 		func() string {
-			return a.u.FyneApp.Preferences().StringWithFallback(
+			return a.u.App().Preferences().StringWithFallback(
 				SettingLogLevel,
 				SettingLogLevelDefault,
 			)
 		},
 		func(s string) {
-			a.u.FyneApp.Preferences().SetString(SettingLogLevel, s)
+			a.u.App().Preferences().SetString(SettingLogLevel, s)
 			slog.SetLogLoggerLevel(LogLevelName2Level(s))
 		},
 		a.currentWindow,
@@ -219,12 +219,12 @@ func (a *Settings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction
 		settingMaxMailsMax,
 		settingMaxMailsDefault,
 		func() float64 {
-			return float64(a.u.FyneApp.Preferences().IntWithFallback(
+			return float64(a.u.App().Preferences().IntWithFallback(
 				settingMaxMails,
 				settingMaxMailsDefault))
 		},
 		func(v float64) {
-			a.u.FyneApp.Preferences().SetInt(settingMaxMails, int(v))
+			a.u.App().Preferences().SetInt(settingMaxMails, int(v))
 		},
 		a.currentWindow,
 	)
@@ -235,12 +235,12 @@ func (a *Settings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction
 		settingMaxWalletTransactionsMax,
 		settingMaxWalletTransactionsDefault,
 		func() float64 {
-			return float64(a.u.FyneApp.Preferences().IntWithFallback(
+			return float64(a.u.App().Preferences().IntWithFallback(
 				settingMaxWalletTransactions,
 				settingMaxWalletTransactionsDefault))
 		},
 		func(v float64) {
-			a.u.FyneApp.Preferences().SetInt(settingMaxWalletTransactions, int(v))
+			a.u.App().Preferences().SetInt(settingMaxWalletTransactions, int(v))
 		},
 		a.currentWindow,
 	)
@@ -248,10 +248,10 @@ func (a *Settings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction
 		"Developer Mode",
 		"App shows addditional technical information like Character IDs",
 		func() bool {
-			return a.u.FyneApp.Preferences().Bool(settingDeveloperMode)
+			return a.u.App().Preferences().Bool(settingDeveloperMode)
 		},
 		func(b bool) {
-			a.u.FyneApp.Preferences().SetBool(settingDeveloperMode, b)
+			a.u.App().Preferences().SetBool(settingDeveloperMode, b)
 		},
 	)
 
@@ -269,13 +269,13 @@ func (a *Settings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction
 		"Close button",
 		"App will minimize to system tray when closed (requires restart)",
 		func() bool {
-			return a.u.FyneApp.Preferences().BoolWithFallback(
+			return a.u.App().Preferences().BoolWithFallback(
 				SettingSysTrayEnabled,
 				SettingSysTrayEnabledDefault,
 			)
 		},
 		func(b bool) {
-			a.u.FyneApp.Preferences().SetBool(SettingSysTrayEnabled, b)
+			a.u.App().Preferences().SetBool(SettingSysTrayEnabled, b)
 		},
 	)
 	if a.u.IsDesktop() {
@@ -330,25 +330,25 @@ func (a *Settings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction
 	exportAppLog := SettingAction{
 		Label: "Export application log",
 		Action: func() {
-			a.showExportFileDialog(a.u.DataPaths["log"])
+			a.showExportFileDialog(a.u.DataPaths()["log"])
 		},
 	}
 	exportCrashLog := SettingAction{
 		Label: "Export crash log",
 		Action: func() {
-			a.showExportFileDialog(a.u.DataPaths["crashfile"])
+			a.showExportFileDialog(a.u.DataPaths()["crashfile"])
 		},
 	}
 	deleteAppLog := SettingAction{
 		Label: "Delete application log",
 		Action: func() {
-			a.showDeleteFileDialog("application log", a.u.DataPaths["log"]+"*")
+			a.showDeleteFileDialog("application log", a.u.DataPaths()["log"]+"*")
 		},
 	}
 	deleteCrashLog := SettingAction{
 		Label: "Delete creash log",
 		Action: func() {
-			a.showDeleteFileDialog("crash log", a.u.DataPaths["crashfile"])
+			a.showDeleteFileDialog("crash log", a.u.DataPaths()["crashfile"])
 		},
 	}
 	actions := []SettingAction{reset, clear, exportAppLog, exportCrashLog, deleteAppLog, deleteCrashLog}
@@ -356,7 +356,7 @@ func (a *Settings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction
 		actions = append(actions, SettingAction{
 			Label: "Resets main window size to defaults",
 			Action: func() {
-				a.u.Window.Resize(fyne.NewSize(SettingWindowWidthDefault, SettingWindowHeightDefault))
+				a.u.MainWindow().Resize(fyne.NewSize(SettingWindowWidthDefault, SettingWindowHeightDefault))
 			},
 		})
 	}
@@ -444,22 +444,22 @@ func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 		slices.Sort(groupsAndTypes[g])
 	}
 	slices.Sort(groups)
-	typesEnabled := set.NewFromSlice(a.u.FyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
+	typesEnabled := set.NewFromSlice(a.u.App().Preferences().StringList(settingNotificationsTypesEnabled))
 
 	// add global items
 	notifyCommunications := iwidget.NewSettingItemSwitch(
 		"Notify communications",
 		"Whether to notify new communications",
 		func() bool {
-			return a.u.FyneApp.Preferences().BoolWithFallback(
+			return a.u.App().Preferences().BoolWithFallback(
 				settingNotifyCommunicationsEnabled,
 				settingNotifyCommunicationsEnabledDefault,
 			)
 		},
 		func(on bool) {
-			a.u.FyneApp.Preferences().SetBool(settingNotifyCommunicationsEnabled, on)
+			a.u.App().Preferences().SetBool(settingNotifyCommunicationsEnabled, on)
 			if on {
-				a.u.FyneApp.Preferences().SetString(
+				a.u.App().Preferences().SetString(
 					settingNotifyCommunicationsEarliest,
 					time.Now().Format(time.RFC3339))
 			}
@@ -469,15 +469,15 @@ func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 		"Notify mails",
 		"Whether to notify new mails",
 		func() bool {
-			return a.u.FyneApp.Preferences().BoolWithFallback(
+			return a.u.App().Preferences().BoolWithFallback(
 				settingNotifyMailsEnabled,
 				settingNotifyMailsEnabledDefault,
 			)
 		},
 		func(on bool) {
-			a.u.FyneApp.Preferences().SetBool(settingNotifyMailsEnabled, on)
+			a.u.App().Preferences().SetBool(settingNotifyMailsEnabled, on)
 			if on {
-				a.u.FyneApp.Preferences().SetString(
+				a.u.App().Preferences().SetString(
 					settingNotifyMailsEarliest,
 					time.Now().Format(time.RFC3339))
 			}
@@ -487,15 +487,15 @@ func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 		"Planetary Industry",
 		"Whether to notify about expired extractions",
 		func() bool {
-			return a.u.FyneApp.Preferences().BoolWithFallback(
+			return a.u.App().Preferences().BoolWithFallback(
 				settingNotifyPIEnabled,
 				settingNotifyPIEnabledDefault,
 			)
 		},
 		func(on bool) {
-			a.u.FyneApp.Preferences().SetBool(settingNotifyPIEnabled, on)
+			a.u.App().Preferences().SetBool(settingNotifyPIEnabled, on)
 			if on {
-				a.u.FyneApp.Preferences().SetString(
+				a.u.App().Preferences().SetString(
 					settingNotifyPIEarliest,
 					time.Now().Format(time.RFC3339))
 			}
@@ -505,7 +505,7 @@ func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 		"Notify Training",
 		"Whether to notify abouthen skillqueue is empty",
 		func() bool {
-			return a.u.FyneApp.Preferences().BoolWithFallback(
+			return a.u.App().Preferences().BoolWithFallback(
 				settingNotifyTrainingEnabled,
 				settingNotifyTrainingEnabledDefault,
 			)
@@ -517,14 +517,14 @@ func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 				if err != nil {
 					a.u.ShowErrorDialog("failed to enable training notification", err, a.currentWindow())
 				} else {
-					a.u.FyneApp.Preferences().SetBool(settingNotifyTrainingEnabled, true)
+					a.u.App().Preferences().SetBool(settingNotifyTrainingEnabled, true)
 				}
 			} else {
 				err := a.u.CharacterService().DisableAllTrainingWatchers(ctx)
 				if err != nil {
 					a.u.ShowErrorDialog("failed to disable training notification", err, a.currentWindow())
 				} else {
-					a.u.FyneApp.Preferences().SetBool(settingNotifyTrainingEnabled, false)
+					a.u.App().Preferences().SetBool(settingNotifyTrainingEnabled, false)
 				}
 			}
 		},
@@ -533,15 +533,15 @@ func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 		"Notify Contracts",
 		"Whether to notify when contract status changes",
 		func() bool {
-			return a.u.FyneApp.Preferences().BoolWithFallback(
+			return a.u.App().Preferences().BoolWithFallback(
 				settingNotifyContractsEnabled,
 				settingNotifyCommunicationsEnabledDefault,
 			)
 		},
 		func(on bool) {
-			a.u.FyneApp.Preferences().SetBool(settingNotifyContractsEnabled, on)
+			a.u.App().Preferences().SetBool(settingNotifyContractsEnabled, on)
 			if on {
-				a.u.FyneApp.Preferences().SetString(
+				a.u.App().Preferences().SetString(
 					settingNotifyContractsEarliest,
 					time.Now().Format(time.RFC3339))
 			}
@@ -554,13 +554,13 @@ func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 		settingNotifyTimeoutHoursMax,
 		settingNotifyTimeoutHoursDefault,
 		func() float64 {
-			return float64(a.u.FyneApp.Preferences().IntWithFallback(
+			return float64(a.u.App().Preferences().IntWithFallback(
 				settingNotifyTimeoutHours,
 				settingNotifyTimeoutHoursDefault,
 			))
 		},
 		func(v float64) {
-			a.u.FyneApp.Preferences().SetInt(settingNotifyTimeoutHours, int(v))
+			a.u.App().Preferences().SetInt(settingNotifyTimeoutHours, int(v))
 		},
 		a.currentWindow,
 	)
@@ -601,7 +601,7 @@ func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 						} else {
 							typesEnabled.Remove(ntStr)
 						}
-						a.u.FyneApp.Preferences().SetStringList(
+						a.u.App().Preferences().SetStringList(
 							settingNotificationsTypesEnabled,
 							typesEnabled.ToSlice())
 					},
@@ -695,7 +695,7 @@ func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 		},
 	}
 	updateTypes := func() {
-		a.u.FyneApp.Preferences().SetStringList(
+		a.u.App().Preferences().SetStringList(
 			settingNotificationsTypesEnabled,
 			typesEnabled.ToSlice(),
 		)
@@ -721,7 +721,7 @@ func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 		Label: "Send test notification",
 		Action: func() {
 			n := fyne.NewNotification("Test", "This is a test notification from EVE Buddy.")
-			a.u.FyneApp.SendNotification(n)
+			a.u.App().SendNotification(n)
 		},
 	}
 	return list, []SettingAction{reset, all, none, send}

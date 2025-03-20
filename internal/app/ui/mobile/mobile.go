@@ -42,7 +42,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 	mailMenu := fyne.NewMenu("")
 	communicationsMenu := fyne.NewMenu("")
 	u.CharacterMail.OnSendMessage = func(character *app.Character, mode ui.SendMailMode, mail *app.CharacterMail) {
-		page, sendIcon, sendAction := ui.MakeSendMailPage(bui, character, mode, mail, u.Window)
+		page, sendIcon, sendAction := ui.MakeSendMailPage(bui, character, mode, mail, u.MainWindow())
 		if mode != ui.SendMailNew {
 			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
 		}
@@ -490,7 +490,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		}()
 	}
 
-	u.Window.SetContent(navBar)
+	u.MainWindow().SetContent(navBar)
 	return u
 }
 

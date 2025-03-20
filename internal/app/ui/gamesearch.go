@@ -53,7 +53,7 @@ func NewGameSearch(u *BaseUI) *GameSearch {
 		resultCount:         widget.NewLabel(""),
 		supportedCategories: infowindow.SupportedEveEntities(),
 		u:                   u,
-		w:                   u.Window,
+		w:                   u.MainWindow(),
 	}
 	a.ExtendBaseWidget(a)
 
@@ -308,7 +308,7 @@ func (a *GameSearch) doSearch(search string) {
 		a.strict.On,
 	)
 	if err != nil {
-		a.u.ShowErrorDialog("Search failed", err, a.u.Window)
+		a.u.ShowErrorDialog("Search failed", err, a.u.MainWindow())
 		return
 	}
 	if total == maxSearchResults {

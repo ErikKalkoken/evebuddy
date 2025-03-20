@@ -98,7 +98,7 @@ func NewCharacterWalletJournal(u *BaseUI) *CharacterWalletJournal {
 	}
 	showReasonDialog := func(r walletJournalEntry) {
 		if r.hasReason() {
-			a.u.ShowInformationDialog("Reason", r.reason, a.u.Window)
+			a.u.ShowInformationDialog("Reason", r.reason, a.u.MainWindow())
 		}
 	}
 	if a.u.IsDesktop() {
