@@ -49,7 +49,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, UpdateSectionParams{
+		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionWalletJournal,
 		})
@@ -102,7 +102,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, UpdateSectionParams{
+		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionWalletJournal,
 		})
@@ -151,7 +151,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		_, err := s.updateCharacterWalletJournalEntryESI(ctx, UpdateSectionParams{
+		_, err := s.updateCharacterWalletJournalEntryESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionWalletJournal,
 		})
@@ -211,7 +211,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 				},
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
 		// when
-		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, UpdateSectionParams{
+		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionWalletJournal,
 		})

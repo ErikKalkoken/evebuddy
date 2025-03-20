@@ -48,7 +48,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/wallet/transactions/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.updateCharacterWalletTransactionESI(ctx, UpdateSectionParams{
+		changed, err := s.updateCharacterWalletTransactionESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionWalletTransactions,
 		})
@@ -101,7 +101,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/wallet/transactions/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.updateCharacterWalletTransactionESI(ctx, UpdateSectionParams{
+		changed, err := s.updateCharacterWalletTransactionESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionWalletTransactions,
 		})
@@ -154,7 +154,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/wallet/transactions/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		_, err := s.updateCharacterWalletTransactionESI(ctx, UpdateSectionParams{
+		_, err := s.updateCharacterWalletTransactionESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionWalletTransactions,
 		})
@@ -213,7 +213,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 				},
 			}))
 		// when
-		_, err := s.updateCharacterWalletTransactionESI(ctx, UpdateSectionParams{
+		_, err := s.updateCharacterWalletTransactionESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionWalletTransactions,
 		})

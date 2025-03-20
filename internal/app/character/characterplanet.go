@@ -57,7 +57,7 @@ func (s *CharacterService) ListCharacterPlanets(ctx context.Context, characterID
 
 // TODO: Improve update logic to only update changes
 
-func (s *CharacterService) updateCharacterPlanetsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterPlanetsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionPlanets {
 		panic("called with wrong section")
 	}

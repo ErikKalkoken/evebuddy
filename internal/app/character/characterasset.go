@@ -46,7 +46,7 @@ type esiCharacterAssetPlus struct {
 	Name string
 }
 
-func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionAssets {
 		panic("called with wrong section")
 	}

@@ -17,13 +17,12 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type NotificationGroup struct {
-	Group       evenotification.Group
+	Group       app.NotificationGroup
 	Name        string
 	UnreadCount int
 }
@@ -58,6 +57,7 @@ func NewCharacterCommunications(u *BaseUI) *CharacterCommunications {
 	a.ExtendBaseWidget(a)
 	a.Toolbar = a.makeToolbar()
 	a.Toolbar.Hide()
+	a.groupList = a.makeGroupList()
 	a.Detail = container.NewVBox()
 	a.notificationList = a.makeNotificationList()
 	a.Notifications = container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList)
@@ -70,7 +70,6 @@ func (a *CharacterCommunications) CreateRenderer() fyne.WidgetRenderer {
 		container.NewBorder(a.Toolbar, nil, nil, nil, a.Detail),
 	)
 	split1.Offset = 0.35
-	a.groupList = a.makeGroupList()
 	split2 := container.NewHSplit(
 		container.NewBorder(a.groupsTop, nil, nil, nil, a.groupList),
 		split1,
@@ -171,7 +170,7 @@ func (a *CharacterCommunications) Update() {
 	a.notificationList.Refresh()
 	a.notificationList.UnselectAll()
 	a.notificationsTop.SetText("")
-	var counts map[evenotification.Group]int
+	var counts map[app.NotificationGroup]int
 	if characterID := a.u.CurrentCharacterID(); characterID != 0 {
 		var err error
 		counts, err = a.u.CharacterService().CountCharacterNotificationUnreads(context.TODO(), characterID)
@@ -181,7 +180,7 @@ func (a *CharacterCommunications) Update() {
 	}
 	groups := make([]NotificationGroup, 0)
 	var unreadTotal int
-	for _, c := range evenotification.Groups() {
+	for _, c := range app.NotificationGroups() {
 		nc := NotificationGroup{
 			Group:       c,
 			Name:        c.String(),
@@ -194,13 +193,13 @@ func (a *CharacterCommunications) Update() {
 		return cmp.Compare(a.Name, b.Name)
 	})
 	f1 := NotificationGroup{
-		Group:       evenotification.Unread,
+		Group:       app.GroupUnread,
 		Name:        "Unread",
 		UnreadCount: unreadTotal,
 	}
 	groups = slices.Insert(groups, 0, f1)
 	f2 := NotificationGroup{
-		Group:       evenotification.All,
+		Group:       app.GroupAll,
 		Name:        "All",
 		UnreadCount: unreadTotal,
 	}
@@ -224,22 +223,21 @@ func (a *CharacterCommunications) makeGroupTopText() (string, widget.Importance)
 }
 
 func (a *CharacterCommunications) ResetGroups() {
-	a.SetGroup(evenotification.Unread)
+	a.SetGroup(app.GroupUnread)
 }
 
-func (a *CharacterCommunications) SetGroup(nc evenotification.Group) {
+func (a *CharacterCommunications) SetGroup(nc app.NotificationGroup) {
 	ctx := context.Background()
 	characterID := a.u.CurrentCharacterID()
 	var notifications []*app.CharacterNotification
 	var err error
 	switch nc {
-	case evenotification.All:
+	case app.GroupAll:
 		notifications, err = a.u.CharacterService().ListCharacterNotificationsAll(ctx, characterID)
-	case evenotification.Unread:
+	case app.GroupUnread:
 		notifications, err = a.u.CharacterService().ListCharacterNotificationsUnread(ctx, characterID)
 	default:
-		types := evenotification.GroupTypes[nc]
-		notifications, err = a.u.CharacterService().ListCharacterNotificationsTypes(ctx, characterID, types)
+		notifications, err = a.u.CharacterService().ListCharacterNotificationsTypes(ctx, characterID, nc)
 	}
 	a.notifications = notifications
 	var top string

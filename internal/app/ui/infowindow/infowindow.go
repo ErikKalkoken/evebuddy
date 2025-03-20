@@ -10,7 +10,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/dustin/go-humanize"
 
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -26,7 +25,7 @@ const (
 )
 
 type UI interface {
-	CharacterService() *character.CharacterService
+	CharacterService() app.CharacterService
 	CurrentCharacterID() int32
 	EveImageService() app.EveImageService
 	EveUniverseService() app.EveUniverseService

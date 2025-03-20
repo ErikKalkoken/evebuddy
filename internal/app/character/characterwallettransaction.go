@@ -21,7 +21,7 @@ func (s *CharacterService) ListCharacterWalletTransactions(ctx context.Context, 
 }
 
 // updateCharacterWalletTransactionESI updates the wallet journal from ESI and reports wether it has changed.
-func (s *CharacterService) updateCharacterWalletTransactionESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterWalletTransactionESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionWalletTransactions {
 		panic("called with wrong section")
 	}

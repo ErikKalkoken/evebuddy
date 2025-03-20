@@ -102,7 +102,7 @@ type BaseUI struct {
 	WealthOverview             *WealthOverview
 
 	character    *app.Character
-	cs           *character.CharacterService
+	cs           app.CharacterService
 	eis          app.EveImageService
 	ess          app.ESIStatusService
 	eus          app.EveUniverseService
@@ -120,7 +120,7 @@ type BaseUI struct {
 // Note:Types embedding BaseUI should define callbacks instead of overwriting methods.
 func NewBaseUI(
 	fyneApp fyne.App,
-	cs *character.CharacterService,
+	cs app.CharacterService,
 	eis app.EveImageService,
 	ess app.ESIStatusService,
 	eus app.EveUniverseService,
@@ -179,7 +179,7 @@ func NewBaseUI(
 	return u
 }
 
-func (u *BaseUI) CharacterService() *character.CharacterService {
+func (u *BaseUI) CharacterService() app.CharacterService {
 	return u.cs
 }
 
@@ -802,7 +802,7 @@ func (u *BaseUI) UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 // to make sure they are refreshed when data changes.
 func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s app.CharacterSection, forceUpdate bool) {
 	hasChanged, err := u.CharacterService().UpdateSectionIfNeeded(
-		ctx, character.UpdateSectionParams{
+		ctx, app.CharacterUpdateSectionParams{
 			CharacterID:           characterID,
 			Section:               s,
 			ForceUpdate:           forceUpdate,

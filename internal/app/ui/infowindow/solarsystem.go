@@ -152,27 +152,25 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 		stationsTab.Content = NewEntityListFromEntities(a.iw.Show, stations...)
 		a.tabs.Refresh()
 
-		if len(structures) > 0 {
-			oo := slices.Collect(xiter.MapSlice(structures, func(x *app.EveLocation) entityItem {
-				return NewEntityItem(
-					x.ID,
-					x.Name,
-					"Structure",
-					Location,
-				)
-			}))
-			xx := NewEntityListFromItems(a.iw.Show, oo...)
-			note := widget.NewLabel("Only contains structures known through characters")
-			note.Importance = widget.LowImportance
-			structuresTab.Content = container.NewBorder(
-				nil,
-				note,
-				nil,
-				nil,
-				xx,
+		oo := slices.Collect(xiter.MapSlice(structures, func(x *app.EveLocation) entityItem {
+			return NewEntityItem(
+				x.ID,
+				x.Name,
+				"Structure",
+				Location,
 			)
-			a.tabs.Refresh()
-		}
+		}))
+		xx := NewEntityListFromItems(a.iw.Show, oo...)
+		note := widget.NewLabel("Only contains structures known through characters")
+		note.Importance = widget.LowImportance
+		structuresTab.Content = container.NewBorder(
+			nil,
+			note,
+			nil,
+			nil,
+			xx,
+		)
+		a.tabs.Refresh()
 
 		id, err := a.iw.u.EveUniverseService().GetStarTypeID(ctx, starID)
 		if err != nil {

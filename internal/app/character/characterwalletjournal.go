@@ -17,7 +17,7 @@ func (s *CharacterService) ListCharacterWalletJournalEntries(ctx context.Context
 }
 
 // updateCharacterWalletJournalEntryESI updates the wallet journal from ESI and reports wether it has changed.
-func (s *CharacterService) updateCharacterWalletJournalEntryESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterWalletJournalEntryESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionWalletJournal {
 		panic("called with wrong section")
 	}

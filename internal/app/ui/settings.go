@@ -21,6 +21,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
@@ -423,12 +424,12 @@ func (a *Settings) showExportFileDialog(path string) {
 }
 
 func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
-	groupsAndTypes := make(map[evenotification.Group][]evenotification.Type)
+	groupsAndTypes := make(map[app.NotificationGroup][]evenotification.Type)
 	for _, n := range evenotification.SupportedGroups() {
 		c := evenotification.Type2group[n]
 		groupsAndTypes[c] = append(groupsAndTypes[c], n)
 	}
-	groups := make([]evenotification.Group, 0)
+	groups := make([]app.NotificationGroup, 0)
 	for c := range groupsAndTypes {
 		groups = append(groups, c)
 	}
@@ -574,7 +575,7 @@ func (a *Settings) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 		content fyne.CanvasObject
 		actions []SettingAction
 	}
-	groupPages := make(map[evenotification.Group]groupPage) // for pre-constructing group pages
+	groupPages := make(map[app.NotificationGroup]groupPage) // for pre-constructing group pages
 	for _, g := range groups {
 		groupPages[g] = func() groupPage {
 			items2 := make([]iwidget.SettingItem, 0)

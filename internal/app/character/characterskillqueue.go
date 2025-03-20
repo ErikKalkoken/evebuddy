@@ -43,7 +43,7 @@ func (s *CharacterService) ListCharacterSkillqueueItems(ctx context.Context, cha
 
 // UpdateCharacterSkillqueueESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *CharacterService) UpdateCharacterSkillqueueESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) UpdateCharacterSkillqueueESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionSkillqueue {
 		panic("called with wrong section")
 	}

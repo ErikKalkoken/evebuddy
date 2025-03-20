@@ -221,7 +221,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 	return token.CharacterID, nil
 }
 
-func (s *CharacterService) updateCharacterLocationESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterLocationESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionLocation {
 		panic("called with wrong section")
 	}
@@ -256,7 +256,7 @@ func (s *CharacterService) updateCharacterLocationESI(ctx context.Context, arg U
 		})
 }
 
-func (s *CharacterService) updateCharacterOnlineESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterOnlineESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionOnline {
 		panic("called with wrong section")
 	}
@@ -278,7 +278,7 @@ func (s *CharacterService) updateCharacterOnlineESI(ctx context.Context, arg Upd
 		})
 }
 
-func (s *CharacterService) updateCharacterShipESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterShipESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionShip {
 		panic("called with wrong section")
 	}
@@ -304,7 +304,7 @@ func (s *CharacterService) updateCharacterShipESI(ctx context.Context, arg Updat
 		})
 }
 
-func (s *CharacterService) updateCharacterWalletBalanceESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterWalletBalanceESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionWalletBalance {
 		panic("called with wrong section")
 	}

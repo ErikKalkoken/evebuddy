@@ -13,12 +13,12 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *CharacterService) CountCharacterNotificationUnreads(ctx context.Context, characterID int32) (map[evenotification.Group]int, error) {
+func (s *CharacterService) CountCharacterNotificationUnreads(ctx context.Context, characterID int32) (map[app.NotificationGroup]int, error) {
 	types, err := s.st.CountCharacterNotificationUnreads(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
-	categories := make(map[evenotification.Group]int)
+	categories := make(map[app.NotificationGroup]int)
 	for name, count := range types {
 		c := evenotification.Type2group[evenotification.Type(name)]
 		categories[c] += count
@@ -54,7 +54,8 @@ func (cs *CharacterService) NotifyCommunications(ctx context.Context, characterI
 	return nil
 }
 
-func (s *CharacterService) ListCharacterNotificationsTypes(ctx context.Context, characterID int32, types []evenotification.Type) ([]*app.CharacterNotification, error) {
+func (s *CharacterService) ListCharacterNotificationsTypes(ctx context.Context, characterID int32, ng app.NotificationGroup) ([]*app.CharacterNotification, error) {
+	types := evenotification.GroupTypes[ng]
 	t2 := make([]string, len(types))
 	for i, v := range types {
 		t2[i] = string(v)
@@ -70,7 +71,7 @@ func (s *CharacterService) ListCharacterNotificationsUnread(ctx context.Context,
 	return s.st.ListCharacterNotificationsUnread(ctx, characterID)
 }
 
-func (s *CharacterService) updateCharacterNotificationsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterNotificationsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionNotifications {
 		panic("called with wrong section")
 	}

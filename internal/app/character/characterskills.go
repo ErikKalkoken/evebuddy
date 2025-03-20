@@ -28,7 +28,7 @@ func (s *CharacterService) ListCharacterSkillGroupsProgress(ctx context.Context,
 	return s.st.ListCharacterSkillGroupsProgress(ctx, characterID)
 }
 
-func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionSkills {
 		panic("called with wrong section")
 	}

@@ -14,7 +14,6 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
@@ -298,7 +297,7 @@ func (a *GameSearch) doSearch(search string) {
 		a.indicator.Stop()
 		a.indicator.Hide()
 	}()
-	categories := slices.Collect(xiter.MapSlice(a.categories.Selected, func(o string) character.SearchCategory {
+	categories := slices.Collect(xiter.MapSlice(a.categories.Selected, func(o string) app.SearchCategory {
 		return option2searchCategory(o)
 	}))
 	results, total, err := a.u.CharacterService().SearchESI(
@@ -352,20 +351,20 @@ func (a *GameSearch) doSearch(search string) {
 	}
 }
 
-var searchCategory2optionMap = map[character.SearchCategory]string{
-	character.SearchAgent:         "Agents",
-	character.SearchAlliance:      "Alliances",
-	character.SearchCharacter:     "Characters",
-	character.SearchConstellation: "Constellations",
-	character.SearchCorporation:   "Corporations",
-	character.SearchFaction:       "Factions",
-	character.SearchRegion:        "Regions",
-	character.SearchSolarSystem:   "Systems",
-	character.SearchStation:       "Stations",
-	character.SearchType:          "Types",
+var searchCategory2optionMap = map[app.SearchCategory]string{
+	app.SearchAgent:         "Agents",
+	app.SearchAlliance:      "Alliances",
+	app.SearchCharacter:     "Characters",
+	app.SearchConstellation: "Constellations",
+	app.SearchCorporation:   "Corporations",
+	app.SearchFaction:       "Factions",
+	app.SearchRegion:        "Regions",
+	app.SearchSolarSystem:   "Systems",
+	app.SearchStation:       "Stations",
+	app.SearchType:          "Types",
 }
 
-func searchCategory2option(c character.SearchCategory) string {
+func searchCategory2option(c app.SearchCategory) string {
 	x, ok := searchCategory2optionMap[c]
 	if !ok {
 		panic(fmt.Sprintf("searchCategory2option: \"%s\" not found", c))
@@ -373,7 +372,7 @@ func searchCategory2option(c character.SearchCategory) string {
 	return x
 }
 
-func option2searchCategory(o string) character.SearchCategory {
+func option2searchCategory(o string) app.SearchCategory {
 	for k, v := range searchCategory2optionMap {
 		if v == o {
 			return k
@@ -383,7 +382,7 @@ func option2searchCategory(o string) character.SearchCategory {
 }
 
 func makeOptions() []string {
-	options := slices.Collect(xiter.MapSlice(character.SearchCategories(), func(c character.SearchCategory) string {
+	options := slices.Collect(xiter.MapSlice(app.SearchCategories(), func(c app.SearchCategory) string {
 		return searchCategory2option(c)
 	}))
 	slices.Sort(options)
@@ -391,7 +390,7 @@ func makeOptions() []string {
 }
 
 type resultNode struct {
-	category character.SearchCategory
+	category app.SearchCategory
 	count    int
 	ee       *app.EveEntity
 }

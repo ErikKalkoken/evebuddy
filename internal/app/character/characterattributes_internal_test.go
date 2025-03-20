@@ -38,7 +38,7 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		changed, err := s.updateCharacterAttributesESI(ctx, UpdateSectionParams{
+		changed, err := s.updateCharacterAttributesESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionAttributes,
 		})

@@ -46,7 +46,7 @@ func (s *CharacterService) calcCharacterNextCloneJump(ctx context.Context, c *ap
 
 // TODO: Consolidate with updating home in separate function
 
-func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionJumpClones {
 		panic("called with wrong section")
 	}

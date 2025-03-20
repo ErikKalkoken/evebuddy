@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
@@ -113,17 +112,17 @@ func TestUpdateMail(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, dataMailLabel),
 		)
 		// when
-		_, err := s.UpdateSectionIfNeeded(ctx, character.UpdateSectionParams{
+		_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c1.ID,
 			Section:     app.SectionMailLabels,
 		})
 		if assert.NoError(t, err) {
-			_, err := s.UpdateSectionIfNeeded(ctx, character.UpdateSectionParams{
+			_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterUpdateSectionParams{
 				CharacterID: c1.ID,
 				Section:     app.SectionMailLists,
 			})
 			if assert.NoError(t, err) {
-				_, err := s.UpdateSectionIfNeeded(ctx, character.UpdateSectionParams{
+				_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterUpdateSectionParams{
 					CharacterID: c1.ID,
 					Section:     app.SectionMails,
 				})
@@ -240,7 +239,7 @@ func TestUpdateMail(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, dataHeader),
 		)
 		// when
-		_, err := s.UpdateSectionIfNeeded(ctx, character.UpdateSectionParams{
+		_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionMails,
 		})

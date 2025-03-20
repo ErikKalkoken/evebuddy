@@ -24,7 +24,7 @@ const (
 
 // updateCharacterMailLabelsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *CharacterService) updateCharacterMailLabelsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterMailLabelsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionMailLabels {
 		panic("called with wrong section")
 	}
@@ -60,7 +60,7 @@ func (s *CharacterService) updateCharacterMailLabelsESI(ctx context.Context, arg
 
 // updateCharacterMailListsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *CharacterService) updateCharacterMailListsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterMailListsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionMailLists {
 		panic("called with wrong section")
 	}
@@ -90,7 +90,7 @@ func (s *CharacterService) updateCharacterMailListsESI(ctx context.Context, arg 
 
 // updateCharacterMailsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *CharacterService) updateCharacterMailsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterMailsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionMails {
 		panic("called with wrong section")
 	}

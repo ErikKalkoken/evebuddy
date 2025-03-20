@@ -42,7 +42,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/notifications/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.updateCharacterNotificationsESI(ctx, UpdateSectionParams{
+		changed, err := s.updateCharacterNotificationsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionNotifications,
 		})
@@ -85,7 +85,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/notifications/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.updateCharacterNotificationsESI(ctx, UpdateSectionParams{
+		changed, err := s.updateCharacterNotificationsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionNotifications,
 		})
@@ -131,7 +131,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/notifications/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.updateCharacterNotificationsESI(ctx, UpdateSectionParams{
+		changed, err := s.updateCharacterNotificationsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionNotifications,
 		})
@@ -159,11 +159,11 @@ func TestListCharacterNotifications(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha"})
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "bravo"})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: string(evenotification.BillOutOfMoneyMsg)})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: string(evenotification.BillPaidCorpAllMsg)})
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha"})
 		// when
-		tt, err := s.ListCharacterNotificationsTypes(ctx, c.ID, []evenotification.Type{"alpha"})
+		tt, err := s.ListCharacterNotificationsTypes(ctx, c.ID, app.GroupBills)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, tt, 2)
