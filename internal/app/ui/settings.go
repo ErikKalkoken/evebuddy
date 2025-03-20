@@ -28,6 +28,7 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
+// TODO: Add settings API to allow this widget to be moved into own package
 // TODO: Improve switch API to allow switch not to be set on error
 
 // Exported settings

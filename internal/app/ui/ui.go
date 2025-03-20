@@ -27,6 +27,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/cross"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/tools"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
@@ -68,7 +69,7 @@ type BaseUI struct {
 	OnShowAndRun         func()
 	ShowMailIndicator    func()
 
-	ManagerCharacters          *ManageCharacters
+	ManagerCharacters          *tools.ManageCharacters
 	AllAssetSearch             *cross.AllAssetSearch
 	CharacterAssets            *character.CharacterAssets
 	CharacterAttributes        *character.CharacterAttributes
@@ -86,7 +87,7 @@ type BaseUI struct {
 	CharacterWalletTransaction *character.CharacterWalletTransaction
 	ColonyOverview             *cross.ColonyOverview
 	LocationOverview           *cross.LocationOverview
-	GameSearch                 *GameSearch
+	GameSearch                 *tools.GameSearch
 	Settings                   *Settings
 	TrainingOverview           *cross.TrainingOverview
 	WealthOverview             *cross.WealthOverview
@@ -149,7 +150,7 @@ func NewBaseUI(
 	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.infoWindow = infowindow.New(u, u.window)
 
-	u.ManagerCharacters = NewManageCharacters(u)
+	u.ManagerCharacters = tools.NewManageCharacters(u)
 	u.CharacterAssets = character.NewCharacterAssets(u)
 	u.AllAssetSearch = cross.NewAssetSearch(u)
 	u.CharacterAttributes = character.NewCharacterAttributes(u)
@@ -162,7 +163,7 @@ func NewBaseUI(
 	u.CharacterCommunications = character.NewCharacterCommunications(u)
 	u.CharacterOverview = cross.NewCharacterOverview(u)
 	u.CharacterPlanets = character.NewCharacterPlanets(u)
-	u.GameSearch = NewGameSearch(u)
+	u.GameSearch = tools.NewGameSearch(u)
 	u.Settings = NewSettings(u)
 	u.CharacterShips = character.NewCharacterShips(u)
 	u.CharacterSkillCatalogue = character.NewCharacterSkillCatalogue(u)
@@ -1009,7 +1010,7 @@ func (u *BaseUI) ShowUpdateStatusWindow() {
 		return
 	}
 	w := u.app.NewWindow(u.MakeWindowTitle("Update Status"))
-	a := NewUpdateStatus(u)
+	a := tools.NewUpdateStatus(u)
 	a.Update()
 	w.SetContent(a)
 	w.Resize(fyne.Size{Width: 1100, Height: 500})
