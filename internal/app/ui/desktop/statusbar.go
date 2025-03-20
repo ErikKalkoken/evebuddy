@@ -17,9 +17,9 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 const (
@@ -185,7 +185,7 @@ func (a *StatusBar) StartUpdateTicker() {
 		if !v.IsRemoteNewer {
 			return
 		}
-		l := ui.NewCustomHyperlink("Update available", func() {
+		l := iwidget.NewCustomHyperlink("Update available", func() {
 			c := container.NewVBox(
 				container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), widget.NewLabel(v.Latest)),
 				container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), widget.NewLabel(v.Local)),

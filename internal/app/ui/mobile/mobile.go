@@ -41,9 +41,9 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 	var characterNav *iwidget.Navigator
 	mailMenu := fyne.NewMenu("")
 	communicationsMenu := fyne.NewMenu("")
-	u.CharacterMail.OnSendMessage = func(character *app.Character, mode ui.SendMailMode, mail *app.CharacterMail) {
+	u.CharacterMail.OnSendMessage = func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 		page, sendIcon, sendAction := ui.MakeSendMailPage(bui, character, mode, mail, u.MainWindow())
-		if mode != ui.SendMailNew {
+		if mode != app.SendMailNew {
 			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
 		}
 		characterNav.PushHideNavBar(

@@ -322,7 +322,7 @@ func (u *DesktopUI) showSettingsWindow() {
 	w.Show()
 }
 
-func (u *DesktopUI) showSendMailWindow(character *app.Character, mode ui.SendMailMode, mail *app.CharacterMail) {
+func (u *DesktopUI) showSendMailWindow(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := u.MakeWindowTitle(fmt.Sprintf("New message [%s]", character.EveCharacter.Name))
 	w := u.App().NewWindow(title)
 	page, icon, action := ui.MakeSendMailPage(u.BaseUI, character, mode, mail, w)

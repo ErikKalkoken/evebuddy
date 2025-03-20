@@ -1,10 +1,11 @@
-package ui
+package character
 
 import (
 	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
+	"regexp"
 	"slices"
 	"strconv"
 
@@ -281,4 +282,10 @@ func (a *CharacterCommunications) setDetail(n *app.CharacterNotification) {
 	a.Detail.Add(body)
 	a.current = n
 	a.Toolbar.Show()
+}
+
+// markdownStripLinks strips all links from a text in markdown.
+func markdownStripLinks(s string) string {
+	r := regexp.MustCompile(`\[(.+?)\]\((.+?)\)`)
+	return r.ReplaceAllString(s, "**$1**")
 }

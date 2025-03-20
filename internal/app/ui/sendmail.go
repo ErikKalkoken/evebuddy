@@ -19,19 +19,10 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-type SendMailMode uint
-
-const (
-	SendMailNew SendMailMode = iota + 1
-	SendMailReply
-	SendMailReplyAll
-	SendMailForward
-)
-
 func MakeSendMailPage(
 	u app.UI,
 	character *app.Character,
-	mode SendMailMode,
+	mode app.SendMailMode,
 	mail *app.CharacterMail,
 	w fyne.Window,
 ) (fyne.CanvasObject, fyne.Resource, func() bool) {
@@ -63,11 +54,11 @@ func MakeSendMailPage(
 	if mail != nil {
 		const sep = "\n\n--------------------------------\n"
 		switch mode {
-		case SendMailReply:
+		case app.SendMailReply:
 			to.Set([]*app.EveEntity{mail.From})
 			subject.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			body.SetText(sep + mail.String())
-		case SendMailReplyAll:
+		case app.SendMailReplyAll:
 			oo := slices.Concat([]*app.EveEntity{mail.From}, mail.Recipients)
 			oo = slices.DeleteFunc(oo, func(o *app.EveEntity) bool {
 				return o.ID == character.EveCharacter.ID
@@ -75,7 +66,7 @@ func MakeSendMailPage(
 			to.Set(oo)
 			subject.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			body.SetText(sep + mail.String())
-		case SendMailForward:
+		case app.SendMailForward:
 			subject.SetText(fmt.Sprintf("Fw: %s", mail.Subject))
 			body.SetText(sep + mail.String())
 		default:

@@ -1,4 +1,4 @@
-package ui
+package character
 
 import (
 	"context"
@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type contractEntry struct {
@@ -52,15 +53,15 @@ func NewCharacterContracts(u app.UI) *CharacterContracts {
 		u:         u,
 	}
 	a.ExtendBaseWidget(a)
-	headers := []headerDef{
-		{"Contract", 300},
-		{"Type", 120},
-		{"From", 150},
-		{"To", 150},
-		{"Status", 100},
-		{"Date Issued", 150},
-		{"Date Accepted", 150},
-		{"Time Left", 100},
+	headers := []iwidget.HeaderDef{
+		{Text: "Contract", Width: 300},
+		{Text: "Type", Width: 120},
+		{Text: "From", Width: 150},
+		{Text: "To", Width: 150},
+		{Text: "Status", Width: 100},
+		{Text: "Date Issued", Width: 150},
+		{Text: "Date Accepted", Width: 150},
+		{Text: "Time Left", Width: 100},
 	}
 	makeDataLabel := func(col int, o *app.CharacterContract) (string, fyne.TextAlign, widget.Importance) {
 		var align fyne.TextAlign
@@ -100,7 +101,7 @@ func NewCharacterContracts(u app.UI) *CharacterContracts {
 		return text, align, importance
 	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTableForDesktop(headers, &a.contracts, makeDataLabel, func(column int, r *app.CharacterContract) {
+		a.body = iwidget.MakeDataTableForDesktop(headers, &a.contracts, makeDataLabel, func(column int, r *app.CharacterContract) {
 			switch column {
 			case 0:
 				a.showContract(r)
@@ -113,7 +114,7 @@ func NewCharacterContracts(u app.UI) *CharacterContracts {
 			}
 		})
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.contracts, makeDataLabel, a.showContract)
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.contracts, makeDataLabel, a.showContract)
 	}
 	return a
 }
@@ -235,7 +236,7 @@ func (a *CharacterContracts) showContract(c *app.CharacterContract) {
 		return fmt.Sprintf("%s (%s)", ts, ds)
 	}
 	makeLocation := func(l *app.EntityShort[int64]) fyne.CanvasObject {
-		x := NewCustomHyperlink(l.Name, func() {
+		x := iwidget.NewCustomHyperlink(l.Name, func() {
 			a.u.ShowLocationInfoWindow(l.ID)
 		})
 		return x
@@ -348,7 +349,7 @@ func (a *CharacterContracts) showContract(c *app.CharacterContract) {
 			}
 		}
 		makeItem := func(it *app.CharacterContractItem) fyne.CanvasObject {
-			x := NewCustomHyperlink(it.Type.Name, func() {
+			x := iwidget.NewCustomHyperlink(it.Type.Name, func() {
 				a.u.ShowTypeInfoWindow(it.Type.ID)
 			})
 			return container.NewHBox(

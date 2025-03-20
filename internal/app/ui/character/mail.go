@@ -1,4 +1,4 @@
-package ui
+package character
 
 import (
 	"context"
@@ -95,7 +95,7 @@ type CharacterMail struct {
 	Headers       fyne.CanvasObject
 	OnSelected    func()
 	OnUpdate      func(count int)
-	OnSendMessage func(character *app.Character, mode SendMailMode, mail *app.CharacterMail)
+	OnSendMessage func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail)
 
 	body          *widget.Label
 	folderSection fyne.CanvasObject
@@ -493,7 +493,7 @@ func (a *CharacterMail) makeFolderTopText(f FolderNode) (string, widget.Importan
 	return s, widget.MediumImportance
 }
 
-func (a *CharacterMail) onSendMessage(mode SendMailMode, mail *app.CharacterMail) {
+func (a *CharacterMail) onSendMessage(mode app.SendMailMode, mail *app.CharacterMail) {
 	if a.OnSendMessage == nil {
 		return
 	}
@@ -506,7 +506,7 @@ func (a *CharacterMail) onSendMessage(mode SendMailMode, mail *app.CharacterMail
 
 func (a *CharacterMail) MakeComposeMessageAction() (fyne.Resource, func()) {
 	return theme.DocumentCreateIcon(), func() {
-		a.onSendMessage(SendMailNew, nil)
+		a.onSendMessage(app.SendMailNew, nil)
 	}
 }
 
@@ -546,19 +546,19 @@ func (a *CharacterMail) MakeDeleteAction(onSuccess func()) (fyne.Resource, func(
 
 func (a *CharacterMail) MakeForwardAction() (fyne.Resource, func()) {
 	return theme.MailForwardIcon(), func() {
-		a.onSendMessage(SendMailForward, a.mail)
+		a.onSendMessage(app.SendMailForward, a.mail)
 	}
 }
 
 func (a *CharacterMail) MakeReplyAction() (fyne.Resource, func()) {
 	return theme.MailReplyIcon(), func() {
-		a.onSendMessage(SendMailReply, a.mail)
+		a.onSendMessage(app.SendMailReply, a.mail)
 	}
 }
 
 func (a *CharacterMail) MakeReplyAllAction() (fyne.Resource, func()) {
 	return theme.MailReplyAllIcon(), func() {
-		a.onSendMessage(SendMailReplyAll, a.mail)
+		a.onSendMessage(app.SendMailReplyAll, a.mail)
 	}
 }
 

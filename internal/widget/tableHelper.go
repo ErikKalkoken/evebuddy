@@ -1,4 +1,4 @@
-package ui
+package widget
 
 import (
 	"fyne.io/fyne/v2"
@@ -7,25 +7,26 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 )
 
-type headerDef struct {
-	text  string
-	width float32
+type HeaderDef struct {
+	Text  string
+	Width float32
 }
 
-func maxHeaderWidth(headers []headerDef) float32 {
+func maxHeaderWidth(headers []HeaderDef) float32 {
 	var m float32
 	for _, h := range headers {
-		l := widget.NewLabel(h.text)
+		l := widget.NewLabel(h.Text)
 		m = max(l.MinSize().Width, m)
 	}
 	return m
 }
 
-func makeDataTableForDesktop[S ~[]E, E any](
-	headers []headerDef,
+func MakeDataTableForDesktop[S ~[]E, E any](
+	headers []HeaderDef,
 	data *S,
 	makeLabel func(int, E) (string, fyne.TextAlign, widget.Importance),
 	onSelected func(int, E),
@@ -56,7 +57,7 @@ func makeDataTableForDesktop[S ~[]E, E any](
 	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
 		h := headers[tci.Col]
 		label := co.(*widget.Label)
-		label.SetText(h.text)
+		label.SetText(h.Text)
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
 		defer t.UnselectAll()
@@ -69,13 +70,13 @@ func makeDataTableForDesktop[S ~[]E, E any](
 		}
 	}
 	for i, h := range headers {
-		t.SetColumnWidth(i, h.width)
+		t.SetColumnWidth(i, h.Width)
 	}
 	return t
 }
 
-func makeDataTableForMobile[S ~[]E, E any](
-	headers []headerDef,
+func MakeDataTableForMobile[S ~[]E, E any](
+	headers []HeaderDef,
 	data *S,
 	makeLabel func(int, E) (string, fyne.TextAlign, widget.Importance),
 	onSelected func(E),
@@ -89,7 +90,7 @@ func makeDataTableForMobile[S ~[]E, E any](
 			rowLayout := kxlayout.NewColumns(maxHeaderWidth(headers) + theme.Padding())
 			c := container.New(layout.NewCustomPaddedVBoxLayout(0))
 			for _, h := range headers {
-				row := container.New(rowLayout, widget.NewLabel(h.text), widget.NewLabel(""))
+				row := container.New(rowLayout, widget.NewLabel(h.Text), widget.NewLabel(""))
 				bg := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
 				bg.Hide()
 				c.Add(container.NewStack(bg, row))

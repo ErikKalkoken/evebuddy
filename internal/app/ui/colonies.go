@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type colonyRow struct {
@@ -47,15 +48,15 @@ func NewColonies(u app.UI) *ColonyOverview {
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)
-	headers := []headerDef{
-		{"Planet", 150},
-		{"Sec.", 50},
-		{"Type", 100},
-		{"Extracting", 200},
-		{"Due", 150},
-		{"Producing", 200},
-		{"Region", 150},
-		{"Character", 150},
+	headers := []iwidget.HeaderDef{
+		{Text: "Planet", Width: 150},
+		{Text: "Sec.", Width: 50},
+		{Text: "Type", Width: 100},
+		{Text: "Extracting", Width: 200},
+		{Text: "Due", Width: 150},
+		{Text: "Producing", Width: 200},
+		{Text: "Region", Width: 150},
+		{Text: "Character", Width: 150},
 	}
 	makeDataLabel := func(col int, w colonyRow) (string, fyne.TextAlign, widget.Importance) {
 		var align fyne.TextAlign
@@ -85,7 +86,7 @@ func NewColonies(u app.UI) *ColonyOverview {
 		return text, align, importance
 	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(col int, r colonyRow) {
+		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(col int, r colonyRow) {
 			switch col {
 			case 0, 1, 2, 3, 4, 5, 6:
 				a.u.ShowInfoWindow(app.EveEntitySolarSystem, r.solarSystemID)
@@ -94,7 +95,7 @@ func NewColonies(u app.UI) *ColonyOverview {
 			}
 		})
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, nil)
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeDataLabel, nil)
 	}
 	return a
 }

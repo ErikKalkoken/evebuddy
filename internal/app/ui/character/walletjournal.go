@@ -1,4 +1,4 @@
-package ui
+package character
 
 import (
 	"context"
@@ -16,6 +16,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type walletJournalEntry struct {
@@ -61,12 +62,12 @@ func NewCharacterWalletJournal(u app.UI) *CharacterWalletJournal {
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)
-	var headers = []headerDef{
-		{"Date", 150},
-		{"Type", 150},
-		{"Amount", 200},
-		{"Balance", 200},
-		{"Description", 450},
+	var headers = []iwidget.HeaderDef{
+		{Text: "Date", Width: 150},
+		{Text: "Type", Width: 150},
+		{Text: "Amount", Width: 200},
+		{Text: "Balance", Width: 200},
+		{Text: "Description", Width: 450},
 	}
 	makeDataLabel := func(col int, w walletJournalEntry) (string, fyne.TextAlign, widget.Importance) {
 		var align fyne.TextAlign
@@ -102,11 +103,11 @@ func NewCharacterWalletJournal(u app.UI) *CharacterWalletJournal {
 		}
 	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(_ int, r walletJournalEntry) {
+		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(_ int, r walletJournalEntry) {
 			showReasonDialog(r)
 		})
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, showReasonDialog)
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeDataLabel, showReasonDialog)
 	}
 	return a
 }

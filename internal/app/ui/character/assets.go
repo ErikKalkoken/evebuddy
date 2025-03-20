@@ -1,4 +1,4 @@
-package ui
+package character
 
 import (
 	"cmp"

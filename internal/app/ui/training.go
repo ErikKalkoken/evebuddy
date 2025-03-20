@@ -13,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type trainingCharacter struct {
@@ -39,11 +40,11 @@ func NewTrainingOverview(u app.UI) *TrainingOverview {
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)
-	headers := []headerDef{
-		{"Name", 250},
-		{"SP", 100},
-		{"Unall. SP", 100},
-		{"Training", 100},
+	headers := []iwidget.HeaderDef{
+		{Text: "Name", Width: 250},
+		{Text: "SP", Width: 100},
+		{Text: "Unall. SP", Width: 100},
+		{Text: "Training", Width: 100},
 	}
 	makeDataLabel := func(col int, c trainingCharacter) (string, fyne.TextAlign, widget.Importance) {
 		var align fyne.TextAlign
@@ -69,9 +70,9 @@ func NewTrainingOverview(u app.UI) *TrainingOverview {
 		return text, align, importance
 	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, nil)
+		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeDataLabel, nil)
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, nil)
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeDataLabel, nil)
 	}
 	return a
 }

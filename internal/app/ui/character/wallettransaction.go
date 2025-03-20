@@ -1,4 +1,4 @@
-package ui
+package character
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type CharacterWalletTransaction struct {
@@ -63,17 +64,17 @@ func NewCharacterWalletTransaction(u app.UI) *CharacterWalletTransaction {
 		}
 		return text, align, importance
 	}
-	var headers = []headerDef{
-		{"Date", 150},
-		{"Quantity", 130},
-		{"Type", 200},
-		{"Unit Price", 200},
-		{"Total", 200},
-		{"Client", 250},
-		{"Where", 250},
+	var headers = []iwidget.HeaderDef{
+		{Text: "Date", Width: 150},
+		{Text: "Quantity", Width: 130},
+		{Text: "Type", Width: 200},
+		{Text: "Unit Price", Width: 200},
+		{Text: "Total", Width: 200},
+		{Text: "Client", Width: 250},
+		{Text: "Where", Width: 250},
 	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(column int, r *app.CharacterWalletTransaction) {
+		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(column int, r *app.CharacterWalletTransaction) {
 			switch column {
 			case 2:
 				a.u.ShowTypeInfoWindow(r.EveType.ID)
@@ -84,7 +85,7 @@ func NewCharacterWalletTransaction(u app.UI) *CharacterWalletTransaction {
 			}
 		})
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, func(r *app.CharacterWalletTransaction) {
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeDataLabel, func(r *app.CharacterWalletTransaction) {
 			a.u.ShowTypeInfoWindow(r.EveType.ID)
 		})
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type locationCharacter struct {
@@ -49,13 +50,13 @@ func NewLocations(u app.UI) *LocationOverview {
 	}
 	a.ExtendBaseWidget(a)
 
-	headers := []headerDef{
-		{"Name", 200},
-		{"Location", 250},
-		{"System", 150},
-		{"Sec.", 50},
-		{"Region", 150},
-		{"Ship", 150},
+	headers := []iwidget.HeaderDef{
+		{Text: "Name", Width: 200},
+		{Text: "Location", Width: 250},
+		{Text: "System", Width: 150},
+		{Text: "Sec.", Width: 50},
+		{Text: "Region", Width: 150},
+		{Text: "Ship", Width: 150},
 	}
 
 	makeDataLabel := func(col int, r locationCharacter) (string, fyne.TextAlign, widget.Importance) {
@@ -81,7 +82,7 @@ func NewLocations(u app.UI) *LocationOverview {
 		return text, align, importance
 	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(c int, r locationCharacter) {
+		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(c int, r locationCharacter) {
 			switch c {
 			case 0:
 				a.u.ShowInfoWindow(app.EveEntityCharacter, r.id)
@@ -94,7 +95,7 @@ func NewLocations(u app.UI) *LocationOverview {
 			}
 		})
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, func(r locationCharacter) {
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeDataLabel, func(r locationCharacter) {
 			a.u.ShowLocationInfoWindow(r.location.ID)
 		})
 	}

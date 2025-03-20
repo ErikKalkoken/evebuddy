@@ -14,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type overviewCharacter struct {
@@ -46,17 +47,17 @@ func NewCharacterOverview(u app.UI) *CharacterOverview {
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)
-	headers := []headerDef{
-		{"Name", 250},
-		{"Corporation", 250},
-		{"Alliance", 250},
-		{"Security", 50},
-		{"Unread", 100},
-		{"Wallet", 100},
-		{"Assets", 100},
-		{"Last Login", 100},
-		{"Home", 250},
-		{"Age", 100},
+	headers := []iwidget.HeaderDef{
+		{Text: "Name", Width: 250},
+		{Text: "Corporation", Width: 250},
+		{Text: "Alliance", Width: 250},
+		{Text: "Security", Width: 50},
+		{Text: "Unread", Width: 100},
+		{Text: "Wallet", Width: 100},
+		{Text: "Assets", Width: 100},
+		{Text: "Last Login", Width: 100},
+		{Text: "Home", Width: 250},
+		{Text: "Age", Width: 100},
 	}
 	makeDataLabel := func(col int, c overviewCharacter) (string, fyne.TextAlign, widget.Importance) {
 		var align fyne.TextAlign
@@ -100,7 +101,7 @@ func NewCharacterOverview(u app.UI) *CharacterOverview {
 		return text, align, importance
 	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(c int, oc overviewCharacter) {
+		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(c int, oc overviewCharacter) {
 			switch c {
 			case 0:
 				u.ShowInfoWindow(app.EveEntityCharacter, oc.id)
@@ -119,7 +120,7 @@ func NewCharacterOverview(u app.UI) *CharacterOverview {
 			}
 		})
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, func(oc overviewCharacter) {
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeDataLabel, func(oc overviewCharacter) {
 			u.ShowEveEntityInfoWindow(&app.EveEntity{ID: oc.id, Name: oc.name, Category: app.EveEntityCharacter})
 		})
 	}

@@ -24,6 +24,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
@@ -68,20 +69,20 @@ type BaseUI struct {
 
 	ManagerCharacters          *ManageCharacters
 	AllAssetSearch             *AllAssetSearch
-	CharacterAssets            *CharacterAssets
-	CharacterAttributes        *CharacterAttributes
-	CharacterCommunications    *CharacterCommunications
-	CharacterContracts         *CharacterContracts
-	CharacterImplants          *CharacterImplants
-	CharacterJumpClones        *CharacterJumpClones
-	CharacterMail              *CharacterMail
+	CharacterAssets            *character.CharacterAssets
+	CharacterAttributes        *character.CharacterAttributes
+	CharacterCommunications    *character.CharacterCommunications
+	CharacterContracts         *character.CharacterContracts
+	CharacterImplants          *character.CharacterImplants
+	CharacterJumpClones        *character.CharacterJumpClones
+	CharacterMail              *character.CharacterMail
 	CharacterOverview          *CharacterOverview
-	CharacterPlanets           *CharacterPlanets
-	CharacterShips             *CharacterShips
-	CharacterSkillCatalogue    *CharacterSkillCatalogue
-	CharacterSkillQueue        *CharacterSkillQueue
-	CharacterWalletJournal     *CharacterWalletJournal
-	CharacterWalletTransaction *CharacterWalletTransaction
+	CharacterPlanets           *character.CharacterPlanets
+	CharacterShips             *character.CharacterShips
+	CharacterSkillCatalogue    *character.CharacterSkillCatalogue
+	CharacterSkillQueue        *character.CharacterSkillQueue
+	CharacterWalletJournal     *character.CharacterWalletJournal
+	CharacterWalletTransaction *character.CharacterWalletTransaction
 	ColonyOverview             *ColonyOverview
 	LocationOverview           *LocationOverview
 	GameSearch                 *GameSearch
@@ -148,26 +149,26 @@ func NewBaseUI(
 	u.infoWindow = infowindow.New(u, u.window)
 
 	u.ManagerCharacters = NewManageCharacters(u)
-	u.CharacterAssets = NewCharacterAssets(u)
+	u.CharacterAssets = character.NewCharacterAssets(u)
 	u.AllAssetSearch = NewAssetSearch(u)
-	u.CharacterAttributes = NewCharacterAttributes(u)
+	u.CharacterAttributes = character.NewCharacterAttributes(u)
 	u.ColonyOverview = NewColonies(u)
-	u.CharacterContracts = NewCharacterContracts(u)
-	u.CharacterImplants = NewCharacterImplants(u)
-	u.CharacterJumpClones = NewCharacterJumpClones(u)
+	u.CharacterContracts = character.NewCharacterContracts(u)
+	u.CharacterImplants = character.NewCharacterImplants(u)
+	u.CharacterJumpClones = character.NewCharacterJumpClones(u)
 	u.LocationOverview = NewLocations(u)
-	u.CharacterMail = NewCharacterMail(u)
-	u.CharacterCommunications = NewCharacterCommunications(u)
+	u.CharacterMail = character.NewCharacterMail(u)
+	u.CharacterCommunications = character.NewCharacterCommunications(u)
 	u.CharacterOverview = NewCharacterOverview(u)
-	u.CharacterPlanets = NewCharacterPlanets(u)
+	u.CharacterPlanets = character.NewCharacterPlanets(u)
 	u.GameSearch = NewGameSearch(u)
 	u.Settings = NewSettings(u)
-	u.CharacterShips = NewCharacterShips(u)
-	u.CharacterSkillCatalogue = NewCharacterSkillCatalogue(u)
-	u.CharacterSkillQueue = NewCharacterSkillQueue(u)
+	u.CharacterShips = character.NewCharacterShips(u)
+	u.CharacterSkillCatalogue = character.NewCharacterSkillCatalogue(u)
+	u.CharacterSkillQueue = character.NewCharacterSkillQueue(u)
 	u.TrainingOverview = NewTrainingOverview(u)
-	u.CharacterWalletJournal = NewCharacterWalletJournal(u)
-	u.CharacterWalletTransaction = NewCharacterWalletTransaction(u)
+	u.CharacterWalletJournal = character.NewCharacterWalletJournal(u)
+	u.CharacterWalletTransaction = character.NewCharacterWalletTransaction(u)
 	u.WealthOverview = NewWealthOverview(u)
 	return u
 }

@@ -81,13 +81,13 @@ func NewAssetSearch(u app.UI) *AllAssetSearch {
 	a.entry.PlaceHolder = "Search assets"
 	a.total.TextStyle.Bold = true
 	a.found.Hide()
-	var headers = []headerDef{
-		{"Item", 300},
-		{"Class", 200},
-		{"Location", 350},
-		{"Owner", 200},
-		{"Qty.", 75},
-		{"Price", 100},
+	var headers = []iwidget.HeaderDef{
+		{Text: "Item", Width: 300},
+		{Text: "Class", Width: 200},
+		{Text: "Location", Width: 350},
+		{Text: "Owner", Width: 200},
+		{Text: "Qty.", Width: 75},
+		{Text: "Price", Width: 100},
 	}
 	makeDataLabel := func(col int, r *assetSearchRow) (string, fyne.TextAlign, widget.Importance) {
 		var a fyne.TextAlign
@@ -112,7 +112,7 @@ func NewAssetSearch(u app.UI) *AllAssetSearch {
 		return t, a, i
 	}
 	if a.u.IsMobile() {
-		a.body = makeDataTableForMobile(headers, &a.assetsFiltered, makeDataLabel, func(r *assetSearchRow) {
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.assetsFiltered, makeDataLabel, func(r *assetSearchRow) {
 			a.u.ShowTypeInfoWindow(r.typeID)
 		})
 	} else {
@@ -146,7 +146,7 @@ func (a *AllAssetSearch) Focus() {
 }
 
 func (a *AllAssetSearch) makeTable(
-	headers []headerDef,
+	headers []iwidget.HeaderDef,
 	makeDataLabel func(int, *assetSearchRow) (string, fyne.TextAlign, widget.Importance),
 	onSelected func(int, *assetSearchRow),
 ) *widget.Table {
@@ -184,7 +184,7 @@ func (a *AllAssetSearch) makeTable(
 		h := headers[tci.Col]
 		row := co.(*fyne.Container).Objects
 		label := row[0].(*widget.Label)
-		label.SetText(h.text)
+		label.SetText(h.Text)
 		button := row[1].(*widget.Button)
 		switch a.colSort[tci.Col] {
 		case sortOff:
@@ -199,7 +199,7 @@ func (a *AllAssetSearch) makeTable(
 		}
 	}
 	for i, h := range headers {
-		t.SetColumnWidth(i, h.width)
+		t.SetColumnWidth(i, h.Width)
 	}
 	t.OnSelected = func(id widget.TableCellID) {
 		defer t.UnselectAll()
