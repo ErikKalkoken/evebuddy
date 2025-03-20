@@ -1,4 +1,4 @@
-package character_test
+package app_test
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -59,7 +58,7 @@ func makeSkillQueueItem(characterID int32, args ...app.CharacterSkillqueueItem) 
 func TestCharacterSkillqueue(t *testing.T) {
 	characterID := int32(42)
 	t.Run("can return information about an active skill queue", func(t *testing.T) {
-		sq := character.NewCharacterSkillqueue()
+		sq := app.NewCharacterSkillqueue()
 		item1 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
 			StartDate:  time.Now().Add(-3 * time.Hour),
 			FinishDate: time.Now().Add(3 * time.Hour),
@@ -81,7 +80,7 @@ func TestCharacterSkillqueue(t *testing.T) {
 		}
 	})
 	t.Run("can return information about an empty skill queue", func(t *testing.T) {
-		sq := character.NewCharacterSkillqueue()
+		sq := app.NewCharacterSkillqueue()
 		assert.Equal(t, int32(0), sq.CharacterID())
 		assert.Equal(t, 0, sq.Size())
 		assert.Nil(t, sq.Current())

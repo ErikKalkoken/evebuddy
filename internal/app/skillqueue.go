@@ -1,25 +1,24 @@
-package character
+package app
 
 import (
 	"context"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type CharacterServiceSkillqueue interface {
-	ListCharacterSkillqueueItems(context.Context, int32) ([]*app.CharacterSkillqueueItem, error)
+	ListCharacterSkillqueueItems(context.Context, int32) ([]*CharacterSkillqueueItem, error)
 }
 
 // CharacterSkillqueue represents the skillqueue of a character.
 type CharacterSkillqueue struct {
 	characterID int32
-	items       []*app.CharacterSkillqueueItem
+	items       []*CharacterSkillqueueItem
 }
 
 func NewCharacterSkillqueue() CharacterSkillqueue {
-	sq := CharacterSkillqueue{}
+	sq := CharacterSkillqueue{items: make([]*CharacterSkillqueueItem, 0)}
 	return sq
 }
 
@@ -27,7 +26,7 @@ func (sq *CharacterSkillqueue) CharacterID() int32 {
 	return sq.characterID
 }
 
-func (sq *CharacterSkillqueue) Current() *app.CharacterSkillqueueItem {
+func (sq *CharacterSkillqueue) Current() *CharacterSkillqueueItem {
 	for _, item := range sq.items {
 		if item.IsActive() {
 			return item
@@ -52,7 +51,7 @@ func (sq *CharacterSkillqueue) IsActive() bool {
 	return sq.Remaining().ValueOrZero() > 0
 }
 
-func (sq *CharacterSkillqueue) Item(id int) *app.CharacterSkillqueueItem {
+func (sq *CharacterSkillqueue) Item(id int) *CharacterSkillqueueItem {
 	if id < 0 || id >= len(sq.items) {
 		return nil
 	}
@@ -73,7 +72,7 @@ func (sq *CharacterSkillqueue) Remaining() optional.Optional[time.Duration] {
 
 func (sq *CharacterSkillqueue) Update(cs CharacterServiceSkillqueue, characterID int32) error {
 	if characterID == 0 {
-		sq.items = []*app.CharacterSkillqueueItem{}
+		sq.items = []*CharacterSkillqueueItem{}
 		return nil
 	}
 	items, err := cs.ListCharacterSkillqueueItems(context.Background(), characterID)

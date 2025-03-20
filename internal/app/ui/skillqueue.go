@@ -12,7 +12,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -24,7 +23,7 @@ type CharacterSkillQueue struct {
 	OnUpdate func(statusShort, statusLong string)
 
 	list  *widget.List
-	sq    character.CharacterSkillqueue
+	sq    app.CharacterSkillqueue
 	total *widget.Label
 	u     *BaseUI
 }
@@ -32,6 +31,7 @@ type CharacterSkillQueue struct {
 func NewCharacterSkillQueue(u *BaseUI) *CharacterSkillQueue {
 	a := &CharacterSkillQueue{
 		total: MakeTopLabel(),
+		sq:    app.NewCharacterSkillqueue(),
 		u:     u,
 	}
 	a.ExtendBaseWidget(a)
