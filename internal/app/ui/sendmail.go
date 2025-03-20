@@ -29,7 +29,7 @@ const (
 )
 
 func MakeSendMailPage(
-	u *BaseUI,
+	u app.UI,
 	character *app.Character,
 	mode SendMailMode,
 	mail *app.CharacterMail,
@@ -125,7 +125,7 @@ func MakeSendMailPage(
 	return page, theme.MailSendIcon(), sendAction
 }
 
-func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEntity), w fyne.Window) {
+func showAddDialog(u app.UI, characterID int32, onSelected func(ee *app.EveEntity), w fyne.Window) {
 	var modal *widget.PopUp
 	items := make([]*app.EveEntity, 0)
 	fallbackIcon := icons.Questionmark32Png

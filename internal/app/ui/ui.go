@@ -172,6 +172,12 @@ func NewBaseUI(
 	return u
 }
 
+func (u *BaseUI) ClearAllCaches() {
+	if u.ClearCache != nil {
+		u.ClearCache()
+	}
+}
+
 func (u *BaseUI) App() fyne.App {
 	return u.app
 }
@@ -357,7 +363,7 @@ func (u *BaseUI) HasCharacter() bool {
 	return u.character != nil
 }
 
-func (u *BaseUI) loadCharacter(id int32) error {
+func (u *BaseUI) LoadCharacter(id int32) error {
 	c, err := u.CharacterService().GetCharacter(context.Background(), id)
 	if err != nil {
 		return fmt.Errorf("load character ID %d: %w", id, err)
@@ -539,7 +545,7 @@ func (u *BaseUI) MakeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 	var wg sync.WaitGroup
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
-			err := u.loadCharacter(c.ID)
+			err := u.LoadCharacter(c.ID)
 			if err != nil {
 				slog.Error("make character switch menu", "error", err)
 				u.snackbar.Show("ERROR: Failed to switch character")

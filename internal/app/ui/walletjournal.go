@@ -51,10 +51,10 @@ type CharacterWalletJournal struct {
 	rows []walletJournalEntry
 	body fyne.CanvasObject
 	top  *widget.Label
-	u    *BaseUI
+	u    app.UI
 }
 
-func NewCharacterWalletJournal(u *BaseUI) *CharacterWalletJournal {
+func NewCharacterWalletJournal(u app.UI) *CharacterWalletJournal {
 	a := &CharacterWalletJournal{
 		rows: make([]walletJournalEntry, 0),
 		top:  MakeTopLabel(),

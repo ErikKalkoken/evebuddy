@@ -36,10 +36,10 @@ type CharacterOverview struct {
 	rows []overviewCharacter
 	body fyne.CanvasObject
 	top  *widget.Label
-	u    *BaseUI
+	u    app.UI
 }
 
-func NewCharacterOverview(u *BaseUI) *CharacterOverview {
+func NewCharacterOverview(u app.UI) *CharacterOverview {
 	a := &CharacterOverview{
 		rows: make([]overviewCharacter, 0),
 		top:  MakeTopLabel(),

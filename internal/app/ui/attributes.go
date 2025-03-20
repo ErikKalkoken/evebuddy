@@ -35,10 +35,10 @@ type CharacterAttributes struct {
 	attributes []attribute
 	list       *widget.List
 	top        *widget.Label
-	u          *BaseUI
+	u          app.UI
 }
 
-func NewCharacterAttributes(u *BaseUI) *CharacterAttributes {
+func NewCharacterAttributes(u app.UI) *CharacterAttributes {
 	w := &CharacterAttributes{
 		attributes: make([]attribute, 0),
 		top:        MakeTopLabel(),

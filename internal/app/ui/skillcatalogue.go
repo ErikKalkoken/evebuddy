@@ -47,10 +47,10 @@ type CharacterSkillCatalogue struct {
 	skills         []skillTrained
 	skillsGrid     fyne.CanvasObject
 	total          *widget.Label
-	u              *BaseUI
+	u              app.UI
 }
 
-func NewCharacterSkillCatalogue(u *BaseUI) *CharacterSkillCatalogue {
+func NewCharacterSkillCatalogue(u app.UI) *CharacterSkillCatalogue {
 	a := &CharacterSkillCatalogue{
 		groups:         make([]skillGroupProgress, 0),
 		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),

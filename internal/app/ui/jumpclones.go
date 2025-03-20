@@ -55,10 +55,10 @@ type CharacterJumpClones struct {
 
 	top  *widget.RichText
 	tree *iwidget.Tree[jumpCloneNode]
-	u    *BaseUI
+	u    app.UI
 }
 
-func NewCharacterJumpClones(u *BaseUI) *CharacterJumpClones {
+func NewCharacterJumpClones(u app.UI) *CharacterJumpClones {
 	ntop := widget.NewRichText()
 	ntop.Wrapping = fyne.TextWrapWord
 	a := &CharacterJumpClones{

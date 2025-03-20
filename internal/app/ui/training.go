@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -28,10 +29,10 @@ type TrainingOverview struct {
 	body fyne.CanvasObject
 	rows []trainingCharacter
 	top  *widget.Label
-	u    *BaseUI
+	u    app.UI
 }
 
-func NewTrainingOverview(u *BaseUI) *TrainingOverview {
+func NewTrainingOverview(u app.UI) *TrainingOverview {
 	a := &TrainingOverview{
 		rows: make([]trainingCharacter, 0),
 		top:  MakeTopLabel(),

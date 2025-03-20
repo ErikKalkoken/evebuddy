@@ -110,10 +110,10 @@ type CharacterMail struct {
 	mail          *app.CharacterMail
 	subject       *iwidget.Label
 	toolbar       *widget.Toolbar
-	u             *BaseUI
+	u             app.UI
 }
 
-func NewCharacterMail(u *BaseUI) *CharacterMail {
+func NewCharacterMail(u app.UI) *CharacterMail {
 	a := &CharacterMail{
 		body:      widget.NewLabel(""),
 		header:    appwidget.NewMailHeader(u.ShowEveEntityInfoWindow),
@@ -593,7 +593,7 @@ func (a *CharacterMail) setMail(mailID int32) {
 		a.u.ShowSnackbar("ERROR: Failed to fetch mail")
 		return
 	}
-	if !a.u.isOffline && !a.mail.IsRead {
+	if !a.u.IsOffline() && !a.mail.IsRead {
 		go func() {
 			err = a.u.CharacterService().UpdateMailRead(ctx, characterID, a.mail.MailID)
 			if err != nil {
@@ -602,7 +602,7 @@ func (a *CharacterMail) setMail(mailID int32) {
 				return
 			}
 			a.update()
-			a.u.CharacterOverview.Update()
+			a.u.RefreshCrossPages()
 			a.u.UpdateMailIndicator()
 		}()
 	}

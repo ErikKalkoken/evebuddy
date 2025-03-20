@@ -78,10 +78,10 @@ type CharacterAssets struct {
 	locationsTop     *widget.Label
 	locations        *iwidget.Tree[locationNode]
 	selectedLocation optional.Optional[locationNode]
-	u                *BaseUI
+	u                app.UI
 }
 
-func NewCharacterAssets(u *BaseUI) *CharacterAssets {
+func NewCharacterAssets(u app.UI) *CharacterAssets {
 	lp := widget.NewLabel("")
 	lp.Wrapping = fyne.TextWrapWord
 	a := &CharacterAssets{

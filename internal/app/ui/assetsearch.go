@@ -60,10 +60,10 @@ type AllAssetSearch struct {
 	found           *widget.Label
 	entry           *widget.Entry
 	total           *widget.Label
-	u               *BaseUI
+	u               app.UI
 }
 
-func NewAssetSearch(u *BaseUI) *AllAssetSearch {
+func NewAssetSearch(u app.UI) *AllAssetSearch {
 	a := &AllAssetSearch{
 		assetsFiltered: make([]*assetSearchRow, 0),
 		entry:          widget.NewEntry(),

@@ -34,10 +34,10 @@ type CharacterShips struct {
 	ships           []*app.CharacterShipAbility
 	top             *widget.Label
 	foundText       *widget.Label
-	u               *BaseUI
+	u               app.UI
 }
 
-func NewCharacterShips(u *BaseUI) *CharacterShips {
+func NewCharacterShips(u app.UI) *CharacterShips {
 	a := &CharacterShips{
 		ships:     make([]*app.CharacterShipAbility, 0),
 		top:       widget.NewLabel(""),

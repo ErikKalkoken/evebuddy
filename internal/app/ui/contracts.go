@@ -42,10 +42,10 @@ type CharacterContracts struct {
 	contracts []*app.CharacterContract
 	body      fyne.CanvasObject
 	top       *widget.Label
-	u         *BaseUI
+	u         app.UI
 }
 
-func NewCharacterContracts(u *BaseUI) *CharacterContracts {
+func NewCharacterContracts(u app.UI) *CharacterContracts {
 	a := &CharacterContracts{
 		contracts: make([]*app.CharacterContract, 0),
 		top:       MakeTopLabel(),
@@ -249,7 +249,7 @@ func (a *CharacterContracts) showContract(c *app.CharacterContract) {
 	}
 	makeBaseInfo := func(c *app.CharacterContract) fyne.CanvasObject {
 		f := widget.NewForm()
-		if a.u.isMobile {
+		if a.u.IsMobile() {
 			f.Orientation = widget.Vertical
 		}
 		f.Append("Info by issuer", widget.NewLabel(c.TitleDisplay()))
@@ -269,7 +269,7 @@ func (a *CharacterContracts) showContract(c *app.CharacterContract) {
 	}
 	makePaymentInfo := func(c *app.CharacterContract) fyne.CanvasObject {
 		f := widget.NewForm()
-		if a.u.isMobile {
+		if a.u.IsMobile() {
 			f.Orientation = widget.Vertical
 		}
 		if c.Price > 0 {

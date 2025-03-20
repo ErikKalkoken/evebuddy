@@ -39,14 +39,14 @@ type GameSearch struct {
 	searchOptions       *widget.Accordion
 	strict              *kxwidget.Switch
 	supportedCategories set.Set[app.EveEntityCategory]
-	u                   *BaseUI
+	u                   app.UI
 	w                   fyne.Window
 
 	mu          sync.RWMutex
 	recentItems []*app.EveEntity
 }
 
-func NewGameSearch(u *BaseUI) *GameSearch {
+func NewGameSearch(u app.UI) *GameSearch {
 	a := &GameSearch{
 		entry:               widget.NewEntry(),
 		indicator:           widget.NewProgressBarInfinite(),
@@ -278,7 +278,7 @@ func (a *GameSearch) showRecent() {
 }
 
 func (a *GameSearch) doSearch(search string) {
-	if a.u.isOffline {
+	if a.u.IsOffline() {
 		a.u.ShowInformationDialog(
 			"Offline",
 			"Can't search when offline",

@@ -200,4 +200,6 @@ type UI interface {
 	ShowInfoWindow(c EveEntityCategory, id int32)
 	ShowSnackbar(text string)
 	WebsiteRootURL() *url.URL
+	LoadCharacter(id int32) error
+	ClearAllCaches()
 }

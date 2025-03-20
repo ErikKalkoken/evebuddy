@@ -37,10 +37,10 @@ type ColonyOverview struct {
 	body fyne.CanvasObject
 	rows []colonyRow
 	top  *widget.Label
-	u    *BaseUI
+	u    app.UI
 }
 
-func NewColonies(u *BaseUI) *ColonyOverview {
+func NewColonies(u app.UI) *ColonyOverview {
 	a := &ColonyOverview{
 		rows: make([]colonyRow, 0),
 		top:  MakeTopLabel(),

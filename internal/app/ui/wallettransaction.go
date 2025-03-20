@@ -19,10 +19,10 @@ type CharacterWalletTransaction struct {
 	rows []*app.CharacterWalletTransaction
 	body fyne.CanvasObject
 	top  *widget.Label
-	u    *BaseUI
+	u    app.UI
 }
 
-func NewCharacterWalletTransaction(u *BaseUI) *CharacterWalletTransaction {
+func NewCharacterWalletTransaction(u app.UI) *CharacterWalletTransaction {
 	a := &CharacterWalletTransaction{
 		top:  MakeTopLabel(),
 		rows: make([]*app.CharacterWalletTransaction, 0),

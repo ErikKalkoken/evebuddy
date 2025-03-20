@@ -65,10 +65,10 @@ type UpdateStatus struct {
 	selectedSectionID int
 	top2              fyne.CanvasObject
 	top3              fyne.CanvasObject
-	u                 *BaseUI
+	u                 app.UI
 }
 
-func NewUpdateStatus(u *BaseUI) *UpdateStatus {
+func NewUpdateStatus(u app.UI) *UpdateStatus {
 	a := &UpdateStatus{
 		charactersTop:     MakeTopLabel(),
 		details:           make([]detailsItem, 0),

@@ -25,10 +25,10 @@ type CharacterImplants struct {
 	implants []*app.CharacterImplant
 	list     *widget.List
 	top      *widget.Label
-	u        *BaseUI
+	u        app.UI
 }
 
-func NewCharacterImplants(u *BaseUI) *CharacterImplants {
+func NewCharacterImplants(u app.UI) *CharacterImplants {
 	a := &CharacterImplants{
 		implants: make([]*app.CharacterImplant, 0),
 		top:      MakeTopLabel(),

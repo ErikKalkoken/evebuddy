@@ -137,11 +137,11 @@ type Settings struct {
 
 	showSnackbar func(string)
 	snackbar     *iwidget.Snackbar
-	u            *BaseUI
+	u            app.UI
 	window       fyne.Window
 }
 
-func NewSettings(u *BaseUI) *Settings {
+func NewSettings(u app.UI) *Settings {
 	a := &Settings{
 		showSnackbar: u.ShowSnackbar,
 		u:            u,
@@ -300,7 +300,7 @@ func (a *Settings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction
 						"Clearing cache...",
 						"",
 						func() error {
-							a.u.ClearCache()
+							a.u.ClearAllCaches()
 							return nil
 						},
 						w,

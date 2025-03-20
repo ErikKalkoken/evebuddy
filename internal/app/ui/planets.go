@@ -24,10 +24,10 @@ type CharacterPlanets struct {
 	planets []*app.CharacterPlanet
 	list    *widget.List
 	top     *widget.Label
-	u       *BaseUI
+	u       app.UI
 }
 
-func NewCharacterPlanets(u *BaseUI) *CharacterPlanets {
+func NewCharacterPlanets(u app.UI) *CharacterPlanets {
 	a := &CharacterPlanets{
 		planets: make([]*app.CharacterPlanet, 0),
 		top:     MakeTopLabel(),

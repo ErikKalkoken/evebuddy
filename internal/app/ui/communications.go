@@ -43,10 +43,10 @@ type CharacterCommunications struct {
 	notifications    []*app.CharacterNotification
 	notificationsTop *widget.Label
 	groupsTop        *widget.Label
-	u                *BaseUI
+	u                app.UI
 }
 
-func NewCharacterCommunications(u *BaseUI) *CharacterCommunications {
+func NewCharacterCommunications(u app.UI) *CharacterCommunications {
 	a := &CharacterCommunications{
 		Groups:           make([]NotificationGroup, 0),
 		notifications:    make([]*app.CharacterNotification, 0),

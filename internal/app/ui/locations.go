@@ -38,10 +38,10 @@ type LocationOverview struct {
 	rows []locationCharacter
 	body fyne.CanvasObject
 	top  *widget.Label
-	u    *BaseUI
+	u    app.UI
 }
 
-func NewLocations(u *BaseUI) *LocationOverview {
+func NewLocations(u app.UI) *LocationOverview {
 	a := &LocationOverview{
 		rows: make([]locationCharacter, 0),
 		top:  MakeTopLabel(),

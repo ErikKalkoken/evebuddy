@@ -25,10 +25,10 @@ type CharacterSkillQueue struct {
 	list  *widget.List
 	sq    app.CharacterSkillqueue
 	total *widget.Label
-	u     *BaseUI
+	u     app.UI
 }
 
-func NewCharacterSkillQueue(u *BaseUI) *CharacterSkillQueue {
+func NewCharacterSkillQueue(u app.UI) *CharacterSkillQueue {
 	a := &CharacterSkillQueue{
 		total: MakeTopLabel(),
 		sq:    app.NewCharacterSkillqueue(),

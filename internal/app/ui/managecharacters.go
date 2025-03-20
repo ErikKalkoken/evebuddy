@@ -40,10 +40,10 @@ type ManageCharacters struct {
 	list         *widget.List
 	title        *widget.Label
 	window       fyne.Window
-	u            *BaseUI
+	u            app.UI
 }
 
-func NewManageCharacters(u *BaseUI) *ManageCharacters {
+func NewManageCharacters(u app.UI) *ManageCharacters {
 	a := &ManageCharacters{
 		characters:   make([]accountCharacter, 0),
 		showSnackbar: u.ShowSnackbar,
@@ -62,7 +62,7 @@ func (a *ManageCharacters) CreateRenderer() fyne.WidgetRenderer {
 		a.ShowAddCharacterDialog()
 	})
 	add.Importance = widget.HighImportance
-	if a.u.isOffline {
+	if a.u.IsOffline() {
 		add.Disable()
 	}
 	if a.u.IsDesktop() {
@@ -148,7 +148,7 @@ func (a *ManageCharacters) makeCharacterList() *widget.List {
 			return
 		}
 		c := a.characters[id]
-		if err := a.u.loadCharacter(c.id); err != nil {
+		if err := a.u.LoadCharacter(c.id); err != nil {
 			slog.Error("load current character", "char", c, "err", err)
 			return
 		}
@@ -247,7 +247,7 @@ func (a *ManageCharacters) ShowAddCharacterDialog() {
 			a.Refresh()
 			go a.u.UpdateCharacterAndRefreshIfNeeded(context.Background(), characterID, false)
 			if !a.u.HasCharacter() {
-				a.u.loadCharacter(characterID)
+				a.u.LoadCharacter(characterID)
 			}
 			a.u.RefreshCrossPages()
 			a.u.UpdateStatus()
