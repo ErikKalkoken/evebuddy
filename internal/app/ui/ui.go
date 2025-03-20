@@ -72,11 +72,9 @@ type BaseUI struct {
 	OnShowAndRun         func()
 	ShowMailIndicator    func()
 
-	DeskApp    desktop.App
-	FyneApp    fyne.App
-	Snackbar   *iwidget.Snackbar
-	InfoWindow infowindow.InfoWindow
-	Window     fyne.Window
+	DeskApp desktop.App
+	FyneApp fyne.App
+	Window  fyne.Window
 
 	ManagerCharacters          *ManageCharacters
 	AllAssetSearch             *AllAssetSearch
@@ -106,11 +104,13 @@ type BaseUI struct {
 	eis          app.EveImageService
 	ess          app.ESIStatusService
 	eus          app.EveUniverseService
+	infoWindow   infowindow.InfoWindow
 	isForeground atomic.Bool // whether the app is currently shown in the foreground
 	isMobile     bool
 	isOffline    bool // Run the app in offline mode
 	memcache     app.CacheService
 	scs          app.StatusCacheService
+	snackbar     *iwidget.Snackbar
 	statusWindow fyne.Window
 	wasStarted   atomic.Bool // whether the app has already been started at least once
 }
@@ -151,8 +151,8 @@ func NewBaseUI(
 		appwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
 	}
 
-	u.Snackbar = iwidget.NewSnackbar(u.Window)
-	u.InfoWindow = infowindow.New(u, u.Window)
+	u.snackbar = iwidget.NewSnackbar(u.Window)
+	u.infoWindow = infowindow.New(u, u.Window)
 
 	u.ManagerCharacters = NewManageCharacters(u)
 	u.CharacterAssets = NewCharacterAssets(u)
@@ -294,7 +294,7 @@ func (u *BaseUI) ShowAndRun() {
 			}
 			u.UpdateStatus()
 		}()
-		u.Snackbar.Start()
+		u.snackbar.Start()
 		if !u.isOffline && !u.IsUpdateTickerDisabled {
 			u.isForeground.Store(true)
 			go func() {
@@ -560,19 +560,19 @@ func (u *BaseUI) ShowUpdateStatusWindow() {
 }
 
 func (u *BaseUI) ShowLocationInfoWindow(id int64) {
-	u.InfoWindow.ShowLocation(id)
+	u.infoWindow.ShowLocation(id)
 }
 
 func (u *BaseUI) ShowTypeInfoWindow(id int32) {
-	u.InfoWindow.Show(app.EveEntityInventoryType, id)
+	u.infoWindow.Show(app.EveEntityInventoryType, id)
 }
 
 func (u *BaseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
-	u.InfoWindow.ShowEveEntity(o)
+	u.infoWindow.ShowEveEntity(o)
 }
 
 func (u *BaseUI) ShowInfoWindow(c app.EveEntityCategory, id int32) {
-	u.InfoWindow.Show(c, id)
+	u.infoWindow.Show(c, id)
 }
 
 func (u *BaseUI) AvailableUpdate() (github.VersionInfo, error) {
@@ -646,7 +646,7 @@ func (u *BaseUI) MakeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 			err := u.loadCharacter(c.ID)
 			if err != nil {
 				slog.Error("make character switch menu", "error", err)
-				u.Snackbar.Show("ERROR: Failed to switch character")
+				u.snackbar.Show("ERROR: Failed to switch character")
 			}
 		})
 		if c.ID == characterID {
@@ -1036,4 +1036,8 @@ func (u *BaseUI) ModifyShortcutsForDialog(d dialog.Dialog, w fyne.Window) {
 			u.EnableMenuShortcuts()
 		})
 	}
+}
+
+func (u *BaseUI) ShowSnackbar(text string) {
+	u.snackbar.Show(text)
 }

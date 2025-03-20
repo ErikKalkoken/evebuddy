@@ -112,7 +112,7 @@ func MakeSendMailPage(
 			showErrorDialog(err.Error())
 			return false
 		}
-		u.Snackbar.Show(fmt.Sprintf("Your mail to %s has been sent.", to))
+		u.ShowSnackbar(fmt.Sprintf("Your mail to %s has been sent.", to))
 		return true
 	}
 	page := container.NewBorder(

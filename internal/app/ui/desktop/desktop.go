@@ -94,12 +94,12 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierControl,
 			},
 			func(fyne.Shortcut) {
-				u.Snackbar.Show(fmt.Sprintf(
+				u.ShowSnackbar(fmt.Sprintf(
 					"%s. This is a test snack bar at %s",
 					fake.WordsN(10),
 					time.Now().Format("15:04:05.999999999"),
 				))
-				u.Snackbar.Show(fmt.Sprintf(
+				u.ShowSnackbar(fmt.Sprintf(
 					"This is a test snack bar at %s",
 					time.Now().Format("15:04:05.999999999"),
 				))
@@ -388,7 +388,7 @@ func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 	characterItem := fyne.NewMenuItem("Current character...", func() {
 		characterID := u.CurrentCharacterID()
 		if characterID == 0 {
-			u.Snackbar.Show("ERROR: No character selected")
+			u.ShowSnackbar("ERROR: No character selected")
 			return
 		}
 		u.ShowInfoWindow(app.EveEntityCharacter, characterID)
@@ -402,11 +402,11 @@ func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 	locationItem := fyne.NewMenuItem("Current location...", func() {
 		c := u.CurrentCharacter()
 		if c == nil {
-			u.Snackbar.Show("ERROR: No character selected")
+			u.ShowSnackbar("ERROR: No character selected")
 			return
 		}
 		if c.Location == nil {
-			u.Snackbar.Show("ERROR: Missing location for current character.")
+			u.ShowSnackbar("ERROR: Missing location for current character.")
 			return
 		}
 		u.ShowLocationInfoWindow(c.Location.ID)
@@ -420,11 +420,11 @@ func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 	shipItem := fyne.NewMenuItem("Current ship...", func() {
 		c := u.CurrentCharacter()
 		if c == nil {
-			u.Snackbar.Show("ERROR: No character selected")
+			u.ShowSnackbar("ERROR: No character selected")
 			return
 		}
 		if c.Ship == nil {
-			u.Snackbar.Show("ERROR: Missing ship for current character.")
+			u.ShowSnackbar("ERROR: Missing ship for current character.")
 			return
 		}
 		u.ShowTypeInfoWindow(c.Ship.ID)

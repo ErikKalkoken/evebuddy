@@ -533,11 +533,11 @@ func (a *CharacterMail) MakeDeleteAction(onSuccess func()) (fyne.Resource, func(
 					if onSuccess != nil {
 						onSuccess()
 					}
-					a.u.Snackbar.Show(fmt.Sprintf("Mail \"%s\" deleted", a.mail.Subject))
+					a.u.ShowSnackbar(fmt.Sprintf("Mail \"%s\" deleted", a.mail.Subject))
 				}
 				m.OnError = func(err error) {
 					slog.Error("Failed to delete mail", "characterID", a.mail.CharacterID, "mailID", a.mail.MailID, "err", err)
-					a.u.Snackbar.Show(fmt.Sprintf("Failed to delete mail: %s", humanize.Error(err)))
+					a.u.ShowSnackbar(fmt.Sprintf("Failed to delete mail: %s", humanize.Error(err)))
 				}
 				m.Start()
 			}, a.u.Window)
@@ -590,7 +590,7 @@ func (a *CharacterMail) setMail(mailID int32) {
 	a.mail, err = a.u.CharacterService().GetCharacterMail(ctx, characterID, mailID)
 	if err != nil {
 		slog.Error("Failed to fetch mail", "mailID", mailID, "error", err)
-		a.u.Snackbar.Show("ERROR: Failed to fetch mail")
+		a.u.ShowSnackbar("ERROR: Failed to fetch mail")
 		return
 	}
 	if !a.u.isOffline && !a.mail.IsRead {
@@ -598,7 +598,7 @@ func (a *CharacterMail) setMail(mailID int32) {
 			err = a.u.CharacterService().UpdateMailRead(ctx, characterID, a.mail.MailID)
 			if err != nil {
 				slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", a.mail.MailID, "error", err)
-				a.u.Snackbar.Show("ERROR: Failed to mark mail as read")
+				a.u.ShowSnackbar("ERROR: Failed to mark mail as read")
 				return
 			}
 			a.update()

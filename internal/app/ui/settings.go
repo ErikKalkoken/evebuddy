@@ -135,16 +135,17 @@ type Settings struct {
 	CommunicationGroupContent    fyne.CanvasObject // TODO: Refactor into widget
 	OnCommunicationGroupSelected func(title string, content fyne.CanvasObject, actions []SettingAction)
 
-	snackbar *iwidget.Snackbar
-	u        *BaseUI
-	window   fyne.Window
+	showSnackbar func(string)
+	snackbar     *iwidget.Snackbar
+	u            *BaseUI
+	window       fyne.Window
 }
 
 func NewSettings(u *BaseUI) *Settings {
 	a := &Settings{
-		snackbar: u.Snackbar,
-		u:        u,
-		window:   u.Window,
+		showSnackbar: u.ShowSnackbar,
+		u:            u,
+		window:       u.Window,
 	}
 	a.ExtendBaseWidget(a)
 	a.GeneralContent, a.GeneralActions = a.makeGeneralSettingsPage()
@@ -179,8 +180,14 @@ func (a *Settings) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *Settings) SetWindow(w fyne.Window) {
 	a.window = w
+	if a.snackbar != nil {
+		a.snackbar.Stop()
+	}
 	a.snackbar = iwidget.NewSnackbar(w)
 	a.snackbar.Start()
+	a.showSnackbar = func(s string) {
+		a.snackbar.Show(s)
+	}
 }
 
 func (a *Settings) currentWindow() fyne.Window {
@@ -300,11 +307,11 @@ func (a *Settings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction
 					)
 					m.OnSuccess = func() {
 						slog.Info("Cleared cache")
-						a.u.Snackbar.Show("Cache cleared")
+						a.u.ShowSnackbar("Cache cleared")
 					}
 					m.OnError = func(err error) {
 						slog.Error("Failed to clear cache", "error", err)
-						a.u.Snackbar.Show(fmt.Sprintf("Failed to clear cache: %s", humanize.Error(err)))
+						a.u.ShowSnackbar(fmt.Sprintf("Failed to clear cache: %s", humanize.Error(err)))
 					}
 					m.Start()
 				}, w)

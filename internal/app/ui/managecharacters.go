@@ -35,21 +35,22 @@ type ManageCharacters struct {
 	OnSelectCharacter func()
 	OnUpdate          func(characterCount int)
 
-	snackbar   *iwidget.Snackbar
-	characters []accountCharacter
-	list       *widget.List
-	title      *widget.Label
-	window     fyne.Window
-	u          *BaseUI
+	showSnackbar func(string)
+	snackbar     *iwidget.Snackbar
+	characters   []accountCharacter
+	list         *widget.List
+	title        *widget.Label
+	window       fyne.Window
+	u            *BaseUI
 }
 
 func NewManageCharacters(u *BaseUI) *ManageCharacters {
 	a := &ManageCharacters{
-		characters: make([]accountCharacter, 0),
-		snackbar:   u.Snackbar,
-		title:      MakeTopLabel(),
-		window:     u.Window,
-		u:          u,
+		characters:   make([]accountCharacter, 0),
+		showSnackbar: u.ShowSnackbar,
+		title:        MakeTopLabel(),
+		window:       u.Window,
+		u:            u,
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeCharacterList()
@@ -87,8 +88,14 @@ func (a *ManageCharacters) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *ManageCharacters) SetWindow(w fyne.Window) {
 	a.window = w
+	if a.snackbar != nil {
+		a.snackbar.Stop()
+	}
 	a.snackbar = iwidget.NewSnackbar(w)
 	a.snackbar.Start()
+	a.showSnackbar = func(s string) {
+		a.snackbar.Show(s)
+	}
 }
 
 func (a *ManageCharacters) makeCharacterList() *widget.List {
@@ -175,7 +182,7 @@ func (a *ManageCharacters) showDeleteDialog(c accountCharacter) {
 					a.window,
 				)
 				m.OnSuccess = func() {
-					a.snackbar.Show(fmt.Sprintf("Character %s deleted", c.name))
+					a.showSnackbar(fmt.Sprintf("Character %s deleted", c.name))
 					if a.u.CurrentCharacterID() == c.id {
 						a.u.SetAnyCharacter()
 					}
@@ -184,7 +191,7 @@ func (a *ManageCharacters) showDeleteDialog(c accountCharacter) {
 				}
 				m.OnError = func(err error) {
 					slog.Error("Failed to delete character", "characterID", c.id)
-					a.snackbar.Show(fmt.Sprintf("ERROR: Failed to delete character %s", c.name))
+					a.showSnackbar(fmt.Sprintf("ERROR: Failed to delete character %s", c.name))
 				}
 				m.Start()
 			}
