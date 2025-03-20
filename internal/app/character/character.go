@@ -19,10 +19,6 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-var (
-	ErrAborted = errors.New("process aborted prematurely")
-)
-
 // CharacterService provides access to all managed Eve Online characters both online and from local storage.
 type CharacterService struct {
 	EveNotificationService *evenotification.EveNotificationService
@@ -172,7 +168,7 @@ func (s *CharacterService) UpdateCharacterIsTrainingWatched(ctx context.Context,
 func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText binding.ExternalString) (int32, error) {
 	ssoToken, err := s.SSOService.Authenticate(ctx, esiScopes)
 	if errors.Is(err, sso.ErrAborted) {
-		return 0, ErrAborted
+		return 0, app.ErrAborted
 	} else if err != nil {
 		return 0, err
 	}

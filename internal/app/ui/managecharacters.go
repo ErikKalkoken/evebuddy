@@ -18,7 +18,6 @@ import (
 	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -240,7 +239,7 @@ func (a *ManageCharacters) ShowAddCharacterDialog() {
 	go func() {
 		err := func() error {
 			characterID, err := a.u.CharacterService().UpdateOrCreateCharacterFromSSO(cancelCTX, infoText)
-			if errors.Is(err, character.ErrAborted) {
+			if errors.Is(err, app.ErrAborted) {
 				return nil
 			} else if err != nil {
 				return err

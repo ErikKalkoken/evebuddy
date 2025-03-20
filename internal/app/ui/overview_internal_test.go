@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
@@ -62,7 +63,7 @@ func newUI(st *storage.Storage) *BaseUI {
 	return u
 }
 
-func newCharacterService(st *storage.Storage) *character.CharacterService {
+func newCharacterService(st *storage.Storage) app.CharacterService {
 	sc := statuscache.New(memcache.New())
 	eu := eveuniverse.New(st, nil)
 	eu.StatusCacheService = sc
