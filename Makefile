@@ -25,3 +25,6 @@ deploy-android:
 
 install-android:
 	adb install -r -d EVE_Buddy.apk
+
+interface:
+	ifacemaker -s BaseUI -i UI -p app -f internal/app/ui/ui.go
