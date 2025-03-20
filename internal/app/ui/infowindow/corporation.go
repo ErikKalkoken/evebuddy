@@ -39,11 +39,11 @@ type corporationInfo struct {
 
 func newCorporationInfo(iw InfoWindow, id int32, w fyne.Window) *corporationInfo {
 	alliance := kxwidget.NewTappableLabel("", nil)
-	alliance.Truncation = fyne.TextTruncateEllipsis
+	alliance.Wrapping = fyne.TextWrapWord
 	name := widget.NewLabel("")
-	name.Truncation = fyne.TextTruncateEllipsis
+	name.Wrapping = fyne.TextWrapWord
 	hq := kxwidget.NewTappableLabel("", nil)
-	hq.Truncation = fyne.TextTruncateEllipsis
+	hq.Wrapping = fyne.TextWrapWord
 	s := float32(app.IconPixelSize) * logoZoomFactor
 	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(s))
 	a := &corporationInfo{

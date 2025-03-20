@@ -36,11 +36,11 @@ type locationInfo struct {
 
 func newLocationInfo(iw InfoWindow, locationID int64, w fyne.Window) *locationInfo {
 	name := widget.NewLabel("Loading...")
-	name.Truncation = fyne.TextTruncateEllipsis
+	name.Wrapping = fyne.TextWrapWord
 	typeInfo := kxwidget.NewTappableLabel("", nil)
-	typeInfo.Truncation = fyne.TextTruncateEllipsis
+	typeInfo.Wrapping = fyne.TextWrapWord
 	corporation := kxwidget.NewTappableLabel("", nil)
-	corporation.Truncation = fyne.TextTruncateEllipsis
+	corporation.Wrapping = fyne.TextWrapWord
 	typeImage := kxwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeImage.SetFillMode(canvas.ImageFillContain)
 	typeImage.SetMinSize(fyne.NewSquareSize(renderIconUnitSize))

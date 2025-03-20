@@ -2,6 +2,8 @@ package ui
 
 import (
 	"log/slog"
+	"maps"
+	"slices"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -71,6 +73,28 @@ func (s AppSettings) ResetDeveloperMode() {
 
 func (s AppSettings) SetDeveloperMode(v bool) {
 	s.p.SetBool(settingDeveloperMode, v)
+}
+
+func (s AppSettings) LogLevelNames() []string {
+	x := slices.Collect(maps.Keys(logLevelName2Level))
+	slices.Sort(x)
+	return x
+}
+
+func (s AppSettings) LogLevelSlog() slog.Level {
+	x := s.LogLevel()
+	l, ok := logLevelName2Level[x]
+	if !ok {
+		l = logLevelName2Level[settingLogLevelDefault]
+	}
+	return l
+}
+
+var logLevelName2Level = map[string]slog.Level{
+	"debug":   slog.LevelDebug,
+	"error":   slog.LevelError,
+	"info":    slog.LevelInfo,
+	"warning": slog.LevelWarn,
 }
 
 func (s AppSettings) LogLevel() string {

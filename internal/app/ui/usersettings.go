@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -28,28 +27,6 @@ import (
 )
 
 // TODO: Improve switch API to allow switch not to be set on error
-
-// TODO: Refactor log level into settings type to remove dependency
-var logLevelName2Level = map[string]slog.Level{
-	"debug":   slog.LevelDebug,
-	"error":   slog.LevelError,
-	"info":    slog.LevelInfo,
-	"warning": slog.LevelWarn,
-}
-
-func LogLevelName2Level(s string) slog.Level {
-	l, ok := logLevelName2Level[s]
-	if !ok {
-		l = slog.LevelInfo
-	}
-	return l
-}
-
-func LogLevelNames() []string {
-	x := slices.Collect(maps.Keys(logLevelName2Level))
-	slices.Sort(x)
-	return x
-}
 
 type SettingAction struct {
 	Label  string
@@ -129,14 +106,15 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 	logLevel := iwidget.NewSettingItemOptions(
 		"Log level",
 		"Set current log level",
-		LogLevelNames(),
+		a.u.Settings().LogLevelNames(),
 		a.u.Settings().LogLevelDefault(),
 		func() string {
 			return a.u.Settings().LogLevel()
 		},
-		func(s string) {
-			a.u.Settings().SetLogLevel(s)
-			slog.SetLogLoggerLevel(LogLevelName2Level(s))
+		func(v string) {
+			s := a.u.Settings()
+			s.SetLogLevel(v)
+			slog.SetLogLoggerLevel(s.LogLevelSlog())
 		},
 		a.currentWindow,
 	)

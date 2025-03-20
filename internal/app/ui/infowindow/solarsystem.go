@@ -39,11 +39,11 @@ type solarSystemInfo struct {
 
 func newSolarSystemInfo(iw InfoWindow, id int32, w fyne.Window) *solarSystemInfo {
 	region := kxwidget.NewTappableLabel("", nil)
-	region.Truncation = fyne.TextTruncateEllipsis
+	region.Wrapping = fyne.TextWrapWord
 	constellation := kxwidget.NewTappableLabel("", nil)
-	constellation.Truncation = fyne.TextTruncateEllipsis
+	constellation.Wrapping = fyne.TextWrapWord
 	name := widget.NewLabel("")
-	name.Truncation = fyne.TextTruncateEllipsis
+	name.Wrapping = fyne.TextWrapWord
 	s := float32(app.IconPixelSize) * logoZoomFactor
 	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(s))
 	a := &solarSystemInfo{
@@ -58,7 +58,6 @@ func newSolarSystemInfo(iw InfoWindow, id int32, w fyne.Window) *solarSystemInfo
 		w:             w,
 	}
 	a.ExtendBaseWidget(a)
-
 	return a
 }
 

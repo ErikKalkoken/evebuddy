@@ -3,6 +3,7 @@
 package app
 
 import (
+	"log/slog"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -14,6 +15,8 @@ type Settings interface {
 	DeveloperMode() bool
 	ResetDeveloperMode()
 	SetDeveloperMode(v bool)
+	LogLevelNames() []string
+	LogLevelSlog() slog.Level
 	LogLevel() string
 	LogLevelDefault() string
 	ResetLogLevel()

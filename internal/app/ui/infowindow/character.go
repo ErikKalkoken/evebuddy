@@ -43,16 +43,16 @@ type characterInfo struct {
 
 func newCharacterInfo(iw InfoWindow, characterID int32, w fyne.Window) *characterInfo {
 	alliance := kxwidget.NewTappableLabel("", nil)
-	alliance.Truncation = fyne.TextTruncateEllipsis
+	alliance.Wrapping = fyne.TextWrapWord
 	name := widget.NewLabel("")
-	name.Truncation = fyne.TextTruncateEllipsis
+	name.Wrapping = fyne.TextWrapWord
 	corporation := kxwidget.NewTappableLabel("", nil)
-	corporation.Truncation = fyne.TextTruncateEllipsis
+	corporation.Wrapping = fyne.TextWrapWord
 	portrait := kxwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
 	portrait.SetMinSize(fyne.NewSquareSize(128))
 	title := widget.NewLabel("")
-	title.Truncation = fyne.TextTruncateEllipsis
+	title.Wrapping = fyne.TextWrapWord
 	a := &characterInfo{
 		alliance:        alliance,
 		corporation:     corporation,

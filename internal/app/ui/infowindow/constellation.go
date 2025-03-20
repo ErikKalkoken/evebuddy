@@ -37,9 +37,9 @@ type constellationInfo struct {
 
 func newConstellationInfo(iw InfoWindow, constellationID int32, w fyne.Window) *constellationInfo {
 	region := kxwidget.NewTappableLabel("", nil)
-	region.Truncation = fyne.TextTruncateEllipsis
+	region.Wrapping = fyne.TextWrapWord
 	name := widget.NewLabel("")
-	name.Truncation = fyne.TextTruncateEllipsis
+	name.Wrapping = fyne.TextWrapWord
 	s := float32(app.IconPixelSize) * logoZoomFactor
 	logo := iwidget.NewImageFromResource(icons.Constellation64Png, fyne.NewSquareSize(s))
 	a := &constellationInfo{
