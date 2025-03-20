@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"regexp"
 	"slices"
 	"strconv"
 
@@ -274,7 +273,11 @@ func (a *CharacterCommunications) setDetail(n *app.CharacterNotification) {
 	h := appwidget.NewMailHeader(a.u.ShowEveEntityInfoWindow)
 	h.Set(a.u.EveImageService(), n.Sender, n.Timestamp, a.u.CurrentCharacter().EveCharacter.ToEveEntity())
 	a.Detail.Add(h)
-	body := widget.NewRichTextFromMarkdown(markdownStripLinks(n.Body.ValueOrZero()))
+	s, err := n.BodyPlain() // using markdown blocked by #61
+	if err != nil {
+		slog.Warn("failed to convert markdown", "notificationID", n.ID, "text", n.Body.ValueOrZero())
+	}
+	body := widget.NewRichTextWithText(s.ValueOrZero())
 	body.Wrapping = fyne.TextWrapWord
 	if n.Body.IsEmpty() {
 		body.ParseMarkdown("*This notification type is not fully supported yet*")
@@ -282,10 +285,4 @@ func (a *CharacterCommunications) setDetail(n *app.CharacterNotification) {
 	a.Detail.Add(body)
 	a.current = n
 	a.Toolbar.Show()
-}
-
-// markdownStripLinks strips all links from a text in markdown.
-func markdownStripLinks(s string) string {
-	r := regexp.MustCompile(`\[(.+?)\]\((.+?)\)`)
-	return r.ReplaceAllString(s, "**$1**")
 }

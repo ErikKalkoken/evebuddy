@@ -301,7 +301,7 @@ func (u *BaseUI) ShowAndRun() {
 		}
 		go func() {
 			time.Sleep(250 * time.Millisecond) // FIXME: Workaround for occasional progess bar panic
-			u.RefreshCrossPages()
+			u.UpdateCrossPages()
 			if u.HasCharacter() {
 				u.setCharacter(u.character)
 			} else {
@@ -430,8 +430,8 @@ func (u *BaseUI) updateCharacter() {
 	}
 }
 
-// RefreshCrossPages refreshed all pages that contain information about multiple characters.
-func (u *BaseUI) RefreshCrossPages() {
+// UpdateCrossPages refreshed all pages that contain information about multiple characters.
+func (u *BaseUI) UpdateCrossPages() {
 	ff := map[string]func(){
 		"assetSearch": u.AllAssetSearch.Update,
 		"colony":      u.ColonyOverview.Update,

@@ -602,7 +602,7 @@ func (a *CharacterMail) setMail(mailID int32) {
 				return
 			}
 			a.update()
-			a.u.RefreshCrossPages()
+			a.u.UpdateCrossPages()
 			a.u.UpdateMailIndicator()
 		}()
 	}

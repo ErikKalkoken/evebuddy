@@ -168,8 +168,8 @@ type UI interface {
 	HasCharacter() bool
 	// UpdateStatus refreshed all status information pages.
 	UpdateStatus()
-	// RefreshCrossPages refreshed all pages that contain information about multiple characters.
-	RefreshCrossPages()
+	// UpdateCrossPages refreshed all pages that contain information about multiple characters.
+	UpdateCrossPages()
 	SetAnyCharacter() error
 	UpdateAvatar(id int32, setIcon func(fyne.Resource))
 	UpdateMailIndicator()
