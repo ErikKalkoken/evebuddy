@@ -45,7 +45,8 @@ func (a *CharacterPlanets) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *CharacterPlanets) makeList() *widget.List {
-	t := widget.NewList(
+	var l *widget.List
+	l = widget.NewList(
 		func() int {
 			return len(a.planets)
 		},
@@ -58,18 +59,16 @@ func (a *CharacterPlanets) makeList() *widget.List {
 			}
 			o := co.(*Planet)
 			p := a.planets[id]
-			o.Set(p)
+			o.Set(p, func() {
+				a.u.ShowInfoWindow(app.EveEntitySolarSystem, p.EvePlanet.SolarSystem.ID)
+			})
+			l.SetItemHeight(id, o.MinSize().Height)
 		},
 	)
-	t.OnSelected = func(id widget.ListItemID) {
-		defer t.UnselectAll()
-		if id >= len(a.planets) || id < 0 {
-			return
-		}
-		p := a.planets[id]
-		a.u.ShowEveEntityInfoWindow(p.EvePlanet.SolarSystem.ToEveEntity())
+	l.OnSelected = func(id widget.ListItemID) {
+		defer l.UnselectAll()
 	}
-	return t
+	return l
 }
 
 func (a *CharacterPlanets) Update() {
