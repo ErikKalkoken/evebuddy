@@ -38,11 +38,11 @@ type Planet struct {
 func NewPlanet() *Planet {
 	image := iwidgets.NewImageFromResource(theme.BrokenImageIcon(), fyne.NewSquareSize(planetWidgetSizeDesktop))
 	extracting := widget.NewLabel("")
-	extracting.Truncation = fyne.TextTruncateEllipsis
+	extracting.Wrapping = fyne.TextWrapWord
 	producing := widget.NewLabel("")
-	producing.Truncation = fyne.TextTruncateEllipsis
+	producing.Wrapping = fyne.TextWrapWord
 	location := widget.NewLabel("")
-	location.Truncation = fyne.TextTruncateEllipsis
+	location.Wrapping = fyne.TextWrapWord
 	w := &Planet{
 		bg:         canvas.NewRectangle(theme.Color(planetBackgroundColor)),
 		extracting: extracting,
