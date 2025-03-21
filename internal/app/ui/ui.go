@@ -51,9 +51,6 @@ const (
 
 // BaseUI represents the core UI logic and is used by both the desktop and mobile UI.
 type BaseUI struct {
-	// Clears all caches
-	ClearCache func()
-
 	DisableMenuShortcuts func()
 	EnableMenuShortcuts  func()
 	HideMailIndicator    func()
@@ -93,6 +90,7 @@ type BaseUI struct {
 
 	app              fyne.App
 	character        *app.Character
+	clearCache       func() // clear all caches
 	cs               app.CharacterService
 	dataPaths        map[string]string // Paths to user data
 	eis              app.EveImageService
@@ -105,11 +103,11 @@ type BaseUI struct {
 	isUpdateDisabled bool // Whether to disable update tickers (useful for debugging)
 	memcache         app.CacheService
 	scs              app.StatusCacheService
+	settings         app.Settings
 	snackbar         *iwidget.Snackbar
 	statusWindow     fyne.Window
 	wasStarted       atomic.Bool // whether the app has already been started at least once
 	window           fyne.Window
-	settings         app.Settings
 }
 
 // NewBaseUI constructs and returns a new BaseUI.
@@ -126,11 +124,13 @@ func NewBaseUI(
 	isOffline bool,
 	isUpdateDisabled bool,
 	dataPaths map[string]string,
+	clearCache func(),
 ) *BaseUI {
 	u := &BaseUI{
-		dataPaths:        dataPaths,
 		app:              app,
+		clearCache:       clearCache,
 		cs:               cs,
+		dataPaths:        dataPaths,
 		eis:              eis,
 		ess:              ess,
 		eus:              eus,
@@ -176,18 +176,12 @@ func NewBaseUI(
 	return u
 }
 
-func (u *BaseUI) ClearAllCaches() {
-	if u.ClearCache != nil {
-		u.ClearCache()
-	}
-}
-
 func (u *BaseUI) App() fyne.App {
 	return u.app
 }
 
-func (u *BaseUI) Settings() app.Settings {
-	return u.settings
+func (u *BaseUI) ClearAllCaches() {
+	u.clearCache()
 }
 
 func (u *BaseUI) AppName() string {
@@ -240,8 +234,8 @@ func (u *BaseUI) IsOffline() bool {
 }
 
 // Init initialized the app.
-// It is meant for initialization logic that requires all services to be initialized and available.
-// It should be called directly after the app was created and before the Fyne loop is started.
+// It is meant for initialization logic that requires the UI to be fully created.
+// It should be called directly after the UI was created and before the Fyne loop is started.
 func (u *BaseUI) Init() {
 	u.ManagerCharacters.Refresh()
 	var c *app.Character
@@ -286,6 +280,10 @@ func (u *BaseUI) MakeWindowTitle(subTitle string) string {
 		return subTitle
 	}
 	return fmt.Sprintf("%s - %s", subTitle, u.AppName())
+}
+
+func (u *BaseUI) Settings() app.Settings {
+	return u.settings
 }
 
 // ShowAndRun shows the UI and runs the Fyne loop (blocking),
