@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -29,10 +30,11 @@ type Planet struct {
 	bg         *canvas.Rectangle
 	extracting *widget.Label
 	image      *canvas.Image
+	infoIcon   *kxwidget.TappableIcon
+	location   *widget.Label
 	post       *widget.Label
 	producing  *widget.Label
 	security   *widget.Label
-	location   *widget.Label
 }
 
 func NewPlanet() *Planet {
@@ -47,16 +49,18 @@ func NewPlanet() *Planet {
 		bg:         canvas.NewRectangle(theme.Color(planetBackgroundColor)),
 		extracting: extracting,
 		image:      image,
+		infoIcon:   kxwidget.NewTappableIcon(theme.InfoIcon(), nil),
+		location:   location,
 		post:       widget.NewLabel(""),
 		producing:  producing,
 		security:   widget.NewLabel(""),
-		location:   location,
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
-func (w *Planet) Set(cp *app.CharacterPlanet) {
+func (w *Planet) Set(cp *app.CharacterPlanet, show func()) {
+	w.infoIcon.OnTapped = show
 	if cp.EvePlanet != nil && cp.EvePlanet.Type != nil {
 		res, ok := cp.EvePlanet.Type.Icon()
 		if ok {
@@ -119,14 +123,13 @@ func (w *Planet) CreateRenderer() fyne.WidgetRenderer {
 	data := container.NewVBox(
 		container.NewStack(
 			w.bg,
-			container.NewBorder(nil, nil, w.security, nil, w.location),
+			container.NewBorder(nil, nil, w.security, w.infoIcon, w.location),
 		),
-		container.NewBorder(nil, nil, nil, widget.NewIcon(theme.InfoIcon()),
-			widget.NewForm(
-				widget.NewFormItem("Extracting", w.extracting),
-				widget.NewFormItem("Extraction due", w.post),
-				widget.NewFormItem("Producing", w.producing),
-			)),
+		widget.NewForm(
+			widget.NewFormItem("Extracting", w.extracting),
+			widget.NewFormItem("Extraction due", w.post),
+			widget.NewFormItem("Producing", w.producing),
+		),
 	)
 	if fyne.CurrentDevice().IsMobile() {
 		return widget.NewSimpleRenderer(data)
