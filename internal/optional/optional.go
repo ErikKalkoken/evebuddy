@@ -18,7 +18,7 @@ var ErrIsEmpty = errors.New("optional is empty")
 
 // Optional represents a variable that may contain a value or not.
 //
-// Note that the zero value of an Optional is a an empty Optional.
+// The zero value for an Optional is an empty optional.
 type Optional[T any] struct {
 	value     T
 	isPresent bool

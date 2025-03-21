@@ -115,7 +115,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 	})
 }
 
-func TestCharacterImplant(t *testing.T) {
+func TestCharacterNextAvailableCloneJump(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
 	cs := newCharacterService(st)
@@ -135,7 +135,7 @@ func TestCharacterImplant(t *testing.T) {
 		})
 		x, err := cs.calcCharacterNextCloneJump(ctx, c)
 		if assert.NoError(t, err) {
-			assert.WithinDuration(t, now.Add(15*time.Hour), x, 10*time.Second)
+			assert.WithinDuration(t, now.Add(15*time.Hour), x.MustValue(), 10*time.Second)
 		}
 	})
 	t.Run("should return time of next available jump without skill", func(t *testing.T) {
@@ -147,7 +147,7 @@ func TestCharacterImplant(t *testing.T) {
 		})
 		x, err := cs.calcCharacterNextCloneJump(ctx, c)
 		if assert.NoError(t, err) {
-			assert.WithinDuration(t, now.Add(18*time.Hour), x, 10*time.Second)
+			assert.WithinDuration(t, now.Add(18*time.Hour), x.MustValue(), 10*time.Second)
 		}
 	})
 	t.Run("should return time of next available jump without skill and never jumped before", func(t *testing.T) {
@@ -158,7 +158,7 @@ func TestCharacterImplant(t *testing.T) {
 		})
 		x, err := cs.calcCharacterNextCloneJump(ctx, c)
 		if assert.NoError(t, err) {
-			assert.Equal(t, time.Time{}, x)
+			assert.Equal(t, time.Time{}, x.MustValue())
 		}
 	})
 	t.Run("should return zero time when next jump available now", func(t *testing.T) {
@@ -176,10 +176,10 @@ func TestCharacterImplant(t *testing.T) {
 		})
 		x, err := cs.calcCharacterNextCloneJump(ctx, c)
 		if assert.NoError(t, err) {
-			assert.Equal(t, time.Time{}, x)
+			assert.Equal(t, time.Time{}, x.MustValue())
 		}
 	})
-	t.Run("should return error when last jump not found", func(t *testing.T) {
+	t.Run("should return empty time when last jump not found", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
@@ -189,7 +189,9 @@ func TestCharacterImplant(t *testing.T) {
 			EveTypeID:        app.EveTypeInfomorphSynchronizing,
 			ActiveSkillLevel: 5,
 		})
-		_, err := cs.calcCharacterNextCloneJump(ctx, c)
-		assert.Error(t, err)
+		x, err := cs.calcCharacterNextCloneJump(ctx, c)
+		if assert.NoError(t, err) {
+			assert.True(t, x.IsEmpty())
+		}
 	})
 }

@@ -127,7 +127,7 @@ func (s *CharacterService) GetCharacter(ctx context.Context, id int32) (*app.Cha
 	if err != nil {
 		slog.Error("get character: next clone jump", "characterID", id, "error", err)
 	} else {
-		c.NextCloneJump = optional.New(x)
+		c.NextCloneJump = x
 	}
 	return c, nil
 }

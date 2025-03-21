@@ -3,7 +3,6 @@ package character
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -19,11 +18,12 @@ func (s *CharacterService) ListCharacterJumpClones(ctx context.Context, characte
 
 // calcCharacterNextCloneJump returns when the next clone jump is available.
 // It returns a zero time when a jump is available now.
-func (s *CharacterService) calcCharacterNextCloneJump(ctx context.Context, c *app.Character) (time.Time, error) {
-	var z time.Time
+// It returns empty when a jump could not be calculated.
+func (s *CharacterService) calcCharacterNextCloneJump(ctx context.Context, c *app.Character) (optional.Optional[time.Time], error) {
+	var z optional.Optional[time.Time]
 
 	if c.LastCloneJumpAt.IsEmpty() {
-		return z, fmt.Errorf("next clone jump: missing last clone jump date: character ID %d", c.ID)
+		return z, nil
 	}
 	lastJump := c.LastCloneJumpAt.MustValue()
 
@@ -39,9 +39,9 @@ func (s *CharacterService) calcCharacterNextCloneJump(ctx context.Context, c *ap
 
 	nextJump := lastJump.Add(time.Duration(24-skillLevel) * time.Hour)
 	if nextJump.Before(time.Now()) {
-		return z, nil
+		return optional.New(time.Time{}), nil
 	}
-	return nextJump, nil
+	return optional.New(nextJump), nil
 }
 
 // TODO: Consolidate with updating home in separate function
