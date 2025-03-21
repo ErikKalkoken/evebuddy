@@ -36,6 +36,7 @@ const (
 	ssoHost             = "login.eveonline.com"
 	tokenURLDefault     = "https://login.eveonline.com/v2/oauth/token"
 	authorizeURLDefault = "https://login.eveonline.com/v2/oauth/authorize"
+	pingTimeout         = 5 * time.Second
 )
 
 var (
@@ -79,7 +80,9 @@ func new(
 		httpClient:   client,
 		port:         port,
 		tokenURL:     tokenURL,
-		OpenURL:      func(u *url.URL) error { return errors.New("not configured: OpenURL") },
+		OpenURL: func(u *url.URL) error {
+			return errors.New("not configured: OpenURL")
+		},
 	}
 	return s
 }
@@ -135,7 +138,6 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 					"<p>You can close this tab now and return to the app.</p>",
 				token.CharacterName,
 			)
-			cancel() // shutdown http server
 			return http.StatusOK, nil
 		}()
 		if err != nil {
@@ -146,6 +148,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 		} else {
 			slog.Info("SSO server received request", "status", status, "path", r.URL.Path)
 		}
+		cancel() // shutdown http server
 	})
 	// Route for reponding to ping requests
 	router.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
@@ -165,27 +168,37 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 	}
 	l, err := net.Listen("tcp", server.Addr)
 	if err != nil {
-		return nil, fmt.Errorf("SSO autenticate: listen on address: %w", err)
+		return nil, fmt.Errorf("SSO authenticate: listen on address: %w", err)
 	}
 	defer func() {
 		if err := server.Close(); err != nil {
-			slog.Error("SSO autenticate: server close", "error", err)
+			slog.Error("SSO authenticate: server close", "error", err)
 		}
 	}()
 	go func() {
 		slog.Info("SSO web server started", "address", server.Addr)
 		if err := server.Serve(l); err != http.ErrServerClosed {
-			slog.Error("SSO autenticate: server terminated prematurely", "error", err)
+			slog.Error("SSO authenticate: server terminated prematurely", "error", err)
 		}
 		cancel()
 		slog.Info("SSO server stopped")
 	}()
-	_, err = s.httpClient.Get(fmt.Sprintf("%s://%s/ping", protocol, server.Addr))
+
+	ctxPing, cncl := context.WithTimeout(ctx, pingTimeout)
+	defer cncl()
+
+	u := fmt.Sprintf("%s://%s/ping", protocol, server.Addr)
+	req, err := http.NewRequestWithContext(ctxPing, http.MethodGet, u, nil)
 	if err != nil {
-		return nil, fmt.Errorf("SSO autenticate: ping: %w", err)
+		return nil, fmt.Errorf("SSO authenticate: prepare ping: %w", err)
 	}
+	_, err = s.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("SSO authenticate: ping: %w", err)
+	}
+
 	if err := s.startSSO(state, codeVerifier, scopes); err != nil {
-		return nil, fmt.Errorf("SSO autenticate: start: %w", err)
+		return nil, fmt.Errorf("SSO authenticate: start: %w", err)
 	}
 	<-serverCtx.Done()
 
@@ -193,7 +206,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 	defer shutdownRelease()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		return nil, fmt.Errorf("SSO autenticate: server shutdown: %w", err)
+		return nil, fmt.Errorf("SSO authenticate: server shutdown: %w", err)
 	}
 
 	errValue := serverCtx.Value(keyError)
