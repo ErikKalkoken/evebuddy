@@ -1,4 +1,4 @@
-package widget
+package character
 
 import (
 	"bytes"
@@ -19,10 +19,8 @@ import (
 	"github.com/anthonynsimon/bild/effect"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
 )
-
-// Default ScaleMode for images
-var DefaultImageScaleMode canvas.ImageScale
 
 // The ShipItem widget is used to render items on the type info window.
 type ShipItem struct {
@@ -40,7 +38,7 @@ func NewShipItem(sv app.EveImageService, cache app.CacheService, fallbackIcon fy
 	lowRight := image.Point{128, 128}
 	image := canvas.NewImageFromImage(image.NewRGBA(image.Rectangle{upLeft, lowRight}))
 	image.FillMode = canvas.ImageFillContain
-	image.ScaleMode = DefaultImageScaleMode
+	image.ScaleMode = appwidget.DefaultImageScaleMode
 	image.SetMinSize(fyne.NewSquareSize(128))
 	w := &ShipItem{
 		image:        image,

@@ -1,4 +1,4 @@
-package widget
+package character
 
 import (
 	"fyne.io/fyne/v2"
@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	sizeLabelText                     = 12
 	colorAssetQuantityBadgeBackground = theme.ColorNameMenuBackground
 )
 

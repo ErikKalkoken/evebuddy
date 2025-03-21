@@ -1,4 +1,4 @@
-package widget
+package desktop
 
 import (
 	"fyne.io/fyne/v2"

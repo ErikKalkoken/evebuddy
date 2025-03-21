@@ -18,7 +18,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -100,7 +99,7 @@ type CharacterMail struct {
 	body          *widget.Label
 	folderSection fyne.CanvasObject
 	folders       *iwidget.Tree[FolderNode]
-	header        *appwidget.MailHeader
+	header        *MailHeader
 	headerList    *widget.List
 	headers       []*app.CharacterMailHeader
 	headerTop     *widget.Label
@@ -116,7 +115,7 @@ type CharacterMail struct {
 func NewCharacterMail(u app.UI) *CharacterMail {
 	a := &CharacterMail{
 		body:      widget.NewLabel(""),
-		header:    appwidget.NewMailHeader(u.ShowEveEntityInfoWindow),
+		header:    NewMailHeader(u.ShowEveEntityInfoWindow),
 		headers:   make([]*app.CharacterMailHeader, 0),
 		headerTop: widget.NewLabel(""),
 		subject:   iwidget.NewLabelWithSize("", theme.SizeNameSubHeadingText),
@@ -382,7 +381,7 @@ func (a *CharacterMail) makeHeaderList() *widget.List {
 			return len(a.headers)
 		},
 		func() fyne.CanvasObject {
-			return appwidget.NewMailHeaderItem(a.u.EveImageService())
+			return NewMailHeaderItem(a.u.EveImageService())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.headers) {
@@ -392,7 +391,7 @@ func (a *CharacterMail) makeHeaderList() *widget.List {
 			if !a.u.HasCharacter() {
 				return
 			}
-			item := co.(*appwidget.MailHeaderItem)
+			item := co.(*MailHeaderItem)
 			item.Set(m.From, m.Subject, m.Timestamp, m.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {

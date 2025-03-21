@@ -15,7 +15,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -184,7 +183,7 @@ func (a *GameSearch) makeResults() *iwidget.Tree[resultNode] {
 			if isBranch {
 				return widget.NewLabel("Template")
 			}
-			return appwidget.NewSearchResult(
+			return NewSearchResult(
 				a.u.EveImageService(),
 				a.u.EveUniverseService(),
 				a.supportedCategories,
@@ -195,7 +194,7 @@ func (a *GameSearch) makeResults() *iwidget.Tree[resultNode] {
 				co.(*widget.Label).SetText(n.String())
 				return
 			}
-			co.(*appwidget.SearchResult).Set(n.ee)
+			co.(*SearchResult).Set(n.ee)
 		},
 	)
 	t.OnSelected = func(n resultNode) {
@@ -231,7 +230,7 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 			return len(a.recentItems)
 		},
 		func() fyne.CanvasObject {
-			return appwidget.NewSearchResult(
+			return NewSearchResult(
 				a.u.EveImageService(),
 				a.u.EveUniverseService(),
 				infowindow.SupportedEveEntities(),
@@ -244,7 +243,7 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 				return
 			}
 			it := a.recentItems[id]
-			co.(*appwidget.SearchResult).Set(it)
+			co.(*SearchResult).Set(it)
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {

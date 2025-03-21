@@ -15,7 +15,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 

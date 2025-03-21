@@ -27,8 +27,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/cross"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/tools"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -141,7 +141,7 @@ func NewBaseUI(
 		scs:              scs,
 		settings:         NewAppSettings(app.Preferences()),
 	}
-	u.window = app.NewWindow(u.AppName())
+	u.window = app.NewWindow(u.appName())
 
 	if u.IsDesktop() {
 		iwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
@@ -173,6 +173,7 @@ func NewBaseUI(
 	u.CharacterWalletJournal = character.NewCharacterWalletJournal(u)
 	u.CharacterWalletTransaction = character.NewCharacterWalletTransaction(u)
 	u.WealthOverview = cross.NewWealthOverview(u)
+	u.MainWindow().SetMaster()
 	return u
 }
 
@@ -182,15 +183,6 @@ func (u *BaseUI) App() fyne.App {
 
 func (u *BaseUI) ClearAllCaches() {
 	u.clearCache()
-}
-
-func (u *BaseUI) AppName() string {
-	info := u.app.Metadata()
-	name := info.Name
-	if name == "" {
-		return "EVE Buddy"
-	}
-	return name
 }
 
 func (u *BaseUI) CharacterService() app.CharacterService {
@@ -275,11 +267,11 @@ func (u *BaseUI) IsMobile() bool {
 	return u.isMobile
 }
 
-func (u *BaseUI) MakeWindowTitle(subTitle string) string {
+func (u *BaseUI) makeWindowTitle(subTitle string) string {
 	if u.IsMobile() {
 		return subTitle
 	}
-	return fmt.Sprintf("%s - %s", subTitle, u.AppName())
+	return fmt.Sprintf("%s - %s", subTitle, u.appName())
 }
 
 func (u *BaseUI) Settings() app.Settings {
@@ -883,58 +875,6 @@ func (u *BaseUI) notifyExpiredExtractionsIfNeeded(ctx context.Context, character
 	}
 }
 
-func (u *BaseUI) MakeAboutPage() fyne.CanvasObject {
-	v, err := github.NormalizeVersion(u.app.Metadata().Version)
-	if err != nil {
-		slog.Error("normalize local version", "error", err)
-		v = "?"
-	}
-	local := widget.NewLabel(v)
-	latest := widget.NewLabel("?")
-	latest.Hide()
-	spinner := widget.NewActivity()
-	spinner.Start()
-	go func() {
-		var s string
-		var i widget.Importance
-		var isBold bool
-		v, err := u.AvailableUpdate()
-		if err != nil {
-			slog.Error("fetch github version for about", "error", err)
-			s = "ERROR"
-			i = widget.DangerImportance
-		} else if v.IsRemoteNewer {
-			s = v.Latest
-			isBold = true
-		} else {
-			s = v.Latest
-		}
-		latest.Text = s
-		latest.TextStyle.Bold = isBold
-		latest.Importance = i
-		latest.Refresh()
-		spinner.Hide()
-		latest.Show()
-	}()
-	title := iwidget.NewLabelWithSize(u.AppName(), theme.SizeNameSubHeadingText)
-	title.TextStyle.Bold = true
-	c := container.New(
-		layout.NewCustomPaddedVBoxLayout(0),
-		title,
-		container.New(layout.NewCustomPaddedVBoxLayout(0),
-			container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), container.NewStack(spinner, latest)),
-			container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), local),
-		),
-		container.NewHBox(
-			widget.NewHyperlink("Website", u.WebsiteRootURL()),
-			widget.NewHyperlink("Downloads", u.WebsiteRootURL().JoinPath("releases")),
-		),
-		widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."),
-		widget.NewLabel("(c) 2024-25 Erik Kalkoken"),
-	)
-	return c
-}
-
 func (u *BaseUI) AvailableUpdate() (github.VersionInfo, error) {
 	current := u.app.Metadata().Version
 	v, err := github.AvailableUpdate(githubOwner, githubRepo, current)
@@ -991,7 +931,7 @@ func (u *BaseUI) ShowUpdateStatusWindow() {
 		u.statusWindow.Show()
 		return
 	}
-	w := u.app.NewWindow(u.MakeWindowTitle("Update Status"))
+	w := u.app.NewWindow(u.makeWindowTitle("Update Status"))
 	a := tools.NewUpdateStatus(u)
 	a.Update()
 	w.SetContent(a)
@@ -1037,4 +977,65 @@ func (u *BaseUI) WebsiteRootURL() *url.URL {
 		uri, _ = url.Parse(fallbackWebsiteURL)
 	}
 	return uri
+}
+
+func (u *BaseUI) appName() string {
+	info := u.app.Metadata()
+	name := info.Name
+	if name == "" {
+		return "EVE Buddy"
+	}
+	return name
+}
+
+func (u *BaseUI) makeAboutPage() fyne.CanvasObject {
+	v, err := github.NormalizeVersion(u.app.Metadata().Version)
+	if err != nil {
+		slog.Error("normalize local version", "error", err)
+		v = "?"
+	}
+	local := widget.NewLabel(v)
+	latest := widget.NewLabel("?")
+	latest.Hide()
+	spinner := widget.NewActivity()
+	spinner.Start()
+	go func() {
+		var s string
+		var i widget.Importance
+		var isBold bool
+		v, err := u.AvailableUpdate()
+		if err != nil {
+			slog.Error("fetch github version for about", "error", err)
+			s = "ERROR"
+			i = widget.DangerImportance
+		} else if v.IsRemoteNewer {
+			s = v.Latest
+			isBold = true
+		} else {
+			s = v.Latest
+		}
+		latest.Text = s
+		latest.TextStyle.Bold = isBold
+		latest.Importance = i
+		latest.Refresh()
+		spinner.Hide()
+		latest.Show()
+	}()
+	title := iwidget.NewLabelWithSize(u.appName(), theme.SizeNameSubHeadingText)
+	title.TextStyle.Bold = true
+	c := container.New(
+		layout.NewCustomPaddedVBoxLayout(0),
+		title,
+		container.New(layout.NewCustomPaddedVBoxLayout(0),
+			container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), container.NewStack(spinner, latest)),
+			container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), local),
+		),
+		container.NewHBox(
+			widget.NewHyperlink("Website", u.WebsiteRootURL()),
+			widget.NewHyperlink("Downloads", u.WebsiteRootURL().JoinPath("releases")),
+		),
+		widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."),
+		widget.NewLabel("(c) 2024-25 Erik Kalkoken"),
+	)
+	return c
 }

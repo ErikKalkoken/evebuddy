@@ -13,7 +13,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
@@ -111,14 +110,14 @@ func (a *CharacterShips) makeShipsGrid() *widget.GridWrap {
 			return len(a.ships)
 		},
 		func() fyne.CanvasObject {
-			return appwidget.NewShipItem(a.u.EveImageService(), a.u.MemCache(), icons.QuestionmarkSvg)
+			return NewShipItem(a.u.EveImageService(), a.u.MemCache(), icons.QuestionmarkSvg)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.ships) {
 				return
 			}
 			o := a.ships[id]
-			item := co.(*appwidget.ShipItem)
+			item := co.(*ShipItem)
 			item.Set(o.Type.ID, o.Type.Name, o.CanFly)
 		})
 	g.OnSelected = func(id widget.GridWrapItemID) {

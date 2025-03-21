@@ -1,4 +1,4 @@
-package widget
+package character
 
 import (
 	"fyne.io/fyne/v2"
@@ -17,17 +17,18 @@ const (
 	typeIconSize = 55
 )
 
-type Asset struct {
+type CharacterAsset struct {
 	widget.BaseWidget
+
 	badge      *assetQuantityBadge
 	icon       *canvas.Image
 	iconLoader func(*canvas.Image, *app.CharacterAsset)
 	label      *assetLabel
 }
 
-func NewAsset(iconLoader func(image *canvas.Image, ca *app.CharacterAsset)) *Asset {
+func NewCharacterAsset(iconLoader func(image *canvas.Image, ca *app.CharacterAsset)) *CharacterAsset {
 	icon := iwidgets.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(typeIconSize))
-	w := &Asset{
+	w := &CharacterAsset{
 		icon:       icon,
 		label:      NewAssetLabel(),
 		iconLoader: iconLoader,
@@ -38,7 +39,7 @@ func NewAsset(iconLoader func(image *canvas.Image, ca *app.CharacterAsset)) *Ass
 	return w
 }
 
-func (o *Asset) Set(ca *app.CharacterAsset) {
+func (o *CharacterAsset) Set(ca *app.CharacterAsset) {
 	o.label.SetText(ca.DisplayName())
 	if !ca.IsSingleton {
 		o.badge.SetQuantity(int(ca.Quantity))
@@ -49,7 +50,7 @@ func (o *Asset) Set(ca *app.CharacterAsset) {
 	o.iconLoader(o.icon, ca)
 }
 
-func (o *Asset) CreateRenderer() fyne.WidgetRenderer {
+func (o *CharacterAsset) CreateRenderer() fyne.WidgetRenderer {
 	customVBox := layout.NewCustomPaddedVBoxLayout(0)
 	c := container.NewPadded(container.New(
 		customVBox,

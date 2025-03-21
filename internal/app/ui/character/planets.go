@@ -13,7 +13,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 )
 
 type CharacterPlanets struct {
@@ -50,13 +49,13 @@ func (a *CharacterPlanets) makeList() *widget.List {
 			return len(a.planets)
 		},
 		func() fyne.CanvasObject {
-			return appwidget.NewPlanet()
+			return NewPlanet()
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.planets) || id < 0 {
 				return
 			}
-			o := co.(*appwidget.Planet)
+			o := co.(*Planet)
 			p := a.planets[id]
 			o.Set(p)
 		},

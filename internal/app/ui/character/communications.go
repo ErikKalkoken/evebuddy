@@ -17,7 +17,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -127,14 +126,14 @@ func (a *CharacterCommunications) makeNotificationList() *widget.List {
 			return len(a.notifications)
 		},
 		func() fyne.CanvasObject {
-			return appwidget.NewMailHeaderItem(a.u.EveImageService())
+			return NewMailHeaderItem(a.u.EveImageService())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.notifications) {
 				return
 			}
 			n := a.notifications[id]
-			item := co.(*appwidget.MailHeaderItem)
+			item := co.(*MailHeaderItem)
 			item.Set(n.Sender, n.TitleDisplay(), n.Timestamp, n.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
@@ -270,7 +269,7 @@ func (a *CharacterCommunications) setDetail(n *app.CharacterNotification) {
 	subject := iwidget.NewLabelWithSize(n.TitleDisplay(), theme.SizeNameSubHeadingText)
 	subject.Wrapping = fyne.TextWrapWord
 	a.Detail.Add(subject)
-	h := appwidget.NewMailHeader(a.u.ShowEveEntityInfoWindow)
+	h := NewMailHeader(a.u.ShowEveEntityInfoWindow)
 	h.Set(a.u.EveImageService(), n.Sender, n.Timestamp, a.u.CurrentCharacter().EveCharacter.ToEveEntity())
 	a.Detail.Add(h)
 	s, err := n.BodyPlain() // using markdown blocked by #61

@@ -1,4 +1,4 @@
-package widget
+package character
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
@@ -16,7 +17,7 @@ type SkillQueueItem struct {
 	duration   *widget.Label
 	progress   *widget.ProgressBar
 	name       *widget.Label
-	skillLevel *SkillLevel
+	skillLevel *appwidget.SkillLevel
 	isMobile   bool
 }
 
@@ -28,7 +29,7 @@ func NewSkillQueueItem() *SkillQueueItem {
 		duration:   widget.NewLabel("duration"),
 		name:       name,
 		progress:   pb,
-		skillLevel: NewSkillLevel(),
+		skillLevel: appwidget.NewSkillLevel(),
 		isMobile:   fyne.CurrentDevice().IsMobile(),
 	}
 	w.ExtendBaseWidget(w)

@@ -18,7 +18,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -47,14 +46,14 @@ type DesktopUI interface {
 type StatusBar struct {
 	widget.BaseWidget
 
-	characterCount *appwidget.StatusBarItem
-	eveClock       *appwidget.StatusBarItem
-	eveStatus      *appwidget.StatusBarItem
+	characterCount *StatusBarItem
+	eveClock       *StatusBarItem
+	eveStatus      *StatusBarItem
 	eveStatusError string
 	infoText       *widget.Label
 	newVersionHint *fyne.Container
 	u              DesktopUI
-	updateStatus   *appwidget.StatusBarItem
+	updateStatus   *StatusBarItem
 }
 
 func NewStatusBar(u DesktopUI) *StatusBar {
@@ -64,18 +63,18 @@ func NewStatusBar(u DesktopUI) *StatusBar {
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
-	a.characterCount = appwidget.NewStatusBarItem(theme.AccountIcon(), "?", func() {
+	a.characterCount = NewStatusBarItem(theme.AccountIcon(), "?", func() {
 		u.ShowAccountWindow()
 	})
-	a.updateStatus = appwidget.NewStatusBarItem(theme.NewThemedResource(icons.UpdateSvg), "?", func() {
+	a.updateStatus = NewStatusBarItem(theme.NewThemedResource(icons.UpdateSvg), "?", func() {
 		u.ShowUpdateStatusWindow()
 	})
-	a.eveClock = appwidget.NewStatusBarItem(
+	a.eveClock = NewStatusBarItem(
 		theme.NewThemedResource(icons.AccesstimefilledSvg),
 		"?",
 		a.showClockDialog,
 	)
-	a.eveStatus = appwidget.NewStatusBarItem(theme.MediaRecordIcon(), "?", a.showEveStatusDialog)
+	a.eveStatus = NewStatusBarItem(theme.MediaRecordIcon(), "?", a.showEveStatusDialog)
 	return a
 }
 

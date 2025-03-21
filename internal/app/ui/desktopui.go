@@ -222,7 +222,7 @@ func NewDesktopUI(bui *BaseUI) *DesktopUI {
 
 	// system tray menu
 	if u.Settings().SysTrayEnabled() {
-		name := u.AppName()
+		name := u.appName()
 		item := fyne.NewMenuItem(name, nil)
 		item.Disabled = true
 		m := fyne.NewMenu(
@@ -242,7 +242,6 @@ func NewDesktopUI(bui *BaseUI) *DesktopUI {
 
 	menu := u.makeMenu()
 	u.MainWindow().SetMainMenu(menu)
-	u.MainWindow().SetMaster()
 	return u
 }
 
@@ -305,7 +304,7 @@ func (u *DesktopUI) showSettingsWindow() {
 		u.settingsWindow.Show()
 		return
 	}
-	w := u.App().NewWindow(u.MakeWindowTitle("Settings"))
+	w := u.App().NewWindow(u.makeWindowTitle("Settings"))
 	u.UserSettings.SetWindow(w)
 	w.SetContent(u.UserSettings)
 	w.Resize(fyne.Size{Width: 700, Height: 500})
@@ -316,7 +315,7 @@ func (u *DesktopUI) showSettingsWindow() {
 }
 
 func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-	title := u.MakeWindowTitle(fmt.Sprintf("New message [%s]", c.EveCharacter.Name))
+	title := u.makeWindowTitle(fmt.Sprintf("New message [%s]", c.EveCharacter.Name))
 	w := u.App().NewWindow(title)
 	page := character.NewSendMail(u, c, mode, mail)
 	send := widget.NewButtonWithIcon("Send", theme.MailSendIcon(), func() {
@@ -336,7 +335,7 @@ func (u *DesktopUI) ShowAccountWindow() {
 		u.accountWindow.Show()
 		return
 	}
-	w := u.App().NewWindow(u.MakeWindowTitle("Characters"))
+	w := u.App().NewWindow(u.makeWindowTitle("Characters"))
 	u.accountWindow = w
 	w.SetOnClosed(func() {
 		u.accountWindow = nil
@@ -362,7 +361,7 @@ func (u *DesktopUI) showSearchWindow() {
 	} else {
 		n = "No Character"
 	}
-	w := u.App().NewWindow(u.MakeWindowTitle(fmt.Sprintf("Search New Eden [%s]", n)))
+	w := u.App().NewWindow(u.makeWindowTitle(fmt.Sprintf("Search New Eden [%s]", n)))
 	u.searchWindow = w
 	w.SetOnClosed(func() {
 		u.searchWindow = nil
@@ -529,7 +528,7 @@ func (u *DesktopUI) disableMenuShortcuts() {
 }
 
 func (u *DesktopUI) showAboutDialog() {
-	d := dialog.NewCustom("About", "Close", u.MakeAboutPage(), u.MainWindow())
+	d := dialog.NewCustom("About", "Close", u.makeAboutPage(), u.MainWindow())
 	u.ModifyShortcutsForDialog(d, u.MainWindow())
 	d.Show()
 }
