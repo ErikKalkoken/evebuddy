@@ -54,20 +54,43 @@ A more detailed overview of the provided features:
   - Assets search: Full asset search across all your characters
   - Show list of all planetary industry colonies
   - Wealth: Charts showing wealth distribution across all characters
-- Can minimize to system tray and show indicator for new mail (desktop only)
 - Get notified about important events (e.g. structure attacked, training queue expired)
 - Ability to search New Eden (similar to in-game search bar)
+- Show information about various entities (e.g. character, alliance, location); similar to in-game information windows
+- Can minimize to system tray and show indicator for new mail (desktop only)
 - Available for desktop (Windows, macOS, Linux) and mobile (Android)
 - Automatic dark and light theme
 - Offline mode
 
 ## Highlights
 
-### Asset browser for each character
+### Asset search across all characters
 
-You can browse the assets of a character by location. The view by location is similar to the in-game view when docked.
+You can search for assets across all characters.
 
-![Screenshot from 2024-11-10 16-53-30](https://github.com/user-attachments/assets/9c4991ab-406a-44cd-9a18-fec1c10c1a42)
+![Screenshot from 2024-11-10 16-52-07](https://github.com/user-attachments/assets/c40f3b7f-279f-4b3c-9135-0c3b043ee0d9)
+
+### Notifications
+
+EVE Buddy can send notifications on your local device to notify about new communications, mails, expired training queues and more.
+
+![Screenshot from 2024-11-10 17-18-27](https://github.com/user-attachments/assets/0a05ddec-bf31-42c6-a1f1-c2661bd12c49)
+
+### Jump clones
+
+See available jump clones and when the next clone jump is available for a character:
+
+![Screenshot from 2025-03-14 17-02-09](https://github.com/user-attachments/assets/96ca85b1-0e4b-447b-89f2-ae14521aae1e)
+
+### New Eden search
+
+You search the live game server for entities, similar to the in-game search bar:
+
+![Screenshot from 2025-03-17 22-10-43](https://github.com/user-attachments/assets/b182033d-9f03-447b-a812-e1ad363f0893)
+
+### Info windows
+
+Open information windows for many entities for additional information, similar to the info windows in the game client:
 
 ### Full mail client
 
@@ -75,23 +98,11 @@ You can receive, send and delete eve mails. Similar to the in-game mail client.
 
 ![Screenshot from 2024-11-10 16-52-55](https://github.com/user-attachments/assets/d7b226c5-1355-4b99-bef7-e0a3b1e75cd6)
 
-### Planetary Industry
+### Asset browser for each character
 
-You can see the current status of your PI colonies. And you can also get notifications when an extraction has expired.
+You can browse the assets of a character by location. The view by location is similar to the in-game view when docked.
 
-![Screenshot from 2024-12-04 15-15-32](https://github.com/user-attachments/assets/a866bd0c-e18a-46b5-a99e-bc94520e3295)
-
-### Overview of all characters
-
-The overview pages gives you key information about all you characters at a glance.
-
-![Screenshot from 2024-11-10 16-54-22](https://github.com/user-attachments/assets/10838273-3a75-4160-aabf-5cc895bde1c4)
-
-### Asset search across all characters
-
-You can search for assets across all characters.
-
-![Screenshot from 2024-11-10 16-52-07](https://github.com/user-attachments/assets/c40f3b7f-279f-4b3c-9135-0c3b043ee0d9)
+![Screenshot from 2024-11-10 16-53-30](https://github.com/user-attachments/assets/9c4991ab-406a-44cd-9a18-fec1c10c1a42)
 
 ### Colonies of all characters
 
@@ -104,12 +115,6 @@ You can see all colonies used for planetey industry from all your characters at 
 The wealth page gives you a graphical overview of your total wealth (= wallets + asset value) and contains breakdowns that help you better understand the structure of your wealth.
 
 ![Screenshot from 2024-11-10 16-54-56](https://github.com/user-attachments/assets/3d26e44f-cdc7-45fe-a441-4ed982662fa7)
-
-### Notifications
-
-EVE Buddy can send notifications on your local device to notify about new communications, mails, expired training queues and more.
-
-![Screenshot from 2024-11-10 17-18-27](https://github.com/user-attachments/assets/0a05ddec-bf31-42c6-a1f1-c2661bd12c49)
 
 ### Mobile version
 
