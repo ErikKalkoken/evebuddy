@@ -39,7 +39,7 @@ type UserSettings struct {
 	OnCommunicationGroupSelected func(title string, content fyne.CanvasObject, actions []app.SettingAction)
 
 	showSnackbar func(string)
-	snackbar     *iwidget.Snackbar
+	sb           *iwidget.Snackbar
 	u            app.UI
 	window       fyne.Window
 }
@@ -83,13 +83,13 @@ func (a *UserSettings) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *UserSettings) SetWindow(w fyne.Window) {
 	a.window = w
-	if a.snackbar != nil {
-		a.snackbar.Stop()
+	if a.sb != nil {
+		a.sb.Stop()
 	}
-	a.snackbar = iwidget.NewSnackbar(w)
-	a.snackbar.Start()
+	a.sb = iwidget.NewSnackbar(w)
+	a.sb.Start()
 	a.showSnackbar = func(s string) {
-		a.snackbar.Show(s)
+		a.showSnackbar(s)
 	}
 }
 
@@ -242,7 +242,7 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []app.Setti
 		},
 	}
 	deleteCrashLog := app.SettingAction{
-		Label: "Delete creash log",
+		Label: "Delete crash log",
 		Action: func() {
 			a.showDeleteFileDialog("crash log", a.u.DataPaths()["crashfile"])
 		},
@@ -283,10 +283,10 @@ func (a *UserSettings) showDeleteFileDialog(name, path string) {
 			}()
 			if err != nil {
 				slog.Error("delete "+name, "path", path, "error", err)
-				a.snackbar.Show("ERROR: Failed to delete " + name)
+				a.showSnackbar("ERROR: Failed to delete " + name)
 			} else {
 				titler := cases.Title(language.English)
-				a.snackbar.Show(titler.String(name) + " deleted")
+				a.showSnackbar(titler.String(name) + " deleted")
 			}
 		}, a.window)
 }
@@ -295,7 +295,7 @@ func (a *UserSettings) showExportFileDialog(path string) {
 	filename := filepath.Base(path)
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
-		a.snackbar.Show("No file to export: " + filename)
+		a.showSnackbar("No file to export: " + filename)
 		return
 	} else if err != nil {
 		a.u.ShowErrorDialog("Failed to open "+filename, err, a.window)
@@ -314,7 +314,7 @@ func (a *UserSettings) showExportFileDialog(path string) {
 				if _, err := writer.Write(data); err != nil {
 					return err
 				}
-				a.snackbar.Show("File " + filename + " exported")
+				a.showSnackbar("File " + filename + " exported")
 				return nil
 			}()
 			if err2 != nil {

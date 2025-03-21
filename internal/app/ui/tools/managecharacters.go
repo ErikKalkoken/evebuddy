@@ -35,13 +35,13 @@ type ManageCharacters struct {
 	OnSelectCharacter func()
 	OnUpdate          func(characterCount int)
 
-	showSnackbar func(string)
-	snackbar     *iwidget.Snackbar
 	characters   []accountCharacter
 	list         *widget.List
+	sb           *iwidget.Snackbar
+	showSnackbar func(string)
 	title        *widget.Label
-	window       fyne.Window
 	u            app.UI
+	window       fyne.Window
 }
 
 func NewManageCharacters(u app.UI) *ManageCharacters {
@@ -88,13 +88,13 @@ func (a *ManageCharacters) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *ManageCharacters) SetWindow(w fyne.Window) {
 	a.window = w
-	if a.snackbar != nil {
-		a.snackbar.Stop()
+	if a.sb != nil {
+		a.sb.Stop()
 	}
-	a.snackbar = iwidget.NewSnackbar(w)
-	a.snackbar.Start()
+	a.sb = iwidget.NewSnackbar(w)
+	a.sb.Start()
 	a.showSnackbar = func(s string) {
-		a.snackbar.Show(s)
+		a.sb.Show(s)
 	}
 }
 
