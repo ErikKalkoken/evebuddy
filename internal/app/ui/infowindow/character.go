@@ -23,10 +23,11 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
-// characterArea represents an area that shows public information about a character.
-type characterArea struct {
-	Content fyne.CanvasObject
+// characterInfo shows public information about a character.
+type characterInfo struct {
+	widget.BaseWidget
 
+	id              int32
 	alliance        *kxwidget.TappableLabel
 	name            *widget.Label
 	corporationLogo *canvas.Image
@@ -40,23 +41,24 @@ type characterArea struct {
 	w               fyne.Window
 }
 
-func newCharacterArea(iw InfoWindow, characterID int32, w fyne.Window) *characterArea {
+func newCharacterInfo(iw InfoWindow, characterID int32, w fyne.Window) *characterInfo {
 	alliance := kxwidget.NewTappableLabel("", nil)
-	alliance.Truncation = fyne.TextTruncateEllipsis
+	alliance.Wrapping = fyne.TextWrapWord
 	name := widget.NewLabel("")
-	name.Truncation = fyne.TextTruncateEllipsis
+	name.Wrapping = fyne.TextWrapWord
 	corporation := kxwidget.NewTappableLabel("", nil)
-	corporation.Truncation = fyne.TextTruncateEllipsis
+	corporation.Wrapping = fyne.TextWrapWord
 	portrait := kxwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
 	portrait.SetMinSize(fyne.NewSquareSize(128))
 	title := widget.NewLabel("")
-	title.Truncation = fyne.TextTruncateEllipsis
-	a := &characterArea{
+	title.Wrapping = fyne.TextWrapWord
+	a := &characterInfo{
 		alliance:        alliance,
 		corporation:     corporation,
 		corporationLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		iw:              iw,
+		id:              characterID,
 		membership:      widget.NewLabel(""),
 		name:            name,
 		portrait:        portrait,
@@ -65,6 +67,11 @@ func newCharacterArea(iw InfoWindow, characterID int32, w fyne.Window) *characte
 		title:           title,
 		w:               w,
 	}
+	a.ExtendBaseWidget(a)
+	return a
+}
+
+func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	main := container.NewVBox(
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
@@ -89,31 +96,31 @@ func newCharacterArea(iw InfoWindow, characterID int32, w fyne.Window) *characte
 		),
 	)
 	top := container.NewBorder(nil, nil, container.NewVBox(a.portrait), nil, main)
-	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
+	c := container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
-		err := a.load(characterID)
+		err := a.load(a.id)
 		if err != nil {
-			slog.Error("character info update failed", "character", characterID, "error", err)
+			slog.Error("character info update failed", "character", a.id, "error", err)
 			a.name.Text = fmt.Sprintf("ERROR: Failed to load character: %s", ihumanize.Error(err))
 			a.name.Importance = widget.DangerImportance
 			a.name.Refresh()
 		}
 	}()
-	return a
+	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterArea) load(characterID int32) error {
+func (a *characterInfo) load(characterID int32) error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.iw.eis.CharacterPortrait(characterID, 256)
+		r, err := a.iw.u.EveImageService().CharacterPortrait(characterID, 256)
 		if err != nil {
 			slog.Error("character info: Failed to load portrait", "charaterID", characterID, "error", err)
 			return
 		}
 		a.portrait.SetResource(r)
 	}()
-	o, err := a.iw.eus.GetEveCharacterESI(ctx, characterID)
+	o, err := a.iw.u.EveUniverseService().GetCharacterESI(ctx, characterID)
 	if err != nil {
 		return err
 	}
@@ -132,7 +139,7 @@ func (a *characterArea) load(characterID int32) error {
 		a.iw.ShowEveEntity(o.Corporation)
 	}
 	a.portrait.OnTapped = func() {
-		go a.iw.showZoomWindow(o.Name, characterID, a.iw.eis.CharacterPortrait, a.w)
+		go a.iw.showZoomWindow(o.Name, characterID, a.iw.u.EveImageService().CharacterPortrait, a.w)
 	}
 	if s := o.DescriptionPlain(); s != "" {
 		bio := widget.NewLabel(s)
@@ -153,7 +160,7 @@ func (a *characterArea) load(characterID int32) error {
 		NewAtributeItem("Corporation", o.Corporation),
 		NewAtributeItem("Race", o.Race.Name),
 	}
-	if a.iw.isDeveloperMode {
+	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
 			a.w.Clipboard().SetContent(fmt.Sprint(o.ID))
@@ -166,7 +173,7 @@ func (a *characterArea) load(characterID int32) error {
 	a.tabs.Append(attributesTab)
 	a.tabs.Refresh()
 	go func() {
-		r, err := a.iw.eis.CorporationLogo(o.Corporation.ID, app.IconPixelSize)
+		r, err := a.iw.u.EveImageService().CorporationLogo(o.Corporation.ID, app.IconPixelSize)
 		if err != nil {
 			slog.Error("character info: Failed to load corp logo", "charaterID", characterID, "error", err)
 			return
@@ -175,7 +182,7 @@ func (a *characterArea) load(characterID int32) error {
 		a.corporationLogo.Refresh()
 	}()
 	go func() {
-		history, err := a.iw.eus.GetCharacterCorporationHistory(ctx, characterID)
+		history, err := a.iw.u.EveUniverseService().GetCharacterCorporationHistory(ctx, characterID)
 		if err != nil {
 			slog.Error("character info: Failed to load corporation history", "charaterID", characterID, "error", err)
 			return
@@ -188,7 +195,7 @@ func (a *characterArea) load(characterID int32) error {
 		duration := humanize.RelTime(current.StartDate, time.Now(), "", "")
 		a.membership.SetText(fmt.Sprintf("for %s", duration))
 		items := slices.Collect(xiter.MapSlice(history, historyItem2EntityItem))
-		historyList := NewEntityListFromItems(a.iw.Show, items...)
+		historyList := NewEntityListFromItems(a.iw.show, items...)
 		a.tabs.Append(container.NewTabItem("Employment History", historyList))
 		a.tabs.Refresh()
 	}()

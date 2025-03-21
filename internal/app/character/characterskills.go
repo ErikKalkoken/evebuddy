@@ -15,7 +15,7 @@ import (
 func (s *CharacterService) GetCharacterSkill(ctx context.Context, characterID, typeID int32) (*app.CharacterSkill, error) {
 	o, err := s.st.GetCharacterSkill(ctx, characterID, typeID)
 	if errors.Is(err, storage.ErrNotFound) {
-		return nil, ErrNotFound
+		return nil, app.ErrNotFound
 	}
 	return o, err
 }
@@ -28,7 +28,7 @@ func (s *CharacterService) ListCharacterSkillGroupsProgress(ctx context.Context,
 	return s.st.ListCharacterSkillGroupsProgress(ctx, characterID)
 }
 
-func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionSkills {
 		panic("called with wrong section")
 	}
@@ -56,7 +56,7 @@ func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg Upd
 			incomingSkillIDs := set.New[int32]()
 			for _, o := range skills.Skills {
 				incomingSkillIDs.Add(o.SkillId)
-				_, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, o.SkillId)
+				_, err := s.EveUniverseService.GetOrCreateTypeESI(ctx, o.SkillId)
 				if err != nil {
 					return err
 				}

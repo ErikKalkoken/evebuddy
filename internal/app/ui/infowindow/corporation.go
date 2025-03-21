@@ -22,9 +22,11 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-// corporationArea represents an area that shows public information about a character.
-type corporationArea struct {
-	Content      fyne.CanvasObject
+// corporationInfo shows public information about a character.
+type corporationInfo struct {
+	widget.BaseWidget
+
+	id           int32
 	iw           InfoWindow
 	alliance     *kxwidget.TappableLabel
 	allianceLogo *canvas.Image
@@ -35,16 +37,17 @@ type corporationArea struct {
 	w            fyne.Window
 }
 
-func newCorporationArea(iw InfoWindow, corporationID int32, w fyne.Window) *corporationArea {
+func newCorporationInfo(iw InfoWindow, id int32, w fyne.Window) *corporationInfo {
 	alliance := kxwidget.NewTappableLabel("", nil)
-	alliance.Truncation = fyne.TextTruncateEllipsis
+	alliance.Wrapping = fyne.TextWrapWord
 	name := widget.NewLabel("")
-	name.Truncation = fyne.TextTruncateEllipsis
+	name.Wrapping = fyne.TextWrapWord
 	hq := kxwidget.NewTappableLabel("", nil)
-	hq.Truncation = fyne.TextTruncateEllipsis
+	hq.Wrapping = fyne.TextWrapWord
 	s := float32(app.IconPixelSize) * logoZoomFactor
 	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(s))
-	a := &corporationArea{
+	a := &corporationInfo{
+		id:           id,
 		alliance:     alliance,
 		allianceLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		name:         name,
@@ -54,6 +57,11 @@ func newCorporationArea(iw InfoWindow, corporationID int32, w fyne.Window) *corp
 		iw:           iw,
 		w:            w,
 	}
+	a.ExtendBaseWidget(a)
+	return a
+}
+
+func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	main := container.NewVBox(
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
@@ -69,24 +77,24 @@ func newCorporationArea(iw InfoWindow, corporationID int32, w fyne.Window) *corp
 		),
 	)
 	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, main)
-	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
+	c := container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
-		err := a.load(corporationID)
+		err := a.load(a.id)
 		if err != nil {
-			slog.Error("corporation info update failed", "corporation", corporationID, "error", err)
+			slog.Error("corporation info update failed", "corporation", a.id, "error", err)
 			a.name.Text = fmt.Sprintf("ERROR: Failed to load corporation: %s", ihumanize.Error(err))
 			a.name.Importance = widget.DangerImportance
 			a.name.Refresh()
 		}
 	}()
-	return a
+	return widget.NewSimpleRenderer(c)
 }
 
-func (a *corporationArea) load(corporationID int32) error {
+func (a *corporationInfo) load(corporationID int32) error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.iw.eis.CorporationLogo(corporationID, app.IconPixelSize)
+		r, err := a.iw.u.EveImageService().CorporationLogo(corporationID, app.IconPixelSize)
 		if err != nil {
 			slog.Error("corporation info: Failed to load logo", "corporationID", corporationID, "error", err)
 			return
@@ -94,7 +102,7 @@ func (a *corporationArea) load(corporationID int32) error {
 		a.logo.Resource = r
 		a.logo.Refresh()
 	}()
-	o, err := a.iw.eus.GetEveCorporationESI(ctx, corporationID)
+	o, err := a.iw.u.EveUniverseService().GetCorporationESI(ctx, corporationID)
 	if err != nil {
 		return err
 	}
@@ -105,7 +113,7 @@ func (a *corporationArea) load(corporationID int32) error {
 			a.iw.ShowEveEntity(o.Alliance)
 		}
 		go func() {
-			r, err := a.iw.eis.AllianceLogo(o.Alliance.ID, app.IconPixelSize)
+			r, err := a.iw.u.EveImageService().AllianceLogo(o.Alliance.ID, app.IconPixelSize)
 			if err != nil {
 				slog.Error("corporation info: Failed to load alliance logo", "allianceID", o.Alliance.ID, "error", err)
 				return
@@ -163,7 +171,7 @@ func (a *corporationArea) load(corporationID int32) error {
 			attributes = append(attributes, NewAtributeItem("URL", u))
 		}
 	}
-	if a.iw.isDeveloperMode {
+	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
 			a.w.Clipboard().SetContent(fmt.Sprint(o.ID))
@@ -176,7 +184,7 @@ func (a *corporationArea) load(corporationID int32) error {
 	a.tabs.Append(attributesTab)
 	a.tabs.Select(attributesTab)
 	go func() {
-		history, err := a.iw.eus.GetCorporationAllianceHistory(ctx, corporationID)
+		history, err := a.iw.u.EveUniverseService().GetCorporationAllianceHistory(ctx, corporationID)
 		if err != nil {
 			slog.Error("corporation info: Failed to load alliance history", "corporationID", corporationID, "error", err)
 			return
@@ -195,9 +203,9 @@ func (a *corporationArea) load(corporationID int32) error {
 			0,
 			"Corporation Founded",
 			fmt.Sprintf("**%s**", oldest.StartDate.Format(app.DateFormat)),
-			NotSupported,
+			infoNotSupported,
 		))
-		historyList := NewEntityListFromItems(a.iw.Show, items...)
+		historyList := NewEntityListFromItems(a.iw.show, items...)
 		a.tabs.Append(container.NewTabItem("Alliance History", historyList))
 		a.tabs.Refresh()
 	}()

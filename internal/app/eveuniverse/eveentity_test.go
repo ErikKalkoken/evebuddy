@@ -29,7 +29,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		httpmock.Reset()
 		e1 := factory.CreateEveEntityCharacter()
 		// when
-		ids, err := s.AddMissingEveEntities(ctx, []int32{e1.ID})
+		ids, err := s.AddMissingEntities(ctx, []int32{e1.ID})
 		// then
 		assert.Equal(t, 0, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
@@ -55,7 +55,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 			},
 		)
 		// when
-		ids, err := s.AddMissingEveEntities(ctx, []int32{47})
+		ids, err := s.AddMissingEntities(ctx, []int32{47})
 		// then
 		assert.Equal(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
@@ -73,7 +73,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		// when
-		_, err := s.AddMissingEveEntities(ctx, []int32{47})
+		_, err := s.AddMissingEntities(ctx, []int32{47})
 		// then
 		assert.Error(t, err)
 	})
@@ -97,7 +97,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 			},
 		)
 		// when
-		ids, err := s.AddMissingEveEntities(ctx, []int32{47, e1.ID})
+		ids, err := s.AddMissingEntities(ctx, []int32{47, e1.ID})
 		// then
 		assert.Equal(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
@@ -133,7 +133,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 			},
 		)
 		// when
-		missing, err := s.AddMissingEveEntities(ctx, ids)
+		missing, err := s.AddMissingEntities(ctx, ids)
 		// then
 		assert.Equal(t, 2, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
@@ -152,7 +152,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		httpmock.RegisterResponder("POST", "https://esi.evetech.net/v3/universe/names/",
 			httpmock.NewStringResponder(404, ""))
 		// when
-		ids, err := s.AddMissingEveEntities(ctx, []int32{666})
+		ids, err := s.AddMissingEntities(ctx, []int32{666})
 		// then
 		assert.GreaterOrEqual(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
@@ -172,7 +172,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		httpmock.RegisterResponder("POST", "https://esi.evetech.net/v3/universe/names/",
 			httpmock.NewStringResponder(404, ""))
 		// when
-		ids, err := s.AddMissingEveEntities(ctx, []int32{1})
+		ids, err := s.AddMissingEntities(ctx, []int32{1})
 		// then
 		assert.GreaterOrEqual(t, 0, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
@@ -192,7 +192,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		httpmock.RegisterResponder("POST", "https://esi.evetech.net/v3/universe/names/",
 			httpmock.NewStringResponder(404, ""))
 		// when
-		ids, err := s.AddMissingEveEntities(ctx, []int32{0})
+		ids, err := s.AddMissingEntities(ctx, []int32{0})
 		// then
 		assert.GreaterOrEqual(t, 0, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
@@ -227,7 +227,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 			httpmock.BodyContainsString("666"),
 			httpmock.NewStringResponder(404, `{"error":"Invalid ID"}`))
 		// when
-		_, err := s.AddMissingEveEntities(ctx, []int32{47, 666})
+		_, err := s.AddMissingEntities(ctx, []int32{47, 666})
 		// then
 		assert.LessOrEqual(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {

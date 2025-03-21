@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -34,7 +33,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []int32{et.ID}))
 		// when
 		changed, err := s.UpdateSectionIfNeeded(
-			ctx, character.UpdateSectionParams{CharacterID: c.ID, Section: section})
+			ctx, app.CharacterUpdateSectionParams{CharacterID: c.ID, Section: section})
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
@@ -63,7 +62,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
 		changed, err := s.UpdateSectionIfNeeded(
-			ctx, character.UpdateSectionParams{CharacterID: c.ID, Section: section})
+			ctx, app.CharacterUpdateSectionParams{CharacterID: c.ID, Section: section})
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, changed)
@@ -95,7 +94,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []int32{et.ID}))
 		// when
 		changed, err := s.UpdateSectionIfNeeded(
-			ctx, character.UpdateSectionParams{
+			ctx, app.CharacterUpdateSectionParams{
 				CharacterID: c.ID,
 				Section:     section,
 			})
@@ -121,7 +120,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(500, map[string]string{"error": "dummy error"}))
 		// when
 		_, err := s.UpdateSectionIfNeeded(
-			ctx, character.UpdateSectionParams{CharacterID: c.ID, Section: section})
+			ctx, app.CharacterUpdateSectionParams{CharacterID: c.ID, Section: section})
 		// then
 		if assert.Error(t, err) {
 			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
@@ -148,7 +147,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []int32{et.ID}))
 		// when
 		_, err := s.UpdateSectionIfNeeded(
-			ctx, character.UpdateSectionParams{
+			ctx, app.CharacterUpdateSectionParams{
 				CharacterID: c.ID,
 				Section:     section,
 				ForceUpdate: true,
@@ -181,7 +180,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
 		_, err := s.UpdateSectionIfNeeded(
-			ctx, character.UpdateSectionParams{
+			ctx, app.CharacterUpdateSectionParams{
 				CharacterID: c.ID,
 				Section:     section,
 				ForceUpdate: true,

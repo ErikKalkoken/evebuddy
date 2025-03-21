@@ -139,7 +139,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		httpmock.Reset()
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
 		// when
-		x1, err := s.GetOrCreateEveTypeESI(ctx, 587)
+		x1, err := s.GetOrCreateTypeESI(ctx, 587)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(587), x1.ID)
@@ -185,7 +185,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		x1, err := s.GetOrCreateEveTypeESI(ctx, 587)
+		x1, err := s.GetOrCreateTypeESI(ctx, 587)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(587), x1.ID)
@@ -256,7 +256,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data3).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		x1, err := s.GetOrCreateEveTypeESI(ctx, 587)
+		x1, err := s.GetOrCreateTypeESI(ctx, 587)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(587), x1.ID)

@@ -35,8 +35,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	uidesktop "github.com/ErikKalkoken/evebuddy/internal/app/ui/desktop"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/mobile"
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
@@ -107,10 +105,9 @@ func main() {
 
 	// set log level from settings
 	if *logLevelFlag == "" {
-		ln := fyneApp.Preferences().StringWithFallback(ui.SettingLogLevel, ui.SettingLogLevelDefault)
-		l := ui.LogLevelName2Level(ln)
-		if l != logLevelDefault {
-			slog.Info("Setting log level", "level", ln)
+		s := ui.NewAppSettings(fyneApp.Preferences())
+		if l := s.LogLevelSlog(); l != logLevelDefault {
+			slog.Info("Setting log level", "level", l)
 			slog.SetLogLoggerLevel(l)
 		}
 	}
@@ -210,24 +207,24 @@ func main() {
 	esiClient := goesi.NewAPIClient(rhc.StandardClient(), userAgent)
 
 	// Init StatusCache service
-	sc := statuscache.New(memCache)
-	if err := sc.InitCache(context.TODO(), st); err != nil {
+	scs := statuscache.New(memCache)
+	if err := scs.InitCache(context.TODO(), st); err != nil {
 		slog.Error("Failed to init cache", "error", err)
 		os.Exit(1)
 	}
 	// Init EveUniverse service
-	eu := eveuniverse.New(st, esiClient)
-	eu.StatusCacheService = sc
+	eus := eveuniverse.New(st, esiClient)
+	eus.StatusCacheService = scs
 
 	// Init EveNotification service
 	en := evenotification.New()
-	en.EveUniverseService = eu
+	en.EveUniverseService = eus
 
 	// Init Character service
 	cs := character.New(st, rhc.StandardClient(), esiClient)
 	cs.EveNotificationService = en
-	cs.EveUniverseService = eu
-	cs.StatusCacheService = sc
+	cs.EveUniverseService = eus
+	cs.StatusCacheService = scs
 	ssoService := sso.New(ssoClientID, rhc.StandardClient())
 	ssoService.OpenURL = fyneApp.OpenURL
 	cs.SSOService = ssoService
@@ -235,33 +232,27 @@ func main() {
 	// Init UI
 	ess := esistatus.New(esiClient)
 	eis := eveimage.New(pc, rhc.StandardClient(), *offlineFlag)
-	bu := ui.NewBaseUI(fyneApp)
-	bu.ClearCache = func() {
-		pc.Clear()
-		memCache.Clear()
-	}
-	bu.CharacterService = cs
-	bu.ESIStatusService = ess
-	bu.EveImageService = eis
-	bu.EveUniverseService = eu
-	bu.MemCache = memCache
-	bu.StatusCacheService = sc
-	bu.IsOffline = *offlineFlag
-	bu.IsUpdateTickerDisabled = *disableUpdatesFlag
-	bu.DataPaths = map[string]string{
-		"db":        dbPath,
-		"log":       logFilePath,
-		"crashfile": crashFilePath,
-	}
+	bu := ui.NewBaseUI(
+		fyneApp, cs, eis, ess, eus, scs, memCache, *offlineFlag, *disableUpdatesFlag,
+		map[string]string{
+			"db":        dbPath,
+			"log":       logFilePath,
+			"crashfile": crashFilePath,
+		},
+		func() {
+			pc.Clear()
+			memCache.Clear()
+		},
+	)
 	if isDesktop {
-		u := uidesktop.NewDesktopUI(bu)
+		u := ui.NewDesktopUI(bu)
 		u.Init()
 		if *resetSettingsFlag {
 			u.ResetDesktopSettings()
 		}
 		u.ShowAndRun()
 	} else {
-		u := mobile.NewMobileUI(bu)
+		u := ui.NewMobileUI(bu)
 		u.Init()
 		u.ShowAndRun()
 	}

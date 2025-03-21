@@ -16,10 +16,9 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	ilayout "github.com/ErikKalkoken/evebuddy/internal/layout"
@@ -43,10 +42,11 @@ type requiredSkill struct {
 	trainedLevel  int
 }
 
-// inventoryTypeArea represents a UI component to display information about Eve Online inventory types
-type inventoryTypeArea struct {
-	Content fyne.CanvasObject
+// inventoryTypeInfo displays information about Eve Online inventory types
+type inventoryTypeInfo struct {
+	widget.BaseWidget
 
+	id             int32
 	attributesData []attributeRow
 	et             *app.EveType
 	fittingData    []attributeRow
@@ -60,15 +60,16 @@ type inventoryTypeArea struct {
 	w  fyne.Window
 }
 
-func NewInventoryTypeArea(iw InfoWindow, typeID, characterID int32, w fyne.Window) (*inventoryTypeArea, error) {
+func NewInventoryTypeInfo(iw InfoWindow, typeID, characterID int32, w fyne.Window) (*inventoryTypeInfo, error) {
 	ctx := context.Background()
-	a := &inventoryTypeArea{iw: iw, w: w}
-	et, err := iw.eus.GetOrCreateEveTypeESI(ctx, typeID)
+	a := &inventoryTypeInfo{iw: iw, w: w, id: typeID}
+	a.ExtendBaseWidget(a)
+	et, err := iw.u.EveUniverseService().GetOrCreateTypeESI(ctx, typeID)
 	if err != nil {
 		return nil, err
 	}
 	a.et = et
-	owner, err := iw.eus.GetOrCreateEveEntityESI(ctx, characterID)
+	owner, err := iw.u.EveUniverseService().GetOrCreateEntityESI(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +77,7 @@ func NewInventoryTypeArea(iw InfoWindow, typeID, characterID int32, w fyne.Windo
 	if a.et == nil {
 		return nil, nil
 	}
-	p, err := iw.eus.GetEveMarketPrice(ctx, a.et.ID)
+	p, err := iw.u.EveUniverseService().GetMarketPrice(ctx, a.et.ID)
 	if errors.Is(err, eveuniverse.ErrNotFound) {
 		p = nil
 	} else if err != nil {
@@ -86,7 +87,7 @@ func NewInventoryTypeArea(iw InfoWindow, typeID, characterID int32, w fyne.Windo
 	} else {
 		a.price = nil
 	}
-	oo, err := iw.eus.ListEveTypeDogmaAttributesForType(ctx, a.et.ID)
+	oo, err := iw.u.EveUniverseService().ListTypeDogmaAttributesForType(ctx, a.et.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -104,11 +105,39 @@ func NewInventoryTypeArea(iw InfoWindow, typeID, characterID int32, w fyne.Windo
 		a.requiredSkills = skills
 	}
 	a.techLevel, a.metaLevel = calcLevels(attributes)
-	a.Content = a.makeContent()
 	return a, nil
 }
 
-func (a *inventoryTypeArea) MakeTitle(suffix string) string {
+func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
+	top := a.makeTop()
+	t := container.NewTabItem("Description", a.makeDescriptionTab())
+	tabs := container.NewAppTabs(t)
+	var attributeTab, requirementsTab *container.TabItem
+	if len(a.attributesData) > 0 {
+		attributeTab = container.NewTabItem("Attributes", a.makeAttributesTab())
+		tabs.Append(attributeTab)
+	}
+	if len(a.fittingData) > 0 {
+		tabs.Append(container.NewTabItem("Fittings", a.makeFittingsTab()))
+	}
+	if len(a.requiredSkills) > 0 {
+		requirementsTab = container.NewTabItem("Requirements", a.makeRequirementsTab())
+		tabs.Append(requirementsTab)
+	}
+	if a.price != nil {
+		tabs.Append(container.NewTabItem("Market", a.makeMarketTab()))
+	}
+	// Select selected tab
+	if requirementsTab != nil && a.et.Group.Category.ID == app.EveCategorySkill {
+		tabs.Select(requirementsTab)
+	} else if attributeTab != nil {
+		tabs.Select(attributeTab)
+	}
+	c := container.NewBorder(top, nil, nil, nil, tabs)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *inventoryTypeInfo) MakeTitle(suffix string) string {
 	return fmt.Sprintf("%s: %s", a.et.Group.Name, suffix)
 }
 
@@ -125,7 +154,7 @@ func calcLevels(attributes map[int32]*app.EveTypeDogmaAttribute) (int, int) {
 	return tech, meta
 }
 
-func (a *inventoryTypeArea) calcAttributesData(
+func (a *inventoryTypeInfo) calcAttributesData(
 	ctx context.Context,
 	attributes map[int32]*app.EveTypeDogmaAttribute,
 ) []attributeRow {
@@ -183,7 +212,7 @@ func (a *inventoryTypeArea) calcAttributesData(
 				x := attributes[app.EveDogmaAttributeWarpSpeedMultiplier]
 				value = value * x.Value
 			}
-			v, substituteIcon := a.iw.eus.FormatValue(ctx, value, o.DogmaAttribute.Unit)
+			v, substituteIcon := a.iw.u.EveUniverseService().FormatDogmaValue(ctx, value, o.DogmaAttribute.Unit)
 			var iconID int32
 			if substituteIcon != 0 {
 				iconID = substituteIcon
@@ -200,9 +229,9 @@ func (a *inventoryTypeArea) calcAttributesData(
 	}
 	rows := make([]attributeRow, 0)
 	if a.et.Volume > 0 {
-		v, _ := a.iw.eus.FormatValue(ctx, a.et.Volume, app.EveUnitVolume)
+		v, _ := a.iw.u.EveUniverseService().FormatDogmaValue(ctx, a.et.Volume, app.EveUnitVolume)
 		if a.et.Volume != a.et.PackagedVolume {
-			v2, _ := a.iw.eus.FormatValue(ctx, a.et.PackagedVolume, app.EveUnitVolume)
+			v2, _ := a.iw.u.EveUniverseService().FormatDogmaValue(ctx, a.et.PackagedVolume, app.EveUnitVolume)
 			v += fmt.Sprintf(" (%s Packaged)", v2)
 		}
 		r := attributeRow{
@@ -232,7 +261,7 @@ func (a *inventoryTypeArea) calcAttributesData(
 			rows = append(rows, groupedRows[ag]...)
 		}
 	}
-	if a.iw.isDeveloperMode {
+	if a.iw.u.IsDeveloperMode() {
 		rows = append(rows, attributeRow{label: "Developer Mode", isTitle: true})
 		rows = append(rows, attributeRow{
 			label: "EVE ID",
@@ -245,7 +274,7 @@ func (a *inventoryTypeArea) calcAttributesData(
 	return rows
 }
 
-func (a *inventoryTypeArea) calcFittingData(ctx context.Context, attributes map[int32]*app.EveTypeDogmaAttribute) []attributeRow {
+func (a *inventoryTypeInfo) calcFittingData(ctx context.Context, attributes map[int32]*app.EveTypeDogmaAttribute) []attributeRow {
 	data := make([]attributeRow, 0)
 	for _, da := range attributeGroupsMap[attributeGroupFitting] {
 		o, ok := attributes[da]
@@ -254,7 +283,7 @@ func (a *inventoryTypeArea) calcFittingData(ctx context.Context, attributes map[
 		}
 		iconID := o.DogmaAttribute.IconID
 		r, _ := eveicon.GetResourceByIconID(iconID)
-		v, _ := a.iw.eus.FormatValue(ctx, o.Value, o.DogmaAttribute.Unit)
+		v, _ := a.iw.u.EveUniverseService().FormatDogmaValue(ctx, o.Value, o.DogmaAttribute.Unit)
 		data = append(data, attributeRow{
 			icon:  r,
 			label: o.DogmaAttribute.DisplayName,
@@ -264,7 +293,7 @@ func (a *inventoryTypeArea) calcFittingData(ctx context.Context, attributes map[
 	return data
 }
 
-func (a *inventoryTypeArea) calcRequiredSkills(ctx context.Context, characterID int32, attributes map[int32]*app.EveTypeDogmaAttribute) ([]requiredSkill, error) {
+func (a *inventoryTypeInfo) calcRequiredSkills(ctx context.Context, characterID int32, attributes map[int32]*app.EveTypeDogmaAttribute) ([]requiredSkill, error) {
 	skills := make([]requiredSkill, 0)
 	skillAttributes := []struct {
 		id    int32
@@ -288,7 +317,7 @@ func (a *inventoryTypeArea) calcRequiredSkills(ctx context.Context, characterID 
 			continue
 		}
 		requiredLevel := int(daLevel.Value)
-		et, err := a.iw.eus.GetEveType(ctx, typeID)
+		et, err := a.iw.u.EveUniverseService().GetType(ctx, typeID)
 		if err != nil {
 			return nil, err
 		}
@@ -298,8 +327,8 @@ func (a *inventoryTypeArea) calcRequiredSkills(ctx context.Context, characterID 
 			name:          et.Name,
 			typeID:        typeID,
 		}
-		cs, err := a.iw.cs.GetCharacterSkill(ctx, characterID, typeID)
-		if errors.Is(err, character.ErrNotFound) {
+		cs, err := a.iw.u.CharacterService().GetCharacterSkill(ctx, characterID, typeID)
+		if errors.Is(err, app.ErrNotFound) {
 			// do nothing
 		} else if err != nil {
 			return nil, err
@@ -312,46 +341,17 @@ func (a *inventoryTypeArea) calcRequiredSkills(ctx context.Context, characterID 
 	return skills, nil
 }
 
-func (a *inventoryTypeArea) makeContent() fyne.CanvasObject {
-	top := a.makeTop()
-	t := container.NewTabItem("Description", a.makeDescriptionTab())
-	tabs := container.NewAppTabs(t)
-	var attributeTab, requirementsTab *container.TabItem
-	if len(a.attributesData) > 0 {
-		attributeTab = container.NewTabItem("Attributes", a.makeAttributesTab())
-		tabs.Append(attributeTab)
-	}
-	if len(a.fittingData) > 0 {
-		tabs.Append(container.NewTabItem("Fittings", a.makeFittingsTab()))
-	}
-	if len(a.requiredSkills) > 0 {
-		requirementsTab = container.NewTabItem("Requirements", a.makeRequirementsTab())
-		tabs.Append(requirementsTab)
-	}
-	if a.price != nil {
-		tabs.Append(container.NewTabItem("Market", a.makeMarketTab()))
-	}
-	// Select selected tab
-	if requirementsTab != nil && a.et.Group.Category.ID == app.EveCategorySkill {
-		tabs.Select(requirementsTab)
-	} else if attributeTab != nil {
-		tabs.Select(attributeTab)
-	}
-	c := container.NewBorder(top, nil, nil, nil, tabs)
-	return c
-}
-
-func (a *inventoryTypeArea) makeTop() fyne.CanvasObject {
+func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 	typeIcon := container.New(ilayout.NewTopLeftLayout())
 	if a.et.HasRender() {
 		size := 128
-		r, err := a.iw.eis.InventoryTypeRender(a.et.ID, size)
+		r, err := a.iw.u.EveImageService().InventoryTypeRender(a.et.ID, size)
 		if err != nil {
 			slog.Error("Failed to load inventory type render", "typeID", a.et.ID, "error", err)
 			r = theme.BrokenImageIcon()
 		}
 		render := kxwidget.NewTappableImage(r, func() {
-			go a.iw.showZoomWindow(a.et.Name, a.et.ID, a.iw.eis.InventoryTypeRender, a.w)
+			go a.iw.showZoomWindow(a.et.Name, a.et.ID, a.iw.u.EveImageService().InventoryTypeRender, a.w)
 		})
 		render.SetFillMode(canvas.ImageFillContain)
 		s := float32(size)
@@ -375,13 +375,13 @@ func (a *inventoryTypeArea) makeTop() fyne.CanvasObject {
 		}
 	} else {
 		s := float32(app.IconPixelSize) * logoZoomFactor
-		icon := appwidget.NewImageResourceAsync(icons.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
+		icon := shared.NewImageResourceAsync(icons.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
 			if a.et.IsSKIN() {
-				return a.iw.eis.InventoryTypeSKIN(a.et.ID, app.IconPixelSize)
+				return a.iw.u.EveImageService().InventoryTypeSKIN(a.et.ID, app.IconPixelSize)
 			} else if a.et.IsBlueprint() {
-				return a.iw.eis.InventoryTypeBPO(a.et.ID, app.IconPixelSize)
+				return a.iw.u.EveImageService().InventoryTypeBPO(a.et.ID, app.IconPixelSize)
 			} else {
-				return a.iw.eis.InventoryTypeIcon(a.et.ID, app.IconPixelSize)
+				return a.iw.u.EveImageService().InventoryTypeIcon(a.et.ID, app.IconPixelSize)
 			}
 		})
 		typeIcon.Add(icon)
@@ -392,8 +392,8 @@ func (a *inventoryTypeArea) makeTop() fyne.CanvasObject {
 	})
 	characterName.Wrapping = fyne.TextWrapWord
 	if a.character != nil {
-		appwidget.RefreshImageResourceAsync(characterIcon, func() (fyne.Resource, error) {
-			return a.iw.eis.CharacterPortrait(a.character.ID, app.IconPixelSize)
+		shared.RefreshImageResourceAsync(characterIcon, func() (fyne.Resource, error) {
+			return a.iw.u.EveImageService().CharacterPortrait(a.character.ID, app.IconPixelSize)
 		})
 		characterName.SetText(a.character.Name)
 	} else {
@@ -430,7 +430,7 @@ func (a *inventoryTypeArea) makeTop() fyne.CanvasObject {
 			)))
 }
 
-func (a *inventoryTypeArea) makeDescriptionTab() fyne.CanvasObject {
+func (a *inventoryTypeInfo) makeDescriptionTab() fyne.CanvasObject {
 	s := a.et.DescriptionPlain()
 	if s == "" {
 		s = a.et.Name
@@ -440,7 +440,7 @@ func (a *inventoryTypeArea) makeDescriptionTab() fyne.CanvasObject {
 	return container.NewVScroll(description)
 }
 
-func (a *inventoryTypeArea) makeMarketTab() fyne.CanvasObject {
+func (a *inventoryTypeInfo) makeMarketTab() fyne.CanvasObject {
 	c := container.NewHBox(
 		widget.NewLabel("Average price"),
 		layout.NewSpacer(),
@@ -449,20 +449,20 @@ func (a *inventoryTypeArea) makeMarketTab() fyne.CanvasObject {
 	return container.NewVScroll(c)
 }
 
-func (a *inventoryTypeArea) makeAttributesTab() fyne.CanvasObject {
+func (a *inventoryTypeInfo) makeAttributesTab() fyne.CanvasObject {
 	list := widget.NewList(
 		func() int {
 			return len(a.attributesData)
 		},
 		func() fyne.CanvasObject {
-			return appwidget.NewTypeAttributeItem()
+			return shared.NewTypeAttributeItem()
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.attributesData) {
 				return
 			}
 			r := a.attributesData[id]
-			item := co.(*appwidget.TypeAttributeItem)
+			item := co.(*shared.TypeAttributeItem)
 			if r.isTitle {
 				item.SetTitle(r.label)
 			} else {
@@ -483,17 +483,17 @@ func (a *inventoryTypeArea) makeAttributesTab() fyne.CanvasObject {
 	return list
 }
 
-func (a *inventoryTypeArea) makeFittingsTab() fyne.CanvasObject {
+func (a *inventoryTypeInfo) makeFittingsTab() fyne.CanvasObject {
 	l := widget.NewList(
 		func() int {
 			return len(a.fittingData)
 		},
 		func() fyne.CanvasObject {
-			return appwidget.NewTypeAttributeItem()
+			return shared.NewTypeAttributeItem()
 		},
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
 			r := a.fittingData[lii]
-			item := co.(*appwidget.TypeAttributeItem)
+			item := co.(*shared.TypeAttributeItem)
 			item.SetRegular(r.icon, r.label, r.value)
 		},
 	)
@@ -503,7 +503,7 @@ func (a *inventoryTypeArea) makeFittingsTab() fyne.CanvasObject {
 	return l
 }
 
-func (a *inventoryTypeArea) makeRequirementsTab() fyne.CanvasObject {
+func (a *inventoryTypeInfo) makeRequirementsTab() fyne.CanvasObject {
 	l := widget.NewList(
 		func() int {
 			return len(a.requiredSkills)
@@ -513,7 +513,7 @@ func (a *inventoryTypeArea) makeRequirementsTab() fyne.CanvasObject {
 				widget.NewLabel("Placeholder"),
 				layout.NewSpacer(),
 				widget.NewLabel("Check"),
-				appwidget.NewSkillLevel(),
+				shared.NewSkillLevel(),
 				widget.NewIcon(icons.QuestionmarkSvg),
 			)
 		},
@@ -522,7 +522,7 @@ func (a *inventoryTypeArea) makeRequirementsTab() fyne.CanvasObject {
 			row := co.(*fyne.Container).Objects
 			skill := row[0].(*widget.Label)
 			text := row[2].(*widget.Label)
-			level := row[3].(*appwidget.SkillLevel)
+			level := row[3].(*shared.SkillLevel)
 			icon := row[4].(*widget.Icon)
 			skill.SetText(app.SkillDisplayName(o.name, o.requiredLevel))
 			if o.activeLevel == 0 && o.trainedLevel == 0 {
@@ -548,7 +548,7 @@ func (a *inventoryTypeArea) makeRequirementsTab() fyne.CanvasObject {
 	)
 	l.OnSelected = func(id widget.ListItemID) {
 		r := a.requiredSkills[id]
-		a.iw.Show(InventoryType, int64(r.typeID))
+		a.iw.show(infoInventoryType, int64(r.typeID))
 		l.UnselectAll()
 	}
 	return l

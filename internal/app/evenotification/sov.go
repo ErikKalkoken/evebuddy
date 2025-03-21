@@ -34,11 +34,11 @@ func (s *EveNotificationService) renderEntosisCaptureStarted(ctx context.Context
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	solarSystem, err := s.EveUniverseService.GetOrCreateEveSolarSystemESI(ctx, data.SolarSystemID)
+	solarSystem, err := s.EveUniverseService.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
 	if err != nil {
 		return title, body, err
 	}
-	structureType, err := s.EveUniverseService.GetOrCreateEveEntityESI(ctx, data.StructureTypeID)
+	structureType, err := s.EveUniverseService.GetOrCreateEntityESI(ctx, data.StructureTypeID)
 	if err != nil {
 		return title, body, err
 	}
@@ -57,11 +57,11 @@ func (s *EveNotificationService) renderSovAllClaimAcquiredMsg(ctx context.Contex
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	solarSystem, err := s.EveUniverseService.GetOrCreateEveSolarSystemESI(ctx, data.SolarSystemID)
+	solarSystem, err := s.EveUniverseService.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
 	if err != nil {
 		return title, body, err
 	}
-	corporation, err := s.EveUniverseService.GetOrCreateEveEntityESI(ctx, data.CorpID)
+	corporation, err := s.EveUniverseService.GetOrCreateEntityESI(ctx, data.CorpID)
 	if err != nil {
 		return title, body, err
 	}
@@ -86,7 +86,7 @@ func (s *EveNotificationService) renderSovCommandNodeEventStarted(ctx context.Co
 	if err != nil {
 		return title, body, err
 	}
-	solarSystem, err := s.EveUniverseService.GetOrCreateEveSolarSystemESI(ctx, data.SolarSystemID)
+	solarSystem, err := s.EveUniverseService.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
 	if err != nil {
 		return title, body, err
 	}
@@ -110,11 +110,11 @@ func (s *EveNotificationService) renderSovAllClaimLostMsg(ctx context.Context, t
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	solarSystem, err := s.EveUniverseService.GetOrCreateEveSolarSystemESI(ctx, data.SolarSystemID)
+	solarSystem, err := s.EveUniverseService.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
 	if err != nil {
 		return title, body, err
 	}
-	corporation, err := s.EveUniverseService.GetOrCreateEveEntityESI(ctx, data.CorpID)
+	corporation, err := s.EveUniverseService.GetOrCreateEntityESI(ctx, data.CorpID)
 	if err != nil {
 		return title, body, err
 	}
@@ -134,11 +134,11 @@ func (s *EveNotificationService) renderSovStructureDestroyed(ctx context.Context
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	structureType, err := s.EveUniverseService.GetOrCreateEveEntityESI(ctx, data.StructureTypeID)
+	structureType, err := s.EveUniverseService.GetOrCreateEntityESI(ctx, data.StructureTypeID)
 	if err != nil {
 		return title, body, err
 	}
-	solarSystem, err := s.EveUniverseService.GetOrCreateEveSolarSystemESI(ctx, data.SolarSystemID)
+	solarSystem, err := s.EveUniverseService.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
 	if err != nil {
 		return title, body, err
 	}
@@ -161,7 +161,7 @@ func (s *EveNotificationService) renderSovStructureReinforced(ctx context.Contex
 	if err != nil {
 		return title, body, err
 	}
-	solarSystem, err := s.EveUniverseService.GetOrCreateEveSolarSystemESI(ctx, data.SolarSystemID)
+	solarSystem, err := s.EveUniverseService.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
 	if err != nil {
 		return title, body, err
 	}
@@ -187,7 +187,7 @@ func (s *EveNotificationService) eventTypeIDToName(ctx context.Context, eventTyp
 	default:
 		return "?", nil
 	}
-	structureType, err := s.EveUniverseService.GetOrCreateEveEntityESI(ctx, typeID)
+	structureType, err := s.EveUniverseService.GetOrCreateEntityESI(ctx, typeID)
 	if err != nil {
 		return "", err
 	}

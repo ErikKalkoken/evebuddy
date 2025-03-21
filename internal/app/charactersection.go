@@ -93,3 +93,11 @@ func (cs CharacterSection) Timeout() time.Duration {
 	}
 	return duration
 }
+
+type CharacterUpdateSectionParams struct {
+	CharacterID           int32
+	Section               CharacterSection
+	ForceUpdate           bool
+	MaxMails              int
+	MaxWalletTransactions int
+}

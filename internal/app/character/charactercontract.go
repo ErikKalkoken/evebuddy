@@ -29,7 +29,7 @@ func (s *CharacterService) GetCharacterContractTopBid(ctx context.Context, contr
 		return nil, err
 	}
 	if len(bids) == 0 {
-		return nil, ErrNotFound
+		return nil, app.ErrNotFound
 	}
 	var max float32
 	var top *app.CharacterContractBid
@@ -124,7 +124,7 @@ var contractTypeFromESIValue = map[string]app.ContractType{
 }
 
 // updateCharacterContractsESI updates the wallet journal from ESI and reports wether it has changed.
-func (s *CharacterService) updateCharacterContractsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterContractsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionContracts {
 		panic("called with wrong section")
 	}
@@ -158,7 +158,7 @@ func (s *CharacterService) updateCharacterContractsESI(ctx context.Context, arg 
 					ids.Add(c.AssigneeId)
 				}
 			}
-			_, err := s.EveUniverseService.AddMissingEveEntities(ctx, ids.ToSlice())
+			_, err := s.EveUniverseService.AddMissingEntities(ctx, ids.ToSlice())
 			if err != nil {
 				return err
 			}
@@ -219,13 +219,13 @@ func (s *CharacterService) updateCharacterContractsESI(ctx context.Context, arg 
 
 func (s *CharacterService) createNewContract(ctx context.Context, characterID int32, c esi.GetCharactersCharacterIdContracts200Ok) error {
 	if c.StartLocationId != 0 {
-		_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, c.StartLocationId)
+		_, err := s.EveUniverseService.GetOrCreateLocationESI(ctx, c.StartLocationId)
 		if err != nil {
 			return err
 		}
 	}
 	if c.EndLocationId != 0 {
-		_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, c.EndLocationId)
+		_, err := s.EveUniverseService.GetOrCreateLocationESI(ctx, c.EndLocationId)
 		if err != nil {
 			return err
 		}
@@ -276,7 +276,7 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 		return err
 	}
 	for _, it := range items {
-		et, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, it.TypeId)
+		et, err := s.EveUniverseService.GetOrCreateTypeESI(ctx, it.TypeId)
 		if err != nil {
 			return err
 		}
@@ -358,7 +358,7 @@ func (s *CharacterService) updateContractBids(ctx context.Context, characterID, 
 		}
 	}
 	if len(eeIDs) > 0 {
-		if _, err = s.EveUniverseService.AddMissingEveEntities(ctx, eeIDs); err != nil {
+		if _, err = s.EveUniverseService.AddMissingEntities(ctx, eeIDs); err != nil {
 			return err
 		}
 	}

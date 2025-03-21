@@ -14,29 +14,34 @@ import (
 	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
-// toolbarArea is the UI area showing the current status aka status bar.
-type toolbarArea struct {
-	content *fyne.Container
-	icon    *kwidget.TappableImage
-	name    *widget.Label
-	u       *DesktopUI
+type Toolbar struct {
+	widget.BaseWidget
+
+	icon *kwidget.TappableImage
+	name *widget.Label
+	u    app.UI
 }
 
-func newToolbarArea(u *DesktopUI) *toolbarArea {
+func NewToolbar(u app.UI) *Toolbar {
 	i := kwidget.NewTappableImageWithMenu(icons.Characterplaceholder64Jpeg, fyne.NewMenu(""))
 	i.SetFillMode(canvas.ImageFillContain)
 	i.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
-	a := &toolbarArea{
+	a := &Toolbar{
 		icon: i,
 		name: widget.NewLabel(""),
 		u:    u,
 	}
-	c := container.NewBorder(nil, nil, a.icon, nil, a.name)
-	a.content = container.NewVBox(c, widget.NewSeparator())
+	a.ExtendBaseWidget(a)
 	return a
 }
 
-func (a *toolbarArea) refresh() {
+func (a *Toolbar) CreateRenderer() fyne.WidgetRenderer {
+	x := container.NewBorder(nil, nil, a.icon, nil, a.name)
+	c := container.NewVBox(x, widget.NewSeparator())
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *Toolbar) Update() {
 	c := a.u.CurrentCharacter()
 	if c == nil {
 		r, _ := fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)

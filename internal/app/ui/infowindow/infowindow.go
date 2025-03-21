@@ -3,7 +3,6 @@ package infowindow
 import (
 	"fmt"
 	"log/slog"
-	"maps"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -11,9 +10,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/dustin/go-humanize"
 
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -28,68 +24,26 @@ const (
 	infoWindowHeight    = 500
 )
 
-type InfoVariant uint
-
-const (
-	NotSupported InfoVariant = iota
-	Alliance
-	Character
-	Corporation
-	InventoryType
-	Location
-	SolarSystem
-)
-
-var eveEntityCategory2InfoVariant = map[app.EveEntityCategory]InfoVariant{
-	app.EveEntityAlliance:      Alliance,
-	app.EveEntityCharacter:     Character,
-	app.EveEntityCorporation:   Corporation,
-	app.EveEntitySolarSystem:   SolarSystem,
-	app.EveEntityStation:       Location,
-	app.EveEntityInventoryType: InventoryType,
-}
-
-func eveEntity2InfoVariant(ee *app.EveEntity) InfoVariant {
-	v, ok := eveEntityCategory2InfoVariant[ee.Category]
-	if !ok {
-		return NotSupported
-	}
-	return v
-
-}
-
-func SupportedEveEntities() set.Set[app.EveEntityCategory] {
-	return set.Collect(maps.Keys(eveEntityCategory2InfoVariant))
-
+type UI interface {
+	CharacterService() app.CharacterService
+	CurrentCharacterID() int32
+	EveImageService() app.EveImageService
+	EveUniverseService() app.EveUniverseService
+	IsDeveloperMode() bool
+	IsOffline() bool
+	ShowErrorDialog(message string, err error, parent fyne.Window)
+	ShowInformationDialog(title, message string, parent fyne.Window)
 }
 
 // InfoWindow represents a dedicated window for showing information similar to the in-game info windows.
 type InfoWindow struct {
-	isDeveloperMode    bool
-	cs                 *character.CharacterService
-	currentCharacterID func() int32
-	eus                *eveuniverse.EveUniverseService
-	eis                app.EveImageService
-	w                  fyne.Window // parent window, e.g. for displaying error dialogs
+	u UI
+	w fyne.Window // parent window, e.g. for displaying error dialogs
 }
 
 // New returns a configured InfoWindow.
-func New(
-	currentCharacterID func() int32,
-	cs *character.CharacterService,
-	eus *eveuniverse.EveUniverseService,
-	eis app.EveImageService,
-	isDeveloperMode bool,
-	w fyne.Window,
-) InfoWindow {
-	iw := InfoWindow{
-		isDeveloperMode:    isDeveloperMode,
-		currentCharacterID: currentCharacterID,
-		cs:                 cs,
-		eus:                eus,
-		eis:                eis,
-		w:                  w,
-	}
+func New(u UI, w fyne.Window) InfoWindow {
+	iw := InfoWindow{u: u, w: w}
 	return iw
 }
 
@@ -97,27 +51,50 @@ func (iw *InfoWindow) SetWindow(w fyne.Window) {
 	iw.w = w
 }
 
-func (iw InfoWindow) Show(t InfoVariant, id int64) {
+// Show shows a new info window for an EveEntity.
+func (iw InfoWindow) ShowEveEntity(ee *app.EveEntity) {
+	iw.show(eveEntity2InfoVariant(ee), int64(ee.ID))
+}
+
+// Show shows a new info window for an EveEntity.
+func (iw InfoWindow) Show(c app.EveEntityCategory, id int32) {
+	iw.show(eveEntity2InfoVariant(&app.EveEntity{Category: c}), int64(id))
+}
+
+func (iw InfoWindow) ShowLocation(id int64) {
+	iw.show(infoLocation, id)
+}
+
+func (iw InfoWindow) show(t infoVariant, id int64) {
+	if iw.u.IsOffline() {
+		iw.u.ShowInformationDialog(
+			"Offline",
+			"Can't show info window when offline",
+			iw.w,
+		)
+		return
+	}
 	switch t {
-	case Alliance:
+	case infoAlliance:
 		showWindow("Alliance", func(w fyne.Window) fyne.CanvasObject {
-			a := newAlliancArea(iw, int32(id), w)
-			return a.Content
+			return newAllianceInfo(iw, int32(id), w)
 		})
-	case Character:
+	case infoCharacter:
 		showWindow("Character", func(w fyne.Window) fyne.CanvasObject {
-			a := newCharacterArea(iw, int32(id), w)
-			return a.Content
+			return newCharacterInfo(iw, int32(id), w)
 		})
-	case Corporation:
+	case infoConstellation:
+		showWindow("Constellation", func(w fyne.Window) fyne.CanvasObject {
+			return newConstellationInfo(iw, int32(id), w)
+		})
+	case infoCorporation:
 		showWindow("Corporation", func(w fyne.Window) fyne.CanvasObject {
-			a := newCorporationArea(iw, int32(id), w)
-			return a.Content
+			return newCorporationInfo(iw, int32(id), w)
 		})
-	case InventoryType:
+	case infoInventoryType:
 		showWindow("Information", func(w fyne.Window) fyne.CanvasObject {
 			// TODO: Restructure, so that window is first drawn empty and content loaded in background (as other info windo)
-			a, err := NewInventoryTypeArea(iw, int32(id), iw.currentCharacterID(), w)
+			a, err := NewInventoryTypeInfo(iw, int32(id), iw.u.CurrentCharacterID(), w)
 			if err != nil {
 				slog.Error("show type", "error", err)
 				l := widget.NewLabel(fmt.Sprintf("ERROR: Can not create info window: %s", err))
@@ -125,30 +102,27 @@ func (iw InfoWindow) Show(t InfoVariant, id int64) {
 				return l
 			}
 			w.SetTitle(a.MakeTitle("Information"))
-			return a.Content
+			return a
 		})
-	case SolarSystem:
+	case infoRegion:
+		showWindow("Region", func(w fyne.Window) fyne.CanvasObject {
+			return newRegionInfo(iw, int32(id), w)
+		})
+	case infoSolarSystem:
 		showWindow("Solar System", func(w fyne.Window) fyne.CanvasObject {
-			a := newSolarSystemArea(iw, int32(id), w)
-			return a.Content
+			return newSolarSystemInfo(iw, int32(id), w)
 		})
-	case Location:
+	case infoLocation:
 		showWindow("Location", func(w fyne.Window) fyne.CanvasObject {
-			a := newLocationArea(iw, id, w)
-			return a.Content
+			return newLocationInfo(iw, id, w)
 		})
 	default:
-		iwidget.ShowErrorDialog(
+		iw.u.ShowInformationDialog(
+			"Warning",
 			"Can't show info window for unknown category",
-			fmt.Errorf("infowindow: undefined category"),
 			iw.w,
 		)
 	}
-}
-
-// Show shows a new info window for an EveEntity.
-func (iw InfoWindow) ShowEveEntity(ee *app.EveEntity) {
-	iw.Show(eveEntity2InfoVariant(ee), int64(ee.ID))
 }
 
 func showWindow(category string, create func(w fyne.Window) fyne.CanvasObject) {
@@ -162,7 +136,7 @@ func (iw InfoWindow) showZoomWindow(title string, id int32, load func(int32, int
 	s := float32(zoomImagePixelSize) / w.Canvas().Scale()
 	r, err := load(id, zoomImagePixelSize)
 	if err != nil {
-		iwidget.ShowErrorDialog("Failed to load image", err, w)
+		iw.u.ShowErrorDialog("Failed to load image", err, w)
 	}
 	i := iwidget.NewImageFromResource(r, fyne.NewSquareSize(s))
 	p := theme.Padding()
@@ -190,5 +164,5 @@ func historyItem2EntityItem(hi app.MembershipHistoryItem) entityItem {
 		endDateStr,
 		humanize.Comma(int64(hi.Days)),
 	)
-	return NewEntityItemFromEveEntity(hi.Organization, text)
+	return NewEntityItemFromEveEntityWithText(hi.Organization, text)
 }

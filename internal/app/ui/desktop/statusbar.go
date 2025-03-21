@@ -13,13 +13,11 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -39,38 +37,49 @@ const (
 	eveStatusError
 )
 
-// statusBarArea is the UI area showing the current status aka status bar.
-type statusBarArea struct {
-	characterCount *appwidget.StatusBarItem
-	content        *fyne.Container
-	eveClock       *appwidget.StatusBarItem
-	eveStatus      *appwidget.StatusBarItem
+type DesktopUI interface {
+	app.UI
+
+	ShowAccountWindow()
+}
+
+type StatusBar struct {
+	widget.BaseWidget
+
+	characterCount *StatusBarItem
+	eveClock       *StatusBarItem
+	eveStatus      *StatusBarItem
 	eveStatusError string
 	infoText       *widget.Label
 	newVersionHint *fyne.Container
-	u              *DesktopUI
-	updateStatus   *appwidget.StatusBarItem
+	u              DesktopUI
+	updateStatus   *StatusBarItem
 }
 
-func newStatusBarArea(u *DesktopUI) *statusBarArea {
-	a := &statusBarArea{
+func NewStatusBar(u DesktopUI) *StatusBar {
+	a := &StatusBar{
 		infoText:       widget.NewLabel(""),
 		newVersionHint: container.NewHBox(),
 		u:              u,
 	}
-	a.characterCount = appwidget.NewStatusBarItem(theme.AccountIcon(), "?", func() {
-		u.showAccountWindow()
+	a.ExtendBaseWidget(a)
+	a.characterCount = NewStatusBarItem(theme.AccountIcon(), "?", func() {
+		u.ShowAccountWindow()
 	})
-	a.updateStatus = appwidget.NewStatusBarItem(theme.NewThemedResource(icons.UpdateSvg), "?", func() {
+	a.updateStatus = NewStatusBarItem(theme.NewThemedResource(icons.UpdateSvg), "?", func() {
 		u.ShowUpdateStatusWindow()
 	})
-	a.eveClock = appwidget.NewStatusBarItem(
+	a.eveClock = NewStatusBarItem(
 		theme.NewThemedResource(icons.AccesstimefilledSvg),
 		"?",
 		a.showClockDialog,
 	)
-	a.eveStatus = appwidget.NewStatusBarItem(theme.MediaRecordIcon(), "?", a.showEveStatusDialog)
-	a.content = container.NewVBox(widget.NewSeparator(), container.NewHBox(
+	a.eveStatus = NewStatusBarItem(theme.MediaRecordIcon(), "?", a.showEveStatusDialog)
+	return a
+}
+
+func (a *StatusBar) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewVBox(widget.NewSeparator(), container.NewHBox(
 		a.infoText,
 		layout.NewSpacer(),
 		a.newVersionHint,
@@ -83,12 +92,13 @@ func newStatusBarArea(u *DesktopUI) *statusBarArea {
 		widget.NewSeparator(),
 		a.eveStatus,
 	))
-	return a
+	return widget.NewSimpleRenderer(c)
 }
 
-func (a *statusBarArea) showClockDialog() {
+func (a *StatusBar) showClockDialog() {
 	content := widget.NewRichTextFromMarkdown("")
-	d := dialog.NewCustom("EVE Clock", "Close", content, a.u.Window)
+	d := dialog.NewCustom("EVE Clock", "Close", content, a.u.MainWindow())
+	a.u.ModifyShortcutsForDialog(d, a.u.MainWindow())
 	stop := make(chan struct{})
 	timer := time.NewTicker(1 * time.Second)
 	go func() {
@@ -108,7 +118,7 @@ func (a *statusBarArea) showClockDialog() {
 	d.Show()
 }
 
-func (a *statusBarArea) showEveStatusDialog() {
+func (a *StatusBar) showEveStatusDialog() {
 	var i widget.Importance
 	var text string
 	if a.eveStatusError == "" {
@@ -121,12 +131,13 @@ func (a *statusBarArea) showEveStatusDialog() {
 	lb := widget.NewLabel(text)
 	lb.Wrapping = fyne.TextWrapWord
 	lb.Importance = i
-	d := dialog.NewCustom("ESI status", "OK", lb, a.u.Window)
+	d := dialog.NewCustom("ESI status", "OK", lb, a.u.MainWindow())
+	a.u.ModifyShortcutsForDialog(d, a.u.MainWindow())
 	d.Show()
 	d.Resize(fyne.Size{Width: 400, Height: 200})
 }
 
-func (a *statusBarArea) StartUpdateTicker() {
+func (a *StatusBar) StartUpdateTicker() {
 	clockTicker := time.NewTicker(clockUpdateTicker)
 	go func() {
 		for {
@@ -135,22 +146,22 @@ func (a *statusBarArea) StartUpdateTicker() {
 			<-clockTicker.C
 		}
 	}()
-	if a.u.IsOffline {
+	if a.u.IsOffline() {
 		a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
-		a.refreshUpdateStatus()
+		a.updateUpdateStatus()
 		return
 	}
 	updateTicker := time.NewTicker(characterUpdateStatusTicker)
 	go func() {
 		for {
-			a.refreshUpdateStatus()
+			a.updateUpdateStatus()
 			<-updateTicker.C
 		}
 	}()
 	esiStatusTicker := time.NewTicker(esiStatusUpdateTicker)
 	go func() {
 		for {
-			x, err := a.u.ESIStatusService.Fetch(context.TODO())
+			x, err := a.u.ESIStatusService().Fetch(context.TODO())
 			var t, errorMessage string
 			var s eveStatus
 			if err != nil {
@@ -180,7 +191,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 		if !v.IsRemoteNewer {
 			return
 		}
-		l := ui.NewCustomHyperlink("Update available", func() {
+		l := iwidget.NewCustomHyperlink("Update available", func() {
 			c := container.NewVBox(
 				container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), widget.NewLabel(v.Latest)),
 				container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), widget.NewLabel(v.Local)),
@@ -190,13 +201,12 @@ func (a *statusBarArea) StartUpdateTicker() {
 				if !ok {
 					return
 				}
-				if err := a.u.FyneApp.OpenURL(u); err != nil {
-					d2 := iwidget.NewErrorDialog("Failed to open download page", err, a.u.Window)
-					d2.Show()
+				if err := a.u.App().OpenURL(u); err != nil {
+					a.u.ShowErrorDialog("Failed to open download page", err, a.u.MainWindow())
 				}
-			}, a.u.Window,
+			}, a.u.MainWindow(),
 			)
-			kxdialog.AddDialogKeyHandler(d, a.u.Window)
+			a.u.ModifyShortcutsForDialog(d, a.u.MainWindow())
 			d.Show()
 		})
 		a.newVersionHint.Add(widget.NewSeparator())
@@ -204,17 +214,18 @@ func (a *statusBarArea) StartUpdateTicker() {
 	}()
 }
 
-func (a *statusBarArea) refreshCharacterCount() {
-	x := a.u.StatusCacheService.ListCharacters()
+func (a *StatusBar) Update() {
+	x := a.u.StatusCacheService().ListCharacters()
 	a.characterCount.SetText(strconv.Itoa(len(x)))
+	a.updateUpdateStatus()
 }
 
-func (a *statusBarArea) refreshUpdateStatus() {
-	x := a.u.StatusCacheService.Summary()
+func (a *StatusBar) updateUpdateStatus() {
+	x := a.u.StatusCacheService().Summary()
 	a.updateStatus.SetTextAndImportance(x.Display(), x.Status().ToImportance())
 }
 
-func (a *statusBarArea) setEveStatus(status eveStatus, title, errorMessage string) {
+func (a *StatusBar) setEveStatus(status eveStatus, title, errorMessage string) {
 	a.eveStatusError = errorMessage
 	r1 := theme.MediaRecordIcon()
 	var r2 fyne.Resource
@@ -232,19 +243,19 @@ func (a *statusBarArea) setEveStatus(status eveStatus, title, errorMessage strin
 	a.eveStatus.SetText(title)
 }
 
-func (s *statusBarArea) SetInfo(text string) {
+func (s *StatusBar) SetInfo(text string) {
 	s.setInfo(text, widget.MediumImportance)
 }
 
-func (s *statusBarArea) SetError(text string) {
+func (s *StatusBar) SetError(text string) {
 	s.setInfo(text, widget.DangerImportance)
 }
 
-func (s *statusBarArea) ClearInfo() {
+func (s *StatusBar) ClearInfo() {
 	s.SetInfo("")
 }
 
-func (s *statusBarArea) setInfo(text string, importance widget.Importance) {
+func (s *StatusBar) setInfo(text string, importance widget.Importance) {
 	s.infoText.Text = text
 	s.infoText.Importance = importance
 	s.infoText.Refresh()

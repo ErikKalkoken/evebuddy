@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
@@ -24,7 +25,7 @@ func TestGetCharacter(t *testing.T) {
 		// when
 		_, err := cs.GetCharacter(ctx, 42)
 		// then
-		assert.ErrorIs(t, err, character.ErrNotFound)
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 	t.Run("should return obj when found", func(t *testing.T) {
 		// given
@@ -50,7 +51,7 @@ func TestGetAnyCharacter(t *testing.T) {
 		// when
 		_, err := cs.GetAnyCharacter(ctx)
 		// then
-		assert.ErrorIs(t, err, character.ErrNotFound)
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 	t.Run("should return obj when found", func(t *testing.T) {
 		// given

@@ -31,19 +31,21 @@ type snackbarMessage struct {
 // When a snackbar receives several texts at the same time, it will queue them and display them one after the other.
 type Snackbar struct {
 	button    *IconButton
+	hideC     chan struct{}
 	isRunning atomic.Bool
 	label     *widget.Label
 	popup     *widget.PopUp
 	q         *syncqueue.SyncQueue[snackbarMessage]
-	hideC     chan struct{}
+	stopC     chan struct{}
 }
 
 // NewSnackbar returns a new snackbar. Call Start() to activate it.
 func NewSnackbar(win fyne.Window) *Snackbar {
 	sb := &Snackbar{
+		hideC: make(chan struct{}),
 		label: widget.NewLabel(""),
 		q:     syncqueue.New[snackbarMessage](),
-		hideC: make(chan struct{}),
+		stopC: make(chan struct{}),
 	}
 	sb.button = NewIconButton(theme.WindowCloseIcon(), func() {
 		sb.hideC <- struct{}{}
@@ -67,21 +69,48 @@ func (sb *Snackbar) ShowWithTimeout(text string, timeout time.Duration) {
 func (sb *Snackbar) Start() {
 	isRunning := !sb.isRunning.CompareAndSwap(false, true)
 	if isRunning {
-		slog.Warn("Snackbar already running")
+		slog.Warn("Snackbar has already been started")
 		return
 	}
+	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
+		<-sb.stopC
+		cancel()
+	}()
+	go func() {
+	L:
 		for {
-			m, _ := sb.q.Get(context.Background())
+			m, err := sb.q.Get(ctx)
+			if err != nil {
+				break
+			}
 			sb.show(m.text)
 			select {
 			case <-sb.hideC:
+			case <-sb.stopC:
+				sb.popup.Hide()
+				cancel()
+				break L
 			case <-time.After(m.timeout):
 			}
 			sb.popup.Hide()
 		}
+		sb.isRunning.Store(false)
+		slog.Debug("Snackbar stopped")
 	}()
 	slog.Debug("Snackbar started")
+}
+
+// Stop stopps a running snackbar and allows the gc to clean up it's resources.
+func (sb *Snackbar) Stop() {
+	if !sb.isRunning.Load() {
+		return
+	}
+	sb.stopC <- struct{}{}
+}
+
+func (sb *Snackbar) IsRunning() bool {
+	return sb.isRunning.Load()
 }
 
 func (sb *Snackbar) show(text string) {

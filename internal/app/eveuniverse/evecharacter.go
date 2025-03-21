@@ -13,7 +13,7 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *EveUniverseService) GetOrCreateEveCharacterESI(ctx context.Context, id int32) (*app.EveCharacter, error) {
+func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, id int32) (*app.EveCharacter, error) {
 	x, err := s.st.GetEveCharacter(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return s.createEveCharacterFromESI(ctx, id)
@@ -23,12 +23,12 @@ func (s *EveUniverseService) GetOrCreateEveCharacterESI(ctx context.Context, id 
 	return x, nil
 }
 
-func (s *EveUniverseService) GetEveCharacterESI(ctx context.Context, characterID int32) (*app.EveCharacter, error) {
+func (s *EveUniverseService) GetCharacterESI(ctx context.Context, characterID int32) (*app.EveCharacter, error) {
 	c, err := s.fetchEveCharacterfromESI(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.AddMissingEveEntities(ctx, []int32{characterID, c.AllianceId, c.CorporationId, c.FactionId})
+	_, err = s.AddMissingEntities(ctx, []int32{characterID, c.AllianceId, c.CorporationId, c.FactionId})
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (s *EveUniverseService) fetchEveCharacterfromESI(ctx context.Context, id in
 	if r.FactionId != 0 {
 		ids = append(ids, r.FactionId)
 	}
-	_, err = s.AddMissingEveEntities(ctx, ids)
+	_, err = s.AddMissingEntities(ctx, ids)
 	if err != nil {
 		return esi.GetCharactersCharacterIdOk{}, err
 	}
@@ -162,7 +162,7 @@ func (s *EveUniverseService) updateEveCharacterESI(ctx context.Context, characte
 		if r.FactionId != 0 {
 			entityIDs = append(entityIDs, r.FactionId)
 		}
-		_, err = s.AddMissingEveEntities(ctx, entityIDs)
+		_, err = s.AddMissingEntities(ctx, entityIDs)
 		if err != nil {
 			return err
 		}

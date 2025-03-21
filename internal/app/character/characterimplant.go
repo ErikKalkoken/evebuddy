@@ -12,7 +12,7 @@ func (s *CharacterService) ListCharacterImplants(ctx context.Context, characterI
 	return s.st.ListCharacterImplants(ctx, characterID)
 }
 
-func (s *CharacterService) updateCharacterImplantsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterImplantsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionImplants {
 		panic("called with wrong section")
 	}
@@ -30,7 +30,7 @@ func (s *CharacterService) updateCharacterImplantsESI(ctx context.Context, arg U
 			implants := data.([]int32)
 			args := make([]storage.CreateCharacterImplantParams, len(implants))
 			for i, typeID := range implants {
-				_, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, typeID)
+				_, err := s.EveUniverseService.GetOrCreateTypeESI(ctx, typeID)
 				if err != nil {
 					return err
 				}

@@ -36,7 +36,7 @@ func (s *CharacterService) DeleteCharacterMail(ctx context.Context, characterID,
 func (s *CharacterService) GetCharacterMail(ctx context.Context, characterID int32, mailID int32) (*app.CharacterMail, error) {
 	o, err := s.st.GetCharacterMail(ctx, characterID, mailID)
 	if errors.Is(err, storage.ErrNotFound) {
-		return nil, ErrNotFound
+		return nil, app.ErrNotFound
 	}
 	return o, err
 }
@@ -140,7 +140,7 @@ func (s *CharacterService) SendCharacterMail(ctx context.Context, characterID in
 		recipientIDs[i] = r.RecipientId
 	}
 	ids := slices.Concat(recipientIDs, []int32{characterID})
-	_, err = s.EveUniverseService.AddMissingEveEntities(ctx, ids)
+	_, err = s.EveUniverseService.AddMissingEntities(ctx, ids)
 	if err != nil {
 		return 0, err
 	}

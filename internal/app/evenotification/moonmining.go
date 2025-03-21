@@ -98,7 +98,7 @@ func (s *EveNotificationService) renderMoonMining(ctx context.Context, type_ Typ
 		title.Set(fmt.Sprintf("Extraction canceled at %s", data.StructureName))
 		cancelledBy := ""
 		if data.CancelledBy != 0 {
-			x, err := s.EveUniverseService.GetOrCreateEveEntityESI(ctx, data.CancelledBy)
+			x, err := s.EveUniverseService.GetOrCreateEntityESI(ctx, data.CancelledBy)
 			if err != nil {
 				return title, body, err
 			}
@@ -123,7 +123,7 @@ func (s *EveNotificationService) renderMoonMining(ctx context.Context, type_ Typ
 		title.Set(fmt.Sprintf("%s has fired it's moon drill", data.StructureName))
 		firedBy := ""
 		if data.FiredBy != 0 {
-			x, err := s.EveUniverseService.GetOrCreateEveEntityESI(ctx, data.FiredBy)
+			x, err := s.EveUniverseService.GetOrCreateEntityESI(ctx, data.FiredBy)
 			if err != nil {
 				return title, body, err
 			}

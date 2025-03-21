@@ -16,17 +16,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-type UpdateSectionParams struct {
-	CharacterID           int32
-	Section               app.CharacterSection
-	ForceUpdate           bool
-	MaxMails              int
-	MaxWalletTransactions int
-}
-
 // UpdateSectionIfNeeded updates a section from ESI if has expired and changed
 // and reports back if it has changed
-func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.CharacterID == 0 {
 		panic("Invalid character ID")
 	}
@@ -41,7 +33,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg Update
 			}
 		}
 	}
-	var f func(context.Context, UpdateSectionParams) (bool, error)
+	var f func(context.Context, app.CharacterUpdateSectionParams) (bool, error)
 	switch arg.Section {
 	case app.SectionAssets:
 		f = s.updateCharacterAssetsESI
@@ -110,7 +102,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg Update
 // and reports wether it has changed
 func (s *CharacterService) updateSectionIfChanged(
 	ctx context.Context,
-	arg UpdateSectionParams,
+	arg app.CharacterUpdateSectionParams,
 	fetch func(ctx context.Context, characterID int32) (any, error),
 	update func(ctx context.Context, characterID int32, data any) error,
 ) (bool, error) {

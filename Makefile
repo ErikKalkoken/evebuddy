@@ -1,7 +1,7 @@
 generate: bundle queries
 
 bundle:
-	fyne bundle --package icon --prefix "" resources/app > internal/app/icon/resource.go
+	fyne bundle --package icons --prefix "" resources/app > internal/app/icons/resource.go
 	fyne bundle --package widget --prefix icon resources/widget > internal/widget/resource.go
 	fyne bundle --package eveimage resources/eveimage > internal/eveimage/resource.go
 	fyne bundle --package eveicon resources/eveicon > internal/eveicon/resource.go
@@ -25,3 +25,7 @@ deploy-android:
 
 install-android:
 	adb install -r -d EVE_Buddy.apk
+
+interfaces:
+	ifacemaker -s BaseUI -i UI -p app -f internal/app/ui/ui.go -o internal/app/ui.go
+	ifacemaker -s AppSettings -i Settings -p app -f internal/app/ui/appsettings.go -o internal/app/settings.go

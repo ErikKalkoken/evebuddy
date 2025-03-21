@@ -7,7 +7,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
-func (s *EveUniverseService) GetEveCorporationESI(ctx context.Context, corporationID int32) (*app.EveCorporation, error) {
+func (s *EveUniverseService) GetCorporationESI(ctx context.Context, corporationID int32) (*app.EveCorporation, error) {
 	x, _, err := s.esiClient.ESI.CorporationApi.GetCorporationsCorporationId(ctx, corporationID, nil)
 	if err != nil {
 		return nil, err

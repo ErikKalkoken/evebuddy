@@ -9,7 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
-func (eu *EveUniverseService) GetOrCreateEveSchematicESI(ctx context.Context, id int32) (*app.EveSchematic, error) {
+func (eu *EveUniverseService) GetOrCreateSchematicESI(ctx context.Context, id int32) (*app.EveSchematic, error) {
 	x, err := eu.st.GetEveSchematic(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveSchematicFromESI(ctx, id)

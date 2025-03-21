@@ -17,10 +17,11 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-// allianceArea represents an area that shows public information about a character.
-type allianceArea struct {
-	Content fyne.CanvasObject
+// allianceInfo shows public information about a character.
+type allianceInfo struct {
+	widget.BaseWidget
 
+	id   int32
 	hq   *kxwidget.TappableLabel
 	iw   InfoWindow
 	logo *canvas.Image
@@ -29,42 +30,45 @@ type allianceArea struct {
 	w    fyne.Window
 }
 
-func newAlliancArea(iw InfoWindow, allianceID int32, w fyne.Window) *allianceArea {
+func newAllianceInfo(iw InfoWindow, allianceID int32, w fyne.Window) *allianceInfo {
 	name := widget.NewLabel("")
-	name.Truncation = fyne.TextTruncateEllipsis
+	name.Wrapping = fyne.TextWrapWord
 	hq := kxwidget.NewTappableLabel("", nil)
-	hq.Truncation = fyne.TextTruncateEllipsis
-	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
+	hq.Wrapping = fyne.TextWrapWord
 	s := float32(app.IconPixelSize) * logoZoomFactor
-	logo.SetMinSize(fyne.NewSquareSize(s))
-	a := &allianceArea{
+	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(s))
+	a := &allianceInfo{
 		iw:   iw,
+		id:   allianceID,
 		name: name,
 		logo: logo,
 		hq:   hq,
 		tabs: container.NewAppTabs(),
 		w:    w,
 	}
+	a.ExtendBaseWidget(a)
+	return a
+}
 
-	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, a.name)
-	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
-
+func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 	go func() {
-		err := a.load(allianceID)
+		err := a.load(a.id)
 		if err != nil {
-			slog.Error("alliance info update failed", "alliance", allianceID, "error", err)
+			slog.Error("alliance info update failed", "alliance", a.id, "error", err)
 			a.name.Text = fmt.Sprintf("ERROR: Failed to load alliance: %s", ihumanize.Error(err))
 			a.name.Importance = widget.DangerImportance
 			a.name.Refresh()
 		}
 	}()
-	return a
+	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, a.name)
+	c := container.NewBorder(top, nil, nil, nil, a.tabs)
+	return widget.NewSimpleRenderer(c)
 }
 
-func (a *allianceArea) load(allianceID int32) error {
+func (a *allianceInfo) load(allianceID int32) error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.iw.eis.AllianceLogo(allianceID, app.IconPixelSize)
+		r, err := a.iw.u.EveImageService().AllianceLogo(allianceID, app.IconPixelSize)
 		if err != nil {
 			slog.Error("alliance info: Failed to load logo", "allianceID", allianceID, "error", err)
 			return
@@ -72,7 +76,7 @@ func (a *allianceArea) load(allianceID int32) error {
 		a.logo.Resource = r
 		a.logo.Refresh()
 	}()
-	o, err := a.iw.eus.GetEveAllianceESI(ctx, allianceID)
+	o, err := a.iw.u.EveUniverseService().GetAllianceESI(ctx, allianceID)
 	if err != nil {
 		return err
 	}
@@ -98,7 +102,7 @@ func (a *allianceArea) load(allianceID int32) error {
 	if o.Faction != nil {
 		attributes = append(attributes, NewAtributeItem("Faction", o.Faction))
 	}
-	if a.iw.isDeveloperMode {
+	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
 			a.w.Clipboard().SetContent(fmt.Sprint(o.ID))
@@ -111,7 +115,7 @@ func (a *allianceArea) load(allianceID int32) error {
 
 	// Members
 	go func() {
-		members, err := a.iw.eus.GetEveAllianceCorporationsESI(ctx, allianceID)
+		members, err := a.iw.u.EveUniverseService().GetAllianceCorporationsESI(ctx, allianceID)
 		if err != nil {
 			slog.Error("alliance info: Failed to load corporations", "allianceID", allianceID, "error", err)
 			return
@@ -119,7 +123,7 @@ func (a *allianceArea) load(allianceID int32) error {
 		if len(members) == 0 {
 			return
 		}
-		memberList := NewEntityListFromEntities(a.iw.Show, members...)
+		memberList := NewEntityListFromEntities(a.iw.show, members...)
 		a.tabs.Append(container.NewTabItem("Members", memberList))
 		a.tabs.Refresh()
 	}()

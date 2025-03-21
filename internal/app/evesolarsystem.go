@@ -87,3 +87,9 @@ func (es EveSolarSystem) DisplayRichText() []widget.TextSegment {
 		},
 	}
 }
+
+type EveSolarSystemPlanet struct {
+	AsteroidBeltIDs []int32
+	MoonIDs         []int32
+	PlanetID        int32
+}

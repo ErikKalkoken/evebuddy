@@ -43,7 +43,7 @@ func (s *CharacterService) ListCharacterSkillqueueItems(ctx context.Context, cha
 
 // UpdateCharacterSkillqueueESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *CharacterService) UpdateCharacterSkillqueueESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) UpdateCharacterSkillqueueESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionSkillqueue {
 		panic("called with wrong section")
 	}
@@ -61,7 +61,7 @@ func (s *CharacterService) UpdateCharacterSkillqueueESI(ctx context.Context, arg
 			items := data.([]esi.GetCharactersCharacterIdSkillqueue200Ok)
 			args := make([]storage.SkillqueueItemParams, len(items))
 			for i, o := range items {
-				_, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, o.SkillId)
+				_, err := s.EveUniverseService.GetOrCreateTypeESI(ctx, o.SkillId)
 				if err != nil {
 					return err
 				}

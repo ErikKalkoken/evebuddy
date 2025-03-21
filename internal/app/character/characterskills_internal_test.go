@@ -51,7 +51,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		changed, err := s.updateCharacterSkillsESI(ctx, UpdateSectionParams{
+		changed, err := s.updateCharacterSkillsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionSkills,
 		})
@@ -109,7 +109,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		changed, err := s.updateCharacterSkillsESI(ctx, UpdateSectionParams{
+		changed, err := s.updateCharacterSkillsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionSkills,
 		})

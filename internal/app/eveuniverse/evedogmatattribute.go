@@ -59,8 +59,8 @@ func (eu *EveUniverseService) createEveDogmaAttributeFromESI(ctx context.Context
 	return x.(*app.EveDogmaAttribute), nil
 }
 
-// FormatValue returns a formatted value.
-func (eu *EveUniverseService) FormatValue(ctx context.Context, value float32, unitID app.EveUnitID) (string, int32) {
+// FormatDogmaValue returns a formatted value.
+func (eu *EveUniverseService) FormatDogmaValue(ctx context.Context, value float32, unitID app.EveUnitID) (string, int32) {
 	defaultFormatter := func(v float32) string {
 		return humanize.CommafWithDigits(float64(v), 2)
 	}
@@ -121,10 +121,10 @@ func (eu *EveUniverseService) FormatValue(ctx context.Context, value float32, un
 	case app.EveUnitWarpSpeed:
 		return fmt.Sprintf("%s AU/s", defaultFormatter(value)), 0
 	case app.EveUnitTypeID:
-		et, err := eu.GetEveType(ctx, int32(value))
+		et, err := eu.GetType(ctx, int32(value))
 		if err != nil {
 			go func() {
-				_, err := eu.GetOrCreateEveTypeESI(ctx, int32(value))
+				_, err := eu.GetOrCreateTypeESI(ctx, int32(value))
 				if err != nil {
 					slog.Error("Failed to fetch type from ESI", "typeID", value, "err", err)
 				}

@@ -19,10 +19,11 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
-// locationArea represents an area that shows public information about a character.
-type locationArea struct {
-	Content fyne.CanvasObject
+// locationInfo shows public information about a character.
+type locationInfo struct {
+	widget.BaseWidget
 
+	id              int64
 	corporation     *kxwidget.TappableLabel
 	corporationLogo *canvas.Image
 	iw              InfoWindow
@@ -33,17 +34,18 @@ type locationArea struct {
 	w               fyne.Window
 }
 
-func newLocationArea(iw InfoWindow, locationID int64, w fyne.Window) *locationArea {
+func newLocationInfo(iw InfoWindow, locationID int64, w fyne.Window) *locationInfo {
 	name := widget.NewLabel("Loading...")
-	name.Truncation = fyne.TextTruncateEllipsis
+	name.Wrapping = fyne.TextWrapWord
 	typeInfo := kxwidget.NewTappableLabel("", nil)
-	typeInfo.Truncation = fyne.TextTruncateEllipsis
+	typeInfo.Wrapping = fyne.TextWrapWord
 	corporation := kxwidget.NewTappableLabel("", nil)
-	corporation.Truncation = fyne.TextTruncateEllipsis
+	corporation.Wrapping = fyne.TextWrapWord
 	typeImage := kxwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeImage.SetFillMode(canvas.ImageFillContain)
 	typeImage.SetMinSize(fyne.NewSquareSize(renderIconUnitSize))
-	a := &locationArea{
+	a := &locationInfo{
+		id:              locationID,
 		corporation:     corporation,
 		corporationLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		iw:              iw,
@@ -53,7 +55,11 @@ func newLocationArea(iw InfoWindow, locationID int64, w fyne.Window) *locationAr
 		tabs:            container.NewAppTabs(),
 		w:               w,
 	}
+	a.ExtendBaseWidget(a)
+	return a
+}
 
+func (a *locationInfo) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	main := container.New(layout.NewCustomPaddedVBoxLayout(0),
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
@@ -69,28 +75,27 @@ func newLocationArea(iw InfoWindow, locationID int64, w fyne.Window) *locationAr
 		),
 	)
 	top := container.NewBorder(nil, nil, container.NewVBox(a.typeImage), nil, main)
-	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
-
+	c := container.NewBorder(top, nil, nil, nil, a.tabs)
 	go func() {
-		err := a.load(locationID)
+		err := a.load(a.id)
 		if err != nil {
-			slog.Error("location info update failed", "characterID", locationID, "error", err)
+			slog.Error("location info update failed", "locationID", a.id, "error", err)
 			a.name.Text = fmt.Sprintf("ERROR: Failed to load character: %s", ihumanize.Error(err))
 			a.name.Importance = widget.DangerImportance
 			a.name.Refresh()
 		}
 	}()
-	return a
+	return widget.NewSimpleRenderer(c)
 }
 
-func (a *locationArea) load(locationID int64) error {
+func (a *locationInfo) load(locationID int64) error {
 	ctx := context.Background()
-	o, err := a.iw.eus.GetOrCreateEveLocationESI(ctx, locationID)
+	o, err := a.iw.u.EveUniverseService().GetOrCreateLocationESI(ctx, locationID)
 	if err != nil {
 		return err
 	}
 	go func() {
-		r, err := a.iw.eis.InventoryTypeRender(o.Type.ID, renderIconPixelSize)
+		r, err := a.iw.u.EveImageService().InventoryTypeRender(o.Type.ID, renderIconPixelSize)
 		if err != nil {
 			slog.Error("location info: Failed to load portrait", "location", o, "error", err)
 			return
@@ -107,7 +112,7 @@ func (a *locationArea) load(locationID int64) error {
 		a.iw.ShowEveEntity(o.Owner)
 	}
 	a.typeImage.OnTapped = func() {
-		go a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.eis.InventoryTypeRender, a.w)
+		go a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.u.EveImageService().InventoryTypeRender, a.w)
 	}
 	description := o.Type.Description
 	if description == "" {
@@ -116,7 +121,7 @@ func (a *locationArea) load(locationID int64) error {
 	desc := widget.NewLabel(description)
 	desc.Wrapping = fyne.TextWrapWord
 	a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
-	if a.iw.isDeveloperMode {
+	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
 			a.w.Clipboard().SetContent(fmt.Sprint(o.ID))
@@ -127,9 +132,9 @@ func (a *locationArea) load(locationID int64) error {
 		a.tabs.Append(attributesTab)
 	}
 	el := NewEntityListFromItems(
-		a.iw.Show,
-		NewEntityItemFromEveEntity(o.SolarSystem.Constellation.Region.ToEveEntity(), ""),
-		NewEntityItemFromEveEntity(o.SolarSystem.Constellation.ToEveEntity(), ""),
+		a.iw.show,
+		NewEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.Region.ToEveEntity(), ""),
+		NewEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.ToEveEntity(), ""),
 		NewEntityItemFromEveSolarSystem(o.SolarSystem),
 	)
 	locationTab := container.NewTabItem("Location", el)
@@ -137,7 +142,7 @@ func (a *locationArea) load(locationID int64) error {
 	a.tabs.Select(locationTab)
 	a.tabs.Refresh()
 	go func() {
-		r, err := a.iw.eis.CorporationLogo(o.Owner.ID, app.IconPixelSize)
+		r, err := a.iw.u.EveImageService().CorporationLogo(o.Owner.ID, app.IconPixelSize)
 		if err != nil {
 			slog.Error("location info: Failed to load corp logo", "owner", o.Owner, "error", err)
 			return

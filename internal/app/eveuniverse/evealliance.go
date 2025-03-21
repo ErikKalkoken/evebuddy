@@ -8,12 +8,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
-func (s *EveUniverseService) GetEveAllianceESI(ctx context.Context, allianceID int32) (*app.EveAlliance, error) {
+func (s *EveUniverseService) GetAllianceESI(ctx context.Context, allianceID int32) (*app.EveAlliance, error) {
 	a, _, err := s.esiClient.ESI.AllianceApi.GetAlliancesAllianceId(ctx, allianceID, nil)
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.AddMissingEveEntities(ctx, []int32{allianceID, a.CreatorCorporationId, a.CreatorId, a.ExecutorCorporationId, a.FactionId})
+	_, err = s.AddMissingEntities(ctx, []int32{allianceID, a.CreatorCorporationId, a.CreatorId, a.ExecutorCorporationId, a.FactionId})
 	if err != nil {
 		return nil, err
 	}
@@ -42,12 +42,12 @@ func (s *EveUniverseService) GetEveAllianceESI(ctx context.Context, allianceID i
 	return o, nil
 }
 
-func (s *EveUniverseService) GetEveAllianceCorporationsESI(ctx context.Context, allianceID int32) ([]*app.EveEntity, error) {
+func (s *EveUniverseService) GetAllianceCorporationsESI(ctx context.Context, allianceID int32) ([]*app.EveEntity, error) {
 	ids, _, err := s.esiClient.ESI.AllianceApi.GetAlliancesAllianceIdCorporations(ctx, allianceID, nil)
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.AddMissingEveEntities(ctx, slices.Concat(ids, []int32{allianceID}))
+	_, err = s.AddMissingEntities(ctx, slices.Concat(ids, []int32{allianceID}))
 	if err != nil {
 		return nil, err
 	}

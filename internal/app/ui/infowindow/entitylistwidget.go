@@ -20,10 +20,10 @@ type entityItem struct {
 	category     string
 	text         string               // text in markdown
 	textSegments []widget.TextSegment // takes precendence over text when not empty
-	infoVariant  InfoVariant
+	infoVariant  infoVariant
 }
 
-func NewEntityItem(id int64, category, text string, v InfoVariant) entityItem {
+func NewEntityItem(id int64, category, text string, v infoVariant) entityItem {
 	return entityItem{
 		id:          id,
 		category:    category,
@@ -37,7 +37,7 @@ func NewEntityItemFromEvePlanet(o *app.EvePlanet) entityItem {
 		id:          int64(o.ID),
 		category:    "Planet",
 		text:        o.Name,
-		infoVariant: NotSupported,
+		infoVariant: infoNotSupported,
 	}
 }
 
@@ -51,7 +51,11 @@ func NewEntityItemFromEveSolarSystem(o *app.EveSolarSystem) entityItem {
 	}
 }
 
-func NewEntityItemFromEveEntity(ee *app.EveEntity, text string) entityItem {
+func NewEntityItemFromEveEntity(ee *app.EveEntity) entityItem {
+	return NewEntityItem(int64(ee.ID), ee.CategoryDisplay(), ee.Name, eveEntity2InfoVariant(ee))
+}
+
+func NewEntityItemFromEveEntityWithText(ee *app.EveEntity, text string) entityItem {
 	if text == "" {
 		text = ee.Name
 	}
@@ -63,22 +67,22 @@ type EntitiyList struct {
 	widget.BaseWidget
 
 	items    []entityItem
-	showInfo func(InfoVariant, int64)
+	showInfo func(infoVariant, int64)
 }
 
-func NewEntityListFromEntities(show func(InfoVariant, int64), s ...*app.EveEntity) *EntitiyList {
+func NewEntityListFromEntities(show func(infoVariant, int64), s ...*app.EveEntity) *EntitiyList {
 	items := slices.Collect(xiter.MapSlice(s, func(ee *app.EveEntity) entityItem {
-		return NewEntityItemFromEveEntity(ee, "")
+		return NewEntityItemFromEveEntityWithText(ee, "")
 	}))
 	return NewEntityListFromItems(show, items...)
 }
 
-func NewEntityList(show func(InfoVariant, int64)) *EntitiyList {
+func NewEntityList(show func(infoVariant, int64)) *EntitiyList {
 	items := make([]entityItem, 0)
 	return NewEntityListFromItems(show, items...)
 }
 
-func NewEntityListFromItems(show func(InfoVariant, int64), items ...entityItem) *EntitiyList {
+func NewEntityListFromItems(show func(infoVariant, int64), items ...entityItem) *EntitiyList {
 	w := &EntitiyList{
 		items:    items,
 		showInfo: show,
@@ -124,7 +128,7 @@ func (w *EntitiyList) CreateRenderer() fyne.WidgetRenderer {
 			icon := border1[1].(*fyne.Container).Objects[1].(*kxwidget.TappableIcon)
 			category := border2[0].(*fyne.Container).Objects[0].(*iwidget.Label)
 			category.SetText(it.category)
-			if it.infoVariant == NotSupported {
+			if it.infoVariant == infoNotSupported {
 				icon.OnTapped = nil
 				icon.Hide()
 			} else {

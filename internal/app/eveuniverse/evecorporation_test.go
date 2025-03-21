@@ -52,7 +52,7 @@ func TestGetEveCorporationESI(t *testing.T) {
 			}),
 		)
 		// when
-		o, err := s.GetEveCorporationESI(ctx, corporationID)
+		o, err := s.GetCorporationESI(ctx, corporationID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, alliance, o.Alliance)
@@ -90,7 +90,7 @@ func TestGetEveCorporationESI(t *testing.T) {
 			}),
 		)
 		// when
-		o, err := s.GetEveCorporationESI(ctx, corporationID)
+		o, err := s.GetCorporationESI(ctx, corporationID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, time.Date(2004, 11, 28, 16, 42, 51, 0, time.UTC), o.DateFounded.UTC())

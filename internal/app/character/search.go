@@ -4,51 +4,12 @@ import (
 	"context"
 	"log/slog"
 	"slices"
-	"strings"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
-
-type SearchCategory string
-
-const (
-	SearchAgent         SearchCategory = "agent"
-	SearchAlliance      SearchCategory = "alliance"
-	SearchCharacter     SearchCategory = "character"
-	SearchConstellation SearchCategory = "constellation"
-	SearchCorporation   SearchCategory = "corporation"
-	SearchFaction       SearchCategory = "faction"
-	SearchRegion        SearchCategory = "region"
-	SearchSolarSystem   SearchCategory = "solar_system"
-	SearchStation       SearchCategory = "station"
-	SearchType          SearchCategory = "inventory_type"
-)
-
-func (x SearchCategory) String() string {
-	titler := cases.Title(language.English)
-	return titler.String(strings.ReplaceAll(string(x), "_", " "))
-}
-
-// SearchCategories returns all available search categories
-func SearchCategories() []SearchCategory {
-	return []SearchCategory{
-		SearchAgent,
-		SearchAlliance,
-		SearchCharacter,
-		SearchConstellation,
-		SearchCorporation,
-		SearchFaction,
-		SearchRegion,
-		SearchSolarSystem,
-		SearchStation,
-		SearchType,
-	}
-}
 
 // SearchESI performs a name search for items on the ESI server
 // and returns the results by EveEntity category and sorted by name.
@@ -58,14 +19,14 @@ func (s *CharacterService) SearchESI(
 	ctx context.Context,
 	characterID int32,
 	search string,
-	categories []SearchCategory, strict bool,
-) (map[SearchCategory][]*app.EveEntity, int, error) {
+	categories []app.SearchCategory, strict bool,
+) (map[app.SearchCategory][]*app.EveEntity, int, error) {
 	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return nil, 0, err
 	}
 	ctx = contextWithESIToken(ctx, token.AccessToken)
-	cc := slices.Collect(xiter.MapSlice(categories, func(a SearchCategory) string {
+	cc := slices.Collect(xiter.MapSlice(categories, func(a app.SearchCategory) string {
 		return string(a)
 	}))
 	x, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(
@@ -96,19 +57,19 @@ func (s *CharacterService) SearchESI(
 		slog.Error("SearchESI: resolve IDs to eve entities", "error", err)
 		return nil, 0, err
 	}
-	categoryMap := map[SearchCategory][]int32{
-		SearchAgent:         x.Agent,
-		SearchAlliance:      x.Alliance,
-		SearchCharacter:     x.Character,
-		SearchConstellation: x.Constellation,
-		SearchCorporation:   x.Corporation,
-		SearchFaction:       x.Faction,
-		SearchRegion:        x.Region,
-		SearchSolarSystem:   x.SolarSystem,
-		SearchStation:       x.Station,
-		SearchType:          x.InventoryType,
+	categoryMap := map[app.SearchCategory][]int32{
+		app.SearchAgent:         x.Agent,
+		app.SearchAlliance:      x.Alliance,
+		app.SearchCharacter:     x.Character,
+		app.SearchConstellation: x.Constellation,
+		app.SearchCorporation:   x.Corporation,
+		app.SearchFaction:       x.Faction,
+		app.SearchRegion:        x.Region,
+		app.SearchSolarSystem:   x.SolarSystem,
+		app.SearchStation:       x.Station,
+		app.SearchType:          x.InventoryType,
 	}
-	r := make(map[SearchCategory][]*app.EveEntity)
+	r := make(map[app.SearchCategory][]*app.EveEntity)
 	for c, ids := range categoryMap {
 		for _, id := range ids {
 			r[c] = append(r[c], eeMap[id])

@@ -300,7 +300,7 @@ func (s *SSOService) fetchRefreshedToken(refreshToken string) (*tokenPayload, er
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Host", ssoHost)
-	slog.Info("Requesting token from SSO API", "grant_type", form.Get("grant_type"), "url", s.tokenURL)
+	slog.Debug("Requesting token from SSO API", "grant_type", form.Get("grant_type"), "url", s.tokenURL)
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {

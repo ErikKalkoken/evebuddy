@@ -29,7 +29,7 @@ func (s *CharacterService) calcCharacterNextCloneJump(ctx context.Context, c *ap
 
 	var skillLevel int
 	sk, err := s.GetCharacterSkill(ctx, c.ID, app.EveTypeInfomorphSynchronizing)
-	if errors.Is(err, ErrNotFound) {
+	if errors.Is(err, app.ErrNotFound) {
 		skillLevel = 0
 	} else if err != nil {
 		return z, err
@@ -46,7 +46,7 @@ func (s *CharacterService) calcCharacterNextCloneJump(ctx context.Context, c *ap
 
 // TODO: Consolidate with updating home in separate function
 
-func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionJumpClones {
 		panic("called with wrong section")
 	}
@@ -64,7 +64,7 @@ func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg
 			clones := data.(esi.GetCharactersCharacterIdClonesOk)
 			var home optional.Optional[int64]
 			if clones.HomeLocation.LocationId != 0 {
-				_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, clones.HomeLocation.LocationId)
+				_, err := s.EveUniverseService.GetOrCreateLocationESI(ctx, clones.HomeLocation.LocationId)
 				if err != nil {
 					return err
 				}
@@ -78,7 +78,7 @@ func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg
 			}
 			args := make([]storage.CreateCharacterJumpCloneParams, len(clones.JumpClones))
 			for i, jc := range clones.JumpClones {
-				_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, jc.LocationId)
+				_, err := s.EveUniverseService.GetOrCreateLocationESI(ctx, jc.LocationId)
 				if err != nil {
 					return err
 				}
