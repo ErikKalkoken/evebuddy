@@ -14,6 +14,7 @@ import (
 
 type SkillQueueItem struct {
 	widget.BaseWidget
+
 	duration   *widget.Label
 	progress   *widget.ProgressBar
 	name       *widget.Label
