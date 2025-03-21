@@ -39,6 +39,7 @@ func newRegionInfo(iw InfoWindow, regionID int32, w fyne.Window) *regionInfo {
 	logo := iwidget.NewImageFromResource(icons.Region64Png, fyne.NewSquareSize(s))
 	a := &regionInfo{
 		iw:   iw,
+		id:   regionID,
 		logo: logo,
 		name: name,
 		tabs: container.NewAppTabs(),
@@ -71,9 +72,9 @@ func (a *regionInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *regionInfo) load(constellationID int32) error {
+func (a *regionInfo) load(regionID int32) error {
 	ctx := context.Background()
-	o, err := a.iw.u.EveUniverseService().GetOrCreateRegionESI(ctx, constellationID)
+	o, err := a.iw.u.EveUniverseService().GetOrCreateRegionESI(ctx, regionID)
 	if err != nil {
 		return err
 	}

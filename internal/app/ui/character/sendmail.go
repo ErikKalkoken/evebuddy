@@ -15,7 +15,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -26,9 +26,9 @@ type SendMail struct {
 
 	body      *widget.Entry
 	character *app.Character
-	from      *appwidget.EveEntityEntry
+	from      *shared.EveEntityEntry
 	subject   *widget.Entry
-	to        *appwidget.EveEntityEntry
+	to        *shared.EveEntityEntry
 	u         app.UI
 }
 
@@ -39,7 +39,7 @@ func NewSendMail(u app.UI, c *app.Character, mode app.SendMailMode, m *app.Chara
 	}
 	a.ExtendBaseWidget(a)
 
-	a.from = appwidget.NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.EveImageService())
+	a.from = shared.NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.EveImageService())
 	a.from.ShowInfoWindow = u.ShowEveEntityInfoWindow
 	a.from.Set([]*app.EveEntity{{ID: c.ID, Name: c.EveCharacter.Name, Category: app.EveEntityCharacter}})
 	a.from.Disable()
@@ -49,7 +49,7 @@ func NewSendMail(u app.UI, c *app.Character, mode app.SendMailMode, m *app.Chara
 			a.to.Add(ee)
 		}, u.MainWindow())
 	})
-	a.to = appwidget.NewEveEntityEntry(toButton, labelWith, u.EveImageService())
+	a.to = shared.NewEveEntityEntry(toButton, labelWith, u.EveImageService())
 	a.to.ShowInfoWindow = u.ShowEveEntityInfoWindow
 	a.to.Placeholder = "Tap To-Button to add recipients..."
 
@@ -169,8 +169,8 @@ func showAddDialog(u app.UI, characterID int32, onSelected func(ee *app.EveEntit
 			row := co.(*fyne.Container).Objects
 			row[0].(*widget.Label).SetText(ee.Name)
 			image := row[1].(*canvas.Image)
-			appwidget.RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
-				res, err := appwidget.FetchEveEntityAvatar(u.EveImageService(), ee, fallbackIcon)
+			shared.RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
+				res, err := shared.FetchEveEntityAvatar(u.EveImageService(), ee, fallbackIcon)
 				if err != nil {
 					return fallbackIcon, err
 				}

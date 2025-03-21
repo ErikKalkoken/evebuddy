@@ -19,6 +19,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -47,7 +48,7 @@ func NewManageCharacters(u app.UI) *ManageCharacters {
 	a := &ManageCharacters{
 		characters:   make([]accountCharacter, 0),
 		showSnackbar: u.ShowSnackbar,
-		title:        MakeTopLabel(),
+		title:        shared.MakeTopLabel(),
 		window:       u.MainWindow(),
 		u:            u,
 	}

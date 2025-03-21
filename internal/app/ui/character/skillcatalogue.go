@@ -12,7 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/dustin/go-humanize"
 
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
@@ -57,7 +57,7 @@ func NewCharacterSkillCatalogue(u app.UI) *CharacterSkillCatalogue {
 		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
 		levelUnTrained: theme.NewDisabledResource(theme.MediaStopIcon()),
 		skills:         make([]skillTrained, 0),
-		total:          MakeTopLabel(),
+		total:          shared.MakeTopLabel(),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
@@ -158,7 +158,7 @@ func (a *CharacterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 			c := container.NewBorder(
 				nil,
 				nil,
-				appwidget.NewSkillLevel(),
+				shared.NewSkillLevel(),
 				nil,
 				title,
 			)
@@ -173,7 +173,7 @@ func (a *CharacterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 		row := co.(*fyne.Container).Objects
 		label := row[0].(*widget.Label)
 		label.SetText(skill.name)
-		level := row[1].(*appwidget.SkillLevel)
+		level := row[1].(*shared.SkillLevel)
 		level.Set(skill.activeLevel, skill.trainedLevel, 0)
 	}
 	makeOnSelected := func(unselectAll func()) func(int) {

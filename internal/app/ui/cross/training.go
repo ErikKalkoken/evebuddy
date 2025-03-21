@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -36,7 +37,7 @@ type TrainingOverview struct {
 func NewTrainingOverview(u app.UI) *TrainingOverview {
 	a := &TrainingOverview{
 		rows: make([]trainingCharacter, 0),
-		top:  MakeTopLabel(),
+		top:  shared.MakeTopLabel(),
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)

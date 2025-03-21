@@ -13,7 +13,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
 	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -55,7 +55,7 @@ func (w *MailHeaderItem) Set(from *app.EveEntity, subject string, timestamp time
 	w.subject.TextStyle = fyne.TextStyle{Bold: !isRead}
 	w.Refresh()
 	go func() {
-		res, err := appwidget.FetchEveEntityAvatar(w.eis, from, w.FallbackIcon)
+		res, err := shared.FetchEveEntityAvatar(w.eis, from, w.FallbackIcon)
 		if err != nil {
 			slog.Error("fetch eve entity avatar", "error", err)
 			res = w.FallbackIcon

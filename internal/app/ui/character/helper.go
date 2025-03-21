@@ -5,14 +5,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// MakeTopLabel returns a new empty label meant for the top bar on a screen.
-func MakeTopLabel() *widget.Label {
-	l := widget.NewLabel("")
-	l.TextStyle.Bold = true
-	l.Wrapping = fyne.TextWrapWord
-	return l
-}
-
 // makeGridOrList makes and returns a GridWrap on desktop and a List on mobile.
 //
 // This allows the grid items to render nicely as list on mobile and also enable truncation.

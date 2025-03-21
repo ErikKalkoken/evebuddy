@@ -17,7 +17,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -127,7 +127,7 @@ func (a *CharacterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 				prefix.Show()
 				spacer.Show()
 			} else {
-				appwidget.RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
+				shared.RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
 					return a.u.EveImageService().InventoryTypeIcon(n.implantTypeID, app.IconPixelSize)
 				})
 				main.SetText(n.implantTypeName)

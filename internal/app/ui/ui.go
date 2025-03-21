@@ -27,7 +27,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/cross"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/tools"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
@@ -145,7 +145,7 @@ func NewBaseUI(
 
 	if u.IsDesktop() {
 		iwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
-		appwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
+		shared.DefaultImageScaleMode = canvas.ImageScaleFastest
 	}
 
 	u.snackbar = iwidget.NewSnackbar(u.window)

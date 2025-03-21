@@ -17,6 +17,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -70,12 +71,12 @@ type UpdateStatus struct {
 
 func NewUpdateStatus(u app.UI) *UpdateStatus {
 	a := &UpdateStatus{
-		charactersTop:     MakeTopLabel(),
+		charactersTop:     shared.MakeTopLabel(),
 		details:           make([]detailsItem, 0),
-		detailsTop:        MakeTopLabel(),
+		detailsTop:        shared.MakeTopLabel(),
 		sectionEntities:   make([]sectionEntity, 0),
 		sections:          make([]app.SectionStatus, 0),
-		sectionsTop:       MakeTopLabel(),
+		sectionsTop:       shared.MakeTopLabel(),
 		selectedEntityID:  -1,
 		selectedSectionID: -1,
 		u:                 u,

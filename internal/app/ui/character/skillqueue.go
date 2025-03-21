@@ -12,6 +12,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -29,7 +30,7 @@ type CharacterSkillQueue struct {
 
 func NewCharacterSkillQueue(u app.UI) *CharacterSkillQueue {
 	a := &CharacterSkillQueue{
-		total: MakeTopLabel(),
+		total: shared.MakeTopLabel(),
 		sq:    app.NewCharacterSkillqueue(),
 		u:     u,
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -25,7 +26,7 @@ type CharacterWalletTransaction struct {
 
 func NewCharacterWalletTransaction(u app.UI) *CharacterWalletTransaction {
 	a := &CharacterWalletTransaction{
-		top:  MakeTopLabel(),
+		top:  shared.MakeTopLabel(),
 		rows: make([]*app.CharacterWalletTransaction, 0),
 		u:    u,
 	}

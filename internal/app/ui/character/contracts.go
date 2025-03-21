@@ -13,6 +13,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -49,7 +50,7 @@ type CharacterContracts struct {
 func NewCharacterContracts(u app.UI) *CharacterContracts {
 	a := &CharacterContracts{
 		contracts: make([]*app.CharacterContract, 0),
-		top:       MakeTopLabel(),
+		top:       shared.MakeTopLabel(),
 		u:         u,
 	}
 	a.ExtendBaseWidget(a)
