@@ -90,7 +90,9 @@ You search the live game server for entities, similar to the in-game search bar:
 
 ### Info windows
 
-Open information windows for many entities for additional information, similar to the info windows in the game client:
+Access additional information about many entities (e.g. characters, corporations, solar systems):
+
+![Screenshot from 2025-03-21 20-37-01](https://github.com/user-attachments/assets/0e29bbb3-5b88-4ee9-a3cc-72a50a98734d)
 
 ### Full mail client
 
