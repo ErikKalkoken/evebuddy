@@ -1,5 +1,4 @@
-// Package desktop contains the code for rendering the desktop UI.
-package desktop
+package ui
 
 import (
 	"fmt"
@@ -23,18 +22,18 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
+	uidesktop "github.com/ErikKalkoken/evebuddy/internal/app/ui/desktop"
 )
 
 // The DesktopUI is the root object of the DesktopUI and contains all DesktopUI areas.
 type DesktopUI struct {
-	*ui.BaseUI
+	*BaseUI
 
 	sfg *singleflight.Group
 
-	statusBar *StatusBar
-	toolbar   *Toolbar
+	statusBar *uidesktop.StatusBar
+	toolbar   *uidesktop.Toolbar
 
 	overviewTab *container.TabItem
 	tabs        *container.AppTabs
@@ -46,7 +45,7 @@ type DesktopUI struct {
 }
 
 // NewDesktopUI build the UI and returns it.
-func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
+func NewDesktopUI(bui *BaseUI) *DesktopUI {
 	u := &DesktopUI{
 		sfg:    new(singleflight.Group),
 		BaseUI: bui,
@@ -113,8 +112,7 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 	}
 	u.OnUpdateStatus = func() {
 		go u.toolbar.Update()
-		go u.statusBar.updateUpdateStatus()
-		go u.statusBar.updateCharacterCount()
+		go u.statusBar.Update()
 	}
 	u.ShowMailIndicator = func() {
 		deskApp.SetSystemTrayIcon(icons.IconmarkedPng)
@@ -217,8 +215,8 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 	)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
-	u.toolbar = NewToolbar(u)
-	u.statusBar = NewStatusBar(u)
+	u.toolbar = uidesktop.NewToolbar(u)
+	u.statusBar = uidesktop.NewStatusBar(u)
 	mainContent := container.NewBorder(u.toolbar, u.statusBar, nil, nil, u.tabs)
 	u.MainWindow().SetContent(mainContent)
 
@@ -333,7 +331,7 @@ func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, 
 	w.Show()
 }
 
-func (u *DesktopUI) showAccountWindow() {
+func (u *DesktopUI) ShowAccountWindow() {
 	if u.accountWindow != nil {
 		u.accountWindow.Show()
 		return
@@ -455,7 +453,7 @@ func (u *DesktopUI) makeMenu() *fyne.MainMenu {
 	}
 	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, settingsItem)
 
-	charactersItem := fyne.NewMenuItem("Manage characters...", u.showAccountWindow)
+	charactersItem := fyne.NewMenuItem("Manage characters...", u.ShowAccountWindow)
 	charactersItem.Shortcut = &desktop.CustomShortcut{
 		KeyName:  fyne.KeyC,
 		Modifier: fyne.KeyModifierAlt,

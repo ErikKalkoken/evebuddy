@@ -35,8 +35,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	uidesktop "github.com/ErikKalkoken/evebuddy/internal/app/ui/desktop"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/mobile"
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
@@ -244,14 +242,14 @@ func main() {
 		memCache.Clear()
 	}
 	if isDesktop {
-		u := uidesktop.NewDesktopUI(bu)
+		u := ui.NewDesktopUI(bu)
 		u.Init()
 		if *resetSettingsFlag {
 			u.ResetDesktopSettings()
 		}
 		u.ShowAndRun()
 	} else {
-		u := mobile.NewMobileUI(bu)
+		u := ui.NewMobileUI(bu)
 		u.Init()
 		u.ShowAndRun()
 	}

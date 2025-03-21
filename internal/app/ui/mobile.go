@@ -1,5 +1,4 @@
-// Package mobile contains the code for rendering the mobile UI.
-package mobile
+package ui
 
 import (
 	"fmt"
@@ -13,20 +12,19 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type MobileUI struct {
-	*ui.BaseUI
+	*BaseUI
 
 	navItemUpdateStatus *iwidget.ListItem
 }
 
 // NewUI build the UI and returns it.
-func NewMobileUI(bui *ui.BaseUI) *MobileUI {
+func NewMobileUI(bui *BaseUI) *MobileUI {
 	u := &MobileUI{BaseUI: bui}
 
 	var navBar *iwidget.NavBar

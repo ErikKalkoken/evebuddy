@@ -16,6 +16,7 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -37,6 +38,12 @@ const (
 	eveStatusError
 )
 
+type DesktopUI interface {
+	app.UI
+
+	ShowAccountWindow()
+}
+
 type StatusBar struct {
 	widget.BaseWidget
 
@@ -46,11 +53,11 @@ type StatusBar struct {
 	eveStatusError string
 	infoText       *widget.Label
 	newVersionHint *fyne.Container
-	u              *DesktopUI
+	u              DesktopUI
 	updateStatus   *appwidget.StatusBarItem
 }
 
-func NewStatusBar(u *DesktopUI) *StatusBar {
+func NewStatusBar(u DesktopUI) *StatusBar {
 	a := &StatusBar{
 		infoText:       widget.NewLabel(""),
 		newVersionHint: container.NewHBox(),
@@ -58,7 +65,7 @@ func NewStatusBar(u *DesktopUI) *StatusBar {
 	}
 	a.ExtendBaseWidget(a)
 	a.characterCount = appwidget.NewStatusBarItem(theme.AccountIcon(), "?", func() {
-		u.showAccountWindow()
+		u.ShowAccountWindow()
 	})
 	a.updateStatus = appwidget.NewStatusBarItem(theme.NewThemedResource(icons.UpdateSvg), "?", func() {
 		u.ShowUpdateStatusWindow()
@@ -208,9 +215,10 @@ func (a *StatusBar) StartUpdateTicker() {
 	}()
 }
 
-func (a *StatusBar) updateCharacterCount() {
+func (a *StatusBar) Update() {
 	x := a.u.StatusCacheService().ListCharacters()
 	a.characterCount.SetText(strconv.Itoa(len(x)))
+	a.updateUpdateStatus()
 }
 
 func (a *StatusBar) updateUpdateStatus() {
