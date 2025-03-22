@@ -34,6 +34,7 @@ type CharacterService interface {
 	GetCharacterSkill(ctx context.Context, characterID, typeID int32) (*CharacterSkill, error)
 	GetCharacterTotalTrainingTime(ctx context.Context, characterID int32) (optional.Optional[time.Duration], error)
 	ListAllCharacterAssets(ctx context.Context) ([]*CharacterAsset, error)
+	ListAllCharacterJumpClones(ctx context.Context) ([]*CharacterJumpClone2, error)
 	ListAllCharacterPlanets(ctx context.Context) ([]*CharacterPlanet, error)
 	ListCharacterAssets(ctx context.Context, characterID int32) ([]*CharacterAsset, error)
 	ListCharacterAssetsInItemHangar(ctx context.Context, characterID int32, locationID int64) ([]*CharacterAsset, error)

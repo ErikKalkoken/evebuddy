@@ -166,7 +166,7 @@ func NewDesktopUI(bui *BaseUI) *DesktopUI {
 			container.NewTabItem("Contracts", u.characterContracts),
 		))
 
-	overviewAssets := container.NewTabItem("Assets", u.allAssetSearch)
+	overviewAssets := container.NewTabItem("Asset Search", u.allAssetSearch)
 	overviewTabs := container.NewAppTabs(
 		container.NewTabItem("Overview", u.characterOverview),
 		container.NewTabItem("Locations", u.locationOverview),
@@ -174,6 +174,7 @@ func NewDesktopUI(bui *BaseUI) *DesktopUI {
 		overviewAssets,
 		container.NewTabItem("Colonies", u.colonyOverview),
 		container.NewTabItem("Wealth", u.wealthOverview),
+		container.NewTabItem("Clone Search", u.cloneSearch),
 	)
 	overviewTabs.OnSelected = func(ti *container.TabItem) {
 		if ti != overviewAssets {

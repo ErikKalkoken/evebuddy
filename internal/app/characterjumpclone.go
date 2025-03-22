@@ -10,6 +10,13 @@ type CharacterJumpClone struct {
 	Region      *EntityShort[int32]
 }
 
+type CharacterJumpClone2 struct {
+	Character   *EntityShort[int32]
+	ID          int64
+	JumpCloneID int32
+	Location    *EveLocation
+}
+
 type CharacterJumpCloneImplant struct {
 	ID      int64
 	EveType *EveType

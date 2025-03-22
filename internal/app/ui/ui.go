@@ -82,6 +82,7 @@ type BaseUI struct {
 	characterWalletJournal     *character.CharacterWalletJournal
 	characterWalletTransaction *character.CharacterWalletTransaction
 	colonyOverview             *cross.ColonyOverview
+	cloneSearch                *cross.CloneSearch
 	gameSearch                 *tools.GameSearch
 	locationOverview           *cross.LocationOverview
 	managerCharacters          *tools.ManageCharacters
@@ -152,28 +153,30 @@ func NewBaseUI(
 	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.infoWindow = infowindow.New(u, u.window)
 
-	u.managerCharacters = tools.NewManageCharacters(u)
-	u.characterAssets = character.NewCharacterAssets(u)
 	u.allAssetSearch = cross.NewAssetSearch(u)
+	u.characterAssets = character.NewCharacterAssets(u)
 	u.characterAttributes = character.NewCharacterAttributes(u)
-	u.colonyOverview = cross.NewColonyOverview(u)
+	u.characterCommunications = character.NewCharacterCommunications(u)
 	u.characterContracts = character.NewCharacterContracts(u)
 	u.characterImplants = character.NewCharacterImplants(u)
 	u.characterJumpClones = character.NewCharacterJumpClones(u)
-	u.locationOverview = cross.NewLocationOverview(u)
 	u.characterMail = character.NewCharacterMail(u)
-	u.characterCommunications = character.NewCharacterCommunications(u)
 	u.characterOverview = cross.NewCharacterOverview(u)
 	u.characterPlanets = character.NewCharacterPlanets(u)
-	u.gameSearch = tools.NewGameSearch(u)
-	u.userSettings = tools.NewSettings(u)
 	u.characterShips = character.NewCharacterShips(u)
 	u.characterSkillCatalogue = character.NewCharacterSkillCatalogue(u)
 	u.characterSkillQueue = character.NewCharacterSkillQueue(u)
-	u.trainingOverview = cross.NewTrainingOverview(u)
 	u.characterWalletJournal = character.NewCharacterWalletJournal(u)
 	u.characterWalletTransaction = character.NewCharacterWalletTransaction(u)
+	u.cloneSearch = cross.NewCloneSearch(u)
+	u.colonyOverview = cross.NewColonyOverview(u)
+	u.gameSearch = tools.NewGameSearch(u)
+	u.locationOverview = cross.NewLocationOverview(u)
+	u.managerCharacters = tools.NewManageCharacters(u)
+	u.trainingOverview = cross.NewTrainingOverview(u)
+	u.userSettings = tools.NewSettings(u)
 	u.wealthOverview = cross.NewWealthOverview(u)
+
 	u.MainWindow().SetMaster()
 	return u
 }
@@ -430,6 +433,7 @@ func (u *BaseUI) updateCharacter() {
 func (u *BaseUI) UpdateCrossPages() {
 	ff := map[string]func(){
 		"assetSearch": u.allAssetSearch.Update,
+		"cloneSeach":  u.cloneSearch.Update,
 		"colony":      u.colonyOverview.Update,
 		"locations":   u.locationOverview.Update,
 		"overview":    u.characterOverview.Update,
@@ -761,6 +765,7 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 		if needsRefresh {
 			u.characterOverview.Update()
+			u.cloneSearch.Update()
 		}
 	case app.SectionLocation,
 		app.SectionOnline,

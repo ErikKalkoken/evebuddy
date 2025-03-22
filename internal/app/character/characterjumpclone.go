@@ -12,6 +12,10 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
+func (s *CharacterService) ListAllCharacterJumpClones(ctx context.Context) ([]*app.CharacterJumpClone2, error) {
+	return s.st.ListAllCharacterJumpClones(ctx)
+}
+
 func (s *CharacterService) ListCharacterJumpClones(ctx context.Context, characterID int32) ([]*app.CharacterJumpClone, error) {
 	return s.st.ListCharacterJumpClones(ctx, characterID)
 }

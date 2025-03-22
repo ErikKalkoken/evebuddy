@@ -8,6 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"golang.org/x/sync/errgroup"
 )
 
 type CreateCharacterJumpCloneParams struct {
@@ -63,10 +64,47 @@ func listCharacterJumpCloneImplants(ctx context.Context, q *queries.Queries, clo
 	return x, nil
 }
 
+// TODO: Refactor SQL for better performance
+func (st *Storage) ListAllCharacterJumpClones(ctx context.Context) ([]*app.CharacterJumpClone2, error) {
+	rows, err := st.q.ListAllCharacterJumpClones(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list all character jump clones: %w", err)
+	}
+	oo := make([]*app.CharacterJumpClone2, len(rows))
+	g := new(errgroup.Group)
+	for i, r := range rows {
+		g.Go(func() error {
+			arg := queries.EveLocation{
+				ID:               r.LocationID,
+				EveSolarSystemID: r.LocationSolarSystemID,
+				EveTypeID:        r.LocationTypeID,
+				Name:             r.LocationName,
+				OwnerID:          r.LocationOwnerID,
+			}
+			l, err := st.eveLocationFromDBModel(ctx, arg)
+			if err != nil {
+				return err
+			}
+			o := &app.CharacterJumpClone2{
+				ID:          r.ID,
+				JumpCloneID: int32(r.JumpCloneID),
+				Character:   &app.EntityShort[int32]{ID: int32(r.CharacterID), Name: r.CharacterName},
+				Location:    l,
+			}
+			oo[i] = o
+			return nil
+		})
+		if err := g.Wait(); err != nil {
+			return nil, err
+		}
+	}
+	return oo, nil
+}
+
 func (st *Storage) ListCharacterJumpClones(ctx context.Context, characterID int32) ([]*app.CharacterJumpClone, error) {
 	rows, err := st.q.ListCharacterJumpClones(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("get jump clones for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("list jump clones for character %d: %w", characterID, err)
 	}
 	oo := make([]*app.CharacterJumpClone, len(rows))
 	for i, row := range rows {

@@ -11,16 +11,15 @@ import (
 )
 
 const createCharacterJumpClone = `-- name: CreateCharacterJumpClone :one
-INSERT INTO character_jump_clones (
-    character_id,
-    jump_clone_id,
-    location_id,
-    name
-)
-VALUES (
-    ?, ?, ?, ?
-)
-RETURNING id
+INSERT INTO
+    character_jump_clones (
+        character_id,
+        jump_clone_id,
+        location_id,
+        name
+    )
+VALUES
+    (?, ?, ?, ?) RETURNING id
 `
 
 type CreateCharacterJumpCloneParams struct {
@@ -43,13 +42,10 @@ func (q *Queries) CreateCharacterJumpClone(ctx context.Context, arg CreateCharac
 }
 
 const createCharacterJumpCloneImplant = `-- name: CreateCharacterJumpCloneImplant :exec
-INSERT INTO character_jump_clone_implants (
-    clone_id,
-    eve_type_id
-)
-VALUES (
-    ?, ?
-)
+INSERT INTO
+    character_jump_clone_implants (clone_id, eve_type_id)
+VALUES
+    (?, ?)
 `
 
 type CreateCharacterJumpCloneImplantParams struct {
@@ -63,8 +59,10 @@ func (q *Queries) CreateCharacterJumpCloneImplant(ctx context.Context, arg Creat
 }
 
 const deleteCharacterJumpClones = `-- name: DeleteCharacterJumpClones :exec
-DELETE FROM character_jump_clones
-WHERE character_id = ?
+DELETE FROM
+    character_jump_clones
+WHERE
+    character_id = ?
 `
 
 func (q *Queries) DeleteCharacterJumpClones(ctx context.Context, characterID int64) error {
@@ -73,14 +71,20 @@ func (q *Queries) DeleteCharacterJumpClones(ctx context.Context, characterID int
 }
 
 const getCharacterJumpClone = `-- name: GetCharacterJumpClone :one
-SELECT character_jump_clones.id, character_jump_clones.character_id, character_jump_clones.jump_clone_id, character_jump_clones.location_id, character_jump_clones.name, eve_locations.name as location_name, eve_regions.id as region_id, eve_regions.name as region_name
-FROM character_jump_clones
-JOIN eve_locations ON eve_locations.id = character_jump_clones.location_id
-LEFT JOIN eve_solar_systems ON eve_solar_systems.id = eve_locations.eve_solar_system_id
-LEFT JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
-LEFT JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
-WHERE character_id = ?
-AND jump_clone_id = ?
+SELECT
+    character_jump_clones.id, character_jump_clones.character_id, character_jump_clones.jump_clone_id, character_jump_clones.location_id, character_jump_clones.name,
+    eve_locations.name as location_name,
+    eve_regions.id as region_id,
+    eve_regions.name as region_name
+FROM
+    character_jump_clones
+    JOIN eve_locations ON eve_locations.id = character_jump_clones.location_id
+    LEFT JOIN eve_solar_systems ON eve_solar_systems.id = eve_locations.eve_solar_system_id
+    LEFT JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
+    LEFT JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
+WHERE
+    character_id = ?
+    AND jump_clone_id = ?
 `
 
 type GetCharacterJumpCloneParams struct {
@@ -111,20 +115,86 @@ func (q *Queries) GetCharacterJumpClone(ctx context.Context, arg GetCharacterJum
 	return i, err
 }
 
+const listAllCharacterJumpClones = `-- name: ListAllCharacterJumpClones :many
+SELECT
+    cjc.id,
+    cjc.character_id,
+    ec.name as character_name,
+    cjc.location_id,
+    cjc.jump_clone_id,
+    el.eve_solar_system_id as location_solar_system_id,
+    el.eve_type_id as location_type_id,
+    el.name as location_name,
+    el.owner_id as location_owner_id
+FROM
+    character_jump_clones cjc
+    JOIN eve_locations el ON el.id = cjc.location_id
+    JOIN eve_characters ec ON ec.id = cjc.character_id
+`
+
+type ListAllCharacterJumpClonesRow struct {
+	ID                    int64
+	CharacterID           int64
+	CharacterName         string
+	LocationID            int64
+	JumpCloneID           int64
+	LocationSolarSystemID sql.NullInt64
+	LocationTypeID        sql.NullInt64
+	LocationName          string
+	LocationOwnerID       sql.NullInt64
+}
+
+func (q *Queries) ListAllCharacterJumpClones(ctx context.Context) ([]ListAllCharacterJumpClonesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllCharacterJumpClones)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllCharacterJumpClonesRow
+	for rows.Next() {
+		var i ListAllCharacterJumpClonesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.CharacterID,
+			&i.CharacterName,
+			&i.LocationID,
+			&i.JumpCloneID,
+			&i.LocationSolarSystemID,
+			&i.LocationTypeID,
+			&i.LocationName,
+			&i.LocationOwnerID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterJumpCloneImplant = `-- name: ListCharacterJumpCloneImplant :many
-SELECT DISTINCT
-    character_jump_clone_implants.id, character_jump_clone_implants.clone_id, character_jump_clone_implants.eve_type_id,
+SELECT
+    DISTINCT character_jump_clone_implants.id, character_jump_clone_implants.clone_id, character_jump_clone_implants.eve_type_id,
     eve_types.id, eve_types.eve_group_id, eve_types.capacity, eve_types.description, eve_types.graphic_id, eve_types.icon_id, eve_types.is_published, eve_types.market_group_id, eve_types.mass, eve_types.name, eve_types.packaged_volume, eve_types.portion_size, eve_types.radius, eve_types.volume,
     eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
     eve_categories.id, eve_categories.name, eve_categories.is_published,
     eve_type_dogma_attributes.value as slot_num
-FROM character_jump_clone_implants
-JOIN eve_types ON eve_types.id = character_jump_clone_implants.eve_type_id
-JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
-JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
-LEFT JOIN eve_type_dogma_attributes ON eve_type_dogma_attributes.eve_type_id = character_jump_clone_implants.eve_type_id AND eve_type_dogma_attributes.dogma_attribute_id = ?
-WHERE clone_id = ?
-ORDER BY slot_num
+FROM
+    character_jump_clone_implants
+    JOIN eve_types ON eve_types.id = character_jump_clone_implants.eve_type_id
+    JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
+    JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
+    LEFT JOIN eve_type_dogma_attributes ON eve_type_dogma_attributes.eve_type_id = character_jump_clone_implants.eve_type_id
+    AND eve_type_dogma_attributes.dogma_attribute_id = ?
+WHERE
+    clone_id = ?
+ORDER BY
+    slot_num
 `
 
 type ListCharacterJumpCloneImplantParams struct {
@@ -190,24 +260,31 @@ func (q *Queries) ListCharacterJumpCloneImplant(ctx context.Context, arg ListCha
 }
 
 const listCharacterJumpClones = `-- name: ListCharacterJumpClones :many
-SELECT DISTINCT
-    character_jump_clones.id, character_jump_clones.character_id, character_jump_clones.jump_clone_id, character_jump_clones.location_id, character_jump_clones.name,
+SELECT
+    DISTINCT character_jump_clones.id, character_jump_clones.character_id, character_jump_clones.jump_clone_id, character_jump_clones.location_id, character_jump_clones.name,
     eve_locations.name as location_name,
     eve_regions.id as region_id,
     eve_regions.name as region_name,
     (
-        SELECT COUNT(*)
-        FROM character_jump_clone_implants
-        WHERE clone_id = character_jump_clones.id
+        SELECT
+            COUNT(*)
+        FROM
+            character_jump_clone_implants
+        WHERE
+            clone_id = character_jump_clones.id
     ) AS implants_count
-FROM character_jump_clones
-JOIN eve_locations ON eve_locations.id = character_jump_clones.location_id
-LEFT JOIN character_jump_clone_implants ON character_jump_clone_implants.clone_id = character_jump_clones.id
-LEFT JOIN eve_solar_systems ON eve_solar_systems.id = eve_locations.eve_solar_system_id
-LEFT JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
-LEFT JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
-WHERE character_id = ?
-ORDER BY location_name, implants_count DESC
+FROM
+    character_jump_clones
+    JOIN eve_locations ON eve_locations.id = character_jump_clones.location_id
+    LEFT JOIN character_jump_clone_implants ON character_jump_clone_implants.clone_id = character_jump_clones.id
+    LEFT JOIN eve_solar_systems ON eve_solar_systems.id = eve_locations.eve_solar_system_id
+    LEFT JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
+    LEFT JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
+WHERE
+    character_id = ?
+ORDER BY
+    location_name,
+    implants_count DESC
 `
 
 type ListCharacterJumpClonesRow struct {
