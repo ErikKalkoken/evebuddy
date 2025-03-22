@@ -440,10 +440,12 @@ func NewMobileUI(bui *BaseUI) *MobileUI {
 		if c == nil {
 			navBar.Disable(0)
 			navBar.Disable(1)
-			navBar.Select(2)
+			navBar.Disable(2)
+			navBar.Select(3)
 		} else {
 			navBar.Enable(0)
 			navBar.Enable(1)
+			navBar.Enable(2)
 		}
 	}
 	u.OnSetCharacter = func(id int32) {
