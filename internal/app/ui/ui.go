@@ -54,39 +54,40 @@ type BaseUI struct {
 	DisableMenuShortcuts func()
 	EnableMenuShortcuts  func()
 	HideMailIndicator    func()
-	OnAppFirstStarted    func()
-	OnAppStopped         func()
-	OnAppTerminated      func()
-	OnInit               func(*app.Character)
-	OnUpdateCharacter    func(*app.Character)
-	OnRefreshCross       func()
-	OnUpdateStatus       func()
-	OnSetCharacter       func(int32)
-	OnShowAndRun         func()
 	ShowMailIndicator    func()
 
-	ManagerCharacters          *tools.ManageCharacters
-	AllAssetSearch             *cross.AllAssetSearch
-	CharacterAssets            *character.CharacterAssets
-	CharacterAttributes        *character.CharacterAttributes
-	CharacterCommunications    *character.CharacterCommunications
-	CharacterContracts         *character.CharacterContracts
-	CharacterImplants          *character.CharacterImplants
-	CharacterJumpClones        *character.CharacterJumpClones
-	CharacterMail              *character.CharacterMail
-	CharacterOverview          *cross.CharacterOverview
-	CharacterPlanets           *character.CharacterPlanets
-	CharacterShips             *character.CharacterShips
-	CharacterSkillCatalogue    *character.CharacterSkillCatalogue
-	CharacterSkillQueue        *character.CharacterSkillQueue
-	CharacterWalletJournal     *character.CharacterWalletJournal
-	CharacterWalletTransaction *character.CharacterWalletTransaction
-	ColonyOverview             *cross.ColonyOverview
-	LocationOverview           *cross.LocationOverview
-	GameSearch                 *tools.GameSearch
-	UserSettings               *tools.UserSettings
-	TrainingOverview           *cross.TrainingOverview
-	WealthOverview             *cross.WealthOverview
+	onAppFirstStarted func()
+	onAppStopped      func()
+	onAppTerminated   func()
+	onInit            func(*app.Character)
+	onRefreshCross    func()
+	onSetCharacter    func(int32)
+	onShowAndRun      func()
+	onUpdateCharacter func(*app.Character)
+	onUpdateStatus    func()
+
+	allAssetSearch             *cross.AllAssetSearch
+	characterAssets            *character.CharacterAssets
+	characterAttributes        *character.CharacterAttributes
+	characterCommunications    *character.CharacterCommunications
+	characterContracts         *character.CharacterContracts
+	characterImplants          *character.CharacterImplants
+	characterJumpClones        *character.CharacterJumpClones
+	characterMail              *character.CharacterMail
+	characterOverview          *cross.CharacterOverview
+	characterPlanets           *character.CharacterPlanets
+	characterShips             *character.CharacterShips
+	characterSkillCatalogue    *character.CharacterSkillCatalogue
+	characterSkillQueue        *character.CharacterSkillQueue
+	characterWalletJournal     *character.CharacterWalletJournal
+	characterWalletTransaction *character.CharacterWalletTransaction
+	colonyOverview             *cross.ColonyOverview
+	gameSearch                 *tools.GameSearch
+	locationOverview           *cross.LocationOverview
+	managerCharacters          *tools.ManageCharacters
+	trainingOverview           *cross.TrainingOverview
+	userSettings               *tools.UserSettings
+	wealthOverview             *cross.WealthOverview
 
 	app              fyne.App
 	character        *app.Character
@@ -151,28 +152,28 @@ func NewBaseUI(
 	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.infoWindow = infowindow.New(u, u.window)
 
-	u.ManagerCharacters = tools.NewManageCharacters(u)
-	u.CharacterAssets = character.NewCharacterAssets(u)
-	u.AllAssetSearch = cross.NewAssetSearch(u)
-	u.CharacterAttributes = character.NewCharacterAttributes(u)
-	u.ColonyOverview = cross.NewColonies(u)
-	u.CharacterContracts = character.NewCharacterContracts(u)
-	u.CharacterImplants = character.NewCharacterImplants(u)
-	u.CharacterJumpClones = character.NewCharacterJumpClones(u)
-	u.LocationOverview = cross.NewLocations(u)
-	u.CharacterMail = character.NewCharacterMail(u)
-	u.CharacterCommunications = character.NewCharacterCommunications(u)
-	u.CharacterOverview = cross.NewCharacterOverview(u)
-	u.CharacterPlanets = character.NewCharacterPlanets(u)
-	u.GameSearch = tools.NewGameSearch(u)
-	u.UserSettings = tools.NewSettings(u)
-	u.CharacterShips = character.NewCharacterShips(u)
-	u.CharacterSkillCatalogue = character.NewCharacterSkillCatalogue(u)
-	u.CharacterSkillQueue = character.NewCharacterSkillQueue(u)
-	u.TrainingOverview = cross.NewTrainingOverview(u)
-	u.CharacterWalletJournal = character.NewCharacterWalletJournal(u)
-	u.CharacterWalletTransaction = character.NewCharacterWalletTransaction(u)
-	u.WealthOverview = cross.NewWealthOverview(u)
+	u.managerCharacters = tools.NewManageCharacters(u)
+	u.characterAssets = character.NewCharacterAssets(u)
+	u.allAssetSearch = cross.NewAssetSearch(u)
+	u.characterAttributes = character.NewCharacterAttributes(u)
+	u.colonyOverview = cross.NewColonyOverview(u)
+	u.characterContracts = character.NewCharacterContracts(u)
+	u.characterImplants = character.NewCharacterImplants(u)
+	u.characterJumpClones = character.NewCharacterJumpClones(u)
+	u.locationOverview = cross.NewLocationOverview(u)
+	u.characterMail = character.NewCharacterMail(u)
+	u.characterCommunications = character.NewCharacterCommunications(u)
+	u.characterOverview = cross.NewCharacterOverview(u)
+	u.characterPlanets = character.NewCharacterPlanets(u)
+	u.gameSearch = tools.NewGameSearch(u)
+	u.userSettings = tools.NewSettings(u)
+	u.characterShips = character.NewCharacterShips(u)
+	u.characterSkillCatalogue = character.NewCharacterSkillCatalogue(u)
+	u.characterSkillQueue = character.NewCharacterSkillQueue(u)
+	u.trainingOverview = cross.NewTrainingOverview(u)
+	u.characterWalletJournal = character.NewCharacterWalletJournal(u)
+	u.characterWalletTransaction = character.NewCharacterWalletTransaction(u)
+	u.wealthOverview = cross.NewWealthOverview(u)
 	u.MainWindow().SetMaster()
 	return u
 }
@@ -229,7 +230,7 @@ func (u *BaseUI) IsOffline() bool {
 // It is meant for initialization logic that requires the UI to be fully created.
 // It should be called directly after the UI was created and before the Fyne loop is started.
 func (u *BaseUI) Init() {
-	u.ManagerCharacters.Refresh()
+	u.managerCharacters.Refresh()
 	var c *app.Character
 	var err error
 	ctx := context.Background()
@@ -253,8 +254,8 @@ func (u *BaseUI) Init() {
 		return
 	}
 	u.setCharacter(c)
-	if u.OnInit != nil {
-		u.OnInit(c)
+	if u.onInit != nil {
+		u.onInit(c)
 	}
 }
 
@@ -314,9 +315,9 @@ func (u *BaseUI) ShowAndRun() {
 		} else {
 			slog.Info("Update ticker disabled")
 		}
-		go u.CharacterJumpClones.StartUpdateTicker()
-		if u.OnAppFirstStarted != nil {
-			u.OnAppFirstStarted()
+		go u.characterJumpClones.StartUpdateTicker()
+		if u.onAppFirstStarted != nil {
+			u.onAppFirstStarted()
 		}
 	})
 	u.app.Lifecycle().SetOnEnteredForeground(func() {
@@ -331,17 +332,17 @@ func (u *BaseUI) ShowAndRun() {
 	})
 	u.app.Lifecycle().SetOnStopped(func() {
 		slog.Info("App stopped")
-		if u.OnAppStopped != nil {
-			u.OnAppStopped()
+		if u.onAppStopped != nil {
+			u.onAppStopped()
 		}
 	})
-	if u.OnShowAndRun != nil {
-		u.OnShowAndRun()
+	if u.onShowAndRun != nil {
+		u.onShowAndRun()
 	}
 	u.window.ShowAndRun()
 	slog.Info("App terminated")
-	if u.OnAppTerminated != nil {
-		u.OnAppTerminated()
+	if u.onAppTerminated != nil {
+		u.onAppTerminated()
 	}
 }
 
@@ -385,28 +386,28 @@ func (u *BaseUI) reloadCurrentCharacter() {
 
 // UpdateStatus refreshed all status information pages.
 func (u *BaseUI) UpdateStatus() {
-	if u.OnUpdateStatus == nil {
+	if u.onUpdateStatus == nil {
 		return
 	}
-	go u.OnUpdateStatus()
+	go u.onUpdateStatus()
 }
 
 // updateCharacter updates all pages for the current character.
 func (u *BaseUI) updateCharacter() {
 	ff := map[string]func(){
-		"assets":            u.CharacterAssets.Update,
-		"attributes":        u.CharacterAttributes.Update,
-		"contracts":         u.CharacterContracts.Update,
-		"implants":          u.CharacterImplants.Update,
-		"jumpClones":        u.CharacterJumpClones.Update,
-		"mail":              u.CharacterMail.Update,
-		"notifications":     u.CharacterCommunications.Update,
-		"planets":           u.CharacterPlanets.Update,
-		"ships":             u.CharacterShips.Update,
-		"skillCatalogue":    u.CharacterSkillCatalogue.Update,
-		"skillqueue":        u.CharacterSkillQueue.Update,
-		"walletJournal":     u.CharacterWalletJournal.Update,
-		"walletTransaction": u.CharacterWalletTransaction.Update,
+		"assets":            u.characterAssets.Update,
+		"attributes":        u.characterAttributes.Update,
+		"contracts":         u.characterContracts.Update,
+		"implants":          u.characterImplants.Update,
+		"jumpClones":        u.characterJumpClones.Update,
+		"mail":              u.characterMail.Update,
+		"notifications":     u.characterCommunications.Update,
+		"planets":           u.characterPlanets.Update,
+		"ships":             u.characterShips.Update,
+		"skillCatalogue":    u.characterSkillCatalogue.Update,
+		"skillqueue":        u.characterSkillQueue.Update,
+		"walletJournal":     u.characterWalletJournal.Update,
+		"walletTransaction": u.characterWalletTransaction.Update,
 	}
 	c := u.CurrentCharacter()
 	if c != nil {
@@ -414,9 +415,9 @@ func (u *BaseUI) updateCharacter() {
 	} else {
 		slog.Debug("Updating without character")
 	}
-	if u.OnUpdateCharacter != nil {
+	if u.onUpdateCharacter != nil {
 		ff["OnUpdateCharacter"] = func() {
-			u.OnUpdateCharacter(c)
+			u.onUpdateCharacter(c)
 		}
 	}
 	runFunctionsWithProgressModal("Loading character", ff, u.window)
@@ -428,15 +429,15 @@ func (u *BaseUI) updateCharacter() {
 // UpdateCrossPages refreshed all pages that contain information about multiple characters.
 func (u *BaseUI) UpdateCrossPages() {
 	ff := map[string]func(){
-		"assetSearch": u.AllAssetSearch.Update,
-		"colony":      u.ColonyOverview.Update,
-		"locations":   u.LocationOverview.Update,
-		"overview":    u.CharacterOverview.Update,
-		"training":    u.TrainingOverview.Update,
-		"wealth":      u.WealthOverview.Update,
+		"assetSearch": u.allAssetSearch.Update,
+		"colony":      u.colonyOverview.Update,
+		"locations":   u.locationOverview.Update,
+		"overview":    u.characterOverview.Update,
+		"training":    u.trainingOverview.Update,
+		"wealth":      u.wealthOverview.Update,
 	}
-	if u.OnRefreshCross != nil {
-		ff["onRefreshCross"] = u.OnRefreshCross
+	if u.onRefreshCross != nil {
+		ff["onRefreshCross"] = u.onRefreshCross
 	}
 	runFunctionsWithProgressModal("Updating characters", ff, u.window)
 }
@@ -480,8 +481,8 @@ func (u *BaseUI) setCharacter(c *app.Character) {
 	u.Settings().SetLastCharacterID(c.ID)
 	u.updateCharacter()
 	u.UpdateStatus()
-	if u.OnSetCharacter != nil {
-		u.OnSetCharacter(c.ID)
+	if u.onSetCharacter != nil {
+		u.onSetCharacter(c.ID)
 	}
 }
 
@@ -604,8 +605,8 @@ func (u *BaseUI) UpdateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 	switch section {
 	case app.SectionEveCategories:
 		if hasChanged {
-			u.CharacterShips.Update()
-			u.CharacterSkillCatalogue.Refresh()
+			u.characterShips.Update()
+			u.characterSkillCatalogue.Refresh()
 		}
 	case app.SectionEveCharacters, app.SectionEveMarketPrices:
 		// nothing to refresh
@@ -728,19 +729,19 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			if isShown {
 				u.character.AssetValue.Set(v)
 			}
-			u.AllAssetSearch.Update()
-			u.WealthOverview.Update()
+			u.allAssetSearch.Update()
+			u.wealthOverview.Update()
 		}
 		if isShown && needsRefresh {
-			u.CharacterAssets.Update()
+			u.characterAssets.Update()
 		}
 	case app.SectionAttributes:
 		if isShown && needsRefresh {
-			u.CharacterAttributes.Update()
+			u.characterAttributes.Update()
 		}
 	case app.SectionContracts:
 		if isShown && needsRefresh {
-			u.CharacterContracts.Update()
+			u.characterContracts.Update()
 		}
 		if u.Settings().NotifyContractsEnabled() {
 			go func() {
@@ -752,43 +753,43 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionImplants:
 		if isShown && needsRefresh {
-			u.CharacterImplants.Update()
+			u.characterImplants.Update()
 		}
 	case app.SectionJumpClones:
 		if isShown && needsRefresh {
-			u.CharacterJumpClones.Update()
+			u.characterJumpClones.Update()
 		}
 		if needsRefresh {
-			u.CharacterOverview.Update()
+			u.characterOverview.Update()
 		}
 	case app.SectionLocation,
 		app.SectionOnline,
 		app.SectionShip:
 		if needsRefresh {
-			u.LocationOverview.Update()
+			u.locationOverview.Update()
 		}
 	case app.SectionPlanets:
 		if isShown && needsRefresh {
-			u.CharacterPlanets.Update()
+			u.characterPlanets.Update()
 		}
 		if needsRefresh {
-			u.ColonyOverview.Update()
+			u.colonyOverview.Update()
 			u.notifyExpiredExtractionsIfNeeded(ctx, characterID)
 		}
 	case app.SectionMailLabels,
 		app.SectionMailLists:
 		if isShown && needsRefresh {
-			u.CharacterMail.Update()
+			u.characterMail.Update()
 		}
 		if needsRefresh {
-			u.CharacterOverview.Update()
+			u.characterOverview.Update()
 		}
 	case app.SectionMails:
 		if isShown && needsRefresh {
-			u.CharacterMail.Update()
+			u.characterMail.Update()
 		}
 		if needsRefresh {
-			go u.CharacterOverview.Update()
+			go u.characterOverview.Update()
 			go u.UpdateMailIndicator()
 		}
 		if u.Settings().NotifyMailsEnabled() {
@@ -801,7 +802,7 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionNotifications:
 		if isShown && needsRefresh {
-			u.CharacterCommunications.Update()
+			u.characterCommunications.Update()
 		}
 		if u.Settings().NotifyCommunicationsEnabled() {
 			go func() {
@@ -814,12 +815,12 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionSkills:
 		if isShown && needsRefresh {
-			u.CharacterSkillCatalogue.Refresh()
-			u.CharacterShips.Update()
-			u.CharacterPlanets.Update()
+			u.characterSkillCatalogue.Refresh()
+			u.characterShips.Update()
+			u.characterPlanets.Update()
 		}
 		if needsRefresh {
-			u.TrainingOverview.Update()
+			u.trainingOverview.Update()
 		}
 	case app.SectionSkillqueue:
 		if u.Settings().NotifyTrainingEnabled() {
@@ -829,24 +830,24 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			}
 		}
 		if isShown {
-			u.CharacterSkillQueue.Update()
+			u.characterSkillQueue.Update()
 		}
 		if needsRefresh {
-			u.TrainingOverview.Update()
+			u.trainingOverview.Update()
 			u.notifyExpiredTrainingIfneeded(ctx, characterID)
 		}
 	case app.SectionWalletBalance:
 		if needsRefresh {
-			u.CharacterOverview.Update()
-			u.WealthOverview.Update()
+			u.characterOverview.Update()
+			u.wealthOverview.Update()
 		}
 	case app.SectionWalletJournal:
 		if isShown && needsRefresh {
-			u.CharacterWalletJournal.Update()
+			u.characterWalletJournal.Update()
 		}
 	case app.SectionWalletTransactions:
 		if isShown && needsRefresh {
-			u.CharacterWalletTransaction.Update()
+			u.characterWalletTransaction.Update()
 		}
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the update ticker: %s", s))

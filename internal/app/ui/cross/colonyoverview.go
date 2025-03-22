@@ -42,7 +42,7 @@ type ColonyOverview struct {
 	u    app.UI
 }
 
-func NewColonies(u app.UI) *ColonyOverview {
+func NewColonyOverview(u app.UI) *ColonyOverview {
 	a := &ColonyOverview{
 		rows: make([]colonyRow, 0),
 		top:  shared.MakeTopLabel(),

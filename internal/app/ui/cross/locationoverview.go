@@ -43,7 +43,7 @@ type LocationOverview struct {
 	u    app.UI
 }
 
-func NewLocations(u app.UI) *LocationOverview {
+func NewLocationOverview(u app.UI) *LocationOverview {
 	a := &LocationOverview{
 		rows: make([]locationCharacter, 0),
 		top:  shared.MakeTopLabel(),
