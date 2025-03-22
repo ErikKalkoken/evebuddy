@@ -267,16 +267,16 @@ func TestToEveEntities(t *testing.T) {
 			assert.Equal(t, map[int32]*app.EveEntity{e1.ID: e1, e2.ID: e2}, oo)
 		}
 	})
-	t.Run("should ignore ID 0", func(t *testing.T) {
+	t.Run("should map unknown IDs to empty objects", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		e1 := factory.CreateEveEntity()
 		// when
-		oo, err := s.ToEveEntities(ctx, []int32{0, e1.ID})
+		oo, err := s.ToEveEntities(ctx, []int32{0, 1})
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, map[int32]*app.EveEntity{e1.ID: e1}, oo)
+			assert.EqualValues(t, &app.EveEntity{ID: 0}, oo[0])
+			assert.EqualValues(t, &app.EveEntity{ID: 1, Name: "?", Category: app.EveEntityUnknown}, oo[1])
 		}
 	})
 }

@@ -49,15 +49,17 @@ func (s *EveUniverseService) GetOrCreateEntityESI(ctx context.Context, id int32)
 }
 
 // ToEveEntities returns the resolved EveEntities for a list of valid entity IDs.
-// Will ignore ID 0 and map known invalid IDs
-// Will return an error if any ID can not be resolved.
+// It garantees a result for every ID and will map unknown IDs (including 0 & 1) to empty EveEntity objects.
 func (s *EveUniverseService) ToEveEntities(ctx context.Context, ids []int32) (map[int32]*app.EveEntity, error) {
-	ids2 := set.NewFromSlice(ids)
-	ids2.Remove(0)
 	r := make(map[int32]*app.EveEntity)
-	if ids2.Size() == 0 {
+	if len(ids) == 0 {
 		return r, nil
 	}
+	ids2 := set.NewFromSlice(ids)
+	if ids2.Contains(0) {
+		r[0] = &app.EveEntity{}
+	}
+	ids2.Remove(0)
 	ids3 := ids2.ToSlice()
 	if _, err := s.AddMissingEntities(ctx, ids3); err != nil {
 		return nil, err
