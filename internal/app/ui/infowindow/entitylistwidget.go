@@ -18,8 +18,8 @@ import (
 type entityItem struct {
 	id           int64
 	category     string
-	text         string               // text in markdown
-	textSegments []widget.TextSegment // takes precendence over text when not empty
+	text         string                   // text in markdown
+	textSegments []widget.RichTextSegment // takes precendence over text when not empty
 	infoVariant  infoVariant
 }
 
@@ -139,7 +139,8 @@ func (w *EntitiyList) CreateRenderer() fyne.WidgetRenderer {
 			}
 			text := border2[1].(*fyne.Container).Objects[0].(*widget.RichText)
 			if len(it.textSegments) != 0 {
-				iwidget.SetRichText(text, it.textSegments...)
+				text.Segments = it.textSegments
+				text.Refresh()
 			} else {
 				text.ParseMarkdown(it.text)
 			}

@@ -12,11 +12,7 @@ const (
 )
 
 // SetRichText sets the content of a RichtText widget and refreshes it.
-func SetRichText(w *widget.RichText, ts ...widget.TextSegment) {
-	segs := make([]widget.RichTextSegment, len(ts))
-	for i, s := range ts {
-		segs[i] = &s
-	}
+func SetRichText(w *widget.RichText, segs ...widget.RichTextSegment) {
 	w.Segments = segs
 	w.Refresh()
 }

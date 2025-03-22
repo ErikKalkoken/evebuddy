@@ -13,108 +13,107 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-type jumpClone struct {
-	id                 int64
-	location           *app.EntityShort[int64]
-	character          *app.EntityShort[int32]
-	region             *app.EntityShort[int32]
-	solarSystem        *app.EntityShort[int32]
-	systemSecurity     optional.Optional[float32]
-	securityImportance widget.Importance
-}
-
-func (c jumpClone) systemSecurityDisplay() string {
-	if c.systemSecurity.IsEmpty() {
-		return "?"
-	}
-	return fmt.Sprintf("%.1f", c.systemSecurity.ValueOrZero())
+type cloneSearchRow struct {
+	c     *app.CharacterJumpClone2
+	jumps optional.Optional[int]
 }
 
 type CloneSearch struct {
 	widget.BaseWidget
 
-	rows []jumpClone
-	body fyne.CanvasObject
-	top  *widget.Label
-	u    app.UI
+	body         fyne.CanvasObject
+	changeOrigin *widget.Button
+	originLabel  *widget.RichText
+	origin       *app.EveSolarSystem
+	rows         []cloneSearchRow
+	top          *widget.Label
+	u            app.UI
 }
 
 func NewCloneSearch(u app.UI) *CloneSearch {
 	a := &CloneSearch{
-		rows: make([]jumpClone, 0),
-		top:  shared.MakeTopLabel(),
-		u:    u,
+		rows:        make([]cloneSearchRow, 0),
+		top:         shared.MakeTopLabel(),
+		originLabel: widget.NewRichText(),
+		changeOrigin: widget.NewButton("Change", func() {
+
+		}),
+		u: u,
 	}
 	a.ExtendBaseWidget(a)
 
 	headers := []iwidget.HeaderDef{
-		{Text: "Location", Width: 250},
-		{Text: "System", Width: 150},
-		{Text: "Sec.", Width: 50},
+		{Text: "Location", Width: 350},
 		{Text: "Region", Width: 150},
 		{Text: "Character", Width: 200},
+		{Text: "Jumps", Width: 50},
 	}
 
-	makeDataLabel := func(col int, r jumpClone) (string, fyne.TextAlign, widget.Importance) {
-		var align fyne.TextAlign
-		var importance widget.Importance
-		var text string
+	makeCell := func(col int, r cloneSearchRow) []widget.RichTextSegment {
+		s := make([]widget.RichTextSegment, 0)
 		switch col {
 		case 0:
-			text = EntityNameOrFallback(r.location, "?")
+			if r.c.Location.SolarSystem != nil {
+				s = append(s, r.c.Location.SolarSystem.SecurityStatusRichText(true))
+				s = append(s, NewRichTextSegmentFromText("  "+r.c.Location.DisplayName()))
+			}
 		case 1:
-			text = EntityNameOrFallback(r.solarSystem, "?")
+			if r.c.Location.SolarSystem != nil {
+				s = append(s, NewRichTextSegmentFromText(r.c.Location.SolarSystem.Constellation.Region.Name))
+			}
 		case 2:
-			text = r.systemSecurityDisplay()
-			importance = r.securityImportance
-			align = fyne.TextAlignTrailing
+			s = append(s, NewRichTextSegmentFromText(r.c.Character.Name))
 		case 3:
-			text = EntityNameOrFallback(r.region, "?")
-		case 4:
-			text = r.character.Name
+			s = append(s, NewRichTextSegmentFromText(humanize.Optional(r.jumps, "?")))
 		}
-		return text, align, importance
+		return s
 	}
 	if a.u.IsDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(c int, r jumpClone) {
+		a.body = iwidget.MakeDataTableForDesktop2(headers, &a.rows, makeCell, func(c int, r cloneSearchRow) {
 			switch c {
 			case 0:
-				a.u.ShowLocationInfoWindow(r.location.ID)
+				a.u.ShowLocationInfoWindow(r.c.Location.ID)
 			case 1:
-				a.u.ShowInfoWindow(app.EveEntitySolarSystem, r.solarSystem.ID)
-			case 4:
-				a.u.ShowInfoWindow(app.EveEntityCharacter, r.character.ID)
+				if r.c.Location.SolarSystem != nil {
+					a.u.ShowInfoWindow(app.EveEntityRegion, r.c.Location.SolarSystem.Constellation.Region.ID)
+				}
+			case 2:
+				a.u.ShowInfoWindow(app.EveEntityCharacter, r.c.Character.ID)
 			}
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeDataLabel, func(r jumpClone) {
-			a.u.ShowLocationInfoWindow(r.location.ID)
+		a.body = iwidget.MakeDataTableForMobile2(headers, &a.rows, makeCell, func(r cloneSearchRow) {
+			a.u.ShowLocationInfoWindow(r.c.Location.ID)
 		})
 	}
 	return a
 }
 
 func (a *CloneSearch) CreateRenderer() fyne.WidgetRenderer {
-	top := container.NewVBox(a.top, widget.NewSeparator())
+	top := container.NewVBox(
+		a.top,
+		widget.NewSeparator(),
+		container.NewBorder(nil, nil, nil, a.changeOrigin, a.originLabel),
+	)
 	c := container.NewBorder(top, nil, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
 }
 
 func (a *CloneSearch) Update() {
 	t, i, err := func() (string, widget.Importance, error) {
-		locations, err := a.updateRows()
+		err := a.updateData()
 		if err != nil {
 			return "", 0, err
 		}
 		if len(a.rows) == 0 {
-			return "No characters", widget.LowImportance, nil
+			return "No clones", widget.LowImportance, nil
 		}
-		s := fmt.Sprintf("%d characters • %d locations", len(a.rows), locations)
+		s := fmt.Sprintf("%d clones", len(a.rows))
 		return s, widget.MediumImportance, nil
 	}()
 	if err != nil {
@@ -127,43 +126,30 @@ func (a *CloneSearch) Update() {
 	a.body.Refresh()
 }
 
-func (a *CloneSearch) updateRows() (int, error) {
-	var err error
+func (a *CloneSearch) updateData() error {
 	oo, err := a.u.CharacterService().ListAllCharacterJumpClones(context.Background())
 	if err != nil {
-		return 0, err
+		return err
 	}
-	locationIDs := set.New[int64]()
-	rows := make([]jumpClone, len(oo))
-	for i, o := range oo {
-		c := jumpClone{
-			id:        o.ID,
-			character: o.Character,
-		}
-		if o.Location != nil {
-			locationIDs.Add(o.Location.ID)
-			c.location = &app.EntityShort[int64]{
-				ID:   o.Location.ID,
-				Name: o.Location.Name,
-			}
-			if o.Location.SolarSystem != nil {
-				c.solarSystem = &app.EntityShort[int32]{
-					ID:   o.Location.SolarSystem.ID,
-					Name: o.Location.SolarSystem.Name,
-				}
-				c.systemSecurity = optional.New(o.Location.SolarSystem.SecurityStatus)
-				c.securityImportance = o.Location.SolarSystem.SecurityType().ToImportance()
-				c.region = &app.EntityShort[int32]{
-					ID:   o.Location.SolarSystem.Constellation.Region.ID,
-					Name: o.Location.SolarSystem.Constellation.Region.Name,
-				}
-			}
-		}
-		rows[i] = c
-	}
-	slices.SortFunc(rows, func(a, b jumpClone) int {
-		return cmp.Compare(a.solarSystem.Name, b.solarSystem.Name)
+	slices.SortFunc(oo, func(a, b *app.CharacterJumpClone2) int {
+		return cmp.Compare(a.SolarSystemName(), b.SolarSystemName())
 	})
+	rows := make([]cloneSearchRow, len(oo))
+	for i, o := range oo {
+		rows[i] = cloneSearchRow{
+			c: o,
+		}
+	}
 	a.rows = rows
-	return locationIDs.Size(), nil
+	system, err := a.u.EveUniverseService().GetOrCreateSolarSystemESI(context.Background(), 30002537)
+	if err != nil {
+		return err
+	}
+	a.origin = system
+	iwidget.SetRichText(a.originLabel, NewRichTextSegmentFromText(system.Name))
+	return nil
+}
+
+func NewRichTextSegmentFromText(s string) widget.RichTextSegment {
+	return &widget.TextSegment{Text: s}
 }

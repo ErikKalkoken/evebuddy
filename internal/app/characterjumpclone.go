@@ -17,6 +17,13 @@ type CharacterJumpClone2 struct {
 	Location    *EveLocation
 }
 
+func (j CharacterJumpClone2) SolarSystemName() string {
+	if s := j.Location.SolarSystem; s != nil {
+		return s.Name
+	}
+	return ""
+}
+
 type CharacterJumpCloneImplant struct {
 	ID      int64
 	EveType *EveType

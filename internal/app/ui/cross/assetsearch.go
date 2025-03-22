@@ -24,10 +24,10 @@ import (
 
 // TODO: Mobile: Add column sort
 
-type assetSortDir uint
+type sortDir uint
 
 const (
-	sortOff assetSortDir = iota
+	sortOff sortDir = iota
 	sortAsc
 	sortDesc
 )
@@ -57,7 +57,7 @@ type AllAssetSearch struct {
 	assetsFiltered  []*assetSearchRow
 	body            fyne.CanvasObject
 	characterNames  map[int32]string
-	colSort         []assetSortDir
+	colSort         []sortDir
 	found           *widget.Label
 	entry           *widget.Entry
 	total           *widget.Label
@@ -90,7 +90,7 @@ func NewAssetSearch(u app.UI) *AllAssetSearch {
 		{Text: "Qty.", Width: 75},
 		{Text: "Price", Width: 100},
 	}
-	makeDataLabel := func(col int, r *assetSearchRow) (string, fyne.TextAlign, widget.Importance) {
+	makeCell := func(col int, r *assetSearchRow) (string, fyne.TextAlign, widget.Importance) {
 		var a fyne.TextAlign
 		var i widget.Importance
 		var t string
@@ -113,12 +113,12 @@ func NewAssetSearch(u app.UI) *AllAssetSearch {
 		return t, a, i
 	}
 	if a.u.IsMobile() {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.assetsFiltered, makeDataLabel, func(r *assetSearchRow) {
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.assetsFiltered, makeCell, func(r *assetSearchRow) {
 			a.u.ShowTypeInfoWindow(r.typeID)
 		})
 	} else {
 		// can't use helper here, because we also need sort
-		a.body = a.makeTable(headers, makeDataLabel, func(col int, r *assetSearchRow) {
+		a.body = a.makeTable(headers, makeCell, func(col int, r *assetSearchRow) {
 			switch col {
 			case 0:
 				a.u.ShowInfoWindow(app.EveEntityInventoryType, r.typeID)
@@ -148,10 +148,10 @@ func (a *AllAssetSearch) Focus() {
 
 func (a *AllAssetSearch) makeTable(
 	headers []iwidget.HeaderDef,
-	makeDataLabel func(int, *assetSearchRow) (string, fyne.TextAlign, widget.Importance),
+	makeCell func(int, *assetSearchRow) (string, fyne.TextAlign, widget.Importance),
 	onSelected func(int, *assetSearchRow),
 ) *widget.Table {
-	a.colSort = make([]assetSortDir, len(headers))
+	a.colSort = make([]sortDir, len(headers))
 	for i := range headers {
 		a.colSort[i] = sortOff
 	}
@@ -168,7 +168,7 @@ func (a *AllAssetSearch) makeTable(
 			}
 			r := a.assetsFiltered[tci.Row]
 			l := co.(*widget.Label)
-			l.Text, l.Alignment, l.Importance = makeDataLabel(tci.Col, r)
+			l.Text, l.Alignment, l.Importance = makeCell(tci.Col, r)
 			l.Truncation = fyne.TextTruncateClip
 			l.Refresh()
 		},
@@ -214,7 +214,7 @@ func (a *AllAssetSearch) makeTable(
 }
 
 func (a *AllAssetSearch) processData(sortCol int) {
-	var order assetSortDir
+	var order sortDir
 	if sortCol >= 0 {
 		order = a.colSort[sortCol]
 		order++

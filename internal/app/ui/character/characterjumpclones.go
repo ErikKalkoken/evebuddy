@@ -149,7 +149,7 @@ func (a *CharacterJumpClones) Update() {
 	tree, err := a.newTreeData()
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
-		iwidget.SetRichText(a.top, widget.TextSegment{
+		iwidget.SetRichText(a.top, &widget.TextSegment{
 			Text: "ERROR: " + ihumanize.Error(err),
 			Style: widget.RichTextStyle{
 				ColorName: theme.ColorNameError,
@@ -219,7 +219,7 @@ func (a *CharacterJumpClones) RefreshTop() {
 	}
 	defaultStyleInline := defaultStyle
 	defaultStyleInline.Inline = true
-	s := widget.TextSegment{
+	s := &widget.TextSegment{
 		Text:  "",
 		Style: defaultStyle,
 	}
@@ -255,11 +255,11 @@ func (a *CharacterJumpClones) RefreshTop() {
 	}
 	iwidget.SetRichText(
 		a.top,
-		widget.TextSegment{
+		&widget.TextSegment{
 			Text:  fmt.Sprintf("%d clones • Next available jump: ", a.ClonesCount()),
 			Style: defaultStyleInline,
 		},
-		widget.TextSegment{
+		&widget.TextSegment{
 			Text: nextJump,
 			Style: widget.RichTextStyle{
 				ColorName: nextJumpColor,
@@ -267,7 +267,7 @@ func (a *CharacterJumpClones) RefreshTop() {
 				Inline:    true,
 			},
 		},
-		widget.TextSegment{
+		&widget.TextSegment{
 			Text:  fmt.Sprintf(" • Last jump: %s", lastJump),
 			Style: defaultStyle,
 		},

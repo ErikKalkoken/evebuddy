@@ -292,6 +292,13 @@ func NewMobileUI(bui *BaseUI) *MobileUI {
 				crossNav.Push(iwidget.NewAppBar("Training", u.trainingOverview))
 			},
 		),
+		iwidget.NewListItemWithIcon(
+			"Clone Search",
+			theme.NewThemedResource(icons.HeadSnowflakeSvg),
+			func() {
+				crossNav.Push(iwidget.NewAppBar("Clone Search", u.cloneSearch))
+			},
+		),
 		navItemColonies2,
 		navItemWealth,
 	)
