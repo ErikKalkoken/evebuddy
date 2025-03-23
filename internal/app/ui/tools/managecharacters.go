@@ -67,9 +67,10 @@ func (a *ManageCharacters) CreateRenderer() fyne.WidgetRenderer {
 		add.Disable()
 	}
 	if a.u.IsDesktop() {
+		p := theme.Padding()
 		c = container.NewBorder(
 			a.title,
-			container.NewHBox(layout.NewSpacer(), add, layout.NewSpacer()),
+			container.NewCenter(container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), add)),
 			nil,
 			nil,
 			a.list,

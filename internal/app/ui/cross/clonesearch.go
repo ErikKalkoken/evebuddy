@@ -98,7 +98,7 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 		{Text: "Location", Width: 350},
 		{Text: "Region", Width: 150},
 		{Text: "Character", Width: 200},
-		{Text: "Jumps", Width: 75},
+		{Text: "Jumps", Width: 100},
 	}
 	a.colSort = make([]sortDir, len(headers))
 	makeCell := func(col int, r cloneSearchRow) []widget.RichTextSegment {
@@ -278,11 +278,11 @@ func (a *CloneSearch) showRoute(r cloneSearchRow) {
 func (a *CloneSearch) CreateRenderer() fyne.WidgetRenderer {
 	var route *fyne.Container
 	if a.u.IsDesktop() {
-		route = container.NewBorder(nil, nil, a.originButton, a.routePref, a.originLabel)
+		route = container.NewBorder(nil, nil, container.NewHBox(a.routePref, a.originButton), nil, a.originLabel)
 	} else {
 		route = container.NewVBox(
-			container.NewBorder(nil, nil, a.originButton, nil, a.originLabel),
 			a.routePref,
+			container.NewBorder(nil, nil, a.originButton, nil, a.originLabel),
 		)
 	}
 	top := container.NewVBox(

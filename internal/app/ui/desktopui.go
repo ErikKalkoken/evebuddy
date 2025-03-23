@@ -326,7 +326,14 @@ func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, 
 		}
 	})
 	send.Importance = widget.HighImportance
-	x := container.NewBorder(nil, container.NewHBox(send), nil, nil, page)
+	p := theme.Padding()
+	x := container.NewBorder(
+		nil,
+		container.NewCenter(container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), send)),
+		nil,
+		nil,
+		page,
+	)
 	w.SetContent(x)
 	w.Resize(fyne.NewSize(600, 500))
 	w.Show()

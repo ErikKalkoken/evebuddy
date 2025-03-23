@@ -216,10 +216,10 @@ func (s *EveUniverseService) GetRouteESI(ctx context.Context, destination, origi
 		Flag: esioptional.NewString(flag.String()),
 	})
 	if err != nil {
+		if r.StatusCode == 404 {
+			return []*app.EveSolarSystem{}, nil // no route found
+		}
 		return nil, err
-	}
-	if r.StatusCode == 404 {
-		return []*app.EveSolarSystem{}, nil // no route found
 	}
 	systems := make([]*app.EveSolarSystem, len(ids))
 	g := new(errgroup.Group)
