@@ -4,6 +4,7 @@ package app
 
 import (
 	"context"
+
 )
 
 // EveUniverseService ...
@@ -50,7 +51,7 @@ type EveUniverseService interface {
 	GetOrCreateSolarSystemESI(ctx context.Context, id int32) (*EveSolarSystem, error)
 	GetOrCreatePlanetESI(ctx context.Context, id int32) (*EvePlanet, error)
 	GetOrCreateEveMoonESI(ctx context.Context, id int32) (*EveMoon, error)
-	GetRouteESI(ctx context.Context, destination, origin *EveSolarSystem) ([]*EveSolarSystem, error)
+	GetRouteESI(ctx context.Context, destination, origin *EveSolarSystem, flag RoutePreference) ([]*EveSolarSystem, error)
 	GetMarketPrice(ctx context.Context, typeID int32) (*EveMarketPrice, error)
 	GetOrCreateEveRaceESI(ctx context.Context, id int32) (*EveRace, error)
 	GetOrCreateSchematicESI(ctx context.Context, id int32) (*EveSchematic, error)

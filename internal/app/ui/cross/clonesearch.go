@@ -58,6 +58,7 @@ type CloneSearch struct {
 	change      *widget.Button
 	originLabel *widget.RichText
 	origin      *app.EveSolarSystem
+	routePref   *widget.Select
 	rows        []cloneSearchRow
 	top         *widget.Label
 	u           app.UI
@@ -65,16 +66,23 @@ type CloneSearch struct {
 
 func NewCloneSearch(u app.UI) *CloneSearch {
 	a := &CloneSearch{
+		originLabel: widget.NewRichTextWithText("?"),
 		rows:        make([]cloneSearchRow, 0),
 		top:         shared.MakeTopLabel(),
-		originLabel: widget.NewRichTextWithText("?"),
 		u:           u,
 	}
 	a.ExtendBaseWidget(a)
 	a.change = widget.NewButton("Change", func() {
 		a.changeOrigin(a.u.MainWindow())
 	})
-
+	xx := slices.Collect(xiter.MapSlice(app.RoutePreferences(), func(a app.RoutePreference) string {
+		return a.String()
+	}))
+	a.routePref = widget.NewSelect(xx, func(s string) {})
+	a.routePref.Selected = app.RouteShortest.String()
+	a.routePref.OnChanged = func(s string) {
+		go a.updateRoutes(app.RoutePreference(s))
+	}
 	headers := []iwidget.HeaderDef{
 		{Text: "Location", Width: 350},
 		{Text: "Region", Width: 150},
@@ -116,21 +124,25 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 				if len(r.route) == 0 {
 					return
 				}
+				col := kxlayout.NewColumns(60)
 				list := widget.NewList(
 					func() int {
 						return len(r.route)
 					},
 					func() fyne.CanvasObject {
-						return widget.NewRichText()
+						return container.New(col, widget.NewLabel(""), widget.NewRichText())
 					},
 					func(id widget.ListItemID, co fyne.CanvasObject) {
 						if id >= len(r.route) {
 							return
 						}
 						s := r.route[id]
-						x := co.(*widget.RichText)
-						x.Segments = s.DisplayRichText()
-						x.Refresh()
+						border := co.(*fyne.Container).Objects
+						num := border[0].(*widget.Label)
+						num.SetText(fmt.Sprint(id))
+						name := border[1].(*widget.RichText)
+						name.Segments = s.DisplayRichTextWithRegion()
+						name.Refresh()
 					},
 				)
 				list.HideSeparators = true
@@ -143,16 +155,15 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 					a.u.ShowInfoWindow(app.EveEntitySolarSystem, s.ID)
 
 				}
-				col := kxlayout.NewColumns(50)
-				from := widget.NewRichText(a.origin.DisplayRichText()...)
+				from := widget.NewRichText(a.origin.DisplayRichTextWithRegion()...)
 				from.Wrapping = fyne.TextWrapWord
-				to := widget.NewRichText(r.c.Location.DisplayRichText()...)
+				to := widget.NewRichText(r.c.Location.SolarSystem.DisplayRichTextWithRegion()...)
 				to.Wrapping = fyne.TextWrapWord
 				top := container.New(
 					layout.NewCustomPaddedVBoxLayout(0),
 					container.New(col, widget.NewLabel("From"), from),
 					container.New(col, widget.NewLabel("To"), to),
-					container.New(col, widget.NewLabel("Jump"), widget.NewLabel(r.jumps())),
+					container.New(col, widget.NewLabel("Jumps"), widget.NewLabel(r.jumps())),
 				)
 				c := container.NewBorder(
 					container.NewVBox(top, widget.NewSeparator()),
@@ -179,7 +190,7 @@ func (a *CloneSearch) CreateRenderer() fyne.WidgetRenderer {
 	top := container.NewVBox(
 		a.top,
 		widget.NewSeparator(),
-		container.NewHBox(widget.NewLabel("Origin:"), a.originLabel, a.change),
+		container.NewHBox(widget.NewLabel("Origin:"), a.originLabel, a.change, layout.NewSpacer(), widget.NewLabel("Route:"), a.routePref),
 	)
 	c := container.NewBorder(top, nil, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
@@ -206,7 +217,7 @@ func (a *CloneSearch) Update() {
 	a.top.Importance = i
 	a.body.Refresh()
 	if len(a.rows) > 0 && a.origin != nil {
-		go a.updateRoutes()
+		go a.updateRoutes(app.RoutePreference(a.routePref.Selected))
 	}
 }
 
@@ -225,18 +236,29 @@ func (a *CloneSearch) updateRows() error {
 	return nil
 }
 
-func (a *CloneSearch) updateRoutes() {
+func (a *CloneSearch) updateRoutes(flag app.RoutePreference) {
+	if a.origin == nil {
+		return
+	}
+	for i := range a.rows {
+		a.rows[i].route = nil
+	}
+	a.body.Refresh()
 	ctx := context.Background()
 	wg := new(sync.WaitGroup)
 	for i, o := range a.rows {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			j, err := a.u.EveUniverseService().GetRouteESI(ctx, o.c.Location.SolarSystem, a.origin)
-			if err == nil {
-				a.rows[i].route = j
-				a.body.Refresh()
+			dest := o.c.Location.SolarSystem
+			origin := a.origin
+			j, err := a.u.EveUniverseService().GetRouteESI(ctx, dest, origin, flag)
+			if err != nil {
+				slog.Error("Failed to get route", "origin", origin.ID, "destination", dest.ID, "error", err)
+				return
 			}
+			a.rows[i].route = j
+			a.body.Refresh()
 		}()
 	}
 	wg.Wait()
@@ -279,9 +301,9 @@ func (a *CloneSearch) changeOrigin(w fyne.Window) {
 			return
 		}
 		a.origin = s
-		a.originLabel.Segments = s.DisplayRichText()
+		a.originLabel.Segments = s.DisplayRichTextWithRegion()
 		a.originLabel.Refresh()
-		go a.updateRoutes()
+		go a.updateRoutes(app.RoutePreference(a.routePref.Selected))
 		d.Hide()
 	}
 	list.HideSeparators = true

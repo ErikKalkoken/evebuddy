@@ -418,7 +418,7 @@ func TestGetRouteESI(t *testing.T) {
 		httpmock.Reset()
 		o := factory.CreateEveSolarSystem()
 		// when
-		x, err := s.GetRouteESI(ctx, o, o)
+		x, err := s.GetRouteESI(ctx, o, o, app.RouteShortest)
 		// then
 		if assert.NoError(t, err) {
 			assert.ElementsMatch(t, []*app.EveSolarSystem{o}, x)
@@ -432,7 +432,7 @@ func TestGetRouteESI(t *testing.T) {
 		orig := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 31000001})
 		dest := factory.CreateEveSolarSystem()
 		// when
-		x, err := s.GetRouteESI(ctx, dest, orig)
+		x, err := s.GetRouteESI(ctx, dest, orig, app.RouteShortest)
 		// then
 		if assert.NoError(t, err) {
 			assert.ElementsMatch(t, []*app.EveSolarSystem{}, x)
@@ -445,7 +445,7 @@ func TestGetRouteESI(t *testing.T) {
 		orig := factory.CreateEveSolarSystem()
 		dest := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 31000001})
 		// when
-		x, err := s.GetRouteESI(ctx, dest, orig)
+		x, err := s.GetRouteESI(ctx, dest, orig, app.RouteShortest)
 		// then
 		if assert.NoError(t, err) {
 			assert.ElementsMatch(t, []*app.EveSolarSystem{}, x)

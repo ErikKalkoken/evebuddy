@@ -5,9 +5,12 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/antihax/goesi/esi"
+	esioptional "github.com/antihax/goesi/optional"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"golang.org/x/sync/errgroup"
 )
 
 func (s *EveUniverseService) GetOrCreateRegionESI(ctx context.Context, id int32) (*app.EveRegion, error) {
@@ -196,14 +199,18 @@ func (s *EveUniverseService) createEveMoonFromESI(ctx context.Context, id int32)
 
 // GetRouteESI returns a route between two solar systems.
 // When no route can be found it returns an empty slice.
-func (s *EveUniverseService) GetRouteESI(ctx context.Context, destination, origin *app.EveSolarSystem) ([]*app.EveSolarSystem, error) {
+type RoutePreference string
+
+func (s *EveUniverseService) GetRouteESI(ctx context.Context, destination, origin *app.EveSolarSystem, flag app.RoutePreference) ([]*app.EveSolarSystem, error) {
 	if destination.ID == origin.ID {
 		return []*app.EveSolarSystem{origin}, nil
 	}
 	if destination.IsWormholeSpace() || origin.IsWormholeSpace() {
 		return []*app.EveSolarSystem{}, nil // no route possible
 	}
-	ids, r, err := s.esiClient.ESI.RoutesApi.GetRouteOriginDestination(ctx, destination.ID, origin.ID, nil)
+	ids, r, err := s.esiClient.ESI.RoutesApi.GetRouteOriginDestination(ctx, destination.ID, origin.ID, &esi.GetRouteOriginDestinationOpts{
+		Flag: esioptional.NewString(flag.String()),
+	})
 	if err != nil {
 		return nil, err
 	}

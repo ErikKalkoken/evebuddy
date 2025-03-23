@@ -97,6 +97,13 @@ func (es EveSolarSystem) DisplayRichText() []widget.RichTextSegment {
 	)
 }
 
+func (es EveSolarSystem) DisplayRichTextWithRegion() []widget.RichTextSegment {
+	return slices.Concat(
+		es.SecurityStatusRichText(),
+		iwidget.NewRichTextSegmentFromText(fmt.Sprintf("  %s (%s)", es.Name, es.Constellation.Region.Name), false),
+	)
+}
+
 type EveSolarSystemPlanet struct {
 	AsteroidBeltIDs []int32
 	MoonIDs         []int32
