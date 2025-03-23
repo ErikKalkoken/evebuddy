@@ -2,10 +2,12 @@ package app
 
 import (
 	"fmt"
+	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type SolarSystemSecurityType uint
@@ -54,6 +56,10 @@ type EveSolarSystem struct {
 	SecurityStatus float32
 }
 
+func (es EveSolarSystem) IsWormholeSpace() bool {
+	return es.ID >= 31000000
+}
+
 func (es EveSolarSystem) SecurityType() SolarSystemSecurityType {
 	switch v := es.SecurityStatus; {
 	case v >= 0.9:
@@ -70,14 +76,14 @@ func (es EveSolarSystem) SecurityStatusDisplay() string {
 	return fmt.Sprintf("%.1f", es.SecurityStatus)
 }
 
-func (es EveSolarSystem) SecurityStatusRichText(inline bool) widget.RichTextSegment {
-	return &widget.TextSegment{
+func (es EveSolarSystem) SecurityStatusRichText() []widget.RichTextSegment {
+	return []widget.RichTextSegment{&widget.TextSegment{
 		Text: es.SecurityStatusDisplay(),
 		Style: widget.RichTextStyle{
 			ColorName: es.SecurityType().ToColorName(),
-			Inline:    inline,
+			Inline:    true,
 		},
-	}
+	}}
 }
 
 func (es EveSolarSystem) ToEveEntity() *EveEntity {
@@ -85,12 +91,10 @@ func (es EveSolarSystem) ToEveEntity() *EveEntity {
 }
 
 func (es EveSolarSystem) DisplayRichText() []widget.RichTextSegment {
-	return []widget.RichTextSegment{
-		es.SecurityStatusRichText(true),
-		&widget.TextSegment{
-			Text: fmt.Sprintf("  %s", es.Name),
-		},
-	}
+	return slices.Concat(
+		es.SecurityStatusRichText(),
+		iwidget.NewRichTextSegmentFromText(fmt.Sprintf("  %s", es.Name), false),
+	)
 }
 
 type EveSolarSystemPlanet struct {

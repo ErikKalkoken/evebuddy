@@ -7,6 +7,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"golang.org/x/sync/errgroup"
 )
 
 func (s *EveUniverseService) GetOrCreateRegionESI(ctx context.Context, id int32) (*app.EveRegion, error) {
@@ -191,4 +192,30 @@ func (s *EveUniverseService) createEveMoonFromESI(ctx context.Context, id int32)
 		return nil, err
 	}
 	return y.(*app.EveMoon), nil
+}
+
+func (s *EveUniverseService) GetRouteESI(ctx context.Context, destination, origin *app.EveSolarSystem) ([]*app.EveSolarSystem, error) {
+	if destination.IsWormholeSpace() || origin.IsWormholeSpace() {
+		return []*app.EveSolarSystem{}, nil
+	}
+	ids, _, err := s.esiClient.ESI.RoutesApi.GetRouteOriginDestination(ctx, destination.ID, origin.ID, nil)
+	if err != nil {
+		return nil, err
+	}
+	systems := make([]*app.EveSolarSystem, len(ids))
+	g := new(errgroup.Group)
+	for i, id := range ids {
+		g.Go(func() error {
+			system, err := s.GetOrCreateSolarSystemESI(ctx, id)
+			if err != nil {
+				return err
+			}
+			systems[i] = system
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	return systems, nil
 }

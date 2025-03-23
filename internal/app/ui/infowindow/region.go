@@ -97,6 +97,7 @@ func (a *regionInfo) load(regionID int32) error {
 	cLabel := widget.NewLabel("Loading...")
 	constellations := container.NewTabItem("Constellations", cLabel)
 	a.tabs.Append(constellations)
+	a.tabs.Select(constellations)
 	a.tabs.Refresh()
 	go func() {
 		oo, err := a.iw.u.EveUniverseService().GetRegionConstellationsESI(ctx, o.ID)

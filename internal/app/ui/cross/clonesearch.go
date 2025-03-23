@@ -6,21 +6,33 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
-	"github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 type cloneSearchRow struct {
 	c     *app.CharacterJumpClone2
-	jumps optional.Optional[int]
+	route []*app.EveSolarSystem
+}
+
+func (r cloneSearchRow) Jumps() string {
+	if r.route == nil {
+		return "?"
+	}
+	if len(r.route) == 0 {
+		return "None"
+	}
+	return fmt.Sprint(len(r.route) - 1)
 }
 
 type CloneSearch struct {
@@ -51,25 +63,25 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 		{Text: "Location", Width: 350},
 		{Text: "Region", Width: 150},
 		{Text: "Character", Width: 200},
-		{Text: "Jumps", Width: 50},
+		{Text: "Jumps", Width: 75},
 	}
 
 	makeCell := func(col int, r cloneSearchRow) []widget.RichTextSegment {
-		s := make([]widget.RichTextSegment, 0)
+		var s []widget.RichTextSegment
 		switch col {
 		case 0:
-			if r.c.Location.SolarSystem != nil {
-				s = append(s, r.c.Location.SolarSystem.SecurityStatusRichText(true))
-				s = append(s, NewRichTextSegmentFromText("  "+r.c.Location.DisplayName()))
-			}
+			s = r.c.Location.DisplayRichText()
 		case 1:
 			if r.c.Location.SolarSystem != nil {
-				s = append(s, NewRichTextSegmentFromText(r.c.Location.SolarSystem.Constellation.Region.Name))
+				s = iwidget.NewRichTextSegmentFromText(
+					r.c.Location.SolarSystem.Constellation.Region.Name,
+					false,
+				)
 			}
 		case 2:
-			s = append(s, NewRichTextSegmentFromText(r.c.Character.Name))
+			s = iwidget.NewRichTextSegmentFromText(r.c.Character.Name, false)
 		case 3:
-			s = append(s, NewRichTextSegmentFromText(humanize.Optional(r.jumps, "?")))
+			s = iwidget.NewRichTextSegmentFromText(r.Jumps(), false)
 		}
 		return s
 	}
@@ -84,6 +96,52 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 				}
 			case 2:
 				a.u.ShowInfoWindow(app.EveEntityCharacter, r.c.Character.ID)
+			case 3:
+				if len(r.route) == 0 {
+					return
+				}
+				list := widget.NewList(
+					func() int {
+						return len(r.route)
+					},
+					func() fyne.CanvasObject {
+						return widget.NewRichText()
+					},
+					func(id widget.ListItemID, co fyne.CanvasObject) {
+						if id >= len(r.route) {
+							return
+						}
+						s := r.route[id]
+						x := co.(*widget.RichText)
+						x.Segments = s.DisplayRichText()
+						x.Refresh()
+					},
+				)
+				list.OnSelected = func(id widget.ListItemID) {
+					defer list.UnselectAll()
+					if id >= len(r.route) {
+						return
+					}
+					s := r.route[id]
+					a.u.ShowInfoWindow(app.EveEntitySolarSystem, s.ID)
+
+				}
+				col := kxlayout.NewColumns(50)
+				from := widget.NewRichText(a.origin.DisplayRichText()...)
+				from.Wrapping = fyne.TextWrapWord
+				to := widget.NewRichText(r.c.Location.DisplayRichText()...)
+				to.Wrapping = fyne.TextWrapWord
+				top := container.New(
+					layout.NewCustomPaddedVBoxLayout(0),
+					container.New(col, widget.NewLabel("From"), from),
+					container.New(col, widget.NewLabel("To"), to),
+					container.New(col, widget.NewLabel("Jump"), widget.NewLabel(r.Jumps())),
+				)
+				c := container.NewBorder(top, nil, nil, nil, list)
+				w := a.u.App().NewWindow(fmt.Sprintf("Route: %s -> %s", a.origin.Name, r.c.Location.SolarSystem.Name))
+				w.SetContent(c)
+				w.Resize(fyne.NewSize(600, 400))
+				w.Show()
 			}
 		})
 	} else {
@@ -106,7 +164,7 @@ func (a *CloneSearch) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *CloneSearch) Update() {
 	t, i, err := func() (string, widget.Importance, error) {
-		err := a.updateData()
+		err := a.updateRows()
 		if err != nil {
 			return "", 0, err
 		}
@@ -124,32 +182,45 @@ func (a *CloneSearch) Update() {
 	a.top.Text = t
 	a.top.Importance = i
 	a.body.Refresh()
+	if len(a.rows) > 0 {
+		go a.updateRoutes()
+	}
 }
 
-func (a *CloneSearch) updateData() error {
-	oo, err := a.u.CharacterService().ListAllCharacterJumpClones(context.Background())
+func (a *CloneSearch) updateRows() error {
+	ctx := context.Background()
+	oo, err := a.u.CharacterService().ListAllCharacterJumpClones(ctx)
 	if err != nil {
 		return err
 	}
 	slices.SortFunc(oo, func(a, b *app.CharacterJumpClone2) int {
 		return cmp.Compare(a.SolarSystemName(), b.SolarSystemName())
 	})
-	rows := make([]cloneSearchRow, len(oo))
-	for i, o := range oo {
-		rows[i] = cloneSearchRow{
-			c: o,
-		}
-	}
-	a.rows = rows
-	system, err := a.u.EveUniverseService().GetOrCreateSolarSystemESI(context.Background(), 30002537)
+	system, err := a.u.EveUniverseService().GetOrCreateSolarSystemESI(ctx, 30002537)
 	if err != nil {
 		return err
 	}
 	a.origin = system
-	iwidget.SetRichText(a.originLabel, NewRichTextSegmentFromText(system.Name))
+	iwidget.SetRichText(a.originLabel, iwidget.NewRichTextSegmentFromText(system.Name, false)...)
+	a.rows = slices.Collect(xiter.MapSlice(oo, func(o *app.CharacterJumpClone2) cloneSearchRow {
+		return cloneSearchRow{c: o}
+	}))
 	return nil
 }
 
-func NewRichTextSegmentFromText(s string) widget.RichTextSegment {
-	return &widget.TextSegment{Text: s}
+func (a *CloneSearch) updateRoutes() {
+	ctx := context.Background()
+	wg := new(sync.WaitGroup)
+	for i, o := range a.rows {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			j, err := a.u.EveUniverseService().GetRouteESI(ctx, o.c.Location.SolarSystem, a.origin)
+			if err == nil {
+				a.rows[i].route = j
+				a.body.Refresh()
+			}
+		}()
+	}
+	wg.Wait()
 }

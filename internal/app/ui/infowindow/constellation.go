@@ -107,6 +107,7 @@ func (a *constellationInfo) load(constellationID int32) error {
 	sLabel := widget.NewLabel("Loading...")
 	solarSystems := container.NewTabItem("Solar Systems", sLabel)
 	a.tabs.Append(solarSystems)
+	a.tabs.Select(solarSystems)
 	a.tabs.Refresh()
 	go func() {
 		oo, err := a.iw.u.EveUniverseService().GetConstellationSolarSytemsESI(ctx, o.ID)
