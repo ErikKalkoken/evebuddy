@@ -193,7 +193,7 @@ func (a *corporationInfo) load(corporationID int32) error {
 			return
 		}
 		history2 := slices.Collect(xiter.FilterSlice(history, func(v app.MembershipHistoryItem) bool {
-			return v.Organization != nil
+			return v.Organization != nil && v.Organization.Category.IsKnown()
 		}))
 		items := slices.Collect(xiter.MapSlice(history2, historyItem2EntityItem))
 		oldest := slices.MinFunc(history, func(a, b app.MembershipHistoryItem) int {

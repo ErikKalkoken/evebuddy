@@ -8,7 +8,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
-	"golang.org/x/sync/errgroup"
 )
 
 type CreateCharacterJumpCloneParams struct {
@@ -71,32 +70,25 @@ func (st *Storage) ListAllCharacterJumpClones(ctx context.Context) ([]*app.Chara
 		return nil, fmt.Errorf("list all character jump clones: %w", err)
 	}
 	oo := make([]*app.CharacterJumpClone2, len(rows))
-	g := new(errgroup.Group)
 	for i, r := range rows {
-		g.Go(func() error {
-			arg := queries.EveLocation{
-				ID:               r.LocationID,
-				EveSolarSystemID: r.LocationSolarSystemID,
-				EveTypeID:        r.LocationTypeID,
-				Name:             r.LocationName,
-				OwnerID:          r.LocationOwnerID,
-			}
-			l, err := st.eveLocationFromDBModel(ctx, arg)
-			if err != nil {
-				return err
-			}
-			o := &app.CharacterJumpClone2{
-				ID:          r.ID,
-				JumpCloneID: int32(r.JumpCloneID),
-				Character:   &app.EntityShort[int32]{ID: int32(r.CharacterID), Name: r.CharacterName},
-				Location:    l,
-			}
-			oo[i] = o
-			return nil
-		})
-		if err := g.Wait(); err != nil {
+		arg := queries.EveLocation{
+			ID:               r.LocationID,
+			EveSolarSystemID: r.LocationSolarSystemID,
+			EveTypeID:        r.LocationTypeID,
+			Name:             r.LocationName,
+			OwnerID:          r.LocationOwnerID,
+		}
+		l, err := st.eveLocationFromDBModel(ctx, arg)
+		if err != nil {
 			return nil, err
 		}
+		o := &app.CharacterJumpClone2{
+			ID:          r.ID,
+			JumpCloneID: int32(r.JumpCloneID),
+			Character:   &app.EntityShort[int32]{ID: int32(r.CharacterID), Name: r.CharacterName},
+			Location:    l,
+		}
+		oo[i] = o
 	}
 	return oo, nil
 }

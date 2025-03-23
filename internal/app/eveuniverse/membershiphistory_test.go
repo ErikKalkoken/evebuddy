@@ -102,11 +102,12 @@ func TestMembershipHistory(t *testing.T) {
 				StartDate:    time.Date(2016, 10, 25, 14, 46, 0, 0, time.UTC),
 			}, x[0])
 			assert.EqualValues(t, app.MembershipHistoryItem{
-				EndDate:   time.Date(2016, 10, 25, 14, 46, 0, 0, time.UTC),
-				Days:      476,
-				IsOldest:  true,
-				RecordID:  1,
-				StartDate: time.Date(2015, 7, 6, 20, 56, 0, 0, time.UTC),
+				EndDate:      time.Date(2016, 10, 25, 14, 46, 0, 0, time.UTC),
+				Days:         476,
+				IsOldest:     true,
+				Organization: &app.EveEntity{},
+				RecordID:     1,
+				StartDate:    time.Date(2015, 7, 6, 20, 56, 0, 0, time.UTC),
 			}, x[1])
 		}
 	})

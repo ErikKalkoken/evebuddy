@@ -25,6 +25,11 @@ const (
 	EveEntityUnknown
 )
 
+// IsKnown reports whether a category is known.
+func (eec EveEntityCategory) IsKnown() bool {
+	return eec != EveEntityUndefined && eec != EveEntityUnknown
+}
+
 func (eec EveEntityCategory) String() string {
 	switch eec {
 	case EveEntityUndefined:

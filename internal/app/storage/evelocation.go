@@ -11,7 +11,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"golang.org/x/sync/errgroup"
 )
 
 type UpdateOrCreateLocationParams struct {
@@ -99,45 +98,33 @@ func (st *Storage) MissingEveLocations(ctx context.Context, ids []int64) ([]int6
 	return missing.ToSlice(), nil
 }
 
+// TODO: Refactor for better performance
 func (st *Storage) eveLocationFromDBModel(ctx context.Context, l queries.EveLocation) (*app.EveLocation, error) {
 	l2 := &app.EveLocation{
 		ID:        l.ID,
 		Name:      l.Name,
 		UpdatedAt: l.UpdatedAt,
 	}
-	g := new(errgroup.Group)
 	if l.EveTypeID.Valid {
-		g.Go(func() error {
-			x, err := st.GetEveType(ctx, int32(l.EveTypeID.Int64))
-			if err != nil {
-				return err
-			}
-			l2.Type = x
-			return nil
-		})
+		x, err := st.GetEveType(ctx, int32(l.EveTypeID.Int64))
+		if err != nil {
+			return nil, err
+		}
+		l2.Type = x
 	}
 	if l.EveSolarSystemID.Valid {
-		g.Go(func() error {
-			x, err := st.GetEveSolarSystem(ctx, int32(l.EveSolarSystemID.Int64))
-			if err != nil {
-				return err
-			}
-			l2.SolarSystem = x
-			return nil
-		})
+		x, err := st.GetEveSolarSystem(ctx, int32(l.EveSolarSystemID.Int64))
+		if err != nil {
+			return nil, err
+		}
+		l2.SolarSystem = x
 	}
 	if l.OwnerID.Valid {
-		g.Go(func() error {
-			x, err := st.GetEveEntity(ctx, int32(l.OwnerID.Int64))
-			if err != nil {
-				return err
-			}
-			l2.Owner = x
-			return nil
-		})
-	}
-	if err := g.Wait(); err != nil {
-		return nil, err
+		x, err := st.GetEveEntity(ctx, int32(l.OwnerID.Int64))
+		if err != nil {
+			return nil, err
+		}
+		l2.Owner = x
 	}
 	return l2, nil
 }
