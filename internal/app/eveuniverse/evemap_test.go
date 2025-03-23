@@ -9,6 +9,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
@@ -401,4 +402,72 @@ func TestGetOrCreateEveMoonESI(t *testing.T) {
 			assert.Equal(t, solarSystem, x1.SolarSystem)
 		}
 	})
+}
+
+func TestGetRouteESI(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	client := goesi.NewAPIClient(nil, "")
+	s := eveuniverse.New(r, client)
+	ctx := context.Background()
+	t.Run("should return short route when origin and dest the same", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		o := factory.CreateEveSolarSystem()
+		// when
+		x, err := s.GetRouteESI(ctx, o, o)
+		// then
+		if assert.NoError(t, err) {
+			assert.ElementsMatch(t, []*app.EveSolarSystem{o}, x)
+			assert.Equal(t, 0, httpmock.GetTotalCallCount())
+		}
+	})
+	t.Run("should return invalid route when origin in WH space", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		orig := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 31000001})
+		dest := factory.CreateEveSolarSystem()
+		// when
+		x, err := s.GetRouteESI(ctx, dest, orig)
+		// then
+		if assert.NoError(t, err) {
+			assert.ElementsMatch(t, []*app.EveSolarSystem{}, x)
+		}
+	})
+	t.Run("should return invalid route when dest in WH space", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		orig := factory.CreateEveSolarSystem()
+		dest := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 31000001})
+		// when
+		x, err := s.GetRouteESI(ctx, dest, orig)
+		// then
+		if assert.NoError(t, err) {
+			assert.ElementsMatch(t, []*app.EveSolarSystem{}, x)
+		}
+	})
+	// FIXME
+	// t.Run("should return route when valid", func(t *testing.T) {
+	// 	// given
+	// 	testutil.TruncateTables(db)
+	// 	httpmock.Reset()
+	// 	s1 := factory.CreateEveSolarSystem()
+	// 	s2 := factory.CreateEveSolarSystem()
+	// 	s3 := factory.CreateEveSolarSystem()
+	// 	httpmock.RegisterResponder(
+	// 		"GET",
+	// 		fmt.Sprintf("https://esi.evetech.net/v1/route/%d/%d/", s1.ID, s3.ID),
+	// 		httpmock.NewJsonResponderOrPanic(200, []int32{s1.ID, s2.ID, s3.ID}))
+	// 	// when
+	// 	x, err := s.GetRouteESI(ctx, s3, s1)
+	// 	// then
+	// 	if assert.NoError(t, err) {
+	// 		assert.Equal(t, []*app.EveSolarSystem{s1, s2, s3}, x)
+	// 	}
+	// })
 }

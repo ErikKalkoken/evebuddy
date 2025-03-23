@@ -194,13 +194,21 @@ func (s *EveUniverseService) createEveMoonFromESI(ctx context.Context, id int32)
 	return y.(*app.EveMoon), nil
 }
 
+// GetRouteESI returns a route between two solar systems.
+// When no route can be found it returns an empty slice.
 func (s *EveUniverseService) GetRouteESI(ctx context.Context, destination, origin *app.EveSolarSystem) ([]*app.EveSolarSystem, error) {
-	if destination.IsWormholeSpace() || origin.IsWormholeSpace() {
-		return []*app.EveSolarSystem{}, nil
+	if destination.ID == origin.ID {
+		return []*app.EveSolarSystem{origin}, nil
 	}
-	ids, _, err := s.esiClient.ESI.RoutesApi.GetRouteOriginDestination(ctx, destination.ID, origin.ID, nil)
+	if destination.IsWormholeSpace() || origin.IsWormholeSpace() {
+		return []*app.EveSolarSystem{}, nil // no route possible
+	}
+	ids, r, err := s.esiClient.ESI.RoutesApi.GetRouteOriginDestination(ctx, destination.ID, origin.ID, nil)
 	if err != nil {
 		return nil, err
+	}
+	if r.StatusCode == 404 {
+		return []*app.EveSolarSystem{}, nil // no route found
 	}
 	systems := make([]*app.EveSolarSystem, len(ids))
 	g := new(errgroup.Group)

@@ -319,6 +319,7 @@ func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, 
 	title := u.makeWindowTitle(fmt.Sprintf("New message [%s]", c.EveCharacter.Name))
 	w := u.App().NewWindow(title)
 	page := character.NewSendMail(u, c, mode, mail)
+	page.SetWindow(w)
 	send := widget.NewButtonWithIcon("Send", theme.MailSendIcon(), func() {
 		if page.SendAction() {
 			w.Hide()

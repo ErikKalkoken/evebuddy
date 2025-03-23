@@ -9,7 +9,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -30,12 +29,14 @@ type SendMail struct {
 	subject   *widget.Entry
 	to        *shared.EveEntityEntry
 	u         app.UI
+	w         fyne.Window
 }
 
 func NewSendMail(u app.UI, c *app.Character, mode app.SendMailMode, m *app.CharacterMail) *SendMail {
 	a := &SendMail{
 		character: c,
 		u:         u,
+		w:         u.MainWindow(),
 	}
 	a.ExtendBaseWidget(a)
 
@@ -47,7 +48,7 @@ func NewSendMail(u app.UI, c *app.Character, mode app.SendMailMode, m *app.Chara
 	toButton := widget.NewButton("To", func() {
 		showAddDialog(u, c.ID, func(ee *app.EveEntity) {
 			a.to.Add(ee)
-		}, u.MainWindow())
+		}, a.w)
 	})
 	a.to = shared.NewEveEntityEntry(toButton, labelWith, u.EveImageService())
 	a.to.ShowInfoWindow = u.ShowEveEntityInfoWindow
@@ -97,6 +98,10 @@ func (a *SendMail) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
+func (a *SendMail) SetWindow(w fyne.Window) {
+	a.w = w
+}
+
 // sendAction tries to send the current mail and reports whether it was successful
 func (a *SendMail) SendAction() bool {
 	showErrorDialog := func(message string) {
@@ -142,11 +147,11 @@ func (a *SendMail) SendAction() bool {
 
 func showAddDialog(u app.UI, characterID int32, onSelected func(ee *app.EveEntity), w fyne.Window) {
 	var modal *widget.PopUp
-	items := make([]*app.EveEntity, 0)
+	results := make([]*app.EveEntity, 0)
 	fallbackIcon := icons.Questionmark32Png
 	list := widget.NewList(
 		func() int {
-			return len(items)
+			return len(results)
 		},
 		func() fyne.CanvasObject {
 			name := widget.NewLabel("Template")
@@ -162,10 +167,10 @@ func showAddDialog(u app.UI, characterID int32, onSelected func(ee *app.EveEntit
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(items) {
+			if id >= len(results) {
 				return
 			}
-			ee := items[id]
+			ee := results[id]
 			row := co.(*fyne.Container).Objects
 			row[0].(*widget.Label).SetText(ee.Name)
 			image := row[1].(*canvas.Image)
@@ -181,11 +186,11 @@ func showAddDialog(u app.UI, characterID int32, onSelected func(ee *app.EveEntit
 	)
 	list.HideSeparators = true
 	list.OnSelected = func(id widget.ListItemID) {
-		if id >= len(items) {
+		if id >= len(results) {
 			list.UnselectAll()
 			return
 		}
-		onSelected(items[id])
+		onSelected(results[id])
 		modal.Hide()
 	}
 	showErrorDialog := func(search string, err error) {
@@ -199,19 +204,21 @@ func showAddDialog(u app.UI, characterID int32, onSelected func(ee *app.EveEntit
 	})
 	entry.OnChanged = func(search string) {
 		if len(search) < 3 {
-			items = items[:0]
+			results = results[:0]
 			list.Refresh()
 			return
 		}
-		ctx := context.Background()
-		var err error
-		items, err = u.EveUniverseService().ListEntitiesByPartialName(ctx, search)
-		if err != nil {
-			showErrorDialog(search, err)
-			return
-		}
-		list.Refresh()
 		go func() {
+			var err error
+			results, err = u.EveUniverseService().ListEntitiesByPartialName(context.Background(), search)
+			if err != nil {
+				showErrorDialog(search, err)
+				return
+			}
+			list.Refresh()
+		}()
+		go func() {
+			ctx := context.Background()
 			missingIDs, err := u.CharacterService().AddEveEntitiesFromCharacterSearchESI(
 				ctx,
 				characterID,
@@ -224,7 +231,7 @@ func showAddDialog(u app.UI, characterID int32, onSelected func(ee *app.EveEntit
 			if len(missingIDs) == 0 {
 				return // no need to update when not changed
 			}
-			items, err = u.EveUniverseService().ListEntitiesByPartialName(ctx, search)
+			results, err = u.EveUniverseService().ListEntitiesByPartialName(ctx, search)
 			if err != nil {
 				showErrorDialog(search, err)
 				return
@@ -234,16 +241,12 @@ func showAddDialog(u app.UI, characterID int32, onSelected func(ee *app.EveEntit
 	}
 	c := container.NewBorder(
 		container.NewBorder(
-			container.NewHBox(
-				widget.NewLabel("Add Recipient"),
-				layout.NewSpacer(),
-				widget.NewButton("Cancel", func() {
-					modal.Hide()
-				}),
-			),
+			widget.NewLabel("Add Recipient"),
 			nil,
 			nil,
-			nil,
+			widget.NewButton("Cancel", func() {
+				modal.Hide()
+			}),
 			entry,
 		),
 		nil,

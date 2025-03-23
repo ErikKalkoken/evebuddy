@@ -10,7 +10,9 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 
@@ -25,12 +27,26 @@ type cloneSearchRow struct {
 	route []*app.EveSolarSystem
 }
 
-func (r cloneSearchRow) Jumps() string {
+func (r cloneSearchRow) compare(other cloneSearchRow) int {
+	return cmp.Compare(r.sortValue(), other.sortValue())
+}
+
+func (r cloneSearchRow) sortValue() int {
+	if r.route == nil {
+		return 10_000
+	}
+	if len(r.route) == 0 {
+		return 10_000_000
+	}
+	return len(r.route) - 1
+}
+
+func (r cloneSearchRow) jumps() string {
 	if r.route == nil {
 		return "?"
 	}
 	if len(r.route) == 0 {
-		return "None"
+		return "No route"
 	}
 	return fmt.Sprint(len(r.route) - 1)
 }
@@ -38,26 +54,26 @@ func (r cloneSearchRow) Jumps() string {
 type CloneSearch struct {
 	widget.BaseWidget
 
-	body         fyne.CanvasObject
-	changeOrigin *widget.Button
-	originLabel  *widget.RichText
-	origin       *app.EveSolarSystem
-	rows         []cloneSearchRow
-	top          *widget.Label
-	u            app.UI
+	body        fyne.CanvasObject
+	change      *widget.Button
+	originLabel *widget.RichText
+	origin      *app.EveSolarSystem
+	rows        []cloneSearchRow
+	top         *widget.Label
+	u           app.UI
 }
 
 func NewCloneSearch(u app.UI) *CloneSearch {
 	a := &CloneSearch{
 		rows:        make([]cloneSearchRow, 0),
 		top:         shared.MakeTopLabel(),
-		originLabel: widget.NewRichText(),
-		changeOrigin: widget.NewButton("Change", func() {
-
-		}),
-		u: u,
+		originLabel: widget.NewRichTextWithText("?"),
+		u:           u,
 	}
 	a.ExtendBaseWidget(a)
+	a.change = widget.NewButton("Change", func() {
+		a.changeOrigin(a.u.MainWindow())
+	})
 
 	headers := []iwidget.HeaderDef{
 		{Text: "Location", Width: 350},
@@ -81,7 +97,7 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 		case 2:
 			s = iwidget.NewRichTextSegmentFromText(r.c.Character.Name, false)
 		case 3:
-			s = iwidget.NewRichTextSegmentFromText(r.Jumps(), false)
+			s = iwidget.NewRichTextSegmentFromText(r.jumps(), false)
 		}
 		return s
 	}
@@ -117,6 +133,7 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 						x.Refresh()
 					},
 				)
+				list.HideSeparators = true
 				list.OnSelected = func(id widget.ListItemID) {
 					defer list.UnselectAll()
 					if id >= len(r.route) {
@@ -135,9 +152,15 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 					layout.NewCustomPaddedVBoxLayout(0),
 					container.New(col, widget.NewLabel("From"), from),
 					container.New(col, widget.NewLabel("To"), to),
-					container.New(col, widget.NewLabel("Jump"), widget.NewLabel(r.Jumps())),
+					container.New(col, widget.NewLabel("Jump"), widget.NewLabel(r.jumps())),
 				)
-				c := container.NewBorder(top, nil, nil, nil, list)
+				c := container.NewBorder(
+					container.NewVBox(top, widget.NewSeparator()),
+					nil,
+					nil,
+					nil,
+					list,
+				)
 				w := a.u.App().NewWindow(fmt.Sprintf("Route: %s -> %s", a.origin.Name, r.c.Location.SolarSystem.Name))
 				w.SetContent(c)
 				w.Resize(fyne.NewSize(600, 400))
@@ -156,7 +179,7 @@ func (a *CloneSearch) CreateRenderer() fyne.WidgetRenderer {
 	top := container.NewVBox(
 		a.top,
 		widget.NewSeparator(),
-		container.NewBorder(nil, nil, nil, a.changeOrigin, a.originLabel),
+		container.NewHBox(widget.NewLabel("Origin:"), a.originLabel, a.change),
 	)
 	c := container.NewBorder(top, nil, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
@@ -182,7 +205,7 @@ func (a *CloneSearch) Update() {
 	a.top.Text = t
 	a.top.Importance = i
 	a.body.Refresh()
-	if len(a.rows) > 0 {
+	if len(a.rows) > 0 && a.origin != nil {
 		go a.updateRoutes()
 	}
 }
@@ -196,12 +219,6 @@ func (a *CloneSearch) updateRows() error {
 	slices.SortFunc(oo, func(a, b *app.CharacterJumpClone2) int {
 		return cmp.Compare(a.SolarSystemName(), b.SolarSystemName())
 	})
-	system, err := a.u.EveUniverseService().GetOrCreateSolarSystemESI(ctx, 30002537)
-	if err != nil {
-		return err
-	}
-	a.origin = system
-	iwidget.SetRichText(a.originLabel, iwidget.NewRichTextSegmentFromText(system.Name, false)...)
 	a.rows = slices.Collect(xiter.MapSlice(oo, func(o *app.CharacterJumpClone2) cloneSearchRow {
 		return cloneSearchRow{c: o}
 	}))
@@ -223,4 +240,101 @@ func (a *CloneSearch) updateRoutes() {
 		}()
 	}
 	wg.Wait()
+	slices.SortFunc(a.rows, func(a, b cloneSearchRow) int {
+		return a.compare(b)
+	})
+	a.body.Refresh()
+}
+
+func (a *CloneSearch) changeOrigin(w fyne.Window) {
+	showErrorDialog := func(search string, err error) {
+		slog.Error("Failed to resolve names", "search", search, "error", err)
+		a.u.ShowErrorDialog("Something went wrong", err, w)
+	}
+	var d dialog.Dialog
+	results := make([]*app.EveEntity, 0)
+	list := widget.NewList(
+		func() int {
+			return len(results)
+		},
+		func() fyne.CanvasObject {
+			return widget.NewLabel("")
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(results) {
+				return
+			}
+			o := results[id]
+			co.(*widget.Label).SetText(o.Name)
+		},
+	)
+	list.OnSelected = func(id widget.ListItemID) {
+		if id >= len(results) {
+			return
+		}
+		r := results[id]
+		s, err := a.u.EveUniverseService().GetOrCreateSolarSystemESI(context.Background(), r.ID)
+		if err != nil {
+			showErrorDialog("Could not load solar system", err)
+			return
+		}
+		a.origin = s
+		a.originLabel.Segments = s.DisplayRichText()
+		a.originLabel.Refresh()
+		go a.updateRoutes()
+		d.Hide()
+	}
+	list.HideSeparators = true
+	entry := widget.NewEntry()
+	entry.PlaceHolder = "Type to start searching..."
+	entry.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
+		entry.SetText("")
+	})
+	entry.OnChanged = func(search string) {
+		if len(search) < 3 {
+			results = results[:0]
+			list.Refresh()
+			return
+		}
+		go func() {
+			ctx := context.Background()
+			ee, _, err := a.u.CharacterService().SearchESI(
+				ctx,
+				a.u.CurrentCharacterID(),
+				search,
+				[]app.SearchCategory{app.SearchSolarSystem},
+				false,
+			)
+			if err != nil {
+				showErrorDialog(search, err)
+				return
+			}
+			results = ee[app.SearchSolarSystem]
+			slices.SortFunc(results, func(a, b *app.EveEntity) int {
+				return a.Compare(b)
+			})
+			list.Refresh()
+		}()
+	}
+	note := widget.NewLabel("Select solar system from results list to change origin.")
+	note.Importance = widget.LowImportance
+	c := container.NewBorder(
+		container.NewBorder(
+			nil,
+			nil,
+			nil,
+			widget.NewButton("Cancel", func() {
+				d.Hide()
+			}),
+			entry,
+		),
+		note,
+		nil,
+		nil,
+		list,
+	)
+	d = dialog.NewCustomWithoutButtons("Change origin", c, w)
+	d.Resize(fyne.NewSize(600, 400))
+	d.Show()
+	w.Canvas().Focus(entry)
 }
