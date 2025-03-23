@@ -16,7 +16,7 @@ import (
 func (eu *EveUniverseService) GetLocation(ctx context.Context, id int64) (*app.EveLocation, error) {
 	o, err := eu.st.GetLocation(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
-		return nil, ErrNotFound
+		return nil, app.ErrNotFound
 	} else if err != nil {
 		return nil, err
 	}

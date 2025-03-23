@@ -18,6 +18,7 @@ import (
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -63,6 +64,7 @@ type CloneSearch struct {
 	rows         []cloneSearchRow
 	top          *widget.Label
 	u            app.UI
+	colSort      []sortDir
 }
 
 func mapRoutePreference2String(x app.RoutePreference) string {
@@ -98,7 +100,7 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 		{Text: "Character", Width: 200},
 		{Text: "Jumps", Width: 75},
 	}
-
+	a.colSort = make([]sortDir, len(headers))
 	makeCell := func(col int, r cloneSearchRow) []widget.RichTextSegment {
 		var s []widget.RichTextSegment
 		switch col {
@@ -119,7 +121,7 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 		return s
 	}
 	if a.u.IsDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop2(headers, &a.rows, makeCell, func(c int, r cloneSearchRow) {
+		t := iwidget.MakeDataTableForDesktop2(headers, &a.rows, makeCell, func(c int, r cloneSearchRow) {
 			switch c {
 			case 0:
 				a.u.ShowLocationInfoWindow(r.c.Location.ID)
@@ -136,6 +138,32 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 				a.showRoute(r)
 			}
 		})
+		iconSortAsc := theme.NewPrimaryThemedResource(icons.SortAscendingSvg)
+		iconSortDesc := theme.NewPrimaryThemedResource(icons.SortDescendingSvg)
+		iconSortOff := theme.NewThemedResource(icons.SortSvg)
+		t.CreateHeader = func() fyne.CanvasObject {
+			b := widget.NewButtonWithIcon("", iconSortOff, func() {})
+			return container.NewBorder(nil, nil, nil, b, widget.NewLabel("Template"))
+		}
+		t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
+			h := headers[tci.Col]
+			row := co.(*fyne.Container).Objects
+			label := row[0].(*widget.Label)
+			label.SetText(h.Text)
+			button := row[1].(*widget.Button)
+			switch a.colSort[tci.Col] {
+			case sortOff:
+				button.SetIcon(iconSortOff)
+			case sortAsc:
+				button.SetIcon(iconSortAsc)
+			case sortDesc:
+				button.SetIcon(iconSortDesc)
+			}
+			button.OnTapped = func() {
+				a.processData(tci.Col)
+			}
+		}
+		a.body = t
 	} else {
 		a.body = iwidget.MakeDataTableForMobile2(headers, &a.rows, makeCell, func(r cloneSearchRow) {
 			if len(r.route) == 0 {
@@ -145,6 +173,50 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 		})
 	}
 	return a
+}
+
+func (a *CloneSearch) processData(sortCol int) {
+	var order sortDir
+	if sortCol >= 0 {
+		order = a.colSort[sortCol]
+		order++
+		if order > sortDesc {
+			order = sortOff
+		}
+		for i := range a.colSort {
+			a.colSort[i] = sortOff
+		}
+		a.colSort[sortCol] = order
+	} else {
+		for i := range a.colSort {
+			if a.colSort[i] != sortOff {
+				order = a.colSort[i]
+				sortCol = i
+				break
+			}
+		}
+	}
+	if sortCol >= 0 && order != sortOff {
+		slices.SortFunc(a.rows, func(a, b cloneSearchRow) int {
+			var x int
+			switch sortCol {
+			case 0:
+				x = cmp.Compare(a.c.Location.DisplayName(), b.c.Location.DisplayName())
+			case 1:
+				x = cmp.Compare(a.c.Location.SolarSystem.Constellation.Region.Name, b.c.Location.SolarSystem.Constellation.Region.Name)
+			case 2:
+				x = cmp.Compare(a.c.Character.Name, b.c.Character.Name)
+			case 3:
+				x = cmp.Compare(a.sortValue(), b.sortValue())
+			}
+			if order == sortAsc {
+				return x
+			} else {
+				return -1 * x
+			}
+		})
+	}
+	a.body.Refresh()
 }
 
 func (a *CloneSearch) showRoute(r cloneSearchRow) {
@@ -297,6 +369,7 @@ func (a *CloneSearch) updateRoutes(flag app.RoutePreference) {
 	slices.SortFunc(a.rows, func(a, b cloneSearchRow) int {
 		return a.compare(b)
 	})
+	a.colSort = []sortDir{sortOff, sortOff, sortOff, sortAsc}
 	a.body.Refresh()
 }
 

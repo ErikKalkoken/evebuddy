@@ -14,7 +14,7 @@ import (
 func (eu *EveUniverseService) GetType(ctx context.Context, id int32) (*app.EveType, error) {
 	x, err := eu.st.GetEveType(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
-		return nil, ErrNotFound
+		return nil, app.ErrNotFound
 	} else if err != nil {
 		return x, err
 	}
@@ -186,7 +186,7 @@ func (eu *EveUniverseService) AddMissingEveTypes(ctx context.Context, ids []int3
 		return nil
 	}
 	slices.Sort(missingIDs)
-	slog.Info("Trying to fetch missing EveTypes from ESI", "count", len(missingIDs))
+	slog.Debug("Trying to fetch missing EveTypes from ESI", "count", len(missingIDs))
 	for _, id := range missingIDs {
 		_, err := eu.GetOrCreateTypeESI(ctx, id)
 		if err != nil {

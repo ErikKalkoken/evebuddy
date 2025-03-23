@@ -15,7 +15,7 @@ import (
 func (eu *EveUniverseService) GetEveDogmaAttribute(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
 	o, err := eu.st.GetEveDogmaAttribute(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
-		return nil, ErrNotFound
+		return nil, app.ErrNotFound
 	} else if err != nil {
 		return nil, err
 	}

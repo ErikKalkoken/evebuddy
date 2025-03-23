@@ -11,7 +11,7 @@ import (
 func (eu *EveUniverseService) GetMarketPrice(ctx context.Context, typeID int32) (*app.EveMarketPrice, error) {
 	o, err := eu.st.GetEveMarketPrice(ctx, typeID)
 	if errors.Is(err, storage.ErrNotFound) {
-		return nil, ErrNotFound
+		return nil, app.ErrNotFound
 	} else if err != nil {
 		return nil, err
 	}

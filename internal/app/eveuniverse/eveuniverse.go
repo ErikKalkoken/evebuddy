@@ -2,7 +2,6 @@
 package eveuniverse
 
 import (
-	"errors"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -10,8 +9,6 @@ import (
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
 )
-
-var ErrNotFound = errors.New("object not found")
 
 // EveUniverseService provides access to Eve Online models with on-demand loading from ESI and local caching.
 type EveUniverseService struct {

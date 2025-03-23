@@ -152,9 +152,6 @@ func (a *AllAssetSearch) makeTable(
 	onSelected func(int, *assetSearchRow),
 ) *widget.Table {
 	a.colSort = make([]sortDir, len(headers))
-	for i := range headers {
-		a.colSort[i] = sortOff
-	}
 	t := widget.NewTable(
 		func() (rows int, cols int) {
 			return len(a.assetsFiltered), len(headers)

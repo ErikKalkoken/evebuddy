@@ -56,9 +56,6 @@ func (s *EveUniverseService) ToEveEntities(ctx context.Context, ids []int32) (ma
 		return r, nil
 	}
 	ids2 := set.NewFromSlice(ids)
-	if ids2.Contains(0) {
-		r[0] = &app.EveEntity{}
-	}
 	ids2.Remove(0)
 	ids3 := ids2.ToSlice()
 	if _, err := s.AddMissingEntities(ctx, ids3); err != nil {
@@ -70,6 +67,12 @@ func (s *EveUniverseService) ToEveEntities(ctx context.Context, ids []int32) (ma
 	}
 	for _, o := range oo {
 		r[o.ID] = o
+	}
+	for _, id := range ids {
+		_, ok := r[id]
+		if !ok {
+			r[id] = &app.EveEntity{}
+		}
 	}
 	return r, nil
 }

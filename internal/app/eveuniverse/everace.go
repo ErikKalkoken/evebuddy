@@ -31,7 +31,7 @@ func (eu *EveUniverseService) createEveRaceFromESI(ctx context.Context, id int32
 				return eu.st.CreateEveRace(ctx, race.RaceId, race.Description, race.Name)
 			}
 		}
-		return nil, fmt.Errorf("race with ID %d not found: %w", id, ErrNotFound)
+		return nil, fmt.Errorf("race with ID %d not found: %w", id, app.ErrNotFound)
 	})
 	if err != nil {
 		return nil, err

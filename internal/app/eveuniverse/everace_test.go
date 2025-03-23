@@ -79,6 +79,6 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 		// when
 		_, err := eu.GetOrCreateEveRaceESI(ctx, 42)
 		// then
-		assert.ErrorIs(t, err, eveuniverse.ErrNotFound)
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }

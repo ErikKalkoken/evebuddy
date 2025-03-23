@@ -16,7 +16,6 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
@@ -78,7 +77,7 @@ func NewInventoryTypeInfo(iw InfoWindow, typeID, characterID int32, w fyne.Windo
 		return nil, nil
 	}
 	p, err := iw.u.EveUniverseService().GetMarketPrice(ctx, a.et.ID)
-	if errors.Is(err, eveuniverse.ErrNotFound) {
+	if errors.Is(err, app.ErrNotFound) {
 		p = nil
 	} else if err != nil {
 		return nil, err
