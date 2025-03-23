@@ -438,6 +438,19 @@ func TestGetRouteESI(t *testing.T) {
 			assert.ElementsMatch(t, []*app.EveSolarSystem{}, x)
 		}
 	})
+	t.Run("should return error when caled with invalid preference", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		orig := factory.CreateEveSolarSystem()
+		dest := factory.CreateEveSolarSystem()
+		// when
+		_, err := s.GetRouteESI(ctx, dest, orig, app.RoutePreference("invalid"))
+		// then
+		if assert.Error(t, err) {
+			assert.Equal(t, 0, httpmock.GetTotalCallCount())
+		}
+	})
 	t.Run("should return invalid route when dest in WH space", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -464,7 +477,7 @@ func TestGetRouteESI(t *testing.T) {
 	// 		fmt.Sprintf("https://esi.evetech.net/v1/route/%d/%d/", s1.ID, s3.ID),
 	// 		httpmock.NewJsonResponderOrPanic(200, []int32{s1.ID, s2.ID, s3.ID}))
 	// 	// when
-	// 	x, err := s.GetRouteESI(ctx, s3, s1)
+	// 	x, err := s.GetRouteESI(ctx, s3, s1, app.RouteShortest)
 	// 	// then
 	// 	if assert.NoError(t, err) {
 	// 		assert.Equal(t, []*app.EveSolarSystem{s1, s2, s3}, x)

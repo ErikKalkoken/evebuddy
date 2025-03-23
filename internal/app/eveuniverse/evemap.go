@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
@@ -202,6 +203,9 @@ func (s *EveUniverseService) createEveMoonFromESI(ctx context.Context, id int32)
 type RoutePreference string
 
 func (s *EveUniverseService) GetRouteESI(ctx context.Context, destination, origin *app.EveSolarSystem, flag app.RoutePreference) ([]*app.EveSolarSystem, error) {
+	if slices.Index(app.RoutePreferences(), flag) == -1 {
+		return nil, fmt.Errorf("invalid flag: %s", flag)
+	}
 	if destination.ID == origin.ID {
 		return []*app.EveSolarSystem{origin}, nil
 	}

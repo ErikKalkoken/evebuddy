@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"strings"
 	"sync"
 
 	"fyne.io/fyne/v2"
@@ -54,14 +55,23 @@ func (r cloneSearchRow) jumps() string {
 type CloneSearch struct {
 	widget.BaseWidget
 
-	body        fyne.CanvasObject
-	change      *widget.Button
-	originLabel *widget.RichText
-	origin      *app.EveSolarSystem
-	routePref   *widget.Select
-	rows        []cloneSearchRow
-	top         *widget.Label
-	u           app.UI
+	body         fyne.CanvasObject
+	originButton *widget.Button
+	originLabel  *widget.RichText
+	origin       *app.EveSolarSystem
+	routePref    *widget.Select
+	rows         []cloneSearchRow
+	top          *widget.Label
+	u            app.UI
+}
+
+func mapRoutePreference2String(x app.RoutePreference) string {
+	return x.String() + " route"
+}
+
+func mapString2RoutePreference(s string) app.RoutePreference {
+	x := strings.Split(s, " ")
+	return app.RoutePreference(x[0])
 }
 
 func NewCloneSearch(u app.UI) *CloneSearch {
@@ -72,16 +82,15 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 		u:           u,
 	}
 	a.ExtendBaseWidget(a)
-	a.change = widget.NewButton("Change", func() {
+	a.originLabel.Wrapping = fyne.TextWrapWord
+	a.originButton = widget.NewButton("Origin", func() {
 		a.changeOrigin(a.u.MainWindow())
 	})
-	xx := slices.Collect(xiter.MapSlice(app.RoutePreferences(), func(a app.RoutePreference) string {
-		return a.String()
-	}))
+	xx := slices.Collect(xiter.MapSlice(app.RoutePreferences(), mapRoutePreference2String))
 	a.routePref = widget.NewSelect(xx, func(s string) {})
-	a.routePref.Selected = app.RouteShortest.String()
+	a.routePref.Selected = mapRoutePreference2String(app.RouteShortest)
 	a.routePref.OnChanged = func(s string) {
-		go a.updateRoutes(app.RoutePreference(s))
+		go a.updateRoutes(mapString2RoutePreference(s))
 	}
 	headers := []iwidget.HeaderDef{
 		{Text: "Location", Width: 350},
@@ -124,75 +133,98 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 				if len(r.route) == 0 {
 					return
 				}
-				col := kxlayout.NewColumns(60)
-				list := widget.NewList(
-					func() int {
-						return len(r.route)
-					},
-					func() fyne.CanvasObject {
-						return container.New(col, widget.NewLabel(""), widget.NewRichText())
-					},
-					func(id widget.ListItemID, co fyne.CanvasObject) {
-						if id >= len(r.route) {
-							return
-						}
-						s := r.route[id]
-						border := co.(*fyne.Container).Objects
-						num := border[0].(*widget.Label)
-						num.SetText(fmt.Sprint(id))
-						name := border[1].(*widget.RichText)
-						name.Segments = s.DisplayRichTextWithRegion()
-						name.Refresh()
-					},
-				)
-				list.HideSeparators = true
-				list.OnSelected = func(id widget.ListItemID) {
-					defer list.UnselectAll()
-					if id >= len(r.route) {
-						return
-					}
-					s := r.route[id]
-					a.u.ShowInfoWindow(app.EveEntitySolarSystem, s.ID)
-
-				}
-				from := widget.NewRichText(a.origin.DisplayRichTextWithRegion()...)
-				from.Wrapping = fyne.TextWrapWord
-				to := widget.NewRichText(r.c.Location.SolarSystem.DisplayRichTextWithRegion()...)
-				to.Wrapping = fyne.TextWrapWord
-				top := container.New(
-					layout.NewCustomPaddedVBoxLayout(0),
-					container.New(col, widget.NewLabel("From"), from),
-					container.New(col, widget.NewLabel("To"), to),
-					container.New(col, widget.NewLabel("Jumps"), widget.NewLabel(r.jumps())),
-				)
-				c := container.NewBorder(
-					container.NewVBox(top, widget.NewSeparator()),
-					nil,
-					nil,
-					nil,
-					list,
-				)
-				w := a.u.App().NewWindow(fmt.Sprintf("Route: %s -> %s", a.origin.Name, r.c.Location.SolarSystem.Name))
-				w.SetContent(c)
-				w.Resize(fyne.NewSize(600, 400))
-				w.Show()
+				a.showRoute(r)
 			}
 		})
 	} else {
 		a.body = iwidget.MakeDataTableForMobile2(headers, &a.rows, makeCell, func(r cloneSearchRow) {
-			a.u.ShowLocationInfoWindow(r.c.Location.ID)
+			if len(r.route) == 0 {
+				return
+			}
+			a.showRoute(r)
 		})
 	}
 	return a
 }
 
+func (a *CloneSearch) showRoute(r cloneSearchRow) {
+	col := kxlayout.NewColumns(60)
+	list := widget.NewList(
+		func() int {
+			return len(r.route)
+		},
+		func() fyne.CanvasObject {
+			return container.New(col, widget.NewLabel(""), widget.NewRichText())
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(r.route) {
+				return
+			}
+			s := r.route[id]
+			border := co.(*fyne.Container).Objects
+			num := border[0].(*widget.Label)
+			num.SetText(fmt.Sprint(id))
+			name := border[1].(*widget.RichText)
+			name.Segments = s.DisplayRichTextWithRegion()
+			name.Refresh()
+		},
+	)
+	list.HideSeparators = true
+	list.OnSelected = func(id widget.ListItemID) {
+		defer list.UnselectAll()
+		if id >= len(r.route) {
+			return
+		}
+		s := r.route[id]
+		a.u.ShowInfoWindow(app.EveEntitySolarSystem, s.ID)
+
+	}
+	from := widget.NewRichText(a.origin.DisplayRichTextWithRegion()...)
+	from.Wrapping = fyne.TextWrapWord
+	to := widget.NewRichText(r.c.Location.SolarSystem.DisplayRichTextWithRegion()...)
+	to.Wrapping = fyne.TextWrapWord
+	jumps := fmt.Sprintf("%s (%s)", r.jumps(), a.routePref.Selected)
+	top := container.New(
+		layout.NewCustomPaddedVBoxLayout(0),
+		container.New(col, widget.NewLabel("From"), from),
+		container.New(col, widget.NewLabel("To"), to),
+		container.New(col, widget.NewLabel("Jumps"), widget.NewLabel(jumps)),
+	)
+	c := container.NewBorder(
+		container.NewVBox(top, widget.NewSeparator()),
+		nil,
+		nil,
+		nil,
+		list,
+	)
+	w := a.u.App().NewWindow(fmt.Sprintf("Route: %s -> %s", a.origin.Name, r.c.Location.SolarSystem.Name))
+	w.SetContent(c)
+	w.Resize(fyne.NewSize(600, 400))
+	w.Show()
+}
+
 func (a *CloneSearch) CreateRenderer() fyne.WidgetRenderer {
+	var route *fyne.Container
+	if a.u.IsDesktop() {
+		route = container.NewBorder(nil, nil, a.originButton, a.routePref, a.originLabel)
+	} else {
+		route = container.NewVBox(
+			container.NewBorder(nil, nil, a.originButton, nil, a.originLabel),
+			a.routePref,
+		)
+	}
 	top := container.NewVBox(
 		a.top,
 		widget.NewSeparator(),
-		container.NewHBox(widget.NewLabel("Origin:"), a.originLabel, a.change, layout.NewSpacer(), widget.NewLabel("Route:"), a.routePref),
+		route,
 	)
-	c := container.NewBorder(top, nil, nil, nil, a.body)
+	c := container.NewBorder(
+		top,
+		nil,
+		nil,
+		nil,
+		a.body,
+	)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -217,7 +249,7 @@ func (a *CloneSearch) Update() {
 	a.top.Importance = i
 	a.body.Refresh()
 	if len(a.rows) > 0 && a.origin != nil {
-		go a.updateRoutes(app.RoutePreference(a.routePref.Selected))
+		go a.updateRoutes(mapString2RoutePreference(a.routePref.Selected))
 	}
 }
 
@@ -303,7 +335,7 @@ func (a *CloneSearch) changeOrigin(w fyne.Window) {
 		a.origin = s
 		a.originLabel.Segments = s.DisplayRichTextWithRegion()
 		a.originLabel.Refresh()
-		go a.updateRoutes(app.RoutePreference(a.routePref.Selected))
+		go a.updateRoutes(mapString2RoutePreference(a.routePref.Selected))
 		d.Hide()
 	}
 	list.HideSeparators = true
