@@ -59,7 +59,7 @@ type CloneSearch struct {
 
 	body         fyne.CanvasObject
 	originButton *widget.Button
-	originLabel  *widget.RichText
+	originLabel  *iwidget.TappableRichText
 	origin       *app.EveSolarSystem
 	routePref    *widget.Select
 	rows         []cloneSearchRow
@@ -78,7 +78,7 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 	}
 	a := &CloneSearch{
 		colSort:     make([]sortDir, len(headers)),
-		originLabel: widget.NewRichTextWithText("?"),
+		originLabel: iwidget.NewTappableRichTextWithText("?", nil),
 		rows:        make([]cloneSearchRow, 0),
 		top:         appwidget.MakeTopLabel(),
 		u:           u,
@@ -317,6 +317,9 @@ func (a *CloneSearch) changeOrigin(w fyne.Window) {
 		}
 		a.origin = s
 		a.originLabel.Segments = s.DisplayRichTextWithRegion()
+		a.originLabel.OnTapped = func() {
+			a.u.ShowInfoWindow(app.EveEntitySolarSystem, s.ID)
+		}
 		a.originLabel.Refresh()
 		go a.updateRoutes(app.RoutePreference(a.routePref.Selected))
 		d.Hide()
@@ -454,9 +457,17 @@ func (a *CloneSearch) showRoute(r cloneSearchRow) {
 		a.u.ShowInfoWindow(app.EveEntitySolarSystem, s.ID)
 
 	}
-	from := widget.NewRichText(a.origin.DisplayRichTextWithRegion()...)
+	from := iwidget.NewTappableRichText(
+		func() {
+			a.u.ShowInfoWindow(app.EveEntitySolarSystem, a.origin.ID)
+		},
+		a.origin.DisplayRichTextWithRegion()...)
 	from.Wrapping = fyne.TextWrapWord
-	to := widget.NewRichText(r.c.Location.SolarSystem.DisplayRichTextWithRegion()...)
+	to := iwidget.NewTappableRichText(
+		func() {
+			a.u.ShowInfoWindow(app.EveEntitySolarSystem, r.c.Location.SolarSystem.ID)
+		},
+		r.c.Location.SolarSystem.DisplayRichTextWithRegion()...)
 	to.Wrapping = fyne.TextWrapWord
 	jumps := widget.NewLabel(fmt.Sprintf("%s (%s)", r.jumps(), a.routePref.Selected))
 	top := container.New(
@@ -538,9 +549,15 @@ func (a *CloneSearch) showClone(r cloneSearchRow) {
 		a.u.ShowInfoWindow(app.EveEntityInventoryType, im.EveType.ID)
 
 	}
-	location := widget.NewRichText(r.c.Location.DisplayRichText()...)
+	location := iwidget.NewTappableRichText(
+		func() {
+			a.u.ShowLocationInfoWindow(r.c.Location.ID)
+		},
+		r.c.Location.DisplayRichText()...)
 	location.Wrapping = fyne.TextWrapWord
-	character := widget.NewLabel(r.c.Character.Name)
+	character := kxwidget.NewTappableLabel(r.c.Character.Name, func() {
+		a.u.ShowInfoWindow(app.EveEntityCharacter, r.c.Character.ID)
+	})
 	character.Wrapping = fyne.TextWrapWord
 	implants := widget.NewLabel(fmt.Sprint(len(clone.Implants)))
 	col := kxlayout.NewColumns(80)
