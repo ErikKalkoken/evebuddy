@@ -6,7 +6,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
@@ -143,7 +143,7 @@ func TestTrainingWatchers(t *testing.T) {
 
 func newCharacterService(st *storage.Storage) *characterservice.CharacterService {
 	sc := statuscache.New(memcache.New())
-	eu := eveuniverse.New(st, nil)
+	eu := eveuniverseservice.New(st, nil)
 	eu.StatusCacheService = sc
 	s := characterservice.New(st, nil, nil)
 	s.EveUniverseService = eu

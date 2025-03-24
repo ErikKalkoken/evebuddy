@@ -1,10 +1,10 @@
-package eveuniverse_test
+package eveuniverseservice_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
@@ -17,7 +17,7 @@ func TestGetOrCreateEveSchematicESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverse.New(r, client)
+	s := eveuniverseservice.New(r, client)
 	ctx := context.Background()
 	t.Run("should return existing schematic", func(t *testing.T) {
 		// given

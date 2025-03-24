@@ -30,7 +30,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatus"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -213,7 +213,7 @@ func main() {
 		os.Exit(1)
 	}
 	// Init EveUniverse service
-	eus := eveuniverse.New(st, esiClient)
+	eus := eveuniverseservice.New(st, esiClient)
 	eus.StatusCacheService = scs
 
 	// Init EveNotification service

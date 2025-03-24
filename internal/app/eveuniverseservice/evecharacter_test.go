@@ -1,4 +1,4 @@
-package eveuniverse_test
+package eveuniverseservice_test
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 )
@@ -22,7 +22,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverse.New(r, client)
+	s := eveuniverseservice.New(r, client)
 	ctx := context.Background()
 	t.Run("should return existing character", func(t *testing.T) {
 		// given
@@ -93,7 +93,7 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverse.New(r, client)
+	s := eveuniverseservice.New(r, client)
 	ctx := context.Background()
 	t.Run("should update character from ESI", func(t *testing.T) {
 		// given

@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
@@ -249,7 +249,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 
 func newCharacterService(st *storage.Storage) *CharacterService {
 	sc := statuscache.New(memcache.New())
-	eu := eveuniverse.New(st, nil)
+	eu := eveuniverseservice.New(st, nil)
 	eu.StatusCacheService = sc
 	s := New(st, nil, nil)
 	s.EveUniverseService = eu

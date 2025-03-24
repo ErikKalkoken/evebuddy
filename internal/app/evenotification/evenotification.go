@@ -7,13 +7,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 // EveNotificationService is a service for rendering notifications.
 type EveNotificationService struct {
-	EveUniverseService *eveuniverse.EveUniverseService
+	EveUniverseService *eveuniverseservice.EveUniverseService
 }
 
 func New() *EveNotificationService {

@@ -1,4 +1,4 @@
-package eveuniverse_test
+package eveuniverseservice_test
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 )
@@ -27,7 +27,7 @@ func TestEveLocationOther(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	eu := eveuniverse.New(r, client)
+	eu := eveuniverseservice.New(r, client)
 	ctx := context.Background()
 	t.Run("should create location for a station", func(t *testing.T) {
 		// given
@@ -115,7 +115,7 @@ func TestLocationStructures(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	eu := eveuniverse.New(r, client)
+	eu := eveuniverseservice.New(r, client)
 	t.Run("should return existing structure", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)

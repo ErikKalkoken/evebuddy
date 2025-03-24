@@ -1,4 +1,4 @@
-package eveuniverse_test
+package eveuniverseservice_test
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 )
 
@@ -22,7 +22,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverse.New(r, client)
+	s := eveuniverseservice.New(r, client)
 	t.Run("do nothing when all entities already exist", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -253,7 +253,7 @@ func TestToEveEntities(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverse.New(st, client)
+	s := eveuniverseservice.New(st, client)
 	t.Run("should resolve normal IDs", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)

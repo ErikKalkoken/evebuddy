@@ -1,4 +1,4 @@
-package eveuniverse
+package eveuniverseservice
 
 import (
 	"context"

@@ -1,5 +1,5 @@
-// Package eveuniverse contains the Eve universe service.
-package eveuniverse
+// Package eveuniverseservice contains the service for accessing EVE universe objects.
+package eveuniverseservice
 
 import (
 	"time"

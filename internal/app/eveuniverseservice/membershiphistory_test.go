@@ -1,4 +1,4 @@
-package eveuniverse_test
+package eveuniverseservice_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
@@ -20,7 +20,7 @@ func TestMembershipHistory(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	eu := eveuniverse.New(r, client)
+	eu := eveuniverseservice.New(r, client)
 	ctx := context.Background()
 	t.Run("should return corporation membership history", func(t *testing.T) {
 		// given

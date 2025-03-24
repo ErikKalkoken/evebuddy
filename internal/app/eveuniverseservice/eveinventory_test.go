@@ -1,4 +1,4 @@
-package eveuniverse_test
+package eveuniverseservice_test
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 )
@@ -20,7 +20,7 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverse.New(r, client)
+	s := eveuniverseservice.New(r, client)
 	ctx := context.Background()
 	t.Run("should return existing category", func(t *testing.T) {
 		// given
@@ -74,7 +74,7 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverse.New(r, client)
+	s := eveuniverseservice.New(r, client)
 	ctx := context.Background()
 	t.Run("should return existing group", func(t *testing.T) {
 		// given
@@ -131,7 +131,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverse.New(r, client)
+	s := eveuniverseservice.New(r, client)
 	ctx := context.Background()
 	t.Run("should return existing type", func(t *testing.T) {
 		// given
