@@ -11,7 +11,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	widget1 "github.com/ErikKalkoken/evebuddy/internal/app/ui/widget"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -45,7 +45,7 @@ type ColonyOverview struct {
 func NewColonyOverview(u app.UI) *ColonyOverview {
 	a := &ColonyOverview{
 		rows: make([]colonyRow, 0),
-		top:  widget1.MakeTopLabel(),
+		top:  appwidget.MakeTopLabel(),
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)

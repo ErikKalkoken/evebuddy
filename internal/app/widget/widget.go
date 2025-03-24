@@ -1,4 +1,4 @@
-// Package widget contains shared widgets with app dependencies.
+// Package widget contains generic widgets with app dependencies.
 package widget
 
 import (

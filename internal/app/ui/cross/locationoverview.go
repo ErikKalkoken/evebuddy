@@ -10,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	widget1 "github.com/ErikKalkoken/evebuddy/internal/app/ui/widget"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -46,7 +46,7 @@ type LocationOverview struct {
 func NewLocationOverview(u app.UI) *LocationOverview {
 	a := &LocationOverview{
 		rows: make([]locationCharacter, 0),
-		top:  widget1.MakeTopLabel(),
+		top:  appwidget.MakeTopLabel(),
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)

@@ -11,12 +11,12 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	widget1 "github.com/ErikKalkoken/evebuddy/internal/app/ui/widget"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
 type CharacterImplants struct {
@@ -31,7 +31,7 @@ type CharacterImplants struct {
 func NewCharacterImplants(u app.UI) *CharacterImplants {
 	a := &CharacterImplants{
 		implants: make([]*app.CharacterImplant, 0),
-		top:      widget1.MakeTopLabel(),
+		top:      appwidget.MakeTopLabel(),
 		u:        u,
 	}
 	a.ExtendBaseWidget(a)
@@ -82,7 +82,7 @@ func (a *CharacterImplants) makeImplantList() *widget.List {
 			slot := vbox[1].(*fyne.Container).Objects[0].(*widget.Label)
 			slot.SetText(fmt.Sprintf("Slot %d", o.SlotNum))
 			iconMain := row[1].(*canvas.Image)
-			widget1.RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
+			appwidget.RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
 				return a.u.EveImageService().InventoryTypeIcon(o.EveType.ID, app.IconPixelSize)
 			})
 			iconInfo := row[2].(*kxwidget.TappableIcon)

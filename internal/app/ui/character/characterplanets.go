@@ -13,7 +13,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	widget1 "github.com/ErikKalkoken/evebuddy/internal/app/ui/widget"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 )
 
 type CharacterPlanets struct {
@@ -30,7 +30,7 @@ type CharacterPlanets struct {
 func NewCharacterPlanets(u app.UI) *CharacterPlanets {
 	a := &CharacterPlanets{
 		planets: make([]*app.CharacterPlanet, 0),
-		top:     widget1.MakeTopLabel(),
+		top:     appwidget.MakeTopLabel(),
 		u:       u,
 	}
 	a.ExtendBaseWidget(a)

@@ -17,7 +17,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	widget1 "github.com/ErikKalkoken/evebuddy/internal/app/ui/widget"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	ilayout "github.com/ErikKalkoken/evebuddy/internal/layout"
@@ -374,7 +374,7 @@ func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 		}
 	} else {
 		s := float32(app.IconPixelSize) * logoZoomFactor
-		icon := widget1.NewImageResourceAsync(icons.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
+		icon := appwidget.NewImageResourceAsync(icons.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
 			if a.et.IsSKIN() {
 				return a.iw.u.EveImageService().InventoryTypeSKIN(a.et.ID, app.IconPixelSize)
 			} else if a.et.IsBlueprint() {
@@ -391,7 +391,7 @@ func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 	})
 	characterName.Wrapping = fyne.TextWrapWord
 	if a.character != nil {
-		widget1.RefreshImageResourceAsync(characterIcon, func() (fyne.Resource, error) {
+		appwidget.RefreshImageResourceAsync(characterIcon, func() (fyne.Resource, error) {
 			return a.iw.u.EveImageService().CharacterPortrait(a.character.ID, app.IconPixelSize)
 		})
 		characterName.SetText(a.character.Name)
@@ -454,14 +454,14 @@ func (a *inventoryTypeInfo) makeAttributesTab() fyne.CanvasObject {
 			return len(a.attributesData)
 		},
 		func() fyne.CanvasObject {
-			return widget1.NewTypeAttributeItem()
+			return appwidget.NewTypeAttributeItem()
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.attributesData) {
 				return
 			}
 			r := a.attributesData[id]
-			item := co.(*widget1.TypeAttributeItem)
+			item := co.(*appwidget.TypeAttributeItem)
 			if r.isTitle {
 				item.SetTitle(r.label)
 			} else {
@@ -488,11 +488,11 @@ func (a *inventoryTypeInfo) makeFittingsTab() fyne.CanvasObject {
 			return len(a.fittingData)
 		},
 		func() fyne.CanvasObject {
-			return widget1.NewTypeAttributeItem()
+			return appwidget.NewTypeAttributeItem()
 		},
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
 			r := a.fittingData[lii]
-			item := co.(*widget1.TypeAttributeItem)
+			item := co.(*appwidget.TypeAttributeItem)
 			item.SetRegular(r.icon, r.label, r.value)
 		},
 	)
@@ -512,7 +512,7 @@ func (a *inventoryTypeInfo) makeRequirementsTab() fyne.CanvasObject {
 				widget.NewLabel("Placeholder"),
 				layout.NewSpacer(),
 				widget.NewLabel("Check"),
-				widget1.NewSkillLevel(),
+				appwidget.NewSkillLevel(),
 				widget.NewIcon(icons.QuestionmarkSvg),
 			)
 		},
@@ -521,7 +521,7 @@ func (a *inventoryTypeInfo) makeRequirementsTab() fyne.CanvasObject {
 			row := co.(*fyne.Container).Objects
 			skill := row[0].(*widget.Label)
 			text := row[2].(*widget.Label)
-			level := row[3].(*widget1.SkillLevel)
+			level := row[3].(*appwidget.SkillLevel)
 			icon := row[4].(*widget.Icon)
 			skill.SetText(app.SkillDisplayName(o.name, o.requiredLevel))
 			if o.activeLevel == 0 && o.trainedLevel == 0 {
