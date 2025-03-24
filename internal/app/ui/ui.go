@@ -24,9 +24,9 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/cross"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/tools"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
