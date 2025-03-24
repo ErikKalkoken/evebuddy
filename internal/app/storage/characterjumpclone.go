@@ -22,10 +22,10 @@ func (st *Storage) CreateCharacterJumpClone(ctx context.Context, arg CreateChara
 	return createCharacterJumpClone(ctx, st.q, arg)
 }
 
-func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int32, jumpCloneID int32) (*app.CharacterJumpClone, error) {
+func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int32, cloneID int32) (*app.CharacterJumpClone, error) {
 	arg := queries.GetCharacterJumpCloneParams{
 		CharacterID: int64(characterID),
-		JumpCloneID: int64(jumpCloneID),
+		JumpCloneID: int64(cloneID),
 	}
 	row, err := st.q.GetCharacterJumpClone(ctx, arg)
 	if err != nil {
@@ -83,10 +83,11 @@ func (st *Storage) ListAllCharacterJumpClones(ctx context.Context) ([]*app.Chara
 			return nil, err
 		}
 		o := &app.CharacterJumpClone2{
-			ID:          r.ID,
-			JumpCloneID: int32(r.JumpCloneID),
-			Character:   &app.EntityShort[int32]{ID: int32(r.CharacterID), Name: r.CharacterName},
-			Location:    l,
+			ID:            r.ID,
+			ImplantsCount: int(r.ImplantsCount),
+			CloneID:       int32(r.JumpCloneID),
+			Character:     &app.EntityShort[int32]{ID: int32(r.CharacterID), Name: r.CharacterName},
+			Location:      l,
 		}
 		oo[i] = o
 	}
@@ -170,7 +171,7 @@ func characterJumpCloneFromDBModel(o queries.CharacterJumpClone, locationName st
 	o2 := &app.CharacterJumpClone{
 		CharacterID: int32(o.CharacterID),
 		ID:          o.ID,
-		JumpCloneID: int32(o.JumpCloneID),
+		CloneID:     int32(o.JumpCloneID),
 		Location:    &app.EntityShort[int64]{ID: o.LocationID, Name: locationName},
 		Name:        o.Name,
 	}

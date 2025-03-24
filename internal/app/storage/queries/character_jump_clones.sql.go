@@ -125,11 +125,20 @@ SELECT
     el.eve_solar_system_id as location_solar_system_id,
     el.eve_type_id as location_type_id,
     el.name as location_name,
-    el.owner_id as location_owner_id
+    el.owner_id as location_owner_id,
+    (
+        SELECT
+            COUNT(*)
+        FROM
+            character_jump_clone_implants
+        WHERE
+            clone_id = cjc.id
+    ) AS implants_count
 FROM
     character_jump_clones cjc
     JOIN eve_locations el ON el.id = cjc.location_id
     JOIN eve_characters ec ON ec.id = cjc.character_id
+    LEFT JOIN character_jump_clone_implants cjci ON cjci.clone_id = cjc.id
 `
 
 type ListAllCharacterJumpClonesRow struct {
@@ -142,6 +151,7 @@ type ListAllCharacterJumpClonesRow struct {
 	LocationTypeID        sql.NullInt64
 	LocationName          string
 	LocationOwnerID       sql.NullInt64
+	ImplantsCount         int64
 }
 
 func (q *Queries) ListAllCharacterJumpClones(ctx context.Context) ([]ListAllCharacterJumpClonesRow, error) {
@@ -163,6 +173,7 @@ func (q *Queries) ListAllCharacterJumpClones(ctx context.Context) ([]ListAllChar
 			&i.LocationTypeID,
 			&i.LocationName,
 			&i.LocationOwnerID,
+			&i.ImplantsCount,
 		); err != nil {
 			return nil, err
 		}

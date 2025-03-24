@@ -61,7 +61,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 			assert.True(t, changed)
 			o, err := st.GetCharacterJumpClone(ctx, c.ID, 12345)
 			if assert.NoError(t, err) {
-				assert.Equal(t, int32(12345), o.JumpCloneID)
+				assert.Equal(t, int32(12345), o.CloneID)
 				assert.Equal(t, "Alpha", o.Name)
 				assert.Equal(t, int64(60003463), o.Location.ID)
 				if assert.Len(t, o.Implants, 1) {
@@ -103,7 +103,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 			assert.True(t, changed)
 			o, err := st.GetCharacterJumpClone(ctx, c.ID, 12345)
 			if assert.NoError(t, err) {
-				assert.Equal(t, int32(12345), o.JumpCloneID)
+				assert.Equal(t, int32(12345), o.CloneID)
 				assert.Equal(t, "Alpha", o.Name)
 				assert.Equal(t, station.ID, o.Location.ID)
 				if assert.Len(t, o.Implants, 1) {

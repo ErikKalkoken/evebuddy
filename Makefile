@@ -30,3 +30,4 @@ interfaces:
 	ifacemaker -s BaseUI -i UI -p app -f internal/app/ui/ui.go -o internal/app/ui.go
 	ifacemaker -s AppSettings -i Settings -p app -f internal/app/ui/appsettings.go -o internal/app/settings.go
 	ifacemaker -s EveUniverseService -i EveUniverseService -p app -o internal/app/eveuniverse.go -f "internal/app/eveuniverse/*.go"
+	ifacemaker -s CharacterService -i CharacterService -p app -o internal/app/characterservice.go -f "internal/app/character/*.go"

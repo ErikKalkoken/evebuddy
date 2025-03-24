@@ -63,7 +63,7 @@ func NewCharacterWalletJournal(u app.UI) *CharacterWalletJournal {
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)
-	var headers = []iwidget.HeaderDef{
+	headers := []iwidget.HeaderDef{
 		{Text: "Date", Width: 150},
 		{Text: "Type", Width: 150},
 		{Text: "Amount", Width: 200},

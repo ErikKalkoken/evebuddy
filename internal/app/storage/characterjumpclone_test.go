@@ -34,7 +34,7 @@ func TestCharacterJumpClone(t *testing.T) {
 		if assert.NoError(t, err) {
 			x, err := r.GetCharacterJumpClone(ctx, c.ID, 5)
 			if assert.NoError(t, err) {
-				assert.Equal(t, int32(5), x.JumpCloneID)
+				assert.Equal(t, int32(5), x.CloneID)
 				assert.Equal(t, "dummy", x.Name)
 				assert.Equal(t, location.ID, x.Location.ID)
 				assert.Equal(t, location.Name, x.Location.Name)
@@ -116,24 +116,27 @@ func TestCharacterJumpClone(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			ids := slices.Collect(xiter.MapSlice(oo, func(a *app.CharacterJumpClone) int32 {
-				return a.JumpCloneID
+				return a.CloneID
 			}))
-			assert.ElementsMatch(t, []int32{x1.JumpCloneID, x2.JumpCloneID}, ids)
+			assert.ElementsMatch(t, []int32{x1.CloneID, x2.CloneID}, ids)
 		}
 	})
 	t.Run("can list clones for all characters", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		x1 := factory.CreateCharacterJumpClone()
-		x2 := factory.CreateCharacterJumpClone()
+		eveType := factory.CreateEveType()
+		x2 := factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{
+			Implants: []int32{eveType.ID},
+		})
 		// when
 		oo, err := r.ListAllCharacterJumpClones(ctx)
 		// then
 		if assert.NoError(t, err) {
 			ids := slices.Collect(xiter.MapSlice(oo, func(a *app.CharacterJumpClone2) int32 {
-				return a.JumpCloneID
+				return a.CloneID
 			}))
-			assert.ElementsMatch(t, []int32{x1.JumpCloneID, x2.JumpCloneID}, ids)
+			assert.ElementsMatch(t, []int32{x1.CloneID, x2.CloneID}, ids)
 		}
 	})
 }

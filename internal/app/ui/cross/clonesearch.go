@@ -77,7 +77,15 @@ func mapString2RoutePreference(s string) app.RoutePreference {
 }
 
 func NewCloneSearch(u app.UI) *CloneSearch {
+	headers := []iwidget.HeaderDef{
+		{Text: "Location", Width: 350},
+		{Text: "Region", Width: 150},
+		{Text: "Impl.", Width: 100},
+		{Text: "Character", Width: 200},
+		{Text: "Jumps", Width: 100},
+	}
 	a := &CloneSearch{
+		colSort:     make([]sortDir, len(headers)),
 		originLabel: widget.NewRichTextWithText("?"),
 		rows:        make([]cloneSearchRow, 0),
 		top:         shared.MakeTopLabel(),
@@ -94,13 +102,6 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 	a.routePref.OnChanged = func(s string) {
 		go a.updateRoutes(mapString2RoutePreference(s))
 	}
-	headers := []iwidget.HeaderDef{
-		{Text: "Location", Width: 350},
-		{Text: "Region", Width: 150},
-		{Text: "Character", Width: 200},
-		{Text: "Jumps", Width: 100},
-	}
-	a.colSort = make([]sortDir, len(headers))
 	makeCell := func(col int, r cloneSearchRow) []widget.RichTextSegment {
 		var s []widget.RichTextSegment
 		switch col {
@@ -114,8 +115,10 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 				)
 			}
 		case 2:
-			s = iwidget.NewRichTextSegmentFromText(r.c.Character.Name, false)
+			s = iwidget.NewRichTextSegmentFromText(fmt.Sprint(r.c.ImplantsCount), false)
 		case 3:
+			s = iwidget.NewRichTextSegmentFromText(r.c.Character.Name, false)
+		case 4:
 			s = iwidget.NewRichTextSegmentFromText(r.jumps(), false)
 		}
 		return s
@@ -130,8 +133,13 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 					a.u.ShowInfoWindow(app.EveEntityRegion, r.c.Location.SolarSystem.Constellation.Region.ID)
 				}
 			case 2:
-				a.u.ShowInfoWindow(app.EveEntityCharacter, r.c.Character.ID)
+				if r.c.ImplantsCount == 0 {
+					return
+				}
+				a.showClone(r)
 			case 3:
+				a.u.ShowInfoWindow(app.EveEntityCharacter, r.c.Character.ID)
+			case 4:
 				if len(r.route) == 0 {
 					return
 				}
@@ -270,6 +278,76 @@ func (a *CloneSearch) showRoute(r cloneSearchRow) {
 		list,
 	)
 	w := a.u.App().NewWindow(fmt.Sprintf("Route: %s -> %s", a.origin.Name, r.c.Location.SolarSystem.Name))
+	w.SetContent(c)
+	w.Resize(fyne.NewSize(600, 400))
+	w.Show()
+}
+
+func (a *CloneSearch) showClone(r cloneSearchRow) {
+	clone, err := a.u.CharacterService().GetCharacterJumpClone(context.Background(), r.c.Character.ID, r.c.CloneID)
+	if err != nil {
+		panic(err) // TODO
+	}
+	list := widget.NewList(
+		func() int {
+			return len(clone.Implants)
+		},
+		func() fyne.CanvasObject {
+			icon := iwidget.NewImageFromResource(
+				icons.Characterplaceholder64Jpeg,
+				fyne.NewSquareSize(app.IconUnitSize),
+			)
+			name := widget.NewLabel("")
+			name.Truncation = fyne.TextTruncateEllipsis
+			return container.NewBorder(
+				nil,
+				nil,
+				icon,
+				nil,
+				name,
+			)
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(clone.Implants) {
+				return
+			}
+			im := clone.Implants[id]
+			border := co.(*fyne.Container).Objects
+			// icon := border[1]
+			name := border[0]
+			name.(*widget.Label).SetText(im.EveType.Name)
+		},
+	)
+	list.HideSeparators = true
+	list.OnSelected = func(id widget.ListItemID) {
+		defer list.UnselectAll()
+		if id >= len(clone.Implants) {
+			return
+		}
+		im := clone.Implants[id]
+		a.u.ShowInfoWindow(app.EveEntityInventoryType, im.EveType.ID)
+
+	}
+	location := widget.NewRichText(r.c.Location.DisplayRichText()...)
+	location.Wrapping = fyne.TextWrapWord
+	character := widget.NewLabel(r.c.Character.Name)
+	character.Wrapping = fyne.TextWrapWord
+	implants := widget.NewLabel(fmt.Sprint(len(clone.Implants)))
+	col := kxlayout.NewColumns(80)
+	top := container.New(
+		layout.NewCustomPaddedVBoxLayout(0),
+		container.New(col, widget.NewLabel("Location:"), location),
+		container.New(col, widget.NewLabel("Character:"), character),
+		container.New(col, widget.NewLabel("Implants:"), implants),
+	)
+	c := container.NewBorder(
+		container.NewVBox(top, widget.NewSeparator()),
+		nil,
+		nil,
+		nil,
+		list,
+	)
+	w := a.u.App().NewWindow("Clone")
 	w.SetContent(c)
 	w.Resize(fyne.NewSize(600, 400))
 	w.Show()

@@ -65,7 +65,16 @@ type AllAssetSearch struct {
 }
 
 func NewAssetSearch(u app.UI) *AllAssetSearch {
+	headers := []iwidget.HeaderDef{
+		{Text: "Item", Width: 300},
+		{Text: "Class", Width: 200},
+		{Text: "Location", Width: 350},
+		{Text: "Owner", Width: 200},
+		{Text: "Qty.", Width: 75},
+		{Text: "Price", Width: 100},
+	}
 	a := &AllAssetSearch{
+		colSort:        make([]sortDir, len(headers)),
 		assetsFiltered: make([]*assetSearchRow, 0),
 		entry:          widget.NewEntry(),
 		found:          widget.NewLabel(""),
@@ -82,14 +91,7 @@ func NewAssetSearch(u app.UI) *AllAssetSearch {
 	a.entry.PlaceHolder = "Search assets"
 	a.total.TextStyle.Bold = true
 	a.found.Hide()
-	var headers = []iwidget.HeaderDef{
-		{Text: "Item", Width: 300},
-		{Text: "Class", Width: 200},
-		{Text: "Location", Width: 350},
-		{Text: "Owner", Width: 200},
-		{Text: "Qty.", Width: 75},
-		{Text: "Price", Width: 100},
-	}
+
 	makeCell := func(col int, r *assetSearchRow) (string, fyne.TextAlign, widget.Importance) {
 		var a fyne.TextAlign
 		var i widget.Importance
@@ -151,7 +153,6 @@ func (a *AllAssetSearch) makeTable(
 	makeCell func(int, *assetSearchRow) (string, fyne.TextAlign, widget.Importance),
 	onSelected func(int, *assetSearchRow),
 ) *widget.Table {
-	a.colSort = make([]sortDir, len(headers))
 	t := widget.NewTable(
 		func() (rows int, cols int) {
 			return len(a.assetsFiltered), len(headers)

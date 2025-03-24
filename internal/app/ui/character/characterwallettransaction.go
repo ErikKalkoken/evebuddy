@@ -65,7 +65,7 @@ func NewCharacterWalletTransaction(u app.UI) *CharacterWalletTransaction {
 		}
 		return text, align, importance
 	}
-	var headers = []iwidget.HeaderDef{
+	headers := []iwidget.HeaderDef{
 		{Text: "Date", Width: 150},
 		{Text: "Quantity", Width: 130},
 		{Text: "Type", Width: 200},

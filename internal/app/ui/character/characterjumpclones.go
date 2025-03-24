@@ -178,7 +178,7 @@ func (a *CharacterJumpClones) newTreeData() (*iwidget.TreeData[jumpCloneNode], e
 	for _, c := range clones {
 		n := jumpCloneNode{
 			implantCount:  len(c.Implants),
-			jumpCloneID:   c.JumpCloneID,
+			jumpCloneID:   c.CloneID,
 			jumpCloneName: c.Name,
 			locationID:    c.Location.ID,
 		}
@@ -203,7 +203,7 @@ func (a *CharacterJumpClones) newTreeData() (*iwidget.TreeData[jumpCloneNode], e
 				implantTypeDescription: i.EveType.DescriptionPlain(),
 				implantTypeID:          i.EveType.ID,
 				implantTypeName:        i.EveType.Name,
-				jumpCloneID:            c.JumpCloneID,
+				jumpCloneID:            c.CloneID,
 			}
 			tree.MustAdd(uid, n)
 		}
