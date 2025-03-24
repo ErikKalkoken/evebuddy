@@ -70,10 +70,10 @@ type CloneSearch struct {
 
 func NewCloneSearch(u app.UI) *CloneSearch {
 	headers := []iwidget.HeaderDef{
-		{Text: "Location", Width: 350},
-		{Text: "Region", Width: 150},
+		{Text: "Location", Width: locationColumnWidth},
+		{Text: "Region", Width: regionColumnWidth},
 		{Text: "Impl.", Width: 100},
-		{Text: "Character", Width: 200},
+		{Text: "Character", Width: characterColumnWidth},
 		{Text: "Jumps", Width: 100},
 	}
 	a := &CloneSearch{
