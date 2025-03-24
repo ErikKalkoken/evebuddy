@@ -27,7 +27,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/collectivewidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/tools"
+	"github.com/ErikKalkoken/evebuddy/internal/app/toolwidgets"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
@@ -83,11 +83,11 @@ type BaseUI struct {
 	characterWalletTransaction *characterwidget.CharacterWalletTransaction
 	colonyOverview             *collectivewidget.ColonyOverview
 	cloneSearch                *collectivewidget.CloneSearch
-	gameSearch                 *tools.GameSearch
+	gameSearch                 *toolwidgets.GameSearch
 	locationOverview           *collectivewidget.LocationOverview
-	managerCharacters          *tools.ManageCharacters
+	managerCharacters          *toolwidgets.ManageCharacters
 	trainingOverview           *collectivewidget.TrainingOverview
-	userSettings               *tools.UserSettings
+	userSettings               *toolwidgets.UserSettings
 	wealthOverview             *collectivewidget.WealthOverview
 
 	app              fyne.App
@@ -170,11 +170,11 @@ func NewBaseUI(
 	u.characterWalletTransaction = characterwidget.NewCharacterWalletTransaction(u)
 	u.cloneSearch = collectivewidget.NewCloneSearch(u)
 	u.colonyOverview = collectivewidget.NewColonyOverview(u)
-	u.gameSearch = tools.NewGameSearch(u)
+	u.gameSearch = toolwidgets.NewGameSearch(u)
 	u.locationOverview = collectivewidget.NewLocationOverview(u)
-	u.managerCharacters = tools.NewManageCharacters(u)
+	u.managerCharacters = toolwidgets.NewManageCharacters(u)
 	u.trainingOverview = collectivewidget.NewTrainingOverview(u)
-	u.userSettings = tools.NewSettings(u)
+	u.userSettings = toolwidgets.NewSettings(u)
 	u.wealthOverview = collectivewidget.NewWealthOverview(u)
 
 	u.MainWindow().SetMaster()
@@ -944,7 +944,7 @@ func (u *BaseUI) ShowUpdateStatusWindow() {
 		return
 	}
 	w := u.app.NewWindow(u.makeWindowTitle("Update Status"))
-	a := tools.NewUpdateStatus(u)
+	a := toolwidgets.NewUpdateStatus(u)
 	a.Update()
 	w.SetContent(a)
 	w.Resize(fyne.Size{Width: 1100, Height: 500})
