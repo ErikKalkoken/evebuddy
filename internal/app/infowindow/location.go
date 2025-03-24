@@ -37,6 +37,7 @@ type locationInfo struct {
 func newLocationInfo(iw InfoWindow, locationID int64, w fyne.Window) *locationInfo {
 	name := widget.NewLabel("Loading...")
 	name.Wrapping = fyne.TextWrapWord
+	name.TextStyle.Bold = true
 	typeInfo := kxwidget.NewTappableLabel("", nil)
 	typeInfo.Wrapping = fyne.TextWrapWord
 	corporation := kxwidget.NewTappableLabel("", nil)

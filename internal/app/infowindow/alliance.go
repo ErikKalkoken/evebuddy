@@ -33,6 +33,7 @@ type allianceInfo struct {
 func newAllianceInfo(iw InfoWindow, allianceID int32, w fyne.Window) *allianceInfo {
 	name := widget.NewLabel("")
 	name.Wrapping = fyne.TextWrapWord
+	name.TextStyle.Bold = true
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Wrapping = fyne.TextWrapWord
 	s := float32(app.IconPixelSize) * logoZoomFactor

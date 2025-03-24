@@ -42,6 +42,7 @@ func newCorporationInfo(iw InfoWindow, id int32, w fyne.Window) *corporationInfo
 	alliance.Wrapping = fyne.TextWrapWord
 	name := widget.NewLabel("")
 	name.Wrapping = fyne.TextWrapWord
+	name.TextStyle.Bold = true
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Wrapping = fyne.TextWrapWord
 	s := float32(app.IconPixelSize) * logoZoomFactor
