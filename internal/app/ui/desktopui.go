@@ -21,9 +21,9 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/desktopwidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
-	uidesktop "github.com/ErikKalkoken/evebuddy/internal/app/ui/desktop"
 )
 
 // The DesktopUI is the root object of the DesktopUI and contains all DesktopUI areas.
@@ -32,8 +32,8 @@ type DesktopUI struct {
 
 	sfg *singleflight.Group
 
-	statusBar *uidesktop.StatusBar
-	toolbar   *uidesktop.Toolbar
+	statusBar *desktopwidget.StatusBar
+	toolbar   *desktopwidget.Toolbar
 
 	overviewTab *container.TabItem
 	tabs        *container.AppTabs
@@ -216,8 +216,8 @@ func NewDesktopUI(bui *BaseUI) *DesktopUI {
 	)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
-	u.toolbar = uidesktop.NewToolbar(u)
-	u.statusBar = uidesktop.NewStatusBar(u)
+	u.toolbar = desktopwidget.NewToolbar(u)
+	u.statusBar = desktopwidget.NewStatusBar(u)
 	mainContent := container.NewBorder(u.toolbar, u.statusBar, nil, nil, u.tabs)
 	u.MainWindow().SetContent(mainContent)
 
