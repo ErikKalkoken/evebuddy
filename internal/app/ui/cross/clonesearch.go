@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
@@ -19,7 +20,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/ui/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
@@ -88,7 +89,7 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 		colSort:     make([]sortDir, len(headers)),
 		originLabel: widget.NewRichTextWithText("?"),
 		rows:        make([]cloneSearchRow, 0),
-		top:         shared.MakeTopLabel(),
+		top:         appwidget.MakeTopLabel(),
 		u:           u,
 	}
 	a.ExtendBaseWidget(a)
@@ -263,12 +264,24 @@ func (a *CloneSearch) showRoute(r cloneSearchRow) {
 	from.Wrapping = fyne.TextWrapWord
 	to := widget.NewRichText(r.c.Location.SolarSystem.DisplayRichTextWithRegion()...)
 	to.Wrapping = fyne.TextWrapWord
-	jumps := fmt.Sprintf("%s (%s)", r.jumps(), a.routePref.Selected)
+	jumps := widget.NewLabel(fmt.Sprintf("%s (%s)", r.jumps(), a.routePref.Selected))
 	top := container.New(
 		layout.NewCustomPaddedVBoxLayout(0),
-		container.New(col, widget.NewLabel("From"), from),
-		container.New(col, widget.NewLabel("To"), to),
-		container.New(col, widget.NewLabel("Jumps"), widget.NewLabel(jumps)),
+		container.New(
+			col,
+			widget.NewLabelWithStyle("From", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+			from,
+		),
+		container.New(
+			col,
+			widget.NewLabelWithStyle("To", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+			to,
+		),
+		container.New(
+			col,
+			widget.NewLabelWithStyle("Jumps", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+			jumps,
+		),
 	)
 	c := container.NewBorder(
 		container.NewVBox(top, widget.NewSeparator()),
@@ -313,7 +326,10 @@ func (a *CloneSearch) showClone(r cloneSearchRow) {
 			}
 			im := clone.Implants[id]
 			border := co.(*fyne.Container).Objects
-			// icon := border[1]
+			icon := border[1].(*canvas.Image)
+			appwidget.RefreshImageResourceAsync(icon, func() (fyne.Resource, error) {
+				return a.u.EveImageService().InventoryTypeIcon(im.EveType.ID, app.IconPixelSize)
+			})
 			name := border[0]
 			name.(*widget.Label).SetText(im.EveType.Name)
 		},
@@ -336,9 +352,21 @@ func (a *CloneSearch) showClone(r cloneSearchRow) {
 	col := kxlayout.NewColumns(80)
 	top := container.New(
 		layout.NewCustomPaddedVBoxLayout(0),
-		container.New(col, widget.NewLabel("Location:"), location),
-		container.New(col, widget.NewLabel("Character:"), character),
-		container.New(col, widget.NewLabel("Implants:"), implants),
+		container.New(
+			col,
+			widget.NewLabelWithStyle("Location", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+			location,
+		),
+		container.New(
+			col,
+			widget.NewLabelWithStyle("Character", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+			character,
+		),
+		container.New(
+			col,
+			widget.NewLabelWithStyle("Implants", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+			implants,
+		),
 	)
 	c := container.NewBorder(
 		container.NewVBox(top, widget.NewSeparator()),
@@ -447,7 +475,10 @@ func (a *CloneSearch) updateRoutes(flag app.RoutePreference) {
 	slices.SortFunc(a.rows, func(a, b cloneSearchRow) int {
 		return a.compare(b)
 	})
-	a.colSort = []sortDir{sortOff, sortOff, sortOff, sortAsc}
+	for i := range a.colSort {
+		a.colSort[i] = sortOff
+	}
+	a.colSort[4] = sortAsc
 	a.body.Refresh()
 }
 

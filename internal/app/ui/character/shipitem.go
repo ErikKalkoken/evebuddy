@@ -19,7 +19,7 @@ import (
 	"github.com/anthonynsimon/bild/effect"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
+	widget1 "github.com/ErikKalkoken/evebuddy/internal/app/ui/widget"
 )
 
 // The ShipItem widget is used to render items on the type info window.
@@ -38,7 +38,7 @@ func NewShipItem(sv app.EveImageService, cache app.CacheService, fallbackIcon fy
 	lowRight := image.Point{128, 128}
 	image := canvas.NewImageFromImage(image.NewRGBA(image.Rectangle{upLeft, lowRight}))
 	image.FillMode = canvas.ImageFillContain
-	image.ScaleMode = shared.DefaultImageScaleMode
+	image.ScaleMode = widget1.DefaultImageScaleMode
 	image.SetMinSize(fyne.NewSquareSize(128))
 	w := &ShipItem{
 		image:        image,

@@ -14,7 +14,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
+	widget1 "github.com/ErikKalkoken/evebuddy/internal/app/ui/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
@@ -31,7 +31,7 @@ type CharacterImplants struct {
 func NewCharacterImplants(u app.UI) *CharacterImplants {
 	a := &CharacterImplants{
 		implants: make([]*app.CharacterImplant, 0),
-		top:      shared.MakeTopLabel(),
+		top:      widget1.MakeTopLabel(),
 		u:        u,
 	}
 	a.ExtendBaseWidget(a)
@@ -82,7 +82,7 @@ func (a *CharacterImplants) makeImplantList() *widget.List {
 			slot := vbox[1].(*fyne.Container).Objects[0].(*widget.Label)
 			slot.SetText(fmt.Sprintf("Slot %d", o.SlotNum))
 			iconMain := row[1].(*canvas.Image)
-			shared.RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
+			widget1.RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
 				return a.u.EveImageService().InventoryTypeIcon(o.EveType.ID, app.IconPixelSize)
 			})
 			iconInfo := row[2].(*kxwidget.TappableIcon)

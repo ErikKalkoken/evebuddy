@@ -16,7 +16,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
+	widget1 "github.com/ErikKalkoken/evebuddy/internal/app/ui/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
@@ -70,7 +70,7 @@ func (w *MailHeader) Set(eis app.EveImageService, from *app.EveEntity, timestamp
 	}
 	w.Refresh()
 	go func() {
-		res, err := shared.FetchEveEntityAvatar(eis, from, icons.BlankSvg)
+		res, err := widget1.FetchEveEntityAvatar(eis, from, icons.BlankSvg)
 		if err != nil {
 			slog.Error("fetch eve entity avatar", "error", err)
 			res = icons.Questionmark32Png

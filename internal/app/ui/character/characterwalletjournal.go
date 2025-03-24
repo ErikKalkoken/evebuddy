@@ -15,7 +15,7 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
+	widget1 "github.com/ErikKalkoken/evebuddy/internal/app/ui/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -59,7 +59,7 @@ type CharacterWalletJournal struct {
 func NewCharacterWalletJournal(u app.UI) *CharacterWalletJournal {
 	a := &CharacterWalletJournal{
 		rows: make([]walletJournalEntry, 0),
-		top:  shared.MakeTopLabel(),
+		top:  widget1.MakeTopLabel(),
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)

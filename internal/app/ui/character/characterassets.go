@@ -19,7 +19,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
+	widget1 "github.com/ErikKalkoken/evebuddy/internal/app/ui/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -88,7 +88,7 @@ func NewCharacterAssets(u app.UI) *CharacterAssets {
 		assets:       make([]*app.CharacterAsset, 0),
 		assetsBottom: widget.NewLabel(""),
 		locationPath: lp,
-		locationsTop: shared.MakeTopLabel(),
+		locationsTop: widget1.MakeTopLabel(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -200,7 +200,7 @@ func (a *CharacterAssets) makeAssetGrid() *widget.GridWrap {
 		},
 		func() fyne.CanvasObject {
 			return NewCharacterAsset(func(image *canvas.Image, ca *app.CharacterAsset) {
-				shared.RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
+				widget1.RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
 					switch ca.Variant() {
 					case app.VariantSKIN:
 						return a.u.EveImageService().InventoryTypeSKIN(ca.EveType.ID, app.IconPixelSize)

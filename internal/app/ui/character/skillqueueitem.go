@@ -8,7 +8,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
+	widget1 "github.com/ErikKalkoken/evebuddy/internal/app/ui/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
@@ -18,7 +18,7 @@ type SkillQueueItem struct {
 	duration   *widget.Label
 	progress   *widget.ProgressBar
 	name       *widget.Label
-	skillLevel *shared.SkillLevel
+	skillLevel *widget1.SkillLevel
 	isMobile   bool
 }
 
@@ -30,7 +30,7 @@ func NewSkillQueueItem() *SkillQueueItem {
 		duration:   widget.NewLabel("duration"),
 		name:       name,
 		progress:   pb,
-		skillLevel: shared.NewSkillLevel(),
+		skillLevel: widget1.NewSkillLevel(),
 		isMobile:   fyne.CurrentDevice().IsMobile(),
 	}
 	w.ExtendBaseWidget(w)

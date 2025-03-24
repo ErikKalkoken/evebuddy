@@ -17,7 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/shared"
+	widget1 "github.com/ErikKalkoken/evebuddy/internal/app/ui/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -78,7 +78,7 @@ func NewAssetSearch(u app.UI) *AllAssetSearch {
 		assetsFiltered: make([]*assetSearchRow, 0),
 		entry:          widget.NewEntry(),
 		found:          widget.NewLabel(""),
-		total:          shared.MakeTopLabel(),
+		total:          widget1.MakeTopLabel(),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)

@@ -1,4 +1,4 @@
-package shared
+package widget
 
 import (
 	"fyne.io/fyne/v2"

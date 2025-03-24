@@ -1,5 +1,5 @@
 // Package widget contains shared widgets with app dependencies.
-package shared
+package widget
 
 import (
 	"fyne.io/fyne/v2"
