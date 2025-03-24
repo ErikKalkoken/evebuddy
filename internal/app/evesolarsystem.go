@@ -12,6 +12,13 @@ import (
 
 type SolarSystemSecurityType uint
 
+const (
+	NullSec SolarSystemSecurityType = iota
+	LowSec
+	HighSec
+	SuperHighSec
+)
+
 // ToImportance returns the importance value for a security type.
 func (t SolarSystemSecurityType) ToImportance() widget.Importance {
 	switch t {
@@ -41,12 +48,17 @@ func (t SolarSystemSecurityType) ToColorName() fyne.ThemeColorName {
 	return theme.ColorNameForeground
 }
 
-const (
-	NullSec SolarSystemSecurityType = iota
-	LowSec
-	HighSec
-	SuperHighSec
-)
+func NewSolarSystemSecurityTypeFromValue(v float32) SolarSystemSecurityType {
+	switch {
+	case v >= 0.9:
+		return SuperHighSec
+	case v >= 0.45:
+		return HighSec
+	case v > 0.0:
+		return LowSec
+	}
+	return NullSec
+}
 
 // EveSolarSystem is a solar system in Eve Online.
 type EveSolarSystem struct {
@@ -61,15 +73,7 @@ func (es EveSolarSystem) IsWormholeSpace() bool {
 }
 
 func (es EveSolarSystem) SecurityType() SolarSystemSecurityType {
-	switch v := es.SecurityStatus; {
-	case v >= 0.9:
-		return SuperHighSec
-	case v >= 0.45:
-		return HighSec
-	case v > 0.0:
-		return LowSec
-	}
-	return NullSec
+	return NewSolarSystemSecurityTypeFromValue(es.SecurityStatus)
 }
 
 func (es EveSolarSystem) SecurityStatusDisplay() string {

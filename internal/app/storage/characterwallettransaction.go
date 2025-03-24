@@ -2,11 +2,13 @@ package storage
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
@@ -53,11 +55,18 @@ func (st *Storage) GetCharacterWalletTransaction(ctx context.Context, characterI
 		CharacterID:   int64(characterID),
 		TransactionID: transactionID,
 	}
-	row, err := st.q.GetCharacterWalletTransaction(ctx, arg)
+	r, err := st.q.GetCharacterWalletTransaction(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("get wallet transaction for character %d: %w", characterID, err)
 	}
-	return characterWalletTransactionFromDBModel(row.CharacterWalletTransaction, row.EveEntity, row.EveTypeName, row.LocationName), err
+	o := characterWalletTransactionFromDBModel(
+		r.CharacterWalletTransaction,
+		r.EveEntity,
+		r.EveTypeName,
+		r.LocationName,
+		r.SystemSecurityStatus,
+	)
+	return o, err
 }
 
 func (st *Storage) ListCharacterWalletTransactionIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
@@ -73,11 +82,17 @@ func (st *Storage) ListCharacterWalletTransactions(ctx context.Context, characte
 	if err != nil {
 		return nil, fmt.Errorf("list wallet transactions for character %d: %w", characterID, err)
 	}
-	ee := make([]*app.CharacterWalletTransaction, len(rows))
-	for i, row := range rows {
-		ee[i] = characterWalletTransactionFromDBModel(row.CharacterWalletTransaction, row.EveEntity, row.EveTypeName, row.LocationName)
+	oo := make([]*app.CharacterWalletTransaction, len(rows))
+	for i, r := range rows {
+		oo[i] = characterWalletTransactionFromDBModel(
+			r.CharacterWalletTransaction,
+			r.EveEntity,
+			r.EveTypeName,
+			r.LocationName,
+			r.SystemSecurityStatus,
+		)
 	}
-	return ee, nil
+	return oo, nil
 }
 
 func characterWalletTransactionFromDBModel(
@@ -85,20 +100,26 @@ func characterWalletTransactionFromDBModel(
 	client queries.EveEntity,
 	eveTypeName string,
 	locationName string,
+	systemSecurityStatus sql.NullFloat64,
 ) *app.CharacterWalletTransaction {
+	var sss optional.Optional[float32]
+	if systemSecurityStatus.Valid {
+		sss.Set(float32(systemSecurityStatus.Float64))
+	}
 	o2 := &app.CharacterWalletTransaction{
-		Client:        eveEntityFromDBModel(client),
-		Date:          o.Date,
-		EveType:       &app.EntityShort[int32]{ID: int32(o.EveTypeID), Name: eveTypeName},
-		ID:            o.ID,
-		IsBuy:         o.IsBuy,
-		IsPersonal:    o.IsPersonal,
-		JournalRefID:  o.JournalRefID,
-		Location:      &app.EntityShort[int64]{ID: o.LocationID, Name: locationName},
-		CharacterID:   int32(o.CharacterID),
-		Quantity:      int32(o.Quantity),
-		TransactionID: o.TransactionID,
-		UnitPrice:     o.UnitPrice,
+		Client:               eveEntityFromDBModel(client),
+		Date:                 o.Date,
+		EveType:              &app.EntityShort[int32]{ID: int32(o.EveTypeID), Name: eveTypeName},
+		ID:                   o.ID,
+		IsBuy:                o.IsBuy,
+		IsPersonal:           o.IsPersonal,
+		JournalRefID:         o.JournalRefID,
+		Location:             &app.EntityShort[int64]{ID: o.LocationID, Name: locationName},
+		CharacterID:          int32(o.CharacterID),
+		Quantity:             int32(o.Quantity),
+		TransactionID:        o.TransactionID,
+		UnitPrice:            o.UnitPrice,
+		SystemSecurityStatus: sss,
 	}
 	return o2
 }
