@@ -8,13 +8,14 @@ const (
 	EveGroupCargoContainer               = 12
 	EveGroupCarrier                      = 547
 	EveGroupDreadnought                  = 485
+	EveGroupExtractorControlUnits        = 1063
 	EveGroupForceAuxiliary               = 1538
 	EveGroupJumpFreighter                = 902
+	EveGroupPlanet                       = 7
+	EveGroupProcessors                   = 1028
 	EveGroupSecureCargoContainer         = 340
 	EveGroupSuperCarrier                 = 659
 	EveGroupTitan                        = 30
-	EveGroupProcessors                   = 1028
-	EveGroupExtractorControlUnits        = 1063
 )
 
 // EveGroup is a group in Eve Online.
