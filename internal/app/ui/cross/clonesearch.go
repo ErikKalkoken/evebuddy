@@ -17,6 +17,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -148,25 +149,26 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 		iconSortDesc := theme.NewPrimaryThemedResource(icons.SortDescendingSvg)
 		iconSortOff := theme.NewThemedResource(icons.SortSvg)
 		t.CreateHeader = func() fyne.CanvasObject {
-			b := widget.NewButtonWithIcon("", iconSortOff, func() {})
-			return container.NewBorder(nil, nil, nil, b, widget.NewLabel("XXX"))
+			icon := widget.NewIcon(iconSortOff)
+			label := kxwidget.NewTappableLabel("XXX", nil)
+			return container.NewBorder(nil, nil, nil, icon, label)
 		}
 		t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
 			h := headers[tci.Col]
 			row := co.(*fyne.Container).Objects
-			label := row[0].(*widget.Label)
+			label := row[0].(*kxwidget.TappableLabel)
 			label.SetText(h.Text)
-			button := row[1].(*widget.Button)
+			label.OnTapped = func() {
+				a.processData(tci.Col)
+			}
+			icon := row[1].(*widget.Icon)
 			switch a.colSort[tci.Col] {
 			case sortOff:
-				button.SetIcon(iconSortOff)
+				icon.SetResource(iconSortOff)
 			case sortAsc:
-				button.SetIcon(iconSortAsc)
+				icon.SetResource(iconSortAsc)
 			case sortDesc:
-				button.SetIcon(iconSortDesc)
-			}
-			button.OnTapped = func() {
-				a.processData(tci.Col)
+				icon.SetResource(iconSortDesc)
 			}
 		}
 		a.body = t

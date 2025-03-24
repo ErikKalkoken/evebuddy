@@ -12,12 +12,13 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	widget1 "github.com/ErikKalkoken/evebuddy/internal/app/ui/widget"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/ui/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -78,7 +79,7 @@ func NewAssetSearch(u app.UI) *AllAssetSearch {
 		assetsFiltered: make([]*assetSearchRow, 0),
 		entry:          widget.NewEntry(),
 		found:          widget.NewLabel(""),
-		total:          widget1.MakeTopLabel(),
+		total:          appwidget.MakeTopLabel(),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
@@ -176,25 +177,26 @@ func (a *AllAssetSearch) makeTable(
 	iconSortDesc := theme.NewPrimaryThemedResource(icons.SortDescendingSvg)
 	iconSortOff := theme.NewThemedResource(icons.SortSvg)
 	t.CreateHeader = func() fyne.CanvasObject {
-		b := widget.NewButtonWithIcon("", iconSortOff, func() {})
-		return container.NewBorder(nil, nil, nil, b, widget.NewLabel("Template"))
+		icon := widget.NewIcon(iconSortOff)
+		label := kxwidget.NewTappableLabel("XXX", nil)
+		return container.NewBorder(nil, nil, nil, icon, label)
 	}
 	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
 		h := headers[tci.Col]
 		row := co.(*fyne.Container).Objects
-		label := row[0].(*widget.Label)
+		label := row[0].(*kxwidget.TappableLabel)
+		label.OnTapped = func() {
+			a.processData(tci.Col)
+		}
 		label.SetText(h.Text)
-		button := row[1].(*widget.Button)
+		icon := row[1].(*widget.Icon)
 		switch a.colSort[tci.Col] {
 		case sortOff:
-			button.SetIcon(iconSortOff)
+			icon.SetResource(iconSortOff)
 		case sortAsc:
-			button.SetIcon(iconSortAsc)
+			icon.SetResource(iconSortAsc)
 		case sortDesc:
-			button.SetIcon(iconSortDesc)
-		}
-		button.OnTapped = func() {
-			a.processData(tci.Col)
+			icon.SetResource(iconSortDesc)
 		}
 	}
 	for i, h := range headers {
