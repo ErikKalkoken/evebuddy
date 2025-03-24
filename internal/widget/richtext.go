@@ -2,8 +2,12 @@ package widget
 
 import "fyne.io/fyne/v2/widget"
 
-func NewRichTextSegmentFromText(s string, inline bool) []widget.RichTextSegment {
-	return []widget.RichTextSegment{&widget.TextSegment{Text: s, Style: widget.RichTextStyle{Inline: inline}}}
+func NewRichTextSegmentFromText(s string, style ...widget.RichTextStyle) []widget.RichTextSegment {
+	seg := &widget.TextSegment{Text: s}
+	if len(style) > 0 {
+		seg.Style = style[0]
+	}
+	return []widget.RichTextSegment{seg}
 }
 
 // SetRichText sets the content of a RichtText widget and refreshes it.

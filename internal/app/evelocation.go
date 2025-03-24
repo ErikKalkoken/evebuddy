@@ -50,7 +50,7 @@ func (el EveLocation) DisplayRichText() []widget.RichTextSegment {
 	}
 	return slices.Concat(
 		el.SolarSystem.SecurityStatusRichText(),
-		iwidget.NewRichTextSegmentFromText(fmt.Sprintf("  %s", n), false))
+		iwidget.NewRichTextSegmentFromText(fmt.Sprintf("  %s", n)))
 }
 
 // DisplayName2 returns a user friendly name not including the location name.

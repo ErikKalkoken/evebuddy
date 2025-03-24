@@ -110,17 +110,14 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 			s = r.c.Location.DisplayRichText()
 		case 1:
 			if r.c.Location.SolarSystem != nil {
-				s = iwidget.NewRichTextSegmentFromText(
-					r.c.Location.SolarSystem.Constellation.Region.Name,
-					false,
-				)
+				s = iwidget.NewRichTextSegmentFromText(r.c.Location.SolarSystem.Constellation.Region.Name)
 			}
 		case 2:
-			s = iwidget.NewRichTextSegmentFromText(fmt.Sprint(r.c.ImplantsCount), false)
+			s = iwidget.NewRichTextSegmentFromText(fmt.Sprint(r.c.ImplantsCount), widget.RichTextStyle{Alignment: fyne.TextAlignTrailing})
 		case 3:
-			s = iwidget.NewRichTextSegmentFromText(r.c.Character.Name, false)
+			s = iwidget.NewRichTextSegmentFromText(r.c.Character.Name)
 		case 4:
-			s = iwidget.NewRichTextSegmentFromText(r.jumps(), false)
+			s = iwidget.NewRichTextSegmentFromText(r.jumps(), widget.RichTextStyle{Alignment: fyne.TextAlignTrailing})
 		}
 		return s
 	}
@@ -152,7 +149,7 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 		iconSortOff := theme.NewThemedResource(icons.SortSvg)
 		t.CreateHeader = func() fyne.CanvasObject {
 			b := widget.NewButtonWithIcon("", iconSortOff, func() {})
-			return container.NewBorder(nil, nil, nil, b, widget.NewLabel("Template"))
+			return container.NewBorder(nil, nil, nil, b, widget.NewLabel("XXX"))
 		}
 		t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
 			h := headers[tci.Col]

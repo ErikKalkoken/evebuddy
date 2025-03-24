@@ -93,14 +93,14 @@ func (es EveSolarSystem) ToEveEntity() *EveEntity {
 func (es EveSolarSystem) DisplayRichText() []widget.RichTextSegment {
 	return slices.Concat(
 		es.SecurityStatusRichText(),
-		iwidget.NewRichTextSegmentFromText(fmt.Sprintf("  %s", es.Name), false),
+		iwidget.NewRichTextSegmentFromText(fmt.Sprintf("  %s", es.Name)),
 	)
 }
 
 func (es EveSolarSystem) DisplayRichTextWithRegion() []widget.RichTextSegment {
 	return slices.Concat(
 		es.SecurityStatusRichText(),
-		iwidget.NewRichTextSegmentFromText(fmt.Sprintf("  %s (%s)", es.Name, es.Constellation.Region.Name), false),
+		iwidget.NewRichTextSegmentFromText(fmt.Sprintf("  %s (%s)", es.Name, es.Constellation.Region.Name)),
 	)
 }
 
