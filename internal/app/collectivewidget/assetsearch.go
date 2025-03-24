@@ -39,8 +39,7 @@ type assetSearchRow struct {
 	groupID         int32
 	groupName       string
 	itemID          int64
-	locationID      int64
-	locationName    string
+	location        *app.EveLocation
 	name            string
 	quantity        int
 	quantityDisplay string
@@ -93,44 +92,69 @@ func NewAssetSearch(u app.UI) *AllAssetSearch {
 	a.total.TextStyle.Bold = true
 	a.found.Hide()
 
-	makeCell := func(col int, r *assetSearchRow) (string, fyne.TextAlign, widget.Importance) {
-		var a fyne.TextAlign
-		var i widget.Importance
-		var t string
+	makeCell := func(col int, r *assetSearchRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			t = r.name
+			return iwidget.NewRichTextSegmentFromText(r.name)
 		case 1:
-			t = r.groupName
+			return iwidget.NewRichTextSegmentFromText(r.groupName)
 		case 2:
-			t = r.locationName
+			if r.location != nil {
+				return r.location.DisplayRichText()
+			}
 		case 3:
-			t = r.characterName
+			return iwidget.NewRichTextSegmentFromText(r.characterName)
 		case 4:
-			t = r.quantityDisplay
-			a = fyne.TextAlignTrailing
+			return iwidget.NewRichTextSegmentFromText(r.quantityDisplay)
 		case 5:
-			t = r.priceDisplay
-			a = fyne.TextAlignTrailing
+			return iwidget.NewRichTextSegmentFromText(r.priceDisplay)
 		}
-		return t, a, i
+		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.IsMobile() {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.assetsFiltered, makeCell, func(r *assetSearchRow) {
+		a.body = iwidget.MakeDataTableForMobile2(headers, &a.assetsFiltered, makeCell, func(r *assetSearchRow) {
 			a.u.ShowTypeInfoWindow(r.typeID)
 		})
 	} else {
-		// can't use helper here, because we also need sort
-		a.body = a.makeTable(headers, makeCell, func(col int, r *assetSearchRow) {
+		t := iwidget.MakeDataTableForDesktop2(headers, &a.assetsFiltered, makeCell, func(col int, r *assetSearchRow) {
 			switch col {
 			case 0:
 				a.u.ShowInfoWindow(app.EveEntityInventoryType, r.typeID)
 			case 2:
-				a.u.ShowLocationInfoWindow(r.locationID)
+				if r.location != nil {
+					a.u.ShowLocationInfoWindow(r.location.ID)
+				}
 			case 3:
 				a.u.ShowInfoWindow(app.EveEntityCharacter, r.characterID)
 			}
 		})
+		iconSortAsc := theme.NewPrimaryThemedResource(icons.SortAscendingSvg)
+		iconSortDesc := theme.NewPrimaryThemedResource(icons.SortDescendingSvg)
+		iconSortOff := theme.NewThemedResource(icons.SortSvg)
+		t.CreateHeader = func() fyne.CanvasObject {
+			icon := widget.NewIcon(iconSortOff)
+			label := kxwidget.NewTappableLabel("XXX", nil)
+			return container.NewBorder(nil, nil, nil, icon, label)
+		}
+		t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
+			h := headers[tci.Col]
+			row := co.(*fyne.Container).Objects
+			label := row[0].(*kxwidget.TappableLabel)
+			label.OnTapped = func() {
+				a.processData(tci.Col)
+			}
+			label.SetText(h.Text)
+			icon := row[1].(*widget.Icon)
+			switch a.colSort[tci.Col] {
+			case sortOff:
+				icon.SetResource(iconSortOff)
+			case sortAsc:
+				icon.SetResource(iconSortAsc)
+			case sortDesc:
+				icon.SetResource(iconSortDesc)
+			}
+		}
+		a.body = t
 	}
 	return a
 }
@@ -147,70 +171,6 @@ func (a *AllAssetSearch) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *AllAssetSearch) Focus() {
 	a.u.MainWindow().Canvas().Focus(a.entry)
-}
-
-func (a *AllAssetSearch) makeTable(
-	headers []iwidget.HeaderDef,
-	makeCell func(int, *assetSearchRow) (string, fyne.TextAlign, widget.Importance),
-	onSelected func(int, *assetSearchRow),
-) *widget.Table {
-	t := widget.NewTable(
-		func() (rows int, cols int) {
-			return len(a.assetsFiltered), len(headers)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewLabel("Template")
-		},
-		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			if tci.Row >= len(a.assetsFiltered) || tci.Row < 0 {
-				return
-			}
-			r := a.assetsFiltered[tci.Row]
-			l := co.(*widget.Label)
-			l.Text, l.Alignment, l.Importance = makeCell(tci.Col, r)
-			l.Truncation = fyne.TextTruncateClip
-			l.Refresh()
-		},
-	)
-	t.ShowHeaderRow = true
-	iconSortAsc := theme.NewPrimaryThemedResource(icons.SortAscendingSvg)
-	iconSortDesc := theme.NewPrimaryThemedResource(icons.SortDescendingSvg)
-	iconSortOff := theme.NewThemedResource(icons.SortSvg)
-	t.CreateHeader = func() fyne.CanvasObject {
-		icon := widget.NewIcon(iconSortOff)
-		label := kxwidget.NewTappableLabel("XXX", nil)
-		return container.NewBorder(nil, nil, nil, icon, label)
-	}
-	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		h := headers[tci.Col]
-		row := co.(*fyne.Container).Objects
-		label := row[0].(*kxwidget.TappableLabel)
-		label.OnTapped = func() {
-			a.processData(tci.Col)
-		}
-		label.SetText(h.Text)
-		icon := row[1].(*widget.Icon)
-		switch a.colSort[tci.Col] {
-		case sortOff:
-			icon.SetResource(iconSortOff)
-		case sortAsc:
-			icon.SetResource(iconSortAsc)
-		case sortDesc:
-			icon.SetResource(iconSortDesc)
-		}
-	}
-	for i, h := range headers {
-		t.SetColumnWidth(i, h.Width)
-	}
-	t.OnSelected = func(id widget.TableCellID) {
-		defer t.UnselectAll()
-		if id.Row >= len(a.assetsFiltered) || id.Row < 0 {
-			return
-		}
-		r := a.assetsFiltered[id.Row]
-		onSelected(id.Col, r)
-	}
-	return t
 }
 
 func (a *AllAssetSearch) processData(sortCol int) {
@@ -241,7 +201,7 @@ func (a *AllAssetSearch) processData(sortCol int) {
 		if search == "" {
 			matches = true
 		}
-		for _, cell := range []string{r.typeName, r.groupName, r.locationName, r.characterName} {
+		for _, cell := range []string{r.typeName, r.groupName, r.location.DisplayName(), r.characterName} {
 			if search != "" {
 				matches = matches || strings.Contains(strings.ToLower(cell), search)
 			}
@@ -259,7 +219,7 @@ func (a *AllAssetSearch) processData(sortCol int) {
 			case 1:
 				x = cmp.Compare(a.groupName, b.groupName)
 			case 2:
-				x = cmp.Compare(a.locationName, b.locationName)
+				x = cmp.Compare(a.location.DisplayName(), b.location.DisplayName())
 			case 3:
 				x = cmp.Compare(a.characterName, b.characterName)
 			case 4:
@@ -359,11 +319,8 @@ func (a *AllAssetSearch) loadData() (bool, error) {
 			r.quantity = int(ca.Quantity)
 		}
 		location, ok := a.assetCollection.AssetParentLocation(ca.ItemID)
-		if !ok {
-			r.locationName = "?"
-		} else {
-			r.locationID = location.ID
-			r.locationName = location.DisplayName()
+		if ok {
+			r.location = location
 		}
 		var price string
 		if ca.Price.IsEmpty() || ca.IsBlueprintCopy {

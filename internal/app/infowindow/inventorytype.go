@@ -109,8 +109,8 @@ func NewInventoryTypeInfo(iw InfoWindow, typeID, characterID int32, w fyne.Windo
 
 func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 	top := a.makeTop()
-	t := container.NewTabItem("Description", a.makeDescriptionTab())
-	tabs := container.NewAppTabs(t)
+	descriptionTab := container.NewTabItem("Description", a.makeDescriptionTab())
+	tabs := container.NewAppTabs(descriptionTab)
 	var attributeTab, requirementsTab *container.TabItem
 	if len(a.attributesData) > 0 {
 		attributeTab = container.NewTabItem("Attributes", a.makeAttributesTab())
@@ -126,9 +126,11 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 	if a.price != nil {
 		tabs.Append(container.NewTabItem("Market", a.makeMarketTab()))
 	}
-	// Select selected tab
+	// Set initial tab
 	if requirementsTab != nil && a.et.Group.Category.ID == app.EveCategorySkill {
 		tabs.Select(requirementsTab)
+	} else if a.et.Group.ID == app.EveGroupPlanet {
+		tabs.Select(descriptionTab)
 	} else if attributeTab != nil {
 		tabs.Select(attributeTab)
 	}

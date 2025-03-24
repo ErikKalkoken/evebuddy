@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
@@ -31,39 +33,47 @@ func NewCharacterWalletTransaction(u app.UI) *CharacterWalletTransaction {
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)
-	makeDataLabel := func(col int, r *app.CharacterWalletTransaction) (string, fyne.TextAlign, widget.Importance) {
-		var align fyne.TextAlign
-		var importance widget.Importance
-		var text string
+	makeCell := func(col int, r *app.CharacterWalletTransaction) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			text = r.Date.Format(app.DateTimeFormat)
+			return iwidget.NewRichTextSegmentFromText(r.Date.Format(app.DateTimeFormat))
 		case 1:
-			align = fyne.TextAlignTrailing
-			text = humanize.Comma(int64(r.Quantity))
+			return iwidget.NewRichTextSegmentFromText(humanize.Comma(int64(r.Quantity)))
 		case 2:
-			text = r.EveType.Name
+			return iwidget.NewRichTextSegmentFromText(r.EveType.Name)
 		case 3:
-			align = fyne.TextAlignTrailing
-			text = humanize.FormatFloat(app.FloatFormat, r.UnitPrice)
+			return iwidget.NewRichTextSegmentFromText(humanize.FormatFloat(app.FloatFormat, r.UnitPrice))
 		case 4:
 			total := r.UnitPrice * float64(r.Quantity)
-			align = fyne.TextAlignTrailing
-			text = humanize.FormatFloat(app.FloatFormat, total)
+			text := humanize.FormatFloat(app.FloatFormat, total)
+			var color fyne.ThemeColorName
 			switch {
 			case total < 0:
-				importance = widget.DangerImportance
+				color = theme.ColorNameError
 			case total > 0:
-				importance = widget.SuccessImportance
+				color = theme.ColorNameSuccess
 			default:
-				importance = widget.MediumImportance
+				color = theme.ColorNameForeground
 			}
+			return iwidget.NewRichTextSegmentFromText(text, widget.RichTextStyle{
+				ColorName: color,
+			})
 		case 5:
-			text = r.Client.Name
+			return iwidget.NewRichTextSegmentFromText(r.Client.Name)
 		case 6:
-			text = r.Location.Name
+			if r.Location != nil && !r.SystemSecurityStatus.IsEmpty() {
+				secValue := r.SystemSecurityStatus.MustValue()
+				secType := app.NewSolarSystemSecurityTypeFromValue(secValue)
+				return slices.Concat(
+					iwidget.NewRichTextSegmentFromText(
+						fmt.Sprintf("%.1f", secValue),
+						widget.RichTextStyle{ColorName: secType.ToColorName(), Inline: true},
+					),
+					iwidget.NewRichTextSegmentFromText("  "+r.Location.Name),
+				)
+			}
 		}
-		return text, align, importance
+		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	headers := []iwidget.HeaderDef{
 		{Text: "Date", Width: 150},
@@ -72,10 +82,10 @@ func NewCharacterWalletTransaction(u app.UI) *CharacterWalletTransaction {
 		{Text: "Unit Price", Width: 200},
 		{Text: "Total", Width: 200},
 		{Text: "Client", Width: 250},
-		{Text: "Where", Width: 250},
+		{Text: "Where", Width: 350},
 	}
 	if a.u.IsDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(column int, r *app.CharacterWalletTransaction) {
+		a.body = iwidget.MakeDataTableForDesktop2(headers, &a.rows, makeCell, func(column int, r *app.CharacterWalletTransaction) {
 			switch column {
 			case 2:
 				a.u.ShowTypeInfoWindow(r.EveType.ID)
@@ -86,7 +96,7 @@ func NewCharacterWalletTransaction(u app.UI) *CharacterWalletTransaction {
 			}
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeDataLabel, func(r *app.CharacterWalletTransaction) {
+		a.body = iwidget.MakeDataTableForMobile2(headers, &a.rows, makeCell, func(r *app.CharacterWalletTransaction) {
 			a.u.ShowTypeInfoWindow(r.EveType.ID)
 		})
 	}

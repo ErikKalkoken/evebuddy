@@ -7,26 +7,27 @@ package queries
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
 
 const createCharacterWalletTransaction = `-- name: CreateCharacterWalletTransaction :exec
-INSERT INTO character_wallet_transactions (
-    client_id,
-    date,
-    eve_type_id,
-    is_buy,
-    is_personal,
-    journal_ref_id,
-    character_id,
-    location_id,
-    quantity,
-    transaction_id,
-    unit_price
-)
-VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-)
+INSERT INTO
+    character_wallet_transactions (
+        client_id,
+        date,
+        eve_type_id,
+        is_buy,
+        is_personal,
+        journal_ref_id,
+        character_id,
+        location_id,
+        quantity,
+        transaction_id,
+        unit_price
+    )
+VALUES
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateCharacterWalletTransactionParams struct {
@@ -61,12 +62,21 @@ func (q *Queries) CreateCharacterWalletTransaction(ctx context.Context, arg Crea
 }
 
 const getCharacterWalletTransaction = `-- name: GetCharacterWalletTransaction :one
-SELECT character_wallet_transactions.id, character_wallet_transactions.character_id, character_wallet_transactions.client_id, character_wallet_transactions.date, character_wallet_transactions.eve_type_id, character_wallet_transactions.is_buy, character_wallet_transactions.is_personal, character_wallet_transactions.journal_ref_id, character_wallet_transactions.location_id, character_wallet_transactions.quantity, character_wallet_transactions.transaction_id, character_wallet_transactions.unit_price, eve_entities.id, eve_entities.category, eve_entities.name, eve_types.name as eve_type_name, eve_locations.name as location_name
-FROM character_wallet_transactions
-JOIN eve_entities ON eve_entities.id = character_wallet_transactions.client_id
-JOIN eve_types ON eve_types.id = character_wallet_transactions.eve_type_id
-JOIN eve_locations ON eve_locations.id = character_wallet_transactions.location_id
-WHERE character_id = ? and transaction_id = ?
+SELECT
+    cwt.id, cwt.character_id, cwt.client_id, cwt.date, cwt.eve_type_id, cwt.is_buy, cwt.is_personal, cwt.journal_ref_id, cwt.location_id, cwt.quantity, cwt.transaction_id, cwt.unit_price,
+    ee.id, ee.category, ee.name,
+    et.name as eve_type_name,
+    el.name as location_name,
+    ess.security_status as system_security_status
+FROM
+    character_wallet_transactions cwt
+    JOIN eve_entities ee ON ee.id = cwt.client_id
+    JOIN eve_types et ON et.id = cwt.eve_type_id
+    JOIN eve_locations el ON el.id = cwt.location_id
+    LEFT JOIN eve_solar_systems ess ON ess.id = el.eve_solar_system_id
+WHERE
+    character_id = ?
+    and transaction_id = ?
 `
 
 type GetCharacterWalletTransactionParams struct {
@@ -79,6 +89,7 @@ type GetCharacterWalletTransactionRow struct {
 	EveEntity                  EveEntity
 	EveTypeName                string
 	LocationName               string
+	SystemSecurityStatus       sql.NullFloat64
 }
 
 func (q *Queries) GetCharacterWalletTransaction(ctx context.Context, arg GetCharacterWalletTransactionParams) (GetCharacterWalletTransactionRow, error) {
@@ -102,14 +113,18 @@ func (q *Queries) GetCharacterWalletTransaction(ctx context.Context, arg GetChar
 		&i.EveEntity.Name,
 		&i.EveTypeName,
 		&i.LocationName,
+		&i.SystemSecurityStatus,
 	)
 	return i, err
 }
 
 const listCharacterWalletTransactionIDs = `-- name: ListCharacterWalletTransactionIDs :many
-SELECT transaction_id
-FROM character_wallet_transactions
-WHERE character_id = ?
+SELECT
+    transaction_id
+FROM
+    character_wallet_transactions
+WHERE
+    character_id = ?
 `
 
 func (q *Queries) ListCharacterWalletTransactionIDs(ctx context.Context, characterID int64) ([]int64, error) {
@@ -136,13 +151,22 @@ func (q *Queries) ListCharacterWalletTransactionIDs(ctx context.Context, charact
 }
 
 const listCharacterWalletTransactions = `-- name: ListCharacterWalletTransactions :many
-SELECT character_wallet_transactions.id, character_wallet_transactions.character_id, character_wallet_transactions.client_id, character_wallet_transactions.date, character_wallet_transactions.eve_type_id, character_wallet_transactions.is_buy, character_wallet_transactions.is_personal, character_wallet_transactions.journal_ref_id, character_wallet_transactions.location_id, character_wallet_transactions.quantity, character_wallet_transactions.transaction_id, character_wallet_transactions.unit_price, eve_entities.id, eve_entities.category, eve_entities.name, eve_types.name as eve_type_name, eve_locations.name as location_name
-FROM character_wallet_transactions
-JOIN eve_entities ON eve_entities.id = character_wallet_transactions.client_id
-JOIN eve_types ON eve_types.id = character_wallet_transactions.eve_type_id
-JOIN eve_locations ON eve_locations.id = character_wallet_transactions.location_id
-WHERE character_id = ?
-ORDER BY date DESC
+SELECT
+    cwt.id, cwt.character_id, cwt.client_id, cwt.date, cwt.eve_type_id, cwt.is_buy, cwt.is_personal, cwt.journal_ref_id, cwt.location_id, cwt.quantity, cwt.transaction_id, cwt.unit_price,
+    ee.id, ee.category, ee.name,
+    et.name as eve_type_name,
+    el.name as location_name,
+    ess.security_status as system_security_status
+FROM
+    character_wallet_transactions cwt
+    JOIN eve_entities ee ON ee.id = cwt.client_id
+    JOIN eve_types et ON et.id = cwt.eve_type_id
+    JOIN eve_locations el ON el.id = cwt.location_id
+    LEFT JOIN eve_solar_systems ess ON ess.id = el.eve_solar_system_id
+WHERE
+    character_id = ?
+ORDER BY
+    date DESC
 `
 
 type ListCharacterWalletTransactionsRow struct {
@@ -150,6 +174,7 @@ type ListCharacterWalletTransactionsRow struct {
 	EveEntity                  EveEntity
 	EveTypeName                string
 	LocationName               string
+	SystemSecurityStatus       sql.NullFloat64
 }
 
 func (q *Queries) ListCharacterWalletTransactions(ctx context.Context, characterID int64) ([]ListCharacterWalletTransactionsRow, error) {
@@ -179,6 +204,7 @@ func (q *Queries) ListCharacterWalletTransactions(ctx context.Context, character
 			&i.EveEntity.Name,
 			&i.EveTypeName,
 			&i.LocationName,
+			&i.SystemSecurityStatus,
 		); err != nil {
 			return nil, err
 		}

@@ -483,11 +483,11 @@ func NewMobileUI(bui *BaseUI) *MobileUI {
 					slog.Error("fetch github version for menu info", "error", err)
 				} else {
 					if v.IsRemoteNewer {
-						navBar.SetBadge(2, true)
+						navBar.SetBadge(3, true)
 						navItemAbout.Supporting = "Update available"
 						navItemAbout.Trailing = theme.NewPrimaryThemedResource(icons.Numeric1CircleSvg)
 					} else {
-						navBar.SetBadge(2, false)
+						navBar.SetBadge(3, false)
 						navItemAbout.Supporting = ""
 						navItemAbout.Trailing = nil
 					}

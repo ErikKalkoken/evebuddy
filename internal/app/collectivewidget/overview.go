@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
@@ -16,6 +18,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 type overviewCharacter struct {
@@ -23,7 +26,7 @@ type overviewCharacter struct {
 	assetValue    optional.Optional[float64]
 	birthday      time.Time
 	corporation   *app.EveEntity
-	home          *app.EntityShort[int64]
+	home          *app.EveLocation
 	id            int32
 	lastLoginAt   optional.Optional[time.Time]
 	name          string
@@ -49,67 +52,66 @@ func NewCharacterOverview(u app.UI) *CharacterOverview {
 	}
 	a.ExtendBaseWidget(a)
 	headers := []iwidget.HeaderDef{
-		{Text: "Name", Width: 250},
+		{Text: "Character", Width: characterColumnWidth},
 		{Text: "Corporation", Width: 250},
 		{Text: "Alliance", Width: 250},
-		{Text: "Security", Width: 50},
+		{Text: "Sec.", Width: 50},
 		{Text: "Unread", Width: 100},
 		{Text: "Wallet", Width: 100},
 		{Text: "Assets", Width: 100},
 		{Text: "Last Login", Width: 100},
-		{Text: "Home", Width: 250},
+		{Text: "Home", Width: locationColumnWidth},
 		{Text: "Age", Width: 100},
 	}
-	makeDataLabel := func(col int, c overviewCharacter) (string, fyne.TextAlign, widget.Importance) {
-		var align fyne.TextAlign
-		var importance widget.Importance
-		var text string
+	makeCell := func(col int, c overviewCharacter) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			text = c.name
+			return iwidget.NewRichTextSegmentFromText(c.name)
 		case 1:
-			text = c.corporation.Name
+			return iwidget.NewRichTextSegmentFromText(c.corporation.Name)
 		case 2:
+			var s string
 			if c.alliance != nil {
-				text = c.alliance.Name
+				s = c.alliance.Name
 			}
+			return iwidget.NewRichTextSegmentFromText(s)
 		case 3:
-			text = fmt.Sprintf("%.1f", c.security)
+			var color fyne.ThemeColorName
+			text := fmt.Sprintf("%.1f", c.security)
 			if c.security > 0 {
-				importance = widget.SuccessImportance
+				color = theme.ColorNameSuccess
 			} else if c.security < 0 {
-				importance = widget.DangerImportance
+				color = theme.ColorNameError
+			} else {
+				color = theme.ColorNameForeground
 			}
-			align = fyne.TextAlignTrailing
+			return iwidget.NewRichTextSegmentFromText(text, widget.RichTextStyle{
+				ColorName: color,
+			})
 		case 4:
-			text = ihumanize.Optional(c.unreadCount, "?")
-			align = fyne.TextAlignTrailing
+			return iwidget.NewRichTextSegmentFromText(ihumanize.Optional(c.unreadCount, "?"))
 		case 5:
-			text = ihumanize.OptionalFloat(c.walletBalance, 1, "?")
-			align = fyne.TextAlignTrailing
+			return iwidget.NewRichTextSegmentFromText(ihumanize.OptionalFloat(c.walletBalance, 1, "?"))
 		case 6:
-			text = ihumanize.OptionalFloat(c.assetValue, 1, "?")
-			align = fyne.TextAlignTrailing
+			return iwidget.NewRichTextSegmentFromText(ihumanize.OptionalFloat(c.assetValue, 1, "?"))
 		case 7:
-			text = ihumanize.Optional(c.lastLoginAt, "?")
-			align = fyne.TextAlignTrailing
+			return iwidget.NewRichTextSegmentFromText(ihumanize.Optional(c.lastLoginAt, "?"))
 		case 8:
-			text = EntityNameOrFallback(c.home, "?")
+			if c.home != nil {
+				return c.home.DisplayRichText()
+			}
 		case 9:
-			text = humanize.RelTime(c.birthday, time.Now(), "", "")
-			align = fyne.TextAlignTrailing
+			return iwidget.NewRichTextSegmentFromText(humanize.RelTime(c.birthday, time.Now(), "", ""))
 		}
-		return text, align, importance
+		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.IsDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(c int, oc overviewCharacter) {
+		a.body = iwidget.MakeDataTableForDesktop2(headers, &a.rows, makeCell, func(c int, oc overviewCharacter) {
 			switch c {
 			case 0:
 				u.ShowInfoWindow(app.EveEntityCharacter, oc.id)
 			case 1:
-				if oc.corporation != nil {
-					u.ShowInfoWindow(app.EveEntityCorporation, oc.corporation.ID)
-				}
+				u.ShowInfoWindow(app.EveEntityCorporation, oc.corporation.ID)
 			case 2:
 				if oc.alliance != nil {
 					u.ShowInfoWindow(app.EveEntityAlliance, oc.alliance.ID)
@@ -121,8 +123,8 @@ func NewCharacterOverview(u app.UI) *CharacterOverview {
 			}
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeDataLabel, func(oc overviewCharacter) {
-			u.ShowEveEntityInfoWindow(&app.EveEntity{ID: oc.id, Name: oc.name, Category: app.EveEntityCharacter})
+		a.body = iwidget.MakeDataTableForMobile2(headers, &a.rows, makeCell, func(oc overviewCharacter) {
+			u.ShowInfoWindow(app.EveEntityCharacter, oc.id)
 		})
 	}
 	return a
@@ -175,13 +177,12 @@ func (a *CharacterOverview) updateCharacters() (overviewTotals, error) {
 	var totals overviewTotals
 	var err error
 	ctx := context.Background()
-	mycc, err := a.u.CharacterService().ListCharacters(ctx)
+	characters, err := a.u.CharacterService().ListCharacters(ctx)
 	if err != nil {
 		return totals, err
 	}
-	cc := make([]overviewCharacter, len(mycc))
-	for i, m := range mycc {
-		c := overviewCharacter{
+	cc := slices.Collect(xiter.MapSlice(characters, func(m *app.Character) overviewCharacter {
+		return overviewCharacter{
 			alliance:      m.EveCharacter.Alliance,
 			birthday:      m.EveCharacter.Birthday,
 			corporation:   m.EveCharacter.Corporation,
@@ -190,15 +191,9 @@ func (a *CharacterOverview) updateCharacters() (overviewTotals, error) {
 			name:          m.EveCharacter.Name,
 			security:      m.EveCharacter.SecurityStatus,
 			walletBalance: m.WalletBalance,
+			home:          m.Home,
 		}
-		if m.Home != nil {
-			c.home = &app.EntityShort[int64]{
-				ID:   m.Home.ID,
-				Name: m.Home.DisplayName(),
-			}
-		}
-		cc[i] = c
-	}
+	}))
 	for i, c := range cc {
 		total, unread, err := a.u.CharacterService().GetCharacterMailCounts(ctx, c.id)
 		if err != nil {

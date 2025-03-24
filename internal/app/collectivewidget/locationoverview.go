@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -11,33 +12,15 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
-
-type locationCharacter struct {
-	id                 int32
-	location           *app.EntityShort[int64]
-	name               string
-	region             *app.EntityShort[int32]
-	ship               *app.EntityShort[int32]
-	solarSystem        *app.EntityShort[int32]
-	systemSecurity     optional.Optional[float32]
-	securityImportance widget.Importance
-}
-
-func (c locationCharacter) systemSecurityDisplay() string {
-	if c.systemSecurity.IsEmpty() {
-		return "?"
-	}
-	return fmt.Sprintf("%.1f", c.systemSecurity.ValueOrZero())
-}
 
 type LocationOverview struct {
 	widget.BaseWidget
 
-	rows []locationCharacter
+	rows []*app.Character
 	body fyne.CanvasObject
 	top  *widget.Label
 	u    app.UI
@@ -45,59 +28,60 @@ type LocationOverview struct {
 
 func NewLocationOverview(u app.UI) *LocationOverview {
 	a := &LocationOverview{
-		rows: make([]locationCharacter, 0),
+		rows: make([]*app.Character, 0),
 		top:  appwidget.MakeTopLabel(),
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)
 
 	headers := []iwidget.HeaderDef{
-		{Text: "Name", Width: 200},
-		{Text: "Location", Width: 250},
-		{Text: "System", Width: 150},
-		{Text: "Sec.", Width: 50},
-		{Text: "Region", Width: 150},
+		{Text: "Character", Width: characterColumnWidth},
+		{Text: "Location", Width: locationColumnWidth},
+		{Text: "Region", Width: regionColumnWidth},
 		{Text: "Ship", Width: 150},
 	}
 
-	makeDataLabel := func(col int, r locationCharacter) (string, fyne.TextAlign, widget.Importance) {
-		var align fyne.TextAlign
-		var importance widget.Importance
-		var text string
+	makeCell := func(col int, r *app.Character) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			text = r.name
+			return iwidget.NewRichTextSegmentFromText(r.EveCharacter.Name)
 		case 1:
-			text = EntityNameOrFallback(r.location, "?")
+			return r.Location.DisplayRichText()
 		case 2:
-			text = EntityNameOrFallback(r.solarSystem, "?")
+			if r.Location != nil {
+				return iwidget.NewRichTextSegmentFromText(r.Location.SolarSystem.Constellation.Region.Name)
+			}
 		case 3:
-			text = r.systemSecurityDisplay()
-			importance = r.securityImportance
-			align = fyne.TextAlignTrailing
-		case 4:
-			text = EntityNameOrFallback(r.region, "?")
-		case 5:
-			text = EntityNameOrFallback(r.ship, "?")
+			if r.Ship != nil {
+				return iwidget.NewRichTextSegmentFromText(r.Ship.Name)
+			}
 		}
-		return text, align, importance
+		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.IsDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(c int, r locationCharacter) {
+		a.body = iwidget.MakeDataTableForDesktop2(headers, &a.rows, makeCell, func(c int, r *app.Character) {
 			switch c {
 			case 0:
-				a.u.ShowInfoWindow(app.EveEntityCharacter, r.id)
+				a.u.ShowInfoWindow(app.EveEntityCharacter, r.ID)
 			case 1:
-				a.u.ShowLocationInfoWindow(r.location.ID)
+				if r.Location != nil {
+					a.u.ShowLocationInfoWindow(r.Location.ID)
+				}
 			case 2:
-				a.u.ShowInfoWindow(app.EveEntitySolarSystem, r.solarSystem.ID)
-			case 5:
-				a.u.ShowTypeInfoWindow(r.ship.ID)
+				if r.Location != nil {
+					a.u.ShowInfoWindow(app.EveEntityRegion, r.Location.SolarSystem.Constellation.Region.ID)
+				}
+			case 3:
+				if r.Ship != nil {
+					a.u.ShowTypeInfoWindow(r.Ship.ID)
+				}
 			}
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeDataLabel, func(r locationCharacter) {
-			a.u.ShowLocationInfoWindow(r.location.ID)
+		a.body = iwidget.MakeDataTableForMobile2(headers, &a.rows, makeCell, func(r *app.Character) {
+			if r.Location != nil {
+				a.u.ShowLocationInfoWindow(r.Location.ID)
+			}
 		})
 	}
 	return a
@@ -138,40 +122,13 @@ func (a *LocationOverview) updateCharacters() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	locationIDs := set.New[int64]()
-	cc := make([]locationCharacter, len(mycc))
-	for i, m := range mycc {
-		c := locationCharacter{
-			id:   m.ID,
-			name: m.EveCharacter.Name,
+	a.rows = mycc
+	locationIDs := set.NewFromSlice(slices.Collect(xiter.MapSlice(mycc, func(x *app.Character) int64 {
+		if x.Location != nil {
+			return x.Location.ID
 		}
-		if m.Location != nil {
-			locationIDs.Add(m.Location.ID)
-			c.location = &app.EntityShort[int64]{
-				ID:   m.Location.ID,
-				Name: m.Location.DisplayName(),
-			}
-			if m.Location.SolarSystem != nil {
-				c.solarSystem = &app.EntityShort[int32]{
-					ID:   m.Location.SolarSystem.ID,
-					Name: m.Location.SolarSystem.Name,
-				}
-				c.systemSecurity = optional.New(m.Location.SolarSystem.SecurityStatus)
-				c.securityImportance = m.Location.SolarSystem.SecurityType().ToImportance()
-				c.region = &app.EntityShort[int32]{
-					ID:   m.Location.SolarSystem.Constellation.Region.ID,
-					Name: m.Location.SolarSystem.Constellation.Region.Name,
-				}
-			}
-		}
-		if m.Ship != nil {
-			c.ship = &app.EntityShort[int32]{
-				ID:   m.Ship.ID,
-				Name: m.Ship.Name,
-			}
-		}
-		cc[i] = c
-	}
-	a.rows = cc
+		return 0
+	})))
+	locationIDs.Remove(0)
 	return locationIDs.Size(), nil
 }
