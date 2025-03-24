@@ -27,7 +27,7 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 	"gopkg.in/natefinch/lumberjack.v2"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/character"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatus"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
@@ -221,7 +221,7 @@ func main() {
 	en.EveUniverseService = eus
 
 	// Init Character service
-	cs := character.New(st, rhc.StandardClient(), esiClient)
+	cs := characterservice.New(st, rhc.StandardClient(), esiClient)
 	cs.EveNotificationService = en
 	cs.EveUniverseService = eus
 	cs.StatusCacheService = scs
