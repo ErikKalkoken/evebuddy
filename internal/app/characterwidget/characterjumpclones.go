@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -85,7 +84,7 @@ func (a *CharacterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 			)
 			main := widget.NewLabel("Template")
 			main.Truncation = fyne.TextTruncateEllipsis
-			iconInfo := kxwidget.NewTappableIcon(theme.InfoIcon(), nil)
+			iconInfo := widget.NewIcon(theme.InfoIcon())
 			spacer := canvas.NewRectangle(color.Transparent)
 			spacer.SetMinSize(fyne.NewSize(40, 10))
 			prefix := widget.NewLabel("-9.9")
@@ -104,14 +103,11 @@ func (a *CharacterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 			iconMain := hbox[0].(*canvas.Image)
 			spacer := hbox[1].(*fyne.Container).Objects[0]
 			prefix := hbox[1].(*fyne.Container).Objects[1].(*widget.Label)
-			iconInfo := border[2].(*kxwidget.TappableIcon)
+			iconInfo := border[2]
 			if n.IsRoot() {
 				iconMain.Resource = eveicon.GetResourceByName(eveicon.CloningCenter)
 				iconMain.Refresh()
 				if !n.isUnknown {
-					iconInfo.OnTapped = func() {
-						a.u.ShowLocationInfoWindow(n.locationID)
-					}
 					iconInfo.Show()
 				} else {
 					iconInfo.Hide()
@@ -131,9 +127,6 @@ func (a *CharacterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 					return a.u.EveImageService().InventoryTypeIcon(n.implantTypeID, app.IconPixelSize)
 				})
 				main.SetText(n.implantTypeName)
-				iconInfo.OnTapped = func() {
-					a.u.ShowTypeInfoWindow(n.implantTypeID)
-				}
 				prefix.Hide()
 				spacer.Hide()
 			}
@@ -141,6 +134,13 @@ func (a *CharacterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 	)
 	t.OnSelected = func(n jumpCloneNode) {
 		defer t.UnselectAll()
+		if n.IsRoot() {
+			if !n.isUnknown {
+				a.u.ShowLocationInfoWindow(n.locationID)
+			}
+			return
+		}
+		a.u.ShowTypeInfoWindow(n.implantTypeID)
 	}
 	return t
 }

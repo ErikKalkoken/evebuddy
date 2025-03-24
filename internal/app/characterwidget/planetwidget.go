@@ -10,7 +10,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -24,20 +23,20 @@ const (
 	planetBackgroundColor   = theme.ColorNameInputBackground
 )
 
-type Planet struct {
+type PlanetWidget struct {
 	widget.BaseWidget
 
 	bg         *canvas.Rectangle
 	extracting *widget.Label
 	image      *canvas.Image
-	infoIcon   *kxwidget.TappableIcon
+	infoIcon   *widget.Icon
 	location   *widget.Label
 	post       *widget.Label
 	producing  *widget.Label
 	security   *widget.Label
 }
 
-func NewPlanet() *Planet {
+func NewPlanet() *PlanetWidget {
 	image := iwidgets.NewImageFromResource(theme.BrokenImageIcon(), fyne.NewSquareSize(planetWidgetSizeDesktop))
 	extracting := widget.NewLabel("")
 	extracting.Wrapping = fyne.TextWrapWord
@@ -45,11 +44,11 @@ func NewPlanet() *Planet {
 	producing.Wrapping = fyne.TextWrapWord
 	location := widget.NewLabel("")
 	location.Wrapping = fyne.TextWrapWord
-	w := &Planet{
+	w := &PlanetWidget{
 		bg:         canvas.NewRectangle(theme.Color(planetBackgroundColor)),
 		extracting: extracting,
 		image:      image,
-		infoIcon:   kxwidget.NewTappableIcon(theme.InfoIcon(), nil),
+		infoIcon:   widget.NewIcon(theme.InfoIcon()),
 		location:   location,
 		post:       widget.NewLabel(""),
 		producing:  producing,
@@ -59,8 +58,7 @@ func NewPlanet() *Planet {
 	return w
 }
 
-func (w *Planet) Set(cp *app.CharacterPlanet, show func()) {
-	w.infoIcon.OnTapped = show
+func (w *PlanetWidget) Set(cp *app.CharacterPlanet) {
 	if cp.EvePlanet != nil && cp.EvePlanet.Type != nil {
 		res, ok := cp.EvePlanet.Type.Icon()
 		if ok {
@@ -110,7 +108,7 @@ func (w *Planet) Set(cp *app.CharacterPlanet, show func()) {
 	w.producing.SetText(produced)
 }
 
-func (w *Planet) Refresh() {
+func (w *PlanetWidget) Refresh() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 	w.bg.FillColor = th.Color(planetBackgroundColor, v)
@@ -119,7 +117,7 @@ func (w *Planet) Refresh() {
 
 }
 
-func (w *Planet) CreateRenderer() fyne.WidgetRenderer {
+func (w *PlanetWidget) CreateRenderer() fyne.WidgetRenderer {
 	data := container.NewVBox(
 		container.NewStack(
 			w.bg,

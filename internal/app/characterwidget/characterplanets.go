@@ -57,16 +57,19 @@ func (a *CharacterPlanets) makeList() *widget.List {
 			if id >= len(a.planets) || id < 0 {
 				return
 			}
-			o := co.(*Planet)
 			p := a.planets[id]
-			o.Set(p, func() {
-				a.u.ShowInfoWindow(app.EveEntitySolarSystem, p.EvePlanet.SolarSystem.ID)
-			})
+			o := co.(*PlanetWidget)
+			o.Set(p)
 			l.SetItemHeight(id, o.MinSize().Height)
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
 		defer l.UnselectAll()
+		if id >= len(a.planets) || id < 0 {
+			return
+		}
+		p := a.planets[id]
+		a.u.ShowInfoWindow(app.EveEntitySolarSystem, p.EvePlanet.SolarSystem.ID)
 	}
 	return l
 }

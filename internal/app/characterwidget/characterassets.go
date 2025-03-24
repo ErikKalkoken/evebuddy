@@ -74,7 +74,7 @@ type CharacterAssets struct {
 	assetGrid        *widget.GridWrap
 	assets           []*app.CharacterAsset
 	assetsBottom     *widget.Label
-	locationPath     *widget.Label
+	locationPath     *kxwidget.TappableLabel
 	locationsTop     *widget.Label
 	locations        *iwidget.Tree[locationNode]
 	selectedLocation optional.Optional[locationNode]
@@ -82,7 +82,7 @@ type CharacterAssets struct {
 }
 
 func NewCharacterAssets(u app.UI) *CharacterAssets {
-	lp := widget.NewLabel("")
+	lp := kxwidget.NewTappableLabel("", nil)
 	lp.Wrapping = fyne.TextWrapWord
 	a := &CharacterAssets{
 		assets:       make([]*app.CharacterAsset, 0),
@@ -102,7 +102,13 @@ func NewCharacterAssets(u app.UI) *CharacterAssets {
 	)
 	a.assetGrid = a.makeAssetGrid()
 	a.LocationAssets = container.NewBorder(
-		container.NewVBox(a.locationPath, widget.NewSeparator()),
+		container.NewBorder(
+			nil,
+			widget.NewSeparator(),
+			nil,
+			widget.NewIcon(theme.InfoIcon()),
+			a.locationPath,
+		),
 		container.NewVBox(widget.NewSeparator(), a.assetsBottom),
 		nil,
 		nil,
@@ -126,7 +132,6 @@ func (a *CharacterAssets) makeLocationsTree() *iwidget.Tree[locationNode] {
 	}
 	t := iwidget.NewTree(
 		func(isBranch bool) fyne.CanvasObject {
-			iconInfo := kxwidget.NewTappableIcon(theme.InfoIcon(), nil)
 			main := widget.NewLabel("Location")
 			main.Truncation = fyne.TextTruncateEllipsis
 			spacer := canvas.NewRectangle(color.Transparent)
@@ -135,7 +140,7 @@ func (a *CharacterAssets) makeLocationsTree() *iwidget.Tree[locationNode] {
 				nil,
 				nil,
 				container.NewStack(spacer, widget.NewLabel("-9.9")),
-				iconInfo,
+				nil,
 				main,
 			)
 		},
@@ -144,7 +149,6 @@ func (a *CharacterAssets) makeLocationsTree() *iwidget.Tree[locationNode] {
 			label := row[0].(*widget.Label)
 			spacer := row[1].(*fyne.Container).Objects[0]
 			prefix := row[1].(*fyne.Container).Objects[1].(*widget.Label)
-			infoIcon := row[2].(*kxwidget.TappableIcon)
 			label.SetText(makeNameWithCount(n.name, n.count))
 			if n.IsRoot() {
 				if !n.isUnknown {
@@ -156,14 +160,9 @@ func (a *CharacterAssets) makeLocationsTree() *iwidget.Tree[locationNode] {
 				}
 				prefix.Refresh()
 				prefix.Show()
-				infoIcon.OnTapped = func() {
-					a.u.ShowLocationInfoWindow(n.containerID)
-				}
-				infoIcon.Show()
 				spacer.Show()
 			} else {
 				prefix.Hide()
-				infoIcon.Hide()
 				spacer.Hide()
 			}
 		},
@@ -189,6 +188,7 @@ func (a *CharacterAssets) clearAssets() error {
 	a.assets = make([]*app.CharacterAsset, 0)
 	a.assetGrid.Refresh()
 	a.locationPath.SetText("")
+	a.locationPath.OnTapped = nil
 	a.selectedLocation.Clear()
 	return nil
 }
@@ -525,6 +525,12 @@ func (a *CharacterAssets) updateLocationPath(location locationNode) {
 		parts = append(parts, n.name)
 	}
 	a.locationPath.SetText(strings.Join(parts, " ＞ "))
+	a.locationPath.OnTapped = func() {
+		if len(path) == 0 {
+			return
+		}
+		a.u.ShowLocationInfoWindow(path[0].containerID)
+	}
 }
 
 // func (u *ui) showNewAssetWindow(ca *app.CharacterAsset) {

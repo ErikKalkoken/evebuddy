@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -53,7 +52,7 @@ func (a *CharacterImplants) makeImplantList() *widget.List {
 		},
 		func() fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(icons.Characterplaceholder64Jpeg, fyne.NewSquareSize(42))
-			iconInfo := kxwidget.NewTappableIcon(theme.InfoIcon(), nil)
+			iconInfo := widget.NewIcon(theme.InfoIcon())
 			name := widget.NewLabel("placeholder")
 			name.Truncation = fyne.TextTruncateEllipsis
 			slot := widget.NewLabel("placeholder")
@@ -85,14 +84,14 @@ func (a *CharacterImplants) makeImplantList() *widget.List {
 			appwidget.RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
 				return a.u.EveImageService().InventoryTypeIcon(o.EveType.ID, app.IconPixelSize)
 			})
-			iconInfo := row[2].(*kxwidget.TappableIcon)
-			iconInfo.OnTapped = func() {
-				a.u.ShowTypeInfoWindow(o.EveType.ID)
-			}
 		})
 
 	l.OnSelected = func(id widget.ListItemID) {
 		defer l.UnselectAll()
+		if id >= len(a.implants) {
+			return
+		}
+		a.u.ShowTypeInfoWindow(a.implants[id].EveType.ID)
 	}
 	return l
 }
