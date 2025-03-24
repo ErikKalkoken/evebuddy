@@ -98,6 +98,7 @@ func (st *Storage) MissingEveLocations(ctx context.Context, ids []int64) ([]int6
 	return missing.ToSlice(), nil
 }
 
+// TODO: Refactor for better performance
 func (st *Storage) eveLocationFromDBModel(ctx context.Context, l queries.EveLocation) (*app.EveLocation, error) {
 	l2 := &app.EveLocation{
 		ID:        l.ID,

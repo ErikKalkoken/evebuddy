@@ -13,6 +13,42 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
+func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCharacterNotificationParams) error {
+	if arg.NotificationID == 0 {
+		return fmt.Errorf("notification ID can not be zero, Character %d", arg.CharacterID)
+	}
+	typeID, err := st.GetOrCreateNotificationType(ctx, arg.Type)
+	if err != nil {
+		return err
+	}
+	arg2 := queries.CreateCharacterNotificationParams{
+		Body:           optional.ToNullString(arg.Body),
+		CharacterID:    int64(arg.CharacterID),
+		IsRead:         arg.IsRead,
+		IsProcessed:    arg.IsProcessed,
+		NotificationID: arg.NotificationID,
+		SenderID:       int64(arg.SenderID),
+		Text:           arg.Text,
+		Timestamp:      arg.Timestamp,
+		Title:          optional.ToNullString(arg.Title),
+		TypeID:         typeID,
+	}
+	if err := st.q.CreateCharacterNotification(ctx, arg2); err != nil {
+		arg.Body.Clear()
+		arg.Text = ""
+		return fmt.Errorf("create character notification %+v: %w", arg, err)
+	}
+	return nil
+}
+
+type UpdateCharacterNotificationParams struct {
+	ID          int64
+	Body        optional.Optional[string]
+	CharacterID int32
+	IsRead      bool
+	Title       optional.Optional[string]
+}
+
 func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int32, notificationID int64) (*app.CharacterNotification, error) {
 	arg := queries.GetCharacterNotificationParams{
 		CharacterID:    int64(characterID),
@@ -20,7 +56,7 @@ func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int
 	}
 	row, err := st.q.GetCharacterNotification(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("get notification for character %d and id %d: %w", characterID, notificationID, err)
+		return nil, fmt.Errorf("get character notification %+v: %w", arg, err)
 	}
 	return characterNotificationFromDBModel(row.CharacterNotification, row.EveEntity, row.NotificationType), err
 }
@@ -28,7 +64,7 @@ func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int
 func (st *Storage) ListCharacterNotificationIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
 	ids, err := st.q.ListCharacterNotificationIDs(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("list notification ids for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("list character notification ids for character %d: %w", characterID, err)
 	}
 	return set.NewFromSlice(ids), nil
 }
@@ -40,7 +76,7 @@ func (st *Storage) ListCharacterNotificationsTypes(ctx context.Context, characte
 	}
 	rows, err := st.q.ListCharacterNotificationsTypes(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("list notification types for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("list notification types %+v: %w", arg, err)
 	}
 	ee := make([]*app.CharacterNotification, len(rows))
 	for i, row := range rows {
@@ -80,7 +116,7 @@ func (st *Storage) ListCharacterNotificationsUnprocessed(ctx context.Context, ch
 	}
 	rows, err := st.q.ListCharacterNotificationsUnprocessed(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("list unprocessed notifications for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("list unprocessed notifications %+v: %w", arg, err)
 	}
 	ee := make([]*app.CharacterNotification, len(rows))
 	for i, row := range rows {
@@ -119,37 +155,6 @@ type CreateCharacterNotificationParams struct {
 	Type           string
 }
 
-func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCharacterNotificationParams) error {
-	if arg.NotificationID == 0 {
-		return fmt.Errorf("notification ID can not be zero, Character %d", arg.CharacterID)
-	}
-	typeID, err := st.GetOrCreateNotificationType(ctx, arg.Type)
-	if err != nil {
-		return err
-	}
-	arg2 := queries.CreateCharacterNotificationParams{
-		Body:           optional.ToNullString(arg.Body),
-		CharacterID:    int64(arg.CharacterID),
-		IsRead:         arg.IsRead,
-		IsProcessed:    arg.IsProcessed,
-		NotificationID: arg.NotificationID,
-		SenderID:       int64(arg.SenderID),
-		Text:           arg.Text,
-		Timestamp:      arg.Timestamp,
-		Title:          optional.ToNullString(arg.Title),
-		TypeID:         typeID,
-	}
-	return st.q.CreateCharacterNotification(ctx, arg2)
-}
-
-type UpdateCharacterNotificationParams struct {
-	ID          int64
-	Body        optional.Optional[string]
-	CharacterID int32
-	IsRead      bool
-	Title       optional.Optional[string]
-}
-
 func (st *Storage) UpdateCharacterNotification(ctx context.Context, arg UpdateCharacterNotificationParams) error {
 	arg2 := queries.UpdateCharacterNotificationParams{
 		ID:     arg.ID,
@@ -158,7 +163,7 @@ func (st *Storage) UpdateCharacterNotification(ctx context.Context, arg UpdateCh
 		Title:  optional.ToNullString(arg.Title),
 	}
 	if err := st.q.UpdateCharacterNotification(ctx, arg2); err != nil {
-		return fmt.Errorf("update notification PK %d for character %d: %w", arg.ID, arg.CharacterID, err)
+		return fmt.Errorf("update character notification %+v: %w", arg, err)
 	}
 	return nil
 }

@@ -22,10 +22,10 @@ func (st *Storage) CreateCharacterJumpClone(ctx context.Context, arg CreateChara
 	return createCharacterJumpClone(ctx, st.q, arg)
 }
 
-func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int32, jumpCloneID int32) (*app.CharacterJumpClone, error) {
+func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int32, cloneID int32) (*app.CharacterJumpClone, error) {
 	arg := queries.GetCharacterJumpCloneParams{
 		CharacterID: int64(characterID),
-		JumpCloneID: int64(jumpCloneID),
+		JumpCloneID: int64(cloneID),
 	}
 	row, err := st.q.GetCharacterJumpClone(ctx, arg)
 	if err != nil {
@@ -63,10 +63,41 @@ func listCharacterJumpCloneImplants(ctx context.Context, q *queries.Queries, clo
 	return x, nil
 }
 
+// TODO: Refactor SQL for better performance
+func (st *Storage) ListAllCharacterJumpClones(ctx context.Context) ([]*app.CharacterJumpClone2, error) {
+	rows, err := st.q.ListAllCharacterJumpClones(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list all character jump clones: %w", err)
+	}
+	oo := make([]*app.CharacterJumpClone2, len(rows))
+	for i, r := range rows {
+		arg := queries.EveLocation{
+			ID:               r.LocationID,
+			EveSolarSystemID: r.LocationSolarSystemID,
+			EveTypeID:        r.LocationTypeID,
+			Name:             r.LocationName,
+			OwnerID:          r.LocationOwnerID,
+		}
+		l, err := st.eveLocationFromDBModel(ctx, arg)
+		if err != nil {
+			return nil, err
+		}
+		o := &app.CharacterJumpClone2{
+			ID:            r.ID,
+			ImplantsCount: int(r.ImplantsCount),
+			CloneID:       int32(r.JumpCloneID),
+			Character:     &app.EntityShort[int32]{ID: int32(r.CharacterID), Name: r.CharacterName},
+			Location:      l,
+		}
+		oo[i] = o
+	}
+	return oo, nil
+}
+
 func (st *Storage) ListCharacterJumpClones(ctx context.Context, characterID int32) ([]*app.CharacterJumpClone, error) {
 	rows, err := st.q.ListCharacterJumpClones(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("get jump clones for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("list jump clones for character %d: %w", characterID, err)
 	}
 	oo := make([]*app.CharacterJumpClone, len(rows))
 	for i, row := range rows {
@@ -140,7 +171,7 @@ func characterJumpCloneFromDBModel(o queries.CharacterJumpClone, locationName st
 	o2 := &app.CharacterJumpClone{
 		CharacterID: int32(o.CharacterID),
 		ID:          o.ID,
-		JumpCloneID: int32(o.JumpCloneID),
+		CloneID:     int32(o.JumpCloneID),
 		Location:    &app.EntityShort[int64]{ID: o.LocationID, Name: locationName},
 		Name:        o.Name,
 	}

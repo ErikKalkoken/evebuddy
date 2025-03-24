@@ -27,16 +27,16 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 	"gopkg.in/natefinch/lumberjack.v2"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/esistatus"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
+	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
 )
@@ -207,13 +207,13 @@ func main() {
 	esiClient := goesi.NewAPIClient(rhc.StandardClient(), userAgent)
 
 	// Init StatusCache service
-	scs := statuscache.New(memCache)
+	scs := statuscacheservice.New(memCache)
 	if err := scs.InitCache(context.TODO(), st); err != nil {
 		slog.Error("Failed to init cache", "error", err)
 		os.Exit(1)
 	}
 	// Init EveUniverse service
-	eus := eveuniverse.New(st, esiClient)
+	eus := eveuniverseservice.New(st, esiClient)
 	eus.StatusCacheService = scs
 
 	// Init EveNotification service
@@ -221,7 +221,7 @@ func main() {
 	en.EveUniverseService = eus
 
 	// Init Character service
-	cs := character.New(st, rhc.StandardClient(), esiClient)
+	cs := characterservice.New(st, rhc.StandardClient(), esiClient)
 	cs.EveNotificationService = en
 	cs.EveUniverseService = eus
 	cs.StatusCacheService = scs
@@ -230,8 +230,8 @@ func main() {
 	cs.SSOService = ssoService
 
 	// Init UI
-	ess := esistatus.New(esiClient)
-	eis := eveimage.New(pc, rhc.StandardClient(), *offlineFlag)
+	ess := esistatusservice.New(esiClient)
+	eis := eveimageservice.New(pc, rhc.StandardClient(), *offlineFlag)
 	bu := ui.NewBaseUI(
 		fyneApp, cs, eis, ess, eus, scs, memCache, *offlineFlag, *disableUpdatesFlag,
 		map[string]string{

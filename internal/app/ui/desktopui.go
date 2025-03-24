@@ -21,9 +21,9 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterwidget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/desktopwidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
-	uidesktop "github.com/ErikKalkoken/evebuddy/internal/app/ui/desktop"
 )
 
 // The DesktopUI is the root object of the DesktopUI and contains all DesktopUI areas.
@@ -32,8 +32,8 @@ type DesktopUI struct {
 
 	sfg *singleflight.Group
 
-	statusBar *uidesktop.StatusBar
-	toolbar   *uidesktop.Toolbar
+	statusBar *desktopwidget.StatusBar
+	toolbar   *desktopwidget.Toolbar
 
 	overviewTab *container.TabItem
 	tabs        *container.AppTabs
@@ -54,7 +54,7 @@ func NewDesktopUI(bui *BaseUI) *DesktopUI {
 	if !ok {
 		panic("Could not start in desktop mode")
 	}
-	u.OnInit = func(_ *app.Character) {
+	u.onInit = func(_ *app.Character) {
 		index := u.Settings().TabsMainID()
 		if index != -1 {
 			u.tabs.SelectIndex(index)
@@ -72,10 +72,10 @@ func NewDesktopUI(bui *BaseUI) *DesktopUI {
 		}
 		go u.UpdateMailIndicator()
 	}
-	u.OnShowAndRun = func() {
+	u.onShowAndRun = func() {
 		u.MainWindow().Resize(u.Settings().WindowSize())
 	}
-	u.OnAppFirstStarted = func() {
+	u.onAppFirstStarted = func() {
 		// FIXME: Workaround to mitigate a bug that causes the window to sometimes render
 		// only in parts and freeze. The issue is known to happen on Linux desktops.
 		if runtime.GOOS == "linux" {
@@ -104,13 +104,13 @@ func NewDesktopUI(bui *BaseUI) *DesktopUI {
 				))
 			})
 	}
-	u.OnAppStopped = func() {
+	u.onAppStopped = func() {
 		u.saveAppState()
 	}
-	u.OnUpdateCharacter = func(c *app.Character) {
+	u.onUpdateCharacter = func(c *app.Character) {
 		go u.toogleTabs(c != nil)
 	}
-	u.OnUpdateStatus = func() {
+	u.onUpdateStatus = func() {
 		go u.toolbar.Update()
 		go u.statusBar.Update()
 	}
@@ -132,54 +132,55 @@ func NewDesktopUI(bui *BaseUI) *DesktopUI {
 
 	assetTab := container.NewTabItemWithIcon("Assets",
 		theme.NewThemedResource(icons.Inventory2Svg), container.NewAppTabs(
-			container.NewTabItem("Assets", u.CharacterAssets),
+			container.NewTabItem("Assets", u.characterAssets),
 		))
 
 	planetTab := container.NewTabItemWithIcon("Colonies",
 		theme.NewThemedResource(icons.EarthSvg), container.NewAppTabs(
-			container.NewTabItem("Colonies", u.CharacterPlanets),
+			container.NewTabItem("Colonies", u.characterPlanets),
 		))
-	u.CharacterPlanets.OnUpdate = func(_, expired int) {
+	u.characterPlanets.OnUpdate = func(_, expired int) {
 		planetTab.Text = makeTitleWithCount("Colonies", expired)
 		u.tabs.Refresh()
 	}
 
 	mailTab := container.NewTabItemWithIcon("Mail",
 		theme.MailComposeIcon(), container.NewAppTabs(
-			container.NewTabItem("Mail", u.CharacterMail),
-			container.NewTabItem("Communications", u.CharacterCommunications),
+			container.NewTabItem("Mail", u.characterMail),
+			container.NewTabItem("Communications", u.characterCommunications),
 		))
-	u.CharacterMail.OnUpdate = func(count int) {
+	u.characterMail.OnUpdate = func(count int) {
 		mailTab.Text = makeTitleWithCount("Comm.", count)
 		u.tabs.Refresh()
 	}
-	u.CharacterMail.OnSendMessage = u.showSendMailWindow
+	u.characterMail.OnSendMessage = u.showSendMailWindow
 
 	clonesTab := container.NewTabItemWithIcon("Clones",
 		theme.NewThemedResource(icons.HeadSnowflakeSvg), container.NewAppTabs(
-			container.NewTabItem("Current Clone", u.CharacterImplants),
-			container.NewTabItem("Jump Clones", u.CharacterJumpClones),
+			container.NewTabItem("Current Clone", u.characterImplants),
+			container.NewTabItem("Jump Clones", u.characterJumpClones),
 		))
 
 	contractTab := container.NewTabItemWithIcon("Contracts",
 		theme.NewThemedResource(icons.FileSignSvg), container.NewAppTabs(
-			container.NewTabItem("Contracts", u.CharacterContracts),
+			container.NewTabItem("Contracts", u.characterContracts),
 		))
 
-	overviewAssets := container.NewTabItem("Assets", u.AllAssetSearch)
+	overviewAssets := container.NewTabItem("Asset Search", u.allAssetSearch)
 	overviewTabs := container.NewAppTabs(
-		container.NewTabItem("Overview", u.CharacterOverview),
-		container.NewTabItem("Locations", u.LocationOverview),
-		container.NewTabItem("Training", u.TrainingOverview),
+		container.NewTabItem("Overview", u.characterOverview),
+		container.NewTabItem("Locations", u.locationOverview),
+		container.NewTabItem("Training", u.trainingOverview),
 		overviewAssets,
-		container.NewTabItem("Colonies", u.ColonyOverview),
-		container.NewTabItem("Wealth", u.WealthOverview),
+		container.NewTabItem("Colonies", u.colonyOverview),
+		container.NewTabItem("Wealth", u.wealthOverview),
+		container.NewTabItem("Clone Search", u.cloneSearch),
 	)
 	overviewTabs.OnSelected = func(ti *container.TabItem) {
 		if ti != overviewAssets {
 			return
 		}
-		u.AllAssetSearch.Focus()
+		u.allAssetSearch.Focus()
 	}
 	u.overviewTab = container.NewTabItemWithIcon("Characters",
 		theme.NewThemedResource(icons.GroupSvg), overviewTabs,
@@ -187,20 +188,20 @@ func NewDesktopUI(bui *BaseUI) *DesktopUI {
 
 	skillTab := container.NewTabItemWithIcon("Skills",
 		theme.NewThemedResource(icons.SchoolSvg), container.NewAppTabs(
-			container.NewTabItem("Training Queue", u.CharacterSkillQueue),
-			container.NewTabItem("Skill Catalogue", u.CharacterSkillCatalogue),
-			container.NewTabItem("Ships", u.CharacterShips),
-			container.NewTabItem("Attributes", u.CharacterAttributes),
+			container.NewTabItem("Training Queue", u.characterSkillQueue),
+			container.NewTabItem("Skill Catalogue", u.characterSkillCatalogue),
+			container.NewTabItem("Ships", u.characterShips),
+			container.NewTabItem("Attributes", u.characterAttributes),
 		))
-	u.CharacterSkillQueue.OnUpdate = func(status, _ string) {
+	u.characterSkillQueue.OnUpdate = func(status, _ string) {
 		skillTab.Text = fmt.Sprintf("Skills (%s)", status)
 		u.tabs.Refresh()
 	}
 
 	walletTab := container.NewTabItemWithIcon("Wallet",
 		theme.NewThemedResource(icons.AttachmoneySvg), container.NewAppTabs(
-			container.NewTabItem("Transactions", u.CharacterWalletJournal),
-			container.NewTabItem("Market Transactions", u.CharacterWalletTransaction),
+			container.NewTabItem("Transactions", u.characterWalletJournal),
+			container.NewTabItem("Market Transactions", u.characterWalletTransaction),
 		))
 
 	u.tabs = container.NewAppTabs(
@@ -215,8 +216,8 @@ func NewDesktopUI(bui *BaseUI) *DesktopUI {
 	)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
-	u.toolbar = uidesktop.NewToolbar(u)
-	u.statusBar = uidesktop.NewStatusBar(u)
+	u.toolbar = desktopwidget.NewToolbar(u)
+	u.statusBar = desktopwidget.NewStatusBar(u)
 	mainContent := container.NewBorder(u.toolbar, u.statusBar, nil, nil, u.tabs)
 	u.MainWindow().SetContent(mainContent)
 
@@ -305,8 +306,8 @@ func (u *DesktopUI) showSettingsWindow() {
 		return
 	}
 	w := u.App().NewWindow(u.makeWindowTitle("Settings"))
-	u.UserSettings.SetWindow(w)
-	w.SetContent(u.UserSettings)
+	u.userSettings.SetWindow(w)
+	w.SetContent(u.userSettings)
 	w.Resize(fyne.Size{Width: 700, Height: 500})
 	w.SetOnClosed(func() {
 		u.settingsWindow = nil
@@ -317,14 +318,22 @@ func (u *DesktopUI) showSettingsWindow() {
 func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := u.makeWindowTitle(fmt.Sprintf("New message [%s]", c.EveCharacter.Name))
 	w := u.App().NewWindow(title)
-	page := character.NewSendMail(u, c, mode, mail)
+	page := characterwidget.NewSendMail(u, c, mode, mail)
+	page.SetWindow(w)
 	send := widget.NewButtonWithIcon("Send", theme.MailSendIcon(), func() {
 		if page.SendAction() {
 			w.Hide()
 		}
 	})
 	send.Importance = widget.HighImportance
-	x := container.NewBorder(nil, container.NewHBox(send), nil, nil, page)
+	p := theme.Padding()
+	x := container.NewBorder(
+		nil,
+		container.NewCenter(container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), send)),
+		nil,
+		nil,
+		page,
+	)
 	w.SetContent(x)
 	w.Resize(fyne.NewSize(600, 500))
 	w.Show()
@@ -341,10 +350,10 @@ func (u *DesktopUI) ShowAccountWindow() {
 		u.accountWindow = nil
 	})
 	w.Resize(fyne.Size{Width: 500, Height: 300})
-	w.SetContent(u.ManagerCharacters)
-	u.ManagerCharacters.SetWindow(w)
+	w.SetContent(u.managerCharacters)
+	u.managerCharacters.SetWindow(w)
 	w.Show()
-	u.ManagerCharacters.OnSelectCharacter = func() {
+	u.managerCharacters.OnSelectCharacter = func() {
 		w.Hide()
 	}
 }
@@ -367,10 +376,10 @@ func (u *DesktopUI) showSearchWindow() {
 		u.searchWindow = nil
 	})
 	w.Resize(fyne.Size{Width: 700, Height: 400})
-	w.SetContent(u.GameSearch)
+	w.SetContent(u.gameSearch)
 	w.Show()
-	u.GameSearch.SetWindow(w)
-	u.GameSearch.Focus()
+	u.gameSearch.SetWindow(w)
+	u.gameSearch.Focus()
 }
 
 func (u *DesktopUI) makeMenu() *fyne.MainMenu {

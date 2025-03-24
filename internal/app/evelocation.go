@@ -2,8 +2,13 @@ package app
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
+
+	"fyne.io/fyne/v2/widget"
+
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type EveLocationVariant int
@@ -34,6 +39,18 @@ func (el EveLocation) DisplayName() string {
 		return el.Name
 	}
 	return el.alternativeName()
+}
+
+func (el EveLocation) DisplayRichText() []widget.RichTextSegment {
+	var n string
+	if el.Name != "" {
+		n = el.Name
+	} else {
+		n = el.alternativeName()
+	}
+	return slices.Concat(
+		el.SolarSystem.SecurityStatusRichText(),
+		iwidget.NewRichTextSegmentFromText(fmt.Sprintf("  %s", n)))
 }
 
 // DisplayName2 returns a user friendly name not including the location name.
