@@ -1,4 +1,4 @@
-package eveimage_test
+package eveimageservice_test
 
 import (
 	"net/http"
@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
+	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -48,7 +48,7 @@ func TestImageFetching(t *testing.T) {
 			"https://images.evetech.net/alliances/99/logo?size=64",
 			httpmock.NewBytesResponder(200, dat))
 		//when
-		m := eveimage.New(c, http.DefaultClient, false)
+		m := eveimageservice.New(c, http.DefaultClient, false)
 		r, err := m.AllianceLogo(99, 64)
 		// then
 		if assert.NoError(t, err) {
@@ -64,7 +64,7 @@ func TestImageFetching(t *testing.T) {
 			"https://images.evetech.net/characters/93330670/portrait?size=64",
 			httpmock.NewBytesResponder(200, dat))
 		//when
-		m := eveimage.New(c, http.DefaultClient, false)
+		m := eveimageservice.New(c, http.DefaultClient, false)
 		r, err := m.CharacterPortrait(93330670, 64)
 		// then
 		if assert.NoError(t, err) {
@@ -80,7 +80,7 @@ func TestImageFetching(t *testing.T) {
 			"https://images.evetech.net/corporations/99/logo?size=64",
 			httpmock.NewBytesResponder(200, dat))
 		//when
-		m := eveimage.New(c, http.DefaultClient, false)
+		m := eveimageservice.New(c, http.DefaultClient, false)
 		r, err := m.CorporationLogo(99, 64)
 		// then
 		if assert.NoError(t, err) {
@@ -96,7 +96,7 @@ func TestImageFetching(t *testing.T) {
 			"https://images.evetech.net/corporations/99/logo?size=64",
 			httpmock.NewBytesResponder(200, dat))
 		//when
-		m := eveimage.New(c, http.DefaultClient, false)
+		m := eveimageservice.New(c, http.DefaultClient, false)
 		r, err := m.FactionLogo(99, 64)
 		// then
 		if assert.NoError(t, err) {
@@ -112,7 +112,7 @@ func TestImageFetching(t *testing.T) {
 			"https://images.evetech.net/types/99/icon?size=64",
 			httpmock.NewBytesResponder(200, dat))
 		//when
-		m := eveimage.New(c, http.DefaultClient, false)
+		m := eveimageservice.New(c, http.DefaultClient, false)
 		r, err := m.InventoryTypeIcon(99, 64)
 		// then
 		if assert.NoError(t, err) {
@@ -128,7 +128,7 @@ func TestImageFetching(t *testing.T) {
 			"https://images.evetech.net/types/99/render?size=64",
 			httpmock.NewBytesResponder(200, dat))
 		//when
-		m := eveimage.New(c, http.DefaultClient, false)
+		m := eveimageservice.New(c, http.DefaultClient, false)
 		r, err := m.InventoryTypeRender(99, 64)
 		// then
 		if assert.NoError(t, err) {
@@ -144,7 +144,7 @@ func TestImageFetching(t *testing.T) {
 			"https://images.evetech.net/types/99/bp?size=64",
 			httpmock.NewBytesResponder(200, dat))
 		//when
-		m := eveimage.New(c, http.DefaultClient, false)
+		m := eveimageservice.New(c, http.DefaultClient, false)
 		r, err := m.InventoryTypeBPO(99, 64)
 		// then
 		if assert.NoError(t, err) {
@@ -160,7 +160,7 @@ func TestImageFetching(t *testing.T) {
 			"https://images.evetech.net/types/99/bpc?size=64",
 			httpmock.NewBytesResponder(200, dat))
 		//when
-		m := eveimage.New(c, http.DefaultClient, false)
+		m := eveimageservice.New(c, http.DefaultClient, false)
 		r, err := m.InventoryTypeBPC(99, 64)
 		// then
 		if assert.NoError(t, err) {
@@ -175,11 +175,11 @@ func TestImageFetching(t *testing.T) {
 			"GET",
 			"https://images.evetech.net/characters/93330670/portrait?size=64",
 			httpmock.NewBytesResponder(200, dat))
-		m := eveimage.New(c, http.DefaultClient, false)
+		m := eveimageservice.New(c, http.DefaultClient, false)
 		// when
 		_, err := m.CharacterPortrait(93330670, 0)
 		// then
-		assert.ErrorIs(t, err, eveimage.ErrInvalidSize)
+		assert.ErrorIs(t, err, eveimageservice.ErrInvalidSize)
 	})
 	t.Run("can clear cache", func(t *testing.T) {
 		// given
@@ -189,7 +189,7 @@ func TestImageFetching(t *testing.T) {
 			"GET",
 			"https://images.evetech.net/types/99/render?size=64",
 			httpmock.NewBytesResponder(200, dat))
-		m := eveimage.New(c, http.DefaultClient, false)
+		m := eveimageservice.New(c, http.DefaultClient, false)
 		_, err := m.InventoryTypeRender(99, 64)
 		if err != nil {
 			t.Fatal(err)
@@ -202,13 +202,13 @@ func TestImageFetching(t *testing.T) {
 }
 
 func TestHTTPError(t *testing.T) {
-	err := eveimage.HTTPError{StatusCode: 200, Status: "200 OK"}
+	err := eveimageservice.HTTPError{StatusCode: 200, Status: "200 OK"}
 	s := err.Error()
 	assert.Equal(t, "HTTP error: 200 OK", s)
 }
 
 func TestLive(t *testing.T) {
-	s := eveimage.New(newCache(), http.DefaultClient, true)
+	s := eveimageservice.New(newCache(), http.DefaultClient, true)
 	x, err := s.CharacterPortrait(123, 64)
 	if assert.NoError(t, err) {
 		assert.NotEmpty(t, x.Content())

@@ -1,4 +1,4 @@
-// Package characterservice provides access to EVE Online characters.
+// Package characterservice contains the EVE character service.
 package characterservice
 
 import (

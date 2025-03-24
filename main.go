@@ -36,7 +36,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
+	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
 )
@@ -231,7 +231,7 @@ func main() {
 
 	// Init UI
 	ess := esistatusservice.New(esiClient)
-	eis := eveimage.New(pc, rhc.StandardClient(), *offlineFlag)
+	eis := eveimageservice.New(pc, rhc.StandardClient(), *offlineFlag)
 	bu := ui.NewBaseUI(
 		fyneApp, cs, eis, ess, eus, scs, memCache, *offlineFlag, *disableUpdatesFlag,
 		map[string]string{

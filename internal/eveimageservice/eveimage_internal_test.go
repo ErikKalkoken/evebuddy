@@ -1,4 +1,4 @@
-package eveimage
+package eveimageservice
 
 import (
 	"errors"

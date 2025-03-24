@@ -1,5 +1,5 @@
-// Package eveimage provides cached access to images from the Eve Online image server.
-package eveimage
+// Package eveimageservice contains the EVE image service.
+package eveimageservice
 
 import (
 	"crypto/md5"

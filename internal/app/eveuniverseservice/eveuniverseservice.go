@@ -1,4 +1,4 @@
-// Package eveuniverseservice contains the service for accessing EVE universe objects.
+// Package eveuniverseservice contains EVE universe service.
 package eveuniverseservice
 
 import (
@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-// EveUniverseService provides access to Eve Online models with on-demand loading from ESI and local caching.
+// EveUniverseService provides access to Eve Online models with on-demand loading from ESI and persistent local caching.
 type EveUniverseService struct {
 	StatusCacheService app.StatusCacheService
 	// Now returns the current time in UTC. Can be overwritten for tests.
