@@ -8,7 +8,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -105,7 +104,7 @@ func (w *EntitiyList) CreateRenderer() fyne.WidgetRenderer {
 			category := iwidget.NewLabelWithSize("Category", theme.SizeNameCaptionText)
 			text := widget.NewRichText()
 			text.Truncation = fyne.TextTruncateEllipsis
-			icon := kxwidget.NewTappableIcon(theme.InfoIcon(), nil)
+			icon := widget.NewIcon(theme.InfoIcon())
 			p := theme.Padding()
 			return container.NewBorder(
 				nil,
@@ -125,16 +124,12 @@ func (w *EntitiyList) CreateRenderer() fyne.WidgetRenderer {
 			it := w.items[id]
 			border1 := co.(*fyne.Container).Objects
 			border2 := border1[0].(*fyne.Container).Objects
-			icon := border1[1].(*fyne.Container).Objects[1].(*kxwidget.TappableIcon)
+			icon := border1[1].(*fyne.Container).Objects[1]
 			category := border2[0].(*fyne.Container).Objects[0].(*iwidget.Label)
 			category.SetText(it.category)
 			if it.infoVariant == infoNotSupported {
-				icon.OnTapped = nil
 				icon.Hide()
 			} else {
-				icon.OnTapped = func() {
-					w.showInfo(it.infoVariant, it.id)
-				}
 				icon.Show()
 			}
 			text := border2[1].(*fyne.Container).Objects[0].(*widget.RichText)
@@ -149,7 +144,14 @@ func (w *EntitiyList) CreateRenderer() fyne.WidgetRenderer {
 	l.HideSeparators = true
 	l.OnSelected = func(id widget.ListItemID) {
 		defer l.UnselectAll()
-
+		if id >= len(w.items) {
+			return
+		}
+		it := w.items[id]
+		if it.infoVariant == infoNotSupported {
+			return
+		}
+		w.showInfo(it.infoVariant, it.id)
 	}
 	return widget.NewSimpleRenderer(l)
 }
