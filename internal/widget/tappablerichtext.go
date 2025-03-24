@@ -2,6 +2,7 @@ package widget
 
 import (
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 )
@@ -29,7 +30,7 @@ func NewTappableRichText(tapped func(), segments ...widget.RichTextSegment) *Tap
 	w := &TappableRichText{OnTapped: tapped}
 	w.ExtendBaseWidget(w)
 	w.Segments = segments
-	w.Scroll = 3 // ScrollNone
+	w.Scroll = container.ScrollNone
 	return w
 }
 

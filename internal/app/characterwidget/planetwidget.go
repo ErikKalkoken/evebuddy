@@ -2,6 +2,7 @@ package characterwidget
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -30,10 +31,9 @@ type PlanetWidget struct {
 	extracting *widget.Label
 	image      *canvas.Image
 	infoIcon   *widget.Icon
-	location   *widget.Label
+	location   *widget.RichText
 	post       *widget.Label
 	producing  *widget.Label
-	security   *widget.Label
 }
 
 func NewPlanet() *PlanetWidget {
@@ -42,7 +42,7 @@ func NewPlanet() *PlanetWidget {
 	extracting.Wrapping = fyne.TextWrapWord
 	producing := widget.NewLabel("")
 	producing.Wrapping = fyne.TextWrapWord
-	location := widget.NewLabel("")
+	location := widget.NewRichText()
 	location.Wrapping = fyne.TextWrapWord
 	w := &PlanetWidget{
 		bg:         canvas.NewRectangle(theme.Color(planetBackgroundColor)),
@@ -52,7 +52,6 @@ func NewPlanet() *PlanetWidget {
 		location:   location,
 		post:       widget.NewLabel(""),
 		producing:  producing,
-		security:   widget.NewLabel(""),
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -66,11 +65,12 @@ func (w *PlanetWidget) Set(cp *app.CharacterPlanet) {
 			w.image.Refresh()
 		}
 	}
-	w.security.Text = fmt.Sprintf("%.1f", cp.EvePlanet.SolarSystem.SecurityStatus)
-	w.security.Importance = cp.EvePlanet.SolarSystem.SecurityType().ToImportance()
-	w.security.Refresh()
-	s := fmt.Sprintf("%s - %s - %d installations", cp.EvePlanet.Name, cp.EvePlanet.TypeDisplay(), len(cp.Pins))
-	w.location.SetText(s)
+	title := fmt.Sprintf("  %s - %s - %d installations", cp.EvePlanet.Name, cp.EvePlanet.TypeDisplay(), len(cp.Pins))
+	w.location.Segments = slices.Concat(
+		cp.EvePlanet.SolarSystem.SecurityStatusRichText(),
+		iwidgets.NewRichTextSegmentFromText(title),
+	)
+	w.location.Refresh()
 
 	extracted := strings.Join(cp.ExtractedTypeNames(), ",")
 	var deadline string
@@ -121,7 +121,7 @@ func (w *PlanetWidget) CreateRenderer() fyne.WidgetRenderer {
 	data := container.NewVBox(
 		container.NewStack(
 			w.bg,
-			container.NewBorder(nil, nil, w.security, w.infoIcon, w.location),
+			container.NewBorder(nil, nil, nil, w.infoIcon, w.location),
 		),
 		widget.NewForm(
 			widget.NewFormItem("Extracting", w.extracting),
