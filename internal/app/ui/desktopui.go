@@ -21,9 +21,9 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterwidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/desktopwidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
 )
 
 // The DesktopUI is the root object of the DesktopUI and contains all DesktopUI areas.
@@ -318,7 +318,7 @@ func (u *DesktopUI) showSettingsWindow() {
 func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := u.makeWindowTitle(fmt.Sprintf("New message [%s]", c.EveCharacter.Name))
 	w := u.App().NewWindow(title)
-	page := character.NewSendMail(u, c, mode, mail)
+	page := characterwidget.NewSendMail(u, c, mode, mail)
 	page.SetWindow(w)
 	send := widget.NewButtonWithIcon("Send", theme.MailSendIcon(), func() {
 		if page.SendAction() {

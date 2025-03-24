@@ -23,10 +23,10 @@ import (
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterwidget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/collectivewidget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/cross"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/tools"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
@@ -66,29 +66,29 @@ type BaseUI struct {
 	onUpdateCharacter func(*app.Character)
 	onUpdateStatus    func()
 
-	allAssetSearch             *cross.AllAssetSearch
-	characterAssets            *character.CharacterAssets
-	characterAttributes        *character.CharacterAttributes
-	characterCommunications    *character.CharacterCommunications
-	characterContracts         *character.CharacterContracts
-	characterImplants          *character.CharacterImplants
-	characterJumpClones        *character.CharacterJumpClones
-	characterMail              *character.CharacterMail
-	characterOverview          *cross.CharacterOverview
-	characterPlanets           *character.CharacterPlanets
-	characterShips             *character.CharacterShips
-	characterSkillCatalogue    *character.CharacterSkillCatalogue
-	characterSkillQueue        *character.CharacterSkillQueue
-	characterWalletJournal     *character.CharacterWalletJournal
-	characterWalletTransaction *character.CharacterWalletTransaction
-	colonyOverview             *cross.ColonyOverview
-	cloneSearch                *cross.CloneSearch
+	allAssetSearch             *collectivewidget.AllAssetSearch
+	characterAssets            *characterwidget.CharacterAssets
+	characterAttributes        *characterwidget.CharacterAttributes
+	characterCommunications    *characterwidget.CharacterCommunications
+	characterContracts         *characterwidget.CharacterContracts
+	characterImplants          *characterwidget.CharacterImplants
+	characterJumpClones        *characterwidget.CharacterJumpClones
+	characterMail              *characterwidget.CharacterMail
+	characterOverview          *collectivewidget.CharacterOverview
+	characterPlanets           *characterwidget.CharacterPlanets
+	characterShips             *characterwidget.CharacterShips
+	characterSkillCatalogue    *characterwidget.CharacterSkillCatalogue
+	characterSkillQueue        *characterwidget.CharacterSkillQueue
+	characterWalletJournal     *characterwidget.CharacterWalletJournal
+	characterWalletTransaction *characterwidget.CharacterWalletTransaction
+	colonyOverview             *collectivewidget.ColonyOverview
+	cloneSearch                *collectivewidget.CloneSearch
 	gameSearch                 *tools.GameSearch
-	locationOverview           *cross.LocationOverview
+	locationOverview           *collectivewidget.LocationOverview
 	managerCharacters          *tools.ManageCharacters
-	trainingOverview           *cross.TrainingOverview
+	trainingOverview           *collectivewidget.TrainingOverview
 	userSettings               *tools.UserSettings
-	wealthOverview             *cross.WealthOverview
+	wealthOverview             *collectivewidget.WealthOverview
 
 	app              fyne.App
 	character        *app.Character
@@ -153,29 +153,29 @@ func NewBaseUI(
 	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.infoWindow = infowindow.New(u, u.window)
 
-	u.allAssetSearch = cross.NewAssetSearch(u)
-	u.characterAssets = character.NewCharacterAssets(u)
-	u.characterAttributes = character.NewCharacterAttributes(u)
-	u.characterCommunications = character.NewCharacterCommunications(u)
-	u.characterContracts = character.NewCharacterContracts(u)
-	u.characterImplants = character.NewCharacterImplants(u)
-	u.characterJumpClones = character.NewCharacterJumpClones(u)
-	u.characterMail = character.NewCharacterMail(u)
-	u.characterOverview = cross.NewCharacterOverview(u)
-	u.characterPlanets = character.NewCharacterPlanets(u)
-	u.characterShips = character.NewCharacterShips(u)
-	u.characterSkillCatalogue = character.NewCharacterSkillCatalogue(u)
-	u.characterSkillQueue = character.NewCharacterSkillQueue(u)
-	u.characterWalletJournal = character.NewCharacterWalletJournal(u)
-	u.characterWalletTransaction = character.NewCharacterWalletTransaction(u)
-	u.cloneSearch = cross.NewCloneSearch(u)
-	u.colonyOverview = cross.NewColonyOverview(u)
+	u.allAssetSearch = collectivewidget.NewAssetSearch(u)
+	u.characterAssets = characterwidget.NewCharacterAssets(u)
+	u.characterAttributes = characterwidget.NewCharacterAttributes(u)
+	u.characterCommunications = characterwidget.NewCharacterCommunications(u)
+	u.characterContracts = characterwidget.NewCharacterContracts(u)
+	u.characterImplants = characterwidget.NewCharacterImplants(u)
+	u.characterJumpClones = characterwidget.NewCharacterJumpClones(u)
+	u.characterMail = characterwidget.NewCharacterMail(u)
+	u.characterOverview = collectivewidget.NewCharacterOverview(u)
+	u.characterPlanets = characterwidget.NewCharacterPlanets(u)
+	u.characterShips = characterwidget.NewCharacterShips(u)
+	u.characterSkillCatalogue = characterwidget.NewCharacterSkillCatalogue(u)
+	u.characterSkillQueue = characterwidget.NewCharacterSkillQueue(u)
+	u.characterWalletJournal = characterwidget.NewCharacterWalletJournal(u)
+	u.characterWalletTransaction = characterwidget.NewCharacterWalletTransaction(u)
+	u.cloneSearch = collectivewidget.NewCloneSearch(u)
+	u.colonyOverview = collectivewidget.NewColonyOverview(u)
 	u.gameSearch = tools.NewGameSearch(u)
-	u.locationOverview = cross.NewLocationOverview(u)
+	u.locationOverview = collectivewidget.NewLocationOverview(u)
 	u.managerCharacters = tools.NewManageCharacters(u)
-	u.trainingOverview = cross.NewTrainingOverview(u)
+	u.trainingOverview = collectivewidget.NewTrainingOverview(u)
 	u.userSettings = tools.NewSettings(u)
-	u.wealthOverview = cross.NewWealthOverview(u)
+	u.wealthOverview = collectivewidget.NewWealthOverview(u)
 
 	u.MainWindow().SetMaster()
 	return u
