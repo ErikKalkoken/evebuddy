@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"strings"
 	"sync"
 
 	"fyne.io/fyne/v2"
@@ -69,15 +68,6 @@ type CloneSearch struct {
 	colSort      []sortDir
 }
 
-func mapRoutePreference2String(x app.RoutePreference) string {
-	return x.String() + " route"
-}
-
-func mapString2RoutePreference(s string) app.RoutePreference {
-	x := strings.Split(s, " ")
-	return app.RoutePreference(x[0])
-}
-
 func NewCloneSearch(u app.UI) *CloneSearch {
 	headers := []iwidget.HeaderDef{
 		{Text: "Location", Width: 350},
@@ -98,11 +88,13 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 	a.originButton = widget.NewButton("Origin", func() {
 		a.changeOrigin(a.u.MainWindow())
 	})
-	xx := slices.Collect(xiter.MapSlice(app.RoutePreferences(), mapRoutePreference2String))
+	xx := slices.Collect(xiter.MapSlice(app.RoutePreferences(), func(a app.RoutePreference) string {
+		return a.String()
+	}))
 	a.routePref = widget.NewSelect(xx, func(s string) {})
-	a.routePref.Selected = mapRoutePreference2String(app.RouteShortest)
+	a.routePref.Selected = app.RouteShortest.String()
 	a.routePref.OnChanged = func(s string) {
-		go a.updateRoutes(mapString2RoutePreference(s))
+		go a.updateRoutes(app.RoutePreference(s))
 	}
 	makeCell := func(col int, r cloneSearchRow) []widget.RichTextSegment {
 		var s []widget.RichTextSegment
@@ -114,11 +106,11 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 				s = iwidget.NewRichTextSegmentFromText(r.c.Location.SolarSystem.Constellation.Region.Name)
 			}
 		case 2:
-			s = iwidget.NewRichTextSegmentFromText(fmt.Sprint(r.c.ImplantsCount), widget.RichTextStyle{Alignment: fyne.TextAlignTrailing})
+			s = iwidget.NewRichTextSegmentFromText(fmt.Sprint(r.c.ImplantsCount))
 		case 3:
 			s = iwidget.NewRichTextSegmentFromText(r.c.Character.Name)
 		case 4:
-			s = iwidget.NewRichTextSegmentFromText(r.jumps(), widget.RichTextStyle{Alignment: fyne.TextAlignTrailing})
+			s = iwidget.NewRichTextSegmentFromText(r.jumps())
 		}
 		return s
 	}
@@ -183,6 +175,207 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 	return a
 }
 
+func (a *CloneSearch) CreateRenderer() fyne.WidgetRenderer {
+	var route *fyne.Container
+	routeLabel := widget.NewLabelWithStyle("Route:", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+	if a.u.IsDesktop() {
+		route = container.NewBorder(
+			nil,
+			nil,
+			container.NewHBox(routeLabel, a.routePref, a.originButton),
+			nil,
+			a.originLabel,
+		)
+	} else {
+		route = container.NewVBox(
+			container.NewHBox(routeLabel, a.routePref),
+			container.NewBorder(nil, nil, a.originButton, nil, a.originLabel),
+		)
+	}
+	top := container.NewVBox(
+		a.top,
+		widget.NewSeparator(),
+		route,
+	)
+	c := container.NewBorder(
+		top,
+		nil,
+		nil,
+		nil,
+		a.body,
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *CloneSearch) Update() {
+	t, i, err := func() (string, widget.Importance, error) {
+		err := a.updateRows()
+		if err != nil {
+			return "", 0, err
+		}
+		if len(a.rows) == 0 {
+			return "No clones", widget.LowImportance, nil
+		}
+		s := fmt.Sprintf("%d clones", len(a.rows))
+		return s, widget.MediumImportance, nil
+	}()
+	if err != nil {
+		slog.Error("Failed to refresh overview UI", "err", err)
+		t = "ERROR"
+		i = widget.DangerImportance
+	}
+	a.top.Text = t
+	a.top.Importance = i
+	a.body.Refresh()
+	if len(a.rows) > 0 && a.origin != nil {
+		go a.updateRoutes(app.RoutePreference(a.routePref.Selected))
+	}
+}
+
+func (a *CloneSearch) updateRows() error {
+	ctx := context.Background()
+	oo, err := a.u.CharacterService().ListAllCharacterJumpClones(ctx)
+	if err != nil {
+		return err
+	}
+	slices.SortFunc(oo, func(a, b *app.CharacterJumpClone2) int {
+		return cmp.Compare(a.SolarSystemName(), b.SolarSystemName())
+	})
+	a.rows = slices.Collect(xiter.MapSlice(oo, func(o *app.CharacterJumpClone2) cloneSearchRow {
+		return cloneSearchRow{c: o}
+	}))
+	return nil
+}
+
+func (a *CloneSearch) updateRoutes(flag app.RoutePreference) {
+	if a.origin == nil {
+		return
+	}
+	for i := range a.rows {
+		a.rows[i].route = nil
+	}
+	a.body.Refresh()
+	ctx := context.Background()
+	wg := new(sync.WaitGroup)
+	for i, o := range a.rows {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			dest := o.c.Location.SolarSystem
+			origin := a.origin
+			j, err := a.u.EveUniverseService().GetRouteESI(ctx, dest, origin, flag)
+			if err != nil {
+				slog.Error("Failed to get route", "origin", origin.ID, "destination", dest.ID, "error", err)
+				return
+			}
+			a.rows[i].route = j
+			a.body.Refresh()
+		}()
+	}
+	wg.Wait()
+	slices.SortFunc(a.rows, func(a, b cloneSearchRow) int {
+		return a.compare(b)
+	})
+	for i := range a.colSort {
+		a.colSort[i] = sortOff
+	}
+	a.colSort[4] = sortAsc
+	a.body.Refresh()
+}
+
+func (a *CloneSearch) changeOrigin(w fyne.Window) {
+	showErrorDialog := func(search string, err error) {
+		slog.Error("Failed to resolve names", "search", search, "error", err)
+		a.u.ShowErrorDialog("Something went wrong", err, w)
+	}
+	var d dialog.Dialog
+	results := make([]*app.EveEntity, 0)
+	list := widget.NewList(
+		func() int {
+			return len(results)
+		},
+		func() fyne.CanvasObject {
+			return widget.NewLabel("")
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(results) {
+				return
+			}
+			o := results[id]
+			co.(*widget.Label).SetText(o.Name)
+		},
+	)
+	list.OnSelected = func(id widget.ListItemID) {
+		if id >= len(results) {
+			return
+		}
+		r := results[id]
+		s, err := a.u.EveUniverseService().GetOrCreateSolarSystemESI(context.Background(), r.ID)
+		if err != nil {
+			showErrorDialog("Could not load solar system", err)
+			return
+		}
+		a.origin = s
+		a.originLabel.Segments = s.DisplayRichTextWithRegion()
+		a.originLabel.Refresh()
+		go a.updateRoutes(app.RoutePreference(a.routePref.Selected))
+		d.Hide()
+	}
+	list.HideSeparators = true
+	entry := widget.NewEntry()
+	entry.PlaceHolder = "Type to start searching..."
+	entry.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
+		entry.SetText("")
+	})
+	entry.OnChanged = func(search string) {
+		if len(search) < 3 {
+			results = results[:0]
+			list.Refresh()
+			return
+		}
+		go func() {
+			ctx := context.Background()
+			ee, _, err := a.u.CharacterService().SearchESI(
+				ctx,
+				a.u.CurrentCharacterID(),
+				search,
+				[]app.SearchCategory{app.SearchSolarSystem},
+				false,
+			)
+			if err != nil {
+				showErrorDialog(search, err)
+				return
+			}
+			results = ee[app.SearchSolarSystem]
+			slices.SortFunc(results, func(a, b *app.EveEntity) int {
+				return a.Compare(b)
+			})
+			list.Refresh()
+		}()
+	}
+	note := widget.NewLabel("Select solar system from results list to change origin.")
+	note.Importance = widget.LowImportance
+	c := container.NewBorder(
+		container.NewBorder(
+			nil,
+			nil,
+			nil,
+			widget.NewButton("Cancel", func() {
+				d.Hide()
+			}),
+			entry,
+		),
+		note,
+		nil,
+		nil,
+		list,
+	)
+	d = dialog.NewCustomWithoutButtons("Change origin", c, w)
+	d.Resize(fyne.NewSize(600, 400))
+	d.Show()
+	w.Canvas().Focus(entry)
+}
+
 func (a *CloneSearch) processData(sortCol int) {
 	var order sortDir
 	if sortCol >= 0 {
@@ -211,7 +404,9 @@ func (a *CloneSearch) processData(sortCol int) {
 			case 0:
 				x = cmp.Compare(a.c.Location.DisplayName(), b.c.Location.DisplayName())
 			case 1:
-				x = cmp.Compare(a.c.Location.SolarSystem.Constellation.Region.Name, b.c.Location.SolarSystem.Constellation.Region.Name)
+				x = cmp.Compare(
+					a.c.Location.SolarSystem.Constellation.Region.Name,
+					b.c.Location.SolarSystem.Constellation.Region.Name)
 			case 2:
 				x = cmp.Compare(a.c.Character.Name, b.c.Character.Name)
 			case 3:
@@ -378,198 +573,4 @@ func (a *CloneSearch) showClone(r cloneSearchRow) {
 	w.SetContent(c)
 	w.Resize(fyne.NewSize(600, 400))
 	w.Show()
-}
-
-func (a *CloneSearch) CreateRenderer() fyne.WidgetRenderer {
-	var route *fyne.Container
-	if a.u.IsDesktop() {
-		route = container.NewBorder(nil, nil, container.NewHBox(a.routePref, a.originButton), nil, a.originLabel)
-	} else {
-		route = container.NewVBox(
-			a.routePref,
-			container.NewBorder(nil, nil, a.originButton, nil, a.originLabel),
-		)
-	}
-	top := container.NewVBox(
-		a.top,
-		widget.NewSeparator(),
-		route,
-	)
-	c := container.NewBorder(
-		top,
-		nil,
-		nil,
-		nil,
-		a.body,
-	)
-	return widget.NewSimpleRenderer(c)
-}
-
-func (a *CloneSearch) Update() {
-	t, i, err := func() (string, widget.Importance, error) {
-		err := a.updateRows()
-		if err != nil {
-			return "", 0, err
-		}
-		if len(a.rows) == 0 {
-			return "No clones", widget.LowImportance, nil
-		}
-		s := fmt.Sprintf("%d clones", len(a.rows))
-		return s, widget.MediumImportance, nil
-	}()
-	if err != nil {
-		slog.Error("Failed to refresh overview UI", "err", err)
-		t = "ERROR"
-		i = widget.DangerImportance
-	}
-	a.top.Text = t
-	a.top.Importance = i
-	a.body.Refresh()
-	if len(a.rows) > 0 && a.origin != nil {
-		go a.updateRoutes(mapString2RoutePreference(a.routePref.Selected))
-	}
-}
-
-func (a *CloneSearch) updateRows() error {
-	ctx := context.Background()
-	oo, err := a.u.CharacterService().ListAllCharacterJumpClones(ctx)
-	if err != nil {
-		return err
-	}
-	slices.SortFunc(oo, func(a, b *app.CharacterJumpClone2) int {
-		return cmp.Compare(a.SolarSystemName(), b.SolarSystemName())
-	})
-	a.rows = slices.Collect(xiter.MapSlice(oo, func(o *app.CharacterJumpClone2) cloneSearchRow {
-		return cloneSearchRow{c: o}
-	}))
-	return nil
-}
-
-func (a *CloneSearch) updateRoutes(flag app.RoutePreference) {
-	if a.origin == nil {
-		return
-	}
-	for i := range a.rows {
-		a.rows[i].route = nil
-	}
-	a.body.Refresh()
-	ctx := context.Background()
-	wg := new(sync.WaitGroup)
-	for i, o := range a.rows {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			dest := o.c.Location.SolarSystem
-			origin := a.origin
-			j, err := a.u.EveUniverseService().GetRouteESI(ctx, dest, origin, flag)
-			if err != nil {
-				slog.Error("Failed to get route", "origin", origin.ID, "destination", dest.ID, "error", err)
-				return
-			}
-			a.rows[i].route = j
-			a.body.Refresh()
-		}()
-	}
-	wg.Wait()
-	slices.SortFunc(a.rows, func(a, b cloneSearchRow) int {
-		return a.compare(b)
-	})
-	for i := range a.colSort {
-		a.colSort[i] = sortOff
-	}
-	a.colSort[4] = sortAsc
-	a.body.Refresh()
-}
-
-func (a *CloneSearch) changeOrigin(w fyne.Window) {
-	showErrorDialog := func(search string, err error) {
-		slog.Error("Failed to resolve names", "search", search, "error", err)
-		a.u.ShowErrorDialog("Something went wrong", err, w)
-	}
-	var d dialog.Dialog
-	results := make([]*app.EveEntity, 0)
-	list := widget.NewList(
-		func() int {
-			return len(results)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewLabel("")
-		},
-		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(results) {
-				return
-			}
-			o := results[id]
-			co.(*widget.Label).SetText(o.Name)
-		},
-	)
-	list.OnSelected = func(id widget.ListItemID) {
-		if id >= len(results) {
-			return
-		}
-		r := results[id]
-		s, err := a.u.EveUniverseService().GetOrCreateSolarSystemESI(context.Background(), r.ID)
-		if err != nil {
-			showErrorDialog("Could not load solar system", err)
-			return
-		}
-		a.origin = s
-		a.originLabel.Segments = s.DisplayRichTextWithRegion()
-		a.originLabel.Refresh()
-		go a.updateRoutes(mapString2RoutePreference(a.routePref.Selected))
-		d.Hide()
-	}
-	list.HideSeparators = true
-	entry := widget.NewEntry()
-	entry.PlaceHolder = "Type to start searching..."
-	entry.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
-		entry.SetText("")
-	})
-	entry.OnChanged = func(search string) {
-		if len(search) < 3 {
-			results = results[:0]
-			list.Refresh()
-			return
-		}
-		go func() {
-			ctx := context.Background()
-			ee, _, err := a.u.CharacterService().SearchESI(
-				ctx,
-				a.u.CurrentCharacterID(),
-				search,
-				[]app.SearchCategory{app.SearchSolarSystem},
-				false,
-			)
-			if err != nil {
-				showErrorDialog(search, err)
-				return
-			}
-			results = ee[app.SearchSolarSystem]
-			slices.SortFunc(results, func(a, b *app.EveEntity) int {
-				return a.Compare(b)
-			})
-			list.Refresh()
-		}()
-	}
-	note := widget.NewLabel("Select solar system from results list to change origin.")
-	note.Importance = widget.LowImportance
-	c := container.NewBorder(
-		container.NewBorder(
-			nil,
-			nil,
-			nil,
-			widget.NewButton("Cancel", func() {
-				d.Hide()
-			}),
-			entry,
-		),
-		note,
-		nil,
-		nil,
-		list,
-	)
-	d = dialog.NewCustomWithoutButtons("Change origin", c, w)
-	d.Resize(fyne.NewSize(600, 400))
-	d.Show()
-	w.Canvas().Focus(entry)
 }

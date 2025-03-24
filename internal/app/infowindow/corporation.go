@@ -167,7 +167,7 @@ func (a *corporationInfo) load(corporationID int32) error {
 	attributes = append(attributes, NewAtributeItem("War Eligability", o.WarEligible))
 	if o.URL != "" {
 		u, err := url.ParseRequestURI(o.URL)
-		if err == nil {
+		if err == nil && u.Host != "" {
 			attributes = append(attributes, NewAtributeItem("URL", u))
 		}
 	}
