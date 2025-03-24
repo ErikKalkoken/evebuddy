@@ -1,13 +1,14 @@
-// Package esistatus contains the ESI status service.
-package esistatus
+// Package esistatusservice contains the ESI status service.
+package esistatusservice
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
 // Ensure service implements interface.

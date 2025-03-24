@@ -28,7 +28,7 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/esistatus"
+	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
@@ -230,7 +230,7 @@ func main() {
 	cs.SSOService = ssoService
 
 	// Init UI
-	ess := esistatus.New(esiClient)
+	ess := esistatusservice.New(esiClient)
 	eis := eveimage.New(pc, rhc.StandardClient(), *offlineFlag)
 	bu := ui.NewBaseUI(
 		fyneApp, cs, eis, ess, eus, scs, memCache, *offlineFlag, *disableUpdatesFlag,

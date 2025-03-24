@@ -1,4 +1,4 @@
-package esistatus_test
+package esistatusservice_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/esistatus"
+	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
 	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -17,7 +17,7 @@ func TestFetch(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	es := esistatus.New(client)
+	es := esistatusservice.New(client)
 	ctx := context.TODO()
 	t.Run("should return full report when ESI is online", func(t *testing.T) {
 		// given
@@ -79,7 +79,7 @@ func TestFetchSwaggerErrors(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	es := esistatus.New(client)
+	es := esistatusservice.New(client)
 	ctx := context.TODO()
 	statusCodes := []int{400, 420, 500, 503, 504}
 	for _, code := range statusCodes {
