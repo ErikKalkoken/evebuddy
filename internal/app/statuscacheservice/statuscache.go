@@ -1,6 +1,6 @@
-// Package characterstatus is a service which provides cached access
+// Package statuscacheservice is a service which provides cached access
 // to the current update status of general and character sections.
-package statuscache
+package statuscacheservice
 
 import (
 	"context"

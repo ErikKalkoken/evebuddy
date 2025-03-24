@@ -1,4 +1,4 @@
-package statuscache_test
+package statuscacheservice_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
@@ -17,7 +17,7 @@ func TestStatusCache(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
 	cache := memcache.New()
-	sc := statuscache.New(cache)
+	sc := statuscacheservice.New(cache)
 	ctx := context.TODO()
 	t.Run("Can init a status cache with character and general sections", func(t *testing.T) {
 		// given
@@ -160,7 +160,7 @@ func TestStatusCacheSummary(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
 	cache := memcache.New()
-	sc := statuscache.New(cache)
+	sc := statuscacheservice.New(cache)
 	ctx := context.TODO()
 	t.Run("should report when all sections are up-to-date", func(t *testing.T) {
 		// given

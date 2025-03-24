@@ -32,7 +32,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
@@ -207,7 +207,7 @@ func main() {
 	esiClient := goesi.NewAPIClient(rhc.StandardClient(), userAgent)
 
 	// Init StatusCache service
-	scs := statuscache.New(memCache)
+	scs := statuscacheservice.New(memCache)
 	if err := scs.InitCache(context.TODO(), st); err != nil {
 		slog.Error("Failed to init cache", "error", err)
 		os.Exit(1)
