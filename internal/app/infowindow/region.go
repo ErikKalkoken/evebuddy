@@ -27,10 +27,10 @@ type regionInfo struct {
 	tabs *container.AppTabs
 }
 
-func newRegionInfo(iw *InfoWindow, regionID int32) *regionInfo {
+func newRegionInfo(iw *InfoWindow, id int32) *regionInfo {
 	a := &regionInfo{
 		iw:   iw,
-		id:   regionID,
+		id:   id,
 		logo: makeInfoLogo(),
 		name: makeInfoName(),
 		tabs: container.NewAppTabs(),
@@ -40,6 +40,15 @@ func newRegionInfo(iw *InfoWindow, regionID int32) *regionInfo {
 }
 
 func (a *regionInfo) CreateRenderer() fyne.WidgetRenderer {
+	go func() {
+		err := a.load()
+		if err != nil {
+			slog.Error("region info update failed", "solarSystem", a.id, "error", err)
+			a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", ihumanize.Error(err))
+			a.name.Importance = widget.DangerImportance
+			a.name.Refresh()
+		}
+	}()
 	p := theme.Padding()
 	main := container.NewVBox(
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
@@ -49,22 +58,12 @@ func (a *regionInfo) CreateRenderer() fyne.WidgetRenderer {
 	)
 	top := container.NewBorder(nil, nil, container.NewVBox(container.NewPadded(a.logo)), nil, main)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
-
-	go func() {
-		err := a.load(a.id)
-		if err != nil {
-			slog.Error("region info update failed", "solarSystem", a.id, "error", err)
-			a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", ihumanize.Error(err))
-			a.name.Importance = widget.DangerImportance
-			a.name.Refresh()
-		}
-	}()
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *regionInfo) load(regionID int32) error {
+func (a *regionInfo) load() error {
 	ctx := context.Background()
-	o, err := a.iw.u.EveUniverseService().GetOrCreateRegionESI(ctx, regionID)
+	o, err := a.iw.u.EveUniverseService().GetOrCreateRegionESI(ctx, a.id)
 	if err != nil {
 		return err
 	}

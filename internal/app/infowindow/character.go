@@ -39,7 +39,7 @@ type characterInfo struct {
 	iw              *InfoWindow
 }
 
-func newCharacterInfo(iw *InfoWindow, characterID int32) *characterInfo {
+func newCharacterInfo(iw *InfoWindow, id int32) *characterInfo {
 	alliance := kxwidget.NewTappableLabel("", nil)
 	alliance.Wrapping = fyne.TextWrapWord
 	corporation := kxwidget.NewTappableLabel("", nil)
@@ -54,7 +54,7 @@ func newCharacterInfo(iw *InfoWindow, characterID int32) *characterInfo {
 		corporation:     corporation,
 		corporationLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		iw:              iw,
-		id:              characterID,
+		id:              id,
 		membership:      widget.NewLabel(""),
 		name:            makeInfoName(),
 		portrait:        portrait,
@@ -67,6 +67,15 @@ func newCharacterInfo(iw *InfoWindow, characterID int32) *characterInfo {
 }
 
 func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
+	go func() {
+		err := a.load()
+		if err != nil {
+			slog.Error("character info update failed", "character", a.id, "error", err)
+			a.name.Text = fmt.Sprintf("ERROR: Failed to load character: %s", ihumanize.Error(err))
+			a.name.Importance = widget.DangerImportance
+			a.name.Refresh()
+		}
+	}()
 	p := theme.Padding()
 	main := container.NewVBox(
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
@@ -92,30 +101,20 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 	)
 	top := container.NewBorder(nil, nil, container.NewVBox(a.portrait), nil, main)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
-
-	go func() {
-		err := a.load(a.id)
-		if err != nil {
-			slog.Error("character info update failed", "character", a.id, "error", err)
-			a.name.Text = fmt.Sprintf("ERROR: Failed to load character: %s", ihumanize.Error(err))
-			a.name.Importance = widget.DangerImportance
-			a.name.Refresh()
-		}
-	}()
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterInfo) load(characterID int32) error {
+func (a *characterInfo) load() error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.iw.u.EveImageService().CharacterPortrait(characterID, 256)
+		r, err := a.iw.u.EveImageService().CharacterPortrait(a.id, 256)
 		if err != nil {
-			slog.Error("character info: Failed to load portrait", "charaterID", characterID, "error", err)
+			slog.Error("character info: Failed to load portrait", "characterID", a.id, "error", err)
 			return
 		}
 		a.portrait.SetResource(r)
 	}()
-	o, err := a.iw.u.EveUniverseService().GetCharacterESI(ctx, characterID)
+	o, err := a.iw.u.EveUniverseService().GetCharacterESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -134,7 +133,7 @@ func (a *characterInfo) load(characterID int32) error {
 		a.iw.ShowEveEntity(o.Corporation)
 	}
 	a.portrait.OnTapped = func() {
-		go a.iw.showZoomWindow(o.Name, characterID, a.iw.u.EveImageService().CharacterPortrait, a.iw.w)
+		go a.iw.showZoomWindow(o.Name, a.id, a.iw.u.EveImageService().CharacterPortrait, a.iw.w)
 	}
 	if s := o.DescriptionPlain(); s != "" {
 		bio := widget.NewLabel(s)
@@ -170,16 +169,16 @@ func (a *characterInfo) load(characterID int32) error {
 	go func() {
 		r, err := a.iw.u.EveImageService().CorporationLogo(o.Corporation.ID, app.IconPixelSize)
 		if err != nil {
-			slog.Error("character info: Failed to load corp logo", "charaterID", characterID, "error", err)
+			slog.Error("character info: Failed to load corp logo", "characterID", a.id, "error", err)
 			return
 		}
 		a.corporationLogo.Resource = r
 		a.corporationLogo.Refresh()
 	}()
 	go func() {
-		history, err := a.iw.u.EveUniverseService().GetCharacterCorporationHistory(ctx, characterID)
+		history, err := a.iw.u.EveUniverseService().GetCharacterCorporationHistory(ctx, a.id)
 		if err != nil {
-			slog.Error("character info: Failed to load corporation history", "charaterID", characterID, "error", err)
+			slog.Error("character info: Failed to load corporation history", "characterID", a.id, "error", err)
 			return
 		}
 		if len(history) == 0 {

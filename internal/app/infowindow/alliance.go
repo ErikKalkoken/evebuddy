@@ -27,12 +27,12 @@ type allianceInfo struct {
 	tabs *container.AppTabs
 }
 
-func newAllianceInfo(iw *InfoWindow, allianceID int32) *allianceInfo {
+func newAllianceInfo(iw *InfoWindow, id int32) *allianceInfo {
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Wrapping = fyne.TextWrapWord
 	a := &allianceInfo{
 		iw:   iw,
-		id:   allianceID,
+		id:   id,
 		name: makeInfoName(),
 		logo: makeInfoLogo(),
 		hq:   hq,
@@ -44,7 +44,7 @@ func newAllianceInfo(iw *InfoWindow, allianceID int32) *allianceInfo {
 
 func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 	go func() {
-		err := a.load(a.id)
+		err := a.load()
 		if err != nil {
 			slog.Error("alliance info update failed", "alliance", a.id, "error", err)
 			a.name.Text = fmt.Sprintf("ERROR: Failed to load alliance: %s", ihumanize.Error(err))
@@ -57,17 +57,17 @@ func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *allianceInfo) load(allianceID int32) error {
+func (a *allianceInfo) load() error {
 	ctx := context.Background()
-	o, err := a.iw.u.EveUniverseService().GetAllianceESI(ctx, allianceID)
+	o, err := a.iw.u.EveUniverseService().GetAllianceESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
 	a.name.SetText(o.Name)
 	go func() {
-		r, err := a.iw.u.EveImageService().AllianceLogo(allianceID, app.IconPixelSize)
+		r, err := a.iw.u.EveImageService().AllianceLogo(a.id, app.IconPixelSize)
 		if err != nil {
-			slog.Error("alliance info: Failed to load logo", "allianceID", allianceID, "error", err)
+			slog.Error("alliance info: Failed to load logo", "allianceID", a.id, "error", err)
 			return
 		}
 		a.logo.Resource = r
@@ -106,9 +106,9 @@ func (a *allianceInfo) load(allianceID int32) error {
 
 	// Members
 	go func() {
-		members, err := a.iw.u.EveUniverseService().GetAllianceCorporationsESI(ctx, allianceID)
+		members, err := a.iw.u.EveUniverseService().GetAllianceCorporationsESI(ctx, a.id)
 		if err != nil {
-			slog.Error("alliance info: Failed to load corporations", "allianceID", allianceID, "error", err)
+			slog.Error("alliance info: Failed to load corporations", "allianceID", a.id, "error", err)
 			return
 		}
 		if len(members) == 0 {

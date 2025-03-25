@@ -355,7 +355,7 @@ func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 		})
 		render.SetFillMode(canvas.ImageFillContain)
 		s := float32(size)
-		render.SetMinSize(fyne.Size{Width: s, Height: s})
+		render.SetMinSize(fyne.NewSquareSize(s))
 		typeIcon.Add(render)
 		if a.metaLevel > 4 {
 			var n eveicon.Name

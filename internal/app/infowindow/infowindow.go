@@ -120,7 +120,7 @@ func (iw *InfoWindow) show(t infoVariant, id int64) {
 		iw.w = w
 		iw.nav = iwidget.NewNavigatorWithAppBar(ab)
 		w.SetContent(iw.nav)
-		w.Resize(fyne.Size{Width: infoWindowWidth, Height: infoWindowHeight})
+		w.Resize(fyne.NewSize(infoWindowWidth, infoWindowHeight))
 		w.Show()
 	} else {
 		iw.nav.Push(ab)

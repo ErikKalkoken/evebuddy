@@ -23,39 +23,48 @@ import (
 type locationInfo struct {
 	widget.BaseWidget
 
-	id              int64
-	corporation     *kxwidget.TappableLabel
-	corporationLogo *canvas.Image
-	iw              *InfoWindow
-	name            *widget.Label
-	tabs            *container.AppTabs
-	typeImage       *kxwidget.TappableImage
-	typeInfo        *kxwidget.TappableLabel
+	id        int64
+	owner     *kxwidget.TappableLabel
+	ownerLogo *canvas.Image
+	iw        *InfoWindow
+	name      *widget.Label
+	tabs      *container.AppTabs
+	typeImage *kxwidget.TappableImage
+	typeInfo  *kxwidget.TappableLabel
 }
 
-func newLocationInfo(iw *InfoWindow, locationID int64) *locationInfo {
+func newLocationInfo(iw *InfoWindow, id int64) *locationInfo {
 	typeInfo := kxwidget.NewTappableLabel("", nil)
 	typeInfo.Wrapping = fyne.TextWrapWord
-	corporation := kxwidget.NewTappableLabel("", nil)
-	corporation.Wrapping = fyne.TextWrapWord
+	owner := kxwidget.NewTappableLabel("", nil)
+	owner.Wrapping = fyne.TextWrapWord
 	typeImage := kxwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeImage.SetFillMode(canvas.ImageFillContain)
 	typeImage.SetMinSize(fyne.NewSquareSize(renderIconUnitSize))
 	a := &locationInfo{
-		id:              locationID,
-		corporation:     corporation,
-		corporationLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
-		iw:              iw,
-		name:            makeInfoName(),
-		typeInfo:        typeInfo,
-		typeImage:       typeImage,
-		tabs:            container.NewAppTabs(),
+		id:        id,
+		owner:     owner,
+		ownerLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		iw:        iw,
+		name:      makeInfoName(),
+		typeInfo:  typeInfo,
+		typeImage: typeImage,
+		tabs:      container.NewAppTabs(),
 	}
 	a.ExtendBaseWidget(a)
 	return a
 }
 
 func (a *locationInfo) CreateRenderer() fyne.WidgetRenderer {
+	go func() {
+		err := a.load()
+		if err != nil {
+			slog.Error("location info update failed", "locationID", a.id, "error", err)
+			a.name.Text = fmt.Sprintf("ERROR: Failed to load character: %s", ihumanize.Error(err))
+			a.name.Importance = widget.DangerImportance
+			a.name.Refresh()
+		}
+	}()
 	p := theme.Padding()
 	main := container.New(layout.NewCustomPaddedVBoxLayout(0),
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
@@ -65,28 +74,19 @@ func (a *locationInfo) CreateRenderer() fyne.WidgetRenderer {
 		container.NewBorder(
 			nil,
 			nil,
-			a.corporationLogo,
+			a.ownerLogo,
 			nil,
-			a.corporation,
+			a.owner,
 		),
 	)
 	top := container.NewBorder(nil, nil, container.NewVBox(a.typeImage), nil, main)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
-	go func() {
-		err := a.load(a.id)
-		if err != nil {
-			slog.Error("location info update failed", "locationID", a.id, "error", err)
-			a.name.Text = fmt.Sprintf("ERROR: Failed to load character: %s", ihumanize.Error(err))
-			a.name.Importance = widget.DangerImportance
-			a.name.Refresh()
-		}
-	}()
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *locationInfo) load(locationID int64) error {
+func (a *locationInfo) load() error {
 	ctx := context.Background()
-	o, err := a.iw.u.EveUniverseService().GetOrCreateLocationESI(ctx, locationID)
+	o, err := a.iw.u.EveUniverseService().GetOrCreateLocationESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -103,8 +103,8 @@ func (a *locationInfo) load(locationID int64) error {
 	a.typeInfo.OnTapped = func() {
 		a.iw.ShowEveEntity(o.Type.ToEveEntity())
 	}
-	a.corporation.SetText(o.Owner.Name)
-	a.corporation.OnTapped = func() {
+	a.owner.SetText(o.Owner.Name)
+	a.owner.OnTapped = func() {
 		a.iw.ShowEveEntity(o.Owner)
 	}
 	a.typeImage.OnTapped = func() {
@@ -143,8 +143,8 @@ func (a *locationInfo) load(locationID int64) error {
 			slog.Error("location info: Failed to load corp logo", "owner", o.Owner, "error", err)
 			return
 		}
-		a.corporationLogo.Resource = r
-		a.corporationLogo.Refresh()
+		a.ownerLogo.Resource = r
+		a.ownerLogo.Refresh()
 	}()
 	return nil
 }

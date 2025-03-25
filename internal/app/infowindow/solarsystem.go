@@ -53,6 +53,15 @@ func newSolarSystemInfo(iw *InfoWindow, id int32) *solarSystemInfo {
 }
 
 func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
+	go func() {
+		err := a.load()
+		if err != nil {
+			slog.Error("solar system info update failed", "solarSystem", a.id, "error", err)
+			a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", ihumanize.Error(err))
+			a.name.Importance = widget.DangerImportance
+			a.name.Refresh()
+		}
+	}()
 	colums := kxlayout.NewColumns(120)
 	p := theme.Padding()
 	main := container.NewVBox(
@@ -67,22 +76,12 @@ func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
 		))
 	top := container.NewBorder(nil, nil, container.NewVBox(container.NewPadded(a.logo)), nil, main)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
-
-	go func() {
-		err := a.load(a.id)
-		if err != nil {
-			slog.Error("solar system info update failed", "solarSystem", a.id, "error", err)
-			a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", ihumanize.Error(err))
-			a.name.Importance = widget.DangerImportance
-			a.name.Refresh()
-		}
-	}()
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *solarSystemInfo) load(solarSystemID int32) error {
+func (a *solarSystemInfo) load() error {
 	ctx := context.Background()
-	o, err := a.iw.u.EveUniverseService().GetOrCreateSolarSystemESI(ctx, solarSystemID)
+	o, err := a.iw.u.EveUniverseService().GetOrCreateSolarSystemESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -116,7 +115,7 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 	a.tabs.Append(structuresTab)
 
 	if a.iw.u.IsDeveloperMode() {
-		x := NewAtributeItem("EVE ID", fmt.Sprint(solarSystemID))
+		x := NewAtributeItem("EVE ID", fmt.Sprint(a.id))
 		x.Action = func(v any) {
 			a.iw.w.Clipboard().SetContent(v.(string))
 		}
@@ -129,9 +128,9 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 	a.tabs.Refresh()
 
 	go func() {
-		starID, planets, stargateIDs, stations, structures, err := a.iw.u.EveUniverseService().GetSolarSystemInfoESI(ctx, solarSystemID)
+		starID, planets, stargateIDs, stations, structures, err := a.iw.u.EveUniverseService().GetSolarSystemInfoESI(ctx, a.id)
 		if err != nil {
-			slog.Error("solar system info: Failed to load system info", "solarSystem", solarSystemID, "error", err)
+			slog.Error("solar system info: Failed to load system info", "solarSystem", a.id, "error", err)
 			stationsLabel.Text = ihumanize.Error(err)
 			stationsLabel.Importance = widget.DangerImportance
 			stationsLabel.Refresh()
@@ -168,7 +167,7 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 		}
 		r, err := a.iw.u.EveImageService().InventoryTypeIcon(id, app.IconPixelSize)
 		if err != nil {
-			slog.Error("solar system info: Failed to load logo", "solarSystem", solarSystemID, "error", err)
+			slog.Error("solar system info: Failed to load logo", "solarSystem", a.id, "error", err)
 			return
 		}
 		a.logo.Resource = r
@@ -177,7 +176,7 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 		go func() {
 			ss, err := a.iw.u.EveUniverseService().GetSolarSystemsESI(ctx, stargateIDs)
 			if err != nil {
-				slog.Error("solar system info: Failed to load adjacent systems", "solarSystem", solarSystemID, "error", err)
+				slog.Error("solar system info: Failed to load adjacent systems", "solarSystem", a.id, "error", err)
 				systemsLabel.Text = ihumanize.Error(err)
 				systemsLabel.Importance = widget.DangerImportance
 				systemsLabel.Refresh()
@@ -191,7 +190,7 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 		go func() {
 			pp, err := a.iw.u.EveUniverseService().GetPlanets(ctx, planets)
 			if err != nil {
-				slog.Error("solar system info: Failed to load planets", "solarSystem", solarSystemID, "error", err)
+				slog.Error("solar system info: Failed to load planets", "solarSystem", a.id, "error", err)
 				planetsLabel.Text = ihumanize.Error(err)
 				planetsLabel.Importance = widget.DangerImportance
 				planetsLabel.Refresh()

@@ -56,6 +56,15 @@ func newCorporationInfo(iw *InfoWindow, id int32) *corporationInfo {
 }
 
 func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
+	go func() {
+		err := a.load()
+		if err != nil {
+			slog.Error("corporation info update failed", "corporation", a.id, "error", err)
+			a.name.Text = fmt.Sprintf("ERROR: Failed to load corporation: %s", ihumanize.Error(err))
+			a.name.Importance = widget.DangerImportance
+			a.name.Refresh()
+		}
+	}()
 	p := theme.Padding()
 	main := container.NewVBox(
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
@@ -72,31 +81,21 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 	)
 	top := container.NewBorder(nil, nil, container.NewVBox(container.NewPadded(a.logo)), nil, main)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
-
-	go func() {
-		err := a.load(a.id)
-		if err != nil {
-			slog.Error("corporation info update failed", "corporation", a.id, "error", err)
-			a.name.Text = fmt.Sprintf("ERROR: Failed to load corporation: %s", ihumanize.Error(err))
-			a.name.Importance = widget.DangerImportance
-			a.name.Refresh()
-		}
-	}()
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *corporationInfo) load(corporationID int32) error {
+func (a *corporationInfo) load() error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.iw.u.EveImageService().CorporationLogo(corporationID, app.IconPixelSize)
+		r, err := a.iw.u.EveImageService().CorporationLogo(a.id, app.IconPixelSize)
 		if err != nil {
-			slog.Error("corporation info: Failed to load logo", "corporationID", corporationID, "error", err)
+			slog.Error("corporation info: Failed to load logo", "corporationID", a.id, "error", err)
 			return
 		}
 		a.logo.Resource = r
 		a.logo.Refresh()
 	}()
-	o, err := a.iw.u.EveUniverseService().GetCorporationESI(ctx, corporationID)
+	o, err := a.iw.u.EveUniverseService().GetCorporationESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -178,9 +177,9 @@ func (a *corporationInfo) load(corporationID int32) error {
 	a.tabs.Append(attributesTab)
 	a.tabs.Select(attributesTab)
 	go func() {
-		history, err := a.iw.u.EveUniverseService().GetCorporationAllianceHistory(ctx, corporationID)
+		history, err := a.iw.u.EveUniverseService().GetCorporationAllianceHistory(ctx, a.id)
 		if err != nil {
-			slog.Error("corporation info: Failed to load alliance history", "corporationID", corporationID, "error", err)
+			slog.Error("corporation info: Failed to load alliance history", "corporationID", a.id, "error", err)
 			return
 		}
 		if len(history) == 0 {
