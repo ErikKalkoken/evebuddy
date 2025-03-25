@@ -27,13 +27,14 @@ func main() {
 
 	// init database
 	dsn := "file:" + dbPath
-	db, err := storage.InitDB("file:" + dbPath)
+	dbRW, dbRO, err := storage.InitDB("file:" + dbPath)
 	if err != nil {
 		log.Fatalf("Failed to initialize database %s: %s", dsn, err)
 	}
-	defer db.Close()
-	st := storage.New(db)
-	f := testutil.NewFactory(st, db)
+	defer dbRW.Close()
+	defer dbRO.Close()
+	st := storage.New(dbRW, dbRO)
+	f := testutil.NewFactory(st, dbRO)
 
 	// build character
 	fmt.Println()

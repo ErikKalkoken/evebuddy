@@ -24,7 +24,7 @@ type UpdateOrCreateCharacterAttributesParams struct {
 }
 
 func (st *Storage) GetCharacterAttributes(ctx context.Context, characterID int32) (*app.CharacterAttributes, error) {
-	o, err := st.q.GetCharacterAttributes(ctx, int64(characterID))
+	o, err := st.qRO.GetCharacterAttributes(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -48,7 +48,7 @@ func (st *Storage) UpdateOrCreateCharacterAttributes(ctx context.Context, arg Up
 		arg2.LastRemapDate.Time = arg.LastRemapDate
 		arg2.LastRemapDate.Valid = true
 	}
-	return st.q.UpdateOrCreateCharacterAttributes(ctx, arg2)
+	return st.qRW.UpdateOrCreateCharacterAttributes(ctx, arg2)
 }
 
 func characterAttributeFromDBModel(o queries.CharacterAttribute) *app.CharacterAttributes {

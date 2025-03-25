@@ -14,7 +14,7 @@ import (
 func (st *Storage) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, characterID int32, labelID int32) ([]*app.CharacterMailHeader, error) {
 	switch labelID {
 	case app.MailLabelAll:
-		rows, err := st.q.ListMailsOrdered(ctx, int64(characterID))
+		rows, err := st.qRO.ListMailsOrdered(ctx, int64(characterID))
 		if err != nil {
 			return nil, fmt.Errorf("list mails for character %d: %w", characterID, err)
 		}
@@ -24,7 +24,7 @@ func (st *Storage) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, 
 		}
 		return mm, nil
 	case app.MailLabelUnread:
-		rows, err := st.q.ListMailsUnreadOrdered(ctx, int64(characterID))
+		rows, err := st.qRO.ListMailsUnreadOrdered(ctx, int64(characterID))
 		if err != nil {
 			return nil, fmt.Errorf("list unread mails for character %d: %w", characterID, err)
 		}
@@ -34,7 +34,7 @@ func (st *Storage) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, 
 		}
 		return mm, nil
 	case app.MailLabelNone:
-		rows, err := st.q.ListMailsNoLabelOrdered(ctx, int64(characterID))
+		rows, err := st.qRO.ListMailsNoLabelOrdered(ctx, int64(characterID))
 		if err != nil {
 			return nil, fmt.Errorf("list mails wo labels for character %d: %w", characterID, err)
 		}
@@ -48,7 +48,7 @@ func (st *Storage) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, 
 			CharacterID: int64(characterID),
 			LabelID:     int64(labelID),
 		}
-		rows, err := st.q.ListMailsForLabelOrdered(ctx, arg)
+		rows, err := st.qRO.ListMailsForLabelOrdered(ctx, arg)
 		if err != nil {
 			return nil, fmt.Errorf("list mails for character %d and label %d: %w", characterID, labelID, err)
 		}
@@ -65,7 +65,7 @@ func (st *Storage) ListCharacterMailHeadersForListOrdered(ctx context.Context, c
 		CharacterID: int64(characterID),
 		EveEntityID: int64(listID),
 	}
-	rows, err := st.q.ListMailsForListOrdered(ctx, arg)
+	rows, err := st.qRO.ListMailsForListOrdered(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("list mail ids for character %d and list %d: %w", characterID, listID, err)
 	}
@@ -82,7 +82,7 @@ func (st *Storage) ListCharacterMailHeadersForUnprocessed(ctx context.Context, c
 		LabelID:     app.MailLabelSent,
 		Timestamp:   earliest,
 	}
-	rows, err := st.q.ListMailsUnprocessed(ctx, arg)
+	rows, err := st.qRO.ListMailsUnprocessed(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("list unprocessed mails for character %d: %w", characterID, err)
 	}

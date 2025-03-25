@@ -49,7 +49,7 @@ func (st *Storage) CreateEveCharacter(ctx context.Context, arg CreateEveCharacte
 		arg2.FactionID.Int64 = int64(arg.FactionID)
 		arg2.FactionID.Valid = true
 	}
-	err := st.q.CreateEveCharacter(ctx, arg2)
+	err := st.qRW.CreateEveCharacter(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("create EveCharacter %v, %w", arg2, err)
 	}
@@ -57,7 +57,7 @@ func (st *Storage) CreateEveCharacter(ctx context.Context, arg CreateEveCharacte
 }
 
 func (st *Storage) DeleteEveCharacter(ctx context.Context, characterID int32) error {
-	err := st.q.DeleteEveCharacter(ctx, int64(characterID))
+	err := st.qRW.DeleteEveCharacter(ctx, int64(characterID))
 	if err != nil {
 		return fmt.Errorf("delete EveCharacter %d: %w", characterID, err)
 	}
@@ -65,7 +65,7 @@ func (st *Storage) DeleteEveCharacter(ctx context.Context, characterID int32) er
 }
 
 func (st *Storage) GetEveCharacter(ctx context.Context, characterID int32) (*app.EveCharacter, error) {
-	r, err := st.q.GetEveCharacter(ctx, int64(characterID))
+	r, err := st.qRO.GetEveCharacter(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -93,7 +93,7 @@ func (st *Storage) GetEveCharacter(ctx context.Context, characterID int32) (*app
 }
 
 func (st *Storage) ListEveCharacterIDs(ctx context.Context) (set.Set[int32], error) {
-	ids, err := st.q.ListEveCharacterIDs(ctx)
+	ids, err := st.qRO.ListEveCharacterIDs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list EveCharacterIDs: %w", err)
 	}
@@ -118,7 +118,7 @@ func (st *Storage) UpdateEveCharacter(ctx context.Context, c *app.EveCharacter) 
 		arg.FactionID.Int64 = int64(c.Faction.ID)
 		arg.FactionID.Valid = true
 	}
-	if err := st.q.UpdateEveCharacter(ctx, arg); err != nil {
+	if err := st.qRW.UpdateEveCharacter(ctx, arg); err != nil {
 		return fmt.Errorf("update or create EveCharacter %d: %w", c.ID, err)
 	}
 	return nil

@@ -11,7 +11,7 @@ import (
 )
 
 func (st *Storage) GetEveMarketPrice(ctx context.Context, typeID int32) (*app.EveMarketPrice, error) {
-	row, err := st.q.GetEveMarketPrice(ctx, int64(typeID))
+	row, err := st.qRO.GetEveMarketPrice(ctx, int64(typeID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -34,7 +34,7 @@ func (st *Storage) UpdateOrCreateEveMarketPrice(ctx context.Context, arg UpdateO
 		AdjustedPrice: arg.AdjustedPrice,
 		AveragePrice:  arg.AveragePrice,
 	}
-	if err := st.q.UpdateOrCreateEveMarketPrice(ctx, arg2); err != nil {
+	if err := st.qRW.UpdateOrCreateEveMarketPrice(ctx, arg2); err != nil {
 		return fmt.Errorf("update or create eve market price %v: %w", arg, err)
 	}
 	return nil

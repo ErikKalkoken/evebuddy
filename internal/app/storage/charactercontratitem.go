@@ -31,7 +31,7 @@ func (st *Storage) CreateCharacterContractItem(ctx context.Context, arg CreateCh
 		RecordID:    arg.RecordID,
 		TypeID:      int64(arg.TypeID),
 	}
-	if err := st.q.CreateCharacterContractItem(ctx, arg2); err != nil {
+	if err := st.qRW.CreateCharacterContractItem(ctx, arg2); err != nil {
 		return fmt.Errorf("create contract item: %+v: %w", arg, err)
 	}
 	return nil
@@ -42,7 +42,7 @@ func (st *Storage) GetCharacterContractItem(ctx context.Context, contractID, rec
 		ContractID: contractID,
 		RecordID:   recordID,
 	}
-	r, err := st.q.GetCharacterContractItem(ctx, arg)
+	r, err := st.qRO.GetCharacterContractItem(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("get contract item %+v: %w", arg, err)
 	}
@@ -50,7 +50,7 @@ func (st *Storage) GetCharacterContractItem(ctx context.Context, contractID, rec
 }
 
 func (st *Storage) ListCharacterContractItems(ctx context.Context, contractID int64) ([]*app.CharacterContractItem, error) {
-	rows, err := st.q.ListCharacterContractItems(ctx, contractID)
+	rows, err := st.qRO.ListCharacterContractItems(ctx, contractID)
 	if err != nil {
 		return nil, fmt.Errorf("list items for contract %d: %w", contractID, err)
 	}

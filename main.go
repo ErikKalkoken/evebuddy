@@ -177,13 +177,14 @@ func main() {
 	// init database
 	dbPath := filepath.Join(dataDir, dbFileName)
 	dsn := "file:///" + filepath.ToSlash(dbPath)
-	db, err := storage.InitDB(dsn)
+	dbRW, dbRO, err := storage.InitDB(dsn)
 	if err != nil {
 		slog.Error("Failed to initialize database", "dsn", dsn, "error", err)
 		os.Exit(1)
 	}
-	defer db.Close()
-	st := storage.New(db)
+	defer dbRW.Close()
+	defer dbRO.Close()
+	st := storage.New(dbRW, dbRO)
 
 	// Initialize caches
 	memCache := memcache.New()

@@ -16,7 +16,7 @@ type CreateCharacterImplantParams struct {
 }
 
 func (st *Storage) CreateCharacterImplant(ctx context.Context, arg CreateCharacterImplantParams) error {
-	err := createCharacterImplant(ctx, st.q, arg)
+	err := createCharacterImplant(ctx, st.qRW, arg)
 	if err != nil {
 		return fmt.Errorf("create implant for character ID %d: %w", arg.CharacterID, err)
 	}
@@ -29,7 +29,7 @@ func (st *Storage) GetCharacterImplant(ctx context.Context, characterID int32, t
 		DogmaAttributeID: app.EveDogmaAttributeImplantSlot,
 		EveTypeID:        int64(typeID),
 	}
-	row, err := st.q.GetCharacterImplant(ctx, arg)
+	row, err := st.qRO.GetCharacterImplant(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -49,7 +49,7 @@ func (st *Storage) ListCharacterImplants(ctx context.Context, characterID int32)
 		DogmaAttributeID: app.EveDogmaAttributeImplantSlot,
 		CharacterID:      int64(characterID),
 	}
-	rows, err := st.q.ListCharacterImplants(ctx, arg)
+	rows, err := st.qRO.ListCharacterImplants(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("list implants for character ID %d: %w", characterID, err)
 	}
@@ -67,12 +67,12 @@ func (st *Storage) ListCharacterImplants(ctx context.Context, characterID int32)
 
 func (st *Storage) ReplaceCharacterImplants(ctx context.Context, characterID int32, args []CreateCharacterImplantParams) error {
 	err := func() error {
-		tx, err := st.db.Begin()
+		tx, err := st.dbRW.Begin()
 		if err != nil {
 			return err
 		}
 		defer tx.Rollback()
-		qtx := st.q.WithTx(tx)
+		qtx := st.qRW.WithTx(tx)
 		if err := qtx.DeleteCharacterImplants(ctx, int64(characterID)); err != nil {
 			return err
 		}

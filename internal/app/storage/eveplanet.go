@@ -27,7 +27,7 @@ func (st *Storage) CreateEvePlanet(ctx context.Context, arg CreateEvePlanetParam
 		EveSolarSystemID: int64(arg.SolarSystemID),
 		EveTypeID:        int64(arg.TypeID),
 	}
-	err := st.q.CreateEvePlanet(ctx, arg2)
+	err := st.qRW.CreateEvePlanet(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("create EvePlanet %v, %w", arg, err)
 	}
@@ -35,7 +35,7 @@ func (st *Storage) CreateEvePlanet(ctx context.Context, arg CreateEvePlanetParam
 }
 
 func (st *Storage) GetEvePlanet(ctx context.Context, id int32) (*app.EvePlanet, error) {
-	row, err := st.q.GetEvePlanet(ctx, int64(id))
+	row, err := st.qRO.GetEvePlanet(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound

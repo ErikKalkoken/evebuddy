@@ -16,7 +16,7 @@ func (st *Storage) CreateEveRace(ctx context.Context, id int32, description, nam
 		Description: description,
 		Name:        name,
 	}
-	o, err := st.q.CreateEveRace(ctx, arg)
+	o, err := st.qRW.CreateEveRace(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("create race %d: %w", id, err)
 	}
@@ -24,7 +24,7 @@ func (st *Storage) CreateEveRace(ctx context.Context, id int32, description, nam
 }
 
 func (st *Storage) GetEveRace(ctx context.Context, id int32) (*app.EveRace, error) {
-	o, err := st.q.GetEveRace(ctx, int64(id))
+	o, err := st.qRO.GetEveRace(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound

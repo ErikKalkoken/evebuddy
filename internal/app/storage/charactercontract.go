@@ -129,7 +129,7 @@ func (st *Storage) CreateCharacterContract(ctx context.Context, arg CreateCharac
 	if arg.StartLocationID != 0 {
 		arg2.StartLocationID = NewNullInt64(arg.StartLocationID)
 	}
-	id, err := st.q.CreateCharacterContract(ctx, arg2)
+	id, err := st.qRW.CreateCharacterContract(ctx, arg2)
 	if err != nil {
 		return 0, fmt.Errorf("create contract: %v: %w", arg, err)
 	}
@@ -141,7 +141,7 @@ func (st *Storage) GetCharacterContract(ctx context.Context, characterID, contra
 		CharacterID: int64(characterID),
 		ContractID:  int64(contractID),
 	}
-	r, err := st.q.GetCharacterContract(ctx, arg)
+	r, err := st.qRO.GetCharacterContract(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("get contract for character %d: %w", characterID, err)
 	}
@@ -166,7 +166,7 @@ func (st *Storage) GetCharacterContract(ctx context.Context, characterID, contra
 }
 
 func (st *Storage) ListCharacterContractIDs(ctx context.Context, characterID int32) ([]int32, error) {
-	ids, err := st.q.ListCharacterContractIDs(ctx, int64(characterID))
+	ids, err := st.qRO.ListCharacterContractIDs(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list contract ids for character %d: %w", characterID, err)
 	}
@@ -174,7 +174,7 @@ func (st *Storage) ListCharacterContractIDs(ctx context.Context, characterID int
 }
 
 func (st *Storage) ListCharacterContracts(ctx context.Context, characterID int32) ([]*app.CharacterContract, error) {
-	rows, err := st.q.ListCharacterContracts(ctx, int64(characterID))
+	rows, err := st.qRO.ListCharacterContracts(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list contracts for character %d: %w", characterID, err)
 	}
@@ -206,7 +206,7 @@ func (st *Storage) ListCharacterContractsForNotify(ctx context.Context, characte
 		CharacterID: int64(characterID),
 		UpdatedAt:   earliest,
 	}
-	rows, err := st.q.ListCharacterContractsForNotify(ctx, arg)
+	rows, err := st.qRO.ListCharacterContractsForNotify(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("list contracts to notify for character %d: %w", characterID, err)
 	}
@@ -258,7 +258,7 @@ func (st *Storage) UpdateCharacterContract(ctx context.Context, arg UpdateCharac
 		arg2.AcceptorID.Int64 = int64(arg.AcceptorID)
 		arg2.AcceptorID.Valid = true
 	}
-	err := st.q.UpdateCharacterContract(ctx, arg2)
+	err := st.qRW.UpdateCharacterContract(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("update character contract: %w", err)
 	}
@@ -281,7 +281,7 @@ func (st *Storage) UpdateCharacterContractNotified(ctx context.Context, id int64
 		StatusNotified: statusNotified,
 		UpdatedAt:      time.Now().UTC(),
 	}
-	err := st.q.UpdateCharacterContractNotified(ctx, arg2)
+	err := st.qRW.UpdateCharacterContractNotified(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("update character contract notified: %w", err)
 	}

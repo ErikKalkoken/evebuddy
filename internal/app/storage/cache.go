@@ -11,7 +11,7 @@ import (
 )
 
 func (st *Storage) CacheClear(ctx context.Context) error {
-	err := st.q.CacheClear(ctx)
+	err := st.qRW.CacheClear(ctx)
 	if err != nil {
 		return fmt.Errorf("cache clear: %w", err)
 	}
@@ -19,7 +19,7 @@ func (st *Storage) CacheClear(ctx context.Context) error {
 }
 
 func (st *Storage) CacheCleanUp(ctx context.Context) (int, error) {
-	n, err := st.q.CacheCleanUp(ctx, NewNullTimeFromTime(time.Now().UTC()))
+	n, err := st.qRW.CacheCleanUp(ctx, NewNullTimeFromTime(time.Now().UTC()))
 	if err != nil {
 		return 0, fmt.Errorf("cache cleanup: %w", err)
 	}
@@ -42,7 +42,7 @@ func (st *Storage) CacheGet(ctx context.Context, key string) ([]byte, error) {
 		Key: key,
 		Now: NewNullTimeFromTime(time.Now().UTC()),
 	}
-	x, err := st.q.CacheGet(ctx, arg)
+	x, err := st.qRO.CacheGet(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -53,7 +53,7 @@ func (st *Storage) CacheGet(ctx context.Context, key string) ([]byte, error) {
 }
 
 func (st *Storage) CacheDelete(ctx context.Context, key string) error {
-	err := st.q.CacheDelete(ctx, key)
+	err := st.qRW.CacheDelete(ctx, key)
 	if err != nil {
 		return fmt.Errorf("cache delete %s: %w", key, err)
 	}
@@ -76,7 +76,7 @@ func (st *Storage) CacheSet(ctx context.Context, arg CacheSetParams) error {
 		Key:       arg.Key,
 		Value:     arg.Value,
 	}
-	err := st.q.CacheSet(ctx, arg2)
+	err := st.qRW.CacheSet(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("cache set %s: %w", arg.Key, err)
 	}

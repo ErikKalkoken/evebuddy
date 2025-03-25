@@ -14,7 +14,7 @@ func (st *Storage) ListCharacterShipsAbilities(ctx context.Context, characterID 
 		CharacterID: int64(characterID),
 		Name:        search,
 	}
-	rows, err := st.q.ListCharacterShipsAbilities(ctx, arg)
+	rows, err := st.qRO.ListCharacterShipsAbilities(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("list ship abilities for character %d and search %s: %w", characterID, search, err)
 	}
@@ -35,7 +35,7 @@ func (st *Storage) ListCharacterShipSkills(ctx context.Context, characterID, shi
 		CharacterID: int64(characterID),
 		ShipTypeID:  int64(shipTypeID),
 	}
-	rows, err := st.q.ListCharacterShipSkills(ctx, arg)
+	rows, err := st.qRO.ListCharacterShipSkills(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("list character ship skills for character %d and type %d: %w", characterID, shipTypeID, err)
 	}

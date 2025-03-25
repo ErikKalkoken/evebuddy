@@ -35,12 +35,12 @@ const (
 )
 
 type Factory struct {
-	st *storage.Storage
-	db *sql.DB
+	st   *storage.Storage
+	dbRO *sql.DB
 }
 
-func NewFactory(st *storage.Storage, db *sql.DB) Factory {
-	f := Factory{st: st, db: db}
+func NewFactory(st *storage.Storage, dbRO *sql.DB) Factory {
+	f := Factory{st: st, dbRO: dbRO}
 	return f
 }
 
@@ -625,7 +625,7 @@ func (f Factory) CreateCharacterSkillqueueItem(args ...storage.SkillqueueItemPar
 	if arg.QueuePosition == 0 {
 		var maxPos sql.NullInt64
 		q := "SELECT MAX(queue_position) FROM character_skillqueue_items WHERE character_id=?;"
-		if err := f.db.QueryRow(q, arg.CharacterID).Scan(&maxPos); err != nil {
+		if err := f.dbRO.QueryRow(q, arg.CharacterID).Scan(&maxPos); err != nil {
 			panic(err)
 		}
 		if maxPos.Valid {
@@ -637,7 +637,7 @@ func (f Factory) CreateCharacterSkillqueueItem(args ...storage.SkillqueueItemPar
 	if arg.StartDate.IsZero() {
 		var v sql.NullString
 		q2 := "SELECT MAX(finish_date) FROM character_skillqueue_items WHERE character_id=?;"
-		if err := f.db.QueryRow(q2, arg.CharacterID).Scan(&v); err != nil {
+		if err := f.dbRO.QueryRow(q2, arg.CharacterID).Scan(&v); err != nil {
 			panic(err)
 		}
 		if !v.Valid {
@@ -1468,7 +1468,7 @@ func (f *Factory) calcNewID(table, id_field string, start int64) int64 {
 		panic("start must be a positive number")
 	}
 	var vMax sql.NullInt64
-	if err := f.db.QueryRow(fmt.Sprintf("SELECT MAX(%s) FROM %s;", id_field, table)).Scan(&vMax); err != nil {
+	if err := f.dbRO.QueryRow(fmt.Sprintf("SELECT MAX(%s) FROM %s;", id_field, table)).Scan(&vMax); err != nil {
 		panic(err)
 	}
 	return max(vMax.Int64+1, start)
@@ -1477,7 +1477,7 @@ func (f *Factory) calcNewID(table, id_field string, start int64) int64 {
 func (f *Factory) calcNewIDWithCharacter(table, id_field string, characterID int32) int64 {
 	var max sql.NullInt64
 	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE character_id = ?;", id_field, table)
-	if err := f.db.QueryRow(sql, characterID).Scan(&max); err != nil {
+	if err := f.dbRO.QueryRow(sql, characterID).Scan(&max); err != nil {
 		panic(err)
 	}
 	return max.Int64 + 1
@@ -1486,7 +1486,7 @@ func (f *Factory) calcNewIDWithCharacter(table, id_field string, characterID int
 func (f *Factory) calcNewIDWithParam(table, id_field, where_field string, where_value int64) int64 {
 	var max sql.NullInt64
 	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE %s = ?;", id_field, table, where_field)
-	if err := f.db.QueryRow(sql, where_value).Scan(&max); err != nil {
+	if err := f.dbRO.QueryRow(sql, where_value).Scan(&max); err != nil {
 		panic(err)
 	}
 	return max.Int64 + 1

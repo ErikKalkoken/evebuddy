@@ -39,14 +39,14 @@ func (st *Storage) CreatePlanetPin(ctx context.Context, arg CreatePlanetPinParam
 		LastCycleStart:         NewNullTimeFromTime(arg.LastCycleStart),
 		PinID:                  arg.PinID,
 	}
-	if err := st.q.CreatePlanetPin(ctx, arg2); err != nil {
+	if err := st.qRW.CreatePlanetPin(ctx, arg2); err != nil {
 		return fmt.Errorf("create PlanetPin %v, %w", arg, err)
 	}
 	return nil
 }
 
 func (st *Storage) DeletePlanetPins(ctx context.Context, characterPlanetID int64) error {
-	if err := st.q.DeletePlanetPins(ctx, characterPlanetID); err != nil {
+	if err := st.qRW.DeletePlanetPins(ctx, characterPlanetID); err != nil {
 		return fmt.Errorf("delete planet pins for %d: %w", characterPlanetID, err)
 	}
 	return nil
@@ -57,7 +57,7 @@ func (st *Storage) GetPlanetPin(ctx context.Context, characterPlanetID, pinID in
 		CharacterPlanetID: characterPlanetID,
 		PinID:             pinID,
 	}
-	r, err := st.q.GetPlanetPin(ctx, arg)
+	r, err := st.qRO.GetPlanetPin(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -68,7 +68,7 @@ func (st *Storage) GetPlanetPin(ctx context.Context, characterPlanetID, pinID in
 }
 
 func (st *Storage) ListPlanetPins(ctx context.Context, characterPlanetID int64) ([]*app.PlanetPin, error) {
-	rows, err := st.q.ListPlanetPins(ctx, characterPlanetID)
+	rows, err := st.qRO.ListPlanetPins(ctx, characterPlanetID)
 	if err != nil {
 		return nil, fmt.Errorf("list planet pins for %d: %w", characterPlanetID, err)
 	}

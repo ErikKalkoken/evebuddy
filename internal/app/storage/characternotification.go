@@ -33,7 +33,7 @@ func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCh
 		Title:          optional.ToNullString(arg.Title),
 		TypeID:         typeID,
 	}
-	if err := st.q.CreateCharacterNotification(ctx, arg2); err != nil {
+	if err := st.qRW.CreateCharacterNotification(ctx, arg2); err != nil {
 		arg.Body.Clear()
 		arg.Text = ""
 		return fmt.Errorf("create character notification %+v: %w", arg, err)
@@ -54,7 +54,7 @@ func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int
 		CharacterID:    int64(characterID),
 		NotificationID: notificationID,
 	}
-	row, err := st.q.GetCharacterNotification(ctx, arg)
+	row, err := st.qRO.GetCharacterNotification(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("get character notification %+v: %w", arg, err)
 	}
@@ -62,7 +62,7 @@ func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int
 }
 
 func (st *Storage) ListCharacterNotificationIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
-	ids, err := st.q.ListCharacterNotificationIDs(ctx, int64(characterID))
+	ids, err := st.qRO.ListCharacterNotificationIDs(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list character notification ids for character %d: %w", characterID, err)
 	}
@@ -74,7 +74,7 @@ func (st *Storage) ListCharacterNotificationsTypes(ctx context.Context, characte
 		CharacterID: int64(characterID),
 		Names:       types,
 	}
-	rows, err := st.q.ListCharacterNotificationsTypes(ctx, arg)
+	rows, err := st.qRO.ListCharacterNotificationsTypes(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("list notification types %+v: %w", arg, err)
 	}
@@ -86,7 +86,7 @@ func (st *Storage) ListCharacterNotificationsTypes(ctx context.Context, characte
 }
 
 func (st *Storage) ListCharacterNotificationsAll(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
-	rows, err := st.q.ListCharacterNotificationsAll(ctx, int64(characterID))
+	rows, err := st.qRO.ListCharacterNotificationsAll(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list all notifications for character %d: %w", characterID, err)
 	}
@@ -98,7 +98,7 @@ func (st *Storage) ListCharacterNotificationsAll(ctx context.Context, characterI
 }
 
 func (st *Storage) ListCharacterNotificationsUnread(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
-	rows, err := st.q.ListCharacterNotificationsUnread(ctx, int64(characterID))
+	rows, err := st.qRO.ListCharacterNotificationsUnread(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list unread notification for character %d: %w", characterID, err)
 	}
@@ -114,7 +114,7 @@ func (st *Storage) ListCharacterNotificationsUnprocessed(ctx context.Context, ch
 		CharacterID: int64(characterID),
 		Timestamp:   earliest,
 	}
-	rows, err := st.q.ListCharacterNotificationsUnprocessed(ctx, arg)
+	rows, err := st.qRO.ListCharacterNotificationsUnprocessed(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("list unprocessed notifications %+v: %w", arg, err)
 	}
@@ -162,7 +162,7 @@ func (st *Storage) UpdateCharacterNotification(ctx context.Context, arg UpdateCh
 		IsRead: arg.IsRead,
 		Title:  optional.ToNullString(arg.Title),
 	}
-	if err := st.q.UpdateCharacterNotification(ctx, arg2); err != nil {
+	if err := st.qRW.UpdateCharacterNotification(ctx, arg2); err != nil {
 		return fmt.Errorf("update character notification %+v: %w", arg, err)
 	}
 	return nil
@@ -170,12 +170,12 @@ func (st *Storage) UpdateCharacterNotification(ctx context.Context, arg UpdateCh
 
 func (st *Storage) GetOrCreateNotificationType(ctx context.Context, name string) (int64, error) {
 	id, err := func() (int64, error) {
-		tx, err := st.db.Begin()
+		tx, err := st.dbRW.Begin()
 		if err != nil {
 			return 0, err
 		}
 		defer tx.Rollback()
-		qtx := st.q.WithTx(tx)
+		qtx := st.qRW.WithTx(tx)
 		id, err := qtx.GetNotificationTypeID(ctx, name)
 		if errors.Is(err, sql.ErrNoRows) {
 			id, err = qtx.CreateNotificationType(ctx, name)
@@ -195,7 +195,7 @@ func (st *Storage) GetOrCreateNotificationType(ctx context.Context, name string)
 }
 
 func (st *Storage) CountCharacterNotificationUnreads(ctx context.Context, characterID int32) (map[string]int, error) {
-	rows, err := st.q.CalcCharacterNotificationUnreadCounts(ctx, int64(characterID))
+	rows, err := st.qRO.CalcCharacterNotificationUnreadCounts(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("count unread notifications for character %d: %w", characterID, err)
 	}
@@ -207,7 +207,7 @@ func (st *Storage) CountCharacterNotificationUnreads(ctx context.Context, charac
 }
 
 func (st *Storage) UpdateCharacterNotificationSetProcessed(ctx context.Context, id int64) error {
-	if err := st.q.UpdateCharacterNotificationSetProcessed(ctx, id); err != nil {
+	if err := st.qRW.UpdateCharacterNotificationSetProcessed(ctx, id); err != nil {
 		return fmt.Errorf("update notification set processed for id %d: %w", id, err)
 	}
 	return nil

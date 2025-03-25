@@ -19,7 +19,7 @@ type CreateCharacterJumpCloneParams struct {
 }
 
 func (st *Storage) CreateCharacterJumpClone(ctx context.Context, arg CreateCharacterJumpCloneParams) error {
-	return createCharacterJumpClone(ctx, st.q, arg)
+	return createCharacterJumpClone(ctx, st.qRW, arg)
 }
 
 func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int32, cloneID int32) (*app.CharacterJumpClone, error) {
@@ -27,7 +27,7 @@ func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int32,
 		CharacterID: int64(characterID),
 		JumpCloneID: int64(cloneID),
 	}
-	row, err := st.q.GetCharacterJumpClone(ctx, arg)
+	row, err := st.qRO.GetCharacterJumpClone(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -35,7 +35,7 @@ func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int32,
 		return nil, fmt.Errorf("get jump clone for character %d: %w", characterID, err)
 	}
 	o := characterJumpCloneFromDBModel(row.CharacterJumpClone, row.LocationName, row.RegionID, row.RegionName)
-	x, err := listCharacterJumpCloneImplants(ctx, st.q, o.ID)
+	x, err := listCharacterJumpCloneImplants(ctx, st.qRO, o.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func listCharacterJumpCloneImplants(ctx context.Context, q *queries.Queries, clo
 
 // TODO: Refactor SQL for better performance
 func (st *Storage) ListAllCharacterJumpClones(ctx context.Context) ([]*app.CharacterJumpClone2, error) {
-	rows, err := st.q.ListAllCharacterJumpClones(ctx)
+	rows, err := st.qRO.ListAllCharacterJumpClones(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list all character jump clones: %w", err)
 	}
@@ -95,14 +95,14 @@ func (st *Storage) ListAllCharacterJumpClones(ctx context.Context) ([]*app.Chara
 }
 
 func (st *Storage) ListCharacterJumpClones(ctx context.Context, characterID int32) ([]*app.CharacterJumpClone, error) {
-	rows, err := st.q.ListCharacterJumpClones(ctx, int64(characterID))
+	rows, err := st.qRO.ListCharacterJumpClones(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list jump clones for character %d: %w", characterID, err)
 	}
 	oo := make([]*app.CharacterJumpClone, len(rows))
 	for i, row := range rows {
 		oo[i] = characterJumpCloneFromDBModel(row.CharacterJumpClone, row.LocationName, row.RegionID, row.RegionName)
-		x, err := listCharacterJumpCloneImplants(ctx, st.q, row.CharacterJumpClone.ID)
+		x, err := listCharacterJumpCloneImplants(ctx, st.qRO, row.CharacterJumpClone.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -113,12 +113,12 @@ func (st *Storage) ListCharacterJumpClones(ctx context.Context, characterID int3
 
 func (st *Storage) ReplaceCharacterJumpClones(ctx context.Context, characterID int32, args []CreateCharacterJumpCloneParams) error {
 	err := func() error {
-		tx, err := st.db.Begin()
+		tx, err := st.dbRW.Begin()
 		if err != nil {
 			return err
 		}
 		defer tx.Rollback()
-		qtx := st.q.WithTx(tx)
+		qtx := st.qRW.WithTx(tx)
 		if err := qtx.DeleteCharacterJumpClones(ctx, int64(characterID)); err != nil {
 			return err
 		}

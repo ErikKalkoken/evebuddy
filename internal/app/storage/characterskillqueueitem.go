@@ -24,7 +24,7 @@ type SkillqueueItemParams struct {
 
 func (st *Storage) GetCharacterTotalTrainingTime(ctx context.Context, characterID int32) (optional.Optional[time.Duration], error) {
 	var d optional.Optional[time.Duration]
-	x, err := st.q.GetTotalTrainingTime(ctx, int64(characterID))
+	x, err := st.qRO.GetTotalTrainingTime(ctx, int64(characterID))
 	if err != nil {
 		return d, fmt.Errorf("fetching total training time for character %d: %w", characterID, err)
 	}
@@ -36,7 +36,7 @@ func (st *Storage) GetCharacterTotalTrainingTime(ctx context.Context, characterI
 }
 
 func (st *Storage) CreateCharacterSkillqueueItem(ctx context.Context, arg SkillqueueItemParams) error {
-	return createCharacterSkillqueueItem(ctx, st.q, arg)
+	return createCharacterSkillqueueItem(ctx, st.qRW, arg)
 }
 
 func createCharacterSkillqueueItem(ctx context.Context, q *queries.Queries, arg SkillqueueItemParams) error {
@@ -78,7 +78,7 @@ func (st *Storage) GetCharacterSkillqueueItem(ctx context.Context, characterID i
 		CharacterID:   int64(characterID),
 		QueuePosition: int64(pos),
 	}
-	row, err := st.q.GetCharacterSkillqueueItem(ctx, arg)
+	row, err := st.qRO.GetCharacterSkillqueueItem(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("get skill queue item for character %d: %w", characterID, err)
 	}
@@ -86,7 +86,7 @@ func (st *Storage) GetCharacterSkillqueueItem(ctx context.Context, characterID i
 }
 
 func (st *Storage) ListCharacterSkillqueueItems(ctx context.Context, characterID int32) ([]*app.CharacterSkillqueueItem, error) {
-	rows, err := st.q.ListCharacterSkillqueueItems(ctx, int64(characterID))
+	rows, err := st.qRO.ListCharacterSkillqueueItems(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list skill queue items for character %d: %w", characterID, err)
 	}
@@ -99,12 +99,12 @@ func (st *Storage) ListCharacterSkillqueueItems(ctx context.Context, characterID
 
 func (st *Storage) ReplaceCharacterSkillqueueItems(ctx context.Context, characterID int32, args []SkillqueueItemParams) error {
 	err := func() error {
-		tx, err := st.db.Begin()
+		tx, err := st.dbRW.Begin()
 		if err != nil {
 			return err
 		}
 		defer tx.Rollback()
-		qtx := st.q.WithTx(tx)
+		qtx := st.qRW.WithTx(tx)
 		if err := qtx.DeleteCharacterSkillqueueItems(ctx, int64(characterID)); err != nil {
 			return err
 		}

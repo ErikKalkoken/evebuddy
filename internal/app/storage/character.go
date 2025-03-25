@@ -15,7 +15,7 @@ import (
 )
 
 func (st *Storage) DeleteCharacter(ctx context.Context, characterID int32) error {
-	err := st.q.DeleteCharacter(ctx, int64(characterID))
+	err := st.qRW.DeleteCharacter(ctx, int64(characterID))
 	if err != nil {
 		return fmt.Errorf("delete character %d: %w", characterID, err)
 	}
@@ -23,14 +23,14 @@ func (st *Storage) DeleteCharacter(ctx context.Context, characterID int32) error
 }
 
 func (st *Storage) DisableAllTrainingWatchers(ctx context.Context) error {
-	if err := st.q.DisableAllTrainingWatchers(ctx); err != nil {
+	if err := st.qRW.DisableAllTrainingWatchers(ctx); err != nil {
 		return fmt.Errorf("disable all training watchers: %w", err)
 	}
 	return nil
 }
 
 func (st *Storage) GetCharacter(ctx context.Context, characterID int32) (*app.Character, error) {
-	r, err := st.q.GetCharacter(ctx, int64(characterID))
+	r, err := st.qRO.GetCharacter(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -79,7 +79,7 @@ func (st *Storage) GetAnyCharacter(ctx context.Context) (*app.Character, error) 
 }
 
 func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error) {
-	rows, err := st.q.ListCharacters(ctx)
+	rows, err := st.qRO.ListCharacters(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list characters: %w", err)
 	}
@@ -116,7 +116,7 @@ func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error)
 }
 
 func (st *Storage) ListCharactersShort(ctx context.Context) ([]*app.CharacterShort, error) {
-	rows, err := st.q.ListCharactersShort(ctx)
+	rows, err := st.qRO.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list short characters: %w", err)
 
@@ -129,7 +129,7 @@ func (st *Storage) ListCharactersShort(ctx context.Context) ([]*app.CharacterSho
 }
 
 func (st *Storage) ListCharacterIDs(ctx context.Context) (set.Set[int32], error) {
-	ids, err := st.q.ListCharacterIDs(ctx)
+	ids, err := st.qRO.ListCharacterIDs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list character IDs: %w", err)
 	}
@@ -142,7 +142,7 @@ func (st *Storage) UpdateCharacterHome(ctx context.Context, characterID int32, h
 		ID:     int64(characterID),
 		HomeID: optional.ToNullInt64(homeID),
 	}
-	if err := st.q.UpdateCharacterHomeId(ctx, arg); err != nil {
+	if err := st.qRW.UpdateCharacterHomeId(ctx, arg); err != nil {
 		return fmt.Errorf("update home for character %d: %w", characterID, err)
 	}
 	return nil
@@ -153,7 +153,7 @@ func (st *Storage) UpdateCharacterIsTrainingWatched(ctx context.Context, charact
 		ID:                int64(characterID),
 		IsTrainingWatched: isWatched,
 	}
-	if err := st.q.UpdateCharacterIsTrainingWatched(ctx, arg); err != nil {
+	if err := st.qRW.UpdateCharacterIsTrainingWatched(ctx, arg); err != nil {
 		return fmt.Errorf("update is training watched for character %d: %w", characterID, err)
 	}
 	return nil
@@ -164,7 +164,7 @@ func (st *Storage) UpdateCharacterLastCloneJump(ctx context.Context, characterID
 		ID:              int64(characterID),
 		LastCloneJumpAt: optional.ToNullTime(v),
 	}
-	if err := st.q.UpdateCharacterLastCloneJump(ctx, arg); err != nil {
+	if err := st.qRW.UpdateCharacterLastCloneJump(ctx, arg); err != nil {
 		return fmt.Errorf("update last clone jump for character %d: %w", characterID, err)
 	}
 	return nil
@@ -175,7 +175,7 @@ func (st *Storage) UpdateCharacterLastLoginAt(ctx context.Context, characterID i
 		ID:          int64(characterID),
 		LastLoginAt: optional.ToNullTime(v),
 	}
-	if err := st.q.UpdateCharacterLastLoginAt(ctx, arg); err != nil {
+	if err := st.qRW.UpdateCharacterLastLoginAt(ctx, arg); err != nil {
 		return fmt.Errorf("update last login for character %d: %w", characterID, err)
 	}
 	return nil
@@ -186,7 +186,7 @@ func (st *Storage) UpdateCharacterLocation(ctx context.Context, characterID int3
 		ID:         int64(characterID),
 		LocationID: optional.ToNullInt64(locationID),
 	}
-	if err := st.q.UpdateCharacterLocationID(ctx, arg); err != nil {
+	if err := st.qRW.UpdateCharacterLocationID(ctx, arg); err != nil {
 		return fmt.Errorf("update location for character %d: %w", characterID, err)
 	}
 	return nil
@@ -197,7 +197,7 @@ func (st *Storage) UpdateCharacterShip(ctx context.Context, characterID int32, s
 		ID:     int64(characterID),
 		ShipID: optional.ToNullInt64(shipID),
 	}
-	if err := st.q.UpdateCharacterShipID(ctx, arg); err != nil {
+	if err := st.qRW.UpdateCharacterShipID(ctx, arg); err != nil {
 		return fmt.Errorf("update ship for character %d: %w", characterID, err)
 	}
 	return nil
@@ -209,7 +209,7 @@ func (st *Storage) UpdateCharacterSkillPoints(ctx context.Context, characterID i
 		TotalSp:       optional.ToNullInt64(totalSP),
 		UnallocatedSp: optional.ToNullInt64(unallocatedSP),
 	}
-	if err := st.q.UpdateCharacterSP(ctx, arg); err != nil {
+	if err := st.qRW.UpdateCharacterSP(ctx, arg); err != nil {
 		return fmt.Errorf("update sp for character %d: %w", characterID, err)
 	}
 	return nil
@@ -220,7 +220,7 @@ func (st *Storage) UpdateCharacterWalletBalance(ctx context.Context, characterID
 		ID:            int64(characterID),
 		WalletBalance: optional.ToNullFloat64(v),
 	}
-	if err := st.q.UpdateCharacterWalletBalance(ctx, arg); err != nil {
+	if err := st.qRW.UpdateCharacterWalletBalance(ctx, arg); err != nil {
 		return fmt.Errorf("update wallet balance for character %d: %w", characterID, err)
 	}
 	return nil
@@ -231,7 +231,7 @@ func (st *Storage) UpdateCharacterAssetValue(ctx context.Context, characterID in
 		ID:         int64(characterID),
 		AssetValue: optional.ToNullFloat64(v),
 	}
-	if err := st.q.UpdateCharacterAssetValue(ctx, arg); err != nil {
+	if err := st.qRW.UpdateCharacterAssetValue(ctx, arg); err != nil {
 		return fmt.Errorf("update asset value for character %d: %w", characterID, err)
 	}
 	return nil
@@ -265,7 +265,7 @@ func (st *Storage) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCrea
 		UnallocatedSp:     optional.ToNullInt64(arg.UnallocatedSP),
 		WalletBalance:     optional.ToNullFloat64(arg.WalletBalance),
 	}
-	if err := st.q.UpdateOrCreateCharacter(ctx, arg2); err != nil {
+	if err := st.qRW.UpdateOrCreateCharacter(ctx, arg2); err != nil {
 		return fmt.Errorf("update or create character %d: %w", arg.ID, err)
 	}
 	return nil
@@ -319,7 +319,7 @@ func (st *Storage) characterFromDBModel(
 }
 
 func (st *Storage) GetCharacterAssetValue(ctx context.Context, id int32) (optional.Optional[float64], error) {
-	v, err := st.q.GetCharacterAssetValue(ctx, int64(id))
+	v, err := st.qRO.GetCharacterAssetValue(ctx, int64(id))
 	if err != nil {
 		return optional.Optional[float64]{}, fmt.Errorf("get asset value for character %d: %w", id, err)
 	}

@@ -15,7 +15,7 @@ func (st *Storage) DeleteObsoleteCharacterMailLabels(ctx context.Context, charac
 		CharacterID:   int64(characterID),
 		CharacterID_2: int64(characterID),
 	}
-	if err := st.q.DeleteObsoleteCharacterMailLabels(ctx, arg); err != nil {
+	if err := st.qRW.DeleteObsoleteCharacterMailLabels(ctx, arg); err != nil {
 		return fmt.Errorf("delete obsolete mail labels for character %d: %w", characterID, err)
 	}
 	return nil
@@ -26,7 +26,7 @@ func (st *Storage) GetCharacterMailLabel(ctx context.Context, characterID, label
 		CharacterID: int64(characterID),
 		LabelID:     int64(labelID),
 	}
-	l, err := st.q.GetCharacterMailLabel(ctx, arg)
+	l, err := st.qRO.GetCharacterMailLabel(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -48,12 +48,12 @@ type MailLabelParams struct {
 func (st *Storage) GetOrCreateCharacterMailLabel(ctx context.Context, arg MailLabelParams) (*app.CharacterMailLabel, error) {
 	label, err := func() (*app.CharacterMailLabel, error) {
 		var l queries.CharacterMailLabel
-		tx, err := st.db.Begin()
+		tx, err := st.dbRW.Begin()
 		if err != nil {
 			return nil, err
 		}
 		defer tx.Rollback()
-		qtx := st.q.WithTx(tx)
+		qtx := st.qRW.WithTx(tx)
 		arg2 := queries.GetCharacterMailLabelParams{
 			CharacterID: int64(arg.CharacterID),
 			LabelID:     int64(arg.LabelID),
@@ -86,7 +86,7 @@ func (st *Storage) GetOrCreateCharacterMailLabel(ctx context.Context, arg MailLa
 }
 
 func (st *Storage) ListCharacterMailLabelsOrdered(ctx context.Context, characterID int32) ([]*app.CharacterMailLabel, error) {
-	ll, err := st.q.ListCharacterMailLabelsOrdered(ctx, int64(characterID))
+	ll, err := st.qRO.ListCharacterMailLabelsOrdered(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list mail label IDs for character %d: %w", characterID, err)
 	}
@@ -105,7 +105,7 @@ func (st *Storage) UpdateOrCreateCharacterMailLabel(ctx context.Context, arg Mai
 		Name:        arg.Name,
 		UnreadCount: int64(arg.UnreadCount),
 	}
-	l, err := st.q.UpdateOrCreateCharacterMailLabel(ctx, arg1)
+	l, err := st.qRW.UpdateOrCreateCharacterMailLabel(ctx, arg1)
 	if err != nil {
 		return nil, fmt.Errorf("update or create mail label for character %d with label %d: %w", arg.CharacterID, arg.LabelID, err)
 	}

@@ -25,7 +25,7 @@ func (st *Storage) CreateEveCategory(ctx context.Context, arg CreateEveCategoryP
 		IsPublished: arg.IsPublished,
 		Name:        arg.Name,
 	}
-	e, err := st.q.CreateEveCategory(ctx, arg2)
+	e, err := st.qRW.CreateEveCategory(ctx, arg2)
 	if err != nil {
 		return nil, fmt.Errorf("create EveCategory %+v, %w", arg, err)
 	}
@@ -33,7 +33,7 @@ func (st *Storage) CreateEveCategory(ctx context.Context, arg CreateEveCategoryP
 }
 
 func (st *Storage) GetEveCategory(ctx context.Context, id int32) (*app.EveCategory, error) {
-	c, err := st.q.GetEveCategory(ctx, int64(id))
+	c, err := st.qRO.GetEveCategory(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
