@@ -46,6 +46,7 @@ func newCharacterInfo(iw InfoWindow, characterID int32, w fyne.Window) *characte
 	alliance.Wrapping = fyne.TextWrapWord
 	name := widget.NewLabel("")
 	name.Wrapping = fyne.TextWrapWord
+	name.TextStyle.Bold = true
 	corporation := kxwidget.NewTappableLabel("", nil)
 	corporation.Wrapping = fyne.TextWrapWord
 	portrait := kxwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)

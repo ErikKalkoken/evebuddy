@@ -414,6 +414,7 @@ func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 	}
 	title := widget.NewLabel("")
 	title.Wrapping = fyne.TextWrapWord
+	title.TextStyle.Bold = true
 	title.SetText(a.et.Name)
 	return container.NewBorder(
 		nil,

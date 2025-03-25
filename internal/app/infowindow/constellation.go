@@ -40,6 +40,7 @@ func newConstellationInfo(iw InfoWindow, constellationID int32, w fyne.Window) *
 	region.Wrapping = fyne.TextWrapWord
 	name := widget.NewLabel("")
 	name.Wrapping = fyne.TextWrapWord
+	name.TextStyle.Bold = true
 	s := float32(app.IconPixelSize) * logoZoomFactor
 	logo := iwidget.NewImageFromResource(icons.Constellation64Png, fyne.NewSquareSize(s))
 	a := &constellationInfo{

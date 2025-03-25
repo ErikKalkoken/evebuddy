@@ -35,6 +35,7 @@ type regionInfo struct {
 func newRegionInfo(iw InfoWindow, regionID int32, w fyne.Window) *regionInfo {
 	name := widget.NewLabel("")
 	name.Wrapping = fyne.TextWrapWord
+	name.TextStyle.Bold = true
 	s := float32(app.IconPixelSize) * logoZoomFactor
 	logo := iwidget.NewImageFromResource(icons.Region64Png, fyne.NewSquareSize(s))
 	a := &regionInfo{

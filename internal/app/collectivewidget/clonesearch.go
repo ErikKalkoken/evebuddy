@@ -151,7 +151,7 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 			label := row[0].(*kxwidget.TappableLabel)
 			label.SetText(h.Text)
 			label.OnTapped = func() {
-				a.processData(tci.Col)
+				a.sortRows(tci.Col)
 			}
 			icon := row[1].(*widget.Icon)
 			switch a.colSort[tci.Col] {
@@ -379,7 +379,7 @@ func (a *CloneSearch) changeOrigin(w fyne.Window) {
 	w.Canvas().Focus(entry)
 }
 
-func (a *CloneSearch) processData(sortCol int) {
+func (a *CloneSearch) sortRows(sortCol int) {
 	var order sortDir
 	if sortCol >= 0 {
 		order = a.colSort[sortCol]
@@ -411,8 +411,10 @@ func (a *CloneSearch) processData(sortCol int) {
 					a.c.Location.SolarSystem.Constellation.Region.Name,
 					b.c.Location.SolarSystem.Constellation.Region.Name)
 			case 2:
-				x = cmp.Compare(a.c.Character.Name, b.c.Character.Name)
+				x = cmp.Compare(a.c.ImplantsCount, b.c.ImplantsCount)
 			case 3:
+				x = cmp.Compare(a.c.Character.Name, b.c.Character.Name)
+			case 4:
 				x = cmp.Compare(a.sortValue(), b.sortValue())
 			}
 			if order == sortAsc {
@@ -504,7 +506,9 @@ func (a *CloneSearch) showRoute(r cloneSearchRow) {
 func (a *CloneSearch) showClone(r cloneSearchRow) {
 	clone, err := a.u.CharacterService().GetCharacterJumpClone(context.Background(), r.c.Character.ID, r.c.CloneID)
 	if err != nil {
-		panic(err) // TODO
+		slog.Error("show clone", "error", err)
+		a.u.ShowErrorDialog("failed to load clone", err, a.u.MainWindow())
+		return
 	}
 	list := widget.NewList(
 		func() int {

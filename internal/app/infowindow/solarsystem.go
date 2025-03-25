@@ -44,6 +44,7 @@ func newSolarSystemInfo(iw InfoWindow, id int32, w fyne.Window) *solarSystemInfo
 	constellation.Wrapping = fyne.TextWrapWord
 	name := widget.NewLabel("")
 	name.Wrapping = fyne.TextWrapWord
+	name.TextStyle.Bold = true
 	s := float32(app.IconPixelSize) * logoZoomFactor
 	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(s))
 	a := &solarSystemInfo{

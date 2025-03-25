@@ -60,7 +60,7 @@ ORDER BY
 
 -- name: ListAllCharacterJumpClones :many
 SELECT
-    cjc.id,
+    DISTINCT cjc.id,
     cjc.character_id,
     ec.name as character_name,
     cjc.location_id,
