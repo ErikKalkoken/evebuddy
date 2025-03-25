@@ -25,10 +25,10 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-type locationNodeType uint
+type locationNodeVariant uint
 
 const (
-	nodeLocation locationNodeType = iota + 1
+	nodeLocation locationNodeVariant = iota + 1
 	nodeShipHangar
 	nodeItemHangar
 	nodeContainer
@@ -48,18 +48,18 @@ type locationNode struct {
 	systemName          string
 	systemSecurityValue float32
 	systemSecurityType  app.SolarSystemSecurityType
-	type_               locationNodeType
+	variant             locationNodeVariant
 }
 
 func (n locationNode) UID() widget.TreeNodeID {
-	if n.characterID == 0 || n.containerID == 0 || n.type_ == 0 {
+	if n.characterID == 0 || n.containerID == 0 || n.variant == 0 {
 		panic("locationNode: some IDs are not set")
 	}
-	return fmt.Sprintf("%d-%d-%d", n.characterID, n.containerID, n.type_)
+	return fmt.Sprintf("%d-%d-%d", n.characterID, n.containerID, n.variant)
 }
 
 func (n locationNode) IsRoot() bool {
-	return n.type_ == nodeLocation
+	return n.variant == nodeLocation
 }
 
 type CharacterAssets struct {
@@ -168,7 +168,7 @@ func (a *CharacterAssets) makeLocationsTree() *iwidget.Tree[locationNode] {
 		},
 	)
 	t.OnSelected = func(n locationNode) {
-		if n.type_ == nodeLocation {
+		if n.variant == nodeLocation {
 			t.OpenBranch(n)
 			t.UnselectAll()
 			return
@@ -306,7 +306,7 @@ func (a *CharacterAssets) newLocationData() (*iwidget.TreeData[locationNode], er
 		location := locationNode{
 			characterID: characterID,
 			containerID: el.ID,
-			type_:       nodeLocation,
+			variant:     nodeLocation,
 			name:        el.DisplayName(),
 			count:       len(ln.Nodes()),
 		}
@@ -347,23 +347,22 @@ func (a *CharacterAssets) newLocationData() (*iwidget.TreeData[locationNode], er
 			}
 		}
 
-		shipHangar := locationNode{
+		// ship hangar
+		shipsUID := tree.MustAdd(locationUID, locationNode{
 			characterID: characterID,
 			containerID: el.ID,
 			name:        "Ship Hangar",
 			count:       shipCount,
-			type_:       nodeShipHangar,
-		}
-		shipsUID := tree.MustAdd(locationUID, shipHangar)
+			variant:     nodeShipHangar,
+		})
 		for _, an := range ships {
 			ship := an.Asset
-			ldn := locationNode{
+			shipUID := tree.MustAdd(shipsUID, locationNode{
 				characterID: characterID,
 				containerID: an.Asset.ItemID,
 				name:        ship.DisplayName2(),
-				type_:       nodeShip,
-			}
-			shipUID := tree.MustAdd(shipsUID, ldn)
+				variant:     nodeShip,
+			})
 			cargo := make([]assetcollection.AssetNode, 0)
 			fuel := make([]assetcollection.AssetNode, 0)
 			for _, an2 := range an.Nodes() {
@@ -373,55 +372,53 @@ func (a *CharacterAssets) newLocationData() (*iwidget.TreeData[locationNode], er
 					fuel = append(fuel, an2)
 				}
 			}
-			cln := locationNode{
+			tree.MustAdd(shipUID, locationNode{
 				characterID: characterID,
 				containerID: ship.ItemID,
 				name:        "Cargo Bay",
 				count:       len(cargo),
-				type_:       nodeCargoBay,
-			}
-			tree.MustAdd(shipUID, cln)
+				variant:     nodeCargoBay,
+			})
 			if ship.EveType.HasFuelBay() {
 				ldn := locationNode{
 					characterID: characterID,
 					containerID: an.Asset.ItemID,
 					name:        "Fuel Bay",
 					count:       len(fuel),
-					type_:       nodeFuelBay,
+					variant:     nodeFuelBay,
 				}
 				tree.MustAdd(shipUID, ldn)
 			}
 		}
 
-		itemHangar := locationNode{
+		// item hangar
+		itemsUID := tree.MustAdd(locationUID, locationNode{
 			characterID: characterID,
 			containerID: el.ID,
 			name:        "Item Hangar",
 			count:       itemCount,
-			type_:       nodeItemHangar,
-		}
-		itemsUID := tree.MustAdd(locationUID, itemHangar)
+			variant:     nodeItemHangar,
+		})
 		for _, an := range itemContainers {
-			ldn := locationNode{
+			tree.MustAdd(itemsUID, locationNode{
 				characterID: characterID,
 				containerID: an.Asset.ItemID,
 				name:        an.Asset.DisplayName(),
 				count:       len(an.Nodes()),
-				type_:       nodeContainer,
-			}
-			tree.MustAdd(itemsUID, ldn)
+				variant:     nodeContainer,
+			})
 		}
 
+		// asset safety
 		if len(assetSafety) > 0 {
 			an := assetSafety[0]
-			ldn := locationNode{
+			tree.MustAdd(locationUID, locationNode{
 				characterID: characterID,
 				containerID: an.Asset.ItemID,
 				name:        "Asset Safety",
 				count:       len(an.Nodes()),
-				type_:       nodeAssetSafety,
-			}
-			tree.MustAdd(locationUID, ldn)
+				variant:     nodeAssetSafety,
+			})
 		}
 	}
 	return tree, nil
@@ -456,7 +453,7 @@ func (a *CharacterAssets) selectLocation(location locationNode) error {
 	a.locations.ScrollTo(location)
 	a.locations.Select(location)
 	var f func(context.Context, int32, int64) ([]*app.CharacterAsset, error)
-	switch location.type_ {
+	switch location.variant {
 	case nodeShipHangar:
 		f = a.u.CharacterService().ListCharacterAssetsInShipHangar
 	case nodeItemHangar:
@@ -468,7 +465,7 @@ func (a *CharacterAssets) selectLocation(location locationNode) error {
 	if err != nil {
 		return err
 	}
-	switch location.type_ {
+	switch location.variant {
 	case nodeItemHangar:
 		containers := make([]*app.CharacterAsset, 0)
 		items := make([]*app.CharacterAsset, 0)
