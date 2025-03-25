@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -12,6 +13,15 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/antihax/goesi"
 )
+
+func (s *EveUniverseService) GetStationServicesESI(ctx context.Context, id int32) ([]string, error) {
+	o, _, err := s.esiClient.ESI.UniverseApi.GetUniverseStationsStationId(ctx, id, nil)
+	if err != nil {
+		return nil, err
+	}
+	slices.Sort(o.Services)
+	return o.Services, nil
+}
 
 func (eu *EveUniverseService) GetLocation(ctx context.Context, id int64) (*app.EveLocation, error) {
 	o, err := eu.st.GetLocation(ctx, id)

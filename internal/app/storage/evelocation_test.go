@@ -2,7 +2,6 @@ package storage_test
 
 import (
 	"context"
-	"slices"
 	"testing"
 	"time"
 
@@ -12,7 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func TestLocation(t *testing.T) {
@@ -131,9 +130,9 @@ func TestLocation(t *testing.T) {
 		// when
 		got, err := r.ListEveLocationInSolarSystem(ctx, s.ID)
 		if assert.NoError(t, err) {
-			gotIDs := slices.Collect(xiter.MapSlice(got, func(x *app.EveLocation) int64 {
+			gotIDs := xslices.Map(got, func(x *app.EveLocation) int64 {
 				return x.ID
-			}))
+			})
 			assert.ElementsMatch(t, []int64{l1.ID, l2.ID}, gotIDs)
 		}
 	})

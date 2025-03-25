@@ -22,7 +22,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type cloneSearchRow struct {
@@ -88,9 +88,9 @@ func NewCloneSearch(u app.UI) *CloneSearch {
 	a.originButton = widget.NewButton("Origin", func() {
 		a.changeOrigin(a.u.MainWindow())
 	})
-	xx := slices.Collect(xiter.MapSlice(app.RoutePreferences(), func(a app.RoutePreference) string {
+	xx := xslices.Map(app.RoutePreferences(), func(a app.RoutePreference) string {
 		return a.String()
-	}))
+	})
 	a.routePref = widget.NewSelect(xx, func(s string) {})
 	a.routePref.Selected = app.RouteShortest.String()
 	a.routePref.OnChanged = func(s string) {
@@ -241,9 +241,9 @@ func (a *CloneSearch) updateRows() error {
 	slices.SortFunc(oo, func(a, b *app.CharacterJumpClone2) int {
 		return cmp.Compare(a.SolarSystemName(), b.SolarSystemName())
 	})
-	a.rows = slices.Collect(xiter.MapSlice(oo, func(o *app.CharacterJumpClone2) cloneSearchRow {
+	a.rows = xslices.Map(oo, func(o *app.CharacterJumpClone2) cloneSearchRow {
 		return cloneSearchRow{c: o}
-	}))
+	})
 	return nil
 }
 

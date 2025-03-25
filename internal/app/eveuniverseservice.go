@@ -53,7 +53,7 @@ type EveUniverseService interface {
 	GetOrCreateEveRaceESI(ctx context.Context, id int32) (*EveRace, error)
 	GetOrCreateSchematicESI(ctx context.Context, id int32) (*EveSchematic, error)
 	GetSolarSystemsESI(ctx context.Context, stargateIDs []int32) ([]*EveSolarSystem, error)
-	GetPlanets(ctx context.Context, planets []EveSolarSystemPlanet) ([]*EvePlanet, error)
+	GetSolarSystemPlanets(ctx context.Context, planets []EveSolarSystemPlanet) ([]*EvePlanet, error)
 	GetStarTypeID(ctx context.Context, id int32) (int32, error)
 	GetSolarSystemInfoESI(ctx context.Context, solarSystemID int32) (int32, []EveSolarSystemPlanet, []int32, []*EveEntity, []*EveLocation, error)
 	GetRegionConstellationsESI(ctx context.Context, id int32) ([]*EveEntity, error)
@@ -63,4 +63,5 @@ type EveUniverseService interface {
 	// CharacterCorporationHistory returns a list of all the alliances a corporation has been a member of in descending order.
 	GetCorporationAllianceHistory(ctx context.Context, corporationID int32) ([]MembershipHistoryItem, error)
 	UpdateSection(ctx context.Context, section GeneralSection, forceUpdate bool) (bool, error)
+	GetStationServicesESI(ctx context.Context, id int32) ([]string, error)
 }

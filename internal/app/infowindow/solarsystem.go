@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -13,20 +12,17 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type solarSystemInfo struct {
 	widget.BaseWidget
 
-	iw InfoWindow
-	w  fyne.Window
+	iw *InfoWindow
 
 	id            int32
 	region        *kxwidget.TappableLabel
@@ -37,32 +33,35 @@ type solarSystemInfo struct {
 	tabs          *container.AppTabs
 }
 
-func newSolarSystemInfo(iw InfoWindow, id int32, w fyne.Window) *solarSystemInfo {
+func newSolarSystemInfo(iw *InfoWindow, id int32) *solarSystemInfo {
 	region := kxwidget.NewTappableLabel("", nil)
 	region.Wrapping = fyne.TextWrapWord
 	constellation := kxwidget.NewTappableLabel("", nil)
 	constellation.Wrapping = fyne.TextWrapWord
-	name := widget.NewLabel("")
-	name.Wrapping = fyne.TextWrapWord
-	name.TextStyle.Bold = true
-	s := float32(app.IconPixelSize) * logoZoomFactor
-	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(s))
 	a := &solarSystemInfo{
 		id:            id,
 		region:        region,
 		constellation: constellation,
 		iw:            iw,
-		logo:          logo,
-		name:          name,
+		logo:          makeInfoLogo(),
+		name:          makeInfoName(),
 		security:      widget.NewLabel(""),
 		tabs:          container.NewAppTabs(),
-		w:             w,
 	}
 	a.ExtendBaseWidget(a)
 	return a
 }
 
 func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
+	go func() {
+		err := a.load()
+		if err != nil {
+			slog.Error("solar system info update failed", "solarSystem", a.id, "error", err)
+			a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", ihumanize.Error(err))
+			a.name.Importance = widget.DangerImportance
+			a.name.Refresh()
+		}
+	}()
 	colums := kxlayout.NewColumns(120)
 	p := theme.Padding()
 	main := container.NewVBox(
@@ -75,24 +74,14 @@ func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
 			container.New(colums, widget.NewLabel("Constellation"), a.constellation),
 			container.New(colums, widget.NewLabel("Security"), a.security),
 		))
-	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, main)
+	top := container.NewBorder(nil, nil, container.NewVBox(container.NewPadded(a.logo)), nil, main)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
-
-	go func() {
-		err := a.load(a.id)
-		if err != nil {
-			slog.Error("solar system info update failed", "solarSystem", a.id, "error", err)
-			a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", ihumanize.Error(err))
-			a.name.Importance = widget.DangerImportance
-			a.name.Refresh()
-		}
-	}()
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *solarSystemInfo) load(solarSystemID int32) error {
+func (a *solarSystemInfo) load() error {
 	ctx := context.Background()
-	o, err := a.iw.u.EveUniverseService().GetOrCreateSolarSystemESI(ctx, solarSystemID)
+	o, err := a.iw.u.EveUniverseService().GetOrCreateSolarSystemESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -126,9 +115,9 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 	a.tabs.Append(structuresTab)
 
 	if a.iw.u.IsDeveloperMode() {
-		x := NewAtributeItem("EVE ID", fmt.Sprint(solarSystemID))
+		x := NewAtributeItem("EVE ID", fmt.Sprint(a.id))
 		x.Action = func(v any) {
-			a.w.Clipboard().SetContent(v.(string))
+			a.iw.w.Clipboard().SetContent(v.(string))
 		}
 		attributeList := NewAttributeList([]AttributeItem{x}...)
 		attributeList.ShowInfoWindow = a.iw.ShowEveEntity
@@ -139,9 +128,9 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 	a.tabs.Refresh()
 
 	go func() {
-		starID, planets, stargateIDs, stations, structures, err := a.iw.u.EveUniverseService().GetSolarSystemInfoESI(ctx, solarSystemID)
+		starID, planets, stargateIDs, stations, structures, err := a.iw.u.EveUniverseService().GetSolarSystemInfoESI(ctx, a.id)
 		if err != nil {
-			slog.Error("solar system info: Failed to load system info", "solarSystem", solarSystemID, "error", err)
+			slog.Error("solar system info: Failed to load system info", "solarSystem", a.id, "error", err)
 			stationsLabel.Text = ihumanize.Error(err)
 			stationsLabel.Importance = widget.DangerImportance
 			stationsLabel.Refresh()
@@ -152,14 +141,14 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 		stationsTab.Content = NewEntityListFromEntities(a.iw.show, stations...)
 		a.tabs.Refresh()
 
-		oo := slices.Collect(xiter.MapSlice(structures, func(x *app.EveLocation) entityItem {
+		oo := xslices.Map(structures, func(x *app.EveLocation) entityItem {
 			return NewEntityItem(
 				x.ID,
 				x.Name,
 				"Structure",
 				infoLocation,
 			)
-		}))
+		})
 		xx := NewEntityListFromItems(a.iw.show, oo...)
 		note := widget.NewLabel("Only contains structures known through characters")
 		note.Importance = widget.LowImportance
@@ -178,7 +167,7 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 		}
 		r, err := a.iw.u.EveImageService().InventoryTypeIcon(id, app.IconPixelSize)
 		if err != nil {
-			slog.Error("solar system info: Failed to load logo", "solarSystem", solarSystemID, "error", err)
+			slog.Error("solar system info: Failed to load logo", "solarSystem", a.id, "error", err)
 			return
 		}
 		a.logo.Resource = r
@@ -187,27 +176,27 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 		go func() {
 			ss, err := a.iw.u.EveUniverseService().GetSolarSystemsESI(ctx, stargateIDs)
 			if err != nil {
-				slog.Error("solar system info: Failed to load adjacent systems", "solarSystem", solarSystemID, "error", err)
+				slog.Error("solar system info: Failed to load adjacent systems", "solarSystem", a.id, "error", err)
 				systemsLabel.Text = ihumanize.Error(err)
 				systemsLabel.Importance = widget.DangerImportance
 				systemsLabel.Refresh()
 				return
 			}
-			xx := slices.Collect(xiter.MapSlice(ss, NewEntityItemFromEveSolarSystem))
+			xx := xslices.Map(ss, NewEntityItemFromEveSolarSystem)
 			systemsTab.Content = NewEntityListFromItems(a.iw.show, xx...)
 			a.tabs.Refresh()
 		}()
 
 		go func() {
-			pp, err := a.iw.u.EveUniverseService().GetPlanets(ctx, planets)
+			pp, err := a.iw.u.EveUniverseService().GetSolarSystemPlanets(ctx, planets)
 			if err != nil {
-				slog.Error("solar system info: Failed to load planets", "solarSystem", solarSystemID, "error", err)
+				slog.Error("solar system info: Failed to load planets", "solarSystem", a.id, "error", err)
 				planetsLabel.Text = ihumanize.Error(err)
 				planetsLabel.Importance = widget.DangerImportance
 				planetsLabel.Refresh()
 				return
 			}
-			xx := slices.Collect(xiter.MapSlice(pp, NewEntityItemFromEvePlanet))
+			xx := xslices.Map(pp, NewEntityItemFromEvePlanet)
 			planetsTab.Content = NewEntityListFromItems(a.iw.show, xx...)
 			a.tabs.Refresh()
 		}()

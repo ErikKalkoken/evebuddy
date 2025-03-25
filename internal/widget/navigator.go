@@ -18,18 +18,36 @@ type Navigator struct {
 	stack *fyne.Container // stack of pages. First object is the root page.
 }
 
-// NewNavigator return a new Navigator and defines the root page.
-func NewNavigator(ab *AppBar) *Navigator {
+// NewNavigatorWithAppBar return a new Navigator and defines the root page.
+func NewNavigatorWithAppBar(ab *AppBar) *Navigator {
 	n := &Navigator{
-		stack: container.NewStack(ab),
+		stack: container.NewStack(),
 	}
 	n.ExtendBaseWidget(n)
+	if ab != nil {
+		n.stack.Add(ab)
+	}
 	return n
+}
+
+// NewNavigator return a new Navigator.
+func NewNavigator() *Navigator {
+	return NewNavigatorWithAppBar(nil)
 }
 
 // Push adds a new page and shows it.
 func (n *Navigator) Push(ab *AppBar) {
 	n.push(ab, false)
+}
+
+func (n *Navigator) Set(ab *AppBar) {
+	n.stack.RemoveAll()
+	n.stack.Add(ab)
+	n.Refresh()
+}
+
+func (n *Navigator) IsEmpty() bool {
+	return len(n.stack.Objects) == 0
 }
 
 // PushHideNavBar adds a new page and shows it while hiding the navbar.
@@ -52,7 +70,7 @@ func (n *Navigator) push(ab *AppBar, hideNavBar bool) {
 // Pop removes the current page and shows the previous page.
 // Does nothing when the root page is shown.
 func (n *Navigator) Pop() {
-	if len(n.stack.Objects) == 1 {
+	if len(n.stack.Objects) < 2 {
 		return
 	}
 	n.stack.Remove(n.topPage())
@@ -65,6 +83,9 @@ func (n *Navigator) Pop() {
 // PopAll removes all additional pages and shows the root page.
 // Does nothing when the root page is shown.
 func (n *Navigator) PopAll() {
+	if len(n.stack.Objects) == 0 {
+		return
+	}
 	for len(n.stack.Objects) > 1 {
 		n.stack.Remove(n.topPage())
 	}

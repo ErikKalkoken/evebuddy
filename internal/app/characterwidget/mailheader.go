@@ -2,7 +2,6 @@ package characterwidget
 
 import (
 	"log/slog"
-	"slices"
 	"strings"
 	"time"
 
@@ -16,8 +15,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 // TODO: Restructure UI so that services are setup before UI New()
@@ -52,9 +50,9 @@ func NewMailHeader(show func(*app.EveEntity)) *MailHeader {
 
 func (w *MailHeader) Set(eis app.EveImageService, from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
 	w.timestamp.Text = timestamp.Format(app.DateTimeFormat)
-	rr := slices.Collect(xiter.MapSlice(recipients, func(x *app.EveEntity) string {
+	rr := xslices.Map(recipients, func(x *app.EveEntity) string {
 		return x.Name
-	}))
+	})
 	w.recipients.Text = "to " + strings.Join(rr, ", ")
 	w.from.Text = from.Name
 	w.from.OnTapped = func() {
@@ -70,7 +68,7 @@ func (w *MailHeader) Set(eis app.EveImageService, from *app.EveEntity, timestamp
 	}
 	w.Refresh()
 	go func() {
-		res, err := appwidget.FetchEveEntityAvatar(eis, from, icons.BlankSvg)
+		res, err := FetchEveEntityAvatar(eis, from, icons.BlankSvg)
 		if err != nil {
 			slog.Error("fetch eve entity avatar", "error", err)
 			res = icons.Questionmark32Png

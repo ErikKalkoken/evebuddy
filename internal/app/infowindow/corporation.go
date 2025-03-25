@@ -15,7 +15,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -27,42 +27,44 @@ type corporationInfo struct {
 	widget.BaseWidget
 
 	id           int32
-	iw           InfoWindow
+	iw           *InfoWindow
 	alliance     *kxwidget.TappableLabel
 	allianceLogo *canvas.Image
 	name         *widget.Label
 	logo         *canvas.Image
 	hq           *kxwidget.TappableLabel
 	tabs         *container.AppTabs
-	w            fyne.Window
 }
 
-func newCorporationInfo(iw InfoWindow, id int32, w fyne.Window) *corporationInfo {
+func newCorporationInfo(iw *InfoWindow, id int32) *corporationInfo {
 	alliance := kxwidget.NewTappableLabel("", nil)
 	alliance.Wrapping = fyne.TextWrapWord
-	name := widget.NewLabel("")
-	name.Wrapping = fyne.TextWrapWord
-	name.TextStyle.Bold = true
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Wrapping = fyne.TextWrapWord
-	s := float32(app.IconPixelSize) * logoZoomFactor
-	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(s))
 	a := &corporationInfo{
 		id:           id,
 		alliance:     alliance,
 		allianceLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
-		name:         name,
-		logo:         logo,
+		name:         makeInfoName(),
+		logo:         makeInfoLogo(),
 		hq:           hq,
 		tabs:         container.NewAppTabs(),
 		iw:           iw,
-		w:            w,
 	}
 	a.ExtendBaseWidget(a)
 	return a
 }
 
 func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
+	go func() {
+		err := a.load()
+		if err != nil {
+			slog.Error("corporation info update failed", "corporation", a.id, "error", err)
+			a.name.Text = fmt.Sprintf("ERROR: Failed to load corporation: %s", ihumanize.Error(err))
+			a.name.Importance = widget.DangerImportance
+			a.name.Refresh()
+		}
+	}()
 	p := theme.Padding()
 	main := container.NewVBox(
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
@@ -77,33 +79,23 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 			a.alliance,
 		),
 	)
-	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, main)
+	top := container.NewBorder(nil, nil, container.NewVBox(container.NewPadded(a.logo)), nil, main)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
-
-	go func() {
-		err := a.load(a.id)
-		if err != nil {
-			slog.Error("corporation info update failed", "corporation", a.id, "error", err)
-			a.name.Text = fmt.Sprintf("ERROR: Failed to load corporation: %s", ihumanize.Error(err))
-			a.name.Importance = widget.DangerImportance
-			a.name.Refresh()
-		}
-	}()
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *corporationInfo) load(corporationID int32) error {
+func (a *corporationInfo) load() error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.iw.u.EveImageService().CorporationLogo(corporationID, app.IconPixelSize)
+		r, err := a.iw.u.EveImageService().CorporationLogo(a.id, app.IconPixelSize)
 		if err != nil {
-			slog.Error("corporation info: Failed to load logo", "corporationID", corporationID, "error", err)
+			slog.Error("corporation info: Failed to load logo", "corporationID", a.id, "error", err)
 			return
 		}
 		a.logo.Resource = r
 		a.logo.Refresh()
 	}()
-	o, err := a.iw.u.EveUniverseService().GetCorporationESI(ctx, corporationID)
+	o, err := a.iw.u.EveUniverseService().GetCorporationESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -175,7 +167,7 @@ func (a *corporationInfo) load(corporationID int32) error {
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
-			a.w.Clipboard().SetContent(fmt.Sprint(o.ID))
+			a.iw.w.Clipboard().SetContent(fmt.Sprint(o.ID))
 		}
 		attributes = append(attributes, x)
 	}
@@ -185,18 +177,18 @@ func (a *corporationInfo) load(corporationID int32) error {
 	a.tabs.Append(attributesTab)
 	a.tabs.Select(attributesTab)
 	go func() {
-		history, err := a.iw.u.EveUniverseService().GetCorporationAllianceHistory(ctx, corporationID)
+		history, err := a.iw.u.EveUniverseService().GetCorporationAllianceHistory(ctx, a.id)
 		if err != nil {
-			slog.Error("corporation info: Failed to load alliance history", "corporationID", corporationID, "error", err)
+			slog.Error("corporation info: Failed to load alliance history", "corporationID", a.id, "error", err)
 			return
 		}
 		if len(history) == 0 {
 			return
 		}
-		history2 := slices.Collect(xiter.FilterSlice(history, func(v app.MembershipHistoryItem) bool {
+		history2 := xslices.Filter(history, func(v app.MembershipHistoryItem) bool {
 			return v.Organization != nil && v.Organization.Category.IsKnown()
-		}))
-		items := slices.Collect(xiter.MapSlice(history2, historyItem2EntityItem))
+		})
+		items := xslices.Map(history2, historyItem2EntityItem)
 		oldest := slices.MinFunc(history, func(a, b app.MembershipHistoryItem) int {
 			return a.StartDate.Compare(b.StartDate)
 		})

@@ -1,8 +1,6 @@
 package infowindow
 
 import (
-	"slices"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
@@ -11,7 +9,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type entityItem struct {
@@ -70,9 +68,9 @@ type EntitiyList struct {
 }
 
 func NewEntityListFromEntities(show func(infoVariant, int64), s ...*app.EveEntity) *EntitiyList {
-	items := slices.Collect(xiter.MapSlice(s, func(ee *app.EveEntity) entityItem {
+	items := xslices.Map(s, func(ee *app.EveEntity) entityItem {
 		return NewEntityItemFromEveEntityWithText(ee, "")
-	}))
+	})
 	return NewEntityListFromItems(show, items...)
 }
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -12,21 +11,17 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type constellationInfo struct {
 	widget.BaseWidget
 
-	iw InfoWindow
-	w  fyne.Window
+	iw *InfoWindow
 
 	id     int32
 	region *kxwidget.TappableLabel
@@ -35,28 +30,31 @@ type constellationInfo struct {
 	tabs   *container.AppTabs
 }
 
-func newConstellationInfo(iw InfoWindow, constellationID int32, w fyne.Window) *constellationInfo {
+func newConstellationInfo(iw *InfoWindow, id int32) *constellationInfo {
 	region := kxwidget.NewTappableLabel("", nil)
 	region.Wrapping = fyne.TextWrapWord
-	name := widget.NewLabel("")
-	name.Wrapping = fyne.TextWrapWord
-	name.TextStyle.Bold = true
-	s := float32(app.IconPixelSize) * logoZoomFactor
-	logo := iwidget.NewImageFromResource(icons.Constellation64Png, fyne.NewSquareSize(s))
 	a := &constellationInfo{
 		iw:     iw,
-		id:     constellationID,
-		logo:   logo,
-		name:   name,
+		id:     id,
+		logo:   makeInfoLogo(),
+		name:   makeInfoName(),
 		region: region,
 		tabs:   container.NewAppTabs(),
-		w:      w,
 	}
 	a.ExtendBaseWidget(a)
 	return a
 }
 
 func (a *constellationInfo) CreateRenderer() fyne.WidgetRenderer {
+	go func() {
+		err := a.load()
+		if err != nil {
+			slog.Error("constellation info update failed", "solarSystem", a.id, "error", err)
+			a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", ihumanize.Error(err))
+			a.name.Importance = widget.DangerImportance
+			a.name.Refresh()
+		}
+	}()
 	colums := kxlayout.NewColumns(120)
 	p := theme.Padding()
 	main := container.NewVBox(
@@ -67,24 +65,14 @@ func (a *constellationInfo) CreateRenderer() fyne.WidgetRenderer {
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
 			container.New(colums, widget.NewLabel("Region"), a.region),
 		))
-	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, main)
+	top := container.NewBorder(nil, nil, container.NewVBox(container.NewPadded(a.logo)), nil, main)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
-
-	go func() {
-		err := a.load(a.id)
-		if err != nil {
-			slog.Error("constellation info update failed", "solarSystem", a.id, "error", err)
-			a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", ihumanize.Error(err))
-			a.name.Importance = widget.DangerImportance
-			a.name.Refresh()
-		}
-	}()
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *constellationInfo) load(constellationID int32) error {
+func (a *constellationInfo) load() error {
 	ctx := context.Background()
-	o, err := a.iw.u.EveUniverseService().GetOrCreateConstellationESI(ctx, constellationID)
+	o, err := a.iw.u.EveUniverseService().GetOrCreateConstellationESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -97,7 +85,7 @@ func (a *constellationInfo) load(constellationID int32) error {
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", fmt.Sprint(o.ID))
 		x.Action = func(v any) {
-			a.w.Clipboard().SetContent(v.(string))
+			a.iw.w.Clipboard().SetContent(v.(string))
 		}
 		attributeList := NewAttributeList([]AttributeItem{x}...)
 		attributeList.ShowInfoWindow = a.iw.ShowEveEntity
@@ -119,7 +107,7 @@ func (a *constellationInfo) load(constellationID int32) error {
 			sLabel.Refresh()
 			return
 		}
-		xx := slices.Collect(xiter.MapSlice(oo, NewEntityItemFromEveSolarSystem))
+		xx := xslices.Map(oo, NewEntityItemFromEveSolarSystem)
 		solarSystems.Content = NewEntityListFromItems(a.iw.show, xx...)
 		a.tabs.Refresh()
 	}()

@@ -3,7 +3,6 @@ package eveuniverseservice_test
 import (
 	"context"
 	"fmt"
-	"slices"
 	"testing"
 
 	"github.com/antihax/goesi"
@@ -13,7 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func TestGetEveAllianceCorporationsESI(t *testing.T) {
@@ -42,9 +41,9 @@ func TestGetEveAllianceCorporationsESI(t *testing.T) {
 		oo, err := s.GetAllianceCorporationsESI(ctx, allianceID)
 		// then
 		if assert.NoError(t, err) {
-			got := slices.Collect(xiter.MapSlice(oo, func(a *app.EveEntity) int32 {
+			got := xslices.Map(oo, func(a *app.EveEntity) int32 {
 				return a.ID
-			}))
+			})
 			want := []int32{103, 102}
 			assert.Equal(t, want, got)
 		}

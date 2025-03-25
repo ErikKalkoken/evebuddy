@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"slices"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -18,7 +17,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type overviewCharacter struct {
@@ -181,7 +180,7 @@ func (a *CharacterOverview) updateCharacters() (overviewTotals, error) {
 	if err != nil {
 		return totals, err
 	}
-	cc := slices.Collect(xiter.MapSlice(characters, func(m *app.Character) overviewCharacter {
+	cc := xslices.Map(characters, func(m *app.Character) overviewCharacter {
 		return overviewCharacter{
 			alliance:      m.EveCharacter.Alliance,
 			birthday:      m.EveCharacter.Birthday,
@@ -193,7 +192,7 @@ func (a *CharacterOverview) updateCharacters() (overviewTotals, error) {
 			walletBalance: m.WalletBalance,
 			home:          m.Home,
 		}
-	}))
+	})
 	for i, c := range cc {
 		total, unread, err := a.u.CharacterService().GetCharacterMailCounts(ctx, c.id)
 		if err != nil {

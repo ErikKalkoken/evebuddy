@@ -3,7 +3,6 @@ package storage_test
 import (
 	"context"
 	"fmt"
-	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,7 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func TestEveEntityUpdateOrCreate(t *testing.T) {
@@ -122,9 +121,9 @@ func TestEveEntity(t *testing.T) {
 		ee, err := st.ListEveEntitiesForIDs(ctx, []int32{2, 3})
 		// then
 		if assert.NoError(t, err) {
-			got := slices.Collect(xiter.MapSlice(ee, func(a *app.EveEntity) int32 {
+			got := xslices.Map(ee, func(a *app.EveEntity) int32 {
 				return a.ID
-			}))
+			})
 			want := []int32{2, 3}
 			assert.ElementsMatch(t, want, got)
 		}
@@ -145,9 +144,9 @@ func TestEveEntity(t *testing.T) {
 		ee, err := st.ListEveEntitiesForIDs(ctx, []int32{2, 3, 4})
 		// then
 		if assert.NoError(t, err) {
-			got := slices.Collect(xiter.MapSlice(ee, func(a *app.EveEntity) int32 {
+			got := xslices.Map(ee, func(a *app.EveEntity) int32 {
 				return a.ID
-			}))
+			})
 			want := []int32{2, 3, 4}
 			assert.ElementsMatch(t, want, got)
 		}

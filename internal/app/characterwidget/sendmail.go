@@ -25,9 +25,9 @@ type SendMail struct {
 
 	body      *widget.Entry
 	character *app.Character
-	from      *appwidget.EveEntityEntry
+	from      *EveEntityEntry
 	subject   *widget.Entry
-	to        *appwidget.EveEntityEntry
+	to        *EveEntityEntry
 	u         app.UI
 	w         fyne.Window
 }
@@ -40,7 +40,7 @@ func NewSendMail(u app.UI, c *app.Character, mode app.SendMailMode, m *app.Chara
 	}
 	a.ExtendBaseWidget(a)
 
-	a.from = appwidget.NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.EveImageService())
+	a.from = NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.EveImageService())
 	a.from.ShowInfoWindow = u.ShowEveEntityInfoWindow
 	a.from.Set([]*app.EveEntity{{ID: c.ID, Name: c.EveCharacter.Name, Category: app.EveEntityCharacter}})
 	a.from.Disable()
@@ -50,7 +50,7 @@ func NewSendMail(u app.UI, c *app.Character, mode app.SendMailMode, m *app.Chara
 			a.to.Add(ee)
 		}, a.w)
 	})
-	a.to = appwidget.NewEveEntityEntry(toButton, labelWith, u.EveImageService())
+	a.to = NewEveEntityEntry(toButton, labelWith, u.EveImageService())
 	a.to.ShowInfoWindow = u.ShowEveEntityInfoWindow
 	a.to.Placeholder = "Tap To-Button to add recipients..."
 
@@ -175,7 +175,7 @@ func showAddDialog(u app.UI, characterID int32, onSelected func(ee *app.EveEntit
 			row[0].(*widget.Label).SetText(ee.Name)
 			image := row[1].(*canvas.Image)
 			appwidget.RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
-				res, err := appwidget.FetchEveEntityAvatar(u.EveImageService(), ee, fallbackIcon)
+				res, err := FetchEveEntityAvatar(u.EveImageService(), ee, fallbackIcon)
 				if err != nil {
 					return fallbackIcon, err
 				}

@@ -134,7 +134,7 @@ func (a *UpdateStatus) CreateRenderer() fyne.WidgetRenderer {
 	var c fyne.CanvasObject
 	if a.u.IsMobile() {
 		ab := iwidget.NewAppBar("Home", a.entities)
-		a.nav = iwidget.NewNavigator(ab)
+		a.nav = iwidget.NewNavigatorWithAppBar(ab)
 		c = a.nav
 
 	} else {

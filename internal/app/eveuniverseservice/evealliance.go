@@ -2,6 +2,7 @@ package eveuniverseservice
 
 import (
 	"context"
+	"maps"
 	"slices"
 	"strings"
 
@@ -13,31 +14,27 @@ func (s *EveUniverseService) GetAllianceESI(ctx context.Context, allianceID int3
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.AddMissingEntities(ctx, []int32{allianceID, a.CreatorCorporationId, a.CreatorId, a.ExecutorCorporationId, a.FactionId})
+	ids := slices.DeleteFunc(
+		[]int32{allianceID, a.CreatorCorporationId, a.CreatorId, a.ExecutorCorporationId, a.FactionId},
+		func(id int32) bool {
+			return id < 2
+		})
+	eeMap, err := s.ToEveEntities(ctx, ids)
 	if err != nil {
 		return nil, err
 	}
+	maps.DeleteFunc(eeMap, func(id int32, o *app.EveEntity) bool {
+		return !o.Category.IsKnown()
+	})
 	o := &app.EveAlliance{
-		DateFounded: a.DateFounded,
-		ID:          allianceID,
-		Name:        a.Name,
-		Ticker:      a.Ticker,
-	}
-	o.CreatorCorporation, err = s.getValidEveEntity(ctx, a.CreatorCorporationId)
-	if err != nil {
-		return nil, err
-	}
-	o.Creator, err = s.getValidEveEntity(ctx, a.CreatorId)
-	if err != nil {
-		return nil, err
-	}
-	o.ExecutorCorporation, err = s.getValidEveEntity(ctx, a.ExecutorCorporationId)
-	if err != nil {
-		return nil, err
-	}
-	o.Faction, err = s.getValidEveEntity(ctx, a.FactionId)
-	if err != nil {
-		return nil, err
+		Creator:             eeMap[a.CreatorId],
+		CreatorCorporation:  eeMap[a.CreatorCorporationId],
+		DateFounded:         a.DateFounded,
+		ExecutorCorporation: eeMap[a.ExecutorCorporationId],
+		Faction:             eeMap[a.FactionId],
+		ID:                  allianceID,
+		Name:                a.Name,
+		Ticker:              a.Ticker,
 	}
 	return o, nil
 }
