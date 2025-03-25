@@ -14,6 +14,7 @@ import (
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -42,6 +43,7 @@ func newConstellationInfo(iw *InfoWindow, id int32) *constellationInfo {
 		tabs:   container.NewAppTabs(),
 	}
 	a.ExtendBaseWidget(a)
+	a.logo.Resource = icons.Constellation64Png
 	return a
 }
 

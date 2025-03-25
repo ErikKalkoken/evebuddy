@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -35,6 +36,7 @@ func newRegionInfo(iw *InfoWindow, id int32) *regionInfo {
 		name: makeInfoName(),
 		tabs: container.NewAppTabs(),
 	}
+	a.logo.Resource = icons.Region64Png
 	a.ExtendBaseWidget(a)
 	return a
 }

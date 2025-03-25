@@ -86,6 +86,11 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *corporationInfo) load() error {
 	ctx := context.Background()
+	o, err := a.iw.u.EveUniverseService().GetCorporationESI(ctx, a.id)
+	if err != nil {
+		return err
+	}
+	a.name.SetText(o.Name)
 	go func() {
 		r, err := a.iw.u.EveImageService().CorporationLogo(a.id, app.IconPixelSize)
 		if err != nil {
@@ -95,11 +100,6 @@ func (a *corporationInfo) load() error {
 		a.logo.Resource = r
 		a.logo.Refresh()
 	}()
-	o, err := a.iw.u.EveUniverseService().GetCorporationESI(ctx, a.id)
-	if err != nil {
-		return err
-	}
-	a.name.SetText(o.Name)
 	if o.Alliance != nil {
 		a.alliance.SetText("Member of " + o.Alliance.Name)
 		a.alliance.OnTapped = func() {
