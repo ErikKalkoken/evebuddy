@@ -2,7 +2,6 @@ package storage_test
 
 import (
 	"context"
-	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,7 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func TestCharacterJumpClone(t *testing.T) {
@@ -115,9 +114,9 @@ func TestCharacterJumpClone(t *testing.T) {
 		oo, err := r.ListCharacterJumpClones(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			ids := slices.Collect(xiter.MapSlice(oo, func(a *app.CharacterJumpClone) int32 {
+			ids := xslices.Map(oo, func(a *app.CharacterJumpClone) int32 {
 				return a.CloneID
-			}))
+			})
 			assert.ElementsMatch(t, []int32{x1.CloneID, x2.CloneID}, ids)
 		}
 	})
@@ -133,9 +132,9 @@ func TestCharacterJumpClone(t *testing.T) {
 		oo, err := r.ListAllCharacterJumpClones(ctx)
 		// then
 		if assert.NoError(t, err) {
-			ids := slices.Collect(xiter.MapSlice(oo, func(a *app.CharacterJumpClone2) int32 {
+			ids := xslices.Map(oo, func(a *app.CharacterJumpClone2) int32 {
 				return a.CloneID
-			}))
+			})
 			assert.ElementsMatch(t, []int32{x1.CloneID, x2.CloneID}, ids)
 		}
 	})

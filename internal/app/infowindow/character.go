@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"slices"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -19,7 +18,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
@@ -190,7 +189,7 @@ func (a *characterInfo) load(characterID int32) error {
 		current := history[0]
 		duration := humanize.RelTime(current.StartDate, time.Now(), "", "")
 		a.membership.SetText(fmt.Sprintf("for %s", duration))
-		items := slices.Collect(xiter.MapSlice(history, historyItem2EntityItem))
+		items := xslices.Map(history, historyItem2EntityItem)
 		historyList := NewEntityListFromItems(a.iw.show, items...)
 		a.tabs.Append(container.NewTabItem("Employment History", historyList))
 		a.tabs.Refresh()

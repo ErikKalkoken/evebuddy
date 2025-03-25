@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -12,11 +11,11 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type constellationInfo struct {
@@ -109,7 +108,7 @@ func (a *constellationInfo) load(constellationID int32) error {
 			sLabel.Refresh()
 			return
 		}
-		xx := slices.Collect(xiter.MapSlice(oo, NewEntityItemFromEveSolarSystem))
+		xx := xslices.Map(oo, NewEntityItemFromEveSolarSystem)
 		solarSystems.Content = NewEntityListFromItems(a.iw.show, xx...)
 		a.tabs.Refresh()
 	}()

@@ -17,7 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 const (
@@ -296,9 +296,9 @@ func (a *GameSearch) doSearch(search string) {
 		a.indicator.Stop()
 		a.indicator.Hide()
 	}()
-	categories := slices.Collect(xiter.MapSlice(a.categories.Selected, func(o string) app.SearchCategory {
+	categories := xslices.Map(a.categories.Selected, func(o string) app.SearchCategory {
 		return option2searchCategory(o)
-	}))
+	})
 	results, total, err := a.u.CharacterService().SearchESI(
 		context.Background(),
 		a.u.CurrentCharacterID(),
@@ -381,9 +381,9 @@ func option2searchCategory(o string) app.SearchCategory {
 }
 
 func makeOptions() []string {
-	options := slices.Collect(xiter.MapSlice(app.SearchCategories(), func(c app.SearchCategory) string {
+	options := xslices.Map(app.SearchCategories(), func(c app.SearchCategory) string {
 		return searchCategory2option(c)
-	}))
+	})
 	slices.Sort(options)
 	return options
 }

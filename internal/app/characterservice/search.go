@@ -6,7 +6,7 @@ import (
 	"slices"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
 )
@@ -26,9 +26,9 @@ func (s *CharacterService) SearchESI(
 		return nil, 0, err
 	}
 	ctx = contextWithESIToken(ctx, token.AccessToken)
-	cc := slices.Collect(xiter.MapSlice(categories, func(a app.SearchCategory) string {
+	cc := xslices.Map(categories, func(a app.SearchCategory) string {
 		return string(a)
-	}))
+	})
 	x, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(
 		ctx,
 		cc,

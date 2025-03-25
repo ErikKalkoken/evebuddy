@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -12,9 +11,9 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type regionInfo struct {
@@ -99,7 +98,7 @@ func (a *regionInfo) load(regionID int32) error {
 			cLabel.Refresh()
 			return
 		}
-		xx := slices.Collect(xiter.MapSlice(oo, NewEntityItemFromEveEntity))
+		xx := xslices.Map(oo, NewEntityItemFromEveEntity)
 		constellations.Content = NewEntityListFromItems(a.iw.show, xx...)
 		a.tabs.Refresh()
 		a.tabs.Refresh()

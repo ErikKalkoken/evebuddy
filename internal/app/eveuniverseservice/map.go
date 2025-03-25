@@ -7,7 +7,7 @@ import (
 	"slices"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/antihax/goesi/esi"
 	"golang.org/x/sync/errgroup"
 )
@@ -95,13 +95,13 @@ func (s *EveUniverseService) GetSolarSystemInfoESI(ctx context.Context, solarSys
 	if err != nil {
 		return 0, nil, nil, nil, nil, err
 	}
-	planets := slices.Collect(xiter.MapSlice(x.Planets, func(p esi.GetUniverseSystemsSystemIdPlanet) app.EveSolarSystemPlanet {
+	planets := xslices.Map(x.Planets, func(p esi.GetUniverseSystemsSystemIdPlanet) app.EveSolarSystemPlanet {
 		return app.EveSolarSystemPlanet{
 			AsteroidBeltIDs: p.AsteroidBelts,
 			MoonIDs:         p.Moons,
 			PlanetID:        p.PlanetId,
 		}
-	}))
+	})
 	_, err = s.AddMissingEntities(ctx, slices.Concat(
 		[]int32{solarSystemID, x.ConstellationId},
 		x.Stations,
@@ -124,9 +124,9 @@ func (s *EveUniverseService) GetSolarSystemInfoESI(ctx context.Context, solarSys
 	if err != nil {
 		return 0, nil, nil, nil, nil, err
 	}
-	structures := slices.Collect(xiter.FilterSlice(xx, func(x *app.EveLocation) bool {
+	structures := xslices.Filter(xx, func(x *app.EveLocation) bool {
 		return x.Variant() == app.EveLocationStructure
-	}))
+	})
 	return x.StarId, planets, x.Stargates, stations, structures, nil
 }
 

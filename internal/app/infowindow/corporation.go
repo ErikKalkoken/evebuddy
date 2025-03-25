@@ -15,7 +15,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -186,10 +186,10 @@ func (a *corporationInfo) load(corporationID int32) error {
 		if len(history) == 0 {
 			return
 		}
-		history2 := slices.Collect(xiter.FilterSlice(history, func(v app.MembershipHistoryItem) bool {
+		history2 := xslices.Filter(history, func(v app.MembershipHistoryItem) bool {
 			return v.Organization != nil && v.Organization.Category.IsKnown()
-		}))
-		items := slices.Collect(xiter.MapSlice(history2, historyItem2EntityItem))
+		})
+		items := xslices.Map(history2, historyItem2EntityItem)
 		oldest := slices.MinFunc(history, func(a, b app.MembershipHistoryItem) int {
 			return a.StartDate.Compare(b.StartDate)
 		})

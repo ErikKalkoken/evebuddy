@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/antihax/goesi/esi"
 )
 
@@ -35,14 +35,14 @@ func (s *EveUniverseService) GetCorporationAllianceHistory(ctx context.Context, 
 	if err != nil {
 		return nil, err
 	}
-	items2 := slices.Collect(xiter.MapSlice(items, func(x esi.GetCorporationsCorporationIdAlliancehistory200Ok) organizationHistoryItem {
+	items2 := xslices.Map(items, func(x esi.GetCorporationsCorporationIdAlliancehistory200Ok) organizationHistoryItem {
 		return organizationHistoryItem{
 			OrganizationID: x.AllianceId,
 			IsDeleted:      x.IsDeleted,
 			RecordID:       int(x.RecordId),
 			StartDate:      x.StartDate,
 		}
-	}))
+	})
 	return s.makeMembershipHistory(ctx, items2)
 }
 
@@ -54,9 +54,9 @@ type organizationHistoryItem struct {
 }
 
 func (s *EveUniverseService) makeMembershipHistory(ctx context.Context, items []organizationHistoryItem) ([]app.MembershipHistoryItem, error) {
-	ids := slices.Collect(xiter.MapSlice(items, func(x organizationHistoryItem) int32 {
+	ids := xslices.Map(items, func(x organizationHistoryItem) int32 {
 		return x.OrganizationID
-	}))
+	})
 	ids = slices.DeleteFunc(ids, func(id int32) bool {
 		return id < 2
 	})

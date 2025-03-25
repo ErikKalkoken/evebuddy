@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -14,7 +13,7 @@ import (
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type LocationOverview struct {
@@ -123,12 +122,12 @@ func (a *LocationOverview) updateCharacters() (int, error) {
 		return 0, err
 	}
 	a.rows = mycc
-	locationIDs := set.NewFromSlice(slices.Collect(xiter.MapSlice(mycc, func(x *app.Character) int64 {
+	locationIDs := set.NewFromSlice(xslices.Map(mycc, func(x *app.Character) int64 {
 		if x.Location != nil {
 			return x.Location.ID
 		}
 		return 0
-	})))
+	}))
 	locationIDs.Remove(0)
 	return locationIDs.Size(), nil
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -13,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
@@ -143,14 +142,14 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 		stationsTab.Content = NewEntityListFromEntities(a.iw.show, stations...)
 		a.tabs.Refresh()
 
-		oo := slices.Collect(xiter.MapSlice(structures, func(x *app.EveLocation) entityItem {
+		oo := xslices.Map(structures, func(x *app.EveLocation) entityItem {
 			return NewEntityItem(
 				x.ID,
 				x.Name,
 				"Structure",
 				infoLocation,
 			)
-		}))
+		})
 		xx := NewEntityListFromItems(a.iw.show, oo...)
 		note := widget.NewLabel("Only contains structures known through characters")
 		note.Importance = widget.LowImportance
@@ -184,7 +183,7 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 				systemsLabel.Refresh()
 				return
 			}
-			xx := slices.Collect(xiter.MapSlice(ss, NewEntityItemFromEveSolarSystem))
+			xx := xslices.Map(ss, NewEntityItemFromEveSolarSystem)
 			systemsTab.Content = NewEntityListFromItems(a.iw.show, xx...)
 			a.tabs.Refresh()
 		}()
@@ -198,7 +197,7 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 				planetsLabel.Refresh()
 				return
 			}
-			xx := slices.Collect(xiter.MapSlice(pp, NewEntityItemFromEvePlanet))
+			xx := xslices.Map(pp, NewEntityItemFromEvePlanet)
 			planetsTab.Content = NewEntityListFromItems(a.iw.show, xx...)
 			a.tabs.Refresh()
 		}()
