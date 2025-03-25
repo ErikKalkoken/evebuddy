@@ -246,14 +246,14 @@ func main() {
 		},
 	)
 	if isDesktop {
-		u := ui.NewDesktopUI(bu)
+		u := ui.NewUIDesktop(bu)
 		u.Init()
 		if *resetSettingsFlag {
 			u.ResetDesktopSettings()
 		}
 		u.ShowAndRun()
 	} else {
-		u := ui.NewMobileUI(bu)
+		u := ui.NewUIMobile(bu)
 		u.Init()
 		u.ShowAndRun()
 	}
