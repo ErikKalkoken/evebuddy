@@ -13,7 +13,7 @@ import (
 )
 
 func (st *Storage) GetGeneralSectionStatus(ctx context.Context, section app.GeneralSection) (*app.GeneralSectionStatus, error) {
-	s, err := st.q.GetGeneralSectionStatus(ctx, string(section))
+	s, err := st.qRO.GetGeneralSectionStatus(ctx, string(section))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -25,7 +25,7 @@ func (st *Storage) GetGeneralSectionStatus(ctx context.Context, section app.Gene
 }
 
 func (st *Storage) ListGeneralSectionStatus(ctx context.Context) ([]*app.GeneralSectionStatus, error) {
-	rows, err := st.q.ListGeneralSectionStatus(ctx)
+	rows, err := st.qRO.ListGeneralSectionStatus(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list general section status: %w", err)
 	}
@@ -50,12 +50,12 @@ func (st *Storage) UpdateOrCreateGeneralSectionStatus(ctx context.Context, arg U
 	if string(arg.Section) == "" {
 		panic("Invalid params")
 	}
-	tx, err := st.db.Begin()
+	tx, err := st.dbRW.Begin()
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
-	qtx := st.q.WithTx(tx)
+	qtx := st.qRW.WithTx(tx)
 	var arg2 queries.UpdateOrCreateGeneralSectionStatusParams
 	old, err := qtx.GetGeneralSectionStatus(ctx, string(arg.Section))
 	if errors.Is(err, sql.ErrNoRows) {

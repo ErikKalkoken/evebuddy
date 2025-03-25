@@ -29,7 +29,7 @@ func (st *Storage) CreateCharacterPlanet(ctx context.Context, arg CreateCharacte
 		LastUpdate:   arg.LastUpdate,
 		UpgradeLevel: int64(arg.UpgradeLevel),
 	}
-	id, err := st.q.CreateCharacterPlanet(ctx, arg2)
+	id, err := st.qRW.CreateCharacterPlanet(ctx, arg2)
 	if err != nil {
 		return 0, fmt.Errorf("create create planet: %+v: %w", arg2, err)
 	}
@@ -41,7 +41,7 @@ func (st *Storage) DeleteCharacterPlanet(ctx context.Context, characterID int32,
 		CharacterID:  int64(characterID),
 		EvePlanetIds: convertNumericSlice[int64](planetIDs),
 	}
-	if err := st.q.DeleteCharacterPlanets(ctx, arg); err != nil {
+	if err := st.qRW.DeleteCharacterPlanets(ctx, arg); err != nil {
 		return fmt.Errorf("delete character planets: %+v: %w", arg, err)
 	}
 	return nil
@@ -52,7 +52,7 @@ func (st *Storage) GetCharacterPlanet(ctx context.Context, characterID int32, pl
 		CharacterID: int64(characterID),
 		EvePlanetID: int64(planetID),
 	}
-	r, err := st.q.GetCharacterPlanet(ctx, arg)
+	r, err := st.qRO.GetCharacterPlanet(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (st *Storage) GetCharacterPlanet(ctx context.Context, characterID int32, pl
 }
 
 func (st *Storage) ListAllCharacterPlanets(ctx context.Context) ([]*app.CharacterPlanet, error) {
-	rows, err := st.q.ListAllCharacterPlanets(ctx)
+	rows, err := st.qRO.ListAllCharacterPlanets(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list all planets: %w", err)
 	}
@@ -80,7 +80,7 @@ func (st *Storage) ListAllCharacterPlanets(ctx context.Context) ([]*app.Characte
 }
 
 func (st *Storage) ListCharacterPlanets(ctx context.Context, id int32) ([]*app.CharacterPlanet, error) {
-	rows, err := st.q.ListCharacterPlanets(ctx, int64(id))
+	rows, err := st.qRO.ListCharacterPlanets(ctx, int64(id))
 	if err != nil {
 		return nil, fmt.Errorf("list planets for character %d: %w", id, err)
 	}
@@ -126,7 +126,7 @@ func (st *Storage) UpdateCharacterPlanetLastNotified(ctx context.Context, arg Up
 		EvePlanetID:  int64(arg.EvePlanetID),
 		LastNotified: NewNullTimeFromTime(arg.LastNotified),
 	}
-	if err := st.q.UpdateCharacterPlanetLastNotified(ctx, arg2); err != nil {
+	if err := st.qRW.UpdateCharacterPlanetLastNotified(ctx, arg2); err != nil {
 		return fmt.Errorf("update character planet last notified: %+v: %w", arg2, err)
 	}
 	return nil
@@ -149,7 +149,7 @@ func (st *Storage) UpdateOrCreateCharacterPlanet(ctx context.Context, arg Update
 		LastUpdate:   arg.LastUpdate,
 		UpgradeLevel: int64(arg.UpgradeLevel),
 	}
-	id, err := st.q.UpdateOrCreateCharacterPlanet(ctx, arg2)
+	id, err := st.qRW.UpdateOrCreateCharacterPlanet(ctx, arg2)
 	if err != nil {
 		return 0, fmt.Errorf("update or create create planet: %+v: %w", arg2, err)
 	}

@@ -58,7 +58,7 @@ func (st *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg Cr
 		arg2.TaxReceiverID.Int64 = int64(arg.TaxReceiverID)
 		arg2.TaxReceiverID.Valid = true
 	}
-	err := st.q.CreateCharacterWalletJournalEntry(ctx, arg2)
+	err := st.qRW.CreateCharacterWalletJournalEntry(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("create wallet journal entry for character %d: %w", arg.CharacterID, err)
 	}
@@ -70,7 +70,7 @@ func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, character
 		CharacterID: int64(characterID),
 		RefID:       refID,
 	}
-	r, err := st.q.GetCharacterWalletJournalEntry(ctx, arg)
+	r, err := st.qRO.GetCharacterWalletJournalEntry(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("get wallet journal entry for character %d: %w", characterID, err)
 	}
@@ -82,7 +82,7 @@ func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, character
 }
 
 func (st *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
-	ids, err := st.q.ListCharacterWalletJournalEntryRefIDs(ctx, int64(characterID))
+	ids, err := st.qRO.ListCharacterWalletJournalEntryRefIDs(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list wallet journal entry ids for character %d: %w", characterID, err)
 	}
@@ -90,7 +90,7 @@ func (st *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, chara
 }
 
 func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, id int32) ([]*app.CharacterWalletJournalEntry, error) {
-	rows, err := st.q.ListCharacterWalletJournalEntries(ctx, int64(id))
+	rows, err := st.qRO.ListCharacterWalletJournalEntries(ctx, int64(id))
 	if err != nil {
 		return nil, fmt.Errorf("list wallet journal entries for character %d: %w", id, err)
 	}

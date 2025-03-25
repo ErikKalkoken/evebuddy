@@ -27,7 +27,7 @@ func (st *Storage) CreateEveGroup(ctx context.Context, arg CreateEveGroupParams)
 		IsPublished:   arg.IsPublished,
 		Name:          arg.Name,
 	}
-	err := st.q.CreateEveGroup(ctx, arg2)
+	err := st.qRW.CreateEveGroup(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("create EveGroup %v, %w", arg, err)
 	}
@@ -35,7 +35,7 @@ func (st *Storage) CreateEveGroup(ctx context.Context, arg CreateEveGroupParams)
 }
 
 func (st *Storage) GetEveGroup(ctx context.Context, id int32) (*app.EveGroup, error) {
-	row, err := st.q.GetEveGroup(ctx, int64(id))
+	row, err := st.qRO.GetEveGroup(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound

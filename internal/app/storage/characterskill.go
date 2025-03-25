@@ -16,7 +16,7 @@ func (st *Storage) DeleteCharacterSkills(ctx context.Context, characterID int32,
 		CharacterID: int64(characterID),
 		EveTypeIds:  convertNumericSlice[int64](eveTypeIDs),
 	}
-	err := st.q.DeleteCharacterSkills(ctx, arg)
+	err := st.qRW.DeleteCharacterSkills(ctx, arg)
 	if err != nil {
 		return fmt.Errorf("delete skills for character %d: %w", characterID, err)
 	}
@@ -28,7 +28,7 @@ func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int32, typ
 		CharacterID: int64(characterID),
 		EveTypeID:   int64(typeID),
 	}
-	r, err := st.q.GetCharacterSkill(ctx, arg)
+	r, err := st.qRO.GetCharacterSkill(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -40,7 +40,7 @@ func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int32, typ
 }
 
 func (st *Storage) ListCharacterSkillIDs(ctx context.Context, characterID int32) (set.Set[int32], error) {
-	ids1, err := st.q.ListCharacterSkillIDs(ctx, int64(characterID))
+	ids1, err := st.qRO.ListCharacterSkillIDs(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list skill ids for character %d: %w", characterID, err)
 	}
@@ -53,7 +53,7 @@ func (st *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, 
 		CharacterID: int64(characterID),
 		EveGroupID:  int64(eveGroupID),
 	}
-	rows, err := st.q.ListCharacterSkillProgress(ctx, arg)
+	rows, err := st.qRO.ListCharacterSkillProgress(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("list skill progress for character %d: %w", characterID, err)
 	}
@@ -75,7 +75,7 @@ func (st *Storage) ListCharacterSkillGroupsProgress(ctx context.Context, charact
 		CharacterID:   int64(characterID),
 		EveCategoryID: app.EveCategorySkill,
 	}
-	rows, err := st.q.ListCharacterSkillGroupsProgress(ctx, arg)
+	rows, err := st.qRO.ListCharacterSkillGroupsProgress(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("list skill groups progress for character %d: %w", characterID, err)
 	}
@@ -110,7 +110,7 @@ func (st *Storage) UpdateOrCreateCharacterSkill(ctx context.Context, arg UpdateO
 		CharacterID:        int64(arg.CharacterID),
 		TrainedSkillLevel:  int64(arg.TrainedSkillLevel),
 	}
-	if err := st.q.UpdateOrCreateCharacterSkill(ctx, arg2); err != nil {
+	if err := st.qRW.UpdateOrCreateCharacterSkill(ctx, arg2); err != nil {
 		return fmt.Errorf("update or create character skill for character %d: %w", arg.CharacterID, err)
 	}
 	return nil

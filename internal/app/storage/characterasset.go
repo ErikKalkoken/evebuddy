@@ -41,7 +41,7 @@ func (st *Storage) CreateCharacterAsset(ctx context.Context, arg CreateCharacter
 		Name:            arg.Name,
 		Quantity:        int64(arg.Quantity),
 	}
-	if err := st.q.CreateCharacterAsset(ctx, arg2); err != nil {
+	if err := st.qRW.CreateCharacterAsset(ctx, arg2); err != nil {
 		return fmt.Errorf("create character asset %v, %w", arg, err)
 	}
 	return nil
@@ -52,7 +52,7 @@ func (st *Storage) DeleteCharacterAssets(ctx context.Context, characterID int32,
 		CharacterID: int64(characterID),
 		ItemIds:     itemIDs,
 	}
-	return st.q.DeleteCharacterAssets(ctx, arg)
+	return st.qRW.DeleteCharacterAssets(ctx, arg)
 }
 
 func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int32, itemID int64) (*app.CharacterAsset, error) {
@@ -60,7 +60,7 @@ func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int32, ite
 		CharacterID: int64(characterID),
 		ItemID:      itemID,
 	}
-	r, err := st.q.GetCharacterAsset(ctx, arg)
+	r, err := st.qRO.GetCharacterAsset(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -72,7 +72,7 @@ func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int32, ite
 }
 
 func (st *Storage) CalculateCharacterAssetTotalValue(ctx context.Context, characterID int32) (float64, error) {
-	v, err := st.q.CalculateCharacterAssetTotalValue(ctx, int64(characterID))
+	v, err := st.qRO.CalculateCharacterAssetTotalValue(ctx, int64(characterID))
 	if err != nil {
 		return 0, fmt.Errorf("calculate character asset for character %d: %w", characterID, err)
 	}
@@ -80,7 +80,7 @@ func (st *Storage) CalculateCharacterAssetTotalValue(ctx context.Context, charac
 }
 
 func (st *Storage) ListCharacterAssetIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
-	ids, err := st.q.ListCharacterAssetIDs(ctx, int64(characterID))
+	ids, err := st.qRO.ListCharacterAssetIDs(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list character asset IDs: %w", err)
 	}
@@ -94,7 +94,7 @@ func (st *Storage) ListCharacterAssetsInShipHangar(ctx context.Context, characte
 		LocationFlag:  "Hangar",
 		EveCategoryID: app.EveCategoryShip,
 	}
-	rows, err := st.q.ListCharacterAssetsInShipHangar(ctx, arg)
+	rows, err := st.qRO.ListCharacterAssetsInShipHangar(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("list assets in ship hangar for character ID %d: %w", characterID, err)
 	}
@@ -112,7 +112,7 @@ func (st *Storage) ListCharacterAssetsInItemHangar(ctx context.Context, characte
 		LocationFlag:  "Hangar",
 		EveCategoryID: app.EveCategoryShip,
 	}
-	rows, err := st.q.ListCharacterAssetsInItemHangar(ctx, arg)
+	rows, err := st.qRO.ListCharacterAssetsInItemHangar(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("list assets in item hangar for character ID %d: %w", characterID, err)
 	}
@@ -128,7 +128,7 @@ func (st *Storage) ListCharacterAssetsInLocation(ctx context.Context, characterI
 		CharacterID: int64(characterID),
 		LocationID:  locationID,
 	}
-	rows, err := st.q.ListCharacterAssetsInLocation(ctx, arg)
+	rows, err := st.qRO.ListCharacterAssetsInLocation(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("list assets in location for character ID %d: %w", characterID, err)
 	}
@@ -162,14 +162,14 @@ func (st *Storage) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacter
 		Name:         arg.Name,
 		Quantity:     int64(arg.Quantity),
 	}
-	if err := st.q.UpdateCharacterAsset(ctx, arg2); err != nil {
+	if err := st.qRW.UpdateCharacterAsset(ctx, arg2); err != nil {
 		return fmt.Errorf("update character asset %v, %w", arg, err)
 	}
 	return nil
 }
 
 func (st *Storage) ListAllCharacterAssets(ctx context.Context) ([]*app.CharacterAsset, error) {
-	rows, err := st.q.ListAllCharacterAssets(ctx)
+	rows, err := st.qRO.ListAllCharacterAssets(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list all character assets: %w", err)
 	}
@@ -181,7 +181,7 @@ func (st *Storage) ListAllCharacterAssets(ctx context.Context) ([]*app.Character
 }
 
 func (st *Storage) ListCharacterAssets(ctx context.Context, characterID int32) ([]*app.CharacterAsset, error) {
-	rows, err := st.q.ListCharacterAssets(ctx, int64(characterID))
+	rows, err := st.qRO.ListCharacterAssets(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list assets for character ID %d: %w", characterID, err)
 	}

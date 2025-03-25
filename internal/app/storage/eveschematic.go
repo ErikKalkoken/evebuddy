@@ -25,7 +25,7 @@ func (st *Storage) CreateEveSchematic(ctx context.Context, arg CreateEveSchemati
 		CycleTime: int64(arg.CycleTime),
 		Name:      arg.Name,
 	}
-	e, err := st.q.CreateEveSchematic(ctx, arg2)
+	e, err := st.qRW.CreateEveSchematic(ctx, arg2)
 	if err != nil {
 		return nil, fmt.Errorf("create EveSchematic %v, %w", arg, err)
 	}
@@ -33,7 +33,7 @@ func (st *Storage) CreateEveSchematic(ctx context.Context, arg CreateEveSchemati
 }
 
 func (st *Storage) GetEveSchematic(ctx context.Context, id int32) (*app.EveSchematic, error) {
-	c, err := st.q.GetEveSchematic(ctx, int64(id))
+	c, err := st.qRO.GetEveSchematic(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound

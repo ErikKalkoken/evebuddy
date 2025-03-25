@@ -27,7 +27,7 @@ func (st *Storage) GetCharacterSectionStatus(ctx context.Context, characterID in
 		CharacterID: int64(characterID),
 		SectionID:   string(section),
 	}
-	s, err := st.q.GetCharacterSectionStatus(ctx, arg)
+	s, err := st.qRO.GetCharacterSectionStatus(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -39,7 +39,7 @@ func (st *Storage) GetCharacterSectionStatus(ctx context.Context, characterID in
 }
 
 func (st *Storage) ListCharacterSectionStatus(ctx context.Context, characterID int32) ([]*app.CharacterSectionStatus, error) {
-	rows, err := st.q.ListCharacterSectionStatus(ctx, int64(characterID))
+	rows, err := st.qRO.ListCharacterSectionStatus(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list character status for ID %d: %w", characterID, err)
 	}
@@ -66,12 +66,12 @@ func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg
 		panic("Invalid params")
 	}
 	o, err := func() (*app.CharacterSectionStatus, error) {
-		tx, err := st.db.Begin()
+		tx, err := st.dbRW.Begin()
 		if err != nil {
 			return nil, err
 		}
 		defer tx.Rollback()
-		qtx := st.q.WithTx(tx)
+		qtx := st.qRW.WithTx(tx)
 		var arg2 queries.UpdateOrCreateCharacterSectionStatusParams
 		old, err := qtx.GetCharacterSectionStatus(ctx, queries.GetCharacterSectionStatusParams{
 			CharacterID: int64(arg.CharacterID),

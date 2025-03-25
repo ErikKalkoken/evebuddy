@@ -46,13 +46,13 @@ func (st *Storage) CreateCharacterMail(ctx context.Context, arg CreateCharacterM
 			IsRead:      arg.IsRead,
 			Timestamp:   arg.Timestamp,
 		}
-		mail, err := st.q.CreateMail(ctx, mailParams)
+		mail, err := st.qRW.CreateMail(ctx, mailParams)
 		if err != nil {
 			return 0, fmt.Errorf("create mail: %w", err)
 		}
 		for _, id := range arg.RecipientIDs {
 			arg := queries.CreateMailRecipientParams{MailID: mail.ID, EveEntityID: int64(id)}
-			err := st.q.CreateMailRecipient(ctx, arg)
+			err := st.qRW.CreateMailRecipient(ctx, arg)
 			if err != nil {
 				return 0, fmt.Errorf("create mail recipient: %w", err)
 			}
@@ -70,12 +70,12 @@ func (st *Storage) CreateCharacterMail(ctx context.Context, arg CreateCharacterM
 }
 
 func (st *Storage) updateCharacterMailLabels(ctx context.Context, characterID int32, mailPK int64, labelIDs []int32) error {
-	tx, err := st.db.Begin()
+	tx, err := st.dbRW.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	qtx := st.q.WithTx(tx)
+	qtx := st.qRW.WithTx(tx)
 	if err := qtx.DeleteMailCharacterMailLabels(ctx, mailPK); err != nil {
 		return fmt.Errorf("delete mail labels: %w", err)
 	}
@@ -107,18 +107,18 @@ func (st *Storage) GetCharacterMail(ctx context.Context, characterID, mailID int
 			CharacterID: int64(characterID),
 			MailID:      int64(mailID),
 		}
-		row, err := st.q.GetMail(ctx, arg)
+		row, err := st.qRO.GetMail(ctx, arg)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				err = ErrNotFound
 			}
 			return nil, err
 		}
-		ll, err := st.q.GetCharacterMailLabels(ctx, row.CharacterMail.ID)
+		ll, err := st.qRO.GetCharacterMailLabels(ctx, row.CharacterMail.ID)
 		if err != nil {
 			return nil, err
 		}
-		rr, err := st.q.GetMailRecipients(ctx, row.CharacterMail.ID)
+		rr, err := st.qRO.GetMailRecipients(ctx, row.CharacterMail.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -132,7 +132,7 @@ func (st *Storage) GetCharacterMail(ctx context.Context, characterID, mailID int
 }
 
 func (st *Storage) GetCharacterMailUnreadCount(ctx context.Context, id int32) (int, error) {
-	count, err := st.q.GetMailUnreadCount(ctx, int64(id))
+	count, err := st.qRO.GetMailUnreadCount(ctx, int64(id))
 	if err != nil {
 		return 0, fmt.Errorf("get mail unread count for character %d: %w", id, err)
 	}
@@ -140,7 +140,7 @@ func (st *Storage) GetCharacterMailUnreadCount(ctx context.Context, id int32) (i
 }
 
 func (st *Storage) GetAllCharacterMailUnreadCount(ctx context.Context) (int, error) {
-	count, err := st.q.GetAllMailUnreadCount(ctx)
+	count, err := st.qRO.GetAllMailUnreadCount(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("get all mail unread count: %w", err)
 	}
@@ -148,7 +148,7 @@ func (st *Storage) GetAllCharacterMailUnreadCount(ctx context.Context) (int, err
 }
 
 func (st *Storage) GetCharacterMailCount(ctx context.Context, id int32) (int, error) {
-	count, err := st.q.GetMailCount(ctx, int64(id))
+	count, err := st.qRO.GetMailCount(ctx, int64(id))
 	if err != nil {
 		return 0, fmt.Errorf("get mail count for character %d: %w", id, err)
 	}
@@ -160,7 +160,7 @@ func (st *Storage) DeleteCharacterMail(ctx context.Context, characterID, mailID 
 		CharacterID: int64(characterID),
 		MailID:      int64(mailID),
 	}
-	err := st.q.DeleteMail(ctx, arg)
+	err := st.qRW.DeleteMail(ctx, arg)
 	if err != nil {
 		return fmt.Errorf("delete mail for character %d with ID%d: %w", characterID, mailID, err)
 	}
@@ -168,7 +168,7 @@ func (st *Storage) DeleteCharacterMail(ctx context.Context, characterID, mailID 
 }
 
 func (st *Storage) GetCharacterMailLabelUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {
-	rows, err := st.q.GetCharacterMailLabelUnreadCounts(ctx, int64(characterID))
+	rows, err := st.qRO.GetCharacterMailLabelUnreadCounts(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("get mail label unread counts for character %d: %w", characterID, err)
 	}
@@ -180,7 +180,7 @@ func (st *Storage) GetCharacterMailLabelUnreadCounts(ctx context.Context, charac
 }
 
 func (st *Storage) GetCharacterMailListUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {
-	rows, err := st.q.GetCharacterMailListUnreadCounts(ctx, int64(characterID))
+	rows, err := st.qRO.GetCharacterMailListUnreadCounts(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("get mail list unread counts for character %d: %w", characterID, err)
 	}
@@ -192,7 +192,7 @@ func (st *Storage) GetCharacterMailListUnreadCounts(ctx context.Context, charact
 }
 
 func (st *Storage) ListCharacterMailIDs(ctx context.Context, characterID int32) (set.Set[int32], error) {
-	ids, err := st.q.ListMailIDs(ctx, int64(characterID))
+	ids, err := st.qRO.ListMailIDs(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list mail IDs for character %d: %w", characterID, err)
 	}
@@ -200,7 +200,7 @@ func (st *Storage) ListCharacterMailIDs(ctx context.Context, characterID int32) 
 }
 
 func (st *Storage) ListCharacterMailListsOrdered(ctx context.Context, characterID int32) ([]*app.EveEntity, error) {
-	ll, err := st.q.ListCharacterMailListsOrdered(ctx, int64(characterID))
+	ll, err := st.qRO.ListCharacterMailListsOrdered(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list mail lists for character %d: %w", characterID, err)
 	}
@@ -216,7 +216,7 @@ func (st *Storage) UpdateCharacterMail(ctx context.Context, characterID int32, m
 		ID:     mailPK,
 		IsRead: isRead,
 	}
-	if err := st.q.UpdateCharacterMailIsRead(ctx, arg); err != nil {
+	if err := st.qRW.UpdateCharacterMailIsRead(ctx, arg); err != nil {
 		return fmt.Errorf("update mail PK %d for character %d: %w", mailPK, characterID, err)
 	}
 	if err := st.updateCharacterMailLabels(ctx, characterID, mailPK, labelIDs); err != nil {
@@ -259,7 +259,7 @@ func characterMailFromDBModel(
 }
 
 func (st *Storage) UpdateCharacterMailSetProcessed(ctx context.Context, id int64) error {
-	if err := st.q.UpdateCharacterMailSetProcessed(ctx, id); err != nil {
+	if err := st.qRW.UpdateCharacterMailSetProcessed(ctx, id); err != nil {
 		return fmt.Errorf("set mail PK %d as processed: %w", id, err)
 	}
 	return nil

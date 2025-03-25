@@ -25,7 +25,7 @@ func (st *Storage) CreateEveConstellation(ctx context.Context, arg CreateEveCons
 		EveRegionID: int64(arg.RegionID),
 		Name:        arg.Name,
 	}
-	err := st.q.CreateEveConstellation(ctx, arg2)
+	err := st.qRW.CreateEveConstellation(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("create EveConstellation %v, %w", arg, err)
 	}
@@ -33,7 +33,7 @@ func (st *Storage) CreateEveConstellation(ctx context.Context, arg CreateEveCons
 }
 
 func (st *Storage) GetEveConstellation(ctx context.Context, id int32) (*app.EveConstellation, error) {
-	row, err := st.q.GetEveConstellation(ctx, int64(id))
+	row, err := st.qRO.GetEveConstellation(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound

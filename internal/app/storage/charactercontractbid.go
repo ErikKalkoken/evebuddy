@@ -29,7 +29,7 @@ func (st *Storage) CreateCharacterContractBid(ctx context.Context, arg CreateCha
 		BidderID:   int64(arg.BidderID),
 		DateBid:    arg.DateBid,
 	}
-	if err := st.q.CreateCharacterContractBid(ctx, arg2); err != nil {
+	if err := st.qRW.CreateCharacterContractBid(ctx, arg2); err != nil {
 		return fmt.Errorf("create contract bid: %+v: %w", arg, err)
 	}
 	return nil
@@ -40,7 +40,7 @@ func (st *Storage) GetCharacterContractBid(ctx context.Context, contractID int64
 		ContractID: contractID,
 		BidID:      int64(bidID),
 	}
-	r, err := st.q.GetCharacterContractBid(ctx, arg)
+	r, err := st.qRO.GetCharacterContractBid(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("get contract bid %+v: %w", arg, err)
 	}
@@ -48,7 +48,7 @@ func (st *Storage) GetCharacterContractBid(ctx context.Context, contractID int64
 }
 
 func (st *Storage) ListCharacterContractBids(ctx context.Context, contractID int64) ([]*app.CharacterContractBid, error) {
-	rows, err := st.q.ListCharacterContractBids(ctx, contractID)
+	rows, err := st.qRO.ListCharacterContractBids(ctx, contractID)
 	if err != nil {
 		return nil, fmt.Errorf("list bids for contract %d: %w", contractID, err)
 	}
@@ -60,7 +60,7 @@ func (st *Storage) ListCharacterContractBids(ctx context.Context, contractID int
 }
 
 func (st *Storage) ListCharacterContractBidIDs(ctx context.Context, contractID int64) (set.Set[int32], error) {
-	ids, err := st.q.ListCharacterContractBidIDs(ctx, contractID)
+	ids, err := st.qRO.ListCharacterContractBidIDs(ctx, contractID)
 	if err != nil {
 		return nil, fmt.Errorf("list bid IDs for contract %d: %w", contractID, err)
 	}

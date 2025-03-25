@@ -25,7 +25,7 @@ func (st *Storage) CreateEveRegion(ctx context.Context, arg CreateEveRegionParam
 		Description: arg.Description,
 		Name:        arg.Name,
 	}
-	e, err := st.q.CreateEveRegion(ctx, arg2)
+	e, err := st.qRW.CreateEveRegion(ctx, arg2)
 	if err != nil {
 		return nil, fmt.Errorf("create EveRegion %v, %w", arg2, err)
 	}
@@ -33,7 +33,7 @@ func (st *Storage) CreateEveRegion(ctx context.Context, arg CreateEveRegionParam
 }
 
 func (st *Storage) GetEveRegion(ctx context.Context, id int32) (*app.EveRegion, error) {
-	c, err := st.q.GetEveRegion(ctx, int64(id))
+	c, err := st.qRO.GetEveRegion(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound

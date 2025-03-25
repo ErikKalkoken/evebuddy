@@ -24,7 +24,7 @@ func (st *Storage) CreateEveTypeDogmaEffect(ctx context.Context, arg CreateEveTy
 		EveTypeID:     int64(arg.EveTypeID),
 		IsDefault:     arg.IsDefault,
 	}
-	err := st.q.CreateEveTypeDogmaEffect(ctx, arg2)
+	err := st.qRW.CreateEveTypeDogmaEffect(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("create EveTypeDogmaEffect %v, %w", arg, err)
 	}
@@ -36,7 +36,7 @@ func (st *Storage) GetEveTypeDogmaEffect(ctx context.Context, eveTypeID, dogmaAt
 		DogmaEffectID: int64(dogmaAttributeID),
 		EveTypeID:     int64(eveTypeID),
 	}
-	row, err := st.q.GetEveTypeDogmaEffect(ctx, arg)
+	row, err := st.qRO.GetEveTypeDogmaEffect(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound

@@ -44,7 +44,7 @@ func (st *Storage) CreateCharacterWalletTransaction(ctx context.Context, arg Cre
 		UnitPrice:     arg.UnitPrice,
 	}
 
-	if err := st.q.CreateCharacterWalletTransaction(ctx, arg2); err != nil {
+	if err := st.qRW.CreateCharacterWalletTransaction(ctx, arg2); err != nil {
 		return fmt.Errorf("create wallet transaction: %+v: %w", arg2, err)
 	}
 	return nil
@@ -55,7 +55,7 @@ func (st *Storage) GetCharacterWalletTransaction(ctx context.Context, characterI
 		CharacterID:   int64(characterID),
 		TransactionID: transactionID,
 	}
-	r, err := st.q.GetCharacterWalletTransaction(ctx, arg)
+	r, err := st.qRO.GetCharacterWalletTransaction(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("get wallet transaction for character %d: %w", characterID, err)
 	}
@@ -70,7 +70,7 @@ func (st *Storage) GetCharacterWalletTransaction(ctx context.Context, characterI
 }
 
 func (st *Storage) ListCharacterWalletTransactionIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
-	ids, err := st.q.ListCharacterWalletTransactionIDs(ctx, int64(characterID))
+	ids, err := st.qRO.ListCharacterWalletTransactionIDs(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list wallet transaction ids for character %d: %w", characterID, err)
 	}
@@ -78,7 +78,7 @@ func (st *Storage) ListCharacterWalletTransactionIDs(ctx context.Context, charac
 }
 
 func (st *Storage) ListCharacterWalletTransactions(ctx context.Context, characterID int32) ([]*app.CharacterWalletTransaction, error) {
-	rows, err := st.q.ListCharacterWalletTransactions(ctx, int64(characterID))
+	rows, err := st.qRO.ListCharacterWalletTransactions(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list wallet transactions for character %d: %w", characterID, err)
 	}

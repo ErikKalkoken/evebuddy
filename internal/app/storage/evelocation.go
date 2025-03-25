@@ -34,14 +34,14 @@ func (st *Storage) UpdateOrCreateEveLocation(ctx context.Context, arg UpdateOrCr
 		OwnerID:          optional.ToNullInt64(arg.OwnerID),
 		UpdatedAt:        arg.UpdatedAt,
 	}
-	if err := st.q.UpdateOrCreateLocation(ctx, arg2); err != nil {
+	if err := st.qRW.UpdateOrCreateLocation(ctx, arg2); err != nil {
 		return fmt.Errorf("update or create eve location %v, %w", arg, err)
 	}
 	return nil
 }
 
 func (st *Storage) GetLocation(ctx context.Context, id int64) (*app.EveLocation, error) {
-	o, err := st.q.GetLocation(ctx, id)
+	o, err := st.qRO.GetLocation(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -56,7 +56,7 @@ func (st *Storage) GetLocation(ctx context.Context, id int64) (*app.EveLocation,
 }
 
 func (st *Storage) ListEveLocation(ctx context.Context) ([]*app.EveLocation, error) {
-	rows, err := st.q.ListEveLocations(ctx)
+	rows, err := st.qRO.ListEveLocations(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list eve locations: %w", err)
 	}
@@ -72,7 +72,7 @@ func (st *Storage) ListEveLocation(ctx context.Context) ([]*app.EveLocation, err
 }
 
 func (st *Storage) ListEveLocationInSolarSystem(ctx context.Context, solarSystemID int32) ([]*app.EveLocation, error) {
-	rows, err := st.q.ListEveLocationsInSolarSystem(ctx, sql.NullInt64{Int64: int64(solarSystemID), Valid: true})
+	rows, err := st.qRO.ListEveLocationsInSolarSystem(ctx, sql.NullInt64{Int64: int64(solarSystemID), Valid: true})
 	if err != nil {
 		return nil, fmt.Errorf("list eve locations in solar system: %w", err)
 	}
@@ -88,7 +88,7 @@ func (st *Storage) ListEveLocationInSolarSystem(ctx context.Context, solarSystem
 }
 
 func (st *Storage) MissingEveLocations(ctx context.Context, ids []int64) ([]int64, error) {
-	currentIDs, err := st.q.ListLocationIDs(ctx)
+	currentIDs, err := st.qRO.ListLocationIDs(ctx)
 	if err != nil {
 		return nil, err
 	}

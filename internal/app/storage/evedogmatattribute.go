@@ -39,7 +39,7 @@ func (st *Storage) CreateEveDogmaAttribute(ctx context.Context, arg CreateEveDog
 		IsStackable:  arg.IsStackable,
 		UnitID:       int64(arg.UnitID),
 	}
-	o, err := st.q.CreateEveDogmaAttribute(ctx, arg2)
+	o, err := st.qRW.CreateEveDogmaAttribute(ctx, arg2)
 	if err != nil {
 		return nil, fmt.Errorf("create EveDogmaAttribute %v, %w", arg2, err)
 	}
@@ -47,7 +47,7 @@ func (st *Storage) CreateEveDogmaAttribute(ctx context.Context, arg CreateEveDog
 }
 
 func (st *Storage) GetEveDogmaAttribute(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
-	c, err := st.q.GetEveDogmaAttribute(ctx, int64(id))
+	c, err := st.qRO.GetEveDogmaAttribute(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound

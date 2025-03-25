@@ -27,7 +27,7 @@ func (st *Storage) CreateEveSolarSystem(ctx context.Context, arg CreateEveSolarS
 		Name:               arg.Name,
 		SecurityStatus:     float64(arg.SecurityStatus),
 	}
-	err := st.q.CreateEveSolarSystem(ctx, arg2)
+	err := st.qRW.CreateEveSolarSystem(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("create EveSolarSystem %v, %w", arg, err)
 	}
@@ -35,7 +35,7 @@ func (st *Storage) CreateEveSolarSystem(ctx context.Context, arg CreateEveSolarS
 }
 
 func (st *Storage) GetEveSolarSystem(ctx context.Context, id int32) (*app.EveSolarSystem, error) {
-	row, err := st.q.GetEveSolarSystem(ctx, int64(id))
+	row, err := st.qRO.GetEveSolarSystem(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound

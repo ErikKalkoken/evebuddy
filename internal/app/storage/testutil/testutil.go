@@ -3,28 +3,52 @@ package testutil
 import (
 	"database/sql"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
+const useMemoryDB = true
+
 func New() (*sql.DB, *storage.Storage, Factory) {
-	db, err := storage.InitDB(":memory:")
+	if useMemoryDB {
+		// in-memory DB for faster runnng tests
+		db, err := sql.Open("sqlite3", ":memory:")
+		if err != nil {
+			panic(err)
+		}
+		if err := storage.ApplyMigrations(db); err != nil {
+			panic(err)
+		}
+		r := storage.New(db, db)
+		factory := NewFactory(r, db)
+		return db, r, factory
+	}
+	// real DB for more thorough tests
+	p := filepath.Join(os.TempDir(), "evebuddy_test.sqlite")
+	os.Remove(p)
+	dbRW, dbRO, err := storage.InitDB("file:" + p)
 	if err != nil {
 		panic(err)
 	}
-	r := storage.New(db)
-	factory := NewFactory(r, db)
-	return db, r, factory
+	r := storage.New(dbRW, dbRO)
+	factory := NewFactory(r, dbRO)
+	return dbRW, r, factory
 }
 
+// func New() (*sql.DB, *storage.Storage, Factory) {
+
+// }
+
 // TruncateTables will purge data from all tables. This is meant for tests.
-func TruncateTables(db *sql.DB) {
-	_, err := db.Exec("PRAGMA foreign_keys = 0")
+func TruncateTables(dbRW *sql.DB) {
+	_, err := dbRW.Exec("PRAGMA foreign_keys = 0")
 	if err != nil {
 		panic(err)
 	}
 	sql := `SELECT name FROM sqlite_master WHERE type = "table"`
-	rows, err := db.Query(sql)
+	rows, err := dbRW.Query(sql)
 	if err != nil {
 		panic(err)
 	}
@@ -39,19 +63,19 @@ func TruncateTables(db *sql.DB) {
 	}
 	for _, n := range tables {
 		sql := fmt.Sprintf("DELETE FROM %s;", n)
-		_, err := db.Exec(sql)
+		_, err := dbRW.Exec(sql)
 		if err != nil {
 			panic(err)
 		}
 	}
 	for _, n := range tables {
 		sql := fmt.Sprintf("DELETE FROM SQLITE_SEQUENCE WHERE name='%s'", n)
-		_, err := db.Exec(sql)
+		_, err := dbRW.Exec(sql)
 		if err != nil {
 			panic(err)
 		}
 	}
-	_, err = db.Exec("PRAGMA foreign_keys = 1")
+	_, err = dbRW.Exec("PRAGMA foreign_keys = 1")
 	if err != nil {
 		panic(err)
 	}

@@ -15,7 +15,7 @@ func (st *Storage) GetEveShipSkill(ctx context.Context, shipTypeID int32, rank u
 		ShipTypeID: int64(shipTypeID),
 		Rank:       int64(rank),
 	}
-	row, err := st.q.GetShipSkill(ctx, arg)
+	row, err := st.qRO.GetShipSkill(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -26,7 +26,7 @@ func (st *Storage) GetEveShipSkill(ctx context.Context, shipTypeID int32, rank u
 }
 
 func (st *Storage) ListEveShipSkills(ctx context.Context, shipTypeID int32) ([]*app.EveShipSkill, error) {
-	rows, err := st.q.ListShipSkills(ctx, int64(shipTypeID))
+	rows, err := st.qRO.ListShipSkills(ctx, int64(shipTypeID))
 	if err != nil {
 		return nil, fmt.Errorf("list ship skills for ID %d: %w", shipTypeID, err)
 	}
@@ -42,12 +42,12 @@ func (st *Storage) UpdateEveShipSkills(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	tx, err := st.db.Begin()
+	tx, err := st.dbRW.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	qtx := st.q.WithTx(tx)
+	qtx := st.qRW.WithTx(tx)
 	if err := qtx.TruncateShipSkills(ctx); err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func (st *Storage) CreateEveShipSkill(ctx context.Context, arg CreateShipSkillPa
 		SkillTypeID: int64(arg.SkillTypeID),
 		SkillLevel:  int64(arg.SkillLevel),
 	}
-	if err := st.q.CreateShipSkill(ctx, arg2); err != nil {
+	if err := st.qRW.CreateShipSkill(ctx, arg2); err != nil {
 		return fmt.Errorf("create ShipSkill %v, %w", arg2, err)
 	}
 	return nil
@@ -233,7 +233,7 @@ type listShipSkillsMapRow struct {
 }
 
 func (st *Storage) listShipSkillsMap(ctx context.Context) ([]listShipSkillsMapRow, error) {
-	rows, err := st.db.QueryContext(
+	rows, err := st.dbRO.QueryContext(
 		ctx,
 		listShipSkillsMapSQL,
 		app.EveDogmaAttributePrimarySkillID,
