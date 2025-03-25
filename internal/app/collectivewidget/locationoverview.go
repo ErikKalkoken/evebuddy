@@ -45,7 +45,9 @@ func NewLocationOverview(u app.UI) *LocationOverview {
 		case 0:
 			return iwidget.NewRichTextSegmentFromText(r.EveCharacter.Name)
 		case 1:
-			return r.Location.DisplayRichText()
+			if r.Location != nil {
+				return r.Location.DisplayRichText()
+			}
 		case 2:
 			if r.Location != nil {
 				return iwidget.NewRichTextSegmentFromText(r.Location.SolarSystem.Constellation.Region.Name)
