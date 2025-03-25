@@ -25,8 +25,7 @@ import (
 type constellationInfo struct {
 	widget.BaseWidget
 
-	iw InfoWindow
-	w  fyne.Window
+	iw *InfoWindow
 
 	id     int32
 	region *kxwidget.TappableLabel
@@ -35,7 +34,7 @@ type constellationInfo struct {
 	tabs   *container.AppTabs
 }
 
-func newConstellationInfo(iw InfoWindow, constellationID int32, w fyne.Window) *constellationInfo {
+func newConstellationInfo(iw *InfoWindow, constellationID int32) *constellationInfo {
 	region := kxwidget.NewTappableLabel("", nil)
 	region.Wrapping = fyne.TextWrapWord
 	name := widget.NewLabel("")
@@ -50,7 +49,6 @@ func newConstellationInfo(iw InfoWindow, constellationID int32, w fyne.Window) *
 		name:   name,
 		region: region,
 		tabs:   container.NewAppTabs(),
-		w:      w,
 	}
 	a.ExtendBaseWidget(a)
 	return a
@@ -97,7 +95,7 @@ func (a *constellationInfo) load(constellationID int32) error {
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", fmt.Sprint(o.ID))
 		x.Action = func(v any) {
-			a.w.Clipboard().SetContent(v.(string))
+			a.iw.window.Clipboard().SetContent(v.(string))
 		}
 		attributeList := NewAttributeList([]AttributeItem{x}...)
 		attributeList.ShowInfoWindow = a.iw.ShowEveEntity

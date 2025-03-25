@@ -98,7 +98,6 @@ type BaseUI struct {
 	eis              app.EveImageService
 	ess              app.ESIStatusService
 	eus              app.EveUniverseService
-	infoWindow       infowindow.InfoWindow
 	isForeground     atomic.Bool // whether the app is currently shown in the foreground
 	isMobile         bool
 	isOffline        bool // Run the app in offline mode
@@ -151,7 +150,6 @@ func NewBaseUI(
 	}
 
 	u.snackbar = iwidget.NewSnackbar(u.window)
-	u.infoWindow = infowindow.New(u, u.window)
 
 	u.allAssetSearch = collectivewidget.NewAssetSearch(u)
 	u.characterAssets = characterwidget.NewCharacterAssets(u)
@@ -959,19 +957,23 @@ func (u *BaseUI) ShowUpdateStatusWindow() {
 }
 
 func (u *BaseUI) ShowLocationInfoWindow(id int64) {
-	u.infoWindow.ShowLocation(id)
+	iw := infowindow.New(u, u.window)
+	iw.ShowLocation(id)
 }
 
 func (u *BaseUI) ShowTypeInfoWindow(id int32) {
-	u.infoWindow.Show(app.EveEntityInventoryType, id)
+	iw := infowindow.New(u, u.window)
+	iw.Show(app.EveEntityInventoryType, id)
 }
 
 func (u *BaseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
-	u.infoWindow.ShowEveEntity(o)
+	iw := infowindow.New(u, u.window)
+	iw.ShowEveEntity(o)
 }
 
 func (u *BaseUI) ShowInfoWindow(c app.EveEntityCategory, id int32) {
-	u.infoWindow.Show(c, id)
+	iw := infowindow.New(u, u.window)
+	iw.Show(c, id)
 }
 
 func (u *BaseUI) ShowSnackbar(text string) {

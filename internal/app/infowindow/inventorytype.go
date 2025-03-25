@@ -55,13 +55,12 @@ type inventoryTypeInfo struct {
 	requiredSkills []requiredSkill
 	techLevel      int
 
-	iw InfoWindow
-	w  fyne.Window
+	iw *InfoWindow
 }
 
-func NewInventoryTypeInfo(iw InfoWindow, typeID, characterID int32, w fyne.Window) (*inventoryTypeInfo, error) {
+func NewInventoryTypeInfo(iw *InfoWindow, typeID, characterID int32) (*inventoryTypeInfo, error) {
 	ctx := context.Background()
-	a := &inventoryTypeInfo{iw: iw, w: w, id: typeID}
+	a := &inventoryTypeInfo{iw: iw, id: typeID}
 	a.ExtendBaseWidget(a)
 	et, err := iw.u.EveUniverseService().GetOrCreateTypeESI(ctx, typeID)
 	if err != nil {
@@ -268,7 +267,7 @@ func (a *inventoryTypeInfo) calcAttributesData(
 			label: "EVE ID",
 			value: fmt.Sprint(a.et.ID),
 			action: func(v string) {
-				a.w.Clipboard().SetContent(v)
+				a.iw.window.Clipboard().SetContent(v)
 			},
 		})
 	}
@@ -352,7 +351,7 @@ func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 			r = theme.BrokenImageIcon()
 		}
 		render := kxwidget.NewTappableImage(r, func() {
-			go a.iw.showZoomWindow(a.et.Name, a.et.ID, a.iw.u.EveImageService().InventoryTypeRender, a.w)
+			go a.iw.showZoomWindow(a.et.Name, a.et.ID, a.iw.u.EveImageService().InventoryTypeRender, a.iw.window)
 		})
 		render.SetFillMode(canvas.ImageFillContain)
 		s := float32(size)

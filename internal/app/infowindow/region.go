@@ -24,15 +24,14 @@ type regionInfo struct {
 	widget.BaseWidget
 
 	id int32
-	iw InfoWindow
-	w  fyne.Window
+	iw *InfoWindow
 
 	logo *canvas.Image
 	name *widget.Label
 	tabs *container.AppTabs
 }
 
-func newRegionInfo(iw InfoWindow, regionID int32, w fyne.Window) *regionInfo {
+func newRegionInfo(iw *InfoWindow, regionID int32) *regionInfo {
 	name := widget.NewLabel("")
 	name.Wrapping = fyne.TextWrapWord
 	name.TextStyle.Bold = true
@@ -44,7 +43,6 @@ func newRegionInfo(iw InfoWindow, regionID int32, w fyne.Window) *regionInfo {
 		logo: logo,
 		name: name,
 		tabs: container.NewAppTabs(),
-		w:    w,
 	}
 	a.ExtendBaseWidget(a)
 	return a
@@ -87,7 +85,7 @@ func (a *regionInfo) load(regionID int32) error {
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", fmt.Sprint(o.ID))
 		x.Action = func(v any) {
-			a.w.Clipboard().SetContent(v.(string))
+			a.iw.window.Clipboard().SetContent(v.(string))
 		}
 		attributeList := NewAttributeList([]AttributeItem{x}...)
 		attributeList.ShowInfoWindow = a.iw.ShowEveEntity

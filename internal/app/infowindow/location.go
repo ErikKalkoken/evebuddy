@@ -26,15 +26,14 @@ type locationInfo struct {
 	id              int64
 	corporation     *kxwidget.TappableLabel
 	corporationLogo *canvas.Image
-	iw              InfoWindow
+	iw              *InfoWindow
 	name            *widget.Label
 	tabs            *container.AppTabs
 	typeImage       *kxwidget.TappableImage
 	typeInfo        *kxwidget.TappableLabel
-	w               fyne.Window
 }
 
-func newLocationInfo(iw InfoWindow, locationID int64, w fyne.Window) *locationInfo {
+func newLocationInfo(iw *InfoWindow, locationID int64) *locationInfo {
 	name := widget.NewLabel("Loading...")
 	name.Wrapping = fyne.TextWrapWord
 	name.TextStyle.Bold = true
@@ -54,7 +53,6 @@ func newLocationInfo(iw InfoWindow, locationID int64, w fyne.Window) *locationIn
 		typeInfo:        typeInfo,
 		typeImage:       typeImage,
 		tabs:            container.NewAppTabs(),
-		w:               w,
 	}
 	a.ExtendBaseWidget(a)
 	return a
@@ -113,7 +111,7 @@ func (a *locationInfo) load(locationID int64) error {
 		a.iw.ShowEveEntity(o.Owner)
 	}
 	a.typeImage.OnTapped = func() {
-		go a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.u.EveImageService().InventoryTypeRender, a.w)
+		go a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.u.EveImageService().InventoryTypeRender, a.iw.window)
 	}
 	description := o.Type.Description
 	if description == "" {
@@ -125,7 +123,7 @@ func (a *locationInfo) load(locationID int64) error {
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
-			a.w.Clipboard().SetContent(fmt.Sprint(o.ID))
+			a.iw.window.Clipboard().SetContent(fmt.Sprint(o.ID))
 		}
 		attributeList := NewAttributeList([]AttributeItem{x}...)
 		attributeList.ShowInfoWindow = a.iw.ShowEveEntity

@@ -23,14 +23,13 @@ type allianceInfo struct {
 
 	id   int32
 	hq   *kxwidget.TappableLabel
-	iw   InfoWindow
+	iw   *InfoWindow
 	logo *canvas.Image
 	name *widget.Label
 	tabs *container.AppTabs
-	w    fyne.Window
 }
 
-func newAllianceInfo(iw InfoWindow, allianceID int32, w fyne.Window) *allianceInfo {
+func newAllianceInfo(iw *InfoWindow, allianceID int32) *allianceInfo {
 	name := widget.NewLabel("")
 	name.Wrapping = fyne.TextWrapWord
 	name.TextStyle.Bold = true
@@ -45,7 +44,6 @@ func newAllianceInfo(iw InfoWindow, allianceID int32, w fyne.Window) *allianceIn
 		logo: logo,
 		hq:   hq,
 		tabs: container.NewAppTabs(),
-		w:    w,
 	}
 	a.ExtendBaseWidget(a)
 	return a
@@ -106,7 +104,7 @@ func (a *allianceInfo) load(allianceID int32) error {
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
-			a.w.Clipboard().SetContent(fmt.Sprint(o.ID))
+			a.iw.window.Clipboard().SetContent(fmt.Sprint(o.ID))
 		}
 		attributes = append(attributes, x)
 	}

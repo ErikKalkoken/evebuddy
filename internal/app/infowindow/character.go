@@ -37,11 +37,10 @@ type characterInfo struct {
 	security        *widget.Label
 	title           *widget.Label
 	tabs            *container.AppTabs
-	iw              InfoWindow
-	w               fyne.Window
+	iw              *InfoWindow
 }
 
-func newCharacterInfo(iw InfoWindow, characterID int32, w fyne.Window) *characterInfo {
+func newCharacterInfo(iw *InfoWindow, characterID int32) *characterInfo {
 	alliance := kxwidget.NewTappableLabel("", nil)
 	alliance.Wrapping = fyne.TextWrapWord
 	name := widget.NewLabel("")
@@ -66,7 +65,6 @@ func newCharacterInfo(iw InfoWindow, characterID int32, w fyne.Window) *characte
 		security:        widget.NewLabel(""),
 		tabs:            container.NewAppTabs(),
 		title:           title,
-		w:               w,
 	}
 	a.ExtendBaseWidget(a)
 	return a
@@ -140,7 +138,7 @@ func (a *characterInfo) load(characterID int32) error {
 		a.iw.ShowEveEntity(o.Corporation)
 	}
 	a.portrait.OnTapped = func() {
-		go a.iw.showZoomWindow(o.Name, characterID, a.iw.u.EveImageService().CharacterPortrait, a.w)
+		go a.iw.showZoomWindow(o.Name, characterID, a.iw.u.EveImageService().CharacterPortrait, a.iw.window)
 	}
 	if s := o.DescriptionPlain(); s != "" {
 		bio := widget.NewLabel(s)
@@ -164,7 +162,7 @@ func (a *characterInfo) load(characterID int32) error {
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
-			a.w.Clipboard().SetContent(fmt.Sprint(o.ID))
+			a.iw.window.Clipboard().SetContent(fmt.Sprint(o.ID))
 		}
 		attributes = append(attributes, x)
 	}

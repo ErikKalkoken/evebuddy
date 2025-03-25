@@ -25,8 +25,7 @@ import (
 type solarSystemInfo struct {
 	widget.BaseWidget
 
-	iw InfoWindow
-	w  fyne.Window
+	iw *InfoWindow
 
 	id            int32
 	region        *kxwidget.TappableLabel
@@ -37,7 +36,7 @@ type solarSystemInfo struct {
 	tabs          *container.AppTabs
 }
 
-func newSolarSystemInfo(iw InfoWindow, id int32, w fyne.Window) *solarSystemInfo {
+func newSolarSystemInfo(iw *InfoWindow, id int32) *solarSystemInfo {
 	region := kxwidget.NewTappableLabel("", nil)
 	region.Wrapping = fyne.TextWrapWord
 	constellation := kxwidget.NewTappableLabel("", nil)
@@ -56,7 +55,6 @@ func newSolarSystemInfo(iw InfoWindow, id int32, w fyne.Window) *solarSystemInfo
 		name:          name,
 		security:      widget.NewLabel(""),
 		tabs:          container.NewAppTabs(),
-		w:             w,
 	}
 	a.ExtendBaseWidget(a)
 	return a
@@ -128,7 +126,7 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", fmt.Sprint(solarSystemID))
 		x.Action = func(v any) {
-			a.w.Clipboard().SetContent(v.(string))
+			a.iw.window.Clipboard().SetContent(v.(string))
 		}
 		attributeList := NewAttributeList([]AttributeItem{x}...)
 		attributeList.ShowInfoWindow = a.iw.ShowEveEntity

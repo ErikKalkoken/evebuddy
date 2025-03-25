@@ -244,7 +244,7 @@ func NewMobileUI(bui *BaseUI) *MobileUI {
 	}
 
 	characterPage := newCharacterAppBar("Character", characterList)
-	characterNav = iwidget.NewNavigator(characterPage)
+	characterNav = iwidget.NewNavigatorWithAppBar(characterPage)
 
 	// characters cross destination
 	var crossNav *iwidget.Navigator
@@ -302,7 +302,7 @@ func NewMobileUI(bui *BaseUI) *MobileUI {
 		navItemColonies2,
 		navItemWealth,
 	)
-	crossNav = iwidget.NewNavigator(iwidget.NewAppBar("Characters", crossList))
+	crossNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("Characters", crossList))
 	u.colonyOverview.OnUpdate = func(top string) {
 		navItemColonies2.Supporting = top
 		crossList.Refresh()
@@ -313,7 +313,7 @@ func NewMobileUI(bui *BaseUI) *MobileUI {
 	}
 
 	// info destination
-	searchNav := iwidget.NewNavigator(
+	searchNav := iwidget.NewNavigatorWithAppBar(
 		newCharacterAppBar("Search", u.gameSearch),
 	)
 
@@ -405,7 +405,7 @@ func NewMobileUI(bui *BaseUI) *MobileUI {
 	u.managerCharacters.OnUpdate = func(characterCount int) {
 		navItemManageCharacters.Supporting = fmt.Sprintf("%d characters", characterCount)
 	}
-	moreNav = iwidget.NewNavigator(iwidget.NewAppBar("More", toolsList))
+	moreNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("More", toolsList))
 
 	// navigation bar
 	characterDest := iwidget.NewDestinationDef("Character", theme.NewThemedResource(icons.AccountSvg), characterNav)
