@@ -188,7 +188,7 @@ func (a *solarSystemInfo) load() error {
 		}()
 
 		go func() {
-			pp, err := a.iw.u.EveUniverseService().GetPlanets(ctx, planets)
+			pp, err := a.iw.u.EveUniverseService().GetSolarSystemPlanets(ctx, planets)
 			if err != nil {
 				slog.Error("solar system info: Failed to load planets", "solarSystem", a.id, "error", err)
 				planetsLabel.Text = ihumanize.Error(err)

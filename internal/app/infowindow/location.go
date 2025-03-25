@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -11,11 +12,14 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
@@ -90,14 +94,6 @@ func (a *locationInfo) load() error {
 	if err != nil {
 		return err
 	}
-	go func() {
-		r, err := a.iw.u.EveImageService().InventoryTypeRender(o.Type.ID, renderIconPixelSize)
-		if err != nil {
-			slog.Error("location info: Failed to load portrait", "location", o, "error", err)
-			return
-		}
-		a.typeImage.SetResource(r)
-	}()
 	a.name.SetText(o.Name)
 	a.typeInfo.SetText(o.Type.Name)
 	a.typeInfo.OnTapped = func() {
@@ -110,6 +106,24 @@ func (a *locationInfo) load() error {
 	a.typeImage.OnTapped = func() {
 		go a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.u.EveImageService().InventoryTypeRender, a.iw.w)
 	}
+	go func() {
+		r, err := a.iw.u.EveImageService().InventoryTypeRender(o.Type.ID, renderIconPixelSize)
+		if err != nil {
+			slog.Error("location info: Failed to load portrait", "location", o, "error", err)
+			return
+		}
+		a.typeImage.SetResource(r)
+	}()
+	go func() {
+		r, err := a.iw.u.EveImageService().CorporationLogo(o.Owner.ID, app.IconPixelSize)
+		if err != nil {
+			slog.Error("location info: Failed to load corp logo", "owner", o.Owner, "error", err)
+			return
+		}
+		a.ownerLogo.Resource = r
+		a.ownerLogo.Refresh()
+	}()
+
 	description := o.Type.Description
 	if description == "" {
 		description = o.Type.Name
@@ -117,6 +131,7 @@ func (a *locationInfo) load() error {
 	desc := widget.NewLabel(description)
 	desc.Wrapping = fyne.TextWrapWord
 	a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
+
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
@@ -127,6 +142,7 @@ func (a *locationInfo) load() error {
 		attributesTab := container.NewTabItem("Attributes", attributeList)
 		a.tabs.Append(attributesTab)
 	}
+
 	el := NewEntityListFromItems(
 		a.iw.show,
 		NewEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.Region.ToEveEntity(), ""),
@@ -135,16 +151,23 @@ func (a *locationInfo) load() error {
 	)
 	locationTab := container.NewTabItem("Location", el)
 	a.tabs.Append(locationTab)
+
+	if o.Variant() == app.EveLocationStation {
+		ss, err := a.iw.u.EveUniverseService().GetStationServicesESI(ctx, int32(a.id))
+		if err != nil {
+			panic(err)
+		}
+		items := xslices.Map(ss, func(s string) entityItem {
+			s2 := strings.ReplaceAll(s, "-", " ")
+			titler := cases.Title(language.English)
+			name := titler.String(s2)
+			return NewEntityItem(0, "Service", name, infoNotSupported)
+		})
+		servicesTab := container.NewTabItem("Services", NewEntityListFromItems(nil, items...))
+		a.tabs.Append(servicesTab)
+	}
+
 	a.tabs.Select(locationTab)
 	a.tabs.Refresh()
-	go func() {
-		r, err := a.iw.u.EveImageService().CorporationLogo(o.Owner.ID, app.IconPixelSize)
-		if err != nil {
-			slog.Error("location info: Failed to load corp logo", "owner", o.Owner, "error", err)
-			return
-		}
-		a.ownerLogo.Resource = r
-		a.ownerLogo.Refresh()
-	}()
 	return nil
 }
