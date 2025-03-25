@@ -57,6 +57,9 @@ func (s *EveUniverseService) makeMembershipHistory(ctx context.Context, items []
 	ids := slices.Collect(xiter.MapSlice(items, func(x organizationHistoryItem) int32 {
 		return x.OrganizationID
 	}))
+	ids = slices.DeleteFunc(ids, func(id int32) bool {
+		return id < 2
+	})
 	eeMap, err := s.ToEveEntities(ctx, ids)
 	if err != nil {
 		return nil, err

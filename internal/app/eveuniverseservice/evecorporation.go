@@ -2,6 +2,7 @@ package eveuniverseservice
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -12,7 +13,12 @@ func (s *EveUniverseService) GetCorporationESI(ctx context.Context, corporationI
 	if err != nil {
 		return nil, err
 	}
-	eeMap, err := s.ToEveEntities(ctx, []int32{corporationID, x.CeoId, x.CreatorId, x.AllianceId, x.FactionId, x.HomeStationId})
+	ids := slices.DeleteFunc(
+		[]int32{corporationID, x.CeoId, x.CreatorId, x.AllianceId, x.FactionId, x.HomeStationId},
+		func(id int32) bool {
+			return id < 2
+		})
+	eeMap, err := s.ToEveEntities(ctx, ids)
 	if err != nil {
 		return nil, err
 	}

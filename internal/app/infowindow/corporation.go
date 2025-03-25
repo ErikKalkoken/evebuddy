@@ -39,19 +39,14 @@ type corporationInfo struct {
 func newCorporationInfo(iw *InfoWindow, id int32) *corporationInfo {
 	alliance := kxwidget.NewTappableLabel("", nil)
 	alliance.Wrapping = fyne.TextWrapWord
-	name := widget.NewLabel("")
-	name.Wrapping = fyne.TextWrapWord
-	name.TextStyle.Bold = true
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Wrapping = fyne.TextWrapWord
-	s := float32(app.IconPixelSize) * logoZoomFactor
-	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(s))
 	a := &corporationInfo{
 		id:           id,
 		alliance:     alliance,
 		allianceLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
-		name:         name,
-		logo:         logo,
+		name:         makeInfoName(),
+		logo:         makeInfoLogo(),
 		hq:           hq,
 		tabs:         container.NewAppTabs(),
 		iw:           iw,
@@ -75,7 +70,7 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 			a.alliance,
 		),
 	)
-	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, main)
+	top := container.NewBorder(nil, nil, container.NewVBox(container.NewPadded(a.logo)), nil, main)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
@@ -173,7 +168,7 @@ func (a *corporationInfo) load(corporationID int32) error {
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
-			a.iw.window.Clipboard().SetContent(fmt.Sprint(o.ID))
+			a.iw.w.Clipboard().SetContent(fmt.Sprint(o.ID))
 		}
 		attributes = append(attributes, x)
 	}

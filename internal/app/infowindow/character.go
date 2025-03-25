@@ -43,14 +43,11 @@ type characterInfo struct {
 func newCharacterInfo(iw *InfoWindow, characterID int32) *characterInfo {
 	alliance := kxwidget.NewTappableLabel("", nil)
 	alliance.Wrapping = fyne.TextWrapWord
-	name := widget.NewLabel("")
-	name.Wrapping = fyne.TextWrapWord
-	name.TextStyle.Bold = true
 	corporation := kxwidget.NewTappableLabel("", nil)
 	corporation.Wrapping = fyne.TextWrapWord
 	portrait := kxwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
-	portrait.SetMinSize(fyne.NewSquareSize(128))
+	portrait.SetMinSize(fyne.NewSquareSize(renderIconUnitSize))
 	title := widget.NewLabel("")
 	title.Wrapping = fyne.TextWrapWord
 	a := &characterInfo{
@@ -60,7 +57,7 @@ func newCharacterInfo(iw *InfoWindow, characterID int32) *characterInfo {
 		iw:              iw,
 		id:              characterID,
 		membership:      widget.NewLabel(""),
-		name:            name,
+		name:            makeInfoName(),
 		portrait:        portrait,
 		security:        widget.NewLabel(""),
 		tabs:            container.NewAppTabs(),
@@ -138,7 +135,7 @@ func (a *characterInfo) load(characterID int32) error {
 		a.iw.ShowEveEntity(o.Corporation)
 	}
 	a.portrait.OnTapped = func() {
-		go a.iw.showZoomWindow(o.Name, characterID, a.iw.u.EveImageService().CharacterPortrait, a.iw.window)
+		go a.iw.showZoomWindow(o.Name, characterID, a.iw.u.EveImageService().CharacterPortrait, a.iw.w)
 	}
 	if s := o.DescriptionPlain(); s != "" {
 		bio := widget.NewLabel(s)
@@ -162,7 +159,7 @@ func (a *characterInfo) load(characterID int32) error {
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
-			a.iw.window.Clipboard().SetContent(fmt.Sprint(o.ID))
+			a.iw.w.Clipboard().SetContent(fmt.Sprint(o.ID))
 		}
 		attributes = append(attributes, x)
 	}

@@ -957,22 +957,22 @@ func (u *BaseUI) ShowUpdateStatusWindow() {
 }
 
 func (u *BaseUI) ShowLocationInfoWindow(id int64) {
-	iw := infowindow.New(u, u.window)
+	iw := infowindow.New(u)
 	iw.ShowLocation(id)
 }
 
 func (u *BaseUI) ShowTypeInfoWindow(id int32) {
-	iw := infowindow.New(u, u.window)
+	iw := infowindow.New(u)
 	iw.Show(app.EveEntityInventoryType, id)
 }
 
 func (u *BaseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
-	iw := infowindow.New(u, u.window)
+	iw := infowindow.New(u)
 	iw.ShowEveEntity(o)
 }
 
 func (u *BaseUI) ShowInfoWindow(c app.EveEntityCategory, id int32) {
-	iw := infowindow.New(u, u.window)
+	iw := infowindow.New(u)
 	iw.Show(c, id)
 }
 

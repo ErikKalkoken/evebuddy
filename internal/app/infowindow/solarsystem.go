@@ -13,13 +13,11 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type solarSystemInfo struct {
@@ -41,18 +39,13 @@ func newSolarSystemInfo(iw *InfoWindow, id int32) *solarSystemInfo {
 	region.Wrapping = fyne.TextWrapWord
 	constellation := kxwidget.NewTappableLabel("", nil)
 	constellation.Wrapping = fyne.TextWrapWord
-	name := widget.NewLabel("")
-	name.Wrapping = fyne.TextWrapWord
-	name.TextStyle.Bold = true
-	s := float32(app.IconPixelSize) * logoZoomFactor
-	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(s))
 	a := &solarSystemInfo{
 		id:            id,
 		region:        region,
 		constellation: constellation,
 		iw:            iw,
-		logo:          logo,
-		name:          name,
+		logo:          makeInfoLogo(),
+		name:          makeInfoName(),
 		security:      widget.NewLabel(""),
 		tabs:          container.NewAppTabs(),
 	}
@@ -73,7 +66,7 @@ func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
 			container.New(colums, widget.NewLabel("Constellation"), a.constellation),
 			container.New(colums, widget.NewLabel("Security"), a.security),
 		))
-	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, main)
+	top := container.NewBorder(nil, nil, container.NewVBox(container.NewPadded(a.logo)), nil, main)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
@@ -126,7 +119,7 @@ func (a *solarSystemInfo) load(solarSystemID int32) error {
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", fmt.Sprint(solarSystemID))
 		x.Action = func(v any) {
-			a.iw.window.Clipboard().SetContent(v.(string))
+			a.iw.w.Clipboard().SetContent(v.(string))
 		}
 		attributeList := NewAttributeList([]AttributeItem{x}...)
 		attributeList.ShowInfoWindow = a.iw.ShowEveEntity

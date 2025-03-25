@@ -34,9 +34,6 @@ type locationInfo struct {
 }
 
 func newLocationInfo(iw *InfoWindow, locationID int64) *locationInfo {
-	name := widget.NewLabel("Loading...")
-	name.Wrapping = fyne.TextWrapWord
-	name.TextStyle.Bold = true
 	typeInfo := kxwidget.NewTappableLabel("", nil)
 	typeInfo.Wrapping = fyne.TextWrapWord
 	corporation := kxwidget.NewTappableLabel("", nil)
@@ -49,7 +46,7 @@ func newLocationInfo(iw *InfoWindow, locationID int64) *locationInfo {
 		corporation:     corporation,
 		corporationLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		iw:              iw,
-		name:            name,
+		name:            makeInfoName(),
 		typeInfo:        typeInfo,
 		typeImage:       typeImage,
 		tabs:            container.NewAppTabs(),
@@ -111,7 +108,7 @@ func (a *locationInfo) load(locationID int64) error {
 		a.iw.ShowEveEntity(o.Owner)
 	}
 	a.typeImage.OnTapped = func() {
-		go a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.u.EveImageService().InventoryTypeRender, a.iw.window)
+		go a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.u.EveImageService().InventoryTypeRender, a.iw.w)
 	}
 	description := o.Type.Description
 	if description == "" {
@@ -123,7 +120,7 @@ func (a *locationInfo) load(locationID int64) error {
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
-			a.iw.window.Clipboard().SetContent(fmt.Sprint(o.ID))
+			a.iw.w.Clipboard().SetContent(fmt.Sprint(o.ID))
 		}
 		attributeList := NewAttributeList([]AttributeItem{x}...)
 		attributeList.ShowInfoWindow = a.iw.ShowEveEntity

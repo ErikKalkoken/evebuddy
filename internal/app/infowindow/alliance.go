@@ -10,11 +10,9 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 // allianceInfo shows public information about a character.
@@ -30,18 +28,13 @@ type allianceInfo struct {
 }
 
 func newAllianceInfo(iw *InfoWindow, allianceID int32) *allianceInfo {
-	name := widget.NewLabel("")
-	name.Wrapping = fyne.TextWrapWord
-	name.TextStyle.Bold = true
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Wrapping = fyne.TextWrapWord
-	s := float32(app.IconPixelSize) * logoZoomFactor
-	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(s))
 	a := &allianceInfo{
 		iw:   iw,
 		id:   allianceID,
-		name: name,
-		logo: logo,
+		name: makeInfoName(),
+		logo: makeInfoLogo(),
 		hq:   hq,
 		tabs: container.NewAppTabs(),
 	}
@@ -59,13 +52,18 @@ func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 			a.name.Refresh()
 		}
 	}()
-	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, a.name)
+	top := container.NewBorder(nil, nil, container.NewVBox(container.NewPadded(a.logo)), nil, a.name)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
 	return widget.NewSimpleRenderer(c)
 }
 
 func (a *allianceInfo) load(allianceID int32) error {
 	ctx := context.Background()
+	o, err := a.iw.u.EveUniverseService().GetAllianceESI(ctx, allianceID)
+	if err != nil {
+		return err
+	}
+	a.name.SetText(o.Name)
 	go func() {
 		r, err := a.iw.u.EveImageService().AllianceLogo(allianceID, app.IconPixelSize)
 		if err != nil {
@@ -75,12 +73,6 @@ func (a *allianceInfo) load(allianceID int32) error {
 		a.logo.Resource = r
 		a.logo.Refresh()
 	}()
-	o, err := a.iw.u.EveUniverseService().GetAllianceESI(ctx, allianceID)
-	if err != nil {
-		return err
-	}
-	a.name.SetText(o.Name)
-
 	// Attributes
 	attributes := make([]AttributeItem, 0)
 	if o.ExecutorCorporation != nil {
@@ -104,7 +96,7 @@ func (a *allianceInfo) load(allianceID int32) error {
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
-			a.iw.window.Clipboard().SetContent(fmt.Sprint(o.ID))
+			a.iw.w.Clipboard().SetContent(fmt.Sprint(o.ID))
 		}
 		attributes = append(attributes, x)
 	}

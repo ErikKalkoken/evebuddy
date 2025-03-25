@@ -12,12 +12,9 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type regionInfo struct {
@@ -32,16 +29,11 @@ type regionInfo struct {
 }
 
 func newRegionInfo(iw *InfoWindow, regionID int32) *regionInfo {
-	name := widget.NewLabel("")
-	name.Wrapping = fyne.TextWrapWord
-	name.TextStyle.Bold = true
-	s := float32(app.IconPixelSize) * logoZoomFactor
-	logo := iwidget.NewImageFromResource(icons.Region64Png, fyne.NewSquareSize(s))
 	a := &regionInfo{
 		iw:   iw,
 		id:   regionID,
-		logo: logo,
-		name: name,
+		logo: makeInfoLogo(),
+		name: makeInfoName(),
 		tabs: container.NewAppTabs(),
 	}
 	a.ExtendBaseWidget(a)
@@ -56,7 +48,7 @@ func (a *regionInfo) CreateRenderer() fyne.WidgetRenderer {
 			widget.NewLabel("Region"),
 		),
 	)
-	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, main)
+	top := container.NewBorder(nil, nil, container.NewVBox(container.NewPadded(a.logo)), nil, main)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
@@ -85,7 +77,7 @@ func (a *regionInfo) load(regionID int32) error {
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", fmt.Sprint(o.ID))
 		x.Action = func(v any) {
-			a.iw.window.Clipboard().SetContent(v.(string))
+			a.iw.w.Clipboard().SetContent(v.(string))
 		}
 		attributeList := NewAttributeList([]AttributeItem{x}...)
 		attributeList.ShowInfoWindow = a.iw.ShowEveEntity

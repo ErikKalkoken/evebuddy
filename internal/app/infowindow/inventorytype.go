@@ -137,8 +137,8 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *inventoryTypeInfo) MakeTitle(suffix string) string {
-	return fmt.Sprintf("%s: %s", a.et.Group.Name, suffix)
+func (a *inventoryTypeInfo) title() string {
+	return a.et.Group.Name
 }
 
 func calcLevels(attributes map[int32]*app.EveTypeDogmaAttribute) (int, int) {
@@ -267,7 +267,7 @@ func (a *inventoryTypeInfo) calcAttributesData(
 			label: "EVE ID",
 			value: fmt.Sprint(a.et.ID),
 			action: func(v string) {
-				a.iw.window.Clipboard().SetContent(v)
+				a.iw.w.Clipboard().SetContent(v)
 			},
 		})
 	}
@@ -344,14 +344,14 @@ func (a *inventoryTypeInfo) calcRequiredSkills(ctx context.Context, characterID 
 func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 	typeIcon := container.New(ilayout.NewTopLeftLayout())
 	if a.et.HasRender() {
-		size := 128
+		size := renderIconUnitSize
 		r, err := a.iw.u.EveImageService().InventoryTypeRender(a.et.ID, size)
 		if err != nil {
 			slog.Error("Failed to load inventory type render", "typeID", a.et.ID, "error", err)
 			r = theme.BrokenImageIcon()
 		}
 		render := kxwidget.NewTappableImage(r, func() {
-			go a.iw.showZoomWindow(a.et.Name, a.et.ID, a.iw.u.EveImageService().InventoryTypeRender, a.iw.window)
+			go a.iw.showZoomWindow(a.et.Name, a.et.ID, a.iw.u.EveImageService().InventoryTypeRender, a.iw.w)
 		})
 		render.SetFillMode(canvas.ImageFillContain)
 		s := float32(size)
@@ -411,17 +411,15 @@ func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 	if a.character != nil && !a.character.IsCharacter() || len(a.requiredSkills) == 0 {
 		checkIcon.Hide()
 	}
-	title := widget.NewLabel("")
-	title.Wrapping = fyne.TextWrapWord
-	title.TextStyle.Bold = true
-	title.SetText(a.et.Name)
+	name := makeInfoName()
+	name.SetText(a.et.Name)
 	return container.NewBorder(
 		nil,
 		nil,
 		typeIcon,
 		nil,
 		container.NewVBox(
-			title,
+			name,
 			container.NewBorder(
 				nil,
 				nil,

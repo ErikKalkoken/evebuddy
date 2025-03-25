@@ -1,7 +1,6 @@
 package infowindow
 
 import (
-	"fmt"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -9,7 +8,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/dustin/go-humanize"
 
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -30,30 +28,25 @@ type UI interface {
 	EveUniverseService() app.EveUniverseService
 	IsDeveloperMode() bool
 	IsOffline() bool
+	MainWindow() fyne.Window
 	ShowErrorDialog(message string, err error, parent fyne.Window)
 	ShowInformationDialog(title, message string, parent fyne.Window)
 }
 
 // InfoWindow represents a dedicated window for showing information similar to the in-game info windows.
 type InfoWindow struct {
-	u            UI
-	parentWindow fyne.Window
-	window       fyne.Window
-	nav          *iwidget.Navigator
+	u   UI
+	w   fyne.Window
+	nav *iwidget.Navigator
 }
 
 // New returns a configured InfoWindow.
-func New(u UI, w fyne.Window) *InfoWindow {
+func New(u UI) *InfoWindow {
 	iw := &InfoWindow{
-		nav:          iwidget.NewNavigator(),
-		u:            u,
-		parentWindow: w,
+		u: u,
+		w: u.MainWindow(),
 	}
 	return iw
-}
-
-func (iw *InfoWindow) SetWindow(w fyne.Window) {
-	iw.parentWindow = w
 }
 
 // Show shows a new info window for an EveEntity.
@@ -75,7 +68,7 @@ func (iw *InfoWindow) show(t infoVariant, id int64) {
 		iw.u.ShowInformationDialog(
 			"Offline",
 			"Can't show info window when offline",
-			iw.parentWindow,
+			iw.w,
 		)
 		return
 	}
@@ -98,11 +91,11 @@ func (iw *InfoWindow) show(t infoVariant, id int64) {
 		// TODO: Restructure, so that window is first drawn empty and content loaded in background (as other info windo)
 		a, err := NewInventoryTypeInfo(iw, int32(id), iw.u.CurrentCharacterID())
 		if err != nil {
-			iw.u.ShowInformationDialog("ERROR", "Something whent wrong when trying to show info for type", iw.parentWindow)
+			iw.u.ShowInformationDialog("ERROR", "Something whent wrong when trying to show info for type", iw.w)
 			slog.Error("show type", "error", err)
 			return
 		}
-		title = a.MakeTitle("Information")
+		title = a.title()
 		page = a
 	case infoRegion:
 		title = "Region"
@@ -117,15 +110,15 @@ func (iw *InfoWindow) show(t infoVariant, id int64) {
 		iw.u.ShowInformationDialog(
 			"Warning",
 			"Can't show info window for unknown category",
-			iw.parentWindow,
+			iw.w,
 		)
 		return
 	}
 	ab := iwidget.NewAppBar(title+": Information", page)
-	if iw.window == nil {
+	if iw.nav == nil {
 		w := fyne.CurrentApp().NewWindow("Information")
-		iw.window = w
-		iw.nav.Set(ab)
+		iw.w = w
+		iw.nav = iwidget.NewNavigatorWithAppBar(ab)
 		w.SetContent(iw.nav)
 		w.Resize(fyne.Size{Width: infoWindowWidth, Height: infoWindowHeight})
 		w.Show()
@@ -145,26 +138,4 @@ func (iw *InfoWindow) showZoomWindow(title string, id int32, load func(int32, in
 	w2 := fyne.CurrentApp().NewWindow(title)
 	w2.SetContent(container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), i))
 	w2.Show()
-}
-
-func historyItem2EntityItem(hi app.MembershipHistoryItem) entityItem {
-	var endDateStr string
-	if !hi.EndDate.IsZero() {
-		endDateStr = hi.EndDate.Format(app.DateFormat)
-	} else {
-		endDateStr = "this day"
-	}
-	var closed string
-	if hi.IsDeleted {
-		closed = " (closed)"
-	}
-	text := fmt.Sprintf(
-		"%s%s   **%s** to **%s** (%s days)",
-		hi.OrganizationName(),
-		closed,
-		hi.StartDate.Format(app.DateFormat),
-		endDateStr,
-		humanize.Comma(int64(hi.Days)),
-	)
-	return NewEntityItemFromEveEntityWithText(hi.Organization, text)
 }

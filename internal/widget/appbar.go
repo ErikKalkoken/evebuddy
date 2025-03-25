@@ -1,6 +1,8 @@
 package widget
 
 import (
+	"image/color"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -82,18 +84,21 @@ func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 		right = container.New(layout.NewCustomPaddedLayout(0, 0, 0, p), icons)
 	}
 	row := container.NewBorder(nil, nil, left, right, w.title)
-	var top fyne.CanvasObject
+	var top, main fyne.CanvasObject
 	if w.isMobile {
 		top = container.New(
 			layout.NewCustomPaddedLayout(-p, -2*p, -p, -p),
 			container.NewStack(w.bg, container.NewPadded(row)),
 		)
+		main = container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), w.body)
 	} else {
 		top = container.NewVBox(
 			row,
 			widget.NewSeparator(),
+			canvas.NewRectangle(color.Transparent),
 		)
+		main = w.body
 	}
-	c := container.NewBorder(top, nil, nil, nil, container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), w.body))
+	c := container.NewBorder(top, nil, nil, nil, main)
 	return widget.NewSimpleRenderer(c)
 }

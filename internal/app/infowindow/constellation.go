@@ -12,14 +12,11 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type constellationInfo struct {
@@ -37,16 +34,11 @@ type constellationInfo struct {
 func newConstellationInfo(iw *InfoWindow, constellationID int32) *constellationInfo {
 	region := kxwidget.NewTappableLabel("", nil)
 	region.Wrapping = fyne.TextWrapWord
-	name := widget.NewLabel("")
-	name.Wrapping = fyne.TextWrapWord
-	name.TextStyle.Bold = true
-	s := float32(app.IconPixelSize) * logoZoomFactor
-	logo := iwidget.NewImageFromResource(icons.Constellation64Png, fyne.NewSquareSize(s))
 	a := &constellationInfo{
 		iw:     iw,
 		id:     constellationID,
-		logo:   logo,
-		name:   name,
+		logo:   makeInfoLogo(),
+		name:   makeInfoName(),
 		region: region,
 		tabs:   container.NewAppTabs(),
 	}
@@ -65,7 +57,7 @@ func (a *constellationInfo) CreateRenderer() fyne.WidgetRenderer {
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
 			container.New(colums, widget.NewLabel("Region"), a.region),
 		))
-	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, main)
+	top := container.NewBorder(nil, nil, container.NewVBox(container.NewPadded(a.logo)), nil, main)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
@@ -95,7 +87,7 @@ func (a *constellationInfo) load(constellationID int32) error {
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", fmt.Sprint(o.ID))
 		x.Action = func(v any) {
-			a.iw.window.Clipboard().SetContent(v.(string))
+			a.iw.w.Clipboard().SetContent(v.(string))
 		}
 		attributeList := NewAttributeList([]AttributeItem{x}...)
 		attributeList.ShowInfoWindow = a.iw.ShowEveEntity
