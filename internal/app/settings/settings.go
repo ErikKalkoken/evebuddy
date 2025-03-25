@@ -1,4 +1,4 @@
-package ui
+package settings
 
 import (
 	"log/slog"
@@ -50,38 +50,41 @@ const (
 	settingWindowHeightDefault                = 600
 	settingWindowsSize                        = "window-size"
 	settingWindowWidthDefault                 = 1000
+	notifyEarliestFallback                    = 24 * time.Hour
 )
 
-type AppSettings struct {
+// Settings represents the settings for the app and provides an API for reading and writing settings.
+type Settings struct {
 	p fyne.Preferences
 }
 
-var _ app.Settings = (*AppSettings)(nil)
+var _ app.Settings = (*Settings)(nil)
 
-func NewAppSettings(p fyne.Preferences) *AppSettings {
-	x := &AppSettings{p: p}
+// New returns a new Settings object.
+func New(p fyne.Preferences) *Settings {
+	x := &Settings{p: p}
 	return x
 }
 
-func (s AppSettings) DeveloperMode() bool {
+func (s Settings) DeveloperMode() bool {
 	return s.p.BoolWithFallback(settingDeveloperMode, settingDeveloperModeDefault)
 }
 
-func (s AppSettings) ResetDeveloperMode() {
+func (s Settings) ResetDeveloperMode() {
 	s.SetDeveloperMode(settingDeveloperModeDefault)
 }
 
-func (s AppSettings) SetDeveloperMode(v bool) {
+func (s Settings) SetDeveloperMode(v bool) {
 	s.p.SetBool(settingDeveloperMode, v)
 }
 
-func (s AppSettings) LogLevelNames() []string {
+func (s Settings) LogLevelNames() []string {
 	x := slices.Collect(maps.Keys(logLevelName2Level))
 	slices.Sort(x)
 	return x
 }
 
-func (s AppSettings) LogLevelSlog() slog.Level {
+func (s Settings) LogLevelSlog() slog.Level {
 	x := s.LogLevel()
 	l, ok := logLevelName2Level[x]
 	if !ok {
@@ -97,53 +100,53 @@ var logLevelName2Level = map[string]slog.Level{
 	"warning": slog.LevelWarn,
 }
 
-func (s AppSettings) LogLevel() string {
+func (s Settings) LogLevel() string {
 	return s.p.StringWithFallback(settingLogLevel, settingLogLevelDefault)
 }
 
-func (s AppSettings) LogLevelDefault() string {
+func (s Settings) LogLevelDefault() string {
 	return settingLogLevelDefault
 }
 
-func (s AppSettings) ResetLogLevel() {
+func (s Settings) ResetLogLevel() {
 	s.SetLogLevel(settingLogLevelDefault)
 }
 
-func (s AppSettings) SetLogLevel(l string) {
+func (s Settings) SetLogLevel(l string) {
 	s.p.SetString(settingLogLevel, l)
 }
 
-func (s AppSettings) MaxMails() int {
+func (s Settings) MaxMails() int {
 	return s.p.IntWithFallback(settingMaxMails, settingMaxMailsDefault)
 }
 
-func (s AppSettings) MaxMailsPresets() (min int, max int, def int) {
+func (s Settings) MaxMailsPresets() (min int, max int, def int) {
 	min = 0
 	max = settingMaxMailsMax
 	def = settingMaxMailsDefault
 	return
 }
 
-func (s AppSettings) ResetMaxMails() {
+func (s Settings) ResetMaxMails() {
 	s.SetMaxMails(settingMaxMailsDefault)
 }
 
-func (s AppSettings) SetMaxMails(v int) {
+func (s Settings) SetMaxMails(v int) {
 	s.p.SetInt(settingMaxMails, v)
 }
 
-func (s AppSettings) SysTrayEnabled() bool {
+func (s Settings) SysTrayEnabled() bool {
 	return s.p.BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault)
 }
-func (s AppSettings) ResetSysTrayEnabled() {
+func (s Settings) ResetSysTrayEnabled() {
 	s.SetSysTrayEnabled(settingSysTrayEnabledDefault)
 }
 
-func (s AppSettings) SetSysTrayEnabled(v bool) {
+func (s Settings) SetSysTrayEnabled(v bool) {
 	s.p.SetBool(settingSysTrayEnabled, v)
 }
 
-func (s AppSettings) WindowSize() fyne.Size {
+func (s Settings) WindowSize() fyne.Size {
 	x := s.p.FloatList(settingWindowsSize)
 	if len(x) < 2 {
 		return fyne.NewSize(settingWindowWidthDefault, settingWindowHeightDefault)
@@ -151,122 +154,122 @@ func (s AppSettings) WindowSize() fyne.Size {
 	return fyne.NewSize(float32(x[0]), float32(x[1]))
 }
 
-func (s AppSettings) ResetWindowSize() {
+func (s Settings) ResetWindowSize() {
 	s.SetWindowSize(fyne.NewSize(settingWindowWidthDefault, settingWindowHeightDefault))
 }
 
-func (s AppSettings) SetWindowSize(v fyne.Size) {
+func (s Settings) SetWindowSize(v fyne.Size) {
 	s.p.SetFloatList(settingWindowsSize, []float64{float64(v.Width), float64(v.Height)})
 }
 
-func (s AppSettings) TabsMainID() int {
+func (s Settings) TabsMainID() int {
 	return s.p.IntWithFallback(settingTabsMainID, settingTabsMainIDDefault)
 }
 
-func (s AppSettings) ResetTabsMainID() {
+func (s Settings) ResetTabsMainID() {
 	s.SetTabsMainID(settingTabsMainIDDefault)
 }
 
-func (s AppSettings) SetTabsMainID(v int) {
+func (s Settings) SetTabsMainID(v int) {
 	s.p.SetInt(settingTabsMainID, v)
 }
 
-func (s AppSettings) LastCharacterID() int32 {
+func (s Settings) LastCharacterID() int32 {
 	return int32(s.p.Int(settingLastCharacterID))
 }
 
-func (s AppSettings) ResetLastCharacterID() {
+func (s Settings) ResetLastCharacterID() {
 	s.SetLastCharacterID(0)
 }
 
-func (s AppSettings) SetLastCharacterID(id int32) {
+func (s Settings) SetLastCharacterID(id int32) {
 	s.p.SetInt(settingLastCharacterID, int(id))
 }
 
-func (s AppSettings) MaxWalletTransactions() int {
+func (s Settings) MaxWalletTransactions() int {
 	return s.p.IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault)
 }
 
-func (s AppSettings) MaxWalletTransactionsPresets() (min int, max int, def int) {
+func (s Settings) MaxWalletTransactionsPresets() (min int, max int, def int) {
 	min = 0
 	max = settingMaxWalletTransactionsMax
 	def = settingMaxWalletTransactionsDefault
 	return
 }
 
-func (s AppSettings) ResetMaxWalletTransactions() {
+func (s Settings) ResetMaxWalletTransactions() {
 	s.SetMaxWalletTransactions(settingMaxWalletTransactionsDefault)
 }
 
-func (s AppSettings) SetMaxWalletTransactions(v int) {
+func (s Settings) SetMaxWalletTransactions(v int) {
 	s.p.SetInt(settingMaxWalletTransactions, v)
 }
 
-func (s AppSettings) NotifyTimeoutHours() int {
+func (s Settings) NotifyTimeoutHours() int {
 	return s.p.IntWithFallback(settingNotifyTimeoutHours, settingNotifyTimeoutHoursDefault)
 }
 
-func (s AppSettings) NotifyTimeoutHoursPresets() (min int, max int, def int) {
+func (s Settings) NotifyTimeoutHoursPresets() (min int, max int, def int) {
 	min = settingNotifyTimeoutHoursMin
 	max = settingNotifyTimeoutHoursMax
 	def = settingNotifyTimeoutHoursDefault
 	return
 }
 
-func (s AppSettings) ResetNotifyTimeoutHours() {
+func (s Settings) ResetNotifyTimeoutHours() {
 	s.SetNotifyTimeoutHours(settingNotifyTimeoutHoursDefault)
 }
 
-func (s AppSettings) SetNotifyTimeoutHours(v int) {
+func (s Settings) SetNotifyTimeoutHours(v int) {
 	s.p.SetInt(settingNotifyTimeoutHours, v)
 }
 
-func (s AppSettings) NotificationTypesEnabled() set.Set[string] {
+func (s Settings) NotificationTypesEnabled() set.Set[string] {
 	return set.NewFromSlice(s.p.StringList(settingNotificationTypesEnabled))
 }
 
-func (s AppSettings) ResetNotificationTypesEnabled() {
+func (s Settings) ResetNotificationTypesEnabled() {
 	s.SetNotificationTypesEnabled(set.New[string]())
 }
 
-func (s AppSettings) SetNotificationTypesEnabled(v set.Set[string]) {
+func (s Settings) SetNotificationTypesEnabled(v set.Set[string]) {
 	s.p.SetStringList(settingNotificationTypesEnabled, v.ToSlice())
 }
 
-func (s AppSettings) NotifyCommunicationsEarliest() time.Time {
+func (s Settings) NotifyCommunicationsEarliest() time.Time {
 	return s.calcNotifyEarliest(settingNotifyCommunicationsEarliest)
 }
 
-func (s AppSettings) SetNotifyCommunicationsEarliest(t time.Time) {
+func (s Settings) SetNotifyCommunicationsEarliest(t time.Time) {
 	s.setEarliest(settingNotifyCommunicationsEarliest, t)
 }
 
-func (s AppSettings) NotifyContractsEarliest() time.Time {
+func (s Settings) NotifyContractsEarliest() time.Time {
 	return s.calcNotifyEarliest(settingNotifyContractsEarliest)
 }
 
-func (s AppSettings) SetNotifyContractsEarliest(t time.Time) {
+func (s Settings) SetNotifyContractsEarliest(t time.Time) {
 	s.setEarliest(settingNotifyContractsEarliest, t)
 }
 
-func (s AppSettings) NotifyMailsEarliest() time.Time {
+func (s Settings) NotifyMailsEarliest() time.Time {
 	return s.calcNotifyEarliest(settingNotifyMailsEarliest)
 }
-func (s AppSettings) SetNotifyMailsEarliest(t time.Time) {
+func (s Settings) SetNotifyMailsEarliest(t time.Time) {
 	s.setEarliest(settingNotifyMailsEarliest, t)
 }
 
-func (s AppSettings) NotifyPIEarliest() time.Time {
+func (s Settings) NotifyPIEarliest() time.Time {
 	return s.calcNotifyEarliest(settingNotifyPIEarliest)
 }
-func (s AppSettings) SetNotifyPIEarliest(t time.Time) {
+func (s Settings) SetNotifyPIEarliest(t time.Time) {
 	s.setEarliest(settingNotifyPIEarliest, t)
 }
 
-func (s AppSettings) NotifyTrainingEarliest() time.Time {
+func (s Settings) NotifyTrainingEarliest() time.Time {
 	return s.calcNotifyEarliest(settingNotifyTrainingEarliest)
 }
-func (s AppSettings) SetNotifyTrainingEarliest(t time.Time) {
+func (s Settings) SetNotifyTrainingEarliest(t time.Time) {
 	s.setEarliest(settingNotifyTrainingEarliest, t)
 }
 
@@ -282,13 +285,13 @@ func (s AppSettings) SetNotifyTrainingEarliest(t time.Time) {
 // 	return t
 // }
 
-func (s AppSettings) setEarliest(key string, t time.Time) {
+func (s Settings) setEarliest(key string, t time.Time) {
 	s.p.SetString(key, timeToString(t))
 }
 
 // calcNotifyEarliest returns the earliest time for a class of notifications.
 // Might return a zero time in some circumstances.
-func (s AppSettings) calcNotifyEarliest(key string) time.Time {
+func (s Settings) calcNotifyEarliest(key string) time.Time {
 	earliest, ok := string2time(s.p.String(key))
 	if !ok {
 		// Recording the earliest when enabling a switch was added later for mails and communications
@@ -320,63 +323,63 @@ func string2time(s string) (time.Time, bool) {
 	return t, true
 }
 
-func (s AppSettings) NotifyCommunicationsEnabled() bool {
+func (s Settings) NotifyCommunicationsEnabled() bool {
 	return s.p.BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault)
 }
-func (s AppSettings) ResetNotifyCommunicationsEnabled() {
+func (s Settings) ResetNotifyCommunicationsEnabled() {
 	s.SetNotifyCommunicationsEnabled(settingNotifyCommunicationsEnabledDefault)
 }
 
-func (s AppSettings) SetNotifyCommunicationsEnabled(v bool) {
+func (s Settings) SetNotifyCommunicationsEnabled(v bool) {
 	s.p.SetBool(settingNotifyCommunicationsEnabled, v)
 }
 
-func (s AppSettings) NotifyContractsEnabled() bool {
+func (s Settings) NotifyContractsEnabled() bool {
 	return s.p.BoolWithFallback(settingNotifyContractsEnabled, settingNotifyContractsEnabledDefault)
 }
-func (s AppSettings) ResetNotifyContractsEnabled() {
+func (s Settings) ResetNotifyContractsEnabled() {
 	s.SetNotifyContractsEnabled(settingNotifyContractsEnabledDefault)
 }
 
-func (s AppSettings) SetNotifyContractsEnabled(v bool) {
+func (s Settings) SetNotifyContractsEnabled(v bool) {
 	s.p.SetBool(settingNotifyContractsEnabled, v)
 }
 
-func (s AppSettings) NotifyMailsEnabled() bool {
+func (s Settings) NotifyMailsEnabled() bool {
 	return s.p.BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault)
 }
-func (s AppSettings) ResetNotifyMailsEnabled() {
+func (s Settings) ResetNotifyMailsEnabled() {
 	s.SetNotifyMailsEnabled(settingNotifyMailsEnabledDefault)
 }
 
-func (s AppSettings) SetNotifyMailsEnabled(v bool) {
+func (s Settings) SetNotifyMailsEnabled(v bool) {
 	s.p.SetBool(settingNotifyMailsEnabled, v)
 }
 
-func (s AppSettings) NotifyPIEnabled() bool {
+func (s Settings) NotifyPIEnabled() bool {
 	return s.p.BoolWithFallback(settingNotifyPIEnabled, settingNotifyPIEnabledDefault)
 }
-func (s AppSettings) ResetNotifyPIEnabled() {
+func (s Settings) ResetNotifyPIEnabled() {
 	s.SetNotifyPIEnabled(settingNotifyPIEnabledDefault)
 }
 
-func (s AppSettings) SetNotifyPIEnabled(v bool) {
+func (s Settings) SetNotifyPIEnabled(v bool) {
 	s.p.SetBool(settingNotifyPIEnabled, v)
 }
 
-func (s AppSettings) NotifyTrainingEnabled() bool {
+func (s Settings) NotifyTrainingEnabled() bool {
 	return s.p.BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault)
 }
-func (s AppSettings) ResetNotifyTrainingEnabled() {
+func (s Settings) ResetNotifyTrainingEnabled() {
 	s.SetNotifyTrainingEnabled(settingNotifyTrainingEnabledDefault)
 }
 
-func (s AppSettings) SetNotifyTrainingEnabled(v bool) {
+func (s Settings) SetNotifyTrainingEnabled(v bool) {
 	s.p.SetBool(settingNotifyTrainingEnabled, v)
 }
 
-// SettingKeys returns all setting keys. Mostly to know what to delete.
-func SettingKeys() []string {
+// Keys returns all setting keys. Mostly to know what to delete.
+func Keys() []string {
 	return []string{
 		settingLastCharacterID,
 		settingMaxMails,

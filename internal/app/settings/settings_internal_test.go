@@ -1,4 +1,4 @@
-package ui
+package settings
 
 import (
 	"testing"
@@ -125,7 +125,7 @@ func TestCalcEarliest(t *testing.T) {
 			if tc.timeoutHours != 0 {
 				p.data[settingNotifyTimeoutHours] = tc.timeoutHours
 			}
-			s := NewAppSettings(p)
+			s := New(p)
 			// when
 			v := s.calcNotifyEarliest("earliest")
 			// then

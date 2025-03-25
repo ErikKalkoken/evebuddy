@@ -27,6 +27,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/collectionui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
+	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/toolui"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
@@ -46,7 +47,6 @@ const (
 const (
 	characterSectionsUpdateTicker = 60 * time.Second
 	generalSectionsUpdateTicker   = 300 * time.Second
-	notifyEarliestFallback        = 24 * time.Hour
 )
 
 // UIBase represents the core UI logic and is used by both the desktop and mobile UI.
@@ -140,7 +140,7 @@ func NewBaseUI(
 		isUpdateDisabled: isUpdateDisabled,
 		memcache:         memCache,
 		scs:              scs,
-		settings:         NewAppSettings(app.Preferences()),
+		settings:         settings.New(app.Preferences()),
 	}
 	u.window = app.NewWindow(u.appName())
 
@@ -220,7 +220,7 @@ func (u *UIBase) MainWindow() fyne.Window {
 }
 
 func (u *UIBase) IsDeveloperMode() bool {
-	return u.app.Preferences().Bool(settingDeveloperMode)
+	return u.Settings().DeveloperMode()
 }
 
 func (u *UIBase) IsOffline() bool {
@@ -710,7 +710,7 @@ func (u *UIBase) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			Section:               s,
 			ForceUpdate:           forceUpdate,
 			MaxMails:              u.Settings().MaxMails(),
-			MaxWalletTransactions: u.app.Preferences().IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault),
+			MaxWalletTransactions: u.Settings().MaxWalletTransactions(),
 		})
 	if err != nil {
 		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
