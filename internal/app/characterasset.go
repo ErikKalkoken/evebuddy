@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -80,20 +81,57 @@ func (ca CharacterAsset) IsContainer() bool {
 	return false
 }
 
-func (ca CharacterAsset) IsInAssetSafety() bool {
+func (ca CharacterAsset) InAssetSafety() bool {
 	return ca.LocationFlag == "AssetSafety"
 }
 
-func (ca CharacterAsset) IsInCargoBay() bool {
+func (ca CharacterAsset) InCargoBay() bool {
 	return ca.LocationFlag == "Cargo"
+}
+
+func (ca CharacterAsset) InDroneBay() bool {
+	return ca.LocationFlag == "DroneBay"
+}
+
+func (ca CharacterAsset) InFighterBay() bool {
+	return ca.LocationFlag == "FighterBay" || strings.HasPrefix(ca.LocationFlag, "FighterTube")
+}
+
+func (ca CharacterAsset) InFrigateEscapeBay() bool {
+	return ca.LocationFlag == "FrigateEscapeBay"
+}
+
+func (ca CharacterAsset) IsInFuelBay() bool {
+	return ca.LocationFlag == "SpecializedFuelBay"
 }
 
 func (ca CharacterAsset) IsInHangar() bool {
 	return ca.LocationFlag == "Hangar"
 }
 
-func (ca CharacterAsset) IsInFuelBay() bool {
-	return ca.LocationFlag == "SpecializedFuelBay"
+func (ca CharacterAsset) IsFitted() bool {
+	switch s := ca.LocationFlag; {
+	case strings.HasPrefix(s, "HiSlot"):
+		return true
+	case strings.HasPrefix(s, "MedSlot"):
+		return true
+	case strings.HasPrefix(s, "LoSlot"):
+		return true
+	case strings.HasPrefix(s, "RigSlot"):
+		return true
+	case strings.HasPrefix(s, "SubSystemSlot"):
+		return true
+	}
+	return false
+}
+
+func (ca CharacterAsset) IsShipOther() bool {
+	return !ca.InCargoBay() &&
+		!ca.InDroneBay() &&
+		!ca.InFighterBay() &&
+		!ca.IsInFuelBay() &&
+		!ca.IsFitted() &&
+		!ca.InFrigateEscapeBay()
 }
 
 func (ca CharacterAsset) Variant() EveTypeVariant {

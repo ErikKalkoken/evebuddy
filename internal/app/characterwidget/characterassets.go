@@ -28,14 +28,19 @@ import (
 type locationNodeVariant uint
 
 const (
-	nodeLocation locationNodeVariant = iota + 1
-	nodeShipHangar
-	nodeItemHangar
-	nodeContainer
-	nodeShip
+	nodeAssetSafety locationNodeVariant = iota + 1
 	nodeCargoBay
+	nodeContainer
+	nodeDroneBay
+	nodeFighterBay
+	nodeFitting
+	nodeFrigateEscapeBay
 	nodeFuelBay
-	nodeAssetSafety
+	nodeItemHangar
+	nodeLocation
+	nodeShip
+	nodeShipHangar
+	nodeShipOther
 )
 
 // locationNode is a node in the location tree.
@@ -259,7 +264,7 @@ func (a *CharacterAssets) Update() {
 		if err := a.clearAssets(); err != nil {
 			return "", 0, err
 		}
-		tree, err := a.newLocationData()
+		tree, err := a.makeLocationData()
 		if err != nil {
 			return "", 0, err
 		}
@@ -281,13 +286,13 @@ func (a *CharacterAssets) Update() {
 	}
 }
 
-func (a *CharacterAssets) newLocationData() (*iwidget.TreeData[locationNode], error) {
-	ctx := context.TODO()
+func (a *CharacterAssets) makeLocationData() (*iwidget.TreeData[locationNode], error) {
 	tree := iwidget.NewTreeData[locationNode]()
 	if !a.u.HasCharacter() {
 		return tree, nil
 	}
 	characterID := a.u.CurrentCharacterID()
+	ctx := context.Background()
 	assets, err := a.u.CharacterService().ListCharacterAssets(ctx, characterID)
 	if err != nil {
 		return tree, err
@@ -320,7 +325,7 @@ func (a *CharacterAssets) newLocationData() (*iwidget.TreeData[locationNode], er
 		locationUID := tree.MustAdd(iwidget.RootUID, location)
 
 		topAssets := ln.Nodes()
-		slices.SortFunc(topAssets, func(a assetcollection.AssetNode, b assetcollection.AssetNode) int {
+		slices.SortFunc(topAssets, func(a, b assetcollection.AssetNode) int {
 			return cmp.Compare(a.Asset.DisplayName(), b.Asset.DisplayName())
 		})
 		itemCount := 0
@@ -329,7 +334,7 @@ func (a *CharacterAssets) newLocationData() (*iwidget.TreeData[locationNode], er
 		itemContainers := make([]assetcollection.AssetNode, 0)
 		assetSafety := make([]assetcollection.AssetNode, 0)
 		for _, an := range topAssets {
-			if an.Asset.IsInAssetSafety() {
+			if an.Asset.InAssetSafety() {
 				assetSafety = append(assetSafety, an)
 			} else if an.Asset.IsInHangar() {
 				if an.Asset.EveType.IsShip() {
@@ -348,6 +353,9 @@ func (a *CharacterAssets) newLocationData() (*iwidget.TreeData[locationNode], er
 		}
 
 		// ship hangar
+		slices.SortFunc(ships, func(a, b assetcollection.AssetNode) int {
+			return cmp.Compare(a.Asset.DisplayName2(), b.Asset.DisplayName2())
+		})
 		shipsUID := tree.MustAdd(locationUID, locationNode{
 			characterID: characterID,
 			containerID: el.ID,
@@ -364,30 +372,92 @@ func (a *CharacterAssets) newLocationData() (*iwidget.TreeData[locationNode], er
 				variant:     nodeShip,
 			})
 			cargo := make([]assetcollection.AssetNode, 0)
+			drones := make([]assetcollection.AssetNode, 0)
+			fitting := make([]assetcollection.AssetNode, 0)
+			frigate := make([]assetcollection.AssetNode, 0)
+			fighters := make([]assetcollection.AssetNode, 0)
 			fuel := make([]assetcollection.AssetNode, 0)
+			other := make([]assetcollection.AssetNode, 0)
 			for _, an2 := range an.Nodes() {
-				if an2.Asset.IsInCargoBay() {
+				switch {
+				case an2.Asset.InCargoBay():
 					cargo = append(cargo, an2)
-				} else if an2.Asset.IsInFuelBay() {
+				case an2.Asset.InDroneBay():
+					drones = append(drones, an2)
+				case an2.Asset.InFrigateEscapeBay():
+					frigate = append(frigate, an2)
+				case an2.Asset.IsInFuelBay():
 					fuel = append(fuel, an2)
+				case an2.Asset.InFighterBay():
+					fighters = append(fighters, an2)
+				case an2.Asset.IsFitted():
+					fitting = append(fitting, an2)
+				case an2.Asset.IsShipOther():
+					other = append(other, an2)
 				}
 			}
-			tree.MustAdd(shipUID, locationNode{
-				characterID: characterID,
-				containerID: ship.ItemID,
-				name:        "Cargo Bay",
-				count:       len(cargo),
-				variant:     nodeCargoBay,
-			})
-			if ship.EveType.HasFuelBay() {
-				ldn := locationNode{
+			if n := len(fitting); n > 0 {
+				tree.MustAdd(shipUID, locationNode{
+					characterID: characterID,
+					containerID: ship.ItemID,
+					name:        "Fitting",
+					count:       n,
+					variant:     nodeFitting,
+				})
+			}
+			if n := len(cargo); n > 0 {
+				tree.MustAdd(shipUID, locationNode{
+					characterID: characterID,
+					containerID: ship.ItemID,
+					name:        "Cargo Bay",
+					count:       n,
+					variant:     nodeCargoBay,
+				})
+			}
+			if n := len(frigate); n > 0 {
+				tree.MustAdd(shipUID, locationNode{
+					characterID: characterID,
+					containerID: ship.ItemID,
+					name:        "Frigate Escape Bay",
+					count:       n,
+					variant:     nodeFrigateEscapeBay,
+				})
+			}
+			if n := len(drones); n > 0 {
+				tree.MustAdd(shipUID, locationNode{
+					characterID: characterID,
+					containerID: an.Asset.ItemID,
+					name:        "Drone Bay",
+					count:       n,
+					variant:     nodeDroneBay,
+				})
+			}
+			if n := len(fuel); n > 0 {
+				tree.MustAdd(shipUID, locationNode{
 					characterID: characterID,
 					containerID: an.Asset.ItemID,
 					name:        "Fuel Bay",
-					count:       len(fuel),
+					count:       n,
 					variant:     nodeFuelBay,
-				}
-				tree.MustAdd(shipUID, ldn)
+				})
+			}
+			if n := len(fighters); n > 0 {
+				tree.MustAdd(shipUID, locationNode{
+					characterID: characterID,
+					containerID: an.Asset.ItemID,
+					name:        "Fighter Bay",
+					count:       n,
+					variant:     nodeFighterBay,
+				})
+			}
+			if n := len(other); n > 0 {
+				tree.MustAdd(shipUID, locationNode{
+					characterID: characterID,
+					containerID: an.Asset.ItemID,
+					name:        "Other",
+					count:       n,
+					variant:     nodeShipOther,
+				})
 			}
 		}
 
@@ -461,41 +531,89 @@ func (a *CharacterAssets) selectLocation(location locationNode) error {
 	default:
 		f = a.u.CharacterService().ListCharacterAssetsInLocation
 	}
-	assets, err := f(context.TODO(), location.characterID, location.containerID)
+	assets, err := f(context.Background(), location.characterID, location.containerID)
 	if err != nil {
 		return err
 	}
 	switch location.variant {
+	case nodeCargoBay:
+		s := make([]*app.CharacterAsset, 0)
+		for _, it := range assets {
+			if !it.InCargoBay() {
+				continue
+			}
+			s = append(s, it)
+		}
+		assets = s
+	case nodeDroneBay:
+		s := make([]*app.CharacterAsset, 0)
+		for _, it := range assets {
+			if !it.InDroneBay() {
+				continue
+			}
+			s = append(s, it)
+		}
+		assets = s
+	case nodeFitting:
+		s := make([]*app.CharacterAsset, 0)
+		for _, it := range assets {
+			if !it.IsFitted() {
+				continue
+			}
+			s = append(s, it)
+		}
+		assets = s
+	case nodeFrigateEscapeBay:
+		s := make([]*app.CharacterAsset, 0)
+		for _, it := range assets {
+			if !it.InFrigateEscapeBay() {
+				continue
+			}
+			s = append(s, it)
+		}
+		assets = s
+	case nodeFighterBay:
+		s := make([]*app.CharacterAsset, 0)
+		for _, it := range assets {
+			if !it.InFighterBay() {
+				continue
+			}
+			s = append(s, it)
+		}
+		assets = s
+	case nodeFuelBay:
+		s := make([]*app.CharacterAsset, 0)
+		for _, it := range assets {
+			if !it.IsInFuelBay() {
+				continue
+			}
+			s = append(s, it)
+		}
+		assets = s
+	case nodeShipOther:
+		s := make([]*app.CharacterAsset, 0)
+		for _, it := range assets {
+			if !it.IsShipOther() {
+				continue
+			}
+			s = append(s, it)
+		}
+		assets = s
 	case nodeItemHangar:
 		containers := make([]*app.CharacterAsset, 0)
-		items := make([]*app.CharacterAsset, 0)
-		for _, ca := range assets {
-			if ca.IsContainer() {
-				containers = append(containers, ca)
+		s := make([]*app.CharacterAsset, 0)
+		for _, it := range assets {
+			if it.IsContainer() {
+				containers = append(containers, it)
 			} else {
-				items = append(items, ca)
+				s = append(s, it)
 			}
 		}
-		assets = slices.Concat(containers, items)
-	case nodeCargoBay:
-		cargo := make([]*app.CharacterAsset, 0)
-		for _, ca := range assets {
-			if !ca.IsInCargoBay() {
-				continue
-			}
-			cargo = append(cargo, ca)
-		}
-		assets = cargo
-	case nodeFuelBay:
-		fuel := make([]*app.CharacterAsset, 0)
-		for _, ca := range assets {
-			if !ca.IsInFuelBay() {
-				continue
-			}
-			fuel = append(fuel, ca)
-		}
-		assets = fuel
+		assets = slices.Concat(containers, s)
 	}
+	// slices.SortFunc(assets, func(a, b *app.CharacterAsset) int {
+	// 	return cmp.Compare(a.DisplayName2(), b.DisplayName2())
+	// })
 	a.assets = assets
 	a.assetGrid.Refresh()
 	var total float64
