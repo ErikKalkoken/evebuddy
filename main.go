@@ -14,6 +14,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"path/filepath"
+	"runtime"
 	"runtime/debug"
 	"slices"
 	"strings"
@@ -154,8 +155,14 @@ func main() {
 		MaxSize:    logMaxSizeMB,
 		MaxBackups: logMaxBackups,
 	}
-	multi := io.MultiWriter(os.Stderr, logger)
-	log.SetOutput(multi)
+	defer logger.Close()
+	var logWriter io.Writer
+	if runtime.GOOS == "windows" {
+		logWriter = logger
+	} else {
+		logWriter = io.MultiWriter(os.Stderr, logger)
+	}
+	log.SetOutput(logWriter)
 
 	if isDesktop {
 		// ensure single instance
