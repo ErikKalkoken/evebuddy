@@ -21,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	ilayout "github.com/ErikKalkoken/evebuddy/internal/layout"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -128,10 +129,17 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 	// Set initial tab
 	if requirementsTab != nil && a.et.Group.Category.ID == app.EveCategorySkill {
 		tabs.Select(requirementsTab)
-	} else if a.et.Group.ID == app.EveGroupPlanet {
-		tabs.Select(descriptionTab)
-	} else if attributeTab != nil {
+	} else if attributeTab != nil &&
+		set.NewFromSlice([]int32{
+			app.EveCategoryDrone,
+			app.EveCategoryFighter,
+			app.EveCategoryOrbitals,
+			app.EveCategoryShip,
+			app.EveCategoryStructure,
+		}).Contains(a.et.Group.Category.ID) {
 		tabs.Select(attributeTab)
+	} else {
+		tabs.Select(descriptionTab)
 	}
 	c := container.NewBorder(top, nil, nil, nil, tabs)
 	return widget.NewSimpleRenderer(c)

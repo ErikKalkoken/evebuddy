@@ -32,6 +32,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
+	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -105,7 +106,7 @@ func main() {
 
 	// set log level from settings
 	if *logLevelFlag == "" {
-		s := ui.NewAppSettings(fyneApp.Preferences())
+		s := settings.New(fyneApp.Preferences())
 		if l := s.LogLevelSlog(); l != logLevelDefault {
 			slog.Info("Setting log level", "level", l)
 			slog.SetLogLoggerLevel(l)
@@ -246,14 +247,14 @@ func main() {
 		},
 	)
 	if isDesktop {
-		u := ui.NewDesktopUI(bu)
+		u := ui.NewUIDesktop(bu)
 		u.Init()
 		if *resetSettingsFlag {
 			u.ResetDesktopSettings()
 		}
 		u.ShowAndRun()
 	} else {
-		u := ui.NewMobileUI(bu)
+		u := ui.NewUIMobile(bu)
 		u.Init()
 		u.ShowAndRun()
 	}

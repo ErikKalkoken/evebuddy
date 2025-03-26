@@ -23,11 +23,12 @@ import (
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/characterwidget"
-	"github.com/ErikKalkoken/evebuddy/internal/app/collectivewidget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/collectionui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
-	"github.com/ErikKalkoken/evebuddy/internal/app/toolwidgets"
+	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
+	"github.com/ErikKalkoken/evebuddy/internal/app/toolui"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
@@ -46,11 +47,10 @@ const (
 const (
 	characterSectionsUpdateTicker = 60 * time.Second
 	generalSectionsUpdateTicker   = 300 * time.Second
-	notifyEarliestFallback        = 24 * time.Hour
 )
 
-// BaseUI represents the core UI logic and is used by both the desktop and mobile UI.
-type BaseUI struct {
+// UIBase represents the core UI logic and is used by both the desktop and mobile UI.
+type UIBase struct {
 	DisableMenuShortcuts func()
 	EnableMenuShortcuts  func()
 	HideMailIndicator    func()
@@ -66,29 +66,29 @@ type BaseUI struct {
 	onUpdateCharacter func(*app.Character)
 	onUpdateStatus    func()
 
-	allAssetSearch             *collectivewidget.AllAssetSearch
-	characterAssets            *characterwidget.CharacterAssets
-	characterAttributes        *characterwidget.CharacterAttributes
-	characterCommunications    *characterwidget.CharacterCommunications
-	characterContracts         *characterwidget.CharacterContracts
-	characterImplants          *characterwidget.CharacterImplants
-	characterJumpClones        *characterwidget.CharacterJumpClones
-	characterMail              *characterwidget.CharacterMail
-	characterOverview          *collectivewidget.CharacterOverview
-	characterPlanets           *characterwidget.CharacterPlanets
-	characterShips             *characterwidget.CharacterShips
-	characterSkillCatalogue    *characterwidget.CharacterSkillCatalogue
-	characterSkillQueue        *characterwidget.CharacterSkillQueue
-	characterWalletJournal     *characterwidget.CharacterWalletJournal
-	characterWalletTransaction *characterwidget.CharacterWalletTransaction
-	colonyOverview             *collectivewidget.ColonyOverview
-	cloneSearch                *collectivewidget.CloneSearch
-	gameSearch                 *toolwidgets.GameSearch
-	locationOverview           *collectivewidget.LocationOverview
-	managerCharacters          *toolwidgets.ManageCharacters
-	trainingOverview           *collectivewidget.TrainingOverview
-	userSettings               *toolwidgets.UserSettings
-	wealthOverview             *collectivewidget.WealthOverview
+	allAssetSearch             *collectionui.AllAssetSearch
+	characterAssets            *characterui.CharacterAssets
+	characterAttributes        *characterui.CharacterAttributes
+	characterCommunications    *characterui.CharacterCommunications
+	characterContracts         *characterui.CharacterContracts
+	characterImplants          *characterui.CharacterImplants
+	characterJumpClones        *characterui.CharacterJumpClones
+	characterMail              *characterui.CharacterMail
+	characterOverview          *collectionui.CharacterOverview
+	characterPlanets           *characterui.CharacterPlanets
+	characterShips             *characterui.CharacterShips
+	characterSkillCatalogue    *characterui.CharacterSkillCatalogue
+	characterSkillQueue        *characterui.CharacterSkillQueue
+	characterWalletJournal     *characterui.CharacterWalletJournal
+	characterWalletTransaction *characterui.CharacterWalletTransaction
+	colonyOverview             *collectionui.ColonyOverview
+	cloneSearch                *collectionui.CloneSearch
+	gameSearch                 *toolui.GameSearch
+	locationOverview           *collectionui.LocationOverview
+	managerCharacters          *toolui.ManageCharacters
+	trainingOverview           *collectionui.TrainingOverview
+	userSettings               *toolui.UserSettings
+	wealthOverview             *collectionui.WealthOverview
 
 	app              fyne.App
 	character        *app.Character
@@ -126,8 +126,8 @@ func NewBaseUI(
 	isUpdateDisabled bool,
 	dataPaths map[string]string,
 	clearCache func(),
-) *BaseUI {
-	u := &BaseUI{
+) *UIBase {
+	u := &UIBase{
 		app:              app,
 		clearCache:       clearCache,
 		cs:               cs,
@@ -140,7 +140,7 @@ func NewBaseUI(
 		isUpdateDisabled: isUpdateDisabled,
 		memcache:         memCache,
 		scs:              scs,
-		settings:         NewAppSettings(app.Preferences()),
+		settings:         settings.New(app.Preferences()),
 	}
 	u.window = app.NewWindow(u.appName())
 
@@ -151,86 +151,86 @@ func NewBaseUI(
 
 	u.snackbar = iwidget.NewSnackbar(u.window)
 
-	u.allAssetSearch = collectivewidget.NewAssetSearch(u)
-	u.characterAssets = characterwidget.NewCharacterAssets(u)
-	u.characterAttributes = characterwidget.NewCharacterAttributes(u)
-	u.characterCommunications = characterwidget.NewCharacterCommunications(u)
-	u.characterContracts = characterwidget.NewCharacterContracts(u)
-	u.characterImplants = characterwidget.NewCharacterImplants(u)
-	u.characterJumpClones = characterwidget.NewCharacterJumpClones(u)
-	u.characterMail = characterwidget.NewCharacterMail(u)
-	u.characterOverview = collectivewidget.NewCharacterOverview(u)
-	u.characterPlanets = characterwidget.NewCharacterPlanets(u)
-	u.characterShips = characterwidget.NewCharacterShips(u)
-	u.characterSkillCatalogue = characterwidget.NewCharacterSkillCatalogue(u)
-	u.characterSkillQueue = characterwidget.NewCharacterSkillQueue(u)
-	u.characterWalletJournal = characterwidget.NewCharacterWalletJournal(u)
-	u.characterWalletTransaction = characterwidget.NewCharacterWalletTransaction(u)
-	u.cloneSearch = collectivewidget.NewCloneSearch(u)
-	u.colonyOverview = collectivewidget.NewColonyOverview(u)
-	u.gameSearch = toolwidgets.NewGameSearch(u)
-	u.locationOverview = collectivewidget.NewLocationOverview(u)
-	u.managerCharacters = toolwidgets.NewManageCharacters(u)
-	u.trainingOverview = collectivewidget.NewTrainingOverview(u)
-	u.userSettings = toolwidgets.NewSettings(u)
-	u.wealthOverview = collectivewidget.NewWealthOverview(u)
+	u.allAssetSearch = collectionui.NewAssetSearch(u)
+	u.characterAssets = characterui.NewCharacterAssets(u)
+	u.characterAttributes = characterui.NewCharacterAttributes(u)
+	u.characterCommunications = characterui.NewCharacterCommunications(u)
+	u.characterContracts = characterui.NewCharacterContracts(u)
+	u.characterImplants = characterui.NewCharacterImplants(u)
+	u.characterJumpClones = characterui.NewCharacterJumpClones(u)
+	u.characterMail = characterui.NewCharacterMail(u)
+	u.characterOverview = collectionui.NewCharacterOverview(u)
+	u.characterPlanets = characterui.NewCharacterPlanets(u)
+	u.characterShips = characterui.NewCharacterShips(u)
+	u.characterSkillCatalogue = characterui.NewCharacterSkillCatalogue(u)
+	u.characterSkillQueue = characterui.NewCharacterSkillQueue(u)
+	u.characterWalletJournal = characterui.NewCharacterWalletJournal(u)
+	u.characterWalletTransaction = characterui.NewCharacterWalletTransaction(u)
+	u.cloneSearch = collectionui.NewCloneSearch(u)
+	u.colonyOverview = collectionui.NewColonyOverview(u)
+	u.gameSearch = toolui.NewGameSearch(u)
+	u.locationOverview = collectionui.NewLocationOverview(u)
+	u.managerCharacters = toolui.NewManageCharacters(u)
+	u.trainingOverview = collectionui.NewTrainingOverview(u)
+	u.userSettings = toolui.NewSettings(u)
+	u.wealthOverview = collectionui.NewWealthOverview(u)
 
 	u.MainWindow().SetMaster()
 	return u
 }
 
-func (u *BaseUI) App() fyne.App {
+func (u *UIBase) App() fyne.App {
 	return u.app
 }
 
-func (u *BaseUI) ClearAllCaches() {
+func (u *UIBase) ClearAllCaches() {
 	u.clearCache()
 }
 
-func (u *BaseUI) CharacterService() app.CharacterService {
+func (u *UIBase) CharacterService() app.CharacterService {
 	return u.cs
 }
 
-func (u *BaseUI) ESIStatusService() app.ESIStatusService {
+func (u *UIBase) ESIStatusService() app.ESIStatusService {
 	return u.ess
 }
 
-func (u *BaseUI) EveImageService() app.EveImageService {
+func (u *UIBase) EveImageService() app.EveImageService {
 	return u.eis
 }
 
-func (u *BaseUI) EveUniverseService() app.EveUniverseService {
+func (u *UIBase) EveUniverseService() app.EveUniverseService {
 	return u.eus
 }
 
-func (u *BaseUI) MemCache() app.CacheService {
+func (u *UIBase) MemCache() app.CacheService {
 	return u.memcache
 }
 
-func (u *BaseUI) StatusCacheService() app.StatusCacheService {
+func (u *UIBase) StatusCacheService() app.StatusCacheService {
 	return u.scs
 }
 
-func (u *BaseUI) DataPaths() map[string]string {
+func (u *UIBase) DataPaths() map[string]string {
 	return u.dataPaths
 }
 
-func (u *BaseUI) MainWindow() fyne.Window {
+func (u *UIBase) MainWindow() fyne.Window {
 	return u.window
 }
 
-func (u *BaseUI) IsDeveloperMode() bool {
-	return u.app.Preferences().Bool(settingDeveloperMode)
+func (u *UIBase) IsDeveloperMode() bool {
+	return u.Settings().DeveloperMode()
 }
 
-func (u *BaseUI) IsOffline() bool {
+func (u *UIBase) IsOffline() bool {
 	return u.isOffline
 }
 
 // Init initialized the app.
 // It is meant for initialization logic that requires the UI to be fully created.
 // It should be called directly after the UI was created and before the Fyne loop is started.
-func (u *BaseUI) Init() {
+func (u *UIBase) Init() {
 	u.managerCharacters.Refresh()
 	var c *app.Character
 	var err error
@@ -260,28 +260,28 @@ func (u *BaseUI) Init() {
 	}
 }
 
-func (u *BaseUI) IsDesktop() bool {
+func (u *UIBase) IsDesktop() bool {
 	_, ok := u.app.(desktop.App)
 	return ok
 }
 
-func (u *BaseUI) IsMobile() bool {
+func (u *UIBase) IsMobile() bool {
 	return u.isMobile
 }
 
-func (u *BaseUI) makeWindowTitle(subTitle string) string {
+func (u *UIBase) makeWindowTitle(subTitle string) string {
 	if u.IsMobile() {
 		return subTitle
 	}
 	return fmt.Sprintf("%s - %s", subTitle, u.appName())
 }
 
-func (u *BaseUI) Settings() app.Settings {
+func (u *UIBase) Settings() app.Settings {
 	return u.settings
 }
 
 // ShowAndRun shows the UI and runs the Fyne loop (blocking),
-func (u *BaseUI) ShowAndRun() {
+func (u *UIBase) ShowAndRun() {
 	// SetOnStarted is called on initial start,
 	// but also when an app is coninued after it was temporarily stopped,
 	// which can happen on mobile
@@ -348,22 +348,22 @@ func (u *BaseUI) ShowAndRun() {
 }
 
 // CurrentCharacterID returns the ID of the current character or 0 if non it set.
-func (u *BaseUI) CurrentCharacterID() int32 {
+func (u *UIBase) CurrentCharacterID() int32 {
 	if u.character == nil {
 		return 0
 	}
 	return u.character.ID
 }
 
-func (u *BaseUI) CurrentCharacter() *app.Character {
+func (u *UIBase) CurrentCharacter() *app.Character {
 	return u.character
 }
 
-func (u *BaseUI) HasCharacter() bool {
+func (u *UIBase) HasCharacter() bool {
 	return u.character != nil
 }
 
-func (u *BaseUI) LoadCharacter(id int32) error {
+func (u *UIBase) LoadCharacter(id int32) error {
 	c, err := u.CharacterService().GetCharacter(context.Background(), id)
 	if err != nil {
 		return fmt.Errorf("load character ID %d: %w", id, err)
@@ -373,7 +373,7 @@ func (u *BaseUI) LoadCharacter(id int32) error {
 }
 
 // reloadCurrentCharacter reloads the current character from storage.
-func (u *BaseUI) reloadCurrentCharacter() {
+func (u *UIBase) reloadCurrentCharacter() {
 	id := u.CurrentCharacterID()
 	if id == 0 {
 		return
@@ -386,7 +386,7 @@ func (u *BaseUI) reloadCurrentCharacter() {
 }
 
 // UpdateStatus refreshed all status information pages.
-func (u *BaseUI) UpdateStatus() {
+func (u *UIBase) UpdateStatus() {
 	if u.onUpdateStatus == nil {
 		return
 	}
@@ -394,7 +394,7 @@ func (u *BaseUI) UpdateStatus() {
 }
 
 // updateCharacter updates all pages for the current character.
-func (u *BaseUI) updateCharacter() {
+func (u *UIBase) updateCharacter() {
 	ff := map[string]func(){
 		"assets":            u.characterAssets.Update,
 		"attributes":        u.characterAttributes.Update,
@@ -428,7 +428,7 @@ func (u *BaseUI) updateCharacter() {
 }
 
 // UpdateCrossPages refreshed all pages that contain information about multiple characters.
-func (u *BaseUI) UpdateCrossPages() {
+func (u *UIBase) UpdateCrossPages() {
 	ff := map[string]func(){
 		"assetSearch": u.allAssetSearch.Update,
 		"cloneSeach":  u.cloneSearch.Update,
@@ -471,14 +471,14 @@ func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Wi
 	m.Start()
 }
 
-func (u *BaseUI) resetCharacter() {
+func (u *UIBase) resetCharacter() {
 	u.character = nil
 	u.Settings().ResetLastCharacterID()
 	u.updateCharacter()
 	u.UpdateStatus()
 }
 
-func (u *BaseUI) setCharacter(c *app.Character) {
+func (u *UIBase) setCharacter(c *app.Character) {
 	u.character = c
 	u.Settings().SetLastCharacterID(c.ID)
 	u.updateCharacter()
@@ -488,7 +488,7 @@ func (u *BaseUI) setCharacter(c *app.Character) {
 	}
 }
 
-func (u *BaseUI) SetAnyCharacter() error {
+func (u *UIBase) SetAnyCharacter() error {
 	c, err := u.CharacterService().GetAnyCharacter(context.Background())
 	if errors.Is(err, app.ErrNotFound) {
 		u.resetCharacter()
@@ -500,7 +500,7 @@ func (u *BaseUI) SetAnyCharacter() error {
 	return nil
 }
 
-func (u *BaseUI) UpdateAvatar(id int32, setIcon func(fyne.Resource)) {
+func (u *UIBase) UpdateAvatar(id int32, setIcon func(fyne.Resource)) {
 	r, err := u.EveImageService().CharacterPortrait(id, app.IconPixelSize)
 	if err != nil {
 		slog.Error("Failed to fetch character portrait", "characterID", id, "err", err)
@@ -514,7 +514,7 @@ func (u *BaseUI) UpdateAvatar(id int32, setIcon func(fyne.Resource)) {
 	setIcon(r2)
 }
 
-func (u *BaseUI) UpdateMailIndicator() {
+func (u *UIBase) UpdateMailIndicator() {
 	if u.ShowMailIndicator == nil || u.HideMailIndicator == nil {
 		return
 	}
@@ -533,7 +533,7 @@ func (u *BaseUI) UpdateMailIndicator() {
 	}
 }
 
-func (u *BaseUI) MakeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
+func (u *UIBase) MakeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 	characterID := u.CurrentCharacterID()
 	cc := u.StatusCacheService().ListCharacters()
 	items := make([]*fyne.MenuItem, 0)
@@ -570,12 +570,12 @@ func (u *BaseUI) MakeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 	return items
 }
 
-func (u *BaseUI) sendDesktopNotification(title, content string) {
+func (u *UIBase) sendDesktopNotification(title, content string) {
 	u.app.SendNotification(fyne.NewNotification(title, content))
 	slog.Info("desktop notification sent", "title", title, "content", content)
 }
 
-func (u *BaseUI) startUpdateTickerGeneralSections() {
+func (u *UIBase) startUpdateTickerGeneralSections() {
 	ticker := time.NewTicker(generalSectionsUpdateTicker)
 	go func() {
 		for {
@@ -585,7 +585,7 @@ func (u *BaseUI) startUpdateTickerGeneralSections() {
 	}()
 }
 
-func (u *BaseUI) UpdateGeneralSectionsAndRefreshIfNeeded(forceUpdate bool) {
+func (u *UIBase) UpdateGeneralSectionsAndRefreshIfNeeded(forceUpdate bool) {
 	if !forceUpdate && u.IsMobile() && !u.isForeground.Load() {
 		slog.Debug("Skipping general sections update while in background")
 		return
@@ -598,7 +598,7 @@ func (u *BaseUI) UpdateGeneralSectionsAndRefreshIfNeeded(forceUpdate bool) {
 	}
 }
 
-func (u *BaseUI) UpdateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
+func (u *UIBase) UpdateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
 	hasChanged, err := u.EveUniverseService().UpdateSection(ctx, section, forceUpdate)
 	if err != nil {
 		slog.Error("Failed to update general section", "section", section, "err", err)
@@ -617,7 +617,7 @@ func (u *BaseUI) UpdateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 	}
 }
 
-func (u *BaseUI) startUpdateTickerCharacters() {
+func (u *UIBase) startUpdateTickerCharacters() {
 	ticker := time.NewTicker(characterSectionsUpdateTicker)
 	ctx := context.Background()
 	go func() {
@@ -633,7 +633,7 @@ func (u *BaseUI) startUpdateTickerCharacters() {
 	}()
 }
 
-func (u *BaseUI) updateCharactersIfNeeded(ctx context.Context) error {
+func (u *UIBase) updateCharactersIfNeeded(ctx context.Context) error {
 	cc, err := u.CharacterService().ListCharactersShort(ctx)
 	if err != nil {
 		return err
@@ -645,7 +645,7 @@ func (u *BaseUI) updateCharactersIfNeeded(ctx context.Context) error {
 	return nil
 }
 
-func (u *BaseUI) notifyCharactersIfNeeded(ctx context.Context) error {
+func (u *UIBase) notifyCharactersIfNeeded(ctx context.Context) error {
 	cc, err := u.CharacterService().ListCharactersShort(ctx)
 	if err != nil {
 		return err
@@ -660,7 +660,7 @@ func (u *BaseUI) notifyCharactersIfNeeded(ctx context.Context) error {
 
 // UpdateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
 // and refreshes the UI accordingly.
-func (u *BaseUI) UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool) {
+func (u *UIBase) UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool) {
 	if u.isOffline {
 		return
 	}
@@ -703,14 +703,14 @@ func (u *BaseUI) UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 //
 // All UI areas showing data based on character sections needs to be included
 // to make sure they are refreshed when data changes.
-func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s app.CharacterSection, forceUpdate bool) {
+func (u *UIBase) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s app.CharacterSection, forceUpdate bool) {
 	hasChanged, err := u.CharacterService().UpdateSectionIfNeeded(
 		ctx, app.CharacterUpdateSectionParams{
 			CharacterID:           characterID,
 			Section:               s,
 			ForceUpdate:           forceUpdate,
 			MaxMails:              u.Settings().MaxMails(),
-			MaxWalletTransactions: u.app.Preferences().IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault),
+			MaxWalletTransactions: u.Settings().MaxWalletTransactions(),
 		})
 	if err != nil {
 		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
@@ -857,7 +857,7 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	}
 }
 
-func (u *BaseUI) notifyExpiredTrainingIfneeded(ctx context.Context, characerID int32) {
+func (u *UIBase) notifyExpiredTrainingIfneeded(ctx context.Context, characerID int32) {
 	if u.Settings().NotifyTrainingEnabled() {
 		go func() {
 			// TODO: earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyTrainingEarliest)
@@ -868,7 +868,7 @@ func (u *BaseUI) notifyExpiredTrainingIfneeded(ctx context.Context, characerID i
 	}
 }
 
-func (u *BaseUI) notifyExpiredExtractionsIfNeeded(ctx context.Context, characterID int32) {
+func (u *UIBase) notifyExpiredExtractionsIfNeeded(ctx context.Context, characterID int32) {
 	if u.Settings().NotifyPIEnabled() {
 		go func() {
 			earliest := u.Settings().NotifyPIEarliest()
@@ -879,7 +879,7 @@ func (u *BaseUI) notifyExpiredExtractionsIfNeeded(ctx context.Context, character
 	}
 }
 
-func (u *BaseUI) AvailableUpdate() (github.VersionInfo, error) {
+func (u *UIBase) AvailableUpdate() (github.VersionInfo, error) {
 	current := u.app.Metadata().Version
 	v, err := github.AvailableUpdate(githubOwner, githubRepo, current)
 	if err != nil {
@@ -888,13 +888,13 @@ func (u *BaseUI) AvailableUpdate() (github.VersionInfo, error) {
 	return v, nil
 }
 
-func (u *BaseUI) ShowInformationDialog(title, message string, parent fyne.Window) {
+func (u *UIBase) ShowInformationDialog(title, message string, parent fyne.Window) {
 	d := dialog.NewInformation(title, message, parent)
 	u.ModifyShortcutsForDialog(d, parent)
 	d.Show()
 }
 
-func (u *BaseUI) ShowConfirmDialog(title, message, confirm string, callback func(bool), parent fyne.Window) {
+func (u *UIBase) ShowConfirmDialog(title, message, confirm string, callback func(bool), parent fyne.Window) {
 	d := dialog.NewConfirm(title, message, callback, parent)
 	d.SetConfirmImportance(widget.DangerImportance)
 	d.SetConfirmText(confirm)
@@ -903,7 +903,7 @@ func (u *BaseUI) ShowConfirmDialog(title, message, confirm string, callback func
 	d.Show()
 }
 
-func (u *BaseUI) NewErrorDialog(message string, err error, parent fyne.Window) dialog.Dialog {
+func (u *UIBase) NewErrorDialog(message string, err error, parent fyne.Window) dialog.Dialog {
 	var errorText string
 	if u.IsDeveloperMode() {
 		errorText = err.Error()
@@ -920,13 +920,13 @@ func (u *BaseUI) NewErrorDialog(message string, err error, parent fyne.Window) d
 	return d
 }
 
-func (u *BaseUI) ShowErrorDialog(message string, err error, parent fyne.Window) {
+func (u *UIBase) ShowErrorDialog(message string, err error, parent fyne.Window) {
 	d := u.NewErrorDialog(message, err, parent)
 	d.Show()
 }
 
 // ModifyShortcutsForDialog modifies the shortcuts for a dialog.
-func (u *BaseUI) ModifyShortcutsForDialog(d dialog.Dialog, w fyne.Window) {
+func (u *UIBase) ModifyShortcutsForDialog(d dialog.Dialog, w fyne.Window) {
 	kxdialog.AddDialogKeyHandler(d, w)
 	if u.DisableMenuShortcuts != nil && u.EnableMenuShortcuts != nil {
 		u.DisableMenuShortcuts()
@@ -936,13 +936,13 @@ func (u *BaseUI) ModifyShortcutsForDialog(d dialog.Dialog, w fyne.Window) {
 	}
 }
 
-func (u *BaseUI) ShowUpdateStatusWindow() {
+func (u *UIBase) ShowUpdateStatusWindow() {
 	if u.statusWindow != nil {
 		u.statusWindow.Show()
 		return
 	}
 	w := u.app.NewWindow(u.makeWindowTitle("Update Status"))
-	a := toolwidgets.NewUpdateStatus(u)
+	a := toolui.NewUpdateStatus(u)
 	a.Update()
 	w.SetContent(a)
 	w.Resize(fyne.Size{Width: 1100, Height: 500})
@@ -956,31 +956,31 @@ func (u *BaseUI) ShowUpdateStatusWindow() {
 	w.Show()
 }
 
-func (u *BaseUI) ShowLocationInfoWindow(id int64) {
+func (u *UIBase) ShowLocationInfoWindow(id int64) {
 	iw := infowindow.New(u)
 	iw.ShowLocation(id)
 }
 
-func (u *BaseUI) ShowTypeInfoWindow(id int32) {
+func (u *UIBase) ShowTypeInfoWindow(id int32) {
 	iw := infowindow.New(u)
 	iw.Show(app.EveEntityInventoryType, id)
 }
 
-func (u *BaseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
+func (u *UIBase) ShowEveEntityInfoWindow(o *app.EveEntity) {
 	iw := infowindow.New(u)
 	iw.ShowEveEntity(o)
 }
 
-func (u *BaseUI) ShowInfoWindow(c app.EveEntityCategory, id int32) {
+func (u *UIBase) ShowInfoWindow(c app.EveEntityCategory, id int32) {
 	iw := infowindow.New(u)
 	iw.Show(c, id)
 }
 
-func (u *BaseUI) ShowSnackbar(text string) {
+func (u *UIBase) ShowSnackbar(text string) {
 	u.snackbar.Show(text)
 }
 
-func (u *BaseUI) WebsiteRootURL() *url.URL {
+func (u *UIBase) WebsiteRootURL() *url.URL {
 	s := u.app.Metadata().Custom["Website"]
 	if s == "" {
 		s = fallbackWebsiteURL
@@ -993,7 +993,7 @@ func (u *BaseUI) WebsiteRootURL() *url.URL {
 	return uri
 }
 
-func (u *BaseUI) appName() string {
+func (u *UIBase) appName() string {
 	info := u.app.Metadata()
 	name := info.Name
 	if name == "" {
@@ -1002,7 +1002,7 @@ func (u *BaseUI) appName() string {
 	return name
 }
 
-func (u *BaseUI) makeAboutPage() fyne.CanvasObject {
+func (u *UIBase) makeAboutPage() fyne.CanvasObject {
 	v, err := github.NormalizeVersion(u.app.Metadata().Version)
 	if err != nil {
 		slog.Error("normalize local version", "error", err)

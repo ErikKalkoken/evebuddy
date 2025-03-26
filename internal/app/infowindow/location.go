@@ -153,18 +153,25 @@ func (a *locationInfo) load() error {
 	a.tabs.Append(locationTab)
 
 	if o.Variant() == app.EveLocationStation {
-		ss, err := a.iw.u.EveUniverseService().GetStationServicesESI(ctx, int32(a.id))
-		if err != nil {
-			panic(err)
-		}
-		items := xslices.Map(ss, func(s string) entityItem {
-			s2 := strings.ReplaceAll(s, "-", " ")
-			titler := cases.Title(language.English)
-			name := titler.String(s2)
-			return NewEntityItem(0, "Service", name, infoNotSupported)
-		})
-		servicesTab := container.NewTabItem("Services", NewEntityListFromItems(nil, items...))
+		servicesLabel := widget.NewLabel("Loading...")
+		servicesTab := container.NewTabItem("Services", servicesLabel)
 		a.tabs.Append(servicesTab)
+		go func() {
+			ss, err := a.iw.u.EveUniverseService().GetStationServicesESI(ctx, int32(a.id))
+			if err != nil {
+				slog.Error("Failed to fetch station services", "stationID", o.ID, "error", err)
+				servicesLabel.SetText("ERROR: Failed to load")
+				return
+			}
+			items := xslices.Map(ss, func(s string) entityItem {
+				s2 := strings.ReplaceAll(s, "-", " ")
+				titler := cases.Title(language.English)
+				name := titler.String(s2)
+				return NewEntityItem(0, "Service", name, infoNotSupported)
+			})
+			servicesTab.Content = NewEntityListFromItems(nil, items...)
+			a.tabs.Refresh()
+		}()
 	}
 
 	a.tabs.Select(locationTab)
