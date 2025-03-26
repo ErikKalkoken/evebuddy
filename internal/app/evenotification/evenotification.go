@@ -7,17 +7,27 @@ import (
 	"context"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-// EveNotificationService is a service for rendering notifications.
-type EveNotificationService struct {
-	EveUniverseService *eveuniverseservice.EveUniverseService
+type EveUniverseService interface {
+	GetOrCreateEntityESI(ctx context.Context, id int32) (*app.EveEntity, error)
+	GetOrCreateEveMoonESI(ctx context.Context, id int32) (*app.EveMoon, error)
+	GetOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error)
+	GetOrCreatePlanetESI(ctx context.Context, id int32) (*app.EvePlanet, error)
+	GetOrCreateSolarSystemESI(ctx context.Context, id int32) (*app.EveSolarSystem, error)
+	GetOrCreateTypeESI(ctx context.Context, id int32) (*app.EveType, error)
+	ToEveEntities(ctx context.Context, ids []int32) (map[int32]*app.EveEntity, error)
 }
 
-func New() *EveNotificationService {
-	s := &EveNotificationService{}
+// EveNotificationService is a service for rendering notifications.
+type EveNotificationService struct {
+	eus EveUniverseService
+}
+
+func New(eus EveUniverseService) *EveNotificationService {
+	s := &EveNotificationService{eus: eus}
 	return s
 }
 

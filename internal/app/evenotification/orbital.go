@@ -22,7 +22,7 @@ func (s *EveNotificationService) renderOrbital(ctx context.Context, type_ Type, 
 		if err != nil {
 			return title, body, err
 		}
-		entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID})
+		entities, err := s.eus.ToEveEntities(ctx, []int32{data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID})
 		if err != nil {
 			return title, body, err
 		}
@@ -55,7 +55,7 @@ func (s *EveNotificationService) renderOrbital(ctx context.Context, type_ Type, 
 		if err != nil {
 			return title, body, err
 		}
-		entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID})
+		entities, err := s.eus.ToEveEntities(ctx, []int32{data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID})
 		if err != nil {
 			return title, body, err
 		}
@@ -89,11 +89,11 @@ type orbitalInfo struct {
 }
 
 func (s *EveNotificationService) makeOrbitalBaseText(ctx context.Context, planetID, typeID int32) (orbitalInfo, error) {
-	structureType, err := s.EveUniverseService.GetOrCreateTypeESI(ctx, typeID)
+	structureType, err := s.eus.GetOrCreateTypeESI(ctx, typeID)
 	if err != nil {
 		return orbitalInfo{}, err
 	}
-	planet, err := s.EveUniverseService.GetOrCreatePlanetESI(ctx, planetID)
+	planet, err := s.eus.GetOrCreatePlanetESI(ctx, planetID)
 	if err != nil {
 		return orbitalInfo{}, err
 	}

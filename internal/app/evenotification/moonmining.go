@@ -98,7 +98,7 @@ func (s *EveNotificationService) renderMoonMining(ctx context.Context, type_ Typ
 		title.Set(fmt.Sprintf("Extraction canceled at %s", data.StructureName))
 		cancelledBy := ""
 		if data.CancelledBy != 0 {
-			x, err := s.EveUniverseService.GetOrCreateEntityESI(ctx, data.CancelledBy)
+			x, err := s.eus.GetOrCreateEntityESI(ctx, data.CancelledBy)
 			if err != nil {
 				return title, body, err
 			}
@@ -123,7 +123,7 @@ func (s *EveNotificationService) renderMoonMining(ctx context.Context, type_ Typ
 		title.Set(fmt.Sprintf("%s has fired it's moon drill", data.StructureName))
 		firedBy := ""
 		if data.FiredBy != 0 {
-			x, err := s.EveUniverseService.GetOrCreateEntityESI(ctx, data.FiredBy)
+			x, err := s.eus.GetOrCreateEntityESI(ctx, data.FiredBy)
 			if err != nil {
 				return title, body, err
 			}
@@ -152,7 +152,7 @@ type moonMiningInfo struct {
 }
 
 func (s *EveNotificationService) makeMoonMiningBaseText(ctx context.Context, moonID int32, structureName string) (moonMiningInfo, error) {
-	moon, err := s.EveUniverseService.GetOrCreateEveMoonESI(ctx, moonID)
+	moon, err := s.eus.GetOrCreateEveMoonESI(ctx, moonID)
 	if err != nil {
 		return moonMiningInfo{}, err
 	}
@@ -177,7 +177,7 @@ type oreItem struct {
 
 func (s *EveNotificationService) makeOreText(ctx context.Context, ores map[int32]float64) (string, error) {
 	ids := slices.Collect(maps.Keys(ores))
-	entities, err := s.EveUniverseService.ToEveEntities(ctx, ids)
+	entities, err := s.eus.ToEveEntities(ctx, ids)
 	if err != nil {
 		return "", err
 	}

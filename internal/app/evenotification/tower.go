@@ -31,7 +31,7 @@ func (s *EveNotificationService) renderTowerAlertMsg(ctx context.Context, text s
 	if err != nil {
 		return title, body, err
 	}
-	entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID})
+	entities, err := s.eus.ToEveEntities(ctx, []int32{data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID})
 	if err != nil {
 		return title, body, err
 	}
@@ -82,11 +82,11 @@ type towerInfo struct {
 }
 
 func (s *EveNotificationService) makeTowerBaseText(ctx context.Context, moonID, typeID int32) (towerInfo, error) {
-	structureType, err := s.EveUniverseService.GetOrCreateTypeESI(ctx, typeID)
+	structureType, err := s.eus.GetOrCreateTypeESI(ctx, typeID)
 	if err != nil {
 		return towerInfo{}, err
 	}
-	moon, err := s.EveUniverseService.GetOrCreateEveMoonESI(ctx, moonID)
+	moon, err := s.eus.GetOrCreateEveMoonESI(ctx, moonID)
 	if err != nil {
 		return towerInfo{}, err
 	}

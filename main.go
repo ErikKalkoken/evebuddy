@@ -218,8 +218,7 @@ func main() {
 	eus.StatusCacheService = scs
 
 	// Init EveNotification service
-	en := evenotification.New()
-	en.EveUniverseService = eus
+	en := evenotification.New(eus)
 
 	// Init Character service
 	cs := characterservice.New(st, rhc.StandardClient(), esiClient)
