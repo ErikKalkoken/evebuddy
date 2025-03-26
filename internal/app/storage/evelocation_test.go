@@ -70,7 +70,7 @@ func TestLocation(t *testing.T) {
 	t.Run("can get existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 42, Name: "Alpha"})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 42, Name: "Alpha"})
 		// when
 		x, err := r.GetLocation(ctx, 42)
 		// then
@@ -81,7 +81,7 @@ func TestLocation(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 42})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 42})
 		owner := factory.CreateEveEntityCorporation()
 		system := factory.CreateEveSolarSystem()
 		myType := factory.CreateEveType()
@@ -111,8 +111,8 @@ func TestLocation(t *testing.T) {
 	t.Run("can list locations", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		l1 := factory.CreateLocationStructure()
-		l2 := factory.CreateLocationStructure()
+		l1 := factory.CreateEveLocationStructure()
+		l2 := factory.CreateEveLocationStructure()
 		// when
 		got, err := r.ListEveLocation(ctx)
 		if assert.NoError(t, err) {
@@ -124,9 +124,9 @@ func TestLocation(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		s := factory.CreateEveSolarSystem()
-		l1 := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{EveSolarSystemID: optional.New(s.ID)})
-		l2 := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{EveSolarSystemID: optional.New(s.ID)})
-		factory.CreateLocationStructure()
+		l1 := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{EveSolarSystemID: optional.New(s.ID)})
+		l2 := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{EveSolarSystemID: optional.New(s.ID)})
+		factory.CreateEveLocationStructure()
 		// when
 		got, err := r.ListEveLocationInSolarSystem(ctx, s.ID)
 		if assert.NoError(t, err) {
@@ -139,7 +139,7 @@ func TestLocation(t *testing.T) {
 	t.Run("can return IDs of missing locations", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{
 			ID: 42,
 		})
 		// when

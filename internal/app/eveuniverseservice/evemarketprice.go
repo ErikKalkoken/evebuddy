@@ -10,12 +10,10 @@ import (
 
 func (eu *EveUniverseService) GetMarketPrice(ctx context.Context, typeID int32) (*app.EveMarketPrice, error) {
 	o, err := eu.st.GetEveMarketPrice(ctx, typeID)
-	if errors.Is(err, storage.ErrNotFound) {
+	if errors.Is(err, app.ErrNotFound) {
 		return nil, app.ErrNotFound
-	} else if err != nil {
-		return nil, err
 	}
-	return o, nil
+	return o, err
 }
 
 // TODO: Change to bulk create

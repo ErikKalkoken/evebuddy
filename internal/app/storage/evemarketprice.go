@@ -14,7 +14,7 @@ func (st *Storage) GetEveMarketPrice(ctx context.Context, typeID int32) (*app.Ev
 	row, err := st.qRO.GetEveMarketPrice(ctx, int64(typeID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get eve market price for type %d: %w", typeID, err)
 	}

@@ -99,7 +99,7 @@ func LocationVariantFromID(id int64) EveLocationVariant {
 		return EveLocationSolarSystem
 	case id >= 60_000_000 && id < 64_000_000:
 		return EveLocationStation
-	case id > 1_000_000_000_000:
+	case id >= 1_000_000_000_000:
 		return EveLocationStructure
 	default:
 		return EveLocationUnknown

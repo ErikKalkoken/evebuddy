@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
@@ -35,9 +34,10 @@ var esiScopes = []string{
 // CharacterHasTokenWithScopes reports wether a token with the requested scopes exists for a character.
 func (s *CharacterService) CharacterHasTokenWithScopes(ctx context.Context, characterID int32) (bool, error) {
 	t, err := s.st.GetCharacterToken(ctx, characterID)
-	if errors.Is(err, storage.ErrNotFound) {
+	if errors.Is(err, app.ErrNotFound) {
 		return false, nil
-	} else if err != nil {
+	}
+	if err != nil {
 		return false, err
 	}
 	incoming := set.NewFromSlice(t.Scopes)

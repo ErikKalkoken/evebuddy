@@ -186,6 +186,14 @@
         "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 2001\nownerCorpName: Wayne Technologies\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- *id001\nstructureTypeID: 35835\n"
     },
     {
+        "notification_id": 1000000503,
+        "type": "StructureDestroyed",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-07T19:30:00Z",
+        "text": "solarsystemID: 30002537\nstructureID: &id001 1000000000001"
+    },
+    {
         "notification_id": 1000000512,
         "type": "StructuresReinforcementChanged",
         "sender_id": 2901,

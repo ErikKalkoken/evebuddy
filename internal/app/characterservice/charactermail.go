@@ -2,7 +2,6 @@ package characterservice
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -34,11 +33,7 @@ func (s *CharacterService) DeleteCharacterMail(ctx context.Context, characterID,
 }
 
 func (s *CharacterService) GetCharacterMail(ctx context.Context, characterID int32, mailID int32) (*app.CharacterMail, error) {
-	o, err := s.st.GetCharacterMail(ctx, characterID, mailID)
-	if errors.Is(err, storage.ErrNotFound) {
-		return nil, app.ErrNotFound
-	}
-	return o, err
+	return s.st.GetCharacterMail(ctx, characterID, mailID)
 }
 
 func (s *CharacterService) GetAllCharacterMailUnreadCount(ctx context.Context) (int, error) {

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 )
 
@@ -28,7 +29,7 @@ func (st *Storage) CacheCleanUp(ctx context.Context) (int, error) {
 
 func (st *Storage) CacheExists(ctx context.Context, key string) (bool, error) {
 	_, err := st.CacheGet(ctx, key)
-	if errors.Is(err, ErrNotFound) {
+	if errors.Is(err, app.ErrNotFound) {
 		return false, nil
 	}
 	if err != nil {
@@ -45,7 +46,7 @@ func (st *Storage) CacheGet(ctx context.Context, key string) ([]byte, error) {
 	x, err := st.qRO.CacheGet(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("cache get: %w", err)
 	}

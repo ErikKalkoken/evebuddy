@@ -59,7 +59,7 @@ func (st *Storage) GetEveType(ctx context.Context, id int32) (*app.EveType, erro
 	row, err := st.qRO.GetEveType(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get EveType for id %d: %w", id, err)
 	}

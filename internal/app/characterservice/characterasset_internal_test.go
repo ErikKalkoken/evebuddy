@@ -31,7 +31,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 3516})
-		location := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
+		location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/assets/", c.ID),
@@ -107,7 +107,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 3516})
-		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
 		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
 			CharacterID: c.ID, ItemID: 1000000019999,
 		})
@@ -170,7 +170,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 3516})
-		location := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
+		location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
 		pages := "2"
 		httpmock.RegisterResponder(
 			"GET",

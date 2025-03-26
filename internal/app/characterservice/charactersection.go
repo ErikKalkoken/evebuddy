@@ -173,12 +173,10 @@ func (s *CharacterService) updateSectionIfChanged(
 
 func (s *CharacterService) getCharacterSectionStatus(ctx context.Context, characterID int32, section app.CharacterSection) (*app.CharacterSectionStatus, error) {
 	o, err := s.st.GetCharacterSectionStatus(ctx, characterID, section)
-	if errors.Is(err, storage.ErrNotFound) {
+	if errors.Is(err, app.ErrNotFound) {
 		return nil, nil
-	} else if err != nil {
-		return nil, err
 	}
-	return o, nil
+	return o, err
 }
 
 func calcContentHash(data any) (string, error) {

@@ -60,7 +60,7 @@ func (st *Storage) GetPlanetPin(ctx context.Context, characterPlanetID, pinID in
 	r, err := st.qRO.GetPlanetPin(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get PlanetPin for %+v: %w", arg, err)
 	}

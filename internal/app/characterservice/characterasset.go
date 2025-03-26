@@ -107,7 +107,7 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg app
 					return err
 				}
 			}
-			if err := s.EveUniverseService.AddMissingEveTypes(ctx, typeIDs.ToSlice()); err != nil {
+			if err := s.EveUniverseService.AddMissingTypes(ctx, typeIDs.ToSlice()); err != nil {
 				return err
 			}
 			currentIDs, err := s.st.ListCharacterAssetIDs(ctx, characterID)

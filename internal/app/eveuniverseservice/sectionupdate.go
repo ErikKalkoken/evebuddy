@@ -15,13 +15,11 @@ import (
 )
 
 func (eu *EveUniverseService) getSectionStatus(ctx context.Context, section app.GeneralSection) (*app.GeneralSectionStatus, error) {
-	x, err := eu.st.GetGeneralSectionStatus(ctx, section)
-	if errors.Is(err, storage.ErrNotFound) {
+	o, err := eu.st.GetGeneralSectionStatus(ctx, section)
+	if errors.Is(err, app.ErrNotFound) {
 		return nil, nil
-	} else if err != nil {
-		return x, err
 	}
-	return x, nil
+	return o, err
 }
 
 func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.GeneralSection, forceUpdate bool) (bool, error) {
@@ -40,7 +38,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	case app.SectionEveCategories:
 		f = s.updateEveCategories
 	case app.SectionEveCharacters:
-		f = s.UpdateAllEveCharactersESI
+		f = s.UpdateAllCharactersESI
 	case app.SectionEveMarketPrices:
 		f = s.updateEveMarketPricesESI
 	}
@@ -97,15 +95,15 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 func (eu *EveUniverseService) updateEveCategories(ctx context.Context) error {
 	g := new(errgroup.Group)
 	g.Go(func() error {
-		return eu.UpdateEveCategoryWithChildrenESI(ctx, app.EveCategorySkill)
+		return eu.UpdateCategoryWithChildrenESI(ctx, app.EveCategorySkill)
 	})
 	g.Go(func() error {
-		return eu.UpdateEveCategoryWithChildrenESI(ctx, app.EveCategoryShip)
+		return eu.UpdateCategoryWithChildrenESI(ctx, app.EveCategoryShip)
 	})
 	if err := g.Wait(); err != nil {
 		return err
 	}
-	if err := eu.UpdateEveShipSkills(ctx); err != nil {
+	if err := eu.UpdateShipSkills(ctx); err != nil {
 		return err
 	}
 	return nil

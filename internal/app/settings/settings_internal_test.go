@@ -76,6 +76,18 @@ func (p myPreferences) SetFloatList(k string, v []float64) {
 	setAny(p, k, v)
 }
 
+func (p myPreferences) IntList(key string) []int {
+	return getAny[[]int](p, key)
+}
+
+func (p myPreferences) IntListWithFallback(key string, fallback []int) []int {
+	return getAnyWithFallback(p, key, fallback)
+}
+
+func (p myPreferences) SetIntList(k string, v []int) {
+	setAny(p, k, v)
+}
+
 func getAny[T any](p myPreferences, k string) T {
 	var z T
 	return getAnyWithFallback(p, k, z)

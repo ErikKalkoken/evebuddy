@@ -2,7 +2,6 @@ package characterservice
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -13,11 +12,7 @@ import (
 )
 
 func (s *CharacterService) GetCharacterSkill(ctx context.Context, characterID, typeID int32) (*app.CharacterSkill, error) {
-	o, err := s.st.GetCharacterSkill(ctx, characterID, typeID)
-	if errors.Is(err, storage.ErrNotFound) {
-		return nil, app.ErrNotFound
-	}
-	return o, err
+	return s.st.GetCharacterSkill(ctx, characterID, typeID)
 }
 
 func (s *CharacterService) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]app.ListCharacterSkillProgress, error) {

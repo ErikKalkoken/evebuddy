@@ -40,7 +40,7 @@ func (s *EveNotificationService) renderAllWarSurrenderMsg(ctx context.Context, t
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.AgainstID, data.DeclaredByID})
+	entities, err := s.eus.ToEntities(ctx, []int32{data.AgainstID, data.DeclaredByID})
 	if err != nil {
 		return title, body, err
 	}
@@ -66,7 +66,7 @@ func (s *EveNotificationService) renderCorpWarSurrenderMsg(ctx context.Context, 
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.AgainstID, data.DeclaredByID})
+	entities, err := s.eus.ToEntities(ctx, []int32{data.AgainstID, data.DeclaredByID})
 	if err != nil {
 		return title, body, err
 	}
@@ -87,7 +87,7 @@ func (s *EveNotificationService) renderDeclareWar(ctx context.Context, text stri
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.CharID, data.DefenderID, data.EntityID})
+	entities, err := s.eus.ToEntities(ctx, []int32{data.CharID, data.DefenderID, data.EntityID})
 	if err != nil {
 		return title, body, err
 	}
@@ -108,7 +108,7 @@ func (s *EveNotificationService) renderWarAdopted(ctx context.Context, text stri
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.EveUniverseService.ToEveEntities(
+	entities, err := s.eus.ToEntities(
 		ctx, []int32{data.AgainstID, data.DeclaredByID, data.AllianceID},
 	)
 	if err != nil {
@@ -143,7 +143,7 @@ func (s *EveNotificationService) renderWarDeclared(ctx context.Context, text str
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.AgainstID, data.DeclaredByID})
+	entities, err := s.eus.ToEntities(ctx, []int32{data.AgainstID, data.DeclaredByID})
 	if err != nil {
 		return title, body, err
 	}
@@ -171,7 +171,7 @@ func (s *EveNotificationService) renderWarHQRemovedFromSpace(ctx context.Context
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.AgainstID, data.DeclaredByID})
+	entities, err := s.eus.ToEntities(ctx, []int32{data.AgainstID, data.DeclaredByID})
 	if err != nil {
 		return title, body, err
 	}
@@ -195,7 +195,7 @@ func (s *EveNotificationService) renderWarInherited(ctx context.Context, text st
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.EveUniverseService.ToEveEntities(
+	entities, err := s.eus.ToEntities(
 		ctx,
 		[]int32{
 			data.AgainstID,
@@ -236,7 +236,7 @@ func (s *EveNotificationService) renderWarInvalid(ctx context.Context, text stri
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.AgainstID, data.DeclaredByID})
+	entities, err := s.eus.ToEntities(ctx, []int32{data.AgainstID, data.DeclaredByID})
 	if err != nil {
 		return title, body, err
 	}
@@ -261,7 +261,7 @@ func (s *EveNotificationService) renderWarRetractedByConcord(ctx context.Context
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.AgainstID, data.DeclaredByID})
+	entities, err := s.eus.ToEntities(ctx, []int32{data.AgainstID, data.DeclaredByID})
 	if err != nil {
 		return title, body, err
 	}

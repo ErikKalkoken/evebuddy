@@ -20,7 +20,7 @@ func TestCharacterJumpClone(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		location := factory.CreateLocationStructure()
+		location := factory.CreateEveLocationStructure()
 		arg := storage.CreateCharacterJumpCloneParams{
 			CharacterID: c.ID,
 			JumpCloneID: 5,
@@ -46,7 +46,7 @@ func TestCharacterJumpClone(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		location := factory.CreateLocationStructure()
+		location := factory.CreateEveLocationStructure()
 		eveType := factory.CreateEveType()
 		arg := storage.CreateCharacterJumpCloneParams{
 			CharacterID: c.ID,
@@ -76,7 +76,7 @@ func TestCharacterJumpClone(t *testing.T) {
 		factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{
 			CharacterID: c.ID,
 		})
-		location := factory.CreateLocationStructure()
+		location := factory.CreateEveLocationStructure()
 		eveType := factory.CreateEveType()
 		arg := storage.CreateCharacterJumpCloneParams{
 			CharacterID: c.ID,

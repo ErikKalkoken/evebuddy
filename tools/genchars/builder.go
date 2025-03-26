@@ -79,7 +79,7 @@ func (b *CharacterBuilder) createTypes() {
 	if err == nil {
 		return
 	}
-	if !errors.Is(err, storage.ErrNotFound) {
+	if !errors.Is(err, app.ErrNotFound) {
 		panic(err)
 	}
 	b.f.CreateEveCategory(storage.CreateEveCategoryParams{
@@ -132,7 +132,7 @@ func (b *CharacterBuilder) createImplants() {
 
 func (b *CharacterBuilder) createLocations() {
 	for i := range locations * b.Factor {
-		l := b.f.CreateLocationStructure()
+		l := b.f.CreateEveLocationStructure()
 		b.locationIDs = append(b.locationIDs, l.ID)
 		printProgress("locations", locations*b.Factor, i)
 	}

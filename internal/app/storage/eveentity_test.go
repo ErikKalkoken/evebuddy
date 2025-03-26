@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -90,7 +89,7 @@ func TestEveEntity(t *testing.T) {
 	})
 	t.Run("should return error when no object found 1", func(t *testing.T) {
 		_, err := st.GetEveEntity(ctx, 99)
-		assert.ErrorIs(t, err, storage.ErrNotFound)
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 	t.Run("should return objs with matching names in order", func(t *testing.T) {
 		// given
@@ -111,21 +110,62 @@ func TestEveEntity(t *testing.T) {
 			assert.Equal(t, want, got)
 		}
 	})
-	t.Run("should return objs with matching ids", func(t *testing.T) {
+	t.Run("should not store with invalid ID 1", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		_, err := st.CreateEveEntity(ctx, 0, "Dummy", app.EveEntityAlliance)
+		// then
+		assert.Error(t, err)
+	})
+	t.Run("should not store with invalid ID 2", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		_, err := st.GetOrCreateEveEntity(ctx, 0, "Dummy", app.EveEntityAlliance)
+		// then
+		assert.Error(t, err)
+	})
+}
+
+func TestListEveEntitiesForIDs(t *testing.T) {
+	db, st, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should return objs with matching ids in requested order", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		factory.CreateEveEntity(app.EveEntity{ID: 1})
 		factory.CreateEveEntity(app.EveEntity{ID: 2})
 		factory.CreateEveEntity(app.EveEntity{ID: 3})
+		factory.CreateEveEntity(app.EveEntity{ID: 4})
 		// when
-		ee, err := st.ListEveEntitiesForIDs(ctx, []int32{2, 3})
+		ee, err := st.ListEveEntitiesForIDs(ctx, []int32{4, 1, 3})
 		// then
 		if assert.NoError(t, err) {
 			got := xslices.Map(ee, func(a *app.EveEntity) int32 {
 				return a.ID
 			})
-			want := []int32{2, 3}
-			assert.ElementsMatch(t, want, got)
+			want := []int32{4, 1, 3}
+			assert.Equal(t, want, got)
+		}
+	})
+	t.Run("should return objs with matching ids in requested order", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		factory.CreateEveEntity(app.EveEntity{ID: 1})
+		factory.CreateEveEntity(app.EveEntity{ID: 2})
+		factory.CreateEveEntity(app.EveEntity{ID: 3})
+		factory.CreateEveEntity(app.EveEntity{ID: 4})
+		// when
+		ee, err := st.ListEveEntitiesForIDs(ctx, []int32{4, 1, 3})
+		// then
+		if assert.NoError(t, err) {
+			got := xslices.Map(ee, func(a *app.EveEntity) int32 {
+				return a.ID
+			})
+			want := []int32{4, 1, 3}
+			assert.Equal(t, want, got)
 		}
 	})
 	t.Run("should return objs with matching ids and chunking", func(t *testing.T) {
@@ -151,21 +191,14 @@ func TestEveEntity(t *testing.T) {
 			assert.ElementsMatch(t, want, got)
 		}
 	})
-	t.Run("should not store with invalid ID 1", func(t *testing.T) {
+	t.Run("should return error when one object can not be found", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		factory.CreateEveEntity(app.EveEntity{ID: 1})
 		// when
-		_, err := st.CreateEveEntity(ctx, 0, "Dummy", app.EveEntityAlliance)
+		_, err := st.ListEveEntitiesForIDs(ctx, []int32{1, 2})
 		// then
-		assert.Error(t, err)
-	})
-	t.Run("should not store with invalid ID 2", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		// when
-		_, err := st.GetOrCreateEveEntity(ctx, 0, "Dummy", app.EveEntityAlliance)
-		// then
-		assert.Error(t, err)
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }
 

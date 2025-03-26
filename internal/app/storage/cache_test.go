@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/stretchr/testify/assert"
@@ -51,7 +52,7 @@ func TestCacheGet(t *testing.T) {
 		// when
 		_, err = r.CacheGet(ctx, key)
 		// then
-		assert.ErrorIs(t, err, storage.ErrNotFound)
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 	t.Run("should return entries with get which have never expiry", func(t *testing.T) {
 		// given

@@ -31,7 +31,6 @@ type Settings interface {
 	WindowSize() fyne.Size
 	ResetWindowSize()
 	SetWindowSize(v fyne.Size)
-	TabsMainID() int
 	ResetTabsMainID()
 	SetTabsMainID(v int)
 	LastCharacterID() int32
@@ -73,4 +72,7 @@ type Settings interface {
 	NotifyTrainingEnabled() bool
 	ResetNotifyTrainingEnabled()
 	SetNotifyTrainingEnabled(v bool)
+	TabsMainID() int
+	RecentSearches() []int32
+	SetRecentSearches(v []int32)
 }

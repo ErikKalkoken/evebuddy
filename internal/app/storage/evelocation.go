@@ -44,7 +44,7 @@ func (st *Storage) GetLocation(ctx context.Context, id int64) (*app.EveLocation,
 	o, err := st.qRO.GetLocation(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get eve location for id %d: %w", id, err)
 	}

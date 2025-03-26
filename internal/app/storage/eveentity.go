@@ -92,7 +92,7 @@ func (st *Storage) GetEveEntity(ctx context.Context, id int32) (*app.EveEntity, 
 	e, err := st.qRO.GetEveEntity(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get eve entity for id %d: %w", id, err)
 	}
@@ -148,19 +148,29 @@ func (st *Storage) ListEveEntitiesByName(ctx context.Context, name string) ([]*a
 	return ee2, nil
 }
 
+// ListEveEntitiesForIDs returns a slice of EveEntites in the same order as ids.
+//
+// Returns an error if at least one object can not be found.
 func (st *Storage) ListEveEntitiesForIDs(ctx context.Context, ids []int32) ([]*app.EveEntity, error) {
-	ids2 := convertNumericSlice[int64](ids)
 	ee := make([]queries.EveEntity, 0)
-	for idsChunk := range slices.Chunk(ids2, st.MaxListEveEntitiesForIDs) {
+	for idsChunk := range slices.Chunk(convertNumericSlice[int64](ids), st.MaxListEveEntitiesForIDs) {
 		r, err := st.qRO.ListEveEntitiesForIDs(ctx, idsChunk)
 		if err != nil {
 			return nil, fmt.Errorf("list eve entities for %d ids: %w", len(idsChunk), err)
 		}
 		ee = slices.Concat(ee, r)
 	}
-	oo := make([]*app.EveEntity, len(ee))
-	for i, e := range ee {
-		oo[i] = eveEntityFromDBModel(e)
+	m := make(map[int32]*app.EveEntity)
+	for _, e := range ee {
+		m[int32(e.ID)] = eveEntityFromDBModel(e)
+	}
+	oo := make([]*app.EveEntity, 0)
+	for _, id := range ids {
+		o, found := m[id]
+		if !found {
+			return nil, app.ErrNotFound
+		}
+		oo = append(oo, o)
 	}
 	return oo, nil
 }

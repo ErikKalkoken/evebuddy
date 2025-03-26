@@ -63,7 +63,7 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 		if data.ExternalID2 != -1 && data.ExternalID2 == int64(int32(data.ExternalID2)) {
 			ids = append(ids, int32(data.ExternalID2))
 		}
-		entities, err := s.EveUniverseService.ToEveEntities(ctx, ids)
+		entities, err := s.eus.ToEntities(ctx, ids)
 		if err != nil {
 			return title, body, err
 		}
@@ -106,7 +106,7 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		solarSystem, err := s.EveUniverseService.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
+		solarSystem, err := s.eus.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
 		if err != nil {
 			return title, body, err
 		}
@@ -122,11 +122,11 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		solarSystem, err := s.EveUniverseService.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
+		solarSystem, err := s.eus.GetOrCreateSolarSystemESI(ctx, data.SolarSystemID)
 		if err != nil {
 			return title, body, err
 		}
-		structureType, err := s.EveUniverseService.GetOrCreateTypeESI(ctx, int32(data.StructureTypeID))
+		structureType, err := s.eus.GetOrCreateTypeESI(ctx, int32(data.StructureTypeID))
 		if err != nil {
 			return title, body, err
 		}

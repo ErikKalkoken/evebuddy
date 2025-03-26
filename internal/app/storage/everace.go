@@ -27,7 +27,7 @@ func (st *Storage) GetEveRace(ctx context.Context, id int32) (*app.EveRace, erro
 	o, err := st.qRO.GetEveRace(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get Race for id %d: %w", id, err)
 	}

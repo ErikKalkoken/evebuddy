@@ -14,13 +14,11 @@ import (
 )
 
 func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, id int32) (*app.EveCharacter, error) {
-	x, err := s.st.GetEveCharacter(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+	o, err := s.st.GetEveCharacter(ctx, id)
+	if errors.Is(err, app.ErrNotFound) {
 		return s.createEveCharacterFromESI(ctx, id)
-	} else if err != nil {
-		return x, err
 	}
-	return x, nil
+	return o, err
 }
 
 func (s *EveUniverseService) GetCharacterESI(ctx context.Context, characterID int32) (*app.EveCharacter, error) {
@@ -107,15 +105,15 @@ func (s *EveUniverseService) fetchEveCharacterfromESI(ctx context.Context, id in
 	if err != nil {
 		return esi.GetCharactersCharacterIdOk{}, err
 	}
-	_, err = s.GetOrCreateEveRaceESI(ctx, r.RaceId)
+	_, err = s.GetOrCreateRaceESI(ctx, r.RaceId)
 	if err != nil {
 		return esi.GetCharactersCharacterIdOk{}, err
 	}
 	return r, nil
 }
 
-// UpdateAllEveCharactersESI updates all known Eve characters from ESI.
-func (s *EveUniverseService) UpdateAllEveCharactersESI(ctx context.Context) error {
+// UpdateAllCharactersESI updates all known Eve characters from ESI.
+func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) error {
 	ids, err := s.st.ListEveCharacterIDs(ctx)
 	if err != nil {
 		return err

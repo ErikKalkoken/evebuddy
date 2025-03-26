@@ -36,7 +36,7 @@ func (st *Storage) GetEveSchematic(ctx context.Context, id int32) (*app.EveSchem
 	c, err := st.qRO.GetEveSchematic(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get EveSchematic for id %d: %w", id, err)
 	}

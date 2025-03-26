@@ -36,7 +36,7 @@ func (st *Storage) GetEveCategory(ctx context.Context, id int32) (*app.EveCatego
 	c, err := st.qRO.GetEveCategory(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get EveCategory %+v: %w", id, err)
 	}

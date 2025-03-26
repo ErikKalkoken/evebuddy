@@ -10,13 +10,11 @@ import (
 )
 
 func (eu *EveUniverseService) GetOrCreateSchematicESI(ctx context.Context, id int32) (*app.EveSchematic, error) {
-	x, err := eu.st.GetEveSchematic(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+	o, err := eu.st.GetEveSchematic(ctx, id)
+	if errors.Is(err, app.ErrNotFound) {
 		return eu.createEveSchematicFromESI(ctx, id)
-	} else if err != nil {
-		return x, err
 	}
-	return x, nil
+	return o, err
 }
 
 func (eu *EveUniverseService) createEveSchematicFromESI(ctx context.Context, id int32) (*app.EveSchematic, error) {

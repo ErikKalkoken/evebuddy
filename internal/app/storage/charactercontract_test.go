@@ -60,8 +60,8 @@ func TestCharacterContract(t *testing.T) {
 		issuerCorporation := c.EveCharacter.Corporation
 		dateExpired := time.Now().Add(12 * time.Hour).UTC()
 		dateIssued := time.Now().UTC()
-		startLocation := factory.CreateLocationStructure()
-		endLocation := factory.CreateLocationStructure()
+		startLocation := factory.CreateEveLocationStructure()
+		endLocation := factory.CreateEveLocationStructure()
 		arg := storage.CreateCharacterContractParams{
 			Availability:        app.ContractAvailabilityPersonal,
 			CharacterID:         c.ID,

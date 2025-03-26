@@ -79,7 +79,7 @@ func TestMail(t *testing.T) {
 		// when
 		_, err := r.GetCharacterMail(ctx, c.ID, 99)
 		// then
-		assert.ErrorIs(t, err, storage.ErrNotFound)
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 	t.Run("can list mail IDs", func(t *testing.T) {
 		// given
@@ -107,7 +107,7 @@ func TestMail(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			_, err := r.GetCharacterMail(ctx, m.CharacterID, m.MailID)
-			assert.ErrorIs(t, err, storage.ErrNotFound)
+			assert.ErrorIs(t, err, app.ErrNotFound)
 		}
 	})
 }

@@ -129,7 +129,7 @@ func (s *EveUniverseService) GetRegionConstellationsESI(ctx context.Context, id 
 	if err != nil {
 		return nil, err
 	}
-	xx, err := s.ToEveEntities(ctx, region.Constellations)
+	xx, err := s.ToEntities(ctx, region.Constellations)
 	if err != nil {
 		return nil, err
 	}
@@ -167,13 +167,11 @@ func (s *EveUniverseService) GetConstellationSolarSytemsESI(ctx context.Context,
 }
 
 func (s *EveUniverseService) GetOrCreateRegionESI(ctx context.Context, id int32) (*app.EveRegion, error) {
-	x, err := s.st.GetEveRegion(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+	o, err := s.st.GetEveRegion(ctx, id)
+	if errors.Is(err, app.ErrNotFound) {
 		return s.createEveRegionFromESI(ctx, id)
-	} else if err != nil {
-		return x, err
 	}
-	return x, nil
+	return o, err
 }
 
 func (s *EveUniverseService) createEveRegionFromESI(ctx context.Context, id int32) (*app.EveRegion, error) {
@@ -197,13 +195,11 @@ func (s *EveUniverseService) createEveRegionFromESI(ctx context.Context, id int3
 }
 
 func (s *EveUniverseService) GetOrCreateConstellationESI(ctx context.Context, id int32) (*app.EveConstellation, error) {
-	x, err := s.st.GetEveConstellation(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+	o, err := s.st.GetEveConstellation(ctx, id)
+	if errors.Is(err, app.ErrNotFound) {
 		return s.createEveConstellationFromESI(ctx, id)
-	} else if err != nil {
-		return x, err
 	}
-	return x, nil
+	return o, err
 }
 
 func (s *EveUniverseService) createEveConstellationFromESI(ctx context.Context, id int32) (*app.EveConstellation, error) {
@@ -234,13 +230,11 @@ func (s *EveUniverseService) createEveConstellationFromESI(ctx context.Context, 
 }
 
 func (s *EveUniverseService) GetOrCreateSolarSystemESI(ctx context.Context, id int32) (*app.EveSolarSystem, error) {
-	x, err := s.st.GetEveSolarSystem(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+	o, err := s.st.GetEveSolarSystem(ctx, id)
+	if errors.Is(err, app.ErrNotFound) {
 		return s.createEveSolarSystemFromESI(ctx, id)
-	} else if err != nil {
-		return x, err
 	}
-	return x, nil
+	return o, err
 }
 
 func (s *EveUniverseService) createEveSolarSystemFromESI(ctx context.Context, id int32) (*app.EveSolarSystem, error) {
@@ -272,13 +266,11 @@ func (s *EveUniverseService) createEveSolarSystemFromESI(ctx context.Context, id
 }
 
 func (s *EveUniverseService) GetOrCreatePlanetESI(ctx context.Context, id int32) (*app.EvePlanet, error) {
-	x, err := s.st.GetEvePlanet(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+	o, err := s.st.GetEvePlanet(ctx, id)
+	if errors.Is(err, app.ErrNotFound) {
 		return s.createEvePlanetFromESI(ctx, id)
-	} else if err != nil {
-		return x, err
 	}
-	return x, nil
+	return o, err
 }
 
 func (s *EveUniverseService) createEvePlanetFromESI(ctx context.Context, id int32) (*app.EvePlanet, error) {
@@ -313,14 +305,12 @@ func (s *EveUniverseService) createEvePlanetFromESI(ctx context.Context, id int3
 	return y.(*app.EvePlanet), nil
 }
 
-func (s *EveUniverseService) GetOrCreateEveMoonESI(ctx context.Context, id int32) (*app.EveMoon, error) {
-	x, err := s.st.GetEveMoon(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+func (s *EveUniverseService) GetOrCreateMoonESI(ctx context.Context, id int32) (*app.EveMoon, error) {
+	o, err := s.st.GetEveMoon(ctx, id)
+	if errors.Is(err, app.ErrNotFound) {
 		return s.createEveMoonFromESI(ctx, id)
-	} else if err != nil {
-		return x, err
 	}
-	return x, nil
+	return o, err
 }
 
 func (s *EveUniverseService) createEveMoonFromESI(ctx context.Context, id int32) (*app.EveMoon, error) {

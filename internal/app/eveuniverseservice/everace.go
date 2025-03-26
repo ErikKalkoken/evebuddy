@@ -6,17 +6,14 @@ import (
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
-func (eu *EveUniverseService) GetOrCreateEveRaceESI(ctx context.Context, id int32) (*app.EveRace, error) {
-	x, err := eu.st.GetEveRace(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+func (eu *EveUniverseService) GetOrCreateRaceESI(ctx context.Context, id int32) (*app.EveRace, error) {
+	o, err := eu.st.GetEveRace(ctx, id)
+	if errors.Is(err, app.ErrNotFound) {
 		return eu.createEveRaceFromESI(ctx, id)
-	} else if err != nil {
-		return x, err
 	}
-	return x, nil
+	return o, err
 }
 
 func (eu *EveUniverseService) createEveRaceFromESI(ctx context.Context, id int32) (*app.EveRace, error) {

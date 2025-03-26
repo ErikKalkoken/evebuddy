@@ -31,7 +31,7 @@ func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int32, typ
 	r, err := st.qRO.GetCharacterSkill(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get skill %d for character %d: %w", typeID, characterID, err)
 	}

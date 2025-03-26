@@ -193,7 +193,6 @@ func main() {
 	pc := pcache.New(st, cacheCleanUpTimeout)
 	defer pc.Close()
 
-	// TODO: Add response logging for DEBUG log level
 	// Initialize shared HTTP client
 	// Automatically retries on connection and most server errors
 	// Logs requests on debug level and all HTTP error responses as warnings
@@ -219,8 +218,7 @@ func main() {
 	eus.StatusCacheService = scs
 
 	// Init EveNotification service
-	en := evenotification.New()
-	en.EveUniverseService = eus
+	en := evenotification.New(eus)
 
 	// Init Character service
 	cs := characterservice.New(st, rhc.StandardClient(), esiClient)
@@ -277,12 +275,12 @@ func setupCrashFile(logDir string) (path string) {
 // logResponse is a callback for retryable logger, which is called for every respose.
 // It logs all HTTP erros and also the complete response when log level is DEBUG.
 func logResponse(l retryablehttp.Logger, r *http.Response) {
-	if r.StatusCode >= 400 {
-		slog.Warn("HTTP error response", "method", r.Request.Method, "url", r.Request.URL, "status", r.Status)
-	}
-	if !slog.Default().Enabled(context.Background(), slog.LevelDebug) {
+	isDebug := slog.Default().Enabled(context.Background(), slog.LevelDebug)
+	isHttpError := r.StatusCode >= 400
+	if !isDebug && !isHttpError {
 		return
 	}
+
 	var respBody string
 	if slices.ContainsFunc(blacklistedURLs, func(x string) bool {
 		return strings.Contains(r.Request.URL.String(), x)
@@ -295,15 +293,39 @@ func logResponse(l retryablehttp.Logger, r *http.Response) {
 			r.Body = io.NopCloser(bytes.NewBuffer(body))
 		}
 	}
-	slog.Debug(
-		"HTTP response",
-		"method", r.Request.Method,
-		"url", r.Request.URL,
-		"status",
-		r.StatusCode,
-		"header",
-		r.Header,
-		"body",
-		respBody,
-	)
+
+	var statusText string
+	if r.StatusCode == 420 {
+		statusText = "Error Limited"
+	} else {
+		statusText = http.StatusText(r.StatusCode)
+	}
+	status := fmt.Sprintf("%d %s", r.StatusCode, statusText)
+
+	var level slog.Level
+	if isHttpError {
+		level = slog.LevelWarn
+	} else {
+		level = slog.LevelDebug
+
+	}
+	var args []any
+	if isDebug {
+		args = []any{
+			"method", r.Request.Method,
+			"url", r.Request.URL,
+			"status", status,
+			"header", r.Header,
+			"body", respBody,
+		}
+	} else {
+		args = []any{
+			"method", r.Request.Method,
+			"url", r.Request.URL,
+			"status", status,
+			"body", respBody,
+		}
+	}
+
+	slog.Log(context.Background(), level, "HTTP response", args...)
 }

@@ -3,6 +3,7 @@ package toolui
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"slices"
 	"sync"
 
@@ -53,6 +54,7 @@ func NewGameSearch(u app.UI) *GameSearch {
 		supportedCategories: infowindow.SupportedEveEntities(),
 		u:                   u,
 		w:                   u.MainWindow(),
+		recentItems:         make([]*app.EveEntity, 0),
 	}
 	a.ExtendBaseWidget(a)
 
@@ -133,10 +135,8 @@ func NewGameSearch(u app.UI) *GameSearch {
 	)
 	clearRecent := widget.NewHyperlink("Clear", nil)
 	clearRecent.OnTapped = func() {
-		a.mu.Lock()
-		a.recentItems = make([]*app.EveEntity, 0)
-		a.mu.Unlock()
-		a.recent.Refresh()
+		a.setRecentItems(make([]*app.EveEntity, 0))
+		a.storeRecentItems()
 	}
 	a.recentPage = container.NewBorder(
 		container.NewHBox(widget.NewLabel("Recent searches"), layout.NewSpacer(), clearRecent),
@@ -146,7 +146,33 @@ func NewGameSearch(u app.UI) *GameSearch {
 		a.recent,
 	)
 	a.showRecent()
+	go func() {
+		ids := a.u.Settings().RecentSearches()
+		if len(ids) == 0 {
+			return
+		}
+		ee, err := a.u.EveUniverseService().ListEntitiesForIDs(context.Background(), ids)
+		if err != nil {
+			slog.Error("failed to load recent items from settings", "error", err)
+			return
+		}
+		a.setRecentItems(ee)
+	}()
 	return a
+}
+
+func (a *GameSearch) setRecentItems(ee []*app.EveEntity) {
+	a.mu.Lock()
+	a.recentItems = ee
+	a.mu.Unlock()
+	a.recent.Refresh()
+}
+
+func (a *GameSearch) storeRecentItems() {
+	ids := xslices.Map(a.recentItems, func(x *app.EveEntity) int32 {
+		return x.ID
+	})
+	a.u.Settings().SetRecentSearches(ids)
 }
 
 func (a *GameSearch) CreateRenderer() fyne.WidgetRenderer {
@@ -209,6 +235,7 @@ func (a *GameSearch) makeResults() *iwidget.Tree[resultNode] {
 			return a.ID == n.ee.ID
 		})
 		a.recentItems = slices.Insert(a.recentItems, 0, n.ee)
+		a.storeRecentItems()
 		a.mu.Unlock()
 		a.recent.Refresh()
 	}

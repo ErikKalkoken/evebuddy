@@ -19,9 +19,8 @@ func TestTowerNotification(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	eu := eveuniverseservice.New(st, nil)
-	en := evenotification.New()
-	en.EveUniverseService = eu
+	eus := eveuniverseservice.New(st, nil)
+	en := evenotification.New(eus)
 	ctx := context.Background()
 	t.Run("TowerAlertMsg full data", func(t *testing.T) {
 		// given

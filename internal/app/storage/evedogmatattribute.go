@@ -50,7 +50,7 @@ func (st *Storage) GetEveDogmaAttribute(ctx context.Context, id int32) (*app.Eve
 	c, err := st.qRO.GetEveDogmaAttribute(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get EveDogmaAttribute for id %d: %w", id, err)
 	}

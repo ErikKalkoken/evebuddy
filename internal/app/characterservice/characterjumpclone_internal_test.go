@@ -44,8 +44,8 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 22118})
-		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60003463})
-		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 1021348135816})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60003463})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 1021348135816})
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/clones/", c.ID),
@@ -79,8 +79,8 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		implant1 := factory.CreateEveType(storage.CreateEveTypeParams{ID: 22118})
 		implant2 := factory.CreateEveType()
-		station := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60003463})
-		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 1021348135816})
+		station := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60003463})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 1021348135816})
 		factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{
 			CharacterID: c.ID,
 			JumpCloneID: 12345,

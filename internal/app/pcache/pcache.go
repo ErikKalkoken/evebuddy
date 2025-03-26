@@ -9,6 +9,7 @@ import (
 
 	"golang.org/x/sync/singleflight"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 )
@@ -107,7 +108,7 @@ func (c *PCache) Get(key string) ([]byte, bool) {
 		return x.([]byte), true
 	}
 	v, err := c.st.CacheGet(context.Background(), key)
-	if errors.Is(err, storage.ErrNotFound) {
+	if errors.Is(err, app.ErrNotFound) {
 		return nil, false
 	}
 	if err != nil {

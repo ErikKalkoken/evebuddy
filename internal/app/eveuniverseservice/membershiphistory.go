@@ -60,7 +60,7 @@ func (s *EveUniverseService) makeMembershipHistory(ctx context.Context, items []
 	ids = slices.DeleteFunc(ids, func(id int32) bool {
 		return id < 2
 	})
-	eeMap, err := s.ToEveEntities(ctx, ids)
+	eeMap, err := s.ToEntities(ctx, ids)
 	if err != nil {
 		return nil, err
 	}

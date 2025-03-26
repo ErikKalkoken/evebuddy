@@ -61,8 +61,8 @@ func TestCharacter(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		character := factory.CreateEveCharacter()
-		home := factory.CreateLocationStructure()
-		location := factory.CreateLocationStructure()
+		home := factory.CreateEveLocationStructure()
+		location := factory.CreateEveLocationStructure()
 		ship := factory.CreateEveType()
 		login := time.Now()
 		cloneJump := time.Now()
@@ -99,7 +99,7 @@ func TestCharacter(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacter()
 		// when
-		newLocation := factory.CreateLocationStructure()
+		newLocation := factory.CreateEveLocationStructure()
 		newShip := factory.CreateEveType()
 		assetValue := optional.New(1.2)
 		walletBalance := optional.New(3.4)
@@ -130,7 +130,7 @@ func TestCharacter(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			_, err := r.GetCharacter(ctx, c.ID)
-			assert.ErrorIs(t, err, storage.ErrNotFound)
+			assert.ErrorIs(t, err, app.ErrNotFound)
 		}
 	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
@@ -139,7 +139,7 @@ func TestCharacter(t *testing.T) {
 		// when
 		_, err := r.GetCharacter(ctx, 99)
 		// then
-		assert.ErrorIs(t, err, storage.ErrNotFound)
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 	t.Run("should return a character", func(t *testing.T) {
 		// given
@@ -159,7 +159,7 @@ func TestCharacter(t *testing.T) {
 		// when
 		_, err := r.GetAnyCharacter(ctx)
 		// then
-		assert.ErrorIs(t, err, storage.ErrNotFound)
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 	t.Run("can fetch character by ID with minimal fields populated only", func(t *testing.T) {
 		// given
@@ -244,7 +244,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacter()
-		home := factory.CreateLocationStructure()
+		home := factory.CreateEveLocationStructure()
 		// when
 		err := r.UpdateCharacterHome(ctx, c1.ID, optional.New(home.ID))
 		// then
@@ -315,7 +315,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacter()
-		location := factory.CreateLocationStructure()
+		location := factory.CreateEveLocationStructure()
 		// when
 		err := r.UpdateCharacterLocation(ctx, c1.ID, optional.New(location.ID))
 		// then

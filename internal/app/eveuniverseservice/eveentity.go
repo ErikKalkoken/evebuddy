@@ -8,7 +8,6 @@ import (
 	"slices"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 
 	"github.com/antihax/goesi/esi"
@@ -22,7 +21,7 @@ var invalidEveEntityIDs = []int32{
 	1, // ID is used for fields, which are technically mandatory, but have no value (e.g. creator for NPC corps)
 }
 
-func (s *EveUniverseService) GetEveEntity(ctx context.Context, id int32) (*app.EveEntity, error) {
+func (s *EveUniverseService) GetEntity(ctx context.Context, id int32) (*app.EveEntity, error) {
 	return s.st.GetEveEntity(ctx, id)
 }
 
@@ -31,14 +30,15 @@ func (s *EveUniverseService) getValidEveEntity(ctx context.Context, id int32) (*
 	if id == 0 || id == 1 {
 		return nil, nil
 	}
-	return s.GetEveEntity(ctx, id)
+	return s.GetEntity(ctx, id)
 }
 
 func (s *EveUniverseService) GetOrCreateEntityESI(ctx context.Context, id int32) (*app.EveEntity, error) {
 	o, err := s.st.GetEveEntity(ctx, id)
 	if err == nil {
 		return o, nil
-	} else if !errors.Is(err, storage.ErrNotFound) {
+	}
+	if !errors.Is(err, app.ErrNotFound) {
 		return nil, err
 	}
 	_, err = s.AddMissingEntities(ctx, []int32{id})
@@ -48,9 +48,9 @@ func (s *EveUniverseService) GetOrCreateEntityESI(ctx context.Context, id int32)
 	return s.st.GetEveEntity(ctx, id)
 }
 
-// ToEveEntities returns the resolved EveEntities for a list of valid entity IDs.
+// ToEntities returns the resolved EveEntities for a list of valid entity IDs.
 // It garantees a result for every ID and will map unknown IDs (including 0 & 1) to empty EveEntity objects.
-func (s *EveUniverseService) ToEveEntities(ctx context.Context, ids []int32) (map[int32]*app.EveEntity, error) {
+func (s *EveUniverseService) ToEntities(ctx context.Context, ids []int32) (map[int32]*app.EveEntity, error) {
 	r := make(map[int32]*app.EveEntity)
 	if len(ids) == 0 {
 		return r, nil
@@ -174,6 +174,9 @@ func (s *EveUniverseService) resolveIDs(ctx context.Context, ids []int32) ([]esi
 
 func (s *EveUniverseService) ListEntitiesByPartialName(ctx context.Context, partial string) ([]*app.EveEntity, error) {
 	return s.st.ListEveEntitiesByPartialName(ctx, partial)
+}
+func (s *EveUniverseService) ListEntitiesForIDs(ctx context.Context, ids []int32) ([]*app.EveEntity, error) {
+	return s.st.ListEveEntitiesForIDs(ctx, ids)
 }
 
 func eveEntityCategoryFromESICategory(c string) app.EveEntityCategory {

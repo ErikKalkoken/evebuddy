@@ -17,7 +17,7 @@ func (s *EveNotificationService) renderCorporate(ctx context.Context, type_ Type
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.CharID, data.CorpID})
+		entities, err := s.eus.ToEntities(ctx, []int32{data.CharID, data.CorpID})
 		if err != nil {
 			return title, body, err
 		}
@@ -38,7 +38,7 @@ func (s *EveNotificationService) renderCorporate(ctx context.Context, type_ Type
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.CharID, data.CorpID})
+		entities, err := s.eus.ToEntities(ctx, []int32{data.CharID, data.CorpID})
 		if err != nil {
 			return title, body, err
 		}
@@ -56,7 +56,7 @@ func (s *EveNotificationService) renderCorporate(ctx context.Context, type_ Type
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.CharID, data.CorpID, data.InvokingCharID})
+		entities, err := s.eus.ToEntities(ctx, []int32{data.CharID, data.CorpID, data.InvokingCharID})
 		if err != nil {
 			return title, body, err
 		}
@@ -75,7 +75,7 @@ func (s *EveNotificationService) renderCorporate(ctx context.Context, type_ Type
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.CharID, data.CorpID})
+		entities, err := s.eus.ToEntities(ctx, []int32{data.CharID, data.CorpID})
 		if err != nil {
 			return title, body, err
 		}
@@ -93,7 +93,7 @@ func (s *EveNotificationService) renderCorporate(ctx context.Context, type_ Type
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.CharID, data.CorpID})
+		entities, err := s.eus.ToEntities(ctx, []int32{data.CharID, data.CorpID})
 		if err != nil {
 			return title, body, err
 		}
@@ -114,7 +114,7 @@ func (s *EveNotificationService) renderCorporate(ctx context.Context, type_ Type
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.CharID, data.CorpID})
+		entities, err := s.eus.ToEntities(ctx, []int32{data.CharID, data.CorpID})
 		if err != nil {
 			return title, body, err
 		}
@@ -132,7 +132,7 @@ func (s *EveNotificationService) renderCorporate(ctx context.Context, type_ Type
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.CharID, data.CorpID})
+		entities, err := s.eus.ToEntities(ctx, []int32{data.CharID, data.CorpID})
 		if err != nil {
 			return title, body, err
 		}

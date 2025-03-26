@@ -39,12 +39,11 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	eu := eveuniverseservice.New(st, nil)
-	en := evenotification.New()
-	en.EveUniverseService = eu
+	en := evenotification.New(eu)
 	ctx := context.Background()
 	solarSystem := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30002537})
 	structureType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 35835})
-	factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{
+	factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{
 		ID:               1000000000001,
 		EveSolarSystemID: optional.New(solarSystem.ID),
 		EveTypeID:        optional.New(structureType.ID),
