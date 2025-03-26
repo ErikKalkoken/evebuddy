@@ -501,12 +501,17 @@ func (s *EveNotificationService) renderStructureWentLowPower(ctx context.Context
 	return title, body, nil
 }
 
+type eveObj struct {
+	ID   int
+	Name string
+}
+
 type structureInfo struct {
-	eveType     *app.EveType
+	eveType     eveObj
 	intro       string
 	name        string
-	owner       *app.EveEntity
-	solarSystem *app.EveSolarSystem
+	owner       eveObj
+	solarSystem eveObj
 }
 
 func (s *EveNotificationService) makeStructureBaseText(ctx context.Context, typeID, systemID int32, structureID int64, structureName string) (structureInfo, error) {
@@ -558,11 +563,17 @@ func (s *EveNotificationService) makeStructureBaseText(ctx context.Context, type
 		text += fmt.Sprintf(" belonging to %s", ownerLink)
 	}
 	x := structureInfo{
-		eveType:     eveType,
-		solarSystem: system,
+		solarSystem: eveObj{ID: int(system.ID), Name: system.Name},
 		name:        structureName,
-		owner:       owner,
 		intro:       text,
+	}
+	if eveType != nil {
+		x.eveType.ID = int(eveType.ID)
+		x.eveType.Name = eveType.Name
+	}
+	if owner != nil {
+		x.owner.ID = int(owner.ID)
+		x.owner.Name = owner.Name
 	}
 	return x, nil
 }
