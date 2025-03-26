@@ -46,15 +46,18 @@ func TestLogResponse(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, http.StatusOK, r.StatusCode)
 			assert.Conditionf(t, func() bool {
-				m, err := regexp.MatchString(`DEBUG HTTP response method=GET .*status=200.*header=.*Dummy:\[alpha\].*.*body=orange`, logBuf.String())
+				m, err := regexp.MatchString(
+					`DEBUG HTTP response method=GET .*status="200.*header=.*Dummy:\[alpha\].*.*body=orange`,
+					logBuf.String(),
+				)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return m
-			}, "buffer: %s", logBuf.String())
+			}, logBuf.String())
 		}
 	})
-	t.Run("should not log response details when log level is not DEBUG", func(t *testing.T) {
+	t.Run("should not log response details when log level is not DEBUG and no HTTP error", func(t *testing.T) {
 		// given
 		logBuf.Reset()
 		slog.SetLogLoggerLevel(slog.LevelInfo)
@@ -71,6 +74,31 @@ func TestLogResponse(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, http.StatusOK, r.StatusCode)
 			assert.NotContains(t, logBuf.String(), "HTTP response")
+		}
+	})
+	t.Run("should log response warning when HTTP error and include body", func(t *testing.T) {
+		// given
+		logBuf.Reset()
+		slog.SetLogLoggerLevel(slog.LevelInfo)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://www.example.com/",
+			httpmock.NewStringResponder(http.StatusNotFound, "orange").HeaderSet(http.Header{"dummy": []string{"alpha"}}))
+
+		// when
+		r, err := rhc.Get("https://www.example.com/")
+
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusNotFound, r.StatusCode)
+			assert.Conditionf(t, func() bool {
+				m, err := regexp.MatchString(`WARN HTTP response .*body=`, logBuf.String())
+				if err != nil {
+					t.Fatal(err)
+				}
+				return m
+			}, logBuf.String())
 		}
 	})
 	t.Run("should redact response body for blacklisted URLs", func(t *testing.T) {
@@ -95,7 +123,7 @@ func TestLogResponse(t *testing.T) {
 					t.Fatal(err)
 				}
 				return m
-			}, "buffer: %s", logBuf.String())
+			}, logBuf.String())
 		}
 	})
 }
