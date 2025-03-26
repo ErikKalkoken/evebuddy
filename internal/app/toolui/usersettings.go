@@ -41,14 +41,14 @@ type UserSettings struct {
 	showSnackbar func(string)
 	sb           *iwidget.Snackbar
 	u            app.UI
-	window       fyne.Window
+	w            fyne.Window
 }
 
 func NewSettings(u app.UI) *UserSettings {
 	a := &UserSettings{
 		showSnackbar: u.ShowSnackbar,
 		u:            u,
-		window:       u.MainWindow(),
+		w:            u.MainWindow(),
 	}
 	a.ExtendBaseWidget(a)
 	a.GeneralContent, a.GeneralActions = a.makeGeneralSettingsPage()
@@ -82,19 +82,19 @@ func (a *UserSettings) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *UserSettings) SetWindow(w fyne.Window) {
-	a.window = w
+	a.w = w
 	if a.sb != nil {
 		a.sb.Stop()
 	}
 	a.sb = iwidget.NewSnackbar(w)
 	a.sb.Start()
 	a.showSnackbar = func(s string) {
-		a.showSnackbar(s)
+		a.sb.Show(s)
 	}
 }
 
 func (a *UserSettings) currentWindow() fyne.Window {
-	return a.window
+	return a.w
 }
 
 func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []app.SettingAction) {
@@ -288,7 +288,7 @@ func (a *UserSettings) showDeleteFileDialog(name, path string) {
 				titler := cases.Title(language.English)
 				a.showSnackbar(titler.String(name) + " deleted")
 			}
-		}, a.window)
+		}, a.w)
 }
 
 func (a *UserSettings) showExportFileDialog(path string) {
@@ -298,7 +298,7 @@ func (a *UserSettings) showExportFileDialog(path string) {
 		a.showSnackbar("No file to export: " + filename)
 		return
 	} else if err != nil {
-		a.u.ShowErrorDialog("Failed to open "+filename, err, a.window)
+		a.u.ShowErrorDialog("Failed to open "+filename, err, a.w)
 		return
 	}
 	d := dialog.NewFileSave(
@@ -318,12 +318,12 @@ func (a *UserSettings) showExportFileDialog(path string) {
 				return nil
 			}()
 			if err2 != nil {
-				a.u.ShowErrorDialog("Failed to export "+filename, err, a.window)
+				a.u.ShowErrorDialog("Failed to export "+filename, err, a.w)
 			}
-		}, a.window,
+		}, a.w,
 	)
 	d.SetFileName(filename)
-	a.u.ModifyShortcutsForDialog(d, a.window)
+	a.u.ModifyShortcutsForDialog(d, a.w)
 	d.Show()
 }
 
