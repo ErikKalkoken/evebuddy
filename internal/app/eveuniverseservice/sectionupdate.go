@@ -15,13 +15,11 @@ import (
 )
 
 func (eu *EveUniverseService) getSectionStatus(ctx context.Context, section app.GeneralSection) (*app.GeneralSectionStatus, error) {
-	x, err := eu.st.GetGeneralSectionStatus(ctx, section)
-	if errors.Is(err, storage.ErrNotFound) {
+	o, err := eu.st.GetGeneralSectionStatus(ctx, section)
+	if errors.Is(err, app.ErrNotFound) {
 		return nil, nil
-	} else if err != nil {
-		return x, err
 	}
-	return x, nil
+	return o, err
 }
 
 func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.GeneralSection, forceUpdate bool) (bool, error) {

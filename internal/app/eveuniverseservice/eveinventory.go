@@ -12,23 +12,15 @@ import (
 )
 
 func (eu *EveUniverseService) GetType(ctx context.Context, id int32) (*app.EveType, error) {
-	x, err := eu.st.GetEveType(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
-		return nil, app.ErrNotFound
-	} else if err != nil {
-		return x, err
-	}
-	return x, nil
+	return eu.st.GetEveType(ctx, id)
 }
 
 func (eu *EveUniverseService) GetOrCreateCategoryESI(ctx context.Context, id int32) (*app.EveCategory, error) {
-	x, err := eu.st.GetEveCategory(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+	o, err := eu.st.GetEveCategory(ctx, id)
+	if errors.Is(err, app.ErrNotFound) {
 		return eu.createEveCategoryFromESI(ctx, id)
-	} else if err != nil {
-		return x, err
 	}
-	return x, nil
+	return o, err
 }
 
 func (eu *EveUniverseService) createEveCategoryFromESI(ctx context.Context, id int32) (*app.EveCategory, error) {
@@ -52,13 +44,11 @@ func (eu *EveUniverseService) createEveCategoryFromESI(ctx context.Context, id i
 }
 
 func (eu *EveUniverseService) GetOrCreateGroupESI(ctx context.Context, id int32) (*app.EveGroup, error) {
-	x, err := eu.st.GetEveGroup(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+	o, err := eu.st.GetEveGroup(ctx, id)
+	if errors.Is(err, app.ErrNotFound) {
 		return eu.createEveGroupFromESI(ctx, id)
-	} else if err != nil {
-		return x, err
 	}
-	return x, nil
+	return o, err
 }
 
 func (eu *EveUniverseService) createEveGroupFromESI(ctx context.Context, id int32) (*app.EveGroup, error) {
@@ -90,13 +80,11 @@ func (eu *EveUniverseService) createEveGroupFromESI(ctx context.Context, id int3
 }
 
 func (eu *EveUniverseService) GetOrCreateTypeESI(ctx context.Context, id int32) (*app.EveType, error) {
-	x, err := eu.st.GetEveType(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+	o, err := eu.st.GetEveType(ctx, id)
+	if errors.Is(err, app.ErrNotFound) {
 		return eu.createEveTypeFromESI(ctx, id)
-	} else if err != nil {
-		return x, err
 	}
-	return x, nil
+	return o, err
 }
 
 func (eu *EveUniverseService) createEveTypeFromESI(ctx context.Context, id int32) (*app.EveType, error) {

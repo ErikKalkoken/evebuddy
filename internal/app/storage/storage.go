@@ -3,7 +3,6 @@ package storage
 import (
 	"database/sql"
 	"embed"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/url"
@@ -13,8 +12,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/migrate"
 )
-
-var ErrNotFound = errors.New("object not found")
 
 //go:embed migrations/*.sql
 var embedMigrations embed.FS

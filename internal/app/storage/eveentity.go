@@ -92,7 +92,7 @@ func (st *Storage) GetEveEntity(ctx context.Context, id int32) (*app.EveEntity, 
 	e, err := st.qRO.GetEveEntity(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get eve entity for id %d: %w", id, err)
 	}
@@ -168,7 +168,7 @@ func (st *Storage) ListEveEntitiesForIDs(ctx context.Context, ids []int32) ([]*a
 	for _, id := range ids {
 		o, found := m[id]
 		if !found {
-			return nil, ErrNotFound
+			return nil, app.ErrNotFound
 		}
 		oo = append(oo, o)
 	}

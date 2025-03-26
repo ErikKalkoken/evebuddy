@@ -25,12 +25,10 @@ func (s *EveUniverseService) GetStationServicesESI(ctx context.Context, id int32
 
 func (eu *EveUniverseService) GetLocation(ctx context.Context, id int64) (*app.EveLocation, error) {
 	o, err := eu.st.GetLocation(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+	if errors.Is(err, app.ErrNotFound) {
 		return nil, app.ErrNotFound
-	} else if err != nil {
-		return nil, err
 	}
-	return o, nil
+	return o, err
 }
 
 func (eu *EveUniverseService) ListLocations(ctx context.Context) ([]*app.EveLocation, error) {
@@ -42,13 +40,11 @@ func (eu *EveUniverseService) ListLocations(ctx context.Context) ([]*app.EveLoca
 //
 // Important: A token with the structure scope must be set in the context
 func (eu *EveUniverseService) GetOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
-	x, err := eu.st.GetLocation(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+	o, err := eu.st.GetLocation(ctx, id)
+	if errors.Is(err, app.ErrNotFound) {
 		return eu.updateOrCreateEveLocationESI(ctx, id)
-	} else if err != nil {
-		return x, err
 	}
-	return x, nil
+	return o, err
 }
 
 // updateOrCreateEveLocationESI tries to fetch and create a new structure from ESI.

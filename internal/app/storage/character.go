@@ -33,7 +33,7 @@ func (st *Storage) GetCharacter(ctx context.Context, characterID int32) (*app.Ch
 	r, err := st.qRO.GetCharacter(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get character %d: %w", characterID, err)
 	}
@@ -72,7 +72,7 @@ func (st *Storage) GetAnyCharacter(ctx context.Context) (*app.Character, error) 
 	}
 	id, err := ids.Pop()
 	if err != nil {
-		return nil, ErrNotFound
+		return nil, app.ErrNotFound
 	}
 	return st.GetCharacter(ctx, id)
 

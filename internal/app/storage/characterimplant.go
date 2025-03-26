@@ -32,7 +32,7 @@ func (st *Storage) GetCharacterImplant(ctx context.Context, characterID int32, t
 	row, err := st.qRO.GetCharacterImplant(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get implant %d for character %d: %w", typeID, characterID, err)
 	}

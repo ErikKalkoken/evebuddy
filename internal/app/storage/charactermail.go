@@ -110,7 +110,7 @@ func (st *Storage) GetCharacterMail(ctx context.Context, characterID, mailID int
 		row, err := st.qRO.GetMail(ctx, arg)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				err = ErrNotFound
+				err = app.ErrNotFound
 			}
 			return nil, err
 		}

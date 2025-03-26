@@ -30,7 +30,7 @@ func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int32,
 	row, err := st.qRO.GetCharacterJumpClone(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get jump clone for character %d: %w", characterID, err)
 	}

@@ -16,7 +16,7 @@ func (st *Storage) GetGeneralSectionStatus(ctx context.Context, section app.Gene
 	s, err := st.qRO.GetGeneralSectionStatus(ctx, string(section))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get status for general section %s: %w", section, err)
 	}

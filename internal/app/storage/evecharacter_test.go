@@ -55,7 +55,7 @@ func TestEveCharacter(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			_, err := r.GetEveCharacter(ctx, c.ID)
-			assert.ErrorIs(t, err, storage.ErrNotFound)
+			assert.ErrorIs(t, err, app.ErrNotFound)
 		}
 	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
@@ -64,7 +64,7 @@ func TestEveCharacter(t *testing.T) {
 		// when
 		_, err := r.GetEveCharacter(ctx, 99)
 		// then
-		assert.ErrorIs(t, err, storage.ErrNotFound)
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 	t.Run("can fetch character by ID with minimal fields populated only", func(t *testing.T) {
 		// given

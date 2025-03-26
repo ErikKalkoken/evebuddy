@@ -76,9 +76,6 @@ func (s *CharacterService) DisableAllTrainingWatchers(ctx context.Context) error
 // GetCharacter returns a character from storage and updates calculated fields.
 func (s *CharacterService) GetCharacter(ctx context.Context, id int32) (*app.Character, error) {
 	c, err := s.st.GetCharacter(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
-		return nil, app.ErrNotFound
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -92,11 +89,7 @@ func (s *CharacterService) GetCharacter(ctx context.Context, id int32) (*app.Cha
 }
 
 func (s *CharacterService) GetAnyCharacter(ctx context.Context) (*app.Character, error) {
-	o, err := s.st.GetAnyCharacter(ctx)
-	if errors.Is(err, storage.ErrNotFound) {
-		return nil, app.ErrNotFound
-	}
-	return o, err
+	return s.st.GetAnyCharacter(ctx)
 }
 
 func (cs *CharacterService) getCharacterName(ctx context.Context, characterID int32) (string, error) {

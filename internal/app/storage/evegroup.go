@@ -38,7 +38,7 @@ func (st *Storage) GetEveGroup(ctx context.Context, id int32) (*app.EveGroup, er
 	row, err := st.qRO.GetEveGroup(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get EveGroup for id %d: %w", id, err)
 	}

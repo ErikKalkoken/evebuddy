@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -90,7 +89,7 @@ func TestEveEntity(t *testing.T) {
 	})
 	t.Run("should return error when no object found 1", func(t *testing.T) {
 		_, err := st.GetEveEntity(ctx, 99)
-		assert.ErrorIs(t, err, storage.ErrNotFound)
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 	t.Run("should return objs with matching names in order", func(t *testing.T) {
 		// given
@@ -199,7 +198,7 @@ func TestListEveEntitiesForIDs(t *testing.T) {
 		// when
 		_, err := st.ListEveEntitiesForIDs(ctx, []int32{1, 2})
 		// then
-		assert.ErrorIs(t, err, storage.ErrNotFound)
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }
 

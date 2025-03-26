@@ -38,7 +38,7 @@ func (st *Storage) GetEvePlanet(ctx context.Context, id int32) (*app.EvePlanet, 
 	row, err := st.qRO.GetEvePlanet(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get EvePlanet for id %d: %w", id, err)
 	}

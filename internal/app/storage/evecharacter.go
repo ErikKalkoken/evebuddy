@@ -68,7 +68,7 @@ func (st *Storage) GetEveCharacter(ctx context.Context, characterID int32) (*app
 	r, err := st.qRO.GetEveCharacter(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get EveCharacter %d: %w", characterID, err)
 	}

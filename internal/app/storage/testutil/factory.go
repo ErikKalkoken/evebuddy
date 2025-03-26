@@ -1423,7 +1423,7 @@ func (f Factory) CreateEveLocationStructure(args ...storage.UpdateOrCreateLocati
 	if arg.EveTypeID.IsEmpty() {
 		ec, err := f.st.GetEveCategory(ctx, app.EveCategoryStructure)
 		if err != nil {
-			if errors.Is(err, storage.ErrNotFound) {
+			if errors.Is(err, app.ErrNotFound) {
 				ec = f.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategoryStructure})
 			} else {
 				panic(err)

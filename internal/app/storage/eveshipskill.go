@@ -18,7 +18,7 @@ func (st *Storage) GetEveShipSkill(ctx context.Context, shipTypeID int32, rank u
 	row, err := st.qRO.GetShipSkill(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get ShipSkill for %v: %w", arg, err)
 	}

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 )
 
@@ -39,7 +40,7 @@ func (st *Storage) GetEveTypeDogmaEffect(ctx context.Context, eveTypeID, dogmaAt
 	row, err := st.qRO.GetEveTypeDogmaEffect(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return false, fmt.Errorf("get EveTypeDogmaEffect for %v: %w", arg, err)
 	}

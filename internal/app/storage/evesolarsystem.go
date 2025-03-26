@@ -38,7 +38,7 @@ func (st *Storage) GetEveSolarSystem(ctx context.Context, id int32) (*app.EveSol
 	row, err := st.qRO.GetEveSolarSystem(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get EveSolarSystem for id %d: %w", id, err)
 	}

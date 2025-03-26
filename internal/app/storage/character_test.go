@@ -130,7 +130,7 @@ func TestCharacter(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			_, err := r.GetCharacter(ctx, c.ID)
-			assert.ErrorIs(t, err, storage.ErrNotFound)
+			assert.ErrorIs(t, err, app.ErrNotFound)
 		}
 	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
@@ -139,7 +139,7 @@ func TestCharacter(t *testing.T) {
 		// when
 		_, err := r.GetCharacter(ctx, 99)
 		// then
-		assert.ErrorIs(t, err, storage.ErrNotFound)
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 	t.Run("should return a character", func(t *testing.T) {
 		// given
@@ -159,7 +159,7 @@ func TestCharacter(t *testing.T) {
 		// when
 		_, err := r.GetAnyCharacter(ctx)
 		// then
-		assert.ErrorIs(t, err, storage.ErrNotFound)
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 	t.Run("can fetch character by ID with minimal fields populated only", func(t *testing.T) {
 		// given

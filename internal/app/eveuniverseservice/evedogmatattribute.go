@@ -13,23 +13,15 @@ import (
 )
 
 func (eu *EveUniverseService) GetDogmaAttribute(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
-	o, err := eu.st.GetEveDogmaAttribute(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
-		return nil, app.ErrNotFound
-	} else if err != nil {
-		return nil, err
-	}
-	return o, nil
+	return eu.st.GetEveDogmaAttribute(ctx, id)
 }
 
 func (eu *EveUniverseService) GetOrCreateDogmaAttributeESI(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
 	o, err := eu.st.GetEveDogmaAttribute(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+	if errors.Is(err, app.ErrNotFound) {
 		return eu.createEveDogmaAttributeFromESI(ctx, id)
-	} else if err != nil {
-		return o, err
 	}
-	return o, nil
+	return o, err
 }
 
 func (eu *EveUniverseService) createEveDogmaAttributeFromESI(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {

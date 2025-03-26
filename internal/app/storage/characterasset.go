@@ -63,7 +63,7 @@ func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int32, ite
 	r, err := st.qRO.GetCharacterAsset(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get character asset for character %d: %w", characterID, err)
 	}

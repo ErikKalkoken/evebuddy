@@ -30,7 +30,7 @@ func (st *Storage) GetCharacterSectionStatus(ctx context.Context, characterID in
 	s, err := st.qRO.GetCharacterSectionStatus(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get status for character %d with section %s: %w", characterID, section, err)
 	}

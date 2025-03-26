@@ -36,7 +36,7 @@ func (st *Storage) GetEveRegion(ctx context.Context, id int32) (*app.EveRegion, 
 	c, err := st.qRO.GetEveRegion(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
+			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get EveRegion for id %d: %w", id, err)
 	}
