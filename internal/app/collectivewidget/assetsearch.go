@@ -195,7 +195,7 @@ func (a *AllAssetSearch) processData(sortCol int) {
 		}
 	}
 	rows := make([]*assetSearchRow, 0)
-	search := a.entry.Text
+	search := strings.ToLower(a.entry.Text)
 	for _, r := range a.assets {
 		var matches bool
 		if search == "" {
