@@ -175,6 +175,9 @@ func (s *EveUniverseService) resolveIDs(ctx context.Context, ids []int32) ([]esi
 func (s *EveUniverseService) ListEntitiesByPartialName(ctx context.Context, partial string) ([]*app.EveEntity, error) {
 	return s.st.ListEveEntitiesByPartialName(ctx, partial)
 }
+func (s *EveUniverseService) ListEveEntitiesForIDs(ctx context.Context, ids []int32) ([]*app.EveEntity, error) {
+	return s.st.ListEveEntitiesForIDs(ctx, ids)
+}
 
 func eveEntityCategoryFromESICategory(c string) app.EveEntityCategory {
 	categoryMap := map[string]app.EveEntityCategory{

@@ -26,6 +26,13 @@ func TestAppSettings(t *testing.T) {
 		assert.Equal(t, x, s.LogLevel())
 		assert.Equal(t, slog.LevelDebug, s.LogLevelSlog())
 	})
+	t.Run("RecentSearches", func(t *testing.T) {
+		p := settings.NewMyPref()
+		s := settings.New(p)
+		x := []int32{1, 2, 3}
+		s.SetRecentSearches(x)
+		assert.Equal(t, x, s.RecentSearches())
+	})
 	t.Run("NotificationTypesEnabled", func(t *testing.T) {
 		p := settings.NewMyPref()
 		s := settings.New(p)

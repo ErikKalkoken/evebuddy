@@ -64,4 +64,5 @@ type EveUniverseService interface {
 	GetCorporationAllianceHistory(ctx context.Context, corporationID int32) ([]MembershipHistoryItem, error)
 	UpdateSection(ctx context.Context, section GeneralSection, forceUpdate bool) (bool, error)
 	GetStationServicesESI(ctx context.Context, id int32) ([]string, error)
+	ListEveEntitiesForIDs(ctx context.Context, ids []int32) ([]*EveEntity, error)
 }

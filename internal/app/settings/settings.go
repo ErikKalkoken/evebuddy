@@ -9,14 +9,16 @@ import (
 	"fyne.io/fyne/v2"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 const (
-	settingLogLevel                           = "logLevel"
-	settingLogLevelDefault                    = "info"
+	notifyEarliestFallback                    = 24 * time.Hour
 	settingDeveloperMode                      = "developer-mode"
 	settingDeveloperModeDefault               = false
 	settingLastCharacterID                    = "settingLastCharacterID"
+	settingLogLevel                           = "logLevel"
+	settingLogLevelDefault                    = "info"
 	settingMaxMails                           = "settingMaxMails"
 	settingMaxMailsDefault                    = 1_000
 	settingMaxMailsMax                        = 10_000
@@ -50,7 +52,7 @@ const (
 	settingWindowHeightDefault                = 600
 	settingWindowsSize                        = "window-size"
 	settingWindowWidthDefault                 = 1000
-	notifyEarliestFallback                    = 24 * time.Hour
+	settingRecentSearches                     = "settingRecentSearches"
 )
 
 // Settings represents the settings for the app and provides an API for reading and writing settings.
@@ -160,10 +162,6 @@ func (s Settings) ResetWindowSize() {
 
 func (s Settings) SetWindowSize(v fyne.Size) {
 	s.p.SetFloatList(settingWindowsSize, []float64{float64(v.Width), float64(v.Height)})
-}
-
-func (s Settings) TabsMainID() int {
-	return s.p.IntWithFallback(settingTabsMainID, settingTabsMainIDDefault)
 }
 
 func (s Settings) ResetTabsMainID() {
@@ -370,6 +368,7 @@ func (s Settings) SetNotifyPIEnabled(v bool) {
 func (s Settings) NotifyTrainingEnabled() bool {
 	return s.p.BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault)
 }
+
 func (s Settings) ResetNotifyTrainingEnabled() {
 	s.SetNotifyTrainingEnabled(settingNotifyTrainingEnabledDefault)
 }
@@ -378,9 +377,25 @@ func (s Settings) SetNotifyTrainingEnabled(v bool) {
 	s.p.SetBool(settingNotifyTrainingEnabled, v)
 }
 
+func (s Settings) TabsMainID() int {
+	return s.p.IntWithFallback(settingTabsMainID, settingTabsMainIDDefault)
+}
+
+func (s Settings) RecentSearches() []int32 {
+	return xslices.Map(s.p.IntList(settingRecentSearches), func(x int) int32 {
+		return int32(x)
+	})
+}
+func (s Settings) SetRecentSearches(v []int32) {
+	s.p.SetIntList(settingRecentSearches, xslices.Map(v, func(x int32) int {
+		return int(x)
+	}))
+}
+
 // Keys returns all setting keys. Mostly to know what to delete.
 func Keys() []string {
 	return []string{
+		settingDeveloperMode,
 		settingLastCharacterID,
 		settingMaxMails,
 		settingMaxWalletTransactions,
@@ -396,6 +411,7 @@ func Keys() []string {
 		settingNotifyTimeoutHours,
 		settingNotifyTrainingEarliest,
 		settingNotifyTrainingEnabled,
+		settingRecentSearches,
 		settingSysTrayEnabled,
 		settingTabsMainID,
 		settingWindowsSize,
