@@ -28,7 +28,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		client := factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
-		location := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
+		location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
 		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
 		data := []map[string]any{
 			{
@@ -81,7 +81,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		client := factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
-		location := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
+		location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
 		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
 		data := []map[string]any{
 			{
@@ -173,7 +173,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
-		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
 
 		data := make([]map[string]any, 0)

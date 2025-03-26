@@ -88,7 +88,7 @@ func TestCharacterAsset(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		location := factory.CreateLocationStructure()
+		location := factory.CreateEveLocationStructure()
 		shipCategory := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategoryShip})
 		shipGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: shipCategory.ID})
 		shipType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: shipGroup.ID})
@@ -146,7 +146,7 @@ func TestCharacterAsset(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		location := factory.CreateLocationStructure()
+		location := factory.CreateEveLocationStructure()
 		ca1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
 			CharacterID:  c.ID,
 			LocationFlag: "Hangar",

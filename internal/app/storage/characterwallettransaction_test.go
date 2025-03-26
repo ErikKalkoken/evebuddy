@@ -22,7 +22,7 @@ func TestWalletTransaction(t *testing.T) {
 		date := time.Now()
 		client := factory.CreateEveEntityCharacter()
 		eveType := factory.CreateEveType()
-		location := factory.CreateLocationStructure()
+		location := factory.CreateEveLocationStructure()
 		arg := storage.CreateCharacterWalletTransactionParams{
 			ClientID:      client.ID,
 			Date:          date,

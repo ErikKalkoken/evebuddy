@@ -61,8 +61,8 @@ func TestCharacter(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		character := factory.CreateEveCharacter()
-		home := factory.CreateLocationStructure()
-		location := factory.CreateLocationStructure()
+		home := factory.CreateEveLocationStructure()
+		location := factory.CreateEveLocationStructure()
 		ship := factory.CreateEveType()
 		login := time.Now()
 		cloneJump := time.Now()
@@ -99,7 +99,7 @@ func TestCharacter(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacter()
 		// when
-		newLocation := factory.CreateLocationStructure()
+		newLocation := factory.CreateEveLocationStructure()
 		newShip := factory.CreateEveType()
 		assetValue := optional.New(1.2)
 		walletBalance := optional.New(3.4)
@@ -244,7 +244,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacter()
-		home := factory.CreateLocationStructure()
+		home := factory.CreateEveLocationStructure()
 		// when
 		err := r.UpdateCharacterHome(ctx, c1.ID, optional.New(home.ID))
 		// then
@@ -315,7 +315,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacter()
-		location := factory.CreateLocationStructure()
+		location := factory.CreateEveLocationStructure()
 		// when
 		err := r.UpdateCharacterLocation(ctx, c1.ID, optional.New(location.ID))
 		// then

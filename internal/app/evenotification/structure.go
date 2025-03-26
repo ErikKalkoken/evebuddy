@@ -125,7 +125,7 @@ func (s *EveNotificationService) renderStructureAnchoring(ctx context.Context, t
 	}
 	title.Set(fmt.Sprintf(
 		"A %s has started anchoring in %s",
-		o.type_.Name,
+		o.eveType.Name,
 		o.solarSystem.Name,
 	))
 	body.Set(fmt.Sprintf("%s has started anchoring.", o.intro))
@@ -502,25 +502,29 @@ func (s *EveNotificationService) renderStructureWentLowPower(ctx context.Context
 }
 
 type structureInfo struct {
-	type_       *app.EveType
-	solarSystem *app.EveSolarSystem
-	owner       *app.EveEntity
-	name        string
+	eveType     *app.EveType
 	intro       string
+	name        string
+	owner       *app.EveEntity
+	solarSystem *app.EveSolarSystem
 }
 
-func (s *EveNotificationService) makeStructureBaseText(ctx context.Context, typeID, solarSystemID int32, structureID int64, structureName string) (structureInfo, error) {
-	structureType, err := s.eus.GetOrCreateTypeESI(ctx, typeID)
-	if err != nil {
-		return structureInfo{}, err
+func (s *EveNotificationService) makeStructureBaseText(ctx context.Context, typeID, systemID int32, structureID int64, structureName string) (structureInfo, error) {
+	var eveType *app.EveType
+	var err error
+	if typeID != 0 {
+		eveType, err = s.eus.GetOrCreateTypeESI(ctx, typeID)
+		if err != nil {
+			return structureInfo{}, err
+		}
 	}
-	solarSystem, err := s.eus.GetOrCreateSolarSystemESI(ctx, solarSystemID)
+	system, err := s.eus.GetOrCreateSolarSystemESI(ctx, systemID)
 	if err != nil {
 		return structureInfo{}, err
 	}
 	var ownerLink string
 	var owner *app.EveEntity
-	isUpwellStructure := structureType.Group.Category.ID == app.EveCategoryStructure
+	isUpwellStructure := eveType != nil && eveType.Group.Category.ID == app.EveCategoryStructure
 	if isUpwellStructure {
 		structure, err := s.eus.GetOrCreateLocationESI(ctx, structureID)
 		if err != nil {
@@ -535,21 +539,27 @@ func (s *EveNotificationService) makeStructureBaseText(ctx context.Context, type
 		}
 	}
 	var name string
-	isOrbital := structureType.Group.Category.ID == app.EveCategoryOrbitals
-	if isOrbital && structureName != "" {
-		name = fmt.Sprintf("**%s**", structureName)
+	if eveType != nil {
+		isOrbital := eveType.Group.Category.ID == app.EveCategoryOrbitals
+		if isOrbital && structureName != "" {
+			name = fmt.Sprintf("**%s**", structureName)
+		} else if structureName != "" {
+			name = fmt.Sprintf("%s **%s**", eveType.Name, structureName)
+		} else {
+			name = eveType.Name
+		}
 	} else if structureName != "" {
-		name = fmt.Sprintf("%s **%s**", structureType.Name, structureName)
+		name = structureName
 	} else {
-		name = structureType.Name
+		name = "unknown structure"
 	}
-	text := fmt.Sprintf("The %s in %s", name, makeSolarSystemLink(solarSystem))
+	text := fmt.Sprintf("The %s in %s", name, makeSolarSystemLink(system))
 	if ownerLink != "" {
 		text += fmt.Sprintf(" belonging to %s", ownerLink)
 	}
 	x := structureInfo{
-		type_:       structureType,
-		solarSystem: solarSystem,
+		eveType:     eveType,
+		solarSystem: system,
 		name:        structureName,
 		owner:       owner,
 		intro:       text,

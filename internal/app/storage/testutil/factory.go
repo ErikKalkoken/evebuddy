@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand/v2"
 	"time"
@@ -62,14 +63,14 @@ func (f Factory) CreateCharacter(args ...storage.UpdateOrCreateCharacterParams) 
 		arg.ID = c.ID
 	}
 	if arg.HomeID.IsEmpty() {
-		x := f.CreateLocationStructure()
+		x := f.CreateEveLocationStructure()
 		arg.HomeID = optional.New(x.ID)
 	}
 	if arg.LastLoginAt.IsEmpty() {
 		arg.LastLoginAt = optional.New(time.Now())
 	}
 	if arg.LocationID.IsEmpty() {
-		x := f.CreateLocationStructure()
+		x := f.CreateEveLocationStructure()
 		arg.LocationID = optional.New(x.ID)
 	}
 	if arg.ShipID.IsEmpty() {
@@ -155,7 +156,7 @@ func (f Factory) CreateCharacterAsset(args ...storage.CreateCharacterAssetParams
 		arg.LocationFlag = "Hangar"
 	}
 	if arg.LocationID == 0 {
-		x := f.CreateLocationStructure()
+		x := f.CreateEveLocationStructure()
 		arg.LocationID = x.ID
 	}
 	if arg.LocationType == "" {
@@ -231,11 +232,11 @@ func (f Factory) CreateCharacterContract(args ...storage.CreateCharacterContract
 	switch arg.Type {
 	case app.ContractTypeCourier:
 		if arg.EndLocationID == 0 {
-			x := f.CreateLocationStructure()
+			x := f.CreateEveLocationStructure()
 			arg.EndLocationID = x.ID
 		}
 		if arg.StartLocationID == 0 {
-			x := f.CreateLocationStructure()
+			x := f.CreateEveLocationStructure()
 			arg.StartLocationID = x.ID
 		}
 	case app.ContractTypeUndefined:
@@ -377,7 +378,7 @@ func (f Factory) CreateCharacterJumpClone(args ...storage.CreateCharacterJumpClo
 		)
 	}
 	if arg.LocationID == 0 {
-		x := f.CreateLocationStructure()
+		x := f.CreateEveLocationStructure()
 		arg.LocationID = x.ID
 	}
 	if len(arg.Implants) == 0 {
@@ -825,7 +826,7 @@ func (f Factory) CreateCharacterWalletTransaction(args ...storage.CreateCharacte
 		arg.EveTypeID = x.ID
 	}
 	if arg.LocationID == 0 {
-		x := f.CreateLocationStructure()
+		x := f.CreateEveLocationStructure()
 		arg.LocationID = x.ID
 	}
 	if arg.CharacterID == 0 {
@@ -1399,7 +1400,7 @@ func (f Factory) CreateEveSchematic(args ...storage.CreateEveSchematicParams) *a
 	return r
 }
 
-func (f Factory) CreateLocationStructure(args ...storage.UpdateOrCreateLocationParams) *app.EveLocation {
+func (f Factory) CreateEveLocationStructure(args ...storage.UpdateOrCreateLocationParams) *app.EveLocation {
 	var arg storage.UpdateOrCreateLocationParams
 	ctx := context.TODO()
 	if len(args) > 0 {
@@ -1420,8 +1421,17 @@ func (f Factory) CreateLocationStructure(args ...storage.UpdateOrCreateLocationP
 		arg.OwnerID = optional.New(x.ID)
 	}
 	if arg.EveTypeID.IsEmpty() {
-		x := f.CreateEveType()
-		arg.EveTypeID = optional.New(x.ID)
+		ec, err := f.st.GetEveCategory(ctx, app.EveCategoryStructure)
+		if err != nil {
+			if errors.Is(err, storage.ErrNotFound) {
+				ec = f.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategoryStructure})
+			} else {
+				panic(err)
+			}
+		}
+		eg := f.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: ec.ID})
+		et := f.CreateEveType(storage.CreateEveTypeParams{GroupID: eg.ID})
+		arg.EveTypeID = optional.New(et.ID)
 	}
 	if arg.UpdatedAt.IsZero() {
 		arg.UpdatedAt = time.Now()

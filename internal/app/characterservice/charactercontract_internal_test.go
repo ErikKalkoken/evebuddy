@@ -29,8 +29,8 @@ func TestUpdateContractESI(t *testing.T) {
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		contractID := int32(42)
-		startLocation := factory.CreateLocationStructure()
-		endLocation := factory.CreateLocationStructure()
+		startLocation := factory.CreateEveLocationStructure()
+		endLocation := factory.CreateEveLocationStructure()
 		volume := 0.01
 		contractData := []map[string]any{
 			{
@@ -114,7 +114,7 @@ func TestUpdateContractESI(t *testing.T) {
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		contractID := int32(42)
-		startLocation := factory.CreateLocationStructure()
+		startLocation := factory.CreateEveLocationStructure()
 		buyout := 10000000000.01
 		volume := 0.01
 		contractData := []map[string]any{
