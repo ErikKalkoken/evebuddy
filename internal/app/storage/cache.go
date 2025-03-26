@@ -39,6 +39,9 @@ func (st *Storage) CacheExists(ctx context.Context, key string) (bool, error) {
 }
 
 func (st *Storage) CacheGet(ctx context.Context, key string) ([]byte, error) {
+	if key == "" {
+		return nil, fmt.Errorf("CacheGet: key can not be empty: %w", app.ErrInvalid)
+	}
 	arg := queries.CacheGetParams{
 		Key: key,
 		Now: NewNullTimeFromTime(time.Now().UTC()),
@@ -54,6 +57,9 @@ func (st *Storage) CacheGet(ctx context.Context, key string) ([]byte, error) {
 }
 
 func (st *Storage) CacheDelete(ctx context.Context, key string) error {
+	if key == "" {
+		return fmt.Errorf("CacheDelete: key can not be empty: %w", app.ErrInvalid)
+	}
 	err := st.qRW.CacheDelete(ctx, key)
 	if err != nil {
 		return fmt.Errorf("cache delete %s: %w", key, err)
@@ -68,6 +74,9 @@ type CacheSetParams struct {
 }
 
 func (st *Storage) CacheSet(ctx context.Context, arg CacheSetParams) error {
+	if arg.Key == "" {
+		return fmt.Errorf("CacheSet: key can not be empty: %w", app.ErrInvalid)
+	}
 	var expiresAt time.Time
 	if !arg.ExpiresAt.IsZero() {
 		expiresAt = arg.ExpiresAt.UTC()

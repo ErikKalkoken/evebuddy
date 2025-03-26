@@ -18,7 +18,7 @@ type CreateEveMoonParams struct {
 
 func (st *Storage) CreateEveMoon(ctx context.Context, arg CreateEveMoonParams) error {
 	if arg.ID == 0 || arg.SolarSystemID == 0 {
-		return fmt.Errorf("invalid IDs %v", arg)
+		return fmt.Errorf("CreateEveMoon: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateEveMoonParams{
 		ID:               int64(arg.ID),
@@ -27,7 +27,7 @@ func (st *Storage) CreateEveMoon(ctx context.Context, arg CreateEveMoonParams) e
 	}
 	err := st.qRW.CreateEveMoon(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("create EveMoon %v, %w", arg, err)
+		return fmt.Errorf("CreateEveMoon: %+v: %w", arg, err)
 	}
 	return nil
 }

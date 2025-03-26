@@ -70,7 +70,7 @@ func TestSendMail(t *testing.T) {
 		httpmock.RegisterResponder(
 			"POST",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/", c.ID),
-			httpmock.NewStringResponder(201, "123"))
+			httpmock.NewJsonResponderOrPanic(201, 123))
 
 		// when
 		mailID, err := s.SendCharacterMail(ctx, c.ID, "subject", []*app.EveEntity{r}, "body")

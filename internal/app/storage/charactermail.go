@@ -28,8 +28,8 @@ type CreateCharacterMailParams struct {
 
 func (st *Storage) CreateCharacterMail(ctx context.Context, arg CreateCharacterMailParams) (int64, error) {
 	id, err := func() (int64, error) {
-		if len(arg.RecipientIDs) == 0 {
-			return 0, fmt.Errorf("missing recipients")
+		if arg.CharacterID == 0 || arg.MailID == 0 || len(arg.RecipientIDs) == 0 {
+			return 0, app.ErrInvalid
 		}
 		characterID2 := int64(arg.CharacterID)
 		from, err := st.GetEveEntity(ctx, arg.FromID)
@@ -48,7 +48,7 @@ func (st *Storage) CreateCharacterMail(ctx context.Context, arg CreateCharacterM
 		}
 		mail, err := st.qRW.CreateMail(ctx, mailParams)
 		if err != nil {
-			return 0, fmt.Errorf("create mail: %w", err)
+			return 0, err
 		}
 		for _, id := range arg.RecipientIDs {
 			arg := queries.CreateMailRecipientParams{MailID: mail.ID, EveEntityID: int64(id)}
@@ -64,7 +64,7 @@ func (st *Storage) CreateCharacterMail(ctx context.Context, arg CreateCharacterM
 		return mail.ID, nil
 	}()
 	if err != nil {
-		return 0, fmt.Errorf("create mail for character %d and mail ID %d: %w", arg.CharacterID, arg.MailID, err)
+		return 0, fmt.Errorf("CreateCharacterMail: %+v: %w", arg, err)
 	}
 	return id, err
 }

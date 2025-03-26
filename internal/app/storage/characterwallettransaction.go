@@ -27,8 +27,8 @@ type CreateCharacterWalletTransactionParams struct {
 }
 
 func (st *Storage) CreateCharacterWalletTransaction(ctx context.Context, arg CreateCharacterWalletTransactionParams) error {
-	if arg.TransactionID == 0 {
-		return fmt.Errorf("WalletTransaction ID can not be zero, Character %d", arg.CharacterID)
+	if arg.CharacterID == 0 || arg.EveTypeID == 0 || arg.ClientID == 0 || arg.JournalRefID == 0 || arg.LocationID == 0 || arg.TransactionID == 0 {
+		return fmt.Errorf("CreateCharacterWalletTransaction: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateCharacterWalletTransactionParams{
 		ClientID:      int64(arg.ClientID),

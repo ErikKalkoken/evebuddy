@@ -108,22 +108,20 @@ func (s *CharacterService) updateCharacterNotificationsESI(ctx context.Context, 
 					continue
 				}
 				arg1 := storage.UpdateCharacterNotificationParams{
-					ID:          o.ID,
-					IsRead:      o.IsRead,
-					CharacterID: characterID,
-					Title:       o.Title,
-					Body:        o.Body,
+					ID:     o.ID,
+					IsRead: o.IsRead,
+					Title:  o.Title,
+					Body:   o.Body,
 				}
 				title, body, err := s.EveNotificationService.RenderESI(ctx, n.Type_, n.Text, n.Timestamp)
 				if err != nil {
 					slog.Error("Failed to render character notification", "characterID", characterID, "NotificationID", n.NotificationId, "error", err)
 				}
 				arg2 := storage.UpdateCharacterNotificationParams{
-					ID:          o.ID,
-					IsRead:      n.IsRead,
-					CharacterID: characterID,
-					Title:       title,
-					Body:        body,
+					ID:     o.ID,
+					IsRead: n.IsRead,
+					Title:  title,
+					Body:   body,
 				}
 				if arg2 != arg1 {
 					if err := s.st.UpdateCharacterNotification(ctx, arg2); err != nil {

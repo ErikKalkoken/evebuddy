@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 
 	"github.com/antihax/goesi/esi"
@@ -122,22 +123,30 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids []int32
 		for _, entity := range ee {
 			_, err := s.st.GetOrCreateEveEntity(
 				ctx,
-				entity.Id,
-				entity.Name,
-				eveEntityCategoryFromESICategory(entity.Category),
+				storage.CreateEveEntityParams{
+					ID:       entity.Id,
+					Name:     entity.Name,
+					Category: eveEntityCategoryFromESICategory(entity.Category),
+				},
 			)
 			if err != nil {
 				return err
 			}
 		}
+		slog.Info("Stored newly resolved EveEntities", "count", len(ee))
 		return nil
 	}()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("AddMissingEntities: %w", err)
 	}
 	if len(badIDs) > 0 {
 		for _, id := range badIDs {
-			if _, err := s.st.GetOrCreateEveEntity(ctx, id, "?", app.EveEntityUnknown); err != nil {
+			arg := storage.CreateEveEntityParams{
+				ID:       id,
+				Name:     "?",
+				Category: app.EveEntityUnknown,
+			}
+			if _, err := s.st.GetOrCreateEveEntity(ctx, arg); err != nil {
 				slog.Error("Failed to mark unresolvable EveEntity", "id", id, "error", err)
 			}
 		}
@@ -168,7 +177,6 @@ func (s *EveUniverseService) resolveIDs(ctx context.Context, ids []int32) ([]esi
 		}
 		return nil, nil, err
 	}
-	slog.Info("Stored newly resolved EveEntities", "count", len(ee))
 	return ee, []int32{}, nil
 }
 

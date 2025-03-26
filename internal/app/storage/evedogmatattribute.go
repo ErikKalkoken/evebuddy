@@ -25,7 +25,7 @@ type CreateEveDogmaAttributeParams struct {
 
 func (st *Storage) CreateEveDogmaAttribute(ctx context.Context, arg CreateEveDogmaAttributeParams) (*app.EveDogmaAttribute, error) {
 	if arg.ID == 0 {
-		return nil, fmt.Errorf("invalid ID %d", arg.ID)
+		return nil, fmt.Errorf("CreateEveDogmaAttribute: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateEveDogmaAttributeParams{
 		ID:           int64(arg.ID),
@@ -41,7 +41,7 @@ func (st *Storage) CreateEveDogmaAttribute(ctx context.Context, arg CreateEveDog
 	}
 	o, err := st.qRW.CreateEveDogmaAttribute(ctx, arg2)
 	if err != nil {
-		return nil, fmt.Errorf("create EveDogmaAttribute %v, %w", arg2, err)
+		return nil, fmt.Errorf("CreateEveDogmaAttribute: %+v: %w", arg, err)
 	}
 	return eveDogmaAttributeFromDBModel(o), nil
 }

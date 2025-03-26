@@ -40,6 +40,9 @@ func (st *Storage) CreateCharacterSkillqueueItem(ctx context.Context, arg Skillq
 }
 
 func createCharacterSkillqueueItem(ctx context.Context, q *queries.Queries, arg SkillqueueItemParams) error {
+	if arg.CharacterID == 0 || arg.EveTypeID == 0 {
+		return fmt.Errorf("createCharacterSkillqueueItem: %+v: %w", arg, app.ErrInvalid)
+	}
 	arg2 := queries.CreateCharacterSkillqueueItemParams{
 		EveTypeID:     int64(arg.EveTypeID),
 		FinishedLevel: int64(arg.FinishedLevel),

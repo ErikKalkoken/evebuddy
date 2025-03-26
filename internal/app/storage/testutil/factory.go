@@ -213,7 +213,12 @@ func (f Factory) CreateCharacterContract(args ...storage.CreateCharacterContract
 		if err != nil {
 			panic(err)
 		}
-		_, err = f.st.GetOrCreateEveEntity(ctx, c.ID, c.EveCharacter.Name, app.EveEntityCharacter)
+		arg2 := storage.CreateEveEntityParams{
+			ID:       c.ID,
+			Name:     c.EveCharacter.Name,
+			Category: app.EveEntityCharacter,
+		}
+		_, err = f.st.GetOrCreateEveEntity(ctx, arg2)
 		if err != nil {
 			panic(err)
 		}
@@ -846,6 +851,12 @@ func (f Factory) CreateCharacterWalletTransaction(args ...storage.CreateCharacte
 	if arg.Quantity == 0 {
 		arg.Quantity = rand.Int32N(100_000)
 	}
+	if arg.JournalRefID == 0 {
+		x := f.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
+			CharacterID: arg.CharacterID,
+		})
+		arg.JournalRefID = x.ID
+	}
 	err := f.st.CreateCharacterWalletTransaction(ctx, arg)
 	if err != nil {
 		panic(err)
@@ -976,6 +987,8 @@ func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) 
 	return o
 }
 
+// TODO: Refactor to use storage.CreateEveEntityParams
+
 func (f Factory) CreateEveEntity(args ...app.EveEntity) *app.EveEntity {
 	var arg app.EveEntity
 	ctx := context.TODO()
@@ -1018,7 +1031,7 @@ func (f Factory) CreateEveEntity(args ...app.EveEntity) *app.EveEntity {
 			arg.Name = fmt.Sprintf("%s #%d", arg.Category, arg.ID)
 		}
 	}
-	e, err := f.st.CreateEveEntity(ctx, arg.ID, arg.Name, arg.Category)
+	e, err := f.st.CreateEveEntity(ctx, storage.CreateEveEntityParams{ID: arg.ID, Name: arg.Name, Category: arg.Category})
 	if err != nil {
 		panic(fmt.Sprintf("create EveEntity %v: %s", arg, err))
 	}
@@ -1359,6 +1372,8 @@ func (f Factory) CreateEveMoon(args ...storage.CreateEveMoonParams) *app.EveMoon
 	return o
 }
 
+// TODO: Refactor to storage.CreateEveRaceParams
+
 func (f Factory) CreateEveRace(args ...app.EveRace) *app.EveRace {
 	var arg app.EveRace
 	ctx := context.TODO()
@@ -1374,7 +1389,12 @@ func (f Factory) CreateEveRace(args ...app.EveRace) *app.EveRace {
 	if arg.Description == "" {
 		arg.Description = fake.Paragraph()
 	}
-	r, err := f.st.CreateEveRace(ctx, arg.ID, arg.Description, arg.Name)
+	arg2 := storage.CreateEveRaceParams{
+		ID:          arg.ID,
+		Description: arg.Description,
+		Name:        arg.Name,
+	}
+	r, err := f.st.CreateEveRace(ctx, arg2)
 	if err != nil {
 		panic(err)
 	}

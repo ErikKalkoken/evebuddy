@@ -20,7 +20,7 @@ type CreateCharacterPlanetParams struct {
 
 func (st *Storage) CreateCharacterPlanet(ctx context.Context, arg CreateCharacterPlanetParams) (int64, error) {
 	if arg.CharacterID == 0 || arg.EvePlanetID == 0 {
-		return 0, fmt.Errorf("create planet: IDs can not be zero: %+v", arg)
+		return 0, fmt.Errorf("CreateCharacterPlanet: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateCharacterPlanetParams{
 		CharacterID:  int64(arg.CharacterID),

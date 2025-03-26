@@ -19,7 +19,7 @@ type CreateEvePlanetParams struct {
 
 func (st *Storage) CreateEvePlanet(ctx context.Context, arg CreateEvePlanetParams) error {
 	if arg.ID == 0 || arg.SolarSystemID == 0 || arg.TypeID == 0 {
-		return fmt.Errorf("invalid IDs %v", arg)
+		return fmt.Errorf("CreateEvePlanet: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateEvePlanetParams{
 		ID:               int64(arg.ID),

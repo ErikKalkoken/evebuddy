@@ -16,11 +16,7 @@ type CreateCharacterImplantParams struct {
 }
 
 func (st *Storage) CreateCharacterImplant(ctx context.Context, arg CreateCharacterImplantParams) error {
-	err := createCharacterImplant(ctx, st.qRW, arg)
-	if err != nil {
-		return fmt.Errorf("create implant for character ID %d: %w", arg.CharacterID, err)
-	}
-	return nil
+	return createCharacterImplant(ctx, st.qRW, arg)
 }
 
 func (st *Storage) GetCharacterImplant(ctx context.Context, characterID int32, typeID int32) (*app.CharacterImplant, error) {
@@ -95,7 +91,7 @@ func (st *Storage) ReplaceCharacterImplants(ctx context.Context, characterID int
 
 func createCharacterImplant(ctx context.Context, q *queries.Queries, arg CreateCharacterImplantParams) error {
 	if arg.CharacterID == 0 || arg.EveTypeID == 0 {
-		return fmt.Errorf("IDs must not be zero %v", arg)
+		return fmt.Errorf("createCharacterImplant: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateCharacterImplantParams{
 		CharacterID: int64(arg.CharacterID),

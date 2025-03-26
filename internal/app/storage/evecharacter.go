@@ -27,8 +27,8 @@ type CreateEveCharacterParams struct {
 }
 
 func (st *Storage) CreateEveCharacter(ctx context.Context, arg CreateEveCharacterParams) error {
-	if arg.ID == 0 {
-		return fmt.Errorf("invalid EveCharacter ID %d", arg.ID)
+	if arg.ID == 0 || arg.CorporationID == 0 {
+		return fmt.Errorf("CreateEveCharacter: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateEveCharacterParams{
 		ID:             int64(arg.ID),
@@ -51,7 +51,7 @@ func (st *Storage) CreateEveCharacter(ctx context.Context, arg CreateEveCharacte
 	}
 	err := st.qRW.CreateEveCharacter(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("create EveCharacter %v, %w", arg2, err)
+		return fmt.Errorf("CreateEveCharacter: %+v: %w", arg, err)
 	}
 	return nil
 }

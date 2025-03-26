@@ -116,7 +116,10 @@ func TestCharacterNotification(t *testing.T) {
 		testutil.TruncateTables(db)
 		n := factory.CreateCharacterNotification()
 		// when
-		err := r.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{ID: n.ID, IsRead: true})
+		err := r.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{
+			ID:     n.ID,
+			IsRead: true,
+		})
 		// then
 		if assert.NoError(t, err) {
 			o, err := r.GetCharacterNotification(ctx, n.CharacterID, n.ID)
@@ -130,7 +133,10 @@ func TestCharacterNotification(t *testing.T) {
 		testutil.TruncateTables(db)
 		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{IsRead: true})
 		// when
-		err := r.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{ID: n.ID, IsRead: false})
+		err := r.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{
+			ID:     n.ID,
+			IsRead: false,
+		})
 		// then
 		if assert.NoError(t, err) {
 			o, err := r.GetCharacterNotification(ctx, n.CharacterID, n.ID)
@@ -144,7 +150,10 @@ func TestCharacterNotification(t *testing.T) {
 		testutil.TruncateTables(db)
 		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{})
 		// when
-		err := r.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{ID: n.ID, Title: optional.New("title")})
+		err := r.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{
+			ID:    n.ID,
+			Title: optional.New("title"),
+		})
 		// then
 		if assert.NoError(t, err) {
 			o, err := r.GetCharacterNotification(ctx, n.CharacterID, n.ID)
@@ -158,7 +167,10 @@ func TestCharacterNotification(t *testing.T) {
 		testutil.TruncateTables(db)
 		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{})
 		// when
-		err := r.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{ID: n.ID, Body: optional.New("body")})
+		err := r.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{
+			ID:   n.ID,
+			Body: optional.New("body"),
+		})
 		// then
 		if assert.NoError(t, err) {
 			o, err := r.GetCharacterNotification(ctx, n.CharacterID, n.ID)

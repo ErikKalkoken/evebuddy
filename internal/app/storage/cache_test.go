@@ -54,7 +54,7 @@ func TestCacheGet(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
-	t.Run("should return entries with get which have never expiry", func(t *testing.T) {
+	t.Run("should return entries with get which never expiry", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		key := "key"
@@ -73,6 +73,13 @@ func TestCacheGet(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, value, x)
 		}
+	})
+	t.Run("should return error when key is empty", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		_, err := r.CacheGet(ctx, "")
+		assert.ErrorIs(t, err, app.ErrInvalid)
 	})
 }
 
@@ -159,6 +166,13 @@ func TestCacheExists(t *testing.T) {
 			assert.True(t, ok)
 		}
 	})
+	t.Run("should return error when key is empty", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		_, err := r.CacheExists(ctx, "")
+		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
 }
 
 func TestCacheSet(t *testing.T) {
@@ -193,6 +207,13 @@ func TestCacheSet(t *testing.T) {
 			}
 		}
 	})
+	t.Run("should return error when key is empty", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		err := r.CacheSet(ctx, storage.CacheSetParams{})
+		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
 }
 
 func TestCacheOther(t *testing.T) {
@@ -222,6 +243,13 @@ func TestCacheOther(t *testing.T) {
 				assert.False(t, ok)
 			}
 		}
+	})
+	t.Run("should return error when delete and key is empty", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		err := r.CacheDelete(ctx, "")
+		assert.ErrorIs(t, err, app.ErrInvalid)
 	})
 	t.Run("can clear cache", func(t *testing.T) {
 		// given

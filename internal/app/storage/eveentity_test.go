@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -57,7 +58,7 @@ func TestEveEntity(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, err := st.CreateEveEntity(ctx, 42, "Dummy", app.EveEntityAlliance)
+		_, err := st.CreateEveEntity(ctx, storage.CreateEveEntityParams{42, "Dummy", app.EveEntityAlliance})
 		// then
 		if assert.NoError(t, err) {
 			e, err := st.GetEveEntity(ctx, 42)
@@ -114,7 +115,7 @@ func TestEveEntity(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, err := st.CreateEveEntity(ctx, 0, "Dummy", app.EveEntityAlliance)
+		_, err := st.CreateEveEntity(ctx, storage.CreateEveEntityParams{0, "Dummy", app.EveEntityAlliance})
 		// then
 		assert.Error(t, err)
 	})
@@ -122,7 +123,12 @@ func TestEveEntity(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, err := st.GetOrCreateEveEntity(ctx, 0, "Dummy", app.EveEntityAlliance)
+		arg := storage.CreateEveEntityParams{
+			ID:       0,
+			Name:     "Dummy",
+			Category: app.EveEntityAlliance,
+		}
+		_, err := st.GetOrCreateEveEntity(ctx, arg)
 		// then
 		assert.Error(t, err)
 	})
@@ -209,8 +215,13 @@ func TestEveEntityGetOrCreate(t *testing.T) {
 	t.Run("should create new when not exist", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		arg := storage.CreateEveEntityParams{
+			ID:       42,
+			Name:     "Dummy",
+			Category: app.EveEntityAlliance,
+		}
 		// when
-		_, err := r.GetOrCreateEveEntity(ctx, 42, "Dummy", app.EveEntityAlliance)
+		_, err := r.GetOrCreateEveEntity(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			e, err := r.GetEveEntity(ctx, 42)
@@ -231,8 +242,13 @@ func TestEveEntityGetOrCreate(t *testing.T) {
 				Name:     "Alpha",
 				Category: app.EveEntityCharacter,
 			})
+		arg := storage.CreateEveEntityParams{
+			ID:       42,
+			Name:     "Erik",
+			Category: app.EveEntityCorporation,
+		}
 		// when
-		e, err := r.GetOrCreateEveEntity(ctx, 42, "Erik", app.EveEntityCorporation)
+		e, err := r.GetOrCreateEveEntity(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(42), e.ID)

@@ -17,8 +17,8 @@ type CreateEveConstellationParams struct {
 }
 
 func (st *Storage) CreateEveConstellation(ctx context.Context, arg CreateEveConstellationParams) error {
-	if arg.ID == 0 {
-		return fmt.Errorf("invalid ID %d", arg.ID)
+	if arg.ID == 0 || arg.RegionID == 0 {
+		return fmt.Errorf("CreateEveConstellation: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateEveConstellationParams{
 		ID:          int64(arg.ID),
@@ -27,7 +27,7 @@ func (st *Storage) CreateEveConstellation(ctx context.Context, arg CreateEveCons
 	}
 	err := st.qRW.CreateEveConstellation(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("create EveConstellation %v, %w", arg, err)
+		return fmt.Errorf("CreateEveConstellation: %+v: %w", arg, err)
 	}
 	return nil
 }

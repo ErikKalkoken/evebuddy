@@ -18,7 +18,7 @@ type CreateEveCategoryParams struct {
 
 func (st *Storage) CreateEveCategory(ctx context.Context, arg CreateEveCategoryParams) (*app.EveCategory, error) {
 	if arg.ID == 0 {
-		return nil, fmt.Errorf("create EveCategory. invalid ID %+v", arg)
+		return nil, fmt.Errorf("CreateEveCategory: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateEveCategoryParams{
 		ID:          int64(arg.ID),
@@ -27,7 +27,7 @@ func (st *Storage) CreateEveCategory(ctx context.Context, arg CreateEveCategoryP
 	}
 	e, err := st.qRW.CreateEveCategory(ctx, arg2)
 	if err != nil {
-		return nil, fmt.Errorf("create EveCategory %+v, %w", arg, err)
+		return nil, fmt.Errorf("CreateEveCategory: %+v: %w", arg, err)
 	}
 	return eveCategoryFromDBModel(e), nil
 }

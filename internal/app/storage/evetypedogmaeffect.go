@@ -18,7 +18,7 @@ type CreateEveTypeDogmaEffectParams struct {
 
 func (st *Storage) CreateEveTypeDogmaEffect(ctx context.Context, arg CreateEveTypeDogmaEffectParams) error {
 	if arg.DogmaEffectID == 0 || arg.EveTypeID == 0 {
-		return fmt.Errorf("invalid IDs for EveTypeDogmaEffect: %v", arg)
+		return fmt.Errorf("CreateEveTypeDogmaEffect: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateEveTypeDogmaEffectParams{
 		DogmaEffectID: int64(arg.DogmaEffectID),
@@ -27,7 +27,7 @@ func (st *Storage) CreateEveTypeDogmaEffect(ctx context.Context, arg CreateEveTy
 	}
 	err := st.qRW.CreateEveTypeDogmaEffect(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("create EveTypeDogmaEffect %v, %w", arg, err)
+		return fmt.Errorf("CreateEveTypeDogmaEffect: %+v: %w", arg, err)
 	}
 	return nil
 }

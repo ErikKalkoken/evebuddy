@@ -139,8 +139,8 @@ func (st *Storage) ReplaceCharacterJumpClones(ctx context.Context, characterID i
 }
 
 func createCharacterJumpClone(ctx context.Context, q *queries.Queries, arg CreateCharacterJumpCloneParams) error {
-	if arg.CharacterID == 0 || arg.JumpCloneID == 0 {
-		return fmt.Errorf("IDs must not be zero %v", arg)
+	if arg.CharacterID == 0 || arg.JumpCloneID == 0 || arg.LocationID == 0 {
+		return fmt.Errorf("createCharacterJumpClone: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateCharacterJumpCloneParams{
 		CharacterID: int64(arg.CharacterID),
@@ -164,7 +164,12 @@ func createCharacterJumpClone(ctx context.Context, q *queries.Queries, arg Creat
 	return nil
 }
 
-func characterJumpCloneFromDBModel(o queries.CharacterJumpClone, locationName string, regionID sql.NullInt64, regionName sql.NullString) *app.CharacterJumpClone {
+func characterJumpCloneFromDBModel(
+	o queries.CharacterJumpClone,
+	locationName string,
+	regionID sql.NullInt64,
+	regionName sql.NullString,
+) *app.CharacterJumpClone {
 	if o.CharacterID == 0 {
 		panic("missing character ID")
 	}

@@ -18,8 +18,8 @@ type CreateEveGroupParams struct {
 }
 
 func (st *Storage) CreateEveGroup(ctx context.Context, arg CreateEveGroupParams) error {
-	if arg.ID == 0 {
-		return fmt.Errorf("invalid ID %d", arg.ID)
+	if arg.ID == 0 || arg.CategoryID == 0 {
+		return fmt.Errorf("CreateEveGroup: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateEveGroupParams{
 		ID:            int64(arg.ID),
@@ -29,7 +29,7 @@ func (st *Storage) CreateEveGroup(ctx context.Context, arg CreateEveGroupParams)
 	}
 	err := st.qRW.CreateEveGroup(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("create EveGroup %v, %w", arg, err)
+		return fmt.Errorf("CreateEveGroup: %+v: %w", arg, err)
 	}
 	return nil
 }

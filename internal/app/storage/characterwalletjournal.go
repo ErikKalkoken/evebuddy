@@ -30,8 +30,8 @@ type CreateCharacterWalletJournalEntryParams struct {
 }
 
 func (st *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg CreateCharacterWalletJournalEntryParams) error {
-	if arg.RefID == 0 {
-		return fmt.Errorf("CharacterWalletJournalEntry ID can not be zero, Character %d", arg.CharacterID)
+	if arg.CharacterID == 0 || arg.RefID == 0 {
+		return fmt.Errorf("CreateCharacterWalletJournalEntry: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateCharacterWalletJournalEntryParams{
 		Amount:        arg.Amount,
