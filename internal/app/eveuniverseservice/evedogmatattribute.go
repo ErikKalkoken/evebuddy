@@ -12,7 +12,7 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-func (eu *EveUniverseService) GetEveDogmaAttribute(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
+func (eu *EveUniverseService) GetDogmaAttribute(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
 	o, err := eu.st.GetEveDogmaAttribute(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, app.ErrNotFound
@@ -22,7 +22,7 @@ func (eu *EveUniverseService) GetEveDogmaAttribute(ctx context.Context, id int32
 	return o, nil
 }
 
-func (eu *EveUniverseService) GetOrCreateEveDogmaAttributeESI(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
+func (eu *EveUniverseService) GetOrCreateDogmaAttributeESI(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
 	o, err := eu.st.GetEveDogmaAttribute(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveDogmaAttributeFromESI(ctx, id)
@@ -71,10 +71,10 @@ func (eu *EveUniverseService) FormatDogmaValue(ctx context.Context, value float3
 	case app.EveUnitAcceleration:
 		return fmt.Sprintf("%s m/sec", defaultFormatter(value)), 0
 	case app.EveUnitAttributeID:
-		da, err := eu.GetEveDogmaAttribute(ctx, int32(value))
+		da, err := eu.GetDogmaAttribute(ctx, int32(value))
 		if err != nil {
 			go func() {
-				_, err := eu.GetOrCreateEveDogmaAttributeESI(ctx, int32(value))
+				_, err := eu.GetOrCreateDogmaAttributeESI(ctx, int32(value))
 				if err != nil {
 					slog.Error("Failed to fetch dogma attribute from ESI", "ID", value, "err", err)
 				}

@@ -151,7 +151,7 @@ func NewGameSearch(u app.UI) *GameSearch {
 		if len(ids) == 0 {
 			return
 		}
-		ee, err := a.u.EveUniverseService().ListEveEntitiesForIDs(context.Background(), ids)
+		ee, err := a.u.EveUniverseService().ListEntitiesForIDs(context.Background(), ids)
 		if err != nil {
 			slog.Error("failed to load recent items from settings", "error", err)
 			return

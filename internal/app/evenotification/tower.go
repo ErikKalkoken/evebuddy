@@ -31,7 +31,7 @@ func (s *EveNotificationService) renderTowerAlertMsg(ctx context.Context, text s
 	if err != nil {
 		return title, body, err
 	}
-	entities, err := s.eus.ToEveEntities(ctx, []int32{data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID})
+	entities, err := s.eus.ToEntities(ctx, []int32{data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID})
 	if err != nil {
 		return title, body, err
 	}
@@ -86,7 +86,7 @@ func (s *EveNotificationService) makeTowerBaseText(ctx context.Context, moonID, 
 	if err != nil {
 		return towerInfo{}, err
 	}
-	moon, err := s.eus.GetOrCreateEveMoonESI(ctx, moonID)
+	moon, err := s.eus.GetOrCreateMoonESI(ctx, moonID)
 	if err != nil {
 		return towerInfo{}, err
 	}

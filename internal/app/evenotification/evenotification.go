@@ -13,12 +13,12 @@ import (
 
 type EveUniverseService interface {
 	GetOrCreateEntityESI(ctx context.Context, id int32) (*app.EveEntity, error)
-	GetOrCreateEveMoonESI(ctx context.Context, id int32) (*app.EveMoon, error)
+	GetOrCreateMoonESI(ctx context.Context, id int32) (*app.EveMoon, error)
 	GetOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error)
 	GetOrCreatePlanetESI(ctx context.Context, id int32) (*app.EvePlanet, error)
 	GetOrCreateSolarSystemESI(ctx context.Context, id int32) (*app.EveSolarSystem, error)
 	GetOrCreateTypeESI(ctx context.Context, id int32) (*app.EveType, error)
-	ToEveEntities(ctx context.Context, ids []int32) (map[int32]*app.EveEntity, error)
+	ToEntities(ctx context.Context, ids []int32) (map[int32]*app.EveEntity, error)
 }
 
 // EveNotificationService is a service for rendering notifications.

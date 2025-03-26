@@ -63,7 +63,7 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 		if data.ExternalID2 != -1 && data.ExternalID2 == int64(int32(data.ExternalID2)) {
 			ids = append(ids, int32(data.ExternalID2))
 		}
-		entities, err := s.eus.ToEveEntities(ctx, ids)
+		entities, err := s.eus.ToEntities(ctx, ids)
 		if err != nil {
 			return title, body, err
 		}

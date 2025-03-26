@@ -28,7 +28,7 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 		httpmock.Reset()
 		factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: 6})
 		// when
-		x1, err := s.GetOrCreateEveCategoryESI(ctx, 6)
+		x1, err := s.GetOrCreateCategoryESI(ctx, 6)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(6), x1.ID)
@@ -54,7 +54,7 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		x1, err := s.GetOrCreateEveCategoryESI(ctx, 6)
+		x1, err := s.GetOrCreateCategoryESI(ctx, 6)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(6), x1.ID)
@@ -82,7 +82,7 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 		httpmock.Reset()
 		factory.CreateEveGroup(storage.CreateEveGroupParams{ID: 25})
 		// when
-		x1, err := s.GetOrCreateEveGroupESI(ctx, 25)
+		x1, err := s.GetOrCreateGroupESI(ctx, 25)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(25), x1.ID)
@@ -110,7 +110,7 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		x1, err := s.GetOrCreateEveGroupESI(ctx, 25)
+		x1, err := s.GetOrCreateGroupESI(ctx, 25)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(25), x1.ID)

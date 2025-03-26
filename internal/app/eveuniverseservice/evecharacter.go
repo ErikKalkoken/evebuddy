@@ -107,15 +107,15 @@ func (s *EveUniverseService) fetchEveCharacterfromESI(ctx context.Context, id in
 	if err != nil {
 		return esi.GetCharactersCharacterIdOk{}, err
 	}
-	_, err = s.GetOrCreateEveRaceESI(ctx, r.RaceId)
+	_, err = s.GetOrCreateRaceESI(ctx, r.RaceId)
 	if err != nil {
 		return esi.GetCharactersCharacterIdOk{}, err
 	}
 	return r, nil
 }
 
-// UpdateAllEveCharactersESI updates all known Eve characters from ESI.
-func (s *EveUniverseService) UpdateAllEveCharactersESI(ctx context.Context) error {
+// UpdateAllCharactersESI updates all known Eve characters from ESI.
+func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) error {
 	ids, err := s.st.ListEveCharacterIDs(ctx)
 	if err != nil {
 		return err

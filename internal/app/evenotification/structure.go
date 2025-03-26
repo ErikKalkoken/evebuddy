@@ -90,7 +90,7 @@ func (s *EveNotificationService) renderOwnershipTransferred(ctx context.Context,
 		d.structureTypeID = int32(data.StructureLinkData[1].(int))
 		d.structureName = data.StructureName
 	}
-	entities, err := s.eus.ToEveEntities(ctx, []int32{d.oldCorpID, d.newCorpID, d.characterID})
+	entities, err := s.eus.ToEntities(ctx, []int32{d.oldCorpID, d.newCorpID, d.characterID})
 	if err != nil {
 		return title, body, err
 	}
@@ -206,7 +206,7 @@ func (s *EveNotificationService) renderStructureItemsDelivered(ctx context.Conte
 	for _, r := range data.ListOfTypesAndQty {
 		ids = append(ids, r[1])
 	}
-	entities, err := s.eus.ToEveEntities(ctx, ids)
+	entities, err := s.eus.ToEntities(ctx, ids)
 	if err != nil {
 		return title, body, err
 	}
@@ -360,7 +360,7 @@ func (s *EveNotificationService) renderStructuresReinforcementChanged(ctx contex
 	slices.SortFunc(structures, func(a structureReinforcementInfo, b structureReinforcementInfo) int {
 		return cmp.Compare(a.name, b.name)
 	})
-	entities, err := s.eus.ToEveEntities(ctx, typeIDs)
+	entities, err := s.eus.ToEntities(ctx, typeIDs)
 	if err != nil {
 		return title, body, err
 	}
@@ -385,7 +385,7 @@ func (s *EveNotificationService) renderStructureServicesOffline(ctx context.Cont
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.eus.ToEveEntities(ctx, data.ListOfServiceModuleIDs)
+	entities, err := s.eus.ToEntities(ctx, data.ListOfServiceModuleIDs)
 	if err != nil {
 		return title, body, err
 	}

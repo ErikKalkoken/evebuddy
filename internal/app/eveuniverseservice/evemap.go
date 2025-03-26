@@ -129,7 +129,7 @@ func (s *EveUniverseService) GetRegionConstellationsESI(ctx context.Context, id 
 	if err != nil {
 		return nil, err
 	}
-	xx, err := s.ToEveEntities(ctx, region.Constellations)
+	xx, err := s.ToEntities(ctx, region.Constellations)
 	if err != nil {
 		return nil, err
 	}
@@ -313,7 +313,7 @@ func (s *EveUniverseService) createEvePlanetFromESI(ctx context.Context, id int3
 	return y.(*app.EvePlanet), nil
 }
 
-func (s *EveUniverseService) GetOrCreateEveMoonESI(ctx context.Context, id int32) (*app.EveMoon, error) {
+func (s *EveUniverseService) GetOrCreateMoonESI(ctx context.Context, id int32) (*app.EveMoon, error) {
 	x, err := s.st.GetEveMoon(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return s.createEveMoonFromESI(ctx, id)

@@ -26,7 +26,7 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 		httpmock.Reset()
 		x1 := factory.CreateEveDogmaAttribute()
 		// when
-		x2, err := s.GetOrCreateEveDogmaAttributeESI(ctx, x1.ID)
+		x2, err := s.GetOrCreateDogmaAttributeESI(ctx, x1.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, x2, x1)
@@ -51,7 +51,7 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 				"unit_id":       124,
 			}))
 		// when
-		x1, err := s.GetOrCreateEveDogmaAttributeESI(ctx, 20)
+		x1, err := s.GetOrCreateDogmaAttributeESI(ctx, 20)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(20), x1.ID)

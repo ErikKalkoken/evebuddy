@@ -152,7 +152,7 @@ type moonMiningInfo struct {
 }
 
 func (s *EveNotificationService) makeMoonMiningBaseText(ctx context.Context, moonID int32, structureName string) (moonMiningInfo, error) {
-	moon, err := s.eus.GetOrCreateEveMoonESI(ctx, moonID)
+	moon, err := s.eus.GetOrCreateMoonESI(ctx, moonID)
 	if err != nil {
 		return moonMiningInfo{}, err
 	}
@@ -177,7 +177,7 @@ type oreItem struct {
 
 func (s *EveNotificationService) makeOreText(ctx context.Context, ores map[int32]float64) (string, error) {
 	ids := slices.Collect(maps.Keys(ores))
-	entities, err := s.eus.ToEveEntities(ctx, ids)
+	entities, err := s.eus.ToEntities(ctx, ids)
 	if err != nil {
 		return "", err
 	}

@@ -22,7 +22,7 @@ func (s *EveNotificationService) renderOrbital(ctx context.Context, type_ Type, 
 		if err != nil {
 			return title, body, err
 		}
-		entities, err := s.eus.ToEveEntities(ctx, []int32{data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID})
+		entities, err := s.eus.ToEntities(ctx, []int32{data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID})
 		if err != nil {
 			return title, body, err
 		}
@@ -55,7 +55,7 @@ func (s *EveNotificationService) renderOrbital(ctx context.Context, type_ Type, 
 		if err != nil {
 			return title, body, err
 		}
-		entities, err := s.eus.ToEveEntities(ctx, []int32{data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID})
+		entities, err := s.eus.ToEntities(ctx, []int32{data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID})
 		if err != nil {
 			return title, body, err
 		}

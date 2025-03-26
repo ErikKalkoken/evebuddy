@@ -52,7 +52,7 @@ func (s *CharacterService) SearchESI(
 		x.Station,
 		x.Region,
 	)
-	eeMap, err := s.EveUniverseService.ToEveEntities(ctx, ids)
+	eeMap, err := s.EveUniverseService.ToEntities(ctx, ids)
 	if err != nil {
 		slog.Error("SearchESI: resolve IDs to eve entities", "error", err)
 		return nil, 0, err

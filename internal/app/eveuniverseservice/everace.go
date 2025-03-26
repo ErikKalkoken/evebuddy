@@ -9,7 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
-func (eu *EveUniverseService) GetOrCreateEveRaceESI(ctx context.Context, id int32) (*app.EveRace, error) {
+func (eu *EveUniverseService) GetOrCreateRaceESI(ctx context.Context, id int32) (*app.EveRace, error) {
 	x, err := eu.st.GetEveRace(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveRaceFromESI(ctx, id)

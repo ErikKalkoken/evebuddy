@@ -130,7 +130,7 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 			"https://esi.evetech.net/v2/characters/affiliation/",
 			httpmock.NewJsonResponderOrPanic(200, dataAffiliation))
 		// when
-		err := s.UpdateAllEveCharactersESI(ctx)
+		err := s.UpdateAllCharactersESI(ctx)
 		// then
 		if assert.NoError(t, err) {
 			x, err := r.GetEveCharacter(ctx, characterID)

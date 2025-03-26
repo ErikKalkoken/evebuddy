@@ -26,7 +26,7 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 		httpmock.Reset()
 		x1 := factory.CreateEveRace(app.EveRace{ID: 7})
 		// when
-		x2, err := eu.GetOrCreateEveRaceESI(ctx, 7)
+		x2, err := eu.GetOrCreateRaceESI(ctx, 7)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, x1, x2)
@@ -49,7 +49,7 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 			}))
 
 		// when
-		x1, err := eu.GetOrCreateEveRaceESI(ctx, 7)
+		x1, err := eu.GetOrCreateRaceESI(ctx, 7)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, "Caldari", x1.Name)
@@ -77,7 +77,7 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 			}))
 
 		// when
-		_, err := eu.GetOrCreateEveRaceESI(ctx, 42)
+		_, err := eu.GetOrCreateRaceESI(ctx, 42)
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
