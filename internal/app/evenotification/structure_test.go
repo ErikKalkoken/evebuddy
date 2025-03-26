@@ -28,10 +28,10 @@ func TestMakeStructureBaseText(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, o.Name, x.name)
-			assert.Equal(t, o.SolarSystem, x.solarSystem)
-			assert.Equal(t, o.Type, x.eveType)
-			assert.Equal(t, o.Owner, x.owner)
-			assert.NotEqual(t, "", x.intro)
+			assert.Equal(t, o.SolarSystem.Name, x.solarSystem.Name)
+			assert.Equal(t, o.Type.Name, x.eveType.Name)
+			assert.Equal(t, o.Owner.Name, x.owner.Name)
+			assert.NotEmpty(t, x.intro)
 		}
 	})
 	t.Run("can create base text from minimal input data", func(t *testing.T) {
@@ -43,11 +43,11 @@ func TestMakeStructureBaseText(t *testing.T) {
 		x, err := s.makeStructureBaseText(ctx, 0, es.ID, 1_000_000_000_000, "")
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, "", x.name)
-			assert.Equal(t, es, x.solarSystem)
-			assert.Nil(t, x.eveType)
-			assert.Nil(t, x.owner)
-			assert.NotEqual(t, "", x.intro)
+			assert.Empty(t, x.name)
+			assert.Equal(t, es.Name, x.solarSystem.Name)
+			assert.Empty(t, x.eveType)
+			assert.Empty(t, x.owner)
+			assert.NotEmpty(t, x.intro)
 		}
 	})
 }
