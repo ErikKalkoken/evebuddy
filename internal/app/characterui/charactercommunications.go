@@ -74,7 +74,15 @@ func (a *CharacterCommunications) CreateRenderer() fyne.WidgetRenderer {
 		split1,
 	)
 	split2.Offset = 0.15
-	return widget.NewSimpleRenderer(split2)
+	p := theme.Padding()
+	c := container.NewBorder(
+		widget.NewSeparator(),
+		nil,
+		nil,
+		nil,
+		container.New(layout.NewCustomPaddedLayout(-p, 0, 0, 0), split2),
+	)
+	return widget.NewSimpleRenderer(c)
 }
 
 func (a *CharacterCommunications) makeGroupList() *widget.List {

@@ -133,17 +133,8 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 	// }
 
 	makePageWithTitle := func(s string, content fyne.CanvasObject) fyne.CanvasObject {
-		return container.NewBorder(
-			container.New(
-				layout.NewCustomPaddedVBoxLayout(0),
-				widget.NewLabelWithStyle(s, fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-				widget.NewSeparator(),
-			),
-			nil,
-			nil,
-			nil,
-			content,
-		)
+		title := iwidget.NewLabelWithSize(s, theme.SizeNameSubHeadingText)
+		return container.NewBorder(title, nil, nil, nil, content)
 	}
 
 	colonies := iwidget.NewNavPage(
@@ -180,13 +171,17 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		makePageWithTitle("Contracts", u.characterContracts),
 	)
 
-	skills := iwidget.NewNavPage("Skills",
-		theme.NewThemedResource(icons.SchoolSvg), container.NewAppTabs(
-			container.NewTabItem("Training Queue", u.characterSkillQueue),
-			container.NewTabItem("Skill Catalogue", u.characterSkillCatalogue),
-			container.NewTabItem("Ships", u.characterShips),
-			container.NewTabItem("Attributes", u.characterAttributes),
-		))
+	skills := iwidget.NewNavPage(
+		"Skills",
+		theme.NewThemedResource(icons.SchoolSvg),
+		makePageWithTitle(
+			"Skills",
+			container.NewAppTabs(
+				container.NewTabItem("Training Queue", u.characterSkillQueue),
+				container.NewTabItem("Skill Catalogue", u.characterSkillCatalogue),
+				container.NewTabItem("Ships", u.characterShips),
+				container.NewTabItem("Attributes", u.characterAttributes),
+			)))
 
 	// FIXME
 	// u.characterSkillQueue.OnUpdate = func(status, _ string) {
@@ -211,21 +206,24 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 			theme.NewThemedResource(icons.Inventory2Svg),
 			makePageWithTitle("Assets", u.characterAssets),
 		),
-		iwidget.NewNavPage("Clones",
-			theme.NewThemedResource(icons.HeadSnowflakeSvg), container.NewAppTabs(
+		iwidget.NewNavPage(
+			"Clones",
+			theme.NewThemedResource(icons.HeadSnowflakeSvg),
+			makePageWithTitle("Clones", container.NewAppTabs(
 				container.NewTabItem("Current Clone", u.characterImplants),
 				container.NewTabItem("Jump Clones", u.characterJumpClones),
-			)),
+			))),
 		contracts,
 		communications,
 		colonies,
 		mail,
 		skills,
 		iwidget.NewNavPage("Wallet",
-			theme.NewThemedResource(icons.AttachmoneySvg), container.NewAppTabs(
+			theme.NewThemedResource(icons.AttachmoneySvg),
+			makePageWithTitle("Wallet", container.NewAppTabs(
 				container.NewTabItem("Transactions", u.characterWalletJournal),
 				container.NewTabItem("Market Transactions", u.characterWalletTransaction),
-			)),
+			))),
 		// -----------------------
 		iwidget.NewNavSectionLabel("All Characters"),
 		iwidget.NewNavPage(

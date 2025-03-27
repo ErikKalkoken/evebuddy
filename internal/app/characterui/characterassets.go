@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -123,8 +124,16 @@ func NewCharacterAssets(u app.UI) *CharacterAssets {
 }
 
 func (a *CharacterAssets) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewHSplit(a.Locations, a.LocationAssets)
-	c.SetOffset(0.33)
+	main := container.NewHSplit(a.Locations, a.LocationAssets)
+	main.SetOffset(0.33)
+	p := theme.Padding()
+	c := container.NewBorder(
+		widget.NewSeparator(),
+		nil,
+		nil,
+		nil,
+		container.New(layout.NewCustomPaddedLayout(-p, 0, 0, 0), main),
+	)
 	return widget.NewSimpleRenderer(c)
 }
 

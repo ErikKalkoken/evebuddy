@@ -58,6 +58,7 @@ type NavDrawer struct {
 	current int
 	items   []*navItem
 	stack   *fyne.Container
+	list    *widget.List
 }
 
 func NewNavDrawer(pages ...*navItem) *NavDrawer {
@@ -66,6 +67,7 @@ func NewNavDrawer(pages ...*navItem) *NavDrawer {
 		stack:   container.NewStack(),
 	}
 	w.ExtendBaseWidget(w)
+	w.list = w.makeList()
 	for _, p := range pages {
 		w.AddPage(p)
 	}
@@ -101,6 +103,18 @@ func (w *NavDrawer) Select(id int) {
 
 func (w *NavDrawer) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
+	c := container.NewBorder(
+		nil,
+		nil,
+		container.NewHBox(w.list, widget.NewSeparator()),
+		nil,
+		container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), w.stack),
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *NavDrawer) makeList() *widget.List {
+	p := w.Theme().Size(theme.SizeNamePadding)
 	list := widget.NewList(
 		func() int {
 			return len(w.items)
@@ -172,12 +186,5 @@ func (w *NavDrawer) CreateRenderer() fyne.WidgetRenderer {
 		}
 	}
 	list.HideSeparators = true
-	c := container.NewBorder(
-		nil,
-		nil,
-		container.NewHBox(list, widget.NewSeparator()),
-		nil,
-		container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), w.stack),
-	)
-	return widget.NewSimpleRenderer(c)
+	return list
 }
