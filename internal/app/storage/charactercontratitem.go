@@ -20,7 +20,7 @@ type CreateCharacterContractItemParams struct {
 
 func (st *Storage) CreateCharacterContractItem(ctx context.Context, arg CreateCharacterContractItemParams) error {
 	if arg.ContractID == 0 || arg.TypeID == 0 {
-		return fmt.Errorf("create contract item. Mandatory fields not set: %v", arg)
+		return fmt.Errorf("create contract item: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateCharacterContractItemParams{
 		ContractID:  arg.ContractID,

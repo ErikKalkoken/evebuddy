@@ -48,7 +48,7 @@ type UpdateOrCreateGeneralSectionStatusParams struct {
 
 func (st *Storage) UpdateOrCreateGeneralSectionStatus(ctx context.Context, arg UpdateOrCreateGeneralSectionStatusParams) (*app.GeneralSectionStatus, error) {
 	if string(arg.Section) == "" {
-		panic("Invalid params")
+		return nil, fmt.Errorf("UpdateOrCreateGeneralSectionStatus: %+v: %w", arg, app.ErrInvalid)
 	}
 	tx, err := st.dbRW.Begin()
 	if err != nil {

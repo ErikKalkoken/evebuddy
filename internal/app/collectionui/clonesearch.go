@@ -497,7 +497,8 @@ func (a *CloneSearch) showRoute(r cloneSearchRow) {
 		nil,
 		list,
 	)
-	w := a.u.App().NewWindow(fmt.Sprintf("Route: %s -> %s", a.origin.Name, r.c.Location.SolarSystem.Name))
+	title := fmt.Sprintf("Route: %s -> %s", a.origin.Name, r.c.Location.SolarSystem.Name)
+	w := a.u.App().NewWindow(a.u.MakeWindowTitle(title))
 	w.SetContent(c)
 	w.Resize(fyne.NewSize(600, 400))
 	w.Show()
@@ -590,7 +591,7 @@ func (a *CloneSearch) showClone(r cloneSearchRow) {
 		nil,
 		list,
 	)
-	w := a.u.App().NewWindow("Clone")
+	w := a.u.App().NewWindow(a.u.MakeWindowTitle("Clone"))
 	w.SetContent(c)
 	w.Resize(fyne.NewSize(600, 400))
 	w.Show()

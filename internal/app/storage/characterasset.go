@@ -27,7 +27,7 @@ type CreateCharacterAssetParams struct {
 
 func (st *Storage) CreateCharacterAsset(ctx context.Context, arg CreateCharacterAssetParams) error {
 	if arg.CharacterID == 0 || arg.EveTypeID == 0 || arg.ItemID == 0 {
-		return fmt.Errorf("IDs must not be zero %v", arg)
+		return fmt.Errorf("CreateCharacterAsset: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateCharacterAssetParams{
 		CharacterID:     int64(arg.CharacterID),

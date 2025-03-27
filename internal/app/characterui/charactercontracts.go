@@ -224,7 +224,7 @@ func (a *CharacterContracts) updateEntries() error {
 }
 
 func (a *CharacterContracts) showContract(c *app.CharacterContract) {
-	w := a.u.App().NewWindow("Contract")
+	w := a.u.App().NewWindow(a.u.MakeWindowTitle("Contract"))
 	makeExpiresString := func(c *app.CharacterContract) string {
 		t := c.DateExpiredEffective()
 		ts := t.Format(app.DateTimeFormat)

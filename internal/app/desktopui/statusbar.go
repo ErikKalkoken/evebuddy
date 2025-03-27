@@ -40,7 +40,7 @@ const (
 type DesktopUI interface {
 	app.UI
 
-	ShowAccountWindow()
+	ShowManageCharactersWindow()
 }
 
 type StatusBar struct {
@@ -64,7 +64,7 @@ func NewStatusBar(u DesktopUI) *StatusBar {
 	}
 	a.ExtendBaseWidget(a)
 	a.characterCount = NewStatusBarItem(theme.AccountIcon(), "?", func() {
-		u.ShowAccountWindow()
+		u.ShowManageCharactersWindow()
 	})
 	a.updateStatus = NewStatusBarItem(theme.NewThemedResource(icons.UpdateSvg), "?", func() {
 		u.ShowUpdateStatusWindow()

@@ -28,33 +28,38 @@ const (
 	eveEntityUnknown       = "unknown"
 )
 
-func (st *Storage) CreateEveEntity(ctx context.Context, id int32, name string, category app.EveEntityCategory) (*app.EveEntity, error) {
-	e, err := func() (*app.EveEntity, error) {
-		if id == 0 {
-			return nil, fmt.Errorf("invalid ID %d", id)
-		}
-		arg := queries.CreateEveEntityParams{
-			ID:       int64(id),
-			Category: eveEntityDBModelCategoryFromCategory(category),
-			Name:     name,
-		}
-		e, err := st.qRW.CreateEveEntity(ctx, arg)
-		if err != nil {
-			return nil, fmt.Errorf("create eve entity %v, %w", arg, err)
-		}
-		return eveEntityFromDBModel(e), nil
-	}()
-	if err != nil {
-		return nil, fmt.Errorf("create eve entity %d: %w", id, err)
-	}
-	return e, nil
+type CreateEveEntityParams struct {
+	ID       int32
+	Name     string
+	Category app.EveEntityCategory
 }
 
-func (st *Storage) GetOrCreateEveEntity(ctx context.Context, id int32, name string, category app.EveEntityCategory) (*app.EveEntity, error) {
-	label, err := func() (*app.EveEntity, error) {
+func (arg CreateEveEntityParams) isValid() bool {
+	return arg.ID != 0
+}
+
+func (st *Storage) CreateEveEntity(ctx context.Context, arg CreateEveEntityParams) (*app.EveEntity, error) {
+	if !arg.isValid() {
+		return nil, fmt.Errorf("CreateEveEntity: %+v: %w", arg, app.ErrInvalid)
+	}
+	arg2 := queries.CreateEveEntityParams{
+		ID:       int64(arg.ID),
+		Category: eveEntityDBModelCategoryFromCategory(arg.Category),
+		Name:     arg.Name,
+	}
+	e, err := st.qRW.CreateEveEntity(ctx, arg2)
+	if err != nil {
+		return nil, fmt.Errorf("CreateEveEntity: %+v, %w", arg2, err)
+	}
+	return eveEntityFromDBModel(e), nil
+
+}
+
+func (st *Storage) GetOrCreateEveEntity(ctx context.Context, arg CreateEveEntityParams) (*app.EveEntity, error) {
+	ee, err := func() (*app.EveEntity, error) {
 		var e queries.EveEntity
-		if id == 0 {
-			return nil, fmt.Errorf("invalid ID %d", id)
+		if !arg.isValid() {
+			return nil, app.ErrInvalid
 		}
 		tx, err := st.dbRW.Begin()
 		if err != nil {
@@ -62,17 +67,17 @@ func (st *Storage) GetOrCreateEveEntity(ctx context.Context, id int32, name stri
 		}
 		defer tx.Rollback()
 		qtx := st.qRW.WithTx(tx)
-		e, err = qtx.GetEveEntity(ctx, int64(id))
+		e, err = qtx.GetEveEntity(ctx, int64(arg.ID))
 		if err != nil {
 			if !errors.Is(err, sql.ErrNoRows) {
 				return nil, err
 			}
-			arg := queries.CreateEveEntityParams{
-				ID:       int64(id),
-				Name:     name,
-				Category: eveEntityDBModelCategoryFromCategory(category),
+			arg2 := queries.CreateEveEntityParams{
+				ID:       int64(arg.ID),
+				Name:     arg.Name,
+				Category: eveEntityDBModelCategoryFromCategory(arg.Category),
 			}
-			e, err = qtx.CreateEveEntity(ctx, arg)
+			e, err = qtx.CreateEveEntity(ctx, arg2)
 			if err != nil {
 				return nil, err
 			}
@@ -83,9 +88,9 @@ func (st *Storage) GetOrCreateEveEntity(ctx context.Context, id int32, name stri
 		return eveEntityFromDBModel(e), nil
 	}()
 	if err != nil {
-		return label, fmt.Errorf("get or create eve entity %d: %w", id, err)
+		return nil, fmt.Errorf("GetOrCreateEveEntity: %+v: %w", arg, err)
 	}
-	return label, nil
+	return ee, nil
 }
 
 func (st *Storage) GetEveEntity(ctx context.Context, id int32) (*app.EveEntity, error) {

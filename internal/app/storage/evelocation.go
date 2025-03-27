@@ -24,7 +24,7 @@ type UpdateOrCreateLocationParams struct {
 
 func (st *Storage) UpdateOrCreateEveLocation(ctx context.Context, arg UpdateOrCreateLocationParams) error {
 	if arg.ID == 0 {
-		return fmt.Errorf("invalid ID for eve location %d", arg.ID)
+		return fmt.Errorf("UpdateOrCreateEveLocation: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.UpdateOrCreateLocationParams{
 		ID:               int64(arg.ID),

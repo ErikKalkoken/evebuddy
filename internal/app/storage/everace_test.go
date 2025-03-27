@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 )
 
@@ -17,7 +18,12 @@ func TestEveRace(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		x1, err := r.CreateEveRace(ctx, 42, "description", "name")
+		arg := storage.CreateEveRaceParams{
+			ID:          42,
+			Description: "description",
+			Name:        "name",
+		}
+		x1, err := r.CreateEveRace(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(42), x1.ID)

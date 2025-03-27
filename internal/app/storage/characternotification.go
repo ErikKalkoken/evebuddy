@@ -14,8 +14,8 @@ import (
 )
 
 func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCharacterNotificationParams) error {
-	if arg.NotificationID == 0 {
-		return fmt.Errorf("notification ID can not be zero, Character %d", arg.CharacterID)
+	if !arg.isValid() {
+		return fmt.Errorf("CreateCharacterNotification: %+v: %w", arg, app.ErrInvalid)
 	}
 	typeID, err := st.GetOrCreateNotificationType(ctx, arg.Type)
 	if err != nil {
@@ -39,14 +39,6 @@ func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCh
 		return fmt.Errorf("create character notification %+v: %w", arg, err)
 	}
 	return nil
-}
-
-type UpdateCharacterNotificationParams struct {
-	ID          int64
-	Body        optional.Optional[string]
-	CharacterID int32
-	IsRead      bool
-	Title       optional.Optional[string]
 }
 
 func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int32, notificationID int64) (*app.CharacterNotification, error) {
@@ -155,7 +147,21 @@ type CreateCharacterNotificationParams struct {
 	Type           string
 }
 
+func (arg CreateCharacterNotificationParams) isValid() bool {
+	return arg.CharacterID != 0 && arg.NotificationID != 0 && arg.SenderID != 0
+}
+
+type UpdateCharacterNotificationParams struct {
+	ID     int64
+	Body   optional.Optional[string]
+	IsRead bool
+	Title  optional.Optional[string]
+}
+
 func (st *Storage) UpdateCharacterNotification(ctx context.Context, arg UpdateCharacterNotificationParams) error {
+	if arg.ID == 0 {
+		return fmt.Errorf("UpdateCharacterNotification: %+v: %w", arg, app.ErrInvalid)
+	}
 	arg2 := queries.UpdateCharacterNotificationParams{
 		ID:     arg.ID,
 		Body:   optional.ToNullString(arg.Body),

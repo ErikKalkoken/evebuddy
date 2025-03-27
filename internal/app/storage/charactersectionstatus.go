@@ -63,7 +63,7 @@ type UpdateOrCreateCharacterSectionStatusParams struct {
 
 func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg UpdateOrCreateCharacterSectionStatusParams) (*app.CharacterSectionStatus, error) {
 	if arg.CharacterID == 0 || arg.Section == "" {
-		panic("Invalid params")
+		return nil, fmt.Errorf("UpdateOrCreateCharacterSectionStatus: %+v: %w", arg, app.ErrInvalid)
 	}
 	o, err := func() (*app.CharacterSectionStatus, error) {
 		tx, err := st.dbRW.Begin()

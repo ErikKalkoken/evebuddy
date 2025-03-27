@@ -29,8 +29,8 @@ type CreateEveTypeParams struct {
 }
 
 func (st *Storage) CreateEveType(ctx context.Context, arg CreateEveTypeParams) error {
-	if arg.ID == 0 {
-		return fmt.Errorf("invalid ID %d", arg.ID)
+	if arg.ID == 0 || arg.GroupID == 0 {
+		return fmt.Errorf("CreateEveType: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateEveTypeParams{
 		ID:             int64(arg.ID),
@@ -50,7 +50,7 @@ func (st *Storage) CreateEveType(ctx context.Context, arg CreateEveTypeParams) e
 	}
 	err := st.qRW.CreateEveType(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("create EveType %v, %w", arg, err)
+		return fmt.Errorf("CreateEveType %+v: %w", arg, err)
 	}
 	return nil
 }

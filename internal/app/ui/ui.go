@@ -269,7 +269,7 @@ func (u *UIBase) IsMobile() bool {
 	return u.isMobile
 }
 
-func (u *UIBase) makeWindowTitle(subTitle string) string {
+func (u *UIBase) MakeWindowTitle(subTitle string) string {
 	if u.IsMobile() {
 		return subTitle
 	}
@@ -941,7 +941,7 @@ func (u *UIBase) ShowUpdateStatusWindow() {
 		u.statusWindow.Show()
 		return
 	}
-	w := u.app.NewWindow(u.makeWindowTitle("Update Status"))
+	w := u.app.NewWindow(u.MakeWindowTitle("Update Status"))
 	a := toolui.NewUpdateStatus(u)
 	a.Update()
 	w.SetContent(a)

@@ -18,8 +18,8 @@ type CreateEveSolarSystemParams struct {
 }
 
 func (st *Storage) CreateEveSolarSystem(ctx context.Context, arg CreateEveSolarSystemParams) error {
-	if arg.ID == 0 {
-		return fmt.Errorf("invalid ID %d", arg.ID)
+	if arg.ID == 0 || arg.ConstellationID == 0 {
+		return fmt.Errorf("CreateEveSolarSystem: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateEveSolarSystemParams{
 		ID:                 int64(arg.ID),

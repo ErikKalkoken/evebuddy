@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
 func (eu *EveUniverseService) GetOrCreateRaceESI(ctx context.Context, id int32) (*app.EveRace, error) {
@@ -25,7 +26,12 @@ func (eu *EveUniverseService) createEveRaceFromESI(ctx context.Context, id int32
 		}
 		for _, race := range races {
 			if race.RaceId == id {
-				return eu.st.CreateEveRace(ctx, race.RaceId, race.Description, race.Name)
+				arg := storage.CreateEveRaceParams{
+					ID:          race.RaceId,
+					Description: race.Description,
+					Name:        race.Name,
+				}
+				return eu.st.CreateEveRace(ctx, arg)
 			}
 		}
 		return nil, fmt.Errorf("race with ID %d not found: %w", id, app.ErrNotFound)

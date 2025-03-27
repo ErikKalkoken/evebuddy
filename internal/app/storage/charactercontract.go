@@ -89,7 +89,7 @@ type CreateCharacterContractParams struct {
 
 func (st *Storage) CreateCharacterContract(ctx context.Context, arg CreateCharacterContractParams) (int64, error) {
 	if arg.CharacterID == 0 || arg.ContractID == 0 {
-		return 0, fmt.Errorf("create character contract. Mandatory fields not set: %v", arg)
+		return 0, fmt.Errorf("create character contract: %+v: %w", arg, app.ErrInvalid)
 	}
 	if arg.UpdatedAt.IsZero() {
 		arg.UpdatedAt = time.Now().UTC()

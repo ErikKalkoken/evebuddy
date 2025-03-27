@@ -305,7 +305,7 @@ func (u *UIDesktop) showSettingsWindow() {
 		u.settingsWindow.Show()
 		return
 	}
-	w := u.App().NewWindow(u.makeWindowTitle("Settings"))
+	w := u.App().NewWindow(u.MakeWindowTitle("Settings"))
 	u.userSettings.SetWindow(w)
 	w.SetContent(u.userSettings)
 	w.Resize(fyne.Size{Width: 700, Height: 500})
@@ -316,8 +316,8 @@ func (u *UIDesktop) showSettingsWindow() {
 }
 
 func (u *UIDesktop) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-	title := u.makeWindowTitle(fmt.Sprintf("New message [%s]", c.EveCharacter.Name))
-	w := u.App().NewWindow(title)
+	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
+	w := u.App().NewWindow(u.MakeWindowTitle(title))
 	page := characterui.NewSendMail(u, c, mode, mail)
 	page.SetWindow(w)
 	send := widget.NewButtonWithIcon("Send", theme.MailSendIcon(), func() {
@@ -339,12 +339,12 @@ func (u *UIDesktop) showSendMailWindow(c *app.Character, mode app.SendMailMode, 
 	w.Show()
 }
 
-func (u *UIDesktop) ShowAccountWindow() {
+func (u *UIDesktop) ShowManageCharactersWindow() {
 	if u.accountWindow != nil {
 		u.accountWindow.Show()
 		return
 	}
-	w := u.App().NewWindow(u.makeWindowTitle("Characters"))
+	w := u.App().NewWindow(u.MakeWindowTitle("Manage Characters"))
 	u.accountWindow = w
 	w.SetOnClosed(func() {
 		u.accountWindow = nil
@@ -370,7 +370,7 @@ func (u *UIDesktop) showSearchWindow() {
 	} else {
 		n = "No Character"
 	}
-	w := u.App().NewWindow(u.makeWindowTitle(fmt.Sprintf("Search New Eden [%s]", n)))
+	w := u.App().NewWindow(u.MakeWindowTitle(fmt.Sprintf("Search New Eden [%s]", n)))
 	u.searchWindow = w
 	w.SetOnClosed(func() {
 		u.searchWindow = nil
@@ -461,7 +461,7 @@ func (u *UIDesktop) makeMenu() *fyne.MainMenu {
 	}
 	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, settingsItem)
 
-	charactersItem := fyne.NewMenuItem("Manage characters...", u.ShowAccountWindow)
+	charactersItem := fyne.NewMenuItem("Manage characters...", u.ShowManageCharactersWindow)
 	charactersItem.Shortcut = &desktop.CustomShortcut{
 		KeyName:  fyne.KeyC,
 		Modifier: fyne.KeyModifierAlt,

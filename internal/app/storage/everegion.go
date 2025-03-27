@@ -18,7 +18,7 @@ type CreateEveRegionParams struct {
 
 func (st *Storage) CreateEveRegion(ctx context.Context, arg CreateEveRegionParams) (*app.EveRegion, error) {
 	if arg.ID == 0 {
-		return nil, fmt.Errorf("invalid ID %d", arg.ID)
+		return nil, fmt.Errorf("CreateEveRegion: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateEveRegionParams{
 		ID:          int64(arg.ID),
@@ -27,7 +27,7 @@ func (st *Storage) CreateEveRegion(ctx context.Context, arg CreateEveRegionParam
 	}
 	e, err := st.qRW.CreateEveRegion(ctx, arg2)
 	if err != nil {
-		return nil, fmt.Errorf("create EveRegion %v, %w", arg2, err)
+		return nil, fmt.Errorf("CreateEveRegion: %+v: %w", arg2, err)
 	}
 	return eveRegionFromDBModel(e), nil
 }

@@ -10,15 +10,24 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 )
 
-func (st *Storage) CreateEveRace(ctx context.Context, id int32, description, name string) (*app.EveRace, error) {
-	arg := queries.CreateEveRaceParams{
-		ID:          int64(id),
-		Description: description,
-		Name:        name,
+type CreateEveRaceParams struct {
+	ID          int32
+	Name        string
+	Description string
+}
+
+func (st *Storage) CreateEveRace(ctx context.Context, arg CreateEveRaceParams) (*app.EveRace, error) {
+	if arg.ID == 0 {
+		return nil, fmt.Errorf("CreateEveRace: %+v, %w", arg, app.ErrInvalid)
 	}
-	o, err := st.qRW.CreateEveRace(ctx, arg)
+	arg2 := queries.CreateEveRaceParams{
+		ID:          int64(arg.ID),
+		Description: arg.Description,
+		Name:        arg.Name,
+	}
+	o, err := st.qRW.CreateEveRace(ctx, arg2)
 	if err != nil {
-		return nil, fmt.Errorf("create race %d: %w", id, err)
+		return nil, fmt.Errorf("CreateEveRace: %+v, %w", arg, err)
 	}
 	return eveRaceFromDBModel(o), nil
 }

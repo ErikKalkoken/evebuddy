@@ -25,8 +25,8 @@ type CreatePlanetPinParams struct {
 }
 
 func (st *Storage) CreatePlanetPin(ctx context.Context, arg CreatePlanetPinParams) error {
-	if arg.CharacterPlanetID == 0 {
-		return fmt.Errorf("create PlanetPin - invalid IDs %+v", arg)
+	if arg.CharacterPlanetID == 0 || arg.PinID == 0 || arg.TypeID == 0 {
+		return fmt.Errorf("CreatePlanetPin: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreatePlanetPinParams{
 		CharacterPlanetID:      arg.CharacterPlanetID,

@@ -18,7 +18,7 @@ type CreateEveTypeDogmaAttributeParams struct {
 
 func (st *Storage) CreateEveTypeDogmaAttribute(ctx context.Context, arg CreateEveTypeDogmaAttributeParams) error {
 	if arg.DogmaAttributeID == 0 || arg.EveTypeID == 0 {
-		return fmt.Errorf("invalid IDs for EveTypeDogmaAttribute: %v", arg)
+		return fmt.Errorf("CreateEveTypeDogmaAttribute: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateEveTypeDogmaAttributeParams{
 		DogmaAttributeID: int64(arg.DogmaAttributeID),
@@ -27,7 +27,7 @@ func (st *Storage) CreateEveTypeDogmaAttribute(ctx context.Context, arg CreateEv
 	}
 	err := st.qRW.CreateEveTypeDogmaAttribute(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("create EveTypeDogmaAttribute %v, %w", arg, err)
+		return fmt.Errorf("CreateEveTypeDogmaAttribute: %+v: %w", arg, err)
 	}
 	return nil
 }

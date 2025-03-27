@@ -34,6 +34,7 @@ type Position struct {
 var (
 	ErrAborted  = errors.New("process aborted prematurely")
 	ErrNotFound = errors.New("object not found")
+	ErrInvalid  = errors.New("invalid parameters")
 )
 
 // VariableDateFormat returns a variable dateformat.

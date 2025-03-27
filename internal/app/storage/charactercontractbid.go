@@ -20,7 +20,7 @@ type CreateCharacterContractBidParams struct {
 
 func (st *Storage) CreateCharacterContractBid(ctx context.Context, arg CreateCharacterContractBidParams) error {
 	if arg.ContractID == 0 || arg.BidID == 0 {
-		return fmt.Errorf("create contract bid. Mandatory fields not set: %+v", arg)
+		return fmt.Errorf("create contract bid: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateCharacterContractBidParams{
 		ContractID: arg.ContractID,
