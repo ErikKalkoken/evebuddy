@@ -16,7 +16,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dustin/go-humanize"
 	"github.com/icrowley/fake"
 	"golang.org/x/sync/singleflight"
 
@@ -24,6 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/desktopui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 // The UIDesktop creates the UI for desktop.
@@ -36,7 +36,7 @@ type UIDesktop struct {
 	toolbar   *desktopui.Toolbar
 
 	overviewTab *container.TabItem
-	tabs        *container.AppTabs
+	nav         *iwidget.NavDrawer
 
 	menuItemsWithShortcut []*fyne.MenuItem
 	accountWindow         fyne.Window
@@ -55,21 +55,22 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		panic("Could not start in desktop mode")
 	}
 	u.onInit = func(_ *app.Character) {
-		index := u.Settings().TabsMainID()
-		if index != -1 {
-			u.tabs.SelectIndex(index)
-			for i, o := range u.tabs.Items {
-				tabs, ok := o.Content.(*container.AppTabs)
-				if !ok {
-					continue
-				}
-				key := makeSubTabsKey(i)
-				index := u.App().Preferences().IntWithFallback(key, -1)
-				if index != -1 {
-					tabs.SelectIndex(index)
-				}
-			}
-		}
+		// FIXME
+		// index := u.Settings().TabsMainID()
+		// if index != -1 {
+		// 	u.tabs.SelectIndex(index)
+		// 	for i, o := range u.tabs.Items {
+		// 		tabs, ok := o.Content.(*container.AppTabs)
+		// 		if !ok {
+		// 			continue
+		// 		}
+		// 		key := makeSubTabsKey(i)
+		// 		index := u.App().Preferences().IntWithFallback(key, -1)
+		// 		if index != -1 {
+		// 			tabs.SelectIndex(index)
+		// 		}
+		// 	}
+		// }
 		go u.UpdateMailIndicator()
 	}
 	u.onShowAndRun = func() {
@@ -108,7 +109,8 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		u.saveAppState()
 	}
 	u.onUpdateCharacter = func(c *app.Character) {
-		go u.toogleTabs(c != nil)
+		// FIXME
+		// go u.toogleTabs(c != nil)
 	}
 	u.onUpdateStatus = func() {
 		go u.toolbar.Update()
@@ -123,102 +125,149 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 	u.EnableMenuShortcuts = u.enableMenuShortcuts
 	u.DisableMenuShortcuts = u.disableMenuShortcuts
 
-	makeTitleWithCount := func(title string, count int) string {
-		if count > 0 {
-			title += fmt.Sprintf(" (%s)", humanize.Comma(int64(count)))
-		}
-		return title
+	// makeTitleWithCount := func(title string, count int) string {
+	// 	if count > 0 {
+	// 		title += fmt.Sprintf(" (%s)", humanize.Comma(int64(count)))
+	// 	}
+	// 	return title
+	// }
+
+	makePageWithTitle := func(s string, content fyne.CanvasObject) fyne.CanvasObject {
+		return container.NewBorder(
+			container.New(
+				layout.NewCustomPaddedVBoxLayout(0),
+				widget.NewLabelWithStyle(s, fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+				widget.NewSeparator(),
+			),
+			nil,
+			nil,
+			nil,
+			content,
+		)
 	}
 
-	assetTab := container.NewTabItemWithIcon("Assets",
-		theme.NewThemedResource(icons.Inventory2Svg), container.NewAppTabs(
-			container.NewTabItem("Assets", u.characterAssets),
-		))
+	colonies := iwidget.NewNavPage(
+		"Colonies",
+		theme.NewThemedResource(icons.EarthSvg),
+		makePageWithTitle("Colonies", u.characterPlanets),
+	)
 
-	planetTab := container.NewTabItemWithIcon("Colonies",
-		theme.NewThemedResource(icons.EarthSvg), container.NewAppTabs(
-			container.NewTabItem("Colonies", u.characterPlanets),
-		))
-	u.characterPlanets.OnUpdate = func(_, expired int) {
-		planetTab.Text = makeTitleWithCount("Colonies", expired)
-		u.tabs.Refresh()
-	}
+	// FIXME
+	// u.characterPlanets.OnUpdate = func(_, expired int) {
+	// 	planetPage.Text = makeTitleWithCount("Colonies", expired)
+	// 	u.tabs.Refresh()
+	// }
 
-	mailTab := container.NewTabItemWithIcon("Mail",
-		theme.MailComposeIcon(), container.NewAppTabs(
-			container.NewTabItem("Mail", u.characterMail),
-			container.NewTabItem("Communications", u.characterCommunications),
-		))
-	u.characterMail.OnUpdate = func(count int) {
-		mailTab.Text = makeTitleWithCount("Comm.", count)
-		u.tabs.Refresh()
-	}
+	mail := iwidget.NewNavPage("Mail", theme.MailComposeIcon(), makePageWithTitle("Mail", u.characterMail))
+
+	communications := iwidget.NewNavPage(
+		"Communications",
+		theme.NewThemedResource(icons.MessageSvg),
+		makePageWithTitle("Communications", u.characterCommunications),
+	)
+
+	// FIXME
+	// u.characterMail.OnUpdate = func(count int) {
+	// 	mailPage.Text = makeTitleWithCount("Comm.", count)
+	// 	u.tabs.Refresh()
+	// }
+
 	u.characterMail.OnSendMessage = u.showSendMailWindow
 
-	clonesTab := container.NewTabItemWithIcon("Clones",
-		theme.NewThemedResource(icons.HeadSnowflakeSvg), container.NewAppTabs(
-			container.NewTabItem("Current Clone", u.characterImplants),
-			container.NewTabItem("Jump Clones", u.characterJumpClones),
-		))
-
-	contractTab := container.NewTabItemWithIcon("Contracts",
-		theme.NewThemedResource(icons.FileSignSvg), container.NewAppTabs(
-			container.NewTabItem("Contracts", u.characterContracts),
-		))
-
-	overviewAssets := container.NewTabItem("Asset Search", u.allAssetSearch)
-	overviewTabs := container.NewAppTabs(
-		container.NewTabItem("Overview", u.characterOverview),
-		container.NewTabItem("Locations", u.locationOverview),
-		container.NewTabItem("Training", u.trainingOverview),
-		overviewAssets,
-		container.NewTabItem("Colonies", u.colonyOverview),
-		container.NewTabItem("Wealth", u.wealthOverview),
-		container.NewTabItem("Clone Search", u.cloneSearch),
-	)
-	overviewTabs.OnSelected = func(ti *container.TabItem) {
-		if ti != overviewAssets {
-			return
-		}
-		u.allAssetSearch.Focus()
-	}
-	u.overviewTab = container.NewTabItemWithIcon("Characters",
-		theme.NewThemedResource(icons.GroupSvg), overviewTabs,
+	contracts := iwidget.NewNavPage(
+		"Contracts",
+		theme.NewThemedResource(icons.FileSignSvg),
+		makePageWithTitle("Contracts", u.characterContracts),
 	)
 
-	skillTab := container.NewTabItemWithIcon("Skills",
+	skills := iwidget.NewNavPage("Skills",
 		theme.NewThemedResource(icons.SchoolSvg), container.NewAppTabs(
 			container.NewTabItem("Training Queue", u.characterSkillQueue),
 			container.NewTabItem("Skill Catalogue", u.characterSkillCatalogue),
 			container.NewTabItem("Ships", u.characterShips),
 			container.NewTabItem("Attributes", u.characterAttributes),
 		))
-	u.characterSkillQueue.OnUpdate = func(status, _ string) {
-		skillTab.Text = fmt.Sprintf("Skills (%s)", status)
-		u.tabs.Refresh()
-	}
 
-	walletTab := container.NewTabItemWithIcon("Wallet",
-		theme.NewThemedResource(icons.AttachmoneySvg), container.NewAppTabs(
-			container.NewTabItem("Transactions", u.characterWalletJournal),
-			container.NewTabItem("Market Transactions", u.characterWalletTransaction),
-		))
+	// FIXME
+	// u.characterSkillQueue.OnUpdate = func(status, _ string) {
+	// 	skills.Text = fmt.Sprintf("Skills (%s)", status)
+	// 	u.tabs.Refresh()
+	// }
 
-	u.tabs = container.NewAppTabs(
-		assetTab,
-		clonesTab,
-		contractTab,
-		mailTab,
-		planetTab,
-		skillTab,
-		walletTab,
-		u.overviewTab,
+	// All characters
+
+	// FIXME
+	// overviewTabs.OnSelected = func(ti *container.TabItem) {
+	// 	if ti != overviewAssets {
+	// 		return
+	// 	}
+	// 	u.allAssetSearch.Focus()
+	// }
+
+	u.nav = iwidget.NewNavDrawer(
+		iwidget.NewNavSectionLabel("Current Character"),
+		iwidget.NewNavPage(
+			"Assets",
+			theme.NewThemedResource(icons.Inventory2Svg),
+			makePageWithTitle("Assets", u.characterAssets),
+		),
+		iwidget.NewNavPage("Clones",
+			theme.NewThemedResource(icons.HeadSnowflakeSvg), container.NewAppTabs(
+				container.NewTabItem("Current Clone", u.characterImplants),
+				container.NewTabItem("Jump Clones", u.characterJumpClones),
+			)),
+		contracts,
+		communications,
+		colonies,
+		mail,
+		skills,
+		iwidget.NewNavPage("Wallet",
+			theme.NewThemedResource(icons.AttachmoneySvg), container.NewAppTabs(
+				container.NewTabItem("Transactions", u.characterWalletJournal),
+				container.NewTabItem("Market Transactions", u.characterWalletTransaction),
+			)),
+		// -----------------------
+		iwidget.NewNavSectionLabel("All Characters"),
+		iwidget.NewNavPage(
+			"Assets",
+			theme.NewThemedResource(icons.Inventory2Svg),
+			makePageWithTitle("Assets", u.allAssetSearch),
+		),
+		iwidget.NewNavPage(
+			"Clones",
+			theme.NewThemedResource(icons.HeadSnowflakeSvg),
+			makePageWithTitle("Clones", u.cloneSearch),
+		),
+		iwidget.NewNavPage(
+			"Colonies",
+			theme.NewThemedResource(icons.EarthSvg),
+			makePageWithTitle("Colonies", u.colonyOverview),
+		),
+		iwidget.NewNavPage(
+			"Locations",
+			theme.NewThemedResource(icons.MapMarkerSvg),
+			makePageWithTitle("Locations", u.locationOverview),
+		),
+		iwidget.NewNavPage(
+			"Overview",
+			theme.NewThemedResource(icons.AccountMultipleSvg),
+			makePageWithTitle("Overview", u.characterOverview),
+		),
+		iwidget.NewNavPage(
+			"Training",
+			theme.NewThemedResource(icons.SchoolSvg),
+			makePageWithTitle("Training", u.trainingOverview),
+		),
+		iwidget.NewNavPage(
+			"Wealth",
+			theme.NewThemedResource(icons.AccountMultipleSvg),
+			makePageWithTitle("Wealth", u.wealthOverview),
+		),
 	)
-	u.tabs.SetTabLocation(container.TabLocationLeading)
 
 	u.toolbar = desktopui.NewToolbar(u)
 	u.statusBar = desktopui.NewStatusBar(u)
-	mainContent := container.NewBorder(u.toolbar, u.statusBar, nil, nil, u.tabs)
+	mainContent := container.NewBorder(u.toolbar, u.statusBar, nil, nil, u.nav)
 	u.MainWindow().SetContent(mainContent)
 
 	// system tray menu
@@ -251,43 +300,47 @@ func (u *UIDesktop) saveAppState() {
 		slog.Warn("Failed to save app state")
 	}
 	u.Settings().SetWindowSize(u.MainWindow().Canvas().Size())
-	if u.tabs == nil {
-		slog.Warn("Failed to save tabs in app state")
-	}
-	u.Settings().SetTabsMainID(u.tabs.SelectedIndex())
-	for i, o := range u.tabs.Items {
-		tabs, ok := o.Content.(*container.AppTabs)
-		if !ok {
-			continue
-		}
-		key := makeSubTabsKey(i)
-		index := tabs.SelectedIndex()
-		u.App().Preferences().SetInt(key, index)
-	}
+
+	// FIXME
+	// if u.tabs == nil {
+	// 	slog.Warn("Failed to save tabs in app state")
+	// }
+	// u.Settings().SetTabsMainID(u.tabs.SelectedIndex())
+	// for i, o := range u.tabs.Items {
+	// 	tabs, ok := o.Content.(*container.AppTabs)
+	// 	if !ok {
+	// 		continue
+	// 	}
+	// 	key := makeSubTabsKey(i)
+	// 	index := tabs.SelectedIndex()
+	// 	u.App().Preferences().SetInt(key, index)
+	// }
+
 	slog.Info("Saved app state")
 }
 
 func (u *UIDesktop) toogleTabs(enabled bool) {
-	if enabled {
-		for i := range u.tabs.Items {
-			u.tabs.EnableIndex(i)
-		}
-		subTabs := u.overviewTab.Content.(*container.AppTabs)
-		for i := range subTabs.Items {
-			subTabs.EnableIndex(i)
-		}
-	} else {
-		for i := range u.tabs.Items {
-			u.tabs.DisableIndex(i)
-		}
-		u.tabs.Select(u.overviewTab)
-		subTabs := u.overviewTab.Content.(*container.AppTabs)
-		for i := range subTabs.Items {
-			subTabs.DisableIndex(i)
-		}
-		u.overviewTab.Content.(*container.AppTabs).SelectIndex(0)
-	}
-	u.tabs.Refresh()
+	// FIXME
+	// if enabled {
+	// 	for i := range u.tabs.Items {
+	// 		u.tabs.EnableIndex(i)
+	// 	}
+	// 	subTabs := u.overviewTab.Content.(*container.AppTabs)
+	// 	for i := range subTabs.Items {
+	// 		subTabs.EnableIndex(i)
+	// 	}
+	// } else {
+	// 	for i := range u.tabs.Items {
+	// 		u.tabs.DisableIndex(i)
+	// 	}
+	// 	u.tabs.Select(u.overviewTab)
+	// 	subTabs := u.overviewTab.Content.(*container.AppTabs)
+	// 	for i := range subTabs.Items {
+	// 		subTabs.DisableIndex(i)
+	// 	}
+	// 	u.overviewTab.Content.(*container.AppTabs).SelectIndex(0)
+	// }
+	// u.tabs.Refresh()
 }
 
 func (u *UIDesktop) ResetDesktopSettings() {
