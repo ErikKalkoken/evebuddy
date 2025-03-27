@@ -55,22 +55,11 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		panic("Could not start in desktop mode")
 	}
 	u.onInit = func(_ *app.Character) {
-		// FIXME
-		// index := u.Settings().TabsMainID()
-		// if index != -1 {
-		// 	u.tabs.SelectIndex(index)
-		// 	for i, o := range u.tabs.Items {
-		// 		tabs, ok := o.Content.(*container.AppTabs)
-		// 		if !ok {
-		// 			continue
-		// 		}
-		// 		key := makeSubTabsKey(i)
-		// 		index := u.App().Preferences().IntWithFallback(key, -1)
-		// 		if index != -1 {
-		// 			tabs.SelectIndex(index)
-		// 		}
-		// 	}
-		// }
+		index := u.Settings().TabsMainID()
+		if index != -1 {
+			u.nav.SelectIndex(index)
+		}
+
 		go u.UpdateMailIndicator()
 	}
 	u.onShowAndRun = func() {
@@ -125,6 +114,16 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 	u.EnableMenuShortcuts = u.enableMenuShortcuts
 	u.DisableMenuShortcuts = u.disableMenuShortcuts
 
+	formatBadge := func(v, mx int) string {
+		if v == 0 {
+			return ""
+		}
+		if v >= mx {
+			return fmt.Sprintf("%d+", mx)
+		}
+		return fmt.Sprint(v)
+	}
+
 	// makeTitleWithCount := func(title string, count int) string {
 	// 	if count > 0 {
 	// 		title += fmt.Sprintf(" (%s)", humanize.Comma(int64(count)))
@@ -142,28 +141,24 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		theme.NewThemedResource(icons.EarthSvg),
 		makePageWithTitle("Colonies", u.characterPlanets),
 	)
-
-	// FIXME
-	// u.characterPlanets.OnUpdate = func(_, expired int) {
-	// 	planetPage.Text = makeTitleWithCount("Colonies", expired)
-	// 	u.tabs.Refresh()
-	// }
+	u.characterPlanets.OnUpdate = func(_, expired int) {
+		u.nav.SetItemBadge(colonies, formatBadge(expired, 10))
+	}
 
 	mail := iwidget.NewNavPage("Mail", theme.MailComposeIcon(), makePageWithTitle("Mail", u.characterMail))
+	u.characterMail.OnUpdate = func(count int) {
+		u.nav.SetItemBadge(mail, formatBadge(count, 99))
+	}
+	u.characterMail.OnSendMessage = u.showSendMailWindow
 
 	communications := iwidget.NewNavPage(
 		"Communications",
 		theme.NewThemedResource(icons.MessageSvg),
 		makePageWithTitle("Communications", u.characterCommunications),
 	)
-
-	// FIXME
-	// u.characterMail.OnUpdate = func(count int) {
-	// 	mailPage.Text = makeTitleWithCount("Comm.", count)
-	// 	u.tabs.Refresh()
-	// }
-
-	u.characterMail.OnSendMessage = u.showSendMailWindow
+	u.characterCommunications.OnUpdate = func(count int) {
+		u.nav.SetItemBadge(communications, formatBadge(count, 999))
+	}
 
 	contracts := iwidget.NewNavPage(
 		"Contracts",
@@ -183,11 +178,9 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 				container.NewTabItem("Attributes", u.characterAttributes),
 			)))
 
-	// FIXME
-	// u.characterSkillQueue.OnUpdate = func(status, _ string) {
-	// 	skills.Text = fmt.Sprintf("Skills (%s)", status)
-	// 	u.tabs.Refresh()
-	// }
+	u.characterSkillQueue.OnUpdate = func(status, _ string) {
+		u.nav.SetItemBadge(skills, status)
+	}
 
 	// All characters
 
@@ -298,21 +291,7 @@ func (u *UIDesktop) saveAppState() {
 		slog.Warn("Failed to save app state")
 	}
 	u.Settings().SetWindowSize(u.MainWindow().Canvas().Size())
-
-	// FIXME
-	// if u.tabs == nil {
-	// 	slog.Warn("Failed to save tabs in app state")
-	// }
-	// u.Settings().SetTabsMainID(u.tabs.SelectedIndex())
-	// for i, o := range u.tabs.Items {
-	// 	tabs, ok := o.Content.(*container.AppTabs)
-	// 	if !ok {
-	// 		continue
-	// 	}
-	// 	key := makeSubTabsKey(i)
-	// 	index := tabs.SelectedIndex()
-	// 	u.App().Preferences().SetInt(key, index)
-	// }
+	u.Settings().SetTabsMainID(u.nav.SelectedIndex())
 
 	slog.Info("Saved app state")
 }
