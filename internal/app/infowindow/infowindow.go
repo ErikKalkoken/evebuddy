@@ -22,6 +22,7 @@ const (
 )
 
 type UI interface {
+	App() fyne.App
 	CharacterService() app.CharacterService
 	CurrentCharacterID() int32
 	EveImageService() app.EveImageService
@@ -29,6 +30,7 @@ type UI interface {
 	IsDeveloperMode() bool
 	IsOffline() bool
 	MainWindow() fyne.Window
+	MakeWindowTitle(subTitle string) string
 	ShowErrorDialog(message string, err error, parent fyne.Window)
 	ShowInformationDialog(title, message string, parent fyne.Window)
 }
@@ -116,7 +118,7 @@ func (iw *InfoWindow) show(t infoVariant, id int64) {
 	}
 	ab := iwidget.NewAppBar(title+": Information", page)
 	if iw.nav == nil {
-		w := fyne.CurrentApp().NewWindow("Information")
+		w := iw.u.App().NewWindow(iw.u.MakeWindowTitle("Information"))
 		iw.w = w
 		iw.nav = iwidget.NewNavigatorWithAppBar(ab)
 		w.SetContent(iw.nav)
@@ -135,7 +137,7 @@ func (iw *InfoWindow) showZoomWindow(title string, id int32, load func(int32, in
 	}
 	i := iwidget.NewImageFromResource(r, fyne.NewSquareSize(s))
 	p := theme.Padding()
-	w2 := fyne.CurrentApp().NewWindow(title)
+	w2 := iw.u.App().NewWindow(iw.u.MakeWindowTitle(title))
 	w2.SetContent(container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), i))
 	w2.Show()
 }

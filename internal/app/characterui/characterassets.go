@@ -647,28 +647,3 @@ func (a *CharacterAssets) updateLocationPath(location locationNode) {
 		a.u.ShowLocationInfoWindow(path[0].containerID)
 	}
 }
-
-// func (u *ui) showNewAssetWindow(ca *app.CharacterAsset) {
-// 	var name string
-// 	if ca.Name != "" {
-// 		name = fmt.Sprintf(" \"%s\" ", ca.Name)
-// 	}
-// 	title := fmt.Sprintf("%s%s(%s): Contents", ca.EveType.Name, name, ca.EveType.Group.Name)
-// 	w := u.fyneApp.NewWindow(u.makeWindowTitle(title))
-// 	oo, err := u.CharacterService().ListCharacterAssetsInLocation(context.TODO(), ca.CharacterID, ca.ItemID)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	data := binding.NewUntypedList()
-// 	if err := data.Set(copyToUntypedSlice(oo)); err != nil {
-// 		panic(err)
-// 	}
-// 	top := widget.NewLabel(fmt.Sprintf("%s items", humanize.Comma(int64(len(oo)))))
-// 	top.TextStyle.Bold = true
-// 	assets := u.makeAssetGrid(data)
-// 	content := container.NewBorder(container.NewVBox(top, widget.NewSeparator()), nil, nil, nil, assets)
-
-// 	w.SetContent(content)
-// 	w.Resize(fyne.Size{Width: 650, Height: 500})
-// 	w.Show()
-// }
