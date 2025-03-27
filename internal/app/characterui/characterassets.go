@@ -99,7 +99,7 @@ func NewCharacterAssets(u app.UI) *CharacterAssets {
 	a.ExtendBaseWidget(a)
 	a.locations = a.makeLocationsTree()
 	a.Locations = container.NewBorder(
-		container.NewVBox(a.locationsTop, widget.NewSeparator()),
+		a.locationsTop,
 		nil,
 		nil,
 		nil,
@@ -109,12 +109,12 @@ func NewCharacterAssets(u app.UI) *CharacterAssets {
 	a.LocationAssets = container.NewBorder(
 		container.NewBorder(
 			nil,
-			widget.NewSeparator(),
+			nil,
 			nil,
 			widget.NewIcon(theme.InfoIcon()),
 			a.locationPath,
 		),
-		container.NewVBox(widget.NewSeparator(), a.assetsBottom),
+		a.assetsBottom,
 		nil,
 		nil,
 		a.assetGrid,

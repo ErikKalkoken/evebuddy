@@ -48,7 +48,10 @@ func NewWealthOverview(u app.UI) *WealthOverview {
 
 func (a *WealthOverview) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
-		container.NewVBox(a.top, widget.NewSeparator()), nil, nil, nil,
+		a.top,
+		nil,
+		nil,
+		nil,
 		container.NewScroll(a.charts),
 	)
 	return widget.NewSimpleRenderer(c)

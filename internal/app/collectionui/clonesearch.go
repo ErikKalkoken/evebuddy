@@ -192,13 +192,11 @@ func (a *CloneSearch) CreateRenderer() fyne.WidgetRenderer {
 			container.NewBorder(nil, nil, a.originButton, nil, a.originLabel),
 		)
 	}
-	top := container.NewVBox(
-		a.top,
-		widget.NewSeparator(),
-		route,
-	)
 	c := container.NewBorder(
-		top,
+		container.NewVBox(
+			a.top,
+			route,
+		),
 		nil,
 		nil,
 		nil,
@@ -226,6 +224,7 @@ func (a *CloneSearch) Update() {
 	}
 	a.top.Text = t
 	a.top.Importance = i
+	a.top.Refresh()
 	a.body.Refresh()
 	if len(a.rows) > 0 && a.origin != nil {
 		go a.updateRoutes(app.RoutePreference(a.routePref.Selected))

@@ -79,8 +79,7 @@ func NewTrainingOverview(u app.UI) *TrainingOverview {
 }
 
 func (a *TrainingOverview) CreateRenderer() fyne.WidgetRenderer {
-	top2 := container.NewVBox(a.top, widget.NewSeparator())
-	c := container.NewBorder(top2, nil, nil, nil, a.body)
+	c := container.NewBorder(a.top, nil, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -104,6 +103,7 @@ func (a *TrainingOverview) Update() {
 	}
 	a.top.Text = t
 	a.top.Importance = i
+	a.top.Refresh()
 	a.body.Refresh()
 }
 

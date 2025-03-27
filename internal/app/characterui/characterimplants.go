@@ -39,8 +39,7 @@ func NewCharacterImplants(u app.UI) *CharacterImplants {
 }
 
 func (a *CharacterImplants) CreateRenderer() fyne.WidgetRenderer {
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	c := container.NewBorder(top, nil, nil, nil, a.list)
+	c := container.NewBorder(a.top, nil, nil, nil, a.list)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -93,6 +92,7 @@ func (a *CharacterImplants) makeImplantList() *widget.List {
 		}
 		a.u.ShowTypeInfoWindow(a.implants[id].EveType.ID)
 	}
+	l.HideSeparators = true
 	return l
 }
 

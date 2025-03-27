@@ -179,10 +179,10 @@ func NewUIMobile(bui *UIBase) *UIMobile {
 	)
 	characterList := iwidget.NewNavList(
 		navItemAssets,
+		navItemClones,
+		navItemCommunications,
 		navItemColonies1,
 		navItemMail,
-		navItemCommunications,
-		navItemClones,
 		iwidget.NewListItemWithIcon(
 			"Contracts",
 			theme.NewThemedResource(icons.FileSignSvg),
@@ -265,25 +265,33 @@ func NewUIMobile(bui *UIBase) *UIMobile {
 	)
 	crossList := iwidget.NewNavList(
 		iwidget.NewListItemWithIcon(
-			"Overview",
-			theme.NewThemedResource(icons.AccountMultipleSvg),
-			func() {
-				crossNav.Push(iwidget.NewAppBar("Overview", u.characterOverview))
-			},
-		),
-		iwidget.NewListItemWithIcon(
-			"Asset Search",
+			"Assets",
 			theme.NewThemedResource(icons.Inventory2Svg),
 			func() {
-				crossNav.Push(iwidget.NewAppBar("Asset Search", u.allAssetSearch))
+				crossNav.Push(iwidget.NewAppBar("Assets", u.allAssetSearch))
 				u.allAssetSearch.Focus()
 			},
 		),
+		iwidget.NewListItemWithIcon(
+			"Clones",
+			theme.NewThemedResource(icons.HeadSnowflakeSvg),
+			func() {
+				crossNav.Push(iwidget.NewAppBar("Clones", u.cloneSearch))
+			},
+		),
+		navItemColonies2,
 		iwidget.NewListItemWithIcon(
 			"Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),
 			func() {
 				crossNav.Push(iwidget.NewAppBar("Locations", u.locationOverview))
+			},
+		),
+		iwidget.NewListItemWithIcon(
+			"Overview",
+			theme.NewThemedResource(icons.AccountMultipleSvg),
+			func() {
+				crossNav.Push(iwidget.NewAppBar("Overview", u.characterOverview))
 			},
 		),
 		iwidget.NewListItemWithIcon(
@@ -293,14 +301,6 @@ func NewUIMobile(bui *UIBase) *UIMobile {
 				crossNav.Push(iwidget.NewAppBar("Training", u.trainingOverview))
 			},
 		),
-		iwidget.NewListItemWithIcon(
-			"Clone Search",
-			theme.NewThemedResource(icons.HeadSnowflakeSvg),
-			func() {
-				crossNav.Push(iwidget.NewAppBar("Clone Search", u.cloneSearch))
-			},
-		),
-		navItemColonies2,
 		navItemWealth,
 	)
 	crossNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("Characters", crossList))

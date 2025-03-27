@@ -130,8 +130,7 @@ func NewCharacterOverview(u app.UI) *CharacterOverview {
 }
 
 func (a *CharacterOverview) CreateRenderer() fyne.WidgetRenderer {
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	c := container.NewBorder(top, nil, nil, nil, a.body)
+	c := container.NewBorder(a.top, nil, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -163,6 +162,7 @@ func (a *CharacterOverview) Update() {
 	}
 	a.top.Text = t
 	a.top.Importance = i
+	a.top.Refresh()
 	a.body.Refresh()
 }
 

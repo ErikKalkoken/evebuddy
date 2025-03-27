@@ -70,8 +70,7 @@ func NewCharacterJumpClones(u app.UI) *CharacterJumpClones {
 }
 
 func (a *CharacterJumpClones) CreateRenderer() fyne.WidgetRenderer {
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	c := container.NewBorder(top, nil, nil, nil, a.tree)
+	c := container.NewBorder(a.top, nil, nil, nil, a.tree)
 	return widget.NewSimpleRenderer(c)
 }
 

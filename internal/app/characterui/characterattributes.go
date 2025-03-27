@@ -51,7 +51,7 @@ func NewCharacterAttributes(u app.UI) *CharacterAttributes {
 }
 
 func (a *CharacterAttributes) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(container.NewVBox(a.top, widget.NewSeparator()), nil, nil, nil, a.list)
+	c := container.NewBorder(a.top, nil, nil, nil, a.list)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -95,6 +95,7 @@ func (a *CharacterAttributes) makeAttributeList() *widget.List {
 	l.OnSelected = func(id widget.ListItemID) {
 		l.UnselectAll()
 	}
+	l.HideSeparators = true
 	return l
 }
 

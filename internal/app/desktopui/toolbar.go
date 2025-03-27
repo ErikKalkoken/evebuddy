@@ -32,6 +32,7 @@ func NewToolbar(u app.UI) *Toolbar {
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)
+	a.name.Truncation = fyne.TextTruncateEllipsis
 	return a
 }
 
@@ -55,7 +56,7 @@ func (a *Toolbar) Update() {
 		})
 		s := fmt.Sprintf("%s (%s)", c.EveCharacter.Name, c.EveCharacter.Corporation.Name)
 		a.name.Text = s
-		a.name.TextStyle = fyne.TextStyle{Bold: true}
+		a.name.TextStyle = fyne.TextStyle{}
 		a.name.Importance = widget.MediumImportance
 	}
 	a.name.Refresh()
