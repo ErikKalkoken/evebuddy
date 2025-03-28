@@ -3,6 +3,7 @@ package widget
 import (
 	"image/color"
 	"slices"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -19,11 +20,15 @@ const (
 type navItemVariant uint
 
 const (
-	navPage navItemVariant = iota
+	navUndefined navItemVariant = iota
+	navAction
+	navPage
 	navSectionLabel
+	navSeparator
 )
 
 type NavItem struct {
+	action     func()
 	badge      string
 	content    fyne.CanvasObject
 	icon       fyne.Resource
@@ -34,23 +39,38 @@ type NavItem struct {
 	variant    navItemVariant
 }
 
-func newNavItem(text string, icon fyne.Resource, content fyne.CanvasObject, variant navItemVariant) *NavItem {
-	it := &NavItem{
-		content:    content,
-		icon:       icon,
-		stackIndex: indexUndefined,
-		text:       text,
-		variant:    variant,
-	}
+func NewNavAction(text string, icon fyne.Resource, action func()) *NavItem {
+	it := newNavItem(navAction)
+	it.text = text
+	it.icon = icon
+	it.action = action
 	return it
 }
 
 func NewNavPage(text string, icon fyne.Resource, content fyne.CanvasObject) *NavItem {
-	return newNavItem(text, icon, content, navPage)
+	it := newNavItem(navPage)
+	it.text = text
+	it.icon = icon
+	it.content = content
+	return it
 }
 
 func NewNavSectionLabel(text string) *NavItem {
-	return newNavItem(text, nil, nil, navSectionLabel)
+	it := newNavItem(navSectionLabel)
+	it.text = text
+	return it
+}
+
+func NewNavSeparator() *NavItem {
+	return newNavItem(navSeparator)
+}
+
+func newNavItem(variant navItemVariant) *NavItem {
+	it := &NavItem{
+		stackIndex: indexUndefined,
+		variant:    variant,
+	}
+	return it
 }
 
 // Navigation drawers let people switch between UI views on larger devices.
@@ -69,7 +89,10 @@ func NewNavDrawer(items ...*NavItem) *NavDrawer {
 		selected: indexUndefined,
 	}
 	w.ExtendBaseWidget(w)
-	w.list = w.makeList()
+	mx := slices.MaxFunc(items, func(a, b *NavItem) int {
+		return strings.Compare(a.text, b.text)
+	})
+	w.list = w.makeList(len(mx.text) + 5)
 	for _, p := range items {
 		w.AddItem(p)
 	}
@@ -81,9 +104,10 @@ func NewNavDrawer(items ...*NavItem) *NavDrawer {
 	return w
 }
 
-func (w *NavDrawer) makeList() *widget.List {
+func (w *NavDrawer) makeList(templateWidth int) *widget.List {
 	p := w.Theme().Size(theme.SizeNamePadding)
-	list := widget.NewList(
+	var list *widget.List
+	list = widget.NewList(
 		func() int {
 			return len(w.items)
 		},
@@ -91,14 +115,12 @@ func (w *NavDrawer) makeList() *widget.List {
 			spacer := canvas.NewRectangle(color.Transparent)
 			spacer.SetMinSize(fyne.NewSize(p, 1))
 			icon := widget.NewIcon(iconBlankSvg)
-			text := widget.NewLabel("Template Template") // TODO: Make width a configuration
+			s := strings.Repeat("W", templateWidth)
+			text := widget.NewLabel(s) // TODO: Make width a configuration
 			badge := widget.NewLabel("Template")
-			return container.NewBorder(
-				widget.NewSeparator(),
-				nil,
-				nil,
-				nil,
-				container.NewHBox(spacer, icon, text, layout.NewSpacer(), badge),
+			return container.NewStack(
+				container.NewPadded(container.NewHBox(spacer, icon, text, layout.NewSpacer(), badge)),
+				container.New(layout.NewCustomPaddedLayout(0, 0, 2*p, 2*p), widget.NewSeparator()),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -106,14 +128,32 @@ func (w *NavDrawer) makeList() *widget.List {
 				return
 			}
 			it := w.items[id]
-			border := co.(*fyne.Container).Objects
-			main := border[0].(*fyne.Container)
-			separator := border[1]
-			box := main.Objects
+			stack := co.(*fyne.Container).Objects
+			separator := stack[1]
+			main := stack[0]
+			if it.variant == navSeparator {
+				separator.Show()
+				main.Hide()
+			} else {
+				separator.Hide()
+				main.Show()
+			}
+			box := main.(*fyne.Container).Objects[0].(*fyne.Container).Objects
 			spacer := box[0]
 			icon := box[1].(*widget.Icon)
 			title := box[2].(*widget.Label)
 			badge := box[4].(*widget.Label)
+			showIcon := func() {
+				var r fyne.Resource
+				if it.isDisabled {
+					r = theme.NewDisabledResource(it.icon)
+				} else {
+					r = it.icon
+				}
+				icon.SetResource(r)
+				icon.Show()
+				spacer.Show()
+			}
 			switch it.variant {
 			case navPage:
 				title.Text = it.text
@@ -124,16 +164,7 @@ func (w *NavDrawer) makeList() *widget.List {
 					title.Importance = widget.MediumImportance
 				}
 				title.Refresh()
-				var r fyne.Resource
-				if it.isDisabled {
-					r = theme.NewDisabledResource(it.icon)
-				} else {
-					r = it.icon
-				}
-				icon.SetResource(r)
-				icon.Show()
-				separator.Hide()
-				spacer.Show()
+				showIcon()
 				if it.badge != "" {
 					badge.Text = it.badge
 					if it.isDisabled {
@@ -149,14 +180,14 @@ func (w *NavDrawer) makeList() *widget.List {
 			case navSectionLabel:
 				title.SetText(it.text)
 				icon.Hide()
-				if id != 0 { // dont show for first item
-					separator.Show()
-				} else {
-					separator.Hide()
-				}
 				spacer.Hide()
 				badge.Hide()
+			case navAction:
+				title.SetText(it.text)
+				showIcon()
+				badge.Hide()
 			}
+			list.SetItemHeight(id, co.(*fyne.Container).MinSize().Height)
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {
@@ -165,7 +196,12 @@ func (w *NavDrawer) makeList() *widget.List {
 			return
 		}
 		it := w.items[id]
-		if it.isDisabled || it.variant != navPage {
+		if it.isDisabled || it.variant == navSeparator || it.variant == navSectionLabel {
+			list.UnselectAll()
+			return
+		}
+		if it.variant == navAction {
+			go it.action()
 			list.UnselectAll()
 			return
 		}
@@ -276,7 +312,7 @@ func (w *NavDrawer) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			container.NewHBox(w.list, widget.NewSeparator()),
 			nil,
-			container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), w.pages),
+			w.pages,
 		))
 	return widget.NewSimpleRenderer(c)
 }

@@ -29,7 +29,7 @@ const (
 type WealthOverview struct {
 	widget.BaseWidget
 
-	OnUpdate func(total string)
+	OnUpdate func(wallet, assets float64)
 
 	charts *fyne.Container
 	top    *widget.Label
@@ -145,8 +145,7 @@ func (a *WealthOverview) Update() {
 	a.top.Refresh()
 
 	if a.OnUpdate != nil {
-		s := fmt.Sprintf("Wallet: %s • Assets: %s", ihumanize.Number(totalWallet, 1), ihumanize.Number(totalAssets, 1))
-		a.OnUpdate(s)
+		a.OnUpdate(totalWallet, totalAssets)
 	}
 }
 

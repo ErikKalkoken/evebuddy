@@ -14,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -308,8 +309,12 @@ func NewUIMobile(bui *UIBase) *UIMobile {
 		navItemColonies2.Supporting = top
 		crossList.Refresh()
 	}
-	u.wealthOverview.OnUpdate = func(total string) {
-		navItemWealth.Supporting = total
+	u.wealthOverview.OnUpdate = func(wallet, assets float64) {
+		navItemWealth.Supporting = fmt.Sprintf(
+			"Wallet: %s • Assets: %s",
+			ihumanize.Number(wallet, 1),
+			ihumanize.Number(assets, 1),
+		)
 		crossList.Refresh()
 	}
 

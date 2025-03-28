@@ -135,10 +135,7 @@ func NewCharacterMail(u app.UI) *CharacterMail {
 
 	// Folders
 	a.folders = a.makeFolderTree()
-	r, f := a.MakeComposeMessageAction()
-	newButton := widget.NewButtonWithIcon("Compose", r, f)
-	newButton.Importance = widget.HighImportance
-	top := container.NewHBox(layout.NewSpacer(), container.NewPadded(newButton), layout.NewSpacer())
+	top := container.NewHBox()
 	a.folderSection = container.NewBorder(top, nil, nil, nil, a.folders)
 	return a
 }
@@ -165,7 +162,7 @@ func (a *CharacterMail) makeFolderTree() *iwidget.Tree[FolderNode] {
 		func(isBranch bool) fyne.CanvasObject {
 			return container.NewHBox(
 				widget.NewIcon(icons.BlankSvg),
-				widget.NewLabel("template"),
+				widget.NewLabel("template template"),
 				layout.NewSpacer(),
 				kwidget.NewBadge("999"),
 			)

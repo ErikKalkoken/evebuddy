@@ -38,8 +38,8 @@ func NewPageBarCollection(u app.UI) *PageBarCollection {
 	return c
 }
 
-func (c *PageBarCollection) NewPageBar(title string) *PageBar {
-	pb := newPageBar(title, c.fallbackIcon, c.u)
+func (c *PageBarCollection) NewPageBar(title string, buttons ...*widget.Button) *PageBar {
+	pb := newPageBar(title, c.fallbackIcon, c.u, buttons...)
 	c.bars = append(c.bars, pb)
 	return pb
 }
@@ -69,19 +69,21 @@ func (c *PageBarCollection) Update() {
 type PageBar struct {
 	widget.BaseWidget
 
-	icon  *kwidget.TappableImage
-	title *iwidget.Label
-	u     app.UI
+	buttons []*widget.Button
+	icon    *kwidget.TappableImage
+	title   *iwidget.Label
+	u       app.UI
 }
 
-func newPageBar(title string, icon fyne.Resource, u app.UI) *PageBar {
+func newPageBar(title string, icon fyne.Resource, u app.UI, buttons ...*widget.Button) *PageBar {
 	i := kwidget.NewTappableImageWithMenu(icon, fyne.NewMenu(""))
 	i.SetFillMode(canvas.ImageFillContain)
 	i.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
 	w := &PageBar{
-		icon:  i,
-		title: iwidget.NewLabelWithSize(title, theme.SizeNameSubHeadingText),
-		u:     u,
+		buttons: buttons,
+		icon:    i,
+		title:   iwidget.NewLabelWithSize(title, theme.SizeNameSubHeadingText),
+		u:       u,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -99,7 +101,13 @@ func (w *PageBar) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewHBox(
 		container.NewVBox(layout.NewSpacer(), w.title, layout.NewSpacer()),
 		layout.NewSpacer(),
-		container.NewPadded(w.icon),
 	)
-	return widget.NewSimpleRenderer(c)
+	if len(w.buttons) > 0 {
+		for _, b := range w.buttons {
+			c.Add(container.NewCenter(b))
+		}
+	}
+	c.Add(container.NewCenter(w.icon))
+	p := theme.Padding()
+	return widget.NewSimpleRenderer(container.New(layout.NewCustomPaddedLayout(p, 0, 0, 0), c))
 }

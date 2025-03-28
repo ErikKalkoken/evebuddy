@@ -58,10 +58,10 @@ type CharacterJumpClones struct {
 }
 
 func NewCharacterJumpClones(u app.UI) *CharacterJumpClones {
-	ntop := widget.NewRichText()
-	ntop.Wrapping = fyne.TextWrapWord
+	top := widget.NewRichText()
+	top.Wrapping = fyne.TextWrapWord
 	a := &CharacterJumpClones{
-		top: ntop,
+		top: top,
 		u:   u,
 	}
 	a.ExtendBaseWidget(a)
@@ -152,7 +152,6 @@ func (a *CharacterJumpClones) Update() {
 			Text: "ERROR: " + a.u.ErrorDisplay(err),
 			Style: widget.RichTextStyle{
 				ColorName: theme.ColorNameError,
-				TextStyle: fyne.TextStyle{Bold: true},
 			}})
 
 	} else {
@@ -211,10 +210,8 @@ func (a *CharacterJumpClones) newTreeData() (*iwidget.TreeData[jumpCloneNode], e
 }
 
 func (a *CharacterJumpClones) RefreshTop() {
-	boldTextStyle := fyne.TextStyle{Bold: true}
 	defaultStyle := widget.RichTextStyle{
 		ColorName: theme.ColorNameForeground,
-		TextStyle: boldTextStyle,
 	}
 	defaultStyleInline := defaultStyle
 	defaultStyleInline.Inline = true
@@ -262,7 +259,6 @@ func (a *CharacterJumpClones) RefreshTop() {
 			Text: nextJump,
 			Style: widget.RichTextStyle{
 				ColorName: nextJumpColor,
-				TextStyle: boldTextStyle,
 				Inline:    true,
 			},
 		},

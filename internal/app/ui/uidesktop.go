@@ -23,6 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/desktopui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -123,8 +124,8 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		return fmt.Sprint(v)
 	}
 
-	makePageWithPageBar := func(title string, content fyne.CanvasObject) fyne.CanvasObject {
-		bar := u.pageBars.NewPageBar(title)
+	makePageWithPageBar := func(title string, content fyne.CanvasObject, buttons ...*widget.Button) fyne.CanvasObject {
+		bar := u.pageBars.NewPageBar(title, buttons...)
 		return container.NewBorder(
 			bar,
 			nil,
@@ -143,10 +144,13 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		u.nav.SetItemBadge(colonies, formatBadge(expired, 10))
 	}
 
+	r, f := u.characterMail.MakeComposeMessageAction()
+	compose := widget.NewButtonWithIcon("Compose", r, f)
+	compose.Importance = widget.HighImportance
 	mail := iwidget.NewNavPage(
 		"Mail",
 		theme.MailComposeIcon(),
-		makePageWithPageBar("Mail", u.characterMail),
+		makePageWithPageBar("Mail", u.characterMail, compose),
 	)
 	u.characterMail.OnUpdate = func(count int) {
 		u.nav.SetItemBadge(mail, formatBadge(count, 99))
@@ -217,6 +221,17 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 			container.NewTabItem("Transactions", u.characterWalletJournal),
 			container.NewTabItem("Market Transactions", u.characterWalletTransaction),
 		)))
+
+	wealth := iwidget.NewNavPage(
+		"Wealth",
+		theme.NewThemedResource(icons.GoldSvg),
+		makePageWithPageBar("Wealth", u.wealthOverview),
+	)
+
+	u.wealthOverview.OnUpdate = func(wallet, assets float64) {
+		u.nav.SetItemBadge(wealth, ihumanize.Number(wallet+assets, 1))
+	}
+
 	u.nav = iwidget.NewNavDrawer(
 		iwidget.NewNavSectionLabel("Current Character"),
 		assets,
@@ -227,7 +242,7 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		mail,
 		skills,
 		wallet,
-		// -----------------------
+		iwidget.NewNavSeparator(),
 		iwidget.NewNavSectionLabel("All Characters"),
 		iwidget.NewNavPage(
 			"Assets",
@@ -255,11 +270,7 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 			theme.NewThemedResource(icons.SchoolSvg),
 			makePageWithPageBar("Training", u.trainingOverview),
 		),
-		iwidget.NewNavPage(
-			"Wealth",
-			theme.NewThemedResource(icons.AccountMultipleSvg),
-			makePageWithPageBar("Wealth", u.wealthOverview),
-		),
+		wealth,
 	)
 
 	mainContent := container.NewBorder(nil, u.statusBar, nil, nil, u.nav)
