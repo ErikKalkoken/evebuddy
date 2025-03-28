@@ -542,7 +542,7 @@ func (u *UIBase) UpdateMailIndicator() {
 }
 
 func (u *UIBase) MakeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
-	characterID := u.CurrentCharacterID()
+	currentID := u.CurrentCharacterID()
 	cc := u.StatusCacheService().ListCharacters()
 	items := make([]*fyne.MenuItem, 0)
 	if len(cc) == 0 {
@@ -551,7 +551,23 @@ func (u *UIBase) MakeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 		items = append(items, it)
 		return items
 	}
+	fallbackIcon, _ := fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)
 	var wg sync.WaitGroup
+	name := u.StatusCacheService().CharacterName(currentID)
+	it := fyne.NewMenuItem(name, func() {
+		u.ShowInfoWindow(app.EveEntityCharacter, currentID)
+	})
+	it.Icon = fallbackIcon
+	wg.Add(1)
+	go u.UpdateAvatar(currentID, func(r fyne.Resource) {
+		defer wg.Done()
+		it.Icon = r
+	})
+	items = append(items, it)
+	items = append(items, fyne.NewMenuItemSeparator())
+	it2 := fyne.NewMenuItem("Switch character", nil)
+	it2.Disabled = true
+	items = append(items, it2)
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
 			err := u.LoadCharacter(c.ID)
@@ -560,10 +576,10 @@ func (u *UIBase) MakeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 				u.snackbar.Show("ERROR: Failed to switch character")
 			}
 		})
-		if c.ID == characterID {
+		if c.ID == currentID {
 			continue
 		}
-		it.Icon, _ = fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)
+		it.Icon = fallbackIcon
 		wg.Add(1)
 		go u.UpdateAvatar(c.ID, func(r fyne.Resource) {
 			defer wg.Done()

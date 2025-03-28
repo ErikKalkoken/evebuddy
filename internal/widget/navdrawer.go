@@ -228,12 +228,13 @@ func (w *NavDrawer) findItem(item *navItem) (int, bool) {
 
 func (w *NavDrawer) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
-	c := container.NewBorder(
-		nil,
-		nil,
-		container.NewHBox(w.list, widget.NewSeparator()),
-		nil,
-		container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), w.pages),
-	)
+	c := container.New(layout.NewCustomPaddedLayout(-p, -p, 0, 0),
+		container.NewBorder(
+			nil,
+			nil,
+			container.NewHBox(w.list, widget.NewSeparator()),
+			nil,
+			container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), w.pages),
+		))
 	return widget.NewSimpleRenderer(c)
 }

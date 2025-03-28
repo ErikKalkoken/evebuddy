@@ -30,18 +30,15 @@ import (
 type UIDesktop struct {
 	*UIBase
 
-	sfg *singleflight.Group
-
-	statusBar *desktopui.StatusBar
-	toolbar   *desktopui.Toolbar
-
-	overviewTab *container.TabItem
-	nav         *iwidget.NavDrawer
-
-	menuItemsWithShortcut []*fyne.MenuItem
 	accountWindow         fyne.Window
+	menuItemsWithShortcut []*fyne.MenuItem
+	nav                   *iwidget.NavDrawer
+	overviewTab           *container.TabItem
 	searchWindow          fyne.Window
 	settingsWindow        fyne.Window
+	sfg                   *singleflight.Group
+	statusBar             *desktopui.StatusBar
+	pageBars              *desktopui.PageBarCollection
 }
 
 // NewUIDesktop build the UI and returns it.
@@ -54,6 +51,10 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 	if !ok {
 		panic("Could not start in desktop mode")
 	}
+
+	u.statusBar = desktopui.NewStatusBar(u)
+	u.pageBars = desktopui.NewPageBarCollection(u)
+
 	u.onInit = func(_ *app.Character) {
 		index := u.Settings().TabsMainID()
 		if index != -1 {
@@ -102,7 +103,7 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		// go u.toogleTabs(c != nil)
 	}
 	u.onUpdateStatus = func() {
-		go u.toolbar.Update()
+		go u.pageBars.Update()
 		go u.statusBar.Update()
 	}
 	u.ShowMailIndicator = func() {
@@ -131,9 +132,15 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 	// 	return title
 	// }
 
-	makePageWithTitle := func(s string, content fyne.CanvasObject) fyne.CanvasObject {
-		title := iwidget.NewLabelWithSize(s, theme.SizeNameSubHeadingText)
-		return container.NewBorder(title, nil, nil, nil, content)
+	makePageWithTitle := func(title string, content fyne.CanvasObject) fyne.CanvasObject {
+		bar := u.pageBars.NewPageBar(title)
+		return container.NewBorder(
+			bar,
+			nil,
+			nil,
+			nil,
+			content,
+		)
 	}
 
 	colonies := iwidget.NewNavPage(
@@ -256,9 +263,7 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		),
 	)
 
-	u.toolbar = desktopui.NewToolbar(u)
-	u.statusBar = desktopui.NewStatusBar(u)
-	mainContent := container.NewBorder(u.toolbar, u.statusBar, nil, nil, u.nav)
+	mainContent := container.NewBorder(nil, u.statusBar, nil, nil, u.nav)
 	u.MainWindow().SetContent(mainContent)
 
 	// system tray menu
