@@ -23,18 +23,19 @@ const (
 	navSectionLabel
 )
 
-type navItem struct {
+type NavItem struct {
 	badge      string
 	content    fyne.CanvasObject
 	icon       fyne.Resource
+	isDisabled bool
 	isSelected bool
 	stackIndex int
 	text       string
 	variant    navItemVariant
 }
 
-func newNavItem(text string, icon fyne.Resource, content fyne.CanvasObject, variant navItemVariant) *navItem {
-	it := &navItem{
+func newNavItem(text string, icon fyne.Resource, content fyne.CanvasObject, variant navItemVariant) *NavItem {
+	it := &NavItem{
 		content:    content,
 		icon:       icon,
 		stackIndex: indexUndefined,
@@ -44,11 +45,11 @@ func newNavItem(text string, icon fyne.Resource, content fyne.CanvasObject, vari
 	return it
 }
 
-func NewNavPage(text string, icon fyne.Resource, content fyne.CanvasObject) *navItem {
+func NewNavPage(text string, icon fyne.Resource, content fyne.CanvasObject) *NavItem {
 	return newNavItem(text, icon, content, navPage)
 }
 
-func NewNavSectionLabel(text string) *navItem {
+func NewNavSectionLabel(text string) *NavItem {
 	return newNavItem(text, nil, nil, navSectionLabel)
 }
 
@@ -56,13 +57,13 @@ func NewNavSectionLabel(text string) *navItem {
 type NavDrawer struct {
 	widget.BaseWidget
 
-	items    []*navItem
+	items    []*NavItem
 	list     *widget.List
 	selected int
 	pages    *fyne.Container
 }
 
-func NewNavDrawer(items ...*navItem) *NavDrawer {
+func NewNavDrawer(items ...*NavItem) *NavDrawer {
 	w := &NavDrawer{
 		pages:    container.NewStack(),
 		selected: indexUndefined,
@@ -70,7 +71,7 @@ func NewNavDrawer(items ...*navItem) *NavDrawer {
 	w.ExtendBaseWidget(w)
 	w.list = w.makeList()
 	for _, p := range items {
-		w.AddPage(p)
+		w.AddItem(p)
 	}
 	for id, it := range slices.Backward(w.items) {
 		if it.variant == navPage {
@@ -78,56 +79,6 @@ func NewNavDrawer(items ...*navItem) *NavDrawer {
 		}
 	}
 	return w
-}
-
-func (w *NavDrawer) AddPage(p *navItem) {
-	if p.variant == navPage {
-		p.content.Hide()
-		w.pages.Add(p.content)
-		p.stackIndex = len(w.pages.Objects) - 1
-	}
-	w.items = append(w.items, p)
-}
-
-func (w *NavDrawer) Select(item *navItem) {
-	id, ok := w.findItem(item)
-	if !ok {
-		return
-	}
-	w.SelectIndex(id)
-}
-
-func (w *NavDrawer) SelectIndex(id int) {
-	if id >= len(w.items) {
-		return
-	}
-	w.list.Select(id)
-}
-
-func (w *NavDrawer) selectIndex(id int) {
-	it := w.items[id]
-	if it.stackIndex == indexUndefined {
-		return
-	}
-	if w.selected != indexUndefined {
-		si := w.items[w.selected]
-		w.pages.Objects[si.stackIndex].Hide()
-	}
-	w.pages.Objects[it.stackIndex].Show()
-	w.selected = id
-}
-
-func (w *NavDrawer) SelectedIndex() int {
-	return w.selected
-}
-
-func (w *NavDrawer) SetItemBadge(item *navItem, text string) {
-	id, ok := w.findItem(item)
-	if !ok {
-		return
-	}
-	w.items[id].badge = text
-	w.list.RefreshItem(id)
 }
 
 func (w *NavDrawer) makeList() *widget.List {
@@ -167,13 +118,30 @@ func (w *NavDrawer) makeList() *widget.List {
 			case navPage:
 				title.Text = it.text
 				title.TextStyle.Bold = it.isSelected
+				if it.isDisabled {
+					title.Importance = widget.LowImportance
+				} else {
+					title.Importance = widget.MediumImportance
+				}
 				title.Refresh()
-				icon.SetResource(it.icon)
+				var r fyne.Resource
+				if it.isDisabled {
+					r = theme.NewDisabledResource(it.icon)
+				} else {
+					r = it.icon
+				}
+				icon.SetResource(r)
 				icon.Show()
 				separator.Hide()
 				spacer.Show()
 				if it.badge != "" {
-					badge.SetText(it.badge)
+					badge.Text = it.badge
+					if it.isDisabled {
+						badge.Importance = widget.LowImportance
+					} else {
+						badge.Importance = widget.MediumImportance
+					}
+					badge.Refresh()
 					badge.Show()
 				} else {
 					badge.Hide()
@@ -197,7 +165,7 @@ func (w *NavDrawer) makeList() *widget.List {
 			return
 		}
 		it := w.items[id]
-		if it.variant != navPage {
+		if it.isDisabled || it.variant != navPage {
 			list.UnselectAll()
 			return
 		}
@@ -217,13 +185,87 @@ func (w *NavDrawer) makeList() *widget.List {
 	return list
 }
 
-func (w *NavDrawer) findItem(item *navItem) (int, bool) {
+func (w *NavDrawer) AddItem(p *NavItem) {
+	if p.variant == navPage {
+		p.content.Hide()
+		w.pages.Add(p.content)
+		p.stackIndex = len(w.pages.Objects) - 1
+	}
+	w.items = append(w.items, p)
+}
+
+func (w *NavDrawer) Items() []*NavItem {
+	return slices.Clone(w.items)
+}
+
+func (w *NavDrawer) EnableItem(item *NavItem) {
+	w.setItemDisabled(item, false)
+}
+
+func (w *NavDrawer) DisableItem(item *NavItem) {
+	w.setItemDisabled(item, true)
+}
+
+func (w *NavDrawer) setItemDisabled(item *NavItem, isDisabled bool) {
+	id, ok := w.findItem(item)
+	if !ok {
+		return
+	}
+	if w.items[id].isDisabled == isDisabled {
+		return
+	}
+	w.items[id].isDisabled = isDisabled
+	w.list.RefreshItem(id)
+}
+
+func (w *NavDrawer) findItem(item *NavItem) (int, bool) {
 	for i, it := range w.items {
 		if it == item {
 			return i, true
 		}
 	}
 	return 0, false
+}
+
+func (w *NavDrawer) Select(item *NavItem) {
+	id, ok := w.findItem(item)
+	if !ok {
+		return
+	}
+	w.SelectIndex(id)
+}
+
+func (w *NavDrawer) SelectIndex(id int) {
+	if id >= len(w.items) {
+		return
+	}
+	w.list.Select(id)
+}
+
+func (w *NavDrawer) selectIndex(id int) {
+	it := w.items[id]
+	if it.stackIndex == indexUndefined {
+		return
+	}
+	if w.selected != indexUndefined {
+		si := w.items[w.selected]
+		w.pages.Objects[si.stackIndex].Hide()
+	}
+	w.pages.Objects[it.stackIndex].Show()
+	w.selected = id
+}
+
+func (w *NavDrawer) SelectedIndex() int {
+	return w.selected
+}
+
+func (w *NavDrawer) SetItemBadge(item *NavItem, text string) {
+	id, ok := w.findItem(item)
+	if !ok {
+		return
+	}
+	w.items[id].badge = text
+	w.list.RefreshItem(id)
 }
 
 func (w *NavDrawer) CreateRenderer() fyne.WidgetRenderer {
