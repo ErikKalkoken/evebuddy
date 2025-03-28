@@ -111,6 +111,8 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 	u.EnableMenuShortcuts = u.enableMenuShortcuts
 	u.DisableMenuShortcuts = u.disableMenuShortcuts
 
+	u.showManageCharacters = u.ShowManageCharactersWindow
+
 	formatBadge := func(v, mx int) string {
 		if v == 0 {
 			return ""
@@ -488,7 +490,7 @@ func (u *UIDesktop) makeMenu() *fyne.MainMenu {
 	}
 	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, settingsItem)
 
-	charactersItem := fyne.NewMenuItem("Manage characters...", u.ShowManageCharactersWindow)
+	charactersItem := fyne.NewMenuItem("Manage characters...", u.showManageCharacters)
 	charactersItem.Shortcut = &desktop.CustomShortcut{
 		KeyName:  fyne.KeyC,
 		Modifier: fyne.KeyModifierAlt,
