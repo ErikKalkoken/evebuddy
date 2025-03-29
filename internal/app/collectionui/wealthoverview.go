@@ -73,7 +73,7 @@ func (a *WealthOverview) Update() {
 	data, characters, err := a.compileData()
 	if err != nil {
 		slog.Error("Failed to fetch data for charts", "err", err)
-		a.top.Text = fmt.Sprintf("Failed to fetch data for charts: %s", ihumanize.Error(err))
+		a.top.Text = fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err))
 		a.top.Importance = widget.DangerImportance
 		a.top.Refresh()
 		return

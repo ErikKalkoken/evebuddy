@@ -18,7 +18,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -166,7 +165,7 @@ func (a *StatusBar) StartUpdateTicker() {
 			var s eveStatus
 			if err != nil {
 				slog.Error("Failed to fetch ESI status", "err", err)
-				errorMessage = humanize.Error(err)
+				errorMessage = a.u.ErrorDisplay(err)
 				s = eveStatusError
 				t = "ERROR"
 			} else if !x.IsOK() {

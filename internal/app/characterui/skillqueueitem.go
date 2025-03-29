@@ -9,7 +9,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/humanize"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
 type SkillQueueItem struct {
@@ -58,10 +58,10 @@ func (w *SkillQueueItem) Set(q *app.CharacterSkillqueueItem) {
 		d = "Completed"
 	} else if isActive {
 		i = widget.MediumImportance
-		d = humanize.Optional(q.Remaining(), "?")
+		d = ihumanize.Optional(q.Remaining(), "?")
 	} else {
 		i = widget.MediumImportance
-		d = humanize.Optional(q.Duration(), "?")
+		d = ihumanize.Optional(q.Duration(), "?")
 	}
 	w.name.Importance = i
 	w.name.Text = q.String()
@@ -93,7 +93,7 @@ func (w *SkillQueueItem) Set(q *app.CharacterSkillqueueItem) {
 }
 
 func (w *SkillQueueItem) SetError(message string, err error) {
-	w.name.Text = fmt.Sprintf("%s: %s", message, humanize.Error(err))
+	w.name.Text = fmt.Sprintf("%s: %s", message, ihumanize.Error(err))
 	w.name.Importance = widget.DangerImportance
 	w.name.Refresh()
 	w.duration.SetText("")

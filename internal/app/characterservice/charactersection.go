@@ -12,7 +12,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
@@ -79,7 +78,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 		return f(ctx, arg)
 	})
 	if err != nil {
-		errorMessage := humanize.Error(err)
+		errorMessage := err.Error()
 		startedAt := optional.Optional[time.Time]{}
 		arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
 			CharacterID:  arg.CharacterID,

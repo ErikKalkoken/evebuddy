@@ -13,7 +13,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -46,7 +45,7 @@ func (a *regionInfo) CreateRenderer() fyne.WidgetRenderer {
 		err := a.load()
 		if err != nil {
 			slog.Error("region info update failed", "solarSystem", a.id, "error", err)
-			a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", ihumanize.Error(err))
+			a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", a.iw.u.ErrorDisplay(err))
 			a.name.Importance = widget.DangerImportance
 			a.name.Refresh()
 		}
@@ -94,7 +93,7 @@ func (a *regionInfo) load() error {
 		oo, err := a.iw.u.EveUniverseService().GetRegionConstellationsESI(ctx, o.ID)
 		if err != nil {
 			slog.Error("region info: Failed to load constellations", "region", o.ID, "error", err)
-			cLabel.Text = ihumanize.Error(err)
+			cLabel.Text = a.iw.u.ErrorDisplay(err)
 			cLabel.Importance = widget.DangerImportance
 			cLabel.Refresh()
 			return

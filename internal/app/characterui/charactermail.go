@@ -18,7 +18,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -536,7 +535,7 @@ func (a *CharacterMail) MakeDeleteAction(onSuccess func()) (fyne.Resource, func(
 				}
 				m.OnError = func(err error) {
 					slog.Error("Failed to delete mail", "characterID", a.mail.CharacterID, "mailID", a.mail.MailID, "err", err)
-					a.u.ShowSnackbar(fmt.Sprintf("Failed to delete mail: %s", humanize.Error(err)))
+					a.u.ShowSnackbar(fmt.Sprintf("Failed to delete mail: %s", a.u.ErrorDisplay(err)))
 				}
 				m.Start()
 			}, a.u.MainWindow())

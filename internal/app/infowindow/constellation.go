@@ -15,7 +15,6 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -52,7 +51,7 @@ func (a *constellationInfo) CreateRenderer() fyne.WidgetRenderer {
 		err := a.load()
 		if err != nil {
 			slog.Error("constellation info update failed", "solarSystem", a.id, "error", err)
-			a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", ihumanize.Error(err))
+			a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", a.iw.u.ErrorDisplay(err))
 			a.name.Importance = widget.DangerImportance
 			a.name.Refresh()
 		}
@@ -104,7 +103,7 @@ func (a *constellationInfo) load() error {
 		oo, err := a.iw.u.EveUniverseService().GetConstellationSolarSytemsESI(ctx, o.ID)
 		if err != nil {
 			slog.Error("constellation info: Failed to load constellations", "region", o.ID, "error", err)
-			sLabel.Text = ihumanize.Error(err)
+			sLabel.Text = a.iw.u.ErrorDisplay(err)
 			sLabel.Importance = widget.DangerImportance
 			sLabel.Refresh()
 			return

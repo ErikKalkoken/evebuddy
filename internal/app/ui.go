@@ -73,4 +73,5 @@ type UI interface {
 	ShowSnackbar(text string)
 	WebsiteRootURL() *url.URL
 	MakeWindowTitle(subTitle string) string
+	ErrorDisplay(err error) string
 }

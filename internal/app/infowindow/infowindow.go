@@ -25,6 +25,7 @@ type UI interface {
 	App() fyne.App
 	CharacterService() app.CharacterService
 	CurrentCharacterID() int32
+	ErrorDisplay(err error) string
 	EveImageService() app.EveImageService
 	EveUniverseService() app.EveUniverseService
 	IsDeveloperMode() bool

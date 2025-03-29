@@ -107,6 +107,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 	router := http.NewServeMux()
 	// Route for responding to SSO callback from CCP server
 	router.HandleFunc(s.callbackPath, func(w http.ResponseWriter, r *http.Request) {
+		slog.Debug("SSO server received request", "path", r.URL.Path, "query", r.URL.RawQuery)
 		status, err := func() (int, error) {
 			v := r.URL.Query()
 			stateGot := v.Get("state")
@@ -132,6 +133,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 			scopes := extractScopes(jwtToken)
 			token := newToken(rawToken, characterID, characterName, scopes)
 			serverCtx = context.WithValue(serverCtx, keyAuthenticatedCharacter, token)
+			slog.Info("SSO authentication successful", "characterID", token.CharacterID, "characterName", token.CharacterName)
 			fmt.Fprintf(
 				w,
 				"<p>SSO authentication successful for <b>%s</b>.</p>"+
@@ -141,23 +143,22 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 			return http.StatusOK, nil
 		}()
 		if err != nil {
-			msg := "SSO callback failed"
+			msg := "callback failed"
 			slog.Warn(msg, "error", err)
 			http.Error(w, msg, status)
-			serverCtx = context.WithValue(serverCtx, keyError, fmt.Errorf("SSO callback: %w", err))
-		} else {
-			slog.Info("SSO server received request", "status", status, "path", r.URL.Path)
+			serverCtx = context.WithValue(serverCtx, keyError, fmt.Errorf("SSO server: %w", err))
 		}
+		slog.Info("SSO server response", "status", status, "path", r.URL.Path)
 		cancel() // shutdown http server
 	})
 	// Route for reponding to ping requests
 	router.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
-		slog.Info("SSO server received request", "status", http.StatusOK, "path", r.URL.Path)
+		slog.Info("SSO server response", "status", http.StatusOK, "path", r.URL.Path)
 		fmt.Fprintf(w, "pong\n")
 	})
 	// Route for returning 404 on all other paths
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		slog.Info("SSO server received request", "status", http.StatusNotFound, "path", r.URL.Path)
+		slog.Info("SSO server response", "status", http.StatusNotFound, "path", r.URL.Path)
 		http.Error(w, "not found", http.StatusNotFound)
 	})
 	// we want to be sure the server is running before starting the browser
@@ -168,17 +169,19 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 	}
 	l, err := net.Listen("tcp", server.Addr)
 	if err != nil {
-		return nil, fmt.Errorf("SSO authenticate: listen on address: %w", err)
+		return nil, fmt.Errorf("SSO server: listen on address: %w", err)
 	}
 	defer func() {
 		if err := server.Close(); err != nil {
-			slog.Error("SSO authenticate: server close", "error", err)
+			slog.Error("SSO server: server close", "error", err)
 		}
 	}()
+
+	slog.Info("SSO server started", "address", server.Addr)
+
 	go func() {
-		slog.Info("SSO web server started", "address", server.Addr)
 		if err := server.Serve(l); err != http.ErrServerClosed {
-			slog.Error("SSO authenticate: server terminated prematurely", "error", err)
+			slog.Error("SSO server: server terminated prematurely", "error", err)
 		}
 		cancel()
 		slog.Info("SSO server stopped")
@@ -190,15 +193,15 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 	u := fmt.Sprintf("%s://%s/ping", protocol, server.Addr)
 	req, err := http.NewRequestWithContext(ctxPing, http.MethodGet, u, nil)
 	if err != nil {
-		return nil, fmt.Errorf("SSO authenticate: prepare ping: %w", err)
+		return nil, fmt.Errorf("SSO server: prepare ping: %w", err)
 	}
 	_, err = s.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("SSO authenticate: ping: %w", err)
+		return nil, fmt.Errorf("SSO server: ping: %w", err)
 	}
 
 	if err := s.startSSO(state, codeVerifier, scopes); err != nil {
-		return nil, fmt.Errorf("SSO authenticate: start: %w", err)
+		return nil, fmt.Errorf("SSO server: start SSO: %w", err)
 	}
 	<-serverCtx.Done()
 
@@ -206,7 +209,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 	defer shutdownRelease()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		return nil, fmt.Errorf("SSO authenticate: server shutdown: %w", err)
+		slog.Warn("SSO server: server shutdown", "error", err)
 	}
 
 	errValue := serverCtx.Value(keyError)
