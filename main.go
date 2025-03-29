@@ -2,7 +2,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -25,6 +27,7 @@ import (
 	"github.com/chasinglogic/appdirs"
 	"github.com/gohugoio/httpcache"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/juju/mutex/v2"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
@@ -53,9 +56,14 @@ const (
 	logLevelDefault     = slog.LevelWarn // for startup only
 	logMaxBackups       = 3
 	logMaxSizeMB        = 50
+	mutexDelay          = 100 * time.Millisecond
+	mutexTimeout        = 250 * time.Millisecond
 	ssoClientID         = "11ae857fe4d149b2be60d875649c05f1"
 	userAgent           = "EveBuddy kalkoken87@gmail.com"
 )
+
+// Resonses from these URLs will never be logged.
+var blacklistedURLs = []string{"login.eveonline.com/v2/oauth/token"}
 
 // define flags
 var (
@@ -63,11 +71,11 @@ var (
 	developFlag        = flag.Bool("dev", false, "Enable developer features")
 	dirsFlag           = flag.Bool("dirs", false, "Show directories for user data")
 	disableUpdatesFlag = flag.Bool("disable-updates", false, "Disable all periodic updates")
+	logLevelFlag       = flag.String("log-level", "", "Set log level for this session")
 	offlineFlag        = flag.Bool("offline", false, "Start app in offline mode")
 	pprofFlag          = flag.Bool("pprof", false, "Enable pprof web server")
-	versionFlag        = flag.Bool("v", false, "Show version")
-	logLevelFlag       = flag.String("log-level", "", "Set log level for this session")
 	resetSettingsFlag  = flag.Bool("reset-settings", false, "Resets desktop settings")
+	versionFlag        = flag.Bool("v", false, "Show version")
 )
 
 func main() {
@@ -261,6 +269,40 @@ func main() {
 	}
 }
 
+type realtime struct{}
+
+func (r realtime) After(d time.Duration) <-chan time.Time {
+	c := make(chan time.Time)
+	go func() {
+		time.Sleep(d)
+		c <- time.Now()
+	}()
+	return c
+}
+
+func (r realtime) Now() time.Time {
+	return time.Now()
+}
+
+// ensureSingleInstance sets and returns a mutex for this application instance.
+// The returned mutex must not be released until the application terminates.
+func ensureSingleInstance() (mutex.Releaser, error) {
+	slog.Debug("Checking for other instances")
+	mu, err := mutex.Acquire(mutex.Spec{
+		Name:    strings.ReplaceAll(appID, ".", "-"),
+		Clock:   realtime{},
+		Delay:   mutexDelay,
+		Timeout: mutexTimeout,
+	})
+	if errors.Is(err, mutex.ErrTimeout) {
+		return nil, fmt.Errorf("another instance running")
+	} else if err != nil {
+		return nil, fmt.Errorf("acquire mutex: %w", err)
+	}
+	slog.Info("No other instances running")
+	return mu, nil
+}
+
 func setupCrashFile(logDir string) (path string) {
 	path = filepath.Join(logDir, crashFileName)
 	crashFile, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
@@ -273,4 +315,107 @@ func setupCrashFile(logDir string) (path string) {
 	}
 	crashFile.Close()
 	return
+}
+
+// logResponse is a callback for retryable logger, which is called for every respose.
+// It logs all HTTP erros and also the complete response when log level is DEBUG.
+func logResponse(l retryablehttp.Logger, r *http.Response) {
+	isDebug := slog.Default().Enabled(context.Background(), slog.LevelDebug)
+	isHttpError := r.StatusCode >= 400
+	if !isDebug && !isHttpError {
+		return
+	}
+
+	var level slog.Level
+	if isHttpError {
+		level = slog.LevelWarn
+	} else {
+		level = slog.LevelDebug
+
+	}
+	status := statusText(r)
+	body := bodyToString(r)
+	var args []any
+	if isDebug {
+		args = []any{
+			"method", r.Request.Method,
+			"url", r.Request.URL,
+			"status", status,
+			"header", r.Header,
+			"body", body,
+		}
+	} else {
+		args = []any{
+			"method", r.Request.Method,
+			"url", r.Request.URL,
+			"status", status,
+			"body", body,
+		}
+	}
+
+	slog.Log(context.Background(), level, "HTTP response", args...)
+}
+
+func bodyToString(r *http.Response) string {
+	if r.Body == nil {
+		return ""
+	}
+	hasBlockedURL := slices.ContainsFunc(blacklistedURLs, func(x string) bool {
+		return strings.Contains(r.Request.URL.String(), x)
+	})
+	if hasBlockedURL {
+		return "xxxxx"
+	}
+	var s string
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		s = "ERROR: " + err.Error()
+	} else {
+		s = string(body)
+	}
+	r.Body = io.NopCloser(bytes.NewBuffer(body))
+	return s
+}
+
+func statusText(r *http.Response) string {
+	var s string
+	if r.StatusCode == 420 {
+		s = "Error Limited"
+	} else {
+		s = http.StatusText(r.StatusCode)
+	}
+	return fmt.Sprintf("%d %s", r.StatusCode, s)
+}
+
+// cacheAdapter enabled the use of pcache with httpcache
+type cacheAdapter struct {
+	c       *pcache.PCache
+	prefix  string
+	timeout time.Duration
+}
+
+var _ httpcache.Cache = (*cacheAdapter)(nil)
+
+// newCacheAdapter returns a new cacheAdapter.
+// The prefix is added to all cache keys to prevent conflicts.
+// Keys are stored with the given cache timeout. A timeout of 0 means that keys never expire.
+func newCacheAdapter(c *pcache.PCache, prefix string, timeout time.Duration) *cacheAdapter {
+	ca := &cacheAdapter{c: c, prefix: prefix, timeout: timeout}
+	return ca
+}
+
+func (ca *cacheAdapter) Get(key string) ([]byte, bool) {
+	return ca.c.Get(ca.makeKey(key))
+}
+
+func (ca *cacheAdapter) Set(key string, b []byte) {
+	ca.c.Set(ca.makeKey(key), b, ca.timeout)
+}
+
+func (ca *cacheAdapter) Delete(key string) {
+	ca.c.Delete(ca.makeKey(key))
+}
+
+func (ca *cacheAdapter) makeKey(key string) string {
+	return ca.prefix + key
 }
