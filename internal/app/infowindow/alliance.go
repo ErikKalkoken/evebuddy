@@ -11,8 +11,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
 // allianceInfo shows public information about a character.
@@ -47,7 +45,7 @@ func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 		err := a.load()
 		if err != nil {
 			slog.Error("alliance info update failed", "alliance", a.id, "error", err)
-			a.name.Text = fmt.Sprintf("ERROR: Failed to load alliance: %s", ihumanize.Error(err))
+			a.name.Text = fmt.Sprintf("ERROR: Failed to load alliance: %s", a.iw.u.ErrorDisplay(err))
 			a.name.Importance = widget.DangerImportance
 			a.name.Refresh()
 		}

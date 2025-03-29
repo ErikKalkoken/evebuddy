@@ -15,8 +15,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
 type solarSystemInfo struct {
@@ -57,7 +55,7 @@ func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
 		err := a.load()
 		if err != nil {
 			slog.Error("solar system info update failed", "solarSystem", a.id, "error", err)
-			a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", ihumanize.Error(err))
+			a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", a.iw.u.ErrorDisplay(err))
 			a.name.Importance = widget.DangerImportance
 			a.name.Refresh()
 		}
@@ -131,7 +129,7 @@ func (a *solarSystemInfo) load() error {
 		starID, planets, stargateIDs, stations, structures, err := a.iw.u.EveUniverseService().GetSolarSystemInfoESI(ctx, a.id)
 		if err != nil {
 			slog.Error("solar system info: Failed to load system info", "solarSystem", a.id, "error", err)
-			stationsLabel.Text = ihumanize.Error(err)
+			stationsLabel.Text = a.iw.u.ErrorDisplay(err)
 			stationsLabel.Importance = widget.DangerImportance
 			stationsLabel.Refresh()
 			return
@@ -177,7 +175,7 @@ func (a *solarSystemInfo) load() error {
 			ss, err := a.iw.u.EveUniverseService().GetSolarSystemsESI(ctx, stargateIDs)
 			if err != nil {
 				slog.Error("solar system info: Failed to load adjacent systems", "solarSystem", a.id, "error", err)
-				systemsLabel.Text = ihumanize.Error(err)
+				systemsLabel.Text = a.iw.u.ErrorDisplay(err)
 				systemsLabel.Importance = widget.DangerImportance
 				systemsLabel.Refresh()
 				return
@@ -191,7 +189,7 @@ func (a *solarSystemInfo) load() error {
 			pp, err := a.iw.u.EveUniverseService().GetSolarSystemPlanets(ctx, planets)
 			if err != nil {
 				slog.Error("solar system info: Failed to load planets", "solarSystem", a.id, "error", err)
-				planetsLabel.Text = ihumanize.Error(err)
+				planetsLabel.Text = a.iw.u.ErrorDisplay(err)
 				planetsLabel.Importance = widget.DangerImportance
 				planetsLabel.Refresh()
 				return

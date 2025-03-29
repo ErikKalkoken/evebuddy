@@ -20,7 +20,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"github.com/ErikKalkoken/evebuddy/internal/humanize"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -81,7 +81,7 @@ func (cb ChartBuilder) Render(ct ChartType, size fyne.Size, title string, values
 			i = widget.LowImportance
 		} else {
 			slog.Error("Failed to generate chart", "title", title, "err", err)
-			t = fmt.Sprintf("Failed to generate chart: %s", humanize.Error(err))
+			t = fmt.Sprintf("Failed to generate chart: %s", ihumanize.Error(err))
 			i = widget.DangerImportance
 		}
 		l := widget.NewLabel(t)
@@ -179,7 +179,7 @@ func (cb ChartBuilder) makePieChart(width, height int, values []Value) ([]byte, 
 	chartValues := make([]chart.Value, 0)
 	for _, r := range data2 {
 		o := chart.Value{
-			Label: fmt.Sprintf("%s %s", r.Label, humanize.Number(r.Value, 1)),
+			Label: fmt.Sprintf("%s %s", r.Label, ihumanize.Number(r.Value, 1)),
 			Value: r.Value,
 		}
 		chartValues = append(chartValues, o)
@@ -263,7 +263,7 @@ func (cb ChartBuilder) makeBarChart(width, height int, data []Value) ([]byte, er
 
 func numericValueFormatter(v interface{}) string {
 	x := v.(float64)
-	return humanize.Number(x, 1)
+	return ihumanize.Number(x, 1)
 }
 
 func chartColor(c color.Color) drawing.Color {

@@ -150,7 +150,7 @@ func (a *CharacterJumpClones) Update() {
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
 		iwidget.SetRichText(a.top, &widget.TextSegment{
-			Text: "ERROR: " + ihumanize.Error(err),
+			Text: "ERROR: " + a.u.ErrorDisplay(err),
 			Style: widget.RichTextStyle{
 				ColorName: theme.ColorNameError,
 				TextStyle: fyne.TextStyle{Bold: true},

@@ -32,7 +32,6 @@ import (
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
-	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -258,6 +257,15 @@ func (u *UIBase) Init() {
 	if u.onInit != nil {
 		u.onInit(c)
 	}
+}
+
+// ErrorDisplay returns user friendly representation of an error for display in the UI.
+func (u *UIBase) ErrorDisplay(err error) string {
+	if u.Settings().DeveloperMode() {
+		return err.Error()
+	}
+	return err.Error()
+	// return ihumanize.Error(err) TODO: Re-enable again when app is stable enough
 }
 
 func (u *UIBase) IsDesktop() bool {
@@ -904,13 +912,7 @@ func (u *UIBase) ShowConfirmDialog(title, message, confirm string, callback func
 }
 
 func (u *UIBase) NewErrorDialog(message string, err error, parent fyne.Window) dialog.Dialog {
-	var errorText string
-	if u.IsDeveloperMode() {
-		errorText = err.Error()
-	} else {
-		errorText = humanize.Error(err)
-	}
-	text := widget.NewLabel(fmt.Sprintf("%s\n\n%s", message, errorText))
+	text := widget.NewLabel(fmt.Sprintf("%s\n\n%s", message, u.ErrorDisplay(err)))
 	text.Wrapping = fyne.TextWrapWord
 	text.Importance = widget.DangerImportance
 	c := container.NewVScroll(text)

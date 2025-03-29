@@ -121,7 +121,7 @@ func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
 			w.openURL(x)
 			// TODO
 			// if err != nil {
-			// 	a.u.ShowSnackbar(fmt.Sprintf("ERROR: Failed to open URL: %s", ihumanize.Error(err)))
+			// 	a.iw.u.ShowSnackbar(fmt.Sprintf("ERROR: Failed to open URL: %s", a.iw.u.ErrorDisplay(err)))
 			// }
 		}
 		if it.Action != nil {

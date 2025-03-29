@@ -22,7 +22,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
-	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -207,7 +206,7 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []app.Setti
 					}
 					m.OnError = func(err error) {
 						slog.Error("Failed to clear cache", "error", err)
-						a.u.ShowSnackbar(fmt.Sprintf("Failed to clear cache: %s", humanize.Error(err)))
+						a.u.ShowSnackbar(fmt.Sprintf("Failed to clear cache: %s", a.u.ErrorDisplay(err)))
 					}
 					m.Start()
 				}, w)
