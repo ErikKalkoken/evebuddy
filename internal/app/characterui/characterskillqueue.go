@@ -22,17 +22,17 @@ type CharacterSkillQueue struct {
 
 	OnUpdate func(statusShort, statusLong string)
 
-	list  *widget.List
-	sq    app.CharacterSkillqueue
-	total *widget.Label
-	u     app.UI
+	list *widget.List
+	sq   app.CharacterSkillqueue
+	top  *widget.Label
+	u    app.UI
 }
 
 func NewCharacterSkillQueue(u app.UI) *CharacterSkillQueue {
 	a := &CharacterSkillQueue{
-		total: appwidget.MakeTopLabel(),
-		sq:    app.NewCharacterSkillqueue(),
-		u:     u,
+		top: appwidget.MakeTopLabel(),
+		sq:  app.NewCharacterSkillqueue(),
+		u:   u,
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeSkillQueue()
@@ -40,8 +40,7 @@ func NewCharacterSkillQueue(u app.UI) *CharacterSkillQueue {
 }
 
 func (a *CharacterSkillQueue) CreateRenderer() fyne.WidgetRenderer {
-	top := container.NewVBox(a.total, widget.NewSeparator())
-	c := container.NewBorder(top, nil, nil, nil, a.list)
+	c := container.NewBorder(a.top, nil, nil, nil, a.list)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -142,9 +141,9 @@ func (a *CharacterSkillQueue) Update() {
 		}
 		t, i = a.makeTopText(total)
 	}
-	a.total.Text = t
-	a.total.Importance = i
-	a.total.Refresh()
+	a.top.Text = t
+	a.top.Importance = i
+	a.top.Refresh()
 }
 
 func (a *CharacterSkillQueue) makeTopText(total optional.Optional[time.Duration]) (string, widget.Importance) {

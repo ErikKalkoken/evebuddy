@@ -39,8 +39,7 @@ func NewCharacterPlanets(u app.UI) *CharacterPlanets {
 }
 
 func (a *CharacterPlanets) CreateRenderer() fyne.WidgetRenderer {
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	c := container.NewBorder(top, nil, nil, nil, a.list)
+	c := container.NewBorder(a.top, nil, nil, nil, a.list)
 	return widget.NewSimpleRenderer(c)
 }
 

@@ -89,8 +89,7 @@ func NewLocationOverview(u app.UI) *LocationOverview {
 }
 
 func (a *LocationOverview) CreateRenderer() fyne.WidgetRenderer {
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	c := container.NewBorder(top, nil, nil, nil, a.body)
+	c := container.NewBorder(a.top, nil, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -113,6 +112,7 @@ func (a *LocationOverview) Update() {
 	}
 	a.top.Text = t
 	a.top.Importance = i
+	a.top.Refresh()
 	a.body.Refresh()
 }
 

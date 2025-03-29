@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -75,6 +76,7 @@ type CharacterAssets struct {
 	OnSelected     func()
 	OnRedraw       func(string)
 
+	infoIcon         *widget.Icon
 	assetCollection  assetcollection.AssetCollection
 	assetGrid        *widget.GridWrap
 	assets           []*app.CharacterAsset
@@ -97,9 +99,11 @@ func NewCharacterAssets(u app.UI) *CharacterAssets {
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
+	a.infoIcon = widget.NewIcon(theme.InfoIcon())
+	a.infoIcon.Hide()
 	a.locations = a.makeLocationsTree()
 	a.Locations = container.NewBorder(
-		container.NewVBox(a.locationsTop, widget.NewSeparator()),
+		a.locationsTop,
 		nil,
 		nil,
 		nil,
@@ -109,12 +113,12 @@ func NewCharacterAssets(u app.UI) *CharacterAssets {
 	a.LocationAssets = container.NewBorder(
 		container.NewBorder(
 			nil,
-			widget.NewSeparator(),
 			nil,
-			widget.NewIcon(theme.InfoIcon()),
+			nil,
+			a.infoIcon,
 			a.locationPath,
 		),
-		container.NewVBox(widget.NewSeparator(), a.assetsBottom),
+		a.assetsBottom,
 		nil,
 		nil,
 		a.assetGrid,
@@ -123,8 +127,16 @@ func NewCharacterAssets(u app.UI) *CharacterAssets {
 }
 
 func (a *CharacterAssets) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewHSplit(a.Locations, a.LocationAssets)
-	c.SetOffset(0.33)
+	main := container.NewHSplit(a.Locations, a.LocationAssets)
+	main.SetOffset(0.33)
+	p := theme.Padding()
+	c := container.NewBorder(
+		widget.NewSeparator(),
+		nil,
+		nil,
+		nil,
+		container.New(layout.NewCustomPaddedLayout(-p, 0, 0, 0), main),
+	)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -195,6 +207,7 @@ func (a *CharacterAssets) clearAssets() error {
 	a.locationPath.SetText("")
 	a.locationPath.OnTapped = nil
 	a.selectedLocation.Clear()
+	a.infoIcon.Hide()
 	return nil
 }
 
@@ -646,4 +659,5 @@ func (a *CharacterAssets) updateLocationPath(location locationNode) {
 		}
 		a.u.ShowLocationInfoWindow(path[0].containerID)
 	}
+	a.infoIcon.Show()
 }

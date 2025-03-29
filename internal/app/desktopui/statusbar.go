@@ -78,19 +78,21 @@ func NewStatusBar(u DesktopUI) *StatusBar {
 }
 
 func (a *StatusBar) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewVBox(widget.NewSeparator(), container.NewHBox(
-		a.infoText,
-		layout.NewSpacer(),
-		a.newVersionHint,
+	c := container.NewVBox(
 		widget.NewSeparator(),
-		a.updateStatus,
-		widget.NewSeparator(),
-		a.characterCount,
-		widget.NewSeparator(),
-		a.eveClock,
-		widget.NewSeparator(),
-		a.eveStatus,
-	))
+		container.NewHBox(
+			a.infoText,
+			layout.NewSpacer(),
+			a.newVersionHint,
+			widget.NewSeparator(),
+			a.updateStatus,
+			widget.NewSeparator(),
+			a.characterCount,
+			widget.NewSeparator(),
+			a.eveClock,
+			widget.NewSeparator(),
+			a.eveStatus,
+		))
 	return widget.NewSimpleRenderer(c)
 }
 

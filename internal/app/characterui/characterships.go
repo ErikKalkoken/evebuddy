@@ -45,7 +45,6 @@ func NewCharacterShips(u app.UI) *CharacterShips {
 	}
 	a.ExtendBaseWidget(a)
 
-	a.top.TextStyle.Bold = true
 	a.searchBox = widget.NewEntry()
 	a.searchBox.SetPlaceHolder("Filter by ship name")
 	a.searchBox.OnChanged = func(s string) {
@@ -91,8 +90,15 @@ func (a *CharacterShips) CreateRenderer() fyne.WidgetRenderer {
 		widget.NewButton("Reset", func() {
 			a.reset()
 		}))
-	entries := container.NewBorder(nil, nil, nil, container.NewHBox(a.groupSelect, a.flyableSelect), a.searchBox)
-	topBox := container.NewVBox(top, widget.NewSeparator(), entries)
+	topBox := container.NewVBox(
+		top,
+		container.NewBorder(
+			nil,
+			nil,
+			nil,
+			container.NewHBox(a.groupSelect, a.flyableSelect),
+			a.searchBox),
+	)
 	c := container.NewBorder(topBox, nil, nil, nil, a.grid)
 	return widget.NewSimpleRenderer(c)
 }

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"slices"
 	"strconv"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -74,17 +75,28 @@ func (a *CharacterCommunications) CreateRenderer() fyne.WidgetRenderer {
 		split1,
 	)
 	split2.Offset = 0.15
-	return widget.NewSimpleRenderer(split2)
+	p := theme.Padding()
+	c := container.NewBorder(
+		widget.NewSeparator(),
+		nil,
+		nil,
+		nil,
+		container.New(layout.NewCustomPaddedLayout(-p, 0, 0, 0), split2),
+	)
+	return widget.NewSimpleRenderer(c)
 }
 
 func (a *CharacterCommunications) makeGroupList() *widget.List {
+	maxGroup := slices.MaxFunc(app.NotificationGroups(), func(a, b app.NotificationGroup) int {
+		return strings.Compare(a.String(), b.String())
+	})
 	l := widget.NewList(
 		func() int {
 			return len(a.Groups)
 		},
 		func() fyne.CanvasObject {
 			return container.NewHBox(
-				widget.NewLabel("template"), layout.NewSpacer(), kwidget.NewBadge("999"),
+				widget.NewLabel(maxGroup.String()+"WWWWWWWW"), layout.NewSpacer(), kwidget.NewBadge("999"),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {

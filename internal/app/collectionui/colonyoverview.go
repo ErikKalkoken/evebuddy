@@ -109,8 +109,7 @@ func NewColonyOverview(u app.UI) *ColonyOverview {
 }
 
 func (a *ColonyOverview) CreateRenderer() fyne.WidgetRenderer {
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	c := container.NewBorder(top, nil, nil, nil, a.body)
+	c := container.NewBorder(a.top, nil, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
 }
 

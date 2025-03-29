@@ -39,14 +39,7 @@ func NewAppBar(title string, body fyne.CanvasObject, items ...*IconButton) *AppB
 	if !w.isMobile {
 		w.bg.Hide()
 	}
-	var size fyne.ThemeSizeName
-	if w.isMobile {
-		size = theme.SizeNameSubHeadingText
-	} else {
-		size = theme.SizeNameText
-	}
-	w.title = NewLabelWithSize(title, size)
-	w.title.TextStyle.Bold = true
+	w.title = NewLabelWithSize(title, theme.SizeNameSubHeadingText)
 	w.title.Truncation = fyne.TextTruncateEllipsis
 	return w
 }
@@ -94,7 +87,6 @@ func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 	} else {
 		top = container.NewVBox(
 			row,
-			widget.NewSeparator(),
 			canvas.NewRectangle(color.Transparent),
 		)
 		main = w.body

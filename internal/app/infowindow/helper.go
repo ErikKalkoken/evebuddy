@@ -43,6 +43,5 @@ func makeInfoLogo() *canvas.Image {
 func makeInfoName() *widget.Label {
 	name := widget.NewLabel("Loading...")
 	name.Wrapping = fyne.TextWrapWord
-	name.TextStyle.Bold = true
 	return name
 }

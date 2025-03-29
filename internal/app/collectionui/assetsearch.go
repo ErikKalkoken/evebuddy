@@ -89,7 +89,6 @@ func NewAssetSearch(u app.UI) *AllAssetSearch {
 		a.processData(-1)
 	}
 	a.entry.PlaceHolder = "Search assets"
-	a.total.TextStyle.Bold = true
 	a.found.Hide()
 
 	makeCell := func(col int, r *assetSearchRow) []widget.RichTextSegment {
@@ -163,7 +162,6 @@ func (a *AllAssetSearch) CreateRenderer() fyne.WidgetRenderer {
 	topBox := container.NewVBox(
 		container.NewBorder(nil, nil, nil, a.found, a.total),
 		a.entry,
-		widget.NewSeparator(),
 	)
 	c := container.NewBorder(topBox, nil, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
