@@ -2,7 +2,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -57,9 +56,6 @@ const (
 	ssoClientID         = "11ae857fe4d149b2be60d875649c05f1"
 	userAgent           = "EveBuddy kalkoken87@gmail.com"
 )
-
-// Resonses from these URLs will never be logged.
-var blacklistedURLs = []string{"login.eveonline.com/v2/oauth/token"}
 
 // define flags
 var (
@@ -277,62 +273,4 @@ func setupCrashFile(logDir string) (path string) {
 	}
 	crashFile.Close()
 	return
-}
-
-// logResponse is a callback for retryable logger, which is called for every respose.
-// It logs all HTTP erros and also the complete response when log level is DEBUG.
-func logResponse(l retryablehttp.Logger, r *http.Response) {
-	isDebug := slog.Default().Enabled(context.Background(), slog.LevelDebug)
-	isHttpError := r.StatusCode >= 400
-	if !isDebug && !isHttpError {
-		return
-	}
-
-	var respBody string
-	if slices.ContainsFunc(blacklistedURLs, func(x string) bool {
-		return strings.Contains(r.Request.URL.String(), x)
-	}) {
-		respBody = "xxxxx"
-	} else if r.Body != nil {
-		body, err := io.ReadAll(r.Body)
-		if err == nil {
-			respBody = string(body)
-			r.Body = io.NopCloser(bytes.NewBuffer(body))
-		}
-	}
-
-	var statusText string
-	if r.StatusCode == 420 {
-		statusText = "Error Limited"
-	} else {
-		statusText = http.StatusText(r.StatusCode)
-	}
-	status := fmt.Sprintf("%d %s", r.StatusCode, statusText)
-
-	var level slog.Level
-	if isHttpError {
-		level = slog.LevelWarn
-	} else {
-		level = slog.LevelDebug
-
-	}
-	var args []any
-	if isDebug {
-		args = []any{
-			"method", r.Request.Method,
-			"url", r.Request.URL,
-			"status", status,
-			"header", r.Header,
-			"body", respBody,
-		}
-	} else {
-		args = []any{
-			"method", r.Request.Method,
-			"url", r.Request.URL,
-			"status", status,
-			"body", respBody,
-		}
-	}
-
-	slog.Log(context.Background(), level, "HTTP response", args...)
 }

@@ -2,12 +2,17 @@ package main
 
 import (
 	"bytes"
+	"errors"
+	"io"
 	"log"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
+	"testing/iotest"
 
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/jarcoal/httpmock"
@@ -125,5 +130,69 @@ func TestLogResponse(t *testing.T) {
 				return m
 			}, logBuf.String())
 		}
+	})
+}
+
+func TestBodyToString(t *testing.T) {
+	t.Run("should return body", func(t *testing.T) {
+		u, _ := url.Parse("http://www.example.com")
+		r := &http.Response{
+			Body: io.NopCloser(strings.NewReader("test")),
+			Request: &http.Request{
+				URL: u,
+			},
+		}
+		x := bodyToString(r)
+		assert.Equal(t, "test", x)
+	})
+	t.Run("should return empty when no body", func(t *testing.T) {
+		u, _ := url.Parse("http://www.example.com")
+		r := &http.Response{
+			Request: &http.Request{
+				URL: u,
+			},
+		}
+		x := bodyToString(r)
+		assert.Equal(t, "", x)
+	})
+	t.Run("should redact blocked URL", func(t *testing.T) {
+		u, _ := url.Parse("https://login.eveonline.com/v2/oauth/token")
+		r := &http.Response{
+			Body: io.NopCloser(strings.NewReader("test")),
+			Request: &http.Request{
+				URL: u,
+			},
+		}
+		x := bodyToString(r)
+		assert.Equal(t, "xxxxx", x)
+	})
+	t.Run("can handle error in reading body", func(t *testing.T) {
+		u, _ := url.Parse("http://www.example.com")
+		b := io.NopCloser(iotest.ErrReader(errors.New("custom error")))
+		r := &http.Response{
+			Request: &http.Request{
+				URL: u,
+			},
+			Body: b,
+		}
+		x := bodyToString(r)
+		assert.Equal(t, "ERROR: custom error", x)
+	})
+}
+
+func TestStatusText(t *testing.T) {
+	t.Run("should return status text for normal codes", func(t *testing.T) {
+		r := &http.Response{
+			StatusCode: 200,
+		}
+		x := statusText(r)
+		assert.Equal(t, "200 OK", x)
+	})
+	t.Run("should return status text for 420", func(t *testing.T) {
+		r := &http.Response{
+			StatusCode: 420,
+		}
+		x := statusText(r)
+		assert.Equal(t, "420 Error Limited", x)
 	})
 }
