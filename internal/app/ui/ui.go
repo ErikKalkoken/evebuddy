@@ -548,29 +548,11 @@ func (u *UIBase) MakeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 	items := make([]*fyne.MenuItem, 0)
 	fallbackIcon, _ := fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)
 	var wg sync.WaitGroup
-	if len(cc) > 0 {
-		name := u.StatusCacheService().CharacterName(currentID)
-		it := fyne.NewMenuItem(name, func() {
-			u.ShowInfoWindow(app.EveEntityCharacter, currentID)
-		})
-		it.Icon = fallbackIcon
-		wg.Add(1)
-		go u.UpdateAvatar(currentID, func(r fyne.Resource) {
-			defer wg.Done()
-			it.Icon = r
-		})
-		items = append(items, it)
-	} else {
-		it := fyne.NewMenuItem("No characters", nil)
-		it.Disabled = true
-		items = append(items, it)
-	}
-
 	if len(cc) > 1 {
 		items = append(items, fyne.NewMenuItemSeparator())
-		it2 := fyne.NewMenuItem("Switch character", nil)
-		it2.Disabled = true
-		items = append(items, it2)
+		it := fyne.NewMenuItem("Switch to...", nil)
+		it.Disabled = true
+		items = append(items, it)
 		for _, c := range cc {
 			it := fyne.NewMenuItem(c.Name, func() {
 				err := u.LoadCharacter(c.ID)
@@ -595,13 +577,25 @@ func (u *UIBase) MakeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 		wg.Wait()
 		refresh()
 	}()
-	if u.showManageCharacters != nil {
+	if u.showManageCharacters != nil || currentID != 0 {
 		items = append(items, fyne.NewMenuItemSeparator())
-		it2 := fyne.NewMenuItem("Manage characters", func() {
+		it := fyne.NewMenuItem("Tools", nil)
+		it.Disabled = true
+		items = append(items, it)
+	}
+	if u.showManageCharacters != nil {
+		it := fyne.NewMenuItem("Manage Characters", func() {
 			u.showManageCharacters()
 		})
-		it2.Icon = theme.NewThemedResource(icons.ManageaccountsSvg)
-		items = append(items, it2)
+		it.Icon = theme.NewThemedResource(icons.ManageaccountsSvg)
+		items = append(items, it)
+	}
+	if currentID != 0 {
+		it := fyne.NewMenuItem("Current Character", func() {
+			u.ShowInfoWindow(app.EveEntityCharacter, currentID)
+		})
+		it.Icon = theme.InfoIcon()
+		items = append(items, it)
 	}
 	return items
 }

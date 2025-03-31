@@ -11,6 +11,8 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 const (
@@ -116,11 +118,15 @@ func (w *NavDrawer) makeList(templateWidth int) *widget.List {
 			spacer.SetMinSize(fyne.NewSize(p, 1))
 			icon := widget.NewIcon(iconBlankSvg)
 			s := strings.Repeat("W", templateWidth)
-			text := widget.NewLabel(s) // TODO: Make width a configuration
+			text := NewLabelWithSize(s, theme.SizeNameText) // TODO: Make width a configuration
 			badge := widget.NewLabel("Template")
 			return container.NewStack(
-				container.NewPadded(container.NewHBox(spacer, icon, text, layout.NewSpacer(), badge)),
-				container.New(layout.NewCustomPaddedLayout(0, 0, 2*p, 2*p), widget.NewSeparator()),
+				container.New(layout.NewCustomPaddedLayout(0, 0, p, p),
+					container.NewHBox(spacer, icon, text, layout.NewSpacer(), badge),
+				),
+				container.New(layout.NewCustomPaddedLayout(0, 0, 2*p, 2*p),
+					widget.NewSeparator(),
+				),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -141,7 +147,7 @@ func (w *NavDrawer) makeList(templateWidth int) *widget.List {
 			box := main.(*fyne.Container).Objects[0].(*fyne.Container).Objects
 			spacer := box[0]
 			icon := box[1].(*widget.Icon)
-			title := box[2].(*widget.Label)
+			title := box[2].(*Label)
 			badge := box[4].(*widget.Label)
 			showIcon := func() {
 				var r fyne.Resource
@@ -156,6 +162,7 @@ func (w *NavDrawer) makeList(templateWidth int) *widget.List {
 			}
 			switch it.variant {
 			case navPage:
+				title.SizeName = theme.SizeNameText
 				title.Text = it.text
 				title.TextStyle.Bold = it.isSelected
 				if it.isDisabled {
@@ -178,7 +185,10 @@ func (w *NavDrawer) makeList(templateWidth int) *widget.List {
 					badge.Hide()
 				}
 			case navSectionLabel:
-				title.SetText(it.text)
+				title.SizeName = theme.SizeNameScrollBar
+				toUpper := cases.Upper(language.English)
+				title.Text = toUpper.String(it.text)
+				title.Refresh()
 				icon.Hide()
 				spacer.Hide()
 				badge.Hide()
@@ -230,8 +240,8 @@ func (w *NavDrawer) AddItem(p *NavItem) {
 	w.items = append(w.items, p)
 }
 
-func (w *NavDrawer) Items() []*NavItem {
-	return slices.Clone(w.items)
+func (w *NavDrawer) ScrollToTop() {
+	w.list.ScrollToTop()
 }
 
 func (w *NavDrawer) EnableItem(item *NavItem) {

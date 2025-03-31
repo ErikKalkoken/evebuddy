@@ -56,14 +56,6 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 	u.statusBar = desktopui.NewStatusBar(u)
 	u.pageBars = desktopui.NewPageBarCollection(u)
 
-	u.onInit = func(_ *app.Character) {
-		index := u.Settings().TabsMainID()
-		if index != -1 {
-			u.nav.SelectIndex(index)
-		}
-
-		go u.UpdateMailIndicator()
-	}
 	u.onShowAndRun = func() {
 		u.MainWindow().Resize(u.Settings().WindowSize())
 	}
@@ -124,7 +116,7 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		return fmt.Sprint(v)
 	}
 
-	makePageWithPageBar := func(title string, content fyne.CanvasObject, buttons ...*widget.Button) fyne.CanvasObject {
+	makePageWithPageBarAndAvatar := func(title string, content fyne.CanvasObject, buttons ...*widget.Button) fyne.CanvasObject {
 		bar := u.pageBars.NewPageBar(title, buttons...)
 		return container.NewBorder(
 			bar,
@@ -135,57 +127,15 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		)
 	}
 
-	colonies := iwidget.NewNavPage(
-		"Colonies",
-		theme.NewThemedResource(icons.EarthSvg),
-		makePageWithPageBar("Colonies", u.characterPlanets),
-	)
-	u.characterPlanets.OnUpdate = func(_, expired int) {
-		u.nav.SetItemBadge(colonies, formatBadge(expired, 10))
-	}
-
-	r, f := u.characterMail.MakeComposeMessageAction()
-	compose := widget.NewButtonWithIcon("Compose", r, f)
-	compose.Importance = widget.HighImportance
-	mail := iwidget.NewNavPage(
-		"Mail",
-		theme.MailComposeIcon(),
-		makePageWithPageBar("Mail", u.characterMail, compose),
-	)
-	u.characterMail.OnUpdate = func(count int) {
-		u.nav.SetItemBadge(mail, formatBadge(count, 99))
-	}
-	u.characterMail.OnSendMessage = u.showSendMailWindow
-
-	communications := iwidget.NewNavPage(
-		"Communications",
-		theme.NewThemedResource(icons.MessageSvg),
-		makePageWithPageBar("Communications", u.characterCommunications),
-	)
-	u.characterCommunications.OnUpdate = func(count int) {
-		u.nav.SetItemBadge(communications, formatBadge(count, 999))
-	}
-
-	contracts := iwidget.NewNavPage(
-		"Contracts",
-		theme.NewThemedResource(icons.FileSignSvg),
-		makePageWithPageBar("Contracts", u.characterContracts),
-	)
-
-	skills := iwidget.NewNavPage(
-		"Skills",
-		theme.NewThemedResource(icons.SchoolSvg),
-		makePageWithPageBar(
-			"Skills",
-			container.NewAppTabs(
-				container.NewTabItem("Training Queue", u.characterSkillQueue),
-				container.NewTabItem("Skill Catalogue", u.characterSkillCatalogue),
-				container.NewTabItem("Ships", u.characterShips),
-				container.NewTabItem("Attributes", u.characterAttributes),
-			)))
-
-	u.characterSkillQueue.OnUpdate = func(status, _ string) {
-		u.nav.SetItemBadge(skills, status)
+	makePageWithPageBar := func(title string, content fyne.CanvasObject, buttons ...*widget.Button) fyne.CanvasObject {
+		l := iwidget.NewLabelWithSize(title, theme.SizeNameSubHeadingText)
+		return container.NewBorder(
+			l,
+			nil,
+			nil,
+			nil,
+			content,
+		)
 	}
 
 	// All characters
@@ -198,29 +148,11 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 	// 	u.allAssetSearch.Focus()
 	// }
 
-	assets := iwidget.NewNavPage(
-		"Assets",
-		theme.NewThemedResource(icons.Inventory2Svg),
-		makePageWithPageBar("Assets", u.characterAssets),
-	)
-	clones := iwidget.NewNavPage(
-		"Clones",
-		theme.NewThemedResource(icons.HeadSnowflakeSvg),
-		makePageWithPageBar("Clones", container.NewAppTabs(
-			container.NewTabItem("Current Clone", u.characterImplants),
-			container.NewTabItem("Jump Clones", u.characterJumpClones),
-		)))
 	overview := iwidget.NewNavPage(
 		"Overview",
 		theme.NewThemedResource(icons.AccountMultipleSvg),
 		makePageWithPageBar("Overview", u.characterOverview),
 	)
-	wallet := iwidget.NewNavPage("Wallet",
-		theme.NewThemedResource(icons.AttachmoneySvg),
-		makePageWithPageBar("Wallet", container.NewAppTabs(
-			container.NewTabItem("Transactions", u.characterWalletJournal),
-			container.NewTabItem("Market Transactions", u.characterWalletTransaction),
-		)))
 
 	wealth := iwidget.NewNavPage(
 		"Wealth",
@@ -232,18 +164,86 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		u.nav.SetItemBadge(wealth, ihumanize.Number(wallet+assets, 1))
 	}
 
+	// current character
+
+	assets := iwidget.NewNavPage(
+		"Assets",
+		theme.NewThemedResource(icons.Inventory2Svg),
+		makePageWithPageBarAndAvatar("Assets", u.characterAssets),
+	)
+	clones := iwidget.NewNavPage(
+		"Clones",
+		theme.NewThemedResource(icons.HeadSnowflakeSvg),
+		makePageWithPageBarAndAvatar("Clones", container.NewAppTabs(
+			container.NewTabItem("Current Clone", u.characterImplants),
+			container.NewTabItem("Jump Clones", u.characterJumpClones),
+		)))
+
+	colonies := iwidget.NewNavPage(
+		"Colonies",
+		theme.NewThemedResource(icons.EarthSvg),
+		makePageWithPageBarAndAvatar("Colonies", u.characterPlanets),
+	)
+	u.characterPlanets.OnUpdate = func(_, expired int) {
+		u.nav.SetItemBadge(colonies, formatBadge(expired, 10))
+	}
+
+	r, f := u.characterMail.MakeComposeMessageAction()
+	compose := widget.NewButtonWithIcon("Compose", r, f)
+	compose.Importance = widget.HighImportance
+	mail := iwidget.NewNavPage(
+		"Mail",
+		theme.MailComposeIcon(),
+		makePageWithPageBarAndAvatar("Mail", u.characterMail, compose),
+	)
+	u.characterMail.OnUpdate = func(count int) {
+		u.nav.SetItemBadge(mail, formatBadge(count, 99))
+	}
+	u.characterMail.OnSendMessage = u.showSendMailWindow
+
+	communications := iwidget.NewNavPage(
+		"Communications",
+		theme.NewThemedResource(icons.MessageSvg),
+		makePageWithPageBarAndAvatar("Communications", u.characterCommunications),
+	)
+	u.characterCommunications.OnUpdate = func(count int) {
+		u.nav.SetItemBadge(communications, formatBadge(count, 999))
+	}
+
+	contracts := iwidget.NewNavPage(
+		"Contracts",
+		theme.NewThemedResource(icons.FileSignSvg),
+		makePageWithPageBarAndAvatar("Contracts", u.characterContracts),
+	)
+
+	skills := iwidget.NewNavPage(
+		"Skills",
+		theme.NewThemedResource(icons.SchoolSvg),
+		makePageWithPageBarAndAvatar(
+			"Skills",
+			container.NewAppTabs(
+				container.NewTabItem("Training Queue", u.characterSkillQueue),
+				container.NewTabItem("Skill Catalogue", u.characterSkillCatalogue),
+				container.NewTabItem("Ships", u.characterShips),
+				container.NewTabItem("Attributes", u.characterAttributes),
+			)))
+
+	u.characterSkillQueue.OnUpdate = func(status, _ string) {
+		u.nav.SetItemBadge(skills, status)
+	}
+
+	wallet := iwidget.NewNavPage("Wallet",
+		theme.NewThemedResource(icons.AttachmoneySvg),
+		makePageWithPageBarAndAvatar("Wallet", container.NewAppTabs(
+			container.NewTabItem("Transactions", u.characterWalletJournal),
+			container.NewTabItem("Market Transactions", u.characterWalletTransaction),
+		)))
+
+	// nav bar
+
 	u.nav = iwidget.NewNavDrawer(
-		iwidget.NewNavSectionLabel("Current Character"),
-		assets,
-		clones,
-		contracts,
-		communications,
-		colonies,
-		mail,
-		skills,
-		wallet,
-		iwidget.NewNavSeparator(),
 		iwidget.NewNavSectionLabel("All Characters"),
+		overview,
 		iwidget.NewNavPage(
 			"Assets",
 			theme.NewThemedResource(icons.Inventory2Svg),
@@ -264,14 +264,26 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 			theme.NewThemedResource(icons.MapMarkerSvg),
 			makePageWithPageBar("Locations", u.locationOverview),
 		),
-		overview,
 		iwidget.NewNavPage(
 			"Training",
 			theme.NewThemedResource(icons.SchoolSvg),
 			makePageWithPageBar("Training", u.trainingOverview),
 		),
 		wealth,
+		// ------------------
+		iwidget.NewNavSeparator(),
+		iwidget.NewNavSectionLabel("Current Character"),
+		assets,
+		clones,
+		contracts,
+		communications,
+		colonies,
+		mail,
+		skills,
+		wallet,
 	)
+	u.nav.Select(overview)
+	u.nav.ScrollToTop()
 
 	mainContent := container.NewBorder(nil, u.statusBar, nil, nil, u.nav)
 	u.MainWindow().SetContent(mainContent)
@@ -295,6 +307,9 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		})
 	}
 	u.HideMailIndicator() // init system tray icon
+	u.onInit = func(_ *app.Character) {
+		go u.UpdateMailIndicator()
+	}
 	u.onUpdateCharacter = func(c *app.Character) {
 		go func() {
 			characterPages := []*iwidget.NavItem{
@@ -329,9 +344,7 @@ func (u *UIDesktop) saveAppState() {
 		slog.Warn("Failed to save app state")
 	}
 	u.Settings().SetWindowSize(u.MainWindow().Canvas().Size())
-	u.Settings().SetTabsMainID(u.nav.SelectedIndex())
-
-	slog.Info("Saved app state")
+	slog.Debug("Saved app state")
 }
 
 func (u *UIDesktop) ResetDesktopSettings() {
@@ -427,7 +440,7 @@ func (u *UIDesktop) makeMenu() *fyne.MainMenu {
 	fileMenu := fyne.NewMenu("File")
 
 	// Info menu
-	characterItem := fyne.NewMenuItem("Current character...", func() {
+	characterItem := fyne.NewMenuItem("Current Character...", func() {
 		characterID := u.CurrentCharacterID()
 		if characterID == 0 {
 			u.ShowSnackbar("ERROR: No character selected")
@@ -441,7 +454,7 @@ func (u *UIDesktop) makeMenu() *fyne.MainMenu {
 	}
 	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, characterItem)
 
-	locationItem := fyne.NewMenuItem("Current location...", func() {
+	locationItem := fyne.NewMenuItem("Current Location...", func() {
 		c := u.CurrentCharacter()
 		if c == nil {
 			u.ShowSnackbar("ERROR: No character selected")
@@ -459,7 +472,7 @@ func (u *UIDesktop) makeMenu() *fyne.MainMenu {
 	}
 	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, locationItem)
 
-	shipItem := fyne.NewMenuItem("Current ship...", func() {
+	shipItem := fyne.NewMenuItem("Current Ship...", func() {
 		c := u.CurrentCharacter()
 		if c == nil {
 			u.ShowSnackbar("ERROR: No character selected")
@@ -501,14 +514,14 @@ func (u *UIDesktop) makeMenu() *fyne.MainMenu {
 	}
 	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, settingsItem)
 
-	charactersItem := fyne.NewMenuItem("Manage characters...", u.showManageCharacters)
+	charactersItem := fyne.NewMenuItem("Manage Characters...", u.showManageCharacters)
 	charactersItem.Shortcut = &desktop.CustomShortcut{
 		KeyName:  fyne.KeyC,
 		Modifier: fyne.KeyModifierAlt,
 	}
 	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, charactersItem)
 
-	statusItem := fyne.NewMenuItem("Update status...", u.ShowUpdateStatusWindow)
+	statusItem := fyne.NewMenuItem("Update Status...", u.ShowUpdateStatusWindow)
 	statusItem.Shortcut = &desktop.CustomShortcut{
 		KeyName:  fyne.KeyU,
 		Modifier: fyne.KeyModifierAlt,
@@ -530,7 +543,7 @@ func (u *UIDesktop) makeMenu() *fyne.MainMenu {
 			slog.Error("open main website", "error", err)
 		}
 	})
-	report := fyne.NewMenuItem("Report a bug", func() {
+	report := fyne.NewMenuItem("Report A Bug", func() {
 		url := u.WebsiteRootURL().JoinPath("issues")
 		if err := u.App().OpenURL(url); err != nil {
 			slog.Error("open issue website", "error", err)
@@ -545,7 +558,7 @@ func (u *UIDesktop) makeMenu() *fyne.MainMenu {
 		website,
 		report,
 		fyne.NewMenuItemSeparator(),
-		fyne.NewMenuItem("User data...", func() {
+		fyne.NewMenuItem("User Data...", func() {
 			u.showUserDataDialog()
 		}), fyne.NewMenuItem("About...", func() {
 			u.showAboutDialog()
