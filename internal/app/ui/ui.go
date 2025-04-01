@@ -68,6 +68,7 @@ type BaseUI struct {
 	allAssetSearch             *collectionui.AllAssetSearch
 	characterAssets            *characterui.CharacterAssets
 	characterAttributes        *characterui.CharacterAttributes
+	characterBiography         *characterui.CharacterBiography
 	characterCommunications    *characterui.CharacterCommunications
 	characterContracts         *characterui.CharacterContracts
 	characterImplants          *characterui.CharacterImplants
@@ -153,6 +154,7 @@ func NewBaseUI(
 	u.allAssetSearch = collectionui.NewAssetSearch(u)
 	u.characterAssets = characterui.NewCharacterAssets(u)
 	u.characterAttributes = characterui.NewCharacterAttributes(u)
+	u.characterBiography = characterui.NewCharacterBiography(u)
 	u.characterCommunications = characterui.NewCharacterCommunications(u)
 	u.characterContracts = characterui.NewCharacterContracts(u)
 	u.characterImplants = characterui.NewCharacterImplants(u)
@@ -402,6 +404,7 @@ func (u *BaseUI) updateCharacter() {
 	ff := map[string]func(){
 		"assets":            u.characterAssets.Update,
 		"attributes":        u.characterAttributes.Update,
+		"biography":         u.characterBiography.Update,
 		"contracts":         u.characterContracts.Update,
 		"implants":          u.characterImplants.Update,
 		"jumpClones":        u.characterJumpClones.Update,

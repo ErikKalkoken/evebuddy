@@ -99,12 +99,14 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 		theme.NewThemedResource(icons.Inventory2Svg),
 		makePageWithPageBar("Assets", u.characterAssets),
 	)
-	clones := iwidget.NewNavPage(
-		"Clones",
-		theme.NewThemedResource(icons.HeadSnowflakeSvg),
-		makePageWithPageBar("Clones", container.NewAppTabs(
-			container.NewTabItem("Current Clone", u.characterImplants),
+	character := iwidget.NewNavPage(
+		"Character Sheet",
+		theme.NewThemedResource(icons.PortraitSvg),
+		makePageWithPageBar("Character Sheet", container.NewAppTabs(
+			container.NewTabItem("Augmentations", u.characterImplants),
 			container.NewTabItem("Jump Clones", u.characterJumpClones),
+			container.NewTabItem("Attributes", u.characterAttributes),
+			container.NewTabItem("Biography", u.characterBiography),
 		)))
 
 	colonies := iwidget.NewNavPage(
@@ -153,7 +155,6 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 				container.NewTabItem("Training Queue", u.characterSkillQueue),
 				container.NewTabItem("Skill Catalogue", u.characterSkillCatalogue),
 				container.NewTabItem("Ships", u.characterShips),
-				container.NewTabItem("Attributes", u.characterAttributes),
 			)))
 
 	u.characterSkillQueue.OnUpdate = func(status, _ string) {
@@ -170,8 +171,8 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 	// nav bar
 
 	characterNav = iwidget.NewNavDrawer("Current Character",
+		character,
 		assets,
-		clones,
 		contracts,
 		communications,
 		colonies,
@@ -208,9 +209,9 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 	// }
 
 	overview := iwidget.NewNavPage(
-		"Overview",
-		theme.NewThemedResource(icons.AccountMultipleSvg),
-		makePageWithTitle("Overview", u.characterOverview),
+		"Characters",
+		theme.NewThemedResource(icons.PortraitSvg),
+		makePageWithTitle("Characters", u.characterOverview),
 	)
 
 	wealth := iwidget.NewNavPage(
@@ -259,8 +260,8 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 		nil,
 		nil,
 		container.NewAppTabs(
-			container.NewTabItem("All Characters", collectiveNav),
-			container.NewTabItem("Current Character", characterNav),
+			container.NewTabItemWithIcon("All Characters", theme.NewThemedResource(icons.GroupSvg), collectiveNav),
+			container.NewTabItemWithIcon("Current Character", theme.AccountIcon(), characterNav),
 		))
 	u.MainWindow().SetContent(mainContent)
 
@@ -291,7 +292,7 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 		go func() {
 			characterPages := []*iwidget.NavItem{
 				assets,
-				clones,
+				character,
 				contracts,
 				communications,
 				colonies,
