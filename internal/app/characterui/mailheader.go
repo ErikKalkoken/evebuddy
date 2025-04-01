@@ -43,7 +43,7 @@ func NewMailHeader(eis app.EveImageService, show func(*app.EveEntity)) *MailHead
 	}
 	w.icon = kxwidget.NewTappableImage(icons.BlankSvg, nil)
 	w.icon.SetFillMode(canvas.ImageFillContain)
-	w.icon.SetMinSize(fyne.NewSquareSize(32))
+	w.icon.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
 	w.ExtendBaseWidget(w)
 	return w
 }

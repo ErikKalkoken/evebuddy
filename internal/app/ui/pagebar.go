@@ -17,6 +17,52 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
+type PageBar struct {
+	widget.BaseWidget
+
+	buttons []*widget.Button
+	icon    *kwidget.TappableImage
+	title   *iwidget.Label
+	u       app.UI
+}
+
+func newPageBar(title string, icon fyne.Resource, u app.UI, buttons ...*widget.Button) *PageBar {
+	i := kwidget.NewTappableImageWithMenu(icon, fyne.NewMenu(""))
+	i.SetFillMode(canvas.ImageFillContain)
+	i.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
+	w := &PageBar{
+		buttons: buttons,
+		icon:    i,
+		title:   iwidget.NewLabelWithSize(title, theme.SizeNameSubHeadingText),
+		u:       u,
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *PageBar) SetIcon(r fyne.Resource) {
+	w.icon.SetResource(r)
+}
+
+func (w *PageBar) SetMenu(items []*fyne.MenuItem) {
+	w.icon.SetMenuItems(items)
+}
+
+func (w *PageBar) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewHBox(
+		container.NewVBox(layout.NewSpacer(), w.title, layout.NewSpacer()),
+		layout.NewSpacer(),
+	)
+	if len(w.buttons) > 0 {
+		for _, b := range w.buttons {
+			c.Add(container.NewCenter(b))
+		}
+	}
+	c.Add(container.NewCenter(w.icon))
+	p := theme.Padding()
+	return widget.NewSimpleRenderer(container.New(layout.NewCustomPaddedLayout(p, 0, 0, 0), c))
+}
+
 type PageBarCollection struct {
 	bars         []*PageBar
 	fallbackIcon fyne.Resource
@@ -64,50 +110,4 @@ func (c *PageBarCollection) Update() {
 	for _, pb := range c.bars {
 		pb.SetMenu(items)
 	}
-}
-
-type PageBar struct {
-	widget.BaseWidget
-
-	buttons []*widget.Button
-	icon    *kwidget.TappableImage
-	title   *iwidget.Label
-	u       app.UI
-}
-
-func newPageBar(title string, icon fyne.Resource, u app.UI, buttons ...*widget.Button) *PageBar {
-	i := kwidget.NewTappableImageWithMenu(icon, fyne.NewMenu(""))
-	i.SetFillMode(canvas.ImageFillContain)
-	i.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
-	w := &PageBar{
-		buttons: buttons,
-		icon:    i,
-		title:   iwidget.NewLabelWithSize(title, theme.SizeNameSubHeadingText),
-		u:       u,
-	}
-	w.ExtendBaseWidget(w)
-	return w
-}
-
-func (w *PageBar) SetIcon(r fyne.Resource) {
-	w.icon.SetResource(r)
-}
-
-func (w *PageBar) SetMenu(items []*fyne.MenuItem) {
-	w.icon.SetMenuItems(items)
-}
-
-func (w *PageBar) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewHBox(
-		container.NewVBox(layout.NewSpacer(), w.title, layout.NewSpacer()),
-		layout.NewSpacer(),
-	)
-	if len(w.buttons) > 0 {
-		for _, b := range w.buttons {
-			c.Add(container.NewCenter(b))
-		}
-	}
-	c.Add(container.NewCenter(w.icon))
-	p := theme.Padding()
-	return widget.NewSimpleRenderer(container.New(layout.NewCustomPaddedLayout(p, 0, 0, 0), c))
 }

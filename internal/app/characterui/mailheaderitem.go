@@ -40,7 +40,7 @@ func NewMailHeaderItem(eis app.EveImageService) *MailHeaderItem {
 		subject:      subject,
 		timestamp:    widget.NewLabel(""),
 	}
-	w.icon = iwidgets.NewImageFromResource(w.FallbackIcon, fyne.NewSquareSize(32))
+	w.icon = iwidgets.NewImageFromResource(w.FallbackIcon, fyne.NewSquareSize(app.IconUnitSize))
 	w.ExtendBaseWidget(w)
 	return w
 }
