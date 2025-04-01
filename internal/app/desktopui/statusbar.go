@@ -45,15 +45,14 @@ type DesktopUI interface {
 type StatusBar struct {
 	widget.BaseWidget
 
-	characterCount   *StatusBarItem
-	eveClock         *StatusBarItem
-	eveStatus        *StatusBarItem
-	eveStatusError   string
-	infoText         *widget.Label
-	newVersionHint   *fyne.Container
-	u                DesktopUI
-	updateStatus     *StatusBarItem
-	currentCharacter *StatusBarItem
+	characterCount *StatusBarItem
+	eveClock       *StatusBarItem
+	eveStatus      *StatusBarItem
+	eveStatusError string
+	infoText       *widget.Label
+	newVersionHint *fyne.Container
+	u              DesktopUI
+	updateStatus   *StatusBarItem
 }
 
 func NewStatusBar(u DesktopUI) *StatusBar {
@@ -63,9 +62,6 @@ func NewStatusBar(u DesktopUI) *StatusBar {
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
-	a.currentCharacter = NewStatusBarItem(theme.AccountIcon(), "?", func() {
-		u.ShowManageCharactersWindow()
-	})
 	a.characterCount = NewStatusBarItem(theme.NewThemedResource(icons.GroupSvg), "?", func() {
 		u.ShowManageCharactersWindow()
 	})
@@ -88,8 +84,6 @@ func (a *StatusBar) CreateRenderer() fyne.WidgetRenderer {
 			a.infoText,
 			layout.NewSpacer(),
 			a.newVersionHint,
-			widget.NewSeparator(),
-			a.currentCharacter,
 			widget.NewSeparator(),
 			a.updateStatus,
 			widget.NewSeparator(),
@@ -222,14 +216,6 @@ func (a *StatusBar) StartUpdateTicker() {
 }
 
 func (a *StatusBar) Update() {
-	c := a.u.CurrentCharacter()
-	var name string
-	if c != nil {
-		name = c.EveCharacter.Name
-	} else {
-		name = "(None)"
-	}
-	a.currentCharacter.SetText(name)
 	x := a.u.StatusCacheService().ListCharacters()
 	a.characterCount.SetText(strconv.Itoa(len(x)))
 	a.updateUpdateStatus()

@@ -39,7 +39,7 @@ type UIDesktop struct {
 	settingsWindow        fyne.Window
 	sfg                   *singleflight.Group
 	statusBar             *desktopui.StatusBar
-	pageBars              *desktopui.PageBarCollection
+	toolbar               *desktopui.Toolbar
 }
 
 // NewUIDesktop build the UI and returns it.
@@ -54,7 +54,7 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 	}
 
 	u.statusBar = desktopui.NewStatusBar(u)
-	u.pageBars = desktopui.NewPageBarCollection(u)
+	u.toolbar = desktopui.NewToolbar(u)
 
 	u.onShowAndRun = func() {
 		u.MainWindow().Resize(u.Settings().WindowSize())
@@ -92,8 +92,8 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		u.saveAppState()
 	}
 	u.onUpdateStatus = func() {
-		go u.pageBars.Update()
 		go u.statusBar.Update()
+		go u.toolbar.Update()
 	}
 	u.ShowMailIndicator = func() {
 		deskApp.SetSystemTrayIcon(icons.IconmarkedPng)
@@ -116,21 +116,16 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		return fmt.Sprint(v)
 	}
 
-	makePageWithPageBarAndAvatar := func(title string, content fyne.CanvasObject, buttons ...*widget.Button) fyne.CanvasObject {
-		bar := u.pageBars.NewPageBar(title, buttons...)
-		return container.NewBorder(
-			bar,
-			nil,
-			nil,
-			nil,
-			content,
-		)
-	}
-
 	makePageWithPageBar := func(title string, content fyne.CanvasObject, buttons ...*widget.Button) fyne.CanvasObject {
-		l := iwidget.NewLabelWithSize(title, theme.SizeNameSubHeadingText)
+		c := container.NewHBox(iwidget.NewLabelWithSize(title, theme.SizeNameSubHeadingText))
+		if len(buttons) > 0 {
+			c.Add(layout.NewSpacer())
+			for _, b := range buttons {
+				c.Add(b)
+			}
+		}
 		return container.NewBorder(
-			l,
+			c,
 			nil,
 			nil,
 			nil,
@@ -169,12 +164,12 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 	assets := iwidget.NewNavPage(
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
-		makePageWithPageBarAndAvatar("Assets", u.characterAssets),
+		makePageWithPageBar("Assets", u.characterAssets),
 	)
 	clones := iwidget.NewNavPage(
 		"Clones",
 		theme.NewThemedResource(icons.HeadSnowflakeSvg),
-		makePageWithPageBarAndAvatar("Clones", container.NewAppTabs(
+		makePageWithPageBar("Clones", container.NewAppTabs(
 			container.NewTabItem("Current Clone", u.characterImplants),
 			container.NewTabItem("Jump Clones", u.characterJumpClones),
 		)))
@@ -182,7 +177,7 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 	colonies := iwidget.NewNavPage(
 		"Colonies",
 		theme.NewThemedResource(icons.EarthSvg),
-		makePageWithPageBarAndAvatar("Colonies", u.characterPlanets),
+		makePageWithPageBar("Colonies", u.characterPlanets),
 	)
 	u.characterPlanets.OnUpdate = func(_, expired int) {
 		u.nav.SetItemBadge(colonies, formatBadge(expired, 10))
@@ -194,7 +189,7 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 	mail := iwidget.NewNavPage(
 		"Mail",
 		theme.MailComposeIcon(),
-		makePageWithPageBarAndAvatar("Mail", u.characterMail, compose),
+		makePageWithPageBar("Mail", u.characterMail, compose),
 	)
 	u.characterMail.OnUpdate = func(count int) {
 		u.nav.SetItemBadge(mail, formatBadge(count, 99))
@@ -204,7 +199,7 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 	communications := iwidget.NewNavPage(
 		"Communications",
 		theme.NewThemedResource(icons.MessageSvg),
-		makePageWithPageBarAndAvatar("Communications", u.characterCommunications),
+		makePageWithPageBar("Communications", u.characterCommunications),
 	)
 	u.characterCommunications.OnUpdate = func(count int) {
 		u.nav.SetItemBadge(communications, formatBadge(count, 999))
@@ -213,13 +208,13 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 	contracts := iwidget.NewNavPage(
 		"Contracts",
 		theme.NewThemedResource(icons.FileSignSvg),
-		makePageWithPageBarAndAvatar("Contracts", u.characterContracts),
+		makePageWithPageBar("Contracts", u.characterContracts),
 	)
 
 	skills := iwidget.NewNavPage(
 		"Skills",
 		theme.NewThemedResource(icons.SchoolSvg),
-		makePageWithPageBarAndAvatar(
+		makePageWithPageBar(
 			"Skills",
 			container.NewAppTabs(
 				container.NewTabItem("Training Queue", u.characterSkillQueue),
@@ -234,7 +229,7 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 
 	wallet := iwidget.NewNavPage("Wallet",
 		theme.NewThemedResource(icons.AttachmoneySvg),
-		makePageWithPageBarAndAvatar("Wallet", container.NewAppTabs(
+		makePageWithPageBar("Wallet", container.NewAppTabs(
 			container.NewTabItem("Transactions", u.characterWalletJournal),
 			container.NewTabItem("Market Transactions", u.characterWalletTransaction),
 		)))
@@ -285,7 +280,7 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 	u.nav.Select(overview)
 	u.nav.ScrollToTop()
 
-	mainContent := container.NewBorder(nil, u.statusBar, nil, nil, u.nav)
+	mainContent := container.NewBorder(u.toolbar, u.statusBar, nil, nil, u.nav)
 	u.MainWindow().SetContent(mainContent)
 
 	// system tray menu
@@ -334,8 +329,8 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 			}
 		}()
 	}
-	menu := u.makeMenu()
-	u.MainWindow().SetMainMenu(menu)
+	// menu := u.makeMenu()
+	// u.MainWindow().SetMainMenu(menu)
 	return u
 }
 
@@ -353,7 +348,7 @@ func (u *UIDesktop) ResetDesktopSettings() {
 	u.Settings().ResetSysTrayEnabled()
 }
 
-func (u *UIDesktop) showSettingsWindow() {
+func (u *UIDesktop) ShowSettingsWindow() {
 	if u.settingsWindow != nil {
 		u.settingsWindow.Show()
 		return
@@ -435,6 +430,7 @@ func (u *UIDesktop) showSearchWindow() {
 	u.gameSearch.Focus()
 }
 
+// TODO: Keep shortcuts
 func (u *UIDesktop) makeMenu() *fyne.MainMenu {
 	// File menu
 	fileMenu := fyne.NewMenu("File")
@@ -507,7 +503,7 @@ func (u *UIDesktop) makeMenu() *fyne.MainMenu {
 	)
 
 	// Tools menu
-	settingsItem := fyne.NewMenuItem("Settings...", u.showSettingsWindow)
+	settingsItem := fyne.NewMenuItem("Settings...", u.ShowSettingsWindow)
 	settingsItem.Shortcut = &desktop.CustomShortcut{
 		KeyName:  fyne.KeyComma,
 		Modifier: fyne.KeyModifierControl,
@@ -561,7 +557,7 @@ func (u *UIDesktop) makeMenu() *fyne.MainMenu {
 		fyne.NewMenuItem("User Data...", func() {
 			u.showUserDataDialog()
 		}), fyne.NewMenuItem("About...", func() {
-			u.showAboutDialog()
+			u.ShowAboutDialog()
 		}),
 	)
 
@@ -589,7 +585,7 @@ func (u *UIDesktop) disableMenuShortcuts() {
 	}
 }
 
-func (u *UIDesktop) showAboutDialog() {
+func (u *UIDesktop) ShowAboutDialog() {
 	d := dialog.NewCustom("About", "Close", u.makeAboutPage(), u.MainWindow())
 	u.ModifyShortcutsForDialog(d, u.MainWindow())
 	d.Show()
