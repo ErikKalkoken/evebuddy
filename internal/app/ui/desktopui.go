@@ -94,7 +94,7 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 
 	// current character
 
-	assets := iwidget.NewNavPage(
+	characterAssets := iwidget.NewNavPage(
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
 		makePageWithPageBar("Assets", u.characterAssets),
@@ -172,7 +172,7 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 
 	characterNav = iwidget.NewNavDrawer("Current Character",
 		character,
-		assets,
+		characterAssets,
 		contracts,
 		communications,
 		colonies,
@@ -200,14 +200,6 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 
 	// All Characters
 
-	// FIXME
-	// overviewTabs.OnSelected = func(ti *container.TabItem) {
-	// 	if ti != overviewAssets {
-	// 		return
-	// 	}
-	// 	u.allAssetSearch.Focus()
-	// }
-
 	overview := iwidget.NewNavPage(
 		"Characters",
 		theme.NewThemedResource(icons.PortraitSvg),
@@ -224,13 +216,14 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 		characterNav.SetItemBadge(wealth, ihumanize.Number(wallet+assets, 1))
 	}
 
+	allAssets := iwidget.NewNavPage(
+		"Assets",
+		theme.NewThemedResource(icons.Inventory2Svg),
+		makePageWithTitle("Assets", u.allAssetSearch),
+	)
 	collectiveNav := iwidget.NewNavDrawer("All Characters",
 		overview,
-		iwidget.NewNavPage(
-			"Assets",
-			theme.NewThemedResource(icons.Inventory2Svg),
-			makePageWithTitle("Assets", u.allAssetSearch),
-		),
+		allAssets,
 		iwidget.NewNavPage(
 			"Clones",
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
@@ -253,6 +246,11 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 		),
 		wealth,
 	)
+	collectiveNav.OnSelectItem = func(it *iwidget.NavItem) {
+		if it == allAssets {
+			u.allAssetSearch.Focus()
+		}
+	}
 
 	mainContent := container.NewBorder(
 		NewToolbar(u),
@@ -291,7 +289,7 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 	u.onUpdateCharacter = func(c *app.Character) {
 		go func() {
 			characterPages := []*iwidget.NavItem{
-				assets,
+				characterAssets,
 				character,
 				contracts,
 				communications,

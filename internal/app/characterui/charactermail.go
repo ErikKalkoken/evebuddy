@@ -114,7 +114,7 @@ type CharacterMail struct {
 func NewCharacterMail(u app.UI) *CharacterMail {
 	a := &CharacterMail{
 		body:      widget.NewLabel(""),
-		header:    NewMailHeader(u.ShowEveEntityInfoWindow),
+		header:    NewMailHeader(u.EveImageService(), u.ShowEveEntityInfoWindow),
 		headers:   make([]*app.CharacterMailHeader, 0),
 		headerTop: widget.NewLabel(""),
 		subject:   iwidget.NewLabelWithSize("", theme.SizeNameSubHeadingText),
@@ -610,7 +610,7 @@ func (a *CharacterMail) setMail(mailID int32) {
 		}()
 	}
 	a.subject.SetText(a.mail.Subject)
-	a.header.Set(a.u.EveImageService(), a.mail.From, a.mail.Timestamp, a.mail.Recipients...)
+	a.header.Set(a.mail.From, a.mail.Timestamp, a.mail.Recipients...)
 	a.body.SetText(a.mail.BodyPlain())
 	a.toolbar.Show()
 }

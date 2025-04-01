@@ -79,6 +79,8 @@ func newNavItem(variant navItemVariant) *NavItem {
 type NavDrawer struct {
 	widget.BaseWidget
 
+	OnSelectItem func(*NavItem)
+
 	items    []*NavItem
 	list     *widget.List
 	selected int
@@ -301,6 +303,9 @@ func (w *NavDrawer) selectIndex(id int) {
 	}
 	w.pages.Objects[it.stackIndex].Show()
 	w.selected = id
+	if w.OnSelectItem != nil {
+		w.OnSelectItem(it)
+	}
 }
 
 func (w *NavDrawer) SelectedIndex() int {

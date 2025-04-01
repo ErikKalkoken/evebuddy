@@ -281,8 +281,8 @@ func (a *CharacterCommunications) setDetail(n *app.CharacterNotification) {
 	subject := iwidget.NewLabelWithSize(n.TitleDisplay(), theme.SizeNameSubHeadingText)
 	subject.Wrapping = fyne.TextWrapWord
 	a.Detail.Add(subject)
-	h := NewMailHeader(a.u.ShowEveEntityInfoWindow)
-	h.Set(a.u.EveImageService(), n.Sender, n.Timestamp, a.u.CurrentCharacter().EveCharacter.ToEveEntity())
+	h := NewMailHeader(a.u.EveImageService(), a.u.ShowEveEntityInfoWindow)
+	h.Set(n.Sender, n.Timestamp, a.u.CurrentCharacter().EveCharacter.ToEveEntity())
 	a.Detail.Add(h)
 	s, err := n.BodyPlain() // using markdown blocked by #61
 	if err != nil {

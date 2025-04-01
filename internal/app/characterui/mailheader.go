@@ -18,8 +18,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-// TODO: Restructure UI so that services are setup before UI New()
-
 type MailHeader struct {
 	widget.BaseWidget
 
@@ -28,9 +26,10 @@ type MailHeader struct {
 	icon       *kxwidget.TappableImage
 	recipients *kxwidget.TappableLabel
 	timestamp  *widget.Label
+	eis        app.EveImageService
 }
 
-func NewMailHeader(show func(*app.EveEntity)) *MailHeader {
+func NewMailHeader(eis app.EveImageService, show func(*app.EveEntity)) *MailHeader {
 	recipients := kxwidget.NewTappableLabel("", nil)
 	recipients.Truncation = fyne.TextTruncateEllipsis
 	from := kxwidget.NewTappableLabel("", nil)
@@ -40,6 +39,7 @@ func NewMailHeader(show func(*app.EveEntity)) *MailHeader {
 		recipients: recipients,
 		showInfo:   show,
 		timestamp:  widget.NewLabel(""),
+		eis:        eis,
 	}
 	w.icon = kxwidget.NewTappableImage(icons.BlankSvg, nil)
 	w.icon.SetFillMode(canvas.ImageFillContain)
@@ -48,7 +48,7 @@ func NewMailHeader(show func(*app.EveEntity)) *MailHeader {
 	return w
 }
 
-func (w *MailHeader) Set(eis app.EveImageService, from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
+func (w *MailHeader) Set(from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
 	w.timestamp.Text = timestamp.Format(app.DateTimeFormat)
 	rr := xslices.Map(recipients, func(x *app.EveEntity) string {
 		return x.Name
@@ -68,7 +68,7 @@ func (w *MailHeader) Set(eis app.EveImageService, from *app.EveEntity, timestamp
 	}
 	w.Refresh()
 	go func() {
-		res, err := FetchEveEntityAvatar(eis, from, icons.BlankSvg)
+		res, err := FetchEveEntityAvatar(w.eis, from, icons.BlankSvg)
 		if err != nil {
 			slog.Error("fetch eve entity avatar", "error", err)
 			res = icons.Questionmark32Png
