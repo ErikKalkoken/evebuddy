@@ -83,12 +83,14 @@ type NavDrawer struct {
 	list     *widget.List
 	selected int
 	pages    *fyne.Container
+	title    string
 }
 
-func NewNavDrawer(items ...*NavItem) *NavDrawer {
+func NewNavDrawer(title string, items ...*NavItem) *NavDrawer {
 	w := &NavDrawer{
 		pages:    container.NewStack(),
 		selected: indexUndefined,
+		title:    title,
 	}
 	w.ExtendBaseWidget(w)
 	mx := slices.MaxFunc(items, func(a, b *NavItem) int {
@@ -320,7 +322,16 @@ func (w *NavDrawer) CreateRenderer() fyne.WidgetRenderer {
 		container.NewBorder(
 			nil,
 			nil,
-			container.NewHBox(w.list, widget.NewSeparator()),
+			container.NewHBox(
+				container.NewBorder(
+					NewLabelWithSize(w.title, theme.SizeNameSubHeadingText),
+					nil,
+					nil,
+					nil,
+					w.list,
+				),
+				widget.NewSeparator(),
+			),
 			nil,
 			w.pages,
 		))

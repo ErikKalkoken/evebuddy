@@ -27,19 +27,21 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
+type shortcutDef struct {
+	shortcut fyne.Shortcut
+	handler  func(shortcut fyne.Shortcut)
+}
+
 // The UIDesktop creates the UI for desktop.
 type UIDesktop struct {
 	*UIBase
 
-	accountWindow         fyne.Window
-	menuItemsWithShortcut []*fyne.MenuItem
-	nav                   *iwidget.NavDrawer
-	overviewTab           *container.TabItem
-	searchWindow          fyne.Window
-	settingsWindow        fyne.Window
-	sfg                   *singleflight.Group
-	statusBar             *desktopui.StatusBar
-	toolbar               *desktopui.Toolbar
+	accountWindow  fyne.Window
+	searchWindow   fyne.Window
+	settingsWindow fyne.Window
+
+	shortcuts map[string]shortcutDef
+	sfg       *singleflight.Group
 }
 
 // NewUIDesktop build the UI and returns it.
@@ -53,58 +55,22 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		panic("Could not start in desktop mode")
 	}
 
-	u.statusBar = desktopui.NewStatusBar(u)
-	u.toolbar = desktopui.NewToolbar(u)
-
-	u.onShowAndRun = func() {
-		u.MainWindow().Resize(u.Settings().WindowSize())
-	}
-	u.onAppFirstStarted = func() {
-		// FIXME: Workaround to mitigate a bug that causes the window to sometimes render
-		// only in parts and freeze. The issue is known to happen on Linux desktops.
-		if runtime.GOOS == "linux" {
-			go func() {
-				time.Sleep(500 * time.Millisecond)
-				s := u.MainWindow().Canvas().Size()
-				u.MainWindow().Resize(fyne.NewSize(s.Width-0.2, s.Height-0.2))
-				u.MainWindow().Resize(fyne.NewSize(s.Width, s.Height))
-			}()
-		}
-		go u.statusBar.StartUpdateTicker()
-		u.MainWindow().Canvas().AddShortcut(
-			&desktop.CustomShortcut{
-				KeyName:  fyne.KeyS,
-				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierControl,
-			},
-			func(fyne.Shortcut) {
-				u.ShowSnackbar(fmt.Sprintf(
-					"%s. This is a test snack bar at %s",
-					fake.WordsN(10),
-					time.Now().Format("15:04:05.999999999"),
-				))
-				u.ShowSnackbar(fmt.Sprintf(
-					"This is a test snack bar at %s",
-					time.Now().Format("15:04:05.999999999"),
-				))
-			})
-	}
-	u.onAppStopped = func() {
-		u.saveAppState()
-	}
-	u.onUpdateStatus = func() {
-		go u.statusBar.Update()
-		go u.toolbar.Update()
-	}
 	u.ShowMailIndicator = func() {
 		deskApp.SetSystemTrayIcon(icons.IconmarkedPng)
 	}
 	u.HideMailIndicator = func() {
 		deskApp.SetSystemTrayIcon(icons.IconPng)
 	}
-	u.EnableMenuShortcuts = u.enableMenuShortcuts
-	u.DisableMenuShortcuts = u.disableMenuShortcuts
+	u.EnableMenuShortcuts = u.enableShortcuts
+	u.DisableMenuShortcuts = u.disableShortcuts
 
 	u.showManageCharacters = u.ShowManageCharactersWindow
+
+	u.defineShortcuts()
+	statusBar := desktopui.NewStatusBar(u)
+	pageBars := desktopui.NewPageBarCollection(u)
+
+	var characterNav *iwidget.NavDrawer
 
 	formatBadge := func(v, mx int) string {
 		if v == 0 {
@@ -117,46 +83,14 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 	}
 
 	makePageWithPageBar := func(title string, content fyne.CanvasObject, buttons ...*widget.Button) fyne.CanvasObject {
-		c := container.NewHBox(iwidget.NewLabelWithSize(title, theme.SizeNameSubHeadingText))
-		if len(buttons) > 0 {
-			c.Add(layout.NewSpacer())
-			for _, b := range buttons {
-				c.Add(b)
-			}
-		}
+		bar := pageBars.NewPageBar(title, buttons...)
 		return container.NewBorder(
-			c,
+			bar,
 			nil,
 			nil,
 			nil,
 			content,
 		)
-	}
-
-	// All characters
-
-	// FIXME
-	// overviewTabs.OnSelected = func(ti *container.TabItem) {
-	// 	if ti != overviewAssets {
-	// 		return
-	// 	}
-	// 	u.allAssetSearch.Focus()
-	// }
-
-	overview := iwidget.NewNavPage(
-		"Overview",
-		theme.NewThemedResource(icons.AccountMultipleSvg),
-		makePageWithPageBar("Overview", u.characterOverview),
-	)
-
-	wealth := iwidget.NewNavPage(
-		"Wealth",
-		theme.NewThemedResource(icons.GoldSvg),
-		makePageWithPageBar("Wealth", u.wealthOverview),
-	)
-
-	u.wealthOverview.OnUpdate = func(wallet, assets float64) {
-		u.nav.SetItemBadge(wealth, ihumanize.Number(wallet+assets, 1))
 	}
 
 	// current character
@@ -180,7 +114,7 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		makePageWithPageBar("Colonies", u.characterPlanets),
 	)
 	u.characterPlanets.OnUpdate = func(_, expired int) {
-		u.nav.SetItemBadge(colonies, formatBadge(expired, 10))
+		characterNav.SetItemBadge(colonies, formatBadge(expired, 10))
 	}
 
 	r, f := u.characterMail.MakeComposeMessageAction()
@@ -192,7 +126,7 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		makePageWithPageBar("Mail", u.characterMail, compose),
 	)
 	u.characterMail.OnUpdate = func(count int) {
-		u.nav.SetItemBadge(mail, formatBadge(count, 99))
+		characterNav.SetItemBadge(mail, formatBadge(count, 99))
 	}
 	u.characterMail.OnSendMessage = u.showSendMailWindow
 
@@ -202,7 +136,7 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		makePageWithPageBar("Communications", u.characterCommunications),
 	)
 	u.characterCommunications.OnUpdate = func(count int) {
-		u.nav.SetItemBadge(communications, formatBadge(count, 999))
+		characterNav.SetItemBadge(communications, formatBadge(count, 999))
 	}
 
 	contracts := iwidget.NewNavPage(
@@ -224,7 +158,7 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 			)))
 
 	u.characterSkillQueue.OnUpdate = func(status, _ string) {
-		u.nav.SetItemBadge(skills, status)
+		characterNav.SetItemBadge(skills, status)
 	}
 
 	wallet := iwidget.NewNavPage("Wallet",
@@ -236,38 +170,7 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 
 	// nav bar
 
-	u.nav = iwidget.NewNavDrawer(
-		iwidget.NewNavSectionLabel("All Characters"),
-		overview,
-		iwidget.NewNavPage(
-			"Assets",
-			theme.NewThemedResource(icons.Inventory2Svg),
-			makePageWithPageBar("Assets", u.allAssetSearch),
-		),
-		iwidget.NewNavPage(
-			"Clones",
-			theme.NewThemedResource(icons.HeadSnowflakeSvg),
-			makePageWithPageBar("Clones", u.cloneSearch),
-		),
-		iwidget.NewNavPage(
-			"Colonies",
-			theme.NewThemedResource(icons.EarthSvg),
-			makePageWithPageBar("Colonies", u.colonyOverview),
-		),
-		iwidget.NewNavPage(
-			"Locations",
-			theme.NewThemedResource(icons.MapMarkerSvg),
-			makePageWithPageBar("Locations", u.locationOverview),
-		),
-		iwidget.NewNavPage(
-			"Training",
-			theme.NewThemedResource(icons.SchoolSvg),
-			makePageWithPageBar("Training", u.trainingOverview),
-		),
-		wealth,
-		// ------------------
-		iwidget.NewNavSeparator(),
-		iwidget.NewNavSectionLabel("Current Character"),
+	characterNav = iwidget.NewNavDrawer("Current Character",
 		assets,
 		clones,
 		contracts,
@@ -277,10 +180,89 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 		skills,
 		wallet,
 	)
-	u.nav.Select(overview)
-	u.nav.ScrollToTop()
 
-	mainContent := container.NewBorder(u.toolbar, u.statusBar, nil, nil, u.nav)
+	makePageWithTitle := func(title string, content fyne.CanvasObject, buttons ...*widget.Button) fyne.CanvasObject {
+		c := container.NewHBox(iwidget.NewLabelWithSize(title, theme.SizeNameSubHeadingText))
+		if len(buttons) > 0 {
+			c.Add(layout.NewSpacer())
+			for _, b := range buttons {
+				c.Add(b)
+			}
+		}
+		return container.NewBorder(
+			c,
+			nil,
+			nil,
+			nil,
+			content,
+		)
+	}
+
+	// All Characters
+
+	// FIXME
+	// overviewTabs.OnSelected = func(ti *container.TabItem) {
+	// 	if ti != overviewAssets {
+	// 		return
+	// 	}
+	// 	u.allAssetSearch.Focus()
+	// }
+
+	overview := iwidget.NewNavPage(
+		"Overview",
+		theme.NewThemedResource(icons.AccountMultipleSvg),
+		makePageWithTitle("Overview", u.characterOverview),
+	)
+
+	wealth := iwidget.NewNavPage(
+		"Wealth",
+		theme.NewThemedResource(icons.GoldSvg),
+		makePageWithTitle("Wealth", u.wealthOverview),
+	)
+
+	u.wealthOverview.OnUpdate = func(wallet, assets float64) {
+		characterNav.SetItemBadge(wealth, ihumanize.Number(wallet+assets, 1))
+	}
+
+	collectiveNav := iwidget.NewNavDrawer("All Characters",
+		overview,
+		iwidget.NewNavPage(
+			"Assets",
+			theme.NewThemedResource(icons.Inventory2Svg),
+			makePageWithTitle("Assets", u.allAssetSearch),
+		),
+		iwidget.NewNavPage(
+			"Clones",
+			theme.NewThemedResource(icons.HeadSnowflakeSvg),
+			makePageWithTitle("Clones", u.cloneSearch),
+		),
+		iwidget.NewNavPage(
+			"Colonies",
+			theme.NewThemedResource(icons.EarthSvg),
+			makePageWithTitle("Colonies", u.colonyOverview),
+		),
+		iwidget.NewNavPage(
+			"Locations",
+			theme.NewThemedResource(icons.MapMarkerSvg),
+			makePageWithTitle("Locations", u.locationOverview),
+		),
+		iwidget.NewNavPage(
+			"Training",
+			theme.NewThemedResource(icons.SchoolSvg),
+			makePageWithTitle("Training", u.trainingOverview),
+		),
+		wealth,
+	)
+
+	mainContent := container.NewBorder(
+		NewToolbar(u),
+		statusBar,
+		nil,
+		nil,
+		container.NewAppTabs(
+			container.NewTabItem("All Characters", collectiveNav),
+			container.NewTabItem("Current Character", characterNav),
+		))
 	u.MainWindow().SetContent(mainContent)
 
 	// system tray menu
@@ -304,6 +286,7 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 	u.HideMailIndicator() // init system tray icon
 	u.onInit = func(_ *app.Character) {
 		go u.UpdateMailIndicator()
+		u.enableShortcuts()
 	}
 	u.onUpdateCharacter = func(c *app.Character) {
 		go func() {
@@ -319,18 +302,40 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 			}
 			if !u.HasCharacter() {
 				for _, it := range characterPages {
-					u.nav.DisableItem(it)
+					characterNav.DisableItem(it)
 				}
-				u.nav.Select(overview)
+				characterNav.Select(overview)
 				return
 			}
 			for _, it := range characterPages {
-				u.nav.EnableItem(it)
+				characterNav.EnableItem(it)
 			}
 		}()
 	}
-	// menu := u.makeMenu()
-	// u.MainWindow().SetMainMenu(menu)
+	u.onShowAndRun = func() {
+		u.MainWindow().Resize(u.Settings().WindowSize())
+	}
+	u.onAppFirstStarted = func() {
+		// FIXME: Workaround to mitigate a bug that causes the window to sometimes render
+		// only in parts and freeze. The issue is known to happen on Linux desktops.
+		if runtime.GOOS == "linux" {
+			go func() {
+				time.Sleep(500 * time.Millisecond)
+				s := u.MainWindow().Canvas().Size()
+				u.MainWindow().Resize(fyne.NewSize(s.Width-0.2, s.Height-0.2))
+				u.MainWindow().Resize(fyne.NewSize(s.Width, s.Height))
+			}()
+		}
+		go statusBar.StartUpdateTicker()
+
+	}
+	u.onAppStopped = func() {
+		u.saveAppState()
+	}
+	u.onUpdateStatus = func() {
+		go statusBar.Update()
+		go pageBars.Update()
+	}
 	return u
 }
 
@@ -406,6 +411,18 @@ func (u *UIDesktop) ShowManageCharactersWindow() {
 	}
 }
 
+func (u *UIDesktop) PerformSearch(s string) {
+	u.gameSearch.ResetOptions()
+	u.gameSearch.ToogleOptions(false)
+	u.gameSearch.DoSearch(s)
+	u.showSearchWindow()
+}
+
+func (u *UIDesktop) ShowAdvancedSearch() {
+	u.gameSearch.ToogleOptions(true)
+	u.showSearchWindow()
+}
+
 func (u *UIDesktop) showSearchWindow() {
 	if u.searchWindow != nil {
 		u.searchWindow.Show()
@@ -430,158 +447,117 @@ func (u *UIDesktop) showSearchWindow() {
 	u.gameSearch.Focus()
 }
 
-// TODO: Keep shortcuts
-func (u *UIDesktop) makeMenu() *fyne.MainMenu {
-	// File menu
-	fileMenu := fyne.NewMenu("File")
-
-	// Info menu
-	characterItem := fyne.NewMenuItem("Current Character...", func() {
-		characterID := u.CurrentCharacterID()
-		if characterID == 0 {
-			u.ShowSnackbar("ERROR: No character selected")
-			return
-		}
-		u.ShowInfoWindow(app.EveEntityCharacter, characterID)
-	})
-	characterItem.Shortcut = &desktop.CustomShortcut{
-		KeyName:  fyne.KeyC,
-		Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
-	}
-	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, characterItem)
-
-	locationItem := fyne.NewMenuItem("Current Location...", func() {
-		c := u.CurrentCharacter()
-		if c == nil {
-			u.ShowSnackbar("ERROR: No character selected")
-			return
-		}
-		if c.Location == nil {
-			u.ShowSnackbar("ERROR: Missing location for current character.")
-			return
-		}
-		u.ShowLocationInfoWindow(c.Location.ID)
-	})
-	locationItem.Shortcut = &desktop.CustomShortcut{
-		KeyName:  fyne.KeyL,
-		Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
-	}
-	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, locationItem)
-
-	shipItem := fyne.NewMenuItem("Current Ship...", func() {
-		c := u.CurrentCharacter()
-		if c == nil {
-			u.ShowSnackbar("ERROR: No character selected")
-			return
-		}
-		if c.Ship == nil {
-			u.ShowSnackbar("ERROR: Missing ship for current character.")
-			return
-		}
-		u.ShowTypeInfoWindow(c.Ship.ID)
-	})
-	shipItem.Shortcut = &desktop.CustomShortcut{
-		KeyName:  fyne.KeyS,
-		Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
-	}
-	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, shipItem)
-
-	searchItem := fyne.NewMenuItem("Search New Eden...", u.showSearchWindow)
-	searchItem.Shortcut = &desktop.CustomShortcut{
-		KeyName:  fyne.KeyS,
-		Modifier: fyne.KeyModifierAlt,
-	}
-	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, searchItem)
-
-	infoMenu := fyne.NewMenu(
-		"Info",
-		searchItem,
-		fyne.NewMenuItemSeparator(),
-		characterItem,
-		locationItem,
-		shipItem,
-	)
-
-	// Tools menu
-	settingsItem := fyne.NewMenuItem("Settings...", u.ShowSettingsWindow)
-	settingsItem.Shortcut = &desktop.CustomShortcut{
-		KeyName:  fyne.KeyComma,
-		Modifier: fyne.KeyModifierControl,
-	}
-	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, settingsItem)
-
-	charactersItem := fyne.NewMenuItem("Manage Characters...", u.showManageCharacters)
-	charactersItem.Shortcut = &desktop.CustomShortcut{
-		KeyName:  fyne.KeyC,
-		Modifier: fyne.KeyModifierAlt,
-	}
-	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, charactersItem)
-
-	statusItem := fyne.NewMenuItem("Update Status...", u.ShowUpdateStatusWindow)
-	statusItem.Shortcut = &desktop.CustomShortcut{
-		KeyName:  fyne.KeyU,
-		Modifier: fyne.KeyModifierAlt,
-	}
-	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, statusItem)
-
-	toolsMenu := fyne.NewMenu(
-		"Tools",
-		charactersItem,
-		fyne.NewMenuItemSeparator(),
-		statusItem,
-		fyne.NewMenuItemSeparator(),
-		settingsItem,
-	)
-
-	// Help menu
-	website := fyne.NewMenuItem("Website", func() {
-		if err := u.App().OpenURL(u.WebsiteRootURL()); err != nil {
-			slog.Error("open main website", "error", err)
-		}
-	})
-	report := fyne.NewMenuItem("Report A Bug", func() {
-		url := u.WebsiteRootURL().JoinPath("issues")
-		if err := u.App().OpenURL(url); err != nil {
-			slog.Error("open issue website", "error", err)
-		}
-	})
-	if u.IsOffline() {
-		website.Disabled = true
-		report.Disabled = true
-	}
-	helpMenu := fyne.NewMenu(
-		"Help",
-		website,
-		report,
-		fyne.NewMenuItemSeparator(),
-		fyne.NewMenuItem("User Data...", func() {
-			u.showUserDataDialog()
-		}), fyne.NewMenuItem("About...", func() {
-			u.ShowAboutDialog()
-		}),
-	)
-
-	u.enableMenuShortcuts()
-	main := fyne.NewMainMenu(fileMenu, infoMenu, toolsMenu, helpMenu)
-	return main
-}
-
-// enableMenuShortcuts enables all registered menu shortcuts.
-func (u *UIDesktop) enableMenuShortcuts() {
-	addShortcutFromMenuItem := func(item *fyne.MenuItem) (fyne.Shortcut, func(fyne.Shortcut)) {
-		return item.Shortcut, func(s fyne.Shortcut) {
-			item.Action()
-		}
-	}
-	for _, mi := range u.menuItemsWithShortcut {
-		u.MainWindow().Canvas().AddShortcut(addShortcutFromMenuItem(mi))
+func (u *UIDesktop) defineShortcuts() {
+	u.shortcuts = map[string]shortcutDef{
+		"snackbar": {
+			&desktop.CustomShortcut{
+				KeyName:  fyne.KeyS,
+				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierControl,
+			},
+			func(fyne.Shortcut) {
+				u.ShowSnackbar(fmt.Sprintf(
+					"%s. This is a test snack bar at %s",
+					fake.WordsN(10),
+					time.Now().Format("15:04:05.999999999"),
+				))
+				u.ShowSnackbar(fmt.Sprintf(
+					"This is a test snack bar at %s",
+					time.Now().Format("15:04:05.999999999"),
+				))
+			}},
+		"currentCharacter": {
+			&desktop.CustomShortcut{
+				KeyName:  fyne.KeyC,
+				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
+			},
+			func(fyne.Shortcut) {
+				characterID := u.CurrentCharacterID()
+				if characterID == 0 {
+					u.ShowSnackbar("ERROR: No character selected")
+					return
+				}
+				u.ShowInfoWindow(app.EveEntityCharacter, characterID)
+			}},
+		"currentLocation": {
+			&desktop.CustomShortcut{
+				KeyName:  fyne.KeyL,
+				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
+			},
+			func(fyne.Shortcut) {
+				c := u.CurrentCharacter()
+				if c == nil {
+					u.ShowSnackbar("ERROR: No character selected")
+					return
+				}
+				if c.Location == nil {
+					u.ShowSnackbar("ERROR: Missing location for current character.")
+					return
+				}
+				u.ShowLocationInfoWindow(c.Location.ID)
+			}},
+		"currentShip": {
+			&desktop.CustomShortcut{
+				KeyName:  fyne.KeyS,
+				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
+			},
+			func(fyne.Shortcut) {
+				c := u.CurrentCharacter()
+				if c == nil {
+					u.ShowSnackbar("ERROR: No character selected")
+					return
+				}
+				if c.Ship == nil {
+					u.ShowSnackbar("ERROR: Missing ship for current character.")
+					return
+				}
+				u.ShowTypeInfoWindow(c.Ship.ID)
+			}},
+		"search": {
+			&desktop.CustomShortcut{
+				KeyName:  fyne.KeyS,
+				Modifier: fyne.KeyModifierAlt,
+			},
+			func(fyne.Shortcut) {
+				u.showSearchWindow()
+			}},
+		"settings": {
+			&desktop.CustomShortcut{
+				KeyName:  fyne.KeyComma,
+				Modifier: fyne.KeyModifierControl,
+			},
+			func(fyne.Shortcut) {
+				u.ShowSettingsWindow()
+			}},
+		"manageCharacters": {
+			&desktop.CustomShortcut{
+				KeyName:  fyne.KeyC,
+				Modifier: fyne.KeyModifierAlt,
+			},
+			func(fyne.Shortcut) {
+				u.showManageCharacters()
+			}},
+		"updateStatus": {
+			&desktop.CustomShortcut{
+				KeyName:  fyne.KeyU,
+				Modifier: fyne.KeyModifierAlt,
+			},
+			func(fyne.Shortcut) {
+				u.ShowUpdateStatusWindow()
+			}},
 	}
 }
 
-// disableMenuShortcuts disabled all registered menu shortcuts.
-func (u *UIDesktop) disableMenuShortcuts() {
-	for _, mi := range u.menuItemsWithShortcut {
-		u.MainWindow().Canvas().RemoveShortcut(mi.Shortcut)
+// enableShortcuts enables all registered menu shortcuts.
+func (u *UIDesktop) enableShortcuts() {
+	for _, sc := range u.shortcuts {
+		u.MainWindow().Canvas().AddShortcut(sc.shortcut, sc.handler)
+	}
+}
+
+// disableShortcuts disabled all registered menu shortcuts.
+func (u *UIDesktop) disableShortcuts() {
+	for _, sc := range u.shortcuts {
+		u.MainWindow().Canvas().RemoveShortcut(sc.shortcut)
 	}
 }
 

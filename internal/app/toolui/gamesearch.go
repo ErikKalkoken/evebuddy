@@ -29,6 +29,7 @@ type GameSearch struct {
 	widget.BaseWidget
 
 	categories          *iwidget.FilterChipGroup
+	defaultCategories   []string
 	entry               *widget.Entry
 	indicator           *widget.ProgressBarInfinite
 	recent              *widget.List
@@ -48,45 +49,27 @@ type GameSearch struct {
 
 func NewGameSearch(u app.UI) *GameSearch {
 	a := &GameSearch{
+		defaultCategories:   makeOptions(),
 		entry:               widget.NewEntry(),
 		indicator:           widget.NewProgressBarInfinite(),
+		recentItems:         make([]*app.EveEntity, 0),
 		resultCount:         widget.NewLabel(""),
 		supportedCategories: infowindow.SupportedEveEntities(),
 		u:                   u,
 		w:                   u.MainWindow(),
-		recentItems:         make([]*app.EveEntity, 0),
 	}
 	a.ExtendBaseWidget(a)
 
-	defaultStrict := false
-	defaultCategories := makeOptions()
-	updateSearchOptionsTitle := func() {
-		isDefault := func() bool {
-			if a.strict.On != defaultStrict {
-				return false
-			}
-			if !set.NewFromSlice(a.categories.Selected).Equal(set.NewFromSlice(defaultCategories)) {
-				return false
-			}
-			return true
-		}()
-		s := "Search options"
-		if !isDefault {
-			s += " (changed)"
-		}
-		a.searchOptions.Items[0].Title = s
-		a.searchOptions.Refresh()
-	}
-	a.categories = iwidget.NewFilterChipGroup(defaultCategories, nil)
-	a.categories.Selected = slices.Clone(defaultCategories)
+	a.categories = iwidget.NewFilterChipGroup(a.defaultCategories, nil)
+	a.categories.Selected = slices.Clone(a.defaultCategories)
 	a.categories.OnChanged = func(s []string) {
-		updateSearchOptionsTitle()
+		a.updateSearchOptionsTitle()
 	}
 
 	a.strict = kxwidget.NewSwitch(nil)
-	a.strict.On = defaultStrict
+	a.strict.On = false
 	a.strict.OnChanged = func(on bool) {
-		updateSearchOptionsTitle()
+		a.updateSearchOptionsTitle()
 	}
 	a.resultCount = widget.NewLabel("")
 	a.resultCount.Hide()
@@ -111,15 +94,11 @@ func NewGameSearch(u app.UI) *GameSearch {
 					kxwidget.NewTappableLabel("Strict search", func() {
 						a.strict.SetOn(!a.strict.On)
 					})),
-				widget.NewButton("Reset", func() {
-					a.categories.SetSelected(defaultCategories)
-					a.strict.SetOn(false)
-					updateSearchOptionsTitle()
-				}),
+				widget.NewButton("Reset", a.ResetOptions),
 			),
 		),
 	)
-	updateSearchOptionsTitle()
+	a.updateSearchOptionsTitle()
 
 	a.recent = a.makeRecentSelected()
 
@@ -159,6 +138,44 @@ func NewGameSearch(u app.UI) *GameSearch {
 		a.setRecentItems(ee)
 	}()
 	return a
+}
+
+func (a *GameSearch) ResetOptions() {
+	a.categories.SetSelected(a.defaultCategories)
+	a.strict.SetOn(false)
+	a.updateSearchOptionsTitle()
+}
+
+func (a *GameSearch) updateSearchOptionsTitle() {
+	isDefault := func() bool {
+		if a.strict.On {
+			return false
+		}
+		if !set.NewFromSlice(a.categories.Selected).Equal(set.NewFromSlice(a.defaultCategories)) {
+			return false
+		}
+		return true
+	}()
+	s := "Search options"
+	if !isDefault {
+		s += " (changed)"
+	}
+	a.searchOptions.Items[0].Title = s
+	a.searchOptions.Refresh()
+}
+
+func (a *GameSearch) DoSearch(s string) {
+	a.entry.SetText(s)
+	go a.doSearch(s)
+}
+
+func (a *GameSearch) ToogleOptions(enabled bool) {
+	if enabled {
+		a.searchOptions.Open(0)
+	} else {
+		a.searchOptions.Close(0)
+	}
+	a.searchOptions.Refresh()
 }
 
 func (a *GameSearch) setRecentItems(ee []*app.EveEntity) {
