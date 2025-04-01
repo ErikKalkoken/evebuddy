@@ -12,7 +12,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/currentcharacter"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -43,7 +43,7 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 	mailMenu := fyne.NewMenu("")
 	communicationsMenu := fyne.NewMenu("")
 	u.characterMail.OnSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-		page := currentcharacter.NewSendMail(u, c, mode, mail)
+		page := character.NewSendMail(u, c, mode, mail)
 		if mode != app.SendMailNew {
 			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
 		}
@@ -237,14 +237,14 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 		"Wealth",
 		theme.NewThemedResource(icons.GoldSvg),
 		func() {
-			crossNav.Push(iwidget.NewAppBar("Wealth", u.wealthOverview))
+			crossNav.Push(iwidget.NewAppBar("Wealth", u.overviewWealth))
 		},
 	)
 	navItemColonies2 := iwidget.NewListItemWithIcon(
 		"Colonies",
 		theme.NewThemedResource(icons.EarthSvg),
 		func() {
-			crossNav.Push(iwidget.NewAppBar("Colonies", u.colonyOverview))
+			crossNav.Push(iwidget.NewAppBar("Colonies", u.overviewColonies))
 		},
 	)
 	crossList := iwidget.NewNavList(
@@ -259,15 +259,15 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 			"Assets",
 			theme.NewThemedResource(icons.Inventory2Svg),
 			func() {
-				crossNav.Push(iwidget.NewAppBar("Assets", u.allAssetSearch))
-				u.allAssetSearch.Focus()
+				crossNav.Push(iwidget.NewAppBar("Assets", u.overviewAssets))
+				u.overviewAssets.Focus()
 			},
 		),
 		iwidget.NewListItemWithIcon(
 			"Clones",
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
 			func() {
-				crossNav.Push(iwidget.NewAppBar("Clones", u.cloneSearch))
+				crossNav.Push(iwidget.NewAppBar("Clones", u.overviewClones))
 			},
 		),
 		navItemColonies2,
@@ -275,24 +275,24 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 			"Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),
 			func() {
-				crossNav.Push(iwidget.NewAppBar("Locations", u.locationOverview))
+				crossNav.Push(iwidget.NewAppBar("Locations", u.overviewLocations))
 			},
 		),
 		iwidget.NewListItemWithIcon(
 			"Training",
 			theme.NewThemedResource(icons.SchoolSvg),
 			func() {
-				crossNav.Push(iwidget.NewAppBar("Training", u.trainingOverview))
+				crossNav.Push(iwidget.NewAppBar("Training", u.overviewTraining))
 			},
 		),
 		navItemWealth,
 	)
 	crossNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("Characters", crossList))
-	u.colonyOverview.OnUpdate = func(top string) {
+	u.overviewColonies.OnUpdate = func(top string) {
 		navItemColonies2.Supporting = top
 		crossList.Refresh()
 	}
-	u.wealthOverview.OnUpdate = func(wallet, assets float64) {
+	u.overviewWealth.OnUpdate = func(wallet, assets float64) {
 		navItemWealth.Supporting = fmt.Sprintf(
 			"Wallet: %s • Assets: %s",
 			ihumanize.Number(wallet, 1),
@@ -328,10 +328,10 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 		func() {
 			moreNav.Push(iwidget.NewAppBar(
 				"Manage characters",
-				u.managerCharacters,
+				u.manageCharacters,
 				iwidget.NewIconButton(
 					theme.NewPrimaryThemedResource(theme.ContentAddIcon()),
-					u.managerCharacters.ShowAddCharacterDialog,
+					u.manageCharacters.ShowAddCharacterDialog,
 				),
 			))
 		},
@@ -391,7 +391,7 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 		u.navItemUpdateStatus,
 		navItemAbout,
 	)
-	u.managerCharacters.OnUpdate = func(characterCount int) {
+	u.manageCharacters.OnUpdate = func(characterCount int) {
 		navItemManageCharacters.Supporting = fmt.Sprintf("%d characters", characterCount)
 	}
 	moreNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("More", toolsList))

@@ -21,7 +21,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/currentcharacter"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -212,17 +212,17 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 	wealth := iwidget.NewNavPage(
 		"Wealth",
 		theme.NewThemedResource(icons.GoldSvg),
-		makePageWithTitle("Wealth", u.wealthOverview),
+		makePageWithTitle("Wealth", u.overviewWealth),
 	)
 
-	u.wealthOverview.OnUpdate = func(wallet, assets float64) {
+	u.overviewWealth.OnUpdate = func(wallet, assets float64) {
 		characterNav.SetItemBadge(wealth, ihumanize.Number(wallet+assets, 1))
 	}
 
 	allAssets := iwidget.NewNavPage(
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
-		makePageWithTitle("Assets", u.allAssetSearch),
+		makePageWithTitle("Assets", u.overviewAssets),
 	)
 	collectiveNav := iwidget.NewNavDrawer("All Characters",
 		overview,
@@ -230,28 +230,28 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 		iwidget.NewNavPage(
 			"Clones",
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
-			makePageWithTitle("Clones", u.cloneSearch),
+			makePageWithTitle("Clones", u.overviewClones),
 		),
 		iwidget.NewNavPage(
 			"Colonies",
 			theme.NewThemedResource(icons.EarthSvg),
-			makePageWithTitle("Colonies", u.colonyOverview),
+			makePageWithTitle("Colonies", u.overviewColonies),
 		),
 		iwidget.NewNavPage(
 			"Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),
-			makePageWithTitle("Locations", u.locationOverview),
+			makePageWithTitle("Locations", u.overviewLocations),
 		),
 		iwidget.NewNavPage(
 			"Training",
 			theme.NewThemedResource(icons.SchoolSvg),
-			makePageWithTitle("Training", u.trainingOverview),
+			makePageWithTitle("Training", u.overviewTraining),
 		),
 		wealth,
 	)
 	collectiveNav.OnSelectItem = func(it *iwidget.NavItem) {
 		if it == allAssets {
-			u.allAssetSearch.Focus()
+			u.overviewAssets.Focus()
 		}
 	}
 	collectiveNav.MinWidth = minNavCharacterWidth
@@ -365,7 +365,7 @@ func (u *DesktopUI) ShowSettingsWindow() {
 func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
 	w := u.App().NewWindow(u.MakeWindowTitle(title))
-	page := currentcharacter.NewSendMail(u, c, mode, mail)
+	page := character.NewSendMail(u, c, mode, mail)
 	page.SetWindow(w)
 	send := widget.NewButtonWithIcon("Send", theme.MailSendIcon(), func() {
 		if page.SendAction() {
@@ -397,10 +397,10 @@ func (u *DesktopUI) showManageCharactersWindow() {
 		u.accountWindow = nil
 	})
 	w.Resize(fyne.Size{Width: 500, Height: 300})
-	w.SetContent(u.managerCharacters)
-	u.managerCharacters.SetWindow(w)
+	w.SetContent(u.manageCharacters)
+	u.manageCharacters.SetWindow(w)
 	w.Show()
-	u.managerCharacters.OnSelectCharacter = func() {
+	u.manageCharacters.OnSelectCharacter = func() {
 		w.Hide()
 	}
 }
