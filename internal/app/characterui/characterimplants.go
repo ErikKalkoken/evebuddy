@@ -50,7 +50,7 @@ func (a *CharacterImplants) makeImplantList() *widget.List {
 			return len(a.implants)
 		},
 		func() fyne.CanvasObject {
-			iconMain := iwidget.NewImageFromResource(icons.Characterplaceholder64Jpeg, fyne.NewSquareSize(42))
+			iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(42))
 			iconInfo := widget.NewIcon(theme.InfoIcon())
 			name := widget.NewLabel("placeholder")
 			name.Truncation = fyne.TextTruncateEllipsis

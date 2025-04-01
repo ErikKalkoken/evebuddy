@@ -13,21 +13,21 @@ import (
 type Toolbar struct {
 	widget.BaseWidget
 
-	search    *widget.Entry
+	searchbar *widget.Entry
 	hamburger *iwidget.IconButton
 	u         *DesktopUI
 }
 
 func NewToolbar(u *DesktopUI) *Toolbar {
-	search := widget.NewEntry()
-	search.PlaceHolder = "Search New Eden"
-	search.Scroll = container.ScrollNone
-	search.Wrapping = fyne.TextWrapOff
-	search.OnSubmitted = func(s string) {
+	searchbar := widget.NewEntry()
+	searchbar.PlaceHolder = "Search New Eden"
+	searchbar.Scroll = container.ScrollNone
+	searchbar.Wrapping = fyne.TextWrapOff
+	searchbar.OnSubmitted = func(s string) {
 		u.PerformSearch(s)
 	}
-	search.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
-		search.SetText("")
+	searchbar.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
+		searchbar.SetText("")
 	})
 	makeMenuItem := func(title string, sc shortcutDef) *fyne.MenuItem {
 		it := fyne.NewMenuItem(title, func() {
@@ -47,11 +47,19 @@ func NewToolbar(u *DesktopUI) *Toolbar {
 	)
 	a := &Toolbar{
 		u:         u,
-		search:    search,
+		searchbar: searchbar,
 		hamburger: iwidget.NewIconButtonWithMenu(theme.MenuIcon(), menu),
 	}
 	a.ExtendBaseWidget(a)
 	return a
+}
+
+func (a *Toolbar) ToogleSearchBar(enabled bool) {
+	if enabled {
+		a.searchbar.Enable()
+	} else {
+		a.searchbar.Disable()
+	}
 }
 
 func (a *Toolbar) CreateRenderer() fyne.WidgetRenderer {
@@ -62,7 +70,7 @@ func (a *Toolbar) CreateRenderer() fyne.WidgetRenderer {
 		container.NewBorder(nil, nil, nil, iwidget.NewIconButton(theme.SearchIcon(), func() {
 			a.u.showAdvancedSearch()
 		}),
-			a.search,
+			a.searchbar,
 		),
 		container.New(layout.NewCustomPaddedHBoxLayout(2*p), layout.NewSpacer(), a.hamburger),
 	)

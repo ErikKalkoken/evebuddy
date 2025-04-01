@@ -3,7 +3,6 @@ package widget
 import (
 	"image/color"
 	"slices"
-	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -77,14 +76,15 @@ func newNavItem(variant navItemVariant) *NavItem {
 
 // Navigation drawers let people switch between UI views on larger devices.
 type NavDrawer struct {
-	widget.BaseWidget
+	widget.DisableableWidget
 
-	OnSelectItem func(*NavItem)
+	MinWidth     float32        // minimum width of the navigation area
+	OnSelectItem func(*NavItem) // called when an item is selected
 
 	items    []*NavItem
 	list     *widget.List
-	selected int
 	pages    *fyne.Container
+	selected int
 	title    string
 }
 
@@ -95,12 +95,14 @@ func NewNavDrawer(title string, items ...*NavItem) *NavDrawer {
 		title:    title,
 	}
 	w.ExtendBaseWidget(w)
-	mx := slices.MaxFunc(items, func(a, b *NavItem) int {
-		return strings.Compare(a.text, b.text)
-	})
-	w.list = w.makeList(len(mx.text) + 5)
+	w.list = w.makeList()
 	for _, p := range items {
-		w.AddItem(p)
+		if p.variant == navPage {
+			p.content.Hide()
+			w.pages.Add(p.content)
+			p.stackIndex = len(w.pages.Objects) - 1
+		}
+		w.items = append(w.items, p)
 	}
 	for id, it := range slices.Backward(w.items) {
 		if it.variant == navPage {
@@ -110,7 +112,11 @@ func NewNavDrawer(title string, items ...*NavItem) *NavDrawer {
 	return w
 }
 
-func (w *NavDrawer) makeList(templateWidth int) *widget.List {
+func (w *NavDrawer) ScrollToTop() {
+	w.list.ScrollToTop()
+}
+
+func (w *NavDrawer) makeList() *widget.List {
 	p := w.Theme().Size(theme.SizeNamePadding)
 	var list *widget.List
 	list = widget.NewList(
@@ -121,9 +127,8 @@ func (w *NavDrawer) makeList(templateWidth int) *widget.List {
 			spacer := canvas.NewRectangle(color.Transparent)
 			spacer.SetMinSize(fyne.NewSize(p, 1))
 			icon := widget.NewIcon(iconBlankSvg)
-			s := strings.Repeat("W", templateWidth)
-			text := NewLabelWithSize(s, theme.SizeNameText) // TODO: Make width a configuration
-			badge := widget.NewLabel("Template")
+			text := NewLabelWithSize("Template", theme.SizeNameText)
+			badge := widget.NewLabel("999+")
 			return container.NewStack(
 				container.New(layout.NewCustomPaddedLayout(0, 0, p, p),
 					container.NewHBox(spacer, icon, text, layout.NewSpacer(), badge),
@@ -235,37 +240,28 @@ func (w *NavDrawer) makeList(templateWidth int) *widget.List {
 	return list
 }
 
-func (w *NavDrawer) AddItem(p *NavItem) {
-	if p.variant == navPage {
-		p.content.Hide()
-		w.pages.Add(p.content)
-		p.stackIndex = len(w.pages.Objects) - 1
-	}
-	w.items = append(w.items, p)
-}
-
-func (w *NavDrawer) ScrollToTop() {
-	w.list.ScrollToTop()
-}
-
-func (w *NavDrawer) EnableItem(item *NavItem) {
-	w.setItemDisabled(item, false)
-}
-
-func (w *NavDrawer) DisableItem(item *NavItem) {
-	w.setItemDisabled(item, true)
-}
-
-func (w *NavDrawer) setItemDisabled(item *NavItem, isDisabled bool) {
-	id, ok := w.findItem(item)
-	if !ok {
+func (w *NavDrawer) Disable() {
+	if w.Disabled() {
 		return
 	}
-	if w.items[id].isDisabled == isDisabled {
+	w.Select(w.items[0])
+	w.ScrollToTop()
+	for _, it := range w.items {
+		it.isDisabled = true
+	}
+	w.DisableableWidget.Disable()
+}
+
+func (w *NavDrawer) Enable() {
+	if !w.Disabled() {
 		return
 	}
-	w.items[id].isDisabled = isDisabled
-	w.list.RefreshItem(id)
+	for _, it := range w.items {
+		it.isDisabled = false
+	}
+	w.DisableableWidget.Enable()
+	w.Select(w.items[0])
+	w.ScrollToTop()
 }
 
 func (w *NavDrawer) findItem(item *NavItem) (int, bool) {
@@ -323,6 +319,8 @@ func (w *NavDrawer) SetItemBadge(item *NavItem, text string) {
 
 func (w *NavDrawer) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
+	spacer := canvas.NewRectangle(color.Transparent)
+	spacer.SetMinSize(fyne.NewSize(w.MinWidth, 1))
 	c := container.New(layout.NewCustomPaddedLayout(-p, -p, 0, 0),
 		container.NewBorder(
 			nil,
@@ -333,7 +331,7 @@ func (w *NavDrawer) CreateRenderer() fyne.WidgetRenderer {
 					nil,
 					nil,
 					nil,
-					w.list,
+					container.NewStack(spacer, w.list),
 				),
 				widget.NewSeparator(),
 			),

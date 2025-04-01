@@ -77,10 +77,7 @@ func (a *CharacterJumpClones) CreateRenderer() fyne.WidgetRenderer {
 func (a *CharacterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 	t := iwidget.NewTree(
 		func(branch bool) fyne.CanvasObject {
-			iconMain := iwidget.NewImageFromResource(
-				icons.Characterplaceholder64Jpeg,
-				fyne.NewSquareSize(app.IconUnitSize),
-			)
+			iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
 			main := widget.NewLabel("Template")
 			main.Truncation = fyne.TextTruncateEllipsis
 			iconInfo := widget.NewIcon(theme.InfoIcon())

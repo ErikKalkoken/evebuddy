@@ -59,6 +59,42 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 			),
 		)
 	}
+
+	navItemAssets := iwidget.NewListItemWithIcon(
+		"Assets",
+		theme.NewThemedResource(icons.Inventory2Svg),
+		func() {
+			u.characterAssets.OnSelected = func() {
+				characterNav.Push(newCharacterAppBar("Assets", u.characterAssets.LocationAssets))
+			}
+			characterNav.Push(newCharacterAppBar("Assets", container.NewHScroll(u.characterAssets.Locations)))
+		},
+	)
+	navItemCommunications := iwidget.NewListItemWithIcon(
+		"Communications",
+		theme.NewThemedResource(icons.MessageSvg),
+		func() {
+			u.characterCommunications.OnSelected = func() {
+				characterNav.PushHideNavBar(
+					newCharacterAppBar("Communications", u.characterCommunications.Detail),
+				)
+			}
+			characterNav.Push(
+				newCharacterAppBar(
+					"Communications",
+					u.characterCommunications.Notifications,
+					iwidget.NewIconButtonWithMenu(theme.FolderIcon(), communicationsMenu),
+				),
+			)
+		},
+	)
+	navItemColonies1 := iwidget.NewListItemWithIcon(
+		"Colonies",
+		theme.NewThemedResource(icons.EarthSvg),
+		func() {
+			characterNav.Push(newCharacterAppBar("Colonies", u.characterPlanets))
+		},
+	)
 	navItemMail := iwidget.NewListItemWithIcon(
 		"Mail",
 		theme.MailComposeIcon(),
@@ -86,41 +122,6 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 				))
 		},
 	)
-	navItemCommunications := iwidget.NewListItemWithIcon(
-		"Communications",
-		theme.NewThemedResource(icons.MessageSvg),
-		func() {
-			u.characterCommunications.OnSelected = func() {
-				characterNav.PushHideNavBar(
-					newCharacterAppBar("Communications", u.characterCommunications.Detail),
-				)
-			}
-			characterNav.Push(
-				newCharacterAppBar(
-					"Communications",
-					u.characterCommunications.Notifications,
-					iwidget.NewIconButtonWithMenu(theme.FolderIcon(), communicationsMenu),
-				),
-			)
-		},
-	)
-	navItemAssets := iwidget.NewListItemWithIcon(
-		"Assets",
-		theme.NewThemedResource(icons.Inventory2Svg),
-		func() {
-			u.characterAssets.OnSelected = func() {
-				characterNav.Push(newCharacterAppBar("Assets", u.characterAssets.LocationAssets))
-			}
-			characterNav.Push(newCharacterAppBar("Assets", container.NewHScroll(u.characterAssets.Locations)))
-		},
-	)
-	navItemColonies1 := iwidget.NewListItemWithIcon(
-		"Colonies",
-		theme.NewThemedResource(icons.EarthSvg),
-		func() {
-			characterNav.Push(newCharacterAppBar("Colonies", u.characterPlanets))
-		},
-	)
 	navItemSkills := iwidget.NewListItemWithIcon(
 		"Skills",
 		theme.NewThemedResource(icons.SchoolSvg),
@@ -128,23 +129,10 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 			characterNav.Push(
 				newCharacterAppBar(
 					"Skills",
-					iwidget.NewNavList(
-						iwidget.NewListItemWithNavigator(
-							characterNav,
-							newCharacterAppBar("Training Queue", u.characterSkillQueue),
-						),
-						iwidget.NewListItemWithNavigator(
-							characterNav,
-							newCharacterAppBar("Skill Catalogue", u.characterSkillCatalogue),
-						),
-						iwidget.NewListItemWithNavigator(
-							characterNav,
-							newCharacterAppBar("Ships", u.characterShips),
-						),
-						iwidget.NewListItemWithNavigator(
-							characterNav,
-							newCharacterAppBar("Attributes", u.characterAttributes),
-						),
+					container.NewAppTabs(
+						container.NewTabItem("Training", u.characterSkillQueue),
+						container.NewTabItem("Catalogue", u.characterSkillCatalogue),
+						container.NewTabItem("Ships", u.characterShips),
 					),
 				))
 		},
@@ -163,27 +151,24 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 				))
 		},
 	)
-
-	navItemClones := iwidget.NewListItemWithIcon(
-		"Clones",
-		theme.NewThemedResource(icons.HeadSnowflakeSvg),
-		func() {
-			characterNav.Push(
-				newCharacterAppBar(
-					"Clones",
-					container.NewAppTabs(
-						container.NewTabItem("Current Clone", u.characterImplants),
-						container.NewTabItem("Jump Clones", u.characterJumpClones),
-					),
-				))
-		},
-	)
 	characterList := iwidget.NewNavList(
+		iwidget.NewListItemWithIcon(
+			"Character Sheet",
+			theme.NewThemedResource(icons.PortraitSvg),
+			func() {
+				characterNav.Push(
+					newCharacterAppBar(
+						"Character Sheet",
+						container.NewAppTabs(
+							container.NewTabItem("Augmentations", u.characterImplants),
+							container.NewTabItem("Clones", u.characterJumpClones),
+							container.NewTabItem("Attributes", u.characterAttributes),
+							container.NewTabItem("Bio", u.characterBiography),
+						),
+					))
+			},
+		),
 		navItemAssets,
-		navItemClones,
-		navItemCommunications,
-		navItemColonies1,
-		navItemMail,
 		iwidget.NewListItemWithIcon(
 			"Contracts",
 			theme.NewThemedResource(icons.FileSignSvg),
@@ -191,17 +176,15 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 				characterNav.Push(newCharacterAppBar("Contracts", u.characterContracts))
 			},
 		),
+		navItemCommunications,
+		navItemColonies1,
+		navItemMail,
 		navItemSkills,
 		navItemWallet,
 	)
 
 	u.characterAssets.OnRedraw = func(s string) {
 		navItemAssets.Supporting = s
-		characterList.Refresh()
-	}
-
-	u.characterJumpClones.OnReDraw = func(clonesCount int) {
-		navItemClones.Supporting = fmt.Sprintf("%d jump clones", clonesCount)
 		characterList.Refresh()
 	}
 
@@ -266,6 +249,13 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 	)
 	crossList := iwidget.NewNavList(
 		iwidget.NewListItemWithIcon(
+			"Characters",
+			theme.NewThemedResource(icons.PortraitSvg),
+			func() {
+				crossNav.Push(iwidget.NewAppBar("Characters", u.characterOverview))
+			},
+		),
+		iwidget.NewListItemWithIcon(
 			"Assets",
 			theme.NewThemedResource(icons.Inventory2Svg),
 			func() {
@@ -286,13 +276,6 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 			theme.NewThemedResource(icons.MapMarkerSvg),
 			func() {
 				crossNav.Push(iwidget.NewAppBar("Locations", u.locationOverview))
-			},
-		),
-		iwidget.NewListItemWithIcon(
-			"Overview",
-			theme.NewThemedResource(icons.AccountMultipleSvg),
-			func() {
-				crossNav.Push(iwidget.NewAppBar("Overview", u.characterOverview))
 			},
 		),
 		iwidget.NewListItemWithIcon(
@@ -437,7 +420,7 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 		moreNav.PopAll()
 	}
 
-	navBar = iwidget.NewNavBar(characterDest, crossDest, searchDest, moreDest)
+	navBar = iwidget.NewNavBar(crossDest, characterDest, searchDest, moreDest)
 	characterNav.NavBar = navBar
 
 	u.onUpdateStatus = func() {

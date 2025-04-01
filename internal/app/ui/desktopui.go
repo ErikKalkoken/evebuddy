@@ -26,6 +26,10 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
+const (
+	minNavCharacterWidth = 250
+)
+
 type shortcutDef struct {
 	shortcut fyne.Shortcut
 	handler  func(shortcut fyne.Shortcut)
@@ -66,7 +70,6 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 	u.showManageCharacters = u.showManageCharactersWindow
 
 	u.defineShortcuts()
-	statusBar := NewStatusBar(u)
 	pageBars := NewPageBarCollection(u)
 
 	var characterNav *iwidget.NavDrawer
@@ -93,21 +96,6 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 	}
 
 	// current character
-
-	characterAssets := iwidget.NewNavPage(
-		"Assets",
-		theme.NewThemedResource(icons.Inventory2Svg),
-		makePageWithPageBar("Assets", u.characterAssets),
-	)
-	character := iwidget.NewNavPage(
-		"Character Sheet",
-		theme.NewThemedResource(icons.PortraitSvg),
-		makePageWithPageBar("Character Sheet", container.NewAppTabs(
-			container.NewTabItem("Augmentations", u.characterImplants),
-			container.NewTabItem("Jump Clones", u.characterJumpClones),
-			container.NewTabItem("Attributes", u.characterAttributes),
-			container.NewTabItem("Biography", u.characterBiography),
-		)))
 
 	colonies := iwidget.NewNavPage(
 		"Colonies",
@@ -161,25 +149,34 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 		characterNav.SetItemBadge(skills, status)
 	}
 
-	wallet := iwidget.NewNavPage("Wallet",
-		theme.NewThemedResource(icons.AttachmoneySvg),
-		makePageWithPageBar("Wallet", container.NewAppTabs(
-			container.NewTabItem("Transactions", u.characterWalletJournal),
-			container.NewTabItem("Market Transactions", u.characterWalletTransaction),
-		)))
-
-	// nav bar
-
 	characterNav = iwidget.NewNavDrawer("Current Character",
-		character,
-		characterAssets,
+		iwidget.NewNavPage(
+			"Character Sheet",
+			theme.NewThemedResource(icons.PortraitSvg),
+			makePageWithPageBar("Character Sheet", container.NewAppTabs(
+				container.NewTabItem("Augmentations", u.characterImplants),
+				container.NewTabItem("Jump Clones", u.characterJumpClones),
+				container.NewTabItem("Attributes", u.characterAttributes),
+				container.NewTabItem("Biography", u.characterBiography),
+			))),
+		iwidget.NewNavPage(
+			"Assets",
+			theme.NewThemedResource(icons.Inventory2Svg),
+			makePageWithPageBar("Assets", u.characterAssets),
+		),
 		contracts,
 		communications,
 		colonies,
 		mail,
 		skills,
-		wallet,
+		iwidget.NewNavPage("Wallet",
+			theme.NewThemedResource(icons.AttachmoneySvg),
+			makePageWithPageBar("Wallet", container.NewAppTabs(
+				container.NewTabItem("Transactions", u.characterWalletJournal),
+				container.NewTabItem("Market Transactions", u.characterWalletTransaction),
+			))),
 	)
+	characterNav.MinWidth = minNavCharacterWidth
 
 	makePageWithTitle := func(title string, content fyne.CanvasObject, buttons ...*widget.Button) fyne.CanvasObject {
 		c := container.NewHBox(iwidget.NewLabelWithSize(title, theme.SizeNameSubHeadingText))
@@ -251,9 +248,12 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 			u.allAssetSearch.Focus()
 		}
 	}
+	collectiveNav.MinWidth = minNavCharacterWidth
 
+	statusBar := NewStatusBar(u)
+	toolbar := NewToolbar(u)
 	mainContent := container.NewBorder(
-		NewToolbar(u),
+		toolbar,
 		statusBar,
 		nil,
 		nil,
@@ -261,6 +261,7 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 			container.NewTabItemWithIcon("All Characters", theme.NewThemedResource(icons.GroupSvg), collectiveNav),
 			container.NewTabItemWithIcon("Current Character", theme.AccountIcon(), characterNav),
 		))
+
 	u.MainWindow().SetContent(mainContent)
 
 	// system tray menu
@@ -288,26 +289,15 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 	}
 	u.onUpdateCharacter = func(c *app.Character) {
 		go func() {
-			characterPages := []*iwidget.NavItem{
-				characterAssets,
-				character,
-				contracts,
-				communications,
-				colonies,
-				mail,
-				skills,
-				wallet,
-			}
 			if !u.HasCharacter() {
-				for _, it := range characterPages {
-					characterNav.DisableItem(it)
-				}
-				characterNav.Select(overview)
+				characterNav.Disable()
+				collectiveNav.Disable()
+				toolbar.ToogleSearchBar(false)
 				return
 			}
-			for _, it := range characterPages {
-				characterNav.EnableItem(it)
-			}
+			characterNav.Enable()
+			collectiveNav.Enable()
+			toolbar.ToogleSearchBar(true)
 		}()
 	}
 	u.onShowAndRun = func() {
