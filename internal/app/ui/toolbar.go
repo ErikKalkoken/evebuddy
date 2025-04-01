@@ -3,6 +3,7 @@ package ui
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -36,6 +37,13 @@ func NewToolbar(u *DesktopUI) *Toolbar {
 		it.Shortcut = sc.shortcut
 		return it
 	}
+	quit := fyne.NewMenuItem("Quit", func() {
+		u.App().Quit()
+	})
+	quit.Shortcut = &desktop.CustomShortcut{
+		KeyName:  fyne.KeyF4,
+		Modifier: fyne.KeyModifierAlt,
+	}
 	menu := fyne.NewMenu(
 		"",
 		makeMenuItem("Settings", u.shortcuts["settings"]),
@@ -44,6 +52,8 @@ func NewToolbar(u *DesktopUI) *Toolbar {
 		fyne.NewMenuItemSeparator(),
 		fyne.NewMenuItem("User Data", u.showUserDataDialog),
 		fyne.NewMenuItem("About", u.ShowAboutDialog),
+		fyne.NewMenuItemSeparator(),
+		makeMenuItem("Quit", u.shortcuts["quit"]),
 	)
 	a := &Toolbar{
 		u:         u,

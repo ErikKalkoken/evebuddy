@@ -149,6 +149,17 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 		characterNav.SetItemBadge(skills, status)
 	}
 
+	wallet := iwidget.NewNavPage("Wallet",
+		theme.NewThemedResource(icons.AttachmoneySvg),
+		makePageWithPageBar("Wallet", container.NewAppTabs(
+			container.NewTabItem("Transactions", u.characterWalletJournal),
+			container.NewTabItem("Market Transactions", u.characterWalletTransaction),
+		)))
+
+	u.characterWalletJournal.OnUpdate = func(balance string) {
+		characterNav.SetItemBadge(wallet, balance)
+	}
+
 	characterNav = iwidget.NewNavDrawer("Current Character",
 		iwidget.NewNavPage(
 			"Character Sheet",
@@ -169,12 +180,7 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 		colonies,
 		mail,
 		skills,
-		iwidget.NewNavPage("Wallet",
-			theme.NewThemedResource(icons.AttachmoneySvg),
-			makePageWithPageBar("Wallet", container.NewAppTabs(
-				container.NewTabItem("Transactions", u.characterWalletJournal),
-				container.NewTabItem("Market Transactions", u.characterWalletTransaction),
-			))),
+		wallet,
 	)
 	characterNav.MinWidth = minNavCharacterWidth
 
@@ -531,6 +537,14 @@ func (u *DesktopUI) defineShortcuts() {
 			},
 			func(fyne.Shortcut) {
 				u.showUpdateStatusWindow()
+			}},
+		"quit": {
+			&desktop.CustomShortcut{
+				KeyName:  fyne.KeyQ,
+				Modifier: fyne.KeyModifierControl,
+			},
+			func(fyne.Shortcut) {
+				u.App().Quit()
 			}},
 	}
 }
