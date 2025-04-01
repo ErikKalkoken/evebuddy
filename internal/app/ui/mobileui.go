@@ -18,16 +18,16 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-// UIMobile creates the UI for mobile.
-type UIMobile struct {
-	*UIBase
+// MobileUI creates the UI for mobile.
+type MobileUI struct {
+	*BaseUI
 
 	navItemUpdateStatus *iwidget.ListItem
 }
 
 // NewUI build the UI and returns it.
-func NewUIMobile(bui *UIBase) *UIMobile {
-	u := &UIMobile{UIBase: bui}
+func NewUIMobile(bui *BaseUI) *MobileUI {
+	u := &MobileUI{BaseUI: bui}
 
 	var navBar *iwidget.NavBar
 
@@ -336,7 +336,7 @@ func NewUIMobile(bui *UIBase) *UIMobile {
 		"Update status",
 		theme.NewThemedResource(icons.UpdateSvg),
 		func() {
-			u.ShowUpdateStatusWindow()
+			u.showUpdateStatusWindow()
 		},
 	)
 	navItemManageCharacters := iwidget.NewListItemWithIcon(
@@ -442,7 +442,7 @@ func NewUIMobile(bui *UIBase) *UIMobile {
 
 	u.onUpdateStatus = func() {
 		go func() {
-			characterSelector.SetMenuItems(u.MakeCharacterSwitchMenu(characterSelector.Refresh))
+			characterSelector.SetMenuItems(u.makeCharacterSwitchMenu(characterSelector.Refresh))
 		}()
 	}
 	u.onUpdateCharacter = func(c *app.Character) {
@@ -462,7 +462,7 @@ func NewUIMobile(bui *UIBase) *UIMobile {
 		}
 	}
 	u.onSetCharacter = func(id int32) {
-		go u.UpdateAvatar(id, func(r fyne.Resource) {
+		go u.updateAvatar(id, func(r fyne.Resource) {
 			characterSelector.SetIcon(r)
 		})
 		u.characterMail.ResetFolders()
@@ -484,7 +484,7 @@ func NewUIMobile(bui *UIBase) *UIMobile {
 		tickerNewVersion := time.NewTicker(3600 * time.Second)
 		go func() {
 			for {
-				v, err := u.AvailableUpdate()
+				v, err := u.availableUpdate()
 				if err != nil {
 					slog.Error("fetch github version for menu info", "error", err)
 				} else {
@@ -508,7 +508,7 @@ func NewUIMobile(bui *UIBase) *UIMobile {
 	return u
 }
 
-func (u *UIMobile) makeMailMenu() []*fyne.MenuItem {
+func (u *MobileUI) makeMailMenu() []*fyne.MenuItem {
 	// current := u.MailArea.CurrentFolder.ValueOrZero()
 	items1 := make([]*fyne.MenuItem, 0)
 	for _, f := range u.characterMail.Folders() {
@@ -527,7 +527,7 @@ func (u *UIMobile) makeMailMenu() []*fyne.MenuItem {
 	return items1
 }
 
-func (u *UIMobile) makeCommunicationsMenu() []*fyne.MenuItem {
+func (u *MobileUI) makeCommunicationsMenu() []*fyne.MenuItem {
 	items2 := make([]*fyne.MenuItem, 0)
 	for _, f := range u.characterCommunications.Groups {
 		s := f.Name

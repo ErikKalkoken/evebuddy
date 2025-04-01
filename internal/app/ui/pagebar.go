@@ -1,4 +1,4 @@
-package desktopui
+package ui
 
 import (
 	"log/slog"
@@ -20,10 +20,10 @@ import (
 type PageBarCollection struct {
 	bars         []*PageBar
 	fallbackIcon fyne.Resource
-	u            app.UI
+	u            *DesktopUI
 }
 
-func NewPageBarCollection(u app.UI) *PageBarCollection {
+func NewPageBarCollection(u *DesktopUI) *PageBarCollection {
 	fallback := icons.Characterplaceholder64Jpeg
 	icon, err := fynetools.MakeAvatar(fallback)
 	if err != nil {
@@ -51,12 +51,12 @@ func (c *PageBarCollection) Update() {
 		}
 		return
 	}
-	go c.u.UpdateAvatar(c.u.CurrentCharacterID(), func(r fyne.Resource) {
+	go c.u.updateAvatar(c.u.CurrentCharacterID(), func(r fyne.Resource) {
 		for _, pb := range c.bars {
 			pb.SetIcon(r)
 		}
 	})
-	items := c.u.MakeCharacterSwitchMenu(func() {
+	items := c.u.makeCharacterSwitchMenu(func() {
 		for _, pb := range c.bars {
 			pb.Refresh()
 		}

@@ -1,4 +1,4 @@
-package toolui
+package ui
 
 import (
 	"context"
@@ -66,10 +66,10 @@ type UpdateStatus struct {
 	selectedSectionID int
 	top2              fyne.CanvasObject
 	top3              fyne.CanvasObject
-	u                 app.UI
+	u                 *BaseUI
 }
 
-func NewUpdateStatus(u app.UI) *UpdateStatus {
+func NewUpdateStatus(u *BaseUI) *UpdateStatus {
 	a := &UpdateStatus{
 		charactersTop:     appwidget.MakeTopLabel(),
 		details:           make([]detailsItem, 0),
@@ -177,7 +177,7 @@ func (a *UpdateStatus) makeEntityList() *widget.List {
 				icon.Resource = eveicon.GetResourceByName(eveicon.StarMap)
 				icon.Refresh()
 			} else {
-				go a.u.UpdateAvatar(c.id, func(r fyne.Resource) {
+				go a.u.updateAvatar(c.id, func(r fyne.Resource) {
 					icon.Resource = r
 					icon.Refresh()
 				})
@@ -225,9 +225,9 @@ func (a *UpdateStatus) MakeUpdateAllAction() func() {
 	return func() {
 		c := a.sectionEntities[a.selectedEntityID]
 		if c.IsGeneralSection() {
-			a.u.UpdateGeneralSectionsAndRefreshIfNeeded(true)
+			a.u.updateGeneralSectionsAndRefreshIfNeeded(true)
 		} else {
-			a.u.UpdateCharacterAndRefreshIfNeeded(context.Background(), c.id, true)
+			a.u.updateCharacterAndRefreshIfNeeded(context.Background(), c.id, true)
 		}
 	}
 }
@@ -408,10 +408,10 @@ func (a *UpdateStatus) refreshDetails() {
 func (a *UpdateStatus) makeDetailsAction(entityID int32, sectionID string) func() {
 	return func() {
 		if entityID == app.GeneralSectionEntityID {
-			go a.u.UpdateGeneralSectionAndRefreshIfNeeded(
+			go a.u.updateGeneralSectionAndRefreshIfNeeded(
 				context.TODO(), app.GeneralSection(sectionID), true)
 		} else {
-			go a.u.UpdateCharacterSectionAndRefreshIfNeeded(
+			go a.u.updateCharacterSectionAndRefreshIfNeeded(
 				context.TODO(), entityID, app.CharacterSection(sectionID), true)
 		}
 	}

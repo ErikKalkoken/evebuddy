@@ -1,4 +1,4 @@
-package toolui
+package ui
 
 import (
 	"context"
@@ -40,14 +40,14 @@ type GameSearch struct {
 	searchOptions       *widget.Accordion
 	strict              *kxwidget.Switch
 	supportedCategories set.Set[app.EveEntityCategory]
-	u                   app.UI
+	u                   *BaseUI
 	w                   fyne.Window
 
 	mu          sync.RWMutex
 	recentItems []*app.EveEntity
 }
 
-func NewGameSearch(u app.UI) *GameSearch {
+func NewGameSearch(u *BaseUI) *GameSearch {
 	a := &GameSearch{
 		defaultCategories:   makeOptions(),
 		entry:               widget.NewEntry(),

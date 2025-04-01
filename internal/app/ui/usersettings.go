@@ -1,4 +1,4 @@
-package toolui
+package ui
 
 import (
 	"context"
@@ -39,11 +39,11 @@ type UserSettings struct {
 
 	showSnackbar func(string)
 	sb           *iwidget.Snackbar
-	u            app.UI
+	u            *BaseUI
 	w            fyne.Window
 }
 
-func NewSettings(u app.UI) *UserSettings {
+func NewSettings(u *BaseUI) *UserSettings {
 	a := &UserSettings{
 		showSnackbar: u.ShowSnackbar,
 		u:            u,
@@ -225,25 +225,25 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []app.Setti
 	exportAppLog := app.SettingAction{
 		Label: "Export application log",
 		Action: func() {
-			a.showExportFileDialog(a.u.DataPaths()["log"])
+			a.showExportFileDialog(a.u.dataPaths["log"])
 		},
 	}
 	exportCrashLog := app.SettingAction{
 		Label: "Export crash log",
 		Action: func() {
-			a.showExportFileDialog(a.u.DataPaths()["crashfile"])
+			a.showExportFileDialog(a.u.dataPaths["crashfile"])
 		},
 	}
 	deleteAppLog := app.SettingAction{
 		Label: "Delete application log",
 		Action: func() {
-			a.showDeleteFileDialog("application log", a.u.DataPaths()["log"]+"*")
+			a.showDeleteFileDialog("application log", a.u.dataPaths["log"]+"*")
 		},
 	}
 	deleteCrashLog := app.SettingAction{
 		Label: "Delete crash log",
 		Action: func() {
-			a.showDeleteFileDialog("crash log", a.u.DataPaths()["crashfile"])
+			a.showDeleteFileDialog("crash log", a.u.dataPaths["crashfile"])
 		},
 	}
 	actions := []app.SettingAction{reset, clear, exportAppLog, exportCrashLog, deleteAppLog, deleteCrashLog}

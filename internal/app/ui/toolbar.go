@@ -15,10 +15,10 @@ type Toolbar struct {
 
 	search    *widget.Entry
 	hamburger *iwidget.IconButton
-	u         *UIDesktop
+	u         *DesktopUI
 }
 
-func NewToolbar(u *UIDesktop) *Toolbar {
+func NewToolbar(u *DesktopUI) *Toolbar {
 	search := widget.NewEntry()
 	search.PlaceHolder = "Search New Eden"
 	search.Scroll = container.ScrollNone
@@ -60,7 +60,7 @@ func (a *Toolbar) CreateRenderer() fyne.WidgetRenderer {
 		3,
 		container.NewHBox(),
 		container.NewBorder(nil, nil, nil, iwidget.NewIconButton(theme.SearchIcon(), func() {
-			a.u.ShowAdvancedSearch()
+			a.u.showAdvancedSearch()
 		}),
 			a.search,
 		),

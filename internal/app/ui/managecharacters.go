@@ -1,4 +1,4 @@
-package toolui
+package ui
 
 import (
 	"context"
@@ -40,11 +40,11 @@ type ManageCharacters struct {
 	sb           *iwidget.Snackbar
 	showSnackbar func(string)
 	title        *widget.Label
-	u            app.UI
+	u            *BaseUI
 	window       fyne.Window
 }
 
-func NewManageCharacters(u app.UI) *ManageCharacters {
+func NewManageCharacters(u *BaseUI) *ManageCharacters {
 	a := &ManageCharacters{
 		characters:   make([]accountCharacter, 0),
 		showSnackbar: u.ShowSnackbar,
@@ -128,7 +128,7 @@ func (a *ManageCharacters) makeCharacterList() *widget.List {
 			name.SetText(c.name)
 
 			icon := row[0].(*canvas.Image)
-			go a.u.UpdateAvatar(c.id, func(r fyne.Resource) {
+			go a.u.updateAvatar(c.id, func(r fyne.Resource) {
 				icon.Resource = r
 				icon.Refresh()
 			})
@@ -150,11 +150,11 @@ func (a *ManageCharacters) makeCharacterList() *widget.List {
 			return
 		}
 		c := a.characters[id]
-		if err := a.u.LoadCharacter(c.id); err != nil {
+		if err := a.u.loadCharacter(c.id); err != nil {
 			slog.Error("load current character", "char", c, "err", err)
 			return
 		}
-		a.u.UpdateStatus()
+		a.u.updateStatus()
 		if a.OnSelectCharacter != nil {
 			a.OnSelectCharacter()
 		}
@@ -185,10 +185,10 @@ func (a *ManageCharacters) showDeleteDialog(c accountCharacter) {
 				m.OnSuccess = func() {
 					a.showSnackbar(fmt.Sprintf("Character %s deleted", c.name))
 					if a.u.CurrentCharacterID() == c.id {
-						a.u.SetAnyCharacter()
+						a.u.setAnyCharacter()
 					}
 					a.u.UpdateCrossPages()
-					a.u.UpdateStatus()
+					a.u.updateStatus()
 				}
 				m.OnError = func(err error) {
 					slog.Error("Failed to delete character", "characterID", c.id)
@@ -247,12 +247,12 @@ func (a *ManageCharacters) ShowAddCharacterDialog() {
 				return err
 			}
 			a.Refresh()
-			go a.u.UpdateCharacterAndRefreshIfNeeded(context.Background(), characterID, false)
+			go a.u.updateCharacterAndRefreshIfNeeded(context.Background(), characterID, false)
 			if !a.u.HasCharacter() {
-				a.u.LoadCharacter(characterID)
+				a.u.loadCharacter(characterID)
 			}
 			a.u.UpdateCrossPages()
-			a.u.UpdateStatus()
+			a.u.updateStatus()
 			return nil
 		}()
 		d1.Hide()

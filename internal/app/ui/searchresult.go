@@ -1,4 +1,4 @@
-package toolui
+package ui
 
 import (
 	"context"

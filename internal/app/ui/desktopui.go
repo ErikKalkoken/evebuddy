@@ -21,7 +21,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/desktopui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -32,9 +31,9 @@ type shortcutDef struct {
 	handler  func(shortcut fyne.Shortcut)
 }
 
-// The UIDesktop creates the UI for desktop.
-type UIDesktop struct {
-	*UIBase
+// The DesktopUI creates the UI for desktop.
+type DesktopUI struct {
+	*BaseUI
 
 	accountWindow  fyne.Window
 	searchWindow   fyne.Window
@@ -45,10 +44,10 @@ type UIDesktop struct {
 }
 
 // NewUIDesktop build the UI and returns it.
-func NewUIDesktop(bui *UIBase) *UIDesktop {
-	u := &UIDesktop{
+func NewUIDesktop(bui *BaseUI) *DesktopUI {
+	u := &DesktopUI{
 		sfg:    new(singleflight.Group),
-		UIBase: bui,
+		BaseUI: bui,
 	}
 	deskApp, ok := u.App().(desktop.App)
 	if !ok {
@@ -64,11 +63,11 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 	u.EnableMenuShortcuts = u.enableShortcuts
 	u.DisableMenuShortcuts = u.disableShortcuts
 
-	u.showManageCharacters = u.ShowManageCharactersWindow
+	u.showManageCharacters = u.showManageCharactersWindow
 
 	u.defineShortcuts()
-	statusBar := desktopui.NewStatusBar(u)
-	pageBars := desktopui.NewPageBarCollection(u)
+	statusBar := NewStatusBar(u)
+	pageBars := NewPageBarCollection(u)
 
 	var characterNav *iwidget.NavDrawer
 
@@ -339,7 +338,7 @@ func NewUIDesktop(bui *UIBase) *UIDesktop {
 	return u
 }
 
-func (u *UIDesktop) saveAppState() {
+func (u *DesktopUI) saveAppState() {
 	if u.MainWindow() == nil || u.App() == nil {
 		slog.Warn("Failed to save app state")
 	}
@@ -347,13 +346,13 @@ func (u *UIDesktop) saveAppState() {
 	slog.Debug("Saved app state")
 }
 
-func (u *UIDesktop) ResetDesktopSettings() {
+func (u *DesktopUI) ResetDesktopSettings() {
 	u.Settings().ResetTabsMainID()
 	u.Settings().ResetWindowSize()
 	u.Settings().ResetSysTrayEnabled()
 }
 
-func (u *UIDesktop) ShowSettingsWindow() {
+func (u *DesktopUI) ShowSettingsWindow() {
 	if u.settingsWindow != nil {
 		u.settingsWindow.Show()
 		return
@@ -368,7 +367,7 @@ func (u *UIDesktop) ShowSettingsWindow() {
 	w.Show()
 }
 
-func (u *UIDesktop) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
+func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
 	w := u.App().NewWindow(u.MakeWindowTitle(title))
 	page := characterui.NewSendMail(u, c, mode, mail)
@@ -392,7 +391,7 @@ func (u *UIDesktop) showSendMailWindow(c *app.Character, mode app.SendMailMode, 
 	w.Show()
 }
 
-func (u *UIDesktop) ShowManageCharactersWindow() {
+func (u *DesktopUI) showManageCharactersWindow() {
 	if u.accountWindow != nil {
 		u.accountWindow.Show()
 		return
@@ -411,19 +410,19 @@ func (u *UIDesktop) ShowManageCharactersWindow() {
 	}
 }
 
-func (u *UIDesktop) PerformSearch(s string) {
+func (u *DesktopUI) PerformSearch(s string) {
 	u.gameSearch.ResetOptions()
 	u.gameSearch.ToogleOptions(false)
 	u.gameSearch.DoSearch(s)
 	u.showSearchWindow()
 }
 
-func (u *UIDesktop) ShowAdvancedSearch() {
+func (u *DesktopUI) showAdvancedSearch() {
 	u.gameSearch.ToogleOptions(true)
 	u.showSearchWindow()
 }
 
-func (u *UIDesktop) showSearchWindow() {
+func (u *DesktopUI) showSearchWindow() {
 	if u.searchWindow != nil {
 		u.searchWindow.Show()
 		return
@@ -447,7 +446,7 @@ func (u *UIDesktop) showSearchWindow() {
 	u.gameSearch.Focus()
 }
 
-func (u *UIDesktop) defineShortcuts() {
+func (u *DesktopUI) defineShortcuts() {
 	u.shortcuts = map[string]shortcutDef{
 		"snackbar": {
 			&desktop.CustomShortcut{
@@ -542,39 +541,39 @@ func (u *UIDesktop) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt,
 			},
 			func(fyne.Shortcut) {
-				u.ShowUpdateStatusWindow()
+				u.showUpdateStatusWindow()
 			}},
 	}
 }
 
 // enableShortcuts enables all registered menu shortcuts.
-func (u *UIDesktop) enableShortcuts() {
+func (u *DesktopUI) enableShortcuts() {
 	for _, sc := range u.shortcuts {
 		u.MainWindow().Canvas().AddShortcut(sc.shortcut, sc.handler)
 	}
 }
 
 // disableShortcuts disabled all registered menu shortcuts.
-func (u *UIDesktop) disableShortcuts() {
+func (u *DesktopUI) disableShortcuts() {
 	for _, sc := range u.shortcuts {
 		u.MainWindow().Canvas().RemoveShortcut(sc.shortcut)
 	}
 }
 
-func (u *UIDesktop) ShowAboutDialog() {
+func (u *DesktopUI) ShowAboutDialog() {
 	d := dialog.NewCustom("About", "Close", u.makeAboutPage(), u.MainWindow())
 	u.ModifyShortcutsForDialog(d, u.MainWindow())
 	d.Show()
 }
 
-func (u *UIDesktop) showUserDataDialog() {
+func (u *DesktopUI) showUserDataDialog() {
 	f := widget.NewForm()
 	type item struct {
 		name string
 		path string
 	}
 	items := make([]item, 0)
-	for n, p := range u.DataPaths() {
+	for n, p := range u.dataPaths {
 		items = append(items, item{n, p})
 	}
 	items = append(items, item{"settings", u.App().Storage().RootURI().Path()})
