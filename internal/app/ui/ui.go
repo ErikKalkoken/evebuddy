@@ -23,11 +23,11 @@ import (
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/characterui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/collectionui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/infowindow"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/allcharacters"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/currentcharacter"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
@@ -65,30 +65,30 @@ type BaseUI struct {
 	onUpdateStatus       func()
 	showManageCharacters func()
 
-	allAssetSearch             *collectionui.AllAssetSearch
-	characterAssets            *characterui.CharacterAssets
-	characterAttributes        *characterui.CharacterAttributes
-	characterBiography         *characterui.CharacterBiography
-	characterCommunications    *characterui.CharacterCommunications
-	characterContracts         *characterui.CharacterContracts
-	characterImplants          *characterui.CharacterImplants
-	characterJumpClones        *characterui.CharacterJumpClones
-	characterMail              *characterui.CharacterMail
-	characterOverview          *collectionui.CharacterOverview
-	characterPlanets           *characterui.CharacterPlanets
-	characterShips             *characterui.CharacterShips
-	characterSkillCatalogue    *characterui.CharacterSkillCatalogue
-	characterSkillQueue        *characterui.CharacterSkillQueue
-	characterWalletJournal     *characterui.CharacterWalletJournal
-	characterWalletTransaction *characterui.CharacterWalletTransaction
-	colonyOverview             *collectionui.ColonyOverview
-	cloneSearch                *collectionui.CloneSearch
+	allAssetSearch             *allcharacters.AllAssetSearch
+	characterAssets            *currentcharacter.CharacterAssets
+	characterAttributes        *currentcharacter.CharacterAttributes
+	characterBiography         *currentcharacter.CharacterBiography
+	characterCommunications    *currentcharacter.CharacterCommunications
+	characterContracts         *currentcharacter.CharacterContracts
+	characterImplants          *currentcharacter.CharacterImplants
+	characterJumpClones        *currentcharacter.CharacterJumpClones
+	characterMail              *currentcharacter.CharacterMail
+	characterOverview          *allcharacters.CharacterOverview
+	characterPlanets           *currentcharacter.CharacterPlanets
+	characterShips             *currentcharacter.CharacterShips
+	characterSkillCatalogue    *currentcharacter.CharacterSkillCatalogue
+	characterSkillQueue        *currentcharacter.CharacterSkillQueue
+	characterWalletJournal     *currentcharacter.CharacterWalletJournal
+	characterWalletTransaction *currentcharacter.CharacterWalletTransaction
+	colonyOverview             *allcharacters.ColonyOverview
+	cloneSearch                *allcharacters.CloneSearch
 	gameSearch                 *GameSearch
-	locationOverview           *collectionui.LocationOverview
+	locationOverview           *allcharacters.LocationOverview
 	managerCharacters          *ManageCharacters
-	trainingOverview           *collectionui.TrainingOverview
+	trainingOverview           *allcharacters.TrainingOverview
 	userSettings               *UserSettings
-	wealthOverview             *collectionui.WealthOverview
+	wealthOverview             *allcharacters.WealthOverview
 
 	app              fyne.App
 	character        *app.Character
@@ -151,30 +151,30 @@ func NewBaseUI(
 
 	u.snackbar = iwidget.NewSnackbar(u.window)
 
-	u.allAssetSearch = collectionui.NewAssetSearch(u)
-	u.characterAssets = characterui.NewCharacterAssets(u)
-	u.characterAttributes = characterui.NewCharacterAttributes(u)
-	u.characterBiography = characterui.NewCharacterBiography(u)
-	u.characterCommunications = characterui.NewCharacterCommunications(u)
-	u.characterContracts = characterui.NewCharacterContracts(u)
-	u.characterImplants = characterui.NewCharacterImplants(u)
-	u.characterJumpClones = characterui.NewCharacterJumpClones(u)
-	u.characterMail = characterui.NewCharacterMail(u)
-	u.characterOverview = collectionui.NewCharacterOverview(u)
-	u.characterPlanets = characterui.NewCharacterPlanets(u)
-	u.characterShips = characterui.NewCharacterShips(u)
-	u.characterSkillCatalogue = characterui.NewCharacterSkillCatalogue(u)
-	u.characterSkillQueue = characterui.NewCharacterSkillQueue(u)
-	u.characterWalletJournal = characterui.NewCharacterWalletJournal(u)
-	u.characterWalletTransaction = characterui.NewCharacterWalletTransaction(u)
-	u.cloneSearch = collectionui.NewCloneSearch(u)
-	u.colonyOverview = collectionui.NewColonyOverview(u)
+	u.allAssetSearch = allcharacters.NewAssetSearch(u)
+	u.characterAssets = currentcharacter.NewCharacterAssets(u)
+	u.characterAttributes = currentcharacter.NewCharacterAttributes(u)
+	u.characterBiography = currentcharacter.NewCharacterBiography(u)
+	u.characterCommunications = currentcharacter.NewCharacterCommunications(u)
+	u.characterContracts = currentcharacter.NewCharacterContracts(u)
+	u.characterImplants = currentcharacter.NewCharacterImplants(u)
+	u.characterJumpClones = currentcharacter.NewCharacterJumpClones(u)
+	u.characterMail = currentcharacter.NewCharacterMail(u)
+	u.characterOverview = allcharacters.NewCharacterOverview(u)
+	u.characterPlanets = currentcharacter.NewCharacterPlanets(u)
+	u.characterShips = currentcharacter.NewCharacterShips(u)
+	u.characterSkillCatalogue = currentcharacter.NewCharacterSkillCatalogue(u)
+	u.characterSkillQueue = currentcharacter.NewCharacterSkillQueue(u)
+	u.characterWalletJournal = currentcharacter.NewCharacterWalletJournal(u)
+	u.characterWalletTransaction = currentcharacter.NewCharacterWalletTransaction(u)
+	u.cloneSearch = allcharacters.NewCloneSearch(u)
+	u.colonyOverview = allcharacters.NewColonyOverview(u)
 	u.gameSearch = NewGameSearch(u)
-	u.locationOverview = collectionui.NewLocationOverview(u)
+	u.locationOverview = allcharacters.NewLocationOverview(u)
 	u.managerCharacters = NewManageCharacters(u)
-	u.trainingOverview = collectionui.NewTrainingOverview(u)
+	u.trainingOverview = allcharacters.NewTrainingOverview(u)
 	u.userSettings = NewSettings(u)
-	u.wealthOverview = collectionui.NewWealthOverview(u)
+	u.wealthOverview = allcharacters.NewWealthOverview(u)
 
 	u.MainWindow().SetMaster()
 	return u

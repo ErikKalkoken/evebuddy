@@ -11,8 +11,8 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/characterui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/currentcharacter"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -43,7 +43,7 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 	mailMenu := fyne.NewMenu("")
 	communicationsMenu := fyne.NewMenu("")
 	u.characterMail.OnSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-		page := characterui.NewSendMail(u, c, mode, mail)
+		page := currentcharacter.NewSendMail(u, c, mode, mail)
 		if mode != app.SendMailNew {
 			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
 		}

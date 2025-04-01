@@ -20,8 +20,8 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/characterui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/currentcharacter"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -365,7 +365,7 @@ func (u *DesktopUI) ShowSettingsWindow() {
 func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
 	w := u.App().NewWindow(u.MakeWindowTitle(title))
-	page := characterui.NewSendMail(u, c, mode, mail)
+	page := currentcharacter.NewSendMail(u, c, mode, mail)
 	page.SetWindow(w)
 	send := widget.NewButtonWithIcon("Send", theme.MailSendIcon(), func() {
 		if page.SendAction() {
