@@ -541,60 +541,44 @@ func (u *BaseUI) UpdateMailIndicator() {
 }
 
 func (u *BaseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
-	currentID := u.CurrentCharacterID()
 	cc := u.StatusCacheService().ListCharacters()
 	items := make([]*fyne.MenuItem, 0)
-	fallbackIcon, _ := fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)
-	var wg sync.WaitGroup
-	if len(cc) > 1 {
-		items = append(items, fyne.NewMenuItemSeparator())
-		it := fyne.NewMenuItem("Switch to...", nil)
+	if len(cc) == 0 {
+		it := fyne.NewMenuItem("No characters", nil)
 		it.Disabled = true
-		items = append(items, it)
-		for _, c := range cc {
-			it := fyne.NewMenuItem(c.Name, func() {
-				err := u.loadCharacter(c.ID)
-				if err != nil {
-					slog.Error("make character switch menu", "error", err)
-					u.snackbar.Show("ERROR: Failed to switch character")
-				}
-			})
-			if c.ID == currentID {
-				continue
+		return append(items, it)
+	}
+	it := fyne.NewMenuItem("Switch to...", nil)
+	it.Disabled = true
+	items = append(items, it)
+	var wg sync.WaitGroup
+	currentID := u.CurrentCharacterID()
+	fallbackIcon, _ := fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)
+	for _, c := range cc {
+		it := fyne.NewMenuItem(c.Name, func() {
+			err := u.loadCharacter(c.ID)
+			if err != nil {
+				slog.Error("make character switch menu", "error", err)
+				u.snackbar.Show("ERROR: Failed to switch character")
 			}
+		})
+		if c.ID == currentID {
+			it.Icon = theme.AccountIcon()
+			it.Disabled = true
+		} else {
 			it.Icon = fallbackIcon
 			wg.Add(1)
 			go u.updateAvatar(c.ID, func(r fyne.Resource) {
 				defer wg.Done()
 				it.Icon = r
 			})
-			items = append(items, it)
 		}
+		items = append(items, it)
 	}
 	go func() {
 		wg.Wait()
 		refresh()
 	}()
-	if u.showManageCharacters != nil || currentID != 0 {
-		items = append(items, fyne.NewMenuItemSeparator())
-		it := fyne.NewMenuItem("Tools", nil)
-		it.Disabled = true
-		items = append(items, it)
-	}
-	if u.showManageCharacters != nil {
-		it := fyne.NewMenuItem("Manage Characters", func() {
-			u.showManageCharacters()
-		})
-		it.Icon = theme.NewThemedResource(icons.ManageaccountsSvg)
-		items = append(items, it)
-	}
-	if currentID != 0 {
-		it := fyne.NewMenuItem("Current Character", func() {
-			u.ShowInfoWindow(app.EveEntityCharacter, currentID)
-		})
-		it.Icon = theme.InfoIcon()
-		items = append(items, it)
-	}
 	return items
 }
 

@@ -49,18 +49,14 @@ func (w *PageBar) SetMenu(items []*fyne.MenuItem) {
 }
 
 func (w *PageBar) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewHBox(
-		container.NewVBox(layout.NewSpacer(), w.title, layout.NewSpacer()),
-		layout.NewSpacer(),
-	)
+	box := container.NewHBox(w.title, layout.NewSpacer())
 	if len(w.buttons) > 0 {
 		for _, b := range w.buttons {
-			c.Add(container.NewCenter(b))
+			box.Add(container.NewCenter(b))
 		}
 	}
-	c.Add(container.NewCenter(w.icon))
-	p := theme.Padding()
-	return widget.NewSimpleRenderer(container.New(layout.NewCustomPaddedLayout(p, 0, 0, 0), c))
+	box.Add(container.NewCenter(w.icon))
+	return widget.NewSimpleRenderer(box)
 }
 
 type PageBarCollection struct {
