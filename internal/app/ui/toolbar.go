@@ -11,6 +11,11 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
+const (
+	searchPlaceholderEnabled  = "Search New Eden"
+	searchPlaceholderDisabled = "(Needs a character)"
+)
+
 type Toolbar struct {
 	widget.BaseWidget
 
@@ -21,7 +26,7 @@ type Toolbar struct {
 
 func NewToolbar(u *DesktopUI) *Toolbar {
 	searchbar := widget.NewEntry()
-	searchbar.PlaceHolder = "Search New Eden"
+	searchbar.PlaceHolder = searchPlaceholderEnabled
 	searchbar.Scroll = container.ScrollNone
 	searchbar.Wrapping = fyne.TextWrapOff
 	searchbar.OnSubmitted = func(s string) {
@@ -66,8 +71,10 @@ func NewToolbar(u *DesktopUI) *Toolbar {
 
 func (a *Toolbar) ToogleSearchBar(enabled bool) {
 	if enabled {
+		a.searchbar.PlaceHolder = searchPlaceholderEnabled
 		a.searchbar.Enable()
 	} else {
+		a.searchbar.PlaceHolder = searchPlaceholderDisabled
 		a.searchbar.Disable()
 	}
 }

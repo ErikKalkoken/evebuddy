@@ -36,7 +36,7 @@ type colonyRow struct {
 type Colonies struct {
 	widget.BaseWidget
 
-	OnUpdate func(top string)
+	OnUpdate func(total, expired int)
 
 	body fyne.CanvasObject
 	rows []colonyRow
@@ -114,36 +114,32 @@ func (a *Colonies) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *Colonies) Update() {
-	var t string
+	var s string
 	var i widget.Importance
+	var total, expired int
 	if err := a.updateEntries(); err != nil {
 		slog.Error("Failed to refresh wallet transaction UI", "err", err)
-		t = "ERROR"
+		s = "ERROR"
 		i = widget.DangerImportance
 	} else {
-		t, i = a.makeTopText()
+		total = len(a.rows)
+		for _, c := range a.rows {
+			if c.isExpired {
+				expired++
+			}
+		}
+		s = fmt.Sprintf("%d colonies", total)
+		if expired > 0 {
+			s += fmt.Sprintf(" • %d expired", expired)
+		}
 	}
-	a.top.Text = t
+	a.top.Text = s
 	a.top.Importance = i
 	a.top.Refresh()
 	a.body.Refresh()
 	if a.OnUpdate != nil {
-		a.OnUpdate(t)
+		a.OnUpdate(total, expired)
 	}
-}
-
-func (a *Colonies) makeTopText() (string, widget.Importance) {
-	var expiredCount int
-	for _, c := range a.rows {
-		if c.isExpired {
-			expiredCount++
-		}
-	}
-	s := fmt.Sprintf("%d colonies", len(a.rows))
-	if expiredCount > 0 {
-		s += fmt.Sprintf(" • %d expired", expiredCount)
-	}
-	return s, widget.MediumImportance
 }
 
 func (a *Colonies) updateEntries() error {

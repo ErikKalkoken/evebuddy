@@ -58,14 +58,14 @@ type Clones struct {
 	widget.BaseWidget
 
 	body         fyne.CanvasObject
+	colSort      []sortDir
+	origin       *app.EveSolarSystem
 	originButton *widget.Button
 	originLabel  *iwidget.TappableRichText
-	origin       *app.EveSolarSystem
 	routePref    *widget.Select
 	rows         []cloneSearchRow
 	top          *widget.Label
 	u            app.UI
-	colSort      []sortDir
 }
 
 func NewClones(u app.UI) *Clones {

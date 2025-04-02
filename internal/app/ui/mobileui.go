@@ -288,8 +288,8 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 		navItemWealth,
 	)
 	crossNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("Characters", crossList))
-	u.overviewColonies.OnUpdate = func(top string) {
-		navItemColonies2.Supporting = top
+	u.overviewColonies.OnUpdate = func(_, expired int) {
+		navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
 		crossList.Refresh()
 	}
 	u.overviewWealth.OnUpdate = func(wallet, assets float64) {

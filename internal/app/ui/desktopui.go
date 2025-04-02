@@ -202,7 +202,7 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 	}
 
 	// All Characters
-
+	var collectiveNav *iwidget.NavDrawer
 	overview := iwidget.NewNavPage(
 		"Characters",
 		theme.NewThemedResource(icons.PortraitSvg),
@@ -216,7 +216,7 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 	)
 
 	u.overviewWealth.OnUpdate = func(wallet, assets float64) {
-		characterNav.SetItemBadge(wealth, ihumanize.Number(wallet+assets, 1))
+		collectiveNav.SetItemBadge(wealth, ihumanize.Number(wallet+assets, 1))
 	}
 
 	allAssets := iwidget.NewNavPage(
@@ -224,7 +224,19 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 		theme.NewThemedResource(icons.Inventory2Svg),
 		makePageWithTitle("Assets", u.overviewAssets),
 	)
-	collectiveNav := iwidget.NewNavDrawer("All Characters",
+	overviewColonies := iwidget.NewNavPage(
+		"Colonies",
+		theme.NewThemedResource(icons.EarthSvg),
+		makePageWithTitle("Colonies", u.overviewColonies),
+	)
+	u.overviewColonies.OnUpdate = func(_, expired int) {
+		var s string
+		if expired > 0 {
+			s = fmt.Sprint(expired)
+		}
+		collectiveNav.SetItemBadge(overviewColonies, s)
+	}
+	collectiveNav = iwidget.NewNavDrawer("All Characters",
 		overview,
 		allAssets,
 		iwidget.NewNavPage(
@@ -232,11 +244,7 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
 			makePageWithTitle("Clones", u.overviewClones),
 		),
-		iwidget.NewNavPage(
-			"Colonies",
-			theme.NewThemedResource(icons.EarthSvg),
-			makePageWithTitle("Colonies", u.overviewColonies),
-		),
+		overviewColonies,
 		iwidget.NewNavPage(
 			"Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),
