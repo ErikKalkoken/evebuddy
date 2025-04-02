@@ -36,7 +36,6 @@ type EveEntityEntry struct {
 
 	eis         app.EveImageService
 	field       *canvas.Rectangle
-	hovered     bool
 	label       fyne.CanvasObject
 	labelWidth  float32
 	main        *fyne.Container

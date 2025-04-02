@@ -73,8 +73,9 @@ type BaseUI struct {
 	characterImplants          *character.Augmentations
 	characterJumpClones        *character.JumpClones
 	characterMail              *character.Mails
-	characterOverview          *characteroverview.Characters
+	overviewCharacters         *characteroverview.Characters
 	characterPlanets           *character.Colonies
+	characterSheet             *character.Sheet
 	characterShips             *character.FlyableShips
 	characterSkillCatalogue    *character.SkillCatalogue
 	characterSkillQueue        *character.SkillQueue
@@ -149,9 +150,6 @@ func NewBaseUI(
 		appwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
 	}
 
-	u.snackbar = iwidget.NewSnackbar(u.window)
-
-	u.overviewAssets = characteroverview.NewAssets(u)
 	u.characterAssets = character.NewAssets(u)
 	u.characterAttributes = character.NewAttributes(u)
 	u.characterBiography = character.NewBiography(u)
@@ -160,21 +158,24 @@ func NewBaseUI(
 	u.characterImplants = character.NewAugmentations(u)
 	u.characterJumpClones = character.NewJumpClones(u)
 	u.characterMail = character.NewMail(u)
-	u.characterOverview = characteroverview.NewCharacters(u)
+	u.overviewCharacters = characteroverview.NewCharacters(u)
 	u.characterPlanets = character.NewColonies(u)
+	u.characterSheet = character.NewSheet(u)
 	u.characterShips = character.NewFlyableShips(u)
 	u.characterSkillCatalogue = character.NewSkillCatalogue(u)
 	u.characterSkillQueue = character.NewSkillQueue(u)
 	u.characterWalletJournal = character.NewWalletJournal(u)
 	u.characterWalletTransaction = character.NewWalletTransaction(u)
+	u.gameSearch = NewGameSearch(u)
+	u.manageCharacters = NewManageCharacters(u)
+	u.overviewAssets = characteroverview.NewAssets(u)
 	u.overviewClones = characteroverview.NewClones(u)
 	u.overviewColonies = characteroverview.NewColonies(u)
-	u.gameSearch = NewGameSearch(u)
 	u.overviewLocations = characteroverview.NewLocations(u)
-	u.manageCharacters = NewManageCharacters(u)
 	u.overviewTraining = characteroverview.NewTraining(u)
-	u.userSettings = NewSettings(u)
 	u.overviewWealth = characteroverview.NewWealth(u)
+	u.snackbar = iwidget.NewSnackbar(u.window)
+	u.userSettings = NewSettings(u)
 
 	u.MainWindow().SetMaster()
 	return u
@@ -411,6 +412,7 @@ func (u *BaseUI) updateCharacter() {
 		"mail":              u.characterMail.Update,
 		"notifications":     u.characterCommunications.Update,
 		"planets":           u.characterPlanets.Update,
+		"sheet":             u.characterSheet.Update,
 		"ships":             u.characterShips.Update,
 		"skillCatalogue":    u.characterSkillCatalogue.Update,
 		"skillqueue":        u.characterSkillQueue.Update,
@@ -441,7 +443,7 @@ func (u *BaseUI) UpdateCrossPages() {
 		"cloneSeach":  u.overviewClones.Update,
 		"colony":      u.overviewColonies.Update,
 		"locations":   u.overviewLocations.Update,
-		"overview":    u.characterOverview.Update,
+		"overview":    u.overviewCharacters.Update,
 		"training":    u.overviewTraining.Update,
 		"wealth":      u.overviewWealth.Update,
 	}
@@ -616,14 +618,23 @@ func (u *BaseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 		slog.Error("Failed to update general section", "section", section, "err", err)
 		return
 	}
+	needsRefresh := hasChanged || forceUpdate
 	switch section {
 	case app.SectionEveCategories:
-		if hasChanged {
+		if needsRefresh {
 			u.characterShips.Update()
 			u.characterSkillCatalogue.Refresh()
 		}
-	case app.SectionEveCharacters, app.SectionEveMarketPrices:
-		// nothing to refresh
+	case app.SectionEveCharacters:
+		if needsRefresh {
+			u.reloadCurrentCharacter()
+			u.overviewCharacters.Update()
+		}
+	case app.SectionEveMarketPrices:
+		u.characterAssets.Update()
+		u.overviewCharacters.Update()
+		u.overviewAssets.Update()
+		u.reloadCurrentCharacter()
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the update ticker refresh: %s", section))
 	}
@@ -730,24 +741,16 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	}
 	isShown := characterID == u.CurrentCharacterID()
 	needsRefresh := hasChanged || forceUpdate
-	if isShown && needsRefresh {
-		u.reloadCurrentCharacter()
-	}
 	switch s {
 	case app.SectionAssets:
 		if needsRefresh {
-			v, err := u.CharacterService().UpdateCharacterAssetTotalValue(ctx, characterID)
-			if err != nil {
-				slog.Error("update asset total value", "characterID", characterID, "err", err)
-			}
-			if isShown {
-				u.character.AssetValue.Set(v)
-			}
 			u.overviewAssets.Update()
 			u.overviewWealth.Update()
-		}
-		if isShown && needsRefresh {
-			u.characterAssets.Update()
+			if isShown {
+				u.reloadCurrentCharacter()
+				u.characterAssets.Update()
+				u.characterSheet.Update()
+			}
 		}
 	case app.SectionAttributes:
 		if isShown && needsRefresh {
@@ -770,42 +773,46 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			u.characterImplants.Update()
 		}
 	case app.SectionJumpClones:
-		if isShown && needsRefresh {
-			u.characterJumpClones.Update()
-		}
 		if needsRefresh {
-			u.characterOverview.Update()
+			u.overviewCharacters.Update()
 			u.overviewClones.Update()
+			if isShown {
+				u.reloadCurrentCharacter()
+				u.characterJumpClones.Update()
+			}
 		}
 	case app.SectionLocation,
 		app.SectionOnline,
 		app.SectionShip:
 		if needsRefresh {
 			u.overviewLocations.Update()
+			if isShown {
+				u.reloadCurrentCharacter()
+			}
 		}
 	case app.SectionPlanets:
-		if isShown && needsRefresh {
-			u.characterPlanets.Update()
-		}
 		if needsRefresh {
 			u.overviewColonies.Update()
 			u.notifyExpiredExtractionsIfNeeded(ctx, characterID)
+			if isShown {
+				u.characterPlanets.Update()
+			}
 		}
 	case app.SectionMailLabels,
 		app.SectionMailLists:
-		if isShown && needsRefresh {
-			u.characterMail.Update()
-		}
 		if needsRefresh {
-			u.characterOverview.Update()
+			u.overviewCharacters.Update()
+			if isShown {
+				u.characterMail.Update()
+			}
 		}
 	case app.SectionMails:
-		if isShown && needsRefresh {
-			u.characterMail.Update()
-		}
 		if needsRefresh {
-			go u.characterOverview.Update()
+			go u.overviewCharacters.Update()
 			go u.UpdateMailIndicator()
+			if isShown {
+				u.characterMail.Update()
+			}
 		}
 		if u.Settings().NotifyMailsEnabled() {
 			go func() {
@@ -829,14 +836,16 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			}()
 		}
 	case app.SectionSkills:
-		if isShown && needsRefresh {
-			u.characterSkillCatalogue.Refresh()
-			u.characterShips.Update()
-			u.characterPlanets.Update()
-		}
 		if needsRefresh {
 			u.overviewTraining.Update()
+			if isShown {
+				u.reloadCurrentCharacter()
+				u.characterSkillCatalogue.Refresh()
+				u.characterShips.Update()
+				u.characterPlanets.Update()
+			}
 		}
+
 	case app.SectionSkillqueue:
 		if u.Settings().NotifyTrainingEnabled() {
 			err := u.CharacterService().EnableTrainingWatcher(ctx, characterID)
@@ -853,8 +862,12 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionWalletBalance:
 		if needsRefresh {
-			u.characterOverview.Update()
+			u.overviewCharacters.Update()
 			u.overviewWealth.Update()
+			if isShown {
+				u.reloadCurrentCharacter()
+				u.characterAssets.Update()
+			}
 		}
 	case app.SectionWalletJournal:
 		if isShown && needsRefresh {
@@ -901,6 +914,12 @@ func (u *BaseUI) availableUpdate() (github.VersionInfo, error) {
 }
 
 func (u *BaseUI) ShowInformationDialog(title, message string, parent fyne.Window) {
+	d := dialog.NewInformation(title, message, parent)
+	u.ModifyShortcutsForDialog(d, parent)
+	d.Show()
+}
+
+func (u *BaseUI) ShowInfoDialog(title, message string, parent fyne.Window) {
 	d := dialog.NewInformation(title, message, parent)
 	u.ModifyShortcutsForDialog(d, parent)
 	d.Show()

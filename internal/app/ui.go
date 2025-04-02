@@ -32,6 +32,7 @@ type UI interface {
 	Settings() Settings
 	ShowAndRun()
 	ShowConfirmDialog(title, message, confirm string, callback func(bool), parent fyne.Window)
+	ShowInfoDialog(title, message string, parent fyne.Window)
 	ShowErrorDialog(message string, err error, parent fyne.Window)
 	ShowEveEntityInfoWindow(o *EveEntity)
 	ShowInformationDialog(title, message string, parent fyne.Window)

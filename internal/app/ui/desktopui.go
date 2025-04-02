@@ -22,7 +22,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -156,15 +155,12 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 			container.NewTabItem("Market Transactions", u.characterWalletTransaction),
 		)))
 
-	u.characterWalletJournal.OnUpdate = func(balance string) {
-		characterNav.SetItemBadge(wallet, balance)
-	}
-
 	characterNav = iwidget.NewNavDrawer("Current Character",
 		iwidget.NewNavPage(
 			"Character Sheet",
 			theme.NewThemedResource(icons.PortraitSvg),
 			makePageWithPageBar("Character Sheet", container.NewAppTabs(
+				container.NewTabItem("Character", u.characterSheet),
 				container.NewTabItem("Augmentations", u.characterImplants),
 				container.NewTabItem("Jump Clones", u.characterJumpClones),
 				container.NewTabItem("Attributes", u.characterAttributes),
@@ -206,7 +202,7 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 	overview := iwidget.NewNavPage(
 		"Characters",
 		theme.NewThemedResource(icons.PortraitSvg),
-		makePageWithTitle("Characters", u.characterOverview),
+		makePageWithTitle("Characters", u.overviewCharacters),
 	)
 
 	wealth := iwidget.NewNavPage(
@@ -214,10 +210,6 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 		theme.NewThemedResource(icons.GoldSvg),
 		makePageWithTitle("Wealth", u.overviewWealth),
 	)
-
-	u.overviewWealth.OnUpdate = func(wallet, assets float64) {
-		collectiveNav.SetItemBadge(wealth, ihumanize.Number(wallet+assets, 1))
-	}
 
 	allAssets := iwidget.NewNavPage(
 		"Assets",

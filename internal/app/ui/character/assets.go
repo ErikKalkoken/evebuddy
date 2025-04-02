@@ -218,7 +218,7 @@ func (a *Assets) makeAssetGrid() *widget.GridWrap {
 		},
 		func() fyne.CanvasObject {
 			return NewAssetItem(func(image *canvas.Image, ca *app.CharacterAsset) {
-				appwidget.RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
+				iwidget.RefreshImageAsync(image, func() (fyne.Resource, error) {
 					switch ca.Variant() {
 					case app.VariantSKIN:
 						return a.u.EveImageService().InventoryTypeSKIN(ca.EveType.ID, app.IconPixelSize)

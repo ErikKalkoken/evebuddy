@@ -14,7 +14,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -174,7 +173,7 @@ func showAddDialog(u app.UI, characterID int32, onSelected func(ee *app.EveEntit
 			row := co.(*fyne.Container).Objects
 			row[0].(*widget.Label).SetText(ee.Name)
 			image := row[1].(*canvas.Image)
-			appwidget.RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
+			iwidget.RefreshImageAsync(image, func() (fyne.Resource, error) {
 				res, err := FetchEveEntityAvatar(u.EveImageService(), ee, fallbackIcon)
 				if err != nil {
 					return fallbackIcon, err

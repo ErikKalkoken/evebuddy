@@ -149,6 +149,9 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg app
 					created++
 				}
 			}
+			if _, err := s.UpdateCharacterAssetTotalValue(ctx, characterID); err != nil {
+				return err
+			}
 			slog.Info("Stored character assets", "characterID", characterID, "created", created, "updated", updated)
 			if ids := currentIDs.Difference(incomingIDs); ids.Size() > 0 {
 				if err := s.st.DeleteCharacterAssets(ctx, characterID, ids.ToSlice()); err != nil {

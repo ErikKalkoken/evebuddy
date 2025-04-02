@@ -80,7 +80,7 @@ func (a *Augmentations) makeImplantList() *widget.List {
 			slot := vbox[1].(*fyne.Container).Objects[0].(*widget.Label)
 			slot.SetText(fmt.Sprintf("Slot %d", o.SlotNum))
 			iconMain := row[1].(*canvas.Image)
-			appwidget.RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
+			iwidget.RefreshImageAsync(iconMain, func() (fyne.Resource, error) {
 				return a.u.EveImageService().InventoryTypeIcon(o.EveType.ID, app.IconPixelSize)
 			})
 		})

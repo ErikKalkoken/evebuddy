@@ -160,6 +160,7 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 					newCharacterAppBar(
 						"Character Sheet",
 						container.NewAppTabs(
+							container.NewTabItem("Character", u.characterSheet),
 							container.NewTabItem("Augmentations", u.characterImplants),
 							container.NewTabItem("Clones", u.characterJumpClones),
 							container.NewTabItem("Attributes", u.characterAttributes),
@@ -252,7 +253,7 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 			"Characters",
 			theme.NewThemedResource(icons.PortraitSvg),
 			func() {
-				crossNav.Push(iwidget.NewAppBar("Characters", u.characterOverview))
+				crossNav.Push(iwidget.NewAppBar("Characters", u.overviewCharacters))
 			},
 		),
 		iwidget.NewListItemWithIcon(
@@ -451,7 +452,7 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 		u.characterMail.ResetFolders()
 		u.characterCommunications.ResetGroups()
 		characterNav.PopAll()
-		navBar.Select(0)
+		navBar.Select(1)
 	}
 
 	u.onAppFirstStarted = func() {

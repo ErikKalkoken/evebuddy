@@ -30,7 +30,6 @@ type destination struct {
 	id              int // id of a destination in a navbar
 	indicator       *canvas.Rectangle
 	isActive        bool
-	hasBadge        bool
 	label           *canvas.Text
 	navbar          *NavBar
 	onSelected      func()

@@ -383,7 +383,7 @@ func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 		}
 	} else {
 		s := float32(app.IconPixelSize) * logoZoomFactor
-		icon := appwidget.NewImageResourceAsync(icons.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
+		icon := iwidget.NewImageWithLoader(icons.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
 			if a.et.IsSKIN() {
 				return a.iw.u.EveImageService().InventoryTypeSKIN(a.et.ID, app.IconPixelSize)
 			} else if a.et.IsBlueprint() {
@@ -400,7 +400,7 @@ func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 	})
 	characterName.Wrapping = fyne.TextWrapWord
 	if a.character != nil {
-		appwidget.RefreshImageResourceAsync(characterIcon, func() (fyne.Resource, error) {
+		iwidget.RefreshImageAsync(characterIcon, func() (fyne.Resource, error) {
 			return a.iw.u.EveImageService().CharacterPortrait(a.character.ID, app.IconPixelSize)
 		})
 		characterName.SetText(a.character.Name)

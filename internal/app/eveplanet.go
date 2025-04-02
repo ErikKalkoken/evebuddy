@@ -19,7 +19,7 @@ func (ep EvePlanet) TypeDisplay() string {
 		return ""
 	}
 	m := rePlanetType.FindStringSubmatch(ep.Type.Name)
-	if m == nil || len(m) < 2 {
+	if len(m) < 2 {
 		return ""
 	}
 	return m[1]
