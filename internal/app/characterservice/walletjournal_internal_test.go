@@ -49,7 +49,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateWalletJournalEntryESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionWalletJournal,
 		})
@@ -102,7 +102,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateWalletJournalEntryESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionWalletJournal,
 		})
@@ -151,7 +151,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		_, err := s.updateCharacterWalletJournalEntryESI(ctx, app.CharacterUpdateSectionParams{
+		_, err := s.updateWalletJournalEntryESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionWalletJournal,
 		})
@@ -211,7 +211,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 				},
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
 		// when
-		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateWalletJournalEntryESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionWalletJournal,
 		})
@@ -248,7 +248,7 @@ func TestListWalletJournalEntries(t *testing.T) {
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		// when
-		ee, err := s.ListCharacterWalletJournalEntries(ctx, c.ID)
+		ee, err := s.ListWalletJournalEntries(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, ee, 3)

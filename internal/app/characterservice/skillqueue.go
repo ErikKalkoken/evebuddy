@@ -12,7 +12,7 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *CharacterService) GetCharacterTotalTrainingTime(ctx context.Context, characterID int32) (optional.Optional[time.Duration], error) {
+func (s *CharacterService) GetTotalTrainingTime(ctx context.Context, characterID int32) (optional.Optional[time.Duration], error) {
 	return s.st.GetCharacterTotalTrainingTime(ctx, characterID)
 }
 
@@ -24,7 +24,7 @@ func (cs *CharacterService) NotifyExpiredTraining(ctx context.Context, character
 	if !c.IsTrainingWatched {
 		return nil
 	}
-	t, err := cs.GetCharacterTotalTrainingTime(ctx, characterID)
+	t, err := cs.GetTotalTrainingTime(ctx, characterID)
 	if err != nil {
 		return err
 	}
@@ -34,16 +34,16 @@ func (cs *CharacterService) NotifyExpiredTraining(ctx context.Context, character
 	title := fmt.Sprintf("%s: No skill in training", c.EveCharacter.Name)
 	content := "There is currently no skill being trained for this character."
 	notify(title, content)
-	return cs.UpdateCharacterIsTrainingWatched(ctx, characterID, false)
+	return cs.UpdateIsTrainingWatched(ctx, characterID, false)
 }
 
-func (s *CharacterService) ListCharacterSkillqueueItems(ctx context.Context, characterID int32) ([]*app.CharacterSkillqueueItem, error) {
+func (s *CharacterService) ListSkillqueueItems(ctx context.Context, characterID int32) ([]*app.CharacterSkillqueueItem, error) {
 	return s.st.ListCharacterSkillqueueItems(ctx, characterID)
 }
 
-// UpdateCharacterSkillqueueESI updates the skillqueue for a character from ESI
+// UpdateSkillqueueESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *CharacterService) UpdateCharacterSkillqueueESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) UpdateSkillqueueESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionSkillqueue {
 		panic("called with wrong section")
 	}

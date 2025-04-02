@@ -530,7 +530,7 @@ func (u *BaseUI) UpdateMailIndicator() {
 	if !u.Settings().SysTrayEnabled() {
 		return
 	}
-	n, err := u.CharacterService().GetAllCharacterMailUnreadCount(context.Background())
+	n, err := u.CharacterService().GetAllMailUnreadCount(context.Background())
 	if err != nil {
 		slog.Error("update mail indicator", "error", err)
 		return

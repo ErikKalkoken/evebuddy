@@ -215,7 +215,7 @@ func (a *Contracts) updateEntries() error {
 	}
 	characterID := a.u.CurrentCharacterID()
 	var err error
-	a.contracts, err = a.u.CharacterService().ListCharacterContracts(context.TODO(), characterID)
+	a.contracts, err = a.u.CharacterService().ListContracts(context.TODO(), characterID)
 	if err != nil {
 		return err
 	}
@@ -304,7 +304,7 @@ func (a *Contracts) showContract(c *app.CharacterContract) {
 	}
 	makeBidInfo := func(c *app.CharacterContract) fyne.CanvasObject {
 		ctx := context.TODO()
-		total, err := a.u.CharacterService().CountCharacterContractBids(ctx, c.ID)
+		total, err := a.u.CharacterService().CountContractBids(ctx, c.ID)
 		if err != nil {
 			d := a.u.NewErrorDialog("Failed to count contract bids", err, w)
 			d.SetOnClosed(w.Hide)
@@ -314,7 +314,7 @@ func (a *Contracts) showContract(c *app.CharacterContract) {
 		if total == 0 {
 			currentBid = "(None)"
 		} else {
-			top, err := a.u.CharacterService().GetCharacterContractTopBid(ctx, c.ID)
+			top, err := a.u.CharacterService().GetContractTopBid(ctx, c.ID)
 			if err != nil {
 				d := a.u.NewErrorDialog("Failed to get top bid", err, w)
 				d.SetOnClosed(w.Hide)
@@ -334,7 +334,7 @@ func (a *Contracts) showContract(c *app.CharacterContract) {
 	}
 	makeItemsInfo := func(c *app.CharacterContract) fyne.CanvasObject {
 		vb := container.NewVBox()
-		items, err := a.u.CharacterService().ListCharacterContractItems(context.TODO(), c.ID)
+		items, err := a.u.CharacterService().ListContractItems(context.TODO(), c.ID)
 		if err != nil {
 			d := a.u.NewErrorDialog("Failed to fetch contract items", err, w)
 			d.SetOnClosed(w.Hide)

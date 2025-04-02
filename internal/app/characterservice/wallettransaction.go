@@ -16,12 +16,12 @@ const (
 	maxTransactionsPerPage = 2_500 // maximum objects returned per page
 )
 
-func (s *CharacterService) ListCharacterWalletTransactions(ctx context.Context, characterID int32) ([]*app.CharacterWalletTransaction, error) {
+func (s *CharacterService) ListWalletTransactions(ctx context.Context, characterID int32) ([]*app.CharacterWalletTransaction, error) {
 	return s.st.ListCharacterWalletTransactions(ctx, characterID)
 }
 
-// updateCharacterWalletTransactionESI updates the wallet journal from ESI and reports wether it has changed.
-func (s *CharacterService) updateCharacterWalletTransactionESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+// updateWalletTransactionESI updates the wallet journal from ESI and reports wether it has changed.
+func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionWalletTransactions {
 		panic("called with wrong section")
 	}

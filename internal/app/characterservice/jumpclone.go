@@ -12,22 +12,22 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *CharacterService) GetCharacterJumpClone(ctx context.Context, characterID, cloneID int32) (*app.CharacterJumpClone, error) {
+func (s *CharacterService) GetJumpClone(ctx context.Context, characterID, cloneID int32) (*app.CharacterJumpClone, error) {
 	return s.st.GetCharacterJumpClone(ctx, characterID, cloneID)
 }
 
-func (s *CharacterService) ListAllCharacterJumpClones(ctx context.Context) ([]*app.CharacterJumpClone2, error) {
+func (s *CharacterService) ListAllJumpClones(ctx context.Context) ([]*app.CharacterJumpClone2, error) {
 	return s.st.ListAllCharacterJumpClones(ctx)
 }
 
-func (s *CharacterService) ListCharacterJumpClones(ctx context.Context, characterID int32) ([]*app.CharacterJumpClone, error) {
+func (s *CharacterService) ListJumpClones(ctx context.Context, characterID int32) ([]*app.CharacterJumpClone, error) {
 	return s.st.ListCharacterJumpClones(ctx, characterID)
 }
 
-// calcCharacterNextCloneJump returns when the next clone jump is available.
+// calcNextCloneJump returns when the next clone jump is available.
 // It returns a zero time when a jump is available now.
 // It returns empty when a jump could not be calculated.
-func (s *CharacterService) calcCharacterNextCloneJump(ctx context.Context, c *app.Character) (optional.Optional[time.Time], error) {
+func (s *CharacterService) calcNextCloneJump(ctx context.Context, c *app.Character) (optional.Optional[time.Time], error) {
 	var z optional.Optional[time.Time]
 
 	if c.LastCloneJumpAt.IsEmpty() {
@@ -36,7 +36,7 @@ func (s *CharacterService) calcCharacterNextCloneJump(ctx context.Context, c *ap
 	lastJump := c.LastCloneJumpAt.MustValue()
 
 	var skillLevel int
-	sk, err := s.GetCharacterSkill(ctx, c.ID, app.EveTypeInfomorphSynchronizing)
+	sk, err := s.GetSkill(ctx, c.ID, app.EveTypeInfomorphSynchronizing)
 	if errors.Is(err, app.ErrNotFound) {
 		skillLevel = 0
 	} else if err != nil {
@@ -54,7 +54,7 @@ func (s *CharacterService) calcCharacterNextCloneJump(ctx context.Context, c *ap
 
 // TODO: Consolidate with updating home in separate function
 
-func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionJumpClones {
 		panic("called with wrong section")
 	}

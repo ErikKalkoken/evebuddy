@@ -165,7 +165,7 @@ func (a *JumpClones) newTreeData() (*iwidget.TreeData[jumpCloneNode], error) {
 		return tree, nil
 	}
 	ctx := context.Background()
-	clones, err := a.u.CharacterService().ListCharacterJumpClones(ctx, a.u.CurrentCharacterID())
+	clones, err := a.u.CharacterService().ListJumpClones(ctx, a.u.CurrentCharacterID())
 	if err != nil {
 		return tree, err
 	}

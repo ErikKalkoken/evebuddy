@@ -108,7 +108,7 @@ func (a *Colonies) makeTopText() (string, widget.Importance) {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
 	var max string
-	s, err := a.u.CharacterService().GetCharacterSkill(context.Background(), c.ID, app.EveTypeInterplanetaryConsolidation)
+	s, err := a.u.CharacterService().GetSkill(context.Background(), c.ID, app.EveTypeInterplanetaryConsolidation)
 	if errors.Is(err, app.ErrNotFound) {
 		max = "1"
 	} else if err != nil {
@@ -128,7 +128,7 @@ func (a *Colonies) updateEntries() error {
 	}
 	characterID := a.u.CurrentCharacterID()
 	var err error
-	a.planets, err = a.u.CharacterService().ListCharacterPlanets(context.TODO(), characterID)
+	a.planets, err = a.u.CharacterService().ListPlanets(context.TODO(), characterID)
 	if err != nil {
 		return err
 	}

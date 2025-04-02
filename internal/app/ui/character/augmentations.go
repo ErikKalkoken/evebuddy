@@ -116,7 +116,7 @@ func (a *Augmentations) updateImplants() error {
 		a.implants = make([]*app.CharacterImplant, 0)
 		return nil
 	}
-	implants, err := a.u.CharacterService().ListCharacterImplants(context.TODO(), a.u.CurrentCharacterID())
+	implants, err := a.u.CharacterService().ListImplants(context.TODO(), a.u.CurrentCharacterID())
 	if err != nil {
 		return err
 	}

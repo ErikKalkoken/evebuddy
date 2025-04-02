@@ -13,8 +13,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
-// DeleteCharacterMail deletes a mail both on ESI and in the database.
-func (s *CharacterService) DeleteCharacterMail(ctx context.Context, characterID, mailID int32) error {
+// DeleteMail deletes a mail both on ESI and in the database.
+func (s *CharacterService) DeleteMail(ctx context.Context, characterID, mailID int32) error {
 	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return err
@@ -32,16 +32,16 @@ func (s *CharacterService) DeleteCharacterMail(ctx context.Context, characterID,
 	return nil
 }
 
-func (s *CharacterService) GetCharacterMail(ctx context.Context, characterID int32, mailID int32) (*app.CharacterMail, error) {
+func (s *CharacterService) GetMail(ctx context.Context, characterID int32, mailID int32) (*app.CharacterMail, error) {
 	return s.st.GetCharacterMail(ctx, characterID, mailID)
 }
 
-func (s *CharacterService) GetAllCharacterMailUnreadCount(ctx context.Context) (int, error) {
+func (s *CharacterService) GetAllMailUnreadCount(ctx context.Context) (int, error) {
 	return s.st.GetAllCharacterMailUnreadCount(ctx)
 }
 
-// GetCharacterMailCounts returns the number of unread mail for a character.
-func (s *CharacterService) GetCharacterMailCounts(ctx context.Context, characterID int32) (int, int, error) {
+// GetMailCounts returns the number of unread mail for a character.
+func (s *CharacterService) GetMailCounts(ctx context.Context, characterID int32) (int, int, error) {
 	total, err := s.st.GetCharacterMailCount(ctx, characterID)
 	if err != nil {
 		return 0, 0, err
@@ -53,11 +53,11 @@ func (s *CharacterService) GetCharacterMailCounts(ctx context.Context, character
 	return total, unread, nil
 }
 
-func (s *CharacterService) GetCharacterMailLabelUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {
+func (s *CharacterService) GetMailLabelUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {
 	return s.st.GetCharacterMailLabelUnreadCounts(ctx, characterID)
 }
 
-func (s *CharacterService) GetCharacterMailListUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {
+func (s *CharacterService) GetMailListUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {
 	return s.st.GetCharacterMailListUnreadCounts(ctx, characterID)
 }
 
@@ -84,25 +84,25 @@ func (cs *CharacterService) NotifyMails(ctx context.Context, characterID int32, 
 	return nil
 }
 
-func (s *CharacterService) ListCharacterMailLists(ctx context.Context, characterID int32) ([]*app.EveEntity, error) {
+func (s *CharacterService) ListMailLists(ctx context.Context, characterID int32) ([]*app.EveEntity, error) {
 	return s.st.ListCharacterMailListsOrdered(ctx, characterID)
 }
 
 // ListMailsForLabel returns a character's mails for a label in descending order by timestamp.
-func (s *CharacterService) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, characterID int32, labelID int32) ([]*app.CharacterMailHeader, error) {
+func (s *CharacterService) ListMailHeadersForLabelOrdered(ctx context.Context, characterID int32, labelID int32) ([]*app.CharacterMailHeader, error) {
 	return s.st.ListCharacterMailHeadersForLabelOrdered(ctx, characterID, labelID)
 }
 
-func (s *CharacterService) ListCharacterMailHeadersForListOrdered(ctx context.Context, characterID int32, listID int32) ([]*app.CharacterMailHeader, error) {
+func (s *CharacterService) ListMailHeadersForListOrdered(ctx context.Context, characterID int32, listID int32) ([]*app.CharacterMailHeader, error) {
 	return s.st.ListCharacterMailHeadersForListOrdered(ctx, characterID, listID)
 }
 
-func (s *CharacterService) ListCharacterMailLabelsOrdered(ctx context.Context, characterID int32) ([]*app.CharacterMailLabel, error) {
+func (s *CharacterService) ListMailLabelsOrdered(ctx context.Context, characterID int32) ([]*app.CharacterMailLabel, error) {
 	return s.st.ListCharacterMailLabelsOrdered(ctx, characterID)
 }
 
-// SendCharacterMail creates a new mail on ESI and stores it locally.
-func (s *CharacterService) SendCharacterMail(ctx context.Context, characterID int32, subject string, recipients []*app.EveEntity, body string) (int32, error) {
+// SendMail creates a new mail on ESI and stores it locally.
+func (s *CharacterService) SendMail(ctx context.Context, characterID int32, subject string, recipients []*app.EveEntity, body string) (int32, error) {
 	if subject == "" {
 		return 0, fmt.Errorf("missing subject")
 	}

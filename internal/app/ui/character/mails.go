@@ -241,12 +241,12 @@ func (a *Mails) updateFolderData(characterID int32) (FolderNode, error) {
 		return emptyFolder, nil
 	}
 	ctx := context.Background()
-	labelUnreadCounts, err := a.u.CharacterService().GetCharacterMailLabelUnreadCounts(ctx, characterID)
+	labelUnreadCounts, err := a.u.CharacterService().GetMailLabelUnreadCounts(ctx, characterID)
 	if err != nil {
 		a.folders.Clear()
 		return emptyFolder, err
 	}
-	listUnreadCounts, err := a.u.CharacterService().GetCharacterMailListUnreadCounts(ctx, characterID)
+	listUnreadCounts, err := a.u.CharacterService().GetMailListUnreadCounts(ctx, characterID)
 	if err != nil {
 		a.folders.Clear()
 		return emptyFolder, err
@@ -292,7 +292,7 @@ func (a *Mails) updateFolderData(characterID int32) (FolderNode, error) {
 	}
 
 	// Add custom labels
-	labels, err := a.u.CharacterService().ListCharacterMailLabelsOrdered(ctx, characterID)
+	labels, err := a.u.CharacterService().ListMailLabelsOrdered(ctx, characterID)
 	if err != nil {
 		return FolderNode{}, err
 	}
@@ -322,7 +322,7 @@ func (a *Mails) updateFolderData(characterID int32) (FolderNode, error) {
 	}
 
 	// Add mailing lists
-	lists, err := a.u.CharacterService().ListCharacterMailLists(ctx, characterID)
+	lists, err := a.u.CharacterService().ListMailLists(ctx, characterID)
 	if err != nil {
 		return FolderNode{}, err
 	}
@@ -461,13 +461,13 @@ func (a *Mails) updateHeaders() (FolderNode, error) {
 	var err error
 	switch folder.Category {
 	case nodeCategoryLabel:
-		headers, err = a.u.CharacterService().ListCharacterMailHeadersForLabelOrdered(
+		headers, err = a.u.CharacterService().ListMailHeadersForLabelOrdered(
 			ctx,
 			folder.CharacterID,
 			folder.ObjID,
 		)
 	case nodeCategoryList:
-		headers, err = a.u.CharacterService().ListCharacterMailHeadersForListOrdered(
+		headers, err = a.u.CharacterService().ListMailHeadersForListOrdered(
 			ctx,
 			folder.CharacterID,
 			folder.ObjID,
@@ -528,7 +528,7 @@ func (a *Mails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 					"Deleting mail...",
 					"",
 					func() error {
-						return a.u.CharacterService().DeleteCharacterMail(context.TODO(), a.mail.CharacterID, a.mail.MailID)
+						return a.u.CharacterService().DeleteMail(context.TODO(), a.mail.CharacterID, a.mail.MailID)
 					},
 					a.u.MainWindow(),
 				)
@@ -591,7 +591,7 @@ func (a *Mails) setMail(mailID int32) {
 	ctx := context.TODO()
 	characterID := a.u.CurrentCharacterID()
 	var err error
-	a.mail, err = a.u.CharacterService().GetCharacterMail(ctx, characterID, mailID)
+	a.mail, err = a.u.CharacterService().GetMail(ctx, characterID, mailID)
 	if err != nil {
 		slog.Error("Failed to fetch mail", "mailID", mailID, "error", err)
 		a.u.ShowSnackbar("ERROR: Failed to fetch mail")

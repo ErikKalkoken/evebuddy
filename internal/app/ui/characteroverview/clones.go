@@ -233,7 +233,7 @@ func (a *Clones) Update() {
 
 func (a *Clones) updateRows() error {
 	ctx := context.Background()
-	oo, err := a.u.CharacterService().ListAllCharacterJumpClones(ctx)
+	oo, err := a.u.CharacterService().ListAllJumpClones(ctx)
 	if err != nil {
 		return err
 	}
@@ -504,7 +504,7 @@ func (a *Clones) showRoute(r cloneSearchRow) {
 }
 
 func (a *Clones) showClone(r cloneSearchRow) {
-	clone, err := a.u.CharacterService().GetCharacterJumpClone(context.Background(), r.c.Character.ID, r.c.CloneID)
+	clone, err := a.u.CharacterService().GetJumpClone(context.Background(), r.c.Character.ID, r.c.CloneID)
 	if err != nil {
 		slog.Error("show clone", "error", err)
 		a.u.ShowErrorDialog("failed to load clone", err, a.u.MainWindow())

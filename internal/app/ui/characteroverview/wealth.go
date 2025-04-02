@@ -172,7 +172,7 @@ func (a *Wealth) compileData() ([]dataRow, int, error) {
 	}
 	data := make([]dataRow, 0)
 	for _, c := range selected {
-		assetTotal, err := a.u.CharacterService().CharacterAssetTotalValue(ctx, c.ID)
+		assetTotal, err := a.u.CharacterService().AssetTotalValue(ctx, c.ID)
 		if err != nil {
 			return nil, 0, err
 		}

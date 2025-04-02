@@ -22,7 +22,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 		panic("Invalid character ID")
 	}
 	if !arg.ForceUpdate {
-		status, err := s.getCharacterSectionStatus(ctx, arg.CharacterID, arg.Section)
+		status, err := s.getSectionStatus(ctx, arg.CharacterID, arg.Section)
 		if err != nil {
 			return false, err
 		}
@@ -35,41 +35,41 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 	var f func(context.Context, app.CharacterUpdateSectionParams) (bool, error)
 	switch arg.Section {
 	case app.SectionAssets:
-		f = s.updateCharacterAssetsESI
+		f = s.updateAssetsESI
 	case app.SectionAttributes:
-		f = s.updateCharacterAttributesESI
+		f = s.updateAttributesESI
 	case app.SectionContracts:
-		f = s.updateCharacterContractsESI
+		f = s.updateContractsESI
 	case app.SectionImplants:
-		f = s.updateCharacterImplantsESI
+		f = s.updateImplantsESI
 	case app.SectionJumpClones:
-		f = s.updateCharacterJumpClonesESI
+		f = s.updateJumpClonesESI
 	case app.SectionLocation:
-		f = s.updateCharacterLocationESI
+		f = s.updateLocationESI
 	case app.SectionMails:
-		f = s.updateCharacterMailsESI
+		f = s.updateMailsESI
 	case app.SectionMailLabels:
-		f = s.updateCharacterMailLabelsESI
+		f = s.updateMailLabelsESI
 	case app.SectionMailLists:
-		f = s.updateCharacterMailListsESI
+		f = s.updateMailListsESI
 	case app.SectionNotifications:
-		f = s.updateCharacterNotificationsESI
+		f = s.updateNotificationsESI
 	case app.SectionOnline:
-		f = s.updateCharacterOnlineESI
+		f = s.updateOnlineESI
 	case app.SectionPlanets:
-		f = s.updateCharacterPlanetsESI
+		f = s.updatePlanetsESI
 	case app.SectionShip:
-		f = s.updateCharacterShipESI
+		f = s.updateShipESI
 	case app.SectionSkillqueue:
-		f = s.UpdateCharacterSkillqueueESI
+		f = s.UpdateSkillqueueESI
 	case app.SectionSkills:
-		f = s.updateCharacterSkillsESI
+		f = s.updateSkillsESI
 	case app.SectionWalletBalance:
-		f = s.updateCharacterWalletBalanceESI
+		f = s.updateWalletBalanceESI
 	case app.SectionWalletJournal:
-		f = s.updateCharacterWalletJournalEntryESI
+		f = s.updateWalletJournalEntryESI
 	case app.SectionWalletTransactions:
-		f = s.updateCharacterWalletTransactionESI
+		f = s.updateWalletTransactionESI
 	default:
 		panic(fmt.Sprintf("Undefined section: %s", arg.Section))
 	}
@@ -131,7 +131,7 @@ func (s *CharacterService) updateSectionIfChanged(
 	}
 	// identify if changed
 	var hasChanged bool
-	u, err := s.getCharacterSectionStatus(ctx, arg.CharacterID, arg.Section)
+	u, err := s.getSectionStatus(ctx, arg.CharacterID, arg.Section)
 	if err != nil {
 		return false, err
 	}
@@ -170,7 +170,7 @@ func (s *CharacterService) updateSectionIfChanged(
 	return hasChanged, nil
 }
 
-func (s *CharacterService) getCharacterSectionStatus(ctx context.Context, characterID int32, section app.CharacterSection) (*app.CharacterSectionStatus, error) {
+func (s *CharacterService) getSectionStatus(ctx context.Context, characterID int32, section app.CharacterSection) (*app.CharacterSectionStatus, error) {
 	o, err := s.st.GetCharacterSectionStatus(ctx, characterID, section)
 	if errors.Is(err, app.ErrNotFound) {
 		return nil, nil

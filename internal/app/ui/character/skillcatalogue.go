@@ -121,7 +121,7 @@ func (a *SkillCatalogue) makeGroupsGrid() fyne.CanvasObject {
 				unselectAll()
 				return
 			}
-			oo, err := a.u.CharacterService().ListCharacterSkillProgress(
+			oo, err := a.u.CharacterService().ListSkillProgress(
 				context.TODO(), a.u.CurrentCharacterID(), group.id,
 			)
 			if err != nil {
@@ -236,7 +236,7 @@ func (a *SkillCatalogue) updateGroups() error {
 	if !a.u.HasCharacter() {
 		return nil
 	}
-	gg, err := a.u.CharacterService().ListCharacterSkillGroupsProgress(context.TODO(), a.u.CurrentCharacterID())
+	gg, err := a.u.CharacterService().ListSkillGroupsProgress(context.TODO(), a.u.CurrentCharacterID())
 	if err != nil {
 		return err
 	}

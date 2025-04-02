@@ -11,19 +11,19 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *CharacterService) GetCharacterSkill(ctx context.Context, characterID, typeID int32) (*app.CharacterSkill, error) {
+func (s *CharacterService) GetSkill(ctx context.Context, characterID, typeID int32) (*app.CharacterSkill, error) {
 	return s.st.GetCharacterSkill(ctx, characterID, typeID)
 }
 
-func (s *CharacterService) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]app.ListCharacterSkillProgress, error) {
+func (s *CharacterService) ListSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]app.ListSkillProgress, error) {
 	return s.st.ListCharacterSkillProgress(ctx, characterID, eveGroupID)
 }
 
-func (s *CharacterService) ListCharacterSkillGroupsProgress(ctx context.Context, characterID int32) ([]app.ListCharacterSkillGroupProgress, error) {
+func (s *CharacterService) ListSkillGroupsProgress(ctx context.Context, characterID int32) ([]app.ListCharacterSkillGroupProgress, error) {
 	return s.st.ListCharacterSkillGroupsProgress(ctx, characterID)
 }
 
-func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionSkills {
 		panic("called with wrong section")
 	}

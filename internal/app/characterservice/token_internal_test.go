@@ -21,7 +21,7 @@ func TestHasTokenWithScopes(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID, Scopes: esiScopes})
 		// when
-		x, err := s.CharacterHasTokenWithScopes(ctx, c.ID)
+		x, err := s.HasTokenWithScopes(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, x)
@@ -34,7 +34,7 @@ func TestHasTokenWithScopes(t *testing.T) {
 		esiScopes2 := []string{"esi-assets.read_assets.v1"}
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID, Scopes: esiScopes2})
 		// when
-		x, err := s.CharacterHasTokenWithScopes(ctx, c.ID)
+		x, err := s.HasTokenWithScopes(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, x)
@@ -46,7 +46,7 @@ func TestHasTokenWithScopes(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID, Scopes: slices.Concat(esiScopes, []string{"extra"})})
 		// when
-		x, err := s.CharacterHasTokenWithScopes(ctx, c.ID)
+		x, err := s.HasTokenWithScopes(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, x)

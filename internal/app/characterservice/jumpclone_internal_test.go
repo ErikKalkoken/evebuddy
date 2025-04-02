@@ -52,7 +52,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		changed, err := s.updateCharacterJumpClonesESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateJumpClonesESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionJumpClones,
 		})
@@ -94,7 +94,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		changed, err := s.updateCharacterJumpClonesESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateJumpClonesESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionJumpClones,
 		})
@@ -133,7 +133,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 			EveTypeID:        app.EveTypeInfomorphSynchronizing,
 			ActiveSkillLevel: 3,
 		})
-		x, err := cs.calcCharacterNextCloneJump(ctx, c)
+		x, err := cs.calcNextCloneJump(ctx, c)
 		if assert.NoError(t, err) {
 			assert.WithinDuration(t, now.Add(15*time.Hour), x.MustValue(), 10*time.Second)
 		}
@@ -145,7 +145,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		c := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{
 			LastCloneJumpAt: optional.New(now.Add(-6 * time.Hour)),
 		})
-		x, err := cs.calcCharacterNextCloneJump(ctx, c)
+		x, err := cs.calcNextCloneJump(ctx, c)
 		if assert.NoError(t, err) {
 			assert.WithinDuration(t, now.Add(18*time.Hour), x.MustValue(), 10*time.Second)
 		}
@@ -156,7 +156,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		c := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{
 			LastCloneJumpAt: optional.New(time.Time{}),
 		})
-		x, err := cs.calcCharacterNextCloneJump(ctx, c)
+		x, err := cs.calcNextCloneJump(ctx, c)
 		if assert.NoError(t, err) {
 			assert.Equal(t, time.Time{}, x.MustValue())
 		}
@@ -174,7 +174,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 			EveTypeID:        app.EveTypeInfomorphSynchronizing,
 			ActiveSkillLevel: 5,
 		})
-		x, err := cs.calcCharacterNextCloneJump(ctx, c)
+		x, err := cs.calcNextCloneJump(ctx, c)
 		if assert.NoError(t, err) {
 			assert.Equal(t, time.Time{}, x.MustValue())
 		}
@@ -189,7 +189,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 			EveTypeID:        app.EveTypeInfomorphSynchronizing,
 			ActiveSkillLevel: 5,
 		})
-		x, err := cs.calcCharacterNextCloneJump(ctx, c)
+		x, err := cs.calcNextCloneJump(ctx, c)
 		if assert.NoError(t, err) {
 			assert.True(t, x.IsEmpty())
 		}

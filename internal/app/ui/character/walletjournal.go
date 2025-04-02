@@ -158,7 +158,7 @@ func (a *WalletJournal) updateEntries() error {
 		return nil
 	}
 	characterID := a.u.CurrentCharacterID()
-	ww, err := a.u.CharacterService().ListCharacterWalletJournalEntries(context.TODO(), characterID)
+	ww, err := a.u.CharacterService().ListWalletJournalEntries(context.TODO(), characterID)
 	if err != nil {
 		return err
 	}

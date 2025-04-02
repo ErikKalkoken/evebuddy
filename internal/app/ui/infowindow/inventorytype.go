@@ -335,7 +335,7 @@ func (a *inventoryTypeInfo) calcRequiredSkills(ctx context.Context, characterID 
 			name:          et.Name,
 			typeID:        typeID,
 		}
-		cs, err := a.iw.u.CharacterService().GetCharacterSkill(ctx, characterID, typeID)
+		cs, err := a.iw.u.CharacterService().GetSkill(ctx, characterID, typeID)
 		if errors.Is(err, app.ErrNotFound) {
 			// do nothing
 		} else if err != nil {

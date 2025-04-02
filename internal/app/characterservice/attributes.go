@@ -8,11 +8,11 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *CharacterService) GetCharacterAttributes(ctx context.Context, characterID int32) (*app.CharacterAttributes, error) {
+func (s *CharacterService) GetAttributes(ctx context.Context, characterID int32) (*app.CharacterAttributes, error) {
 	return s.st.GetCharacterAttributes(ctx, characterID)
 }
 
-func (s *CharacterService) updateCharacterAttributesESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateAttributesESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionAttributes {
 		panic("called with wrong section")
 	}

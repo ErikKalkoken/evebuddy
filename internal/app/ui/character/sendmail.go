@@ -119,7 +119,7 @@ func (a *SendMail) SendAction() bool {
 		return false
 	}
 	ctx := context.Background()
-	_, err := a.u.CharacterService().SendCharacterMail(
+	_, err := a.u.CharacterService().SendMail(
 		ctx,
 		a.character.ID,
 		a.subject.Text,
@@ -218,7 +218,7 @@ func showAddDialog(u app.UI, characterID int32, onSelected func(ee *app.EveEntit
 		}()
 		go func() {
 			ctx := context.Background()
-			missingIDs, err := u.CharacterService().AddEveEntitiesFromCharacterSearchESI(
+			missingIDs, err := u.CharacterService().AddEveEntitiesFromSearchESI(
 				ctx,
 				characterID,
 				search,

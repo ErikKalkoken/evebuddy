@@ -176,7 +176,7 @@ func (a *FlyableShips) updateEntries() error {
 	}
 	characterID := a.u.CurrentCharacterID()
 	search := fmt.Sprintf("%%%s%%", a.searchBox.Text)
-	oo, err := a.u.CharacterService().ListCharacterShipsAbilities(context.Background(), characterID, search)
+	oo, err := a.u.CharacterService().ListShipsAbilities(context.Background(), characterID, search)
 	if err != nil {
 		return err
 	}
@@ -228,7 +228,7 @@ func (a *FlyableShips) makeTopText() (string, widget.Importance, bool, error) {
 	if !hasData {
 		return "Waiting for skills to be loaded...", widget.WarningImportance, false, nil
 	}
-	oo, err := a.u.CharacterService().ListCharacterShipsAbilities(context.Background(), characterID, "%%")
+	oo, err := a.u.CharacterService().ListShipsAbilities(context.Background(), characterID, "%%")
 	if err != nil {
 		return "", 0, false, err
 	}

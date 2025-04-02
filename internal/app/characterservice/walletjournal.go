@@ -12,12 +12,12 @@ import (
 	esioptional "github.com/antihax/goesi/optional"
 )
 
-func (s *CharacterService) ListCharacterWalletJournalEntries(ctx context.Context, characterID int32) ([]*app.CharacterWalletJournalEntry, error) {
+func (s *CharacterService) ListWalletJournalEntries(ctx context.Context, characterID int32) ([]*app.CharacterWalletJournalEntry, error) {
 	return s.st.ListCharacterWalletJournalEntries(ctx, characterID)
 }
 
-// updateCharacterWalletJournalEntryESI updates the wallet journal from ESI and reports wether it has changed.
-func (s *CharacterService) updateCharacterWalletJournalEntryESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+// updateWalletJournalEntryESI updates the wallet journal from ESI and reports wether it has changed.
+func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionWalletJournal {
 		panic("called with wrong section")
 	}

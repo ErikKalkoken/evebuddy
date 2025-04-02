@@ -38,7 +38,7 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		changed, err := s.updateCharacterAttributesESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateAttributesESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionAttributes,
 		})
@@ -57,7 +57,7 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 	})
 }
 
-func TestGetCharacterAttributes(t *testing.T) {
+func TestGetAttributes(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
 	cs := newCharacterService(st)
@@ -66,7 +66,7 @@ func TestGetCharacterAttributes(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, err := cs.GetCharacterAttributes(ctx, 42)
+		_, err := cs.GetAttributes(ctx, 42)
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
@@ -75,7 +75,7 @@ func TestGetCharacterAttributes(t *testing.T) {
 		testutil.TruncateTables(db)
 		x1 := factory.CreateCharacterAttributes()
 		// when
-		x2, err := cs.GetCharacterAttributes(ctx, x1.CharacterID)
+		x2, err := cs.GetAttributes(ctx, x1.CharacterID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, x1, x2)

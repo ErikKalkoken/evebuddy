@@ -31,8 +31,8 @@ var esiScopes = []string{
 	"esi-wallet.read_character_wallet.v1",
 }
 
-// CharacterHasTokenWithScopes reports wether a token with the requested scopes exists for a character.
-func (s *CharacterService) CharacterHasTokenWithScopes(ctx context.Context, characterID int32) (bool, error) {
+// HasTokenWithScopes reports wether a token with the requested scopes exists for a character.
+func (s *CharacterService) HasTokenWithScopes(ctx context.Context, characterID int32) (bool, error) {
 	t, err := s.st.GetCharacterToken(ctx, characterID)
 	if errors.Is(err, app.ErrNotFound) {
 		return false, nil

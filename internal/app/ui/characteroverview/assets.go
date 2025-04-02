@@ -287,7 +287,7 @@ func (a *Assets) loadData() (bool, error) {
 		m2[o.ID] = o.Name
 	}
 	a.characterNames = m2
-	assets, err := a.u.CharacterService().ListAllCharacterAssets(ctx)
+	assets, err := a.u.CharacterService().ListAllAssets(ctx)
 	if err != nil {
 		return false, err
 	}

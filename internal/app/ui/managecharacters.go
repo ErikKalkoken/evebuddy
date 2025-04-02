@@ -209,7 +209,7 @@ func (a *ManageCharacters) Refresh() {
 	}
 	cc2 := make([]accountCharacter, len(cc))
 	for i, c := range cc {
-		hasToken, err := a.u.CharacterService().CharacterHasTokenWithScopes(context.Background(), c.ID)
+		hasToken, err := a.u.CharacterService().HasTokenWithScopes(context.Background(), c.ID)
 		if err != nil {
 			slog.Error("Tried to check if character has token", "err", err)
 			hasToken = true // do not report error when state is unclear

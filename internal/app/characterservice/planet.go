@@ -15,7 +15,7 @@ import (
 )
 
 func (cs *CharacterService) NotifyExpiredExtractions(ctx context.Context, characterID int32, earliest time.Time, notify func(title, content string)) error {
-	planets, err := cs.ListCharacterPlanets(ctx, characterID)
+	planets, err := cs.ListPlanets(ctx, characterID)
 	if err != nil {
 		return err
 	}
@@ -47,17 +47,17 @@ func (cs *CharacterService) NotifyExpiredExtractions(ctx context.Context, charac
 	return nil
 }
 
-func (s *CharacterService) ListAllCharacterPlanets(ctx context.Context) ([]*app.CharacterPlanet, error) {
+func (s *CharacterService) ListAllPlanets(ctx context.Context) ([]*app.CharacterPlanet, error) {
 	return s.st.ListAllCharacterPlanets(ctx)
 }
 
-func (s *CharacterService) ListCharacterPlanets(ctx context.Context, characterID int32) ([]*app.CharacterPlanet, error) {
+func (s *CharacterService) ListPlanets(ctx context.Context, characterID int32) ([]*app.CharacterPlanet, error) {
 	return s.st.ListCharacterPlanets(ctx, characterID)
 }
 
 // TODO: Improve update logic to only update changes
 
-func (s *CharacterService) updateCharacterPlanetsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionPlanets {
 		panic("called with wrong section")
 	}

@@ -48,7 +48,7 @@ func (st *Storage) ListCharacterSkillIDs(ctx context.Context, characterID int32)
 	return ids2, nil
 }
 
-func (st *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]app.ListCharacterSkillProgress, error) {
+func (st *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]app.ListSkillProgress, error) {
 	arg := queries.ListCharacterSkillProgressParams{
 		CharacterID: int64(characterID),
 		EveGroupID:  int64(eveGroupID),
@@ -57,9 +57,9 @@ func (st *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, 
 	if err != nil {
 		return nil, fmt.Errorf("list skill progress for character %d: %w", characterID, err)
 	}
-	oo := make([]app.ListCharacterSkillProgress, len(rows))
+	oo := make([]app.ListSkillProgress, len(rows))
 	for i, r := range rows {
-		oo[i] = app.ListCharacterSkillProgress{
+		oo[i] = app.ListSkillProgress{
 			ActiveSkillLevel:  int(r.ActiveSkillLevel.Int64),
 			TypeDescription:   r.Description,
 			TypeID:            int32(r.ID),

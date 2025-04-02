@@ -194,7 +194,7 @@ func (a *Characters) updateCharacters() (overviewTotals, error) {
 		}
 	})
 	for i, c := range cc {
-		total, unread, err := a.u.CharacterService().GetCharacterMailCounts(ctx, c.id)
+		total, unread, err := a.u.CharacterService().GetMailCounts(ctx, c.id)
 		if err != nil {
 			return totals, err
 		}
@@ -203,7 +203,7 @@ func (a *Characters) updateCharacters() (overviewTotals, error) {
 		}
 	}
 	for i, c := range cc {
-		v, err := a.u.CharacterService().CharacterAssetTotalValue(ctx, c.id)
+		v, err := a.u.CharacterService().AssetTotalValue(ctx, c.id)
 		if err != nil {
 			return totals, err
 		}

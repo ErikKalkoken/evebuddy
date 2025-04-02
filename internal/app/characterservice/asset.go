@@ -21,23 +21,23 @@ const (
 	assetNamesMaxIDs = 999
 )
 
-func (s *CharacterService) ListCharacterAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {
+func (s *CharacterService) ListAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {
 	return s.st.ListCharacterAssetsInShipHangar(ctx, characterID, locationID)
 }
 
-func (s *CharacterService) ListCharacterAssetsInItemHangar(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {
+func (s *CharacterService) ListAssetsInItemHangar(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {
 	return s.st.ListCharacterAssetsInItemHangar(ctx, characterID, locationID)
 }
 
-func (s *CharacterService) ListCharacterAssetsInLocation(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {
+func (s *CharacterService) ListAssetsInLocation(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {
 	return s.st.ListCharacterAssetsInLocation(ctx, characterID, locationID)
 }
 
-func (s *CharacterService) ListCharacterAssets(ctx context.Context, characterID int32) ([]*app.CharacterAsset, error) {
+func (s *CharacterService) ListAssets(ctx context.Context, characterID int32) ([]*app.CharacterAsset, error) {
 	return s.st.ListCharacterAssets(ctx, characterID)
 }
 
-func (s *CharacterService) ListAllCharacterAssets(ctx context.Context) ([]*app.CharacterAsset, error) {
+func (s *CharacterService) ListAllAssets(ctx context.Context) ([]*app.CharacterAsset, error) {
 	return s.st.ListAllCharacterAssets(ctx)
 }
 
@@ -46,7 +46,7 @@ type esiCharacterAssetPlus struct {
 	Name string
 }
 
-func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionAssets {
 		panic("called with wrong section")
 	}
@@ -68,7 +68,7 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg app
 			for i, a := range assets {
 				ids[i] = a.ItemId
 			}
-			names, err := s.fetchCharacterAssetNamesESI(ctx, characterID, ids)
+			names, err := s.fetchAssetNamesESI(ctx, characterID, ids)
 			if err != nil {
 				return false, err
 			}
@@ -149,7 +149,7 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg app
 					created++
 				}
 			}
-			if _, err := s.UpdateCharacterAssetTotalValue(ctx, characterID); err != nil {
+			if _, err := s.UpdateAssetTotalValue(ctx, characterID); err != nil {
 				return err
 			}
 			slog.Info("Stored character assets", "characterID", characterID, "created", created, "updated", updated)
@@ -164,14 +164,14 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg app
 	if err != nil {
 		return false, err
 	}
-	_, err = s.UpdateCharacterAssetTotalValue(ctx, arg.CharacterID)
+	_, err = s.UpdateAssetTotalValue(ctx, arg.CharacterID)
 	if err != nil {
 		slog.Error("Failed to update asset total value", "characterID", arg.CharacterID, "err", err)
 	}
 	return hasChanged, err
 }
 
-func (s *CharacterService) fetchCharacterAssetNamesESI(ctx context.Context, characterID int32, ids []int64) (map[int64]string, error) {
+func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID int32, ids []int64) (map[int64]string, error) {
 	numResults := len(ids) / assetNamesMaxIDs
 	if len(ids)%assetNamesMaxIDs > 0 {
 		numResults++
@@ -204,11 +204,11 @@ func (s *CharacterService) fetchCharacterAssetNamesESI(ctx context.Context, char
 	return m, nil
 }
 
-func (s *CharacterService) CharacterAssetTotalValue(ctx context.Context, characterID int32) (optional.Optional[float64], error) {
+func (s *CharacterService) AssetTotalValue(ctx context.Context, characterID int32) (optional.Optional[float64], error) {
 	return s.st.GetCharacterAssetValue(ctx, characterID)
 }
 
-func (s *CharacterService) UpdateCharacterAssetTotalValue(ctx context.Context, characterID int32) (float64, error) {
+func (s *CharacterService) UpdateAssetTotalValue(ctx context.Context, characterID int32) (float64, error) {
 	v, err := s.st.CalculateCharacterAssetTotalValue(ctx, characterID)
 	if err != nil {
 		return 0, err

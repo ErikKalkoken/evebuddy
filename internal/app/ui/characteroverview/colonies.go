@@ -143,7 +143,7 @@ func (a *Colonies) Update() {
 }
 
 func (a *Colonies) updateEntries() error {
-	pp, err := a.u.CharacterService().ListAllCharacterPlanets(context.TODO())
+	pp, err := a.u.CharacterService().ListAllPlanets(context.TODO())
 	if err != nil {
 		return err
 	}

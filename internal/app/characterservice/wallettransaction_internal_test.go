@@ -48,7 +48,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/wallet/transactions/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.updateCharacterWalletTransactionESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateWalletTransactionESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionWalletTransactions,
 		})
@@ -101,7 +101,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/wallet/transactions/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.updateCharacterWalletTransactionESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateWalletTransactionESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionWalletTransactions,
 		})
@@ -154,7 +154,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/wallet/transactions/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		_, err := s.updateCharacterWalletTransactionESI(ctx, app.CharacterUpdateSectionParams{
+		_, err := s.updateWalletTransactionESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionWalletTransactions,
 		})
@@ -213,7 +213,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 				},
 			}))
 		// when
-		_, err := s.updateCharacterWalletTransactionESI(ctx, app.CharacterUpdateSectionParams{
+		_, err := s.updateWalletTransactionESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionWalletTransactions,
 		})
@@ -240,7 +240,7 @@ func TestListWalletTransactions(t *testing.T) {
 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		// when
-		tt, err := s.ListCharacterWalletTransactions(ctx, c.ID)
+		tt, err := s.ListWalletTransactions(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, tt, 3)

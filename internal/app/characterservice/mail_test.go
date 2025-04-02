@@ -73,10 +73,10 @@ func TestSendMail(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(201, 123))
 
 		// when
-		mailID, err := s.SendCharacterMail(ctx, c.ID, "subject", []*app.EveEntity{r}, "body")
+		mailID, err := s.SendMail(ctx, c.ID, "subject", []*app.EveEntity{r}, "body")
 		// then
 		if assert.NoError(t, err) {
-			m, err := s.GetCharacterMail(ctx, c.ID, mailID)
+			m, err := s.GetMail(ctx, c.ID, mailID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "body", m.Body)
 			}

@@ -13,7 +13,7 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *CharacterService) CountCharacterNotificationUnreads(ctx context.Context, characterID int32) (map[app.NotificationGroup]int, error) {
+func (s *CharacterService) CountNotificationUnreads(ctx context.Context, characterID int32) (map[app.NotificationGroup]int, error) {
 	types, err := s.st.CountCharacterNotificationUnreads(ctx, characterID)
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func (cs *CharacterService) NotifyCommunications(ctx context.Context, characterI
 	return nil
 }
 
-func (s *CharacterService) ListCharacterNotificationsTypes(ctx context.Context, characterID int32, ng app.NotificationGroup) ([]*app.CharacterNotification, error) {
+func (s *CharacterService) ListNotificationsTypes(ctx context.Context, characterID int32, ng app.NotificationGroup) ([]*app.CharacterNotification, error) {
 	types := evenotification.GroupTypes[ng]
 	t2 := make([]string, len(types))
 	for i, v := range types {
@@ -63,15 +63,15 @@ func (s *CharacterService) ListCharacterNotificationsTypes(ctx context.Context, 
 	return s.st.ListCharacterNotificationsTypes(ctx, characterID, t2)
 }
 
-func (s *CharacterService) ListCharacterNotificationsAll(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
+func (s *CharacterService) ListNotificationsAll(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
 	return s.st.ListCharacterNotificationsAll(ctx, characterID)
 }
 
-func (s *CharacterService) ListCharacterNotificationsUnread(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
+func (s *CharacterService) ListNotificationsUnread(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
 	return s.st.ListCharacterNotificationsUnread(ctx, characterID)
 }
 
-func (s *CharacterService) updateCharacterNotificationsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionNotifications {
 		panic("called with wrong section")
 	}

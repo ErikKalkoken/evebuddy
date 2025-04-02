@@ -34,7 +34,7 @@ type ListCharacterSkillGroupProgress struct {
 	Trained   float64
 }
 
-type ListCharacterSkillProgress struct {
+type ListSkillProgress struct {
 	ActiveSkillLevel  int
 	TrainedSkillLevel int
 	TypeID            int32

@@ -15,7 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
-func (s *CharacterService) CountCharacterContractBids(ctx context.Context, contractID int64) (int, error) {
+func (s *CharacterService) CountContractBids(ctx context.Context, contractID int64) (int, error) {
 	x, err := s.st.ListCharacterContractBidIDs(ctx, contractID)
 	if err != nil {
 		return 0, err
@@ -23,7 +23,7 @@ func (s *CharacterService) CountCharacterContractBids(ctx context.Context, contr
 	return x.Size(), nil
 }
 
-func (s *CharacterService) GetCharacterContractTopBid(ctx context.Context, contractID int64) (*app.CharacterContractBid, error) {
+func (s *CharacterService) GetContractTopBid(ctx context.Context, contractID int64) (*app.CharacterContractBid, error) {
 	bids, err := s.st.ListCharacterContractBids(ctx, contractID)
 	if err != nil {
 		return nil, err
@@ -87,11 +87,11 @@ func (cs *CharacterService) NotifyUpdatedContracts(ctx context.Context, characte
 	return nil
 }
 
-func (s *CharacterService) ListCharacterContracts(ctx context.Context, characterID int32) ([]*app.CharacterContract, error) {
+func (s *CharacterService) ListContracts(ctx context.Context, characterID int32) ([]*app.CharacterContract, error) {
 	return s.st.ListCharacterContracts(ctx, characterID)
 }
 
-func (s *CharacterService) ListCharacterContractItems(ctx context.Context, contractID int64) ([]*app.CharacterContractItem, error) {
+func (s *CharacterService) ListContractItems(ctx context.Context, contractID int64) ([]*app.CharacterContractItem, error) {
 	return s.st.ListCharacterContractItems(ctx, contractID)
 }
 
@@ -123,8 +123,8 @@ var contractTypeFromESIValue = map[string]app.ContractType{
 	"unknown":       app.ContractTypeUnknown,
 }
 
-// updateCharacterContractsESI updates the wallet journal from ESI and reports wether it has changed.
-func (s *CharacterService) updateCharacterContractsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+// updateContractsESI updates the wallet journal from ESI and reports wether it has changed.
+func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionContracts {
 		panic("called with wrong section")
 	}

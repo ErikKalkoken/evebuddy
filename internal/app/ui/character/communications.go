@@ -184,7 +184,7 @@ func (a *Communications) Update() {
 	var counts map[app.NotificationGroup]int
 	if characterID := a.u.CurrentCharacterID(); characterID != 0 {
 		var err error
-		counts, err = a.u.CharacterService().CountCharacterNotificationUnreads(context.TODO(), characterID)
+		counts, err = a.u.CharacterService().CountNotificationUnreads(context.TODO(), characterID)
 		if err != nil {
 			slog.Error("Failed to fetch notification unread counts", "error", err)
 		}
@@ -244,11 +244,11 @@ func (a *Communications) SetGroup(nc app.NotificationGroup) {
 	var err error
 	switch nc {
 	case app.GroupAll:
-		notifications, err = a.u.CharacterService().ListCharacterNotificationsAll(ctx, characterID)
+		notifications, err = a.u.CharacterService().ListNotificationsAll(ctx, characterID)
 	case app.GroupUnread:
-		notifications, err = a.u.CharacterService().ListCharacterNotificationsUnread(ctx, characterID)
+		notifications, err = a.u.CharacterService().ListNotificationsUnread(ctx, characterID)
 	default:
-		notifications, err = a.u.CharacterService().ListCharacterNotificationsTypes(ctx, characterID, nc)
+		notifications, err = a.u.CharacterService().ListNotificationsTypes(ctx, characterID, nc)
 	}
 	a.notifications = notifications
 	var top string

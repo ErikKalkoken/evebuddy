@@ -8,11 +8,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
-func (s *CharacterService) ListCharacterImplants(ctx context.Context, characterID int32) ([]*app.CharacterImplant, error) {
+func (s *CharacterService) ListImplants(ctx context.Context, characterID int32) ([]*app.CharacterImplant, error) {
 	return s.st.ListCharacterImplants(ctx, characterID)
 }
 
-func (s *CharacterService) updateCharacterImplantsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateImplantsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionImplants {
 		panic("called with wrong section")
 	}
