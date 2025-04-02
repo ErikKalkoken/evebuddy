@@ -27,14 +27,14 @@ func NewAtributeItem(label string, value any) AttributeItem {
 type AttributeList struct {
 	widget.BaseWidget
 
-	ShowInfoWindow func(*app.EveEntity)
-
+	iw      *InfoWindow
 	items   []AttributeItem
 	openURL func(*url.URL) error
 }
 
-func NewAttributeList(items ...AttributeItem) *AttributeList {
+func NewAttributeList(iw *InfoWindow, items ...AttributeItem) *AttributeList {
 	w := &AttributeList{
+		iw:      iw,
 		items:   items,
 		openURL: fyne.CurrentApp().OpenURL,
 	}
@@ -77,9 +77,12 @@ func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
 			switch x := it.Value.(type) {
 			case *app.EveEntity:
 				s = x.Name
-				if supportedCategories.Contains(x.Category) && w.ShowInfoWindow != nil {
+				if supportedCategories.Contains(x.Category) {
 					icon.Show()
 				}
+			case *app.EveRace:
+				s = x.Name
+				icon.Show()
 			case *url.URL:
 				s = x.String()
 				i = widget.HighImportance
@@ -114,9 +117,11 @@ func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
 		it := w.items[id]
 		switch x := it.Value.(type) {
 		case *app.EveEntity:
-			if supportedCategories.Contains(x.Category) && w.ShowInfoWindow != nil {
-				w.ShowInfoWindow(x)
+			if supportedCategories.Contains(x.Category) {
+				w.iw.ShowEveEntity(x)
 			}
+		case *app.EveRace:
+			w.iw.ShowRace(x.ID)
 		case *url.URL:
 			w.openURL(x)
 			// TODO

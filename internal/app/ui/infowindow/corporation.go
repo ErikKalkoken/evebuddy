@@ -170,8 +170,7 @@ func (a *corporationInfo) load() error {
 		}
 		attributes = append(attributes, x)
 	}
-	attributeList := NewAttributeList(attributes...)
-	attributeList.ShowInfoWindow = a.iw.ShowEveEntity
+	attributeList := NewAttributeList(a.iw, attributes...)
 	attributesTab := container.NewTabItem("Attributes", attributeList)
 	a.tabs.Append(attributesTab)
 	a.tabs.Select(attributesTab)

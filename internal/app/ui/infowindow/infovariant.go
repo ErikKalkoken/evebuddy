@@ -18,6 +18,7 @@ const (
 	infoInventoryType
 	infoLocation
 	infoRegion
+	infoRace
 	infoSolarSystem
 )
 

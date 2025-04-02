@@ -32,12 +32,12 @@ type UI interface {
 	Settings() Settings
 	ShowAndRun()
 	ShowConfirmDialog(title, message, confirm string, callback func(bool), parent fyne.Window)
-	ShowInfoDialog(title, message string, parent fyne.Window)
+	ShowInformationDialog(title, message string, parent fyne.Window)
 	ShowErrorDialog(message string, err error, parent fyne.Window)
 	ShowEveEntityInfoWindow(o *EveEntity)
-	ShowInformationDialog(title, message string, parent fyne.Window)
 	ShowInfoWindow(c EveEntityCategory, id int32)
 	ShowLocationInfoWindow(id int64)
+	ShowRaceInfoWindow(id int32)
 	ShowSnackbar(text string)
 	ShowTypeInfoWindow(id int32)
 	StatusCacheService() StatusCacheService

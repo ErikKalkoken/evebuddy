@@ -88,8 +88,7 @@ func (a *constellationInfo) load() error {
 		x.Action = func(v any) {
 			a.iw.w.Clipboard().SetContent(v.(string))
 		}
-		attributeList := NewAttributeList([]AttributeItem{x}...)
-		attributeList.ShowInfoWindow = a.iw.ShowEveEntity
+		attributeList := NewAttributeList(a.iw, []AttributeItem{x}...)
 		attributesTab := container.NewTabItem("Attributes", attributeList)
 		a.tabs.Append(attributesTab)
 	}

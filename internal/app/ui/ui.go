@@ -919,12 +919,6 @@ func (u *BaseUI) ShowInformationDialog(title, message string, parent fyne.Window
 	d.Show()
 }
 
-func (u *BaseUI) ShowInfoDialog(title, message string, parent fyne.Window) {
-	d := dialog.NewInformation(title, message, parent)
-	u.ModifyShortcutsForDialog(d, parent)
-	d.Show()
-}
-
 func (u *BaseUI) ShowConfirmDialog(title, message, confirm string, callback func(bool), parent fyne.Window) {
 	d := dialog.NewConfirm(title, message, callback, parent)
 	d.SetConfirmImportance(widget.DangerImportance)
@@ -984,6 +978,11 @@ func (u *BaseUI) showUpdateStatusWindow() {
 func (u *BaseUI) ShowLocationInfoWindow(id int64) {
 	iw := infowindow.New(u)
 	iw.ShowLocation(id)
+}
+
+func (u *BaseUI) ShowRaceInfoWindow(id int32) {
+	iw := infowindow.New(u)
+	iw.ShowRace(id)
 }
 
 func (u *BaseUI) ShowTypeInfoWindow(id int32) {

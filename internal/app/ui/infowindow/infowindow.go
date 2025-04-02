@@ -66,6 +66,10 @@ func (iw *InfoWindow) ShowLocation(id int64) {
 	iw.show(infoLocation, id)
 }
 
+func (iw *InfoWindow) ShowRace(id int32) {
+	iw.show(infoRace, int64(id))
+}
+
 func (iw *InfoWindow) show(t infoVariant, id int64) {
 	if iw.u.IsOffline() {
 		iw.u.ShowInformationDialog(
@@ -100,6 +104,9 @@ func (iw *InfoWindow) show(t infoVariant, id int64) {
 		}
 		title = a.title()
 		page = a
+	case infoRace:
+		title = "Race"
+		page = newRaceInfo(iw, int32(id))
 	case infoRegion:
 		title = "Region"
 		page = newRegionInfo(iw, int32(id))

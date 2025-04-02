@@ -151,7 +151,7 @@ func (a *characterInfo) load() error {
 
 	attributes := []AttributeItem{
 		NewAtributeItem("Corporation", o.Corporation),
-		NewAtributeItem("Race", o.Race.Name),
+		NewAtributeItem("Race", o.Race),
 	}
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.ID)
@@ -160,8 +160,7 @@ func (a *characterInfo) load() error {
 		}
 		attributes = append(attributes, x)
 	}
-	attributeList := NewAttributeList(attributes...)
-	attributeList.ShowInfoWindow = a.iw.ShowEveEntity
+	attributeList := NewAttributeList(a.iw, attributes...)
 	attributesTab := container.NewTabItem("Attributes", attributeList)
 	a.tabs.Append(attributesTab)
 	a.tabs.Refresh()

@@ -98,8 +98,7 @@ func (a *allianceInfo) load() error {
 		}
 		attributes = append(attributes, x)
 	}
-	attributeList := NewAttributeList(attributes...)
-	attributeList.ShowInfoWindow = a.iw.ShowEveEntity
+	attributeList := NewAttributeList(a.iw, attributes...)
 	a.tabs.Append(container.NewTabItem("Attributes", attributeList))
 
 	// Members

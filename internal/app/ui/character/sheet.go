@@ -79,7 +79,7 @@ func (a *Sheet) Update() {
 	a.name.SetText(c.EveCharacter.Name)
 	a.race.SetText(c.EveCharacter.Race.Name)
 	a.race.OnTapped = func() {
-		a.u.ShowInfoDialog("Race: Information", c.EveCharacter.Race.Description, a.u.MainWindow())
+		a.u.ShowRaceInfoWindow(c.EveCharacter.Race.ID)
 	}
 	a.born.SetText(c.EveCharacter.Birthday.Format(app.DateTimeFormat))
 	a.security.SetText(fmt.Sprintf("%.1f", c.EveCharacter.SecurityStatus))

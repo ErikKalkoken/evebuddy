@@ -117,8 +117,7 @@ func (a *solarSystemInfo) load() error {
 		x.Action = func(v any) {
 			a.iw.w.Clipboard().SetContent(v.(string))
 		}
-		attributeList := NewAttributeList([]AttributeItem{x}...)
-		attributeList.ShowInfoWindow = a.iw.ShowEveEntity
+		attributeList := NewAttributeList(a.iw, []AttributeItem{x}...)
 		attributesTab := container.NewTabItem("Attributes", attributeList)
 		a.tabs.Append(attributesTab)
 	}
@@ -172,7 +171,7 @@ func (a *solarSystemInfo) load() error {
 		a.logo.Refresh()
 
 		go func() {
-			ss, err := a.iw.u.EveUniverseService().GetSolarSystemsESI(ctx, stargateIDs)
+			ss, err := a.iw.u.EveUniverseService().GetStargateSolarSystemsESI(ctx, stargateIDs)
 			if err != nil {
 				slog.Error("solar system info: Failed to load adjacent systems", "solarSystem", a.id, "error", err)
 				systemsLabel.Text = a.iw.u.ErrorDisplay(err)

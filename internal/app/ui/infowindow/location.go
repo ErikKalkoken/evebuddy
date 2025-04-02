@@ -136,8 +136,7 @@ func (a *locationInfo) load() error {
 		x.Action = func(_ any) {
 			a.iw.w.Clipboard().SetContent(fmt.Sprint(o.ID))
 		}
-		attributeList := NewAttributeList([]AttributeItem{x}...)
-		attributeList.ShowInfoWindow = a.iw.ShowEveEntity
+		attributeList := NewAttributeList(a.iw, []AttributeItem{x}...)
 		attributesTab := container.NewTabItem("Attributes", attributeList)
 		a.tabs.Append(attributesTab)
 	}
