@@ -34,7 +34,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 				},
 			}))
 		// when
-		err := s.updateEveMarketPricesESI(ctx)
+		err := s.updateMarketPricesESI(ctx)
 		// then
 		if assert.NoError(t, err) {
 			o, err := r.GetEveMarketPrice(ctx, 32772)
@@ -64,7 +64,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 				},
 			}))
 		// when
-		err := s.updateEveMarketPricesESI(ctx)
+		err := s.updateMarketPricesESI(ctx)
 		// then
 		if assert.NoError(t, err) {
 			o, err := r.GetEveMarketPrice(ctx, 32772)

@@ -26,8 +26,8 @@ func (s *EveUniverseService) GetEntity(ctx context.Context, id int32) (*app.EveE
 	return s.st.GetEveEntity(ctx, id)
 }
 
-// getValidEveEntity returns an EveEntity from storage for valid IDs and nil for invalid IDs.
-func (s *EveUniverseService) getValidEveEntity(ctx context.Context, id int32) (*app.EveEntity, error) {
+// getValidEntity returns an EveEntity from storage for valid IDs and nil for invalid IDs.
+func (s *EveUniverseService) getValidEntity(ctx context.Context, id int32) (*app.EveEntity, error) {
 	if id == 0 || id == 1 {
 		return nil, nil
 	}

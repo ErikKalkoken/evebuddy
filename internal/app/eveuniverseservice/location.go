@@ -23,40 +23,40 @@ func (s *EveUniverseService) GetStationServicesESI(ctx context.Context, id int32
 	return o.Services, nil
 }
 
-func (eu *EveUniverseService) GetLocation(ctx context.Context, id int64) (*app.EveLocation, error) {
-	o, err := eu.st.GetLocation(ctx, id)
+func (s *EveUniverseService) GetLocation(ctx context.Context, id int64) (*app.EveLocation, error) {
+	o, err := s.st.GetLocation(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {
 		return nil, app.ErrNotFound
 	}
 	return o, err
 }
 
-func (eu *EveUniverseService) ListLocations(ctx context.Context) ([]*app.EveLocation, error) {
-	return eu.st.ListEveLocation(ctx)
+func (s *EveUniverseService) ListLocations(ctx context.Context) ([]*app.EveLocation, error) {
+	return s.st.ListEveLocation(ctx)
 }
 
 // GetOrCreateLocationESI return a structure when it already exists
 // or else tries to fetch and create a new structure from ESI.
 //
 // Important: A token with the structure scope must be set in the context
-func (eu *EveUniverseService) GetOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
-	o, err := eu.st.GetLocation(ctx, id)
+func (s *EveUniverseService) GetOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
+	o, err := s.st.GetLocation(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {
-		return eu.updateOrCreateEveLocationESI(ctx, id)
+		return s.updateOrCreateLocationESI(ctx, id)
 	}
 	return o, err
 }
 
-// updateOrCreateEveLocationESI tries to fetch and create a new structure from ESI.
+// updateOrCreateLocationESI tries to fetch and create a new structure from ESI.
 //
 // Important: A token with the structure scope must be set in the context when trying to fetch a structure.
-func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
+func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
 	key := fmt.Sprintf("updateOrCreateLocationESI-%d", id)
-	y, err, _ := eu.sfg.Do(key, func() (any, error) {
+	y, err, _ := s.sfg.Do(key, func() (any, error) {
 		var arg storage.UpdateOrCreateLocationParams
 		switch app.LocationVariantFromID(id) {
 		case app.EveLocationUnknown:
-			t, err := eu.GetOrCreateTypeESI(ctx, app.EveTypeSolarSystem)
+			t, err := s.GetOrCreateTypeESI(ctx, app.EveTypeSolarSystem)
 			if err != nil {
 				return nil, err
 			}
@@ -65,7 +65,7 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 				EveTypeID: optional.New(t.ID),
 			}
 		case app.EveLocationAssetSafety:
-			t, err := eu.GetOrCreateTypeESI(ctx, app.EveTypeAssetSafetyWrap)
+			t, err := s.GetOrCreateTypeESI(ctx, app.EveTypeAssetSafetyWrap)
 			if err != nil {
 				return nil, err
 			}
@@ -74,11 +74,11 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 				EveTypeID: optional.New(t.ID),
 			}
 		case app.EveLocationSolarSystem:
-			et, err := eu.GetOrCreateTypeESI(ctx, app.EveTypeSolarSystem)
+			et, err := s.GetOrCreateTypeESI(ctx, app.EveTypeSolarSystem)
 			if err != nil {
 				return nil, err
 			}
-			es, err := eu.GetOrCreateSolarSystemESI(ctx, int32(id))
+			es, err := s.GetOrCreateSolarSystemESI(ctx, int32(id))
 			if err != nil {
 				return nil, err
 			}
@@ -88,15 +88,15 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 				EveSolarSystemID: optional.New(es.ID),
 			}
 		case app.EveLocationStation:
-			station, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseStationsStationId(ctx, int32(id), nil)
+			station, _, err := s.esiClient.ESI.UniverseApi.GetUniverseStationsStationId(ctx, int32(id), nil)
 			if err != nil {
 				return nil, err
 			}
-			_, err = eu.GetOrCreateSolarSystemESI(ctx, station.SystemId)
+			_, err = s.GetOrCreateSolarSystemESI(ctx, station.SystemId)
 			if err != nil {
 				return nil, err
 			}
-			_, err = eu.GetOrCreateTypeESI(ctx, station.TypeId)
+			_, err = s.GetOrCreateTypeESI(ctx, station.TypeId)
 			if err != nil {
 				return nil, err
 			}
@@ -108,7 +108,7 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 				Name:             station.Name,
 			}
 			if station.Owner != 0 {
-				_, err = eu.AddMissingEntities(ctx, []int32{station.Owner})
+				_, err = s.AddMissingEntities(ctx, []int32{station.Owner})
 				if err != nil {
 					return nil, err
 				}
@@ -118,7 +118,7 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 			if ctx.Value(goesi.ContextAccessToken) == nil {
 				return nil, fmt.Errorf("eve location: token not set for fetching structure: %d", id)
 			}
-			structure, r, err := eu.esiClient.ESI.UniverseApi.GetUniverseStructuresStructureId(ctx, id, nil)
+			structure, r, err := s.esiClient.ESI.UniverseApi.GetUniverseStructuresStructureId(ctx, id, nil)
 			if err != nil {
 				if r != nil && r.StatusCode == http.StatusForbidden {
 					arg = storage.UpdateOrCreateLocationParams{ID: id}
@@ -126,11 +126,11 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 				}
 				return nil, err
 			}
-			_, err = eu.GetOrCreateSolarSystemESI(ctx, structure.SolarSystemId)
+			_, err = s.GetOrCreateSolarSystemESI(ctx, structure.SolarSystemId)
 			if err != nil {
 				return nil, err
 			}
-			_, err = eu.AddMissingEntities(ctx, []int32{structure.OwnerId})
+			_, err = s.AddMissingEntities(ctx, []int32{structure.OwnerId})
 			if err != nil {
 				return nil, err
 			}
@@ -141,7 +141,7 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 				OwnerID:          optional.New(structure.OwnerId),
 			}
 			if structure.TypeId != 0 {
-				myType, err := eu.GetOrCreateTypeESI(ctx, structure.TypeId)
+				myType, err := s.GetOrCreateTypeESI(ctx, structure.TypeId)
 				if err != nil {
 					return nil, err
 				}
@@ -151,10 +151,10 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 			return nil, fmt.Errorf("eve location: invalid ID in update or create: %d", id)
 		}
 		arg.UpdatedAt = time.Now()
-		if err := eu.st.UpdateOrCreateEveLocation(ctx, arg); err != nil {
+		if err := s.st.UpdateOrCreateEveLocation(ctx, arg); err != nil {
 			return nil, err
 		}
-		return eu.st.GetLocation(ctx, id)
+		return s.st.GetLocation(ctx, id)
 	})
 	if err != nil {
 		return nil, err

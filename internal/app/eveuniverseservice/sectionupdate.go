@@ -14,8 +14,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func (eu *EveUniverseService) getSectionStatus(ctx context.Context, section app.GeneralSection) (*app.GeneralSectionStatus, error) {
-	o, err := eu.st.GetGeneralSectionStatus(ctx, section)
+func (s *EveUniverseService) getSectionStatus(ctx context.Context, section app.GeneralSection) (*app.GeneralSectionStatus, error) {
+	o, err := s.st.GetGeneralSectionStatus(ctx, section)
 	if errors.Is(err, app.ErrNotFound) {
 		return nil, nil
 	}
@@ -36,11 +36,11 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	var f func(context.Context) error
 	switch section {
 	case app.SectionEveCategories:
-		f = s.updateEveCategories
+		f = s.updateCategories
 	case app.SectionEveCharacters:
 		f = s.UpdateAllCharactersESI
 	case app.SectionEveMarketPrices:
-		f = s.updateEveMarketPricesESI
+		f = s.updateMarketPricesESI
 	}
 	key := fmt.Sprintf("Update-section-%s", section)
 	_, err, _ = s.sfg.Do(key, func() (any, error) {
@@ -92,18 +92,18 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	return true, nil
 }
 
-func (eu *EveUniverseService) updateEveCategories(ctx context.Context) error {
+func (s *EveUniverseService) updateCategories(ctx context.Context) error {
 	g := new(errgroup.Group)
 	g.Go(func() error {
-		return eu.UpdateCategoryWithChildrenESI(ctx, app.EveCategorySkill)
+		return s.UpdateCategoryWithChildrenESI(ctx, app.EveCategorySkill)
 	})
 	g.Go(func() error {
-		return eu.UpdateCategoryWithChildrenESI(ctx, app.EveCategoryShip)
+		return s.UpdateCategoryWithChildrenESI(ctx, app.EveCategoryShip)
 	})
 	if err := g.Wait(); err != nil {
 		return err
 	}
-	if err := eu.UpdateShipSkills(ctx); err != nil {
+	if err := s.UpdateShipSkills(ctx); err != nil {
 		return err
 	}
 	return nil

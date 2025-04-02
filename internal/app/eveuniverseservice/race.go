@@ -9,18 +9,18 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
-func (eu *EveUniverseService) GetOrCreateRaceESI(ctx context.Context, id int32) (*app.EveRace, error) {
-	o, err := eu.st.GetEveRace(ctx, id)
+func (s *EveUniverseService) GetOrCreateRaceESI(ctx context.Context, id int32) (*app.EveRace, error) {
+	o, err := s.st.GetEveRace(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {
-		return eu.createEveRaceFromESI(ctx, id)
+		return s.createRaceFromESI(ctx, id)
 	}
 	return o, err
 }
 
-func (eu *EveUniverseService) createEveRaceFromESI(ctx context.Context, id int32) (*app.EveRace, error) {
-	key := fmt.Sprintf("createEveRaceFromESI-%d", id)
-	y, err, _ := eu.sfg.Do(key, func() (any, error) {
-		races, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseRaces(ctx, nil)
+func (s *EveUniverseService) createRaceFromESI(ctx context.Context, id int32) (*app.EveRace, error) {
+	key := fmt.Sprintf("createRaceFromESI-%d", id)
+	y, err, _ := s.sfg.Do(key, func() (any, error) {
+		races, _, err := s.esiClient.ESI.UniverseApi.GetUniverseRaces(ctx, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -31,7 +31,7 @@ func (eu *EveUniverseService) createEveRaceFromESI(ctx context.Context, id int32
 					Description: race.Description,
 					Name:        race.Name,
 				}
-				return eu.st.CreateEveRace(ctx, arg)
+				return s.st.CreateEveRace(ctx, arg)
 			}
 		}
 		return nil, fmt.Errorf("race with ID %d not found: %w", id, app.ErrNotFound)

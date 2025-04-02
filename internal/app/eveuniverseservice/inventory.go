@@ -11,22 +11,22 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
-func (eu *EveUniverseService) GetType(ctx context.Context, id int32) (*app.EveType, error) {
-	return eu.st.GetEveType(ctx, id)
+func (s *EveUniverseService) GetType(ctx context.Context, id int32) (*app.EveType, error) {
+	return s.st.GetEveType(ctx, id)
 }
 
-func (eu *EveUniverseService) GetOrCreateCategoryESI(ctx context.Context, id int32) (*app.EveCategory, error) {
-	o, err := eu.st.GetEveCategory(ctx, id)
+func (s *EveUniverseService) GetOrCreateCategoryESI(ctx context.Context, id int32) (*app.EveCategory, error) {
+	o, err := s.st.GetEveCategory(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {
-		return eu.createEveCategoryFromESI(ctx, id)
+		return s.createCategoryFromESI(ctx, id)
 	}
 	return o, err
 }
 
-func (eu *EveUniverseService) createEveCategoryFromESI(ctx context.Context, id int32) (*app.EveCategory, error) {
-	key := fmt.Sprintf("createEveCategoryFromESI-%d", id)
-	y, err, _ := eu.sfg.Do(key, func() (any, error) {
-		r, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseCategoriesCategoryId(ctx, id, nil)
+func (s *EveUniverseService) createCategoryFromESI(ctx context.Context, id int32) (*app.EveCategory, error) {
+	key := fmt.Sprintf("createCategoryFromESI-%d", id)
+	y, err, _ := s.sfg.Do(key, func() (any, error) {
+		r, _, err := s.esiClient.ESI.UniverseApi.GetUniverseCategoriesCategoryId(ctx, id, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -35,7 +35,7 @@ func (eu *EveUniverseService) createEveCategoryFromESI(ctx context.Context, id i
 			Name:        r.Name,
 			IsPublished: r.Published,
 		}
-		return eu.st.CreateEveCategory(ctx, arg)
+		return s.st.CreateEveCategory(ctx, arg)
 	})
 	if err != nil {
 		return nil, err
@@ -43,22 +43,22 @@ func (eu *EveUniverseService) createEveCategoryFromESI(ctx context.Context, id i
 	return y.(*app.EveCategory), nil
 }
 
-func (eu *EveUniverseService) GetOrCreateGroupESI(ctx context.Context, id int32) (*app.EveGroup, error) {
-	o, err := eu.st.GetEveGroup(ctx, id)
+func (s *EveUniverseService) GetOrCreateGroupESI(ctx context.Context, id int32) (*app.EveGroup, error) {
+	o, err := s.st.GetEveGroup(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {
-		return eu.createEveGroupFromESI(ctx, id)
+		return s.createGroupFromESI(ctx, id)
 	}
 	return o, err
 }
 
-func (eu *EveUniverseService) createEveGroupFromESI(ctx context.Context, id int32) (*app.EveGroup, error) {
-	key := fmt.Sprintf("createEveGroupFromESI-%d", id)
-	y, err, _ := eu.sfg.Do(key, func() (any, error) {
-		r, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseGroupsGroupId(ctx, id, nil)
+func (s *EveUniverseService) createGroupFromESI(ctx context.Context, id int32) (*app.EveGroup, error) {
+	key := fmt.Sprintf("createGroupFromESI-%d", id)
+	y, err, _ := s.sfg.Do(key, func() (any, error) {
+		r, _, err := s.esiClient.ESI.UniverseApi.GetUniverseGroupsGroupId(ctx, id, nil)
 		if err != nil {
 			return nil, err
 		}
-		c, err := eu.GetOrCreateCategoryESI(ctx, r.CategoryId)
+		c, err := s.GetOrCreateCategoryESI(ctx, r.CategoryId)
 		if err != nil {
 			return nil, err
 		}
@@ -68,10 +68,10 @@ func (eu *EveUniverseService) createEveGroupFromESI(ctx context.Context, id int3
 			CategoryID:  c.ID,
 			IsPublished: r.Published,
 		}
-		if err := eu.st.CreateEveGroup(ctx, arg); err != nil {
+		if err := s.st.CreateEveGroup(ctx, arg); err != nil {
 			return nil, err
 		}
-		return eu.st.GetEveGroup(ctx, id)
+		return s.st.GetEveGroup(ctx, id)
 	})
 	if err != nil {
 		return nil, err
@@ -79,22 +79,22 @@ func (eu *EveUniverseService) createEveGroupFromESI(ctx context.Context, id int3
 	return y.(*app.EveGroup), nil
 }
 
-func (eu *EveUniverseService) GetOrCreateTypeESI(ctx context.Context, id int32) (*app.EveType, error) {
-	o, err := eu.st.GetEveType(ctx, id)
+func (s *EveUniverseService) GetOrCreateTypeESI(ctx context.Context, id int32) (*app.EveType, error) {
+	o, err := s.st.GetEveType(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {
-		return eu.createEveTypeFromESI(ctx, id)
+		return s.createTypeFromESI(ctx, id)
 	}
 	return o, err
 }
 
-func (eu *EveUniverseService) createEveTypeFromESI(ctx context.Context, id int32) (*app.EveType, error) {
-	key := fmt.Sprintf("createEveTypeFromESI-%d", id)
-	x, err, _ := eu.sfg.Do(key, func() (any, error) {
-		t, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseTypesTypeId(ctx, id, nil)
+func (s *EveUniverseService) createTypeFromESI(ctx context.Context, id int32) (*app.EveType, error) {
+	key := fmt.Sprintf("createTypeFromESI-%d", id)
+	x, err, _ := s.sfg.Do(key, func() (any, error) {
+		t, _, err := s.esiClient.ESI.UniverseApi.GetUniverseTypesTypeId(ctx, id, nil)
 		if err != nil {
 			return nil, err
 		}
-		g, err := eu.GetOrCreateGroupESI(ctx, t.GroupId)
+		g, err := s.GetOrCreateGroupESI(ctx, t.GroupId)
 		if err != nil {
 			return nil, err
 		}
@@ -114,25 +114,25 @@ func (eu *EveUniverseService) createEveTypeFromESI(ctx context.Context, id int32
 			Radius:         t.Radius,
 			Volume:         t.Volume,
 		}
-		if err := eu.st.CreateEveType(ctx, arg); err != nil {
+		if err := s.st.CreateEveType(ctx, arg); err != nil {
 			return nil, err
 		}
 		for _, o := range t.DogmaAttributes {
-			x, err := eu.GetOrCreateDogmaAttributeESI(ctx, o.AttributeId)
+			x, err := s.GetOrCreateDogmaAttributeESI(ctx, o.AttributeId)
 			if err != nil {
 				return nil, err
 			}
 			switch x.Unit {
 			case app.EveUnitGroupID:
 				go func(ctx context.Context, groupID int32) {
-					_, err := eu.GetOrCreateGroupESI(ctx, groupID)
+					_, err := s.GetOrCreateGroupESI(ctx, groupID)
 					if err != nil {
 						slog.Error("Failed to fetch eve group %d", "ID", groupID, "err", err)
 					}
 				}(ctx, int32(o.Value))
 			case app.EveUnitTypeID:
 				go func(ctx context.Context, typeID int32) {
-					_, err := eu.GetOrCreateTypeESI(ctx, typeID)
+					_, err := s.GetOrCreateTypeESI(ctx, typeID)
 					if err != nil {
 						slog.Error("Failed to fetch eve type %d", "ID", typeID, "err", err)
 					}
@@ -143,7 +143,7 @@ func (eu *EveUniverseService) createEveTypeFromESI(ctx context.Context, id int32
 				EveTypeID:        id,
 				Value:            o.Value,
 			}
-			if err := eu.st.CreateEveTypeDogmaAttribute(ctx, arg); err != nil {
+			if err := s.st.CreateEveTypeDogmaAttribute(ctx, arg); err != nil {
 				return nil, err
 			}
 		}
@@ -153,11 +153,11 @@ func (eu *EveUniverseService) createEveTypeFromESI(ctx context.Context, id int32
 				EveTypeID:     id,
 				IsDefault:     o.IsDefault,
 			}
-			if err := eu.st.CreateEveTypeDogmaEffect(ctx, arg); err != nil {
+			if err := s.st.CreateEveTypeDogmaEffect(ctx, arg); err != nil {
 				return nil, err
 			}
 		}
-		return eu.st.GetEveType(ctx, id)
+		return s.st.GetEveType(ctx, id)
 	})
 	if err != nil {
 		return nil, err
@@ -165,8 +165,8 @@ func (eu *EveUniverseService) createEveTypeFromESI(ctx context.Context, id int32
 	return x.(*app.EveType), nil
 }
 
-func (eu *EveUniverseService) AddMissingTypes(ctx context.Context, ids []int32) error {
-	missingIDs, err := eu.st.MissingEveTypes(ctx, ids)
+func (s *EveUniverseService) AddMissingTypes(ctx context.Context, ids []int32) error {
+	missingIDs, err := s.st.MissingEveTypes(ctx, ids)
 	if err != nil {
 		return err
 	}
@@ -176,7 +176,7 @@ func (eu *EveUniverseService) AddMissingTypes(ctx context.Context, ids []int32) 
 	slices.Sort(missingIDs)
 	slog.Debug("Trying to fetch missing EveTypes from ESI", "count", len(missingIDs))
 	for _, id := range missingIDs {
-		_, err := eu.GetOrCreateTypeESI(ctx, id)
+		_, err := s.GetOrCreateTypeESI(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -184,23 +184,23 @@ func (eu *EveUniverseService) AddMissingTypes(ctx context.Context, ids []int32) 
 	return nil
 }
 
-func (eu *EveUniverseService) UpdateCategoryWithChildrenESI(ctx context.Context, categoryID int32) error {
+func (s *EveUniverseService) UpdateCategoryWithChildrenESI(ctx context.Context, categoryID int32) error {
 	key := fmt.Sprintf("UpdateCategoryWithChildrenESI-%d", categoryID)
-	_, err, _ := eu.sfg.Do(key, func() (any, error) {
+	_, err, _ := s.sfg.Do(key, func() (any, error) {
 		typeIDs := make([]int32, 0)
-		r1, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseCategoriesCategoryId(ctx, categoryID, nil)
+		r1, _, err := s.esiClient.ESI.UniverseApi.GetUniverseCategoriesCategoryId(ctx, categoryID, nil)
 		if err != nil {
 			return nil, err
 		}
 		for _, id := range r1.Groups {
-			r2, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseGroupsGroupId(ctx, id, nil)
+			r2, _, err := s.esiClient.ESI.UniverseApi.GetUniverseGroupsGroupId(ctx, id, nil)
 			if err != nil {
 				return nil, err
 			}
 			typeIDs = slices.Concat(typeIDs, r2.Types)
 		}
 		for _, id := range typeIDs {
-			_, err := eu.GetOrCreateTypeESI(ctx, id)
+			_, err := s.GetOrCreateTypeESI(ctx, id)
 			if err != nil {
 				return nil, err
 			}
@@ -213,13 +213,13 @@ func (eu *EveUniverseService) UpdateCategoryWithChildrenESI(ctx context.Context,
 	return nil
 }
 
-func (eu *EveUniverseService) UpdateShipSkills(ctx context.Context) error {
-	return eu.st.UpdateEveShipSkills(ctx)
+func (s *EveUniverseService) UpdateShipSkills(ctx context.Context) error {
+	return s.st.UpdateEveShipSkills(ctx)
 }
 
-func (eu *EveUniverseService) ListTypeDogmaAttributesForType(
+func (s *EveUniverseService) ListTypeDogmaAttributesForType(
 	ctx context.Context,
 	typeID int32,
 ) ([]*app.EveTypeDogmaAttribute, error) {
-	return eu.st.ListEveTypeDogmaAttributesForType(ctx, typeID)
+	return s.st.ListEveTypeDogmaAttributesForType(ctx, typeID)
 }

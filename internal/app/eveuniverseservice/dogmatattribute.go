@@ -12,22 +12,22 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-func (eu *EveUniverseService) GetDogmaAttribute(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
-	return eu.st.GetEveDogmaAttribute(ctx, id)
+func (s *EveUniverseService) GetDogmaAttribute(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
+	return s.st.GetEveDogmaAttribute(ctx, id)
 }
 
-func (eu *EveUniverseService) GetOrCreateDogmaAttributeESI(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
-	o, err := eu.st.GetEveDogmaAttribute(ctx, id)
+func (s *EveUniverseService) GetOrCreateDogmaAttributeESI(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
+	o, err := s.st.GetEveDogmaAttribute(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {
-		return eu.createEveDogmaAttributeFromESI(ctx, id)
+		return s.createDogmaAttributeFromESI(ctx, id)
 	}
 	return o, err
 }
 
-func (eu *EveUniverseService) createEveDogmaAttributeFromESI(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
-	key := fmt.Sprintf("createEveDogmaAttributeFromESI-%d", id)
-	x, err, _ := eu.sfg.Do(key, func() (any, error) {
-		o, _, err := eu.esiClient.ESI.DogmaApi.GetDogmaAttributesAttributeId(ctx, id, nil)
+func (s *EveUniverseService) createDogmaAttributeFromESI(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
+	key := fmt.Sprintf("createDogmaAttributeFromESI-%d", id)
+	x, err, _ := s.sfg.Do(key, func() (any, error) {
+		o, _, err := s.esiClient.ESI.DogmaApi.GetDogmaAttributesAttributeId(ctx, id, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -43,7 +43,7 @@ func (eu *EveUniverseService) createEveDogmaAttributeFromESI(ctx context.Context
 			IsStackable:  o.Stackable,
 			UnitID:       app.EveUnitID(o.UnitId),
 		}
-		return eu.st.CreateEveDogmaAttribute(ctx, arg)
+		return s.st.CreateEveDogmaAttribute(ctx, arg)
 	})
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (eu *EveUniverseService) createEveDogmaAttributeFromESI(ctx context.Context
 }
 
 // FormatDogmaValue returns a formatted value.
-func (eu *EveUniverseService) FormatDogmaValue(ctx context.Context, value float32, unitID app.EveUnitID) (string, int32) {
+func (s *EveUniverseService) FormatDogmaValue(ctx context.Context, value float32, unitID app.EveUnitID) (string, int32) {
 	defaultFormatter := func(v float32) string {
 		return humanize.CommafWithDigits(float64(v), 2)
 	}
@@ -63,10 +63,10 @@ func (eu *EveUniverseService) FormatDogmaValue(ctx context.Context, value float3
 	case app.EveUnitAcceleration:
 		return fmt.Sprintf("%s m/sec", defaultFormatter(value)), 0
 	case app.EveUnitAttributeID:
-		da, err := eu.GetDogmaAttribute(ctx, int32(value))
+		da, err := s.GetDogmaAttribute(ctx, int32(value))
 		if err != nil {
 			go func() {
-				_, err := eu.GetOrCreateDogmaAttributeESI(ctx, int32(value))
+				_, err := s.GetOrCreateDogmaAttributeESI(ctx, int32(value))
 				if err != nil {
 					slog.Error("Failed to fetch dogma attribute from ESI", "ID", value, "err", err)
 				}
@@ -113,10 +113,10 @@ func (eu *EveUniverseService) FormatDogmaValue(ctx context.Context, value float3
 	case app.EveUnitWarpSpeed:
 		return fmt.Sprintf("%s AU/s", defaultFormatter(value)), 0
 	case app.EveUnitTypeID:
-		et, err := eu.GetType(ctx, int32(value))
+		et, err := s.GetType(ctx, int32(value))
 		if err != nil {
 			go func() {
-				_, err := eu.GetOrCreateTypeESI(ctx, int32(value))
+				_, err := s.GetOrCreateTypeESI(ctx, int32(value))
 				if err != nil {
 					slog.Error("Failed to fetch type from ESI", "typeID", value, "err", err)
 				}

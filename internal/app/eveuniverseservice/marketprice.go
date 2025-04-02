@@ -8,8 +8,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
-func (eu *EveUniverseService) GetMarketPrice(ctx context.Context, typeID int32) (*app.EveMarketPrice, error) {
-	o, err := eu.st.GetEveMarketPrice(ctx, typeID)
+func (s *EveUniverseService) GetMarketPrice(ctx context.Context, typeID int32) (*app.EveMarketPrice, error) {
+	o, err := s.st.GetEveMarketPrice(ctx, typeID)
 	if errors.Is(err, app.ErrNotFound) {
 		return nil, app.ErrNotFound
 	}
@@ -18,8 +18,8 @@ func (eu *EveUniverseService) GetMarketPrice(ctx context.Context, typeID int32) 
 
 // TODO: Change to bulk create
 
-func (eu *EveUniverseService) updateEveMarketPricesESI(ctx context.Context) error {
-	prices, _, err := eu.esiClient.ESI.MarketApi.GetMarketsPrices(ctx, nil)
+func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) error {
+	prices, _, err := s.esiClient.ESI.MarketApi.GetMarketsPrices(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func (eu *EveUniverseService) updateEveMarketPricesESI(ctx context.Context) erro
 			AdjustedPrice: p.AdjustedPrice,
 			AveragePrice:  p.AveragePrice,
 		}
-		if err := eu.st.UpdateOrCreateEveMarketPrice(ctx, arg); err != nil {
+		if err := s.st.UpdateOrCreateEveMarketPrice(ctx, arg); err != nil {
 			return err
 		}
 	}

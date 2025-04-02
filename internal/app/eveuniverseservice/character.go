@@ -16,13 +16,13 @@ import (
 func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, id int32) (*app.EveCharacter, error) {
 	o, err := s.st.GetEveCharacter(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {
-		return s.createEveCharacterFromESI(ctx, id)
+		return s.createCharacterFromESI(ctx, id)
 	}
 	return o, err
 }
 
 func (s *EveUniverseService) GetCharacterESI(ctx context.Context, characterID int32) (*app.EveCharacter, error) {
-	c, err := s.fetchEveCharacterfromESI(ctx, characterID)
+	c, err := s.fetchCharacterfromESI(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func (s *EveUniverseService) GetCharacterESI(ctx context.Context, characterID in
 		SecurityStatus: float64(c.SecurityStatus),
 		Title:          c.Title,
 	}
-	o.Corporation, err = s.getValidEveEntity(ctx, c.CorporationId)
+	o.Corporation, err = s.getValidEntity(ctx, c.CorporationId)
 	if err != nil {
 		return nil, err
 	}
@@ -47,21 +47,21 @@ func (s *EveUniverseService) GetCharacterESI(ctx context.Context, characterID in
 	if err != nil {
 		return nil, err
 	}
-	o.Alliance, err = s.getValidEveEntity(ctx, c.AllianceId)
+	o.Alliance, err = s.getValidEntity(ctx, c.AllianceId)
 	if err != nil {
 		return nil, err
 	}
-	o.Faction, err = s.getValidEveEntity(ctx, c.FactionId)
+	o.Faction, err = s.getValidEntity(ctx, c.FactionId)
 	if err != nil {
 		return nil, err
 	}
 	return o, nil
 }
 
-func (s *EveUniverseService) createEveCharacterFromESI(ctx context.Context, id int32) (*app.EveCharacter, error) {
-	key := fmt.Sprintf("createEveCharacterFromESI-%d", id)
+func (s *EveUniverseService) createCharacterFromESI(ctx context.Context, id int32) (*app.EveCharacter, error) {
+	key := fmt.Sprintf("createCharacterFromESI-%d", id)
 	y, err, _ := s.sfg.Do(key, func() (any, error) {
-		r, err := s.fetchEveCharacterfromESI(ctx, id)
+		r, err := s.fetchCharacterfromESI(ctx, id)
 		if err != nil {
 			return nil, err
 		}
@@ -89,7 +89,7 @@ func (s *EveUniverseService) createEveCharacterFromESI(ctx context.Context, id i
 	return y.(*app.EveCharacter), nil
 }
 
-func (s *EveUniverseService) fetchEveCharacterfromESI(ctx context.Context, id int32) (esi.GetCharactersCharacterIdOk, error) {
+func (s *EveUniverseService) fetchCharacterfromESI(ctx context.Context, id int32) (esi.GetCharactersCharacterIdOk, error) {
 	r, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, id, nil)
 	if err != nil {
 		return esi.GetCharactersCharacterIdOk{}, err
@@ -127,7 +127,7 @@ func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) error {
 	for id := range ids.Values() {
 		id := id
 		g.Go(func() error {
-			return s.updateEveCharacterESI(ctx, id)
+			return s.updateCharacterESI(ctx, id)
 		})
 	}
 	if err := g.Wait(); err != nil {
@@ -137,7 +137,7 @@ func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) error {
 	return nil
 }
 
-func (s *EveUniverseService) updateEveCharacterESI(ctx context.Context, characterID int32) error {
+func (s *EveUniverseService) updateCharacterESI(ctx context.Context, characterID int32) error {
 	c, err := s.st.GetEveCharacter(ctx, characterID)
 	if err != nil {
 		return err
