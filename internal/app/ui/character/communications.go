@@ -18,6 +18,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -36,14 +37,15 @@ type Communications struct {
 	OnUpdate      func(count int)
 	Toolbar       *widget.Toolbar
 
-	current          *app.CharacterNotification
-	folderList       *widget.List
-	folders          []NotificationGroup
-	foldersTop       *widget.Label
-	notificationList *widget.List
-	notifications    []*app.CharacterNotification
-	notificationsTop *widget.Label
-	u                app.UI
+	current            *app.CharacterNotification
+	folderList         *widget.List
+	folders            []NotificationGroup
+	foldersTop         *widget.Label
+	notificationList   *widget.List
+	notifications      []*app.CharacterNotification
+	notificationsTop   *widget.Label
+	notificationsCount optional.Optional[int]
+	u                  app.UI
 }
 
 func NewCommunications(u app.UI) *Communications {
@@ -196,12 +198,23 @@ func (a *Communications) Update() {
 	a.notificationList.Refresh()
 	a.notificationList.UnselectAll()
 	a.notificationsTop.SetText("")
-	var counts map[app.NotificationGroup]int
-	if characterID := a.u.CurrentCharacterID(); characterID != 0 {
-		var err error
-		counts, err = a.u.CharacterService().CountNotificationUnreads(context.TODO(), characterID)
+
+	ctx := context.Background()
+	characterID := a.u.CurrentCharacterID()
+	a.notificationsCount.Clear()
+	if characterID != 0 {
+		n, err := a.u.CharacterService().CountNotifications(ctx, characterID)
 		if err != nil {
-			slog.Error("Failed to fetch notification unread counts", "error", err)
+			slog.Error("communications update", "error", err)
+		}
+		a.notificationsCount.Set(n)
+	}
+	var counts map[app.NotificationGroup]int
+	if characterID != 0 {
+		var err error
+		counts, err = a.u.CharacterService().CountNotificationUnreads(ctx, characterID)
+		if err != nil {
+			slog.Error("communications update", "error", err)
 		}
 	}
 	groups := make([]NotificationGroup, 0)
@@ -245,7 +258,13 @@ func (a *Communications) makeFolderTopText() (string, widget.Importance) {
 	if !hasData {
 		return "Waiting for data to load...", widget.WarningImportance
 	}
-	return fmt.Sprintf("%d folders", len(a.folders)), widget.MediumImportance
+	var s string
+	if a.notificationsCount.IsEmpty() {
+		s = "?"
+	} else {
+		s = humanize.Comma(int64(a.notificationsCount.ValueOrZero()))
+	}
+	return fmt.Sprintf("%s messages", s), widget.MediumImportance
 }
 
 func (a *Communications) ResetGroups() {
@@ -269,11 +288,11 @@ func (a *Communications) setGroup(nc app.NotificationGroup) {
 	var top string
 	var importance widget.Importance
 	if err != nil {
-		slog.Error("set notifications", "characterID", characterID, "error", err)
+		slog.Error("communications set group", "characterID", characterID, "error", err)
 		top = "Something went wrong"
 		importance = widget.DangerImportance
 	} else {
-		top = fmt.Sprintf("%s • %s notifications", nc.String(), humanize.Comma(int64(len(notifications))))
+		top = fmt.Sprintf("%s • %s messages", nc.String(), humanize.Comma(int64(len(notifications))))
 	}
 	a.notificationsTop.Text = top
 	a.notificationsTop.Importance = importance

@@ -193,6 +193,20 @@ func TestCharacterNotification(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can count notifications for a character", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "bravo"})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha"})
+		factory.CreateCharacterNotification()
+		// when
+		x, err := r.CountCharacterNotifications(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, 2, x)
+		}
+	})
 	t.Run("can calculate unread counts", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)

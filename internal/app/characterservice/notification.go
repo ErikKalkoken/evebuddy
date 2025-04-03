@@ -13,6 +13,10 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
+func (s *CharacterService) CountNotifications(ctx context.Context, characterID int32) (int, error) {
+	return s.st.CountCharacterNotifications(ctx, characterID)
+}
+
 func (s *CharacterService) CountNotificationUnreads(ctx context.Context, characterID int32) (map[app.NotificationGroup]int, error) {
 	types, err := s.st.CountCharacterNotificationUnreads(ctx, characterID)
 	if err != nil {
