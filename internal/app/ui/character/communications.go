@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"strconv"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -18,14 +17,16 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-type NotificationGroup struct {
-	group       app.NotificationGroup
-	Name        string
-	UnreadCount int
+type NotificationFolder struct {
+	group  app.NotificationGroup
+	Name   string
+	Unread optional.Optional[int]
+	Total  optional.Optional[int]
 }
 
 type Communications struct {
@@ -34,12 +35,12 @@ type Communications struct {
 	Detail        *fyne.Container
 	Notifications fyne.CanvasObject
 	OnSelected    func()
-	OnUpdate      func(count int)
+	OnUpdate      func(count optional.Optional[int])
 	Toolbar       *widget.Toolbar
 
 	current            *app.CharacterNotification
 	folderList         *widget.List
-	folders            []NotificationGroup
+	folders            []NotificationFolder
 	foldersTop         *widget.Label
 	notificationList   *widget.List
 	notifications      []*app.CharacterNotification
@@ -50,7 +51,7 @@ type Communications struct {
 
 func NewCommunications(u app.UI) *Communications {
 	a := &Communications{
-		folders:          make([]NotificationGroup, 0),
+		folders:          make([]NotificationFolder, 0),
 		notifications:    make([]*app.CharacterNotification, 0),
 		notificationsTop: widget.NewLabel(""),
 		foldersTop:       widget.NewLabel(""),
@@ -92,8 +93,8 @@ func (a *Communications) MakeFolderMenu() []*fyne.MenuItem {
 	items2 := make([]*fyne.MenuItem, 0)
 	for _, f := range a.folders {
 		s := f.Name
-		if f.UnreadCount > 0 {
-			s += fmt.Sprintf(" (%d)", f.UnreadCount)
+		if f.Unread.ValueOrZero() > 0 {
+			s += fmt.Sprintf(" (%s)", ihumanize.OptionalComma(f.Unread, "?"))
 		}
 		it := fyne.NewMenuItem(s, func() {
 			a.setCurrentFolder(f.group)
@@ -125,9 +126,9 @@ func (a *Communications) makeFolderList() *widget.List {
 			label := hbox[0].(*widget.Label)
 			badge := hbox[2].(*kwidget.Badge)
 			text := c.Name
-			if c.UnreadCount > 0 {
+			if c.Unread.ValueOrZero() > 0 {
 				label.TextStyle.Bold = true
-				badge.SetText(strconv.Itoa(c.UnreadCount))
+				badge.SetText(ihumanize.OptionalComma(c.Unread, "?"))
 				badge.Show()
 			} else {
 				label.TextStyle.Bold = false
@@ -199,57 +200,56 @@ func (a *Communications) Update() {
 	a.notificationList.UnselectAll()
 	a.notificationsTop.SetText("")
 
-	ctx := context.Background()
-	characterID := a.u.CurrentCharacterID()
-	a.notificationsCount.Clear()
-	if characterID != 0 {
-		n, err := a.u.CharacterService().CountNotifications(ctx, characterID)
-		if err != nil {
-			slog.Error("communications update", "error", err)
-		}
-		a.notificationsCount.Set(n)
-	}
-	var counts map[app.NotificationGroup]int
-	if characterID != 0 {
+	var groupCounts map[app.NotificationGroup][]int
+	if characterID := a.u.CurrentCharacterID(); characterID != 0 {
 		var err error
-		counts, err = a.u.CharacterService().CountNotificationUnreads(ctx, characterID)
+		groupCounts, err = a.u.CharacterService().CountNotifications(context.Background(), characterID)
 		if err != nil {
 			slog.Error("communications update", "error", err)
 		}
 	}
-	groups := make([]NotificationGroup, 0)
-	var unreadTotal int
-	for _, c := range app.NotificationGroups() {
-		nc := NotificationGroup{
-			group:       c,
-			Name:        c.String(),
-			UnreadCount: counts[c],
+
+	groups := make([]NotificationFolder, 0)
+	var unreadCount, totalCount optional.Optional[int]
+	for _, g := range app.NotificationGroups() {
+		nf := NotificationFolder{
+			group: g,
+			Name:  g.String(),
 		}
-		groups = append(groups, nc)
-		unreadTotal += counts[c]
+		gc, ok := groupCounts[g]
+		if ok {
+			nf.Total.Set(gc[0])
+			nf.Unread.Set(gc[1])
+			totalCount.Set(totalCount.ValueOrZero() + gc[0])
+			unreadCount.Set(unreadCount.ValueOrZero() + gc[1])
+		}
+		if nf.Total.ValueOrZero() > 0 {
+			groups = append(groups, nf)
+		}
 	}
-	slices.SortFunc(groups, func(a, b NotificationGroup) int {
+	slices.SortFunc(groups, func(a, b NotificationFolder) int {
 		return cmp.Compare(a.Name, b.Name)
 	})
-	f1 := NotificationGroup{
-		group:       app.GroupUnread,
-		Name:        "Unread",
-		UnreadCount: unreadTotal,
+	if unreadCount.ValueOrZero() > 0 {
+		groups = slices.Insert(groups, 0, NotificationFolder{
+			group:  app.GroupUnread,
+			Name:   "Unread",
+			Unread: unreadCount,
+		})
 	}
-	groups = slices.Insert(groups, 0, f1)
-	f2 := NotificationGroup{
-		group:       app.GroupAll,
-		Name:        "AllXX",
-		UnreadCount: unreadTotal,
-	}
-	groups = append(groups, f2)
+	groups = append(groups, NotificationFolder{
+		group:  app.GroupAll,
+		Name:   "All",
+		Unread: unreadCount,
+	})
+	a.notificationsCount = totalCount
 	a.folders = groups
 	a.folderList.Refresh()
 	a.folderList.UnselectAll()
 	a.foldersTop.Text, a.foldersTop.Importance = a.makeFolderTopText()
 	a.foldersTop.Refresh()
 	if a.OnUpdate != nil {
-		a.OnUpdate(unreadTotal)
+		a.OnUpdate(unreadCount)
 	}
 }
 
@@ -258,13 +258,7 @@ func (a *Communications) makeFolderTopText() (string, widget.Importance) {
 	if !hasData {
 		return "Waiting for data to load...", widget.WarningImportance
 	}
-	var s string
-	if a.notificationsCount.IsEmpty() {
-		s = "?"
-	} else {
-		s = humanize.Comma(int64(a.notificationsCount.ValueOrZero()))
-	}
-	return fmt.Sprintf("%s messages", s), widget.MediumImportance
+	return fmt.Sprintf("%s messages", ihumanize.OptionalComma(a.notificationsCount, "?")), widget.MediumImportance
 }
 
 func (a *Communications) ResetCurrentFolder() {

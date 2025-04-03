@@ -1,8 +1,9 @@
--- name: CountCharacterNotificationUnreads :many
+-- name: CountCharacterNotifications :many
 SELECT
     cn.type_id,
     nt.name,
-    SUM(NOT cn.is_read)
+    SUM(NOT cn.is_read) AS unread_count,
+    COUNT(*) AS total_count
 FROM
     character_notifications cn
     JOIN notification_types nt ON nt.id = cn.type_id
@@ -11,14 +12,6 @@ WHERE
 GROUP BY
     cn.type_id,
     nt.name;
-
--- name: CountCharacterNotifications :one
-SELECT
-    COUNT(*)
-FROM
-    character_notifications cn
-WHERE
-    character_id = ?;
 
 -- name: CreateCharacterNotification :exec
 INSERT INTO

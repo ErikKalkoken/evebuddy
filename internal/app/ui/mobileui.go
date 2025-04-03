@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -210,10 +211,12 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 		characterList.Refresh()
 	}
 
-	u.characterCommunications.OnUpdate = func(count int) {
-		s := ""
-		if count > 0 {
-			s = fmt.Sprintf("%s unread", humanize.Comma(int64(count)))
+	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
+		var s string
+		if count.IsEmpty() {
+			s = "?"
+		} else if count.ValueOrZero() > 0 {
+			s = fmt.Sprintf("%s unread", humanize.Comma(int64(count.ValueOrZero())))
 		}
 		navItemCommunications.Supporting = s
 		characterList.Refresh()

@@ -13,21 +13,21 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *CharacterService) CountNotifications(ctx context.Context, characterID int32) (int, error) {
-	return s.st.CountCharacterNotifications(ctx, characterID)
-}
-
-func (s *CharacterService) CountNotificationUnreads(ctx context.Context, characterID int32) (map[app.NotificationGroup]int, error) {
-	types, err := s.st.CountCharacterNotificationUnreads(ctx, characterID)
+func (s *CharacterService) CountNotifications(ctx context.Context, characterID int32) (map[app.NotificationGroup][]int, error) {
+	types, err := s.st.CountCharacterNotifications(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
-	categories := make(map[app.NotificationGroup]int)
-	for name, count := range types {
+	values := make(map[app.NotificationGroup][]int)
+	for name, v := range types {
 		c := evenotification.Type2group[evenotification.Type(name)]
-		categories[c] += count
+		if _, ok := values[c]; !ok {
+			values[c] = make([]int, 2)
+		}
+		values[c][0] += v[0]
+		values[c][1] += v[1]
 	}
-	return categories, nil
+	return values, nil
 }
 
 // TODO: Add tests for NotifyCommunications

@@ -13,22 +13,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
-func (st *Storage) CountCharacterNotifications(ctx context.Context, characterID int32) (int, error) {
-	n, err := st.qRO.CountCharacterNotifications(ctx, int64(characterID))
+func (st *Storage) CountCharacterNotifications(ctx context.Context, characterID int32) (map[string][]int, error) {
+	rows, err := st.qRO.CountCharacterNotifications(ctx, int64(characterID))
 	if err != nil {
-		return 0, fmt.Errorf("count notifications for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("count notifications for character %d: %w", characterID, err)
 	}
-	return int(n), nil
-}
-
-func (st *Storage) CountCharacterNotificationUnreads(ctx context.Context, characterID int32) (map[string]int, error) {
-	r, err := st.qRO.CountCharacterNotificationUnreads(ctx, int64(characterID))
-	if err != nil {
-		return nil, fmt.Errorf("count unread notifications for character %d: %w", characterID, err)
-	}
-	x := make(map[string]int)
-	for _, r := range r {
-		x[r.Name] = int(r.Sum.Float64)
+	x := make(map[string][]int)
+	for _, r := range rows {
+		x[r.Name] = []int{int(r.TotalCount), int(r.UnreadCount.Float64)}
 	}
 	return x, nil
 }

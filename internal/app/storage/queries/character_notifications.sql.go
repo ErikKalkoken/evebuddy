@@ -12,11 +12,12 @@ import (
 	"time"
 )
 
-const countCharacterNotificationUnreads = `-- name: CountCharacterNotificationUnreads :many
+const countCharacterNotifications = `-- name: CountCharacterNotifications :many
 SELECT
     cn.type_id,
     nt.name,
-    SUM(NOT cn.is_read)
+    SUM(NOT cn.is_read) AS unread_count,
+    COUNT(*) AS total_count
 FROM
     character_notifications cn
     JOIN notification_types nt ON nt.id = cn.type_id
@@ -27,22 +28,28 @@ GROUP BY
     nt.name
 `
 
-type CountCharacterNotificationUnreadsRow struct {
-	TypeID int64
-	Name   string
-	Sum    sql.NullFloat64
+type CountCharacterNotificationsRow struct {
+	TypeID      int64
+	Name        string
+	UnreadCount sql.NullFloat64
+	TotalCount  int64
 }
 
-func (q *Queries) CountCharacterNotificationUnreads(ctx context.Context, characterID int64) ([]CountCharacterNotificationUnreadsRow, error) {
-	rows, err := q.db.QueryContext(ctx, countCharacterNotificationUnreads, characterID)
+func (q *Queries) CountCharacterNotifications(ctx context.Context, characterID int64) ([]CountCharacterNotificationsRow, error) {
+	rows, err := q.db.QueryContext(ctx, countCharacterNotifications, characterID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []CountCharacterNotificationUnreadsRow
+	var items []CountCharacterNotificationsRow
 	for rows.Next() {
-		var i CountCharacterNotificationUnreadsRow
-		if err := rows.Scan(&i.TypeID, &i.Name, &i.Sum); err != nil {
+		var i CountCharacterNotificationsRow
+		if err := rows.Scan(
+			&i.TypeID,
+			&i.Name,
+			&i.UnreadCount,
+			&i.TotalCount,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -54,22 +61,6 @@ func (q *Queries) CountCharacterNotificationUnreads(ctx context.Context, charact
 		return nil, err
 	}
 	return items, nil
-}
-
-const countCharacterNotifications = `-- name: CountCharacterNotifications :one
-SELECT
-    COUNT(*)
-FROM
-    character_notifications cn
-WHERE
-    character_id = ?
-`
-
-func (q *Queries) CountCharacterNotifications(ctx context.Context, characterID int64) (int64, error) {
-	row := q.db.QueryRowContext(ctx, countCharacterNotifications, characterID)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
 }
 
 const createCharacterNotification = `-- name: CreateCharacterNotification :exec

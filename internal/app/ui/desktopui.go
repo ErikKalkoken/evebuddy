@@ -22,6 +22,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -119,8 +120,14 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 		theme.NewThemedResource(icons.MessageSvg),
 		makePageWithPageBar("Communications", u.characterCommunications),
 	)
-	u.characterCommunications.OnUpdate = func(count int) {
-		characterNav.SetItemBadge(communications, formatBadge(count, 999))
+	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
+		var s string
+		if count.IsEmpty() {
+			s = "?"
+		} else if count.ValueOrZero() > 0 {
+			s = formatBadge(count.ValueOrZero(), 999)
+		}
+		characterNav.SetItemBadge(communications, s)
 	}
 
 	contracts := iwidget.NewNavPage(

@@ -14,8 +14,7 @@ type CharacterService interface {
 	AddEveEntitiesFromSearchESI(ctx context.Context, characterID int32, search string) ([]int32, error)
 	AssetTotalValue(ctx context.Context, characterID int32) (optional.Optional[float64], error)
 	CountContractBids(ctx context.Context, contractID int64) (int, error)
-	CountNotifications(ctx context.Context, characterID int32) (int, error)
-	CountNotificationUnreads(ctx context.Context, characterID int32) (map[NotificationGroup]int, error)
+	CountNotifications(ctx context.Context, characterID int32) (map[NotificationGroup][]int, error)
 	DeleteCharacter(ctx context.Context, id int32) error
 	DeleteMail(ctx context.Context, characterID, mailID int32) error
 	DisableAllTrainingWatchers(ctx context.Context) error

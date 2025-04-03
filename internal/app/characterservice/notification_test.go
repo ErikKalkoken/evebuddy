@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
@@ -54,5 +55,37 @@ func TestNotifyCommunications(t *testing.T) {
 				assert.Equal(t, tc.shouldNotify, sendCount == 1)
 			}
 		})
+	}
+}
+
+func TestCountNotificatios(t *testing.T) {
+	db, st, factory := testutil.New()
+	defer db.Close()
+	// given
+	cs := newCharacterService(st)
+	ctx := context.Background()
+	c := factory.CreateCharacter()
+	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+		CharacterID: c.ID,
+		Type:        string(evenotification.StructureDestroyed),
+	})
+	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+		CharacterID: c.ID,
+		Type:        string(evenotification.MoonminingExtractionStarted),
+	})
+	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+		CharacterID: c.ID,
+		Type:        string(evenotification.MoonminingExtractionStarted),
+		IsRead:      true,
+	})
+	factory.CreateCharacterNotification()
+	// when
+	got, err := cs.CountNotifications(ctx, c.ID)
+	if assert.NoError(t, err) {
+		want := map[app.NotificationGroup][]int{
+			app.GroupStructure:  {1, 1},
+			app.GroupMoonMining: {2, 1},
+		}
+		assert.Equal(t, want, got)
 	}
 }

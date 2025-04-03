@@ -114,6 +114,13 @@ func Optional[T time.Duration | time.Time | string | int | int32 | int64](o opti
 	panic("not implemented")
 }
 
+func OptionalComma[T constraints.Integer](o optional.Optional[T], fallback string) string {
+	if o.IsEmpty() {
+		return fallback
+	}
+	return humanize.Comma(int64(o.ValueOrZero()))
+}
+
 func OptionalFloat[T float32 | float64](o optional.Optional[T], decimals int, fallback string) string {
 	if o.IsEmpty() {
 		return fallback

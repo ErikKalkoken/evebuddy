@@ -15,6 +15,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -92,11 +93,7 @@ func (a *Sheet) Update() {
 	} else {
 		a.home.ParseMarkdown("")
 	}
-	if c.TotalSP.IsEmpty() {
-		a.sp.SetText("?")
-	} else {
-		a.sp.SetText(humanize.Comma(int64(c.TotalSP.ValueOrZero())))
-	}
+	a.sp.SetText(ihumanize.OptionalComma(c.TotalSP, "?"))
 	if c.AssetValue.IsEmpty() || c.WalletBalance.IsEmpty() {
 		a.wealth.SetText("?")
 	} else {
