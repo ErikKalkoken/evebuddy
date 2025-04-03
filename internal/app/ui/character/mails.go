@@ -98,7 +98,6 @@ type Mails struct {
 
 	body          *widget.Label
 	folders       *iwidget.Tree[FolderNode]
-	folderTop     *widget.Label
 	header        *MailHeader
 	headerList    *widget.List
 	headers       []*app.CharacterMailHeader
@@ -115,7 +114,6 @@ type Mails struct {
 func NewMail(u app.UI) *Mails {
 	a := &Mails{
 		body:      widget.NewLabel(""),
-		folderTop: appwidget.MakeTopLabel(),
 		header:    NewMailHeader(u.EveImageService(), u.ShowEveEntityInfoWindow),
 		headers:   make([]*app.CharacterMailHeader, 0),
 		headerTop: appwidget.MakeTopLabel(),
@@ -144,7 +142,20 @@ func (a *Mails) CreateRenderer() fyne.WidgetRenderer {
 	detailWithToolbar := container.NewBorder(a.toolbar, nil, nil, nil, a.Detail)
 	split1 := container.NewHSplit(a.Headers, detailWithToolbar)
 	split1.SetOffset(0.35)
-	split2 := container.NewHSplit(container.NewBorder(a.folderTop, nil, nil, nil, a.folders), split1)
+
+	r, f := a.MakeComposeMessageAction()
+	compose := widget.NewButtonWithIcon("Compose", r, f)
+	compose.Importance = widget.HighImportance
+
+	split2 := container.NewHSplit(container.NewBorder(
+		container.NewCenter(container.NewPadded(compose)),
+		nil,
+		nil,
+		nil,
+		a.folders,
+	),
+		split1,
+	)
 	split2.SetOffset(0.15)
 	p := theme.Padding()
 	c := container.NewBorder(
@@ -191,7 +202,7 @@ func (a *Mails) makeFolderTree() *iwidget.Tree[FolderNode] {
 			return
 		}
 		a.lastFolder = n
-		a.SetFolder(n)
+		a.SetCurrentFolder(n)
 	}
 	return tree
 }
@@ -210,7 +221,7 @@ func (a *Mails) MakeFolderMenu() []*fyne.MenuItem {
 			s += fmt.Sprintf(" (%d)", f.UnreadCount)
 		}
 		it := fyne.NewMenuItem(s, func() {
-			a.SetFolder(f)
+			a.SetCurrentFolder(f)
 		})
 		// if f == current {
 		// 	it.Disabled = true
@@ -241,12 +252,11 @@ func (a *Mails) update() {
 		a.folders.UnselectAll()
 		a.folders.ScrollToTop()
 		a.folders.Select(folderAll)
-		a.SetFolder(folderAll)
+		a.SetCurrentFolder(folderAll)
 	} else {
 		a.headerRefresh()
 	}
 	a.folderDefault = folderAll
-	a.folderTop.SetText("? mails")
 }
 
 func (a *Mails) updateFolderData(characterID int32) (FolderNode, error) {
@@ -429,11 +439,11 @@ func (a *Mails) makeHeaderList() *widget.List {
 	return l
 }
 
-func (a *Mails) ResetFolders() {
-	a.SetFolder(a.folderDefault)
+func (a *Mails) ResetCurrentFolder() {
+	a.SetCurrentFolder(a.folderDefault)
 }
 
-func (a *Mails) SetFolder(folder FolderNode) {
+func (a *Mails) SetCurrentFolder(folder FolderNode) {
 	a.CurrentFolder = optional.New(folder)
 	a.headerRefresh()
 	a.headerList.ScrollToTop()

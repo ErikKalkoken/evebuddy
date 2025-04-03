@@ -449,8 +449,8 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 		go u.updateAvatar(id, func(r fyne.Resource) {
 			characterSelector.SetIcon(r)
 		})
-		u.characterMail.ResetFolders()
-		u.characterCommunications.ResetGroups()
+		u.characterMail.ResetCurrentFolder()
+		u.characterCommunications.ResetCurrentFolder()
 		characterNav.PopAll()
 		navBar.Select(1)
 	}

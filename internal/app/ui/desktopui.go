@@ -104,14 +104,10 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 	u.characterPlanets.OnUpdate = func(_, expired int) {
 		characterNav.SetItemBadge(colonies, formatBadge(expired, 10))
 	}
-
-	r, f := u.characterMail.MakeComposeMessageAction()
-	compose := widget.NewButtonWithIcon("Compose", r, f)
-	compose.Importance = widget.HighImportance
 	mail := iwidget.NewNavPage(
 		"Mail",
 		theme.MailComposeIcon(),
-		makePageWithPageBar("Mail", u.characterMail, compose),
+		makePageWithPageBar("Mail", u.characterMail),
 	)
 	u.characterMail.OnUpdate = func(count int) {
 		characterNav.SetItemBadge(mail, formatBadge(count, 99))

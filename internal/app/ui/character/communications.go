@@ -96,7 +96,7 @@ func (a *Communications) MakeFolderMenu() []*fyne.MenuItem {
 			s += fmt.Sprintf(" (%d)", f.UnreadCount)
 		}
 		it := fyne.NewMenuItem(s, func() {
-			a.setGroup(f.group)
+			a.setCurrentFolder(f.group)
 		})
 		items2 = append(items2, it)
 	}
@@ -144,7 +144,7 @@ func (a *Communications) makeFolderList() *widget.List {
 		}
 		o := a.folders[id]
 		a.clearDetail()
-		a.setGroup(o.group)
+		a.setCurrentFolder(o.group)
 	}
 	return l
 }
@@ -239,7 +239,7 @@ func (a *Communications) Update() {
 	groups = slices.Insert(groups, 0, f1)
 	f2 := NotificationGroup{
 		group:       app.GroupAll,
-		Name:        "All",
+		Name:        "AllXX",
 		UnreadCount: unreadTotal,
 	}
 	groups = append(groups, f2)
@@ -267,11 +267,11 @@ func (a *Communications) makeFolderTopText() (string, widget.Importance) {
 	return fmt.Sprintf("%s messages", s), widget.MediumImportance
 }
 
-func (a *Communications) ResetGroups() {
-	a.setGroup(app.GroupUnread)
+func (a *Communications) ResetCurrentFolder() {
+	a.setCurrentFolder(app.GroupUnread)
 }
 
-func (a *Communications) setGroup(nc app.NotificationGroup) {
+func (a *Communications) setCurrentFolder(nc app.NotificationGroup) {
 	ctx := context.Background()
 	characterID := a.u.CurrentCharacterID()
 	var notifications []*app.CharacterNotification

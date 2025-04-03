@@ -1,10 +1,5 @@
 package app
 
-import (
-	"maps"
-	"slices"
-)
-
 type NotificationGroup uint
 
 const (
@@ -20,6 +15,7 @@ const (
 	GroupSovereignty
 	GroupStructure
 	GroupWar
+
 	GroupUnknown
 	GroupUnread
 	GroupAll
@@ -30,10 +26,11 @@ func (c NotificationGroup) String() string {
 }
 
 var group2Name = map[NotificationGroup]string{
+	GroupAll:            "All",
 	GroupBills:          "Bills",
-	GroupFactionWarfare: "Faction Warfare",
 	GroupContacts:       "Contacts",
 	GroupCorporate:      "Corporate",
+	GroupFactionWarfare: "Faction Warfare",
 	GroupInsurance:      "Insurance",
 	GroupInsurgencies:   "Insurgencies",
 	GroupMiscellaneous:  "Miscellaneous",
@@ -41,13 +38,25 @@ var group2Name = map[NotificationGroup]string{
 	GroupOld:            "Old",
 	GroupSovereignty:    "Sovereignty",
 	GroupStructure:      "Structure",
-	GroupWar:            "War",
-	GroupUnread:         "Unread",
 	GroupUnknown:        "Unknown",
-	GroupAll:            "All",
+	GroupUnread:         "Unread",
+	GroupWar:            "War",
 }
 
-// Groups returns a slice of all groups in alphabetical order.
+// Groups returns a slice of all normal groups in alphabetical order.
 func NotificationGroups() []NotificationGroup {
-	return slices.Sorted(maps.Keys(group2Name))
+	return []NotificationGroup{
+		GroupBills,
+		GroupFactionWarfare,
+		GroupContacts,
+		GroupCorporate,
+		GroupInsurance,
+		GroupInsurgencies,
+		GroupMoonMining,
+		GroupMiscellaneous,
+		GroupOld,
+		GroupSovereignty,
+		GroupStructure,
+		GroupWar,
+	}
 }
