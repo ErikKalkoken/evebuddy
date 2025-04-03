@@ -34,7 +34,7 @@ func NewMailHeader(eis app.EveImageService, show func(*app.EveEntity)) *MailHead
 	p := theme.Padding()
 	w := &MailHeader{
 		from:       from,
-		recipients: container.New(ilayout.NewRowWrapLayoutWithCustomPadding(0, -2*p)),
+		recipients: container.New(ilayout.NewRowWrapLayoutWithCustomPadding(0, -3*p)),
 		showInfo:   show,
 		timestamp:  widget.NewLabel(""),
 		eis:        eis,
@@ -97,9 +97,7 @@ func (w *MailHeader) CreateRenderer() fyne.WidgetRenderer {
 		layout.NewCustomPaddedLayout(0, -2*p, 0, 0),
 		container.NewHBox(w.from, w.timestamp),
 	)
-	second := container.New(layout.NewCustomPaddedLayout(-p, 0, 0, 0),
-		container.NewBorder(nil, nil, container.NewVBox(widget.NewLabel("to")), nil, w.recipients),
-	)
+	second := container.NewBorder(nil, nil, container.NewVBox(widget.NewLabel("to")), nil, w.recipients)
 	main := container.New(layout.NewCustomPaddedVBoxLayout(0), first, second)
 	c := container.NewBorder(nil, nil, container.NewPadded(w.icon), nil, main)
 	return widget.NewSimpleRenderer(c)
