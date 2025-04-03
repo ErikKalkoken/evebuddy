@@ -43,7 +43,7 @@ A more detailed overview of the provided features:
 
 - Information about each character:
   - Assets: Browse through your assets at all your locations
-  - Clones: Current augmentations, jump clones & jump cooltime timer
+  - Clones: Current augmentations, jump clones & jump cooldown timer
   - Mails: Full mail client for receiving and sending Eve mails
   - Communications: Browse through all communications
   - Planets: Status of PI colonies
@@ -68,19 +68,19 @@ A more detailed overview of the provided features:
 
 You can search for assets across all characters.
 
-![Screenshot from 2024-11-10 16-52-07](https://github.com/user-attachments/assets/c40f3b7f-279f-4b3c-9135-0c3b043ee0d9)
+![Screenshot from 2025-04-03](https://cdn.imgpile.com/f/qN4Wj7K_xl.png)
 
 ### Notifications
 
 EVE Buddy can send notifications on your local device to notify about new communications, mails, expired training queues and more.
 
-![Screenshot from 2024-11-10 17-18-27](https://github.com/user-attachments/assets/0a05ddec-bf31-42c6-a1f1-c2661bd12c49)
+![Screenshot from 2025-04-03](https://cdn.imgpile.com/f/WFsQGDV_xl.png)
 
 ### Jump clones
 
 See available jump clones and when the next clone jump is available for a character:
 
-![Screenshot from 2025-03-14 17-02-09](https://github.com/user-attachments/assets/96ca85b1-0e4b-447b-89f2-ae14521aae1e)
+![Screenshot from 2025-04-03](https://cdn.imgpile.com/f/7kCXcj5_xl.png)
 
 ### New Eden search
 
@@ -92,31 +92,25 @@ You search the live game server for entities, similar to the in-game search bar:
 
 Access additional information about many entities (e.g. characters, corporations, solar systems):
 
-![Screenshot from 2025-03-21 20-37-01](https://github.com/user-attachments/assets/0e29bbb3-5b88-4ee9-a3cc-72a50a98734d)
+![Screenshot from 2025-04-03](https://cdn.imgpile.com/f/japrVbC_xl.png)
 
 ### Full mail client
 
 You can receive, send and delete eve mails. Similar to the in-game mail client.
 
-![Screenshot from 2024-11-10 16-52-55](https://github.com/user-attachments/assets/d7b226c5-1355-4b99-bef7-e0a3b1e75cd6)
+![Screenshot from 2025-04-03](https://cdn.imgpile.com/f/cjp9mUs_xl.png)
 
 ### Asset browser for each character
 
 You can browse the assets of a character by location. The view by location is similar to the in-game view when docked.
 
-![Screenshot from 2024-11-10 16-53-30](https://github.com/user-attachments/assets/9c4991ab-406a-44cd-9a18-fec1c10c1a42)
+![Screenshot from 2025-04-03](https://cdn.imgpile.com/f/5vYS17c_xl.png)
 
 ### Colonies of all characters
 
-You can see all colonies used for planetey industry from all your characters at a glance.
+You can see all colonies used for planetary industry from all your characters at a glance.
 
-![Screenshot from 2024-12-04 17-47-45](https://github.com/user-attachments/assets/80338f3a-510b-4a45-98bd-836898b720c9)
-
-### Wealth charts across all characters
-
-The wealth page gives you a graphical overview of your total wealth (= wallets + asset value) and contains breakdowns that help you better understand the structure of your wealth.
-
-![Screenshot from 2024-11-10 16-54-56](https://github.com/user-attachments/assets/3d26e44f-cdc7-45fe-a441-4ed982662fa7)
+![Screenshot from 2025-04-03](https://cdn.imgpile.com/f/xFnr2yP_xl.png)
 
 ### Mobile version
 
@@ -171,7 +165,7 @@ You find the latest packages for download on the [releases page](https://github.
 1. In case you get a security warning from Google Play Protect:
    1. Select "More details"
    1. Select "Install anyway"
-1. Enable unrestriced background usage for EVE Buddy in settings. For a guide please see [How to prevent apps from 'sleeping' in the background on Android](https://www.androidpolice.com/prevent-apps-from-sleeping-in-the-background-on-android/)
+1. Enable unrestricted background usage for EVE Buddy in settings. For a guide please see [How to prevent apps from 'sleeping' in the background on Android](https://www.androidpolice.com/prevent-apps-from-sleeping-in-the-background-on-android/)
 1. Select "Unrestricted" under "App battery usage" / "App background usage"
 
 To enable notifications:
@@ -183,7 +177,7 @@ To enable notifications:
 You should now see a test notification.
 
 > [!NOTE]
-> EVE Buddy needs unrestricted background usage in order to function proberbly. The reason is that Android otherwise  automatically suspends apps when you switch to another app. Then you can no longer add new characters, because it requires you to swich to your browser app, but EVE Buddy needs to keep running for the process to work. Also EVE Buddy needs to keep running in order to pick up events for notifications.
+> EVE Buddy needs unrestricted background usage in order to function probably. The reason is that Android otherwise  automatically suspends apps when you switch to another app. Then you can no longer add new characters, because it requires you to switch to your browser app, but EVE Buddy needs to keep running for the process to work. Also EVE Buddy needs to keep running in order to pick up events for notifications.
 
 ### From source
 
