@@ -22,7 +22,7 @@ import (
 )
 
 type NotificationGroup struct {
-	Group       app.NotificationGroup
+	group       app.NotificationGroup
 	Name        string
 	UnreadCount int
 }
@@ -32,32 +32,32 @@ type Communications struct {
 
 	Detail        *fyne.Container
 	Notifications fyne.CanvasObject
-	Toolbar       *widget.Toolbar
 	OnSelected    func()
 	OnUpdate      func(count int)
+	Toolbar       *widget.Toolbar
 
-	Groups           []NotificationGroup
-	groupList        *widget.List
 	current          *app.CharacterNotification
+	folderList       *widget.List
+	folders          []NotificationGroup
+	foldersTop       *widget.Label
 	notificationList *widget.List
 	notifications    []*app.CharacterNotification
 	notificationsTop *widget.Label
-	groupsTop        *widget.Label
 	u                app.UI
 }
 
 func NewCommunications(u app.UI) *Communications {
 	a := &Communications{
-		Groups:           make([]NotificationGroup, 0),
+		folders:          make([]NotificationGroup, 0),
 		notifications:    make([]*app.CharacterNotification, 0),
 		notificationsTop: widget.NewLabel(""),
-		groupsTop:        widget.NewLabel(""),
+		foldersTop:       widget.NewLabel(""),
 		u:                u,
 	}
 	a.ExtendBaseWidget(a)
 	a.Toolbar = a.makeToolbar()
 	a.Toolbar.Hide()
-	a.groupList = a.makeGroupList()
+	a.folderList = a.makeFolderList()
 	a.Detail = container.NewVBox()
 	a.notificationList = a.makeNotificationList()
 	a.Notifications = container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList)
@@ -71,7 +71,7 @@ func (a *Communications) CreateRenderer() fyne.WidgetRenderer {
 	)
 	split1.Offset = 0.35
 	split2 := container.NewHSplit(
-		container.NewBorder(a.groupsTop, nil, nil, nil, a.groupList),
+		container.NewBorder(a.foldersTop, nil, nil, nil, a.folderList),
 		split1,
 	)
 	split2.Offset = 0.15
@@ -86,13 +86,28 @@ func (a *Communications) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *Communications) makeGroupList() *widget.List {
+func (a *Communications) MakeFolderMenu() []*fyne.MenuItem {
+	items2 := make([]*fyne.MenuItem, 0)
+	for _, f := range a.folders {
+		s := f.Name
+		if f.UnreadCount > 0 {
+			s += fmt.Sprintf(" (%d)", f.UnreadCount)
+		}
+		it := fyne.NewMenuItem(s, func() {
+			a.setGroup(f.group)
+		})
+		items2 = append(items2, it)
+	}
+	return items2
+}
+
+func (a *Communications) makeFolderList() *widget.List {
 	maxGroup := slices.MaxFunc(app.NotificationGroups(), func(a, b app.NotificationGroup) int {
 		return strings.Compare(a.String(), b.String())
 	})
 	l := widget.NewList(
 		func() int {
-			return len(a.Groups)
+			return len(a.folders)
 		},
 		func() fyne.CanvasObject {
 			return container.NewHBox(
@@ -100,10 +115,10 @@ func (a *Communications) makeGroupList() *widget.List {
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(a.Groups) {
+			if id >= len(a.folders) {
 				return
 			}
-			c := a.Groups[id]
+			c := a.folders[id]
 			hbox := co.(*fyne.Container).Objects
 			label := hbox[0].(*widget.Label)
 			badge := hbox[2].(*kwidget.Badge)
@@ -121,13 +136,13 @@ func (a *Communications) makeGroupList() *widget.List {
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		a.notificationList.UnselectAll()
-		if id >= len(a.Groups) {
+		if id >= len(a.folders) {
 			l.UnselectAll()
 			return
 		}
-		o := a.Groups[id]
+		o := a.folders[id]
 		a.clearDetail()
-		a.SetGroup(o.Group)
+		a.setGroup(o.group)
 	}
 	return l
 }
@@ -193,7 +208,7 @@ func (a *Communications) Update() {
 	var unreadTotal int
 	for _, c := range app.NotificationGroups() {
 		nc := NotificationGroup{
-			Group:       c,
+			group:       c,
 			Name:        c.String(),
 			UnreadCount: counts[c],
 		}
@@ -204,40 +219,40 @@ func (a *Communications) Update() {
 		return cmp.Compare(a.Name, b.Name)
 	})
 	f1 := NotificationGroup{
-		Group:       app.GroupUnread,
+		group:       app.GroupUnread,
 		Name:        "Unread",
 		UnreadCount: unreadTotal,
 	}
 	groups = slices.Insert(groups, 0, f1)
 	f2 := NotificationGroup{
-		Group:       app.GroupAll,
+		group:       app.GroupAll,
 		Name:        "All",
 		UnreadCount: unreadTotal,
 	}
 	groups = append(groups, f2)
-	a.Groups = groups
-	a.groupList.Refresh()
-	a.groupList.UnselectAll()
-	a.groupsTop.Text, a.groupsTop.Importance = a.makeGroupTopText()
-	a.groupsTop.Refresh()
+	a.folders = groups
+	a.folderList.Refresh()
+	a.folderList.UnselectAll()
+	a.foldersTop.Text, a.foldersTop.Importance = a.makeFolderTopText()
+	a.foldersTop.Refresh()
 	if a.OnUpdate != nil {
 		a.OnUpdate(unreadTotal)
 	}
 }
 
-func (a *Communications) makeGroupTopText() (string, widget.Importance) {
+func (a *Communications) makeFolderTopText() (string, widget.Importance) {
 	hasData := a.u.StatusCacheService().CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for data to load...", widget.WarningImportance
 	}
-	return fmt.Sprintf("%d groups", len(a.Groups)), widget.MediumImportance
+	return fmt.Sprintf("%d folders", len(a.folders)), widget.MediumImportance
 }
 
 func (a *Communications) ResetGroups() {
-	a.SetGroup(app.GroupUnread)
+	a.setGroup(app.GroupUnread)
 }
 
-func (a *Communications) SetGroup(nc app.NotificationGroup) {
+func (a *Communications) setGroup(nc app.NotificationGroup) {
 	ctx := context.Background()
 	characterID := a.u.CurrentCharacterID()
 	var notifications []*app.CharacterNotification

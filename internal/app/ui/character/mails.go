@@ -201,8 +201,23 @@ func (a *Mails) Update() {
 	a.update()
 }
 
-func (a *Mails) Folders() []FolderNode {
-	return a.folders.Data().Flat()
+func (a *Mails) MakeFolderMenu() []*fyne.MenuItem {
+	// current := u.MailArea.CurrentFolder.ValueOrZero()
+	items1 := make([]*fyne.MenuItem, 0)
+	for _, f := range a.folders.Data().Flat() {
+		s := f.Name
+		if f.UnreadCount > 0 {
+			s += fmt.Sprintf(" (%d)", f.UnreadCount)
+		}
+		it := fyne.NewMenuItem(s, func() {
+			a.SetFolder(f)
+		})
+		// if f == current {
+		// 	it.Disabled = true
+		// }
+		items1 = append(items1, it)
+	}
+	return items1
 }
 
 func (a *Mails) update() {

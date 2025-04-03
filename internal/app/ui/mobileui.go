@@ -430,9 +430,9 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 		}()
 	}
 	u.onUpdateCharacter = func(c *app.Character) {
-		mailMenu.Items = u.makeMailMenu()
+		mailMenu.Items = u.characterMail.MakeFolderMenu()
 		mailMenu.Refresh()
-		communicationsMenu.Items = u.makeCommunicationsMenu()
+		communicationsMenu.Items = u.characterCommunications.MakeFolderMenu()
 		communicationsMenu.Refresh()
 		if c == nil {
 			navBar.Disable(0)
@@ -490,38 +490,4 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 
 	u.MainWindow().SetContent(navBar)
 	return u
-}
-
-func (u *MobileUI) makeMailMenu() []*fyne.MenuItem {
-	// current := u.MailArea.CurrentFolder.ValueOrZero()
-	items1 := make([]*fyne.MenuItem, 0)
-	for _, f := range u.characterMail.Folders() {
-		s := f.Name
-		if f.UnreadCount > 0 {
-			s += fmt.Sprintf(" (%d)", f.UnreadCount)
-		}
-		it := fyne.NewMenuItem(s, func() {
-			u.characterMail.SetFolder(f)
-		})
-		// if f == current {
-		// 	it.Disabled = true
-		// }
-		items1 = append(items1, it)
-	}
-	return items1
-}
-
-func (u *MobileUI) makeCommunicationsMenu() []*fyne.MenuItem {
-	items2 := make([]*fyne.MenuItem, 0)
-	for _, f := range u.characterCommunications.Groups {
-		s := f.Name
-		if f.UnreadCount > 0 {
-			s += fmt.Sprintf(" (%d)", f.UnreadCount)
-		}
-		it := fyne.NewMenuItem(s, func() {
-			u.characterCommunications.SetGroup(f.Group)
-		})
-		items2 = append(items2, it)
-	}
-	return items2
 }
