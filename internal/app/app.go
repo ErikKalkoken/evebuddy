@@ -14,7 +14,7 @@ const (
 	DateFormat     = "2006.01.02"
 	FloatFormat    = "#,###.##"
 	IconPixelSize  = 64
-	IconUnitSize   = 32
+	IconUnitSize   = 28
 )
 
 // EntityShort is a short representation of an entity.

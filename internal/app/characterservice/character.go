@@ -31,14 +31,14 @@ func (s *CharacterService) EnableTrainingWatcher(ctx context.Context, characterI
 	if c.IsTrainingWatched {
 		return nil
 	}
-	t, err := s.GetCharacterTotalTrainingTime(ctx, characterID)
+	t, err := s.GetTotalTrainingTime(ctx, characterID)
 	if err != nil {
 		return err
 	}
 	if t.IsEmpty() {
 		return nil
 	}
-	err = s.UpdateCharacterIsTrainingWatched(ctx, characterID, true)
+	err = s.UpdateIsTrainingWatched(ctx, characterID, true)
 	if err != nil {
 		return err
 	}
@@ -53,14 +53,14 @@ func (s *CharacterService) EnableAllTrainingWatchers(ctx context.Context) error 
 		return err
 	}
 	for id := range ids.Values() {
-		t, err := s.GetCharacterTotalTrainingTime(ctx, id)
+		t, err := s.GetTotalTrainingTime(ctx, id)
 		if err != nil {
 			return err
 		}
 		if t.IsEmpty() {
 			continue
 		}
-		err = s.UpdateCharacterIsTrainingWatched(ctx, id, true)
+		err = s.UpdateIsTrainingWatched(ctx, id, true)
 		if err != nil {
 			return err
 		}
@@ -79,7 +79,7 @@ func (s *CharacterService) GetCharacter(ctx context.Context, id int32) (*app.Cha
 	if err != nil {
 		return nil, err
 	}
-	x, err := s.calcCharacterNextCloneJump(ctx, c)
+	x, err := s.calcNextCloneJump(ctx, c)
 	if err != nil {
 		slog.Error("get character: next clone jump", "characterID", id, "error", err)
 	} else {
@@ -111,7 +111,7 @@ func (s *CharacterService) ListCharactersShort(ctx context.Context) ([]*app.Char
 	return s.st.ListCharactersShort(ctx)
 }
 
-func (s *CharacterService) UpdateCharacterIsTrainingWatched(ctx context.Context, id int32, v bool) error {
+func (s *CharacterService) UpdateIsTrainingWatched(ctx context.Context, id int32, v bool) error {
 	return s.st.UpdateCharacterIsTrainingWatched(ctx, id, v)
 }
 
@@ -168,7 +168,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 	return token.CharacterID, nil
 }
 
-func (s *CharacterService) updateCharacterLocationESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionLocation {
 		panic("called with wrong section")
 	}
@@ -203,7 +203,7 @@ func (s *CharacterService) updateCharacterLocationESI(ctx context.Context, arg a
 		})
 }
 
-func (s *CharacterService) updateCharacterOnlineESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateOnlineESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionOnline {
 		panic("called with wrong section")
 	}
@@ -225,7 +225,7 @@ func (s *CharacterService) updateCharacterOnlineESI(ctx context.Context, arg app
 		})
 }
 
-func (s *CharacterService) updateCharacterShipESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateShipESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionShip {
 		panic("called with wrong section")
 	}
@@ -251,7 +251,7 @@ func (s *CharacterService) updateCharacterShipESI(ctx context.Context, arg app.C
 		})
 }
 
-func (s *CharacterService) updateCharacterWalletBalanceESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionWalletBalance {
 		panic("called with wrong section")
 	}
@@ -273,9 +273,9 @@ func (s *CharacterService) updateCharacterWalletBalanceESI(ctx context.Context, 
 		})
 }
 
-// AddEveEntitiesFromCharacterSearchESI runs a search on ESI and adds the results as new EveEntity objects to the database.
+// AddEveEntitiesFromSearchESI runs a search on ESI and adds the results as new EveEntity objects to the database.
 // This method performs a character specific search and needs a token.
-func (s *CharacterService) AddEveEntitiesFromCharacterSearchESI(ctx context.Context, characterID int32, search string) ([]int32, error) {
+func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, characterID int32, search string) ([]int32, error) {
 	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return nil, err

@@ -14,6 +14,7 @@ type Label struct {
 
 	Alignment  fyne.TextAlign
 	Importance widget.Importance
+	SizeName   fyne.ThemeSizeName
 	Text       string
 	TextStyle  fyne.TextStyle
 	Truncation fyne.TextTruncation
@@ -21,7 +22,6 @@ type Label struct {
 
 	mu       sync.Mutex
 	provider *widget.RichText
-	sizeName fyne.ThemeSizeName
 }
 
 func NewLabelWithSize(text string, sizeName fyne.ThemeSizeName) *Label {
@@ -35,7 +35,7 @@ func NewLabelWithSize(text string, sizeName fyne.ThemeSizeName) *Label {
 			},
 			Text: text,
 		}),
-		sizeName: sizeName,
+		SizeName: sizeName,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -91,7 +91,7 @@ func (w *Label) syncSegments() {
 		ColorName: color,
 		TextStyle: w.TextStyle,
 		Inline:    true,
-		SizeName:  w.sizeName,
+		SizeName:  w.SizeName,
 	}
 	seg.Text = w.Text
 }

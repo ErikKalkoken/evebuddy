@@ -13,6 +13,18 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
+func (st *Storage) CountCharacterNotifications(ctx context.Context, characterID int32) (map[string][]int, error) {
+	rows, err := st.qRO.CountCharacterNotifications(ctx, int64(characterID))
+	if err != nil {
+		return nil, fmt.Errorf("count notifications for character %d: %w", characterID, err)
+	}
+	x := make(map[string][]int)
+	for _, r := range rows {
+		x[r.Name] = []int{int(r.TotalCount), int(r.UnreadCount.Float64)}
+	}
+	return x, nil
+}
+
 func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCharacterNotificationParams) error {
 	if !arg.isValid() {
 		return fmt.Errorf("CreateCharacterNotification: %+v: %w", arg, app.ErrInvalid)
@@ -51,6 +63,32 @@ func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int
 		return nil, fmt.Errorf("get character notification %+v: %w", arg, err)
 	}
 	return characterNotificationFromDBModel(row.CharacterNotification, row.EveEntity, row.NotificationType), err
+}
+
+func (st *Storage) GetOrCreateNotificationType(ctx context.Context, name string) (int64, error) {
+	id, err := func() (int64, error) {
+		tx, err := st.dbRW.Begin()
+		if err != nil {
+			return 0, err
+		}
+		defer tx.Rollback()
+		qtx := st.qRW.WithTx(tx)
+		id, err := qtx.GetNotificationTypeID(ctx, name)
+		if errors.Is(err, sql.ErrNoRows) {
+			id, err = qtx.CreateNotificationType(ctx, name)
+		}
+		if err != nil {
+			return 0, err
+		}
+		if err := tx.Commit(); err != nil {
+			return 0, err
+		}
+		return id, nil
+	}()
+	if err != nil {
+		return 0, fmt.Errorf("get or create notification type %s: %w", name, err)
+	}
+	return id, nil
 }
 
 func (st *Storage) ListCharacterNotificationIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
@@ -117,23 +155,6 @@ func (st *Storage) ListCharacterNotificationsUnprocessed(ctx context.Context, ch
 	return ee, nil
 }
 
-func characterNotificationFromDBModel(o queries.CharacterNotification, sender queries.EveEntity, type_ queries.NotificationType) *app.CharacterNotification {
-	o2 := &app.CharacterNotification{
-		ID:             o.ID,
-		Body:           optional.FromNullString(o.Body),
-		CharacterID:    int32(o.CharacterID),
-		IsProcessed:    o.IsProcessed,
-		IsRead:         o.IsRead,
-		NotificationID: o.NotificationID,
-		Sender:         eveEntityFromDBModel(sender),
-		Text:           o.Text,
-		Timestamp:      o.Timestamp,
-		Title:          optional.FromNullString(o.Title),
-		Type:           type_.Name,
-	}
-	return o2
-}
-
 type CreateCharacterNotificationParams struct {
 	Body           optional.Optional[string]
 	CharacterID    int32
@@ -174,47 +195,26 @@ func (st *Storage) UpdateCharacterNotification(ctx context.Context, arg UpdateCh
 	return nil
 }
 
-func (st *Storage) GetOrCreateNotificationType(ctx context.Context, name string) (int64, error) {
-	id, err := func() (int64, error) {
-		tx, err := st.dbRW.Begin()
-		if err != nil {
-			return 0, err
-		}
-		defer tx.Rollback()
-		qtx := st.qRW.WithTx(tx)
-		id, err := qtx.GetNotificationTypeID(ctx, name)
-		if errors.Is(err, sql.ErrNoRows) {
-			id, err = qtx.CreateNotificationType(ctx, name)
-		}
-		if err != nil {
-			return 0, err
-		}
-		if err := tx.Commit(); err != nil {
-			return 0, err
-		}
-		return id, nil
-	}()
-	if err != nil {
-		return 0, fmt.Errorf("get or create notification type %s: %w", name, err)
-	}
-	return id, nil
-}
-
-func (st *Storage) CountCharacterNotificationUnreads(ctx context.Context, characterID int32) (map[string]int, error) {
-	rows, err := st.qRO.CalcCharacterNotificationUnreadCounts(ctx, int64(characterID))
-	if err != nil {
-		return nil, fmt.Errorf("count unread notifications for character %d: %w", characterID, err)
-	}
-	x := make(map[string]int)
-	for _, r := range rows {
-		x[r.Name] = int(r.Sum.Float64)
-	}
-	return x, nil
-}
-
 func (st *Storage) UpdateCharacterNotificationSetProcessed(ctx context.Context, id int64) error {
 	if err := st.qRW.UpdateCharacterNotificationSetProcessed(ctx, id); err != nil {
 		return fmt.Errorf("update notification set processed for id %d: %w", id, err)
 	}
 	return nil
+}
+
+func characterNotificationFromDBModel(o queries.CharacterNotification, sender queries.EveEntity, type_ queries.NotificationType) *app.CharacterNotification {
+	o2 := &app.CharacterNotification{
+		ID:             o.ID,
+		Body:           optional.FromNullString(o.Body),
+		CharacterID:    int32(o.CharacterID),
+		IsProcessed:    o.IsProcessed,
+		IsRead:         o.IsRead,
+		NotificationID: o.NotificationID,
+		Sender:         eveEntityFromDBModel(sender),
+		Text:           o.Text,
+		Timestamp:      o.Timestamp,
+		Title:          optional.FromNullString(o.Title),
+		Type:           type_.Name,
+	}
+	return o2
 }

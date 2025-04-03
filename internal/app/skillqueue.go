@@ -8,7 +8,7 @@ import (
 )
 
 type CharacterServiceSkillqueue interface {
-	ListCharacterSkillqueueItems(context.Context, int32) ([]*CharacterSkillqueueItem, error)
+	ListSkillqueueItems(context.Context, int32) ([]*CharacterSkillqueueItem, error)
 }
 
 // CharacterSkillqueue represents the skillqueue of a character.
@@ -75,7 +75,7 @@ func (sq *CharacterSkillqueue) Update(cs CharacterServiceSkillqueue, characterID
 		sq.items = []*CharacterSkillqueueItem{}
 		return nil
 	}
-	items, err := cs.ListCharacterSkillqueueItems(context.Background(), characterID)
+	items, err := cs.ListSkillqueueItems(context.Background(), characterID)
 	if err != nil {
 		return err
 	}

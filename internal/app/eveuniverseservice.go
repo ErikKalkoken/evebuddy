@@ -52,7 +52,7 @@ type EveUniverseService interface {
 	GetMarketPrice(ctx context.Context, typeID int32) (*EveMarketPrice, error)
 	GetOrCreateRaceESI(ctx context.Context, id int32) (*EveRace, error)
 	GetOrCreateSchematicESI(ctx context.Context, id int32) (*EveSchematic, error)
-	GetSolarSystemsESI(ctx context.Context, stargateIDs []int32) ([]*EveSolarSystem, error)
+	GetStargateSolarSystemsESI(ctx context.Context, stargateIDs []int32) ([]*EveSolarSystem, error)
 	GetSolarSystemPlanets(ctx context.Context, planets []EveSolarSystemPlanet) ([]*EvePlanet, error)
 	GetStarTypeID(ctx context.Context, id int32) (int32, error)
 	GetSolarSystemInfoESI(ctx context.Context, solarSystemID int32) (int32, []EveSolarSystemPlanet, []int32, []*EveEntity, []*EveLocation, error)

@@ -15,7 +15,7 @@ type MyCS struct {
 	err   error
 }
 
-func (cs MyCS) ListCharacterSkillqueueItems(context.Context, int32) ([]*app.CharacterSkillqueueItem, error) {
+func (cs MyCS) ListSkillqueueItems(context.Context, int32) ([]*app.CharacterSkillqueueItem, error) {
 	if cs.err != nil {
 		return nil, cs.err
 	}
