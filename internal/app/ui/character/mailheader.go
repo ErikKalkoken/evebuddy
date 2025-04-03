@@ -2,7 +2,6 @@ package character
 
 import (
 	"log/slog"
-	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -15,7 +14,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	ilayout "github.com/ErikKalkoken/evebuddy/internal/layout"
 )
 
 type MailHeader struct {
@@ -24,19 +23,18 @@ type MailHeader struct {
 	showInfo   func(*app.EveEntity)
 	from       *kxwidget.TappableLabel
 	icon       *kxwidget.TappableImage
-	recipients *kxwidget.TappableLabel
+	recipients *fyne.Container
 	timestamp  *widget.Label
 	eis        app.EveImageService
 }
 
 func NewMailHeader(eis app.EveImageService, show func(*app.EveEntity)) *MailHeader {
-	recipients := kxwidget.NewTappableLabel("", nil)
-	recipients.Truncation = fyne.TextTruncateEllipsis
 	from := kxwidget.NewTappableLabel("", nil)
 	from.TextStyle.Bold = true
+	p := theme.Padding()
 	w := &MailHeader{
 		from:       from,
-		recipients: recipients,
+		recipients: container.New(ilayout.NewRowWrapLayoutWithCustomPadding(0, -2*p)),
 		showInfo:   show,
 		timestamp:  widget.NewLabel(""),
 		eis:        eis,
@@ -50,21 +48,20 @@ func NewMailHeader(eis app.EveImageService, show func(*app.EveEntity)) *MailHead
 
 func (w *MailHeader) Set(from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
 	w.timestamp.Text = timestamp.Format(app.DateTimeFormat)
-	rr := xslices.Map(recipients, func(x *app.EveEntity) string {
-		return x.Name
-	})
-	w.recipients.Text = "to " + strings.Join(rr, ", ")
+	w.recipients.RemoveAll()
+	// p := theme.Padding()
+	for _, r := range recipients {
+		x := kxwidget.NewTappableLabel(r.Name, func() {
+			w.showInfo(r)
+		})
+		w.recipients.Add(x)
+	}
 	w.from.Text = from.Name
 	w.from.OnTapped = func() {
 		w.showInfo(from)
 	}
 	w.icon.OnTapped = func() {
 		w.showInfo(from)
-	}
-	if len(recipients) > 0 {
-		w.recipients.OnTapped = func() {
-			w.showInfo(recipients[0])
-		}
 	}
 	w.Refresh()
 	go func() {
@@ -80,8 +77,7 @@ func (w *MailHeader) Set(from *app.EveEntity, timestamp time.Time, recipients ..
 func (w *MailHeader) Clear() {
 	w.from.Text = ""
 	w.from.OnTapped = nil
-	w.recipients.Text = ""
-	w.recipients.OnTapped = nil
+	w.recipients.RemoveAll()
 	w.timestamp.Text = ""
 	w.icon.SetResource(icons.BlankSvg)
 	w.icon.OnTapped = nil
@@ -101,7 +97,9 @@ func (w *MailHeader) CreateRenderer() fyne.WidgetRenderer {
 		layout.NewCustomPaddedLayout(0, -2*p, 0, 0),
 		container.NewHBox(w.from, w.timestamp),
 	)
-	second := container.New(layout.NewCustomPaddedLayout(-2*p, 0, 0, 0), w.recipients)
+	second := container.New(layout.NewCustomPaddedLayout(-p, 0, 0, 0),
+		container.NewBorder(nil, nil, container.NewVBox(widget.NewLabel("to")), nil, w.recipients),
+	)
 	main := container.New(layout.NewCustomPaddedVBoxLayout(0), first, second)
 	c := container.NewBorder(nil, nil, container.NewPadded(w.icon), nil, main)
 	return widget.NewSimpleRenderer(c)
