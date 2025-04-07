@@ -48,12 +48,15 @@ func (el EveLocation) DisplayRichText() []widget.RichTextSegment {
 	} else {
 		n = el.alternativeName()
 	}
+	if el.SolarSystem == nil {
+		return iwidget.NewRichTextSegmentFromText(n)
+	}
 	return slices.Concat(
 		el.SolarSystem.SecurityStatusRichText(),
 		iwidget.NewRichTextSegmentFromText(fmt.Sprintf("  %s", n)))
 }
 
-// DisplayName2 returns a user friendly name not including the location name.
+// DisplayName2 returns a user friendly name not including the sytem name.
 func (el EveLocation) DisplayName2() string {
 	if el.Name != "" {
 		if el.Variant() != EveLocationStructure {

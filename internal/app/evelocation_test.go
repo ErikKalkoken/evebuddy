@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/stretchr/testify/assert"
 )
@@ -26,7 +28,7 @@ func TestLocationVariantFromID(t *testing.T) {
 	}
 }
 
-func TestEveLocation(t *testing.T) {
+func TestEveLocationDisplayName2(t *testing.T) {
 	cases := []struct {
 		in  string
 		out string
@@ -44,4 +46,35 @@ func TestEveLocation(t *testing.T) {
 			assert.Equal(t, tc.out, x.DisplayName2())
 		})
 	}
+}
+
+func TestEveLocationDisplayRichText(t *testing.T) {
+	t.Run("can return as rich text", func(t *testing.T) {
+		ss := &app.EveSolarSystem{SecurityStatus: 0.5}
+		l := &app.EveLocation{Name: "location_name", SolarSystem: ss}
+		got := l.DisplayRichText()
+		want := []widget.RichTextSegment{
+			&widget.TextSegment{
+				Text: "0.5",
+				Style: widget.RichTextStyle{
+					ColorName: theme.ColorNameSuccess,
+					Inline:    true,
+				},
+			},
+			&widget.TextSegment{
+				Text: "  location_name",
+			},
+		}
+		assert.Equal(t, want, got)
+	})
+	t.Run("can handle missing solar system", func(t *testing.T) {
+		l := &app.EveLocation{Name: "location_name"}
+		got := l.DisplayRichText()
+		want := []widget.RichTextSegment{
+			&widget.TextSegment{
+				Text: "location_name",
+			},
+		}
+		assert.Equal(t, want, got)
+	})
 }
