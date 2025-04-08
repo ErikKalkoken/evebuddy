@@ -280,18 +280,17 @@ func (a *CharacterAssets) makeLocationData() (*iwidget.TreeData[locationNode], e
 		return cmp.Compare(a.Location.DisplayName(), b.Location.DisplayName())
 	})
 	for _, ln := range locationNodes {
-		el := ln.Location
 		location := locationNode{
 			characterID: characterID,
-			containerID: el.ID,
+			containerID: ln.Location.ID,
 			variant:     nodeLocation,
-			name:        el.DisplayName(),
+			name:        ln.Location.DisplayName(),
 			count:       len(ln.Nodes()),
 		}
-		if el.SolarSystem != nil {
-			location.systemName = el.SolarSystem.Name
-			location.systemSecurityValue = float32(el.SolarSystem.SecurityStatus)
-			location.systemSecurityType = el.SolarSystem.SecurityType()
+		if ln.Location.SolarSystem != nil {
+			location.systemName = ln.Location.SolarSystem.Name
+			location.systemSecurityValue = float32(ln.Location.SolarSystem.SecurityStatus)
+			location.systemSecurityType = ln.Location.SolarSystem.SecurityType()
 		} else {
 			location.isUnknown = true
 		}
@@ -331,7 +330,7 @@ func (a *CharacterAssets) makeLocationData() (*iwidget.TreeData[locationNode], e
 		})
 		shipsUID := tree.MustAdd(locationUID, locationNode{
 			characterID: characterID,
-			containerID: el.ID,
+			containerID: ln.Location.ID,
 			name:        "Ship Hangar",
 			count:       shipCount,
 			variant:     nodeShipHangar,
@@ -437,7 +436,7 @@ func (a *CharacterAssets) makeLocationData() (*iwidget.TreeData[locationNode], e
 		// item hangar
 		itemsUID := tree.MustAdd(locationUID, locationNode{
 			characterID: characterID,
-			containerID: el.ID,
+			containerID: ln.Location.ID,
 			name:        "Item Hangar",
 			count:       itemCount,
 			variant:     nodeItemHangar,

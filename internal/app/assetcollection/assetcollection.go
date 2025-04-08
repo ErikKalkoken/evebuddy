@@ -2,43 +2,41 @@
 package assetcollection
 
 import (
+	"maps"
+	"slices"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
-// AssetNode is a node in an asset tree representing an asset, e.g. a ship.
-type AssetNode struct {
-	Asset *app.CharacterAsset
+type baseNode struct {
 	nodes map[int64]AssetNode
 }
 
-func (an AssetNode) Nodes() []AssetNode {
-	nn := make([]AssetNode, 0)
-	for _, ln := range an.nodes {
-		nn = append(nn, ln)
-	}
-	return nn
+func newBaseNode() baseNode {
+	return baseNode{nodes: make(map[int64]AssetNode)}
+}
+func (bn baseNode) Nodes() []AssetNode {
+	return slices.Collect(maps.Values(bn.nodes))
+}
+
+// AssetNode is a node in an asset tree representing an asset, e.g. a ship.
+type AssetNode struct {
+	baseNode
+	Asset *app.CharacterAsset
 }
 
 func newAssetNode(ca *app.CharacterAsset) AssetNode {
-	return AssetNode{Asset: ca, nodes: make(map[int64]AssetNode)}
+	return AssetNode{Asset: ca, baseNode: newBaseNode()}
 }
 
 // LocationNode is the root node in an asset tree representing a location, e.g. a station.
 type LocationNode struct {
+	baseNode
 	Location *app.EveLocation
-	nodes    map[int64]AssetNode
 }
 
 func newLocationNode(l *app.EveLocation) LocationNode {
-	return LocationNode{Location: l, nodes: make(map[int64]AssetNode)}
-}
-
-func (ln LocationNode) Nodes() []AssetNode {
-	nn := make([]AssetNode, 0)
-	for _, ln := range ln.nodes {
-		nn = append(nn, ln)
-	}
-	return nn
+	return LocationNode{Location: l, baseNode: newBaseNode()}
 }
 
 // AssetCollection is a collection of assets.
