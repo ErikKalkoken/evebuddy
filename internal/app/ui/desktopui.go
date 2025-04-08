@@ -21,7 +21,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -172,7 +171,7 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 		iwidget.NewNavPage(
 			"Assets",
 			theme.NewThemedResource(icons.Inventory2Svg),
-			makePageWithPageBar("Assets", u.characterAssets),
+			makePageWithPageBar("Assets", u.characterAsset),
 		),
 		contracts,
 		communications,
@@ -368,7 +367,7 @@ func (u *DesktopUI) ShowSettingsWindow() {
 func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
 	w := u.App().NewWindow(u.MakeWindowTitle(title))
-	page := character.NewSendMail(u, c, mode, mail)
+	page := NewCharacterSendMail(u.BaseUI, c, mode, mail)
 	page.SetWindow(w)
 	send := widget.NewButtonWithIcon("Send", theme.MailSendIcon(), func() {
 		if page.SendAction() {

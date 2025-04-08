@@ -25,8 +25,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/characteroverview"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
@@ -39,6 +37,12 @@ const (
 	githubOwner        = "ErikKalkoken"
 	githubRepo         = "evebuddy"
 	fallbackWebsiteURL = "https://github.com/ErikKalkoken/evebuddy"
+)
+
+const (
+	characterColumnWidth = 200
+	locationColumnWidth  = 350
+	regionColumnWidth    = 150
 )
 
 // ticker
@@ -65,30 +69,30 @@ type BaseUI struct {
 	onUpdateStatus       func()
 	showManageCharacters func()
 
-	characterAssets            *character.Assets
-	characterAttributes        *character.Attributes
-	characterBiography         *character.Biography
-	characterCommunications    *character.Communications
-	characterContracts         *character.Contracts
-	characterImplants          *character.Augmentations
-	characterJumpClones        *character.JumpClones
-	characterMail              *character.Mails
-	overviewCharacters         *characteroverview.Characters
-	characterPlanets           *character.Colonies
-	characterSheet             *character.Sheet
-	characterShips             *character.FlyableShips
-	characterSkillCatalogue    *character.SkillCatalogue
-	characterSkillQueue        *character.SkillQueue
-	characterWalletJournal     *character.WalletJournal
-	characterWalletTransaction *character.WalletTransaction
+	characterAsset             *CharacterAssets
+	characterAttributes        *CharacterAttributes
+	characterBiography         *CharacterBiography
+	characterCommunications    *CharacterCommunications
+	characterContracts         *CharacterContracts
+	characterImplants          *CharacterAugmentations
+	characterJumpClones        *CharacterJumpClones
+	characterMail              *CharacterMails
+	overviewCharacters         *OverviewCharacters
+	characterPlanets           *CharacterColonies
+	characterSheet             *CharacterSheet
+	characterShips             *CharacterFlyableShips
+	characterSkillCatalogue    *CharacterSkillCatalogue
+	characterSkillQueue        *CharacterSkillQueue
+	characterWalletJournal     *CharacterWalletJournal
+	characterWalletTransaction *CharacterWalletTransaction
 	gameSearch                 *GameSearch
 	manageCharacters           *ManageCharacters
-	overviewAssets             *characteroverview.Assets
-	overviewClones             *characteroverview.Clones
-	overviewColonies           *characteroverview.Colonies
-	overviewLocations          *characteroverview.Locations
-	overviewTraining           *characteroverview.Training
-	overviewWealth             *characteroverview.Wealth
+	overviewAssets             *OverviewAssets
+	overviewClones             *OverviewClones
+	overviewColonies           *OverviewColonies
+	overviewLocations          *OverviewLocations
+	overviewTraining           *OverviewTraining
+	overviewWealth             *OverviewWealth
 	userSettings               *UserSettings
 
 	app              fyne.App
@@ -150,30 +154,30 @@ func NewBaseUI(
 		appwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
 	}
 
-	u.characterAssets = character.NewAssets(u)
-	u.characterAttributes = character.NewAttributes(u)
-	u.characterBiography = character.NewBiography(u)
-	u.characterCommunications = character.NewCommunications(u)
-	u.characterContracts = character.NewContracts(u)
-	u.characterImplants = character.NewAugmentations(u)
-	u.characterJumpClones = character.NewJumpClones(u)
-	u.characterMail = character.NewMail(u)
-	u.overviewCharacters = characteroverview.NewCharacters(u)
-	u.characterPlanets = character.NewColonies(u)
-	u.characterSheet = character.NewSheet(u)
-	u.characterShips = character.NewFlyableShips(u)
-	u.characterSkillCatalogue = character.NewSkillCatalogue(u)
-	u.characterSkillQueue = character.NewSkillQueue(u)
-	u.characterWalletJournal = character.NewWalletJournal(u)
-	u.characterWalletTransaction = character.NewWalletTransaction(u)
+	u.characterAsset = NewCharacterAssets(u)
+	u.characterAttributes = NewCharacterAttributes(u)
+	u.characterBiography = NewCharacterBiography(u)
+	u.characterCommunications = NewCharacterCommunications(u)
+	u.characterContracts = NewCharacterContracts(u)
+	u.characterImplants = NewCharacterAugmentations(u)
+	u.characterJumpClones = NewCharacterJumpClones(u)
+	u.characterMail = NewCharacterMails(u)
+	u.overviewCharacters = NewOverviewCharacters(u)
+	u.characterPlanets = NewCharacterColonies(u)
+	u.characterSheet = NewSheet(u)
+	u.characterShips = NewCharacterFlyableShips(u)
+	u.characterSkillCatalogue = NewCharacterSkillCatalogue(u)
+	u.characterSkillQueue = NewCharacterSkillQueue(u)
+	u.characterWalletJournal = NewCharacterWalletJournal(u)
+	u.characterWalletTransaction = NewCharacterWalletTransaction(u)
 	u.gameSearch = NewGameSearch(u)
 	u.manageCharacters = NewManageCharacters(u)
-	u.overviewAssets = characteroverview.NewAssets(u)
-	u.overviewClones = characteroverview.NewClones(u)
-	u.overviewColonies = characteroverview.NewColonies(u)
-	u.overviewLocations = characteroverview.NewLocations(u)
-	u.overviewTraining = characteroverview.NewTraining(u)
-	u.overviewWealth = characteroverview.NewWealth(u)
+	u.overviewAssets = NewOverviewAssets(u)
+	u.overviewClones = NewOverviewClones(u)
+	u.overviewColonies = NewOverviewColonies(u)
+	u.overviewLocations = NewOverviewLocations(u)
+	u.overviewTraining = NewOverviewTraining(u)
+	u.overviewWealth = NewOverviewWealth(u)
 	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.userSettings = NewSettings(u)
 
@@ -403,7 +407,7 @@ func (u *BaseUI) updateStatus() {
 // updateCharacter updates all pages for the current character.
 func (u *BaseUI) updateCharacter() {
 	ff := map[string]func(){
-		"assets":            u.characterAssets.Update,
+		"assets":            u.characterAsset.Update,
 		"attributes":        u.characterAttributes.Update,
 		"biography":         u.characterBiography.Update,
 		"contracts":         u.characterContracts.Update,
@@ -631,7 +635,7 @@ func (u *BaseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 			u.overviewCharacters.Update()
 		}
 	case app.SectionEveMarketPrices:
-		u.characterAssets.Update()
+		u.characterAsset.Update()
 		u.overviewCharacters.Update()
 		u.overviewAssets.Update()
 		u.reloadCurrentCharacter()
@@ -748,7 +752,7 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			u.overviewWealth.Update()
 			if isShown {
 				u.reloadCurrentCharacter()
-				u.characterAssets.Update()
+				u.characterAsset.Update()
 				u.characterSheet.Update()
 			}
 		}
@@ -866,7 +870,7 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			u.overviewWealth.Update()
 			if isShown {
 				u.reloadCurrentCharacter()
-				u.characterAssets.Update()
+				u.characterAsset.Update()
 			}
 		}
 	case app.SectionWalletJournal:
