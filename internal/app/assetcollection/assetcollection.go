@@ -8,37 +8,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
-type baseNode struct {
-	nodes map[int64]AssetNode
-}
-
-func newBaseNode() baseNode {
-	return baseNode{nodes: make(map[int64]AssetNode)}
-}
-func (bn baseNode) Nodes() []AssetNode {
-	return slices.Collect(maps.Values(bn.nodes))
-}
-
-// AssetNode is a node in an asset tree representing an asset, e.g. a ship.
-type AssetNode struct {
-	baseNode
-	Asset *app.CharacterAsset
-}
-
-func newAssetNode(ca *app.CharacterAsset) AssetNode {
-	return AssetNode{Asset: ca, baseNode: newBaseNode()}
-}
-
-// LocationNode is the root node in an asset tree representing a location, e.g. a station.
-type LocationNode struct {
-	baseNode
-	Location *app.EveLocation
-}
-
-func newLocationNode(l *app.EveLocation) LocationNode {
-	return LocationNode{Location: l, baseNode: newBaseNode()}
-}
-
 // AssetCollection is a collection of assets.
 // The assets are structured as one asset tree per location
 // and may contain assets belonging to one or multiple characters.
@@ -77,7 +46,7 @@ func New(assets []*app.CharacterAsset, locations []*app.EveLocation) AssetCollec
 		if !found {
 			continue
 		}
-		location.nodes[ca.ItemID] = newAssetNode(ca)
+		location.Add(ca)
 		delete(am, ca.ItemID)
 	}
 	for _, l := range lns {
@@ -93,7 +62,7 @@ func addChildNodes(m map[int64]*app.CharacterAsset, nodes map[int64]AssetNode) {
 	for _, ca := range m {
 		_, found := nodes[ca.LocationID]
 		if found {
-			nodes[ca.LocationID].nodes[ca.ItemID] = newAssetNode(ca)
+			nodes[ca.LocationID].Add(ca)
 			delete(m, ca.ItemID)
 		}
 	}
@@ -153,4 +122,58 @@ func (at AssetCollection) Locations() []LocationNode {
 		nn = append(nn, ln)
 	}
 	return nn
+}
+
+type baseNode struct {
+	nodes map[int64]AssetNode
+}
+
+func newBaseNode() baseNode {
+	return baseNode{nodes: make(map[int64]AssetNode)}
+}
+
+func (bn baseNode) Nodes() []AssetNode {
+	return slices.Collect(maps.Values(bn.nodes))
+}
+
+func (bn baseNode) Add(ca *app.CharacterAsset) AssetNode {
+	x := newAssetNode(ca)
+	bn.nodes[ca.ItemID] = x
+	return x
+}
+
+func (bn baseNode) Size() int {
+	var counter func(nodes map[int64]AssetNode) int
+	counter = func(nodes map[int64]AssetNode) int {
+		var count int
+		for _, n := range nodes {
+			if len(n.nodes) == 0 {
+				count++
+			} else {
+				count += counter(n.nodes)
+			}
+		}
+		return count
+	}
+	return counter(bn.nodes)
+}
+
+// AssetNode is a node in an asset tree representing an asset, e.g. a ship.
+type AssetNode struct {
+	baseNode
+	Asset *app.CharacterAsset
+}
+
+func newAssetNode(ca *app.CharacterAsset) AssetNode {
+	return AssetNode{Asset: ca, baseNode: newBaseNode()}
+}
+
+// LocationNode is the root node in an asset tree representing a location, e.g. a station.
+type LocationNode struct {
+	baseNode
+	Location *app.EveLocation
+}
+
+func newLocationNode(l *app.EveLocation) LocationNode {
+	return LocationNode{Location: l, baseNode: newBaseNode()}
 }

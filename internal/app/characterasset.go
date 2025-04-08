@@ -105,6 +105,10 @@ func (ca CharacterAsset) IsInFuelBay() bool {
 	return ca.LocationFlag == "SpecializedFuelBay"
 }
 
+func (ca CharacterAsset) IsInSpace() bool {
+	return ca.LocationType == "solar_system"
+}
+
 func (ca CharacterAsset) IsInHangar() bool {
 	return ca.LocationFlag == "Hangar"
 }
