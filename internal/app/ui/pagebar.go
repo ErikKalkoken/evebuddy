@@ -23,10 +23,10 @@ type PageBar struct {
 	buttons []*widget.Button
 	icon    *kwidget.TappableImage
 	title   *iwidget.Label
-	u       app.UI
+	u       *BaseUI
 }
 
-func newPageBar(title string, icon fyne.Resource, u app.UI, buttons ...*widget.Button) *PageBar {
+func newPageBar(title string, icon fyne.Resource, u *BaseUI, buttons ...*widget.Button) *PageBar {
 	i := kwidget.NewTappableImageWithMenu(icon, fyne.NewMenu(""))
 	i.SetFillMode(canvas.ImageFillContain)
 	i.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
@@ -81,7 +81,7 @@ func NewPageBarCollection(u *DesktopUI) *PageBarCollection {
 }
 
 func (c *PageBarCollection) NewPageBar(title string, buttons ...*widget.Button) *PageBar {
-	pb := newPageBar(title, c.fallbackIcon, c.u, buttons...)
+	pb := newPageBar(title, c.fallbackIcon, c.u.BaseUI, buttons...)
 	c.bars = append(c.bars, pb)
 	return pb
 }

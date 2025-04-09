@@ -12,7 +12,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/character"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -44,7 +43,7 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 	mailMenu := fyne.NewMenu("")
 	communicationsMenu := fyne.NewMenu("")
 	u.characterMail.OnSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-		page := character.NewSendMail(u, c, mode, mail)
+		page := NewCharacterSendMail(bui, c, mode, mail)
 		if mode != app.SendMailNew {
 			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
 		}
@@ -65,10 +64,10 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
-			u.characterAssets.OnSelected = func() {
-				characterNav.Push(newCharacterAppBar("Assets", u.characterAssets.LocationAssets))
+			u.characterAsset.OnSelected = func() {
+				characterNav.Push(newCharacterAppBar("Assets", u.characterAsset.LocationAssets))
 			}
-			characterNav.Push(newCharacterAppBar("Assets", container.NewHScroll(u.characterAssets.Locations)))
+			characterNav.Push(newCharacterAppBar("Assets", container.NewHScroll(u.characterAsset.Locations)))
 		},
 	)
 	navItemCommunications := iwidget.NewListItemWithIcon(
@@ -175,7 +174,20 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 			"Contracts",
 			theme.NewThemedResource(icons.FileSignSvg),
 			func() {
-				characterNav.Push(newCharacterAppBar("Contracts", u.characterContracts))
+				contractActive := container.NewTabItem("Active", u.characterContractsActive)
+				contractTabs := container.NewAppTabs(
+					contractActive,
+					container.NewTabItem("All", u.characterContractsAll),
+				)
+				u.characterContractsActive.OnUpdate = func(count int) {
+					s := "Active"
+					if count > 0 {
+						s += fmt.Sprintf(" (%d)", count)
+					}
+					contractActive.Text = s
+					contractTabs.Refresh()
+				}
+				characterNav.Push(newCharacterAppBar("Contracts", contractTabs))
 			},
 		),
 		navItemCommunications,
@@ -185,7 +197,7 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 		navItemWallet,
 	)
 
-	u.characterAssets.OnRedraw = func(s string) {
+	u.characterAsset.OnRedraw = func(s string) {
 		navItemAssets.Supporting = s
 		characterList.Refresh()
 	}
