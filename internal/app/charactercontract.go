@@ -171,9 +171,6 @@ type CharacterContract struct {
 func (cc CharacterContract) AvailabilityDisplay() string {
 	titler := cases.Title(language.English)
 	s := titler.String(cc.Availability.String())
-	if cc.Assignee != nil && cc.Availability != ContractAvailabilityPublic && cc.Availability != ContractAvailabilityUndefined {
-		s += " - " + cc.Assignee.Name
-	}
 	return s
 }
 
@@ -182,6 +179,29 @@ func (cc CharacterContract) ContractorDisplay() string {
 		return "(None)"
 	}
 	return cc.Acceptor.Name
+}
+
+func (cc CharacterContract) HasIssue() bool {
+	return cc.Status.consolidated() == contractHasIssue
+}
+
+func (cc CharacterContract) IsExpired() bool {
+	return cc.DateExpired.Before(time.Now())
+}
+
+func (cc CharacterContract) IsActive() bool {
+	return cc.Status.consolidated() == contractInProgress || cc.Status.consolidated() == contractOustanding
+}
+
+func (cc CharacterContract) IsCompleted() bool {
+	return cc.Status.consolidated() == contractCompleted
+}
+
+func (cc CharacterContract) IssuerEffective() *EveEntity {
+	if cc.ForCorporation {
+		return cc.IssuerCorporation
+	}
+	return cc.Issuer
 }
 
 func (cc CharacterContract) NameDisplay() string {
@@ -247,20 +267,4 @@ func (cc CharacterContract) TitleDisplay() string {
 func (cc CharacterContract) TypeDisplay() string {
 	caser := cases.Title(language.English)
 	return caser.String(cc.Type.String())
-}
-
-func (cc CharacterContract) IsExpired() bool {
-	return cc.DateExpired.Before(time.Now())
-}
-
-func (cc CharacterContract) IsActive() bool {
-	return cc.Status.consolidated() == contractInProgress || cc.Status.consolidated() == contractOustanding
-}
-
-func (cc CharacterContract) IsCompleted() bool {
-	return cc.Status.consolidated() == contractCompleted
-}
-
-func (cc CharacterContract) HasIssue() bool {
-	return cc.Status.consolidated() == contractHasIssue
 }

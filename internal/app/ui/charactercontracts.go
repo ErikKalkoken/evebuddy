@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -69,7 +70,7 @@ func NewCharacterContracts(u *BaseUI) *CharacterContracts {
 		case 1:
 			return iwidget.NewRichTextSegmentFromText(o.TypeDisplay())
 		case 2:
-			return iwidget.NewRichTextSegmentFromText(o.Issuer.Name)
+			return iwidget.NewRichTextSegmentFromText(o.IssuerEffective().Name)
 		case 3:
 			var s string
 			if o.Assignee == nil {
@@ -112,7 +113,7 @@ func NewCharacterContracts(u *BaseUI) *CharacterContracts {
 			case 0:
 				a.showContract(r)
 			case 2:
-				a.u.ShowEveEntityInfoWindow(r.Issuer)
+				a.u.ShowEveEntityInfoWindow(r.IssuerEffective())
 			case 3:
 				if r.Assignee != nil {
 					a.u.ShowEveEntityInfoWindow(r.Assignee)
@@ -195,11 +196,15 @@ func (a *CharacterContracts) showContract(c *app.CharacterContract) {
 		}
 		return fmt.Sprintf("%s (%s)", ts, ds)
 	}
-	makeLocation := func(l *app.EntityShort[int64]) fyne.CanvasObject {
-		x := iwidget.NewCustomHyperlink(l.Name, func() {
+	makeEntity := func(ee *app.EveEntity) *kxwidget.TappableLabel {
+		return kxwidget.NewTappableLabel(ee.Name, func() {
+			a.u.ShowEveEntityInfoWindow(ee)
+		})
+	}
+	makeLocation := func(l *app.EntityShort[int64]) *kxwidget.TappableLabel {
+		return kxwidget.NewTappableLabel(l.Name, func() {
 			a.u.ShowLocationInfoWindow(l.ID)
 		})
-		return x
 	}
 	makeISKString := func(v float64) string {
 		t := humanize.Commaf(v) + " ISK"
@@ -215,8 +220,12 @@ func (a *CharacterContracts) showContract(c *app.CharacterContract) {
 		}
 		f.Append("Info by issuer", widget.NewLabel(c.TitleDisplay()))
 		f.Append("Type", widget.NewLabel(c.TypeDisplay()))
-		f.Append("Issued By", widget.NewLabel(c.Issuer.Name))
-		f.Append("Availability", widget.NewLabel(c.AvailabilityDisplay()))
+		f.Append("Issued By", makeEntity(c.IssuerEffective()))
+		availability := container.NewHBox(widget.NewLabel(c.AvailabilityDisplay()))
+		if c.Assignee != nil {
+			availability.Add(makeEntity(c.Assignee))
+		}
+		f.Append("Availability", availability)
 		if c.Type == app.ContractTypeCourier {
 			f.Append("Contractor", widget.NewLabel(c.ContractorDisplay()))
 		}
@@ -309,7 +318,7 @@ func (a *CharacterContracts) showContract(c *app.CharacterContract) {
 			}
 		}
 		makeItem := func(it *app.CharacterContractItem) fyne.CanvasObject {
-			x := iwidget.NewCustomHyperlink(it.Type.Name, func() {
+			x := kxwidget.NewTappableLabel(it.Type.Name, func() {
 				a.u.ShowTypeInfoWindow(it.Type.ID)
 			})
 			return container.NewHBox(
@@ -352,6 +361,18 @@ func (a *CharacterContracts) showContract(c *app.CharacterContract) {
 		main.Add(makeBidInfo(c))
 		main.Add(widget.NewSeparator())
 		main.Add(makeItemsInfo(c))
+	}
+	if a.u.IsDeveloperMode() {
+		main.Add(widget.NewSeparator())
+		main.Add(&widget.Form{
+			Items: []*widget.FormItem{
+				{
+					Text: "Contract ID",
+					Widget: kxwidget.NewTappableLabel(fmt.Sprint(c.ContractID), func() {
+						a.u.MainWindow().Clipboard().SetContent(fmt.Sprint(c.ContractID))
+					}),
+				},
+			}})
 	}
 	main.Add(widget.NewSeparator())
 
