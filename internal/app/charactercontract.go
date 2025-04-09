@@ -24,15 +24,14 @@ const (
 	ContractAvailabilityPublic
 )
 
-var cca2String = map[ContractAvailability]string{
-	ContractAvailabilityAlliance:    "alliance",
-	ContractAvailabilityCorporation: "corporation",
-	ContractAvailabilityPersonal:    "private",
-	ContractAvailabilityPublic:      "public",
-}
-
 func (cca ContractAvailability) String() string {
-	s, ok := cca2String[cca]
+	var m = map[ContractAvailability]string{
+		ContractAvailabilityAlliance:    "alliance",
+		ContractAvailabilityCorporation: "corporation",
+		ContractAvailabilityPersonal:    "private",
+		ContractAvailabilityPublic:      "public",
+	}
+	s, ok := m[cca]
 	if !ok {
 		return "?"
 	}

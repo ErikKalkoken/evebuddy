@@ -15,6 +15,14 @@ func FromNullFloat64(v sql.NullFloat64) Optional[float64] {
 	return New(v.Float64)
 }
 
+// FromNullFloat64ToFloat32 converts a sql.Null variable to it's Optional equivalent and returns it.
+func FromNullFloat64ToFloat32(v sql.NullFloat64) Optional[float32] {
+	if !v.Valid {
+		return Optional[float32]{}
+	}
+	return New(float32(v.Float64))
+}
+
 // FromNullInt64 converts a sql.Null variable to it's Optional equivalent and returns it.
 func FromNullInt64(v sql.NullInt64) Optional[int64] {
 	if !v.Valid {

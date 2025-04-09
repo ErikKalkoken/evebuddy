@@ -365,6 +365,95 @@ func (f Factory) CreateCharacterImplant(args ...storage.CreateCharacterImplantPa
 	return o
 }
 
+func (f Factory) CreateCharacterIndustryJob(args ...storage.UpdateOrCreateCharacterIndustryJobParams) *app.CharacterIndustryJob {
+	ctx := context.TODO()
+	var arg storage.UpdateOrCreateCharacterIndustryJobParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CharacterID == 0 {
+		x := f.CreateCharacter()
+		arg.CharacterID = x.ID
+	}
+	if arg.ActivityID == 0 {
+		activities := []app.IndustryActivity{
+			app.Manufacturing,
+			app.TimeEfficiencyResearch,
+			app.MaterialEfficiencyResearch,
+			app.Copying,
+			app.Invention,
+			app.Reactions,
+		}
+		arg.ActivityID = int32(activities[rand.IntN(len(activities))])
+	}
+	if arg.BlueprintID == 0 {
+		arg.BlueprintID = rand.Int64N(10_000_000)
+	}
+	if arg.BlueprintLocationID == 0 {
+		x := f.CreateEveLocationStructure()
+		arg.BlueprintLocationID = x.ID
+	}
+	if arg.BlueprintTypeID == 0 {
+		x := f.CreateEveType()
+		arg.BlueprintTypeID = x.ID
+	}
+	if arg.Duration == 0 {
+		arg.Duration = rand.IntN(10_000)
+	}
+	if arg.FacilityID == 0 {
+		arg.FacilityID = rand.Int64N(10_000_000)
+	}
+	if arg.JobID == 0 {
+		arg.JobID = int32(f.calcNewIDWithCharacter(
+			"character_industry_jobs",
+			"job_id",
+			arg.CharacterID,
+		))
+	}
+	if arg.InstallerID == 0 {
+		x := f.CreateEveEntityCharacter()
+		arg.InstallerID = x.ID
+	}
+	if arg.OutputLocationID == 0 {
+		x := f.CreateEveLocationStructure()
+		arg.OutputLocationID = x.ID
+	}
+	if arg.Runs == 0 {
+		arg.Runs = rand.Int32N(50)
+	}
+	if arg.StationID == 0 {
+		x := f.CreateEveLocationStructure()
+		arg.StationID = x.ID
+	}
+	if arg.Status == 0 {
+		items := []app.IndustryJobStatus{
+			app.JobActive,
+			app.JobCancelled,
+			app.JobDelivered,
+			app.JobPaused,
+			app.JobReady,
+			app.JobReverted,
+		}
+		arg.Status = items[rand.IntN(len(items))]
+	}
+	now := time.Now().UTC()
+	if arg.StartDate.IsZero() {
+		arg.StartDate = now.Add(-time.Duration(rand.IntN(200)+12) * time.Hour)
+	}
+	if arg.EndDate.IsZero() {
+		arg.EndDate = now.Add(time.Duration(rand.IntN(200)+12) * time.Hour)
+	}
+	err := f.st.UpdateOrCreateCharacterIndustryJob(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetCharacterIndustryJob(ctx, arg.CharacterID, arg.JobID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f Factory) CreateCharacterJumpClone(args ...storage.CreateCharacterJumpCloneParams) *app.CharacterJumpClone {
 	ctx := context.TODO()
 	var arg storage.CreateCharacterJumpCloneParams
