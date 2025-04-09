@@ -4,9 +4,14 @@ import (
 	"fmt"
 	"time"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type ContractAvailability uint
@@ -34,6 +39,18 @@ func (cca ContractAvailability) String() string {
 	return s
 }
 
+// contractConsolidatedStatus represents a consolidated status of a contract based on the original contract.
+type contractConsolidatedStatus uint
+
+const (
+	contractUndefiend contractConsolidatedStatus = iota
+	contractOustanding
+	contractInProgress
+	contractHasIssue
+	contractCompleted
+)
+
+// ContractStatus represents the original status of a contract.
 type ContractStatus uint
 
 const (
@@ -69,6 +86,27 @@ func (ccs ContractStatus) String() string {
 		return "?"
 	}
 	return s
+}
+
+func (cc ContractStatus) consolidated() contractConsolidatedStatus {
+	switch cc {
+	case ContractStatusOutstanding:
+		return contractOustanding
+	case ContractStatusInProgress:
+		return contractInProgress
+	case
+		ContractStatusFinished,
+		ContractStatusFinishedContractor,
+		ContractStatusFinishedIssuer:
+		return contractCompleted
+	case
+		ContractStatusCancelled,
+		ContractStatusDeleted,
+		ContractStatusFailed,
+		ContractStatusRejected:
+		return contractHasIssue
+	}
+	return contractUndefiend
 }
 
 type ContractType uint
@@ -180,6 +218,25 @@ func (cc CharacterContract) StatusDisplay() string {
 	return caser.String(cc.Status.String())
 }
 
+func (cc CharacterContract) StatusDisplayRichText() []widget.RichTextSegment {
+	var color fyne.ThemeColorName
+	switch cc.Status.consolidated() {
+	case contractOustanding:
+		color = theme.ColorNamePrimary
+	case contractInProgress:
+		color = theme.ColorNameWarning
+	case contractCompleted:
+		color = theme.ColorNameSuccess
+	case contractHasIssue:
+		color = theme.ColorNameError
+	default:
+		color = theme.ColorNameForeground
+	}
+	return iwidget.NewRichTextSegmentFromText(cc.StatusDisplay(), widget.RichTextStyle{
+		ColorName: color,
+	})
+}
+
 func (cc CharacterContract) TitleDisplay() string {
 	if cc.Title == "" {
 		return "(None)"
@@ -194,4 +251,16 @@ func (cc CharacterContract) TypeDisplay() string {
 
 func (cc CharacterContract) IsExpired() bool {
 	return cc.DateExpired.Before(time.Now())
+}
+
+func (cc CharacterContract) IsActive() bool {
+	return cc.Status.consolidated() == contractInProgress || cc.Status.consolidated() == contractOustanding
+}
+
+func (cc CharacterContract) IsCompleted() bool {
+	return cc.Status.consolidated() == contractCompleted
+}
+
+func (cc CharacterContract) HasIssue() bool {
+	return cc.Status.consolidated() == contractHasIssue
 }

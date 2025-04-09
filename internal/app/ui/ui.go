@@ -73,7 +73,8 @@ type BaseUI struct {
 	characterAttributes        *CharacterAttributes
 	characterBiography         *CharacterBiography
 	characterCommunications    *CharacterCommunications
-	characterContracts         *CharacterContracts
+	characterContractsActive   *CharacterContracts
+	characterContractsAll      *CharacterContracts
 	characterImplants          *CharacterAugmentations
 	characterJumpClones        *CharacterJumpClones
 	characterMail              *CharacterMails
@@ -158,7 +159,9 @@ func NewBaseUI(
 	u.characterAttributes = NewCharacterAttributes(u)
 	u.characterBiography = NewCharacterBiography(u)
 	u.characterCommunications = NewCharacterCommunications(u)
-	u.characterContracts = NewCharacterContracts(u)
+	u.characterContractsAll = NewCharacterContracts(u)
+	u.characterContractsActive = NewCharacterContracts(u)
+	u.characterContractsActive.ShowActiveOnly = true
 	u.characterImplants = NewCharacterAugmentations(u)
 	u.characterJumpClones = NewCharacterJumpClones(u)
 	u.characterMail = NewCharacterMails(u)
@@ -410,7 +413,8 @@ func (u *BaseUI) updateCharacter() {
 		"assets":            u.characterAsset.Update,
 		"attributes":        u.characterAttributes.Update,
 		"biography":         u.characterBiography.Update,
-		"contracts":         u.characterContracts.Update,
+		"contracts":         u.characterContractsAll.Update,
+		"contracts2":        u.characterContractsActive.Update,
 		"implants":          u.characterImplants.Update,
 		"jumpClones":        u.characterJumpClones.Update,
 		"mail":              u.characterMail.Update,
@@ -762,7 +766,8 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionContracts:
 		if isShown && needsRefresh {
-			u.characterContracts.Update()
+			u.characterContractsActive.Update()
+			u.characterContractsAll.Update()
 		}
 		if u.Settings().NotifyContractsEnabled() {
 			go func() {

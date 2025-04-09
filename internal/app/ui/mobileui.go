@@ -174,7 +174,20 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 			"Contracts",
 			theme.NewThemedResource(icons.FileSignSvg),
 			func() {
-				characterNav.Push(newCharacterAppBar("Contracts", u.characterContracts))
+				contractActive := container.NewTabItem("Active", u.characterContractsActive)
+				contractTabs := container.NewAppTabs(
+					contractActive,
+					container.NewTabItem("All", u.characterContractsAll),
+				)
+				u.characterContractsActive.OnUpdate = func(count int) {
+					s := "Active"
+					if count > 0 {
+						s += fmt.Sprintf(" (%d)", count)
+					}
+					contractActive.Text = s
+					contractTabs.Refresh()
+				}
+				characterNav.Push(newCharacterAppBar("Contracts", contractTabs))
 			},
 		),
 		navItemCommunications,

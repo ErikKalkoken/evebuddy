@@ -9,6 +9,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
@@ -17,6 +18,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type contractEntry struct {
@@ -31,15 +33,11 @@ type contractEntry struct {
 	type_    string
 }
 
-// func (e contractEntry) refTypeOutput() string {
-// 	s := strings.ReplaceAll(e.refType, "_", " ")
-// 	c := cases.Title(language.English)
-// 	s = c.String(s)
-// 	return s
-// }
-
 type CharacterContracts struct {
 	widget.BaseWidget
+
+	ShowActiveOnly bool
+	OnUpdate       func(count int)
 
 	contracts []*app.CharacterContract
 	body      fyne.CanvasObject
@@ -64,45 +62,52 @@ func NewCharacterContracts(u *BaseUI) *CharacterContracts {
 		{Text: "Date Accepted", Width: 150},
 		{Text: "Time Left", Width: 100},
 	}
-	makeDataLabel := func(col int, o *app.CharacterContract) (string, fyne.TextAlign, widget.Importance) {
-		var align fyne.TextAlign
-		var importance widget.Importance
-		var text string
+	makeCell := func(col int, o *app.CharacterContract) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			text = o.NameDisplay()
+			return iwidget.NewRichTextSegmentFromText(o.NameDisplay())
 		case 1:
-			text = o.TypeDisplay()
+			return iwidget.NewRichTextSegmentFromText(o.TypeDisplay())
 		case 2:
-			text = o.Issuer.Name
+			return iwidget.NewRichTextSegmentFromText(o.Issuer.Name)
 		case 3:
+			var s string
 			if o.Assignee == nil {
-				text = ""
+				s = ""
 			} else {
-				text = o.Assignee.Name
+				s = o.Assignee.Name
 			}
+			return iwidget.NewRichTextSegmentFromText(s)
 		case 4:
-			text = o.StatusDisplay()
+			return o.StatusDisplayRichText()
 		case 5:
-			text = o.DateIssued.Format(app.DateTimeFormat)
+			return iwidget.NewRichTextSegmentFromText(o.DateIssued.Format(app.DateTimeFormat))
 		case 6:
+			var s string
 			if o.DateAccepted.IsEmpty() {
-				text = ""
+				s = ""
 			} else {
-				text = o.DateAccepted.MustValue().Format(app.DateTimeFormat)
+				s = o.DateAccepted.MustValue().Format(app.DateTimeFormat)
 			}
+			return iwidget.NewRichTextSegmentFromText(s)
 		case 7:
+			var text string
+			var color fyne.ThemeColorName
 			if o.IsExpired() {
 				text = "EXPIRED"
-				importance = widget.DangerImportance
+				color = theme.ColorNameError
 			} else {
 				text = ihumanize.RelTime(o.DateExpired)
+				color = theme.ColorNameForeground
 			}
+			return iwidget.NewRichTextSegmentFromText(text, widget.RichTextStyle{
+				ColorName: color,
+			})
 		}
-		return text, align, importance
+		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.IsDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop(headers, &a.contracts, makeDataLabel, func(column int, r *app.CharacterContract) {
+		a.body = iwidget.MakeDataTableForDesktop2(headers, &a.contracts, makeCell, func(column int, r *app.CharacterContract) {
 			switch column {
 			case 0:
 				a.showContract(r)
@@ -115,7 +120,7 @@ func NewCharacterContracts(u *BaseUI) *CharacterContracts {
 			}
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.contracts, makeDataLabel, a.showContract)
+		a.body = iwidget.MakeDataTableForMobile2(headers, &a.contracts, makeCell, a.showContract)
 	}
 	return a
 }
@@ -130,9 +135,14 @@ func (a *CharacterContracts) Update() {
 	} else {
 		t, i = a.makeTopText()
 	}
-	a.top.Text = t
-	a.top.Importance = i
-	a.top.Refresh()
+	if t != "" {
+		a.top.Text = t
+		a.top.Importance = i
+		a.top.Refresh()
+		a.top.Show()
+	} else {
+		a.top.Hide()
+	}
 	a.body.Refresh()
 }
 
@@ -145,9 +155,7 @@ func (a *CharacterContracts) makeTopText() (string, widget.Importance) {
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
-	t := humanize.Comma(int64(len(a.contracts)))
-	s := fmt.Sprintf("Entries: %s", t)
-	return s, widget.MediumImportance
+	return "", widget.MediumImportance
 }
 
 func (a *CharacterContracts) updateEntries() error {
@@ -157,9 +165,20 @@ func (a *CharacterContracts) updateEntries() error {
 	}
 	characterID := a.u.CurrentCharacterID()
 	var err error
-	a.contracts, err = a.u.CharacterService().ListContracts(context.Background(), characterID)
+	oo, err := a.u.CharacterService().ListContracts(context.Background(), characterID)
 	if err != nil {
 		return err
+	}
+	if a.ShowActiveOnly {
+		a.contracts = xslices.Filter(oo, func(o *app.CharacterContract) bool {
+			return o.IsActive()
+		})
+
+	} else {
+		a.contracts = oo
+	}
+	if a.OnUpdate != nil {
+		a.OnUpdate(len(a.contracts))
 	}
 	return nil
 }
@@ -201,7 +220,7 @@ func (a *CharacterContracts) showContract(c *app.CharacterContract) {
 		if c.Type == app.ContractTypeCourier {
 			f.Append("Contractor", widget.NewLabel(c.ContractorDisplay()))
 		}
-		f.Append("Status", widget.NewLabel(c.StatusDisplay()))
+		f.Append("Status", widget.NewRichText(c.StatusDisplayRichText()...))
 		f.Append("Location", makeLocation(c.StartLocation))
 		if c.Type == app.ContractTypeCourier || c.Type == app.ContractTypeItemExchange {
 			f.Append("Date Issued", widget.NewLabel(c.DateIssued.Format(app.DateTimeFormat)))

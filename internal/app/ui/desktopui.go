@@ -129,11 +129,21 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 		characterNav.SetItemBadge(communications, s)
 	}
 
+	contractActive := container.NewTabItem("Active", u.characterContractsActive)
+	contractTabs := container.NewAppTabs(contractActive, container.NewTabItem("All", u.characterContractsAll))
 	contracts := iwidget.NewNavPage(
 		"Contracts",
 		theme.NewThemedResource(icons.FileSignSvg),
-		makePageWithPageBar("Contracts", u.characterContracts),
+		makePageWithPageBar("Contracts", contractTabs),
 	)
+	u.characterContractsActive.OnUpdate = func(count int) {
+		s := "Active"
+		if count > 0 {
+			s += fmt.Sprintf(" (%d)", count)
+		}
+		contractActive.Text = s
+		contractTabs.Refresh()
+	}
 
 	skills := iwidget.NewNavPage(
 		"Skills",
@@ -144,7 +154,9 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 				container.NewTabItem("Training Queue", u.characterSkillQueue),
 				container.NewTabItem("Skill Catalogue", u.characterSkillCatalogue),
 				container.NewTabItem("Ships", u.characterShips),
-			)))
+			),
+		),
+	)
 
 	u.characterSkillQueue.OnUpdate = func(status, _ string) {
 		characterNav.SetItemBadge(skills, status)
