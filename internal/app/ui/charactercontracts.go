@@ -96,7 +96,7 @@ func NewCharacterContracts(u *BaseUI) *CharacterContracts {
 				text = "EXPIRED"
 				importance = widget.DangerImportance
 			} else {
-				text = ihumanize.RelTime(o.DateExpiredEffective())
+				text = ihumanize.RelTime(o.DateExpired)
 			}
 		}
 		return text, align, importance
@@ -119,64 +119,6 @@ func NewCharacterContracts(u *BaseUI) *CharacterContracts {
 	}
 	return a
 }
-
-func (a *CharacterContracts) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(a.top, nil, nil, nil, a.body)
-	return widget.NewSimpleRenderer(c)
-}
-
-// func (a *ContractsArea) makeTable() *widget.Table {
-// 	var headers = []struct {
-// 		text  string
-// 		width float32
-// 	}{
-// 		{"Contract", 300},
-// 		{"Type", 120},
-// 		{"From", 150},
-// 		{"To", 150},
-// 		{"Status", 100},
-// 		{"Date Issued", 150},
-// 		{"Date Accepted", 150},
-// 		{"Time Left", 100},
-// 	}
-// 	t := widget.NewTable(
-// 		func() (rows int, cols int) {
-// 			return len(a.contracts), len(headers)
-// 		},
-// 		func() fyne.CanvasObject {
-// 			return widget.NewLabel("Template Template")
-// 		},
-// 		func(tci widget.TableCellID, co fyne.CanvasObject) {
-// 			if tci.Row >= len(a.contracts) || tci.Row < 0 {
-// 				return
-// 			}
-// 			l := co.(*widget.Label)
-// 			w := a.contracts[tci.Row]
-// 			l.Text, l.Alignment, l.Importance = makeDataLabel(tci.Col, w)
-// 			l.Refresh()
-// 		},
-// 	)
-// 	t.ShowHeaderRow = true
-// 	t.CreateHeader = func() fyne.CanvasObject {
-// 		return widget.NewLabel("Template")
-// 	}
-// 	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-// 		s := headers[tci.Col]
-// 		co.(*widget.Label).SetText(s.text)
-// 	}
-// 	for i, h := range headers {
-// 		t.SetColumnWidth(i, h.width)
-// 	}
-// 	t.OnSelected = func(tci widget.TableCellID) {
-// 		defer t.UnselectAll()
-// 		if tci.Row >= len(a.contracts) || tci.Row < 0 {
-// 			return
-// 		}
-// 		o := a.contracts[tci.Row]
-// 		a.showContract(o)
-// 	}
-// 	return t
-// }
 
 func (a *CharacterContracts) Update() {
 	var t string
@@ -215,7 +157,7 @@ func (a *CharacterContracts) updateEntries() error {
 	}
 	characterID := a.u.CurrentCharacterID()
 	var err error
-	a.contracts, err = a.u.CharacterService().ListContracts(context.TODO(), characterID)
+	a.contracts, err = a.u.CharacterService().ListContracts(context.Background(), characterID)
 	if err != nil {
 		return err
 	}
@@ -225,13 +167,12 @@ func (a *CharacterContracts) updateEntries() error {
 func (a *CharacterContracts) showContract(c *app.CharacterContract) {
 	w := a.u.App().NewWindow(a.u.MakeWindowTitle("Contract"))
 	makeExpiresString := func(c *app.CharacterContract) string {
-		t := c.DateExpiredEffective()
-		ts := t.Format(app.DateTimeFormat)
+		ts := c.DateExpired.Format(app.DateTimeFormat)
 		var ds string
 		if c.IsExpired() {
 			ds = "EXPIRED"
 		} else {
-			ds = ihumanize.RelTime(t)
+			ds = ihumanize.RelTime(c.DateExpired)
 		}
 		return fmt.Sprintf("%s (%s)", ts, ds)
 	}
@@ -415,4 +356,9 @@ func (a *CharacterContracts) showContract(c *app.CharacterContract) {
 		vs,
 	)))
 	w.Show()
+}
+
+func (a *CharacterContracts) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewBorder(a.top, nil, nil, nil, a.body)
+	return widget.NewSimpleRenderer(c)
 }

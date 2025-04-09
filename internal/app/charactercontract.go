@@ -148,7 +148,23 @@ func (cc CharacterContract) ContractorDisplay() string {
 
 func (cc CharacterContract) NameDisplay() string {
 	if cc.Type == ContractTypeCourier {
-		return fmt.Sprintf("%s >> %s (%.0f m3)", cc.StartSolarSystem.Name, cc.EndSolarSystem.Name, cc.Volume)
+		var start, end string
+		if cc.StartSolarSystem != nil {
+			start = cc.StartSolarSystem.Name
+		} else {
+			start = "?"
+		}
+		if cc.EndSolarSystem != nil {
+			end = cc.EndSolarSystem.Name
+		} else {
+			end = "?"
+		}
+		return fmt.Sprintf(
+			"%s >> %s (%.0f m3)",
+			start,
+			end,
+			cc.Volume,
+		)
 	}
 	if len(cc.Items) > 1 {
 		return "[Multiple Items]"
@@ -176,13 +192,6 @@ func (cc CharacterContract) TypeDisplay() string {
 	return caser.String(cc.Type.String())
 }
 
-func (cc CharacterContract) DateExpiredEffective() time.Time {
-	if cc.DateAccepted.IsEmpty() {
-		return cc.DateExpired
-	}
-	return cc.DateAccepted.ValueOrZero().Add(time.Duration(cc.DaysToComplete) * time.Hour * 24)
-}
-
 func (cc CharacterContract) IsExpired() bool {
-	return cc.DateExpiredEffective().Before(time.Now())
+	return cc.DateExpired.Before(time.Now())
 }
