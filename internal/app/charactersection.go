@@ -19,17 +19,18 @@ const (
 	SectionAttributes         CharacterSection = "attributes"
 	SectionContracts          CharacterSection = "contracts"
 	SectionImplants           CharacterSection = "implants"
+	SectionIndustryJobs       CharacterSection = "industry_jobs"
 	SectionJumpClones         CharacterSection = "jump_clones"
 	SectionLocation           CharacterSection = "location"
-	SectionMailLists          CharacterSection = "mail_lists"
 	SectionMailLabels         CharacterSection = "mail_labels"
+	SectionMailLists          CharacterSection = "mail_lists"
 	SectionMails              CharacterSection = "mails"
 	SectionNotifications      CharacterSection = "notifications"
 	SectionOnline             CharacterSection = "online"
 	SectionPlanets            CharacterSection = "planets"
 	SectionShip               CharacterSection = "ship"
-	SectionSkills             CharacterSection = "skills"
 	SectionSkillqueue         CharacterSection = "skillqueue"
+	SectionSkills             CharacterSection = "skills"
 	SectionWalletBalance      CharacterSection = "wallet_balance"
 	SectionWalletJournal      CharacterSection = "wallet_journal"
 	SectionWalletTransactions CharacterSection = "wallet_transactions"
@@ -40,6 +41,7 @@ var CharacterSections = []CharacterSection{
 	SectionAttributes,
 	SectionContracts,
 	SectionImplants,
+	SectionIndustryJobs,
 	SectionJumpClones,
 	SectionLocation,
 	SectionMailLabels,
@@ -49,8 +51,8 @@ var CharacterSections = []CharacterSection{
 	SectionOnline,
 	SectionPlanets,
 	SectionShip,
-	SectionSkills,
 	SectionSkillqueue,
+	SectionSkills,
 	SectionWalletBalance,
 	SectionWalletJournal,
 	SectionWalletTransactions,
@@ -61,6 +63,7 @@ var characterSectionTimeouts = map[CharacterSection]time.Duration{
 	SectionAttributes:         120 * time.Second,
 	SectionContracts:          300 * time.Second,
 	SectionImplants:           120 * time.Second,
+	SectionIndustryJobs:       300 * time.Second,
 	SectionJumpClones:         120 * time.Second,
 	SectionLocation:           300 * time.Second, // minimum 5 seconds
 	SectionMailLabels:         60 * time.Second,  // minimum 30 seconds

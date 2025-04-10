@@ -49,3 +49,5 @@ CREATE INDEX character_industry_jobs_idx6 ON character_industry_jobs (output_loc
 CREATE INDEX character_industry_jobs_idx7 ON character_industry_jobs (product_type_id);
 
 CREATE INDEX character_industry_jobs_idx8 ON character_industry_jobs (station_id);
+
+CREATE INDEX character_industry_jobs_idx9 ON character_industry_jobs (start_date DESC);

@@ -92,6 +92,97 @@ func (q *Queries) GetCharacterIndustryJob(ctx context.Context, arg GetCharacterI
 	return i, err
 }
 
+const listAllCharacterIndustryJobs = `-- name: ListAllCharacterIndustryJobs :many
+SELECT
+    cij.id, cij.activity_id, cij.blueprint_id, cij.blueprint_location_id, cij.blueprint_type_id, cij.character_id, cij.completed_character_id, cij.completed_date, cij.cost, cij.duration, cij.end_date, cij.facility_id, cij.installer_id, cij.job_id, cij.licensed_runs, cij.output_location_id, cij.pause_date, cij.probability, cij.product_type_id, cij.runs, cij.start_date, cij.station_id, cij.status, cij.successful_runs,
+    ic.id, ic.category, ic.name,
+    bl.name AS blueprint_location_name,
+    bt.name AS blueprint_type_name,
+    cc.name AS completed_character_name,
+    ol.name AS output_location_name,
+    pt.name AS product_type_name,
+    sl.name AS station_name
+FROM
+    character_industry_jobs cij
+    JOIN eve_locations bl ON bl.id = cij.blueprint_location_id
+    JOIN eve_types bt ON bt.id = cij.blueprint_type_id
+    JOIN eve_entities ic ON ic.id = cij.installer_id
+    JOIN eve_locations ol ON ol.id = cij.output_location_id
+    JOIN eve_locations sl ON sl.id = cij.station_id
+    LEFT JOIN eve_entities cc ON cc.id = cij.completed_character_id
+    LEFT JOIN eve_types pt ON pt.id = cij.product_type_id
+ORDER BY
+    start_date DESC
+`
+
+type ListAllCharacterIndustryJobsRow struct {
+	CharacterIndustryJob   CharacterIndustryJob
+	EveEntity              EveEntity
+	BlueprintLocationName  string
+	BlueprintTypeName      string
+	CompletedCharacterName sql.NullString
+	OutputLocationName     string
+	ProductTypeName        sql.NullString
+	StationName            string
+}
+
+func (q *Queries) ListAllCharacterIndustryJobs(ctx context.Context) ([]ListAllCharacterIndustryJobsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllCharacterIndustryJobs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllCharacterIndustryJobsRow
+	for rows.Next() {
+		var i ListAllCharacterIndustryJobsRow
+		if err := rows.Scan(
+			&i.CharacterIndustryJob.ID,
+			&i.CharacterIndustryJob.ActivityID,
+			&i.CharacterIndustryJob.BlueprintID,
+			&i.CharacterIndustryJob.BlueprintLocationID,
+			&i.CharacterIndustryJob.BlueprintTypeID,
+			&i.CharacterIndustryJob.CharacterID,
+			&i.CharacterIndustryJob.CompletedCharacterID,
+			&i.CharacterIndustryJob.CompletedDate,
+			&i.CharacterIndustryJob.Cost,
+			&i.CharacterIndustryJob.Duration,
+			&i.CharacterIndustryJob.EndDate,
+			&i.CharacterIndustryJob.FacilityID,
+			&i.CharacterIndustryJob.InstallerID,
+			&i.CharacterIndustryJob.JobID,
+			&i.CharacterIndustryJob.LicensedRuns,
+			&i.CharacterIndustryJob.OutputLocationID,
+			&i.CharacterIndustryJob.PauseDate,
+			&i.CharacterIndustryJob.Probability,
+			&i.CharacterIndustryJob.ProductTypeID,
+			&i.CharacterIndustryJob.Runs,
+			&i.CharacterIndustryJob.StartDate,
+			&i.CharacterIndustryJob.StationID,
+			&i.CharacterIndustryJob.Status,
+			&i.CharacterIndustryJob.SuccessfulRuns,
+			&i.EveEntity.ID,
+			&i.EveEntity.Category,
+			&i.EveEntity.Name,
+			&i.BlueprintLocationName,
+			&i.BlueprintTypeName,
+			&i.CompletedCharacterName,
+			&i.OutputLocationName,
+			&i.ProductTypeName,
+			&i.StationName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterIndustryJobs = `-- name: ListCharacterIndustryJobs :many
 SELECT
     cij.id, cij.activity_id, cij.blueprint_id, cij.blueprint_location_id, cij.blueprint_type_id, cij.character_id, cij.completed_character_id, cij.completed_date, cij.cost, cij.duration, cij.end_date, cij.facility_id, cij.installer_id, cij.job_id, cij.licensed_runs, cij.output_location_id, cij.pause_date, cij.probability, cij.product_type_id, cij.runs, cij.start_date, cij.station_id, cij.status, cij.successful_runs,
@@ -113,6 +204,8 @@ FROM
     LEFT JOIN eve_types pt ON pt.id = cij.product_type_id
 WHERE
     character_id = ?
+ORDER BY
+    start_date DESC
 `
 
 type ListCharacterIndustryJobsRow struct {
@@ -241,6 +334,7 @@ SET
     completed_character_id = ?6,
     completed_date = ?7,
     pause_date = ?16,
+    status = ?22,
     successful_runs = ?23
 WHERE
     character_id = ?5

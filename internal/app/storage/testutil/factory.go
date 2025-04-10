@@ -398,7 +398,7 @@ func (f Factory) CreateCharacterIndustryJob(args ...storage.UpdateOrCreateCharac
 		arg.BlueprintTypeID = x.ID
 	}
 	if arg.Duration == 0 {
-		arg.Duration = rand.IntN(10_000)
+		arg.Duration = rand.Int32N(10_000)
 	}
 	if arg.FacilityID == 0 {
 		arg.FacilityID = rand.Int64N(10_000_000)

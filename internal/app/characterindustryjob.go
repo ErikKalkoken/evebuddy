@@ -6,7 +6,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-type IndustryActivity uint
+type IndustryActivity int32
 
 const (
 	Undefined                  IndustryActivity = 0

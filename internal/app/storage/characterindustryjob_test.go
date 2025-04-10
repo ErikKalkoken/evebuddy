@@ -135,7 +135,66 @@ func TestCharacterIndustryJob(t *testing.T) {
 			}
 		}
 	})
-	t.Run("can list jobs for character", func(t *testing.T) {
+	t.Run("can update existing", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		now := time.Now().UTC()
+		blueprintLocation := factory.CreateEveLocationStructure()
+		blueprintType := factory.CreateEveType()
+		endDate := now.Add(12 * time.Hour)
+		installer := factory.CreateEveEntityCharacter()
+		outputLocation := factory.CreateEveLocationStructure()
+		startDate := now.Add(-6 * time.Hour)
+		station := factory.CreateEveLocationStructure()
+		arg := storage.UpdateOrCreateCharacterIndustryJobParams{
+			ActivityID:          int32(app.Manufacturing),
+			BlueprintID:         42,
+			BlueprintLocationID: blueprintLocation.ID,
+			BlueprintTypeID:     blueprintType.ID,
+			CharacterID:         c.ID,
+			Duration:            123,
+			EndDate:             endDate,
+			FacilityID:          53,
+			InstallerID:         installer.ID,
+			JobID:               1,
+			OutputLocationID:    outputLocation.ID,
+			Runs:                7,
+			StartDate:           startDate,
+			Status:              app.JobActive,
+			StationID:           station.ID,
+		}
+		if err := st.UpdateOrCreateCharacterIndustryJob(ctx, arg); err != nil {
+			t.Fatal(err)
+		}
+		arg = storage.UpdateOrCreateCharacterIndustryJobParams{
+			ActivityID:          int32(app.Manufacturing),
+			BlueprintID:         42,
+			BlueprintLocationID: blueprintLocation.ID,
+			BlueprintTypeID:     blueprintType.ID,
+			CharacterID:         c.ID,
+			Duration:            123,
+			EndDate:             endDate,
+			FacilityID:          53,
+			InstallerID:         installer.ID,
+			JobID:               1,
+			OutputLocationID:    outputLocation.ID,
+			Runs:                7,
+			StartDate:           startDate,
+			Status:              app.JobDelivered,
+			StationID:           station.ID,
+		}
+		// when
+		err := st.UpdateOrCreateCharacterIndustryJob(ctx, arg)
+		// then
+		if assert.NoError(t, err) {
+			o, err := st.GetCharacterIndustryJob(ctx, arg.CharacterID, arg.JobID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, app.JobDelivered, o.Status)
+			}
+		}
+	})
+	t.Run("can list jobs for a character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
@@ -151,6 +210,24 @@ func TestCharacterIndustryJob(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, x, 2)
+		}
+	})
+	t.Run("can list jobs for all characters", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+		})
+		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+		})
+		factory.CreateCharacterIndustryJob()
+		// when
+		x, err := st.ListAllCharacterIndustryJob(ctx)
+		// then
+		if assert.NoError(t, err) {
+			assert.Len(t, x, 3)
 		}
 	})
 }

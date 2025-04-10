@@ -52,6 +52,27 @@ func (st *Storage) GetCharacterIndustryJob(ctx context.Context, characterID, job
 	return o2, err
 }
 
+func (st *Storage) ListAllCharacterIndustryJob(ctx context.Context) ([]*app.CharacterIndustryJob, error) {
+	rows, err := st.qRO.ListAllCharacterIndustryJobs(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list industry jobs for all characters: %w", err)
+	}
+	oo := make([]*app.CharacterIndustryJob, len(rows))
+	for i, r := range rows {
+		oo[i] = characterIndustryJobFromDBModel(
+			r.CharacterIndustryJob,
+			r.EveEntity,
+			r.BlueprintLocationName,
+			r.BlueprintTypeName,
+			r.CompletedCharacterName,
+			r.OutputLocationName,
+			r.ProductTypeName,
+			r.StationName,
+		)
+	}
+	return oo, nil
+}
+
 func (st *Storage) ListCharacterIndustryJob(ctx context.Context, characterID int32) ([]*app.CharacterIndustryJob, error) {
 	rows, err := st.qRO.ListCharacterIndustryJobs(ctx, int64(characterID))
 	if err != nil {
@@ -143,7 +164,7 @@ type UpdateOrCreateCharacterIndustryJobParams struct {
 	CompletedCharacterID int32     // optional
 	CompletedDate        time.Time // optional
 	Cost                 float64   // optional
-	Duration             int
+	Duration             int32
 	EndDate              time.Time
 	FacilityID           int64
 	InstallerID          int32
