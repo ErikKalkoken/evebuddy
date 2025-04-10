@@ -38,11 +38,18 @@ func NewCharacterWalletTransaction(u *BaseUI) *CharacterWalletTransaction {
 		case 0:
 			return iwidget.NewRichTextSegmentFromText(r.Date.Format(app.DateTimeFormat))
 		case 1:
-			return iwidget.NewRichTextSegmentFromText(humanize.Comma(int64(r.Quantity)))
+			return iwidget.NewRichTextSegmentFromText(humanize.Comma(int64(r.Quantity)),
+				widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+				})
 		case 2:
 			return iwidget.NewRichTextSegmentFromText(r.EveType.Name)
 		case 3:
-			return iwidget.NewRichTextSegmentFromText(humanize.FormatFloat(app.FloatFormat, r.UnitPrice))
+			return iwidget.NewRichTextSegmentFromText(
+				humanize.FormatFloat(app.FloatFormat, r.UnitPrice),
+				widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+				})
 		case 4:
 			total := r.UnitPrice * float64(r.Quantity)
 			if r.IsBuy {
@@ -60,6 +67,7 @@ func NewCharacterWalletTransaction(u *BaseUI) *CharacterWalletTransaction {
 			}
 			return iwidget.NewRichTextSegmentFromText(text, widget.RichTextStyle{
 				ColorName: color,
+				Alignment: fyne.TextAlignTrailing,
 			})
 		case 5:
 			return iwidget.NewRichTextSegmentFromText(r.Client.Name)
