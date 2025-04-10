@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
-	"time"
+	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -17,22 +17,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
-
-type contractEntry struct {
-	from     string
-	info     string
-	issued   time.Time
-	accepted optional.Optional[time.Time]
-	name     string
-	expired  time.Time
-	status   string
-	to       string
-	type_    string
-}
 
 type Contracts struct {
 	widget.BaseWidget
@@ -109,16 +96,7 @@ func NewContracts(u *BaseUI) *Contracts {
 	}
 	if a.u.IsDesktop() {
 		a.body = iwidget.MakeDataTableForDesktop2(headers, &a.contracts, makeCell, func(column int, r *app.CharacterContract) {
-			switch column {
-			case 0:
-				a.showContract(r)
-			case 2:
-				a.u.ShowEveEntityInfoWindow(r.IssuerEffective())
-			case 3:
-				if r.Assignee != nil {
-					a.u.ShowEveEntityInfoWindow(r.Assignee)
-				}
-			}
+			a.showContract(r)
 		})
 	} else {
 		a.body = iwidget.MakeDataTableForMobile2(headers, &a.contracts, makeCell, a.showContract)
@@ -164,7 +142,6 @@ func (a *Contracts) updateEntries() error {
 		a.contracts = make([]*app.CharacterContract, 0)
 		return nil
 	}
-	var err error
 	oo, err := a.u.CharacterService().ListAllContracts(context.Background())
 	if err != nil {
 		return err
@@ -212,65 +189,56 @@ func (a *Contracts) showContract(c *app.CharacterContract) {
 		}
 		return t
 	}
-	makeBaseInfo := func(c *app.CharacterContract) fyne.CanvasObject {
-		f := widget.NewForm()
-		if a.u.IsMobile() {
-			f.Orientation = widget.Vertical
-		}
-		f.Append("Info by issuer", widget.NewLabel(c.TitleDisplay()))
-		f.Append("Type", widget.NewLabel(c.TypeDisplay()))
-		f.Append("Issued By", makeEntity(c.IssuerEffective()))
-		availability := container.NewHBox(widget.NewLabel(c.AvailabilityDisplay()))
-		if c.Assignee != nil {
-			availability.Add(makeEntity(c.Assignee))
-		}
-		f.Append("Availability", availability)
-		if c.Type == app.ContractTypeCourier {
-			f.Append("Contractor", widget.NewLabel(c.ContractorDisplay()))
-		}
-		f.Append("Status", widget.NewRichText(c.StatusDisplayRichText()...))
-		f.Append("Location", makeLocation(c.StartLocation))
-		if c.Type == app.ContractTypeCourier || c.Type == app.ContractTypeItemExchange {
-			f.Append("Date Issued", widget.NewLabel(c.DateIssued.Format(app.DateTimeFormat)))
-			f.Append("Expiration Date", widget.NewLabel(makeExpiresString(c)))
-		}
-		return f
+
+	availability := container.NewHBox(widget.NewLabel(c.AvailabilityDisplay()))
+	if c.Assignee != nil {
+		availability.Add(makeEntity(c.Assignee))
 	}
-	makePaymentInfo := func(c *app.CharacterContract) fyne.CanvasObject {
-		f := widget.NewForm()
-		if a.u.IsMobile() {
-			f.Orientation = widget.Vertical
-		}
-		if c.Price > 0 {
-			x := widget.NewLabel(makeISKString(c.Price))
-			x.Importance = widget.DangerImportance
-			f.Append("Buyer Will Pay", x)
-		} else {
-			x := widget.NewLabel(makeISKString(c.Reward))
-			x.Importance = widget.SuccessImportance
-			f.Append("Buyer Will Get", x)
-		}
-		return f
+	fi := []*widget.FormItem{
+		widget.NewFormItem("Info by issuer", widget.NewLabel(c.TitleDisplay())),
+		widget.NewFormItem("Type", widget.NewLabel(c.TypeDisplay())),
+		widget.NewFormItem("Issued By", makeEntity(c.IssuerEffective())),
+		widget.NewFormItem("Availability", availability),
 	}
-	makeCourierInfo := func(c *app.CharacterContract) fyne.CanvasObject {
+	if a.u.IsDeveloperMode() {
+		fi = append(fi, widget.NewFormItem("Contract ID", a.u.makeCopyToClipbardLabel(fmt.Sprint(c.ContractID))))
+	}
+	if c.Type == app.ContractTypeCourier {
+		fi = append(fi, widget.NewFormItem("Contractor", widget.NewLabel(c.ContractorDisplay())))
+	}
+	fi = append(fi, widget.NewFormItem("Status", widget.NewRichText(c.StatusDisplayRichText()...)))
+	fi = append(fi, widget.NewFormItem("Location", makeLocation(c.StartLocation)))
+	if c.Type == app.ContractTypeCourier || c.Type == app.ContractTypeItemExchange {
+		fi = append(fi, widget.NewFormItem("Date Issued", widget.NewLabel(c.DateIssued.Format(app.DateTimeFormat))))
+		fi = append(fi, widget.NewFormItem("Expiration Date", widget.NewLabel(makeExpiresString(c))))
+	}
+
+	switch c.Type {
+	case app.ContractTypeCourier:
 		var collateral string
 		if c.Collateral == 0 {
 			collateral = "(None)"
 		} else {
 			collateral = makeISKString(c.Collateral)
 		}
-		f := &widget.Form{
-			Items: []*widget.FormItem{
-				{Text: "Complete In", Widget: widget.NewLabel(fmt.Sprintf("%d days", c.DaysToComplete))},
-				{Text: "Volume", Widget: widget.NewLabel(fmt.Sprintf("%f m3", c.Volume))},
-				{Text: "Reward", Widget: widget.NewLabel(makeISKString(c.Reward))},
-				{Text: "Collateral", Widget: widget.NewLabel(collateral)},
-				{Text: "Destination", Widget: makeLocation(c.EndLocation)},
-			},
+		fi = slices.Concat(fi, []*widget.FormItem{
+			{Text: "Complete In", Widget: widget.NewLabel(fmt.Sprintf("%d days", c.DaysToComplete))},
+			{Text: "Volume", Widget: widget.NewLabel(fmt.Sprintf("%f m3", c.Volume))},
+			{Text: "Reward", Widget: widget.NewLabel(makeISKString(c.Reward))},
+			{Text: "Collateral", Widget: widget.NewLabel(collateral)},
+			{Text: "Destination", Widget: makeLocation(c.EndLocation)},
+		})
+	case app.ContractTypeItemExchange:
+		if c.Price > 0 {
+			x := widget.NewLabel(makeISKString(c.Price))
+			x.Importance = widget.DangerImportance
+			fi = append(fi, widget.NewFormItem("Buyer Will Pay", x))
+		} else {
+			x := widget.NewLabel(makeISKString(c.Reward))
+			x.Importance = widget.SuccessImportance
+			fi = append(fi, widget.NewFormItem("Buyer Will Get", x))
 		}
-		return f
-	}
-	makeBidInfo := func(c *app.CharacterContract) fyne.CanvasObject {
+	case app.ContractTypeAuction:
 		ctx := context.TODO()
 		total, err := a.u.CharacterService().CountContractBids(ctx, c.ID)
 		if err != nil {
@@ -290,16 +258,14 @@ func (a *Contracts) showContract(c *app.CharacterContract) {
 			}
 			currentBid = fmt.Sprintf("%s (%d bids so far)", makeISKString(float64(top.Amount)), total)
 		}
-		f := &widget.Form{
-			Items: []*widget.FormItem{
-				{Text: "Starting Bid", Widget: widget.NewLabel(makeISKString(c.Price))},
-				{Text: "Buyout Price", Widget: widget.NewLabel(makeISKString(c.Buyout))},
-				{Text: "Current Bid", Widget: widget.NewLabel(currentBid)},
-				{Text: "Expires", Widget: widget.NewLabel(makeExpiresString(c))},
-			},
-		}
-		return f
+		fi = slices.Concat(fi, []*widget.FormItem{
+			{Text: "Starting Bid", Widget: widget.NewLabel(makeISKString(c.Price))},
+			{Text: "Buyout Price", Widget: widget.NewLabel(makeISKString(c.Buyout))},
+			{Text: "Current Bid", Widget: widget.NewLabel(currentBid)},
+			{Text: "Expires", Widget: widget.NewLabel(makeExpiresString(c))},
+		})
 	}
+
 	makeItemsInfo := func(c *app.CharacterContract) fyne.CanvasObject {
 		vb := container.NewVBox()
 		items, err := a.u.CharacterService().ListContractItems(context.TODO(), c.ID)
@@ -347,31 +313,14 @@ func (a *Contracts) showContract(c *app.CharacterContract) {
 		return vb
 	}
 
-	// construct window content
-	main := container.NewVBox(makeBaseInfo(c), widget.NewSeparator())
-	switch c.Type {
-	case app.ContractTypeCourier:
-		main.Add(makeCourierInfo(c))
-	case app.ContractTypeItemExchange:
-		main.Add(makePaymentInfo(c))
-		main.Add(widget.NewSeparator())
-		main.Add(makeItemsInfo(c))
-	case app.ContractTypeAuction:
-		main.Add(makeBidInfo(c))
-		main.Add(widget.NewSeparator())
-		main.Add(makeItemsInfo(c))
-	}
-	if a.u.IsDeveloperMode() {
-		main.Add(widget.NewSeparator())
-		main.Add(&widget.Form{
-			Items: []*widget.FormItem{
-				{
-					Text:   "Contract ID",
-					Widget: a.u.makeCopyToClipbardLabel(fmt.Sprint(c.ContractID)),
-				},
-			}})
-	}
 	subTitle := fmt.Sprintf("%s (%s)", c.NameDisplay(), c.TypeDisplay())
+	f := widget.NewForm(fi...)
+	f.Orientation = widget.Adaptive
+	main := container.NewVBox(f)
+	if c.Type == app.ContractTypeItemExchange || c.Type == app.ContractTypeAuction {
+		main.Add(widget.NewSeparator())
+		main.Add(makeItemsInfo(c))
+	}
 	w = a.u.makeDetailWindow("Contract", subTitle, main)
 	w.Show()
 }
