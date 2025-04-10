@@ -9,6 +9,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
@@ -40,8 +41,7 @@ func NewIndustryJobs(u *BaseUI) *IndustryJobs {
 	a.ExtendBaseWidget(a)
 	headers := []iwidget.HeaderDef{
 		{Text: "Blueprint", Width: 250},
-		{Text: "Status", Width: 100},
-		{Text: "Remain", Width: 100, Refresh: true},
+		{Text: "Status", Width: 100, Refresh: true},
 		{Text: "Runs", Width: 50},
 		{Text: "Activity", Width: 200},
 		{Text: "End date", Width: columnWidthDateTime},
@@ -54,27 +54,24 @@ func NewIndustryJobs(u *BaseUI) *IndustryJobs {
 		case 0:
 			return iwidget.NewRichTextSegmentFromText(r.BlueprintType.Name)
 		case 1:
+			if status == app.JobActive {
+				return iwidget.NewRichTextSegmentFromText(ihumanize.Duration(time.Until(r.EndDate)), widget.RichTextStyle{
+					ColorName: theme.ColorNamePrimary,
+				})
+			}
 			return r.StatusRichText()
 		case 2:
-			var s string
-			if status == app.JobActive {
-				s = ihumanize.Duration(time.Until(r.EndDate))
-			} else {
-				s = ""
-			}
-			return iwidget.NewRichTextSegmentFromText(s)
-		case 3:
 			return iwidget.NewRichTextSegmentFromText(
 				ihumanize.Comma(r.Runs),
 				widget.RichTextStyle{Alignment: fyne.TextAlignTrailing},
 			)
-		case 4:
+		case 3:
 			return iwidget.NewRichTextSegmentFromText(r.Activity.Display())
-		case 5:
+		case 4:
 			return iwidget.NewRichTextSegmentFromText(r.EndDate.Format(app.DateTimeFormat))
-		case 6:
+		case 5:
 			return r.Facility.DisplayRichText()
-		case 7:
+		case 6:
 			return iwidget.NewRichTextSegmentFromText(r.Installer.Name)
 		}
 		return iwidget.NewRichTextSegmentFromText("?")

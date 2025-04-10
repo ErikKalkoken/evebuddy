@@ -227,7 +227,7 @@ func eveEntityCategoryFromDBModel(c string) app.EveEntityCategory {
 	}
 	c2, ok := categoryMap[c]
 	if !ok {
-		panic(fmt.Errorf("can not map invalid category: %s", c))
+		return app.EveEntityUnknown
 	}
 	return c2
 }
@@ -248,7 +248,7 @@ func eveEntityDBModelCategoryFromCategory(c app.EveEntityCategory) string {
 	}
 	c2, ok := categoryMap[c]
 	if !ok {
-		panic(fmt.Errorf("can not map invalid category: %v", c))
+		return eveEntityUnknown
 	}
 	return c2
 }

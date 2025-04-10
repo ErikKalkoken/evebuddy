@@ -25,7 +25,7 @@ func (s *EveNotificationService) renderSov(ctx context.Context, type_ Type, text
 	case SovStructureReinforced:
 		return s.renderSovStructureReinforced(ctx, text)
 	}
-	panic("Notification type not implemented: " + type_)
+	return optional.Optional[string]{}, optional.Optional[string]{}, fmt.Errorf("render sov: unknown notification type: %s", type_)
 }
 
 func (s *EveNotificationService) renderEntosisCaptureStarted(ctx context.Context, text string) (optional.Optional[string], optional.Optional[string], error) {
