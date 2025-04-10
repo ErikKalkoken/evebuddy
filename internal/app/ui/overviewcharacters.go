@@ -51,7 +51,7 @@ func NewOverviewCharacters(u *BaseUI) *OverviewCharacters {
 	}
 	a.ExtendBaseWidget(a)
 	headers := []iwidget.HeaderDef{
-		{Text: "Character", Width: characterColumnWidth},
+		{Text: "Character", Width: columnWidthCharacter},
 		{Text: "Corporation", Width: 250},
 		{Text: "Alliance", Width: 250},
 		{Text: "Sec.", Width: 50},
@@ -59,7 +59,7 @@ func NewOverviewCharacters(u *BaseUI) *OverviewCharacters {
 		{Text: "Wallet", Width: 100},
 		{Text: "Assets", Width: 100},
 		{Text: "Last Login", Width: 100},
-		{Text: "Home", Width: locationColumnWidth},
+		{Text: "Home", Width: columnWidthLocation},
 		{Text: "Age", Width: 100},
 	}
 	makeCell := func(col int, c overviewCharacter) []widget.RichTextSegment {

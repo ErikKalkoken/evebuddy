@@ -89,3 +89,12 @@ type CharacterIndustryJob struct {
 	Status             IndustryJobStatus
 	SuccessfulRuns     optional.Optional[int32]
 }
+
+// StatusCorrected returns a corrected status.
+func (j CharacterIndustryJob) StatusCorrected() IndustryJobStatus {
+	if j.Status == JobActive && j.EndDate.Before(time.Now()) {
+		// Workaroud for known bug: https://github.com/esi/esi-issues/issues/752
+		return JobReady
+	}
+	return j.Status
+}

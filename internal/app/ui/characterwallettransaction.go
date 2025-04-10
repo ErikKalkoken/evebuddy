@@ -27,6 +27,15 @@ type CharacterWalletTransaction struct {
 }
 
 func NewCharacterWalletTransaction(u *BaseUI) *CharacterWalletTransaction {
+	headers := []iwidget.HeaderDef{
+		{Text: "Date", Width: 150},
+		{Text: "Quantity", Width: 130},
+		{Text: "Type", Width: 200},
+		{Text: "Unit Price", Width: 200},
+		{Text: "Total", Width: 200},
+		{Text: "Client", Width: 250},
+		{Text: "Where", Width: 350},
+	}
 	a := &CharacterWalletTransaction{
 		top:  appwidget.MakeTopLabel(),
 		rows: make([]*app.CharacterWalletTransaction, 0),
@@ -85,15 +94,6 @@ func NewCharacterWalletTransaction(u *BaseUI) *CharacterWalletTransaction {
 			}
 		}
 		return iwidget.NewRichTextSegmentFromText("?")
-	}
-	headers := []iwidget.HeaderDef{
-		{Text: "Date", Width: 150},
-		{Text: "Quantity", Width: 130},
-		{Text: "Type", Width: 200},
-		{Text: "Unit Price", Width: 200},
-		{Text: "Total", Width: 200},
-		{Text: "Client", Width: 250},
-		{Text: "Where", Width: 350},
 	}
 	if a.u.IsDesktop() {
 		a.body = iwidget.MakeDataTableForDesktop2(headers, &a.rows, makeCell, func(column int, r *app.CharacterWalletTransaction) {

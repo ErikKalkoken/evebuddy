@@ -4,17 +4,19 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
+
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/dustin/go-humanize"
 )
 
-type OverviewIndustryJobs struct {
+type industryJobs struct {
 	widget.BaseWidget
 
 	body fyne.CanvasObject
@@ -23,8 +25,8 @@ type OverviewIndustryJobs struct {
 	u    *BaseUI
 }
 
-func NewOverviewIndustryJobs(u *BaseUI) *OverviewIndustryJobs {
-	a := &OverviewIndustryJobs{
+func newIndustryJobs(u *BaseUI) *industryJobs {
+	a := &industryJobs{
 		jobs: make([]*app.CharacterIndustryJob, 0),
 		top:  appwidget.MakeTopLabel(),
 		u:    u,
@@ -36,19 +38,26 @@ func NewOverviewIndustryJobs(u *BaseUI) *OverviewIndustryJobs {
 		{Text: "Remain", Width: 100},
 		{Text: "Runs", Width: 50},
 		{Text: "Activity", Width: 150},
-		{Text: "Facility", Width: 300},
-		{Text: "Install date", Width: 100},
-		{Text: "End date", Width: 100},
-		{Text: "Installer", Width: characterColumnWidth},
+		{Text: "Facility", Width: columnWidthLocation},
+		{Text: "Install date", Width: columnWidthDateTime},
+		{Text: "End date", Width: columnWidthDateTime},
+		{Text: "Installer", Width: columnWidthCharacter},
 	}
 	makeCell := func(col int, r *app.CharacterIndustryJob) []widget.RichTextSegment {
+		status := r.StatusCorrected()
 		switch col {
 		case 0:
 			return iwidget.NewRichTextSegmentFromText(r.BlueprintType.Name)
 		case 1:
-			return iwidget.NewRichTextSegmentFromText(r.Status.String())
+			return iwidget.NewRichTextSegmentFromText(status.String())
 		case 2:
-			return iwidget.NewRichTextSegmentFromText(humanize.Time(r.EndDate))
+			var s string
+			if status == app.JobActive {
+				s = humanize.Duration(time.Until(r.EndDate))
+			} else {
+				s = ""
+			}
+			return iwidget.NewRichTextSegmentFromText(s)
 		case 3:
 			return iwidget.NewRichTextSegmentFromText(fmt.Sprint(r.Runs))
 		case 4:
@@ -56,9 +65,9 @@ func NewOverviewIndustryJobs(u *BaseUI) *OverviewIndustryJobs {
 		case 5:
 			return iwidget.NewRichTextSegmentFromText(r.Facility.Name)
 		case 6:
-			return iwidget.NewRichTextSegmentFromText(r.StartDate.Format(app.DateFormat))
+			return iwidget.NewRichTextSegmentFromText(r.StartDate.Format(app.DateTimeFormat))
 		case 7:
-			return iwidget.NewRichTextSegmentFromText(r.EndDate.Format(app.DateFormat))
+			return iwidget.NewRichTextSegmentFromText(r.EndDate.Format(app.DateTimeFormat))
 		case 8:
 			return iwidget.NewRichTextSegmentFromText(r.Installer.Name)
 		}
@@ -81,12 +90,12 @@ func NewOverviewIndustryJobs(u *BaseUI) *OverviewIndustryJobs {
 	return a
 }
 
-func (a *OverviewIndustryJobs) CreateRenderer() fyne.WidgetRenderer {
+func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(a.top, nil, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *OverviewIndustryJobs) Update() {
+func (a *industryJobs) Update() {
 	var s string
 	var i widget.Importance
 	if err := a.updateEntries(); err != nil {
@@ -102,7 +111,7 @@ func (a *OverviewIndustryJobs) Update() {
 	a.body.Refresh()
 }
 
-func (a *OverviewIndustryJobs) updateEntries() error {
+func (a *industryJobs) updateEntries() error {
 	jobs, err := a.u.CharacterService().ListAllCharacterIndustryJob(context.TODO())
 	if err != nil {
 		return err

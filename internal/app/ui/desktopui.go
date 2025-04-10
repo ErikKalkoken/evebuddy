@@ -253,8 +253,8 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 		overviewColonies,
 		iwidget.NewNavPage(
 			"Industry",
-			theme.NewThemedResource(icons.ToolsSvg),
-			makePageWithTitle("Industry", u.overviewIndustryJobs),
+			theme.NewThemedResource(icons.FactorySvg),
+			makePageWithTitle("Industry", u.industryJobs),
 		),
 		iwidget.NewNavPage(
 			"Locations",

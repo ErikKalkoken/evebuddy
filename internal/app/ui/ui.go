@@ -40,9 +40,10 @@ const (
 )
 
 const (
-	characterColumnWidth = 200
-	locationColumnWidth  = 350
-	regionColumnWidth    = 150
+	columnWidthCharacter = 200
+	columnWidthDateTime  = 150
+	columnWidthLocation  = 350
+	columnWidthRegion    = 150
 )
 
 // ticker
@@ -94,7 +95,7 @@ type BaseUI struct {
 	overviewLocations          *OverviewLocations
 	overviewTraining           *OverviewTraining
 	overviewWealth             *OverviewWealth
-	overviewIndustryJobs       *OverviewIndustryJobs
+	industryJobs               *industryJobs
 	userSettings               *UserSettings
 
 	app              fyne.App
@@ -179,7 +180,7 @@ func NewBaseUI(
 	u.overviewAssets = NewOverviewAssets(u)
 	u.overviewClones = NewOverviewClones(u)
 	u.overviewColonies = NewOverviewColonies(u)
-	u.overviewIndustryJobs = NewOverviewIndustryJobs(u)
+	u.industryJobs = newIndustryJobs(u)
 	u.overviewLocations = NewOverviewLocations(u)
 	u.overviewTraining = NewOverviewTraining(u)
 	u.overviewWealth = NewOverviewWealth(u)
@@ -452,7 +453,7 @@ func (u *BaseUI) UpdateCrossPages() {
 		"assetSearch": u.overviewAssets.Update,
 		"cloneSeach":  u.overviewClones.Update,
 		"colony":      u.overviewColonies.Update,
-		"industryJob": u.overviewIndustryJobs.Update,
+		"industryJob": u.industryJobs.Update,
 		"locations":   u.overviewLocations.Update,
 		"overview":    u.overviewCharacters.Update,
 		"training":    u.overviewTraining.Update,
@@ -795,7 +796,7 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionIndustryJobs:
 		if needsRefresh {
-			u.overviewIndustryJobs.Update()
+			u.industryJobs.Update()
 		}
 	case app.SectionLocation, app.SectionOnline, app.SectionShip:
 		if needsRefresh {
