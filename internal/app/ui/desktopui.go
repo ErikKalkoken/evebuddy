@@ -242,6 +242,21 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 		}
 		collectiveNav.SetItemBadge(overviewColonies, s)
 	}
+
+	industryJobsActive := container.NewTabItem("Active", u.industryJobsActive)
+	industryTabs := container.NewAppTabs(
+		industryJobsActive,
+		container.NewTabItem("All", u.industryJobsAll),
+	)
+	u.industryJobsActive.OnUpdate = func(count int) {
+		s := "Active"
+		if count > 0 {
+			s += fmt.Sprintf(" (%d)", count)
+		}
+		industryJobsActive.Text = s
+		industryTabs.Refresh()
+	}
+
 	collectiveNav = iwidget.NewNavDrawer("All Characters",
 		overview,
 		allAssets,
@@ -254,7 +269,7 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 		iwidget.NewNavPage(
 			"Industry",
 			theme.NewThemedResource(icons.FactorySvg),
-			makePageWithTitle("Industry", u.industryJobs),
+			makePageWithTitle("Industry", industryTabs),
 		),
 		iwidget.NewNavPage(
 			"Locations",

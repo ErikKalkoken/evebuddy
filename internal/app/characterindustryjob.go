@@ -3,7 +3,11 @@ package app
 import (
 	"time"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/theme"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // IndustryActivity represents the activity type of an industry job.
@@ -20,7 +24,7 @@ const (
 	Reactions                  IndustryActivity = 11
 )
 
-func (ia IndustryActivity) String() string {
+func (a IndustryActivity) String() string {
 	m := map[IndustryActivity]string{
 		None:                       "none",
 		Manufacturing:              "manufacturing",
@@ -30,11 +34,16 @@ func (ia IndustryActivity) String() string {
 		Invention:                  "invention",
 		Reactions:                  "reactions",
 	}
-	s, ok := m[ia]
+	s, ok := m[a]
 	if !ok {
 		return "?"
 	}
 	return s
+}
+
+func (a IndustryActivity) Display() string {
+	titler := cases.Title(language.English)
+	return titler.String(a.String())
 }
 
 type IndustryJobStatus uint
@@ -52,10 +61,10 @@ const (
 func (s IndustryJobStatus) String() string {
 	m := map[IndustryJobStatus]string{
 		JobUndefined: "undefined",
-		JobActive:    "active",
+		JobActive:    "in progress",
 		JobCancelled: "cancelled",
 		JobDelivered: "delivered",
-		JobPaused:    "paused",
+		JobPaused:    "halted",
 		JobReady:     "ready",
 		JobReverted:  "reverted",
 	}
@@ -64,6 +73,25 @@ func (s IndustryJobStatus) String() string {
 		return "?"
 	}
 	return x
+}
+
+func (s IndustryJobStatus) Display() string {
+	titler := cases.Title(language.English)
+	return titler.String(s.String())
+}
+
+func (s IndustryJobStatus) Color() fyne.ThemeColorName {
+	m := map[IndustryJobStatus]fyne.ThemeColorName{
+		JobActive:    theme.ColorNamePrimary,
+		JobCancelled: theme.ColorNameError,
+		JobPaused:    theme.ColorNameWarning,
+		JobReady:     theme.ColorNameSuccess,
+	}
+	c, ok := m[s]
+	if ok {
+		return c
+	}
+	return theme.ColorNameForeground
 }
 
 type CharacterIndustryJob struct {
@@ -99,4 +127,12 @@ func (j CharacterIndustryJob) StatusCorrected() IndustryJobStatus {
 		return JobReady
 	}
 	return j.Status
+}
+
+func (j CharacterIndustryJob) IsActive() bool {
+	switch s := j.StatusCorrected(); s {
+	case JobActive, JobReady, JobPaused:
+		return true
+	}
+	return false
 }

@@ -95,7 +95,8 @@ type BaseUI struct {
 	overviewLocations          *OverviewLocations
 	overviewTraining           *OverviewTraining
 	overviewWealth             *OverviewWealth
-	industryJobs               *industryJobs
+	industryJobsAll            *IndustryJobs
+	industryJobsActive         *IndustryJobs
 	userSettings               *UserSettings
 
 	app              fyne.App
@@ -180,7 +181,9 @@ func NewBaseUI(
 	u.overviewAssets = NewOverviewAssets(u)
 	u.overviewClones = NewOverviewClones(u)
 	u.overviewColonies = NewOverviewColonies(u)
-	u.industryJobs = newIndustryJobs(u)
+	u.industryJobsActive = NewIndustryJobs(u)
+	u.industryJobsActive.ShowActiveOnly = true
+	u.industryJobsAll = NewIndustryJobs(u)
 	u.overviewLocations = NewOverviewLocations(u)
 	u.overviewTraining = NewOverviewTraining(u)
 	u.overviewWealth = NewOverviewWealth(u)
@@ -450,14 +453,15 @@ func (u *BaseUI) updateCharacter() {
 // UpdateCrossPages refreshed all pages that contain information about multiple characters.
 func (u *BaseUI) UpdateCrossPages() {
 	ff := map[string]func(){
-		"assetSearch": u.overviewAssets.Update,
-		"cloneSeach":  u.overviewClones.Update,
-		"colony":      u.overviewColonies.Update,
-		"industryJob": u.industryJobs.Update,
-		"locations":   u.overviewLocations.Update,
-		"overview":    u.overviewCharacters.Update,
-		"training":    u.overviewTraining.Update,
-		"wealth":      u.overviewWealth.Update,
+		"assetSearch":       u.overviewAssets.Update,
+		"cloneSeach":        u.overviewClones.Update,
+		"colony":            u.overviewColonies.Update,
+		"industryJobAll":    u.industryJobsAll.Update,
+		"industryJobActive": u.industryJobsActive.Update,
+		"locations":         u.overviewLocations.Update,
+		"overview":          u.overviewCharacters.Update,
+		"training":          u.overviewTraining.Update,
+		"wealth":            u.overviewWealth.Update,
 	}
 	if u.onRefreshCross != nil {
 		ff["onRefreshCross"] = u.onRefreshCross
@@ -796,7 +800,8 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionIndustryJobs:
 		if needsRefresh {
-			u.industryJobs.Update()
+			u.industryJobsAll.Update()
+			u.industryJobsActive.Update()
 		}
 	case app.SectionLocation, app.SectionOnline, app.SectionShip:
 		if needsRefresh {
@@ -1090,4 +1095,28 @@ func (u *BaseUI) makeAboutPage() fyne.CanvasObject {
 		widget.NewLabel("(c) 2024-25 Erik Kalkoken"),
 	)
 	return c
+}
+
+func (u *BaseUI) makeDetailWindow(title, subTitle string, content fyne.CanvasObject) fyne.Window {
+	w := fyne.CurrentApp().NewWindow(u.MakeWindowTitle(title))
+	t := widget.NewLabel(subTitle)
+	t.Importance = widget.HighImportance
+	t.TextStyle.Bold = true
+	top := container.NewVBox(t, widget.NewSeparator())
+	bottom := container.NewVBox(
+		widget.NewSeparator(),
+		container.NewCenter(widget.NewButton("Close", func() {
+			w.Hide()
+		})),
+	)
+	vs := container.NewVScroll(content)
+	vs.SetMinSize(fyne.NewSize(600, 500))
+	w.SetContent(container.NewPadded(container.NewBorder(
+		top,
+		bottom,
+		nil,
+		nil,
+		vs,
+	)))
+	return w
 }

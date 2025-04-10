@@ -185,7 +185,7 @@ func (a *CharacterContracts) updateEntries() error {
 }
 
 func (a *CharacterContracts) showContract(c *app.CharacterContract) {
-	w := a.u.App().NewWindow(a.u.MakeWindowTitle("Contract"))
+	var w fyne.Window
 	makeExpiresString := func(c *app.CharacterContract) string {
 		ts := c.DateExpired.Format(app.DateTimeFormat)
 		var ds string
@@ -374,27 +374,8 @@ func (a *CharacterContracts) showContract(c *app.CharacterContract) {
 				},
 			}})
 	}
-	main.Add(widget.NewSeparator())
-
-	t := widget.NewLabel(fmt.Sprintf("%s (%s)", c.NameDisplay(), c.TypeDisplay()))
-	t.Importance = widget.HighImportance
-	t.TextStyle.Bold = true
-	top := container.NewVBox(t, widget.NewSeparator())
-
-	bottom := container.NewCenter(widget.NewButton("Close", func() {
-		w.Hide()
-	}))
-
-	vs := container.NewVScroll(main)
-	vs.SetMinSize(fyne.NewSize(600, 500))
-
-	w.SetContent(container.NewPadded(container.NewBorder(
-		top,
-		bottom,
-		nil,
-		nil,
-		vs,
-	)))
+	subTitle := fmt.Sprintf("%s (%s)", c.NameDisplay(), c.TypeDisplay())
+	w = a.u.makeDetailWindow("Contract", subTitle, main)
 	w.Show()
 }
 

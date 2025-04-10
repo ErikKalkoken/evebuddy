@@ -1511,13 +1511,21 @@ func (f Factory) CreateEveSchematic(args ...storage.CreateEveSchematicParams) *a
 }
 
 func (f Factory) CreateEveLocationStructure(args ...storage.UpdateOrCreateLocationParams) *app.EveLocation {
+	return f.createEveLocationStructure(startIDStructure, app.EveCategoryStructure, args...)
+}
+
+func (f Factory) CreateEveLocationStation(args ...storage.UpdateOrCreateLocationParams) *app.EveLocation {
+	return f.createEveLocationStructure(startIDStation, app.EveCategoryStation, args...)
+}
+
+func (f Factory) createEveLocationStructure(startID int64, categoryID int32, args ...storage.UpdateOrCreateLocationParams) *app.EveLocation {
 	var arg storage.UpdateOrCreateLocationParams
 	ctx := context.TODO()
 	if len(args) > 0 {
 		arg = args[0]
 	}
 	if arg.ID == 0 {
-		arg.ID = f.calcNewID("eve_locations", "id", startIDStructure)
+		arg.ID = f.calcNewID("eve_locations", "id", startID)
 	}
 	if arg.Name == "" {
 		arg.Name = fake.Color() + " " + fake.Brand()
@@ -1531,10 +1539,10 @@ func (f Factory) CreateEveLocationStructure(args ...storage.UpdateOrCreateLocati
 		arg.OwnerID = optional.New(x.ID)
 	}
 	if arg.EveTypeID.IsEmpty() {
-		ec, err := f.st.GetEveCategory(ctx, app.EveCategoryStructure)
+		ec, err := f.st.GetEveCategory(ctx, categoryID)
 		if err != nil {
 			if errors.Is(err, app.ErrNotFound) {
-				ec = f.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategoryStructure})
+				ec = f.CreateEveCategory(storage.CreateEveCategoryParams{ID: categoryID})
 			} else {
 				panic(err)
 			}

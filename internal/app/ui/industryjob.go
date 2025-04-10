@@ -11,13 +11,17 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-type industryJobs struct {
+type IndustryJobs struct {
 	widget.BaseWidget
+
+	ShowActiveOnly bool
+	OnUpdate       func(count int)
 
 	body fyne.CanvasObject
 	jobs []*app.CharacterIndustryJob
@@ -25,19 +29,19 @@ type industryJobs struct {
 	u    *BaseUI
 }
 
-func newIndustryJobs(u *BaseUI) *industryJobs {
-	a := &industryJobs{
+func NewIndustryJobs(u *BaseUI) *IndustryJobs {
+	a := &IndustryJobs{
 		jobs: make([]*app.CharacterIndustryJob, 0),
 		top:  appwidget.MakeTopLabel(),
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)
 	headers := []iwidget.HeaderDef{
-		{Text: "Blueprint", Width: 200},
+		{Text: "Blueprint", Width: 250},
 		{Text: "Status", Width: 100},
 		{Text: "Remain", Width: 100, Refresh: true},
 		{Text: "Runs", Width: 50},
-		{Text: "Activity", Width: 150},
+		{Text: "Activity", Width: 200},
 		{Text: "Facility", Width: columnWidthLocation},
 		{Text: "Install date", Width: columnWidthDateTime},
 		{Text: "End date", Width: columnWidthDateTime},
@@ -49,7 +53,9 @@ func newIndustryJobs(u *BaseUI) *industryJobs {
 		case 0:
 			return iwidget.NewRichTextSegmentFromText(r.BlueprintType.Name)
 		case 1:
-			return iwidget.NewRichTextSegmentFromText(status.String())
+			return iwidget.NewRichTextSegmentFromText(status.Display(), widget.RichTextStyle{
+				ColorName: status.Color(),
+			})
 		case 2:
 			var s string
 			if status == app.JobActive {
@@ -59,9 +65,11 @@ func newIndustryJobs(u *BaseUI) *industryJobs {
 			}
 			return iwidget.NewRichTextSegmentFromText(s)
 		case 3:
-			return iwidget.NewRichTextSegmentFromText(fmt.Sprint(r.Runs))
+			return iwidget.NewRichTextSegmentFromText(fmt.Sprint(r.Runs),
+				widget.RichTextStyle{Alignment: fyne.TextAlignTrailing},
+			)
 		case 4:
-			return iwidget.NewRichTextSegmentFromText(r.Activity.String())
+			return iwidget.NewRichTextSegmentFromText(r.Activity.Display())
 		case 5:
 			return iwidget.NewRichTextSegmentFromText(r.Facility.Name)
 		case 6:
@@ -90,32 +98,39 @@ func newIndustryJobs(u *BaseUI) *industryJobs {
 	return a
 }
 
-func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
+func (a *IndustryJobs) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(a.top, nil, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *industryJobs) Update() {
-	var s string
-	var i widget.Importance
+func (a *IndustryJobs) Update() {
 	if err := a.updateEntries(); err != nil {
 		slog.Error("Failed to refresh wallet transaction UI", "err", err)
-		s = "ERROR"
-		i = widget.DangerImportance
-	} else {
-		s = fmt.Sprintf("%d jobs", len(a.jobs))
+		a.top.Text = fmt.Sprintf("ERROR: %s", humanize.Error(err))
+		a.top.Importance = widget.DangerImportance
+		a.top.Refresh()
+		a.top.Show()
+		return
 	}
-	a.top.Text = s
-	a.top.Importance = i
-	a.top.Refresh()
+	a.top.Hide()
 	a.body.Refresh()
 }
 
-func (a *industryJobs) updateEntries() error {
+func (a *IndustryJobs) updateEntries() error {
 	jobs, err := a.u.CharacterService().ListAllCharacterIndustryJob(context.TODO())
 	if err != nil {
 		return err
 	}
-	a.jobs = jobs
+	if a.ShowActiveOnly {
+		a.jobs = xslices.Filter(jobs, func(o *app.CharacterIndustryJob) bool {
+			return o.IsActive()
+		})
+
+	} else {
+		a.jobs = jobs
+	}
+	if a.OnUpdate != nil {
+		a.OnUpdate(len(a.jobs))
+	}
 	return nil
 }
