@@ -20,3 +20,18 @@ func Map[S ~[]X, X any, Y any](s S, f func(X) Y) []Y {
 	}
 	return s2
 }
+
+func Reduce[S ~[]E, E any](s S, f func(E, E) E) E {
+	if len(s) == 0 {
+		panic("slice can not be empty")
+	}
+	var x E
+	for i, v := range s {
+		if i == 0 {
+			x = v
+			continue
+		}
+		x = f(x, v)
+	}
+	return x
+}

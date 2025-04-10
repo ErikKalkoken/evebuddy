@@ -6,10 +6,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
+// IndustryActivity represents the activity type of an industry job.
+// See also: https://github.com/esi/esi-issues/issues/894
 type IndustryActivity int32
 
 const (
-	Undefined                  IndustryActivity = 0
+	None                       IndustryActivity = 0
 	Manufacturing              IndustryActivity = 1
 	TimeEfficiencyResearch     IndustryActivity = 3
 	MaterialEfficiencyResearch IndustryActivity = 4
@@ -20,7 +22,7 @@ const (
 
 func (ia IndustryActivity) String() string {
 	m := map[IndustryActivity]string{
-		Undefined:                  "undefined",
+		None:                       "none",
 		Manufacturing:              "manufacturing",
 		TimeEfficiencyResearch:     "time efficiency research",
 		MaterialEfficiencyResearch: "material efficiency research",

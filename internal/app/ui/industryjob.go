@@ -35,7 +35,7 @@ func newIndustryJobs(u *BaseUI) *industryJobs {
 	headers := []iwidget.HeaderDef{
 		{Text: "Blueprint", Width: 200},
 		{Text: "Status", Width: 100},
-		{Text: "Remain", Width: 100},
+		{Text: "Remain", Width: 100, Refresh: true},
 		{Text: "Runs", Width: 50},
 		{Text: "Activity", Width: 150},
 		{Text: "Facility", Width: columnWidthLocation},
