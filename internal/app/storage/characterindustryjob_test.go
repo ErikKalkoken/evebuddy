@@ -23,6 +23,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 		blueprintLocation := factory.CreateEveLocationStructure()
 		blueprintType := factory.CreateEveType()
 		endDate := now.Add(12 * time.Hour)
+		facility := factory.CreateEveLocationStructure()
 		installer := factory.CreateEveEntityCharacter()
 		outputLocation := factory.CreateEveLocationStructure()
 		startDate := now.Add(-6 * time.Hour)
@@ -35,7 +36,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 			CharacterID:         c.ID,
 			Duration:            123,
 			EndDate:             endDate,
-			FacilityID:          53,
+			FacilityID:          facility.ID,
 			InstallerID:         installer.ID,
 			JobID:               1,
 			OutputLocationID:    outputLocation.ID,
@@ -55,7 +56,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 				assert.Equal(t, blueprintType.ID, o.BlueprintType.ID)
 				assert.EqualValues(t, 123, o.Duration)
 				assert.Equal(t, endDate, o.EndDate)
-				assert.EqualValues(t, 53, o.Facility)
+				assert.EqualValues(t, facility.ID, o.Facility.ID)
 				assert.Equal(t, installer, o.Installer)
 				assert.EqualValues(t, outputLocation.ID, o.OutputLocation.ID)
 				assert.EqualValues(t, 7, o.Runs)
@@ -76,6 +77,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 		completedCharacter := factory.CreateEveEntityCharacter()
 		completedDate := now
 		endDate := now.Add(12 * time.Hour)
+		facility := factory.CreateEveLocationStructure()
 		outputLocation := factory.CreateEveLocationStructure()
 		pauseDate := now.Add(-3 * time.Hour)
 		productType := factory.CreateEveType()
@@ -92,7 +94,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 			Cost:                 123.45,
 			Duration:             123,
 			EndDate:              endDate,
-			FacilityID:           53,
+			FacilityID:           facility.ID,
 			InstallerID:          installer.ID,
 			LicensedRuns:         3,
 			JobID:                1,
@@ -120,7 +122,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 				assert.EqualValues(t, 123.45, o.Cost.MustValue())
 				assert.EqualValues(t, 123, o.Duration)
 				assert.Equal(t, endDate, o.EndDate)
-				assert.EqualValues(t, 53, o.Facility)
+				assert.EqualValues(t, facility.ID, o.Facility.ID)
 				assert.Equal(t, installer, o.Installer)
 				assert.EqualValues(t, 3, o.LicensedRuns.MustValue())
 				assert.EqualValues(t, outputLocation.ID, o.OutputLocation.ID)
@@ -143,6 +145,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 		blueprintLocation := factory.CreateEveLocationStructure()
 		blueprintType := factory.CreateEveType()
 		endDate := now.Add(12 * time.Hour)
+		facility := factory.CreateEveLocationStructure()
 		installer := factory.CreateEveEntityCharacter()
 		outputLocation := factory.CreateEveLocationStructure()
 		startDate := now.Add(-6 * time.Hour)
@@ -155,7 +158,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 			CharacterID:         c.ID,
 			Duration:            123,
 			EndDate:             endDate,
-			FacilityID:          53,
+			FacilityID:          facility.ID,
 			InstallerID:         installer.ID,
 			JobID:               1,
 			OutputLocationID:    outputLocation.ID,
@@ -175,7 +178,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 			CharacterID:         c.ID,
 			Duration:            123,
 			EndDate:             endDate,
-			FacilityID:          53,
+			FacilityID:          facility.ID,
 			InstallerID:         installer.ID,
 			JobID:               1,
 			OutputLocationID:    outputLocation.ID,

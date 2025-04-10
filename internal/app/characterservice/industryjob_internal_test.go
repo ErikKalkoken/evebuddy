@@ -70,7 +70,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 				assert.EqualValues(t, 118.01, x.Cost.MustValue())
 				assert.EqualValues(t, 548, x.Duration)
 				assert.Equal(t, time.Date(2014, 7, 19, 15, 56, 14, 0, time.UTC), x.EndDate)
-				assert.EqualValues(t, 60006382, x.Facility)
+				assert.EqualValues(t, 60006382, x.Facility.ID)
 				assert.EqualValues(t, 498338451, x.Installer.ID)
 				assert.EqualValues(t, 229136101, x.JobID)
 				assert.EqualValues(t, 200, x.LicensedRuns.MustValue())

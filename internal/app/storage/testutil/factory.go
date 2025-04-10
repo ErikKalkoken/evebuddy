@@ -401,7 +401,8 @@ func (f Factory) CreateCharacterIndustryJob(args ...storage.UpdateOrCreateCharac
 		arg.Duration = rand.Int32N(10_000)
 	}
 	if arg.FacilityID == 0 {
-		arg.FacilityID = rand.Int64N(10_000_000)
+		x := f.CreateEveLocationStructure()
+		arg.FacilityID = x.ID
 	}
 	if arg.JobID == 0 {
 		arg.JobID = int32(f.calcNewIDWithCharacter(
