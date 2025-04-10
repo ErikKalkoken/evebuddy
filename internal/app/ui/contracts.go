@@ -34,7 +34,7 @@ type contractEntry struct {
 	type_    string
 }
 
-type CharacterContracts struct {
+type Contracts struct {
 	widget.BaseWidget
 
 	ShowActiveOnly bool
@@ -46,8 +46,8 @@ type CharacterContracts struct {
 	u         *BaseUI
 }
 
-func NewCharacterContracts(u *BaseUI) *CharacterContracts {
-	a := &CharacterContracts{
+func NewContracts(u *BaseUI) *Contracts {
+	a := &Contracts{
 		contracts: make([]*app.CharacterContract, 0),
 		top:       appwidget.MakeTopLabel(),
 		u:         u,
@@ -126,7 +126,7 @@ func NewCharacterContracts(u *BaseUI) *CharacterContracts {
 	return a
 }
 
-func (a *CharacterContracts) Update() {
+func (a *Contracts) Update() {
 	var t string
 	var i widget.Importance
 	if err := a.updateEntries(); err != nil {
@@ -147,7 +147,7 @@ func (a *CharacterContracts) Update() {
 	a.body.Refresh()
 }
 
-func (a *CharacterContracts) makeTopText() (string, widget.Importance) {
+func (a *Contracts) makeTopText() (string, widget.Importance) {
 	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance
 	}
@@ -159,14 +159,13 @@ func (a *CharacterContracts) makeTopText() (string, widget.Importance) {
 	return "", widget.MediumImportance
 }
 
-func (a *CharacterContracts) updateEntries() error {
+func (a *Contracts) updateEntries() error {
 	if !a.u.HasCharacter() {
 		a.contracts = make([]*app.CharacterContract, 0)
 		return nil
 	}
-	characterID := a.u.CurrentCharacterID()
 	var err error
-	oo, err := a.u.CharacterService().ListContracts(context.Background(), characterID)
+	oo, err := a.u.CharacterService().ListAllContracts(context.Background())
 	if err != nil {
 		return err
 	}
@@ -184,7 +183,7 @@ func (a *CharacterContracts) updateEntries() error {
 	return nil
 }
 
-func (a *CharacterContracts) showContract(c *app.CharacterContract) {
+func (a *Contracts) showContract(c *app.CharacterContract) {
 	var w fyne.Window
 	makeExpiresString := func(c *app.CharacterContract) string {
 		ts := c.DateExpired.Format(app.DateTimeFormat)
@@ -377,7 +376,7 @@ func (a *CharacterContracts) showContract(c *app.CharacterContract) {
 	w.Show()
 }
 
-func (a *CharacterContracts) CreateRenderer() fyne.WidgetRenderer {
+func (a *Contracts) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(a.top, nil, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
 }

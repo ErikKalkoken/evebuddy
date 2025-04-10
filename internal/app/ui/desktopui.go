@@ -129,22 +129,6 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 		characterNav.SetItemBadge(communications, s)
 	}
 
-	contractActive := container.NewTabItem("Active", u.characterContractsActive)
-	contractTabs := container.NewAppTabs(contractActive, container.NewTabItem("All", u.characterContractsAll))
-	contracts := iwidget.NewNavPage(
-		"Contracts",
-		theme.NewThemedResource(icons.FileSignSvg),
-		makePageWithPageBar("Contracts", contractTabs),
-	)
-	u.characterContractsActive.OnUpdate = func(count int) {
-		s := "Active"
-		if count > 0 {
-			s += fmt.Sprintf(" (%d)", count)
-		}
-		contractActive.Text = s
-		contractTabs.Refresh()
-	}
-
 	skills := iwidget.NewNavPage(
 		"Skills",
 		theme.NewThemedResource(icons.SchoolSvg),
@@ -185,7 +169,6 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 			theme.NewThemedResource(icons.Inventory2Svg),
 			makePageWithPageBar("Assets", u.characterAsset),
 		),
-		contracts,
 		communications,
 		colonies,
 		mail,
@@ -230,6 +213,23 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 		theme.NewThemedResource(icons.Inventory2Svg),
 		makePageWithTitle("Assets", u.overviewAssets),
 	)
+
+	contractActive := container.NewTabItem("Active", u.contractsActive)
+	contractTabs := container.NewAppTabs(contractActive, container.NewTabItem("All", u.contractsAll))
+	contracts := iwidget.NewNavPage(
+		"Contracts",
+		theme.NewThemedResource(icons.FileSignSvg),
+		makePageWithTitle("Contracts", contractTabs),
+	)
+	u.contractsActive.OnUpdate = func(count int) {
+		s := "Active"
+		if count > 0 {
+			s += fmt.Sprintf(" (%d)", count)
+		}
+		contractActive.Text = s
+		contractTabs.Refresh()
+	}
+
 	overviewColonies := iwidget.NewNavPage(
 		"Colonies",
 		theme.NewThemedResource(icons.EarthSvg),
@@ -265,6 +265,7 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
 			makePageWithTitle("Clones", u.overviewClones),
 		),
+		contracts,
 		overviewColonies,
 		iwidget.NewNavPage(
 			"Industry",

@@ -165,10 +165,10 @@ func (st *Storage) ListCharacterContractIDs(ctx context.Context, characterID int
 	return convertNumericSlice[int32](ids), nil
 }
 
-func (st *Storage) ListCharacterContracts(ctx context.Context, characterID int32) ([]*app.CharacterContract, error) {
-	rows, err := st.qRO.ListCharacterContracts(ctx, int64(characterID))
+func (st *Storage) ListAllCharacterContracts(ctx context.Context) ([]*app.CharacterContract, error) {
+	rows, err := st.qRO.ListAllCharacterContracts(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("list contracts for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("list character contracts: %w", err)
 	}
 	oo := make([]*app.CharacterContract, len(rows))
 	for i, r := range rows {

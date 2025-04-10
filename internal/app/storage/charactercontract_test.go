@@ -163,15 +163,14 @@ func TestCharacterContract(t *testing.T) {
 	t.Run("can list existing contracts", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
-		factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
-		factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
-		factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
+		factory.CreateCharacterContract()
+		factory.CreateCharacterContract(storage.CreateCharacterContractParams{ContractID: 42})
+		factory.CreateCharacterContract(storage.CreateCharacterContractParams{ContractID: 42})
 		// when
-		oo, err := r.ListCharacterContracts(ctx, c.ID)
+		oo, err := r.ListAllCharacterContracts(ctx)
 		// then
 		if assert.NoError(t, err) {
-			assert.Len(t, oo, 3)
+			assert.Len(t, oo, 2)
 		}
 	})
 	t.Run("can list existing contracts for notify", func(t *testing.T) {
