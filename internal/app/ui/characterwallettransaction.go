@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -81,17 +80,7 @@ func NewCharacterWalletTransaction(u *BaseUI) *CharacterWalletTransaction {
 		case 5:
 			return iwidget.NewRichTextSegmentFromText(r.Client.Name)
 		case 6:
-			if r.Location != nil && !r.SystemSecurityStatus.IsEmpty() {
-				secValue := r.SystemSecurityStatus.MustValue()
-				secType := app.NewSolarSystemSecurityTypeFromValue(secValue)
-				return slices.Concat(
-					iwidget.NewRichTextSegmentFromText(
-						fmt.Sprintf("%.1f", secValue),
-						widget.RichTextStyle{ColorName: secType.ToColorName(), Inline: true},
-					),
-					iwidget.NewRichTextSegmentFromText("  "+r.Location.Name),
-				)
-			}
+			return r.Location.DisplayRichText()
 		}
 		return iwidget.NewRichTextSegmentFromText("?")
 	}

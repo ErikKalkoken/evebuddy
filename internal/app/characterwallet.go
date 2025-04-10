@@ -2,8 +2,6 @@ package app
 
 import (
 	"time"
-
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type CharacterWalletJournalEntry struct {
@@ -25,17 +23,16 @@ type CharacterWalletJournalEntry struct {
 }
 
 type CharacterWalletTransaction struct {
-	CharacterID          int32
-	Client               *EveEntity
-	Date                 time.Time
-	EveType              *EntityShort[int32]
-	ID                   int64
-	IsBuy                bool
-	IsPersonal           bool
-	JournalRefID         int64
-	Location             *EntityShort[int64]
-	Quantity             int32
-	SystemSecurityStatus optional.Optional[float32]
-	TransactionID        int64
-	UnitPrice            float64
+	CharacterID   int32
+	Client        *EveEntity
+	Date          time.Time
+	EveType       *EntityShort[int32]
+	ID            int64
+	IsBuy         bool
+	IsPersonal    bool
+	JournalRefID  int64
+	Location      *EveLocationShort
+	Quantity      int32
+	TransactionID int64
+	UnitPrice     float64
 }

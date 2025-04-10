@@ -8,6 +8,8 @@ import (
 
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -117,4 +119,30 @@ func (el EveLocation) ToEveEntity() *EveEntity {
 		return &EveEntity{ID: int32(el.ID), Name: el.Name, Category: EveEntityStation}
 	}
 	return nil
+}
+
+// EveLocationShort is a shortended representation of EveLocation.
+type EveLocationShort struct {
+	ID             int64
+	Name           optional.Optional[string]
+	SecurityStatus optional.Optional[float32]
+}
+
+func (l EveLocationShort) DisplayRichText() []widget.RichTextSegment {
+	var s []widget.RichTextSegment
+	if !l.SecurityStatus.IsEmpty() {
+		secValue := l.SecurityStatus.MustValue()
+		secType := NewSolarSystemSecurityTypeFromValue(secValue)
+		s = slices.Concat(s, iwidget.NewRichTextSegmentFromText(
+			fmt.Sprintf("%.1f", secValue),
+			widget.RichTextStyle{ColorName: secType.ToColorName(), Inline: true},
+		))
+	}
+	var name string
+	if len(s) > 0 {
+		name += "   "
+	}
+	name += humanize.Optional(l.Name, "?")
+	s = slices.Concat(s, iwidget.NewRichTextSegmentFromText(name))
+	return s
 }

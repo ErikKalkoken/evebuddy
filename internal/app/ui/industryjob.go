@@ -86,6 +86,8 @@ func NewIndustryJobs(u *BaseUI) *IndustryJobs {
 			switch col {
 			case 0:
 				a.u.ShowInfoWindow(app.EveEntityInventoryType, r.BlueprintType.ID)
+			case 4:
+				// TODO: Show job detail
 			case 5:
 				a.u.ShowLocationInfoWindow(r.Facility.ID)
 			case 8:
