@@ -38,19 +38,22 @@ func (st *Storage) GetCharacterIndustryJob(ctx context.Context, characterID, job
 	if err != nil {
 		return nil, fmt.Errorf("get industry job for character %d: %w", characterID, err)
 	}
-	o := r.CharacterIndustryJob
-	o2 := characterIndustryJobFromDBModel(
-		o,
+	o := characterIndustryJobFromDBModel(
+		r.CharacterIndustryJob,
 		r.EveEntity,
 		r.BlueprintLocationName,
+		r.BlueprintLocationSecurity,
 		r.BlueprintTypeName,
 		r.CompletedCharacterName,
 		r.FacilityName,
+		r.FacilitySecurity,
 		r.OutputLocationName,
+		r.OutputLocationSecurity,
 		r.ProductTypeName,
 		r.StationName,
+		r.StationSecurity,
 	)
-	return o2, err
+	return o, err
 }
 
 func (st *Storage) ListAllCharacterIndustryJob(ctx context.Context) ([]*app.CharacterIndustryJob, error) {
@@ -64,12 +67,16 @@ func (st *Storage) ListAllCharacterIndustryJob(ctx context.Context) ([]*app.Char
 			r.CharacterIndustryJob,
 			r.EveEntity,
 			r.BlueprintLocationName,
+			r.BlueprintLocationSecurity,
 			r.BlueprintTypeName,
 			r.CompletedCharacterName,
 			r.FacilityName,
+			r.FacilitySecurity,
 			r.OutputLocationName,
+			r.OutputLocationSecurity,
 			r.ProductTypeName,
 			r.StationName,
+			r.StationSecurity,
 		)
 	}
 	return oo, nil
@@ -86,12 +93,16 @@ func (st *Storage) ListCharacterIndustryJob(ctx context.Context, characterID int
 			r.CharacterIndustryJob,
 			r.EveEntity,
 			r.BlueprintLocationName,
+			r.BlueprintLocationSecurity,
 			r.BlueprintTypeName,
 			r.CompletedCharacterName,
 			r.FacilityName,
+			r.FacilitySecurity,
 			r.OutputLocationName,
+			r.OutputLocationSecurity,
 			r.ProductTypeName,
 			r.StationName,
+			r.StationSecurity,
 		)
 	}
 	return oo, nil
@@ -101,19 +112,24 @@ func characterIndustryJobFromDBModel(
 	o queries.CharacterIndustryJob,
 	installer queries.EveEntity,
 	blueprintLocationName string,
+	blueprintLocationSecurity float64,
 	blueprintTypeName string,
 	completedCharacterName sql.NullString,
 	facilityName string,
+	facilitySecurity float64,
 	outputLocationName string,
+	outputLocationSecurity float64,
 	productTypeName sql.NullString,
 	stationName string,
+	stationSecurity sql.NullFloat64,
 ) *app.CharacterIndustryJob {
 	o2 := &app.CharacterIndustryJob{
 		Activity:    app.IndustryActivity(o.ActivityID),
 		BlueprintID: o.BlueprintID,
-		BlueprintLocation: &app.EntityShort[int64]{
-			ID:   o.BlueprintLocationID,
-			Name: blueprintLocationName,
+		BlueprintLocation: &app.EveLocationShort{
+			ID:             o.BlueprintLocationID,
+			Name:           optional.New(blueprintLocationName),
+			SecurityStatus: optional.New(float32(blueprintLocationSecurity)),
 		},
 		BlueprintType: &app.EntityShort[int32]{
 			ID:   int32(o.BlueprintTypeID),
@@ -124,25 +140,28 @@ func characterIndustryJobFromDBModel(
 		Cost:          optional.FromNullFloat64(o.Cost),
 		Duration:      int(o.Duration),
 		EndDate:       o.EndDate,
-		Facility: &app.EntityShort[int64]{
-			ID:   o.FacilityID,
-			Name: facilityName,
+		Facility: &app.EveLocationShort{
+			ID:             o.FacilityID,
+			Name:           optional.New(facilityName),
+			SecurityStatus: optional.New(float32(facilitySecurity)),
 		},
 		Installer:    eveEntityFromDBModel(installer),
 		JobID:        int32(o.JobID),
 		LicensedRuns: optional.FromNullInt64ToInteger[int](o.LicensedRuns),
-		OutputLocation: &app.EntityShort[int64]{
-			ID:   o.OutputLocationID,
-			Name: outputLocationName,
+		OutputLocation: &app.EveLocationShort{
+			ID:             o.OutputLocationID,
+			Name:           optional.New(outputLocationName),
+			SecurityStatus: optional.New(float32(outputLocationSecurity)),
 		},
 		PauseDate:   optional.FromNullTime(o.PauseDate),
 		Probability: optional.FromNullFloat64ToFloat32(o.Probability),
 		Runs:        int(o.Runs),
-		StartDate:   o.StartDate,
-		Station: &app.EntityShort[int64]{
-			ID:   o.StationID,
-			Name: stationName,
+		Station: &app.EveLocationShort{
+			ID:             o.StationID,
+			Name:           optional.New(stationName),
+			SecurityStatus: optional.FromNullFloat64ToFloat32(stationSecurity),
 		},
+		StartDate:      o.StartDate,
 		Status:         jobStatusFromDBValue[o.Status],
 		SuccessfulRuns: optional.FromNullInt64ToInteger[int32](o.SuccessfulRuns),
 	}

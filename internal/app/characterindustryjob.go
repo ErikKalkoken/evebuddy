@@ -97,7 +97,7 @@ func (s IndustryJobStatus) Color() fyne.ThemeColorName {
 type CharacterIndustryJob struct {
 	Activity           IndustryActivity
 	BlueprintID        int64
-	BlueprintLocation  *EntityShort[int64]
+	BlueprintLocation  *EveLocationShort
 	BlueprintType      *EntityShort[int32]
 	CharacterID        int32
 	CompletedCharacter optional.Optional[*EveEntity]
@@ -105,17 +105,17 @@ type CharacterIndustryJob struct {
 	Cost               optional.Optional[float64]
 	Duration           int
 	EndDate            time.Time
-	Facility           *EntityShort[int64]
+	Facility           *EveLocationShort
 	Installer          *EveEntity
 	JobID              int32
 	LicensedRuns       optional.Optional[int]
-	OutputLocation     *EntityShort[int64]
+	OutputLocation     *EveLocationShort
 	PauseDate          optional.Optional[time.Time]
 	Probability        optional.Optional[float32]
 	ProductType        optional.Optional[*EntityShort[int32]]
 	Runs               int
 	StartDate          time.Time
-	Station            *EntityShort[int64]
+	Station            *EveLocationShort
 	Status             IndustryJobStatus
 	SuccessfulRuns     optional.Optional[int32]
 }

@@ -71,7 +71,7 @@ func NewIndustryJobs(u *BaseUI) *IndustryJobs {
 		case 4:
 			return iwidget.NewRichTextSegmentFromText(r.Activity.Display())
 		case 5:
-			return iwidget.NewRichTextSegmentFromText(r.Facility.Name)
+			return r.Facility.DisplayRichText()
 		case 6:
 			return iwidget.NewRichTextSegmentFromText(r.StartDate.Format(app.DateTimeFormat))
 		case 7:

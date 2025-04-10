@@ -8,6 +8,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -52,17 +53,45 @@ func TestCharacterIndustryJob(t *testing.T) {
 			o, err := st.GetCharacterIndustryJob(ctx, arg.CharacterID, arg.JobID)
 			if assert.NoError(t, err) {
 				assert.EqualValues(t, 42, o.BlueprintID)
-				assert.EqualValues(t, blueprintLocation.ID, o.BlueprintLocation.ID)
+				assert.EqualValues(
+					t, &app.EveLocationShort{
+						ID:             blueprintLocation.ID,
+						Name:           optional.New(blueprintLocation.Name),
+						SecurityStatus: optional.New(blueprintLocation.SolarSystem.SecurityStatus),
+					},
+					o.BlueprintLocation,
+				)
 				assert.Equal(t, blueprintType.ID, o.BlueprintType.ID)
 				assert.EqualValues(t, 123, o.Duration)
 				assert.Equal(t, endDate, o.EndDate)
-				assert.EqualValues(t, facility.ID, o.Facility.ID)
+				assert.EqualValues(
+					t, &app.EveLocationShort{
+						ID:             facility.ID,
+						Name:           optional.New(facility.Name),
+						SecurityStatus: optional.New(facility.SolarSystem.SecurityStatus),
+					},
+					o.Facility,
+				)
 				assert.Equal(t, installer, o.Installer)
-				assert.EqualValues(t, outputLocation.ID, o.OutputLocation.ID)
+				assert.EqualValues(
+					t, &app.EveLocationShort{
+						ID:             outputLocation.ID,
+						Name:           optional.New(outputLocation.Name),
+						SecurityStatus: optional.New(outputLocation.SolarSystem.SecurityStatus),
+					},
+					o.OutputLocation,
+				)
 				assert.EqualValues(t, 7, o.Runs)
 				assert.Equal(t, startDate, o.StartDate)
 				assert.Equal(t, app.JobActive, o.Status)
-				assert.EqualValues(t, station.ID, o.Station.ID)
+				assert.EqualValues(
+					t, &app.EveLocationShort{
+						ID:             station.ID,
+						Name:           optional.New(station.Name),
+						SecurityStatus: optional.New(station.SolarSystem.SecurityStatus),
+					},
+					o.Station,
+				)
 			}
 		}
 	})

@@ -67,20 +67,28 @@ SELECT
     sqlc.embed(cij),
     sqlc.embed(ic),
     bl.name AS blueprint_location_name,
+    bls.security_status as blueprint_location_security,
     bt.name AS blueprint_type_name,
     cc.name AS completed_character_name,
     fc.name AS facility_name,
+    fcs.security_status as facility_security,
     ol.name AS output_location_name,
+    ols.security_status as output_location_security,
     pt.name AS product_type_name,
-    sl.name AS station_name
+    sl.name AS station_name,
+    sls.security_status as station_security
 FROM
     character_industry_jobs cij
     JOIN eve_locations bl ON bl.id = cij.blueprint_location_id
+    LEFT JOIN eve_solar_systems bls ON bls.id = bl.eve_solar_system_id
     JOIN eve_types bt ON bt.id = cij.blueprint_type_id
     JOIN eve_locations fc ON fc.id = cij.facility_id
+    LEFT JOIN eve_solar_systems fcs ON fcs.id = fc.eve_solar_system_id
     JOIN eve_entities ic ON ic.id = cij.installer_id
     JOIN eve_locations ol ON ol.id = cij.output_location_id
+    LEFT JOIN eve_solar_systems ols ON ols.id = ol.eve_solar_system_id
     JOIN eve_locations sl ON sl.id = cij.station_id
+    LEFT JOIN eve_solar_systems sls ON sls.id = sl.eve_solar_system_id
     LEFT JOIN eve_entities cc ON cc.id = cij.completed_character_id
     LEFT JOIN eve_types pt ON pt.id = cij.product_type_id
 WHERE
@@ -92,20 +100,28 @@ SELECT
     sqlc.embed(cij),
     sqlc.embed(ic),
     bl.name AS blueprint_location_name,
+    bls.security_status as blueprint_location_security,
     bt.name AS blueprint_type_name,
     cc.name AS completed_character_name,
     fc.name AS facility_name,
+    fcs.security_status as facility_security,
     ol.name AS output_location_name,
+    ols.security_status as output_location_security,
     pt.name AS product_type_name,
-    sl.name AS station_name
+    sl.name AS station_name,
+    sls.security_status as station_security
 FROM
     character_industry_jobs cij
     JOIN eve_locations bl ON bl.id = cij.blueprint_location_id
+    LEFT JOIN eve_solar_systems bls ON bls.id = bl.eve_solar_system_id
     JOIN eve_types bt ON bt.id = cij.blueprint_type_id
     JOIN eve_locations fc ON fc.id = cij.facility_id
+    LEFT JOIN eve_solar_systems fcs ON fcs.id = fc.eve_solar_system_id
     JOIN eve_entities ic ON ic.id = cij.installer_id
     JOIN eve_locations ol ON ol.id = cij.output_location_id
+    LEFT JOIN eve_solar_systems ols ON ols.id = ol.eve_solar_system_id
     JOIN eve_locations sl ON sl.id = cij.station_id
+    LEFT JOIN eve_solar_systems sls ON sls.id = sl.eve_solar_system_id
     LEFT JOIN eve_entities cc ON cc.id = cij.completed_character_id
     LEFT JOIN eve_types pt ON pt.id = cij.product_type_id
 WHERE
@@ -118,20 +134,28 @@ SELECT
     sqlc.embed(cij),
     sqlc.embed(ic),
     bl.name AS blueprint_location_name,
+    bls.security_status as blueprint_location_security,
     bt.name AS blueprint_type_name,
     cc.name AS completed_character_name,
     fc.name AS facility_name,
+    fcs.security_status as facility_security,
     ol.name AS output_location_name,
+    ols.security_status as output_location_security,
     pt.name AS product_type_name,
-    sl.name AS station_name
+    sl.name AS station_name,
+    sls.security_status as station_security
 FROM
     character_industry_jobs cij
     JOIN eve_locations bl ON bl.id = cij.blueprint_location_id
+    LEFT JOIN eve_solar_systems bls ON bls.id = bl.eve_solar_system_id
     JOIN eve_types bt ON bt.id = cij.blueprint_type_id
     JOIN eve_locations fc ON fc.id = cij.facility_id
+    LEFT JOIN eve_solar_systems fcs ON fcs.id = fc.eve_solar_system_id
     JOIN eve_entities ic ON ic.id = cij.installer_id
     JOIN eve_locations ol ON ol.id = cij.output_location_id
+    LEFT JOIN eve_solar_systems ols ON ols.id = ol.eve_solar_system_id
     JOIN eve_locations sl ON sl.id = cij.station_id
+    LEFT JOIN eve_solar_systems sls ON sls.id = sl.eve_solar_system_id
     LEFT JOIN eve_entities cc ON cc.id = cij.completed_character_id
     LEFT JOIN eve_types pt ON pt.id = cij.product_type_id
 ORDER BY
