@@ -5,9 +5,12 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"fyne.io/fyne/v2/widget"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 // IndustryActivity represents the activity type of an industry job.
@@ -127,6 +130,13 @@ func (j CharacterIndustryJob) StatusCorrected() IndustryJobStatus {
 		return JobReady
 	}
 	return j.Status
+}
+
+func (j CharacterIndustryJob) StatusRichText() []widget.RichTextSegment {
+	status := j.StatusCorrected()
+	return iwidget.NewRichTextSegmentFromText(status.Display(), widget.RichTextStyle{
+		ColorName: status.Color(),
+	})
 }
 
 func (j CharacterIndustryJob) IsActive() bool {

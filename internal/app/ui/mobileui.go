@@ -288,6 +288,26 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 		),
 		navItemColonies2,
 		iwidget.NewListItemWithIcon(
+			"Industry",
+			theme.NewThemedResource(icons.FactorySvg),
+			func() {
+				jobsActive := container.NewTabItem("Active", u.industryJobsActive)
+				jobsTab := container.NewAppTabs(
+					jobsActive,
+					container.NewTabItem("All", u.industryJobsAll),
+				)
+				u.industryJobsActive.OnUpdate = func(count int) {
+					s := "Active"
+					if count > 0 {
+						s += fmt.Sprintf(" (%d)", count)
+					}
+					jobsActive.Text = s
+					jobsTab.Refresh()
+				}
+				crossNav.Push(iwidget.NewAppBar("Industry", jobsTab))
+			},
+		),
+		iwidget.NewListItemWithIcon(
 			"Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),
 			func() {

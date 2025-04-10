@@ -4,17 +4,19 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type IndustryJobs struct {
@@ -53,19 +55,18 @@ func NewIndustryJobs(u *BaseUI) *IndustryJobs {
 		case 0:
 			return iwidget.NewRichTextSegmentFromText(r.BlueprintType.Name)
 		case 1:
-			return iwidget.NewRichTextSegmentFromText(status.Display(), widget.RichTextStyle{
-				ColorName: status.Color(),
-			})
+			return r.StatusRichText()
 		case 2:
 			var s string
 			if status == app.JobActive {
-				s = humanize.Duration(time.Until(r.EndDate))
+				s = ihumanize.Duration(time.Until(r.EndDate))
 			} else {
 				s = ""
 			}
 			return iwidget.NewRichTextSegmentFromText(s)
 		case 3:
-			return iwidget.NewRichTextSegmentFromText(fmt.Sprint(r.Runs),
+			return iwidget.NewRichTextSegmentFromText(
+				ihumanize.Comma(r.Runs),
 				widget.RichTextStyle{Alignment: fyne.TextAlignTrailing},
 			)
 		case 4:
@@ -81,21 +82,93 @@ func NewIndustryJobs(u *BaseUI) *IndustryJobs {
 		}
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
-	if a.u.IsDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop2(headers, &a.jobs, makeCell, func(col int, r *app.CharacterIndustryJob) {
-			switch col {
-			case 0:
+	showDetail := func(r *app.CharacterIndustryJob) {
+		makeLocationWidget := func(o *app.EveLocationShort) *iwidget.TappableRichText {
+			return iwidget.NewTappableRichText(func() {
+				a.u.ShowLocationInfoWindow(o.ID)
+			},
+				o.DisplayRichText()...,
+			)
+		}
+		items := []*widget.FormItem{
+			widget.NewFormItem("Blueprint", kxwidget.NewTappableLabel(r.BlueprintType.Name, func() {
 				a.u.ShowInfoWindow(app.EveEntityInventoryType, r.BlueprintType.ID)
-			case 4:
-				// TODO: Show job detail
-			case 5:
-				a.u.ShowLocationInfoWindow(r.Facility.ID)
-			case 8:
-				a.u.ShowInfoWindow(app.EveEntityCharacter, r.Installer.ID)
-			}
+			})),
+			widget.NewFormItem("Activity", widget.NewLabel(r.Activity.Display())),
+		}
+		if !r.ProductType.IsEmpty() {
+			x := r.ProductType.MustValue()
+			items = append(items, widget.NewFormItem(
+				"Product Type",
+				kxwidget.NewTappableLabel(x.Name, func() {
+					a.u.ShowInfoWindow(app.EveEntityInventoryType, x.ID)
+				}),
+			))
+		}
+		items = slices.Concat(items, []*widget.FormItem{
+			widget.NewFormItem("Status", widget.NewRichText(r.StatusRichText()...)),
+			widget.NewFormItem("Runs", widget.NewLabel(ihumanize.Comma(r.Runs))),
+		})
+
+		if !r.LicensedRuns.IsEmpty() {
+			items = append(items, widget.NewFormItem(
+				"Licensed Runs",
+				widget.NewLabel(ihumanize.Comma(r.LicensedRuns.ValueOrZero())),
+			))
+		}
+		if !r.SuccessfulRuns.IsEmpty() {
+			items = append(items, widget.NewFormItem(
+				"Successful Runs",
+				widget.NewLabel(ihumanize.Comma(r.SuccessfulRuns.ValueOrZero())),
+			))
+		}
+		if !r.Probability.IsEmpty() {
+			items = append(items, widget.NewFormItem(
+				"Probability",
+				widget.NewLabel(fmt.Sprintf("%.0f%%", r.Probability.ValueOrZero()*100)),
+			))
+		}
+
+		items = slices.Concat(items, []*widget.FormItem{
+			widget.NewFormItem("Facility", makeLocationWidget(r.Facility)),
+			widget.NewFormItem("Start date", widget.NewLabel(r.StartDate.Format(app.DateTimeFormat))),
+			widget.NewFormItem("End date (est.)", widget.NewLabel(r.EndDate.Format(app.DateTimeFormat))),
+			widget.NewFormItem("Installer", kxwidget.NewTappableLabel(r.Installer.Name, func() {
+				a.u.ShowEveEntityInfoWindow(r.Installer)
+			})),
+			widget.NewFormItem("Blueprint Location", makeLocationWidget(r.BlueprintLocation)),
+			widget.NewFormItem("Output Location", makeLocationWidget(r.OutputLocation)),
+			widget.NewFormItem("Station", makeLocationWidget(r.Station)),
+		})
+
+		if !r.PauseDate.IsEmpty() {
+			items = append(items, widget.NewFormItem(
+				"Pause date",
+				widget.NewLabel(r.PauseDate.ValueOrZero().Format(app.DateTimeFormat)),
+			))
+		}
+		if !r.CompletedCharacter.IsEmpty() {
+			x := r.CompletedCharacter.MustValue()
+			items = append(items, widget.NewFormItem("Completed By", kxwidget.NewTappableLabel(x.Name, func() {
+				a.u.ShowEveEntityInfoWindow(x)
+			})))
+		}
+		if !r.CompletedDate.IsEmpty() {
+			items = append(items, widget.NewFormItem(
+				"Completed date",
+				widget.NewLabel(r.CompletedDate.ValueOrZero().Format(app.DateTimeFormat))),
+			)
+		}
+		title := fmt.Sprintf("%s - %s - #%d", r.BlueprintType.Name, r.Activity.Display(), r.JobID)
+		w := a.u.makeDetailWindow("Industry Job", title, widget.NewForm(items...))
+		w.Show()
+	}
+	if a.u.IsDesktop() {
+		a.body = iwidget.MakeDataTableForDesktop2(headers, &a.jobs, makeCell, func(_ int, r *app.CharacterIndustryJob) {
+			showDetail(r)
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile2(headers, &a.jobs, makeCell, nil)
+		a.body = iwidget.MakeDataTableForMobile2(headers, &a.jobs, makeCell, showDetail)
 	}
 	return a
 }
@@ -108,7 +181,7 @@ func (a *IndustryJobs) CreateRenderer() fyne.WidgetRenderer {
 func (a *IndustryJobs) Update() {
 	if err := a.updateEntries(); err != nil {
 		slog.Error("Failed to refresh wallet transaction UI", "err", err)
-		a.top.Text = fmt.Sprintf("ERROR: %s", humanize.Error(err))
+		a.top.Text = fmt.Sprintf("ERROR: %s", ihumanize.Error(err))
 		a.top.Importance = widget.DangerImportance
 		a.top.Refresh()
 		a.top.Show()

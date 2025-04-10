@@ -1098,10 +1098,9 @@ func (u *BaseUI) makeAboutPage() fyne.CanvasObject {
 }
 
 func (u *BaseUI) makeDetailWindow(title, subTitle string, content fyne.CanvasObject) fyne.Window {
-	w := fyne.CurrentApp().NewWindow(u.MakeWindowTitle(title))
-	t := widget.NewLabel(subTitle)
-	t.Importance = widget.HighImportance
-	t.TextStyle.Bold = true
+	w := u.App().NewWindow(u.MakeWindowTitle(title))
+	t := iwidget.NewLabelWithSize(subTitle, theme.SizeNameSubHeadingText)
+	t.Wrapping = fyne.TextWrapWord
 	top := container.NewVBox(t, widget.NewSeparator())
 	bottom := container.NewVBox(
 		widget.NewSeparator(),

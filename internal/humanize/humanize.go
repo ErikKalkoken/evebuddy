@@ -92,6 +92,11 @@ func RelTime(t time.Time) string {
 	return Duration(time.Until(t))
 }
 
+// Comma produces a string form of the given number in base 10 with commas after every three orders of magnitude.
+func Comma[T constraints.Integer](x T) string {
+	return humanize.Comma(int64(x))
+}
+
 func Optional[T time.Duration | time.Time | string | int | int32 | int64](o optional.Optional[T], fallback string) string {
 	if o.IsEmpty() {
 		return fallback
