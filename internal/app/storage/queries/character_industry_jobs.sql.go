@@ -18,6 +18,7 @@ SELECT
     bl.name AS blueprint_location_name,
     bt.name AS blueprint_type_name,
     cc.name AS completed_character_name,
+    fc.name AS facility_name,
     ol.name AS output_location_name,
     pt.name AS product_type_name,
     sl.name AS station_name
@@ -25,6 +26,7 @@ FROM
     character_industry_jobs cij
     JOIN eve_locations bl ON bl.id = cij.blueprint_location_id
     JOIN eve_types bt ON bt.id = cij.blueprint_type_id
+    JOIN eve_locations fc ON fc.id = cij.facility_id
     JOIN eve_entities ic ON ic.id = cij.installer_id
     JOIN eve_locations ol ON ol.id = cij.output_location_id
     JOIN eve_locations sl ON sl.id = cij.station_id
@@ -46,6 +48,7 @@ type GetCharacterIndustryJobRow struct {
 	BlueprintLocationName  string
 	BlueprintTypeName      string
 	CompletedCharacterName sql.NullString
+	FacilityName           string
 	OutputLocationName     string
 	ProductTypeName        sql.NullString
 	StationName            string
@@ -85,6 +88,7 @@ func (q *Queries) GetCharacterIndustryJob(ctx context.Context, arg GetCharacterI
 		&i.BlueprintLocationName,
 		&i.BlueprintTypeName,
 		&i.CompletedCharacterName,
+		&i.FacilityName,
 		&i.OutputLocationName,
 		&i.ProductTypeName,
 		&i.StationName,
@@ -99,6 +103,7 @@ SELECT
     bl.name AS blueprint_location_name,
     bt.name AS blueprint_type_name,
     cc.name AS completed_character_name,
+    fc.name AS facility_name,
     ol.name AS output_location_name,
     pt.name AS product_type_name,
     sl.name AS station_name
@@ -106,6 +111,7 @@ FROM
     character_industry_jobs cij
     JOIN eve_locations bl ON bl.id = cij.blueprint_location_id
     JOIN eve_types bt ON bt.id = cij.blueprint_type_id
+    JOIN eve_locations fc ON fc.id = cij.facility_id
     JOIN eve_entities ic ON ic.id = cij.installer_id
     JOIN eve_locations ol ON ol.id = cij.output_location_id
     JOIN eve_locations sl ON sl.id = cij.station_id
@@ -121,6 +127,7 @@ type ListAllCharacterIndustryJobsRow struct {
 	BlueprintLocationName  string
 	BlueprintTypeName      string
 	CompletedCharacterName sql.NullString
+	FacilityName           string
 	OutputLocationName     string
 	ProductTypeName        sql.NullString
 	StationName            string
@@ -166,6 +173,7 @@ func (q *Queries) ListAllCharacterIndustryJobs(ctx context.Context) ([]ListAllCh
 			&i.BlueprintLocationName,
 			&i.BlueprintTypeName,
 			&i.CompletedCharacterName,
+			&i.FacilityName,
 			&i.OutputLocationName,
 			&i.ProductTypeName,
 			&i.StationName,
@@ -190,6 +198,7 @@ SELECT
     bl.name AS blueprint_location_name,
     bt.name AS blueprint_type_name,
     cc.name AS completed_character_name,
+    fc.name AS facility_name,
     ol.name AS output_location_name,
     pt.name AS product_type_name,
     sl.name AS station_name
@@ -197,6 +206,7 @@ FROM
     character_industry_jobs cij
     JOIN eve_locations bl ON bl.id = cij.blueprint_location_id
     JOIN eve_types bt ON bt.id = cij.blueprint_type_id
+    JOIN eve_locations fc ON fc.id = cij.facility_id
     JOIN eve_entities ic ON ic.id = cij.installer_id
     JOIN eve_locations ol ON ol.id = cij.output_location_id
     JOIN eve_locations sl ON sl.id = cij.station_id
@@ -214,6 +224,7 @@ type ListCharacterIndustryJobsRow struct {
 	BlueprintLocationName  string
 	BlueprintTypeName      string
 	CompletedCharacterName sql.NullString
+	FacilityName           string
 	OutputLocationName     string
 	ProductTypeName        sql.NullString
 	StationName            string
@@ -259,6 +270,7 @@ func (q *Queries) ListCharacterIndustryJobs(ctx context.Context, characterID int
 			&i.BlueprintLocationName,
 			&i.BlueprintTypeName,
 			&i.CompletedCharacterName,
+			&i.FacilityName,
 			&i.OutputLocationName,
 			&i.ProductTypeName,
 			&i.StationName,

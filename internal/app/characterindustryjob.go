@@ -75,7 +75,7 @@ type CharacterIndustryJob struct {
 	Cost               optional.Optional[float64]
 	Duration           int
 	EndDate            time.Time
-	FacilityID         int64
+	Facility           *EntityShort[int64]
 	Installer          *EveEntity
 	JobID              int32
 	LicensedRuns       optional.Optional[int]

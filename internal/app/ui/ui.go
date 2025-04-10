@@ -94,6 +94,7 @@ type BaseUI struct {
 	overviewLocations          *OverviewLocations
 	overviewTraining           *OverviewTraining
 	overviewWealth             *OverviewWealth
+	overviewIndustryJobs       *OverviewIndustryJobs
 	userSettings               *UserSettings
 
 	app              fyne.App
@@ -178,6 +179,7 @@ func NewBaseUI(
 	u.overviewAssets = NewOverviewAssets(u)
 	u.overviewClones = NewOverviewClones(u)
 	u.overviewColonies = NewOverviewColonies(u)
+	u.overviewIndustryJobs = NewOverviewIndustryJobs(u)
 	u.overviewLocations = NewOverviewLocations(u)
 	u.overviewTraining = NewOverviewTraining(u)
 	u.overviewWealth = NewOverviewWealth(u)
@@ -450,6 +452,7 @@ func (u *BaseUI) UpdateCrossPages() {
 		"assetSearch": u.overviewAssets.Update,
 		"cloneSeach":  u.overviewClones.Update,
 		"colony":      u.overviewColonies.Update,
+		"industryJob": u.overviewIndustryJobs.Update,
 		"locations":   u.overviewLocations.Update,
 		"overview":    u.overviewCharacters.Update,
 		"training":    u.overviewTraining.Update,
@@ -790,9 +793,11 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 				u.characterJumpClones.Update()
 			}
 		}
-	case app.SectionLocation,
-		app.SectionOnline,
-		app.SectionShip:
+	case app.SectionIndustryJobs:
+		if needsRefresh {
+			u.overviewIndustryJobs.Update()
+		}
+	case app.SectionLocation, app.SectionOnline, app.SectionShip:
 		if needsRefresh {
 			u.overviewLocations.Update()
 			if isShown {
@@ -807,8 +812,7 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 				u.characterPlanets.Update()
 			}
 		}
-	case app.SectionMailLabels,
-		app.SectionMailLists:
+	case app.SectionMailLabels, app.SectionMailLists:
 		if needsRefresh {
 			u.overviewCharacters.Update()
 			if isShown {

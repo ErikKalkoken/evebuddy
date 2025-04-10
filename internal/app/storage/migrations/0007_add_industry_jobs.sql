@@ -27,6 +27,7 @@ CREATE TABLE character_industry_jobs (
     FOREIGN KEY (blueprint_type_id) REFERENCES eve_types (id) ON DELETE CASCADE,
     FOREIGN KEY (character_id) REFERENCES characters (id) ON DELETE CASCADE,
     FOREIGN KEY (completed_character_id) REFERENCES eve_entities (id) ON DELETE SET NULL,
+    FOREIGN KEY (facility_id) REFERENCES eve_locations (id) ON DELETE CASCADE,
     FOREIGN KEY (installer_id) REFERENCES eve_entities (id) ON DELETE CASCADE,
     FOREIGN KEY (output_location_id) REFERENCES eve_locations (id) ON DELETE CASCADE,
     FOREIGN KEY (product_type_id) REFERENCES eve_types (id) ON DELETE CASCADE,
@@ -42,12 +43,14 @@ CREATE INDEX character_industry_jobs_idx3 ON character_industry_jobs (character_
 
 CREATE INDEX character_industry_jobs_idx4 ON character_industry_jobs (completed_character_id);
 
-CREATE INDEX character_industry_jobs_idx5 ON character_industry_jobs (installer_id);
+CREATE INDEX character_industry_jobs_idx5 ON character_industry_jobs (facility_id);
 
-CREATE INDEX character_industry_jobs_idx6 ON character_industry_jobs (output_location_id);
+CREATE INDEX character_industry_jobs_idx6 ON character_industry_jobs (installer_id);
 
-CREATE INDEX character_industry_jobs_idx7 ON character_industry_jobs (product_type_id);
+CREATE INDEX character_industry_jobs_idx7 ON character_industry_jobs (output_location_id);
 
-CREATE INDEX character_industry_jobs_idx8 ON character_industry_jobs (station_id);
+CREATE INDEX character_industry_jobs_idx8 ON character_industry_jobs (product_type_id);
 
-CREATE INDEX character_industry_jobs_idx9 ON character_industry_jobs (start_date DESC);
+CREATE INDEX character_industry_jobs_idx9 ON character_industry_jobs (station_id);
+
+CREATE INDEX character_industry_jobs_idx10 ON character_industry_jobs (start_date DESC);

@@ -69,6 +69,7 @@ SELECT
     bl.name AS blueprint_location_name,
     bt.name AS blueprint_type_name,
     cc.name AS completed_character_name,
+    fc.name AS facility_name,
     ol.name AS output_location_name,
     pt.name AS product_type_name,
     sl.name AS station_name
@@ -76,6 +77,7 @@ FROM
     character_industry_jobs cij
     JOIN eve_locations bl ON bl.id = cij.blueprint_location_id
     JOIN eve_types bt ON bt.id = cij.blueprint_type_id
+    JOIN eve_locations fc ON fc.id = cij.facility_id
     JOIN eve_entities ic ON ic.id = cij.installer_id
     JOIN eve_locations ol ON ol.id = cij.output_location_id
     JOIN eve_locations sl ON sl.id = cij.station_id
@@ -92,6 +94,7 @@ SELECT
     bl.name AS blueprint_location_name,
     bt.name AS blueprint_type_name,
     cc.name AS completed_character_name,
+    fc.name AS facility_name,
     ol.name AS output_location_name,
     pt.name AS product_type_name,
     sl.name AS station_name
@@ -99,6 +102,7 @@ FROM
     character_industry_jobs cij
     JOIN eve_locations bl ON bl.id = cij.blueprint_location_id
     JOIN eve_types bt ON bt.id = cij.blueprint_type_id
+    JOIN eve_locations fc ON fc.id = cij.facility_id
     JOIN eve_entities ic ON ic.id = cij.installer_id
     JOIN eve_locations ol ON ol.id = cij.output_location_id
     JOIN eve_locations sl ON sl.id = cij.station_id
@@ -116,6 +120,7 @@ SELECT
     bl.name AS blueprint_location_name,
     bt.name AS blueprint_type_name,
     cc.name AS completed_character_name,
+    fc.name AS facility_name,
     ol.name AS output_location_name,
     pt.name AS product_type_name,
     sl.name AS station_name
@@ -123,6 +128,7 @@ FROM
     character_industry_jobs cij
     JOIN eve_locations bl ON bl.id = cij.blueprint_location_id
     JOIN eve_types bt ON bt.id = cij.blueprint_type_id
+    JOIN eve_locations fc ON fc.id = cij.facility_id
     JOIN eve_entities ic ON ic.id = cij.installer_id
     JOIN eve_locations ol ON ol.id = cij.output_location_id
     JOIN eve_locations sl ON sl.id = cij.station_id
