@@ -45,6 +45,9 @@ func NewCharacterWalletTransaction(u *BaseUI) *CharacterWalletTransaction {
 			return iwidget.NewRichTextSegmentFromText(humanize.FormatFloat(app.FloatFormat, r.UnitPrice))
 		case 4:
 			total := r.UnitPrice * float64(r.Quantity)
+			if r.IsBuy {
+				total = total * -1
+			}
 			text := humanize.FormatFloat(app.FloatFormat, total)
 			var color fyne.ThemeColorName
 			switch {
