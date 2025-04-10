@@ -82,32 +82,6 @@ func (st *Storage) ListAllCharacterIndustryJob(ctx context.Context) ([]*app.Char
 	return oo, nil
 }
 
-func (st *Storage) ListCharacterIndustryJob(ctx context.Context, characterID int32) ([]*app.CharacterIndustryJob, error) {
-	rows, err := st.qRO.ListCharacterIndustryJobs(ctx, int64(characterID))
-	if err != nil {
-		return nil, fmt.Errorf("list industry jobs for character %d: %w", characterID, err)
-	}
-	oo := make([]*app.CharacterIndustryJob, len(rows))
-	for i, r := range rows {
-		oo[i] = characterIndustryJobFromDBModel(
-			r.CharacterIndustryJob,
-			r.EveEntity,
-			r.BlueprintLocationName,
-			r.BlueprintLocationSecurity,
-			r.BlueprintTypeName,
-			r.CompletedCharacterName,
-			r.FacilityName,
-			r.FacilitySecurity,
-			r.OutputLocationName,
-			r.OutputLocationSecurity,
-			r.ProductTypeName,
-			r.StationName,
-			r.StationSecurity,
-		)
-	}
-	return oo, nil
-}
-
 func characterIndustryJobFromDBModel(
 	o queries.CharacterIndustryJob,
 	installer queries.EveEntity,

@@ -44,9 +44,8 @@ func NewIndustryJobs(u *BaseUI) *IndustryJobs {
 		{Text: "Remain", Width: 100, Refresh: true},
 		{Text: "Runs", Width: 50},
 		{Text: "Activity", Width: 200},
-		{Text: "Facility", Width: columnWidthLocation},
-		{Text: "Install date", Width: columnWidthDateTime},
 		{Text: "End date", Width: columnWidthDateTime},
+		{Text: "Facility", Width: columnWidthLocation},
 		{Text: "Installer", Width: columnWidthCharacter},
 	}
 	makeCell := func(col int, r *app.CharacterIndustryJob) []widget.RichTextSegment {
@@ -72,26 +71,31 @@ func NewIndustryJobs(u *BaseUI) *IndustryJobs {
 		case 4:
 			return iwidget.NewRichTextSegmentFromText(r.Activity.Display())
 		case 5:
-			return r.Facility.DisplayRichText()
-		case 6:
-			return iwidget.NewRichTextSegmentFromText(r.StartDate.Format(app.DateTimeFormat))
-		case 7:
 			return iwidget.NewRichTextSegmentFromText(r.EndDate.Format(app.DateTimeFormat))
-		case 8:
+		case 6:
+			return r.Facility.DisplayRichText()
+		case 7:
 			return iwidget.NewRichTextSegmentFromText(r.Installer.Name)
 		}
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	showDetail := func(r *app.CharacterIndustryJob) {
 		makeLocationWidget := func(o *app.EveLocationShort) *iwidget.TappableRichText {
-			return iwidget.NewTappableRichText(func() {
+			x := iwidget.NewTappableRichText(func() {
 				a.u.ShowLocationInfoWindow(o.ID)
 			},
 				o.DisplayRichText()...,
 			)
+			x.Wrapping = fyne.TextWrapWord
+			return x
+		}
+		newTappableLabelWithWrap := func(text string, f func()) *kxwidget.TappableLabel {
+			x := kxwidget.NewTappableLabel(text, f)
+			x.Wrapping = fyne.TextWrapWord
+			return x
 		}
 		items := []*widget.FormItem{
-			widget.NewFormItem("Blueprint", kxwidget.NewTappableLabel(r.BlueprintType.Name, func() {
+			widget.NewFormItem("Blueprint", newTappableLabelWithWrap(r.BlueprintType.Name, func() {
 				a.u.ShowInfoWindow(app.EveEntityInventoryType, r.BlueprintType.ID)
 			})),
 			widget.NewFormItem("Activity", widget.NewLabel(r.Activity.Display())),
@@ -100,7 +104,7 @@ func NewIndustryJobs(u *BaseUI) *IndustryJobs {
 			x := r.ProductType.MustValue()
 			items = append(items, widget.NewFormItem(
 				"Product Type",
-				kxwidget.NewTappableLabel(x.Name, func() {
+				newTappableLabelWithWrap(x.Name, func() {
 					a.u.ShowInfoWindow(app.EveEntityInventoryType, x.ID)
 				}),
 			))
@@ -128,39 +132,49 @@ func NewIndustryJobs(u *BaseUI) *IndustryJobs {
 				widget.NewLabel(fmt.Sprintf("%.0f%%", r.Probability.ValueOrZero()*100)),
 			))
 		}
-
-		items = slices.Concat(items, []*widget.FormItem{
-			widget.NewFormItem("Facility", makeLocationWidget(r.Facility)),
-			widget.NewFormItem("Start date", widget.NewLabel(r.StartDate.Format(app.DateTimeFormat))),
-			widget.NewFormItem("End date (est.)", widget.NewLabel(r.EndDate.Format(app.DateTimeFormat))),
-			widget.NewFormItem("Installer", kxwidget.NewTappableLabel(r.Installer.Name, func() {
-				a.u.ShowEveEntityInfoWindow(r.Installer)
-			})),
-			widget.NewFormItem("Blueprint Location", makeLocationWidget(r.BlueprintLocation)),
-			widget.NewFormItem("Output Location", makeLocationWidget(r.OutputLocation)),
-			widget.NewFormItem("Station", makeLocationWidget(r.Station)),
-		})
-
+		items = append(items, widget.NewFormItem("Start date", widget.NewLabel(r.StartDate.Format(app.DateTimeFormat))))
 		if !r.PauseDate.IsEmpty() {
 			items = append(items, widget.NewFormItem(
 				"Pause date",
 				widget.NewLabel(r.PauseDate.ValueOrZero().Format(app.DateTimeFormat)),
 			))
 		}
-		if !r.CompletedCharacter.IsEmpty() {
-			x := r.CompletedCharacter.MustValue()
-			items = append(items, widget.NewFormItem("Completed By", kxwidget.NewTappableLabel(x.Name, func() {
-				a.u.ShowEveEntityInfoWindow(x)
-			})))
-		}
+		items = append(items, widget.NewFormItem("End date", widget.NewLabel(r.EndDate.Format(app.DateTimeFormat))))
 		if !r.CompletedDate.IsEmpty() {
 			items = append(items, widget.NewFormItem(
 				"Completed date",
 				widget.NewLabel(r.CompletedDate.ValueOrZero().Format(app.DateTimeFormat))),
 			)
 		}
+
+		items = slices.Concat(items, []*widget.FormItem{
+			widget.NewFormItem("Facility", makeLocationWidget(r.Facility)),
+			widget.NewFormItem("Blueprint Location", makeLocationWidget(r.BlueprintLocation)),
+			widget.NewFormItem("Output Location", makeLocationWidget(r.OutputLocation)),
+			widget.NewFormItem("Station", makeLocationWidget(r.Station)),
+			widget.NewFormItem("Installer", newTappableLabelWithWrap(r.Installer.Name, func() {
+				a.u.ShowEveEntityInfoWindow(r.Installer)
+			})),
+			widget.NewFormItem("Owner", newTappableLabelWithWrap(
+				u.StatusCacheService().CharacterName(r.CharacterID),
+				func() {
+					a.u.ShowInfoWindow(app.EveEntityCharacter, r.CharacterID)
+				},
+			)),
+		})
+		if !r.CompletedCharacter.IsEmpty() {
+			x := r.CompletedCharacter.MustValue()
+			items = append(items, widget.NewFormItem("Completed By", newTappableLabelWithWrap(x.Name, func() {
+				a.u.ShowEveEntityInfoWindow(x)
+			})))
+		}
+		if a.u.IsDeveloperMode() {
+			items = append(items, widget.NewFormItem("Job ID", a.u.makeCopyToClipbardLabel(fmt.Sprint(r.JobID))))
+		}
 		title := fmt.Sprintf("%s - %s - #%d", r.BlueprintType.Name, r.Activity.Display(), r.JobID)
-		w := a.u.makeDetailWindow("Industry Job", title, widget.NewForm(items...))
+		f := widget.NewForm(items...)
+		f.Orientation = widget.Adaptive
+		w := a.u.makeDetailWindow("Industry Job", title, f)
 		w.Show()
 	}
 	if a.u.IsDesktop() {

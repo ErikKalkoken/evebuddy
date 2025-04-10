@@ -21,6 +21,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -1100,7 +1101,6 @@ func (u *BaseUI) makeAboutPage() fyne.CanvasObject {
 func (u *BaseUI) makeDetailWindow(title, subTitle string, content fyne.CanvasObject) fyne.Window {
 	w := u.App().NewWindow(u.MakeWindowTitle(title))
 	t := iwidget.NewLabelWithSize(subTitle, theme.SizeNameSubHeadingText)
-	t.Wrapping = fyne.TextWrapWord
 	top := container.NewVBox(t, widget.NewSeparator())
 	bottom := container.NewVBox(
 		widget.NewSeparator(),
@@ -1110,12 +1110,20 @@ func (u *BaseUI) makeDetailWindow(title, subTitle string, content fyne.CanvasObj
 	)
 	vs := container.NewVScroll(content)
 	vs.SetMinSize(fyne.NewSize(600, 500))
-	w.SetContent(container.NewPadded(container.NewBorder(
+	c := container.NewBorder(
 		top,
 		bottom,
 		nil,
 		nil,
 		vs,
-	)))
+	)
+	c.Refresh()
+	w.SetContent(container.NewPadded(c))
 	return w
+}
+
+func (u *BaseUI) makeCopyToClipbardLabel(text string) *kxwidget.TappableLabel {
+	return kxwidget.NewTappableLabel(text, func() {
+		u.MainWindow().Clipboard().SetContent(text)
+	})
 }

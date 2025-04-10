@@ -53,4 +53,4 @@ CREATE INDEX character_industry_jobs_idx8 ON character_industry_jobs (product_ty
 
 CREATE INDEX character_industry_jobs_idx9 ON character_industry_jobs (station_id);
 
-CREATE INDEX character_industry_jobs_idx10 ON character_industry_jobs (start_date DESC);
+CREATE INDEX character_industry_jobs_idx10 ON character_industry_jobs (end_date DESC);

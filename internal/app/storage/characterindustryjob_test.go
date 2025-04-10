@@ -199,22 +199,30 @@ func TestCharacterIndustryJob(t *testing.T) {
 		if err := st.UpdateOrCreateCharacterIndustryJob(ctx, arg); err != nil {
 			t.Fatal(err)
 		}
+		completedCharacter := factory.CreateEveEntityCharacter()
+		completedDate := now
+		pauseDate := now.Add(-3 * time.Hour)
+		endDate2 := now.Add(20 * time.Hour)
 		arg = storage.UpdateOrCreateCharacterIndustryJobParams{
-			ActivityID:          int32(app.Manufacturing),
-			BlueprintID:         42,
-			BlueprintLocationID: blueprintLocation.ID,
-			BlueprintTypeID:     blueprintType.ID,
-			CharacterID:         c.ID,
-			Duration:            123,
-			EndDate:             endDate,
-			FacilityID:          facility.ID,
-			InstallerID:         installer.ID,
-			JobID:               1,
-			OutputLocationID:    outputLocation.ID,
-			Runs:                7,
-			StartDate:           startDate,
-			Status:              app.JobDelivered,
-			StationID:           station.ID,
+			ActivityID:           int32(app.Manufacturing),
+			BlueprintID:          42,
+			BlueprintLocationID:  blueprintLocation.ID,
+			BlueprintTypeID:      blueprintType.ID,
+			CharacterID:          c.ID,
+			CompletedCharacterID: completedCharacter.ID,
+			CompletedDate:        completedDate,
+			Duration:             123,
+			EndDate:              endDate2,
+			FacilityID:           facility.ID,
+			InstallerID:          installer.ID,
+			JobID:                1,
+			OutputLocationID:     outputLocation.ID,
+			PauseDate:            pauseDate,
+			Runs:                 7,
+			StartDate:            startDate,
+			Status:               app.JobDelivered,
+			StationID:            station.ID,
+			SuccessfulRuns:       5,
 		}
 		// when
 		err := st.UpdateOrCreateCharacterIndustryJob(ctx, arg)
@@ -222,26 +230,13 @@ func TestCharacterIndustryJob(t *testing.T) {
 		if assert.NoError(t, err) {
 			o, err := st.GetCharacterIndustryJob(ctx, arg.CharacterID, arg.JobID)
 			if assert.NoError(t, err) {
+				assert.Equal(t, completedCharacter.ID, o.CompletedCharacter.MustValue().ID)
+				assert.Equal(t, completedDate, o.CompletedDate.MustValue())
+				assert.Equal(t, endDate2, o.EndDate)
+				assert.Equal(t, pauseDate, o.PauseDate.MustValue())
 				assert.Equal(t, app.JobDelivered, o.Status)
+				assert.EqualValues(t, 5, o.SuccessfulRuns.MustValue())
 			}
-		}
-	})
-	t.Run("can list jobs for a character", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
-		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			CharacterID: c.ID,
-		})
-		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			CharacterID: c.ID,
-		})
-		factory.CreateCharacterIndustryJob()
-		// when
-		x, err := st.ListCharacterIndustryJob(ctx, c.ID)
-		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, x, 2)
 		}
 	})
 	t.Run("can list jobs for all characters", func(t *testing.T) {

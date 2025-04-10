@@ -367,10 +367,8 @@ func (a *CharacterContracts) showContract(c *app.CharacterContract) {
 		main.Add(&widget.Form{
 			Items: []*widget.FormItem{
 				{
-					Text: "Contract ID",
-					Widget: kxwidget.NewTappableLabel(fmt.Sprint(c.ContractID), func() {
-						a.u.MainWindow().Clipboard().SetContent(fmt.Sprint(c.ContractID))
-					}),
+					Text:   "Contract ID",
+					Widget: a.u.makeCopyToClipbardLabel(fmt.Sprint(c.ContractID)),
 				},
 			}})
 	}
