@@ -31,7 +31,7 @@ func (s *EveNotificationService) renderWar(ctx context.Context, type_ Type, text
 	case WarRetractedByConcord:
 		return s.renderWarRetractedByConcord(ctx, text)
 	}
-	panic("Notification type not implemented: " + type_)
+	return optional.Optional[string]{}, optional.Optional[string]{}, fmt.Errorf("render war: unknown notification type: %s", type_)
 }
 
 func (s *EveNotificationService) renderAllWarSurrenderMsg(ctx context.Context, text string) (optional.Optional[string], optional.Optional[string], error) {

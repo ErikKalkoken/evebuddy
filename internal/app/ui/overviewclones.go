@@ -70,10 +70,10 @@ type OverviewClones struct {
 
 func NewOverviewClones(u *BaseUI) *OverviewClones {
 	headers := []iwidget.HeaderDef{
-		{Text: "Location", Width: locationColumnWidth},
-		{Text: "Region", Width: regionColumnWidth},
+		{Text: "Location", Width: columnWidthLocation},
+		{Text: "Region", Width: columnWidthRegion},
 		{Text: "Impl.", Width: 100},
-		{Text: "Character", Width: characterColumnWidth},
+		{Text: "Character", Width: columnWidthCharacter},
 		{Text: "Jumps", Width: 100},
 	}
 	a := &OverviewClones{

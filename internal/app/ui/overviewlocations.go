@@ -34,9 +34,9 @@ func NewOverviewLocations(u *BaseUI) *OverviewLocations {
 	a.ExtendBaseWidget(a)
 
 	headers := []iwidget.HeaderDef{
-		{Text: "Character", Width: characterColumnWidth},
-		{Text: "Location", Width: locationColumnWidth},
-		{Text: "Region", Width: regionColumnWidth},
+		{Text: "Character", Width: columnWidthCharacter},
+		{Text: "Location", Width: columnWidthLocation},
+		{Text: "Region", Width: columnWidthRegion},
 		{Text: "Ship", Width: 150},
 	}
 

@@ -1,6 +1,8 @@
 package widget
 
 import (
+	"time"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -12,8 +14,9 @@ import (
 )
 
 type HeaderDef struct {
-	Text  string
-	Width float32
+	Text    string
+	Width   float32
+	Refresh bool
 }
 
 func maxHeaderWidth(headers []HeaderDef) float32 {
@@ -71,6 +74,20 @@ func MakeDataTableForDesktop[S ~[]E, E any](
 	}
 	for i, h := range headers {
 		t.SetColumnWidth(i, h.Width)
+	}
+	var needsRefresh bool
+	for _, h := range headers {
+		if h.Refresh {
+			needsRefresh = true
+			break
+		}
+	}
+	if needsRefresh {
+		ticker := time.NewTicker(30 * time.Second)
+		go func() {
+			<-ticker.C
+			t.Refresh()
+		}()
 	}
 	return t
 }

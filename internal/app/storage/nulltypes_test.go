@@ -10,17 +10,21 @@ import (
 )
 
 func TestNullTypes(t *testing.T) {
-	t.Run("should convert float64", func(t *testing.T) {
+	t.Run("should convert float64 from value", func(t *testing.T) {
 		x := storage.NewNullFloat64(1.2)
 		assert.Equal(t, sql.NullFloat64{Float64: 1.2, Valid: true}, x)
 	})
-	t.Run("should convert int32", func(t *testing.T) {
-		x := storage.NewNullInt32(42)
-		assert.Equal(t, sql.NullInt32{Int32: 42, Valid: true}, x)
+	t.Run("should convert float64 from zero", func(t *testing.T) {
+		x := storage.NewNullFloat64(0)
+		assert.Equal(t, sql.NullFloat64{}, x)
 	})
-	t.Run("should convert int64", func(t *testing.T) {
+	t.Run("should convert int64 from value", func(t *testing.T) {
 		x := storage.NewNullInt64(42)
 		assert.Equal(t, sql.NullInt64{Int64: 42, Valid: true}, x)
+	})
+	t.Run("should convert int64 from zero", func(t *testing.T) {
+		x := storage.NewNullInt64(0)
+		assert.Equal(t, sql.NullInt64{Int64: 0, Valid: false}, x)
 	})
 	t.Run("should convert string", func(t *testing.T) {
 		x := storage.NewNullString("alpha")

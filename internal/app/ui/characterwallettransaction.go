@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -27,6 +26,15 @@ type CharacterWalletTransaction struct {
 }
 
 func NewCharacterWalletTransaction(u *BaseUI) *CharacterWalletTransaction {
+	headers := []iwidget.HeaderDef{
+		{Text: "Date", Width: 150},
+		{Text: "Quantity", Width: 130},
+		{Text: "Type", Width: 200},
+		{Text: "Unit Price", Width: 200},
+		{Text: "Total", Width: 200},
+		{Text: "Client", Width: 250},
+		{Text: "Where", Width: 350},
+	}
 	a := &CharacterWalletTransaction{
 		top:  appwidget.MakeTopLabel(),
 		rows: make([]*app.CharacterWalletTransaction, 0),
@@ -72,28 +80,9 @@ func NewCharacterWalletTransaction(u *BaseUI) *CharacterWalletTransaction {
 		case 5:
 			return iwidget.NewRichTextSegmentFromText(r.Client.Name)
 		case 6:
-			if r.Location != nil && !r.SystemSecurityStatus.IsEmpty() {
-				secValue := r.SystemSecurityStatus.MustValue()
-				secType := app.NewSolarSystemSecurityTypeFromValue(secValue)
-				return slices.Concat(
-					iwidget.NewRichTextSegmentFromText(
-						fmt.Sprintf("%.1f", secValue),
-						widget.RichTextStyle{ColorName: secType.ToColorName(), Inline: true},
-					),
-					iwidget.NewRichTextSegmentFromText("  "+r.Location.Name),
-				)
-			}
+			return r.Location.DisplayRichText()
 		}
 		return iwidget.NewRichTextSegmentFromText("?")
-	}
-	headers := []iwidget.HeaderDef{
-		{Text: "Date", Width: 150},
-		{Text: "Quantity", Width: 130},
-		{Text: "Type", Width: 200},
-		{Text: "Unit Price", Width: 200},
-		{Text: "Total", Width: 200},
-		{Text: "Client", Width: 250},
-		{Text: "Where", Width: 350},
 	}
 	if a.u.IsDesktop() {
 		a.body = iwidget.MakeDataTableForDesktop2(headers, &a.rows, makeCell, func(column int, r *app.CharacterWalletTransaction) {

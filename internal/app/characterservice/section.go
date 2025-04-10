@@ -42,6 +42,8 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 		f = s.updateContractsESI
 	case app.SectionImplants:
 		f = s.updateImplantsESI
+	case app.SectionIndustryJobs:
+		f = s.updateIndustryJobsESI
 	case app.SectionJumpClones:
 		f = s.updateJumpClonesESI
 	case app.SectionLocation:
@@ -71,7 +73,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 	case app.SectionWalletTransactions:
 		f = s.updateWalletTransactionESI
 	default:
-		panic(fmt.Sprintf("Undefined section: %s", arg.Section))
+		return false, fmt.Errorf("update section: unknown section: %s", arg.Section)
 	}
 	key := fmt.Sprintf("UpdateESI-%s-%d", arg.Section, arg.CharacterID)
 	x, err, _ := s.sfg.Do(key, func() (any, error) {

@@ -51,7 +51,7 @@ func (s *EveNotificationService) renderStructure(ctx context.Context, type_ Type
 	case StructureWentLowPower:
 		return s.renderStructureWentLowPower(ctx, text)
 	}
-	panic("Notification type not implemented: " + type_)
+	return optional.Optional[string]{}, optional.Optional[string]{}, fmt.Errorf("render structure: unknown notification type: %s", type_)
 }
 
 func (s *EveNotificationService) renderOwnershipTransferred(ctx context.Context, text string) (optional.Optional[string], optional.Optional[string], error) {

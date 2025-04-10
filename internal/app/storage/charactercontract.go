@@ -95,6 +95,8 @@ func (st *Storage) CreateCharacterContract(ctx context.Context, arg CreateCharac
 		arg.UpdatedAt = time.Now().UTC()
 	}
 	arg2 := queries.CreateCharacterContractParams{
+		AcceptorID:          NewNullInt64(int64(arg.AcceptorID)),
+		AssigneeID:          NewNullInt64(int64(arg.AssigneeID)),
 		Availability:        contractAvailabilityToDBValue[arg.Availability],
 		Buyout:              arg.Buyout,
 		CharacterID:         int64(arg.CharacterID),
@@ -105,29 +107,19 @@ func (st *Storage) CreateCharacterContract(ctx context.Context, arg CreateCharac
 		DateExpired:         arg.DateExpired,
 		DateIssued:          arg.DateIssued,
 		DaysToComplete:      int64(arg.DaysToComplete),
+		EndLocationID:       NewNullInt64(arg.EndLocationID),
 		ForCorporation:      arg.ForCorporation,
 		IssuerCorporationID: int64(arg.IssuerCorporationID),
 		IssuerID:            int64(arg.IssuerID),
 		Price:               arg.Price,
 		Reward:              arg.Reward,
+		StartLocationID:     NewNullInt64(arg.StartLocationID),
 		Status:              contractStatusToDBValue[arg.Status],
 		StatusNotified:      contractStatusToDBValue[arg.StatusNotified],
 		Title:               arg.Title,
 		Type:                contractTypeToDBValue[arg.Type],
 		UpdatedAt:           arg.UpdatedAt,
 		Volume:              arg.Volume,
-	}
-	if arg.AcceptorID != 0 {
-		arg2.AcceptorID = NewNullInt64(int64(arg.AcceptorID))
-	}
-	if arg.AssigneeID != 0 {
-		arg2.AssigneeID = NewNullInt64(int64(arg.AssigneeID))
-	}
-	if arg.EndLocationID != 0 {
-		arg2.EndLocationID = NewNullInt64(arg.EndLocationID)
-	}
-	if arg.StartLocationID != 0 {
-		arg2.StartLocationID = NewNullInt64(arg.StartLocationID)
 	}
 	id, err := st.qRW.CreateCharacterContract(ctx, arg2)
 	if err != nil {

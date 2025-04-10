@@ -18,7 +18,7 @@ func (s *EveNotificationService) renderTower(ctx context.Context, type_ Type, te
 	case TowerResourceAlertMsg:
 		return s.renderTowerResourceAlertMsg(ctx, text)
 	}
-	panic("Notification type not implemented: " + type_)
+	return optional.Optional[string]{}, optional.Optional[string]{}, fmt.Errorf("render tower: unknown notification type: %s", type_)
 }
 
 func (s *EveNotificationService) renderTowerAlertMsg(ctx context.Context, text string) (optional.Optional[string], optional.Optional[string], error) {

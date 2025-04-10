@@ -202,7 +202,7 @@ func eveEntityCategoryFromESICategory(c string) app.EveEntityCategory {
 	}
 	c2, ok := categoryMap[c]
 	if !ok {
-		panic(fmt.Sprintf("Can not map invalid category: %v", c))
+		return app.EveEntityUnknown
 	}
 	return c2
 }

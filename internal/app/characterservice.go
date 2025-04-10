@@ -36,6 +36,7 @@ type CharacterService interface {
 	ListAllAssets(ctx context.Context) ([]*CharacterAsset, error)
 	ListAllJumpClones(ctx context.Context) ([]*CharacterJumpClone2, error)
 	ListAllPlanets(ctx context.Context) ([]*CharacterPlanet, error)
+	ListAllCharacterIndustryJob(ctx context.Context) ([]*CharacterIndustryJob, error)
 	ListAssets(ctx context.Context, characterID int32) ([]*CharacterAsset, error)
 	ListAssetsInItemHangar(ctx context.Context, characterID int32, locationID int64) ([]*CharacterAsset, error)
 	ListAssetsInLocation(ctx context.Context, characterID int32, locationID int64) ([]*CharacterAsset, error)

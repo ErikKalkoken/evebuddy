@@ -5,8 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/stretchr/testify/assert"
 )
@@ -50,7 +52,10 @@ func TestWalletTransaction(t *testing.T) {
 				assert.True(t, i.IsPersonal)
 				assert.Equal(t, int64(99), i.JournalRefID)
 				assert.Equal(t, location.ID, i.Location.ID)
-				assert.Equal(t, location.Name, i.Location.Name)
+				assert.Equal(t, &app.EveLocationShort{
+					ID:             location.ID,
+					Name:           optional.New(location.Name),
+					SecurityStatus: i.Location.SecurityStatus}, i.Location)
 				assert.Equal(t, c.ID, i.CharacterID)
 				assert.Equal(t, int32(7), i.Quantity)
 				assert.Equal(t, 123.45, i.UnitPrice)

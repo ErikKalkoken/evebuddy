@@ -102,24 +102,22 @@ func characterWalletTransactionFromDBModel(
 	locationName string,
 	systemSecurityStatus sql.NullFloat64,
 ) *app.CharacterWalletTransaction {
-	var sss optional.Optional[float32]
-	if systemSecurityStatus.Valid {
-		sss.Set(float32(systemSecurityStatus.Float64))
-	}
 	o2 := &app.CharacterWalletTransaction{
-		Client:               eveEntityFromDBModel(client),
-		Date:                 o.Date,
-		EveType:              &app.EntityShort[int32]{ID: int32(o.EveTypeID), Name: eveTypeName},
-		ID:                   o.ID,
-		IsBuy:                o.IsBuy,
-		IsPersonal:           o.IsPersonal,
-		JournalRefID:         o.JournalRefID,
-		Location:             &app.EntityShort[int64]{ID: o.LocationID, Name: locationName},
-		CharacterID:          int32(o.CharacterID),
-		Quantity:             int32(o.Quantity),
-		TransactionID:        o.TransactionID,
-		UnitPrice:            o.UnitPrice,
-		SystemSecurityStatus: sss,
+		Client:       eveEntityFromDBModel(client),
+		Date:         o.Date,
+		EveType:      &app.EntityShort[int32]{ID: int32(o.EveTypeID), Name: eveTypeName},
+		ID:           o.ID,
+		IsBuy:        o.IsBuy,
+		IsPersonal:   o.IsPersonal,
+		JournalRefID: o.JournalRefID,
+		Location: &app.EveLocationShort{
+			ID:             o.LocationID,
+			Name:           optional.New(locationName),
+			SecurityStatus: optional.FromNullFloat64ToFloat32(systemSecurityStatus)},
+		CharacterID:   int32(o.CharacterID),
+		Quantity:      int32(o.Quantity),
+		TransactionID: o.TransactionID,
+		UnitPrice:     o.UnitPrice,
 	}
 	return o2
 }

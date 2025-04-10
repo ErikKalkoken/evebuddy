@@ -58,7 +58,7 @@ func NewOverviewColonies(u *BaseUI) *OverviewColonies {
 		{Text: "Due", Width: 150},
 		{Text: "Producing", Width: 200},
 		{Text: "Region", Width: 150},
-		{Text: "Character", Width: characterColumnWidth},
+		{Text: "Character", Width: columnWidthCharacter},
 	}
 	makeCell := func(col int, r colonyRow) []widget.RichTextSegment {
 		switch col {

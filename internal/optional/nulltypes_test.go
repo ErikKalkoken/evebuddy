@@ -46,6 +46,16 @@ func TestNullTypeConversion(t *testing.T) {
 		x2 := optional.ToNullFloat64(o)
 		assert.Equal(t, x1, x2)
 	})
+	t.Run("can convert NullFloat64 3", func(t *testing.T) {
+		x := sql.NullFloat64{Float64: 1.23, Valid: true}
+		o := optional.FromNullFloat64ToFloat32(x)
+		assert.Equal(t, optional.New(float32(1.23)), o)
+	})
+	t.Run("can convert NullFloat64 4", func(t *testing.T) {
+		x := sql.NullFloat64{}
+		o := optional.FromNullFloat64ToFloat32(x)
+		assert.Equal(t, optional.Optional[float32]{}, o)
+	})
 	t.Run("can convert NullInt64 to int", func(t *testing.T) {
 		x1 := sql.NullInt64{Int64: 42, Valid: true}
 		o := optional.FromNullInt64ToInteger[int](x1)
