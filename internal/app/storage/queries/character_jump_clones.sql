@@ -17,46 +17,38 @@ WHERE
 
 -- name: GetCharacterJumpClone :one
 SELECT
-    sqlc.embed(character_jump_clones),
-    eve_locations.name as location_name,
-    eve_regions.id as region_id,
-    eve_regions.name as region_name
+    sqlc.embed(cjc),
+    el.name as location_name,
+    er.id as region_id,
+    er.name as region_name,
+    ess.security_status as location_security
 FROM
-    character_jump_clones
-    JOIN eve_locations ON eve_locations.id = character_jump_clones.location_id
-    LEFT JOIN eve_solar_systems ON eve_solar_systems.id = eve_locations.eve_solar_system_id
-    LEFT JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
-    LEFT JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
+    character_jump_clones cjc
+    JOIN eve_locations el ON el.id = cjc.location_id
+    LEFT JOIN eve_solar_systems ess ON ess.id = el.eve_solar_system_id
+    LEFT JOIN eve_constellations ON eve_constellations.id = ess.eve_constellation_id
+    LEFT JOIN eve_regions er ON er.id = eve_constellations.eve_region_id
 WHERE
     character_id = ?
     AND jump_clone_id = ?;
 
 -- name: ListCharacterJumpClones :many
 SELECT
-    DISTINCT sqlc.embed(character_jump_clones),
-    eve_locations.name as location_name,
-    eve_regions.id as region_id,
-    eve_regions.name as region_name,
-    (
-        SELECT
-            COUNT(*)
-        FROM
-            character_jump_clone_implants
-        WHERE
-            clone_id = character_jump_clones.id
-    ) AS implants_count
+    DISTINCT sqlc.embed(cjc),
+    el.name as location_name,
+    er.id as region_id,
+    er.name as region_name,
+    ess.security_status as location_security
 FROM
-    character_jump_clones
-    JOIN eve_locations ON eve_locations.id = character_jump_clones.location_id
-    LEFT JOIN character_jump_clone_implants ON character_jump_clone_implants.clone_id = character_jump_clones.id
-    LEFT JOIN eve_solar_systems ON eve_solar_systems.id = eve_locations.eve_solar_system_id
-    LEFT JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
-    LEFT JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
+    character_jump_clones cjc
+    JOIN eve_locations el ON el.id = cjc.location_id
+    LEFT JOIN eve_solar_systems ess ON ess.id = el.eve_solar_system_id
+    LEFT JOIN eve_constellations ON eve_constellations.id = ess.eve_constellation_id
+    LEFT JOIN eve_regions er ON er.id = eve_constellations.eve_region_id
 WHERE
     character_id = ?
 ORDER BY
-    location_name,
-    implants_count DESC;
+    location_name;
 
 -- name: ListAllCharacterJumpClones :many
 SELECT

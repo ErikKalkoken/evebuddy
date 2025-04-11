@@ -5,7 +5,7 @@ type CharacterJumpClone struct {
 	ID          int64
 	Implants    []*CharacterJumpCloneImplant
 	CloneID     int32
-	Location    *EntityShort[int64]
+	Location    *EveLocationShort
 	Name        string
 	Region      *EntityShort[int32]
 }

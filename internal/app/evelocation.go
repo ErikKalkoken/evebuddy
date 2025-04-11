@@ -146,3 +146,10 @@ func (l EveLocationShort) DisplayRichText() []widget.RichTextSegment {
 	s = slices.Concat(s, iwidget.NewRichTextSegmentFromText(name))
 	return s
 }
+
+func (l EveLocationShort) SecurityType() optional.Optional[SolarSystemSecurityType] {
+	if l.SecurityStatus.IsEmpty() {
+		return optional.Optional[SolarSystemSecurityType]{}
+	}
+	return optional.New(NewSolarSystemSecurityTypeFromValue(l.SecurityStatus.MustValue()))
+}
