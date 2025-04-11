@@ -76,6 +76,7 @@ var (
 	pprofFlag          = flag.Bool("pprof", false, "Enable pprof web server")
 	resetSettingsFlag  = flag.Bool("reset-settings", false, "Resets desktop settings")
 	versionFlag        = flag.Bool("v", false, "Show version")
+	ssoDemoFlag        = flag.Bool("sso-demo", false, "Start SSO serer in demo mode")
 )
 
 func main() {
@@ -167,6 +168,13 @@ func main() {
 		logWriter = io.MultiWriter(os.Stderr, logger)
 	}
 	log.SetOutput(logWriter)
+
+	if *ssoDemoFlag {
+		sso := sso.New("", http.DefaultClient)
+		sso.DemoMode = true
+		sso.Authenticate(context.Background(), []string{})
+		return
+	}
 
 	if isDesktop {
 		// ensure single instance
