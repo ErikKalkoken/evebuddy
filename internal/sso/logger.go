@@ -42,7 +42,7 @@ func WithLogger(handlerToWrap http.Handler) *Logger {
 // ServeHTTP handles the request by passing it to the real
 // handler and logging the request and response.
 func (l *Logger) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	slog.Info("SSO server request", "method", r.Method, "path", r.URL.Path)
+	slog.Debug("SSO server request", "method", r.Method, "path", r.URL.Path)
 	lw := &loggingResponseWriter{ResponseWriter: rw}
 	l.handler.ServeHTTP(lw, r)
 	slog.Info("SSO server response", "method", r.Method, "path", r.URL.Path, "status", lw.info.Status())

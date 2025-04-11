@@ -41,8 +41,8 @@ const (
 	pingTimeout         = 5 * time.Second
 )
 
-//go:embed template/*
-var templateFS embed.FS
+//go:embed tmpl/*
+var templFS embed.FS
 
 var (
 	ErrAborted             = errors.New("auth process canceled prematurely")
@@ -54,6 +54,9 @@ var (
 type SSOService struct {
 	// Function to open the default browser. This must to be configured.
 	OpenURL func(*url.URL) error
+	// When enabled will keep the SSO server running and not start the authentication.
+	// This feature is for testing purposes only.
+	DemoMode bool
 
 	authorizeURL string
 	callbackPath string
@@ -121,6 +124,10 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 	router.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "pong\n")
 	})
+	// Route for stopping the server
+	router.HandleFunc("/stop", func(w http.ResponseWriter, r *http.Request) {
+		cancel()
+	})
 	// Route for responding to SSO callback from CCP server
 	router.HandleFunc(s.callbackPath, func(w http.ResponseWriter, r *http.Request) {
 		v := r.URL.Query()
@@ -151,20 +158,24 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 		http.Redirect(w, r, "/authenticated", http.StatusSeeOther)
 	})
 	router.HandleFunc("/authenticated", func(w http.ResponseWriter, r *http.Request) {
-		x := serverCtx.Value(keyAuthenticatedCharacter)
-		token, ok := x.(*Token)
-		if !ok {
-			processError(w, http.StatusInternalServerError, fmt.Errorf("token not found in context"))
-			return
+		var name string
+		token, ok := serverCtx.Value(keyAuthenticatedCharacter).(*Token)
+		if ok {
+			name = token.CharacterName
+		} else {
+			name = "?"
 		}
-		t, err := template.ParseFS(templateFS, "template/authenticated.html")
+		t, err := template.ParseFS(templFS, "tmpl/authenticated.html")
 		if err != nil {
 			processError(w, http.StatusInternalServerError, err)
 			return
 		}
-		err = t.Execute(w, map[string]string{"Name": token.CharacterName})
+		err = t.Execute(w, map[string]string{"Name": name})
 		if err != nil {
 			processError(w, http.StatusInternalServerError, err)
+			return
+		}
+		if s.DemoMode {
 			return
 		}
 		cancel() // shutdown http server
@@ -212,8 +223,10 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 		return nil, fmt.Errorf("SSO server: ping: %w", err)
 	}
 
-	if err := s.startSSO(state, codeVerifier, scopes); err != nil {
-		return nil, fmt.Errorf("SSO server: start SSO: %w", err)
+	if !s.DemoMode {
+		if err := s.startSSO(state, codeVerifier, scopes); err != nil {
+			return nil, fmt.Errorf("SSO server: start SSO: %w", err)
+		}
 	}
 	<-serverCtx.Done()
 
