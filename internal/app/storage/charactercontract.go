@@ -150,8 +150,10 @@ func (st *Storage) GetCharacterContract(ctx context.Context, characterID, contra
 		r.StartLocationName,
 		r.EndSolarSystemID,
 		r.EndSolarSystemName,
+		r.EndSolarSystemSecurityStatus,
 		r.StartSolarSystemID,
 		r.StartSolarSystemName,
+		r.StartSolarSystemSecurityStatus,
 		r.Items,
 	)
 	return o2, err
@@ -185,8 +187,10 @@ func (st *Storage) ListAllCharacterContracts(ctx context.Context) ([]*app.Charac
 			r.StartLocationName,
 			r.EndSolarSystemID,
 			r.EndSolarSystemName,
+			r.EndSolarSystemSecurityStatus,
 			r.StartSolarSystemID,
 			r.StartSolarSystemName,
+			r.StartSolarSystemSecurityStatus,
 			r.Items,
 		)
 	}
@@ -217,8 +221,10 @@ func (st *Storage) ListCharacterContractsForNotify(ctx context.Context, characte
 			r.StartLocationName,
 			r.EndSolarSystemID,
 			r.EndSolarSystemName,
+			r.EndSolarSystemSecurityStatus,
 			r.StartSolarSystemID,
 			r.StartSolarSystemName,
+			r.StartSolarSystemSecurityStatus,
 			r.Items,
 		)
 	}
@@ -290,8 +296,10 @@ func characterContractFromDBModel(
 	startLocationName sql.NullString,
 	endSolarSystemID sql.NullInt64,
 	endSolarSystemName sql.NullString,
+	endSolarSystemSecurity sql.NullFloat64,
 	startSolarSystemID sql.NullInt64,
 	startSolarSystemName sql.NullString,
+	startSolarSystemSecurity sql.NullFloat64,
 	items any,
 ) *app.CharacterContract {
 	i2, ok := items.(string)
@@ -325,16 +333,18 @@ func characterContractFromDBModel(
 		UpdatedAt:         o.UpdatedAt,
 		Volume:            o.Volume,
 	}
-	if o.EndLocationID.Valid && endLocationName.Valid {
-		o2.EndLocation = &app.EntityShort[int64]{
-			ID:   o.EndLocationID.Int64,
-			Name: endLocationName.String,
+	if o.EndLocationID.Valid {
+		o2.EndLocation = &app.EveLocationShort{
+			ID:             o.EndLocationID.Int64,
+			Name:           optional.FromNullString(endLocationName),
+			SecurityStatus: optional.FromNullFloat64ToFloat32(endSolarSystemSecurity),
 		}
 	}
-	if o.StartLocationID.Valid && startLocationName.Valid {
-		o2.StartLocation = &app.EntityShort[int64]{
-			ID:   o.StartLocationID.Int64,
-			Name: startLocationName.String,
+	if o.StartLocationID.Valid {
+		o2.StartLocation = &app.EveLocationShort{
+			ID:             o.StartLocationID.Int64,
+			Name:           optional.FromNullString(startLocationName),
+			SecurityStatus: optional.FromNullFloat64ToFloat32(startSolarSystemSecurity),
 		}
 	}
 	if endSolarSystemID.Valid && endSolarSystemName.Valid {

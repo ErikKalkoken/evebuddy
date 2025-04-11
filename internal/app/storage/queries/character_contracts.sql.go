@@ -144,8 +144,10 @@ SELECT
     start_locations.name as start_location_name,
     end_solar_systems.id as end_solar_system_id,
     end_solar_systems.name as end_solar_system_name,
+    end_solar_systems.security_status as end_solar_system_security_status,
     start_solar_systems.id as start_solar_system_id,
     start_solar_systems.name as start_solar_system_name,
+    start_solar_systems.security_status as start_solar_system_security_status,
     (
         SELECT
             IFNULL(GROUP_CONCAT(name || " x " || quantity), "")
@@ -177,20 +179,22 @@ type GetCharacterContractParams struct {
 }
 
 type GetCharacterContractRow struct {
-	CharacterContract    CharacterContract
-	EveEntity            EveEntity
-	EveEntity_2          EveEntity
-	AcceptorName         sql.NullString
-	AcceptorCategory     sql.NullString
-	AssigneeName         sql.NullString
-	AssigneeCategory     sql.NullString
-	EndLocationName      sql.NullString
-	StartLocationName    sql.NullString
-	EndSolarSystemID     sql.NullInt64
-	EndSolarSystemName   sql.NullString
-	StartSolarSystemID   sql.NullInt64
-	StartSolarSystemName sql.NullString
-	Items                interface{}
+	CharacterContract              CharacterContract
+	EveEntity                      EveEntity
+	EveEntity_2                    EveEntity
+	AcceptorName                   sql.NullString
+	AcceptorCategory               sql.NullString
+	AssigneeName                   sql.NullString
+	AssigneeCategory               sql.NullString
+	EndLocationName                sql.NullString
+	StartLocationName              sql.NullString
+	EndSolarSystemID               sql.NullInt64
+	EndSolarSystemName             sql.NullString
+	EndSolarSystemSecurityStatus   sql.NullFloat64
+	StartSolarSystemID             sql.NullInt64
+	StartSolarSystemName           sql.NullString
+	StartSolarSystemSecurityStatus sql.NullFloat64
+	Items                          interface{}
 }
 
 func (q *Queries) GetCharacterContract(ctx context.Context, arg GetCharacterContractParams) (GetCharacterContractRow, error) {
@@ -237,8 +241,10 @@ func (q *Queries) GetCharacterContract(ctx context.Context, arg GetCharacterCont
 		&i.StartLocationName,
 		&i.EndSolarSystemID,
 		&i.EndSolarSystemName,
+		&i.EndSolarSystemSecurityStatus,
 		&i.StartSolarSystemID,
 		&i.StartSolarSystemName,
+		&i.StartSolarSystemSecurityStatus,
 		&i.Items,
 	)
 	return i, err
@@ -257,8 +263,10 @@ SELECT
     start_locations.name as start_location_name,
     end_solar_systems.id as end_solar_system_id,
     end_solar_systems.name as end_solar_system_name,
+    end_solar_systems.security_status as end_solar_system_security_status,
     start_solar_systems.id as start_solar_system_id,
     start_solar_systems.name as start_solar_system_name,
+    start_solar_systems.security_status as start_solar_system_security_status,
     (
         SELECT
             IFNULL(GROUP_CONCAT(name || " x " || quantity), "")
@@ -286,20 +294,22 @@ ORDER BY
 `
 
 type ListAllCharacterContractsRow struct {
-	CharacterContract    CharacterContract
-	EveEntity            EveEntity
-	EveEntity_2          EveEntity
-	AcceptorName         sql.NullString
-	AcceptorCategory     sql.NullString
-	AssigneeName         sql.NullString
-	AssigneeCategory     sql.NullString
-	EndLocationName      sql.NullString
-	StartLocationName    sql.NullString
-	EndSolarSystemID     sql.NullInt64
-	EndSolarSystemName   sql.NullString
-	StartSolarSystemID   sql.NullInt64
-	StartSolarSystemName sql.NullString
-	Items                interface{}
+	CharacterContract              CharacterContract
+	EveEntity                      EveEntity
+	EveEntity_2                    EveEntity
+	AcceptorName                   sql.NullString
+	AcceptorCategory               sql.NullString
+	AssigneeName                   sql.NullString
+	AssigneeCategory               sql.NullString
+	EndLocationName                sql.NullString
+	StartLocationName              sql.NullString
+	EndSolarSystemID               sql.NullInt64
+	EndSolarSystemName             sql.NullString
+	EndSolarSystemSecurityStatus   sql.NullFloat64
+	StartSolarSystemID             sql.NullInt64
+	StartSolarSystemName           sql.NullString
+	StartSolarSystemSecurityStatus sql.NullFloat64
+	Items                          interface{}
 }
 
 func (q *Queries) ListAllCharacterContracts(ctx context.Context) ([]ListAllCharacterContractsRow, error) {
@@ -352,8 +362,10 @@ func (q *Queries) ListAllCharacterContracts(ctx context.Context) ([]ListAllChara
 			&i.StartLocationName,
 			&i.EndSolarSystemID,
 			&i.EndSolarSystemName,
+			&i.EndSolarSystemSecurityStatus,
 			&i.StartSolarSystemID,
 			&i.StartSolarSystemName,
+			&i.StartSolarSystemSecurityStatus,
 			&i.Items,
 		); err != nil {
 			return nil, err
@@ -414,8 +426,10 @@ SELECT
     start_locations.name as start_location_name,
     end_solar_systems.id as end_solar_system_id,
     end_solar_systems.name as end_solar_system_name,
+    end_solar_systems.security_status as end_solar_system_security_status,
     start_solar_systems.id as start_solar_system_id,
     start_solar_systems.name as start_solar_system_name,
+    start_solar_systems.security_status as start_solar_system_security_status,
     (
         SELECT
             IFNULL(GROUP_CONCAT(name || " x " || quantity), "")
@@ -448,20 +462,22 @@ type ListCharacterContractsForNotifyParams struct {
 }
 
 type ListCharacterContractsForNotifyRow struct {
-	CharacterContract    CharacterContract
-	EveEntity            EveEntity
-	EveEntity_2          EveEntity
-	AcceptorName         sql.NullString
-	AcceptorCategory     sql.NullString
-	AssigneeName         sql.NullString
-	AssigneeCategory     sql.NullString
-	EndLocationName      sql.NullString
-	StartLocationName    sql.NullString
-	EndSolarSystemID     sql.NullInt64
-	EndSolarSystemName   sql.NullString
-	StartSolarSystemID   sql.NullInt64
-	StartSolarSystemName sql.NullString
-	Items                interface{}
+	CharacterContract              CharacterContract
+	EveEntity                      EveEntity
+	EveEntity_2                    EveEntity
+	AcceptorName                   sql.NullString
+	AcceptorCategory               sql.NullString
+	AssigneeName                   sql.NullString
+	AssigneeCategory               sql.NullString
+	EndLocationName                sql.NullString
+	StartLocationName              sql.NullString
+	EndSolarSystemID               sql.NullInt64
+	EndSolarSystemName             sql.NullString
+	EndSolarSystemSecurityStatus   sql.NullFloat64
+	StartSolarSystemID             sql.NullInt64
+	StartSolarSystemName           sql.NullString
+	StartSolarSystemSecurityStatus sql.NullFloat64
+	Items                          interface{}
 }
 
 func (q *Queries) ListCharacterContractsForNotify(ctx context.Context, arg ListCharacterContractsForNotifyParams) ([]ListCharacterContractsForNotifyRow, error) {
@@ -514,8 +530,10 @@ func (q *Queries) ListCharacterContractsForNotify(ctx context.Context, arg ListC
 			&i.StartLocationName,
 			&i.EndSolarSystemID,
 			&i.EndSolarSystemName,
+			&i.EndSolarSystemSecurityStatus,
 			&i.StartSolarSystemID,
 			&i.StartSolarSystemName,
+			&i.StartSolarSystemSecurityStatus,
 			&i.Items,
 		); err != nil {
 			return nil, err

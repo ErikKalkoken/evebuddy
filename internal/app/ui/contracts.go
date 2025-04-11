@@ -177,10 +177,16 @@ func (a *Contracts) showContract(c *app.CharacterContract) {
 			a.u.ShowEveEntityInfoWindow(ee)
 		})
 	}
-	makeLocation := func(l *app.EntityShort[int64]) *kxwidget.TappableLabel {
-		return kxwidget.NewTappableLabel(l.Name, func() {
+	makeLocation := func(l *app.EveLocationShort) *iwidget.TappableRichText {
+		if l == nil {
+			return iwidget.NewTappableRichTextWithText("?", nil)
+		}
+		x := iwidget.NewTappableRichText(func() {
 			a.u.ShowLocationInfoWindow(l.ID)
-		})
+		},
+			l.DisplayRichText()...,
+		)
+		return x
 	}
 	makeISKString := func(v float64) string {
 		t := humanize.Commaf(v) + " ISK"

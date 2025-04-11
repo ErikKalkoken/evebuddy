@@ -121,6 +121,17 @@ func (el EveLocation) ToEveEntity() *EveEntity {
 	return nil
 }
 
+func (el EveLocation) ToShort() *EveLocationShort {
+	o := &EveLocationShort{
+		ID:   el.ID,
+		Name: optional.New(el.Name),
+	}
+	if el.SolarSystem != nil {
+		o.SecurityStatus = optional.New(el.SolarSystem.SecurityStatus)
+	}
+	return o
+}
+
 // EveLocationShort is a shortended representation of EveLocation.
 type EveLocationShort struct {
 	ID             int64

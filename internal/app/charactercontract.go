@@ -149,7 +149,7 @@ type CharacterContract struct {
 	DateExpired       time.Time
 	DateIssued        time.Time
 	DaysToComplete    int32
-	EndLocation       *EntityShort[int64]
+	EndLocation       *EveLocationShort
 	EndSolarSystem    *EntityShort[int32]
 	ForCorporation    bool
 	Issuer            *EveEntity
@@ -157,7 +157,7 @@ type CharacterContract struct {
 	Items             []string
 	Price             float64
 	Reward            float64
-	StartLocation     *EntityShort[int64]
+	StartLocation     *EveLocationShort
 	StartSolarSystem  *EntityShort[int32]
 	Status            ContractStatus
 	StatusNotified    ContractStatus

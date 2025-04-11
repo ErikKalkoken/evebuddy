@@ -69,8 +69,10 @@ SELECT
     start_locations.name as start_location_name,
     end_solar_systems.id as end_solar_system_id,
     end_solar_systems.name as end_solar_system_name,
+    end_solar_systems.security_status as end_solar_system_security_status,
     start_solar_systems.id as start_solar_system_id,
     start_solar_systems.name as start_solar_system_name,
+    start_solar_systems.security_status as start_solar_system_security_status,
     (
         SELECT
             IFNULL(GROUP_CONCAT(name || " x " || quantity), "")
@@ -108,8 +110,10 @@ SELECT
     start_locations.name as start_location_name,
     end_solar_systems.id as end_solar_system_id,
     end_solar_systems.name as end_solar_system_name,
+    end_solar_systems.security_status as end_solar_system_security_status,
     start_solar_systems.id as start_solar_system_id,
     start_solar_systems.name as start_solar_system_name,
+    start_solar_systems.security_status as start_solar_system_security_status,
     (
         SELECT
             IFNULL(GROUP_CONCAT(name || " x " || quantity), "")
@@ -148,8 +152,10 @@ SELECT
     start_locations.name as start_location_name,
     end_solar_systems.id as end_solar_system_id,
     end_solar_systems.name as end_solar_system_name,
+    end_solar_systems.security_status as end_solar_system_security_status,
     start_solar_systems.id as start_solar_system_id,
     start_solar_systems.name as start_solar_system_name,
+    start_solar_systems.security_status as start_solar_system_security_status,
     (
         SELECT
             IFNULL(GROUP_CONCAT(name || " x " || quantity), "")
