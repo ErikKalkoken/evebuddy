@@ -104,68 +104,71 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 	serverCtx, cancel := context.WithCancel(serverCtx)
 	defer cancel()
 
-	router := http.NewServeMux()
-	// Route for responding to SSO callback from CCP server
-	router.HandleFunc(s.callbackPath, func(w http.ResponseWriter, r *http.Request) {
-		slog.Debug("SSO server received request", "path", r.URL.Path, "query", r.URL.RawQuery)
-		status, err := func() (int, error) {
-			v := r.URL.Query()
-			stateGot := v.Get("state")
-			stateWant := serverCtx.Value(keyState).(string)
-			if stateGot != stateWant {
-				return http.StatusUnauthorized, fmt.Errorf("invalid state. Want: %s - Got: %s", stateWant, stateGot)
-			}
-			code := v.Get("code")
-			codeVerifier := serverCtx.Value(keyCodeVerifier).(string)
-			rawToken, err := s.fetchNewToken(code, codeVerifier)
-			if err != nil {
-				return http.StatusUnauthorized, fmt.Errorf("fetch new token: %w", err)
-			}
-			jwtToken, err := validateJWT(ctx, s.httpClient, rawToken.AccessToken)
-			if err != nil {
-				return http.StatusUnauthorized, fmt.Errorf("token validation: %w", err)
-			}
-			characterID, err := extractCharacterID(jwtToken)
-			if err != nil {
-				return http.StatusInternalServerError, fmt.Errorf("extract character ID: %w", err)
-			}
-			characterName := extractCharacterName(jwtToken)
-			scopes := extractScopes(jwtToken)
-			token := newToken(rawToken, characterID, characterName, scopes)
-			serverCtx = context.WithValue(serverCtx, keyAuthenticatedCharacter, token)
-			slog.Info("SSO authentication successful", "characterID", token.CharacterID, "characterName", token.CharacterName)
-			fmt.Fprintf(
-				w,
-				"<p>SSO authentication successful for <b>%s</b>.</p>"+
-					"<p>You can close this tab now and return to the app.</p>",
-				token.CharacterName,
-			)
-			return http.StatusOK, nil
-		}()
-		if err != nil {
-			msg := "callback failed"
-			slog.Warn(msg, "error", err)
-			http.Error(w, msg, status)
-			serverCtx = context.WithValue(serverCtx, keyError, fmt.Errorf("SSO server: %w", err))
-		}
-		slog.Info("SSO server response", "status", status, "path", r.URL.Path)
+	processError := func(w http.ResponseWriter, status int, err error) {
+		slog.Warn("SSO autentication failed", "error", err)
+		http.Error(w, fmt.Sprintf("SSO autentication failed: %s", err), status)
+		serverCtx = context.WithValue(serverCtx, keyError, fmt.Errorf("SSO server: %w", err))
 		cancel() // shutdown http server
-	})
+	}
+
+	router := http.NewServeMux()
 	// Route for reponding to ping requests
 	router.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
-		slog.Info("SSO server response", "status", http.StatusOK, "path", r.URL.Path)
 		fmt.Fprintf(w, "pong\n")
+	})
+	// Route for responding to SSO callback from CCP server
+	router.HandleFunc(s.callbackPath, func(w http.ResponseWriter, r *http.Request) {
+		v := r.URL.Query()
+		stateGot := v.Get("state")
+		stateWant := serverCtx.Value(keyState).(string)
+		if stateGot != stateWant {
+			processError(w, http.StatusUnauthorized, fmt.Errorf("invalid state. Want: %s - Got: %s", stateWant, stateGot))
+		}
+		code := v.Get("code")
+		codeVerifier := serverCtx.Value(keyCodeVerifier).(string)
+		rawToken, err := s.fetchNewToken(code, codeVerifier)
+		if err != nil {
+			processError(w, http.StatusUnauthorized, fmt.Errorf("fetch new token: %w", err))
+		}
+		jwtToken, err := validateJWT(ctx, s.httpClient, rawToken.AccessToken)
+		if err != nil {
+			processError(w, http.StatusUnauthorized, fmt.Errorf("token validation: %w", err))
+		}
+		characterID, err := extractCharacterID(jwtToken)
+		if err != nil {
+			processError(w, http.StatusInternalServerError, fmt.Errorf("extract character ID: %w", err))
+		}
+		characterName := extractCharacterName(jwtToken)
+		scopes := extractScopes(jwtToken)
+		token := newToken(rawToken, characterID, characterName, scopes)
+		serverCtx = context.WithValue(serverCtx, keyAuthenticatedCharacter, token)
+		slog.Info("SSO authentication successful", "characterID", token.CharacterID, "characterName", token.CharacterName)
+		http.Redirect(w, r, "/authenticated", http.StatusSeeOther)
+	})
+	router.HandleFunc("/authenticated", func(w http.ResponseWriter, r *http.Request) {
+		x := serverCtx.Value(keyAuthenticatedCharacter)
+		token, ok := x.(*Token)
+		if !ok {
+			processError(w, http.StatusInternalServerError, fmt.Errorf("token not found in context"))
+			return
+		}
+		fmt.Fprintf(
+			w,
+			"<p>SSO authentication successful for <b>%s</b>.</p>"+
+				"<p>You can close this tab now and return to the app.</p>",
+			token.CharacterName,
+		)
+		cancel() // shutdown http server
 	})
 	// Route for returning 404 on all other paths
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		slog.Info("SSO server response", "status", http.StatusNotFound, "path", r.URL.Path)
 		http.Error(w, "not found", http.StatusNotFound)
 	})
 	// we want to be sure the server is running before starting the browser
 	// and we want to be able to exit early in case the port is blocked
 	server := &http.Server{
 		Addr:    s.address(),
-		Handler: router,
+		Handler: WithLogger(router),
 	}
 	l, err := net.Listen("tcp", server.Addr)
 	if err != nil {
