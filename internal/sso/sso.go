@@ -6,10 +6,12 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"embed"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"io"
 	"log/slog"
 	"net"
@@ -38,6 +40,9 @@ const (
 	authorizeURLDefault = "https://login.eveonline.com/v2/oauth/authorize"
 	pingTimeout         = 5 * time.Second
 )
+
+//go:embed template/*
+var templateFS embed.FS
 
 var (
 	ErrAborted             = errors.New("auth process canceled prematurely")
@@ -152,12 +157,16 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 			processError(w, http.StatusInternalServerError, fmt.Errorf("token not found in context"))
 			return
 		}
-		fmt.Fprintf(
-			w,
-			"<p>SSO authentication successful for <b>%s</b>.</p>"+
-				"<p>You can close this tab now and return to the app.</p>",
-			token.CharacterName,
-		)
+		t, err := template.ParseFS(templateFS, "template/authenticated.html")
+		if err != nil {
+			processError(w, http.StatusInternalServerError, err)
+			return
+		}
+		err = t.Execute(w, map[string]string{"Name": token.CharacterName})
+		if err != nil {
+			processError(w, http.StatusInternalServerError, err)
+			return
+		}
 		cancel() // shutdown http server
 	})
 	// Route for returning 404 on all other paths
