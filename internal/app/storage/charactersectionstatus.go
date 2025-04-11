@@ -94,6 +94,7 @@ func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg
 				StartedAt:   old.StartedAt,
 			}
 		}
+		arg2.UpdatedAt = time.Now().UTC()
 		if arg.CompletedAt != nil {
 			arg2.CompletedAt = *arg.CompletedAt
 		}

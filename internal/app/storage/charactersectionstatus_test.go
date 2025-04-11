@@ -52,6 +52,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 				assert.Equal(t, "", x1.ContentHash)
 				assert.Equal(t, "error", x1.ErrorMessage)
 				assert.True(t, x1.CompletedAt.IsZero())
+				assert.False(t, x1.UpdatedAt.IsZero())
 			}
 			x2, err := r.GetCharacterSectionStatus(ctx, c.ID, app.SectionImplants)
 			if assert.NoError(t, err) {
@@ -81,6 +82,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 			assert.Equal(t, "error", x1.ErrorMessage)
 			assert.Equal(t, x.CompletedAt, x1.CompletedAt)
 			assert.Equal(t, x.StartedAt, x1.StartedAt)
+			assert.False(t, x1.UpdatedAt.IsZero())
 			x2, err := r.GetCharacterSectionStatus(ctx, c.ID, x.Section)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
