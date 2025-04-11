@@ -3,9 +3,13 @@ package app
 import (
 	"maps"
 	"slices"
+	"strings"
 	"time"
 
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type CharacterPlanet struct {
@@ -16,6 +20,13 @@ type CharacterPlanet struct {
 	LastNotified optional.Optional[time.Time] // expiry time that was last notified
 	Pins         []*PlanetPin
 	UpgradeLevel int
+}
+
+func (cp CharacterPlanet) NameRichText() []widget.RichTextSegment {
+	return slices.Concat(
+		cp.EvePlanet.SolarSystem.SecurityStatusRichText(),
+		iwidget.NewRichTextSegmentFromText("  "+cp.EvePlanet.Name),
+	)
 }
 
 // ExtractedTypes returns a list of unique types currently being extracted.
@@ -34,6 +45,14 @@ func (cp CharacterPlanet) ExtractedTypeNames() []string {
 	return extractedStringsSorted(cp.ExtractedTypes(), func(a *EveType) string {
 		return a.Name
 	})
+}
+
+func (cp CharacterPlanet) Extracting() string {
+	extractions := strings.Join(cp.ExtractedTypeNames(), ", ")
+	if extractions == "" {
+		extractions = "-"
+	}
+	return extractions
 }
 
 // ExtractionsExpiryTime returns the final expiry time for all extractions.
@@ -74,6 +93,33 @@ func (cp CharacterPlanet) ProducedSchematicNames() []string {
 	return extractedStringsSorted(cp.ProducedSchematics(), func(a *EveSchematic) string {
 		return a.Name
 	})
+}
+
+func (cp CharacterPlanet) IsExpired() bool {
+	due := cp.ExtractionsExpiryTime()
+	if due.IsZero() {
+		return false
+	}
+	return due.Before(time.Now())
+}
+
+func (cp CharacterPlanet) Producing() string {
+	productions := strings.Join(cp.ProducedSchematicNames(), ", ")
+	if productions == "" {
+		productions = "-"
+	}
+	return productions
+}
+
+func (cp CharacterPlanet) DueRichText() []widget.RichTextSegment {
+	if cp.IsExpired() {
+		return iwidget.NewRichTextSegmentFromText("OFFLINE", widget.RichTextStyle{ColorName: theme.ColorNameError})
+	}
+	due := cp.ExtractionsExpiryTime()
+	if due.IsZero() {
+		return iwidget.NewRichTextSegmentFromText("-")
+	}
+	return iwidget.NewRichTextSegmentFromText(due.Format(DateTimeFormat))
 }
 
 type PlanetPin struct {

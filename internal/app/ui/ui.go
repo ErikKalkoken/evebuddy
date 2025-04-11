@@ -94,7 +94,7 @@ type BaseUI struct {
 	overviewAssets             *OverviewAssets
 	overviewCharacters         *OverviewCharacters
 	overviewClones             *OverviewClones
-	overviewColonies           *OverviewColonies
+	overviewColonies           *Colonies
 	overviewLocations          *OverviewLocations
 	overviewTraining           *OverviewTraining
 	overviewWealth             *OverviewWealth
@@ -184,7 +184,7 @@ func NewBaseUI(
 	u.overviewAssets = NewOverviewAssets(u)
 	u.overviewCharacters = NewOverviewCharacters(u)
 	u.overviewClones = NewOverviewClones(u)
-	u.overviewColonies = NewOverviewColonies(u)
+	u.overviewColonies = NewColonies(u)
 	u.overviewLocations = NewOverviewLocations(u)
 	u.overviewTraining = NewOverviewTraining(u)
 	u.overviewWealth = NewOverviewWealth(u)
