@@ -121,6 +121,17 @@ func (el EveLocation) ToEveEntity() *EveEntity {
 	return nil
 }
 
+func (el EveLocation) ToShort() *EveLocationShort {
+	o := &EveLocationShort{
+		ID:   el.ID,
+		Name: optional.New(el.Name),
+	}
+	if el.SolarSystem != nil {
+		o.SecurityStatus = optional.New(el.SolarSystem.SecurityStatus)
+	}
+	return o
+}
+
 // EveLocationShort is a shortended representation of EveLocation.
 type EveLocationShort struct {
 	ID             int64
@@ -145,4 +156,11 @@ func (l EveLocationShort) DisplayRichText() []widget.RichTextSegment {
 	name += humanize.Optional(l.Name, "?")
 	s = slices.Concat(s, iwidget.NewRichTextSegmentFromText(name))
 	return s
+}
+
+func (l EveLocationShort) SecurityType() optional.Optional[SolarSystemSecurityType] {
+	if l.SecurityStatus.IsEmpty() {
+		return optional.Optional[SolarSystemSecurityType]{}
+	}
+	return optional.New(NewSolarSystemSecurityTypeFromValue(l.SecurityStatus.MustValue()))
 }

@@ -115,7 +115,7 @@ func NewOverviewClones(u *BaseUI) *OverviewClones {
 		return s
 	}
 	if a.u.IsDesktop() {
-		t := iwidget.MakeDataTableForDesktop2(headers, &a.rows, makeCell, func(c int, r cloneSearchRow) {
+		t := iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, func(c int, r cloneSearchRow) {
 			switch c {
 			case 0:
 				a.u.ShowLocationInfoWindow(r.c.Location.ID)
@@ -165,7 +165,7 @@ func NewOverviewClones(u *BaseUI) *OverviewClones {
 		}
 		a.body = t
 	} else {
-		a.body = iwidget.MakeDataTableForMobile2(headers, &a.rows, makeCell, func(r cloneSearchRow) {
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeCell, func(r cloneSearchRow) {
 			if len(r.route) == 0 {
 				return
 			}

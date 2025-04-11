@@ -177,15 +177,10 @@ func (a *CharacterJumpClones) newTreeData() (*iwidget.TreeData[jumpCloneNode], e
 			locationID:    c.Location.ID,
 		}
 		// TODO: Refactor to use same location method for all unknown location cases
-		if c.Location != nil {
-			loc, err := a.u.EveUniverseService().GetLocation(ctx, c.Location.ID)
-			if err != nil {
-				slog.Error("get location for jump clone", "error", err)
-			} else {
-				n.locationName = loc.Name
-				n.systemSecurityValue = float32(loc.SolarSystem.SecurityStatus)
-				n.systemSecurityType = loc.SolarSystem.SecurityType()
-			}
+		if c.Location != nil && !c.Location.Name.IsEmpty() && !c.Location.SecurityStatus.IsEmpty() {
+			n.locationName = c.Location.Name.ValueOrZero()
+			n.systemSecurityValue = c.Location.SecurityStatus.MustValue()
+			n.systemSecurityType = app.NewSolarSystemSecurityTypeFromValue(n.systemSecurityValue)
 		}
 		if n.locationName == "" {
 			n.locationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)

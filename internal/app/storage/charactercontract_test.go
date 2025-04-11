@@ -87,10 +87,8 @@ func TestCharacterContract(t *testing.T) {
 				assert.Equal(t, app.ContractAvailabilityPersonal, o.Availability)
 				assert.Equal(t, app.ContractStatusOutstanding, o.Status)
 				assert.Equal(t, app.ContractTypeCourier, o.Type)
-				assert.Equal(t, endLocation.ID, o.EndLocation.ID)
-				assert.Equal(t, endLocation.Name, o.EndLocation.Name)
-				assert.Equal(t, startLocation.ID, o.StartLocation.ID)
-				assert.Equal(t, startLocation.Name, o.StartLocation.Name)
+				assert.Equal(t, endLocation.ToShort(), o.EndLocation)
+				assert.Equal(t, startLocation.ToShort(), o.StartLocation)
 				assert.Equal(t, endLocation.SolarSystem.ID, o.EndSolarSystem.ID)
 				assert.Equal(t, endLocation.SolarSystem.Name, o.EndSolarSystem.Name)
 				assert.Equal(t, startLocation.SolarSystem.ID, o.StartSolarSystem.ID)
@@ -163,15 +161,14 @@ func TestCharacterContract(t *testing.T) {
 	t.Run("can list existing contracts", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
-		factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
-		factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
-		factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
+		factory.CreateCharacterContract()
+		factory.CreateCharacterContract(storage.CreateCharacterContractParams{ContractID: 42})
+		factory.CreateCharacterContract(storage.CreateCharacterContractParams{ContractID: 42})
 		// when
-		oo, err := r.ListCharacterContracts(ctx, c.ID)
+		oo, err := r.ListAllCharacterContracts(ctx)
 		// then
 		if assert.NoError(t, err) {
-			assert.Len(t, oo, 3)
+			assert.Len(t, oo, 2)
 		}
 	})
 	t.Run("can list existing contracts for notify", func(t *testing.T) {

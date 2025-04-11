@@ -60,7 +60,7 @@ func NewOverviewLocations(u *BaseUI) *OverviewLocations {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.IsDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop2(headers, &a.rows, makeCell, func(c int, r *app.Character) {
+		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, func(c int, r *app.Character) {
 			switch c {
 			case 0:
 				a.u.ShowInfoWindow(app.EveEntityCharacter, r.ID)
@@ -79,7 +79,7 @@ func NewOverviewLocations(u *BaseUI) *OverviewLocations {
 			}
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile2(headers, &a.rows, makeCell, func(r *app.Character) {
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeCell, func(r *app.Character) {
 			if r.Location != nil {
 				a.u.ShowLocationInfoWindow(r.Location.ID)
 			}

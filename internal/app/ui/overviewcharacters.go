@@ -105,7 +105,7 @@ func NewOverviewCharacters(u *BaseUI) *OverviewCharacters {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.IsDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop2(headers, &a.rows, makeCell, func(c int, oc overviewCharacter) {
+		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, func(c int, oc overviewCharacter) {
 			switch c {
 			case 0:
 				u.ShowInfoWindow(app.EveEntityCharacter, oc.id)
@@ -122,7 +122,7 @@ func NewOverviewCharacters(u *BaseUI) *OverviewCharacters {
 			}
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile2(headers, &a.rows, makeCell, func(oc overviewCharacter) {
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeCell, func(oc overviewCharacter) {
 			u.ShowInfoWindow(app.EveEntityCharacter, oc.id)
 		})
 	}

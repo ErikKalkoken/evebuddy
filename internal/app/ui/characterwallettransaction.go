@@ -85,7 +85,7 @@ func NewCharacterWalletTransaction(u *BaseUI) *CharacterWalletTransaction {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.IsDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop2(headers, &a.rows, makeCell, func(column int, r *app.CharacterWalletTransaction) {
+		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, func(column int, r *app.CharacterWalletTransaction) {
 			switch column {
 			case 2:
 				a.u.ShowTypeInfoWindow(r.EveType.ID)
@@ -96,7 +96,7 @@ func NewCharacterWalletTransaction(u *BaseUI) *CharacterWalletTransaction {
 			}
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile2(headers, &a.rows, makeCell, func(r *app.CharacterWalletTransaction) {
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeCell, func(r *app.CharacterWalletTransaction) {
 			a.u.ShowTypeInfoWindow(r.EveType.ID)
 		})
 	}

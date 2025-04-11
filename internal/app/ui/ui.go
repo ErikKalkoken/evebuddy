@@ -75,12 +75,9 @@ type BaseUI struct {
 	characterAttributes        *CharacterAttributes
 	characterBiography         *CharacterBiography
 	characterCommunications    *CharacterCommunications
-	characterContractsActive   *CharacterContracts
-	characterContractsAll      *CharacterContracts
 	characterImplants          *CharacterAugmentations
 	characterJumpClones        *CharacterJumpClones
 	characterMail              *CharacterMails
-	overviewCharacters         *OverviewCharacters
 	characterPlanets           *CharacterColonies
 	characterSheet             *CharacterSheet
 	characterShips             *CharacterFlyableShips
@@ -88,16 +85,19 @@ type BaseUI struct {
 	characterSkillQueue        *CharacterSkillQueue
 	characterWalletJournal     *CharacterWalletJournal
 	characterWalletTransaction *CharacterWalletTransaction
+	contractsActive            *Contracts
+	contractsAll               *Contracts
 	gameSearch                 *GameSearch
+	industryJobsActive         *IndustryJobs
+	industryJobsAll            *IndustryJobs
 	manageCharacters           *ManageCharacters
 	overviewAssets             *OverviewAssets
+	overviewCharacters         *OverviewCharacters
 	overviewClones             *OverviewClones
 	overviewColonies           *OverviewColonies
 	overviewLocations          *OverviewLocations
 	overviewTraining           *OverviewTraining
 	overviewWealth             *OverviewWealth
-	industryJobsAll            *IndustryJobs
-	industryJobsActive         *IndustryJobs
 	userSettings               *UserSettings
 
 	app              fyne.App
@@ -163,13 +163,9 @@ func NewBaseUI(
 	u.characterAttributes = NewCharacterAttributes(u)
 	u.characterBiography = NewCharacterBiography(u)
 	u.characterCommunications = NewCharacterCommunications(u)
-	u.characterContractsAll = NewCharacterContracts(u)
-	u.characterContractsActive = NewCharacterContracts(u)
-	u.characterContractsActive.ShowActiveOnly = true
 	u.characterImplants = NewCharacterAugmentations(u)
 	u.characterJumpClones = NewCharacterJumpClones(u)
 	u.characterMail = NewCharacterMails(u)
-	u.overviewCharacters = NewOverviewCharacters(u)
 	u.characterPlanets = NewCharacterColonies(u)
 	u.characterSheet = NewSheet(u)
 	u.characterShips = NewCharacterFlyableShips(u)
@@ -177,20 +173,23 @@ func NewBaseUI(
 	u.characterSkillQueue = NewCharacterSkillQueue(u)
 	u.characterWalletJournal = NewCharacterWalletJournal(u)
 	u.characterWalletTransaction = NewCharacterWalletTransaction(u)
+	u.contractsActive = NewContracts(u)
+	u.contractsActive.ShowActiveOnly = true
+	u.contractsAll = NewContracts(u)
 	u.gameSearch = NewGameSearch(u)
-	u.manageCharacters = NewManageCharacters(u)
-	u.overviewAssets = NewOverviewAssets(u)
-	u.overviewClones = NewOverviewClones(u)
-	u.overviewColonies = NewOverviewColonies(u)
 	u.industryJobsActive = NewIndustryJobs(u)
 	u.industryJobsActive.ShowActiveOnly = true
 	u.industryJobsAll = NewIndustryJobs(u)
+	u.manageCharacters = NewManageCharacters(u)
+	u.overviewAssets = NewOverviewAssets(u)
+	u.overviewCharacters = NewOverviewCharacters(u)
+	u.overviewClones = NewOverviewClones(u)
+	u.overviewColonies = NewOverviewColonies(u)
 	u.overviewLocations = NewOverviewLocations(u)
 	u.overviewTraining = NewOverviewTraining(u)
 	u.overviewWealth = NewOverviewWealth(u)
 	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.userSettings = NewSettings(u)
-
 	u.MainWindow().SetMaster()
 	return u
 }
@@ -420,8 +419,6 @@ func (u *BaseUI) updateCharacter() {
 		"assets":            u.characterAsset.Update,
 		"attributes":        u.characterAttributes.Update,
 		"biography":         u.characterBiography.Update,
-		"contracts":         u.characterContractsAll.Update,
-		"contracts2":        u.characterContractsActive.Update,
 		"implants":          u.characterImplants.Update,
 		"jumpClones":        u.characterJumpClones.Update,
 		"mail":              u.characterMail.Update,
@@ -455,6 +452,8 @@ func (u *BaseUI) updateCharacter() {
 func (u *BaseUI) UpdateCrossPages() {
 	ff := map[string]func(){
 		"assetSearch":       u.overviewAssets.Update,
+		"contractsAll":      u.contractsAll.Update,
+		"contractsActive":   u.contractsActive.Update,
 		"cloneSeach":        u.overviewClones.Update,
 		"colony":            u.overviewColonies.Update,
 		"industryJobAll":    u.industryJobsAll.Update,
@@ -774,9 +773,9 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			u.characterAttributes.Update()
 		}
 	case app.SectionContracts:
-		if isShown && needsRefresh {
-			u.characterContractsActive.Update()
-			u.characterContractsAll.Update()
+		if needsRefresh {
+			u.contractsActive.Update()
+			u.contractsAll.Update()
 		}
 		if u.Settings().NotifyContractsEnabled() {
 			go func() {

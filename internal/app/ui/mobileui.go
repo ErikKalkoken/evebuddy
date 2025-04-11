@@ -170,26 +170,6 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 			},
 		),
 		navItemAssets,
-		iwidget.NewListItemWithIcon(
-			"Contracts",
-			theme.NewThemedResource(icons.FileSignSvg),
-			func() {
-				contractActive := container.NewTabItem("Active", u.characterContractsActive)
-				contractTabs := container.NewAppTabs(
-					contractActive,
-					container.NewTabItem("All", u.characterContractsAll),
-				)
-				u.characterContractsActive.OnUpdate = func(count int) {
-					s := "Active"
-					if count > 0 {
-						s += fmt.Sprintf(" (%d)", count)
-					}
-					contractActive.Text = s
-					contractTabs.Refresh()
-				}
-				characterNav.Push(newCharacterAppBar("Contracts", contractTabs))
-			},
-		),
 		navItemCommunications,
 		navItemColonies1,
 		navItemMail,
@@ -244,7 +224,7 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 		characterList.Refresh()
 	}
 
-	characterPage := newCharacterAppBar("Character", characterList)
+	characterPage := newCharacterAppBar("Current Character", characterList)
 	characterNav = iwidget.NewNavigatorWithAppBar(characterPage)
 
 	// characters cross destination
@@ -286,6 +266,26 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 				crossNav.Push(iwidget.NewAppBar("Clones", u.overviewClones))
 			},
 		),
+		iwidget.NewListItemWithIcon(
+			"Contracts",
+			theme.NewThemedResource(icons.FileSignSvg),
+			func() {
+				contractActive := container.NewTabItem("Active", u.contractsActive)
+				contractTabs := container.NewAppTabs(
+					contractActive,
+					container.NewTabItem("All", u.contractsAll),
+				)
+				u.contractsActive.OnUpdate = func(count int) {
+					s := "Active"
+					if count > 0 {
+						s += fmt.Sprintf(" (%d)", count)
+					}
+					contractActive.Text = s
+					contractTabs.Refresh()
+				}
+				crossNav.Push(iwidget.NewAppBar("Contracts", contractTabs))
+			},
+		),
 		navItemColonies2,
 		iwidget.NewListItemWithIcon(
 			"Industry",
@@ -323,7 +323,7 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 		),
 		navItemWealth,
 	)
-	crossNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("Characters", crossList))
+	crossNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("All Characters", crossList))
 	u.overviewColonies.OnUpdate = func(_, expired int) {
 		navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
 		crossList.Refresh()
@@ -487,7 +487,7 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 		u.characterMail.ResetCurrentFolder()
 		u.characterCommunications.ResetCurrentFolder()
 		characterNav.PopAll()
-		navBar.Select(1)
+		navBar.Select(0)
 	}
 
 	u.onAppFirstStarted = func() {

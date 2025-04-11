@@ -144,8 +144,10 @@ SELECT
     start_locations.name as start_location_name,
     end_solar_systems.id as end_solar_system_id,
     end_solar_systems.name as end_solar_system_name,
+    end_solar_systems.security_status as end_solar_system_security_status,
     start_solar_systems.id as start_solar_system_id,
     start_solar_systems.name as start_solar_system_name,
+    start_solar_systems.security_status as start_solar_system_security_status,
     (
         SELECT
             IFNULL(GROUP_CONCAT(name || " x " || quantity), "")
@@ -177,20 +179,22 @@ type GetCharacterContractParams struct {
 }
 
 type GetCharacterContractRow struct {
-	CharacterContract    CharacterContract
-	EveEntity            EveEntity
-	EveEntity_2          EveEntity
-	AcceptorName         sql.NullString
-	AcceptorCategory     sql.NullString
-	AssigneeName         sql.NullString
-	AssigneeCategory     sql.NullString
-	EndLocationName      sql.NullString
-	StartLocationName    sql.NullString
-	EndSolarSystemID     sql.NullInt64
-	EndSolarSystemName   sql.NullString
-	StartSolarSystemID   sql.NullInt64
-	StartSolarSystemName sql.NullString
-	Items                interface{}
+	CharacterContract              CharacterContract
+	EveEntity                      EveEntity
+	EveEntity_2                    EveEntity
+	AcceptorName                   sql.NullString
+	AcceptorCategory               sql.NullString
+	AssigneeName                   sql.NullString
+	AssigneeCategory               sql.NullString
+	EndLocationName                sql.NullString
+	StartLocationName              sql.NullString
+	EndSolarSystemID               sql.NullInt64
+	EndSolarSystemName             sql.NullString
+	EndSolarSystemSecurityStatus   sql.NullFloat64
+	StartSolarSystemID             sql.NullInt64
+	StartSolarSystemName           sql.NullString
+	StartSolarSystemSecurityStatus sql.NullFloat64
+	Items                          interface{}
 }
 
 func (q *Queries) GetCharacterContract(ctx context.Context, arg GetCharacterContractParams) (GetCharacterContractRow, error) {
@@ -237,46 +241,16 @@ func (q *Queries) GetCharacterContract(ctx context.Context, arg GetCharacterCont
 		&i.StartLocationName,
 		&i.EndSolarSystemID,
 		&i.EndSolarSystemName,
+		&i.EndSolarSystemSecurityStatus,
 		&i.StartSolarSystemID,
 		&i.StartSolarSystemName,
+		&i.StartSolarSystemSecurityStatus,
 		&i.Items,
 	)
 	return i, err
 }
 
-const listCharacterContractIDs = `-- name: ListCharacterContractIDs :many
-SELECT
-    contract_id
-FROM
-    character_contracts
-WHERE
-    character_id = ?
-`
-
-func (q *Queries) ListCharacterContractIDs(ctx context.Context, characterID int64) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterContractIDs, characterID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []int64
-	for rows.Next() {
-		var contract_id int64
-		if err := rows.Scan(&contract_id); err != nil {
-			return nil, err
-		}
-		items = append(items, contract_id)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listCharacterContracts = `-- name: ListCharacterContracts :many
+const listAllCharacterContracts = `-- name: ListAllCharacterContracts :many
 SELECT
     cc.id, cc.acceptor_id, cc.assignee_id, cc.availability, cc.buyout, cc.character_id, cc.collateral, cc.contract_id, cc.date_accepted, cc.date_completed, cc.date_expired, cc.date_issued, cc.days_to_complete, cc.end_location_id, cc.for_corporation, cc.issuer_corporation_id, cc.issuer_id, cc.price, cc.reward, cc.start_location_id, cc.status, cc.status_notified, cc.title, cc.type, cc.updated_at, cc.volume,
     issuer_corporation.id, issuer_corporation.category, issuer_corporation.name,
@@ -289,8 +263,10 @@ SELECT
     start_locations.name as start_location_name,
     end_solar_systems.id as end_solar_system_id,
     end_solar_systems.name as end_solar_system_name,
+    end_solar_systems.security_status as end_solar_system_security_status,
     start_solar_systems.id as start_solar_system_id,
     start_solar_systems.name as start_solar_system_name,
+    start_solar_systems.security_status as start_solar_system_security_status,
     (
         SELECT
             IFNULL(GROUP_CONCAT(name || " x " || quantity), "")
@@ -311,39 +287,40 @@ FROM
     LEFT JOIN eve_locations AS start_locations ON start_locations.id = cc.start_location_id
     LEFT JOIN eve_solar_systems AS end_solar_systems ON end_solar_systems.id = end_locations.eve_solar_system_id
     LEFT JOIN eve_solar_systems AS start_solar_systems ON start_solar_systems.id = start_locations.eve_solar_system_id
-WHERE
-    character_id = ?
-    AND status <> "deleted"
+GROUP BY
+    contract_id
 ORDER BY
     date_issued DESC
 `
 
-type ListCharacterContractsRow struct {
-	CharacterContract    CharacterContract
-	EveEntity            EveEntity
-	EveEntity_2          EveEntity
-	AcceptorName         sql.NullString
-	AcceptorCategory     sql.NullString
-	AssigneeName         sql.NullString
-	AssigneeCategory     sql.NullString
-	EndLocationName      sql.NullString
-	StartLocationName    sql.NullString
-	EndSolarSystemID     sql.NullInt64
-	EndSolarSystemName   sql.NullString
-	StartSolarSystemID   sql.NullInt64
-	StartSolarSystemName sql.NullString
-	Items                interface{}
+type ListAllCharacterContractsRow struct {
+	CharacterContract              CharacterContract
+	EveEntity                      EveEntity
+	EveEntity_2                    EveEntity
+	AcceptorName                   sql.NullString
+	AcceptorCategory               sql.NullString
+	AssigneeName                   sql.NullString
+	AssigneeCategory               sql.NullString
+	EndLocationName                sql.NullString
+	StartLocationName              sql.NullString
+	EndSolarSystemID               sql.NullInt64
+	EndSolarSystemName             sql.NullString
+	EndSolarSystemSecurityStatus   sql.NullFloat64
+	StartSolarSystemID             sql.NullInt64
+	StartSolarSystemName           sql.NullString
+	StartSolarSystemSecurityStatus sql.NullFloat64
+	Items                          interface{}
 }
 
-func (q *Queries) ListCharacterContracts(ctx context.Context, characterID int64) ([]ListCharacterContractsRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterContracts, characterID)
+func (q *Queries) ListAllCharacterContracts(ctx context.Context) ([]ListAllCharacterContractsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllCharacterContracts)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListCharacterContractsRow
+	var items []ListAllCharacterContractsRow
 	for rows.Next() {
-		var i ListCharacterContractsRow
+		var i ListAllCharacterContractsRow
 		if err := rows.Scan(
 			&i.CharacterContract.ID,
 			&i.CharacterContract.AcceptorID,
@@ -385,13 +362,47 @@ func (q *Queries) ListCharacterContracts(ctx context.Context, characterID int64)
 			&i.StartLocationName,
 			&i.EndSolarSystemID,
 			&i.EndSolarSystemName,
+			&i.EndSolarSystemSecurityStatus,
 			&i.StartSolarSystemID,
 			&i.StartSolarSystemName,
+			&i.StartSolarSystemSecurityStatus,
 			&i.Items,
 		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCharacterContractIDs = `-- name: ListCharacterContractIDs :many
+SELECT
+    contract_id
+FROM
+    character_contracts
+WHERE
+    character_id = ?
+`
+
+func (q *Queries) ListCharacterContractIDs(ctx context.Context, characterID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterContractIDs, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var contract_id int64
+		if err := rows.Scan(&contract_id); err != nil {
+			return nil, err
+		}
+		items = append(items, contract_id)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -415,8 +426,10 @@ SELECT
     start_locations.name as start_location_name,
     end_solar_systems.id as end_solar_system_id,
     end_solar_systems.name as end_solar_system_name,
+    end_solar_systems.security_status as end_solar_system_security_status,
     start_solar_systems.id as start_solar_system_id,
     start_solar_systems.name as start_solar_system_name,
+    start_solar_systems.security_status as start_solar_system_security_status,
     (
         SELECT
             IFNULL(GROUP_CONCAT(name || " x " || quantity), "")
@@ -449,20 +462,22 @@ type ListCharacterContractsForNotifyParams struct {
 }
 
 type ListCharacterContractsForNotifyRow struct {
-	CharacterContract    CharacterContract
-	EveEntity            EveEntity
-	EveEntity_2          EveEntity
-	AcceptorName         sql.NullString
-	AcceptorCategory     sql.NullString
-	AssigneeName         sql.NullString
-	AssigneeCategory     sql.NullString
-	EndLocationName      sql.NullString
-	StartLocationName    sql.NullString
-	EndSolarSystemID     sql.NullInt64
-	EndSolarSystemName   sql.NullString
-	StartSolarSystemID   sql.NullInt64
-	StartSolarSystemName sql.NullString
-	Items                interface{}
+	CharacterContract              CharacterContract
+	EveEntity                      EveEntity
+	EveEntity_2                    EveEntity
+	AcceptorName                   sql.NullString
+	AcceptorCategory               sql.NullString
+	AssigneeName                   sql.NullString
+	AssigneeCategory               sql.NullString
+	EndLocationName                sql.NullString
+	StartLocationName              sql.NullString
+	EndSolarSystemID               sql.NullInt64
+	EndSolarSystemName             sql.NullString
+	EndSolarSystemSecurityStatus   sql.NullFloat64
+	StartSolarSystemID             sql.NullInt64
+	StartSolarSystemName           sql.NullString
+	StartSolarSystemSecurityStatus sql.NullFloat64
+	Items                          interface{}
 }
 
 func (q *Queries) ListCharacterContractsForNotify(ctx context.Context, arg ListCharacterContractsForNotifyParams) ([]ListCharacterContractsForNotifyRow, error) {
@@ -515,8 +530,10 @@ func (q *Queries) ListCharacterContractsForNotify(ctx context.Context, arg ListC
 			&i.StartLocationName,
 			&i.EndSolarSystemID,
 			&i.EndSolarSystemName,
+			&i.EndSolarSystemSecurityStatus,
 			&i.StartSolarSystemID,
 			&i.StartSolarSystemName,
+			&i.StartSolarSystemSecurityStatus,
 			&i.Items,
 		); err != nil {
 			return nil, err

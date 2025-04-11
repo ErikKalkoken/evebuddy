@@ -72,16 +72,17 @@ func (q *Queries) DeleteCharacterJumpClones(ctx context.Context, characterID int
 
 const getCharacterJumpClone = `-- name: GetCharacterJumpClone :one
 SELECT
-    character_jump_clones.id, character_jump_clones.character_id, character_jump_clones.jump_clone_id, character_jump_clones.location_id, character_jump_clones.name,
-    eve_locations.name as location_name,
-    eve_regions.id as region_id,
-    eve_regions.name as region_name
+    cjc.id, cjc.character_id, cjc.jump_clone_id, cjc.location_id, cjc.name,
+    el.name as location_name,
+    er.id as region_id,
+    er.name as region_name,
+    ess.security_status as location_security
 FROM
-    character_jump_clones
-    JOIN eve_locations ON eve_locations.id = character_jump_clones.location_id
-    LEFT JOIN eve_solar_systems ON eve_solar_systems.id = eve_locations.eve_solar_system_id
-    LEFT JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
-    LEFT JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
+    character_jump_clones cjc
+    JOIN eve_locations el ON el.id = cjc.location_id
+    LEFT JOIN eve_solar_systems ess ON ess.id = el.eve_solar_system_id
+    LEFT JOIN eve_constellations ON eve_constellations.id = ess.eve_constellation_id
+    LEFT JOIN eve_regions er ON er.id = eve_constellations.eve_region_id
 WHERE
     character_id = ?
     AND jump_clone_id = ?
@@ -97,6 +98,7 @@ type GetCharacterJumpCloneRow struct {
 	LocationName       string
 	RegionID           sql.NullInt64
 	RegionName         sql.NullString
+	LocationSecurity   sql.NullFloat64
 }
 
 func (q *Queries) GetCharacterJumpClone(ctx context.Context, arg GetCharacterJumpCloneParams) (GetCharacterJumpCloneRow, error) {
@@ -111,6 +113,7 @@ func (q *Queries) GetCharacterJumpClone(ctx context.Context, arg GetCharacterJum
 		&i.LocationName,
 		&i.RegionID,
 		&i.RegionName,
+		&i.LocationSecurity,
 	)
 	return i, err
 }
@@ -272,30 +275,21 @@ func (q *Queries) ListCharacterJumpCloneImplant(ctx context.Context, arg ListCha
 
 const listCharacterJumpClones = `-- name: ListCharacterJumpClones :many
 SELECT
-    DISTINCT character_jump_clones.id, character_jump_clones.character_id, character_jump_clones.jump_clone_id, character_jump_clones.location_id, character_jump_clones.name,
-    eve_locations.name as location_name,
-    eve_regions.id as region_id,
-    eve_regions.name as region_name,
-    (
-        SELECT
-            COUNT(*)
-        FROM
-            character_jump_clone_implants
-        WHERE
-            clone_id = character_jump_clones.id
-    ) AS implants_count
+    DISTINCT cjc.id, cjc.character_id, cjc.jump_clone_id, cjc.location_id, cjc.name,
+    el.name as location_name,
+    er.id as region_id,
+    er.name as region_name,
+    ess.security_status as location_security
 FROM
-    character_jump_clones
-    JOIN eve_locations ON eve_locations.id = character_jump_clones.location_id
-    LEFT JOIN character_jump_clone_implants ON character_jump_clone_implants.clone_id = character_jump_clones.id
-    LEFT JOIN eve_solar_systems ON eve_solar_systems.id = eve_locations.eve_solar_system_id
-    LEFT JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
-    LEFT JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
+    character_jump_clones cjc
+    JOIN eve_locations el ON el.id = cjc.location_id
+    LEFT JOIN eve_solar_systems ess ON ess.id = el.eve_solar_system_id
+    LEFT JOIN eve_constellations ON eve_constellations.id = ess.eve_constellation_id
+    LEFT JOIN eve_regions er ON er.id = eve_constellations.eve_region_id
 WHERE
     character_id = ?
 ORDER BY
-    location_name,
-    implants_count DESC
+    location_name
 `
 
 type ListCharacterJumpClonesRow struct {
@@ -303,7 +297,7 @@ type ListCharacterJumpClonesRow struct {
 	LocationName       string
 	RegionID           sql.NullInt64
 	RegionName         sql.NullString
-	ImplantsCount      int64
+	LocationSecurity   sql.NullFloat64
 }
 
 func (q *Queries) ListCharacterJumpClones(ctx context.Context, characterID int64) ([]ListCharacterJumpClonesRow, error) {
@@ -324,7 +318,7 @@ func (q *Queries) ListCharacterJumpClones(ctx context.Context, characterID int64
 			&i.LocationName,
 			&i.RegionID,
 			&i.RegionName,
-			&i.ImplantsCount,
+			&i.LocationSecurity,
 		); err != nil {
 			return nil, err
 		}

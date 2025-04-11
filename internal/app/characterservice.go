@@ -44,7 +44,7 @@ type CharacterService interface {
 	ListCharacters(ctx context.Context) ([]*Character, error)
 	ListCharactersShort(ctx context.Context) ([]*CharacterShort, error)
 	ListContractItems(ctx context.Context, contractID int64) ([]*CharacterContractItem, error)
-	ListContracts(ctx context.Context, characterID int32) ([]*CharacterContract, error)
+	ListAllContracts(ctx context.Context) ([]*CharacterContract, error)
 	ListImplants(ctx context.Context, characterID int32) ([]*CharacterImplant, error)
 	ListJumpClones(ctx context.Context, characterID int32) ([]*CharacterJumpClone, error)
 	ListMailHeadersForLabelOrdered(ctx context.Context, characterID int32, labelID int32) ([]*CharacterMailHeader, error)

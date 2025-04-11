@@ -18,15 +18,16 @@ import (
 // UpdateSectionIfNeeded updates a section from ESI if has expired and changed
 // and reports back if it has changed
 func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.CharacterID == 0 {
-		panic("Invalid character ID")
+	if arg.CharacterID == 0 || arg.Section == "" {
+		panic("update section: invalid parameters")
 	}
 	if !arg.ForceUpdate {
-		status, err := s.getSectionStatus(ctx, arg.CharacterID, arg.Section)
+		status, err := s.st.GetCharacterSectionStatus(ctx, arg.CharacterID, arg.Section)
 		if err != nil {
-			return false, err
-		}
-		if status != nil {
+			if !errors.Is(err, app.ErrNotFound) {
+				return false, err
+			}
+		} else {
 			if status.IsOK() && !status.IsExpired() {
 				return false, nil
 			}
@@ -131,19 +132,19 @@ func (s *CharacterService) updateSectionIfChanged(
 	if err != nil {
 		return false, err
 	}
+
 	// identify if changed
-	var hasChanged bool
-	u, err := s.getSectionStatus(ctx, arg.CharacterID, arg.Section)
-	if err != nil {
+	var notFound bool
+	u, err := s.st.GetCharacterSectionStatus(ctx, arg.CharacterID, arg.Section)
+	if errors.Is(err, app.ErrNotFound) {
+		notFound = true
+	} else if err != nil {
 		return false, err
 	}
-	if u == nil {
-		hasChanged = true
-	} else {
-		hasChanged = u.ContentHash != hash
-	}
+
 	// update if needed
-	if arg.ForceUpdate || hasChanged {
+	hasChanged := u.ContentHash != hash
+	if arg.ForceUpdate || notFound || hasChanged {
 		if err := update(ctx, arg.CharacterID, data); err != nil {
 			return false, err
 		}
@@ -170,14 +171,6 @@ func (s *CharacterService) updateSectionIfChanged(
 
 	slog.Debug("Has section changed", "characterID", arg.CharacterID, "section", arg.Section, "changed", hasChanged)
 	return hasChanged, nil
-}
-
-func (s *CharacterService) getSectionStatus(ctx context.Context, characterID int32, section app.CharacterSection) (*app.CharacterSectionStatus, error) {
-	o, err := s.st.GetCharacterSectionStatus(ctx, characterID, section)
-	if errors.Is(err, app.ErrNotFound) {
-		return nil, nil
-	}
-	return o, err
 }
 
 func calcContentHash(data any) (string, error) {

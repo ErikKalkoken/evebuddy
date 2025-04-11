@@ -8,6 +8,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
@@ -46,33 +47,41 @@ func NewOverviewTraining(u *BaseUI) *OverviewTraining {
 		{Text: "Unall. SP", Width: 100},
 		{Text: "Training", Width: 100},
 	}
-	makeDataLabel := func(col int, c trainingCharacter) (string, fyne.TextAlign, widget.Importance) {
-		var align fyne.TextAlign
-		var importance widget.Importance
-		var text string
+	makeCell := func(col int, c trainingCharacter) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			text = c.name
+			return iwidget.NewRichTextSegmentFromText(c.name)
 		case 1:
-			text = ihumanize.Optional(c.totalSP, "?")
-			align = fyne.TextAlignTrailing
+			return iwidget.NewRichTextSegmentFromText(
+				ihumanize.Optional(c.totalSP, "?"),
+				widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+				},
+			)
 		case 2:
-			text = ihumanize.Optional(c.unallocatedSP, "?")
-			align = fyne.TextAlignTrailing
+			return iwidget.NewRichTextSegmentFromText(
+				ihumanize.Optional(c.unallocatedSP, "?"),
+				widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+				},
+			)
 		case 3:
 			if c.training.IsEmpty() {
-				text = "Inactive"
-				importance = widget.WarningImportance
-			} else {
-				text = ihumanize.Duration(c.training.ValueOrZero())
+				return iwidget.NewRichTextSegmentFromText(
+					"Inactive",
+					widget.RichTextStyle{
+						ColorName: theme.ColorNameWarning,
+					},
+				)
 			}
+			return iwidget.NewRichTextSegmentFromText(ihumanize.Duration(c.training.ValueOrZero()))
 		}
-		return text, align, importance
+		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.IsDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeDataLabel, nil)
+		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, nil)
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeDataLabel, nil)
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeCell, nil)
 	}
 	return a
 }

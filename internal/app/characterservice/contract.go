@@ -87,8 +87,8 @@ func (cs *CharacterService) NotifyUpdatedContracts(ctx context.Context, characte
 	return nil
 }
 
-func (s *CharacterService) ListContracts(ctx context.Context, characterID int32) ([]*app.CharacterContract, error) {
-	return s.st.ListCharacterContracts(ctx, characterID)
+func (s *CharacterService) ListAllContracts(ctx context.Context) ([]*app.CharacterContract, error) {
+	return s.st.ListAllCharacterContracts(ctx)
 }
 
 func (s *CharacterService) ListContractItems(ctx context.Context, contractID int64) ([]*app.CharacterContractItem, error) {

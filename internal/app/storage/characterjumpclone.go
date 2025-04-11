@@ -8,6 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type CreateCharacterJumpCloneParams struct {
@@ -27,14 +28,14 @@ func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int32,
 		CharacterID: int64(characterID),
 		JumpCloneID: int64(cloneID),
 	}
-	row, err := st.qRO.GetCharacterJumpClone(ctx, arg)
+	r, err := st.qRO.GetCharacterJumpClone(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = app.ErrNotFound
 		}
 		return nil, fmt.Errorf("get jump clone for character %d: %w", characterID, err)
 	}
-	o := characterJumpCloneFromDBModel(row.CharacterJumpClone, row.LocationName, row.RegionID, row.RegionName)
+	o := characterJumpCloneFromDBModel(r.CharacterJumpClone, r.LocationName, r.RegionID, r.RegionName, r.LocationSecurity)
 	x, err := listCharacterJumpCloneImplants(ctx, st.qRO, o.ID)
 	if err != nil {
 		return nil, err
@@ -100,9 +101,9 @@ func (st *Storage) ListCharacterJumpClones(ctx context.Context, characterID int3
 		return nil, fmt.Errorf("list jump clones for character %d: %w", characterID, err)
 	}
 	oo := make([]*app.CharacterJumpClone, len(rows))
-	for i, row := range rows {
-		oo[i] = characterJumpCloneFromDBModel(row.CharacterJumpClone, row.LocationName, row.RegionID, row.RegionName)
-		x, err := listCharacterJumpCloneImplants(ctx, st.qRO, row.CharacterJumpClone.ID)
+	for i, r := range rows {
+		oo[i] = characterJumpCloneFromDBModel(r.CharacterJumpClone, r.LocationName, r.RegionID, r.RegionName, r.LocationSecurity)
+		x, err := listCharacterJumpCloneImplants(ctx, st.qRO, r.CharacterJumpClone.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -164,21 +165,19 @@ func createCharacterJumpClone(ctx context.Context, q *queries.Queries, arg Creat
 	return nil
 }
 
-func characterJumpCloneFromDBModel(
-	o queries.CharacterJumpClone,
-	locationName string,
-	regionID sql.NullInt64,
-	regionName sql.NullString,
-) *app.CharacterJumpClone {
-	if o.CharacterID == 0 {
-		panic("missing character ID")
+func characterJumpCloneFromDBModel(o queries.CharacterJumpClone, locationName string, regionID sql.NullInt64, regionName sql.NullString, locationSecurity sql.NullFloat64) *app.CharacterJumpClone {
+	if o.CharacterID == 0 || o.JumpCloneID == 0 || o.LocationID == 0 {
+		panic("invalid IDs")
 	}
 	o2 := &app.CharacterJumpClone{
 		CharacterID: int32(o.CharacterID),
 		ID:          o.ID,
 		CloneID:     int32(o.JumpCloneID),
-		Location:    &app.EntityShort[int64]{ID: o.LocationID, Name: locationName},
-		Name:        o.Name,
+		Location: &app.EveLocationShort{
+			ID:             o.LocationID,
+			Name:           optional.New(locationName),
+			SecurityStatus: optional.FromNullFloat64ToFloat32(locationSecurity)},
+		Name: o.Name,
 	}
 	if regionID.Valid && regionName.Valid {
 		o2.Region = &app.EntityShort[int32]{ID: int32(regionID.Int64), Name: regionName.String}
