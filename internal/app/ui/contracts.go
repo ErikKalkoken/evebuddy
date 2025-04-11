@@ -95,11 +95,11 @@ func NewContracts(u *BaseUI) *Contracts {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.IsDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop2(headers, &a.contracts, makeCell, func(column int, r *app.CharacterContract) {
+		a.body = iwidget.MakeDataTableForDesktop(headers, &a.contracts, makeCell, func(column int, r *app.CharacterContract) {
 			a.showContract(r)
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile2(headers, &a.contracts, makeCell, a.showContract)
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.contracts, makeCell, a.showContract)
 	}
 	return a
 }

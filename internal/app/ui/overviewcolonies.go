@@ -88,7 +88,7 @@ func NewOverviewColonies(u *BaseUI) *OverviewColonies {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.IsDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop2(headers, &a.rows, makeCell, func(col int, r colonyRow) {
+		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, func(col int, r colonyRow) {
 			switch col {
 			case 0:
 				a.u.ShowInfoWindow(app.EveEntitySolarSystem, r.solarSystemID)
@@ -101,7 +101,7 @@ func NewOverviewColonies(u *BaseUI) *OverviewColonies {
 			}
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile2(headers, &a.rows, makeCell, func(r colonyRow) {
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeCell, func(r colonyRow) {
 			a.u.ShowInfoWindow(app.EveEntitySolarSystem, r.solarSystemID)
 		})
 	}

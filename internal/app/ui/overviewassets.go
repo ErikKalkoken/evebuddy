@@ -111,11 +111,11 @@ func NewOverviewAssets(u *BaseUI) *OverviewAssets {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.IsMobile() {
-		a.body = iwidget.MakeDataTableForMobile2(headers, &a.assetsFiltered, makeCell, func(r *assetSearchRow) {
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.assetsFiltered, makeCell, func(r *assetSearchRow) {
 			a.u.ShowTypeInfoWindow(r.typeID)
 		})
 	} else {
-		t := iwidget.MakeDataTableForDesktop2(headers, &a.assetsFiltered, makeCell, func(col int, r *assetSearchRow) {
+		t := iwidget.MakeDataTableForDesktop(headers, &a.assetsFiltered, makeCell, func(col int, r *assetSearchRow) {
 			switch col {
 			case 0:
 				a.u.ShowInfoWindow(app.EveEntityInventoryType, r.typeID)

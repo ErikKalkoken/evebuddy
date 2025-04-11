@@ -9,6 +9,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 	"golang.org/x/text/cases"
@@ -70,33 +71,40 @@ func NewCharacterWalletJournal(u *BaseUI) *CharacterWalletJournal {
 		{Text: "Balance", Width: 200},
 		{Text: "Description", Width: 450},
 	}
-	makeDataLabel := func(col int, w walletJournalEntry) (string, fyne.TextAlign, widget.Importance) {
-		var align fyne.TextAlign
-		var importance widget.Importance
-		var text string
+	makeCell := func(col int, w walletJournalEntry) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			text = w.date.Format(app.DateTimeFormat)
+			return iwidget.NewRichTextSegmentFromText(w.date.Format(app.DateTimeFormat))
 		case 1:
-			text = w.refTypeOutput()
+			return iwidget.NewRichTextSegmentFromText(w.refTypeOutput())
 		case 2:
-			align = fyne.TextAlignTrailing
-			text = humanize.FormatFloat(app.FloatFormat, w.amount)
+			var color fyne.ThemeColorName
 			switch {
 			case w.amount < 0:
-				importance = widget.DangerImportance
+				color = theme.ColorNameError
 			case w.amount > 0:
-				importance = widget.SuccessImportance
+				color = theme.ColorNameSuccess
 			default:
-				importance = widget.MediumImportance
+				color = theme.ColorNameForeground
 			}
+			return iwidget.NewRichTextSegmentFromText(
+				humanize.FormatFloat(app.FloatFormat, w.amount),
+				widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+					ColorName: color,
+				},
+			)
 		case 3:
-			align = fyne.TextAlignTrailing
-			text = humanize.FormatFloat(app.FloatFormat, w.balance)
+			return iwidget.NewRichTextSegmentFromText(
+				humanize.FormatFloat(app.FloatFormat, w.balance),
+				widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+				},
+			)
 		case 4:
-			text = w.descriptionWithReason()
+			return iwidget.NewRichTextSegmentFromText(w.descriptionWithReason())
 		}
-		return text, align, importance
+		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	showReasonDialog := func(r walletJournalEntry) {
 		if r.hasReason() {
@@ -104,11 +112,11 @@ func NewCharacterWalletJournal(u *BaseUI) *CharacterWalletJournal {
 		}
 	}
 	if a.u.IsDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(_ int, r walletJournalEntry) {
+		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, func(_ int, r walletJournalEntry) {
 			showReasonDialog(r)
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeDataLabel, showReasonDialog)
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeCell, showReasonDialog)
 	}
 	return a
 }

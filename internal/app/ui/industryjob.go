@@ -78,11 +78,11 @@ func NewIndustryJobs(u *BaseUI) *IndustryJobs {
 	}
 
 	if a.u.IsDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop2(headers, &a.jobs, makeCell, func(_ int, r *app.CharacterIndustryJob) {
+		a.body = iwidget.MakeDataTableForDesktop(headers, &a.jobs, makeCell, func(_ int, r *app.CharacterIndustryJob) {
 			a.showJob(r)
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile2(headers, &a.jobs, makeCell, a.showJob)
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.jobs, makeCell, a.showJob)
 	}
 	return a
 }
