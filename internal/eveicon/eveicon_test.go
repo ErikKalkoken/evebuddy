@@ -26,3 +26,16 @@ func TestGetResourceByName(t *testing.T) {
 		assert.Equal(t, "73_16_246.png", r.Name())
 	})
 }
+
+func TestFromSchematicID(t *testing.T) {
+	t.Run("should return resource for valid ID", func(t *testing.T) {
+		r, ok := eveicon.FromSchematicID(66)
+		assert.True(t, ok)
+		assert.Equal(t, "24_64_6.png", r.Name())
+	})
+	t.Run("should return undefined resource for invalid ID", func(t *testing.T) {
+		r, ok := eveicon.FromSchematicID(1)
+		assert.False(t, ok)
+		assert.Equal(t, "7_64_15.png", r.Name())
+	})
+}
