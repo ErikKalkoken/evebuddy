@@ -1,6 +1,7 @@
 package app
 
 import (
+	"iter"
 	"maps"
 	"slices"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 type CharacterPlanet struct {
@@ -32,13 +34,16 @@ func (cp CharacterPlanet) NameRichText() []widget.RichTextSegment {
 // ExtractedTypes returns a list of unique types currently being extracted.
 func (cp CharacterPlanet) ExtractedTypes() []*EveType {
 	types := make(map[int32]*EveType)
-	for _, p := range cp.Pins {
-		if p.Type.Group.ID != EveGroupExtractorControlUnits || p.ExtractorProductType == nil {
-			continue
-		}
-		types[p.ExtractorProductType.ID] = p.ExtractorProductType
+	for pp := range cp.ActiveExtractors() {
+		types[pp.ExtractorProductType.ID] = pp.ExtractorProductType
 	}
 	return slices.Collect(maps.Values(types))
+}
+
+func (cp CharacterPlanet) ActiveExtractors() iter.Seq[*PlanetPin] {
+	return xiter.Filter(slices.Values(cp.Pins), func(o *PlanetPin) bool {
+		return o.IsExtracting()
+	})
 }
 
 func (cp CharacterPlanet) ExtractedTypeNames() []string {
@@ -59,14 +64,11 @@ func (cp CharacterPlanet) Extracting() string {
 // When no expiry data is found it will return a zero time.
 func (cp CharacterPlanet) ExtractionsExpiryTime() time.Time {
 	expireTimes := make([]time.Time, 0)
-	for _, p := range cp.Pins {
-		if p.Type.Group.ID != EveGroupExtractorControlUnits {
+	for pp := range cp.ActiveExtractors() {
+		if pp.ExpiryTime.IsEmpty() {
 			continue
 		}
-		if p.ExpiryTime.IsEmpty() {
-			continue
-		}
-		expireTimes = append(expireTimes, p.ExpiryTime.ValueOrZero())
+		expireTimes = append(expireTimes, pp.ExpiryTime.ValueOrZero())
 	}
 	if len(expireTimes) == 0 {
 		return time.Time{}
@@ -77,14 +79,17 @@ func (cp CharacterPlanet) ExtractionsExpiryTime() time.Time {
 	return expireTimes[0]
 }
 
+func (cp CharacterPlanet) ActiveProducers() iter.Seq[*PlanetPin] {
+	return xiter.Filter(slices.Values(cp.Pins), func(o *PlanetPin) bool {
+		return o.IsProducing()
+	})
+}
+
 // ProducedSchematics returns a list of unique schematics currently in production.
 func (cp CharacterPlanet) ProducedSchematics() []*EveSchematic {
 	schematics := make(map[int32]*EveSchematic)
-	for _, p := range cp.Pins {
-		if p.Type.Group.ID != EveGroupProcessors || p.Schematic == nil {
-			continue
-		}
-		schematics[p.Schematic.ID] = p.Schematic
+	for pp := range cp.ActiveProducers() {
+		schematics[pp.Schematic.ID] = pp.Schematic
 	}
 	return slices.Collect(maps.Values(schematics))
 }
@@ -122,6 +127,15 @@ func (cp CharacterPlanet) DueRichText() []widget.RichTextSegment {
 	return iwidget.NewRichTextSegmentFromText(due.Format(DateTimeFormat))
 }
 
+func extractedStringsSorted[T any](s []T, extract func(a T) string) []string {
+	s2 := make([]string, 0)
+	for _, x := range s {
+		s2 = append(s2, extract(x))
+	}
+	slices.Sort(s2)
+	return s2
+}
+
 type PlanetPin struct {
 	ID                   int64
 	ExpiryTime           optional.Optional[time.Time]
@@ -133,11 +147,10 @@ type PlanetPin struct {
 	Type                 *EveType
 }
 
-func extractedStringsSorted[T any](s []T, extract func(a T) string) []string {
-	s2 := make([]string, 0)
-	for _, x := range s {
-		s2 = append(s2, extract(x))
-	}
-	slices.Sort(s2)
-	return s2
+func (pp PlanetPin) IsExtracting() bool {
+	return pp.Type.Group.ID == EveGroupExtractorControlUnits && pp.ExtractorProductType != nil
+}
+
+func (pp PlanetPin) IsProducing() bool {
+	return pp.Type.Group.ID == EveGroupProcessors && pp.Schematic != nil
 }
