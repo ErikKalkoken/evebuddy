@@ -1094,18 +1094,11 @@ func (u *BaseUI) makeDetailWindow(title, subTitle string, content fyne.CanvasObj
 	w := u.App().NewWindow(u.MakeWindowTitle(title))
 	t := iwidget.NewLabelWithSize(subTitle, theme.SizeNameSubHeadingText)
 	top := container.NewVBox(t, widget.NewSeparator())
-	bottom := container.NewVBox()
-	if u.IsDesktop() {
-		bottom.Add(widget.NewSeparator())
-		bottom.Add(container.NewCenter(widget.NewButton("Close", func() {
-			w.Hide()
-		})))
-	}
 	vs := container.NewVScroll(content)
 	vs.SetMinSize(fyne.NewSize(600, 500))
 	c := container.NewBorder(
 		top,
-		bottom,
+		nil,
 		nil,
 		nil,
 		vs,
