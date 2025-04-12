@@ -155,8 +155,8 @@ func (a *Colonies) showColony(cp *app.CharacterPlanet) {
 			a.u.ShowInfoWindow(app.EveEntityCharacter, cp.CharacterID)
 		})),
 	}
-	f1 := widget.NewForm(fi...)
-	f1.Orientation = widget.Adaptive
+	infos := widget.NewForm(fi...)
+	infos.Orientation = widget.Adaptive
 
 	extracting := container.NewVBox()
 	for pp := range cp.ActiveExtractors() {
@@ -165,12 +165,13 @@ func (a *Colonies) showColony(cp *app.CharacterPlanet) {
 		}
 		expiryTime := pp.ExpiryTime.ValueOrZero()
 		icon, _ := pp.ExtractorProductType.Icon()
+		product := kxwidget.NewTappableLabel(pp.ExtractorProductType.Name, func() {
+			a.u.ShowEveEntityInfoWindow(pp.ExtractorProductType.ToEveEntity())
+		})
 		row := container.NewHBox(
 			iwidget.NewImageFromResource(icon, fyne.NewSquareSize(app.IconUnitSize)),
-			kxwidget.NewTappableLabel(pp.ExtractorProductType.Name, func() {
-				a.u.ShowEveEntityInfoWindow(pp.ExtractorProductType.ToEveEntity())
-			}),
-			widget.NewLabel(expiryTime.Format(app.DateTimeFormat)),
+			product,
+			container.NewHBox(widget.NewLabel(expiryTime.Format(app.DateTimeFormat))),
 		)
 		if expiryTime.Before(time.Now()) {
 			l := widget.NewLabel("EXPIRED")
@@ -193,17 +194,19 @@ func (a *Colonies) showColony(cp *app.CharacterPlanet) {
 	if len(producing.Objects) == 0 {
 		producing.Add(widget.NewLabel("-"))
 	}
-	f2 := widget.NewForm(
+	processes := widget.NewForm(
 		widget.NewFormItem("Extracting", extracting),
 		widget.NewFormItem("Producing", producing),
 	)
-	top := container.NewHBox(f1, layout.NewSpacer())
+	processes.Orientation = widget.Adaptive
+
+	top := container.NewHBox(infos, layout.NewSpacer())
 	if a.u.IsDesktop() {
 		res, _ := cp.EvePlanet.Type.Icon()
 		image := iwidget.NewImageFromResource(res, fyne.NewSquareSize(100))
-		top.Add(container.NewVBox(image))
+		top.Add(container.NewVBox(container.NewPadded(image)))
 	}
-	c := container.NewVBox(top, f2)
+	c := container.NewVBox(top, processes)
 
 	subTitle := fmt.Sprintf("%s - %s", cp.EvePlanet.Name, characterName)
 	w := a.u.makeDetailWindow("Colony", subTitle, c)

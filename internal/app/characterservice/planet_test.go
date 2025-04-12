@@ -7,6 +7,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,13 +36,15 @@ func TestNotifyExpiredExtractions(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// given
 			testutil.TruncateTables(db)
+			product := factory.CreateEveType()
 			p := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{
 				LastNotified: tc.lastNotified,
 			})
 			if tc.isExtractor {
 				factory.CreatePlanetPinExtractor(storage.CreatePlanetPinParams{
-					CharacterPlanetID: p.ID,
-					ExpiryTime:        tc.expiryTime,
+					CharacterPlanetID:      p.ID,
+					ExpiryTime:             tc.expiryTime,
+					ExtractorProductTypeID: optional.New(product.ID),
 				})
 			} else {
 				factory.CreatePlanetPin(storage.CreatePlanetPinParams{

@@ -78,7 +78,6 @@ type BaseUI struct {
 	characterImplants          *CharacterAugmentations
 	characterJumpClones        *CharacterJumpClones
 	characterMail              *CharacterMails
-	characterPlanets           *CharacterColonies
 	characterSheet             *CharacterSheet
 	characterShips             *CharacterFlyableShips
 	characterSkillCatalogue    *CharacterSkillCatalogue
@@ -94,7 +93,7 @@ type BaseUI struct {
 	overviewAssets             *OverviewAssets
 	overviewCharacters         *OverviewCharacters
 	overviewClones             *OverviewClones
-	overviewColonies           *Colonies
+	colonies                   *Colonies
 	overviewLocations          *OverviewLocations
 	overviewTraining           *OverviewTraining
 	overviewWealth             *OverviewWealth
@@ -166,7 +165,6 @@ func NewBaseUI(
 	u.characterImplants = NewCharacterAugmentations(u)
 	u.characterJumpClones = NewCharacterJumpClones(u)
 	u.characterMail = NewCharacterMails(u)
-	u.characterPlanets = NewCharacterColonies(u)
 	u.characterSheet = NewSheet(u)
 	u.characterShips = NewCharacterFlyableShips(u)
 	u.characterSkillCatalogue = NewCharacterSkillCatalogue(u)
@@ -184,7 +182,7 @@ func NewBaseUI(
 	u.overviewAssets = NewOverviewAssets(u)
 	u.overviewCharacters = NewOverviewCharacters(u)
 	u.overviewClones = NewOverviewClones(u)
-	u.overviewColonies = NewColonies(u)
+	u.colonies = NewColonies(u)
 	u.overviewLocations = NewOverviewLocations(u)
 	u.overviewTraining = NewOverviewTraining(u)
 	u.overviewWealth = NewOverviewWealth(u)
@@ -423,7 +421,6 @@ func (u *BaseUI) updateCharacter() {
 		"jumpClones":        u.characterJumpClones.Update,
 		"mail":              u.characterMail.Update,
 		"notifications":     u.characterCommunications.Update,
-		"planets":           u.characterPlanets.Update,
 		"sheet":             u.characterSheet.Update,
 		"ships":             u.characterShips.Update,
 		"skillCatalogue":    u.characterSkillCatalogue.Update,
@@ -455,7 +452,7 @@ func (u *BaseUI) UpdateCrossPages() {
 		"contractsAll":      u.contractsAll.Update,
 		"contractsActive":   u.contractsActive.Update,
 		"cloneSeach":        u.overviewClones.Update,
-		"colony":            u.overviewColonies.Update,
+		"colony":            u.colonies.Update,
 		"industryJobAll":    u.industryJobsAll.Update,
 		"industryJobActive": u.industryJobsActive.Update,
 		"locations":         u.overviewLocations.Update,
@@ -812,11 +809,8 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionPlanets:
 		if needsRefresh {
-			u.overviewColonies.Update()
+			u.colonies.Update()
 			u.notifyExpiredExtractionsIfNeeded(ctx, characterID)
-			if isShown {
-				u.characterPlanets.Update()
-			}
 		}
 	case app.SectionMailLabels, app.SectionMailLists:
 		if needsRefresh {
@@ -861,7 +855,6 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 				u.reloadCurrentCharacter()
 				u.characterSkillCatalogue.Refresh()
 				u.characterShips.Update()
-				u.characterPlanets.Update()
 			}
 		}
 
@@ -1101,12 +1094,13 @@ func (u *BaseUI) makeDetailWindow(title, subTitle string, content fyne.CanvasObj
 	w := u.App().NewWindow(u.MakeWindowTitle(title))
 	t := iwidget.NewLabelWithSize(subTitle, theme.SizeNameSubHeadingText)
 	top := container.NewVBox(t, widget.NewSeparator())
-	bottom := container.NewVBox(
-		widget.NewSeparator(),
-		container.NewCenter(widget.NewButton("Close", func() {
+	bottom := container.NewVBox()
+	if u.IsDesktop() {
+		bottom.Add(widget.NewSeparator())
+		bottom.Add(container.NewCenter(widget.NewButton("Close", func() {
 			w.Hide()
-		})),
-	)
+		})))
+	}
 	vs := container.NewVScroll(content)
 	vs.SetMinSize(fyne.NewSize(600, 500))
 	c := container.NewBorder(

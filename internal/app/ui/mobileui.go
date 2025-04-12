@@ -88,13 +88,6 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 			)
 		},
 	)
-	navItemColonies1 := iwidget.NewListItemWithIcon(
-		"Colonies",
-		theme.NewThemedResource(icons.EarthSvg),
-		func() {
-			characterNav.Push(newCharacterAppBar("Colonies", u.characterPlanets))
-		},
-	)
 	navItemMail := iwidget.NewListItemWithIcon(
 		"Mail",
 		theme.MailComposeIcon(),
@@ -171,7 +164,6 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 		),
 		navItemAssets,
 		navItemCommunications,
-		navItemColonies1,
 		navItemMail,
 		navItemSkills,
 		navItemWallet,
@@ -179,18 +171,6 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 
 	u.characterAsset.OnRedraw = func(s string) {
 		navItemAssets.Supporting = s
-		characterList.Refresh()
-	}
-
-	u.characterPlanets.OnUpdate = func(total, expired int) {
-		var s string
-		if total > 0 {
-			s = fmt.Sprintf("%d colonies", total)
-			if expired > 0 {
-				s += fmt.Sprintf(" • %d expired", expired)
-			}
-		}
-		navItemColonies1.Supporting = s
 		characterList.Refresh()
 	}
 
@@ -240,7 +220,7 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 		"Colonies",
 		theme.NewThemedResource(icons.EarthSvg),
 		func() {
-			crossNav.Push(iwidget.NewAppBar("Colonies", u.overviewColonies))
+			crossNav.Push(iwidget.NewAppBar("Colonies", u.colonies))
 		},
 	)
 	crossList := iwidget.NewNavList(
@@ -324,7 +304,7 @@ func NewUIMobile(bui *BaseUI) *MobileUI {
 		navItemWealth,
 	)
 	crossNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("All Characters", crossList))
-	u.overviewColonies.OnUpdate = func(_, expired int) {
+	u.colonies.OnUpdate = func(_, expired int) {
 		navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
 		crossList.Refresh()
 	}
