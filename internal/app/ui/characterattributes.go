@@ -136,11 +136,11 @@ func (a *CharacterAttributes) updateData() (int, error) {
 	} else if err != nil {
 		return 0, err
 	}
-	resPerception := eveicon.GetResourceByName(eveicon.Perception)
-	resMemory := eveicon.GetResourceByName(eveicon.Memory)
-	resWillpower := eveicon.GetResourceByName(eveicon.Willpower)
-	resIntelligence := eveicon.GetResourceByName(eveicon.Intelligence)
-	resCharisma := eveicon.GetResourceByName(eveicon.Charisma)
+	resPerception := eveicon.FromName(eveicon.Perception)
+	resMemory := eveicon.FromName(eveicon.Memory)
+	resWillpower := eveicon.FromName(eveicon.Willpower)
+	resIntelligence := eveicon.FromName(eveicon.Intelligence)
+	resCharisma := eveicon.FromName(eveicon.Charisma)
 	items := make([]attribute, 6)
 	items[0] = attribute{
 		icon:   resPerception,

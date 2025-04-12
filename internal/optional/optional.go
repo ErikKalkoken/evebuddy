@@ -64,6 +64,15 @@ func (o Optional[T]) String() string {
 	return fmt.Sprint(o.value)
 }
 
+// StringFunc returns the result of applying convert when the optional has a value.
+// Or it returns the provided fallback, when the optional is empty,
+func (o Optional[T]) StringFunc(fallback string, convert func(v T) string) string {
+	if o.IsEmpty() {
+		return fallback
+	}
+	return convert(o.ValueOrZero())
+}
+
 // Value returns the value of an Optional.
 func (o Optional[T]) Value() (T, error) {
 	var z T

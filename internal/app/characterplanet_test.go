@@ -131,6 +131,7 @@ func TestCharacterPlanetProducedSchematics(t *testing.T) {
 func TestCharacterPlanetExtractionsExpire(t *testing.T) {
 	extractorType := &app.EveType{Group: &app.EveGroup{ID: app.EveGroupExtractorControlUnits}}
 	processorType := &app.EveType{Group: &app.EveGroup{ID: app.EveGroupProcessors}}
+	productType := &app.EveType{ID: 42}
 	processorPin := &app.PlanetPin{Type: processorType}
 	t.Run("should return final expiration date", func(t *testing.T) {
 		// given
@@ -138,12 +139,14 @@ func TestCharacterPlanetExtractionsExpire(t *testing.T) {
 		et2 := time.Now().Add(10 * time.Hour).UTC()
 		cp := &app.CharacterPlanet{Pins: []*app.PlanetPin{
 			{
-				Type:       extractorType,
-				ExpiryTime: optional.New(et2),
+				Type:                 extractorType,
+				ExpiryTime:           optional.New(et2),
+				ExtractorProductType: productType,
 			},
 			{
-				Type:       extractorType,
-				ExpiryTime: optional.New(et1),
+				Type:                 extractorType,
+				ExpiryTime:           optional.New(et1),
+				ExtractorProductType: productType,
 			},
 			processorPin,
 		}}
@@ -157,8 +160,9 @@ func TestCharacterPlanetExtractionsExpire(t *testing.T) {
 		et1 := time.Now().Add(-5 * time.Hour).UTC()
 		cp := &app.CharacterPlanet{Pins: []*app.PlanetPin{
 			{
-				Type:       extractorType,
-				ExpiryTime: optional.New(et1),
+				Type:                 extractorType,
+				ExpiryTime:           optional.New(et1),
+				ExtractorProductType: productType,
 			},
 			processorPin,
 		}}

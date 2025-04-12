@@ -96,14 +96,6 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 
 	// current character
 
-	colonies := iwidget.NewNavPage(
-		"Colonies",
-		theme.NewThemedResource(icons.EarthSvg),
-		makePageWithPageBar("Colonies", u.characterPlanets),
-	)
-	u.characterPlanets.OnUpdate = func(_, expired int) {
-		characterNav.SetItemBadge(colonies, formatBadge(expired, 10))
-	}
 	mail := iwidget.NewNavPage(
 		"Mail",
 		theme.MailComposeIcon(),
@@ -170,7 +162,6 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 			makePageWithPageBar("Assets", u.characterAsset),
 		),
 		communications,
-		colonies,
 		mail,
 		skills,
 		wallet,
@@ -233,9 +224,9 @@ func NewUIDesktop(bui *BaseUI) *DesktopUI {
 	overviewColonies := iwidget.NewNavPage(
 		"Colonies",
 		theme.NewThemedResource(icons.EarthSvg),
-		makePageWithTitle("Colonies", u.overviewColonies),
+		makePageWithTitle("Colonies", u.colonies),
 	)
-	u.overviewColonies.OnUpdate = func(_, expired int) {
+	u.colonies.OnUpdate = func(_, expired int) {
 		var s string
 		if expired > 0 {
 			s = fmt.Sprint(expired)

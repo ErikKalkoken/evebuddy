@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"math"
 	"slices"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -47,7 +48,6 @@ func NewContracts(u *BaseUI) *Contracts {
 		{Text: "To", Width: 150},
 		{Text: "Status", Width: 100},
 		{Text: "Date Issued", Width: 150},
-		{Text: "Date Accepted", Width: 150},
 		{Text: "Time Left", Width: 100},
 	}
 	makeCell := func(col int, o *app.CharacterContract) []widget.RichTextSegment {
@@ -71,14 +71,6 @@ func NewContracts(u *BaseUI) *Contracts {
 		case 5:
 			return iwidget.NewRichTextSegmentFromText(o.DateIssued.Format(app.DateTimeFormat))
 		case 6:
-			var s string
-			if o.DateAccepted.IsEmpty() {
-				s = ""
-			} else {
-				s = o.DateAccepted.MustValue().Format(app.DateTimeFormat)
-			}
-			return iwidget.NewRichTextSegmentFromText(s)
-		case 7:
 			var text string
 			var color fyne.ThemeColorName
 			if o.IsExpired() {
@@ -214,9 +206,16 @@ func (a *Contracts) showContract(c *app.CharacterContract) {
 	}
 	fi = append(fi, widget.NewFormItem("Status", widget.NewRichText(c.StatusDisplayRichText()...)))
 	fi = append(fi, widget.NewFormItem("Location", makeLocation(c.StartLocation)))
+
 	if c.Type == app.ContractTypeCourier || c.Type == app.ContractTypeItemExchange {
 		fi = append(fi, widget.NewFormItem("Date Issued", widget.NewLabel(c.DateIssued.Format(app.DateTimeFormat))))
-		fi = append(fi, widget.NewFormItem("Expiration Date", widget.NewLabel(makeExpiresString(c))))
+		fi = append(fi, widget.NewFormItem("Date Accepted", widget.NewLabel(c.DateAccepted.StringFunc("", func(v time.Time) string {
+			return v.Format(app.DateTimeFormat)
+		}))))
+		fi = append(fi, widget.NewFormItem("Date Expired", widget.NewLabel(makeExpiresString(c))))
+		fi = append(fi, widget.NewFormItem("Date Completed", widget.NewLabel(c.DateCompleted.StringFunc("", func(v time.Time) string {
+			return v.Format(app.DateTimeFormat)
+		}))))
 	}
 
 	switch c.Type {

@@ -76,7 +76,23 @@ func TestOptional(t *testing.T) {
 		got := x.MustValue()
 		assert.Equal(t, 12, got)
 	})
+}
 
+func TestString(t *testing.T) {
+	t.Run("should return converted string when optional has value", func(t *testing.T) {
+		x := optional.New(12)
+		got := x.StringFunc("", func(v int) string {
+			return fmt.Sprint(v)
+		})
+		assert.Equal(t, "12", got)
+	})
+	t.Run("should return fallback when optional is empty", func(t *testing.T) {
+		var x optional.Optional[int]
+		got := x.StringFunc("x", func(v int) string {
+			return fmt.Sprint(v)
+		})
+		assert.Equal(t, "x", got)
+	})
 }
 
 func TestValueOrZero(t *testing.T) {

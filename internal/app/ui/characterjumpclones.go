@@ -100,7 +100,7 @@ func (a *CharacterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 			prefix := hbox[1].(*fyne.Container).Objects[1].(*widget.Label)
 			iconInfo := border[2]
 			if n.IsRoot() {
-				iconMain.Resource = eveicon.GetResourceByName(eveicon.CloningCenter)
+				iconMain.Resource = eveicon.FromName(eveicon.CloningCenter)
 				iconMain.Refresh()
 				if !n.isUnknown {
 					iconInfo.Show()

@@ -1,0 +1,223 @@
+{
+"select ps.schematicID , (\n select ei.iconID from eveIcons ei \n where ei.description LIKE concat(ps.schematicName, \"%\")\n) as iconID \nfrom planetSchematics ps\nwhere iconID is not null": [
+	{
+		"schematicID" : 66,
+		"iconID" : 1360
+	},
+	{
+		"schematicID" : 67,
+		"iconID" : 1359
+	},
+	{
+		"schematicID" : 68,
+		"iconID" : 1187
+	},
+	{
+		"schematicID" : 69,
+		"iconID" : 10051
+	},
+	{
+		"schematicID" : 70,
+		"iconID" : 1190
+	},
+	{
+		"schematicID" : 71,
+		"iconID" : 1364
+	},
+	{
+		"schematicID" : 72,
+		"iconID" : 10052
+	},
+	{
+		"schematicID" : 73,
+		"iconID" : 1186
+	},
+	{
+		"schematicID" : 76,
+		"iconID" : 1362
+	},
+	{
+		"schematicID" : 77,
+		"iconID" : 1365
+	},
+	{
+		"schematicID" : 78,
+		"iconID" : 10053
+	},
+	{
+		"schematicID" : 79,
+		"iconID" : 10054
+	},
+	{
+		"schematicID" : 80,
+		"iconID" : 10055
+	},
+	{
+		"schematicID" : 82,
+		"iconID" : 1188
+	},
+	{
+		"schematicID" : 84,
+		"iconID" : 1205
+	},
+	{
+		"schematicID" : 85,
+		"iconID" : 1189
+	},
+	{
+		"schematicID" : 86,
+		"iconID" : 10056
+	},
+	{
+		"schematicID" : 87,
+		"iconID" : 10057
+	},
+	{
+		"schematicID" : 88,
+		"iconID" : 10058
+	},
+	{
+		"schematicID" : 90,
+		"iconID" : 10039
+	},
+	{
+		"schematicID" : 91,
+		"iconID" : 10040
+	},
+	{
+		"schematicID" : 92,
+		"iconID" : 10041
+	},
+	{
+		"schematicID" : 96,
+		"iconID" : 10043
+	},
+	{
+		"schematicID" : 97,
+		"iconID" : 1368
+	},
+	{
+		"schematicID" : 98,
+		"iconID" : 10044
+	},
+	{
+		"schematicID" : 99,
+		"iconID" : 10045
+	},
+	{
+		"schematicID" : 103,
+		"iconID" : 1367
+	},
+	{
+		"schematicID" : 104,
+		"iconID" : 10132
+	},
+	{
+		"schematicID" : 106,
+		"iconID" : 10116
+	},
+	{
+		"schematicID" : 107,
+		"iconID" : 10048
+	},
+	{
+		"schematicID" : 110,
+		"iconID" : 10049
+	},
+	{
+		"schematicID" : 111,
+		"iconID" : 10050
+	},
+	{
+		"schematicID" : 112,
+		"iconID" : 10076
+	},
+	{
+		"schematicID" : 113,
+		"iconID" : 10079
+	},
+	{
+		"schematicID" : 114,
+		"iconID" : 10075
+	},
+	{
+		"schematicID" : 115,
+		"iconID" : 10078
+	},
+	{
+		"schematicID" : 116,
+		"iconID" : 10077
+	},
+	{
+		"schematicID" : 117,
+		"iconID" : 10073
+	},
+	{
+		"schematicID" : 118,
+		"iconID" : 10074
+	},
+	{
+		"schematicID" : 119,
+		"iconID" : 10066
+	},
+	{
+		"schematicID" : 121,
+		"iconID" : 1178
+	},
+	{
+		"schematicID" : 122,
+		"iconID" : 10017
+	},
+	{
+		"schematicID" : 123,
+		"iconID" : 10019
+	},
+	{
+		"schematicID" : 124,
+		"iconID" : 1183
+	},
+	{
+		"schematicID" : 125,
+		"iconID" : 10018
+	},
+	{
+		"schematicID" : 126,
+		"iconID" : 10020
+	},
+	{
+		"schematicID" : 127,
+		"iconID" : 10021
+	},
+	{
+		"schematicID" : 128,
+		"iconID" : 10022
+	},
+	{
+		"schematicID" : 129,
+		"iconID" : 10023
+	},
+	{
+		"schematicID" : 130,
+		"iconID" : 1358
+	},
+	{
+		"schematicID" : 131,
+		"iconID" : 10029
+	},
+	{
+		"schematicID" : 132,
+		"iconID" : 10030
+	},
+	{
+		"schematicID" : 133,
+		"iconID" : 10031
+	},
+	{
+		"schematicID" : 134,
+		"iconID" : 10032
+	},
+	{
+		"schematicID" : 135,
+		"iconID" : 10033
+	}
+]}
