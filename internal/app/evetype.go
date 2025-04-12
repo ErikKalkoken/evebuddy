@@ -89,7 +89,7 @@ func (et EveType) Icon() (fyne.Resource, bool) {
 	if et.IconID == 0 {
 		return nil, false
 	}
-	res, ok := eveicon.GetResourceByIconID(et.IconID)
+	res, ok := eveicon.FromID(et.IconID)
 	if !ok {
 		return nil, false
 	}

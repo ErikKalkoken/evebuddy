@@ -227,7 +227,7 @@ func (a *inventoryTypeInfo) calcAttributesData(
 			} else {
 				iconID = o.DogmaAttribute.IconID
 			}
-			r, _ := eveicon.GetResourceByIconID(iconID)
+			r, _ := eveicon.FromID(iconID)
 			groupedRows[ag] = append(groupedRows[ag], attributeRow{
 				icon:  r,
 				label: o.DogmaAttribute.DisplayName,
@@ -243,7 +243,7 @@ func (a *inventoryTypeInfo) calcAttributesData(
 			v += fmt.Sprintf(" (%s Packaged)", v2)
 		}
 		r := attributeRow{
-			icon:  eveicon.GetResourceByName(eveicon.Structure),
+			icon:  eveicon.FromName(eveicon.Structure),
 			label: "Volume",
 			value: v,
 		}
@@ -290,7 +290,7 @@ func (a *inventoryTypeInfo) calcFittingData(ctx context.Context, attributes map[
 			continue
 		}
 		iconID := o.DogmaAttribute.IconID
-		r, _ := eveicon.GetResourceByIconID(iconID)
+		r, _ := eveicon.FromID(iconID)
 		v, _ := a.iw.u.EveUniverseService().FormatDogmaValue(ctx, o.Value, o.DogmaAttribute.Unit)
 		data = append(data, attributeRow{
 			icon:  r,
@@ -376,7 +376,7 @@ func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 				n = eveicon.Faction
 			}
 			marker := iwidget.NewImageFromResource(
-				eveicon.GetResourceByName(n),
+				eveicon.FromName(n),
 				fyne.NewSquareSize(render.MinSize().Width*0.2),
 			)
 			typeIcon.Add(container.NewPadded(marker))

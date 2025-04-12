@@ -8,11 +8,11 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -132,20 +132,41 @@ func (a *Colonies) updateEntries() error {
 	return nil
 }
 
-// TODO: Show expiry times of all extractions
-
 func (a *Colonies) showColony(cp *app.CharacterPlanet) {
 	characterName := a.u.StatusCacheService().CharacterName(cp.CharacterID)
+
+	fi := []*widget.FormItem{
+		widget.NewFormItem("Planet", iwidget.NewTappableRichText(
+			func() {
+				a.u.ShowEveEntityInfoWindow(cp.EvePlanet.SolarSystem.ToEveEntity())
+			},
+			cp.NameRichText()...,
+		)),
+		widget.NewFormItem("Type", kxwidget.NewTappableLabel(cp.EvePlanet.TypeDisplay(), func() {
+			a.u.ShowEveEntityInfoWindow(cp.EvePlanet.Type.ToEveEntity())
+		})),
+		widget.NewFormItem("Region", kxwidget.NewTappableLabel(
+			cp.EvePlanet.SolarSystem.Constellation.Region.Name,
+			func() {
+				a.u.ShowEveEntityInfoWindow(cp.EvePlanet.SolarSystem.Constellation.Region.ToEveEntity())
+			})),
+		widget.NewFormItem("Installations", widget.NewLabel(fmt.Sprint(len(cp.Pins)))),
+		widget.NewFormItem("Character", kxwidget.NewTappableLabel(characterName, func() {
+			a.u.ShowInfoWindow(app.EveEntityCharacter, cp.CharacterID)
+		})),
+	}
+	f1 := widget.NewForm(fi...)
+	f1.Orientation = widget.Adaptive
+
 	extracting := container.NewVBox()
 	for pp := range cp.ActiveExtractors() {
 		if pp.ExpiryTime.IsEmpty() {
 			continue
 		}
 		expiryTime := pp.ExpiryTime.ValueOrZero()
+		icon, _ := pp.ExtractorProductType.Icon()
 		row := container.NewHBox(
-			iwidget.NewImageWithLoader(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize), func() (fyne.Resource, error) {
-				return a.u.EveImageService().InventoryTypeIcon(pp.ExtractorProductType.ID, app.IconPixelSize)
-			}),
+			iwidget.NewImageFromResource(icon, fyne.NewSquareSize(app.IconUnitSize)),
 			kxwidget.NewTappableLabel(pp.ExtractorProductType.Name, func() {
 				a.u.ShowEveEntityInfoWindow(pp.ExtractorProductType.ToEveEntity())
 			}),
@@ -162,37 +183,29 @@ func (a *Colonies) showColony(cp *app.CharacterPlanet) {
 		extracting.Add(widget.NewLabel("-"))
 	}
 	producing := container.NewVBox()
-	for _, s := range cp.ProducedSchematicNames() {
-		producing.Add(widget.NewLabel(s))
+	for _, s := range cp.ProducedSchematics() {
+		icon, _ := s.Icon()
+		producing.Add(container.NewHBox(
+			iwidget.NewImageFromResource(icon, fyne.NewSquareSize(app.IconUnitSize)),
+			widget.NewLabel(s.Name),
+		))
 	}
 	if len(producing.Objects) == 0 {
 		producing.Add(widget.NewLabel("-"))
 	}
-	fi := []*widget.FormItem{
-		widget.NewFormItem("Planet", iwidget.NewTappableRichText(
-			func() {
-				a.u.ShowEveEntityInfoWindow(cp.EvePlanet.SolarSystem.ToEveEntity())
-			},
-			cp.NameRichText()...,
-		)),
-		widget.NewFormItem("Type", kxwidget.NewTappableLabel(cp.EvePlanet.TypeDisplay(), func() {
-			a.u.ShowEveEntityInfoWindow(cp.EvePlanet.Type.ToEveEntity())
-		})),
+	f2 := widget.NewForm(
 		widget.NewFormItem("Extracting", extracting),
 		widget.NewFormItem("Producing", producing),
-		widget.NewFormItem("Region", kxwidget.NewTappableLabel(
-			cp.EvePlanet.SolarSystem.Constellation.Region.Name,
-			func() {
-				a.u.ShowEveEntityInfoWindow(cp.EvePlanet.SolarSystem.Constellation.Region.ToEveEntity())
-			})),
-		widget.NewFormItem("Installations", widget.NewLabel(fmt.Sprint(len(cp.Pins)))),
-		widget.NewFormItem("Character", kxwidget.NewTappableLabel(characterName, func() {
-			a.u.ShowInfoWindow(app.EveEntityCharacter, cp.CharacterID)
-		})),
+	)
+	top := container.NewHBox(f1, layout.NewSpacer())
+	if a.u.IsDesktop() {
+		res, _ := cp.EvePlanet.Type.Icon()
+		image := iwidget.NewImageFromResource(res, fyne.NewSquareSize(100))
+		top.Add(container.NewVBox(image))
 	}
-	f := widget.NewForm(fi...)
-	f.Orientation = widget.Adaptive
+	c := container.NewVBox(top, f2)
+
 	subTitle := fmt.Sprintf("%s - %s", cp.EvePlanet.Name, characterName)
-	w := a.u.makeDetailWindow("Colony", subTitle, f)
+	w := a.u.makeDetailWindow("Colony", subTitle, c)
 	w.Show()
 }

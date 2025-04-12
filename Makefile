@@ -1,11 +1,14 @@
-generate: bundle queries
+generate: bundle queries mapping
 
 bundle:
 	fyne bundle --package icons --prefix "" resources/app > internal/app/icons/resource.go
 	fyne bundle --package widget --prefix icon resources/widget > internal/widget/resource.go
 	fyne bundle --package eveimageservice resources/eveimageservice > internal/eveimageservice/resource.go
 	fyne bundle --package eveicon resources/eveicon > internal/eveicon/resource.go
+
+mapping:
 	python3 tools/icons_map/generate.py > internal/eveicon/mapping.go
+	go run ./tools/genschematicids/ -p eveicon > internal/eveicon/schematic.go
 
 queries:
 	sqlc generate

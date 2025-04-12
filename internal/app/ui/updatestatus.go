@@ -174,7 +174,7 @@ func (a *UpdateStatus) makeEntityList() *widget.List {
 
 			icon := row[0].(*canvas.Image)
 			if c.IsGeneralSection() {
-				icon.Resource = eveicon.GetResourceByName(eveicon.StarMap)
+				icon.Resource = eveicon.FromName(eveicon.StarMap)
 				icon.Refresh()
 			} else {
 				go a.u.updateAvatar(c.id, func(r fyne.Resource) {
