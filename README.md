@@ -46,13 +46,16 @@ A more detailed overview of the provided features:
   - Clones: Current augmentations, jump clones & jump cooldown timer
   - Mails: Full mail client for receiving and sending Eve mails
   - Communications: Browse through all communications
-  - Planets: Status of PI colonies
   - Skills: Training queue, catalogue of all trained skills and what ships can be flown
   - Wallet: Wallet and Wallet Transactions
 - Combined view over all characters:
-  - Overview (e.g. wallet, skill points, location)
-  - Assets search: Full asset search across all your characters
-  - Show list of all planetary industry colonies
+  - Assets: Assets of all characters with full text search feature
+  - Clones: Jump clones of all characters with route search from any location 
+  - Colonies: Show list of all planetary industry colonies
+  - Contracts: Active and history of contracts
+  - Industry: Active and history of industry jobs
+  - Location: Location in New Eden and current ships for all characters
+  - Training: Queue status and skillpoints
   - Wealth: Charts showing wealth distribution across all characters
 - Get notified about important events (e.g. structure attacked, training queue expired)
 - Ability to search New Eden (similar to in-game search bar)
@@ -75,6 +78,12 @@ You can search for assets across all characters.
 EVE Buddy can send notifications on your local device to notify about new communications, mails, expired training queues and more.
 
 ![Screenshot from 2025-04-03](https://cdn.imgpile.com/f/WFsQGDV_xl.png)
+
+### Industry jobs
+
+See active industry jobs and the history of industry jobs for all characters in one combined view.
+
+![Screenshot from 2025-04-10 23-45-24](https://github.com/user-attachments/assets/b5071430-1301-447f-b7a6-054c64f86d90)
 
 ### Jump clones
 
