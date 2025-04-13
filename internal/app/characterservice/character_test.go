@@ -94,7 +94,7 @@ func TestTrainingWatchers(t *testing.T) {
 	t.Run("should disable all training watchers", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{IsTrainingWatched: true})
+		c1 := factory.CreateCharacter(storage.CreateCharacterParams{IsTrainingWatched: true})
 		c2 := factory.CreateCharacter()
 		// when
 		err := cs.DisableAllTrainingWatchers(ctx)

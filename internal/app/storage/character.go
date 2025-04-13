@@ -8,11 +8,52 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mattn/go-sqlite3"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
+
+type CreateCharacterParams struct {
+	AssetValue        optional.Optional[float64]
+	ID                int32
+	IsTrainingWatched bool
+	HomeID            optional.Optional[int64]
+	LastCloneJumpAt   optional.Optional[time.Time]
+	LastLoginAt       optional.Optional[time.Time]
+	LocationID        optional.Optional[int64]
+	ShipID            optional.Optional[int32]
+	TotalSP           optional.Optional[int]
+	UnallocatedSP     optional.Optional[int]
+	WalletBalance     optional.Optional[float64]
+}
+
+func (st *Storage) CreateCharacter(ctx context.Context, arg CreateCharacterParams) error {
+	arg2 := queries.CreateCharacterParams{
+		ID:                int64(arg.ID),
+		AssetValue:        optional.ToNullFloat64(arg.AssetValue),
+		IsTrainingWatched: arg.IsTrainingWatched,
+		HomeID:            optional.ToNullInt64(arg.HomeID),
+		LastCloneJumpAt:   optional.ToNullTime(arg.LastCloneJumpAt),
+		LastLoginAt:       optional.ToNullTime(arg.LastLoginAt),
+		LocationID:        optional.ToNullInt64(arg.LocationID),
+		ShipID:            optional.ToNullInt64(arg.ShipID),
+		TotalSp:           optional.ToNullInt64(arg.TotalSP),
+		UnallocatedSp:     optional.ToNullInt64(arg.UnallocatedSP),
+		WalletBalance:     optional.ToNullFloat64(arg.WalletBalance),
+	}
+	if err := st.qRW.CreateCharacter(ctx, arg2); err != nil {
+		if sqliteErr, ok := err.(sqlite3.Error); ok {
+			if sqliteErr.ExtendedCode == sqlite3.ErrConstraintPrimaryKey {
+				err = app.ErrAlreadyExists
+			}
+		}
+		return fmt.Errorf("create character %d: %w", arg.ID, err)
+	}
+	return nil
+}
 
 func (st *Storage) DeleteCharacter(ctx context.Context, characterID int32) error {
 	err := st.qRW.DeleteCharacter(ctx, int64(characterID))
@@ -233,40 +274,6 @@ func (st *Storage) UpdateCharacterAssetValue(ctx context.Context, characterID in
 	}
 	if err := st.qRW.UpdateCharacterAssetValue(ctx, arg); err != nil {
 		return fmt.Errorf("update asset value for character %d: %w", characterID, err)
-	}
-	return nil
-}
-
-type UpdateOrCreateCharacterParams struct {
-	AssetValue        optional.Optional[float64]
-	ID                int32
-	IsTrainingWatched bool
-	HomeID            optional.Optional[int64]
-	LastCloneJumpAt   optional.Optional[time.Time]
-	LastLoginAt       optional.Optional[time.Time]
-	LocationID        optional.Optional[int64]
-	ShipID            optional.Optional[int32]
-	TotalSP           optional.Optional[int]
-	UnallocatedSP     optional.Optional[int]
-	WalletBalance     optional.Optional[float64]
-}
-
-func (st *Storage) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCreateCharacterParams) error {
-	arg2 := queries.UpdateOrCreateCharacterParams{
-		ID:                int64(arg.ID),
-		AssetValue:        optional.ToNullFloat64(arg.AssetValue),
-		IsTrainingWatched: arg.IsTrainingWatched,
-		HomeID:            optional.ToNullInt64(arg.HomeID),
-		LastCloneJumpAt:   optional.ToNullTime(arg.LastCloneJumpAt),
-		LastLoginAt:       optional.ToNullTime(arg.LastLoginAt),
-		LocationID:        optional.ToNullInt64(arg.LocationID),
-		ShipID:            optional.ToNullInt64(arg.ShipID),
-		TotalSp:           optional.ToNullInt64(arg.TotalSP),
-		UnallocatedSp:     optional.ToNullInt64(arg.UnallocatedSP),
-		WalletBalance:     optional.ToNullFloat64(arg.WalletBalance),
-	}
-	if err := st.qRW.UpdateOrCreateCharacter(ctx, arg2); err != nil {
-		return fmt.Errorf("update or create character %d: %w", arg.ID, err)
 	}
 	return nil
 }

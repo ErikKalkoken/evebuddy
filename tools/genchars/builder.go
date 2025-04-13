@@ -116,7 +116,7 @@ func (b *CharacterBuilder) createCharacter() {
 		Name:       c.Name,
 		ID:         c.ID,
 	})
-	b.c = b.f.CreateCharacter(storage.UpdateOrCreateCharacterParams{
+	b.c = b.f.CreateCharacter(storage.CreateCharacterParams{
 		ID: ec.ID,
 	})
 	b.f.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})

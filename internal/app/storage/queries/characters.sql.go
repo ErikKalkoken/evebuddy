@@ -10,6 +10,56 @@ import (
 	"database/sql"
 )
 
+const createCharacter = `-- name: CreateCharacter :exec
+INSERT INTO
+    characters (
+        id,
+        home_id,
+        last_login_at,
+        location_id,
+        ship_id,
+        total_sp,
+        unallocated_sp,
+        wallet_balance,
+        asset_value,
+        is_training_watched,
+        last_clone_jump_at
+    )
+VALUES
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+type CreateCharacterParams struct {
+	ID                int64
+	HomeID            sql.NullInt64
+	LastLoginAt       sql.NullTime
+	LocationID        sql.NullInt64
+	ShipID            sql.NullInt64
+	TotalSp           sql.NullInt64
+	UnallocatedSp     sql.NullInt64
+	WalletBalance     sql.NullFloat64
+	AssetValue        sql.NullFloat64
+	IsTrainingWatched bool
+	LastCloneJumpAt   sql.NullTime
+}
+
+func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams) error {
+	_, err := q.db.ExecContext(ctx, createCharacter,
+		arg.ID,
+		arg.HomeID,
+		arg.LastLoginAt,
+		arg.LocationID,
+		arg.ShipID,
+		arg.TotalSp,
+		arg.UnallocatedSp,
+		arg.WalletBalance,
+		arg.AssetValue,
+		arg.IsTrainingWatched,
+		arg.LastCloneJumpAt,
+	)
+	return err
+}
+
 const deleteCharacter = `-- name: DeleteCharacter :exec
 DELETE FROM
     characters
@@ -467,69 +517,5 @@ type UpdateCharacterWalletBalanceParams struct {
 
 func (q *Queries) UpdateCharacterWalletBalance(ctx context.Context, arg UpdateCharacterWalletBalanceParams) error {
 	_, err := q.db.ExecContext(ctx, updateCharacterWalletBalance, arg.WalletBalance, arg.ID)
-	return err
-}
-
-const updateOrCreateCharacter = `-- name: UpdateOrCreateCharacter :exec
-INSERT INTO
-    characters (
-        id,
-        home_id,
-        last_login_at,
-        location_id,
-        ship_id,
-        total_sp,
-        unallocated_sp,
-        wallet_balance,
-        asset_value,
-        is_training_watched,
-        last_clone_jump_at
-    )
-VALUES
-    (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11) ON CONFLICT(id) DO
-UPDATE
-SET
-    home_id = ?2,
-    last_login_at = ?3,
-    location_id = ?4,
-    ship_id = ?5,
-    total_sp = ?6,
-    unallocated_sp = ?7,
-    wallet_balance = ?8,
-    asset_value = ?9,
-    is_training_watched = ?10,
-    last_clone_jump_at = ?11
-WHERE
-    id = ?1
-`
-
-type UpdateOrCreateCharacterParams struct {
-	ID                int64
-	HomeID            sql.NullInt64
-	LastLoginAt       sql.NullTime
-	LocationID        sql.NullInt64
-	ShipID            sql.NullInt64
-	TotalSp           sql.NullInt64
-	UnallocatedSp     sql.NullInt64
-	WalletBalance     sql.NullFloat64
-	AssetValue        sql.NullFloat64
-	IsTrainingWatched bool
-	LastCloneJumpAt   sql.NullTime
-}
-
-func (q *Queries) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCreateCharacterParams) error {
-	_, err := q.db.ExecContext(ctx, updateOrCreateCharacter,
-		arg.ID,
-		arg.HomeID,
-		arg.LastLoginAt,
-		arg.LocationID,
-		arg.ShipID,
-		arg.TotalSp,
-		arg.UnallocatedSp,
-		arg.WalletBalance,
-		arg.AssetValue,
-		arg.IsTrainingWatched,
-		arg.LastCloneJumpAt,
-	)
 	return err
 }

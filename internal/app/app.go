@@ -32,9 +32,10 @@ type Position struct {
 
 // App errors
 var (
-	ErrAborted  = errors.New("process aborted prematurely")
-	ErrNotFound = errors.New("object not found")
-	ErrInvalid  = errors.New("invalid parameters")
+	ErrAborted       = errors.New("process aborted prematurely")
+	ErrNotFound      = errors.New("object not found")
+	ErrAlreadyExists = errors.New("object already exists")
+	ErrInvalid       = errors.New("invalid parameters")
 )
 
 // VariableDateFormat returns a variable dateformat.

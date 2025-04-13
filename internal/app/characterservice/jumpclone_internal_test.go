@@ -124,7 +124,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		now := time.Now().UTC()
-		c := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{
+		c := factory.CreateCharacter(storage.CreateCharacterParams{
 			LastCloneJumpAt: optional.New(now.Add(-6 * time.Hour)),
 		})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeInfomorphSynchronizing})
@@ -142,7 +142,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		now := time.Now().UTC()
-		c := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{
+		c := factory.CreateCharacter(storage.CreateCharacterParams{
 			LastCloneJumpAt: optional.New(now.Add(-6 * time.Hour)),
 		})
 		x, err := cs.calcNextCloneJump(ctx, c)
@@ -153,7 +153,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 	t.Run("should return time of next available jump without skill and never jumped before", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{
+		c := factory.CreateCharacter(storage.CreateCharacterParams{
 			LastCloneJumpAt: optional.New(time.Time{}),
 		})
 		x, err := cs.calcNextCloneJump(ctx, c)
@@ -165,7 +165,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		now := time.Now().UTC()
-		c := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{
+		c := factory.CreateCharacter(storage.CreateCharacterParams{
 			LastCloneJumpAt: optional.New(now.Add(-20 * time.Hour)),
 		})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeInfomorphSynchronizing})
