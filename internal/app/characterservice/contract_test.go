@@ -46,7 +46,7 @@ func TestNotifyUpdatedContracts(t *testing.T) {
 				factory.CreateEveEntityCharacter(app.EveEntity{ID: tc.acceptorID})
 			}
 			ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{ID: characterID})
-			c := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{ID: ec.ID})
+			c := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
 			o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
 				AcceptorID:     tc.acceptorID,
 				CharacterID:    c.ID,

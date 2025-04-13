@@ -17,7 +17,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 	t.Run("send notification when watched & expired", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{IsTrainingWatched: true})
+		c := factory.CreateCharacter(storage.CreateCharacterParams{IsTrainingWatched: true})
 		var sendCount int
 		// when
 		err := cs.NotifyExpiredTraining(ctx, c.ID, func(title, content string) {
@@ -45,7 +45,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 	t.Run("don't send notification when watched and training ongoing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{IsTrainingWatched: true})
+		c := factory.CreateCharacter(storage.CreateCharacterParams{IsTrainingWatched: true})
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
 		var sendCount int
 		// when

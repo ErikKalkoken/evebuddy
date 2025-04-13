@@ -52,9 +52,9 @@ func (f Factory) RandomTime() time.Time {
 	return time.Now().Add(-d).UTC()
 }
 
-func (f Factory) CreateCharacter(args ...storage.UpdateOrCreateCharacterParams) *app.Character {
+func (f Factory) CreateCharacter(args ...storage.CreateCharacterParams) *app.Character {
 	ctx := context.TODO()
-	var arg storage.UpdateOrCreateCharacterParams
+	var arg storage.CreateCharacterParams
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -86,7 +86,7 @@ func (f Factory) CreateCharacter(args ...storage.UpdateOrCreateCharacterParams) 
 	if arg.AssetValue.IsEmpty() {
 		arg.AssetValue = optional.New(rand.Float64() * 100_000_000_000)
 	}
-	err := f.st.UpdateOrCreateCharacter(ctx, arg)
+	err := f.st.CreateCharacter(ctx, arg)
 	if err != nil {
 		panic(err)
 	}

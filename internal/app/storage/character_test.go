@@ -24,7 +24,7 @@ func TestCharacter(t *testing.T) {
 		a := factory.CreateEveEntityAlliance()
 		f := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityFaction})
 		eveC := factory.CreateEveCharacter(storage.CreateEveCharacterParams{AllianceID: a.ID, FactionID: f.ID})
-		c1 := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{ID: eveC.ID})
+		c1 := factory.CreateCharacter(storage.CreateCharacterParams{ID: eveC.ID})
 		// when
 		c2, err := r.GetCharacter(ctx, c1.ID)
 		// then
@@ -38,87 +38,6 @@ func TestCharacter(t *testing.T) {
 			assert.Equal(t, c1.EveCharacter.ID, c2.EveCharacter.ID)
 			assert.Equal(t, c1.EveCharacter.Alliance, c2.EveCharacter.Alliance)
 			assert.Equal(t, c1.EveCharacter.Faction, c2.EveCharacter.Faction)
-		}
-	})
-	t.Run("can create new minimal", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		character := factory.CreateEveCharacter()
-		arg := storage.UpdateOrCreateCharacterParams{
-			ID: character.ID,
-		}
-		// when
-		err := r.UpdateOrCreateCharacter(ctx, arg)
-		// then
-		if assert.NoError(t, err) {
-			r, err := r.GetCharacter(ctx, arg.ID)
-			if assert.NoError(t, err) {
-				assert.Equal(t, character.ID, r.ID)
-			}
-		}
-	})
-	t.Run("can create new full", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		character := factory.CreateEveCharacter()
-		home := factory.CreateEveLocationStructure()
-		location := factory.CreateEveLocationStructure()
-		ship := factory.CreateEveType()
-		login := time.Now()
-		cloneJump := time.Now()
-		arg := storage.UpdateOrCreateCharacterParams{
-			ID:              character.ID,
-			AssetValue:      optional.New(3.4),
-			HomeID:          optional.New(home.ID),
-			LastCloneJumpAt: optional.New(cloneJump),
-			LastLoginAt:     optional.New(login),
-			LocationID:      optional.New(location.ID),
-			ShipID:          optional.New(ship.ID),
-			TotalSP:         optional.New(123),
-			WalletBalance:   optional.New(1.2),
-		}
-		// when
-		err := r.UpdateOrCreateCharacter(ctx, arg)
-		// then
-		if assert.NoError(t, err) {
-			r, err := r.GetCharacter(ctx, arg.ID)
-			if assert.NoError(t, err) {
-				assert.Equal(t, home, r.Home)
-				assert.Equal(t, cloneJump.UTC(), r.LastCloneJumpAt.ValueOrZero().UTC())
-				assert.Equal(t, login.UTC(), r.LastLoginAt.ValueOrZero().UTC())
-				assert.Equal(t, location, r.Location)
-				assert.Equal(t, ship, r.Ship)
-				assert.Equal(t, 123, r.TotalSP.ValueOrZero())
-				assert.Equal(t, 1.2, r.WalletBalance.ValueOrZero())
-				assert.Equal(t, 3.4, r.AssetValue.ValueOrZero())
-			}
-		}
-	})
-	t.Run("can update existing", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		c1 := factory.CreateCharacter()
-		// when
-		newLocation := factory.CreateEveLocationStructure()
-		newShip := factory.CreateEveType()
-		assetValue := optional.New(1.2)
-		walletBalance := optional.New(3.4)
-		err := r.UpdateOrCreateCharacter(ctx, storage.UpdateOrCreateCharacterParams{
-			ID:            c1.ID,
-			LocationID:    optional.New(newLocation.ID),
-			ShipID:        optional.New(newShip.ID),
-			AssetValue:    assetValue,
-			WalletBalance: walletBalance,
-		})
-		// then
-		if assert.NoError(t, err) {
-			c2, err := r.GetCharacter(ctx, c1.ID)
-			if assert.NoError(t, err) {
-				assert.Equal(t, newLocation, c2.Location)
-				assert.Equal(t, newShip, c2.Ship)
-				assert.Equal(t, assetValue, c2.AssetValue)
-				assert.Equal(t, walletBalance, c2.WalletBalance)
-			}
 		}
 	})
 	t.Run("can delete", func(t *testing.T) {
@@ -172,6 +91,76 @@ func TestCharacter(t *testing.T) {
 			assert.Equal(t, c1.ID, c2.ID)
 			assert.Equal(t, c1.Location, c2.Location)
 		}
+	})
+}
+
+func TestCharacterCreate(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("can create new minimal", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		character := factory.CreateEveCharacter()
+		arg := storage.CreateCharacterParams{
+			ID: character.ID,
+		}
+		// when
+		err := r.CreateCharacter(ctx, arg)
+		// then
+		if assert.NoError(t, err) {
+			r, err := r.GetCharacter(ctx, arg.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, character.ID, r.ID)
+			}
+		}
+	})
+	t.Run("can create new full", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		character := factory.CreateEveCharacter()
+		home := factory.CreateEveLocationStructure()
+		location := factory.CreateEveLocationStructure()
+		ship := factory.CreateEveType()
+		login := time.Now()
+		cloneJump := time.Now()
+		arg := storage.CreateCharacterParams{
+			ID:              character.ID,
+			AssetValue:      optional.New(3.4),
+			HomeID:          optional.New(home.ID),
+			LastCloneJumpAt: optional.New(cloneJump),
+			LastLoginAt:     optional.New(login),
+			LocationID:      optional.New(location.ID),
+			ShipID:          optional.New(ship.ID),
+			TotalSP:         optional.New(123),
+			WalletBalance:   optional.New(1.2),
+		}
+		// when
+		err := r.CreateCharacter(ctx, arg)
+		// then
+		if assert.NoError(t, err) {
+			r, err := r.GetCharacter(ctx, arg.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, home, r.Home)
+				assert.Equal(t, cloneJump.UTC(), r.LastCloneJumpAt.ValueOrZero().UTC())
+				assert.Equal(t, login.UTC(), r.LastLoginAt.ValueOrZero().UTC())
+				assert.Equal(t, location, r.Location)
+				assert.Equal(t, ship, r.Ship)
+				assert.Equal(t, 123, r.TotalSP.ValueOrZero())
+				assert.Equal(t, 1.2, r.WalletBalance.ValueOrZero())
+				assert.Equal(t, 3.4, r.AssetValue.ValueOrZero())
+			}
+		}
+	})
+	t.Run("report error when character already exists", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCharacter()
+		arg := storage.CreateCharacterParams{ID: c1.ID}
+		// when
+		err := r.CreateCharacter(ctx, arg)
+		// then
+		assert.ErrorIs(t, err, app.ErrAlreadyExists)
 	})
 }
 
@@ -358,7 +347,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 	t.Run("can update is training watched 2", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{IsTrainingWatched: true})
+		c1 := factory.CreateCharacter(storage.CreateCharacterParams{IsTrainingWatched: true})
 		c2, err := r.GetCharacter(ctx, c1.ID)
 		if assert.NoError(t, err) {
 			assert.True(t, c2.IsTrainingWatched)

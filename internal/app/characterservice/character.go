@@ -115,6 +115,8 @@ func (s *CharacterService) UpdateIsTrainingWatched(ctx context.Context, id int32
 	return s.st.UpdateCharacterIsTrainingWatched(ctx, id, v)
 }
 
+// TODO: Add test for UpdateOrCreateCharacterFromSSO
+
 // UpdateOrCreateCharacterFromSSO creates or updates a character via SSO authentication.
 // The provided context is used for the SSO authentication process only and can be canceled.
 func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText binding.ExternalString) (int32, error) {
@@ -138,25 +140,14 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 		TokenType:    ssoToken.TokenType,
 	}
 	ctx = contextWithESIToken(context.Background(), token.AccessToken)
-	myCharacter := &app.Character{
-		ID: token.CharacterID,
-	}
-	arg := storage.UpdateOrCreateCharacterParams{
-		ID:            myCharacter.ID,
-		LastLoginAt:   myCharacter.LastLoginAt,
-		TotalSP:       myCharacter.TotalSP,
-		WalletBalance: myCharacter.WalletBalance,
-	}
-	if myCharacter.Location != nil {
-		arg.LocationID = optional.New(myCharacter.Location.ID)
-	}
-	if myCharacter.Ship != nil {
-		arg.ShipID = optional.New(myCharacter.Ship.ID)
-	}
 	if _, err := s.EveUniverseService.GetOrCreateCharacterESI(ctx, token.CharacterID); err != nil {
 		return 0, err
 	}
-	if err := s.st.UpdateOrCreateCharacter(ctx, arg); err != nil {
+	arg := storage.CreateCharacterParams{
+		ID: token.CharacterID,
+	}
+	err = s.st.CreateCharacter(ctx, arg)
+	if err != nil && !errors.Is(err, app.ErrAlreadyExists) {
 		return 0, err
 	}
 	if err := s.st.UpdateOrCreateCharacterToken(ctx, &token); err != nil {

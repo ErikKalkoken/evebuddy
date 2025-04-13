@@ -24,7 +24,7 @@ func TestStatusCache(t *testing.T) {
 		testutil.TruncateTables(db)
 		cache.Clear()
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Bruce"})
-		c := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{ID: ec.ID})
+		c := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
 		section1 := app.SectionImplants
 		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
@@ -101,7 +101,7 @@ func TestStatusCache(t *testing.T) {
 		testutil.TruncateTables(db)
 		cache.Clear()
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Bruce"})
-		c := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{ID: ec.ID})
+		c := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
 		// when
 		if err := sc.UpdateCharacters(ctx, st); err != nil {
 			t.Fatal(err)
