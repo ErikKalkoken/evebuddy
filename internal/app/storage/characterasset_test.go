@@ -42,8 +42,8 @@ func TestCharacterAsset(t *testing.T) {
 		if assert.NoError(t, err) {
 			x, err := r.GetCharacterAsset(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
-				assert.Equal(t, eveType.ID, x.EveType.ID)
-				assert.Equal(t, eveType.Name, x.EveType.Name)
+				assert.Equal(t, eveType.ID, x.Type.ID)
+				assert.Equal(t, eveType.Name, x.Type.Name)
 				assert.False(t, x.IsBlueprintCopy)
 				assert.True(t, x.IsSingleton)
 				assert.Equal(t, int64(42), x.ItemID)
@@ -109,7 +109,7 @@ func TestCharacterAsset(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, oo, 1)
-			assert.Equal(t, x1.EveType, oo[0].EveType)
+			assert.Equal(t, x1.Type, oo[0].Type)
 		}
 	})
 	t.Run("can delete assets", func(t *testing.T) {
@@ -205,11 +205,11 @@ func TestCharacterAsset(t *testing.T) {
 			Quantity:    2,
 		})
 		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
-			TypeID:       ca1.EveType.ID,
+			TypeID:       ca1.Type.ID,
 			AveragePrice: 100.1,
 		})
 		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
-			TypeID:       ca2.EveType.ID,
+			TypeID:       ca2.Type.ID,
 			AveragePrice: 200.2,
 		})
 		// when

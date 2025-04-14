@@ -301,13 +301,13 @@ func (a *OverviewAssets) loadData() (bool, error) {
 		r := &assetSearchRow{
 			characterID:   ca.CharacterID,
 			characterName: a.characterNames[ca.CharacterID],
-			groupID:       ca.EveType.Group.ID,
-			groupName:     ca.EveType.Group.Name,
+			groupID:       ca.Type.Group.ID,
+			groupName:     ca.Type.Group.Name,
 			itemID:        ca.ItemID,
 			name:          ca.DisplayName2(),
 			price:         ca.Price.ValueOrZero(),
-			typeID:        ca.EveType.ID,
-			typeName:      ca.EveType.Name,
+			typeID:        ca.Type.ID,
+			typeName:      ca.Type.Name,
 		}
 		if ca.IsSingleton {
 			r.quantityDisplay = "1*"

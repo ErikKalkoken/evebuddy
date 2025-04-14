@@ -17,9 +17,8 @@ const (
 )
 
 type CharacterAsset struct {
-	ID              int64
 	CharacterID     int32
-	EveType         *EveType
+	ID              int64
 	IsBlueprintCopy bool
 	IsSingleton     bool
 	ItemID          int64
@@ -27,15 +26,16 @@ type CharacterAsset struct {
 	LocationID      int64
 	LocationType    string
 	Name            string
-	Quantity        int32
 	Price           optional.Optional[float64]
+	Quantity        int32
+	Type            *EveType
 }
 
 func (ca CharacterAsset) DisplayName() string {
 	if ca.Name != "" {
 		return ca.Name
 	}
-	s := ca.EveType.Name
+	s := ca.TypeName()
 	if ca.IsBlueprintCopy {
 		s += " (Copy)"
 	}
@@ -44,34 +44,41 @@ func (ca CharacterAsset) DisplayName() string {
 
 func (ca CharacterAsset) DisplayName2() string {
 	if ca.Name != "" {
-		return fmt.Sprintf("%s \"%s\"", ca.EveType.Name, ca.Name)
+		return fmt.Sprintf("%s \"%s\"", ca.TypeName(), ca.Name)
 	}
-	s := ca.EveType.Name
+	s := ca.TypeName()
 	if ca.IsBlueprintCopy {
 		s += " (Copy)"
 	}
 	return s
 }
 
+func (ca CharacterAsset) TypeName() string {
+	if ca.Type == nil {
+		return ""
+	}
+	return ca.Type.Name
+}
+
 func (ca CharacterAsset) IsBPO() bool {
-	return ca.EveType.Group.Category.ID == EveCategoryBlueprint && !ca.IsBlueprintCopy
+	return ca.Type.Group.Category.ID == EveCategoryBlueprint && !ca.IsBlueprintCopy
 }
 
 func (ca CharacterAsset) IsSKIN() bool {
-	return ca.EveType.Group.Category.ID == EveCategorySKINs
+	return ca.Type.Group.Category.ID == EveCategorySKINs
 }
 
 func (ca CharacterAsset) IsContainer() bool {
 	if !ca.IsSingleton {
 		return false
 	}
-	if ca.EveType.IsShip() {
+	if ca.Type.IsShip() {
 		return true
 	}
-	if ca.EveType.ID == EveTypeAssetSafetyWrap {
+	if ca.Type.ID == EveTypeAssetSafetyWrap {
 		return true
 	}
-	switch ca.EveType.Group.ID {
+	switch ca.Type.Group.ID {
 	case EveGroupAuditLogFreightContainer,
 		EveGroupAuditLogSecureCargoContainer,
 		EveGroupCargoContainer,
