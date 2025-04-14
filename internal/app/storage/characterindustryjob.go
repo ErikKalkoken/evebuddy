@@ -86,13 +86,13 @@ func characterIndustryJobFromDBModel(
 	o queries.CharacterIndustryJob,
 	installer queries.EveEntity,
 	blueprintLocationName string,
-	blueprintLocationSecurity float64,
+	blueprintLocationSecurity sql.NullFloat64,
 	blueprintTypeName string,
 	completedCharacterName sql.NullString,
 	facilityName string,
-	facilitySecurity float64,
+	facilitySecurity sql.NullFloat64,
 	outputLocationName string,
-	outputLocationSecurity float64,
+	outputLocationSecurity sql.NullFloat64,
 	productTypeName sql.NullString,
 	stationName string,
 	stationSecurity sql.NullFloat64,
@@ -103,7 +103,7 @@ func characterIndustryJobFromDBModel(
 		BlueprintLocation: &app.EveLocationShort{
 			ID:             o.BlueprintLocationID,
 			Name:           optional.New(blueprintLocationName),
-			SecurityStatus: optional.New(float32(blueprintLocationSecurity)),
+			SecurityStatus: optional.FromNullFloat64ToFloat32(blueprintLocationSecurity),
 		},
 		BlueprintType: &app.EntityShort[int32]{
 			ID:   int32(o.BlueprintTypeID),
@@ -117,7 +117,7 @@ func characterIndustryJobFromDBModel(
 		Facility: &app.EveLocationShort{
 			ID:             o.FacilityID,
 			Name:           optional.New(facilityName),
-			SecurityStatus: optional.New(float32(facilitySecurity)),
+			SecurityStatus: optional.FromNullFloat64ToFloat32(facilitySecurity),
 		},
 		Installer:    eveEntityFromDBModel(installer),
 		JobID:        int32(o.JobID),
@@ -125,7 +125,7 @@ func characterIndustryJobFromDBModel(
 		OutputLocation: &app.EveLocationShort{
 			ID:             o.OutputLocationID,
 			Name:           optional.New(outputLocationName),
-			SecurityStatus: optional.New(float32(outputLocationSecurity)),
+			SecurityStatus: optional.FromNullFloat64ToFloat32(outputLocationSecurity),
 		},
 		PauseDate:   optional.FromNullTime(o.PauseDate),
 		Probability: optional.FromNullFloat64ToFloat32(o.Probability),

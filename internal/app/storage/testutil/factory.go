@@ -1511,14 +1511,18 @@ func (f Factory) CreateEveSchematic(args ...storage.CreateEveSchematicParams) *a
 }
 
 func (f Factory) CreateEveLocationStructure(args ...storage.UpdateOrCreateLocationParams) *app.EveLocation {
-	return f.createEveLocationStructure(startIDStructure, app.EveCategoryStructure, args...)
+	return f.createEveLocationStructure(startIDStructure, app.EveCategoryStructure, false, args...)
 }
 
 func (f Factory) CreateEveLocationStation(args ...storage.UpdateOrCreateLocationParams) *app.EveLocation {
-	return f.createEveLocationStructure(startIDStation, app.EveCategoryStation, args...)
+	return f.createEveLocationStructure(startIDStation, app.EveCategoryStation, false, args...)
 }
 
-func (f Factory) createEveLocationStructure(startID int64, categoryID int32, args ...storage.UpdateOrCreateLocationParams) *app.EveLocation {
+func (f Factory) CreateEveLocationEmptyStructure(args ...storage.UpdateOrCreateLocationParams) *app.EveLocation {
+	return f.createEveLocationStructure(startIDStructure, app.EveCategoryStructure, true, args...)
+}
+
+func (f Factory) createEveLocationStructure(startID int64, categoryID int32, isEmpty bool, args ...storage.UpdateOrCreateLocationParams) *app.EveLocation {
 	var arg storage.UpdateOrCreateLocationParams
 	ctx := context.TODO()
 	if len(args) > 0 {
@@ -1530,15 +1534,15 @@ func (f Factory) createEveLocationStructure(startID int64, categoryID int32, arg
 	if arg.Name == "" {
 		arg.Name = fake.Color() + " " + fake.Brand()
 	}
-	if arg.EveSolarSystemID.IsEmpty() {
+	if !isEmpty && arg.EveSolarSystemID.IsEmpty() {
 		x := f.CreateEveSolarSystem()
 		arg.EveSolarSystemID = optional.New(x.ID)
 	}
-	if arg.OwnerID.IsEmpty() {
+	if !isEmpty && arg.OwnerID.IsEmpty() {
 		x := f.CreateEveEntityCorporation()
 		arg.OwnerID = optional.New(x.ID)
 	}
-	if arg.EveTypeID.IsEmpty() {
+	if !isEmpty && arg.EveTypeID.IsEmpty() {
 		ec, err := f.st.GetEveCategory(ctx, categoryID)
 		if err != nil {
 			if errors.Is(err, app.ErrNotFound) {

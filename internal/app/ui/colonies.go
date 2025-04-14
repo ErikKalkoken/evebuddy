@@ -99,7 +99,7 @@ func (a *Colonies) Update() {
 	var i widget.Importance
 	var total, expired int
 	if err := a.updateEntries(); err != nil {
-		slog.Error("Failed to refresh wallet transaction UI", "err", err)
+		slog.Error("Failed to refresh colonies UI", "err", err)
 		s = "ERROR"
 		i = widget.DangerImportance
 	} else {
