@@ -251,18 +251,26 @@ func main() {
 	// Init UI
 	ess := esistatusservice.New(esiClient)
 	eis := eveimageservice.New(pc, rhc.StandardClient(), *offlineFlag)
-	bu := ui.NewBaseUI(
-		fyneApp, cs, eis, ess, eus, scs, memCache, *offlineFlag, *disableUpdatesFlag,
-		map[string]string{
+	bu := ui.NewBaseUI(ui.BaseUIParams{
+		App:                fyneApp,
+		CharacterService:   cs,
+		EveImageService:    eis,
+		ESIStatusService:   ess,
+		EveUniverseService: eus,
+		StatusCacheService: scs,
+		MemCache:           memCache,
+		IsOffline:          *offlineFlag,
+		IsUpdateDisabled:   *disableUpdatesFlag,
+		DataPaths: map[string]string{
 			"db":        dbPath,
 			"log":       logFilePath,
 			"crashfile": crashFilePath,
 		},
-		func() {
+		ClearCacheFunc: func() {
 			pc.Clear()
 			memCache.Clear()
 		},
-	)
+	})
 	if isDesktop {
 		u := ui.NewUIDesktop(bu)
 		u.Init()

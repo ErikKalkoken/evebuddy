@@ -83,8 +83,8 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 				assert.Len(t, ids, 2)
 				x, err := st.GetCharacterAsset(ctx, c.ID, 1000000016835)
 				if assert.NoError(t, err) {
-					assert.Equal(t, eveType.ID, x.EveType.ID)
-					assert.Equal(t, eveType.Name, x.EveType.Name)
+					assert.Equal(t, eveType.ID, x.Type.ID)
+					assert.Equal(t, eveType.Name, x.Type.Name)
 					assert.True(t, x.IsBlueprintCopy)
 					assert.True(t, x.IsSingleton)
 					assert.Equal(t, "Hangar", x.LocationFlag)
@@ -228,8 +228,8 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 				assert.Len(t, ids, 2)
 				x, err := st.GetCharacterAsset(ctx, c.ID, 1000000016835)
 				if assert.NoError(t, err) {
-					assert.Equal(t, eveType.ID, x.EveType.ID)
-					assert.Equal(t, eveType.Name, x.EveType.Name)
+					assert.Equal(t, eveType.ID, x.Type.ID)
+					assert.Equal(t, eveType.Name, x.Type.Name)
 					assert.True(t, x.IsBlueprintCopy)
 					assert.True(t, x.IsSingleton)
 					assert.Equal(t, "Hangar", x.LocationFlag)

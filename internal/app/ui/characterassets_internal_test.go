@@ -3,8 +3,56 @@ package ui
 import (
 	"testing"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/stretchr/testify/assert"
 )
+
+type FakeEveUniverseService struct {
+	eveuniverseservice.EveUniverseService
+}
+
+func TestCharacterAssetsMakeLocationTreeData(t *testing.T) {
+	t.Run("can create simple tree", func(t *testing.T) {
+		el := &app.EveLocation{
+			ID:          100000,
+			Name:        "Alpha 1",
+			SolarSystem: &app.EveSolarSystem{Name: "Alpha", ID: 1},
+		}
+		a := &app.CharacterAsset{ItemID: 1, LocationID: el.ID}
+		b := &app.CharacterAsset{ItemID: 2, LocationID: 1}
+		c := &app.CharacterAsset{ItemID: 3, LocationID: 2}
+		d := &app.CharacterAsset{ItemID: 4, LocationID: 2}
+		assets := []*app.CharacterAsset{a, b, c, d}
+		locations := []*app.EveLocation{el}
+		ac := assetcollection.New(assets, locations)
+		tree := makeLocationTreeData(ac.Locations(), 42)
+		assert.Greater(t, tree.Size(), 0)
+	})
+	t.Run("can have multiple locations with items in space", func(t *testing.T) {
+		l1 := &app.EveLocation{
+			ID:          100000,
+			Name:        "Alpha 1",
+			SolarSystem: &app.EveSolarSystem{Name: "Alpha", ID: 1},
+		}
+		l2 := &app.EveLocation{
+			ID:          100001,
+			Name:        "Alpha 2",
+			SolarSystem: &app.EveSolarSystem{Name: "Alpha", ID: 1},
+		}
+		a := &app.CharacterAsset{ItemID: 1, LocationID: l1.ID}
+		b := &app.CharacterAsset{ItemID: 2, LocationID: 1}
+		c := &app.CharacterAsset{ItemID: 3, LocationID: 1}
+		d := &app.CharacterAsset{ItemID: 4, LocationID: 1}
+		e := &app.CharacterAsset{ItemID: 5, LocationID: l2.ID}
+		assets := []*app.CharacterAsset{a, b, c, d, e}
+		locations := []*app.EveLocation{l1, l2}
+		ac := assetcollection.New(assets, locations)
+		tree := makeLocationTreeData(ac.Locations(), 42)
+		assert.Greater(t, tree.Size(), 0)
+	})
+}
 
 func TestSplitLines(t *testing.T) {
 	const maxLine = 10

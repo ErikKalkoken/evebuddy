@@ -120,38 +120,40 @@ type BaseUI struct {
 	window           fyne.Window
 }
 
+type BaseUIParams struct {
+	App                fyne.App
+	CharacterService   app.CharacterService
+	ClearCacheFunc     func()
+	DataPaths          map[string]string
+	ESIStatusService   app.ESIStatusService
+	EveImageService    app.EveImageService
+	EveUniverseService app.EveUniverseService
+	IsOffline          bool
+	IsUpdateDisabled   bool
+	MemCache           app.CacheService
+	StatusCacheService app.StatusCacheService
+}
+
 // NewBaseUI constructs and returns a new BaseUI.
 //
 // Note:Types embedding BaseUI should define callbacks instead of overwriting methods.
-func NewBaseUI(
-	app fyne.App,
-	cs app.CharacterService,
-	eis app.EveImageService,
-	ess app.ESIStatusService,
-	eus app.EveUniverseService,
-	scs app.StatusCacheService,
-	memCache app.CacheService,
-	isOffline bool,
-	isUpdateDisabled bool,
-	dataPaths map[string]string,
-	clearCache func(),
-) *BaseUI {
+func NewBaseUI(args BaseUIParams) *BaseUI {
 	u := &BaseUI{
-		app:              app,
-		clearCache:       clearCache,
-		cs:               cs,
-		dataPaths:        dataPaths,
-		eis:              eis,
-		ess:              ess,
-		eus:              eus,
+		app:              args.App,
+		clearCache:       args.ClearCacheFunc,
+		cs:               args.CharacterService,
+		dataPaths:        args.DataPaths,
+		eis:              args.EveImageService,
+		ess:              args.ESIStatusService,
+		eus:              args.EveUniverseService,
 		isMobile:         fyne.CurrentDevice().IsMobile(),
-		isOffline:        isOffline,
-		isUpdateDisabled: isUpdateDisabled,
-		memcache:         memCache,
-		scs:              scs,
-		settings:         settings.New(app.Preferences()),
+		isOffline:        args.IsOffline,
+		isUpdateDisabled: args.IsUpdateDisabled,
+		memcache:         args.MemCache,
+		scs:              args.StatusCacheService,
+		settings:         settings.New(args.App.Preferences()),
 	}
-	u.window = app.NewWindow(u.appName())
+	u.window = u.app.NewWindow(u.appName())
 
 	if u.IsDesktop() {
 		iwidget.DefaultImageScaleMode = canvas.ImageScaleFastest

@@ -199,7 +199,7 @@ func characterAssetFromDBModel(ca queries.CharacterAsset, t queries.EveType, g q
 	o := &app.CharacterAsset{
 		ID:              ca.ID,
 		CharacterID:     int32(ca.CharacterID),
-		EveType:         eveTypeFromDBModel(t, g, c),
+		Type:            eveTypeFromDBModel(t, g, c),
 		IsBlueprintCopy: ca.IsBlueprintCopy,
 		IsSingleton:     ca.IsSingleton,
 		ItemID:          ca.ItemID,
