@@ -94,7 +94,7 @@ func (a *IndustryJobs) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *IndustryJobs) Update() {
 	if err := a.updateEntries(); err != nil {
-		slog.Error("Failed to refresh wallet transaction UI", "err", err)
+		slog.Error("Failed to refresh industry jobs UI", "err", err)
 		a.top.Text = fmt.Sprintf("ERROR: %s", ihumanize.Error(err))
 		a.top.Importance = widget.DangerImportance
 		a.top.Refresh()

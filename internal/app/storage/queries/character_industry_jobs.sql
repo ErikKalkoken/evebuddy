@@ -81,15 +81,15 @@ SELECT
 FROM
     character_industry_jobs cij
     JOIN eve_locations bl ON bl.id = cij.blueprint_location_id
-    LEFT JOIN eve_solar_systems bls ON bls.id = bl.eve_solar_system_id
     JOIN eve_types bt ON bt.id = cij.blueprint_type_id
     JOIN eve_locations fc ON fc.id = cij.facility_id
-    LEFT JOIN eve_solar_systems fcs ON fcs.id = fc.eve_solar_system_id
     JOIN eve_entities ic ON ic.id = cij.installer_id
     JOIN eve_locations ol ON ol.id = cij.output_location_id
-    LEFT JOIN eve_solar_systems ols ON ols.id = ol.eve_solar_system_id
     JOIN eve_locations sl ON sl.id = cij.station_id
+    LEFT JOIN eve_solar_systems bls ON bls.id = bl.eve_solar_system_id
+    LEFT JOIN eve_solar_systems fcs ON fcs.id = fc.eve_solar_system_id
     LEFT JOIN eve_solar_systems sls ON sls.id = sl.eve_solar_system_id
+    LEFT JOIN eve_solar_systems ols ON ols.id = ol.eve_solar_system_id
     LEFT JOIN eve_entities cc ON cc.id = cij.completed_character_id
     LEFT JOIN eve_types pt ON pt.id = cij.product_type_id
 WHERE
@@ -114,14 +114,14 @@ SELECT
 FROM
     character_industry_jobs cij
     JOIN eve_locations bl ON bl.id = cij.blueprint_location_id
-    LEFT JOIN eve_solar_systems bls ON bls.id = bl.eve_solar_system_id
     JOIN eve_types bt ON bt.id = cij.blueprint_type_id
     JOIN eve_locations fc ON fc.id = cij.facility_id
-    LEFT JOIN eve_solar_systems fcs ON fcs.id = fc.eve_solar_system_id
     JOIN eve_entities ic ON ic.id = cij.installer_id
     JOIN eve_locations ol ON ol.id = cij.output_location_id
-    LEFT JOIN eve_solar_systems ols ON ols.id = ol.eve_solar_system_id
     JOIN eve_locations sl ON sl.id = cij.station_id
+    LEFT JOIN eve_solar_systems bls ON bls.id = bl.eve_solar_system_id
+    LEFT JOIN eve_solar_systems fcs ON fcs.id = fc.eve_solar_system_id
+    LEFT JOIN eve_solar_systems ols ON ols.id = ol.eve_solar_system_id
     LEFT JOIN eve_solar_systems sls ON sls.id = sl.eve_solar_system_id
     LEFT JOIN eve_entities cc ON cc.id = cij.completed_character_id
     LEFT JOIN eve_types pt ON pt.id = cij.product_type_id

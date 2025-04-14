@@ -257,4 +257,41 @@ func TestCharacterIndustryJob(t *testing.T) {
 			assert.Len(t, x, 3)
 		}
 	})
+	t.Run("can get jobs with incomplete locations", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		el := factory.CreateEveLocationEmptyStructure()
+		j := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			BlueprintLocationID: el.ID,
+			FacilityID:          el.ID,
+			OutputLocationID:    el.ID,
+			StationID:           el.ID,
+		})
+		// when
+		x, err := st.GetCharacterIndustryJob(ctx, j.CharacterID, j.JobID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, el.ID, x.BlueprintLocation.ID)
+			assert.Equal(t, el.ID, x.Facility.ID)
+			assert.Equal(t, el.ID, x.OutputLocation.ID)
+			assert.Equal(t, el.ID, x.Station.ID)
+		}
+	})
+	t.Run("can list jobs with incomplete locations", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		el := factory.CreateEveLocationEmptyStructure()
+		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			BlueprintLocationID: el.ID,
+			FacilityID:          el.ID,
+			OutputLocationID:    el.ID,
+			StationID:           el.ID,
+		})
+		// when
+		x, err := st.ListAllCharacterIndustryJob(ctx)
+		// then
+		if assert.NoError(t, err) {
+			assert.Len(t, x, 1)
+		}
+	})
 }
