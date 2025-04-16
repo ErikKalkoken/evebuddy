@@ -3,15 +3,11 @@ package ui
 import (
 	"testing"
 
+	"fyne.io/fyne/v2/test"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/stretchr/testify/assert"
 )
-
-type FakeEveUniverseService struct {
-	eveuniverseservice.EveUniverseService
-}
 
 func TestCharacterAssetsMakeLocationTreeData(t *testing.T) {
 	t.Run("can create simple tree", func(t *testing.T) {
@@ -79,4 +75,13 @@ func TestSplitLines(t *testing.T) {
 			assert.Equal(t, tc.want2, got2)
 		})
 	}
+}
+
+func TestCharacterAssets(t *testing.T) {
+	t.Run("can update without data", func(t *testing.T) {
+		app := test.NewTempApp(t)
+		ui := NewBaseUI(BaseUIParams{App: app})
+		w := NewCharacterAssets(ui)
+		w.Update()
+	})
 }

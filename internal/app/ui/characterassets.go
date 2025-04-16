@@ -255,7 +255,7 @@ func (a *CharacterAssets) Update() {
 
 func (a *CharacterAssets) makeLocationData() (*iwidget.TreeData[locationNode], error) {
 	if !a.u.HasCharacter() {
-		return nil, nil
+		return iwidget.NewTreeData[locationNode](), nil
 	}
 	characterID := a.u.CurrentCharacterID()
 	ctx := context.Background()
