@@ -62,7 +62,7 @@ const (
 	userAgent           = "EveBuddy kalkoken87@gmail.com"
 )
 
-// Resonses from these URLs will never be logged.
+// Responses from these URLs will never be logged.
 var blacklistedURLs = []string{"login.eveonline.com/v2/oauth/token"}
 
 // define flags
@@ -338,8 +338,8 @@ func setupCrashFile(logDir string) (path string) {
 	return
 }
 
-// logResponse is a callback for retryable logger, which is called for every respose.
-// It logs all HTTP erros and also the complete response when log level is DEBUG.
+// logResponse is a callback for retryable logger, which is called for every response.
+// It logs all HTTP errors and also the complete response when log level is DEBUG.
 func logResponse(l retryablehttp.Logger, r *http.Response) {
 	isDebug := slog.Default().Enabled(context.Background(), slog.LevelDebug)
 	isHttpError := r.StatusCode >= 400

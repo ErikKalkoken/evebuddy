@@ -50,7 +50,7 @@ A more detailed overview of the provided features:
   - Wallet: Wallet and Wallet Transactions
 - Combined view over all characters:
   - Assets: Assets of all characters with full text search feature
-  - Clones: Jump clones of all characters with route search from any location 
+  - Clones: Jump clones of all characters with route search from any location
   - Colonies: Show list of all planetary industry colonies
   - Contracts: Active and history of contracts
   - Industry: Active and history of industry jobs
