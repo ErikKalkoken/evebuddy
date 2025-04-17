@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/test"
 	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -17,10 +17,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
-)
-
-const (
-	testAppID = "io.github.erikkalkoken.evebuddy_test"
 )
 
 type cache map[string][]byte
@@ -59,8 +55,8 @@ func TestUIStartEmpty(t *testing.T) {
 	cs := characterservice.New(st, nil, esiClient)
 	cs.EveUniverseService = eus
 	cs.StatusCacheService = sc
-	bu := NewBaseUI(BaseUIParams{
-		App:                app.NewWithID(testAppID),
+	u := NewBaseUI(BaseUIParams{
+		App:                test.NewTempApp(t),
 		CharacterService:   cs,
 		ESIStatusService:   esistatusservice.New(esiClient),
 		EveImageService:    eis,
@@ -69,15 +65,15 @@ func TestUIStartEmpty(t *testing.T) {
 		StatusCacheService: sc,
 		IsOffline:          true,
 	})
-	u := NewDesktopUI(bu)
+	// u := NewDesktopUI(bu)
 	u.Init()
-	for _, f := range bu.updateCharacterMap() {
+	for _, f := range u.updateCharacterMap() {
 		f()
 	}
-	for _, f := range bu.updateCrossPagesMap() {
+	for _, f := range u.updateCrossPagesMap() {
 		f()
 	}
-	assert.False(t, bu.HasCharacter())
+	assert.False(t, u.HasCharacter())
 	assert.Equal(t, 0, httpmock.GetTotalCallCount())
 }
 
@@ -112,8 +108,8 @@ func TestUIStartWithCharacter(t *testing.T) {
 	cs := characterservice.New(st, nil, esiClient)
 	cs.EveUniverseService = eus
 	cs.StatusCacheService = sc
-	bu := NewBaseUI(BaseUIParams{
-		App:                app.NewWithID(testAppID),
+	u := NewBaseUI(BaseUIParams{
+		App:                test.NewTempApp(t),
 		CharacterService:   cs,
 		ESIStatusService:   esistatusservice.New(esiClient),
 		EveImageService:    eis,
@@ -122,7 +118,7 @@ func TestUIStartWithCharacter(t *testing.T) {
 		StatusCacheService: sc,
 		IsOffline:          true,
 	})
-	u := NewDesktopUI(bu)
+	// u := NewDesktopUI(bu)
 	u.Init()
 	for _, f := range u.updateCharacterMap() {
 		f()
