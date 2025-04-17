@@ -26,8 +26,7 @@ func TestEveLocationOther(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	eu := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.NewTestService(r)
 	ctx := context.Background()
 	t.Run("should create location for a station", func(t *testing.T) {
 		// given
@@ -72,7 +71,7 @@ func TestEveLocationOther(t *testing.T) {
 			}),
 		)
 		// when
-		x1, err := eu.GetOrCreateLocationESI(ctx, stationID)
+		x1, err := s.GetOrCreateLocationESI(ctx, stationID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int64(stationID), x1.ID)
@@ -93,7 +92,7 @@ func TestEveLocationOther(t *testing.T) {
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeSolarSystem})
 		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000148})
 		// when
-		x1, err := eu.GetOrCreateLocationESI(ctx, int64(system.ID))
+		x1, err := s.GetOrCreateLocationESI(ctx, int64(system.ID))
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int64(system.ID), x1.ID)
@@ -114,15 +113,14 @@ func TestLocationStructures(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	eu := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.NewTestService(r)
 	t.Run("should return existing structure", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: structureID, Name: "Alpha"})
 		// when
-		x, err := eu.GetOrCreateLocationESI(context.Background(), structureID)
+		x, err := s.GetOrCreateLocationESI(context.Background(), structureID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, "Alpha", x.Name)
@@ -151,7 +149,7 @@ func TestLocationStructures(t *testing.T) {
 		)
 		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
 		// when
-		x1, err := eu.GetOrCreateLocationESI(ctx, structureID)
+		x1, err := s.GetOrCreateLocationESI(ctx, structureID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int64(structureID), x1.ID)
@@ -170,7 +168,7 @@ func TestLocationStructures(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		// when
-		_, err := eu.GetOrCreateLocationESI(context.Background(), structureID)
+		_, err := s.GetOrCreateLocationESI(context.Background(), structureID)
 		// then
 		assert.Error(t, err)
 	})
@@ -187,7 +185,7 @@ func TestLocationStructures(t *testing.T) {
 		)
 		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
 		// when
-		x1, err := eu.GetOrCreateLocationESI(ctx, structureID)
+		x1, err := s.GetOrCreateLocationESI(ctx, structureID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int64(structureID), x1.ID)
@@ -214,7 +212,7 @@ func TestLocationStructures(t *testing.T) {
 		)
 		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
 		// when
-		_, err := eu.GetOrCreateLocationESI(ctx, structureID)
+		_, err := s.GetOrCreateLocationESI(ctx, structureID)
 		// then
 		assert.Error(t, err)
 	})

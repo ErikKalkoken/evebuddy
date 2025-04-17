@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
@@ -16,12 +15,11 @@ import (
 )
 
 func TestGetEveCorporationESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("should return corporation", func(t *testing.T) {
 		// given

@@ -17,12 +17,14 @@ import (
 )
 
 func TestGetOrCreateEveCharacterESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.New(eveuniverseservice.Params{
+		Storage:   st,
+		ESIClient: goesi.NewAPIClient(nil, ""),
+	})
 	ctx := context.Background()
 	t.Run("should return existing character", func(t *testing.T) {
 		// given
@@ -72,7 +74,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 			assert.Equal(t, int32(2), x1.Race.ID)
 			assert.Equal(t, "All round pretty awesome guy", x1.Title)
 			assert.InDelta(t, -9.9, x1.SecurityStatus, 0.01)
-			x2, err := r.GetEveCharacter(ctx, characterID)
+			x2, err := st.GetEveCharacter(ctx, characterID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1.Birthday.UTC(), x2.Birthday.UTC())
 				assert.Equal(t, x1.Corporation.ID, x2.Corporation.ID)
@@ -88,12 +90,11 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 }
 
 func TestUpdateAllEveCharactersESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("should update character from ESI", func(t *testing.T) {
 		// given
@@ -133,7 +134,7 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 		err := s.UpdateAllCharactersESI(ctx)
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetEveCharacter(ctx, characterID)
+			x, err := st.GetEveCharacter(ctx, characterID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, int32(434243723), x.Alliance.ID)
 				assert.Equal(t, int32(109299958), x.Corporation.ID)

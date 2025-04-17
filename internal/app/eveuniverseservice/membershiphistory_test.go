@@ -9,22 +9,20 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
-	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMembershipHistory(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	eu := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("should return corporation membership history", func(t *testing.T) {
 		// given
-		eu.Now = func() time.Time { return time.Date(2016, 7, 30, 20, 0, 0, 0, time.UTC) }
+		s.Now = func() time.Time { return time.Date(2016, 7, 30, 20, 0, 0, 0, time.UTC) }
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c1 := factory.CreateEveEntityCorporation(app.EveEntity{ID: 90000001})
@@ -46,7 +44,7 @@ func TestMembershipHistory(t *testing.T) {
 				},
 			}))
 		// when
-		x, err := eu.GetCharacterCorporationHistory(ctx, 42)
+		x, err := s.GetCharacterCorporationHistory(ctx, 42)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, x, 2)
@@ -70,7 +68,7 @@ func TestMembershipHistory(t *testing.T) {
 	})
 	t.Run("should return alliance membership history", func(t *testing.T) {
 		// given
-		eu.Now = func() time.Time { return time.Date(2016, 10, 30, 20, 0, 0, 0, time.UTC) }
+		s.Now = func() time.Time { return time.Date(2016, 10, 30, 20, 0, 0, 0, time.UTC) }
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c1 := factory.CreateEveEntityAlliance(app.EveEntity{ID: 99000006})
@@ -90,7 +88,7 @@ func TestMembershipHistory(t *testing.T) {
 				},
 			}))
 		// when
-		x, err := eu.GetCorporationAllianceHistory(ctx, 42)
+		x, err := s.GetCorporationAllianceHistory(ctx, 42)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, x, 2)

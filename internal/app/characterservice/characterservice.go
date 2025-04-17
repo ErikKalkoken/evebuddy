@@ -13,17 +13,6 @@ import (
 	"github.com/antihax/goesi"
 )
 
-type Params struct {
-	EveNotificationService *evenotification.EveNotificationService
-	EveUniverseService     app.EveUniverseService
-	SSOService             *sso.SSOService
-	StatusCacheService     app.StatusCacheService
-	Storage                *storage.Storage
-	// optional
-	HttpClient *http.Client
-	EsiClient  *goesi.APIClient
-}
-
 // CharacterService provides access to all managed Eve Online characters both online and from local storage.
 type CharacterService struct {
 	ens        *evenotification.EveNotificationService
@@ -34,6 +23,17 @@ type CharacterService struct {
 	sfg        *singleflight.Group
 	sso        *sso.SSOService
 	st         *storage.Storage
+}
+
+type Params struct {
+	EveNotificationService *evenotification.EveNotificationService
+	EveUniverseService     app.EveUniverseService
+	SSOService             *sso.SSOService
+	StatusCacheService     app.StatusCacheService
+	Storage                *storage.Storage
+	// optional
+	HttpClient *http.Client
+	EsiClient  *goesi.APIClient
 }
 
 // New creates a new Characters service and returns it.

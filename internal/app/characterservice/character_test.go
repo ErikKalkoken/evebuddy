@@ -142,13 +142,15 @@ func TestTrainingWatchers(t *testing.T) {
 }
 
 func newCharacterService(st *storage.Storage) *characterservice.CharacterService {
-	sc := statuscacheservice.New(memcache.New())
-	eu := eveuniverseservice.New(st, nil)
-	eu.StatusCacheService = sc
-	s := characterservice.New(characterservice.Params{
+	scs := statuscacheservice.New(memcache.New())
+	eus := eveuniverseservice.New(eveuniverseservice.Params{
+		StatusCacheService: scs,
 		Storage:            st,
-		EveUniverseService: eu,
-		StatusCacheService: sc,
+	})
+	s := characterservice.New(characterservice.Params{
+		EveUniverseService: eus,
+		StatusCacheService: scs,
+		Storage:            st,
 	})
 	return s
 }

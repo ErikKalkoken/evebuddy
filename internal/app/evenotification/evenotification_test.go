@@ -38,8 +38,10 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	eu := eveuniverseservice.New(st, nil)
-	en := evenotification.New(eu)
+	eus := eveuniverseservice.New(eveuniverseservice.Params{
+		Storage: st,
+	})
+	ens := evenotification.New(eus)
 	ctx := context.Background()
 	solarSystem := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30002537})
 	structureType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 35835})
@@ -79,7 +81,7 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 			t2 := evenotification.Type(n.Type)
 			if notifTypes.Contains(t2) {
 				typeTested[t2] = true
-				title, body, err := en.RenderESI(ctx, n.Type, n.Text, n.Timestamp)
+				title, body, err := ens.RenderESI(ctx, n.Type, n.Text, n.Timestamp)
 				if assert.NoError(t, err) {
 					assert.False(t, title.IsEmpty())
 					assert.False(t, body.IsEmpty())

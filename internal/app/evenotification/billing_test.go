@@ -18,7 +18,9 @@ func TestBilling(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	eus := eveuniverseservice.New(st, nil)
+	eus := eveuniverseservice.New(eveuniverseservice.Params{
+		Storage: st,
+	})
 	en := evenotification.New(eus)
 	ctx := context.Background()
 	t.Run("CorpAllBillMsg full data", func(t *testing.T) {

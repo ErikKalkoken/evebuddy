@@ -135,14 +135,17 @@ func TestUIStartEmpty(t *testing.T) {
 	defer db.Close()
 	esiClient := goesi.NewAPIClient(nil, "dummy")
 	cache := memcache.New()
-	sc := statuscacheservice.New(cache)
-	eus := eveuniverseservice.New(st, esiClient)
-	eus.StatusCacheService = sc
+	scs := statuscacheservice.New(cache)
+	eus := eveuniverseservice.New(eveuniverseservice.Params{
+		ESIClient:          esiClient,
+		StatusCacheService: scs,
+		Storage:            st,
+	})
 	eis := eveimageservice.New(newCache(), nil, true)
 	cs := characterservice.New(characterservice.Params{
-		Storage:            st,
 		EveUniverseService: eus,
-		StatusCacheService: sc,
+		StatusCacheService: scs,
+		Storage:            st,
 	})
 	bu := NewBaseUI(BaseUIParams{
 		App:                newTestApp(t),
@@ -151,7 +154,7 @@ func TestUIStartEmpty(t *testing.T) {
 		EveImageService:    eis,
 		EveUniverseService: eus,
 		MemCache:           cache,
-		StatusCacheService: sc,
+		StatusCacheService: scs,
 		IsOffline:          true,
 	})
 	u := NewDesktopUI(bu)
@@ -191,14 +194,17 @@ func TestUIStartWithCharacter(t *testing.T) {
 
 	esiClient := goesi.NewAPIClient(nil, "dummy")
 	cache := memcache.New()
-	sc := statuscacheservice.New(cache)
-	eus := eveuniverseservice.New(st, esiClient)
-	eus.StatusCacheService = sc
+	scs := statuscacheservice.New(cache)
+	eus := eveuniverseservice.New(eveuniverseservice.Params{
+		ESIClient:          esiClient,
+		StatusCacheService: scs,
+		Storage:            st,
+	})
 	eis := eveimageservice.New(newCache(), nil, true)
 	cs := characterservice.New(characterservice.Params{
-		Storage:            st,
 		EveUniverseService: eus,
-		StatusCacheService: sc,
+		StatusCacheService: scs,
+		Storage:            st,
 	})
 	bu := NewBaseUI(BaseUIParams{
 		App:                newTestApp(t),
@@ -207,7 +213,7 @@ func TestUIStartWithCharacter(t *testing.T) {
 		EveImageService:    eis,
 		EveUniverseService: eus,
 		MemCache:           cache,
-		StatusCacheService: sc,
+		StatusCacheService: scs,
 		IsOffline:          true,
 	})
 	u := NewDesktopUI(bu)

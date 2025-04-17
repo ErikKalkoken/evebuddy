@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
@@ -16,12 +15,11 @@ import (
 )
 
 func TestGetOrCreateEveRegionESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("should return existing region", func(t *testing.T) {
 		// given
@@ -59,7 +57,7 @@ func TestGetOrCreateEveRegionESI(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(10000042), x1.ID)
 			assert.Equal(t, "Metropolis", x1.Name)
-			x2, err := r.GetEveRegion(ctx, 10000042)
+			x2, err := st.GetEveRegion(ctx, 10000042)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -68,12 +66,11 @@ func TestGetOrCreateEveRegionESI(t *testing.T) {
 }
 
 func TestGetOrCreateEveConstellationESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("should return existing constellation", func(t *testing.T) {
 		// given
@@ -118,7 +115,7 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 			assert.Equal(t, int32(20000009), x1.ID)
 			assert.Equal(t, "Mekashtad", x1.Name)
 			assert.Equal(t, int32(10000001), x1.Region.ID)
-			x2, err := r.GetEveConstellation(ctx, 20000009)
+			x2, err := st.GetEveConstellation(ctx, 20000009)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -127,12 +124,11 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 }
 
 func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("should return existing solar system", func(t *testing.T) {
 		// given
@@ -190,7 +186,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 			assert.Equal(t, int32(30000003), x1.ID)
 			assert.Equal(t, "Akpivem", x1.Name)
 			assert.Equal(t, int32(20000001), x1.Constellation.ID)
-			x2, err := r.GetEveSolarSystem(ctx, 30000003)
+			x2, err := st.GetEveSolarSystem(ctx, 30000003)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -293,7 +289,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 			assert.Equal(t, int32(30000003), x1.ID)
 			assert.Equal(t, "Akpivem", x1.Name)
 			assert.Equal(t, int32(20000001), x1.Constellation.ID)
-			x2, err := r.GetEveSolarSystem(ctx, 30000003)
+			x2, err := st.GetEveSolarSystem(ctx, 30000003)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -302,12 +298,11 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 }
 
 func TestGetOrCreateEvePlanetESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("should return existing planet", func(t *testing.T) {
 		// given
@@ -355,12 +350,11 @@ func TestGetOrCreateEvePlanetESI(t *testing.T) {
 }
 
 func TestGetOrCreateEveMoonESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("should return existing moon", func(t *testing.T) {
 		// given
@@ -405,12 +399,11 @@ func TestGetOrCreateEveMoonESI(t *testing.T) {
 }
 
 func TestGetRouteESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("should return short route when origin and dest the same", func(t *testing.T) {
 		// given

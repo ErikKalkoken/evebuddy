@@ -233,8 +233,11 @@ func main() {
 		os.Exit(1)
 	}
 	// Init EveUniverse service
-	eus := eveuniverseservice.New(st, esiClient)
-	eus.StatusCacheService = scs
+	eus := eveuniverseservice.New(eveuniverseservice.Params{
+		Storage:            st,
+		ESIClient:          esiClient,
+		StatusCacheService: scs,
+	})
 
 	// Init EveNotification service
 	en := evenotification.New(eus)

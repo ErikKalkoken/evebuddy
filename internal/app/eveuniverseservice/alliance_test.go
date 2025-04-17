@@ -16,12 +16,14 @@ import (
 )
 
 func TestGetEveAllianceCorporationsESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.New(eveuniverseservice.Params{
+		Storage:   st,
+		ESIClient: goesi.NewAPIClient(nil, ""),
+	})
 	ctx := context.Background()
 	t.Run("should return corporations", func(t *testing.T) {
 		// given

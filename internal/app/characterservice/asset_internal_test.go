@@ -248,13 +248,15 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 }
 
 func newCharacterService(st *storage.Storage) *CharacterService {
-	sc := statuscacheservice.New(memcache.New())
-	eu := eveuniverseservice.New(st, nil)
-	eu.StatusCacheService = sc
-	s := New(Params{
+	scs := statuscacheservice.New(memcache.New())
+	eus := eveuniverseservice.New(eveuniverseservice.Params{
+		StatusCacheService: scs,
 		Storage:            st,
-		EveUniverseService: eu,
-		StatusCacheService: sc,
+	})
+	s := New(Params{
+		EveUniverseService: eus,
+		StatusCacheService: scs,
+		Storage:            st,
 	})
 	return s
 }
