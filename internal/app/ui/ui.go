@@ -202,6 +202,62 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.userSettings = NewSettings(u)
 	u.MainWindow().SetMaster()
+
+	// SetOnStarted is called on initial start,
+	// but also when an app is coninued after it was temporarily stopped,
+	// which can happen on mobile
+	u.app.Lifecycle().SetOnStarted(func() {
+		wasStarted := !u.wasStarted.CompareAndSwap(false, true)
+		if wasStarted {
+			slog.Info("App continued")
+			return
+		}
+		// First app start
+		slog.Info("App started")
+		if u.isOffline {
+			slog.Info("Started in offline mode")
+		}
+		go func() {
+			time.Sleep(250 * time.Millisecond) // FIXME: Workaround for occasional progess bar panic
+			u.UpdateCrossPages()
+			if u.HasCharacter() {
+				u.setCharacter(u.character)
+			} else {
+				u.resetCharacter()
+			}
+			u.updateStatus()
+		}()
+		u.snackbar.Start()
+		if !u.isOffline && !u.isUpdateDisabled {
+			u.isForeground.Store(true)
+			go func() {
+				u.startUpdateTickerGeneralSections()
+				u.startUpdateTickerCharacters()
+			}()
+		} else {
+			slog.Info("Update ticker disabled")
+		}
+		go u.characterJumpClones.StartUpdateTicker()
+		if u.onAppFirstStarted != nil {
+			u.onAppFirstStarted()
+		}
+	})
+	u.app.Lifecycle().SetOnEnteredForeground(func() {
+		slog.Debug("Entered foreground")
+		u.isForeground.Store(true)
+		u.updateCharactersIfNeeded(context.Background())
+		u.updateGeneralSectionsAndRefreshIfNeeded(false)
+	})
+	u.app.Lifecycle().SetOnExitedForeground(func() {
+		slog.Debug("Exited foreground")
+		u.isForeground.Store(false)
+	})
+	u.app.Lifecycle().SetOnStopped(func() {
+		slog.Info("App stopped")
+		if u.onAppStopped != nil {
+			u.onAppStopped()
+		}
+	})
 	return u
 }
 
@@ -313,61 +369,6 @@ func (u *BaseUI) Settings() app.Settings {
 
 // ShowAndRun shows the UI and runs the Fyne loop (blocking),
 func (u *BaseUI) ShowAndRun() {
-	// SetOnStarted is called on initial start,
-	// but also when an app is coninued after it was temporarily stopped,
-	// which can happen on mobile
-	u.app.Lifecycle().SetOnStarted(func() {
-		wasStarted := !u.wasStarted.CompareAndSwap(false, true)
-		if wasStarted {
-			slog.Info("App continued")
-			return
-		}
-		// First app start
-		slog.Info("App started")
-		if u.isOffline {
-			slog.Info("Started in offline mode")
-		}
-		go func() {
-			time.Sleep(250 * time.Millisecond) // FIXME: Workaround for occasional progess bar panic
-			u.UpdateCrossPages()
-			if u.HasCharacter() {
-				u.setCharacter(u.character)
-			} else {
-				u.resetCharacter()
-			}
-			u.updateStatus()
-		}()
-		u.snackbar.Start()
-		if !u.isOffline && !u.isUpdateDisabled {
-			u.isForeground.Store(true)
-			go func() {
-				u.startUpdateTickerGeneralSections()
-				u.startUpdateTickerCharacters()
-			}()
-		} else {
-			slog.Info("Update ticker disabled")
-		}
-		go u.characterJumpClones.StartUpdateTicker()
-		if u.onAppFirstStarted != nil {
-			u.onAppFirstStarted()
-		}
-	})
-	u.app.Lifecycle().SetOnEnteredForeground(func() {
-		slog.Debug("Entered foreground")
-		u.isForeground.Store(true)
-		u.updateCharactersIfNeeded(context.Background())
-		u.updateGeneralSectionsAndRefreshIfNeeded(false)
-	})
-	u.app.Lifecycle().SetOnExitedForeground(func() {
-		slog.Debug("Exited foreground")
-		u.isForeground.Store(false)
-	})
-	u.app.Lifecycle().SetOnStopped(func() {
-		slog.Info("App stopped")
-		if u.onAppStopped != nil {
-			u.onAppStopped()
-		}
-	})
 	if u.onShowAndRun != nil {
 		u.onShowAndRun()
 	}
