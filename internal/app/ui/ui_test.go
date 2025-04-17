@@ -1,9 +1,12 @@
 package ui
 
 import (
+	"net/url"
 	"testing"
 	"time"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/test"
 	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
@@ -40,6 +43,89 @@ func (c cache) Clear() {
 	}
 }
 
+type myTestApp struct {
+	app fyne.App
+}
+
+func newMyTestApp(t testing.TB) *myTestApp {
+	a := &myTestApp{app: test.NewTempApp(t)}
+	return a
+}
+
+func (a *myTestApp) NewWindow(title string) fyne.Window {
+	return a.app.NewWindow(title)
+}
+
+func (a *myTestApp) OpenURL(url *url.URL) error {
+	return a.app.OpenURL(url)
+}
+
+func (a *myTestApp) Icon() fyne.Resource {
+	return a.app.Icon()
+}
+
+func (a *myTestApp) SetIcon(r fyne.Resource) {
+	a.app.SetIcon(r)
+}
+
+func (a *myTestApp) Run() {
+	a.app.Run()
+}
+
+func (a *myTestApp) Quit() {
+	a.app.Quit()
+}
+
+func (a *myTestApp) Driver() fyne.Driver {
+	return a.app.Driver()
+}
+
+func (a *myTestApp) UniqueID() string {
+	return a.app.UniqueID()
+}
+
+func (a *myTestApp) SendNotification(n *fyne.Notification) {
+	a.app.SendNotification(n)
+}
+
+func (a *myTestApp) Settings() fyne.Settings {
+	return a.app.Settings()
+}
+
+func (a *myTestApp) Preferences() fyne.Preferences {
+	return a.app.Preferences()
+}
+
+func (a *myTestApp) Storage() fyne.Storage {
+	return a.app.Storage()
+}
+
+func (a *myTestApp) Lifecycle() fyne.Lifecycle {
+	return a.app.Lifecycle()
+}
+
+func (a *myTestApp) Metadata() fyne.AppMetadata {
+	return a.app.Metadata()
+}
+
+func (a *myTestApp) CloudProvider() fyne.CloudProvider {
+	return a.app.CloudProvider()
+}
+
+func (a *myTestApp) SetCloudProvider(o fyne.CloudProvider) {
+	a.app.SetCloudProvider(o)
+}
+
+func (a *myTestApp) SetSystemTrayMenu(_ *fyne.Menu) {
+	// noop
+}
+
+func (a *myTestApp) SetSystemTrayIcon(_ fyne.Resource) {
+	// noop
+}
+
+var _ desktop.App = (*myTestApp)(nil)
+
 func TestUIStartEmpty(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -55,8 +141,8 @@ func TestUIStartEmpty(t *testing.T) {
 	cs := characterservice.New(st, nil, esiClient)
 	cs.EveUniverseService = eus
 	cs.StatusCacheService = sc
-	u := NewBaseUI(BaseUIParams{
-		App:                test.NewTempApp(t),
+	bu := NewBaseUI(BaseUIParams{
+		App:                newMyTestApp(t),
 		CharacterService:   cs,
 		ESIStatusService:   esistatusservice.New(esiClient),
 		EveImageService:    eis,
@@ -65,7 +151,7 @@ func TestUIStartEmpty(t *testing.T) {
 		StatusCacheService: sc,
 		IsOffline:          true,
 	})
-	// u := NewDesktopUI(bu)
+	u := NewDesktopUI(bu)
 	u.Init()
 	for _, f := range u.updateCharacterMap() {
 		f()
@@ -109,8 +195,8 @@ func TestUIStartWithCharacter(t *testing.T) {
 	cs := characterservice.New(st, nil, esiClient)
 	cs.EveUniverseService = eus
 	cs.StatusCacheService = sc
-	u := NewBaseUI(BaseUIParams{
-		App:                test.NewTempApp(t),
+	bu := NewBaseUI(BaseUIParams{
+		App:                newMyTestApp(t),
 		CharacterService:   cs,
 		ESIStatusService:   esistatusservice.New(esiClient),
 		EveImageService:    eis,
@@ -119,7 +205,7 @@ func TestUIStartWithCharacter(t *testing.T) {
 		StatusCacheService: sc,
 		IsOffline:          true,
 	})
-	// u := NewDesktopUI(bu)
+	u := NewDesktopUI(bu)
 	u.Init()
 	for _, f := range u.updateCharacterMap() {
 		f()
