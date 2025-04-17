@@ -19,7 +19,7 @@ func (s *CharacterService) DeleteCharacter(ctx context.Context, id int32) error 
 		return err
 	}
 	slog.Info("Character deleted", "characterID", id)
-	return s.StatusCacheService.UpdateCharacters(ctx, s.st)
+	return s.scs.UpdateCharacters(ctx, s.st)
 }
 
 // EnableTrainingWatcher enables training watcher for a character when it has an active training queue.
@@ -120,7 +120,7 @@ func (s *CharacterService) UpdateIsTrainingWatched(ctx context.Context, id int32
 // UpdateOrCreateCharacterFromSSO creates or updates a character via SSO authentication.
 // The provided context is used for the SSO authentication process only and can be canceled.
 func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText binding.ExternalString) (int32, error) {
-	ssoToken, err := s.SSOService.Authenticate(ctx, esiScopes)
+	ssoToken, err := s.sso.Authenticate(ctx, esiScopes)
 	if errors.Is(err, sso.ErrAborted) {
 		return 0, app.ErrAborted
 	} else if err != nil {
@@ -140,7 +140,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 		TokenType:    ssoToken.TokenType,
 	}
 	ctx = contextWithESIToken(context.Background(), token.AccessToken)
-	if _, err := s.EveUniverseService.GetOrCreateCharacterESI(ctx, token.CharacterID); err != nil {
+	if _, err := s.eus.GetOrCreateCharacterESI(ctx, token.CharacterID); err != nil {
 		return 0, err
 	}
 	arg := storage.CreateCharacterParams{
@@ -153,7 +153,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 	if err := s.st.UpdateOrCreateCharacterToken(ctx, &token); err != nil {
 		return 0, err
 	}
-	if err := s.StatusCacheService.UpdateCharacters(ctx, s.st); err != nil {
+	if err := s.scs.UpdateCharacters(ctx, s.st); err != nil {
 		return 0, err
 	}
 	return token.CharacterID, nil
@@ -183,7 +183,7 @@ func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.Charac
 			default:
 				locationID = int64(location.SolarSystemId)
 			}
-			_, err := s.EveUniverseService.GetOrCreateLocationESI(ctx, locationID)
+			_, err := s.eus.GetOrCreateLocationESI(ctx, locationID)
 			if err != nil {
 				return err
 			}
@@ -231,7 +231,7 @@ func (s *CharacterService) updateShipESI(ctx context.Context, arg app.CharacterU
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			ship := data.(esi.GetCharactersCharacterIdShipOk)
-			_, err := s.EveUniverseService.GetOrCreateTypeESI(ctx, ship.ShipTypeId)
+			_, err := s.eus.GetOrCreateTypeESI(ctx, ship.ShipTypeId)
 			if err != nil {
 				return err
 			}
@@ -282,7 +282,7 @@ func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, char
 		return nil, err
 	}
 	ids := slices.Concat(r.Alliance, r.Character, r.Corporation)
-	missingIDs, err := s.EveUniverseService.AddMissingEntities(ctx, ids)
+	missingIDs, err := s.eus.AddMissingEntities(ctx, ids)
 	if err != nil {
 		slog.Error("Failed to fetch missing IDs", "error", err)
 		return nil, err

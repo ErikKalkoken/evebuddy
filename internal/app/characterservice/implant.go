@@ -30,7 +30,7 @@ func (s *CharacterService) updateImplantsESI(ctx context.Context, arg app.Charac
 			implants := data.([]int32)
 			args := make([]storage.CreateCharacterImplantParams, len(implants))
 			for i, typeID := range implants {
-				_, err := s.EveUniverseService.GetOrCreateTypeESI(ctx, typeID)
+				_, err := s.eus.GetOrCreateTypeESI(ctx, typeID)
 				if err != nil {
 					return err
 				}

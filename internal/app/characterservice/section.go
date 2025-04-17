@@ -93,7 +93,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 		if err2 != nil {
 			slog.Error("record error for failed section update: %s", "error", err2)
 		}
-		s.StatusCacheService.CharacterSectionSet(o)
+		s.scs.CharacterSectionSet(o)
 		return false, fmt.Errorf("update character section from ESI for %v: %w", arg, err)
 	}
 	changed := x.(bool)
@@ -118,7 +118,7 @@ func (s *CharacterService) updateSectionIfChanged(
 	if err != nil {
 		return false, err
 	}
-	s.StatusCacheService.CharacterSectionSet(o)
+	s.scs.CharacterSectionSet(o)
 	token, err := s.getValidCharacterToken(ctx, arg.CharacterID)
 	if err != nil {
 		return false, err
@@ -167,7 +167,7 @@ func (s *CharacterService) updateSectionIfChanged(
 	if err != nil {
 		return false, err
 	}
-	s.StatusCacheService.CharacterSectionSet(o)
+	s.scs.CharacterSectionSet(o)
 
 	slog.Debug("Has section changed", "characterID", arg.CharacterID, "section", arg.Section, "changed", hasChanged)
 	return hasChanged, nil

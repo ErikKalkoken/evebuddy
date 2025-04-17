@@ -7,18 +7,16 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
-	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("should return existing object", func(t *testing.T) {
 		// given
@@ -64,7 +62,7 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 			assert.True(t, x1.IsPublished)
 			assert.False(t, x1.IsStackable)
 			assert.Equal(t, app.EveUnitID(124), x1.Unit)
-			x2, err := r.GetEveDogmaAttribute(ctx, 20)
+			x2, err := st.GetEveDogmaAttribute(ctx, 20)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}

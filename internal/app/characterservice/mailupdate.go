@@ -202,7 +202,7 @@ func (s *CharacterService) resolveMailEntities(ctx context.Context, mm []esi.Get
 			entityIDs.Add(r.RecipientId)
 		}
 	}
-	_, err := s.EveUniverseService.AddMissingEntities(ctx, entityIDs.ToSlice())
+	_, err := s.eus.AddMissingEntities(ctx, entityIDs.ToSlice())
 	if err != nil {
 		return err
 	}

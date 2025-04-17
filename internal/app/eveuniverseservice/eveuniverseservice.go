@@ -12,20 +12,27 @@ import (
 
 // EveUniverseService provides access to Eve Online models with on-demand loading from ESI and persistent local caching.
 type EveUniverseService struct {
-	StatusCacheService app.StatusCacheService
 	// Now returns the current time in UTC. Can be overwritten for tests.
 	Now func() time.Time
 
 	esiClient *goesi.APIClient
+	scs       app.StatusCacheService
 	sfg       *singleflight.Group
 	st        *storage.Storage
 }
 
+type Params struct {
+	ESIClient          *goesi.APIClient
+	StatusCacheService app.StatusCacheService
+	Storage            *storage.Storage
+}
+
 // New returns a new instance of an Eve universe service.
-func New(st *storage.Storage, esiClient *goesi.APIClient) *EveUniverseService {
+func New(args Params) *EveUniverseService {
 	eu := &EveUniverseService{
-		esiClient: esiClient,
-		st:        st,
+		scs:       args.StatusCacheService,
+		esiClient: args.ESIClient,
+		st:        args.Storage,
 		sfg:       new(singleflight.Group),
 		Now: func() time.Time {
 			return time.Now().UTC()

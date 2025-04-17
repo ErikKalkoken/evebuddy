@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
@@ -15,12 +14,11 @@ import (
 )
 
 func TestGetOrCreateEveCategoryESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("should return existing category", func(t *testing.T) {
 		// given
@@ -60,7 +58,7 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 			assert.Equal(t, int32(6), x1.ID)
 			assert.Equal(t, "Ship", x1.Name)
 			assert.Equal(t, true, x1.IsPublished)
-			x2, err := r.GetEveCategory(ctx, 6)
+			x2, err := st.GetEveCategory(ctx, 6)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -69,12 +67,11 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 }
 
 func TestGetOrCreateEveGroupESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("should return existing group", func(t *testing.T) {
 		// given
@@ -117,7 +114,7 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 			assert.Equal(t, "Frigate", x1.Name)
 			assert.Equal(t, int32(6), x1.Category.ID)
 			assert.Equal(t, true, x1.IsPublished)
-			x2, err := r.GetEveGroup(ctx, 25)
+			x2, err := st.GetEveGroup(ctx, 25)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -126,12 +123,11 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 }
 
 func TestGetOrCreateEveTypeESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("should return existing type", func(t *testing.T) {
 		// given
@@ -192,15 +188,15 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 			assert.Equal(t, "Rifter", x1.Name)
 			assert.Equal(t, int32(25), x1.Group.ID)
 			assert.Equal(t, true, x1.IsPublished)
-			x2, err := r.GetEveType(ctx, 587)
+			x2, err := st.GetEveType(ctx, 587)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
-			y, err := r.GetEveTypeDogmaAttribute(ctx, 587, 161)
+			y, err := st.GetEveTypeDogmaAttribute(ctx, 587, 161)
 			if assert.NoError(t, err) {
 				assert.Equal(t, float32(11), y)
 			}
-			z, err := r.GetEveTypeDogmaEffect(ctx, 587, 111)
+			z, err := st.GetEveTypeDogmaEffect(ctx, 587, 111)
 			if assert.NoError(t, err) {
 				assert.True(t, z)
 			}
@@ -263,7 +259,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 			assert.Equal(t, "Rifter", x1.Name)
 			assert.Equal(t, int32(25), x1.Group.ID)
 			assert.Equal(t, true, x1.IsPublished)
-			x2, err := r.GetEveType(ctx, 587)
+			x2, err := st.GetEveType(ctx, 587)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}

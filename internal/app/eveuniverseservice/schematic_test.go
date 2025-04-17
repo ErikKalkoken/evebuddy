@@ -6,18 +6,16 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
-	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetOrCreateEveSchematicESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("should return existing schematic", func(t *testing.T) {
 		// given
@@ -50,7 +48,7 @@ func TestGetOrCreateEveSchematicESI(t *testing.T) {
 			assert.Equal(t, int32(3), x1.ID)
 			assert.Equal(t, "Bacteria", x1.Name)
 			assert.Equal(t, 1800, x1.CycleTime)
-			x2, err := r.GetEveSchematic(ctx, 3)
+			x2, err := st.GetEveSchematic(ctx, 3)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}

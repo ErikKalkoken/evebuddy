@@ -102,12 +102,12 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 				return err
 			}
 			for _, id := range missingLocationIDs {
-				_, err := s.EveUniverseService.GetOrCreateLocationESI(ctx, id)
+				_, err := s.eus.GetOrCreateLocationESI(ctx, id)
 				if err != nil {
 					return err
 				}
 			}
-			if err := s.EveUniverseService.AddMissingTypes(ctx, typeIDs.ToSlice()); err != nil {
+			if err := s.eus.AddMissingTypes(ctx, typeIDs.ToSlice()); err != nil {
 				return err
 			}
 			currentIDs, err := s.st.ListCharacterAssetIDs(ctx, characterID)

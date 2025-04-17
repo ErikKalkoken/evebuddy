@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
@@ -16,13 +15,12 @@ import (
 )
 
 func TestAddMissingEveEntities(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.NewTestService(st)
 	t.Run("do nothing when all entities already exist", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -60,7 +58,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		assert.Equal(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(47), ids[0])
-			e, err := r.GetEveEntity(ctx, 47)
+			e, err := st.GetEveEntity(ctx, 47)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -138,7 +136,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		assert.Equal(t, 2, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
 			assert.Len(t, missing, count)
-			ids2, err := r.ListEveEntityIDs(ctx)
+			ids2, err := st.ListEveEntityIDs(ctx)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -157,7 +155,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		assert.GreaterOrEqual(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(666), ids[0])
-			e, err := r.GetEveEntity(ctx, 666)
+			e, err := st.GetEveEntity(ctx, 666)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -177,7 +175,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		assert.GreaterOrEqual(t, 0, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
 			assert.Len(t, ids, 0)
-			e, err := r.GetEveEntity(ctx, 1)
+			e, err := st.GetEveEntity(ctx, 1)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -231,13 +229,13 @@ func TestAddMissingEveEntities(t *testing.T) {
 		// then
 		assert.LessOrEqual(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			e1, err := r.GetEveEntity(ctx, 47)
+			e1, err := st.GetEveEntity(ctx, 47)
 			if err != nil {
 				t.Fatal(err)
 			}
 			assert.Equal(t, e1.Name, "Erik")
 			assert.Equal(t, e1.Category, app.EveEntityCharacter)
-			e2, err := r.GetEveEntity(ctx, 666)
+			e2, err := st.GetEveEntity(ctx, 666)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -252,8 +250,7 @@ func TestToEveEntities(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverseservice.New(st, client)
+	s := eveuniverseservice.NewTestService(st)
 	t.Run("should resolve normal IDs", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)

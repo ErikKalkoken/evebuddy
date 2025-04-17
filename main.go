@@ -62,7 +62,7 @@ const (
 	userAgent           = "EveBuddy kalkoken87@gmail.com"
 )
 
-// Resonses from these URLs will never be logged.
+// Responses from these URLs will never be logged.
 var blacklistedURLs = []string{"login.eveonline.com/v2/oauth/token"}
 
 // define flags
@@ -233,29 +233,34 @@ func main() {
 		os.Exit(1)
 	}
 	// Init EveUniverse service
-	eus := eveuniverseservice.New(st, esiClient)
-	eus.StatusCacheService = scs
+	eus := eveuniverseservice.New(eveuniverseservice.Params{
+		Storage:            st,
+		ESIClient:          esiClient,
+		StatusCacheService: scs,
+	})
 
 	// Init EveNotification service
 	en := evenotification.New(eus)
 
 	// Init Character service
-	cs := characterservice.New(st, rhc.StandardClient(), esiClient)
-	cs.EveNotificationService = en
-	cs.EveUniverseService = eus
-	cs.StatusCacheService = scs
 	ssoService := sso.New(ssoClientID, rhc.StandardClient())
 	ssoService.OpenURL = fyneApp.OpenURL
-	cs.SSOService = ssoService
+	cs := characterservice.New(characterservice.Params{
+		Storage:                st,
+		HttpClient:             rhc.StandardClient(),
+		EsiClient:              esiClient,
+		EveNotificationService: en,
+		EveUniverseService:     eus,
+		StatusCacheService:     scs,
+		SSOService:             ssoService,
+	})
 
 	// Init UI
-	ess := esistatusservice.New(esiClient)
-	eis := eveimageservice.New(pc, rhc.StandardClient(), *offlineFlag)
 	bu := ui.NewBaseUI(ui.BaseUIParams{
 		App:                fyneApp,
 		CharacterService:   cs,
-		EveImageService:    eis,
-		ESIStatusService:   ess,
+		EveImageService:    eveimageservice.New(pc, rhc.StandardClient(), *offlineFlag),
+		ESIStatusService:   esistatusservice.New(esiClient),
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		MemCache:           memCache,
@@ -272,14 +277,14 @@ func main() {
 		},
 	})
 	if isDesktop {
-		u := ui.NewUIDesktop(bu)
+		u := ui.NewDesktopUI(bu)
 		u.Init()
 		if *resetSettingsFlag {
 			u.ResetDesktopSettings()
 		}
 		u.ShowAndRun()
 	} else {
-		u := ui.NewUIMobile(bu)
+		u := ui.NewMobileUI(bu)
 		u.Init()
 		u.ShowAndRun()
 	}
@@ -333,8 +338,8 @@ func setupCrashFile(logDir string) (path string) {
 	return
 }
 
-// logResponse is a callback for retryable logger, which is called for every respose.
-// It logs all HTTP erros and also the complete response when log level is DEBUG.
+// logResponse is a callback for retryable logger, which is called for every response.
+// It logs all HTTP errors and also the complete response when log level is DEBUG.
 func logResponse(l retryablehttp.Logger, r *http.Response) {
 	isDebug := slog.Default().Enabled(context.Background(), slog.LevelDebug)
 	isHttpError := r.StatusCode >= 400

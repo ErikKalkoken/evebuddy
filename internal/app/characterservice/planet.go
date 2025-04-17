@@ -92,7 +92,7 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 			}
 			// update or create planet
 			for _, o := range planets {
-				_, err := s.EveUniverseService.GetOrCreatePlanetESI(ctx, o.PlanetId)
+				_, err := s.eus.GetOrCreatePlanetESI(ctx, o.PlanetId)
 				if err != nil {
 					return err
 				}
@@ -115,7 +115,7 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 					return err
 				}
 				for _, pin := range planet.Pins {
-					et, err := s.EveUniverseService.GetOrCreateTypeESI(ctx, pin.TypeId)
+					et, err := s.eus.GetOrCreateTypeESI(ctx, pin.TypeId)
 					if err != nil {
 						return err
 					}
@@ -128,21 +128,21 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 						LastCycleStart:    pin.LastCycleStart,
 					}
 					if pin.ExtractorDetails.ProductTypeId != 0 {
-						et, err := s.EveUniverseService.GetOrCreateTypeESI(ctx, pin.ExtractorDetails.ProductTypeId)
+						et, err := s.eus.GetOrCreateTypeESI(ctx, pin.ExtractorDetails.ProductTypeId)
 						if err != nil {
 							return err
 						}
 						arg.ExtractorProductTypeID = optional.New(et.ID)
 					}
 					if pin.FactoryDetails.SchematicId != 0 {
-						es, err := s.EveUniverseService.GetOrCreateSchematicESI(ctx, pin.FactoryDetails.SchematicId)
+						es, err := s.eus.GetOrCreateSchematicESI(ctx, pin.FactoryDetails.SchematicId)
 						if err != nil {
 							return err
 						}
 						arg.FactorySchemaID = optional.New(es.ID)
 					}
 					if pin.SchematicId != 0 {
-						es, err := s.EveUniverseService.GetOrCreateSchematicESI(ctx, pin.SchematicId)
+						es, err := s.eus.GetOrCreateSchematicESI(ctx, pin.SchematicId)
 						if err != nil {
 							return err
 						}

@@ -123,15 +123,16 @@ type BaseUI struct {
 type BaseUIParams struct {
 	App                fyne.App
 	CharacterService   app.CharacterService
-	ClearCacheFunc     func()
-	DataPaths          map[string]string
 	ESIStatusService   app.ESIStatusService
 	EveImageService    app.EveImageService
 	EveUniverseService app.EveUniverseService
-	IsOffline          bool
-	IsUpdateDisabled   bool
 	MemCache           app.CacheService
 	StatusCacheService app.StatusCacheService
+	// optional
+	ClearCacheFunc   func()
+	IsOffline        bool
+	IsUpdateDisabled bool
+	DataPaths        map[string]string
 }
 
 // NewBaseUI constructs and returns a new BaseUI.
@@ -140,9 +141,7 @@ type BaseUIParams struct {
 func NewBaseUI(args BaseUIParams) *BaseUI {
 	u := &BaseUI{
 		app:              args.App,
-		clearCache:       args.ClearCacheFunc,
 		cs:               args.CharacterService,
-		dataPaths:        args.DataPaths,
 		eis:              args.EveImageService,
 		ess:              args.ESIStatusService,
 		eus:              args.EveUniverseService,
@@ -154,6 +153,18 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 		settings:         settings.New(args.App.Preferences()),
 	}
 	u.window = u.app.NewWindow(u.appName())
+
+	if args.ClearCacheFunc != nil {
+		u.clearCache = args.ClearCacheFunc
+	} else {
+		u.clearCache = func() {}
+	}
+
+	if len(args.DataPaths) > 0 {
+		u.dataPaths = args.DataPaths
+	} else {
+		u.dataPaths = make(map[string]string)
+	}
 
 	if u.IsDesktop() {
 		iwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
@@ -191,6 +202,62 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.userSettings = NewSettings(u)
 	u.MainWindow().SetMaster()
+
+	// SetOnStarted is called on initial start,
+	// but also when an app is coninued after it was temporarily stopped,
+	// which can happen on mobile
+	u.app.Lifecycle().SetOnStarted(func() {
+		wasStarted := !u.wasStarted.CompareAndSwap(false, true)
+		if wasStarted {
+			slog.Info("App continued")
+			return
+		}
+		// First app start
+		slog.Info("App started")
+		if u.isOffline {
+			slog.Info("Started in offline mode")
+		}
+		go func() {
+			time.Sleep(250 * time.Millisecond) // FIXME: Workaround for occasional progess bar panic
+			u.UpdateCrossPages()
+			if u.HasCharacter() {
+				u.setCharacter(u.character)
+			} else {
+				u.resetCharacter()
+			}
+			u.updateStatus()
+		}()
+		u.snackbar.Start()
+		if !u.isOffline && !u.isUpdateDisabled {
+			u.isForeground.Store(true)
+			go func() {
+				u.startUpdateTickerGeneralSections()
+				u.startUpdateTickerCharacters()
+			}()
+		} else {
+			slog.Info("Update ticker disabled")
+		}
+		go u.characterJumpClones.StartUpdateTicker()
+		if u.onAppFirstStarted != nil {
+			u.onAppFirstStarted()
+		}
+	})
+	u.app.Lifecycle().SetOnEnteredForeground(func() {
+		slog.Debug("Entered foreground")
+		u.isForeground.Store(true)
+		u.updateCharactersIfNeeded(context.Background())
+		u.updateGeneralSectionsAndRefreshIfNeeded(false)
+	})
+	u.app.Lifecycle().SetOnExitedForeground(func() {
+		slog.Debug("Exited foreground")
+		u.isForeground.Store(false)
+	})
+	u.app.Lifecycle().SetOnStopped(func() {
+		slog.Info("App stopped")
+		if u.onAppStopped != nil {
+			u.onAppStopped()
+		}
+	})
 	return u
 }
 
@@ -302,61 +369,6 @@ func (u *BaseUI) Settings() app.Settings {
 
 // ShowAndRun shows the UI and runs the Fyne loop (blocking),
 func (u *BaseUI) ShowAndRun() {
-	// SetOnStarted is called on initial start,
-	// but also when an app is coninued after it was temporarily stopped,
-	// which can happen on mobile
-	u.app.Lifecycle().SetOnStarted(func() {
-		wasStarted := !u.wasStarted.CompareAndSwap(false, true)
-		if wasStarted {
-			slog.Info("App continued")
-			return
-		}
-		// First app start
-		slog.Info("App started")
-		if u.isOffline {
-			slog.Info("Started in offline mode")
-		}
-		go func() {
-			time.Sleep(250 * time.Millisecond) // FIXME: Workaround for occasional progess bar panic
-			u.UpdateCrossPages()
-			if u.HasCharacter() {
-				u.setCharacter(u.character)
-			} else {
-				u.resetCharacter()
-			}
-			u.updateStatus()
-		}()
-		u.snackbar.Start()
-		if !u.isOffline && !u.isUpdateDisabled {
-			u.isForeground.Store(true)
-			go func() {
-				u.startUpdateTickerGeneralSections()
-				u.startUpdateTickerCharacters()
-			}()
-		} else {
-			slog.Info("Update ticker disabled")
-		}
-		go u.characterJumpClones.StartUpdateTicker()
-		if u.onAppFirstStarted != nil {
-			u.onAppFirstStarted()
-		}
-	})
-	u.app.Lifecycle().SetOnEnteredForeground(func() {
-		slog.Debug("Entered foreground")
-		u.isForeground.Store(true)
-		u.updateCharactersIfNeeded(context.Background())
-		u.updateGeneralSectionsAndRefreshIfNeeded(false)
-	})
-	u.app.Lifecycle().SetOnExitedForeground(func() {
-		slog.Debug("Exited foreground")
-		u.isForeground.Store(false)
-	})
-	u.app.Lifecycle().SetOnStopped(func() {
-		slog.Info("App stopped")
-		if u.onAppStopped != nil {
-			u.onAppStopped()
-		}
-	})
 	if u.onShowAndRun != nil {
 		u.onShowAndRun()
 	}
@@ -415,6 +427,25 @@ func (u *BaseUI) updateStatus() {
 
 // updateCharacter updates all pages for the current character.
 func (u *BaseUI) updateCharacter() {
+	c := u.CurrentCharacter()
+	if c != nil {
+		slog.Debug("Updating character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
+	} else {
+		slog.Debug("Updating without character")
+	}
+	ff := u.updateCharacterMap()
+	if u.onUpdateCharacter != nil {
+		ff["OnUpdateCharacter"] = func() {
+			u.onUpdateCharacter(c)
+		}
+	}
+	runFunctionsWithProgressModal("Loading character", ff, u.window)
+	if c != nil && !u.isUpdateDisabled {
+		u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
+	}
+}
+
+func (u *BaseUI) updateCharacterMap() map[string]func() {
 	ff := map[string]func(){
 		"assets":            u.characterAsset.Update,
 		"attributes":        u.characterAttributes.Update,
@@ -430,25 +461,15 @@ func (u *BaseUI) updateCharacter() {
 		"walletJournal":     u.characterWalletJournal.Update,
 		"walletTransaction": u.characterWalletTransaction.Update,
 	}
-	c := u.CurrentCharacter()
-	if c != nil {
-		slog.Debug("Updating character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
-	} else {
-		slog.Debug("Updating without character")
-	}
-	if u.onUpdateCharacter != nil {
-		ff["OnUpdateCharacter"] = func() {
-			u.onUpdateCharacter(c)
-		}
-	}
-	runFunctionsWithProgressModal("Loading character", ff, u.window)
-	if c != nil && !u.isUpdateDisabled {
-		u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
-	}
+	return ff
 }
 
 // UpdateCrossPages refreshed all pages that contain information about multiple characters.
 func (u *BaseUI) UpdateCrossPages() {
+	runFunctionsWithProgressModal("Updating characters", u.updateCrossPagesMap(), u.window)
+}
+
+func (u *BaseUI) updateCrossPagesMap() map[string]func() {
 	ff := map[string]func(){
 		"assetSearch":       u.overviewAssets.Update,
 		"contractsAll":      u.contractsAll.Update,
@@ -465,7 +486,7 @@ func (u *BaseUI) UpdateCrossPages() {
 	if u.onRefreshCross != nil {
 		ff["onRefreshCross"] = u.onRefreshCross
 	}
-	runFunctionsWithProgressModal("Updating characters", ff, u.window)
+	return ff
 }
 
 func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Window) {

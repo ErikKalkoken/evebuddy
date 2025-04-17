@@ -7,18 +7,16 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
-	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetOrCreateEveRaceESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	eu := eveuniverseservice.New(r, client)
+	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("should return existing race", func(t *testing.T) {
 		// given
@@ -26,7 +24,7 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 		httpmock.Reset()
 		x1 := factory.CreateEveRace(app.EveRace{ID: 7})
 		// when
-		x2, err := eu.GetOrCreateRaceESI(ctx, 7)
+		x2, err := s.GetOrCreateRaceESI(ctx, 7)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, x1, x2)
@@ -49,12 +47,12 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 			}))
 
 		// when
-		x1, err := eu.GetOrCreateRaceESI(ctx, 7)
+		x1, err := s.GetOrCreateRaceESI(ctx, 7)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, "Caldari", x1.Name)
 			assert.Equal(t, "Founded on the tenets of patriotism and hard work...", x1.Description)
-			x2, err := r.GetEveRace(ctx, 7)
+			x2, err := st.GetEveRace(ctx, 7)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -77,7 +75,7 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 			}))
 
 		// when
-		_, err := eu.GetOrCreateRaceESI(ctx, 42)
+		_, err := s.GetOrCreateRaceESI(ctx, 42)
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})

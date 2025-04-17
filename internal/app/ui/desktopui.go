@@ -46,11 +46,11 @@ type DesktopUI struct {
 	sfg       *singleflight.Group
 }
 
-// NewUIDesktop build the UI and returns it.
-func NewUIDesktop(bui *BaseUI) *DesktopUI {
+// NewDesktopUI build the UI and returns it.
+func NewDesktopUI(bu *BaseUI) *DesktopUI {
 	u := &DesktopUI{
 		sfg:    new(singleflight.Group),
-		BaseUI: bui,
+		BaseUI: bu,
 	}
 	deskApp, ok := u.App().(desktop.App)
 	if !ok {

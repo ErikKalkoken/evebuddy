@@ -6,18 +6,16 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
-	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestUpdateEveMarketPricesESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	s := New(r, client)
+	s := NewTestService(st)
 	ctx := context.Background()
 	t.Run("should create new objects from ESI", func(t *testing.T) {
 		// given
@@ -37,7 +35,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 		err := s.updateMarketPricesESI(ctx)
 		// then
 		if assert.NoError(t, err) {
-			o, err := r.GetEveMarketPrice(ctx, 32772)
+			o, err := st.GetEveMarketPrice(ctx, 32772)
 			if assert.NoError(t, err) {
 				assert.Equal(t, 306988.09, o.AdjustedPrice)
 				assert.Equal(t, 306292.67, o.AveragePrice)
@@ -67,7 +65,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 		err := s.updateMarketPricesESI(ctx)
 		// then
 		if assert.NoError(t, err) {
-			o, err := r.GetEveMarketPrice(ctx, 32772)
+			o, err := st.GetEveMarketPrice(ctx, 32772)
 			if assert.NoError(t, err) {
 				assert.Equal(t, 306988.09, o.AdjustedPrice)
 				assert.Equal(t, 306292.67, o.AveragePrice)
