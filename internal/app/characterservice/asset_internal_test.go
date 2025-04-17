@@ -251,8 +251,10 @@ func newCharacterService(st *storage.Storage) *CharacterService {
 	sc := statuscacheservice.New(memcache.New())
 	eu := eveuniverseservice.New(st, nil)
 	eu.StatusCacheService = sc
-	s := New(st, nil, nil)
-	s.EveUniverseService = eu
-	s.StatusCacheService = sc
+	s := New(Params{
+		Storage:            st,
+		EveUniverseService: eu,
+		StatusCacheService: sc,
+	})
 	return s
 }

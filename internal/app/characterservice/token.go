@@ -62,7 +62,7 @@ func (s *CharacterService) getValidCharacterToken(ctx context.Context, character
 func (s *CharacterService) ensureValidCharacterToken(ctx context.Context, t *app.CharacterToken) error {
 	if !t.RemainsValid(time.Second * 60) {
 		slog.Debug("Need to refresh token", "characterID", t.CharacterID)
-		rawToken, err := s.SSOService.RefreshToken(ctx, t.RefreshToken)
+		rawToken, err := s.sso.RefreshToken(ctx, t.RefreshToken)
 		if err != nil {
 			return err
 		}

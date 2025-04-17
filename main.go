@@ -240,13 +240,17 @@ func main() {
 	en := evenotification.New(eus)
 
 	// Init Character service
-	cs := characterservice.New(st, rhc.StandardClient(), esiClient)
-	cs.EveNotificationService = en
-	cs.EveUniverseService = eus
-	cs.StatusCacheService = scs
 	ssoService := sso.New(ssoClientID, rhc.StandardClient())
 	ssoService.OpenURL = fyneApp.OpenURL
-	cs.SSOService = ssoService
+	cs := characterservice.New(characterservice.Params{
+		Storage:                st,
+		HttpClient:             rhc.StandardClient(),
+		EsiClient:              esiClient,
+		EveNotificationService: en,
+		EveUniverseService:     eus,
+		StatusCacheService:     scs,
+		SSOService:             ssoService,
+	})
 
 	// Init UI
 	bu := ui.NewBaseUI(ui.BaseUIParams{

@@ -51,7 +51,7 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 			incomingSkillIDs := set.New[int32]()
 			for _, o := range skills.Skills {
 				incomingSkillIDs.Add(o.SkillId)
-				_, err := s.EveUniverseService.GetOrCreateTypeESI(ctx, o.SkillId)
+				_, err := s.eus.GetOrCreateTypeESI(ctx, o.SkillId)
 				if err != nil {
 					return err
 				}

@@ -60,16 +60,16 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 					typeIDs.Add(j.ProductTypeId)
 				}
 			}
-			if _, err := s.EveUniverseService.AddMissingEntities(ctx, entityIDs.ToSlice()); err != nil {
+			if _, err := s.eus.AddMissingEntities(ctx, entityIDs.ToSlice()); err != nil {
 				return err
 			}
 			for id := range locationIDs.Values() {
-				if _, err := s.EveUniverseService.GetOrCreateLocationESI(ctx, id); err != nil {
+				if _, err := s.eus.GetOrCreateLocationESI(ctx, id); err != nil {
 					return err
 				}
 			}
 			for id := range typeIDs.Values() {
-				if _, err := s.EveUniverseService.GetOrCreateTypeESI(ctx, id); err != nil {
+				if _, err := s.eus.GetOrCreateTypeESI(ctx, id); err != nil {
 					return err
 				}
 			}

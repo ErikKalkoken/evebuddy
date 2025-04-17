@@ -158,7 +158,7 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 					ids.Add(c.AssigneeId)
 				}
 			}
-			_, err := s.EveUniverseService.AddMissingEntities(ctx, ids.ToSlice())
+			_, err := s.eus.AddMissingEntities(ctx, ids.ToSlice())
 			if err != nil {
 				return err
 			}
@@ -219,13 +219,13 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 
 func (s *CharacterService) createNewContract(ctx context.Context, characterID int32, c esi.GetCharactersCharacterIdContracts200Ok) error {
 	if c.StartLocationId != 0 {
-		_, err := s.EveUniverseService.GetOrCreateLocationESI(ctx, c.StartLocationId)
+		_, err := s.eus.GetOrCreateLocationESI(ctx, c.StartLocationId)
 		if err != nil {
 			return err
 		}
 	}
 	if c.EndLocationId != 0 {
-		_, err := s.EveUniverseService.GetOrCreateLocationESI(ctx, c.EndLocationId)
+		_, err := s.eus.GetOrCreateLocationESI(ctx, c.EndLocationId)
 		if err != nil {
 			return err
 		}
@@ -276,7 +276,7 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 		return err
 	}
 	for _, it := range items {
-		et, err := s.EveUniverseService.GetOrCreateTypeESI(ctx, it.TypeId)
+		et, err := s.eus.GetOrCreateTypeESI(ctx, it.TypeId)
 		if err != nil {
 			return err
 		}
@@ -358,7 +358,7 @@ func (s *CharacterService) updateContractBids(ctx context.Context, characterID, 
 		}
 	}
 	if len(eeIDs) > 0 {
-		if _, err = s.EveUniverseService.AddMissingEntities(ctx, eeIDs); err != nil {
+		if _, err = s.eus.AddMissingEntities(ctx, eeIDs); err != nil {
 			return err
 		}
 	}

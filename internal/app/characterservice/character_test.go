@@ -43,7 +43,7 @@ func TestGetCharacter(t *testing.T) {
 func TestGetAnyCharacter(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := characterservice.New(st, nil, nil)
+	cs := newCharacterService(st)
 	ctx := context.Background()
 	t.Run("should return own error when object not found", func(t *testing.T) {
 		// given
@@ -145,8 +145,10 @@ func newCharacterService(st *storage.Storage) *characterservice.CharacterService
 	sc := statuscacheservice.New(memcache.New())
 	eu := eveuniverseservice.New(st, nil)
 	eu.StatusCacheService = sc
-	s := characterservice.New(st, nil, nil)
-	s.EveUniverseService = eu
-	s.StatusCacheService = sc
+	s := characterservice.New(characterservice.Params{
+		Storage:            st,
+		EveUniverseService: eu,
+		StatusCacheService: sc,
+	})
 	return s
 }

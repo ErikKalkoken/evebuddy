@@ -61,7 +61,7 @@ func (s *CharacterService) UpdateSkillqueueESI(ctx context.Context, arg app.Char
 			items := data.([]esi.GetCharactersCharacterIdSkillqueue200Ok)
 			args := make([]storage.SkillqueueItemParams, len(items))
 			for i, o := range items {
-				_, err := s.EveUniverseService.GetOrCreateTypeESI(ctx, o.SkillId)
+				_, err := s.eus.GetOrCreateTypeESI(ctx, o.SkillId)
 				if err != nil {
 					return err
 				}

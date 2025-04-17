@@ -43,88 +43,89 @@ func (c cache) Clear() {
 	}
 }
 
-type myTestApp struct {
+// testApp is an extension of the Fyne test app which also conforms to the desktop app interface.
+type testApp struct {
 	app fyne.App
 }
 
-func newMyTestApp(t testing.TB) *myTestApp {
-	a := &myTestApp{app: test.NewTempApp(t)}
+func newTestApp(t testing.TB) *testApp {
+	a := &testApp{app: test.NewTempApp(t)}
 	return a
 }
 
-func (a *myTestApp) NewWindow(title string) fyne.Window {
+func (a *testApp) NewWindow(title string) fyne.Window {
 	return a.app.NewWindow(title)
 }
 
-func (a *myTestApp) OpenURL(url *url.URL) error {
+func (a *testApp) OpenURL(url *url.URL) error {
 	return a.app.OpenURL(url)
 }
 
-func (a *myTestApp) Icon() fyne.Resource {
+func (a *testApp) Icon() fyne.Resource {
 	return a.app.Icon()
 }
 
-func (a *myTestApp) SetIcon(r fyne.Resource) {
+func (a *testApp) SetIcon(r fyne.Resource) {
 	a.app.SetIcon(r)
 }
 
-func (a *myTestApp) Run() {
+func (a *testApp) Run() {
 	a.app.Run()
 }
 
-func (a *myTestApp) Quit() {
+func (a *testApp) Quit() {
 	a.app.Quit()
 }
 
-func (a *myTestApp) Driver() fyne.Driver {
+func (a *testApp) Driver() fyne.Driver {
 	return a.app.Driver()
 }
 
-func (a *myTestApp) UniqueID() string {
+func (a *testApp) UniqueID() string {
 	return a.app.UniqueID()
 }
 
-func (a *myTestApp) SendNotification(n *fyne.Notification) {
+func (a *testApp) SendNotification(n *fyne.Notification) {
 	a.app.SendNotification(n)
 }
 
-func (a *myTestApp) Settings() fyne.Settings {
+func (a *testApp) Settings() fyne.Settings {
 	return a.app.Settings()
 }
 
-func (a *myTestApp) Preferences() fyne.Preferences {
+func (a *testApp) Preferences() fyne.Preferences {
 	return a.app.Preferences()
 }
 
-func (a *myTestApp) Storage() fyne.Storage {
+func (a *testApp) Storage() fyne.Storage {
 	return a.app.Storage()
 }
 
-func (a *myTestApp) Lifecycle() fyne.Lifecycle {
+func (a *testApp) Lifecycle() fyne.Lifecycle {
 	return a.app.Lifecycle()
 }
 
-func (a *myTestApp) Metadata() fyne.AppMetadata {
+func (a *testApp) Metadata() fyne.AppMetadata {
 	return a.app.Metadata()
 }
 
-func (a *myTestApp) CloudProvider() fyne.CloudProvider {
+func (a *testApp) CloudProvider() fyne.CloudProvider {
 	return a.app.CloudProvider()
 }
 
-func (a *myTestApp) SetCloudProvider(o fyne.CloudProvider) {
+func (a *testApp) SetCloudProvider(o fyne.CloudProvider) {
 	a.app.SetCloudProvider(o)
 }
 
-func (a *myTestApp) SetSystemTrayMenu(_ *fyne.Menu) {
+func (a *testApp) SetSystemTrayMenu(_ *fyne.Menu) {
 	// noop
 }
 
-func (a *myTestApp) SetSystemTrayIcon(_ fyne.Resource) {
+func (a *testApp) SetSystemTrayIcon(_ fyne.Resource) {
 	// noop
 }
 
-var _ desktop.App = (*myTestApp)(nil)
+var _ desktop.App = (*testApp)(nil)
 
 func TestUIStartEmpty(t *testing.T) {
 	httpmock.Activate()
@@ -138,11 +139,13 @@ func TestUIStartEmpty(t *testing.T) {
 	eus := eveuniverseservice.New(st, esiClient)
 	eus.StatusCacheService = sc
 	eis := eveimageservice.New(newCache(), nil, true)
-	cs := characterservice.New(st, nil, esiClient)
-	cs.EveUniverseService = eus
-	cs.StatusCacheService = sc
+	cs := characterservice.New(characterservice.Params{
+		Storage:            st,
+		EveUniverseService: eus,
+		StatusCacheService: sc,
+	})
 	bu := NewBaseUI(BaseUIParams{
-		App:                newMyTestApp(t),
+		App:                newTestApp(t),
 		CharacterService:   cs,
 		ESIStatusService:   esistatusservice.New(esiClient),
 		EveImageService:    eis,
@@ -192,11 +195,13 @@ func TestUIStartWithCharacter(t *testing.T) {
 	eus := eveuniverseservice.New(st, esiClient)
 	eus.StatusCacheService = sc
 	eis := eveimageservice.New(newCache(), nil, true)
-	cs := characterservice.New(st, nil, esiClient)
-	cs.EveUniverseService = eus
-	cs.StatusCacheService = sc
+	cs := characterservice.New(characterservice.Params{
+		Storage:            st,
+		EveUniverseService: eus,
+		StatusCacheService: sc,
+	})
 	bu := NewBaseUI(BaseUIParams{
-		App:                newMyTestApp(t),
+		App:                newTestApp(t),
 		CharacterService:   cs,
 		ESIStatusService:   esistatusservice.New(esiClient),
 		EveImageService:    eis,

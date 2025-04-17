@@ -135,7 +135,7 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int32, subj
 		recipientIDs[i] = r.RecipientId
 	}
 	ids := slices.Concat(recipientIDs, []int32{characterID})
-	_, err = s.EveUniverseService.AddMissingEntities(ctx, ids)
+	_, err = s.eus.AddMissingEntities(ctx, ids)
 	if err != nil {
 		return 0, err
 	}
