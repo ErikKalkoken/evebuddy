@@ -249,13 +249,11 @@ func main() {
 	cs.SSOService = ssoService
 
 	// Init UI
-	ess := esistatusservice.New(esiClient)
-	eis := eveimageservice.New(pc, rhc.StandardClient(), *offlineFlag)
 	bu := ui.NewBaseUI(ui.BaseUIParams{
 		App:                fyneApp,
 		CharacterService:   cs,
-		EveImageService:    eis,
-		ESIStatusService:   ess,
+		EveImageService:    eveimageservice.New(pc, rhc.StandardClient(), *offlineFlag),
+		ESIStatusService:   esistatusservice.New(esiClient),
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		MemCache:           memCache,
@@ -272,14 +270,14 @@ func main() {
 		},
 	})
 	if isDesktop {
-		u := ui.NewUIDesktop(bu)
+		u := ui.NewDesktopUI(bu)
 		u.Init()
 		if *resetSettingsFlag {
 			u.ResetDesktopSettings()
 		}
 		u.ShowAndRun()
 	} else {
-		u := ui.NewUIMobile(bu)
+		u := ui.NewMobileUI(bu)
 		u.Init()
 		u.ShowAndRun()
 	}

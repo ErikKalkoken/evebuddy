@@ -9,9 +9,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
-const useMemoryDB = true
-
 func New() (*sql.DB, *storage.Storage, Factory) {
+	return NewWithOptions(true)
+}
+
+func NewWithOptions(useMemoryDB bool) (*sql.DB, *storage.Storage, Factory) {
 	if useMemoryDB {
 		// in-memory DB for faster runnng tests
 		db, err := sql.Open("sqlite3", ":memory:")

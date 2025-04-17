@@ -123,15 +123,16 @@ type BaseUI struct {
 type BaseUIParams struct {
 	App                fyne.App
 	CharacterService   app.CharacterService
-	ClearCacheFunc     func()
-	DataPaths          map[string]string
 	ESIStatusService   app.ESIStatusService
 	EveImageService    app.EveImageService
 	EveUniverseService app.EveUniverseService
-	IsOffline          bool
-	IsUpdateDisabled   bool
 	MemCache           app.CacheService
 	StatusCacheService app.StatusCacheService
+	// optional
+	ClearCacheFunc   func()
+	IsOffline        bool
+	IsUpdateDisabled bool
+	DataPaths        map[string]string
 }
 
 // NewBaseUI constructs and returns a new BaseUI.
@@ -140,9 +141,7 @@ type BaseUIParams struct {
 func NewBaseUI(args BaseUIParams) *BaseUI {
 	u := &BaseUI{
 		app:              args.App,
-		clearCache:       args.ClearCacheFunc,
 		cs:               args.CharacterService,
-		dataPaths:        args.DataPaths,
 		eis:              args.EveImageService,
 		ess:              args.ESIStatusService,
 		eus:              args.EveUniverseService,
@@ -154,6 +153,18 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 		settings:         settings.New(args.App.Preferences()),
 	}
 	u.window = u.app.NewWindow(u.appName())
+
+	if args.ClearCacheFunc != nil {
+		u.clearCache = args.ClearCacheFunc
+	} else {
+		u.clearCache = func() {}
+	}
+
+	if len(args.DataPaths) > 0 {
+		u.dataPaths = args.DataPaths
+	} else {
+		u.dataPaths = make(map[string]string)
+	}
 
 	if u.IsDesktop() {
 		iwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
@@ -415,6 +426,25 @@ func (u *BaseUI) updateStatus() {
 
 // updateCharacter updates all pages for the current character.
 func (u *BaseUI) updateCharacter() {
+	c := u.CurrentCharacter()
+	if c != nil {
+		slog.Debug("Updating character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
+	} else {
+		slog.Debug("Updating without character")
+	}
+	ff := u.updateCharacterMap()
+	if u.onUpdateCharacter != nil {
+		ff["OnUpdateCharacter"] = func() {
+			u.onUpdateCharacter(c)
+		}
+	}
+	runFunctionsWithProgressModal("Loading character", ff, u.window)
+	if c != nil && !u.isUpdateDisabled {
+		u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
+	}
+}
+
+func (u *BaseUI) updateCharacterMap() map[string]func() {
 	ff := map[string]func(){
 		"assets":            u.characterAsset.Update,
 		"attributes":        u.characterAttributes.Update,
@@ -430,25 +460,15 @@ func (u *BaseUI) updateCharacter() {
 		"walletJournal":     u.characterWalletJournal.Update,
 		"walletTransaction": u.characterWalletTransaction.Update,
 	}
-	c := u.CurrentCharacter()
-	if c != nil {
-		slog.Debug("Updating character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
-	} else {
-		slog.Debug("Updating without character")
-	}
-	if u.onUpdateCharacter != nil {
-		ff["OnUpdateCharacter"] = func() {
-			u.onUpdateCharacter(c)
-		}
-	}
-	runFunctionsWithProgressModal("Loading character", ff, u.window)
-	if c != nil && !u.isUpdateDisabled {
-		u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
-	}
+	return ff
 }
 
 // UpdateCrossPages refreshed all pages that contain information about multiple characters.
 func (u *BaseUI) UpdateCrossPages() {
+	runFunctionsWithProgressModal("Updating characters", u.updateCrossPagesMap(), u.window)
+}
+
+func (u *BaseUI) updateCrossPagesMap() map[string]func() {
 	ff := map[string]func(){
 		"assetSearch":       u.overviewAssets.Update,
 		"contractsAll":      u.contractsAll.Update,
@@ -465,7 +485,7 @@ func (u *BaseUI) UpdateCrossPages() {
 	if u.onRefreshCross != nil {
 		ff["onRefreshCross"] = u.onRefreshCross
 	}
-	runFunctionsWithProgressModal("Updating characters", ff, u.window)
+	return ff
 }
 
 func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Window) {
