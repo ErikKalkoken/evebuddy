@@ -597,7 +597,7 @@ func (a *CharacterMails) makeToolbar() *widget.Toolbar {
 		widget.NewToolbarAction(a.MakeReplyAllAction()),
 		widget.NewToolbarAction(a.MakeForwardAction()),
 		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
-			a.u.MainWindow().Clipboard().SetContent(a.mail.String())
+			a.u.App().Clipboard().SetContent(a.mail.String())
 		}),
 		widget.NewToolbarSpacer(),
 		widget.NewToolbarAction(a.MakeDeleteAction(nil)),

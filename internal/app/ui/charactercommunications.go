@@ -187,7 +187,7 @@ func (a *CharacterCommunications) makeToolbar() *widget.Toolbar {
 			if a.current == nil {
 				return
 			}
-			a.u.MainWindow().Clipboard().SetContent(a.current.String())
+			a.u.App().Clipboard().SetContent(a.current.String())
 		}),
 	)
 	return toolbar

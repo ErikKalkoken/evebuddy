@@ -1133,6 +1133,6 @@ func (u *BaseUI) makeDetailWindow(title, subTitle string, content fyne.CanvasObj
 
 func (u *BaseUI) makeCopyToClipbardLabel(text string) *kxwidget.TappableLabel {
 	return kxwidget.NewTappableLabel(text, func() {
-		u.MainWindow().Clipboard().SetContent(text)
+		u.App().Clipboard().SetContent(text)
 	})
 }

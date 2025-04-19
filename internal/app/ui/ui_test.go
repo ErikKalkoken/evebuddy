@@ -125,6 +125,11 @@ func (a *testApp) SetSystemTrayIcon(_ fyne.Resource) {
 	// noop
 }
 
+func (a *testApp) Clipboard() fyne.Clipboard {
+	return a.app.Clipboard()
+}
+
+var _ fyne.App = (*testApp)(nil)
 var _ desktop.App = (*testApp)(nil)
 
 func TestUIStartEmpty(t *testing.T) {

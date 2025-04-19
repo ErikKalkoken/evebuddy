@@ -610,7 +610,7 @@ func (u *DesktopUI) showUserDataDialog() {
 		return strings.Compare(a.name, b.name)
 	})
 	for _, it := range items {
-		f.Append(it.name, makePathEntry(u.MainWindow().Clipboard(), it.path))
+		f.Append(it.name, makePathEntry(u.App().Clipboard(), it.path))
 	}
 	d := dialog.NewCustom("User data", "Close", f, u.MainWindow())
 	u.ModifyShortcutsForDialog(d, u.MainWindow())
