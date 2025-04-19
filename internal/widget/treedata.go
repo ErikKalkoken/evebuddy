@@ -73,6 +73,9 @@ func (t *TreeData[T]) Add(parentUID widget.TreeNodeID, node T) (widget.TreeNodeI
 
 // ChildUIDs returns the child UIDs of a node.
 func (t *TreeData[T]) ChildUIDs(uid widget.TreeNodeID) []widget.TreeNodeID {
+	if t == nil {
+		return make([]widget.TreeNodeID, 0)
+	}
 	return t.ids[uid]
 }
 
@@ -88,6 +91,9 @@ func (t *TreeData[T]) Flat() []T {
 
 // IsBranch reports wether a node is a branch.
 func (t *TreeData[T]) IsBranch(uid widget.TreeNodeID) bool {
+	if t == nil {
+		return false
+	}
 	_, found := t.ids[uid]
 	return found
 }
