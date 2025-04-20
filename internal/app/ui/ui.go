@@ -515,7 +515,9 @@ func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Wi
 		myLog.Debug("completed", "duration", time.Since(start).Milliseconds())
 		return nil
 	}, float64(len(ff)), w)
-	m.Start()
+	fyne.Do(func() {
+		m.Start()
+	})
 }
 
 func (u *BaseUI) resetCharacter() {

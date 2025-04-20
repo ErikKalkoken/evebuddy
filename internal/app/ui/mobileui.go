@@ -170,8 +170,10 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 	)
 
 	u.characterAsset.OnRedraw = func(s string) {
-		navItemAssets.Supporting = s
-		characterList.Refresh()
+		fyne.Do(func() {
+			navItemAssets.Supporting = s
+			characterList.Refresh()
+		})
 	}
 
 	u.characterMail.OnUpdate = func(count int) {
@@ -179,8 +181,10 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		if count > 0 {
 			s = fmt.Sprintf("%s unread", humanize.Comma(int64(count)))
 		}
-		navItemMail.Supporting = s
-		characterList.Refresh()
+		fyne.Do(func() {
+			navItemMail.Supporting = s
+			characterList.Refresh()
+		})
 	}
 
 	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
@@ -190,18 +194,25 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		} else if count.ValueOrZero() > 0 {
 			s = fmt.Sprintf("%s unread", humanize.Comma(int64(count.ValueOrZero())))
 		}
-		navItemCommunications.Supporting = s
-		characterList.Refresh()
+		fyne.Do(func() {
+			navItemCommunications.Supporting = s
+			characterList.Refresh()
+		})
 	}
 
 	u.characterSkillQueue.OnUpdate = func(_, status string) {
-		navItemSkills.Supporting = status
-		characterList.Refresh()
+		fyne.Do(func() {
+			navItemSkills.Supporting = status
+			characterList.Refresh()
+		})
 	}
 
 	u.characterWalletJournal.OnUpdate = func(b string) {
-		navItemWallet.Supporting = "Balance: " + b
-		characterList.Refresh()
+		fyne.Do(func() {
+			navItemWallet.Supporting = "Balance: " + b
+			characterList.Refresh()
+
+		})
 	}
 
 	characterPage := newCharacterAppBar("Current Character", characterList)
@@ -260,8 +271,10 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 					if count > 0 {
 						s += fmt.Sprintf(" (%d)", count)
 					}
-					contractActive.Text = s
-					contractTabs.Refresh()
+					fyne.Do(func() {
+						contractActive.Text = s
+						contractTabs.Refresh()
+					})
 				}
 				crossNav.Push(iwidget.NewAppBar("Contracts", contractTabs))
 			},
@@ -281,8 +294,10 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 					if count > 0 {
 						s += fmt.Sprintf(" (%d)", count)
 					}
-					jobsActive.Text = s
-					jobsTab.Refresh()
+					fyne.Do(func() {
+						jobsActive.Text = s
+						jobsTab.Refresh()
+					})
 				}
 				crossNav.Push(iwidget.NewAppBar("Industry", jobsTab))
 			},
@@ -305,16 +320,20 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 	)
 	crossNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("All Characters", crossList))
 	u.colonies.OnUpdate = func(_, expired int) {
-		navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
-		crossList.Refresh()
+		fyne.Do(func() {
+			navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
+			crossList.Refresh()
+		})
 	}
 	u.overviewWealth.OnUpdate = func(wallet, assets float64) {
-		navItemWealth.Supporting = fmt.Sprintf(
-			"Wallet: %s • Assets: %s",
-			ihumanize.Number(wallet, 1),
-			ihumanize.Number(assets, 1),
-		)
-		crossList.Refresh()
+		fyne.Do(func() {
+			navItemWealth.Supporting = fmt.Sprintf(
+				"Wallet: %s • Assets: %s",
+				ihumanize.Number(wallet, 1),
+				ihumanize.Number(assets, 1),
+			)
+			crossList.Refresh()
+		})
 	}
 
 	// info destination
@@ -408,7 +427,10 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		navItemAbout,
 	)
 	u.manageCharacters.OnUpdate = func(characterCount int) {
-		navItemManageCharacters.Supporting = fmt.Sprintf("%d characters", characterCount)
+		fyne.Do(func() {
+			navItemManageCharacters.Supporting = fmt.Sprintf("%d characters", characterCount)
+			toolsList.Refresh()
+		})
 	}
 	moreNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("More", toolsList))
 
@@ -468,10 +490,12 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 				characterSelector.SetIcon(r)
 			})
 		})
-		u.characterMail.ResetCurrentFolder()
-		u.characterCommunications.ResetCurrentFolder()
-		characterNav.PopAll()
-		navBar.Select(0)
+		fyne.Do(func() {
+			u.characterMail.resetCurrentFolder()
+			u.characterCommunications.resetCurrentFolder()
+			characterNav.PopAll()
+			navBar.Select(0)
+		})
 	}
 
 	u.onAppFirstStarted = func() {

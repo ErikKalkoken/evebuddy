@@ -202,7 +202,7 @@ func (a *CharacterMails) makeFolderTree() *iwidget.Tree[FolderNode] {
 			return
 		}
 		a.lastFolder = n
-		a.SetCurrentFolder(n)
+		a.setCurrentFolder(n)
 	}
 	return tree
 }
@@ -221,7 +221,7 @@ func (a *CharacterMails) MakeFolderMenu() []*fyne.MenuItem {
 			s += fmt.Sprintf(" (%d)", f.UnreadCount)
 		}
 		it := fyne.NewMenuItem(s, func() {
-			a.SetCurrentFolder(f)
+			a.setCurrentFolder(f)
 		})
 		// if f == current {
 		// 	it.Disabled = true
@@ -252,7 +252,7 @@ func (a *CharacterMails) update2() {
 				a.folders.UnselectAll()
 				a.folders.ScrollToTop()
 				a.folders.Select(folderAll)
-				a.SetCurrentFolder(folderAll)
+				a.setCurrentFolder(folderAll)
 			} else {
 				a.headerRefresh()
 			}
@@ -439,11 +439,11 @@ func (a *CharacterMails) makeHeaderList() *widget.List {
 	return l
 }
 
-func (a *CharacterMails) ResetCurrentFolder() {
-	a.SetCurrentFolder(a.folderDefault)
+func (a *CharacterMails) resetCurrentFolder() {
+	a.setCurrentFolder(a.folderDefault)
 }
 
-func (a *CharacterMails) SetCurrentFolder(folder FolderNode) {
+func (a *CharacterMails) setCurrentFolder(folder FolderNode) {
 	a.CurrentFolder = optional.New(folder)
 	a.headerRefresh()
 	a.headerList.ScrollToTop()

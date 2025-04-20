@@ -177,11 +177,13 @@ func (a *CharacterFlyableShips) update() {
 
 func (a *CharacterFlyableShips) updateEntries() error {
 	if !a.u.HasCharacter() {
-		a.ships = make([]*app.CharacterShipAbility, 0)
-		a.grid.Refresh()
-		a.searchBox.SetText("")
-		a.groupSelect.SetOptions([]string{})
-		a.flyableSelect.SetOptions([]string{})
+		fyne.Do(func() {
+			a.ships = make([]*app.CharacterShipAbility, 0)
+			a.grid.Refresh()
+			a.searchBox.SetText("")
+			a.groupSelect.SetOptions([]string{})
+			a.flyableSelect.SetOptions([]string{})
+		})
 		return nil
 	}
 	characterID := a.u.CurrentCharacterID()
@@ -206,8 +208,6 @@ func (a *CharacterFlyableShips) updateEntries() error {
 			ships = append(ships, o)
 		}
 	}
-	a.ships = ships
-	a.grid.Refresh()
 	g := set.New[string]()
 	f := set.New[string]()
 	for _, o := range ships {
@@ -220,12 +220,16 @@ func (a *CharacterFlyableShips) updateEntries() error {
 	}
 	groups := g.ToSlice()
 	slices.Sort(groups)
-	a.groupSelect.SetOptions(groups)
 	flyable := f.ToSlice()
 	slices.Sort(flyable)
-	a.flyableSelect.SetOptions(flyable)
-	a.foundText.SetText(fmt.Sprintf("%d found", len(ships)))
-	a.foundText.Show()
+	fyne.Do(func() {
+		a.groupSelect.SetOptions(groups)
+		a.flyableSelect.SetOptions(flyable)
+		a.foundText.SetText(fmt.Sprintf("%d found", len(ships)))
+		a.foundText.Show()
+		a.ships = ships
+		a.grid.Refresh()
+	})
 	return nil
 }
 

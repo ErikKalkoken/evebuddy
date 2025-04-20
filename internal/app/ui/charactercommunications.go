@@ -265,7 +265,7 @@ func (a *CharacterCommunications) makeFolderTopText() (string, widget.Importance
 	return fmt.Sprintf("%s messages", ihumanize.OptionalComma(a.notificationsCount, "?")), widget.MediumImportance
 }
 
-func (a *CharacterCommunications) ResetCurrentFolder() {
+func (a *CharacterCommunications) resetCurrentFolder() {
 	a.setCurrentFolder(app.GroupUnread)
 }
 
