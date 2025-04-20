@@ -259,11 +259,15 @@ func (a *ManageCharacters) ShowAddCharacterDialog() {
 			a.u.updateStatus()
 			return nil
 		}()
-		d1.Hide()
-		if err != nil {
-			slog.Error("Failed to add a new character", "error", err)
-			a.u.ShowErrorDialog("Failed add a new character", err, a.window)
-		}
+		fyne.Do(func() {
+			d1.Hide()
+			if err != nil {
+				slog.Error("Failed to add a new character", "error", err)
+				a.u.ShowErrorDialog("Failed add a new character", err, a.window)
+			}
+		})
 	}()
-	d1.Show()
+	fyne.Do(func() {
+		d1.Show()
+	})
 }

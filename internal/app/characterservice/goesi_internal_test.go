@@ -24,7 +24,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 		pages := "3"
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v5/characters/99/assets/",
+			"https://esi.evetech.net/v4/characters/99/assets/",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -39,7 +39,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v5/characters/99/assets/?page=2",
+			"https://esi.evetech.net/v4/characters/99/assets/?page=2",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -54,7 +54,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v5/characters/99/assets/?page=3",
+			"https://esi.evetech.net/v4/characters/99/assets/?page=3",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -92,7 +92,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 		pages := "1"
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v5/characters/99/assets/",
+			"https://esi.evetech.net/v4/characters/99/assets/",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -123,7 +123,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v5/characters/99/assets/",
+			"https://esi.evetech.net/v4/characters/99/assets/",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -165,7 +165,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v5/characters/99/assets/",
+			"https://esi.evetech.net/v4/characters/99/assets/",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}).HeaderSet(http.Header{"X-Pages": []string{"invalid"}}))
 		// when
 		_, err := fetchFromESIWithPaging(

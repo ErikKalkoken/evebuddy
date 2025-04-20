@@ -48,7 +48,7 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 		  }`
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v1/universe/categories/6/",
+			`=~^https://esi\.evetech\.net/v\d+/universe/categories/\d+/`,
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
@@ -103,7 +103,7 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 		  }`
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v1/universe/groups/25/",
+			`=~^https://esi\.evetech\.net/v\d+/universe/groups/\d+/`,
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
@@ -177,7 +177,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		  }`
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v3/universe/types/587/",
+			`=~^https://esi\.evetech\.net/v\d+/universe/types/\d+/`,
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
@@ -220,7 +220,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		  }`
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v1/universe/categories/6/",
+			`=~^https://esi\.evetech\.net/v\d+/universe/categories/\d+/`,
 			httpmock.NewStringResponder(200, data1).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		data2 := `{
@@ -236,7 +236,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		  }`
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v1/universe/groups/25/",
+			`=~^https://esi\.evetech\.net/v\d+/universe/groups/\d+/`,
 			httpmock.NewStringResponder(200, data2).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		data3 := `{
@@ -248,7 +248,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		  }`
 		httpmock.RegisterResponder(
 			"GET",
-			"https://esi.evetech.net/v3/universe/types/587/",
+			`=~^https://esi\.evetech\.net/v\d+/universe/types/\d+/`,
 			httpmock.NewStringResponder(200, data3).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when

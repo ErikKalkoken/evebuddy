@@ -43,7 +43,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
-			"https://esi.evetech.net/v3/universe/names/",
+			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
 			func(req *http.Request) (*http.Response, error) {
 				resp, err := httpmock.NewJsonResponse(200, data)
 				if err != nil {
@@ -85,7 +85,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
-			"https://esi.evetech.net/v3/universe/names/",
+			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
 			func(req *http.Request) (*http.Response, error) {
 				resp, err := httpmock.NewJsonResponse(200, data)
 				if err != nil {
@@ -121,7 +121,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
-			"https://esi.evetech.net/v3/universe/names/",
+			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
 			func(req *http.Request) (*http.Response, error) {
 				resp, err := httpmock.NewJsonResponse(200, data)
 				if err != nil {
@@ -147,8 +147,11 @@ func TestAddMissingEveEntities(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		httpmock.RegisterResponder("POST", "https://esi.evetech.net/v3/universe/names/",
-			httpmock.NewStringResponder(404, ""))
+		httpmock.RegisterResponder(
+			"POST",
+			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			httpmock.NewStringResponder(404, ""),
+		)
 		// when
 		ids, err := s.AddMissingEntities(ctx, []int32{666})
 		// then
@@ -167,8 +170,11 @@ func TestAddMissingEveEntities(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		httpmock.RegisterResponder("POST", "https://esi.evetech.net/v3/universe/names/",
-			httpmock.NewStringResponder(404, ""))
+		httpmock.RegisterResponder(
+			"POST",
+			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			httpmock.NewStringResponder(404, ""),
+		)
 		// when
 		ids, err := s.AddMissingEntities(ctx, []int32{1})
 		// then
@@ -187,8 +193,11 @@ func TestAddMissingEveEntities(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		httpmock.RegisterResponder("POST", "https://esi.evetech.net/v3/universe/names/",
-			httpmock.NewStringResponder(404, ""))
+		httpmock.RegisterResponder(
+			"POST",
+			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			httpmock.NewStringResponder(404, ""),
+		)
 		// when
 		ids, err := s.AddMissingEntities(ctx, []int32{0})
 		// then
@@ -211,7 +220,8 @@ func TestAddMissingEveEntities(t *testing.T) {
 		}
 		httpmock.Reset()
 		httpmock.RegisterResponder(
-			"POST", "https://esi.evetech.net/v3/universe/names/",
+			"POST",
+			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
 			func(req *http.Request) (*http.Response, error) {
 				resp, err := httpmock.NewJsonResponse(200, data)
 				if err != nil {
@@ -221,9 +231,11 @@ func TestAddMissingEveEntities(t *testing.T) {
 			},
 		)
 		httpmock.RegisterMatcherResponder(
-			"POST", "https://esi.evetech.net/v3/universe/names/",
+			"POST",
+			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
 			httpmock.BodyContainsString("666"),
-			httpmock.NewStringResponder(404, `{"error":"Invalid ID"}`))
+			httpmock.NewStringResponder(404, `{"error":"Invalid ID"}`),
+		)
 		// when
 		_, err := s.AddMissingEntities(ctx, []int32{47, 666})
 		// then
