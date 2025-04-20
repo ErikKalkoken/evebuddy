@@ -86,24 +86,32 @@ func (c *PageBarCollection) NewPageBar(title string, buttons ...*widget.Button) 
 	return pb
 }
 
-func (c *PageBarCollection) Update() {
+func (c *PageBarCollection) update() {
 	if !c.u.HasCharacter() {
 		for _, pb := range c.bars {
-			pb.SetIcon(c.fallbackIcon)
+			fyne.Do(func() {
+				pb.SetIcon(c.fallbackIcon)
+			})
 		}
 		return
 	}
 	go c.u.updateAvatar(c.u.CurrentCharacterID(), func(r fyne.Resource) {
 		for _, pb := range c.bars {
-			pb.SetIcon(r)
+			fyne.Do(func() {
+				pb.SetIcon(r)
+			})
 		}
 	})
 	items := c.u.makeCharacterSwitchMenu(func() {
-		for _, pb := range c.bars {
-			pb.Refresh()
-		}
+		fyne.Do(func() {
+			for _, pb := range c.bars {
+				pb.Refresh()
+			}
+		})
 	})
 	for _, pb := range c.bars {
-		pb.SetMenu(items)
+		fyne.Do(func() {
+			pb.SetMenu(items)
+		})
 	}
 }

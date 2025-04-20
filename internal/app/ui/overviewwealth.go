@@ -72,19 +72,23 @@ func (a *OverviewWealth) makeCharts() *fyne.Container {
 	return c
 }
 
-func (a *OverviewWealth) Update() {
+func (a *OverviewWealth) update() {
 	data, characters, err := a.compileData()
 	if err != nil {
 		slog.Error("Failed to fetch data for charts", "err", err)
-		a.top.Text = fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err))
-		a.top.Importance = widget.DangerImportance
-		a.top.Refresh()
+		fyne.Do(func() {
+			a.top.Text = fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err))
+			a.top.Importance = widget.DangerImportance
+			a.top.Refresh()
+		})
 		return
 	}
 	if characters == 0 {
-		a.top.Text = "No characters"
-		a.top.Importance = widget.LowImportance
-		a.top.Refresh()
+		fyne.Do(func() {
+			a.top.Text = "No characters"
+			a.top.Importance = widget.LowImportance
+			a.top.Refresh()
+		})
 		return
 	}
 	cb := chartbuilder.New(a.u.MainWindow())
@@ -137,12 +141,15 @@ func (a *OverviewWealth) Update() {
 	charts[1] = charactersChart
 	charts[2] = assetsChart
 	charts[3] = walletChart
-	a.charts.Refresh()
 
 	totalText := ihumanize.Number(total, 1)
-	a.top.Text = fmt.Sprintf("%s ISK total wealth • %d characters", totalText, characters)
-	a.top.Importance = widget.MediumImportance
-	a.top.Refresh()
+
+	fyne.Do(func() {
+		a.top.Text = fmt.Sprintf("%s ISK total wealth • %d characters", totalText, characters)
+		a.top.Importance = widget.MediumImportance
+		a.top.Refresh()
+		a.charts.Refresh()
+	})
 
 	if a.OnUpdate != nil {
 		a.OnUpdate(totalWallet, totalAssets)

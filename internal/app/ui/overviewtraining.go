@@ -91,7 +91,7 @@ func (a *OverviewTraining) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *OverviewTraining) Update() {
+func (a *OverviewTraining) update() {
 	t, i, err := func() (string, widget.Importance, error) {
 		totalSP, err := a.updateCharacters()
 		if err != nil {
@@ -105,14 +105,16 @@ func (a *OverviewTraining) Update() {
 		return s, widget.MediumImportance, nil
 	}()
 	if err != nil {
-		slog.Error("Failed to refresh overview UI", "err", err)
+		slog.Error("Failed to refresh training UI", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
 	}
-	a.top.Text = t
-	a.top.Importance = i
-	a.top.Refresh()
-	a.body.Refresh()
+	fyne.Do(func() {
+		a.top.Text = t
+		a.top.Importance = i
+		a.top.Refresh()
+		a.body.Refresh()
+	})
 }
 
 func (a *OverviewTraining) updateCharacters() (optional.Optional[int], error) {

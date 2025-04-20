@@ -82,6 +82,6 @@ func TestCharacterAssets(t *testing.T) {
 		app := test.NewTempApp(t)
 		ui := NewBaseUI(BaseUIParams{App: app})
 		w := NewCharacterAssets(ui)
-		w.Update()
+		w.update()
 	})
 }

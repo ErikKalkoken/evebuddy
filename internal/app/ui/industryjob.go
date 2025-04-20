@@ -92,36 +92,32 @@ func (a *IndustryJobs) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *IndustryJobs) Update() {
-	if err := a.updateEntries(); err != nil {
-		slog.Error("Failed to refresh industry jobs UI", "err", err)
-		a.top.Text = fmt.Sprintf("ERROR: %s", ihumanize.Error(err))
-		a.top.Importance = widget.DangerImportance
-		a.top.Refresh()
-		a.top.Show()
-		return
-	}
-	a.top.Hide()
-	a.body.Refresh()
-}
-
-func (a *IndustryJobs) updateEntries() error {
+func (a *IndustryJobs) update() {
 	jobs, err := a.u.CharacterService().ListAllCharacterIndustryJob(context.TODO())
 	if err != nil {
-		return err
+		slog.Error("Failed to refresh industry jobs UI", "err", err)
+		fyne.Do(func() {
+			a.top.Text = fmt.Sprintf("ERROR: %s", ihumanize.Error(err))
+			a.top.Importance = widget.DangerImportance
+			a.top.Refresh()
+			a.top.Show()
+		})
+		return
 	}
 	if a.ShowActiveOnly {
 		a.jobs = xslices.Filter(jobs, func(o *app.CharacterIndustryJob) bool {
 			return o.IsActive()
 		})
-
 	} else {
 		a.jobs = jobs
 	}
 	if a.OnUpdate != nil {
 		a.OnUpdate(len(a.jobs))
 	}
-	return nil
+	fyne.Do(func() {
+		a.top.Hide()
+		a.body.Refresh()
+	})
 }
 
 func (a *IndustryJobs) showJob(r *app.CharacterIndustryJob) {

@@ -140,20 +140,23 @@ func (a *CharacterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 	return t
 }
 
-func (a *CharacterJumpClones) Update() {
+func (a *CharacterJumpClones) update() {
 	tree, err := a.newTreeData()
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
-		iwidget.SetRichText(a.top, &widget.TextSegment{
-			Text: "ERROR: " + a.u.ErrorDisplay(err),
-			Style: widget.RichTextStyle{
-				ColorName: theme.ColorNameError,
-			}})
-
+		fyne.Do(func() {
+			iwidget.SetRichText(a.top, &widget.TextSegment{
+				Text: "ERROR: " + a.u.ErrorDisplay(err),
+				Style: widget.RichTextStyle{
+					ColorName: theme.ColorNameError,
+				}})
+		})
 	} else {
-		a.RefreshTop()
+		fyne.Do(func() {
+			a.RefreshTop()
+			a.tree.Set(tree)
+		})
 	}
-	a.tree.Set(tree)
 	if a.OnReDraw != nil {
 		a.OnReDraw(a.ClonesCount())
 	}
@@ -268,7 +271,9 @@ func (a *CharacterJumpClones) StartUpdateTicker() {
 	ticker := time.NewTicker(time.Second * 15)
 	go func() {
 		for {
-			a.RefreshTop()
+			fyne.Do(func() {
+				a.RefreshTop()
+			})
 			<-ticker.C
 		}
 	}()

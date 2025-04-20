@@ -303,7 +303,9 @@ func NewSettingList(items []SettingItem) *SettingList {
 		})
 		go func() {
 			time.Sleep(w.SelectDelay)
-			w.UnselectAll()
+			fyne.Do(func() {
+				w.UnselectAll()
+			})
 		}()
 	}
 	w.HideSeparators = true

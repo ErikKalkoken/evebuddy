@@ -129,8 +129,10 @@ func (a *ManageCharacters) makeCharacterList() *widget.List {
 
 			icon := row[0].(*canvas.Image)
 			go a.u.updateAvatar(c.id, func(r fyne.Resource) {
-				icon.Resource = r
-				icon.Refresh()
+				fyne.Do(func() {
+					icon.Resource = r
+					icon.Refresh()
+				})
 			})
 
 			issue := row[2].(*widget.Label)
@@ -246,7 +248,9 @@ func (a *ManageCharacters) ShowAddCharacterDialog() {
 			} else if err != nil {
 				return err
 			}
-			a.Refresh()
+			fyne.Do(func() {
+				a.Refresh()
+			})
 			go a.u.updateCharacterAndRefreshIfNeeded(context.Background(), characterID, false)
 			if !a.u.HasCharacter() {
 				a.u.loadCharacter(characterID)

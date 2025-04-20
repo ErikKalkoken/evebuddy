@@ -37,8 +37,10 @@ func RefreshImageAsync(image *canvas.Image, loader func() (fyne.Resource, error)
 			slog.Warn("Failed to fetch image resource", "err", err)
 			r = theme.BrokenImageIcon()
 		}
-		image.Resource = r
-		image.Refresh()
+		fyne.Do(func() {
+			image.Resource = r
+			image.Refresh()
+		})
 	}()
 }
 
@@ -51,6 +53,8 @@ func RefreshTappableImageAsync(image *kxwidget.TappableImage, loader func() (fyn
 			slog.Warn("Failed to fetch image resource", "err", err)
 			r = theme.BrokenImageIcon()
 		}
-		image.SetResource(r)
+		fyne.Do(func() {
+			image.SetResource(r)
+		})
 	}()
 }

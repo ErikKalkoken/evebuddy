@@ -108,7 +108,7 @@ func (a *CharacterWalletTransaction) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *CharacterWalletTransaction) Update() {
+func (a *CharacterWalletTransaction) update() {
 	var t string
 	var i widget.Importance
 	if err := a.updateEntries(); err != nil {
@@ -118,10 +118,12 @@ func (a *CharacterWalletTransaction) Update() {
 	} else {
 		t, i = a.makeTopText()
 	}
-	a.top.Text = t
-	a.top.Importance = i
-	a.top.Refresh()
-	a.body.Refresh()
+	fyne.Do(func() {
+		a.top.Text = t
+		a.top.Importance = i
+		a.top.Refresh()
+		a.body.Refresh()
+	})
 }
 
 func (a *CharacterWalletTransaction) makeTopText() (string, widget.Importance) {

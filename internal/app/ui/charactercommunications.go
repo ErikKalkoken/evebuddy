@@ -193,12 +193,14 @@ func (a *CharacterCommunications) makeToolbar() *widget.Toolbar {
 	return toolbar
 }
 
-func (a *CharacterCommunications) Update() {
-	a.clearDetail()
+func (a *CharacterCommunications) update() {
 	a.notifications = make([]*app.CharacterNotification, 0)
-	a.notificationList.Refresh()
-	a.notificationList.UnselectAll()
-	a.notificationsTop.SetText("")
+	fyne.Do(func() {
+		a.notificationList.Refresh()
+		a.notificationList.UnselectAll()
+		a.notificationsTop.SetText("")
+		a.clearDetail()
+	})
 
 	var groupCounts map[app.NotificationGroup][]int
 	if characterID := a.u.CurrentCharacterID(); characterID != 0 {
@@ -244,10 +246,12 @@ func (a *CharacterCommunications) Update() {
 	})
 	a.notificationsCount = totalCount
 	a.folders = groups
-	a.folderList.Refresh()
-	a.folderList.UnselectAll()
 	a.foldersTop.Text, a.foldersTop.Importance = a.makeFolderTopText()
-	a.foldersTop.Refresh()
+	fyne.Do(func() {
+		a.folderList.Refresh()
+		a.folderList.UnselectAll()
+		a.foldersTop.Refresh()
+	})
 	if a.OnUpdate != nil {
 		a.OnUpdate(unreadCount)
 	}

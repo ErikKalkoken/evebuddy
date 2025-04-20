@@ -34,7 +34,7 @@ type sectionEntity struct {
 	ss   app.StatusSummary
 }
 
-func (se sectionEntity) IsGeneralSection() bool {
+func (se sectionEntity) isGeneralSection() bool {
 	return se.id == app.GeneralSectionEntityID
 }
 
@@ -44,7 +44,7 @@ type detailsItem struct {
 	importance widget.Importance
 }
 
-type UpdateStatus struct {
+type updateStatus struct {
 	widget.BaseWidget
 
 	charactersTop     *widget.Label
@@ -69,8 +69,8 @@ type UpdateStatus struct {
 	u                 *BaseUI
 }
 
-func NewUpdateStatus(u *BaseUI) *UpdateStatus {
-	a := &UpdateStatus{
+func newUpdateStatus(u *BaseUI) *updateStatus {
+	a := &updateStatus{
 		charactersTop:     appwidget.MakeTopLabel(),
 		details:           make([]detailsItem, 0),
 		detailsTop:        appwidget.MakeTopLabel(),
@@ -105,7 +105,7 @@ func NewUpdateStatus(u *BaseUI) *UpdateStatus {
 		details := container.NewBorder(a.top3, nil, nil, nil, a.detailsList)
 		menu := iwidget.NewIconButtonWithMenu(
 			theme.MoreVerticalIcon(),
-			fyne.NewMenu("", fyne.NewMenuItem(a.entitiesButton.Text, a.MakeUpdateAllAction())),
+			fyne.NewMenu("", fyne.NewMenuItem(a.entitiesButton.Text, a.makeUpdateAllAction())),
 		)
 		a.onEntitySelected = func(id int) {
 			a.nav.Push(
@@ -130,7 +130,7 @@ func NewUpdateStatus(u *BaseUI) *UpdateStatus {
 	return a
 }
 
-func (a *UpdateStatus) CreateRenderer() fyne.WidgetRenderer {
+func (a *updateStatus) CreateRenderer() fyne.WidgetRenderer {
 	var c fyne.CanvasObject
 	if a.u.IsMobile() {
 		ab := iwidget.NewAppBar("Home", a.entities)
@@ -149,7 +149,7 @@ func (a *UpdateStatus) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *UpdateStatus) makeEntityList() *widget.List {
+func (a *updateStatus) makeEntityList() *widget.List {
 	list := widget.NewList(
 		func() int {
 			return len(a.sectionEntities)
@@ -158,9 +158,9 @@ func (a *UpdateStatus) makeEntityList() *widget.List {
 			icon := iwidget.NewImageFromResource(icons.QuestionmarkSvg, fyne.NewSquareSize(app.IconUnitSize))
 			name := widget.NewLabel("Template")
 			status := widget.NewLabel("Template")
-			pb := widget.NewActivity()
-			pb.Stop()
-			row := container.NewHBox(icon, name, pb, layout.NewSpacer(), status)
+			spinner := widget.NewActivity()
+			spinner.Stop()
+			row := container.NewHBox(icon, name, spinner, layout.NewSpacer(), status)
 			return row
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -173,23 +173,25 @@ func (a *UpdateStatus) makeEntityList() *widget.List {
 			name.SetText(c.name)
 
 			icon := row[0].(*canvas.Image)
-			if c.IsGeneralSection() {
+			if c.isGeneralSection() {
 				icon.Resource = eveicon.FromName(eveicon.StarMap)
 				icon.Refresh()
 			} else {
 				go a.u.updateAvatar(c.id, func(r fyne.Resource) {
-					icon.Resource = r
-					icon.Refresh()
+					fyne.Do(func() {
+						icon.Resource = r
+						icon.Refresh()
+					})
 				})
 			}
 
-			pb := row[2].(*widget.Activity)
-			if c.ss.IsRunning {
-				pb.Start()
-				pb.Show()
+			spinner := row[2].(*widget.Activity)
+			if c.ss.IsRunning && !a.u.IsOffline() {
+				spinner.Start()
+				spinner.Show()
 			} else {
-				pb.Stop()
-				pb.Hide()
+				spinner.Stop()
+				spinner.Hide()
 			}
 
 			status := row[4].(*widget.Label)
@@ -209,8 +211,10 @@ func (a *UpdateStatus) makeEntityList() *widget.List {
 		a.selectedSectionID = -1
 		a.sectionList.UnselectAll()
 
-		a.entitiesButton.OnTapped = a.MakeUpdateAllAction()
-		a.entitiesButton.Enable()
+		if !a.u.IsOffline() {
+			a.entitiesButton.OnTapped = a.makeUpdateAllAction()
+			a.entitiesButton.Enable()
+		}
 		if a.onEntitySelected != nil {
 			a.onEntitySelected(id)
 			list.UnselectAll()
@@ -221,10 +225,10 @@ func (a *UpdateStatus) makeEntityList() *widget.List {
 	return list
 }
 
-func (a *UpdateStatus) MakeUpdateAllAction() func() {
+func (a *updateStatus) makeUpdateAllAction() func() {
 	return func() {
 		c := a.sectionEntities[a.selectedEntityID]
-		if c.IsGeneralSection() {
+		if c.isGeneralSection() {
 			a.u.updateGeneralSectionsAndRefreshIfNeeded(true)
 		} else {
 			a.u.updateCharacterAndRefreshIfNeeded(context.Background(), c.id, true)
@@ -232,16 +236,19 @@ func (a *UpdateStatus) MakeUpdateAllAction() func() {
 	}
 }
 
-func (a *UpdateStatus) Update() {
+func (a *updateStatus) update() {
 	if err := a.updateEntityList(); err != nil {
 		slog.Warn("failed to refresh entity list for status window", "error", err)
 	}
-	a.refreshSections()
-	a.refreshDetails()
-	a.charactersTop.SetText(fmt.Sprintf("Entities: %d", len(a.sectionEntities)))
+	fyne.Do(func() {
+		a.entityList.Refresh()
+		a.refreshSections()
+		a.charactersTop.SetText(fmt.Sprintf("Entities: %d", len(a.sectionEntities)))
+		a.refreshDetails()
+	})
 }
 
-func (a *UpdateStatus) updateEntityList() error {
+func (a *updateStatus) updateEntityList() error {
 	entities := make([]sectionEntity, 0)
 	cc := a.u.StatusCacheService().ListCharacters()
 	for _, c := range cc {
@@ -257,21 +264,20 @@ func (a *UpdateStatus) updateEntityList() error {
 	}
 	entities = append(entities, o)
 	a.sectionEntities = entities
-	a.entityList.Refresh()
 	return nil
 }
 
-func (a *UpdateStatus) makeSectionList() *widget.List {
+func (a *updateStatus) makeSectionList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.sections)
 		},
 		func() fyne.CanvasObject {
-			pb := widget.NewActivity()
-			pb.Stop()
+			spinner := widget.NewActivity()
+			spinner.Stop()
 			return container.NewHBox(
 				widget.NewLabel("Section name long"),
-				pb,
+				spinner,
 				layout.NewSpacer(),
 				widget.NewLabel("Status XXXX"),
 			)
@@ -290,13 +296,13 @@ func (a *UpdateStatus) makeSectionList() *widget.List {
 			status.Importance = i
 			status.Refresh()
 
-			pb := hbox[1].(*widget.Activity)
-			if cs.IsRunning() {
-				pb.Start()
-				pb.Show()
+			spinner := hbox[1].(*widget.Activity)
+			if cs.IsRunning() && !a.u.IsOffline() {
+				spinner.Start()
+				spinner.Show()
 			} else {
-				pb.Stop()
-				pb.Hide()
+				spinner.Stop()
+				spinner.Hide()
 			}
 		},
 	)
@@ -315,7 +321,7 @@ func (a *UpdateStatus) makeSectionList() *widget.List {
 	return l
 }
 
-func (a *UpdateStatus) refreshSections() {
+func (a *updateStatus) refreshSections() {
 	if a.selectedEntityID == -1 || a.selectedEntityID >= len(a.sectionEntities) {
 		return
 	}
@@ -325,7 +331,7 @@ func (a *UpdateStatus) refreshSections() {
 	a.sectionsTop.SetText(fmt.Sprintf("%s: All sections", se.name))
 }
 
-func (a *UpdateStatus) makeDetails() *widget.List {
+func (a *updateStatus) makeDetails() *widget.List {
 	rowLayout := kxlayout.NewColumns(100)
 	var l *widget.List
 	l = widget.NewList(
@@ -364,7 +370,7 @@ func (a *UpdateStatus) makeDetails() *widget.List {
 	return l
 }
 
-func (a *UpdateStatus) refreshDetails() {
+func (a *updateStatus) refreshDetails() {
 	id := a.selectedSectionID
 	if id == -1 || id >= len(a.sections) {
 		a.details = []detailsItem{}
@@ -400,12 +406,14 @@ func (a *UpdateStatus) refreshDetails() {
 	} else {
 		a.detailsTop.SetText("")
 	}
-	a.detailsButton.OnTapped = a.makeDetailsAction(es.EntityID, es.SectionID)
-	a.detailsButton.Enable()
+	if !a.u.IsOffline() {
+		a.detailsButton.OnTapped = a.makeDetailsAction(es.EntityID, es.SectionID)
+		a.detailsButton.Enable()
+	}
 	a.detailsList.Refresh()
 }
 
-func (a *UpdateStatus) makeDetailsAction(entityID int32, sectionID string) func() {
+func (a *updateStatus) makeDetailsAction(entityID int32, sectionID string) func() {
 	return func() {
 		if entityID == app.GeneralSectionEntityID {
 			go a.u.updateGeneralSectionAndRefreshIfNeeded(
@@ -417,7 +425,7 @@ func (a *UpdateStatus) makeDetailsAction(entityID int32, sectionID string) func(
 	}
 }
 
-func (a *UpdateStatus) StartTicker(ctx context.Context) {
+func (a *updateStatus) startTicker(ctx context.Context) {
 	ticker := time.NewTicker(updateStatusTicker)
 	go func() {
 		for {
@@ -425,7 +433,7 @@ func (a *UpdateStatus) StartTicker(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			default:
-				a.Update()
+				a.update()
 				<-ticker.C
 			}
 		}

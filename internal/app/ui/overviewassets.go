@@ -249,7 +249,7 @@ func (a *OverviewAssets) resetSearch() {
 	a.processData(-1)
 }
 
-func (a *OverviewAssets) Update() {
+func (a *OverviewAssets) update() {
 	var t string
 	var i widget.Importance
 	characterCount := a.characterCount()
@@ -267,14 +267,17 @@ func (a *OverviewAssets) Update() {
 	} else {
 		t, i = a.makeTopText(characterCount)
 	}
-	a.total.Text = t
-	a.total.Importance = i
-	a.total.Refresh()
-	a.body.Refresh()
+	fyne.Do(func() {
+		a.updateFoundInfo()
+		a.total.Text = t
+		a.total.Importance = i
+		a.total.Refresh()
+		a.body.Refresh()
+	})
 }
 
 func (a *OverviewAssets) loadData() (bool, error) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	cc, err := a.u.CharacterService().ListCharactersShort(ctx)
 	if err != nil {
 		return false, err
@@ -332,7 +335,6 @@ func (a *OverviewAssets) loadData() (bool, error) {
 	}
 	a.assetsFiltered = rows
 	a.assets = rows
-	a.updateFoundInfo()
 	return true, nil
 }
 

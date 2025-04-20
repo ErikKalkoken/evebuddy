@@ -2,7 +2,6 @@ package ui
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"strconv"
 	"time"
@@ -18,6 +17,7 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/github"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -36,7 +36,7 @@ const (
 	eveStatusError
 )
 
-type StatusBar struct {
+type statusBar struct {
 	widget.BaseWidget
 
 	characterCount *StatusBarItem
@@ -44,16 +44,17 @@ type StatusBar struct {
 	eveStatus      *StatusBarItem
 	eveStatusError string
 	infoText       *widget.Label
-	newVersionHint *fyne.Container
+	updateHint     *updateHint
 	u              *DesktopUI
 	updateStatus   *StatusBarItem
+	latestVersion  *widget.Label
+	currentVersion *widget.Label
 }
 
-func NewStatusBar(u *DesktopUI) *StatusBar {
-	a := &StatusBar{
-		infoText:       widget.NewLabel(""),
-		newVersionHint: container.NewHBox(),
-		u:              u,
+func newStatusBar(u *DesktopUI) *statusBar {
+	a := &statusBar{
+		infoText: widget.NewLabel(""),
+		u:        u,
 	}
 	a.ExtendBaseWidget(a)
 	a.characterCount = NewStatusBarItem(theme.NewThemedResource(icons.GroupSvg), "?", func() {
@@ -68,16 +69,18 @@ func NewStatusBar(u *DesktopUI) *StatusBar {
 		a.showClockDialog,
 	)
 	a.eveStatus = NewStatusBarItem(theme.MediaRecordIcon(), "?", a.showEveStatusDialog)
+	a.updateHint = newUpdateHint(u)
+	a.updateHint.Hide()
 	return a
 }
 
-func (a *StatusBar) CreateRenderer() fyne.WidgetRenderer {
+func (a *statusBar) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewVBox(
 		widget.NewSeparator(),
 		container.NewHBox(
 			a.infoText,
 			layout.NewSpacer(),
-			a.newVersionHint,
+			a.updateHint,
 			widget.NewSeparator(),
 			a.updateStatus,
 			widget.NewSeparator(),
@@ -90,16 +93,18 @@ func (a *StatusBar) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *StatusBar) showClockDialog() {
-	content := widget.NewRichTextFromMarkdown("")
-	d := dialog.NewCustom("EVE Clock", "Close", content, a.u.MainWindow())
+func (a *statusBar) showClockDialog() {
+	clock := iwidget.NewLabelWithSize("", theme.SizeNameHeadingText)
+	d := dialog.NewCustom("EVE Clock", "Close", clock, a.u.MainWindow())
 	a.u.ModifyShortcutsForDialog(d, a.u.MainWindow())
 	stop := make(chan struct{})
 	timer := time.NewTicker(1 * time.Second)
 	go func() {
 		for {
 			s := time.Now().UTC().Format("15:04:05")
-			content.ParseMarkdown(fmt.Sprintf("# %s", s))
+			fyne.Do(func() {
+				clock.SetText(s)
+			})
 			select {
 			case <-stop:
 				return
@@ -113,7 +118,7 @@ func (a *StatusBar) showClockDialog() {
 	d.Show()
 }
 
-func (a *StatusBar) showEveStatusDialog() {
+func (a *statusBar) showEveStatusDialog() {
 	var i widget.Importance
 	var text string
 	if a.eveStatusError == "" {
@@ -132,24 +137,30 @@ func (a *StatusBar) showEveStatusDialog() {
 	d.Resize(fyne.Size{Width: 400, Height: 200})
 }
 
-func (a *StatusBar) StartUpdateTicker() {
+func (a *statusBar) startUpdateTicker() {
 	clockTicker := time.NewTicker(clockUpdateTicker)
 	go func() {
 		for {
 			t := time.Now().UTC().Format("15:04")
-			a.eveClock.SetText(t)
+			fyne.Do(func() {
+				a.eveClock.SetText(t)
+			})
 			<-clockTicker.C
 		}
 	}()
 	if a.u.IsOffline() {
-		a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
-		a.updateUpdateStatus()
+		fyne.Do(func() {
+			a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
+			a.refreshUpdateStatus()
+		})
 		return
 	}
 	updateTicker := time.NewTicker(characterUpdateStatusTicker)
 	go func() {
 		for {
-			a.updateUpdateStatus()
+			fyne.Do(func() {
+				a.refreshUpdateStatus()
+			})
 			<-updateTicker.C
 		}
 	}()
@@ -173,54 +184,44 @@ func (a *StatusBar) StartUpdateTicker() {
 				t = arg.Sprintf("%d players", x.PlayerCount)
 				s = eveStatusOnline
 			}
-			a.setEveStatus(s, t, errorMessage)
+			fyne.Do(func() {
+				a.setEveStatus(s, t, errorMessage)
+			})
 			<-esiStatusTicker.C
 		}
 	}()
-	go func() {
-		v, err := a.u.availableUpdate()
-		if err != nil {
-			slog.Error("fetch latest github version for download hint", "err", err)
-			return
-		}
-		if !v.IsRemoteNewer {
-			return
-		}
-		l := iwidget.NewCustomHyperlink("Update available", func() {
-			c := container.NewVBox(
-				container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), widget.NewLabel(v.Latest)),
-				container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), widget.NewLabel(v.Local)),
-			)
-			u := a.u.websiteRootURL().JoinPath("releases")
-			d := dialog.NewCustomConfirm("Update available", "Download", "Close", c, func(ok bool) {
-				if !ok {
-					return
-				}
-				if err := a.u.App().OpenURL(u); err != nil {
-					a.u.ShowErrorDialog("Failed to open download page", err, a.u.MainWindow())
-				}
-			}, a.u.MainWindow(),
-			)
-			a.u.ModifyShortcutsForDialog(d, a.u.MainWindow())
-			d.Show()
-		})
-		a.newVersionHint.Add(widget.NewSeparator())
-		a.newVersionHint.Add(l)
-	}()
+	if !a.u.IsOffline() {
+		go func() {
+			v, err := a.u.availableUpdate()
+			if err != nil {
+				slog.Error("fetch latest github version for download hint", "err", err)
+				return
+			}
+			if !v.IsRemoteNewer {
+				return
+			}
+			fyne.Do(func() {
+				a.updateHint.set(v)
+				a.updateHint.Show()
+			})
+		}()
+	}
 }
 
-func (a *StatusBar) Update() {
+func (a *statusBar) update() {
 	x := a.u.StatusCacheService().ListCharacters()
-	a.characterCount.SetText(strconv.Itoa(len(x)))
-	a.updateUpdateStatus()
+	fyne.Do(func() {
+		a.characterCount.SetText(strconv.Itoa(len(x)))
+		a.refreshUpdateStatus()
+	})
 }
 
-func (a *StatusBar) updateUpdateStatus() {
+func (a *statusBar) refreshUpdateStatus() {
 	x := a.u.StatusCacheService().Summary()
 	a.updateStatus.SetTextAndImportance(x.Display(), x.Status().ToImportance())
 }
 
-func (a *StatusBar) setEveStatus(status eveStatus, title, errorMessage string) {
+func (a *statusBar) setEveStatus(status eveStatus, title, errorMessage string) {
 	a.eveStatusError = errorMessage
 	r1 := theme.MediaRecordIcon()
 	var r2 fyne.Resource
@@ -238,19 +239,11 @@ func (a *StatusBar) setEveStatus(status eveStatus, title, errorMessage string) {
 	a.eveStatus.SetText(title)
 }
 
-func (s *StatusBar) SetInfo(text string) {
+func (s *statusBar) SetInfo(text string) {
 	s.setInfo(text, widget.MediumImportance)
 }
 
-func (s *StatusBar) SetError(text string) {
-	s.setInfo(text, widget.DangerImportance)
-}
-
-func (s *StatusBar) ClearInfo() {
-	s.SetInfo("")
-}
-
-func (s *StatusBar) setInfo(text string, importance widget.Importance) {
+func (s *statusBar) setInfo(text string, importance widget.Importance) {
 	s.infoText.Text = text
 	s.infoText.Importance = importance
 	s.infoText.Refresh()
@@ -334,5 +327,51 @@ func (w *StatusBarItem) CreateRenderer() fyne.WidgetRenderer {
 		c.Add(w.icon)
 	}
 	c.Add(w.label)
+	return widget.NewSimpleRenderer(c)
+}
+
+type updateHint struct {
+	widget.BaseWidget
+
+	latest  *widget.Label
+	current *widget.Label
+	u       *DesktopUI
+}
+
+func newUpdateHint(u *DesktopUI) *updateHint {
+	w := &updateHint{
+		latest:  widget.NewLabel(""),
+		current: widget.NewLabel(""),
+		u:       u,
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *updateHint) set(v github.VersionInfo) {
+	w.current.SetText(v.Local)
+	w.latest.SetText(v.Latest)
+}
+
+func (w *updateHint) CreateRenderer() fyne.WidgetRenderer {
+	l := iwidget.NewCustomHyperlink("Update available", func() {
+		c := container.NewVBox(
+			container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), w.latest),
+			container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), w.current),
+		)
+		u := w.u.websiteRootURL().JoinPath("releases")
+		d := dialog.NewCustomConfirm("Update available", "Download", "Close", c, func(ok bool) {
+			if !ok {
+				return
+			}
+			if err := w.u.App().OpenURL(u); err != nil {
+				w.u.ShowErrorDialog("Failed to open download page", err, w.u.MainWindow())
+			}
+		}, w.u.MainWindow(),
+		)
+		w.u.ModifyShortcutsForDialog(d, w.u.MainWindow())
+		d.Show()
+	})
+	c := container.NewHBox(l, widget.NewSeparator())
 	return widget.NewSimpleRenderer(c)
 }

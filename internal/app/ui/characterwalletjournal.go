@@ -126,7 +126,7 @@ func (a *CharacterWalletJournal) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *CharacterWalletJournal) Update() {
+func (a *CharacterWalletJournal) update() {
 	var t string
 	var i widget.Importance
 	if err := a.updateEntries(); err != nil {
@@ -136,10 +136,12 @@ func (a *CharacterWalletJournal) Update() {
 	} else {
 		t, i = a.makeTopText()
 	}
-	a.top.Text = t
-	a.top.Importance = i
-	a.top.Refresh()
-	a.body.Refresh()
+	fyne.Do(func() {
+		a.top.Text = t
+		a.top.Importance = i
+		a.top.Refresh()
+		a.body.Refresh()
+	})
 }
 
 func (a *CharacterWalletJournal) makeTopText() (string, widget.Importance) {

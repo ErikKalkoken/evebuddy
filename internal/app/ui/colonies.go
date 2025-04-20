@@ -94,15 +94,17 @@ func (a *Colonies) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *Colonies) Update() {
+func (a *Colonies) update() {
 	var s string
 	var i widget.Importance
 	var total, expired int
-	if err := a.updateEntries(); err != nil {
+	planets, err := a.u.CharacterService().ListAllPlanets(context.Background())
+	if err != nil {
 		slog.Error("Failed to refresh colonies UI", "err", err)
 		s = "ERROR"
 		i = widget.DangerImportance
 	} else {
+		a.planets = planets
 		total = len(a.planets)
 		for _, c := range a.planets {
 			if c.IsExpired() {
@@ -114,22 +116,15 @@ func (a *Colonies) Update() {
 			s += fmt.Sprintf(" • %d expired", expired)
 		}
 	}
-	a.top.Text = s
-	a.top.Importance = i
-	a.top.Refresh()
-	a.body.Refresh()
+	fyne.Do(func() {
+		a.top.Text = s
+		a.top.Importance = i
+		a.top.Refresh()
+		a.body.Refresh()
+	})
 	if a.OnUpdate != nil {
 		a.OnUpdate(total, expired)
 	}
-}
-
-func (a *Colonies) updateEntries() error {
-	oo, err := a.u.CharacterService().ListAllPlanets(context.TODO())
-	if err != nil {
-		return err
-	}
-	a.planets = oo
-	return nil
 }
 
 func (a *Colonies) showColony(cp *app.CharacterPlanet) {

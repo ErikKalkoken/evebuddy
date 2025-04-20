@@ -447,19 +447,19 @@ func (u *BaseUI) updateCharacter() {
 
 func (u *BaseUI) updateCharacterMap() map[string]func() {
 	ff := map[string]func(){
-		"assets":            u.characterAsset.Update,
-		"attributes":        u.characterAttributes.Update,
-		"biography":         u.characterBiography.Update,
-		"implants":          u.characterImplants.Update,
-		"jumpClones":        u.characterJumpClones.Update,
-		"mail":              u.characterMail.Update,
-		"notifications":     u.characterCommunications.Update,
-		"sheet":             u.characterSheet.Update,
-		"ships":             u.characterShips.Update,
-		"skillCatalogue":    u.characterSkillCatalogue.Update,
-		"skillqueue":        u.characterSkillQueue.Update,
-		"walletJournal":     u.characterWalletJournal.Update,
-		"walletTransaction": u.characterWalletTransaction.Update,
+		"assets":            u.characterAsset.update,
+		"attributes":        u.characterAttributes.update,
+		"biography":         u.characterBiography.update,
+		"implants":          u.characterImplants.update,
+		"jumpClones":        u.characterJumpClones.update,
+		"mail":              u.characterMail.update,
+		"notifications":     u.characterCommunications.update,
+		"sheet":             u.characterSheet.update,
+		"ships":             u.characterShips.update,
+		"skillCatalogue":    u.characterSkillCatalogue.update,
+		"skillqueue":        u.characterSkillQueue.update,
+		"walletJournal":     u.characterWalletJournal.update,
+		"walletTransaction": u.characterWalletTransaction.update,
 	}
 	return ff
 }
@@ -471,17 +471,17 @@ func (u *BaseUI) UpdateCrossPages() {
 
 func (u *BaseUI) updateCrossPagesMap() map[string]func() {
 	ff := map[string]func(){
-		"assetSearch":       u.overviewAssets.Update,
-		"contractsAll":      u.contractsAll.Update,
-		"contractsActive":   u.contractsActive.Update,
-		"cloneSeach":        u.overviewClones.Update,
-		"colony":            u.colonies.Update,
-		"industryJobAll":    u.industryJobsAll.Update,
-		"industryJobActive": u.industryJobsActive.Update,
-		"locations":         u.overviewLocations.Update,
-		"overview":          u.overviewCharacters.Update,
-		"training":          u.overviewTraining.Update,
-		"wealth":            u.overviewWealth.Update,
+		"assetSearch":       u.overviewAssets.update,
+		"contractsAll":      u.contractsAll.update,
+		"contractsActive":   u.contractsActive.update,
+		"cloneSeach":        u.overviewClones.update,
+		"colony":            u.colonies.update,
+		"industryJobAll":    u.industryJobsAll.update,
+		"industryJobActive": u.industryJobsActive.update,
+		"locations":         u.overviewLocations.update,
+		"overview":          u.overviewCharacters.update,
+		"training":          u.overviewTraining.update,
+		"wealth":            u.overviewWealth.update,
 	}
 	if u.onRefreshCross != nil {
 		ff["onRefreshCross"] = u.onRefreshCross
@@ -503,9 +503,11 @@ func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Wi
 				start2 := time.Now()
 				f()
 				x := completed.Add(1)
-				if err := p.Set(float64(x)); err != nil {
-					myLog.Warn("failed set progress", "error", err)
-				}
+				fyne.Do(func() {
+					if err := p.Set(float64(x)); err != nil {
+						myLog.Warn("failed set progress", "error", err)
+					}
+				})
 				myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
 			}()
 		}
@@ -559,7 +561,7 @@ func (u *BaseUI) updateAvatar(id int32, setIcon func(fyne.Resource)) {
 	setIcon(r2)
 }
 
-func (u *BaseUI) UpdateMailIndicator() {
+func (u *BaseUI) updateMailIndicator() {
 	if u.ShowMailIndicator == nil || u.HideMailIndicator == nil {
 		return
 	}
@@ -608,20 +610,26 @@ func (u *BaseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 			wg.Add(1)
 			go u.updateAvatar(c.ID, func(r fyne.Resource) {
 				defer wg.Done()
-				it.Icon = r
+				fyne.Do(func() {
+					it.Icon = r
+				})
 			})
 		}
 		items = append(items, it)
 	}
 	go func() {
 		wg.Wait()
-		refresh()
+		fyne.Do(func() {
+			refresh()
+		})
 	}()
 	return items
 }
 
 func (u *BaseUI) sendDesktopNotification(title, content string) {
-	u.app.SendNotification(fyne.NewNotification(title, content))
+	fyne.Do(func() {
+		u.app.SendNotification(fyne.NewNotification(title, content))
+	})
 	slog.Info("desktop notification sent", "title", title, "content", content)
 }
 
@@ -658,18 +666,18 @@ func (u *BaseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 	switch section {
 	case app.SectionEveCategories:
 		if needsRefresh {
-			u.characterShips.Update()
-			u.characterSkillCatalogue.Refresh()
+			u.characterShips.update()
+			u.characterSkillCatalogue.update()
 		}
 	case app.SectionEveCharacters:
 		if needsRefresh {
 			u.reloadCurrentCharacter()
-			u.overviewCharacters.Update()
+			u.overviewCharacters.update()
 		}
 	case app.SectionEveMarketPrices:
-		u.characterAsset.Update()
-		u.overviewCharacters.Update()
-		u.overviewAssets.Update()
+		u.characterAsset.update()
+		u.overviewCharacters.update()
+		u.overviewAssets.update()
 		u.reloadCurrentCharacter()
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the update ticker refresh: %s", section))
@@ -780,22 +788,22 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	switch s {
 	case app.SectionAssets:
 		if needsRefresh {
-			u.overviewAssets.Update()
-			u.overviewWealth.Update()
+			u.overviewAssets.update()
+			u.overviewWealth.update()
 			if isShown {
 				u.reloadCurrentCharacter()
-				u.characterAsset.Update()
-				u.characterSheet.Update()
+				u.characterAsset.update()
+				u.characterSheet.update()
 			}
 		}
 	case app.SectionAttributes:
 		if isShown && needsRefresh {
-			u.characterAttributes.Update()
+			u.characterAttributes.update()
 		}
 	case app.SectionContracts:
 		if needsRefresh {
-			u.contractsActive.Update()
-			u.contractsAll.Update()
+			u.contractsActive.update()
+			u.contractsAll.update()
 		}
 		if u.Settings().NotifyContractsEnabled() {
 			go func() {
@@ -807,47 +815,47 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionImplants:
 		if isShown && needsRefresh {
-			u.characterImplants.Update()
+			u.characterImplants.update()
 		}
 	case app.SectionJumpClones:
 		if needsRefresh {
-			u.overviewCharacters.Update()
-			u.overviewClones.Update()
+			u.overviewCharacters.update()
+			u.overviewClones.update()
 			if isShown {
 				u.reloadCurrentCharacter()
-				u.characterJumpClones.Update()
+				u.characterJumpClones.update()
 			}
 		}
 	case app.SectionIndustryJobs:
 		if needsRefresh {
-			u.industryJobsAll.Update()
-			u.industryJobsActive.Update()
+			u.industryJobsAll.update()
+			u.industryJobsActive.update()
 		}
 	case app.SectionLocation, app.SectionOnline, app.SectionShip:
 		if needsRefresh {
-			u.overviewLocations.Update()
+			u.overviewLocations.update()
 			if isShown {
 				u.reloadCurrentCharacter()
 			}
 		}
 	case app.SectionPlanets:
 		if needsRefresh {
-			u.colonies.Update()
+			u.colonies.update()
 			u.notifyExpiredExtractionsIfNeeded(ctx, characterID)
 		}
 	case app.SectionMailLabels, app.SectionMailLists:
 		if needsRefresh {
-			u.overviewCharacters.Update()
+			u.overviewCharacters.update()
 			if isShown {
-				u.characterMail.Update()
+				u.characterMail.update()
 			}
 		}
 	case app.SectionMails:
 		if needsRefresh {
-			go u.overviewCharacters.Update()
-			go u.UpdateMailIndicator()
+			go u.overviewCharacters.update()
+			go u.updateMailIndicator()
 			if isShown {
-				u.characterMail.Update()
+				u.characterMail.update()
 			}
 		}
 		if u.Settings().NotifyMailsEnabled() {
@@ -860,24 +868,31 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionNotifications:
 		if isShown && needsRefresh {
-			u.characterCommunications.Update()
+			u.characterCommunications.update()
 		}
 		if u.Settings().NotifyCommunicationsEnabled() {
 			go func() {
 				earliest := u.Settings().NotifyCommunicationsEarliest()
 				typesEnabled := u.Settings().NotificationTypesEnabled()
-				if err := u.CharacterService().NotifyCommunications(ctx, characterID, earliest, typesEnabled, u.sendDesktopNotification); err != nil {
+				err := u.CharacterService().NotifyCommunications(
+					ctx,
+					characterID,
+					earliest,
+					typesEnabled,
+					u.sendDesktopNotification,
+				)
+				if err != nil {
 					slog.Error("notify communications", "characterID", characterID, "error", err)
 				}
 			}()
 		}
 	case app.SectionSkills:
 		if needsRefresh {
-			u.overviewTraining.Update()
+			u.overviewTraining.update()
 			if isShown {
 				u.reloadCurrentCharacter()
-				u.characterSkillCatalogue.Refresh()
-				u.characterShips.Update()
+				u.characterSkillCatalogue.update()
+				u.characterShips.update()
 			}
 		}
 
@@ -889,28 +904,28 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			}
 		}
 		if isShown {
-			u.characterSkillQueue.Update()
+			u.characterSkillQueue.update()
 		}
 		if needsRefresh {
-			u.overviewTraining.Update()
+			u.overviewTraining.update()
 			u.notifyExpiredTrainingIfneeded(ctx, characterID)
 		}
 	case app.SectionWalletBalance:
 		if needsRefresh {
-			u.overviewCharacters.Update()
-			u.overviewWealth.Update()
+			u.overviewCharacters.update()
+			u.overviewWealth.update()
 			if isShown {
 				u.reloadCurrentCharacter()
-				u.characterAsset.Update()
+				u.characterAsset.update()
 			}
 		}
 	case app.SectionWalletJournal:
 		if isShown && needsRefresh {
-			u.characterWalletJournal.Update()
+			u.characterWalletJournal.update()
 		}
 	case app.SectionWalletTransactions:
 		if isShown && needsRefresh {
-			u.characterWalletTransaction.Update()
+			u.characterWalletTransaction.update()
 		}
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the update ticker: %s", s))
@@ -921,7 +936,8 @@ func (u *BaseUI) notifyExpiredTrainingIfneeded(ctx context.Context, characerID i
 	if u.Settings().NotifyTrainingEnabled() {
 		go func() {
 			// TODO: earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyTrainingEarliest)
-			if err := u.CharacterService().NotifyExpiredTraining(ctx, characerID, u.sendDesktopNotification); err != nil {
+			err := u.CharacterService().NotifyExpiredTraining(ctx, characerID, u.sendDesktopNotification)
+			if err != nil {
 				slog.Error("notify expired training", "error", err)
 			}
 		}()
@@ -932,7 +948,8 @@ func (u *BaseUI) notifyExpiredExtractionsIfNeeded(ctx context.Context, character
 	if u.Settings().NotifyPIEnabled() {
 		go func() {
 			earliest := u.Settings().NotifyPIEarliest()
-			if err := u.CharacterService().NotifyExpiredExtractions(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
+			err := u.CharacterService().NotifyExpiredExtractions(ctx, characterID, earliest, u.sendDesktopNotification)
+			if err != nil {
 				slog.Error("notify expired extractions", "characterID", characterID, "error", err)
 			}
 		}()
@@ -996,12 +1013,12 @@ func (u *BaseUI) showUpdateStatusWindow() {
 		return
 	}
 	w := u.app.NewWindow(u.MakeWindowTitle("Update Status"))
-	a := NewUpdateStatus(u)
-	a.Update()
+	a := newUpdateStatus(u)
+	a.update()
 	w.SetContent(a)
 	w.Resize(fyne.Size{Width: 1100, Height: 500})
 	ctx, cancel := context.WithCancel(context.Background())
-	a.StartTicker(ctx)
+	a.startTicker(ctx)
 	w.SetOnClosed(func() {
 		cancel()
 		u.statusWindow = nil
@@ -1087,12 +1104,14 @@ func (u *BaseUI) makeAboutPage() fyne.CanvasObject {
 		} else {
 			s = v.Latest
 		}
-		latest.Text = s
-		latest.TextStyle.Bold = isBold
-		latest.Importance = i
-		latest.Refresh()
-		spinner.Hide()
-		latest.Show()
+		fyne.Do(func() {
+			latest.Text = s
+			latest.TextStyle.Bold = isBold
+			latest.Importance = i
+			latest.Refresh()
+			spinner.Hide()
+			latest.Show()
+		})
 	}()
 	title := iwidget.NewLabelWithSize(u.appName(), theme.SizeNameSubHeadingText)
 	title.TextStyle.Bold = true

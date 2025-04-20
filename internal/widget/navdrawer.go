@@ -22,7 +22,6 @@ type navItemVariant uint
 
 const (
 	navUndefined navItemVariant = iota
-	navAction
 	navPage
 	navSectionLabel
 	navSeparator
@@ -38,14 +37,6 @@ type NavItem struct {
 	stackIndex int
 	text       string
 	variant    navItemVariant
-}
-
-func NewNavAction(text string, icon fyne.Resource, action func()) *NavItem {
-	it := newNavItem(navAction)
-	it.text = text
-	it.icon = icon
-	it.action = action
-	return it
 }
 
 func NewNavPage(text string, icon fyne.Resource, content fyne.CanvasObject) *NavItem {
@@ -201,10 +192,6 @@ func (w *NavDrawer) makeList() *widget.List {
 				icon.Hide()
 				spacer.Hide()
 				badge.Hide()
-			case navAction:
-				title.SetText(it.text)
-				showIcon()
-				badge.Hide()
 			}
 			list.SetItemHeight(id, co.(*fyne.Container).MinSize().Height)
 		},
@@ -216,11 +203,6 @@ func (w *NavDrawer) makeList() *widget.List {
 		}
 		it := w.items[id]
 		if it.isDisabled || it.variant == navSeparator || it.variant == navSectionLabel {
-			list.UnselectAll()
-			return
-		}
-		if it.variant == navAction {
-			go it.action()
 			list.UnselectAll()
 			return
 		}

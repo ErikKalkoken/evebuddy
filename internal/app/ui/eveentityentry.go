@@ -171,8 +171,10 @@ func (w *EveEntityEntry) update() {
 						slog.Error("fetch eve entity avatar", "error", err)
 						return
 					}
-					nameItem.Icon = res
-					pm.Refresh()
+					fyne.Do(func() {
+						nameItem.Icon = res
+						pm.Refresh()
+					})
 				}()
 			}
 			w.main.Add(container.New(colums, label, badge))
@@ -263,8 +265,10 @@ func (w *eveEntityBadge) CreateRenderer() fyne.WidgetRenderer {
 			slog.Error("fetch eve entity avatar", "error", err)
 			res = w.fallbackIcon
 		}
-		icon.Resource = res
-		icon.Refresh()
+		fyne.Do(func() {
+			icon.Resource = res
+			icon.Refresh()
+		})
 	}()
 	return widget.NewSimpleRenderer(c)
 }

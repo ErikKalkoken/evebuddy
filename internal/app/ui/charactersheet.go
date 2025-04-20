@@ -70,77 +70,78 @@ func NewSheet(u *BaseUI) *CharacterSheet {
 	return w
 }
 
-func (a *CharacterSheet) Update() {
+func (a *CharacterSheet) update() {
 	c := a.u.CurrentCharacter()
 	if c == nil || c.EveCharacter == nil {
-		a.name.Text = "No character..."
-		a.name.Importance = widget.WarningImportance
+		fyne.Do(func() {
+			a.name.Text = "No character..."
+			a.name.Importance = widget.WarningImportance
+			a.name.Refresh()
+		})
 		return
 	}
-	a.name.SetText(c.EveCharacter.Name)
-	a.race.SetText(c.EveCharacter.Race.Name)
-	a.race.OnTapped = func() {
-		a.u.ShowRaceInfoWindow(c.EveCharacter.Race.ID)
-	}
-	a.born.SetText(c.EveCharacter.Birthday.Format(app.DateTimeFormat))
-	a.security.SetText(fmt.Sprintf("%.1f", c.EveCharacter.SecurityStatus))
-	if c.Home != nil {
-		a.home.Segments = c.Home.DisplayRichText()
-		a.home.OnTapped = func() {
-			a.u.ShowLocationInfoWindow(c.Home.ID)
+	fyne.Do(func() {
+		a.name.SetText(c.EveCharacter.Name)
+		a.race.SetText(c.EveCharacter.Race.Name)
+		a.born.SetText(c.EveCharacter.Birthday.Format(app.DateTimeFormat))
+		a.security.SetText(fmt.Sprintf("%.1f", c.EveCharacter.SecurityStatus))
+		if c.Home != nil {
+			a.home.Segments = c.Home.DisplayRichText()
+			a.home.OnTapped = func() {
+				a.u.ShowLocationInfoWindow(c.Home.ID)
+			}
+			a.home.Refresh()
+		} else {
+			a.home.ParseMarkdown("")
 		}
-		a.home.Refresh()
-	} else {
-		a.home.ParseMarkdown("")
-	}
-	a.sp.SetText(ihumanize.OptionalComma(c.TotalSP, "?"))
-	if c.AssetValue.IsEmpty() || c.WalletBalance.IsEmpty() {
-		a.wealth.SetText("?")
-	} else {
-		v := c.AssetValue.ValueOrZero() + c.WalletBalance.ValueOrZero()
-		a.wealth.SetText(humanize.Comma(int64(v)) + " ISK")
-	}
-	a.portrait.OnTapped = func() {
-		a.u.ShowInfoWindow(app.EveEntityCharacter, c.ID)
-	}
+		a.sp.SetText(ihumanize.OptionalComma(c.TotalSP, "?"))
+		if c.AssetValue.IsEmpty() || c.WalletBalance.IsEmpty() {
+			a.wealth.SetText("?")
+		} else {
+			v := c.AssetValue.ValueOrZero() + c.WalletBalance.ValueOrZero()
+			a.wealth.SetText(humanize.Comma(int64(v)) + " ISK")
+		}
+		a.portrait.OnTapped = func() {
+			a.u.ShowInfoWindow(app.EveEntityCharacter, c.ID)
+		}
+		a.corporationLogo.OnTapped = func() {
+			a.u.ShowInfoWindow(app.EveEntityCorporation, c.EveCharacter.Corporation.ID)
+		}
+		if c.EveCharacter.Alliance != nil {
+			a.allianceLogo.OnTapped = func() {
+				a.u.ShowInfoWindow(app.EveEntityAlliance, c.EveCharacter.Alliance.ID)
+			}
+			a.allianceLogo.Show()
+		} else {
+			a.allianceLogo.Hide()
+		}
+		if c.EveCharacter.Faction != nil {
+			a.factionLogo.OnTapped = func() {
+				a.u.ShowInfoWindow(app.EveEntityFaction, c.EveCharacter.Faction.ID)
+			}
+			a.factionLogo.Show()
+		} else {
+			a.factionLogo.Hide()
+		}
+		a.race.OnTapped = func() {
+			a.u.ShowRaceInfoWindow(c.EveCharacter.Race.ID)
+		}
+	})
 	iwidget.RefreshTappableImageAsync(a.portrait, func() (fyne.Resource, error) {
 		return a.u.EveImageService().CharacterPortrait(c.ID, 512)
 	})
-	a.corporationLogo.OnTapped = func() {
-		a.u.ShowInfoWindow(app.EveEntityCorporation, c.EveCharacter.Corporation.ID)
-	}
 	iwidget.RefreshTappableImageAsync(a.corporationLogo, func() (fyne.Resource, error) {
 		return a.u.EveImageService().CorporationLogo(c.EveCharacter.Corporation.ID, app.IconPixelSize)
 	})
 	if c.EveCharacter.Alliance != nil {
-		a.allianceLogo.OnTapped = func() {
-			a.u.ShowInfoWindow(app.EveEntityAlliance, c.EveCharacter.Alliance.ID)
-		}
 		iwidget.RefreshTappableImageAsync(a.allianceLogo, func() (fyne.Resource, error) {
-			r, err := a.u.EveImageService().AllianceLogo(c.EveCharacter.Alliance.ID, app.IconPixelSize)
-			if err != nil {
-				return nil, err
-			}
-			a.allianceLogo.Show()
-			return r, nil
+			return a.u.EveImageService().AllianceLogo(c.EveCharacter.Alliance.ID, app.IconPixelSize)
 		})
-	} else {
-		a.allianceLogo.Hide()
 	}
 	if c.EveCharacter.Faction != nil {
-		a.factionLogo.OnTapped = func() {
-			a.u.ShowInfoWindow(app.EveEntityFaction, c.EveCharacter.Faction.ID)
-		}
 		iwidget.RefreshTappableImageAsync(a.factionLogo, func() (fyne.Resource, error) {
-			r, err := a.u.EveImageService().FactionLogo(c.EveCharacter.Faction.ID, app.IconPixelSize)
-			if err != nil {
-				return nil, err
-			}
-			a.factionLogo.Show()
-			return r, nil
+			return a.u.EveImageService().FactionLogo(c.EveCharacter.Faction.ID, app.IconPixelSize)
 		})
-	} else {
-		a.factionLogo.Hide()
 	}
 }
 

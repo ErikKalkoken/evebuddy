@@ -189,18 +189,16 @@ func (a *CharacterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 	return makeGridOrList(a.u.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
 }
 
-func (a *CharacterSkillCatalogue) Update() {
-	switch x := a.groupsGrid.(type) {
-	case *widget.GridWrap:
-		x.UnselectAll()
-	case *widget.List:
-		x.UnselectAll()
-	}
+func (a *CharacterSkillCatalogue) update() {
 	a.skills = make([]skillTrained, 0)
-	a.Refresh()
-}
-
-func (a *CharacterSkillCatalogue) Refresh() {
+	fyne.Do(func() {
+		switch x := a.groupsGrid.(type) {
+		case *widget.GridWrap:
+			x.UnselectAll()
+		case *widget.List:
+			x.UnselectAll()
+		}
+	})
 	t, i, err := func() (string, widget.Importance, error) {
 		exists := a.u.StatusCacheService().GeneralSectionExists(app.SectionEveCategories)
 		if !exists {
@@ -216,9 +214,12 @@ func (a *CharacterSkillCatalogue) Refresh() {
 		t = "ERROR"
 		i = widget.DangerImportance
 	}
-	a.total.Text = t
-	a.total.Importance = i
-	a.total.Refresh()
+	fyne.Do(func() {
+		a.groupsGrid.Refresh()
+		a.total.Text = t
+		a.total.Importance = i
+		a.total.Refresh()
+	})
 }
 
 func (a *CharacterSkillCatalogue) makeTopText() (string, widget.Importance, error) {
@@ -250,6 +251,5 @@ func (a *CharacterSkillCatalogue) updateGroups() error {
 		}
 	}
 	a.groups = groups
-	a.groupsGrid.Refresh()
 	return nil
 }

@@ -275,7 +275,7 @@ func (a *inventoryTypeInfo) calcAttributesData(
 			label: "EVE ID",
 			value: fmt.Sprint(a.et.ID),
 			action: func(v string) {
-				a.iw.w.Clipboard().SetContent(v)
+				a.iw.u.App().Clipboard().SetContent(v)
 			},
 		})
 	}
@@ -359,7 +359,9 @@ func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 			r = theme.BrokenImageIcon()
 		}
 		render := kxwidget.NewTappableImage(r, func() {
-			go a.iw.showZoomWindow(a.et.Name, a.et.ID, a.iw.u.EveImageService().InventoryTypeRender, a.iw.w)
+			go fyne.Do(func() {
+				a.iw.showZoomWindow(a.et.Name, a.et.ID, a.iw.u.EveImageService().InventoryTypeRender, a.iw.w)
+			})
 		})
 		render.SetFillMode(canvas.ImageFillContain)
 		s := float32(size)

@@ -425,10 +425,10 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 
 	searchDest := iwidget.NewDestinationDef("Search", theme.SearchIcon(), searchNav)
 	searchDest.OnSelected = func() {
-		u.gameSearch.Focus()
+		u.gameSearch.focus()
 	}
 	searchDest.OnSelectedAgain = func() {
-		u.gameSearch.Reset()
+		u.gameSearch.reset()
 	}
 
 	moreDest := iwidget.NewDestinationDef("More", theme.MenuIcon(), moreNav)
@@ -441,7 +441,9 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 
 	u.onUpdateStatus = func() {
 		go func() {
-			characterSelector.SetMenuItems(u.makeCharacterSwitchMenu(characterSelector.Refresh))
+			fyne.Do(func() {
+				characterSelector.SetMenuItems(u.makeCharacterSwitchMenu(characterSelector.Refresh))
+			})
 		}()
 	}
 	u.onUpdateCharacter = func(c *app.Character) {
@@ -462,7 +464,9 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 	}
 	u.onSetCharacter = func(id int32) {
 		go u.updateAvatar(id, func(r fyne.Resource) {
-			characterSelector.SetIcon(r)
+			fyne.Do(func() {
+				characterSelector.SetIcon(r)
+			})
 		})
 		u.characterMail.ResetCurrentFolder()
 		u.characterCommunications.ResetCurrentFolder()
@@ -475,8 +479,10 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		go func() {
 			for {
 				x := u.StatusCacheService().Summary()
-				u.navItemUpdateStatus.Supporting = x.Display()
-				toolsList.Refresh()
+				fyne.Do(func() {
+					u.navItemUpdateStatus.Supporting = x.Display()
+					toolsList.Refresh()
+				})
 				<-tickerUpdateStatus.C
 			}
 		}()
@@ -487,17 +493,21 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 				if err != nil {
 					slog.Error("fetch github version for menu info", "error", err)
 				} else {
-					if v.IsRemoteNewer {
-						navBar.SetBadge(3, true)
-						navItemAbout.Supporting = "Update available"
-						navItemAbout.Trailing = theme.NewPrimaryThemedResource(icons.Numeric1CircleSvg)
-					} else {
-						navBar.SetBadge(3, false)
-						navItemAbout.Supporting = ""
-						navItemAbout.Trailing = nil
-					}
+					fyne.Do(func() {
+						if v.IsRemoteNewer {
+							navBar.SetBadge(3, true)
+							navItemAbout.Supporting = "Update available"
+							navItemAbout.Trailing = theme.NewPrimaryThemedResource(icons.Numeric1CircleSvg)
+						} else {
+							navBar.SetBadge(3, false)
+							navItemAbout.Supporting = ""
+							navItemAbout.Trailing = nil
+						}
+					})
 				}
-				crossList.Refresh()
+				fyne.Do(func() {
+					crossList.Refresh()
+				})
 				<-tickerNewVersion.C
 			}
 		}()

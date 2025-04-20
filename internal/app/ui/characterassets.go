@@ -155,16 +155,6 @@ func (a *CharacterAssets) makeLocationsTree() *iwidget.Tree[locationNode] {
 	return t
 }
 
-func (a *CharacterAssets) clearAssets() error {
-	a.assets = make([]*app.CharacterAsset, 0)
-	a.assetGrid.Refresh()
-	a.locationPath.SetText("")
-	a.locationPath.OnTapped = nil
-	a.selectedLocation.Clear()
-	a.infoIcon.Hide()
-	return nil
-}
-
 func (a *CharacterAssets) makeAssetGrid() *widget.GridWrap {
 	g := widget.NewGridWrap(
 		func() int {
@@ -224,18 +214,27 @@ func (a *CharacterAssets) makeAssetGrid() *widget.GridWrap {
 	return g
 }
 
-func (a *CharacterAssets) Update() {
-	a.locations.CloseAllBranches()
-	a.locations.ScrollToTop()
+func (a *CharacterAssets) update() {
+	fyne.Do(func() {
+		a.locations.CloseAllBranches()
+		a.locations.ScrollToTop()
+	})
 	t, i, err := func() (string, widget.Importance, error) {
-		if err := a.clearAssets(); err != nil {
-			return "", 0, err
-		}
+		a.assets = make([]*app.CharacterAsset, 0)
+		fyne.Do(func() {
+			a.assetGrid.Refresh()
+			a.locationPath.SetText("")
+			a.locationPath.OnTapped = nil
+			a.selectedLocation.Clear()
+			a.infoIcon.Hide()
+		})
 		tree, err := a.makeLocationData()
 		if err != nil {
 			return "", 0, err
 		}
-		a.locations.Set(tree)
+		fyne.Do(func() {
+			a.locations.Set(tree)
+		})
 		locationsCount := len(tree.ChildUIDs(""))
 		return a.makeTopText(locationsCount)
 	}()
@@ -244,10 +243,12 @@ func (a *CharacterAssets) Update() {
 		t = "ERROR"
 		i = widget.DangerImportance
 	}
-	a.locationsTop.Text = t
-	a.locationsTop.Importance = i
-	a.locationsTop.Refresh()
-	a.locations.Refresh()
+	fyne.Do(func() {
+		a.locationsTop.Text = t
+		a.locationsTop.Importance = i
+		a.locationsTop.Refresh()
+		a.locations.Refresh()
+	})
 	if a.OnRedraw != nil {
 		a.OnRedraw(t)
 	}

@@ -207,9 +207,9 @@ func (a *CharacterMails) makeFolderTree() *iwidget.Tree[FolderNode] {
 	return tree
 }
 
-func (a *CharacterMails) Update() {
+func (a *CharacterMails) update() {
 	a.lastFolder = emptyFolder
-	a.update()
+	a.update2()
 }
 
 func (a *CharacterMails) MakeFolderMenu() []*fyne.MenuItem {
@@ -231,50 +231,52 @@ func (a *CharacterMails) MakeFolderMenu() []*fyne.MenuItem {
 	return items1
 }
 
-func (a *CharacterMails) update() {
+func (a *CharacterMails) update2() {
 	characterID := a.u.CurrentCharacterID()
-	folderAll, err := a.updateFolderData(characterID)
+	tree, folderAll, err := a.updateFolderData(characterID)
 	if err != nil {
 		t := "Failed to build folder tree"
 		slog.Error(t, "character", characterID, "error", err)
-		a.u.ShowErrorDialog(t, err, a.u.MainWindow())
+		fyne.Do(func() {
+			a.u.ShowErrorDialog(t, err, a.u.MainWindow())
+		})
 		return
 	}
+	fyne.Do(func() {
+		a.folders.Set(tree)
+		a.folders.Refresh()
+		if folderAll.IsEmpty() {
+			a.clearFolder()
+		} else {
+			if a.lastFolder == emptyFolder {
+				a.folders.UnselectAll()
+				a.folders.ScrollToTop()
+				a.folders.Select(folderAll)
+				a.SetCurrentFolder(folderAll)
+			} else {
+				a.headerRefresh()
+			}
+			a.folderDefault = folderAll
+		}
+	})
 	if a.OnUpdate != nil {
 		a.OnUpdate(folderAll.UnreadCount)
 	}
-	a.folders.Refresh()
-	if folderAll.IsEmpty() {
-		a.clearFolder()
-		return
-	}
-	if a.lastFolder == emptyFolder {
-		a.folders.UnselectAll()
-		a.folders.ScrollToTop()
-		a.folders.Select(folderAll)
-		a.SetCurrentFolder(folderAll)
-	} else {
-		a.headerRefresh()
-	}
-	a.folderDefault = folderAll
 }
 
-func (a *CharacterMails) updateFolderData(characterID int32) (FolderNode, error) {
+func (a *CharacterMails) updateFolderData(characterID int32) (*iwidget.TreeData[FolderNode], FolderNode, error) {
 	tree := iwidget.NewTreeData[FolderNode]()
 	if characterID == 0 {
-		a.folders.Clear()
-		return emptyFolder, nil
+		return tree, emptyFolder, nil
 	}
 	ctx := context.Background()
 	labelUnreadCounts, err := a.u.CharacterService().GetMailLabelUnreadCounts(ctx, characterID)
 	if err != nil {
-		a.folders.Clear()
-		return emptyFolder, err
+		return nil, FolderNode{}, err
 	}
 	listUnreadCounts, err := a.u.CharacterService().GetMailListUnreadCounts(ctx, characterID)
 	if err != nil {
-		a.folders.Clear()
-		return emptyFolder, err
+		return nil, FolderNode{}, err
 	}
 	totalUnreadCount, totalLabelsUnreadCount, totalListUnreadCount := calcUnreadTotals(labelUnreadCounts, listUnreadCounts)
 
@@ -319,7 +321,7 @@ func (a *CharacterMails) updateFolderData(characterID int32) (FolderNode, error)
 	// Add custom labels
 	labels, err := a.u.CharacterService().ListMailLabelsOrdered(ctx, characterID)
 	if err != nil {
-		return FolderNode{}, err
+		return nil, FolderNode{}, err
 	}
 	if len(labels) > 0 {
 		n := FolderNode{
@@ -349,7 +351,7 @@ func (a *CharacterMails) updateFolderData(characterID int32) (FolderNode, error)
 	// Add mailing lists
 	lists, err := a.u.CharacterService().ListMailLists(ctx, characterID)
 	if err != nil {
-		return FolderNode{}, err
+		return nil, FolderNode{}, err
 	}
 	if len(lists) > 0 {
 		n := FolderNode{
@@ -385,9 +387,7 @@ func (a *CharacterMails) updateFolderData(characterID int32) (FolderNode, error)
 		UnreadCount: totalUnreadCount,
 	}
 	tree.MustAdd(iwidget.RootUID, folderAll)
-
-	a.folders.Set(tree)
-	return folderAll, nil
+	return tree, folderAll, nil
 }
 
 func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
@@ -630,9 +630,9 @@ func (a *CharacterMails) setMail(mailID int32) {
 				a.u.ShowSnackbar("ERROR: Failed to mark mail as read")
 				return
 			}
-			a.update()
+			a.update2()
 			a.u.UpdateCrossPages()
-			a.u.UpdateMailIndicator()
+			a.u.updateMailIndicator()
 		}()
 	}
 	a.subject.SetText(a.mail.Subject)

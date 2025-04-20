@@ -96,7 +96,7 @@ func NewContracts(u *BaseUI) *Contracts {
 	return a
 }
 
-func (a *Contracts) Update() {
+func (a *Contracts) update() {
 	var t string
 	var i widget.Importance
 	if err := a.updateEntries(); err != nil {
@@ -106,15 +106,17 @@ func (a *Contracts) Update() {
 	} else {
 		t, i = a.makeTopText()
 	}
-	if t != "" {
-		a.top.Text = t
-		a.top.Importance = i
-		a.top.Refresh()
-		a.top.Show()
-	} else {
-		a.top.Hide()
-	}
-	a.body.Refresh()
+	fyne.Do(func() {
+		if t != "" {
+			a.top.Text = t
+			a.top.Importance = i
+			a.top.Refresh()
+			a.top.Show()
+		} else {
+			a.top.Hide()
+		}
+		a.body.Refresh()
+	})
 }
 
 func (a *Contracts) makeTopText() (string, widget.Importance) {

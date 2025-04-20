@@ -96,7 +96,7 @@ func (a *CharacterAugmentations) makeImplantList() *widget.List {
 	return l
 }
 
-func (a *CharacterAugmentations) Update() {
+func (a *CharacterAugmentations) update() {
 	var t string
 	var i widget.Importance
 	if err := a.updateImplants(); err != nil {
@@ -106,9 +106,12 @@ func (a *CharacterAugmentations) Update() {
 	} else {
 		t, i = a.makeTopText()
 	}
-	a.top.Text = t
-	a.top.Importance = i
-	a.top.Refresh()
+	fyne.Do(func() {
+		a.top.Text = t
+		a.top.Importance = i
+		a.top.Refresh()
+		a.list.Refresh()
+	})
 }
 
 func (a *CharacterAugmentations) updateImplants() error {
@@ -121,7 +124,6 @@ func (a *CharacterAugmentations) updateImplants() error {
 		return err
 	}
 	a.implants = implants
-	a.list.Refresh()
 	return nil
 }
 

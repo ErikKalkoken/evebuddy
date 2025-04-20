@@ -145,7 +145,7 @@ func (a *CharacterFlyableShips) makeShipsGrid() *widget.GridWrap {
 	return g
 }
 
-func (a *CharacterFlyableShips) Update() {
+func (a *CharacterFlyableShips) update() {
 	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
 		exists := a.u.StatusCacheService().GeneralSectionExists(app.SectionEveCategories)
 		if !exists {
@@ -161,16 +161,18 @@ func (a *CharacterFlyableShips) Update() {
 		t = "ERROR"
 		i = widget.DangerImportance
 	}
-	a.top.Text = t
-	a.top.Importance = i
-	a.top.Refresh()
-	a.grid.Refresh()
-	if enabled {
-		a.searchBox.Enable()
-	} else {
-		a.searchBox.Disable()
-	}
-	a.reset()
+	fyne.Do(func() {
+		a.top.Text = t
+		a.top.Importance = i
+		a.top.Refresh()
+		a.grid.Refresh()
+		if enabled {
+			a.searchBox.Enable()
+		} else {
+			a.searchBox.Disable()
+		}
+		a.reset()
+	})
 }
 
 func (a *CharacterFlyableShips) updateEntries() error {
@@ -318,8 +320,10 @@ func (w *ShipItem) Set(typeID int32, label string, canFly bool) {
 		if !canFly {
 			img = effect.Grayscale(img)
 		}
-		w.image.Image = img
-		w.image.Refresh()
+		fyne.Do(func() {
+			w.image.Image = img
+			w.image.Refresh()
+		})
 	}()
 }
 
