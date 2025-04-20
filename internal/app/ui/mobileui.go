@@ -469,20 +469,24 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		}()
 	}
 	u.onUpdateCharacter = func(c *app.Character) {
-		mailMenu.Items = u.characterMail.MakeFolderMenu()
-		mailMenu.Refresh()
-		communicationsMenu.Items = u.characterCommunications.MakeFolderMenu()
-		communicationsMenu.Refresh()
-		if c == nil {
-			navBar.Disable(0)
-			navBar.Disable(1)
-			navBar.Disable(2)
-			navBar.Select(3)
-		} else {
-			navBar.Enable(0)
-			navBar.Enable(1)
-			navBar.Enable(2)
-		}
+		notifyItems := u.characterCommunications.MakeFolderMenu()
+		mailItems := u.characterMail.MakeFolderMenu()
+		fyne.Do(func() {
+			mailMenu.Items = mailItems
+			mailMenu.Refresh()
+			communicationsMenu.Items = notifyItems
+			communicationsMenu.Refresh()
+			if c == nil {
+				navBar.Disable(0)
+				navBar.Disable(1)
+				navBar.Disable(2)
+				navBar.Select(3)
+			} else {
+				navBar.Enable(0)
+				navBar.Enable(1)
+				navBar.Enable(2)
+			}
+		})
 	}
 	u.onSetCharacter = func(id int32) {
 		go u.updateAvatar(id, func(r fyne.Resource) {

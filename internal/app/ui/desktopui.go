@@ -226,8 +226,10 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 		if count > 0 {
 			s += fmt.Sprintf(" (%d)", count)
 		}
-		contractActive.Text = s
-		contractTabs.Refresh()
+		fyne.Do(func() {
+			contractActive.Text = s
+			contractTabs.Refresh()
+		})
 	}
 
 	overviewColonies := iwidget.NewNavPage(
