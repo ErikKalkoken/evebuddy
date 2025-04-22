@@ -111,8 +111,14 @@ func (a *IndustryJobs) update() {
 	} else {
 		a.jobs = jobs
 	}
+	var readyCount int
+	for _, j := range a.jobs {
+		if j.StatusCorrected() == app.JobReady {
+			readyCount++
+		}
+	}
 	if a.OnUpdate != nil {
-		a.OnUpdate(len(a.jobs))
+		a.OnUpdate(readyCount)
 	}
 	fyne.Do(func() {
 		a.top.Hide()

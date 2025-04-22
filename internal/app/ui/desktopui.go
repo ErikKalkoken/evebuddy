@@ -20,6 +20,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -252,15 +253,23 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 		industryJobsActive,
 		container.NewTabItem("All", u.industryJobsAll),
 	)
+	industry := iwidget.NewNavPage(
+		"Industry",
+		theme.NewThemedResource(icons.FactorySvg),
+		makePageWithTitle("Industry", industryTabs),
+	)
 	u.industryJobsActive.OnUpdate = func(count int) {
 		s := "Active"
+		c := ihumanize.Comma(count)
 		if count > 0 {
-			s += fmt.Sprintf(" (%d)", count)
+			s += fmt.Sprintf(" (%s)", c)
 		}
 		industryJobsActive.Text = s
 		industryTabs.Refresh()
+		fyne.Do(func() {
+			collectiveNav.SetItemBadge(industry, c)
+		})
 	}
-
 	collectiveNav = iwidget.NewNavDrawer("All Characters",
 		overview,
 		allAssets,
@@ -271,11 +280,7 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 		),
 		contracts,
 		overviewColonies,
-		iwidget.NewNavPage(
-			"Industry",
-			theme.NewThemedResource(icons.FactorySvg),
-			makePageWithTitle("Industry", industryTabs),
-		),
+		industry,
 		iwidget.NewNavPage(
 			"Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),

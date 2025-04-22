@@ -234,6 +234,18 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 			crossNav.Push(iwidget.NewAppBar("Colonies", u.colonies))
 		},
 	)
+	jobsActive := container.NewTabItem("Active", u.industryJobsActive)
+	jobsTab := container.NewAppTabs(
+		jobsActive,
+		container.NewTabItem("All", u.industryJobsAll),
+	)
+	navItemIndustry := iwidget.NewListItemWithIcon(
+		"Industry",
+		theme.NewThemedResource(icons.FactorySvg),
+		func() {
+			crossNav.Push(iwidget.NewAppBar("Industry", jobsTab))
+		},
+	)
 	crossList := iwidget.NewNavList(
 		iwidget.NewListItemWithIcon(
 			"Characters",
@@ -280,28 +292,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 			},
 		),
 		navItemColonies2,
-		iwidget.NewListItemWithIcon(
-			"Industry",
-			theme.NewThemedResource(icons.FactorySvg),
-			func() {
-				jobsActive := container.NewTabItem("Active", u.industryJobsActive)
-				jobsTab := container.NewAppTabs(
-					jobsActive,
-					container.NewTabItem("All", u.industryJobsAll),
-				)
-				u.industryJobsActive.OnUpdate = func(count int) {
-					s := "Active"
-					if count > 0 {
-						s += fmt.Sprintf(" (%d)", count)
-					}
-					fyne.Do(func() {
-						jobsActive.Text = s
-						jobsTab.Refresh()
-					})
-				}
-				crossNav.Push(iwidget.NewAppBar("Industry", jobsTab))
-			},
-		),
+		navItemIndustry,
 		iwidget.NewListItemWithIcon(
 			"Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),
@@ -332,6 +323,21 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 				ihumanize.Number(wallet, 1),
 				ihumanize.Number(assets, 1),
 			)
+			crossList.Refresh()
+		})
+	}
+	u.industryJobsActive.OnUpdate = func(count int) {
+		s := "Active"
+		c := ihumanize.Comma(count)
+		if count > 0 {
+			s += fmt.Sprintf(" (%s)", c)
+		}
+		fyne.Do(func() {
+			jobsActive.Text = s
+			jobsTab.Refresh()
+		})
+		fyne.Do(func() {
+			navItemIndustry.Supporting = fmt.Sprintf("%s jobs ready", c)
 			crossList.Refresh()
 		})
 	}
