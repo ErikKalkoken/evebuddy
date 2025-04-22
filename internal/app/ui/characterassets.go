@@ -255,7 +255,7 @@ func (a *CharacterAssets) update() {
 }
 
 func (a *CharacterAssets) makeLocationData() (*iwidget.TreeData[locationNode], error) {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		return iwidget.NewTreeData[locationNode](), nil
 	}
 	characterID := a.u.CurrentCharacterID()
@@ -481,7 +481,7 @@ func makeLocationTreeData(locationNodes []assetcollection.LocationNode, characte
 }
 
 func (a *CharacterAssets) makeTopText(total int) (string, widget.Importance, error) {
-	c := a.u.CurrentCharacter()
+	c := a.u.currentCharacter()
 	if c == nil {
 		return "No character", widget.LowImportance, nil
 	}

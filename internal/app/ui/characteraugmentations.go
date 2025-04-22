@@ -115,7 +115,7 @@ func (a *CharacterAugmentations) update() {
 }
 
 func (a *CharacterAugmentations) updateImplants() error {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		a.implants = make([]*app.CharacterImplant, 0)
 		return nil
 	}

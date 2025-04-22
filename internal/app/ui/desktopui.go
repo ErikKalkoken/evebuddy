@@ -334,7 +334,7 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 	}
 	u.onUpdateCharacter = func(c *app.Character) {
 		go func() {
-			if !u.HasCharacter() {
+			if !u.hasCharacter() {
 				fyne.Do(func() {
 					characterNav.Disable()
 					collectiveNav.Disable()
@@ -455,7 +455,7 @@ func (u *DesktopUI) showSearchWindow() {
 		u.searchWindow.Show()
 		return
 	}
-	c := u.CurrentCharacter()
+	c := u.currentCharacter()
 	var n string
 	if c != nil {
 		n = c.EveCharacter.Name
@@ -511,7 +511,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
 			},
 			func(fyne.Shortcut) {
-				c := u.CurrentCharacter()
+				c := u.currentCharacter()
 				if c == nil {
 					u.ShowSnackbar("ERROR: No character selected")
 					return
@@ -528,7 +528,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
 			},
 			func(fyne.Shortcut) {
-				c := u.CurrentCharacter()
+				c := u.currentCharacter()
 				if c == nil {
 					u.ShowSnackbar("ERROR: No character selected")
 					return

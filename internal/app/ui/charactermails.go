@@ -418,7 +418,7 @@ func (a *CharacterMails) makeHeaderList() *widget.List {
 				return
 			}
 			m := a.headers[id]
-			if !a.u.HasCharacter() {
+			if !a.u.hasCharacter() {
 				return
 			}
 			item := co.(*MailHeaderItem)
@@ -510,7 +510,7 @@ func (a *CharacterMails) updateHeaders() (FolderNode, error) {
 }
 
 func (a *CharacterMails) makeFolderTopText(f FolderNode) (string, widget.Importance) {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		return "No Character", widget.LowImportance
 	}
 	hasData := a.u.StatusCacheService().CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionSkillqueue)
@@ -526,7 +526,7 @@ func (a *CharacterMails) onSendMessage(mode app.SendMailMode, mail *app.Characte
 	if a.OnSendMessage == nil {
 		return
 	}
-	character := a.u.CurrentCharacter()
+	character := a.u.currentCharacter()
 	if character == nil {
 		return
 	}
@@ -631,7 +631,7 @@ func (a *CharacterMails) setMail(mailID int32) {
 				return
 			}
 			a.update2()
-			a.u.UpdateCrossPages()
+			a.u.updateCrossPages()
 			a.u.updateMailIndicator()
 		}()
 	}

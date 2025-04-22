@@ -120,10 +120,10 @@ func (a *Contracts) update() {
 }
 
 func (a *Contracts) makeTopText() (string, widget.Importance) {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		return "No character", widget.LowImportance
 	}
-	c := a.u.CurrentCharacter()
+	c := a.u.currentCharacter()
 	hasData := a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionContracts)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
@@ -132,7 +132,7 @@ func (a *Contracts) makeTopText() (string, widget.Importance) {
 }
 
 func (a *Contracts) updateEntries() error {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		a.contracts = make([]*app.CharacterContract, 0)
 		return nil
 	}

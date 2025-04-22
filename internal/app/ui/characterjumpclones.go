@@ -164,7 +164,7 @@ func (a *CharacterJumpClones) update() {
 
 func (a *CharacterJumpClones) newTreeData() (*iwidget.TreeData[jumpCloneNode], error) {
 	tree := iwidget.NewTreeData[jumpCloneNode]()
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		return tree, nil
 	}
 	ctx := context.Background()
@@ -213,7 +213,7 @@ func (a *CharacterJumpClones) RefreshTop() {
 		Text:  "",
 		Style: defaultStyle,
 	}
-	c := a.u.CurrentCharacter()
+	c := a.u.currentCharacter()
 	if c == nil {
 		s.Text = "No character"
 		s.Style.ColorName = theme.ColorNameDisabled

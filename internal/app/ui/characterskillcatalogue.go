@@ -117,7 +117,7 @@ func (a *CharacterSkillCatalogue) makeGroupsGrid() fyne.CanvasObject {
 				return
 			}
 			group := a.groups[id]
-			if !a.u.HasCharacter() {
+			if !a.u.hasCharacter() {
 				unselectAll()
 				return
 			}
@@ -223,10 +223,10 @@ func (a *CharacterSkillCatalogue) update() {
 }
 
 func (a *CharacterSkillCatalogue) makeTopText() (string, widget.Importance, error) {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		return "No Character", widget.LowImportance, nil
 	}
-	c := a.u.CurrentCharacter()
+	c := a.u.currentCharacter()
 	total := ihumanize.Optional(c.TotalSP, "?")
 	unallocated := ihumanize.Optional(c.UnallocatedSP, "?")
 	t := fmt.Sprintf("%s Total Skill Points (%s Unallocated)", total, unallocated)
@@ -234,7 +234,7 @@ func (a *CharacterSkillCatalogue) makeTopText() (string, widget.Importance, erro
 }
 
 func (a *CharacterSkillCatalogue) updateGroups() error {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		return nil
 	}
 	gg, err := a.u.CharacterService().ListSkillGroupsProgress(context.TODO(), a.u.CurrentCharacterID())

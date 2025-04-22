@@ -99,25 +99,26 @@ type BaseUI struct {
 	overviewWealth             *OverviewWealth
 	userSettings               *UserSettings
 
-	app              fyne.App
-	character        *app.Character
-	clearCache       func() // clear all caches
-	cs               app.CharacterService
-	dataPaths        map[string]string // Paths to user data
-	eis              app.EveImageService
-	ess              app.ESIStatusService
-	eus              app.EveUniverseService
-	isForeground     atomic.Bool // whether the app is currently shown in the foreground
-	isMobile         bool
-	isOffline        bool // Run the app in offline mode
-	isUpdateDisabled bool // Whether to disable update tickers (useful for debugging)
-	memcache         app.CacheService
-	scs              app.StatusCacheService
-	settings         app.Settings
-	snackbar         *iwidget.Snackbar
-	statusWindow     fyne.Window
-	wasStarted       atomic.Bool // whether the app has already been started at least once
-	window           fyne.Window
+	app                fyne.App
+	character          *app.Character
+	clearCache         func() // clear all caches
+	cs                 app.CharacterService
+	dataPaths          map[string]string // Paths to user data
+	eis                app.EveImageService
+	ess                app.ESIStatusService
+	eus                app.EveUniverseService
+	isForeground       atomic.Bool // whether the app is currently shown in the foreground
+	isMobile           bool
+	isOffline          bool        // Run the app in offline mode
+	isStartupCompleted atomic.Bool // whether the app has completed startup (for testing)
+	isUpdateDisabled   bool        // Whether to disable update tickers (useful for debugging)
+	memcache           app.CacheService
+	scs                app.StatusCacheService
+	settings           app.Settings
+	snackbar           *iwidget.Snackbar
+	statusWindow       fyne.Window
+	wasStarted         atomic.Bool // whether the app has already been started at least once
+	window             fyne.Window
 }
 
 type BaseUIParams struct {
@@ -213,20 +214,16 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 			return
 		}
 		// First app start
-		slog.Info("App started")
 		if u.isOffline {
-			slog.Info("Started in offline mode")
-		}
-		if !u.isOffline && !u.isUpdateDisabled {
-			u.isForeground.Store(true)
+			slog.Info("App started in offline mode")
 		} else {
-			slog.Info("Update ticker disabled")
+			slog.Info("App started")
 		}
+		u.isForeground.Store(true)
 		u.snackbar.Start()
 		go func() {
-			// time.Sleep(250 * time.Millisecond) // FIXME: Workaround for occasional progess bar panic
-			u.UpdateCrossPages()
-			if u.HasCharacter() {
+			u.updateCrossPages()
+			if u.hasCharacter() {
 				u.setCharacter(u.character)
 			} else {
 				u.resetCharacter()
@@ -236,7 +233,10 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 			if !u.isOffline && !u.isUpdateDisabled {
 				u.startUpdateTickerGeneralSections()
 				u.startUpdateTickerCharacters()
+			} else {
+				slog.Info("Update ticker disabled")
 			}
+			u.isStartupCompleted.Store(true)
 		}()
 		if u.onAppFirstStarted != nil {
 			u.onAppFirstStarted()
@@ -303,6 +303,10 @@ func (u *BaseUI) IsDeveloperMode() bool {
 
 func (u *BaseUI) IsOffline() bool {
 	return u.isOffline
+}
+
+func (u *BaseUI) IsStartupCompleted() bool {
+	return u.isStartupCompleted.Load()
 }
 
 // Init initialized the app.
@@ -387,11 +391,11 @@ func (u *BaseUI) CurrentCharacterID() int32 {
 	return u.character.ID
 }
 
-func (u *BaseUI) CurrentCharacter() *app.Character {
+func (u *BaseUI) currentCharacter() *app.Character {
 	return u.character
 }
 
-func (u *BaseUI) HasCharacter() bool {
+func (u *BaseUI) hasCharacter() bool {
 	return u.character != nil
 }
 
@@ -422,12 +426,12 @@ func (u *BaseUI) updateStatus() {
 	if u.onUpdateStatus == nil {
 		return
 	}
-	go u.onUpdateStatus()
+	u.onUpdateStatus()
 }
 
-// UpdateCharacter updates all pages for the current character.
-func (u *BaseUI) UpdateCharacter() {
-	c := u.CurrentCharacter()
+// updateCharacter updates all pages for the current character.
+func (u *BaseUI) updateCharacter() {
+	c := u.currentCharacter()
 	if c != nil {
 		slog.Debug("Updating character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
 	} else {
@@ -459,8 +463,8 @@ func (u *BaseUI) UpdateCharacter() {
 	}
 }
 
-// UpdateCrossPages refreshed all pages that contain information about multiple characters.
-func (u *BaseUI) UpdateCrossPages() {
+// updateCrossPages refreshed all pages that contain information about multiple characters.
+func (u *BaseUI) updateCrossPages() {
 	ff := map[string]func(){
 		"assetSearch":       u.overviewAssets.update,
 		"contractsAll":      u.contractsAll.update,
@@ -514,14 +518,14 @@ func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Wi
 func (u *BaseUI) resetCharacter() {
 	u.character = nil
 	u.Settings().ResetLastCharacterID()
-	u.UpdateCharacter()
+	u.updateCharacter()
 	u.updateStatus()
 }
 
 func (u *BaseUI) setCharacter(c *app.Character) {
 	u.character = c
 	u.Settings().SetLastCharacterID(c.ID)
-	u.UpdateCharacter()
+	u.updateCharacter()
 	u.updateStatus()
 	if u.onSetCharacter != nil {
 		u.onSetCharacter(c.ID)

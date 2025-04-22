@@ -189,7 +189,7 @@ func (a *ManageCharacters) showDeleteDialog(c accountCharacter) {
 					if a.u.CurrentCharacterID() == c.id {
 						a.u.setAnyCharacter()
 					}
-					a.u.UpdateCrossPages()
+					a.u.updateCrossPages()
 					a.u.updateStatus()
 				}
 				m.OnError = func(err error) {
@@ -252,10 +252,10 @@ func (a *ManageCharacters) ShowAddCharacterDialog() {
 				a.Refresh()
 			})
 			go a.u.updateCharacterAndRefreshIfNeeded(context.Background(), characterID, false)
-			if !a.u.HasCharacter() {
+			if !a.u.hasCharacter() {
 				a.u.loadCharacter(characterID)
 			}
-			a.u.UpdateCrossPages()
+			a.u.updateCrossPages()
 			a.u.updateStatus()
 			return nil
 		}()

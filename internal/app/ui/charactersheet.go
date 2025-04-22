@@ -71,7 +71,7 @@ func NewSheet(u *BaseUI) *CharacterSheet {
 }
 
 func (a *CharacterSheet) update() {
-	c := a.u.CurrentCharacter()
+	c := a.u.currentCharacter()
 	if c == nil || c.EveCharacter == nil {
 		fyne.Do(func() {
 			a.name.Text = "No character..."

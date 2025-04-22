@@ -145,10 +145,10 @@ func (a *CharacterWalletJournal) update() {
 }
 
 func (a *CharacterWalletJournal) makeTopText() (string, widget.Importance) {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		return "No character", widget.LowImportance
 	}
-	c := a.u.CurrentCharacter()
+	c := a.u.currentCharacter()
 	hasData := a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionWalletJournal)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
@@ -163,7 +163,7 @@ func (a *CharacterWalletJournal) makeTopText() (string, widget.Importance) {
 }
 
 func (a *CharacterWalletJournal) updateEntries() error {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		a.rows = make([]walletJournalEntry, 0)
 		return nil
 	}

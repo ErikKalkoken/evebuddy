@@ -306,15 +306,15 @@ func (a *CharacterCommunications) clearDetail() {
 
 // TODO: Refactor to avoid recreating the container every time
 func (a *CharacterCommunications) setDetail(n *app.CharacterNotification) {
-	if n.RecipientName == "" && a.u.HasCharacter() {
-		n.RecipientName = a.u.CurrentCharacter().EveCharacter.Name
+	if n.RecipientName == "" && a.u.hasCharacter() {
+		n.RecipientName = a.u.currentCharacter().EveCharacter.Name
 	}
 	a.Detail.RemoveAll()
 	subject := iwidget.NewLabelWithSize(n.TitleDisplay(), theme.SizeNameSubHeadingText)
 	subject.Wrapping = fyne.TextWrapWord
 	a.Detail.Add(subject)
 	h := NewMailHeader(a.u.EveImageService(), a.u.ShowEveEntityInfoWindow)
-	h.Set(n.Sender, n.Timestamp, a.u.CurrentCharacter().EveCharacter.ToEveEntity())
+	h.Set(n.Sender, n.Timestamp, a.u.currentCharacter().EveCharacter.ToEveEntity())
 	a.Detail.Add(h)
 	s, err := n.BodyPlain() // using markdown blocked by #61
 	if err != nil {

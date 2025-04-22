@@ -31,7 +31,7 @@ func (a *CharacterBiography) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *CharacterBiography) update() {
-	character := a.u.CurrentCharacter()
+	character := a.u.currentCharacter()
 	if character == nil || character.EveCharacter == nil {
 		fyne.Do(func() {
 			a.body.Text = "Waiting for character data to be loaded..."

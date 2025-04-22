@@ -87,7 +87,7 @@ func (c *PageBarCollection) NewPageBar(title string, buttons ...*widget.Button) 
 }
 
 func (c *PageBarCollection) update() {
-	if !c.u.HasCharacter() {
+	if !c.u.hasCharacter() {
 		for _, pb := range c.bars {
 			fyne.Do(func() {
 				pb.SetIcon(c.fallbackIcon)

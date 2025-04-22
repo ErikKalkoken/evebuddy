@@ -176,7 +176,7 @@ func (a *CharacterFlyableShips) update() {
 }
 
 func (a *CharacterFlyableShips) updateEntries() error {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		fyne.Do(func() {
 			a.ships = make([]*app.CharacterShipAbility, 0)
 			a.grid.Refresh()
@@ -234,7 +234,7 @@ func (a *CharacterFlyableShips) updateEntries() error {
 }
 
 func (a *CharacterFlyableShips) makeTopText() (string, widget.Importance, bool, error) {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		return "No character", widget.LowImportance, false, nil
 	}
 	characterID := a.u.CurrentCharacterID()

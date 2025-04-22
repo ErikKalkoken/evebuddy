@@ -127,7 +127,7 @@ func (a *CharacterWalletTransaction) update() {
 }
 
 func (a *CharacterWalletTransaction) makeTopText() (string, widget.Importance) {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		return "No character", widget.LowImportance
 	}
 	characterID := a.u.CurrentCharacterID()
@@ -141,7 +141,7 @@ func (a *CharacterWalletTransaction) makeTopText() (string, widget.Importance) {
 }
 
 func (a *CharacterWalletTransaction) updateEntries() error {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		a.rows = make([]*app.CharacterWalletTransaction, 0)
 		return nil
 	}

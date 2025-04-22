@@ -164,10 +164,17 @@ func TestUIStartEmpty(t *testing.T) {
 	})
 	u := NewDesktopUI(bu)
 	u.Init()
-	u.UpdateCharacter()
-	u.UpdateCrossPages()
-	u.MainWindow().Show()
-	assert.False(t, u.HasCharacter())
+	go func() {
+		ticker := time.NewTicker(50 * time.Millisecond)
+		for {
+			<-ticker.C
+			if u.IsStartupCompleted() {
+				u.App().Quit()
+			}
+		}
+	}()
+	u.ShowAndRun()
+	assert.False(t, u.hasCharacter())
 	assert.Equal(t, 0, httpmock.GetTotalCallCount())
 }
 
@@ -219,8 +226,16 @@ func TestUIStartWithCharacter(t *testing.T) {
 	})
 	u := NewDesktopUI(bu)
 	u.Init()
-	u.UpdateCharacter()
-	u.UpdateCrossPages()
-	u.MainWindow().Show()
-	assert.Equal(t, character, u.CurrentCharacter())
+	go func() {
+		ticker := time.NewTicker(50 * time.Millisecond)
+		for {
+			<-ticker.C
+			if u.IsStartupCompleted() {
+				u.App().Quit()
+			}
+		}
+	}()
+	u.ShowAndRun()
+	assert.Equal(t, character, u.currentCharacter())
+
 }

@@ -127,7 +127,7 @@ func (a *CharacterAttributes) makeTopText(total int) (string, widget.Importance)
 }
 
 func (a *CharacterAttributes) updateData() (int, error) {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		a.attributes = make([]attribute, 0)
 		return 0, nil
 	}
