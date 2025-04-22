@@ -13,6 +13,7 @@ var ErrNotFound = errors.New("not found")
 // Set is a container for a set of values.
 //
 // Sets are not thread safe.
+// Sets must be initialized with New() before use.
 type Set[T comparable] map[T]struct{}
 
 // New returns a new Set.
@@ -55,7 +56,7 @@ func (s Set[T]) Clone() Set[T] {
 	return New(s.ToSlice()...)
 }
 
-// Contains reports wether an item is in this set.
+// Contains reports whether an item is in this set.
 func (s Set[T]) Contains(v T) bool {
 	_, ok := s[v]
 	return ok
@@ -63,31 +64,31 @@ func (s Set[T]) Contains(v T) bool {
 
 // Difference returns a new set which elements from current set,
 // that does not exist in other set.
-func (s Set[T]) Difference(other Set[T]) Set[T] {
+func (s Set[T]) Difference(u Set[T]) Set[T] {
 	n := New[T]()
 	for v := range s {
-		if !other.Contains(v) {
+		if !u.Contains(v) {
 			n.Add(v)
 		}
 	}
 	return n
 }
 
-// Equal reports wether two sets are equal.
-func (s Set[T]) Equal(other Set[T]) bool {
-	if s.Size() != other.Size() {
+// Equal reports whether two sets are equal.
+func (s Set[T]) Equal(u Set[T]) bool {
+	if s.Size() != u.Size() {
 		return false
 	}
-	d := s.Difference(other)
+	d := s.Difference(u)
 	x := d.Size()
 	return x == 0
 }
 
 // Intersect returns a new set which contains elements found in both sets only.
-func (s Set[T]) Intersect(other Set[T]) Set[T] {
+func (s Set[T]) Intersect(u Set[T]) Set[T] {
 	n := New[T]()
 	for v := range s {
-		if other.Contains(v) {
+		if u.Contains(v) {
 			n.Add(v)
 		}
 	}
@@ -95,20 +96,20 @@ func (s Set[T]) Intersect(other Set[T]) Set[T] {
 }
 
 // IsDisjoint reports whether a set has any elements in common with another set.
-func (s Set[T]) IsDisjoint(other Set[T]) bool {
-	x := s.Intersect(other)
+func (s Set[T]) IsDisjoint(u Set[T]) bool {
+	x := s.Intersect(u)
 	return x.Size() == 0
 }
 
 // IsSubset reports whether a set is the subset of another set.
-func (s Set[T]) IsSubset(other Set[T]) bool {
-	x := s.Difference(other)
+func (s Set[T]) IsSubset(u Set[T]) bool {
+	x := s.Difference(u)
 	return x.Size() == 0
 }
 
 // IsSuperset reports whether a set is the superset of another set.
-func (s Set[T]) IsSuperset(other Set[T]) bool {
-	x := other.Difference(s)
+func (s Set[T]) IsSuperset(u Set[T]) bool {
+	x := u.Difference(s)
 	return x.Size() == 0
 }
 
@@ -149,16 +150,17 @@ func (s Set[T]) ToSlice() []T {
 }
 
 // Union returns a new set containing the combined elements from both sets.
-func (s Set[T]) Union(other Set[T]) Set[T] {
+func (s Set[T]) Union(u Set[T]) Set[T] {
 	n := s.Clone()
-	for v := range other {
+	for v := range u {
 		n.Add(v)
 	}
 	return n
 }
 
 // Values returns on iterator over all elements of a set.
-// Note that sets are unordered, so elements will be returned in no particular order.
+//
+// Since sets are unordered, elements will be returned in no particular order.
 func (s Set[T]) Values() iter.Seq[T] {
 	return maps.Keys(s)
 }
