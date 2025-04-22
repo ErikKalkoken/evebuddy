@@ -164,12 +164,8 @@ func TestUIStartEmpty(t *testing.T) {
 	})
 	u := NewDesktopUI(bu)
 	u.Init()
-	for _, f := range u.updateCharacterMap() {
-		f()
-	}
-	for _, f := range u.updateCrossPagesMap() {
-		f()
-	}
+	u.UpdateCharacter()
+	u.UpdateCrossPages()
 	u.MainWindow().Show()
 	assert.False(t, u.HasCharacter())
 	assert.Equal(t, 0, httpmock.GetTotalCallCount())
@@ -223,12 +219,8 @@ func TestUIStartWithCharacter(t *testing.T) {
 	})
 	u := NewDesktopUI(bu)
 	u.Init()
-	for _, f := range u.updateCharacterMap() {
-		f()
-	}
-	for _, f := range u.updateCrossPagesMap() {
-		f()
-	}
+	u.UpdateCharacter()
+	u.UpdateCrossPages()
 	u.MainWindow().Show()
 	assert.Equal(t, character, u.CurrentCharacter())
 }

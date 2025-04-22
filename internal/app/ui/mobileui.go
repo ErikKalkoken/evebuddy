@@ -485,6 +485,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 				navBar.Enable(0)
 				navBar.Enable(1)
 				navBar.Enable(2)
+				navBar.Select(1)
 			}
 		})
 	}

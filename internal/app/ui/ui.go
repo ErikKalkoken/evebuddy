@@ -217,8 +217,14 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 		if u.isOffline {
 			slog.Info("Started in offline mode")
 		}
+		if !u.isOffline && !u.isUpdateDisabled {
+			u.isForeground.Store(true)
+		} else {
+			slog.Info("Update ticker disabled")
+		}
+		u.snackbar.Start()
 		go func() {
-			time.Sleep(250 * time.Millisecond) // FIXME: Workaround for occasional progess bar panic
+			// time.Sleep(250 * time.Millisecond) // FIXME: Workaround for occasional progess bar panic
 			u.UpdateCrossPages()
 			if u.HasCharacter() {
 				u.setCharacter(u.character)
@@ -226,18 +232,12 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 				u.resetCharacter()
 			}
 			u.updateStatus()
-		}()
-		u.snackbar.Start()
-		if !u.isOffline && !u.isUpdateDisabled {
-			u.isForeground.Store(true)
-			go func() {
+			u.characterJumpClones.StartUpdateTicker()
+			if !u.isOffline && !u.isUpdateDisabled {
 				u.startUpdateTickerGeneralSections()
 				u.startUpdateTickerCharacters()
-			}()
-		} else {
-			slog.Info("Update ticker disabled")
-		}
-		go u.characterJumpClones.StartUpdateTicker()
+			}
+		}()
 		if u.onAppFirstStarted != nil {
 			u.onAppFirstStarted()
 		}
@@ -425,27 +425,14 @@ func (u *BaseUI) updateStatus() {
 	go u.onUpdateStatus()
 }
 
-// updateCharacter updates all pages for the current character.
-func (u *BaseUI) updateCharacter() {
+// UpdateCharacter updates all pages for the current character.
+func (u *BaseUI) UpdateCharacter() {
 	c := u.CurrentCharacter()
 	if c != nil {
 		slog.Debug("Updating character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
 	} else {
 		slog.Debug("Updating without character")
 	}
-	ff := u.updateCharacterMap()
-	if u.onUpdateCharacter != nil {
-		ff["OnUpdateCharacter"] = func() {
-			u.onUpdateCharacter(c)
-		}
-	}
-	runFunctionsWithProgressModal("Loading character", ff, u.window)
-	if c != nil && !u.isUpdateDisabled {
-		u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
-	}
-}
-
-func (u *BaseUI) updateCharacterMap() map[string]func() {
 	ff := map[string]func(){
 		"assets":            u.characterAsset.update,
 		"attributes":        u.characterAttributes.update,
@@ -461,15 +448,19 @@ func (u *BaseUI) updateCharacterMap() map[string]func() {
 		"walletJournal":     u.characterWalletJournal.update,
 		"walletTransaction": u.characterWalletTransaction.update,
 	}
-	return ff
+	if u.onUpdateCharacter != nil {
+		ff["OnUpdateCharacter"] = func() {
+			u.onUpdateCharacter(c)
+		}
+	}
+	runFunctionsWithProgressModal("Loading character", ff, u.window)
+	if c != nil && !u.isUpdateDisabled {
+		u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
+	}
 }
 
 // UpdateCrossPages refreshed all pages that contain information about multiple characters.
 func (u *BaseUI) UpdateCrossPages() {
-	runFunctionsWithProgressModal("Updating characters", u.updateCrossPagesMap(), u.window)
-}
-
-func (u *BaseUI) updateCrossPagesMap() map[string]func() {
 	ff := map[string]func(){
 		"assetSearch":       u.overviewAssets.update,
 		"contractsAll":      u.contractsAll.update,
@@ -486,7 +477,7 @@ func (u *BaseUI) updateCrossPagesMap() map[string]func() {
 	if u.onRefreshCross != nil {
 		ff["onRefreshCross"] = u.onRefreshCross
 	}
-	return ff
+	runFunctionsWithProgressModal("Updating characters", ff, u.window)
 }
 
 func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Window) {
@@ -523,14 +514,14 @@ func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Wi
 func (u *BaseUI) resetCharacter() {
 	u.character = nil
 	u.Settings().ResetLastCharacterID()
-	u.updateCharacter()
+	u.UpdateCharacter()
 	u.updateStatus()
 }
 
 func (u *BaseUI) setCharacter(c *app.Character) {
 	u.character = c
 	u.Settings().SetLastCharacterID(c.ID)
-	u.updateCharacter()
+	u.UpdateCharacter()
 	u.updateStatus()
 	if u.onSetCharacter != nil {
 		u.onSetCharacter(c.ID)

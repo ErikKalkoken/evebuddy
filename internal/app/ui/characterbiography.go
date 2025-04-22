@@ -32,15 +32,17 @@ func (a *CharacterBiography) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *CharacterBiography) update() {
 	character := a.u.CurrentCharacter()
-	fyne.Do(func() {
-		if character == nil || character.EveCharacter == nil {
+	if character == nil || character.EveCharacter == nil {
+		fyne.Do(func() {
 			a.body.Text = "Waiting for character data to be loaded..."
 			a.body.Importance = widget.WarningImportance
 			a.body.Refresh()
-		} else {
+		})
+	} else {
+		fyne.Do(func() {
 			a.body.Text = character.EveCharacter.DescriptionPlain()
 			a.body.Importance = widget.MediumImportance
 			a.body.Refresh()
-		}
-	})
+		})
+	}
 }
