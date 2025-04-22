@@ -70,16 +70,24 @@ func (u *UI) makePage() *fyne.Container {
 		u.window.SetContent(c)
 		go func() {
 			if err := u.removeFolders(ctx, pb); err == ErrCancel {
-				title.SetText("Data delete aborted")
+				fyne.Do(func() {
+					title.SetText("Data delete aborted")
+				})
 			} else if err != nil {
-				title.SetText("Data delete failed")
-				errText.SetText(fmt.Sprintf("ERROR: %s", err))
+				fyne.Do(func() {
+					title.SetText("Data delete failed")
+					errText.SetText(fmt.Sprintf("ERROR: %s", err))
+				})
 			} else {
-				title.SetText("Data delete completed")
+				fyne.Do(func() {
+					title.SetText("Data delete completed")
+				})
 			}
 			cancel()
-			cancelBtn.Disable()
-			closeBtn.Enable()
+			fyne.Do(func() {
+				cancelBtn.Disable()
+				closeBtn.Enable()
+			})
 		}()
 	})
 	okBtn.Importance = widget.DangerImportance
