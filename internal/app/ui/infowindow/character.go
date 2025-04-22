@@ -70,9 +70,11 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 		err := a.load()
 		if err != nil {
 			slog.Error("character info update failed", "character", a.id, "error", err)
-			a.name.Text = fmt.Sprintf("ERROR: Failed to load character: %s", a.iw.u.ErrorDisplay(err))
-			a.name.Importance = widget.DangerImportance
-			a.name.Refresh()
+			fyne.Do(func() {
+				a.name.Text = fmt.Sprintf("ERROR: Failed to load character: %s", a.iw.u.ErrorDisplay(err))
+				a.name.Importance = widget.DangerImportance
+				a.name.Refresh()
+			})
 		}
 	}()
 	p := theme.Padding()
@@ -111,68 +113,11 @@ func (a *characterInfo) load() error {
 			slog.Error("character info: Failed to load portrait", "characterID", a.id, "error", err)
 			return
 		}
-		a.portrait.SetResource(r)
+		fyne.Do(func() {
+			a.portrait.SetResource(r)
+		})
 	}()
-	o, err := a.iw.u.EveUniverseService().GetCharacterESI(ctx, a.id)
-	if err != nil {
-		return err
-	}
-	a.name.SetText(o.Name)
-	if o.HasAlliance() {
-		a.alliance.SetText(o.Alliance.Name)
-		a.alliance.OnTapped = func() {
-			a.iw.ShowEveEntity(o.Alliance)
-		}
-	} else {
-		a.alliance.Hide()
-	}
-	a.security.SetText(fmt.Sprintf("Security Status: %.1f", o.SecurityStatus))
-	a.corporation.SetText(fmt.Sprintf("Member of %s", o.Corporation.Name))
-	a.corporation.OnTapped = func() {
-		a.iw.ShowEveEntity(o.Corporation)
-	}
-	a.portrait.OnTapped = func() {
-		go a.iw.showZoomWindow(o.Name, a.id, a.iw.u.EveImageService().CharacterPortrait, a.iw.w)
-	}
-	if s := o.DescriptionPlain(); s != "" {
-		bio := widget.NewLabel(s)
-		bio.Wrapping = fyne.TextWrapWord
-		a.tabs.Append(container.NewTabItem("Bio", container.NewVScroll(bio)))
-	}
-	if o.Title != "" {
-		a.title.SetText("Title: " + o.Title)
-	} else {
-		a.title.Hide()
-	}
 
-	desc := widget.NewLabel(o.RaceDescription())
-	desc.Wrapping = fyne.TextWrapWord
-	a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
-
-	attributes := []AttributeItem{
-		NewAtributeItem("Corporation", o.Corporation),
-		NewAtributeItem("Race", o.Race),
-	}
-	if a.iw.u.IsDeveloperMode() {
-		x := NewAtributeItem("EVE ID", o.ID)
-		x.Action = func(_ any) {
-			a.iw.w.Clipboard().SetContent(fmt.Sprint(o.ID))
-		}
-		attributes = append(attributes, x)
-	}
-	attributeList := NewAttributeList(a.iw, attributes...)
-	attributesTab := container.NewTabItem("Attributes", attributeList)
-	a.tabs.Append(attributesTab)
-	a.tabs.Refresh()
-	go func() {
-		r, err := a.iw.u.EveImageService().CorporationLogo(o.Corporation.ID, app.IconPixelSize)
-		if err != nil {
-			slog.Error("character info: Failed to load corp logo", "characterID", a.id, "error", err)
-			return
-		}
-		a.corporationLogo.Resource = r
-		a.corporationLogo.Refresh()
-	}()
 	go func() {
 		history, err := a.iw.u.EveUniverseService().GetCharacterCorporationHistory(ctx, a.id)
 		if err != nil {
@@ -180,16 +125,86 @@ func (a *characterInfo) load() error {
 			return
 		}
 		if len(history) == 0 {
-			a.membership.Hide()
+			fyne.Do(func() {
+				a.membership.Hide()
+			})
 			return
 		}
-		current := history[0]
-		duration := humanize.RelTime(current.StartDate, time.Now(), "", "")
-		a.membership.SetText(fmt.Sprintf("for %s", duration))
 		items := xslices.Map(history, historyItem2EntityItem)
 		historyList := NewEntityListFromItems(a.iw.show, items...)
-		a.tabs.Append(container.NewTabItem("Employment History", historyList))
-		a.tabs.Refresh()
+		fyne.Do(func() {
+			a.tabs.Append(container.NewTabItem("Employment History", historyList))
+			a.tabs.Refresh()
+			current := history[0]
+			duration := humanize.RelTime(current.StartDate, time.Now(), "", "")
+			a.membership.SetText(fmt.Sprintf("for %s", duration))
+		})
 	}()
+	o, err := a.iw.u.EveUniverseService().GetCharacterESI(ctx, a.id)
+	if err != nil {
+		return err
+	}
+	go func() {
+		r, err := a.iw.u.EveImageService().CorporationLogo(o.Corporation.ID, app.IconPixelSize)
+		if err != nil {
+			slog.Error("character info: Failed to load corp logo", "characterID", a.id, "error", err)
+			return
+		}
+		fyne.Do(func() {
+			a.corporationLogo.Resource = r
+			a.corporationLogo.Refresh()
+		})
+	}()
+	fyne.Do(func() {
+		a.name.SetText(o.Name)
+		if o.HasAlliance() {
+			a.alliance.SetText(o.Alliance.Name)
+			a.alliance.OnTapped = func() {
+				a.iw.ShowEveEntity(o.Alliance)
+			}
+		} else {
+			a.alliance.Hide()
+		}
+		a.security.SetText(fmt.Sprintf("Security Status: %.1f", o.SecurityStatus))
+		a.corporation.SetText(fmt.Sprintf("Member of %s", o.Corporation.Name))
+		a.corporation.OnTapped = func() {
+			a.iw.ShowEveEntity(o.Corporation)
+		}
+		a.portrait.OnTapped = func() {
+			go fyne.Do(func() {
+				a.iw.showZoomWindow(o.Name, a.id, a.iw.u.EveImageService().CharacterPortrait, a.iw.w)
+			})
+		}
+		if s := o.DescriptionPlain(); s != "" {
+			bio := widget.NewLabel(s)
+			bio.Wrapping = fyne.TextWrapWord
+			a.tabs.Append(container.NewTabItem("Bio", container.NewVScroll(bio)))
+		}
+		if o.Title != "" {
+			a.title.SetText("Title: " + o.Title)
+		} else {
+			a.title.Hide()
+		}
+
+		desc := widget.NewLabel(o.RaceDescription())
+		desc.Wrapping = fyne.TextWrapWord
+		a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
+
+		attributes := []AttributeItem{
+			NewAtributeItem("Corporation", o.Corporation),
+			NewAtributeItem("Race", o.Race),
+		}
+		if a.iw.u.IsDeveloperMode() {
+			x := NewAtributeItem("EVE ID", o.ID)
+			x.Action = func(_ any) {
+				a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
+			}
+			attributes = append(attributes, x)
+		}
+		attributeList := NewAttributeList(a.iw, attributes...)
+		attributesTab := container.NewTabItem("Attributes", attributeList)
+		a.tabs.Append(attributesTab)
+		a.tabs.Refresh()
+	})
 	return nil
 }

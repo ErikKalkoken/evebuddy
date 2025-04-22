@@ -140,20 +140,23 @@ func (a *CharacterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 	return t
 }
 
-func (a *CharacterJumpClones) Update() {
+func (a *CharacterJumpClones) update() {
 	tree, err := a.newTreeData()
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
-		iwidget.SetRichText(a.top, &widget.TextSegment{
-			Text: "ERROR: " + a.u.ErrorDisplay(err),
-			Style: widget.RichTextStyle{
-				ColorName: theme.ColorNameError,
-			}})
-
+		fyne.Do(func() {
+			iwidget.SetRichText(a.top, &widget.TextSegment{
+				Text: "ERROR: " + a.u.ErrorDisplay(err),
+				Style: widget.RichTextStyle{
+					ColorName: theme.ColorNameError,
+				}})
+		})
 	} else {
-		a.RefreshTop()
+		fyne.Do(func() {
+			a.RefreshTop()
+			a.tree.Set(tree)
+		})
 	}
-	a.tree.Set(tree)
 	if a.OnReDraw != nil {
 		a.OnReDraw(a.ClonesCount())
 	}
@@ -161,7 +164,7 @@ func (a *CharacterJumpClones) Update() {
 
 func (a *CharacterJumpClones) newTreeData() (*iwidget.TreeData[jumpCloneNode], error) {
 	tree := iwidget.NewTreeData[jumpCloneNode]()
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		return tree, nil
 	}
 	ctx := context.Background()
@@ -210,7 +213,7 @@ func (a *CharacterJumpClones) RefreshTop() {
 		Text:  "",
 		Style: defaultStyle,
 	}
-	c := a.u.CurrentCharacter()
+	c := a.u.currentCharacter()
 	if c == nil {
 		s.Text = "No character"
 		s.Style.ColorName = theme.ColorNameDisabled
@@ -268,7 +271,9 @@ func (a *CharacterJumpClones) StartUpdateTicker() {
 	ticker := time.NewTicker(time.Second * 15)
 	go func() {
 		for {
-			a.RefreshTop()
+			fyne.Do(func() {
+				a.RefreshTop()
+			})
 			<-ticker.C
 		}
 	}()

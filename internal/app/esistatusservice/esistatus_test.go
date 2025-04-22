@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -55,7 +56,7 @@ func TestFetch(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := &app.ESIStatus{
-				ErrorMessage: "418: general swagger error",
+				ErrorMessage: "418 I'm a teapot: general swagger error",
 			}
 			assert.Equal(t, want, got)
 		}
@@ -96,10 +97,7 @@ func TestFetchSwaggerErrors(t *testing.T) {
 			got, err := es.Fetch(ctx)
 			// then
 			if assert.NoError(t, err) {
-				want := &app.ESIStatus{
-					ErrorMessage: fmt.Sprintf("%d: custom error message", code),
-				}
-				assert.Equal(t, want, got)
+				assert.True(t, strings.HasPrefix(got.ErrorMessage, fmt.Sprint(code)))
 			}
 		})
 	}

@@ -39,7 +39,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			"type":            "InsurancePayoutMsg"}}
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/notifications/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/notifications/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
 		changed, err := s.updateNotificationsESI(ctx, app.CharacterUpdateSectionParams{
@@ -82,7 +82,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			"type":            "InsurancePayoutMsg"}}
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/notifications/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/notifications/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
 		changed, err := s.updateNotificationsESI(ctx, app.CharacterUpdateSectionParams{
@@ -128,7 +128,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			"type":            "InsurancePayoutMsg"}}
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/notifications/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/notifications/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
 		changed, err := s.updateNotificationsESI(ctx, app.CharacterUpdateSectionParams{

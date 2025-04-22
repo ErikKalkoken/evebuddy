@@ -134,7 +134,7 @@ func (a *OverviewCharacters) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *OverviewCharacters) Update() {
+func (a *OverviewCharacters) update() {
 	t, i, err := func() (string, widget.Importance, error) {
 		totals, err := a.updateCharacters()
 		if err != nil {
@@ -160,10 +160,12 @@ func (a *OverviewCharacters) Update() {
 		t = "ERROR"
 		i = widget.DangerImportance
 	}
-	a.top.Text = t
-	a.top.Importance = i
-	a.top.Refresh()
-	a.body.Refresh()
+	fyne.Do(func() {
+		a.top.Text = t
+		a.top.Importance = i
+		a.top.Refresh()
+		a.body.Refresh()
+	})
 }
 
 type overviewTotals struct {

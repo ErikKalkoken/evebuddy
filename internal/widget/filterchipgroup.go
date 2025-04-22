@@ -3,7 +3,6 @@ package widget
 import (
 	"image/color"
 	"slices"
-	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -34,7 +33,6 @@ type FilterChip struct {
 	label      *widget.Label
 	bg         *canvas.Rectangle
 	focused    bool
-	mu         sync.RWMutex
 }
 
 var _ desktop.Hoverable = (*FilterChip)(nil)
@@ -63,13 +61,10 @@ func NewFilterChip(text string, changed func(selected bool)) *FilterChip {
 
 // SetSelected sets the state.
 func (w *FilterChip) SetSelected(v bool) {
-	w.mu.Lock()
 	if w.Selected == v {
-		w.mu.Unlock()
 		return
 	}
 	w.Selected = v
-	w.mu.Unlock()
 	if w.OnChanged != nil {
 		w.OnChanged(v)
 	}
@@ -87,8 +82,6 @@ func (w *FilterChip) Refresh() {
 func (w *FilterChip) updateState() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
-	w.mu.Lock()
-	defer w.mu.Unlock()
 
 	w.label.Text = w.Text
 
@@ -228,9 +221,7 @@ type FilterChipGroup struct {
 	widget.DisableableWidget
 
 	OnChanged func([]string)
-
-	mu       sync.RWMutex
-	Selected []string
+	Selected  []string
 
 	options []string
 	chips   []*FilterChip
@@ -260,8 +251,6 @@ func NewFilterChipGroup(options []string, changed func([]string)) *FilterChipGro
 }
 
 func (w *FilterChipGroup) toggleOption(o string, selected bool) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
 	if selected {
 		if slices.IndexFunc(w.Selected, func(s string) bool {
 			return s == o
@@ -277,9 +266,7 @@ func (w *FilterChipGroup) toggleOption(o string, selected bool) {
 
 // SetSelected updates the selected options.
 func (w *FilterChipGroup) SetSelected(s []string) {
-	w.mu.Lock()
 	w.Selected = slices.Clone(s)
-	w.mu.Unlock()
 	w.Refresh()
 
 }
@@ -294,8 +281,6 @@ func (w *FilterChipGroup) update() {
 	for _, v := range w.options {
 		optionMap[v] = true
 	}
-	w.mu.RLock()
-	defer w.mu.RUnlock()
 	for _, v := range w.Selected {
 		if v == "" {
 			panic("Empty string in Selected")

@@ -96,7 +96,7 @@ func NewContracts(u *BaseUI) *Contracts {
 	return a
 }
 
-func (a *Contracts) Update() {
+func (a *Contracts) update() {
 	var t string
 	var i widget.Importance
 	if err := a.updateEntries(); err != nil {
@@ -106,22 +106,24 @@ func (a *Contracts) Update() {
 	} else {
 		t, i = a.makeTopText()
 	}
-	if t != "" {
-		a.top.Text = t
-		a.top.Importance = i
-		a.top.Refresh()
-		a.top.Show()
-	} else {
-		a.top.Hide()
-	}
-	a.body.Refresh()
+	fyne.Do(func() {
+		if t != "" {
+			a.top.Text = t
+			a.top.Importance = i
+			a.top.Refresh()
+			a.top.Show()
+		} else {
+			a.top.Hide()
+		}
+		a.body.Refresh()
+	})
 }
 
 func (a *Contracts) makeTopText() (string, widget.Importance) {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		return "No character", widget.LowImportance
 	}
-	c := a.u.CurrentCharacter()
+	c := a.u.currentCharacter()
 	hasData := a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionContracts)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
@@ -130,7 +132,7 @@ func (a *Contracts) makeTopText() (string, widget.Importance) {
 }
 
 func (a *Contracts) updateEntries() error {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		a.contracts = make([]*app.CharacterContract, 0)
 		return nil
 	}

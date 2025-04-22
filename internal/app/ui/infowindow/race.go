@@ -45,9 +45,11 @@ func (a *raceInfo) CreateRenderer() fyne.WidgetRenderer {
 		err := a.load()
 		if err != nil {
 			slog.Error("race info update failed", "race", a.id, "error", err)
-			a.name.Text = fmt.Sprintf("ERROR: Failed to load race: %s", a.iw.u.ErrorDisplay(err))
-			a.name.Importance = widget.DangerImportance
-			a.name.Refresh()
+			fyne.Do(func() {
+				a.name.Text = fmt.Sprintf("ERROR: Failed to load race: %s", a.iw.u.ErrorDisplay(err))
+				a.name.Importance = widget.DangerImportance
+				a.name.Refresh()
+			})
 		}
 	}()
 	p := theme.Padding()
@@ -67,7 +69,6 @@ func (a *raceInfo) load() error {
 	if err != nil {
 		return err
 	}
-	a.name.SetText(o.Name)
 	factionID, found := o.FactionID()
 	if found {
 		go func() {
@@ -76,21 +77,28 @@ func (a *raceInfo) load() error {
 				slog.Error("race info: Failed to load logo", "corporationID", a.id, "error", err)
 				return
 			}
-			a.logo.Resource = r
-			a.logo.Refresh()
+			fyne.Do(func() {
+				a.logo.Resource = r
+				a.logo.Refresh()
+			})
 		}()
 	}
-	desc := widget.NewLabel(o.Description)
-	desc.Wrapping = fyne.TextWrapWord
-	a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
+	fyne.Do(func() {
+		desc := widget.NewLabel(o.Description)
+		desc.Wrapping = fyne.TextWrapWord
+		a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
+		a.name.SetText(o.Name)
+	})
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", fmt.Sprint(o.ID))
 		x.Action = func(v any) {
-			a.iw.w.Clipboard().SetContent(v.(string))
+			a.iw.u.App().Clipboard().SetContent(v.(string))
 		}
 		attributeList := NewAttributeList(a.iw, []AttributeItem{x}...)
 		attributesTab := container.NewTabItem("Attributes", attributeList)
-		a.tabs.Append(attributesTab)
+		fyne.Do(func() {
+			a.tabs.Append(attributesTab)
+		})
 	}
 	return nil
 }

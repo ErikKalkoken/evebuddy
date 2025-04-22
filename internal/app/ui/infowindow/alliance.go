@@ -45,9 +45,11 @@ func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 		err := a.load()
 		if err != nil {
 			slog.Error("alliance info update failed", "alliance", a.id, "error", err)
-			a.name.Text = fmt.Sprintf("ERROR: Failed to load alliance: %s", a.iw.u.ErrorDisplay(err))
-			a.name.Importance = widget.DangerImportance
-			a.name.Refresh()
+			fyne.Do(func() {
+				a.name.Text = fmt.Sprintf("ERROR: Failed to load alliance: %s", a.iw.u.ErrorDisplay(err))
+				a.name.Importance = widget.DangerImportance
+				a.name.Refresh()
+			})
 		}
 	}()
 	top := container.NewBorder(nil, nil, container.NewVBox(container.NewPadded(a.logo)), nil, a.name)
@@ -57,20 +59,39 @@ func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *allianceInfo) load() error {
 	ctx := context.Background()
-	o, err := a.iw.u.EveUniverseService().GetAllianceESI(ctx, a.id)
-	if err != nil {
-		return err
-	}
-	a.name.SetText(o.Name)
 	go func() {
 		r, err := a.iw.u.EveImageService().AllianceLogo(a.id, app.IconPixelSize)
 		if err != nil {
 			slog.Error("alliance info: Failed to load logo", "allianceID", a.id, "error", err)
 			return
 		}
-		a.logo.Resource = r
-		a.logo.Refresh()
+		fyne.Do(func() {
+			a.logo.Resource = r
+			a.logo.Refresh()
+		})
 	}()
+
+	// Members
+	go func() {
+		members, err := a.iw.u.EveUniverseService().GetAllianceCorporationsESI(ctx, a.id)
+		if err != nil {
+			slog.Error("alliance info: Failed to load corporations", "allianceID", a.id, "error", err)
+			return
+		}
+		if len(members) == 0 {
+			return
+		}
+		memberList := NewEntityListFromEntities(a.iw.show, members...)
+		fyne.Do(func() {
+			a.tabs.Append(container.NewTabItem("Members", memberList))
+			a.tabs.Refresh()
+		})
+	}()
+	o, err := a.iw.u.EveUniverseService().GetAllianceESI(ctx, a.id)
+	if err != nil {
+		return err
+	}
+
 	// Attributes
 	attributes := make([]AttributeItem, 0)
 	if o.ExecutorCorporation != nil {
@@ -94,27 +115,15 @@ func (a *allianceInfo) load() error {
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
-			a.iw.w.Clipboard().SetContent(fmt.Sprint(o.ID))
+			a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
 		}
 		attributes = append(attributes, x)
 	}
 	attributeList := NewAttributeList(a.iw, attributes...)
-	a.tabs.Append(container.NewTabItem("Attributes", attributeList))
-
-	// Members
-	go func() {
-		members, err := a.iw.u.EveUniverseService().GetAllianceCorporationsESI(ctx, a.id)
-		if err != nil {
-			slog.Error("alliance info: Failed to load corporations", "allianceID", a.id, "error", err)
-			return
-		}
-		if len(members) == 0 {
-			return
-		}
-		memberList := NewEntityListFromEntities(a.iw.show, members...)
-		a.tabs.Append(container.NewTabItem("Members", memberList))
+	fyne.Do(func() {
+		a.name.SetText(o.Name)
+		a.tabs.Append(container.NewTabItem("Attributes", attributeList))
 		a.tabs.Refresh()
-	}()
-	a.tabs.Refresh()
+	})
 	return nil
 }

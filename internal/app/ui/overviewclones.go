@@ -205,7 +205,7 @@ func (a *OverviewClones) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *OverviewClones) Update() {
+func (a *OverviewClones) update() {
 	t, i, err := func() (string, widget.Importance, error) {
 		err := a.updateRows()
 		if err != nil {
@@ -218,14 +218,16 @@ func (a *OverviewClones) Update() {
 		return s, widget.MediumImportance, nil
 	}()
 	if err != nil {
-		slog.Error("Failed to refresh overview UI", "err", err)
+		slog.Error("Failed to refresh clones UI", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
 	}
-	a.top.Text = t
-	a.top.Importance = i
-	a.top.Refresh()
-	a.body.Refresh()
+	fyne.Do(func() {
+		a.top.Text = t
+		a.top.Importance = i
+		a.top.Refresh()
+		a.body.Refresh()
+	})
 	if len(a.rows) > 0 && a.origin != nil {
 		go a.updateRoutes(app.RoutePreference(a.routePref.Selected))
 	}
@@ -250,10 +252,12 @@ func (a *OverviewClones) updateRoutes(flag app.RoutePreference) {
 	if a.origin == nil {
 		return
 	}
-	for i := range a.rows {
-		a.rows[i].route = nil
-	}
-	a.body.Refresh()
+	fyne.Do(func() {
+		for i := range a.rows {
+			a.rows[i].route = nil
+		}
+		a.body.Refresh()
+	})
 	ctx := context.Background()
 	wg := new(sync.WaitGroup)
 	for i, o := range a.rows {
@@ -267,19 +271,23 @@ func (a *OverviewClones) updateRoutes(flag app.RoutePreference) {
 				slog.Error("Failed to get route", "origin", origin.ID, "destination", dest.ID, "error", err)
 				return
 			}
-			a.rows[i].route = j
-			a.body.Refresh()
+			fyne.Do(func() {
+				a.rows[i].route = j
+				a.body.Refresh()
+			})
 		}()
 	}
 	wg.Wait()
 	slices.SortFunc(a.rows, func(a, b cloneSearchRow) int {
 		return a.compare(b)
 	})
-	for i := range a.colSort {
-		a.colSort[i] = sortOff
-	}
-	a.colSort[4] = sortAsc
-	a.body.Refresh()
+	fyne.Do(func() {
+		for i := range a.colSort {
+			a.colSort[i] = sortOff
+		}
+		a.colSort[4] = sortAsc
+		a.body.Refresh()
+	})
 }
 
 func (a *OverviewClones) changeOrigin(w fyne.Window) {
@@ -345,14 +353,18 @@ func (a *OverviewClones) changeOrigin(w fyne.Window) {
 				false,
 			)
 			if err != nil {
-				showErrorDialog(search, err)
+				fyne.Do(func() {
+					showErrorDialog(search, err)
+				})
 				return
 			}
 			results = ee[app.SearchSolarSystem]
 			slices.SortFunc(results, func(a, b *app.EveEntity) int {
 				return a.Compare(b)
 			})
-			list.Refresh()
+			fyne.Do(func() {
+				list.Refresh()
+			})
 		}()
 	}
 	note := widget.NewLabel("Select solar system from results list to change origin.")

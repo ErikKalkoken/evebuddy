@@ -145,7 +145,7 @@ func (a *CharacterFlyableShips) makeShipsGrid() *widget.GridWrap {
 	return g
 }
 
-func (a *CharacterFlyableShips) Update() {
+func (a *CharacterFlyableShips) update() {
 	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
 		exists := a.u.StatusCacheService().GeneralSectionExists(app.SectionEveCategories)
 		if !exists {
@@ -161,25 +161,29 @@ func (a *CharacterFlyableShips) Update() {
 		t = "ERROR"
 		i = widget.DangerImportance
 	}
-	a.top.Text = t
-	a.top.Importance = i
-	a.top.Refresh()
-	a.grid.Refresh()
-	if enabled {
-		a.searchBox.Enable()
-	} else {
-		a.searchBox.Disable()
-	}
-	a.reset()
+	fyne.Do(func() {
+		a.top.Text = t
+		a.top.Importance = i
+		a.top.Refresh()
+		a.grid.Refresh()
+		if enabled {
+			a.searchBox.Enable()
+		} else {
+			a.searchBox.Disable()
+		}
+		a.reset()
+	})
 }
 
 func (a *CharacterFlyableShips) updateEntries() error {
-	if !a.u.HasCharacter() {
-		a.ships = make([]*app.CharacterShipAbility, 0)
-		a.grid.Refresh()
-		a.searchBox.SetText("")
-		a.groupSelect.SetOptions([]string{})
-		a.flyableSelect.SetOptions([]string{})
+	if !a.u.hasCharacter() {
+		fyne.Do(func() {
+			a.ships = make([]*app.CharacterShipAbility, 0)
+			a.grid.Refresh()
+			a.searchBox.SetText("")
+			a.groupSelect.SetOptions([]string{})
+			a.flyableSelect.SetOptions([]string{})
+		})
 		return nil
 	}
 	characterID := a.u.CurrentCharacterID()
@@ -204,8 +208,6 @@ func (a *CharacterFlyableShips) updateEntries() error {
 			ships = append(ships, o)
 		}
 	}
-	a.ships = ships
-	a.grid.Refresh()
 	g := set.New[string]()
 	f := set.New[string]()
 	for _, o := range ships {
@@ -218,17 +220,21 @@ func (a *CharacterFlyableShips) updateEntries() error {
 	}
 	groups := g.ToSlice()
 	slices.Sort(groups)
-	a.groupSelect.SetOptions(groups)
 	flyable := f.ToSlice()
 	slices.Sort(flyable)
-	a.flyableSelect.SetOptions(flyable)
-	a.foundText.SetText(fmt.Sprintf("%d found", len(ships)))
-	a.foundText.Show()
+	fyne.Do(func() {
+		a.groupSelect.SetOptions(groups)
+		a.flyableSelect.SetOptions(flyable)
+		a.foundText.SetText(fmt.Sprintf("%d found", len(ships)))
+		a.foundText.Show()
+		a.ships = ships
+		a.grid.Refresh()
+	})
 	return nil
 }
 
 func (a *CharacterFlyableShips) makeTopText() (string, widget.Importance, bool, error) {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		return "No character", widget.LowImportance, false, nil
 	}
 	characterID := a.u.CurrentCharacterID()
@@ -318,8 +324,10 @@ func (w *ShipItem) Set(typeID int32, label string, canFly bool) {
 		if !canFly {
 			img = effect.Grayscale(img)
 		}
-		w.image.Image = img
-		w.image.Refresh()
+		fyne.Do(func() {
+			w.image.Image = img
+			w.image.Refresh()
+		})
 	}()
 }
 

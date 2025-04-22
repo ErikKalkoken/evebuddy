@@ -61,8 +61,10 @@ func (w *MailHeaderItem) Set(from *app.EveEntity, subject string, timestamp time
 			slog.Error("fetch eve entity avatar", "error", err)
 			res = w.FallbackIcon
 		}
-		w.icon.Resource = res
-		w.icon.Refresh()
+		fyne.Do(func() {
+			w.icon.Resource = res
+			w.icon.Refresh()
+		})
 	}()
 }
 
@@ -138,7 +140,9 @@ func (w *MailHeader) Set(from *app.EveEntity, timestamp time.Time, recipients ..
 			slog.Error("fetch eve entity avatar", "error", err)
 			res = icons.Questionmark32Png
 		}
-		w.icon.SetResource(res)
+		fyne.Do(func() {
+			w.icon.SetResource(res)
+		})
 	}()
 }
 

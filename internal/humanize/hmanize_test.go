@@ -91,7 +91,7 @@ func TestError(t *testing.T) {
 		_, _, err := client.ESI.MarketApi.GetMarketsPrices(ctx, nil)
 		// when
 		got := humanize.Error(err)
-		assert.Equal(t, "400: my error", got)
+		assert.Equal(t, "400 Bad Request: my error", got)
 	})
 }
 

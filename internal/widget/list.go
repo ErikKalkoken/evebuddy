@@ -203,7 +203,9 @@ func (w *List) CreateRenderer() fyne.WidgetRenderer {
 		a()
 		go func() {
 			time.Sleep(w.SelectDelay)
-			list.UnselectAll()
+			fyne.Do(func() {
+				list.UnselectAll()
+			})
 		}()
 	}
 	list.HideSeparators = true

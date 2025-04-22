@@ -118,8 +118,9 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 		}
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/", characterID),
-			httpmock.NewJsonResponderOrPanic(200, dataCharacter))
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/`,
+			httpmock.NewJsonResponderOrPanic(200, dataCharacter),
+		)
 		dataAffiliation := []map[string]any{
 			{
 				"alliance_id":    434243723,
@@ -128,8 +129,9 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 			}}
 		httpmock.RegisterResponder(
 			"POST",
-			"https://esi.evetech.net/v2/characters/affiliation/",
-			httpmock.NewJsonResponderOrPanic(200, dataAffiliation))
+			`=~^https://esi\.evetech\.net/v\d+/characters/affiliation/`,
+			httpmock.NewJsonResponderOrPanic(200, dataAffiliation),
+		)
 		// when
 		err := s.UpdateAllCharactersESI(ctx)
 		// then

@@ -125,6 +125,11 @@ func (a *testApp) SetSystemTrayIcon(_ fyne.Resource) {
 	// noop
 }
 
+func (a *testApp) Clipboard() fyne.Clipboard {
+	return a.app.Clipboard()
+}
+
+var _ fyne.App = (*testApp)(nil)
 var _ desktop.App = (*testApp)(nil)
 
 func TestUIStartEmpty(t *testing.T) {
@@ -159,14 +164,17 @@ func TestUIStartEmpty(t *testing.T) {
 	})
 	u := NewDesktopUI(bu)
 	u.Init()
-	for _, f := range u.updateCharacterMap() {
-		f()
-	}
-	for _, f := range u.updateCrossPagesMap() {
-		f()
-	}
-	u.MainWindow().Show()
-	assert.False(t, u.HasCharacter())
+	go func() {
+		ticker := time.NewTicker(50 * time.Millisecond)
+		for {
+			<-ticker.C
+			if u.IsStartupCompleted() {
+				u.App().Quit()
+			}
+		}
+	}()
+	u.ShowAndRun()
+	assert.False(t, u.hasCharacter())
 	assert.Equal(t, 0, httpmock.GetTotalCallCount())
 }
 
@@ -218,12 +226,16 @@ func TestUIStartWithCharacter(t *testing.T) {
 	})
 	u := NewDesktopUI(bu)
 	u.Init()
-	for _, f := range u.updateCharacterMap() {
-		f()
-	}
-	for _, f := range u.updateCrossPagesMap() {
-		f()
-	}
-	u.MainWindow().Show()
-	assert.Equal(t, character, u.CurrentCharacter())
+	go func() {
+		ticker := time.NewTicker(50 * time.Millisecond)
+		for {
+			<-ticker.C
+			if u.IsStartupCompleted() {
+				u.App().Quit()
+			}
+		}
+	}()
+	u.ShowAndRun()
+	assert.Equal(t, character, u.currentCharacter())
+
 }

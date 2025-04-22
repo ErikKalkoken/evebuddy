@@ -1,8 +1,6 @@
 package widget
 
 import (
-	"sync"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -20,7 +18,6 @@ type Label struct {
 	Truncation fyne.TextTruncation
 	Wrapping   fyne.TextWrap
 
-	mu       sync.Mutex
 	provider *widget.RichText
 }
 
@@ -42,9 +39,7 @@ func NewLabelWithSize(text string, sizeName fyne.ThemeSizeName) *Label {
 }
 
 func (w *Label) SetText(text string) {
-	w.mu.Lock()
 	w.Text = text
-	w.mu.Unlock()
 	w.Refresh()
 }
 
@@ -81,8 +76,6 @@ func (w *Label) syncSegments() {
 		color = theme.ColorNameForeground
 	}
 
-	w.mu.Lock()
-	defer w.mu.Unlock()
 	w.provider.Wrapping = w.Wrapping
 	w.provider.Truncation = w.Truncation
 	seg := w.provider.Segments[0].(*widget.TextSegment)

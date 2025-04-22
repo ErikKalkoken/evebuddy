@@ -93,31 +93,32 @@ func (a *OverviewLocations) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *OverviewLocations) Update() {
+func (a *OverviewLocations) update() {
 	t, i, err := func() (string, widget.Importance, error) {
-		locations, err := a.updateCharacters()
+		count, err := a.updateCharacters()
 		if err != nil {
 			return "", 0, err
 		}
 		if len(a.rows) == 0 {
 			return "No characters", widget.LowImportance, nil
 		}
-		s := fmt.Sprintf("%d characters • %d locations", len(a.rows), locations)
+		s := fmt.Sprintf("%d characters • %d locations", len(a.rows), count)
 		return s, widget.MediumImportance, nil
 	}()
 	if err != nil {
-		slog.Error("Failed to refresh overview UI", "err", err)
+		slog.Error("Failed to refresh locations UI", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
 	}
-	a.top.Text = t
-	a.top.Importance = i
-	a.top.Refresh()
-	a.body.Refresh()
+	fyne.Do(func() {
+		a.top.Text = t
+		a.top.Importance = i
+		a.top.Refresh()
+		a.body.Refresh()
+	})
 }
 
 func (a *OverviewLocations) updateCharacters() (int, error) {
-	var err error
 	ctx := context.TODO()
 	mycc, err := a.u.CharacterService().ListCharacters(ctx)
 	if err != nil {

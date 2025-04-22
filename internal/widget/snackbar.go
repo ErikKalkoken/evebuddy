@@ -84,7 +84,9 @@ func (sb *Snackbar) Start() {
 			if err != nil {
 				break
 			}
-			sb.show(m.text)
+			fyne.Do(func() {
+				sb.show(m.text)
+			})
 			select {
 			case <-sb.hideC:
 			case <-sb.stopC:
@@ -93,7 +95,9 @@ func (sb *Snackbar) Start() {
 				break L
 			case <-time.After(m.timeout):
 			}
-			sb.popup.Hide()
+			fyne.Do(func() {
+				sb.popup.Hide()
+			})
 		}
 		sb.isRunning.Store(false)
 		slog.Debug("Snackbar stopped")

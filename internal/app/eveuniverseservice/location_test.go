@@ -135,7 +135,7 @@ func TestLocationStructures(t *testing.T) {
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 99})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v2/universe/structures/%d/", structureID),
+			`=~^https://esi\.evetech\.net/v\d+/universe/structures/\d+/`,
 			httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]any{
 				"name":            "V-3YG7 VI - The Capital",
 				"owner_id":        109299958,
@@ -178,7 +178,7 @@ func TestLocationStructures(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v2/universe/structures/%d/", structureID),
+			`=~^https://esi\.evetech\.net/v\d+/universe/structures/\d+/`,
 			httpmock.NewJsonResponderOrPanic(http.StatusForbidden, map[string]any{
 				"error": "forbidden",
 			}),
@@ -205,7 +205,7 @@ func TestLocationStructures(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v2/universe/structures/%d/", structureID),
+			`=~^https://esi\.evetech\.net/v\d+/universe/structures/\d+/`,
 			httpmock.NewJsonResponderOrPanic(http.StatusNotFound, map[string]any{
 				"error": "xxx",
 			}),

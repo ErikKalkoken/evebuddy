@@ -170,8 +170,10 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 	)
 
 	u.characterAsset.OnRedraw = func(s string) {
-		navItemAssets.Supporting = s
-		characterList.Refresh()
+		fyne.Do(func() {
+			navItemAssets.Supporting = s
+			characterList.Refresh()
+		})
 	}
 
 	u.characterMail.OnUpdate = func(count int) {
@@ -179,8 +181,10 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		if count > 0 {
 			s = fmt.Sprintf("%s unread", humanize.Comma(int64(count)))
 		}
-		navItemMail.Supporting = s
-		characterList.Refresh()
+		fyne.Do(func() {
+			navItemMail.Supporting = s
+			characterList.Refresh()
+		})
 	}
 
 	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
@@ -190,18 +194,25 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		} else if count.ValueOrZero() > 0 {
 			s = fmt.Sprintf("%s unread", humanize.Comma(int64(count.ValueOrZero())))
 		}
-		navItemCommunications.Supporting = s
-		characterList.Refresh()
+		fyne.Do(func() {
+			navItemCommunications.Supporting = s
+			characterList.Refresh()
+		})
 	}
 
 	u.characterSkillQueue.OnUpdate = func(_, status string) {
-		navItemSkills.Supporting = status
-		characterList.Refresh()
+		fyne.Do(func() {
+			navItemSkills.Supporting = status
+			characterList.Refresh()
+		})
 	}
 
 	u.characterWalletJournal.OnUpdate = func(b string) {
-		navItemWallet.Supporting = "Balance: " + b
-		characterList.Refresh()
+		fyne.Do(func() {
+			navItemWallet.Supporting = "Balance: " + b
+			characterList.Refresh()
+
+		})
 	}
 
 	characterPage := newCharacterAppBar("Current Character", characterList)
@@ -221,6 +232,18 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		theme.NewThemedResource(icons.EarthSvg),
 		func() {
 			crossNav.Push(iwidget.NewAppBar("Colonies", u.colonies))
+		},
+	)
+	jobsActive := container.NewTabItem("Active", u.industryJobsActive)
+	jobsTab := container.NewAppTabs(
+		jobsActive,
+		container.NewTabItem("All", u.industryJobsAll),
+	)
+	navItemIndustry := iwidget.NewListItemWithIcon(
+		"Industry",
+		theme.NewThemedResource(icons.FactorySvg),
+		func() {
+			crossNav.Push(iwidget.NewAppBar("Industry", jobsTab))
 		},
 	)
 	crossList := iwidget.NewNavList(
@@ -260,33 +283,16 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 					if count > 0 {
 						s += fmt.Sprintf(" (%d)", count)
 					}
-					contractActive.Text = s
-					contractTabs.Refresh()
+					fyne.Do(func() {
+						contractActive.Text = s
+						contractTabs.Refresh()
+					})
 				}
 				crossNav.Push(iwidget.NewAppBar("Contracts", contractTabs))
 			},
 		),
 		navItemColonies2,
-		iwidget.NewListItemWithIcon(
-			"Industry",
-			theme.NewThemedResource(icons.FactorySvg),
-			func() {
-				jobsActive := container.NewTabItem("Active", u.industryJobsActive)
-				jobsTab := container.NewAppTabs(
-					jobsActive,
-					container.NewTabItem("All", u.industryJobsAll),
-				)
-				u.industryJobsActive.OnUpdate = func(count int) {
-					s := "Active"
-					if count > 0 {
-						s += fmt.Sprintf(" (%d)", count)
-					}
-					jobsActive.Text = s
-					jobsTab.Refresh()
-				}
-				crossNav.Push(iwidget.NewAppBar("Industry", jobsTab))
-			},
-		),
+		navItemIndustry,
 		iwidget.NewListItemWithIcon(
 			"Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),
@@ -305,16 +311,35 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 	)
 	crossNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("All Characters", crossList))
 	u.colonies.OnUpdate = func(_, expired int) {
-		navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
-		crossList.Refresh()
+		fyne.Do(func() {
+			navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
+			crossList.Refresh()
+		})
 	}
 	u.overviewWealth.OnUpdate = func(wallet, assets float64) {
-		navItemWealth.Supporting = fmt.Sprintf(
-			"Wallet: %s • Assets: %s",
-			ihumanize.Number(wallet, 1),
-			ihumanize.Number(assets, 1),
-		)
-		crossList.Refresh()
+		fyne.Do(func() {
+			navItemWealth.Supporting = fmt.Sprintf(
+				"Wallet: %s • Assets: %s",
+				ihumanize.Number(wallet, 1),
+				ihumanize.Number(assets, 1),
+			)
+			crossList.Refresh()
+		})
+	}
+	u.industryJobsActive.OnUpdate = func(count int) {
+		s := "Active"
+		c := ihumanize.Comma(count)
+		if count > 0 {
+			s += fmt.Sprintf(" (%s)", c)
+		}
+		fyne.Do(func() {
+			jobsActive.Text = s
+			jobsTab.Refresh()
+		})
+		fyne.Do(func() {
+			navItemIndustry.Supporting = fmt.Sprintf("%s jobs ready", c)
+			crossList.Refresh()
+		})
 	}
 
 	// info destination
@@ -408,7 +433,10 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		navItemAbout,
 	)
 	u.manageCharacters.OnUpdate = func(characterCount int) {
-		navItemManageCharacters.Supporting = fmt.Sprintf("%d characters", characterCount)
+		fyne.Do(func() {
+			navItemManageCharacters.Supporting = fmt.Sprintf("%d characters", characterCount)
+			toolsList.Refresh()
+		})
 	}
 	moreNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("More", toolsList))
 
@@ -425,10 +453,10 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 
 	searchDest := iwidget.NewDestinationDef("Search", theme.SearchIcon(), searchNav)
 	searchDest.OnSelected = func() {
-		u.gameSearch.Focus()
+		u.gameSearch.focus()
 	}
 	searchDest.OnSelectedAgain = func() {
-		u.gameSearch.Reset()
+		u.gameSearch.reset()
 	}
 
 	moreDest := iwidget.NewDestinationDef("More", theme.MenuIcon(), moreNav)
@@ -441,33 +469,44 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 
 	u.onUpdateStatus = func() {
 		go func() {
-			characterSelector.SetMenuItems(u.makeCharacterSwitchMenu(characterSelector.Refresh))
+			fyne.Do(func() {
+				characterSelector.SetMenuItems(u.makeCharacterSwitchMenu(characterSelector.Refresh))
+			})
 		}()
 	}
 	u.onUpdateCharacter = func(c *app.Character) {
-		mailMenu.Items = u.characterMail.MakeFolderMenu()
-		mailMenu.Refresh()
-		communicationsMenu.Items = u.characterCommunications.MakeFolderMenu()
-		communicationsMenu.Refresh()
-		if c == nil {
-			navBar.Disable(0)
-			navBar.Disable(1)
-			navBar.Disable(2)
-			navBar.Select(3)
-		} else {
-			navBar.Enable(0)
-			navBar.Enable(1)
-			navBar.Enable(2)
-		}
+		notifyItems := u.characterCommunications.MakeFolderMenu()
+		mailItems := u.characterMail.MakeFolderMenu()
+		fyne.Do(func() {
+			mailMenu.Items = mailItems
+			mailMenu.Refresh()
+			communicationsMenu.Items = notifyItems
+			communicationsMenu.Refresh()
+			if c == nil {
+				navBar.Disable(0)
+				navBar.Disable(1)
+				navBar.Disable(2)
+				navBar.Select(3)
+			} else {
+				navBar.Enable(0)
+				navBar.Enable(1)
+				navBar.Enable(2)
+				navBar.Select(1)
+			}
+		})
 	}
 	u.onSetCharacter = func(id int32) {
 		go u.updateAvatar(id, func(r fyne.Resource) {
-			characterSelector.SetIcon(r)
+			fyne.Do(func() {
+				characterSelector.SetIcon(r)
+			})
 		})
-		u.characterMail.ResetCurrentFolder()
-		u.characterCommunications.ResetCurrentFolder()
-		characterNav.PopAll()
-		navBar.Select(0)
+		fyne.Do(func() {
+			u.characterMail.resetCurrentFolder()
+			u.characterCommunications.resetCurrentFolder()
+			characterNav.PopAll()
+			navBar.Select(0)
+		})
 	}
 
 	u.onAppFirstStarted = func() {
@@ -475,8 +514,10 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		go func() {
 			for {
 				x := u.StatusCacheService().Summary()
-				u.navItemUpdateStatus.Supporting = x.Display()
-				toolsList.Refresh()
+				fyne.Do(func() {
+					u.navItemUpdateStatus.Supporting = x.Display()
+					toolsList.Refresh()
+				})
 				<-tickerUpdateStatus.C
 			}
 		}()
@@ -487,17 +528,21 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 				if err != nil {
 					slog.Error("fetch github version for menu info", "error", err)
 				} else {
-					if v.IsRemoteNewer {
-						navBar.SetBadge(3, true)
-						navItemAbout.Supporting = "Update available"
-						navItemAbout.Trailing = theme.NewPrimaryThemedResource(icons.Numeric1CircleSvg)
-					} else {
-						navBar.SetBadge(3, false)
-						navItemAbout.Supporting = ""
-						navItemAbout.Trailing = nil
-					}
+					fyne.Do(func() {
+						if v.IsRemoteNewer {
+							navBar.SetBadge(3, true)
+							navItemAbout.Supporting = "Update available"
+							navItemAbout.Trailing = theme.NewPrimaryThemedResource(icons.Numeric1CircleSvg)
+						} else {
+							navBar.SetBadge(3, false)
+							navItemAbout.Supporting = ""
+							navItemAbout.Trailing = nil
+						}
+					})
 				}
-				crossList.Refresh()
+				fyne.Do(func() {
+					crossList.Refresh()
+				})
 				<-tickerNewVersion.C
 			}
 		}()

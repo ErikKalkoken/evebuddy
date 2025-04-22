@@ -129,8 +129,10 @@ func (a *ManageCharacters) makeCharacterList() *widget.List {
 
 			icon := row[0].(*canvas.Image)
 			go a.u.updateAvatar(c.id, func(r fyne.Resource) {
-				icon.Resource = r
-				icon.Refresh()
+				fyne.Do(func() {
+					icon.Resource = r
+					icon.Refresh()
+				})
 			})
 
 			issue := row[2].(*widget.Label)
@@ -187,7 +189,7 @@ func (a *ManageCharacters) showDeleteDialog(c accountCharacter) {
 					if a.u.CurrentCharacterID() == c.id {
 						a.u.setAnyCharacter()
 					}
-					a.u.UpdateCrossPages()
+					a.u.updateCrossPages()
 					a.u.updateStatus()
 				}
 				m.OnError = func(err error) {
@@ -246,20 +248,26 @@ func (a *ManageCharacters) ShowAddCharacterDialog() {
 			} else if err != nil {
 				return err
 			}
-			a.Refresh()
+			fyne.Do(func() {
+				a.Refresh()
+			})
 			go a.u.updateCharacterAndRefreshIfNeeded(context.Background(), characterID, false)
-			if !a.u.HasCharacter() {
+			if !a.u.hasCharacter() {
 				a.u.loadCharacter(characterID)
 			}
-			a.u.UpdateCrossPages()
+			a.u.updateCrossPages()
 			a.u.updateStatus()
 			return nil
 		}()
-		d1.Hide()
-		if err != nil {
-			slog.Error("Failed to add a new character", "error", err)
-			a.u.ShowErrorDialog("Failed add a new character", err, a.window)
-		}
+		fyne.Do(func() {
+			d1.Hide()
+			if err != nil {
+				slog.Error("Failed to add a new character", "error", err)
+				a.u.ShowErrorDialog("Failed add a new character", err, a.window)
+			}
+		})
 	}()
-	d1.Show()
+	fyne.Do(func() {
+		d1.Show()
+	})
 }

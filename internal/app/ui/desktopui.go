@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"path/filepath"
-	"runtime"
 	"slices"
 	"strings"
 	"time"
@@ -21,6 +20,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -58,10 +58,14 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 	}
 
 	u.ShowMailIndicator = func() {
-		deskApp.SetSystemTrayIcon(icons.IconmarkedPng)
+		fyne.Do(func() {
+			deskApp.SetSystemTrayIcon(icons.IconmarkedPng)
+		})
 	}
 	u.HideMailIndicator = func() {
-		deskApp.SetSystemTrayIcon(icons.IconPng)
+		fyne.Do(func() {
+			deskApp.SetSystemTrayIcon(icons.IconPng)
+		})
 	}
 	u.EnableMenuShortcuts = u.enableShortcuts
 	u.DisableMenuShortcuts = u.disableShortcuts
@@ -102,7 +106,9 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 		makePageWithPageBar("Mail", u.characterMail),
 	)
 	u.characterMail.OnUpdate = func(count int) {
-		characterNav.SetItemBadge(mail, formatBadge(count, 99))
+		fyne.Do(func() {
+			characterNav.SetItemBadge(mail, formatBadge(count, 99))
+		})
 	}
 	u.characterMail.OnSendMessage = u.showSendMailWindow
 
@@ -118,7 +124,9 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 		} else if count.ValueOrZero() > 0 {
 			s = formatBadge(count.ValueOrZero(), 999)
 		}
-		characterNav.SetItemBadge(communications, s)
+		fyne.Do(func() {
+			characterNav.SetItemBadge(communications, s)
+		})
 	}
 
 	skills := iwidget.NewNavPage(
@@ -135,7 +143,9 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 	)
 
 	u.characterSkillQueue.OnUpdate = func(status, _ string) {
-		characterNav.SetItemBadge(skills, status)
+		fyne.Do(func() {
+			characterNav.SetItemBadge(skills, status)
+		})
 	}
 
 	wallet := iwidget.NewNavPage("Wallet",
@@ -217,8 +227,10 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 		if count > 0 {
 			s += fmt.Sprintf(" (%d)", count)
 		}
-		contractActive.Text = s
-		contractTabs.Refresh()
+		fyne.Do(func() {
+			contractActive.Text = s
+			contractTabs.Refresh()
+		})
 	}
 
 	overviewColonies := iwidget.NewNavPage(
@@ -231,7 +243,9 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 		if expired > 0 {
 			s = fmt.Sprint(expired)
 		}
-		collectiveNav.SetItemBadge(overviewColonies, s)
+		fyne.Do(func() {
+			collectiveNav.SetItemBadge(overviewColonies, s)
+		})
 	}
 
 	industryJobsActive := container.NewTabItem("Active", u.industryJobsActive)
@@ -239,15 +253,23 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 		industryJobsActive,
 		container.NewTabItem("All", u.industryJobsAll),
 	)
+	industry := iwidget.NewNavPage(
+		"Industry",
+		theme.NewThemedResource(icons.FactorySvg),
+		makePageWithTitle("Industry", industryTabs),
+	)
 	u.industryJobsActive.OnUpdate = func(count int) {
 		s := "Active"
+		c := ihumanize.Comma(count)
 		if count > 0 {
-			s += fmt.Sprintf(" (%d)", count)
+			s += fmt.Sprintf(" (%s)", c)
 		}
 		industryJobsActive.Text = s
 		industryTabs.Refresh()
+		fyne.Do(func() {
+			collectiveNav.SetItemBadge(industry, c)
+		})
 	}
-
 	collectiveNav = iwidget.NewNavDrawer("All Characters",
 		overview,
 		allAssets,
@@ -258,11 +280,7 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 		),
 		contracts,
 		overviewColonies,
-		iwidget.NewNavPage(
-			"Industry",
-			theme.NewThemedResource(icons.FactorySvg),
-			makePageWithTitle("Industry", industryTabs),
-		),
+		industry,
 		iwidget.NewNavPage(
 			"Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),
@@ -282,7 +300,7 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 	}
 	collectiveNav.MinWidth = minNavCharacterWidth
 
-	statusBar := NewStatusBar(u)
+	statusBar := newStatusBar(u)
 	toolbar := NewToolbar(u)
 	mainContent := container.NewBorder(
 		toolbar,
@@ -316,45 +334,39 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 	}
 	u.HideMailIndicator() // init system tray icon
 	u.onInit = func(_ *app.Character) {
-		go u.UpdateMailIndicator()
+		go u.updateMailIndicator()
 		u.enableShortcuts()
 	}
 	u.onUpdateCharacter = func(c *app.Character) {
 		go func() {
-			if !u.HasCharacter() {
-				characterNav.Disable()
-				collectiveNav.Disable()
-				toolbar.ToogleSearchBar(false)
+			if !u.hasCharacter() {
+				fyne.Do(func() {
+					characterNav.Disable()
+					collectiveNav.Disable()
+					toolbar.ToogleSearchBar(false)
+				})
 				return
 			}
-			characterNav.Enable()
-			collectiveNav.Enable()
-			toolbar.ToogleSearchBar(true)
+			fyne.Do(func() {
+				characterNav.Enable()
+				collectiveNav.Enable()
+				toolbar.ToogleSearchBar(true)
+			})
 		}()
 	}
 	u.onShowAndRun = func() {
 		u.MainWindow().Resize(u.Settings().WindowSize())
 	}
 	u.onAppFirstStarted = func() {
-		// FIXME: Workaround to mitigate a bug that causes the window to sometimes render
-		// only in parts and freeze. The issue is known to happen on Linux desktops.
-		if runtime.GOOS == "linux" {
-			go func() {
-				time.Sleep(500 * time.Millisecond)
-				s := u.MainWindow().Canvas().Size()
-				u.MainWindow().Resize(fyne.NewSize(s.Width-0.2, s.Height-0.2))
-				u.MainWindow().Resize(fyne.NewSize(s.Width, s.Height))
-			}()
-		}
-		go statusBar.StartUpdateTicker()
+		go statusBar.startUpdateTicker()
 
 	}
 	u.onAppStopped = func() {
 		u.saveAppState()
 	}
 	u.onUpdateStatus = func() {
-		go statusBar.Update()
-		go pageBars.Update()
+		go statusBar.update()
+		go pageBars.update()
 	}
 	return u
 }
@@ -433,13 +445,13 @@ func (u *DesktopUI) showManageCharactersWindow() {
 
 func (u *DesktopUI) PerformSearch(s string) {
 	u.gameSearch.ResetOptions()
-	u.gameSearch.ToogleOptions(false)
+	u.gameSearch.toogleOptions(false)
 	u.gameSearch.DoSearch(s)
 	u.showSearchWindow()
 }
 
 func (u *DesktopUI) showAdvancedSearch() {
-	u.gameSearch.ToogleOptions(true)
+	u.gameSearch.toogleOptions(true)
 	u.showSearchWindow()
 }
 
@@ -448,7 +460,7 @@ func (u *DesktopUI) showSearchWindow() {
 		u.searchWindow.Show()
 		return
 	}
-	c := u.CurrentCharacter()
+	c := u.currentCharacter()
 	var n string
 	if c != nil {
 		n = c.EveCharacter.Name
@@ -464,7 +476,7 @@ func (u *DesktopUI) showSearchWindow() {
 	w.SetContent(u.gameSearch)
 	w.Show()
 	u.gameSearch.SetWindow(w)
-	u.gameSearch.Focus()
+	u.gameSearch.focus()
 }
 
 func (u *DesktopUI) defineShortcuts() {
@@ -504,7 +516,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
 			},
 			func(fyne.Shortcut) {
-				c := u.CurrentCharacter()
+				c := u.currentCharacter()
 				if c == nil {
 					u.ShowSnackbar("ERROR: No character selected")
 					return
@@ -521,7 +533,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
 			},
 			func(fyne.Shortcut) {
-				c := u.CurrentCharacter()
+				c := u.currentCharacter()
 				if c == nil {
 					u.ShowSnackbar("ERROR: No character selected")
 					return
@@ -610,7 +622,7 @@ func (u *DesktopUI) showUserDataDialog() {
 		return strings.Compare(a.name, b.name)
 	})
 	for _, it := range items {
-		f.Append(it.name, makePathEntry(u.MainWindow().Clipboard(), it.path))
+		f.Append(it.name, makePathEntry(u.App().Clipboard(), it.path))
 	}
 	d := dialog.NewCustom("User data", "Close", f, u.MainWindow())
 	u.ModifyShortcutsForDialog(d, u.MainWindow())

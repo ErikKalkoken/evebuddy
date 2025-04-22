@@ -48,7 +48,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 1021348135816})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/clones/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v2/characters/%d/clones/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
@@ -90,7 +90,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 		})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/clones/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v2/characters/%d/clones/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when

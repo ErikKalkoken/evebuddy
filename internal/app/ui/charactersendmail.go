@@ -211,10 +211,14 @@ func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEnti
 			var err error
 			results, err = u.EveUniverseService().ListEntitiesByPartialName(context.Background(), search)
 			if err != nil {
-				showErrorDialog(search, err)
+				fyne.Do(func() {
+					showErrorDialog(search, err)
+				})
 				return
 			}
-			list.Refresh()
+			fyne.Do(func() {
+				list.Refresh()
+			})
 		}()
 		go func() {
 			ctx := context.Background()
@@ -224,7 +228,9 @@ func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEnti
 				search,
 			)
 			if err != nil {
-				showErrorDialog(search, err)
+				fyne.Do(func() {
+					showErrorDialog(search, err)
+				})
 				return
 			}
 			if len(missingIDs) == 0 {
@@ -232,10 +238,14 @@ func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEnti
 			}
 			results, err = u.EveUniverseService().ListEntitiesByPartialName(ctx, search)
 			if err != nil {
-				showErrorDialog(search, err)
+				fyne.Do(func() {
+					showErrorDialog(search, err)
+				})
 				return
 			}
-			list.Refresh()
+			fyne.Do(func() {
+				list.Refresh()
+			})
 		}()
 	}
 	c := container.NewBorder(

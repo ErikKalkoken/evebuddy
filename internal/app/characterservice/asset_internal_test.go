@@ -34,7 +34,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/assets/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/assets/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -113,7 +113,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/assets/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/assets/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -174,7 +174,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		pages := "2"
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/assets/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/assets/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
@@ -189,7 +189,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/assets/?page=2", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/assets/?page=2", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,

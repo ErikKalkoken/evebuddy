@@ -45,7 +45,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			}}
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v6/characters/%d/wallet/journal/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/wallet/journal/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
@@ -98,7 +98,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			}}
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v6/characters/%d/wallet/journal/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/wallet/journal/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
@@ -147,7 +147,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			}}
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v6/characters/%d/wallet/journal/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/wallet/journal/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
@@ -178,7 +178,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		pages := "2"
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v6/characters/%d/wallet/journal/", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/wallet/journal/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"amount":          -100000,
@@ -195,7 +195,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v6/characters/%d/wallet/journal/?page=2", c.ID),
+			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/wallet/journal/?page=2", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"amount":          -110000,

@@ -59,9 +59,11 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 		err := a.load()
 		if err != nil {
 			slog.Error("corporation info update failed", "corporation", a.id, "error", err)
-			a.name.Text = fmt.Sprintf("ERROR: Failed to load corporation: %s", a.iw.u.ErrorDisplay(err))
-			a.name.Importance = widget.DangerImportance
-			a.name.Refresh()
+			fyne.Do(func() {
+				a.name.Text = fmt.Sprintf("ERROR: Failed to load corporation: %s", a.iw.u.ErrorDisplay(err))
+				a.name.Importance = widget.DangerImportance
+				a.name.Refresh()
+			})
 		}
 	}()
 	p := theme.Padding()
@@ -85,52 +87,94 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *corporationInfo) load() error {
 	ctx := context.Background()
-	o, err := a.iw.u.EveUniverseService().GetCorporationESI(ctx, a.id)
-	if err != nil {
-		return err
-	}
-	a.name.SetText(o.Name)
 	go func() {
 		r, err := a.iw.u.EveImageService().CorporationLogo(a.id, app.IconPixelSize)
 		if err != nil {
 			slog.Error("corporation info: Failed to load logo", "corporationID", a.id, "error", err)
 			return
 		}
-		a.logo.Resource = r
-		a.logo.Refresh()
+		fyne.Do(func() {
+			a.logo.Resource = r
+			a.logo.Refresh()
+		})
 	}()
-	if o.Alliance != nil {
-		a.alliance.SetText("Member of " + o.Alliance.Name)
-		a.alliance.OnTapped = func() {
-			a.iw.ShowEveEntity(o.Alliance)
+	go func() {
+		history, err := a.iw.u.EveUniverseService().GetCorporationAllianceHistory(ctx, a.id)
+		if err != nil {
+			slog.Error("corporation info: Failed to load alliance history", "corporationID", a.id, "error", err)
+			return
 		}
-		go func() {
-			r, err := a.iw.u.EveImageService().AllianceLogo(o.Alliance.ID, app.IconPixelSize)
-			if err != nil {
-				slog.Error("corporation info: Failed to load alliance logo", "allianceID", o.Alliance.ID, "error", err)
-				return
+		if len(history) == 0 {
+			return
+		}
+		history2 := xslices.Filter(history, func(v app.MembershipHistoryItem) bool {
+			return v.Organization != nil && v.Organization.Category.IsKnown()
+		})
+		items := xslices.Map(history2, historyItem2EntityItem)
+		oldest := slices.MinFunc(history, func(a, b app.MembershipHistoryItem) int {
+			return a.StartDate.Compare(b.StartDate)
+		})
+		items = append(items, NewEntityItem(
+			0,
+			"Corporation Founded",
+			fmt.Sprintf("**%s**", oldest.StartDate.Format(app.DateFormat)),
+			infoNotSupported,
+		))
+		historyList := NewEntityListFromItems(a.iw.show, items...)
+		fyne.Do(func() {
+			a.tabs.Append(container.NewTabItem("Alliance History", historyList))
+			a.tabs.Refresh()
+		})
+	}()
+	o, err := a.iw.u.EveUniverseService().GetCorporationESI(ctx, a.id)
+	if err != nil {
+		return err
+	}
+	attributesTab := a.makeAttributesTab(o)
+	fyne.Do(func() {
+
+		a.tabs.Append(attributesTab)
+		a.tabs.Select(attributesTab)
+		a.name.SetText(o.Name)
+		if o.Alliance != nil {
+			a.alliance.SetText("Member of " + o.Alliance.Name)
+			a.alliance.OnTapped = func() {
+				a.iw.ShowEveEntity(o.Alliance)
 			}
-			a.allianceLogo.Resource = r
-			a.allianceLogo.Refresh()
-		}()
-	} else {
-		a.alliance.Hide()
-		a.allianceLogo.Hide()
-	}
-	desc := o.DescriptionPlain()
-	if desc != "" {
-		description := widget.NewLabel(desc)
-		description.Wrapping = fyne.TextWrapWord
-		a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(description)))
-	}
-	if o.HomeStation != nil {
-		a.hq.SetText("Headquarters: " + o.HomeStation.Name)
-		a.hq.OnTapped = func() {
-			a.iw.ShowEveEntity(o.HomeStation)
+			go func() {
+				r, err := a.iw.u.EveImageService().AllianceLogo(o.Alliance.ID, app.IconPixelSize)
+				if err != nil {
+					slog.Error("corporation info: Failed to load alliance logo", "allianceID", o.Alliance.ID, "error", err)
+					return
+				}
+				fyne.Do(func() {
+					a.allianceLogo.Resource = r
+					a.allianceLogo.Refresh()
+				})
+			}()
+		} else {
+			a.alliance.Hide()
+			a.allianceLogo.Hide()
 		}
-	} else {
-		a.hq.Hide()
-	}
+		desc := o.DescriptionPlain()
+		if desc != "" {
+			description := widget.NewLabel(desc)
+			description.Wrapping = fyne.TextWrapWord
+			a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(description)))
+		}
+		if o.HomeStation != nil {
+			a.hq.SetText("Headquarters: " + o.HomeStation.Name)
+			a.hq.OnTapped = func() {
+				a.iw.ShowEveEntity(o.HomeStation)
+			}
+		} else {
+			a.hq.Hide()
+		}
+	})
+	return nil
+}
+
+func (a *corporationInfo) makeAttributesTab(o *app.EveCorporation) *container.TabItem {
 	attributes := make([]AttributeItem, 0)
 	if o.Ceo != nil {
 		attributes = append(attributes, NewAtributeItem("CEO", o.Ceo))
@@ -166,39 +210,11 @@ func (a *corporationInfo) load() error {
 	if a.iw.u.IsDeveloperMode() {
 		x := NewAtributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
-			a.iw.w.Clipboard().SetContent(fmt.Sprint(o.ID))
+			a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
 		}
 		attributes = append(attributes, x)
 	}
 	attributeList := NewAttributeList(a.iw, attributes...)
 	attributesTab := container.NewTabItem("Attributes", attributeList)
-	a.tabs.Append(attributesTab)
-	a.tabs.Select(attributesTab)
-	go func() {
-		history, err := a.iw.u.EveUniverseService().GetCorporationAllianceHistory(ctx, a.id)
-		if err != nil {
-			slog.Error("corporation info: Failed to load alliance history", "corporationID", a.id, "error", err)
-			return
-		}
-		if len(history) == 0 {
-			return
-		}
-		history2 := xslices.Filter(history, func(v app.MembershipHistoryItem) bool {
-			return v.Organization != nil && v.Organization.Category.IsKnown()
-		})
-		items := xslices.Map(history2, historyItem2EntityItem)
-		oldest := slices.MinFunc(history, func(a, b app.MembershipHistoryItem) int {
-			return a.StartDate.Compare(b.StartDate)
-		})
-		items = append(items, NewEntityItem(
-			0,
-			"Corporation Founded",
-			fmt.Sprintf("**%s**", oldest.StartDate.Format(app.DateFormat)),
-			infoNotSupported,
-		))
-		historyList := NewEntityListFromItems(a.iw.show, items...)
-		a.tabs.Append(container.NewTabItem("Alliance History", historyList))
-		a.tabs.Refresh()
-	}()
-	return nil
+	return attributesTab
 }

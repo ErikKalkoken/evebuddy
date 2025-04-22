@@ -45,9 +45,11 @@ func (a *regionInfo) CreateRenderer() fyne.WidgetRenderer {
 		err := a.load()
 		if err != nil {
 			slog.Error("region info update failed", "solarSystem", a.id, "error", err)
-			a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", a.iw.u.ErrorDisplay(err))
-			a.name.Importance = widget.DangerImportance
-			a.name.Refresh()
+			fyne.Do(func() {
+				a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", a.iw.u.ErrorDisplay(err))
+				a.name.Importance = widget.DangerImportance
+				a.name.Refresh()
+			})
 		}
 	}()
 	p := theme.Padding()
@@ -68,39 +70,42 @@ func (a *regionInfo) load() error {
 	if err != nil {
 		return err
 	}
-	a.name.SetText(o.Name)
-
-	desc := widget.NewLabel(o.DescriptionPlain())
-	desc.Wrapping = fyne.TextWrapWord
-	a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
-	if a.iw.u.IsDeveloperMode() {
-		x := NewAtributeItem("EVE ID", fmt.Sprint(o.ID))
-		x.Action = func(v any) {
-			a.iw.w.Clipboard().SetContent(v.(string))
+	constellations := container.NewTabItem("Constellations", widget.NewLabel("Loading..."))
+	fyne.Do(func() {
+		desc := widget.NewLabel(o.DescriptionPlain())
+		desc.Wrapping = fyne.TextWrapWord
+		a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
+		a.name.SetText(o.Name)
+		if a.iw.u.IsDeveloperMode() {
+			x := NewAtributeItem("EVE ID", fmt.Sprint(o.ID))
+			x.Action = func(v any) {
+				a.iw.u.App().Clipboard().SetContent(v.(string))
+			}
+			attributeList := NewAttributeList(a.iw, []AttributeItem{x}...)
+			attributesTab := container.NewTabItem("Attributes", attributeList)
+			a.tabs.Append(attributesTab)
 		}
-		attributeList := NewAttributeList(a.iw, []AttributeItem{x}...)
-		attributesTab := container.NewTabItem("Attributes", attributeList)
-		a.tabs.Append(attributesTab)
-	}
-
-	cLabel := widget.NewLabel("Loading...")
-	constellations := container.NewTabItem("Constellations", cLabel)
-	a.tabs.Append(constellations)
-	a.tabs.Select(constellations)
-	a.tabs.Refresh()
+		a.tabs.Append(constellations)
+		a.tabs.Select(constellations)
+		a.tabs.Refresh()
+	})
 	go func() {
 		oo, err := a.iw.u.EveUniverseService().GetRegionConstellationsESI(ctx, o.ID)
 		if err != nil {
 			slog.Error("region info: Failed to load constellations", "region", o.ID, "error", err)
-			cLabel.Text = a.iw.u.ErrorDisplay(err)
-			cLabel.Importance = widget.DangerImportance
-			cLabel.Refresh()
+			fyne.Do(func() {
+				label := widget.NewLabel(a.iw.u.ErrorDisplay(err))
+				label.Importance = widget.DangerImportance
+				constellations.Content = label
+				a.tabs.Refresh()
+			})
 			return
 		}
 		xx := xslices.Map(oo, NewEntityItemFromEveEntity)
 		constellations.Content = NewEntityListFromItems(a.iw.show, xx...)
-		a.tabs.Refresh()
-		a.tabs.Refresh()
+		fyne.Do(func() {
+			a.tabs.Refresh()
+		})
 	}()
 	return nil
 }

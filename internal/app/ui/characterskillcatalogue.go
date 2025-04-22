@@ -117,7 +117,7 @@ func (a *CharacterSkillCatalogue) makeGroupsGrid() fyne.CanvasObject {
 				return
 			}
 			group := a.groups[id]
-			if !a.u.HasCharacter() {
+			if !a.u.hasCharacter() {
 				unselectAll()
 				return
 			}
@@ -189,18 +189,16 @@ func (a *CharacterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 	return makeGridOrList(a.u.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
 }
 
-func (a *CharacterSkillCatalogue) Update() {
-	switch x := a.groupsGrid.(type) {
-	case *widget.GridWrap:
-		x.UnselectAll()
-	case *widget.List:
-		x.UnselectAll()
-	}
+func (a *CharacterSkillCatalogue) update() {
 	a.skills = make([]skillTrained, 0)
-	a.Refresh()
-}
-
-func (a *CharacterSkillCatalogue) Refresh() {
+	fyne.Do(func() {
+		switch x := a.groupsGrid.(type) {
+		case *widget.GridWrap:
+			x.UnselectAll()
+		case *widget.List:
+			x.UnselectAll()
+		}
+	})
 	t, i, err := func() (string, widget.Importance, error) {
 		exists := a.u.StatusCacheService().GeneralSectionExists(app.SectionEveCategories)
 		if !exists {
@@ -216,16 +214,19 @@ func (a *CharacterSkillCatalogue) Refresh() {
 		t = "ERROR"
 		i = widget.DangerImportance
 	}
-	a.total.Text = t
-	a.total.Importance = i
-	a.total.Refresh()
+	fyne.Do(func() {
+		a.groupsGrid.Refresh()
+		a.total.Text = t
+		a.total.Importance = i
+		a.total.Refresh()
+	})
 }
 
 func (a *CharacterSkillCatalogue) makeTopText() (string, widget.Importance, error) {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		return "No Character", widget.LowImportance, nil
 	}
-	c := a.u.CurrentCharacter()
+	c := a.u.currentCharacter()
 	total := ihumanize.Optional(c.TotalSP, "?")
 	unallocated := ihumanize.Optional(c.UnallocatedSP, "?")
 	t := fmt.Sprintf("%s Total Skill Points (%s Unallocated)", total, unallocated)
@@ -233,7 +234,7 @@ func (a *CharacterSkillCatalogue) makeTopText() (string, widget.Importance, erro
 }
 
 func (a *CharacterSkillCatalogue) updateGroups() error {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		return nil
 	}
 	gg, err := a.u.CharacterService().ListSkillGroupsProgress(context.TODO(), a.u.CurrentCharacterID())
@@ -250,6 +251,5 @@ func (a *CharacterSkillCatalogue) updateGroups() error {
 		}
 	}
 	a.groups = groups
-	a.groupsGrid.Refresh()
 	return nil
 }

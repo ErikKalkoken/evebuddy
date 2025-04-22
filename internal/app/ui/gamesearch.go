@@ -90,8 +90,10 @@ func (w *SearchResult) Set(o *app.EveEntity) {
 			res = theme.BrokenImageIcon()
 			slog.Error("failed to load w.image", "error", err)
 		}
-		w.image.Resource = res
-		w.image.Refresh()
+		fyne.Do(func() {
+			w.image.Resource = res
+			w.image.Refresh()
+		})
 	}()
 }
 
@@ -150,7 +152,7 @@ func NewGameSearch(u *BaseUI) *GameSearch {
 	a.resultCount.Hide()
 	a.results = a.makeResults()
 	a.entry.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.Reset()
+		a.reset()
 	})
 	a.entry.PlaceHolder = "Search New Eden"
 	a.entry.OnSubmitted = func(s string) {
@@ -210,7 +212,9 @@ func NewGameSearch(u *BaseUI) *GameSearch {
 			slog.Error("failed to load recent items from settings", "error", err)
 			return
 		}
-		a.setRecentItems(ee)
+		fyne.Do(func() {
+			a.setRecentItems(ee)
+		})
 	}()
 	return a
 }
@@ -244,7 +248,7 @@ func (a *GameSearch) DoSearch(s string) {
 	go a.doSearch(s)
 }
 
-func (a *GameSearch) ToogleOptions(enabled bool) {
+func (a *GameSearch) toogleOptions(enabled bool) {
 	if enabled {
 		a.searchOptions.Open(0)
 	} else {
@@ -282,11 +286,11 @@ func (a *GameSearch) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *GameSearch) Focus() {
+func (a *GameSearch) focus() {
 	a.w.Canvas().Focus(a.entry)
 }
 
-func (a *GameSearch) Reset() {
+func (a *GameSearch) reset() {
 	a.entry.SetText("")
 	a.clearResults()
 }
@@ -380,14 +384,11 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 }
 
 func (a *GameSearch) clearResults() {
-	a.results.Clear()
-	a.resultCount.Hide()
-	a.showRecent()
-}
-
-func (a *GameSearch) showResults() {
-	a.recentPage.Hide()
-	a.resultsPage.Show()
+	fyne.Do(func() {
+		a.results.Clear()
+		a.resultCount.Hide()
+		a.showRecent()
+	})
 }
 
 func (a *GameSearch) showRecent() {
@@ -397,23 +398,30 @@ func (a *GameSearch) showRecent() {
 
 func (a *GameSearch) doSearch(search string) {
 	if a.u.IsOffline() {
-		a.u.ShowInformationDialog(
-			"Offline",
-			"Can't search when offline",
-			a.w,
-		)
+		fyne.Do(func() {
+			a.u.ShowInformationDialog(
+				"Offline",
+				"Can't search when offline",
+				a.w,
+			)
+		})
 		return
 	}
 	a.clearResults()
 	if search == "" {
 		return
 	}
-	a.showResults()
-	a.indicator.Show()
-	a.indicator.Start()
+	fyne.Do(func() {
+		a.recentPage.Hide()
+		a.resultsPage.Show()
+		a.indicator.Show()
+		a.indicator.Start()
+	})
 	defer func() {
-		a.indicator.Stop()
-		a.indicator.Hide()
+		fyne.Do(func() {
+			a.indicator.Stop()
+			a.indicator.Hide()
+		})
 	}()
 	categories := xslices.Map(a.categories.Selected, func(o string) app.SearchCategory {
 		return option2searchCategory(o)
@@ -426,22 +434,28 @@ func (a *GameSearch) doSearch(search string) {
 		a.strict.On,
 	)
 	if err != nil {
-		a.u.ShowErrorDialog("Search failed", err, a.u.MainWindow())
+		fyne.Do(func() {
+			a.u.ShowErrorDialog("Search failed", err, a.u.MainWindow())
+		})
 		return
 	}
-	if total == maxSearchResults {
-		a.resultCount.Importance = widget.WarningImportance
-		a.resultCount.Wrapping = fyne.TextWrapWord
-		a.resultCount.SetText(fmt.Sprintf(
-			"Search for \"%s\" exceeded the server limit of 500 results "+
-				"and may not contain the items you are looking for.",
-			search,
-		))
-	} else {
-		a.resultCount.Importance = widget.MediumImportance
-		a.resultCount.SetText(fmt.Sprintf("%d Results", total))
-	}
-	a.resultCount.Show()
+	fyne.Do(func() {
+		if total == maxSearchResults {
+			a.resultCount.Importance = widget.WarningImportance
+			a.resultCount.Wrapping = fyne.TextWrapWord
+			a.resultCount.Text = fmt.Sprintf(
+				"Search for \"%s\" exceeded the server limit of 500 results "+
+					"and may not contain the items you are looking for.",
+				search,
+			)
+		} else {
+			a.resultCount.Importance = widget.MediumImportance
+			a.resultCount.Text = fmt.Sprintf("%d Results", total)
+		}
+		a.resultCount.Refresh()
+		a.resultCount.Show()
+
+	})
 	if total == 0 {
 		return
 	}
@@ -464,10 +478,12 @@ func (a *GameSearch) doSearch(search string) {
 			t.Add(parentUID, n)
 		}
 	}
-	a.results.Set(t)
-	if categoriesFound == 1 {
-		a.results.OpenAllBranches()
-	}
+	fyne.Do(func() {
+		a.results.Set(t)
+		if categoriesFound == 1 {
+			a.results.OpenAllBranches()
+		}
+	})
 }
 
 var searchCategory2optionMap = map[app.SearchCategory]string{

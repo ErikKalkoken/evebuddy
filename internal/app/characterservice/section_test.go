@@ -126,7 +126,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
 				assert.False(t, x.IsOK())
-				assert.Equal(t, "500", x.ErrorMessage)
+				assert.Equal(t, "500 Internal Server Error", x.ErrorMessage)
 			}
 		}
 	})

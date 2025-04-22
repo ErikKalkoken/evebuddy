@@ -114,7 +114,7 @@ func (a *CharacterSkillQueue) makeSkillQueue() *widget.List {
 	return list
 }
 
-func (a *CharacterSkillQueue) Update() {
+func (a *CharacterSkillQueue) update() {
 	var t string
 	var i widget.Importance
 	err := a.sq.Update(a.u.CharacterService(), a.u.CurrentCharacterID())
@@ -141,9 +141,12 @@ func (a *CharacterSkillQueue) Update() {
 		}
 		t, i = a.makeTopText(total)
 	}
-	a.top.Text = t
-	a.top.Importance = i
-	a.top.Refresh()
+	fyne.Do(func() {
+		a.top.Text = t
+		a.top.Importance = i
+		a.top.Refresh()
+		a.list.Refresh()
+	})
 }
 
 func (a *CharacterSkillQueue) makeTopText(total optional.Optional[time.Duration]) (string, widget.Importance) {

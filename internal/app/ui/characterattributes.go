@@ -99,7 +99,7 @@ func (a *CharacterAttributes) makeAttributeList() *widget.List {
 	return l
 }
 
-func (a *CharacterAttributes) Update() {
+func (a *CharacterAttributes) update() {
 	var t string
 	var i widget.Importance
 	total, err := a.updateData()
@@ -110,9 +110,12 @@ func (a *CharacterAttributes) Update() {
 	} else {
 		t, i = a.makeTopText(total)
 	}
-	a.top.Text = t
-	a.top.Importance = i
-	a.top.Refresh()
+	fyne.Do(func() {
+		a.top.Text = t
+		a.top.Importance = i
+		a.top.Refresh()
+		a.list.Refresh()
+	})
 }
 
 func (a *CharacterAttributes) makeTopText(total int) (string, widget.Importance) {
@@ -124,7 +127,7 @@ func (a *CharacterAttributes) makeTopText(total int) (string, widget.Importance)
 }
 
 func (a *CharacterAttributes) updateData() (int, error) {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		a.attributes = make([]attribute, 0)
 		return 0, nil
 	}

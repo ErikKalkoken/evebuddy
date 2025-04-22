@@ -126,7 +126,7 @@ func (a *CharacterWalletJournal) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *CharacterWalletJournal) Update() {
+func (a *CharacterWalletJournal) update() {
 	var t string
 	var i widget.Importance
 	if err := a.updateEntries(); err != nil {
@@ -136,17 +136,19 @@ func (a *CharacterWalletJournal) Update() {
 	} else {
 		t, i = a.makeTopText()
 	}
-	a.top.Text = t
-	a.top.Importance = i
-	a.top.Refresh()
-	a.body.Refresh()
+	fyne.Do(func() {
+		a.top.Text = t
+		a.top.Importance = i
+		a.top.Refresh()
+		a.body.Refresh()
+	})
 }
 
 func (a *CharacterWalletJournal) makeTopText() (string, widget.Importance) {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		return "No character", widget.LowImportance
 	}
-	c := a.u.CurrentCharacter()
+	c := a.u.currentCharacter()
 	hasData := a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionWalletJournal)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
@@ -161,7 +163,7 @@ func (a *CharacterWalletJournal) makeTopText() (string, widget.Importance) {
 }
 
 func (a *CharacterWalletJournal) updateEntries() error {
-	if !a.u.HasCharacter() {
+	if !a.u.hasCharacter() {
 		a.rows = make([]walletJournalEntry, 0)
 		return nil
 	}
