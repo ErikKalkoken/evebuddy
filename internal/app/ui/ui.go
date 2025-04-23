@@ -229,14 +229,15 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 				u.resetCharacter()
 			}
 			u.updateStatus()
+			u.isStartupCompleted.Store(true)
 			u.characterJumpClones.StartUpdateTicker()
 			if !u.isOffline && !u.isUpdateDisabled {
+				time.Sleep(5 * time.Second) // Workaround to prevend concurrent updates from happening at startup.
 				u.startUpdateTickerGeneralSections()
 				u.startUpdateTickerCharacters()
 			} else {
 				slog.Info("Update ticker disabled")
 			}
-			u.isStartupCompleted.Store(true)
 		}()
 		if u.onAppFirstStarted != nil {
 			u.onAppFirstStarted()
