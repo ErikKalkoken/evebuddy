@@ -107,14 +107,17 @@ func (a *Contracts) update() {
 		t, i = a.makeTopText()
 	}
 	fyne.Do(func() {
-		if t != "" {
-			a.top.Text = t
-			a.top.Importance = i
-			a.top.Refresh()
-			a.top.Show()
-		} else {
+		if t == "" {
 			a.top.Hide()
+			return
 		}
+		a.top.Text = t
+		a.top.Importance = i
+		a.top.Refresh()
+		a.top.Show()
+
+	})
+	fyne.Do(func() {
 		a.body.Refresh()
 	})
 }

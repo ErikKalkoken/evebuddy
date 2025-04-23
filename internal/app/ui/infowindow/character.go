@@ -157,14 +157,6 @@ func (a *characterInfo) load() error {
 	}()
 	fyne.Do(func() {
 		a.name.SetText(o.Name)
-		if o.HasAlliance() {
-			a.alliance.SetText(o.Alliance.Name)
-			a.alliance.OnTapped = func() {
-				a.iw.ShowEveEntity(o.Alliance)
-			}
-		} else {
-			a.alliance.Hide()
-		}
 		a.security.SetText(fmt.Sprintf("Security Status: %.1f", o.SecurityStatus))
 		a.corporation.SetText(fmt.Sprintf("Member of %s", o.Corporation.Name))
 		a.corporation.OnTapped = func() {
@@ -175,21 +167,39 @@ func (a *characterInfo) load() error {
 				a.iw.showZoomWindow(o.Name, a.id, a.iw.u.EveImageService().CharacterPortrait, a.iw.w)
 			})
 		}
-		if s := o.DescriptionPlain(); s != "" {
-			bio := widget.NewLabel(s)
-			bio.Wrapping = fyne.TextWrapWord
-			a.tabs.Append(container.NewTabItem("Bio", container.NewVScroll(bio)))
+	})
+	fyne.Do(func() {
+		if !o.HasAlliance() {
+			a.alliance.Hide()
+			return
 		}
-		if o.Title != "" {
-			a.title.SetText("Title: " + o.Title)
-		} else {
+		a.alliance.SetText(o.Alliance.Name)
+		a.alliance.OnTapped = func() {
+			a.iw.ShowEveEntity(o.Alliance)
+		}
+	})
+	fyne.Do(func() {
+		s := o.DescriptionPlain()
+		if s == "" {
+			return
+		}
+		bio := widget.NewLabel(s)
+		bio.Wrapping = fyne.TextWrapWord
+		a.tabs.Append(container.NewTabItem("Bio", container.NewVScroll(bio)))
+	})
+	fyne.Do(func() {
+		if o.Title == "" {
 			a.title.Hide()
+			return
 		}
-
+		a.title.SetText("Title: " + o.Title)
+	})
+	fyne.Do(func() {
 		desc := widget.NewLabel(o.RaceDescription())
 		desc.Wrapping = fyne.TextWrapWord
 		a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
-
+	})
+	fyne.Do(func() {
 		attributes := []AttributeItem{
 			NewAtributeItem("Corporation", o.Corporation),
 			NewAtributeItem("Race", o.Race),

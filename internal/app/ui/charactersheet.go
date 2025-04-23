@@ -85,43 +85,11 @@ func (a *CharacterSheet) update() {
 		a.race.SetText(c.EveCharacter.Race.Name)
 		a.born.SetText(c.EveCharacter.Birthday.Format(app.DateTimeFormat))
 		a.security.SetText(fmt.Sprintf("%.1f", c.EveCharacter.SecurityStatus))
-		if c.Home != nil {
-			a.home.Segments = c.Home.DisplayRichText()
-			a.home.OnTapped = func() {
-				a.u.ShowLocationInfoWindow(c.Home.ID)
-			}
-			a.home.Refresh()
-		} else {
-			a.home.ParseMarkdown("")
-		}
-		a.sp.SetText(ihumanize.OptionalComma(c.TotalSP, "?"))
-		if c.AssetValue.IsEmpty() || c.WalletBalance.IsEmpty() {
-			a.wealth.SetText("?")
-		} else {
-			v := c.AssetValue.ValueOrZero() + c.WalletBalance.ValueOrZero()
-			a.wealth.SetText(humanize.Comma(int64(v)) + " ISK")
-		}
 		a.portrait.OnTapped = func() {
 			a.u.ShowInfoWindow(app.EveEntityCharacter, c.ID)
 		}
 		a.corporationLogo.OnTapped = func() {
 			a.u.ShowInfoWindow(app.EveEntityCorporation, c.EveCharacter.Corporation.ID)
-		}
-		if c.EveCharacter.Alliance != nil {
-			a.allianceLogo.OnTapped = func() {
-				a.u.ShowInfoWindow(app.EveEntityAlliance, c.EveCharacter.Alliance.ID)
-			}
-			a.allianceLogo.Show()
-		} else {
-			a.allianceLogo.Hide()
-		}
-		if c.EveCharacter.Faction != nil {
-			a.factionLogo.OnTapped = func() {
-				a.u.ShowInfoWindow(app.EveEntityFaction, c.EveCharacter.Faction.ID)
-			}
-			a.factionLogo.Show()
-		} else {
-			a.factionLogo.Hide()
 		}
 		a.race.OnTapped = func() {
 			a.u.ShowRaceInfoWindow(c.EveCharacter.Race.ID)
@@ -133,11 +101,51 @@ func (a *CharacterSheet) update() {
 	iwidget.RefreshTappableImageAsync(a.corporationLogo, func() (fyne.Resource, error) {
 		return a.u.EveImageService().CorporationLogo(c.EveCharacter.Corporation.ID, app.IconPixelSize)
 	})
+	fyne.Do(func() {
+		if c.Home == nil {
+			a.home.ParseMarkdown("")
+			return
+		}
+		a.home.Segments = c.Home.DisplayRichText()
+		a.home.OnTapped = func() {
+			a.u.ShowLocationInfoWindow(c.Home.ID)
+		}
+		a.home.Refresh()
+	})
+	fyne.Do(func() {
+		a.sp.SetText(ihumanize.OptionalComma(c.TotalSP, "?"))
+		if c.AssetValue.IsEmpty() || c.WalletBalance.IsEmpty() {
+			a.wealth.SetText("?")
+			return
+		}
+		v := c.AssetValue.ValueOrZero() + c.WalletBalance.ValueOrZero()
+		a.wealth.SetText(humanize.Comma(int64(v)) + " ISK")
+	})
+	fyne.Do(func() {
+		if c.EveCharacter.Alliance == nil {
+			a.allianceLogo.Hide()
+			return
+		}
+		a.allianceLogo.Show()
+		a.allianceLogo.OnTapped = func() {
+			a.u.ShowInfoWindow(app.EveEntityAlliance, c.EveCharacter.Alliance.ID)
+		}
+	})
 	if c.EveCharacter.Alliance != nil {
 		iwidget.RefreshTappableImageAsync(a.allianceLogo, func() (fyne.Resource, error) {
 			return a.u.EveImageService().AllianceLogo(c.EveCharacter.Alliance.ID, app.IconPixelSize)
 		})
 	}
+	fyne.Do(func() {
+		if c.EveCharacter.Faction == nil {
+			a.factionLogo.Hide()
+			return
+		}
+		a.factionLogo.Show()
+		a.factionLogo.OnTapped = func() {
+			a.u.ShowInfoWindow(app.EveEntityFaction, c.EveCharacter.Faction.ID)
+		}
+	})
 	if c.EveCharacter.Faction != nil {
 		iwidget.RefreshTappableImageAsync(a.factionLogo, func() (fyne.Resource, error) {
 			return a.u.EveImageService().FactionLogo(c.EveCharacter.Faction.ID, app.IconPixelSize)

@@ -242,22 +242,25 @@ func (a *CharacterMails) update2() {
 		})
 		return
 	}
+	if !folderAll.IsEmpty() {
+		a.folderDefault = folderAll
+	}
 	fyne.Do(func() {
 		a.folders.Set(tree)
-		a.folders.Refresh()
+	})
+	fyne.Do(func() {
 		if folderAll.IsEmpty() {
 			a.clearFolder()
-		} else {
-			if a.lastFolder == emptyFolder {
-				a.folders.UnselectAll()
-				a.folders.ScrollToTop()
-				a.folders.Select(folderAll)
-				a.setCurrentFolder(folderAll)
-			} else {
-				a.headerRefresh()
-			}
-			a.folderDefault = folderAll
+			return
 		}
+		if a.lastFolder != emptyFolder {
+			a.headerRefresh()
+			return
+		}
+		a.folders.UnselectAll()
+		a.folders.ScrollToTop()
+		a.folders.Select(folderAll)
+		a.setCurrentFolder(folderAll)
 	})
 	if a.OnUpdate != nil {
 		a.OnUpdate(folderAll.UnreadCount)

@@ -272,6 +272,8 @@ func (a *OverviewAssets) update() {
 		a.total.Text = t
 		a.total.Importance = i
 		a.total.Refresh()
+	})
+	fyne.Do(func() {
 		a.body.Refresh()
 	})
 }

@@ -122,6 +122,8 @@ func (a *CharacterWalletTransaction) update() {
 		a.top.Text = t
 		a.top.Importance = i
 		a.top.Refresh()
+	})
+	fyne.Do(func() {
 		a.body.Refresh()
 	})
 }

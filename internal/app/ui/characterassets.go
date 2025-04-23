@@ -236,7 +236,8 @@ func (a *CharacterAssets) update() {
 			a.locations.Set(tree)
 		})
 		locationsCount := len(tree.ChildUIDs(""))
-		return a.makeTopText(locationsCount)
+		t, i := a.makeTopText(locationsCount)
+		return t, i, nil
 	}()
 	if err != nil {
 		slog.Error("Failed to redraw asset locations UI", "err", err)
@@ -480,18 +481,18 @@ func makeLocationTreeData(locationNodes []assetcollection.LocationNode, characte
 	return tree
 }
 
-func (a *CharacterAssets) makeTopText(total int) (string, widget.Importance, error) {
+func (a *CharacterAssets) makeTopText(total int) (string, widget.Importance) {
 	c := a.u.currentCharacter()
 	if c == nil {
-		return "No character", widget.LowImportance, nil
+		return "No character", widget.LowImportance
 	}
 	hasData := a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionAssets)
 	if !hasData {
-		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
+		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
 	locations := humanize.Comma(int64(total))
 	text := fmt.Sprintf("%s locations • %s total value", locations, ihumanize.OptionalFloat(c.AssetValue, 1, "?"))
-	return text, widget.MediumImportance, nil
+	return text, widget.MediumImportance
 }
 
 func (a *CharacterAssets) selectLocation(location locationNode) error {

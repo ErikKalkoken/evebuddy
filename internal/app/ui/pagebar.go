@@ -103,11 +103,11 @@ func (c *PageBarCollection) update() {
 		}
 	})
 	items := c.u.makeCharacterSwitchMenu(func() {
-		fyne.Do(func() {
-			for _, pb := range c.bars {
+		for _, pb := range c.bars {
+			fyne.Do(func() {
 				pb.Refresh()
-			}
-		})
+			})
+		}
 	})
 	for _, pb := range c.bars {
 		fyne.Do(func() {

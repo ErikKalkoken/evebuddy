@@ -120,6 +120,8 @@ func (a *Colonies) update() {
 		a.top.Text = s
 		a.top.Importance = i
 		a.top.Refresh()
+	})
+	fyne.Do(func() {
 		a.body.Refresh()
 	})
 	if a.OnUpdate != nil {
