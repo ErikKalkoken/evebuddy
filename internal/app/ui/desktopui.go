@@ -264,9 +264,9 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 		if count > 0 {
 			s += fmt.Sprintf(" (%s)", c)
 		}
-		industryJobsActive.Text = s
-		industryTabs.Refresh()
 		fyne.Do(func() {
+			industryJobsActive.Text = s
+			industryTabs.Refresh()
 			collectiveNav.SetItemBadge(industry, c)
 		})
 	}

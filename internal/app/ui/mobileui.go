@@ -211,7 +211,6 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		fyne.Do(func() {
 			navItemWallet.Supporting = "Balance: " + b
 			characterList.Refresh()
-
 		})
 	}
 
@@ -335,8 +334,6 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		fyne.Do(func() {
 			jobsActive.Text = s
 			jobsTab.Refresh()
-		})
-		fyne.Do(func() {
 			navItemIndustry.Supporting = fmt.Sprintf("%s jobs ready", c)
 			crossList.Refresh()
 		})
