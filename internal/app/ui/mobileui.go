@@ -502,7 +502,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 			u.characterMail.resetCurrentFolder()
 			u.characterCommunications.resetCurrentFolder()
 			characterNav.PopAll()
-			navBar.Select(0)
+			navBar.Select(1)
 		})
 	}
 

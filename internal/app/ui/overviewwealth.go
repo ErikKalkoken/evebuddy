@@ -148,6 +148,8 @@ func (a *OverviewWealth) update() {
 		a.top.Text = fmt.Sprintf("%s ISK total wealth • %d characters", totalText, characters)
 		a.top.Importance = widget.MediumImportance
 		a.top.Refresh()
+	})
+	fyne.Do(func() {
 		a.charts.Refresh()
 	})
 

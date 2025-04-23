@@ -152,8 +152,8 @@ func (a *CharacterJumpClones) update() {
 				}})
 		})
 	} else {
+		a.RefreshTop()
 		fyne.Do(func() {
-			a.RefreshTop()
 			a.tree.Set(tree)
 		})
 	}
@@ -207,8 +207,6 @@ func (a *CharacterJumpClones) RefreshTop() {
 	defaultStyle := widget.RichTextStyle{
 		ColorName: theme.ColorNameForeground,
 	}
-	defaultStyleInline := defaultStyle
-	defaultStyleInline.Inline = true
 	s := &widget.TextSegment{
 		Text:  "",
 		Style: defaultStyle,
@@ -217,14 +215,19 @@ func (a *CharacterJumpClones) RefreshTop() {
 	if c == nil {
 		s.Text = "No character"
 		s.Style.ColorName = theme.ColorNameDisabled
-		iwidget.SetRichText(a.top, s)
+		fyne.Do(func() {
+			iwidget.SetRichText(a.top, s)
+		})
 		return
 	}
 	hasData := a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionJumpClones)
 	if !hasData {
 		s.Text = "Waiting for character data to be loaded..."
 		s.Style.ColorName = theme.ColorNameWarning
-		iwidget.SetRichText(a.top, s)
+		fyne.Do(func() {
+			iwidget.SetRichText(a.top, s)
+		})
+		return
 	}
 	var nextJumpColor fyne.ThemeColorName
 	var nextJump, lastJump string
@@ -243,8 +246,9 @@ func (a *CharacterJumpClones) RefreshTop() {
 	} else {
 		lastJump = humanize.Time(x)
 	}
-	iwidget.SetRichText(
-		a.top,
+	defaultStyleInline := defaultStyle
+	defaultStyleInline.Inline = true
+	segs := []widget.RichTextSegment{
 		&widget.TextSegment{
 			Text:  fmt.Sprintf("%d clones • Next available jump: ", a.ClonesCount()),
 			Style: defaultStyleInline,
@@ -260,7 +264,10 @@ func (a *CharacterJumpClones) RefreshTop() {
 			Text:  fmt.Sprintf(" • Last jump: %s", lastJump),
 			Style: defaultStyle,
 		},
-	)
+	}
+	fyne.Do(func() {
+		iwidget.SetRichText(a.top, segs...)
+	})
 }
 
 func (a *CharacterJumpClones) ClonesCount() int {
@@ -271,9 +278,7 @@ func (a *CharacterJumpClones) StartUpdateTicker() {
 	ticker := time.NewTicker(time.Second * 15)
 	go func() {
 		for {
-			fyne.Do(func() {
-				a.RefreshTop()
-			})
+			a.RefreshTop()
 			<-ticker.C
 		}
 	}()

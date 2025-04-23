@@ -226,6 +226,8 @@ func (a *OverviewClones) update() {
 		a.top.Text = t
 		a.top.Importance = i
 		a.top.Refresh()
+	})
+	fyne.Do(func() {
 		a.body.Refresh()
 	})
 	if len(a.rows) > 0 && a.origin != nil {

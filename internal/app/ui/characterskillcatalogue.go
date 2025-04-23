@@ -216,6 +216,8 @@ func (a *CharacterSkillCatalogue) update() {
 	}
 	fyne.Do(func() {
 		a.groupsGrid.Refresh()
+	})
+	fyne.Do(func() {
 		a.total.Text = t
 		a.total.Importance = i
 		a.total.Refresh()
