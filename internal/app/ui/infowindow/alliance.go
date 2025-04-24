@@ -17,12 +17,14 @@ import (
 type allianceInfo struct {
 	widget.BaseWidget
 
-	id   int32
-	hq   *kxwidget.TappableLabel
-	iw   *InfoWindow
-	logo *canvas.Image
-	name *widget.Label
-	tabs *container.AppTabs
+	attributes *attributeList
+	hq         *kxwidget.TappableLabel
+	id         int32
+	iw         *InfoWindow
+	logo       *canvas.Image
+	members    *entityList
+	name       *widget.Label
+	tabs       *container.AppTabs
 }
 
 func newAllianceInfo(iw *InfoWindow, id int32) *allianceInfo {
@@ -34,9 +36,14 @@ func newAllianceInfo(iw *InfoWindow, id int32) *allianceInfo {
 		name: makeInfoName(),
 		logo: makeInfoLogo(),
 		hq:   hq,
-		tabs: container.NewAppTabs(),
 	}
 	a.ExtendBaseWidget(a)
+	a.attributes = newAttributeList(a.iw)
+	a.members = newEntityList(a.iw.show)
+	a.tabs = container.NewAppTabs(
+		container.NewTabItem("Attributes", a.attributes),
+		container.NewTabItem("Members", a.members),
+	)
 	return a
 }
 
@@ -81,10 +88,8 @@ func (a *allianceInfo) load() error {
 		if len(members) == 0 {
 			return
 		}
-		memberList := NewEntityListFromEntities(a.iw.show, members...)
 		fyne.Do(func() {
-			a.tabs.Append(container.NewTabItem("Members", memberList))
-			a.tabs.Refresh()
+			a.members.set(entityItemsFromEveEntities(members)...)
 		})
 	}()
 	o, err := a.iw.u.EveUniverseService().GetAllianceESI(ctx, a.id)
@@ -93,37 +98,35 @@ func (a *allianceInfo) load() error {
 	}
 
 	// Attributes
-	attributes := make([]AttributeItem, 0)
+	attributes := make([]attributeItem, 0)
 	if o.ExecutorCorporation != nil {
-		attributes = append(attributes, NewAtributeItem("Executor", o.ExecutorCorporation))
+		attributes = append(attributes, newAttributeItem("Executor", o.ExecutorCorporation))
 	}
 	if o.Ticker != "" {
-		attributes = append(attributes, NewAtributeItem("Short Name", o.Ticker))
+		attributes = append(attributes, newAttributeItem("Short Name", o.Ticker))
 	}
 	if o.CreatorCorporation != nil {
-		attributes = append(attributes, NewAtributeItem("Created By Corporation", o.CreatorCorporation))
+		attributes = append(attributes, newAttributeItem("Created By Corporation", o.CreatorCorporation))
 	}
 	if o.Creator != nil {
-		attributes = append(attributes, NewAtributeItem("Created By", o.Creator))
+		attributes = append(attributes, newAttributeItem("Created By", o.Creator))
 	}
 	if !o.DateFounded.IsZero() {
-		attributes = append(attributes, NewAtributeItem("Start Date", o.DateFounded))
+		attributes = append(attributes, newAttributeItem("Start Date", o.DateFounded))
 	}
 	if o.Faction != nil {
-		attributes = append(attributes, NewAtributeItem("Faction", o.Faction))
+		attributes = append(attributes, newAttributeItem("Faction", o.Faction))
 	}
 	if a.iw.u.IsDeveloperMode() {
-		x := NewAtributeItem("EVE ID", o.ID)
+		x := newAttributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
 			a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
 		}
 		attributes = append(attributes, x)
 	}
-	attributeList := NewAttributeList(a.iw, attributes...)
 	fyne.Do(func() {
 		a.name.SetText(o.Name)
-		a.tabs.Append(container.NewTabItem("Attributes", attributeList))
-		a.tabs.Refresh()
+		a.attributes.set(attributes)
 	})
 	return nil
 }

@@ -2,12 +2,14 @@ package infowindow
 
 import (
 	"log/slog"
+	"maps"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -148,4 +150,44 @@ func (iw *InfoWindow) showZoomWindow(title string, id int32, load func(int32, in
 	w2 := iw.u.App().NewWindow(iw.u.MakeWindowTitle(title))
 	w2.SetContent(container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), i))
 	w2.Show()
+}
+
+type infoVariant uint
+
+const (
+	infoNotSupported infoVariant = iota
+	infoAlliance
+	infoCharacter
+	infoConstellation
+	infoCorporation
+	infoInventoryType
+	infoLocation
+	infoRegion
+	infoRace
+	infoSolarSystem
+)
+
+var eveEntityCategory2InfoVariant = map[app.EveEntityCategory]infoVariant{
+	app.EveEntityAlliance:      infoAlliance,
+	app.EveEntityCharacter:     infoCharacter,
+	app.EveEntityConstellation: infoConstellation,
+	app.EveEntityCorporation:   infoCorporation,
+	app.EveEntityRegion:        infoRegion,
+	app.EveEntitySolarSystem:   infoSolarSystem,
+	app.EveEntityStation:       infoLocation,
+	app.EveEntityInventoryType: infoInventoryType,
+}
+
+func eveEntity2InfoVariant(ee *app.EveEntity) infoVariant {
+	v, ok := eveEntityCategory2InfoVariant[ee.Category]
+	if !ok {
+		return infoNotSupported
+	}
+	return v
+
+}
+
+func SupportedEveEntities() set.Set[app.EveEntityCategory] {
+	return set.Collect(maps.Keys(eveEntityCategory2InfoVariant))
+
 }

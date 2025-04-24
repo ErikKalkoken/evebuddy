@@ -26,14 +26,16 @@ import (
 type locationInfo struct {
 	widget.BaseWidget
 
-	id        int64
-	owner     *kxwidget.TappableLabel
-	ownerLogo *canvas.Image
-	iw        *InfoWindow
-	name      *widget.Label
-	tabs      *container.AppTabs
-	typeImage *kxwidget.TappableImage
-	typeInfo  *kxwidget.TappableLabel
+	description *widget.Label
+	id          int64
+	iw          *InfoWindow
+	name        *widget.Label
+	owner       *kxwidget.TappableLabel
+	ownerLogo   *canvas.Image
+	location    *entityList
+	tabs        *container.AppTabs
+	typeImage   *kxwidget.TappableImage
+	typeInfo    *kxwidget.TappableLabel
 }
 
 func newLocationInfo(iw *InfoWindow, id int64) *locationInfo {
@@ -41,20 +43,27 @@ func newLocationInfo(iw *InfoWindow, id int64) *locationInfo {
 	typeInfo.Wrapping = fyne.TextWrapWord
 	owner := kxwidget.NewTappableLabel("", nil)
 	owner.Wrapping = fyne.TextWrapWord
+	description := widget.NewLabel("")
+	description.Wrapping = fyne.TextWrapWord
 	typeImage := kxwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeImage.SetFillMode(canvas.ImageFillContain)
 	typeImage.SetMinSize(fyne.NewSquareSize(renderIconUnitSize))
 	a := &locationInfo{
-		id:        id,
-		owner:     owner,
-		ownerLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
-		iw:        iw,
-		name:      makeInfoName(),
-		typeInfo:  typeInfo,
-		typeImage: typeImage,
-		tabs:      container.NewAppTabs(),
+		description: description,
+		id:          id,
+		iw:          iw,
+		name:        makeInfoName(),
+		owner:       owner,
+		ownerLogo:   iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		typeImage:   typeImage,
+		typeInfo:    typeInfo,
 	}
 	a.ExtendBaseWidget(a)
+	a.location = newEntityList(a.iw.show)
+	a.tabs = container.NewAppTabs(
+		container.NewTabItem("Description", container.NewVScroll(a.description)),
+		container.NewTabItem("Location", a.location),
+	)
 	return a
 }
 
@@ -95,7 +104,6 @@ func (a *locationInfo) load() error {
 	if err != nil {
 		return err
 	}
-
 	go func() {
 		r, err := a.iw.u.EveImageService().InventoryTypeRender(o.Type.ID, renderIconPixelSize)
 		if err != nil {
@@ -134,61 +142,47 @@ func (a *locationInfo) load() error {
 		if description == "" {
 			description = o.Type.Name
 		}
-		desc := widget.NewLabel(description)
-		desc.Wrapping = fyne.TextWrapWord
-		a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
+		a.description.SetText(description)
 	})
 
 	if a.iw.u.IsDeveloperMode() {
-		x := NewAtributeItem("EVE ID", o.ID)
+		x := newAttributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
 			a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
 		}
-		attributeList := NewAttributeList(a.iw, []AttributeItem{x}...)
+		attributeList := newAttributeList(a.iw, []attributeItem{x}...)
 		attributesTab := container.NewTabItem("Attributes", attributeList)
 		fyne.Do(func() {
 			a.tabs.Append(attributesTab)
 		})
 	}
-
-	el := NewEntityListFromItems(
-		a.iw.show,
-		NewEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.Region.ToEveEntity(), ""),
-		NewEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.ToEveEntity(), ""),
-		NewEntityItemFromEveSolarSystem(o.SolarSystem),
-	)
-	locationTab := container.NewTabItem("Location", el)
-	var servicesTab *container.TabItem
 	fyne.Do(func() {
-		a.tabs.Append(locationTab)
-		a.tabs.Select(locationTab)
-		a.tabs.Refresh()
-		servicesTab = container.NewTabItem("Services", widget.NewLabel("Loading..."))
-		a.tabs.Append(servicesTab)
+		a.location.set(
+			newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.Region.ToEveEntity(), ""),
+			newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.ToEveEntity(), ""),
+			newEntityItemFromEveSolarSystem(o.SolarSystem),
+		)
 	})
-
 	if o.Variant() == app.EveLocationStation {
+		services := container.NewTabItem("Services", widget.NewLabel(""))
+		fyne.Do(func() {
+			a.tabs.Append(services)
+			a.tabs.Refresh()
+		})
 		go func() {
-			fyne.Do(func() {
-				a.tabs.Refresh()
-			})
 			ss, err := a.iw.u.EveUniverseService().GetStationServicesESI(ctx, int32(a.id))
 			if err != nil {
 				slog.Error("Failed to fetch station services", "stationID", o.ID, "error", err)
-				fyne.Do(func() {
-					servicesTab.Content = widget.NewLabel("ERROR: Failed to load")
-					a.tabs.Refresh()
-				})
 				return
 			}
 			items := xslices.Map(ss, func(s string) entityItem {
 				s2 := strings.ReplaceAll(s, "-", " ")
 				titler := cases.Title(language.English)
 				name := titler.String(s2)
-				return NewEntityItem(0, "Service", name, infoNotSupported)
+				return newEntityItem(0, "Service", name, infoNotSupported)
 			})
 			fyne.Do(func() {
-				servicesTab.Content = NewEntityListFromItems(nil, items...)
+				services.Content = newEntityListFromItems(nil, items...)
 				a.tabs.Refresh()
 			})
 		}()

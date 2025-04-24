@@ -19,24 +19,30 @@ import (
 type raceInfo struct {
 	widget.BaseWidget
 
-	id int32
-	iw *InfoWindow
-
-	logo *canvas.Image
-	name *widget.Label
-	tabs *container.AppTabs
+	id          int32
+	iw          *InfoWindow
+	logo        *canvas.Image
+	name        *widget.Label
+	tabs        *container.AppTabs
+	description *widget.Label
 }
 
 func newRaceInfo(iw *InfoWindow, id int32) *raceInfo {
+	description := widget.NewLabel("")
+	description.Wrapping = fyne.TextWrapWord
 	a := &raceInfo{
-		iw:   iw,
-		id:   id,
-		logo: makeInfoLogo(),
-		name: makeInfoName(),
-		tabs: container.NewAppTabs(),
+		description: description,
+		id:          id,
+		iw:          iw,
+		logo:        makeInfoLogo(),
+		name:        makeInfoName(),
+		tabs:        container.NewAppTabs(),
 	}
 	a.logo.Resource = icons.BlankSvg
 	a.ExtendBaseWidget(a)
+	a.tabs = container.NewAppTabs(
+		container.NewTabItem("Description", container.NewVScroll(a.description)),
+	)
 	return a
 }
 
@@ -84,17 +90,15 @@ func (a *raceInfo) load() error {
 		}()
 	}
 	fyne.Do(func() {
-		desc := widget.NewLabel(o.Description)
-		desc.Wrapping = fyne.TextWrapWord
-		a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
 		a.name.SetText(o.Name)
+		a.description.SetText(o.Description)
 	})
 	if a.iw.u.IsDeveloperMode() {
-		x := NewAtributeItem("EVE ID", fmt.Sprint(o.ID))
+		x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
 		x.Action = func(v any) {
 			a.iw.u.App().Clipboard().SetContent(v.(string))
 		}
-		attributeList := NewAttributeList(a.iw, []AttributeItem{x}...)
+		attributeList := newAttributeList(a.iw, []attributeItem{x}...)
 		attributesTab := container.NewTabItem("Attributes", attributeList)
 		fyne.Do(func() {
 			a.tabs.Append(attributesTab)

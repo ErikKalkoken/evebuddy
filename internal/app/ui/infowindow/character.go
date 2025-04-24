@@ -25,17 +25,21 @@ import (
 type characterInfo struct {
 	widget.BaseWidget
 
-	id              int32
 	alliance        *kxwidget.TappableLabel
-	name            *widget.Label
-	corporationLogo *canvas.Image
+	bio             *widget.Label
 	corporation     *kxwidget.TappableLabel
+	corporationLogo *canvas.Image
+	description     *widget.Label
+	employeeHistory *entityList
+	id              int32
+	iw              *InfoWindow
 	membership      *widget.Label
+	name            *widget.Label
 	portrait        *kxwidget.TappableImage
 	security        *widget.Label
-	title           *widget.Label
 	tabs            *container.AppTabs
-	iw              *InfoWindow
+	title           *widget.Label
+	attributes      *attributeList
 }
 
 func newCharacterInfo(iw *InfoWindow, id int32) *characterInfo {
@@ -48,20 +52,33 @@ func newCharacterInfo(iw *InfoWindow, id int32) *characterInfo {
 	portrait.SetMinSize(fyne.NewSquareSize(renderIconUnitSize))
 	title := widget.NewLabel("")
 	title.Wrapping = fyne.TextWrapWord
+	bio := widget.NewLabel("")
+	bio.Wrapping = fyne.TextWrapWord
+	description := widget.NewLabel("")
+	description.Wrapping = fyne.TextWrapWord
 	a := &characterInfo{
 		alliance:        alliance,
+		bio:             bio,
 		corporation:     corporation,
 		corporationLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
-		iw:              iw,
+		description:     description,
 		id:              id,
+		iw:              iw,
 		membership:      widget.NewLabel(""),
 		name:            makeInfoName(),
 		portrait:        portrait,
 		security:        widget.NewLabel(""),
-		tabs:            container.NewAppTabs(),
 		title:           title,
 	}
 	a.ExtendBaseWidget(a)
+	a.attributes = newAttributeList(a.iw)
+	a.employeeHistory = newEntityListFromItems(a.iw.show)
+	a.tabs = container.NewAppTabs(
+		container.NewTabItem("Bio", container.NewVScroll(a.bio)),
+		container.NewTabItem("Description", container.NewVScroll(a.description)),
+		container.NewTabItem("Attributes", a.attributes),
+		container.NewTabItem("Employment History", a.employeeHistory),
+	)
 	return a
 }
 
@@ -117,7 +134,6 @@ func (a *characterInfo) load() error {
 			a.portrait.SetResource(r)
 		})
 	}()
-
 	go func() {
 		history, err := a.iw.u.EveUniverseService().GetCharacterCorporationHistory(ctx, a.id)
 		if err != nil {
@@ -131,10 +147,8 @@ func (a *characterInfo) load() error {
 			return
 		}
 		items := xslices.Map(history, historyItem2EntityItem)
-		historyList := NewEntityListFromItems(a.iw.show, items...)
 		fyne.Do(func() {
-			a.tabs.Append(container.NewTabItem("Employment History", historyList))
-			a.tabs.Refresh()
+			a.employeeHistory.set(items...)
 			current := history[0]
 			duration := humanize.RelTime(current.StartDate, time.Now(), "", "")
 			a.membership.SetText(fmt.Sprintf("for %s", duration))
@@ -169,6 +183,10 @@ func (a *characterInfo) load() error {
 		}
 	})
 	fyne.Do(func() {
+		a.bio.SetText(o.DescriptionPlain())
+		a.description.SetText(o.RaceDescription())
+	})
+	fyne.Do(func() {
 		if !o.HasAlliance() {
 			a.alliance.Hide()
 			return
@@ -179,42 +197,25 @@ func (a *characterInfo) load() error {
 		}
 	})
 	fyne.Do(func() {
-		s := o.DescriptionPlain()
-		if s == "" {
-			return
-		}
-		bio := widget.NewLabel(s)
-		bio.Wrapping = fyne.TextWrapWord
-		a.tabs.Append(container.NewTabItem("Bio", container.NewVScroll(bio)))
-	})
-	fyne.Do(func() {
 		if o.Title == "" {
 			a.title.Hide()
 			return
 		}
 		a.title.SetText("Title: " + o.Title)
 	})
-	fyne.Do(func() {
-		desc := widget.NewLabel(o.RaceDescription())
-		desc.Wrapping = fyne.TextWrapWord
-		a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
-	})
-	fyne.Do(func() {
-		attributes := []AttributeItem{
-			NewAtributeItem("Corporation", o.Corporation),
-			NewAtributeItem("Race", o.Race),
+	attributes := []attributeItem{
+		newAttributeItem("Corporation", o.Corporation),
+		newAttributeItem("Race", o.Race),
+	}
+	if a.iw.u.IsDeveloperMode() {
+		x := newAttributeItem("EVE ID", o.ID)
+		x.Action = func(_ any) {
+			a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
 		}
-		if a.iw.u.IsDeveloperMode() {
-			x := NewAtributeItem("EVE ID", o.ID)
-			x.Action = func(_ any) {
-				a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
-			}
-			attributes = append(attributes, x)
-		}
-		attributeList := NewAttributeList(a.iw, attributes...)
-		attributesTab := container.NewTabItem("Attributes", attributeList)
-		a.tabs.Append(attributesTab)
-		a.tabs.Refresh()
+		attributes = append(attributes, x)
+	}
+	fyne.Do(func() {
+		a.attributes.set(attributes)
 	})
 	return nil
 }

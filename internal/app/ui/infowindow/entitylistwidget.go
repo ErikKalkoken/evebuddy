@@ -20,7 +20,7 @@ type entityItem struct {
 	infoVariant  infoVariant
 }
 
-func NewEntityItem(id int64, category, text string, v infoVariant) entityItem {
+func newEntityItem(id int64, category, text string, v infoVariant) entityItem {
 	return entityItem{
 		id:          id,
 		category:    category,
@@ -29,7 +29,7 @@ func NewEntityItem(id int64, category, text string, v infoVariant) entityItem {
 	}
 }
 
-func NewEntityItemFromEvePlanet(o *app.EvePlanet) entityItem {
+func newEntityItemFromEvePlanet(o *app.EvePlanet) entityItem {
 	return entityItem{
 		id:          int64(o.ID),
 		category:    "Planet",
@@ -38,7 +38,7 @@ func NewEntityItemFromEvePlanet(o *app.EvePlanet) entityItem {
 	}
 }
 
-func NewEntityItemFromEveSolarSystem(o *app.EveSolarSystem) entityItem {
+func newEntityItemFromEveSolarSystem(o *app.EveSolarSystem) entityItem {
 	ee := o.ToEveEntity()
 	return entityItem{
 		id:           int64(ee.ID),
@@ -49,38 +49,43 @@ func NewEntityItemFromEveSolarSystem(o *app.EveSolarSystem) entityItem {
 }
 
 func NewEntityItemFromEveEntity(ee *app.EveEntity) entityItem {
-	return NewEntityItem(int64(ee.ID), ee.CategoryDisplay(), ee.Name, eveEntity2InfoVariant(ee))
+	return newEntityItem(int64(ee.ID), ee.CategoryDisplay(), ee.Name, eveEntity2InfoVariant(ee))
 }
 
-func NewEntityItemFromEveEntityWithText(ee *app.EveEntity, text string) entityItem {
+func newEntityItemFromEveEntityWithText(ee *app.EveEntity, text string) entityItem {
 	if text == "" {
 		text = ee.Name
 	}
-	return NewEntityItem(int64(ee.ID), ee.CategoryDisplay(), text, eveEntity2InfoVariant(ee))
+	return newEntityItem(int64(ee.ID), ee.CategoryDisplay(), text, eveEntity2InfoVariant(ee))
 }
 
-// EntitiyList is a list widget for showing entities.
-type EntitiyList struct {
+// entityList is a list widget for showing entities.
+type entityList struct {
 	widget.BaseWidget
 
 	items    []entityItem
 	showInfo func(infoVariant, int64)
 }
 
-func NewEntityListFromEntities(show func(infoVariant, int64), s ...*app.EveEntity) *EntitiyList {
-	items := xslices.Map(s, func(ee *app.EveEntity) entityItem {
-		return NewEntityItemFromEveEntityWithText(ee, "")
+func newEntityListFromEntities(show func(infoVariant, int64), s ...*app.EveEntity) *entityList {
+	items := entityItemsFromEveEntities(s)
+	return newEntityListFromItems(show, items...)
+}
+
+func entityItemsFromEveEntities(ee []*app.EveEntity) []entityItem {
+	items := xslices.Map(ee, func(ee *app.EveEntity) entityItem {
+		return newEntityItemFromEveEntityWithText(ee, "")
 	})
-	return NewEntityListFromItems(show, items...)
+	return items
 }
 
-func NewEntityList(show func(infoVariant, int64)) *EntitiyList {
+func newEntityList(show func(infoVariant, int64)) *entityList {
 	items := make([]entityItem, 0)
-	return NewEntityListFromItems(show, items...)
+	return newEntityListFromItems(show, items...)
 }
 
-func NewEntityListFromItems(show func(infoVariant, int64), items ...entityItem) *EntitiyList {
-	w := &EntitiyList{
+func newEntityListFromItems(show func(infoVariant, int64), items ...entityItem) *entityList {
+	w := &entityList{
 		items:    items,
 		showInfo: show,
 	}
@@ -88,12 +93,12 @@ func NewEntityListFromItems(show func(infoVariant, int64), items ...entityItem) 
 	return w
 }
 
-func (w *EntitiyList) Set(items ...entityItem) {
+func (w *entityList) set(items ...entityItem) {
 	w.items = items
 	w.Refresh()
 }
 
-func (w *EntitiyList) CreateRenderer() fyne.WidgetRenderer {
+func (w *entityList) CreateRenderer() fyne.WidgetRenderer {
 	l := widget.NewList(
 		func() int {
 			return len(w.items)

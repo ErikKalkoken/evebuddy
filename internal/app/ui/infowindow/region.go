@@ -19,24 +19,33 @@ import (
 type regionInfo struct {
 	widget.BaseWidget
 
-	id int32
-	iw *InfoWindow
-
-	logo *canvas.Image
-	name *widget.Label
-	tabs *container.AppTabs
+	description    *widget.Label
+	constellations *entityList
+	id             int32
+	iw             *InfoWindow
+	logo           *canvas.Image
+	name           *widget.Label
+	tabs           *container.AppTabs
 }
 
 func newRegionInfo(iw *InfoWindow, id int32) *regionInfo {
+	description := widget.NewLabel("")
+	description.Wrapping = fyne.TextWrapWord
 	a := &regionInfo{
-		iw:   iw,
-		id:   id,
-		logo: makeInfoLogo(),
-		name: makeInfoName(),
-		tabs: container.NewAppTabs(),
+		iw:          iw,
+		id:          id,
+		description: description,
+		logo:        makeInfoLogo(),
+		name:        makeInfoName(),
+		tabs:        container.NewAppTabs(),
 	}
 	a.logo.Resource = icons.Region64Png
 	a.ExtendBaseWidget(a)
+	a.constellations = newEntityList(a.iw.show)
+	a.tabs = container.NewAppTabs(
+		container.NewTabItem("Description", container.NewVScroll(a.description)),
+		container.NewTabItem("Constellations", a.constellations),
+	)
 	return a
 }
 
@@ -70,41 +79,31 @@ func (a *regionInfo) load() error {
 	if err != nil {
 		return err
 	}
-	constellations := container.NewTabItem("Constellations", widget.NewLabel("Loading..."))
 	fyne.Do(func() {
-		desc := widget.NewLabel(o.DescriptionPlain())
-		desc.Wrapping = fyne.TextWrapWord
-		a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
 		a.name.SetText(o.Name)
-		if a.iw.u.IsDeveloperMode() {
-			x := NewAtributeItem("EVE ID", fmt.Sprint(o.ID))
-			x.Action = func(v any) {
-				a.iw.u.App().Clipboard().SetContent(v.(string))
-			}
-			attributeList := NewAttributeList(a.iw, []AttributeItem{x}...)
-			attributesTab := container.NewTabItem("Attributes", attributeList)
-			a.tabs.Append(attributesTab)
+		a.description.SetText(o.DescriptionPlain())
+	})
+	fyne.Do(func() {
+		if !a.iw.u.IsDeveloperMode() {
+			return
 		}
-		a.tabs.Append(constellations)
-		a.tabs.Select(constellations)
-		a.tabs.Refresh()
+		x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
+		x.Action = func(v any) {
+			a.iw.u.App().Clipboard().SetContent(v.(string))
+		}
+		attributeList := newAttributeList(a.iw, []attributeItem{x}...)
+		attributesTab := container.NewTabItem("Attributes", attributeList)
+		a.tabs.Append(attributesTab)
 	})
 	go func() {
 		oo, err := a.iw.u.EveUniverseService().GetRegionConstellationsESI(ctx, o.ID)
 		if err != nil {
 			slog.Error("region info: Failed to load constellations", "region", o.ID, "error", err)
-			fyne.Do(func() {
-				label := widget.NewLabel(a.iw.u.ErrorDisplay(err))
-				label.Importance = widget.DangerImportance
-				constellations.Content = label
-				a.tabs.Refresh()
-			})
 			return
 		}
-		xx := xslices.Map(oo, NewEntityItemFromEveEntity)
-		constellations.Content = NewEntityListFromItems(a.iw.show, xx...)
+		items := xslices.Map(oo, NewEntityItemFromEveEntity)
 		fyne.Do(func() {
-			a.tabs.Refresh()
+			a.constellations.set(items...)
 		})
 	}()
 	return nil
