@@ -1747,11 +1747,6 @@ type entityList struct {
 	showInfo func(infoVariant, int64)
 }
 
-func newEntityListFromEntities(show func(infoVariant, int64), s ...*app.EveEntity) *entityList {
-	items := entityItemsFromEveEntities(s)
-	return newEntityListFromItems(show, items...)
-}
-
 func entityItemsFromEveEntities(ee []*app.EveEntity) []entityItem {
 	items := xslices.Map(ee, func(ee *app.EveEntity) entityItem {
 		return newEntityItemFromEveEntityWithText(ee, "")

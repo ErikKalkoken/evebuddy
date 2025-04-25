@@ -196,3 +196,24 @@ func TestStatusText(t *testing.T) {
 		assert.Equal(t, "420 Error Limited", x)
 	})
 }
+
+func TestObfuscate(t *testing.T) {
+	cases := []struct {
+		name string
+		s    string
+		n    int
+		want string
+	}{
+		{"normal", "123456789", 4, "XXXXX6789"},
+		{"s too short", "123", 4, "XXX"},
+		{"n is zero", "123456789", 0, "XXXXXXXXX"},
+		{"n is negativ", "123456789", -5, "XXXXXXXXX"},
+		{"s is empty", "", 4, ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := obfuscate(tc.s, tc.n)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
