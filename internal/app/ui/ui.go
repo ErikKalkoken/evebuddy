@@ -26,7 +26,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
@@ -1026,27 +1025,27 @@ func (u *BaseUI) showUpdateStatusWindow() {
 }
 
 func (u *BaseUI) ShowLocationInfoWindow(id int64) {
-	iw := infowindow.New(u)
-	iw.ShowLocation(id)
+	iw := newInfoWindow(u)
+	iw.showLocation(id)
 }
 
 func (u *BaseUI) ShowRaceInfoWindow(id int32) {
-	iw := infowindow.New(u)
-	iw.ShowRace(id)
+	iw := newInfoWindow(u)
+	iw.showRace(id)
 }
 
 func (u *BaseUI) ShowTypeInfoWindow(id int32) {
-	iw := infowindow.New(u)
+	iw := newInfoWindow(u)
 	iw.Show(app.EveEntityInventoryType, id)
 }
 
 func (u *BaseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
-	iw := infowindow.New(u)
-	iw.ShowEveEntity(o)
+	iw := newInfoWindow(u)
+	iw.showEveEntity(o)
 }
 
 func (u *BaseUI) ShowInfoWindow(c app.EveEntityCategory, id int32) {
-	iw := infowindow.New(u)
+	iw := newInfoWindow(u)
 	iw.Show(c, id)
 }
 
