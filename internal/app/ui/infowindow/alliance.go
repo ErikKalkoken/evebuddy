@@ -4,12 +4,15 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
@@ -18,6 +21,7 @@ type allianceInfo struct {
 	widget.BaseWidget
 
 	attributes *attributeList
+	dotlan     *kxwidget.TappableIcon
 	hq         *kxwidget.TappableLabel
 	id         int32
 	iw         *InfoWindow
@@ -44,6 +48,8 @@ func newAllianceInfo(iw *InfoWindow, id int32) *allianceInfo {
 		container.NewTabItem("Attributes", a.attributes),
 		container.NewTabItem("Members", a.members),
 	)
+	a.dotlan = kxwidget.NewTappableIcon(icons.DotlanAvatarPng, nil)
+	a.dotlan.Hide()
 	return a
 }
 
@@ -59,7 +65,23 @@ func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 			})
 		}
 	}()
-	top := container.NewBorder(nil, nil, container.NewVBox(container.NewPadded(a.logo)), nil, a.name)
+	top := container.NewBorder(
+		nil,
+		nil,
+		container.NewVBox(
+			a.logo,
+			container.NewHBox(
+				layout.NewSpacer(),
+				kxwidget.NewTappableIcon(icons.ZkillboardPng, func() {
+					a.iw.openURL(fmt.Sprintf("https://zkillboard.com/alliance/%d/", a.id))
+				}),
+				a.dotlan,
+				layout.NewSpacer(),
+			),
+		),
+		nil,
+		a.name,
+	)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
 	return widget.NewSimpleRenderer(c)
 }
@@ -127,6 +149,11 @@ func (a *allianceInfo) load() error {
 	fyne.Do(func() {
 		a.name.SetText(o.Name)
 		a.attributes.set(attributes)
+		a.dotlan.OnTapped = func() {
+			name := strings.ReplaceAll(o.Name, "_", " ")
+			a.iw.openURL(fmt.Sprintf("https://evemaps.dotlan.net/alliance/%s", name))
+		}
+		a.dotlan.Show()
 	})
 	return nil
 }

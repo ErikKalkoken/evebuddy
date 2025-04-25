@@ -3,6 +3,7 @@ package infowindow
 import (
 	"log/slog"
 	"maps"
+	"net/url"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -151,6 +152,19 @@ func (iw *InfoWindow) showZoomWindow(title string, id int32, load func(int32, in
 	w2 := iw.u.App().NewWindow(iw.u.MakeWindowTitle(title))
 	w2.SetContent(container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), i))
 	w2.Show()
+}
+
+func (iw *InfoWindow) openURL(s string) {
+	x, err := url.ParseRequestURI(s)
+	if err != nil {
+		slog.Error("Construcing URL", "url", s, "error", err)
+		return
+	}
+	err = iw.u.App().OpenURL(x)
+	if err != nil {
+		slog.Error("Opening URL", "url", x, "error", err)
+		return
+	}
 }
 
 type infoVariant uint
