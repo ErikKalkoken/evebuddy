@@ -31,12 +31,11 @@ func historyItem2EntityItem(hi app.MembershipHistoryItem) entityItem {
 		endDateStr,
 		humanize.Comma(int64(hi.Days)),
 	)
-	return NewEntityItemFromEveEntityWithText(hi.Organization, text)
+	return newEntityItemFromEveEntityWithText(hi.Organization, text)
 }
 
 func makeInfoLogo() *canvas.Image {
-	s := float32(app.IconPixelSize) * logoZoomFactor
-	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(s))
+	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(logoUnitSize))
 	return logo
 }
 

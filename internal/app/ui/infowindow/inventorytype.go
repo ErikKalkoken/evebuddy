@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
+	"image/color"
 	"slices"
 
 	"fyne.io/fyne/v2"
@@ -20,7 +20,6 @@ import (
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	ilayout "github.com/ErikKalkoken/evebuddy/internal/layout"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -143,6 +142,210 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(top, nil, nil, nil, tabs)
 	return widget.NewSimpleRenderer(c)
+}
+
+func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
+	typeIcon := iwidget.NewImageWithLoader(
+		icons.BlankSvg,
+		fyne.NewSquareSize(logoUnitSize),
+		func() (fyne.Resource, error) {
+			if a.et.IsSKIN() {
+				return a.iw.u.EveImageService().InventoryTypeSKIN(a.et.ID, app.IconPixelSize)
+			} else if a.et.IsBlueprint() {
+				return a.iw.u.EveImageService().InventoryTypeBPO(a.et.ID, app.IconPixelSize)
+			} else {
+				return a.iw.u.EveImageService().InventoryTypeIcon(a.et.ID, app.IconPixelSize)
+			}
+		},
+	)
+	characterIcon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
+	characterName := kxwidget.NewTappableLabel("", func() {
+		a.iw.ShowEveEntity(a.character)
+	})
+	characterName.Wrapping = fyne.TextWrapWord
+	if a.character != nil {
+		iwidget.RefreshImageAsync(characterIcon, func() (fyne.Resource, error) {
+			return a.iw.u.EveImageService().CharacterPortrait(a.character.ID, app.IconPixelSize)
+		})
+		characterName.SetText(a.character.Name)
+	} else {
+		characterIcon.Hide()
+		characterName.Hide()
+	}
+	hasRequiredSkills := true
+	for _, o := range a.requiredSkills {
+		if o.requiredLevel > o.activeLevel {
+			hasRequiredSkills = false
+			break
+		}
+	}
+	checkIcon := widget.NewIcon(boolIconResource(hasRequiredSkills))
+	if a.character != nil && !a.character.IsCharacter() || len(a.requiredSkills) == 0 {
+		checkIcon.Hide()
+	}
+	name := makeInfoName()
+	name.SetText(a.et.Name)
+	emb := iwidget.NewTappableIcon(icons.EvemarketbrowserJpg, func() {
+		a.iw.openURL(fmt.Sprintf("https://evemarketbrowser.com/region/0/type/%d", a.id))
+	})
+	emb.SetToolTip("Show on evemarketbrowser.com")
+	evemarketbrowser := container.NewStack(canvas.NewRectangle(theme.Color(theme.ColorNameButton)), emb)
+	j := iwidget.NewTappableIcon(icons.JanicePng, func() {
+		a.iw.openURL(fmt.Sprintf("https://janice.e-351.com/i/%d", a.id))
+	})
+	j.SetToolTip("Show on janice.e-351.com")
+	janice := container.NewStack(canvas.NewRectangle(color.White), j)
+	if !a.et.IsTradeable() {
+		evemarketbrowser.Hide()
+		janice.Hide()
+	}
+	return container.NewBorder(
+		nil,
+		nil,
+		container.NewVBox(
+			container.NewPadded(typeIcon),
+			container.New(
+				layout.NewCustomPaddedHBoxLayout(3*theme.Padding()),
+				layout.NewSpacer(),
+				evemarketbrowser,
+				janice,
+				layout.NewSpacer(),
+			),
+		),
+		nil,
+		container.NewVBox(
+			name,
+			container.NewBorder(
+				nil,
+				nil,
+				container.NewHBox(checkIcon, characterIcon),
+				nil,
+				characterName,
+			)))
+}
+
+func (a *inventoryTypeInfo) makeDescriptionTab() fyne.CanvasObject {
+	s := a.et.DescriptionPlain()
+	if s == "" {
+		s = a.et.Name
+	}
+	description := widget.NewLabel(s)
+	description.Wrapping = fyne.TextWrapWord
+	return container.NewVScroll(description)
+}
+
+func (a *inventoryTypeInfo) makeMarketTab() fyne.CanvasObject {
+	c := container.NewHBox(
+		widget.NewLabel("Average price"),
+		layout.NewSpacer(),
+		widget.NewLabel(ihumanize.Number(a.price.AveragePrice, 1)),
+	)
+	return container.NewVScroll(c)
+}
+
+func (a *inventoryTypeInfo) makeAttributesTab() fyne.CanvasObject {
+	list := widget.NewList(
+		func() int {
+			return len(a.attributesData)
+		},
+		func() fyne.CanvasObject {
+			return appwidget.NewTypeAttributeItem()
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(a.attributesData) {
+				return
+			}
+			r := a.attributesData[id]
+			item := co.(*appwidget.TypeAttributeItem)
+			if r.isTitle {
+				item.SetTitle(r.label)
+			} else {
+				item.SetRegular(r.icon, r.label, r.value)
+			}
+		},
+	)
+	list.OnSelected = func(id widget.ListItemID) {
+		defer list.UnselectAll()
+		if id >= len(a.attributesData) {
+			return
+		}
+		r := a.attributesData[id]
+		if r.action != nil {
+			r.action(r.value)
+		}
+	}
+	return list
+}
+
+func (a *inventoryTypeInfo) makeFittingsTab() fyne.CanvasObject {
+	l := widget.NewList(
+		func() int {
+			return len(a.fittingData)
+		},
+		func() fyne.CanvasObject {
+			return appwidget.NewTypeAttributeItem()
+		},
+		func(lii widget.ListItemID, co fyne.CanvasObject) {
+			r := a.fittingData[lii]
+			item := co.(*appwidget.TypeAttributeItem)
+			item.SetRegular(r.icon, r.label, r.value)
+		},
+	)
+	l.OnSelected = func(id widget.ListItemID) {
+		l.UnselectAll()
+	}
+	return l
+}
+
+func (a *inventoryTypeInfo) makeRequirementsTab() fyne.CanvasObject {
+	l := widget.NewList(
+		func() int {
+			return len(a.requiredSkills)
+		},
+		func() fyne.CanvasObject {
+			return container.NewHBox(
+				widget.NewLabel("Placeholder"),
+				layout.NewSpacer(),
+				widget.NewLabel("Check"),
+				appwidget.NewSkillLevel(),
+				widget.NewIcon(icons.QuestionmarkSvg),
+			)
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			o := a.requiredSkills[id]
+			row := co.(*fyne.Container).Objects
+			skill := row[0].(*widget.Label)
+			text := row[2].(*widget.Label)
+			level := row[3].(*appwidget.SkillLevel)
+			icon := row[4].(*widget.Icon)
+			skill.SetText(app.SkillDisplayName(o.name, o.requiredLevel))
+			if o.activeLevel == 0 && o.trainedLevel == 0 {
+				text.Text = "Skill not injected"
+				text.Importance = widget.DangerImportance
+				text.Refresh()
+				text.Show()
+				level.Hide()
+				icon.Hide()
+			} else if o.activeLevel >= o.requiredLevel {
+				icon.SetResource(boolIconResource(true))
+				icon.Show()
+				text.Hide()
+				level.Hide()
+			} else {
+				level.Set(o.activeLevel, o.trainedLevel, o.requiredLevel)
+				text.Refresh()
+				text.Hide()
+				icon.Hide()
+				level.Show()
+			}
+		},
+	)
+	l.OnSelected = func(id widget.ListItemID) {
+		r := a.requiredSkills[id]
+		a.iw.show(infoInventoryType, int64(r.typeID))
+		l.UnselectAll()
+	}
+	return l
 }
 
 func (a *inventoryTypeInfo) title() string {
@@ -347,220 +550,6 @@ func (a *inventoryTypeInfo) calcRequiredSkills(ctx context.Context, characterID 
 		skills = append(skills, skill)
 	}
 	return skills, nil
-}
-
-func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
-	typeIcon := container.New(ilayout.NewTopLeftLayout())
-	if a.et.HasRender() {
-		size := renderIconUnitSize
-		r, err := a.iw.u.EveImageService().InventoryTypeRender(a.et.ID, size)
-		if err != nil {
-			slog.Error("Failed to load inventory type render", "typeID", a.et.ID, "error", err)
-			r = theme.BrokenImageIcon()
-		}
-		render := kxwidget.NewTappableImage(r, func() {
-			go fyne.Do(func() {
-				a.iw.showZoomWindow(a.et.Name, a.et.ID, a.iw.u.EveImageService().InventoryTypeRender, a.iw.w)
-			})
-		})
-		render.SetFillMode(canvas.ImageFillContain)
-		s := float32(size)
-		render.SetMinSize(fyne.NewSquareSize(s))
-		typeIcon.Add(render)
-		if a.metaLevel > 4 {
-			var n eveicon.Name
-			switch a.techLevel {
-			case 2:
-				n = eveicon.Tech2
-			case 3:
-				n = eveicon.Tech3
-			default:
-				n = eveicon.Faction
-			}
-			marker := iwidget.NewImageFromResource(
-				eveicon.FromName(n),
-				fyne.NewSquareSize(render.MinSize().Width*0.2),
-			)
-			typeIcon.Add(container.NewPadded(marker))
-		}
-	} else {
-		s := float32(app.IconPixelSize) * logoZoomFactor
-		icon := iwidget.NewImageWithLoader(icons.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
-			if a.et.IsSKIN() {
-				return a.iw.u.EveImageService().InventoryTypeSKIN(a.et.ID, app.IconPixelSize)
-			} else if a.et.IsBlueprint() {
-				return a.iw.u.EveImageService().InventoryTypeBPO(a.et.ID, app.IconPixelSize)
-			} else {
-				return a.iw.u.EveImageService().InventoryTypeIcon(a.et.ID, app.IconPixelSize)
-			}
-		})
-		typeIcon.Add(icon)
-	}
-	characterIcon := iwidget.NewImageFromResource(icons.QuestionmarkSvg, fyne.NewSquareSize(app.IconUnitSize))
-	characterName := kxwidget.NewTappableLabel("", func() {
-		a.iw.ShowEveEntity(a.character)
-	})
-	characterName.Wrapping = fyne.TextWrapWord
-	if a.character != nil {
-		iwidget.RefreshImageAsync(characterIcon, func() (fyne.Resource, error) {
-			return a.iw.u.EveImageService().CharacterPortrait(a.character.ID, app.IconPixelSize)
-		})
-		characterName.SetText(a.character.Name)
-	} else {
-		characterIcon.Hide()
-		characterName.Hide()
-	}
-	hasRequiredSkills := true
-	for _, o := range a.requiredSkills {
-		if o.requiredLevel > o.activeLevel {
-			hasRequiredSkills = false
-			break
-		}
-	}
-	checkIcon := widget.NewIcon(boolIconResource(hasRequiredSkills))
-	if a.character != nil && !a.character.IsCharacter() || len(a.requiredSkills) == 0 {
-		checkIcon.Hide()
-	}
-	name := makeInfoName()
-	name.SetText(a.et.Name)
-	return container.NewBorder(
-		nil,
-		nil,
-		typeIcon,
-		nil,
-		container.NewVBox(
-			name,
-			container.NewBorder(
-				nil,
-				nil,
-				container.NewHBox(checkIcon, characterIcon),
-				nil,
-				characterName,
-			)))
-}
-
-func (a *inventoryTypeInfo) makeDescriptionTab() fyne.CanvasObject {
-	s := a.et.DescriptionPlain()
-	if s == "" {
-		s = a.et.Name
-	}
-	description := widget.NewLabel(s)
-	description.Wrapping = fyne.TextWrapWord
-	return container.NewVScroll(description)
-}
-
-func (a *inventoryTypeInfo) makeMarketTab() fyne.CanvasObject {
-	c := container.NewHBox(
-		widget.NewLabel("Average price"),
-		layout.NewSpacer(),
-		widget.NewLabel(ihumanize.Number(a.price.AveragePrice, 1)),
-	)
-	return container.NewVScroll(c)
-}
-
-func (a *inventoryTypeInfo) makeAttributesTab() fyne.CanvasObject {
-	list := widget.NewList(
-		func() int {
-			return len(a.attributesData)
-		},
-		func() fyne.CanvasObject {
-			return appwidget.NewTypeAttributeItem()
-		},
-		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(a.attributesData) {
-				return
-			}
-			r := a.attributesData[id]
-			item := co.(*appwidget.TypeAttributeItem)
-			if r.isTitle {
-				item.SetTitle(r.label)
-			} else {
-				item.SetRegular(r.icon, r.label, r.value)
-			}
-		},
-	)
-	list.OnSelected = func(id widget.ListItemID) {
-		defer list.UnselectAll()
-		if id >= len(a.attributesData) {
-			return
-		}
-		r := a.attributesData[id]
-		if r.action != nil {
-			r.action(r.value)
-		}
-	}
-	return list
-}
-
-func (a *inventoryTypeInfo) makeFittingsTab() fyne.CanvasObject {
-	l := widget.NewList(
-		func() int {
-			return len(a.fittingData)
-		},
-		func() fyne.CanvasObject {
-			return appwidget.NewTypeAttributeItem()
-		},
-		func(lii widget.ListItemID, co fyne.CanvasObject) {
-			r := a.fittingData[lii]
-			item := co.(*appwidget.TypeAttributeItem)
-			item.SetRegular(r.icon, r.label, r.value)
-		},
-	)
-	l.OnSelected = func(id widget.ListItemID) {
-		l.UnselectAll()
-	}
-	return l
-}
-
-func (a *inventoryTypeInfo) makeRequirementsTab() fyne.CanvasObject {
-	l := widget.NewList(
-		func() int {
-			return len(a.requiredSkills)
-		},
-		func() fyne.CanvasObject {
-			return container.NewHBox(
-				widget.NewLabel("Placeholder"),
-				layout.NewSpacer(),
-				widget.NewLabel("Check"),
-				appwidget.NewSkillLevel(),
-				widget.NewIcon(icons.QuestionmarkSvg),
-			)
-		},
-		func(id widget.ListItemID, co fyne.CanvasObject) {
-			o := a.requiredSkills[id]
-			row := co.(*fyne.Container).Objects
-			skill := row[0].(*widget.Label)
-			text := row[2].(*widget.Label)
-			level := row[3].(*appwidget.SkillLevel)
-			icon := row[4].(*widget.Icon)
-			skill.SetText(app.SkillDisplayName(o.name, o.requiredLevel))
-			if o.activeLevel == 0 && o.trainedLevel == 0 {
-				text.Text = "Skill not injected"
-				text.Importance = widget.DangerImportance
-				text.Refresh()
-				text.Show()
-				level.Hide()
-				icon.Hide()
-			} else if o.activeLevel >= o.requiredLevel {
-				icon.SetResource(boolIconResource(true))
-				icon.Show()
-				text.Hide()
-				level.Hide()
-			} else {
-				level.Set(o.activeLevel, o.trainedLevel, o.requiredLevel)
-				text.Refresh()
-				text.Hide()
-				icon.Hide()
-				level.Show()
-			}
-		},
-	)
-	l.OnSelected = func(id widget.ListItemID) {
-		r := a.requiredSkills[id]
-		a.iw.show(infoInventoryType, int64(r.typeID))
-		l.UnselectAll()
-	}
-	return l
 }
 
 func boolIconResource(ok bool) fyne.Resource {

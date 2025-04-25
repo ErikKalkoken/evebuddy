@@ -14,40 +14,40 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
-type AttributeItem struct {
+type attributeItem struct {
 	Label  string
 	Value  any
 	Action func(v any)
 }
 
-func NewAtributeItem(label string, value any) AttributeItem {
-	return AttributeItem{Label: label, Value: value}
+func newAttributeItem(label string, value any) attributeItem {
+	return attributeItem{Label: label, Value: value}
 }
 
-type AttributeList struct {
+type attributeList struct {
 	widget.BaseWidget
 
+	items   []attributeItem
 	iw      *InfoWindow
-	items   []AttributeItem
 	openURL func(*url.URL) error
 }
 
-func NewAttributeList(iw *InfoWindow, items ...AttributeItem) *AttributeList {
-	w := &AttributeList{
-		iw:      iw,
+func newAttributeList(iw *InfoWindow, items ...attributeItem) *attributeList {
+	w := &attributeList{
 		items:   items,
+		iw:      iw,
 		openURL: fyne.CurrentApp().OpenURL,
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
-func (w *AttributeList) Set(items []AttributeItem) {
+func (w *attributeList) set(items []attributeItem) {
 	w.items = items
 	w.Refresh()
 }
 
-func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
+func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 	supportedCategories := SupportedEveEntities()
 	l := widget.NewList(
 		func() int {

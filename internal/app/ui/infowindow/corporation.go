@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
-	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -25,14 +24,17 @@ import (
 type corporationInfo struct {
 	widget.BaseWidget
 
-	id           int32
-	iw           *InfoWindow
-	alliance     *kxwidget.TappableLabel
-	allianceLogo *canvas.Image
-	name         *widget.Label
-	logo         *canvas.Image
-	hq           *kxwidget.TappableLabel
-	tabs         *container.AppTabs
+	alliance        *kxwidget.TappableLabel
+	allianceHistory *entityList
+	allianceLogo    *canvas.Image
+	attributes      *attributeList
+	description     *widget.Label
+	hq              *kxwidget.TappableLabel
+	id              int32
+	iw              *InfoWindow
+	logo            *canvas.Image
+	name            *widget.Label
+	tabs            *container.AppTabs
 }
 
 func newCorporationInfo(iw *InfoWindow, id int32) *corporationInfo {
@@ -40,17 +42,28 @@ func newCorporationInfo(iw *InfoWindow, id int32) *corporationInfo {
 	alliance.Wrapping = fyne.TextWrapWord
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Wrapping = fyne.TextWrapWord
+	description := widget.NewLabel("")
+	description.Wrapping = fyne.TextWrapWord
 	a := &corporationInfo{
-		id:           id,
 		alliance:     alliance,
 		allianceLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
-		name:         makeInfoName(),
-		logo:         makeInfoLogo(),
+		description:  description,
 		hq:           hq,
-		tabs:         container.NewAppTabs(),
+		id:           id,
 		iw:           iw,
+		logo:         makeInfoLogo(),
+		name:         makeInfoName(),
 	}
 	a.ExtendBaseWidget(a)
+	a.attributes = newAttributeList(a.iw)
+	a.allianceHistory = newEntityListFromItems(a.iw.show)
+	attributes := container.NewTabItem("Attributes", a.attributes)
+	a.tabs = container.NewAppTabs(
+		container.NewTabItem("Description", container.NewVScroll(a.description)),
+		attributes,
+		container.NewTabItem("Alliance History", a.allianceHistory),
+	)
+	a.tabs.Select(attributes)
 	return a
 }
 
@@ -80,7 +93,23 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 			a.alliance,
 		),
 	)
-	top := container.NewBorder(nil, nil, container.NewVBox(container.NewPadded(a.logo)), nil, main)
+	top := container.NewBorder(
+		nil,
+		nil,
+		container.NewVBox(
+			container.NewPadded(a.logo),
+			container.New(
+				layout.NewCustomPaddedHBoxLayout(3*p),
+				layout.NewSpacer(),
+				a.iw.makeZkillboardIcon(a.id, infoCorporation),
+				a.iw.makeDotlanIcon(a.id, infoCorporation),
+				a.iw.makeEveWhoIcon(a.id, infoCorporation),
+				layout.NewSpacer(),
+			),
+		),
+		nil,
+		main,
+	)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
 	return widget.NewSimpleRenderer(c)
 }
@@ -98,123 +127,114 @@ func (a *corporationInfo) load() error {
 			a.logo.Refresh()
 		})
 	}()
+	o, err := a.iw.u.EveUniverseService().GetCorporationESI(ctx, a.id)
+	if err != nil {
+		return err
+	}
+	attributes := a.makeAttributes(o)
+	fyne.Do(func() {
+		a.name.SetText(o.Name)
+		a.description.SetText(o.DescriptionPlain())
+		a.attributes.set(attributes)
+	})
+	fyne.Do(func() {
+		if o.Alliance == nil {
+			a.alliance.Hide()
+			a.allianceLogo.Hide()
+			return
+		}
+		a.alliance.SetText("Member of " + o.Alliance.Name)
+		a.alliance.OnTapped = func() {
+			a.iw.ShowEveEntity(o.Alliance)
+		}
+		go func() {
+			r, err := a.iw.u.EveImageService().AllianceLogo(o.Alliance.ID, app.IconPixelSize)
+			if err != nil {
+				slog.Error("corporation info: Failed to load alliance logo", "allianceID", o.Alliance.ID, "error", err)
+				return
+			}
+			fyne.Do(func() {
+				a.allianceLogo.Resource = r
+				a.allianceLogo.Refresh()
+			})
+		}()
+	})
+	fyne.Do(func() {
+		if o.HomeStation == nil {
+			a.hq.Hide()
+			return
+		}
+		a.hq.SetText("Headquarters: " + o.HomeStation.Name)
+		a.hq.OnTapped = func() {
+			a.iw.ShowEveEntity(o.HomeStation)
+		}
+	})
 	go func() {
 		history, err := a.iw.u.EveUniverseService().GetCorporationAllianceHistory(ctx, a.id)
 		if err != nil {
 			slog.Error("corporation info: Failed to load alliance history", "corporationID", a.id, "error", err)
 			return
 		}
-		if len(history) == 0 {
-			return
+		var items []entityItem
+		if len(history) > 0 {
+			history2 := xslices.Filter(history, func(v app.MembershipHistoryItem) bool {
+				return v.Organization != nil && v.Organization.Category.IsKnown()
+			})
+			items = append(items, xslices.Map(history2, historyItem2EntityItem)...)
 		}
-		history2 := xslices.Filter(history, func(v app.MembershipHistoryItem) bool {
-			return v.Organization != nil && v.Organization.Category.IsKnown()
-		})
-		items := xslices.Map(history2, historyItem2EntityItem)
-		oldest := slices.MinFunc(history, func(a, b app.MembershipHistoryItem) int {
-			return a.StartDate.Compare(b.StartDate)
-		})
-		items = append(items, NewEntityItem(
-			0,
-			"Corporation Founded",
-			fmt.Sprintf("**%s**", oldest.StartDate.Format(app.DateFormat)),
-			infoNotSupported,
-		))
-		historyList := NewEntityListFromItems(a.iw.show, items...)
+		var founded string
+		if o.DateFounded.IsZero() {
+			founded = "?"
+		} else {
+			founded = fmt.Sprintf("**%s**", o.DateFounded.Format(app.DateFormat))
+		}
+		items = append(items, newEntityItem(0, "Corporation Founded", founded, infoNotSupported))
 		fyne.Do(func() {
-			a.tabs.Append(container.NewTabItem("Alliance History", historyList))
-			a.tabs.Refresh()
+			a.allianceHistory.set(items...)
 		})
 	}()
-	o, err := a.iw.u.EveUniverseService().GetCorporationESI(ctx, a.id)
-	if err != nil {
-		return err
-	}
-	attributesTab := a.makeAttributesTab(o)
-	fyne.Do(func() {
-
-		a.tabs.Append(attributesTab)
-		a.tabs.Select(attributesTab)
-		a.name.SetText(o.Name)
-		if o.Alliance != nil {
-			a.alliance.SetText("Member of " + o.Alliance.Name)
-			a.alliance.OnTapped = func() {
-				a.iw.ShowEveEntity(o.Alliance)
-			}
-			go func() {
-				r, err := a.iw.u.EveImageService().AllianceLogo(o.Alliance.ID, app.IconPixelSize)
-				if err != nil {
-					slog.Error("corporation info: Failed to load alliance logo", "allianceID", o.Alliance.ID, "error", err)
-					return
-				}
-				fyne.Do(func() {
-					a.allianceLogo.Resource = r
-					a.allianceLogo.Refresh()
-				})
-			}()
-		} else {
-			a.alliance.Hide()
-			a.allianceLogo.Hide()
-		}
-		desc := o.DescriptionPlain()
-		if desc != "" {
-			description := widget.NewLabel(desc)
-			description.Wrapping = fyne.TextWrapWord
-			a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(description)))
-		}
-		if o.HomeStation != nil {
-			a.hq.SetText("Headquarters: " + o.HomeStation.Name)
-			a.hq.OnTapped = func() {
-				a.iw.ShowEveEntity(o.HomeStation)
-			}
-		} else {
-			a.hq.Hide()
-		}
-	})
 	return nil
 }
 
-func (a *corporationInfo) makeAttributesTab(o *app.EveCorporation) *container.TabItem {
-	attributes := make([]AttributeItem, 0)
+func (a *corporationInfo) makeAttributes(o *app.EveCorporation) []attributeItem {
+	attributes := make([]attributeItem, 0)
 	if o.Ceo != nil {
-		attributes = append(attributes, NewAtributeItem("CEO", o.Ceo))
+		attributes = append(attributes, newAttributeItem("CEO", o.Ceo))
 	}
 	if o.Creator != nil {
-		attributes = append(attributes, NewAtributeItem("Founder", o.Creator))
+		attributes = append(attributes, newAttributeItem("Founder", o.Creator))
 	}
 	if o.Alliance != nil {
-		attributes = append(attributes, NewAtributeItem("Alliance", o.Alliance))
+		attributes = append(attributes, newAttributeItem("Alliance", o.Alliance))
 	}
 	if o.Ticker != "" {
-		attributes = append(attributes, NewAtributeItem("Ticker Name", o.Ticker))
+		attributes = append(attributes, newAttributeItem("Ticker Name", o.Ticker))
 	}
 	if o.Faction != nil {
-		attributes = append(attributes, NewAtributeItem("Faction", o.Faction))
+		attributes = append(attributes, newAttributeItem("Faction", o.Faction))
 	}
 	if o.Shares != 0 {
-		attributes = append(attributes, NewAtributeItem("Shares", o.Shares))
+		attributes = append(attributes, newAttributeItem("Shares", o.Shares))
 	}
 	if o.MemberCount != 0 {
-		attributes = append(attributes, NewAtributeItem("Member Count", o.MemberCount))
+		attributes = append(attributes, newAttributeItem("Member Count", o.MemberCount))
 	}
 	if o.TaxRate != 0 {
-		attributes = append(attributes, NewAtributeItem("ISK Tax Rate", o.TaxRate))
+		attributes = append(attributes, newAttributeItem("ISK Tax Rate", o.TaxRate))
 	}
-	attributes = append(attributes, NewAtributeItem("War Eligability", o.WarEligible))
+	attributes = append(attributes, newAttributeItem("War Eligability", o.WarEligible))
 	if o.URL != "" {
 		u, err := url.ParseRequestURI(o.URL)
 		if err == nil && u.Host != "" {
-			attributes = append(attributes, NewAtributeItem("URL", u))
+			attributes = append(attributes, newAttributeItem("URL", u))
 		}
 	}
 	if a.iw.u.IsDeveloperMode() {
-		x := NewAtributeItem("EVE ID", o.ID)
+		x := newAttributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
 			a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
 		}
 		attributes = append(attributes, x)
 	}
-	attributeList := NewAttributeList(a.iw, attributes...)
-	attributesTab := container.NewTabItem("Attributes", attributeList)
-	return attributesTab
+	return attributes
 }

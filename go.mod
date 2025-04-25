@@ -11,6 +11,7 @@ require (
 	github.com/antihax/goesi v0.0.0-20250326124837-837c9408dfa4
 	github.com/chasinglogic/appdirs v0.0.0-20240910093348-1aea124d8cd9
 	github.com/dustin/go-humanize v1.0.1
+	github.com/dweymouth/fyne-tooltip v0.3.1
 	github.com/gohugoio/httpcache v0.7.0
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/hashicorp/go-retryablehttp v0.7.7

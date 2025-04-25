@@ -50,6 +50,10 @@ func (et EveType) IsSKIN() bool {
 	return et.Group.Category.ID == EveCategorySKINs
 }
 
+func (et EveType) IsTradeable() bool {
+	return et.MarketGroupID != 0
+}
+
 func (et EveType) HasFuelBay() bool {
 	if et.Group.Category.ID != EveCategoryShip {
 		return false

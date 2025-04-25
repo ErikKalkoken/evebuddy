@@ -23,11 +23,12 @@ type constellationInfo struct {
 
 	iw *InfoWindow
 
-	id     int32
-	region *kxwidget.TappableLabel
-	logo   *canvas.Image
-	name   *widget.Label
-	tabs   *container.AppTabs
+	id      int32
+	region  *kxwidget.TappableLabel
+	logo    *canvas.Image
+	name    *widget.Label
+	tabs    *container.AppTabs
+	systems *entityList
 }
 
 func newConstellationInfo(iw *InfoWindow, id int32) *constellationInfo {
@@ -43,6 +44,10 @@ func newConstellationInfo(iw *InfoWindow, id int32) *constellationInfo {
 	}
 	a.ExtendBaseWidget(a)
 	a.logo.Resource = icons.Constellation64Png
+	a.systems = newEntityList(a.iw.show)
+	a.tabs = container.NewAppTabs(
+		container.NewTabItem("Solar Systems", a.systems),
+	)
 	return a
 }
 
@@ -89,37 +94,24 @@ func (a *constellationInfo) load() error {
 		}
 
 		if a.iw.u.IsDeveloperMode() {
-			x := NewAtributeItem("EVE ID", fmt.Sprint(o.ID))
+			x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
 			x.Action = func(v any) {
 				a.iw.u.App().Clipboard().SetContent(v.(string))
 			}
-			attributeList := NewAttributeList(a.iw, []AttributeItem{x}...)
+			attributeList := newAttributeList(a.iw, []attributeItem{x}...)
 			attributesTab := container.NewTabItem("Attributes", attributeList)
 			a.tabs.Append(attributesTab)
 		}
 	})
 	go func() {
-		sLabel := widget.NewLabel("Loading...")
-		solarSystems := container.NewTabItem("Solar Systems", sLabel)
-		fyne.Do(func() {
-			a.tabs.Append(solarSystems)
-			a.tabs.Select(solarSystems)
-			a.tabs.Refresh()
-		})
 		oo, err := a.iw.u.EveUniverseService().GetConstellationSolarSytemsESI(ctx, o.ID)
 		if err != nil {
 			slog.Error("constellation info: Failed to load constellations", "region", o.ID, "error", err)
-			fyne.Do(func() {
-				sLabel.Text = a.iw.u.ErrorDisplay(err)
-				sLabel.Importance = widget.DangerImportance
-				sLabel.Refresh()
-			})
 			return
 		}
-		xx := xslices.Map(oo, NewEntityItemFromEveSolarSystem)
+		xx := xslices.Map(oo, newEntityItemFromEveSolarSystem)
 		fyne.Do(func() {
-			solarSystems.Content = NewEntityListFromItems(a.iw.show, xx...)
-			a.tabs.Refresh()
+			a.systems.set(xx...)
 		})
 	}()
 	return nil

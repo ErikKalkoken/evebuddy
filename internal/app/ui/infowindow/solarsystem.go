@@ -20,14 +20,17 @@ import (
 type solarSystemInfo struct {
 	widget.BaseWidget
 
-	iw *InfoWindow
-
-	id            int32
-	region        *kxwidget.TappableLabel
 	constellation *kxwidget.TappableLabel
+	id            int32
+	iw            *InfoWindow
 	logo          *canvas.Image
 	name          *widget.Label
+	planets       *entityList
+	region        *kxwidget.TappableLabel
 	security      *widget.Label
+	stargates     *entityList
+	stations      *entityList
+	structures    *entityList
 	tabs          *container.AppTabs
 }
 
@@ -47,6 +50,24 @@ func newSolarSystemInfo(iw *InfoWindow, id int32) *solarSystemInfo {
 		tabs:          container.NewAppTabs(),
 	}
 	a.ExtendBaseWidget(a)
+	a.planets = newEntityList(a.iw.show)
+	a.stargates = newEntityList(a.iw.show)
+	a.stations = newEntityList(a.iw.show)
+	a.structures = newEntityList(a.iw.show)
+	note := widget.NewLabel("Only contains structures known through characters")
+	note.Importance = widget.LowImportance
+	a.tabs = container.NewAppTabs(
+		container.NewTabItem("Stargates", a.stargates),
+		container.NewTabItem("Planets", a.planets),
+		container.NewTabItem("Stations", a.stations),
+		container.NewTabItem("Structures", container.NewBorder(
+			nil,
+			note,
+			nil,
+			nil,
+			a.structures,
+		)),
+	)
 	return a
 }
 
@@ -73,8 +94,24 @@ func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
 			container.New(colums, widget.NewLabel("Region"), a.region),
 			container.New(colums, widget.NewLabel("Constellation"), a.constellation),
 			container.New(colums, widget.NewLabel("Security"), a.security),
-		))
-	top := container.NewBorder(nil, nil, container.NewVBox(container.NewPadded(a.logo)), nil, main)
+		),
+	)
+	top := container.NewBorder(
+		nil,
+		nil,
+		container.NewVBox(
+			container.NewPadded(a.logo),
+			container.New(
+				layout.NewCustomPaddedHBoxLayout(3*p),
+				layout.NewSpacer(),
+				a.iw.makeZkillboardIcon(a.id, infoSolarSystem),
+				a.iw.makeDotlanIcon(a.id, infoSolarSystem),
+				layout.NewSpacer(),
+			),
+		),
+		nil,
+		main,
+	)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
 	return widget.NewSimpleRenderer(c)
 }
@@ -100,27 +137,12 @@ func (a *solarSystemInfo) load() error {
 		a.security.Refresh()
 	})
 
-	systemsLabel := widget.NewLabel("Loading...")
-	systemsTab := container.NewTabItem("Stargates", systemsLabel)
-	planetsLabel := widget.NewLabel("Loading...")
-	planetsTab := container.NewTabItem("Planets", planetsLabel)
-	stationsLabel := widget.NewLabel("Loading...")
-	stationsTab := container.NewTabItem("Stations", stationsLabel)
-	structuresLabel := widget.NewLabel("Loading...")
-	structuresTab := container.NewTabItem("Structures", structuresLabel)
-	fyne.Do(func() {
-		a.tabs.Append(systemsTab)
-		a.tabs.Append(planetsTab)
-		a.tabs.Append(stationsTab)
-		a.tabs.Append(structuresTab)
-	})
-
 	if a.iw.u.IsDeveloperMode() {
-		x := NewAtributeItem("EVE ID", fmt.Sprint(a.id))
+		x := newAttributeItem("EVE ID", fmt.Sprint(a.id))
 		x.Action = func(v any) {
 			a.iw.u.App().Clipboard().SetContent(v.(string))
 		}
-		attributeList := NewAttributeList(a.iw, []AttributeItem{x}...)
+		attributeList := newAttributeList(a.iw, []attributeItem{x}...)
 		attributesTab := container.NewTabItem("Attributes", attributeList)
 		fyne.Do(func() {
 			a.tabs.Append(attributesTab)
@@ -133,20 +155,14 @@ func (a *solarSystemInfo) load() error {
 		starID, planets, stargateIDs, stations, structures, err := a.iw.u.EveUniverseService().GetSolarSystemInfoESI(ctx, a.id)
 		if err != nil {
 			slog.Error("solar system info: Failed to load system info", "solarSystem", a.id, "error", err)
-			fyne.Do(func() {
-				stationsLabel.Text = a.iw.u.ErrorDisplay(err)
-				stationsLabel.Importance = widget.DangerImportance
-				stationsLabel.Refresh()
-			})
 			return
 		}
+		items := entityItemsFromEveEntities(stations)
 		fyne.Do(func() {
-			stationsTab.Content = NewEntityListFromEntities(a.iw.show, stations...)
-			a.tabs.Refresh()
+			a.stations.set(items...)
 		})
-
 		oo := xslices.Map(structures, func(x *app.EveLocation) entityItem {
-			return NewEntityItem(
+			return newEntityItem(
 				x.ID,
 				x.Name,
 				"Structure",
@@ -154,17 +170,7 @@ func (a *solarSystemInfo) load() error {
 			)
 		})
 		fyne.Do(func() {
-			xx := NewEntityListFromItems(a.iw.show, oo...)
-			note := widget.NewLabel("Only contains structures known through characters")
-			note.Importance = widget.LowImportance
-			structuresTab.Content = container.NewBorder(
-				nil,
-				note,
-				nil,
-				nil,
-				xx,
-			)
-			a.tabs.Refresh()
+			a.structures.set(oo...)
 		})
 
 		id, err := a.iw.u.EveUniverseService().GetStarTypeID(ctx, starID)
@@ -185,17 +191,11 @@ func (a *solarSystemInfo) load() error {
 			ss, err := a.iw.u.EveUniverseService().GetStargateSolarSystemsESI(ctx, stargateIDs)
 			if err != nil {
 				slog.Error("solar system info: Failed to load adjacent systems", "solarSystem", a.id, "error", err)
-				fyne.Do(func() {
-					systemsLabel.Text = a.iw.u.ErrorDisplay(err)
-					systemsLabel.Importance = widget.DangerImportance
-					systemsLabel.Refresh()
-				})
 				return
 			}
-			xx := xslices.Map(ss, NewEntityItemFromEveSolarSystem)
+			items := xslices.Map(ss, newEntityItemFromEveSolarSystem)
 			fyne.Do(func() {
-				systemsTab.Content = NewEntityListFromItems(a.iw.show, xx...)
-				a.tabs.Refresh()
+				a.stargates.set(items...)
 			})
 		}()
 
@@ -203,17 +203,11 @@ func (a *solarSystemInfo) load() error {
 			pp, err := a.iw.u.EveUniverseService().GetSolarSystemPlanets(ctx, planets)
 			if err != nil {
 				slog.Error("solar system info: Failed to load planets", "solarSystem", a.id, "error", err)
-				fyne.Do(func() {
-					planetsLabel.Text = a.iw.u.ErrorDisplay(err)
-					planetsLabel.Importance = widget.DangerImportance
-					planetsLabel.Refresh()
-				})
 				return
 			}
-			xx := xslices.Map(pp, NewEntityItemFromEvePlanet)
+			items := xslices.Map(pp, newEntityItemFromEvePlanet)
 			fyne.Do(func() {
-				planetsTab.Content = NewEntityListFromItems(a.iw.show, xx...)
-				a.tabs.Refresh()
+				a.planets.set(items...)
 			})
 		}()
 
