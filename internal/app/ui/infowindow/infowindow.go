@@ -36,6 +36,7 @@ type UI interface {
 	MakeWindowTitle(subTitle string) string
 	ShowErrorDialog(message string, err error, parent fyne.Window)
 	ShowInformationDialog(title, message string, parent fyne.Window)
+	StatusCacheService() app.StatusCacheService
 }
 
 // InfoWindow represents a dedicated window for showing information similar to the in-game info windows.

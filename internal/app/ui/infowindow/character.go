@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/url"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -119,9 +121,45 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 			a.security,
 		),
 	)
-	top := container.NewBorder(nil, nil, container.NewVBox(a.portrait), nil, main)
+	name := a.iw.u.StatusCacheService().CharacterName(a.id)
+	name = strings.ReplaceAll(name, " ", "_")
+	top := container.NewBorder(
+		nil,
+		nil,
+		container.NewVBox(
+			a.portrait,
+			container.NewHBox(
+				layout.NewSpacer(),
+				kxwidget.NewTappableIcon(icons.ZkillboardPng, func() {
+					a.openURL(fmt.Sprintf("https://zkillboard.com/character/%d/", a.id))
+				}),
+				kxwidget.NewTappableIcon(icons.Characterplaceholder32Jpeg, func() {
+					a.openURL(fmt.Sprintf("https://evewho.com/character/%d", a.id))
+				}),
+				kxwidget.NewTappableIcon(icons.EvelogoPng, func() {
+					a.openURL(fmt.Sprintf("https://forums.eveonline.com/u/%s/summary", name))
+				}),
+				layout.NewSpacer(),
+			),
+		),
+		nil,
+		main,
+	)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
 	return widget.NewSimpleRenderer(c)
+}
+
+func (a *characterInfo) openURL(s string) {
+	x, err := url.ParseRequestURI(s)
+	if err != nil {
+		slog.Error("Construcing URL", "url", s, "error", err)
+		return
+	}
+	err = a.iw.u.App().OpenURL(x)
+	if err != nil {
+		slog.Error("Opening URL", "url", x, "error", err)
+		return
+	}
 }
 
 func (a *characterInfo) load() error {

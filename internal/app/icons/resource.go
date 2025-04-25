@@ -100,6 +100,11 @@ var EarthSvg = &fyne.StaticResource{
 	StaticContent: []byte(
 		"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\"><path d=\"M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z\" /></svg>"),
 }
+var EvelogoPng = &fyne.StaticResource{
+	StaticName: "evelogo.png",
+	StaticContent: []byte(
+		"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x10\x00\x00\x00\x10\b\x06\x00\x00\x00\x1f\xf3\xffa\x00\x00\x00\x01sRGB\x00\xae\xce\x1c\xe9\x00\x00\x00\x04gAMA\x00\x00\xb1\x8f\v\xfca\x05\x00\x00\x00\tpHYs\x00\x00\x0e\xc4\x00\x00\x0e\xc4\x01\x95+\x0e\x1b\x00\x00\x00qIDAT8O\xad\x8e1\nE!\f\x04\xf7\x1e\x82 \b\x16\x82\x85\b\"\xe8\xfd\x8f\xb5\x9f\x14ۿ\x90?0\x84\x14\x13\x82\xf7\x1e#\"\x12[\xfb\xbf\x03t\xa2\xcfq\xef\xa5\xe9E\x1d\xce94\x85\xf6\xaf\x13{oF\xc4Z\x8b\xa6\x17u\x98s\xd2\xf4\xa2\x0ec\fFD\uf766\xd0\xfeu\xa2\xb5FӋ:\xd4ZizQ\x87R\n#\"\xe7̈H)1\xe2\x0f\x01\xbfF\xbb\xae\x03\x85\xdd\x00\x00\x00\x00IEND\xaeB`\x82"),
+}
 var FactorySvg = &fyne.StaticResource{
 	StaticName: "factory.svg",
 	StaticContent: []byte(
@@ -254,4 +259,9 @@ var WrenchCogSvg = &fyne.StaticResource{
 	StaticName: "wrench-cog.svg",
 	StaticContent: []byte(
 		"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M19.94 17.94C19.96 17.79 19.97 17.65 19.97 17.5S19.96 17.2 19.94 17.05L20.91 16.32C21 16.25 21.03 16.13 20.97 16.03L20.05 14.47C20 14.37 19.86 14.33 19.76 14.37L18.61 14.82C18.37 14.65 18.12 14.5 17.83 14.38L17.66 13.19C17.64 13.08 17.54 13 17.43 13H15.58C15.46 13 15.36 13.08 15.34 13.19L15.17 14.38C14.88 14.5 14.63 14.65 14.39 14.82L13.24 14.37C13.14 14.33 13 14.37 12.96 14.47L12.03 16.03C11.97 16.13 12 16.25 12.09 16.32L13.06 17.05C13.05 17.2 13.03 17.35 13.03 17.5S13.05 17.79 13.06 17.94L12.09 18.68C12 18.75 11.97 18.87 12.03 18.97L12.96 20.53C13 20.63 13.14 20.66 13.24 20.63L14.39 20.17C14.63 20.35 14.88 20.5 15.17 20.62L15.34 21.81C15.36 21.92 15.46 22 15.58 22H17.43C17.54 22 17.64 21.92 17.66 21.81L17.83 20.62C18.12 20.5 18.37 20.35 18.61 20.17L19.76 20.63C19.86 20.66 20 20.63 20.05 20.53L20.97 18.97C21.03 18.87 21 18.75 20.91 18.68L19.94 17.94M16.5 19C15.67 19 15 18.33 15 17.5S15.67 16 16.5 16 18 16.67 18 17.5 17.33 19 16.5 19M9 2C10.8 2.6 12 4.3 12 6.2C12 8.2 10.8 9.9 9 10.5V21.5C9 21.8 8.8 22 8.5 22H6.5C6.2 22 6 21.8 6 21.4V10.4C4.2 9.8 3 8.1 3 6.2S4.2 2.6 6 2V5.7H9V2Z\" /></svg>"),
+}
+var ZkillboardPng = &fyne.StaticResource{
+	StaticName: "zkillboard.png",
+	StaticContent: []byte(
+		"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x10\x00\x00\x00\x10\b\x02\x00\x00\x00\x90\x91h6\x00\x00\x00\xcaIDATx\xda\xe5\x92=\xaa\x84@\x10\x84۞\x1f\x06\xc6C\x98x\r\x03\xc1[\x18z\x02o\xe1\x81\x04\x03\xd1\xc8\x13\x98\x19\t\"\xc6&\"\xa3vo ,\x9b첰\xd1\xe3u\xd84\xf5u\x15\x05\xf0\x0f\xc7\x03\x00)e۶Ƙ\xeb\xba<\xcf#\"\xa5\x94\x94\x92\x88\x8e\xe3`f!ľ\xefQ\x141\xf3\xcf\x04\x00 \"\xad\xf5Mp\xce\x01\xc0+\x01\x01\xe0<\xcf4M\xa7iz\xa7\xba,K\x96e\xf7?\xe2^\xad\xebZ\x96e\x10\x04J)\xdf\xf7\x85\x10\x88\xc8\xcc\xc30\xf4}\x9f\xe7\xf9<\xcf\xf7\xa5x\xca8皦\xd1Z\x87ah\xadE\xc4q\x1c\xbb\xae+\x8ab۶O\xb6\xe28\xae뺪\xaa$I\x10\xf1\xab(\x8c1\xd6ڿR\x8d\a2za\xa3i{\x83j\x00\x00\x00\x00IEND\xaeB`\x82"),
 }
