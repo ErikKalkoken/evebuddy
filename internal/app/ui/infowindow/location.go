@@ -47,7 +47,7 @@ func newLocationInfo(iw *InfoWindow, id int64) *locationInfo {
 	description.Wrapping = fyne.TextWrapWord
 	typeImage := kxwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeImage.SetFillMode(canvas.ImageFillContain)
-	typeImage.SetMinSize(fyne.NewSquareSize(renderIconUnitSize))
+	typeImage.SetMinSize(iw.renderIconSize())
 	a := &locationInfo{
 		description: description,
 		id:          id,

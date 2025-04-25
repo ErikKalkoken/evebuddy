@@ -66,7 +66,8 @@ func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 	top := container.NewBorder(
 		nil,
 		nil,
-		container.NewVBox(
+		container.New(
+			layout.NewCustomPaddedVBoxLayout(2*p),
 			container.NewPadded(a.logo),
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(3*p),

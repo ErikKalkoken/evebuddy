@@ -50,7 +50,7 @@ func newCharacterInfo(iw *InfoWindow, id int32) *characterInfo {
 	corporation.Wrapping = fyne.TextWrapWord
 	portrait := kxwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
-	portrait.SetMinSize(fyne.NewSquareSize(renderIconUnitSize))
+	portrait.SetMinSize(iw.renderIconSize())
 	title := widget.NewLabel("")
 	title.Wrapping = fyne.TextWrapWord
 	bio := widget.NewLabel("")
@@ -129,7 +129,8 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 	top := container.NewBorder(
 		nil,
 		nil,
-		container.NewVBox(
+		container.New(
+			layout.NewCustomPaddedVBoxLayout(2*p),
 			a.portrait,
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(3*p),

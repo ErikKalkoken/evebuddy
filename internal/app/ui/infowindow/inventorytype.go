@@ -147,7 +147,7 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 	typeIcon := iwidget.NewImageWithLoader(
 		icons.BlankSvg,
-		fyne.NewSquareSize(float32(app.IconPixelSize)*logoZoomFactor),
+		fyne.NewSquareSize(logoUnitSize),
 		func() (fyne.Resource, error) {
 			if a.et.IsSKIN() {
 				return a.iw.u.EveImageService().InventoryTypeSKIN(a.et.ID, app.IconPixelSize)

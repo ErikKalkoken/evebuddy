@@ -19,12 +19,12 @@ import (
 )
 
 const (
+	infoWindowHeight    = 600
+	infoWindowWidth     = 600
+	logoUnitSize        = 64
 	renderIconPixelSize = 256
 	renderIconUnitSize  = 128
-	logoZoomFactor      = 1.0
 	zoomImagePixelSize  = 512
-	infoWindowWidth     = 600
-	infoWindowHeight    = 600
 )
 
 type UI interface {
@@ -35,6 +35,7 @@ type UI interface {
 	EveImageService() app.EveImageService
 	EveUniverseService() app.EveUniverseService
 	IsDeveloperMode() bool
+	IsMobile() bool
 	IsOffline() bool
 	MainWindow() fyne.Window
 	MakeWindowTitle(subTitle string) string
@@ -241,6 +242,16 @@ func (iw *InfoWindow) makeEveWhoIcon(id int32, v infoVariant) *iwidget.TappableI
 		icon.SetToolTip(title)
 	}
 	return icon
+}
+
+func (iw *InfoWindow) renderIconSize() fyne.Size {
+	var s float32
+	if iw.u.IsMobile() {
+		s = logoUnitSize
+	} else {
+		s = renderIconUnitSize
+	}
+	return fyne.NewSquareSize(s)
 }
 
 type infoVariant uint

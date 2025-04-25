@@ -103,7 +103,7 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 				layout.NewSpacer(),
 				a.iw.makeZkillboardIcon(a.id, infoCorporation),
 				a.iw.makeDotlanIcon(a.id, infoCorporation),
-				a.iw.makeEveWhoIcon(a.id, infoAlliance),
+				a.iw.makeEveWhoIcon(a.id, infoCorporation),
 				layout.NewSpacer(),
 			),
 		),
