@@ -21,7 +21,7 @@ import (
 const (
 	renderIconPixelSize = 256
 	renderIconUnitSize  = 128
-	logoZoomFactor      = 1.3
+	logoZoomFactor      = 1.0
 	zoomImagePixelSize  = 512
 	infoWindowWidth     = 600
 	infoWindowHeight    = 600
