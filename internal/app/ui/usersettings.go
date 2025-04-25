@@ -142,6 +142,16 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []app.Setti
 		},
 		a.currentWindow,
 	)
+	preferMarketTab := iwidget.NewSettingItemSwitch(
+		"Prefer market tab",
+		"Show market tab for tradeable items",
+		func() bool {
+			return a.u.Settings().PreferMarketTab()
+		},
+		func(v bool) {
+			a.u.Settings().SetPreferMarketTab(v)
+		},
+	)
 	developerMode := iwidget.NewSettingItemSwitch(
 		"Developer Mode",
 		"App shows addditional technical information like Character IDs",
@@ -156,6 +166,7 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []app.Setti
 	items := []iwidget.SettingItem{
 		iwidget.NewSettingItemHeading("Application"),
 		logLevel,
+		preferMarketTab,
 		developerMode,
 		iwidget.NewSettingItemSeperator(),
 		iwidget.NewSettingItemHeading("EVE Online"),
@@ -214,6 +225,7 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []app.Setti
 	reset := app.SettingAction{
 		Label: "Reset to defaults",
 		Action: func() {
+			a.u.Settings().ResetPreferMarketTab()
 			a.u.Settings().ResetDeveloperMode()
 			a.u.Settings().ResetLogLevel()
 			a.u.Settings().ResetMaxMails()

@@ -122,11 +122,12 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 		requirementsTab = container.NewTabItem("Requirements", a.makeRequirementsTab())
 		tabs.Append(requirementsTab)
 	}
-	if a.price != nil {
-		tabs.Append(container.NewTabItem("Market", a.makeMarketTab()))
-	}
+	marketTab := container.NewTabItem("Market", a.makeMarketTab())
+	tabs.Append(marketTab)
 	// Set initial tab
-	if requirementsTab != nil && a.et.Group.Category.ID == app.EveCategorySkill {
+	if a.iw.u.Settings().PreferMarketTab() && a.et.IsTradeable() {
+		tabs.Select(marketTab)
+	} else if requirementsTab != nil && a.et.Group.Category.ID == app.EveCategorySkill {
 		tabs.Select(requirementsTab)
 	} else if attributeTab != nil &&
 		set.NewFromSlice([]int32{
@@ -145,19 +146,33 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
-	typeIcon := iwidget.NewImageWithLoader(
-		icons.BlankSvg,
-		fyne.NewSquareSize(logoUnitSize),
-		func() (fyne.Resource, error) {
-			if a.et.IsSKIN() {
-				return a.iw.u.EveImageService().InventoryTypeSKIN(a.et.ID, app.IconPixelSize)
-			} else if a.et.IsBlueprint() {
-				return a.iw.u.EveImageService().InventoryTypeBPO(a.et.ID, app.IconPixelSize)
-			} else {
-				return a.iw.u.EveImageService().InventoryTypeIcon(a.et.ID, app.IconPixelSize)
-			}
-		},
-	)
+	var typeIcon fyne.CanvasObject
+	loader := func() (fyne.Resource, error) {
+		if a.et.IsSKIN() {
+			return a.iw.u.EveImageService().InventoryTypeSKIN(a.et.ID, app.IconPixelSize)
+		} else if a.et.IsBlueprint() {
+			return a.iw.u.EveImageService().InventoryTypeBPO(a.et.ID, app.IconPixelSize)
+		} else {
+			return a.iw.u.EveImageService().InventoryTypeIcon(a.et.ID, app.IconPixelSize)
+		}
+	}
+	if !a.et.HasRender() {
+		icon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(logoUnitSize))
+		iwidget.RefreshImageAsync(icon, loader)
+		typeIcon = icon
+	} else {
+		icon := kxwidget.NewTappableImage(icons.BlankSvg, nil)
+		icon.SetFillMode(canvas.ImageFillContain)
+		icon.SetMinSize(fyne.NewSquareSize(logoUnitSize))
+		icon.OnTapped = func() {
+			go fyne.Do(func() {
+				a.iw.showZoomWindow(a.et.Name, a.id, a.iw.u.EveImageService().InventoryTypeRender, a.iw.w)
+			})
+		}
+		iwidget.RefreshTappableImageAsync(icon, loader)
+		typeIcon = icon
+	}
+
 	characterIcon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
 	characterName := kxwidget.NewTappableLabel("", func() {
 		a.iw.ShowEveEntity(a.character)

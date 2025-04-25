@@ -75,4 +75,7 @@ type Settings interface {
 	TabsMainID() int
 	RecentSearches() []int32
 	SetRecentSearches(v []int32)
+	PreferMarketTab() bool
+	ResetPreferMarketTab()
+	SetPreferMarketTab(v bool)
 }
