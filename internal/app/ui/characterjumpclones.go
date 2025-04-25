@@ -146,7 +146,7 @@ func (a *CharacterJumpClones) update() {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
 		fyne.Do(func() {
 			iwidget.SetRichText(a.top, &widget.TextSegment{
-				Text: "ERROR: " + a.u.ErrorDisplay(err),
+				Text: "ERROR: " + a.u.humanizeError(err),
 				Style: widget.RichTextStyle{
 					ColorName: theme.ColorNameError,
 				}})

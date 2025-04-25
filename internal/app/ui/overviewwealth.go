@@ -77,7 +77,7 @@ func (a *OverviewWealth) update() {
 	if err != nil {
 		slog.Error("Failed to fetch data for charts", "err", err)
 		fyne.Do(func() {
-			a.top.Text = fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err))
+			a.top.Text = fmt.Sprintf("Failed to fetch data for charts: %s", a.u.humanizeError(err))
 			a.top.Importance = widget.DangerImportance
 			a.top.Refresh()
 		})

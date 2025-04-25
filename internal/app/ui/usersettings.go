@@ -184,7 +184,7 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []app.Setti
 			a.u.Settings().SetSysTrayEnabled(v)
 		},
 	)
-	if a.u.IsDesktop() {
+	if a.u.isDesktop() {
 		items = slices.Insert(items, 2, systray)
 	}
 
@@ -217,7 +217,7 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []app.Setti
 					}
 					m.OnError = func(err error) {
 						slog.Error("Failed to clear cache", "error", err)
-						a.u.ShowSnackbar(fmt.Sprintf("Failed to clear cache: %s", a.u.ErrorDisplay(err)))
+						a.u.ShowSnackbar(fmt.Sprintf("Failed to clear cache: %s", a.u.humanizeError(err)))
 					}
 					m.Start()
 				}, w)
@@ -259,7 +259,7 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []app.Setti
 		},
 	}
 	actions := []app.SettingAction{reset, clear, exportAppLog, exportCrashLog, deleteAppLog, deleteCrashLog}
-	if a.u.IsDesktop() {
+	if a.u.isDesktop() {
 		actions = append(actions, app.SettingAction{
 			Label: "Resets main window size to defaults",
 			Action: func() {

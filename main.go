@@ -41,6 +41,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
+	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
 )
@@ -256,12 +257,17 @@ func main() {
 	})
 
 	// Init UI
+	janiceKey := os.Getenv("JANICE_API_KEY")
+	if janiceKey == "" {
+		janiceKey = fyneApp.Metadata().Custom["janiceAPIKey"]
+	}
 	bu := ui.NewBaseUI(ui.BaseUIParams{
 		App:                fyneApp,
 		CharacterService:   cs,
 		EveImageService:    eveimageservice.New(pc, rhc.StandardClient(), *offlineFlag),
 		ESIStatusService:   esistatusservice.New(esiClient),
 		EveUniverseService: eus,
+		JaniceService:      janiceservice.New(rhc.StandardClient(), janiceKey),
 		StatusCacheService: scs,
 		MemCache:           memCache,
 		IsOffline:          *offlineFlag,

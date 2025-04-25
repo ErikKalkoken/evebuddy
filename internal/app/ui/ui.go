@@ -29,6 +29,7 @@ import (
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
+	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -111,6 +112,7 @@ type BaseUI struct {
 	isOffline          bool        // Run the app in offline mode
 	isStartupCompleted atomic.Bool // whether the app has completed startup (for testing)
 	isUpdateDisabled   bool        // Whether to disable update tickers (useful for debugging)
+	js                 *janiceservice.JaniceService
 	memcache           app.CacheService
 	scs                app.StatusCacheService
 	settings           app.Settings
@@ -126,6 +128,7 @@ type BaseUIParams struct {
 	ESIStatusService   app.ESIStatusService
 	EveImageService    app.EveImageService
 	EveUniverseService app.EveUniverseService
+	JaniceService      *janiceservice.JaniceService
 	MemCache           app.CacheService
 	StatusCacheService app.StatusCacheService
 	// optional
@@ -148,6 +151,7 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 		isMobile:         fyne.CurrentDevice().IsMobile(),
 		isOffline:        args.IsOffline,
 		isUpdateDisabled: args.IsUpdateDisabled,
+		js:               args.JaniceService,
 		memcache:         args.MemCache,
 		scs:              args.StatusCacheService,
 		settings:         settings.New(args.App.Preferences()),
@@ -166,7 +170,7 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 		u.dataPaths = make(map[string]string)
 	}
 
-	if u.IsDesktop() {
+	if u.isDesktop() {
 		iwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
 		appwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
 	}
@@ -342,8 +346,8 @@ func (u *BaseUI) Init() {
 	}
 }
 
-// ErrorDisplay returns user friendly representation of an error for display in the UI.
-func (u *BaseUI) ErrorDisplay(err error) string {
+// humanizeError returns user friendly representation of an error for display in the UI.
+func (u *BaseUI) humanizeError(err error) string {
 	if u.Settings().DeveloperMode() {
 		return err.Error()
 	}
@@ -351,7 +355,7 @@ func (u *BaseUI) ErrorDisplay(err error) string {
 	// return ihumanize.Error(err) TODO: Re-enable again when app is stable enough
 }
 
-func (u *BaseUI) IsDesktop() bool {
+func (u *BaseUI) isDesktop() bool {
 	_, ok := u.app.(desktop.App)
 	return ok
 }
@@ -978,7 +982,7 @@ func (u *BaseUI) ShowConfirmDialog(title, message, confirm string, callback func
 }
 
 func (u *BaseUI) NewErrorDialog(message string, err error, parent fyne.Window) dialog.Dialog {
-	text := widget.NewLabel(fmt.Sprintf("%s\n\n%s", message, u.ErrorDisplay(err)))
+	text := widget.NewLabel(fmt.Sprintf("%s\n\n%s", message, u.humanizeError(err)))
 	text.Wrapping = fyne.TextWrapWord
 	text.Importance = widget.DangerImportance
 	c := container.NewVScroll(text)

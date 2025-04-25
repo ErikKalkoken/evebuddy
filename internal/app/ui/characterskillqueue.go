@@ -250,14 +250,6 @@ func (w *SkillQueueItem) Set(q *app.CharacterSkillqueueItem) {
 	w.skillLevel.Set(active, trained, required)
 }
 
-func (w *SkillQueueItem) SetError(message string, err error) {
-	w.name.Text = fmt.Sprintf("%s: %s", message, ihumanize.Error(err))
-	w.name.Importance = widget.DangerImportance
-	w.name.Refresh()
-	w.duration.SetText("")
-	w.progress.Hide()
-}
-
 func (w *SkillQueueItem) CreateRenderer() fyne.WidgetRenderer {
 	queue := container.NewStack(
 		w.progress,

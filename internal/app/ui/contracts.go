@@ -86,7 +86,7 @@ func NewContracts(u *BaseUI) *Contracts {
 		}
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
-	if a.u.IsDesktop() {
+	if a.u.isDesktop() {
 		a.body = iwidget.MakeDataTableForDesktop(headers, &a.contracts, makeCell, func(column int, r *app.CharacterContract) {
 			a.showContract(r)
 		})

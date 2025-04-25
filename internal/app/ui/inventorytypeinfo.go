@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"image/color"
+	"log/slog"
 	"slices"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -14,6 +16,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/dustin/go-humanize"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -124,7 +127,46 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 		requirementsTab = container.NewTabItem("Requirements", a.makeRequirementsTab())
 		tabs.Append(requirementsTab)
 	}
-	marketTab := container.NewTabItem("Market", a.makeMarketTab())
+	marketLabel := widget.NewLabel("Fetching prices...")
+	marketTab := container.NewTabItem("Market", marketLabel)
+	ctx, cancel := context.WithCancel(context.Background())
+	a.iw.onClosedFuncs = append(a.iw.onClosedFuncs, cancel)
+	go func() {
+		const (
+			priceFormat    = "#,###.##"
+			currencySuffix = " ISK"
+		)
+		ticker := time.NewTicker(60 * time.Second)
+	L:
+		for {
+			r, err := a.iw.u.js.FetchPrices(ctx, a.id)
+			if err != nil {
+				fyne.Do(func() {
+					marketLabel.Text = "Error: " + a.iw.u.humanizeError(err)
+					marketLabel.Importance = widget.DangerImportance
+					marketLabel.Refresh()
+				})
+			} else {
+				c := newAttributeList(a.iw,
+					newAttributeItem("Average price", humanize.FormatFloat(priceFormat, a.price.AveragePrice)+currencySuffix),
+					newAttributeItem("Jita sell price", humanize.FormatFloat(priceFormat, r.ImmediatePrices.SellPrice)+currencySuffix),
+					newAttributeItem("Jita buy price", humanize.FormatFloat(priceFormat, r.ImmediatePrices.BuyPrice)+currencySuffix),
+					newAttributeItem("Jita sell volume", ihumanize.Comma(r.SellVolume)),
+					newAttributeItem("Jita buy volume", ihumanize.Comma(r.BuyVolume)),
+				)
+				fyne.Do(func() {
+					marketTab.Content = c
+					tabs.Refresh()
+				})
+			}
+			select {
+			case <-ctx.Done():
+				break L
+			case <-ticker.C:
+			}
+		}
+		slog.Debug("market update type for canceled", "name", a.et.Name)
+	}()
 	tabs.Append(marketTab)
 	// Set initial tab
 	if a.iw.u.Settings().PreferMarketTab() && a.et.IsTradeable() {
@@ -249,15 +291,6 @@ func (a *inventoryTypeInfo) makeDescriptionTab() fyne.CanvasObject {
 	description := widget.NewLabel(s)
 	description.Wrapping = fyne.TextWrapWord
 	return container.NewVScroll(description)
-}
-
-func (a *inventoryTypeInfo) makeMarketTab() fyne.CanvasObject {
-	c := container.NewHBox(
-		widget.NewLabel("Average price"),
-		layout.NewSpacer(),
-		widget.NewLabel(ihumanize.Number(a.price.AveragePrice, 1)),
-	)
-	return container.NewVScroll(c)
 }
 
 func (a *inventoryTypeInfo) makeAttributesTab() fyne.CanvasObject {

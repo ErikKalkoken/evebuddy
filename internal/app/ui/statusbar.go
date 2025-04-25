@@ -172,7 +172,7 @@ func (a *statusBar) startUpdateTicker() {
 			var s eveStatus
 			if err != nil {
 				slog.Error("Failed to fetch ESI status", "err", err)
-				errorMessage = a.u.ErrorDisplay(err)
+				errorMessage = a.u.humanizeError(err)
 				s = eveStatusError
 				t = "ERROR"
 			} else if !x.IsOK() {

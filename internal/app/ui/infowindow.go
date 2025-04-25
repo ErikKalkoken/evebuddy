@@ -40,9 +40,10 @@ const (
 
 // InfoWindow represents a dedicated window for showing information similar to the in-game info windows.
 type InfoWindow struct {
-	u   *BaseUI
-	w   fyne.Window
-	nav *iwidget.Navigator
+	nav           *iwidget.Navigator
+	onClosedFuncs []func() // f runs when the window is closed. Useful for cleanup.
+	u             *BaseUI
+	w             fyne.Window
 }
 
 // newInfoWindow returns a configured InfoWindow.
@@ -136,6 +137,11 @@ func (iw *InfoWindow) show(t infoVariant, id int64) {
 		w.SetCloseIntercept(func() {
 			w.Close()
 			fynetooltip.DestroyWindowToolTipLayer(w.Canvas())
+		})
+		w.SetOnClosed(func() {
+			for _, f := range iw.onClosedFuncs {
+				f()
+			}
 		})
 		w.Show()
 	} else {
@@ -347,7 +353,7 @@ func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 		if err != nil {
 			slog.Error("alliance info update failed", "alliance", a.id, "error", err)
 			fyne.Do(func() {
-				a.name.Text = fmt.Sprintf("ERROR: Failed to load alliance: %s", a.iw.u.ErrorDisplay(err))
+				a.name.Text = fmt.Sprintf("ERROR: Failed to load alliance: %s", a.iw.u.humanizeError(err))
 				a.name.Importance = widget.DangerImportance
 				a.name.Refresh()
 			})
@@ -512,7 +518,7 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 		if err != nil {
 			slog.Error("character info update failed", "character", a.id, "error", err)
 			fyne.Do(func() {
-				a.name.Text = fmt.Sprintf("ERROR: Failed to load character: %s", a.iw.u.ErrorDisplay(err))
+				a.name.Text = fmt.Sprintf("ERROR: Failed to load character: %s", a.iw.u.humanizeError(err))
 				a.name.Importance = widget.DangerImportance
 				a.name.Refresh()
 			})
@@ -715,7 +721,7 @@ func (a *constellationInfo) CreateRenderer() fyne.WidgetRenderer {
 			slog.Error("constellation info update failed", "solarSystem", a.id, "error", err)
 			fyne.Do(func() {
 				fyne.Do(func() {
-					a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", a.iw.u.ErrorDisplay(err))
+					a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", a.iw.u.humanizeError(err))
 					a.name.Importance = widget.DangerImportance
 					a.name.Refresh()
 				})
@@ -827,7 +833,7 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 		if err != nil {
 			slog.Error("corporation info update failed", "corporation", a.id, "error", err)
 			fyne.Do(func() {
-				a.name.Text = fmt.Sprintf("ERROR: Failed to load corporation: %s", a.iw.u.ErrorDisplay(err))
+				a.name.Text = fmt.Sprintf("ERROR: Failed to load corporation: %s", a.iw.u.humanizeError(err))
 				a.name.Importance = widget.DangerImportance
 				a.name.Refresh()
 			})
@@ -1046,7 +1052,7 @@ func (a *locationInfo) CreateRenderer() fyne.WidgetRenderer {
 		if err != nil {
 			slog.Error("location info update failed", "locationID", a.id, "error", err)
 			fyne.Do(func() {
-				a.name.Text = fmt.Sprintf("ERROR: Failed to load character: %s", a.iw.u.ErrorDisplay(err))
+				a.name.Text = fmt.Sprintf("ERROR: Failed to load character: %s", a.iw.u.humanizeError(err))
 				a.name.Importance = widget.DangerImportance
 				a.name.Refresh()
 			})
@@ -1201,7 +1207,7 @@ func (a *raceInfo) CreateRenderer() fyne.WidgetRenderer {
 		if err != nil {
 			slog.Error("race info update failed", "race", a.id, "error", err)
 			fyne.Do(func() {
-				a.name.Text = fmt.Sprintf("ERROR: Failed to load race: %s", a.iw.u.ErrorDisplay(err))
+				a.name.Text = fmt.Sprintf("ERROR: Failed to load race: %s", a.iw.u.humanizeError(err))
 				a.name.Importance = widget.DangerImportance
 				a.name.Refresh()
 			})
@@ -1297,7 +1303,7 @@ func (a *regionInfo) CreateRenderer() fyne.WidgetRenderer {
 		if err != nil {
 			slog.Error("region info update failed", "solarSystem", a.id, "error", err)
 			fyne.Do(func() {
-				a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", a.iw.u.ErrorDisplay(err))
+				a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", a.iw.u.humanizeError(err))
 				a.name.Importance = widget.DangerImportance
 				a.name.Refresh()
 			})
@@ -1426,7 +1432,7 @@ func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
 		if err != nil {
 			slog.Error("solar system info update failed", "solarSystem", a.id, "error", err)
 			fyne.Do(func() {
-				a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", a.iw.u.ErrorDisplay(err))
+				a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", a.iw.u.humanizeError(err))
 				a.name.Importance = widget.DangerImportance
 				a.name.Refresh()
 			})

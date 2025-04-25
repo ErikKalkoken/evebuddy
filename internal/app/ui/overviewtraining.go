@@ -78,7 +78,7 @@ func NewOverviewTraining(u *BaseUI) *OverviewTraining {
 		}
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
-	if a.u.IsDesktop() {
+	if a.u.isDesktop() {
 		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, nil)
 	} else {
 		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeCell, nil)
