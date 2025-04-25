@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -19,7 +20,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
 // locationInfo shows public information about a character.

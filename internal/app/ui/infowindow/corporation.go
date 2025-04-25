@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
-	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -30,7 +29,6 @@ type corporationInfo struct {
 	allianceLogo    *canvas.Image
 	attributes      *attributeList
 	description     *widget.Label
-	dotlan          *kxwidget.TappableIcon
 	hq              *kxwidget.TappableLabel
 	id              int32
 	iw              *InfoWindow
@@ -66,8 +64,6 @@ func newCorporationInfo(iw *InfoWindow, id int32) *corporationInfo {
 		container.NewTabItem("Alliance History", a.allianceHistory),
 	)
 	a.tabs.Select(attributes)
-	a.dotlan = kxwidget.NewTappableIcon(icons.DotlanAvatarPng, nil)
-	a.dotlan.Hide()
 	return a
 }
 
@@ -101,13 +97,13 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		nil,
 		container.NewVBox(
-			a.logo,
-			container.NewHBox(
+			container.NewPadded(a.logo),
+			container.New(
+				layout.NewCustomPaddedHBoxLayout(3*p),
 				layout.NewSpacer(),
-				kxwidget.NewTappableIcon(icons.ZkillboardPng, func() {
-					a.iw.openURL(fmt.Sprintf("https://zkillboard.com/corporation/%d/", a.id))
-				}),
-				a.dotlan,
+				a.iw.makeZkillboardIcon(a.id, infoCorporation),
+				a.iw.makeDotlanIcon(a.id, infoCorporation),
+				a.iw.makeEveWhoIcon(a.id, infoAlliance),
 				layout.NewSpacer(),
 			),
 		),
@@ -140,11 +136,6 @@ func (a *corporationInfo) load() error {
 		a.name.SetText(o.Name)
 		a.description.SetText(o.DescriptionPlain())
 		a.attributes.set(attributes)
-		a.dotlan.OnTapped = func() {
-			name := strings.ReplaceAll(o.Name, "_", " ")
-			a.iw.openURL(fmt.Sprintf("https://evemaps.dotlan.net/corp/%s", name))
-		}
-		a.dotlan.Show()
 	})
 	fyne.Do(func() {
 		if o.Alliance == nil {

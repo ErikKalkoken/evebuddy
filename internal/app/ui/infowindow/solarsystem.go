@@ -20,19 +20,18 @@ import (
 type solarSystemInfo struct {
 	widget.BaseWidget
 
-	iw *InfoWindow
-
-	id            int32
-	region        *kxwidget.TappableLabel
 	constellation *kxwidget.TappableLabel
+	id            int32
+	iw            *InfoWindow
 	logo          *canvas.Image
 	name          *widget.Label
-	security      *widget.Label
-	tabs          *container.AppTabs
-	stations      *entityList
 	planets       *entityList
-	structures    *entityList
+	region        *kxwidget.TappableLabel
+	security      *widget.Label
 	stargates     *entityList
+	stations      *entityList
+	structures    *entityList
+	tabs          *container.AppTabs
 }
 
 func newSolarSystemInfo(iw *InfoWindow, id int32) *solarSystemInfo {
@@ -95,8 +94,24 @@ func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
 			container.New(colums, widget.NewLabel("Region"), a.region),
 			container.New(colums, widget.NewLabel("Constellation"), a.constellation),
 			container.New(colums, widget.NewLabel("Security"), a.security),
-		))
-	top := container.NewBorder(nil, nil, container.NewVBox(container.NewPadded(a.logo)), nil, main)
+		),
+	)
+	top := container.NewBorder(
+		nil,
+		nil,
+		container.NewVBox(
+			container.NewPadded(a.logo),
+			container.New(
+				layout.NewCustomPaddedHBoxLayout(3*p),
+				layout.NewSpacer(),
+				a.iw.makeZkillboardIcon(a.id, infoSolarSystem),
+				a.iw.makeDotlanIcon(a.id, infoSolarSystem),
+				layout.NewSpacer(),
+			),
+		),
+		nil,
+		main,
+	)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
 	return widget.NewSimpleRenderer(c)
 }

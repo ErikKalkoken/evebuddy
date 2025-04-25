@@ -70,7 +70,22 @@ func (a *regionInfo) CreateRenderer() fyne.WidgetRenderer {
 			widget.NewLabel("Region"),
 		),
 	)
-	top := container.NewBorder(nil, nil, container.NewVBox(container.NewPadded(a.logo)), nil, main)
+	top := container.NewBorder(
+		nil,
+		nil,
+		container.NewVBox(
+			container.NewPadded(a.logo),
+			container.New(
+				layout.NewCustomPaddedHBoxLayout(3*p),
+				layout.NewSpacer(),
+				a.iw.makeZkillboardIcon(a.id, infoRegion),
+				a.iw.makeDotlanIcon(a.id, infoRegion),
+				layout.NewSpacer(),
+			),
+		),
+		nil,
+		main,
+	)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
 	return widget.NewSimpleRenderer(c)
 }

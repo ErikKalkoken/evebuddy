@@ -13,13 +13,13 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
 // characterInfo shows public information about a character.
@@ -122,22 +122,21 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 	)
 	name := a.iw.u.StatusCacheService().CharacterName(a.id)
 	name = strings.ReplaceAll(name, " ", "_")
+	forums := iwidget.NewTappableIcon(icons.EvelogoPng, func() {
+		a.iw.openURL(fmt.Sprintf("https://forums.eveonline.com/u/%s/summary", name))
+	})
+	forums.SetToolTip("Show on forums.eveonline.com")
 	top := container.NewBorder(
 		nil,
 		nil,
 		container.NewVBox(
 			a.portrait,
-			container.NewHBox(
+			container.New(
+				layout.NewCustomPaddedHBoxLayout(3*p),
 				layout.NewSpacer(),
-				kxwidget.NewTappableIcon(icons.ZkillboardPng, func() {
-					a.iw.openURL(fmt.Sprintf("https://zkillboard.com/character/%d/", a.id))
-				}),
-				kxwidget.NewTappableIcon(icons.Characterplaceholder32Jpeg, func() {
-					a.iw.openURL(fmt.Sprintf("https://evewho.com/character/%d", a.id))
-				}),
-				kxwidget.NewTappableIcon(icons.EvelogoPng, func() {
-					a.iw.openURL(fmt.Sprintf("https://forums.eveonline.com/u/%s/summary", name))
-				}),
+				a.iw.makeZkillboardIcon(a.id, infoCharacter),
+				a.iw.makeEveWhoIcon(a.id, infoCharacter),
+				forums,
 				layout.NewSpacer(),
 			),
 		),

@@ -1,6 +1,7 @@
 package infowindow
 
 import (
+	"fmt"
 	"log/slog"
 	"maps"
 	"net/url"
@@ -9,9 +10,11 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
-	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
+	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -133,8 +136,12 @@ func (iw *InfoWindow) show(t infoVariant, id int64) {
 		w := iw.u.App().NewWindow(iw.u.MakeWindowTitle("Information"))
 		iw.w = w
 		iw.nav = iwidget.NewNavigatorWithAppBar(ab)
-		w.SetContent(iw.nav)
+		w.SetContent(fynetooltip.AddWindowToolTipLayer(iw.nav, w.Canvas()))
 		w.Resize(fyne.NewSize(infoWindowWidth, infoWindowHeight))
+		w.SetCloseIntercept(func() {
+			w.Close()
+			fynetooltip.DestroyWindowToolTipLayer(w.Canvas())
+		})
 		w.Show()
 	} else {
 		iw.nav.Push(ab)
@@ -167,6 +174,75 @@ func (iw *InfoWindow) openURL(s string) {
 	}
 }
 
+func (iw *InfoWindow) makeZkillboardIcon(id int32, v infoVariant) *iwidget.TappableIcon {
+	m := map[infoVariant]string{
+		infoAlliance:    "alliance",
+		infoCharacter:   "character",
+		infoCorporation: "corporation",
+		infoRegion:      "region",
+		infoSolarSystem: "system",
+	}
+	var f func()
+	var title string
+	partial, ok := m[v]
+	if ok {
+		f = func() {
+			iw.openURL(fmt.Sprintf("https://zkillboard.com/%s/%d/", partial, id))
+		}
+		title = fmt.Sprintf("Show %s on zKillboard.com", v)
+	}
+	icon := iwidget.NewTappableIcon(icons.ZkillboardPng, f)
+	if title != "" {
+		icon.SetToolTip(title)
+	}
+	return icon
+}
+
+func (iw *InfoWindow) makeDotlanIcon(id int32, v infoVariant) *iwidget.TappableIcon {
+	m := map[infoVariant]string{
+		infoAlliance:    "alliance",
+		infoCorporation: "corp",
+		infoRegion:      "region",
+		infoSolarSystem: "system",
+	}
+	var f func()
+	var title string
+	partial, ok := m[v]
+	if ok {
+		f = func() {
+			iw.openURL(fmt.Sprintf("https://evemaps.dotlan.net/%s/%d", partial, id))
+		}
+		title = fmt.Sprintf("Show %s on evemaps.dotlan.net", v)
+	}
+	icon := iwidget.NewTappableIcon(icons.DotlanAvatarPng, f)
+	if title != "" {
+		icon.SetToolTip(title)
+	}
+	return icon
+}
+
+func (iw *InfoWindow) makeEveWhoIcon(id int32, v infoVariant) *iwidget.TappableIcon {
+	m := map[infoVariant]string{
+		infoAlliance:    "alliance",
+		infoCorporation: "corporation",
+		infoCharacter:   "character",
+	}
+	var f func()
+	var title string
+	partial, ok := m[v]
+	if ok {
+		f = func() {
+			iw.openURL(fmt.Sprintf("https://evewho.com/%s/%d", partial, id))
+		}
+		title = fmt.Sprintf("Show %s on evewho.com", v)
+	}
+	icon := iwidget.NewTappableIcon(icons.Characterplaceholder32Jpeg, f)
+	if title != "" {
+		icon.SetToolTip(title)
+	}
+	return icon
+}
+
 type infoVariant uint
 
 const (
@@ -181,6 +257,25 @@ const (
 	infoRace
 	infoSolarSystem
 )
+
+func (iv infoVariant) String() string {
+	m := map[infoVariant]string{
+		infoAlliance:      "alliance",
+		infoCharacter:     "character",
+		infoConstellation: "constellation",
+		infoCorporation:   "corporation",
+		infoInventoryType: "type",
+		infoLocation:      "location",
+		infoRegion:        "region",
+		infoRace:          "race",
+		infoSolarSystem:   "solar system",
+	}
+	s, ok := m[iv]
+	if !ok {
+		return ""
+	}
+	return s
+}
 
 var eveEntityCategory2InfoVariant = map[app.EveEntityCategory]infoVariant{
 	app.EveEntityAlliance:      infoAlliance,
