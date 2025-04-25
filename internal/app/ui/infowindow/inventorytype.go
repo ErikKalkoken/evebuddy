@@ -122,11 +122,12 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 		requirementsTab = container.NewTabItem("Requirements", a.makeRequirementsTab())
 		tabs.Append(requirementsTab)
 	}
-	if a.price != nil {
-		tabs.Append(container.NewTabItem("Market", a.makeMarketTab()))
-	}
+	marketTab := container.NewTabItem("Market", a.makeMarketTab())
+	tabs.Append(marketTab)
 	// Set initial tab
-	if requirementsTab != nil && a.et.Group.Category.ID == app.EveCategorySkill {
+	if a.iw.u.Settings().PreferMarketTab() && a.et.IsTradeable() {
+		tabs.Select(marketTab)
+	} else if requirementsTab != nil && a.et.Group.Category.ID == app.EveCategorySkill {
 		tabs.Select(requirementsTab)
 	} else if attributeTab != nil &&
 		set.NewFromSlice([]int32{

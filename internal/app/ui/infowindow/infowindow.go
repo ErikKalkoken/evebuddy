@@ -39,6 +39,7 @@ type UI interface {
 	IsOffline() bool
 	MainWindow() fyne.Window
 	MakeWindowTitle(subTitle string) string
+	Settings() app.Settings
 	ShowErrorDialog(message string, err error, parent fyne.Window)
 	ShowInformationDialog(title, message string, parent fyne.Window)
 	StatusCacheService() app.StatusCacheService

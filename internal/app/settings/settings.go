@@ -45,6 +45,7 @@ const (
 	settingNotifyTrainingEarliest             = "settingNotifyTrainingEarliest"
 	settingNotifyTrainingEnabled              = "settingNotifyTrainingEnabled"
 	settingNotifyTrainingEnabledDefault       = false
+	settingRecentSearches                     = "settingRecentSearches"
 	settingSysTrayEnabled                     = "settingSysTrayEnabled"
 	settingSysTrayEnabledDefault              = false
 	settingTabsMainID                         = "tabs-main-id"
@@ -52,7 +53,7 @@ const (
 	settingWindowHeightDefault                = 600
 	settingWindowsSize                        = "window-size"
 	settingWindowWidthDefault                 = 1000
-	settingRecentSearches                     = "settingRecentSearches"
+	settingPreferMarketTab                    = "settingPreferMarketTab"
 )
 
 // Settings represents the settings for the app and provides an API for reading and writing settings.
@@ -390,6 +391,17 @@ func (s Settings) SetRecentSearches(v []int32) {
 	s.p.SetIntList(settingRecentSearches, xslices.Map(v, func(x int32) int {
 		return int(x)
 	}))
+}
+
+func (s Settings) PreferMarketTab() bool {
+	return s.p.Bool(settingPreferMarketTab)
+}
+func (s Settings) ResetPreferMarketTab() {
+	s.SetPreferMarketTab(false)
+}
+
+func (s Settings) SetPreferMarketTab(v bool) {
+	s.p.SetBool(settingPreferMarketTab, v)
 }
 
 // Keys returns all setting keys. Mostly to know what to delete.
