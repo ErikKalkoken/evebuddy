@@ -73,12 +73,14 @@ func newCharacterInfo(iw *InfoWindow, id int32) *characterInfo {
 	a.ExtendBaseWidget(a)
 	a.attributes = newAttributeList(a.iw)
 	a.employeeHistory = newEntityListFromItems(a.iw.show)
+	attributes := container.NewTabItem("Attributes", a.attributes)
 	a.tabs = container.NewAppTabs(
 		container.NewTabItem("Bio", container.NewVScroll(a.bio)),
 		container.NewTabItem("Description", container.NewVScroll(a.description)),
-		container.NewTabItem("Attributes", a.attributes),
+		attributes,
 		container.NewTabItem("Employment History", a.employeeHistory),
 	)
+	a.tabs.Select(attributes)
 	return a
 }
 
@@ -204,8 +206,16 @@ func (a *characterInfo) load() error {
 		a.title.SetText("Title: " + o.Title)
 	})
 	attributes := []attributeItem{
-		newAttributeItem("Corporation", o.Corporation),
+		newAttributeItem("Born", o.Birthday.Format(app.DateTimeFormat)),
 		newAttributeItem("Race", o.Race),
+		newAttributeItem("Security Status", fmt.Sprintf("%.1f", o.SecurityStatus)),
+		newAttributeItem("Corporation", o.Corporation),
+	}
+	if o.Alliance != nil {
+		attributes = append(attributes, newAttributeItem("Alliance", o.Alliance))
+	}
+	if o.Faction != nil {
+		attributes = append(attributes, newAttributeItem("Faction", o.Faction))
 	}
 	if a.iw.u.IsDeveloperMode() {
 		x := newAttributeItem("EVE ID", o.ID)

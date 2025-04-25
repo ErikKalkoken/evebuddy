@@ -42,10 +42,12 @@ func newRegionInfo(iw *InfoWindow, id int32) *regionInfo {
 	a.logo.Resource = icons.Region64Png
 	a.ExtendBaseWidget(a)
 	a.constellations = newEntityList(a.iw.show)
+	constellations := container.NewTabItem("Constellations", a.constellations)
 	a.tabs = container.NewAppTabs(
 		container.NewTabItem("Description", container.NewVScroll(a.description)),
-		container.NewTabItem("Constellations", a.constellations),
+		constellations,
 	)
+	a.tabs.Select(constellations)
 	return a
 }
 

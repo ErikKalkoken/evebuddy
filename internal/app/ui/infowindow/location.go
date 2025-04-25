@@ -60,10 +60,12 @@ func newLocationInfo(iw *InfoWindow, id int64) *locationInfo {
 	}
 	a.ExtendBaseWidget(a)
 	a.location = newEntityList(a.iw.show)
+	location := container.NewTabItem("Location", a.location)
 	a.tabs = container.NewAppTabs(
 		container.NewTabItem("Description", container.NewVScroll(a.description)),
-		container.NewTabItem("Location", a.location),
+		location,
 	)
+	a.tabs.Select(location)
 	return a
 }
 
@@ -154,6 +156,7 @@ func (a *locationInfo) load() error {
 		attributesTab := container.NewTabItem("Attributes", attributeList)
 		fyne.Do(func() {
 			a.tabs.Append(attributesTab)
+			a.tabs.Refresh()
 		})
 	}
 	fyne.Do(func() {
@@ -165,7 +168,7 @@ func (a *locationInfo) load() error {
 	})
 	if o.Variant() == app.EveLocationStation {
 		services := container.NewTabItem("Services", widget.NewLabel(""))
-		fyne.Do(func() {
+		fyne.DoAndWait(func() {
 			a.tabs.Append(services)
 			a.tabs.Refresh()
 		})
