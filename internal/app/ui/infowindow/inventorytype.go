@@ -145,19 +145,33 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
-	typeIcon := iwidget.NewImageWithLoader(
-		icons.BlankSvg,
-		fyne.NewSquareSize(logoUnitSize),
-		func() (fyne.Resource, error) {
-			if a.et.IsSKIN() {
-				return a.iw.u.EveImageService().InventoryTypeSKIN(a.et.ID, app.IconPixelSize)
-			} else if a.et.IsBlueprint() {
-				return a.iw.u.EveImageService().InventoryTypeBPO(a.et.ID, app.IconPixelSize)
-			} else {
-				return a.iw.u.EveImageService().InventoryTypeIcon(a.et.ID, app.IconPixelSize)
-			}
-		},
-	)
+	var typeIcon fyne.CanvasObject
+	loader := func() (fyne.Resource, error) {
+		if a.et.IsSKIN() {
+			return a.iw.u.EveImageService().InventoryTypeSKIN(a.et.ID, app.IconPixelSize)
+		} else if a.et.IsBlueprint() {
+			return a.iw.u.EveImageService().InventoryTypeBPO(a.et.ID, app.IconPixelSize)
+		} else {
+			return a.iw.u.EveImageService().InventoryTypeIcon(a.et.ID, app.IconPixelSize)
+		}
+	}
+	if !a.et.HasRender() {
+		icon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(logoUnitSize))
+		iwidget.RefreshImageAsync(icon, loader)
+		typeIcon = icon
+	} else {
+		icon := kxwidget.NewTappableImage(icons.BlankSvg, nil)
+		icon.SetFillMode(canvas.ImageFillContain)
+		icon.SetMinSize(fyne.NewSquareSize(logoUnitSize))
+		icon.OnTapped = func() {
+			go fyne.Do(func() {
+				a.iw.showZoomWindow(a.et.Name, a.id, a.iw.u.EveImageService().InventoryTypeRender, a.iw.w)
+			})
+		}
+		iwidget.RefreshTappableImageAsync(icon, loader)
+		typeIcon = icon
+	}
+
 	characterIcon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
 	characterName := kxwidget.NewTappableLabel("", func() {
 		a.iw.ShowEveEntity(a.character)
