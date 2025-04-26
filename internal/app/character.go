@@ -1,9 +1,27 @@
 package app
 
 import (
+	"bytes"
+	"fmt"
+	"iter"
+	"log/slog"
+	"maps"
+	"slices"
+	"strings"
 	"time"
+	"unicode"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/yuin/goldmark"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // An Eve Online character owners by the user.
@@ -28,4 +46,1211 @@ type Character struct {
 type CharacterShort struct {
 	ID   int32
 	Name string
+}
+
+type EveTypeVariant uint
+
+const (
+	VariantRegular EveTypeVariant = iota
+	VariantBPO
+	VariantBPC
+	VariantSKIN
+)
+
+type CharacterAsset struct {
+	CharacterID     int32
+	ID              int64
+	IsBlueprintCopy bool
+	IsSingleton     bool
+	ItemID          int64
+	LocationFlag    string
+	LocationID      int64
+	LocationType    string
+	Name            string
+	Price           optional.Optional[float64]
+	Quantity        int32
+	Type            *EveType
+}
+
+func (ca CharacterAsset) DisplayName() string {
+	if ca.Name != "" {
+		return ca.Name
+	}
+	s := ca.TypeName()
+	if ca.IsBlueprintCopy {
+		s += " (Copy)"
+	}
+	return s
+}
+
+func (ca CharacterAsset) DisplayName2() string {
+	if ca.Name != "" {
+		return fmt.Sprintf("%s \"%s\"", ca.TypeName(), ca.Name)
+	}
+	s := ca.TypeName()
+	if ca.IsBlueprintCopy {
+		s += " (Copy)"
+	}
+	return s
+}
+
+func (ca CharacterAsset) TypeName() string {
+	if ca.Type == nil {
+		return ""
+	}
+	return ca.Type.Name
+}
+
+func (ca CharacterAsset) IsBPO() bool {
+	return ca.Type.Group.Category.ID == EveCategoryBlueprint && !ca.IsBlueprintCopy
+}
+
+func (ca CharacterAsset) IsSKIN() bool {
+	return ca.Type.Group.Category.ID == EveCategorySKINs
+}
+
+func (ca CharacterAsset) IsContainer() bool {
+	if !ca.IsSingleton {
+		return false
+	}
+	if ca.Type.IsShip() {
+		return true
+	}
+	if ca.Type.ID == EveTypeAssetSafetyWrap {
+		return true
+	}
+	switch ca.Type.Group.ID {
+	case EveGroupAuditLogFreightContainer,
+		EveGroupAuditLogSecureCargoContainer,
+		EveGroupCargoContainer,
+		EveGroupSecureCargoContainer:
+		return true
+	}
+	return false
+}
+
+func (ca CharacterAsset) InAssetSafety() bool {
+	return ca.LocationFlag == "AssetSafety"
+}
+
+func (ca CharacterAsset) InCargoBay() bool {
+	return ca.LocationFlag == "Cargo"
+}
+
+func (ca CharacterAsset) InDroneBay() bool {
+	return ca.LocationFlag == "DroneBay"
+}
+
+func (ca CharacterAsset) InFighterBay() bool {
+	return ca.LocationFlag == "FighterBay" || strings.HasPrefix(ca.LocationFlag, "FighterTube")
+}
+
+func (ca CharacterAsset) InFrigateEscapeBay() bool {
+	return ca.LocationFlag == "FrigateEscapeBay"
+}
+
+func (ca CharacterAsset) IsInFuelBay() bool {
+	return ca.LocationFlag == "SpecializedFuelBay"
+}
+
+func (ca CharacterAsset) IsInSpace() bool {
+	return ca.LocationType == "solar_system"
+}
+
+func (ca CharacterAsset) IsInHangar() bool {
+	return ca.LocationFlag == "Hangar"
+}
+
+func (ca CharacterAsset) IsFitted() bool {
+	switch s := ca.LocationFlag; {
+	case strings.HasPrefix(s, "HiSlot"):
+		return true
+	case strings.HasPrefix(s, "MedSlot"):
+		return true
+	case strings.HasPrefix(s, "LoSlot"):
+		return true
+	case strings.HasPrefix(s, "RigSlot"):
+		return true
+	case strings.HasPrefix(s, "SubSystemSlot"):
+		return true
+	}
+	return false
+}
+
+func (ca CharacterAsset) IsShipOther() bool {
+	return !ca.InCargoBay() &&
+		!ca.InDroneBay() &&
+		!ca.InFighterBay() &&
+		!ca.IsInFuelBay() &&
+		!ca.IsFitted() &&
+		!ca.InFrigateEscapeBay()
+}
+
+func (ca CharacterAsset) Variant() EveTypeVariant {
+	if ca.IsSKIN() {
+		return VariantSKIN
+	} else if ca.IsBPO() {
+		return VariantBPO
+	} else if ca.IsBlueprintCopy {
+		return VariantBPO
+	}
+	return VariantRegular
+}
+
+type CharacterAttributes struct {
+	ID            int64
+	BonusRemaps   int
+	CharacterID   int32
+	Charisma      int
+	Intelligence  int
+	LastRemapDate time.Time
+	Memory        int
+	Perception    int
+	Willpower     int
+}
+
+type ContractAvailability uint
+
+const (
+	ContractAvailabilityUndefined ContractAvailability = iota
+	ContractAvailabilityAlliance
+	ContractAvailabilityCorporation
+	ContractAvailabilityPersonal
+	ContractAvailabilityPublic
+)
+
+func (cca ContractAvailability) String() string {
+	var m = map[ContractAvailability]string{
+		ContractAvailabilityAlliance:    "alliance",
+		ContractAvailabilityCorporation: "corporation",
+		ContractAvailabilityPersonal:    "private",
+		ContractAvailabilityPublic:      "public",
+	}
+	s, ok := m[cca]
+	if !ok {
+		return "?"
+	}
+	return s
+}
+
+// contractConsolidatedStatus represents a consolidated status of a contract based on the original contract.
+type contractConsolidatedStatus uint
+
+const (
+	contractUndefiend contractConsolidatedStatus = iota
+	contractOustanding
+	contractInProgress
+	contractHasIssue
+	contractCompleted
+)
+
+// ContractStatus represents the original status of a contract.
+type ContractStatus uint
+
+const (
+	ContractStatusUndefined ContractStatus = iota
+	ContractStatusCancelled
+	ContractStatusDeleted
+	ContractStatusFailed
+	ContractStatusFinished
+	ContractStatusFinishedContractor
+	ContractStatusFinishedIssuer
+	ContractStatusInProgress
+	ContractStatusOutstanding
+	ContractStatusRejected
+	ContractStatusReversed
+)
+
+var ccs2String = map[ContractStatus]string{
+	ContractStatusCancelled:          "cancelled",
+	ContractStatusDeleted:            "deleted",
+	ContractStatusFailed:             "failed",
+	ContractStatusFinished:           "finished",
+	ContractStatusFinishedContractor: "finished contractor",
+	ContractStatusFinishedIssuer:     "finished issuer",
+	ContractStatusInProgress:         "in progress",
+	ContractStatusOutstanding:        "outstanding",
+	ContractStatusRejected:           "rejected",
+	ContractStatusReversed:           "reversed",
+}
+
+func (ccs ContractStatus) String() string {
+	s, ok := ccs2String[ccs]
+	if !ok {
+		return "?"
+	}
+	return s
+}
+
+func (cc ContractStatus) consolidated() contractConsolidatedStatus {
+	switch cc {
+	case ContractStatusOutstanding:
+		return contractOustanding
+	case ContractStatusInProgress:
+		return contractInProgress
+	case
+		ContractStatusFinished,
+		ContractStatusFinishedContractor,
+		ContractStatusFinishedIssuer:
+		return contractCompleted
+	case
+		ContractStatusCancelled,
+		ContractStatusDeleted,
+		ContractStatusFailed,
+		ContractStatusRejected:
+		return contractHasIssue
+	}
+	return contractUndefiend
+}
+
+type ContractType uint
+
+const (
+	ContractTypeUndefined ContractType = iota
+	ContractTypeAuction
+	ContractTypeCourier
+	ContractTypeItemExchange
+	ContractTypeLoan
+	ContractTypeUnknown
+)
+
+var cct2String = map[ContractType]string{
+	ContractTypeAuction:      "auction",
+	ContractTypeCourier:      "courier",
+	ContractTypeItemExchange: "item exchange",
+	ContractTypeLoan:         "loan",
+	ContractTypeUnknown:      "unknown",
+}
+
+func (cct ContractType) String() string {
+	s, ok := cct2String[cct]
+	if !ok {
+		return "?"
+	}
+	return s
+}
+
+type CharacterContract struct {
+	ID                int64
+	Acceptor          *EveEntity
+	Assignee          *EveEntity
+	Availability      ContractAvailability
+	Buyout            float64
+	CharacterID       int32
+	Collateral        float64
+	ContractID        int32
+	DateAccepted      optional.Optional[time.Time]
+	DateCompleted     optional.Optional[time.Time]
+	DateExpired       time.Time
+	DateIssued        time.Time
+	DaysToComplete    int32
+	EndLocation       *EveLocationShort
+	EndSolarSystem    *EntityShort[int32]
+	ForCorporation    bool
+	Issuer            *EveEntity
+	IssuerCorporation *EveEntity
+	Items             []string
+	Price             float64
+	Reward            float64
+	StartLocation     *EveLocationShort
+	StartSolarSystem  *EntityShort[int32]
+	Status            ContractStatus
+	StatusNotified    ContractStatus
+	Title             string
+	Type              ContractType
+	UpdatedAt         time.Time
+	Volume            float64
+}
+
+func (cc CharacterContract) AvailabilityDisplay() string {
+	titler := cases.Title(language.English)
+	s := titler.String(cc.Availability.String())
+	return s
+}
+
+func (cc CharacterContract) ContractorDisplay() string {
+	if cc.Acceptor == nil {
+		return "(None)"
+	}
+	return cc.Acceptor.Name
+}
+
+func (cc CharacterContract) HasIssue() bool {
+	return cc.Status.consolidated() == contractHasIssue
+}
+
+func (cc CharacterContract) IsExpired() bool {
+	return cc.DateExpired.Before(time.Now())
+}
+
+func (cc CharacterContract) IsActive() bool {
+	return cc.Status.consolidated() == contractInProgress || cc.Status.consolidated() == contractOustanding
+}
+
+func (cc CharacterContract) IsCompleted() bool {
+	return cc.Status.consolidated() == contractCompleted
+}
+
+func (cc CharacterContract) IssuerEffective() *EveEntity {
+	if cc.ForCorporation {
+		return cc.IssuerCorporation
+	}
+	return cc.Issuer
+}
+
+func (cc CharacterContract) NameDisplay() string {
+	if cc.Type == ContractTypeCourier {
+		var start, end string
+		if cc.StartSolarSystem != nil {
+			start = cc.StartSolarSystem.Name
+		} else {
+			start = "?"
+		}
+		if cc.EndSolarSystem != nil {
+			end = cc.EndSolarSystem.Name
+		} else {
+			end = "?"
+		}
+		return fmt.Sprintf(
+			"%s >> %s (%.0f m3)",
+			start,
+			end,
+			cc.Volume,
+		)
+	}
+	if len(cc.Items) > 1 {
+		return "[Multiple Items]"
+	}
+	if len(cc.Items) == 1 {
+		return cc.Items[0]
+	}
+	return "?"
+}
+
+func (cc CharacterContract) StatusDisplay() string {
+	caser := cases.Title(language.English)
+	return caser.String(cc.Status.String())
+}
+
+func (cc CharacterContract) StatusDisplayRichText() []widget.RichTextSegment {
+	var color fyne.ThemeColorName
+	switch cc.Status.consolidated() {
+	case contractOustanding:
+		color = theme.ColorNamePrimary
+	case contractInProgress:
+		color = theme.ColorNameWarning
+	case contractCompleted:
+		color = theme.ColorNameSuccess
+	case contractHasIssue:
+		color = theme.ColorNameError
+	default:
+		color = theme.ColorNameForeground
+	}
+	return iwidget.NewRichTextSegmentFromText(cc.StatusDisplay(), widget.RichTextStyle{
+		ColorName: color,
+	})
+}
+
+func (cc CharacterContract) TitleDisplay() string {
+	if cc.Title == "" {
+		return "(None)"
+	}
+	return cc.Title
+}
+
+func (cc CharacterContract) TypeDisplay() string {
+	caser := cases.Title(language.English)
+	return caser.String(cc.Type.String())
+}
+
+type CharacterContractBid struct {
+	ContractID int64
+	Amount     float32
+	BidID      int32
+	Bidder     *EveEntity
+	DateBid    time.Time
+}
+
+type CharacterContractItem struct {
+	ContractID  int64
+	IsIncluded  bool
+	IsSingleton bool
+	Quantity    int
+	RawQuantity int
+	RecordID    int64
+	Type        *EveType
+}
+
+type CharacterImplant struct {
+	CharacterID int32
+	EveType     *EveType
+	ID          int64
+	SlotNum     int // 0 = unknown
+}
+
+// IndustryActivity represents the activity type of an industry job.
+// See also: https://github.com/esi/esi-issues/issues/894
+type IndustryActivity int32
+
+const (
+	None                       IndustryActivity = 0
+	Manufacturing              IndustryActivity = 1
+	TimeEfficiencyResearch     IndustryActivity = 3
+	MaterialEfficiencyResearch IndustryActivity = 4
+	Copying                    IndustryActivity = 5
+	Invention                  IndustryActivity = 8
+	Reactions                  IndustryActivity = 11
+)
+
+func (a IndustryActivity) String() string {
+	m := map[IndustryActivity]string{
+		None:                       "none",
+		Manufacturing:              "manufacturing",
+		TimeEfficiencyResearch:     "time efficiency research",
+		MaterialEfficiencyResearch: "material efficiency research",
+		Copying:                    "copying",
+		Invention:                  "invention",
+		Reactions:                  "reactions",
+	}
+	s, ok := m[a]
+	if !ok {
+		return "?"
+	}
+	return s
+}
+
+func (a IndustryActivity) Display() string {
+	titler := cases.Title(language.English)
+	return titler.String(a.String())
+}
+
+type IndustryJobStatus uint
+
+const (
+	JobUndefined IndustryJobStatus = iota
+	JobActive
+	JobCancelled
+	JobDelivered
+	JobPaused
+	JobReady
+	JobReverted
+)
+
+func (s IndustryJobStatus) String() string {
+	m := map[IndustryJobStatus]string{
+		JobUndefined: "undefined",
+		JobActive:    "in progress",
+		JobCancelled: "cancelled",
+		JobDelivered: "delivered",
+		JobPaused:    "halted",
+		JobReady:     "ready",
+		JobReverted:  "reverted",
+	}
+	x, ok := m[s]
+	if !ok {
+		return "?"
+	}
+	return x
+}
+
+func (s IndustryJobStatus) Display() string {
+	titler := cases.Title(language.English)
+	return titler.String(s.String())
+}
+
+func (s IndustryJobStatus) Color() fyne.ThemeColorName {
+	m := map[IndustryJobStatus]fyne.ThemeColorName{
+		JobActive:    theme.ColorNamePrimary,
+		JobCancelled: theme.ColorNameError,
+		JobPaused:    theme.ColorNameWarning,
+		JobReady:     theme.ColorNameSuccess,
+	}
+	c, ok := m[s]
+	if ok {
+		return c
+	}
+	return theme.ColorNameForeground
+}
+
+type CharacterIndustryJob struct {
+	Activity           IndustryActivity
+	BlueprintID        int64
+	BlueprintLocation  *EveLocationShort
+	BlueprintType      *EntityShort[int32]
+	CharacterID        int32
+	CompletedCharacter optional.Optional[*EveEntity]
+	CompletedDate      optional.Optional[time.Time]
+	Cost               optional.Optional[float64]
+	Duration           int
+	EndDate            time.Time
+	Facility           *EveLocationShort
+	Installer          *EveEntity
+	JobID              int32
+	LicensedRuns       optional.Optional[int]
+	OutputLocation     *EveLocationShort
+	PauseDate          optional.Optional[time.Time]
+	Probability        optional.Optional[float32]
+	ProductType        optional.Optional[*EntityShort[int32]]
+	Runs               int
+	StartDate          time.Time
+	Station            *EveLocationShort
+	Status             IndustryJobStatus
+	SuccessfulRuns     optional.Optional[int32]
+}
+
+// StatusCorrected returns a corrected status.
+func (j CharacterIndustryJob) StatusCorrected() IndustryJobStatus {
+	if j.Status == JobActive && j.EndDate.Before(time.Now()) {
+		// Workaroud for known bug: https://github.com/esi/esi-issues/issues/752
+		return JobReady
+	}
+	return j.Status
+}
+
+func (j CharacterIndustryJob) StatusRichText() []widget.RichTextSegment {
+	status := j.StatusCorrected()
+	return iwidget.NewRichTextSegmentFromText(status.Display(), widget.RichTextStyle{
+		ColorName: status.Color(),
+	})
+}
+
+func (j CharacterIndustryJob) IsActive() bool {
+	switch s := j.StatusCorrected(); s {
+	case JobActive, JobReady, JobPaused:
+		return true
+	}
+	return false
+}
+
+type CharacterJumpClone struct {
+	CharacterID int32
+	ID          int64
+	Implants    []*CharacterJumpCloneImplant
+	CloneID     int32
+	Location    *EveLocationShort
+	Name        string
+	Region      *EntityShort[int32]
+}
+
+type CharacterJumpClone2 struct {
+	Character     *EntityShort[int32]
+	ImplantsCount int
+	ID            int64
+	CloneID       int32
+	Location      *EveLocation
+}
+
+func (j CharacterJumpClone2) SolarSystemName() string {
+	if s := j.Location.SolarSystem; s != nil {
+		return s.Name
+	}
+	return ""
+}
+
+type CharacterJumpCloneImplant struct {
+	ID      int64
+	EveType *EveType
+	SlotNum int // 0 = unknown
+}
+
+type SendMailMode uint
+
+const (
+	SendMailNew SendMailMode = iota + 1
+	SendMailReply
+	SendMailReplyAll
+	SendMailForward
+)
+
+// Special mail label IDs
+const (
+	MailLabelAll      = 1<<31 - 1
+	MailLabelUnread   = 1<<31 - 2
+	MailLabelNone     = 0
+	MailLabelInbox    = 1
+	MailLabelSent     = 2
+	MailLabelCorp     = 4
+	MailLabelAlliance = 8
+)
+
+// A mail label for an Eve mail belonging to a character.
+type CharacterMailLabel struct {
+	ID          int64
+	CharacterID int32
+	Color       string
+	LabelID     int32
+	Name        string
+	UnreadCount int
+}
+
+// An Eve mail belonging to a character.
+type CharacterMail struct {
+	Body        string
+	CharacterID int32
+	From        *EveEntity
+	Labels      []*CharacterMailLabel
+	IsProcessed bool
+	IsRead      bool
+	ID          int64
+	MailID      int32
+	Recipients  []*EveEntity
+	Subject     string
+	Timestamp   time.Time
+}
+
+// An Eve mail header belonging to a character.
+type CharacterMailHeader struct {
+	CharacterID int32
+	From        *EveEntity
+	IsRead      bool
+	ID          int64
+	MailID      int32
+	Subject     string
+	Timestamp   time.Time
+}
+
+// BodyPlain returns a mail's body as plain text.
+func (cm CharacterMail) BodyPlain() string {
+	return evehtml.ToPlain(cm.Body)
+}
+
+// String returns a mail's content as string.
+func (cm CharacterMail) String() string {
+	s := fmt.Sprintf("%s\n", cm.Subject) + cm.Header() + "\n\n" + cm.BodyPlain()
+	return s
+}
+
+// Header returns a mail's header as string.
+func (cm CharacterMail) Header() string {
+	var names []string
+	for _, n := range cm.Recipients {
+		names = append(names, n.Name)
+	}
+	header := fmt.Sprintf(
+		"From: %s\n"+
+			"Sent: %s\n"+
+			"To: %s",
+		cm.From.Name,
+		cm.Timestamp.Format(DateTimeFormat),
+		strings.Join(names, ", "),
+	)
+	return header
+}
+
+// RecipientNames returns the names of the recipients.
+func (cm CharacterMail) RecipientNames() []string {
+	ss := make([]string, len(cm.Recipients))
+	for i, r := range cm.Recipients {
+		ss[i] = r.Name
+	}
+	return ss
+}
+
+func (cm CharacterMail) BodyToMarkdown() string {
+	return evehtml.ToMarkdown(cm.Body)
+}
+
+type CharacterNotification struct {
+	ID             int64
+	Body           optional.Optional[string] // generated body text in markdown
+	CharacterID    int32
+	IsProcessed    bool
+	IsRead         bool
+	NotificationID int64
+	RecipientName  string // TODO: Replace with EveEntity
+	Sender         *EveEntity
+	Text           string
+	Timestamp      time.Time
+	Title          optional.Optional[string] // generated title text in markdown
+	Type           string                    // This is a string, so that it can handle unknown types
+}
+
+// TitleDisplay returns the rendered title when it exists or else the fake tile.
+func (cn *CharacterNotification) TitleDisplay() string {
+	if cn.Title.IsEmpty() {
+		return cn.TitleFake()
+	}
+	return cn.Title.ValueOrZero()
+}
+
+// TitleFake returns a title for output made from the name of the type.
+func (cn *CharacterNotification) TitleFake() string {
+	var b strings.Builder
+	var last rune
+	for _, r := range cn.Type {
+		if unicode.IsUpper(r) && unicode.IsLower(last) {
+			b.WriteRune(' ')
+		}
+		b.WriteRune(r)
+		last = r
+	}
+	return b.String()
+}
+
+// Header returns the header of a notification.
+func (cn *CharacterNotification) Header() string {
+	s := fmt.Sprintf(
+		"From: %s\n"+
+			"Sent: %s",
+		cn.Sender.Name,
+		cn.Timestamp.Format(DateTimeFormat),
+	)
+	if cn.RecipientName != "" {
+		s += fmt.Sprintf("\nTo: %s", cn.RecipientName)
+	}
+	return s
+}
+
+// String returns the content of a notification as string.
+func (cn *CharacterNotification) String() string {
+	s := cn.TitleDisplay() + "\n" + cn.Header()
+	b, err := cn.BodyPlain()
+	if err != nil {
+		slog.Error("render notification to string", "id", cn.ID, "error", err)
+		return s
+	}
+	s += "\n\n"
+	if b.IsEmpty() {
+		s += "(no body)"
+	} else {
+		s += b.ValueOrZero()
+	}
+	return s
+}
+
+// BodyPlain returns the body of a notification as plain text.
+func (cn *CharacterNotification) BodyPlain() (optional.Optional[string], error) {
+	var b optional.Optional[string]
+	if cn.Body.IsEmpty() {
+		return b, nil
+	}
+	var buf bytes.Buffer
+	if err := goldmark.Convert([]byte(cn.Body.ValueOrZero()), &buf); err != nil {
+		return b, fmt.Errorf("convert notification body: %w", err)
+	}
+	b.Set(evehtml.Strip(buf.String()))
+	return b, nil
+}
+
+type CharacterPlanet struct {
+	ID           int64
+	CharacterID  int32
+	EvePlanet    *EvePlanet
+	LastUpdate   time.Time
+	LastNotified optional.Optional[time.Time] // expiry time that was last notified
+	Pins         []*PlanetPin
+	UpgradeLevel int
+}
+
+func (cp CharacterPlanet) NameRichText() []widget.RichTextSegment {
+	return slices.Concat(
+		cp.EvePlanet.SolarSystem.SecurityStatusRichText(),
+		iwidget.NewRichTextSegmentFromText("  "+cp.EvePlanet.Name),
+	)
+}
+
+// ExtractedTypes returns a list of unique types currently being extracted.
+func (cp CharacterPlanet) ExtractedTypes() []*EveType {
+	types := make(map[int32]*EveType)
+	for pp := range cp.ActiveExtractors() {
+		types[pp.ExtractorProductType.ID] = pp.ExtractorProductType
+	}
+	return slices.Collect(maps.Values(types))
+}
+
+func (cp CharacterPlanet) ActiveExtractors() iter.Seq[*PlanetPin] {
+	return xiter.Filter(slices.Values(cp.Pins), func(o *PlanetPin) bool {
+		return o.IsExtracting()
+	})
+}
+
+func (cp CharacterPlanet) ExtractedTypeNames() []string {
+	return extractedStringsSorted(cp.ExtractedTypes(), func(a *EveType) string {
+		return a.Name
+	})
+}
+
+func (cp CharacterPlanet) Extracting() string {
+	extractions := strings.Join(cp.ExtractedTypeNames(), ", ")
+	if extractions == "" {
+		extractions = "-"
+	}
+	return extractions
+}
+
+// ExtractionsExpiryTime returns the final expiry time for all extractions.
+// When no expiry data is found it will return a zero time.
+func (cp CharacterPlanet) ExtractionsExpiryTime() time.Time {
+	expireTimes := make([]time.Time, 0)
+	for pp := range cp.ActiveExtractors() {
+		if pp.ExpiryTime.IsEmpty() {
+			continue
+		}
+		expireTimes = append(expireTimes, pp.ExpiryTime.ValueOrZero())
+	}
+	if len(expireTimes) == 0 {
+		return time.Time{}
+	}
+	slices.SortFunc(expireTimes, func(a, b time.Time) int {
+		return b.Compare(a) // sort descending
+	})
+	return expireTimes[0]
+}
+
+func (cp CharacterPlanet) ActiveProducers() iter.Seq[*PlanetPin] {
+	return xiter.Filter(slices.Values(cp.Pins), func(o *PlanetPin) bool {
+		return o.IsProducing()
+	})
+}
+
+// ProducedSchematics returns a list of unique schematics currently in production.
+func (cp CharacterPlanet) ProducedSchematics() []*EveSchematic {
+	schematics := make(map[int32]*EveSchematic)
+	for pp := range cp.ActiveProducers() {
+		schematics[pp.Schematic.ID] = pp.Schematic
+	}
+	return slices.Collect(maps.Values(schematics))
+}
+
+func (cp CharacterPlanet) ProducedSchematicNames() []string {
+	return extractedStringsSorted(cp.ProducedSchematics(), func(a *EveSchematic) string {
+		return a.Name
+	})
+}
+
+func (cp CharacterPlanet) IsExpired() bool {
+	due := cp.ExtractionsExpiryTime()
+	if due.IsZero() {
+		return false
+	}
+	return due.Before(time.Now())
+}
+
+func (cp CharacterPlanet) Producing() string {
+	productions := strings.Join(cp.ProducedSchematicNames(), ", ")
+	if productions == "" {
+		productions = "-"
+	}
+	return productions
+}
+
+func (cp CharacterPlanet) DueRichText() []widget.RichTextSegment {
+	if cp.IsExpired() {
+		return iwidget.NewRichTextSegmentFromText("OFFLINE", widget.RichTextStyle{ColorName: theme.ColorNameError})
+	}
+	due := cp.ExtractionsExpiryTime()
+	if due.IsZero() {
+		return iwidget.NewRichTextSegmentFromText("-")
+	}
+	return iwidget.NewRichTextSegmentFromText(due.Format(DateTimeFormat))
+}
+
+func extractedStringsSorted[T any](s []T, extract func(a T) string) []string {
+	s2 := make([]string, 0)
+	for _, x := range s {
+		s2 = append(s2, extract(x))
+	}
+	slices.Sort(s2)
+	return s2
+}
+
+type PlanetPin struct {
+	ID                   int64
+	ExpiryTime           optional.Optional[time.Time]
+	ExtractorProductType *EveType
+	FactorySchematic     *EveSchematic
+	InstallTime          optional.Optional[time.Time]
+	LastCycleStart       optional.Optional[time.Time]
+	Schematic            *EveSchematic
+	Type                 *EveType
+}
+
+func (pp PlanetPin) IsExtracting() bool {
+	return pp.Type.Group.ID == EveGroupExtractorControlUnits && pp.ExtractorProductType != nil
+}
+
+func (pp PlanetPin) IsProducing() bool {
+	return pp.Type.Group.ID == EveGroupProcessors && pp.Schematic != nil
+}
+
+const characterSectionDefaultTimeout = 3600 * time.Second
+
+type CharacterSection string
+
+// Updated character sections
+const (
+	SectionAssets             CharacterSection = "assets"
+	SectionAttributes         CharacterSection = "attributes"
+	SectionContracts          CharacterSection = "contracts"
+	SectionImplants           CharacterSection = "implants"
+	SectionIndustryJobs       CharacterSection = "industry_jobs"
+	SectionJumpClones         CharacterSection = "jump_clones"
+	SectionLocation           CharacterSection = "location"
+	SectionMailLabels         CharacterSection = "mail_labels"
+	SectionMailLists          CharacterSection = "mail_lists"
+	SectionMails              CharacterSection = "mails"
+	SectionNotifications      CharacterSection = "notifications"
+	SectionOnline             CharacterSection = "online"
+	SectionPlanets            CharacterSection = "planets"
+	SectionShip               CharacterSection = "ship"
+	SectionSkillqueue         CharacterSection = "skillqueue"
+	SectionSkills             CharacterSection = "skills"
+	SectionWalletBalance      CharacterSection = "wallet_balance"
+	SectionWalletJournal      CharacterSection = "wallet_journal"
+	SectionWalletTransactions CharacterSection = "wallet_transactions"
+)
+
+var CharacterSections = []CharacterSection{
+	SectionAssets,
+	SectionAttributes,
+	SectionContracts,
+	SectionImplants,
+	SectionIndustryJobs,
+	SectionJumpClones,
+	SectionLocation,
+	SectionMailLabels,
+	SectionMailLists,
+	SectionMails,
+	SectionNotifications,
+	SectionOnline,
+	SectionPlanets,
+	SectionShip,
+	SectionSkillqueue,
+	SectionSkills,
+	SectionWalletBalance,
+	SectionWalletJournal,
+	SectionWalletTransactions,
+}
+
+var characterSectionTimeouts = map[CharacterSection]time.Duration{
+	SectionAssets:             3600 * time.Second,
+	SectionAttributes:         120 * time.Second,
+	SectionContracts:          300 * time.Second,
+	SectionImplants:           120 * time.Second,
+	SectionIndustryJobs:       300 * time.Second,
+	SectionJumpClones:         120 * time.Second,
+	SectionLocation:           300 * time.Second, // minimum 5 seconds
+	SectionMailLabels:         60 * time.Second,  // minimum 30 seconds
+	SectionMailLists:          120 * time.Second,
+	SectionMails:              60 * time.Second, // minimum 30 seconds
+	SectionNotifications:      600 * time.Second,
+	SectionOnline:             300 * time.Second, // minimum 30 seconds
+	SectionPlanets:            600 * time.Second,
+	SectionShip:               300 * time.Second, // minimum 5 seconds
+	SectionSkillqueue:         120 * time.Second,
+	SectionSkills:             120 * time.Second,
+	SectionWalletBalance:      120 * time.Second,
+	SectionWalletJournal:      3600 * time.Second,
+	SectionWalletTransactions: 3600 * time.Second,
+}
+
+func (cs CharacterSection) DisplayName() string {
+	t := strings.ReplaceAll(string(cs), "_", " ")
+	c := cases.Title(language.English)
+	t = c.String(t)
+	return t
+}
+
+// Timeout returns the time until the data of an update section becomes stale.
+func (cs CharacterSection) Timeout() time.Duration {
+	duration, ok := characterSectionTimeouts[cs]
+	if !ok {
+		slog.Warn("Requested duration for unknown section. Using default.", "section", cs)
+		return characterSectionDefaultTimeout
+	}
+	return duration
+}
+
+type CharacterUpdateSectionParams struct {
+	CharacterID           int32
+	Section               CharacterSection
+	ForceUpdate           bool
+	MaxMails              int
+	MaxWalletTransactions int
+}
+
+type CharacterSectionStatus struct {
+	ID            int64
+	CharacterID   int32
+	CharacterName string
+	CompletedAt   time.Time
+	ContentHash   string
+	ErrorMessage  string
+	Section       CharacterSection
+	StartedAt     time.Time
+	UpdatedAt     time.Time
+}
+
+func (s CharacterSectionStatus) IsOK() bool {
+	return s.ErrorMessage == ""
+}
+
+func (s CharacterSectionStatus) IsExpired() bool {
+	if s.CompletedAt.IsZero() {
+		return true
+	}
+	timeout := s.Section.Timeout()
+	deadline := s.CompletedAt.Add(timeout)
+	return time.Now().After(deadline)
+}
+
+type CharacterShipAbility struct {
+	Type   EntityShort[int32]
+	Group  EntityShort[int32]
+	CanFly bool
+}
+
+type CharacterSkill struct {
+	ActiveSkillLevel   int
+	CharacterID        int32
+	EveType            *EveType
+	ID                 int64
+	SkillPointsInSkill int
+	TrainedSkillLevel  int
+}
+
+func SkillDisplayName[N int | int32 | int64 | uint | uint32 | uint64](name string, level N) string {
+	return fmt.Sprintf("%s %s", name, ihumanize.RomanLetter(level))
+}
+
+type ListCharacterSkillGroupProgress struct {
+	GroupID   int32
+	GroupName string
+	Total     float64
+	Trained   float64
+}
+
+type ListSkillProgress struct {
+	ActiveSkillLevel  int
+	TrainedSkillLevel int
+	TypeID            int32
+	TypeDescription   string
+	TypeName          string
+}
+
+type CharacterShipSkill struct {
+	ActiveSkillLevel  optional.Optional[int]
+	ID                int64
+	CharacterID       int32
+	Rank              uint
+	ShipTypeID        int32
+	SkillTypeID       int32
+	SkillName         string
+	SkillLevel        uint
+	TrainedSkillLevel optional.Optional[int]
+}
+
+type CharacterSkillqueueItem struct {
+	CharacterID      int32
+	GroupName        string
+	FinishDate       time.Time
+	FinishedLevel    int
+	LevelEndSP       int
+	LevelStartSP     int
+	ID               int64
+	QueuePosition    int
+	StartDate        time.Time
+	SkillName        string
+	SkillDescription string
+	TrainingStartSP  int
+}
+
+func (qi CharacterSkillqueueItem) String() string {
+	return fmt.Sprintf("%s %s", qi.SkillName, ihumanize.RomanLetter(qi.FinishedLevel))
+}
+
+func (qi CharacterSkillqueueItem) IsActive() bool {
+	now := time.Now()
+	return !qi.StartDate.IsZero() && qi.StartDate.Before(now) && qi.FinishDate.After(now)
+}
+
+func (qi CharacterSkillqueueItem) IsCompleted() bool {
+	return qi.CompletionP() == 1
+}
+
+func (qi CharacterSkillqueueItem) CompletionP() float64 {
+	d := qi.Duration()
+	if d.IsEmpty() {
+		return 0
+	}
+	duration := d.ValueOrZero()
+	now := time.Now()
+	if qi.FinishDate.Before(now) {
+		return 1
+	}
+	if qi.StartDate.After(now) {
+		return 0
+	}
+	if duration == 0 {
+		return 0
+	}
+	remaining := qi.FinishDate.Sub(now)
+	c := remaining.Seconds() / duration.Seconds()
+	base := float64(qi.LevelEndSP-qi.TrainingStartSP) / float64(qi.LevelEndSP-qi.LevelStartSP)
+	return 1 - (c * base)
+}
+
+func (qi CharacterSkillqueueItem) Duration() optional.Optional[time.Duration] {
+	if qi.StartDate.IsZero() || qi.FinishDate.IsZero() {
+		return optional.Optional[time.Duration]{}
+	}
+	return optional.New(qi.FinishDate.Sub(qi.StartDate))
+}
+
+func (qi CharacterSkillqueueItem) Remaining() optional.Optional[time.Duration] {
+	if qi.StartDate.IsZero() || qi.FinishDate.IsZero() {
+		return optional.Optional[time.Duration]{}
+	}
+	remainingP := 1 - qi.CompletionP()
+	d := qi.Duration()
+	return optional.New(time.Duration(float64(d.ValueOrZero()) * remainingP))
+}
+
+// A SSO token belonging to a character in Eve Online.
+type CharacterToken struct {
+	AccessToken  string
+	CharacterID  int32
+	ExpiresAt    time.Time
+	ID           int64
+	RefreshToken string
+	Scopes       []string
+	TokenType    string
+}
+
+// RemainsValid reports wether a token remains valid within a duration.
+func (ct CharacterToken) RemainsValid(d time.Duration) bool {
+	return ct.ExpiresAt.After(time.Now().Add(d))
+}
+
+type CharacterWalletJournalEntry struct {
+	Amount        float64
+	Balance       float64
+	CharacterID   int32
+	ContextID     int64
+	ContextIDType string
+	Date          time.Time
+	Description   string
+	FirstParty    *EveEntity
+	ID            int64
+	Reason        string
+	RefID         int64
+	RefType       string
+	SecondParty   *EveEntity
+	Tax           float64
+	TaxReceiver   *EveEntity
+}
+
+type CharacterWalletTransaction struct {
+	CharacterID   int32
+	Client        *EveEntity
+	Date          time.Time
+	EveType       *EntityShort[int32]
+	ID            int64
+	IsBuy         bool
+	IsPersonal    bool
+	JournalRefID  int64
+	Location      *EveLocationShort
+	Quantity      int32
+	TransactionID int64
+	UnitPrice     float64
 }
