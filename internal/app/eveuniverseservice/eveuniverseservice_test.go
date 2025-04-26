@@ -18,6 +18,53 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
+func TestGetAllianceESI(t *testing.T) {
+	db, st, factory := testutil.New()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := eveuniverseservice.New(eveuniverseservice.Params{
+		Storage:   st,
+		ESIClient: goesi.NewAPIClient(nil, ""),
+	})
+	ctx := context.Background()
+	t.Run("should return alliance", func(t *testing.T) {
+		// given
+		const allianceID = 42
+		factory.CreateEveEntityAlliance(app.EveEntity{ID: allianceID})
+		creator := factory.CreateEveEntityCharacter(app.EveEntity{ID: 12345})
+		creatorCorp := factory.CreateEveEntityCorporation(app.EveEntity{ID: 45678})
+		executor := factory.CreateEveEntityCorporation(app.EveEntity{ID: 98356193})
+		faction := factory.CreateEveEntity(app.EveEntity{ID: 888, Category: app.EveEntityFaction})
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v3/alliances/%d/", allianceID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"creator_corporation_id":  45678,
+				"creator_id":              12345,
+				"faction_id":              888,
+				"date_founded":            "2016-06-26T21:00:00Z",
+				"executor_corporation_id": 98356193,
+				"name":                    "C C P Alliance",
+				"ticker":                  "<C C P>",
+			}),
+		)
+		// when
+		x, err := s.GetAllianceESI(ctx, allianceID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, "C C P Alliance", x.Name)
+			assert.Equal(t, "<C C P>", x.Ticker)
+			assert.Equal(t, creator, x.Creator)
+			assert.Equal(t, creatorCorp, x.CreatorCorporation)
+			assert.Equal(t, executor, x.ExecutorCorporation)
+			assert.Equal(t, faction, x.Faction)
+			assert.Equal(t, time.Date(2016, 6, 26, 21, 0, 0, 0, time.UTC), x.DateFounded)
+		}
+	})
+}
+
 func TestGetEveAllianceCorporationsESI(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
@@ -374,20 +421,13 @@ func TestAddMissingEveEntities(t *testing.T) {
 	t.Run("can resolve missing entities", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		data := []map[string]any{
-			{"id": 47, "name": "Erik", "category": "character"},
-		}
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
 			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
-			func(req *http.Request) (*http.Response, error) {
-				resp, err := httpmock.NewJsonResponse(200, data)
-				if err != nil {
-					return httpmock.NewStringResponse(500, ""), nil
-				}
-				return resp, nil
-			},
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{"id": 47, "name": "Erik", "category": "character"},
+			}),
 		)
 		// when
 		ids, err := s.AddMissingEntities(ctx, []int32{47})
@@ -552,15 +592,14 @@ func TestAddMissingEveEntities(t *testing.T) {
 	t.Run("can deal with a mix of valid and invalid IDs", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		data := []map[string]any{
-			{"id": 47, "name": "Erik", "category": "character"},
-		}
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
 			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
 			func(req *http.Request) (*http.Response, error) {
-				resp, err := httpmock.NewJsonResponse(200, data)
+				resp, err := httpmock.NewJsonResponse(200, []map[string]any{
+					{"id": 47, "name": "Erik", "category": "character"},
+				})
 				if err != nil {
 					return httpmock.NewStringResponse(500, ""), nil
 				}
