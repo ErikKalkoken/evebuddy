@@ -21,6 +21,7 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -34,14 +35,14 @@ type EveUniverseService struct {
 	Now func() time.Time
 
 	esiClient *goesi.APIClient
-	scs       app.StatusCacheService
+	scs       *statuscacheservice.StatusCacheService
 	sfg       *singleflight.Group
 	st        *storage.Storage
 }
 
 type Params struct {
 	ESIClient          *goesi.APIClient
-	StatusCacheService app.StatusCacheService
+	StatusCacheService *statuscacheservice.StatusCacheService
 	Storage            *storage.Storage
 }
 

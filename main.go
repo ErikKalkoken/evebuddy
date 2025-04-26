@@ -228,8 +228,8 @@ func main() {
 	esiClient := goesi.NewAPIClient(rhc.StandardClient(), userAgent)
 
 	// Init StatusCache service
-	scs := statuscacheservice.New(memCache)
-	if err := scs.InitCache(context.TODO(), st); err != nil {
+	scs := statuscacheservice.New(memCache, st)
+	if err := scs.InitCache(context.Background()); err != nil {
 		slog.Error("Failed to init cache", "error", err)
 		os.Exit(1)
 	}

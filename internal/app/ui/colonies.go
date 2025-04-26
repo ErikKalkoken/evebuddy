@@ -75,7 +75,7 @@ func NewColonies(u *BaseUI) *Colonies {
 		case 5:
 			return iwidget.NewRichTextSegmentFromText(r.EvePlanet.SolarSystem.Constellation.Region.Name)
 		case 6:
-			return iwidget.NewRichTextSegmentFromText(a.u.StatusCacheService().CharacterName(r.CharacterID))
+			return iwidget.NewRichTextSegmentFromText(a.u.scs.CharacterName(r.CharacterID))
 		}
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
@@ -98,7 +98,7 @@ func (a *Colonies) update() {
 	var s string
 	var i widget.Importance
 	var total, expired int
-	planets, err := a.u.CharacterService().ListAllPlanets(context.Background())
+	planets, err := a.u.cs.ListAllPlanets(context.Background())
 	if err != nil {
 		slog.Error("Failed to refresh colonies UI", "err", err)
 		s = "ERROR"
@@ -130,7 +130,7 @@ func (a *Colonies) update() {
 }
 
 func (a *Colonies) showColony(cp *app.CharacterPlanet) {
-	characterName := a.u.StatusCacheService().CharacterName(cp.CharacterID)
+	characterName := a.u.scs.CharacterName(cp.CharacterID)
 
 	fi := []*widget.FormItem{
 		widget.NewFormItem("Planet", iwidget.NewTappableRichText(

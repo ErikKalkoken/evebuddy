@@ -122,7 +122,7 @@ func (a *OverviewLocations) update() {
 
 func (a *OverviewLocations) updateCharacters() (int, error) {
 	ctx := context.TODO()
-	mycc, err := a.u.CharacterService().ListCharacters(ctx)
+	mycc, err := a.u.cs.ListCharacters(ctx)
 	if err != nil {
 		return 0, err
 	}

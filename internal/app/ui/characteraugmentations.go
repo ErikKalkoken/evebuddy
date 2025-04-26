@@ -81,7 +81,7 @@ func (a *CharacterAugmentations) makeImplantList() *widget.List {
 			slot.SetText(fmt.Sprintf("Slot %d", o.SlotNum))
 			iconMain := row[1].(*canvas.Image)
 			iwidget.RefreshImageAsync(iconMain, func() (fyne.Resource, error) {
-				return a.u.EveImageService().InventoryTypeIcon(o.EveType.ID, app.IconPixelSize)
+				return a.u.eis.InventoryTypeIcon(o.EveType.ID, app.IconPixelSize)
 			})
 		})
 
@@ -119,7 +119,7 @@ func (a *CharacterAugmentations) updateImplants() error {
 		a.implants = make([]*app.CharacterImplant, 0)
 		return nil
 	}
-	implants, err := a.u.CharacterService().ListImplants(context.TODO(), a.u.CurrentCharacterID())
+	implants, err := a.u.cs.ListImplants(context.TODO(), a.u.CurrentCharacterID())
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func (a *CharacterAugmentations) updateImplants() error {
 }
 
 func (a *CharacterAugmentations) makeTopText() (string, widget.Importance) {
-	hasData := a.u.StatusCacheService().CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
+	hasData := a.u.scs.CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

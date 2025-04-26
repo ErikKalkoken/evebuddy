@@ -18,6 +18,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
+	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/anthonynsimon/bild/effect"
 
@@ -124,7 +126,7 @@ func (a *CharacterFlyableShips) makeShipsGrid() *widget.GridWrap {
 			return len(a.ships)
 		},
 		func() fyne.CanvasObject {
-			return NewShipItem(a.u.EveImageService(), a.u.MemCache(), icons.QuestionmarkSvg)
+			return NewShipItem(a.u.eis, a.u.memcache, icons.QuestionmarkSvg)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.ships) {
@@ -147,7 +149,7 @@ func (a *CharacterFlyableShips) makeShipsGrid() *widget.GridWrap {
 
 func (a *CharacterFlyableShips) update() {
 	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
-		exists := a.u.StatusCacheService().GeneralSectionExists(app.SectionEveCategories)
+		exists := a.u.scs.GeneralSectionExists(app.SectionEveCategories)
 		if !exists {
 			return "Waiting for universe data to be loaded...", widget.WarningImportance, false, nil
 		}
@@ -190,7 +192,7 @@ func (a *CharacterFlyableShips) updateEntries() error {
 		return nil
 	}
 	search := fmt.Sprintf("%%%s%%", a.searchBox.Text)
-	oo, err := a.u.CharacterService().ListShipsAbilities(context.Background(), characterID, search)
+	oo, err := a.u.cs.ListShipsAbilities(context.Background(), characterID, search)
 	if err != nil {
 		return err
 	}
@@ -240,11 +242,11 @@ func (a *CharacterFlyableShips) makeTopText() (string, widget.Importance, bool, 
 		return "No character", widget.LowImportance, false, nil
 	}
 	characterID := a.u.CurrentCharacterID()
-	hasData := a.u.StatusCacheService().CharacterSectionExists(characterID, app.SectionSkills)
+	hasData := a.u.scs.CharacterSectionExists(characterID, app.SectionSkills)
 	if !hasData {
 		return "Waiting for skills to be loaded...", widget.WarningImportance, false, nil
 	}
-	oo, err := a.u.CharacterService().ListShipsAbilities(context.Background(), characterID, "%%")
+	oo, err := a.u.cs.ListShipsAbilities(context.Background(), characterID, "%%")
 	if err != nil {
 		return "", 0, false, err
 	}
@@ -263,14 +265,14 @@ func (a *CharacterFlyableShips) makeTopText() (string, widget.Importance, bool, 
 type ShipItem struct {
 	widget.BaseWidget
 
-	cache        app.CacheService
+	cache        *memcache.Cache
 	fallbackIcon fyne.Resource
 	image        *canvas.Image
 	label        *widget.Label
-	sv           app.EveImageService
+	eis          *eveimageservice.EveImageService
 }
 
-func NewShipItem(sv app.EveImageService, cache app.CacheService, fallbackIcon fyne.Resource) *ShipItem {
+func NewShipItem(eis *eveimageservice.EveImageService, cache *memcache.Cache, fallbackIcon fyne.Resource) *ShipItem {
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{128, 128}
 	image := canvas.NewImageFromImage(image.NewRGBA(image.Rectangle{upLeft, lowRight}))
@@ -281,7 +283,7 @@ func NewShipItem(sv app.EveImageService, cache app.CacheService, fallbackIcon fy
 		image:        image,
 		label:        widget.NewLabel("First line\nSecond Line\nThird Line"),
 		fallbackIcon: fallbackIcon,
-		sv:           sv,
+		eis:          eis,
 		cache:        cache,
 	}
 	w.ExtendBaseWidget(w)
@@ -306,7 +308,7 @@ func (w *ShipItem) Set(typeID int32, label string, canFly bool) {
 		var img *image.RGBA
 		y, ok := w.cache.Get(key)
 		if !ok {
-			r, err := w.sv.InventoryTypeRender(typeID, 256)
+			r, err := w.eis.InventoryTypeRender(typeID, 256)
 			if err != nil {
 				slog.Error("failed to fetch image for ship render", "error", err)
 				return

@@ -175,7 +175,7 @@ func (a *ManageCharacters) showDeleteDialog(c accountCharacter) {
 					"Deleting character",
 					fmt.Sprintf("Deleting %s...", c.name),
 					func() error {
-						err := a.u.CharacterService().DeleteCharacter(context.TODO(), c.id)
+						err := a.u.cs.DeleteCharacter(context.TODO(), c.id)
 						if err != nil {
 							return err
 						}
@@ -204,14 +204,14 @@ func (a *ManageCharacters) showDeleteDialog(c accountCharacter) {
 }
 
 func (a *ManageCharacters) Refresh() {
-	cc, err := a.u.CharacterService().ListCharactersShort(context.TODO())
+	cc, err := a.u.cs.ListCharactersShort(context.TODO())
 	if err != nil {
 		slog.Error("account refresh", "error", err)
 		return
 	}
 	cc2 := make([]accountCharacter, len(cc))
 	for i, c := range cc {
-		hasToken, err := a.u.CharacterService().HasTokenWithScopes(context.Background(), c.ID)
+		hasToken, err := a.u.cs.HasTokenWithScopes(context.Background(), c.ID)
 		if err != nil {
 			slog.Error("Tried to check if character has token", "err", err)
 			hasToken = true // do not report error when state is unclear
@@ -242,7 +242,7 @@ func (a *ManageCharacters) ShowAddCharacterDialog() {
 	d1.SetOnClosed(cancel)
 	go func() {
 		err := func() error {
-			characterID, err := a.u.CharacterService().UpdateOrCreateCharacterFromSSO(cancelCTX, infoText)
+			characterID, err := a.u.cs.UpdateOrCreateCharacterFromSSO(cancelCTX, infoText)
 			if errors.Is(err, app.ErrAborted) {
 				return nil
 			} else if err != nil {

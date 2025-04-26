@@ -24,6 +24,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
@@ -58,9 +60,9 @@ var esiScopes = []string{
 type CharacterService struct {
 	ens        *evenotification.EveNotificationService
 	esiClient  *goesi.APIClient
-	eus        app.EveUniverseService
+	eus        *eveuniverseservice.EveUniverseService
 	httpClient *http.Client
-	scs        app.StatusCacheService
+	scs        *statuscacheservice.StatusCacheService
 	sfg        *singleflight.Group
 	sso        *sso.SSOService
 	st         *storage.Storage
@@ -68,9 +70,9 @@ type CharacterService struct {
 
 type Params struct {
 	EveNotificationService *evenotification.EveNotificationService
-	EveUniverseService     app.EveUniverseService
+	EveUniverseService     *eveuniverseservice.EveUniverseService
 	SSOService             *sso.SSOService
-	StatusCacheService     app.StatusCacheService
+	StatusCacheService     *statuscacheservice.StatusCacheService
 	Storage                *storage.Storage
 	// optional
 	HttpClient *http.Client
@@ -344,7 +346,7 @@ func (s *CharacterService) DeleteCharacter(ctx context.Context, id int32) error 
 		return err
 	}
 	slog.Info("Character deleted", "characterID", id)
-	return s.scs.UpdateCharacters(ctx, s.st)
+	return s.scs.UpdateCharacters(ctx)
 }
 
 // EnableTrainingWatcher enables training watcher for a character when it has an active training queue.
@@ -478,7 +480,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 	if err := s.st.UpdateOrCreateCharacterToken(ctx, &token); err != nil {
 		return 0, err
 	}
-	if err := s.scs.UpdateCharacters(ctx, s.st); err != nil {
+	if err := s.scs.UpdateCharacters(ctx); err != nil {
 		return 0, err
 	}
 	return token.CharacterID, nil

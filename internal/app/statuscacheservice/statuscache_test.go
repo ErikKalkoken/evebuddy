@@ -17,7 +17,7 @@ func TestStatusCache(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
 	cache := memcache.New()
-	sc := statuscacheservice.New(cache)
+	sc := statuscacheservice.New(cache, st)
 	ctx := context.TODO()
 	t.Run("Can init a status cache with character and general sections", func(t *testing.T) {
 		// given
@@ -35,7 +35,7 @@ func TestStatusCache(t *testing.T) {
 			Section: section2,
 		})
 		// when
-		err := sc.InitCache(ctx, st)
+		err := sc.InitCache(ctx)
 		// then
 		if assert.NoError(t, err) {
 			x2, ok := sc.CharacterSectionGet(c.ID, section1)
@@ -103,7 +103,7 @@ func TestStatusCache(t *testing.T) {
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Bruce"})
 		c := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
 		// when
-		if err := sc.UpdateCharacters(ctx, st); err != nil {
+		if err := sc.UpdateCharacters(ctx); err != nil {
 			t.Fatal(err)
 		}
 		xx := sc.ListCharacters()
@@ -122,7 +122,7 @@ func TestStatusCache(t *testing.T) {
 			CharacterID: c.ID,
 			Section:     section,
 		})
-		if err := sc.InitCache(ctx, st); err != nil {
+		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
 		}
 		// when/then
@@ -138,7 +138,7 @@ func TestStatusCache(t *testing.T) {
 		factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 			Section: section,
 		})
-		if err := sc.InitCache(ctx, st); err != nil {
+		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
 		}
 		// when/then
@@ -148,7 +148,7 @@ func TestStatusCache(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		cache.Clear()
-		if err := sc.InitCache(ctx, st); err != nil {
+		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
 		}
 		// when/then
@@ -160,7 +160,7 @@ func TestStatusCacheSummary(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
 	cache := memcache.New()
-	sc := statuscacheservice.New(cache)
+	sc := statuscacheservice.New(cache, st)
 	ctx := context.TODO()
 	t.Run("should report when all sections are up-to-date", func(t *testing.T) {
 		// given
@@ -188,7 +188,7 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.GeneralSectionSet(o)
 		}
-		if err := sc.InitCache(ctx, st); err != nil {
+		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
 		}
 		// when
@@ -224,7 +224,7 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.GeneralSectionSet(o)
 		}
-		if err := sc.InitCache(ctx, st); err != nil {
+		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
 		}
 		o := &app.CharacterSectionStatus{
@@ -266,7 +266,7 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.GeneralSectionSet(o)
 		}
-		if err := sc.InitCache(ctx, st); err != nil {
+		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
 		}
 		o := &app.GeneralSectionStatus{
@@ -308,7 +308,7 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.GeneralSectionSet(o)
 		}
-		if err := sc.InitCache(ctx, st); err != nil {
+		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
 		}
 		// when
@@ -346,7 +346,7 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.GeneralSectionSet(o)
 		}
-		if err := sc.InitCache(ctx, st); err != nil {
+		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
 		}
 		// when
@@ -384,7 +384,7 @@ func TestStatusCacheSummary(t *testing.T) {
 				sc.GeneralSectionSet(o)
 			}
 		}
-		if err := sc.InitCache(ctx, st); err != nil {
+		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
 		}
 		o := &app.CharacterSectionStatus{
@@ -426,7 +426,7 @@ func TestStatusCacheSummary(t *testing.T) {
 				sc.GeneralSectionSet(o)
 			}
 		}
-		if err := sc.InitCache(ctx, st); err != nil {
+		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
 		}
 		o := &app.GeneralSectionStatus{

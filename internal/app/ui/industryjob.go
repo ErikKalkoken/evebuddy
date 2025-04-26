@@ -93,7 +93,7 @@ func (a *IndustryJobs) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *IndustryJobs) update() {
-	jobs, err := a.u.CharacterService().ListAllCharacterIndustryJob(context.TODO())
+	jobs, err := a.u.cs.ListAllCharacterIndustryJob(context.TODO())
 	if err != nil {
 		slog.Error("Failed to refresh industry jobs UI", "err", err)
 		fyne.Do(func() {
@@ -203,7 +203,7 @@ func (a *IndustryJobs) showJob(r *app.CharacterIndustryJob) {
 			a.u.ShowEveEntityInfoWindow(r.Installer)
 		})),
 		widget.NewFormItem("Owner", newTappableLabelWithWrap(
-			a.u.StatusCacheService().CharacterName(r.CharacterID),
+			a.u.scs.CharacterName(r.CharacterID),
 			func() {
 				a.u.ShowInfoWindow(app.EveEntityCharacter, r.CharacterID)
 			},

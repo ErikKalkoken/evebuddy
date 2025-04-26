@@ -346,7 +346,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 
 	// more destination
 	var moreNav *iwidget.Navigator
-	makeSettingsMenu := func(actions []app.SettingAction) (fyne.Resource, *fyne.Menu) {
+	makeSettingsMenu := func(actions []settingAction) (fyne.Resource, *fyne.Menu) {
 		items := make([]*fyne.MenuItem, 0)
 		for _, a := range actions {
 			items = append(items, fyne.NewMenuItem(a.Label, a.Action))
@@ -388,7 +388,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		"Notifications",
 		func() {
 			u.userSettings.OnCommunicationGroupSelected = func(
-				title string, content fyne.CanvasObject, actions []app.SettingAction,
+				title string, content fyne.CanvasObject, actions []settingAction,
 			) {
 				moreNav.Push(iwidget.NewAppBar(
 					title,
@@ -510,7 +510,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		tickerUpdateStatus := time.NewTicker(5 * time.Second)
 		go func() {
 			for {
-				x := u.StatusCacheService().Summary()
+				x := u.scs.Summary()
 				fyne.Do(func() {
 					u.navItemUpdateStatus.Supporting = x.Display()
 					toolsList.Refresh()

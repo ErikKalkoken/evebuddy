@@ -39,7 +39,7 @@ func NewCharacterSendMail(u *BaseUI, c *app.Character, mode app.SendMailMode, m 
 	}
 	a.ExtendBaseWidget(a)
 
-	a.from = NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.EveImageService())
+	a.from = NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.eis)
 	a.from.ShowInfoWindow = u.ShowEveEntityInfoWindow
 	a.from.Set([]*app.EveEntity{{ID: c.ID, Name: c.EveCharacter.Name, Category: app.EveEntityCharacter}})
 	a.from.Disable()
@@ -49,7 +49,7 @@ func NewCharacterSendMail(u *BaseUI, c *app.Character, mode app.SendMailMode, m 
 			a.to.Add(ee)
 		}, a.w)
 	})
-	a.to = NewEveEntityEntry(toButton, labelWith, u.EveImageService())
+	a.to = NewEveEntityEntry(toButton, labelWith, u.eis)
 	a.to.ShowInfoWindow = u.ShowEveEntityInfoWindow
 	a.to.Placeholder = "Tap To-Button to add recipients..."
 
@@ -119,7 +119,7 @@ func (a *CharacterSendMail) SendAction() bool {
 		return false
 	}
 	ctx := context.Background()
-	_, err := a.u.CharacterService().SendMail(
+	_, err := a.u.cs.SendMail(
 		ctx,
 		a.character.ID,
 		a.subject.Text,
@@ -174,7 +174,7 @@ func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEnti
 			row[0].(*widget.Label).SetText(ee.Name)
 			image := row[1].(*canvas.Image)
 			iwidget.RefreshImageAsync(image, func() (fyne.Resource, error) {
-				res, err := FetchEveEntityAvatar(u.EveImageService(), ee, fallbackIcon)
+				res, err := FetchEveEntityAvatar(u.eis, ee, fallbackIcon)
 				if err != nil {
 					return fallbackIcon, err
 				}
@@ -209,7 +209,7 @@ func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEnti
 		}
 		go func() {
 			var err error
-			results, err = u.EveUniverseService().ListEntitiesByPartialName(context.Background(), search)
+			results, err = u.eus.ListEntitiesByPartialName(context.Background(), search)
 			if err != nil {
 				fyne.Do(func() {
 					showErrorDialog(search, err)
@@ -222,7 +222,7 @@ func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEnti
 		}()
 		go func() {
 			ctx := context.Background()
-			missingIDs, err := u.CharacterService().AddEveEntitiesFromSearchESI(
+			missingIDs, err := u.cs.AddEveEntitiesFromSearchESI(
 				ctx,
 				characterID,
 				search,
@@ -236,7 +236,7 @@ func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEnti
 			if len(missingIDs) == 0 {
 				return // no need to update when not changed
 			}
-			results, err = u.EveUniverseService().ListEntitiesByPartialName(ctx, search)
+			results, err = u.eus.ListEntitiesByPartialName(ctx, search)
 			if err != nil {
 				fyne.Do(func() {
 					showErrorDialog(search, err)

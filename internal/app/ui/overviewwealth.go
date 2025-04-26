@@ -167,21 +167,21 @@ type dataRow struct {
 
 func (a *OverviewWealth) compileData() ([]dataRow, int, error) {
 	ctx := context.TODO()
-	cc, err := a.u.CharacterService().ListCharacters(ctx)
+	cc, err := a.u.cs.ListCharacters(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
 	selected := make([]*app.Character, 0)
 	for _, c := range cc {
-		hasAssets := a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionAssets)
-		hasWallet := a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionWalletBalance)
+		hasAssets := a.u.scs.CharacterSectionExists(c.ID, app.SectionAssets)
+		hasWallet := a.u.scs.CharacterSectionExists(c.ID, app.SectionWalletBalance)
 		if hasAssets && hasWallet {
 			selected = append(selected, c)
 		}
 	}
 	data := make([]dataRow, 0)
 	for _, c := range selected {
-		assetTotal, err := a.u.CharacterService().AssetTotalValue(ctx, c.ID)
+		assetTotal, err := a.u.cs.AssetTotalValue(ctx, c.ID)
 		if err != nil {
 			return nil, 0, err
 		}

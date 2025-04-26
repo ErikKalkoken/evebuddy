@@ -96,10 +96,10 @@ func (a *CharacterSheet) update() {
 		}
 	})
 	iwidget.RefreshTappableImageAsync(a.portrait, func() (fyne.Resource, error) {
-		return a.u.EveImageService().CharacterPortrait(c.ID, 512)
+		return a.u.eis.CharacterPortrait(c.ID, 512)
 	})
 	iwidget.RefreshTappableImageAsync(a.corporationLogo, func() (fyne.Resource, error) {
-		return a.u.EveImageService().CorporationLogo(c.EveCharacter.Corporation.ID, app.IconPixelSize)
+		return a.u.eis.CorporationLogo(c.EveCharacter.Corporation.ID, app.IconPixelSize)
 	})
 	fyne.Do(func() {
 		if c.Home == nil {
@@ -133,7 +133,7 @@ func (a *CharacterSheet) update() {
 	})
 	if c.EveCharacter.Alliance != nil {
 		iwidget.RefreshTappableImageAsync(a.allianceLogo, func() (fyne.Resource, error) {
-			return a.u.EveImageService().AllianceLogo(c.EveCharacter.Alliance.ID, app.IconPixelSize)
+			return a.u.eis.AllianceLogo(c.EveCharacter.Alliance.ID, app.IconPixelSize)
 		})
 	}
 	fyne.Do(func() {
@@ -148,7 +148,7 @@ func (a *CharacterSheet) update() {
 	})
 	if c.EveCharacter.Faction != nil {
 		iwidget.RefreshTappableImageAsync(a.factionLogo, func() (fyne.Resource, error) {
-			return a.u.EveImageService().FactionLogo(c.EveCharacter.Faction.ID, app.IconPixelSize)
+			return a.u.eis.FactionLogo(c.EveCharacter.Faction.ID, app.IconPixelSize)
 		})
 	}
 }

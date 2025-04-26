@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/antihax/goesi/notification"
@@ -20,22 +21,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type EveUniverseService interface {
-	GetOrCreateEntityESI(ctx context.Context, id int32) (*app.EveEntity, error)
-	GetOrCreateMoonESI(ctx context.Context, id int32) (*app.EveMoon, error)
-	GetOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error)
-	GetOrCreatePlanetESI(ctx context.Context, id int32) (*app.EvePlanet, error)
-	GetOrCreateSolarSystemESI(ctx context.Context, id int32) (*app.EveSolarSystem, error)
-	GetOrCreateTypeESI(ctx context.Context, id int32) (*app.EveType, error)
-	ToEntities(ctx context.Context, ids []int32) (map[int32]*app.EveEntity, error)
-}
-
 // EveNotificationService is a service for rendering notifications.
 type EveNotificationService struct {
-	eus EveUniverseService
+	eus *eveuniverseservice.EveUniverseService
 }
 
-func New(eus EveUniverseService) *EveNotificationService {
+func New(eus *eveuniverseservice.EveUniverseService) *EveNotificationService {
 	s := &EveNotificationService{eus: eus}
 	return s
 }

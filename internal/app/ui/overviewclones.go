@@ -237,7 +237,7 @@ func (a *OverviewClones) update() {
 
 func (a *OverviewClones) updateRows() error {
 	ctx := context.Background()
-	oo, err := a.u.CharacterService().ListAllJumpClones(ctx)
+	oo, err := a.u.cs.ListAllJumpClones(ctx)
 	if err != nil {
 		return err
 	}
@@ -268,7 +268,7 @@ func (a *OverviewClones) updateRoutes(flag app.RoutePreference) {
 			defer wg.Done()
 			dest := o.c.Location.SolarSystem
 			origin := a.origin
-			j, err := a.u.EveUniverseService().GetRouteESI(ctx, dest, origin, flag)
+			j, err := a.u.eus.GetRouteESI(ctx, dest, origin, flag)
 			if err != nil {
 				slog.Error("Failed to get route", "origin", origin.ID, "destination", dest.ID, "error", err)
 				return
@@ -319,7 +319,7 @@ func (a *OverviewClones) changeOrigin(w fyne.Window) {
 			return
 		}
 		r := results[id]
-		s, err := a.u.EveUniverseService().GetOrCreateSolarSystemESI(context.Background(), r.ID)
+		s, err := a.u.eus.GetOrCreateSolarSystemESI(context.Background(), r.ID)
 		if err != nil {
 			showErrorDialog("Could not load solar system", err)
 			return
@@ -347,7 +347,7 @@ func (a *OverviewClones) changeOrigin(w fyne.Window) {
 		}
 		go func() {
 			ctx := context.Background()
-			ee, _, err := a.u.CharacterService().SearchESI(
+			ee, _, err := a.u.cs.SearchESI(
 				ctx,
 				a.u.CurrentCharacterID(),
 				search,
@@ -518,7 +518,7 @@ func (a *OverviewClones) showRoute(r cloneSearchRow) {
 }
 
 func (a *OverviewClones) showClone(r cloneSearchRow) {
-	clone, err := a.u.CharacterService().GetJumpClone(context.Background(), r.c.Character.ID, r.c.CloneID)
+	clone, err := a.u.cs.GetJumpClone(context.Background(), r.c.Character.ID, r.c.CloneID)
 	if err != nil {
 		slog.Error("show clone", "error", err)
 		a.u.ShowErrorDialog("failed to load clone", err, a.u.MainWindow())
@@ -551,7 +551,7 @@ func (a *OverviewClones) showClone(r cloneSearchRow) {
 			border := co.(*fyne.Container).Objects
 			icon := border[1].(*canvas.Image)
 			iwidget.RefreshImageAsync(icon, func() (fyne.Resource, error) {
-				return a.u.EveImageService().InventoryTypeIcon(im.EveType.ID, app.IconPixelSize)
+				return a.u.eis.InventoryTypeIcon(im.EveType.ID, app.IconPixelSize)
 			})
 			name := border[0]
 			name.(*widget.Label).SetText(im.EveType.Name)

@@ -28,12 +28,3 @@ deploy-android:
 
 install-android:
 	adb install -r -d EVE_Buddy.apk
-
-interface_settings:
-	ifacemaker -s Settings -i Settings -p app -f internal/app/settings/settings.go -o internal/app/settings.go
-
-interfaces:
-	ifacemaker -s BaseUI -i UI -p app -f internal/app/ui/ui.go -o internal/app/ui.go
-	interface_settings
-	ifacemaker -s EveUniverseService -i EveUniverseService -p app -o internal/app/eveuniverseservice.go -f internal/app/eveuniverseservice/eveuniverseservice.go
-	ifacemaker -s CharacterService -i CharacterService -p app -o internal/app/characterservice.go -f internal/app/characterservice/characterservice.go

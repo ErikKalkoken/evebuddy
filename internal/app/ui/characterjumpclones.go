@@ -119,7 +119,7 @@ func (a *CharacterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 				spacer.Show()
 			} else {
 				iwidget.RefreshImageAsync(iconMain, func() (fyne.Resource, error) {
-					return a.u.EveImageService().InventoryTypeIcon(n.implantTypeID, app.IconPixelSize)
+					return a.u.eis.InventoryTypeIcon(n.implantTypeID, app.IconPixelSize)
 				})
 				main.SetText(n.implantTypeName)
 				prefix.Hide()
@@ -168,7 +168,7 @@ func (a *CharacterJumpClones) newTreeData() (*iwidget.TreeData[jumpCloneNode], e
 		return tree, nil
 	}
 	ctx := context.Background()
-	clones, err := a.u.CharacterService().ListJumpClones(ctx, a.u.CurrentCharacterID())
+	clones, err := a.u.cs.ListJumpClones(ctx, a.u.CurrentCharacterID())
 	if err != nil {
 		return tree, err
 	}
@@ -220,7 +220,7 @@ func (a *CharacterJumpClones) RefreshTop() {
 		})
 		return
 	}
-	hasData := a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionJumpClones)
+	hasData := a.u.scs.CharacterSectionExists(c.ID, app.SectionJumpClones)
 	if !hasData {
 		s.Text = "Waiting for character data to be loaded..."
 		s.Style.ColorName = theme.ColorNameWarning

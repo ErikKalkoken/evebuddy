@@ -280,7 +280,7 @@ func (a *OverviewAssets) update() {
 
 func (a *OverviewAssets) loadData() (bool, error) {
 	ctx := context.Background()
-	cc, err := a.u.CharacterService().ListCharactersShort(ctx)
+	cc, err := a.u.cs.ListCharactersShort(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -292,11 +292,11 @@ func (a *OverviewAssets) loadData() (bool, error) {
 		m2[o.ID] = o.Name
 	}
 	a.characterNames = m2
-	assets, err := a.u.CharacterService().ListAllAssets(ctx)
+	assets, err := a.u.cs.ListAllAssets(ctx)
 	if err != nil {
 		return false, err
 	}
-	locations, err := a.u.EveUniverseService().ListLocations(ctx)
+	locations, err := a.u.eus.ListLocations(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -350,10 +350,10 @@ func (a *OverviewAssets) updateFoundInfo() {
 }
 
 func (a *OverviewAssets) characterCount() int {
-	cc := a.u.StatusCacheService().ListCharacters()
+	cc := a.u.scs.ListCharacters()
 	validCount := 0
 	for _, c := range cc {
-		if a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionAssets) {
+		if a.u.scs.CharacterSectionExists(c.ID, app.SectionAssets) {
 			validCount++
 		}
 	}

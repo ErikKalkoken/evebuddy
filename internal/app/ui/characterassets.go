@@ -165,13 +165,13 @@ func (a *CharacterAssets) makeAssetGrid() *widget.GridWrap {
 				iwidget.RefreshImageAsync(image, func() (fyne.Resource, error) {
 					switch ca.Variant() {
 					case app.VariantSKIN:
-						return a.u.EveImageService().InventoryTypeSKIN(ca.Type.ID, app.IconPixelSize)
+						return a.u.eis.InventoryTypeSKIN(ca.Type.ID, app.IconPixelSize)
 					case app.VariantBPO:
-						return a.u.EveImageService().InventoryTypeBPO(ca.Type.ID, app.IconPixelSize)
+						return a.u.eis.InventoryTypeBPO(ca.Type.ID, app.IconPixelSize)
 					case app.VariantBPC:
-						return a.u.EveImageService().InventoryTypeBPC(ca.Type.ID, app.IconPixelSize)
+						return a.u.eis.InventoryTypeBPC(ca.Type.ID, app.IconPixelSize)
 					default:
-						return a.u.EveImageService().InventoryTypeIcon(ca.Type.ID, app.IconPixelSize)
+						return a.u.eis.InventoryTypeIcon(ca.Type.ID, app.IconPixelSize)
 					}
 				})
 			})
@@ -261,11 +261,11 @@ func (a *CharacterAssets) makeLocationData() (*iwidget.TreeData[locationNode], e
 	}
 	characterID := a.u.CurrentCharacterID()
 	ctx := context.Background()
-	assets, err := a.u.CharacterService().ListAssets(ctx, characterID)
+	assets, err := a.u.cs.ListAssets(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
-	locations, err := a.u.EveUniverseService().ListLocations(ctx)
+	locations, err := a.u.eus.ListLocations(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -486,7 +486,7 @@ func (a *CharacterAssets) makeTopText(total int) (string, widget.Importance) {
 	if c == nil {
 		return "No character", widget.LowImportance
 	}
-	hasData := a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionAssets)
+	hasData := a.u.scs.CharacterSectionExists(c.ID, app.SectionAssets)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
@@ -512,11 +512,11 @@ func (a *CharacterAssets) selectLocation(location locationNode) error {
 	var f func(context.Context, int32, int64) ([]*app.CharacterAsset, error)
 	switch location.variant {
 	case nodeShipHangar:
-		f = a.u.CharacterService().ListAssetsInShipHangar
+		f = a.u.cs.ListAssetsInShipHangar
 	case nodeItemHangar:
-		f = a.u.CharacterService().ListAssetsInItemHangar
+		f = a.u.cs.ListAssetsInItemHangar
 	default:
-		f = a.u.CharacterService().ListAssetsInLocation
+		f = a.u.cs.ListAssetsInLocation
 	}
 	assets, err := f(context.Background(), location.characterID, location.containerID)
 	if err != nil {

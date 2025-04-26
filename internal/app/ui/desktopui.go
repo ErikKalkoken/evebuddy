@@ -315,7 +315,7 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 	u.MainWindow().SetContent(mainContent)
 
 	// system tray menu
-	if u.Settings().SysTrayEnabled() {
+	if u.settings.SysTrayEnabled() {
 		name := u.appName()
 		item := fyne.NewMenuItem(name, nil)
 		item.Disabled = true
@@ -355,7 +355,7 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 		}()
 	}
 	u.onShowAndRun = func() {
-		u.MainWindow().Resize(u.Settings().WindowSize())
+		u.MainWindow().Resize(u.settings.WindowSize())
 	}
 	u.onAppFirstStarted = func() {
 		go statusBar.startUpdateTicker()
@@ -375,14 +375,14 @@ func (u *DesktopUI) saveAppState() {
 	if u.MainWindow() == nil || u.App() == nil {
 		slog.Warn("Failed to save app state")
 	}
-	u.Settings().SetWindowSize(u.MainWindow().Canvas().Size())
+	u.settings.SetWindowSize(u.MainWindow().Canvas().Size())
 	slog.Debug("Saved app state")
 }
 
 func (u *DesktopUI) ResetDesktopSettings() {
-	u.Settings().ResetTabsMainID()
-	u.Settings().ResetWindowSize()
-	u.Settings().ResetSysTrayEnabled()
+	u.settings.ResetTabsMainID()
+	u.settings.ResetWindowSize()
+	u.settings.ResetSysTrayEnabled()
 }
 
 func (u *DesktopUI) ShowSettingsWindow() {

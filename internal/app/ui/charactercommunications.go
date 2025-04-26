@@ -156,7 +156,7 @@ func (a *CharacterCommunications) makeNotificationList() *widget.List {
 			return len(a.notifications)
 		},
 		func() fyne.CanvasObject {
-			return NewMailHeaderItem(a.u.EveImageService())
+			return NewMailHeaderItem(a.u.eis)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.notifications) {
@@ -205,7 +205,7 @@ func (a *CharacterCommunications) update() {
 	var groupCounts map[app.NotificationGroup][]int
 	if characterID := a.u.CurrentCharacterID(); characterID != 0 {
 		var err error
-		groupCounts, err = a.u.CharacterService().CountNotifications(context.Background(), characterID)
+		groupCounts, err = a.u.cs.CountNotifications(context.Background(), characterID)
 		if err != nil {
 			slog.Error("communications update", "error", err)
 		}
@@ -258,7 +258,7 @@ func (a *CharacterCommunications) update() {
 }
 
 func (a *CharacterCommunications) makeFolderTopText() (string, widget.Importance) {
-	hasData := a.u.StatusCacheService().CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
+	hasData := a.u.scs.CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for data to load...", widget.WarningImportance
 	}
@@ -276,11 +276,11 @@ func (a *CharacterCommunications) setCurrentFolder(nc app.NotificationGroup) {
 	var err error
 	switch nc {
 	case app.GroupAll:
-		notifications, err = a.u.CharacterService().ListNotificationsAll(ctx, characterID)
+		notifications, err = a.u.cs.ListNotificationsAll(ctx, characterID)
 	case app.GroupUnread:
-		notifications, err = a.u.CharacterService().ListNotificationsUnread(ctx, characterID)
+		notifications, err = a.u.cs.ListNotificationsUnread(ctx, characterID)
 	default:
-		notifications, err = a.u.CharacterService().ListNotificationsTypes(ctx, characterID, nc)
+		notifications, err = a.u.cs.ListNotificationsTypes(ctx, characterID, nc)
 	}
 	a.notifications = notifications
 	var top string
@@ -313,7 +313,7 @@ func (a *CharacterCommunications) setDetail(n *app.CharacterNotification) {
 	subject := iwidget.NewLabelWithSize(n.TitleDisplay(), theme.SizeNameSubHeadingText)
 	subject.Wrapping = fyne.TextWrapWord
 	a.Detail.Add(subject)
-	h := NewMailHeader(a.u.EveImageService(), a.u.ShowEveEntityInfoWindow)
+	h := NewMailHeader(a.u.eis, a.u.ShowEveEntityInfoWindow)
 	h.Set(n.Sender, n.Timestamp, a.u.currentCharacter().EveCharacter.ToEveEntity())
 	a.Detail.Add(h)
 	s, err := n.BodyPlain() // using markdown blocked by #61
