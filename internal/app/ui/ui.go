@@ -36,6 +36,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
+	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -119,7 +120,7 @@ type BaseUI struct {
 	isStartupCompleted atomic.Bool // whether the app has completed startup (for testing)
 	isUpdateDisabled   bool        // Whether to disable update tickers (useful for debugging)
 	js                 *janiceservice.JaniceService
-	memcache           app.CacheService
+	memcache           *memcache.Cache
 	scs                *statuscacheservice.StatusCacheService
 	settings           *settings.Settings
 	snackbar           *iwidget.Snackbar
@@ -135,7 +136,7 @@ type BaseUIParams struct {
 	EveImageService    *eveimageservice.EveImageService
 	EveUniverseService *eveuniverseservice.EveUniverseService
 	JaniceService      *janiceservice.JaniceService
-	MemCache           app.CacheService
+	MemCache           *memcache.Cache
 	StatusCacheService *statuscacheservice.StatusCacheService
 	// optional
 	ClearCacheFunc   func()
@@ -277,10 +278,6 @@ func (u *BaseUI) App() fyne.App {
 
 func (u *BaseUI) ClearAllCaches() {
 	u.clearCache()
-}
-
-func (u *BaseUI) MemCache() app.CacheService {
-	return u.memcache
 }
 
 func (u *BaseUI) MainWindow() fyne.Window {

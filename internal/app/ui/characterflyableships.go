@@ -19,6 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
+	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/anthonynsimon/bild/effect"
 
@@ -125,7 +126,7 @@ func (a *CharacterFlyableShips) makeShipsGrid() *widget.GridWrap {
 			return len(a.ships)
 		},
 		func() fyne.CanvasObject {
-			return NewShipItem(a.u.eis, a.u.MemCache(), icons.QuestionmarkSvg)
+			return NewShipItem(a.u.eis, a.u.memcache, icons.QuestionmarkSvg)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.ships) {
@@ -264,14 +265,14 @@ func (a *CharacterFlyableShips) makeTopText() (string, widget.Importance, bool, 
 type ShipItem struct {
 	widget.BaseWidget
 
-	cache        app.CacheService
+	cache        *memcache.Cache
 	fallbackIcon fyne.Resource
 	image        *canvas.Image
 	label        *widget.Label
 	eis          *eveimageservice.EveImageService
 }
 
-func NewShipItem(eis *eveimageservice.EveImageService, cache app.CacheService, fallbackIcon fyne.Resource) *ShipItem {
+func NewShipItem(eis *eveimageservice.EveImageService, cache *memcache.Cache, fallbackIcon fyne.Resource) *ShipItem {
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{128, 128}
 	image := canvas.NewImageFromImage(image.NewRGBA(image.Rectangle{upLeft, lowRight}))
