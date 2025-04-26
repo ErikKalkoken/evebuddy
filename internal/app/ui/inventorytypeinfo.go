@@ -1,11 +1,13 @@
-package infowindow
+package ui
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"image/color"
+	"log/slog"
 	"slices"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -14,6 +16,9 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/dustin/go-humanize"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -122,7 +127,46 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 		requirementsTab = container.NewTabItem("Requirements", a.makeRequirementsTab())
 		tabs.Append(requirementsTab)
 	}
-	marketTab := container.NewTabItem("Market", a.makeMarketTab())
+	marketLabel := widget.NewLabel("Fetching prices...")
+	marketTab := container.NewTabItem("Market", marketLabel)
+	ctx, cancel := context.WithCancel(context.Background())
+	a.iw.onClosedFuncs = append(a.iw.onClosedFuncs, cancel)
+	go func() {
+		const (
+			priceFormat    = "#,###.##"
+			currencySuffix = " ISK"
+		)
+		ticker := time.NewTicker(60 * time.Second)
+	L:
+		for {
+			r, err := a.iw.u.js.FetchPrices(ctx, a.id)
+			if err != nil {
+				fyne.Do(func() {
+					marketLabel.Text = "Error: " + a.iw.u.humanizeError(err)
+					marketLabel.Importance = widget.DangerImportance
+					marketLabel.Refresh()
+				})
+			} else {
+				c := newAttributeList(a.iw,
+					newAttributeItem("Average price", humanize.FormatFloat(priceFormat, a.price.AveragePrice)+currencySuffix),
+					newAttributeItem("Jita sell price", humanize.FormatFloat(priceFormat, r.ImmediatePrices.SellPrice)+currencySuffix),
+					newAttributeItem("Jita buy price", humanize.FormatFloat(priceFormat, r.ImmediatePrices.BuyPrice)+currencySuffix),
+					newAttributeItem("Jita sell volume", ihumanize.Comma(r.SellVolume)),
+					newAttributeItem("Jita buy volume", ihumanize.Comma(r.BuyVolume)),
+				)
+				fyne.Do(func() {
+					marketTab.Content = c
+					tabs.Refresh()
+				})
+			}
+			select {
+			case <-ctx.Done():
+				break L
+			case <-ticker.C:
+			}
+		}
+		slog.Debug("market update type for canceled", "name", a.et.Name)
+	}()
 	tabs.Append(marketTab)
 	// Set initial tab
 	if a.iw.u.Settings().PreferMarketTab() && a.et.IsTradeable() {
@@ -175,7 +219,7 @@ func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 
 	characterIcon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
 	characterName := kxwidget.NewTappableLabel("", func() {
-		a.iw.ShowEveEntity(a.character)
+		a.iw.showEveEntity(a.character)
 	})
 	characterName.Wrapping = fyne.TextWrapWord
 	if a.character != nil {
@@ -247,15 +291,6 @@ func (a *inventoryTypeInfo) makeDescriptionTab() fyne.CanvasObject {
 	description := widget.NewLabel(s)
 	description.Wrapping = fyne.TextWrapWord
 	return container.NewVScroll(description)
-}
-
-func (a *inventoryTypeInfo) makeMarketTab() fyne.CanvasObject {
-	c := container.NewHBox(
-		widget.NewLabel("Average price"),
-		layout.NewSpacer(),
-		widget.NewLabel(ihumanize.Number(a.price.AveragePrice, 1)),
-	)
-	return container.NewVScroll(c)
 }
 
 func (a *inventoryTypeInfo) makeAttributesTab() fyne.CanvasObject {
@@ -565,6 +600,145 @@ func (a *inventoryTypeInfo) calcRequiredSkills(ctx context.Context, characterID 
 		skills = append(skills, skill)
 	}
 	return skills, nil
+}
+
+// attributeGroup represents a group of dogma attributes.
+//
+// Used for rendering the attributes and fitting tabs for inventory type info
+type attributeGroup string
+
+func (ag attributeGroup) DisplayName() string {
+	titler := cases.Title(language.English)
+	return titler.String(string(ag))
+}
+
+const (
+	attributeGroupArmor                 attributeGroup = "armor"
+	attributeGroupCapacitor             attributeGroup = "capacitor"
+	attributeGroupElectronicResistances attributeGroup = "electronic resistances"
+	attributeGroupFitting               attributeGroup = "fitting"
+	attributeGroupFighter               attributeGroup = "fighter squadron facilities"
+	attributeGroupJumpDrive             attributeGroup = "jump drive systems"
+	attributeGroupMiscellaneous         attributeGroup = "miscellaneous"
+	attributeGroupPropulsion            attributeGroup = "propulsion"
+	attributeGroupShield                attributeGroup = "shield"
+	attributeGroupStructure             attributeGroup = "structure"
+	attributeGroupTargeting             attributeGroup = "targeting"
+)
+
+// attribute groups to show in order on attributes tab
+var attributeGroups = []attributeGroup{
+	attributeGroupStructure,
+	attributeGroupArmor,
+	attributeGroupShield,
+	attributeGroupElectronicResistances,
+	attributeGroupCapacitor,
+	attributeGroupTargeting,
+	attributeGroupFighter,
+	attributeGroupJumpDrive,
+	attributeGroupPropulsion,
+	attributeGroupMiscellaneous,
+}
+
+// assignment of attributes to groups
+var attributeGroupsMap = map[attributeGroup][]int32{
+	attributeGroupStructure: {
+		app.EveDogmaAttributeStructureHitpoints,
+		app.EveDogmaAttributeCapacity,
+		app.EveDogmaAttributeDroneCapacity,
+		app.EveDogmaAttributeDroneBandwidth,
+		app.EveDogmaAttributeMass,
+		app.EveDogmaAttributeInertiaModifier,
+		app.EveDogmaAttributeStructureEMDamageResistance,
+		app.EveDogmaAttributeStructureThermalDamageResistance,
+		app.EveDogmaAttributeStructureKineticDamageResistance,
+		app.EveDogmaAttributeStructureExplosiveDamageResistance,
+	},
+	attributeGroupArmor: {
+		app.EveDogmaAttributeArmorHitpoints,
+		app.EveDogmaAttributeArmorEMDamageResistance,
+		app.EveDogmaAttributeArmorThermalDamageResistance,
+		app.EveDogmaAttributeArmorKineticDamageResistance,
+		app.EveDogmaAttributeArmorExplosiveDamageResistance,
+	},
+	attributeGroupShield: {
+		app.EveDogmaAttributeShieldCapacity,
+		app.EveDogmaAttributeShieldRechargeTime,
+		app.EveDogmaAttributeShieldEMDamageResistance,
+		app.EveDogmaAttributeShieldThermalDamageResistance,
+		app.EveDogmaAttributeShieldKineticDamageResistance,
+		app.EveDogmaAttributeShieldExplosiveDamageResistance,
+	},
+	attributeGroupElectronicResistances: {
+		app.EveDogmaAttributeCargoScanResistance,
+		app.EveDogmaAttributeCapacitorWarfareResistance,
+		app.EveDogmaAttributeSensorWarfareResistance,
+		app.EveDogmaAttributeWeaponDisruptionResistance,
+		app.EveDogmaAttributeTargetPainterResistance,
+		app.EveDogmaAttributeStasisWebifierResistance,
+		app.EveDogmaAttributeRemoteLogisticsImpedance,
+		app.EveDogmaAttributeRemoteElectronicAssistanceImpedance,
+		app.EveDogmaAttributeECMResistance,
+		app.EveDogmaAttributeCapacitorWarfareResistanceBonus,
+		app.EveDogmaAttributeStasisWebifierResistanceBonus,
+	},
+	attributeGroupCapacitor: {
+		app.EveDogmaAttributeCapacitorCapacity,
+		app.EveDogmaAttributeCapacitorRechargeTime,
+	},
+	attributeGroupTargeting: {
+		app.EveDogmaAttributeMaximumTargetingRange,
+		app.EveDogmaAttributeMaximumLockedTargets,
+		app.EveDogmaAttributeSignatureRadius,
+		app.EveDogmaAttributeScanResolution,
+		app.EveDogmaAttributeRADARSensorStrength,
+		app.EveDogmaAttributeLadarSensorStrength,
+		app.EveDogmaAttributeMagnetometricSensorStrength,
+		app.EveDogmaAttributeGravimetricSensorStrength,
+	},
+	attributeGroupPropulsion: {
+		app.EveDogmaAttributeMaxVelocity,
+		app.EveDogmaAttributeShipWarpSpeed,
+	},
+	attributeGroupJumpDrive: {
+		app.EveDogmaAttributeJumpDriveCapacitorNeed,
+		app.EveDogmaAttributeMaximumJumpRange,
+		app.EveDogmaAttributeJumpDriveFuelNeed,
+		app.EveDogmaAttributeJumpDriveConsumptionAmount,
+		app.EveDogmaAttributeFuelBayCapacity,
+	},
+	attributeGroupFighter: {
+		app.EveDogmaAttributeFighterHangarCapacity,
+		app.EveDogmaAttributeFighterSquadronLaunchTubes,
+		app.EveDogmaAttributeLightFighterSquadronLimit,
+		app.EveDogmaAttributeSupportFighterSquadronLimit,
+		app.EveDogmaAttributeHeavyFighterSquadronLimit,
+	},
+	attributeGroupFitting: {
+		app.EveDogmaAttributeCPUOutput,
+		app.EveDogmaAttributeCPUusage,
+		app.EveDogmaAttributePowergridOutput,
+		app.EveDogmaAttributeCalibration,
+		app.EveDogmaAttributeRigSlots,
+		app.EveDogmaAttributeLauncherHardpoints,
+		app.EveDogmaAttributeTurretHardpoints,
+		app.EveDogmaAttributeHighSlots,
+		app.EveDogmaAttributeMediumSlots,
+		app.EveDogmaAttributeLowSlots,
+		app.EveDogmaAttributeRigSlots,
+	},
+	attributeGroupMiscellaneous: {
+		app.EveDogmaAttributeImplantSlot,
+		app.EveDogmaAttributeCharismaModifier,
+		app.EveDogmaAttributeIntelligenceModifier,
+		app.EveDogmaAttributeMemoryModifier,
+		app.EveDogmaAttributePerceptionModifier,
+		app.EveDogmaAttributeWillpowerModifier,
+		app.EveDogmaAttributePrimaryAttribute,
+		app.EveDogmaAttributeSecondaryAttribute,
+		app.EveDogmaAttributeTrainingTimeMultiplier,
+		app.EveDogmaAttributeTechLevel,
+	},
 }
 
 func boolIconResource(ok bool) fyne.Resource {

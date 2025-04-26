@@ -59,7 +59,7 @@ func NewOverviewLocations(u *BaseUI) *OverviewLocations {
 		}
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
-	if a.u.IsDesktop() {
+	if a.u.isDesktop() {
 		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, func(c int, r *app.Character) {
 			switch c {
 			case 0:

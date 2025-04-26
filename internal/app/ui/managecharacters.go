@@ -66,7 +66,7 @@ func (a *ManageCharacters) CreateRenderer() fyne.WidgetRenderer {
 	if a.u.IsOffline() {
 		add.Disable()
 	}
-	if a.u.IsDesktop() {
+	if a.u.isDesktop() {
 		p := theme.Padding()
 		c = container.NewBorder(
 			a.title,

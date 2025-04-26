@@ -41,6 +41,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
+	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
 )
@@ -256,12 +257,18 @@ func main() {
 	})
 
 	// Init UI
+	key := os.Getenv("JANICE_API_KEY")
+	if key == "" {
+		key = fyneApp.Metadata().Custom["janiceAPIKey"]
+	}
+	slog.Info("Janice API key", "value", obfuscate(key, 4))
 	bu := ui.NewBaseUI(ui.BaseUIParams{
 		App:                fyneApp,
 		CharacterService:   cs,
 		EveImageService:    eveimageservice.New(pc, rhc.StandardClient(), *offlineFlag),
 		ESIStatusService:   esistatusservice.New(esiClient),
 		EveUniverseService: eus,
+		JaniceService:      janiceservice.New(rhc.StandardClient(), key),
 		StatusCacheService: scs,
 		MemCache:           memCache,
 		IsOffline:          *offlineFlag,
@@ -288,6 +295,15 @@ func main() {
 		u.Init()
 		u.ShowAndRun()
 	}
+}
+
+// obfuscate returns a new string of the same length as s, but only containing the last n characters from s.
+func obfuscate(s string, n int) string {
+	const X = "X"
+	if n > len(s) || n < 0 {
+		return strings.Repeat(X, len(s))
+	}
+	return strings.Repeat(X, len(s)-n) + s[len(s)-n:]
 }
 
 type realtime struct{}

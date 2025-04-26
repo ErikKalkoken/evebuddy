@@ -77,7 +77,7 @@ func NewIndustryJobs(u *BaseUI) *IndustryJobs {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 
-	if a.u.IsDesktop() {
+	if a.u.isDesktop() {
 		a.body = iwidget.MakeDataTableForDesktop(headers, &a.jobs, makeCell, func(_ int, r *app.CharacterIndustryJob) {
 			a.showJob(r)
 		})
@@ -97,7 +97,7 @@ func (a *IndustryJobs) update() {
 	if err != nil {
 		slog.Error("Failed to refresh industry jobs UI", "err", err)
 		fyne.Do(func() {
-			a.top.Text = fmt.Sprintf("ERROR: %s", ihumanize.Error(err))
+			a.top.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
 			a.top.Importance = widget.DangerImportance
 			a.top.Refresh()
 			a.top.Show()

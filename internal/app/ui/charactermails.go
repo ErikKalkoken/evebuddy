@@ -569,7 +569,7 @@ func (a *CharacterMails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func
 				}
 				m.OnError = func(err error) {
 					slog.Error("Failed to delete mail", "characterID", a.mail.CharacterID, "mailID", a.mail.MailID, "err", err)
-					a.u.ShowSnackbar(fmt.Sprintf("Failed to delete mail: %s", a.u.ErrorDisplay(err)))
+					a.u.ShowSnackbar(fmt.Sprintf("Failed to delete mail: %s", a.u.humanizeError(err)))
 				}
 				m.Start()
 			}, a.u.MainWindow())
