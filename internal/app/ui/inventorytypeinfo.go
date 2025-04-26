@@ -25,6 +25,7 @@ import (
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -56,7 +57,7 @@ type inventoryTypeInfo struct {
 	fittingData    []attributeRow
 	metaLevel      int
 	character      *app.EveEntity
-	price          *app.EveMarketPrice
+	price          optional.Optional[float64]
 	requiredSkills []requiredSkill
 	techLevel      int
 
@@ -80,16 +81,11 @@ func NewInventoryTypeInfo(iw *InfoWindow, typeID, characterID int32) (*inventory
 	if a.et == nil {
 		return nil, nil
 	}
-	p, err := iw.u.eus.GetMarketPrice(ctx, a.et.ID)
-	if errors.Is(err, app.ErrNotFound) {
-		p = nil
-	} else if err != nil {
+	p, err := iw.u.eus.MarketPrice(ctx, a.et.ID)
+	if err != nil {
 		return nil, err
-	} else if p.AveragePrice != 0 {
-		a.price = p
-	} else {
-		a.price = nil
 	}
+	a.price = p
 	oo, err := iw.u.eus.ListTypeDogmaAttributesForType(ctx, a.et.ID)
 	if err != nil {
 		return nil, err
@@ -127,49 +123,55 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 		requirementsTab = container.NewTabItem("Requirements", a.makeRequirementsTab())
 		tabs.Append(requirementsTab)
 	}
-	marketLabel := widget.NewLabel("Fetching prices...")
-	marketTab := container.NewTabItem("Market", marketLabel)
-	ctx, cancel := context.WithCancel(context.Background())
-	a.iw.onClosedFuncs = append(a.iw.onClosedFuncs, cancel)
-	go func() {
-		const (
-			priceFormat    = "#,###.##"
-			currencySuffix = " ISK"
-		)
-		ticker := time.NewTicker(60 * time.Second)
-	L:
-		for {
-			r, err := a.iw.u.js.FetchPrices(ctx, a.id)
-			if err != nil {
-				fyne.Do(func() {
-					marketLabel.Text = "Error: " + a.iw.u.humanizeError(err)
-					marketLabel.Importance = widget.DangerImportance
-					marketLabel.Refresh()
-				})
-			} else {
-				c := newAttributeList(a.iw,
-					newAttributeItem("Average price", humanize.FormatFloat(priceFormat, a.price.AveragePrice)+currencySuffix),
-					newAttributeItem("Jita sell price", humanize.FormatFloat(priceFormat, r.ImmediatePrices.SellPrice)+currencySuffix),
-					newAttributeItem("Jita buy price", humanize.FormatFloat(priceFormat, r.ImmediatePrices.BuyPrice)+currencySuffix),
-					newAttributeItem("Jita sell volume", ihumanize.Comma(r.SellVolume)),
-					newAttributeItem("Jita buy volume", ihumanize.Comma(r.BuyVolume)),
-				)
-				fyne.Do(func() {
-					marketTab.Content = c
-					tabs.Refresh()
-				})
+	var marketTab *container.TabItem
+	if a.et.IsTradeable() {
+		marketLabel := widget.NewLabel("Fetching prices...")
+		marketTab = container.NewTabItem("Market", marketLabel)
+		tabs.Append(marketTab)
+		ctx, cancel := context.WithCancel(context.Background())
+		a.iw.onClosedFuncs = append(a.iw.onClosedFuncs, cancel)
+		go func() {
+			const (
+				priceFormat    = "#,###.##"
+				currencySuffix = " ISK"
+			)
+			ticker := time.NewTicker(60 * time.Second)
+		L:
+			for {
+				r, err := a.iw.u.js.FetchPrices(ctx, a.id)
+				if err != nil {
+					fyne.Do(func() {
+						marketLabel.Text = "Error: " + a.iw.u.humanizeError(err)
+						marketLabel.Importance = widget.DangerImportance
+						marketLabel.Refresh()
+					})
+				} else {
+					averagePrice := a.price.StringFunc("?", func(v float64) string {
+						return humanize.FormatFloat(priceFormat, v) + currencySuffix
+					})
+					c := newAttributeList(a.iw,
+						newAttributeItem("Average price", averagePrice),
+						newAttributeItem("Jita sell price", humanize.FormatFloat(priceFormat, r.ImmediatePrices.SellPrice)+currencySuffix),
+						newAttributeItem("Jita buy price", humanize.FormatFloat(priceFormat, r.ImmediatePrices.BuyPrice)+currencySuffix),
+						newAttributeItem("Jita sell volume", ihumanize.Comma(r.SellVolume)),
+						newAttributeItem("Jita buy volume", ihumanize.Comma(r.BuyVolume)),
+					)
+					fyne.Do(func() {
+						marketTab.Content = c
+						tabs.Refresh()
+					})
+				}
+				select {
+				case <-ctx.Done():
+					break L
+				case <-ticker.C:
+				}
 			}
-			select {
-			case <-ctx.Done():
-				break L
-			case <-ticker.C:
-			}
-		}
-		slog.Debug("market update type for canceled", "name", a.et.Name)
-	}()
-	tabs.Append(marketTab)
+			slog.Debug("market update type for canceled", "name", a.et.Name)
+		}()
+	}
 	// Set initial tab
-	if a.iw.u.settings.PreferMarketTab() && a.et.IsTradeable() {
+	if marketTab != nil && a.iw.u.settings.PreferMarketTab() {
 		tabs.Select(marketTab)
 	} else if requirementsTab != nil && a.et.Group.Category.ID == app.EveCategorySkill {
 		tabs.Select(requirementsTab)

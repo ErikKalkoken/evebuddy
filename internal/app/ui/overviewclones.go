@@ -268,7 +268,7 @@ func (a *OverviewClones) updateRoutes(flag app.RoutePreference) {
 			defer wg.Done()
 			dest := o.c.Location.SolarSystem
 			origin := a.origin
-			j, err := a.u.eus.GetRouteESI(ctx, dest, origin, flag)
+			j, err := a.u.eus.FetchRoute(ctx, dest, origin, flag)
 			if err != nil {
 				slog.Error("Failed to get route", "origin", origin.ID, "destination", dest.ID, "error", err)
 				return

@@ -588,7 +588,7 @@ func (a *characterInfo) load() error {
 		})
 	}()
 	go func() {
-		history, err := a.iw.u.eus.GetCharacterCorporationHistory(ctx, a.id)
+		history, err := a.iw.u.eus.FetchCharacterCorporationHistory(ctx, a.id)
 		if err != nil {
 			slog.Error("character info: Failed to load corporation history", "characterID", a.id, "error", err)
 			return
@@ -930,7 +930,7 @@ func (a *corporationInfo) load() error {
 		}
 	})
 	go func() {
-		history, err := a.iw.u.eus.GetCorporationAllianceHistory(ctx, a.id)
+		history, err := a.iw.u.eus.FetchCorporationAllianceHistory(ctx, a.id)
 		if err != nil {
 			slog.Error("corporation info: Failed to load alliance history", "corporationID", a.id, "error", err)
 			return
