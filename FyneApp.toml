@@ -5,7 +5,7 @@ Website = "https://github.com/ErikKalkoken/evebuddy"
   Name = "EVE Buddy"
   ID = "io.github.erikkalkoken.evebuddy"
   Version = "0.25.0"
-  Build = 2
+  Build = 0
 
 [Release]
   BuildName = "evebuddy"
@@ -20,5 +20,5 @@ Website = "https://github.com/ErikKalkoken/evebuddy"
   Comment = "A companion app for Eve Online players"
   Keywords = ["Eve Online", "characters"]
 
-[Migrations]
-  fyneDo = true
+# [Migrations] # Disabled as workaround until Fyne issue #5639 is fixed
+#   fyneDo = true
