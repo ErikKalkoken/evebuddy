@@ -736,6 +736,33 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 	})
 }
 
+func TestMarketPrice(t *testing.T) {
+	db, st, factory := testutil.New()
+	defer db.Close()
+	s := eveuniverseservice.NewTestService(st)
+	ctx := context.Background()
+	t.Run("return price when it exists", func(t *testing.T) {
+		testutil.TruncateTables(db)
+		o := factory.CreateEveType()
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       o.ID,
+			AveragePrice: 12.34,
+		})
+		x, err := s.MarketPrice(ctx, o.ID)
+		if assert.NoError(t, err) {
+			assert.InDelta(t, 12.34, x.MustValue(), 0.01)
+		}
+	})
+	t.Run("return empty when no price exists", func(t *testing.T) {
+		testutil.TruncateTables(db)
+		o := factory.CreateEveType()
+		x, err := s.MarketPrice(ctx, o.ID)
+		if assert.NoError(t, err) {
+			assert.True(t, x.IsEmpty())
+		}
+	})
+}
+
 func TestGetOrCreateEveTypeESI(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
@@ -1480,7 +1507,7 @@ func TestGetRouteESI(t *testing.T) {
 		httpmock.Reset()
 		o := factory.CreateEveSolarSystem()
 		// when
-		x, err := s.GetRouteESI(ctx, o, o, app.RouteShortest)
+		x, err := s.FetchRoute(ctx, o, o, app.RouteShortest)
 		// then
 		if assert.NoError(t, err) {
 			assert.ElementsMatch(t, []*app.EveSolarSystem{o}, x)
@@ -1494,7 +1521,7 @@ func TestGetRouteESI(t *testing.T) {
 		orig := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 31000001})
 		dest := factory.CreateEveSolarSystem()
 		// when
-		x, err := s.GetRouteESI(ctx, dest, orig, app.RouteShortest)
+		x, err := s.FetchRoute(ctx, dest, orig, app.RouteShortest)
 		// then
 		if assert.NoError(t, err) {
 			assert.ElementsMatch(t, []*app.EveSolarSystem{}, x)
@@ -1507,7 +1534,7 @@ func TestGetRouteESI(t *testing.T) {
 		orig := factory.CreateEveSolarSystem()
 		dest := factory.CreateEveSolarSystem()
 		// when
-		_, err := s.GetRouteESI(ctx, dest, orig, app.RoutePreference("invalid"))
+		_, err := s.FetchRoute(ctx, dest, orig, app.RoutePreference("invalid"))
 		// then
 		if assert.Error(t, err) {
 			assert.Equal(t, 0, httpmock.GetTotalCallCount())
@@ -1520,7 +1547,7 @@ func TestGetRouteESI(t *testing.T) {
 		orig := factory.CreateEveSolarSystem()
 		dest := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 31000001})
 		// when
-		x, err := s.GetRouteESI(ctx, dest, orig, app.RouteShortest)
+		x, err := s.FetchRoute(ctx, dest, orig, app.RouteShortest)
 		// then
 		if assert.NoError(t, err) {
 			assert.ElementsMatch(t, []*app.EveSolarSystem{}, x)
@@ -1578,7 +1605,7 @@ func TestMembershipHistory(t *testing.T) {
 				},
 			}))
 		// when
-		x, err := s.GetCharacterCorporationHistory(ctx, 42)
+		x, err := s.FetchCharacterCorporationHistory(ctx, 42)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, x, 2)
@@ -1622,7 +1649,7 @@ func TestMembershipHistory(t *testing.T) {
 				},
 			}))
 		// when
-		x, err := s.GetCorporationAllianceHistory(ctx, 42)
+		x, err := s.FetchCorporationAllianceHistory(ctx, 42)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, x, 2)

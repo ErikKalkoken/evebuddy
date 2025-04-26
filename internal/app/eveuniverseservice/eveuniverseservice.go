@@ -1330,9 +1330,9 @@ func (s *EveUniverseService) createMoonFromESI(ctx context.Context, id int32) (*
 	return y.(*app.EveMoon), nil
 }
 
-// GetRouteESI returns a route between two solar systems.
+// FetchRoute fetches a route between two solar systems from ESi and returns it.
 // When no route can be found it returns an empty slice.
-func (s *EveUniverseService) GetRouteESI(ctx context.Context, destination, origin *app.EveSolarSystem, flag app.RoutePreference) ([]*app.EveSolarSystem, error) {
+func (s *EveUniverseService) FetchRoute(ctx context.Context, destination, origin *app.EveSolarSystem, flag app.RoutePreference) ([]*app.EveSolarSystem, error) {
 	if slices.Index(app.RoutePreferences(), flag) == -1 {
 		return nil, fmt.Errorf("invalid flag: %s", flag)
 	}
@@ -1369,12 +1369,16 @@ func (s *EveUniverseService) GetRouteESI(ctx context.Context, destination, origi
 	return systems, nil
 }
 
-func (s *EveUniverseService) GetMarketPrice(ctx context.Context, typeID int32) (*app.EveMarketPrice, error) {
+// MarketPrice returns the average market price for a type. Or empty when no price is known for this type.
+func (s *EveUniverseService) MarketPrice(ctx context.Context, typeID int32) (optional.Optional[float64], error) {
+	var v optional.Optional[float64]
 	o, err := s.st.GetEveMarketPrice(ctx, typeID)
 	if errors.Is(err, app.ErrNotFound) {
-		return nil, app.ErrNotFound
+		return v, nil
+	} else if err != nil {
+		return v, err
 	}
-	return o, err
+	return optional.New(o.AveragePrice), nil
 }
 
 // TODO: Change to bulk create
@@ -1397,8 +1401,8 @@ func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) error {
 	return nil
 }
 
-// GetCharacterCorporationHistory returns a list of all the corporations a character has been a member of in descending order.
-func (s *EveUniverseService) GetCharacterCorporationHistory(ctx context.Context, characterID int32) ([]app.MembershipHistoryItem, error) {
+// FetchCharacterCorporationHistory returns a list of all the corporations a character has been a member of in descending order.
+func (s *EveUniverseService) FetchCharacterCorporationHistory(ctx context.Context, characterID int32) ([]app.MembershipHistoryItem, error) {
 	items, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterIdCorporationhistory(ctx, characterID, nil)
 	if err != nil {
 		return nil, err
@@ -1416,7 +1420,7 @@ func (s *EveUniverseService) GetCharacterCorporationHistory(ctx context.Context,
 }
 
 // CharacterCorporationHistory returns a list of all the alliances a corporation has been a member of in descending order.
-func (s *EveUniverseService) GetCorporationAllianceHistory(ctx context.Context, corporationID int32) ([]app.MembershipHistoryItem, error) {
+func (s *EveUniverseService) FetchCorporationAllianceHistory(ctx context.Context, corporationID int32) ([]app.MembershipHistoryItem, error) {
 	items, _, err := s.esiClient.ESI.CorporationApi.GetCorporationsCorporationIdAlliancehistory(ctx, corporationID, nil)
 	if err != nil {
 		return nil, err
