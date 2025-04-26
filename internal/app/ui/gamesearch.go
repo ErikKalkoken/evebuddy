@@ -16,9 +16,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -31,23 +29,18 @@ const (
 type SearchResult struct {
 	widget.BaseWidget
 
-	eis                 *eveimageservice.EveImageService
-	eus                 *eveuniverseservice.EveUniverseService
 	name                *widget.Label
 	image               *canvas.Image
 	supportedCategories set.Set[app.EveEntityCategory]
+	u                   *BaseUI
 }
 
-func NewSearchResult(
-	eis *eveimageservice.EveImageService,
-	eus *eveuniverseservice.EveUniverseService,
-	supportedCategories set.Set[app.EveEntityCategory]) *SearchResult {
+func NewSearchResult(u *BaseUI, supportedCategories set.Set[app.EveEntityCategory]) *SearchResult {
 	w := &SearchResult{
-		eis:                 eis,
-		eus:                 eus,
 		supportedCategories: supportedCategories,
 		name:                widget.NewLabel(""),
 		image:               iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		u:                   u,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -72,20 +65,20 @@ func (w *SearchResult) Set(o *app.EveEntity) {
 		res, err := func() (fyne.Resource, error) {
 			switch o.Category {
 			case app.EveEntityInventoryType:
-				et, err := w.eus.GetOrCreateTypeESI(ctx, o.ID)
+				et, err := w.u.eus.GetOrCreateTypeESI(ctx, o.ID)
 				if err != nil {
 					return nil, err
 				}
 				switch et.Group.Category.ID {
 				case app.EveCategorySKINs:
-					return w.eis.InventoryTypeSKIN(et.ID, app.IconPixelSize)
+					return w.u.eis.InventoryTypeSKIN(et.ID, app.IconPixelSize)
 				case app.EveCategoryBlueprint:
-					return w.eis.InventoryTypeBPO(et.ID, app.IconPixelSize)
+					return w.u.eis.InventoryTypeBPO(et.ID, app.IconPixelSize)
 				default:
-					return w.eis.InventoryTypeIcon(et.ID, app.IconPixelSize)
+					return w.u.eis.InventoryTypeIcon(et.ID, app.IconPixelSize)
 				}
 			default:
-				return w.eis.EntityIcon(o.ID, imageCategory, app.IconPixelSize)
+				return w.u.eis.EntityIcon(o.ID, imageCategory, app.IconPixelSize)
 			}
 		}()
 		if err != nil {
@@ -307,11 +300,7 @@ func (a *GameSearch) makeResults() *iwidget.Tree[resultNode] {
 			if isBranch {
 				return widget.NewLabel("Template")
 			}
-			return NewSearchResult(
-				a.u.eis,
-				a.u.eus,
-				a.supportedCategories,
-			)
+			return NewSearchResult(a.u, a.supportedCategories)
 		},
 		func(n resultNode, isBranch bool, co fyne.CanvasObject) {
 			if isBranch {
@@ -355,11 +344,7 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 			return len(a.recentItems)
 		},
 		func() fyne.CanvasObject {
-			return NewSearchResult(
-				a.u.eis,
-				a.u.eus,
-				infoWindowSupportedEveEntities(),
-			)
+			return NewSearchResult(a.u, infoWindowSupportedEveEntities())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			a.mu.RLock()
