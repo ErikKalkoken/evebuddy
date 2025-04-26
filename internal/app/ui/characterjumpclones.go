@@ -119,7 +119,7 @@ func (a *CharacterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 				spacer.Show()
 			} else {
 				iwidget.RefreshImageAsync(iconMain, func() (fyne.Resource, error) {
-					return a.u.EveImageService().InventoryTypeIcon(n.implantTypeID, app.IconPixelSize)
+					return a.u.eis.InventoryTypeIcon(n.implantTypeID, app.IconPixelSize)
 				})
 				main.SetText(n.implantTypeName)
 				prefix.Hide()

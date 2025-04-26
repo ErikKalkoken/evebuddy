@@ -29,6 +29,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
@@ -106,7 +107,7 @@ type BaseUI struct {
 	clearCache         func() // clear all caches
 	cs                 *characterservice.CharacterService
 	dataPaths          map[string]string // Paths to user data
-	eis                app.EveImageService
+	eis                *eveimageservice.EveImageService
 	ess                app.ESIStatusService
 	eus                *eveuniverseservice.EveUniverseService
 	isForeground       atomic.Bool // whether the app is currently shown in the foreground
@@ -128,7 +129,7 @@ type BaseUIParams struct {
 	App                fyne.App
 	CharacterService   *characterservice.CharacterService
 	ESIStatusService   app.ESIStatusService
-	EveImageService    app.EveImageService
+	EveImageService    *eveimageservice.EveImageService
 	EveUniverseService *eveuniverseservice.EveUniverseService
 	JaniceService      *janiceservice.JaniceService
 	MemCache           app.CacheService
@@ -277,10 +278,6 @@ func (u *BaseUI) ClearAllCaches() {
 
 func (u *BaseUI) ESIStatusService() app.ESIStatusService {
 	return u.ess
-}
-
-func (u *BaseUI) EveImageService() app.EveImageService {
-	return u.eis
 }
 
 func (u *BaseUI) MemCache() app.CacheService {
@@ -543,7 +540,7 @@ func (u *BaseUI) setAnyCharacter() error {
 }
 
 func (u *BaseUI) updateAvatar(id int32, setIcon func(fyne.Resource)) {
-	r, err := u.EveImageService().CharacterPortrait(id, app.IconPixelSize)
+	r, err := u.eis.CharacterPortrait(id, app.IconPixelSize)
 	if err != nil {
 		slog.Error("Failed to fetch character portrait", "characterID", id, "err", err)
 		r = icons.Characterplaceholder64Jpeg

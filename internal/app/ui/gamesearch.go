@@ -18,6 +18,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -30,7 +31,7 @@ const (
 type SearchResult struct {
 	widget.BaseWidget
 
-	eis                 app.EveImageService
+	eis                 *eveimageservice.EveImageService
 	eus                 *eveuniverseservice.EveUniverseService
 	name                *widget.Label
 	image               *canvas.Image
@@ -38,7 +39,7 @@ type SearchResult struct {
 }
 
 func NewSearchResult(
-	eis app.EveImageService,
+	eis *eveimageservice.EveImageService,
 	eus *eveuniverseservice.EveUniverseService,
 	supportedCategories set.Set[app.EveEntityCategory]) *SearchResult {
 	w := &SearchResult{
@@ -307,7 +308,7 @@ func (a *GameSearch) makeResults() *iwidget.Tree[resultNode] {
 				return widget.NewLabel("Template")
 			}
 			return NewSearchResult(
-				a.u.EveImageService(),
+				a.u.eis,
 				a.u.eus,
 				a.supportedCategories,
 			)
@@ -355,7 +356,7 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 		},
 		func() fyne.CanvasObject {
 			return NewSearchResult(
-				a.u.EveImageService(),
+				a.u.eis,
 				a.u.eus,
 				infoWindowSupportedEveEntities(),
 			)

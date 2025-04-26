@@ -165,13 +165,13 @@ func (a *CharacterAssets) makeAssetGrid() *widget.GridWrap {
 				iwidget.RefreshImageAsync(image, func() (fyne.Resource, error) {
 					switch ca.Variant() {
 					case app.VariantSKIN:
-						return a.u.EveImageService().InventoryTypeSKIN(ca.Type.ID, app.IconPixelSize)
+						return a.u.eis.InventoryTypeSKIN(ca.Type.ID, app.IconPixelSize)
 					case app.VariantBPO:
-						return a.u.EveImageService().InventoryTypeBPO(ca.Type.ID, app.IconPixelSize)
+						return a.u.eis.InventoryTypeBPO(ca.Type.ID, app.IconPixelSize)
 					case app.VariantBPC:
-						return a.u.EveImageService().InventoryTypeBPC(ca.Type.ID, app.IconPixelSize)
+						return a.u.eis.InventoryTypeBPC(ca.Type.ID, app.IconPixelSize)
 					default:
-						return a.u.EveImageService().InventoryTypeIcon(ca.Type.ID, app.IconPixelSize)
+						return a.u.eis.InventoryTypeIcon(ca.Type.ID, app.IconPixelSize)
 					}
 				})
 			})

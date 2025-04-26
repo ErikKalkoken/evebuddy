@@ -385,7 +385,7 @@ func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 func (a *allianceInfo) load() error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.iw.u.EveImageService().AllianceLogo(a.id, app.IconPixelSize)
+		r, err := a.iw.u.eis.AllianceLogo(a.id, app.IconPixelSize)
 		if err != nil {
 			slog.Error("alliance info: Failed to load logo", "allianceID", a.id, "error", err)
 			return
@@ -578,7 +578,7 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 func (a *characterInfo) load() error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.iw.u.EveImageService().CharacterPortrait(a.id, 256)
+		r, err := a.iw.u.eis.CharacterPortrait(a.id, 256)
 		if err != nil {
 			slog.Error("character info: Failed to load portrait", "characterID", a.id, "error", err)
 			return
@@ -612,7 +612,7 @@ func (a *characterInfo) load() error {
 		return err
 	}
 	go func() {
-		r, err := a.iw.u.EveImageService().CorporationLogo(o.Corporation.ID, app.IconPixelSize)
+		r, err := a.iw.u.eis.CorporationLogo(o.Corporation.ID, app.IconPixelSize)
 		if err != nil {
 			slog.Error("character info: Failed to load corp logo", "characterID", a.id, "error", err)
 			return
@@ -631,7 +631,7 @@ func (a *characterInfo) load() error {
 		}
 		a.portrait.OnTapped = func() {
 			go fyne.Do(func() {
-				a.iw.showZoomWindow(o.Name, a.id, a.iw.u.EveImageService().CharacterPortrait, a.iw.w)
+				a.iw.showZoomWindow(o.Name, a.id, a.iw.u.eis.CharacterPortrait, a.iw.w)
 			})
 		}
 	})
@@ -877,7 +877,7 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 func (a *corporationInfo) load() error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.iw.u.EveImageService().CorporationLogo(a.id, app.IconPixelSize)
+		r, err := a.iw.u.eis.CorporationLogo(a.id, app.IconPixelSize)
 		if err != nil {
 			slog.Error("corporation info: Failed to load logo", "corporationID", a.id, "error", err)
 			return
@@ -908,7 +908,7 @@ func (a *corporationInfo) load() error {
 			a.iw.showEveEntity(o.Alliance)
 		}
 		go func() {
-			r, err := a.iw.u.EveImageService().AllianceLogo(o.Alliance.ID, app.IconPixelSize)
+			r, err := a.iw.u.eis.AllianceLogo(o.Alliance.ID, app.IconPixelSize)
 			if err != nil {
 				slog.Error("corporation info: Failed to load alliance logo", "allianceID", o.Alliance.ID, "error", err)
 				return
@@ -1084,7 +1084,7 @@ func (a *locationInfo) load() error {
 		return err
 	}
 	go func() {
-		r, err := a.iw.u.EveImageService().InventoryTypeRender(o.Type.ID, renderIconPixelSize)
+		r, err := a.iw.u.eis.InventoryTypeRender(o.Type.ID, renderIconPixelSize)
 		if err != nil {
 			slog.Error("location info: Failed to load portrait", "location", o, "error", err)
 			return
@@ -1094,7 +1094,7 @@ func (a *locationInfo) load() error {
 		})
 	}()
 	go func() {
-		r, err := a.iw.u.EveImageService().CorporationLogo(o.Owner.ID, app.IconPixelSize)
+		r, err := a.iw.u.eis.CorporationLogo(o.Owner.ID, app.IconPixelSize)
 		if err != nil {
 			slog.Error("location info: Failed to load corp logo", "owner", o.Owner, "error", err)
 			return
@@ -1115,7 +1115,7 @@ func (a *locationInfo) load() error {
 			a.iw.showEveEntity(o.Owner)
 		}
 		a.typeImage.OnTapped = func() {
-			a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.u.EveImageService().InventoryTypeRender, a.iw.w)
+			a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.u.eis.InventoryTypeRender, a.iw.w)
 		}
 		description := o.Type.Description
 		if description == "" {
@@ -1233,7 +1233,7 @@ func (a *raceInfo) load() error {
 	factionID, found := o.FactionID()
 	if found {
 		go func() {
-			r, err := a.iw.u.EveImageService().FactionLogo(factionID, app.IconPixelSize)
+			r, err := a.iw.u.eis.FactionLogo(factionID, app.IconPixelSize)
 			if err != nil {
 				slog.Error("race info: Failed to load logo", "corporationID", a.id, "error", err)
 				return
@@ -1532,7 +1532,7 @@ func (a *solarSystemInfo) load() error {
 		if err != nil {
 			return
 		}
-		r, err := a.iw.u.EveImageService().InventoryTypeIcon(id, app.IconPixelSize)
+		r, err := a.iw.u.eis.InventoryTypeIcon(id, app.IconPixelSize)
 		if err != nil {
 			slog.Error("solar system info: Failed to load logo", "solarSystem", a.id, "error", err)
 			return

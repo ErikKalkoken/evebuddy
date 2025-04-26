@@ -156,7 +156,7 @@ func (a *CharacterCommunications) makeNotificationList() *widget.List {
 			return len(a.notifications)
 		},
 		func() fyne.CanvasObject {
-			return NewMailHeaderItem(a.u.EveImageService())
+			return NewMailHeaderItem(a.u.eis)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.notifications) {
@@ -313,7 +313,7 @@ func (a *CharacterCommunications) setDetail(n *app.CharacterNotification) {
 	subject := iwidget.NewLabelWithSize(n.TitleDisplay(), theme.SizeNameSubHeadingText)
 	subject.Wrapping = fyne.TextWrapWord
 	a.Detail.Add(subject)
-	h := NewMailHeader(a.u.EveImageService(), a.u.ShowEveEntityInfoWindow)
+	h := NewMailHeader(a.u.eis, a.u.ShowEveEntityInfoWindow)
 	h.Set(n.Sender, n.Timestamp, a.u.currentCharacter().EveCharacter.ToEveEntity())
 	a.Detail.Add(h)
 	s, err := n.BodyPlain() // using markdown blocked by #61

@@ -114,7 +114,7 @@ type CharacterMails struct {
 func NewCharacterMails(u *BaseUI) *CharacterMails {
 	a := &CharacterMails{
 		body:      widget.NewLabel(""),
-		header:    NewMailHeader(u.EveImageService(), u.ShowEveEntityInfoWindow),
+		header:    NewMailHeader(u.eis, u.ShowEveEntityInfoWindow),
 		headers:   make([]*app.CharacterMailHeader, 0),
 		headerTop: appwidget.MakeTopLabel(),
 		subject:   iwidget.NewLabelWithSize("", theme.SizeNameSubHeadingText),
@@ -414,7 +414,7 @@ func (a *CharacterMails) makeHeaderList() *widget.List {
 			return len(a.headers)
 		},
 		func() fyne.CanvasObject {
-			return NewMailHeaderItem(a.u.EveImageService())
+			return NewMailHeaderItem(a.u.eis)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.headers) {

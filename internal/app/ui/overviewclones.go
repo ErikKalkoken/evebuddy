@@ -551,7 +551,7 @@ func (a *OverviewClones) showClone(r cloneSearchRow) {
 			border := co.(*fyne.Container).Objects
 			icon := border[1].(*canvas.Image)
 			iwidget.RefreshImageAsync(icon, func() (fyne.Resource, error) {
-				return a.u.EveImageService().InventoryTypeIcon(im.EveType.ID, app.IconPixelSize)
+				return a.u.eis.InventoryTypeIcon(im.EveType.ID, app.IconPixelSize)
 			})
 			name := border[0]
 			name.(*widget.Label).SetText(im.EveType.Name)

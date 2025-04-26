@@ -193,11 +193,11 @@ func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 	var typeIcon fyne.CanvasObject
 	loader := func() (fyne.Resource, error) {
 		if a.et.IsSKIN() {
-			return a.iw.u.EveImageService().InventoryTypeSKIN(a.et.ID, app.IconPixelSize)
+			return a.iw.u.eis.InventoryTypeSKIN(a.et.ID, app.IconPixelSize)
 		} else if a.et.IsBlueprint() {
-			return a.iw.u.EveImageService().InventoryTypeBPO(a.et.ID, app.IconPixelSize)
+			return a.iw.u.eis.InventoryTypeBPO(a.et.ID, app.IconPixelSize)
 		} else {
-			return a.iw.u.EveImageService().InventoryTypeIcon(a.et.ID, app.IconPixelSize)
+			return a.iw.u.eis.InventoryTypeIcon(a.et.ID, app.IconPixelSize)
 		}
 	}
 	if !a.et.HasRender() {
@@ -210,7 +210,7 @@ func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 		icon.SetMinSize(fyne.NewSquareSize(logoUnitSize))
 		icon.OnTapped = func() {
 			go fyne.Do(func() {
-				a.iw.showZoomWindow(a.et.Name, a.id, a.iw.u.EveImageService().InventoryTypeRender, a.iw.w)
+				a.iw.showZoomWindow(a.et.Name, a.id, a.iw.u.eis.InventoryTypeRender, a.iw.w)
 			})
 		}
 		iwidget.RefreshTappableImageAsync(icon, loader)
@@ -224,7 +224,7 @@ func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 	characterName.Wrapping = fyne.TextWrapWord
 	if a.character != nil {
 		iwidget.RefreshImageAsync(characterIcon, func() (fyne.Resource, error) {
-			return a.iw.u.EveImageService().CharacterPortrait(a.character.ID, app.IconPixelSize)
+			return a.iw.u.eis.CharacterPortrait(a.character.ID, app.IconPixelSize)
 		})
 		characterName.SetText(a.character.Name)
 	} else {
