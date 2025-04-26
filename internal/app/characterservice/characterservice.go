@@ -346,7 +346,7 @@ func (s *CharacterService) DeleteCharacter(ctx context.Context, id int32) error 
 		return err
 	}
 	slog.Info("Character deleted", "characterID", id)
-	return s.scs.UpdateCharacters(ctx, s.st)
+	return s.scs.UpdateCharacters(ctx)
 }
 
 // EnableTrainingWatcher enables training watcher for a character when it has an active training queue.
@@ -480,7 +480,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 	if err := s.st.UpdateOrCreateCharacterToken(ctx, &token); err != nil {
 		return 0, err
 	}
-	if err := s.scs.UpdateCharacters(ctx, s.st); err != nil {
+	if err := s.scs.UpdateCharacters(ctx); err != nil {
 		return 0, err
 	}
 	return token.CharacterID, nil

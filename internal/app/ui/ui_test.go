@@ -140,7 +140,7 @@ func TestUIStartEmpty(t *testing.T) {
 	defer db.Close()
 	esiClient := goesi.NewAPIClient(nil, "dummy")
 	cache := memcache.New()
-	scs := statuscacheservice.New(cache)
+	scs := statuscacheservice.New(cache, st)
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
 		ESIClient:          esiClient,
 		StatusCacheService: scs,
@@ -202,7 +202,7 @@ func TestUIStartWithCharacter(t *testing.T) {
 
 	esiClient := goesi.NewAPIClient(nil, "dummy")
 	cache := memcache.New()
-	scs := statuscacheservice.New(cache)
+	scs := statuscacheservice.New(cache, st)
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
 		ESIClient:          esiClient,
 		StatusCacheService: scs,

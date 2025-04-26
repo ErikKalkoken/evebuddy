@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 )
 
 const keyCharacters = "characterUpdateStatusCache-characters"
@@ -15,25 +17,26 @@ const keyCharacters = "characterUpdateStatusCache-characters"
 // StatusCacheService provides cached access to the current update status
 // of all characters to improve performance of UI refresh tickers.
 type StatusCacheService struct {
-	cache app.CacheService
+	cache *memcache.Cache
+	st    *storage.Storage
 }
 
 // New creates and returns a new instance of a character status service.
 // When nil is provided it will create and use it's own cache instance.
-func New(cache app.CacheService) *StatusCacheService {
-	sc := &StatusCacheService{cache: cache}
+func New(cache *memcache.Cache, st *storage.Storage) *StatusCacheService {
+	sc := &StatusCacheService{cache: cache, st: st}
 	return sc
 }
 
 // InitCache initializes the internal state from local storage.
 // It should always be called once for a new instance to ensure the cache is current.
-func (sc *StatusCacheService) InitCache(ctx context.Context, st app.StatusCacheStorage) error {
-	cc, err := sc.updateCharacters(ctx, st)
+func (sc *StatusCacheService) InitCache(ctx context.Context) error {
+	cc, err := sc.updateCharacters(ctx)
 	if err != nil {
 		return err
 	}
 	for _, c := range cc {
-		oo, err := st.ListCharacterSectionStatus(ctx, c.ID)
+		oo, err := sc.st.ListCharacterSectionStatus(ctx, c.ID)
 		if err != nil {
 			return err
 		}
@@ -41,7 +44,7 @@ func (sc *StatusCacheService) InitCache(ctx context.Context, st app.StatusCacheS
 			sc.CharacterSectionSet(o)
 		}
 	}
-	oo, err := st.ListGeneralSectionStatus(ctx)
+	oo, err := sc.st.ListGeneralSectionStatus(ctx)
 	if err != nil {
 		return err
 	}
@@ -285,13 +288,13 @@ func (sc *StatusCacheService) Summary() app.StatusSummary {
 	return s
 }
 
-func (sc *StatusCacheService) UpdateCharacters(ctx context.Context, r app.StatusCacheStorage) error {
-	_, err := sc.updateCharacters(ctx, r)
+func (sc *StatusCacheService) UpdateCharacters(ctx context.Context) error {
+	_, err := sc.updateCharacters(ctx)
 	return err
 }
 
-func (sc *StatusCacheService) updateCharacters(ctx context.Context, r app.StatusCacheStorage) ([]*app.CharacterShort, error) {
-	cc, err := r.ListCharactersShort(ctx)
+func (sc *StatusCacheService) updateCharacters(ctx context.Context) ([]*app.CharacterShort, error) {
+	cc, err := sc.st.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, err
 	}

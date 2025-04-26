@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"time"
 )
 
@@ -52,10 +51,4 @@ func (s SectionStatus) IsMissing() bool {
 
 func (s SectionStatus) IsRunning() bool {
 	return !s.StartedAt.IsZero()
-}
-
-type StatusCacheStorage interface {
-	ListCharacterSectionStatus(context.Context, int32) ([]*CharacterSectionStatus, error)
-	ListGeneralSectionStatus(context.Context) ([]*GeneralSectionStatus, error)
-	ListCharactersShort(context.Context) ([]*CharacterShort, error)
 }

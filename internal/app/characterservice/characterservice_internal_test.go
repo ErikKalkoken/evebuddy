@@ -27,7 +27,7 @@ import (
 )
 
 func newCharacterService(st *storage.Storage) *CharacterService {
-	scs := statuscacheservice.New(memcache.New())
+	scs := statuscacheservice.New(memcache.New(), st)
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
 		StatusCacheService: scs,
 		Storage:            st,
