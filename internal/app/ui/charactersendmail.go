@@ -209,7 +209,7 @@ func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEnti
 		}
 		go func() {
 			var err error
-			results, err = u.EveUniverseService().ListEntitiesByPartialName(context.Background(), search)
+			results, err = u.eus.ListEntitiesByPartialName(context.Background(), search)
 			if err != nil {
 				fyne.Do(func() {
 					showErrorDialog(search, err)
@@ -236,7 +236,7 @@ func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEnti
 			if len(missingIDs) == 0 {
 				return // no need to update when not changed
 			}
-			results, err = u.EveUniverseService().ListEntitiesByPartialName(ctx, search)
+			results, err = u.eus.ListEntitiesByPartialName(ctx, search)
 			if err != nil {
 				fyne.Do(func() {
 					showErrorDialog(search, err)

@@ -296,7 +296,7 @@ func (a *OverviewAssets) loadData() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	locations, err := a.u.EveUniverseService().ListLocations(ctx)
+	locations, err := a.u.eus.ListLocations(ctx)
 	if err != nil {
 		return false, err
 	}

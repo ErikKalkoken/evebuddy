@@ -24,6 +24,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
@@ -106,7 +107,7 @@ type BaseUI struct {
 	dataPaths          map[string]string // Paths to user data
 	eis                app.EveImageService
 	ess                app.ESIStatusService
-	eus                app.EveUniverseService
+	eus                *eveuniverseservice.EveUniverseService
 	isForeground       atomic.Bool // whether the app is currently shown in the foreground
 	isMobile           bool
 	isOffline          bool        // Run the app in offline mode
@@ -127,7 +128,7 @@ type BaseUIParams struct {
 	CharacterService   app.CharacterService
 	ESIStatusService   app.ESIStatusService
 	EveImageService    app.EveImageService
-	EveUniverseService app.EveUniverseService
+	EveUniverseService *eveuniverseservice.EveUniverseService
 	JaniceService      *janiceservice.JaniceService
 	MemCache           app.CacheService
 	StatusCacheService app.StatusCacheService
@@ -283,10 +284,6 @@ func (u *BaseUI) ESIStatusService() app.ESIStatusService {
 
 func (u *BaseUI) EveImageService() app.EveImageService {
 	return u.eis
-}
-
-func (u *BaseUI) EveUniverseService() app.EveUniverseService {
-	return u.eus
 }
 
 func (u *BaseUI) MemCache() app.CacheService {
@@ -658,7 +655,7 @@ func (u *BaseUI) updateGeneralSectionsAndRefreshIfNeeded(forceUpdate bool) {
 }
 
 func (u *BaseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
-	hasChanged, err := u.EveUniverseService().UpdateSection(ctx, section, forceUpdate)
+	hasChanged, err := u.eus.UpdateSection(ctx, section, forceUpdate)
 	if err != nil {
 		slog.Error("Failed to update general section", "section", section, "err", err)
 		return

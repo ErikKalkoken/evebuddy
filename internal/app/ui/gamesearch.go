@@ -16,6 +16,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -28,8 +29,9 @@ const (
 
 type SearchResult struct {
 	widget.BaseWidget
+
 	eis                 app.EveImageService
-	eus                 app.EveUniverseService
+	eus                 *eveuniverseservice.EveUniverseService
 	name                *widget.Label
 	image               *canvas.Image
 	supportedCategories set.Set[app.EveEntityCategory]
@@ -37,7 +39,7 @@ type SearchResult struct {
 
 func NewSearchResult(
 	eis app.EveImageService,
-	eus app.EveUniverseService,
+	eus *eveuniverseservice.EveUniverseService,
 	supportedCategories set.Set[app.EveEntityCategory]) *SearchResult {
 	w := &SearchResult{
 		eis:                 eis,
@@ -206,7 +208,7 @@ func NewGameSearch(u *BaseUI) *GameSearch {
 		if len(ids) == 0 {
 			return
 		}
-		ee, err := a.u.EveUniverseService().ListEntitiesForIDs(context.Background(), ids)
+		ee, err := a.u.eus.ListEntitiesForIDs(context.Background(), ids)
 		if err != nil {
 			slog.Error("failed to load recent items from settings", "error", err)
 			return
@@ -306,7 +308,7 @@ func (a *GameSearch) makeResults() *iwidget.Tree[resultNode] {
 			}
 			return NewSearchResult(
 				a.u.EveImageService(),
-				a.u.EveUniverseService(),
+				a.u.eus,
 				a.supportedCategories,
 			)
 		},
@@ -354,7 +356,7 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 		func() fyne.CanvasObject {
 			return NewSearchResult(
 				a.u.EveImageService(),
-				a.u.EveUniverseService(),
+				a.u.eus,
 				infoWindowSupportedEveEntities(),
 			)
 		},

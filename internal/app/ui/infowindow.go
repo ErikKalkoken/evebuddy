@@ -398,7 +398,7 @@ func (a *allianceInfo) load() error {
 
 	// Members
 	go func() {
-		members, err := a.iw.u.EveUniverseService().GetAllianceCorporationsESI(ctx, a.id)
+		members, err := a.iw.u.eus.GetAllianceCorporationsESI(ctx, a.id)
 		if err != nil {
 			slog.Error("alliance info: Failed to load corporations", "allianceID", a.id, "error", err)
 			return
@@ -410,7 +410,7 @@ func (a *allianceInfo) load() error {
 			a.members.set(entityItemsFromEveEntities(members)...)
 		})
 	}()
-	o, err := a.iw.u.EveUniverseService().GetAllianceESI(ctx, a.id)
+	o, err := a.iw.u.eus.GetAllianceESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -588,7 +588,7 @@ func (a *characterInfo) load() error {
 		})
 	}()
 	go func() {
-		history, err := a.iw.u.EveUniverseService().GetCharacterCorporationHistory(ctx, a.id)
+		history, err := a.iw.u.eus.GetCharacterCorporationHistory(ctx, a.id)
 		if err != nil {
 			slog.Error("character info: Failed to load corporation history", "characterID", a.id, "error", err)
 			return
@@ -607,7 +607,7 @@ func (a *characterInfo) load() error {
 			a.membership.SetText(fmt.Sprintf("for %s", duration))
 		})
 	}()
-	o, err := a.iw.u.EveUniverseService().GetCharacterESI(ctx, a.id)
+	o, err := a.iw.u.eus.GetCharacterESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -745,7 +745,7 @@ func (a *constellationInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *constellationInfo) load() error {
 	ctx := context.Background()
-	o, err := a.iw.u.EveUniverseService().GetOrCreateConstellationESI(ctx, a.id)
+	o, err := a.iw.u.eus.GetOrCreateConstellationESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -767,7 +767,7 @@ func (a *constellationInfo) load() error {
 		}
 	})
 	go func() {
-		oo, err := a.iw.u.EveUniverseService().GetConstellationSolarSytemsESI(ctx, o.ID)
+		oo, err := a.iw.u.eus.GetConstellationSolarSytemsESI(ctx, o.ID)
 		if err != nil {
 			slog.Error("constellation info: Failed to load constellations", "region", o.ID, "error", err)
 			return
@@ -887,7 +887,7 @@ func (a *corporationInfo) load() error {
 			a.logo.Refresh()
 		})
 	}()
-	o, err := a.iw.u.EveUniverseService().GetCorporationESI(ctx, a.id)
+	o, err := a.iw.u.eus.GetCorporationESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -930,7 +930,7 @@ func (a *corporationInfo) load() error {
 		}
 	})
 	go func() {
-		history, err := a.iw.u.EveUniverseService().GetCorporationAllianceHistory(ctx, a.id)
+		history, err := a.iw.u.eus.GetCorporationAllianceHistory(ctx, a.id)
 		if err != nil {
 			slog.Error("corporation info: Failed to load alliance history", "corporationID", a.id, "error", err)
 			return
@@ -1079,7 +1079,7 @@ func (a *locationInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *locationInfo) load() error {
 	ctx := context.Background()
-	o, err := a.iw.u.EveUniverseService().GetOrCreateLocationESI(ctx, a.id)
+	o, err := a.iw.u.eus.GetOrCreateLocationESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -1150,7 +1150,7 @@ func (a *locationInfo) load() error {
 			a.tabs.Refresh()
 		})
 		go func() {
-			ss, err := a.iw.u.EveUniverseService().GetStationServicesESI(ctx, int32(a.id))
+			ss, err := a.iw.u.eus.GetStationServicesESI(ctx, int32(a.id))
 			if err != nil {
 				slog.Error("Failed to fetch station services", "stationID", o.ID, "error", err)
 				return
@@ -1226,7 +1226,7 @@ func (a *raceInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *raceInfo) load() error {
 	ctx := context.Background()
-	o, err := a.iw.u.EveUniverseService().GetOrCreateRaceESI(ctx, a.id)
+	o, err := a.iw.u.eus.GetOrCreateRaceESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -1338,7 +1338,7 @@ func (a *regionInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *regionInfo) load() error {
 	ctx := context.Background()
-	o, err := a.iw.u.EveUniverseService().GetOrCreateRegionESI(ctx, a.id)
+	o, err := a.iw.u.eus.GetOrCreateRegionESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -1359,7 +1359,7 @@ func (a *regionInfo) load() error {
 		a.tabs.Append(attributesTab)
 	})
 	go func() {
-		oo, err := a.iw.u.EveUniverseService().GetRegionConstellationsESI(ctx, o.ID)
+		oo, err := a.iw.u.eus.GetRegionConstellationsESI(ctx, o.ID)
 		if err != nil {
 			slog.Error("region info: Failed to load constellations", "region", o.ID, "error", err)
 			return
@@ -1473,7 +1473,7 @@ func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *solarSystemInfo) load() error {
 	ctx := context.Background()
-	o, err := a.iw.u.EveUniverseService().GetOrCreateSolarSystemESI(ctx, a.id)
+	o, err := a.iw.u.eus.GetOrCreateSolarSystemESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -1507,7 +1507,7 @@ func (a *solarSystemInfo) load() error {
 	a.tabs.Refresh()
 
 	go func() {
-		starID, planets, stargateIDs, stations, structures, err := a.iw.u.EveUniverseService().GetSolarSystemInfoESI(ctx, a.id)
+		starID, planets, stargateIDs, stations, structures, err := a.iw.u.eus.GetSolarSystemInfoESI(ctx, a.id)
 		if err != nil {
 			slog.Error("solar system info: Failed to load system info", "solarSystem", a.id, "error", err)
 			return
@@ -1528,7 +1528,7 @@ func (a *solarSystemInfo) load() error {
 			a.structures.set(oo...)
 		})
 
-		id, err := a.iw.u.EveUniverseService().GetStarTypeID(ctx, starID)
+		id, err := a.iw.u.eus.GetStarTypeID(ctx, starID)
 		if err != nil {
 			return
 		}
@@ -1543,7 +1543,7 @@ func (a *solarSystemInfo) load() error {
 		})
 
 		go func() {
-			ss, err := a.iw.u.EveUniverseService().GetStargateSolarSystemsESI(ctx, stargateIDs)
+			ss, err := a.iw.u.eus.GetStargateSolarSystemsESI(ctx, stargateIDs)
 			if err != nil {
 				slog.Error("solar system info: Failed to load adjacent systems", "solarSystem", a.id, "error", err)
 				return
@@ -1555,7 +1555,7 @@ func (a *solarSystemInfo) load() error {
 		}()
 
 		go func() {
-			pp, err := a.iw.u.EveUniverseService().GetSolarSystemPlanets(ctx, planets)
+			pp, err := a.iw.u.eus.GetSolarSystemPlanets(ctx, planets)
 			if err != nil {
 				slog.Error("solar system info: Failed to load planets", "solarSystem", a.id, "error", err)
 				return

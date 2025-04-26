@@ -265,7 +265,7 @@ func (a *CharacterAssets) makeLocationData() (*iwidget.TreeData[locationNode], e
 	if err != nil {
 		return nil, err
 	}
-	locations, err := a.u.EveUniverseService().ListLocations(ctx)
+	locations, err := a.u.eus.ListLocations(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -24,6 +24,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
@@ -58,7 +59,7 @@ var esiScopes = []string{
 type CharacterService struct {
 	ens        *evenotification.EveNotificationService
 	esiClient  *goesi.APIClient
-	eus        app.EveUniverseService
+	eus        *eveuniverseservice.EveUniverseService
 	httpClient *http.Client
 	scs        app.StatusCacheService
 	sfg        *singleflight.Group
@@ -68,7 +69,7 @@ type CharacterService struct {
 
 type Params struct {
 	EveNotificationService *evenotification.EveNotificationService
-	EveUniverseService     app.EveUniverseService
+	EveUniverseService     *eveuniverseservice.EveUniverseService
 	SSOService             *sso.SSOService
 	StatusCacheService     app.StatusCacheService
 	Storage                *storage.Storage

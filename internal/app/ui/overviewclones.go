@@ -268,7 +268,7 @@ func (a *OverviewClones) updateRoutes(flag app.RoutePreference) {
 			defer wg.Done()
 			dest := o.c.Location.SolarSystem
 			origin := a.origin
-			j, err := a.u.EveUniverseService().GetRouteESI(ctx, dest, origin, flag)
+			j, err := a.u.eus.GetRouteESI(ctx, dest, origin, flag)
 			if err != nil {
 				slog.Error("Failed to get route", "origin", origin.ID, "destination", dest.ID, "error", err)
 				return
@@ -319,7 +319,7 @@ func (a *OverviewClones) changeOrigin(w fyne.Window) {
 			return
 		}
 		r := results[id]
-		s, err := a.u.EveUniverseService().GetOrCreateSolarSystemESI(context.Background(), r.ID)
+		s, err := a.u.eus.GetOrCreateSolarSystemESI(context.Background(), r.ID)
 		if err != nil {
 			showErrorDialog("Could not load solar system", err)
 			return
