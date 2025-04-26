@@ -273,11 +273,11 @@ func (a *CharacterMails) updateFolderData(characterID int32) (*iwidget.TreeData[
 		return tree, emptyFolder, nil
 	}
 	ctx := context.Background()
-	labelUnreadCounts, err := a.u.CharacterService().GetMailLabelUnreadCounts(ctx, characterID)
+	labelUnreadCounts, err := a.u.cs.GetMailLabelUnreadCounts(ctx, characterID)
 	if err != nil {
 		return nil, FolderNode{}, err
 	}
-	listUnreadCounts, err := a.u.CharacterService().GetMailListUnreadCounts(ctx, characterID)
+	listUnreadCounts, err := a.u.cs.GetMailListUnreadCounts(ctx, characterID)
 	if err != nil {
 		return nil, FolderNode{}, err
 	}
@@ -322,7 +322,7 @@ func (a *CharacterMails) updateFolderData(characterID int32) (*iwidget.TreeData[
 	}
 
 	// Add custom labels
-	labels, err := a.u.CharacterService().ListMailLabelsOrdered(ctx, characterID)
+	labels, err := a.u.cs.ListMailLabelsOrdered(ctx, characterID)
 	if err != nil {
 		return nil, FolderNode{}, err
 	}
@@ -352,7 +352,7 @@ func (a *CharacterMails) updateFolderData(characterID int32) (*iwidget.TreeData[
 	}
 
 	// Add mailing lists
-	lists, err := a.u.CharacterService().ListMailLists(ctx, characterID)
+	lists, err := a.u.cs.ListMailLists(ctx, characterID)
 	if err != nil {
 		return nil, FolderNode{}, err
 	}
@@ -489,13 +489,13 @@ func (a *CharacterMails) updateHeaders() (FolderNode, error) {
 	var err error
 	switch folder.Category {
 	case nodeCategoryLabel:
-		headers, err = a.u.CharacterService().ListMailHeadersForLabelOrdered(
+		headers, err = a.u.cs.ListMailHeadersForLabelOrdered(
 			ctx,
 			folder.CharacterID,
 			folder.ObjID,
 		)
 	case nodeCategoryList:
-		headers, err = a.u.CharacterService().ListMailHeadersForListOrdered(
+		headers, err = a.u.cs.ListMailHeadersForListOrdered(
 			ctx,
 			folder.CharacterID,
 			folder.ObjID,
@@ -556,7 +556,7 @@ func (a *CharacterMails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func
 					"Deleting mail...",
 					"",
 					func() error {
-						return a.u.CharacterService().DeleteMail(context.TODO(), a.mail.CharacterID, a.mail.MailID)
+						return a.u.cs.DeleteMail(context.TODO(), a.mail.CharacterID, a.mail.MailID)
 					},
 					a.u.MainWindow(),
 				)
@@ -619,7 +619,7 @@ func (a *CharacterMails) setMail(mailID int32) {
 	ctx := context.TODO()
 	characterID := a.u.CurrentCharacterID()
 	var err error
-	a.mail, err = a.u.CharacterService().GetMail(ctx, characterID, mailID)
+	a.mail, err = a.u.cs.GetMail(ctx, characterID, mailID)
 	if err != nil {
 		slog.Error("Failed to fetch mail", "mailID", mailID, "error", err)
 		a.u.ShowSnackbar("ERROR: Failed to fetch mail")
@@ -627,7 +627,7 @@ func (a *CharacterMails) setMail(mailID int32) {
 	}
 	if !a.u.IsOffline() && !a.mail.IsRead {
 		go func() {
-			err = a.u.CharacterService().UpdateMailRead(ctx, characterID, a.mail.MailID)
+			err = a.u.cs.UpdateMailRead(ctx, characterID, a.mail.MailID)
 			if err != nil {
 				slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", a.mail.MailID, "error", err)
 				a.u.ShowSnackbar("ERROR: Failed to mark mail as read")

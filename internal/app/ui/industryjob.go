@@ -93,7 +93,7 @@ func (a *IndustryJobs) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *IndustryJobs) update() {
-	jobs, err := a.u.CharacterService().ListAllCharacterIndustryJob(context.TODO())
+	jobs, err := a.u.cs.ListAllCharacterIndustryJob(context.TODO())
 	if err != nil {
 		slog.Error("Failed to refresh industry jobs UI", "err", err)
 		fyne.Do(func() {

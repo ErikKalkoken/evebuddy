@@ -148,7 +148,7 @@ func (a *CharacterWalletTransaction) updateEntries() error {
 		return nil
 	}
 	characterID := a.u.CurrentCharacterID()
-	ww, err := a.u.CharacterService().ListWalletTransactions(context.TODO(), characterID)
+	ww, err := a.u.cs.ListWalletTransactions(context.TODO(), characterID)
 	if err != nil {
 		return err
 	}

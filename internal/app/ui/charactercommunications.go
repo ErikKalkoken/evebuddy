@@ -205,7 +205,7 @@ func (a *CharacterCommunications) update() {
 	var groupCounts map[app.NotificationGroup][]int
 	if characterID := a.u.CurrentCharacterID(); characterID != 0 {
 		var err error
-		groupCounts, err = a.u.CharacterService().CountNotifications(context.Background(), characterID)
+		groupCounts, err = a.u.cs.CountNotifications(context.Background(), characterID)
 		if err != nil {
 			slog.Error("communications update", "error", err)
 		}
@@ -276,11 +276,11 @@ func (a *CharacterCommunications) setCurrentFolder(nc app.NotificationGroup) {
 	var err error
 	switch nc {
 	case app.GroupAll:
-		notifications, err = a.u.CharacterService().ListNotificationsAll(ctx, characterID)
+		notifications, err = a.u.cs.ListNotificationsAll(ctx, characterID)
 	case app.GroupUnread:
-		notifications, err = a.u.CharacterService().ListNotificationsUnread(ctx, characterID)
+		notifications, err = a.u.cs.ListNotificationsUnread(ctx, characterID)
 	default:
-		notifications, err = a.u.CharacterService().ListNotificationsTypes(ctx, characterID, nc)
+		notifications, err = a.u.cs.ListNotificationsTypes(ctx, characterID, nc)
 	}
 	a.notifications = notifications
 	var top string

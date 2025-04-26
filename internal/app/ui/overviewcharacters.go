@@ -180,7 +180,7 @@ func (a *OverviewCharacters) updateCharacters() (overviewTotals, error) {
 	var totals overviewTotals
 	var err error
 	ctx := context.Background()
-	characters, err := a.u.CharacterService().ListCharacters(ctx)
+	characters, err := a.u.cs.ListCharacters(ctx)
 	if err != nil {
 		return totals, err
 	}
@@ -198,7 +198,7 @@ func (a *OverviewCharacters) updateCharacters() (overviewTotals, error) {
 		}
 	})
 	for i, c := range cc {
-		total, unread, err := a.u.CharacterService().GetMailCounts(ctx, c.id)
+		total, unread, err := a.u.cs.GetMailCounts(ctx, c.id)
 		if err != nil {
 			return totals, err
 		}
@@ -207,7 +207,7 @@ func (a *OverviewCharacters) updateCharacters() (overviewTotals, error) {
 		}
 	}
 	for i, c := range cc {
-		v, err := a.u.CharacterService().AssetTotalValue(ctx, c.id)
+		v, err := a.u.cs.AssetTotalValue(ctx, c.id)
 		if err != nil {
 			return totals, err
 		}

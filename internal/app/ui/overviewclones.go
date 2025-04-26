@@ -237,7 +237,7 @@ func (a *OverviewClones) update() {
 
 func (a *OverviewClones) updateRows() error {
 	ctx := context.Background()
-	oo, err := a.u.CharacterService().ListAllJumpClones(ctx)
+	oo, err := a.u.cs.ListAllJumpClones(ctx)
 	if err != nil {
 		return err
 	}
@@ -347,7 +347,7 @@ func (a *OverviewClones) changeOrigin(w fyne.Window) {
 		}
 		go func() {
 			ctx := context.Background()
-			ee, _, err := a.u.CharacterService().SearchESI(
+			ee, _, err := a.u.cs.SearchESI(
 				ctx,
 				a.u.CurrentCharacterID(),
 				search,
@@ -518,7 +518,7 @@ func (a *OverviewClones) showRoute(r cloneSearchRow) {
 }
 
 func (a *OverviewClones) showClone(r cloneSearchRow) {
-	clone, err := a.u.CharacterService().GetJumpClone(context.Background(), r.c.Character.ID, r.c.CloneID)
+	clone, err := a.u.cs.GetJumpClone(context.Background(), r.c.Character.ID, r.c.CloneID)
 	if err != nil {
 		slog.Error("show clone", "error", err)
 		a.u.ShowErrorDialog("failed to load clone", err, a.u.MainWindow())

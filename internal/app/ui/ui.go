@@ -24,6 +24,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
@@ -103,7 +104,7 @@ type BaseUI struct {
 	app                fyne.App
 	character          *app.Character
 	clearCache         func() // clear all caches
-	cs                 app.CharacterService
+	cs                 *characterservice.CharacterService
 	dataPaths          map[string]string // Paths to user data
 	eis                app.EveImageService
 	ess                app.ESIStatusService
@@ -125,7 +126,7 @@ type BaseUI struct {
 
 type BaseUIParams struct {
 	App                fyne.App
-	CharacterService   app.CharacterService
+	CharacterService   *characterservice.CharacterService
 	ESIStatusService   app.ESIStatusService
 	EveImageService    app.EveImageService
 	EveUniverseService *eveuniverseservice.EveUniverseService
@@ -274,10 +275,6 @@ func (u *BaseUI) ClearAllCaches() {
 	u.clearCache()
 }
 
-func (u *BaseUI) CharacterService() app.CharacterService {
-	return u.cs
-}
-
 func (u *BaseUI) ESIStatusService() app.ESIStatusService {
 	return u.ess
 }
@@ -319,7 +316,7 @@ func (u *BaseUI) Init() {
 	var err error
 	ctx := context.Background()
 	if cID := u.Settings().LastCharacterID(); cID != 0 {
-		c, err = u.CharacterService().GetCharacter(ctx, int32(cID))
+		c, err = u.cs.GetCharacter(ctx, int32(cID))
 		if err != nil {
 			if !errors.Is(err, app.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
@@ -327,7 +324,7 @@ func (u *BaseUI) Init() {
 		}
 	}
 	if c == nil {
-		c, err = u.CharacterService().GetAnyCharacter(ctx)
+		c, err = u.cs.GetAnyCharacter(ctx)
 		if err != nil {
 			if !errors.Is(err, app.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
@@ -401,7 +398,7 @@ func (u *BaseUI) hasCharacter() bool {
 }
 
 func (u *BaseUI) loadCharacter(id int32) error {
-	c, err := u.CharacterService().GetCharacter(context.Background(), id)
+	c, err := u.cs.GetCharacter(context.Background(), id)
 	if err != nil {
 		return fmt.Errorf("load character ID %d: %w", id, err)
 	}
@@ -416,7 +413,7 @@ func (u *BaseUI) reloadCurrentCharacter() {
 		return
 	}
 	var err error
-	u.character, err = u.CharacterService().GetCharacter(context.Background(), id)
+	u.character, err = u.cs.GetCharacter(context.Background(), id)
 	if err != nil {
 		slog.Error("reload character", "characterID", id, "error", err)
 	}
@@ -534,7 +531,7 @@ func (u *BaseUI) setCharacter(c *app.Character) {
 }
 
 func (u *BaseUI) setAnyCharacter() error {
-	c, err := u.CharacterService().GetAnyCharacter(context.Background())
+	c, err := u.cs.GetAnyCharacter(context.Background())
 	if errors.Is(err, app.ErrNotFound) {
 		u.resetCharacter()
 		return nil
@@ -566,7 +563,7 @@ func (u *BaseUI) updateMailIndicator() {
 	if !u.Settings().SysTrayEnabled() {
 		return
 	}
-	n, err := u.CharacterService().GetAllMailUnreadCount(context.Background())
+	n, err := u.cs.GetAllMailUnreadCount(context.Background())
 	if err != nil {
 		slog.Error("update mail indicator", "error", err)
 		return
@@ -699,7 +696,7 @@ func (u *BaseUI) startUpdateTickerCharacters() {
 }
 
 func (u *BaseUI) updateCharactersIfNeeded(ctx context.Context) error {
-	cc, err := u.CharacterService().ListCharactersShort(ctx)
+	cc, err := u.cs.ListCharactersShort(ctx)
 	if err != nil {
 		return err
 	}
@@ -711,7 +708,7 @@ func (u *BaseUI) updateCharactersIfNeeded(ctx context.Context) error {
 }
 
 func (u *BaseUI) notifyCharactersIfNeeded(ctx context.Context) error {
-	cc, err := u.CharacterService().ListCharactersShort(ctx)
+	cc, err := u.cs.ListCharactersShort(ctx)
 	if err != nil {
 		return err
 	}
@@ -769,7 +766,7 @@ func (u *BaseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 // All UI areas showing data based on character sections needs to be included
 // to make sure they are refreshed when data changes.
 func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s app.CharacterSection, forceUpdate bool) {
-	hasChanged, err := u.CharacterService().UpdateSectionIfNeeded(
+	hasChanged, err := u.cs.UpdateSectionIfNeeded(
 		ctx, app.CharacterUpdateSectionParams{
 			CharacterID:           characterID,
 			Section:               s,
@@ -806,7 +803,7 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		if u.Settings().NotifyContractsEnabled() {
 			go func() {
 				earliest := u.Settings().NotifyContractsEarliest()
-				if err := u.CharacterService().NotifyUpdatedContracts(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
+				if err := u.cs.NotifyUpdatedContracts(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
 					slog.Error("notify contract update", "error", err)
 				}
 			}()
@@ -859,7 +856,7 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		if u.Settings().NotifyMailsEnabled() {
 			go func() {
 				earliest := u.Settings().NotifyMailsEarliest()
-				if err := u.CharacterService().NotifyMails(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
+				if err := u.cs.NotifyMails(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
 					slog.Error("notify mails", "characterID", characterID, "error", err)
 				}
 			}()
@@ -872,7 +869,7 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			go func() {
 				earliest := u.Settings().NotifyCommunicationsEarliest()
 				typesEnabled := u.Settings().NotificationTypesEnabled()
-				err := u.CharacterService().NotifyCommunications(
+				err := u.cs.NotifyCommunications(
 					ctx,
 					characterID,
 					earliest,
@@ -896,7 +893,7 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 
 	case app.SectionSkillqueue:
 		if u.Settings().NotifyTrainingEnabled() {
-			err := u.CharacterService().EnableTrainingWatcher(ctx, characterID)
+			err := u.cs.EnableTrainingWatcher(ctx, characterID)
 			if err != nil {
 				slog.Error("Failed to enable training watcher", "characterID", characterID, "error", err)
 			}
@@ -934,7 +931,7 @@ func (u *BaseUI) notifyExpiredTrainingIfneeded(ctx context.Context, characerID i
 	if u.Settings().NotifyTrainingEnabled() {
 		go func() {
 			// TODO: earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyTrainingEarliest)
-			err := u.CharacterService().NotifyExpiredTraining(ctx, characerID, u.sendDesktopNotification)
+			err := u.cs.NotifyExpiredTraining(ctx, characerID, u.sendDesktopNotification)
 			if err != nil {
 				slog.Error("notify expired training", "error", err)
 			}
@@ -946,7 +943,7 @@ func (u *BaseUI) notifyExpiredExtractionsIfNeeded(ctx context.Context, character
 	if u.Settings().NotifyPIEnabled() {
 		go func() {
 			earliest := u.Settings().NotifyPIEarliest()
-			err := u.CharacterService().NotifyExpiredExtractions(ctx, characterID, earliest, u.sendDesktopNotification)
+			err := u.cs.NotifyExpiredExtractions(ctx, characterID, earliest, u.sendDesktopNotification)
 			if err != nil {
 				slog.Error("notify expired extractions", "characterID", characterID, "error", err)
 			}

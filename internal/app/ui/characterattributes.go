@@ -132,7 +132,7 @@ func (a *CharacterAttributes) updateData() (int, error) {
 		return 0, nil
 	}
 	ctx := context.TODO()
-	ca, err := a.u.CharacterService().GetAttributes(ctx, a.u.CurrentCharacterID())
+	ca, err := a.u.cs.GetAttributes(ctx, a.u.CurrentCharacterID())
 	if errors.Is(err, app.ErrNotFound) {
 		a.attributes = make([]attribute, 0)
 		return 0, nil

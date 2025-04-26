@@ -34,4 +34,3 @@ interface_settings:
 
 interfaces:
 	interface_settings
-	ifacemaker -s CharacterService -i CharacterService -p app -o internal/app/characterservice.go -f internal/app/characterservice/characterservice.go

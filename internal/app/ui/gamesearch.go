@@ -427,7 +427,7 @@ func (a *GameSearch) doSearch(search string) {
 	categories := xslices.Map(a.categories.Selected, func(o string) app.SearchCategory {
 		return option2searchCategory(o)
 	})
-	results, total, err := a.u.CharacterService().SearchESI(
+	results, total, err := a.u.cs.SearchESI(
 		context.Background(),
 		a.u.CurrentCharacterID(),
 		search,

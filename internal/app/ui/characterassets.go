@@ -261,7 +261,7 @@ func (a *CharacterAssets) makeLocationData() (*iwidget.TreeData[locationNode], e
 	}
 	characterID := a.u.CurrentCharacterID()
 	ctx := context.Background()
-	assets, err := a.u.CharacterService().ListAssets(ctx, characterID)
+	assets, err := a.u.cs.ListAssets(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
@@ -512,11 +512,11 @@ func (a *CharacterAssets) selectLocation(location locationNode) error {
 	var f func(context.Context, int32, int64) ([]*app.CharacterAsset, error)
 	switch location.variant {
 	case nodeShipHangar:
-		f = a.u.CharacterService().ListAssetsInShipHangar
+		f = a.u.cs.ListAssetsInShipHangar
 	case nodeItemHangar:
-		f = a.u.CharacterService().ListAssetsInItemHangar
+		f = a.u.cs.ListAssetsInItemHangar
 	default:
-		f = a.u.CharacterService().ListAssetsInLocation
+		f = a.u.cs.ListAssetsInLocation
 	}
 	assets, err := f(context.Background(), location.characterID, location.containerID)
 	if err != nil {

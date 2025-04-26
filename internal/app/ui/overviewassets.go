@@ -280,7 +280,7 @@ func (a *OverviewAssets) update() {
 
 func (a *OverviewAssets) loadData() (bool, error) {
 	ctx := context.Background()
-	cc, err := a.u.CharacterService().ListCharactersShort(ctx)
+	cc, err := a.u.cs.ListCharactersShort(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -292,7 +292,7 @@ func (a *OverviewAssets) loadData() (bool, error) {
 		m2[o.ID] = o.Name
 	}
 	a.characterNames = m2
-	assets, err := a.u.CharacterService().ListAllAssets(ctx)
+	assets, err := a.u.cs.ListAllAssets(ctx)
 	if err != nil {
 		return false, err
 	}

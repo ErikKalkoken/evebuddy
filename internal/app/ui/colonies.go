@@ -98,7 +98,7 @@ func (a *Colonies) update() {
 	var s string
 	var i widget.Importance
 	var total, expired int
-	planets, err := a.u.CharacterService().ListAllPlanets(context.Background())
+	planets, err := a.u.cs.ListAllPlanets(context.Background())
 	if err != nil {
 		slog.Error("Failed to refresh colonies UI", "err", err)
 		s = "ERROR"
