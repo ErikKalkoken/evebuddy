@@ -100,19 +100,19 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []app.Setti
 	logLevel := iwidget.NewSettingItemOptions(
 		"Log level",
 		"Set current log level",
-		a.u.Settings().LogLevelNames(),
-		a.u.Settings().LogLevelDefault(),
+		a.u.settings.LogLevelNames(),
+		a.u.settings.LogLevelDefault(),
 		func() string {
-			return a.u.Settings().LogLevel()
+			return a.u.settings.LogLevel()
 		},
 		func(v string) {
-			s := a.u.Settings()
+			s := a.u.settings
 			s.SetLogLevel(v)
 			slog.SetLogLoggerLevel(s.LogLevelSlog())
 		},
 		a.currentWindow,
 	)
-	vMin, vMax, vDef := a.u.Settings().MaxMailsPresets()
+	vMin, vMax, vDef := a.u.settings.MaxMailsPresets()
 	maxMail := iwidget.NewSettingItemSlider(
 		"Maximum mails",
 		"Max number of mails downloaded. 0 = unlimited.",
@@ -120,14 +120,14 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []app.Setti
 		float64(vMax),
 		float64(vDef),
 		func() float64 {
-			return float64(a.u.Settings().MaxMails())
+			return float64(a.u.settings.MaxMails())
 		},
 		func(v float64) {
-			a.u.Settings().SetMaxMails(int(v))
+			a.u.settings.SetMaxMails(int(v))
 		},
 		a.currentWindow,
 	)
-	vMin, vMax, vDef = a.u.Settings().MaxWalletTransactionsPresets()
+	vMin, vMax, vDef = a.u.settings.MaxWalletTransactionsPresets()
 	maxWallet := iwidget.NewSettingItemSlider(
 		"Maximum wallet transaction",
 		"Max wallet transactions downloaded. 0 = unlimited.",
@@ -135,10 +135,10 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []app.Setti
 		float64(vMax),
 		float64(vDef),
 		func() float64 {
-			return float64(a.u.Settings().MaxWalletTransactions())
+			return float64(a.u.settings.MaxWalletTransactions())
 		},
 		func(v float64) {
-			a.u.Settings().SetMaxWalletTransactions(int(v))
+			a.u.settings.SetMaxWalletTransactions(int(v))
 		},
 		a.currentWindow,
 	)
@@ -146,20 +146,20 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []app.Setti
 		"Prefer market tab",
 		"Show market tab for tradeable items",
 		func() bool {
-			return a.u.Settings().PreferMarketTab()
+			return a.u.settings.PreferMarketTab()
 		},
 		func(v bool) {
-			a.u.Settings().SetPreferMarketTab(v)
+			a.u.settings.SetPreferMarketTab(v)
 		},
 	)
 	developerMode := iwidget.NewSettingItemSwitch(
 		"Developer Mode",
 		"App shows addditional technical information like Character IDs",
 		func() bool {
-			return a.u.Settings().DeveloperMode()
+			return a.u.settings.DeveloperMode()
 		},
 		func(v bool) {
-			a.u.Settings().SetDeveloperMode(v)
+			a.u.settings.SetDeveloperMode(v)
 		},
 	)
 
@@ -178,10 +178,10 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []app.Setti
 		"Close button",
 		"App will minimize to system tray when closed (requires restart)",
 		func() bool {
-			return a.u.Settings().SysTrayEnabled()
+			return a.u.settings.SysTrayEnabled()
 		},
 		func(v bool) {
-			a.u.Settings().SetSysTrayEnabled(v)
+			a.u.settings.SetSysTrayEnabled(v)
 		},
 	)
 	if a.u.isDesktop() {
@@ -225,12 +225,12 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []app.Setti
 	reset := app.SettingAction{
 		Label: "Reset to defaults",
 		Action: func() {
-			a.u.Settings().ResetPreferMarketTab()
-			a.u.Settings().ResetDeveloperMode()
-			a.u.Settings().ResetLogLevel()
-			a.u.Settings().ResetMaxMails()
-			a.u.Settings().ResetMaxWalletTransactions()
-			a.u.Settings().ResetSysTrayEnabled()
+			a.u.settings.ResetPreferMarketTab()
+			a.u.settings.ResetDeveloperMode()
+			a.u.settings.ResetLogLevel()
+			a.u.settings.ResetMaxMails()
+			a.u.settings.ResetMaxWalletTransactions()
+			a.u.settings.ResetSysTrayEnabled()
 			list.Refresh()
 		},
 	}
@@ -263,8 +263,8 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []app.Setti
 		actions = append(actions, app.SettingAction{
 			Label: "Resets main window size to defaults",
 			Action: func() {
-				a.u.Settings().ResetWindowSize()
-				a.u.MainWindow().Resize(a.u.Settings().WindowSize())
+				a.u.settings.ResetWindowSize()
+				a.u.MainWindow().Resize(a.u.settings.WindowSize())
 			},
 		})
 	}
@@ -352,19 +352,19 @@ func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []app.SettingA
 		slices.Sort(groupsAndTypes[g])
 	}
 	slices.Sort(groups)
-	typesEnabled := a.u.Settings().NotificationTypesEnabled()
+	typesEnabled := a.u.settings.NotificationTypesEnabled()
 
 	// add global items
 	notifyCommunications := iwidget.NewSettingItemSwitch(
 		"Notify communications",
 		"Whether to notify new communications",
 		func() bool {
-			return a.u.Settings().NotifyCommunicationsEnabled()
+			return a.u.settings.NotifyCommunicationsEnabled()
 		},
 		func(on bool) {
-			a.u.Settings().SetNotifyCommunicationsEnabled(on)
+			a.u.settings.SetNotifyCommunicationsEnabled(on)
 			if on {
-				a.u.Settings().SetNotifyCommunicationsEarliest(time.Now())
+				a.u.settings.SetNotifyCommunicationsEarliest(time.Now())
 			}
 		},
 	)
@@ -372,12 +372,12 @@ func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []app.SettingA
 		"Notify mails",
 		"Whether to notify new mails",
 		func() bool {
-			return a.u.Settings().NotifyMailsEnabled()
+			return a.u.settings.NotifyMailsEnabled()
 		},
 		func(on bool) {
-			a.u.Settings().SetNotifyMailsEnabled(on)
+			a.u.settings.SetNotifyMailsEnabled(on)
 			if on {
-				a.u.Settings().SetNotifyMailsEarliest(time.Now())
+				a.u.settings.SetNotifyMailsEarliest(time.Now())
 			}
 		},
 	)
@@ -385,12 +385,12 @@ func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []app.SettingA
 		"Planetary Industry",
 		"Whether to notify about expired extractions",
 		func() bool {
-			return a.u.Settings().NotifyPIEnabled()
+			return a.u.settings.NotifyPIEnabled()
 		},
 		func(on bool) {
-			a.u.Settings().SetNotifyPIEnabled(on)
+			a.u.settings.SetNotifyPIEnabled(on)
 			if on {
-				a.u.Settings().SetNotifyPIEarliest(time.Now())
+				a.u.settings.SetNotifyPIEarliest(time.Now())
 			}
 		},
 	)
@@ -398,7 +398,7 @@ func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []app.SettingA
 		"Notify Training",
 		"Whether to notify abouthen skillqueue is empty",
 		func() bool {
-			return a.u.Settings().NotifyTrainingEnabled()
+			return a.u.settings.NotifyTrainingEnabled()
 		},
 		func(on bool) {
 			ctx := context.Background()
@@ -407,14 +407,14 @@ func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []app.SettingA
 				if err != nil {
 					a.u.ShowErrorDialog("failed to enable training notification", err, a.currentWindow())
 				} else {
-					a.u.Settings().SetNotifyTrainingEnabled(on)
+					a.u.settings.SetNotifyTrainingEnabled(on)
 				}
 			} else {
 				err := a.u.cs.DisableAllTrainingWatchers(ctx)
 				if err != nil {
 					a.u.ShowErrorDialog("failed to disable training notification", err, a.currentWindow())
 				} else {
-					a.u.Settings().SetNotifyCommunicationsEnabled(false)
+					a.u.settings.SetNotifyCommunicationsEnabled(false)
 				}
 			}
 		},
@@ -423,16 +423,16 @@ func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []app.SettingA
 		"Notify Contracts",
 		"Whether to notify when contract status changes",
 		func() bool {
-			return a.u.Settings().NotifyContractsEnabled()
+			return a.u.settings.NotifyContractsEnabled()
 		},
 		func(on bool) {
-			a.u.Settings().SetNotifyContractsEnabled(on)
+			a.u.settings.SetNotifyContractsEnabled(on)
 			if on {
-				a.u.Settings().SetNotifyContractsEarliest(time.Now())
+				a.u.settings.SetNotifyContractsEarliest(time.Now())
 			}
 		},
 	)
-	vMin, vMax, vDef := a.u.Settings().NotifyTimeoutHoursPresets()
+	vMin, vMax, vDef := a.u.settings.NotifyTimeoutHoursPresets()
 	notifTimeout := iwidget.NewSettingItemSlider(
 		"Notify Timeout",
 		"Events older then this value in hours will not be notified",
@@ -440,10 +440,10 @@ func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []app.SettingA
 		float64(vMax),
 		float64(vDef),
 		func() float64 {
-			return float64(a.u.Settings().NotifyTimeoutHours())
+			return float64(a.u.settings.NotifyTimeoutHours())
 		},
 		func(v float64) {
-			a.u.Settings().SetNotifyTimeoutHours(int(v))
+			a.u.settings.SetNotifyTimeoutHours(int(v))
 		},
 		a.currentWindow,
 	)
@@ -484,7 +484,7 @@ func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []app.SettingA
 						} else {
 							typesEnabled.Remove(ntStr)
 						}
-						a.u.Settings().SetNotificationTypesEnabled(typesEnabled)
+						a.u.settings.SetNotificationTypesEnabled(typesEnabled)
 					},
 				)
 				items2 = append(items2, it)
@@ -565,19 +565,19 @@ func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []app.SettingA
 	reset := app.SettingAction{
 		Label: "Reset to defaults",
 		Action: func() {
-			a.u.Settings().ResetNotifyCommunicationsEnabled()
-			a.u.Settings().ResetNotifyContractsEnabled()
-			a.u.Settings().ResetNotifyMailsEnabled()
-			a.u.Settings().ResetNotifyPIEnabled()
-			a.u.Settings().ResetNotifyTimeoutHours()
-			a.u.Settings().ResetNotifyTrainingEnabled()
+			a.u.settings.ResetNotifyCommunicationsEnabled()
+			a.u.settings.ResetNotifyContractsEnabled()
+			a.u.settings.ResetNotifyMailsEnabled()
+			a.u.settings.ResetNotifyPIEnabled()
+			a.u.settings.ResetNotifyTimeoutHours()
+			a.u.settings.ResetNotifyTrainingEnabled()
 			typesEnabled.Clear()
-			a.u.Settings().ResetNotificationTypesEnabled()
+			a.u.settings.ResetNotificationTypesEnabled()
 			list.Refresh()
 		},
 	}
 	updateTypes := func() {
-		a.u.Settings().SetNotificationTypesEnabled(typesEnabled)
+		a.u.settings.SetNotificationTypesEnabled(typesEnabled)
 		list.Refresh()
 	}
 	none := app.SettingAction{

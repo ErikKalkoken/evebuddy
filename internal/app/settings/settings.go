@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -60,8 +59,6 @@ const (
 type Settings struct {
 	p fyne.Preferences
 }
-
-var _ app.Settings = (*Settings)(nil)
 
 // New returns a new Settings object.
 func New(p fyne.Preferences) *Settings {

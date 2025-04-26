@@ -198,7 +198,7 @@ func NewGameSearch(u *BaseUI) *GameSearch {
 	)
 	a.showRecent()
 	go func() {
-		ids := a.u.Settings().RecentSearches()
+		ids := a.u.settings.RecentSearches()
 		if len(ids) == 0 {
 			return
 		}
@@ -263,7 +263,7 @@ func (a *GameSearch) storeRecentItems() {
 	ids := xslices.Map(a.recentItems, func(x *app.EveEntity) int32 {
 		return x.ID
 	})
-	a.u.Settings().SetRecentSearches(ids)
+	a.u.settings.SetRecentSearches(ids)
 }
 
 func (a *GameSearch) CreateRenderer() fyne.WidgetRenderer {

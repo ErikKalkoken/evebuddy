@@ -121,7 +121,7 @@ type BaseUI struct {
 	js                 *janiceservice.JaniceService
 	memcache           app.CacheService
 	scs                *statuscacheservice.StatusCacheService
-	settings           app.Settings
+	settings           *settings.Settings
 	snackbar           *iwidget.Snackbar
 	statusWindow       fyne.Window
 	wasStarted         atomic.Bool // whether the app has already been started at least once
@@ -288,7 +288,7 @@ func (u *BaseUI) MainWindow() fyne.Window {
 }
 
 func (u *BaseUI) IsDeveloperMode() bool {
-	return u.Settings().DeveloperMode()
+	return u.settings.DeveloperMode()
 }
 
 func (u *BaseUI) IsOffline() bool {
@@ -307,7 +307,7 @@ func (u *BaseUI) Init() {
 	var c *app.Character
 	var err error
 	ctx := context.Background()
-	if cID := u.Settings().LastCharacterID(); cID != 0 {
+	if cID := u.settings.LastCharacterID(); cID != 0 {
 		c, err = u.cs.GetCharacter(ctx, int32(cID))
 		if err != nil {
 			if !errors.Is(err, app.ErrNotFound) {
@@ -334,7 +334,7 @@ func (u *BaseUI) Init() {
 
 // humanizeError returns user friendly representation of an error for display in the UI.
 func (u *BaseUI) humanizeError(err error) string {
-	if u.Settings().DeveloperMode() {
+	if u.settings.DeveloperMode() {
 		return err.Error()
 	}
 	return err.Error()
@@ -355,10 +355,6 @@ func (u *BaseUI) MakeWindowTitle(subTitle string) string {
 		return subTitle
 	}
 	return fmt.Sprintf("%s - %s", subTitle, u.appName())
-}
-
-func (u *BaseUI) Settings() app.Settings {
-	return u.settings
 }
 
 // ShowAndRun shows the UI and runs the Fyne loop (blocking),
@@ -507,14 +503,14 @@ func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Wi
 
 func (u *BaseUI) resetCharacter() {
 	u.character = nil
-	u.Settings().ResetLastCharacterID()
+	u.settings.ResetLastCharacterID()
 	u.updateCharacter()
 	u.updateStatus()
 }
 
 func (u *BaseUI) setCharacter(c *app.Character) {
 	u.character = c
-	u.Settings().SetLastCharacterID(c.ID)
+	u.settings.SetLastCharacterID(c.ID)
 	u.updateCharacter()
 	u.updateStatus()
 	if u.onSetCharacter != nil {
@@ -552,7 +548,7 @@ func (u *BaseUI) updateMailIndicator() {
 	if u.ShowMailIndicator == nil || u.HideMailIndicator == nil {
 		return
 	}
-	if !u.Settings().SysTrayEnabled() {
+	if !u.settings.SysTrayEnabled() {
 		return
 	}
 	n, err := u.cs.GetAllMailUnreadCount(context.Background())
@@ -721,21 +717,21 @@ func (u *BaseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	var sections []app.CharacterSection
 	if u.IsMobile() && !u.isForeground.Load() {
 		// only update what is needed for notifications on mobile when running in background to save battery
-		if u.Settings().NotifyCommunicationsEnabled() {
+		if u.settings.NotifyCommunicationsEnabled() {
 			sections = append(sections, app.SectionNotifications)
 		}
-		if u.Settings().NotifyContractsEnabled() {
+		if u.settings.NotifyContractsEnabled() {
 			sections = append(sections, app.SectionContracts)
 		}
-		if u.Settings().NotifyMailsEnabled() {
+		if u.settings.NotifyMailsEnabled() {
 			sections = append(sections, app.SectionMailLabels)
 			sections = append(sections, app.SectionMailLists)
 			sections = append(sections, app.SectionMails)
 		}
-		if u.Settings().NotifyPIEnabled() {
+		if u.settings.NotifyPIEnabled() {
 			sections = append(sections, app.SectionPlanets)
 		}
-		if u.Settings().NotifyTrainingEnabled() {
+		if u.settings.NotifyTrainingEnabled() {
 			sections = append(sections, app.SectionSkillqueue)
 			sections = append(sections, app.SectionSkills)
 		}
@@ -763,8 +759,8 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			CharacterID:           characterID,
 			Section:               s,
 			ForceUpdate:           forceUpdate,
-			MaxMails:              u.Settings().MaxMails(),
-			MaxWalletTransactions: u.Settings().MaxWalletTransactions(),
+			MaxMails:              u.settings.MaxMails(),
+			MaxWalletTransactions: u.settings.MaxWalletTransactions(),
 		})
 	if err != nil {
 		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
@@ -792,9 +788,9 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			u.contractsActive.update()
 			u.contractsAll.update()
 		}
-		if u.Settings().NotifyContractsEnabled() {
+		if u.settings.NotifyContractsEnabled() {
 			go func() {
-				earliest := u.Settings().NotifyContractsEarliest()
+				earliest := u.settings.NotifyContractsEarliest()
 				if err := u.cs.NotifyUpdatedContracts(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
 					slog.Error("notify contract update", "error", err)
 				}
@@ -845,9 +841,9 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 				u.characterMail.update()
 			}
 		}
-		if u.Settings().NotifyMailsEnabled() {
+		if u.settings.NotifyMailsEnabled() {
 			go func() {
-				earliest := u.Settings().NotifyMailsEarliest()
+				earliest := u.settings.NotifyMailsEarliest()
 				if err := u.cs.NotifyMails(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
 					slog.Error("notify mails", "characterID", characterID, "error", err)
 				}
@@ -857,10 +853,10 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		if isShown && needsRefresh {
 			u.characterCommunications.update()
 		}
-		if u.Settings().NotifyCommunicationsEnabled() {
+		if u.settings.NotifyCommunicationsEnabled() {
 			go func() {
-				earliest := u.Settings().NotifyCommunicationsEarliest()
-				typesEnabled := u.Settings().NotificationTypesEnabled()
+				earliest := u.settings.NotifyCommunicationsEarliest()
+				typesEnabled := u.settings.NotificationTypesEnabled()
 				err := u.cs.NotifyCommunications(
 					ctx,
 					characterID,
@@ -884,7 +880,7 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 
 	case app.SectionSkillqueue:
-		if u.Settings().NotifyTrainingEnabled() {
+		if u.settings.NotifyTrainingEnabled() {
 			err := u.cs.EnableTrainingWatcher(ctx, characterID)
 			if err != nil {
 				slog.Error("Failed to enable training watcher", "characterID", characterID, "error", err)
@@ -920,7 +916,7 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 }
 
 func (u *BaseUI) notifyExpiredTrainingIfneeded(ctx context.Context, characerID int32) {
-	if u.Settings().NotifyTrainingEnabled() {
+	if u.settings.NotifyTrainingEnabled() {
 		go func() {
 			// TODO: earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyTrainingEarliest)
 			err := u.cs.NotifyExpiredTraining(ctx, characerID, u.sendDesktopNotification)
@@ -932,9 +928,9 @@ func (u *BaseUI) notifyExpiredTrainingIfneeded(ctx context.Context, characerID i
 }
 
 func (u *BaseUI) notifyExpiredExtractionsIfNeeded(ctx context.Context, characterID int32) {
-	if u.Settings().NotifyPIEnabled() {
+	if u.settings.NotifyPIEnabled() {
 		go func() {
-			earliest := u.Settings().NotifyPIEarliest()
+			earliest := u.settings.NotifyPIEarliest()
 			err := u.cs.NotifyExpiredExtractions(ctx, characterID, earliest, u.sendDesktopNotification)
 			if err != nil {
 				slog.Error("notify expired extractions", "characterID", characterID, "error", err)

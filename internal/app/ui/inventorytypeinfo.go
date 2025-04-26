@@ -169,7 +169,7 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 	}()
 	tabs.Append(marketTab)
 	// Set initial tab
-	if a.iw.u.Settings().PreferMarketTab() && a.et.IsTradeable() {
+	if a.iw.u.settings.PreferMarketTab() && a.et.IsTradeable() {
 		tabs.Select(marketTab)
 	} else if requirementsTab != nil && a.et.Group.Category.ID == app.EveCategorySkill {
 		tabs.Select(requirementsTab)
