@@ -30,9 +30,6 @@ mkdir "$dest"
 # Extract application files into appdir folder
 tar xvfJ "$appname".tar.xz -C "$source"
 
-# Rename desktop file to match AppStream requirements
-mv "$source/usr/local/share/applications/$appname.desktop" "$source/usr/local/share/applications/$appid.desktop"
-
 # Add AppStream appdata file
 mkdir -p $dest/usr/share/metainfo
 ./fynemeta generate -t AppStream -s "$metadir" -d "$dest/usr/share/metainfo"
@@ -40,7 +37,7 @@ mkdir -p $dest/usr/share/metainfo
 # Create appimage
 wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage -O linuxdeploy
 chmod +x linuxdeploy
-./linuxdeploy --appdir "$dest" -v 2 -o appimage -e "$source/usr/local/bin/$buildname"  -d "$source/usr/local/share/applications/$appid.desktop" -i "$source/usr/local/share/pixmaps/$appname.png"
+./linuxdeploy --appdir "$dest" -v 2 -o appimage -e "$source/usr/local/bin/$buildname"  -d "$source/usr/local/share/applications/$appid.desktop" -i "$source/usr/local/share/pixmaps/$appid.png"
 
 # Cleanup
 rm -rf "$source"

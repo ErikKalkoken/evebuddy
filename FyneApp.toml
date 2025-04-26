@@ -5,7 +5,7 @@ Website = "https://github.com/ErikKalkoken/evebuddy"
   Name = "EVE Buddy"
   ID = "io.github.erikkalkoken.evebuddy"
   Version = "0.25.0"
-  Build = 0
+  Build = 2
 
 [Release]
   BuildName = "evebuddy"
