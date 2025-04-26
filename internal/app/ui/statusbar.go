@@ -167,7 +167,7 @@ func (a *statusBar) startUpdateTicker() {
 	esiStatusTicker := time.NewTicker(esiStatusUpdateTicker)
 	go func() {
 		for {
-			x, err := a.u.ESIStatusService().Fetch(context.TODO())
+			x, err := a.u.ess.Fetch(context.TODO())
 			var t, errorMessage string
 			var s eveStatus
 			if err != nil {

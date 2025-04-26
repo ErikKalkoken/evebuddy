@@ -11,9 +11,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
-// Ensure service implements interface.
-var _ app.ESIStatusService = (*ESIStatusService)(nil)
-
 // ESIStatusService provides information about the current status of the ESI API.
 type ESIStatusService struct {
 	esiClient *goesi.APIClient

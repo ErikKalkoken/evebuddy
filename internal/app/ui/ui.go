@@ -1,3 +1,4 @@
+// Package ui implements the graphical user interface of the app.
 package ui
 
 import (
@@ -25,6 +26,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
@@ -109,7 +111,7 @@ type BaseUI struct {
 	cs                 *characterservice.CharacterService
 	dataPaths          map[string]string // Paths to user data
 	eis                *eveimageservice.EveImageService
-	ess                app.ESIStatusService
+	ess                *esistatusservice.ESIStatusService
 	eus                *eveuniverseservice.EveUniverseService
 	isForeground       atomic.Bool // whether the app is currently shown in the foreground
 	isMobile           bool
@@ -129,7 +131,7 @@ type BaseUI struct {
 type BaseUIParams struct {
 	App                fyne.App
 	CharacterService   *characterservice.CharacterService
-	ESIStatusService   app.ESIStatusService
+	ESIStatusService   *esistatusservice.ESIStatusService
 	EveImageService    *eveimageservice.EveImageService
 	EveUniverseService *eveuniverseservice.EveUniverseService
 	JaniceService      *janiceservice.JaniceService
@@ -275,10 +277,6 @@ func (u *BaseUI) App() fyne.App {
 
 func (u *BaseUI) ClearAllCaches() {
 	u.clearCache()
-}
-
-func (u *BaseUI) ESIStatusService() app.ESIStatusService {
-	return u.ess
 }
 
 func (u *BaseUI) MemCache() app.CacheService {
