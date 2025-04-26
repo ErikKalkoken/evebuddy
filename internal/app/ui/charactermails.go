@@ -516,7 +516,7 @@ func (a *CharacterMails) makeFolderTopText(f FolderNode) (string, widget.Importa
 	if !a.u.hasCharacter() {
 		return "No Character", widget.LowImportance
 	}
-	hasData := a.u.StatusCacheService().CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionSkillqueue)
+	hasData := a.u.scs.CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionSkillqueue)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

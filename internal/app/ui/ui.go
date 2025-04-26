@@ -28,6 +28,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
@@ -117,7 +118,7 @@ type BaseUI struct {
 	isUpdateDisabled   bool        // Whether to disable update tickers (useful for debugging)
 	js                 *janiceservice.JaniceService
 	memcache           app.CacheService
-	scs                app.StatusCacheService
+	scs                *statuscacheservice.StatusCacheService
 	settings           app.Settings
 	snackbar           *iwidget.Snackbar
 	statusWindow       fyne.Window
@@ -133,7 +134,7 @@ type BaseUIParams struct {
 	EveUniverseService *eveuniverseservice.EveUniverseService
 	JaniceService      *janiceservice.JaniceService
 	MemCache           app.CacheService
-	StatusCacheService app.StatusCacheService
+	StatusCacheService *statuscacheservice.StatusCacheService
 	// optional
 	ClearCacheFunc   func()
 	IsOffline        bool
@@ -282,10 +283,6 @@ func (u *BaseUI) ESIStatusService() app.ESIStatusService {
 
 func (u *BaseUI) MemCache() app.CacheService {
 	return u.memcache
-}
-
-func (u *BaseUI) StatusCacheService() app.StatusCacheService {
-	return u.scs
 }
 
 func (u *BaseUI) MainWindow() fyne.Window {
@@ -573,7 +570,7 @@ func (u *BaseUI) updateMailIndicator() {
 }
 
 func (u *BaseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
-	cc := u.StatusCacheService().ListCharacters()
+	cc := u.scs.ListCharacters()
 	items := make([]*fyne.MenuItem, 0)
 	if len(cc) == 0 {
 		it := fyne.NewMenuItem("No characters", nil)

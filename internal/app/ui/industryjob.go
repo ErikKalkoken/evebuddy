@@ -203,7 +203,7 @@ func (a *IndustryJobs) showJob(r *app.CharacterIndustryJob) {
 			a.u.ShowEveEntityInfoWindow(r.Installer)
 		})),
 		widget.NewFormItem("Owner", newTappableLabelWithWrap(
-			a.u.StatusCacheService().CharacterName(r.CharacterID),
+			a.u.scs.CharacterName(r.CharacterID),
 			func() {
 				a.u.ShowInfoWindow(app.EveEntityCharacter, r.CharacterID)
 			},

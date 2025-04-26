@@ -119,7 +119,7 @@ func (a *CharacterAttributes) update() {
 }
 
 func (a *CharacterAttributes) makeTopText(total int) (string, widget.Importance) {
-	hasData := a.u.StatusCacheService().CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionAttributes)
+	hasData := a.u.scs.CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionAttributes)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

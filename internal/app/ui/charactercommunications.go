@@ -258,7 +258,7 @@ func (a *CharacterCommunications) update() {
 }
 
 func (a *CharacterCommunications) makeFolderTopText() (string, widget.Importance) {
-	hasData := a.u.StatusCacheService().CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
+	hasData := a.u.scs.CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for data to load...", widget.WarningImportance
 	}

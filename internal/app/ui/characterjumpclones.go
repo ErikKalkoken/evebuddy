@@ -220,7 +220,7 @@ func (a *CharacterJumpClones) RefreshTop() {
 		})
 		return
 	}
-	hasData := a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionJumpClones)
+	hasData := a.u.scs.CharacterSectionExists(c.ID, app.SectionJumpClones)
 	if !hasData {
 		s.Text = "Waiting for character data to be loaded..."
 		s.Style.ColorName = theme.ColorNameWarning

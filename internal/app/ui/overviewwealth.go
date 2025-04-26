@@ -173,8 +173,8 @@ func (a *OverviewWealth) compileData() ([]dataRow, int, error) {
 	}
 	selected := make([]*app.Character, 0)
 	for _, c := range cc {
-		hasAssets := a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionAssets)
-		hasWallet := a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionWalletBalance)
+		hasAssets := a.u.scs.CharacterSectionExists(c.ID, app.SectionAssets)
+		hasWallet := a.u.scs.CharacterSectionExists(c.ID, app.SectionWalletBalance)
 		if hasAssets && hasWallet {
 			selected = append(selected, c)
 		}

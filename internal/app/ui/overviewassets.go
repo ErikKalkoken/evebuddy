@@ -350,10 +350,10 @@ func (a *OverviewAssets) updateFoundInfo() {
 }
 
 func (a *OverviewAssets) characterCount() int {
-	cc := a.u.StatusCacheService().ListCharacters()
+	cc := a.u.scs.ListCharacters()
 	validCount := 0
 	for _, c := range cc {
-		if a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionAssets) {
+		if a.u.scs.CharacterSectionExists(c.ID, app.SectionAssets) {
 			validCount++
 		}
 	}

@@ -209,7 +209,7 @@ func (a *statusBar) startUpdateTicker() {
 }
 
 func (a *statusBar) update() {
-	x := a.u.StatusCacheService().ListCharacters()
+	x := a.u.scs.ListCharacters()
 	fyne.Do(func() {
 		a.characterCount.SetText(strconv.Itoa(len(x)))
 		a.refreshUpdateStatus()
@@ -217,7 +217,7 @@ func (a *statusBar) update() {
 }
 
 func (a *statusBar) refreshUpdateStatus() {
-	x := a.u.StatusCacheService().Summary()
+	x := a.u.scs.Summary()
 	a.updateStatus.SetTextAndImportance(x.Display(), x.Status().ToImportance())
 }
 

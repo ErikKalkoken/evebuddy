@@ -151,7 +151,7 @@ func (a *CharacterWalletJournal) makeTopText() (string, widget.Importance) {
 		return "No character", widget.LowImportance
 	}
 	c := a.u.currentCharacter()
-	hasData := a.u.StatusCacheService().CharacterSectionExists(c.ID, app.SectionWalletJournal)
+	hasData := a.u.scs.CharacterSectionExists(c.ID, app.SectionWalletJournal)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

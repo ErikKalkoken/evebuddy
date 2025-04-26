@@ -200,7 +200,7 @@ func (a *CharacterSkillCatalogue) update() {
 		}
 	})
 	t, i, err := func() (string, widget.Importance, error) {
-		exists := a.u.StatusCacheService().GeneralSectionExists(app.SectionEveCategories)
+		exists := a.u.scs.GeneralSectionExists(app.SectionEveCategories)
 		if !exists {
 			return "Waiting for universe data to be loaded...", widget.WarningImportance, nil
 		}

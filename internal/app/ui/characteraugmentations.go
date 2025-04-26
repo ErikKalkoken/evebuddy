@@ -128,7 +128,7 @@ func (a *CharacterAugmentations) updateImplants() error {
 }
 
 func (a *CharacterAugmentations) makeTopText() (string, widget.Importance) {
-	hasData := a.u.StatusCacheService().CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
+	hasData := a.u.scs.CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

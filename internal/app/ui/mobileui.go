@@ -510,7 +510,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		tickerUpdateStatus := time.NewTicker(5 * time.Second)
 		go func() {
 			for {
-				x := u.StatusCacheService().Summary()
+				x := u.scs.Summary()
 				fyne.Do(func() {
 					u.navItemUpdateStatus.Supporting = x.Display()
 					toolsList.Refresh()

@@ -547,7 +547,7 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 			a.security,
 		),
 	)
-	name := a.iw.u.StatusCacheService().CharacterName(a.id)
+	name := a.iw.u.scs.CharacterName(a.id)
 	name = strings.ReplaceAll(name, " ", "_")
 	forums := iwidget.NewTappableIcon(icons.EvelogoPng, func() {
 		a.iw.openURL(fmt.Sprintf("https://forums.eveonline.com/u/%s/summary", name))
