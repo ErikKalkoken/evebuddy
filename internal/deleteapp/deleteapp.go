@@ -132,6 +132,6 @@ func (u *UI) removeFolders(ctx context.Context, pb *widget.ProgressBar) error {
 	for k := range keys.Values() {
 		u.app.Preferences().RemoveValue(k)
 	}
-	slog.Info("Deleted setting keys", "count", len(keys))
+	slog.Info("Deleted setting keys", "count", keys.Size())
 	return nil
 }

@@ -1,4 +1,4 @@
-// Package set implements a generic set container type.
+// Package set provides a generic set container type.
 package set
 
 import (
@@ -10,27 +10,34 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
-// Set is a container for a set of values.
+// Set is a container for a set of values of type T.
 //
-// Sets are not thread safe.
-// Sets must be initialized with New() before use.
-type Set[T comparable] map[T]struct{}
+// The zero value of Set is an empty set and ready for use.
+//
+// For comparing sets you must use the[Set.Equal] method.
+//
+// Sets must not be used concurrently.
+type Set[T comparable] struct {
+	m map[T]struct{}
+}
 
-// New returns a new Set.
+// New returns a new set.
+// It can optionally be initialized with a list of values vals.
 func New[T comparable](vals ...T) Set[T] {
 	s := Set[T]{}
+	s.init()
 	for _, v := range vals {
-		s[v] = struct{}{}
+		s.m[v] = struct{}{}
 	}
 	return s
 }
 
-// NewFromSlice returns a new set from the elements of a slice.
-func NewFromSlice[T comparable](slice []T) Set[T] {
-	return New(slice...)
+// NewFromSlice returns a new set created from the elements of slice x.
+func NewFromSlice[T comparable](x []T) Set[T] {
+	return New(x...)
 }
 
-// Collect creates a new set from an iterable.
+// Collect returns a new set created from the elements of iterable seq.
 func Collect[T comparable](seq iter.Seq[T]) Set[T] {
 	s := New[T]()
 	for v := range seq {
@@ -39,34 +46,44 @@ func Collect[T comparable](seq iter.Seq[T]) Set[T] {
 	return s
 }
 
-// Add adds an element to the set
-func (s Set[T]) Add(v T) {
-	s[v] = struct{}{}
+// Add adds element v to set s.
+func (s *Set[T]) Add(v T) {
+	if s.m == nil {
+		s.init()
+	}
+	s.m[v] = struct{}{}
 }
 
-// Clear removes all elements from a set.
+// init initializes set s.
+func (s *Set[T]) init() {
+	s.m = make(map[T]struct{})
+}
+
+// Clear removes all elements from set s.
 func (s Set[T]) Clear() {
-	for k := range s {
-		delete(s, k)
+	if s.m == nil {
+		return
+	}
+	for k := range s.m {
+		delete(s.m, k)
 	}
 }
 
-// Clone returns a clone of a set.
+// Clone returns a new set, which is a clone clone of a set s.
 func (s Set[T]) Clone() Set[T] {
 	return New(s.ToSlice()...)
 }
 
-// Contains reports whether an item is in this set.
+// Contains reports whether element v is in set s.
 func (s Set[T]) Contains(v T) bool {
-	_, ok := s[v]
+	_, ok := s.m[v]
 	return ok
 }
 
-// Difference returns a new set which elements from current set,
-// that does not exist in other set.
+// Difference returns a new set with the difference between the sets s and u.
 func (s Set[T]) Difference(u Set[T]) Set[T] {
 	n := New[T]()
-	for v := range s {
+	for v := range s.m {
 		if !u.Contains(v) {
 			n.Add(v)
 		}
@@ -74,20 +91,32 @@ func (s Set[T]) Difference(u Set[T]) Set[T] {
 	return n
 }
 
-// Equal reports whether two sets are equal.
+// Discard discards element v from set s if it is present.
+// It does nothing when s does not contain v or when s is empty.
+func (s Set[T]) Discard(v T) {
+	delete(s.m, v)
+}
+
+// Equal reports whether sets s and u are equal.
 func (s Set[T]) Equal(u Set[T]) bool {
 	if s.Size() != u.Size() {
 		return false
 	}
-	d := s.Difference(u)
-	x := d.Size()
-	return x == 0
+	if s.IsEmpty() && u.IsEmpty() {
+		return true
+	}
+	for v := range s.m {
+		if !u.Contains(v) {
+			return false
+		}
+	}
+	return true
 }
 
-// Intersect returns a new set which contains elements found in both sets only.
+// Intersect returns a new set which contains the intersection between the sets s and u.
 func (s Set[T]) Intersect(u Set[T]) Set[T] {
 	n := New[T]()
-	for v := range s {
+	for v := range s.m {
 		if u.Contains(v) {
 			n.Add(v)
 		}
@@ -95,72 +124,107 @@ func (s Set[T]) Intersect(u Set[T]) Set[T] {
 	return n
 }
 
-// IsDisjoint reports whether a set has any elements in common with another set.
+// IsDisjoint reports whether set s has any elements in common with set u.
 func (s Set[T]) IsDisjoint(u Set[T]) bool {
 	x := s.Intersect(u)
 	return x.Size() == 0
 }
 
-// IsSubset reports whether a set is the subset of another set.
+// IsEmpty reports whether set s is empty.
+func (s Set[T]) IsEmpty() bool {
+	return s.Size() == 0
+}
+
+// IsSubset reports whether set s is the subset of set u.
 func (s Set[T]) IsSubset(u Set[T]) bool {
 	x := s.Difference(u)
 	return x.Size() == 0
 }
 
-// IsSuperset reports whether a set is the superset of another set.
+// IsSuperset reports whether set s is the superset of set u.
 func (s Set[T]) IsSuperset(u Set[T]) bool {
 	x := u.Difference(s)
 	return x.Size() == 0
 }
 
-// Remove removes an element from a set.
-// It does nothing when the element doesn't exist.
-func (s Set[T]) Remove(v T) {
-	delete(s, v)
+// MustPop removes a random element from set s and returns it when s is not empty.
+// It panics if s is empty.
+func (s Set[T]) MustPop() T {
+	x, err := s.Pop()
+	if err != nil {
+		panic(err)
+	}
+	return x
 }
 
-// Pop removes a random element from a set and returns it.
-// Or if the set is empty an error is returned.
+// MustRemove removes element v from set s.
+// It panics if s does not contain v.
+func (s Set[T]) MustRemove(v T) {
+	err := s.Remove(v)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// Pop removes a random element from set s and returns it when s is not empty.
+// When s is empty it returns [ErrNotFound].
 func (s Set[T]) Pop() (T, error) {
-	for v := range s {
-		delete(s, v)
+	for v := range s.m {
+		delete(s.m, v)
 		return v, nil
 	}
 	var x T
 	return x, ErrNotFound
 }
 
-// Size returns the number of elements in a set.
-func (s Set[T]) Size() int {
-	return len(s)
+// Remove removes element v from set s.
+// Returns [ErrNotFound] if v is not present.
+func (s Set[T]) Remove(v T) error {
+	if !s.Contains(v) {
+		return ErrNotFound
+	}
+	s.Discard(v)
+	return nil
 }
 
+// Size returns the number of elements in set s. An empty set returns 0.
+func (s Set[T]) Size() int {
+	return len(s.m)
+}
+
+// String returns a string representation of set s.
 func (s Set[T]) String() string {
 	return fmt.Sprint(s.ToSlice())
 }
 
-// ToSlice converts a set to a slice and returns it.
-// Note that the elements in the slice have no defined order.
+// Difference returns a new set with the difference between the sets s and u.
+func (s Set[T]) SymetricDifference(u Set[T]) Set[T] {
+	return s.Union(u).Difference(s.Intersect(u))
+}
+
+// ToSlice creates a new slice from the elements of set s and returns it.
+//
+// Note that the order of elements is undefined.
 func (s Set[T]) ToSlice() []T {
 	slice := make([]T, 0, s.Size())
-	for v := range s {
+	for v := range s.m {
 		slice = append(slice, v)
 	}
 	return slice
 }
 
-// Union returns a new set containing the combined elements from both sets.
+// Union returns a new set containing the combined elements from the sets s and u.
 func (s Set[T]) Union(u Set[T]) Set[T] {
 	n := s.Clone()
-	for v := range u {
+	for v := range u.m {
 		n.Add(v)
 	}
 	return n
 }
 
-// Values returns on iterator over all elements of a set.
+// Values returns on iterator over all elements of set s.
 //
-// Since sets are unordered, elements will be returned in no particular order.
+// Note that the order of elements is undefined.
 func (s Set[T]) Values() iter.Seq[T] {
-	return maps.Keys(s)
+	return maps.Keys(s.m)
 }

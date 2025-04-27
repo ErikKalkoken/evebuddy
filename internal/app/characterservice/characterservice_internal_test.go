@@ -103,7 +103,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 			assert.True(t, changed)
 			ids, err := st.ListCharacterAssetIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Len(t, ids, 2)
+				assert.Equal(t, 2, ids.Size())
 				x, err := st.GetCharacterAsset(ctx, c.ID, 1000000016835)
 				if assert.NoError(t, err) {
 					assert.Equal(t, eveType.ID, x.Type.ID)
@@ -248,7 +248,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 			assert.True(t, changed)
 			ids, err := st.ListCharacterAssetIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Len(t, ids, 2)
+				assert.Equal(t, 2, ids.Size())
 				x, err := st.GetCharacterAsset(ctx, c.ID, 1000000016835)
 				if assert.NoError(t, err) {
 					assert.Equal(t, eveType.ID, x.Type.ID)
@@ -1206,7 +1206,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			}
 			ids, err := st.ListCharacterNotificationIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Len(t, ids, 1)
+				assert.Equal(t, 1, ids.Size())
 			}
 		}
 	})
@@ -1249,7 +1249,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			}
 			ids, err := st.ListCharacterNotificationIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Len(t, ids, 2)
+				assert.Equal(t, 2, ids.Size())
 			}
 		}
 	})
@@ -1290,7 +1290,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			}
 			ids, err := st.ListCharacterNotificationIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Len(t, ids, 1)
+				assert.Equal(t, 1, ids.Size())
 			}
 		}
 	})
@@ -1992,7 +1992,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			}
 			ids, err := st.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Len(t, ids, 1)
+				assert.Equal(t, 1, ids.Size())
 			}
 		}
 	})
@@ -2037,7 +2037,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			}
 			ids, err := st.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Len(t, ids, 2)
+				assert.Equal(t, 2, ids.Size())
 			}
 		}
 	})
@@ -2085,7 +2085,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			}
 			ids, err := st.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Len(t, ids, 1)
+				assert.Equal(t, 1, ids.Size())
 			}
 		}
 	})
@@ -2142,7 +2142,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			assert.True(t, changed)
 			ids, err := st.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				if assert.Len(t, ids, 2) {
+				if assert.Equal(t, 2, ids.Size()) {
 					x1, err := st.GetCharacterWalletJournalEntry(ctx, c.ID, 89)
 					if assert.NoError(t, err) {
 						assert.Equal(t, "First", x1.Description)
@@ -2233,7 +2233,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			}
 			ids, err := st.ListCharacterWalletTransactionIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Len(t, ids, 1)
+				assert.Equal(t, 1, ids.Size())
 			}
 		}
 	})
@@ -2286,7 +2286,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			}
 			ids, err := st.ListCharacterWalletTransactionIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Len(t, ids, 2)
+				assert.Equal(t, 2, ids.Size())
 			}
 		}
 	})
@@ -2326,7 +2326,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		if assert.NoError(t, err) {
 			ids, err := st.ListCharacterWalletTransactionIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Len(t, ids, 1)
+				assert.Equal(t, 1, ids.Size())
 			}
 		}
 	})
@@ -2385,7 +2385,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		if assert.NoError(t, err) {
 			ids, err := st.ListCharacterWalletTransactionIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Len(t, ids, 2501)
+				assert.Equal(t, 2501, ids.Size())
 			}
 		}
 	})

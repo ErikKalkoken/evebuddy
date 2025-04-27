@@ -95,7 +95,7 @@ func (st *Storage) GetEveCharacter(ctx context.Context, characterID int32) (*app
 func (st *Storage) ListEveCharacterIDs(ctx context.Context) (set.Set[int32], error) {
 	ids, err := st.qRO.ListEveCharacterIDs(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("list EveCharacterIDs: %w", err)
+		return set.Set[int32]{}, fmt.Errorf("list EveCharacterIDs: %w", err)
 	}
 	ids2 := set.NewFromSlice(convertNumericSlice[int32](ids))
 	return ids2, nil

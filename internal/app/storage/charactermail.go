@@ -194,7 +194,7 @@ func (st *Storage) GetCharacterMailListUnreadCounts(ctx context.Context, charact
 func (st *Storage) ListCharacterMailIDs(ctx context.Context, characterID int32) (set.Set[int32], error) {
 	ids, err := st.qRO.ListMailIDs(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("list mail IDs for character %d: %w", characterID, err)
+		return set.Set[int32]{}, fmt.Errorf("list mail IDs for character %d: %w", characterID, err)
 	}
 	return set.NewFromSlice(convertNumericSlice[int32](ids)), nil
 }

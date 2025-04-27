@@ -94,7 +94,7 @@ func (st *Storage) GetOrCreateNotificationType(ctx context.Context, name string)
 func (st *Storage) ListCharacterNotificationIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
 	ids, err := st.qRO.ListCharacterNotificationIDs(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("list character notification ids for character %d: %w", characterID, err)
+		return set.Set[int64]{}, fmt.Errorf("list character notification ids for character %d: %w", characterID, err)
 	}
 	return set.NewFromSlice(ids), nil
 }

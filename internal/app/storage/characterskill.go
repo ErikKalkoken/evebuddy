@@ -42,7 +42,7 @@ func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int32, typ
 func (st *Storage) ListCharacterSkillIDs(ctx context.Context, characterID int32) (set.Set[int32], error) {
 	ids1, err := st.qRO.ListCharacterSkillIDs(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("list skill ids for character %d: %w", characterID, err)
+		return set.Set[int32]{}, fmt.Errorf("list skill ids for character %d: %w", characterID, err)
 	}
 	ids2 := set.NewFromSlice(convertNumericSlice[int32](ids1))
 	return ids2, nil
