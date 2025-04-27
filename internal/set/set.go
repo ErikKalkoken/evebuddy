@@ -14,13 +14,17 @@ var ErrNotFound = errors.New("not found")
 //
 // Sets are not thread safe.
 // Sets must be initialized with New() before use.
-type Set[T comparable] map[T]struct{}
+type Set[T comparable] struct {
+	m map[T]struct{}
+}
 
 // New returns a new Set.
 func New[T comparable](vals ...T) Set[T] {
-	s := Set[T]{}
+	s := Set[T]{
+		m: make(map[T]struct{}),
+	}
 	for _, v := range vals {
-		s[v] = struct{}{}
+		s.m[v] = struct{}{}
 	}
 	return s
 }
@@ -41,13 +45,13 @@ func Collect[T comparable](seq iter.Seq[T]) Set[T] {
 
 // Add adds an element to the set
 func (s Set[T]) Add(v T) {
-	s[v] = struct{}{}
+	s.m[v] = struct{}{}
 }
 
 // Clear removes all elements from a set.
 func (s Set[T]) Clear() {
-	for k := range s {
-		delete(s, k)
+	for k := range s.m {
+		delete(s.m, k)
 	}
 }
 
@@ -58,7 +62,7 @@ func (s Set[T]) Clone() Set[T] {
 
 // Contains reports whether an item is in this set.
 func (s Set[T]) Contains(v T) bool {
-	_, ok := s[v]
+	_, ok := s.m[v]
 	return ok
 }
 
@@ -66,7 +70,7 @@ func (s Set[T]) Contains(v T) bool {
 // that does not exist in other set.
 func (s Set[T]) Difference(u Set[T]) Set[T] {
 	n := New[T]()
-	for v := range s {
+	for v := range s.m {
 		if !u.Contains(v) {
 			n.Add(v)
 		}
@@ -87,7 +91,7 @@ func (s Set[T]) Equal(u Set[T]) bool {
 // Intersect returns a new set which contains elements found in both sets only.
 func (s Set[T]) Intersect(u Set[T]) Set[T] {
 	n := New[T]()
-	for v := range s {
+	for v := range s.m {
 		if u.Contains(v) {
 			n.Add(v)
 		}
@@ -116,14 +120,14 @@ func (s Set[T]) IsSuperset(u Set[T]) bool {
 // Remove removes an element from a set.
 // It does nothing when the element doesn't exist.
 func (s Set[T]) Remove(v T) {
-	delete(s, v)
+	delete(s.m, v)
 }
 
 // Pop removes a random element from a set and returns it.
 // Or if the set is empty an error is returned.
 func (s Set[T]) Pop() (T, error) {
-	for v := range s {
-		delete(s, v)
+	for v := range s.m {
+		delete(s.m, v)
 		return v, nil
 	}
 	var x T
@@ -132,7 +136,7 @@ func (s Set[T]) Pop() (T, error) {
 
 // Size returns the number of elements in a set.
 func (s Set[T]) Size() int {
-	return len(s)
+	return len(s.m)
 }
 
 func (s Set[T]) String() string {
@@ -143,7 +147,7 @@ func (s Set[T]) String() string {
 // Note that the elements in the slice have no defined order.
 func (s Set[T]) ToSlice() []T {
 	slice := make([]T, 0, s.Size())
-	for v := range s {
+	for v := range s.m {
 		slice = append(slice, v)
 	}
 	return slice
@@ -152,7 +156,7 @@ func (s Set[T]) ToSlice() []T {
 // Union returns a new set containing the combined elements from both sets.
 func (s Set[T]) Union(u Set[T]) Set[T] {
 	n := s.Clone()
-	for v := range u {
+	for v := range u.m {
 		n.Add(v)
 	}
 	return n
@@ -162,5 +166,5 @@ func (s Set[T]) Union(u Set[T]) Set[T] {
 //
 // Since sets are unordered, elements will be returned in no particular order.
 func (s Set[T]) Values() iter.Seq[T] {
-	return maps.Keys(s)
+	return maps.Keys(s.m)
 }

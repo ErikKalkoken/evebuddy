@@ -84,7 +84,7 @@ func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, character
 func (st *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
 	ids, err := st.qRO.ListCharacterWalletJournalEntryRefIDs(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("list wallet journal entry ids for character %d: %w", characterID, err)
+		return set.Set[int64]{}, fmt.Errorf("list wallet journal entry ids for character %d: %w", characterID, err)
 	}
 	return set.NewFromSlice(ids), nil
 }

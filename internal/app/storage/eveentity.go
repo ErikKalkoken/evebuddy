@@ -135,7 +135,7 @@ func (st *Storage) ListEveEntitiesByPartialName(ctx context.Context, partial str
 func (st *Storage) ListEveEntityIDs(ctx context.Context) (set.Set[int32], error) {
 	ids, err := st.qRO.ListEveEntityIDs(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("list eve entity id: %w", err)
+		return set.Set[int32]{}, fmt.Errorf("list eve entity id: %w", err)
 	}
 	ids2 := set.NewFromSlice(convertNumericSlice[int32](ids))
 	return ids2, nil

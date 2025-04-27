@@ -82,7 +82,7 @@ func (st *Storage) CalculateCharacterAssetTotalValue(ctx context.Context, charac
 func (st *Storage) ListCharacterAssetIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
 	ids, err := st.qRO.ListCharacterAssetIDs(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("list character asset IDs: %w", err)
+		return set.Set[int64]{}, fmt.Errorf("list character asset IDs: %w", err)
 	}
 	return set.NewFromSlice(ids), nil
 }

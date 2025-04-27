@@ -179,10 +179,10 @@ func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if len(ids) == 0 {
+	if ids.Size() == 0 {
 		return nil
 	}
-	slog.Info("Started updating eve characters", "count", len(ids))
+	slog.Info("Started updating eve characters", "count", ids.Size())
 	g := new(errgroup.Group)
 	g.SetLimit(10)
 	for id := range ids.Values() {
@@ -194,7 +194,7 @@ func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) error {
 	if err := g.Wait(); err != nil {
 		return fmt.Errorf("update EveCharacters: %w", err)
 	}
-	slog.Info("Finished updating eve characters", "count", len(ids))
+	slog.Info("Finished updating eve characters", "count", ids.Size())
 	return nil
 }
 

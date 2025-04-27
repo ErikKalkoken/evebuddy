@@ -72,7 +72,7 @@ func (st *Storage) GetCharacterWalletTransaction(ctx context.Context, characterI
 func (st *Storage) ListCharacterWalletTransactionIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
 	ids, err := st.qRO.ListCharacterWalletTransactionIDs(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("list wallet transaction ids for character %d: %w", characterID, err)
+		return set.Set[int64]{}, fmt.Errorf("list wallet transaction ids for character %d: %w", characterID, err)
 	}
 	return set.NewFromSlice(ids), nil
 }

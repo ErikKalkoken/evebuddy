@@ -62,7 +62,7 @@ func (st *Storage) ListCharacterContractBids(ctx context.Context, contractID int
 func (st *Storage) ListCharacterContractBidIDs(ctx context.Context, contractID int64) (set.Set[int32], error) {
 	ids, err := st.qRO.ListCharacterContractBidIDs(ctx, contractID)
 	if err != nil {
-		return nil, fmt.Errorf("list bid IDs for contract %d: %w", contractID, err)
+		return set.Set[int32]{}, fmt.Errorf("list bid IDs for contract %d: %w", contractID, err)
 	}
 	return set.NewFromSlice(convertNumericSlice[int32](ids)), err
 }
