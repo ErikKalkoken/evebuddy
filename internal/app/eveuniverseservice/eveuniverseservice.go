@@ -60,7 +60,8 @@ func New(args Params) *EveUniverseService {
 	return eu
 }
 
-func (s *EveUniverseService) GetAllianceESI(ctx context.Context, allianceID int32) (*app.EveAlliance, error) {
+// FetchAlliance fetches an alliance from ESI and returns it.
+func (s *EveUniverseService) FetchAlliance(ctx context.Context, allianceID int32) (*app.EveAlliance, error) {
 	a, _, err := s.esiClient.ESI.AllianceApi.GetAlliancesAllianceId(ctx, allianceID, nil)
 	if err != nil {
 		return nil, err
@@ -90,7 +91,8 @@ func (s *EveUniverseService) GetAllianceESI(ctx context.Context, allianceID int3
 	return o, nil
 }
 
-func (s *EveUniverseService) GetAllianceCorporationsESI(ctx context.Context, allianceID int32) ([]*app.EveEntity, error) {
+// FetchAllianceCorporations fetches the corporations for an alliance from ESI and returns them.
+func (s *EveUniverseService) FetchAllianceCorporations(ctx context.Context, allianceID int32) ([]*app.EveEntity, error) {
 	ids, _, err := s.esiClient.ESI.AllianceApi.GetAlliancesAllianceIdCorporations(ctx, allianceID, nil)
 	if err != nil {
 		return nil, err
@@ -115,43 +117,6 @@ func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, id int
 		return s.createCharacterFromESI(ctx, id)
 	}
 	return o, err
-}
-
-func (s *EveUniverseService) GetCharacterESI(ctx context.Context, characterID int32) (*app.EveCharacter, error) {
-	c, err := s.fetchCharacterfromESI(ctx, characterID)
-	if err != nil {
-		return nil, err
-	}
-	_, err = s.AddMissingEntities(ctx, []int32{characterID, c.AllianceId, c.CorporationId, c.FactionId})
-	if err != nil {
-		return nil, err
-	}
-	o := &app.EveCharacter{
-		Birthday:       c.Birthday,
-		Description:    c.Description,
-		Gender:         c.Gender,
-		ID:             characterID,
-		Name:           c.Name,
-		SecurityStatus: float64(c.SecurityStatus),
-		Title:          c.Title,
-	}
-	o.Corporation, err = s.getValidEntity(ctx, c.CorporationId)
-	if err != nil {
-		return nil, err
-	}
-	o.Race, err = s.st.GetEveRace(ctx, c.RaceId)
-	if err != nil {
-		return nil, err
-	}
-	o.Alliance, err = s.getValidEntity(ctx, c.AllianceId)
-	if err != nil {
-		return nil, err
-	}
-	o.Faction, err = s.getValidEntity(ctx, c.FactionId)
-	if err != nil {
-		return nil, err
-	}
-	return o, nil
 }
 
 func (s *EveUniverseService) createCharacterFromESI(ctx context.Context, id int32) (*app.EveCharacter, error) {
