@@ -767,7 +767,7 @@ func (a *constellationInfo) load() error {
 		}
 	})
 	go func() {
-		oo, err := a.iw.u.eus.GetConstellationSolarSytemsESI(ctx, o.ID)
+		oo, err := a.iw.u.eus.GetConstellationSolarSystemsESI(ctx, o.ID)
 		if err != nil {
 			slog.Error("constellation info: Failed to load constellations", "region", o.ID, "error", err)
 			return

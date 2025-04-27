@@ -122,7 +122,7 @@ func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, id int
 func (s *EveUniverseService) createCharacterFromESI(ctx context.Context, id int32) (*app.EveCharacter, error) {
 	key := fmt.Sprintf("createCharacterFromESI-%d", id)
 	y, err, _ := s.sfg.Do(key, func() (any, error) {
-		r, err := s.fetchCharacterfromESI(ctx, id)
+		r, err := s.fetchCharacterFromESI(ctx, id)
 		if err != nil {
 			return nil, err
 		}
@@ -150,7 +150,7 @@ func (s *EveUniverseService) createCharacterFromESI(ctx context.Context, id int3
 	return y.(*app.EveCharacter), nil
 }
 
-func (s *EveUniverseService) fetchCharacterfromESI(ctx context.Context, id int32) (esi.GetCharactersCharacterIdOk, error) {
+func (s *EveUniverseService) fetchCharacterFromESI(ctx context.Context, id int32) (esi.GetCharactersCharacterIdOk, error) {
 	r, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, id, nil)
 	if err != nil {
 		return esi.GetCharactersCharacterIdOk{}, err
@@ -454,7 +454,7 @@ func (s *EveUniverseService) GetOrCreateEntityESI(ctx context.Context, id int32)
 }
 
 // ToEntities returns the resolved EveEntities for a list of valid entity IDs.
-// It garantees a result for every ID and will map unknown IDs (including 0 & 1) to empty EveEntity objects.
+// It guarantees a result for every ID and will map unknown IDs (including 0 & 1) to empty EveEntity objects.
 func (s *EveUniverseService) ToEntities(ctx context.Context, ids []int32) (map[int32]*app.EveEntity, error) {
 	r := make(map[int32]*app.EveEntity)
 	if len(ids) == 0 {
@@ -491,7 +491,7 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids []int32
 	var badIDs, missingIDs []int32
 	err := func() error {
 		ids2 := set.NewFromSlice(ids)
-		ids2.Remove(0) // do nothring with ID 0
+		ids2.Remove(0) // do nothing with ID 0
 		for _, id := range invalidEveEntityIDs {
 			if ids2.Contains(id) {
 				badIDs = append(badIDs, 1)
@@ -1095,7 +1095,7 @@ func (s *EveUniverseService) GetRegionConstellationsESI(ctx context.Context, id 
 	return oo, nil
 }
 
-func (s *EveUniverseService) GetConstellationSolarSytemsESI(ctx context.Context, id int32) ([]*app.EveSolarSystem, error) {
+func (s *EveUniverseService) GetConstellationSolarSystemsESI(ctx context.Context, id int32) ([]*app.EveSolarSystem, error) {
 	o, _, err := s.esiClient.ESI.UniverseApi.GetUniverseConstellationsConstellationId(ctx, id, nil)
 	if err != nil {
 		return nil, err
