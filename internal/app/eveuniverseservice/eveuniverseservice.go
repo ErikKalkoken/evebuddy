@@ -342,20 +342,41 @@ func (s *EveUniverseService) createDogmaAttributeFromESI(ctx context.Context, id
 
 // FormatDogmaValue returns a formatted value.
 func (s *EveUniverseService) FormatDogmaValue(ctx context.Context, value float32, unitID app.EveUnitID) (string, int32) {
+	return formatDogmaValue(ctx, formatDogmaValueParams{
+		value:                        value,
+		unitID:                       unitID,
+		getDogmaAttribute:            s.GetDogmaAttribute,
+		getOrCreateDogmaAttributeESI: s.GetOrCreateDogmaAttributeESI,
+		getType:                      s.GetType,
+		getOrCreateTypeESI:           s.GetOrCreateTypeESI,
+	})
+}
+
+type formatDogmaValueParams struct {
+	value                        float32
+	unitID                       app.EveUnitID
+	getDogmaAttribute            func(context.Context, int32) (*app.EveDogmaAttribute, error)
+	getOrCreateDogmaAttributeESI func(context.Context, int32) (*app.EveDogmaAttribute, error)
+	getType                      func(context.Context, int32) (*app.EveType, error)
+	getOrCreateTypeESI           func(context.Context, int32) (*app.EveType, error)
+}
+
+func formatDogmaValue(ctx context.Context, args formatDogmaValueParams) (string, int32) {
 	defaultFormatter := func(v float32) string {
 		return humanize.CommafWithDigits(float64(v), 2)
 	}
 	now := time.Now()
-	switch unitID {
+	value := args.value
+	switch args.unitID {
 	case app.EveUnitAbsolutePercent:
 		return fmt.Sprintf("%.0f%%", value*100), 0
 	case app.EveUnitAcceleration:
-		return fmt.Sprintf("%s m/sec", defaultFormatter(value)), 0
+		return fmt.Sprintf("%s m/s²", defaultFormatter(value)), 0
 	case app.EveUnitAttributeID:
-		da, err := s.GetDogmaAttribute(ctx, int32(value))
+		da, err := args.getDogmaAttribute(ctx, int32(value))
 		if err != nil {
 			go func() {
-				_, err := s.GetOrCreateDogmaAttributeESI(ctx, int32(value))
+				_, err := args.getOrCreateDogmaAttributeESI(ctx, int32(value))
 				if err != nil {
 					slog.Error("Failed to fetch dogma attribute from ESI", "ID", value, "err", err)
 				}
@@ -366,7 +387,7 @@ func (s *EveUniverseService) FormatDogmaValue(ctx context.Context, value float32
 	case app.EveUnitAttributePoints:
 		return fmt.Sprintf("%s points", defaultFormatter(value)), 0
 	case app.EveUnitCapacitorUnits:
-		return fmt.Sprintf("%.1f GJ", value), 0
+		return fmt.Sprintf("%s GJ", humanize.FormatFloat("#,###.#", float64(value))), 0
 	case app.EveUnitDroneBandwidth:
 		return fmt.Sprintf("%s Mbit/s", defaultFormatter(value)), 0
 	case app.EveUnitHitpoints:
@@ -390,7 +411,7 @@ func (s *EveUniverseService) FormatDogmaValue(ctx context.Context, value float32
 	case app.EveUnitMillimeters:
 		return fmt.Sprintf("%s mm", defaultFormatter(value)), 0
 	case app.EveUnitMilliseconds:
-		return humanize.RelTime(now, now.Add(time.Duration(value)*time.Millisecond), "", ""), 0
+		return strings.TrimSpace(humanize.RelTime(now, now.Add(time.Duration(value)*time.Millisecond), "", "")), 0
 	case app.EveUnitMultiplier:
 		return fmt.Sprintf("%.3f x", value), 0
 	case app.EveUnitPercentage:
@@ -402,10 +423,10 @@ func (s *EveUniverseService) FormatDogmaValue(ctx context.Context, value float32
 	case app.EveUnitWarpSpeed:
 		return fmt.Sprintf("%s AU/s", defaultFormatter(value)), 0
 	case app.EveUnitTypeID:
-		et, err := s.GetType(ctx, int32(value))
+		et, err := args.getType(ctx, int32(value))
 		if err != nil {
 			go func() {
-				_, err := s.GetOrCreateTypeESI(ctx, int32(value))
+				_, err := args.getOrCreateTypeESI(ctx, int32(value))
 				if err != nil {
 					slog.Error("Failed to fetch type from ESI", "typeID", value, "err", err)
 				}

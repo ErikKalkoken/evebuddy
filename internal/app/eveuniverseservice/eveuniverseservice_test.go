@@ -496,13 +496,13 @@ func TestAddMissingEveEntities(t *testing.T) {
 		// then
 		assert.Equal(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(47), ids[0])
+			assert.EqualValues(t, 47, ids[0])
 			e, err := st.GetEveEntity(ctx, 47)
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, e.Name, "Erik")
-			assert.Equal(t, e.Category, app.EveEntityCharacter)
+			assert.Equal(t, "Erik", e.Name)
+			assert.Equal(t, app.EveEntityCharacter, e.Category)
 		}
 	})
 	t.Run("can report normal error correctly", func(t *testing.T) {
@@ -588,8 +588,8 @@ func TestAddMissingEveEntities(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, e.Name, "?")
-			assert.Equal(t, e.Category, app.EveEntityUnknown)
+			assert.Equal(t, "?", e.Name)
+			assert.Equal(t, app.EveEntityUnknown, e.Category)
 		}
 	})
 	t.Run("should not call API with known invalid IDs", func(t *testing.T) {
@@ -611,8 +611,8 @@ func TestAddMissingEveEntities(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, e.Name, "?")
-			assert.Equal(t, e.Category, app.EveEntityUnknown)
+			assert.Equal(t, "?", e.Name)
+			assert.Equal(t, app.EveEntityUnknown, e.Category)
 		}
 	})
 	t.Run("should do nothing with ID 0", func(t *testing.T) {
@@ -664,13 +664,56 @@ func TestAddMissingEveEntities(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, e1.Name, "Erik")
-			assert.Equal(t, e1.Category, app.EveEntityCharacter)
+			assert.Equal(t, "Erik", e1.Name)
+			assert.Equal(t, app.EveEntityCharacter, e1.Category)
 			e2, err := st.GetEveEntity(ctx, 666)
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, e2.Category, app.EveEntityUnknown)
+			assert.Equal(t, app.EveEntityUnknown, e2.Category)
+		}
+	})
+}
+
+func TestGerOrCreateEntityESI(t *testing.T) {
+	db, st, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := eveuniverseservice.NewTestService(st)
+	t.Run("return existing entity", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		x1 := factory.CreateEveEntityCharacter()
+		// when
+		x2, err := s.GetOrCreateEntityESI(ctx, x1.ID)
+		// then
+		assert.Equal(t, 0, httpmock.GetTotalCallCount())
+		if assert.NoError(t, err) {
+			assert.Equal(t, x2, x1)
+		}
+	})
+	t.Run("create entity from ESI", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"POST",
+			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{"id": 42, "name": "Erik", "category": "character"},
+			}),
+		)
+		// when
+		x, err := s.GetOrCreateEntityESI(ctx, 42)
+		// then
+		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		if assert.NoError(t, err) {
+			assert.EqualValues(t, 42, x.ID)
+			assert.Equal(t, "Erik", x.Name)
+			assert.Equal(t, app.EveEntityCharacter, x.Category)
 		}
 	})
 }
