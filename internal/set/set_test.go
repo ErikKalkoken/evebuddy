@@ -51,42 +51,6 @@ func TestClone(t *testing.T) {
 	}
 }
 
-func TestNewFromSlice(t *testing.T) {
-	t.Run("can create from slice", func(t *testing.T) {
-		got := set.NewFromSlice([]int{1, 2})
-		want := set.New(1, 2)
-		assert.Equal(t, want, got)
-	})
-	t.Run("can create from empty slice", func(t *testing.T) {
-		got := set.NewFromSlice([]int{})
-		want := set.New[int]()
-		assert.Equal(t, want, got)
-	})
-}
-
-func TestRemove(t *testing.T) {
-	empty := set.New[int]()
-	zero := set.Set[int]{}
-	cases := []struct {
-		name string
-		s    set.Set[int]
-		v    int
-		want set.Set[int]
-	}{
-		{"element exists", set.New(1, 2), 1, set.New(2)},
-		{"element does not exist", set.New(1, 2), 3, set.New(1, 2)},
-		{"removing last element", set.New(1), 1, empty},
-		{"empty set", empty, 1, empty},
-		{"zero set", zero, 1, zero},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			tc.s.Remove(tc.v)
-			assert.True(t, tc.s.Equal(tc.want))
-		})
-	}
-}
-
 func TestContainsNormalSet(t *testing.T) {
 	s := set.New(3, 7, 9)
 	cases := []struct {
@@ -118,23 +82,60 @@ func TestContainsZeroSet(t *testing.T) {
 	assert.False(t, s.Contains(5))
 }
 
-func TestSize(t *testing.T) {
+func TestCollect(t *testing.T) {
+	t.Run("can create a new set from an iterable with items", func(t *testing.T) {
+		s := set.Collect(slices.Values([]int{1, 2, 3}))
+		assert.True(t, set.New(1, 2, 3).Equal(s))
+	})
+	t.Run("can create a new set from an iterable without items", func(t *testing.T) {
+		s := set.Collect(slices.Values([]int{}))
+		assert.True(t, s.IsEmpty())
+	})
+}
+
+func TestDifference(t *testing.T) {
+	empty := set.New[int]()
+	zero := set.Set[int]{}
+	cases := []struct {
+		name string
+		a    set.Set[int]
+		b    set.Set[int]
+		want set.Set[int]
+	}{
+		{"non-empy sets without intersection", set.New(1), set.New(2), set.New(1)},
+		{"non-empy sets with intersection", set.New(1, 2), set.New(2, 3), set.New(1)},
+		{"non-empy sets with empty set", set.New(1), empty, set.New(1)},
+		{"empy sets with non-empty set", empty, set.New(1), empty},
+		{"non-empy sets with zero set", set.New(1), zero, set.New(1)},
+		{"zero sets with non-empty set", zero, set.New(1), empty},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.a.Difference(tc.b)
+			assert.True(t, got.Equal(tc.want))
+		})
+	}
+}
+
+func TestDiscard(t *testing.T) {
 	empty := set.New[int]()
 	zero := set.Set[int]{}
 	cases := []struct {
 		name string
 		s    set.Set[int]
-		want int
+		v    int
+		want set.Set[int]
 	}{
-		{"non-empty 2 elements", set.New(1, 2), 2},
-		{"non-empty 1 element", set.New(1), 1},
-		{"empty", empty, 0},
-		{"zero", zero, 0},
+		{"element exists", set.New(1, 2), 1, set.New(2)},
+		{"element does not exist", set.New(1, 2), 3, set.New(1, 2)},
+		{"removing last element", set.New(1), 1, empty},
+		{"empty set", empty, 1, empty},
+		{"zero set", zero, 1, zero},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := tc.s.Size()
-			assert.Equal(t, tc.want, got)
+			tc.s.Discard(tc.v)
+			assert.True(t, tc.s.Equal(tc.want))
 		})
 	}
 }
@@ -148,9 +149,10 @@ func TestEqual(t *testing.T) {
 		b    set.Set[int]
 		want bool
 	}{
-		{"non-empty are equal", set.New(1, 2), set.New(1, 2), true},
-		{"non-empty are not equal 1", set.New(1, 2), set.New(1), false},
-		{"non-empty are not equal 2", set.New(1, 2), set.New(1, 2, 3), false},
+		{"non-empty equal", set.New(1, 2), set.New(1, 2), true},
+		{"non-empty not equal 1", set.New(1, 2), set.New(1), false},
+		{"non-empty not equal 2", set.New(1, 2), set.New(1, 2, 3), false},
+		{"non-empty not equal 2", set.New(1, 2), set.New(2, 3), false},
 		{"non-empty and empty", set.New(1), empty, false},
 		{"non-empty and zero", set.New(1), zero, false},
 		{"empty sets are equal", empty, empty, true},
@@ -164,51 +166,6 @@ func TestEqual(t *testing.T) {
 			assert.Equal(t, tc.want, got2)
 		})
 	}
-}
-
-func TestIsSubset2(t *testing.T) {
-	empty := set.New[int]()
-	zero := set.Set[int]{}
-	cases := []struct {
-		name string
-		a    set.Set[int]
-		b    set.Set[int]
-		want bool
-	}{
-		{"non-empy set is subset of another", set.New(1, 2), set.New(1, 2, 3), true},
-		{"non-empy set is not subset of another", set.New(1, 2), set.New(2, 3), false},
-		{"sets are subsets of themselves", set.New(1, 2), set.New(1, 2), true},
-		{"empty set is subset of non-empty", empty, set.New(1, 2), true},
-		{"zero set is subset of non-empty", zero, set.New(1, 2), true},
-		{"empty set is subset of itself", empty, empty, true},
-		{"zero set is subset of itself", zero, zero, true},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := tc.a.IsSubset(tc.b)
-			assert.Equal(t, tc.want, got)
-		})
-	}
-}
-
-func TestPop(t *testing.T) {
-	t.Run("can pop element when set non-empty", func(t *testing.T) {
-		s := set.New(1, 2, 3)
-		x, err := s.Pop()
-		if assert.NoError(t, err) {
-			assert.True(t, set.New(1, 2, 3).Contains(x))
-		}
-	})
-	t.Run("should return error when trying to remove from empty set", func(t *testing.T) {
-		s := set.New[int]()
-		_, err := s.Pop()
-		assert.ErrorIs(t, err, set.ErrNotFound)
-	})
-	t.Run("should return error when trying to remove from zero set", func(t *testing.T) {
-		var s set.Set[int]
-		_, err := s.Pop()
-		assert.ErrorIs(t, err, set.ErrNotFound)
-	})
 }
 
 func TestMustPop(t *testing.T) {
@@ -231,26 +188,34 @@ func TestMustPop(t *testing.T) {
 	})
 }
 
-func TestCollect(t *testing.T) {
-	t.Run("can create a new set from an iterable", func(t *testing.T) {
-		x := set.Collect(slices.Values([]int{1, 2, 3}))
-		assert.True(t, set.New(1, 2, 3).Equal(x))
-	})
-}
-
-func TestConvert(t *testing.T) {
-	t.Run("can convert non-empty set to string", func(t *testing.T) {
-		s := set.New(42)
-		assert.Equal(t, "[42]", fmt.Sprint(s))
-	})
-	t.Run("can convert empty set to string", func(t *testing.T) {
-		s := set.New[int]()
-		assert.Equal(t, "[]", fmt.Sprint(s))
-	})
-	t.Run("can convert zero set to string", func(t *testing.T) {
-		var s set.Set[int]
-		assert.Equal(t, "[]", fmt.Sprint(s))
-	})
+func TestMustRemove(t *testing.T) {
+	empty := set.New[int]()
+	zero := set.Set[int]{}
+	cases := []struct {
+		name   string
+		s      set.Set[int]
+		v      int
+		want   set.Set[int]
+		panics bool
+	}{
+		{"element exists", set.New(1, 2), 1, set.New(2), false},
+		{"element does not exist", set.New(1, 2), 3, zero, true},
+		{"removing last element", set.New(1), 1, empty, false},
+		{"empty set", empty, 1, zero, true},
+		{"zero set", zero, 1, zero, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.panics {
+				assert.Panics(t, func() {
+					tc.s.MustRemove(tc.v)
+				})
+			} else {
+				tc.s.MustRemove(tc.v)
+				assert.True(t, tc.s.Equal(tc.want))
+			}
+		})
+	}
 }
 
 func TestClear(t *testing.T) {
@@ -270,27 +235,6 @@ func TestClear(t *testing.T) {
 		var got, want set.Set[int]
 		got.Clear()
 		assert.Equal(t, want, got)
-	})
-}
-
-func TestConvertToSlice(t *testing.T) {
-	t.Run("can convert non-empty set to slice", func(t *testing.T) {
-		s := set.New(1, 2)
-		got := s.ToSlice()
-		want := []int{1, 2}
-		assert.ElementsMatch(t, want, got)
-	})
-	t.Run("can convert empty set to slice", func(t *testing.T) {
-		s := set.New[int]()
-		got := s.ToSlice()
-		want := []int{}
-		assert.ElementsMatch(t, want, got)
-	})
-	t.Run("can convert zero set to slice", func(t *testing.T) {
-		var s set.Set[int]
-		got := s.ToSlice()
-		want := []int{}
-		assert.ElementsMatch(t, want, got)
 	})
 }
 
@@ -319,30 +263,6 @@ func TestIterate(t *testing.T) {
 		}
 		assert.Equal(t, 0, s2.Size())
 	})
-}
-
-func TestUnion(t *testing.T) {
-	empty := set.New[int]()
-	zero := set.Set[int]{}
-	cases := []struct {
-		name string
-		a    set.Set[int]
-		b    set.Set[int]
-		want set.Set[int]
-	}{
-		{"non-empy with of another", set.New(1, 2), set.New(2, 3), set.New(1, 2, 3)},
-		{"non-empy with itself", set.New(1), set.New(1), set.New(1)},
-		{"non-empy with empty", set.New(1), empty, set.New(1)},
-		{"empy with itself", empty, empty, empty},
-		{"non-empy with zero", set.New(1), zero, set.New(1)},
-		{"zero with itself", zero, zero, empty},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := tc.a.Union(tc.b)
-			assert.True(t, got.Equal(tc.want))
-		})
-	}
 }
 
 func TestIntersec(t *testing.T) {
@@ -399,7 +319,52 @@ func TestIsDisjoint(t *testing.T) {
 	}
 }
 
-func TestSuperset(t *testing.T) {
+func TestIsEmpty(t *testing.T) {
+	empty := set.New[int]()
+	zero := set.Set[int]{}
+	cases := []struct {
+		name string
+		s    set.Set[int]
+		want bool
+	}{
+		{"non-empy set", set.New(1), false},
+		{"empy set", empty, true},
+		{"zero set", zero, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.s.IsEmpty()
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestIsSubset(t *testing.T) {
+	empty := set.New[int]()
+	zero := set.Set[int]{}
+	cases := []struct {
+		name string
+		a    set.Set[int]
+		b    set.Set[int]
+		want bool
+	}{
+		{"non-empy set is subset of another", set.New(1, 2), set.New(1, 2, 3), true},
+		{"non-empy set is not subset of another", set.New(1, 2), set.New(2, 3), false},
+		{"sets are subsets of themselves", set.New(1, 2), set.New(1, 2), true},
+		{"empty set is subset of non-empty", empty, set.New(1, 2), true},
+		{"zero set is subset of non-empty", zero, set.New(1, 2), true},
+		{"empty set is subset of itself", empty, empty, true},
+		{"zero set is subset of itself", zero, zero, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.a.IsSubset(tc.b)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestIsSuperset(t *testing.T) {
 	empty := set.New[int]()
 	zero := set.Set[int]{}
 	cases := []struct {
@@ -426,7 +391,122 @@ func TestSuperset(t *testing.T) {
 	}
 }
 
-func TestDifference(t *testing.T) {
+func TestNew(t *testing.T) {
+	t.Run("can create empty", func(t *testing.T) {
+		s := set.New[int]()
+		assert.ElementsMatch(t, []int{}, s.ToSlice())
+	})
+	t.Run("can create empty with initial elements", func(t *testing.T) {
+		s := set.New(3, 2, 1)
+		assert.ElementsMatch(t, []int{1, 2, 3}, s.ToSlice())
+	})
+}
+func TestNewFromSlice(t *testing.T) {
+	t.Run("can create from slice", func(t *testing.T) {
+		got := set.NewFromSlice([]int{1, 2})
+		want := set.New(1, 2)
+		assert.Equal(t, want, got)
+	})
+	t.Run("can create from empty slice", func(t *testing.T) {
+		got := set.NewFromSlice([]int{})
+		want := set.New[int]()
+		assert.Equal(t, want, got)
+	})
+}
+
+func TestPop(t *testing.T) {
+	t.Run("can pop element when set non-empty", func(t *testing.T) {
+		s := set.New(1, 2, 3)
+		x, err := s.Pop()
+		if assert.NoError(t, err) {
+			assert.True(t, set.New(1, 2, 3).Contains(x))
+		}
+	})
+	t.Run("should return error when trying to remove from empty set", func(t *testing.T) {
+		s := set.New[int]()
+		_, err := s.Pop()
+		assert.ErrorIs(t, err, set.ErrNotFound)
+	})
+	t.Run("should return error when trying to remove from zero set", func(t *testing.T) {
+		var s set.Set[int]
+		_, err := s.Pop()
+		assert.ErrorIs(t, err, set.ErrNotFound)
+	})
+}
+
+func TestRemove(t *testing.T) {
+	empty := set.New[int]()
+	zero := set.Set[int]{}
+	cases := []struct {
+		name string
+		s    set.Set[int]
+		v    int
+		want set.Set[int]
+		err  error
+	}{
+		{"element exists", set.New(1, 2), 1, set.New(2), nil},
+		{"element does not exist", set.New(1, 2), 3, zero, set.ErrNotFound},
+		{"removing last element", set.New(1), 1, empty, nil},
+		{"empty set", empty, 1, zero, set.ErrNotFound},
+		{"zero set", zero, 1, zero, set.ErrNotFound},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.s.Remove(tc.v)
+			assert.Equal(t, tc.err, err)
+			if err == nil {
+				assert.True(t, tc.s.Equal(tc.want))
+			}
+		})
+	}
+}
+
+func TestSize(t *testing.T) {
+	empty := set.New[int]()
+	zero := set.Set[int]{}
+	cases := []struct {
+		name string
+		s    set.Set[int]
+		want int
+	}{
+		{"non-empty 2 elements", set.New(1, 2), 2},
+		{"non-empty 1 element", set.New(1), 1},
+		{"empty", empty, 0},
+		{"zero", zero, 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.s.Size()
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestString(t *testing.T) {
+	empty := set.New[int]()
+	zero := set.Set[int]{}
+	cases := []struct {
+		name  string
+		s     set.Set[int]
+		want1 string
+		want2 string
+	}{
+		{"non-empty 1", set.New(1), "[1]", ""},
+		{"non-empty 2", set.New(1, 2), "[1 2]", "[2 1]"},
+		{"empty", empty, "[]", ""},
+		{"zero", zero, "[]", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.s.String()
+			assert.Condition(t, func() (success bool) {
+				return got == tc.want1 || got == tc.want2
+			})
+		})
+	}
+}
+
+func TestSymetricDifference(t *testing.T) {
 	empty := set.New[int]()
 	zero := set.Set[int]{}
 	cases := []struct {
@@ -435,16 +515,64 @@ func TestDifference(t *testing.T) {
 		b    set.Set[int]
 		want set.Set[int]
 	}{
-		{"non-empy sets without intersection", set.New(1), set.New(2), set.New(1)},
-		{"non-empy sets with intersection", set.New(1, 2), set.New(2, 3), set.New(1)},
+		{"non-empy sets without intersection", set.New(1), set.New(2), set.New(1, 2)},
+		{"non-empy equal sets", set.New(1), set.New(1), empty},
+		{"non-empy sets with intersection", set.New(1, 2), set.New(2, 3), set.New(1, 3)},
 		{"non-empy sets with empty set", set.New(1), empty, set.New(1)},
-		{"empy sets with non-empty set", empty, set.New(1), empty},
+		{"empy sets with non-empty set", empty, set.New(1), set.New(1)},
 		{"non-empy sets with zero set", set.New(1), zero, set.New(1)},
-		{"zero sets with non-empty set", zero, set.New(1), empty},
+		{"zero sets with non-empty set", zero, set.New(1), set.New(1)},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := tc.a.Difference(tc.b)
+			got1 := tc.a.SymetricDifference(tc.b)
+			assert.True(t, got1.Equal(tc.want))
+			got2 := tc.b.SymetricDifference(tc.a)
+			assert.True(t, got2.Equal(tc.want))
+		})
+	}
+}
+
+func TestToSlice(t *testing.T) {
+	t.Run("can convert non-empty set to slice", func(t *testing.T) {
+		s := set.New(1, 2)
+		got := s.ToSlice()
+		want := []int{1, 2}
+		assert.ElementsMatch(t, want, got)
+	})
+	t.Run("can convert empty set to slice", func(t *testing.T) {
+		s := set.New[int]()
+		got := s.ToSlice()
+		want := []int{}
+		assert.ElementsMatch(t, want, got)
+	})
+	t.Run("can convert zero set to slice", func(t *testing.T) {
+		var s set.Set[int]
+		got := s.ToSlice()
+		want := []int{}
+		assert.ElementsMatch(t, want, got)
+	})
+}
+
+func TestUnion(t *testing.T) {
+	empty := set.New[int]()
+	zero := set.Set[int]{}
+	cases := []struct {
+		name string
+		a    set.Set[int]
+		b    set.Set[int]
+		want set.Set[int]
+	}{
+		{"non-empy with of another", set.New(1, 2), set.New(2, 3), set.New(1, 2, 3)},
+		{"non-empy with itself", set.New(1), set.New(1), set.New(1)},
+		{"non-empy with empty", set.New(1), empty, set.New(1)},
+		{"empy with itself", empty, empty, empty},
+		{"non-empy with zero", set.New(1), zero, set.New(1)},
+		{"zero with itself", zero, zero, empty},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.a.Union(tc.b)
 			assert.True(t, got.Equal(tc.want))
 		})
 	}

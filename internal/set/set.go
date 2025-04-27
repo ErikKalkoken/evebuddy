@@ -12,14 +12,17 @@ var ErrNotFound = errors.New("not found")
 
 // Set is a container for a set of values of type T.
 //
-// The zero value of a Set it an empty set.
+// The zero value of Set is an empty set and ready for use.
+//
+// For comparing sets you must use the[Set.Equal] method.
+//
 // Sets must not be used concurrently.
 type Set[T comparable] struct {
 	m map[T]struct{}
 }
 
 // New returns a new set.
-// It can optionally be initialized with a list of values.
+// It can optionally be initialized with a list of values vals.
 func New[T comparable](vals ...T) Set[T] {
 	s := Set[T]{}
 	s.init()
@@ -29,12 +32,12 @@ func New[T comparable](vals ...T) Set[T] {
 	return s
 }
 
-// NewFromSlice returns a new set created from the elements of a slice a.
-func NewFromSlice[T comparable](a []T) Set[T] {
-	return New(a...)
+// NewFromSlice returns a new set created from the elements of slice x.
+func NewFromSlice[T comparable](x []T) Set[T] {
+	return New(x...)
 }
 
-// Collect returns a new set created from the elements of an iterable seq.
+// Collect returns a new set created from the elements of iterable seq.
 func Collect[T comparable](seq iter.Seq[T]) Set[T] {
 	s := New[T]()
 	for v := range seq {
@@ -88,16 +91,26 @@ func (s Set[T]) Difference(u Set[T]) Set[T] {
 	return n
 }
 
+// Discard discards element v from set s if it is present.
+// It does nothing when s does not contain v or when s is empty.
+func (s Set[T]) Discard(v T) {
+	delete(s.m, v)
+}
+
 // Equal reports whether sets s and u are equal.
-//
-// Note: The Equal method should be prefered to determine equality instead of directly comparing sets with the = operator.
 func (s Set[T]) Equal(u Set[T]) bool {
 	if s.Size() != u.Size() {
 		return false
 	}
-	d := s.Difference(u)
-	x := d.Size()
-	return x == 0
+	if s.IsEmpty() && u.IsEmpty() {
+		return true
+	}
+	for v := range s.m {
+		if !u.Contains(v) {
+			return false
+		}
+	}
+	return true
 }
 
 // Intersect returns a new set which contains the intersection between the sets s and u.
@@ -115,6 +128,11 @@ func (s Set[T]) Intersect(u Set[T]) Set[T] {
 func (s Set[T]) IsDisjoint(u Set[T]) bool {
 	x := s.Intersect(u)
 	return x.Size() == 0
+}
+
+// IsEmpty reports whether set s is empty.
+func (s Set[T]) IsEmpty() bool {
+	return s.Size() == 0
 }
 
 // IsSubset reports whether set s is the subset of set u.
@@ -139,10 +157,13 @@ func (s Set[T]) MustPop() T {
 	return x
 }
 
-// Remove removes element v from a set s.
-// It does nothing when s does not contain v or when s is empty.
-func (s Set[T]) Remove(v T) {
-	delete(s.m, v)
+// MustRemove removes element v from set s.
+// It panics if s does not contain v.
+func (s Set[T]) MustRemove(v T) {
+	err := s.Remove(v)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // Pop removes a random element from set s and returns it when s is not empty.
@@ -156,7 +177,17 @@ func (s Set[T]) Pop() (T, error) {
 	return x, ErrNotFound
 }
 
-// Size returns the count of elements in set s. An empty set returns 0.
+// Remove removes element v from set s.
+// Returns [ErrNotFound] if v is not present.
+func (s Set[T]) Remove(v T) error {
+	if !s.Contains(v) {
+		return ErrNotFound
+	}
+	s.Discard(v)
+	return nil
+}
+
+// Size returns the number of elements in set s. An empty set returns 0.
 func (s Set[T]) Size() int {
 	return len(s.m)
 }
@@ -164,6 +195,11 @@ func (s Set[T]) Size() int {
 // String returns a string representation of set s.
 func (s Set[T]) String() string {
 	return fmt.Sprint(s.ToSlice())
+}
+
+// Difference returns a new set with the difference between the sets s and u.
+func (s Set[T]) SymetricDifference(u Set[T]) Set[T] {
+	return s.Union(u).Difference(s.Intersect(u))
 }
 
 // ToSlice creates a new slice from the elements of set s and returns it.

@@ -133,6 +133,6 @@ func (a *OverviewLocations) updateCharacters() (int, error) {
 		}
 		return 0
 	}))
-	locationIDs.Remove(0)
+	locationIDs.Discard(0)
 	return locationIDs.Size(), nil
 }
