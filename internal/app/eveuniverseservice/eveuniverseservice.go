@@ -60,7 +60,8 @@ func New(args Params) *EveUniverseService {
 	return eu
 }
 
-func (s *EveUniverseService) GetAllianceESI(ctx context.Context, allianceID int32) (*app.EveAlliance, error) {
+// FetchAlliance fetches an alliance from ESI and returns it.
+func (s *EveUniverseService) FetchAlliance(ctx context.Context, allianceID int32) (*app.EveAlliance, error) {
 	a, _, err := s.esiClient.ESI.AllianceApi.GetAlliancesAllianceId(ctx, allianceID, nil)
 	if err != nil {
 		return nil, err
@@ -90,7 +91,8 @@ func (s *EveUniverseService) GetAllianceESI(ctx context.Context, allianceID int3
 	return o, nil
 }
 
-func (s *EveUniverseService) GetAllianceCorporationsESI(ctx context.Context, allianceID int32) ([]*app.EveEntity, error) {
+// FetchAllianceCorporations fetches the corporations for an alliance from ESI and returns them.
+func (s *EveUniverseService) FetchAllianceCorporations(ctx context.Context, allianceID int32) ([]*app.EveEntity, error) {
 	ids, _, err := s.esiClient.ESI.AllianceApi.GetAlliancesAllianceIdCorporations(ctx, allianceID, nil)
 	if err != nil {
 		return nil, err
@@ -117,47 +119,10 @@ func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, id int
 	return o, err
 }
 
-func (s *EveUniverseService) GetCharacterESI(ctx context.Context, characterID int32) (*app.EveCharacter, error) {
-	c, err := s.fetchCharacterfromESI(ctx, characterID)
-	if err != nil {
-		return nil, err
-	}
-	_, err = s.AddMissingEntities(ctx, []int32{characterID, c.AllianceId, c.CorporationId, c.FactionId})
-	if err != nil {
-		return nil, err
-	}
-	o := &app.EveCharacter{
-		Birthday:       c.Birthday,
-		Description:    c.Description,
-		Gender:         c.Gender,
-		ID:             characterID,
-		Name:           c.Name,
-		SecurityStatus: float64(c.SecurityStatus),
-		Title:          c.Title,
-	}
-	o.Corporation, err = s.getValidEntity(ctx, c.CorporationId)
-	if err != nil {
-		return nil, err
-	}
-	o.Race, err = s.st.GetEveRace(ctx, c.RaceId)
-	if err != nil {
-		return nil, err
-	}
-	o.Alliance, err = s.getValidEntity(ctx, c.AllianceId)
-	if err != nil {
-		return nil, err
-	}
-	o.Faction, err = s.getValidEntity(ctx, c.FactionId)
-	if err != nil {
-		return nil, err
-	}
-	return o, nil
-}
-
 func (s *EveUniverseService) createCharacterFromESI(ctx context.Context, id int32) (*app.EveCharacter, error) {
 	key := fmt.Sprintf("createCharacterFromESI-%d", id)
 	y, err, _ := s.sfg.Do(key, func() (any, error) {
-		r, err := s.fetchCharacterfromESI(ctx, id)
+		r, err := s.fetchCharacterFromESI(ctx, id)
 		if err != nil {
 			return nil, err
 		}
@@ -185,7 +150,7 @@ func (s *EveUniverseService) createCharacterFromESI(ctx context.Context, id int3
 	return y.(*app.EveCharacter), nil
 }
 
-func (s *EveUniverseService) fetchCharacterfromESI(ctx context.Context, id int32) (esi.GetCharactersCharacterIdOk, error) {
+func (s *EveUniverseService) fetchCharacterFromESI(ctx context.Context, id int32) (esi.GetCharactersCharacterIdOk, error) {
 	r, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, id, nil)
 	if err != nil {
 		return esi.GetCharactersCharacterIdOk{}, err
@@ -377,20 +342,41 @@ func (s *EveUniverseService) createDogmaAttributeFromESI(ctx context.Context, id
 
 // FormatDogmaValue returns a formatted value.
 func (s *EveUniverseService) FormatDogmaValue(ctx context.Context, value float32, unitID app.EveUnitID) (string, int32) {
+	return formatDogmaValue(ctx, formatDogmaValueParams{
+		value:                        value,
+		unitID:                       unitID,
+		getDogmaAttribute:            s.GetDogmaAttribute,
+		getOrCreateDogmaAttributeESI: s.GetOrCreateDogmaAttributeESI,
+		getType:                      s.GetType,
+		getOrCreateTypeESI:           s.GetOrCreateTypeESI,
+	})
+}
+
+type formatDogmaValueParams struct {
+	value                        float32
+	unitID                       app.EveUnitID
+	getDogmaAttribute            func(context.Context, int32) (*app.EveDogmaAttribute, error)
+	getOrCreateDogmaAttributeESI func(context.Context, int32) (*app.EveDogmaAttribute, error)
+	getType                      func(context.Context, int32) (*app.EveType, error)
+	getOrCreateTypeESI           func(context.Context, int32) (*app.EveType, error)
+}
+
+func formatDogmaValue(ctx context.Context, args formatDogmaValueParams) (string, int32) {
 	defaultFormatter := func(v float32) string {
 		return humanize.CommafWithDigits(float64(v), 2)
 	}
 	now := time.Now()
-	switch unitID {
+	value := args.value
+	switch args.unitID {
 	case app.EveUnitAbsolutePercent:
 		return fmt.Sprintf("%.0f%%", value*100), 0
 	case app.EveUnitAcceleration:
-		return fmt.Sprintf("%s m/sec", defaultFormatter(value)), 0
+		return fmt.Sprintf("%s m/s²", defaultFormatter(value)), 0
 	case app.EveUnitAttributeID:
-		da, err := s.GetDogmaAttribute(ctx, int32(value))
+		da, err := args.getDogmaAttribute(ctx, int32(value))
 		if err != nil {
 			go func() {
-				_, err := s.GetOrCreateDogmaAttributeESI(ctx, int32(value))
+				_, err := args.getOrCreateDogmaAttributeESI(ctx, int32(value))
 				if err != nil {
 					slog.Error("Failed to fetch dogma attribute from ESI", "ID", value, "err", err)
 				}
@@ -401,7 +387,7 @@ func (s *EveUniverseService) FormatDogmaValue(ctx context.Context, value float32
 	case app.EveUnitAttributePoints:
 		return fmt.Sprintf("%s points", defaultFormatter(value)), 0
 	case app.EveUnitCapacitorUnits:
-		return fmt.Sprintf("%.1f GJ", value), 0
+		return fmt.Sprintf("%s GJ", humanize.FormatFloat("#,###.#", float64(value))), 0
 	case app.EveUnitDroneBandwidth:
 		return fmt.Sprintf("%s Mbit/s", defaultFormatter(value)), 0
 	case app.EveUnitHitpoints:
@@ -425,7 +411,7 @@ func (s *EveUniverseService) FormatDogmaValue(ctx context.Context, value float32
 	case app.EveUnitMillimeters:
 		return fmt.Sprintf("%s mm", defaultFormatter(value)), 0
 	case app.EveUnitMilliseconds:
-		return humanize.RelTime(now, now.Add(time.Duration(value)*time.Millisecond), "", ""), 0
+		return strings.TrimSpace(humanize.RelTime(now, now.Add(time.Duration(value)*time.Millisecond), "", "")), 0
 	case app.EveUnitMultiplier:
 		return fmt.Sprintf("%.3f x", value), 0
 	case app.EveUnitPercentage:
@@ -437,10 +423,10 @@ func (s *EveUniverseService) FormatDogmaValue(ctx context.Context, value float32
 	case app.EveUnitWarpSpeed:
 		return fmt.Sprintf("%s AU/s", defaultFormatter(value)), 0
 	case app.EveUnitTypeID:
-		et, err := s.GetType(ctx, int32(value))
+		et, err := args.getType(ctx, int32(value))
 		if err != nil {
 			go func() {
-				_, err := s.GetOrCreateTypeESI(ctx, int32(value))
+				_, err := args.getOrCreateTypeESI(ctx, int32(value))
 				if err != nil {
 					slog.Error("Failed to fetch type from ESI", "typeID", value, "err", err)
 				}
@@ -489,7 +475,7 @@ func (s *EveUniverseService) GetOrCreateEntityESI(ctx context.Context, id int32)
 }
 
 // ToEntities returns the resolved EveEntities for a list of valid entity IDs.
-// It garantees a result for every ID and will map unknown IDs (including 0 & 1) to empty EveEntity objects.
+// It guarantees a result for every ID and will map unknown IDs (including 0 & 1) to empty EveEntity objects.
 func (s *EveUniverseService) ToEntities(ctx context.Context, ids []int32) (map[int32]*app.EveEntity, error) {
 	r := make(map[int32]*app.EveEntity)
 	if len(ids) == 0 {
@@ -526,7 +512,7 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids []int32
 	var badIDs, missingIDs []int32
 	err := func() error {
 		ids2 := set.NewFromSlice(ids)
-		ids2.Remove(0) // do nothring with ID 0
+		ids2.Remove(0) // do nothing with ID 0
 		for _, id := range invalidEveEntityIDs {
 			if ids2.Contains(id) {
 				badIDs = append(badIDs, 1)
@@ -1130,7 +1116,7 @@ func (s *EveUniverseService) GetRegionConstellationsESI(ctx context.Context, id 
 	return oo, nil
 }
 
-func (s *EveUniverseService) GetConstellationSolarSytemsESI(ctx context.Context, id int32) ([]*app.EveSolarSystem, error) {
+func (s *EveUniverseService) GetConstellationSolarSystemsESI(ctx context.Context, id int32) ([]*app.EveSolarSystem, error) {
 	o, _, err := s.esiClient.ESI.UniverseApi.GetUniverseConstellationsConstellationId(ctx, id, nil)
 	if err != nil {
 		return nil, err

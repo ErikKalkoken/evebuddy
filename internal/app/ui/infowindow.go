@@ -398,7 +398,7 @@ func (a *allianceInfo) load() error {
 
 	// Members
 	go func() {
-		members, err := a.iw.u.eus.GetAllianceCorporationsESI(ctx, a.id)
+		members, err := a.iw.u.eus.FetchAllianceCorporations(ctx, a.id)
 		if err != nil {
 			slog.Error("alliance info: Failed to load corporations", "allianceID", a.id, "error", err)
 			return
@@ -410,7 +410,7 @@ func (a *allianceInfo) load() error {
 			a.members.set(entityItemsFromEveEntities(members)...)
 		})
 	}()
-	o, err := a.iw.u.eus.GetAllianceESI(ctx, a.id)
+	o, err := a.iw.u.eus.FetchAlliance(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -607,7 +607,7 @@ func (a *characterInfo) load() error {
 			a.membership.SetText(fmt.Sprintf("for %s", duration))
 		})
 	}()
-	o, err := a.iw.u.eus.GetCharacterESI(ctx, a.id)
+	o, err := a.iw.u.eus.GetOrCreateCharacterESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -767,7 +767,7 @@ func (a *constellationInfo) load() error {
 		}
 	})
 	go func() {
-		oo, err := a.iw.u.eus.GetConstellationSolarSytemsESI(ctx, o.ID)
+		oo, err := a.iw.u.eus.GetConstellationSolarSystemsESI(ctx, o.ID)
 		if err != nil {
 			slog.Error("constellation info: Failed to load constellations", "region", o.ID, "error", err)
 			return

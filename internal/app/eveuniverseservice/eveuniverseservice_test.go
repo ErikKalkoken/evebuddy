@@ -18,7 +18,77 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-func TestGetEveAllianceCorporationsESI(t *testing.T) {
+func TestFetchAlliance(t *testing.T) {
+	db, st, factory := testutil.New()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := eveuniverseservice.New(eveuniverseservice.Params{
+		Storage:   st,
+		ESIClient: goesi.NewAPIClient(nil, ""),
+	})
+	const allianceID = 434243723
+	factory.CreateEveEntityAlliance(app.EveEntity{ID: allianceID})
+	creator := factory.CreateEveEntityCharacter(app.EveEntity{ID: 12345})
+	creatorCorp := factory.CreateEveEntityCorporation(app.EveEntity{ID: 45678})
+	executor := factory.CreateEveEntityCorporation(app.EveEntity{ID: 98356193})
+	ctx := context.Background()
+	t.Run("should return complete alliance", func(t *testing.T) {
+		// given
+		faction := factory.CreateEveEntity(app.EveEntity{ID: 888, Category: app.EveEntityFaction})
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v3/alliances/%d/", allianceID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"creator_corporation_id":  45678,
+				"creator_id":              12345,
+				"faction_id":              888,
+				"date_founded":            "2016-06-26T21:00:00Z",
+				"executor_corporation_id": 98356193,
+				"name":                    "C C P Alliance",
+				"ticker":                  "<C C P>",
+			}),
+		)
+		// when
+		x, err := s.FetchAlliance(ctx, allianceID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, "C C P Alliance", x.Name)
+			assert.Equal(t, "<C C P>", x.Ticker)
+			assert.Equal(t, creator, x.Creator)
+			assert.Equal(t, creatorCorp, x.CreatorCorporation)
+			assert.Equal(t, executor, x.ExecutorCorporation)
+			assert.Equal(t, faction, x.Faction)
+			assert.Equal(t, time.Date(2016, 6, 26, 21, 0, 0, 0, time.UTC), x.DateFounded)
+		}
+	})
+	t.Run("should return nil for undefined entities", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v3/alliances/%d/", allianceID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"creator_corporation_id":  45678,
+				"creator_id":              12345,
+				"date_founded":            "2016-06-26T21:00:00Z",
+				"executor_corporation_id": 98356193,
+				"name":                    "C C P Alliance",
+				"ticker":                  "<C C P>",
+			}),
+		)
+		// when
+		x, err := s.FetchAlliance(ctx, allianceID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, "C C P Alliance", x.Name)
+			assert.Nil(t, x.Faction)
+		}
+	})
+}
+
+func TestFetchAllianceCorporations(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
@@ -43,7 +113,7 @@ func TestGetEveAllianceCorporationsESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []int32{102, 103}),
 		)
 		// when
-		oo, err := s.GetAllianceCorporationsESI(ctx, allianceID)
+		oo, err := s.FetchAllianceCorporations(ctx, allianceID)
 		// then
 		if assert.NoError(t, err) {
 			got := xslices.Map(oo, func(a *app.EveEntity) int32 {
@@ -65,7 +135,7 @@ func TestGetEveAllianceCorporationsESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []int32{}),
 		)
 		// when
-		oo, err := s.GetAllianceCorporationsESI(ctx, allianceID)
+		oo, err := s.FetchAllianceCorporations(ctx, allianceID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, oo, 0)
@@ -95,52 +165,91 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 			assert.Equal(t, c.ID, x1.ID)
 		}
 	})
-	t.Run("should fetch character from ESI and create it", func(t *testing.T) {
+	t.Run("should fetch minimal character from ESI and create it", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		characterID := int32(95465499)
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: characterID})
-		factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
-		factory.CreateEveRace(app.EveRace{ID: 2})
+		corporation := factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
+		race := factory.CreateEveRace(app.EveRace{ID: 2})
 		httpmock.Reset()
-		data := map[string]any{
-			"birthday":        "2015-03-24T11:37:00Z",
-			"bloodline_id":    3,
-			"corporation_id":  109299958,
-			"description":     "bla bla",
-			"gender":          "male",
-			"name":            "CCP Bartender",
-			"race_id":         2,
-			"security_status": -9.9,
-			"title":           "All round pretty awesome guy",
-		}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/", characterID),
-			httpmock.NewJsonResponderOrPanic(200, data))
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"birthday":        "2015-03-24T11:37:00Z",
+				"bloodline_id":    3,
+				"corporation_id":  109299958,
+				"gender":          "male",
+				"name":            "CCP Bartender",
+				"race_id":         2,
+				"security_status": -9.9,
+			}))
+		// when
+		x1, err := s.GetOrCreateCharacterESI(ctx, characterID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Nil(t, x1.Alliance)
+			assert.Nil(t, x1.Faction)
+			assert.Equal(t, characterID, x1.ID)
+			assert.Equal(t, time.Date(2015, 03, 24, 11, 37, 0, 0, time.UTC), x1.Birthday)
+			assert.Equal(t, corporation, x1.Corporation)
+			assert.Empty(t, x1.Description)
+			assert.Equal(t, "male", x1.Gender)
+			assert.Equal(t, "CCP Bartender", x1.Name)
+			assert.Equal(t, race, x1.Race)
+			assert.Empty(t, x1.Title)
+			assert.InDelta(t, -9.9, x1.SecurityStatus, 0.01)
+			x2, err := st.GetEveCharacter(ctx, characterID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, x1, x2)
+			}
+		}
+	})
+	t.Run("should fetch full character from ESI and create it", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		characterID := int32(95465499)
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: characterID})
+		alliance := factory.CreateEveEntityCorporation(app.EveEntity{ID: 434243723})
+		corporation := factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
+		faction := factory.CreateEveEntity(app.EveEntity{ID: 500004, Category: app.EveEntityFaction})
+		race := factory.CreateEveRace(app.EveRace{ID: 2})
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/", characterID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"birthday":        "2015-03-24T11:37:00Z",
+				"bloodline_id":    3,
+				"alliance_id":     434243723,
+				"corporation_id":  109299958,
+				"faction_id":      500004,
+				"description":     "bla bla",
+				"gender":          "male",
+				"name":            "CCP Bartender",
+				"race_id":         2,
+				"security_status": -9.9,
+				"title":           "All round pretty awesome guy",
+			}))
 		// when
 		x1, err := s.GetOrCreateCharacterESI(ctx, characterID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, characterID, x1.ID)
 			assert.Equal(t, time.Date(2015, 03, 24, 11, 37, 0, 0, time.UTC), x1.Birthday)
-			assert.Equal(t, int32(109299958), x1.Corporation.ID)
+			assert.Equal(t, alliance, x1.Alliance)
+			assert.Equal(t, corporation, x1.Corporation)
+			assert.Equal(t, faction, x1.Faction)
 			assert.Equal(t, "bla bla", x1.Description)
 			assert.Equal(t, "male", x1.Gender)
 			assert.Equal(t, "CCP Bartender", x1.Name)
-			assert.Equal(t, int32(2), x1.Race.ID)
+			assert.Equal(t, race, x1.Race)
 			assert.Equal(t, "All round pretty awesome guy", x1.Title)
 			assert.InDelta(t, -9.9, x1.SecurityStatus, 0.01)
 			x2, err := st.GetEveCharacter(ctx, characterID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1.Birthday.UTC(), x2.Birthday.UTC())
-				assert.Equal(t, x1.Corporation.ID, x2.Corporation.ID)
-				assert.Equal(t, x1.Description, x2.Description)
-				assert.Equal(t, x1.Gender, x2.Gender)
-				assert.Equal(t, x1.Name, x2.Name)
-				assert.Equal(t, x1.Race.ID, x2.Race.ID)
-				assert.Equal(t, x1.SecurityStatus, x2.SecurityStatus)
-				assert.Equal(t, x1.Title, x2.Title)
+				assert.Equal(t, x1, x2)
 			}
 		}
 	})
@@ -156,38 +265,38 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 	t.Run("should update character from ESI", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		characterID := int32(95465499)
+		const characterID = 95465499
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: characterID})
-		factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
-		factory.CreateEveEntityAlliance(app.EveEntity{ID: 434243723})
 		factory.CreateEveCharacter(storage.CreateEveCharacterParams{ID: characterID})
+		alliance := factory.CreateEveEntityAlliance()
+		corporation := factory.CreateEveEntityCorporation()
+		faction := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityFaction})
 		httpmock.Reset()
-		dataCharacter := map[string]any{
-			"birthday":        "2015-03-24T11:37:00Z",
-			"bloodline_id":    3,
-			"corporation_id":  109299958,
-			"description":     "bla bla",
-			"gender":          "male",
-			"name":            "CCP Bartender",
-			"race_id":         2,
-			"security_status": -9.9,
-			"title":           "All round pretty awesome guy",
-		}
 		httpmock.RegisterResponder(
 			"GET",
 			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/`,
-			httpmock.NewJsonResponderOrPanic(200, dataCharacter),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"birthday":        "2015-03-24T11:37:00Z",
+				"bloodline_id":    3,
+				"corporation_id":  corporation.ID,
+				"description":     "bla bla",
+				"gender":          "male",
+				"name":            "CCP Bartender",
+				"race_id":         2,
+				"security_status": -9.9,
+				"title":           "All round pretty awesome guy",
+			}),
 		)
-		dataAffiliation := []map[string]any{
-			{
-				"alliance_id":    434243723,
-				"character_id":   95465499,
-				"corporation_id": 109299958,
-			}}
 		httpmock.RegisterResponder(
 			"POST",
 			`=~^https://esi\.evetech\.net/v\d+/characters/affiliation/`,
-			httpmock.NewJsonResponderOrPanic(200, dataAffiliation),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"alliance_id":    alliance.ID,
+					"character_id":   characterID,
+					"corporation_id": corporation.ID,
+					"faction_id":     faction.ID,
+				}}),
 		)
 		// when
 		err := s.UpdateAllCharactersESI(ctx)
@@ -195,8 +304,8 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 		if assert.NoError(t, err) {
 			x, err := st.GetEveCharacter(ctx, characterID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, int32(434243723), x.Alliance.ID)
-				assert.Equal(t, int32(109299958), x.Corporation.ID)
+				assert.Equal(t, alliance, x.Alliance)
+				assert.Equal(t, corporation, x.Corporation)
 				assert.Equal(t, "bla bla", x.Description)
 				assert.InDelta(t, -9.9, x.SecurityStatus, 0.01)
 				assert.Equal(t, "All round pretty awesome guy", x.Title)
@@ -374,33 +483,26 @@ func TestAddMissingEveEntities(t *testing.T) {
 	t.Run("can resolve missing entities", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		data := []map[string]any{
-			{"id": 47, "name": "Erik", "category": "character"},
-		}
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
 			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
-			func(req *http.Request) (*http.Response, error) {
-				resp, err := httpmock.NewJsonResponse(200, data)
-				if err != nil {
-					return httpmock.NewStringResponse(500, ""), nil
-				}
-				return resp, nil
-			},
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{"id": 47, "name": "Erik", "category": "character"},
+			}),
 		)
 		// when
 		ids, err := s.AddMissingEntities(ctx, []int32{47})
 		// then
 		assert.Equal(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(47), ids[0])
+			assert.EqualValues(t, 47, ids[0])
 			e, err := st.GetEveEntity(ctx, 47)
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, e.Name, "Erik")
-			assert.Equal(t, e.Category, app.EveEntityCharacter)
+			assert.Equal(t, "Erik", e.Name)
+			assert.Equal(t, app.EveEntityCharacter, e.Category)
 		}
 	})
 	t.Run("can report normal error correctly", func(t *testing.T) {
@@ -416,20 +518,13 @@ func TestAddMissingEveEntities(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		e1 := factory.CreateEveEntityAlliance()
-		data := []map[string]any{
-			{"id": 47, "name": "Erik", "category": "character"},
-		}
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
 			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
-			func(req *http.Request) (*http.Response, error) {
-				resp, err := httpmock.NewJsonResponse(200, data)
-				if err != nil {
-					return httpmock.NewStringResponse(500, ""), nil
-				}
-				return resp, nil
-			},
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{"id": 47, "name": "Erik", "category": "character"},
+			}),
 		)
 		// when
 		ids, err := s.AddMissingEntities(ctx, []int32{47, e1.ID})
@@ -459,13 +554,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		httpmock.RegisterResponder(
 			"POST",
 			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
-			func(req *http.Request) (*http.Response, error) {
-				resp, err := httpmock.NewJsonResponse(200, data)
-				if err != nil {
-					return httpmock.NewStringResponse(500, ""), nil
-				}
-				return resp, nil
-			},
+			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		// when
 		missing, err := s.AddMissingEntities(ctx, ids)
@@ -487,7 +576,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		httpmock.RegisterResponder(
 			"POST",
 			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
-			httpmock.NewStringResponder(404, ""),
+			httpmock.NewJsonResponderOrPanic(404, map[string]any{"error": "not found"}),
 		)
 		// when
 		ids, err := s.AddMissingEntities(ctx, []int32{666})
@@ -499,8 +588,8 @@ func TestAddMissingEveEntities(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, e.Name, "?")
-			assert.Equal(t, e.Category, app.EveEntityUnknown)
+			assert.Equal(t, "?", e.Name)
+			assert.Equal(t, app.EveEntityUnknown, e.Category)
 		}
 	})
 	t.Run("should not call API with known invalid IDs", func(t *testing.T) {
@@ -510,7 +599,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		httpmock.RegisterResponder(
 			"POST",
 			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
-			httpmock.NewStringResponder(404, ""),
+			httpmock.NewJsonResponderOrPanic(404, map[string]any{"error": "not found"}),
 		)
 		// when
 		ids, err := s.AddMissingEntities(ctx, []int32{1})
@@ -522,8 +611,8 @@ func TestAddMissingEveEntities(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, e.Name, "?")
-			assert.Equal(t, e.Category, app.EveEntityUnknown)
+			assert.Equal(t, "?", e.Name)
+			assert.Equal(t, app.EveEntityUnknown, e.Category)
 		}
 	})
 	t.Run("should do nothing with ID 0", func(t *testing.T) {
@@ -533,7 +622,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		httpmock.RegisterResponder(
 			"POST",
 			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
-			httpmock.NewStringResponder(404, ""),
+			httpmock.NewJsonResponderOrPanic(404, map[string]any{"error": "not found"}),
 		)
 		// when
 		ids, err := s.AddMissingEntities(ctx, []int32{0})
@@ -552,26 +641,19 @@ func TestAddMissingEveEntities(t *testing.T) {
 	t.Run("can deal with a mix of valid and invalid IDs", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		data := []map[string]any{
-			{"id": 47, "name": "Erik", "category": "character"},
-		}
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
 			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
-			func(req *http.Request) (*http.Response, error) {
-				resp, err := httpmock.NewJsonResponse(200, data)
-				if err != nil {
-					return httpmock.NewStringResponse(500, ""), nil
-				}
-				return resp, nil
-			},
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{"id": 47, "name": "Erik", "category": "character"},
+			}),
 		)
 		httpmock.RegisterMatcherResponder(
 			"POST",
 			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
 			httpmock.BodyContainsString("666"),
-			httpmock.NewStringResponder(404, `{"error":"Invalid ID"}`),
+			httpmock.NewJsonResponderOrPanic(404, map[string]any{"error": "Invalid ID"}),
 		)
 		// when
 		_, err := s.AddMissingEntities(ctx, []int32{47, 666})
@@ -582,13 +664,56 @@ func TestAddMissingEveEntities(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, e1.Name, "Erik")
-			assert.Equal(t, e1.Category, app.EveEntityCharacter)
+			assert.Equal(t, "Erik", e1.Name)
+			assert.Equal(t, app.EveEntityCharacter, e1.Category)
 			e2, err := st.GetEveEntity(ctx, 666)
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, e2.Category, app.EveEntityUnknown)
+			assert.Equal(t, app.EveEntityUnknown, e2.Category)
+		}
+	})
+}
+
+func TestGerOrCreateEntityESI(t *testing.T) {
+	db, st, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := eveuniverseservice.NewTestService(st)
+	t.Run("return existing entity", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		x1 := factory.CreateEveEntityCharacter()
+		// when
+		x2, err := s.GetOrCreateEntityESI(ctx, x1.ID)
+		// then
+		assert.Equal(t, 0, httpmock.GetTotalCallCount())
+		if assert.NoError(t, err) {
+			assert.Equal(t, x2, x1)
+		}
+	})
+	t.Run("create entity from ESI", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"POST",
+			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{"id": 42, "name": "Erik", "category": "character"},
+			}),
+		)
+		// when
+		x, err := s.GetOrCreateEntityESI(ctx, 42)
+		// then
+		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		if assert.NoError(t, err) {
+			assert.EqualValues(t, 42, x.ID)
+			assert.Equal(t, "Erik", x.Name)
+			assert.Equal(t, app.EveEntityCharacter, x.Category)
 		}
 	})
 }
@@ -650,20 +775,15 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		data := `{
-			"category_id": 6,
-			"groups": [
-			  25,
-			  26,
-			  27
-			],
-			"name": "Ship",
-			"published": true
-		  }`
 		httpmock.RegisterResponder(
 			"GET",
 			`=~^https://esi\.evetech\.net/v\d+/universe/categories/\d+/`,
-			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"category_id": 6,
+				"groups":      []int{25, 26, 27},
+				"name":        "Ship",
+				"published":   true,
+			}))
 
 		// when
 		x1, err := s.GetOrCreateCategoryESI(ctx, 6)
@@ -704,21 +824,16 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: 6})
-		data := `{
-			"category_id": 6,
-			"group_id": 25,
-			"name": "Frigate",
-			"published": true,
-			"types": [
-			  587,
-			  586,
-			  585
-			]
-		  }`
 		httpmock.RegisterResponder(
 			"GET",
 			`=~^https://esi\.evetech\.net/v\d+/universe/groups/\d+/`,
-			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"category_id": 6,
+				"group_id":    25,
+				"name":        "Frigate",
+				"published":   true,
+				"types":       []int32{587, 586, 585},
+			}))
 
 		// when
 		x1, err := s.GetOrCreateGroupESI(ctx, 25)
@@ -789,38 +904,37 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		factory.CreateEveGroup(storage.CreateEveGroupParams{ID: 25})
 		factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{ID: 161})
 		factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{ID: 162})
-		data := `{
-			"description": "The Rifter is a...",
-			"dogma_attributes": [
-				{
-					"attribute_id": 161,
-					"value": 11
-					},
-				{
-					"attribute_id": 162,
-					"value": 12
-				}
-			],
-			"dogma_effects": [
-				{
-					"effect_id": 111,
-					"is_default": true
-					},
-				{
-					"effect_id": 112,
-					"is_default": false
-				}
-			],
-			"group_id": 25,
-			"name": "Rifter",
-			"published": true,
-			"type_id": 587
-		  }`
 		httpmock.RegisterResponder(
 			"GET",
 			`=~^https://esi\.evetech\.net/v\d+/universe/types/\d+/`,
-			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
-
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"description": "The Rifter is a...",
+				"dogma_attributes": []map[string]any{
+					{
+						"attribute_id": 161,
+						"value":        11,
+					},
+					{
+						"attribute_id": 162,
+						"value":        12,
+					},
+				},
+				"dogma_effects": []map[string]any{
+					{
+						"effect_id":  111,
+						"is_default": true,
+					},
+					{
+						"effect_id":  112,
+						"is_default": false,
+					},
+				},
+				"group_id":  25,
+				"name":      "Rifter",
+				"published": true,
+				"type_id":   587,
+			}),
+		)
 		// when
 		x1, err := s.GetOrCreateTypeESI(ctx, 587)
 		// then
@@ -848,50 +962,38 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-
-		data1 := `{
-			"category_id": 6,
-			"groups": [
-			  25,
-			  26,
-			  27
-			],
-			"name": "Ship",
-			"published": true
-		  }`
 		httpmock.RegisterResponder(
 			"GET",
 			`=~^https://esi\.evetech\.net/v\d+/universe/categories/\d+/`,
-			httpmock.NewStringResponder(200, data1).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
-
-		data2 := `{
-			"category_id": 6,
-			"group_id": 25,
-			"name": "Frigate",
-			"published": true,
-			"types": [
-			  587,
-			  586,
-			  585
-			]
-		  }`
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"category_id": 6,
+				"groups":      []int{25, 26, 27},
+				"name":        "Ship",
+				"published":   true,
+			}),
+		)
 		httpmock.RegisterResponder(
 			"GET",
 			`=~^https://esi\.evetech\.net/v\d+/universe/groups/\d+/`,
-			httpmock.NewStringResponder(200, data2).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
-
-		data3 := `{
-			"description": "The Rifter is a...",
-			"group_id": 25,
-			"name": "Rifter",
-			"published": true,
-			"type_id": 587
-		  }`
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"category_id": 6,
+				"group_id":    25,
+				"name":        "Frigate",
+				"published":   true,
+				"types":       []int{587, 586, 585},
+			}),
+		)
 		httpmock.RegisterResponder(
 			"GET",
 			`=~^https://esi\.evetech\.net/v\d+/universe/types/\d+/`,
-			httpmock.NewStringResponder(200, data3).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
-
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"description": "The Rifter is a...",
+				"group_id":    25,
+				"name":        "Rifter",
+				"published":   true,
+				"type_id":     587,
+			}),
+		)
 		// when
 		x1, err := s.GetOrCreateTypeESI(ctx, 587)
 		// then
@@ -1133,20 +1235,16 @@ func TestGetOrCreateEveRegionESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		data := `{
-			"constellations": [
-			  20000302,
-			  20000303
-			],
-			"description": "It has long been an established fact of civilization...",
-			"name": "Metropolis",
-			"region_id": 10000042
-		  }`
 		httpmock.RegisterResponder(
 			"GET",
 			"https://esi.evetech.net/v1/universe/regions/10000042/",
-			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
-
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"constellations": []int{20000302, 20000303},
+				"description":    "It has long been an established fact of civilization...",
+				"name":           "Metropolis",
+				"region_id":      10000042,
+			}),
+		)
 		// when
 		x1, err := s.GetOrCreateRegionESI(ctx, 10000042)
 		// then
@@ -1185,25 +1283,21 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		factory.CreateEveRegion(storage.CreateEveRegionParams{ID: 10000001})
-		data := `{
-			"constellation_id": 20000009,
-			"name": "Mekashtad",
-			"position": {
-			  "x": 67796138757472320,
-			  "y": -70591121348560960,
-			  "z": -59587016159270070
-			},
-			"region_id": 10000001,
-			"systems": [
-			  20000302,
-			  20000303
-			]
-		  }`
 		httpmock.RegisterResponder(
 			"GET",
 			"https://esi.evetech.net/v1/universe/constellations/20000009/",
-			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
-
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"constellation_id": 20000009,
+				"name":             "Mekashtad",
+				"position": map[string]any{
+					"x": 67796138757472320,
+					"y": -70591121348560960,
+					"z": -59587016159270070,
+				},
+				"region_id": 10000001,
+				"systems":   []int{20000302, 20000303},
+			}),
+		)
 		// when
 		x1, err := s.GetOrCreateConstellationESI(ctx, 20000009)
 		// then
@@ -1243,38 +1337,33 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		factory.CreateEveConstellation(storage.CreateEveConstellationParams{ID: 20000001})
-		data := `{
-			"constellation_id": 20000001,
-			"name": "Akpivem",
-			"planets": [
-			  {
-				"moons": [
-				  40000042
-				],
-				"planet_id": 40000041
-			  },
-			  {
-				"planet_id": 40000043
-			  }
-			],
-			"position": {
-			  "x": -91174141133075340,
-			  "y": 43938227486247170,
-			  "z": -56482824383339900
-			},
-			"security_class": "B",
-			"security_status": 0.8462923765182495,
-			"star_id": 40000040,
-			"stargates": [
-			  50000342
-			],
-			"system_id": 30000003
-		  }`
 		httpmock.RegisterResponder(
 			"GET",
 			"https://esi.evetech.net/v4/universe/systems/30000003/",
-			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
-
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"constellation_id": 20000001,
+				"name":             "Akpivem",
+				"planets": []map[string]any{
+					{
+						"moons":     []int{40000042},
+						"planet_id": 40000041,
+					},
+					{
+						"planet_id": 40000043,
+					},
+				},
+				"position": map[string]any{
+					"x": -91174141133075340,
+					"y": 43938227486247170,
+					"z": -56482824383339900,
+				},
+				"security_class":  "B",
+				"security_status": 0.8462923765182495,
+				"star_id":         40000040,
+				"stargates":       []int{50000342},
+				"system_id":       30000003,
+			}),
+		)
 		// when
 		x1, err := s.GetOrCreateSolarSystemESI(ctx, 30000003)
 		// then
@@ -1292,92 +1381,86 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-
-		data1 := `{
-			"constellations": [
-			  20000001,
-			  20000002,
-			  20000003,
-			  20000004,
-			  20000005,
-			  20000006,
-			  20000007,
-			  20000008,
-			  20000009,
-			  20000010,
-			  20000011,
-			  20000012,
-			  20000013,
-			  20000014,
-			  20000015,
-			  20000016
-			],
-			"description": "The Derelik region, sovereign seat of the Ammatar Mandate, became the shield to the Amarrian flank in the wake of the Minmatar Rebellion. Derelik witnessed many hostile exchanges between the Amarr and rebel forces as the latter tried to push deeper into the territory of their former masters. Having held their ground, thanks in no small part to the Ammatars' military efforts, the Amarr awarded the Ammatar with their own province. However, this portion of space shared borders with the newly forming Minmatar Republic as well as the Empire, and thus came to be situated in a dark recess surrounded by hostiles. \n\nGiven the lack of safe routes elsewhere, the local economies of this region were dependent on trade with the Amarr as their primary means of survival. The Ammatar persevered over many decades of economic stagnation and limited trade partners, and their determination has in recent decades been rewarded with an increase in economic prosperity. This harsh trail is a point of pride for all who call themselves Ammatar, and it has bolstered their faith in the Amarrian way to no end.",
-			"name": "Derelik",
-			"region_id": 10000001
-		  }`
 		httpmock.RegisterResponder(
 			"GET",
 			"https://esi.evetech.net/v1/universe/regions/10000001/",
-			httpmock.NewStringResponder(200, data1).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
-
-		data2 := `{
-			"constellation_id": 20000001,
-			"name": "San Matar",
-			"position": {
-			  "x": -94046559700991340,
-			  "y": 49520153153798850,
-			  "z": -42738731818401970
-			},
-			"region_id": 10000001,
-			"systems": [
-			  30000001,
-			  30000002,
-			  30000003,
-			  30000004,
-			  30000005,
-			  30000006,
-			  30000007,
-			  30000008
-			]
-		  }`
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"constellations": []int{
+					20000001,
+					20000002,
+					20000003,
+					20000004,
+					20000005,
+					20000006,
+					20000007,
+					20000008,
+					20000009,
+					20000010,
+					20000011,
+					20000012,
+					20000013,
+					20000014,
+					20000015,
+					20000016,
+				},
+				"description": "The Derelik region, sovereign seat of the Ammatar Mandate, became the shield to the Amarrian flank in the wake of the Minmatar Rebellion. Derelik witnessed many hostile exchanges between the Amarr and rebel forces as the latter tried to push deeper into the territory of their former masters. Having held their ground, thanks in no small part to the Ammatars' military efforts, the Amarr awarded the Ammatar with their own province. However, this portion of space shared borders with the newly forming Minmatar Republic as well as the Empire, and thus came to be situated in a dark recess surrounded by hostiles. \n\nGiven the lack of safe routes elsewhere, the local economies of this region were dependent on trade with the Amarr as their primary means of survival. The Ammatar persevered over many decades of economic stagnation and limited trade partners, and their determination has in recent decades been rewarded with an increase in economic prosperity. This harsh trail is a point of pride for all who call themselves Ammatar, and it has bolstered their faith in the Amarrian way to no end.",
+				"name":        "Derelik",
+				"region_id":   10000001,
+			}),
+		)
 		httpmock.RegisterResponder(
 			"GET",
 			"https://esi.evetech.net/v1/universe/constellations/20000001/",
-			httpmock.NewStringResponder(200, data2).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
-
-		data3 := `{
-			"constellation_id": 20000001,
-			"name": "Akpivem",
-			"planets": [
-			  {
-				"moons": [
-				  40000042
-				],
-				"planet_id": 40000041
-			  },
-			  {
-				"planet_id": 40000043
-			  }
-			],
-			"position": {
-			  "x": -91174141133075340,
-			  "y": 43938227486247170,
-			  "z": -56482824383339900
-			},
-			"security_class": "B",
-			"security_status": 0.8462923765182495,
-			"star_id": 40000040,
-			"stargates": [
-			  50000342
-			],
-			"system_id": 30000003
-		  }`
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"constellation_id": 20000001,
+				"name":             "San Matar",
+				"position": map[string]any{
+					"x": -94046559700991340,
+					"y": 49520153153798850,
+					"z": -42738731818401970,
+				},
+				"region_id": 10000001,
+				"systems": []int{
+					30000001,
+					30000002,
+					30000003,
+					30000004,
+					30000005,
+					30000006,
+					30000007,
+					30000008,
+				},
+			}),
+		)
 		httpmock.RegisterResponder(
 			"GET",
 			"https://esi.evetech.net/v4/universe/systems/30000003/",
-			httpmock.NewStringResponder(200, data3).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
-
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"constellation_id": 20000001,
+				"name":             "Akpivem",
+				"planets": []map[string]any{
+					{
+						"moons":     []int{40000042},
+						"planet_id": 40000041,
+					},
+					{
+						"planet_id": 40000043,
+					},
+				},
+				"position": map[string]any{
+					"x": -91174141133075340,
+					"y": 43938227486247170,
+					"z": -56482824383339900,
+				},
+				"security_class":  "B",
+				"security_status": 0.8462923765182495,
+				"star_id":         40000040,
+				"stargates": []int{
+					50000342,
+				},
+				"system_id": 30000003,
+			}),
+		)
 		// when
 		x1, err := s.GetOrCreateSolarSystemESI(ctx, 30000003)
 		// then
@@ -1527,7 +1610,7 @@ func TestGetRouteESI(t *testing.T) {
 			assert.ElementsMatch(t, []*app.EveSolarSystem{}, x)
 		}
 	})
-	t.Run("should return error when caled with invalid preference", func(t *testing.T) {
+	t.Run("should return error when called with invalid preference", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()

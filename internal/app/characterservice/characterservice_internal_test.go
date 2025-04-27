@@ -1039,18 +1039,12 @@ func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 	httpmock.RegisterResponder(
 		"GET",
 		"https://esi.evetech.net/v1/characters/1/mail/",
-		func(r *http.Request) (*http.Response, error) {
-			resp, err := httpmock.NewJsonResponse(200, objs[:50])
-			return resp, err
-		},
+		httpmock.NewJsonResponderOrPanic(200, objs[:50]),
 	)
 	httpmock.RegisterResponder(
 		"GET",
 		"https://esi.evetech.net/v1/characters/1/mail/?last_mail_id=951",
-		func(r *http.Request) (*http.Response, error) {
-			resp, err := httpmock.NewJsonResponse(200, objs[50:])
-			return resp, err
-		},
+		httpmock.NewJsonResponderOrPanic(200, objs[50:]),
 	)
 	// when
 	mails, err := s.fetchMailHeadersESI(ctx, 1, 1000)
@@ -1082,33 +1076,27 @@ func TestUpdateMailLabel(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		dataMailLabel := map[string]any{
-			"labels": []map[string]any{
-				{
-					"color":        "#660066",
-					"label_id":     16,
-					"name":         "PINK",
-					"unread_count": 4,
-				},
-				{
-					"color":        "#FFFFFF",
-					"label_id":     32,
-					"name":         "WHITE",
-					"unread_count": 0,
-				},
-			},
-			"total_unread_count": 4,
-		}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/mail/labels/", c.ID),
-			func(req *http.Request) (*http.Response, error) {
-				resp, err := httpmock.NewJsonResponse(200, dataMailLabel)
-				if err != nil {
-					return httpmock.NewStringResponse(500, ""), nil
-				}
-				return resp, nil
-			})
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"labels": []map[string]any{
+					{
+						"color":        "#660066",
+						"label_id":     16,
+						"name":         "PINK",
+						"unread_count": 4,
+					},
+					{
+						"color":        "#FFFFFF",
+						"label_id":     32,
+						"name":         "WHITE",
+						"unread_count": 0,
+					},
+				},
+				"total_unread_count": 4,
+			}),
+		)
 		// when
 		_, err := s.updateMailLabelsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
@@ -1135,33 +1123,27 @@ func TestUpdateMailLabel(t *testing.T) {
 			Color:       "#000000",
 			UnreadCount: 99,
 		})
-		dataMailLabel := map[string]any{
-			"labels": []map[string]any{
-				{
-					"color":        "#660066",
-					"label_id":     16,
-					"name":         "PINK",
-					"unread_count": 4,
-				},
-				{
-					"color":        "#FFFFFF",
-					"label_id":     32,
-					"name":         "WHITE",
-					"unread_count": 0,
-				},
-			},
-			"total_unread_count": 4,
-		}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/mail/labels/", c.ID),
-			func(req *http.Request) (*http.Response, error) {
-				resp, err := httpmock.NewJsonResponse(200, dataMailLabel)
-				if err != nil {
-					return httpmock.NewStringResponse(500, ""), nil
-				}
-				return resp, nil
-			})
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"labels": []map[string]any{
+					{
+						"color":        "#660066",
+						"label_id":     16,
+						"name":         "PINK",
+						"unread_count": 4,
+					},
+					{
+						"color":        "#FFFFFF",
+						"label_id":     32,
+						"name":         "WHITE",
+						"unread_count": 0,
+					},
+				},
+				"total_unread_count": 4,
+			}),
+		)
 		// when
 		_, err := s.updateMailLabelsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
