@@ -99,7 +99,7 @@ func (iw *InfoWindow) show(t infoVariant, id int64) {
 		page = newCorporationInfo(iw, int32(id))
 	case infoInventoryType:
 		// TODO: Restructure, so that window is first drawn empty and content loaded in background (as other info windo)
-		a, err := NewInventoryTypeInfo(iw, int32(id), iw.u.CurrentCharacterID())
+		a, err := NewInventoryTypeInfo(iw, int32(id), iw.u.currentCharacterID())
 		if err != nil {
 			iw.u.ShowInformationDialog("ERROR", "Something whent wrong when trying to show info for type", iw.w)
 			slog.Error("show type", "error", err)

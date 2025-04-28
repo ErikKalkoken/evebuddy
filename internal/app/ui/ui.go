@@ -70,7 +70,6 @@ type BaseUI struct {
 	onAppFirstStarted    func()
 	onAppStopped         func()
 	onAppTerminated      func()
-	onInit               func(*app.Character)
 	onRefreshCross       func()
 	onSetCharacter       func(int32)
 	onShowAndRun         func()
@@ -107,7 +106,6 @@ type BaseUI struct {
 	userSettings               *UserSettings
 
 	app                fyne.App
-	character          *app.Character
 	clearCache         func() // clear all caches
 	cs                 *characterservice.CharacterService
 	dataPaths          map[string]string // Paths to user data
@@ -115,7 +113,6 @@ type BaseUI struct {
 	ess                *esistatusservice.ESIStatusService
 	eus                *eveuniverseservice.EveUniverseService
 	isForeground       atomic.Bool // whether the app is currently shown in the foreground
-	isMobile           bool
 	isOffline          bool        // Run the app in offline mode
 	isStartupCompleted atomic.Bool // whether the app has completed startup (for testing)
 	isUpdateDisabled   bool        // Whether to disable update tickers (useful for debugging)
@@ -127,6 +124,9 @@ type BaseUI struct {
 	statusWindow       fyne.Window
 	wasStarted         atomic.Bool // whether the app has already been started at least once
 	window             fyne.Window
+
+	mu        sync.RWMutex
+	character *app.Character
 }
 
 type BaseUIParams struct {
@@ -155,7 +155,6 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 		eis:              args.EveImageService,
 		ess:              args.ESIStatusService,
 		eus:              args.EveUniverseService,
-		isMobile:         fyne.CurrentDevice().IsMobile(),
 		isOffline:        args.IsOffline,
 		isUpdateDisabled: args.IsUpdateDisabled,
 		js:               args.JaniceService,
@@ -232,12 +231,9 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 		u.isForeground.Store(true)
 		u.snackbar.Start()
 		go func() {
+			u.initCharacter()
+			u.manageCharacters.update()
 			u.updateCrossPages()
-			if u.hasCharacter() {
-				u.setCharacter(u.character)
-			} else {
-				u.resetCharacter()
-			}
 			u.updateStatus()
 			u.isStartupCompleted.Store(true)
 			u.characterJumpClones.StartUpdateTicker()
@@ -272,6 +268,45 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 	return u
 }
 
+func (u *BaseUI) initCharacter() {
+	var c *app.Character
+	var err error
+	ctx := context.Background()
+	if cID := u.settings.LastCharacterID(); cID != 0 {
+		c, err = u.cs.GetCharacter(ctx, int32(cID))
+		if err != nil {
+			if !errors.Is(err, app.ErrNotFound) {
+				slog.Error("Failed to load character", "error", err)
+			}
+		}
+	}
+	if c == nil {
+		c, err = u.cs.GetAnyCharacter(ctx)
+		if err != nil {
+			if !errors.Is(err, app.ErrNotFound) {
+				slog.Error("Failed to load character", "error", err)
+			}
+		}
+	}
+	if c == nil {
+		u.resetCharacter()
+		return
+	}
+	u.setCharacter(c)
+}
+
+// ShowAndRun shows the UI and runs the Fyne loop (blocking),
+func (u *BaseUI) ShowAndRun() {
+	if u.onShowAndRun != nil {
+		u.onShowAndRun()
+	}
+	u.window.ShowAndRun()
+	slog.Info("App terminated")
+	if u.onAppTerminated != nil {
+		u.onAppTerminated()
+	}
+}
+
 func (u *BaseUI) App() fyne.App {
 	return u.app
 }
@@ -296,39 +331,6 @@ func (u *BaseUI) IsStartupCompleted() bool {
 	return u.isStartupCompleted.Load()
 }
 
-// Init initialized the app.
-// It is meant for initialization logic that requires the UI to be fully created.
-// It should be called directly after the UI was created and before the Fyne loop is started.
-func (u *BaseUI) Init() {
-	u.manageCharacters.Refresh()
-	var c *app.Character
-	var err error
-	ctx := context.Background()
-	if cID := u.settings.LastCharacterID(); cID != 0 {
-		c, err = u.cs.GetCharacter(ctx, int32(cID))
-		if err != nil {
-			if !errors.Is(err, app.ErrNotFound) {
-				slog.Error("Failed to load character", "error", err)
-			}
-		}
-	}
-	if c == nil {
-		c, err = u.cs.GetAnyCharacter(ctx)
-		if err != nil {
-			if !errors.Is(err, app.ErrNotFound) {
-				slog.Error("Failed to load character", "error", err)
-			}
-		}
-	}
-	if c == nil {
-		return
-	}
-	u.setCharacter(c)
-	if u.onInit != nil {
-		u.onInit(c)
-	}
-}
-
 // humanizeError returns user friendly representation of an error for display in the UI.
 func (u *BaseUI) humanizeError(err error) string {
 	if u.settings.DeveloperMode() {
@@ -344,7 +346,7 @@ func (u *BaseUI) isDesktop() bool {
 }
 
 func (u *BaseUI) IsMobile() bool {
-	return u.isMobile
+	return fyne.CurrentDevice().IsMobile()
 }
 
 func (u *BaseUI) MakeWindowTitle(subTitle string) string {
@@ -354,20 +356,10 @@ func (u *BaseUI) MakeWindowTitle(subTitle string) string {
 	return fmt.Sprintf("%s - %s", subTitle, u.appName())
 }
 
-// ShowAndRun shows the UI and runs the Fyne loop (blocking),
-func (u *BaseUI) ShowAndRun() {
-	if u.onShowAndRun != nil {
-		u.onShowAndRun()
-	}
-	u.window.ShowAndRun()
-	slog.Info("App terminated")
-	if u.onAppTerminated != nil {
-		u.onAppTerminated()
-	}
-}
-
-// CurrentCharacterID returns the ID of the current character or 0 if non it set.
-func (u *BaseUI) CurrentCharacterID() int32 {
+// currentCharacterID returns the ID of the current character or 0 if non it set.
+func (u *BaseUI) currentCharacterID() int32 {
+	u.mu.RLock()
+	defer u.mu.RUnlock()
 	if u.character == nil {
 		return 0
 	}
@@ -375,10 +367,14 @@ func (u *BaseUI) CurrentCharacterID() int32 {
 }
 
 func (u *BaseUI) currentCharacter() *app.Character {
+	u.mu.RLock()
+	defer u.mu.RUnlock()
 	return u.character
 }
 
 func (u *BaseUI) hasCharacter() bool {
+	u.mu.RLock()
+	defer u.mu.RUnlock()
 	return u.character != nil
 }
 
@@ -393,15 +389,17 @@ func (u *BaseUI) loadCharacter(id int32) error {
 
 // reloadCurrentCharacter reloads the current character from storage.
 func (u *BaseUI) reloadCurrentCharacter() {
-	id := u.CurrentCharacterID()
+	id := u.currentCharacterID()
 	if id == 0 {
 		return
 	}
-	var err error
-	u.character, err = u.cs.GetCharacter(context.Background(), id)
+	c, err := u.cs.GetCharacter(context.Background(), id)
 	if err != nil {
 		slog.Error("reload character", "characterID", id, "error", err)
 	}
+	u.mu.Lock()
+	u.character = c
+	u.mu.Unlock()
 }
 
 // updateStatus refreshed all status information pages.
@@ -499,14 +497,18 @@ func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Wi
 }
 
 func (u *BaseUI) resetCharacter() {
+	u.mu.Lock()
 	u.character = nil
+	u.mu.Unlock()
 	u.settings.ResetLastCharacterID()
 	u.updateCharacter()
 	u.updateStatus()
 }
 
 func (u *BaseUI) setCharacter(c *app.Character) {
+	u.mu.Lock()
 	u.character = c
+	u.mu.Unlock()
 	u.settings.SetLastCharacterID(c.ID)
 	u.updateCharacter()
 	u.updateStatus()
@@ -572,7 +574,7 @@ func (u *BaseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 	it.Disabled = true
 	items = append(items, it)
 	var wg sync.WaitGroup
-	currentID := u.CurrentCharacterID()
+	currentID := u.currentCharacterID()
 	fallbackIcon, _ := fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
@@ -763,7 +765,7 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
 		return
 	}
-	isShown := characterID == u.CurrentCharacterID()
+	isShown := characterID == u.currentCharacterID()
 	needsRefresh := hasChanged || forceUpdate
 	switch s {
 	case app.SectionAssets:

@@ -119,7 +119,7 @@ func (a *CharacterAttributes) update() {
 }
 
 func (a *CharacterAttributes) makeTopText(total int) (string, widget.Importance) {
-	hasData := a.u.scs.CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionAttributes)
+	hasData := a.u.scs.CharacterSectionExists(a.u.currentCharacterID(), app.SectionAttributes)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
@@ -132,7 +132,7 @@ func (a *CharacterAttributes) updateData() (int, error) {
 		return 0, nil
 	}
 	ctx := context.TODO()
-	ca, err := a.u.cs.GetAttributes(ctx, a.u.CurrentCharacterID())
+	ca, err := a.u.cs.GetAttributes(ctx, a.u.currentCharacterID())
 	if errors.Is(err, app.ErrNotFound) {
 		a.attributes = make([]attribute, 0)
 		return 0, nil

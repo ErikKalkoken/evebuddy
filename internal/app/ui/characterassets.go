@@ -220,8 +220,8 @@ func (a *CharacterAssets) update() {
 		a.locations.ScrollToTop()
 	})
 	t, i, err := func() (string, widget.Importance, error) {
-		a.assets = make([]*app.CharacterAsset, 0)
 		fyne.Do(func() {
+			a.assets = make([]*app.CharacterAsset, 0)
 			a.assetGrid.Refresh()
 			a.locationPath.SetText("")
 			a.locationPath.OnTapped = nil
@@ -259,7 +259,7 @@ func (a *CharacterAssets) makeLocationData() (*iwidget.TreeData[locationNode], e
 	if !a.u.hasCharacter() {
 		return iwidget.NewTreeData[locationNode](), nil
 	}
-	characterID := a.u.CurrentCharacterID()
+	characterID := a.u.currentCharacterID()
 	ctx := context.Background()
 	assets, err := a.u.cs.ListAssets(ctx, characterID)
 	if err != nil {

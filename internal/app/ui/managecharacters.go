@@ -186,7 +186,7 @@ func (a *ManageCharacters) showDeleteDialog(c accountCharacter) {
 				)
 				m.OnSuccess = func() {
 					a.showSnackbar(fmt.Sprintf("Character %s deleted", c.name))
-					if a.u.CurrentCharacterID() == c.id {
+					if a.u.currentCharacterID() == c.id {
 						a.u.setAnyCharacter()
 					}
 					a.u.updateCrossPages()
@@ -203,7 +203,7 @@ func (a *ManageCharacters) showDeleteDialog(c accountCharacter) {
 	)
 }
 
-func (a *ManageCharacters) Refresh() {
+func (a *ManageCharacters) update() {
 	cc, err := a.u.cs.ListCharactersShort(context.TODO())
 	if err != nil {
 		slog.Error("account refresh", "error", err)
@@ -218,10 +218,14 @@ func (a *ManageCharacters) Refresh() {
 		}
 		cc2[i] = accountCharacter{id: c.ID, name: c.Name, hasTokenWithScope: hasToken}
 	}
-	a.characters = cc2
-	a.list.Refresh()
+	fyne.Do(func() {
+		a.characters = cc2
+		a.list.Refresh()
+	})
 	characterCount := len(a.characters)
-	a.title.SetText(fmt.Sprintf("Characters (%d)", characterCount))
+	fyne.Do(func() {
+		a.title.SetText(fmt.Sprintf("Characters (%d)", characterCount))
+	})
 	if a.OnUpdate != nil {
 		a.OnUpdate(characterCount)
 	}

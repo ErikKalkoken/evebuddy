@@ -180,7 +180,7 @@ func (a *CharacterFlyableShips) update() {
 }
 
 func (a *CharacterFlyableShips) updateEntries() error {
-	characterID := a.u.CurrentCharacterID()
+	characterID := a.u.currentCharacterID()
 	if characterID == 0 {
 		a.ships = make([]*app.CharacterShipAbility, 0)
 		fyne.Do(func() {
@@ -241,7 +241,7 @@ func (a *CharacterFlyableShips) makeTopText() (string, widget.Importance, bool, 
 	if !a.u.hasCharacter() {
 		return "No character", widget.LowImportance, false, nil
 	}
-	characterID := a.u.CurrentCharacterID()
+	characterID := a.u.currentCharacterID()
 	hasData := a.u.scs.CharacterSectionExists(characterID, app.SectionSkills)
 	if !hasData {
 		return "Waiting for skills to be loaded...", widget.WarningImportance, false, nil

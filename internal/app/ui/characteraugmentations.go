@@ -119,7 +119,7 @@ func (a *CharacterAugmentations) updateImplants() error {
 		a.implants = make([]*app.CharacterImplant, 0)
 		return nil
 	}
-	implants, err := a.u.cs.ListImplants(context.TODO(), a.u.CurrentCharacterID())
+	implants, err := a.u.cs.ListImplants(context.TODO(), a.u.currentCharacterID())
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func (a *CharacterAugmentations) updateImplants() error {
 }
 
 func (a *CharacterAugmentations) makeTopText() (string, widget.Importance) {
-	hasData := a.u.scs.CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
+	hasData := a.u.scs.CharacterSectionExists(a.u.currentCharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

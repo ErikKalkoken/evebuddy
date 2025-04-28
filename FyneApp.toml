@@ -20,5 +20,5 @@ Website = "https://github.com/ErikKalkoken/evebuddy"
   Comment = "A companion app for Eve Online players"
   Keywords = ["Eve Online", "characters"]
 
-# [Migrations] # Disabled as workaround until Fyne issue #5639 is fixed
-#   fyneDo = true
+[Migrations]
+  fyneDo = true

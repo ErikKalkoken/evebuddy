@@ -203,7 +203,7 @@ func (a *CharacterCommunications) update() {
 	})
 
 	var groupCounts map[app.NotificationGroup][]int
-	if characterID := a.u.CurrentCharacterID(); characterID != 0 {
+	if characterID := a.u.currentCharacterID(); characterID != 0 {
 		var err error
 		groupCounts, err = a.u.cs.CountNotifications(context.Background(), characterID)
 		if err != nil {
@@ -258,7 +258,7 @@ func (a *CharacterCommunications) update() {
 }
 
 func (a *CharacterCommunications) makeFolderTopText() (string, widget.Importance) {
-	hasData := a.u.scs.CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
+	hasData := a.u.scs.CharacterSectionExists(a.u.currentCharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for data to load...", widget.WarningImportance
 	}
@@ -271,7 +271,7 @@ func (a *CharacterCommunications) resetCurrentFolder() {
 
 func (a *CharacterCommunications) setCurrentFolder(nc app.NotificationGroup) {
 	ctx := context.Background()
-	characterID := a.u.CurrentCharacterID()
+	characterID := a.u.currentCharacterID()
 	var notifications []*app.CharacterNotification
 	var err error
 	switch nc {

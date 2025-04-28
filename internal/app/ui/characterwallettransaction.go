@@ -132,7 +132,7 @@ func (a *CharacterWalletTransaction) makeTopText() (string, widget.Importance) {
 	if !a.u.hasCharacter() {
 		return "No character", widget.LowImportance
 	}
-	characterID := a.u.CurrentCharacterID()
+	characterID := a.u.currentCharacterID()
 	hasData := a.u.scs.CharacterSectionExists(characterID, app.SectionWalletTransactions)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
@@ -147,7 +147,7 @@ func (a *CharacterWalletTransaction) updateEntries() error {
 		a.rows = make([]*app.CharacterWalletTransaction, 0)
 		return nil
 	}
-	characterID := a.u.CurrentCharacterID()
+	characterID := a.u.currentCharacterID()
 	ww, err := a.u.cs.ListWalletTransactions(context.TODO(), characterID)
 	if err != nil {
 		return err

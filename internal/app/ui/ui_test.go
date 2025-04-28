@@ -20,7 +20,6 @@ func TestUIStartEmpty(t *testing.T) {
 	defer db.Close()
 	bu := ui.NewFakeBaseUI(st, ui.NewFakeApp(t))
 	u := ui.NewDesktopUI(bu)
-	u.Init()
 	go func() {
 		ticker := time.NewTicker(50 * time.Millisecond)
 		for {
@@ -58,7 +57,6 @@ func TestUIStartWithCharacter(t *testing.T) {
 
 	bu := ui.NewFakeBaseUI(st, ui.NewFakeApp(t))
 	u := ui.NewDesktopUI(bu)
-	u.Init()
 	go func() {
 		ticker := time.NewTicker(50 * time.Millisecond)
 		for {

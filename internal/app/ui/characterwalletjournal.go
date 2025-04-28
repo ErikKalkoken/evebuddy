@@ -169,7 +169,7 @@ func (a *CharacterWalletJournal) updateEntries() error {
 		a.rows = make([]walletJournalEntry, 0)
 		return nil
 	}
-	characterID := a.u.CurrentCharacterID()
+	characterID := a.u.currentCharacterID()
 	ww, err := a.u.cs.ListWalletJournalEntries(context.TODO(), characterID)
 	if err != nil {
 		return err

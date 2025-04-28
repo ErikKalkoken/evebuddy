@@ -349,7 +349,7 @@ func (a *OverviewClones) changeOrigin(w fyne.Window) {
 			ctx := context.Background()
 			ee, _, err := a.u.cs.SearchESI(
 				ctx,
-				a.u.CurrentCharacterID(),
+				a.u.currentCharacterID(),
 				search,
 				[]app.SearchCategory{app.SearchSolarSystem},
 				false,

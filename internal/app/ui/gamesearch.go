@@ -26,77 +26,6 @@ const (
 	maxSearchResults = 500 // max results returned from the server
 )
 
-type SearchResult struct {
-	widget.BaseWidget
-
-	name                *widget.Label
-	image               *canvas.Image
-	supportedCategories set.Set[app.EveEntityCategory]
-	u                   *BaseUI
-}
-
-func NewSearchResult(u *BaseUI, supportedCategories set.Set[app.EveEntityCategory]) *SearchResult {
-	w := &SearchResult{
-		supportedCategories: supportedCategories,
-		name:                widget.NewLabel(""),
-		image:               iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
-		u:                   u,
-	}
-	w.ExtendBaseWidget(w)
-	return w
-}
-
-func (w *SearchResult) Set(o *app.EveEntity) {
-	w.name.Text = o.Name
-	var i widget.Importance
-	if !w.supportedCategories.Contains(o.Category) {
-		i = widget.LowImportance
-	}
-	w.name.Importance = i
-	w.name.Refresh()
-	imageCategory := o.Category.ToEveImage()
-	if imageCategory == "" {
-		w.image.Resource = icons.BlankSvg
-		w.image.Refresh()
-		return
-	}
-	go func() {
-		ctx := context.Background()
-		res, err := func() (fyne.Resource, error) {
-			switch o.Category {
-			case app.EveEntityInventoryType:
-				et, err := w.u.eus.GetOrCreateTypeESI(ctx, o.ID)
-				if err != nil {
-					return nil, err
-				}
-				switch et.Group.Category.ID {
-				case app.EveCategorySKINs:
-					return w.u.eis.InventoryTypeSKIN(et.ID, app.IconPixelSize)
-				case app.EveCategoryBlueprint:
-					return w.u.eis.InventoryTypeBPO(et.ID, app.IconPixelSize)
-				default:
-					return w.u.eis.InventoryTypeIcon(et.ID, app.IconPixelSize)
-				}
-			default:
-				return w.u.eis.EntityIcon(o.ID, imageCategory, app.IconPixelSize)
-			}
-		}()
-		if err != nil {
-			res = theme.BrokenImageIcon()
-			slog.Error("failed to load w.image", "error", err)
-		}
-		fyne.Do(func() {
-			w.image.Resource = res
-			w.image.Refresh()
-		})
-	}()
-}
-
-func (w *SearchResult) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(nil, nil, container.NewPadded(w.image), nil, w.name)
-	return widget.NewSimpleRenderer(c)
-}
-
 type GameSearch struct {
 	widget.BaseWidget
 
@@ -104,7 +33,9 @@ type GameSearch struct {
 	defaultCategories   []string
 	entry               *widget.Entry
 	indicator           *widget.ProgressBarInfinite
+	mu                  sync.RWMutex
 	recent              *widget.List
+	recentItems         []*app.EveEntity
 	recentPage          *fyne.Container
 	resultCount         *widget.Label
 	results             *iwidget.Tree[resultNode]
@@ -114,9 +45,6 @@ type GameSearch struct {
 	supportedCategories set.Set[app.EveEntityCategory]
 	u                   *BaseUI
 	w                   fyne.Window
-
-	mu          sync.RWMutex
-	recentItems []*app.EveEntity
 }
 
 func NewGameSearch(u *BaseUI) *GameSearch {
@@ -151,7 +79,7 @@ func NewGameSearch(u *BaseUI) *GameSearch {
 	})
 	a.entry.PlaceHolder = "Search New Eden"
 	a.entry.OnSubmitted = func(s string) {
-		go a.doSearch(s)
+		go a.doSearch2(s)
 	}
 	a.indicator.Hide()
 
@@ -166,7 +94,7 @@ func NewGameSearch(u *BaseUI) *GameSearch {
 					kxwidget.NewTappableLabel("Strict search", func() {
 						a.strict.SetOn(!a.strict.On)
 					})),
-				widget.NewButton("Reset", a.ResetOptions),
+				widget.NewButton("Reset", a.resetOptions),
 			),
 		),
 	)
@@ -196,25 +124,27 @@ func NewGameSearch(u *BaseUI) *GameSearch {
 		nil,
 		a.recent,
 	)
-	a.showRecent()
-	go func() {
-		ids := a.u.settings.RecentSearches()
-		if len(ids) == 0 {
-			return
-		}
-		ee, err := a.u.eus.ListEntitiesForIDs(context.Background(), ids)
-		if err != nil {
-			slog.Error("failed to load recent items from settings", "error", err)
-			return
-		}
-		fyne.Do(func() {
-			a.setRecentItems(ee)
-		})
-	}()
+	a.init()
 	return a
 }
 
-func (a *GameSearch) ResetOptions() {
+func (a *GameSearch) init() {
+	ids := a.u.settings.RecentSearches()
+	if len(ids) == 0 {
+		return
+	}
+	ee, err := a.u.eus.ListEntitiesForIDs(context.Background(), ids)
+	if err != nil {
+		slog.Error("failed to load recent items from settings", "error", err)
+		return
+	}
+	fyne.Do(func() {
+		a.setRecentItems(ee)
+		a.showRecent()
+	})
+}
+
+func (a *GameSearch) resetOptions() {
 	a.categories.SetSelected(a.defaultCategories)
 	a.strict.SetOn(false)
 	a.updateSearchOptionsTitle()
@@ -238,9 +168,9 @@ func (a *GameSearch) updateSearchOptionsTitle() {
 	a.searchOptions.Refresh()
 }
 
-func (a *GameSearch) DoSearch(s string) {
+func (a *GameSearch) doSearch(s string) {
 	a.entry.SetText(s)
-	go a.doSearch(s)
+	go a.doSearch2(s)
 }
 
 func (a *GameSearch) toogleOptions(enabled bool) {
@@ -290,7 +220,7 @@ func (a *GameSearch) reset() {
 	a.clearResults()
 }
 
-func (a *GameSearch) SetWindow(w fyne.Window) {
+func (a *GameSearch) setWindow(w fyne.Window) {
 	a.w = w
 }
 
@@ -307,7 +237,7 @@ func (a *GameSearch) makeResults() *iwidget.Tree[resultNode] {
 				co.(*widget.Label).SetText(n.String())
 				return
 			}
-			co.(*SearchResult).Set(n.ee)
+			co.(*SearchResult).set(n.ee)
 		},
 	)
 	t.OnSelected = func(n resultNode) {
@@ -353,7 +283,7 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 				return
 			}
 			it := a.recentItems[id]
-			co.(*SearchResult).Set(it)
+			co.(*SearchResult).set(it)
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
@@ -383,7 +313,7 @@ func (a *GameSearch) showRecent() {
 	a.recentPage.Show()
 }
 
-func (a *GameSearch) doSearch(search string) {
+func (a *GameSearch) doSearch2(search string) {
 	if a.u.IsOffline() {
 		fyne.Do(func() {
 			a.u.ShowInformationDialog(
@@ -415,7 +345,7 @@ func (a *GameSearch) doSearch(search string) {
 	})
 	results, total, err := a.u.cs.SearchESI(
 		context.Background(),
-		a.u.CurrentCharacterID(),
+		a.u.currentCharacterID(),
 		search,
 		categories,
 		a.strict.On,
@@ -471,6 +401,77 @@ func (a *GameSearch) doSearch(search string) {
 			a.results.OpenAllBranches()
 		}
 	})
+}
+
+type SearchResult struct {
+	widget.BaseWidget
+
+	name                *widget.Label
+	image               *canvas.Image
+	supportedCategories set.Set[app.EveEntityCategory]
+	u                   *BaseUI
+}
+
+func NewSearchResult(u *BaseUI, supportedCategories set.Set[app.EveEntityCategory]) *SearchResult {
+	w := &SearchResult{
+		supportedCategories: supportedCategories,
+		name:                widget.NewLabel(""),
+		image:               iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
+		u:                   u,
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *SearchResult) set(o *app.EveEntity) {
+	w.name.Text = o.Name
+	var i widget.Importance
+	if !w.supportedCategories.Contains(o.Category) {
+		i = widget.LowImportance
+	}
+	w.name.Importance = i
+	w.name.Refresh()
+	imageCategory := o.Category.ToEveImage()
+	if imageCategory == "" {
+		w.image.Resource = icons.BlankSvg
+		w.image.Refresh()
+		return
+	}
+	go func() {
+		ctx := context.Background()
+		res, err := func() (fyne.Resource, error) {
+			switch o.Category {
+			case app.EveEntityInventoryType:
+				et, err := w.u.eus.GetOrCreateTypeESI(ctx, o.ID)
+				if err != nil {
+					return nil, err
+				}
+				switch et.Group.Category.ID {
+				case app.EveCategorySKINs:
+					return w.u.eis.InventoryTypeSKIN(et.ID, app.IconPixelSize)
+				case app.EveCategoryBlueprint:
+					return w.u.eis.InventoryTypeBPO(et.ID, app.IconPixelSize)
+				default:
+					return w.u.eis.InventoryTypeIcon(et.ID, app.IconPixelSize)
+				}
+			default:
+				return w.u.eis.EntityIcon(o.ID, imageCategory, app.IconPixelSize)
+			}
+		}()
+		if err != nil {
+			res = theme.BrokenImageIcon()
+			slog.Error("failed to load w.image", "error", err)
+		}
+		fyne.Do(func() {
+			w.image.Resource = res
+			w.image.Refresh()
+		})
+	}()
+}
+
+func (w *SearchResult) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewBorder(nil, nil, container.NewPadded(w.image), nil, w.name)
+	return widget.NewSimpleRenderer(c)
 }
 
 var searchCategory2optionMap = map[app.SearchCategory]string{

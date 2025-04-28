@@ -232,7 +232,7 @@ func (a *CharacterMails) MakeFolderMenu() []*fyne.MenuItem {
 }
 
 func (a *CharacterMails) update2() {
-	characterID := a.u.CurrentCharacterID()
+	characterID := a.u.currentCharacterID()
 	tree, folderAll, err := a.updateFolderData(characterID)
 	if err != nil {
 		t := "Failed to build folder tree"
@@ -516,7 +516,7 @@ func (a *CharacterMails) makeFolderTopText(f FolderNode) (string, widget.Importa
 	if !a.u.hasCharacter() {
 		return "No Character", widget.LowImportance
 	}
-	hasData := a.u.scs.CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionSkillqueue)
+	hasData := a.u.scs.CharacterSectionExists(a.u.currentCharacterID(), app.SectionSkillqueue)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
@@ -617,7 +617,7 @@ func (a *CharacterMails) clearMail() {
 
 func (a *CharacterMails) setMail(mailID int32) {
 	ctx := context.TODO()
-	characterID := a.u.CurrentCharacterID()
+	characterID := a.u.currentCharacterID()
 	var err error
 	a.mail, err = a.u.cs.GetMail(ctx, characterID, mailID)
 	if err != nil {

@@ -122,7 +122,7 @@ func (a *CharacterSkillCatalogue) makeGroupsGrid() fyne.CanvasObject {
 				return
 			}
 			oo, err := a.u.cs.ListSkillProgress(
-				context.TODO(), a.u.CurrentCharacterID(), group.id,
+				context.TODO(), a.u.currentCharacterID(), group.id,
 			)
 			if err != nil {
 				slog.Error("Failed to fetch skill group data", "err", err)
@@ -239,7 +239,7 @@ func (a *CharacterSkillCatalogue) updateGroups() error {
 	if !a.u.hasCharacter() {
 		return nil
 	}
-	gg, err := a.u.cs.ListSkillGroupsProgress(context.TODO(), a.u.CurrentCharacterID())
+	gg, err := a.u.cs.ListSkillGroupsProgress(context.TODO(), a.u.currentCharacterID())
 	if err != nil {
 		return err
 	}
