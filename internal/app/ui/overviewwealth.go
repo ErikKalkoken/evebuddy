@@ -73,7 +73,7 @@ func (a *OverviewWealth) makeCharts() *fyne.Container {
 }
 
 func (a *OverviewWealth) update() {
-	data, characters, err := a.compileData()
+	data, characters, err := a.compileData(a.u.services())
 	if err != nil {
 		slog.Error("Failed to fetch data for charts", "err", err)
 		fyne.Do(func() {
@@ -136,12 +136,6 @@ func (a *OverviewWealth) update() {
 		total += r.assets + r.wallet
 	}
 
-	charts := a.charts.Objects
-	charts[0] = typesChart
-	charts[1] = charactersChart
-	charts[2] = assetsChart
-	charts[3] = walletChart
-
 	totalText := ihumanize.Number(total, 1)
 
 	fyne.Do(func() {
@@ -150,6 +144,11 @@ func (a *OverviewWealth) update() {
 		a.top.Refresh()
 	})
 	fyne.Do(func() {
+		charts := a.charts.Objects
+		charts[0] = typesChart
+		charts[1] = charactersChart
+		charts[2] = assetsChart
+		charts[3] = walletChart
 		a.charts.Refresh()
 	})
 
@@ -165,23 +164,23 @@ type dataRow struct {
 	total  float64
 }
 
-func (a *OverviewWealth) compileData() ([]dataRow, int, error) {
-	ctx := context.TODO()
-	cc, err := a.u.cs.ListCharacters(ctx)
+func (*OverviewWealth) compileData(s services) ([]dataRow, int, error) {
+	ctx := context.Background()
+	cc, err := s.cs.ListCharacters(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
 	selected := make([]*app.Character, 0)
 	for _, c := range cc {
-		hasAssets := a.u.scs.CharacterSectionExists(c.ID, app.SectionAssets)
-		hasWallet := a.u.scs.CharacterSectionExists(c.ID, app.SectionWalletBalance)
+		hasAssets := s.scs.CharacterSectionExists(c.ID, app.SectionAssets)
+		hasWallet := s.scs.CharacterSectionExists(c.ID, app.SectionWalletBalance)
 		if hasAssets && hasWallet {
 			selected = append(selected, c)
 		}
 	}
 	data := make([]dataRow, 0)
 	for _, c := range selected {
-		assetTotal, err := a.u.cs.AssetTotalValue(ctx, c.ID)
+		assetTotal, err := s.cs.AssetTotalValue(ctx, c.ID)
 		if err != nil {
 			return nil, 0, err
 		}

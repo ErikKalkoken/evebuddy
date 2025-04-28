@@ -100,80 +100,79 @@ func (a *CharacterAttributes) makeAttributeList() *widget.List {
 }
 
 func (a *CharacterAttributes) update() {
-	var t string
-	var i widget.Importance
-	total, err := a.updateData()
-	if err != nil {
-		slog.Error("Failed to refresh attributes UI", "err", err)
-		t = "ERROR"
-		i = widget.DangerImportance
-	} else {
-		t, i = a.makeTopText(total)
+	var err error
+	var total int
+	attributes := make([]attribute, 0)
+	characterID := a.u.currentCharacterID()
+	hasData := a.u.scs.CharacterSectionExists(characterID, app.SectionAttributes)
+	if hasData {
+		total2, attributes2, err2 := a.fetchData(a.u.currentCharacterID(), a.u.services())
+		if err2 != nil {
+			slog.Error("Failed to refresh attributes UI", "err", err)
+			err = err2
+		} else {
+			attributes = attributes2
+			total = total2
+		}
 	}
+	t, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
+		return fmt.Sprintf("Total points: %d", total), widget.MediumImportance
+	})
 	fyne.Do(func() {
-		a.top.Text = t
-		a.top.Importance = i
+		a.top.Text, a.top.Importance = t, i
 		a.top.Refresh()
+	})
+	fyne.Do(func() {
+		a.attributes = attributes
 		a.list.Refresh()
 	})
 }
 
-func (a *CharacterAttributes) makeTopText(total int) (string, widget.Importance) {
-	hasData := a.u.scs.CharacterSectionExists(a.u.currentCharacterID(), app.SectionAttributes)
-	if !hasData {
-		return "Waiting for character data to be loaded...", widget.WarningImportance
+func (*CharacterAttributes) fetchData(characterID int32, s services) (int, []attribute, error) {
+	attributes := make([]attribute, 0, 6)
+	if characterID == 0 {
+		return 0, attributes, nil
 	}
-	return fmt.Sprintf("Total points: %d", total), widget.MediumImportance
-}
-
-func (a *CharacterAttributes) updateData() (int, error) {
-	if !a.u.hasCharacter() {
-		a.attributes = make([]attribute, 0)
-		return 0, nil
-	}
-	ctx := context.TODO()
-	ca, err := a.u.cs.GetAttributes(ctx, a.u.currentCharacterID())
+	ca, err := s.cs.GetAttributes(context.Background(), characterID)
 	if errors.Is(err, app.ErrNotFound) {
-		a.attributes = make([]attribute, 0)
-		return 0, nil
+		return 0, attributes, nil
 	} else if err != nil {
-		return 0, err
+		return 0, attributes, err
 	}
 	resPerception := eveicon.FromName(eveicon.Perception)
 	resMemory := eveicon.FromName(eveicon.Memory)
 	resWillpower := eveicon.FromName(eveicon.Willpower)
 	resIntelligence := eveicon.FromName(eveicon.Intelligence)
 	resCharisma := eveicon.FromName(eveicon.Charisma)
-	items := make([]attribute, 6)
-	items[0] = attribute{
+	attributes = attributes[:6]
+	attributes[0] = attribute{
 		icon:   resPerception,
 		name:   "Perception",
 		points: ca.Perception,
 	}
-	items[1] = attribute{
+	attributes[1] = attribute{
 		icon:   resMemory,
 		name:   "Memory",
 		points: ca.Memory,
 	}
-	items[2] = attribute{
+	attributes[2] = attribute{
 		icon:   resWillpower,
 		name:   "Willpower",
 		points: ca.Willpower,
 	}
-	items[3] = attribute{
+	attributes[3] = attribute{
 		icon:   resIntelligence,
 		name:   "Intelligence",
 		points: ca.Intelligence,
 	}
-	items[4] = attribute{
+	attributes[4] = attribute{
 		icon:   resCharisma,
 		name:   "Charisma",
 		points: ca.Charisma,
 	}
-	items[5] = attribute{
+	attributes[5] = attribute{
 		name: fmt.Sprintf("Bonus Remaps Available: %d", ca.BonusRemaps),
 	}
-	a.attributes = items
 	total := ca.Charisma + ca.Intelligence + ca.Memory + ca.Perception + ca.Willpower
-	return total, nil
+	return total, attributes, nil
 }

@@ -33,7 +33,7 @@ type CharacterCommunications struct {
 	widget.BaseWidget
 
 	Detail        *fyne.Container
-	Notifications fyne.CanvasObject
+	Notifications *fyne.Container
 	OnSelected    func()
 	OnUpdate      func(count optional.Optional[int])
 	Toolbar       *widget.Toolbar
@@ -194,79 +194,71 @@ func (a *CharacterCommunications) makeToolbar() *widget.Toolbar {
 }
 
 func (a *CharacterCommunications) update() {
-	a.notifications = make([]*app.CharacterNotification, 0)
-	fyne.Do(func() {
-		a.notificationList.Refresh()
-		a.notificationList.UnselectAll()
-		a.notificationsTop.SetText("")
-		a.clearDetail()
-	})
-
-	var groupCounts map[app.NotificationGroup][]int
-	if characterID := a.u.currentCharacterID(); characterID != 0 {
-		var err error
-		groupCounts, err = a.u.cs.CountNotifications(context.Background(), characterID)
-		if err != nil {
-			slog.Error("communications update", "error", err)
-		}
-	}
-
+	var err error
+	characterID := a.u.currentCharacterID()
+	hasData := a.u.scs.CharacterSectionExists(a.u.currentCharacterID(), app.SectionImplants)
 	groups := make([]NotificationFolder, 0)
 	var unreadCount, totalCount optional.Optional[int]
-	for _, g := range app.NotificationGroups() {
-		nf := NotificationFolder{
-			group: g,
-			Name:  g.String(),
+	if characterID != 0 && hasData {
+		groupCounts, err2 := a.u.cs.CountNotifications(context.Background(), characterID)
+		if err2 != nil {
+			slog.Error("communications update", "error", err)
+			err = err2
 		}
-		gc, ok := groupCounts[g]
-		if ok {
-			nf.Total.Set(gc[0])
-			nf.Unread.Set(gc[1])
-			totalCount.Set(totalCount.ValueOrZero() + gc[0])
-			unreadCount.Set(unreadCount.ValueOrZero() + gc[1])
+
+		for _, g := range app.NotificationGroups() {
+			nf := NotificationFolder{
+				group: g,
+				Name:  g.String(),
+			}
+			gc, ok := groupCounts[g]
+			if ok {
+				nf.Total.Set(gc[0])
+				nf.Unread.Set(gc[1])
+				totalCount.Set(totalCount.ValueOrZero() + gc[0])
+				unreadCount.Set(unreadCount.ValueOrZero() + gc[1])
+			}
+			if nf.Total.ValueOrZero() > 0 {
+				groups = append(groups, nf)
+			}
 		}
-		if nf.Total.ValueOrZero() > 0 {
-			groups = append(groups, nf)
+		slices.SortFunc(groups, func(a, b NotificationFolder) int {
+			return cmp.Compare(a.Name, b.Name)
+		})
+		if unreadCount.ValueOrZero() > 0 {
+			groups = slices.Insert(groups, 0, NotificationFolder{
+				group:  app.GroupUnread,
+				Name:   "Unread",
+				Unread: unreadCount,
+			})
 		}
-	}
-	slices.SortFunc(groups, func(a, b NotificationFolder) int {
-		return cmp.Compare(a.Name, b.Name)
-	})
-	if unreadCount.ValueOrZero() > 0 {
-		groups = slices.Insert(groups, 0, NotificationFolder{
-			group:  app.GroupUnread,
-			Name:   "Unread",
+		groups = append(groups, NotificationFolder{
+			group:  app.GroupAll,
+			Name:   "All",
 			Unread: unreadCount,
 		})
 	}
-	groups = append(groups, NotificationFolder{
-		group:  app.GroupAll,
-		Name:   "All",
-		Unread: unreadCount,
+	t, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
+		return fmt.Sprintf("%s messages", ihumanize.OptionalComma(totalCount, "?")), widget.MediumImportance
 	})
-	a.notificationsCount = totalCount
-	a.folders = groups
-	a.foldersTop.Text, a.foldersTop.Importance = a.makeFolderTopText()
 	fyne.Do(func() {
+		a.resetCurrentFolder()
+		a.clearDetail()
+		a.notificationsCount = totalCount
+		a.folders = groups
+		a.foldersTop.Text, a.foldersTop.Importance = t, i
+		a.foldersTop.Refresh()
 		a.folderList.Refresh()
 		a.folderList.UnselectAll()
-		a.foldersTop.Refresh()
 	})
 	if a.OnUpdate != nil {
 		a.OnUpdate(unreadCount)
 	}
 }
 
-func (a *CharacterCommunications) makeFolderTopText() (string, widget.Importance) {
-	hasData := a.u.scs.CharacterSectionExists(a.u.currentCharacterID(), app.SectionImplants)
-	if !hasData {
-		return "Waiting for data to load...", widget.WarningImportance
-	}
-	return fmt.Sprintf("%s messages", ihumanize.OptionalComma(a.notificationsCount, "?")), widget.MediumImportance
-}
-
 func (a *CharacterCommunications) resetCurrentFolder() {
 	a.setCurrentFolder(app.GroupUnread)
+	a.notificationList.UnselectAll()
 }
 
 func (a *CharacterCommunications) setCurrentFolder(nc app.NotificationGroup) {
@@ -292,10 +284,9 @@ func (a *CharacterCommunications) setCurrentFolder(nc app.NotificationGroup) {
 	} else {
 		top = fmt.Sprintf("%s • %s messages", nc.String(), humanize.Comma(int64(len(notifications))))
 	}
-	a.notificationsTop.Text = top
-	a.notificationsTop.Importance = importance
+	a.notificationsTop.Text, a.notificationsTop.Importance = top, importance
 	a.notificationsTop.Refresh()
-	a.Notifications.Refresh()
+	a.notificationList.Refresh()
 }
 
 func (a *CharacterCommunications) clearDetail() {

@@ -206,20 +206,22 @@ func (a *OverviewClones) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *OverviewClones) update() {
+	rows := make([]cloneSearchRow, 0)
 	t, i, err := func() (string, widget.Importance, error) {
-		err := a.updateRows()
+		rows2, err := a.fetchRows(a.u.services())
 		if err != nil {
 			return "", 0, err
 		}
-		if len(a.rows) == 0 {
+		if len(rows2) == 0 {
 			return "No clones", widget.LowImportance, nil
 		}
-		s := fmt.Sprintf("%d clones", len(a.rows))
+		rows = rows2
+		s := fmt.Sprintf("%d clones", len(rows2))
 		return s, widget.MediumImportance, nil
 	}()
 	if err != nil {
 		slog.Error("Failed to refresh clones UI", "err", err)
-		t = "ERROR"
+		t = "ERROR: " + a.u.humanizeError(err)
 		i = widget.DangerImportance
 	}
 	fyne.Do(func() {
@@ -228,26 +230,27 @@ func (a *OverviewClones) update() {
 		a.top.Refresh()
 	})
 	fyne.Do(func() {
+		a.rows = rows
 		a.body.Refresh()
+		if len(rows) > 0 && a.origin != nil {
+			go a.updateRoutes(app.RoutePreference(a.routePref.Selected))
+		}
 	})
-	if len(a.rows) > 0 && a.origin != nil {
-		go a.updateRoutes(app.RoutePreference(a.routePref.Selected))
-	}
 }
 
-func (a *OverviewClones) updateRows() error {
+func (*OverviewClones) fetchRows(s services) ([]cloneSearchRow, error) {
 	ctx := context.Background()
-	oo, err := a.u.cs.ListAllJumpClones(ctx)
+	oo, err := s.cs.ListAllJumpClones(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	slices.SortFunc(oo, func(a, b *app.CharacterJumpClone2) int {
 		return cmp.Compare(a.SolarSystemName(), b.SolarSystemName())
 	})
-	a.rows = xslices.Map(oo, func(o *app.CharacterJumpClone2) cloneSearchRow {
+	rows := xslices.Map(oo, func(o *app.CharacterJumpClone2) cloneSearchRow {
 		return cloneSearchRow{c: o}
 	})
-	return nil
+	return rows, nil
 }
 
 func (a *OverviewClones) updateRoutes(flag app.RoutePreference) {

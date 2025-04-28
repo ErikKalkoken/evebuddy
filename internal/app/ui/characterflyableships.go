@@ -149,8 +149,8 @@ func (a *CharacterFlyableShips) makeShipsGrid() *widget.GridWrap {
 
 func (a *CharacterFlyableShips) update() {
 	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
-		exists := a.u.scs.GeneralSectionExists(app.SectionEveCategories)
-		if !exists {
+		hasData := a.u.scs.GeneralSectionExists(app.SectionEveCategories)
+		if !hasData {
 			return "Waiting for universe data to be loaded...", widget.WarningImportance, false, nil
 		}
 		if err := a.updateEntries(); err != nil {

@@ -228,14 +228,15 @@ func (a *CharacterAssets) update() {
 			a.selectedLocation.Clear()
 			a.infoIcon.Hide()
 		})
-		tree, err := a.makeLocationData()
+		ac, locations, err := a.fetchData(a.u.currentCharacterID(), a.u.services())
 		if err != nil {
 			return "", 0, err
 		}
 		fyne.Do(func() {
-			a.locations.Set(tree)
+			a.assetCollection = ac
+			a.locations.Set(locations)
 		})
-		locationsCount := len(tree.ChildUIDs(""))
+		locationsCount := len(locations.ChildUIDs(""))
 		t, i := a.makeTopText(locationsCount)
 		return t, i, nil
 	}()
@@ -255,28 +256,27 @@ func (a *CharacterAssets) update() {
 	}
 }
 
-func (a *CharacterAssets) makeLocationData() (*iwidget.TreeData[locationNode], error) {
-	if !a.u.hasCharacter() {
-		return iwidget.NewTreeData[locationNode](), nil
+func (*CharacterAssets) fetchData(characterID int32, s services) (assetcollection.AssetCollection, *iwidget.TreeData[locationNode], error) {
+	var ac assetcollection.AssetCollection
+	if characterID == 0 {
+		return ac, iwidget.NewTreeData[locationNode](), nil
 	}
-	characterID := a.u.currentCharacterID()
 	ctx := context.Background()
-	assets, err := a.u.cs.ListAssets(ctx, characterID)
+	assets, err := s.cs.ListAssets(ctx, characterID)
 	if err != nil {
-		return nil, err
+		return ac, nil, err
 	}
-	locations, err := a.u.eus.ListLocations(ctx)
+	el, err := s.eus.ListLocations(ctx)
 	if err != nil {
-		return nil, err
+		return ac, nil, err
 	}
-	a.assetCollection = assetcollection.New(assets, locations)
-	locationNodes := a.assetCollection.Locations()
-	slices.SortFunc(locationNodes, func(a assetcollection.LocationNode, b assetcollection.LocationNode) int {
-		return cmp.Compare(a.Location.DisplayName(), b.Location.DisplayName())
+	ac = assetcollection.New(assets, el)
+	locationNodes := ac.Locations()
+	slices.SortFunc(locationNodes, func(x assetcollection.LocationNode, y assetcollection.LocationNode) int {
+		return cmp.Compare(x.Location.DisplayName(), y.Location.DisplayName())
 	})
-
-	tree := makeLocationTreeData(locationNodes, characterID)
-	return tree, nil
+	locations := makeLocationTreeData(locationNodes, characterID)
+	return ac, locations, nil
 }
 
 func makeLocationTreeData(locationNodes []assetcollection.LocationNode, characterID int32) *iwidget.TreeData[locationNode] {

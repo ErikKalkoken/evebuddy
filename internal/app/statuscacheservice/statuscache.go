@@ -56,6 +56,9 @@ func (sc *StatusCacheService) InitCache(ctx context.Context) error {
 
 // CharacterSectionExists reports wether a character section exists.
 func (sc *StatusCacheService) CharacterSectionExists(characterID int32, section app.CharacterSection) bool {
+	if characterID == 0 {
+		return false
+	}
 	x, ok := sc.CharacterSectionGet(characterID, section)
 	if !ok {
 		return false

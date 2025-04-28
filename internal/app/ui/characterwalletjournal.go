@@ -51,17 +51,17 @@ type CharacterWalletJournal struct {
 
 	OnUpdate func(balance string)
 
-	rows []walletJournalEntry
-	body fyne.CanvasObject
-	top  *widget.Label
-	u    *BaseUI
+	entries []walletJournalEntry
+	body    fyne.CanvasObject
+	top     *widget.Label
+	u       *BaseUI
 }
 
 func NewCharacterWalletJournal(u *BaseUI) *CharacterWalletJournal {
 	a := &CharacterWalletJournal{
-		rows: make([]walletJournalEntry, 0),
-		top:  appwidget.MakeTopLabel(),
-		u:    u,
+		entries: make([]walletJournalEntry, 0),
+		top:     appwidget.MakeTopLabel(),
+		u:       u,
 	}
 	a.ExtendBaseWidget(a)
 	headers := []iwidget.HeaderDef{
@@ -112,11 +112,11 @@ func NewCharacterWalletJournal(u *BaseUI) *CharacterWalletJournal {
 		}
 	}
 	if a.u.isDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, func(_ int, r walletJournalEntry) {
+		a.body = iwidget.MakeDataTableForDesktop(headers, &a.entries, makeCell, func(_ int, r walletJournalEntry) {
 			showReasonDialog(r)
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeCell, showReasonDialog)
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.entries, makeCell, showReasonDialog)
 	}
 	return a
 }
@@ -127,52 +127,43 @@ func (a *CharacterWalletJournal) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *CharacterWalletJournal) update() {
-	var t string
-	var i widget.Importance
-	if err := a.updateEntries(); err != nil {
-		slog.Error("Failed to refresh wallet journal UI", "err", err)
-		t = "ERROR"
-		i = widget.DangerImportance
-	} else {
-		t, i = a.makeTopText()
+	var err error
+	entries := make([]walletJournalEntry, 0)
+	character := a.u.currentCharacter()
+	hasData := a.u.scs.CharacterSectionExists(character.ID, app.SectionWalletJournal)
+	if hasData {
+		entries2, err2 := a.updateEntries(character.ID, a.u.services())
+		if err2 != nil {
+			slog.Error("Failed to refresh wallet journal UI", "err", err2)
+			err = err2
+		} else {
+			entries = entries2
+		}
 	}
+	t, i := makeTopText(character.ID, hasData, err, func() (string, widget.Importance) {
+		b := ihumanize.OptionalFloat(character.WalletBalance, 1, "?")
+		t := humanize.Comma(int64(len(entries)))
+		s := fmt.Sprintf("Balance: %s • Entries: %s", b, t)
+		if a.OnUpdate != nil {
+			a.OnUpdate(b)
+		}
+		return s, widget.MediumImportance
+	})
 	fyne.Do(func() {
 		a.top.Text = t
 		a.top.Importance = i
 		a.top.Refresh()
 	})
 	fyne.Do(func() {
+		a.entries = entries
 		a.body.Refresh()
 	})
 }
 
-func (a *CharacterWalletJournal) makeTopText() (string, widget.Importance) {
-	if !a.u.hasCharacter() {
-		return "No character", widget.LowImportance
-	}
-	c := a.u.currentCharacter()
-	hasData := a.u.scs.CharacterSectionExists(c.ID, app.SectionWalletJournal)
-	if !hasData {
-		return "Waiting for character data to be loaded...", widget.WarningImportance
-	}
-	b := ihumanize.OptionalFloat(c.WalletBalance, 1, "?")
-	t := humanize.Comma(int64(len(a.rows)))
-	s := fmt.Sprintf("Balance: %s • Entries: %s", b, t)
-	if a.OnUpdate != nil {
-		a.OnUpdate(b)
-	}
-	return s, widget.MediumImportance
-}
-
-func (a *CharacterWalletJournal) updateEntries() error {
-	if !a.u.hasCharacter() {
-		a.rows = make([]walletJournalEntry, 0)
-		return nil
-	}
-	characterID := a.u.currentCharacterID()
-	ww, err := a.u.cs.ListWalletJournalEntries(context.TODO(), characterID)
+func (*CharacterWalletJournal) updateEntries(characterID int32, s services) ([]walletJournalEntry, error) {
+	ww, err := s.cs.ListWalletJournalEntries(context.TODO(), characterID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	entries := make([]walletJournalEntry, len(ww))
 	for i, w := range ww {
@@ -185,6 +176,5 @@ func (a *CharacterWalletJournal) updateEntries() error {
 		w2.refType = w.RefType
 		entries[i] = w2
 	}
-	a.rows = entries
-	return nil
+	return entries, nil
 }

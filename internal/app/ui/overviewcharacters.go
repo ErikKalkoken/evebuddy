@@ -135,14 +135,16 @@ func (a *OverviewCharacters) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *OverviewCharacters) update() {
+	var rows []overviewCharacter
 	t, i, err := func() (string, widget.Importance, error) {
-		totals, err := a.updateCharacters()
+		cc, totals, err := a.fetchRows(a.u.services())
 		if err != nil {
 			return "", 0, err
 		}
-		if len(a.rows) == 0 {
+		if len(cc) == 0 {
 			return "No characters", widget.LowImportance, nil
 		}
+		rows = cc
 		walletText := ihumanize.OptionalFloat(totals.wallet, 1, "?")
 		assetsText := ihumanize.OptionalFloat(totals.assets, 1, "?")
 		unreadText := ihumanize.Optional(totals.unread, "?")
@@ -157,7 +159,7 @@ func (a *OverviewCharacters) update() {
 	}()
 	if err != nil {
 		slog.Error("Failed to refresh overview UI", "err", err)
-		t = "ERROR"
+		t = "ERROR: " + a.u.humanizeError(err)
 		i = widget.DangerImportance
 	}
 	fyne.Do(func() {
@@ -166,6 +168,7 @@ func (a *OverviewCharacters) update() {
 		a.top.Refresh()
 	})
 	fyne.Do(func() {
+		a.rows = rows
 		a.body.Refresh()
 	})
 }
@@ -176,13 +179,12 @@ type overviewTotals struct {
 	assets optional.Optional[float64]
 }
 
-func (a *OverviewCharacters) updateCharacters() (overviewTotals, error) {
+func (*OverviewCharacters) fetchRows(s services) ([]overviewCharacter, overviewTotals, error) {
 	var totals overviewTotals
-	var err error
 	ctx := context.Background()
-	characters, err := a.u.cs.ListCharacters(ctx)
+	characters, err := s.cs.ListCharacters(ctx)
 	if err != nil {
-		return totals, err
+		return nil, totals, err
 	}
 	cc := xslices.Map(characters, func(m *app.Character) overviewCharacter {
 		return overviewCharacter{
@@ -198,18 +200,18 @@ func (a *OverviewCharacters) updateCharacters() (overviewTotals, error) {
 		}
 	})
 	for i, c := range cc {
-		total, unread, err := a.u.cs.GetMailCounts(ctx, c.id)
+		total, unread, err := s.cs.GetMailCounts(ctx, c.id)
 		if err != nil {
-			return totals, err
+			return nil, totals, err
 		}
 		if total > 0 {
 			cc[i].unreadCount = optional.New(unread)
 		}
 	}
 	for i, c := range cc {
-		v, err := a.u.cs.AssetTotalValue(ctx, c.id)
+		v, err := s.cs.AssetTotalValue(ctx, c.id)
 		if err != nil {
-			return totals, err
+			return nil, totals, err
 		}
 		cc[i].assetValue = v
 	}
@@ -224,6 +226,5 @@ func (a *OverviewCharacters) updateCharacters() (overviewTotals, error) {
 			totals.assets.Set(totals.assets.ValueOrZero() + c.assetValue.ValueOrZero())
 		}
 	}
-	a.rows = cc
-	return totals, nil
+	return cc, totals, nil
 }

@@ -92,21 +92,23 @@ func (a *OverviewTraining) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *OverviewTraining) update() {
+	rows := make([]trainingCharacter, 0)
 	t, i, err := func() (string, widget.Importance, error) {
-		totalSP, err := a.updateCharacters()
+		cc, totalSP, err := a.fetchRows(a.u.services())
 		if err != nil {
 			return "", 0, err
 		}
-		if len(a.rows) == 0 {
+		if len(cc) == 0 {
 			return "No characters", widget.LowImportance, nil
 		}
+		rows = cc
 		spText := ihumanize.Optional(totalSP, "?")
-		s := fmt.Sprintf("%d characters • %s Total SP", len(a.rows), spText)
+		s := fmt.Sprintf("%d characters • %s Total SP", len(cc), spText)
 		return s, widget.MediumImportance, nil
 	}()
 	if err != nil {
 		slog.Error("Failed to refresh training UI", "err", err)
-		t = "ERROR"
+		t = "ERROR: " + a.u.humanizeError(err)
 		i = widget.DangerImportance
 	}
 	fyne.Do(func() {
@@ -115,17 +117,17 @@ func (a *OverviewTraining) update() {
 		a.top.Refresh()
 	})
 	fyne.Do(func() {
+		a.rows = rows
 		a.body.Refresh()
 	})
 }
 
-func (a *OverviewTraining) updateCharacters() (optional.Optional[int], error) {
+func (*OverviewTraining) fetchRows(s services) ([]trainingCharacter, optional.Optional[int], error) {
 	var totalSP optional.Optional[int]
-	var err error
 	ctx := context.TODO()
-	mycc, err := a.u.cs.ListCharacters(ctx)
+	mycc, err := s.cs.ListCharacters(ctx)
 	if err != nil {
-		return totalSP, err
+		return nil, totalSP, err
 	}
 	cc := make([]trainingCharacter, len(mycc))
 	for i, m := range mycc {
@@ -138,9 +140,9 @@ func (a *OverviewTraining) updateCharacters() (optional.Optional[int], error) {
 		cc[i] = c
 	}
 	for i, c := range cc {
-		v, err := a.u.cs.GetTotalTrainingTime(ctx, c.id)
+		v, err := s.cs.GetTotalTrainingTime(ctx, c.id)
 		if err != nil {
-			return totalSP, err
+			return nil, totalSP, err
 		}
 		cc[i].training = v
 	}
@@ -149,6 +151,5 @@ func (a *OverviewTraining) updateCharacters() (optional.Optional[int], error) {
 			totalSP.Set(totalSP.ValueOrZero() + c.totalSP.ValueOrZero())
 		}
 	}
-	a.rows = cc
-	return totalSP, nil
+	return cc, totalSP, nil
 }

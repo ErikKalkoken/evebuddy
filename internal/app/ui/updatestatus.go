@@ -3,7 +3,6 @@ package ui
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -237,10 +236,9 @@ func (a *updateStatus) makeUpdateAllAction() func() {
 }
 
 func (a *updateStatus) update() {
-	if err := a.updateEntityList(); err != nil {
-		slog.Warn("failed to refresh entity list for status window", "error", err)
-	}
+	entities := a.updateEntityList(a.u.services())
 	fyne.Do(func() {
+		a.sectionEntities = entities
 		a.entityList.Refresh()
 		a.refreshSections()
 		a.charactersTop.SetText(fmt.Sprintf("Entities: %d", len(a.sectionEntities)))
@@ -248,23 +246,22 @@ func (a *updateStatus) update() {
 	})
 }
 
-func (a *updateStatus) updateEntityList() error {
+func (*updateStatus) updateEntityList(s services) []sectionEntity {
 	entities := make([]sectionEntity, 0)
-	cc := a.u.scs.ListCharacters()
+	cc := s.scs.ListCharacters()
 	for _, c := range cc {
-		ss := a.u.scs.CharacterSectionSummary(c.ID)
+		ss := s.scs.CharacterSectionSummary(c.ID)
 		o := sectionEntity{id: c.ID, name: c.Name, ss: ss}
 		entities = append(entities, o)
 	}
-	ss := a.u.scs.GeneralSectionSummary()
+	ss := s.scs.GeneralSectionSummary()
 	o := sectionEntity{
 		id:   app.GeneralSectionEntityID,
 		name: app.GeneralSectionEntityName,
 		ss:   ss,
 	}
 	entities = append(entities, o)
-	a.sectionEntities = entities
-	return nil
+	return entities
 }
 
 func (a *updateStatus) makeSectionList() *widget.List {

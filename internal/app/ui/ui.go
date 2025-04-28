@@ -60,6 +60,14 @@ const (
 	generalSectionsUpdateTicker   = 300 * time.Second
 )
 
+// services represents a wrapper for passing the main services to funtions.
+type services struct {
+	cs  *characterservice.CharacterService
+	eis *eveimageservice.EveImageService
+	eus *eveuniverseservice.EveUniverseService
+	scs *statuscacheservice.StatusCacheService
+}
+
 // BaseUI represents the core UI logic and is used by both the desktop and mobile UI.
 type BaseUI struct {
 	DisableMenuShortcuts func()
@@ -194,13 +202,11 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 	u.characterSkillQueue = NewCharacterSkillQueue(u)
 	u.characterWalletJournal = NewCharacterWalletJournal(u)
 	u.characterWalletTransaction = NewCharacterWalletTransaction(u)
-	u.contractsActive = NewContracts(u)
-	u.contractsActive.ShowActiveOnly = true
-	u.contractsAll = NewContracts(u)
+	u.contractsActive = NewContracts(u, true)
+	u.contractsAll = NewContracts(u, false)
 	u.gameSearch = NewGameSearch(u)
-	u.industryJobsActive = NewIndustryJobs(u)
-	u.industryJobsActive.ShowActiveOnly = true
-	u.industryJobsAll = NewIndustryJobs(u)
+	u.industryJobsActive = NewIndustryJobs(u, true)
+	u.industryJobsAll = NewIndustryJobs(u, false)
 	u.manageCharacters = NewManageCharacters(u)
 	u.overviewAssets = NewOverviewAssets(u)
 	u.overviewCharacters = NewOverviewCharacters(u)
@@ -307,6 +313,15 @@ func (u *BaseUI) ShowAndRun() {
 	}
 }
 
+func (u *BaseUI) services() services {
+	return services{
+		cs:  u.cs,
+		eis: u.eis,
+		eus: u.eus,
+		scs: u.scs,
+	}
+}
+
 func (u *BaseUI) App() fyne.App {
 	return u.app
 }
@@ -356,7 +371,7 @@ func (u *BaseUI) MakeWindowTitle(subTitle string) string {
 	return fmt.Sprintf("%s - %s", subTitle, u.appName())
 }
 
-// currentCharacterID returns the ID of the current character or 0 if non it set.
+// currentCharacterID returns the ID of the current character or 0 if non is set.
 func (u *BaseUI) currentCharacterID() int32 {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
@@ -1136,4 +1151,18 @@ func (u *BaseUI) makeCopyToClipbardLabel(text string) *kxwidget.TappableLabel {
 	return kxwidget.NewTappableLabel(text, func() {
 		u.App().Clipboard().SetContent(text)
 	})
+}
+
+// makeTopText makes the content for the top label of a gui element.
+func makeTopText(characterID int32, hasData bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
+	if err != nil {
+		return "ERROR", widget.DangerImportance
+	}
+	if characterID == 0 {
+		return "No character...", widget.LowImportance
+	}
+	if !hasData {
+		return "Waiting for character data to be loaded...", widget.WarningImportance
+	}
+	return make()
 }

@@ -209,25 +209,22 @@ func (a *ManageCharacters) update() {
 		slog.Error("account refresh", "error", err)
 		return
 	}
-	cc2 := make([]accountCharacter, len(cc))
+	characters := make([]accountCharacter, len(cc))
 	for i, c := range cc {
 		hasToken, err := a.u.cs.HasTokenWithScopes(context.Background(), c.ID)
 		if err != nil {
 			slog.Error("Tried to check if character has token", "err", err)
 			hasToken = true // do not report error when state is unclear
 		}
-		cc2[i] = accountCharacter{id: c.ID, name: c.Name, hasTokenWithScope: hasToken}
+		characters[i] = accountCharacter{id: c.ID, name: c.Name, hasTokenWithScope: hasToken}
 	}
 	fyne.Do(func() {
-		a.characters = cc2
+		a.characters = characters
 		a.list.Refresh()
-	})
-	characterCount := len(a.characters)
-	fyne.Do(func() {
-		a.title.SetText(fmt.Sprintf("Characters (%d)", characterCount))
+		a.title.SetText(fmt.Sprintf("Characters (%d)", len(characters)))
 	})
 	if a.OnUpdate != nil {
-		a.OnUpdate(characterCount)
+		a.OnUpdate(len(characters))
 	}
 }
 

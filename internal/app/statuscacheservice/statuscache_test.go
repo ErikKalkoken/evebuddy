@@ -129,6 +129,7 @@ func TestStatusCache(t *testing.T) {
 		assert.True(t, sc.CharacterSectionExists(c.ID, app.SectionImplants))
 		assert.False(t, sc.CharacterSectionExists(99, app.SectionImplants))
 		assert.False(t, sc.CharacterSectionExists(c.ID, app.SectionAssets))
+		assert.False(t, sc.CharacterSectionExists(0, app.SectionAssets))
 	})
 	t.Run("can report wether a general section exists 1", func(t *testing.T) {
 		// given

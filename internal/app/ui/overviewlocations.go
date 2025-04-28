@@ -94,20 +94,22 @@ func (a *OverviewLocations) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *OverviewLocations) update() {
+	rows := make([]*app.Character, 0)
 	t, i, err := func() (string, widget.Importance, error) {
-		count, err := a.updateCharacters()
+		cc, count, err := a.fetchRows(a.u.services())
 		if err != nil {
 			return "", 0, err
 		}
-		if len(a.rows) == 0 {
+		if len(cc) == 0 {
 			return "No characters", widget.LowImportance, nil
 		}
-		s := fmt.Sprintf("%d characters • %d locations", len(a.rows), count)
+		rows = cc
+		s := fmt.Sprintf("%d characters • %d locations", len(cc), count)
 		return s, widget.MediumImportance, nil
 	}()
 	if err != nil {
 		slog.Error("Failed to refresh locations UI", "err", err)
-		t = "ERROR"
+		t = "ERROR: " + a.u.humanizeError(err)
 		i = widget.DangerImportance
 	}
 	fyne.Do(func() {
@@ -116,23 +118,23 @@ func (a *OverviewLocations) update() {
 		a.top.Refresh()
 	})
 	fyne.Do(func() {
+		a.rows = rows
 		a.body.Refresh()
 	})
 }
 
-func (a *OverviewLocations) updateCharacters() (int, error) {
+func (*OverviewLocations) fetchRows(s services) ([]*app.Character, int, error) {
 	ctx := context.TODO()
-	mycc, err := a.u.cs.ListCharacters(ctx)
+	cc, err := s.cs.ListCharacters(ctx)
 	if err != nil {
-		return 0, err
+		return nil, 0, err
 	}
-	a.rows = mycc
-	locationIDs := set.NewFromSlice(xslices.Map(mycc, func(x *app.Character) int64 {
+	locationIDs := set.NewFromSlice(xslices.Map(cc, func(x *app.Character) int64 {
 		if x.Location != nil {
 			return x.Location.ID
 		}
 		return 0
 	}))
 	locationIDs.Discard(0)
-	return locationIDs.Size(), nil
+	return cc, locationIDs.Size(), nil
 }
