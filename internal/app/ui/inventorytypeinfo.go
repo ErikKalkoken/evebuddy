@@ -191,6 +191,11 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
+func (a *inventoryTypeInfo) update() error {
+	// TODO: move logic into here
+	return nil
+}
+
 func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 	var typeIcon fyne.CanvasObject
 	loader := func() (fyne.Resource, error) {

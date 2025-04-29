@@ -49,8 +49,6 @@ func (n jumpCloneNode) UID() widget.TreeNodeID {
 type CharacterJumpClones struct {
 	widget.BaseWidget
 
-	OnReDraw func(clonesCount int)
-
 	top  *widget.RichText
 	tree *iwidget.Tree[jumpCloneNode]
 	u    *BaseUI
@@ -141,7 +139,7 @@ func (a *CharacterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 }
 
 func (a *CharacterJumpClones) update() {
-	tree, err := a.newTreeData()
+	td, err := a.newTreeData()
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
 		fyne.Do(func() {
@@ -152,14 +150,16 @@ func (a *CharacterJumpClones) update() {
 				}})
 		})
 	} else {
-		a.RefreshTop()
+		a.refreshTop(cloneCount(td))
 		fyne.Do(func() {
-			a.tree.Set(tree)
+			a.tree.Set(td)
 		})
 	}
-	if a.OnReDraw != nil {
-		a.OnReDraw(a.ClonesCount())
-	}
+}
+
+func cloneCount(td *iwidget.TreeData[jumpCloneNode]) int {
+	return len(td.ChildUIDs(""))
+
 }
 
 func (a *CharacterJumpClones) newTreeData() (*iwidget.TreeData[jumpCloneNode], error) {
@@ -203,45 +203,45 @@ func (a *CharacterJumpClones) newTreeData() (*iwidget.TreeData[jumpCloneNode], e
 	return tree, err
 }
 
-func (a *CharacterJumpClones) RefreshTop() {
+func (a *CharacterJumpClones) refreshTop(cloneCount int) {
+	segs := a.makeTopText(cloneCount, a.u.currentCharacter(), a.u.services())
+	fyne.Do(func() {
+		iwidget.SetRichText(a.top, segs...)
+	})
+}
+
+func (*CharacterJumpClones) makeTopText(cloneCount int, character *app.Character, s services) []widget.RichTextSegment {
 	defaultStyle := widget.RichTextStyle{
 		ColorName: theme.ColorNameForeground,
 	}
-	s := &widget.TextSegment{
+	ts := &widget.TextSegment{
 		Text:  "",
 		Style: defaultStyle,
 	}
-	c := a.u.currentCharacter()
-	if c == nil {
-		s.Text = "No character"
-		s.Style.ColorName = theme.ColorNameDisabled
-		fyne.Do(func() {
-			iwidget.SetRichText(a.top, s)
-		})
-		return
+	if character == nil {
+		ts.Text = "No character"
+		ts.Style.ColorName = theme.ColorNameDisabled
+		return []widget.RichTextSegment{ts}
 	}
-	hasData := a.u.scs.CharacterSectionExists(c.ID, app.SectionJumpClones)
+	hasData := s.scs.CharacterSectionExists(character.ID, app.SectionJumpClones)
 	if !hasData {
-		s.Text = "Waiting for character data to be loaded..."
-		s.Style.ColorName = theme.ColorNameWarning
-		fyne.Do(func() {
-			iwidget.SetRichText(a.top, s)
-		})
-		return
+		ts.Text = "Waiting for character data to be loaded..."
+		ts.Style.ColorName = theme.ColorNameWarning
+		return []widget.RichTextSegment{ts}
 	}
 	var nextJumpColor fyne.ThemeColorName
 	var nextJump, lastJump string
-	if c.NextCloneJump.IsEmpty() {
+	if character.NextCloneJump.IsEmpty() {
 		nextJump = "?"
 		nextJumpColor = theme.ColorNameForeground
-	} else if c.NextCloneJump.MustValue().IsZero() {
+	} else if character.NextCloneJump.MustValue().IsZero() {
 		nextJump = "NOW"
 		nextJumpColor = theme.ColorNameSuccess
 	} else {
-		nextJump = ihumanize.Duration(time.Until(c.NextCloneJump.MustValue()))
+		nextJump = ihumanize.Duration(time.Until(character.NextCloneJump.MustValue()))
 		nextJumpColor = theme.ColorNameError
 	}
-	if x := c.LastCloneJumpAt.ValueOrZero(); x.IsZero() {
+	if x := character.LastCloneJumpAt.ValueOrZero(); x.IsZero() {
 		lastJump = "?"
 	} else {
 		lastJump = humanize.Time(x)
@@ -250,7 +250,7 @@ func (a *CharacterJumpClones) RefreshTop() {
 	defaultStyleInline.Inline = true
 	segs := []widget.RichTextSegment{
 		&widget.TextSegment{
-			Text:  fmt.Sprintf("%d clones • Next available jump: ", a.ClonesCount()),
+			Text:  fmt.Sprintf("%d clones • Next available jump: ", cloneCount),
 			Style: defaultStyleInline,
 		},
 		&widget.TextSegment{
@@ -265,20 +265,18 @@ func (a *CharacterJumpClones) RefreshTop() {
 			Style: defaultStyle,
 		},
 	}
-	fyne.Do(func() {
-		iwidget.SetRichText(a.top, segs...)
-	})
-}
-
-func (a *CharacterJumpClones) ClonesCount() int {
-	return len(a.tree.Data().ChildUIDs(""))
+	return segs
 }
 
 func (a *CharacterJumpClones) StartUpdateTicker() {
 	ticker := time.NewTicker(time.Second * 15)
 	go func() {
 		for {
-			a.RefreshTop()
+			var c int
+			fyne.DoAndWait(func() {
+				c = cloneCount(a.tree.Data())
+			})
+			a.refreshTop(c)
 			<-ticker.C
 		}
 	}()

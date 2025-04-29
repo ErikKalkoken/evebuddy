@@ -472,6 +472,7 @@ func (u *BaseUI) updateCrossPages() {
 	runFunctionsWithProgressModal("Updating characters", ff, u.window)
 }
 
+// TODO: Replac with "infinite" variant, because progress can not be shown correctly.
 func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Window) {
 	m := kxmodal.NewProgress("Updating", title, func(p binding.Float) error {
 		start := time.Now()
