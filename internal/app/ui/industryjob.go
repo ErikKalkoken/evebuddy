@@ -217,7 +217,7 @@ func (a *IndustryJobs) showJob(r *app.CharacterIndustryJob) {
 		})))
 	}
 	if a.u.IsDeveloperMode() {
-		items = append(items, widget.NewFormItem("Job ID", a.u.makeCopyToClipbardLabel(fmt.Sprint(r.JobID))))
+		items = append(items, widget.NewFormItem("Job ID", a.u.makeCopyToClipboardLabel(fmt.Sprint(r.JobID))))
 	}
 	title := fmt.Sprintf("%s - %s - #%d", r.BlueprintType.Name, r.Activity.Display(), r.JobID)
 	f := widget.NewForm(items...)

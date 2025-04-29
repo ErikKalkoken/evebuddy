@@ -60,7 +60,7 @@ const (
 	generalSectionsUpdateTicker   = 300 * time.Second
 )
 
-// services represents a wrapper for passing the main services to funtions.
+// services represents a wrapper for passing the main services to functions.
 type services struct {
 	cs  *characterservice.CharacterService
 	eis *eveimageservice.EveImageService
@@ -220,7 +220,7 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 	u.MainWindow().SetMaster()
 
 	// SetOnStarted is called on initial start,
-	// but also when an app is coninued after it was temporarily stopped,
+	// but also when an app is continued after it was temporarily stopped,
 	// which can happen on mobile
 	u.app.Lifecycle().SetOnStarted(func() {
 		wasStarted := !u.wasStarted.CompareAndSwap(false, true)
@@ -244,7 +244,7 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 			u.isStartupCompleted.Store(true)
 			u.characterJumpClones.StartUpdateTicker()
 			if !u.isOffline && !u.isUpdateDisabled {
-				time.Sleep(5 * time.Second) // Workaround to prevend concurrent updates from happening at startup.
+				time.Sleep(5 * time.Second) // Workaround to prevent concurrent updates from happening at startup.
 				u.startUpdateTickerGeneralSections()
 				u.startUpdateTickerCharacters()
 			} else {
@@ -465,7 +465,7 @@ func (u *BaseUI) updateCrossPages() {
 		"assetSearch":       u.overviewAssets.update,
 		"contractsAll":      u.contractsAll.update,
 		"contractsActive":   u.contractsActive.update,
-		"cloneSeach":        u.overviewClones.update,
+		"cloneSearch":       u.overviewClones.update,
 		"colony":            u.colonies.update,
 		"industryJobAll":    u.industryJobsAll.update,
 		"industryJobActive": u.industryJobsActive.update,
@@ -716,7 +716,7 @@ func (u *BaseUI) notifyCharactersIfNeeded(ctx context.Context) error {
 	}
 	for _, c := range cc {
 		go u.notifyExpiredExtractionsIfNeeded(ctx, c.ID)
-		go u.notifyExpiredTrainingIfneeded(ctx, c.ID)
+		go u.notifyExpiredTrainingIfNeeded(ctx, c.ID)
 	}
 	slog.Debug("started notify characters")
 	return nil
@@ -905,7 +905,7 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 		if needsRefresh {
 			u.overviewTraining.update()
-			u.notifyExpiredTrainingIfneeded(ctx, characterID)
+			u.notifyExpiredTrainingIfNeeded(ctx, characterID)
 		}
 	case app.SectionWalletBalance:
 		if needsRefresh {
@@ -929,11 +929,11 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	}
 }
 
-func (u *BaseUI) notifyExpiredTrainingIfneeded(ctx context.Context, characerID int32) {
+func (u *BaseUI) notifyExpiredTrainingIfNeeded(ctx context.Context, characterID int32) {
 	if u.settings.NotifyTrainingEnabled() {
 		go func() {
 			// TODO: earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyTrainingEarliest)
-			err := u.cs.NotifyExpiredTraining(ctx, characerID, u.sendDesktopNotification)
+			err := u.cs.NotifyExpiredTraining(ctx, characterID, u.sendDesktopNotification)
 			if err != nil {
 				slog.Error("notify expired training", "error", err)
 			}
@@ -1147,7 +1147,7 @@ func (u *BaseUI) makeDetailWindow(title, subTitle string, content fyne.CanvasObj
 	return w
 }
 
-func (u *BaseUI) makeCopyToClipbardLabel(text string) *kxwidget.TappableLabel {
+func (u *BaseUI) makeCopyToClipboardLabel(text string) *kxwidget.TappableLabel {
 	return kxwidget.NewTappableLabel(text, func() {
 		u.App().Clipboard().SetContent(text)
 	})

@@ -183,7 +183,7 @@ func (a *Contracts) showContract(c *app.CharacterContract) {
 		widget.NewFormItem("Availability", availability),
 	}
 	if a.u.IsDeveloperMode() {
-		fi = append(fi, widget.NewFormItem("Contract ID", a.u.makeCopyToClipbardLabel(fmt.Sprint(c.ContractID))))
+		fi = append(fi, widget.NewFormItem("Contract ID", a.u.makeCopyToClipboardLabel(fmt.Sprint(c.ContractID))))
 	}
 	if c.Type == app.ContractTypeCourier {
 		fi = append(fi, widget.NewFormItem("Contractor", widget.NewLabel(c.ContractorDisplay())))
