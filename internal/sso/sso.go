@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -25,9 +26,7 @@ type contextKey int
 
 const (
 	keyCodeVerifier contextKey = iota
-	keyError
 	keyState
-	keyAuthenticatedCharacter
 )
 
 const (
@@ -112,15 +111,21 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 	serverCtx, cancel := context.WithCancel(serverCtx)
 	defer cancel()
 
+	// result variables. These are returned to caller.
+	var (
+		errValue atomic.Value
+		token    atomic.Pointer[Token]
+	)
+
 	processError := func(w http.ResponseWriter, status int, err error) {
-		slog.Warn("SSO autentication failed", "error", err)
-		http.Error(w, fmt.Sprintf("SSO autentication failed: %s", err), status)
-		serverCtx = context.WithValue(serverCtx, keyError, fmt.Errorf("SSO server: %w", err))
+		slog.Warn("SSO authentication failed", "error", err)
+		http.Error(w, fmt.Sprintf("SSO authentication failed: %s", err), status)
+		errValue.Store(fmt.Errorf("SSO server: %w", err))
 		cancel() // shutdown http server
 	}
 
 	router := http.NewServeMux()
-	// Route for reponding to ping requests
+	// Route for responding to ping requests
 	router.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "pong\n")
 	})
@@ -152,16 +157,16 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 		}
 		characterName := extractCharacterName(jwtToken)
 		scopes := extractScopes(jwtToken)
-		token := newToken(rawToken, characterID, characterName, scopes)
-		serverCtx = context.WithValue(serverCtx, keyAuthenticatedCharacter, token)
-		slog.Info("SSO authentication successful", "characterID", token.CharacterID, "characterName", token.CharacterName)
+		tok := newToken(rawToken, characterID, characterName, scopes)
+		token.Store(tok)
+		slog.Info("SSO authentication successful", "characterID", tok.CharacterID, "characterName", tok.CharacterName)
 		http.Redirect(w, r, "/authenticated", http.StatusSeeOther)
 	})
 	router.HandleFunc("/authenticated", func(w http.ResponseWriter, r *http.Request) {
 		var name string
-		token, ok := serverCtx.Value(keyAuthenticatedCharacter).(*Token)
-		if ok {
-			name = token.CharacterName
+		tok := token.Load()
+		if tok != nil {
+			name = tok.CharacterName
 		} else {
 			name = "?"
 		}
@@ -237,16 +242,15 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 		slog.Warn("SSO server: server shutdown", "error", err)
 	}
 
-	errValue := serverCtx.Value(keyError)
-	if errValue != nil {
-		return nil, errValue.(error)
+	if x := errValue.Load(); x != nil {
+		return nil, x.(error) // we expect this to always be an error
 	}
 
-	token, ok := serverCtx.Value(keyAuthenticatedCharacter).(*Token)
-	if !ok {
+	t := token.Load()
+	if t == nil {
 		return nil, ErrAborted
 	}
-	return token, nil
+	return t, nil
 }
 
 func (s *SSOService) address() string {

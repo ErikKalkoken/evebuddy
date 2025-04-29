@@ -150,7 +150,7 @@ func (a *OverviewCharacters) update() {
 		unreadText := ihumanize.Optional(totals.unread, "?")
 		s := fmt.Sprintf(
 			"%d characters • %s ISK wallet • %s ISK assets • %s unread",
-			len(a.rows),
+			len(cc),
 			walletText,
 			assetsText,
 			unreadText,

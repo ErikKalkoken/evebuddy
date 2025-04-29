@@ -151,16 +151,14 @@ func (a *statusBar) startUpdateTicker() {
 	if a.u.IsOffline() {
 		fyne.Do(func() {
 			a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
-			a.refreshUpdateStatus()
 		})
+		a.refreshUpdateStatus()
 		return
 	}
 	updateTicker := time.NewTicker(characterUpdateStatusTicker)
 	go func() {
 		for {
-			fyne.Do(func() {
-				a.refreshUpdateStatus()
-			})
+			a.refreshUpdateStatus()
 			<-updateTicker.C
 		}
 	}()
@@ -212,13 +210,15 @@ func (a *statusBar) update() {
 	x := a.u.scs.ListCharacters()
 	fyne.Do(func() {
 		a.characterCount.SetText(strconv.Itoa(len(x)))
-		a.refreshUpdateStatus()
 	})
+	a.refreshUpdateStatus()
 }
 
 func (a *statusBar) refreshUpdateStatus() {
 	x := a.u.scs.Summary()
-	a.updateStatus.SetTextAndImportance(x.Display(), x.Status().ToImportance())
+	fyne.Do(func() {
+		a.updateStatus.SetTextAndImportance(x.Display(), x.Status().ToImportance())
+	})
 }
 
 func (a *statusBar) setEveStatus(status eveStatus, title, errorMessage string) {

@@ -473,7 +473,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 	}
 	u.onUpdateCharacter = func(c *app.Character) {
 		notifyItems := u.characterCommunications.MakeFolderMenu()
-		mailItems := u.characterMail.MakeFolderMenu()
+		mailItems := u.characterMail.makeFolderMenu()
 		fyne.Do(func() {
 			mailMenu.Items = mailItems
 			mailMenu.Refresh()
@@ -498,9 +498,9 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 				characterSelector.SetIcon(r)
 			})
 		})
+		u.characterMail.resetCurrentFolder()
+		u.characterCommunications.resetCurrentFolder()
 		fyne.Do(func() {
-			u.characterMail.resetCurrentFolder()
-			u.characterCommunications.resetCurrentFolder()
 			characterNav.PopAll()
 			navBar.Select(1)
 		})

@@ -133,8 +133,7 @@ type BaseUI struct {
 	wasStarted         atomic.Bool // whether the app has already been started at least once
 	window             fyne.Window
 
-	mu        sync.RWMutex
-	character *app.Character
+	character atomic.Pointer[app.Character]
 }
 
 type BaseUIParams struct {
@@ -373,24 +372,19 @@ func (u *BaseUI) MakeWindowTitle(subTitle string) string {
 
 // currentCharacterID returns the ID of the current character or 0 if non is set.
 func (u *BaseUI) currentCharacterID() int32 {
-	u.mu.RLock()
-	defer u.mu.RUnlock()
-	if u.character == nil {
+	c := u.currentCharacter()
+	if c == nil {
 		return 0
 	}
-	return u.character.ID
+	return c.ID
 }
 
 func (u *BaseUI) currentCharacter() *app.Character {
-	u.mu.RLock()
-	defer u.mu.RUnlock()
-	return u.character
+	return u.character.Load()
 }
 
 func (u *BaseUI) hasCharacter() bool {
-	u.mu.RLock()
-	defer u.mu.RUnlock()
-	return u.character != nil
+	return u.currentCharacter() != nil
 }
 
 func (u *BaseUI) loadCharacter(id int32) error {
@@ -412,9 +406,7 @@ func (u *BaseUI) reloadCurrentCharacter() {
 	if err != nil {
 		slog.Error("reload character", "characterID", id, "error", err)
 	}
-	u.mu.Lock()
-	u.character = c
-	u.mu.Unlock()
+	u.character.Store(c)
 }
 
 // updateStatus refreshed all status information pages.
@@ -512,18 +504,14 @@ func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Wi
 }
 
 func (u *BaseUI) resetCharacter() {
-	u.mu.Lock()
-	u.character = nil
-	u.mu.Unlock()
+	u.character.Store(nil)
 	u.settings.ResetLastCharacterID()
 	u.updateCharacter()
 	u.updateStatus()
 }
 
 func (u *BaseUI) setCharacter(c *app.Character) {
-	u.mu.Lock()
-	u.character = c
-	u.mu.Unlock()
+	u.character.Store(c)
 	u.settings.SetLastCharacterID(c.ID)
 	u.updateCharacter()
 	u.updateStatus()

@@ -179,18 +179,21 @@ func (a *ManageCharacters) showDeleteDialog(c accountCharacter) {
 						if err != nil {
 							return err
 						}
-						a.Refresh()
+						a.update()
 						return nil
 					},
 					a.window,
 				)
 				m.OnSuccess = func() {
 					a.showSnackbar(fmt.Sprintf("Character %s deleted", c.name))
-					if a.u.currentCharacterID() == c.id {
-						a.u.setAnyCharacter()
-					}
-					a.u.updateCrossPages()
-					a.u.updateStatus()
+					go func() {
+						a.update()
+						if a.u.currentCharacterID() == c.id {
+							a.u.setAnyCharacter()
+						}
+						a.u.updateCrossPages()
+						a.u.updateStatus()
+					}()
 				}
 				m.OnError = func(err error) {
 					slog.Error("Failed to delete character", "characterID", c.id)
@@ -249,15 +252,15 @@ func (a *ManageCharacters) ShowAddCharacterDialog() {
 			} else if err != nil {
 				return err
 			}
-			fyne.Do(func() {
-				a.Refresh()
-			})
-			go a.u.updateCharacterAndRefreshIfNeeded(context.Background(), characterID, false)
-			if !a.u.hasCharacter() {
-				a.u.loadCharacter(characterID)
-			}
-			a.u.updateCrossPages()
-			a.u.updateStatus()
+			a.update()
+			go func() {
+				if !a.u.hasCharacter() {
+					a.u.loadCharacter(characterID)
+				}
+				a.u.updateStatus()
+				a.u.updateCrossPages()
+				a.u.updateCharacterAndRefreshIfNeeded(context.Background(), characterID, false)
+			}()
 			return nil
 		}()
 		fyne.Do(func() {
