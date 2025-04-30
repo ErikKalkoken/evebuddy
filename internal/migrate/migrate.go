@@ -141,7 +141,7 @@ func applyNewMigrations(db *sql.DB, migrations MigrateFS) error {
 	return nil
 }
 
-// isEmpty reports wether the database is empty.
+// isEmpty reports whether the database is empty.
 func isEmpty(db *sql.DB) (bool, error) {
 	rows, err := db.Query("SELECT NAME from sqlite_master;")
 	if err != nil {

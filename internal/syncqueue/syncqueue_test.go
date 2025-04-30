@@ -36,7 +36,7 @@ func TestSyncQueue(t *testing.T) {
 		v := q.Size()
 		assert.Equal(t, 2, v)
 	})
-	t.Run("should report wether the queue is empty", func(t *testing.T) {
+	t.Run("should report whether the queue is empty", func(t *testing.T) {
 		q := syncqueue.New[int]()
 		assert.True(t, q.IsEmpty())
 		q.Put(99)

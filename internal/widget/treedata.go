@@ -86,7 +86,7 @@ func (t *TreeData[T]) Flat() []T {
 	return s
 }
 
-// IsBranch reports wether a node is a branch.
+// IsBranch reports whether a node is a branch.
 func (t *TreeData[T]) IsBranch(uid widget.TreeNodeID) bool {
 	_, found := t.ids[uid]
 	return found

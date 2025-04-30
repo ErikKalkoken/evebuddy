@@ -87,12 +87,12 @@ func (ec EveCharacter) FactionName() string {
 	return ec.Faction.Name
 }
 
-// HasAlliance reports wether the character is member of an alliance.
+// HasAlliance reports whether the character is member of an alliance.
 func (ec EveCharacter) HasAlliance() bool {
 	return ec.Alliance != nil
 }
 
-// HasFaction reports wether the character is member of a faction.
+// HasFaction reports whether the character is member of a faction.
 func (ec EveCharacter) HasFaction() bool {
 	return ec.Faction != nil
 }
