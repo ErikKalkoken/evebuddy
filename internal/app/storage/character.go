@@ -111,9 +111,13 @@ func (st *Storage) GetAnyCharacter(ctx context.Context) (*app.Character, error) 
 	if err != nil {
 		return nil, fmt.Errorf("list first character: %w", err)
 	}
-	id, err := ids.Pop()
-	if err != nil {
+	if ids.Size() == 0 {
 		return nil, app.ErrNotFound
+	}
+	var id int32
+	for v := range ids.All() {
+		id = v
+		break
 	}
 	return st.GetCharacter(ctx, id)
 
@@ -174,7 +178,7 @@ func (st *Storage) ListCharacterIDs(ctx context.Context) (set.Set[int32], error)
 	if err != nil {
 		return set.Set[int32]{}, fmt.Errorf("list character IDs: %w", err)
 	}
-	ids2 := set.NewFromSlice(convertNumericSlice[int32](ids))
+	ids2 := set.Of(convertNumericSlice[int32](ids)...)
 	return ids2, nil
 }
 

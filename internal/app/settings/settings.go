@@ -221,15 +221,15 @@ func (s Settings) SetNotifyTimeoutHours(v int) {
 }
 
 func (s Settings) NotificationTypesEnabled() set.Set[string] {
-	return set.NewFromSlice(s.p.StringList(settingNotificationTypesEnabled))
+	return set.Of(s.p.StringList(settingNotificationTypesEnabled)...)
 }
 
 func (s Settings) ResetNotificationTypesEnabled() {
-	s.SetNotificationTypesEnabled(set.New[string]())
+	s.SetNotificationTypesEnabled(set.Of[string]())
 }
 
 func (s Settings) SetNotificationTypesEnabled(v set.Set[string]) {
-	s.p.SetStringList(settingNotificationTypesEnabled, v.ToSlice())
+	s.p.SetStringList(settingNotificationTypesEnabled, v.Slice())
 }
 
 func (s Settings) NotifyCommunicationsEarliest() time.Time {

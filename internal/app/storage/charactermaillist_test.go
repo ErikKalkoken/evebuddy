@@ -67,20 +67,20 @@ func TestMailList(t *testing.T) {
 		if assert.NoError(t, err) {
 			lists, err := r.ListCharacterMailListsOrdered(ctx, c1.ID)
 			if assert.NoError(t, err) {
-				got := set.New[int32]()
+				got := set.Of[int32]()
 				for _, l := range lists {
 					got.Add(l.ID)
 				}
-				want := set.NewFromSlice([]int32{e1.ID})
+				want := set.Of([]int32{e1.ID}...)
 				assert.Equal(t, want, got)
 			}
 			lists, err = r.ListCharacterMailListsOrdered(ctx, c2.ID)
 			if assert.NoError(t, err) {
-				got := set.New[int32]()
+				got := set.Of[int32]()
 				for _, l := range lists {
 					got.Add(l.ID)
 				}
-				want := set.New(e3.ID)
+				want := set.Of(e3.ID)
 				assert.Equal(t, want, got)
 			}
 		}

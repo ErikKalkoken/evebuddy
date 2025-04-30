@@ -155,7 +155,7 @@ func (a *GameSearch) updateSearchOptionsTitle() {
 		if a.strict.On {
 			return false
 		}
-		if !set.NewFromSlice(a.categories.Selected).Equal(set.NewFromSlice(a.defaultCategories)) {
+		if !set.Of(a.categories.Selected...).Equal(set.Of(a.defaultCategories...)) {
 			return false
 		}
 		return true

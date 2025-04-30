@@ -95,7 +95,7 @@ func TestMail(t *testing.T) {
 		got, err := r.ListCharacterMailIDs(ctx, c.ID)
 		// then
 		assert.NoError(t, err)
-		want := set.NewFromSlice([]int32{10, 11, 12})
+		want := set.Of([]int32{10, 11, 12}...)
 		assert.Equal(t, want, got)
 	})
 	t.Run("can delete existing mail", func(t *testing.T) {

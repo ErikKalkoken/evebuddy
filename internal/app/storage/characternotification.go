@@ -96,7 +96,7 @@ func (st *Storage) ListCharacterNotificationIDs(ctx context.Context, characterID
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list character notification ids for character %d: %w", characterID, err)
 	}
-	return set.NewFromSlice(ids), nil
+	return set.Of(ids...), nil
 }
 
 func (st *Storage) ListCharacterNotificationsTypes(ctx context.Context, characterID int32, types []string) ([]*app.CharacterNotification, error) {

@@ -153,8 +153,8 @@ func TestCharacterContract(t *testing.T) {
 		ids, err := r.ListCharacterContractIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			got := set.NewFromSlice(ids)
-			want := set.NewFromSlice([]int32{e1.ContractID, e2.ContractID, e3.ContractID})
+			got := set.Of(ids...)
+			want := set.Of([]int32{e1.ContractID, e2.ContractID, e3.ContractID}...)
 			assert.Equal(t, want, got)
 		}
 	})

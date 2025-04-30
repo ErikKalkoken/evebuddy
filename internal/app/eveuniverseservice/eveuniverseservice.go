@@ -185,7 +185,7 @@ func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) error {
 	slog.Info("Started updating eve characters", "count", ids.Size())
 	g := new(errgroup.Group)
 	g.SetLimit(10)
-	for id := range ids.Values() {
+	for id := range ids.All() {
 		id := id
 		g.Go(func() error {
 			return s.updateCharacterESI(ctx, id)
@@ -481,9 +481,9 @@ func (s *EveUniverseService) ToEntities(ctx context.Context, ids []int32) (map[i
 	if len(ids) == 0 {
 		return r, nil
 	}
-	ids2 := set.NewFromSlice(ids)
-	ids2.Discard(0)
-	ids3 := ids2.ToSlice()
+	ids2 := set.Of(ids...)
+	ids2.Delete(0)
+	ids3 := ids2.Slice()
 	if _, err := s.AddMissingEntities(ctx, ids3); err != nil {
 		return nil, err
 	}
@@ -511,19 +511,19 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids []int32
 	// Filter out known invalid IDs before continuing
 	var badIDs, missingIDs []int32
 	err := func() error {
-		ids2 := set.NewFromSlice(ids)
-		ids2.Discard(0) // do nothing with ID 0
+		ids2 := set.Of(ids...)
+		ids2.Delete(0) // do nothing with ID 0
 		for _, id := range invalidEveEntityIDs {
 			if ids2.Contains(id) {
 				badIDs = append(badIDs, 1)
-				ids2.Discard(1)
+				ids2.Delete(1)
 			}
 		}
 		if ids2.Size() == 0 {
 			return nil
 		}
 		// Identify missing IDs
-		missing, err := s.st.MissingEveEntityIDs(ctx, ids2.ToSlice())
+		missing, err := s.st.MissingEveEntityIDs(ctx, ids2.Slice())
 		if err != nil {
 			return err
 		}
@@ -531,7 +531,7 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids []int32
 			return nil
 		}
 		// Call ESI to resolve missing IDs
-		missingIDs = missing.ToSlice()
+		missingIDs = missing.Slice()
 		slices.Sort(missingIDs)
 		if len(missingIDs) > 0 {
 			slog.Debug("Trying to resolve EveEntity IDs from ESI", "ids", missingIDs)

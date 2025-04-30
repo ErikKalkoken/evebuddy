@@ -1,7 +1,7 @@
 package set_test
 
 import (
-	"fmt"
+	"iter"
 	"slices"
 	"testing"
 
@@ -9,8 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func assertEqualSet[T comparable](t *testing.T, want, got set.Set[T]) {
+	assert.True(t, want.Equal(got), "got: %s, want: %s", got, want)
+}
+
 func TestAdd(t *testing.T) {
-	empty := set.New[int]()
+	empty := set.Of[int]()
 	zero := set.Set[int]{}
 	cases := []struct {
 		name string
@@ -18,10 +22,10 @@ func TestAdd(t *testing.T) {
 		v    int
 		want set.Set[int]
 	}{
-		{"add to empty", empty, 1, set.New(1)},
-		{"add to zero", zero, 1, set.New(1)},
-		{"add new to non-empty", set.New(1), 2, set.New(1, 2)},
-		{"add existing to non-empty", set.New(1), 1, set.New(1)},
+		{"add to empty", empty, 1, set.Of(1)},
+		{"add to zero", zero, 1, set.Of(1)},
+		{"add new to non-empty", set.Of(1), 2, set.Of(1, 2)},
+		{"add existing to non-empty", set.Of(1), 1, set.Of(1)},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -31,15 +35,66 @@ func TestAdd(t *testing.T) {
 	}
 }
 
+func TestAddSeq(t *testing.T) {
+	empty := set.Of[int]()
+	zero := set.Set[int]{}
+	cases := []struct {
+		name string
+		s    set.Set[int]
+		seq  iter.Seq[int]
+		want set.Set[int]
+	}{
+		{"add many to non-empty", set.Of(1), set.Of(1, 2).All(), set.Of(1, 2)},
+		{"add none to non-empty", set.Of(1), empty.All(), set.Of(1)},
+		{"add many to empty", empty, set.Of(1, 2).All(), set.Of(1, 2)},
+		{"add none to empty", empty, empty.All(), empty},
+		{"add many to zero", empty, set.Of(1, 2).All(), set.Of(1, 2)},
+		{"add none to zero", zero, empty.All(), zero},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.s.AddSeq(tc.seq)
+			assertEqualSet(t, tc.want, tc.s)
+		})
+	}
+}
+
+func TestAll(t *testing.T) {
+	t.Run("can iterate over non-empty set", func(t *testing.T) {
+		s1 := set.Of(1, 2, 3)
+		s2 := set.Of[int]()
+		for e := range s1.All() {
+			s2.Add(e)
+		}
+		assertEqualSet(t, s1, s2)
+	})
+	t.Run("can iterate over empty set", func(t *testing.T) {
+		s1 := set.Of[int]()
+		s2 := set.Of[int]()
+		for e := range s1.All() {
+			s2.Add(e)
+		}
+		assert.Equal(t, 0, s2.Size())
+	})
+	t.Run("can iterate over zero set", func(t *testing.T) {
+		var s1 set.Set[int]
+		s2 := set.Of[int]()
+		for e := range s1.All() {
+			s2.Add(e)
+		}
+		assert.Equal(t, 0, s2.Size())
+	})
+}
+
 func TestClone(t *testing.T) {
-	empty := set.New[int]()
+	empty := set.Of[int]()
 	zero := set.Set[int]{}
 	cases := []struct {
 		name string
 		s    set.Set[int]
 		want set.Set[int]
 	}{
-		{"non-empty", set.New(1), set.New(1)},
+		{"non-empty", set.Of(1), set.Of(1)},
 		{"empty", empty, empty},
 		{"zero", zero, empty},
 	}
@@ -51,97 +106,107 @@ func TestClone(t *testing.T) {
 	}
 }
 
-func TestContainsNormalSet(t *testing.T) {
-	s := set.New(3, 7, 9)
-	cases := []struct {
-		in   int
-		want bool
-	}{
-		{3, true},
-		{7, true},
-		{9, true},
-		{1, false},
-		{0, false},
-		{-1, false},
-	}
-	for _, c := range cases {
-		t.Run(fmt.Sprintf("case: %v", c.in), func(t *testing.T) {
-			result := s.Contains(c.in)
-			assert.Equal(t, c.want, result)
-		})
-	}
-}
-
-func TestContainsEmptySet(t *testing.T) {
-	s := set.New[int]()
-	assert.False(t, s.Contains(5))
-}
-
-func TestContainsZeroSet(t *testing.T) {
-	var s set.Set[int]
-	assert.False(t, s.Contains(5))
-}
-
-func TestCollect(t *testing.T) {
-	t.Run("can create a new set from an iterable with items", func(t *testing.T) {
-		s := set.Collect(slices.Values([]int{1, 2, 3}))
-		assert.True(t, set.New(1, 2, 3).Equal(s))
-	})
-	t.Run("can create a new set from an iterable without items", func(t *testing.T) {
-		s := set.Collect(slices.Values([]int{}))
-		assert.True(t, s.IsEmpty())
-	})
-}
-
-func TestDifference(t *testing.T) {
-	empty := set.New[int]()
-	zero := set.Set[int]{}
-	cases := []struct {
-		name string
-		a    set.Set[int]
-		b    set.Set[int]
-		want set.Set[int]
-	}{
-		{"non-empy sets without intersection", set.New(1), set.New(2), set.New(1)},
-		{"non-empy sets with intersection", set.New(1, 2), set.New(2, 3), set.New(1)},
-		{"non-empy sets with empty set", set.New(1), empty, set.New(1)},
-		{"empy sets with non-empty set", empty, set.New(1), empty},
-		{"non-empy sets with zero set", set.New(1), zero, set.New(1)},
-		{"zero sets with non-empty set", zero, set.New(1), empty},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := tc.a.Difference(tc.b)
-			assert.True(t, got.Equal(tc.want))
-		})
-	}
-}
-
-func TestDiscard(t *testing.T) {
-	empty := set.New[int]()
-	zero := set.Set[int]{}
+func TestContains(t *testing.T) {
 	cases := []struct {
 		name string
 		s    set.Set[int]
 		v    int
-		want set.Set[int]
+		want bool
 	}{
-		{"element exists", set.New(1, 2), 1, set.New(2)},
-		{"element does not exist", set.New(1, 2), 3, set.New(1, 2)},
-		{"removing last element", set.New(1), 1, empty},
-		{"empty set", empty, 1, empty},
-		{"zero set", zero, 1, zero},
+		{"non-empty contains element", set.Of(1, 2), 2, true},
+		{"non-empty does not contain element", set.Of(1, 2), 3, false},
+		{"empty", set.Of[int](), 3, false},
+		{"zero", set.Set[int]{}, 3, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.s.Discard(tc.v)
-			assert.True(t, tc.s.Equal(tc.want))
+			x := tc.s.Contains(tc.v)
+			assert.Equal(t, tc.want, x)
+		})
+	}
+}
+
+func TestContainsAny(t *testing.T) {
+	empty := set.Of[int]()
+	zero := set.Set[int]{}
+	cases := []struct {
+		name string
+		s    set.Set[int]
+		seq  iter.Seq[int]
+		want bool
+	}{
+		{"non-empty contains one element", set.Of(1, 2), set.Of(2, 3).All(), true},
+		{"non-empty contains many elements", set.Of(1, 2, 3), set.Of(2, 3, 4).All(), true},
+		{"non-empty contains no elements", set.Of(1, 2), set.Of(3, 4).All(), false},
+		{"seq with no elements", set.Of(1, 2), set.Of[int]().All(), false},
+		{"empty set with non-empty", empty, set.Of(1).All(), false},
+		{"zero set with non-empty", zero, set.Of(1).All(), false},
+		{"empty set with empty seq", empty, empty.All(), false},
+		{"zero set with empty seq", zero, empty.All(), false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			x := tc.s.ContainsAny(tc.seq)
+			assert.Equal(t, tc.want, x)
+		})
+	}
+}
+
+func TestContainsAll(t *testing.T) {
+	empty := set.Of[int]()
+	zero := set.Set[int]{}
+	cases := []struct {
+		name string
+		s    set.Set[int]
+		seq  iter.Seq[int]
+		want bool
+	}{
+		{"non-empty contains some elements", set.Of(1, 2), set.Of(2, 3).All(), false},
+		{"non-empty contains all elements", set.Of(1, 2), set.Of(1, 2).All(), true},
+		{"non-empty contains no elements", set.Of(1, 2), set.Of(3, 4).All(), false},
+		{"seq with no elements", set.Of(1, 2), empty.All(), true},
+		{"empty set with non-empty", empty, set.Of(1).All(), false},
+		{"zero set with non-empty", zero, set.Of(1).All(), false},
+		{"empty set with empty seq", empty, empty.All(), true},
+		{"zero set with empty seq", zero, empty.All(), true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			x := tc.s.ContainsAll(tc.seq)
+			assert.Equal(t, tc.want, x)
+		})
+	}
+}
+
+func TestContainsFunc(t *testing.T) {
+	empty := set.Of[int]()
+	zero := set.Set[int]{}
+	f := func(i int) bool {
+		return i%2 == 0
+	}
+	cases := []struct {
+		name string
+		s    set.Set[int]
+		f    func(int) bool
+		want bool
+	}{
+		{"non-empty contains one", set.Of(1, 2), f, true},
+		{"non-empty contains many", set.Of(1, 2, 4), f, true},
+		{"non-empty contains none", set.Of(1), f, false},
+		{"empty set", empty, f, false},
+		{"zero set", zero, f, false},
+		{"f is nil", set.Of(1), nil, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			x := tc.s.ContainsFunc(tc.f)
+			assert.Equal(t, tc.want, x)
 		})
 	}
 }
 
 func TestEqual(t *testing.T) {
-	empty := set.New[int]()
+	empty := set.Of[int]()
 	zero := set.Set[int]{}
 	cases := []struct {
 		name string
@@ -149,12 +214,12 @@ func TestEqual(t *testing.T) {
 		b    set.Set[int]
 		want bool
 	}{
-		{"non-empty equal", set.New(1, 2), set.New(1, 2), true},
-		{"non-empty not equal 1", set.New(1, 2), set.New(1), false},
-		{"non-empty not equal 2", set.New(1, 2), set.New(1, 2, 3), false},
-		{"non-empty not equal 2", set.New(1, 2), set.New(2, 3), false},
-		{"non-empty and empty", set.New(1), empty, false},
-		{"non-empty and zero", set.New(1), zero, false},
+		{"non-empty equal", set.Of(1, 2), set.Of(1, 2), true},
+		{"non-empty not equal 1", set.Of(1, 2), set.Of(1), false},
+		{"non-empty not equal 2", set.Of(1, 2), set.Of(1, 2, 3), false},
+		{"non-empty not equal 2", set.Of(1, 2), set.Of(2, 3), false},
+		{"non-empty and empty", set.Of(1), empty, false},
+		{"non-empty and zero", set.Of(1), zero, false},
 		{"empty sets are equal", empty, empty, true},
 		{"zero sets are equal", zero, zero, true},
 	}
@@ -168,309 +233,139 @@ func TestEqual(t *testing.T) {
 	}
 }
 
-func TestMustPop(t *testing.T) {
-	t.Run("can pop element when set non-empty", func(t *testing.T) {
-		s := set.New(1, 2, 3)
-		x := s.MustPop()
-		assert.True(t, set.New(1, 2, 3).Contains(x))
-	})
-	t.Run("should panic when trying to remove from empty set", func(t *testing.T) {
-		s := set.New[int]()
-		assert.Panics(t, func() {
-			s.MustPop()
-		})
-	})
-	t.Run("should return error when trying to remove from zero set", func(t *testing.T) {
-		var s set.Set[int]
-		assert.Panics(t, func() {
-			s.MustPop()
-		})
-	})
-}
-
-func TestMustRemove(t *testing.T) {
-	empty := set.New[int]()
-	zero := set.Set[int]{}
-	cases := []struct {
-		name   string
-		s      set.Set[int]
-		v      int
-		want   set.Set[int]
-		panics bool
-	}{
-		{"element exists", set.New(1, 2), 1, set.New(2), false},
-		{"element does not exist", set.New(1, 2), 3, zero, true},
-		{"removing last element", set.New(1), 1, empty, false},
-		{"empty set", empty, 1, zero, true},
-		{"zero set", zero, 1, zero, true},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			if tc.panics {
-				assert.Panics(t, func() {
-					tc.s.MustRemove(tc.v)
-				})
-			} else {
-				tc.s.MustRemove(tc.v)
-				assert.True(t, tc.s.Equal(tc.want))
-			}
-		})
-	}
-}
-
 func TestClear(t *testing.T) {
-	t.Run("can clear non-empty set", func(t *testing.T) {
-		got := set.New(1, 2)
-		got.Clear()
-		want := set.New[int]()
-		assert.Equal(t, want, got)
-	})
-	t.Run("can clear empty set", func(t *testing.T) {
-		got := set.New[int]()
-		got.Clear()
-		want := set.New[int]()
-		assert.Equal(t, want, got)
-	})
-	t.Run("can clear zero set", func(t *testing.T) {
-		var got, want set.Set[int]
-		got.Clear()
-		assert.Equal(t, want, got)
-	})
-}
-
-func TestIterate(t *testing.T) {
-	t.Run("can iterate over non-empty set", func(t *testing.T) {
-		s1 := set.New(1, 2, 3)
-		s2 := set.New[int]()
-		for e := range s1.Values() {
-			s2.Add(e)
-		}
-		assert.Equal(t, s1, s2)
-	})
-	t.Run("can iterate over empty set", func(t *testing.T) {
-		s1 := set.New[int]()
-		s2 := set.New[int]()
-		for e := range s1.Values() {
-			s2.Add(e)
-		}
-		assert.Equal(t, 0, s2.Size())
-	})
-	t.Run("can iterate over zero set", func(t *testing.T) {
-		var s1 set.Set[int]
-		s2 := set.New[int]()
-		for e := range s1.Values() {
-			s2.Add(e)
-		}
-		assert.Equal(t, 0, s2.Size())
-	})
-}
-
-func TestIntersec(t *testing.T) {
-	empty := set.New[int]()
-	zero := set.Set[int]{}
-	cases := []struct {
-		name string
-		a    set.Set[int]
-		b    set.Set[int]
-		want set.Set[int]
-	}{
-		{"non-empy with of another", set.New(1, 2, 3), set.New(2, 3, 4), set.New(2, 3)},
-		{"non-empy with itself", set.New(1), set.New(1), set.New(1)},
-		{"non-empy with empty", set.New(1), empty, empty},
-		{"empy with non-empty", empty, set.New(1), empty},
-		{"empy with itself", empty, empty, empty},
-		{"non-empy with zero", set.New(1), zero, empty},
-		{"zero with non-empty", zero, set.New(1), empty},
-		{"zero with itself", zero, zero, empty},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got1 := tc.a.Intersect(tc.b)
-			assert.True(t, got1.Equal(tc.want))
-			got2 := tc.b.Intersect(tc.a)
-			assert.True(t, got2.Equal(tc.want))
-		})
-	}
-}
-
-func TestIsDisjoint(t *testing.T) {
-	empty := set.New[int]()
-	zero := set.Set[int]{}
-	cases := []struct {
-		name string
-		a    set.Set[int]
-		b    set.Set[int]
-		want bool
-	}{
-		{"non-empy set is disjoint of another", set.New(1, 2), set.New(3, 4), true},
-		{"non-empy set is not disjoint of another", set.New(1, 2), set.New(2, 3), false},
-		{"empty set is disjoint with non-empty set", empty, set.New(1), true},
-		{"empty set is disjoint with itself", empty, empty, true},
-		{"zero set is disjoint with non-empty set", zero, set.New(1), true},
-		{"zero set is disjoint with itself", zero, zero, true},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got1 := tc.a.IsDisjoint(tc.b)
-			assert.Equal(t, tc.want, got1)
-			got2 := tc.b.IsDisjoint(tc.a)
-			assert.Equal(t, tc.want, got2)
-		})
-	}
-}
-
-func TestIsEmpty(t *testing.T) {
-	empty := set.New[int]()
+	empty := set.Of[int]()
 	zero := set.Set[int]{}
 	cases := []struct {
 		name string
 		s    set.Set[int]
-		want bool
+		want set.Set[int]
 	}{
-		{"non-empy set", set.New(1), false},
-		{"empy set", empty, true},
-		{"zero set", zero, true},
+		{"non-empty", set.Of(1, 2), zero},
+		{"empty", empty, zero},
+		{"zero", zero, zero},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := tc.s.IsEmpty()
-			assert.Equal(t, tc.want, got)
+			tc.s.Clear()
+			assertEqualSet(t, tc.want, tc.s)
 		})
 	}
 }
 
-func TestIsSubset(t *testing.T) {
-	empty := set.New[int]()
+func TestDelete(t *testing.T) {
+	empty := set.Of[int]()
 	zero := set.Set[int]{}
 	cases := []struct {
-		name string
-		a    set.Set[int]
-		b    set.Set[int]
-		want bool
+		name     string
+		s        set.Set[int]
+		v        int
+		wantSet  set.Set[int]
+		wantBool bool
 	}{
-		{"non-empy set is subset of another", set.New(1, 2), set.New(1, 2, 3), true},
-		{"non-empy set is not subset of another", set.New(1, 2), set.New(2, 3), false},
-		{"sets are subsets of themselves", set.New(1, 2), set.New(1, 2), true},
-		{"empty set is subset of non-empty", empty, set.New(1, 2), true},
-		{"zero set is subset of non-empty", zero, set.New(1, 2), true},
-		{"empty set is subset of itself", empty, empty, true},
-		{"zero set is subset of itself", zero, zero, true},
+		{"element exists", set.Of(1, 2), 1, set.Of(2), true},
+		{"element does not exist", set.Of(1, 2), 3, set.Of(1, 2), false},
+		{"removing last element", set.Of(1), 1, empty, true},
+		{"empty set", empty, 1, empty, false},
+		{"zero set", zero, 1, zero, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := tc.a.IsSubset(tc.b)
-			assert.Equal(t, tc.want, got)
+			x := tc.s.Delete(tc.v)
+			assert.True(t, tc.s.Equal(tc.wantSet))
+			assert.Equal(t, tc.wantBool, x)
 		})
 	}
 }
 
-func TestIsSuperset(t *testing.T) {
-	empty := set.New[int]()
+func TestDeleteFunc(t *testing.T) {
+	empty := set.Of[int]()
+	zero := set.Set[int]{}
+	f := func(i int) bool {
+		return i%2 == 0
+	}
+	cases := []struct {
+		name      string
+		s         set.Set[int]
+		f         func(int) bool
+		wantSet   set.Set[int]
+		wantCount int
+	}{
+		{"delete one", set.Of(1, 2), f, set.Of(1), 1},
+		{"delete many", set.Of(1, 2, 4), f, set.Of(1), 2},
+		{"delete none", set.Of(1), f, set.Of(1), 0},
+		{"empty set", empty, f, empty, 0},
+		{"zero set", zero, f, zero, 0},
+		{"f is nil", set.Of(1), nil, set.Of(1), 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			x := tc.s.DeleteFunc(tc.f)
+			assert.True(t, tc.s.Equal(tc.wantSet))
+			assert.Equal(t, tc.wantCount, x)
+		})
+	}
+}
+
+func TestDeleteSeq(t *testing.T) {
+	empty := set.Of[int]()
 	zero := set.Set[int]{}
 	cases := []struct {
-		name string
-		a    set.Set[int]
-		b    set.Set[int]
-		want bool
+		name      string
+		s         set.Set[int]
+		seq       iter.Seq[int]
+		wantSet   set.Set[int]
+		wantCount int
 	}{
-		{"non-empy set is supserset of another", set.New(1, 2, 3), set.New(1, 2), true},
-		{"non-empy set is not supserset of another", set.New(1, 2), set.New(1, 2, 3), false},
-		{"non-empy set is not supserset of itself", set.New(1), set.New(1), true},
-		{"non-empty set is superset of empty set", set.New(1), empty, true},
-		{"non-empty set is superset of zero set", set.New(1), zero, true},
-		{"empty set is not superset of non-empty set", empty, set.New(1), false},
-		{"zero set is not superset of non-empty set", zero, set.New(1), false},
-		{"empty set is superset of itself", empty, empty, true},
-		{"zero set is superset of itself", zero, zero, true},
+		{"non-empty contains one match", set.Of(1, 2), set.Of(2, 3).All(), set.Of(1), 1},
+		{"non-empty contains many matches", set.Of(1, 2, 3), set.Of(2, 3, 4).All(), set.Of(1), 2},
+		{"non-empty contains no matches", set.Of(1, 2), set.Of(3, 4).All(), set.Of(1, 2), 0},
+		{"seq with no elements", set.Of(1, 2), empty.All(), set.Of(1, 2), 0},
+		{"empty set with non-empty seq", empty, set.Of(1).All(), empty, 0},
+		{"zero set with non-empty seq", zero, set.Of(1).All(), zero, 0},
+		{"empty set with empty seq", empty, empty.All(), empty, 0},
+		{"zero set with empty seq", zero, empty.All(), zero, 0},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := tc.a.IsSuperset(tc.b)
-			assert.Equal(t, tc.want, got)
+			x := tc.s.DeleteSeq(tc.seq)
+			assertEqualSet(t, tc.wantSet, tc.s)
+			assert.Equal(t, tc.wantCount, x)
 		})
 	}
 }
 
-func TestNew(t *testing.T) {
+func TestOf(t *testing.T) {
 	t.Run("can create empty", func(t *testing.T) {
-		s := set.New[int]()
-		assert.ElementsMatch(t, []int{}, s.ToSlice())
+		s := set.Of[int]()
+		assert.ElementsMatch(t, []int{}, s.Slice())
 	})
 	t.Run("can create empty with initial elements", func(t *testing.T) {
-		s := set.New(3, 2, 1)
-		assert.ElementsMatch(t, []int{1, 2, 3}, s.ToSlice())
+		s := set.Of(3, 2, 1)
+		assert.ElementsMatch(t, []int{1, 2, 3}, s.Slice())
 	})
-}
-func TestNewFromSlice(t *testing.T) {
 	t.Run("can create from slice", func(t *testing.T) {
-		got := set.NewFromSlice([]int{1, 2})
-		want := set.New(1, 2)
+		got := set.Of([]int{1, 2}...)
+		want := set.Of(1, 2)
 		assert.Equal(t, want, got)
 	})
 	t.Run("can create from empty slice", func(t *testing.T) {
-		got := set.NewFromSlice([]int{})
-		want := set.New[int]()
-		assert.Equal(t, want, got)
+		got := set.Of([]int{}...)
+		want := set.Of[int]()
+		assertEqualSet(t, want, got)
 	})
-}
-
-func TestPop(t *testing.T) {
-	t.Run("can pop element when set non-empty", func(t *testing.T) {
-		s := set.New(1, 2, 3)
-		x, err := s.Pop()
-		if assert.NoError(t, err) {
-			assert.True(t, set.New(1, 2, 3).Contains(x))
-		}
-	})
-	t.Run("should return error when trying to remove from empty set", func(t *testing.T) {
-		s := set.New[int]()
-		_, err := s.Pop()
-		assert.ErrorIs(t, err, set.ErrNotFound)
-	})
-	t.Run("should return error when trying to remove from zero set", func(t *testing.T) {
-		var s set.Set[int]
-		_, err := s.Pop()
-		assert.ErrorIs(t, err, set.ErrNotFound)
-	})
-}
-
-func TestRemove(t *testing.T) {
-	empty := set.New[int]()
-	zero := set.Set[int]{}
-	cases := []struct {
-		name string
-		s    set.Set[int]
-		v    int
-		want set.Set[int]
-		err  error
-	}{
-		{"element exists", set.New(1, 2), 1, set.New(2), nil},
-		{"element does not exist", set.New(1, 2), 3, zero, set.ErrNotFound},
-		{"removing last element", set.New(1), 1, empty, nil},
-		{"empty set", empty, 1, zero, set.ErrNotFound},
-		{"zero set", zero, 1, zero, set.ErrNotFound},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			err := tc.s.Remove(tc.v)
-			assert.Equal(t, tc.err, err)
-			if err == nil {
-				assert.True(t, tc.s.Equal(tc.want))
-			}
-		})
-	}
 }
 
 func TestSize(t *testing.T) {
-	empty := set.New[int]()
+	empty := set.Of[int]()
 	zero := set.Set[int]{}
 	cases := []struct {
 		name string
 		s    set.Set[int]
 		want int
 	}{
-		{"non-empty 2 elements", set.New(1, 2), 2},
-		{"non-empty 1 element", set.New(1), 1},
+		{"non-empty 2 elements", set.Of(1, 2), 2},
+		{"non-empty 1 element", set.Of(1), 1},
 		{"empty", empty, 0},
 		{"zero", zero, 0},
 	}
@@ -483,7 +378,7 @@ func TestSize(t *testing.T) {
 }
 
 func TestString(t *testing.T) {
-	empty := set.New[int]()
+	empty := set.Of[int]()
 	zero := set.Set[int]{}
 	cases := []struct {
 		name  string
@@ -491,10 +386,10 @@ func TestString(t *testing.T) {
 		want1 string
 		want2 string
 	}{
-		{"non-empty 1", set.New(1), "[1]", ""},
-		{"non-empty 2", set.New(1, 2), "[1 2]", "[2 1]"},
-		{"empty", empty, "[]", ""},
-		{"zero", zero, "[]", ""},
+		{"non-empty 1", set.Of(1), "{1}", ""},
+		{"non-empty 2", set.Of(1, 2), "{1 2}", "{2 1}"},
+		{"empty", empty, "{}", ""},
+		{"zero", zero, "{}", ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -506,73 +401,116 @@ func TestString(t *testing.T) {
 	}
 }
 
-func TestSymetricDifference(t *testing.T) {
-	empty := set.New[int]()
-	zero := set.Set[int]{}
-	cases := []struct {
-		name string
-		a    set.Set[int]
-		b    set.Set[int]
-		want set.Set[int]
-	}{
-		{"non-empy sets without intersection", set.New(1), set.New(2), set.New(1, 2)},
-		{"non-empy equal sets", set.New(1), set.New(1), empty},
-		{"non-empy sets with intersection", set.New(1, 2), set.New(2, 3), set.New(1, 3)},
-		{"non-empy sets with empty set", set.New(1), empty, set.New(1)},
-		{"empy sets with non-empty set", empty, set.New(1), set.New(1)},
-		{"non-empy sets with zero set", set.New(1), zero, set.New(1)},
-		{"zero sets with non-empty set", zero, set.New(1), set.New(1)},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got1 := tc.a.SymetricDifference(tc.b)
-			assert.True(t, got1.Equal(tc.want))
-			got2 := tc.b.SymetricDifference(tc.a)
-			assert.True(t, got2.Equal(tc.want))
-		})
-	}
-}
-
-func TestToSlice(t *testing.T) {
+func TestSlice(t *testing.T) {
 	t.Run("can convert non-empty set to slice", func(t *testing.T) {
-		s := set.New(1, 2)
-		got := s.ToSlice()
+		s := set.Of(1, 2)
+		got := s.Slice()
 		want := []int{1, 2}
 		assert.ElementsMatch(t, want, got)
 	})
 	t.Run("can convert empty set to slice", func(t *testing.T) {
-		s := set.New[int]()
-		got := s.ToSlice()
+		s := set.Of[int]()
+		got := s.Slice()
 		want := []int{}
 		assert.ElementsMatch(t, want, got)
 	})
 	t.Run("can convert zero set to slice", func(t *testing.T) {
 		var s set.Set[int]
-		got := s.ToSlice()
+		got := s.Slice()
 		want := []int{}
 		assert.ElementsMatch(t, want, got)
 	})
 }
 
-func TestUnion(t *testing.T) {
-	empty := set.New[int]()
+func TestCollect(t *testing.T) {
+	t.Run("can create a new set from an iterable with items", func(t *testing.T) {
+		s := set.Collect(slices.Values([]int{1, 2, 3}))
+		assertEqualSet(t, set.Of(1, 2, 3), s)
+	})
+	t.Run("can create a new set from an iterable without items", func(t *testing.T) {
+		s := set.Collect(slices.Values([]int{}))
+		assertEqualSet(t, set.Of[int](), s)
+	})
+}
+
+func TestDifference(t *testing.T) {
+	empty := set.Of[int]()
 	zero := set.Set[int]{}
 	cases := []struct {
-		name string
-		a    set.Set[int]
-		b    set.Set[int]
-		want set.Set[int]
+		name   string
+		s      set.Set[int]
+		others []set.Set[int]
+		want   set.Set[int]
 	}{
-		{"non-empy with of another", set.New(1, 2), set.New(2, 3), set.New(1, 2, 3)},
-		{"non-empy with itself", set.New(1), set.New(1), set.New(1)},
-		{"non-empy with empty", set.New(1), empty, set.New(1)},
-		{"empy with itself", empty, empty, empty},
-		{"non-empy with zero", set.New(1), zero, set.New(1)},
-		{"zero with itself", zero, zero, empty},
+		{"non-empty sets without intersection", set.Of(1), []set.Set[int]{set.Of(2)}, set.Of(1)},
+		{"non-empty sets with intersection", set.Of(1, 2), []set.Set[int]{set.Of(2, 3)}, set.Of(1)},
+		{"non-empty sets with empty set", set.Of(1), []set.Set[int]{empty}, set.Of(1)},
+		{"empty sets with non-empty set", empty, []set.Set[int]{set.Of(1)}, empty},
+		{"non-empty sets with zero set", set.Of(1), []set.Set[int]{zero}, set.Of(1)},
+		{"zero sets with non-empty set", zero, []set.Set[int]{set.Of(1)}, empty},
+		{"non-empty sets multiple other non-empty", set.Of(1, 4), []set.Set[int]{set.Of(2, 3), set.Of(4, 5)}, set.Of(1)},
+		{"no other set provided", set.Of(1), []set.Set[int]{}, set.Of(1)},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := tc.a.Union(tc.b)
+			got := set.Difference(tc.s, tc.others...)
+			assertEqualSet(t, tc.want, got)
+		})
+	}
+}
+
+func TestIntersection(t *testing.T) {
+	empty := set.Of[int]()
+	zero := set.Set[int]{}
+	cases := []struct {
+		name string
+		sets []set.Set[int]
+		want set.Set[int]
+	}{
+		{"non-empty with another", []set.Set[int]{set.Of(1, 2, 3), set.Of(2, 3, 4)}, set.Of(2, 3)},
+		{"non-empty with itself", []set.Set[int]{set.Of(1), set.Of(1)}, set.Of(1)},
+		{"non-empty with empty", []set.Set[int]{set.Of(1), empty}, empty},
+		{"empty with non-empty", []set.Set[int]{empty, set.Of(1)}, empty},
+		{"empty with itself", []set.Set[int]{empty, empty}, empty},
+		{"non-empty with zero", []set.Set[int]{set.Of(1), zero}, empty},
+		{"zero with non-empty", []set.Set[int]{zero, set.Of(1)}, empty},
+		{"zero with itself", []set.Set[int]{zero, zero}, empty},
+		{"non-empty with 2 other", []set.Set[int]{set.Of(1, 2, 3), set.Of(2, 3, 4), set.Of(2, 5, 6)}, set.Of(2)},
+		{"only one non-empty set provided", []set.Set[int]{set.Of(1, 2, 3)}, empty},
+		{"no sets provided", []set.Set[int]{}, empty},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := set.Intersection(tc.sets...)
+			assert.True(t, got.Equal(tc.want))
+			assert.Condition(t, func() (success bool) {
+				return got.Equal(tc.want)
+			},
+				"got=%s, want=%s", got, tc.want,
+			)
+		})
+	}
+}
+
+func TestUnion(t *testing.T) {
+	empty := set.Of[int]()
+	zero := set.Set[int]{}
+	cases := []struct {
+		name string
+		sets []set.Set[int]
+		want set.Set[int]
+	}{
+		{"non-empty with of another", []set.Set[int]{set.Of(1, 2), set.Of(2, 3)}, set.Of(1, 2, 3)},
+		{"non-empty with itself", []set.Set[int]{set.Of(1), set.Of(1)}, set.Of(1)},
+		{"non-empty with empty", []set.Set[int]{set.Of(1), empty}, set.Of(1)},
+		{"empty with itself", []set.Set[int]{empty, empty}, empty},
+		{"non-empty with zero", []set.Set[int]{set.Of(1), zero}, set.Of(1)},
+		{"zero with itself", []set.Set[int]{zero, zero}, empty},
+		{"multiple non-empty", []set.Set[int]{set.Of(1, 2), set.Of(2, 3), set.Of(3, 4)}, set.Of(1, 2, 3, 4)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := set.Union(tc.sets...)
 			assert.True(t, got.Equal(tc.want))
 		})
 	}

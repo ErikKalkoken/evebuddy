@@ -93,7 +93,7 @@ func TestCharacterNotification(t *testing.T) {
 		got, err := r.ListCharacterNotificationIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			want := set.New(e1.NotificationID, e2.NotificationID, e3.NotificationID)
+			want := set.Of(e1.NotificationID, e2.NotificationID, e3.NotificationID)
 			assert.Equal(t, want, got)
 		}
 	})

@@ -74,7 +74,7 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 32226}) // TCU
 	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 27})
 	factory.CreateEveEntity(app.EveEntity{ID: 60003760, Category: app.EveEntityStation})
-	notifTypes := set.NewFromSlice(evenotification.SupportedGroups())
+	notifTypes := set.Of(evenotification.SupportedGroups()...)
 	typeTested := make(map[evenotification.Type]bool)
 	for _, n := range notifications {
 		t.Run("should render notification type "+n.Type, func(t *testing.T) {
@@ -93,7 +93,7 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 			}
 		})
 	}
-	for n := range notifTypes.Values() {
+	for n := range notifTypes.All() {
 		if !typeTested[n] {
 			t.Errorf("Failed to test supported notification type: %s", n)
 		}

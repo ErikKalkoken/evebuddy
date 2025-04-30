@@ -86,7 +86,7 @@ func (st *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, chara
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list wallet journal entry ids for character %d: %w", characterID, err)
 	}
-	return set.NewFromSlice(ids), nil
+	return set.Of(ids...), nil
 }
 
 func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, id int32) ([]*app.CharacterWalletJournalEntry, error) {

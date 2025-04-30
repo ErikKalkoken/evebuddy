@@ -124,7 +124,7 @@ func TestCharacterAsset(t *testing.T) {
 		if assert.NoError(t, err) {
 			ids, err := r.ListCharacterAssetIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, set.New(x1.ItemID), ids)
+				assert.Equal(t, set.Of(x1.ItemID), ids)
 			}
 		}
 	})

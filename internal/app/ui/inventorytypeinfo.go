@@ -176,13 +176,13 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 	} else if requirementsTab != nil && a.et.Group.Category.ID == app.EveCategorySkill {
 		tabs.Select(requirementsTab)
 	} else if attributeTab != nil &&
-		set.NewFromSlice([]int32{
+		set.Of[int32](
 			app.EveCategoryDrone,
 			app.EveCategoryFighter,
 			app.EveCategoryOrbitals,
 			app.EveCategoryShip,
 			app.EveCategoryStructure,
-		}).Contains(a.et.Group.Category.ID) {
+		).Contains(a.et.Group.Category.ID) {
 		tabs.Select(attributeTab)
 	} else {
 		tabs.Select(descriptionTab)

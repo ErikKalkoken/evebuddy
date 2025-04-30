@@ -92,7 +92,7 @@ func applyNewMigrations(db *sql.DB, migrations MigrateFS) error {
 	if err != nil {
 		return err
 	}
-	appliedMigrations := set.NewFromSlice(names)
+	appliedMigrations := set.Of(names...)
 	c, err := migrations.ReadDir("migrations")
 	if err != nil {
 		return err
