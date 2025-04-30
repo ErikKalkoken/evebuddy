@@ -92,7 +92,7 @@ func (c *Cache) Delete(key string) {
 	c.items.Delete(key)
 }
 
-// Exists reports wether an item exists. Expired items do not exist.
+// Exists reports whether an item exists. Expired items do not exist.
 func (c *Cache) Exists(key string) bool {
 	_, ok := c.Get(key)
 	return ok

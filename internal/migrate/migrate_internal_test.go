@@ -145,7 +145,7 @@ func CreateTestDB() *sql.DB {
 	return db
 }
 
-// isEmpty reports wether the database is empty.
+// isEmpty reports whether the database is empty.
 func ListTableNames(db *sql.DB) ([]string, error) {
 	rows, err := db.Query("SELECT name from sqlite_master;")
 	if err != nil {

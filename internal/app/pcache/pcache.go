@@ -88,7 +88,7 @@ func (c *PCache) Delete(key string) {
 	c.mc.Delete(key)
 }
 
-// Exists reports wether an item exists. Expired items do not exist.
+// Exists reports whether an item exists. Expired items do not exist.
 func (c *PCache) Exists(key string) bool {
 	if c.mc.Exists(key) {
 		return true

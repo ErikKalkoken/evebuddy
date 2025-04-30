@@ -725,7 +725,7 @@ var contractTypeFromESIValue = map[string]app.ContractType{
 	"unknown":       app.ContractTypeUnknown,
 }
 
-// updateContractsESI updates the wallet journal from ESI and reports wether it has changed.
+// updateContractsESI updates the wallet journal from ESI and reports whether it has changed.
 func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionContracts {
 		panic("called with wrong section")
@@ -1400,7 +1400,7 @@ const (
 // TODO: Add ability to delete obsolete mail labels
 
 // updateMailLabelsESI updates the skillqueue for a character from ESI
-// and reports wether it has changed.
+// and reports whether it has changed.
 func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionMailLabels {
 		panic("called with wrong section")
@@ -1436,7 +1436,7 @@ func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.Char
 }
 
 // updateMailListsESI updates the skillqueue for a character from ESI
-// and reports wether it has changed.
+// and reports whether it has changed.
 func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionMailLists {
 		panic("called with wrong section")
@@ -1466,7 +1466,7 @@ func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.Chara
 }
 
 // updateMailsESI updates the skillqueue for a character from ESI
-// and reports wether it has changed.
+// and reports whether it has changed.
 func (s *CharacterService) updateMailsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionMails {
 		panic("called with wrong section")
@@ -2149,7 +2149,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 }
 
 // updateSectionIfChanged updates a character section if it has changed
-// and reports wether it has changed
+// and reports whether it has changed
 func (s *CharacterService) updateSectionIfChanged(
 	ctx context.Context,
 	arg app.CharacterUpdateSectionParams,
@@ -2332,7 +2332,7 @@ func (s *CharacterService) ListSkillqueueItems(ctx context.Context, characterID 
 }
 
 // UpdateSkillqueueESI updates the skillqueue for a character from ESI
-// and reports wether it has changed.
+// and reports whether it has changed.
 func (s *CharacterService) UpdateSkillqueueESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionSkillqueue {
 		panic("called with wrong section")
@@ -2427,7 +2427,7 @@ func (s *CharacterService) ListWalletJournalEntries(ctx context.Context, charact
 	return s.st.ListCharacterWalletJournalEntries(ctx, characterID)
 }
 
-// updateWalletJournalEntryESI updates the wallet journal from ESI and reports wether it has changed.
+// updateWalletJournalEntryESI updates the wallet journal from ESI and reports whether it has changed.
 func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionWalletJournal {
 		panic("called with wrong section")
@@ -2516,7 +2516,7 @@ func (s *CharacterService) ListWalletTransactions(ctx context.Context, character
 	return s.st.ListCharacterWalletTransactions(ctx, characterID)
 }
 
-// updateWalletTransactionESI updates the wallet journal from ESI and reports wether it has changed.
+// updateWalletTransactionESI updates the wallet journal from ESI and reports whether it has changed.
 func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionWalletTransactions {
 		panic("called with wrong section")

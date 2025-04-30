@@ -30,7 +30,7 @@ func NormalizeVersion(v string) (string, error) {
 	return version.String(), nil
 }
 
-// AvailableUpdate return the version of the latest release and reports wether the update is newer.
+// AvailableUpdate return the version of the latest release and reports whether the update is newer.
 func AvailableUpdate(gitHubOwner, githubRepo, localVersion string) (VersionInfo, error) {
 	return availableUpdate(gitHubOwner, githubRepo, localVersion, fetchGitHubLatest)
 }

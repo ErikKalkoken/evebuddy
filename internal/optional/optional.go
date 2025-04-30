@@ -37,7 +37,7 @@ func (o *Optional[T]) Clear() {
 	o.isPresent = false
 }
 
-// IsEmpty reports wether an Optional is empty.
+// IsEmpty reports whether an Optional is empty.
 func (o Optional[T]) IsEmpty() bool {
 	return !o.isPresent
 }

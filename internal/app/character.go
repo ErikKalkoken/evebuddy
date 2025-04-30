@@ -1188,7 +1188,7 @@ type CharacterToken struct {
 	TokenType    string
 }
 
-// RemainsValid reports wether a token remains valid within a duration.
+// RemainsValid reports whether a token remains valid within a duration.
 func (ct CharacterToken) RemainsValid(d time.Duration) bool {
 	return ct.ExpiresAt.After(time.Now().Add(d))
 }

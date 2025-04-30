@@ -66,7 +66,7 @@ func (q *SyncQueue[T]) Get(ctx context.Context) (T, error) {
 	}
 }
 
-// IsEmpty reports wether the queue is empty.
+// IsEmpty reports whether the queue is empty.
 func (q *SyncQueue[T]) IsEmpty() bool {
 	return q.Size() == 0
 }

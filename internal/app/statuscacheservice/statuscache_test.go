@@ -112,7 +112,7 @@ func TestStatusCache(t *testing.T) {
 		assert.Equal(t, c.ID, xx[0].ID)
 		assert.Equal(t, "Bruce", xx[0].Name)
 	})
-	t.Run("can report wether a character section exists", func(t *testing.T) {
+	t.Run("can report whether a character section exists", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		cache.Clear()
@@ -131,7 +131,7 @@ func TestStatusCache(t *testing.T) {
 		assert.False(t, sc.CharacterSectionExists(c.ID, app.SectionAssets))
 		assert.False(t, sc.CharacterSectionExists(0, app.SectionAssets))
 	})
-	t.Run("can report wether a general section exists 1", func(t *testing.T) {
+	t.Run("can report whether a general section exists 1", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		cache.Clear()
@@ -145,7 +145,7 @@ func TestStatusCache(t *testing.T) {
 		// when/then
 		assert.True(t, sc.GeneralSectionExists(app.SectionEveCategories))
 	})
-	t.Run("can report wether a general section exists 2", func(t *testing.T) {
+	t.Run("can report whether a general section exists 2", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		cache.Clear()
