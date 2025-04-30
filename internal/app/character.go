@@ -9,6 +9,7 @@ import (
 	"maps"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -1026,12 +1027,13 @@ type CharacterServiceSkillqueue interface {
 
 // CharacterSkillqueue represents the skillqueue of a character.
 type CharacterSkillqueue struct {
+	mu          sync.RWMutex
 	characterID int32
 	items       []*CharacterSkillqueueItem
 }
 
-func NewCharacterSkillqueue() CharacterSkillqueue {
-	sq := CharacterSkillqueue{items: make([]*CharacterSkillqueueItem, 0)}
+func NewCharacterSkillqueue() *CharacterSkillqueue {
+	sq := &CharacterSkillqueue{items: make([]*CharacterSkillqueueItem, 0)}
 	return sq
 }
 
@@ -1040,6 +1042,8 @@ func (sq *CharacterSkillqueue) CharacterID() int32 {
 }
 
 func (sq *CharacterSkillqueue) Current() *CharacterSkillqueueItem {
+	sq.mu.RLock()
+	defer sq.mu.RUnlock()
 	for _, item := range sq.items {
 		if item.IsActive() {
 			return item
@@ -1065,6 +1069,8 @@ func (sq *CharacterSkillqueue) IsActive() bool {
 }
 
 func (sq *CharacterSkillqueue) Item(id int) *CharacterSkillqueueItem {
+	sq.mu.RLock()
+	defer sq.mu.RUnlock()
 	if id < 0 || id >= len(sq.items) {
 		return nil
 	}
@@ -1072,10 +1078,14 @@ func (sq *CharacterSkillqueue) Item(id int) *CharacterSkillqueueItem {
 }
 
 func (sq *CharacterSkillqueue) Size() int {
+	sq.mu.RLock()
+	defer sq.mu.RUnlock()
 	return len(sq.items)
 }
 
 func (sq *CharacterSkillqueue) Remaining() optional.Optional[time.Duration] {
+	sq.mu.RLock()
+	defer sq.mu.RUnlock()
 	var r optional.Optional[time.Duration]
 	for _, item := range sq.items {
 		r = optional.New(r.ValueOrZero() + item.Remaining().ValueOrZero())
@@ -1084,14 +1094,18 @@ func (sq *CharacterSkillqueue) Remaining() optional.Optional[time.Duration] {
 }
 
 func (sq *CharacterSkillqueue) Update(cs CharacterServiceSkillqueue, characterID int32) error {
+	var items []*CharacterSkillqueueItem
 	if characterID == 0 {
-		sq.items = []*CharacterSkillqueueItem{}
-		return nil
+		items = []*CharacterSkillqueueItem{}
+	} else {
+		var err error
+		items, err = cs.ListSkillqueueItems(context.Background(), characterID)
+		if err != nil {
+			return err
+		}
 	}
-	items, err := cs.ListSkillqueueItems(context.Background(), characterID)
-	if err != nil {
-		return err
-	}
+	sq.mu.Lock()
+	defer sq.mu.Unlock()
 	sq.items = items
 	sq.characterID = characterID
 	return nil

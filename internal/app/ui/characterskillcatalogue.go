@@ -122,7 +122,7 @@ func (a *CharacterSkillCatalogue) makeGroupsGrid() fyne.CanvasObject {
 				return
 			}
 			oo, err := a.u.cs.ListSkillProgress(
-				context.TODO(), a.u.CurrentCharacterID(), group.id,
+				context.TODO(), a.u.currentCharacterID(), group.id,
 			)
 			if err != nil {
 				slog.Error("Failed to fetch skill group data", "err", err)
@@ -190,8 +190,33 @@ func (a *CharacterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 }
 
 func (a *CharacterSkillCatalogue) update() {
-	a.skills = make([]skillTrained, 0)
+	var err error
+	groups := make([]skillGroupProgress, 0)
+	character := a.u.currentCharacter()
+	hasData := a.u.scs.GeneralSectionExists(app.SectionEveCategories) && a.u.scs.CharacterSectionExists(character.ID, app.SectionSkills)
+	if hasData {
+		groups2, err2 := a.updateGroups(character.ID, a.u.services())
+		if err2 != nil {
+			slog.Error("Failed to refresh skill catalogue UI", "err", err)
+			err = err2
+		} else {
+			groups = groups2
+		}
+	}
+	t, i := makeTopText(character.ID, hasData, err, func() (string, widget.Importance) {
+		total := ihumanize.Optional(character.TotalSP, "?")
+		unallocated := ihumanize.Optional(character.UnallocatedSP, "?")
+		return fmt.Sprintf("%s Total Skill Points (%s Unallocated)", total, unallocated), widget.MediumImportance
+	})
 	fyne.Do(func() {
+		a.total.Text = t
+		a.total.Importance = i
+		a.total.Refresh()
+	})
+	fyne.Do(func() {
+		a.skills = make([]skillTrained, 0)
+		a.groups = groups
+		a.groupsGrid.Refresh()
 		switch x := a.groupsGrid.(type) {
 		case *widget.GridWrap:
 			x.UnselectAll()
@@ -199,49 +224,12 @@ func (a *CharacterSkillCatalogue) update() {
 			x.UnselectAll()
 		}
 	})
-	t, i, err := func() (string, widget.Importance, error) {
-		exists := a.u.scs.GeneralSectionExists(app.SectionEveCategories)
-		if !exists {
-			return "Waiting for universe data to be loaded...", widget.WarningImportance, nil
-		}
-		if err := a.updateGroups(); err != nil {
-			return "", 0, err
-		}
-		return a.makeTopText()
-	}()
-	if err != nil {
-		slog.Error("Failed to refresh skill catalogue UI", "err", err)
-		t = "ERROR"
-		i = widget.DangerImportance
-	}
-	fyne.Do(func() {
-		a.groupsGrid.Refresh()
-	})
-	fyne.Do(func() {
-		a.total.Text = t
-		a.total.Importance = i
-		a.total.Refresh()
-	})
 }
 
-func (a *CharacterSkillCatalogue) makeTopText() (string, widget.Importance, error) {
-	if !a.u.hasCharacter() {
-		return "No Character", widget.LowImportance, nil
-	}
-	c := a.u.currentCharacter()
-	total := ihumanize.Optional(c.TotalSP, "?")
-	unallocated := ihumanize.Optional(c.UnallocatedSP, "?")
-	t := fmt.Sprintf("%s Total Skill Points (%s Unallocated)", total, unallocated)
-	return t, widget.MediumImportance, nil
-}
-
-func (a *CharacterSkillCatalogue) updateGroups() error {
-	if !a.u.hasCharacter() {
-		return nil
-	}
-	gg, err := a.u.cs.ListSkillGroupsProgress(context.TODO(), a.u.CurrentCharacterID())
+func (*CharacterSkillCatalogue) updateGroups(characterID int32, s services) ([]skillGroupProgress, error) {
+	gg, err := s.cs.ListSkillGroupsProgress(context.TODO(), characterID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	groups := make([]skillGroupProgress, len(gg))
 	for i, g := range gg {
@@ -252,6 +240,5 @@ func (a *CharacterSkillCatalogue) updateGroups() error {
 			total:   g.Total,
 		}
 	}
-	a.groups = groups
-	return nil
+	return groups, nil
 }

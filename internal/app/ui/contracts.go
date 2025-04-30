@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"math"
 	"slices"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -25,22 +26,23 @@ import (
 type Contracts struct {
 	widget.BaseWidget
 
-	ShowActiveOnly bool
-	OnUpdate       func(count int)
+	OnUpdate func(count int)
 
-	contracts []*app.CharacterContract
-	body      fyne.CanvasObject
-	top       *widget.Label
-	u         *BaseUI
+	contracts      []*app.CharacterContract
+	showActiveOnly atomic.Bool
+	body           fyne.CanvasObject
+	top            *widget.Label
+	u              *BaseUI
 }
 
-func NewContracts(u *BaseUI) *Contracts {
+func NewContracts(u *BaseUI, showActiveOnly bool) *Contracts {
 	a := &Contracts{
 		contracts: make([]*app.CharacterContract, 0),
 		top:       appwidget.MakeTopLabel(),
 		u:         u,
 	}
 	a.ExtendBaseWidget(a)
+	a.showActiveOnly.Store(showActiveOnly)
 	headers := []iwidget.HeaderDef{
 		{Text: "Contract", Width: 300},
 		{Text: "Type", Width: 120},
@@ -97,64 +99,41 @@ func NewContracts(u *BaseUI) *Contracts {
 }
 
 func (a *Contracts) update() {
-	var t string
-	var i widget.Importance
-	if err := a.updateEntries(); err != nil {
+	contracts, err := a.updateEntries()
+	if err != nil {
 		slog.Error("Failed to refresh contracts UI", "err", err)
-		t = "ERROR"
-		i = widget.DangerImportance
-	} else {
-		t, i = a.makeTopText()
+		fyne.Do(func() {
+			a.top.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
+			a.top.Importance = widget.DangerImportance
+			a.top.Refresh()
+			a.top.Show()
+		})
+		return
 	}
 	fyne.Do(func() {
-		if t == "" {
-			a.top.Hide()
-			return
-		}
-		a.top.Text = t
-		a.top.Importance = i
-		a.top.Refresh()
-		a.top.Show()
-
-	})
-	fyne.Do(func() {
+		a.top.Hide()
+		a.contracts = contracts
 		a.body.Refresh()
 	})
+	if a.OnUpdate != nil {
+		a.OnUpdate(len(contracts))
+	}
 }
 
-func (a *Contracts) makeTopText() (string, widget.Importance) {
-	if !a.u.hasCharacter() {
-		return "No character", widget.LowImportance
-	}
-	c := a.u.currentCharacter()
-	hasData := a.u.scs.CharacterSectionExists(c.ID, app.SectionContracts)
-	if !hasData {
-		return "Waiting for character data to be loaded...", widget.WarningImportance
-	}
-	return "", widget.MediumImportance
-}
-
-func (a *Contracts) updateEntries() error {
-	if !a.u.hasCharacter() {
-		a.contracts = make([]*app.CharacterContract, 0)
-		return nil
-	}
+func (a *Contracts) updateEntries() ([]*app.CharacterContract, error) {
+	var contracts []*app.CharacterContract
 	oo, err := a.u.cs.ListAllContracts(context.Background())
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if a.ShowActiveOnly {
-		a.contracts = xslices.Filter(oo, func(o *app.CharacterContract) bool {
+	if a.showActiveOnly.Load() {
+		contracts = xslices.Filter(oo, func(o *app.CharacterContract) bool {
 			return o.IsActive()
 		})
-
 	} else {
-		a.contracts = oo
+		contracts = oo
 	}
-	if a.OnUpdate != nil {
-		a.OnUpdate(len(a.contracts))
-	}
-	return nil
+	return contracts, nil
 }
 
 func (a *Contracts) showContract(c *app.CharacterContract) {
@@ -204,7 +183,7 @@ func (a *Contracts) showContract(c *app.CharacterContract) {
 		widget.NewFormItem("Availability", availability),
 	}
 	if a.u.IsDeveloperMode() {
-		fi = append(fi, widget.NewFormItem("Contract ID", a.u.makeCopyToClipbardLabel(fmt.Sprint(c.ContractID))))
+		fi = append(fi, widget.NewFormItem("Contract ID", a.u.makeCopyToClipboardLabel(fmt.Sprint(c.ContractID))))
 	}
 	if c.Type == app.ContractTypeCourier {
 		fi = append(fi, widget.NewFormItem("Contractor", widget.NewLabel(c.ContractorDisplay())))

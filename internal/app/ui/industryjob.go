@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -23,22 +24,23 @@ import (
 type IndustryJobs struct {
 	widget.BaseWidget
 
-	ShowActiveOnly bool
-	OnUpdate       func(count int)
+	OnUpdate func(count int)
 
-	body fyne.CanvasObject
-	jobs []*app.CharacterIndustryJob
-	top  *widget.Label
-	u    *BaseUI
+	body           fyne.CanvasObject
+	jobs           []*app.CharacterIndustryJob
+	showActiveOnly atomic.Bool
+	top            *widget.Label
+	u              *BaseUI
 }
 
-func NewIndustryJobs(u *BaseUI) *IndustryJobs {
+func NewIndustryJobs(u *BaseUI, showActiveOnly bool) *IndustryJobs {
 	a := &IndustryJobs{
 		jobs: make([]*app.CharacterIndustryJob, 0),
 		top:  appwidget.MakeTopLabel(),
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)
+	a.showActiveOnly.Store(showActiveOnly)
 	headers := []iwidget.HeaderDef{
 		{Text: "Blueprint", Width: 250},
 		{Text: "Status", Width: 100, Refresh: true},
@@ -93,7 +95,7 @@ func (a *IndustryJobs) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *IndustryJobs) update() {
-	jobs, err := a.u.cs.ListAllCharacterIndustryJob(context.TODO())
+	jobs, err := a.u.cs.ListAllCharacterIndustryJob(context.Background())
 	if err != nil {
 		slog.Error("Failed to refresh industry jobs UI", "err", err)
 		fyne.Do(func() {
@@ -104,15 +106,13 @@ func (a *IndustryJobs) update() {
 		})
 		return
 	}
-	if a.ShowActiveOnly {
-		a.jobs = xslices.Filter(jobs, func(o *app.CharacterIndustryJob) bool {
+	if a.showActiveOnly.Load() {
+		jobs = xslices.Filter(jobs, func(o *app.CharacterIndustryJob) bool {
 			return o.IsActive()
 		})
-	} else {
-		a.jobs = jobs
 	}
 	var readyCount int
-	for _, j := range a.jobs {
+	for _, j := range jobs {
 		if j.StatusCorrected() == app.JobReady {
 			readyCount++
 		}
@@ -122,6 +122,7 @@ func (a *IndustryJobs) update() {
 	}
 	fyne.Do(func() {
 		a.top.Hide()
+		a.jobs = jobs
 		a.body.Refresh()
 	})
 }
@@ -216,7 +217,7 @@ func (a *IndustryJobs) showJob(r *app.CharacterIndustryJob) {
 		})))
 	}
 	if a.u.IsDeveloperMode() {
-		items = append(items, widget.NewFormItem("Job ID", a.u.makeCopyToClipbardLabel(fmt.Sprint(r.JobID))))
+		items = append(items, widget.NewFormItem("Job ID", a.u.makeCopyToClipboardLabel(fmt.Sprint(r.JobID))))
 	}
 	title := fmt.Sprintf("%s - %s - #%d", r.BlueprintType.Name, r.Activity.Display(), r.JobID)
 	f := widget.NewForm(items...)

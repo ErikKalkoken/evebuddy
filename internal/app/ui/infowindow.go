@@ -73,7 +73,12 @@ func (iw *InfoWindow) showRace(id int32) {
 	iw.show(infoRace, int64(id))
 }
 
-func (iw *InfoWindow) show(t infoVariant, id int64) {
+type infoWidget interface {
+	fyne.CanvasObject
+	update() error
+}
+
+func (iw *InfoWindow) show(v infoVariant, id int64) {
 	if iw.u.IsOffline() {
 		iw.u.ShowInformationDialog(
 			"Offline",
@@ -83,8 +88,8 @@ func (iw *InfoWindow) show(t infoVariant, id int64) {
 		return
 	}
 	var title string
-	var page fyne.CanvasObject
-	switch t {
+	var page infoWidget
+	switch v {
 	case infoAlliance:
 		title = "Alliance"
 		page = newAllianceInfo(iw, int32(id))
@@ -98,8 +103,7 @@ func (iw *InfoWindow) show(t infoVariant, id int64) {
 		title = "Corporation"
 		page = newCorporationInfo(iw, int32(id))
 	case infoInventoryType:
-		// TODO: Restructure, so that window is first drawn empty and content loaded in background (as other info windo)
-		a, err := NewInventoryTypeInfo(iw, int32(id), iw.u.CurrentCharacterID())
+		a, err := NewInventoryTypeInfo(iw, int32(id), iw.u.currentCharacterID())
 		if err != nil {
 			iw.u.ShowInformationDialog("ERROR", "Something whent wrong when trying to show info for type", iw.w)
 			slog.Error("show type", "error", err)
@@ -147,6 +151,16 @@ func (iw *InfoWindow) show(t infoVariant, id int64) {
 	} else {
 		iw.nav.Push(ab)
 	}
+	go func() {
+		err := page.update()
+		if err != nil {
+			slog.Error("info widget load", "variant", v, "id", id, "error", err)
+			fyne.Do(func() {
+				iw.u.ShowErrorDialog(fmt.Sprintf("Failed to load info window for %s", v), err, iw.w)
+			})
+		}
+	}()
+
 }
 
 func (iw *InfoWindow) showZoomWindow(title string, id int32, load func(int32, int) (fyne.Resource, error), w fyne.Window) {
@@ -348,17 +362,6 @@ func newAllianceInfo(iw *InfoWindow, id int32) *allianceInfo {
 }
 
 func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
-	go func() {
-		err := a.load()
-		if err != nil {
-			slog.Error("alliance info update failed", "alliance", a.id, "error", err)
-			fyne.Do(func() {
-				a.name.Text = fmt.Sprintf("ERROR: Failed to load alliance: %s", a.iw.u.humanizeError(err))
-				a.name.Importance = widget.DangerImportance
-				a.name.Refresh()
-			})
-		}
-	}()
 	p := theme.Padding()
 	top := container.NewBorder(
 		nil,
@@ -382,7 +385,7 @@ func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *allianceInfo) load() error {
+func (a *allianceInfo) update() error {
 	ctx := context.Background()
 	go func() {
 		r, err := a.iw.u.eis.AllianceLogo(a.id, app.IconPixelSize)
@@ -513,17 +516,6 @@ func newCharacterInfo(iw *InfoWindow, id int32) *characterInfo {
 }
 
 func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
-	go func() {
-		err := a.load()
-		if err != nil {
-			slog.Error("character info update failed", "character", a.id, "error", err)
-			fyne.Do(func() {
-				a.name.Text = fmt.Sprintf("ERROR: Failed to load character: %s", a.iw.u.humanizeError(err))
-				a.name.Importance = widget.DangerImportance
-				a.name.Refresh()
-			})
-		}
-	}()
 	p := theme.Padding()
 	main := container.NewVBox(
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
@@ -575,7 +567,7 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterInfo) load() error {
+func (a *characterInfo) update() error {
 	ctx := context.Background()
 	go func() {
 		r, err := a.iw.u.eis.CharacterPortrait(a.id, 256)
@@ -715,19 +707,6 @@ func newConstellationInfo(iw *InfoWindow, id int32) *constellationInfo {
 }
 
 func (a *constellationInfo) CreateRenderer() fyne.WidgetRenderer {
-	go func() {
-		err := a.load()
-		if err != nil {
-			slog.Error("constellation info update failed", "solarSystem", a.id, "error", err)
-			fyne.Do(func() {
-				fyne.Do(func() {
-					a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", a.iw.u.humanizeError(err))
-					a.name.Importance = widget.DangerImportance
-					a.name.Refresh()
-				})
-			})
-		}
-	}()
 	colums := kxlayout.NewColumns(120)
 	p := theme.Padding()
 	main := container.NewVBox(
@@ -743,7 +722,7 @@ func (a *constellationInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *constellationInfo) load() error {
+func (a *constellationInfo) update() error {
 	ctx := context.Background()
 	o, err := a.iw.u.eus.GetOrCreateConstellationESI(ctx, a.id)
 	if err != nil {
@@ -828,17 +807,6 @@ func newCorporationInfo(iw *InfoWindow, id int32) *corporationInfo {
 }
 
 func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
-	go func() {
-		err := a.load()
-		if err != nil {
-			slog.Error("corporation info update failed", "corporation", a.id, "error", err)
-			fyne.Do(func() {
-				a.name.Text = fmt.Sprintf("ERROR: Failed to load corporation: %s", a.iw.u.humanizeError(err))
-				a.name.Importance = widget.DangerImportance
-				a.name.Refresh()
-			})
-		}
-	}()
 	p := theme.Padding()
 	main := container.NewVBox(
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
@@ -874,7 +842,7 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *corporationInfo) load() error {
+func (a *corporationInfo) update() error {
 	ctx := context.Background()
 	go func() {
 		r, err := a.iw.u.eis.CorporationLogo(a.id, app.IconPixelSize)
@@ -1047,17 +1015,6 @@ func newLocationInfo(iw *InfoWindow, id int64) *locationInfo {
 }
 
 func (a *locationInfo) CreateRenderer() fyne.WidgetRenderer {
-	go func() {
-		err := a.load()
-		if err != nil {
-			slog.Error("location info update failed", "locationID", a.id, "error", err)
-			fyne.Do(func() {
-				a.name.Text = fmt.Sprintf("ERROR: Failed to load character: %s", a.iw.u.humanizeError(err))
-				a.name.Importance = widget.DangerImportance
-				a.name.Refresh()
-			})
-		}
-	}()
 	p := theme.Padding()
 	main := container.New(layout.NewCustomPaddedVBoxLayout(0),
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
@@ -1077,7 +1034,7 @@ func (a *locationInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *locationInfo) load() error {
+func (a *locationInfo) update() error {
 	ctx := context.Background()
 	o, err := a.iw.u.eus.GetOrCreateLocationESI(ctx, a.id)
 	if err != nil {
@@ -1202,17 +1159,6 @@ func newRaceInfo(iw *InfoWindow, id int32) *raceInfo {
 }
 
 func (a *raceInfo) CreateRenderer() fyne.WidgetRenderer {
-	go func() {
-		err := a.load()
-		if err != nil {
-			slog.Error("race info update failed", "race", a.id, "error", err)
-			fyne.Do(func() {
-				a.name.Text = fmt.Sprintf("ERROR: Failed to load race: %s", a.iw.u.humanizeError(err))
-				a.name.Importance = widget.DangerImportance
-				a.name.Refresh()
-			})
-		}
-	}()
 	p := theme.Padding()
 	main := container.NewVBox(
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
@@ -1224,7 +1170,7 @@ func (a *raceInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *raceInfo) load() error {
+func (a *raceInfo) update() error {
 	ctx := context.Background()
 	o, err := a.iw.u.eus.GetOrCreateRaceESI(ctx, a.id)
 	if err != nil {
@@ -1298,17 +1244,6 @@ func newRegionInfo(iw *InfoWindow, id int32) *regionInfo {
 }
 
 func (a *regionInfo) CreateRenderer() fyne.WidgetRenderer {
-	go func() {
-		err := a.load()
-		if err != nil {
-			slog.Error("region info update failed", "solarSystem", a.id, "error", err)
-			fyne.Do(func() {
-				a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", a.iw.u.humanizeError(err))
-				a.name.Importance = widget.DangerImportance
-				a.name.Refresh()
-			})
-		}
-	}()
 	p := theme.Padding()
 	main := container.NewVBox(
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
@@ -1336,7 +1271,7 @@ func (a *regionInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *regionInfo) load() error {
+func (a *regionInfo) update() error {
 	ctx := context.Background()
 	o, err := a.iw.u.eus.GetOrCreateRegionESI(ctx, a.id)
 	if err != nil {
@@ -1427,17 +1362,6 @@ func newSolarSystemInfo(iw *InfoWindow, id int32) *solarSystemInfo {
 }
 
 func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
-	go func() {
-		err := a.load()
-		if err != nil {
-			slog.Error("solar system info update failed", "solarSystem", a.id, "error", err)
-			fyne.Do(func() {
-				a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", a.iw.u.humanizeError(err))
-				a.name.Importance = widget.DangerImportance
-				a.name.Refresh()
-			})
-		}
-	}()
 	colums := kxlayout.NewColumns(120)
 	p := theme.Padding()
 	main := container.NewVBox(
@@ -1471,7 +1395,7 @@ func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *solarSystemInfo) load() error {
+func (a *solarSystemInfo) update() error {
 	ctx := context.Background()
 	o, err := a.iw.u.eus.GetOrCreateSolarSystemESI(ctx, a.id)
 	if err != nil {

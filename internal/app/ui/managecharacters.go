@@ -179,18 +179,21 @@ func (a *ManageCharacters) showDeleteDialog(c accountCharacter) {
 						if err != nil {
 							return err
 						}
-						a.Refresh()
+						a.update()
 						return nil
 					},
 					a.window,
 				)
 				m.OnSuccess = func() {
 					a.showSnackbar(fmt.Sprintf("Character %s deleted", c.name))
-					if a.u.CurrentCharacterID() == c.id {
-						a.u.setAnyCharacter()
-					}
-					a.u.updateCrossPages()
-					a.u.updateStatus()
+					go func() {
+						a.update()
+						if a.u.currentCharacterID() == c.id {
+							a.u.setAnyCharacter()
+						}
+						a.u.updateCrossPages()
+						a.u.updateStatus()
+					}()
 				}
 				m.OnError = func(err error) {
 					slog.Error("Failed to delete character", "characterID", c.id)
@@ -203,27 +206,28 @@ func (a *ManageCharacters) showDeleteDialog(c accountCharacter) {
 	)
 }
 
-func (a *ManageCharacters) Refresh() {
+func (a *ManageCharacters) update() {
 	cc, err := a.u.cs.ListCharactersShort(context.TODO())
 	if err != nil {
 		slog.Error("account refresh", "error", err)
 		return
 	}
-	cc2 := make([]accountCharacter, len(cc))
+	characters := make([]accountCharacter, len(cc))
 	for i, c := range cc {
 		hasToken, err := a.u.cs.HasTokenWithScopes(context.Background(), c.ID)
 		if err != nil {
 			slog.Error("Tried to check if character has token", "err", err)
 			hasToken = true // do not report error when state is unclear
 		}
-		cc2[i] = accountCharacter{id: c.ID, name: c.Name, hasTokenWithScope: hasToken}
+		characters[i] = accountCharacter{id: c.ID, name: c.Name, hasTokenWithScope: hasToken}
 	}
-	a.characters = cc2
-	a.list.Refresh()
-	characterCount := len(a.characters)
-	a.title.SetText(fmt.Sprintf("Characters (%d)", characterCount))
+	fyne.Do(func() {
+		a.characters = characters
+		a.list.Refresh()
+		a.title.SetText(fmt.Sprintf("Characters (%d)", len(characters)))
+	})
 	if a.OnUpdate != nil {
-		a.OnUpdate(characterCount)
+		a.OnUpdate(len(characters))
 	}
 }
 
@@ -248,15 +252,15 @@ func (a *ManageCharacters) ShowAddCharacterDialog() {
 			} else if err != nil {
 				return err
 			}
-			fyne.Do(func() {
-				a.Refresh()
-			})
-			go a.u.updateCharacterAndRefreshIfNeeded(context.Background(), characterID, false)
-			if !a.u.hasCharacter() {
-				a.u.loadCharacter(characterID)
-			}
-			a.u.updateCrossPages()
-			a.u.updateStatus()
+			a.update()
+			go func() {
+				if !a.u.hasCharacter() {
+					a.u.loadCharacter(characterID)
+				}
+				a.u.updateStatus()
+				a.u.updateCrossPages()
+				a.u.updateCharacterAndRefreshIfNeeded(context.Background(), characterID, false)
+			}()
 			return nil
 		}()
 		fyne.Do(func() {

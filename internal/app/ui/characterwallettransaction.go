@@ -109,49 +109,31 @@ func (a *CharacterWalletTransaction) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *CharacterWalletTransaction) update() {
-	var t string
-	var i widget.Importance
-	if err := a.updateEntries(); err != nil {
-		slog.Error("Failed to refresh wallet transaction UI", "err", err)
-		t = "ERROR"
-		i = widget.DangerImportance
-	} else {
-		t, i = a.makeTopText()
+	var err error
+	entries := make([]*app.CharacterWalletTransaction, 0)
+	characterID := a.u.currentCharacterID()
+	hasData := a.u.scs.CharacterSectionExists(characterID, app.SectionWalletTransactions)
+	if hasData {
+		entries2, err2 := a.u.cs.ListWalletTransactions(context.Background(), characterID)
+		if err2 != nil {
+			slog.Error("Failed to refresh wallet transaction UI", "err", err2)
+			err = err2
+		} else {
+			entries = entries2
+		}
 	}
+	t, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
+		t := humanize.Comma(int64(len(entries)))
+		s := fmt.Sprintf("Entries: %s", t)
+		return s, widget.MediumImportance
+	})
 	fyne.Do(func() {
 		a.top.Text = t
 		a.top.Importance = i
 		a.top.Refresh()
 	})
 	fyne.Do(func() {
+		a.rows = entries
 		a.body.Refresh()
 	})
-}
-
-func (a *CharacterWalletTransaction) makeTopText() (string, widget.Importance) {
-	if !a.u.hasCharacter() {
-		return "No character", widget.LowImportance
-	}
-	characterID := a.u.CurrentCharacterID()
-	hasData := a.u.scs.CharacterSectionExists(characterID, app.SectionWalletTransactions)
-	if !hasData {
-		return "Waiting for character data to be loaded...", widget.WarningImportance
-	}
-	t := humanize.Comma(int64(len(a.rows)))
-	s := fmt.Sprintf("Entries: %s", t)
-	return s, widget.MediumImportance
-}
-
-func (a *CharacterWalletTransaction) updateEntries() error {
-	if !a.u.hasCharacter() {
-		a.rows = make([]*app.CharacterWalletTransaction, 0)
-		return nil
-	}
-	characterID := a.u.CurrentCharacterID()
-	ww, err := a.u.cs.ListWalletTransactions(context.TODO(), characterID)
-	if err != nil {
-		return err
-	}
-	a.rows = ww
-	return nil
 }

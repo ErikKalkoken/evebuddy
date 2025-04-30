@@ -98,14 +98,15 @@ func (a *Colonies) update() {
 	var s string
 	var i widget.Importance
 	var total, expired int
-	planets, err := a.u.cs.ListAllPlanets(context.Background())
+	planets := make([]*app.CharacterPlanet, 0)
+	planets2, err := a.u.cs.ListAllPlanets(context.Background())
 	if err != nil {
 		slog.Error("Failed to refresh colonies UI", "err", err)
 		s = "ERROR"
 		i = widget.DangerImportance
 	} else {
-		a.planets = planets
-		total = len(a.planets)
+		planets = planets2
+		total = len(planets)
 		for _, c := range a.planets {
 			if c.IsExpired() {
 				expired++
@@ -122,6 +123,7 @@ func (a *Colonies) update() {
 		a.top.Refresh()
 	})
 	fyne.Do(func() {
+		a.planets = planets
 		a.body.Refresh()
 	})
 	if a.OnUpdate != nil {

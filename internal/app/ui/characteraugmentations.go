@@ -97,40 +97,29 @@ func (a *CharacterAugmentations) makeImplantList() *widget.List {
 }
 
 func (a *CharacterAugmentations) update() {
-	var t string
-	var i widget.Importance
-	if err := a.updateImplants(); err != nil {
-		slog.Error("Failed to refresh implants UI", "err", err)
-		t = "ERROR"
-		i = widget.DangerImportance
-	} else {
-		t, i = a.makeTopText()
+	var err error
+	implants := make([]*app.CharacterImplant, 0)
+	characterID := a.u.currentCharacterID()
+	hasData := a.u.scs.CharacterSectionExists(characterID, app.SectionImplants)
+	if hasData {
+		implants2, err2 := a.u.cs.ListImplants(context.Background(), characterID)
+		if err2 != nil {
+			slog.Error("Failed to refresh implants UI", "err", err)
+			err = err2
+		} else {
+			implants = implants2
+		}
 	}
+	t, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
+		return fmt.Sprintf("%d implants", len(implants)), widget.MediumImportance
+	})
 	fyne.Do(func() {
 		a.top.Text = t
 		a.top.Importance = i
 		a.top.Refresh()
+	})
+	fyne.Do(func() {
+		a.implants = implants
 		a.list.Refresh()
 	})
-}
-
-func (a *CharacterAugmentations) updateImplants() error {
-	if !a.u.hasCharacter() {
-		a.implants = make([]*app.CharacterImplant, 0)
-		return nil
-	}
-	implants, err := a.u.cs.ListImplants(context.TODO(), a.u.CurrentCharacterID())
-	if err != nil {
-		return err
-	}
-	a.implants = implants
-	return nil
-}
-
-func (a *CharacterAugmentations) makeTopText() (string, widget.Importance) {
-	hasData := a.u.scs.CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
-	if !hasData {
-		return "Waiting for character data to be loaded...", widget.WarningImportance
-	}
-	return fmt.Sprintf("%d implants", len(a.implants)), widget.MediumImportance
 }

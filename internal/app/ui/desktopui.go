@@ -333,10 +333,6 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 		})
 	}
 	u.HideMailIndicator() // init system tray icon
-	u.onInit = func(_ *app.Character) {
-		go u.updateMailIndicator()
-		u.enableShortcuts()
-	}
 	u.onUpdateCharacter = func(c *app.Character) {
 		go func() {
 			if !u.hasCharacter() {
@@ -358,8 +354,9 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 		u.MainWindow().Resize(u.settings.WindowSize())
 	}
 	u.onAppFirstStarted = func() {
+		u.enableShortcuts()
+		go u.updateMailIndicator()
 		go statusBar.startUpdateTicker()
-
 	}
 	u.onAppStopped = func() {
 		u.saveAppState()
@@ -444,9 +441,9 @@ func (u *DesktopUI) showManageCharactersWindow() {
 }
 
 func (u *DesktopUI) PerformSearch(s string) {
-	u.gameSearch.ResetOptions()
+	u.gameSearch.resetOptions()
 	u.gameSearch.toogleOptions(false)
-	u.gameSearch.DoSearch(s)
+	u.gameSearch.doSearch(s)
 	u.showSearchWindow()
 }
 
@@ -475,7 +472,7 @@ func (u *DesktopUI) showSearchWindow() {
 	w.Resize(fyne.Size{Width: 700, Height: 400})
 	w.SetContent(u.gameSearch)
 	w.Show()
-	u.gameSearch.SetWindow(w)
+	u.gameSearch.setWindow(w)
 	u.gameSearch.focus()
 }
 
@@ -503,7 +500,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
 			},
 			func(fyne.Shortcut) {
-				characterID := u.CurrentCharacterID()
+				characterID := u.currentCharacterID()
 				if characterID == 0 {
 					u.ShowSnackbar("ERROR: No character selected")
 					return

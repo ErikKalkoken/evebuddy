@@ -95,7 +95,7 @@ func (c *PageBarCollection) update() {
 		}
 		return
 	}
-	go c.u.updateAvatar(c.u.CurrentCharacterID(), func(r fyne.Resource) {
+	go c.u.updateAvatar(c.u.currentCharacterID(), func(r fyne.Resource) {
 		for _, pb := range c.bars {
 			fyne.Do(func() {
 				pb.SetIcon(r)

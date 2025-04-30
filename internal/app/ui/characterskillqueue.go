@@ -23,7 +23,7 @@ type CharacterSkillQueue struct {
 	OnUpdate func(statusShort, statusLong string)
 
 	list *widget.List
-	sq   app.CharacterSkillqueue
+	sq   *app.CharacterSkillqueue
 	top  *widget.Label
 	u    *BaseUI
 }
@@ -117,7 +117,7 @@ func (a *CharacterSkillQueue) makeSkillQueue() *widget.List {
 func (a *CharacterSkillQueue) update() {
 	var t string
 	var i widget.Importance
-	err := a.sq.Update(a.u.cs, a.u.CurrentCharacterID())
+	err := a.sq.Update(a.u.cs, a.u.currentCharacterID())
 	if err != nil {
 		slog.Error("Failed to refresh skill queue UI", "err", err)
 		t = "ERROR"
@@ -152,7 +152,7 @@ func (a *CharacterSkillQueue) update() {
 }
 
 func (a *CharacterSkillQueue) makeTopText(total optional.Optional[time.Duration]) (string, widget.Importance) {
-	hasData := a.u.scs.CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionSkillqueue)
+	hasData := a.u.scs.CharacterSectionExists(a.u.currentCharacterID(), app.SectionSkillqueue)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

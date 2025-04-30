@@ -33,20 +33,19 @@ type CharacterCommunications struct {
 	widget.BaseWidget
 
 	Detail        *fyne.Container
-	Notifications fyne.CanvasObject
+	Notifications *fyne.Container
 	OnSelected    func()
 	OnUpdate      func(count optional.Optional[int])
 	Toolbar       *widget.Toolbar
 
-	current            *app.CharacterNotification
-	folderList         *widget.List
-	folders            []NotificationFolder
-	foldersTop         *widget.Label
-	notificationList   *widget.List
-	notifications      []*app.CharacterNotification
-	notificationsTop   *widget.Label
-	notificationsCount optional.Optional[int]
-	u                  *BaseUI
+	current          *app.CharacterNotification
+	folderList       *widget.List
+	folders          []NotificationFolder
+	foldersTop       *widget.Label
+	notificationList *widget.List
+	notifications    []*app.CharacterNotification
+	notificationsTop *widget.Label
+	u                *BaseUI
 }
 
 func NewCharacterCommunications(u *BaseUI) *CharacterCommunications {
@@ -181,129 +180,6 @@ func (a *CharacterCommunications) makeNotificationList() *widget.List {
 	return l
 }
 
-func (a *CharacterCommunications) makeToolbar() *widget.Toolbar {
-	toolbar := widget.NewToolbar(
-		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
-			if a.current == nil {
-				return
-			}
-			a.u.App().Clipboard().SetContent(a.current.String())
-		}),
-	)
-	return toolbar
-}
-
-func (a *CharacterCommunications) update() {
-	a.notifications = make([]*app.CharacterNotification, 0)
-	fyne.Do(func() {
-		a.notificationList.Refresh()
-		a.notificationList.UnselectAll()
-		a.notificationsTop.SetText("")
-		a.clearDetail()
-	})
-
-	var groupCounts map[app.NotificationGroup][]int
-	if characterID := a.u.CurrentCharacterID(); characterID != 0 {
-		var err error
-		groupCounts, err = a.u.cs.CountNotifications(context.Background(), characterID)
-		if err != nil {
-			slog.Error("communications update", "error", err)
-		}
-	}
-
-	groups := make([]NotificationFolder, 0)
-	var unreadCount, totalCount optional.Optional[int]
-	for _, g := range app.NotificationGroups() {
-		nf := NotificationFolder{
-			group: g,
-			Name:  g.String(),
-		}
-		gc, ok := groupCounts[g]
-		if ok {
-			nf.Total.Set(gc[0])
-			nf.Unread.Set(gc[1])
-			totalCount.Set(totalCount.ValueOrZero() + gc[0])
-			unreadCount.Set(unreadCount.ValueOrZero() + gc[1])
-		}
-		if nf.Total.ValueOrZero() > 0 {
-			groups = append(groups, nf)
-		}
-	}
-	slices.SortFunc(groups, func(a, b NotificationFolder) int {
-		return cmp.Compare(a.Name, b.Name)
-	})
-	if unreadCount.ValueOrZero() > 0 {
-		groups = slices.Insert(groups, 0, NotificationFolder{
-			group:  app.GroupUnread,
-			Name:   "Unread",
-			Unread: unreadCount,
-		})
-	}
-	groups = append(groups, NotificationFolder{
-		group:  app.GroupAll,
-		Name:   "All",
-		Unread: unreadCount,
-	})
-	a.notificationsCount = totalCount
-	a.folders = groups
-	a.foldersTop.Text, a.foldersTop.Importance = a.makeFolderTopText()
-	fyne.Do(func() {
-		a.folderList.Refresh()
-		a.folderList.UnselectAll()
-		a.foldersTop.Refresh()
-	})
-	if a.OnUpdate != nil {
-		a.OnUpdate(unreadCount)
-	}
-}
-
-func (a *CharacterCommunications) makeFolderTopText() (string, widget.Importance) {
-	hasData := a.u.scs.CharacterSectionExists(a.u.CurrentCharacterID(), app.SectionImplants)
-	if !hasData {
-		return "Waiting for data to load...", widget.WarningImportance
-	}
-	return fmt.Sprintf("%s messages", ihumanize.OptionalComma(a.notificationsCount, "?")), widget.MediumImportance
-}
-
-func (a *CharacterCommunications) resetCurrentFolder() {
-	a.setCurrentFolder(app.GroupUnread)
-}
-
-func (a *CharacterCommunications) setCurrentFolder(nc app.NotificationGroup) {
-	ctx := context.Background()
-	characterID := a.u.CurrentCharacterID()
-	var notifications []*app.CharacterNotification
-	var err error
-	switch nc {
-	case app.GroupAll:
-		notifications, err = a.u.cs.ListNotificationsAll(ctx, characterID)
-	case app.GroupUnread:
-		notifications, err = a.u.cs.ListNotificationsUnread(ctx, characterID)
-	default:
-		notifications, err = a.u.cs.ListNotificationsTypes(ctx, characterID, nc)
-	}
-	a.notifications = notifications
-	var top string
-	var importance widget.Importance
-	if err != nil {
-		slog.Error("communications set group", "characterID", characterID, "error", err)
-		top = "Something went wrong"
-		importance = widget.DangerImportance
-	} else {
-		top = fmt.Sprintf("%s • %s messages", nc.String(), humanize.Comma(int64(len(notifications))))
-	}
-	a.notificationsTop.Text = top
-	a.notificationsTop.Importance = importance
-	a.notificationsTop.Refresh()
-	a.Notifications.Refresh()
-}
-
-func (a *CharacterCommunications) clearDetail() {
-	a.Detail.RemoveAll()
-	a.Toolbar.Hide()
-	a.current = nil
-}
-
 // TODO: Refactor to avoid recreating the container every time
 func (a *CharacterCommunications) setDetail(n *app.CharacterNotification) {
 	if n.RecipientName == "" && a.u.hasCharacter() {
@@ -328,4 +204,129 @@ func (a *CharacterCommunications) setDetail(n *app.CharacterNotification) {
 	a.Detail.Add(body)
 	a.current = n
 	a.Toolbar.Show()
+}
+
+func (a *CharacterCommunications) makeToolbar() *widget.Toolbar {
+	toolbar := widget.NewToolbar(
+		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
+			if a.current == nil {
+				return
+			}
+			a.u.App().Clipboard().SetContent(a.current.String())
+		}),
+	)
+	return toolbar
+}
+
+func (a *CharacterCommunications) update() {
+	var err error
+	characterID := a.u.currentCharacterID()
+	hasData := a.u.scs.CharacterSectionExists(a.u.currentCharacterID(), app.SectionNotifications)
+	groups := make([]NotificationFolder, 0)
+	var unreadCount, totalCount optional.Optional[int]
+	if characterID != 0 && hasData {
+		groupCounts, err2 := a.u.cs.CountNotifications(context.Background(), characterID)
+		if err2 != nil {
+			slog.Error("communications update", "error", err)
+			err = err2
+		}
+
+		for _, g := range app.NotificationGroups() {
+			nf := NotificationFolder{
+				group: g,
+				Name:  g.String(),
+			}
+			gc, ok := groupCounts[g]
+			if ok {
+				nf.Total.Set(gc[0])
+				nf.Unread.Set(gc[1])
+				totalCount.Set(totalCount.ValueOrZero() + gc[0])
+				unreadCount.Set(unreadCount.ValueOrZero() + gc[1])
+			}
+			if nf.Total.ValueOrZero() > 0 {
+				groups = append(groups, nf)
+			}
+		}
+		slices.SortFunc(groups, func(a, b NotificationFolder) int {
+			return cmp.Compare(a.Name, b.Name)
+		})
+		if unreadCount.ValueOrZero() > 0 {
+			groups = slices.Insert(groups, 0, NotificationFolder{
+				group:  app.GroupUnread,
+				Name:   "Unread",
+				Unread: unreadCount,
+			})
+		}
+		groups = append(groups, NotificationFolder{
+			group:  app.GroupAll,
+			Name:   "All",
+			Unread: unreadCount,
+		})
+	}
+	t, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
+		return fmt.Sprintf("%s messages", ihumanize.OptionalComma(totalCount, "?")), widget.MediumImportance
+	})
+	a.resetCurrentFolder()
+	fyne.Do(func() {
+		a.clearDetail()
+		a.folders = groups
+		a.foldersTop.Text, a.foldersTop.Importance = t, i
+		a.foldersTop.Refresh()
+		a.folderList.Refresh()
+		a.folderList.UnselectAll()
+	})
+	if a.OnUpdate != nil {
+		a.OnUpdate(unreadCount)
+	}
+}
+
+func (a *CharacterCommunications) resetCurrentFolder() {
+	a.setCurrentFolder(app.GroupUnread)
+	fyne.Do(func() {
+		a.notificationList.UnselectAll()
+	})
+}
+
+func (a *CharacterCommunications) setCurrentFolder(nc app.NotificationGroup) {
+	var err error
+	characterID := a.u.currentCharacterID()
+	notifications := make([]*app.CharacterNotification, 0)
+	hasData := a.u.scs.CharacterSectionExists(a.u.currentCharacterID(), app.SectionNotifications)
+	if hasData {
+		var err2 error
+		var n []*app.CharacterNotification
+		ctx := context.Background()
+		switch nc {
+		case app.GroupAll:
+			n, err2 = a.u.cs.ListNotificationsAll(ctx, characterID)
+		case app.GroupUnread:
+			n, err2 = a.u.cs.ListNotificationsUnread(ctx, characterID)
+		default:
+			n, err2 = a.u.cs.ListNotificationsTypes(ctx, characterID, nc)
+		}
+		if err2 != nil {
+			slog.Error("communications set group", "characterID", characterID, "error", err2)
+		} else {
+			notifications = n
+			err = err2
+		}
+	}
+	s, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
+		s := humanize.Comma(int64(len(notifications)))
+		return fmt.Sprintf("%s • %s messages", nc.String(), s), widget.MediumImportance
+	})
+	fyne.Do(func() {
+		a.notificationsTop.Text, a.notificationsTop.Importance = s, i
+		a.notificationsTop.Refresh()
+	})
+	fyne.Do(func() {
+		a.notifications = notifications
+		a.notificationList.Refresh()
+	})
+}
+
+func (a *CharacterCommunications) clearDetail() {
+	a.Detail.RemoveAll()
+	a.Toolbar.Hide()
+	a.current = nil
 }

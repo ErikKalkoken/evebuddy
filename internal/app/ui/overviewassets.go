@@ -52,16 +52,14 @@ type assetSearchRow struct {
 type OverviewAssets struct {
 	widget.BaseWidget
 
-	assetCollection assetcollection.AssetCollection
-	assets          []*assetSearchRow
-	assetsFiltered  []*assetSearchRow
-	body            fyne.CanvasObject
-	characterNames  map[int32]string
-	colSort         []sortDir
-	found           *widget.Label
-	entry           *widget.Entry
-	total           *widget.Label
-	u               *BaseUI
+	assets         []*assetSearchRow
+	assetsFiltered []*assetSearchRow
+	body           fyne.CanvasObject
+	colSort        []sortDir
+	found          *widget.Label
+	entry          *widget.Entry
+	total          *widget.Label
+	u              *BaseUI
 }
 
 func NewOverviewAssets(u *BaseUI) *OverviewAssets {
@@ -253,10 +251,10 @@ func (a *OverviewAssets) update() {
 	var t string
 	var i widget.Importance
 	characterCount := a.characterCount()
-	hasData, err := a.loadData()
+	assets, hasData, err := a.loadData(a.u.services())
 	if err != nil {
 		slog.Error("Failed to refresh asset search data", "err", err)
-		t = "ERROR"
+		t = "ERROR: " + a.u.humanizeError(err)
 		i = widget.DangerImportance
 	} else if !hasData {
 		t = "No data"
@@ -274,38 +272,39 @@ func (a *OverviewAssets) update() {
 		a.total.Refresh()
 	})
 	fyne.Do(func() {
+		a.assetsFiltered = assets
+		a.assets = assets
 		a.body.Refresh()
 	})
 }
 
-func (a *OverviewAssets) loadData() (bool, error) {
+func (*OverviewAssets) loadData(s services) ([]*assetSearchRow, bool, error) {
 	ctx := context.Background()
-	cc, err := a.u.cs.ListCharactersShort(ctx)
+	cc, err := s.cs.ListCharactersShort(ctx)
 	if err != nil {
-		return false, err
+		return nil, false, err
 	}
 	if len(cc) == 0 {
-		return false, nil
+		return nil, false, nil
 	}
-	m2 := make(map[int32]string)
+	characterNames := make(map[int32]string)
 	for _, o := range cc {
-		m2[o.ID] = o.Name
+		characterNames[o.ID] = o.Name
 	}
-	a.characterNames = m2
-	assets, err := a.u.cs.ListAllAssets(ctx)
+	assets, err := s.cs.ListAllAssets(ctx)
 	if err != nil {
-		return false, err
+		return nil, false, err
 	}
-	locations, err := a.u.eus.ListLocations(ctx)
+	locations, err := s.eus.ListLocations(ctx)
 	if err != nil {
-		return false, err
+		return nil, false, err
 	}
-	a.assetCollection = assetcollection.New(assets, locations)
+	assetCollection := assetcollection.New(assets, locations)
 	rows := make([]*assetSearchRow, len(assets))
 	for i, ca := range assets {
 		r := &assetSearchRow{
 			characterID:   ca.CharacterID,
-			characterName: a.characterNames[ca.CharacterID],
+			characterName: characterNames[ca.CharacterID],
 			groupID:       ca.Type.Group.ID,
 			groupName:     ca.Type.Group.Name,
 			itemID:        ca.ItemID,
@@ -321,7 +320,7 @@ func (a *OverviewAssets) loadData() (bool, error) {
 			r.quantityDisplay = humanize.Comma(int64(ca.Quantity))
 			r.quantity = int(ca.Quantity)
 		}
-		location, ok := a.assetCollection.AssetParentLocation(ca.ItemID)
+		location, ok := assetCollection.AssetParentLocation(ca.ItemID)
 		if ok {
 			r.location = location
 		}
@@ -335,9 +334,7 @@ func (a *OverviewAssets) loadData() (bool, error) {
 		r.priceDisplay = price
 		rows[i] = r
 	}
-	a.assetsFiltered = rows
-	a.assets = rows
-	return true, nil
+	return rows, true, nil
 }
 
 func (a *OverviewAssets) updateFoundInfo() {
