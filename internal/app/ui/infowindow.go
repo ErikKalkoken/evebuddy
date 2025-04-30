@@ -411,6 +411,7 @@ func (a *allianceInfo) update() error {
 		}
 		fyne.Do(func() {
 			a.members.set(entityItemsFromEveEntities(members)...)
+			a.tabs.Refresh()
 		})
 	}()
 	o, err := a.iw.u.eus.FetchAlliance(ctx, a.id)
@@ -448,6 +449,7 @@ func (a *allianceInfo) update() error {
 	fyne.Do(func() {
 		a.name.SetText(o.Name)
 		a.attributes.set(attributes)
+		a.tabs.Refresh()
 	})
 	return nil
 }
@@ -592,11 +594,11 @@ func (a *characterInfo) update() error {
 			return
 		}
 		items := xslices.Map(history, historyItem2EntityItem)
+		duration := humanize.RelTime(history[0].StartDate, time.Now(), "", "")
 		fyne.Do(func() {
 			a.employeeHistory.set(items...)
-			current := history[0]
-			duration := humanize.RelTime(current.StartDate, time.Now(), "", "")
 			a.membership.SetText(fmt.Sprintf("for %s", duration))
+			a.tabs.Refresh()
 		})
 	}()
 	o, err := a.iw.u.eus.GetOrCreateCharacterESI(ctx, a.id)
@@ -630,6 +632,7 @@ func (a *characterInfo) update() error {
 	fyne.Do(func() {
 		a.bio.SetText(o.DescriptionPlain())
 		a.description.SetText(o.RaceDescription())
+		a.tabs.Refresh()
 	})
 	fyne.Do(func() {
 		if !o.HasAlliance() {
@@ -669,6 +672,7 @@ func (a *characterInfo) update() error {
 	}
 	fyne.Do(func() {
 		a.attributes.set(attributes)
+		a.tabs.Refresh()
 	})
 	return nil
 }
@@ -743,6 +747,7 @@ func (a *constellationInfo) update() error {
 			attributeList := newAttributeList(a.iw, []attributeItem{x}...)
 			attributesTab := container.NewTabItem("Attributes", attributeList)
 			a.tabs.Append(attributesTab)
+			a.tabs.Refresh()
 		}
 	})
 	go func() {
@@ -754,6 +759,7 @@ func (a *constellationInfo) update() error {
 		xx := xslices.Map(oo, newEntityItemFromEveSolarSystem)
 		fyne.Do(func() {
 			a.systems.set(xx...)
+			a.tabs.Refresh()
 		})
 	}()
 	return nil
@@ -859,11 +865,50 @@ func (a *corporationInfo) update() error {
 	if err != nil {
 		return err
 	}
-	attributes := a.makeAttributes(o)
+	attributes := make([]attributeItem, 0)
+	if o.Ceo != nil {
+		attributes = append(attributes, newAttributeItem("CEO", o.Ceo))
+	}
+	if o.Creator != nil {
+		attributes = append(attributes, newAttributeItem("Founder", o.Creator))
+	}
+	if o.Alliance != nil {
+		attributes = append(attributes, newAttributeItem("Alliance", o.Alliance))
+	}
+	if o.Ticker != "" {
+		attributes = append(attributes, newAttributeItem("Ticker Name", o.Ticker))
+	}
+	if o.Faction != nil {
+		attributes = append(attributes, newAttributeItem("Faction", o.Faction))
+	}
+	if o.Shares != 0 {
+		attributes = append(attributes, newAttributeItem("Shares", o.Shares))
+	}
+	if o.MemberCount != 0 {
+		attributes = append(attributes, newAttributeItem("Member Count", o.MemberCount))
+	}
+	if o.TaxRate != 0 {
+		attributes = append(attributes, newAttributeItem("ISK Tax Rate", o.TaxRate))
+	}
+	attributes = append(attributes, newAttributeItem("War Eligability", o.WarEligible))
+	if o.URL != "" {
+		u, err := url.ParseRequestURI(o.URL)
+		if err == nil && u.Host != "" {
+			attributes = append(attributes, newAttributeItem("URL", u))
+		}
+	}
+	if a.iw.u.IsDeveloperMode() {
+		x := newAttributeItem("EVE ID", o.ID)
+		x.Action = func(_ any) {
+			a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
+		}
+		attributes = append(attributes, x)
+	}
 	fyne.Do(func() {
 		a.name.SetText(o.Name)
 		a.description.SetText(o.DescriptionPlain())
 		a.attributes.set(attributes)
+		a.tabs.Refresh()
 	})
 	fyne.Do(func() {
 		if o.Alliance == nil {
@@ -919,52 +964,10 @@ func (a *corporationInfo) update() error {
 		items = append(items, newEntityItem(0, "Corporation Founded", founded, infoNotSupported))
 		fyne.Do(func() {
 			a.allianceHistory.set(items...)
+			a.tabs.Refresh()
 		})
 	}()
 	return nil
-}
-
-func (a *corporationInfo) makeAttributes(o *app.EveCorporation) []attributeItem {
-	attributes := make([]attributeItem, 0)
-	if o.Ceo != nil {
-		attributes = append(attributes, newAttributeItem("CEO", o.Ceo))
-	}
-	if o.Creator != nil {
-		attributes = append(attributes, newAttributeItem("Founder", o.Creator))
-	}
-	if o.Alliance != nil {
-		attributes = append(attributes, newAttributeItem("Alliance", o.Alliance))
-	}
-	if o.Ticker != "" {
-		attributes = append(attributes, newAttributeItem("Ticker Name", o.Ticker))
-	}
-	if o.Faction != nil {
-		attributes = append(attributes, newAttributeItem("Faction", o.Faction))
-	}
-	if o.Shares != 0 {
-		attributes = append(attributes, newAttributeItem("Shares", o.Shares))
-	}
-	if o.MemberCount != 0 {
-		attributes = append(attributes, newAttributeItem("Member Count", o.MemberCount))
-	}
-	if o.TaxRate != 0 {
-		attributes = append(attributes, newAttributeItem("ISK Tax Rate", o.TaxRate))
-	}
-	attributes = append(attributes, newAttributeItem("War Eligability", o.WarEligible))
-	if o.URL != "" {
-		u, err := url.ParseRequestURI(o.URL)
-		if err == nil && u.Host != "" {
-			attributes = append(attributes, newAttributeItem("URL", u))
-		}
-	}
-	if a.iw.u.IsDeveloperMode() {
-		x := newAttributeItem("EVE ID", o.ID)
-		x.Action = func(_ any) {
-			a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
-		}
-		attributes = append(attributes, x)
-	}
-	return attributes
 }
 
 // locationInfo shows public information about a character.
@@ -1079,6 +1082,7 @@ func (a *locationInfo) update() error {
 			description = o.Type.Name
 		}
 		a.description.SetText(description)
+		a.tabs.Refresh()
 	})
 
 	if a.iw.u.IsDeveloperMode() {
@@ -1099,6 +1103,7 @@ func (a *locationInfo) update() error {
 			newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.ToEveEntity(), ""),
 			newEntityItemFromEveSolarSystem(o.SolarSystem),
 		)
+		a.tabs.Refresh()
 	})
 	if o.Variant() == app.EveLocationStation {
 		services := container.NewTabItem("Services", widget.NewLabel(""))
@@ -1124,7 +1129,6 @@ func (a *locationInfo) update() error {
 			})
 		}()
 	}
-
 	return nil
 }
 
@@ -1190,10 +1194,6 @@ func (a *raceInfo) update() error {
 			})
 		}()
 	}
-	fyne.Do(func() {
-		a.name.SetText(o.Name)
-		a.description.SetText(o.Description)
-	})
 	if a.iw.u.IsDeveloperMode() {
 		x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
 		x.Action = func(v any) {
@@ -1205,6 +1205,11 @@ func (a *raceInfo) update() error {
 			a.tabs.Append(attributesTab)
 		})
 	}
+	fyne.Do(func() {
+		a.name.SetText(o.Name)
+		a.description.SetText(o.Description)
+		a.tabs.Refresh()
+	})
 	return nil
 }
 
@@ -1277,21 +1282,21 @@ func (a *regionInfo) update() error {
 	if err != nil {
 		return err
 	}
-	fyne.Do(func() {
-		a.name.SetText(o.Name)
-		a.description.SetText(o.DescriptionPlain())
-	})
-	fyne.Do(func() {
-		if !a.iw.u.IsDeveloperMode() {
-			return
-		}
+	if !a.iw.u.IsDeveloperMode() {
 		x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
 		x.Action = func(v any) {
 			a.iw.u.App().Clipboard().SetContent(v.(string))
 		}
 		attributeList := newAttributeList(a.iw, []attributeItem{x}...)
 		attributesTab := container.NewTabItem("Attributes", attributeList)
-		a.tabs.Append(attributesTab)
+		fyne.Do(func() {
+			a.tabs.Append(attributesTab)
+		})
+	}
+	fyne.Do(func() {
+		a.name.SetText(o.Name)
+		a.description.SetText(o.DescriptionPlain())
+		a.tabs.Refresh()
 	})
 	go func() {
 		oo, err := a.iw.u.eus.GetRegionConstellationsESI(ctx, o.ID)
@@ -1302,6 +1307,7 @@ func (a *regionInfo) update() error {
 		items := xslices.Map(oo, NewEntityItemFromEveEntity)
 		fyne.Do(func() {
 			a.constellations.set(items...)
+			a.tabs.Refresh()
 		})
 	}()
 	return nil
@@ -1401,6 +1407,17 @@ func (a *solarSystemInfo) update() error {
 	if err != nil {
 		return err
 	}
+	if a.iw.u.IsDeveloperMode() {
+		x := newAttributeItem("EVE ID", fmt.Sprint(a.id))
+		x.Action = func(v any) {
+			a.iw.u.App().Clipboard().SetContent(v.(string))
+		}
+		attributeList := newAttributeList(a.iw, []attributeItem{x}...)
+		attributesTab := container.NewTabItem("Attributes", attributeList)
+		fyne.Do(func() {
+			a.tabs.Append(attributesTab)
+		})
+	}
 	fyne.Do(func() {
 		a.name.SetText(o.Name)
 		a.region.SetText(o.Constellation.Region.Name)
@@ -1414,33 +1431,16 @@ func (a *solarSystemInfo) update() error {
 		a.security.Text = o.SecurityStatusDisplay()
 		a.security.Importance = o.SecurityType().ToImportance()
 		a.security.Refresh()
+		a.tabs.Refresh()
 	})
-
-	if a.iw.u.IsDeveloperMode() {
-		x := newAttributeItem("EVE ID", fmt.Sprint(a.id))
-		x.Action = func(v any) {
-			a.iw.u.App().Clipboard().SetContent(v.(string))
-		}
-		attributeList := newAttributeList(a.iw, []attributeItem{x}...)
-		attributesTab := container.NewTabItem("Attributes", attributeList)
-		fyne.Do(func() {
-			a.tabs.Append(attributesTab)
-		})
-	}
-
-	a.tabs.Refresh()
-
 	go func() {
 		starID, planets, stargateIDs, stations, structures, err := a.iw.u.eus.GetSolarSystemInfoESI(ctx, a.id)
 		if err != nil {
 			slog.Error("solar system info: Failed to load system info", "solarSystem", a.id, "error", err)
 			return
 		}
-		items := entityItemsFromEveEntities(stations)
-		fyne.Do(func() {
-			a.stations.set(items...)
-		})
-		oo := xslices.Map(structures, func(x *app.EveLocation) entityItem {
+		stationItems := entityItemsFromEveEntities(stations)
+		structureItems := xslices.Map(structures, func(x *app.EveLocation) entityItem {
 			return newEntityItem(
 				x.ID,
 				x.Name,
@@ -1449,9 +1449,10 @@ func (a *solarSystemInfo) update() error {
 			)
 		})
 		fyne.Do(func() {
-			a.structures.set(oo...)
+			a.stations.set(stationItems...)
+			a.structures.set(structureItems...)
+			a.tabs.Refresh()
 		})
-
 		id, err := a.iw.u.eus.GetStarTypeID(ctx, starID)
 		if err != nil {
 			return
@@ -1475,6 +1476,7 @@ func (a *solarSystemInfo) update() error {
 			items := xslices.Map(ss, newEntityItemFromEveSolarSystem)
 			fyne.Do(func() {
 				a.stargates.set(items...)
+				a.tabs.Refresh()
 			})
 		}()
 
@@ -1487,6 +1489,7 @@ func (a *solarSystemInfo) update() error {
 			items := xslices.Map(pp, newEntityItemFromEvePlanet)
 			fyne.Do(func() {
 				a.planets.set(items...)
+				a.tabs.Refresh()
 			})
 		}()
 
