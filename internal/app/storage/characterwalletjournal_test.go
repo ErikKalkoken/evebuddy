@@ -107,7 +107,7 @@ func TestWalletJournalEntry(t *testing.T) {
 		got, err := r.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			want := set.New(e1.RefID, e2.RefID, e3.RefID)
+			want := set.Of(e1.RefID, e2.RefID, e3.RefID)
 			assert.Equal(t, want, got)
 		}
 	})

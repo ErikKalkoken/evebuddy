@@ -92,10 +92,10 @@ func (st *Storage) MissingEveLocations(ctx context.Context, ids []int64) ([]int6
 	if err != nil {
 		return nil, err
 	}
-	current := set.NewFromSlice(currentIDs)
-	incoming := set.NewFromSlice(ids)
-	missing := incoming.Difference(current)
-	return missing.ToSlice(), nil
+	current := set.Of(currentIDs...)
+	incoming := set.Of(ids...)
+	missing := set.Difference(incoming, current)
+	return missing.Slice(), nil
 }
 
 // TODO: Refactor for better performance

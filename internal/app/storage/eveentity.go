@@ -137,7 +137,7 @@ func (st *Storage) ListEveEntityIDs(ctx context.Context) (set.Set[int32], error)
 	if err != nil {
 		return set.Set[int32]{}, fmt.Errorf("list eve entity id: %w", err)
 	}
-	ids2 := set.NewFromSlice(convertNumericSlice[int32](ids))
+	ids2 := set.Of(convertNumericSlice[int32](ids)...)
 	return ids2, nil
 }
 
@@ -183,13 +183,13 @@ func (st *Storage) ListEveEntitiesForIDs(ctx context.Context, ids []int32) ([]*a
 // MissingEveEntityIDs returns the IDs, which are have no respective EveEntity in the database.
 // IDs with value 0 are ignored.
 func (st *Storage) MissingEveEntityIDs(ctx context.Context, ids []int32) (set.Set[int32], error) {
-	incoming := set.NewFromSlice(ids)
-	incoming.Discard(0)
+	incoming := set.Of(ids...)
+	incoming.Delete(0)
 	current, err := st.ListEveEntityIDs(ctx)
 	if err != nil {
-		return set.New[int32](), err
+		return set.Of[int32](), err
 	}
-	missing := incoming.Difference(current)
+	missing := set.Difference(incoming, current)
 	return missing, nil
 }
 

@@ -566,7 +566,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.ElementsMatch(t, ids, ids2.ToSlice())
+			assert.ElementsMatch(t, ids, ids2.Slice())
 		}
 	})
 	t.Run("should store unresolvable IDs accordingly", func(t *testing.T) {

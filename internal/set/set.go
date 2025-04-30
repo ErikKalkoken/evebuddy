@@ -1,108 +1,151 @@
-// Package set provides a generic set container type.
+// Package set defines a Set type that holds a set of elements.
+//
+// Key features:
+//   - Type safe
+//   - Feature complete
+//   - Usable zero value
+//   - Supports standard iterators
+//   - Prevents accidental comparison with == operator
+//   - Ideomatic API (inspired by Go proposal for new set type)
+//   - 100% test coverage
 package set
 
 import (
-	"errors"
 	"fmt"
 	"iter"
 	"maps"
+	"slices"
+	"strings"
 )
 
-var ErrNotFound = errors.New("not found")
-
-// Set is a container for a set of values of type T.
+// A Set is an unordered collection of unique elements.
+// The zero value of a Set is an empty set ready to use.
 //
-// The zero value of Set is an empty set and ready for use.
-//
-// For comparing sets you must use the[Set.Equal] method.
-//
-// Sets must not be used concurrently.
-type Set[T comparable] struct {
-	m map[T]struct{}
+// Set is not safe for current use.
+type Set[E comparable] struct {
+	m map[E]struct{}
+	_ nocmp
 }
 
-// New returns a new set.
-// It can optionally be initialized with a list of values vals.
-func New[T comparable](vals ...T) Set[T] {
-	s := Set[T]{}
-	s.init()
-	for _, v := range vals {
-		s.m[v] = struct{}{}
-	}
-	return s
-}
-
-// NewFromSlice returns a new set created from the elements of slice x.
-func NewFromSlice[T comparable](x []T) Set[T] {
-	return New(x...)
-}
-
-// Collect returns a new set created from the elements of iterable seq.
-func Collect[T comparable](seq iter.Seq[T]) Set[T] {
-	s := New[T]()
-	for v := range seq {
-		s.Add(v)
+// Of returns a set of the elements v.
+func Of[E comparable](v ...E) Set[E] {
+	var s Set[E]
+	for _, w := range v {
+		s.Add(w)
 	}
 	return s
 }
 
 // Add adds element v to set s.
-func (s *Set[T]) Add(v T) {
+func (s *Set[E]) Add(v E) {
 	if s.m == nil {
-		s.init()
+		s.m = make(map[E]struct{})
 	}
 	s.m[v] = struct{}{}
 }
 
-// init initializes set s.
-func (s *Set[T]) init() {
-	s.m = make(map[T]struct{})
+// AddSeq adds the values from seq to s.
+func (s *Set[E]) AddSeq(seq iter.Seq[E]) {
+	for v := range seq {
+		s.Add(v)
+	}
 }
 
 // Clear removes all elements from set s.
-func (s Set[T]) Clear() {
-	if s.m == nil {
-		return
-	}
-	for k := range s.m {
-		delete(s.m, k)
-	}
+func (s Set[E]) Clear() {
+	clear(s.m)
 }
 
-// Clone returns a new set, which is a clone clone of a set s.
-func (s Set[T]) Clone() Set[T] {
-	return New(s.ToSlice()...)
+// Clone returns a new set, which contains a shallow copy of all elements of set s.
+func (s Set[E]) Clone() Set[E] {
+	return Set[E]{m: maps.Clone(s.m)}
 }
 
 // Contains reports whether element v is in set s.
-func (s Set[T]) Contains(v T) bool {
+func (s Set[E]) Contains(v E) bool {
 	_, ok := s.m[v]
 	return ok
 }
 
-// Difference returns a new set with the difference between the sets s and u.
-func (s Set[T]) Difference(u Set[T]) Set[T] {
-	n := New[T]()
-	for v := range s.m {
-		if !u.Contains(v) {
-			n.Add(v)
+// ContainsAny reports whether any of the elements in seq are in s.
+func (s *Set[E]) ContainsAny(seq iter.Seq[E]) bool {
+	for v := range seq {
+		if _, ok := s.m[v]; ok {
+			return true
 		}
 	}
-	return n
+	return false
 }
 
-// Discard discards element v from set s if it is present.
-// It does nothing when s does not contain v or when s is empty.
-func (s Set[T]) Discard(v T) {
+// ContainsAll reports whether all of the elements in seq are in s.
+func (s *Set[E]) ContainsAll(seq iter.Seq[E]) bool {
+	for v := range seq {
+		if _, ok := s.m[v]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// ContainsFunc reports whether at least one element e of s satisfies f(e).
+func (s *Set[E]) ContainsFunc(f func(E) bool) bool {
+	if f == nil || len(s.m) == 0 {
+		return false
+	}
+	for v := range s.m {
+		if f(v) {
+			return true
+		}
+	}
+	return false
+}
+
+// Delete removes element v from set s.
+// It reports whether the element was in the set.
+// It does nothing when the set does not contain the element.
+func (s Set[E]) Delete(v E) bool {
+	ln := len(s.m)
 	delete(s.m, v)
+	return len(s.m) < ln
+}
+
+// DeleteFunc deletes the elements in s for which del returns true.
+// It returns the numnber of deleted elements.
+func (s *Set[E]) DeleteFunc(del func(E) bool) int {
+	if del == nil {
+		return 0
+	}
+	var c int
+	for v := range s.m {
+		if del(v) {
+			delete(s.m, v)
+			c++
+		}
+	}
+	return c
+}
+
+// DeleteSeq deletes the elements in seq from s.
+// Elements that are not present are ignored.
+// It returns the numnber of deleted elements.
+func (s *Set[E]) DeleteSeq(seq iter.Seq[E]) int {
+	var c int
+	for v := range seq {
+		_, ok := s.m[v]
+		if ok {
+			delete(s.m, v)
+			c++
+		}
+	}
+	return c
 }
 
 // Equal reports whether sets s and u are equal.
-func (s Set[T]) Equal(u Set[T]) bool {
-	if s.Size() != u.Size() {
+func (s Set[E]) Equal(u Set[E]) bool {
+	if len(s.m) != len(u.m) {
 		return false
 	}
-	if s.IsEmpty() && u.IsEmpty() {
+	if len(s.m) == 0 && len(u.m) == 0 {
 		return true
 	}
 	for v := range s.m {
@@ -113,118 +156,89 @@ func (s Set[T]) Equal(u Set[T]) bool {
 	return true
 }
 
-// Intersect returns a new set which contains the intersection between the sets s and u.
-func (s Set[T]) Intersect(u Set[T]) Set[T] {
-	n := New[T]()
+// Size returns the number of elements in set s. An empty set returns 0.
+func (s Set[E]) Size() int {
+	return len(s.m)
+}
+
+// String returns a string representation of set s.
+// Sets are printed with curly brackets, e.g. {1 2}.
+func (s Set[E]) String() string {
+	var p []string
+	for v := range s.All() {
+		p = append(p, fmt.Sprint(v))
+	}
+	return "{" + strings.Join(p, " ") + "}"
+}
+
+// Slice creates a new slice from the elements of set s and returns it.
+//
+// Note that the order of elements is undefined.
+func (s Set[E]) Slice() []E {
+	return slices.Collect(s.All())
+}
+
+// All returns on iterator over all elements of set s.
+//
+// Note that the order of elements is undefined.
+func (s Set[E]) All() iter.Seq[E] {
+	return maps.Keys(s.m)
+}
+
+// Collect returns a new [Set] created from the elements of iterable seq.
+func Collect[E comparable](seq iter.Seq[E]) Set[E] {
+	var s Set[E]
+	for v := range seq {
+		s.Add(v)
+	}
+	return s
+}
+
+// Difference constructs a new [Set] containing the elements of s that are not present in others.
+func Difference[E comparable](s Set[E], others ...Set[E]) Set[E] {
+	if len(others) == 0 {
+		return s
+	}
+	var n Set[E]
+	o := Union(others...)
 	for v := range s.m {
-		if u.Contains(v) {
+		if !o.Contains(v) {
 			n.Add(v)
 		}
 	}
 	return n
 }
 
-// IsDisjoint reports whether set s has any elements in common with set u.
-func (s Set[T]) IsDisjoint(u Set[T]) bool {
-	x := s.Intersect(u)
-	return x.Size() == 0
-}
-
-// IsEmpty reports whether set s is empty.
-func (s Set[T]) IsEmpty() bool {
-	return s.Size() == 0
-}
-
-// IsSubset reports whether set s is the subset of set u.
-func (s Set[T]) IsSubset(u Set[T]) bool {
-	x := s.Difference(u)
-	return x.Size() == 0
-}
-
-// IsSuperset reports whether set s is the superset of set u.
-func (s Set[T]) IsSuperset(u Set[T]) bool {
-	x := u.Difference(s)
-	return x.Size() == 0
-}
-
-// MustPop removes a random element from set s and returns it when s is not empty.
-// It panics if s is empty.
-func (s Set[T]) MustPop() T {
-	x, err := s.Pop()
-	if err != nil {
-		panic(err)
-	}
-	return x
-}
-
-// MustRemove removes element v from set s.
-// It panics if s does not contain v.
-func (s Set[T]) MustRemove(v T) {
-	err := s.Remove(v)
-	if err != nil {
-		panic(err)
-	}
-}
-
-// Pop removes a random element from set s and returns it when s is not empty.
-// When s is empty it returns [ErrNotFound].
-func (s Set[T]) Pop() (T, error) {
-	for v := range s.m {
-		delete(s.m, v)
-		return v, nil
-	}
-	var x T
-	return x, ErrNotFound
-}
-
-// Remove removes element v from set s.
-// Returns [ErrNotFound] if v is not present.
-func (s Set[T]) Remove(v T) error {
-	if !s.Contains(v) {
-		return ErrNotFound
-	}
-	s.Discard(v)
-	return nil
-}
-
-// Size returns the number of elements in set s. An empty set returns 0.
-func (s Set[T]) Size() int {
-	return len(s.m)
-}
-
-// String returns a string representation of set s.
-func (s Set[T]) String() string {
-	return fmt.Sprint(s.ToSlice())
-}
-
-// Difference returns a new set with the difference between the sets s and u.
-func (s Set[T]) SymetricDifference(u Set[T]) Set[T] {
-	return s.Union(u).Difference(s.Intersect(u))
-}
-
-// ToSlice creates a new slice from the elements of set s and returns it.
+// Intersection returns a new [Set] with elements common to all sets.
 //
-// Note that the order of elements is undefined.
-func (s Set[T]) ToSlice() []T {
-	slice := make([]T, 0, s.Size())
-	for v := range s.m {
-		slice = append(slice, v)
+// When less then 2 sets are provided they will be assumed to be empty.
+func Intersection[E comparable](sets ...Set[E]) Set[E] {
+	var n Set[E]
+	if len(sets) < 2 {
+		return n
 	}
-	return slice
-}
-
-// Union returns a new set containing the combined elements from the sets s and u.
-func (s Set[T]) Union(u Set[T]) Set[T] {
-	n := s.Clone()
-	for v := range u.m {
+L:
+	for v := range sets[0].m {
+		for _, s := range sets[1:] {
+			if !s.Contains(v) {
+				continue L
+			}
+		}
 		n.Add(v)
 	}
 	return n
 }
 
-// Values returns on iterator over all elements of set s.
-//
-// Note that the order of elements is undefined.
-func (s Set[T]) Values() iter.Seq[T] {
-	return maps.Keys(s.m)
+// Union returns a new [Set] with the elements of all sets.
+func Union[E comparable](sets ...Set[E]) Set[E] {
+	var n Set[E]
+	for _, s := range sets {
+		for v := range s.m {
+			n.Add(v)
+		}
+	}
+	return n
 }
+
+// nocmp is an uncomparable struct. Embed this inside another struct to make it uncomparable.
+type nocmp [0]func()

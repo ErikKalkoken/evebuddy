@@ -338,20 +338,20 @@ func TestUpdateMail(t *testing.T) {
 					}
 					labels, err := st.ListCharacterMailLabelsOrdered(ctx, c1.ID)
 					if assert.NoError(t, err) {
-						got := set.New[int32]()
+						got := set.Of[int32]()
 						for _, l := range labels {
 							got.Add(l.LabelID)
 						}
-						want := set.NewFromSlice(labelIDs)
+						want := set.Of(labelIDs...)
 						assert.True(t, want.Equal(got))
 					}
 					lists, err := st.ListCharacterMailListsOrdered(ctx, c2.ID)
 					if assert.NoError(t, err) {
-						got := set.New[int32]()
+						got := set.Of[int32]()
 						for _, l := range lists {
 							got.Add(l.ID)
 						}
-						want := set.New(m2.ID)
+						want := set.Of(m2.ID)
 						assert.True(t, want.Equal(got))
 					}
 				}
@@ -459,11 +459,11 @@ func TestUpdateMail(t *testing.T) {
 			}
 			labels, err := st.ListCharacterMailLabelsOrdered(ctx, c.ID)
 			if assert.NoError(t, err) {
-				got := set.New[int32]()
+				got := set.Of[int32]()
 				for _, l := range labels {
 					got.Add(l.LabelID)
 				}
-				want := set.New[int32](16, 32)
+				want := set.Of[int32](16, 32)
 				assert.Equal(t, want, got)
 			}
 		}
@@ -547,7 +547,7 @@ func TestNotifyCommunications(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now().UTC()
 	earliest := now.Add(-12 * time.Hour)
-	typesEnabled := set.New(string(evenotification.StructureUnderAttack))
+	typesEnabled := set.Of(string(evenotification.StructureUnderAttack))
 	cases := []struct {
 		name         string
 		typ          evenotification.Type

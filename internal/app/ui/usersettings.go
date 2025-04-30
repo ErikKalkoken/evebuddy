@@ -487,7 +487,7 @@ func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 						if on {
 							typesEnabled.Add(ntStr)
 						} else {
-							typesEnabled.Discard(ntStr)
+							typesEnabled.Delete(ntStr)
 						}
 						a.u.settings.SetNotificationTypesEnabled(typesEnabled)
 					},

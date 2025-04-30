@@ -84,11 +84,11 @@ func TestPlanetPin(t *testing.T) {
 		oo, err := r.ListPlanetPins(ctx, p.ID)
 		// then
 		if assert.NoError(t, err) {
-			got := set.New[int64]()
+			got := set.Of[int64]()
 			for _, o := range oo {
 				got.Add(o.ID)
 			}
-			want := set.New(x1.ID, x2.ID)
+			want := set.Of(x1.ID, x2.ID)
 			assert.Equal(t, want, got)
 		}
 	})

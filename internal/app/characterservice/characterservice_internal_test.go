@@ -182,7 +182,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 			assert.True(t, changed)
 			ids, err := st.ListCharacterAssetIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.ElementsMatch(t, []int64{1000000016835, 1000000016836}, ids.ToSlice())
+				assert.ElementsMatch(t, []int64{1000000016835, 1000000016836}, ids.Slice())
 			}
 		}
 	})
@@ -676,11 +676,11 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 			assert.True(t, changed)
 			oo, err := st.ListCharacterImplants(ctx, c.ID)
 			if assert.NoError(t, err) {
-				got := set.New[int32]()
+				got := set.Of[int32]()
 				for _, o := range oo {
 					got.Add(o.EveType.ID)
 				}
-				want := set.New(t1.ID, t2.ID)
+				want := set.Of(t1.ID, t2.ID)
 				assert.True(t, want.Equal(got))
 			}
 		}
@@ -1808,7 +1808,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 			assert.True(t, changed)
 			ids, err := st.ListCharacterSkillIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.ElementsMatch(t, []int32{41}, ids.ToSlice())
+				assert.ElementsMatch(t, []int32{41}, ids.Slice())
 			}
 		}
 	})

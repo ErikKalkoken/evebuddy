@@ -128,8 +128,8 @@ func (u *UI) removeFolders(ctx context.Context, pb *widget.ProgressBar) error {
 			slog.Info("Deleted directory", "path", p)
 		}
 	}
-	keys := set.NewFromSlice(settings.Keys())
-	for k := range keys.Values() {
+	keys := set.Of(settings.Keys()...)
+	for k := range keys.All() {
 		u.app.Preferences().RemoveValue(k)
 	}
 	slog.Info("Deleted setting keys", "count", keys.Size())

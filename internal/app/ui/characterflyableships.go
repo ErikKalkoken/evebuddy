@@ -212,8 +212,8 @@ func (a *CharacterFlyableShips) updateEntries() error {
 			ships = append(ships, o)
 		}
 	}
-	g := set.New[string]()
-	f := set.New[string]()
+	g := set.Of[string]()
+	f := set.Of[string]()
 	for _, o := range ships {
 		g.Add(o.Group.Name)
 		if o.CanFly {
@@ -222,9 +222,9 @@ func (a *CharacterFlyableShips) updateEntries() error {
 			f.Add(flyableCanNot)
 		}
 	}
-	groups := g.ToSlice()
+	groups := g.Slice()
 	slices.Sort(groups)
-	flyable := f.ToSlice()
+	flyable := f.Slice()
 	slices.Sort(flyable)
 	a.ships = ships
 	fyne.Do(func() {

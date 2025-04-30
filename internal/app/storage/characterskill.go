@@ -44,7 +44,7 @@ func (st *Storage) ListCharacterSkillIDs(ctx context.Context, characterID int32)
 	if err != nil {
 		return set.Set[int32]{}, fmt.Errorf("list skill ids for character %d: %w", characterID, err)
 	}
-	ids2 := set.NewFromSlice(convertNumericSlice[int32](ids1))
+	ids2 := set.Of(convertNumericSlice[int32](ids1)...)
 	return ids2, nil
 }
 

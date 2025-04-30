@@ -73,7 +73,7 @@ func TestWalletTransaction(t *testing.T) {
 		got, err := r.ListCharacterWalletTransactionIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			want := set.New(e1.TransactionID, e2.TransactionID, e3.TransactionID)
+			want := set.Of(e1.TransactionID, e2.TransactionID, e3.TransactionID)
 			assert.Equal(t, want, got)
 		}
 	})

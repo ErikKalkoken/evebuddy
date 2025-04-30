@@ -129,12 +129,13 @@ func (*OverviewLocations) fetchRows(s services) ([]*app.Character, int, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	locationIDs := set.NewFromSlice(xslices.Map(cc, func(x *app.Character) int64 {
+	u := xslices.Map(cc, func(x *app.Character) int64 {
 		if x.Location != nil {
 			return x.Location.ID
 		}
 		return 0
-	}))
-	locationIDs.Discard(0)
+	})
+	locationIDs := set.Of(u...)
+	locationIDs.Delete(0)
 	return cc, locationIDs.Size(), nil
 }

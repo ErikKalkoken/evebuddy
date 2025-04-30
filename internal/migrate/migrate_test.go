@@ -27,7 +27,7 @@ func TestMigrate(t *testing.T) {
 		if assert.NoError(t, err) {
 			tables, err := migrate.ListTableNames(db)
 			if assert.NoError(t, err) {
-				names := set.NewFromSlice(tables)
+				names := set.Of(tables...)
 				assert.True(t, names.Contains("alpha"))
 				assert.True(t, names.Contains("bravo"))
 			}

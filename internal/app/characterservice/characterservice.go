@@ -171,19 +171,19 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			assets := data.([]esiCharacterAssetPlus)
-			incomingIDs := set.New[int64]()
+			incomingIDs := set.Of[int64]()
 			for _, ca := range assets {
 				incomingIDs.Add(ca.ItemId)
 			}
-			typeIDs := set.New[int32]()
-			locationIDs := set.New[int64]()
+			typeIDs := set.Of[int32]()
+			locationIDs := set.Of[int64]()
 			for _, ca := range assets {
 				typeIDs.Add(ca.TypeId)
 				if !incomingIDs.Contains(ca.LocationId) {
 					locationIDs.Add(ca.LocationId) // location IDs that are not referencing other itemIDs are locations
 				}
 			}
-			missingLocationIDs, err := s.st.MissingEveLocations(ctx, locationIDs.ToSlice())
+			missingLocationIDs, err := s.st.MissingEveLocations(ctx, locationIDs.Slice())
 			if err != nil {
 				return err
 			}
@@ -193,7 +193,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 					return err
 				}
 			}
-			if err := s.eus.AddMissingTypes(ctx, typeIDs.ToSlice()); err != nil {
+			if err := s.eus.AddMissingTypes(ctx, typeIDs.Slice()); err != nil {
 				return err
 			}
 			currentIDs, err := s.st.ListCharacterAssetIDs(ctx, characterID)
@@ -239,8 +239,8 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 				return err
 			}
 			slog.Info("Stored character assets", "characterID", characterID, "created", created, "updated", updated)
-			if ids := currentIDs.Difference(incomingIDs); ids.Size() > 0 {
-				if err := s.st.DeleteCharacterAssets(ctx, characterID, ids.ToSlice()); err != nil {
+			if ids := set.Difference(currentIDs, incomingIDs); ids.Size() > 0 {
+				if err := s.st.DeleteCharacterAssets(ctx, characterID, ids.Slice()); err != nil {
 					return err
 				}
 				slog.Info("Deleted obsolete character assets", "characterID", characterID, "count", ids.Size())
@@ -379,7 +379,7 @@ func (s *CharacterService) EnableAllTrainingWatchers(ctx context.Context) error 
 	if err != nil {
 		return err
 	}
-	for id := range ids.Values() {
+	for id := range ids.All() {
 		t, err := s.GetTotalTrainingTime(ctx, id)
 		if err != nil {
 			return err
@@ -749,7 +749,7 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 		func(ctx context.Context, characterID int32, data any) error {
 			contracts := data.([]esi.GetCharactersCharacterIdContracts200Ok)
 			// fetch missing eve entities
-			ids := set.New[int32]()
+			ids := set.Of[int32]()
 			for _, c := range contracts {
 				ids.Add(c.IssuerId)
 				ids.Add(c.IssuerCorporationId)
@@ -760,7 +760,7 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 					ids.Add(c.AssigneeId)
 				}
 			}
-			_, err := s.eus.AddMissingEntities(ctx, ids.ToSlice())
+			_, err := s.eus.AddMissingEntities(ctx, ids.Slice())
 			if err != nil {
 				return err
 			}
@@ -769,7 +769,7 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 			if err != nil {
 				return err
 			}
-			existingIDs := set.NewFromSlice(ii)
+			existingIDs := set.Of(ii...)
 			var existingContracts, newContracts []esi.GetCharactersCharacterIdContracts200Ok
 			for _, c := range contracts {
 				if existingIDs.Contains(c.ContractId) {
@@ -1051,9 +1051,9 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 		func(ctx context.Context, characterID int32, data any) error {
 			jobs := data.([]esi.GetCharactersCharacterIdIndustryJobs200Ok)
 
-			entityIDs := set.New[int32]()
-			typeIDs := set.New[int32]()
-			locationIDs := set.New[int64]()
+			entityIDs := set.Of[int32]()
+			typeIDs := set.Of[int32]()
+			locationIDs := set.Of[int64]()
 			for _, j := range jobs {
 				entityIDs.Add(j.InstallerId)
 				if j.CompletedCharacterId != 0 {
@@ -1067,15 +1067,15 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 					typeIDs.Add(j.ProductTypeId)
 				}
 			}
-			if _, err := s.eus.AddMissingEntities(ctx, entityIDs.ToSlice()); err != nil {
+			if _, err := s.eus.AddMissingEntities(ctx, entityIDs.Slice()); err != nil {
 				return err
 			}
-			for id := range locationIDs.Values() {
+			for id := range locationIDs.All() {
 				if _, err := s.eus.GetOrCreateLocationESI(ctx, id); err != nil {
 					return err
 				}
 			}
-			for id := range typeIDs.Values() {
+			for id := range typeIDs.All() {
 				if _, err := s.eus.GetOrCreateTypeESI(ctx, id); err != nil {
 					return err
 				}
@@ -1561,25 +1561,25 @@ func (s *CharacterService) determineNewMail(ctx context.Context, characterID int
 func (s *CharacterService) determineMailIDs(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) (set.Set[int32], set.Set[int32], error) {
 	existingIDs, err := s.st.ListCharacterMailIDs(ctx, characterID)
 	if err != nil {
-		return set.New[int32](), set.New[int32](), err
+		return set.Of[int32](), set.Of[int32](), err
 	}
-	incomingIDs := set.New[int32]()
+	incomingIDs := set.Of[int32]()
 	for _, h := range headers {
 		incomingIDs.Add(h.MailId)
 	}
-	missingIDs := incomingIDs.Difference(existingIDs)
+	missingIDs := set.Difference(incomingIDs, existingIDs)
 	return existingIDs, missingIDs, nil
 }
 
 func (s *CharacterService) resolveMailEntities(ctx context.Context, mm []esi.GetCharactersCharacterIdMail200Ok) error {
-	entityIDs := set.New[int32]()
+	entityIDs := set.Of[int32]()
 	for _, m := range mm {
 		entityIDs.Add(m.From)
 		for _, r := range m.Recipients {
 			entityIDs.Add(r.RecipientId)
 		}
 	}
-	_, err := s.eus.AddMissingEntities(ctx, entityIDs.ToSlice())
+	_, err := s.eus.AddMissingEntities(ctx, entityIDs.Slice())
 	if err != nil {
 		return err
 	}
@@ -1812,13 +1812,13 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 				slog.Info("No new notifications", "characterID", characterID)
 				return nil
 			}
-			senderIDs := set.New[int32]()
+			senderIDs := set.Of[int32]()
 			for _, n := range newNotifs {
 				if n.SenderId != 0 {
 					senderIDs.Add(n.SenderId)
 				}
 			}
-			_, err = s.eus.AddMissingEntities(ctx, senderIDs.ToSlice())
+			_, err = s.eus.AddMissingEntities(ctx, senderIDs.Slice())
 			if err != nil {
 				return err
 			}
@@ -1910,17 +1910,17 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 			if err != nil {
 				return err
 			}
-			existing := set.New[int32]()
+			existing := set.Of[int32]()
 			for _, p := range pp {
 				existing.Add(p.EvePlanet.ID)
 			}
 			planets := data.([]esi.GetCharactersCharacterIdPlanets200Ok)
-			incoming := set.New[int32]()
+			incoming := set.Of[int32]()
 			for _, p := range planets {
 				incoming.Add(p.PlanetId)
 			}
-			obsolete := existing.Difference(incoming)
-			if err := s.st.DeleteCharacterPlanet(ctx, characterID, obsolete.ToSlice()); err != nil {
+			obsolete := set.Difference(existing, incoming)
+			if err := s.st.DeleteCharacterPlanet(ctx, characterID, obsolete.Slice()); err != nil {
 				return err
 			}
 			// update or create planet
@@ -2272,7 +2272,7 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 			if err != nil {
 				return err
 			}
-			incomingSkillIDs := set.New[int32]()
+			incomingSkillIDs := set.Of[int32]()
 			for _, o := range skills.Skills {
 				incomingSkillIDs.Add(o.SkillId)
 				_, err := s.eus.GetOrCreateTypeESI(ctx, o.SkillId)
@@ -2292,8 +2292,8 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 				}
 			}
 			slog.Info("Stored updated character skills", "characterID", characterID, "count", len(skills.Skills))
-			if ids := currentSkillIDs.Difference(incomingSkillIDs); ids.Size() > 0 {
-				if err := s.st.DeleteCharacterSkills(ctx, characterID, ids.ToSlice()); err != nil {
+			if ids := set.Difference(currentSkillIDs, incomingSkillIDs); ids.Size() > 0 {
+				if err := s.st.DeleteCharacterSkills(ctx, characterID, ids.Slice()); err != nil {
 					return err
 				}
 				slog.Info("Deleted obsolete character skills", "characterID", characterID, "count", ids.Size())
@@ -2376,7 +2376,7 @@ func (s *CharacterService) UpdateSkillqueueESI(ctx context.Context, arg app.Char
 
 }
 
-// HasTokenWithScopes reports wether a token with the requested scopes exists for a character.
+// HasTokenWithScopes reports whether a character's token has the requested scopes.
 func (s *CharacterService) HasTokenWithScopes(ctx context.Context, characterID int32) (bool, error) {
 	t, err := s.st.GetCharacterToken(ctx, characterID)
 	if errors.Is(err, app.ErrNotFound) {
@@ -2385,9 +2385,10 @@ func (s *CharacterService) HasTokenWithScopes(ctx context.Context, characterID i
 	if err != nil {
 		return false, err
 	}
-	incoming := set.NewFromSlice(t.Scopes)
-	required := set.NewFromSlice(esiScopes)
-	return required.IsSubset(incoming), nil
+	current := set.Of(t.Scopes...)
+	required := set.Of(esiScopes...)
+	hasScope := current.ContainsAll(required.All())
+	return hasScope, nil
 }
 
 // getValidCharacterToken returns a valid token for a character. Convenience function.
@@ -2465,7 +2466,7 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 				slog.Info("No new wallet journal entries", "characterID", characterID)
 				return nil
 			}
-			ids := set.New[int32]()
+			ids := set.Of[int32]()
 			for _, e := range newEntries {
 				if e.FirstPartyId != 0 {
 					ids.Add(e.FirstPartyId)
@@ -2477,7 +2478,7 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 					ids.Add(e.TaxReceiverId)
 				}
 			}
-			_, err = s.eus.AddMissingEntities(ctx, ids.ToSlice())
+			_, err = s.eus.AddMissingEntities(ctx, ids.Slice())
 			if err != nil {
 				return err
 			}
@@ -2547,13 +2548,13 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg a
 				slog.Info("No new wallet transactions", "characterID", characterID)
 				return nil
 			}
-			ids := set.New[int32]()
+			ids := set.Of[int32]()
 			for _, e := range newEntries {
 				if e.ClientId != 0 {
 					ids.Add(e.ClientId)
 				}
 			}
-			_, err = s.eus.AddMissingEntities(ctx, ids.ToSlice())
+			_, err = s.eus.AddMissingEntities(ctx, ids.Slice())
 			if err != nil {
 				return err
 			}

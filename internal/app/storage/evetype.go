@@ -72,10 +72,10 @@ func (st *Storage) MissingEveTypes(ctx context.Context, ids []int32) ([]int32, e
 	if err != nil {
 		return nil, err
 	}
-	current := set.NewFromSlice(convertNumericSlice[int32](currentIDs))
-	incoming := set.NewFromSlice(ids)
-	missing := incoming.Difference(current)
-	return missing.ToSlice(), nil
+	current := set.Of(convertNumericSlice[int32](currentIDs)...)
+	incoming := set.Of(ids...)
+	missing := set.Difference(incoming, current)
+	return missing.Slice(), nil
 }
 
 func eveTypeFromDBModel(t queries.EveType, g queries.EveGroup, c queries.EveCategory) *app.EveType {

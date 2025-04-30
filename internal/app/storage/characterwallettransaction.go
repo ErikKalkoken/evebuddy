@@ -74,7 +74,7 @@ func (st *Storage) ListCharacterWalletTransactionIDs(ctx context.Context, charac
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list wallet transaction ids for character %d: %w", characterID, err)
 	}
-	return set.NewFromSlice(ids), nil
+	return set.Of(ids...), nil
 }
 
 func (st *Storage) ListCharacterWalletTransactions(ctx context.Context, characterID int32) ([]*app.CharacterWalletTransaction, error) {

@@ -84,7 +84,7 @@ func (st *Storage) ListCharacterAssetIDs(ctx context.Context, characterID int32)
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("list character asset IDs: %w", err)
 	}
-	return set.NewFromSlice(ids), nil
+	return set.Of(ids...), nil
 }
 
 func (st *Storage) ListCharacterAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {

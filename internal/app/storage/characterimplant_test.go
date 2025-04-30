@@ -64,11 +64,11 @@ func TestCharacterImplant(t *testing.T) {
 		oo, err := r.ListCharacterImplants(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			got := set.New[int32]()
+			got := set.Of[int32]()
 			for _, o := range oo {
 				got.Add(o.EveType.ID)
 			}
-			want := set.New(x1.EveType.ID, x2.EveType.ID)
+			want := set.Of(x1.EveType.ID, x2.EveType.ID)
 			assert.Equal(t, want, got)
 		}
 	})

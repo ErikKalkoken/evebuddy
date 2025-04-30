@@ -196,7 +196,7 @@ func (st *Storage) ListCharacterMailIDs(ctx context.Context, characterID int32) 
 	if err != nil {
 		return set.Set[int32]{}, fmt.Errorf("list mail IDs for character %d: %w", characterID, err)
 	}
-	return set.NewFromSlice(convertNumericSlice[int32](ids)), nil
+	return set.Of(convertNumericSlice[int32](ids)...), nil
 }
 
 func (st *Storage) ListCharacterMailListsOrdered(ctx context.Context, characterID int32) ([]*app.EveEntity, error) {
