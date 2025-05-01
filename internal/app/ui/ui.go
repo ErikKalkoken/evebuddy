@@ -440,15 +440,14 @@ func (u *BaseUI) updateCharacter() {
 		"walletJournal":     u.characterWalletJournal.update,
 		"walletTransaction": u.characterWalletTransaction.update,
 	}
-	if u.onUpdateCharacter != nil {
-		ff["OnUpdateCharacter"] = func() {
+	runFunctionsWithProgressModal("Loading character", ff, func() {
+		if u.onUpdateCharacter != nil {
 			u.onUpdateCharacter(c)
 		}
-	}
-	runFunctionsWithProgressModal("Loading character", ff, u.window)
-	if c != nil && !u.isUpdateDisabled {
-		u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
-	}
+		if c != nil && !u.isUpdateDisabled {
+			u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
+		}
+	}, u.window)
 }
 
 // updateCrossPages refreshed all pages that contain information about multiple characters.
@@ -466,14 +465,11 @@ func (u *BaseUI) updateCrossPages() {
 		"training":          u.overviewTraining.update,
 		"wealth":            u.overviewWealth.update,
 	}
-	if u.onRefreshCross != nil {
-		ff["onRefreshCross"] = u.onRefreshCross
-	}
-	runFunctionsWithProgressModal("Updating characters", ff, u.window)
+	runFunctionsWithProgressModal("Updating characters", ff, u.onRefreshCross, u.window)
 }
 
 // TODO: Replac with "infinite" variant, because progress can not be shown correctly.
-func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Window) {
+func runFunctionsWithProgressModal(title string, ff map[string]func(), onSuccess func(), w fyne.Window) {
 	m := kxmodal.NewProgress("Updating", title, func(p binding.Float) error {
 		start := time.Now()
 		myLog := slog.With("title", title)
@@ -500,6 +496,7 @@ func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Wi
 		return nil
 	}, float64(len(ff)), w)
 	fyne.Do(func() {
+		m.OnSuccess = onSuccess
 		m.Start()
 	})
 }

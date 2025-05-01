@@ -472,12 +472,10 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		}()
 	}
 	u.onUpdateCharacter = func(c *app.Character) {
-		notifyItems := u.characterCommunications.makeFolderMenu()
-		mailItems := u.characterMail.makeFolderMenu()
 		fyne.Do(func() {
-			mailMenu.Items = mailItems
+			mailMenu.Items = u.characterMail.makeFolderMenu()
 			mailMenu.Refresh()
-			communicationsMenu.Items = notifyItems
+			communicationsMenu.Items = u.characterCommunications.makeFolderMenu()
 			communicationsMenu.Refresh()
 			if c == nil {
 				navBar.Disable(0)
