@@ -92,9 +92,9 @@ type CharacterMails struct {
 
 	Detail        fyne.CanvasObject
 	Headers       fyne.CanvasObject
-	OnSelected    func()
-	OnUpdate      func(count int)
-	OnSendMessage func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail)
+	onSelected    func()
+	onUpdate      func(count int)
+	onSendMessage func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail)
 
 	body          *widget.Label
 	folders       *iwidget.Tree[FolderNode]
@@ -149,7 +149,7 @@ func (a *CharacterMails) CreateRenderer() fyne.WidgetRenderer {
 	split1 := container.NewHSplit(a.Headers, detailWithToolbar)
 	split1.SetOffset(0.35)
 
-	r, f := a.MakeComposeMessageAction()
+	r, f := a.makeComposeMessageAction()
 	compose := widget.NewButtonWithIcon("Compose", r, f)
 	compose.Importance = widget.HighImportance
 
@@ -257,8 +257,8 @@ func (a *CharacterMails) update() {
 		a.folders.Select(folderAll)
 		a.setCurrentFolder(folderAll)
 	})
-	if a.OnUpdate != nil {
-		a.OnUpdate(folderAll.UnreadCount)
+	if a.onUpdate != nil {
+		a.onUpdate(folderAll.UnreadCount)
 	}
 }
 
@@ -448,8 +448,8 @@ func (a *CharacterMails) makeHeaderList() *widget.List {
 		r := a.headers[id]
 		a.setMail(r.MailID)
 		a.lastSelected = id
-		if a.OnSelected != nil {
-			a.OnSelected()
+		if a.onSelected != nil {
+			a.onSelected()
 			l.UnselectAll()
 		}
 	}
@@ -466,9 +466,11 @@ func (a *CharacterMails) setCurrentFolder(folder FolderNode) {
 	a.mu.Unlock()
 
 	a.headerRefresh()
-	a.headerList.ScrollToTop()
-	a.headerList.UnselectAll()
-	a.clearMail()
+	fyne.Do(func() {
+		a.headerList.ScrollToTop()
+		a.headerList.UnselectAll()
+		a.clearMail()
+	})
 }
 
 func (a *CharacterMails) clearFolder() {
@@ -513,10 +515,10 @@ func (a *CharacterMails) headerRefresh() {
 	fyne.Do(func() {
 		a.headers = headers
 		a.headerList.Refresh()
+		if len(headers) == 0 {
+			a.clearMail()
+		}
 	})
-	if len(headers) == 0 {
-		a.clearMail()
-	}
 }
 
 func (*CharacterMails) fetchHeaders(folder FolderNode, s services) ([]*app.CharacterMailHeader, error) {
@@ -540,20 +542,20 @@ func (*CharacterMails) fetchHeaders(folder FolderNode, s services) ([]*app.Chara
 	return headers, err
 }
 
-func (a *CharacterMails) onSendMessage(mode app.SendMailMode, mail *app.CharacterMail) {
-	if a.OnSendMessage == nil {
+func (a *CharacterMails) doOnSendMessage(mode app.SendMailMode, mail *app.CharacterMail) {
+	if a.onSendMessage == nil {
 		return
 	}
 	character := a.u.currentCharacter()
 	if character == nil {
 		return
 	}
-	a.OnSendMessage(character, mode, mail)
+	a.onSendMessage(character, mode, mail)
 }
 
-func (a *CharacterMails) MakeComposeMessageAction() (fyne.Resource, func()) {
+func (a *CharacterMails) makeComposeMessageAction() (fyne.Resource, func()) {
 	return theme.DocumentCreateIcon(), func() {
-		a.onSendMessage(app.SendMailNew, nil)
+		a.doOnSendMessage(app.SendMailNew, nil)
 	}
 }
 
@@ -593,19 +595,19 @@ func (a *CharacterMails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func
 
 func (a *CharacterMails) MakeForwardAction() (fyne.Resource, func()) {
 	return theme.MailForwardIcon(), func() {
-		a.onSendMessage(app.SendMailForward, a.mail)
+		a.doOnSendMessage(app.SendMailForward, a.mail)
 	}
 }
 
 func (a *CharacterMails) MakeReplyAction() (fyne.Resource, func()) {
 	return theme.MailReplyIcon(), func() {
-		a.onSendMessage(app.SendMailReply, a.mail)
+		a.doOnSendMessage(app.SendMailReply, a.mail)
 	}
 }
 
 func (a *CharacterMails) MakeReplyAllAction() (fyne.Resource, func()) {
 	return theme.MailReplyAllIcon(), func() {
-		a.onSendMessage(app.SendMailReplyAll, a.mail)
+		a.doOnSendMessage(app.SendMailReplyAll, a.mail)
 	}
 }
 

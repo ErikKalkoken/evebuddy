@@ -192,10 +192,10 @@ func (a *CharacterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 func (a *CharacterSkillCatalogue) update() {
 	var err error
 	groups := make([]skillGroupProgress, 0)
-	character := a.u.currentCharacter()
-	hasData := a.u.scs.GeneralSectionExists(app.SectionEveCategories) && a.u.scs.CharacterSectionExists(character.ID, app.SectionSkills)
+	characterID := a.u.currentCharacterID()
+	hasData := a.u.scs.GeneralSectionExists(app.SectionEveCategories) && a.u.scs.CharacterSectionExists(characterID, app.SectionSkills)
 	if hasData {
-		groups2, err2 := a.updateGroups(character.ID, a.u.services())
+		groups2, err2 := a.updateGroups(characterID, a.u.services())
 		if err2 != nil {
 			slog.Error("Failed to refresh skill catalogue UI", "err", err)
 			err = err2
@@ -203,7 +203,8 @@ func (a *CharacterSkillCatalogue) update() {
 			groups = groups2
 		}
 	}
-	t, i := makeTopText(character.ID, hasData, err, func() (string, widget.Importance) {
+	t, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
+		character := a.u.currentCharacter()
 		total := ihumanize.Optional(character.TotalSP, "?")
 		unallocated := ihumanize.Optional(character.UnallocatedSP, "?")
 		return fmt.Sprintf("%s Total Skill Points (%s Unallocated)", total, unallocated), widget.MediumImportance
