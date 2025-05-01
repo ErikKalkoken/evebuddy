@@ -88,7 +88,7 @@ func (a *CharacterCommunications) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *CharacterCommunications) MakeFolderMenu() []*fyne.MenuItem {
+func (a *CharacterCommunications) makeFolderMenu() []*fyne.MenuItem {
 	items2 := make([]*fyne.MenuItem, 0)
 	for _, f := range a.folders {
 		s := f.Name
@@ -322,6 +322,7 @@ func (a *CharacterCommunications) setCurrentFolder(nc app.NotificationGroup) {
 	fyne.Do(func() {
 		a.notifications = notifications
 		a.notificationList.Refresh()
+		a.notificationList.ScrollToTop()
 	})
 }
 

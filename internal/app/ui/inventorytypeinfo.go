@@ -50,23 +50,27 @@ type requiredSkill struct {
 // inventoryTypeInfo displays information about Eve Online inventory types
 type inventoryTypeInfo struct {
 	widget.BaseWidget
+	baseInfoWidget
 
-	id             int32
 	attributesData []attributeRow
+	character      *app.EveEntity
 	et             *app.EveType
 	fittingData    []attributeRow
+	id             int32
+	iw             *InfoWindow
 	metaLevel      int
-	character      *app.EveEntity
 	price          optional.Optional[float64]
 	requiredSkills []requiredSkill
 	techLevel      int
-
-	iw *InfoWindow
 }
 
 func NewInventoryTypeInfo(iw *InfoWindow, typeID, characterID int32) (*inventoryTypeInfo, error) {
 	ctx := context.Background()
-	a := &inventoryTypeInfo{iw: iw, id: typeID}
+	a := &inventoryTypeInfo{
+		iw: iw,
+		id: typeID,
+	}
+	a.initBase()
 	a.ExtendBaseWidget(a)
 	et, err := iw.u.eus.GetOrCreateTypeESI(ctx, typeID)
 	if err != nil {
@@ -249,8 +253,7 @@ func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 	if a.character != nil && !a.character.IsCharacter() || len(a.requiredSkills) == 0 {
 		checkIcon.Hide()
 	}
-	name := makeInfoName()
-	name.SetText(a.et.Name)
+	a.name.SetText(a.et.Name)
 	emb := iwidget.NewTappableIcon(icons.EvemarketbrowserJpg, func() {
 		a.iw.openURL(fmt.Sprintf("https://evemarketbrowser.com/region/0/type/%d", a.id))
 	})
@@ -280,7 +283,7 @@ func (a *inventoryTypeInfo) makeTop() fyne.CanvasObject {
 		),
 		nil,
 		container.NewVBox(
-			name,
+			a.name,
 			container.NewBorder(
 				nil,
 				nil,

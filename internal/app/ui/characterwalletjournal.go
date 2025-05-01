@@ -129,10 +129,10 @@ func (a *CharacterWalletJournal) CreateRenderer() fyne.WidgetRenderer {
 func (a *CharacterWalletJournal) update() {
 	var err error
 	entries := make([]walletJournalEntry, 0)
-	character := a.u.currentCharacter()
-	hasData := a.u.scs.CharacterSectionExists(character.ID, app.SectionWalletJournal)
+	characterID := a.u.currentCharacterID()
+	hasData := a.u.scs.CharacterSectionExists(characterID, app.SectionWalletJournal)
 	if hasData {
-		entries2, err2 := a.updateEntries(character.ID, a.u.services())
+		entries2, err2 := a.updateEntries(characterID, a.u.services())
 		if err2 != nil {
 			slog.Error("Failed to refresh wallet journal UI", "err", err2)
 			err = err2
@@ -140,7 +140,8 @@ func (a *CharacterWalletJournal) update() {
 			entries = entries2
 		}
 	}
-	t, i := makeTopText(character.ID, hasData, err, func() (string, widget.Importance) {
+	t, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
+		character := a.u.currentCharacter()
 		b := ihumanize.OptionalFloat(character.WalletBalance, 1, "?")
 		t := humanize.Comma(int64(len(entries)))
 		s := fmt.Sprintf("Balance: %s • Entries: %s", b, t)

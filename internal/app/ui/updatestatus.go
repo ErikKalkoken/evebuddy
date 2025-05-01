@@ -47,9 +47,8 @@ type updateStatus struct {
 	widget.BaseWidget
 
 	charactersTop     *widget.Label
-	details           []detailsItem
+	details           *updateStatusDetail
 	detailsButton     *widget.Button
-	detailsList       *widget.List
 	detailsTop        *widget.Label
 	entities          fyne.CanvasObject
 	entitiesButton    *widget.Button
@@ -71,7 +70,7 @@ type updateStatus struct {
 func newUpdateStatus(u *BaseUI) *updateStatus {
 	a := &updateStatus{
 		charactersTop:     appwidget.MakeTopLabel(),
-		details:           make([]detailsItem, 0),
+		details:           newUpdateStatusDetail(),
 		detailsTop:        appwidget.MakeTopLabel(),
 		sectionEntities:   make([]sectionEntity, 0),
 		sections:          make([]app.SectionStatus, 0),
@@ -95,20 +94,19 @@ func newUpdateStatus(u *BaseUI) *updateStatus {
 	a.entitiesButton.Disable()
 	a.detailsButton = widget.NewButton("Force update section", nil)
 	a.detailsButton.Disable()
-	a.detailsList = a.makeDetails()
 
 	a.top2 = container.NewVBox(a.sectionsTop, widget.NewSeparator())
 	a.top3 = container.NewVBox(a.detailsTop, widget.NewSeparator())
 	if u.IsMobile() {
 		sections := container.NewBorder(a.top2, nil, nil, nil, a.sectionList)
-		details := container.NewBorder(a.top3, nil, nil, nil, a.detailsList)
+		details := container.NewBorder(a.top3, nil, nil, nil, a.details)
 		menu := iwidget.NewIconButtonWithMenu(
 			theme.MoreVerticalIcon(),
 			fyne.NewMenu("", fyne.NewMenuItem(a.entitiesButton.Text, a.makeUpdateAllAction())),
 		)
 		a.onEntitySelected = func(id int) {
 			a.nav.Push(
-				iwidget.NewAppBar("", sections, menu),
+				iwidget.NewAppBar("Sections", sections, menu),
 			)
 		}
 		a.onSectionSelected = func(id int) {
@@ -119,13 +117,10 @@ func newUpdateStatus(u *BaseUI) *updateStatus {
 					"", fyne.NewMenuItem(a.detailsButton.Text, a.makeDetailsAction(s.EntityID, s.SectionID))),
 			)
 			a.nav.Push(
-				iwidget.NewAppBar("", details, menu),
+				iwidget.NewAppBar("Section Detail", details, menu),
 			)
 		}
-	} else {
-
 	}
-
 	return a
 }
 
@@ -135,10 +130,9 @@ func (a *updateStatus) CreateRenderer() fyne.WidgetRenderer {
 		ab := iwidget.NewAppBar("Home", a.entities)
 		a.nav = iwidget.NewNavigatorWithAppBar(ab)
 		c = a.nav
-
 	} else {
 		sections := container.NewBorder(a.top2, a.entitiesButton, nil, nil, a.sectionList)
-		details := container.NewBorder(a.top3, a.detailsButton, nil, nil, a.detailsList)
+		details := container.NewBorder(a.top3, a.detailsButton, nil, nil, a.details)
 		vs := container.NewHSplit(sections, details)
 		vs.SetOffset(0.5)
 		hs := container.NewHSplit(a.entities, vs)
@@ -325,89 +319,29 @@ func (a *updateStatus) refreshSections() {
 	se := a.sectionEntities[a.selectedEntityID]
 	a.sections = a.u.scs.SectionList(se.id)
 	a.sectionList.Refresh()
-	a.sectionsTop.SetText(fmt.Sprintf("%s: All sections", se.name))
-}
-
-func (a *updateStatus) makeDetails() *widget.List {
-	rowLayout := kxlayout.NewColumns(100)
-	var l *widget.List
-	l = widget.NewList(
-		func() int {
-			return len(a.details)
-		},
-		func() fyne.CanvasObject {
-			status := widget.NewLabel("")
-			status.Wrapping = fyne.TextWrapWord
-			label := widget.NewLabel("")
-			return container.New(rowLayout, label, status)
-		},
-		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(a.details) {
-				return
-			}
-			item := a.details[id]
-			border := co.(*fyne.Container).Objects
-			label := border[0].(*widget.Label)
-			status := border[1].(*widget.Label)
-			label.SetText(item.label)
-			status.Importance = item.importance
-			v := item.value
-			if v == "" {
-				v = "?"
-				status.Importance = widget.LowImportance
-			}
-			status.Text = v
-			l.SetItemHeight(id, status.MinSize().Height)
-			status.Refresh()
-		},
-	)
-	l.OnSelected = func(_ widget.ListItemID) {
-		l.UnselectAll()
-	}
-	return l
+	a.sectionsTop.SetText(fmt.Sprintf("%s: Sections", se.name))
 }
 
 func (a *updateStatus) refreshDetails() {
 	id := a.selectedSectionID
 	if id == -1 || id >= len(a.sections) {
-		a.details = []detailsItem{}
+		a.details.Hide()
 		a.detailsButton.Disable()
-		a.detailsList.Refresh()
 		a.detailsTop.SetText("")
 		return
 	}
-	es := a.sections[id]
-	statusValue, statusImportance := statusDisplay(es)
-	var errorText string
-	var errorImportance widget.Importance
-	if es.ErrorMessage == "" {
-		errorText = "-"
-	} else {
-		errorText = es.ErrorMessage
-		errorImportance = widget.DangerImportance
-	}
-	completedAt := ihumanize.Time(es.CompletedAt, "?")
-	startedAt := ihumanize.Time(es.StartedAt, "-")
-	now := time.Now()
-	timeout := humanize.RelTime(now.Add(es.Timeout), now, "", "")
-
-	a.details = []detailsItem{
-		{label: "Status", value: statusValue, importance: statusImportance},
-		{label: "Error", value: errorText, importance: errorImportance},
-		{label: "Started", value: startedAt},
-		{label: "Completed", value: completedAt},
-		{label: "Timeout", value: timeout},
-	}
-	if es.EntityName != "" {
-		a.detailsTop.SetText(fmt.Sprintf("%s: Section %s", es.EntityName, es.SectionName))
+	ss := a.sections[id]
+	if ss.EntityName != "" {
+		a.detailsTop.SetText(fmt.Sprintf("%s: %s", ss.EntityName, ss.SectionName))
 	} else {
 		a.detailsTop.SetText("")
 	}
 	if !a.u.IsOffline() {
-		a.detailsButton.OnTapped = a.makeDetailsAction(es.EntityID, es.SectionID)
+		a.detailsButton.OnTapped = a.makeDetailsAction(ss.EntityID, ss.SectionID)
 		a.detailsButton.Enable()
 	}
-	a.detailsList.Refresh()
+	a.details.set(ss)
+	a.details.Show()
 }
 
 func (a *updateStatus) makeDetailsAction(entityID int32, sectionID string) func() {
@@ -437,16 +371,16 @@ func (a *updateStatus) startTicker(ctx context.Context) {
 	}()
 }
 
-func statusDisplay(cs app.SectionStatus) (string, widget.Importance) {
+func statusDisplay(ss app.SectionStatus) (string, widget.Importance) {
 	var s string
 	var i widget.Importance
-	if !cs.IsOK() {
+	if !ss.IsOK() {
 		s = "ERROR"
 		i = widget.DangerImportance
-	} else if cs.IsMissing() {
+	} else if ss.IsMissing() {
 		s = "Missing"
 		i = widget.WarningImportance
-	} else if !cs.IsCurrent() {
+	} else if !ss.IsCurrent() {
 		s = "Stale"
 		i = widget.HighImportance
 	} else {
@@ -454,4 +388,64 @@ func statusDisplay(cs app.SectionStatus) (string, widget.Importance) {
 		i = widget.SuccessImportance
 	}
 	return s, i
+}
+
+type updateStatusDetail struct {
+	widget.BaseWidget
+
+	completedAt *widget.Label
+	error       *widget.Label
+	startedAt   *widget.Label
+	status      *widget.Label
+	timeout     *widget.Label
+}
+
+func newUpdateStatusDetail() *updateStatusDetail {
+	makeLabel := func() *widget.Label {
+		l := widget.NewLabel("")
+		l.Wrapping = fyne.TextWrapWord
+		return l
+	}
+	w := &updateStatusDetail{
+		completedAt: makeLabel(),
+		error:       makeLabel(),
+		startedAt:   makeLabel(),
+		status:      makeLabel(),
+		timeout:     makeLabel(),
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *updateStatusDetail) set(ss app.SectionStatus) {
+	w.status.Text, w.status.Importance = statusDisplay(ss)
+	w.status.Refresh()
+
+	var errorText string
+	var errorImportance widget.Importance
+	if ss.ErrorMessage == "" {
+		errorText = "-"
+	} else {
+		errorText = ss.ErrorMessage
+		errorImportance = widget.DangerImportance
+	}
+	w.error.Text, w.error.Importance = errorText, errorImportance
+	w.error.Refresh()
+
+	w.completedAt.SetText(ihumanize.Time(ss.CompletedAt, "?"))
+	w.startedAt.SetText(ihumanize.Time(ss.StartedAt, "-"))
+	now := time.Now()
+	w.timeout.SetText(humanize.RelTime(now.Add(ss.Timeout), now, "", ""))
+}
+
+func (w *updateStatusDetail) CreateRenderer() fyne.WidgetRenderer {
+	layout := kxlayout.NewColumns(100)
+	c := container.NewVBox(
+		container.New(layout, widget.NewLabel("Status"), w.status),
+		container.New(layout, widget.NewLabel("Error"), w.error),
+		container.New(layout, widget.NewLabel("Started"), w.startedAt),
+		container.New(layout, widget.NewLabel("Completed"), w.completedAt),
+		container.New(layout, widget.NewLabel("Timeout"), w.timeout),
+	)
+	return widget.NewSimpleRenderer(c)
 }

@@ -19,6 +19,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -76,6 +77,7 @@ func (iw *InfoWindow) showRace(id int32) {
 type infoWidget interface {
 	fyne.CanvasObject
 	update() error
+	setError(string)
 }
 
 func (iw *InfoWindow) show(v infoVariant, id int64) {
@@ -156,11 +158,10 @@ func (iw *InfoWindow) show(v infoVariant, id int64) {
 		if err != nil {
 			slog.Error("info widget load", "variant", v, "id", id, "error", err)
 			fyne.Do(func() {
-				iw.u.ShowErrorDialog(fmt.Sprintf("Failed to load info window for %s", v), err, iw.w)
+				page.setError("ERROR: " + iw.u.humanizeError(err))
 			})
 		}
 	}()
-
 }
 
 func (iw *InfoWindow) showZoomWindow(title string, id int32, load func(int32, int) (fyne.Resource, error), w fyne.Window) {
@@ -327,9 +328,25 @@ func infoWindowSupportedEveEntities() set.Set[app.EveEntityCategory] {
 
 }
 
+// baseInfoWidget represents shared functionality between all info widgets.
+type baseInfoWidget struct {
+	name *widget.Label
+}
+
+func (b *baseInfoWidget) initBase() {
+	b.name = makeInfoName()
+}
+
+func (b *baseInfoWidget) setError(s string) {
+	b.name.Text = s
+	b.name.Importance = widget.DangerImportance
+	b.name.Refresh()
+}
+
 // allianceInfo shows public information about a character.
 type allianceInfo struct {
 	widget.BaseWidget
+	baseInfoWidget
 
 	attributes *attributeList
 	hq         *kxwidget.TappableLabel
@@ -337,7 +354,6 @@ type allianceInfo struct {
 	iw         *InfoWindow
 	logo       *canvas.Image
 	members    *entityList
-	name       *widget.Label
 	tabs       *container.AppTabs
 }
 
@@ -347,10 +363,10 @@ func newAllianceInfo(iw *InfoWindow, id int32) *allianceInfo {
 	a := &allianceInfo{
 		iw:   iw,
 		id:   id,
-		name: makeInfoName(),
 		logo: makeInfoLogo(),
 		hq:   hq,
 	}
+	a.initBase()
 	a.ExtendBaseWidget(a)
 	a.attributes = newAttributeList(a.iw)
 	a.members = newEntityList(a.iw.show)
@@ -387,76 +403,78 @@ func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *allianceInfo) update() error {
 	ctx := context.Background()
-	go func() {
+	g := new(errgroup.Group)
+	g.Go(func() error {
+		o, err := a.iw.u.eus.FetchAlliance(ctx, a.id)
+		if err != nil {
+			return err
+		}
+		// Attributes
+		attributes := make([]attributeItem, 0)
+		if o.ExecutorCorporation != nil {
+			attributes = append(attributes, newAttributeItem("Executor", o.ExecutorCorporation))
+		}
+		if o.Ticker != "" {
+			attributes = append(attributes, newAttributeItem("Short Name", o.Ticker))
+		}
+		if o.CreatorCorporation != nil {
+			attributes = append(attributes, newAttributeItem("Created By Corporation", o.CreatorCorporation))
+		}
+		if o.Creator != nil {
+			attributes = append(attributes, newAttributeItem("Created By", o.Creator))
+		}
+		if !o.DateFounded.IsZero() {
+			attributes = append(attributes, newAttributeItem("Start Date", o.DateFounded))
+		}
+		if o.Faction != nil {
+			attributes = append(attributes, newAttributeItem("Faction", o.Faction))
+		}
+		if a.iw.u.IsDeveloperMode() {
+			x := newAttributeItem("EVE ID", o.ID)
+			x.Action = func(_ any) {
+				a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
+			}
+			attributes = append(attributes, x)
+		}
+		fyne.Do(func() {
+			a.name.SetText(o.Name)
+			a.attributes.set(attributes)
+			a.tabs.Refresh()
+		})
+		return nil
+	})
+	g.Go(func() error {
 		r, err := a.iw.u.eis.AllianceLogo(a.id, app.IconPixelSize)
 		if err != nil {
-			slog.Error("alliance info: Failed to load logo", "allianceID", a.id, "error", err)
-			return
+			return err
 		}
 		fyne.Do(func() {
 			a.logo.Resource = r
 			a.logo.Refresh()
 		})
-	}()
-
-	// Members
-	go func() {
+		return nil
+	})
+	g.Go(func() error {
 		members, err := a.iw.u.eus.FetchAllianceCorporations(ctx, a.id)
 		if err != nil {
-			slog.Error("alliance info: Failed to load corporations", "allianceID", a.id, "error", err)
-			return
+			return err
 		}
 		if len(members) == 0 {
-			return
+			return nil
 		}
 		fyne.Do(func() {
 			a.members.set(entityItemsFromEveEntities(members)...)
 			a.tabs.Refresh()
 		})
-	}()
-	o, err := a.iw.u.eus.FetchAlliance(ctx, a.id)
-	if err != nil {
-		return err
-	}
-
-	// Attributes
-	attributes := make([]attributeItem, 0)
-	if o.ExecutorCorporation != nil {
-		attributes = append(attributes, newAttributeItem("Executor", o.ExecutorCorporation))
-	}
-	if o.Ticker != "" {
-		attributes = append(attributes, newAttributeItem("Short Name", o.Ticker))
-	}
-	if o.CreatorCorporation != nil {
-		attributes = append(attributes, newAttributeItem("Created By Corporation", o.CreatorCorporation))
-	}
-	if o.Creator != nil {
-		attributes = append(attributes, newAttributeItem("Created By", o.Creator))
-	}
-	if !o.DateFounded.IsZero() {
-		attributes = append(attributes, newAttributeItem("Start Date", o.DateFounded))
-	}
-	if o.Faction != nil {
-		attributes = append(attributes, newAttributeItem("Faction", o.Faction))
-	}
-	if a.iw.u.IsDeveloperMode() {
-		x := newAttributeItem("EVE ID", o.ID)
-		x.Action = func(_ any) {
-			a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
-		}
-		attributes = append(attributes, x)
-	}
-	fyne.Do(func() {
-		a.name.SetText(o.Name)
-		a.attributes.set(attributes)
-		a.tabs.Refresh()
+		return nil
 	})
-	return nil
+	return g.Wait()
 }
 
 // characterInfo shows public information about a character.
 type characterInfo struct {
 	widget.BaseWidget
+	baseInfoWidget
 
 	alliance        *kxwidget.TappableLabel
 	bio             *widget.Label
@@ -467,7 +485,6 @@ type characterInfo struct {
 	id              int32
 	iw              *InfoWindow
 	membership      *widget.Label
-	name            *widget.Label
 	portrait        *kxwidget.TappableImage
 	security        *widget.Label
 	tabs            *container.AppTabs
@@ -498,11 +515,11 @@ func newCharacterInfo(iw *InfoWindow, id int32) *characterInfo {
 		id:              id,
 		iw:              iw,
 		membership:      widget.NewLabel(""),
-		name:            makeInfoName(),
 		portrait:        portrait,
 		security:        widget.NewLabel(""),
 		title:           title,
 	}
+	a.initBase()
 	a.ExtendBaseWidget(a)
 	a.attributes = newAttributeList(a.iw)
 	a.employeeHistory = newEntityListFromItems(a.iw.show)
@@ -571,27 +588,31 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *characterInfo) update() error {
 	ctx := context.Background()
-	go func() {
+	o, err := a.iw.u.eus.GetOrCreateCharacterESI(ctx, a.id)
+	if err != nil {
+		return err
+	}
+	g := new(errgroup.Group)
+	g.Go(func() error {
 		r, err := a.iw.u.eis.CharacterPortrait(a.id, 256)
 		if err != nil {
-			slog.Error("character info: Failed to load portrait", "characterID", a.id, "error", err)
-			return
+			return err
 		}
 		fyne.Do(func() {
 			a.portrait.SetResource(r)
 		})
-	}()
-	go func() {
+		return nil
+	})
+	g.Go(func() error {
 		history, err := a.iw.u.eus.FetchCharacterCorporationHistory(ctx, a.id)
 		if err != nil {
-			slog.Error("character info: Failed to load corporation history", "characterID", a.id, "error", err)
-			return
+			return err
 		}
 		if len(history) == 0 {
 			fyne.Do(func() {
 				a.membership.Hide()
 			})
-			return
+			return nil
 		}
 		items := xslices.Map(history, historyItem2EntityItem)
 		duration := humanize.RelTime(history[0].StartDate, time.Now(), "", "")
@@ -600,94 +621,96 @@ func (a *characterInfo) update() error {
 			a.membership.SetText(fmt.Sprintf("for %s", duration))
 			a.tabs.Refresh()
 		})
-	}()
-	o, err := a.iw.u.eus.GetOrCreateCharacterESI(ctx, a.id)
-	if err != nil {
-		return err
-	}
-	go func() {
+		return nil
+	})
+	g.Go(func() error {
+		fyne.Do(func() {
+			a.name.SetText(o.Name)
+			a.security.SetText(fmt.Sprintf("Security Status: %.1f", o.SecurityStatus))
+			a.corporation.SetText(fmt.Sprintf("Member of %s", o.Corporation.Name))
+			a.corporation.OnTapped = func() {
+				a.iw.showEveEntity(o.Corporation)
+			}
+			a.portrait.OnTapped = func() {
+				go fyne.Do(func() {
+					a.iw.showZoomWindow(o.Name, a.id, a.iw.u.eis.CharacterPortrait, a.iw.w)
+				})
+			}
+		})
+		fyne.Do(func() {
+			a.bio.SetText(o.DescriptionPlain())
+			a.description.SetText(o.RaceDescription())
+			a.tabs.Refresh()
+		})
+		fyne.Do(func() {
+			if !o.HasAlliance() {
+				a.alliance.Hide()
+				return
+			}
+			a.alliance.SetText(o.Alliance.Name)
+			a.alliance.OnTapped = func() {
+				a.iw.showEveEntity(o.Alliance)
+			}
+		})
+		fyne.Do(func() {
+			if o.Title == "" {
+				a.title.Hide()
+				return
+			}
+			a.title.SetText("Title: " + o.Title)
+		})
+		attributes := []attributeItem{
+			newAttributeItem("Born", o.Birthday.Format(app.DateTimeFormat)),
+			newAttributeItem("Race", o.Race),
+			newAttributeItem("Security Status", fmt.Sprintf("%.1f", o.SecurityStatus)),
+			newAttributeItem("Corporation", o.Corporation),
+		}
+		if o.Alliance != nil {
+			attributes = append(attributes, newAttributeItem("Alliance", o.Alliance))
+		}
+		if o.Faction != nil {
+			attributes = append(attributes, newAttributeItem("Faction", o.Faction))
+		}
+		if a.iw.u.IsDeveloperMode() {
+			x := newAttributeItem("EVE ID", o.ID)
+			x.Action = func(_ any) {
+				a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
+			}
+			attributes = append(attributes, x)
+		}
+		fyne.Do(func() {
+			a.attributes.set(attributes)
+			a.tabs.Refresh()
+		})
+		return nil
+	})
+	g.Go(func() error {
 		r, err := a.iw.u.eis.CorporationLogo(o.Corporation.ID, app.IconPixelSize)
 		if err != nil {
-			slog.Error("character info: Failed to load corp logo", "characterID", a.id, "error", err)
-			return
+			return err
 		}
 		fyne.Do(func() {
 			a.corporationLogo.Resource = r
 			a.corporationLogo.Refresh()
 		})
-	}()
-	fyne.Do(func() {
-		a.name.SetText(o.Name)
-		a.security.SetText(fmt.Sprintf("Security Status: %.1f", o.SecurityStatus))
-		a.corporation.SetText(fmt.Sprintf("Member of %s", o.Corporation.Name))
-		a.corporation.OnTapped = func() {
-			a.iw.showEveEntity(o.Corporation)
-		}
-		a.portrait.OnTapped = func() {
-			go fyne.Do(func() {
-				a.iw.showZoomWindow(o.Name, a.id, a.iw.u.eis.CharacterPortrait, a.iw.w)
-			})
-		}
+		return nil
 	})
-	fyne.Do(func() {
-		a.bio.SetText(o.DescriptionPlain())
-		a.description.SetText(o.RaceDescription())
-		a.tabs.Refresh()
-	})
-	fyne.Do(func() {
-		if !o.HasAlliance() {
-			a.alliance.Hide()
-			return
-		}
-		a.alliance.SetText(o.Alliance.Name)
-		a.alliance.OnTapped = func() {
-			a.iw.showEveEntity(o.Alliance)
-		}
-	})
-	fyne.Do(func() {
-		if o.Title == "" {
-			a.title.Hide()
-			return
-		}
-		a.title.SetText("Title: " + o.Title)
-	})
-	attributes := []attributeItem{
-		newAttributeItem("Born", o.Birthday.Format(app.DateTimeFormat)),
-		newAttributeItem("Race", o.Race),
-		newAttributeItem("Security Status", fmt.Sprintf("%.1f", o.SecurityStatus)),
-		newAttributeItem("Corporation", o.Corporation),
+	if err := g.Wait(); err != nil {
+		return err
 	}
-	if o.Alliance != nil {
-		attributes = append(attributes, newAttributeItem("Alliance", o.Alliance))
-	}
-	if o.Faction != nil {
-		attributes = append(attributes, newAttributeItem("Faction", o.Faction))
-	}
-	if a.iw.u.IsDeveloperMode() {
-		x := newAttributeItem("EVE ID", o.ID)
-		x.Action = func(_ any) {
-			a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
-		}
-		attributes = append(attributes, x)
-	}
-	fyne.Do(func() {
-		a.attributes.set(attributes)
-		a.tabs.Refresh()
-	})
 	return nil
 }
 
 type constellationInfo struct {
 	widget.BaseWidget
-
-	iw *InfoWindow
+	baseInfoWidget
 
 	id      int32
-	region  *kxwidget.TappableLabel
+	iw      *InfoWindow
 	logo    *canvas.Image
-	name    *widget.Label
-	tabs    *container.AppTabs
+	region  *kxwidget.TappableLabel
 	systems *entityList
+	tabs    *container.AppTabs
 }
 
 func newConstellationInfo(iw *InfoWindow, id int32) *constellationInfo {
@@ -697,10 +720,10 @@ func newConstellationInfo(iw *InfoWindow, id int32) *constellationInfo {
 		iw:     iw,
 		id:     id,
 		logo:   makeInfoLogo(),
-		name:   makeInfoName(),
 		region: region,
 		tabs:   container.NewAppTabs(),
 	}
+	a.initBase()
 	a.ExtendBaseWidget(a)
 	a.logo.Resource = icons.Constellation64Png
 	a.systems = newEntityList(a.iw.show)
@@ -750,24 +773,22 @@ func (a *constellationInfo) update() error {
 			a.tabs.Refresh()
 		}
 	})
-	go func() {
-		oo, err := a.iw.u.eus.GetConstellationSolarSystemsESI(ctx, o.ID)
-		if err != nil {
-			slog.Error("constellation info: Failed to load constellations", "region", o.ID, "error", err)
-			return
-		}
-		xx := xslices.Map(oo, newEntityItemFromEveSolarSystem)
-		fyne.Do(func() {
-			a.systems.set(xx...)
-			a.tabs.Refresh()
-		})
-	}()
+	oo, err := a.iw.u.eus.GetConstellationSolarSystemsESI(ctx, o.ID)
+	if err != nil {
+		return err
+	}
+	xx := xslices.Map(oo, newEntityItemFromEveSolarSystem)
+	fyne.Do(func() {
+		a.systems.set(xx...)
+		a.tabs.Refresh()
+	})
 	return nil
 }
 
 // corporationInfo shows public information about a character.
 type corporationInfo struct {
 	widget.BaseWidget
+	baseInfoWidget
 
 	alliance        *kxwidget.TappableLabel
 	allianceHistory *entityList
@@ -778,7 +799,6 @@ type corporationInfo struct {
 	id              int32
 	iw              *InfoWindow
 	logo            *canvas.Image
-	name            *widget.Label
 	tabs            *container.AppTabs
 }
 
@@ -797,8 +817,8 @@ func newCorporationInfo(iw *InfoWindow, id int32) *corporationInfo {
 		id:           id,
 		iw:           iw,
 		logo:         makeInfoLogo(),
-		name:         makeInfoName(),
 	}
+	a.initBase()
 	a.ExtendBaseWidget(a)
 	a.attributes = newAttributeList(a.iw)
 	a.allianceHistory = newEntityListFromItems(a.iw.show)
@@ -850,103 +870,106 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *corporationInfo) update() error {
 	ctx := context.Background()
-	go func() {
+	o, err := a.iw.u.eus.GetCorporationESI(ctx, a.id)
+	if err != nil {
+		return err
+	}
+	g := new(errgroup.Group)
+	g.Go(func() error {
 		r, err := a.iw.u.eis.CorporationLogo(a.id, app.IconPixelSize)
 		if err != nil {
-			slog.Error("corporation info: Failed to load logo", "corporationID", a.id, "error", err)
-			return
+			return err
 		}
 		fyne.Do(func() {
 			a.logo.Resource = r
 			a.logo.Refresh()
 		})
-	}()
-	o, err := a.iw.u.eus.GetCorporationESI(ctx, a.id)
-	if err != nil {
-		return err
-	}
-	attributes := make([]attributeItem, 0)
-	if o.Ceo != nil {
-		attributes = append(attributes, newAttributeItem("CEO", o.Ceo))
-	}
-	if o.Creator != nil {
-		attributes = append(attributes, newAttributeItem("Founder", o.Creator))
-	}
-	if o.Alliance != nil {
-		attributes = append(attributes, newAttributeItem("Alliance", o.Alliance))
-	}
-	if o.Ticker != "" {
-		attributes = append(attributes, newAttributeItem("Ticker Name", o.Ticker))
-	}
-	if o.Faction != nil {
-		attributes = append(attributes, newAttributeItem("Faction", o.Faction))
-	}
-	if o.Shares != 0 {
-		attributes = append(attributes, newAttributeItem("Shares", o.Shares))
-	}
-	if o.MemberCount != 0 {
-		attributes = append(attributes, newAttributeItem("Member Count", o.MemberCount))
-	}
-	if o.TaxRate != 0 {
-		attributes = append(attributes, newAttributeItem("ISK Tax Rate", o.TaxRate))
-	}
-	attributes = append(attributes, newAttributeItem("War Eligability", o.WarEligible))
-	if o.URL != "" {
-		u, err := url.ParseRequestURI(o.URL)
-		if err == nil && u.Host != "" {
-			attributes = append(attributes, newAttributeItem("URL", u))
-		}
-	}
-	if a.iw.u.IsDeveloperMode() {
-		x := newAttributeItem("EVE ID", o.ID)
-		x.Action = func(_ any) {
-			a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
-		}
-		attributes = append(attributes, x)
-	}
-	fyne.Do(func() {
-		a.name.SetText(o.Name)
-		a.description.SetText(o.DescriptionPlain())
-		a.attributes.set(attributes)
-		a.tabs.Refresh()
+		return nil
 	})
-	fyne.Do(func() {
-		if o.Alliance == nil {
-			a.alliance.Hide()
-			a.allianceLogo.Hide()
-			return
+	g.Go(func() error {
+		attributes := make([]attributeItem, 0)
+		if o.Ceo != nil {
+			attributes = append(attributes, newAttributeItem("CEO", o.Ceo))
 		}
-		a.alliance.SetText("Member of " + o.Alliance.Name)
-		a.alliance.OnTapped = func() {
-			a.iw.showEveEntity(o.Alliance)
+		if o.Creator != nil {
+			attributes = append(attributes, newAttributeItem("Founder", o.Creator))
 		}
-		go func() {
-			r, err := a.iw.u.eis.AllianceLogo(o.Alliance.ID, app.IconPixelSize)
-			if err != nil {
-				slog.Error("corporation info: Failed to load alliance logo", "allianceID", o.Alliance.ID, "error", err)
+		if o.Alliance != nil {
+			attributes = append(attributes, newAttributeItem("Alliance", o.Alliance))
+		}
+		if o.Ticker != "" {
+			attributes = append(attributes, newAttributeItem("Ticker Name", o.Ticker))
+		}
+		if o.Faction != nil {
+			attributes = append(attributes, newAttributeItem("Faction", o.Faction))
+		}
+		if o.Shares != 0 {
+			attributes = append(attributes, newAttributeItem("Shares", o.Shares))
+		}
+		if o.MemberCount != 0 {
+			attributes = append(attributes, newAttributeItem("Member Count", o.MemberCount))
+		}
+		if o.TaxRate != 0 {
+			attributes = append(attributes, newAttributeItem("ISK Tax Rate", o.TaxRate))
+		}
+		attributes = append(attributes, newAttributeItem("War Eligability", o.WarEligible))
+		if o.URL != "" {
+			u, err := url.ParseRequestURI(o.URL)
+			if err == nil && u.Host != "" {
+				attributes = append(attributes, newAttributeItem("URL", u))
+			}
+		}
+		if a.iw.u.IsDeveloperMode() {
+			x := newAttributeItem("EVE ID", o.ID)
+			x.Action = func(_ any) {
+				a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
+			}
+			attributes = append(attributes, x)
+		}
+		fyne.Do(func() {
+			a.name.SetText(o.Name)
+			a.description.SetText(o.DescriptionPlain())
+			a.attributes.set(attributes)
+			a.tabs.Refresh()
+		})
+		fyne.Do(func() {
+			if o.Alliance == nil {
+				a.alliance.Hide()
+				a.allianceLogo.Hide()
 				return
 			}
-			fyne.Do(func() {
-				a.allianceLogo.Resource = r
-				a.allianceLogo.Refresh()
-			})
-		}()
+			a.alliance.SetText("Member of " + o.Alliance.Name)
+			a.alliance.OnTapped = func() {
+				a.iw.showEveEntity(o.Alliance)
+			}
+			go func() {
+				r, err := a.iw.u.eis.AllianceLogo(o.Alliance.ID, app.IconPixelSize)
+				if err != nil {
+					slog.Error("corporation info: Failed to load alliance logo", "allianceID", o.Alliance.ID, "error", err)
+					return
+				}
+				fyne.Do(func() {
+					a.allianceLogo.Resource = r
+					a.allianceLogo.Refresh()
+				})
+			}()
+		})
+		fyne.Do(func() {
+			if o.HomeStation == nil {
+				a.hq.Hide()
+				return
+			}
+			a.hq.SetText("Headquarters: " + o.HomeStation.Name)
+			a.hq.OnTapped = func() {
+				a.iw.showEveEntity(o.HomeStation)
+			}
+		})
+		return nil
 	})
-	fyne.Do(func() {
-		if o.HomeStation == nil {
-			a.hq.Hide()
-			return
-		}
-		a.hq.SetText("Headquarters: " + o.HomeStation.Name)
-		a.hq.OnTapped = func() {
-			a.iw.showEveEntity(o.HomeStation)
-		}
-	})
-	go func() {
+	g.Go(func() error {
 		history, err := a.iw.u.eus.FetchCorporationAllianceHistory(ctx, a.id)
 		if err != nil {
-			slog.Error("corporation info: Failed to load alliance history", "corporationID", a.id, "error", err)
-			return
+			return err
 		}
 		var items []entityItem
 		if len(history) > 0 {
@@ -966,21 +989,23 @@ func (a *corporationInfo) update() error {
 			a.allianceHistory.set(items...)
 			a.tabs.Refresh()
 		})
-	}()
-	return nil
+		return nil
+	})
+	return g.Wait()
 }
 
 // locationInfo shows public information about a character.
 type locationInfo struct {
 	widget.BaseWidget
+	baseInfoWidget
 
 	description *widget.Label
 	id          int64
 	iw          *InfoWindow
-	name        *widget.Label
+	location    *entityList
 	owner       *kxwidget.TappableLabel
 	ownerLogo   *canvas.Image
-	location    *entityList
+	services    *entityList
 	tabs        *container.AppTabs
 	typeImage   *kxwidget.TappableImage
 	typeInfo    *kxwidget.TappableLabel
@@ -1000,18 +1025,21 @@ func newLocationInfo(iw *InfoWindow, id int64) *locationInfo {
 		description: description,
 		id:          id,
 		iw:          iw,
-		name:        makeInfoName(),
 		owner:       owner,
 		ownerLogo:   iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		typeImage:   typeImage,
 		typeInfo:    typeInfo,
 	}
 	a.ExtendBaseWidget(a)
+	a.initBase()
 	a.location = newEntityList(a.iw.show)
 	location := container.NewTabItem("Location", a.location)
+	a.services = newEntityList(a.iw.show)
+	services := container.NewTabItem("Services", a.services)
 	a.tabs = container.NewAppTabs(
 		container.NewTabItem("Description", container.NewVScroll(a.description)),
 		location,
+		services,
 	)
 	a.tabs.Select(location)
 	return a
@@ -1043,102 +1071,101 @@ func (a *locationInfo) update() error {
 	if err != nil {
 		return err
 	}
-	go func() {
+	g := new(errgroup.Group)
+	g.Go(func() error {
 		r, err := a.iw.u.eis.InventoryTypeRender(o.Type.ID, renderIconPixelSize)
 		if err != nil {
-			slog.Error("location info: Failed to load portrait", "location", o, "error", err)
-			return
+			return err
 		}
 		fyne.Do(func() {
 			a.typeImage.SetResource(r)
 		})
-	}()
-	go func() {
+		return nil
+	})
+	g.Go(func() error {
 		r, err := a.iw.u.eis.CorporationLogo(o.Owner.ID, app.IconPixelSize)
 		if err != nil {
-			slog.Error("location info: Failed to load corp logo", "owner", o.Owner, "error", err)
-			return
+			return err
 		}
 		fyne.Do(func() {
 			a.ownerLogo.Resource = r
 			a.ownerLogo.Refresh()
 		})
-	}()
-	fyne.Do(func() {
-		a.name.SetText(o.Name)
-		a.typeInfo.SetText(o.Type.Name)
-		a.typeInfo.OnTapped = func() {
-			a.iw.showEveEntity(o.Type.ToEveEntity())
-		}
-		a.owner.SetText(o.Owner.Name)
-		a.owner.OnTapped = func() {
-			a.iw.showEveEntity(o.Owner)
-		}
-		a.typeImage.OnTapped = func() {
-			a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.u.eis.InventoryTypeRender, a.iw.w)
-		}
-		description := o.Type.Description
-		if description == "" {
-			description = o.Type.Name
-		}
-		a.description.SetText(description)
-		a.tabs.Refresh()
+		return nil
 	})
-
-	if a.iw.u.IsDeveloperMode() {
-		x := newAttributeItem("EVE ID", o.ID)
-		x.Action = func(_ any) {
-			a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
-		}
-		attributeList := newAttributeList(a.iw, []attributeItem{x}...)
-		attributesTab := container.NewTabItem("Attributes", attributeList)
+	g.Go(func() error {
 		fyne.Do(func() {
-			a.tabs.Append(attributesTab)
-			a.tabs.Refresh()
-		})
-	}
-	fyne.Do(func() {
-		a.location.set(
-			newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.Region.ToEveEntity(), ""),
-			newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.ToEveEntity(), ""),
-			newEntityItemFromEveSolarSystem(o.SolarSystem),
-		)
-		a.tabs.Refresh()
-	})
-	if o.Variant() == app.EveLocationStation {
-		services := container.NewTabItem("Services", widget.NewLabel(""))
-		fyne.DoAndWait(func() {
-			a.tabs.Append(services)
-			a.tabs.Refresh()
-		})
-		go func() {
-			ss, err := a.iw.u.eus.GetStationServicesESI(ctx, int32(a.id))
-			if err != nil {
-				slog.Error("Failed to fetch station services", "stationID", o.ID, "error", err)
-				return
+			a.name.SetText(o.Name)
+			a.typeInfo.SetText(o.Type.Name)
+			a.typeInfo.OnTapped = func() {
+				a.iw.showEveEntity(o.Type.ToEveEntity())
 			}
-			items := xslices.Map(ss, func(s string) entityItem {
-				s2 := strings.ReplaceAll(s, "-", " ")
-				titler := cases.Title(language.English)
-				name := titler.String(s2)
-				return newEntityItem(0, "Service", name, infoNotSupported)
-			})
+			a.owner.SetText(o.Owner.Name)
+			a.owner.OnTapped = func() {
+				a.iw.showEveEntity(o.Owner)
+			}
+			a.typeImage.OnTapped = func() {
+				a.iw.showZoomWindow(o.Name, o.Type.ID, a.iw.u.eis.InventoryTypeRender, a.iw.w)
+			}
+			description := o.Type.Description
+			if description == "" {
+				description = o.Type.Name
+			}
+			a.description.SetText(description)
+			a.tabs.Refresh()
+		})
+		if a.iw.u.IsDeveloperMode() {
+			x := newAttributeItem("EVE ID", o.ID)
+			x.Action = func(_ any) {
+				a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
+			}
+			attributeList := newAttributeList(a.iw, []attributeItem{x}...)
+			attributesTab := container.NewTabItem("Attributes", attributeList)
 			fyne.Do(func() {
-				services.Content = newEntityListFromItems(nil, items...)
+				a.tabs.Append(attributesTab)
 				a.tabs.Refresh()
 			})
-		}()
-	}
-	return nil
+		}
+		fyne.Do(func() {
+			a.location.set(
+				newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.Region.ToEveEntity(), ""),
+				newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.ToEveEntity(), ""),
+				newEntityItemFromEveSolarSystem(o.SolarSystem),
+			)
+			a.tabs.Refresh()
+		})
+		return nil
+	})
+	g.Go(func() error {
+		if o.Variant() != app.EveLocationStation {
+			return nil
+		}
+		ss, err := a.iw.u.eus.GetStationServicesESI(ctx, int32(a.id))
+		if err != nil {
+			return err
+		}
+		items := xslices.Map(ss, func(s string) entityItem {
+			s2 := strings.ReplaceAll(s, "-", " ")
+			titler := cases.Title(language.English)
+			name := titler.String(s2)
+			return newEntityItem(0, "Service", name, infoNotSupported)
+		})
+		fyne.Do(func() {
+			a.services.set(items...)
+			a.tabs.Refresh()
+		})
+		return nil
+	})
+	return g.Wait()
 }
 
 type raceInfo struct {
 	widget.BaseWidget
+	baseInfoWidget
 
 	id          int32
 	iw          *InfoWindow
 	logo        *canvas.Image
-	name        *widget.Label
 	tabs        *container.AppTabs
 	description *widget.Label
 }
@@ -1151,10 +1178,10 @@ func newRaceInfo(iw *InfoWindow, id int32) *raceInfo {
 		id:          id,
 		iw:          iw,
 		logo:        makeInfoLogo(),
-		name:        makeInfoName(),
 		tabs:        container.NewAppTabs(),
 	}
 	a.logo.Resource = icons.BlankSvg
+	a.initBase()
 	a.ExtendBaseWidget(a)
 	a.tabs = container.NewAppTabs(
 		container.NewTabItem("Description", container.NewVScroll(a.description)),
@@ -1180,48 +1207,53 @@ func (a *raceInfo) update() error {
 	if err != nil {
 		return err
 	}
-	factionID, found := o.FactionID()
-	if found {
-		go func() {
-			r, err := a.iw.u.eis.FactionLogo(factionID, app.IconPixelSize)
-			if err != nil {
-				slog.Error("race info: Failed to load logo", "corporationID", a.id, "error", err)
-				return
-			}
-			fyne.Do(func() {
-				a.logo.Resource = r
-				a.logo.Refresh()
-			})
-		}()
-	}
-	if a.iw.u.IsDeveloperMode() {
-		x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
-		x.Action = func(v any) {
-			a.iw.u.App().Clipboard().SetContent(v.(string))
+	g := new(errgroup.Group)
+	g.Go(func() error {
+		factionID, found := o.FactionID()
+		if !found {
+			return nil
 		}
-		attributeList := newAttributeList(a.iw, []attributeItem{x}...)
-		attributesTab := container.NewTabItem("Attributes", attributeList)
+		r, err := a.iw.u.eis.FactionLogo(factionID, app.IconPixelSize)
+		if err != nil {
+			return err
+		}
 		fyne.Do(func() {
-			a.tabs.Append(attributesTab)
+			a.logo.Resource = r
+			a.logo.Refresh()
 		})
-	}
-	fyne.Do(func() {
-		a.name.SetText(o.Name)
-		a.description.SetText(o.Description)
-		a.tabs.Refresh()
+		return nil
 	})
-	return nil
+	g.Go(func() error {
+		if a.iw.u.IsDeveloperMode() {
+			x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
+			x.Action = func(v any) {
+				a.iw.u.App().Clipboard().SetContent(v.(string))
+			}
+			attributeList := newAttributeList(a.iw, []attributeItem{x}...)
+			attributesTab := container.NewTabItem("Attributes", attributeList)
+			fyne.Do(func() {
+				a.tabs.Append(attributesTab)
+			})
+		}
+		fyne.Do(func() {
+			a.name.SetText(o.Name)
+			a.description.SetText(o.Description)
+			a.tabs.Refresh()
+		})
+		return nil
+	})
+	return g.Wait()
 }
 
 type regionInfo struct {
 	widget.BaseWidget
+	baseInfoWidget
 
 	description    *widget.Label
 	constellations *entityList
 	id             int32
 	iw             *InfoWindow
 	logo           *canvas.Image
-	name           *widget.Label
 	tabs           *container.AppTabs
 }
 
@@ -1233,10 +1265,10 @@ func newRegionInfo(iw *InfoWindow, id int32) *regionInfo {
 		id:          id,
 		description: description,
 		logo:        makeInfoLogo(),
-		name:        makeInfoName(),
 		tabs:        container.NewAppTabs(),
 	}
 	a.logo.Resource = icons.Region64Png
+	a.initBase()
 	a.ExtendBaseWidget(a)
 	a.constellations = newEntityList(a.iw.show)
 	constellations := container.NewTabItem("Constellations", a.constellations)
@@ -1282,45 +1314,49 @@ func (a *regionInfo) update() error {
 	if err != nil {
 		return err
 	}
-	if !a.iw.u.IsDeveloperMode() {
-		x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
-		x.Action = func(v any) {
-			a.iw.u.App().Clipboard().SetContent(v.(string))
+	g := new(errgroup.Group)
+	g.Go(func() error {
+		if !a.iw.u.IsDeveloperMode() {
+			x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
+			x.Action = func(v any) {
+				a.iw.u.App().Clipboard().SetContent(v.(string))
+			}
+			attributeList := newAttributeList(a.iw, []attributeItem{x}...)
+			attributesTab := container.NewTabItem("Attributes", attributeList)
+			fyne.Do(func() {
+				a.tabs.Append(attributesTab)
+			})
 		}
-		attributeList := newAttributeList(a.iw, []attributeItem{x}...)
-		attributesTab := container.NewTabItem("Attributes", attributeList)
 		fyne.Do(func() {
-			a.tabs.Append(attributesTab)
+			a.name.SetText(o.Name)
+			a.description.SetText(o.DescriptionPlain())
+			a.tabs.Refresh()
 		})
-	}
-	fyne.Do(func() {
-		a.name.SetText(o.Name)
-		a.description.SetText(o.DescriptionPlain())
-		a.tabs.Refresh()
+		return nil
 	})
-	go func() {
+	g.Go(func() error {
 		oo, err := a.iw.u.eus.GetRegionConstellationsESI(ctx, o.ID)
 		if err != nil {
-			slog.Error("region info: Failed to load constellations", "region", o.ID, "error", err)
-			return
+			return err
 		}
 		items := xslices.Map(oo, NewEntityItemFromEveEntity)
 		fyne.Do(func() {
 			a.constellations.set(items...)
 			a.tabs.Refresh()
 		})
-	}()
+		return nil
+	})
 	return nil
 }
 
 type solarSystemInfo struct {
 	widget.BaseWidget
+	baseInfoWidget
 
 	constellation *kxwidget.TappableLabel
 	id            int32
 	iw            *InfoWindow
 	logo          *canvas.Image
-	name          *widget.Label
 	planets       *entityList
 	region        *kxwidget.TappableLabel
 	security      *widget.Label
@@ -1341,10 +1377,10 @@ func newSolarSystemInfo(iw *InfoWindow, id int32) *solarSystemInfo {
 		constellation: constellation,
 		iw:            iw,
 		logo:          makeInfoLogo(),
-		name:          makeInfoName(),
 		security:      widget.NewLabel(""),
 		tabs:          container.NewAppTabs(),
 	}
+	a.initBase()
 	a.ExtendBaseWidget(a)
 	a.planets = newEntityList(a.iw.show)
 	a.stargates = newEntityList(a.iw.show)
@@ -1407,38 +1443,41 @@ func (a *solarSystemInfo) update() error {
 	if err != nil {
 		return err
 	}
-	if a.iw.u.IsDeveloperMode() {
-		x := newAttributeItem("EVE ID", fmt.Sprint(a.id))
-		x.Action = func(v any) {
-			a.iw.u.App().Clipboard().SetContent(v.(string))
-		}
-		attributeList := newAttributeList(a.iw, []attributeItem{x}...)
-		attributesTab := container.NewTabItem("Attributes", attributeList)
-		fyne.Do(func() {
-			a.tabs.Append(attributesTab)
-		})
+	starID, planets, stargateIDs, stations, structures, err := a.iw.u.eus.GetSolarSystemInfoESI(ctx, a.id)
+	if err != nil {
+		return err
 	}
-	fyne.Do(func() {
-		a.name.SetText(o.Name)
-		a.region.SetText(o.Constellation.Region.Name)
-		a.region.OnTapped = func() {
-			a.iw.showEveEntity(o.Constellation.Region.ToEveEntity())
+	g := new(errgroup.Group)
+	g.Go(func() error {
+		if a.iw.u.IsDeveloperMode() {
+			x := newAttributeItem("EVE ID", fmt.Sprint(a.id))
+			x.Action = func(v any) {
+				a.iw.u.App().Clipboard().SetContent(v.(string))
+			}
+			attributeList := newAttributeList(a.iw, []attributeItem{x}...)
+			attributesTab := container.NewTabItem("Attributes", attributeList)
+			fyne.Do(func() {
+				a.tabs.Append(attributesTab)
+			})
 		}
-		a.constellation.SetText(o.Constellation.Name)
-		a.constellation.OnTapped = func() {
-			a.iw.showEveEntity(o.Constellation.ToEveEntity())
-		}
-		a.security.Text = o.SecurityStatusDisplay()
-		a.security.Importance = o.SecurityType().ToImportance()
-		a.security.Refresh()
-		a.tabs.Refresh()
+		fyne.Do(func() {
+			a.name.SetText(o.Name)
+			a.region.SetText(o.Constellation.Region.Name)
+			a.region.OnTapped = func() {
+				a.iw.showEveEntity(o.Constellation.Region.ToEveEntity())
+			}
+			a.constellation.SetText(o.Constellation.Name)
+			a.constellation.OnTapped = func() {
+				a.iw.showEveEntity(o.Constellation.ToEveEntity())
+			}
+			a.security.Text = o.SecurityStatusDisplay()
+			a.security.Importance = o.SecurityType().ToImportance()
+			a.security.Refresh()
+			a.tabs.Refresh()
+		})
+		return nil
 	})
-	go func() {
-		starID, planets, stargateIDs, stations, structures, err := a.iw.u.eus.GetSolarSystemInfoESI(ctx, a.id)
-		if err != nil {
-			slog.Error("solar system info: Failed to load system info", "solarSystem", a.id, "error", err)
-			return
-		}
+	g.Go(func() error {
 		stationItems := entityItemsFromEveEntities(stations)
 		structureItems := xslices.Map(structures, func(x *app.EveLocation) entityItem {
 			return newEntityItem(
@@ -1453,48 +1492,48 @@ func (a *solarSystemInfo) update() error {
 			a.structures.set(structureItems...)
 			a.tabs.Refresh()
 		})
+		return nil
+	})
+	g.Go(func() error {
 		id, err := a.iw.u.eus.GetStarTypeID(ctx, starID)
 		if err != nil {
-			return
+			return err
 		}
 		r, err := a.iw.u.eis.InventoryTypeIcon(id, app.IconPixelSize)
 		if err != nil {
-			slog.Error("solar system info: Failed to load logo", "solarSystem", a.id, "error", err)
-			return
+			return err
 		}
 		fyne.Do(func() {
 			a.logo.Resource = r
 			a.logo.Refresh()
 		})
-
-		go func() {
-			ss, err := a.iw.u.eus.GetStargateSolarSystemsESI(ctx, stargateIDs)
-			if err != nil {
-				slog.Error("solar system info: Failed to load adjacent systems", "solarSystem", a.id, "error", err)
-				return
-			}
-			items := xslices.Map(ss, newEntityItemFromEveSolarSystem)
-			fyne.Do(func() {
-				a.stargates.set(items...)
-				a.tabs.Refresh()
-			})
-		}()
-
-		go func() {
-			pp, err := a.iw.u.eus.GetSolarSystemPlanets(ctx, planets)
-			if err != nil {
-				slog.Error("solar system info: Failed to load planets", "solarSystem", a.id, "error", err)
-				return
-			}
-			items := xslices.Map(pp, newEntityItemFromEvePlanet)
-			fyne.Do(func() {
-				a.planets.set(items...)
-				a.tabs.Refresh()
-			})
-		}()
-
-	}()
-	return nil
+		return nil
+	})
+	g.Go(func() error {
+		ss, err := a.iw.u.eus.GetStargateSolarSystemsESI(ctx, stargateIDs)
+		if err != nil {
+			return err
+		}
+		items := xslices.Map(ss, newEntityItemFromEveSolarSystem)
+		fyne.Do(func() {
+			a.stargates.set(items...)
+			a.tabs.Refresh()
+		})
+		return nil
+	})
+	g.Go(func() error {
+		pp, err := a.iw.u.eus.GetSolarSystemPlanets(ctx, planets)
+		if err != nil {
+			return err
+		}
+		items := xslices.Map(pp, newEntityItemFromEvePlanet)
+		fyne.Do(func() {
+			a.planets.set(items...)
+			a.tabs.Refresh()
+		})
+		return nil
+	})
+	return g.Wait()
 }
 
 type attributeItem struct {

@@ -42,7 +42,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 	var characterNav *iwidget.Navigator
 	mailMenu := fyne.NewMenu("")
 	communicationsMenu := fyne.NewMenu("")
-	u.characterMail.OnSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
+	u.characterMail.onSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 		page := NewCharacterSendMail(bu, c, mode, mail)
 		if mode != app.SendMailNew {
 			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
@@ -92,7 +92,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		"Mail",
 		theme.MailComposeIcon(),
 		func() {
-			u.characterMail.OnSelected = func() {
+			u.characterMail.onSelected = func() {
 				characterNav.PushHideNavBar(
 					newCharacterAppBar(
 						"Mail",
@@ -111,7 +111,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 					"Mail",
 					u.characterMail.Headers,
 					iwidget.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
-					iwidget.NewIconButton(u.characterMail.MakeComposeMessageAction()),
+					iwidget.NewIconButton(u.characterMail.makeComposeMessageAction()),
 				))
 		},
 	)
@@ -176,7 +176,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		})
 	}
 
-	u.characterMail.OnUpdate = func(count int) {
+	u.characterMail.onUpdate = func(count int) {
 		s := ""
 		if count > 0 {
 			s = fmt.Sprintf("%s unread", humanize.Comma(int64(count)))
@@ -472,12 +472,10 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		}()
 	}
 	u.onUpdateCharacter = func(c *app.Character) {
-		notifyItems := u.characterCommunications.MakeFolderMenu()
-		mailItems := u.characterMail.makeFolderMenu()
 		fyne.Do(func() {
-			mailMenu.Items = mailItems
+			mailMenu.Items = u.characterMail.makeFolderMenu()
 			mailMenu.Refresh()
-			communicationsMenu.Items = notifyItems
+			communicationsMenu.Items = u.characterCommunications.makeFolderMenu()
 			communicationsMenu.Refresh()
 			if c == nil {
 				navBar.Disable(0)
