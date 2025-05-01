@@ -24,9 +24,18 @@ appimage: release build-appimage
 loc:
 	gocloc ./internal --by-file --include-lang=Go --not-match="\.sql\.go" --not-match-d="eveicon" --not-match="_test\.go"
 
-deploy-android:
+deploy-android: check-device make-android install-android
+
+make-android:
 	fyne package -os android
-	adb install -r -d EVE_Buddy.apk
 
 install-android:
 	adb install -r -d EVE_Buddy.apk
+
+# check-device aborts when no Android device is connected
+check-device:
+	@if ! adb devices | grep -q device$$; then\
+		echo "device not found";\
+		exit 1;\
+	fi
+	@echo device found
