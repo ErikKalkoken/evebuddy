@@ -105,14 +105,8 @@ func (iw *InfoWindow) show(v infoVariant, id int64) {
 		title = "Corporation"
 		page = newCorporationInfo(iw, int32(id))
 	case infoInventoryType:
-		a, err := NewInventoryTypeInfo(iw, int32(id), iw.u.currentCharacterID())
-		if err != nil {
-			iw.u.ShowInformationDialog("ERROR", "Something whent wrong when trying to show info for type", iw.w)
-			slog.Error("show type", "error", err)
-			return
-		}
-		title = a.title()
-		page = a
+		page = newInventoryTypeInfo(iw, int32(id), iw.u.currentCharacterID())
+		title = "Item" // TODO: Restore dynamic title
 	case infoRace:
 		title = "Race"
 		page = newRaceInfo(iw, int32(id))
