@@ -785,7 +785,7 @@ func (a *characterInfo) makeRolesTab(roles []app.CharacterRole) (*container.TabI
 		},
 	)
 	search := widget.NewEntry()
-	search.PlaceHolder = "Type to filter list..."
+	search.PlaceHolder = "Search roles"
 	search.OnChanged = func(s string) {
 		if len(s) < 2 {
 			rolesFiltered = slices.Clone(roles)
@@ -793,7 +793,7 @@ func (a *characterInfo) makeRolesTab(roles []app.CharacterRole) (*container.TabI
 			return
 		}
 		rolesFiltered = xslices.Filter(roles, func(x app.CharacterRole) bool {
-			return strings.Contains(x.Role.String(), s)
+			return strings.Contains(x.Role.String(), strings.ToLower(s))
 		})
 		list.Refresh()
 	}
