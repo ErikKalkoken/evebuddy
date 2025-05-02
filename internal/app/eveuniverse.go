@@ -344,6 +344,13 @@ type EveDogmaAttribute struct {
 	Unit         EveUnitID
 }
 
+const (
+	npcCorporationIDBegin = 1_000_000
+	npcCorporationIDEnd   = 2_000_000
+	npcCharacterIDBegin   = 3_000_000
+	npcCharacterIDEnd     = 4_000_000
+)
+
 // An EveEntity in EveOnline.
 type EveEntity struct {
 	Category EveEntityCategory
@@ -356,8 +363,22 @@ func (ee EveEntity) CategoryDisplay() string {
 	return titler.String(ee.Category.String())
 }
 
+// IsCharacter reports whether an entity is a character.
 func (ee EveEntity) IsCharacter() bool {
 	return ee.Category == EveEntityCharacter
+}
+
+// IsNPC reports whether an entity is a NPC.
+//
+// This function only works for characters and corporations and returns an empty value for anything else..
+func (ee EveEntity) IsNPC() optional.Optional[bool] {
+	switch ee.Category {
+	case EveEntityCharacter:
+		return optional.New(ee.ID >= npcCharacterIDBegin && ee.ID < npcCharacterIDEnd)
+	case EveEntityCorporation:
+		return optional.New(ee.ID >= npcCorporationIDBegin && ee.ID < npcCorporationIDEnd)
+	}
+	return optional.Optional[bool]{}
 }
 
 func (ee *EveEntity) Compare(other *EveEntity) int {

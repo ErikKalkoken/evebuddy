@@ -545,8 +545,11 @@ func newCharacterInfo(iw *InfoWindow, id int32) *characterInfo {
 		container.NewTabItem("Bio", container.NewVScroll(a.bio)),
 		container.NewTabItem("Description", container.NewVScroll(a.description)),
 		attributes,
-		container.NewTabItem("Employment History", a.employeeHistory),
 	)
+	ee := app.EveEntity{ID: id, Category: app.EveEntityCharacter}
+	if !ee.IsNPC().ValueOrZero() {
+		a.tabs.Append(container.NewTabItem("Employment History", a.employeeHistory))
+	}
 	a.tabs.Select(attributes)
 	return a
 }
@@ -738,6 +741,13 @@ func (a *characterInfo) makeAttributes(o *app.EveCharacter) []attributeItem {
 	if o.Faction != nil {
 		attributes = append(attributes, newAttributeItem("Faction", o.Faction))
 	}
+	var u any
+	if v := o.ToEveEntity().IsNPC(); v.IsEmpty() {
+		u = "?"
+	} else {
+		u = v.ValueOrZero()
+	}
+	attributes = append(attributes, newAttributeItem("NPC", u))
 	if a.iw.u.IsDeveloperMode() {
 		x := newAttributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
@@ -916,8 +926,11 @@ func newCorporationInfo(iw *InfoWindow, id int32) *corporationInfo {
 	a.tabs = container.NewAppTabs(
 		container.NewTabItem("Description", container.NewVScroll(a.description)),
 		attributes,
-		container.NewTabItem("Alliance History", a.allianceHistory),
 	)
+	ee := app.EveEntity{ID: id, Category: app.EveEntityCorporation}
+	if !ee.IsNPC().ValueOrZero() {
+		a.tabs.Append(container.NewTabItem("Alliance History", a.allianceHistory))
+	}
 	a.tabs.Select(attributes)
 	return a
 }
@@ -977,45 +990,7 @@ func (a *corporationInfo) update() error {
 		return nil
 	})
 	g.Go(func() error {
-		attributes := make([]attributeItem, 0)
-		if o.Ceo != nil {
-			attributes = append(attributes, newAttributeItem("CEO", o.Ceo))
-		}
-		if o.Creator != nil {
-			attributes = append(attributes, newAttributeItem("Founder", o.Creator))
-		}
-		if o.Alliance != nil {
-			attributes = append(attributes, newAttributeItem("Alliance", o.Alliance))
-		}
-		if o.Ticker != "" {
-			attributes = append(attributes, newAttributeItem("Ticker Name", o.Ticker))
-		}
-		if o.Faction != nil {
-			attributes = append(attributes, newAttributeItem("Faction", o.Faction))
-		}
-		if o.Shares != 0 {
-			attributes = append(attributes, newAttributeItem("Shares", o.Shares))
-		}
-		if o.MemberCount != 0 {
-			attributes = append(attributes, newAttributeItem("Member Count", o.MemberCount))
-		}
-		if o.TaxRate != 0 {
-			attributes = append(attributes, newAttributeItem("ISK Tax Rate", o.TaxRate))
-		}
-		attributes = append(attributes, newAttributeItem("War Eligability", o.WarEligible))
-		if o.URL != "" {
-			u, err := url.ParseRequestURI(o.URL)
-			if err == nil && u.Host != "" {
-				attributes = append(attributes, newAttributeItem("URL", u))
-			}
-		}
-		if a.iw.u.IsDeveloperMode() {
-			x := newAttributeItem("EVE ID", o.ID)
-			x.Action = func(_ any) {
-				a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
-			}
-			attributes = append(attributes, x)
-		}
+		attributes := a.makeAttributes(o)
 		fyne.Do(func() {
 			a.name.SetText(o.Name)
 			a.description.SetText(o.DescriptionPlain())
@@ -1082,6 +1057,56 @@ func (a *corporationInfo) update() error {
 		return nil
 	})
 	return g.Wait()
+}
+
+func (a *corporationInfo) makeAttributes(o *app.EveCorporation) []attributeItem {
+	attributes := make([]attributeItem, 0)
+	if o.Ceo != nil {
+		attributes = append(attributes, newAttributeItem("CEO", o.Ceo))
+	}
+	if o.Creator != nil {
+		attributes = append(attributes, newAttributeItem("Founder", o.Creator))
+	}
+	if o.Alliance != nil {
+		attributes = append(attributes, newAttributeItem("Alliance", o.Alliance))
+	}
+	if o.Ticker != "" {
+		attributes = append(attributes, newAttributeItem("Ticker Name", o.Ticker))
+	}
+	if o.Faction != nil {
+		attributes = append(attributes, newAttributeItem("Faction", o.Faction))
+	}
+	var u any
+	if v := o.ToEveEntity().IsNPC(); v.IsEmpty() {
+		u = "?"
+	} else {
+		u = v.ValueOrZero()
+	}
+	attributes = append(attributes, newAttributeItem("NPC", u))
+	if o.Shares != 0 {
+		attributes = append(attributes, newAttributeItem("Shares", o.Shares))
+	}
+	if o.MemberCount != 0 {
+		attributes = append(attributes, newAttributeItem("Member Count", o.MemberCount))
+	}
+	if o.TaxRate != 0 {
+		attributes = append(attributes, newAttributeItem("ISK Tax Rate", o.TaxRate))
+	}
+	attributes = append(attributes, newAttributeItem("War Eligability", o.WarEligible))
+	if o.URL != "" {
+		u, err := url.ParseRequestURI(o.URL)
+		if err == nil && u.Host != "" {
+			attributes = append(attributes, newAttributeItem("URL", u))
+		}
+	}
+	if a.iw.u.IsDeveloperMode() {
+		x := newAttributeItem("EVE ID", o.ID)
+		x.Action = func(_ any) {
+			a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
+		}
+		attributes = append(attributes, x)
+	}
+	return attributes
 }
 
 // locationInfo shows public information about a character.
