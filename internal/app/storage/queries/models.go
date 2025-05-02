@@ -215,6 +215,12 @@ type CharacterPlanet struct {
 	UpgradeLevel int64
 }
 
+type CharacterRole struct {
+	ID          int64
+	CharacterID int64
+	Name        string
+}
+
 type CharacterSectionStatus struct {
 	ID          int64
 	CharacterID int64

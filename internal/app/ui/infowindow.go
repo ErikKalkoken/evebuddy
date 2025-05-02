@@ -676,25 +676,7 @@ func (a *characterInfo) update() error {
 			}
 			a.title.SetText("Title: " + o.Title)
 		})
-		attributes := []attributeItem{
-			newAttributeItem("Born", o.Birthday.Format(app.DateTimeFormat)),
-			newAttributeItem("Race", o.Race),
-			newAttributeItem("Security Status", fmt.Sprintf("%.1f", o.SecurityStatus)),
-			newAttributeItem("Corporation", o.Corporation),
-		}
-		if o.Alliance != nil {
-			attributes = append(attributes, newAttributeItem("Alliance", o.Alliance))
-		}
-		if o.Faction != nil {
-			attributes = append(attributes, newAttributeItem("Faction", o.Faction))
-		}
-		if a.iw.u.IsDeveloperMode() {
-			x := newAttributeItem("EVE ID", o.ID)
-			x.Action = func(_ any) {
-				a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
-			}
-			attributes = append(attributes, x)
-		}
+		attributes := a.makeAttributes(o)
 		fyne.Do(func() {
 			a.attributes.set(attributes)
 			a.tabs.Refresh()
@@ -712,10 +694,104 @@ func (a *characterInfo) update() error {
 		})
 		return nil
 	})
+	g.Go(func() error {
+		found, err := a.iw.u.cs.HasCharacter(ctx, a.id)
+		if err != nil {
+			return err
+		}
+		if !found {
+			return nil
+		}
+		roles, err := a.iw.u.cs.ListRoles(ctx, a.id)
+		if err != nil {
+			return err
+		}
+		tab, search := a.makeRolesTab(roles)
+		fyne.Do(func() {
+			a.tabs.Append(tab)
+			a.tabs.OnSelected = func(ti *container.TabItem) {
+				if ti != tab {
+					return
+				}
+				a.iw.w.Canvas().Focus(search)
+			}
+			a.tabs.Refresh()
+		})
+		return nil
+	})
 	if err := g.Wait(); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (a *characterInfo) makeAttributes(o *app.EveCharacter) []attributeItem {
+	attributes := []attributeItem{
+		newAttributeItem("Born", o.Birthday.Format(app.DateTimeFormat)),
+		newAttributeItem("Race", o.Race),
+		newAttributeItem("Security Status", fmt.Sprintf("%.1f", o.SecurityStatus)),
+		newAttributeItem("Corporation", o.Corporation),
+	}
+	if o.Alliance != nil {
+		attributes = append(attributes, newAttributeItem("Alliance", o.Alliance))
+	}
+	if o.Faction != nil {
+		attributes = append(attributes, newAttributeItem("Faction", o.Faction))
+	}
+	if a.iw.u.IsDeveloperMode() {
+		x := newAttributeItem("EVE ID", o.ID)
+		x.Action = func(_ any) {
+			a.iw.u.App().Clipboard().SetContent(fmt.Sprint(o.ID))
+		}
+		attributes = append(attributes, x)
+	}
+	return attributes
+}
+
+func (a *characterInfo) makeRolesTab(roles []app.CharacterRole) (*container.TabItem, *widget.Entry) {
+	rolesFiltered := slices.Clone(roles)
+	list := widget.NewList(
+		func() int {
+			return len(rolesFiltered)
+		},
+		func() fyne.CanvasObject {
+			name := widget.NewLabel("Template")
+			name.Wrapping = fyne.TextWrapWord
+			return container.NewBorder(
+				nil,
+				nil,
+				nil,
+				widget.NewIcon(icons.BlankSvg),
+				name,
+			)
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(rolesFiltered) {
+				return
+			}
+			border := co.(*fyne.Container).Objects
+			border[0].(*widget.Label).SetText(rolesFiltered[id].Role.Display())
+			border[1].(*widget.Icon).SetResource(boolIconResource(rolesFiltered[id].Granted))
+		},
+	)
+	search := widget.NewEntry()
+	search.PlaceHolder = "Type to filter list..."
+	search.OnChanged = func(s string) {
+		if len(s) < 2 {
+			rolesFiltered = slices.Clone(roles)
+			list.Refresh()
+			return
+		}
+		rolesFiltered = xslices.Filter(roles, func(x app.CharacterRole) bool {
+			return strings.Contains(x.Role.String(), s)
+		})
+		list.Refresh()
+	}
+	search.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
+		search.SetText("")
+	})
+	rolesTab := container.NewTabItem("Roles", container.NewBorder(search, nil, nil, nil, list))
+	return rolesTab, search
 }
 
 type constellationInfo struct {

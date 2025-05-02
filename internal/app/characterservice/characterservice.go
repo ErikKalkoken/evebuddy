@@ -37,6 +37,7 @@ import (
 var esiScopes = []string{
 	"esi-assets.read_assets.v1",
 	"esi-characters.read_contacts.v1",
+	"esi-characters.read_corporation_roles.v1",
 	"esi-characters.read_notifications.v1",
 	"esi-clones.read_clones.v1",
 	"esi-clones.read_implants.v1",
@@ -134,7 +135,7 @@ type esiCharacterAssetPlus struct {
 
 func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionAssets {
-		panic("called with wrong section")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	hasChanged, err := s.updateSectionIfChanged(
 		ctx, arg,
@@ -311,7 +312,7 @@ func (s *CharacterService) GetAttributes(ctx context.Context, characterID int32)
 
 func (s *CharacterService) updateAttributesESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionAttributes {
-		panic("called with wrong section")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
@@ -442,6 +443,18 @@ func (s *CharacterService) UpdateIsTrainingWatched(ctx context.Context, id int32
 	return s.st.UpdateCharacterIsTrainingWatched(ctx, id, v)
 }
 
+// HasCharacter reports whether a character exists.
+func (s *CharacterService) HasCharacter(ctx context.Context, id int32) (bool, error) {
+	_, err := s.GetCharacter(ctx, id)
+	if errors.Is(err, app.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 // TODO: Add test for UpdateOrCreateCharacterFromSSO
 
 // UpdateOrCreateCharacterFromSSO creates or updates a character via SSO authentication.
@@ -488,7 +501,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 
 func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionLocation {
-		panic("called with wrong section")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
@@ -523,7 +536,7 @@ func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.Charac
 
 func (s *CharacterService) updateOnlineESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionOnline {
-		panic("called with wrong section")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
@@ -545,7 +558,7 @@ func (s *CharacterService) updateOnlineESI(ctx context.Context, arg app.Characte
 
 func (s *CharacterService) updateShipESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionShip {
-		panic("called with wrong section")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
@@ -571,7 +584,7 @@ func (s *CharacterService) updateShipESI(ctx context.Context, arg app.CharacterU
 
 func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionWalletBalance {
-		panic("called with wrong section")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
@@ -728,7 +741,7 @@ var contractTypeFromESIValue = map[string]app.ContractType{
 // updateContractsESI updates the wallet journal from ESI and reports whether it has changed.
 func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionContracts {
-		panic("called with wrong section")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
@@ -986,7 +999,7 @@ func (s *CharacterService) ListImplants(ctx context.Context, characterID int32) 
 
 func (s *CharacterService) updateImplantsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionImplants {
-		panic("called with wrong section")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
@@ -1034,7 +1047,7 @@ func (s *CharacterService) ListAllCharacterIndustryJob(ctx context.Context) ([]*
 
 func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionIndustryJobs {
-		panic("called with wrong section")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
@@ -1163,7 +1176,7 @@ func (s *CharacterService) calcNextCloneJump(ctx context.Context, c *app.Charact
 
 func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionJumpClones {
-		panic("called with wrong section")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
@@ -1403,7 +1416,7 @@ const (
 // and reports whether it has changed.
 func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionMailLabels {
-		panic("called with wrong section")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
@@ -1439,7 +1452,7 @@ func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.Char
 // and reports whether it has changed.
 func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionMailLists {
-		panic("called with wrong section")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
@@ -1469,7 +1482,7 @@ func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.Chara
 // and reports whether it has changed.
 func (s *CharacterService) updateMailsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionMails {
-		panic("called with wrong section")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
@@ -1748,7 +1761,7 @@ func (s *CharacterService) ListNotificationsUnread(ctx context.Context, characte
 
 func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionNotifications {
-		panic("called with wrong section")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
@@ -1892,7 +1905,7 @@ func (s *CharacterService) ListPlanets(ctx context.Context, characterID int32) (
 
 func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionPlanets {
-		panic("called with wrong section")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
@@ -1991,6 +2004,111 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 		})
 }
 
+func (s *CharacterService) ListRoles(ctx context.Context, characterID int32) ([]app.CharacterRole, error) {
+	granted, err := s.st.ListCharacterRoles(ctx, characterID)
+	if err != nil {
+		return nil, err
+	}
+	rolesSorted := slices.SortedFunc(app.CorporationRoles(), func(a, b app.Role) int {
+		return strings.Compare(a.String(), b.String())
+	})
+	roles := make([]app.CharacterRole, 0)
+	for _, r := range rolesSorted {
+		o := app.CharacterRole{
+			CharacterID: characterID,
+			Role:        r,
+			Granted:     granted.Contains(r),
+		}
+		roles = append(roles, o)
+	}
+	return roles, nil
+}
+
+// Roles
+func (s *CharacterService) updateRolesESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+	if arg.Section != app.SectionRoles {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+	}
+	roleMap := map[string]app.Role{
+		"Account_Take_1":            app.RoleAccountTake1,
+		"Account_Take_2":            app.RoleAccountTake2,
+		"Account_Take_3":            app.RoleAccountTake3,
+		"Account_Take_4":            app.RoleAccountTake4,
+		"Account_Take_5":            app.RoleAccountTake5,
+		"Account_Take_6":            app.RoleAccountTake6,
+		"Account_Take_7":            app.RoleAccountTake7,
+		"Accountant":                app.RoleAccountant,
+		"Auditor":                   app.RoleAuditor,
+		"Brand_Manager":             app.RoleBrandManager,
+		"Communications_Officer":    app.RoleCommunicationsOfficer,
+		"Config_Equipment":          app.RoleConfigEquipment,
+		"Config_Starbase_Equipment": app.RoleConfigStarbaseEquipment,
+		"Container_Take_1":          app.RoleContainerTake1,
+		"Container_Take_2":          app.RoleContainerTake2,
+		"Container_Take_3":          app.RoleContainerTake3,
+		"Container_Take_4":          app.RoleContainerTake4,
+		"Container_Take_5":          app.RoleContainerTake5,
+		"Container_Take_6":          app.RoleContainerTake6,
+		"Container_Take_7":          app.RoleContainerTake7,
+		"Contract_Manager":          app.RoleContractManager,
+		"Deliveries_Container_Take": app.RoleDeliveriesContainerTake,
+		"Deliveries_Query":          app.RoleDeliveriesQuery,
+		"Deliveries_Take":           app.RoleDeliveriesTake,
+		"Diplomat":                  app.RoleDiplomat,
+		"Director":                  app.RoleDirector,
+		"Factory_Manager":           app.RoleFactoryManager,
+		"Fitting_Manager":           app.RoleFittingManager,
+		"Hangar_Query_1":            app.RoleHangarQuery1,
+		"Hangar_Query_2":            app.RoleHangarQuery2,
+		"Hangar_Query_3":            app.RoleHangarQuery3,
+		"Hangar_Query_4":            app.RoleHangarQuery4,
+		"Hangar_Query_5":            app.RoleHangarQuery5,
+		"Hangar_Query_6":            app.RoleHangarQuery6,
+		"Hangar_Query_7":            app.RoleHangarQuery7,
+		"Hangar_Take_1":             app.RoleHangarTake1,
+		"Hangar_Take_2":             app.RoleHangarTake2,
+		"Hangar_Take_3":             app.RoleHangarTake3,
+		"Hangar_Take_4":             app.RoleHangarTake4,
+		"Hangar_Take_5":             app.RoleHangarTake5,
+		"Hangar_Take_6":             app.RoleHangarTake6,
+		"Hangar_Take_7":             app.RoleHangarTake7,
+		"Junior_Accountant":         app.RoleJuniorAccountant,
+		"Personnel_Manager":         app.RolePersonnelManager,
+		"Project_Manager":           app.RoleProjectManager,
+		"Rent_Factory_Facility":     app.RoleRentFactoryFacility,
+		"Rent_Office":               app.RoleRentOffice,
+		"Rent_Research_Facility":    app.RoleRentResearchFacility,
+		"Security_Officer":          app.RoleSecurityOfficer,
+		"Skill_Plan_Manager":        app.RoleSkillPlanManager,
+		"Starbase_Defense_Operator": app.RoleStarbaseDefenseOperator,
+		"Starbase_Fuel_Technician":  app.RoleStarbaseFuelTechnician,
+		"Station_Manager":           app.RoleStationManager,
+		"Trader":                    app.RoleTrader,
+	}
+
+	return s.updateSectionIfChanged(
+		ctx, arg,
+		func(ctx context.Context, characterID int32) (any, error) {
+			roles, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterIdRoles(ctx, characterID, nil)
+			if err != nil {
+				return false, err
+			}
+			return roles, nil
+		},
+		func(ctx context.Context, characterID int32, data any) error {
+			r := data.(esi.GetCharactersCharacterIdRolesOk)
+			var roles set.Set[app.Role]
+			for _, n := range r.Roles {
+				r, ok := roleMap[n]
+				if !ok {
+					slog.Warn("received unknown role from ESI", "characterID", characterID, "role", n)
+				}
+				roles.Add(r)
+			}
+			return s.st.UpdateCharacterRoles(ctx, characterID, roles)
+		})
+}
+
 // SearchESI performs a name search for items on the ESI server
 // and returns the results by EveEntity category and sorted by name.
 // It also returns the total number of results.
@@ -2067,7 +2185,7 @@ func (s *CharacterService) SearchESI(
 // and reports back if it has changed
 func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.CharacterID == 0 || arg.Section == "" {
-		panic("update section: invalid parameters")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	if !arg.ForceUpdate {
 		status, err := s.st.GetCharacterSectionStatus(ctx, arg.CharacterID, arg.Section)
@@ -2107,6 +2225,8 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 		f = s.updateNotificationsESI
 	case app.SectionOnline:
 		f = s.updateOnlineESI
+	case app.SectionRoles:
+		f = s.updateRolesESI
 	case app.SectionPlanets:
 		f = s.updatePlanetsESI
 	case app.SectionShip:
@@ -2249,7 +2369,7 @@ func (s *CharacterService) ListSkillGroupsProgress(ctx context.Context, characte
 
 func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionSkills {
-		panic("called with wrong section")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
@@ -2335,7 +2455,7 @@ func (s *CharacterService) ListSkillqueueItems(ctx context.Context, characterID 
 // and reports whether it has changed.
 func (s *CharacterService) UpdateSkillqueueESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionSkillqueue {
-		panic("called with wrong section")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
@@ -2430,7 +2550,7 @@ func (s *CharacterService) ListWalletJournalEntries(ctx context.Context, charact
 // updateWalletJournalEntryESI updates the wallet journal from ESI and reports whether it has changed.
 func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionWalletJournal {
-		panic("called with wrong section")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
@@ -2519,7 +2639,7 @@ func (s *CharacterService) ListWalletTransactions(ctx context.Context, character
 // updateWalletTransactionESI updates the wallet journal from ESI and reports whether it has changed.
 func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionWalletTransactions {
-		panic("called with wrong section")
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
