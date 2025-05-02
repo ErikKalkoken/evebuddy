@@ -470,32 +470,32 @@ func (u *BaseUI) updateCrossPages() {
 
 // TODO: Replace with "infinite" variant, because progress can not be shown correctly.
 func runFunctionsWithProgressModal(title string, ff map[string]func(), onSuccess func(), w fyne.Window) {
-	m := kxmodal.NewProgress("Updating", title, func(p binding.Float) error {
-		start := time.Now()
-		myLog := slog.With("title", title)
-		myLog.Debug("started")
-		var wg sync.WaitGroup
-		var completed atomic.Int64
-		for name, f := range ff {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				start2 := time.Now()
-				f()
-				x := completed.Add(1)
-				fyne.Do(func() {
-					if err := p.Set(float64(x)); err != nil {
-						myLog.Warn("failed set progress", "error", err)
-					}
-				})
-				myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
-			}()
-		}
-		wg.Wait()
-		myLog.Debug("completed", "duration", time.Since(start).Milliseconds())
-		return nil
-	}, float64(len(ff)), w)
 	fyne.Do(func() {
+		m := kxmodal.NewProgress("Updating", title, func(p binding.Float) error {
+			start := time.Now()
+			myLog := slog.With("title", title)
+			myLog.Debug("started")
+			var wg sync.WaitGroup
+			var completed atomic.Int64
+			for name, f := range ff {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					start2 := time.Now()
+					f()
+					x := completed.Add(1)
+					fyne.Do(func() {
+						if err := p.Set(float64(x)); err != nil {
+							myLog.Warn("failed set progress", "error", err)
+						}
+					})
+					myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
+				}()
+			}
+			wg.Wait()
+			myLog.Debug("completed", "duration", time.Since(start).Milliseconds())
+			return nil
+		}, float64(len(ff)), w)
 		m.OnSuccess = onSuccess
 		m.Start()
 	})

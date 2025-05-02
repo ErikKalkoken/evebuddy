@@ -141,6 +141,10 @@ func NewAppBar(title string, body fyne.CanvasObject, items ...*IconButton) *AppB
 	return w
 }
 
+func (w *AppBar) SetTitle(text string) {
+	w.title.SetText(text)
+}
+
 func (w *AppBar) Title() string {
 	return w.title.Text
 }
