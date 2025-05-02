@@ -49,6 +49,7 @@ const (
 type InfoWindow struct {
 	nav           *iwidget.Navigator
 	onClosedFuncs []func() // f runs when the window is closed. Useful for cleanup.
+	sb            *iwidget.Snackbar
 	u             *BaseUI
 	w             fyne.Window
 }
@@ -149,6 +150,8 @@ func (iw *InfoWindow) show(v infoVariant, id int64) {
 	if iw.nav == nil {
 		w := iw.u.App().NewWindow(iw.u.MakeWindowTitle("Information"))
 		iw.w = w
+		iw.sb = iwidget.NewSnackbar(w)
+		iw.sb.Start()
 		iw.nav = iwidget.NewNavigatorWithAppBar(ab)
 		w.SetContent(fynetooltip.AddWindowToolTipLayer(iw.nav, w.Canvas()))
 		w.Resize(fyne.NewSize(infoWindowWidth, infoWindowHeight))
@@ -340,16 +343,22 @@ func infoWindowSupportedEveEntities() set.Set[app.EveEntityCategory] {
 
 }
 
-// baseInfoWidget represents shared functionality between all info widgets.
-type baseInfoWidget struct {
-	name *widget.Label
+// baseInfo represents shared functionality between all info widgets.
+type baseInfo struct {
+	name *kxwidget.TappableLabel
+	iw   *InfoWindow
 }
 
-func (b *baseInfoWidget) initBase() {
-	b.name = makeInfoName()
+func (b *baseInfo) initBase(iw *InfoWindow) {
+	b.iw = iw
+	b.name = kxwidget.NewTappableLabel("Loading...", func() {
+		b.iw.u.app.Clipboard().SetContent(b.name.Text)
+		b.iw.sb.Show(fmt.Sprintf("\"%s\" added to clipboard", b.name.Text))
+	})
+	b.name.Wrapping = fyne.TextWrapWord
 }
 
-func (b *baseInfoWidget) setError(s string) {
+func (b *baseInfo) setError(s string) {
 	b.name.Text = s
 	b.name.Importance = widget.DangerImportance
 	b.name.Refresh()
@@ -358,12 +367,11 @@ func (b *baseInfoWidget) setError(s string) {
 // allianceInfo shows public information about a character.
 type allianceInfo struct {
 	widget.BaseWidget
-	baseInfoWidget
+	baseInfo
 
 	attributes *attributeList
 	hq         *kxwidget.TappableLabel
 	id         int32
-	iw         *InfoWindow
 	logo       *canvas.Image
 	members    *entityList
 	tabs       *container.AppTabs
@@ -373,12 +381,11 @@ func newAllianceInfo(iw *InfoWindow, id int32) *allianceInfo {
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Wrapping = fyne.TextWrapWord
 	a := &allianceInfo{
-		iw:   iw,
 		id:   id,
 		logo: makeInfoLogo(),
 		hq:   hq,
 	}
-	a.initBase()
+	a.initBase(iw)
 	a.ExtendBaseWidget(a)
 	a.attributes = newAttributeList(a.iw)
 	a.members = newEntityList(a.iw.show)
@@ -486,7 +493,7 @@ func (a *allianceInfo) update() error {
 // characterInfo shows public information about a character.
 type characterInfo struct {
 	widget.BaseWidget
-	baseInfoWidget
+	baseInfo
 
 	alliance        *kxwidget.TappableLabel
 	bio             *widget.Label
@@ -495,7 +502,6 @@ type characterInfo struct {
 	description     *widget.Label
 	employeeHistory *entityList
 	id              int32
-	iw              *InfoWindow
 	membership      *widget.Label
 	portrait        *kxwidget.TappableImage
 	security        *widget.Label
@@ -525,13 +531,12 @@ func newCharacterInfo(iw *InfoWindow, id int32) *characterInfo {
 		corporationLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		description:     description,
 		id:              id,
-		iw:              iw,
 		membership:      widget.NewLabel(""),
 		portrait:        portrait,
 		security:        widget.NewLabel(""),
 		title:           title,
 	}
-	a.initBase()
+	a.initBase(iw)
 	a.ExtendBaseWidget(a)
 	a.attributes = newAttributeList(a.iw)
 	a.employeeHistory = newEntityListFromItems(a.iw.show)
@@ -715,10 +720,9 @@ func (a *characterInfo) update() error {
 
 type constellationInfo struct {
 	widget.BaseWidget
-	baseInfoWidget
+	baseInfo
 
 	id      int32
-	iw      *InfoWindow
 	logo    *canvas.Image
 	region  *kxwidget.TappableLabel
 	systems *entityList
@@ -729,13 +733,13 @@ func newConstellationInfo(iw *InfoWindow, id int32) *constellationInfo {
 	region := kxwidget.NewTappableLabel("", nil)
 	region.Wrapping = fyne.TextWrapWord
 	a := &constellationInfo{
-		iw:     iw,
+
 		id:     id,
 		logo:   makeInfoLogo(),
 		region: region,
 		tabs:   container.NewAppTabs(),
 	}
-	a.initBase()
+	a.initBase(iw)
 	a.ExtendBaseWidget(a)
 	a.logo.Resource = icons.Constellation64Png
 	a.systems = newEntityList(a.iw.show)
@@ -800,7 +804,7 @@ func (a *constellationInfo) update() error {
 // corporationInfo shows public information about a character.
 type corporationInfo struct {
 	widget.BaseWidget
-	baseInfoWidget
+	baseInfo
 
 	alliance        *kxwidget.TappableLabel
 	allianceHistory *entityList
@@ -809,7 +813,6 @@ type corporationInfo struct {
 	description     *widget.Label
 	hq              *kxwidget.TappableLabel
 	id              int32
-	iw              *InfoWindow
 	logo            *canvas.Image
 	tabs            *container.AppTabs
 }
@@ -827,10 +830,9 @@ func newCorporationInfo(iw *InfoWindow, id int32) *corporationInfo {
 		description:  description,
 		hq:           hq,
 		id:           id,
-		iw:           iw,
 		logo:         makeInfoLogo(),
 	}
-	a.initBase()
+	a.initBase(iw)
 	a.ExtendBaseWidget(a)
 	a.attributes = newAttributeList(a.iw)
 	a.allianceHistory = newEntityListFromItems(a.iw.show)
@@ -1009,11 +1011,10 @@ func (a *corporationInfo) update() error {
 // locationInfo shows public information about a character.
 type locationInfo struct {
 	widget.BaseWidget
-	baseInfoWidget
+	baseInfo
 
 	description *widget.Label
 	id          int64
-	iw          *InfoWindow
 	location    *entityList
 	owner       *kxwidget.TappableLabel
 	ownerLogo   *canvas.Image
@@ -1036,14 +1037,13 @@ func newLocationInfo(iw *InfoWindow, id int64) *locationInfo {
 	a := &locationInfo{
 		description: description,
 		id:          id,
-		iw:          iw,
 		owner:       owner,
 		ownerLogo:   iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		typeImage:   typeImage,
 		typeInfo:    typeInfo,
 	}
 	a.ExtendBaseWidget(a)
-	a.initBase()
+	a.initBase(iw)
 	a.location = newEntityList(a.iw.show)
 	location := container.NewTabItem("Location", a.location)
 	a.services = newEntityList(a.iw.show)
@@ -1173,10 +1173,9 @@ func (a *locationInfo) update() error {
 
 type raceInfo struct {
 	widget.BaseWidget
-	baseInfoWidget
+	baseInfo
 
 	id          int32
-	iw          *InfoWindow
 	logo        *canvas.Image
 	tabs        *container.AppTabs
 	description *widget.Label
@@ -1188,12 +1187,11 @@ func newRaceInfo(iw *InfoWindow, id int32) *raceInfo {
 	a := &raceInfo{
 		description: description,
 		id:          id,
-		iw:          iw,
 		logo:        makeInfoLogo(),
 		tabs:        container.NewAppTabs(),
 	}
 	a.logo.Resource = icons.BlankSvg
-	a.initBase()
+	a.initBase(iw)
 	a.ExtendBaseWidget(a)
 	a.tabs = container.NewAppTabs(
 		container.NewTabItem("Description", container.NewVScroll(a.description)),
@@ -1259,12 +1257,11 @@ func (a *raceInfo) update() error {
 
 type regionInfo struct {
 	widget.BaseWidget
-	baseInfoWidget
+	baseInfo
 
 	description    *widget.Label
 	constellations *entityList
 	id             int32
-	iw             *InfoWindow
 	logo           *canvas.Image
 	tabs           *container.AppTabs
 }
@@ -1273,14 +1270,13 @@ func newRegionInfo(iw *InfoWindow, id int32) *regionInfo {
 	description := widget.NewLabel("")
 	description.Wrapping = fyne.TextWrapWord
 	a := &regionInfo{
-		iw:          iw,
 		id:          id,
 		description: description,
 		logo:        makeInfoLogo(),
 		tabs:        container.NewAppTabs(),
 	}
 	a.logo.Resource = icons.Region64Png
-	a.initBase()
+	a.initBase(iw)
 	a.ExtendBaseWidget(a)
 	a.constellations = newEntityList(a.iw.show)
 	constellations := container.NewTabItem("Constellations", a.constellations)
@@ -1363,11 +1359,10 @@ func (a *regionInfo) update() error {
 
 type solarSystemInfo struct {
 	widget.BaseWidget
-	baseInfoWidget
+	baseInfo
 
 	constellation *kxwidget.TappableLabel
 	id            int32
-	iw            *InfoWindow
 	logo          *canvas.Image
 	planets       *entityList
 	region        *kxwidget.TappableLabel
@@ -1387,12 +1382,11 @@ func newSolarSystemInfo(iw *InfoWindow, id int32) *solarSystemInfo {
 		id:            id,
 		region:        region,
 		constellation: constellation,
-		iw:            iw,
 		logo:          makeInfoLogo(),
 		security:      widget.NewLabel(""),
 		tabs:          container.NewAppTabs(),
 	}
-	a.initBase()
+	a.initBase(iw)
 	a.ExtendBaseWidget(a)
 	a.planets = newEntityList(a.iw.show)
 	a.stargates = newEntityList(a.iw.show)
@@ -1551,7 +1545,7 @@ func (a *solarSystemInfo) update() error {
 // inventoryTypeInfo displays information about Eve Online inventory types.
 type inventoryTypeInfo struct {
 	widget.BaseWidget
-	baseInfoWidget
+	baseInfo
 
 	setTitle         func(string) // for setting the title during update
 	characterIcon    *canvas.Image
@@ -1560,7 +1554,6 @@ type inventoryTypeInfo struct {
 	checkIcon        *widget.Icon
 	description      *widget.Label
 	evemarketbrowser *fyne.Container
-	iw               *InfoWindow
 	janice           *fyne.Container
 	tabs             *container.AppTabs
 	typeIcon         *kxwidget.TappableImage
@@ -1578,11 +1571,10 @@ func newInventoryTypeInfo(iw *InfoWindow, typeID, characterID int32) *inventoryT
 		characterID:   characterID,
 		checkIcon:     widget.NewIcon(icons.BlankSvg),
 		description:   description,
-		iw:            iw,
 		typeIcon:      typeIcon,
 		typeID:        typeID,
 	}
-	a.initBase()
+	a.initBase(iw)
 	a.ExtendBaseWidget(a)
 
 	a.checkIcon.Hide()
@@ -2584,10 +2576,4 @@ func historyItem2EntityItem(hi app.MembershipHistoryItem) entityItem {
 func makeInfoLogo() *canvas.Image {
 	logo := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(logoUnitSize))
 	return logo
-}
-
-func makeInfoName() *widget.Label {
-	name := widget.NewLabel("Loading...")
-	name.Wrapping = fyne.TextWrapWord
-	return name
 }
