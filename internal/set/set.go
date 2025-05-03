@@ -8,6 +8,16 @@
 //   - Prevents accidental comparison with == operator
 //   - Ideomatic API (inspired by Go proposal for new set type)
 //   - 100% test coverage
+//
+// Usage in tests:
+//
+// Sets can be compared with testify's assert.Equal method.
+// Except for a nil set (the zero value),
+// which is not reported as "equal" with empty sets by assert.Equal.
+// Sets use maps internally, so this issue is similar to comparing nil maps and initialized maps.
+// We recommend to avoid nil sets in tests if possible.
+// Alternativly, nil sets can be correctly compared with [Set.Equal],
+// Also, all methods and functions return empty sets to enable normal comparisons in tests.
 package set
 
 import (
@@ -29,7 +39,7 @@ type Set[E comparable] struct {
 
 // Of returns a set of the elements v.
 func Of[E comparable](v ...E) Set[E] {
-	var s Set[E]
+	s := Set[E]{m: map[E]struct{}{}}
 	for _, w := range v {
 		s.Add(w)
 	}
@@ -46,13 +56,19 @@ func (s *Set[E]) Add(v E) {
 
 // AddSeq adds the values from seq to s.
 func (s *Set[E]) AddSeq(seq iter.Seq[E]) {
+	if s.m == nil {
+		s.m = make(map[E]struct{})
+	}
 	for v := range seq {
 		s.Add(v)
 	}
 }
 
 // Clear removes all elements from set s.
-func (s Set[E]) Clear() {
+func (s *Set[E]) Clear() {
+	if s.m == nil {
+		s.m = make(map[E]struct{})
+	}
 	clear(s.m)
 }
 
@@ -187,11 +203,11 @@ func (s Set[E]) All() iter.Seq[E] {
 
 // Collect returns a new [Set] created from the elements of iterable seq.
 func Collect[E comparable](seq iter.Seq[E]) Set[E] {
-	var s Set[E]
+	r := Of[E]()
 	for v := range seq {
-		s.Add(v)
+		r.Add(v)
 	}
-	return s
+	return r
 }
 
 // Difference constructs a new [Set] containing the elements of s that are not present in others.
@@ -199,23 +215,23 @@ func Difference[E comparable](s Set[E], others ...Set[E]) Set[E] {
 	if len(others) == 0 {
 		return s
 	}
-	var n Set[E]
+	r := Of[E]()
 	o := Union(others...)
 	for v := range s.m {
 		if !o.Contains(v) {
-			n.Add(v)
+			r.Add(v)
 		}
 	}
-	return n
+	return r
 }
 
 // Intersection returns a new [Set] with elements common to all sets.
 //
 // When less then 2 sets are provided they will be assumed to be empty.
 func Intersection[E comparable](sets ...Set[E]) Set[E] {
-	var n Set[E]
+	r := Of[E]()
 	if len(sets) < 2 {
-		return n
+		return r
 	}
 L:
 	for v := range sets[0].m {
@@ -224,20 +240,20 @@ L:
 				continue L
 			}
 		}
-		n.Add(v)
+		r.Add(v)
 	}
-	return n
+	return r
 }
 
 // Union returns a new [Set] with the elements of all sets.
 func Union[E comparable](sets ...Set[E]) Set[E] {
-	var n Set[E]
+	r := Of[E]()
 	for _, s := range sets {
 		for v := range s.m {
-			n.Add(v)
+			r.Add(v)
 		}
 	}
-	return n
+	return r
 }
 
 // nocmp is an uncomparable struct. Embed this inside another struct to make it uncomparable.

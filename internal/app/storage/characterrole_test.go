@@ -26,7 +26,7 @@ func TestCharacterRole(t *testing.T) {
 		if assert.NoError(t, err) {
 			r2, err := r.ListCharacterRoles(ctx, c.ID)
 			if assert.NoError(t, err) {
-				testutil.AssertEqualSet(t, r1, r2)
+				assert.Equal(t, r1, r2)
 			}
 		}
 	})
@@ -44,7 +44,7 @@ func TestCharacterRole(t *testing.T) {
 		if assert.NoError(t, err) {
 			r2, err := r.ListCharacterRoles(ctx, c.ID)
 			if assert.NoError(t, err) {
-				testutil.AssertEqualSet(t, r1, r2)
+				assert.Equal(t, r1, r2)
 			}
 		}
 	})
@@ -62,7 +62,7 @@ func TestCharacterRole(t *testing.T) {
 		if assert.NoError(t, err) {
 			r2, err := r.ListCharacterRoles(ctx, c.ID)
 			if assert.NoError(t, err) {
-				testutil.AssertEqualSet(t, r1, r2)
+				assert.Equal(t, r1, r2)
 			}
 		}
 	})

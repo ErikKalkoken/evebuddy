@@ -1629,7 +1629,7 @@ func TestUpdateCharacterRolesESI(t *testing.T) {
 			assert.True(t, changed)
 			r, err := st.ListCharacterRoles(ctx, c.ID)
 			if assert.NoError(t, err) {
-				testutil.AssertEqualSet(t, set.Of(app.RoleDirector, app.RoleStationManager), r)
+				assert.Equal(t, set.Of(app.RoleDirector, app.RoleStationManager), r)
 			}
 		}
 	})

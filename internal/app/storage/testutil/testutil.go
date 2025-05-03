@@ -5,11 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/stretchr/testify/assert"
 )
 
 func New() (*sql.DB, *storage.Storage, Factory) {
@@ -84,9 +81,4 @@ func TruncateTables(dbRW *sql.DB) {
 	if err != nil {
 		panic(err)
 	}
-}
-
-// AssertEqualSet asserts that two sets are equal.
-func AssertEqualSet[T comparable](t *testing.T, want, got set.Set[T]) {
-	assert.True(t, want.Equal(got), "got: %s, want: %s", got, want)
 }
