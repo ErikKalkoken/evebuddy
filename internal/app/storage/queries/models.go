@@ -329,6 +329,24 @@ type EveConstellation struct {
 	Name        string
 }
 
+type EveCorporation struct {
+	ID            int64
+	AllianceID    sql.NullInt64
+	CeoID         sql.NullInt64
+	CreatorID     sql.NullInt64
+	DateFounded   sql.NullTime
+	Description   string
+	FactionID     sql.NullInt64
+	HomeStationID sql.NullInt64
+	MemberCount   int64
+	Name          string
+	Shares        sql.NullInt64
+	TaxRate       float64
+	Ticker        string
+	Url           string
+	WarEligible   bool
+}
+
 type EveDogmaAttribute struct {
 	ID           int64
 	DefaultValue float64

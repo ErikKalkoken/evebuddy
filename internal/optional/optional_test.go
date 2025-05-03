@@ -3,6 +3,7 @@ package optional_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/stretchr/testify/assert"
@@ -129,4 +130,15 @@ func TestConvertNumeric(t *testing.T) {
 		optional.Optional[float64]{},
 		optional.ConvertNumeric[int32, float64](optional.Optional[int32]{}),
 	)
+}
+
+func TestFromIntegerWithZero(t *testing.T) {
+	assert.Equal(t, optional.New(5), optional.FromIntegerWithZero(5))
+	assert.Equal(t, optional.Optional[int]{}, optional.FromIntegerWithZero(0))
+}
+
+func TestFromIntegerWithTime(t *testing.T) {
+	x := time.Now()
+	assert.Equal(t, optional.New(x), optional.FromTimeWithZero(x))
+	assert.Equal(t, optional.Optional[time.Time]{}, optional.FromTimeWithZero(time.Time{}))
 }

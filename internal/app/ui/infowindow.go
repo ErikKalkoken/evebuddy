@@ -973,7 +973,7 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *corporationInfo) update() error {
 	ctx := context.Background()
-	o, err := a.iw.u.eus.GetCorporationESI(ctx, a.id)
+	o, err := a.iw.u.eus.GetOrCreateCorporationESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -1044,10 +1044,10 @@ func (a *corporationInfo) update() error {
 			items = append(items, xslices.Map(history2, historyItem2EntityItem)...)
 		}
 		var founded string
-		if o.DateFounded.IsZero() {
+		if o.DateFounded.IsEmpty() {
 			founded = "?"
 		} else {
-			founded = fmt.Sprintf("**%s**", o.DateFounded.Format(app.DateFormat))
+			founded = fmt.Sprintf("**%s**", o.DateFounded.ValueOrZero().Format(app.DateFormat))
 		}
 		items = append(items, newEntityItem(0, "Corporation Founded", founded, infoNotSupported))
 		fyne.Do(func() {
@@ -1083,7 +1083,7 @@ func (a *corporationInfo) makeAttributes(o *app.EveCorporation) []attributeItem 
 		u = v.ValueOrZero()
 	}
 	attributes = append(attributes, newAttributeItem("NPC", u))
-	if o.Shares != 0 {
+	if !o.Shares.IsEmpty() {
 		attributes = append(attributes, newAttributeItem("Shares", o.Shares))
 	}
 	if o.MemberCount != 0 {

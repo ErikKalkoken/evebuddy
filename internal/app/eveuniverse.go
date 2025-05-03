@@ -128,14 +128,14 @@ type EveCorporation struct {
 	Alliance    *EveEntity
 	Ceo         *EveEntity
 	Creator     *EveEntity
-	DateFounded time.Time
+	DateFounded optional.Optional[time.Time]
 	Description string
 	Faction     *EveEntity
 	HomeStation *EveEntity
 	ID          int32
 	MemberCount int
 	Name        string
-	Shares      int
+	Shares      optional.Optional[int]
 	TaxRate     float32
 	Ticker      string
 	URL         string

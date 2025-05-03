@@ -1033,6 +1033,46 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *a
 	return c
 }
 
+func (f Factory) CreateEveCorporation(args ...storage.CreateEveCorporationParams) *app.EveCorporation {
+	ctx := context.TODO()
+	var arg storage.CreateEveCorporationParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ID == 0 {
+		arg.ID = int32(f.calcNewID("eve_corporations", "id", startIDCorporation))
+	}
+	if arg.Name == "" {
+		arg.Name = fake.Company()
+	}
+	if arg.CeoID.IsEmpty() {
+		c := f.CreateEveEntityCharacter()
+		arg.CeoID.Set(c.ID)
+	}
+	if arg.CreatorID.IsEmpty() {
+		c := f.CreateEveEntityCharacter()
+		arg.CreatorID.Set(c.ID)
+	}
+	if arg.DateFounded.IsEmpty() {
+		arg.DateFounded = optional.New(time.Now().Add(-100 * time.Hour))
+	}
+	if arg.Description == "" {
+		arg.Description = fake.Paragraphs()
+	}
+	if arg.MemberCount == 0 {
+		arg.MemberCount = rand.Int32N(1000 + 1)
+	}
+	err := f.st.CreateEveCorporation(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	c, err := f.st.GetEveCorporation(ctx, arg.ID)
+	if err != nil {
+		panic(err)
+	}
+	return c
+}
+
 type GeneralSectionStatusParams struct {
 	Section      app.GeneralSection
 	ErrorMessage string

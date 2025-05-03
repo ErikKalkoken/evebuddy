@@ -6,6 +6,7 @@ package optional
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"golang.org/x/exp/constraints"
 )
@@ -105,4 +106,22 @@ func ConvertNumeric[X Numeric, Y Numeric](o Optional[X]) Optional[Y] {
 		return Optional[Y]{}
 	}
 	return New(Y(o.ValueOrZero()))
+}
+
+// FromIntegerWithZero returns an optional from an integer
+// where a zero value is interpreted as empty.
+func FromIntegerWithZero[T constraints.Integer](v T) Optional[T] {
+	if v == 0 {
+		return Optional[T]{}
+	}
+	return New(v)
+}
+
+// FromTimeWithZero returns an optional from a [time.Time]
+// where a zero value is interpreted as empty.
+func FromTimeWithZero(v time.Time) Optional[time.Time] {
+	if v.IsZero() {
+		return Optional[time.Time]{}
+	}
+	return New(v)
 }
