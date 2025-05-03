@@ -122,9 +122,10 @@ func TestCharacterAsset(t *testing.T) {
 		err := r.DeleteCharacterAssets(ctx, c.ID, []int64{x2.ItemID})
 		// then
 		if assert.NoError(t, err) {
-			ids, err := r.ListCharacterAssetIDs(ctx, c.ID)
+			got, err := r.ListCharacterAssetIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, set.Of(x1.ItemID), ids)
+				want := set.Of(x1.ItemID)
+				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 			}
 		}
 	})

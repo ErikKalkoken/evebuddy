@@ -7,8 +7,8 @@
 //   - Usable zero value
 //   - Supports standard iterators
 //   - Prevents accidental comparison with == operator
-//   - Ideomatic API (inspired by Go proposal for new set type)
-//   - 100% test coverage
+//   - Idiomatic API (inspired by latest Go proposal for new set type)
+//   - Full test coverage
 //
 // # Zero value
 //

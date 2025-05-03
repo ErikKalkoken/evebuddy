@@ -74,7 +74,7 @@ func TestWalletTransaction(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(e1.TransactionID, e2.TransactionID, e3.TransactionID)
-			assert.Equal(t, want, got)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 	t.Run("can list existing entries", func(t *testing.T) {

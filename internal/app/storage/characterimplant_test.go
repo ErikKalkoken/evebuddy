@@ -69,7 +69,7 @@ func TestCharacterImplant(t *testing.T) {
 				got.Add(o.EveType.ID)
 			}
 			want := set.Of(x1.EveType.ID, x2.EveType.ID)
-			assert.Equal(t, want, got)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 }

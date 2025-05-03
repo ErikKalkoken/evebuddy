@@ -37,14 +37,14 @@ func TestCharacterRole(t *testing.T) {
 		if err := r.UpdateCharacterRoles(ctx, c.ID, set.Of(app.RoleBrandManager)); err != nil {
 			panic(err)
 		}
-		r1 := set.Of(app.RoleDiplomat, app.RoleBrandManager)
+		want := set.Of(app.RoleDiplomat, app.RoleBrandManager)
 		// when
-		err := r.UpdateCharacterRoles(ctx, c.ID, set.Of(app.RoleDiplomat, app.RoleBrandManager))
+		err := r.UpdateCharacterRoles(ctx, c.ID, want)
 		// then
 		if assert.NoError(t, err) {
-			r2, err := r.ListCharacterRoles(ctx, c.ID)
+			got, err := r.ListCharacterRoles(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, r1, r2)
+				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 			}
 		}
 	})
@@ -55,14 +55,14 @@ func TestCharacterRole(t *testing.T) {
 		if err := r.UpdateCharacterRoles(ctx, c.ID, set.Of(app.RoleDiplomat, app.RoleBrandManager)); err != nil {
 			panic(err)
 		}
-		r1 := set.Of(app.RoleDiplomat)
+		want := set.Of(app.RoleDiplomat)
 		// when
-		err := r.UpdateCharacterRoles(ctx, c.ID, r1)
+		err := r.UpdateCharacterRoles(ctx, c.ID, want)
 		// then
 		if assert.NoError(t, err) {
-			r2, err := r.ListCharacterRoles(ctx, c.ID)
+			got, err := r.ListCharacterRoles(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, r1, r2)
+				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 			}
 		}
 	})
