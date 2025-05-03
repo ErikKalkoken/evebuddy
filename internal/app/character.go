@@ -490,6 +490,143 @@ type CharacterImplant struct {
 	SlotNum     int // 0 = unknown
 }
 
+// A Role is the in-game role of a character in a corporatipn.
+type Role uint
+
+const (
+	RoleAccountant Role = iota + 1
+	RoleAccountTake1
+	RoleAccountTake2
+	RoleAccountTake3
+	RoleAccountTake4
+	RoleAccountTake5
+	RoleAccountTake6
+	RoleAccountTake7
+	RoleAuditor
+	RoleBrandManager
+	RoleCommunicationsOfficer
+	RoleConfigEquipment
+	RoleConfigStarbaseEquipment
+	RoleContainerTake1
+	RoleContainerTake2
+	RoleContainerTake3
+	RoleContainerTake4
+	RoleContainerTake5
+	RoleContainerTake6
+	RoleContainerTake7
+	RoleContractManager
+	RoleDeliveriesContainerTake
+	RoleDeliveriesQuery
+	RoleDeliveriesTake
+	RoleDiplomat
+	RoleDirector
+	RoleFactoryManager
+	RoleFittingManager
+	RoleHangarQuery1
+	RoleHangarQuery2
+	RoleHangarQuery3
+	RoleHangarQuery4
+	RoleHangarQuery5
+	RoleHangarQuery6
+	RoleHangarQuery7
+	RoleHangarTake1
+	RoleHangarTake2
+	RoleHangarTake3
+	RoleHangarTake4
+	RoleHangarTake5
+	RoleHangarTake6
+	RoleHangarTake7
+	RoleJuniorAccountant
+	RolePersonnelManager
+	RoleProjectManager
+	RoleRentFactoryFacility
+	RoleRentOffice
+	RoleRentResearchFacility
+	RoleSecurityOfficer
+	RoleSkillPlanManager
+	RoleStarbaseDefenseOperator
+	RoleStarbaseFuelTechnician
+	RoleStationManager
+	RoleTrader
+)
+
+func (cp Role) String() string {
+	s := role2String[cp]
+	return s
+}
+
+func (cp Role) Display() string {
+	titler := cases.Title(language.English)
+	return titler.String(cp.String())
+}
+
+func CorporationRoles() iter.Seq[Role] {
+	return maps.Keys(role2String)
+}
+
+var role2String = map[Role]string{
+	RoleAuditor:                 "auditor",
+	RoleConfigEquipment:         "config equipment",
+	RoleContainerTake7:          "container take 7",
+	RoleFactoryManager:          "factory manager",
+	RoleHangarQuery3:            "hangar query 3",
+	RoleHangarQuery6:            "hangar query 6",
+	RoleHangarTake1:             "hangar take 1",
+	RoleHangarTake4:             "hangar take 4",
+	RoleContainerTake3:          "container take 3",
+	RoleContractManager:         "contract manager",
+	RoleDeliveriesTake:          "deliveries take",
+	RoleHangarTake7:             "hangar take 7",
+	RoleRentFactoryFacility:     "rent factory facility",
+	RoleRentOffice:              "rent office",
+	RoleStarbaseDefenseOperator: "starbase defense operator",
+	RoleAccountTake3:            "account take 3",
+	RoleAccountTake7:            "account take 7",
+	RoleAccountant:              "accountant",
+	RoleContainerTake2:          "container take 2",
+	RoleDeliveriesQuery:         "deliveries query",
+	RoleHangarQuery2:            "hangar query 2",
+	RoleHangarQuery7:            "hangar query 7",
+	RolePersonnelManager:        "personnel manager",
+	RoleAccountTake2:            "account take 2",
+	RoleAccountTake4:            "account take 4",
+	RoleBrandManager:            "brand manager",
+	RoleContainerTake4:          "container take 4",
+	RoleDeliveriesContainerTake: "deliveries container take",
+	RoleHangarQuery5:            "hangar query 5",
+	RoleHangarTake5:             "hangar take 5",
+	RoleHangarTake6:             "hangar take 6",
+	RoleConfigStarbaseEquipment: "config starbase equipment",
+	RoleHangarTake3:             "hangar take 3",
+	RoleStationManager:          "station manager",
+	RoleAccountTake1:            "account take 1",
+	RoleContainerTake1:          "container take 1",
+	RoleDiplomat:                "diplomat",
+	RoleHangarTake2:             "hangar take 2",
+	RoleProjectManager:          "project manager",
+	RoleRentResearchFacility:    "rent research facility",
+	RoleSecurityOfficer:         "security officer",
+	RoleSkillPlanManager:        "skill plan manager",
+	RoleFittingManager:          "fitting manager",
+	RoleAccountTake5:            "account take 5",
+	RoleAccountTake6:            "account take 6",
+	RoleCommunicationsOfficer:   "communications officer",
+	RoleDirector:                "director",
+	RoleHangarQuery1:            "hangar query 1",
+	RoleStarbaseFuelTechnician:  "starbase fuel technician",
+	RoleTrader:                  "trader",
+	RoleContainerTake5:          "container take 5",
+	RoleContainerTake6:          "container take 6",
+	RoleHangarQuery4:            "hangar query 4",
+	RoleJuniorAccountant:        "junior accountant",
+}
+
+type CharacterRole struct {
+	CharacterID int32
+	Role        Role
+	Granted     bool
+}
+
 // IndustryActivity represents the activity type of an industry job.
 // See also: https://github.com/esi/esi-issues/issues/894
 type IndustryActivity int32

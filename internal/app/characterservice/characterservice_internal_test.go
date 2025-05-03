@@ -1596,6 +1596,45 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 	})
 }
 
+func TestUpdateCharacterRolesESI(t *testing.T) {
+	db, st, factory := testutil.New()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := newCharacterService(st)
+	ctx := context.Background()
+	t.Run("should update roles", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/roles/`,
+			httpmock.NewJsonResponderOrPanic(200, map[string][]string{
+				"roles": {
+					"Director",
+					"Station_Manager",
+				},
+			}),
+		)
+		// when
+		changed, err := s.updateRolesESI(ctx, app.CharacterUpdateSectionParams{
+			CharacterID: c.ID,
+			Section:     app.SectionRoles,
+		})
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, changed)
+			r, err := st.ListCharacterRoles(ctx, c.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, set.Of(app.RoleDirector, app.RoleStationManager), r)
+			}
+		}
+	})
+}
+
 // TODO: Add tests for UpdateSectionIfNeeded()
 
 func TestUpdateCharacterSectionIfChanged(t *testing.T) {

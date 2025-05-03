@@ -31,6 +31,7 @@ const (
 	SectionNotifications      CharacterSection = "notifications"
 	SectionOnline             CharacterSection = "online"
 	SectionPlanets            CharacterSection = "planets"
+	SectionRoles              CharacterSection = "roles"
 	SectionShip               CharacterSection = "ship"
 	SectionSkillqueue         CharacterSection = "skillqueue"
 	SectionSkills             CharacterSection = "skills"
@@ -52,6 +53,7 @@ var CharacterSections = []CharacterSection{
 	SectionMails,
 	SectionNotifications,
 	SectionOnline,
+	SectionRoles,
 	SectionPlanets,
 	SectionShip,
 	SectionSkillqueue,
@@ -75,6 +77,7 @@ var characterSectionTimeouts = map[CharacterSection]time.Duration{
 	SectionNotifications:      600 * time.Second,
 	SectionOnline:             300 * time.Second, // minimum 30 seconds
 	SectionPlanets:            600 * time.Second,
+	SectionRoles:              3600 * time.Second,
 	SectionShip:               300 * time.Second, // minimum 5 seconds
 	SectionSkillqueue:         120 * time.Second,
 	SectionSkills:             120 * time.Second,

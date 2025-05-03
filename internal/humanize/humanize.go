@@ -97,7 +97,7 @@ func Comma[T constraints.Integer](x T) string {
 	return humanize.Comma(int64(x))
 }
 
-func Optional[T time.Duration | time.Time | string | int | int32 | int64](o optional.Optional[T], fallback string) string {
+func Optional[T any](o optional.Optional[T], fallback string) string {
 	if o.IsEmpty() {
 		return fallback
 	}
@@ -115,8 +115,13 @@ func Optional[T time.Duration | time.Time | string | int | int32 | int64](o opti
 		return Number(float64(x), 0)
 	case int64:
 		return Number(float64(x), 0)
+	case bool:
+		if x {
+			return "yes"
+		}
+		return "no"
 	}
-	panic("not implemented")
+	return fmt.Sprint(v)
 }
 
 func OptionalComma[T constraints.Integer](o optional.Optional[T], fallback string) string {

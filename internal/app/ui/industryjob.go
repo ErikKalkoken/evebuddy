@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -28,16 +29,19 @@ type IndustryJobs struct {
 
 	body           fyne.CanvasObject
 	jobs           []*app.CharacterIndustryJob
+	jobsFiltered   []*app.CharacterIndustryJob
 	showActiveOnly atomic.Bool
 	top            *widget.Label
 	u              *BaseUI
+	search         *widget.Entry
 }
 
 func NewIndustryJobs(u *BaseUI, showActiveOnly bool) *IndustryJobs {
 	a := &IndustryJobs{
-		jobs: make([]*app.CharacterIndustryJob, 0),
-		top:  appwidget.MakeTopLabel(),
-		u:    u,
+		jobs:         make([]*app.CharacterIndustryJob, 0),
+		jobsFiltered: make([]*app.CharacterIndustryJob, 0),
+		top:          appwidget.MakeTopLabel(),
+		u:            u,
 	}
 	a.ExtendBaseWidget(a)
 	a.showActiveOnly.Store(showActiveOnly)
@@ -80,17 +84,33 @@ func NewIndustryJobs(u *BaseUI, showActiveOnly bool) *IndustryJobs {
 	}
 
 	if a.u.isDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop(headers, &a.jobs, makeCell, func(_ int, r *app.CharacterIndustryJob) {
+		a.body = iwidget.MakeDataTableForDesktop(headers, &a.jobsFiltered, makeCell, func(_ int, r *app.CharacterIndustryJob) {
 			a.showJob(r)
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.jobs, makeCell, a.showJob)
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.jobsFiltered, makeCell, a.showJob)
 	}
+	a.search = widget.NewEntry()
+	a.search.PlaceHolder = "Search blueprints"
+	a.search.OnChanged = func(s string) {
+		if len(s) < 2 {
+			a.jobsFiltered = slices.Clone(a.jobs)
+			a.body.Refresh()
+			return
+		}
+		a.jobsFiltered = xslices.Filter(a.jobs, func(x *app.CharacterIndustryJob) bool {
+			return strings.Contains(strings.ToLower(x.BlueprintType.Name), strings.ToLower(s))
+		})
+		a.body.Refresh()
+	}
+	a.search.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
+		a.search.SetText("")
+	})
 	return a
 }
 
 func (a *IndustryJobs) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(a.top, nil, nil, nil, a.body)
+	c := container.NewBorder(container.NewVBox(a.search, a.top), nil, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -123,6 +143,8 @@ func (a *IndustryJobs) update() {
 	fyne.Do(func() {
 		a.top.Hide()
 		a.jobs = jobs
+		a.jobsFiltered = slices.Clone(jobs)
+		a.search.SetText("")
 		a.body.Refresh()
 	})
 }

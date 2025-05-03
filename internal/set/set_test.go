@@ -9,21 +9,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func assertEqualSet[T comparable](t *testing.T, want, got set.Set[T]) {
-	assert.True(t, want.Equal(got), "got: %s, want: %s", got, want)
-}
-
 func TestAdd(t *testing.T) {
-	empty := set.Of[int]()
-	zero := set.Set[int]{}
 	cases := []struct {
 		name string
 		s    set.Set[int]
 		v    int
 		want set.Set[int]
 	}{
-		{"add to empty", empty, 1, set.Of(1)},
-		{"add to zero", zero, 1, set.Of(1)},
+		{"add to empty", set.Of[int](), 1, set.Of(1)},
+		{"add to zero", set.Set[int]{}, 1, set.Of(1)},
 		{"add new to non-empty", set.Of(1), 2, set.Of(1, 2)},
 		{"add existing to non-empty", set.Of(1), 1, set.Of(1)},
 	}
@@ -37,7 +31,6 @@ func TestAdd(t *testing.T) {
 
 func TestAddSeq(t *testing.T) {
 	empty := set.Of[int]()
-	zero := set.Set[int]{}
 	cases := []struct {
 		name string
 		s    set.Set[int]
@@ -46,15 +39,15 @@ func TestAddSeq(t *testing.T) {
 	}{
 		{"add many to non-empty", set.Of(1), set.Of(1, 2).All(), set.Of(1, 2)},
 		{"add none to non-empty", set.Of(1), empty.All(), set.Of(1)},
-		{"add many to empty", empty, set.Of(1, 2).All(), set.Of(1, 2)},
-		{"add none to empty", empty, empty.All(), empty},
-		{"add many to zero", empty, set.Of(1, 2).All(), set.Of(1, 2)},
-		{"add none to zero", zero, empty.All(), zero},
+		{"add many to empty", set.Of[int](), set.Of(1, 2).All(), set.Of(1, 2)},
+		{"add none to empty", set.Of[int](), empty.All(), empty},
+		{"add many to zero", set.Of[int](), set.Of(1, 2).All(), set.Of(1, 2)},
+		{"add none to zero", set.Set[int]{}, empty.All(), empty},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.s.AddSeq(tc.seq)
-			assertEqualSet(t, tc.want, tc.s)
+			assert.Equal(t, tc.want, tc.s)
 		})
 	}
 }
@@ -66,7 +59,7 @@ func TestAll(t *testing.T) {
 		for e := range s1.All() {
 			s2.Add(e)
 		}
-		assertEqualSet(t, s1, s2)
+		assert.Equal(t, s1, s2)
 	})
 	t.Run("can iterate over empty set", func(t *testing.T) {
 		s1 := set.Of[int]()
@@ -234,21 +227,19 @@ func TestEqual(t *testing.T) {
 }
 
 func TestClear(t *testing.T) {
-	empty := set.Of[int]()
-	zero := set.Set[int]{}
 	cases := []struct {
 		name string
 		s    set.Set[int]
 		want set.Set[int]
 	}{
-		{"non-empty", set.Of(1, 2), zero},
-		{"empty", empty, zero},
-		{"zero", zero, zero},
+		{"non-empty", set.Of(1, 2), set.Of[int]()},
+		{"empty", set.Of[int](), set.Of[int]()},
+		{"zero", set.Set[int]{}, set.Of[int]()},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.s.Clear()
-			assertEqualSet(t, tc.want, tc.s)
+			assert.Equal(t, tc.want, tc.s)
 		})
 	}
 }
@@ -329,7 +320,7 @@ func TestDeleteSeq(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			x := tc.s.DeleteSeq(tc.seq)
-			assertEqualSet(t, tc.wantSet, tc.s)
+			assert.Equal(t, tc.wantSet, tc.s)
 			assert.Equal(t, tc.wantCount, x)
 		})
 	}
@@ -352,7 +343,7 @@ func TestOf(t *testing.T) {
 	t.Run("can create from empty slice", func(t *testing.T) {
 		got := set.Of([]int{}...)
 		want := set.Of[int]()
-		assertEqualSet(t, want, got)
+		assert.Equal(t, want, got)
 	})
 }
 
@@ -425,11 +416,11 @@ func TestSlice(t *testing.T) {
 func TestCollect(t *testing.T) {
 	t.Run("can create a new set from an iterable with items", func(t *testing.T) {
 		s := set.Collect(slices.Values([]int{1, 2, 3}))
-		assertEqualSet(t, set.Of(1, 2, 3), s)
+		assert.Equal(t, set.Of(1, 2, 3), s)
 	})
 	t.Run("can create a new set from an iterable without items", func(t *testing.T) {
 		s := set.Collect(slices.Values([]int{}))
-		assertEqualSet(t, set.Of[int](), s)
+		assert.Equal(t, set.Of[int](), s)
 	})
 }
 
@@ -454,7 +445,7 @@ func TestDifference(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := set.Difference(tc.s, tc.others...)
-			assertEqualSet(t, tc.want, got)
+			assert.Equal(t, tc.want, got)
 		})
 	}
 }
@@ -512,6 +503,33 @@ func TestUnion(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got := set.Union(tc.sets...)
 			assert.True(t, got.Equal(tc.want))
+		})
+	}
+}
+
+// TestAssert tests that testify's assert functions work correctly with the Set type.
+func TestAssert(t *testing.T) {
+	cases := []struct {
+		name  string
+		a     set.Set[int]
+		b     set.Set[int]
+		equal bool
+	}{
+		{"non-empty equal", set.Of(1, 2), set.Of(2, 1), true},
+		{"non-empty not-equal 1", set.Of(1, 2), set.Of(2, 1, 3), false},
+		{"non-empty not-equal 1", set.Of(1, 2), set.Of(1), false},
+		{"non-empty vs. empty", set.Of(1, 2), set.Of[int](), false},
+		{"empty", set.Of[int](), set.Of[int](), true},
+		{"zero", set.Set[int]{}, set.Set[int]{}, true},
+		{"empty vs. zero", set.Of[int](), set.Set[int]{}, false}, // note that this is false
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.equal {
+				assert.Equal(t, tc.b, tc.a)
+			} else {
+				assert.NotEqual(t, tc.b, tc.a)
+			}
 		})
 	}
 }

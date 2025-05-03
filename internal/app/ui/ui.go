@@ -869,6 +869,8 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 				}
 			}()
 		}
+	case app.SectionRoles:
+		// nothing to do
 	case app.SectionSkills:
 		if needsRefresh {
 			u.overviewTraining.update()
@@ -911,7 +913,7 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			u.characterWalletTransaction.update()
 		}
 	default:
-		slog.Warn(fmt.Sprintf("section not part of the update ticker: %s", s))
+		slog.Warn(fmt.Sprintf("section not part of the refresh ticker: %s", s))
 	}
 }
 
