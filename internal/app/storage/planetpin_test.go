@@ -89,7 +89,7 @@ func TestPlanetPin(t *testing.T) {
 				got.Add(o.ID)
 			}
 			want := set.Of(x1.ID, x2.ID)
-			assert.Equal(t, want, got)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 	t.Run("can delete pins", func(t *testing.T) {

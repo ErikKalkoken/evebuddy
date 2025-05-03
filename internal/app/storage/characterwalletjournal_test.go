@@ -108,7 +108,7 @@ func TestWalletJournalEntry(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(e1.RefID, e2.RefID, e3.RefID)
-			assert.Equal(t, want, got)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 	t.Run("can list existing entries", func(t *testing.T) {

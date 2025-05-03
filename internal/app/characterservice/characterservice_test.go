@@ -343,7 +343,7 @@ func TestUpdateMail(t *testing.T) {
 							got.Add(l.LabelID)
 						}
 						want := set.Of(labelIDs...)
-						assert.True(t, want.Equal(got))
+						assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 					}
 					lists, err := st.ListCharacterMailListsOrdered(ctx, c2.ID)
 					if assert.NoError(t, err) {
@@ -352,7 +352,7 @@ func TestUpdateMail(t *testing.T) {
 							got.Add(l.ID)
 						}
 						want := set.Of(m2.ID)
-						assert.True(t, want.Equal(got))
+						assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 					}
 				}
 			}
@@ -464,7 +464,7 @@ func TestUpdateMail(t *testing.T) {
 					got.Add(l.LabelID)
 				}
 				want := set.Of[int32](16, 32)
-				assert.Equal(t, want, got)
+				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 			}
 		}
 	})

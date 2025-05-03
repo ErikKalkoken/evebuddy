@@ -96,7 +96,7 @@ func TestMail(t *testing.T) {
 		// then
 		assert.NoError(t, err)
 		want := set.Of([]int32{10, 11, 12}...)
-		assert.Equal(t, want, got)
+		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 	})
 	t.Run("can delete existing mail", func(t *testing.T) {
 		// given

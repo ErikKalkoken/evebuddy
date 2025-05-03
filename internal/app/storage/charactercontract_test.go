@@ -155,7 +155,7 @@ func TestCharacterContract(t *testing.T) {
 		if assert.NoError(t, err) {
 			got := set.Of(ids...)
 			want := set.Of([]int32{e1.ContractID, e2.ContractID, e3.ContractID}...)
-			assert.Equal(t, want, got)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 	t.Run("can list existing contracts", func(t *testing.T) {

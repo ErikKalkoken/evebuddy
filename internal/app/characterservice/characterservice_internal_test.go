@@ -681,7 +681,7 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 					got.Add(o.EveType.ID)
 				}
 				want := set.Of(t1.ID, t2.ID)
-				assert.True(t, want.Equal(got))
+				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 			}
 		}
 	})
@@ -1627,9 +1627,10 @@ func TestUpdateCharacterRolesESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			r, err := st.ListCharacterRoles(ctx, c.ID)
+			got, err := st.ListCharacterRoles(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, set.Of(app.RoleDirector, app.RoleStationManager), r)
+				want := set.Of(app.RoleDirector, app.RoleStationManager)
+				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 			}
 		}
 	})

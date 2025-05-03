@@ -36,8 +36,9 @@ func TestAppSettings(t *testing.T) {
 	t.Run("NotificationTypesEnabled", func(t *testing.T) {
 		p := settings.NewMyPref()
 		s := settings.New(p)
-		x := set.Of([]string{"alpha", "bravo"}...)
-		s.SetNotificationTypesEnabled(x)
-		assert.Equal(t, x, s.NotificationTypesEnabled())
+		got := set.Of([]string{"alpha", "bravo"}...)
+		s.SetNotificationTypesEnabled(got)
+		want := s.NotificationTypesEnabled()
+		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 	})
 }
