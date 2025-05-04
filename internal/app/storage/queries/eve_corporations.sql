@@ -22,9 +22,10 @@ WHERE
     ec.id = ?;
 
 -- name: ListEveCorporationIDs :many
-SELECT id
-FROM eve_corporations;
-
+SELECT
+    id
+FROM
+    eve_corporations;
 
 -- name: UpdateOrCreateEveCorporation :exec
 INSERT INTO

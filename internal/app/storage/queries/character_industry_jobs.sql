@@ -58,10 +58,7 @@ SET
     end_date = ?10,
     pause_date = ?16,
     status = ?22,
-    successful_runs = ?23
-WHERE
-    character_id = ?5
-    AND job_id = ?13;
+    successful_runs = ?23;
 
 -- name: GetCharacterIndustryJob :one
 SELECT

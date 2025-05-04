@@ -59,8 +59,6 @@ SET
     memory = ?6,
     perception = ?7,
     willpower = ?8
-WHERE
-    character_id = ?1
 `
 
 type UpdateOrCreateCharacterAttributesParams struct {

@@ -12,9 +12,12 @@ import (
 )
 
 const getGeneralSectionStatus = `-- name: GetGeneralSectionStatus :one
-SELECT id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
-FROM general_section_status
-WHERE section_id = ?
+SELECT
+    id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
+FROM
+    general_section_status
+WHERE
+    section_id = ?
 `
 
 func (q *Queries) GetGeneralSectionStatus(ctx context.Context, sectionID string) (GeneralSectionStatus, error) {
@@ -34,8 +37,10 @@ func (q *Queries) GetGeneralSectionStatus(ctx context.Context, sectionID string)
 }
 
 const listGeneralSectionStatus = `-- name: ListGeneralSectionStatus :many
-SELECT id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
-FROM general_section_status
+SELECT
+    id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
+FROM
+    general_section_status
 `
 
 func (q *Queries) ListGeneralSectionStatus(ctx context.Context) ([]GeneralSectionStatus, error) {
@@ -71,25 +76,24 @@ func (q *Queries) ListGeneralSectionStatus(ctx context.Context) ([]GeneralSectio
 }
 
 const updateOrCreateGeneralSectionStatus = `-- name: UpdateOrCreateGeneralSectionStatus :one
-INSERT INTO general_section_status (
-    section_id,
-    completed_at,
-    content_hash,
-    error,
-    started_at,
-    updated_at
-)
-VALUES (
-    ?1, ?2, ?3, ?4, ?5, ?6
-)
-ON CONFLICT(section_id) DO
-UPDATE SET
+INSERT INTO
+    general_section_status (
+        section_id,
+        completed_at,
+        content_hash,
+        error,
+        started_at,
+        updated_at
+    )
+VALUES
+    (?1, ?2, ?3, ?4, ?5, ?6)
+ON CONFLICT (section_id) DO UPDATE
+SET
     completed_at = ?2,
     content_hash = ?3,
     error = ?4,
     started_at = ?5,
     updated_at = ?6
-WHERE section_id = ?1
 RETURNING id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
 `
 

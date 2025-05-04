@@ -620,6 +620,8 @@ func (u *BaseUI) sendDesktopNotification(title, content string) {
 	slog.Info("desktop notification sent", "title", title, "content", content)
 }
 
+// udpate general sections
+
 func (u *BaseUI) startUpdateTickerGeneralSections() {
 	ticker := time.NewTicker(generalSectionsUpdateTicker)
 	go func() {
@@ -673,6 +675,8 @@ func (u *BaseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 	}
 }
 
+// update character sections
+
 func (u *BaseUI) startUpdateTickerCharacters() {
 	ticker := time.NewTicker(characterSectionsUpdateTicker)
 	ctx := context.Background()
@@ -697,7 +701,7 @@ func (u *BaseUI) updateCharactersIfNeeded(ctx context.Context) error {
 	for _, c := range cc {
 		go u.updateCharacterAndRefreshIfNeeded(ctx, c.ID, false)
 	}
-	slog.Debug("started update status characters") // FIXME: Reset to DEBUG
+	slog.Debug("started update status characters")
 	return nil
 }
 

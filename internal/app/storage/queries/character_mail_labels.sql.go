@@ -11,17 +11,10 @@ import (
 )
 
 const createCharacterMailLabel = `-- name: CreateCharacterMailLabel :one
-INSERT INTO character_mail_labels (
-    color,
-    name,
-    unread_count,
-    character_id,
-    label_id
-)
-VALUES (
-    ?, ?, ?, ?, ?
-)
-RETURNING id, character_id, color, label_id, name, unread_count
+INSERT INTO
+    character_mail_labels (color, name, unread_count, character_id, label_id)
+VALUES
+    (?, ?, ?, ?, ?) RETURNING id, character_id, color, label_id, name, unread_count
 `
 
 type CreateCharacterMailLabelParams struct {
@@ -54,13 +47,17 @@ func (q *Queries) CreateCharacterMailLabel(ctx context.Context, arg CreateCharac
 
 const deleteObsoleteCharacterMailLabels = `-- name: DeleteObsoleteCharacterMailLabels :exec
 DELETE FROM character_mail_labels
-WHERE character_mail_labels.character_id = ?
-AND id NOT IN (
-    SELECT character_mail_label_id
-    FROM character_mail_mail_labels
-    JOIN character_mails ON character_mails.id = character_mail_mail_labels.character_mail_id
-    WHERE character_mail_labels.character_id = ?
-)
+WHERE
+    character_mail_labels.character_id = ?
+    AND id NOT IN (
+        SELECT
+            character_mail_label_id
+        FROM
+            character_mail_mail_labels
+            JOIN character_mails ON character_mails.id = character_mail_mail_labels.character_mail_id
+        WHERE
+            character_mail_labels.character_id = ?
+    )
 `
 
 type DeleteObsoleteCharacterMailLabelsParams struct {
@@ -74,9 +71,13 @@ func (q *Queries) DeleteObsoleteCharacterMailLabels(ctx context.Context, arg Del
 }
 
 const getCharacterMailLabel = `-- name: GetCharacterMailLabel :one
-SELECT id, character_id, color, label_id, name, unread_count
-FROM character_mail_labels
-WHERE character_id = ? AND label_id = ?
+SELECT
+    id, character_id, color, label_id, name, unread_count
+FROM
+    character_mail_labels
+WHERE
+    character_id = ?
+    AND label_id = ?
 `
 
 type GetCharacterMailLabelParams struct {
@@ -99,9 +100,13 @@ func (q *Queries) GetCharacterMailLabel(ctx context.Context, arg GetCharacterMai
 }
 
 const listCharacterMailLabelsByIDs = `-- name: ListCharacterMailLabelsByIDs :many
-SELECT id, character_id, color, label_id, name, unread_count
-FROM character_mail_labels
-WHERE character_id = ? AND label_id IN (/*SLICE:ids*/?)
+SELECT
+    id, character_id, color, label_id, name, unread_count
+FROM
+    character_mail_labels
+WHERE
+    character_id = ?
+    AND label_id IN (/*SLICE:ids*/?)
 `
 
 type ListCharacterMailLabelsByIDsParams struct {
@@ -151,11 +156,15 @@ func (q *Queries) ListCharacterMailLabelsByIDs(ctx context.Context, arg ListChar
 }
 
 const listCharacterMailLabelsOrdered = `-- name: ListCharacterMailLabelsOrdered :many
-SELECT id, character_id, color, label_id, name, unread_count
-FROM character_mail_labels
-WHERE character_id = ?
-AND label_id > 8
-ORDER BY name
+SELECT
+    id, character_id, color, label_id, name, unread_count
+FROM
+    character_mail_labels
+WHERE
+    character_id = ?
+    AND label_id > 8
+ORDER BY
+    name
 `
 
 func (q *Queries) ListCharacterMailLabelsOrdered(ctx context.Context, characterID int64) ([]CharacterMailLabel, error) {
@@ -189,24 +198,15 @@ func (q *Queries) ListCharacterMailLabelsOrdered(ctx context.Context, characterI
 }
 
 const updateOrCreateCharacterMailLabel = `-- name: UpdateOrCreateCharacterMailLabel :one
-INSERT INTO character_mail_labels (
-    character_id,
-    label_id,
-    color,
-    name,
-    unread_count
-)
-VALUES (
-    ?1, ?2, ?3, ?4, ?5
-)
-ON CONFLICT(character_id, label_id) DO
-UPDATE SET
+INSERT INTO
+    character_mail_labels (character_id, label_id, color, name, unread_count)
+VALUES
+    (?1, ?2, ?3, ?4, ?5)
+ON CONFLICT (character_id, label_id) DO UPDATE
+SET
     color = ?3,
     name = ?4,
-    unread_count = ?5
-WHERE character_id = ?1
-AND label_id = ?2
-RETURNING id, character_id, color, label_id, name, unread_count
+    unread_count = ?5 RETURNING id, character_id, color, label_id, name, unread_count
 `
 
 type UpdateOrCreateCharacterMailLabelParams struct {

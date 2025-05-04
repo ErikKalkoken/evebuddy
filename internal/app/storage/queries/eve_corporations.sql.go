@@ -82,8 +82,10 @@ func (q *Queries) GetEveCorporation(ctx context.Context, id int64) (GetEveCorpor
 }
 
 const listEveCorporationIDs = `-- name: ListEveCorporationIDs :many
-SELECT id
-FROM eve_corporations
+SELECT
+    id
+FROM
+    eve_corporations
 `
 
 func (q *Queries) ListEveCorporationIDs(ctx context.Context) ([]int64, error) {

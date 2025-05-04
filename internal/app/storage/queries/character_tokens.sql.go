@@ -11,13 +11,10 @@ import (
 )
 
 const addCharacterTokenScope = `-- name: AddCharacterTokenScope :exec
-INSERT INTO character_token_scopes (
-    character_token_id,
-    scope_id
-)
-VALUES (
-    ?, ?
-)
+INSERT INTO
+    character_token_scopes (character_token_id, scope_id)
+VALUES
+    (?, ?)
 `
 
 type AddCharacterTokenScopeParams struct {
@@ -32,11 +29,15 @@ func (q *Queries) AddCharacterTokenScope(ctx context.Context, arg AddCharacterTo
 
 const clearCharacterTokenScopes = `-- name: ClearCharacterTokenScopes :exec
 DELETE FROM character_token_scopes
-WHERE character_token_id IN (
-    SELECT id
-    FROM character_tokens
-    WHERE character_id = ?
-)
+WHERE
+    character_token_id IN (
+        SELECT
+            id
+        FROM
+            character_tokens
+        WHERE
+            character_id = ?
+    )
 `
 
 func (q *Queries) ClearCharacterTokenScopes(ctx context.Context, characterID int64) error {
@@ -45,9 +46,12 @@ func (q *Queries) ClearCharacterTokenScopes(ctx context.Context, characterID int
 }
 
 const getCharacterToken = `-- name: GetCharacterToken :one
-SELECT id, access_token, character_id, expires_at, refresh_token, token_type
-FROM character_tokens
-WHERE character_id = ?
+SELECT
+    id, access_token, character_id, expires_at, refresh_token, token_type
+FROM
+    character_tokens
+WHERE
+    character_id = ?
 `
 
 func (q *Queries) GetCharacterToken(ctx context.Context, characterID int64) (CharacterToken, error) {
@@ -65,12 +69,16 @@ func (q *Queries) GetCharacterToken(ctx context.Context, characterID int64) (Cha
 }
 
 const listCharacterTokenScopes = `-- name: ListCharacterTokenScopes :many
-SELECT scopes.id, scopes.name
-FROM character_token_scopes
-JOIN scopes ON scopes.id = character_token_scopes.scope_id
-JOIN character_tokens ON character_tokens.id = character_token_scopes.character_token_id
-WHERE character_id = ?
-ORDER BY scopes.name
+SELECT
+    scopes.id, scopes.name
+FROM
+    character_token_scopes
+    JOIN scopes ON scopes.id = character_token_scopes.scope_id
+    JOIN character_tokens ON character_tokens.id = character_token_scopes.character_token_id
+WHERE
+    character_id = ?
+ORDER BY
+    scopes.name
 `
 
 func (q *Queries) ListCharacterTokenScopes(ctx context.Context, characterID int64) ([]Scope, error) {
@@ -97,23 +105,22 @@ func (q *Queries) ListCharacterTokenScopes(ctx context.Context, characterID int6
 }
 
 const updateOrCreateCharacterToken = `-- name: UpdateOrCreateCharacterToken :one
-INSERT INTO character_tokens (
-    character_id,
-    access_token,
-    expires_at,
-    refresh_token,
-    token_type
-)
-VALUES (
-    ?1, ?2, ?3, ?4, ?5
-)
-ON CONFLICT(character_id) DO
-UPDATE SET
+INSERT INTO
+    character_tokens (
+        character_id,
+        access_token,
+        expires_at,
+        refresh_token,
+        token_type
+    )
+VALUES
+    (?1, ?2, ?3, ?4, ?5)
+ON CONFLICT (character_id) DO UPDATE
+SET
     access_token = ?2,
     expires_at = ?3,
     refresh_token = ?4,
     token_type = ?5
-WHERE character_id = ?1
 RETURNING id, access_token, character_id, expires_at, refresh_token, token_type
 `
 

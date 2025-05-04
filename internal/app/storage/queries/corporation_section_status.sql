@@ -35,6 +35,4 @@ SET
     error = ?5,
     started_at = ?6,
     updated_at = ?7
-WHERE
-    corporation_id = ?1
-    AND section_id = ?2 RETURNING *;
+RETURNING *;

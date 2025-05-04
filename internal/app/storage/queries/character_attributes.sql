@@ -20,9 +20,7 @@ SET
     last_remap_date = ?5,
     memory = ?6,
     perception = ?7,
-    willpower = ?8
-WHERE
-    character_id = ?1;
+    willpower = ?8;
 
 -- name: GetCharacterAttributes :one
 SELECT
