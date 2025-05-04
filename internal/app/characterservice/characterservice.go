@@ -57,8 +57,8 @@ var esiScopes = []string{
 }
 
 type SSOService interface {
-	Authenticate(context.Context, []string) (*app.Token, error)
-	RefreshToken(context.Context, string) (*app.Token, error)
+	Authenticate(ctx context.Context, scopes []string) (*app.Token, error)
+	RefreshToken(ctx context.Context, refreshToken string) (*app.Token, error)
 }
 
 // CharacterService provides access to all managed Eve Online characters both online and from local storage.
@@ -459,15 +459,11 @@ func (s *CharacterService) HasCharacter(ctx context.Context, id int32) (bool, er
 	return true, nil
 }
 
-// TODO: Add test for UpdateOrCreateCharacterFromSSO
-
 // UpdateOrCreateCharacterFromSSO creates or updates a character via SSO authentication.
 // The provided context is used for the SSO authentication process only and can be canceled.
 func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText binding.ExternalString) (int32, error) {
 	ssoToken, err := s.sso.Authenticate(ctx, esiScopes)
-	if errors.Is(err, app.ErrAborted) {
-		return 0, app.ErrAborted
-	} else if err != nil {
+	if err != nil {
 		return 0, err
 	}
 	slog.Info("Created new SSO token", "characterID", ssoToken.CharacterID, "scopes", ssoToken.Scopes)

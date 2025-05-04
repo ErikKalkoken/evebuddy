@@ -1648,6 +1648,41 @@ func (f Factory) CreateEveMarketPrice(args ...storage.UpdateOrCreateEveMarketPri
 	return o
 }
 
+func (f *Factory) CreateToken(args ...app.Token) *app.Token {
+	o := &app.Token{
+		AccessToken:   "AccessToken",
+		CharacterID:   42,
+		CharacterName: "Bruce Wayne",
+		ExpiresAt:     time.Now().Add(20 * time.Minute),
+		RefreshToken:  "RefreshToken",
+		Scopes:        []string{},
+		TokenType:     "Character",
+	}
+	if len(args) == 0 {
+		return o
+	}
+	a := args[0]
+	if a.AccessToken != "" {
+		o.AccessToken = a.AccessToken
+	}
+	if a.RefreshToken != "" {
+		o.RefreshToken = a.RefreshToken
+	}
+	if a.CharacterName != "" {
+		o.CharacterName = a.CharacterName
+	}
+	if a.CharacterID != 0 {
+		o.CharacterID = a.CharacterID
+	}
+	if !a.ExpiresAt.IsZero() {
+		o.ExpiresAt = a.ExpiresAt
+	}
+	if len(a.Scopes) > 0 {
+		o.Scopes = a.Scopes
+	}
+	return o
+}
+
 func (f *Factory) calcNewID(table, id_field string, start int64) int64 {
 	if start < 1 {
 		panic("start must be a positive number")

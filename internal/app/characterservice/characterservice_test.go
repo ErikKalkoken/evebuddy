@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/test"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
@@ -21,17 +23,24 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
-func newCharacterService(st *storage.Storage) *characterservice.CharacterService {
+func newCharacterService(st *storage.Storage, args ...characterservice.Params) *characterservice.CharacterService {
 	scs := statuscacheservice.New(memcache.New(), st)
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
 		StatusCacheService: scs,
 		Storage:            st,
 	})
-	s := characterservice.New(characterservice.Params{
+	arg := characterservice.Params{
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,
-	})
+	}
+	if len(args) > 0 {
+		a := args[0]
+		if a.SSOService != nil {
+			arg.SSOService = a.SSOService
+		}
+	}
+	s := characterservice.New(arg)
 	return s
 }
 
@@ -83,6 +92,74 @@ func TestGetAnyCharacter(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, x1, x2)
+		}
+	})
+}
+
+type ssoFake struct {
+	token *app.Token
+	err   error
+}
+
+func (s ssoFake) Authenticate(ctx context.Context, scopes []string) (*app.Token, error) {
+	return s.token, s.err
+}
+
+func (s ssoFake) RefreshToken(ctx context.Context, refreshToken string) (*app.Token, error) {
+	return s.token, s.err
+}
+
+func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
+	db, st, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	test.NewTempApp(t)
+	t.Run("create new character", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		ec := factory.CreateEveCharacter()
+		cs := newCharacterService(st, characterservice.Params{
+			SSOService: ssoFake{token: factory.CreateToken(app.Token{
+				CharacterID:   ec.ID,
+				CharacterName: ec.Name})},
+		})
+		var info string
+		b := binding.BindString(&info)
+		got, err := cs.UpdateOrCreateCharacterFromSSO(ctx, b)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, ec.ID, got)
+			ok, _ := cs.HasCharacter(ctx, ec.ID)
+			assert.True(t, ok)
+			token, err := st.GetCharacterToken(ctx, ec.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, token.CharacterID, ec.ID)
+			}
+		}
+	})
+	t.Run("update existing character", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(app.CharacterToken{
+			AccessToken: "oldToken",
+			CharacterID: c.ID,
+		})
+		cs := newCharacterService(st, characterservice.Params{
+			SSOService: ssoFake{token: factory.CreateToken(app.Token{
+				CharacterID:   c.ID,
+				CharacterName: c.EveCharacter.Name})},
+		})
+		var info string
+		b := binding.BindString(&info)
+		got, err := cs.UpdateOrCreateCharacterFromSSO(ctx, b)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, c.ID, got)
+			token, err := st.GetCharacterToken(ctx, c.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, token.CharacterID, c.ID)
+			}
 		}
 	})
 }
