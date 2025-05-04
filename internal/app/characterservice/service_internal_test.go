@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
@@ -26,17 +27,30 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
-func newCharacterService(st *storage.Storage) *CharacterService {
+func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 	scs := statuscacheservice.New(memcache.New(), st)
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
 		StatusCacheService: scs,
 		Storage:            st,
 	})
-	s := New(Params{
+	rs := corporationservice.New(corporationservice.Params{
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,
 	})
+	arg := Params{
+		CorporationService: rs,
+		EveUniverseService: eus,
+		StatusCacheService: scs,
+		Storage:            st,
+	}
+	if len(args) > 0 {
+		a := args[0]
+		if a.SSOService != nil {
+			arg.SSOService = a.SSOService
+		}
+	}
+	s := New(arg)
 	return s
 }
 
@@ -45,7 +59,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("should create new assets from scratch", func(t *testing.T) {
 		// given
@@ -275,7 +289,7 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("should create attributes from ESI response", func(t *testing.T) {
 		// given
@@ -318,7 +332,7 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 func TestGetAttributes(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := newCharacterService(st)
+	cs := NewFake(st)
 	ctx := context.Background()
 	t.Run("should return own error when object not found", func(t *testing.T) {
 		// given
@@ -346,7 +360,7 @@ func TestUpdateContractESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("should create new courier contract from scratch", func(t *testing.T) {
 		// given
@@ -651,7 +665,7 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("should create new implants from scratch", func(t *testing.T) {
 		// given
@@ -692,7 +706,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("should create new job from scratch", func(t *testing.T) {
 		// given
@@ -836,7 +850,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	data := map[string]any{
 		"home_location": map[string]any{
@@ -934,7 +948,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 func TestCharacterNextAvailableCloneJump(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := newCharacterService(st)
+	cs := NewFake(st)
 	ctx := context.Background()
 	t.Run("should return time of next available jump with skill", func(t *testing.T) {
 		// given
@@ -1019,7 +1033,7 @@ func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 	ctx := context.Background()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	var objs []esi.GetCharactersCharacterIdMail200Ok
 	var mailIDs []int32
 	for i := range 55 {
@@ -1069,7 +1083,7 @@ func TestUpdateMailLabel(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	ctx := context.Background()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	t.Run("should create new mail labels", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -1166,7 +1180,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("should create new notification from scratch", func(t *testing.T) {
 		// given
@@ -1299,7 +1313,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 func TestListCharacterNotifications(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
@@ -1322,7 +1336,7 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("should update planets from scratch (minimal)", func(t *testing.T) {
 		// given
@@ -1601,7 +1615,7 @@ func TestUpdateCharacterRolesESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("should update roles", func(t *testing.T) {
 		// given
@@ -1640,7 +1654,7 @@ func TestUpdateCharacterRolesESI(t *testing.T) {
 
 func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 	db, st, factory := testutil.New()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("should report as changed and run update when new", func(t *testing.T) {
 		// given
@@ -1748,7 +1762,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("should update skills from scratch", func(t *testing.T) {
 		// given
@@ -1880,7 +1894,7 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("should create new queue", func(t *testing.T) {
 		// given
@@ -1936,7 +1950,7 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 func TestHasTokenWithScopes(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("should return true when token has same scopes", func(t *testing.T) {
 		// given
@@ -1982,7 +1996,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("should create new entry from scratch", func(t *testing.T) {
 		// given
@@ -2200,7 +2214,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 func TestListWalletJournalEntries(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
@@ -2223,7 +2237,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("should create new transaction from scratch", func(t *testing.T) {
 		// given
@@ -2434,7 +2448,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 func TestListWalletTransactions(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	s := newCharacterService(st)
+	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given

@@ -10,68 +10,6 @@ import (
 	"database/sql"
 )
 
-const createEveCorporation = `-- name: CreateEveCorporation :exec
-INSERT INTO
-    eve_corporations (
-        id,
-        alliance_id,
-        ceo_id,
-        creator_id,
-        date_founded,
-        description,
-        faction_id,
-        home_station_id,
-        member_count,
-        name,
-        shares,
-        tax_rate,
-        ticker,
-        url,
-        war_eligible
-    )
-VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`
-
-type CreateEveCorporationParams struct {
-	ID            int64
-	AllianceID    sql.NullInt64
-	CeoID         sql.NullInt64
-	CreatorID     sql.NullInt64
-	DateFounded   sql.NullTime
-	Description   string
-	FactionID     sql.NullInt64
-	HomeStationID sql.NullInt64
-	MemberCount   int64
-	Name          string
-	Shares        sql.NullInt64
-	TaxRate       float64
-	Ticker        string
-	Url           string
-	WarEligible   bool
-}
-
-func (q *Queries) CreateEveCorporation(ctx context.Context, arg CreateEveCorporationParams) error {
-	_, err := q.db.ExecContext(ctx, createEveCorporation,
-		arg.ID,
-		arg.AllianceID,
-		arg.CeoID,
-		arg.CreatorID,
-		arg.DateFounded,
-		arg.Description,
-		arg.FactionID,
-		arg.HomeStationID,
-		arg.MemberCount,
-		arg.Name,
-		arg.Shares,
-		arg.TaxRate,
-		arg.Ticker,
-		arg.Url,
-		arg.WarEligible,
-	)
-	return err
-}
-
 const getEveCorporation = `-- name: GetEveCorporation :one
 SELECT
     ec.id, ec.alliance_id, ec.ceo_id, ec.creator_id, ec.date_founded, ec.description, ec.faction_id, ec.home_station_id, ec.member_count, ec.name, ec.shares, ec.tax_rate, ec.ticker, ec.url, ec.war_eligible,
@@ -141,4 +79,124 @@ func (q *Queries) GetEveCorporation(ctx context.Context, id int64) (GetEveCorpor
 		&i.StationCategory,
 	)
 	return i, err
+}
+
+const listEveCorporationIDs = `-- name: ListEveCorporationIDs :many
+SELECT id
+FROM eve_corporations
+`
+
+func (q *Queries) ListEveCorporationIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listEveCorporationIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateOrCreateEveCorporation = `-- name: UpdateOrCreateEveCorporation :exec
+INSERT INTO
+    eve_corporations (
+        id,
+        alliance_id,
+        ceo_id,
+        creator_id,
+        date_founded,
+        description,
+        faction_id,
+        home_station_id,
+        member_count,
+        name,
+        shares,
+        tax_rate,
+        ticker,
+        url,
+        war_eligible
+    )
+VALUES
+    (
+        ?1,
+        ?2,
+        ?3,
+        ?4,
+        ?5,
+        ?6,
+        ?7,
+        ?8,
+        ?9,
+        ?10,
+        ?11,
+        ?12,
+        ?13,
+        ?14,
+        ?15
+    )
+ON CONFLICT (id) DO UPDATE
+SET
+    alliance_id = ?2,
+    ceo_id = ?3,
+    description = ?6,
+    faction_id = ?7,
+    home_station_id = ?8,
+    member_count = ?9,
+    name = ?10,
+    shares = ?11,
+    tax_rate = ?12,
+    ticker = ?13,
+    url = ?14,
+    war_eligible = ?15
+`
+
+type UpdateOrCreateEveCorporationParams struct {
+	ID            int64
+	AllianceID    sql.NullInt64
+	CeoID         sql.NullInt64
+	CreatorID     sql.NullInt64
+	DateFounded   sql.NullTime
+	Description   string
+	FactionID     sql.NullInt64
+	HomeStationID sql.NullInt64
+	MemberCount   int64
+	Name          string
+	Shares        sql.NullInt64
+	TaxRate       float64
+	Ticker        string
+	Url           string
+	WarEligible   bool
+}
+
+func (q *Queries) UpdateOrCreateEveCorporation(ctx context.Context, arg UpdateOrCreateEveCorporationParams) error {
+	_, err := q.db.ExecContext(ctx, updateOrCreateEveCorporation,
+		arg.ID,
+		arg.AllianceID,
+		arg.CeoID,
+		arg.CreatorID,
+		arg.DateFounded,
+		arg.Description,
+		arg.FactionID,
+		arg.HomeStationID,
+		arg.MemberCount,
+		arg.Name,
+		arg.Shares,
+		arg.TaxRate,
+		arg.Ticker,
+		arg.Url,
+		arg.WarEligible,
+	)
+	return err
 }

@@ -1052,8 +1052,8 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *a
 	return c
 }
 
-func (f Factory) CreateEveCorporation(args ...storage.CreateEveCorporationParams) *app.EveCorporation {
-	var arg storage.CreateEveCorporationParams
+func (f Factory) CreateEveCorporation(args ...storage.UpdateOrCreateEveCorporationParams) *app.EveCorporation {
+	var arg storage.UpdateOrCreateEveCorporationParams
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -1080,7 +1080,7 @@ func (f Factory) CreateEveCorporation(args ...storage.CreateEveCorporationParams
 	if arg.MemberCount == 0 {
 		arg.MemberCount = rand.Int32N(1000 + 1)
 	}
-	err := f.st.CreateEveCorporation(context.Background(), arg)
+	err := f.st.UpdateOrCreateEveCorporation(context.Background(), arg)
 	if err != nil {
 		panic(err)
 	}

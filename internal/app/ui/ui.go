@@ -26,6 +26,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -126,6 +127,7 @@ type BaseUI struct {
 	isUpdateDisabled   bool        // Whether to disable update tickers (useful for debugging)
 	js                 *janiceservice.JaniceService
 	memcache           *memcache.Cache
+	rs                 *corporationservice.CorporationService
 	scs                *statuscacheservice.StatusCacheService
 	settings           *settings.Settings
 	snackbar           *iwidget.Snackbar
@@ -139,6 +141,7 @@ type BaseUI struct {
 type BaseUIParams struct {
 	App                fyne.App
 	CharacterService   *characterservice.CharacterService
+	CorporationService *corporationservice.CorporationService
 	ESIStatusService   *esistatusservice.ESIStatusService
 	EveImageService    *eveimageservice.EveImageService
 	EveUniverseService *eveuniverseservice.EveUniverseService
@@ -166,6 +169,7 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 		isUpdateDisabled: args.IsUpdateDisabled,
 		js:               args.JaniceService,
 		memcache:         args.MemCache,
+		rs:               args.CorporationService,
 		scs:              args.StatusCacheService,
 		settings:         settings.New(args.App.Preferences()),
 	}
@@ -657,6 +661,8 @@ func (u *BaseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 			u.reloadCurrentCharacter()
 			u.overviewCharacters.update()
 		}
+	case app.SectionEveCorporations:
+		// nothing to do
 	case app.SectionEveMarketPrices:
 		u.characterAsset.update()
 		u.overviewCharacters.update()

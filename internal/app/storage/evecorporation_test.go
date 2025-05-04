@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func TestEveCorporation(t *testing.T) {
@@ -20,17 +21,36 @@ func TestEveCorporation(t *testing.T) {
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		arg := storage.CreateEveCorporationParams{
+		arg := storage.UpdateOrCreateEveCorporationParams{
 			ID:   1,
 			Name: "Alpha",
 		}
 		// when
-		err := r.CreateEveCorporation(ctx, arg)
+		err := r.UpdateOrCreateEveCorporation(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			r, err := r.GetEveCorporation(ctx, arg.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, arg.Name, r.Name)
+			}
+		}
+	})
+	t.Run("can update existing", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{MemberCount: 42})
+		arg := storage.UpdateOrCreateEveCorporationParams{
+			ID:          c1.ID,
+			MemberCount: 99,
+		}
+		// when
+		err := r.UpdateOrCreateEveCorporation(ctx, arg)
+		// then
+		if assert.NoError(t, err) {
+			// assert.False(t, created)
+			r, err := r.GetEveCorporation(ctx, arg.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, 99, r.MemberCount)
 			}
 		}
 	})
@@ -55,7 +75,7 @@ func TestEveCorporation(t *testing.T) {
 		faction := factory.CreateEveEntityWithCategory(app.EveEntityFaction)
 		station := factory.CreateEveEntityWithCategory(app.EveEntityStation)
 		founded := time.Now()
-		c1 := factory.CreateEveCorporation(storage.CreateEveCorporationParams{
+		c1 := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{
 			AllianceID:    optional.From(alliance.ID),
 			CeoID:         optional.From(ceo.ID),
 			CreatorID:     optional.From(creator.ID),
@@ -90,6 +110,19 @@ func TestEveCorporation(t *testing.T) {
 			assert.Equal(t, "url", c2.URL)
 			assert.Equal(t, c1.Name, c2.Name)
 			assert.True(t, c2.WarEligible)
+		}
+	})
+	t.Run("list corporation IDs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateEveCorporation()
+		c2 := factory.CreateEveCorporation()
+		// when
+		got, err := r.ListEveCorporationIDs(ctx)
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of(c1.ID, c2.ID)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 }

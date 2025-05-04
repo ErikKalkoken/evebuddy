@@ -23,6 +23,7 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
@@ -70,10 +71,12 @@ type CharacterService struct {
 	scs        *statuscacheservice.StatusCacheService
 	sfg        *singleflight.Group
 	sso        SSOService
+	rs         *corporationservice.CorporationService
 	st         *storage.Storage
 }
 
 type Params struct {
+	CorporationService     *corporationservice.CorporationService
 	EveNotificationService *evenotification.EveNotificationService
 	EveUniverseService     *eveuniverseservice.EveUniverseService
 	SSOService             SSOService
@@ -84,7 +87,7 @@ type Params struct {
 	EsiClient  *goesi.APIClient
 }
 
-// New creates a new Characters service and returns it.
+// New creates a new character service and returns it.
 // When nil is passed for any parameter a new default instance will be created for it (except for storage).
 func New(args Params) *CharacterService {
 	s := &CharacterService{
@@ -92,6 +95,7 @@ func New(args Params) *CharacterService {
 		eus: args.EveUniverseService,
 		scs: args.StatusCacheService,
 		sso: args.SSOService,
+		rs:  args.CorporationService,
 		st:  args.Storage,
 		sfg: new(singleflight.Group),
 	}
@@ -480,13 +484,11 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 		TokenType:    ssoToken.TokenType,
 	}
 	ctx = contextWithESIToken(context.Background(), token.AccessToken)
-	if _, err := s.eus.GetOrCreateCharacterESI(ctx, token.CharacterID); err != nil {
+	character, err := s.eus.GetOrCreateCharacterESI(ctx, token.CharacterID)
+	if err != nil {
 		return 0, err
 	}
-	arg := storage.CreateCharacterParams{
-		ID: token.CharacterID,
-	}
-	err = s.st.CreateCharacter(ctx, arg)
+	err = s.st.CreateCharacter(ctx, storage.CreateCharacterParams{ID: token.CharacterID})
 	if err != nil && !errors.Is(err, app.ErrAlreadyExists) {
 		return 0, err
 	}
@@ -494,6 +496,12 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 		return 0, err
 	}
 	if err := s.scs.UpdateCharacters(ctx); err != nil {
+		return 0, err
+	}
+	if _, err := s.eus.GetOrCreateCorporationESI(ctx, character.Corporation.ID); err != nil {
+		return 0, err
+	}
+	if _, err = s.rs.GetOrCreateCorporation(ctx, character.Corporation.ID); err != nil {
 		return 0, err
 	}
 	return token.CharacterID, nil

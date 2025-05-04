@@ -1,25 +1,3 @@
--- name: CreateEveCorporation :exec
-INSERT INTO
-    eve_corporations (
-        id,
-        alliance_id,
-        ceo_id,
-        creator_id,
-        date_founded,
-        description,
-        faction_id,
-        home_station_id,
-        member_count,
-        name,
-        shares,
-        tax_rate,
-        ticker,
-        url,
-        war_eligible
-    )
-VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-
 -- name: GetEveCorporation :one
 SELECT
     sqlc.embed(ec),
@@ -42,3 +20,60 @@ FROM
     LEFT JOIN eve_entities as eeh ON eeh.id = ec.home_station_id
 WHERE
     ec.id = ?;
+
+-- name: ListEveCorporationIDs :many
+SELECT id
+FROM eve_corporations;
+
+
+-- name: UpdateOrCreateEveCorporation :exec
+INSERT INTO
+    eve_corporations (
+        id,
+        alliance_id,
+        ceo_id,
+        creator_id,
+        date_founded,
+        description,
+        faction_id,
+        home_station_id,
+        member_count,
+        name,
+        shares,
+        tax_rate,
+        ticker,
+        url,
+        war_eligible
+    )
+VALUES
+    (
+        ?1,
+        ?2,
+        ?3,
+        ?4,
+        ?5,
+        ?6,
+        ?7,
+        ?8,
+        ?9,
+        ?10,
+        ?11,
+        ?12,
+        ?13,
+        ?14,
+        ?15
+    )
+ON CONFLICT (id) DO UPDATE
+SET
+    alliance_id = ?2,
+    ceo_id = ?3,
+    description = ?6,
+    faction_id = ?7,
+    home_station_id = ?8,
+    member_count = ?9,
+    name = ?10,
+    shares = ?11,
+    tax_rate = ?12,
+    ticker = ?13,
+    url = ?14,
+    war_eligible = ?15;

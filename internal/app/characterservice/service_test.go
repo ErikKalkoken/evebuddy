@@ -14,40 +14,16 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
-func newCharacterService(st *storage.Storage, args ...characterservice.Params) *characterservice.CharacterService {
-	scs := statuscacheservice.New(memcache.New(), st)
-	eus := eveuniverseservice.New(eveuniverseservice.Params{
-		StatusCacheService: scs,
-		Storage:            st,
-	})
-	arg := characterservice.Params{
-		EveUniverseService: eus,
-		StatusCacheService: scs,
-		Storage:            st,
-	}
-	if len(args) > 0 {
-		a := args[0]
-		if a.SSOService != nil {
-			arg.SSOService = a.SSOService
-		}
-	}
-	s := characterservice.New(arg)
-	return s
-}
-
 func TestGetCharacter(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := newCharacterService(st)
+	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should return own error when object not found", func(t *testing.T) {
 		// given
@@ -73,7 +49,7 @@ func TestGetCharacter(t *testing.T) {
 func TestGetAnyCharacter(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := newCharacterService(st)
+	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should return own error when object not found", func(t *testing.T) {
 		// given
@@ -117,35 +93,50 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 	t.Run("create new character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		ec := factory.CreateEveCharacter()
-		cs := newCharacterService(st, characterservice.Params{
+		corporation := factory.CreateEveCorporation()
+		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: corporation.ID})
+		character := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+			CorporationID: corporation.ID,
+		})
+		cs := characterservice.NewFake(st, characterservice.Params{
 			SSOService: ssoFake{token: factory.CreateToken(app.Token{
-				CharacterID:   ec.ID,
-				CharacterName: ec.Name})},
+				CharacterID:   character.ID,
+				CharacterName: character.Name})},
 		})
 		var info string
 		b := binding.BindString(&info)
 		got, err := cs.UpdateOrCreateCharacterFromSSO(ctx, b)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, ec.ID, got)
-			ok, _ := cs.HasCharacter(ctx, ec.ID)
-			assert.True(t, ok)
-			token, err := st.GetCharacterToken(ctx, ec.ID)
+			assert.Equal(t, character.ID, got)
+			ok, err := cs.HasCharacter(ctx, character.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, token.CharacterID, ec.ID)
+				assert.True(t, ok)
+			}
+			token, err := st.GetCharacterToken(ctx, character.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, token.CharacterID, character.ID)
+			}
+			x, err := st.GetCorporation(ctx, corporation.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, corporation, x.Corporation)
 			}
 		}
 	})
 	t.Run("update existing character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		corporation := factory.CreateEveCorporation()
+		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: corporation.ID})
+		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+			CorporationID: corporation.ID,
+		})
+		c := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
 		factory.CreateCharacterToken(app.CharacterToken{
 			AccessToken: "oldToken",
 			CharacterID: c.ID,
 		})
-		cs := newCharacterService(st, characterservice.Params{
+		cs := characterservice.NewFake(st, characterservice.Params{
 			SSOService: ssoFake{token: factory.CreateToken(app.Token{
 				CharacterID:   c.ID,
 				CharacterName: c.EveCharacter.Name})},
@@ -167,7 +158,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 func TestTrainingWatchers(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := newCharacterService(st)
+	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should enable watchers for characters with active queues only", func(t *testing.T) {
 		// given
@@ -242,7 +233,7 @@ func TestTrainingWatchers(t *testing.T) {
 func TestNotifyUpdatedContracts(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := newCharacterService(st)
+	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	const characterID = 7
 	earliest := time.Now().UTC().Add(-6 * time.Hour)
@@ -301,7 +292,7 @@ func TestUpdateMail(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := characterservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("Can fetch new mail", func(t *testing.T) {
 		// given
@@ -550,7 +541,7 @@ func TestUpdateMail(t *testing.T) {
 func TestNotifyMails(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := newCharacterService(st)
+	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	now := time.Now().UTC()
 	earliest := now.Add(-12 * time.Hour)
@@ -591,7 +582,7 @@ func TestSendMail(t *testing.T) {
 	ctx := context.Background()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := characterservice.NewFake(st)
 	t.Run("Can send mail", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -620,7 +611,7 @@ func TestSendMail(t *testing.T) {
 func TestNotifyCommunications(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := newCharacterService(st)
+	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	now := time.Now().UTC()
 	earliest := now.Add(-12 * time.Hour)
@@ -665,7 +656,7 @@ func TestCountNotificatios(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
 	// given
-	cs := newCharacterService(st)
+	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	c := factory.CreateCharacter()
 	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
@@ -696,7 +687,7 @@ func TestCountNotificatios(t *testing.T) {
 func TestNotifyExpiredExtractions(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := newCharacterService(st)
+	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	now := time.Now().UTC()
 	earliest := now.Add(-24 * time.Hour)
@@ -752,7 +743,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := characterservice.NewFake(st)
 	section := app.SectionImplants
 	ctx := context.Background()
 	t.Run("should report true when changed", func(t *testing.T) {
@@ -938,7 +929,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := newCharacterService(st)
+	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("send notification when watched & expired", func(t *testing.T) {
 		// given

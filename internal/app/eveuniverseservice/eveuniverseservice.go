@@ -173,9 +173,8 @@ func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) error {
 	if ids.Size() == 0 {
 		return nil
 	}
-	slog.Info("Started updating eve characters", "count", ids.Size())
 	g := new(errgroup.Group)
-	g.SetLimit(10)
+	g.SetLimit(5)
 	for id := range ids.All() {
 		id := id
 		g.Go(func() error {
@@ -183,7 +182,7 @@ func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) error {
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return fmt.Errorf("update EveCharacters: %w", err)
+		return err
 	}
 	slog.Info("Finished updating eve characters", "count", ids.Size())
 	return nil
@@ -260,13 +259,13 @@ func (s *EveUniverseService) updateCharacterESI(ctx context.Context, characterID
 func (s *EveUniverseService) GetOrCreateCorporationESI(ctx context.Context, id int32) (*app.EveCorporation, error) {
 	o, err := s.st.GetEveCorporation(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {
-		return s.createCorporationFromESI(ctx, id)
+		return s.updateOrcreateCorporationFromESI(ctx, id)
 	}
 	return o, err
 }
 
-func (s *EveUniverseService) createCorporationFromESI(ctx context.Context, id int32) (*app.EveCorporation, error) {
-	key := fmt.Sprintf("createCorporationFromESI-%d", id)
+func (s *EveUniverseService) updateOrcreateCorporationFromESI(ctx context.Context, id int32) (*app.EveCorporation, error) {
+	key := fmt.Sprintf("updateOrcreateCorporationFromESI-%d", id)
 	y, err, _ := s.sfg.Do(key, func() (any, error) {
 		r, _, err := s.esiClient.ESI.CorporationApi.GetCorporationsCorporationId(ctx, id, nil)
 		if err != nil {
@@ -286,7 +285,7 @@ func (s *EveUniverseService) createCorporationFromESI(ctx context.Context, id in
 			}
 			return optional.From(v)
 		}
-		arg := storage.CreateEveCorporationParams{
+		arg := storage.UpdateOrCreateEveCorporationParams{
 			AllianceID:    optional.FromIntegerWithZero(r.AllianceId),
 			CeoID:         optionalFromSpecialEntityID(r.CeoId),
 			CreatorID:     optionalFromSpecialEntityID(r.CreatorId),
@@ -303,16 +302,40 @@ func (s *EveUniverseService) createCorporationFromESI(ctx context.Context, id in
 			URL:           r.Url,
 			WarEligible:   r.WarEligible,
 		}
-		if err := s.st.CreateEveCorporation(ctx, arg); err != nil {
+		if err := s.st.UpdateOrCreateEveCorporation(ctx, arg); err != nil {
 			return nil, err
 		}
-		slog.Info("Stored new eve corporation", "ID", arg.ID)
+		slog.Info("Updated eve corporation", "ID", arg.ID)
 		return s.st.GetEveCorporation(ctx, id)
 	})
 	if err != nil {
 		return nil, err
 	}
 	return y.(*app.EveCorporation), nil
+}
+
+// UpdateAllCorporationsESI updates all known corporations from ESI.
+func (s *EveUniverseService) UpdateAllCorporationsESI(ctx context.Context) error {
+	ids, err := s.st.ListEveCorporationIDs(ctx)
+	if err != nil {
+		return err
+	}
+	if ids.Size() == 0 {
+		return nil
+	}
+	g := new(errgroup.Group)
+	g.SetLimit(5)
+	for id := range ids.All() {
+		g.Go(func() error {
+			_, err := s.updateOrcreateCorporationFromESI(ctx, id)
+			return err
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return err
+	}
+	slog.Info("Finished updating eve corporations", "count", ids.Size())
+	return nil
 }
 
 func (s *EveUniverseService) GetDogmaAttribute(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
@@ -1566,15 +1589,18 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 			return false, nil
 		}
 	}
-
 	var f func(context.Context) error
 	switch section {
 	case app.SectionEveCategories:
 		f = s.updateCategories
 	case app.SectionEveCharacters:
 		f = s.UpdateAllCharactersESI
+	case app.SectionEveCorporations:
+		f = s.UpdateAllCorporationsESI
 	case app.SectionEveMarketPrices:
 		f = s.updateMarketPricesESI
+	default:
+		slog.Warn("encountered unknown section", "section", section)
 	}
 	key := fmt.Sprintf("Update-section-%s", section)
 	_, err, _ = s.sfg.Do(key, func() (any, error) {
