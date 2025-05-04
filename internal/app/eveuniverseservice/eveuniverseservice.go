@@ -23,7 +23,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -1595,7 +1594,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 		return nil, err
 	})
 	if err != nil {
-		errorMessage := ihumanize.Error(err)
+		errorMessage := app.ErrorDisplay(err)
 		startedAt := optional.Optional[time.Time]{}
 		arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
 			Section:   section,

@@ -29,7 +29,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/ErikKalkoken/evebuddy/internal/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -57,6 +56,11 @@ var esiScopes = []string{
 	"esi-wallet.read_character_wallet.v1",
 }
 
+type SSOService interface {
+	Authenticate(context.Context, []string) (*app.Token, error)
+	RefreshToken(context.Context, string) (*app.Token, error)
+}
+
 // CharacterService provides access to all managed Eve Online characters both online and from local storage.
 type CharacterService struct {
 	ens        *evenotification.EveNotificationService
@@ -65,14 +69,14 @@ type CharacterService struct {
 	httpClient *http.Client
 	scs        *statuscacheservice.StatusCacheService
 	sfg        *singleflight.Group
-	sso        *sso.SSOService
+	sso        SSOService
 	st         *storage.Storage
 }
 
 type Params struct {
 	EveNotificationService *evenotification.EveNotificationService
 	EveUniverseService     *eveuniverseservice.EveUniverseService
-	SSOService             *sso.SSOService
+	SSOService             SSOService
 	StatusCacheService     *statuscacheservice.StatusCacheService
 	Storage                *storage.Storage
 	// optional
@@ -461,7 +465,7 @@ func (s *CharacterService) HasCharacter(ctx context.Context, id int32) (bool, er
 // The provided context is used for the SSO authentication process only and can be canceled.
 func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText binding.ExternalString) (int32, error) {
 	ssoToken, err := s.sso.Authenticate(ctx, esiScopes)
-	if errors.Is(err, sso.ErrAborted) {
+	if errors.Is(err, app.ErrAborted) {
 		return 0, app.ErrAborted
 	} else if err != nil {
 		return 0, err

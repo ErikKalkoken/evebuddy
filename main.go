@@ -36,6 +36,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -43,7 +44,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
-	"github.com/ErikKalkoken/evebuddy/internal/sso"
 )
 
 const (

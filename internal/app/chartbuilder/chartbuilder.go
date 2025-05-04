@@ -20,6 +20,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -81,7 +82,7 @@ func (cb ChartBuilder) Render(ct ChartType, size fyne.Size, title string, values
 			i = widget.LowImportance
 		} else {
 			slog.Error("Failed to generate chart", "title", title, "err", err)
-			t = fmt.Sprintf("Failed to generate chart: %s", ihumanize.Error(err))
+			t = fmt.Sprintf("Failed to generate chart: %s", app.ErrorDisplay(err))
 			i = widget.DangerImportance
 		}
 		l := widget.NewLabel(t)
