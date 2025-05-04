@@ -56,8 +56,8 @@ func TestCharacterIndustryJob(t *testing.T) {
 				assert.EqualValues(
 					t, &app.EveLocationShort{
 						ID:             blueprintLocation.ID,
-						Name:           optional.New(blueprintLocation.Name),
-						SecurityStatus: optional.New(blueprintLocation.SolarSystem.SecurityStatus),
+						Name:           optional.From(blueprintLocation.Name),
+						SecurityStatus: optional.From(blueprintLocation.SolarSystem.SecurityStatus),
 					},
 					o.BlueprintLocation,
 				)
@@ -67,8 +67,8 @@ func TestCharacterIndustryJob(t *testing.T) {
 				assert.EqualValues(
 					t, &app.EveLocationShort{
 						ID:             facility.ID,
-						Name:           optional.New(facility.Name),
-						SecurityStatus: optional.New(facility.SolarSystem.SecurityStatus),
+						Name:           optional.From(facility.Name),
+						SecurityStatus: optional.From(facility.SolarSystem.SecurityStatus),
 					},
 					o.Facility,
 				)
@@ -76,8 +76,8 @@ func TestCharacterIndustryJob(t *testing.T) {
 				assert.EqualValues(
 					t, &app.EveLocationShort{
 						ID:             outputLocation.ID,
-						Name:           optional.New(outputLocation.Name),
-						SecurityStatus: optional.New(outputLocation.SolarSystem.SecurityStatus),
+						Name:           optional.From(outputLocation.Name),
+						SecurityStatus: optional.From(outputLocation.SolarSystem.SecurityStatus),
 					},
 					o.OutputLocation,
 				)
@@ -87,8 +87,8 @@ func TestCharacterIndustryJob(t *testing.T) {
 				assert.EqualValues(
 					t, &app.EveLocationShort{
 						ID:             station.ID,
-						Name:           optional.New(station.Name),
-						SecurityStatus: optional.New(station.SolarSystem.SecurityStatus),
+						Name:           optional.From(station.Name),
+						SecurityStatus: optional.From(station.SolarSystem.SecurityStatus),
 					},
 					o.Station,
 				)

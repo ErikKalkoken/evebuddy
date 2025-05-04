@@ -1194,7 +1194,7 @@ func (sq *CharacterSkillqueue) Completion() optional.Optional[float64] {
 	if c == nil {
 		return optional.Optional[float64]{}
 	}
-	return optional.New(c.CompletionP())
+	return optional.From(c.CompletionP())
 }
 
 func (sq *CharacterSkillqueue) IsActive() bool {
@@ -1225,7 +1225,7 @@ func (sq *CharacterSkillqueue) Remaining() optional.Optional[time.Duration] {
 	defer sq.mu.RUnlock()
 	var r optional.Optional[time.Duration]
 	for _, item := range sq.items {
-		r = optional.New(r.ValueOrZero() + item.Remaining().ValueOrZero())
+		r = optional.From(r.ValueOrZero() + item.Remaining().ValueOrZero())
 	}
 	return r
 }
@@ -1302,7 +1302,7 @@ func (qi CharacterSkillqueueItem) Duration() optional.Optional[time.Duration] {
 	if qi.StartDate.IsZero() || qi.FinishDate.IsZero() {
 		return optional.Optional[time.Duration]{}
 	}
-	return optional.New(qi.FinishDate.Sub(qi.StartDate))
+	return optional.From(qi.FinishDate.Sub(qi.StartDate))
 }
 
 func (qi CharacterSkillqueueItem) Remaining() optional.Optional[time.Duration] {
@@ -1311,7 +1311,7 @@ func (qi CharacterSkillqueueItem) Remaining() optional.Optional[time.Duration] {
 	}
 	remainingP := 1 - qi.CompletionP()
 	d := qi.Duration()
-	return optional.New(time.Duration(float64(d.ValueOrZero()) * remainingP))
+	return optional.From(time.Duration(float64(d.ValueOrZero()) * remainingP))
 }
 
 // A SSO token belonging to a character in Eve Online.

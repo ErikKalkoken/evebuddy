@@ -116,7 +116,7 @@ func TestCharacterNotificationBodyPlain(t *testing.T) {
 	t.Run("can return body as plain text", func(t *testing.T) {
 		n := &app.CharacterNotification{
 			Type: "Alpha",
-			Body: optional.New("**alpha**"),
+			Body: optional.From("**alpha**"),
 		}
 		got, err := n.BodyPlain()
 		if assert.NoError(t, err) {
@@ -265,12 +265,12 @@ func TestCharacterPlanetExtractionsExpire(t *testing.T) {
 		cp := &app.CharacterPlanet{Pins: []*app.PlanetPin{
 			{
 				Type:                 extractorType,
-				ExpiryTime:           optional.New(et2),
+				ExpiryTime:           optional.From(et2),
 				ExtractorProductType: productType,
 			},
 			{
 				Type:                 extractorType,
-				ExpiryTime:           optional.New(et1),
+				ExpiryTime:           optional.From(et1),
 				ExtractorProductType: productType,
 			},
 			processorPin,
@@ -286,7 +286,7 @@ func TestCharacterPlanetExtractionsExpire(t *testing.T) {
 		cp := &app.CharacterPlanet{Pins: []*app.PlanetPin{
 			{
 				Type:                 extractorType,
-				ExpiryTime:           optional.New(et1),
+				ExpiryTime:           optional.From(et1),
 				ExtractorProductType: productType,
 			},
 			processorPin,

@@ -462,7 +462,7 @@ func (a *CharacterMails) resetCurrentFolder() {
 
 func (a *CharacterMails) setCurrentFolder(folder FolderNode) {
 	a.mu.Lock()
-	a.currentFolder = optional.New(folder)
+	a.currentFolder = optional.From(folder)
 	a.mu.Unlock()
 
 	a.headerRefresh()

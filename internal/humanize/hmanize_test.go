@@ -123,7 +123,7 @@ func TestRomanLetters(t *testing.T) {
 
 func TestOptional(t *testing.T) {
 	t.Run("can format optional number", func(t *testing.T) {
-		assert.Equal(t, "42", humanize.Optional(optional.New(42), ""))
+		assert.Equal(t, "42", humanize.Optional(optional.From(42), ""))
 		assert.Equal(t, "XX", humanize.Optional(optional.Optional[int]{}, "XX"))
 	})
 }

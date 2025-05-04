@@ -126,14 +126,14 @@ func TestCharacterCreate(t *testing.T) {
 		cloneJump := time.Now()
 		arg := storage.CreateCharacterParams{
 			ID:              character.ID,
-			AssetValue:      optional.New(3.4),
-			HomeID:          optional.New(home.ID),
-			LastCloneJumpAt: optional.New(cloneJump),
-			LastLoginAt:     optional.New(login),
-			LocationID:      optional.New(location.ID),
-			ShipID:          optional.New(ship.ID),
-			TotalSP:         optional.New(123),
-			WalletBalance:   optional.New(1.2),
+			AssetValue:      optional.From(3.4),
+			HomeID:          optional.From(home.ID),
+			LastCloneJumpAt: optional.From(cloneJump),
+			LastLoginAt:     optional.From(login),
+			LocationID:      optional.From(location.ID),
+			ShipID:          optional.From(ship.ID),
+			TotalSP:         optional.From(123),
+			WalletBalance:   optional.From(1.2),
 		}
 		// when
 		err := r.CreateCharacter(ctx, arg)
@@ -235,7 +235,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacter()
 		home := factory.CreateEveLocationStructure()
 		// when
-		err := r.UpdateCharacterHome(ctx, c1.ID, optional.New(home.ID))
+		err := r.UpdateCharacterHome(ctx, c1.ID, optional.From(home.ID))
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetCharacter(ctx, c1.ID)
@@ -251,7 +251,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacter()
 		x := time.Now().Add(1 * time.Hour)
 		// when
-		err := r.UpdateCharacterLastCloneJump(ctx, c1.ID, optional.New(x))
+		err := r.UpdateCharacterLastCloneJump(ctx, c1.ID, optional.From(x))
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetCharacter(ctx, c1.ID)
@@ -266,7 +266,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacter()
 		x := time.Time{}
 		// when
-		err := r.UpdateCharacterLastCloneJump(ctx, c1.ID, optional.New(x))
+		err := r.UpdateCharacterLastCloneJump(ctx, c1.ID, optional.From(x))
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetCharacter(ctx, c1.ID)
@@ -291,7 +291,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacter()
 		x := time.Now().Add(1 * time.Hour)
 		// when
-		err := r.UpdateCharacterLastLoginAt(ctx, c1.ID, optional.New(x))
+		err := r.UpdateCharacterLastLoginAt(ctx, c1.ID, optional.From(x))
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetCharacter(ctx, c1.ID)
@@ -306,7 +306,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacter()
 		location := factory.CreateEveLocationStructure()
 		// when
-		err := r.UpdateCharacterLocation(ctx, c1.ID, optional.New(location.ID))
+		err := r.UpdateCharacterLocation(ctx, c1.ID, optional.From(location.ID))
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetCharacter(ctx, c1.ID)
@@ -321,7 +321,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacter()
 		x := factory.CreateEveType()
 		// when
-		err := r.UpdateCharacterShip(ctx, c1.ID, optional.New(x.ID))
+		err := r.UpdateCharacterShip(ctx, c1.ID, optional.From(x.ID))
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetCharacter(ctx, c1.ID)
@@ -367,8 +367,8 @@ func TestUpdateCharacterFields(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacter()
 		// when
-		totalSP := optional.New(rand.IntN(100_000_000))
-		unallocatedSP := optional.New(rand.IntN(10_000_000))
+		totalSP := optional.From(rand.IntN(100_000_000))
+		unallocatedSP := optional.From(rand.IntN(10_000_000))
 		err := r.UpdateCharacterSkillPoints(ctx, c1.ID, totalSP, unallocatedSP)
 		// then
 		if assert.NoError(t, err) {
@@ -385,7 +385,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacter()
 		x := rand.Float64() * 100_000_000
 		// when
-		err := r.UpdateCharacterWalletBalance(ctx, c1.ID, optional.New(x))
+		err := r.UpdateCharacterWalletBalance(ctx, c1.ID, optional.From(x))
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetCharacter(ctx, c1.ID)

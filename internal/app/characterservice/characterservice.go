@@ -300,7 +300,7 @@ func (s *CharacterService) UpdateAssetTotalValue(ctx context.Context, characterI
 	if err != nil {
 		return 0, err
 	}
-	if err := s.st.UpdateCharacterAssetValue(ctx, characterID, optional.New(v)); err != nil {
+	if err := s.st.UpdateCharacterAssetValue(ctx, characterID, optional.From(v)); err != nil {
 		return 0, err
 	}
 	return v, nil
@@ -527,7 +527,7 @@ func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.Charac
 			if err != nil {
 				return err
 			}
-			if err := s.st.UpdateCharacterLocation(ctx, characterID, optional.New(locationID)); err != nil {
+			if err := s.st.UpdateCharacterLocation(ctx, characterID, optional.From(locationID)); err != nil {
 				return err
 			}
 			return nil
@@ -549,7 +549,7 @@ func (s *CharacterService) updateOnlineESI(ctx context.Context, arg app.Characte
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			online := data.(esi.GetCharactersCharacterIdOnlineOk)
-			if err := s.st.UpdateCharacterLastLoginAt(ctx, characterID, optional.New(online.LastLogin)); err != nil {
+			if err := s.st.UpdateCharacterLastLoginAt(ctx, characterID, optional.From(online.LastLogin)); err != nil {
 				return err
 			}
 			return nil
@@ -575,7 +575,7 @@ func (s *CharacterService) updateShipESI(ctx context.Context, arg app.CharacterU
 			if err != nil {
 				return err
 			}
-			if err := s.st.UpdateCharacterShip(ctx, characterID, optional.New(ship.ShipTypeId)); err != nil {
+			if err := s.st.UpdateCharacterShip(ctx, characterID, optional.From(ship.ShipTypeId)); err != nil {
 				return err
 			}
 			return nil
@@ -597,7 +597,7 @@ func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg app.C
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			balance := data.(float64)
-			if err := s.st.UpdateCharacterWalletBalance(ctx, characterID, optional.New(balance)); err != nil {
+			if err := s.st.UpdateCharacterWalletBalance(ctx, characterID, optional.From(balance)); err != nil {
 				return err
 			}
 			return nil
@@ -1167,9 +1167,9 @@ func (s *CharacterService) calcNextCloneJump(ctx context.Context, c *app.Charact
 
 	nextJump := lastJump.Add(time.Duration(24-skillLevel) * time.Hour)
 	if nextJump.Before(time.Now()) {
-		return optional.New(time.Time{}), nil
+		return optional.From(time.Time{}), nil
 	}
-	return optional.New(nextJump), nil
+	return optional.From(nextJump), nil
 }
 
 // TODO: Consolidate with updating home in separate function
@@ -1201,7 +1201,7 @@ func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.Char
 			if err := s.st.UpdateCharacterHome(ctx, characterID, home); err != nil {
 				return err
 			}
-			if err := s.st.UpdateCharacterLastCloneJump(ctx, characterID, optional.New(clones.LastCloneJumpDate)); err != nil {
+			if err := s.st.UpdateCharacterLastCloneJump(ctx, characterID, optional.From(clones.LastCloneJumpDate)); err != nil {
 				return err
 			}
 			args := make([]storage.CreateCharacterJumpCloneParams, len(clones.JumpClones))
@@ -1978,21 +1978,21 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 						if err != nil {
 							return err
 						}
-						arg.ExtractorProductTypeID = optional.New(et.ID)
+						arg.ExtractorProductTypeID = optional.From(et.ID)
 					}
 					if pin.FactoryDetails.SchematicId != 0 {
 						es, err := s.eus.GetOrCreateSchematicESI(ctx, pin.FactoryDetails.SchematicId)
 						if err != nil {
 							return err
 						}
-						arg.FactorySchemaID = optional.New(es.ID)
+						arg.FactorySchemaID = optional.From(es.ID)
 					}
 					if pin.SchematicId != 0 {
 						es, err := s.eus.GetOrCreateSchematicESI(ctx, pin.SchematicId)
 						if err != nil {
 							return err
 						}
-						arg.SchematicID = optional.New(es.ID)
+						arg.SchematicID = optional.From(es.ID)
 					}
 					if err := s.st.CreatePlanetPin(ctx, arg); err != nil {
 						return err
@@ -2276,7 +2276,7 @@ func (s *CharacterService) updateSectionIfChanged(
 	fetch func(ctx context.Context, characterID int32) (any, error),
 	update func(ctx context.Context, characterID int32, data any) error,
 ) (bool, error) {
-	startedAt := optional.New(time.Now())
+	startedAt := optional.From(time.Now())
 	arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
 		CharacterID: arg.CharacterID,
 		Section:     arg.Section,
@@ -2383,8 +2383,8 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			skills := data.(esi.GetCharactersCharacterIdSkillsOk)
-			total := optional.New(int(skills.TotalSp))
-			unallocated := optional.New(int(skills.UnallocatedSp))
+			total := optional.From(int(skills.TotalSp))
+			unallocated := optional.From(int(skills.UnallocatedSp))
 			if err := s.st.UpdateCharacterSkillPoints(ctx, characterID, total, unallocated); err != nil {
 				return err
 			}

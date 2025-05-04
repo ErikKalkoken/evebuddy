@@ -941,7 +941,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		testutil.TruncateTables(db)
 		now := time.Now().UTC()
 		c := factory.CreateCharacter(storage.CreateCharacterParams{
-			LastCloneJumpAt: optional.New(now.Add(-6 * time.Hour)),
+			LastCloneJumpAt: optional.From(now.Add(-6 * time.Hour)),
 		})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeInfomorphSynchronizing})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
@@ -959,7 +959,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		testutil.TruncateTables(db)
 		now := time.Now().UTC()
 		c := factory.CreateCharacter(storage.CreateCharacterParams{
-			LastCloneJumpAt: optional.New(now.Add(-6 * time.Hour)),
+			LastCloneJumpAt: optional.From(now.Add(-6 * time.Hour)),
 		})
 		x, err := cs.calcNextCloneJump(ctx, c)
 		if assert.NoError(t, err) {
@@ -970,7 +970,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter(storage.CreateCharacterParams{
-			LastCloneJumpAt: optional.New(time.Time{}),
+			LastCloneJumpAt: optional.From(time.Time{}),
 		})
 		x, err := cs.calcNextCloneJump(ctx, c)
 		if assert.NoError(t, err) {
@@ -982,7 +982,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 		testutil.TruncateTables(db)
 		now := time.Now().UTC()
 		c := factory.CreateCharacter(storage.CreateCharacterParams{
-			LastCloneJumpAt: optional.New(now.Add(-20 * time.Hour)),
+			LastCloneJumpAt: optional.From(now.Add(-20 * time.Hour)),
 		})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeInfomorphSynchronizing})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{

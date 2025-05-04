@@ -54,7 +54,7 @@ func TestWalletTransaction(t *testing.T) {
 				assert.Equal(t, location.ID, i.Location.ID)
 				assert.Equal(t, &app.EveLocationShort{
 					ID:             location.ID,
-					Name:           optional.New(location.Name),
+					Name:           optional.From(location.Name),
 					SecurityStatus: i.Location.SecurityStatus}, i.Location)
 				assert.Equal(t, c.ID, i.CharacterID)
 				assert.Equal(t, int32(7), i.Quantity)

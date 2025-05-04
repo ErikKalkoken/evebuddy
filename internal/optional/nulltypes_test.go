@@ -49,7 +49,7 @@ func TestNullTypeConversion(t *testing.T) {
 	t.Run("can convert NullFloat64 3", func(t *testing.T) {
 		x := sql.NullFloat64{Float64: 1.23, Valid: true}
 		o := optional.FromNullFloat64ToFloat32(x)
-		assert.Equal(t, optional.New(float32(1.23)), o)
+		assert.Equal(t, optional.From(float32(1.23)), o)
 	})
 	t.Run("can convert NullFloat64 4", func(t *testing.T) {
 		x := sql.NullFloat64{}

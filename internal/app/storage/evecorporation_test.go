@@ -56,16 +56,16 @@ func TestEveCorporation(t *testing.T) {
 		station := factory.CreateEveEntityWithCategory(app.EveEntityStation)
 		founded := time.Now()
 		c1 := factory.CreateEveCorporation(storage.CreateEveCorporationParams{
-			AllianceID:    optional.New(alliance.ID),
-			CeoID:         optional.New(ceo.ID),
-			CreatorID:     optional.New(creator.ID),
-			DateFounded:   optional.New(founded),
+			AllianceID:    optional.From(alliance.ID),
+			CeoID:         optional.From(ceo.ID),
+			CreatorID:     optional.From(creator.ID),
+			DateFounded:   optional.From(founded),
 			Description:   "description",
-			FactionID:     optional.New(faction.ID),
-			HomeStationID: optional.New(station.ID),
+			FactionID:     optional.From(faction.ID),
+			HomeStationID: optional.From(station.ID),
 			MemberCount:   42,
 			Name:          "name",
-			Shares:        optional.New[int64](888),
+			Shares:        optional.From[int64](888),
 			TaxRate:       0.1,
 			Ticker:        "ticker",
 			URL:           "url",

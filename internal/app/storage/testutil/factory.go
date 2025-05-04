@@ -64,27 +64,27 @@ func (f Factory) CreateCharacter(args ...storage.CreateCharacterParams) *app.Cha
 	}
 	if arg.HomeID.IsEmpty() {
 		x := f.CreateEveLocationStructure()
-		arg.HomeID = optional.New(x.ID)
+		arg.HomeID = optional.From(x.ID)
 	}
 	if arg.LastLoginAt.IsEmpty() {
-		arg.LastLoginAt = optional.New(time.Now())
+		arg.LastLoginAt = optional.From(time.Now())
 	}
 	if arg.LocationID.IsEmpty() {
 		x := f.CreateEveLocationStructure()
-		arg.LocationID = optional.New(x.ID)
+		arg.LocationID = optional.From(x.ID)
 	}
 	if arg.ShipID.IsEmpty() {
 		x := f.CreateEveType()
-		arg.ShipID = optional.New(x.ID)
+		arg.ShipID = optional.From(x.ID)
 	}
 	if arg.TotalSP.IsEmpty() {
-		arg.TotalSP = optional.New(rand.IntN(100_000_000))
+		arg.TotalSP = optional.From(rand.IntN(100_000_000))
 	}
 	if arg.WalletBalance.IsEmpty() {
-		arg.WalletBalance = optional.New(rand.Float64() * 100_000_000_000)
+		arg.WalletBalance = optional.From(rand.Float64() * 100_000_000_000)
 	}
 	if arg.AssetValue.IsEmpty() {
-		arg.AssetValue = optional.New(rand.Float64() * 100_000_000_000)
+		arg.AssetValue = optional.From(rand.Float64() * 100_000_000_000)
 	}
 	err := f.st.CreateCharacter(ctx, arg)
 	if err != nil {
@@ -1072,7 +1072,7 @@ func (f Factory) CreateEveCorporation(args ...storage.CreateEveCorporationParams
 		arg.CreatorID.Set(c.ID)
 	}
 	if arg.DateFounded.IsEmpty() {
-		arg.DateFounded = optional.New(time.Now().Add(-100 * time.Hour))
+		arg.DateFounded = optional.From(time.Now().Add(-100 * time.Hour))
 	}
 	if arg.Description == "" {
 		arg.Description = fake.Paragraphs()
@@ -1589,11 +1589,11 @@ func (f Factory) createEveLocationStructure(startID int64, categoryID int32, isE
 	}
 	if !isEmpty && arg.EveSolarSystemID.IsEmpty() {
 		x := f.CreateEveSolarSystem()
-		arg.EveSolarSystemID = optional.New(x.ID)
+		arg.EveSolarSystemID = optional.From(x.ID)
 	}
 	if !isEmpty && arg.OwnerID.IsEmpty() {
 		x := f.CreateEveEntityCorporation()
-		arg.OwnerID = optional.New(x.ID)
+		arg.OwnerID = optional.From(x.ID)
 	}
 	if !isEmpty && arg.EveTypeID.IsEmpty() {
 		ec, err := f.st.GetEveCategory(ctx, categoryID)
@@ -1606,7 +1606,7 @@ func (f Factory) createEveLocationStructure(startID int64, categoryID int32, isE
 		}
 		eg := f.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: ec.ID})
 		et := f.CreateEveType(storage.CreateEveTypeParams{GroupID: eg.ID})
-		arg.EveTypeID = optional.New(et.ID)
+		arg.EveTypeID = optional.From(et.ID)
 	}
 	if arg.UpdatedAt.IsZero() {
 		arg.UpdatedAt = time.Now()

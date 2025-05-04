@@ -285,7 +285,7 @@ func (s *EveUniverseService) createCorporationFromESI(ctx context.Context, id in
 			if v == 0 || v == 1 {
 				return optional.Optional[int32]{}
 			}
-			return optional.New(v)
+			return optional.From(v)
 		}
 		arg := storage.CreateEveCorporationParams{
 			AllianceID:    optional.FromIntegerWithZero(r.AllianceId),
@@ -908,7 +908,7 @@ func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id i
 			}
 			arg = storage.UpdateOrCreateLocationParams{
 				ID:        id,
-				EveTypeID: optional.New(t.ID),
+				EveTypeID: optional.From(t.ID),
 			}
 		case app.EveLocationAssetSafety:
 			t, err := s.GetOrCreateTypeESI(ctx, app.EveTypeAssetSafetyWrap)
@@ -917,7 +917,7 @@ func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id i
 			}
 			arg = storage.UpdateOrCreateLocationParams{
 				ID:        id,
-				EveTypeID: optional.New(t.ID),
+				EveTypeID: optional.From(t.ID),
 			}
 		case app.EveLocationSolarSystem:
 			et, err := s.GetOrCreateTypeESI(ctx, app.EveTypeSolarSystem)
@@ -930,8 +930,8 @@ func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id i
 			}
 			arg = storage.UpdateOrCreateLocationParams{
 				ID:               id,
-				EveTypeID:        optional.New(et.ID),
-				EveSolarSystemID: optional.New(es.ID),
+				EveTypeID:        optional.From(et.ID),
+				EveSolarSystemID: optional.From(es.ID),
 			}
 		case app.EveLocationStation:
 			station, _, err := s.esiClient.ESI.UniverseApi.GetUniverseStationsStationId(ctx, int32(id), nil)
@@ -946,11 +946,11 @@ func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id i
 			if err != nil {
 				return nil, err
 			}
-			arg.EveTypeID = optional.New(station.TypeId)
+			arg.EveTypeID = optional.From(station.TypeId)
 			arg = storage.UpdateOrCreateLocationParams{
 				ID:               id,
-				EveSolarSystemID: optional.New(station.SystemId),
-				EveTypeID:        optional.New(station.TypeId),
+				EveSolarSystemID: optional.From(station.SystemId),
+				EveTypeID:        optional.From(station.TypeId),
 				Name:             station.Name,
 			}
 			if station.Owner != 0 {
@@ -958,7 +958,7 @@ func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id i
 				if err != nil {
 					return nil, err
 				}
-				arg.OwnerID = optional.New(station.Owner)
+				arg.OwnerID = optional.From(station.Owner)
 			}
 		case app.EveLocationStructure:
 			if ctx.Value(goesi.ContextAccessToken) == nil {
@@ -982,16 +982,16 @@ func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id i
 			}
 			arg = storage.UpdateOrCreateLocationParams{
 				ID:               id,
-				EveSolarSystemID: optional.New(structure.SolarSystemId),
+				EveSolarSystemID: optional.From(structure.SolarSystemId),
 				Name:             structure.Name,
-				OwnerID:          optional.New(structure.OwnerId),
+				OwnerID:          optional.From(structure.OwnerId),
 			}
 			if structure.TypeId != 0 {
 				myType, err := s.GetOrCreateTypeESI(ctx, structure.TypeId)
 				if err != nil {
 					return nil, err
 				}
-				arg.EveTypeID = optional.New(myType.ID)
+				arg.EveTypeID = optional.From(myType.ID)
 			}
 		default:
 			return nil, fmt.Errorf("eve location: invalid ID in update or create: %d", id)
@@ -1379,7 +1379,7 @@ func (s *EveUniverseService) MarketPrice(ctx context.Context, typeID int32) (opt
 	} else if err != nil {
 		return v, err
 	}
-	return optional.New(o.AveragePrice), nil
+	return optional.From(o.AveragePrice), nil
 }
 
 // TODO: Change to bulk create
@@ -1580,7 +1580,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	key := fmt.Sprintf("Update-section-%s", section)
 	_, err, _ = s.sfg.Do(key, func() (any, error) {
 		slog.Debug("Started updating eveuniverse section", "section", section)
-		startedAt := optional.New(time.Now())
+		startedAt := optional.From(time.Now())
 		arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
 			Section:   section,
 			StartedAt: &startedAt,

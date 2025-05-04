@@ -566,8 +566,8 @@ func TestNotifyCommunications(t *testing.T) {
 			testutil.TruncateTables(db)
 			n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 				IsProcessed: tc.isProcessed,
-				Title:       optional.New("title"),
-				Body:        optional.New("body"),
+				Title:       optional.From("title"),
+				Body:        optional.From("body"),
 				Type:        string(tc.typ),
 				Timestamp:   tc.timestamp,
 			})
@@ -649,7 +649,7 @@ func TestNotifyExpiredExtractions(t *testing.T) {
 				factory.CreatePlanetPinExtractor(storage.CreatePlanetPinParams{
 					CharacterPlanetID:      p.ID,
 					ExpiryTime:             tc.expiryTime,
-					ExtractorProductTypeID: optional.New(product.ID),
+					ExtractorProductTypeID: optional.From(product.ID),
 				})
 			} else {
 				factory.CreatePlanetPin(storage.CreatePlanetPinParams{
