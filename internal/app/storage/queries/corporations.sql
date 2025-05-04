@@ -1,26 +1,15 @@
--- name: CreateEveCorporation :exec
+-- name: CreateCorporation :exec
 INSERT INTO
-    eve_corporations (
-        id,
-        alliance_id,
-        ceo_id,
-        creator_id,
-        date_founded,
-        description,
-        faction_id,
-        home_station_id,
-        member_count,
-        name,
-        shares,
-        tax_rate,
-        ticker,
-        url,
-        war_eligible
-    )
+    corporations (eve_corporation_id)
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    (?);
 
--- name: GetEveCorporation :one
+-- name: DeleteCorporation :exec
+DELETE FROM corporations
+WHERE
+    eve_corporation_id = ?;
+
+-- name: GetCorporation :one
 SELECT
     sqlc.embed(ec),
     eec.name as ceo_name,
@@ -34,11 +23,18 @@ SELECT
     eeh.name as station_name,
     eeh.category as station_category
 FROM
-    eve_corporations ec
+    corporations co
+    JOIN eve_corporations ec ON ec.id = co.eve_corporation_id
     LEFT JOIN eve_entities AS eec ON eec.id = ec.ceo_id
     LEFT JOIN eve_entities AS eer ON eer.id = ec.creator_id
     LEFT JOIN eve_entities as eea ON eea.id = ec.alliance_id
     LEFT JOIN eve_entities as eef ON eef.id = ec.faction_id
     LEFT JOIN eve_entities as eeh ON eeh.id = ec.home_station_id
 WHERE
-    ec.id = ?;
+    co.eve_corporation_id = ?;
+
+-- name: ListCorporationIDs :many
+SELECT
+    eve_corporation_id
+FROM
+    corporations;

@@ -996,6 +996,25 @@ func (f Factory) CreateCharacterNotification(args ...storage.CreateCharacterNoti
 	return x
 }
 
+func (f Factory) CreateCorporation(corporationID ...int32) *app.Corporation {
+	var id int32
+	if len(corporationID) == 0 {
+		ec := f.CreateEveCorporation()
+		id = ec.ID
+	} else {
+		id = corporationID[0]
+	}
+	err := f.st.CreateCorporation(context.Background(), id)
+	if err != nil {
+		panic(err)
+	}
+	c, err := f.st.GetCorporation(context.Background(), id)
+	if err != nil {
+		panic(err)
+	}
+	return c
+}
+
 func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *app.EveCharacter {
 	ctx := context.TODO()
 	var arg storage.CreateEveCharacterParams
@@ -1034,7 +1053,6 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *a
 }
 
 func (f Factory) CreateEveCorporation(args ...storage.CreateEveCorporationParams) *app.EveCorporation {
-	ctx := context.TODO()
 	var arg storage.CreateEveCorporationParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -1062,11 +1080,11 @@ func (f Factory) CreateEveCorporation(args ...storage.CreateEveCorporationParams
 	if arg.MemberCount == 0 {
 		arg.MemberCount = rand.Int32N(1000 + 1)
 	}
-	err := f.st.CreateEveCorporation(ctx, arg)
+	err := f.st.CreateEveCorporation(context.Background(), arg)
 	if err != nil {
 		panic(err)
 	}
-	c, err := f.st.GetEveCorporation(ctx, arg.ID)
+	c, err := f.st.GetEveCorporation(context.Background(), arg.ID)
 	if err != nil {
 		panic(err)
 	}
@@ -1183,13 +1201,8 @@ func (f Factory) CreateEveEntityCorporation(args ...app.EveEntity) *app.EveEntit
 	return f.CreateEveEntity(args2...)
 }
 
-func (f Factory) CreateEveEntitySolarSystem(args ...app.EveEntity) *app.EveEntity {
-	args2 := eveEntityWithCategory(args, app.EveEntitySolarSystem)
-	return f.CreateEveEntity(args2...)
-}
-
-func (f Factory) CreateEveEntityInventoryType(args ...app.EveEntity) *app.EveEntity {
-	args2 := eveEntityWithCategory(args, app.EveEntityInventoryType)
+func (f Factory) CreateEveEntityWithCategory(c app.EveEntityCategory, args ...app.EveEntity) *app.EveEntity {
+	args2 := eveEntityWithCategory(args, c)
 	return f.CreateEveEntity(args2...)
 }
 

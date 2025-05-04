@@ -303,6 +303,24 @@ type CharacterWalletTransaction struct {
 	UnitPrice     float64
 }
 
+type Corporation struct {
+	ID               int64
+	CreatedAt        time.Time
+	EveCorporationID int64
+}
+
+type CorporationSectionStatus struct {
+	ID            int64
+	CorporationID int64
+	SectionID     string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	ContentHash   string
+	CompletedAt   sql.NullTime
+	Error         string
+	StartedAt     sql.NullTime
+}
+
 type EveCategory struct {
 	ID          int64
 	Name        string

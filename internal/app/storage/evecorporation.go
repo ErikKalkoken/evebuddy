@@ -66,38 +66,33 @@ func (st *Storage) GetEveCorporation(ctx context.Context, corporationID int32) (
 		}
 		return nil, fmt.Errorf("get EveCorporation %d: %w", corporationID, err)
 	}
-	ceo := nullEveEntry{
-		ID:       r.EveCorporation.CeoID,
-		Name:     r.CeoName,
-		Category: r.CeoCategory,
-	}
-	creator := nullEveEntry{
-		ID:       r.EveCorporation.CreatorID,
-		Name:     r.CreatorName,
-		Category: r.CreatorCategory,
-	}
-	alliance := nullEveEntry{
-		ID:       r.EveCorporation.AllianceID,
-		Name:     r.AllianceName,
-		Category: r.AllianceCategory,
-	}
-	faction := nullEveEntry{
-		ID:       r.EveCorporation.FactionID,
-		Name:     r.FactionName,
-		Category: r.FactionCategory,
-	}
-	station := nullEveEntry{
-		ID:       r.EveCorporation.HomeStationID,
-		Name:     r.StationName,
-		Category: r.StationCategory,
-	}
 	c := eveCorporationFromDBModel(eveCorporationFromDBModelParams{
 		corporation: r.EveCorporation,
-		creator:     creator,
-		ceo:         ceo,
-		alliance:    alliance,
-		faction:     faction,
-		station:     station,
+		ceo: nullEveEntry{
+			ID:       r.EveCorporation.CeoID,
+			Name:     r.CeoName,
+			Category: r.CeoCategory,
+		},
+		creator: nullEveEntry{
+			ID:       r.EveCorporation.CreatorID,
+			Name:     r.CreatorName,
+			Category: r.CreatorCategory,
+		},
+		alliance: nullEveEntry{
+			ID:       r.EveCorporation.AllianceID,
+			Name:     r.AllianceName,
+			Category: r.AllianceCategory,
+		},
+		faction: nullEveEntry{
+			ID:       r.EveCorporation.FactionID,
+			Name:     r.FactionName,
+			Category: r.FactionCategory,
+		},
+		station: nullEveEntry{
+			ID:       r.EveCorporation.HomeStationID,
+			Name:     r.StationName,
+			Category: r.StationCategory,
+		},
 	})
 	return c, nil
 }

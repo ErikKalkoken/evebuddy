@@ -1,9 +1,3 @@
--- CREATE TABLE corporations (
---     id INTEGER PRIMARY KEY AUTOINCREMENT,
---     eve_corporation_id INTEGER NOT NULL,
---     FOREIGN KEY (eve_corporation_id) REFERENCES eve_corporations (id) ON DELETE CASCADE,
---     UNIQUE (eve_corporation_id)
--- )
 CREATE TABLE eve_corporations (
     id INTEGER PRIMARY KEY NOT NULL,
     alliance_id INTEGER,
