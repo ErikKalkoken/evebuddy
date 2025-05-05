@@ -23,7 +23,6 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
@@ -43,6 +42,7 @@ var esiScopes = []string{
 	"esi-clones.read_implants.v1",
 	"esi-contracts.read_character_contracts.v1",
 	"esi-industry.read_character_jobs.v1",
+	"esi-industry.read_corporation_jobs.v1",
 	"esi-location.read_location.v1",
 	"esi-location.read_online.v1",
 	"esi-location.read_ship_type.v1",
@@ -71,12 +71,10 @@ type CharacterService struct {
 	scs        *statuscacheservice.StatusCacheService
 	sfg        *singleflight.Group
 	sso        SSOService
-	rs         *corporationservice.CorporationService
 	st         *storage.Storage
 }
 
 type Params struct {
-	CorporationService     *corporationservice.CorporationService
 	EveNotificationService *evenotification.EveNotificationService
 	EveUniverseService     *eveuniverseservice.EveUniverseService
 	SSOService             SSOService
@@ -95,7 +93,6 @@ func New(args Params) *CharacterService {
 		eus: args.EveUniverseService,
 		scs: args.StatusCacheService,
 		sso: args.SSOService,
-		rs:  args.CorporationService,
 		st:  args.Storage,
 		sfg: new(singleflight.Group),
 	}
@@ -483,7 +480,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 		Scopes:       ssoToken.Scopes,
 		TokenType:    ssoToken.TokenType,
 	}
-	ctx = contextWithESIToken(context.Background(), token.AccessToken)
+	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
 	character, err := s.eus.GetOrCreateCharacterESI(ctx, token.CharacterID)
 	if err != nil {
 		return 0, err
@@ -501,7 +498,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 	if _, err := s.eus.GetOrCreateCorporationESI(ctx, character.Corporation.ID); err != nil {
 		return 0, err
 	}
-	if _, err = s.rs.GetOrCreateCorporation(ctx, character.Corporation.ID); err != nil {
+	if _, err = s.st.GetOrCreateCorporation(ctx, character.Corporation.ID); err != nil {
 		return 0, err
 	}
 	return token.CharacterID, nil
@@ -624,7 +621,7 @@ func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, char
 		"character",
 		"alliance",
 	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
+	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
 	r, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(ctx, categories, characterID, search, nil)
 	if err != nil {
 		return nil, err
@@ -1040,6 +1037,11 @@ func (s *CharacterService) updateImplantsESI(ctx context.Context, arg app.Charac
 		})
 }
 
+// ListAllCharacterIndustryJob returns all industry jobs from characters.
+func (s *CharacterService) ListAllCharacterIndustryJob(ctx context.Context) ([]*app.CharacterIndustryJob, error) {
+	return s.st.ListAllCharacterIndustryJob(ctx)
+}
+
 var jobStatusFromESIValue = map[string]app.IndustryJobStatus{
 	"active":    app.JobActive,
 	"cancelled": app.JobCancelled,
@@ -1047,10 +1049,6 @@ var jobStatusFromESIValue = map[string]app.IndustryJobStatus{
 	"paused":    app.JobPaused,
 	"ready":     app.JobReady,
 	"reverted":  app.JobReverted,
-}
-
-func (s *CharacterService) ListAllCharacterIndustryJob(ctx context.Context) ([]*app.CharacterIndustryJob, error) {
-	return s.st.ListAllCharacterIndustryJob(ctx)
 }
 
 func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
@@ -1243,7 +1241,7 @@ func (s *CharacterService) DeleteMail(ctx context.Context, characterID, mailID i
 	if err != nil {
 		return err
 	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
+	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
 	_, err = s.esiClient.ESI.MailApi.DeleteCharactersCharacterIdMailMailId(ctx, characterID, mailID, nil)
 	if err != nil {
 		return err
@@ -1349,7 +1347,7 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int32, subj
 		Subject:    subject,
 		Recipients: rr,
 	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
+	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
 	mailID, _, err := s.esiClient.ESI.MailApi.PostCharactersCharacterIdMail(ctx, characterID, esiMail, nil)
 	if err != nil {
 		return 0, err
@@ -1683,7 +1681,7 @@ func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mail
 	if err != nil {
 		return err
 	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
+	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
 	m, err := s.st.GetCharacterMail(ctx, characterID, mailID)
 	if err != nil {
 		return err
@@ -2131,7 +2129,7 @@ func (s *CharacterService) SearchESI(
 	if err != nil {
 		return nil, 0, err
 	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
+	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
 	cc := xslices.Map(categories, func(a app.SearchCategory) string {
 		return string(a)
 	})
@@ -2299,7 +2297,7 @@ func (s *CharacterService) updateSectionIfChanged(
 	if err != nil {
 		return false, err
 	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
+	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
 	data, err := fetch(ctx, arg.CharacterID)
 	if err != nil {
 		return false, err
@@ -2517,6 +2515,22 @@ func (s *CharacterService) HasTokenWithScopes(ctx context.Context, characterID i
 	required := set.Of(esiScopes...)
 	hasScope := current.ContainsAll(required.All())
 	return hasScope, nil
+}
+
+func (s *CharacterService) ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, role app.Role) (*app.CharacterToken, error) {
+	token, err := s.st.ListCharacterTokenForCorporation(ctx, corporationID, role)
+	if err != nil {
+		return nil, err
+	}
+	for _, t := range token {
+		err := s.ensureValidCharacterToken(ctx, t)
+		if err != nil {
+			slog.Error("failed to refresh token", "ID", t.CharacterID)
+			continue
+		}
+		return t, nil
+	}
+	return nil, app.ErrNotFound
 }
 
 // getValidCharacterToken returns a valid token for a character. Convenience function.
@@ -2748,13 +2762,6 @@ func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, chara
 	}
 	slog.Debug("Received wallet transactions", "characterID", characterID, "count", len(oo2))
 	return oo2, nil
-}
-
-// contextWithESIToken returns a new context with the ESI access token included
-// so it can be used to authenticate requests with the goesi library.
-func contextWithESIToken(ctx context.Context, accessToken string) context.Context {
-	ctx = context.WithValue(ctx, goesi.ContextAccessToken, accessToken)
-	return ctx
 }
 
 // fetchFromESIWithPaging returns the combined list of items from all pages of an ESI endpoint.

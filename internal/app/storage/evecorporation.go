@@ -80,6 +80,9 @@ type UpdateOrCreateEveCorporationParams struct {
 }
 
 func (st *Storage) UpdateOrCreateEveCorporation(ctx context.Context, arg UpdateOrCreateEveCorporationParams) error {
+	if arg.ID == 0 {
+		return fmt.Errorf("update or create corporation industry job: %+v: invalid parameters", arg)
+	}
 	arg2 := queries.UpdateOrCreateEveCorporationParams{
 		AllianceID:    optional.ToNullInt64(arg.AllianceID),
 		CeoID:         optional.ToNullInt64(arg.CeoID),

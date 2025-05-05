@@ -11,7 +11,6 @@ import (
 
 const (
 	characterSectionDefaultTimeout = 3600 * time.Second
-	generalSectionDefaultTimeout   = 24 * time.Hour
 )
 
 type CharacterSection string
@@ -63,29 +62,6 @@ var CharacterSections = []CharacterSection{
 	SectionWalletTransactions,
 }
 
-var characterSectionTimeouts = map[CharacterSection]time.Duration{
-	SectionAssets:             3600 * time.Second,
-	SectionAttributes:         120 * time.Second,
-	SectionContracts:          300 * time.Second,
-	SectionImplants:           120 * time.Second,
-	SectionIndustryJobs:       300 * time.Second,
-	SectionJumpClones:         120 * time.Second,
-	SectionLocation:           300 * time.Second, // minimum 5 seconds
-	SectionMailLabels:         60 * time.Second,  // minimum 30 seconds
-	SectionMailLists:          120 * time.Second,
-	SectionMails:              60 * time.Second, // minimum 30 seconds
-	SectionNotifications:      600 * time.Second,
-	SectionOnline:             300 * time.Second, // minimum 30 seconds
-	SectionPlanets:            600 * time.Second,
-	SectionRoles:              3600 * time.Second,
-	SectionShip:               300 * time.Second, // minimum 5 seconds
-	SectionSkillqueue:         120 * time.Second,
-	SectionSkills:             120 * time.Second,
-	SectionWalletBalance:      120 * time.Second,
-	SectionWalletJournal:      3600 * time.Second,
-	SectionWalletTransactions: 3600 * time.Second,
-}
-
 func (cs CharacterSection) DisplayName() string {
 	t := strings.ReplaceAll(string(cs), "_", " ")
 	c := cases.Title(language.English)
@@ -95,7 +71,29 @@ func (cs CharacterSection) DisplayName() string {
 
 // Timeout returns the time until the data of an update section becomes stale.
 func (cs CharacterSection) Timeout() time.Duration {
-	duration, ok := characterSectionTimeouts[cs]
+	var m = map[CharacterSection]time.Duration{
+		SectionAssets:             3600 * time.Second,
+		SectionAttributes:         120 * time.Second,
+		SectionContracts:          300 * time.Second,
+		SectionImplants:           120 * time.Second,
+		SectionIndustryJobs:       300 * time.Second,
+		SectionJumpClones:         120 * time.Second,
+		SectionLocation:           300 * time.Second, // minimum 5 seconds
+		SectionMailLabels:         60 * time.Second,  // minimum 30 seconds
+		SectionMailLists:          120 * time.Second,
+		SectionMails:              60 * time.Second, // minimum 30 seconds
+		SectionNotifications:      600 * time.Second,
+		SectionOnline:             300 * time.Second, // minimum 30 seconds
+		SectionPlanets:            600 * time.Second,
+		SectionRoles:              3600 * time.Second,
+		SectionShip:               300 * time.Second, // minimum 5 seconds
+		SectionSkillqueue:         120 * time.Second,
+		SectionSkills:             120 * time.Second,
+		SectionWalletBalance:      120 * time.Second,
+		SectionWalletJournal:      3600 * time.Second,
+		SectionWalletTransactions: 3600 * time.Second,
+	}
+	duration, ok := m[cs]
 	if !ok {
 		slog.Warn("Requested duration for unknown section. Using default.", "section", cs)
 		return characterSectionDefaultTimeout
@@ -135,6 +133,89 @@ func (s CharacterSectionStatus) IsExpired() bool {
 	deadline := s.CompletedAt.Add(timeout)
 	return time.Now().After(deadline)
 }
+
+const (
+	corporationSectionDefaultTimeout = 3600 * time.Second
+)
+
+type CorporationSection string
+
+// Updated corporation sections
+const (
+	SectionIndustryJobsCorporation CorporationSection = "industry_jobs"
+)
+
+var CorporationSections = []CorporationSection{
+	SectionIndustryJobsCorporation,
+}
+
+func (cs CorporationSection) DisplayName() string {
+	t := strings.ReplaceAll(string(cs), "_", " ")
+	c := cases.Title(language.English)
+	t = c.String(t)
+	return t
+}
+
+// Timeout returns the time until the data of an update section becomes stale.
+func (cs CorporationSection) Timeout() time.Duration {
+	m := map[CorporationSection]time.Duration{
+		SectionIndustryJobsCorporation: 300 * time.Second,
+	}
+	duration, ok := m[cs]
+	if !ok {
+		slog.Warn("Requested duration for unknown section. Using default.", "section", cs)
+		return corporationSectionDefaultTimeout
+	}
+	return duration
+}
+
+// Role returns the required role for fetching data for a section from ESI.
+func (cs CorporationSection) Role() Role {
+	m := map[CorporationSection]Role{
+		SectionIndustryJobsCorporation: RoleFactoryManager,
+	}
+	role, ok := m[cs]
+	if !ok {
+		slog.Warn("Requested role for unknown section. Using default.", "section", cs)
+		return RoleDirector
+	}
+	return role
+}
+
+type CorporationUpdateSectionParams struct {
+	CorporationID int32
+	Section       CorporationSection
+	ForceUpdate   bool
+}
+
+type CorporationSectionStatus struct {
+	ID              int64
+	CorporationID   int32
+	CorporationName string
+	CompletedAt     time.Time
+	ContentHash     string
+	ErrorMessage    string
+	Section         CorporationSection
+	StartedAt       time.Time
+	UpdatedAt       time.Time
+}
+
+func (s CorporationSectionStatus) IsOK() bool {
+	return s.ErrorMessage == ""
+}
+
+func (s CorporationSectionStatus) IsExpired() bool {
+	if s.CompletedAt.IsZero() {
+		return true
+	}
+	timeout := s.Section.Timeout()
+	deadline := s.CompletedAt.Add(timeout)
+	return time.Now().After(deadline)
+}
+
+const (
+	generalSectionDefaultTimeout = 24 * time.Hour
+)
 
 // A general section represents a topic that can be updated, e.g. market prices
 type GeneralSection string

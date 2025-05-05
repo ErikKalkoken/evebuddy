@@ -737,30 +737,6 @@ type CharacterIndustryJob struct {
 	SuccessfulRuns     optional.Optional[int32]
 }
 
-// StatusCorrected returns a corrected status.
-func (j CharacterIndustryJob) StatusCorrected() IndustryJobStatus {
-	if j.Status == JobActive && j.EndDate.Before(time.Now()) {
-		// Workaroud for known bug: https://github.com/esi/esi-issues/issues/752
-		return JobReady
-	}
-	return j.Status
-}
-
-func (j CharacterIndustryJob) StatusRichText() []widget.RichTextSegment {
-	status := j.StatusCorrected()
-	return iwidget.NewRichTextSegmentFromText(status.Display(), widget.RichTextStyle{
-		ColorName: status.Color(),
-	})
-}
-
-func (j CharacterIndustryJob) IsActive() bool {
-	switch s := j.StatusCorrected(); s {
-	case JobActive, JobReady, JobPaused:
-		return true
-	}
-	return false
-}
-
 type CharacterJumpClone struct {
 	CharacterID int32
 	ID          int64

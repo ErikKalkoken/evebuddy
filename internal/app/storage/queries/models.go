@@ -304,9 +304,35 @@ type CharacterWalletTransaction struct {
 }
 
 type Corporation struct {
-	ID               int64
-	CreatedAt        time.Time
-	EveCorporationID int64
+	ID        int64
+	CreatedAt time.Time
+}
+
+type CorporationIndustryJob struct {
+	ID                   int64
+	ActivityID           int64
+	BlueprintID          int64
+	BlueprintLocationID  int64
+	BlueprintTypeID      int64
+	CorporationID        int64
+	CompletedCharacterID sql.NullInt64
+	CompletedDate        sql.NullTime
+	Cost                 sql.NullFloat64
+	Duration             int64
+	EndDate              time.Time
+	FacilityID           int64
+	InstallerID          int64
+	JobID                int64
+	LicensedRuns         sql.NullInt64
+	OutputLocationID     int64
+	PauseDate            sql.NullTime
+	Probability          sql.NullFloat64
+	ProductTypeID        sql.NullInt64
+	Runs                 int64
+	StartDate            time.Time
+	LocationID           int64
+	Status               string
+	SuccessfulRuns       sql.NullInt64
 }
 
 type CorporationSectionStatus struct {

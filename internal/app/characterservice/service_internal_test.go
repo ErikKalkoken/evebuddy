@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
@@ -33,13 +32,7 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 		StatusCacheService: scs,
 		Storage:            st,
 	})
-	rs := corporationservice.New(corporationservice.Params{
-		EveUniverseService: eus,
-		StatusCacheService: scs,
-		Storage:            st,
-	})
 	arg := Params{
-		CorporationService: rs,
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,
@@ -52,6 +45,10 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 	}
 	s := New(arg)
 	return s
+}
+
+func TestNoScopeDuplicates(t *testing.T) {
+	assert.ElementsMatch(t, esiScopes, set.Of(esiScopes...).Slice())
 }
 
 func TestUpdateCharacterAssetsESI(t *testing.T) {

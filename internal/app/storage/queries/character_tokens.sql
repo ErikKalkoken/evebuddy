@@ -24,6 +24,17 @@ FROM
 WHERE
     character_id = ?;
 
+-- name: ListCharacterTokenForCorporation :many
+SELECT
+    ct.*
+FROM
+    character_tokens ct
+    JOIN eve_characters ec ON ec.id = ct.character_id
+    JOIN character_roles cr ON cr.character_id = ct.character_id
+WHERE
+    corporation_id = ?
+    AND cr.name = ?;
+
 -- name: ListCharacterTokenScopes :many
 SELECT
     scopes.*
@@ -52,5 +63,4 @@ SET
     access_token = ?2,
     expires_at = ?3,
     refresh_token = ?4,
-    token_type = ?5
-RETURNING *;
+    token_type = ?5 RETURNING *;

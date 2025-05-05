@@ -12,24 +12,24 @@ import (
 
 const createCorporation = `-- name: CreateCorporation :exec
 INSERT INTO
-    corporations (eve_corporation_id)
+    corporations (id)
 VALUES
     (?)
 `
 
-func (q *Queries) CreateCorporation(ctx context.Context, eveCorporationID int64) error {
-	_, err := q.db.ExecContext(ctx, createCorporation, eveCorporationID)
+func (q *Queries) CreateCorporation(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, createCorporation, id)
 	return err
 }
 
 const deleteCorporation = `-- name: DeleteCorporation :exec
 DELETE FROM corporations
 WHERE
-    eve_corporation_id = ?
+    id = ?
 `
 
-func (q *Queries) DeleteCorporation(ctx context.Context, eveCorporationID int64) error {
-	_, err := q.db.ExecContext(ctx, deleteCorporation, eveCorporationID)
+func (q *Queries) DeleteCorporation(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteCorporation, id)
 	return err
 }
 
@@ -48,14 +48,14 @@ SELECT
     eeh.category as station_category
 FROM
     corporations co
-    JOIN eve_corporations ec ON ec.id = co.eve_corporation_id
+    JOIN eve_corporations ec ON ec.id = co.id
     LEFT JOIN eve_entities AS eec ON eec.id = ec.ceo_id
     LEFT JOIN eve_entities AS eer ON eer.id = ec.creator_id
     LEFT JOIN eve_entities as eea ON eea.id = ec.alliance_id
     LEFT JOIN eve_entities as eef ON eef.id = ec.faction_id
     LEFT JOIN eve_entities as eeh ON eeh.id = ec.home_station_id
 WHERE
-    co.eve_corporation_id = ?
+    co.id = ?
 `
 
 type GetCorporationRow struct {
@@ -72,8 +72,8 @@ type GetCorporationRow struct {
 	StationCategory  sql.NullString
 }
 
-func (q *Queries) GetCorporation(ctx context.Context, eveCorporationID int64) (GetCorporationRow, error) {
-	row := q.db.QueryRowContext(ctx, getCorporation, eveCorporationID)
+func (q *Queries) GetCorporation(ctx context.Context, id int64) (GetCorporationRow, error) {
+	row := q.db.QueryRowContext(ctx, getCorporation, id)
 	var i GetCorporationRow
 	err := row.Scan(
 		&i.EveCorporation.ID,
@@ -107,7 +107,7 @@ func (q *Queries) GetCorporation(ctx context.Context, eveCorporationID int64) (G
 
 const listCorporationIDs = `-- name: ListCorporationIDs :many
 SELECT
-    eve_corporation_id
+    id
 FROM
     corporations
 `
@@ -120,11 +120,11 @@ func (q *Queries) ListCorporationIDs(ctx context.Context) ([]int64, error) {
 	defer rows.Close()
 	var items []int64
 	for rows.Next() {
-		var eve_corporation_id int64
-		if err := rows.Scan(&eve_corporation_id); err != nil {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
 			return nil, err
 		}
-		items = append(items, eve_corporation_id)
+		items = append(items, id)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func (st *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*app.CharacterToken, error) {
@@ -18,14 +19,13 @@ func (st *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*a
 		}
 		return nil, fmt.Errorf("get token for character %d: %w", characterID, err)
 	}
-	ss, err := st.qRO.ListCharacterTokenScopes(ctx, int64(characterID))
+	rows, err := st.qRO.ListCharacterTokenScopes(ctx, int64(characterID))
 	if err != nil {
 		return nil, err
 	}
-	scopes := make([]string, len(ss))
-	for i, s := range ss {
-		scopes[i] = s.Name
-	}
+	scopes := xslices.Map(rows, func(x queries.Scope) string {
+		return x.Name
+	})
 	t2 := characterTokenFromDBModel(t, scopes)
 	return t2, nil
 }
@@ -104,6 +104,33 @@ func (st *Storage) getOrCreateScope(ctx context.Context, name string) (queries.S
 		return s, err
 	}
 	return s, nil
+}
+
+func (st *Storage) ListCharacterTokenForCorporation(ctx context.Context, corporationID int32, role app.Role) ([]*app.CharacterToken, error) {
+	arg := queries.ListCharacterTokenForCorporationParams{
+		CorporationID: int64(corporationID),
+		Name:          role2String[role],
+	}
+	rows, err := st.qRO.ListCharacterTokenForCorporation(ctx, arg)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = app.ErrNotFound
+		}
+		return nil, fmt.Errorf("ListCharacterTokenForCorporation %v: %w", arg, err)
+	}
+	token := make([]*app.CharacterToken, 0)
+	for _, r := range rows {
+		ss, err := st.qRO.ListCharacterTokenScopes(ctx, r.CharacterID)
+		if err != nil {
+			return nil, err
+		}
+		scopes := xslices.Map(ss, func(x queries.Scope) string {
+			return x.Name
+		})
+		t := characterTokenFromDBModel(r, scopes)
+		token = append(token, t)
+	}
+	return token, nil
 }
 
 func characterTokenFromDBModel(o queries.CharacterToken, scopes []string) *app.CharacterToken {

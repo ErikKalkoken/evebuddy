@@ -250,6 +250,7 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 				time.Sleep(5 * time.Second) // Workaround to prevent concurrent updates from happening at startup.
 				u.startUpdateTickerGeneralSections()
 				u.startUpdateTickerCharacters()
+				u.startUpdateTickerCorporations()
 			} else {
 				slog.Info("Update ticker disabled")
 			}
@@ -620,7 +621,7 @@ func (u *BaseUI) sendDesktopNotification(title, content string) {
 	slog.Info("desktop notification sent", "title", title, "content", content)
 }
 
-// udpate general sections
+// update general sections
 
 func (u *BaseUI) startUpdateTickerGeneralSections() {
 	ticker := time.NewTicker(generalSectionsUpdateTicker)
@@ -921,6 +922,83 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	case app.SectionWalletTransactions:
 		if isShown && needsRefresh {
 			u.characterWalletTransaction.update()
+		}
+	default:
+		slog.Warn(fmt.Sprintf("section not part of the refresh ticker: %s", s))
+	}
+}
+
+// update corporation sections
+
+func (u *BaseUI) startUpdateTickerCorporations() {
+	ticker := time.NewTicker(characterSectionsUpdateTicker)
+	ctx := context.Background()
+	go func() {
+		for {
+			if err := u.updateCorporationsIfNeeded(ctx); err != nil {
+				slog.Error("Failed to update corporations", "error", err)
+			}
+			<-ticker.C
+		}
+	}()
+}
+
+func (u *BaseUI) updateCorporationsIfNeeded(ctx context.Context) error {
+	ids, err := u.rs.ListCorporationIDs(ctx)
+	if err != nil {
+		return err
+	}
+	for id := range ids.All() {
+		go u.updateCorporationAndRefreshIfNeeded(ctx, id, false)
+	}
+	slog.Debug("started update status corporations")
+	return nil
+}
+
+// updateCorporationAndRefreshIfNeeded runs update for all sections of a corporation if needed
+// and refreshes the UI accordingly.
+func (u *BaseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corporationID int32, forceUpdate bool) {
+	if u.isOffline {
+		return
+	}
+	var sections []app.CorporationSection
+	if u.IsMobile() && !u.isForeground.Load() {
+		// nothing to update
+	} else {
+		sections = app.CorporationSections
+	}
+	if len(sections) == 0 {
+		return
+	}
+	slog.Debug("Starting to check corporation sections for update", "sections", sections)
+	for _, s := range sections {
+		s := s
+		go u.updateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, s, forceUpdate)
+	}
+}
+
+// updateCorporationSectionAndRefreshIfNeeded runs update for a corporation section if needed
+// and refreshes the UI accordingly.
+//
+// All UI areas showing data based on corporation sections needs to be included
+// to make sure they are refreshed when data changes.
+func (u *BaseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context, corporationID int32, s app.CorporationSection, forceUpdate bool) {
+	hasChanged, err := u.rs.UpdateSectionIfNeeded(
+		ctx, app.CorporationUpdateSectionParams{
+			CorporationID: corporationID,
+			Section:       s,
+			ForceUpdate:   forceUpdate,
+		})
+	if err != nil {
+		slog.Error("Failed to update corporation section", "corporationID", corporationID, "section", s, "err", err)
+		return
+	}
+	needsRefresh := hasChanged || forceUpdate
+	switch s {
+	case app.SectionIndustryJobsCorporation:
+		if needsRefresh {
+			u.industryJobsAll.update()
+			u.industryJobsActive.update()
 		}
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the refresh ticker: %s", s))

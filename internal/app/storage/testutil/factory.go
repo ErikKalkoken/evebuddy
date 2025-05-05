@@ -1015,6 +1015,143 @@ func (f Factory) CreateCorporation(corporationID ...int32) *app.Corporation {
 	return c
 }
 
+func (f Factory) CreateCorporationIndustryJob(args ...storage.UpdateOrCreateCorporationIndustryJobParams) *app.CorporationIndustryJob {
+	ctx := context.TODO()
+	var arg storage.UpdateOrCreateCorporationIndustryJobParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CorporationID == 0 {
+		x := f.CreateCorporation()
+		arg.CorporationID = x.ID
+	}
+	if arg.ActivityID == 0 {
+		activities := []app.IndustryActivity{
+			app.Manufacturing,
+			app.TimeEfficiencyResearch,
+			app.MaterialEfficiencyResearch,
+			app.Copying,
+			app.Invention,
+			app.Reactions,
+		}
+		arg.ActivityID = int32(activities[rand.IntN(len(activities))])
+	}
+	if arg.BlueprintID == 0 {
+		arg.BlueprintID = rand.Int64N(10_000_000)
+	}
+	if arg.BlueprintLocationID == 0 {
+		arg.BlueprintLocationID = rand.Int64N(10_000_000_000)
+	}
+	if arg.BlueprintTypeID == 0 {
+		x := f.CreateEveType()
+		arg.BlueprintTypeID = x.ID
+	}
+	if arg.Duration == 0 {
+		arg.Duration = rand.Int32N(10_000)
+	}
+	if arg.FacilityID == 0 {
+		arg.FacilityID = rand.Int64N(10_000_000_000)
+	}
+	if arg.JobID == 0 {
+		arg.JobID = int32(f.calcNewIDWithCorporation(
+			"corporation_industry_jobs",
+			"job_id",
+			arg.CorporationID,
+		))
+	}
+	if arg.InstallerID == 0 {
+		x := f.CreateEveEntityCharacter()
+		arg.InstallerID = x.ID
+	}
+	if arg.OutputLocationID == 0 {
+		arg.OutputLocationID = rand.Int64N(10_000_000_000)
+	}
+	if arg.Runs == 0 {
+		arg.Runs = rand.Int32N(50)
+	}
+	if arg.LocationID == 0 {
+		x := f.CreateEveLocationStructure()
+		arg.LocationID = x.ID
+	}
+	if arg.Status == 0 {
+		items := []app.IndustryJobStatus{
+			app.JobActive,
+			app.JobCancelled,
+			app.JobDelivered,
+			app.JobPaused,
+			app.JobReady,
+			app.JobReverted,
+		}
+		arg.Status = items[rand.IntN(len(items))]
+	}
+	now := time.Now().UTC()
+	if arg.StartDate.IsZero() {
+		arg.StartDate = now.Add(-time.Duration(rand.IntN(200)+12) * time.Hour)
+	}
+	if arg.EndDate.IsZero() {
+		arg.EndDate = now.Add(time.Duration(rand.IntN(200)+12) * time.Hour)
+	}
+	err := f.st.UpdateOrCreateCorporationIndustryJob(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetCorporationIndustryJob(ctx, arg.CorporationID, arg.JobID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
+type CorporationSectionStatusParams struct {
+	CorporationID int32
+	Section       app.CorporationSection
+	ErrorMessage  string
+	CompletedAt   time.Time
+	StartedAt     time.Time
+	Data          any
+}
+
+func (f Factory) CreateCorporationSectionStatus(args ...CorporationSectionStatusParams) *app.CorporationSectionStatus {
+	ctx := context.TODO()
+	var arg CorporationSectionStatusParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CorporationID == 0 {
+		c := f.CreateCorporation()
+		arg.CorporationID = c.ID
+	}
+	if arg.Section == "" {
+		panic("must define a section in test factory")
+	}
+	if arg.Data == "" {
+		arg.Data = fmt.Sprintf("content-hash-%d-%s-%s", arg.CorporationID, arg.Section, time.Now())
+	}
+	if arg.CompletedAt.IsZero() {
+		arg.CompletedAt = time.Now()
+	}
+	if arg.StartedAt.IsZero() {
+		arg.StartedAt = time.Now().Add(-1 * time.Duration(rand.IntN(60)) * time.Second)
+	}
+	hash, err := calcContentHash(arg.Data)
+	if err != nil {
+		panic(err)
+	}
+	t := storage.NewNullTimeFromTime(arg.CompletedAt)
+	arg2 := storage.UpdateOrCreateCorporationSectionStatusParams{
+		CorporationID: arg.CorporationID,
+		Section:       arg.Section,
+		ErrorMessage:  &arg.ErrorMessage,
+		CompletedAt:   &t,
+		ContentHash:   &hash,
+	}
+	o, err := f.st.UpdateOrCreateCorporationSectionStatus(ctx, arg2)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *app.EveCharacter {
 	ctx := context.TODO()
 	var arg storage.CreateEveCharacterParams
@@ -1698,6 +1835,15 @@ func (f *Factory) calcNewIDWithCharacter(table, id_field string, characterID int
 	var max sql.NullInt64
 	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE character_id = ?;", id_field, table)
 	if err := f.dbRO.QueryRow(sql, characterID).Scan(&max); err != nil {
+		panic(err)
+	}
+	return max.Int64 + 1
+}
+
+func (f *Factory) calcNewIDWithCorporation(table, id_field string, corporationID int32) int64 {
+	var max sql.NullInt64
+	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE corporation_id = ?;", id_field, table)
+	if err := f.dbRO.QueryRow(sql, corporationID).Scan(&max); err != nil {
 		panic(err)
 	}
 	return max.Int64 + 1

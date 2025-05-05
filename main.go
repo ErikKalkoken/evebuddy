@@ -241,20 +241,10 @@ func main() {
 		Storage:            st,
 	})
 
-	// Init Corporation service
-	rs := corporationservice.New(corporationservice.Params{
-		EsiClient:          esiClient,
-		EveUniverseService: eus,
-		HttpClient:         rhc.StandardClient(),
-		StatusCacheService: scs,
-		Storage:            st,
-	})
-
 	// Init Character service
 	ssoService := sso.New(ssoClientID, rhc.StandardClient())
 	ssoService.OpenURL = fyneApp.OpenURL
 	cs := characterservice.New(characterservice.Params{
-		CorporationService:     rs,
 		EsiClient:              esiClient,
 		EveNotificationService: evenotification.New(eus),
 		EveUniverseService:     eus,
@@ -262,6 +252,16 @@ func main() {
 		SSOService:             ssoService,
 		StatusCacheService:     scs,
 		Storage:                st,
+	})
+
+	// Init Corporation service
+	rs := corporationservice.New(corporationservice.Params{
+		CharacterService:   cs,
+		EsiClient:          esiClient,
+		EveUniverseService: eus,
+		HttpClient:         rhc.StandardClient(),
+		StatusCacheService: scs,
+		Storage:            st,
 	})
 
 	// Init UI

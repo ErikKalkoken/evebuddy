@@ -68,6 +68,53 @@ func (q *Queries) GetCharacterToken(ctx context.Context, characterID int64) (Cha
 	return i, err
 }
 
+const listCharacterTokenForCorporation = `-- name: ListCharacterTokenForCorporation :many
+SELECT
+    ct.id, ct.access_token, ct.character_id, ct.expires_at, ct.refresh_token, ct.token_type
+FROM
+    character_tokens ct
+    JOIN eve_characters ec ON ec.id = ct.character_id
+    JOIN character_roles cr ON cr.character_id = ct.character_id
+WHERE
+    corporation_id = ?
+    AND cr.name = ?
+`
+
+type ListCharacterTokenForCorporationParams struct {
+	CorporationID int64
+	Name          string
+}
+
+func (q *Queries) ListCharacterTokenForCorporation(ctx context.Context, arg ListCharacterTokenForCorporationParams) ([]CharacterToken, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterTokenForCorporation, arg.CorporationID, arg.Name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CharacterToken
+	for rows.Next() {
+		var i CharacterToken
+		if err := rows.Scan(
+			&i.ID,
+			&i.AccessToken,
+			&i.CharacterID,
+			&i.ExpiresAt,
+			&i.RefreshToken,
+			&i.TokenType,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterTokenScopes = `-- name: ListCharacterTokenScopes :many
 SELECT
     scopes.id, scopes.name
@@ -120,8 +167,7 @@ SET
     access_token = ?2,
     expires_at = ?3,
     refresh_token = ?4,
-    token_type = ?5
-RETURNING id, access_token, character_id, expires_at, refresh_token, token_type
+    token_type = ?5 RETURNING id, access_token, character_id, expires_at, refresh_token, token_type
 `
 
 type UpdateOrCreateCharacterTokenParams struct {

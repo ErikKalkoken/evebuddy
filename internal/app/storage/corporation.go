@@ -33,7 +33,7 @@ type CreateCorporationParams struct {
 func (st *Storage) CreateCorporation(ctx context.Context, corporationID int32) error {
 	if err := st.qRW.CreateCorporation(ctx, int64(corporationID)); err != nil {
 		if sqliteErr, ok := err.(sqlite3.Error); ok {
-			if sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+			if sqliteErr.ExtendedCode == sqlite3.ErrConstraintPrimaryKey {
 				err = app.ErrAlreadyExists
 			}
 		}
@@ -132,6 +132,7 @@ func (st *Storage) GetOrCreateCorporation(ctx context.Context, corporationID int
 	return ee, nil
 }
 
+// ListCorporationIDs returns the IDs or all corporations.
 func (st *Storage) ListCorporationIDs(ctx context.Context) (set.Set[int32], error) {
 	ids, err := st.qRO.ListCorporationIDs(ctx)
 	if err != nil {

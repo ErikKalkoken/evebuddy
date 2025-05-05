@@ -1,9 +1,7 @@
 CREATE TABLE corporations (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    eve_corporation_id INTEGER NOT NULL,
-    FOREIGN KEY (eve_corporation_id) REFERENCES eve_corporations (id) ON DELETE CASCADE,
-    UNIQUE (eve_corporation_id)
+    FOREIGN KEY (id) REFERENCES eve_corporations (id) ON DELETE CASCADE
 );
 
 CREATE TABLE corporation_section_status (
