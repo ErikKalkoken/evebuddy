@@ -24,6 +24,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
+var (
+	errNotAuthorized = errors.New("not authorized")
+)
+
 type CharacterService interface {
 	ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, role app.Role) (*app.CharacterToken, error)
 }
@@ -73,13 +77,22 @@ func New(args Params) *CorporationService {
 }
 
 func (s *CorporationService) GetOrCreateCorporation(ctx context.Context, corporationID int32) (*app.Corporation, error) {
-	return s.st.GetOrCreateCorporation(ctx, corporationID)
+	o, err := s.st.GetOrCreateCorporation(ctx, corporationID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.scs.UpdateCorporations(ctx); err != nil {
+		return nil, err
+	}
+	return o, nil
 }
 
+// ListCorporationIDs returns all corporation IDs.
 func (s *CorporationService) ListCorporationIDs(ctx context.Context) (set.Set[int32], error) {
 	return s.st.ListCorporationIDs(ctx)
 }
 
+// GetCorporationIndustryJob returns an industry job.
 func (s *CorporationService) GetCorporationIndustryJob(ctx context.Context, corporationID, jobID int32) (*app.CorporationIndustryJob, error) {
 	return s.st.GetCorporationIndustryJob(ctx, corporationID, jobID)
 }
@@ -116,7 +129,6 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 		},
 		func(ctx context.Context, corporationID int32, data any) error {
 			jobs := data.([]esi.GetCorporationsCorporationIdIndustryJobs200Ok)
-
 			entityIDs := set.Of[int32]()
 			typeIDs := set.Of[int32]()
 			locationIDs := set.Of[int64]()
@@ -252,7 +264,9 @@ func (s *CorporationService) updateSectionIfChanged(
 	}
 	s.scs.CorporationSectionSet(o)
 	token, err := s.cs.ValidCharacterTokenForCorporation(ctx, arg.CorporationID, arg.Section.Role())
-	if err != nil {
+	if errors.Is(err, app.ErrNotFound) {
+		return false, errNotAuthorized
+	} else if err != nil {
 		return false, err
 	}
 	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)

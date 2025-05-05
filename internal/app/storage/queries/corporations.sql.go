@@ -173,3 +173,41 @@ func (q *Queries) ListCorporationsShort(ctx context.Context) ([]ListCorporations
 	}
 	return items, nil
 }
+
+const listOrphanedCorporationIDs = `-- name: ListOrphanedCorporationIDs :many
+SELECT
+    id
+FROM
+    corporations
+WHERE
+    id NOT IN (
+        SELECT
+            ec.corporation_id
+        FROM
+            characters ch
+            JOIN eve_characters ec ON ec.id = ch.id
+    )
+`
+
+func (q *Queries) ListOrphanedCorporationIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listOrphanedCorporationIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

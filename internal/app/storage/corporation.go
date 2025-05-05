@@ -142,6 +142,16 @@ func (st *Storage) ListCorporationIDs(ctx context.Context) (set.Set[int32], erro
 	return ids2, nil
 }
 
+// ListOrphanedCorporationIDs returns ID of corporations without any members.
+func (st *Storage) ListOrphanedCorporationIDs(ctx context.Context) (set.Set[int32], error) {
+	ids, err := st.qRO.ListOrphanedCorporationIDs(ctx)
+	if err != nil {
+		return set.Set[int32]{}, fmt.Errorf("list orphaned corporation IDs: %w", err)
+	}
+	ids2 := set.Of(convertNumericSlice[int32](ids)...)
+	return ids2, nil
+}
+
 // ListCorporationsShort returns all corporations ordered by name.
 func (st *Storage) ListCorporationsShort(ctx context.Context) ([]*app.EntityShort[int32], error) {
 	rows, err := st.qRO.ListCorporationsShort(ctx)

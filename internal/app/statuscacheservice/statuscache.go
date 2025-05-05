@@ -135,23 +135,22 @@ func (sc *StatusCacheService) CharacterSectionExists(characterID int32, section 
 }
 
 func (sc *StatusCacheService) CharacterSectionGet(characterID int32, section app.CharacterSection) (app.SectionStatus, bool) {
+	o := app.SectionStatus{
+		EntityID:    characterID,
+		EntityName:  sc.CharacterName(characterID),
+		SectionID:   string(section),
+		SectionName: section.DisplayName(),
+		Timeout:     section.Timeout(),
+	}
 	k := cacheKey{id: characterID, section: string(section)}
 	x, ok := sc.cache.Get(k.String())
-	if !ok {
-		return app.SectionStatus{}, false
+	if ok {
+		v := x.(cacheValue)
+		o.CompletedAt = v.CompletedAt
+		o.ErrorMessage = v.ErrorMessage
+		o.StartedAt = v.StartedAt
 	}
-	v := x.(cacheValue)
-	o := app.SectionStatus{
-		EntityID:     characterID,
-		EntityName:   sc.CharacterName(characterID),
-		SectionID:    string(section),
-		SectionName:  section.DisplayName(),
-		CompletedAt:  v.CompletedAt,
-		ErrorMessage: v.ErrorMessage,
-		StartedAt:    v.StartedAt,
-		Timeout:      section.Timeout(),
-	}
-	return o, true
+	return o, ok
 }
 
 func (sc *StatusCacheService) CharacterSectionList(characterID int32) []app.SectionStatus {
@@ -262,23 +261,22 @@ func (sc *StatusCacheService) CorporationSectionExists(corporationID int32, sect
 }
 
 func (sc *StatusCacheService) CorporationSectionGet(corporationID int32, section app.CorporationSection) (app.SectionStatus, bool) {
+	o := app.SectionStatus{
+		EntityID:    corporationID,
+		EntityName:  sc.CorporationName(corporationID),
+		SectionID:   string(section),
+		SectionName: section.DisplayName(),
+		Timeout:     section.Timeout(),
+	}
 	k := cacheKey{id: corporationID, section: string(section)}
 	x, ok := sc.cache.Get(k.String())
-	if !ok {
-		return app.SectionStatus{}, false
+	if ok {
+		v := x.(cacheValue)
+		o.CompletedAt = v.CompletedAt
+		o.ErrorMessage = v.ErrorMessage
+		o.StartedAt = v.StartedAt
 	}
-	v := x.(cacheValue)
-	o := app.SectionStatus{
-		EntityID:     corporationID,
-		EntityName:   sc.CorporationName(corporationID),
-		SectionID:    string(section),
-		SectionName:  section.DisplayName(),
-		CompletedAt:  v.CompletedAt,
-		ErrorMessage: v.ErrorMessage,
-		StartedAt:    v.StartedAt,
-		Timeout:      section.Timeout(),
-	}
-	return o, true
+	return o, ok
 }
 
 func (sc *StatusCacheService) CorporationSectionList(corporationID int32) []app.SectionStatus {

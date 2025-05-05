@@ -975,3 +975,48 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 		}
 	})
 }
+
+func TestDeleteCharacter(t *testing.T) {
+	db, st, factory := testutil.New()
+	defer db.Close()
+	cs := characterservice.NewFake(st)
+	ctx := context.Background()
+	t.Run("delete character and delete corporation when it has no members anymore", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		ec := factory.CreateEveCorporation()
+		corporation := factory.CreateCorporation(ec.ID)
+		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
+		x := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
+		character := factory.CreateCharacter(storage.CreateCharacterParams{ID: x.ID})
+		// when
+		err := cs.DeleteCharacter(ctx, character.ID)
+		// then
+		if assert.NoError(t, err) {
+			_, err = st.GetCharacter(ctx, character.ID)
+			assert.ErrorIs(t, err, app.ErrNotFound)
+			_, err = st.GetCorporation(ctx, corporation.ID)
+			assert.ErrorIs(t, err, app.ErrNotFound)
+		}
+	})
+	t.Run("delete character and keep corporation when it still has members", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		ec := factory.CreateEveCorporation()
+		corporation := factory.CreateCorporation(ec.ID)
+		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
+		x1 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
+		character := factory.CreateCharacter(storage.CreateCharacterParams{ID: x1.ID})
+		x2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
+		factory.CreateCharacter(storage.CreateCharacterParams{ID: x2.ID})
+		// when
+		err := cs.DeleteCharacter(ctx, character.ID)
+		// then
+		if assert.NoError(t, err) {
+			_, err = st.GetCharacter(ctx, character.ID)
+			assert.ErrorIs(t, err, app.ErrNotFound)
+			_, err = st.GetCorporation(ctx, corporation.ID)
+			assert.NoError(t, err)
+		}
+	})
+}

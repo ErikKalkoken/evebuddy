@@ -232,7 +232,7 @@ func (a *ManageCharacters) update() {
 }
 
 func (a *ManageCharacters) ShowAddCharacterDialog() {
-	cancelCTX, cancel := context.WithCancel(context.TODO())
+	cancelCTX, cancel := context.WithCancel(context.Background())
 	s := "Please follow instructions in your browser to add a new character."
 	infoText := binding.BindString(&s)
 	content := widget.NewLabelWithData(infoText)

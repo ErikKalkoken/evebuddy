@@ -7,7 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func TestCorporation(t *testing.T) {
@@ -68,6 +70,45 @@ func TestCorporation(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c2, c1)
+		}
+	})
+}
+
+func TestListOrphanedCorporationIDs(t *testing.T) {
+	db, st, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("orphaned corporation exists", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		ec := factory.CreateEveCorporation()
+		factory.CreateCorporation(ec.ID)
+		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
+		x := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
+		factory.CreateCharacter(storage.CreateCharacterParams{ID: x.ID})
+		corporation2 := factory.CreateCorporation()
+		// when
+		got, err := st.ListOrphanedCorporationIDs(ctx)
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of(corporation2.ID)
+			assert.True(t, got.Equal(want))
+		}
+	})
+	t.Run("orphaned corporation does not exist", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		ec := factory.CreateEveCorporation()
+		factory.CreateCorporation(ec.ID)
+		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
+		x := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
+		factory.CreateCharacter(storage.CreateCharacterParams{ID: x.ID})
+		// when
+		got, err := st.ListOrphanedCorporationIDs(ctx)
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of[int32]()
+			assert.True(t, got.Equal(want))
 		}
 	})
 }

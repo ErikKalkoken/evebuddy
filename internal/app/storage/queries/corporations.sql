@@ -9,6 +9,20 @@ DELETE FROM corporations
 WHERE
     id = ?;
 
+-- name: ListOrphanedCorporationIDs :many
+SELECT
+    id
+FROM
+    corporations
+WHERE
+    id NOT IN (
+        SELECT
+            ec.corporation_id
+        FROM
+            characters ch
+            JOIN eve_characters ec ON ec.id = ch.id
+    );
+
 -- name: GetCorporation :one
 SELECT
     sqlc.embed(ec),

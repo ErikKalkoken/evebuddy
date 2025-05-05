@@ -352,7 +352,24 @@ func (s *CharacterService) DeleteCharacter(ctx context.Context, id int32) error 
 		return err
 	}
 	slog.Info("Character deleted", "characterID", id)
-	return s.scs.UpdateCharacters(ctx)
+	if err := s.scs.UpdateCharacters(ctx); err != nil {
+		return err
+	}
+	ids, err := s.st.ListOrphanedCorporationIDs(ctx)
+	if err != nil {
+		return err
+	}
+	if ids.Size() == 0 {
+		return nil
+	}
+	for id := range ids.All() {
+		err := s.st.DeleteCorporation(ctx, id)
+		if err != nil {
+			return nil
+		}
+		slog.Info("Corporation deleted", "corporationID", id)
+	}
+	return s.scs.UpdateCorporations(ctx)
 }
 
 // EnableTrainingWatcher enables training watcher for a character when it has an active training queue.
