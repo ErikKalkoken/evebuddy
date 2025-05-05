@@ -190,7 +190,7 @@ func (a *IndustryJobs) update() {
 		return x.CorporationID
 	}))
 	ids := set.Union(ids1, ids2)
-	eeMap, err := a.u.eus.ToEntities(context.Background(), ids.Slice())
+	eeMap, err := a.u.eus.ToEntities(context.Background(), ids)
 	if err != nil {
 		reportError(err)
 		return

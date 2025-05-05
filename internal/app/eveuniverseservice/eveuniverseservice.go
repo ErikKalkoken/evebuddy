@@ -25,6 +25,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -65,11 +66,10 @@ func (s *EveUniverseService) FetchAlliance(ctx context.Context, allianceID int32
 	if err != nil {
 		return nil, err
 	}
-	ids := slices.DeleteFunc(
-		[]int32{allianceID, a.CreatorCorporationId, a.CreatorId, a.ExecutorCorporationId, a.FactionId},
-		func(id int32) bool {
-			return id < 2
-		})
+	ids := set.Of(allianceID, a.CreatorCorporationId, a.CreatorId, a.ExecutorCorporationId, a.FactionId)
+	ids.DeleteFunc(func(id int32) bool {
+		return id < 2
+	})
 	eeMap, err := s.ToEntities(ctx, ids)
 	if err != nil {
 		return nil, err
@@ -504,12 +504,12 @@ func (s *EveUniverseService) GetOrCreateEntityESI(ctx context.Context, id int32)
 
 // ToEntities returns the resolved EveEntities for a list of valid entity IDs.
 // It guarantees a result for every ID and will map unknown IDs (including 0 & 1) to empty EveEntity objects.
-func (s *EveUniverseService) ToEntities(ctx context.Context, ids []int32) (map[int32]*app.EveEntity, error) {
+func (s *EveUniverseService) ToEntities(ctx context.Context, ids set.Set[int32]) (map[int32]*app.EveEntity, error) {
 	r := make(map[int32]*app.EveEntity)
-	if len(ids) == 0 {
+	if ids.Size() == 0 {
 		return r, nil
 	}
-	ids2 := set.Of(ids...)
+	ids2 := ids.Clone()
 	ids2.Delete(0)
 	if _, err := s.AddMissingEntities(ctx, ids2); err != nil {
 		return nil, err
@@ -521,7 +521,7 @@ func (s *EveUniverseService) ToEntities(ctx context.Context, ids []int32) (map[i
 	for _, o := range oo {
 		r[o.ID] = o
 	}
-	for _, id := range ids {
+	for id := range ids.All() {
 		_, ok := r[id]
 		if !ok {
 			r[id] = &app.EveEntity{}
@@ -1128,7 +1128,7 @@ func (s *EveUniverseService) GetRegionConstellationsESI(ctx context.Context, id 
 	if err != nil {
 		return nil, err
 	}
-	xx, err := s.ToEntities(ctx, region.Constellations)
+	xx, err := s.ToEntities(ctx, set.Of(region.Constellations...))
 	if err != nil {
 		return nil, err
 	}
@@ -1453,10 +1453,10 @@ type organizationHistoryItem struct {
 }
 
 func (s *EveUniverseService) makeMembershipHistory(ctx context.Context, items []organizationHistoryItem) ([]app.MembershipHistoryItem, error) {
-	ids := xslices.Map(items, func(x organizationHistoryItem) int32 {
+	ids := set.Collect(xiter.Map(slices.Values(items), func(x organizationHistoryItem) int32 {
 		return x.OrganizationID
-	})
-	ids = slices.DeleteFunc(ids, func(id int32) bool {
+	}))
+	ids.DeleteFunc(func(id int32) bool {
 		return id < 2
 	})
 	eeMap, err := s.ToEntities(ctx, ids)

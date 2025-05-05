@@ -2144,7 +2144,7 @@ func (s *CharacterService) SearchESI(
 	if err != nil {
 		return nil, 0, err
 	}
-	ids := slices.Concat(
+	ids := set.Of(slices.Concat(
 		x.Agent,
 		x.Alliance,
 		x.Character,
@@ -2155,7 +2155,7 @@ func (s *CharacterService) SearchESI(
 		x.SolarSystem,
 		x.Station,
 		x.Region,
-	)
+	)...)
 	eeMap, err := s.eus.ToEntities(ctx, ids)
 	if err != nil {
 		slog.Error("SearchESI: resolve IDs to eve entities", "error", err)
@@ -2174,8 +2174,8 @@ func (s *CharacterService) SearchESI(
 		app.SearchType:          x.InventoryType,
 	}
 	r := make(map[app.SearchCategory][]*app.EveEntity)
-	for c, ids := range categoryMap {
-		for _, id := range ids {
+	for c, ids2 := range categoryMap {
+		for _, id := range ids2 {
 			r[c] = append(r[c], eeMap[id])
 		}
 	}
@@ -2184,7 +2184,7 @@ func (s *CharacterService) SearchESI(
 			return a.Compare(b)
 		})
 	}
-	return r, len(ids), nil
+	return r, ids.Size(), nil
 }
 
 // UpdateSectionIfNeeded updates a section from ESI if has expired and changed

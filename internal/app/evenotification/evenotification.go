@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/notification"
 	"github.com/dustin/go-humanize"
 	"gopkg.in/yaml.v3"
@@ -161,12 +162,12 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 			return title, body, err
 		}
 		title.Set(fmt.Sprintf("Bill issued for %s", billTypeName(data.BillTypeID)))
-		ids := []int32{data.CreditorID, data.DebtorID}
+		ids := set.Of(data.CreditorID, data.DebtorID)
 		if data.ExternalID != -1 && data.ExternalID == int64(int32(data.ExternalID)) {
-			ids = append(ids, int32(data.ExternalID))
+			ids.Add(int32(data.ExternalID))
 		}
 		if data.ExternalID2 != -1 && data.ExternalID2 == int64(int32(data.ExternalID2)) {
-			ids = append(ids, int32(data.ExternalID2))
+			ids.Add(int32(data.ExternalID2))
 		}
 		entities, err := s.eus.ToEntities(ctx, ids)
 		if err != nil {
@@ -256,7 +257,7 @@ func (s *EveNotificationService) renderCorporate(ctx context.Context, type_ Type
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		entities, err := s.eus.ToEntities(ctx, []int32{data.CharID, data.CorpID})
+		entities, err := s.eus.ToEntities(ctx, set.Of(data.CharID, data.CorpID))
 		if err != nil {
 			return title, body, err
 		}
@@ -277,7 +278,7 @@ func (s *EveNotificationService) renderCorporate(ctx context.Context, type_ Type
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		entities, err := s.eus.ToEntities(ctx, []int32{data.CharID, data.CorpID})
+		entities, err := s.eus.ToEntities(ctx, set.Of(data.CharID, data.CorpID))
 		if err != nil {
 			return title, body, err
 		}
@@ -295,7 +296,7 @@ func (s *EveNotificationService) renderCorporate(ctx context.Context, type_ Type
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		entities, err := s.eus.ToEntities(ctx, []int32{data.CharID, data.CorpID, data.InvokingCharID})
+		entities, err := s.eus.ToEntities(ctx, set.Of(data.CharID, data.CorpID, data.InvokingCharID))
 		if err != nil {
 			return title, body, err
 		}
@@ -314,7 +315,7 @@ func (s *EveNotificationService) renderCorporate(ctx context.Context, type_ Type
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		entities, err := s.eus.ToEntities(ctx, []int32{data.CharID, data.CorpID})
+		entities, err := s.eus.ToEntities(ctx, set.Of(data.CharID, data.CorpID))
 		if err != nil {
 			return title, body, err
 		}
@@ -332,7 +333,7 @@ func (s *EveNotificationService) renderCorporate(ctx context.Context, type_ Type
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		entities, err := s.eus.ToEntities(ctx, []int32{data.CharID, data.CorpID})
+		entities, err := s.eus.ToEntities(ctx, set.Of(data.CharID, data.CorpID))
 		if err != nil {
 			return title, body, err
 		}
@@ -353,7 +354,7 @@ func (s *EveNotificationService) renderCorporate(ctx context.Context, type_ Type
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		entities, err := s.eus.ToEntities(ctx, []int32{data.CharID, data.CorpID})
+		entities, err := s.eus.ToEntities(ctx, set.Of(data.CharID, data.CorpID))
 		if err != nil {
 			return title, body, err
 		}
@@ -371,7 +372,7 @@ func (s *EveNotificationService) renderCorporate(ctx context.Context, type_ Type
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		entities, err := s.eus.ToEntities(ctx, []int32{data.CharID, data.CorpID})
+		entities, err := s.eus.ToEntities(ctx, set.Of(data.CharID, data.CorpID))
 		if err != nil {
 			return title, body, err
 		}
@@ -551,7 +552,7 @@ type oreItem struct {
 }
 
 func (s *EveNotificationService) makeOreText(ctx context.Context, ores map[int32]float64) (string, error) {
-	ids := slices.Collect(maps.Keys(ores))
+	ids := set.Collect(maps.Keys(ores))
 	entities, err := s.eus.ToEntities(ctx, ids)
 	if err != nil {
 		return "", err
@@ -588,7 +589,7 @@ func (s *EveNotificationService) renderOrbital(ctx context.Context, type_ Type, 
 		if err != nil {
 			return title, body, err
 		}
-		entities, err := s.eus.ToEntities(ctx, []int32{data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID})
+		entities, err := s.eus.ToEntities(ctx, set.Of(data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID))
 		if err != nil {
 			return title, body, err
 		}
@@ -621,7 +622,7 @@ func (s *EveNotificationService) renderOrbital(ctx context.Context, type_ Type, 
 		if err != nil {
 			return title, body, err
 		}
-		entities, err := s.eus.ToEntities(ctx, []int32{data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID})
+		entities, err := s.eus.ToEntities(ctx, set.Of(data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID))
 		if err != nil {
 			return title, body, err
 		}
@@ -935,7 +936,7 @@ func (s *EveNotificationService) renderOwnershipTransferred(ctx context.Context,
 		d.structureTypeID = int32(data.StructureLinkData[1].(int))
 		d.structureName = data.StructureName
 	}
-	entities, err := s.eus.ToEntities(ctx, []int32{d.oldCorpID, d.newCorpID, d.characterID})
+	entities, err := s.eus.ToEntities(ctx, set.Of(d.oldCorpID, d.newCorpID, d.characterID))
 	if err != nil {
 		return title, body, err
 	}
@@ -1047,9 +1048,9 @@ func (s *EveNotificationService) renderStructureItemsDelivered(ctx context.Conte
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	ids := []int32{data.CharID, data.StructureTypeID}
+	ids := set.Of(data.CharID, data.StructureTypeID)
 	for _, r := range data.ListOfTypesAndQty {
-		ids = append(ids, r[1])
+		ids.Add(r[1])
 	}
 	entities, err := s.eus.ToEntities(ctx, ids)
 	if err != nil {
@@ -1190,7 +1191,7 @@ func (s *EveNotificationService) renderStructuresReinforcementChanged(ctx contex
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	typeIDs := make([]int32, 0)
+	var typeIDs set.Set[int32]
 	structures := make([]structureReinforcementInfo, 0)
 	for _, x := range data.AllStructureInfo {
 		typeID := int32(x[2].(int))
@@ -1200,7 +1201,7 @@ func (s *EveNotificationService) renderStructuresReinforcementChanged(ctx contex
 			typeID:      typeID,
 		}
 		structures = append(structures, s)
-		typeIDs = append(typeIDs, typeID)
+		typeIDs.Add(typeID)
 	}
 	slices.SortFunc(structures, func(a structureReinforcementInfo, b structureReinforcementInfo) int {
 		return cmp.Compare(a.name, b.name)
@@ -1230,7 +1231,7 @@ func (s *EveNotificationService) renderStructureServicesOffline(ctx context.Cont
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.eus.ToEntities(ctx, data.ListOfServiceModuleIDs)
+	entities, err := s.eus.ToEntities(ctx, set.Of(data.ListOfServiceModuleIDs...))
 	if err != nil {
 		return title, body, err
 	}
@@ -1443,7 +1444,7 @@ func (s *EveNotificationService) renderTowerAlertMsg(ctx context.Context, text s
 	if err != nil {
 		return title, body, err
 	}
-	entities, err := s.eus.ToEntities(ctx, []int32{data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID})
+	entities, err := s.eus.ToEntities(ctx, set.Of(data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID))
 	if err != nil {
 		return title, body, err
 	}
@@ -1541,7 +1542,7 @@ func (s *EveNotificationService) renderAllWarSurrenderMsg(ctx context.Context, t
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.eus.ToEntities(ctx, []int32{data.AgainstID, data.DeclaredByID})
+	entities, err := s.eus.ToEntities(ctx, set.Of(data.AgainstID, data.DeclaredByID))
 	if err != nil {
 		return title, body, err
 	}
@@ -1567,7 +1568,7 @@ func (s *EveNotificationService) renderCorpWarSurrenderMsg(ctx context.Context, 
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.eus.ToEntities(ctx, []int32{data.AgainstID, data.DeclaredByID})
+	entities, err := s.eus.ToEntities(ctx, set.Of(data.AgainstID, data.DeclaredByID))
 	if err != nil {
 		return title, body, err
 	}
@@ -1588,7 +1589,7 @@ func (s *EveNotificationService) renderDeclareWar(ctx context.Context, text stri
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.eus.ToEntities(ctx, []int32{data.CharID, data.DefenderID, data.EntityID})
+	entities, err := s.eus.ToEntities(ctx, set.Of(data.CharID, data.DefenderID, data.EntityID))
 	if err != nil {
 		return title, body, err
 	}
@@ -1609,9 +1610,7 @@ func (s *EveNotificationService) renderWarAdopted(ctx context.Context, text stri
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.eus.ToEntities(
-		ctx, []int32{data.AgainstID, data.DeclaredByID, data.AllianceID},
-	)
+	entities, err := s.eus.ToEntities(ctx, set.Of(data.AgainstID, data.DeclaredByID, data.AllianceID))
 	if err != nil {
 		return title, body, err
 	}
@@ -1644,7 +1643,7 @@ func (s *EveNotificationService) renderWarDeclared(ctx context.Context, text str
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.eus.ToEntities(ctx, []int32{data.AgainstID, data.DeclaredByID})
+	entities, err := s.eus.ToEntities(ctx, set.Of(data.AgainstID, data.DeclaredByID))
 	if err != nil {
 		return title, body, err
 	}
@@ -1672,7 +1671,7 @@ func (s *EveNotificationService) renderWarHQRemovedFromSpace(ctx context.Context
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.eus.ToEntities(ctx, []int32{data.AgainstID, data.DeclaredByID})
+	entities, err := s.eus.ToEntities(ctx, set.Of(data.AgainstID, data.DeclaredByID))
 	if err != nil {
 		return title, body, err
 	}
@@ -1696,16 +1695,13 @@ func (s *EveNotificationService) renderWarInherited(ctx context.Context, text st
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.eus.ToEntities(
-		ctx,
-		[]int32{
-			data.AgainstID,
-			data.AllianceID,
-			data.DeclaredByID,
-			data.OpponentID,
-			data.QuitterID,
-		},
-	)
+	entities, err := s.eus.ToEntities(ctx, set.Of(
+		data.AgainstID,
+		data.AllianceID,
+		data.DeclaredByID,
+		data.OpponentID,
+		data.QuitterID,
+	))
 	if err != nil {
 		return title, body, err
 	}
@@ -1737,7 +1733,7 @@ func (s *EveNotificationService) renderWarInvalid(ctx context.Context, text stri
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.eus.ToEntities(ctx, []int32{data.AgainstID, data.DeclaredByID})
+	entities, err := s.eus.ToEntities(ctx, set.Of(data.AgainstID, data.DeclaredByID))
 	if err != nil {
 		return title, body, err
 	}
@@ -1762,7 +1758,7 @@ func (s *EveNotificationService) renderWarRetractedByConcord(ctx context.Context
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	entities, err := s.eus.ToEntities(ctx, []int32{data.AgainstID, data.DeclaredByID})
+	entities, err := s.eus.ToEntities(ctx, set.Of(data.AgainstID, data.DeclaredByID))
 	if err != nil {
 		return title, body, err
 	}

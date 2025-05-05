@@ -736,7 +736,7 @@ func TestToEveEntities(t *testing.T) {
 		e1 := factory.CreateEveEntity()
 		e2 := factory.CreateEveEntity()
 		// when
-		oo, err := s.ToEntities(ctx, []int32{e1.ID, e2.ID})
+		oo, err := s.ToEntities(ctx, set.Of(e1.ID, e2.ID))
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, map[int32]*app.EveEntity{e1.ID: e1, e2.ID: e2}, oo)
@@ -747,7 +747,7 @@ func TestToEveEntities(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		// when
-		oo, err := s.ToEntities(ctx, []int32{0, 1})
+		oo, err := s.ToEntities(ctx, set.Of[int32](0, 1))
 		// then
 		if assert.NoError(t, err) {
 			assert.EqualValues(t, &app.EveEntity{ID: 0}, oo[0])
