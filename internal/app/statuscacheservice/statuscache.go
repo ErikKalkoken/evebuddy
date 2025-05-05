@@ -14,6 +14,19 @@ import (
 
 const keyCharacters = "characterUpdateStatusCache-characters"
 
+type statusSummary struct {
+	current   int
+	errors    int
+	isRunning bool
+}
+
+// add ads the content of another statusSummary (Mutating).
+func (ss *statusSummary) add(other statusSummary) {
+	ss.current += other.current
+	ss.errors += other.errors
+	ss.isRunning = ss.isRunning || other.isRunning
+}
+
 // StatusCacheService provides cached access to the current update status
 // of all characters to improve performance of UI refresh tickers.
 type StatusCacheService struct {
@@ -53,6 +66,34 @@ func (sc *StatusCacheService) InitCache(ctx context.Context) error {
 	}
 	return nil
 }
+
+// ListSections returns the sections for an entity.
+func (sc *StatusCacheService) ListSections(entityID int32) []app.SectionStatus {
+	if entityID == app.GeneralSectionEntityID {
+		return sc.GeneralSectionList()
+	}
+	return sc.CharacterSectionList(entityID)
+}
+
+// Summary returns the current summary status in percent of fresh sections
+// and the number of missing and errors.
+func (sc *StatusCacheService) Summary() app.StatusSummary {
+	var ss statusSummary
+	cc := sc.ListCharacters()
+	for _, character := range cc {
+		ss.add(sc.calcCharacterSectionSummary(character.ID))
+	}
+	ss.add(sc.calcGeneralSectionSummary())
+	s := app.StatusSummary{
+		Current:   ss.current,
+		Errors:    ss.errors,
+		IsRunning: ss.isRunning,
+		Total:     len(app.CharacterSections)*len(cc) + len(app.GeneralSections),
+	}
+	return s
+}
+
+// Character sections
 
 // CharacterSectionExists reports whether a character section exists.
 func (sc *StatusCacheService) CharacterSectionExists(characterID int32, section app.CharacterSection) bool {
@@ -113,19 +154,6 @@ func (sc *StatusCacheService) CharacterSectionList(characterID int32) []app.Sect
 	return list
 }
 
-type statusSummary struct {
-	current   int
-	errors    int
-	isRunning bool
-}
-
-// add ads the content of another statusSummary (Mutating).
-func (ss *statusSummary) add(other statusSummary) {
-	ss.current += other.current
-	ss.errors += other.errors
-	ss.isRunning = ss.isRunning || other.isRunning
-}
-
 func (sc *StatusCacheService) CharacterSectionSummary(characterID int32) app.StatusSummary {
 	total := len(app.CharacterSections)
 	ss := sc.calcCharacterSectionSummary(characterID)
@@ -183,6 +211,31 @@ func (sc *StatusCacheService) CharacterName(characterID int32) string {
 	}
 	return ""
 }
+
+func (sc *StatusCacheService) UpdateCharacters(ctx context.Context) error {
+	_, err := sc.updateCharacters(ctx)
+	return err
+}
+
+func (sc *StatusCacheService) updateCharacters(ctx context.Context) ([]*app.CharacterShort, error) {
+	cc, err := sc.st.ListCharactersShort(ctx)
+	if err != nil {
+		return nil, err
+	}
+	sc.cache.Set(keyCharacters, cc, 0)
+	return cc, nil
+}
+
+// ListCharacters returns the user's characters in alphabetical order.
+func (sc *StatusCacheService) ListCharacters() []*app.CharacterShort {
+	x, ok := sc.cache.Get(keyCharacters)
+	if !ok {
+		return nil
+	}
+	return x.([]*app.CharacterShort)
+}
+
+// general sections
 
 func (sc *StatusCacheService) GeneralSectionExists(section app.GeneralSection) bool {
 	x, ok := sc.GeneralSectionGet(section)
@@ -264,56 +317,4 @@ func (sc *StatusCacheService) calcGeneralSectionSummary() statusSummary {
 		}
 	}
 	return ss
-}
-
-func (sc *StatusCacheService) SectionList(entityID int32) []app.SectionStatus {
-	if entityID == app.GeneralSectionEntityID {
-		return sc.GeneralSectionList()
-	}
-	return sc.CharacterSectionList(entityID)
-}
-
-// Summary returns the current summary status in percent of fresh sections
-// and the number of missing and errors.
-func (sc *StatusCacheService) Summary() app.StatusSummary {
-	var ss statusSummary
-	cc := sc.ListCharacters()
-	for _, character := range cc {
-		ss.add(sc.calcCharacterSectionSummary(character.ID))
-	}
-	ss.add(sc.calcGeneralSectionSummary())
-	s := app.StatusSummary{
-		Current:   ss.current,
-		Errors:    ss.errors,
-		IsRunning: ss.isRunning,
-		Total:     len(app.CharacterSections)*len(cc) + len(app.GeneralSections),
-	}
-	return s
-}
-
-func (sc *StatusCacheService) UpdateCharacters(ctx context.Context) error {
-	_, err := sc.updateCharacters(ctx)
-	return err
-}
-
-func (sc *StatusCacheService) updateCharacters(ctx context.Context) ([]*app.CharacterShort, error) {
-	cc, err := sc.st.ListCharactersShort(ctx)
-	if err != nil {
-		return nil, err
-	}
-	sc.setCharacters(cc)
-	return cc, nil
-}
-
-// ListCharacters returns the list of the users characters in alphabetical order.
-func (sc *StatusCacheService) ListCharacters() []*app.CharacterShort {
-	x, ok := sc.cache.Get(keyCharacters)
-	if !ok {
-		return nil
-	}
-	return x.([]*app.CharacterShort)
-}
-
-func (sc *StatusCacheService) setCharacters(cc []*app.CharacterShort) {
-	sc.cache.Set(keyCharacters, cc, 0)
 }

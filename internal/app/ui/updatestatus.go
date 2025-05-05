@@ -317,7 +317,7 @@ func (a *updateStatus) refreshSections() {
 		return
 	}
 	se := a.sectionEntities[a.selectedEntityID]
-	a.sections = a.u.scs.SectionList(se.id)
+	a.sections = a.u.scs.ListSections(se.id)
 	a.sectionList.Refresh()
 	a.sectionsTop.SetText(fmt.Sprintf("%s: Sections", se.name))
 }

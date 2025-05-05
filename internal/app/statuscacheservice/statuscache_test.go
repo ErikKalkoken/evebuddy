@@ -5,12 +5,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestStatusCache(t *testing.T) {
@@ -18,7 +19,7 @@ func TestStatusCache(t *testing.T) {
 	defer db.Close()
 	cache := memcache.New()
 	sc := statuscacheservice.New(cache, st)
-	ctx := context.TODO()
+	ctx := context.Background()
 	t.Run("Can init a status cache with character and general sections", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -442,4 +443,111 @@ func TestStatusCacheSummary(t *testing.T) {
 		assert.Less(t, ss.ProgressP(), float32(1.0))
 		assert.Equal(t, 0, ss.Errors)
 	})
+}
+
+func TestListSections(t *testing.T) {
+	cache := memcache.New()
+	sc := statuscacheservice.New(cache, nil)
+	t.Run("can list sections for a character", func(t *testing.T) {
+		// given
+		const (
+			ID1 = 42
+			ID2 = 88
+		)
+		cache.Clear()
+		sc.CharacterSectionSet(&app.CharacterSectionStatus{
+			CharacterID: ID1,
+			Section:     app.SectionImplants,
+		})
+		sc.CharacterSectionSet(&app.CharacterSectionStatus{
+			CharacterID: ID2,
+			Section:     app.SectionSkills,
+		})
+		// when
+		s := sc.ListSections(ID1)
+		// then
+		assert.Len(t, s, 1)
+		assert.Equal(t, app.SectionImplants.DisplayName(), s[0].SectionName)
+	})
+	t.Run("can list sections for a general entity", func(t *testing.T) {
+		// given
+		cache.Clear()
+		sc.GeneralSectionSet(&app.GeneralSectionStatus{
+			ID:      app.GeneralSectionEntityID,
+			Section: app.SectionEveCategories,
+		})
+		// when
+		s := sc.ListSections(app.GeneralSectionEntityID)
+		// then
+		assert.Len(t, s, 1)
+		assert.Equal(t, app.SectionEveCategories.DisplayName(), s[0].SectionName)
+	})
+}
+
+func TestCharacterSectionSummary(t *testing.T) {
+	cache := memcache.New()
+	sc := statuscacheservice.New(cache, nil)
+	// given
+	const (
+		characterID = 42
+	)
+	cache.Clear()
+	sc.CharacterSectionSet(&app.CharacterSectionStatus{
+		CharacterID:  characterID,
+		Section:      app.SectionImplants,
+		ErrorMessage: "ERROR",
+	})
+	sc.CharacterSectionSet(&app.CharacterSectionStatus{
+		CharacterID: characterID,
+		Section:     app.SectionAssets,
+		CompletedAt: time.Now(),
+	})
+	sc.CharacterSectionSet(&app.CharacterSectionStatus{
+		CharacterID: characterID,
+		Section:     app.SectionIndustryJobs,
+		StartedAt:   time.Now().Add(-10 * time.Second),
+	})
+	// when
+	got := sc.CharacterSectionSummary(characterID)
+	// then
+	want := app.StatusSummary{
+		Current:   1,
+		Errors:    1,
+		IsRunning: true,
+		Total:     20,
+	}
+	assert.Equal(t, want, got)
+}
+
+func TestGeneralSectionSummary(t *testing.T) {
+	cache := memcache.New()
+	sc := statuscacheservice.New(cache, nil)
+	// given
+	const (
+		characterID = 42
+	)
+	cache.Clear()
+	sc.GeneralSectionSet(&app.GeneralSectionStatus{
+		Section:      app.SectionEveCategories,
+		ErrorMessage: "ERROR",
+	})
+	sc.GeneralSectionSet(&app.GeneralSectionStatus{
+		Section:     app.SectionEveCharacters,
+		CompletedAt: time.Now(),
+	})
+	sc.GeneralSectionSet(&app.GeneralSectionStatus{
+		Section: app.SectionEveMarketPrices,
+
+		StartedAt: time.Now().Add(-10 * time.Second),
+	})
+	// when
+	got := sc.GeneralSectionSummary()
+	// then
+	want := app.StatusSummary{
+		Current:   1,
+		Errors:    1,
+		IsRunning: true,
+		Total:     4,
+	}
+	assert.Equal(t, want, got)
 }
