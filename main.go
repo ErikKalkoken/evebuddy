@@ -112,6 +112,8 @@ func main() {
 		return
 	}
 
+	log.Printf("INFO EVE Buddy version=%s", fyneApp.Metadata().Version)
+
 	// set log level from settings
 	if *logLevelFlag == "" {
 		s := settings.New(fyneApp.Preferences())
