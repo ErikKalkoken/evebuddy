@@ -267,6 +267,7 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 		if count > 0 {
 			c := ihumanize.Comma(count)
 			s += fmt.Sprintf(" (%s)", c)
+			badge = c
 		}
 		fyne.Do(func() {
 			industryJobsActive.Text = s

@@ -141,3 +141,17 @@ func (st *Storage) ListCorporationIDs(ctx context.Context) (set.Set[int32], erro
 	ids2 := set.Of(convertNumericSlice[int32](ids)...)
 	return ids2, nil
 }
+
+// ListCorporationsShort returns all corporations ordered by name.
+func (st *Storage) ListCorporationsShort(ctx context.Context) ([]*app.EntityShort[int32], error) {
+	rows, err := st.qRO.ListCorporationsShort(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list corporations short: %w", err)
+
+	}
+	cc := make([]*app.EntityShort[int32], 0)
+	for _, r := range rows {
+		cc = append(cc, &app.EntityShort[int32]{ID: int32(r.ID), Name: r.Name})
+	}
+	return cc, nil
+}

@@ -38,3 +38,13 @@ SELECT
     id
 FROM
     corporations;
+
+-- name: ListCorporationsShort :many
+SELECT
+    co.id,
+    ec.name
+FROM
+    corporations co
+    JOIN eve_corporations ec ON ec.id = co.id
+ORDER BY
+    ec.name;

@@ -221,11 +221,11 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 			ErrorMessage:  &errorMessage,
 			StartedAt:     &startedAt,
 		}
-		_, err2 := s.st.UpdateOrCreateCorporationSectionStatus(ctx, arg2)
+		o, err2 := s.st.UpdateOrCreateCorporationSectionStatus(ctx, arg2)
 		if err2 != nil {
 			slog.Error("record error for failed section update: %s", "error", err2)
 		}
-		// s.scs.CorporationSectionSet(o)
+		s.scs.CorporationSectionSet(o)
 		return false, fmt.Errorf("update corporation section from ESI for %v: %w", arg, err)
 	}
 	changed := x.(bool)
@@ -246,11 +246,11 @@ func (s *CorporationService) updateSectionIfChanged(
 		Section:       arg.Section,
 		StartedAt:     &startedAt,
 	}
-	_, err := s.st.UpdateOrCreateCorporationSectionStatus(ctx, arg2)
+	o, err := s.st.UpdateOrCreateCorporationSectionStatus(ctx, arg2)
 	if err != nil {
 		return false, err
 	}
-	// s.scs.CorporationSectionSet(o)
+	s.scs.CorporationSectionSet(o)
 	token, err := s.cs.ValidCharacterTokenForCorporation(ctx, arg.CorporationID, arg.Section.Role())
 	if err != nil {
 		return false, err
@@ -295,12 +295,11 @@ func (s *CorporationService) updateSectionIfChanged(
 		CompletedAt:  &completedAt,
 		StartedAt:    &startedAt2,
 	}
-	_, err = s.st.UpdateOrCreateCorporationSectionStatus(ctx, arg2)
+	o, err = s.st.UpdateOrCreateCorporationSectionStatus(ctx, arg2)
 	if err != nil {
 		return false, err
 	}
-	// s.scs.CorporationSectionSet(o)
-
+	s.scs.CorporationSectionSet(o)
 	slog.Debug("Has section changed", "corporationID", arg.CorporationID, "section", arg.Section, "changed", hasChanged)
 	return hasChanged, nil
 }

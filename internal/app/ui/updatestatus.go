@@ -26,15 +26,25 @@ const (
 	updateStatusTicker = 3 * time.Second
 )
 
+type sectionCategory uint
+
+const (
+	sectionCharacter sectionCategory = iota + 1
+	sectionCorpoation
+	sectionGeneral
+	sectionHeader
+)
+
 // An entity which has update sections, e.g. a character
 type sectionEntity struct {
-	id   int32
-	name string
-	ss   app.StatusSummary
+	id       int32
+	name     string
+	category sectionCategory
+	ss       app.StatusSummary
 }
 
 func (se sectionEntity) isGeneralSection() bool {
-	return se.id == app.GeneralSectionEntityID
+	return se.category == sectionGeneral
 }
 
 type detailsItem struct {
@@ -163,22 +173,38 @@ func (a *updateStatus) makeEntityList() *widget.List {
 			c := a.sectionEntities[id]
 			row := co.(*fyne.Container).Objects
 			name := row[1].(*widget.Label)
-			name.SetText(c.name)
-
 			icon := row[0].(*canvas.Image)
-			if c.isGeneralSection() {
+			spinner := row[2].(*widget.Activity)
+			status := row[4].(*widget.Label)
+
+			name.Text = c.name
+			switch c.category {
+			case sectionGeneral:
+				name.TextStyle.Bold = false
+				name.Refresh()
 				icon.Resource = eveicon.FromName(eveicon.StarMap)
 				icon.Refresh()
-			} else {
-				go a.u.updateAvatar(c.id, func(r fyne.Resource) {
-					fyne.Do(func() {
-						icon.Resource = r
-						icon.Refresh()
-					})
+			case sectionCharacter, sectionCorpoation:
+				name.TextStyle.Bold = false
+				name.Refresh()
+				iwidget.RefreshImageAsync(icon, func() (fyne.Resource, error) {
+					switch c.category {
+					case sectionCharacter:
+						return a.u.eis.CharacterPortrait(c.id, app.IconPixelSize)
+					case sectionCorpoation:
+						return a.u.eis.CorporationLogo(c.id, app.IconPixelSize)
+					}
+					return icons.BlankSvg, nil
 				})
+			case sectionHeader:
+				name.TextStyle.Bold = true
+				name.Refresh()
+				icon.Hide()
+				spinner.Hide()
+				status.Hide()
+				return
 			}
 
-			spinner := row[2].(*widget.Activity)
 			if c.ss.IsRunning && !a.u.IsOffline() {
 				spinner.Start()
 				spinner.Show()
@@ -187,19 +213,22 @@ func (a *updateStatus) makeEntityList() *widget.List {
 				spinner.Hide()
 			}
 
-			status := row[4].(*widget.Label)
 			t := c.ss.Display()
 			i := c.ss.Status().ToImportance2()
 			status.Text = t
 			status.Importance = i
 			status.Refresh()
+			status.Show()
+
+			icon.Show()
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		if id >= len(a.sectionEntities) {
+		if id >= len(a.sectionEntities) || a.sectionEntities[id].category == sectionHeader {
 			list.UnselectAll()
 			return
 		}
+
 		a.selectedEntityID = id
 		a.selectedSectionID = -1
 		a.sectionList.UnselectAll()
@@ -242,17 +271,37 @@ func (a *updateStatus) update() {
 
 func (*updateStatus) updateEntityList(s services) []sectionEntity {
 	entities := make([]sectionEntity, 0)
+	entities = append(entities, sectionEntity{category: sectionHeader, name: "Characters"})
 	cc := s.scs.ListCharacters()
 	for _, c := range cc {
 		ss := s.scs.CharacterSectionSummary(c.ID)
-		o := sectionEntity{id: c.ID, name: c.Name, ss: ss}
+		o := sectionEntity{
+			category: sectionCharacter,
+			id:       c.ID,
+			name:     c.Name,
+			ss:       ss,
+		}
 		entities = append(entities, o)
 	}
+	entities = append(entities, sectionEntity{category: sectionHeader, name: "Corporations"})
+	rr := s.scs.ListCorporations()
+	for _, r := range rr {
+		ss := s.scs.CorporationSectionSummary(r.ID)
+		o := sectionEntity{
+			category: sectionCorpoation,
+			id:       r.ID,
+			name:     r.Name,
+			ss:       ss,
+		}
+		entities = append(entities, o)
+	}
+	entities = append(entities, sectionEntity{category: sectionHeader, name: "General"})
 	ss := s.scs.GeneralSectionSummary()
 	o := sectionEntity{
-		id:   app.GeneralSectionEntityID,
-		name: app.GeneralSectionEntityName,
-		ss:   ss,
+		category: sectionGeneral,
+		id:       app.GeneralSectionEntityID,
+		name:     app.GeneralSectionEntityName,
+		ss:       ss,
 	}
 	entities = append(entities, o)
 	return entities
@@ -317,7 +366,14 @@ func (a *updateStatus) refreshSections() {
 		return
 	}
 	se := a.sectionEntities[a.selectedEntityID]
-	a.sections = a.u.scs.ListSections(se.id)
+	switch se.category {
+	case sectionCharacter:
+		a.sections = a.u.scs.CharacterSectionList(se.id)
+	case sectionCorpoation:
+		a.sections = a.u.scs.CorporationSectionList(se.id)
+	case sectionGeneral:
+		a.sections = a.u.scs.GeneralSectionList()
+	}
 	a.sectionList.Refresh()
 	a.sectionsTop.SetText(fmt.Sprintf("%s: Sections", se.name))
 }

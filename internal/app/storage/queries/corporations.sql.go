@@ -134,3 +134,42 @@ func (q *Queries) ListCorporationIDs(ctx context.Context) ([]int64, error) {
 	}
 	return items, nil
 }
+
+const listCorporationsShort = `-- name: ListCorporationsShort :many
+SELECT
+    co.id,
+    ec.name
+FROM
+    corporations co
+    JOIN eve_corporations ec ON ec.id = co.id
+ORDER BY
+    ec.name
+`
+
+type ListCorporationsShortRow struct {
+	ID   int64
+	Name string
+}
+
+func (q *Queries) ListCorporationsShort(ctx context.Context) ([]ListCorporationsShortRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCorporationsShort)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCorporationsShortRow
+	for rows.Next() {
+		var i ListCorporationsShortRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

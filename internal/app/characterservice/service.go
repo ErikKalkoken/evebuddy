@@ -495,11 +495,16 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 	if err := s.scs.UpdateCharacters(ctx); err != nil {
 		return 0, err
 	}
-	if _, err := s.eus.GetOrCreateCorporationESI(ctx, character.Corporation.ID); err != nil {
-		return 0, err
-	}
-	if _, err = s.st.GetOrCreateCorporation(ctx, character.Corporation.ID); err != nil {
-		return 0, err
+	if x := character.Corporation.IsNPC(); !x.IsEmpty() && !x.ValueOrZero() {
+		if _, err := s.eus.GetOrCreateCorporationESI(ctx, character.Corporation.ID); err != nil {
+			return 0, err
+		}
+		if _, err = s.st.GetOrCreateCorporation(ctx, character.Corporation.ID); err != nil {
+			return 0, err
+		}
+		if err := s.scs.UpdateCorporations(ctx); err != nil {
+			return 0, err
+		}
 	}
 	return token.CharacterID, nil
 }
@@ -2342,7 +2347,6 @@ func (s *CharacterService) updateSectionIfChanged(
 		return false, err
 	}
 	s.scs.CharacterSectionSet(o)
-
 	slog.Debug("Has section changed", "characterID", arg.CharacterID, "section", arg.Section, "changed", hasChanged)
 	return hasChanged, nil
 }
