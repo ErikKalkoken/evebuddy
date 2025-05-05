@@ -96,7 +96,7 @@ func (s *EveUniverseService) FetchAllianceCorporations(ctx context.Context, alli
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.AddMissingEntities(ctx, slices.Concat(ids, []int32{allianceID}))
+	_, err = s.AddMissingEntities(ctx, set.Of(slices.Concat(ids, []int32{allianceID})...))
 	if err != nil {
 		return nil, err
 	}
@@ -125,12 +125,12 @@ func (s *EveUniverseService) createCharacterFromESI(ctx context.Context, id int3
 		if err != nil {
 			return nil, err
 		}
-		ids := []int32{id, r.CorporationId}
+		ids := set.Of(id, r.CorporationId)
 		if r.AllianceId != 0 {
-			ids = append(ids, r.AllianceId)
+			ids.Add(r.AllianceId)
 		}
 		if r.FactionId != 0 {
-			ids = append(ids, r.FactionId)
+			ids.Add(r.FactionId)
 		}
 		_, err = s.AddMissingEntities(ctx, ids)
 		if err != nil {
@@ -203,15 +203,7 @@ func (s *EveUniverseService) updateCharacterESI(ctx context.Context, characterID
 			return nil
 		}
 		r := rr[0]
-		entityIDs := []int32{c.ID}
-		entityIDs = append(entityIDs, r.CorporationId)
-		if r.AllianceId != 0 {
-			entityIDs = append(entityIDs, r.AllianceId)
-		}
-		if r.FactionId != 0 {
-			entityIDs = append(entityIDs, r.FactionId)
-		}
-		_, err = s.AddMissingEntities(ctx, entityIDs)
+		_, err = s.AddMissingEntities(ctx, set.Of(c.ID, r.CorporationId, r.AllianceId, r.FactionId))
 		if err != nil {
 			return err
 		}
@@ -271,11 +263,10 @@ func (s *EveUniverseService) updateOrcreateCorporationFromESI(ctx context.Contex
 		if err != nil {
 			return nil, err
 		}
-		ids := slices.DeleteFunc(
-			[]int32{id, r.CeoId, r.CreatorId, r.AllianceId, r.FactionId, r.HomeStationId},
-			func(id int32) bool {
-				return id < 2
-			})
+		ids := set.Of(id, r.CeoId, r.CreatorId, r.AllianceId, r.FactionId, r.HomeStationId)
+		ids.DeleteFunc(func(id int32) bool {
+			return id < 2
+		})
 		if _, err := s.AddMissingEntities(ctx, ids); err != nil {
 			return nil, err
 		}
@@ -504,7 +495,7 @@ func (s *EveUniverseService) GetOrCreateEntityESI(ctx context.Context, id int32)
 	if !errors.Is(err, app.ErrNotFound) {
 		return nil, err
 	}
-	_, err = s.AddMissingEntities(ctx, []int32{id})
+	_, err = s.AddMissingEntities(ctx, set.Of(id))
 	if err != nil {
 		return nil, err
 	}
@@ -520,11 +511,10 @@ func (s *EveUniverseService) ToEntities(ctx context.Context, ids []int32) (map[i
 	}
 	ids2 := set.Of(ids...)
 	ids2.Delete(0)
-	ids3 := ids2.Slice()
-	if _, err := s.AddMissingEntities(ctx, ids3); err != nil {
+	if _, err := s.AddMissingEntities(ctx, ids2); err != nil {
 		return nil, err
 	}
-	oo, err := s.st.ListEveEntitiesForIDs(ctx, ids3)
+	oo, err := s.st.ListEveEntitiesForIDs(ctx, ids2.Slice())
 	if err != nil {
 		return nil, err
 	}
@@ -544,15 +534,15 @@ func (s *EveUniverseService) ToEntities(ctx context.Context, ids []int32) (map[i
 // and returns which IDs where indeed missing.
 //
 // Invalid IDs (e.g. 0, 1) will be ignored.
-func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids []int32) ([]int32, error) {
+func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set[int32]) (set.Set[int32], error) {
 	// Filter out known invalid IDs before continuing
-	var badIDs, missingIDs []int32
+	var bad, missing set.Set[int32]
+	ids2 := ids.Clone()
 	err := func() error {
-		ids2 := set.Of(ids...)
 		ids2.Delete(0) // do nothing with ID 0
 		for _, id := range invalidEveEntityIDs {
 			if ids2.Contains(id) {
-				badIDs = append(badIDs, 1)
+				bad.Add(1)
 				ids2.Delete(1)
 			}
 		}
@@ -560,7 +550,8 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids []int32
 			return nil
 		}
 		// Identify missing IDs
-		missing, err := s.st.MissingEveEntityIDs(ctx, ids2.Slice())
+		var err error
+		missing, err = s.st.MissingEveEntityIDs(ctx, ids2.Slice())
 		if err != nil {
 			return err
 		}
@@ -568,19 +559,17 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids []int32
 			return nil
 		}
 		// Call ESI to resolve missing IDs
-		missingIDs = missing.Slice()
-		slices.Sort(missingIDs)
-		if len(missingIDs) > 0 {
-			slog.Debug("Trying to resolve EveEntity IDs from ESI", "ids", missingIDs)
+		if missing.Size() > 0 {
+			slog.Debug("Trying to resolve EveEntity IDs from ESI", "ids", missing)
 		}
 		var ee []esi.PostUniverseNames200Ok
-		for chunk := range slices.Chunk(missingIDs, 1000) { // PostUniverseNames max is 1000 IDs
+		for chunk := range slices.Chunk(missing.Slice(), 1000) { // PostUniverseNames max is 1000 IDs
 			eeChunk, badChunk, err := s.resolveIDs(ctx, chunk)
 			if err != nil {
 				return err
 			}
 			ee = append(ee, eeChunk...)
-			badIDs = append(badIDs, badChunk...)
+			bad.AddSeq(slices.Values(badChunk))
 		}
 		for _, entity := range ee {
 			_, err := s.st.GetOrCreateEveEntity(
@@ -599,10 +588,10 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids []int32
 		return nil
 	}()
 	if err != nil {
-		return nil, fmt.Errorf("AddMissingEntities: %w", err)
+		return set.Set[int32]{}, fmt.Errorf("AddMissingEntities: %w", err)
 	}
-	if len(badIDs) > 0 {
-		for _, id := range badIDs {
+	if bad.Size() > 0 {
+		for id := range bad.All() {
 			arg := storage.CreateEveEntityParams{
 				ID:       id,
 				Name:     "?",
@@ -612,9 +601,9 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids []int32
 				slog.Error("Failed to mark unresolvable EveEntity", "id", id, "error", err)
 			}
 		}
-		slog.Warn("Marking unresolvable EveEntity IDs as unknown", "ids", badIDs)
+		slog.Warn("Marking unresolvable EveEntity IDs as unknown", "ids", bad)
 	}
-	return missingIDs, nil
+	return missing, nil
 }
 
 func (s *EveUniverseService) resolveIDs(ctx context.Context, ids []int32) ([]esi.PostUniverseNames200Ok, []int32, error) {
@@ -975,7 +964,7 @@ func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id i
 				Name:             station.Name,
 			}
 			if station.Owner != 0 {
-				_, err = s.AddMissingEntities(ctx, []int32{station.Owner})
+				_, err = s.AddMissingEntities(ctx, set.Of(station.Owner))
 				if err != nil {
 					return nil, err
 				}
@@ -997,7 +986,7 @@ func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id i
 			if err != nil {
 				return nil, err
 			}
-			_, err = s.AddMissingEntities(ctx, []int32{structure.OwnerId})
+			_, err = s.AddMissingEntities(ctx, set.Of(structure.OwnerId))
 			if err != nil {
 				return nil, err
 			}
@@ -1108,10 +1097,8 @@ func (s *EveUniverseService) GetSolarSystemInfoESI(ctx context.Context, solarSys
 			PlanetID:        p.PlanetId,
 		}
 	})
-	_, err = s.AddMissingEntities(ctx, slices.Concat(
-		[]int32{solarSystemID, x.ConstellationId},
-		x.Stations,
-	))
+	ids := slices.Concat([]int32{solarSystemID, x.ConstellationId}, x.Stations)
+	_, err = s.AddMissingEntities(ctx, set.Of(ids...))
 	if err != nil {
 		return 0, nil, nil, nil, nil, err
 	}

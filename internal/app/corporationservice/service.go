@@ -131,7 +131,7 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 					typeIDs.Add(j.ProductTypeId)
 				}
 			}
-			if _, err := s.eus.AddMissingEntities(ctx, entityIDs.Slice()); err != nil {
+			if _, err := s.eus.AddMissingEntities(ctx, entityIDs); err != nil {
 				return err
 			}
 			for id := range locationIDs.All() {

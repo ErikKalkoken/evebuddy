@@ -477,11 +477,11 @@ func TestAddMissingEveEntities(t *testing.T) {
 		httpmock.Reset()
 		e1 := factory.CreateEveEntityCharacter()
 		// when
-		ids, err := s.AddMissingEntities(ctx, []int32{e1.ID})
+		ids, err := s.AddMissingEntities(ctx, set.Of(e1.ID))
 		// then
 		assert.Equal(t, 0, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			assert.Len(t, ids, 0)
+			assert.Equal(t, 0, ids.Size())
 		}
 	})
 	t.Run("can resolve missing entities", func(t *testing.T) {
@@ -496,11 +496,11 @@ func TestAddMissingEveEntities(t *testing.T) {
 			}),
 		)
 		// when
-		ids, err := s.AddMissingEntities(ctx, []int32{47})
+		ids, err := s.AddMissingEntities(ctx, set.Of[int32](47))
 		// then
 		assert.Equal(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			assert.EqualValues(t, 47, ids[0])
+			assert.True(t, set.Of[int32](47).Equal(ids))
 			e, err := st.GetEveEntity(ctx, 47)
 			if err != nil {
 				t.Fatal(err)
@@ -514,7 +514,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		// when
-		_, err := s.AddMissingEntities(ctx, []int32{47})
+		_, err := s.AddMissingEntities(ctx, set.Of[int32](47))
 		// then
 		assert.Error(t, err)
 	})
@@ -531,11 +531,11 @@ func TestAddMissingEveEntities(t *testing.T) {
 			}),
 		)
 		// when
-		ids, err := s.AddMissingEntities(ctx, []int32{47, e1.ID})
+		ids, err := s.AddMissingEntities(ctx, set.Of(47, e1.ID))
 		// then
 		assert.Equal(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(47), ids[0])
+			assert.True(t, set.Of[int32](47).Equal(ids))
 		}
 	})
 	t.Run("can resolve more then 1000 IDs", func(t *testing.T) {
@@ -561,11 +561,11 @@ func TestAddMissingEveEntities(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		// when
-		missing, err := s.AddMissingEntities(ctx, ids)
+		missing, err := s.AddMissingEntities(ctx, set.Of(ids...))
 		// then
 		assert.Equal(t, 2, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			assert.Len(t, missing, count)
+			assert.Equal(t, count, missing.Size())
 			ids2, err := st.ListEveEntityIDs(ctx)
 			if err != nil {
 				t.Fatal(err)
@@ -583,11 +583,11 @@ func TestAddMissingEveEntities(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(404, map[string]any{"error": "not found"}),
 		)
 		// when
-		ids, err := s.AddMissingEntities(ctx, []int32{666})
+		ids, err := s.AddMissingEntities(ctx, set.Of[int32](666))
 		// then
 		assert.GreaterOrEqual(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(666), ids[0])
+			assert.True(t, set.Of[int32](666).Equal(ids))
 			e, err := st.GetEveEntity(ctx, 666)
 			if err != nil {
 				t.Fatal(err)
@@ -606,11 +606,11 @@ func TestAddMissingEveEntities(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(404, map[string]any{"error": "not found"}),
 		)
 		// when
-		ids, err := s.AddMissingEntities(ctx, []int32{1})
+		ids, err := s.AddMissingEntities(ctx, set.Of[int32](1))
 		// then
 		assert.GreaterOrEqual(t, 0, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			assert.Len(t, ids, 0)
+			assert.Equal(t, 0, ids.Size())
 			e, err := st.GetEveEntity(ctx, 1)
 			if err != nil {
 				t.Fatal(err)
@@ -629,11 +629,11 @@ func TestAddMissingEveEntities(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(404, map[string]any{"error": "not found"}),
 		)
 		// when
-		ids, err := s.AddMissingEntities(ctx, []int32{0})
+		ids, err := s.AddMissingEntities(ctx, set.Of[int32](0))
 		// then
 		assert.GreaterOrEqual(t, 0, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			assert.Len(t, ids, 0)
+			assert.Equal(t, 0, ids.Size())
 			r := db.QueryRow("SELECT count(*) FROM eve_entities;")
 			var c int
 			if err := r.Scan(&c); err != nil {
@@ -660,7 +660,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(404, map[string]any{"error": "Invalid ID"}),
 		)
 		// when
-		_, err := s.AddMissingEntities(ctx, []int32{47, 666})
+		_, err := s.AddMissingEntities(ctx, set.Of[int32](47, 666))
 		// then
 		assert.LessOrEqual(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {

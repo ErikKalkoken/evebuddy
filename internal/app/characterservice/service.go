@@ -626,13 +626,13 @@ func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, char
 	if err != nil {
 		return nil, err
 	}
-	ids := slices.Concat(r.Alliance, r.Character, r.Corporation)
+	ids := set.Of(slices.Concat(r.Alliance, r.Character, r.Corporation)...)
 	missingIDs, err := s.eus.AddMissingEntities(ctx, ids)
 	if err != nil {
 		slog.Error("Failed to fetch missing IDs", "error", err)
 		return nil, err
 	}
-	return missingIDs, nil
+	return missingIDs.Slice(), nil
 }
 
 func (s *CharacterService) CountContractBids(ctx context.Context, contractID int64) (int, error) {
@@ -778,7 +778,7 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 					ids.Add(c.AssigneeId)
 				}
 			}
-			_, err := s.eus.AddMissingEntities(ctx, ids.Slice())
+			_, err := s.eus.AddMissingEntities(ctx, ids)
 			if err != nil {
 				return err
 			}
@@ -971,13 +971,13 @@ func (s *CharacterService) updateContractBids(ctx context.Context, characterID, 
 	if len(newBids) == 0 {
 		return nil
 	}
-	eeIDs := make([]int32, 0)
+	var eeIDs set.Set[int32]
 	for _, b := range newBids {
 		if b.BidderId != 0 {
-			eeIDs = append(eeIDs, b.BidderId)
+			eeIDs.Add(b.BidderId)
 		}
 	}
-	if len(eeIDs) > 0 {
+	if eeIDs.Size() > 0 {
 		if _, err = s.eus.AddMissingEntities(ctx, eeIDs); err != nil {
 			return err
 		}
@@ -1086,7 +1086,7 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 					typeIDs.Add(j.ProductTypeId)
 				}
 			}
-			if _, err := s.eus.AddMissingEntities(ctx, entityIDs.Slice()); err != nil {
+			if _, err := s.eus.AddMissingEntities(ctx, entityIDs); err != nil {
 				return err
 			}
 			for id := range locationIDs.All() {
@@ -1356,7 +1356,7 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int32, subj
 	for i, r := range rr {
 		recipientIDs[i] = r.RecipientId
 	}
-	ids := slices.Concat(recipientIDs, []int32{characterID})
+	ids := set.Of(slices.Concat(recipientIDs, []int32{characterID})...)
 	_, err = s.eus.AddMissingEntities(ctx, ids)
 	if err != nil {
 		return 0, err
@@ -1598,7 +1598,7 @@ func (s *CharacterService) resolveMailEntities(ctx context.Context, mm []esi.Get
 			entityIDs.Add(r.RecipientId)
 		}
 	}
-	_, err := s.eus.AddMissingEntities(ctx, entityIDs.Slice())
+	_, err := s.eus.AddMissingEntities(ctx, entityIDs)
 	if err != nil {
 		return err
 	}
@@ -1837,7 +1837,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 					senderIDs.Add(n.SenderId)
 				}
 			}
-			_, err = s.eus.AddMissingEntities(ctx, senderIDs.Slice())
+			_, err = s.eus.AddMissingEntities(ctx, senderIDs)
 			if err != nil {
 				return err
 			}
@@ -2620,7 +2620,7 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 					ids.Add(e.TaxReceiverId)
 				}
 			}
-			_, err = s.eus.AddMissingEntities(ctx, ids.Slice())
+			_, err = s.eus.AddMissingEntities(ctx, ids)
 			if err != nil {
 				return err
 			}
@@ -2696,7 +2696,7 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg a
 					ids.Add(e.ClientId)
 				}
 			}
-			_, err = s.eus.AddMissingEntities(ctx, ids.Slice())
+			_, err = s.eus.AddMissingEntities(ctx, ids)
 			if err != nil {
 				return err
 			}
