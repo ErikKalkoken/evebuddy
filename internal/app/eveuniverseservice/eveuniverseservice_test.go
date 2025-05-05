@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -1009,6 +1010,27 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
+		}
+	})
+}
+
+func TestAddMissingEveTypes(t *testing.T) {
+	db, st, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := eveuniverseservice.NewTestService(st)
+	t.Run("do nothing when all types already exist", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		x1 := factory.CreateEveType()
+		// when
+		err := s.AddMissingTypes(ctx, set.Of(x1.ID))
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, 0, httpmock.GetTotalCallCount())
 		}
 	})
 }

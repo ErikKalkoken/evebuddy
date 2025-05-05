@@ -199,7 +199,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 					return err
 				}
 			}
-			if err := s.eus.AddMissingTypes(ctx, typeIDs.Slice()); err != nil {
+			if err := s.eus.AddMissingTypes(ctx, typeIDs); err != nil {
 				return err
 			}
 			currentIDs, err := s.st.ListCharacterAssetIDs(ctx, characterID)
@@ -1216,7 +1216,7 @@ func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.Char
 				if err != nil {
 					return err
 				}
-				if err := s.eus.AddMissingTypes(ctx, jc.Implants); err != nil {
+				if err := s.eus.AddMissingTypes(ctx, set.Of(jc.Implants...)); err != nil {
 					return err
 				}
 				args[i] = storage.CreateCharacterJumpCloneParams{

@@ -2,7 +2,6 @@ package corporationservice
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -61,7 +60,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/industry/jobs/?include_completed=true", c.ID),
+			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/industry/jobs/\?include_completed=true`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"activity_id":           1,
@@ -138,7 +137,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/industry/jobs/?include_completed=true", c.ID),
+			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/industry/jobs/\?include_completed=true`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"activity_id":           1,

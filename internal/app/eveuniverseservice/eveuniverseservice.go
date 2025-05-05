@@ -823,17 +823,16 @@ func (s *EveUniverseService) createTypeFromESI(ctx context.Context, id int32) (*
 	return x.(*app.EveType), nil
 }
 
-func (s *EveUniverseService) AddMissingTypes(ctx context.Context, ids []int32) error {
+func (s *EveUniverseService) AddMissingTypes(ctx context.Context, ids set.Set[int32]) error {
 	missingIDs, err := s.st.MissingEveTypes(ctx, ids)
 	if err != nil {
 		return err
 	}
-	if len(missingIDs) == 0 {
+	if missingIDs.Size() == 0 {
 		return nil
 	}
-	slices.Sort(missingIDs)
-	slog.Debug("Trying to fetch missing EveTypes from ESI", "count", len(missingIDs))
-	for _, id := range missingIDs {
+	slog.Debug("Trying to fetch missing EveTypes from ESI", "count", missingIDs.Size())
+	for id := range missingIDs.All() {
 		_, err := s.GetOrCreateTypeESI(ctx, id)
 		if err != nil {
 			return err

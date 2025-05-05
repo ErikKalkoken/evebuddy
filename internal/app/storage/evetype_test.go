@@ -8,6 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func TestEveType(t *testing.T) {
@@ -61,10 +62,10 @@ func TestEveType(t *testing.T) {
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 7})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 8})
 		// when
-		x, err := r.MissingEveTypes(ctx, []int32{7, 9})
+		x, err := r.MissingEveTypes(ctx, set.Of[int32](7, 9))
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, []int32{9}, x)
+			assert.True(t, set.Of[int32](9).Equal(x))
 		}
 	})
 }
