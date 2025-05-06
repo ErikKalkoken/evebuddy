@@ -36,8 +36,8 @@ func TestCharacterUpdateStatusIsOK(t *testing.T) {
 		errorMessage string
 		want         bool
 	}{
-		{"", true},
-		{"error", false},
+		{"", false},
+		{"error", true},
 	}
 	for _, tc := range cases {
 		t.Run("Can report when update is ok", func(t *testing.T) {
@@ -47,7 +47,7 @@ func TestCharacterUpdateStatusIsOK(t *testing.T) {
 				ErrorMessage: tc.errorMessage,
 			}
 			// when/then
-			assert.Equal(t, tc.want, o.IsOK())
+			assert.Equal(t, tc.want, o.HasError())
 		})
 	}
 }

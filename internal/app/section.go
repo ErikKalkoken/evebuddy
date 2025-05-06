@@ -120,8 +120,8 @@ type CharacterSectionStatus struct {
 	UpdatedAt     time.Time
 }
 
-func (s CharacterSectionStatus) IsOK() bool {
-	return s.ErrorMessage == ""
+func (s CharacterSectionStatus) HasError() bool {
+	return s.ErrorMessage != ""
 }
 
 func (s CharacterSectionStatus) IsExpired() bool {
@@ -199,8 +199,8 @@ type CorporationSectionStatus struct {
 	UpdatedAt       time.Time
 }
 
-func (s CorporationSectionStatus) IsOK() bool {
-	return s.ErrorMessage == ""
+func (s CorporationSectionStatus) HasError() bool {
+	return s.ErrorMessage != ""
 }
 
 func (s CorporationSectionStatus) IsExpired() bool {
@@ -267,8 +267,8 @@ type GeneralSectionStatus struct {
 	UpdatedAt    time.Time
 }
 
-func (s GeneralSectionStatus) IsOK() bool {
-	return s.ErrorMessage == ""
+func (s GeneralSectionStatus) HasError() bool {
+	return s.ErrorMessage != ""
 }
 
 func (s GeneralSectionStatus) IsExpired() bool {

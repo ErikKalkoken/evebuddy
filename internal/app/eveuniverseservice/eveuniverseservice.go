@@ -1574,7 +1574,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 		return false, err
 	}
 	if !forceUpdate && status != nil {
-		if status.IsOK() && !status.IsExpired() {
+		if !status.HasError() && !status.IsExpired() {
 			return false, nil
 		}
 	}

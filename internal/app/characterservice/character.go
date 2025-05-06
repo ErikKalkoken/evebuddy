@@ -2222,7 +2222,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 				return false, err
 			}
 		} else {
-			if status.IsOK() && !status.IsExpired() {
+			if !status.HasError() && !status.IsExpired() {
 				return false, nil
 			}
 		}

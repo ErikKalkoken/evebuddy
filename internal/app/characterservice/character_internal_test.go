@@ -1680,7 +1680,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
 				assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
-				assert.True(t, x.IsOK())
+				assert.False(t, x.HasError())
 			}
 		}
 	})
@@ -1714,7 +1714,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
 				assert.Greater(t, x2.CompletedAt, x1.CompletedAt)
-				assert.True(t, x2.IsOK())
+				assert.False(t, x2.HasError())
 			}
 		}
 	})
@@ -1748,7 +1748,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
 				assert.Greater(t, x2.CompletedAt, x1.CompletedAt)
-				assert.True(t, x2.IsOK())
+				assert.False(t, x2.HasError())
 			}
 		}
 	})

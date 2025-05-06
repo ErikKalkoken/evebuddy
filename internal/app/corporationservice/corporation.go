@@ -204,7 +204,7 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 				return false, err
 			}
 		} else {
-			if status.IsOK() && !status.IsExpired() {
+			if !status.HasError() && !status.IsExpired() {
 				return false, nil
 			}
 		}

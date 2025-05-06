@@ -765,7 +765,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			assert.True(t, changed)
 			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
-				assert.True(t, x.IsOK())
+				assert.False(t, x.HasError())
 			}
 		}
 	})
@@ -851,7 +851,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		if assert.Error(t, err) {
 			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
-				assert.False(t, x.IsOK())
+				assert.True(t, x.HasError())
 				assert.Equal(t, "500 Internal Server Error", x.ErrorMessage)
 			}
 		}
