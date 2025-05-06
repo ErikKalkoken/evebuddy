@@ -457,7 +457,7 @@ func (s *CharacterService) ListCharacters(ctx context.Context) ([]*app.Character
 	return s.st.ListCharacters(ctx)
 }
 
-func (s *CharacterService) ListCharactersShort(ctx context.Context) ([]*app.CharacterShort, error) {
+func (s *CharacterService) ListCharactersShort(ctx context.Context) ([]*app.EntityShort[int32], error) {
 	return s.st.ListCharactersShort(ctx)
 }
 

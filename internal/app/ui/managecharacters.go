@@ -208,7 +208,7 @@ func (a *ManageCharacters) showDeleteDialog(c accountCharacter) {
 }
 
 func (a *ManageCharacters) update() {
-	characters := xslices.Map(a.u.scs.ListCharacters(), func(c *app.CharacterShort) accountCharacter {
+	characters := xslices.Map(a.u.scs.ListCharacters(), func(c *app.EntityShort[int32]) accountCharacter {
 		return accountCharacter{id: c.ID, name: c.Name}
 	})
 	// hasToken, err := a.u.cs.HasTokenWithScopes(context.Background(), c.ID)

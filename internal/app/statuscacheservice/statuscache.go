@@ -225,12 +225,12 @@ func (sc *StatusCacheService) CharacterName(characterID int32) string {
 }
 
 // ListCharacters returns the user's characters in alphabetical order.
-func (sc *StatusCacheService) ListCharacters() []*app.CharacterShort {
+func (sc *StatusCacheService) ListCharacters() []*app.EntityShort[int32] {
 	x, ok := sc.cache.Get(keyCharacters)
 	if !ok {
 		return nil
 	}
-	return x.([]*app.CharacterShort)
+	return x.([]*app.EntityShort[int32])
 }
 
 func (sc *StatusCacheService) UpdateCharacters(ctx context.Context) error {
@@ -238,7 +238,7 @@ func (sc *StatusCacheService) UpdateCharacters(ctx context.Context) error {
 	return err
 }
 
-func (sc *StatusCacheService) updateCharacters(ctx context.Context) ([]*app.CharacterShort, error) {
+func (sc *StatusCacheService) updateCharacters(ctx context.Context) ([]*app.EntityShort[int32], error) {
 	cc, err := sc.st.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, err

@@ -44,12 +44,6 @@ type Character struct {
 	NextCloneJump optional.Optional[time.Time] // zero time == now
 }
 
-// A shortened version of Character.
-type CharacterShort struct {
-	ID   int32
-	Name string
-}
-
 type EveTypeVariant uint
 
 const (

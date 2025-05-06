@@ -160,15 +160,15 @@ func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error)
 	return cc, nil
 }
 
-func (st *Storage) ListCharactersShort(ctx context.Context) ([]*app.CharacterShort, error) {
+func (st *Storage) ListCharactersShort(ctx context.Context) ([]*app.EntityShort[int32], error) {
 	rows, err := st.qRO.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list short characters: %w", err)
 
 	}
-	cc := make([]*app.CharacterShort, len(rows))
+	cc := make([]*app.EntityShort[int32], len(rows))
 	for i, row := range rows {
-		cc[i] = &app.CharacterShort{ID: int32(row.ID), Name: row.Name}
+		cc[i] = &app.EntityShort[int32]{ID: int32(row.ID), Name: row.Name}
 	}
 	return cc, nil
 }
