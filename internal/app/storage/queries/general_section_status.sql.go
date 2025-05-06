@@ -41,6 +41,8 @@ SELECT
     id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
 FROM
     general_section_status
+ORDER BY
+    section_id
 `
 
 func (q *Queries) ListGeneralSectionStatus(ctx context.Context) ([]GeneralSectionStatus, error) {
@@ -93,8 +95,7 @@ SET
     content_hash = ?3,
     error = ?4,
     started_at = ?5,
-    updated_at = ?6
-RETURNING id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
+    updated_at = ?6 RETURNING id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
 `
 
 type UpdateOrCreateGeneralSectionStatusParams struct {

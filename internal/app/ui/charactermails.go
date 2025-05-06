@@ -215,7 +215,7 @@ func (a *CharacterMails) makeFolderTree() *iwidget.Tree[FolderNode] {
 
 func (a *CharacterMails) update() {
 	characterID := a.u.currentCharacterID()
-	hasData := a.u.scs.CharacterSectionExists(characterID, app.SectionMails)
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionMails)
 	tree := iwidget.NewTreeData[FolderNode]()
 	folderAll := FolderNode{}
 	var err error
@@ -490,7 +490,7 @@ func (a *CharacterMails) headerRefresh() {
 	a.mu.RLock()
 	currentFolder := a.currentFolder
 	a.mu.RUnlock()
-	hasData := a.u.scs.CharacterSectionExists(a.u.currentCharacterID(), app.SectionMails)
+	hasData := a.u.scs.HasCharacterSection(a.u.currentCharacterID(), app.SectionMails)
 	if hasData && !currentFolder.IsEmpty() {
 		headers2, err := a.fetchHeaders(currentFolder.MustValue(), a.u.services())
 		if err != nil {

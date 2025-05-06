@@ -654,7 +654,7 @@ func (u *BaseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 	}
 	needsRefresh := hasChanged || forceUpdate
 	switch section {
-	case app.SectionEveCategories:
+	case app.SectionEveTypes:
 		if needsRefresh {
 			u.characterShips.update()
 			u.characterSkillCatalogue.update()

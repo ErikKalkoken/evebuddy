@@ -73,7 +73,7 @@ func (sc *StatusCacheService) InitCache(ctx context.Context) error {
 			return err
 		}
 		for _, o := range oo {
-			sc.CharacterSectionSet(o)
+			sc.SetCharacterSection(o)
 		}
 	}
 	rr, err := sc.updateCorporations(ctx)
@@ -86,7 +86,7 @@ func (sc *StatusCacheService) InitCache(ctx context.Context) error {
 			return err
 		}
 		for _, o := range oo {
-			sc.CorporationSectionSet(o)
+			sc.SetCorporationSection(o)
 		}
 	}
 	oo, err := sc.st.ListGeneralSectionStatus(ctx)
@@ -94,7 +94,7 @@ func (sc *StatusCacheService) InitCache(ctx context.Context) error {
 		return err
 	}
 	for _, o := range oo {
-		sc.GeneralSectionSet(o)
+		sc.SetGeneralSection(o)
 	}
 	return nil
 }
@@ -123,19 +123,19 @@ func (sc *StatusCacheService) Summary() app.StatusSummary {
 
 // Character sections
 
-// CharacterSectionExists reports whether a character section exists.
-func (sc *StatusCacheService) CharacterSectionExists(characterID int32, section app.CharacterSection) bool {
+// HasCharacterSection reports whether a character section exists.
+func (sc *StatusCacheService) HasCharacterSection(characterID int32, section app.CharacterSection) bool {
 	if characterID == 0 {
 		return false
 	}
-	x, ok := sc.CharacterSectionGet(characterID, section)
+	x, ok := sc.CharacterSection(characterID, section)
 	if !ok {
 		return false
 	}
 	return !x.IsMissing()
 }
 
-func (sc *StatusCacheService) CharacterSectionGet(characterID int32, section app.CharacterSection) (app.SectionStatus, bool) {
+func (sc *StatusCacheService) CharacterSection(characterID int32, section app.CharacterSection) (app.SectionStatus, bool) {
 	o := app.SectionStatus{
 		EntityID:    characterID,
 		EntityName:  sc.CharacterName(characterID),
@@ -154,10 +154,10 @@ func (sc *StatusCacheService) CharacterSectionGet(characterID int32, section app
 	return o, ok
 }
 
-func (sc *StatusCacheService) CharacterSectionList(characterID int32) []app.SectionStatus {
+func (sc *StatusCacheService) ListCharacterSections(characterID int32) []app.SectionStatus {
 	list := make([]app.SectionStatus, 0)
 	for _, section := range app.CharacterSections {
-		v, ok := sc.CharacterSectionGet(characterID, section)
+		v, ok := sc.CharacterSection(characterID, section)
 		if !ok {
 			continue
 		}
@@ -180,7 +180,7 @@ func (sc *StatusCacheService) CharacterSectionSummary(characterID int32) app.Sta
 
 func (sc *StatusCacheService) calcCharacterSectionSummary(characterID int32) statusSummary {
 	var ss statusSummary
-	csl := sc.CharacterSectionList(characterID)
+	csl := sc.ListCharacterSections(characterID)
 	for _, o := range csl {
 		if o.HasError() {
 			ss.errors++
@@ -194,7 +194,7 @@ func (sc *StatusCacheService) calcCharacterSectionSummary(characterID int32) sta
 	return ss
 }
 
-func (sc *StatusCacheService) CharacterSectionSet(o *app.CharacterSectionStatus) {
+func (sc *StatusCacheService) SetCharacterSection(o *app.CharacterSectionStatus) {
 	if o == nil {
 		return
 	}
@@ -249,19 +249,19 @@ func (sc *StatusCacheService) updateCharacters(ctx context.Context) ([]*app.Enti
 
 // Corporation sections
 
-// CorporationSectionExists reports whether a corporation section exists.
-func (sc *StatusCacheService) CorporationSectionExists(corporationID int32, section app.CorporationSection) bool {
+// HasCorporationSection reports whether a corporation section exists.
+func (sc *StatusCacheService) HasCorporationSection(corporationID int32, section app.CorporationSection) bool {
 	if corporationID == 0 {
 		return false
 	}
-	x, ok := sc.CorporationSectionGet(corporationID, section)
+	x, ok := sc.CorporationSection(corporationID, section)
 	if !ok {
 		return false
 	}
 	return !x.IsMissing()
 }
 
-func (sc *StatusCacheService) CorporationSectionGet(corporationID int32, section app.CorporationSection) (app.SectionStatus, bool) {
+func (sc *StatusCacheService) CorporationSection(corporationID int32, section app.CorporationSection) (app.SectionStatus, bool) {
 	o := app.SectionStatus{
 		EntityID:    corporationID,
 		EntityName:  sc.CorporationName(corporationID),
@@ -281,10 +281,10 @@ func (sc *StatusCacheService) CorporationSectionGet(corporationID int32, section
 	return o, ok
 }
 
-func (sc *StatusCacheService) CorporationSectionList(corporationID int32) []app.SectionStatus {
+func (sc *StatusCacheService) ListCorporationSections(corporationID int32) []app.SectionStatus {
 	list := make([]app.SectionStatus, 0)
 	for _, section := range app.CorporationSections {
-		v, ok := sc.CorporationSectionGet(corporationID, section)
+		v, ok := sc.CorporationSection(corporationID, section)
 		if !ok {
 			continue
 		}
@@ -307,7 +307,7 @@ func (sc *StatusCacheService) CorporationSectionSummary(corporationID int32) app
 
 func (sc *StatusCacheService) calcCorporationSectionSummary(corporationID int32) statusSummary {
 	var ss statusSummary
-	csl := sc.CorporationSectionList(corporationID)
+	csl := sc.ListCorporationSections(corporationID)
 	for _, o := range csl {
 		if o.HasError() {
 			ss.errors++
@@ -321,7 +321,7 @@ func (sc *StatusCacheService) calcCorporationSectionSummary(corporationID int32)
 	return ss
 }
 
-func (sc *StatusCacheService) CorporationSectionSet(o *app.CorporationSectionStatus) {
+func (sc *StatusCacheService) SetCorporationSection(o *app.CorporationSectionStatus) {
 	if o == nil {
 		return
 	}
@@ -377,15 +377,15 @@ func (sc *StatusCacheService) updateCorporations(ctx context.Context) ([]*app.En
 
 // general sections
 
-func (sc *StatusCacheService) GeneralSectionExists(section app.GeneralSection) bool {
-	x, ok := sc.GeneralSectionGet(section)
+func (sc *StatusCacheService) HasGeneralSection(section app.GeneralSection) bool {
+	x, ok := sc.GeneralSection(section)
 	if !ok {
 		return false
 	}
 	return !x.IsMissing()
 }
 
-func (sc *StatusCacheService) GeneralSectionGet(section app.GeneralSection) (app.SectionStatus, bool) {
+func (sc *StatusCacheService) GeneralSection(section app.GeneralSection) (app.SectionStatus, bool) {
 	k := cacheKey{id: app.GeneralSectionEntityID, section: string(section)}
 	x, ok := sc.cache.Get(k.String())
 	if !ok {
@@ -405,10 +405,10 @@ func (sc *StatusCacheService) GeneralSectionGet(section app.GeneralSection) (app
 	return o, true
 }
 
-func (sc *StatusCacheService) GeneralSectionList() []app.SectionStatus {
+func (sc *StatusCacheService) ListGeneralSections() []app.SectionStatus {
 	list := make([]app.SectionStatus, 0)
 	for _, section := range app.GeneralSections {
-		v, ok := sc.GeneralSectionGet(section)
+		v, ok := sc.GeneralSection(section)
 		if ok {
 			list = append(list, v)
 		}
@@ -416,7 +416,7 @@ func (sc *StatusCacheService) GeneralSectionList() []app.SectionStatus {
 	return list
 }
 
-func (sc *StatusCacheService) GeneralSectionSet(o *app.GeneralSectionStatus) {
+func (sc *StatusCacheService) SetGeneralSection(o *app.GeneralSectionStatus) {
 	if o == nil {
 		return
 	}
@@ -445,7 +445,7 @@ func (sc *StatusCacheService) GeneralSectionSummary() app.StatusSummary {
 
 func (sc *StatusCacheService) calcGeneralSectionSummary() statusSummary {
 	var ss statusSummary
-	gsl := sc.GeneralSectionList()
+	gsl := sc.ListGeneralSections()
 	for _, o := range gsl {
 		if o.HasError() {
 			ss.errors++

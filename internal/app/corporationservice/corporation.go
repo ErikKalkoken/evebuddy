@@ -233,7 +233,7 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 		if err2 != nil {
 			slog.Error("record error for failed section update: %s", "error", err2)
 		}
-		s.scs.CorporationSectionSet(o)
+		s.scs.SetCorporationSection(o)
 		return false, fmt.Errorf("update corporation section from ESI for %v: %w", arg, err)
 	}
 	changed := x.(bool)
@@ -258,7 +258,7 @@ func (s *CorporationService) updateSectionIfChanged(
 	if err != nil {
 		return false, err
 	}
-	s.scs.CorporationSectionSet(o)
+	s.scs.SetCorporationSection(o)
 	var hash, comment string
 	var hasChanged bool
 	token, err := s.cs.ValidCharacterTokenForCorporation(ctx, arg.CorporationID, arg.Section.Role())
@@ -315,7 +315,7 @@ func (s *CorporationService) updateSectionIfChanged(
 	if err != nil {
 		return false, err
 	}
-	s.scs.CorporationSectionSet(o)
+	s.scs.SetCorporationSection(o)
 	slog.Debug("Has section changed", "corporationID", arg.CorporationID, "section", arg.Section, "changed", hasChanged)
 	return hasChanged, nil
 }

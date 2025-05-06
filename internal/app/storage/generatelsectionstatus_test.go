@@ -19,7 +19,7 @@ func TestGeneralSectionStatus(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		s1 := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
-			Section: app.SectionEveCategories,
+			Section: app.SectionEveTypes,
 		})
 		s2 := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 			Section: app.SectionEveCharacters,
@@ -37,7 +37,7 @@ func TestGeneralSectionStatus(t *testing.T) {
 		// when
 		error := "error"
 		arg := storage.UpdateOrCreateGeneralSectionStatusParams{
-			Section: app.SectionEveCategories,
+			Section: app.SectionEveTypes,
 			Error:   &error,
 		}
 		x1, err := r.UpdateOrCreateGeneralSectionStatus(ctx, arg)
@@ -48,7 +48,7 @@ func TestGeneralSectionStatus(t *testing.T) {
 				assert.Equal(t, "error", x1.ErrorMessage)
 				assert.True(t, x1.CompletedAt.IsZero())
 			}
-			x2, err := r.GetGeneralSectionStatus(ctx, app.SectionEveCategories)
+			x2, err := r.GetGeneralSectionStatus(ctx, app.SectionEveTypes)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -58,12 +58,12 @@ func TestGeneralSectionStatus(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		x := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
-			Section: app.SectionEveCategories,
+			Section: app.SectionEveTypes,
 		})
 		// when
 		error := "error"
 		arg := storage.UpdateOrCreateGeneralSectionStatusParams{
-			Section: app.SectionEveCategories,
+			Section: app.SectionEveTypes,
 			Error:   &error,
 		}
 		x1, err := r.UpdateOrCreateGeneralSectionStatus(ctx, arg)
@@ -73,7 +73,7 @@ func TestGeneralSectionStatus(t *testing.T) {
 			assert.Equal(t, "error", x1.ErrorMessage)
 			assert.Equal(t, x.CompletedAt, x1.CompletedAt)
 			assert.Equal(t, x.StartedAt, x1.StartedAt)
-			x2, err := r.GetGeneralSectionStatus(ctx, app.SectionEveCategories)
+			x2, err := r.GetGeneralSectionStatus(ctx, app.SectionEveTypes)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}

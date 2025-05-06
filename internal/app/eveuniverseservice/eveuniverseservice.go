@@ -1580,7 +1580,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	}
 	var f func(context.Context) error
 	switch section {
-	case app.SectionEveCategories:
+	case app.SectionEveTypes:
 		f = s.updateCategories
 	case app.SectionEveCharacters:
 		f = s.UpdateAllCharactersESI
@@ -1603,7 +1603,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 		if err != nil {
 			return false, err
 		}
-		s.scs.GeneralSectionSet(o)
+		s.scs.SetGeneralSection(o)
 		err = f(ctx)
 		slog.Debug("Finished updating eveuniverse section", "section", section)
 		return nil, err
@@ -1620,7 +1620,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 		if err != nil {
 			return false, err
 		}
-		s.scs.GeneralSectionSet(o)
+		s.scs.SetGeneralSection(o)
 		return false, err
 	}
 	completedAt := storage.NewNullTimeFromTime(time.Now())
@@ -1637,7 +1637,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	if err != nil {
 		return false, err
 	}
-	s.scs.GeneralSectionSet(o)
+	s.scs.SetGeneralSection(o)
 	return true, nil
 }
 

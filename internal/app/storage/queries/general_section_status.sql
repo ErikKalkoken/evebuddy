@@ -10,7 +10,9 @@ WHERE
 SELECT
     *
 FROM
-    general_section_status;
+    general_section_status
+ORDER BY
+    section_id;
 
 -- name: UpdateOrCreateGeneralSectionStatus :one
 INSERT INTO
@@ -30,5 +32,4 @@ SET
     content_hash = ?3,
     error = ?4,
     started_at = ?5,
-    updated_at = ?6
-RETURNING *;
+    updated_at = ?6 RETURNING *;

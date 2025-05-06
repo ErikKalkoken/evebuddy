@@ -149,7 +149,7 @@ func (a *CharacterFlyableShips) makeShipsGrid() *widget.GridWrap {
 
 func (a *CharacterFlyableShips) update() {
 	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
-		hasData := a.u.scs.GeneralSectionExists(app.SectionEveCategories)
+		hasData := a.u.scs.HasGeneralSection(app.SectionEveTypes)
 		if !hasData {
 			return "Waiting for universe data to be loaded...", widget.WarningImportance, false, nil
 		}
@@ -242,7 +242,7 @@ func (a *CharacterFlyableShips) makeTopText() (string, widget.Importance, bool, 
 		return "No character", widget.LowImportance, false, nil
 	}
 	characterID := a.u.currentCharacterID()
-	hasData := a.u.scs.CharacterSectionExists(characterID, app.SectionSkills)
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionSkills)
 	if !hasData {
 		return "Waiting for skills to be loaded...", widget.WarningImportance, false, nil
 	}

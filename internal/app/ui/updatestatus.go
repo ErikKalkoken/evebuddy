@@ -368,11 +368,11 @@ func (a *updateStatus) refreshSections() {
 	se := a.sectionEntities[a.selectedEntityID]
 	switch se.category {
 	case sectionCharacter:
-		a.sections = a.u.scs.CharacterSectionList(se.id)
+		a.sections = a.u.scs.ListCharacterSections(se.id)
 	case sectionCorpoation:
-		a.sections = a.u.scs.CorporationSectionList(se.id)
+		a.sections = a.u.scs.ListCorporationSections(se.id)
 	case sectionGeneral:
-		a.sections = a.u.scs.GeneralSectionList()
+		a.sections = a.u.scs.ListGeneralSections()
 	}
 	a.sectionList.Refresh()
 	a.sectionsTop.SetText(fmt.Sprintf("%s: Sections", se.name))

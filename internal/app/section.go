@@ -52,8 +52,8 @@ var CharacterSections = []CharacterSection{
 	SectionMails,
 	SectionNotifications,
 	SectionOnline,
-	SectionRoles,
 	SectionPlanets,
+	SectionRoles,
 	SectionShip,
 	SectionSkillqueue,
 	SectionSkills,
@@ -220,24 +220,24 @@ const (
 type GeneralSection string
 
 const (
-	SectionEveCategories   GeneralSection = "Eve_Categories"
-	SectionEveCorporations GeneralSection = "Eve_Corporations"
-	SectionEveCharacters   GeneralSection = "Eve_Characters"
-	SectionEveMarketPrices GeneralSection = "Eve_MarketPrices"
+	SectionEveCharacters   GeneralSection = "characters"
+	SectionEveCorporations GeneralSection = "corporations"
+	SectionEveMarketPrices GeneralSection = "market_prices"
+	SectionEveTypes        GeneralSection = "types"
 )
 
 var GeneralSections = []GeneralSection{
-	SectionEveCategories,
-	SectionEveCorporations,
 	SectionEveCharacters,
+	SectionEveCorporations,
 	SectionEveMarketPrices,
+	SectionEveTypes,
 }
 
 var generalSectionTimeouts = map[GeneralSection]time.Duration{
-	SectionEveCategories:   24 * time.Hour,
 	SectionEveCharacters:   4 * time.Hour,
 	SectionEveCorporations: 4 * time.Hour,
 	SectionEveMarketPrices: 6 * time.Hour,
+	SectionEveTypes:        24 * time.Hour,
 }
 
 func (gs GeneralSection) DisplayName() string {

@@ -112,7 +112,7 @@ func (a *CharacterWalletTransaction) update() {
 	var err error
 	entries := make([]*app.CharacterWalletTransaction, 0)
 	characterID := a.u.currentCharacterID()
-	hasData := a.u.scs.CharacterSectionExists(characterID, app.SectionWalletTransactions)
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionWalletTransactions)
 	if hasData {
 		entries2, err2 := a.u.cs.ListWalletTransactions(context.Background(), characterID)
 		if err2 != nil {
