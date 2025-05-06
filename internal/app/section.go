@@ -110,7 +110,6 @@ type CharacterUpdateSectionParams struct {
 }
 
 type CharacterSectionStatus struct {
-	ID            int64
 	CharacterID   int32
 	CharacterName string
 	CompletedAt   time.Time
@@ -189,7 +188,6 @@ type CorporationUpdateSectionParams struct {
 }
 
 type CorporationSectionStatus struct {
-	ID              int64
 	CorporationID   int32
 	CorporationName string
 	CompletedAt     time.Time
@@ -260,7 +258,6 @@ func (gs GeneralSection) Timeout() time.Duration {
 
 // Updates status of a general section
 type GeneralSectionStatus struct {
-	ID           int64
 	ContentHash  string
 	ErrorMessage string
 	CompletedAt  time.Time

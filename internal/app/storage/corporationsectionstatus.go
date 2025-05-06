@@ -124,7 +124,6 @@ func (st *Storage) UpdateOrCreateCorporationSectionStatus(ctx context.Context, a
 
 func corporationSectionStatusFromDBModel(o queries.CorporationSectionStatus) *app.CorporationSectionStatus {
 	x := &app.CorporationSectionStatus{
-		ID:            o.ID,
 		CorporationID: int32(o.CorporationID),
 		ErrorMessage:  o.Error,
 		Section:       app.CorporationSection(o.SectionID),
