@@ -7,7 +7,7 @@ bundle:
 	fyne bundle --package eveicon resources/eveicon > internal/eveicon/resource.go
 
 mapping:
-	python3 tools/icons_map/generate.py > internal/eveicon/mapping.go
+	go run ./tools/geneveicons/ -p eveicon > internal/eveicon/mapping.go
 	go run ./tools/genschematicids/ -p eveicon > internal/eveicon/schematic.go
 
 queries:
