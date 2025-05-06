@@ -535,6 +535,9 @@ func (s *EveUniverseService) ToEntities(ctx context.Context, ids set.Set[int32])
 //
 // Invalid IDs (e.g. 0, 1) will be ignored.
 func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set[int32]) (set.Set[int32], error) {
+	if ids.Size() == 0 {
+		return set.Set[int32]{}, nil
+	}
 	// Filter out known invalid IDs before continuing
 	var bad, missing set.Set[int32]
 	ids2 := ids.Clone()

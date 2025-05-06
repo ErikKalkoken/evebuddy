@@ -648,7 +648,7 @@ func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, char
 	if err != nil {
 		return nil, err
 	}
-	ids := set.Of(slices.Concat(r.Alliance, r.Character, r.Corporation)...)
+	ids := set.Union(set.Of(r.Alliance...), set.Of(r.Character...), set.Of(r.Corporation...))
 	missingIDs, err := s.eus.AddMissingEntities(ctx, ids)
 	if err != nil {
 		slog.Error("Failed to fetch missing IDs", "error", err)

@@ -677,6 +677,29 @@ func TestAddMissingEveEntities(t *testing.T) {
 			assert.Equal(t, app.EveEntityUnknown, e2.Category)
 		}
 	})
+	t.Run("should do nothing when no ids passed", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"POST",
+			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			httpmock.NewJsonResponderOrPanic(404, map[string]any{"error": "not found"}),
+		)
+		// when
+		ids, err := s.AddMissingEntities(ctx, set.Of[int32]())
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, 0, httpmock.GetTotalCallCount())
+			assert.Equal(t, 0, ids.Size())
+			r := db.QueryRow("SELECT count(*) FROM eve_entities;")
+			var c int
+			if err := r.Scan(&c); err != nil {
+				t.Fatal(err)
+			}
+			assert.Equal(t, 0, c)
+		}
+	})
 }
 
 func TestGerOrCreateEntityESI(t *testing.T) {
