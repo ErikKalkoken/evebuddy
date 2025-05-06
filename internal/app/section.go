@@ -188,6 +188,7 @@ type CorporationUpdateSectionParams struct {
 }
 
 type CorporationSectionStatus struct {
+	Comment         string
 	CorporationID   int32
 	CorporationName string
 	CompletedAt     time.Time

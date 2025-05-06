@@ -13,7 +13,7 @@ import (
 
 const getCorporationSectionStatus = `-- name: GetCorporationSectionStatus :one
 SELECT
-    id, corporation_id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
+    id, comment, corporation_id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
 FROM
     corporation_section_status
 WHERE
@@ -31,6 +31,7 @@ func (q *Queries) GetCorporationSectionStatus(ctx context.Context, arg GetCorpor
 	var i CorporationSectionStatus
 	err := row.Scan(
 		&i.ID,
+		&i.Comment,
 		&i.CorporationID,
 		&i.SectionID,
 		&i.CreatedAt,
@@ -45,7 +46,7 @@ func (q *Queries) GetCorporationSectionStatus(ctx context.Context, arg GetCorpor
 
 const listCorporationSectionStatus = `-- name: ListCorporationSectionStatus :many
 SELECT
-    id, corporation_id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
+    id, comment, corporation_id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
 FROM
     corporation_section_status
 WHERE
@@ -63,6 +64,7 @@ func (q *Queries) ListCorporationSectionStatus(ctx context.Context, corporationI
 		var i CorporationSectionStatus
 		if err := rows.Scan(
 			&i.ID,
+			&i.Comment,
 			&i.CorporationID,
 			&i.SectionID,
 			&i.CreatedAt,
@@ -88,6 +90,7 @@ func (q *Queries) ListCorporationSectionStatus(ctx context.Context, corporationI
 const updateOrCreateCorporationSectionStatus = `-- name: UpdateOrCreateCorporationSectionStatus :one
 INSERT INTO
     corporation_section_status (
+        comment,
         corporation_id,
         section_id,
         completed_at,
@@ -97,18 +100,20 @@ INSERT INTO
         updated_at
     )
 VALUES
-    (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+    (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
 ON CONFLICT (corporation_id, section_id) DO UPDATE
 SET
-    completed_at = ?3,
-    content_hash = ?4,
-    error = ?5,
-    started_at = ?6,
-    updated_at = ?7
-RETURNING id, corporation_id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
+    comment = ?1,
+    completed_at = ?4,
+    content_hash = ?5,
+    error = ?6,
+    started_at = ?7,
+    updated_at = ?8
+RETURNING id, comment, corporation_id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
 `
 
 type UpdateOrCreateCorporationSectionStatusParams struct {
+	Comment       string
 	CorporationID int64
 	SectionID     string
 	CompletedAt   sql.NullTime
@@ -120,6 +125,7 @@ type UpdateOrCreateCorporationSectionStatusParams struct {
 
 func (q *Queries) UpdateOrCreateCorporationSectionStatus(ctx context.Context, arg UpdateOrCreateCorporationSectionStatusParams) (CorporationSectionStatus, error) {
 	row := q.db.QueryRowContext(ctx, updateOrCreateCorporationSectionStatus,
+		arg.Comment,
 		arg.CorporationID,
 		arg.SectionID,
 		arg.CompletedAt,
@@ -131,6 +137,7 @@ func (q *Queries) UpdateOrCreateCorporationSectionStatus(ctx context.Context, ar
 	var i CorporationSectionStatus
 	err := row.Scan(
 		&i.ID,
+		&i.Comment,
 		&i.CorporationID,
 		&i.SectionID,
 		&i.CreatedAt,

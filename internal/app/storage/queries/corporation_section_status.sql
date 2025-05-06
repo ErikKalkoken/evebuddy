@@ -18,6 +18,7 @@ WHERE
 -- name: UpdateOrCreateCorporationSectionStatus :one
 INSERT INTO
     corporation_section_status (
+        comment,
         corporation_id,
         section_id,
         completed_at,
@@ -27,12 +28,13 @@ INSERT INTO
         updated_at
     )
 VALUES
-    (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+    (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
 ON CONFLICT (corporation_id, section_id) DO UPDATE
 SET
-    completed_at = ?3,
-    content_hash = ?4,
-    error = ?5,
-    started_at = ?6,
-    updated_at = ?7
+    comment = ?1,
+    completed_at = ?4,
+    content_hash = ?5,
+    error = ?6,
+    started_at = ?7,
+    updated_at = ?8
 RETURNING *;

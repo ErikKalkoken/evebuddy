@@ -1103,6 +1103,7 @@ func (f Factory) CreateCorporationIndustryJob(args ...storage.UpdateOrCreateCorp
 }
 
 type CorporationSectionStatusParams struct {
+	Comment       string
 	CorporationID int32
 	Section       app.CorporationSection
 	ErrorMessage  string
@@ -1139,6 +1140,7 @@ func (f Factory) CreateCorporationSectionStatus(args ...CorporationSectionStatus
 	}
 	t := storage.NewNullTimeFromTime(arg.CompletedAt)
 	arg2 := storage.UpdateOrCreateCorporationSectionStatusParams{
+		Comment:       &arg.Comment,
 		CorporationID: arg.CorporationID,
 		Section:       arg.Section,
 		ErrorMessage:  &arg.ErrorMessage,

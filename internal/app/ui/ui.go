@@ -754,7 +754,6 @@ func (u *BaseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	}
 	slog.Debug("Starting to check character sections for update", "sections", sections)
 	for _, s := range sections {
-		s := s
 		go u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
 	}
 }
@@ -972,7 +971,6 @@ func (u *BaseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 	}
 	slog.Debug("Starting to check corporation sections for update", "sections", sections)
 	for _, s := range sections {
-		s := s
 		go u.updateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, s, forceUpdate)
 	}
 }

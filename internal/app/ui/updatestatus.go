@@ -158,7 +158,7 @@ func (a *updateStatus) makeEntityList() *widget.List {
 			return len(a.sectionEntities)
 		},
 		func() fyne.CanvasObject {
-			icon := iwidget.NewImageFromResource(icons.QuestionmarkSvg, fyne.NewSquareSize(app.IconUnitSize))
+			icon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
 			name := widget.NewLabel("Template")
 			status := widget.NewLabel("Template")
 			spinner := widget.NewActivity()
@@ -430,12 +430,15 @@ func (a *updateStatus) startTicker(ctx context.Context) {
 func statusDisplay(ss app.SectionStatus) (string, widget.Importance) {
 	var s string
 	var i widget.Importance
-	if !ss.IsOK() {
+	if ss.HasError() {
 		s = "ERROR"
 		i = widget.DangerImportance
 	} else if ss.IsMissing() {
 		s = "Missing"
 		i = widget.WarningImportance
+	} else if ss.HasComment() {
+		s = "Skipped"
+		i = widget.MediumImportance
 	} else if !ss.IsCurrent() {
 		s = "Stale"
 		i = widget.HighImportance
@@ -450,7 +453,7 @@ type updateStatusDetail struct {
 	widget.BaseWidget
 
 	completedAt *widget.Label
-	error       *widget.Label
+	issue       *widget.Label
 	startedAt   *widget.Label
 	status      *widget.Label
 	timeout     *widget.Label
@@ -464,7 +467,7 @@ func newUpdateStatusDetail() *updateStatusDetail {
 	}
 	w := &updateStatusDetail{
 		completedAt: makeLabel(),
-		error:       makeLabel(),
+		issue:       makeLabel(),
 		startedAt:   makeLabel(),
 		status:      makeLabel(),
 		timeout:     makeLabel(),
@@ -477,16 +480,18 @@ func (w *updateStatusDetail) set(ss app.SectionStatus) {
 	w.status.Text, w.status.Importance = statusDisplay(ss)
 	w.status.Refresh()
 
-	var errorText string
-	var errorImportance widget.Importance
-	if ss.ErrorMessage == "" {
-		errorText = "-"
+	var issue string
+	var issueImportance widget.Importance
+	if ss.ErrorMessage != "" {
+		issue = ss.ErrorMessage
+		issueImportance = widget.DangerImportance
+	} else if ss.Comment != "" {
+		issue = ss.Comment
 	} else {
-		errorText = ss.ErrorMessage
-		errorImportance = widget.DangerImportance
+		issue = "-"
 	}
-	w.error.Text, w.error.Importance = errorText, errorImportance
-	w.error.Refresh()
+	w.issue.Text, w.issue.Importance = issue, issueImportance
+	w.issue.Refresh()
 
 	w.completedAt.SetText(ihumanize.Time(ss.CompletedAt, "?"))
 	w.startedAt.SetText(ihumanize.Time(ss.StartedAt, "-"))
@@ -498,7 +503,7 @@ func (w *updateStatusDetail) CreateRenderer() fyne.WidgetRenderer {
 	layout := kxlayout.NewColumns(100)
 	c := container.NewVBox(
 		container.New(layout, widget.NewLabel("Status"), w.status),
-		container.New(layout, widget.NewLabel("Error"), w.error),
+		container.New(layout, widget.NewLabel("Issue"), w.issue),
 		container.New(layout, widget.NewLabel("Started"), w.startedAt),
 		container.New(layout, widget.NewLabel("Completed"), w.completedAt),
 		container.New(layout, widget.NewLabel("Timeout"), w.timeout),

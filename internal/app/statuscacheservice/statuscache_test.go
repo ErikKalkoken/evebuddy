@@ -601,6 +601,7 @@ func TestCorporationSections(t *testing.T) {
 		x1 := factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: c.ID,
 			Section:       section,
+			Comment:       "comment",
 		})
 		// when
 		sc.CorporationSectionSet(x1)
@@ -613,6 +614,7 @@ func TestCorporationSections(t *testing.T) {
 		assert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
 		assert.Equal(t, x1.StartedAt, x2.StartedAt)
 		assert.Equal(t, section.Timeout(), x2.Timeout)
+		assert.Equal(t, x1.Comment, x2.Comment)
 	})
 	t.Run("Can update and list corporations", func(t *testing.T) {
 		// given

@@ -259,11 +259,13 @@ func (s *CorporationService) updateSectionIfChanged(
 		return false, err
 	}
 	s.scs.CorporationSectionSet(o)
-	var hash string
+	var hash, comment string
 	var hasChanged bool
 	token, err := s.cs.ValidCharacterTokenForCorporation(ctx, arg.CorporationID, arg.Section.Role())
 	if errors.Is(err, app.ErrNotFound) {
-		slog.Info("Skipping section update due to missing role", "corporationID", arg.CorporationID, "section", arg.Section)
+		msg := "update skipped due to missing corporation member with required role"
+		comment = msg + ": " + arg.Section.Role().Display()
+		slog.Info("Section "+comment, "corporationID", arg.CorporationID, "section", arg.Section, "role", arg.Section.Role())
 	} else if err != nil {
 		return false, err
 	} else {
@@ -296,11 +298,12 @@ func (s *CorporationService) updateSectionIfChanged(
 		}
 	}
 
-	// record successful completion
+	// record completion
 	completedAt := storage.NewNullTimeFromTime(time.Now())
 	errorMessage := ""
 	startedAt2 := optional.Optional[time.Time]{}
 	arg2 = storage.UpdateOrCreateCorporationSectionStatusParams{
+		Comment:       &comment,
 		CompletedAt:   &completedAt,
 		ContentHash:   &hash,
 		CorporationID: arg.CorporationID,

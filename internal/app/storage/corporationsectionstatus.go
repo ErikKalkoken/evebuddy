@@ -12,16 +12,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-type CorporationSectionStatusParams struct {
-	CorporationID int32
-	Section       app.CorporationSection
-
-	CompletedAt time.Time
-	ContentHash string
-	Error       string
-	StartedAt   time.Time
-}
-
 func (st *Storage) GetCorporationSectionStatus(ctx context.Context, corporationID int32, section app.CorporationSection) (*app.CorporationSectionStatus, error) {
 	arg := queries.GetCorporationSectionStatusParams{
 		CorporationID: int64(corporationID),
@@ -55,6 +45,7 @@ type UpdateOrCreateCorporationSectionStatusParams struct {
 	CorporationID int32
 	Section       app.CorporationSection
 	// optional
+	Comment      *string
 	CompletedAt  *sql.NullTime
 	ContentHash  *string
 	ErrorMessage *string
@@ -95,6 +86,9 @@ func (st *Storage) UpdateOrCreateCorporationSectionStatus(ctx context.Context, a
 			}
 		}
 		arg2.UpdatedAt = time.Now().UTC()
+		if arg.Comment != nil {
+			arg2.Comment = *arg.Comment
+		}
 		if arg.CompletedAt != nil {
 			arg2.CompletedAt = *arg.CompletedAt
 		}
@@ -124,6 +118,7 @@ func (st *Storage) UpdateOrCreateCorporationSectionStatus(ctx context.Context, a
 
 func corporationSectionStatusFromDBModel(o queries.CorporationSectionStatus) *app.CorporationSectionStatus {
 	x := &app.CorporationSectionStatus{
+		Comment:       o.Comment,
 		CorporationID: int32(o.CorporationID),
 		ErrorMessage:  o.Error,
 		Section:       app.CorporationSection(o.SectionID),

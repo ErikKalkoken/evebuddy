@@ -337,6 +337,7 @@ type CorporationIndustryJob struct {
 
 type CorporationSectionStatus struct {
 	ID            int64
+	Comment       string
 	CorporationID int64
 	SectionID     string
 	CreatedAt     time.Time

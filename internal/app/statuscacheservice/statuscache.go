@@ -40,6 +40,7 @@ func (ck cacheKey) String() string {
 }
 
 type cacheValue struct {
+	Commment     string
 	CompletedAt  time.Time
 	ErrorMessage string
 	StartedAt    time.Time
@@ -181,7 +182,7 @@ func (sc *StatusCacheService) calcCharacterSectionSummary(characterID int32) sta
 	var ss statusSummary
 	csl := sc.CharacterSectionList(characterID)
 	for _, o := range csl {
-		if !o.IsOK() {
+		if o.HasError() {
 			ss.errors++
 		} else if o.IsCurrent() {
 			ss.current++
@@ -272,6 +273,7 @@ func (sc *StatusCacheService) CorporationSectionGet(corporationID int32, section
 	x, ok := sc.cache.Get(k.String())
 	if ok {
 		v := x.(cacheValue)
+		o.Comment = v.Commment
 		o.CompletedAt = v.CompletedAt
 		o.ErrorMessage = v.ErrorMessage
 		o.StartedAt = v.StartedAt
@@ -307,7 +309,7 @@ func (sc *StatusCacheService) calcCorporationSectionSummary(corporationID int32)
 	var ss statusSummary
 	csl := sc.CorporationSectionList(corporationID)
 	for _, o := range csl {
-		if !o.IsOK() {
+		if o.HasError() {
 			ss.errors++
 		} else if o.IsCurrent() {
 			ss.current++
@@ -328,6 +330,7 @@ func (sc *StatusCacheService) CorporationSectionSet(o *app.CorporationSectionSta
 		section: string(o.Section),
 	}
 	v := cacheValue{
+		Commment:     o.Comment,
 		ErrorMessage: o.ErrorMessage,
 		CompletedAt:  o.CompletedAt,
 		StartedAt:    o.StartedAt,
@@ -444,7 +447,7 @@ func (sc *StatusCacheService) calcGeneralSectionSummary() statusSummary {
 	var ss statusSummary
 	gsl := sc.GeneralSectionList()
 	for _, o := range gsl {
-		if !o.IsOK() {
+		if o.HasError() {
 			ss.errors++
 		} else if o.IsCurrent() {
 			ss.current++
