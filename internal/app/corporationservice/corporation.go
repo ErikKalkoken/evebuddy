@@ -24,10 +24,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
-var (
-	errNotAuthorized = errors.New("not authorized")
-)
-
 type CharacterService interface {
 	ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, role app.Role) (*app.CharacterToken, error)
 }
@@ -263,36 +259,40 @@ func (s *CorporationService) updateSectionIfChanged(
 		return false, err
 	}
 	s.scs.CorporationSectionSet(o)
+	var hash string
+	var hasChanged bool
 	token, err := s.cs.ValidCharacterTokenForCorporation(ctx, arg.CorporationID, arg.Section.Role())
 	if errors.Is(err, app.ErrNotFound) {
-		return false, errNotAuthorized
+		slog.Info("Skipping section update due to missing role", "corporationID", arg.CorporationID, "section", arg.Section)
 	} else if err != nil {
 		return false, err
-	}
-	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
-	data, err := fetch(ctx, arg.CorporationID)
-	if err != nil {
-		return false, err
-	}
-	hash, err := calcContentHash(data)
-	if err != nil {
-		return false, err
-	}
-
-	// identify if changed
-	var notFound bool
-	u, err := s.st.GetCorporationSectionStatus(ctx, arg.CorporationID, arg.Section)
-	if errors.Is(err, app.ErrNotFound) {
-		notFound = true
-	} else if err != nil {
-		return false, err
-	}
-
-	// update if needed
-	hasChanged := u.ContentHash != hash
-	if arg.ForceUpdate || notFound || hasChanged {
-		if err := update(ctx, arg.CorporationID, data); err != nil {
+	} else {
+		ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+		data, err := fetch(ctx, arg.CorporationID)
+		if err != nil {
 			return false, err
+		}
+		h, err := calcContentHash(data)
+		if err != nil {
+			return false, err
+		}
+		hash = h
+
+		// identify if changed
+		var notFound bool
+		u, err := s.st.GetCorporationSectionStatus(ctx, arg.CorporationID, arg.Section)
+		if errors.Is(err, app.ErrNotFound) {
+			notFound = true
+		} else if err != nil {
+			return false, err
+		}
+
+		// update if needed
+		hasChanged = u.ContentHash != hash
+		if arg.ForceUpdate || notFound || hasChanged {
+			if err := update(ctx, arg.CorporationID, data); err != nil {
+				return false, err
+			}
 		}
 	}
 
@@ -301,13 +301,12 @@ func (s *CorporationService) updateSectionIfChanged(
 	errorMessage := ""
 	startedAt2 := optional.Optional[time.Time]{}
 	arg2 = storage.UpdateOrCreateCorporationSectionStatusParams{
+		CompletedAt:   &completedAt,
+		ContentHash:   &hash,
 		CorporationID: arg.CorporationID,
+		ErrorMessage:  &errorMessage,
 		Section:       arg.Section,
-
-		ErrorMessage: &errorMessage,
-		ContentHash:  &hash,
-		CompletedAt:  &completedAt,
-		StartedAt:    &startedAt2,
+		StartedAt:     &startedAt2,
 	}
 	o, err = s.st.UpdateOrCreateCorporationSectionStatus(ctx, arg2)
 	if err != nil {
