@@ -41,7 +41,7 @@ func main() {
 	}
 	tmpl, err := template.New("").Parse(tmpl)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	err = tmpl.Execute(os.Stdout, map[string]any{
 		"Package":  *packageFlag,
@@ -49,6 +49,6 @@ func main() {
 		"Variable": "schematicToIconIDs",
 	})
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
