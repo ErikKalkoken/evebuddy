@@ -352,6 +352,9 @@ func (u *BaseUI) IsStartupCompleted() bool {
 
 // humanizeError returns user friendly representation of an error for display in the UI.
 func (u *BaseUI) humanizeError(err error) string {
+	if err == nil {
+		return "No error"
+	}
 	if u.settings.DeveloperMode() {
 		return err.Error()
 	}
