@@ -60,3 +60,11 @@ func TestMapSlice(t *testing.T) {
 	expected := []string{"1", "2", "3"}
 	assert.Equal(t, expected, got)
 }
+
+func TestChain(t *testing.T) {
+	s1 := []int{1, 2}
+	s2 := []int{3, 4}
+	got := slices.Collect(xiter.Chain(slices.Values(s1), slices.Values(s2)))
+	expected := []int{1, 2, 3, 4}
+	assert.Equal(t, expected, got)
+}

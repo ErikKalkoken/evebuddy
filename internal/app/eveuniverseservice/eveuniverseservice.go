@@ -96,7 +96,7 @@ func (s *EveUniverseService) FetchAllianceCorporations(ctx context.Context, alli
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.AddMissingEntities(ctx, set.Of(slices.Concat(ids, []int32{allianceID})...))
+	_, err = s.AddMissingEntities(ctx, set.Union(set.Of(ids...), set.Of(allianceID)))
 	if err != nil {
 		return nil, err
 	}
@@ -193,6 +193,7 @@ func (s *EveUniverseService) updateCharacterESI(ctx context.Context, characterID
 	if err != nil {
 		return err
 	}
+	// TODO: Refactor to use ToEntites()
 	g := new(errgroup.Group)
 	g.Go(func() error {
 		rr, _, err := s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{c.ID}, nil)

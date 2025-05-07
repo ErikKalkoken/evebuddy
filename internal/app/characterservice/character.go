@@ -485,7 +485,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 		return 0, err
 	}
 	slog.Info("Created new SSO token", "characterID", ssoToken.CharacterID, "scopes", ssoToken.Scopes)
-	if err := infoText.Set("Fetching character from server. Please wait..."); err != nil {
+	if err := infoText.Set("Fetching character from game server. Please wait..."); err != nil {
 		slog.Warn("failed to set info text", "error", err)
 	}
 	charID := ssoToken.CharacterID
@@ -513,6 +513,9 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 		return 0, err
 	}
 	if x := character.Corporation.IsNPC(); !x.IsEmpty() && !x.ValueOrZero() {
+		if err := infoText.Set("Fetching corporation from game server. Please wait..."); err != nil {
+			slog.Warn("failed to set info text", "error", err)
+		}
 		if _, err := s.eus.GetOrCreateCorporationESI(ctx, character.Corporation.ID); err != nil {
 			return 0, err
 		}
@@ -522,6 +525,9 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 		if err := s.scs.UpdateCorporations(ctx); err != nil {
 			return 0, err
 		}
+	}
+	if err := infoText.Set("Character added successfully"); err != nil {
+		slog.Warn("failed to set info text", "error", err)
 	}
 	return token.CharacterID, nil
 }
@@ -1378,7 +1384,7 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int32, subj
 	for i, r := range rr {
 		recipientIDs[i] = r.RecipientId
 	}
-	ids := set.Of(slices.Concat(recipientIDs, []int32{characterID})...)
+	ids := set.Union(set.Of(recipientIDs...), set.Of(characterID))
 	_, err = s.eus.AddMissingEntities(ctx, ids)
 	if err != nil {
 		return 0, err

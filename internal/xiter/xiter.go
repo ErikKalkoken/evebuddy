@@ -52,3 +52,16 @@ func Map[X, Y any](it iter.Seq[X], f func(X) Y) iter.Seq[Y] {
 func MapSlice[S ~[]X, X any, Y any](s S, f func(X) Y) iter.Seq[Y] {
 	return Map(slices.Values(s), f)
 }
+
+// Chain returns an iterator that returns the all elements of each seq one after the other.
+func Chain[T any](seqs ...iter.Seq[T]) iter.Seq[T] {
+	return func(yield func(T) bool) {
+		for _, seq := range seqs {
+			for v := range seq {
+				if !yield(v) {
+					return
+				}
+			}
+		}
+	}
+}

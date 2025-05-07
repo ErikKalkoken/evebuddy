@@ -240,31 +240,30 @@ func (a *ManageCharacters) ShowAddCharacterDialog() {
 	a.u.ModifyShortcutsForDialog(d1, a.window)
 	d1.SetOnClosed(cancel)
 	go func() {
-		err := func() error {
+		characterID, err := func() (int32, error) {
 			characterID, err := a.u.cs.UpdateOrCreateCharacterFromSSO(cancelCTX, infoText)
-			if errors.Is(err, app.ErrAborted) {
-				return nil
-			} else if err != nil {
-				return err
+			if err != nil {
+				return 0, err
 			}
 			a.update()
+			return characterID, nil
+		}()
+		fyne.Do(func() {
+			d1.Hide()
+			if err != nil && !errors.Is(err, app.ErrAborted) {
+				s := "Failed to add a new character"
+				slog.Error(s, "error", err)
+				a.u.ShowErrorDialog(s, err, a.window)
+				return
+			}
 			go func() {
 				if !a.u.hasCharacter() {
 					a.u.loadCharacter(characterID)
 				}
 				a.u.updateStatus()
 				a.u.updateCrossPages()
-				ctx := context.Background()
-				a.u.updateCharacterAndRefreshIfNeeded(ctx, characterID, true)
+				go a.u.updateCharacterAndRefreshIfNeeded(context.Background(), characterID, true)
 			}()
-			return nil
-		}()
-		fyne.Do(func() {
-			d1.Hide()
-			if err != nil {
-				slog.Error("Failed to add a new character", "error", err)
-				a.u.ShowErrorDialog("Failed add a new character", err, a.window)
-			}
 		})
 	}()
 	fyne.Do(func() {
