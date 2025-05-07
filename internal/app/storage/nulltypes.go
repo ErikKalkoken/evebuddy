@@ -3,6 +3,8 @@ package storage
 import (
 	"database/sql"
 	"time"
+
+	"golang.org/x/exp/constraints"
 )
 
 // NewNullFloat64 returns a value as null type. Will assume invalid when value is zero.
@@ -14,11 +16,11 @@ func NewNullFloat64(v float64) sql.NullFloat64 {
 }
 
 // NewNullInt64 returns a value as null type. Will assume invalid when value is zero.
-func NewNullInt64(v int64) sql.NullInt64 {
+func NewNullInt64[T constraints.Integer](v T) sql.NullInt64 {
 	if v == 0 {
 		return sql.NullInt64{}
 	}
-	return sql.NullInt64{Int64: v, Valid: true}
+	return sql.NullInt64{Int64: int64(v), Valid: true}
 }
 
 func NewNullString(v string) sql.NullString {

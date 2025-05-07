@@ -50,12 +50,12 @@ func TestPlanetPin(t *testing.T) {
 		arg := storage.CreatePlanetPinParams{
 			CharacterPlanetID:      planet.ID,
 			ExpiryTime:             expiryTime,
-			ExtractorProductTypeID: optional.New(productType.ID),
-			FactorySchemaID:        optional.New(factorySchematic.ID),
+			ExtractorProductTypeID: optional.From(productType.ID),
+			FactorySchemaID:        optional.From(factorySchematic.ID),
 			InstallTime:            installTime,
 			LastCycleStart:         lastCycleStart,
 			PinID:                  42,
-			SchematicID:            optional.New(schematic.ID),
+			SchematicID:            optional.From(schematic.ID),
 			TypeID:                 pinType.ID,
 		}
 		// when
@@ -66,9 +66,9 @@ func TestPlanetPin(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, pinType, c2.Type)
 				assert.Equal(t, productType, c2.ExtractorProductType)
-				assert.Equal(t, optional.New(expiryTime), c2.ExpiryTime)
-				assert.Equal(t, optional.New(installTime), c2.InstallTime)
-				assert.Equal(t, optional.New(lastCycleStart), c2.LastCycleStart)
+				assert.Equal(t, optional.From(expiryTime), c2.ExpiryTime)
+				assert.Equal(t, optional.From(installTime), c2.InstallTime)
+				assert.Equal(t, optional.From(lastCycleStart), c2.LastCycleStart)
 				assert.Equal(t, schematic, c2.Schematic)
 				assert.Equal(t, factorySchematic, c2.FactorySchematic)
 			}

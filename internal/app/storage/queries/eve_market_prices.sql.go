@@ -10,9 +10,12 @@ import (
 )
 
 const getEveMarketPrice = `-- name: GetEveMarketPrice :one
-SELECT type_id, adjusted_price, average_price
-FROM eve_market_prices
-WHERE type_id = ?
+SELECT
+    type_id, adjusted_price, average_price
+FROM
+    eve_market_prices
+WHERE
+    type_id = ?
 `
 
 func (q *Queries) GetEveMarketPrice(ctx context.Context, typeID int64) (EveMarketPrice, error) {
@@ -23,8 +26,10 @@ func (q *Queries) GetEveMarketPrice(ctx context.Context, typeID int64) (EveMarke
 }
 
 const listEveMarketPrices = `-- name: ListEveMarketPrices :one
-SELECT type_id, adjusted_price, average_price
-FROM eve_market_prices
+SELECT
+    type_id, adjusted_price, average_price
+FROM
+    eve_market_prices
 `
 
 func (q *Queries) ListEveMarketPrices(ctx context.Context) (EveMarketPrice, error) {
@@ -35,19 +40,14 @@ func (q *Queries) ListEveMarketPrices(ctx context.Context) (EveMarketPrice, erro
 }
 
 const updateOrCreateEveMarketPrice = `-- name: UpdateOrCreateEveMarketPrice :exec
-INSERT INTO eve_market_prices (
-    type_id,
-    adjusted_price,
-    average_price
-)
-VALUES (
-    ?1, ?2, ?3
-)
-ON CONFLICT(type_id) DO
-UPDATE SET
+INSERT INTO
+    eve_market_prices (type_id, adjusted_price, average_price)
+VALUES
+    (?1, ?2, ?3)
+ON CONFLICT (type_id) DO UPDATE
+SET
     adjusted_price = ?2,
     average_price = ?3
-WHERE type_id = ?1
 `
 
 type UpdateOrCreateEveMarketPriceParams struct {

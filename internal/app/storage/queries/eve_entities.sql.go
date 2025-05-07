@@ -11,15 +11,10 @@ import (
 )
 
 const createEveEntity = `-- name: CreateEveEntity :one
-INSERT INTO eve_entities (
-    id,
-    category,
-    name
-)
-VALUES (
-    ?, ?, ?
-)
-RETURNING id, category, name
+INSERT INTO
+    eve_entities (id, category, name)
+VALUES
+    (?, ?, ?) RETURNING id, category, name
 `
 
 type CreateEveEntityParams struct {
@@ -36,9 +31,12 @@ func (q *Queries) CreateEveEntity(ctx context.Context, arg CreateEveEntityParams
 }
 
 const getEveEntity = `-- name: GetEveEntity :one
-SELECT id, category, name
-FROM eve_entities
-WHERE id = ?
+SELECT
+    id, category, name
+FROM
+    eve_entities
+WHERE
+    id = ?
 `
 
 func (q *Queries) GetEveEntity(ctx context.Context, id int64) (EveEntity, error) {
@@ -49,9 +47,12 @@ func (q *Queries) GetEveEntity(ctx context.Context, id int64) (EveEntity, error)
 }
 
 const listEveEntitiesByName = `-- name: ListEveEntitiesByName :many
-SELECT id, category, name
-FROM eve_entities
-WHERE name = ?
+SELECT
+    id, category, name
+FROM
+    eve_entities
+WHERE
+    name = ?
 `
 
 func (q *Queries) ListEveEntitiesByName(ctx context.Context, name string) ([]EveEntity, error) {
@@ -78,11 +79,14 @@ func (q *Queries) ListEveEntitiesByName(ctx context.Context, name string) ([]Eve
 }
 
 const listEveEntitiesByPartialName = `-- name: ListEveEntitiesByPartialName :many
-SELECT id, category, name
-FROM eve_entities
-WHERE name LIKE ?
-ORDER BY name
-COLLATE NOCASE
+SELECT
+    id, category, name
+FROM
+    eve_entities
+WHERE
+    name LIKE ?
+ORDER BY
+    name COLLATE NOCASE
 `
 
 func (q *Queries) ListEveEntitiesByPartialName(ctx context.Context, name string) ([]EveEntity, error) {
@@ -109,9 +113,12 @@ func (q *Queries) ListEveEntitiesByPartialName(ctx context.Context, name string)
 }
 
 const listEveEntitiesForIDs = `-- name: ListEveEntitiesForIDs :many
-SELECT id, category, name
-FROM eve_entities
-WHERE id IN (/*SLICE:ids*/?)
+SELECT
+    id, category, name
+FROM
+    eve_entities
+WHERE
+    id IN (/*SLICE:ids*/?)
 `
 
 func (q *Queries) ListEveEntitiesForIDs(ctx context.Context, ids []int64) ([]EveEntity, error) {
@@ -148,9 +155,13 @@ func (q *Queries) ListEveEntitiesForIDs(ctx context.Context, ids []int64) ([]Eve
 }
 
 const listEveEntityByNameAndCategory = `-- name: ListEveEntityByNameAndCategory :many
-SELECT id, category, name
-FROM eve_entities
-WHERE name = ? AND category = ?
+SELECT
+    id, category, name
+FROM
+    eve_entities
+WHERE
+    name = ?
+    AND category = ?
 `
 
 type ListEveEntityByNameAndCategoryParams struct {
@@ -182,8 +193,10 @@ func (q *Queries) ListEveEntityByNameAndCategory(ctx context.Context, arg ListEv
 }
 
 const listEveEntityIDs = `-- name: ListEveEntityIDs :many
-SELECT id
-FROM eve_entities
+SELECT
+    id
+FROM
+    eve_entities
 `
 
 func (q *Queries) ListEveEntityIDs(ctx context.Context) ([]int64, error) {
@@ -210,19 +223,14 @@ func (q *Queries) ListEveEntityIDs(ctx context.Context) ([]int64, error) {
 }
 
 const updateOrCreateEveEntity = `-- name: UpdateOrCreateEveEntity :one
-INSERT INTO eve_entities (
-    id,
-    category,
-    name
-)
-VALUES (
-    ?1, ?2, ?3
-)
-ON CONFLICT(id) DO
-UPDATE SET
+INSERT INTO
+    eve_entities (id, category, name)
+VALUES
+    (?1, ?2, ?3)
+ON CONFLICT (id) DO UPDATE
+SET
     category = ?2,
     name = ?3
-WHERE id = ?1
 RETURNING id, category, name
 `
 

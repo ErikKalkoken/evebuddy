@@ -67,15 +67,14 @@ func (st *Storage) GetEveType(ctx context.Context, id int32) (*app.EveType, erro
 	return t, nil
 }
 
-func (st *Storage) MissingEveTypes(ctx context.Context, ids []int32) ([]int32, error) {
+func (st *Storage) MissingEveTypes(ctx context.Context, ids set.Set[int32]) (set.Set[int32], error) {
 	currentIDs, err := st.qRO.ListEveTypeIDs(ctx)
 	if err != nil {
-		return nil, err
+		return set.Set[int32]{}, err
 	}
 	current := set.Of(convertNumericSlice[int32](currentIDs)...)
-	incoming := set.Of(ids...)
-	missing := set.Difference(incoming, current)
-	return missing.Slice(), nil
+	missing := set.Difference(ids, current)
+	return missing, nil
 }
 
 func eveTypeFromDBModel(t queries.EveType, g queries.EveGroup, c queries.EveCategory) *app.EveType {

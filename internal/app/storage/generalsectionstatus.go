@@ -97,7 +97,6 @@ func (st *Storage) UpdateOrCreateGeneralSectionStatus(ctx context.Context, arg U
 
 func generalSectionStatusFromDBModel(o queries.GeneralSectionStatus) *app.GeneralSectionStatus {
 	x := &app.GeneralSectionStatus{
-		ID:           o.ID,
 		ErrorMessage: o.Error,
 		Section:      app.GeneralSection(o.SectionID),
 		ContentHash:  o.ContentHash,

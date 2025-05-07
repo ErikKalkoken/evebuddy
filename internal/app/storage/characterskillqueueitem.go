@@ -31,7 +31,7 @@ func (st *Storage) GetCharacterTotalTrainingTime(ctx context.Context, characterI
 	if !x.Valid {
 		return d, nil
 	}
-	d = optional.New(time.Duration(float64(time.Hour) * 24 * x.Float64))
+	d = optional.From(time.Duration(float64(time.Hour) * 24 * x.Float64))
 	return d, nil
 }
 

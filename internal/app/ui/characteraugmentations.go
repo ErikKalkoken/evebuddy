@@ -100,7 +100,7 @@ func (a *CharacterAugmentations) update() {
 	var err error
 	implants := make([]*app.CharacterImplant, 0)
 	characterID := a.u.currentCharacterID()
-	hasData := a.u.scs.CharacterSectionExists(characterID, app.SectionImplants)
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionImplants)
 	if hasData {
 		implants2, err2 := a.u.cs.ListImplants(context.Background(), characterID)
 		if err2 != nil {

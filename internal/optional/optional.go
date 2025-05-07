@@ -6,6 +6,7 @@ package optional
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"golang.org/x/exp/constraints"
 )
@@ -24,8 +25,8 @@ type Optional[T any] struct {
 	isPresent bool
 }
 
-// New returns a new Optional with a value.
-func New[T any](v T) Optional[T] {
+// From returns a new Optional from v.
+func From[T any](v T) Optional[T] {
 	o := Optional[T]{value: v, isPresent: true}
 	return o
 }
@@ -104,5 +105,23 @@ func ConvertNumeric[X Numeric, Y Numeric](o Optional[X]) Optional[Y] {
 	if o.IsEmpty() {
 		return Optional[Y]{}
 	}
-	return New(Y(o.ValueOrZero()))
+	return From(Y(o.ValueOrZero()))
+}
+
+// FromIntegerWithZero returns an optional from an integer
+// where a zero value is interpreted as empty.
+func FromIntegerWithZero[T constraints.Integer](v T) Optional[T] {
+	if v == 0 {
+		return Optional[T]{}
+	}
+	return From(v)
+}
+
+// FromTimeWithZero returns an optional from a [time.Time]
+// where a zero value is interpreted as empty.
+func FromTimeWithZero(v time.Time) Optional[time.Time] {
+	if v.IsZero() {
+		return Optional[time.Time]{}
+	}
+	return From(v)
 }

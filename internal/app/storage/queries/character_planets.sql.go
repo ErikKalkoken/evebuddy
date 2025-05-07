@@ -47,8 +47,7 @@ func (q *Queries) CreateCharacterPlanet(ctx context.Context, arg CreateCharacter
 }
 
 const deleteCharacterPlanets = `-- name: DeleteCharacterPlanets :exec
-DELETE FROM
-    character_planets
+DELETE FROM character_planets
 WHERE
     character_id = ?
     AND eve_planet_id IN (/*SLICE:eve_planet_ids*/?)
@@ -365,8 +364,7 @@ func (q *Queries) ListCharacterPlanets(ctx context.Context, characterID int64) (
 }
 
 const updateCharacterPlanetLastNotified = `-- name: UpdateCharacterPlanetLastNotified :exec
-UPDATE
-    character_planets
+UPDATE character_planets
 SET
     last_notified = ?
 WHERE
@@ -394,14 +392,12 @@ INSERT INTO
         upgrade_level
     )
 VALUES
-    (?1, ?2, ?3, ?4) ON CONFLICT(character_id, eve_planet_id) DO
-UPDATE
+    (?1, ?2, ?3, ?4)
+ON CONFLICT (character_id, eve_planet_id) DO UPDATE
 SET
     last_update = ?3,
     upgrade_level = ?4
-WHERE
-    character_id = ?1
-    AND eve_planet_id = ?2 RETURNING id
+RETURNING id
 `
 
 type UpdateOrCreateCharacterPlanetParams struct {

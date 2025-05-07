@@ -86,6 +86,7 @@ const (
 type SectionStatus struct {
 	EntityID     int32
 	EntityName   string
+	Comment      string
 	CompletedAt  time.Time
 	ContentHash  string
 	ErrorMessage string
@@ -99,8 +100,12 @@ func (s SectionStatus) IsGeneralSection() bool {
 	return s.EntityID == GeneralSectionEntityID
 }
 
-func (s SectionStatus) IsOK() bool {
-	return s.ErrorMessage == ""
+func (s SectionStatus) HasError() bool {
+	return s.ErrorMessage != ""
+}
+
+func (s SectionStatus) HasComment() bool {
+	return s.Comment != ""
 }
 
 func (s SectionStatus) IsExpired() bool {

@@ -193,7 +193,7 @@ func (a *CharacterSkillCatalogue) update() {
 	var err error
 	groups := make([]skillGroupProgress, 0)
 	characterID := a.u.currentCharacterID()
-	hasData := a.u.scs.GeneralSectionExists(app.SectionEveCategories) && a.u.scs.CharacterSectionExists(characterID, app.SectionSkills)
+	hasData := a.u.scs.HasGeneralSection(app.SectionEveTypes) && a.u.scs.HasCharacterSection(characterID, app.SectionSkills)
 	if hasData {
 		groups2, err2 := a.updateGroups(characterID, a.u.services())
 		if err2 != nil {

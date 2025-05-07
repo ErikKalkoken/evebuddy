@@ -21,12 +21,13 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type accountCharacter struct {
-	id                int32
-	name              string
-	hasTokenWithScope bool
+	id           int32
+	name         string
+	missingToken bool
 }
 
 type ManageCharacters struct {
@@ -136,7 +137,7 @@ func (a *ManageCharacters) makeCharacterList() *widget.List {
 			})
 
 			issue := row[2].(*widget.Label)
-			if !c.hasTokenWithScope {
+			if c.missingToken {
 				issue.Show()
 			} else {
 				issue.Hide()
@@ -207,20 +208,14 @@ func (a *ManageCharacters) showDeleteDialog(c accountCharacter) {
 }
 
 func (a *ManageCharacters) update() {
-	cc, err := a.u.cs.ListCharactersShort(context.TODO())
-	if err != nil {
-		slog.Error("account refresh", "error", err)
-		return
-	}
-	characters := make([]accountCharacter, len(cc))
-	for i, c := range cc {
-		hasToken, err := a.u.cs.HasTokenWithScopes(context.Background(), c.ID)
-		if err != nil {
-			slog.Error("Tried to check if character has token", "err", err)
-			hasToken = true // do not report error when state is unclear
-		}
-		characters[i] = accountCharacter{id: c.ID, name: c.Name, hasTokenWithScope: hasToken}
-	}
+	characters := xslices.Map(a.u.scs.ListCharacters(), func(c *app.EntityShort[int32]) accountCharacter {
+		return accountCharacter{id: c.ID, name: c.Name}
+	})
+	// hasToken, err := a.u.cs.HasTokenWithScopes(context.Background(), c.ID)
+	// if err != nil {
+	// 	slog.Error("Tried to check if character has token", "err", err)
+	// 	hasToken = true // do not report error when state is unclear
+	// }
 	fyne.Do(func() {
 		a.characters = characters
 		a.list.Refresh()
@@ -232,7 +227,7 @@ func (a *ManageCharacters) update() {
 }
 
 func (a *ManageCharacters) ShowAddCharacterDialog() {
-	cancelCTX, cancel := context.WithCancel(context.TODO())
+	cancelCTX, cancel := context.WithCancel(context.Background())
 	s := "Please follow instructions in your browser to add a new character."
 	infoText := binding.BindString(&s)
 	content := widget.NewLabelWithData(infoText)
@@ -259,7 +254,8 @@ func (a *ManageCharacters) ShowAddCharacterDialog() {
 				}
 				a.u.updateStatus()
 				a.u.updateCrossPages()
-				a.u.updateCharacterAndRefreshIfNeeded(context.Background(), characterID, false)
+				ctx := context.Background()
+				a.u.updateCharacterAndRefreshIfNeeded(ctx, characterID, true)
 			}()
 			return nil
 		}()

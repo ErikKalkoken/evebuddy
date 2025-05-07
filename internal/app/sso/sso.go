@@ -20,6 +20,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
 type contextKey int
@@ -44,9 +46,7 @@ const (
 var templFS embed.FS
 
 var (
-	ErrAborted             = errors.New("auth process canceled prematurely")
-	ErrTokenError          = errors.New("token error")
-	ErrMissingRefreshToken = errors.New("missing refresh token")
+	errMissingRefreshToken = errors.New("missing refresh token")
 )
 
 // SSOService is a service for authentication Eve Online characters.
@@ -97,7 +97,7 @@ func new(
 // Authenticate authenticates an Eve Online character via OAuth 2.0 PKCE and returns the new SSO token.
 //
 // Will open a new browser tab on the desktop and run a web server for the OAuth process.
-func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token, error) {
+func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*app.Token, error) {
 	codeVerifier, err := generateRandomStringBase64(32)
 	if err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 	// result variables. These are returned to caller.
 	var (
 		errValue atomic.Value
-		token    atomic.Pointer[Token]
+		token    atomic.Pointer[app.Token]
 	)
 
 	processError := func(w http.ResponseWriter, status int, err error) {
@@ -157,7 +157,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 		}
 		characterName := extractCharacterName(jwtToken)
 		scopes := extractScopes(jwtToken)
-		tok := newToken(rawToken, characterID, characterName, scopes)
+		tok := makeToken(rawToken, characterID, characterName, scopes)
 		token.Store(tok)
 		slog.Info("SSO authentication successful", "characterID", tok.CharacterID, "characterName", tok.CharacterName)
 		http.Redirect(w, r, "/authenticated", http.StatusSeeOther)
@@ -248,9 +248,23 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 
 	t := token.Load()
 	if t == nil {
-		return nil, ErrAborted
+		return nil, app.ErrAborted
 	}
 	return t, nil
+}
+
+// makeToken creates e new [app.Token] from a [rawToken] and returns it.
+func makeToken(rawToken *tokenPayload, characterID int, characterName string, scopes []string) *app.Token {
+	t := &app.Token{
+		AccessToken:   rawToken.AccessToken,
+		CharacterID:   int32(characterID),
+		CharacterName: characterName,
+		ExpiresAt:     rawToken.expiresAt(),
+		RefreshToken:  rawToken.RefreshToken,
+		TokenType:     rawToken.TokenType,
+		Scopes:        scopes,
+	}
+	return t
 }
 
 func (s *SSOService) address() string {
@@ -287,6 +301,22 @@ func (s *SSOService) makeStartURL(challenge, state string, scopes []string) stri
 	return s.authorizeURL + "/?" + v.Encode()
 }
 
+// token payload as returned from SSO API
+type tokenPayload struct {
+	AccessToken      string `json:"access_token"`
+	ExpiresIn        int    `json:"expires_in"`
+	TokenType        string `json:"token_type"`
+	RefreshToken     string `json:"refresh_token"`
+	Error            string `json:"error"`
+	ErrorDescription string `json:"error_description"`
+}
+
+// expiresAt returns the time when this token will expire.
+func (t *tokenPayload) expiresAt() time.Time {
+	x := time.Now().Add(time.Second * time.Duration(t.ExpiresIn))
+	return x
+}
+
 // fetchNewToken returns a new token from SSO API.
 func (s *SSOService) fetchNewToken(code, codeVerifier string) (*tokenPayload, error) {
 	form := url.Values{
@@ -317,15 +347,20 @@ func (s *SSOService) fetchNewToken(code, codeVerifier string) (*tokenPayload, er
 		return nil, err
 	}
 	if token.Error != "" {
-		return nil, fmt.Errorf("SSO new token: token payload has error: %s, %s: %w", token.Error, token.ErrorDescription, ErrTokenError)
+		err := fmt.Errorf(
+			"SSO new token: token payload has error: %s, %s: %w",
+			token.Error, token.ErrorDescription,
+			app.ErrTokenError,
+		)
+		return nil, err
 	}
 	return &token, nil
 }
 
 // Update given token with new instance from SSO API
-func (s *SSOService) RefreshToken(ctx context.Context, refreshToken string) (*Token, error) {
+func (s *SSOService) RefreshToken(ctx context.Context, refreshToken string) (*app.Token, error) {
 	if refreshToken == "" {
-		return nil, ErrMissingRefreshToken
+		return nil, errMissingRefreshToken
 	}
 	rawToken, err := s.fetchRefreshedToken(refreshToken)
 	if err != nil {
@@ -335,7 +370,7 @@ func (s *SSOService) RefreshToken(ctx context.Context, refreshToken string) (*To
 	if err != nil {
 		return nil, err
 	}
-	token := Token{
+	token := app.Token{
 		AccessToken:  rawToken.AccessToken,
 		RefreshToken: rawToken.RefreshToken,
 		ExpiresAt:    rawToken.expiresAt(),
@@ -371,7 +406,13 @@ func (s *SSOService) fetchRefreshedToken(refreshToken string) (*tokenPayload, er
 		return nil, err
 	}
 	if token.Error != "" {
-		return nil, fmt.Errorf("SSO refresh token: token payload has error: %s, %s: %w", token.Error, token.ErrorDescription, ErrTokenError)
+		err := fmt.Errorf(
+			"SSO refresh token: token payload has error: %s, %s: %w",
+			token.Error,
+			token.ErrorDescription,
+			app.ErrTokenError,
+		)
+		return nil, err
 	}
 	return &token, nil
 }

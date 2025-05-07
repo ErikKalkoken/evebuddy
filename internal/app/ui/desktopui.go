@@ -263,14 +263,16 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 	)
 	u.industryJobsActive.OnUpdate = func(count int) {
 		s := "Active"
-		c := ihumanize.Comma(count)
+		var badge string
 		if count > 0 {
+			c := ihumanize.Comma(count)
 			s += fmt.Sprintf(" (%s)", c)
+			badge = c
 		}
 		fyne.Do(func() {
 			industryJobsActive.Text = s
 			industryTabs.Refresh()
-			collectiveNav.SetItemBadge(industry, c)
+			collectiveNav.SetItemBadge(industry, badge)
 		})
 	}
 	collectiveNav = iwidget.NewNavDrawer("All Characters",

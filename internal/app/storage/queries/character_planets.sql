@@ -11,11 +11,10 @@ VALUES
     (?1, ?2, ?3, ?4, ?5) RETURNING id;
 
 -- name: DeleteCharacterPlanets :exec
-DELETE FROM
-    character_planets
+DELETE FROM character_planets
 WHERE
     character_id = ?
-    AND eve_planet_id IN (sqlc.slice('eve_planet_ids'));
+    AND eve_planet_id IN (sqlc.slice ('eve_planet_ids'));
 
 -- name: GetCharacterPlanet :one
 SELECT
@@ -87,8 +86,7 @@ ORDER BY
     ep.name;
 
 -- name: UpdateCharacterPlanetLastNotified :exec
-UPDATE
-    character_planets
+UPDATE character_planets
 SET
     last_notified = ?
 WHERE
@@ -104,11 +102,9 @@ INSERT INTO
         upgrade_level
     )
 VALUES
-    (?1, ?2, ?3, ?4) ON CONFLICT(character_id, eve_planet_id) DO
-UPDATE
+    (?1, ?2, ?3, ?4)
+ON CONFLICT (character_id, eve_planet_id) DO UPDATE
 SET
     last_update = ?3,
     upgrade_level = ?4
-WHERE
-    character_id = ?1
-    AND eve_planet_id = ?2 RETURNING id;
+RETURNING id;

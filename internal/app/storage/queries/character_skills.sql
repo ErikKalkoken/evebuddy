@@ -14,11 +14,10 @@ WHERE
     AND eve_type_id = ?;
 
 -- name: DeleteCharacterSkills :exec
-DELETE FROM
-    character_skills
+DELETE FROM character_skills
 WHERE
     character_id = ?
-    AND eve_type_id IN (sqlc.slice('eve_type_ids'));
+    AND eve_type_id IN (sqlc.slice ('eve_type_ids'));
 
 -- name: ListCharacterSkillIDs :many
 SELECT
@@ -29,8 +28,8 @@ WHERE
     character_id = ?;
 
 -- name: ListCharacterShipsAbilities :many
-SELECT
-    DISTINCT ss2.ship_type_id as type_id,
+SELECT DISTINCT
+    ss2.ship_type_id as type_id,
     et.name as type_name,
     eg.id as group_id,
     eg.name as group_name,
@@ -122,12 +121,9 @@ INSERT INTO
         trained_skill_level
     )
 VALUES
-    (?1, ?2, ?3, ?4, ?5) ON CONFLICT(character_id, eve_type_id) DO
-UPDATE
+    (?1, ?2, ?3, ?4, ?5)
+ON CONFLICT (character_id, eve_type_id) DO UPDATE
 SET
     active_skill_level = ?3,
     skill_points_in_skill = ?4,
-    trained_skill_level = ?5
-WHERE
-    character_id = ?1
-    AND eve_type_id = ?2;
+    trained_skill_level = ?5;

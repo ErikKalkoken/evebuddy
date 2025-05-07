@@ -12,10 +12,13 @@ import (
 )
 
 const getCharacterSectionStatus = `-- name: GetCharacterSectionStatus :one
-SELECT id, character_id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
-FROM character_section_status
-WHERE character_id = ?
-AND section_id = ?
+SELECT
+    id, character_id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
+FROM
+    character_section_status
+WHERE
+    character_id = ?
+    AND section_id = ?
 `
 
 type GetCharacterSectionStatusParams struct {
@@ -41,9 +44,12 @@ func (q *Queries) GetCharacterSectionStatus(ctx context.Context, arg GetCharacte
 }
 
 const listCharacterSectionStatus = `-- name: ListCharacterSectionStatus :many
-SELECT id, character_id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
-FROM character_section_status
-WHERE character_id = ?
+SELECT
+    id, character_id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
+FROM
+    character_section_status
+WHERE
+    character_id = ?
 `
 
 func (q *Queries) ListCharacterSectionStatus(ctx context.Context, characterID int64) ([]CharacterSectionStatus, error) {
@@ -80,27 +86,25 @@ func (q *Queries) ListCharacterSectionStatus(ctx context.Context, characterID in
 }
 
 const updateOrCreateCharacterSectionStatus = `-- name: UpdateOrCreateCharacterSectionStatus :one
-INSERT INTO character_section_status (
-    character_id,
-    section_id,
-    completed_at,
-    content_hash,
-    error,
-    started_at,
-    updated_at
-)
-VALUES (
-    ?1, ?2, ?3, ?4, ?5, ?6, ?7
-)
-ON CONFLICT(character_id, section_id) DO
-UPDATE SET
+INSERT INTO
+    character_section_status (
+        character_id,
+        section_id,
+        completed_at,
+        content_hash,
+        error,
+        started_at,
+        updated_at
+    )
+VALUES
+    (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+ON CONFLICT (character_id, section_id) DO UPDATE
+SET
     completed_at = ?3,
     content_hash = ?4,
     error = ?5,
     started_at = ?6,
     updated_at = ?7
-WHERE character_id = ?1
-AND section_id = ?2
 RETURNING id, character_id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
 `
 

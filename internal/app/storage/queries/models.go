@@ -303,6 +303,51 @@ type CharacterWalletTransaction struct {
 	UnitPrice     float64
 }
 
+type Corporation struct {
+	ID        int64
+	CreatedAt time.Time
+}
+
+type CorporationIndustryJob struct {
+	ID                   int64
+	ActivityID           int64
+	BlueprintID          int64
+	BlueprintLocationID  int64
+	BlueprintTypeID      int64
+	CorporationID        int64
+	CompletedCharacterID sql.NullInt64
+	CompletedDate        sql.NullTime
+	Cost                 sql.NullFloat64
+	Duration             int64
+	EndDate              time.Time
+	FacilityID           int64
+	InstallerID          int64
+	JobID                int64
+	LicensedRuns         sql.NullInt64
+	OutputLocationID     int64
+	PauseDate            sql.NullTime
+	Probability          sql.NullFloat64
+	ProductTypeID        sql.NullInt64
+	Runs                 int64
+	StartDate            time.Time
+	LocationID           int64
+	Status               string
+	SuccessfulRuns       sql.NullInt64
+}
+
+type CorporationSectionStatus struct {
+	ID            int64
+	Comment       string
+	CorporationID int64
+	SectionID     string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	ContentHash   string
+	CompletedAt   sql.NullTime
+	Error         string
+	StartedAt     sql.NullTime
+}
+
 type EveCategory struct {
 	ID          int64
 	Name        string
@@ -327,6 +372,24 @@ type EveConstellation struct {
 	ID          int64
 	EveRegionID int64
 	Name        string
+}
+
+type EveCorporation struct {
+	ID            int64
+	AllianceID    sql.NullInt64
+	CeoID         sql.NullInt64
+	CreatorID     sql.NullInt64
+	DateFounded   sql.NullTime
+	Description   string
+	FactionID     sql.NullInt64
+	HomeStationID sql.NullInt64
+	MemberCount   int64
+	Name          string
+	Shares        sql.NullInt64
+	TaxRate       float64
+	Ticker        string
+	Url           string
+	WarEligible   bool
 }
 
 type EveDogmaAttribute struct {

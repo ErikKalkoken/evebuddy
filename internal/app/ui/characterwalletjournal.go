@@ -130,7 +130,7 @@ func (a *CharacterWalletJournal) update() {
 	var err error
 	entries := make([]walletJournalEntry, 0)
 	characterID := a.u.currentCharacterID()
-	hasData := a.u.scs.CharacterSectionExists(characterID, app.SectionWalletJournal)
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionWalletJournal)
 	if hasData {
 		entries2, err2 := a.updateEntries(characterID, a.u.services())
 		if err2 != nil {

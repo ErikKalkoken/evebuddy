@@ -2,21 +2,14 @@
 package humanize
 
 import (
-	"errors"
 	"fmt"
 	"math"
-	"net"
-	"net/url"
-	"syscall"
 	"time"
 
-	"github.com/antihax/goesi/esi"
 	"github.com/dustin/go-humanize"
-	"github.com/mattn/go-sqlite3"
 	"golang.org/x/exp/constraints"
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/sso"
 )
 
 // Number returns a humanized number, e.g. 1234 becomes 1.23K
@@ -143,61 +136,6 @@ func OptionalFloat[T float32 | float64](o optional.Optional[T], decimals int, fa
 		return Number(float64(x), decimals)
 	}
 	panic("not implemented")
-}
-
-// Error returns a user friendly error message for an error.
-func Error(err error) string {
-	if err == nil {
-		return "No error"
-	}
-	if errors.Is(err, sso.ErrTokenError) {
-		return "token error"
-	}
-	switch t := err.(type) {
-	case sqlite3.Error:
-		return "database error"
-	case esi.GenericSwaggerError:
-		var detail string
-		switch t2 := t.Model().(type) {
-		case esi.BadRequest:
-			detail = t2.Error_
-		case esi.ErrorLimited:
-			detail = t2.Error_
-		case esi.GatewayTimeout:
-			detail = t2.Error_
-		case esi.Forbidden:
-			detail = t2.Error_
-		case esi.InternalServerError:
-			detail = t2.Error_
-		case esi.ServiceUnavailable:
-			detail = t2.Error_
-		case esi.Unauthorized:
-			detail = t2.Error_
-		default:
-			detail = "General swagger error"
-		}
-		return fmt.Sprintf("%s: %s", err.Error(), detail)
-	case *net.OpError:
-		switch t.Op {
-		case "dial":
-			return "unknown host"
-		case "read":
-			return "connection refused"
-		}
-		return "network error"
-	case syscall.Errno:
-		if t == syscall.ECONNREFUSED {
-			return "connection refused"
-		}
-	case *url.Error:
-		return "network error"
-	case net.Error:
-		if t.Timeout() {
-			return "timeout"
-		}
-		return "network error"
-	}
-	return "general error"
 }
 
 // RomanLetter returns a number as roman letters.

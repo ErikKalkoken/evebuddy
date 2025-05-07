@@ -205,7 +205,7 @@ func (*OverviewCharacters) fetchRows(s services) ([]overviewCharacter, overviewT
 			return nil, totals, err
 		}
 		if total > 0 {
-			cc[i].unreadCount = optional.New(unread)
+			cc[i].unreadCount = optional.From(unread)
 		}
 	}
 	for i, c := range cc {

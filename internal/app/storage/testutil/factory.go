@@ -64,27 +64,27 @@ func (f Factory) CreateCharacter(args ...storage.CreateCharacterParams) *app.Cha
 	}
 	if arg.HomeID.IsEmpty() {
 		x := f.CreateEveLocationStructure()
-		arg.HomeID = optional.New(x.ID)
+		arg.HomeID = optional.From(x.ID)
 	}
 	if arg.LastLoginAt.IsEmpty() {
-		arg.LastLoginAt = optional.New(time.Now())
+		arg.LastLoginAt = optional.From(time.Now())
 	}
 	if arg.LocationID.IsEmpty() {
 		x := f.CreateEveLocationStructure()
-		arg.LocationID = optional.New(x.ID)
+		arg.LocationID = optional.From(x.ID)
 	}
 	if arg.ShipID.IsEmpty() {
 		x := f.CreateEveType()
-		arg.ShipID = optional.New(x.ID)
+		arg.ShipID = optional.From(x.ID)
 	}
 	if arg.TotalSP.IsEmpty() {
-		arg.TotalSP = optional.New(rand.IntN(100_000_000))
+		arg.TotalSP = optional.From(rand.IntN(100_000_000))
 	}
 	if arg.WalletBalance.IsEmpty() {
-		arg.WalletBalance = optional.New(rand.Float64() * 100_000_000_000)
+		arg.WalletBalance = optional.From(rand.Float64() * 100_000_000_000)
 	}
 	if arg.AssetValue.IsEmpty() {
-		arg.AssetValue = optional.New(rand.Float64() * 100_000_000_000)
+		arg.AssetValue = optional.From(rand.Float64() * 100_000_000_000)
 	}
 	err := f.st.CreateCharacter(ctx, arg)
 	if err != nil {
@@ -996,6 +996,164 @@ func (f Factory) CreateCharacterNotification(args ...storage.CreateCharacterNoti
 	return x
 }
 
+func (f Factory) CreateCorporation(corporationID ...int32) *app.Corporation {
+	var id int32
+	if len(corporationID) == 0 {
+		ec := f.CreateEveCorporation()
+		id = ec.ID
+	} else {
+		id = corporationID[0]
+	}
+	err := f.st.CreateCorporation(context.Background(), id)
+	if err != nil {
+		panic(err)
+	}
+	c, err := f.st.GetCorporation(context.Background(), id)
+	if err != nil {
+		panic(err)
+	}
+	return c
+}
+
+func (f Factory) CreateCorporationIndustryJob(args ...storage.UpdateOrCreateCorporationIndustryJobParams) *app.CorporationIndustryJob {
+	ctx := context.TODO()
+	var arg storage.UpdateOrCreateCorporationIndustryJobParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CorporationID == 0 {
+		x := f.CreateCorporation()
+		arg.CorporationID = x.ID
+	}
+	if arg.ActivityID == 0 {
+		activities := []app.IndustryActivity{
+			app.Manufacturing,
+			app.TimeEfficiencyResearch,
+			app.MaterialEfficiencyResearch,
+			app.Copying,
+			app.Invention,
+			app.Reactions,
+		}
+		arg.ActivityID = int32(activities[rand.IntN(len(activities))])
+	}
+	if arg.BlueprintID == 0 {
+		arg.BlueprintID = rand.Int64N(10_000_000)
+	}
+	if arg.BlueprintLocationID == 0 {
+		arg.BlueprintLocationID = rand.Int64N(10_000_000_000)
+	}
+	if arg.BlueprintTypeID == 0 {
+		x := f.CreateEveType()
+		arg.BlueprintTypeID = x.ID
+	}
+	if arg.Duration == 0 {
+		arg.Duration = rand.Int32N(10_000)
+	}
+	if arg.FacilityID == 0 {
+		arg.FacilityID = rand.Int64N(10_000_000_000)
+	}
+	if arg.JobID == 0 {
+		arg.JobID = int32(f.calcNewIDWithCorporation(
+			"corporation_industry_jobs",
+			"job_id",
+			arg.CorporationID,
+		))
+	}
+	if arg.InstallerID == 0 {
+		x := f.CreateEveEntityCharacter()
+		arg.InstallerID = x.ID
+	}
+	if arg.OutputLocationID == 0 {
+		arg.OutputLocationID = rand.Int64N(10_000_000_000)
+	}
+	if arg.Runs == 0 {
+		arg.Runs = rand.Int32N(50)
+	}
+	if arg.LocationID == 0 {
+		x := f.CreateEveLocationStructure()
+		arg.LocationID = x.ID
+	}
+	if arg.Status == 0 {
+		items := []app.IndustryJobStatus{
+			app.JobActive,
+			app.JobCancelled,
+			app.JobDelivered,
+			app.JobPaused,
+			app.JobReady,
+			app.JobReverted,
+		}
+		arg.Status = items[rand.IntN(len(items))]
+	}
+	now := time.Now().UTC()
+	if arg.StartDate.IsZero() {
+		arg.StartDate = now.Add(-time.Duration(rand.IntN(200)+12) * time.Hour)
+	}
+	if arg.EndDate.IsZero() {
+		arg.EndDate = now.Add(time.Duration(rand.IntN(200)+12) * time.Hour)
+	}
+	err := f.st.UpdateOrCreateCorporationIndustryJob(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetCorporationIndustryJob(ctx, arg.CorporationID, arg.JobID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
+type CorporationSectionStatusParams struct {
+	Comment       string
+	CorporationID int32
+	Section       app.CorporationSection
+	ErrorMessage  string
+	CompletedAt   time.Time
+	StartedAt     time.Time
+	Data          any
+}
+
+func (f Factory) CreateCorporationSectionStatus(args ...CorporationSectionStatusParams) *app.CorporationSectionStatus {
+	ctx := context.TODO()
+	var arg CorporationSectionStatusParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CorporationID == 0 {
+		c := f.CreateCorporation()
+		arg.CorporationID = c.ID
+	}
+	if arg.Section == "" {
+		panic("must define a section in test factory")
+	}
+	if arg.Data == "" {
+		arg.Data = fmt.Sprintf("content-hash-%d-%s-%s", arg.CorporationID, arg.Section, time.Now())
+	}
+	if arg.CompletedAt.IsZero() {
+		arg.CompletedAt = time.Now()
+	}
+	if arg.StartedAt.IsZero() {
+		arg.StartedAt = time.Now().Add(-1 * time.Duration(rand.IntN(60)) * time.Second)
+	}
+	hash, err := calcContentHash(arg.Data)
+	if err != nil {
+		panic(err)
+	}
+	t := storage.NewNullTimeFromTime(arg.CompletedAt)
+	arg2 := storage.UpdateOrCreateCorporationSectionStatusParams{
+		Comment:       &arg.Comment,
+		CorporationID: arg.CorporationID,
+		Section:       arg.Section,
+		ErrorMessage:  &arg.ErrorMessage,
+		CompletedAt:   &t,
+		ContentHash:   &hash,
+	}
+	o, err := f.st.UpdateOrCreateCorporationSectionStatus(ctx, arg2)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *app.EveCharacter {
 	ctx := context.TODO()
 	var arg storage.CreateEveCharacterParams
@@ -1027,6 +1185,45 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *a
 		panic(err)
 	}
 	c, err := f.st.GetEveCharacter(ctx, arg.ID)
+	if err != nil {
+		panic(err)
+	}
+	return c
+}
+
+func (f Factory) CreateEveCorporation(args ...storage.UpdateOrCreateEveCorporationParams) *app.EveCorporation {
+	var arg storage.UpdateOrCreateEveCorporationParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ID == 0 {
+		arg.ID = int32(f.calcNewID("eve_corporations", "id", startIDCorporation))
+	}
+	if arg.Name == "" {
+		arg.Name = fake.Company()
+	}
+	if arg.CeoID.IsEmpty() {
+		c := f.CreateEveEntityCharacter()
+		arg.CeoID.Set(c.ID)
+	}
+	if arg.CreatorID.IsEmpty() {
+		c := f.CreateEveEntityCharacter()
+		arg.CreatorID.Set(c.ID)
+	}
+	if arg.DateFounded.IsEmpty() {
+		arg.DateFounded = optional.From(time.Now().Add(-100 * time.Hour))
+	}
+	if arg.Description == "" {
+		arg.Description = fake.Paragraphs()
+	}
+	if arg.MemberCount == 0 {
+		arg.MemberCount = rand.Int32N(1000 + 1)
+	}
+	err := f.st.UpdateOrCreateEveCorporation(context.Background(), arg)
+	if err != nil {
+		panic(err)
+	}
+	c, err := f.st.GetEveCorporation(context.Background(), arg.ID)
 	if err != nil {
 		panic(err)
 	}
@@ -1143,13 +1340,8 @@ func (f Factory) CreateEveEntityCorporation(args ...app.EveEntity) *app.EveEntit
 	return f.CreateEveEntity(args2...)
 }
 
-func (f Factory) CreateEveEntitySolarSystem(args ...app.EveEntity) *app.EveEntity {
-	args2 := eveEntityWithCategory(args, app.EveEntitySolarSystem)
-	return f.CreateEveEntity(args2...)
-}
-
-func (f Factory) CreateEveEntityInventoryType(args ...app.EveEntity) *app.EveEntity {
-	args2 := eveEntityWithCategory(args, app.EveEntityInventoryType)
+func (f Factory) CreateEveEntityWithCategory(c app.EveEntityCategory, args ...app.EveEntity) *app.EveEntity {
+	args2 := eveEntityWithCategory(args, c)
 	return f.CreateEveEntity(args2...)
 }
 
@@ -1536,11 +1728,11 @@ func (f Factory) createEveLocationStructure(startID int64, categoryID int32, isE
 	}
 	if !isEmpty && arg.EveSolarSystemID.IsEmpty() {
 		x := f.CreateEveSolarSystem()
-		arg.EveSolarSystemID = optional.New(x.ID)
+		arg.EveSolarSystemID = optional.From(x.ID)
 	}
 	if !isEmpty && arg.OwnerID.IsEmpty() {
 		x := f.CreateEveEntityCorporation()
-		arg.OwnerID = optional.New(x.ID)
+		arg.OwnerID = optional.From(x.ID)
 	}
 	if !isEmpty && arg.EveTypeID.IsEmpty() {
 		ec, err := f.st.GetEveCategory(ctx, categoryID)
@@ -1553,7 +1745,7 @@ func (f Factory) createEveLocationStructure(startID int64, categoryID int32, isE
 		}
 		eg := f.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: ec.ID})
 		et := f.CreateEveType(storage.CreateEveTypeParams{GroupID: eg.ID})
-		arg.EveTypeID = optional.New(et.ID)
+		arg.EveTypeID = optional.From(et.ID)
 	}
 	if arg.UpdatedAt.IsZero() {
 		arg.UpdatedAt = time.Now()
@@ -1595,6 +1787,41 @@ func (f Factory) CreateEveMarketPrice(args ...storage.UpdateOrCreateEveMarketPri
 	return o
 }
 
+func (f *Factory) CreateToken(args ...app.Token) *app.Token {
+	o := &app.Token{
+		AccessToken:   "AccessToken",
+		CharacterID:   42,
+		CharacterName: "Bruce Wayne",
+		ExpiresAt:     time.Now().Add(20 * time.Minute),
+		RefreshToken:  "RefreshToken",
+		Scopes:        []string{},
+		TokenType:     "Character",
+	}
+	if len(args) == 0 {
+		return o
+	}
+	a := args[0]
+	if a.AccessToken != "" {
+		o.AccessToken = a.AccessToken
+	}
+	if a.RefreshToken != "" {
+		o.RefreshToken = a.RefreshToken
+	}
+	if a.CharacterName != "" {
+		o.CharacterName = a.CharacterName
+	}
+	if a.CharacterID != 0 {
+		o.CharacterID = a.CharacterID
+	}
+	if !a.ExpiresAt.IsZero() {
+		o.ExpiresAt = a.ExpiresAt
+	}
+	if len(a.Scopes) > 0 {
+		o.Scopes = a.Scopes
+	}
+	return o
+}
+
 func (f *Factory) calcNewID(table, id_field string, start int64) int64 {
 	if start < 1 {
 		panic("start must be a positive number")
@@ -1610,6 +1837,15 @@ func (f *Factory) calcNewIDWithCharacter(table, id_field string, characterID int
 	var max sql.NullInt64
 	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE character_id = ?;", id_field, table)
 	if err := f.dbRO.QueryRow(sql, characterID).Scan(&max); err != nil {
+		panic(err)
+	}
+	return max.Int64 + 1
+}
+
+func (f *Factory) calcNewIDWithCorporation(table, id_field string, corporationID int32) int64 {
+	var max sql.NullInt64
+	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE corporation_id = ?;", id_field, table)
+	if err := f.dbRO.QueryRow(sql, corporationID).Scan(&max); err != nil {
 		panic(err)
 	}
 	return max.Int64 + 1

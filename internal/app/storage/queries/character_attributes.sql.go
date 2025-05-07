@@ -11,9 +11,12 @@ import (
 )
 
 const getCharacterAttributes = `-- name: GetCharacterAttributes :one
-SELECT id, bonus_remaps, character_id, charisma, intelligence, last_remap_date, memory, perception, willpower
-FROM character_attributes
-WHERE character_id = ?1
+SELECT
+    id, bonus_remaps, character_id, charisma, intelligence, last_remap_date, memory, perception, willpower
+FROM
+    character_attributes
+WHERE
+    character_id = ?1
 `
 
 func (q *Queries) GetCharacterAttributes(ctx context.Context, characterID int64) (CharacterAttribute, error) {
@@ -34,21 +37,21 @@ func (q *Queries) GetCharacterAttributes(ctx context.Context, characterID int64)
 }
 
 const updateOrCreateCharacterAttributes = `-- name: UpdateOrCreateCharacterAttributes :exec
-INSERT INTO character_attributes (
-    character_id,
-    bonus_remaps,
-    charisma,
-    intelligence,
-    last_remap_date,
-    memory,
-    perception,
-    willpower
-)
-VALUES (
-    ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8
-)
-ON CONFLICT(character_id) DO
-UPDATE SET
+INSERT INTO
+    character_attributes (
+        character_id,
+        bonus_remaps,
+        charisma,
+        intelligence,
+        last_remap_date,
+        memory,
+        perception,
+        willpower
+    )
+VALUES
+    (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+ON CONFLICT (character_id) DO UPDATE
+SET
     bonus_remaps = ?2,
     charisma = ?3,
     intelligence = ?4,
@@ -56,7 +59,6 @@ UPDATE SET
     memory = ?6,
     perception = ?7,
     willpower = ?8
-WHERE character_id = ?1
 `
 
 type UpdateOrCreateCharacterAttributesParams struct {

@@ -2,6 +2,7 @@ package storage_test
 
 import (
 	"context"
+	"slices"
 	"testing"
 	"time"
 
@@ -9,6 +10,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -56,8 +59,8 @@ func TestCharacterIndustryJob(t *testing.T) {
 				assert.EqualValues(
 					t, &app.EveLocationShort{
 						ID:             blueprintLocation.ID,
-						Name:           optional.New(blueprintLocation.Name),
-						SecurityStatus: optional.New(blueprintLocation.SolarSystem.SecurityStatus),
+						Name:           optional.From(blueprintLocation.Name),
+						SecurityStatus: optional.From(blueprintLocation.SolarSystem.SecurityStatus),
 					},
 					o.BlueprintLocation,
 				)
@@ -67,8 +70,8 @@ func TestCharacterIndustryJob(t *testing.T) {
 				assert.EqualValues(
 					t, &app.EveLocationShort{
 						ID:             facility.ID,
-						Name:           optional.New(facility.Name),
-						SecurityStatus: optional.New(facility.SolarSystem.SecurityStatus),
+						Name:           optional.From(facility.Name),
+						SecurityStatus: optional.From(facility.SolarSystem.SecurityStatus),
 					},
 					o.Facility,
 				)
@@ -76,8 +79,8 @@ func TestCharacterIndustryJob(t *testing.T) {
 				assert.EqualValues(
 					t, &app.EveLocationShort{
 						ID:             outputLocation.ID,
-						Name:           optional.New(outputLocation.Name),
-						SecurityStatus: optional.New(outputLocation.SolarSystem.SecurityStatus),
+						Name:           optional.From(outputLocation.Name),
+						SecurityStatus: optional.From(outputLocation.SolarSystem.SecurityStatus),
 					},
 					o.OutputLocation,
 				)
@@ -87,8 +90,8 @@ func TestCharacterIndustryJob(t *testing.T) {
 				assert.EqualValues(
 					t, &app.EveLocationShort{
 						ID:             station.ID,
-						Name:           optional.New(station.Name),
-						SecurityStatus: optional.New(station.SolarSystem.SecurityStatus),
+						Name:           optional.From(station.Name),
+						SecurityStatus: optional.From(station.SolarSystem.SecurityStatus),
 					},
 					o.Station,
 				)
@@ -242,19 +245,17 @@ func TestCharacterIndustryJob(t *testing.T) {
 	t.Run("can list jobs for all characters", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
-		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			CharacterID: c.ID,
-		})
-		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			CharacterID: c.ID,
-		})
-		factory.CreateCharacterIndustryJob()
+		j1 := factory.CreateCharacterIndustryJob()
+		j2 := factory.CreateCharacterIndustryJob()
 		// when
-		x, err := st.ListAllCharacterIndustryJob(ctx)
+		s, err := st.ListAllCharacterIndustryJob(ctx)
 		// then
 		if assert.NoError(t, err) {
-			assert.Len(t, x, 3)
+			want := set.Of(j1.JobID, j2.JobID)
+			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterIndustryJob) int32 {
+				return x.JobID
+			}))
+			assert.True(t, got.Equal(want))
 		}
 	})
 	t.Run("can get jobs with incomplete locations", func(t *testing.T) {

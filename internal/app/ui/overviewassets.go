@@ -350,7 +350,7 @@ func (a *OverviewAssets) characterCount() int {
 	cc := a.u.scs.ListCharacters()
 	validCount := 0
 	for _, c := range cc {
-		if a.u.scs.CharacterSectionExists(c.ID, app.SectionAssets) {
+		if a.u.scs.HasCharacterSection(c.ID, app.SectionAssets) {
 			validCount++
 		}
 	}

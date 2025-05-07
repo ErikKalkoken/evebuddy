@@ -327,14 +327,16 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 	}
 	u.industryJobsActive.OnUpdate = func(count int) {
 		s := "Active"
-		c := ihumanize.Comma(count)
+		var badge string
 		if count > 0 {
-			s += fmt.Sprintf(" (%s)", c)
+			x := ihumanize.Comma(count)
+			s += fmt.Sprintf(" (%s)", x)
+			badge = fmt.Sprintf("%s jobs ready", x)
 		}
 		fyne.Do(func() {
 			jobsActive.Text = s
 			jobsTab.Refresh()
-			navItemIndustry.Supporting = fmt.Sprintf("%s jobs ready", c)
+			navItemIndustry.Supporting = badge
 			crossList.Refresh()
 		})
 	}

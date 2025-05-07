@@ -8,11 +8,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func TestToken(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -29,7 +31,7 @@ func TestToken(t *testing.T) {
 			TokenType:    "xxx",
 		}
 		// when
-		err := r.UpdateOrCreateCharacterToken(ctx, &o1)
+		err := st.UpdateOrCreateCharacterToken(ctx, &o1)
 		// then
 		assert.NoError(t, err)
 		assert.Equal(t, "access", o1.AccessToken)
@@ -37,7 +39,7 @@ func TestToken(t *testing.T) {
 		assert.Equal(t, now.UTC(), o1.ExpiresAt.UTC())
 		assert.Equal(t, []string{"alpha", "bravo"}, o1.Scopes)
 		assert.Equal(t, "xxx", o1.TokenType)
-		o2, err := r.GetCharacterToken(ctx, c.ID)
+		o2, err := st.GetCharacterToken(ctx, c.ID)
 		if assert.NoError(t, err) {
 			assert.Equal(t, o1.AccessToken, o2.AccessToken)
 			assert.Equal(t, c.ID, o2.CharacterID)
@@ -51,7 +53,7 @@ func TestToken(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterToken()
 		// when
-		r, err := r.GetCharacterToken(ctx, c.CharacterID)
+		r, err := st.GetCharacterToken(ctx, c.CharacterID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c.AccessToken, r.AccessToken)
@@ -69,10 +71,10 @@ func TestToken(t *testing.T) {
 		o1.AccessToken = "changed"
 		o1.Scopes = []string{"alpha", "bravo"}
 		// when
-		err := r.UpdateOrCreateCharacterToken(ctx, o1)
+		err := st.UpdateOrCreateCharacterToken(ctx, o1)
 		// then
 		assert.NoError(t, err)
-		o2, err := r.GetCharacterToken(ctx, c.ID)
+		o2, err := st.GetCharacterToken(ctx, c.ID)
 		if assert.NoError(t, err) {
 			assert.Equal(t, o1.AccessToken, o2.AccessToken)
 			assert.Equal(t, c.ID, o2.CharacterID)
@@ -87,8 +89,46 @@ func TestToken(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
-		_, err := r.GetCharacterToken(ctx, c.ID)
+		_, err := st.GetCharacterToken(ctx, c.ID)
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+	t.Run("list for corporation", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		corp1 := factory.CreateEveEntityCorporation()
+		corp2 := factory.CreateEveEntityCorporation()
+
+		// token with correct corp and role
+		ec1 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: corp1.ID})
+		c1 := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec1.ID})
+		if err := st.UpdateCharacterRoles(ctx, c1.ID, set.Of(app.RoleFactoryManager)); err != nil {
+			panic(err)
+		}
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c1.ID})
+
+		// token with correct corp and wrong role
+		ec2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: corp1.ID})
+		c2 := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec2.ID})
+		if err := st.UpdateCharacterRoles(ctx, c2.ID, set.Of(app.RoleAccountant)); err != nil {
+			panic(err)
+		}
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c2.ID})
+
+		// token with wrong corp and correct role
+		ec3 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: corp2.ID})
+		c3 := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec3.ID})
+		if err := st.UpdateCharacterRoles(ctx, c3.ID, set.Of(app.RoleAccountant)); err != nil {
+			panic(err)
+		}
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c3.ID})
+
+		// when
+		r, err := st.ListCharacterTokenForCorporation(ctx, c1.EveCharacter.Corporation.ID, app.RoleFactoryManager)
+		// then
+		if assert.NoError(t, err) {
+			assert.Len(t, r, 1)
+			assert.Equal(t, c1.ID, r[0].CharacterID)
+		}
 	})
 }

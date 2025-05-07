@@ -6,39 +6,24 @@ import (
 	"testing"
 	"time"
 
+	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/test"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
-func newCharacterService(st *storage.Storage) *characterservice.CharacterService {
-	scs := statuscacheservice.New(memcache.New(), st)
-	eus := eveuniverseservice.New(eveuniverseservice.Params{
-		StatusCacheService: scs,
-		Storage:            st,
-	})
-	s := characterservice.New(characterservice.Params{
-		EveUniverseService: eus,
-		StatusCacheService: scs,
-		Storage:            st,
-	})
-	return s
-}
-
 func TestGetCharacter(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := newCharacterService(st)
+	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should return own error when object not found", func(t *testing.T) {
 		// given
@@ -64,7 +49,7 @@ func TestGetCharacter(t *testing.T) {
 func TestGetAnyCharacter(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := newCharacterService(st)
+	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should return own error when object not found", func(t *testing.T) {
 		// given
@@ -87,10 +72,93 @@ func TestGetAnyCharacter(t *testing.T) {
 	})
 }
 
+type ssoFake struct {
+	token *app.Token
+	err   error
+}
+
+func (s ssoFake) Authenticate(ctx context.Context, scopes []string) (*app.Token, error) {
+	return s.token, s.err
+}
+
+func (s ssoFake) RefreshToken(ctx context.Context, refreshToken string) (*app.Token, error) {
+	return s.token, s.err
+}
+
+func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
+	db, st, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	test.NewTempApp(t)
+	t.Run("create new character", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		corporation := factory.CreateEveCorporation()
+		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: corporation.ID})
+		character := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+			CorporationID: corporation.ID,
+		})
+		cs := characterservice.NewFake(st, characterservice.Params{
+			SSOService: ssoFake{token: factory.CreateToken(app.Token{
+				CharacterID:   character.ID,
+				CharacterName: character.Name})},
+		})
+		var info string
+		b := binding.BindString(&info)
+		got, err := cs.UpdateOrCreateCharacterFromSSO(ctx, b)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, character.ID, got)
+			ok, err := cs.HasCharacter(ctx, character.ID)
+			if assert.NoError(t, err) {
+				assert.True(t, ok)
+			}
+			token, err := st.GetCharacterToken(ctx, character.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, token.CharacterID, character.ID)
+			}
+			x, err := st.GetCorporation(ctx, corporation.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, corporation, x.Corporation)
+			}
+		}
+	})
+	t.Run("update existing character", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		corporation := factory.CreateEveCorporation()
+		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: corporation.ID})
+		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+			CorporationID: corporation.ID,
+		})
+		c := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
+		factory.CreateCharacterToken(app.CharacterToken{
+			AccessToken: "oldToken",
+			CharacterID: c.ID,
+		})
+		cs := characterservice.NewFake(st, characterservice.Params{
+			SSOService: ssoFake{token: factory.CreateToken(app.Token{
+				CharacterID:   c.ID,
+				CharacterName: c.EveCharacter.Name})},
+		})
+		var info string
+		b := binding.BindString(&info)
+		got, err := cs.UpdateOrCreateCharacterFromSSO(ctx, b)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, c.ID, got)
+			token, err := st.GetCharacterToken(ctx, c.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, token.CharacterID, c.ID)
+			}
+		}
+	})
+}
+
 func TestTrainingWatchers(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := newCharacterService(st)
+	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should enable watchers for characters with active queues only", func(t *testing.T) {
 		// given
@@ -165,7 +233,7 @@ func TestTrainingWatchers(t *testing.T) {
 func TestNotifyUpdatedContracts(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := newCharacterService(st)
+	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	const characterID = 7
 	earliest := time.Now().UTC().Add(-6 * time.Hour)
@@ -224,7 +292,7 @@ func TestUpdateMail(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := characterservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("Can fetch new mail", func(t *testing.T) {
 		// given
@@ -473,7 +541,7 @@ func TestUpdateMail(t *testing.T) {
 func TestNotifyMails(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := newCharacterService(st)
+	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	now := time.Now().UTC()
 	earliest := now.Add(-12 * time.Hour)
@@ -514,7 +582,7 @@ func TestSendMail(t *testing.T) {
 	ctx := context.Background()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := characterservice.NewFake(st)
 	t.Run("Can send mail", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -543,7 +611,7 @@ func TestSendMail(t *testing.T) {
 func TestNotifyCommunications(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := newCharacterService(st)
+	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	now := time.Now().UTC()
 	earliest := now.Add(-12 * time.Hour)
@@ -566,8 +634,8 @@ func TestNotifyCommunications(t *testing.T) {
 			testutil.TruncateTables(db)
 			n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 				IsProcessed: tc.isProcessed,
-				Title:       optional.New("title"),
-				Body:        optional.New("body"),
+				Title:       optional.From("title"),
+				Body:        optional.From("body"),
 				Type:        string(tc.typ),
 				Timestamp:   tc.timestamp,
 			})
@@ -588,7 +656,7 @@ func TestCountNotificatios(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
 	// given
-	cs := newCharacterService(st)
+	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	c := factory.CreateCharacter()
 	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
@@ -619,7 +687,7 @@ func TestCountNotificatios(t *testing.T) {
 func TestNotifyExpiredExtractions(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := newCharacterService(st)
+	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	now := time.Now().UTC()
 	earliest := now.Add(-24 * time.Hour)
@@ -649,7 +717,7 @@ func TestNotifyExpiredExtractions(t *testing.T) {
 				factory.CreatePlanetPinExtractor(storage.CreatePlanetPinParams{
 					CharacterPlanetID:      p.ID,
 					ExpiryTime:             tc.expiryTime,
-					ExtractorProductTypeID: optional.New(product.ID),
+					ExtractorProductTypeID: optional.From(product.ID),
 				})
 			} else {
 				factory.CreatePlanetPin(storage.CreatePlanetPinParams{
@@ -675,7 +743,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
+	s := characterservice.NewFake(st)
 	section := app.SectionImplants
 	ctx := context.Background()
 	t.Run("should report true when changed", func(t *testing.T) {
@@ -697,7 +765,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			assert.True(t, changed)
 			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
-				assert.True(t, x.IsOK())
+				assert.False(t, x.HasError())
 			}
 		}
 	})
@@ -783,7 +851,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		if assert.Error(t, err) {
 			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
-				assert.False(t, x.IsOK())
+				assert.True(t, x.HasError())
 				assert.Equal(t, "500 Internal Server Error", x.ErrorMessage)
 			}
 		}
@@ -861,7 +929,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := newCharacterService(st)
+	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("send notification when watched & expired", func(t *testing.T) {
 		// given
@@ -904,6 +972,51 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, sendCount, 0)
+		}
+	})
+}
+
+func TestDeleteCharacter(t *testing.T) {
+	db, st, factory := testutil.New()
+	defer db.Close()
+	cs := characterservice.NewFake(st)
+	ctx := context.Background()
+	t.Run("delete character and delete corporation when it has no members anymore", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		ec := factory.CreateEveCorporation()
+		corporation := factory.CreateCorporation(ec.ID)
+		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
+		x := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
+		character := factory.CreateCharacter(storage.CreateCharacterParams{ID: x.ID})
+		// when
+		err := cs.DeleteCharacter(ctx, character.ID)
+		// then
+		if assert.NoError(t, err) {
+			_, err = st.GetCharacter(ctx, character.ID)
+			assert.ErrorIs(t, err, app.ErrNotFound)
+			_, err = st.GetCorporation(ctx, corporation.ID)
+			assert.ErrorIs(t, err, app.ErrNotFound)
+		}
+	})
+	t.Run("delete character and keep corporation when it still has members", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		ec := factory.CreateEveCorporation()
+		corporation := factory.CreateCorporation(ec.ID)
+		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
+		x1 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
+		character := factory.CreateCharacter(storage.CreateCharacterParams{ID: x1.ID})
+		x2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
+		factory.CreateCharacter(storage.CreateCharacterParams{ID: x2.ID})
+		// when
+		err := cs.DeleteCharacter(ctx, character.ID)
+		// then
+		if assert.NoError(t, err) {
+			_, err = st.GetCharacter(ctx, character.ID)
+			assert.ErrorIs(t, err, app.ErrNotFound)
+			_, err = st.GetCorporation(ctx, corporation.ID)
+			assert.NoError(t, err)
 		}
 	})
 }

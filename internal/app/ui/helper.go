@@ -3,7 +3,6 @@ package ui
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
 // makeGridOrList makes and returns a GridWrap on desktop and a List on mobile.
@@ -25,11 +24,4 @@ func makeGridOrList(isMobile bool, length func() int, makeCreateItem func(trunc 
 		})
 	}
 	return w
-}
-
-func EntityNameOrFallback[T int | int32 | int64](e *app.EntityShort[T], fallback string) string {
-	if e == nil {
-		return fallback
-	}
-	return e.Name
 }

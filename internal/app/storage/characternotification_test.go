@@ -54,14 +54,14 @@ func TestCharacterNotification(t *testing.T) {
 		timestamp := time.Now().UTC()
 		sender := factory.CreateEveEntityCharacter()
 		arg := storage.CreateCharacterNotificationParams{
-			Body:           optional.New("body"),
+			Body:           optional.From("body"),
 			CharacterID:    c.ID,
 			IsRead:         true,
 			NotificationID: 42,
 			SenderID:       sender.ID,
 			Text:           "text",
 			Timestamp:      timestamp,
-			Title:          optional.New("title"),
+			Title:          optional.From("title"),
 			Type:           "type",
 		}
 		// when
@@ -152,7 +152,7 @@ func TestCharacterNotification(t *testing.T) {
 		// when
 		err := r.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{
 			ID:    n.ID,
-			Title: optional.New("title"),
+			Title: optional.From("title"),
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -169,7 +169,7 @@ func TestCharacterNotification(t *testing.T) {
 		// when
 		err := r.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{
 			ID:   n.ID,
-			Body: optional.New("body"),
+			Body: optional.From("body"),
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -242,12 +242,12 @@ func TestCharacterNotification(t *testing.T) {
 		c := factory.CreateCharacter()
 		now := time.Now().UTC()
 		o := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-			Body:        optional.New("title"),
+			Body:        optional.From("title"),
 			CharacterID: c.ID,
 			IsProcessed: false,
 			Type:        "bravo",
 			Timestamp:   now,
-			Title:       optional.New("title"),
+			Title:       optional.From("title"),
 		})
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 			CharacterID: c.ID,
@@ -261,12 +261,12 @@ func TestCharacterNotification(t *testing.T) {
 			Timestamp:   now,
 		})
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-			Body:        optional.New("title"),
+			Body:        optional.From("title"),
 			CharacterID: c.ID,
 			IsProcessed: false,
 			Type:        "bravo",
 			Timestamp:   now.Add(-25 * time.Hour),
-			Title:       optional.New("title"),
+			Title:       optional.From("title"),
 		})
 		// when
 		ee, err := r.ListCharacterNotificationsUnprocessed(ctx, c.ID, now.Add(-24*time.Hour))

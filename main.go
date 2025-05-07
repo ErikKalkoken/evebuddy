@@ -31,11 +31,13 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -43,7 +45,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
-	"github.com/ErikKalkoken/evebuddy/internal/sso"
 )
 
 const (
@@ -110,6 +111,8 @@ func main() {
 		fmt.Println(fyneApp.Metadata().Version)
 		return
 	}
+
+	log.Printf("INFO EVE Buddy version=%s", fyneApp.Metadata().Version)
 
 	// set log level from settings
 	if *logLevelFlag == "" {
@@ -235,25 +238,32 @@ func main() {
 	}
 	// Init EveUniverse service
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
-		Storage:            st,
 		ESIClient:          esiClient,
 		StatusCacheService: scs,
+		Storage:            st,
 	})
-
-	// Init EveNotification service
-	en := evenotification.New(eus)
 
 	// Init Character service
 	ssoService := sso.New(ssoClientID, rhc.StandardClient())
 	ssoService.OpenURL = fyneApp.OpenURL
 	cs := characterservice.New(characterservice.Params{
-		Storage:                st,
-		HttpClient:             rhc.StandardClient(),
 		EsiClient:              esiClient,
-		EveNotificationService: en,
+		EveNotificationService: evenotification.New(eus),
 		EveUniverseService:     eus,
-		StatusCacheService:     scs,
+		HttpClient:             rhc.StandardClient(),
 		SSOService:             ssoService,
+		StatusCacheService:     scs,
+		Storage:                st,
+	})
+
+	// Init Corporation service
+	rs := corporationservice.New(corporationservice.Params{
+		CharacterService:   cs,
+		EsiClient:          esiClient,
+		EveUniverseService: eus,
+		HttpClient:         rhc.StandardClient(),
+		StatusCacheService: scs,
+		Storage:            st,
 	})
 
 	// Init UI
@@ -265,14 +275,15 @@ func main() {
 	bu := ui.NewBaseUI(ui.BaseUIParams{
 		App:                fyneApp,
 		CharacterService:   cs,
-		EveImageService:    eveimageservice.New(pc, rhc.StandardClient(), *offlineFlag),
+		CorporationService: rs,
 		ESIStatusService:   esistatusservice.New(esiClient),
+		EveImageService:    eveimageservice.New(pc, rhc.StandardClient(), *offlineFlag),
 		EveUniverseService: eus,
-		JaniceService:      janiceservice.New(rhc.StandardClient(), key),
-		StatusCacheService: scs,
-		MemCache:           memCache,
 		IsOffline:          *offlineFlag,
 		IsUpdateDisabled:   *disableUpdatesFlag,
+		JaniceService:      janiceservice.New(rhc.StandardClient(), key),
+		MemCache:           memCache,
+		StatusCacheService: scs,
 		DataPaths: map[string]string{
 			"db":        dbPath,
 			"log":       logFilePath,

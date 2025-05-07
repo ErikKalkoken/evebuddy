@@ -23,9 +23,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -66,11 +66,10 @@ func (s *EveUniverseService) FetchAlliance(ctx context.Context, allianceID int32
 	if err != nil {
 		return nil, err
 	}
-	ids := slices.DeleteFunc(
-		[]int32{allianceID, a.CreatorCorporationId, a.CreatorId, a.ExecutorCorporationId, a.FactionId},
-		func(id int32) bool {
-			return id < 2
-		})
+	ids := set.Of(allianceID, a.CreatorCorporationId, a.CreatorId, a.ExecutorCorporationId, a.FactionId)
+	ids.DeleteFunc(func(id int32) bool {
+		return id < 2
+	})
 	eeMap, err := s.ToEntities(ctx, ids)
 	if err != nil {
 		return nil, err
@@ -97,7 +96,7 @@ func (s *EveUniverseService) FetchAllianceCorporations(ctx context.Context, alli
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.AddMissingEntities(ctx, slices.Concat(ids, []int32{allianceID}))
+	_, err = s.AddMissingEntities(ctx, set.Of(slices.Concat(ids, []int32{allianceID})...))
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +121,22 @@ func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, id int
 func (s *EveUniverseService) createCharacterFromESI(ctx context.Context, id int32) (*app.EveCharacter, error) {
 	key := fmt.Sprintf("createCharacterFromESI-%d", id)
 	y, err, _ := s.sfg.Do(key, func() (any, error) {
-		r, err := s.fetchCharacterFromESI(ctx, id)
+		r, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, id, nil)
+		if err != nil {
+			return nil, err
+		}
+		ids := set.Of(id, r.CorporationId)
+		if r.AllianceId != 0 {
+			ids.Add(r.AllianceId)
+		}
+		if r.FactionId != 0 {
+			ids.Add(r.FactionId)
+		}
+		_, err = s.AddMissingEntities(ctx, ids)
+		if err != nil {
+			return nil, err
+		}
+		_, err = s.GetOrCreateRaceESI(ctx, r.RaceId)
 		if err != nil {
 			return nil, err
 		}
@@ -150,29 +164,6 @@ func (s *EveUniverseService) createCharacterFromESI(ctx context.Context, id int3
 	return y.(*app.EveCharacter), nil
 }
 
-func (s *EveUniverseService) fetchCharacterFromESI(ctx context.Context, id int32) (esi.GetCharactersCharacterIdOk, error) {
-	r, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, id, nil)
-	if err != nil {
-		return esi.GetCharactersCharacterIdOk{}, err
-	}
-	ids := []int32{id, r.CorporationId}
-	if r.AllianceId != 0 {
-		ids = append(ids, r.AllianceId)
-	}
-	if r.FactionId != 0 {
-		ids = append(ids, r.FactionId)
-	}
-	_, err = s.AddMissingEntities(ctx, ids)
-	if err != nil {
-		return esi.GetCharactersCharacterIdOk{}, err
-	}
-	_, err = s.GetOrCreateRaceESI(ctx, r.RaceId)
-	if err != nil {
-		return esi.GetCharactersCharacterIdOk{}, err
-	}
-	return r, nil
-}
-
 // UpdateAllCharactersESI updates all known Eve characters from ESI.
 func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) error {
 	ids, err := s.st.ListEveCharacterIDs(ctx)
@@ -182,9 +173,8 @@ func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) error {
 	if ids.Size() == 0 {
 		return nil
 	}
-	slog.Info("Started updating eve characters", "count", ids.Size())
 	g := new(errgroup.Group)
-	g.SetLimit(10)
+	g.SetLimit(5)
 	for id := range ids.All() {
 		id := id
 		g.Go(func() error {
@@ -192,7 +182,7 @@ func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) error {
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return fmt.Errorf("update EveCharacters: %w", err)
+		return err
 	}
 	slog.Info("Finished updating eve characters", "count", ids.Size())
 	return nil
@@ -213,15 +203,7 @@ func (s *EveUniverseService) updateCharacterESI(ctx context.Context, characterID
 			return nil
 		}
 		r := rr[0]
-		entityIDs := []int32{c.ID}
-		entityIDs = append(entityIDs, r.CorporationId)
-		if r.AllianceId != 0 {
-			entityIDs = append(entityIDs, r.AllianceId)
-		}
-		if r.FactionId != 0 {
-			entityIDs = append(entityIDs, r.FactionId)
-		}
-		_, err = s.AddMissingEntities(ctx, entityIDs)
+		_, err = s.AddMissingEntities(ctx, set.Of(c.ID, r.CorporationId, r.AllianceId, r.FactionId))
 		if err != nil {
 			return err
 		}
@@ -266,39 +248,85 @@ func (s *EveUniverseService) updateCharacterESI(ctx context.Context, characterID
 	return nil
 }
 
-func (s *EveUniverseService) GetCorporationESI(ctx context.Context, corporationID int32) (*app.EveCorporation, error) {
-	x, _, err := s.esiClient.ESI.CorporationApi.GetCorporationsCorporationId(ctx, corporationID, nil)
-	if err != nil {
-		return nil, err
+func (s *EveUniverseService) GetOrCreateCorporationESI(ctx context.Context, id int32) (*app.EveCorporation, error) {
+	o, err := s.st.GetEveCorporation(ctx, id)
+	if errors.Is(err, app.ErrNotFound) {
+		return s.updateOrcreateCorporationFromESI(ctx, id)
 	}
-	ids := slices.DeleteFunc(
-		[]int32{corporationID, x.CeoId, x.CreatorId, x.AllianceId, x.FactionId, x.HomeStationId},
-		func(id int32) bool {
+	return o, err
+}
+
+func (s *EveUniverseService) updateOrcreateCorporationFromESI(ctx context.Context, id int32) (*app.EveCorporation, error) {
+	key := fmt.Sprintf("updateOrcreateCorporationFromESI-%d", id)
+	y, err, _ := s.sfg.Do(key, func() (any, error) {
+		r, _, err := s.esiClient.ESI.CorporationApi.GetCorporationsCorporationId(ctx, id, nil)
+		if err != nil {
+			return nil, err
+		}
+		ids := set.Of(id, r.CeoId, r.CreatorId, r.AllianceId, r.FactionId, r.HomeStationId)
+		ids.DeleteFunc(func(id int32) bool {
 			return id < 2
 		})
-	eeMap, err := s.ToEntities(ctx, ids)
+		if _, err := s.AddMissingEntities(ctx, ids); err != nil {
+			return nil, err
+		}
+		optionalFromSpecialEntityID := func(v int32) optional.Optional[int32] {
+			if v == 0 || v == 1 {
+				return optional.Optional[int32]{}
+			}
+			return optional.From(v)
+		}
+		arg := storage.UpdateOrCreateEveCorporationParams{
+			AllianceID:    optional.FromIntegerWithZero(r.AllianceId),
+			CeoID:         optionalFromSpecialEntityID(r.CeoId),
+			CreatorID:     optionalFromSpecialEntityID(r.CreatorId),
+			FactionID:     optional.FromIntegerWithZero(r.FactionId),
+			DateFounded:   optional.FromTimeWithZero(r.DateFounded),
+			Description:   r.Description,
+			HomeStationID: optional.FromIntegerWithZero(r.HomeStationId),
+			ID:            id,
+			MemberCount:   r.MemberCount,
+			Name:          r.Name,
+			Shares:        optional.FromIntegerWithZero(r.Shares),
+			TaxRate:       r.TaxRate,
+			Ticker:        r.Ticker,
+			URL:           r.Url,
+			WarEligible:   r.WarEligible,
+		}
+		if err := s.st.UpdateOrCreateEveCorporation(ctx, arg); err != nil {
+			return nil, err
+		}
+		slog.Info("Updated eve corporation", "ID", arg.ID)
+		return s.st.GetEveCorporation(ctx, id)
+	})
 	if err != nil {
 		return nil, err
 	}
-	o := &app.EveCorporation{
-		Alliance:    eeMap[x.AllianceId],
-		Ceo:         eeMap[x.CeoId],
-		Creator:     eeMap[x.CreatorId],
-		Faction:     eeMap[x.FactionId],
-		DateFounded: x.DateFounded,
-		Description: x.Description,
-		HomeStation: eeMap[x.HomeStationId],
-		ID:          corporationID,
-		MemberCount: int(x.MemberCount),
-		Name:        x.Name,
-		Shares:      int(x.Shares),
-		TaxRate:     x.TaxRate,
-		Ticker:      x.Ticker,
-		URL:         x.Url,
-		WarEligible: x.WarEligible,
-		Timestamp:   time.Now().UTC(),
+	return y.(*app.EveCorporation), nil
+}
+
+// UpdateAllCorporationsESI updates all known corporations from ESI.
+func (s *EveUniverseService) UpdateAllCorporationsESI(ctx context.Context) error {
+	ids, err := s.st.ListEveCorporationIDs(ctx)
+	if err != nil {
+		return err
 	}
-	return o, nil
+	if ids.Size() == 0 {
+		return nil
+	}
+	g := new(errgroup.Group)
+	g.SetLimit(5)
+	for id := range ids.All() {
+		g.Go(func() error {
+			_, err := s.updateOrcreateCorporationFromESI(ctx, id)
+			return err
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return err
+	}
+	slog.Info("Finished updating eve corporations", "count", ids.Size())
+	return nil
 }
 
 func (s *EveUniverseService) GetDogmaAttribute(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
@@ -467,7 +495,7 @@ func (s *EveUniverseService) GetOrCreateEntityESI(ctx context.Context, id int32)
 	if !errors.Is(err, app.ErrNotFound) {
 		return nil, err
 	}
-	_, err = s.AddMissingEntities(ctx, []int32{id})
+	_, err = s.AddMissingEntities(ctx, set.Of(id))
 	if err != nil {
 		return nil, err
 	}
@@ -476,25 +504,24 @@ func (s *EveUniverseService) GetOrCreateEntityESI(ctx context.Context, id int32)
 
 // ToEntities returns the resolved EveEntities for a list of valid entity IDs.
 // It guarantees a result for every ID and will map unknown IDs (including 0 & 1) to empty EveEntity objects.
-func (s *EveUniverseService) ToEntities(ctx context.Context, ids []int32) (map[int32]*app.EveEntity, error) {
+func (s *EveUniverseService) ToEntities(ctx context.Context, ids set.Set[int32]) (map[int32]*app.EveEntity, error) {
 	r := make(map[int32]*app.EveEntity)
-	if len(ids) == 0 {
+	if ids.Size() == 0 {
 		return r, nil
 	}
-	ids2 := set.Of(ids...)
+	ids2 := ids.Clone()
 	ids2.Delete(0)
-	ids3 := ids2.Slice()
-	if _, err := s.AddMissingEntities(ctx, ids3); err != nil {
+	if _, err := s.AddMissingEntities(ctx, ids2); err != nil {
 		return nil, err
 	}
-	oo, err := s.st.ListEveEntitiesForIDs(ctx, ids3)
+	oo, err := s.st.ListEveEntitiesForIDs(ctx, ids2.Slice())
 	if err != nil {
 		return nil, err
 	}
 	for _, o := range oo {
 		r[o.ID] = o
 	}
-	for _, id := range ids {
+	for id := range ids.All() {
 		_, ok := r[id]
 		if !ok {
 			r[id] = &app.EveEntity{}
@@ -507,15 +534,18 @@ func (s *EveUniverseService) ToEntities(ctx context.Context, ids []int32) (map[i
 // and returns which IDs where indeed missing.
 //
 // Invalid IDs (e.g. 0, 1) will be ignored.
-func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids []int32) ([]int32, error) {
+func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set[int32]) (set.Set[int32], error) {
+	if ids.Size() == 0 {
+		return set.Set[int32]{}, nil
+	}
 	// Filter out known invalid IDs before continuing
-	var badIDs, missingIDs []int32
+	var bad, missing set.Set[int32]
+	ids2 := ids.Clone()
 	err := func() error {
-		ids2 := set.Of(ids...)
 		ids2.Delete(0) // do nothing with ID 0
 		for _, id := range invalidEveEntityIDs {
 			if ids2.Contains(id) {
-				badIDs = append(badIDs, 1)
+				bad.Add(1)
 				ids2.Delete(1)
 			}
 		}
@@ -523,7 +553,8 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids []int32
 			return nil
 		}
 		// Identify missing IDs
-		missing, err := s.st.MissingEveEntityIDs(ctx, ids2.Slice())
+		var err error
+		missing, err = s.st.MissingEveEntityIDs(ctx, ids2.Slice())
 		if err != nil {
 			return err
 		}
@@ -531,19 +562,17 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids []int32
 			return nil
 		}
 		// Call ESI to resolve missing IDs
-		missingIDs = missing.Slice()
-		slices.Sort(missingIDs)
-		if len(missingIDs) > 0 {
-			slog.Debug("Trying to resolve EveEntity IDs from ESI", "ids", missingIDs)
+		if missing.Size() > 0 {
+			slog.Debug("Trying to resolve EveEntity IDs from ESI", "ids", missing)
 		}
 		var ee []esi.PostUniverseNames200Ok
-		for chunk := range slices.Chunk(missingIDs, 1000) { // PostUniverseNames max is 1000 IDs
+		for chunk := range slices.Chunk(missing.Slice(), 1000) { // PostUniverseNames max is 1000 IDs
 			eeChunk, badChunk, err := s.resolveIDs(ctx, chunk)
 			if err != nil {
 				return err
 			}
 			ee = append(ee, eeChunk...)
-			badIDs = append(badIDs, badChunk...)
+			bad.AddSeq(slices.Values(badChunk))
 		}
 		for _, entity := range ee {
 			_, err := s.st.GetOrCreateEveEntity(
@@ -562,10 +591,10 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids []int32
 		return nil
 	}()
 	if err != nil {
-		return nil, fmt.Errorf("AddMissingEntities: %w", err)
+		return set.Set[int32]{}, fmt.Errorf("AddMissingEntities: %w", err)
 	}
-	if len(badIDs) > 0 {
-		for _, id := range badIDs {
+	if bad.Size() > 0 {
+		for id := range bad.All() {
 			arg := storage.CreateEveEntityParams{
 				ID:       id,
 				Name:     "?",
@@ -575,9 +604,9 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids []int32
 				slog.Error("Failed to mark unresolvable EveEntity", "id", id, "error", err)
 			}
 		}
-		slog.Warn("Marking unresolvable EveEntity IDs as unknown", "ids", badIDs)
+		slog.Warn("Marking unresolvable EveEntity IDs as unknown", "ids", bad)
 	}
-	return missingIDs, nil
+	return missing, nil
 }
 
 func (s *EveUniverseService) resolveIDs(ctx context.Context, ids []int32) ([]esi.PostUniverseNames200Ok, []int32, error) {
@@ -786,17 +815,16 @@ func (s *EveUniverseService) createTypeFromESI(ctx context.Context, id int32) (*
 	return x.(*app.EveType), nil
 }
 
-func (s *EveUniverseService) AddMissingTypes(ctx context.Context, ids []int32) error {
+func (s *EveUniverseService) AddMissingTypes(ctx context.Context, ids set.Set[int32]) error {
 	missingIDs, err := s.st.MissingEveTypes(ctx, ids)
 	if err != nil {
 		return err
 	}
-	if len(missingIDs) == 0 {
+	if missingIDs.Size() == 0 {
 		return nil
 	}
-	slices.Sort(missingIDs)
-	slog.Debug("Trying to fetch missing EveTypes from ESI", "count", len(missingIDs))
-	for _, id := range missingIDs {
+	slog.Debug("Trying to fetch missing EveTypes from ESI", "count", missingIDs.Size())
+	for id := range missingIDs.All() {
 		_, err := s.GetOrCreateTypeESI(ctx, id)
 		if err != nil {
 			return err
@@ -893,7 +921,7 @@ func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id i
 			}
 			arg = storage.UpdateOrCreateLocationParams{
 				ID:        id,
-				EveTypeID: optional.New(t.ID),
+				EveTypeID: optional.From(t.ID),
 			}
 		case app.EveLocationAssetSafety:
 			t, err := s.GetOrCreateTypeESI(ctx, app.EveTypeAssetSafetyWrap)
@@ -902,7 +930,7 @@ func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id i
 			}
 			arg = storage.UpdateOrCreateLocationParams{
 				ID:        id,
-				EveTypeID: optional.New(t.ID),
+				EveTypeID: optional.From(t.ID),
 			}
 		case app.EveLocationSolarSystem:
 			et, err := s.GetOrCreateTypeESI(ctx, app.EveTypeSolarSystem)
@@ -915,8 +943,8 @@ func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id i
 			}
 			arg = storage.UpdateOrCreateLocationParams{
 				ID:               id,
-				EveTypeID:        optional.New(et.ID),
-				EveSolarSystemID: optional.New(es.ID),
+				EveTypeID:        optional.From(et.ID),
+				EveSolarSystemID: optional.From(es.ID),
 			}
 		case app.EveLocationStation:
 			station, _, err := s.esiClient.ESI.UniverseApi.GetUniverseStationsStationId(ctx, int32(id), nil)
@@ -931,19 +959,19 @@ func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id i
 			if err != nil {
 				return nil, err
 			}
-			arg.EveTypeID = optional.New(station.TypeId)
+			arg.EveTypeID = optional.From(station.TypeId)
 			arg = storage.UpdateOrCreateLocationParams{
 				ID:               id,
-				EveSolarSystemID: optional.New(station.SystemId),
-				EveTypeID:        optional.New(station.TypeId),
+				EveSolarSystemID: optional.From(station.SystemId),
+				EveTypeID:        optional.From(station.TypeId),
 				Name:             station.Name,
 			}
 			if station.Owner != 0 {
-				_, err = s.AddMissingEntities(ctx, []int32{station.Owner})
+				_, err = s.AddMissingEntities(ctx, set.Of(station.Owner))
 				if err != nil {
 					return nil, err
 				}
-				arg.OwnerID = optional.New(station.Owner)
+				arg.OwnerID = optional.From(station.Owner)
 			}
 		case app.EveLocationStructure:
 			if ctx.Value(goesi.ContextAccessToken) == nil {
@@ -961,22 +989,22 @@ func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id i
 			if err != nil {
 				return nil, err
 			}
-			_, err = s.AddMissingEntities(ctx, []int32{structure.OwnerId})
+			_, err = s.AddMissingEntities(ctx, set.Of(structure.OwnerId))
 			if err != nil {
 				return nil, err
 			}
 			arg = storage.UpdateOrCreateLocationParams{
 				ID:               id,
-				EveSolarSystemID: optional.New(structure.SolarSystemId),
+				EveSolarSystemID: optional.From(structure.SolarSystemId),
 				Name:             structure.Name,
-				OwnerID:          optional.New(structure.OwnerId),
+				OwnerID:          optional.From(structure.OwnerId),
 			}
 			if structure.TypeId != 0 {
 				myType, err := s.GetOrCreateTypeESI(ctx, structure.TypeId)
 				if err != nil {
 					return nil, err
 				}
-				arg.EveTypeID = optional.New(myType.ID)
+				arg.EveTypeID = optional.From(myType.ID)
 			}
 		default:
 			return nil, fmt.Errorf("eve location: invalid ID in update or create: %d", id)
@@ -1072,10 +1100,8 @@ func (s *EveUniverseService) GetSolarSystemInfoESI(ctx context.Context, solarSys
 			PlanetID:        p.PlanetId,
 		}
 	})
-	_, err = s.AddMissingEntities(ctx, slices.Concat(
-		[]int32{solarSystemID, x.ConstellationId},
-		x.Stations,
-	))
+	ids := slices.Concat([]int32{solarSystemID, x.ConstellationId}, x.Stations)
+	_, err = s.AddMissingEntities(ctx, set.Of(ids...))
 	if err != nil {
 		return 0, nil, nil, nil, nil, err
 	}
@@ -1105,7 +1131,7 @@ func (s *EveUniverseService) GetRegionConstellationsESI(ctx context.Context, id 
 	if err != nil {
 		return nil, err
 	}
-	xx, err := s.ToEntities(ctx, region.Constellations)
+	xx, err := s.ToEntities(ctx, set.Of(region.Constellations...))
 	if err != nil {
 		return nil, err
 	}
@@ -1364,7 +1390,7 @@ func (s *EveUniverseService) MarketPrice(ctx context.Context, typeID int32) (opt
 	} else if err != nil {
 		return v, err
 	}
-	return optional.New(o.AveragePrice), nil
+	return optional.From(o.AveragePrice), nil
 }
 
 // TODO: Change to bulk create
@@ -1430,10 +1456,10 @@ type organizationHistoryItem struct {
 }
 
 func (s *EveUniverseService) makeMembershipHistory(ctx context.Context, items []organizationHistoryItem) ([]app.MembershipHistoryItem, error) {
-	ids := xslices.Map(items, func(x organizationHistoryItem) int32 {
+	ids := set.Collect(xiter.Map(slices.Values(items), func(x organizationHistoryItem) int32 {
 		return x.OrganizationID
-	})
-	ids = slices.DeleteFunc(ids, func(id int32) bool {
+	}))
+	ids.DeleteFunc(func(id int32) bool {
 		return id < 2
 	})
 	eeMap, err := s.ToEntities(ctx, ids)
@@ -1548,24 +1574,27 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 		return false, err
 	}
 	if !forceUpdate && status != nil {
-		if status.IsOK() && !status.IsExpired() {
+		if !status.HasError() && !status.IsExpired() {
 			return false, nil
 		}
 	}
-
 	var f func(context.Context) error
 	switch section {
-	case app.SectionEveCategories:
+	case app.SectionEveTypes:
 		f = s.updateCategories
 	case app.SectionEveCharacters:
 		f = s.UpdateAllCharactersESI
+	case app.SectionEveCorporations:
+		f = s.UpdateAllCorporationsESI
 	case app.SectionEveMarketPrices:
 		f = s.updateMarketPricesESI
+	default:
+		slog.Warn("encountered unknown section", "section", section)
 	}
 	key := fmt.Sprintf("Update-section-%s", section)
 	_, err, _ = s.sfg.Do(key, func() (any, error) {
 		slog.Debug("Started updating eveuniverse section", "section", section)
-		startedAt := optional.New(time.Now())
+		startedAt := optional.From(time.Now())
 		arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
 			Section:   section,
 			StartedAt: &startedAt,
@@ -1574,13 +1603,13 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 		if err != nil {
 			return false, err
 		}
-		s.scs.GeneralSectionSet(o)
+		s.scs.SetGeneralSection(o)
 		err = f(ctx)
 		slog.Debug("Finished updating eveuniverse section", "section", section)
 		return nil, err
 	})
 	if err != nil {
-		errorMessage := ihumanize.Error(err)
+		errorMessage := app.ErrorDisplay(err)
 		startedAt := optional.Optional[time.Time]{}
 		arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
 			Section:   section,
@@ -1591,7 +1620,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 		if err != nil {
 			return false, err
 		}
-		s.scs.GeneralSectionSet(o)
+		s.scs.SetGeneralSection(o)
 		return false, err
 	}
 	completedAt := storage.NewNullTimeFromTime(time.Now())
@@ -1608,7 +1637,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	if err != nil {
 		return false, err
 	}
-	s.scs.GeneralSectionSet(o)
+	s.scs.SetGeneralSection(o)
 	return true, nil
 }
 

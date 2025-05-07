@@ -47,8 +47,8 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 	structureType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 35835})
 	factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{
 		ID:               1000000000001,
-		EveSolarSystemID: optional.New(solarSystem.ID),
-		EveTypeID:        optional.New(structureType.ID),
+		EveSolarSystemID: optional.From(solarSystem.ID),
+		EveTypeID:        optional.From(structureType.ID),
 	})
 	factory.CreateEveEntityCharacter(app.EveEntity{ID: 1000134})
 	factory.CreateEveEntityCharacter(app.EveEntity{ID: 1001})
@@ -65,14 +65,14 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 	factory.CreateEveType(storage.CreateEveTypeParams{ID: 16213})
 	factory.CreateEvePlanet(storage.CreateEvePlanetParams{ID: 40161469})
 	factory.CreateEveMoon(storage.CreateEveMoonParams{ID: 40161465})
-	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 46300})
-	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 46301})
-	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 46302})
-	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 46303})
-	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 35894})
-	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 35835})
-	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 32226}) // TCU
-	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 27})
+	factory.CreateEveEntityWithCategory(app.EveEntityInventoryType, app.EveEntity{ID: 46300})
+	factory.CreateEveEntityWithCategory(app.EveEntityInventoryType, app.EveEntity{ID: 46301})
+	factory.CreateEveEntityWithCategory(app.EveEntityInventoryType, app.EveEntity{ID: 46302})
+	factory.CreateEveEntityWithCategory(app.EveEntityInventoryType, app.EveEntity{ID: 46303})
+	factory.CreateEveEntityWithCategory(app.EveEntityInventoryType, app.EveEntity{ID: 35894})
+	factory.CreateEveEntityWithCategory(app.EveEntityInventoryType, app.EveEntity{ID: 35835})
+	factory.CreateEveEntityWithCategory(app.EveEntityInventoryType, app.EveEntity{ID: 32226}) // TCU
+	factory.CreateEveEntityWithCategory(app.EveEntityInventoryType, app.EveEntity{ID: 27})
 	factory.CreateEveEntity(app.EveEntity{ID: 60003760, Category: app.EveEntityStation})
 	notifTypes := set.Of(evenotification.SupportedGroups()...)
 	typeTested := make(map[evenotification.Type]bool)
@@ -116,7 +116,7 @@ func TestBilling(t *testing.T) {
 		httpmock.Reset()
 		creditor := factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000023})
 		debtor := factory.CreateEveEntityCorporation(app.EveEntity{ID: 98267621})
-		office := factory.CreateEveEntityInventoryType(app.EveEntity{ID: 27})
+		office := factory.CreateEveEntityWithCategory(app.EveEntityInventoryType, app.EveEntity{ID: 27})
 		station := factory.CreateEveEntity(app.EveEntity{ID: 60003760, Category: app.EveEntityStation})
 		text := `
 amount: 10000

@@ -55,10 +55,10 @@ func characterShiSkillFromDBModel(r queries.ListCharacterShipSkillsRow) *app.Cha
 		SkillLevel:  uint(r.SkillLevel),
 	}
 	if r.ActiveSkillLevel.Valid {
-		css.ActiveSkillLevel = optional.New(int(r.ActiveSkillLevel.Int64))
+		css.ActiveSkillLevel = optional.From(int(r.ActiveSkillLevel.Int64))
 	}
 	if r.TrainedSkillLevel.Valid {
-		css.TrainedSkillLevel = optional.New(int(r.TrainedSkillLevel.Int64))
+		css.TrainedSkillLevel = optional.From(int(r.TrainedSkillLevel.Int64))
 	}
 	return css
 }

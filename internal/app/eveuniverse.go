@@ -128,14 +128,14 @@ type EveCorporation struct {
 	Alliance    *EveEntity
 	Ceo         *EveEntity
 	Creator     *EveEntity
-	DateFounded time.Time
+	DateFounded optional.Optional[time.Time]
 	Description string
 	Faction     *EveEntity
 	HomeStation *EveEntity
 	ID          int32
 	MemberCount int
 	Name        string
-	Shares      int
+	Shares      optional.Optional[int]
 	TaxRate     float32
 	Ticker      string
 	URL         string
@@ -374,9 +374,9 @@ func (ee EveEntity) IsCharacter() bool {
 func (ee EveEntity) IsNPC() optional.Optional[bool] {
 	switch ee.Category {
 	case EveEntityCharacter:
-		return optional.New(ee.ID >= npcCharacterIDBegin && ee.ID < npcCharacterIDEnd)
+		return optional.From(ee.ID >= npcCharacterIDBegin && ee.ID < npcCharacterIDEnd)
 	case EveEntityCorporation:
-		return optional.New(ee.ID >= npcCorporationIDBegin && ee.ID < npcCorporationIDEnd)
+		return optional.From(ee.ID >= npcCorporationIDBegin && ee.ID < npcCorporationIDEnd)
 	}
 	return optional.Optional[bool]{}
 }
@@ -595,10 +595,10 @@ func (el EveLocation) ToEveEntity() *EveEntity {
 func (el EveLocation) ToShort() *EveLocationShort {
 	o := &EveLocationShort{
 		ID:   el.ID,
-		Name: optional.New(el.Name),
+		Name: optional.From(el.Name),
 	}
 	if el.SolarSystem != nil {
-		o.SecurityStatus = optional.New(el.SolarSystem.SecurityStatus)
+		o.SecurityStatus = optional.From(el.SolarSystem.SecurityStatus)
 	}
 	return o
 }
@@ -633,7 +633,7 @@ func (l EveLocationShort) SecurityType() optional.Optional[SolarSystemSecurityTy
 	if l.SecurityStatus.IsEmpty() {
 		return optional.Optional[SolarSystemSecurityType]{}
 	}
-	return optional.New(NewSolarSystemSecurityTypeFromValue(l.SecurityStatus.MustValue()))
+	return optional.From(NewSolarSystemSecurityTypeFromValue(l.SecurityStatus.MustValue()))
 }
 
 type EveMarketPrice struct {
