@@ -1859,13 +1859,18 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 				slog.Info("No new notifications", "characterID", characterID)
 				return nil
 			}
-			senderIDs := set.Of[int32]()
+			var ids set.Set[int32]
 			for _, n := range newNotifs {
 				if n.SenderId != 0 {
-					senderIDs.Add(n.SenderId)
+					ids.Add(n.SenderId)
 				}
+				ids2, err := s.ens.EntityIDs(n.Type_, n.Text)
+				if err != nil {
+					return err
+				}
+				ids.AddSeq(ids2.All())
 			}
-			_, err = s.eus.AddMissingEntities(ctx, senderIDs)
+			_, err = s.eus.AddMissingEntities(ctx, ids)
 			if err != nil {
 				return err
 			}
