@@ -37,8 +37,8 @@ func (n entosisCaptureStarted) unmarshal(text string) (notification.EntosisCaptu
 	return data, ids, nil
 }
 
-func (n entosisCaptureStarted) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n entosisCaptureStarted) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, _, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -51,12 +51,12 @@ func (n entosisCaptureStarted) render(ctx context.Context, text string, timestam
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("%s in %s is being captured", structureType.Name, solarSystem.Name))
-	body.Set(fmt.Sprintf(
+	title = fmt.Sprintf("%s in %s is being captured", structureType.Name, solarSystem.Name)
+	body = fmt.Sprintf(
 		"A capsuleer has started to influence the **%s** in %s with an Entosis Link.",
 		structureType.Name,
 		makeSolarSystemLink(solarSystem),
-	))
+	)
 	return title, body, nil
 }
 
@@ -81,8 +81,8 @@ func (n sovAllClaimAcquiredMsg) unmarshal(text string) (notification.SovAllClaim
 	return data, ids, nil
 }
 
-func (n sovAllClaimAcquiredMsg) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n sovAllClaimAcquiredMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, _, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -95,14 +95,14 @@ func (n sovAllClaimAcquiredMsg) render(ctx context.Context, text string, timesta
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("DED Sovereignty claim acknowledgement: %s", solarSystem.Name))
-	body.Set(fmt.Sprintf(
+	title = fmt.Sprintf("DED Sovereignty claim acknowledgement: %s", solarSystem.Name)
+	body = fmt.Sprintf(
 		"This mail is your confirmation that DED now officially acknowledges "+
 			"that your member organization %s has claimed sovereignty "+
 			"on your behalf in the system %s.",
 		makeEveEntityProfileLink(corporation),
 		makeSolarSystemLink(solarSystem),
-	))
+	)
 	return title, body, nil
 }
 
@@ -127,8 +127,8 @@ func (n sovAllClaimLostMsg) unmarshal(text string) (notification.SovAllClaimLost
 	return data, ids, nil
 }
 
-func (n sovAllClaimLostMsg) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n sovAllClaimLostMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, _, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -141,13 +141,13 @@ func (n sovAllClaimLostMsg) render(ctx context.Context, text string, timestamp t
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("Lost sovereignty in: %s", solarSystem.Name))
-	body.Set(fmt.Sprintf(
+	title = fmt.Sprintf("Lost sovereignty in: %s", solarSystem.Name)
+	body = fmt.Sprintf(
 		"DED acknowledges that your member organization %s has lost its claim "+
 			"to sovereignty on your behalf in the system %s.",
 		makeEveEntityProfileLink(corporation),
 		makeSolarSystemLink(solarSystem),
-	))
+	)
 	return title, body, nil
 }
 
@@ -159,8 +159,8 @@ func (n sovCommandNodeEventStarted) entityIDs(text string) (setInt32, error) {
 	return set.Of[int32](app.EveTypeTCU, app.EveTypeIHUB), nil
 }
 
-func (n sovCommandNodeEventStarted) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n sovCommandNodeEventStarted) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	var data notification.SovCommandNodeEventStarted
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
@@ -180,17 +180,17 @@ func (n sovCommandNodeEventStarted) render(ctx context.Context, text string, tim
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf(
+	title = fmt.Sprintf(
 		"Command nodes for %s in %s have begun to decloak",
 		structureTypeName,
 		solarSystem.Name,
-	))
-	body.Set(fmt.Sprintf(
+	)
+	body = fmt.Sprintf(
 		"Command nodes for %s in %s can now be found throughout the **%s** constellation",
 		structureTypeName,
 		makeSolarSystemLink(solarSystem),
 		solarSystem.Constellation.Name,
-	))
+	)
 	return title, body, nil
 }
 
@@ -215,8 +215,8 @@ func (n sovStructureDestroyed) unmarshal(text string) (notification.SovStructure
 	return data, ids, nil
 }
 
-func (n sovStructureDestroyed) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n sovStructureDestroyed) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, _, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -229,12 +229,12 @@ func (n sovStructureDestroyed) render(ctx context.Context, text string, timestam
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("%s in %s has been destroyed", structureType.Name, solarSystem.Name))
-	body.Set(fmt.Sprintf(
+	title = fmt.Sprintf("%s in %s has been destroyed", structureType.Name, solarSystem.Name)
+	body = fmt.Sprintf(
 		"The command nodes for %s in %s have been destroyed by hostile forces.",
 		structureType.Name,
 		makeSolarSystemLink(solarSystem),
-	))
+	)
 	return title, body, nil
 }
 
@@ -246,8 +246,8 @@ func (n sovStructureReinforced) entityIDs(text string) (setInt32, error) {
 	return set.Of[int32](app.EveTypeTCU, app.EveTypeIHUB), nil
 }
 
-func (n sovStructureReinforced) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n sovStructureReinforced) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	var data notification.SovStructureReinforced
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
@@ -267,13 +267,13 @@ func (n sovStructureReinforced) render(ctx context.Context, text string, timesta
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("%s in %s has entered reinforced mode", structureTypeName, solarSystem.Name))
-	body.Set(fmt.Sprintf(
+	title = fmt.Sprintf("%s in %s has entered reinforced mode", structureTypeName, solarSystem.Name)
+	body = fmt.Sprintf(
 		"The %s in %s has been reinforced by hostile forces "+
 			"and command nodes will begin decloaking at **%s**.",
 		structureTypeName,
 		makeSolarSystemLink(solarSystem),
 		fromLDAPTime(data.DecloakTime).Format(app.DateTimeFormat),
-	))
+	)
 	return title, body, nil
 }

@@ -31,8 +31,8 @@ func (n charAppAcceptMsg) unmarshal(text string) (notification.CharAppAcceptMsg,
 	return data, ids, nil
 }
 
-func (n charAppAcceptMsg) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n charAppAcceptMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -41,17 +41,17 @@ func (n charAppAcceptMsg) render(ctx context.Context, text string, timestamp tim
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf(
+	title = fmt.Sprintf(
 		"%s joins %s",
 		entities[data.CharID].Name,
 		entities[data.CorpID].Name,
-	))
+	)
 	out := fmt.Sprintf(
 		"%s is now a member of %s.",
 		makeEveEntityProfileLink(entities[data.CorpID]),
 		makeEveEntityProfileLink(entities[data.CharID]),
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -76,8 +76,8 @@ func (n corpAppNewMsg) unmarshal(text string) (notification.CorpAppNewMsg, setIn
 	return data, ids, nil
 }
 
-func (n corpAppNewMsg) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n corpAppNewMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -86,14 +86,14 @@ func (n corpAppNewMsg) render(ctx context.Context, text string, timestamp time.T
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("New application from %s", entities[data.CharID].Name))
+	title = fmt.Sprintf("New application from %s", entities[data.CharID].Name)
 	out := fmt.Sprintf(
 		"New application from %s to join %s:\n\n> %s",
 		makeEveEntityProfileLink(entities[data.CharID]),
 		makeEveEntityProfileLink(entities[data.CorpID]),
 		data.ApplicationText,
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -118,8 +118,8 @@ func (n corpAppInvitedMsg) unmarshal(text string) (notification.CorpAppInvitedMs
 	return data, ids, nil
 }
 
-func (n corpAppInvitedMsg) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n corpAppInvitedMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -128,7 +128,7 @@ func (n corpAppInvitedMsg) render(ctx context.Context, text string, timestamp ti
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("%s has been invited", entities[data.CharID].Name))
+	title = fmt.Sprintf("%s has been invited", entities[data.CharID].Name)
 	out := fmt.Sprintf(
 		"%s has been invited to join %s by %s:\n\n> %s",
 		makeEveEntityProfileLink(entities[data.CharID]),
@@ -136,7 +136,7 @@ func (n corpAppInvitedMsg) render(ctx context.Context, text string, timestamp ti
 		makeEveEntityProfileLink(entities[data.InvokingCharID]),
 		data.ApplicationText,
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -161,8 +161,8 @@ func (n charAppRejectMsg) unmarshal(text string) (notification.CharAppRejectMsg,
 	return data, ids, nil
 }
 
-func (n charAppRejectMsg) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n charAppRejectMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -171,14 +171,14 @@ func (n charAppRejectMsg) render(ctx context.Context, text string, timestamp tim
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("%s rejected invitation", entities[data.CharID].Name))
+	title = fmt.Sprintf("%s rejected invitation", entities[data.CharID].Name)
 	out := fmt.Sprintf(
 		"Application from %s to join %s has been rejected:\n\n> %s",
 		makeEveEntityProfileLink(entities[data.CharID]),
 		makeEveEntityProfileLink(entities[data.CorpID]),
 		data.ApplicationText,
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -203,8 +203,8 @@ func (n corpAppRejectCustomMsg) unmarshal(text string) (notification.CorpAppReje
 	return data, ids, nil
 }
 
-func (n corpAppRejectCustomMsg) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n corpAppRejectCustomMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -213,7 +213,7 @@ func (n corpAppRejectCustomMsg) render(ctx context.Context, text string, timesta
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("Application from %s rejected", entities[data.CharID].Name))
+	title = fmt.Sprintf("Application from %s rejected", entities[data.CharID].Name)
 	out := fmt.Sprintf(
 		"%s has rejected application from %s:\n\n>%s",
 		makeEveEntityProfileLink(entities[data.CorpID]),
@@ -223,7 +223,7 @@ func (n corpAppRejectCustomMsg) render(ctx context.Context, text string, timesta
 	if data.CustomMessage != "" {
 		out += fmt.Sprintf("\n\nReply:\n\n>%s", data.CustomMessage)
 	}
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -248,8 +248,8 @@ func (n charAppWithdrawMsg) unmarshal(text string) (notification.CharAppWithdraw
 	return data, ids, nil
 }
 
-func (n charAppWithdrawMsg) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n charAppWithdrawMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -258,14 +258,14 @@ func (n charAppWithdrawMsg) render(ctx context.Context, text string, timestamp t
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("%s withdrew application", entities[data.CharID].Name))
+	title = fmt.Sprintf("%s withdrew application", entities[data.CharID].Name)
 	out := fmt.Sprintf(
 		"%s has withdrawn application to join %s:\n\n>%s",
 		makeEveEntityProfileLink(entities[data.CorpID]),
 		makeEveEntityProfileLink(entities[data.CharID]),
 		data.ApplicationText,
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -290,8 +290,8 @@ func (n charLeftCorpMsg) unmarshal(text string) (notification.CharLeftCorpMsg, s
 	return data, ids, nil
 }
 
-func (n charLeftCorpMsg) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n charLeftCorpMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -300,15 +300,15 @@ func (n charLeftCorpMsg) render(ctx context.Context, text string, timestamp time
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("%s left %s",
+	title = fmt.Sprintf("%s left %s",
 		entities[data.CharID].Name,
 		entities[data.CorpID].Name,
-	))
+	)
 	out := fmt.Sprintf(
 		"%s is no longer a member of %s.",
 		makeEveEntityProfileLink(entities[data.CorpID]),
 		makeEveEntityProfileLink(entities[data.CharID]),
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }

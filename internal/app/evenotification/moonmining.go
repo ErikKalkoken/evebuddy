@@ -94,8 +94,8 @@ func (n moonminingAutomaticFracture) unmarshal(text string) (notification.Moonmi
 	ids := set.Collect(maps.Keys(data.OreVolumeByType))
 	return data, ids, nil
 }
-func (n moonminingAutomaticFracture) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n moonminingAutomaticFracture) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, _, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -104,7 +104,7 @@ func (n moonminingAutomaticFracture) render(ctx context.Context, text string, ti
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("Extraction for %s has autofractured", data.StructureName))
+	title = fmt.Sprintf("Extraction for %s has autofractured", data.StructureName)
 	ores, err := makeOreText(ctx, data.OreVolumeByType, n.eus)
 	if err != nil {
 		return title, body, err
@@ -114,7 +114,7 @@ func (n moonminingAutomaticFracture) render(ctx context.Context, text string, ti
 		o.text,
 		ores,
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -138,8 +138,8 @@ func (n moonminingExtractionStarted) unmarshal(text string) (notification.Moonmi
 	ids := set.Collect(maps.Keys(data.OreVolumeByType))
 	return data, ids, nil
 }
-func (n moonminingExtractionStarted) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n moonminingExtractionStarted) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, _, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -148,7 +148,7 @@ func (n moonminingExtractionStarted) render(ctx context.Context, text string, ti
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("Extraction started at %s", data.StructureName))
+	title = fmt.Sprintf("Extraction started at %s", data.StructureName)
 	ores, err := makeOreText(ctx, data.OreVolumeByType, n.eus)
 	if err != nil {
 		return title, body, err
@@ -161,7 +161,7 @@ func (n moonminingExtractionStarted) render(ctx context.Context, text string, ti
 		fromLDAPTime(data.AutoTime).Format(app.DateTimeFormat),
 		ores,
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -185,8 +185,8 @@ func (n moonminingExtractionFinished) unmarshal(text string) (notification.Moonm
 	ids := set.Collect(maps.Keys(data.OreVolumeByType))
 	return data, ids, nil
 }
-func (n moonminingExtractionFinished) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n moonminingExtractionFinished) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, _, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -195,7 +195,7 @@ func (n moonminingExtractionFinished) render(ctx context.Context, text string, t
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("Extraction finished at %s", data.StructureName))
+	title = fmt.Sprintf("Extraction finished at %s", data.StructureName)
 	ores, err := makeOreText(ctx, data.OreVolumeByType, n.eus)
 	if err != nil {
 		return title, body, err
@@ -207,7 +207,7 @@ func (n moonminingExtractionFinished) render(ctx context.Context, text string, t
 		fromLDAPTime(data.AutoTime).Format(app.DateTimeFormat),
 		ores,
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -235,8 +235,8 @@ func (n moonminingExtractionCancelled) unmarshal(text string) (notification.Moon
 	return data, ids, nil
 }
 
-func (n moonminingExtractionCancelled) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n moonminingExtractionCancelled) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	var data notification.MoonminingExtractionCancelled
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
@@ -245,7 +245,7 @@ func (n moonminingExtractionCancelled) render(ctx context.Context, text string, 
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("Extraction canceled at %s", data.StructureName))
+	title = fmt.Sprintf("Extraction canceled at %s", data.StructureName)
 	cancelledBy := ""
 	if data.CancelledBy != 0 {
 		x, err := n.eus.GetOrCreateEntityESI(ctx, data.CancelledBy)
@@ -259,7 +259,7 @@ func (n moonminingExtractionCancelled) render(ctx context.Context, text string, 
 		o.text,
 		cancelledBy,
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -286,8 +286,8 @@ func (n moonminingLaserFired) unmarshal(text string) (notification.MoonminingLas
 	}
 	return data, ids, nil
 }
-func (n moonminingLaserFired) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n moonminingLaserFired) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, _, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -296,7 +296,7 @@ func (n moonminingLaserFired) render(ctx context.Context, text string, timestamp
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("%s has fired it's moon drill", data.StructureName))
+	title = fmt.Sprintf("%s has fired it's moon drill", data.StructureName)
 	firedBy := ""
 	if data.FiredBy != 0 {
 		x, err := n.eus.GetOrCreateEntityESI(ctx, data.FiredBy)
@@ -315,6 +315,6 @@ func (n moonminingLaserFired) render(ctx context.Context, text string, timestamp
 		firedBy,
 		ores,
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }

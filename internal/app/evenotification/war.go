@@ -32,8 +32,8 @@ func (n allWarSurrenderMsg) unmarshal(text string) (notification.AllWarSurrender
 	return data, ids, nil
 }
 
-func (n allWarSurrenderMsg) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n allWarSurrenderMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -42,11 +42,11 @@ func (n allWarSurrenderMsg) render(ctx context.Context, text string, timestamp t
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf(
+	title = fmt.Sprintf(
 		"%s has surrendered in the war against %s",
 		entities[data.DeclaredByID].Name,
 		entities[data.AgainstID].Name,
-	))
+	)
 	out := fmt.Sprintf(
 		"%s has surrendered in the war against %s.\n\n"+
 			"The war will be declared as being over after approximately %d hours.",
@@ -54,7 +54,7 @@ func (n allWarSurrenderMsg) render(ctx context.Context, text string, timestamp t
 		makeEveEntityProfileLink(entities[data.AgainstID]),
 		data.DelayHours,
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -79,8 +79,8 @@ func (n corpWarSurrenderMsg) unmarshal(text string) (notification.CorpWarSurrend
 	return data, ids, nil
 }
 
-func (n corpWarSurrenderMsg) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n corpWarSurrenderMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -89,14 +89,14 @@ func (n corpWarSurrenderMsg) render(ctx context.Context, text string, timestamp 
 	if err != nil {
 		return title, body, err
 	}
-	title.Set("One party has surrendered")
+	title = "One party has surrendered"
 	out := fmt.Sprintf(
 		"The war between %s and %s is coming to an end as one party has surrendered.\n\n"+
 			"The war will be declared as being over after approximately 24 hours.",
 		makeEveEntityProfileLink(entities[data.DeclaredByID]),
 		makeEveEntityProfileLink(entities[data.AgainstID]),
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -121,8 +121,8 @@ func (n declareWar) unmarshal(text string) (notification.DeclareWar, setInt32, e
 	return data, ids, nil
 }
 
-func (n declareWar) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n declareWar) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -131,14 +131,14 @@ func (n declareWar) render(ctx context.Context, text string, timestamp time.Time
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("%s declared war", entities[data.EntityID].Name))
+	title = fmt.Sprintf("%s declared war", entities[data.EntityID].Name)
 	out := fmt.Sprintf(
 		"%s has declared war on %s on behalf of %s.",
 		makeEveEntityProfileLink(entities[data.CharID]),
 		makeEveEntityProfileLink(entities[data.DefenderID]),
 		makeEveEntityProfileLink(entities[data.EntityID]),
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -163,8 +163,8 @@ func (n warAdopted) unmarshal(text string) (notification.WarAdopted, setInt32, e
 	return data, ids, nil
 }
 
-func (n warAdopted) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n warAdopted) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -173,11 +173,11 @@ func (n warAdopted) render(ctx context.Context, text string, timestamp time.Time
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf(
+	title = fmt.Sprintf(
 		"War update: %s has left %s",
 		entities[data.AgainstID].Name,
 		entities[data.AllianceID].Name,
-	))
+	)
 	declaredBy := makeEveEntityProfileLink(entities[data.DeclaredByID])
 	alliance := makeEveEntityProfileLink(entities[data.AllianceID])
 	against := makeEveEntityProfileLink(entities[data.AgainstID])
@@ -192,7 +192,7 @@ func (n warAdopted) render(ctx context.Context, text string, timestamp time.Time
 		declaredBy,
 		alliance,
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -217,8 +217,8 @@ func (n warDeclared) unmarshal(text string) (notification.WarDeclared, setInt32,
 	return data, ids, nil
 }
 
-func (n warDeclared) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n warDeclared) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -227,11 +227,11 @@ func (n warDeclared) render(ctx context.Context, text string, timestamp time.Tim
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf(
+	title = fmt.Sprintf(
 		"%s Declares War Against %s",
 		entities[data.DeclaredByID].Name,
 		entities[data.AgainstID].Name,
-	))
+	)
 	out := fmt.Sprintf(
 		"%s has declared war on %s with **%s** "+
 			"as the designated war headquarters.\n\n"+
@@ -241,7 +241,7 @@ func (n warDeclared) render(ctx context.Context, text string, timestamp time.Tim
 		data.WarHQ,
 		data.DelayHours,
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -266,8 +266,8 @@ func (n warHQRemovedFromSpace) unmarshal(text string) (notification.WarHQRemoved
 	return data, ids, nil
 }
 
-func (n warHQRemovedFromSpace) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n warHQRemovedFromSpace) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -276,7 +276,7 @@ func (n warHQRemovedFromSpace) render(ctx context.Context, text string, timestam
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("WarHQ %s lost", data.WarHQ))
+	title = fmt.Sprintf("WarHQ %s lost", data.WarHQ)
 	out := fmt.Sprintf(
 		"The war HQ **%s** is no more. "+
 			"As a consequence, the war declared by %s against %s on %s "+
@@ -286,7 +286,7 @@ func (n warHQRemovedFromSpace) render(ctx context.Context, text string, timestam
 		makeEveEntityProfileLink(entities[data.AgainstID]),
 		fromLDAPTime(data.TimeDeclared).Format(app.DateTimeFormat),
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -317,8 +317,8 @@ func (n warInherited) unmarshal(text string) (notification.WarInherited, setInt3
 	return data, ids, nil
 }
 
-func (n warInherited) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n warInherited) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -327,11 +327,11 @@ func (n warInherited) render(ctx context.Context, text string, timestamp time.Ti
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf(
+	title = fmt.Sprintf(
 		"War update: %s has left %s",
 		entities[data.QuitterID].Name,
 		entities[data.AllianceID].Name,
-	))
+	)
 	alliance := makeEveEntityProfileLink(entities[data.AllianceID])
 	against := makeEveEntityProfileLink(entities[data.AgainstID])
 	quitter := makeEveEntityProfileLink(entities[data.QuitterID])
@@ -345,7 +345,7 @@ func (n warInherited) render(ctx context.Context, text string, timestamp time.Ti
 		against,
 		quitter,
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -370,8 +370,8 @@ func (n warInvalid) unmarshal(text string) (notification.WarInvalid, setInt32, e
 	return data, ids, nil
 }
 
-func (n warInvalid) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n warInvalid) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -380,7 +380,7 @@ func (n warInvalid) render(ctx context.Context, text string, timestamp time.Time
 	if err != nil {
 		return title, body, err
 	}
-	title.Set("CONCORD invalidates war")
+	title = "CONCORD invalidates war"
 	out := fmt.Sprintf(
 		"The war between %s and %s "+
 			"has been invalidated by CONCORD, "+
@@ -391,7 +391,7 @@ func (n warInvalid) render(ctx context.Context, text string, timestamp time.Time
 		makeEveEntityProfileLink(entities[data.AgainstID]),
 		fromLDAPTime(data.EndDate).Format(app.DateTimeFormat),
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -416,8 +416,8 @@ func (n warRetractedByConcord) unmarshal(text string) (notification.WarRetracted
 	return data, ids, nil
 }
 
-func (n warRetractedByConcord) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n warRetractedByConcord) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -426,7 +426,7 @@ func (n warRetractedByConcord) render(ctx context.Context, text string, timestam
 	if err != nil {
 		return title, body, err
 	}
-	title.Set("CONCORD retracts war")
+	title = "CONCORD retracts war"
 	out := fmt.Sprintf(
 		"The war between %s and %s "+
 			"has been retracted by CONCORD. \n\n"+
@@ -436,6 +436,6 @@ func (n warRetractedByConcord) render(ctx context.Context, text string, timestam
 		makeEveEntityProfileLink(entities[data.AgainstID]),
 		fromLDAPTime(data.EndDate).Format(app.DateTimeFormat),
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }

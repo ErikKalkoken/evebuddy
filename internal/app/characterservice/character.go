@@ -1822,6 +1822,9 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 					newNotifs = append(newNotifs, n)
 				}
 			}
+			if err := s.loadEntitiesForNotifications(ctx, existingNotifs); err != nil {
+				return err
+			}
 			var updatedCount int
 			for _, n := range existingNotifs {
 				o, err := s.st.GetCharacterNotification(ctx, characterID, n.NotificationId)
@@ -1835,15 +1838,18 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 					Title:  o.Title,
 					Body:   o.Body,
 				}
-				title, body, err := s.ens.RenderESI(ctx, n.Type_, n.Text, n.Timestamp)
-				if err != nil {
-					slog.Error("Failed to render character notification", "characterID", characterID, "NotificationID", n.NotificationId, "error", err)
-				}
 				arg2 := storage.UpdateCharacterNotificationParams{
 					ID:     o.ID,
 					IsRead: n.IsRead,
-					Title:  title,
-					Body:   body,
+				}
+				title, body, err := s.ens.RenderESI(ctx, n.Type_, n.Text, n.Timestamp)
+				if errors.Is(err, app.ErrNotFound) {
+					// do nothing
+				} else if err != nil {
+					slog.Error("Failed to render character notification", "characterID", characterID, "NotificationID", n.NotificationId, "error", err)
+				} else {
+					arg2.Title.Set(title)
+					arg2.Body.Set(body)
 				}
 				if arg2 != arg1 {
 					if err := s.st.UpdateCharacterNotification(ctx, arg2); err != nil {
@@ -1859,36 +1865,27 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 				slog.Info("No new notifications", "characterID", characterID)
 				return nil
 			}
-			var ids set.Set[int32]
-			for _, n := range newNotifs {
-				if n.SenderId != 0 {
-					ids.Add(n.SenderId)
-				}
-				ids2, err := s.ens.EntityIDs(n.Type_, n.Text)
-				if err != nil {
-					return err
-				}
-				ids.AddSeq(ids2.All())
-			}
-			_, err = s.eus.AddMissingEntities(ctx, ids)
-			if err != nil {
+			if err := s.loadEntitiesForNotifications(ctx, newNotifs); err != nil {
 				return err
 			}
 			for _, n := range newNotifs {
-				title, body, err := s.ens.RenderESI(ctx, n.Type_, n.Text, n.Timestamp)
-				if err != nil {
-					slog.Error("Failed to render character notification", "characterID", characterID, "NotificationID", n.NotificationId, "error", err)
-				}
 				arg := storage.CreateCharacterNotificationParams{
-					Body:           body,
 					CharacterID:    characterID,
 					IsRead:         n.IsRead,
 					NotificationID: n.NotificationId,
 					SenderID:       n.SenderId,
 					Text:           n.Text,
 					Timestamp:      n.Timestamp,
-					Title:          title,
 					Type:           n.Type_,
+				}
+				title, body, err := s.ens.RenderESI(ctx, n.Type_, n.Text, n.Timestamp)
+				if errors.Is(err, app.ErrNotFound) {
+					// do nothing
+				} else if err != nil {
+					slog.Error("Failed to render character notification", "characterID", characterID, "NotificationID", n.NotificationId, "error", err)
+				} else {
+					arg.Title.Set(title)
+					arg.Body.Set(body)
 				}
 				if err := s.st.CreateCharacterNotification(ctx, arg); err != nil {
 					return err
@@ -1897,6 +1894,32 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 			slog.Info("Stored new notifications", "characterID", characterID, "entries", len(newNotifs))
 			return nil
 		})
+}
+
+func (s *CharacterService) loadEntitiesForNotifications(ctx context.Context, notifications []esi.GetCharactersCharacterIdNotifications200Ok) error {
+	if len(notifications) == 0 {
+		return nil
+	}
+	var ids set.Set[int32]
+	for _, n := range notifications {
+		if n.SenderId != 0 {
+			ids.Add(n.SenderId)
+		}
+		ids2, err := s.ens.EntityIDs(n.Type_, n.Text)
+		if errors.Is(err, app.ErrNotFound) {
+			continue
+		} else if err != nil {
+			return err
+		}
+		ids.AddSeq(ids2.All())
+	}
+	if ids.Size() > 0 {
+		_, err := s.eus.AddMissingEntities(ctx, ids)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *CharacterService) NotifyExpiredExtractions(ctx context.Context, characterID int32, earliest time.Time, notify func(title, content string)) error {

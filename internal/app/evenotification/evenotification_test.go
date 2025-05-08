@@ -74,21 +74,22 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 	factory.CreateEveEntityWithCategory(app.EveEntityInventoryType, app.EveEntity{ID: 32226}) // TCU
 	factory.CreateEveEntityWithCategory(app.EveEntityInventoryType, app.EveEntity{ID: 27})
 	factory.CreateEveEntity(app.EveEntity{ID: 60003760, Category: app.EveEntityStation})
-	notifTypes := set.Of(evenotification.SupportedGroups()...)
+	notifTypes := evenotification.SupportedTypes()
 	typeTested := make(map[evenotification.Type]bool)
 	for _, n := range notifications {
+		t2 := evenotification.Type(n.Type)
+		if !notifTypes.Contains(t2) {
+			continue
+		}
 		t.Run("should render notification type "+n.Type, func(t *testing.T) {
-			t2 := evenotification.Type(n.Type)
-			if notifTypes.Contains(t2) {
-				typeTested[t2] = true
-				title, body, err := ens.RenderESI(ctx, n.Type, n.Text, n.Timestamp)
-				if assert.NoError(t, err) {
-					assert.False(t, title.IsEmpty())
-					assert.False(t, body.IsEmpty())
-					switch n.NotificationID {
-					case 1000000515:
-						assert.Contains(t, body.ValueOrZero(), "POCO")
-					}
+			typeTested[t2] = true
+			title, body, err := ens.RenderESI(ctx, n.Type, n.Text, n.Timestamp)
+			if assert.NoError(t, err) {
+				assert.NotEqual(t, "", title)
+				assert.NotEqual(t, "", body)
+				switch n.NotificationID {
+				case 1000000515:
+					assert.Contains(t, body, "POCO")
 				}
 			}
 		})
@@ -121,7 +122,19 @@ externalID2: 60003760`
 	})
 }
 
-func TestEntityIDsAllNotifications(t *testing.T) {
+func TestRenderESIErrorHandling(t *testing.T) {
+	en := evenotification.New(nil)
+	t.Run("return error for unsurported", func(t *testing.T) {
+		_, _, err := en.RenderESI(context.Background(), "invalid_type", "", time.Now())
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+	t.Run("return error for empty", func(t *testing.T) {
+		_, _, err := en.RenderESI(context.Background(), "", "", time.Now())
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+}
+
+func TestEntityIDsSupportedNotifications(t *testing.T) {
 	data, err := os.ReadFile("testdata/notifications.json")
 	if err != nil {
 		panic(err)
@@ -130,11 +143,27 @@ func TestEntityIDsAllNotifications(t *testing.T) {
 	if err := json.Unmarshal(data, &notifications); err != nil {
 		panic(err)
 	}
+	notifTypes := evenotification.SupportedTypes()
 	en := evenotification.New(nil)
 	for _, n := range notifications {
+		if t2 := evenotification.Type(n.Type); !notifTypes.Contains(t2) {
+			continue
+		}
 		t.Run("should process notification type "+n.Type, func(t *testing.T) {
 			_, err := en.EntityIDs(n.Type, n.Text)
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func TestEntityIDErrorHandling(t *testing.T) {
+	en := evenotification.New(nil)
+	t.Run("return error for unsurported", func(t *testing.T) {
+		_, err := en.EntityIDs("invalid_type", "")
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+	t.Run("return error for empty type", func(t *testing.T) {
+		_, err := en.EntityIDs("", "")
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 }

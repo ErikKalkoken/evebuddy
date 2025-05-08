@@ -33,8 +33,8 @@ func (n orbitalAttacked) unmarshal(text string) (notification.OrbitalAttacked, s
 	return data, ids, nil
 }
 
-func (n orbitalAttacked) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n orbitalAttacked) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -47,11 +47,11 @@ func (n orbitalAttacked) render(ctx context.Context, text string, timestamp time
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf(
+	title = fmt.Sprintf(
 		"%s at %s is under attack",
 		o.type_.Name,
 		o.planet.Name,
-	))
+	)
 	t := fmt.Sprintf("%s is under attack.\n\n"+
 		"Attacking Character: %s\n\n"+
 		"Attacking Corporation: %s",
@@ -65,7 +65,7 @@ func (n orbitalAttacked) render(ctx context.Context, text string, timestamp time
 			makeEveEntityProfileLink(entities[data.AggressorAllianceID]),
 		)
 	}
-	body.Set(t)
+	body = t
 	return title, body, nil
 }
 
@@ -90,8 +90,8 @@ func (n orbitalReinforced) unmarshal(text string) (notification.OrbitalReinforce
 	return data, ids, nil
 }
 
-func (n orbitalReinforced) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n orbitalReinforced) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -104,11 +104,11 @@ func (n orbitalReinforced) render(ctx context.Context, text string, timestamp ti
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf(
+	title = fmt.Sprintf(
 		"%s at %s has been reinforced",
 		o.type_.Name,
 		o.planet.Name,
-	))
+	)
 	t := fmt.Sprintf("has been reinforced and will come out at %s.\n\n"+
 		"Attacking Character: %s\n\n"+
 		"Attacking Corporation: %s",
@@ -122,7 +122,7 @@ func (n orbitalReinforced) render(ctx context.Context, text string, timestamp ti
 			makeEveEntityProfileLink(entities[data.AggressorAllianceID]),
 		)
 	}
-	body.Set(t)
+	body = t
 	return title, body, nil
 }
 

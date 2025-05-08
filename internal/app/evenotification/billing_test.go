@@ -42,11 +42,11 @@ externalID: 27
 externalID2: 60003760`
 		title, body, err := en.RenderESI(ctx, "CorpAllBillMsg", text, time.Now())
 		if assert.NoError(t, err) {
-			assert.Equal(t, "Bill issued for lease", title.ValueOrZero())
-			assert.Contains(t, body.ValueOrZero(), creditor.Name)
-			assert.Contains(t, body.ValueOrZero(), debtor.Name)
-			assert.Contains(t, body.ValueOrZero(), office.Name)
-			assert.Contains(t, body.ValueOrZero(), station.Name)
+			assert.Equal(t, "Bill issued for lease", title)
+			assert.Contains(t, body, creditor.Name)
+			assert.Contains(t, body, debtor.Name)
+			assert.Contains(t, body, office.Name)
+			assert.Contains(t, body, station.Name)
 		}
 	})
 	t.Run("CorpAllBillMsg partial data", func(t *testing.T) {
@@ -66,10 +66,11 @@ externalID: 0
 externalID2: 0`
 		title, body, err := en.RenderESI(ctx, "CorpAllBillMsg", text, time.Now())
 		if assert.NoError(t, err) {
-			assert.Equal(t, "Bill issued for lease", title.ValueOrZero())
-			assert.Contains(t, body.ValueOrZero(), creditor.Name)
-			assert.Contains(t, body.ValueOrZero(), debtor.Name)
-			assert.Contains(t, body.ValueOrZero(), "?")
+
+			assert.Equal(t, "Bill issued for lease", title)
+			assert.Contains(t, body, creditor.Name)
+			assert.Contains(t, body, debtor.Name)
+			assert.Contains(t, body, "?")
 		}
 	})
 }

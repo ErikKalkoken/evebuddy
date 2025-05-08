@@ -45,10 +45,11 @@ solarSystemID: 30002537
 typeID: 16213`
 		title, body, err := en.RenderESI(ctx, "TowerAlertMsg", text, time.Now())
 		if assert.NoError(t, err) {
-			assert.Contains(t, title.ValueOrZero(), "is under attack")
-			assert.Contains(t, body.ValueOrZero(), aggressorAlliance.Name)
-			assert.Contains(t, body.ValueOrZero(), moon.Name)
-			assert.Contains(t, body.ValueOrZero(), type_.Name)
+
+			assert.Contains(t, title, "is under attack")
+			assert.Contains(t, body, aggressorAlliance.Name)
+			assert.Contains(t, body, moon.Name)
+			assert.Contains(t, body, type_.Name)
 		}
 	})
 	t.Run("TowerAlertMsg partial data 1", func(t *testing.T) {
@@ -72,10 +73,11 @@ solarSystemID: 30002537
 typeID: 16213`
 		title, body, err := en.RenderESI(ctx, "TowerAlertMsg", text, time.Now())
 		if assert.NoError(t, err) {
-			assert.Contains(t, title.ValueOrZero(), "is under attack")
-			assert.Contains(t, body.ValueOrZero(), aggressorAlliance.Name)
-			assert.Contains(t, body.ValueOrZero(), moon.Name)
-			assert.Contains(t, body.ValueOrZero(), type_.Name)
+
+			assert.Contains(t, title, "is under attack")
+			assert.Contains(t, body, aggressorAlliance.Name)
+			assert.Contains(t, body, moon.Name)
+			assert.Contains(t, body, type_.Name)
 		}
 	})
 	t.Run("TowerAlertMsg partial data 1", func(t *testing.T) {
@@ -99,10 +101,11 @@ solarSystemID: 30002537
 typeID: 16213`
 		title, body, err := en.RenderESI(ctx, "TowerAlertMsg", text, time.Now())
 		if assert.NoError(t, err) {
-			assert.Contains(t, title.ValueOrZero(), "is under attack")
-			assert.Contains(t, body.ValueOrZero(), aggressorAlliance.Name)
-			assert.Contains(t, body.ValueOrZero(), moon.Name)
-			assert.Contains(t, body.ValueOrZero(), type_.Name)
+
+			assert.Contains(t, title, "is under attack")
+			assert.Contains(t, body, aggressorAlliance.Name)
+			assert.Contains(t, body, moon.Name)
+			assert.Contains(t, body, type_.Name)
 		}
 	})
 }

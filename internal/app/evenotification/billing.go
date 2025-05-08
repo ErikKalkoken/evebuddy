@@ -34,13 +34,13 @@ type billOutOfMoneyMsg struct {
 	baseRenderer
 }
 
-func (n billOutOfMoneyMsg) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n billOutOfMoneyMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	var data notification.CorpAllBillMsgV2
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("Insufficient funds for %s bill", billTypeName(data.BillTypeID)))
+	title = fmt.Sprintf("Insufficient funds for %s bill", billTypeName(data.BillTypeID))
 	out := fmt.Sprintf(
 		"The selected corporation wallet division for automatic payments "+
 			"does not have enough current funds available to pay the %s bill, "+
@@ -50,7 +50,7 @@ func (n billOutOfMoneyMsg) render(ctx context.Context, text string, timestamp ti
 		billTypeName(data.BillTypeID),
 		fromLDAPTime(data.DueDate).Format(app.DateTimeFormat),
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -58,9 +58,9 @@ type billPaidCorpAllMsg struct {
 	baseRenderer
 }
 
-func (n billPaidCorpAllMsg) render(_ context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
-	title.Set("Bill payed")
+func (n billPaidCorpAllMsg) render(_ context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
+	title = "Bill payed"
 	var data notification.BillPaidCorpAllMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
@@ -70,7 +70,7 @@ func (n billPaidCorpAllMsg) render(_ context.Context, text string, timestamp tim
 		humanize.Commaf(float64(data.Amount)),
 		fromLDAPTime(data.DueDate).Format(app.DateTimeFormat),
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -101,8 +101,8 @@ func (n corpAllBillMsg) unmarshal(text string) (notification.CorpAllBillMsgV2, s
 	return data, ids, nil
 }
 
-func (n corpAllBillMsg) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n corpAllBillMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -134,7 +134,7 @@ func (n corpAllBillMsg) render(ctx context.Context, text string, timestamp time.
 	default:
 		billPurpose = "?"
 	}
-	body.Set(fmt.Sprintf(
+	body = fmt.Sprintf(
 		"A bill of **%s** ISK, due **%s** owed by %s to %s was issued on %s. This bill is for %s.",
 		humanize.Commaf(data.Amount),
 		fromLDAPTime(data.DueDate).Format(app.DateTimeFormat),
@@ -142,8 +142,8 @@ func (n corpAllBillMsg) render(ctx context.Context, text string, timestamp time.
 		makeEveEntityProfileLink(entities[data.CreditorID]),
 		fromLDAPTime(data.CurrentDate).Format(app.DateTimeFormat),
 		billPurpose,
-	))
-	title.Set(fmt.Sprintf("Bill issued for %s", billTypeName(data.BillTypeID)))
+	)
+	title = fmt.Sprintf("Bill issued for %s", billTypeName(data.BillTypeID))
 	return title, body, err
 }
 
@@ -151,9 +151,9 @@ type infrastructureHubBillAboutToExpire struct {
 	baseRenderer
 }
 
-func (n infrastructureHubBillAboutToExpire) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
-	title.Set("IHub Bill About to Expire")
+func (n infrastructureHubBillAboutToExpire) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
+	title = "IHub Bill About to Expire"
 	var data notification.InfrastructureHubBillAboutToExpire
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
@@ -167,7 +167,7 @@ func (n infrastructureHubBillAboutToExpire) render(ctx context.Context, text str
 		makeSolarSystemLink(solarSystem),
 		fromLDAPTime(data.DueDate).Format(app.DateTimeFormat),
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }
 
@@ -175,8 +175,8 @@ type iHubDestroyedByBillFailure struct {
 	baseRenderer
 }
 
-func (n iHubDestroyedByBillFailure) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n iHubDestroyedByBillFailure) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	var data notification.IHubDestroyedByBillFailure
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
@@ -189,14 +189,14 @@ func (n iHubDestroyedByBillFailure) render(ctx context.Context, text string, tim
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf(
+	title = fmt.Sprintf(
 		"%s has self-destructed due to unpaid maintenance bills",
 		structureType.Name,
-	))
+	)
 	out := fmt.Sprintf("%s in %s has self-destructed, as the standard maintenance bills where not paid.",
 		structureType.Name,
 		makeSolarSystemLink(solarSystem),
 	)
-	body.Set(out)
+	body = out
 	return title, body, nil
 }

@@ -58,8 +58,8 @@ func (n towerAlertMsg) unmarshal(text string) (notification.TowerAlertMsg, setIn
 	return data, ids, nil
 }
 
-func (n towerAlertMsg) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n towerAlertMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
 		return title, body, err
@@ -72,7 +72,7 @@ func (n towerAlertMsg) render(ctx context.Context, text string, timestamp time.T
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("Starbase at %s is under attack", o.moon.Name))
+	title = fmt.Sprintf("Starbase at %s is under attack", o.moon.Name)
 	b := fmt.Sprintf(
 		"%s is under attack.\n\n"+
 			"Attacking Character: %s\n\n"+
@@ -87,7 +87,7 @@ func (n towerAlertMsg) render(ctx context.Context, text string, timestamp time.T
 			makeEveEntityProfileLink(entities[data.AggressorAllianceID]),
 		)
 	}
-	body.Set(b)
+	body = b
 	return title, body, nil
 }
 
@@ -95,8 +95,8 @@ type towerResourceAlertMsg struct {
 	baseRenderer
 }
 
-func (n towerResourceAlertMsg) render(ctx context.Context, text string, timestamp time.Time) (optionalString, optionalString, error) {
-	var title, body optionalString
+func (n towerResourceAlertMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
 	var data notification.TowerResourceAlertMsg
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
@@ -105,13 +105,13 @@ func (n towerResourceAlertMsg) render(ctx context.Context, text string, timestam
 	if err != nil {
 		return title, body, err
 	}
-	title.Set(fmt.Sprintf("Starbase at %s is running out of fuel", o.moon.Name))
+	title = fmt.Sprintf("Starbase at %s is running out of fuel", o.moon.Name)
 	b := fmt.Sprintf("%s is running out of fuel in less then 24hrs.\n\n", o.intro)
 	if len(data.Wants) > 0 {
 		b += fmt.Sprintf(
 			"Fuel remaining: %s units", humanize.Comma(int64(data.Wants[0].Quantity)),
 		)
 	}
-	body.Set(b)
+	body = b
 	return title, body, nil
 }
