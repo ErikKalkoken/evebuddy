@@ -555,7 +555,7 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 		}
 		// Identify missing IDs
 		var err error
-		missing, err = s.st.MissingEveEntityIDs(ctx, ids2.Slice())
+		missing, err = s.st.MissingEveEntityIDs(ctx, ids2)
 		if err != nil {
 			return err
 		}
@@ -564,7 +564,7 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 		}
 		// Call ESI to resolve missing IDs
 		if missing.Size() > 0 {
-			slog.Debug("Trying to resolve EveEntity IDs from ESI", "ids", missing)
+			slog.Info("Trying to resolve EveEntity IDs from ESI", "ids", missing)
 		}
 		var ee []esi.PostUniverseNames200Ok
 		for chunk := range slices.Chunk(missing.Slice(), 1000) { // PostUniverseNames max is 1000 IDs
@@ -576,13 +576,11 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 			bad.AddSeq(slices.Values(badChunk))
 		}
 		for _, entity := range ee {
-			_, err := s.st.GetOrCreateEveEntity(
-				ctx,
-				storage.CreateEveEntityParams{
-					ID:       entity.Id,
-					Name:     entity.Name,
-					Category: eveEntityCategoryFromESICategory(entity.Category),
-				},
+			_, err := s.st.GetOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
+				ID:       entity.Id,
+				Name:     entity.Name,
+				Category: eveEntityCategoryFromESICategory(entity.Category),
+			},
 			)
 			if err != nil {
 				return err

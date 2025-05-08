@@ -182,8 +182,8 @@ func (st *Storage) ListEveEntitiesForIDs(ctx context.Context, ids []int32) ([]*a
 
 // MissingEveEntityIDs returns the IDs, which are have no respective EveEntity in the database.
 // IDs with value 0 are ignored.
-func (st *Storage) MissingEveEntityIDs(ctx context.Context, ids []int32) (set.Set[int32], error) {
-	incoming := set.Of(ids...)
+func (st *Storage) MissingEveEntityIDs(ctx context.Context, ids set.Set[int32]) (set.Set[int32], error) {
+	incoming := ids.Clone()
 	incoming.Delete(0)
 	current, err := st.ListEveEntityIDs(ctx)
 	if err != nil {

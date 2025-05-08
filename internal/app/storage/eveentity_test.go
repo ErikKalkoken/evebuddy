@@ -280,7 +280,7 @@ func TestEveEntityIDs(t *testing.T) {
 		testutil.TruncateTables(db)
 		factory.CreateEveEntity(app.EveEntity{ID: 42})
 		// when
-		got, err := r.MissingEveEntityIDs(ctx, []int32{42, 5, 0})
+		got, err := r.MissingEveEntityIDs(ctx, set.Of[int32](42, 5, 0))
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int32](5)
