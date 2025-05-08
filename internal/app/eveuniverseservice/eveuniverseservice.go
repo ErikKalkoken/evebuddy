@@ -1020,6 +1020,81 @@ func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id i
 	return y.(*app.EveLocation), nil
 }
 
+// AddMissingEveLocations adds missing EveLocations in bulk from ESI.
+func (s *EveUniverseService) AddMissingEveLocations(ctx context.Context, ids set.Set[int64]) error {
+	missing, err := s.st.MissingEveLocations(ctx, ids)
+	if err != nil {
+		return err
+	}
+	entities, err := s.entityIDsFromLocationsESI(ctx, missing.Slice())
+	if err != nil {
+		return err
+	}
+	if _, err := s.AddMissingEntities(ctx, entities); err != nil {
+		return err
+	}
+	g := new(errgroup.Group)
+	for id := range missing.All() {
+		g.Go(func() error {
+			_, err := s.GetOrCreateLocationESI(ctx, id)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+	}
+	return g.Wait()
+}
+
+// entityIDsFromLocationsESI returns the EveEntity IDs in EveLocation ids from ESI.
+// This methods allows bulkd resolving EveEntities before fetching many new locations from ESI.
+func (s *EveUniverseService) entityIDsFromLocationsESI(ctx context.Context, ids []int64) (set.Set[int32], error) {
+	if len(ids) == 0 {
+		return set.Set[int32]{}, nil
+	}
+	for _, id := range ids {
+		if app.LocationVariantFromID(id) == app.EveLocationStructure {
+			if ctx.Value(goesi.ContextAccessToken) == nil {
+				return set.Set[int32]{}, fmt.Errorf("eve location: token not set for fetching structure: %d", id)
+			}
+			break
+		}
+	}
+	entityIDs := make([]int32, len(ids))
+	g := new(errgroup.Group)
+	for i, id := range ids {
+		g.Go(func() error {
+			switch app.LocationVariantFromID(id) {
+			case app.EveLocationStation:
+				station, _, err := s.esiClient.ESI.UniverseApi.GetUniverseStationsStationId(ctx, int32(id), nil)
+				if err != nil {
+					return err
+				}
+				if x := station.Owner; x != 0 {
+					entityIDs[i] = x
+				}
+			case app.EveLocationStructure:
+				structure, r, err := s.esiClient.ESI.UniverseApi.GetUniverseStructuresStructureId(ctx, id, nil)
+				if err != nil {
+					if r != nil && r.StatusCode == http.StatusForbidden {
+						return nil
+					}
+					return err
+				}
+				entityIDs[i] = structure.OwnerId
+			}
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return set.Set[int32]{}, err
+	}
+	r := set.Of(xslices.Filter(entityIDs, func(x int32) bool {
+		return x != 0 && x != 1 && x != -1
+	})...)
+	return r, nil
+}
+
 func (s *EveUniverseService) GetStargateSolarSystemsESI(ctx context.Context, stargateIDs []int32) ([]*app.EveSolarSystem, error) {
 	g := new(errgroup.Group)
 	systemIDs := make([]int32, len(stargateIDs))
