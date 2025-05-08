@@ -2,6 +2,7 @@ package statuscacheservice_test
 
 import (
 	"context"
+	"maps"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func TestInit(t *testing.T) {
@@ -37,7 +39,7 @@ func TestInit(t *testing.T) {
 		})
 		er := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{Name: "Alpha"})
 		r := factory.CreateCorporation(er.ID)
-		section3 := app.SectionIndustryJobsCorporation
+		section3 := app.SectionCorporationIndustryJobs
 		z1 := factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: r.ID,
 			Section:       section3,
@@ -234,7 +236,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		}
 		o := &app.CorporationSectionStatus{
 			CorporationID: corporations[0],
-			Section:       app.SectionIndustryJobsCorporation,
+			Section:       app.SectionCorporationIndustryJobs,
 			ErrorMessage:  "error",
 		}
 		sc.SetCorporationSection(o)
@@ -521,6 +523,46 @@ func TestStatusCacheSummary(t *testing.T) {
 	})
 }
 
+func TestUpdateAndList(t *testing.T) {
+	db, st, factory := testutil.New()
+	defer db.Close()
+	cache := memcache.New()
+	sc := statuscacheservice.New(cache, st)
+	ctx := context.Background()
+	t.Run("update and list characters", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		cache.Clear()
+		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Bruce"})
+		c := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
+		// when
+		if err := sc.UpdateCharacters(ctx); err != nil {
+			t.Fatal(err)
+		}
+		xx := sc.ListCharacters()
+		// then
+		assert.Len(t, xx, 1)
+		assert.Equal(t, c.ID, xx[0].ID)
+		assert.Equal(t, "Bruce", xx[0].Name)
+	})
+	t.Run("update and list corporations", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		cache.Clear()
+		ec := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{Name: "Alpha"})
+		c := factory.CreateCorporation(ec.ID)
+		// when
+		if err := sc.UpdateCorporations(ctx); err != nil {
+			t.Fatal(err)
+		}
+		xx := sc.ListCorporations()
+		// then
+		assert.Len(t, xx, 1)
+		assert.Equal(t, c.ID, xx[0].ID)
+		assert.Equal(t, "Alpha", xx[0].Name)
+	})
+}
+
 func TestCharacterSections(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
@@ -549,22 +591,6 @@ func TestCharacterSections(t *testing.T) {
 		assert.Equal(t, x1.StartedAt, x2.StartedAt)
 		assert.Equal(t, section.Timeout(), x2.Timeout)
 	})
-	t.Run("Can update and list characters", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		cache.Clear()
-		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Bruce"})
-		c := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
-		// when
-		if err := sc.UpdateCharacters(ctx); err != nil {
-			t.Fatal(err)
-		}
-		xx := sc.ListCharacters()
-		// then
-		assert.Len(t, xx, 1)
-		assert.Equal(t, c.ID, xx[0].ID)
-		assert.Equal(t, "Bruce", xx[0].Name)
-	})
 	t.Run("can report whether a character section exists", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -584,6 +610,51 @@ func TestCharacterSections(t *testing.T) {
 		assert.False(t, sc.HasCharacterSection(c.ID, app.SectionAssets))
 		assert.False(t, sc.HasCharacterSection(0, app.SectionAssets))
 	})
+	t.Run("list character sections", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		cache.Clear()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionAssets,
+		})
+		if err := sc.InitCache(ctx); err != nil {
+			t.Fatal(err)
+		}
+		// when
+		x := sc.ListCharacterSections(c.ID)
+		// then
+		m := make(map[app.CharacterSection]app.SectionStatus)
+		for _, s := range x {
+			m[app.CharacterSection(s.SectionID)] = s
+		}
+		got := set.Collect(maps.Keys(m))
+		want := set.Of(app.CharacterSections...)
+		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		assert.False(t, m[app.SectionAssets].IsMissing())
+		assert.True(t, m[app.SectionImplants].IsMissing())
+	})
+	t.Run("list character sections all empty", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		cache.Clear()
+		c := factory.CreateCharacter()
+		if err := sc.InitCache(ctx); err != nil {
+			t.Fatal(err)
+		}
+		// when
+		x := sc.ListCharacterSections(c.ID)
+		// then
+		m := make(map[app.CharacterSection]app.SectionStatus)
+		for _, s := range x {
+			m[app.CharacterSection(s.SectionID)] = s
+		}
+		got := set.Collect(maps.Keys(m))
+		want := set.Of(app.CharacterSections...)
+		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		assert.True(t, m[app.SectionImplants].IsMissing())
+	})
 }
 
 func TestCorporationSections(t *testing.T) {
@@ -597,7 +668,7 @@ func TestCorporationSections(t *testing.T) {
 		testutil.TruncateTables(db)
 		cache.Clear()
 		c := factory.CreateCorporation()
-		section := app.SectionIndustryJobsCorporation
+		section := app.SectionCorporationIndustryJobs
 		x1 := factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: c.ID,
 			Section:       section,
@@ -616,28 +687,12 @@ func TestCorporationSections(t *testing.T) {
 		assert.Equal(t, section.Timeout(), x2.Timeout)
 		assert.Equal(t, x1.Comment, x2.Comment)
 	})
-	t.Run("Can update and list corporations", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		cache.Clear()
-		ec := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{Name: "Alpha"})
-		c := factory.CreateCorporation(ec.ID)
-		// when
-		if err := sc.UpdateCorporations(ctx); err != nil {
-			t.Fatal(err)
-		}
-		xx := sc.ListCorporations()
-		// then
-		assert.Len(t, xx, 1)
-		assert.Equal(t, c.ID, xx[0].ID)
-		assert.Equal(t, "Alpha", xx[0].Name)
-	})
 	t.Run("can report whether a corporation section exists", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		cache.Clear()
 		c := factory.CreateCorporation()
-		section := app.SectionIndustryJobsCorporation
+		section := app.SectionCorporationIndustryJobs
 		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: c.ID,
 			Section:       section,
@@ -646,7 +701,51 @@ func TestCorporationSections(t *testing.T) {
 			t.Fatal(err)
 		}
 		// when/then
-		assert.True(t, sc.HasCorporationSection(c.ID, app.SectionIndustryJobsCorporation))
+		assert.True(t, sc.HasCorporationSection(c.ID, app.SectionCorporationIndustryJobs))
+	})
+	t.Run("list corporation sections 1", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		cache.Clear()
+		c := factory.CreateCorporation()
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationIndustryJobs,
+		})
+		if err := sc.InitCache(ctx); err != nil {
+			t.Fatal(err)
+		}
+		// when
+		x := sc.ListCorporationSections(c.ID)
+		// then
+		m := make(map[app.CorporationSection]app.SectionStatus)
+		for _, s := range x {
+			m[app.CorporationSection(s.SectionID)] = s
+		}
+		got := set.Collect(maps.Keys(m))
+		want := set.Of(app.CorporationSections...)
+		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		assert.False(t, m[app.SectionCorporationIndustryJobs].IsMissing())
+	})
+	t.Run("list corporation sections all empty", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		cache.Clear()
+		c := factory.CreateCorporation()
+		if err := sc.InitCache(ctx); err != nil {
+			t.Fatal(err)
+		}
+		// when
+		x := sc.ListCorporationSections(c.ID)
+		// then
+		m := make(map[app.CorporationSection]app.SectionStatus)
+		for _, s := range x {
+			m[app.CorporationSection(s.SectionID)] = s
+		}
+		got := set.Collect(maps.Keys(m))
+		want := set.Of(app.CorporationSections...)
+		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		assert.True(t, m[app.SectionCorporationIndustryJobs].IsMissing())
 	})
 }
 
@@ -676,9 +775,8 @@ func TestGeneralSections(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		cache.Clear()
-		section := app.SectionEveTypes
 		factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
-			Section: section,
+			Section: app.SectionEveTypes,
 		})
 		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
@@ -695,6 +793,29 @@ func TestGeneralSections(t *testing.T) {
 		}
 		// when/then
 		assert.False(t, sc.HasGeneralSection(app.SectionEveTypes))
+	})
+	t.Run("list general sections", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		cache.Clear()
+		factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
+			Section: app.SectionEveTypes,
+		})
+		if err := sc.InitCache(ctx); err != nil {
+			t.Fatal(err)
+		}
+		// when
+		x := sc.ListGeneralSections()
+		// then
+		m := make(map[app.GeneralSection]app.SectionStatus)
+		for _, s := range x {
+			m[app.GeneralSection(s.SectionID)] = s
+		}
+		got := set.Collect(maps.Keys(m))
+		want := set.Of(app.GeneralSections...)
+		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		assert.False(t, m[app.SectionEveTypes].IsMissing())
+		assert.True(t, m[app.SectionEveCharacters].IsMissing())
 	})
 }
 
@@ -742,7 +863,7 @@ func TestCorporationSectionSummary(t *testing.T) {
 	)
 	sc.SetCorporationSection(&app.CorporationSectionStatus{
 		CorporationID: corporationID,
-		Section:       app.SectionIndustryJobsCorporation,
+		Section:       app.SectionCorporationIndustryJobs,
 		ErrorMessage:  "ERROR",
 	})
 	// when

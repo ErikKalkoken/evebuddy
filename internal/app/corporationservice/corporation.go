@@ -108,7 +108,7 @@ var jobStatusFromESIValue = map[string]app.IndustryJobStatus{
 }
 
 func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.CorporationUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionIndustryJobsCorporation {
+	if arg.Section != app.SectionCorporationIndustryJobs {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
@@ -211,7 +211,7 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 	}
 	var f func(context.Context, app.CorporationUpdateSectionParams) (bool, error)
 	switch arg.Section {
-	case app.SectionIndustryJobsCorporation:
+	case app.SectionCorporationIndustryJobs:
 		f = s.updateIndustryJobsESI
 	default:
 		return false, fmt.Errorf("update section: unknown section: %s", arg.Section)

@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -143,9 +144,10 @@ func TestLocation(t *testing.T) {
 			ID: 42,
 		})
 		// when
-		got, err := r.MissingEveLocations(ctx, []int64{42, 99})
+		got, err := r.MissingEveLocations(ctx, set.Of[int64](42, 99))
 		if assert.NoError(t, err) {
-			assert.Equal(t, []int64{99}, got)
+			want := set.Of[int64](99)
+			assert.True(t, got.Equal(want))
 		}
 	})
 }

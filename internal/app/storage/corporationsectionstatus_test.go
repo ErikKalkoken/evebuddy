@@ -23,7 +23,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 		c := factory.CreateCorporation()
 		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: c.ID,
-			Section:       app.SectionIndustryJobsCorporation,
+			Section:       app.SectionCorporationIndustryJobs,
 		})
 		// when
 		oo, err := r.ListCorporationSectionStatus(ctx, c.ID)
@@ -40,7 +40,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 		error := "error"
 		arg := storage.UpdateOrCreateCorporationSectionStatusParams{
 			CorporationID: c.ID,
-			Section:       app.SectionIndustryJobsCorporation,
+			Section:       app.SectionCorporationIndustryJobs,
 			ErrorMessage:  &error,
 		}
 		x1, err := r.UpdateOrCreateCorporationSectionStatus(ctx, arg)
@@ -52,7 +52,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 				assert.True(t, x1.CompletedAt.IsZero())
 				assert.False(t, x1.UpdatedAt.IsZero())
 			}
-			x2, err := r.GetCorporationSectionStatus(ctx, c.ID, app.SectionIndustryJobsCorporation)
+			x2, err := r.GetCorporationSectionStatus(ctx, c.ID, app.SectionCorporationIndustryJobs)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -64,7 +64,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 		c := factory.CreateCorporation()
 		x := factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: c.ID,
-			Section:       app.SectionIndustryJobsCorporation,
+			Section:       app.SectionCorporationIndustryJobs,
 		})
 		// when
 		s := "error"
@@ -93,7 +93,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 		c := factory.CreateCorporation()
 		x := factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: c.ID,
-			Section:       app.SectionIndustryJobsCorporation,
+			Section:       app.SectionCorporationIndustryJobs,
 		})
 		// when
 		e := "error"

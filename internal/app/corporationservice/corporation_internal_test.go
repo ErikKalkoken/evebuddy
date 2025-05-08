@@ -86,7 +86,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		// when
 		changed, err := s.updateIndustryJobsESI(ctx, app.CorporationUpdateSectionParams{
 			CorporationID: c.ID,
-			Section:       app.SectionIndustryJobsCorporation,
+			Section:       app.SectionCorporationIndustryJobs,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -163,7 +163,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		// when
 		changed, err := s.updateIndustryJobsESI(ctx, app.CorporationUpdateSectionParams{
 			CorporationID: c.ID,
-			Section:       app.SectionIndustryJobsCorporation,
+			Section:       app.SectionCorporationIndustryJobs,
 		})
 		// then
 		if assert.NoError(t, err) {

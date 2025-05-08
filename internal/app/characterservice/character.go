@@ -189,11 +189,11 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 					locationIDs.Add(ca.LocationId) // location IDs that are not referencing other itemIDs are locations
 				}
 			}
-			missingLocationIDs, err := s.st.MissingEveLocations(ctx, locationIDs.Slice())
+			missingLocationIDs, err := s.st.MissingEveLocations(ctx, locationIDs)
 			if err != nil {
 				return err
 			}
-			for _, id := range missingLocationIDs {
+			for id := range missingLocationIDs.All() {
 				_, err := s.eus.GetOrCreateLocationESI(ctx, id)
 				if err != nil {
 					return err
