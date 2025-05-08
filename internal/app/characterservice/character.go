@@ -189,7 +189,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 					locationIDs.Add(ca.LocationId) // location IDs that are not referencing other itemIDs are locations
 				}
 			}
-			if err := s.eus.AddMissingEveLocations(ctx, locationIDs); err != nil {
+			if err := s.eus.AddMissingLocations(ctx, locationIDs); err != nil {
 				return err
 			}
 			if err := s.eus.AddMissingTypes(ctx, typeIDs); err != nil {
@@ -788,19 +788,28 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 		func(ctx context.Context, characterID int32, data any) error {
 			contracts := data.([]esi.GetCharactersCharacterIdContracts200Ok)
 			// fetch missing eve entities
-			ids := set.Of[int32]()
+			var entityIDs set.Set[int32]
+			var locationIDs set.Set[int64]
 			for _, c := range contracts {
-				ids.Add(c.IssuerId)
-				ids.Add(c.IssuerCorporationId)
+				entityIDs.Add(c.IssuerId)
+				entityIDs.Add(c.IssuerCorporationId)
 				if c.AcceptorId != 0 {
-					ids.Add(c.AcceptorId)
+					entityIDs.Add(c.AcceptorId)
 				}
 				if c.AssigneeId != 0 {
-					ids.Add(c.AssigneeId)
+					entityIDs.Add(c.AssigneeId)
+				}
+				if c.StartLocationId != 0 {
+					locationIDs.Add(c.StartLocationId)
+				}
+				if c.EndLocationId != 0 {
+					locationIDs.Add(c.EndLocationId)
 				}
 			}
-			_, err := s.eus.AddMissingEntities(ctx, ids)
-			if err != nil {
+			if _, err := s.eus.AddMissingEntities(ctx, entityIDs); err != nil {
+				return err
+			}
+			if err := s.eus.AddMissingLocations(ctx, locationIDs); err != nil {
 				return err
 			}
 			// identify new contracts
@@ -859,18 +868,6 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 }
 
 func (s *CharacterService) createNewContract(ctx context.Context, characterID int32, c esi.GetCharactersCharacterIdContracts200Ok) error {
-	if c.StartLocationId != 0 {
-		_, err := s.eus.GetOrCreateLocationESI(ctx, c.StartLocationId)
-		if err != nil {
-			return err
-		}
-	}
-	if c.EndLocationId != 0 {
-		_, err := s.eus.GetOrCreateLocationESI(ctx, c.EndLocationId)
-		if err != nil {
-			return err
-		}
-	}
 	availability, ok := contractAvailabilityFromESIValue[c.Availability]
 	if !ok {
 		return fmt.Errorf("unknown availability: %s", c.Availability)
@@ -1090,7 +1087,6 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			jobs := data.([]esi.GetCharactersCharacterIdIndustryJobs200Ok)
-
 			entityIDs := set.Of[int32]()
 			typeIDs := set.Of[int32]()
 			locationIDs := set.Of[int64]()
@@ -1110,10 +1106,8 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 			if _, err := s.eus.AddMissingEntities(ctx, entityIDs); err != nil {
 				return err
 			}
-			for id := range locationIDs.All() {
-				if _, err := s.eus.GetOrCreateLocationESI(ctx, id); err != nil {
-					return err
-				}
+			if err := s.eus.AddMissingLocations(ctx, locationIDs); err != nil {
+				return err
 			}
 			for id := range typeIDs.All() {
 				if _, err := s.eus.GetOrCreateTypeESI(ctx, id); err != nil {
@@ -1231,15 +1225,20 @@ func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.Char
 			if err := s.st.UpdateCharacterLastCloneJump(ctx, characterID, optional.From(clones.LastCloneJumpDate)); err != nil {
 				return err
 			}
+			var locationIDs set.Set[int64]
+			var typeIDs set.Set[int32]
+			for _, jc := range clones.JumpClones {
+				locationIDs.Add(jc.LocationId)
+				typeIDs.AddSeq(slices.Values(jc.Implants))
+			}
+			if err := s.eus.AddMissingLocations(ctx, locationIDs); err != nil {
+				return err
+			}
+			if err := s.eus.AddMissingTypes(ctx, typeIDs); err != nil {
+				return err
+			}
 			args := make([]storage.CreateCharacterJumpCloneParams, len(clones.JumpClones))
 			for i, jc := range clones.JumpClones {
-				_, err := s.eus.GetOrCreateLocationESI(ctx, jc.LocationId)
-				if err != nil {
-					return err
-				}
-				if err := s.eus.AddMissingTypes(ctx, set.Of(jc.Implants...)); err != nil {
-					return err
-				}
 				args[i] = storage.CreateCharacterJumpCloneParams{
 					CharacterID: characterID,
 					Implants:    jc.Implants,
@@ -1627,51 +1626,49 @@ func (s *CharacterService) resolveMailEntities(ctx context.Context, mm []esi.Get
 }
 
 func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
-	count := 0
+	type esiMailWrapper struct {
+		mail esi.GetCharactersCharacterIdMailMailIdOk
+		id   int32
+	}
+	mails := make([]esiMailWrapper, len(headers))
 	g := new(errgroup.Group)
-	g.SetLimit(20)
-	for _, h := range headers {
-		count++
-		mailID := h.MailId
+	for i, h := range headers {
 		g.Go(func() error {
-			err := s.fetchAndStoreMail(ctx, characterID, mailID)
+			m, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, characterID, h.MailId, nil)
 			if err != nil {
-				return fmt.Errorf("fetch mail %d: %w", mailID, err)
+				return err
 			}
+			mails[i].mail = m
+			mails[i].id = h.MailId
 			return nil
 		})
 	}
 	if err := g.Wait(); err != nil {
 		return err
 	}
-	slog.Info("Stored new mail from ESI", "characterID", characterID, "count", count)
-	return nil
-}
-
-func (s *CharacterService) fetchAndStoreMail(ctx context.Context, characterID, mailID int32) error {
-	m, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, characterID, mailID, nil)
-	if err != nil {
-		return err
+	slog.Info("Received mails from ESI", "characterID", characterID, "count", len(mails))
+	for _, m := range mails {
+		recipientIDs := make([]int32, len(m.mail.Recipients))
+		for i, r := range m.mail.Recipients {
+			recipientIDs[i] = r.RecipientId
+		}
+		arg := storage.CreateCharacterMailParams{
+			Body:         m.mail.Body,
+			CharacterID:  characterID,
+			FromID:       m.mail.From,
+			IsRead:       m.mail.Read,
+			LabelIDs:     m.mail.Labels,
+			MailID:       m.id,
+			RecipientIDs: recipientIDs,
+			Subject:      m.mail.Subject,
+			Timestamp:    m.mail.Timestamp,
+		}
+		_, err := s.st.CreateCharacterMail(ctx, arg)
+		if err != nil {
+			return err
+		}
 	}
-	recipientIDs := make([]int32, len(m.Recipients))
-	for i, r := range m.Recipients {
-		recipientIDs[i] = r.RecipientId
-	}
-	arg := storage.CreateCharacterMailParams{
-		Body:         m.Body,
-		CharacterID:  characterID,
-		FromID:       m.From,
-		IsRead:       m.Read,
-		LabelIDs:     m.Labels,
-		MailID:       mailID,
-		RecipientIDs: recipientIDs,
-		Subject:      m.Subject,
-		Timestamp:    m.Timestamp,
-	}
-	_, err = s.st.CreateCharacterMail(ctx, arg)
-	if err != nil {
-		return err
-	}
+	slog.Info("Stored new mail from ESI", "characterID", characterID, "count", len(mails))
 	return nil
 }
 
@@ -2738,28 +2735,25 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg a
 				slog.Info("No new wallet transactions", "characterID", characterID)
 				return nil
 			}
-			ids := set.Of[int32]()
-			for _, e := range newEntries {
-				if e.ClientId != 0 {
-					ids.Add(e.ClientId)
+			var entityIDs, typeIDs set.Set[int32]
+			var locationIDs set.Set[int64]
+			for _, en := range newEntries {
+				if en.ClientId != 0 {
+					entityIDs.Add(en.ClientId)
 				}
+				locationIDs.Add(en.LocationId)
+				typeIDs.Add(en.TypeId)
 			}
-			_, err = s.eus.AddMissingEntities(ctx, ids)
-			if err != nil {
+			if _, err := s.eus.AddMissingEntities(ctx, entityIDs); err != nil {
 				return err
 			}
-
+			if err := s.eus.AddMissingLocations(ctx, locationIDs); err != nil {
+				return err
+			}
+			if err := s.eus.AddMissingTypes(ctx, typeIDs); err != nil {
+				return err
+			}
 			for _, o := range newEntries {
-				_, err = s.eus.GetOrCreateTypeESI(ctx, o.TypeId)
-				if err != nil {
-					slog.Error("get or create wallet journal type", "record", o, "error", err)
-					continue
-				}
-				_, err = s.eus.GetOrCreateLocationESI(ctx, o.LocationId)
-				if err != nil {
-					slog.Error("get or create wallet journal location", "record", o, "error", err)
-					continue
-				}
 				arg := storage.CreateCharacterWalletTransactionParams{
 					ClientID:      o.ClientId,
 					Date:          o.Date,

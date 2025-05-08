@@ -684,7 +684,12 @@ func (s *EveUniverseService) createCategoryFromESI(ctx context.Context, id int32
 			Name:        r.Name,
 			IsPublished: r.Published,
 		}
-		return s.st.CreateEveCategory(ctx, arg)
+		o, err := s.st.CreateEveCategory(ctx, arg)
+		if err != nil {
+			return nil, err
+		}
+		slog.Info("Stored upated EveCategory", "ID", id)
+		return o, nil
 	})
 	if err != nil {
 		return nil, err
@@ -720,6 +725,7 @@ func (s *EveUniverseService) createGroupFromESI(ctx context.Context, id int32) (
 		if err := s.st.CreateEveGroup(ctx, arg); err != nil {
 			return nil, err
 		}
+		slog.Info("Stored upated EveGroup", "ID", id)
 		return s.st.GetEveGroup(ctx, id)
 	})
 	if err != nil {
@@ -806,6 +812,7 @@ func (s *EveUniverseService) createTypeFromESI(ctx context.Context, id int32) (*
 				return nil, err
 			}
 		}
+		slog.Info("Stored updated EveType", "ID", id)
 		return s.st.GetEveType(ctx, id)
 	})
 	if err != nil {
@@ -814,6 +821,7 @@ func (s *EveUniverseService) createTypeFromESI(ctx context.Context, id int32) (*
 	return x.(*app.EveType), nil
 }
 
+// AddMissingTypes fetches missing typeIDs from ESI.
 func (s *EveUniverseService) AddMissingTypes(ctx context.Context, ids set.Set[int32]) error {
 	missingIDs, err := s.st.MissingEveTypes(ctx, ids)
 	if err != nil {
@@ -823,35 +831,61 @@ func (s *EveUniverseService) AddMissingTypes(ctx context.Context, ids set.Set[in
 		return nil
 	}
 	slog.Debug("Trying to fetch missing EveTypes from ESI", "count", missingIDs.Size())
+	g := new(errgroup.Group)
 	for id := range missingIDs.All() {
-		_, err := s.GetOrCreateTypeESI(ctx, id)
-		if err != nil {
-			return err
-		}
+		g.Go(func() error {
+			_, err := s.GetOrCreateTypeESI(ctx, id)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
 	}
-	return nil
+	return g.Wait()
 }
 
 func (s *EveUniverseService) UpdateCategoryWithChildrenESI(ctx context.Context, categoryID int32) error {
 	key := fmt.Sprintf("UpdateCategoryWithChildrenESI-%d", categoryID)
 	_, err, _ := s.sfg.Do(key, func() (any, error) {
-		typeIDs := make([]int32, 0)
-		r1, _, err := s.esiClient.ESI.UniverseApi.GetUniverseCategoriesCategoryId(ctx, categoryID, nil)
+		_, err := s.GetOrCreateCategoryESI(ctx, categoryID)
 		if err != nil {
 			return nil, err
 		}
-		for _, id := range r1.Groups {
-			r2, _, err := s.esiClient.ESI.UniverseApi.GetUniverseGroupsGroupId(ctx, id, nil)
-			if err != nil {
-				return nil, err
-			}
-			typeIDs = slices.Concat(typeIDs, r2.Types)
+		category, _, err := s.esiClient.ESI.UniverseApi.GetUniverseCategoriesCategoryId(ctx, categoryID, nil)
+		if err != nil {
+			return nil, err
 		}
-		for _, id := range typeIDs {
-			_, err := s.GetOrCreateTypeESI(ctx, id)
-			if err != nil {
-				return nil, err
-			}
+		g := new(errgroup.Group)
+		for _, id := range category.Groups {
+			g.Go(func() error {
+				_, err := s.GetOrCreateGroupESI(ctx, id)
+				return err
+			})
+		}
+		if err := g.Wait(); err != nil {
+			return nil, err
+		}
+		groupTypes := make([][]int32, len(category.Groups))
+		g = new(errgroup.Group)
+		for i, id := range category.Groups {
+			g.Go(func() error {
+				group, _, err := s.esiClient.ESI.UniverseApi.GetUniverseGroupsGroupId(ctx, id, nil)
+				if err != nil {
+					return err
+				}
+				groupTypes[i] = group.Types
+				return nil
+			})
+		}
+		if err := g.Wait(); err != nil {
+			return nil, err
+		}
+		var typeIds set.Set[int32]
+		for _, ids := range groupTypes {
+			typeIds.AddSeq(slices.Values(ids))
+		}
+		if err := s.AddMissingTypes(ctx, typeIds); err != nil {
+			return nil, err
 		}
 		return nil, nil
 	})
@@ -1020,13 +1054,13 @@ func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id i
 	return y.(*app.EveLocation), nil
 }
 
-// AddMissingEveLocations adds missing EveLocations in bulk from ESI.
-func (s *EveUniverseService) AddMissingEveLocations(ctx context.Context, ids set.Set[int64]) error {
+// AddMissingLocations adds missing EveLocations in bulk from ESI.
+func (s *EveUniverseService) AddMissingLocations(ctx context.Context, ids set.Set[int64]) error {
 	missing, err := s.st.MissingEveLocations(ctx, ids)
 	if err != nil {
 		return err
 	}
-	entities, err := s.entityIDsFromLocationsESI(ctx, missing.Slice())
+	entities, err := s.EntityIDsFromLocationsESI(ctx, missing.Slice())
 	if err != nil {
 		return err
 	}
@@ -1046,9 +1080,9 @@ func (s *EveUniverseService) AddMissingEveLocations(ctx context.Context, ids set
 	return g.Wait()
 }
 
-// entityIDsFromLocationsESI returns the EveEntity IDs in EveLocation ids from ESI.
+// EntityIDsFromLocationsESI returns the EveEntity IDs in EveLocation ids from ESI.
 // This methods allows bulkd resolving EveEntities before fetching many new locations from ESI.
-func (s *EveUniverseService) entityIDsFromLocationsESI(ctx context.Context, ids []int64) (set.Set[int32], error) {
+func (s *EveUniverseService) EntityIDsFromLocationsESI(ctx context.Context, ids []int64) (set.Set[int32], error) {
 	if len(ids) == 0 {
 		return set.Set[int32]{}, nil
 	}
@@ -1262,7 +1296,12 @@ func (s *EveUniverseService) createRegionFromESI(ctx context.Context, id int32) 
 			Description: region.Description,
 			Name:        region.Name,
 		}
-		return s.st.CreateEveRegion(ctx, arg)
+		o, err := s.st.CreateEveRegion(ctx, arg)
+		if err != nil {
+			return nil, err
+		}
+		slog.Info("Stored upated EveRegion", "ID", id)
+		return o, nil
 	})
 	if err != nil {
 		return nil, err
@@ -1297,7 +1336,12 @@ func (s *EveUniverseService) createConstellationFromESI(ctx context.Context, id 
 		if err := s.st.CreateEveConstellation(ctx, arg); err != nil {
 			return nil, err
 		}
-		return s.st.GetEveConstellation(ctx, id)
+		o, err := s.st.GetEveConstellation(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		slog.Info("Stored upated EveConstellation", "ID", id)
+		return o, nil
 	})
 	if err != nil {
 		return nil, err
@@ -1333,7 +1377,12 @@ func (s *EveUniverseService) createSolarSystemFromESI(ctx context.Context, id in
 		if err := s.st.CreateEveSolarSystem(ctx, arg); err != nil {
 			return nil, err
 		}
-		return s.st.GetEveSolarSystem(ctx, id)
+		o, err := s.st.GetEveSolarSystem(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		slog.Info("Stored upated EveSolarSystem", "ID", id)
+		return o, nil
 	})
 	if err != nil {
 		return nil, err

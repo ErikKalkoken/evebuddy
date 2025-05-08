@@ -142,15 +142,11 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 			if _, err := s.eus.AddMissingEntities(ctx, entityIDs); err != nil {
 				return err
 			}
-			for id := range locationIDs.All() {
-				if _, err := s.eus.GetOrCreateLocationESI(ctx, id); err != nil {
-					return err
-				}
+			if err := s.eus.AddMissingLocations(ctx, locationIDs); err != nil {
+				return err
 			}
-			for id := range typeIDs.All() {
-				if _, err := s.eus.GetOrCreateTypeESI(ctx, id); err != nil {
-					return err
-				}
+			if err := s.eus.AddMissingTypes(ctx, typeIDs); err != nil {
+				return err
 			}
 			for _, j := range jobs {
 				status, ok := jobStatusFromESIValue[j.Status]
