@@ -111,15 +111,13 @@ func (s *EveUniverseService) FetchAllianceCorporations(ctx context.Context, alli
 }
 
 func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, id int32) (*app.EveCharacter, error) {
-	o, err := s.st.GetEveCharacter(ctx, id)
-	if errors.Is(err, app.ErrNotFound) {
-		return s.createCharacterFromESI(ctx, id)
-	}
-	return o, err
-}
-
-func (s *EveUniverseService) createCharacterFromESI(ctx context.Context, id int32) (*app.EveCharacter, error) {
-	y, err, _ := s.sfg.Do(fmt.Sprintf("createCharacterFromESI-%d", id), func() (any, error) {
+	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateCharacterESI-%d", id), func() (any, error) {
+		o, err := s.st.GetEveCharacter(ctx, id)
+		if err == nil {
+			return o, err
+		} else if !errors.Is(err, app.ErrNotFound) {
+			return nil, err
+		}
 		r, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -161,7 +159,7 @@ func (s *EveUniverseService) createCharacterFromESI(ctx context.Context, id int3
 	if err != nil {
 		return nil, err
 	}
-	return y.(*app.EveCharacter), nil
+	return x.(*app.EveCharacter), nil
 }
 
 // UpdateAllCharactersESI updates all known Eve characters from ESI.
@@ -252,13 +250,19 @@ func (s *EveUniverseService) updateCharacterESI(ctx context.Context, characterID
 func (s *EveUniverseService) GetOrCreateCorporationESI(ctx context.Context, id int32) (*app.EveCorporation, error) {
 	o, err := s.st.GetEveCorporation(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {
-		return s.updateOrcreateCorporationFromESI(ctx, id)
+		return s.UpdateOrCreateCorporationFromESI(ctx, id)
 	}
 	return o, err
 }
 
-func (s *EveUniverseService) updateOrcreateCorporationFromESI(ctx context.Context, id int32) (*app.EveCorporation, error) {
-	y, err, _ := s.sfg.Do(fmt.Sprintf("updateOrcreateCorporationFromESI-%d", id), func() (any, error) {
+func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Context, id int32) (*app.EveCorporation, error) {
+	x, err, _ := s.sfg.Do(fmt.Sprintf("UpdateOrCreateCorporationFromESI-%d", id), func() (any, error) {
+		o, err := s.st.GetEveCorporation(ctx, id)
+		if err == nil {
+			return o, err
+		} else if !errors.Is(err, app.ErrNotFound) {
+			return nil, err
+		}
 		r, _, err := s.esiClient.ESI.CorporationApi.GetCorporationsCorporationId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -302,7 +306,7 @@ func (s *EveUniverseService) updateOrcreateCorporationFromESI(ctx context.Contex
 	if err != nil {
 		return nil, err
 	}
-	return y.(*app.EveCorporation), nil
+	return x.(*app.EveCorporation), nil
 }
 
 // UpdateAllCorporationsESI updates all known corporations from ESI.
@@ -318,7 +322,7 @@ func (s *EveUniverseService) UpdateAllCorporationsESI(ctx context.Context) error
 	g.SetLimit(5)
 	for id := range ids.All() {
 		g.Go(func() error {
-			_, err := s.updateOrcreateCorporationFromESI(ctx, id)
+			_, err := s.UpdateOrCreateCorporationFromESI(ctx, id)
 			return err
 		})
 	}
@@ -334,30 +338,28 @@ func (s *EveUniverseService) GetDogmaAttribute(ctx context.Context, id int32) (*
 }
 
 func (s *EveUniverseService) GetOrCreateDogmaAttributeESI(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
-	o, err := s.st.GetEveDogmaAttribute(ctx, id)
-	if errors.Is(err, app.ErrNotFound) {
-		return s.createDogmaAttributeFromESI(ctx, id)
-	}
-	return o, err
-}
-
-func (s *EveUniverseService) createDogmaAttributeFromESI(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
 	x, err, _ := s.sfg.Do(fmt.Sprintf("createDogmaAttributeFromESI-%d", id), func() (any, error) {
-		o, _, err := s.esiClient.ESI.DogmaApi.GetDogmaAttributesAttributeId(ctx, id, nil)
+		o1, err := s.st.GetEveDogmaAttribute(ctx, id)
+		if err == nil {
+			return o1, err
+		} else if !errors.Is(err, app.ErrNotFound) {
+			return nil, err
+		}
+		d, _, err := s.esiClient.ESI.DogmaApi.GetDogmaAttributesAttributeId(ctx, id, nil)
 		if err != nil {
 			return nil, err
 		}
 		arg := storage.CreateEveDogmaAttributeParams{
-			ID:           o.AttributeId,
-			DefaultValue: o.DefaultValue,
-			Description:  o.Description,
-			DisplayName:  o.DisplayName,
-			IconID:       o.IconId,
-			Name:         o.Name,
-			IsHighGood:   o.HighIsGood,
-			IsPublished:  o.Published,
-			IsStackable:  o.Stackable,
-			UnitID:       app.EveUnitID(o.UnitId),
+			ID:           d.AttributeId,
+			DefaultValue: d.DefaultValue,
+			Description:  d.Description,
+			DisplayName:  d.DisplayName,
+			IconID:       d.IconId,
+			Name:         d.Name,
+			IsHighGood:   d.HighIsGood,
+			IsPublished:  d.Published,
+			IsStackable:  d.Stackable,
+			UnitID:       app.EveUnitID(d.UnitId),
 		}
 		o2, err := s.st.CreateEveDogmaAttribute(ctx, arg)
 		if err != nil {
@@ -668,15 +670,13 @@ func (s *EveUniverseService) GetType(ctx context.Context, id int32) (*app.EveTyp
 }
 
 func (s *EveUniverseService) GetOrCreateCategoryESI(ctx context.Context, id int32) (*app.EveCategory, error) {
-	o, err := s.st.GetEveCategory(ctx, id)
-	if errors.Is(err, app.ErrNotFound) {
-		return s.createCategoryFromESI(ctx, id)
-	}
-	return o, err
-}
-
-func (s *EveUniverseService) createCategoryFromESI(ctx context.Context, id int32) (*app.EveCategory, error) {
-	y, err, _ := s.sfg.Do(fmt.Sprintf("createCategoryFromESI-%d", id), func() (any, error) {
+	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateCategoryESI-%d", id), func() (any, error) {
+		o1, err := s.st.GetEveCategory(ctx, id)
+		if err == nil {
+			return o1, err
+		} else if !errors.Is(err, app.ErrNotFound) {
+			return nil, err
+		}
 		r, _, err := s.esiClient.ESI.UniverseApi.GetUniverseCategoriesCategoryId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -686,43 +686,40 @@ func (s *EveUniverseService) createCategoryFromESI(ctx context.Context, id int32
 			Name:        r.Name,
 			IsPublished: r.Published,
 		}
-		o, err := s.st.CreateEveCategory(ctx, arg)
+		o2, err := s.st.CreateEveCategory(ctx, arg)
 		if err != nil {
 			return nil, err
 		}
 		slog.Info("Created eve category", "ID", id)
-		return o, nil
+		return o2, nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	return y.(*app.EveCategory), nil
+	return x.(*app.EveCategory), nil
 }
 
 func (s *EveUniverseService) GetOrCreateGroupESI(ctx context.Context, id int32) (*app.EveGroup, error) {
-	o, err := s.st.GetEveGroup(ctx, id)
-	if errors.Is(err, app.ErrNotFound) {
-		return s.createGroupFromESI(ctx, id)
-	}
-	return o, err
-}
-
-func (s *EveUniverseService) createGroupFromESI(ctx context.Context, id int32) (*app.EveGroup, error) {
-	key := fmt.Sprintf("createGroupFromESI-%d", id)
-	y, err, _ := s.sfg.Do(key, func() (any, error) {
-		r, _, err := s.esiClient.ESI.UniverseApi.GetUniverseGroupsGroupId(ctx, id, nil)
+	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateGroupESI-%d", id), func() (any, error) {
+		o, err := s.st.GetEveGroup(ctx, id)
+		if err == nil {
+			return o, err
+		} else if !errors.Is(err, app.ErrNotFound) {
+			return nil, err
+		}
+		group, _, err := s.esiClient.ESI.UniverseApi.GetUniverseGroupsGroupId(ctx, id, nil)
 		if err != nil {
 			return nil, err
 		}
-		c, err := s.GetOrCreateCategoryESI(ctx, r.CategoryId)
+		c, err := s.GetOrCreateCategoryESI(ctx, group.CategoryId)
 		if err != nil {
 			return nil, err
 		}
 		arg := storage.CreateEveGroupParams{
 			ID:          id,
-			Name:        r.Name,
+			Name:        group.Name,
 			CategoryID:  c.ID,
-			IsPublished: r.Published,
+			IsPublished: group.Published,
 		}
 		if err := s.st.CreateEveGroup(ctx, arg); err != nil {
 			return nil, err
@@ -733,19 +730,17 @@ func (s *EveUniverseService) createGroupFromESI(ctx context.Context, id int32) (
 	if err != nil {
 		return nil, err
 	}
-	return y.(*app.EveGroup), nil
+	return x.(*app.EveGroup), nil
 }
 
 func (s *EveUniverseService) GetOrCreateTypeESI(ctx context.Context, id int32) (*app.EveType, error) {
-	o, err := s.st.GetEveType(ctx, id)
-	if errors.Is(err, app.ErrNotFound) {
-		return s.createTypeFromESI(ctx, id)
-	}
-	return o, err
-}
-
-func (s *EveUniverseService) createTypeFromESI(ctx context.Context, id int32) (*app.EveType, error) {
-	x, err, _ := s.sfg.Do(fmt.Sprintf("createTypeFromESI-%d", id), func() (any, error) {
+	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateTypeESI-%d", id), func() (any, error) {
+		o, err := s.st.GetEveType(ctx, id)
+		if err == nil {
+			return o, err
+		} else if !errors.Is(err, app.ErrNotFound) {
+			return nil, err
+		}
 		t, _, err := s.esiClient.ESI.UniverseApi.GetUniverseTypesTypeId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -934,16 +929,22 @@ func (s *EveUniverseService) ListLocations(ctx context.Context) ([]*app.EveLocat
 func (s *EveUniverseService) GetOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
 	o, err := s.st.GetLocation(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {
-		return s.updateOrCreateLocationESI(ctx, id)
+		return s.UpdateOrCreateLocationESI(ctx, id)
 	}
 	return o, err
 }
 
-// updateOrCreateLocationESI tries to fetch and create a new structure from ESI.
+// UpdateOrCreateLocationESI tries to fetch and create a new structure from ESI.
 //
 // Important: A token with the structure scope must be set in the context when trying to fetch a structure.
-func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
+func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
 	y, err, _ := s.sfg.Do(fmt.Sprintf("updateOrCreateLocationESI-%d", id), func() (any, error) {
+		o, err := s.st.GetLocation(ctx, id)
+		if err == nil {
+			return o, err
+		} else if !errors.Is(err, app.ErrNotFound) {
+			return nil, err
+		}
 		var arg storage.UpdateOrCreateLocationParams
 		switch app.LocationVariantFromID(id) {
 		case app.EveLocationUnknown:
@@ -1277,15 +1278,13 @@ func (s *EveUniverseService) GetConstellationSolarSystemsESI(ctx context.Context
 }
 
 func (s *EveUniverseService) GetOrCreateRegionESI(ctx context.Context, id int32) (*app.EveRegion, error) {
-	o, err := s.st.GetEveRegion(ctx, id)
-	if errors.Is(err, app.ErrNotFound) {
-		return s.createRegionFromESI(ctx, id)
-	}
-	return o, err
-}
-
-func (s *EveUniverseService) createRegionFromESI(ctx context.Context, id int32) (*app.EveRegion, error) {
-	y, err, _ := s.sfg.Do(fmt.Sprintf("createRegionFromESI-%d", id), func() (any, error) {
+	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateRegionESI-%d", id), func() (any, error) {
+		o1, err := s.st.GetEveRegion(ctx, id)
+		if err == nil {
+			return o1, err
+		} else if !errors.Is(err, app.ErrNotFound) {
+			return nil, err
+		}
 		region, _, err := s.esiClient.ESI.UniverseApi.GetUniverseRegionsRegionId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -1295,29 +1294,27 @@ func (s *EveUniverseService) createRegionFromESI(ctx context.Context, id int32) 
 			Description: region.Description,
 			Name:        region.Name,
 		}
-		o, err := s.st.CreateEveRegion(ctx, arg)
+		o2, err := s.st.CreateEveRegion(ctx, arg)
 		if err != nil {
 			return nil, err
 		}
 		slog.Info("Created eve region", "ID", id)
-		return o, nil
+		return o2, nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	return y.(*app.EveRegion), nil
+	return x.(*app.EveRegion), nil
 }
 
 func (s *EveUniverseService) GetOrCreateConstellationESI(ctx context.Context, id int32) (*app.EveConstellation, error) {
-	o, err := s.st.GetEveConstellation(ctx, id)
-	if errors.Is(err, app.ErrNotFound) {
-		return s.createConstellationFromESI(ctx, id)
-	}
-	return o, err
-}
-
-func (s *EveUniverseService) createConstellationFromESI(ctx context.Context, id int32) (*app.EveConstellation, error) {
-	y, err, _ := s.sfg.Do(fmt.Sprintf("createConstellationFromESI-%d", id), func() (any, error) {
+	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateConstellationESI-%d", id), func() (any, error) {
+		o, err := s.st.GetEveConstellation(ctx, id)
+		if err == nil {
+			return o, err
+		} else if !errors.Is(err, app.ErrNotFound) {
+			return nil, err
+		}
 		constellation, _, err := s.esiClient.ESI.UniverseApi.GetUniverseConstellationsConstellationId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -1334,29 +1331,23 @@ func (s *EveUniverseService) createConstellationFromESI(ctx context.Context, id 
 		if err := s.st.CreateEveConstellation(ctx, arg); err != nil {
 			return nil, err
 		}
-		o, err := s.st.GetEveConstellation(ctx, id)
-		if err != nil {
-			return nil, err
-		}
 		slog.Info("Created eve constellation", "ID", id)
-		return o, nil
+		return s.st.GetEveConstellation(ctx, id)
 	})
 	if err != nil {
 		return nil, err
 	}
-	return y.(*app.EveConstellation), nil
+	return x.(*app.EveConstellation), nil
 }
 
 func (s *EveUniverseService) GetOrCreateSolarSystemESI(ctx context.Context, id int32) (*app.EveSolarSystem, error) {
-	o, err := s.st.GetEveSolarSystem(ctx, id)
-	if errors.Is(err, app.ErrNotFound) {
-		return s.createSolarSystemFromESI(ctx, id)
-	}
-	return o, err
-}
-
-func (s *EveUniverseService) createSolarSystemFromESI(ctx context.Context, id int32) (*app.EveSolarSystem, error) {
-	y, err, _ := s.sfg.Do(fmt.Sprintf("createSolarSystemFromESI-%d", id), func() (any, error) {
+	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateSolarSystemESI-%d", id), func() (any, error) {
+		o, err := s.st.GetEveSolarSystem(ctx, id)
+		if err == nil {
+			return o, err
+		} else if !errors.Is(err, app.ErrNotFound) {
+			return nil, err
+		}
 		system, _, err := s.esiClient.ESI.UniverseApi.GetUniverseSystemsSystemId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -1374,29 +1365,23 @@ func (s *EveUniverseService) createSolarSystemFromESI(ctx context.Context, id in
 		if err := s.st.CreateEveSolarSystem(ctx, arg); err != nil {
 			return nil, err
 		}
-		o, err := s.st.GetEveSolarSystem(ctx, id)
-		if err != nil {
-			return nil, err
-		}
 		slog.Info("Created eve solar system", "ID", id)
-		return o, nil
+		return s.st.GetEveSolarSystem(ctx, id)
 	})
 	if err != nil {
 		return nil, err
 	}
-	return y.(*app.EveSolarSystem), nil
+	return x.(*app.EveSolarSystem), nil
 }
 
 func (s *EveUniverseService) GetOrCreatePlanetESI(ctx context.Context, id int32) (*app.EvePlanet, error) {
-	o, err := s.st.GetEvePlanet(ctx, id)
-	if errors.Is(err, app.ErrNotFound) {
-		return s.createPlanetFromESI(ctx, id)
-	}
-	return o, err
-}
-
-func (s *EveUniverseService) createPlanetFromESI(ctx context.Context, id int32) (*app.EvePlanet, error) {
-	y, err, _ := s.sfg.Do(fmt.Sprintf("createPlanetFromESI-%d", id), func() (any, error) {
+	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreatePlanetESI-%d", id), func() (any, error) {
+		o, err := s.st.GetEvePlanet(ctx, id)
+		if err == nil {
+			return o, err
+		} else if !errors.Is(err, app.ErrNotFound) {
+			return nil, err
+		}
 		planet, _, err := s.esiClient.ESI.UniverseApi.GetUniversePlanetsPlanetId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -1424,19 +1409,17 @@ func (s *EveUniverseService) createPlanetFromESI(ctx context.Context, id int32) 
 	if err != nil {
 		return nil, err
 	}
-	return y.(*app.EvePlanet), nil
+	return x.(*app.EvePlanet), nil
 }
 
 func (s *EveUniverseService) GetOrCreateMoonESI(ctx context.Context, id int32) (*app.EveMoon, error) {
-	o, err := s.st.GetEveMoon(ctx, id)
-	if errors.Is(err, app.ErrNotFound) {
-		return s.createMoonFromESI(ctx, id)
-	}
-	return o, err
-}
-
-func (s *EveUniverseService) createMoonFromESI(ctx context.Context, id int32) (*app.EveMoon, error) {
-	y, err, _ := s.sfg.Do(fmt.Sprintf("createMoonFromESI-%d", id), func() (any, error) {
+	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateMoonESI-%d", id), func() (any, error) {
+		o, err := s.st.GetEveMoon(ctx, id)
+		if err == nil {
+			return o, err
+		} else if !errors.Is(err, app.ErrNotFound) {
+			return nil, err
+		}
 		moon, _, err := s.esiClient.ESI.UniverseApi.GetUniverseMoonsMoonId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -1459,7 +1442,7 @@ func (s *EveUniverseService) createMoonFromESI(ctx context.Context, id int32) (*
 	if err != nil {
 		return nil, err
 	}
-	return y.(*app.EveMoon), nil
+	return x.(*app.EveMoon), nil
 }
 
 // FetchRoute fetches a route between two solar systems from ESi and returns it.
@@ -1500,6 +1483,8 @@ func (s *EveUniverseService) FetchRoute(ctx context.Context, destination, origin
 	}
 	return systems, nil
 }
+
+// TODO: Not fully thread safe: Might update for same ID multiple times.
 
 // MarketPrice returns the average market price for a type. Or empty when no price is known for this type.
 func (s *EveUniverseService) MarketPrice(ctx context.Context, typeID int32) (optional.Optional[float64], error) {
@@ -1624,15 +1609,13 @@ func (s *EveUniverseService) makeMembershipHistory(ctx context.Context, items []
 }
 
 func (s *EveUniverseService) GetOrCreateRaceESI(ctx context.Context, id int32) (*app.EveRace, error) {
-	o, err := s.st.GetEveRace(ctx, id)
-	if errors.Is(err, app.ErrNotFound) {
-		return s.createRaceFromESI(ctx, id)
-	}
-	return o, err
-}
-
-func (s *EveUniverseService) createRaceFromESI(ctx context.Context, id int32) (*app.EveRace, error) {
-	y, err, _ := s.sfg.Do(fmt.Sprintf("createRaceFromESI-%d", id), func() (any, error) {
+	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateRaceESI-%d", id), func() (any, error) {
+		o, err := s.st.GetEveRace(ctx, id)
+		if err == nil {
+			return o, err
+		} else if !errors.Is(err, app.ErrNotFound) {
+			return nil, err
+		}
 		races, _, err := s.esiClient.ESI.UniverseApi.GetUniverseRaces(ctx, nil)
 		if err != nil {
 			return nil, err
@@ -1657,39 +1640,37 @@ func (s *EveUniverseService) createRaceFromESI(ctx context.Context, id int32) (*
 	if err != nil {
 		return nil, err
 	}
-	return y.(*app.EveRace), nil
+	return x.(*app.EveRace), nil
 }
 
 func (s *EveUniverseService) GetOrCreateSchematicESI(ctx context.Context, id int32) (*app.EveSchematic, error) {
-	o, err := s.st.GetEveSchematic(ctx, id)
-	if errors.Is(err, app.ErrNotFound) {
-		return s.createSchematicFromESI(ctx, id)
-	}
-	return o, err
-}
-
-func (s *EveUniverseService) createSchematicFromESI(ctx context.Context, id int32) (*app.EveSchematic, error) {
-	y, err, _ := s.sfg.Do(fmt.Sprintf("createSchematicFromESI-%d", id), func() (any, error) {
-		r, _, err := s.esiClient.ESI.PlanetaryInteractionApi.GetUniverseSchematicsSchematicId(ctx, id, nil)
+	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateSchematicESI-%d", id), func() (any, error) {
+		o, err := s.st.GetEveSchematic(ctx, id)
+		if err == nil {
+			return o, err
+		} else if !errors.Is(err, app.ErrNotFound) {
+			return nil, err
+		}
+		d, _, err := s.esiClient.ESI.PlanetaryInteractionApi.GetUniverseSchematicsSchematicId(ctx, id, nil)
 		if err != nil {
 			return nil, err
 		}
 		arg := storage.CreateEveSchematicParams{
 			ID:        id,
-			CycleTime: int(r.CycleTime),
-			Name:      r.SchematicName,
+			CycleTime: int(d.CycleTime),
+			Name:      d.SchematicName,
 		}
-		o, err := s.st.CreateEveSchematic(ctx, arg)
+		o2, err := s.st.CreateEveSchematic(ctx, arg)
 		if err != nil {
 			return nil, err
 		}
 		slog.Info("Created eve schematic", "id", id)
-		return o, nil
+		return o2, nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	return y.(*app.EveSchematic), nil
+	return x.(*app.EveSchematic), nil
 }
 
 func (s *EveUniverseService) getSectionStatus(ctx context.Context, section app.GeneralSection) (*app.GeneralSectionStatus, error) {
