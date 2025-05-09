@@ -16,7 +16,7 @@ func TestUIStartEmpty(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	httpmock.RegisterNoResponder(httpmock.NewNotFoundResponder(t.Fatal)) // fails on any HTTP request
-	db, st, _ := testutil.NewWithOptions(false)
+	db, st, _ := testutil.NewDBOnDisk(t.TempDir())
 	defer db.Close()
 	bu := ui.NewFakeBaseUI(st, ui.NewFakeApp(t))
 	u := ui.NewDesktopUI(bu)
@@ -37,7 +37,7 @@ func TestUIStartWithCharacter(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	httpmock.RegisterNoResponder(httpmock.NewNotFoundResponder(t.Fatal)) // fails on any HTTP request
-	db, st, factory := testutil.NewWithOptions(false)
+	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
 	defer db.Close()
 
 	character := factory.CreateCharacter()

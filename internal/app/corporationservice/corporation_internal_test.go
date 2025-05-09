@@ -43,7 +43,7 @@ func NewFake(st *storage.Storage, args ...Params) *CorporationService {
 }
 
 func TestUpdateIndustryJobsESI(t *testing.T) {
-	db, st, factory := testutil.NewWithOptions(false)
+	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()

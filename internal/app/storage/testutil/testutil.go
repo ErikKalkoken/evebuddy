@@ -3,33 +3,32 @@ package testutil
 import (
 	"database/sql"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
+// New creates and returns a database in memory for tests.
+// Important: This variant is not suitable for DB code that runs in goroutines.
 func New() (*sql.DB, *storage.Storage, Factory) {
-	return NewWithOptions(true)
+	// in-memory DB for faster runnng tests
+	db, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		panic(err)
+	}
+	if err := storage.ApplyMigrations(db); err != nil {
+		panic(err)
+	}
+	r := storage.New(db, db)
+	factory := NewFactory(r, db)
+	return db, r, factory
 }
 
-func NewWithOptions(useMemoryDB bool) (*sql.DB, *storage.Storage, Factory) {
-	if useMemoryDB {
-		// in-memory DB for faster runnng tests
-		db, err := sql.Open("sqlite3", ":memory:")
-		if err != nil {
-			panic(err)
-		}
-		if err := storage.ApplyMigrations(db); err != nil {
-			panic(err)
-		}
-		r := storage.New(db, db)
-		factory := NewFactory(r, db)
-		return db, r, factory
-	}
+// NeNewDBWithFile create and returns a new database on disk for tests.
+// The caller of this function is reponsible for deleting the file when the tests have concluded.
+func NewDBOnDisk(path string) (*sql.DB, *storage.Storage, Factory) {
 	// real DB for more thorough tests
-	p := filepath.Join(os.TempDir(), "evebuddy_test.sqlite")
-	os.Remove(p)
+	p := filepath.Join(path, "evebuddy_test.sqlite")
 	dbRW, dbRO, err := storage.InitDB("file:" + p)
 	if err != nil {
 		panic(err)
