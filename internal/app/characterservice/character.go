@@ -189,10 +189,14 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 					locationIDs.Add(ca.LocationId) // location IDs that are not referencing other itemIDs are locations
 				}
 			}
-			if err := s.eus.AddMissingLocations(ctx, locationIDs); err != nil {
-				return err
-			}
-			if err := s.eus.AddMissingTypes(ctx, typeIDs); err != nil {
+			g := new(errgroup.Group)
+			g.Go(func() error {
+				return s.eus.AddMissingLocations(ctx, locationIDs)
+			})
+			g.Go(func() error {
+				return s.eus.AddMissingTypes(ctx, typeIDs)
+			})
+			if err := g.Wait(); err != nil {
 				return err
 			}
 			currentIDs, err := s.st.ListCharacterAssetIDs(ctx, characterID)
@@ -806,7 +810,15 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 					locationIDs.Add(c.EndLocationId)
 				}
 			}
-			if _, err := s.eus.AddMissingEntities(ctx, entityIDs); err != nil {
+			g := new(errgroup.Group)
+			g.Go(func() error {
+				_, err := s.eus.AddMissingEntities(ctx, entityIDs)
+				return err
+			})
+			g.Go(func() error {
+				return s.eus.AddMissingLocations(ctx, locationIDs)
+			})
+			if err := g.Wait(); err != nil {
 				return err
 			}
 			if err := s.eus.AddMissingLocations(ctx, locationIDs); err != nil {
@@ -913,11 +925,14 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 	if err != nil {
 		return err
 	}
+	typeIDs := set.Of(xslices.Map(items, func(x esi.GetCharactersCharacterIdContractsContractIdItems200Ok) int32 {
+		return x.TypeId
+
+	})...)
+	if err := s.eus.AddMissingTypes(ctx, typeIDs); err != nil {
+		return err
+	}
 	for _, it := range items {
-		et, err := s.eus.GetOrCreateTypeESI(ctx, it.TypeId)
-		if err != nil {
-			return err
-		}
 		arg := storage.CreateCharacterContractItemParams{
 			ContractID:  id,
 			IsIncluded:  it.IsIncluded,
@@ -925,7 +940,7 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 			Quantity:    it.Quantity,
 			RawQuantity: it.RawQuantity,
 			RecordID:    it.RecordId,
-			TypeID:      et.ID,
+			TypeID:      it.TypeId,
 		}
 		if err := s.st.CreateCharacterContractItem(ctx, arg); err != nil {
 			return err
@@ -1036,12 +1051,11 @@ func (s *CharacterService) updateImplantsESI(ctx context.Context, arg app.Charac
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			implants := data.([]int32)
+			if err := s.eus.AddMissingTypes(ctx, set.Of(implants...)); err != nil {
+				return err
+			}
 			args := make([]storage.CreateCharacterImplantParams, len(implants))
 			for i, typeID := range implants {
-				_, err := s.eus.GetOrCreateTypeESI(ctx, typeID)
-				if err != nil {
-					return err
-				}
 				args[i] = storage.CreateCharacterImplantParams{
 					CharacterID: characterID,
 					EveTypeID:   typeID,
@@ -1103,16 +1117,19 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 					typeIDs.Add(j.ProductTypeId)
 				}
 			}
-			if _, err := s.eus.AddMissingEntities(ctx, entityIDs); err != nil {
+			g := new(errgroup.Group)
+			g.Go(func() error {
+				_, err := s.eus.AddMissingEntities(ctx, entityIDs)
 				return err
-			}
-			if err := s.eus.AddMissingLocations(ctx, locationIDs); err != nil {
+			})
+			g.Go(func() error {
+				return s.eus.AddMissingLocations(ctx, locationIDs)
+			})
+			g.Go(func() error {
+				return s.eus.AddMissingTypes(ctx, typeIDs)
+			})
+			if err := g.Wait(); err != nil {
 				return err
-			}
-			for id := range typeIDs.All() {
-				if _, err := s.eus.GetOrCreateTypeESI(ctx, id); err != nil {
-					return err
-				}
 			}
 			for _, j := range jobs {
 				status, ok := jobStatusFromESIValue[j.Status]
@@ -1211,30 +1228,23 @@ func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.Char
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			clones := data.(esi.GetCharactersCharacterIdClonesOk)
-			var home optional.Optional[int64]
-			if clones.HomeLocation.LocationId != 0 {
-				_, err := s.eus.GetOrCreateLocationESI(ctx, clones.HomeLocation.LocationId)
-				if err != nil {
-					return err
-				}
-				home.Set(clones.HomeLocation.LocationId)
-			}
-			if err := s.st.UpdateCharacterHome(ctx, characterID, home); err != nil {
-				return err
-			}
-			if err := s.st.UpdateCharacterLastCloneJump(ctx, characterID, optional.From(clones.LastCloneJumpDate)); err != nil {
-				return err
-			}
 			var locationIDs set.Set[int64]
 			var typeIDs set.Set[int32]
 			for _, jc := range clones.JumpClones {
 				locationIDs.Add(jc.LocationId)
 				typeIDs.AddSeq(slices.Values(jc.Implants))
 			}
-			if err := s.eus.AddMissingLocations(ctx, locationIDs); err != nil {
-				return err
+			if clones.HomeLocation.LocationId != 0 {
+				locationIDs.Add(clones.HomeLocation.LocationId)
 			}
-			if err := s.eus.AddMissingTypes(ctx, typeIDs); err != nil {
+			g := new(errgroup.Group)
+			g.Go(func() error {
+				return s.eus.AddMissingLocations(ctx, locationIDs)
+			})
+			g.Go(func() error {
+				return s.eus.AddMissingTypes(ctx, typeIDs)
+			})
+			if err := g.Wait(); err != nil {
 				return err
 			}
 			args := make([]storage.CreateCharacterJumpCloneParams, len(clones.JumpClones))
@@ -1251,6 +1261,17 @@ func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.Char
 				return err
 			}
 			slog.Info("Stored updated jump clones", "characterID", characterID, "count", len(clones.JumpClones))
+
+			var home optional.Optional[int64]
+			if clones.HomeLocation.LocationId != 0 {
+				home.Set(clones.HomeLocation.LocationId)
+			}
+			if err := s.st.UpdateCharacterHome(ctx, characterID, home); err != nil {
+				return err
+			}
+			if err := s.st.UpdateCharacterLastCloneJump(ctx, characterID, optional.From(clones.LastCloneJumpDate)); err != nil {
+				return err
+			}
 			return nil
 		})
 }
@@ -1646,7 +1667,6 @@ func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32
 	if err := g.Wait(); err != nil {
 		return err
 	}
-	slog.Info("Received mails from ESI", "characterID", characterID, "count", len(mails))
 	for _, m := range mails {
 		recipientIDs := make([]int32, len(m.mail.Recipients))
 		for i, r := range m.mail.Recipients {
@@ -1668,7 +1688,7 @@ func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32
 			return err
 		}
 	}
-	slog.Info("Stored new mail from ESI", "characterID", characterID, "count", len(mails))
+	slog.Info("Stored new mail", "characterID", characterID, "count", len(mails))
 	return nil
 }
 
@@ -1858,25 +1878,36 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 			if err := s.loadEntitiesForNotifications(ctx, newNotifs); err != nil {
 				return err
 			}
-			for _, n := range newNotifs {
-				arg := storage.CreateCharacterNotificationParams{
-					CharacterID:    characterID,
-					IsRead:         n.IsRead,
-					NotificationID: n.NotificationId,
-					SenderID:       n.SenderId,
-					Text:           n.Text,
-					Timestamp:      n.Timestamp,
-					Type:           n.Type_,
-				}
-				title, body, err := s.ens.RenderESI(ctx, n.Type_, n.Text, n.Timestamp)
-				if errors.Is(err, app.ErrNotFound) {
-					// do nothing
-				} else if err != nil {
-					slog.Error("Failed to render character notification", "characterID", characterID, "NotificationID", n.NotificationId, "error", err)
-				} else {
-					arg.Title.Set(title)
-					arg.Body.Set(body)
-				}
+			args := make([]storage.CreateCharacterNotificationParams, len(newNotifs))
+			g := new(errgroup.Group)
+			for i, n := range newNotifs {
+				g.Go(func() error {
+					arg := storage.CreateCharacterNotificationParams{
+						CharacterID:    characterID,
+						IsRead:         n.IsRead,
+						NotificationID: n.NotificationId,
+						SenderID:       n.SenderId,
+						Text:           n.Text,
+						Timestamp:      n.Timestamp,
+						Type:           n.Type_,
+					}
+					title, body, err := s.ens.RenderESI(ctx, n.Type_, n.Text, n.Timestamp)
+					if errors.Is(err, app.ErrNotFound) {
+						// do nothing
+					} else if err != nil {
+						slog.Error("Failed to render character notification", "characterID", characterID, "NotificationID", n.NotificationId, "error", err)
+					} else {
+						arg.Title.Set(title)
+						arg.Body.Set(body)
+					}
+					args[i] = arg
+					return nil
+				})
+			}
+			if err := g.Wait(); err != nil {
+				return err
+			}
+			for _, arg := range args {
 				if err := s.st.CreateCharacterNotification(ctx, arg); err != nil {
 					return err
 				}
@@ -2744,13 +2775,18 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg a
 				locationIDs.Add(en.LocationId)
 				typeIDs.Add(en.TypeId)
 			}
-			if _, err := s.eus.AddMissingEntities(ctx, entityIDs); err != nil {
+			g := new(errgroup.Group)
+			g.Go(func() error {
+				_, err := s.eus.AddMissingEntities(ctx, entityIDs)
 				return err
-			}
-			if err := s.eus.AddMissingLocations(ctx, locationIDs); err != nil {
-				return err
-			}
-			if err := s.eus.AddMissingTypes(ctx, typeIDs); err != nil {
+			})
+			g.Go(func() error {
+				return s.eus.AddMissingLocations(ctx, locationIDs)
+			})
+			g.Go(func() error {
+				return s.eus.AddMissingTypes(ctx, typeIDs)
+			})
+			if err := g.Wait(); err != nil {
 				return err
 			}
 			for _, o := range newEntries {

@@ -14,6 +14,7 @@ import (
 	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -139,13 +140,18 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 					typeIDs.Add(j.ProductTypeId)
 				}
 			}
-			if _, err := s.eus.AddMissingEntities(ctx, entityIDs); err != nil {
+			g := new(errgroup.Group)
+			g.Go(func() error {
+				_, err := s.eus.AddMissingEntities(ctx, entityIDs)
 				return err
-			}
-			if err := s.eus.AddMissingLocations(ctx, locationIDs); err != nil {
-				return err
-			}
-			if err := s.eus.AddMissingTypes(ctx, typeIDs); err != nil {
+			})
+			g.Go(func() error {
+				return s.eus.AddMissingLocations(ctx, locationIDs)
+			})
+			g.Go(func() error {
+				return s.eus.AddMissingTypes(ctx, typeIDs)
+			})
+			if err := g.Wait(); err != nil {
 				return err
 			}
 			for _, j := range jobs {

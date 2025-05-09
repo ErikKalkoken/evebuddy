@@ -831,10 +831,7 @@ func (s *EveUniverseService) AddMissingTypes(ctx context.Context, ids set.Set[in
 	for id := range missing.All() {
 		g.Go(func() error {
 			_, err := s.GetOrCreateTypeESI(ctx, id)
-			if err != nil {
-				return err
-			}
-			return nil
+			return err
 		})
 	}
 	return g.Wait()
@@ -1072,10 +1069,7 @@ func (s *EveUniverseService) AddMissingLocations(ctx context.Context, ids set.Se
 	for id := range missing.All() {
 		g.Go(func() error {
 			_, err := s.GetOrCreateLocationESI(ctx, id)
-			if err != nil {
-				return err
-			}
-			return nil
+			return err
 		})
 	}
 	return g.Wait()
