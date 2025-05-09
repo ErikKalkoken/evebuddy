@@ -41,21 +41,23 @@ func New(dbRW *sql.DB, dbRO *sql.DB) *Storage {
 func InitDB(dsn string) (dbRW *sql.DB, dbRO *sql.DB, err error) {
 	// create RW connection
 	dsn2 := sqliteDSN(dsn, false)
-	slog.Debug("Creating RW connection to DB", "dsn", dsn2)
+	slog.Info("Creating RW connection to DB", "dsn", dsn2)
 	dbRW, err = sql.Open("sqlite3", dsn2)
 	if err != nil {
+		err = fmt.Errorf("open RW connection: %s: %w", dsn, err)
 		return
 	}
 	dbRW.SetMaxOpenConns(1)
-	slog.Info("Creating RO connection to DB", "DSN", dsn)
 	if err = ApplyMigrations(dbRW); err != nil {
+		err = fmt.Errorf("apply migrations: %w", err)
 		return
 	}
 	// create RO connection
 	dsn2 = sqliteDSN(dsn, true)
-	slog.Debug("connecting to sqlite DB", "dsn", dsn2)
+	slog.Info("Creating RO connection to DB", "DSN", dsn)
 	dbRO, err = sql.Open("sqlite3", dsn2)
 	if err != nil {
+		err = fmt.Errorf("open RO connection: %s: %w", dsn, err)
 		return
 	}
 	return
