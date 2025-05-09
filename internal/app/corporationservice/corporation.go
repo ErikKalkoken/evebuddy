@@ -212,7 +212,7 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 	default:
 		return false, fmt.Errorf("update section: unknown section: %s", arg.Section)
 	}
-	key := fmt.Sprintf("UpdateESI-%s-%d", arg.Section, arg.CorporationID)
+	key := fmt.Sprintf("update-corporation-section-%s-%d", arg.Section, arg.CorporationID)
 	x, err, _ := s.sfg.Do(key, func() (any, error) {
 		return f(ctx, arg)
 	})

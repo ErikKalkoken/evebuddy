@@ -259,41 +259,49 @@ func (a *updateStatus) makeUpdateAllAction() func() {
 }
 
 func (a *updateStatus) update() {
-	entities := a.updateEntityList(a.u.services())
+	entities, count := a.updateEntityList(a.u.services())
+
 	fyne.Do(func() {
 		a.sectionEntities = entities
 		a.entityList.Refresh()
 		a.refreshSections()
-		a.charactersTop.SetText(fmt.Sprintf("Entities: %d", len(a.sectionEntities)))
+		a.charactersTop.SetText(fmt.Sprintf("Entities: %d", count))
 		a.refreshDetails()
 	})
 }
 
-func (*updateStatus) updateEntityList(s services) []sectionEntity {
+func (*updateStatus) updateEntityList(s services) ([]sectionEntity, int) {
+	var count int
 	entities := make([]sectionEntity, 0)
-	entities = append(entities, sectionEntity{category: sectionHeader, name: "Characters"})
 	cc := s.scs.ListCharacters()
-	for _, c := range cc {
-		ss := s.scs.CharacterSectionSummary(c.ID)
-		o := sectionEntity{
-			category: sectionCharacter,
-			id:       c.ID,
-			name:     c.Name,
-			ss:       ss,
+	if len(cc) > 0 {
+		entities = append(entities, sectionEntity{category: sectionHeader, name: "Characters"})
+		count += len(cc)
+		for _, c := range cc {
+			ss := s.scs.CharacterSectionSummary(c.ID)
+			o := sectionEntity{
+				category: sectionCharacter,
+				id:       c.ID,
+				name:     c.Name,
+				ss:       ss,
+			}
+			entities = append(entities, o)
 		}
-		entities = append(entities, o)
 	}
-	entities = append(entities, sectionEntity{category: sectionHeader, name: "Corporations"})
 	rr := s.scs.ListCorporations()
-	for _, r := range rr {
-		ss := s.scs.CorporationSectionSummary(r.ID)
-		o := sectionEntity{
-			category: sectionCorpoation,
-			id:       r.ID,
-			name:     r.Name,
-			ss:       ss,
+	if len(rr) > 0 {
+		entities = append(entities, sectionEntity{category: sectionHeader, name: "Corporations"})
+		count += len(rr)
+		for _, r := range rr {
+			ss := s.scs.CorporationSectionSummary(r.ID)
+			o := sectionEntity{
+				category: sectionCorpoation,
+				id:       r.ID,
+				name:     r.Name,
+				ss:       ss,
+			}
+			entities = append(entities, o)
 		}
-		entities = append(entities, o)
 	}
 	entities = append(entities, sectionEntity{category: sectionHeader, name: "General"})
 	ss := s.scs.GeneralSectionSummary()
@@ -304,7 +312,8 @@ func (*updateStatus) updateEntityList(s services) []sectionEntity {
 		ss:       ss,
 	}
 	entities = append(entities, o)
-	return entities
+	count += 1
+	return entities, count
 }
 
 func (a *updateStatus) makeSectionList() *widget.List {

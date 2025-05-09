@@ -119,8 +119,7 @@ func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, id int
 }
 
 func (s *EveUniverseService) createCharacterFromESI(ctx context.Context, id int32) (*app.EveCharacter, error) {
-	key := fmt.Sprintf("createCharacterFromESI-%d", id)
-	y, err, _ := s.sfg.Do(key, func() (any, error) {
+	y, err, _ := s.sfg.Do(fmt.Sprintf("createCharacterFromESI-%d", id), func() (any, error) {
 		r, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -259,8 +258,7 @@ func (s *EveUniverseService) GetOrCreateCorporationESI(ctx context.Context, id i
 }
 
 func (s *EveUniverseService) updateOrcreateCorporationFromESI(ctx context.Context, id int32) (*app.EveCorporation, error) {
-	key := fmt.Sprintf("updateOrcreateCorporationFromESI-%d", id)
-	y, err, _ := s.sfg.Do(key, func() (any, error) {
+	y, err, _ := s.sfg.Do(fmt.Sprintf("updateOrcreateCorporationFromESI-%d", id), func() (any, error) {
 		r, _, err := s.esiClient.ESI.CorporationApi.GetCorporationsCorporationId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -344,8 +342,7 @@ func (s *EveUniverseService) GetOrCreateDogmaAttributeESI(ctx context.Context, i
 }
 
 func (s *EveUniverseService) createDogmaAttributeFromESI(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
-	key := fmt.Sprintf("createDogmaAttributeFromESI-%d", id)
-	x, err, _ := s.sfg.Do(key, func() (any, error) {
+	x, err, _ := s.sfg.Do(fmt.Sprintf("createDogmaAttributeFromESI-%d", id), func() (any, error) {
 		o, _, err := s.esiClient.ESI.DogmaApi.GetDogmaAttributesAttributeId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -570,11 +567,11 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 		}
 		// Call ESI to resolve missing IDs
 		if missing.Size() > 0 {
-			slog.Info("Trying to resolve EveEntity IDs from ESI", "ids", missing)
+			slog.Debug("Trying to resolve EveEntity IDs from ESI", "ids", missing)
 		}
 		var ee []esi.PostUniverseNames200Ok
 		for chunk := range slices.Chunk(missing.Slice(), 1000) { // PostUniverseNames max is 1000 IDs
-			eeChunk, badChunk, err := s.resolveIDs(ctx, chunk)
+			eeChunk, badChunk, err := s.resolveIDsFromESI(ctx, chunk)
 			if err != nil {
 				return err
 			}
@@ -614,8 +611,8 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 	return missing, nil
 }
 
-func (s *EveUniverseService) resolveIDs(ctx context.Context, ids []int32) ([]esi.PostUniverseNames200Ok, []int32, error) {
-	slog.Debug("Trying to resolve IDs", "count", len(ids))
+func (s *EveUniverseService) resolveIDsFromESI(ctx context.Context, ids []int32) ([]esi.PostUniverseNames200Ok, []int32, error) {
+	slog.Debug("Trying to resolve IDs from ESI", "count", len(ids))
 	ee, resp, err := s.esiClient.ESI.UniverseApi.PostUniverseNames(ctx, ids, nil)
 	if err != nil {
 		if resp != nil && resp.StatusCode == 404 {
@@ -624,11 +621,11 @@ func (s *EveUniverseService) resolveIDs(ctx context.Context, ids []int32) ([]esi
 				return []esi.PostUniverseNames200Ok{}, ids, nil
 			}
 			i := len(ids) / 2
-			ee1, bad1, err := s.resolveIDs(ctx, ids[:i])
+			ee1, bad1, err := s.resolveIDsFromESI(ctx, ids[:i])
 			if err != nil {
 				return nil, nil, err
 			}
-			ee2, bad2, err := s.resolveIDs(ctx, ids[i:])
+			ee2, bad2, err := s.resolveIDsFromESI(ctx, ids[i:])
 			if err != nil {
 				return nil, nil, err
 			}
@@ -679,8 +676,7 @@ func (s *EveUniverseService) GetOrCreateCategoryESI(ctx context.Context, id int3
 }
 
 func (s *EveUniverseService) createCategoryFromESI(ctx context.Context, id int32) (*app.EveCategory, error) {
-	key := fmt.Sprintf("createCategoryFromESI-%d", id)
-	y, err, _ := s.sfg.Do(key, func() (any, error) {
+	y, err, _ := s.sfg.Do(fmt.Sprintf("createCategoryFromESI-%d", id), func() (any, error) {
 		r, _, err := s.esiClient.ESI.UniverseApi.GetUniverseCategoriesCategoryId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -749,8 +745,7 @@ func (s *EveUniverseService) GetOrCreateTypeESI(ctx context.Context, id int32) (
 }
 
 func (s *EveUniverseService) createTypeFromESI(ctx context.Context, id int32) (*app.EveType, error) {
-	key := fmt.Sprintf("createTypeFromESI-%d", id)
-	x, err, _ := s.sfg.Do(key, func() (any, error) {
+	x, err, _ := s.sfg.Do(fmt.Sprintf("createTypeFromESI-%d", id), func() (any, error) {
 		t, _, err := s.esiClient.ESI.UniverseApi.GetUniverseTypesTypeId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -851,8 +846,7 @@ func (s *EveUniverseService) AddMissingTypes(ctx context.Context, ids set.Set[in
 }
 
 func (s *EveUniverseService) UpdateCategoryWithChildrenESI(ctx context.Context, categoryID int32) error {
-	key := fmt.Sprintf("UpdateCategoryWithChildrenESI-%d", categoryID)
-	_, err, _ := s.sfg.Do(key, func() (any, error) {
+	_, err, _ := s.sfg.Do(fmt.Sprintf("UpdateCategoryWithChildrenESI-%d", categoryID), func() (any, error) {
 		_, err := s.GetOrCreateCategoryESI(ctx, categoryID)
 		if err != nil {
 			return nil, err
@@ -949,8 +943,7 @@ func (s *EveUniverseService) GetOrCreateLocationESI(ctx context.Context, id int6
 //
 // Important: A token with the structure scope must be set in the context when trying to fetch a structure.
 func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
-	key := fmt.Sprintf("updateOrCreateLocationESI-%d", id)
-	y, err, _ := s.sfg.Do(key, func() (any, error) {
+	y, err, _ := s.sfg.Do(fmt.Sprintf("updateOrCreateLocationESI-%d", id), func() (any, error) {
 		var arg storage.UpdateOrCreateLocationParams
 		switch app.LocationVariantFromID(id) {
 		case app.EveLocationUnknown:
@@ -1292,8 +1285,7 @@ func (s *EveUniverseService) GetOrCreateRegionESI(ctx context.Context, id int32)
 }
 
 func (s *EveUniverseService) createRegionFromESI(ctx context.Context, id int32) (*app.EveRegion, error) {
-	key := fmt.Sprintf("createRegionFromESI-%d", id)
-	y, err, _ := s.sfg.Do(key, func() (any, error) {
+	y, err, _ := s.sfg.Do(fmt.Sprintf("createRegionFromESI-%d", id), func() (any, error) {
 		region, _, err := s.esiClient.ESI.UniverseApi.GetUniverseRegionsRegionId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -1325,8 +1317,7 @@ func (s *EveUniverseService) GetOrCreateConstellationESI(ctx context.Context, id
 }
 
 func (s *EveUniverseService) createConstellationFromESI(ctx context.Context, id int32) (*app.EveConstellation, error) {
-	key := fmt.Sprintf("createConstellationFromESI-%d", id)
-	y, err, _ := s.sfg.Do(key, func() (any, error) {
+	y, err, _ := s.sfg.Do(fmt.Sprintf("createConstellationFromESI-%d", id), func() (any, error) {
 		constellation, _, err := s.esiClient.ESI.UniverseApi.GetUniverseConstellationsConstellationId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -1365,8 +1356,7 @@ func (s *EveUniverseService) GetOrCreateSolarSystemESI(ctx context.Context, id i
 }
 
 func (s *EveUniverseService) createSolarSystemFromESI(ctx context.Context, id int32) (*app.EveSolarSystem, error) {
-	key := fmt.Sprintf("createSolarSystemFromESI-%d", id)
-	y, err, _ := s.sfg.Do(key, func() (any, error) {
+	y, err, _ := s.sfg.Do(fmt.Sprintf("createSolarSystemFromESI-%d", id), func() (any, error) {
 		system, _, err := s.esiClient.ESI.UniverseApi.GetUniverseSystemsSystemId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -1406,8 +1396,7 @@ func (s *EveUniverseService) GetOrCreatePlanetESI(ctx context.Context, id int32)
 }
 
 func (s *EveUniverseService) createPlanetFromESI(ctx context.Context, id int32) (*app.EvePlanet, error) {
-	key := fmt.Sprintf("createPlanetFromESI-%d", id)
-	y, err, _ := s.sfg.Do(key, func() (any, error) {
+	y, err, _ := s.sfg.Do(fmt.Sprintf("createPlanetFromESI-%d", id), func() (any, error) {
 		planet, _, err := s.esiClient.ESI.UniverseApi.GetUniversePlanetsPlanetId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -1447,8 +1436,7 @@ func (s *EveUniverseService) GetOrCreateMoonESI(ctx context.Context, id int32) (
 }
 
 func (s *EveUniverseService) createMoonFromESI(ctx context.Context, id int32) (*app.EveMoon, error) {
-	key := fmt.Sprintf("createMoonFromESI-%d", id)
-	y, err, _ := s.sfg.Do(key, func() (any, error) {
+	y, err, _ := s.sfg.Do(fmt.Sprintf("createMoonFromESI-%d", id), func() (any, error) {
 		moon, _, err := s.esiClient.ESI.UniverseApi.GetUniverseMoonsMoonId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -1528,8 +1516,7 @@ func (s *EveUniverseService) MarketPrice(ctx context.Context, typeID int32) (opt
 // TODO: Change to bulk create
 
 func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) error {
-	key := "updateMarketPricesESI"
-	_, err, _ := s.sfg.Do(key, func() (any, error) {
+	_, err, _ := s.sfg.Do("updateMarketPricesESI", func() (any, error) {
 		prices, _, err := s.esiClient.ESI.MarketApi.GetMarketsPrices(ctx, nil)
 		if err != nil {
 			return nil, err
@@ -1645,8 +1632,7 @@ func (s *EveUniverseService) GetOrCreateRaceESI(ctx context.Context, id int32) (
 }
 
 func (s *EveUniverseService) createRaceFromESI(ctx context.Context, id int32) (*app.EveRace, error) {
-	key := fmt.Sprintf("createRaceFromESI-%d", id)
-	y, err, _ := s.sfg.Do(key, func() (any, error) {
+	y, err, _ := s.sfg.Do(fmt.Sprintf("createRaceFromESI-%d", id), func() (any, error) {
 		races, _, err := s.esiClient.ESI.UniverseApi.GetUniverseRaces(ctx, nil)
 		if err != nil {
 			return nil, err
@@ -1683,8 +1669,7 @@ func (s *EveUniverseService) GetOrCreateSchematicESI(ctx context.Context, id int
 }
 
 func (s *EveUniverseService) createSchematicFromESI(ctx context.Context, id int32) (*app.EveSchematic, error) {
-	key := fmt.Sprintf("createSchematicFromESI-%d", id)
-	y, err, _ := s.sfg.Do(key, func() (any, error) {
+	y, err, _ := s.sfg.Do(fmt.Sprintf("createSchematicFromESI-%d", id), func() (any, error) {
 		r, _, err := s.esiClient.ESI.PlanetaryInteractionApi.GetUniverseSchematicsSchematicId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -1738,8 +1723,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	default:
 		slog.Warn("encountered unknown section", "section", section)
 	}
-	key := fmt.Sprintf("Update-section-%s", section)
-	_, err, _ = s.sfg.Do(key, func() (any, error) {
+	_, err, _ = s.sfg.Do(fmt.Sprintf("update-general-section-%s", section), func() (any, error) {
 		slog.Debug("Started updating eveuniverse section", "section", section)
 		startedAt := optional.From(time.Now())
 		arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
