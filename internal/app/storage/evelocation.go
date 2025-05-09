@@ -87,15 +87,15 @@ func (st *Storage) ListEveLocationInSolarSystem(ctx context.Context, solarSystem
 	return oo, nil
 }
 
-func (st *Storage) MissingEveLocations(ctx context.Context, ids []int64) ([]int64, error) {
+// MissingEveLocations returns which ids for eve locations are missing.
+func (st *Storage) MissingEveLocations(ctx context.Context, ids set.Set[int64]) (set.Set[int64], error) {
 	currentIDs, err := st.qRO.ListLocationIDs(ctx)
 	if err != nil {
-		return nil, err
+		return set.Set[int64]{}, err
 	}
 	current := set.Of(currentIDs...)
-	incoming := set.Of(ids...)
-	missing := set.Difference(incoming, current)
-	return missing.Slice(), nil
+	missing := set.Difference(ids, current)
+	return missing, nil
 }
 
 // TODO: Refactor for better performance

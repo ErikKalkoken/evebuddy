@@ -141,11 +141,11 @@ type CorporationSection string
 
 // Updated corporation sections
 const (
-	SectionIndustryJobsCorporation CorporationSection = "industry_jobs"
+	SectionCorporationIndustryJobs CorporationSection = "industry_jobs"
 )
 
 var CorporationSections = []CorporationSection{
-	SectionIndustryJobsCorporation,
+	SectionCorporationIndustryJobs,
 }
 
 func (cs CorporationSection) DisplayName() string {
@@ -158,7 +158,7 @@ func (cs CorporationSection) DisplayName() string {
 // Timeout returns the time until the data of an update section becomes stale.
 func (cs CorporationSection) Timeout() time.Duration {
 	m := map[CorporationSection]time.Duration{
-		SectionIndustryJobsCorporation: 300 * time.Second,
+		SectionCorporationIndustryJobs: 300 * time.Second,
 	}
 	duration, ok := m[cs]
 	if !ok {
@@ -171,7 +171,7 @@ func (cs CorporationSection) Timeout() time.Duration {
 // Role returns the required role for fetching data for a section from ESI.
 func (cs CorporationSection) Role() Role {
 	m := map[CorporationSection]Role{
-		SectionIndustryJobsCorporation: RoleFactoryManager,
+		SectionCorporationIndustryJobs: RoleFactoryManager,
 	}
 	role, ok := m[cs]
 	if !ok {

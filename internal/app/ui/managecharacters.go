@@ -262,6 +262,9 @@ func (a *ManageCharacters) ShowAddCharacterDialog() {
 				}
 				a.u.updateStatus()
 				a.u.updateCrossPages()
+				if a.u.isUpdateDisabled { // FIXME: temporary for testing. should be removed again.
+					return
+				}
 				go a.u.updateCharacterAndRefreshIfNeeded(context.Background(), characterID, true)
 			}()
 		})

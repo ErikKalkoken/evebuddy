@@ -43,7 +43,7 @@ func NewFake(st *storage.Storage, args ...Params) *CorporationService {
 }
 
 func TestUpdateIndustryJobsESI(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -86,7 +86,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		// when
 		changed, err := s.updateIndustryJobsESI(ctx, app.CorporationUpdateSectionParams{
 			CorporationID: c.ID,
-			Section:       app.SectionIndustryJobsCorporation,
+			Section:       app.SectionCorporationIndustryJobs,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -163,7 +163,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		// when
 		changed, err := s.updateIndustryJobsESI(ctx, app.CorporationUpdateSectionParams{
 			CorporationID: c.ID,
-			Section:       app.SectionIndustryJobsCorporation,
+			Section:       app.SectionCorporationIndustryJobs,
 		})
 		// then
 		if assert.NoError(t, err) {

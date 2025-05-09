@@ -345,7 +345,7 @@ func (a *UserSettings) showExportFileDialog(path string) {
 
 func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []settingAction) {
 	groupsAndTypes := make(map[app.NotificationGroup][]evenotification.Type)
-	for _, n := range evenotification.SupportedGroups() {
+	for n := range evenotification.SupportedTypes().All() {
 		c := evenotification.Type2group[n]
 		groupsAndTypes[c] = append(groupsAndTypes[c], n)
 	}
@@ -595,7 +595,7 @@ func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 	all := settingAction{
 		Label: "Enable all communication groups",
 		Action: func() {
-			for _, nt := range evenotification.SupportedGroups() {
+			for nt := range evenotification.SupportedTypes().All() {
 				typesEnabled.Add(nt.String())
 			}
 			updateTypes()

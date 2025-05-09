@@ -262,8 +262,10 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 	u.app.Lifecycle().SetOnEnteredForeground(func() {
 		slog.Debug("Entered foreground")
 		u.isForeground.Store(true)
-		u.updateCharactersIfNeeded(context.Background())
-		u.updateGeneralSectionsAndRefreshIfNeeded(false)
+		if !u.isOffline && !u.isUpdateDisabled {
+			u.updateCharactersIfNeeded(context.Background())
+			u.updateGeneralSectionsAndRefreshIfNeeded(false)
+		}
 	})
 	u.app.Lifecycle().SetOnExitedForeground(func() {
 		slog.Debug("Exited foreground")
@@ -996,7 +998,7 @@ func (u *BaseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 	}
 	needsRefresh := hasChanged || forceUpdate
 	switch s {
-	case app.SectionIndustryJobsCorporation:
+	case app.SectionCorporationIndustryJobs:
 		if needsRefresh {
 			u.industryJobsAll.update()
 			u.industryJobsActive.update()

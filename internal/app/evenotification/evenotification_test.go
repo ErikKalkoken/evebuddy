@@ -74,21 +74,22 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 	factory.CreateEveEntityWithCategory(app.EveEntityInventoryType, app.EveEntity{ID: 32226}) // TCU
 	factory.CreateEveEntityWithCategory(app.EveEntityInventoryType, app.EveEntity{ID: 27})
 	factory.CreateEveEntity(app.EveEntity{ID: 60003760, Category: app.EveEntityStation})
-	notifTypes := set.Of(evenotification.SupportedGroups()...)
+	notifTypes := evenotification.SupportedTypes()
 	typeTested := make(map[evenotification.Type]bool)
 	for _, n := range notifications {
+		t2 := evenotification.Type(n.Type)
+		if !notifTypes.Contains(t2) {
+			continue
+		}
 		t.Run("should render notification type "+n.Type, func(t *testing.T) {
-			t2 := evenotification.Type(n.Type)
-			if notifTypes.Contains(t2) {
-				typeTested[t2] = true
-				title, body, err := ens.RenderESI(ctx, n.Type, n.Text, n.Timestamp)
-				if assert.NoError(t, err) {
-					assert.False(t, title.IsEmpty())
-					assert.False(t, body.IsEmpty())
-					switch n.NotificationID {
-					case 1000000515:
-						assert.Contains(t, body.ValueOrZero(), "POCO")
-					}
+			typeTested[t2] = true
+			title, body, err := ens.RenderESI(ctx, n.Type, n.Text, n.Timestamp)
+			if assert.NoError(t, err) {
+				assert.NotEqual(t, "", title)
+				assert.NotEqual(t, "", body)
+				switch n.NotificationID {
+				case 1000000515:
+					assert.Contains(t, body, "POCO")
 				}
 			}
 		})
@@ -100,24 +101,10 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 	}
 }
 
-func TestBilling(t *testing.T) {
-	db, st, factory := testutil.New()
-	defer db.Close()
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-	eus := eveuniverseservice.New(eveuniverseservice.Params{
-		Storage: st,
-	})
-	en := evenotification.New(eus)
-	ctx := context.Background()
-	t.Run("CorpAllBillMsg full data", func(t *testing.T) {
+func TestEntityIDsWithExample(t *testing.T) {
+	en := evenotification.New(nil)
+	t.Run("returns entity IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
-		httpmock.Reset()
-		creditor := factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000023})
-		debtor := factory.CreateEveEntityCorporation(app.EveEntity{ID: 98267621})
-		office := factory.CreateEveEntityWithCategory(app.EveEntityInventoryType, app.EveEntity{ID: 27})
-		station := factory.CreateEveEntity(app.EveEntity{ID: 60003760, Category: app.EveEntityStation})
 		text := `
 amount: 10000
 billTypeID: 2
@@ -127,129 +114,56 @@ debtorID: 98267621
 dueDate: 133704743590000000
 externalID: 27
 externalID2: 60003760`
-		title, body, err := en.RenderESI(ctx, "CorpAllBillMsg", text, time.Now())
+		got, err := en.EntityIDs("CorpAllBillMsg", text)
 		if assert.NoError(t, err) {
-			assert.Equal(t, "Bill issued for lease", title.ValueOrZero())
-			assert.Contains(t, body.ValueOrZero(), creditor.Name)
-			assert.Contains(t, body.ValueOrZero(), debtor.Name)
-			assert.Contains(t, body.ValueOrZero(), office.Name)
-			assert.Contains(t, body.ValueOrZero(), station.Name)
-		}
-	})
-	t.Run("CorpAllBillMsg partial data", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		httpmock.Reset()
-		creditor := factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000023})
-		debtor := factory.CreateEveEntityCorporation(app.EveEntity{ID: 98267621})
-		text := `
-amount: 10000
-billTypeID: 2
-creditorID: 1000023
-currentDate: 133678830021821155
-debtorID: 98267621
-dueDate: 133704743590000000
-externalID: 0
-externalID2: 0`
-		title, body, err := en.RenderESI(ctx, "CorpAllBillMsg", text, time.Now())
-		if assert.NoError(t, err) {
-			assert.Equal(t, "Bill issued for lease", title.ValueOrZero())
-			assert.Contains(t, body.ValueOrZero(), creditor.Name)
-			assert.Contains(t, body.ValueOrZero(), debtor.Name)
-			assert.Contains(t, body.ValueOrZero(), "?")
+			want := set.Of[int32](1000023, 98267621, 27, 60003760)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 }
 
-func TestTowerNotification(t *testing.T) {
-	db, st, factory := testutil.New()
-	defer db.Close()
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-	eus := eveuniverseservice.New(eveuniverseservice.Params{
-		Storage: st,
+func TestRenderESIErrorHandling(t *testing.T) {
+	en := evenotification.New(nil)
+	t.Run("return error for unsurported", func(t *testing.T) {
+		_, _, err := en.RenderESI(context.Background(), "invalid_type", "", time.Now())
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
-	en := evenotification.New(eus)
-	ctx := context.Background()
-	t.Run("TowerAlertMsg full data", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		httpmock.Reset()
-		aggressorAlliance := factory.CreateEveEntityAlliance(app.EveEntity{ID: 3011})
-		factory.CreateEveEntityCorporation(app.EveEntity{ID: 2011})
-		factory.CreateEveEntityCharacter(app.EveEntity{ID: 1011})
-		type_ := factory.CreateEveType(storage.CreateEveTypeParams{ID: 16213})
-		moon := factory.CreateEveMoon(storage.CreateEveMoonParams{ID: 40161465})
-		text := `
-aggressorAllianceID: 3011
-aggressorCorpID: 2011
-aggressorID: 1011
-armorValue: 0.6950949076033535
-hullValue: 1.0
-moonID: 40161465
-shieldValue: 0.3950949076033535
-solarSystemID: 30002537
-typeID: 16213`
-		title, body, err := en.RenderESI(ctx, "TowerAlertMsg", text, time.Now())
-		if assert.NoError(t, err) {
-			assert.Contains(t, title.ValueOrZero(), "is under attack")
-			assert.Contains(t, body.ValueOrZero(), aggressorAlliance.Name)
-			assert.Contains(t, body.ValueOrZero(), moon.Name)
-			assert.Contains(t, body.ValueOrZero(), type_.Name)
-		}
+	t.Run("return error for empty", func(t *testing.T) {
+		_, _, err := en.RenderESI(context.Background(), "", "", time.Now())
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
-	t.Run("TowerAlertMsg partial data 1", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		httpmock.Reset()
-		aggressorAlliance := factory.CreateEveEntityAlliance(app.EveEntity{ID: 3011})
-		factory.CreateEveEntityCorporation(app.EveEntity{ID: 2011})
-		factory.CreateEveEntityCharacter(app.EveEntity{ID: 1011})
-		type_ := factory.CreateEveType(storage.CreateEveTypeParams{ID: 16213})
-		moon := factory.CreateEveMoon(storage.CreateEveMoonParams{ID: 40161465})
-		text := `
-aggressorAllianceID: 3011
-aggressorCorpID: 2011
-aggressorID: 0
-armorValue: 0.6950949076033535
-hullValue: 1.0
-moonID: 40161465
-shieldValue: 0.3950949076033535
-solarSystemID: 30002537
-typeID: 16213`
-		title, body, err := en.RenderESI(ctx, "TowerAlertMsg", text, time.Now())
-		if assert.NoError(t, err) {
-			assert.Contains(t, title.ValueOrZero(), "is under attack")
-			assert.Contains(t, body.ValueOrZero(), aggressorAlliance.Name)
-			assert.Contains(t, body.ValueOrZero(), moon.Name)
-			assert.Contains(t, body.ValueOrZero(), type_.Name)
+}
+
+func TestEntityIDsSupportedNotifications(t *testing.T) {
+	data, err := os.ReadFile("testdata/notifications.json")
+	if err != nil {
+		panic(err)
+	}
+	notifications := make([]notification, 0)
+	if err := json.Unmarshal(data, &notifications); err != nil {
+		panic(err)
+	}
+	notifTypes := evenotification.SupportedTypes()
+	en := evenotification.New(nil)
+	for _, n := range notifications {
+		if t2 := evenotification.Type(n.Type); !notifTypes.Contains(t2) {
+			continue
 		}
+		t.Run("should process notification type "+n.Type, func(t *testing.T) {
+			_, err := en.EntityIDs(n.Type, n.Text)
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestEntityIDErrorHandling(t *testing.T) {
+	en := evenotification.New(nil)
+	t.Run("return error for unsurported", func(t *testing.T) {
+		_, err := en.EntityIDs("invalid_type", "")
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
-	t.Run("TowerAlertMsg partial data 1", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		httpmock.Reset()
-		aggressorAlliance := factory.CreateEveEntityAlliance(app.EveEntity{ID: 3011})
-		factory.CreateEveEntityCorporation(app.EveEntity{ID: 2011})
-		factory.CreateEveEntityCharacter(app.EveEntity{ID: 1011})
-		type_ := factory.CreateEveType(storage.CreateEveTypeParams{ID: 16213})
-		moon := factory.CreateEveMoon(storage.CreateEveMoonParams{ID: 40161465})
-		text := `
-aggressorAllianceID: 3011
-aggressorCorpID: 2011
-aggressorID: 0
-armorValue: 0.6950949076033535
-hullValue: 1.0
-moonID: 40161465
-shieldValue: 0.3950949076033535
-solarSystemID: 30002537
-typeID: 16213`
-		title, body, err := en.RenderESI(ctx, "TowerAlertMsg", text, time.Now())
-		if assert.NoError(t, err) {
-			assert.Contains(t, title.ValueOrZero(), "is under attack")
-			assert.Contains(t, body.ValueOrZero(), aggressorAlliance.Name)
-			assert.Contains(t, body.ValueOrZero(), moon.Name)
-			assert.Contains(t, body.ValueOrZero(), type_.Name)
-		}
+	t.Run("return error for empty type", func(t *testing.T) {
+		_, err := en.EntityIDs("", "")
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }

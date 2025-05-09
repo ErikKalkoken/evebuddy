@@ -159,7 +159,13 @@ func (sc *StatusCacheService) ListCharacterSections(characterID int32) []app.Sec
 	for _, section := range app.CharacterSections {
 		v, ok := sc.CharacterSection(characterID, section)
 		if !ok {
-			continue
+			v = app.SectionStatus{
+				EntityID:    characterID,
+				EntityName:  sc.CharacterName(characterID),
+				SectionID:   string(section),
+				SectionName: section.DisplayName(),
+				Timeout:     section.Timeout(),
+			}
 		}
 		list = append(list, v)
 	}
@@ -286,7 +292,13 @@ func (sc *StatusCacheService) ListCorporationSections(corporationID int32) []app
 	for _, section := range app.CorporationSections {
 		v, ok := sc.CorporationSection(corporationID, section)
 		if !ok {
-			continue
+			v = app.SectionStatus{
+				EntityID:    corporationID,
+				EntityName:  sc.CorporationName(corporationID),
+				SectionID:   string(section),
+				SectionName: section.DisplayName(),
+				Timeout:     section.Timeout(),
+			}
 		}
 		list = append(list, v)
 	}
@@ -386,32 +398,38 @@ func (sc *StatusCacheService) HasGeneralSection(section app.GeneralSection) bool
 }
 
 func (sc *StatusCacheService) GeneralSection(section app.GeneralSection) (app.SectionStatus, bool) {
+	o := app.SectionStatus{
+		EntityID:    app.GeneralSectionEntityID,
+		EntityName:  app.GeneralSectionEntityName,
+		SectionID:   string(section),
+		SectionName: section.DisplayName(),
+		Timeout:     section.Timeout(),
+	}
 	k := cacheKey{id: app.GeneralSectionEntityID, section: string(section)}
 	x, ok := sc.cache.Get(k.String())
-	if !ok {
-		return app.SectionStatus{}, false
+	if ok {
+		v := x.(cacheValue)
+		o.CompletedAt = v.CompletedAt
+		o.ErrorMessage = v.ErrorMessage
+		o.StartedAt = v.StartedAt
 	}
-	v := x.(cacheValue)
-	o := app.SectionStatus{
-		EntityID:     app.GeneralSectionEntityID,
-		EntityName:   app.GeneralSectionEntityName,
-		SectionID:    string(section),
-		SectionName:  section.DisplayName(),
-		CompletedAt:  v.CompletedAt,
-		ErrorMessage: v.ErrorMessage,
-		StartedAt:    v.StartedAt,
-		Timeout:      section.Timeout(),
-	}
-	return o, true
+	return o, ok
 }
 
 func (sc *StatusCacheService) ListGeneralSections() []app.SectionStatus {
 	list := make([]app.SectionStatus, 0)
 	for _, section := range app.GeneralSections {
 		v, ok := sc.GeneralSection(section)
-		if ok {
-			list = append(list, v)
+		if !ok {
+			v = app.SectionStatus{
+				EntityID:    app.GeneralSectionEntityID,
+				EntityName:  app.GeneralSectionEntityName,
+				SectionID:   string(section),
+				SectionName: section.DisplayName(),
+				Timeout:     section.Timeout(),
+			}
 		}
+		list = append(list, v)
 	}
 	return list
 }

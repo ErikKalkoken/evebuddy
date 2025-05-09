@@ -14,6 +14,7 @@ import (
 	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -108,7 +109,7 @@ var jobStatusFromESIValue = map[string]app.IndustryJobStatus{
 }
 
 func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.CorporationUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionIndustryJobsCorporation {
+	if arg.Section != app.SectionCorporationIndustryJobs {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
@@ -139,18 +140,19 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 					typeIDs.Add(j.ProductTypeId)
 				}
 			}
-			if _, err := s.eus.AddMissingEntities(ctx, entityIDs); err != nil {
+			g := new(errgroup.Group)
+			g.Go(func() error {
+				_, err := s.eus.AddMissingEntities(ctx, entityIDs)
 				return err
-			}
-			for id := range locationIDs.All() {
-				if _, err := s.eus.GetOrCreateLocationESI(ctx, id); err != nil {
-					return err
-				}
-			}
-			for id := range typeIDs.All() {
-				if _, err := s.eus.GetOrCreateTypeESI(ctx, id); err != nil {
-					return err
-				}
+			})
+			g.Go(func() error {
+				return s.eus.AddMissingLocations(ctx, locationIDs)
+			})
+			g.Go(func() error {
+				return s.eus.AddMissingTypes(ctx, typeIDs)
+			})
+			if err := g.Wait(); err != nil {
+				return err
 			}
 			for _, j := range jobs {
 				status, ok := jobStatusFromESIValue[j.Status]
@@ -211,12 +213,12 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 	}
 	var f func(context.Context, app.CorporationUpdateSectionParams) (bool, error)
 	switch arg.Section {
-	case app.SectionIndustryJobsCorporation:
+	case app.SectionCorporationIndustryJobs:
 		f = s.updateIndustryJobsESI
 	default:
 		return false, fmt.Errorf("update section: unknown section: %s", arg.Section)
 	}
-	key := fmt.Sprintf("UpdateESI-%s-%d", arg.Section, arg.CorporationID)
+	key := fmt.Sprintf("update-corporation-section-%s-%d", arg.Section, arg.CorporationID)
 	x, err, _ := s.sfg.Do(key, func() (any, error) {
 		return f(ctx, arg)
 	})
