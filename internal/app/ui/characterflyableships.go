@@ -182,8 +182,8 @@ func (a *CharacterFlyableShips) update() {
 func (a *CharacterFlyableShips) updateEntries() error {
 	characterID := a.u.currentCharacterID()
 	if characterID == 0 {
-		a.ships = make([]*app.CharacterShipAbility, 0)
 		fyne.Do(func() {
+			a.ships = make([]*app.CharacterShipAbility, 0)
 			a.grid.Refresh()
 			a.searchBox.SetText("")
 			a.groupSelect.SetOptions([]string{})

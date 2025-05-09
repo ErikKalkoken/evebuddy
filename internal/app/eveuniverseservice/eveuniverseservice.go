@@ -156,6 +156,7 @@ func (s *EveUniverseService) createCharacterFromESI(ctx context.Context, id int3
 		if err := s.st.CreateEveCharacter(ctx, arg); err != nil {
 			return nil, err
 		}
+		slog.Info("Created eve character", "ID", id)
 		return s.st.GetEveCharacter(ctx, id)
 	})
 	if err != nil {
@@ -297,7 +298,7 @@ func (s *EveUniverseService) updateOrcreateCorporationFromESI(ctx context.Contex
 		if err := s.st.UpdateOrCreateEveCorporation(ctx, arg); err != nil {
 			return nil, err
 		}
-		slog.Info("Updated eve corporation", "ID", arg.ID)
+		slog.Info("Stored updated eve corporation", "ID", id)
 		return s.st.GetEveCorporation(ctx, id)
 	})
 	if err != nil {
@@ -361,7 +362,12 @@ func (s *EveUniverseService) createDogmaAttributeFromESI(ctx context.Context, id
 			IsStackable:  o.Stackable,
 			UnitID:       app.EveUnitID(o.UnitId),
 		}
-		return s.st.CreateEveDogmaAttribute(ctx, arg)
+		o2, err := s.st.CreateEveDogmaAttribute(ctx, arg)
+		if err != nil {
+			return nil, err
+		}
+		slog.Info("Created eve dogma attribute", "ID", id)
+		return o2, nil
 	})
 	if err != nil {
 		return nil, err
@@ -688,7 +694,7 @@ func (s *EveUniverseService) createCategoryFromESI(ctx context.Context, id int32
 		if err != nil {
 			return nil, err
 		}
-		slog.Info("Stored upated EveCategory", "ID", id)
+		slog.Info("Created eve category", "ID", id)
 		return o, nil
 	})
 	if err != nil {
@@ -725,7 +731,7 @@ func (s *EveUniverseService) createGroupFromESI(ctx context.Context, id int32) (
 		if err := s.st.CreateEveGroup(ctx, arg); err != nil {
 			return nil, err
 		}
-		slog.Info("Stored upated EveGroup", "ID", id)
+		slog.Info("Created eve group", "ID", id)
 		return s.st.GetEveGroup(ctx, id)
 	})
 	if err != nil {
@@ -812,7 +818,7 @@ func (s *EveUniverseService) createTypeFromESI(ctx context.Context, id int32) (*
 				return nil, err
 			}
 		}
-		slog.Info("Stored updated EveType", "ID", id)
+		slog.Info("Created eve type", "ID", id)
 		return s.st.GetEveType(ctx, id)
 	})
 	if err != nil {
@@ -823,16 +829,16 @@ func (s *EveUniverseService) createTypeFromESI(ctx context.Context, id int32) (*
 
 // AddMissingTypes fetches missing typeIDs from ESI.
 func (s *EveUniverseService) AddMissingTypes(ctx context.Context, ids set.Set[int32]) error {
-	missingIDs, err := s.st.MissingEveTypes(ctx, ids)
+	missing, err := s.st.MissingEveTypes(ctx, ids)
 	if err != nil {
 		return err
 	}
-	if missingIDs.Size() == 0 {
+	if missing.Size() == 0 {
 		return nil
 	}
-	slog.Debug("Trying to fetch missing EveTypes from ESI", "count", missingIDs.Size())
+	slog.Debug("Trying to fetch missing EveTypes from ESI", "count", missing.Size())
 	g := new(errgroup.Group)
-	for id := range missingIDs.All() {
+	for id := range missing.All() {
 		g.Go(func() error {
 			_, err := s.GetOrCreateTypeESI(ctx, id)
 			if err != nil {
@@ -1046,6 +1052,7 @@ func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id i
 		if err := s.st.UpdateOrCreateEveLocation(ctx, arg); err != nil {
 			return nil, err
 		}
+		slog.Info("Stored updated eve location", "ID", id)
 		return s.st.GetLocation(ctx, id)
 	})
 	if err != nil {
@@ -1054,7 +1061,7 @@ func (s *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id i
 	return y.(*app.EveLocation), nil
 }
 
-// AddMissingLocations adds missing EveLocations in bulk from ESI.
+// AddMissingLocations adds missing EveLocations from ESI.
 func (s *EveUniverseService) AddMissingLocations(ctx context.Context, ids set.Set[int64]) error {
 	missing, err := s.st.MissingEveLocations(ctx, ids)
 	if err != nil {
@@ -1300,7 +1307,7 @@ func (s *EveUniverseService) createRegionFromESI(ctx context.Context, id int32) 
 		if err != nil {
 			return nil, err
 		}
-		slog.Info("Stored upated EveRegion", "ID", id)
+		slog.Info("Created eve region", "ID", id)
 		return o, nil
 	})
 	if err != nil {
@@ -1340,7 +1347,7 @@ func (s *EveUniverseService) createConstellationFromESI(ctx context.Context, id 
 		if err != nil {
 			return nil, err
 		}
-		slog.Info("Stored upated EveConstellation", "ID", id)
+		slog.Info("Created eve constellation", "ID", id)
 		return o, nil
 	})
 	if err != nil {
@@ -1381,7 +1388,7 @@ func (s *EveUniverseService) createSolarSystemFromESI(ctx context.Context, id in
 		if err != nil {
 			return nil, err
 		}
-		slog.Info("Stored upated EveSolarSystem", "ID", id)
+		slog.Info("Created eve solar system", "ID", id)
 		return o, nil
 	})
 	if err != nil {
@@ -1422,6 +1429,7 @@ func (s *EveUniverseService) createPlanetFromESI(ctx context.Context, id int32) 
 		if err := s.st.CreateEvePlanet(ctx, arg); err != nil {
 			return nil, err
 		}
+		slog.Info("Created eve planet", "ID", id)
 		return s.st.GetEvePlanet(ctx, id)
 	})
 	if err != nil {
@@ -1457,6 +1465,7 @@ func (s *EveUniverseService) createMoonFromESI(ctx context.Context, id int32) (*
 		if err := s.st.CreateEveMoon(ctx, arg); err != nil {
 			return nil, err
 		}
+		slog.Info("Created eve moon", "ID", id)
 		return s.st.GetEveMoon(ctx, id)
 	})
 	if err != nil {
@@ -1519,21 +1528,26 @@ func (s *EveUniverseService) MarketPrice(ctx context.Context, typeID int32) (opt
 // TODO: Change to bulk create
 
 func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) error {
-	prices, _, err := s.esiClient.ESI.MarketApi.GetMarketsPrices(ctx, nil)
-	if err != nil {
-		return err
-	}
-	for _, p := range prices {
-		arg := storage.UpdateOrCreateEveMarketPriceParams{
-			TypeID:        p.TypeId,
-			AdjustedPrice: p.AdjustedPrice,
-			AveragePrice:  p.AveragePrice,
+	key := "updateMarketPricesESI"
+	_, err, _ := s.sfg.Do(key, func() (any, error) {
+		prices, _, err := s.esiClient.ESI.MarketApi.GetMarketsPrices(ctx, nil)
+		if err != nil {
+			return nil, err
 		}
-		if err := s.st.UpdateOrCreateEveMarketPrice(ctx, arg); err != nil {
-			return err
+		for _, p := range prices {
+			arg := storage.UpdateOrCreateEveMarketPriceParams{
+				TypeID:        p.TypeId,
+				AdjustedPrice: p.AdjustedPrice,
+				AveragePrice:  p.AveragePrice,
+			}
+			if err := s.st.UpdateOrCreateEveMarketPrice(ctx, arg); err != nil {
+				return nil, err
+			}
 		}
-	}
-	return nil
+		slog.Info("Updated market prices", "count", len(prices))
+		return nil, nil
+	})
+	return err
 }
 
 // FetchCharacterCorporationHistory returns a list of all the corporations a character has been a member of in descending order.
@@ -1644,7 +1658,12 @@ func (s *EveUniverseService) createRaceFromESI(ctx context.Context, id int32) (*
 					Description: race.Description,
 					Name:        race.Name,
 				}
-				return s.st.CreateEveRace(ctx, arg)
+				o, err := s.st.CreateEveRace(ctx, arg)
+				if err != nil {
+					return nil, err
+				}
+				slog.Info("Created eve race", "id", id)
+				return o, nil
 			}
 		}
 		return nil, fmt.Errorf("race with ID %d not found: %w", id, app.ErrNotFound)
@@ -1675,7 +1694,12 @@ func (s *EveUniverseService) createSchematicFromESI(ctx context.Context, id int3
 			CycleTime: int(r.CycleTime),
 			Name:      r.SchematicName,
 		}
-		return s.st.CreateEveSchematic(ctx, arg)
+		o, err := s.st.CreateEveSchematic(ctx, arg)
+		if err != nil {
+			return nil, err
+		}
+		slog.Info("Created eve schematic", "id", id)
+		return o, nil
 	})
 	if err != nil {
 		return nil, err
