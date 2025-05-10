@@ -166,20 +166,26 @@ func (a *CharacterSheet) CreateRenderer() fyne.WidgetRenderer {
 		NewDataRow(width, "Total Skill Points", a.sp),
 	)
 
-	c := container.NewBorder(
-		container.NewVBox(container.NewHBox(container.NewPadded(a.portrait))),
-		nil,
-		nil,
-		nil,
-		container.NewVBox(
-			a.name,
-			main,
-			container.NewHBox(
-				container.NewPadded(a.corporationLogo),
-				container.NewPadded(a.allianceLogo),
-				container.NewPadded(a.factionLogo)),
+	portraitDesktop := container.NewVBox(container.NewPadded(a.portrait))
+	c := container.NewVBox(
+		a.name,
+		container.NewBorder(
+			nil,
+			nil,
+			nil,
+			portraitDesktop,
+			container.NewVBox(
+				main,
+				container.NewHBox(
+					container.NewPadded(a.corporationLogo),
+					container.NewPadded(a.allianceLogo),
+					container.NewPadded(a.factionLogo)),
+			),
 		),
 	)
+	if a.u.IsMobile() {
+		portraitDesktop.Hide()
+	}
 	return widget.NewSimpleRenderer(c)
 }
 
