@@ -214,7 +214,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		})
 	}
 
-	characterPage := newCharacterAppBar("Current Character", characterList)
+	characterPage := newCharacterAppBar("Character", characterList)
 	characterNav = iwidget.NewNavigatorWithAppBar(characterPage)
 
 	// characters cross destination
@@ -308,7 +308,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		),
 		navItemWealth,
 	)
-	crossNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("All Characters", crossList))
+	crossNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("Home", crossList))
 	u.colonies.OnUpdate = func(_, expired int) {
 		fyne.Do(func() {
 			navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
@@ -445,8 +445,8 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		characterNav.PopAll()
 	}
 
-	crossDest := iwidget.NewDestinationDef("Characters", theme.NewThemedResource(icons.AccountMultipleSvg), crossNav)
-	crossDest.OnSelectedAgain = func() {
+	homeDest := iwidget.NewDestinationDef("Home", theme.NewThemedResource(theme.HomeIcon()), crossNav)
+	homeDest.OnSelectedAgain = func() {
 		crossNav.PopAll()
 	}
 
@@ -463,7 +463,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		moreNav.PopAll()
 	}
 
-	navBar = iwidget.NewNavBar(crossDest, characterDest, searchDest, moreDest)
+	navBar = iwidget.NewNavBar(homeDest, characterDest, searchDest, moreDest)
 	characterNav.NavBar = navBar
 
 	u.onUpdateStatus = func() {
@@ -488,11 +488,11 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 				navBar.Enable(0)
 				navBar.Enable(1)
 				navBar.Enable(2)
-				navBar.Select(1)
 			}
 		})
 	}
 	u.onSetCharacter = func(id int32) {
+		characterPage.SetTitle(u.scs.CharacterName(id))
 		go u.updateAvatar(id, func(r fyne.Resource) {
 			fyne.Do(func() {
 				characterSelector.SetIcon(r)
@@ -502,7 +502,6 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		u.characterCommunications.resetCurrentFolder()
 		fyne.Do(func() {
 			characterNav.PopAll()
-			navBar.Select(1)
 		})
 	}
 

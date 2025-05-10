@@ -74,7 +74,7 @@ type services struct {
 type BaseUI struct {
 	DisableMenuShortcuts func()
 	EnableMenuShortcuts  func()
-	HideMailIndicator    func()
+	hideMailIndicator    func()
 	ShowMailIndicator    func()
 
 	onAppFirstStarted    func()
@@ -556,7 +556,7 @@ func (u *BaseUI) updateAvatar(id int32, setIcon func(fyne.Resource)) {
 }
 
 func (u *BaseUI) updateMailIndicator() {
-	if u.ShowMailIndicator == nil || u.HideMailIndicator == nil {
+	if u.ShowMailIndicator == nil || u.hideMailIndicator == nil {
 		return
 	}
 	if !u.settings.SysTrayEnabled() {
@@ -570,7 +570,7 @@ func (u *BaseUI) updateMailIndicator() {
 	if n > 0 {
 		u.ShowMailIndicator()
 	} else {
-		u.HideMailIndicator()
+		u.hideMailIndicator()
 	}
 }
 
