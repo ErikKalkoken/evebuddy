@@ -239,6 +239,7 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 		return false, fmt.Errorf("update corporation section from ESI for %v: %w", arg, err)
 	}
 	changed := x.(bool)
+	slog.Info("Corporation section update completed", "corporationID", arg.CorporationID, "section", arg.Section, "changed", changed)
 	return changed, err
 }
 

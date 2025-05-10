@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -758,6 +759,10 @@ func (u *BaseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 		return
 	}
 	slog.Debug("Starting to check character sections for update", "sections", sections)
+	_, err := u.cs.GetValidCharacterToken(ctx, characterID)
+	if err != nil {
+		slog.Error("Failed to refresh token for update", "characterID", characterID, "error", err)
+	}
 	for _, s := range sections {
 		go u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
 	}
@@ -975,6 +980,15 @@ func (u *BaseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 		return
 	}
 	slog.Debug("Starting to check corporation sections for update", "sections", sections)
+	for _, s := range sections {
+		_, err := u.cs.ValidCharacterTokenForCorporation(ctx, corporationID, s.Role())
+		if err != nil {
+			slog.Error("Skipping corporation section update due to missing valid token", "error", err)
+			sections = slices.DeleteFunc(sections, func(x app.CorporationSection) bool {
+				return x == s
+			})
+		}
+	}
 	for _, s := range sections {
 		go u.updateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, s, forceUpdate)
 	}
