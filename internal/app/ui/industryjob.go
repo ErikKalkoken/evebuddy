@@ -25,6 +25,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
+const (
+	industryMyJobs  = "My Jobs"
+	industryAllJobs = "All Jobs"
+)
+
 type industryJob struct {
 	activity           app.IndustryActivity
 	blueprintID        int64
@@ -46,6 +51,7 @@ type industryJob struct {
 	startDate          time.Time
 	status             app.IndustryJobStatus
 	successfulRuns     optional.Optional[int32]
+	isMine             bool
 }
 
 func (j industryJob) StatusRichText() []widget.RichTextSegment {
@@ -62,7 +68,7 @@ func (j industryJob) IsActive() bool {
 	return false
 }
 
-type IndustryJobs struct {
+type industryJobs struct {
 	widget.BaseWidget
 
 	OnUpdate func(count int)
@@ -70,14 +76,15 @@ type IndustryJobs struct {
 	body           fyne.CanvasObject
 	jobs           []industryJob
 	jobsFiltered   []industryJob
+	search         *widget.Entry
 	showActiveOnly atomic.Bool
 	top            *widget.Label
 	u              *BaseUI
-	search         *widget.Entry
+	selectJobs     *widget.Select
 }
 
-func NewIndustryJobs(u *BaseUI, showActiveOnly bool) *IndustryJobs {
-	a := &IndustryJobs{
+func NewIndustryJobs(u *BaseUI, showActiveOnly bool) *industryJobs {
+	a := &industryJobs{
 		jobs:         make([]industryJob, 0),
 		jobsFiltered: make([]industryJob, 0),
 		top:          appwidget.MakeTopLabel(),
@@ -132,31 +139,59 @@ func NewIndustryJobs(u *BaseUI, showActiveOnly bool) *IndustryJobs {
 	} else {
 		a.body = iwidget.MakeDataTableForMobile(headers, &a.jobsFiltered, makeCell, a.showJob)
 	}
+
 	a.search = widget.NewEntry()
-	a.search.PlaceHolder = "Search blueprints"
-	a.search.OnChanged = func(s string) {
-		if len(s) < 2 {
-			a.jobsFiltered = slices.Clone(a.jobs)
-			a.body.Refresh()
-			return
-		}
-		a.jobsFiltered = xslices.Filter(a.jobs, func(x industryJob) bool {
-			return strings.Contains(strings.ToLower(x.blueprintType.Name), strings.ToLower(s))
-		})
-		a.body.Refresh()
+	a.search.PlaceHolder = "Search Blueprints"
+	a.search.OnChanged = func(_ string) {
+		a.filterJobs()
 	}
 	a.search.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
 	})
+	a.selectJobs = widget.NewSelect([]string{industryMyJobs, industryAllJobs}, func(s string) {
+		a.filterJobs()
+	})
+	a.selectJobs.Selected = industryMyJobs
 	return a
 }
 
-func (a *IndustryJobs) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(container.NewVBox(a.search, a.top), nil, nil, nil, a.body)
+func (a *industryJobs) filterJobs() {
+	jobs := slices.Clone(a.jobs)
+	if s := a.search.Text; len(s) > 1 {
+		jobs = xslices.Filter(jobs, func(x industryJob) bool {
+			return strings.Contains(strings.ToLower(x.blueprintType.Name), strings.ToLower(s))
+		})
+	}
+	if a.selectJobs.Selected == industryMyJobs {
+		jobs = xslices.Filter(jobs, func(x industryJob) bool {
+			return x.isMine
+		})
+	}
+	a.jobsFiltered = jobs
+	a.body.Refresh()
+}
+
+func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewBorder(
+		container.NewVBox(
+			container.NewBorder(
+				nil,
+				nil,
+				nil,
+				a.selectJobs,
+				a.search,
+			),
+			a.top,
+		),
+		nil,
+		nil,
+		nil,
+		a.body,
+	)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *IndustryJobs) update() {
+func (a *industryJobs) update() {
 	reportError := func(err error) {
 		slog.Error("Failed to refresh industry jobs UI", "err", err)
 		fyne.Do(func() {
@@ -168,7 +203,7 @@ func (a *IndustryJobs) update() {
 	}
 	fixStatus := func(s app.IndustryJobStatus, endDate time.Time) app.IndustryJobStatus {
 		if s == app.JobActive && endDate.Before(time.Now()) {
-			// Workaroud for known bug: https://github.com/esi/esi-issues/issues/752
+			// Workaround for known bug: https://github.com/esi/esi-issues/issues/752
 			return app.JobReady
 		}
 		return s
@@ -195,6 +230,14 @@ func (a *IndustryJobs) update() {
 		reportError(err)
 		return
 	}
+	cc, err := a.u.cs.ListCharactersShort(context.Background())
+	if err != nil {
+		reportError(err)
+		return
+	}
+	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort[int32]) int32 {
+		return c.ID
+	})...)
 	characterJobs := xslices.Map(cj, func(cj *app.CharacterIndustryJob) industryJob {
 		j := industryJob{
 			activity:           cj.Activity,
@@ -217,6 +260,7 @@ func (a *IndustryJobs) update() {
 			startDate:          cj.StartDate,
 			status:             fixStatus(cj.Status, cj.EndDate),
 			successfulRuns:     cj.SuccessfulRuns,
+			isMine:             myCharacters.Contains(cj.Installer.ID),
 		}
 		return j
 	})
@@ -253,7 +297,7 @@ func (a *IndustryJobs) update() {
 	}
 	var readyCount int
 	for _, j := range jobs {
-		if j.status == app.JobReady {
+		if j.status == app.JobReady && j.isMine {
 			readyCount++
 		}
 	}
@@ -261,15 +305,14 @@ func (a *IndustryJobs) update() {
 		a.OnUpdate(readyCount)
 	}
 	fyne.Do(func() {
+		a.search.SetText("")
 		a.top.Hide()
 		a.jobs = jobs
-		a.jobsFiltered = slices.Clone(jobs)
-		a.search.SetText("")
-		a.body.Refresh()
+		a.filterJobs()
 	})
 }
 
-func (a *IndustryJobs) showJob(r industryJob) {
+func (a *industryJobs) showJob(r industryJob) {
 	makeLocationWidget := func(o *app.EveLocationShort) *iwidget.TappableRichText {
 		x := iwidget.NewTappableRichText(func() {
 			a.u.ShowLocationInfoWindow(o.ID)

@@ -103,8 +103,8 @@ type BaseUI struct {
 	contractsActive            *Contracts
 	contractsAll               *Contracts
 	gameSearch                 *GameSearch
-	industryJobsActive         *IndustryJobs
-	industryJobsAll            *IndustryJobs
+	industryJobsActive         *industryJobs
+	industryJobsAll            *industryJobs
 	manageCharacters           *ManageCharacters
 	overviewAssets             *OverviewAssets
 	overviewCharacters         *OverviewCharacters
