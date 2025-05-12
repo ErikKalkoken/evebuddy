@@ -3,13 +3,14 @@ package ui
 import (
 	"context"
 	"fmt"
+	"image/color"
 	"log/slog"
 	"slices"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -25,11 +26,30 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
+// Options for industry job select widgets
 const (
-	industryMyJobs  = "My Jobs"
-	industryAllJobs = "All Jobs"
+	industryActivityAll              = "All activities"
+	industryActivityCopying          = "Copying"
+	industryActivityInvention        = "Invention"
+	industryActivityManufacturing    = "Manufacturing"
+	industryActivityMaterialResearch = "Material efficiency research"
+	industryActivityReaction         = "Reactions"
+	industryActivityTimeResearch     = "Time efficiency research"
+	industryInstallerAny             = "Any installer"
+	industryInstallerCorpmates       = "Installed by corpmates"
+	industryInstallerMe              = "Installed by me"
+	industryOwnerAny                 = "Any owner"
+	industryOwnerCorp                = "Owned by corp"
+	industryOwnerMe                  = "Owned by me"
+	industryStatusActive             = "All active jobs"
+	industryStatusHalted             = "Halted"
+	industryStatusHistory            = "History"
+	industryStatusInProgress         = "In progress"
+	industryStatusReady              = "Ready for delivery"
 )
 
+// industryJob represents a job row in the list widgets.
+// It combines character and corporation jobs and has precalcuated fields for filters.
 type industryJob struct {
 	activity           app.IndustryActivity
 	blueprintID        int64
@@ -51,7 +71,8 @@ type industryJob struct {
 	startDate          time.Time
 	status             app.IndustryJobStatus
 	successfulRuns     optional.Optional[int32]
-	isMine             bool
+	isInstallerMe      bool
+	isOwnerMe          bool
 }
 
 func (j industryJob) StatusRichText() []widget.RichTextSegment {
@@ -73,17 +94,19 @@ type industryJobs struct {
 
 	OnUpdate func(count int)
 
-	body           fyne.CanvasObject
-	jobs           []industryJob
-	jobsFiltered   []industryJob
-	search         *widget.Entry
-	showActiveOnly atomic.Bool
-	top            *widget.Label
-	u              *BaseUI
-	selectJobs     *widget.Select
+	body            fyne.CanvasObject
+	jobs            []industryJob
+	jobsFiltered    []industryJob
+	search          *widget.Entry
+	selectActivity  *widget.Select
+	selectInstaller *widget.Select
+	selectOwner     *widget.Select
+	selectStatus    *widget.Select
+	top             *widget.Label
+	u               *BaseUI
 }
 
-func NewIndustryJobs(u *BaseUI, showActiveOnly bool) *industryJobs {
+func NewIndustryJobs(u *BaseUI) *industryJobs {
 	a := &industryJobs{
 		jobs:         make([]industryJob, 0),
 		jobsFiltered: make([]industryJob, 0),
@@ -91,7 +114,6 @@ func NewIndustryJobs(u *BaseUI, showActiveOnly bool) *industryJobs {
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	a.showActiveOnly.Store(showActiveOnly)
 	headers := []iwidget.HeaderDef{
 		{Text: "Blueprint", Width: 250},
 		{Text: "Status", Width: 100, Refresh: true},
@@ -148,23 +170,113 @@ func NewIndustryJobs(u *BaseUI, showActiveOnly bool) *industryJobs {
 	a.search.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
 	})
-	a.selectJobs = widget.NewSelect([]string{industryMyJobs, industryAllJobs}, func(s string) {
+
+	a.selectOwner = widget.NewSelect([]string{
+		industryOwnerAny,
+		industryOwnerMe,
+		industryOwnerCorp,
+	}, func(_ string) {
 		a.filterJobs()
 	})
-	a.selectJobs.Selected = industryMyJobs
+	a.selectOwner.Selected = industryOwnerMe
+
+	a.selectStatus = widget.NewSelect([]string{
+		industryStatusActive,
+		industryStatusInProgress,
+		industryStatusReady,
+		industryStatusHalted,
+		industryStatusHistory,
+	}, func(_ string) {
+		a.filterJobs()
+	})
+	a.selectStatus.Selected = industryStatusActive
+
+	a.selectActivity = widget.NewSelect([]string{
+		industryActivityAll,
+		industryActivityManufacturing,
+		industryActivityMaterialResearch,
+		industryActivityTimeResearch,
+		industryActivityCopying,
+		industryActivityInvention,
+		industryActivityReaction,
+	}, func(_ string) {
+		a.filterJobs()
+	})
+	a.selectActivity.Selected = industryActivityAll
+
+	a.selectInstaller = widget.NewSelect([]string{
+		industryInstallerAny,
+		industryInstallerMe,
+		industryInstallerCorpmates,
+	}, func(_ string) {
+		a.filterJobs()
+	})
+	a.selectInstaller.Selected = industryInstallerAny
+
 	return a
 }
 
 func (a *industryJobs) filterJobs() {
 	jobs := slices.Clone(a.jobs)
+	jobs = xslices.Filter(jobs, func(o industryJob) bool {
+		switch a.selectStatus.Selected {
+		case industryStatusActive:
+			return o.IsActive()
+		case industryStatusInProgress:
+			return o.status == app.JobActive
+		case industryStatusReady:
+			return o.status == app.JobReady
+		case industryStatusHalted:
+			return o.status == app.JobPaused
+		case industryStatusHistory:
+			return o.status == app.JobDelivered
+		}
+		return false
+	})
+	if a.selectInstaller.Selected != industryInstallerAny {
+		jobs = xslices.Filter(jobs, func(o industryJob) bool {
+			switch a.selectInstaller.Selected {
+			case industryInstallerMe:
+				return o.isInstallerMe
+			case industryInstallerCorpmates:
+				return !o.isInstallerMe
+			}
+			return false
+		})
+	}
+	if a.selectActivity.Selected != industryActivityAll {
+		jobs = xslices.Filter(jobs, func(o industryJob) bool {
+			switch a.selectActivity.Selected {
+			case industryActivityCopying:
+				return o.activity == app.Copying
+			case industryActivityInvention:
+				return o.activity == app.Invention
+			case industryActivityManufacturing:
+				return o.activity == app.Manufacturing
+			case industryActivityMaterialResearch:
+				return o.activity == app.MaterialEfficiencyResearch
+			case industryActivityReaction:
+				return o.activity == app.Reactions
+			case industryActivityTimeResearch:
+				return o.activity == app.TimeEfficiencyResearch
+			}
+			return false
+		})
+	}
+	if a.selectOwner.Selected != industryOwnerAny {
+		jobs = xslices.Filter(jobs, func(o industryJob) bool {
+			switch a.selectOwner.Selected {
+			case industryOwnerCorp:
+				return !o.isOwnerMe
+			case industryOwnerMe:
+				return o.isOwnerMe
+			}
+			return false
+		})
+	}
 	if s := a.search.Text; len(s) > 1 {
 		jobs = xslices.Filter(jobs, func(x industryJob) bool {
 			return strings.Contains(strings.ToLower(x.blueprintType.Name), strings.ToLower(s))
-		})
-	}
-	if a.selectJobs.Selected == industryMyJobs {
-		jobs = xslices.Filter(jobs, func(x industryJob) bool {
-			return x.isMine
 		})
 	}
 	a.jobsFiltered = jobs
@@ -172,13 +284,20 @@ func (a *industryJobs) filterJobs() {
 }
 
 func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
+	spacer := canvas.NewRectangle(color.Transparent)
+	spacer.SetMinSize(fyne.NewSize(180, 1))
 	c := container.NewBorder(
 		container.NewVBox(
 			container.NewBorder(
 				nil,
+				container.NewHScroll(container.NewHBox(
+					container.NewStack(spacer, a.selectOwner),
+					container.NewStack(spacer, a.selectStatus),
+					container.NewStack(spacer, a.selectActivity),
+					container.NewStack(spacer, a.selectInstaller),
+				)),
 				nil,
 				nil,
-				a.selectJobs,
 				a.search,
 			),
 			a.top,
@@ -260,7 +379,8 @@ func (a *industryJobs) update() {
 			startDate:          cj.StartDate,
 			status:             fixStatus(cj.Status, cj.EndDate),
 			successfulRuns:     cj.SuccessfulRuns,
-			isMine:             myCharacters.Contains(cj.Installer.ID),
+			isInstallerMe:      true,
+			isOwnerMe:          true,
 		}
 		return j
 	})
@@ -286,18 +406,15 @@ func (a *industryJobs) update() {
 			startDate:          rj.StartDate,
 			status:             fixStatus(rj.Status, rj.EndDate),
 			successfulRuns:     rj.SuccessfulRuns,
+			isInstallerMe:      myCharacters.Contains(rj.Installer.ID),
+			isOwnerMe:          false,
 		}
 		return j
 	})
 	jobs := slices.Concat(characterJobs, corporationJobs)
-	if a.showActiveOnly.Load() {
-		jobs = xslices.Filter(jobs, func(o industryJob) bool {
-			return o.IsActive()
-		})
-	}
 	var readyCount int
 	for _, j := range jobs {
-		if j.status == app.JobReady && j.isMine {
+		if j.status == app.JobReady && j.isInstallerMe {
 			readyCount++
 		}
 	}

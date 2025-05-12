@@ -103,8 +103,7 @@ type BaseUI struct {
 	contractsActive            *Contracts
 	contractsAll               *Contracts
 	gameSearch                 *GameSearch
-	industryJobsActive         *industryJobs
-	industryJobsAll            *industryJobs
+	industryJobs               *industryJobs
 	manageCharacters           *ManageCharacters
 	overviewAssets             *OverviewAssets
 	overviewCharacters         *OverviewCharacters
@@ -209,8 +208,7 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 	u.contractsActive = NewContracts(u, true)
 	u.contractsAll = NewContracts(u, false)
 	u.gameSearch = NewGameSearch(u)
-	u.industryJobsActive = NewIndustryJobs(u, true)
-	u.industryJobsAll = NewIndustryJobs(u, false)
+	u.industryJobs = NewIndustryJobs(u)
 	u.manageCharacters = NewManageCharacters(u)
 	u.overviewAssets = NewOverviewAssets(u)
 	u.overviewCharacters = NewOverviewCharacters(u)
@@ -464,17 +462,16 @@ func (u *BaseUI) updateCharacter() {
 // updateCrossPages refreshed all pages that contain information about multiple characters.
 func (u *BaseUI) updateCrossPages() {
 	ff := map[string]func(){
-		"assetSearch":       u.overviewAssets.update,
-		"contractsAll":      u.contractsAll.update,
-		"contractsActive":   u.contractsActive.update,
-		"cloneSearch":       u.overviewClones.update,
-		"colony":            u.colonies.update,
-		"industryJobAll":    u.industryJobsAll.update,
-		"industryJobActive": u.industryJobsActive.update,
-		"locations":         u.overviewLocations.update,
-		"overview":          u.overviewCharacters.update,
-		"training":          u.overviewTraining.update,
-		"wealth":            u.overviewWealth.update,
+		"assetSearch":     u.overviewAssets.update,
+		"contractsAll":    u.contractsAll.update,
+		"contractsActive": u.contractsActive.update,
+		"cloneSearch":     u.overviewClones.update,
+		"colony":          u.colonies.update,
+		"industryJob":     u.industryJobs.update,
+		"locations":       u.overviewLocations.update,
+		"overview":        u.overviewCharacters.update,
+		"training":        u.overviewTraining.update,
+		"wealth":          u.overviewWealth.update,
 	}
 	runFunctionsWithProgressModal("Updating characters", ff, u.onRefreshCross, u.window)
 }
@@ -831,8 +828,7 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionIndustryJobs:
 		if needsRefresh {
-			u.industryJobsAll.update()
-			u.industryJobsActive.update()
+			u.industryJobs.update()
 		}
 	case app.SectionLocation, app.SectionOnline, app.SectionShip:
 		if needsRefresh {
@@ -1014,8 +1010,7 @@ func (u *BaseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 	switch s {
 	case app.SectionCorporationIndustryJobs:
 		if needsRefresh {
-			u.industryJobsAll.update()
-			u.industryJobsActive.update()
+			u.industryJobs.update()
 		}
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the refresh ticker: %s", s))

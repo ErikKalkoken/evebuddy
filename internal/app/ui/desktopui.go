@@ -251,27 +251,17 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 		})
 	}
 
-	industryJobsActive := container.NewTabItem("Active", u.industryJobsActive)
-	industryTabs := container.NewAppTabs(
-		industryJobsActive,
-		container.NewTabItem("All", u.industryJobsAll),
-	)
 	industry := iwidget.NewNavPage(
 		"Industry",
 		theme.NewThemedResource(icons.FactorySvg),
-		makePageWithTitle("Industry", industryTabs),
+		makePageWithTitle("Industry", u.industryJobs),
 	)
-	u.industryJobsActive.OnUpdate = func(count int) {
-		s := "Active"
+	u.industryJobs.OnUpdate = func(count int) {
 		var badge string
 		if count > 0 {
-			c := ihumanize.Comma(count)
-			s += fmt.Sprintf(" (%s)", c)
-			badge = c
+			badge = ihumanize.Comma(count)
 		}
 		fyne.Do(func() {
-			industryJobsActive.Text = s
-			industryTabs.Refresh()
 			homeNav.SetItemBadge(industry, badge)
 		})
 	}

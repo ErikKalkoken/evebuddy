@@ -219,6 +219,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 
 	// characters cross destination
 	var crossNav *iwidget.Navigator
+	var crossList *iwidget.List
 	navItemWealth := iwidget.NewListItemWithIcon(
 		"Wealth",
 		theme.NewThemedResource(icons.GoldSvg),
@@ -233,19 +234,25 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 			crossNav.Push(iwidget.NewAppBar("Colonies", u.colonies))
 		},
 	)
-	jobsActive := container.NewTabItem("Active", u.industryJobsActive)
-	jobsTab := container.NewAppTabs(
-		jobsActive,
-		container.NewTabItem("All", u.industryJobsAll),
-	)
 	navItemIndustry := iwidget.NewListItemWithIcon(
 		"Industry",
 		theme.NewThemedResource(icons.FactorySvg),
 		func() {
-			crossNav.Push(iwidget.NewAppBar("Industry", jobsTab))
+			crossNav.Push(iwidget.NewAppBar("Industry", u.industryJobs))
 		},
 	)
-	crossList := iwidget.NewNavList(
+	u.industryJobs.OnUpdate = func(count int) {
+		var badge string
+		if count > 0 {
+			badge = fmt.Sprintf("%s jobs ready", ihumanize.Comma(count))
+		}
+		fyne.Do(func() {
+			navItemIndustry.Supporting = badge
+			crossList.Refresh()
+		})
+	}
+
+	crossList = iwidget.NewNavList(
 		iwidget.NewListItemWithIcon(
 			"Characters",
 			theme.NewThemedResource(icons.PortraitSvg),
@@ -322,21 +329,6 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 				ihumanize.Number(wallet, 1),
 				ihumanize.Number(assets, 1),
 			)
-			crossList.Refresh()
-		})
-	}
-	u.industryJobsActive.OnUpdate = func(count int) {
-		s := "Active"
-		var badge string
-		if count > 0 {
-			x := ihumanize.Comma(count)
-			s += fmt.Sprintf(" (%s)", x)
-			badge = fmt.Sprintf("%s jobs ready", x)
-		}
-		fyne.Do(func() {
-			jobsActive.Text = s
-			jobsTab.Refresh()
-			navItemIndustry.Supporting = badge
 			crossList.Refresh()
 		})
 	}
