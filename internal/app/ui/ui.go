@@ -49,11 +49,20 @@ const (
 	fallbackWebsiteURL = "https://github.com/ErikKalkoken/evebuddy"
 )
 
+// width of common columns in data tables
 const (
 	columnWidthCharacter = 200
 	columnWidthDateTime  = 150
 	columnWidthLocation  = 350
 	columnWidthRegion    = 150
+)
+
+type sortDir uint
+
+const (
+	sortOff sortDir = iota
+	sortAsc
+	sortDesc
 )
 
 // ticker

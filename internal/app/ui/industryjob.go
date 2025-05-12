@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"image/color"
@@ -17,6 +18,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -95,6 +97,7 @@ type industryJobs struct {
 	OnUpdate func(count int)
 
 	body            fyne.CanvasObject
+	colSort         []sortDir
 	jobs            []industryJob
 	jobsFiltered    []industryJob
 	search          *widget.Entry
@@ -107,23 +110,24 @@ type industryJobs struct {
 }
 
 func NewIndustryJobs(u *BaseUI) *industryJobs {
-	a := &industryJobs{
-		jobs:         make([]industryJob, 0),
-		jobsFiltered: make([]industryJob, 0),
-		top:          appwidget.MakeTopLabel(),
-		u:            u,
-	}
-	a.ExtendBaseWidget(a)
 	headers := []iwidget.HeaderDef{
 		{Text: "Blueprint", Width: 250},
 		{Text: "Status", Width: 100, Refresh: true},
-		{Text: "Runs", Width: 50},
+		{Text: "Runs", Width: 75},
 		{Text: "Activity", Width: 200},
 		{Text: "End date", Width: columnWidthDateTime},
 		{Text: "Location", Width: columnWidthLocation},
 		{Text: "Owner", Width: columnWidthCharacter},
 		{Text: "Installer", Width: columnWidthCharacter},
 	}
+	a := &industryJobs{
+		colSort:      make([]sortDir, len(headers)),
+		jobs:         make([]industryJob, 0),
+		jobsFiltered: make([]industryJob, 0),
+		top:          appwidget.MakeTopLabel(),
+		u:            u,
+	}
+	a.ExtendBaseWidget(a)
 	makeCell := func(col int, j industryJob) []widget.RichTextSegment {
 		switch col {
 		case 0:
@@ -145,7 +149,7 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		case 4:
 			return iwidget.NewRichTextSegmentFromText(j.endDate.Format(app.DateTimeFormat))
 		case 5:
-			return j.location.DisplayRichText()
+			return iwidget.NewRichTextSegmentFromText(j.location.Name.ValueOrZero())
 		case 6:
 			return iwidget.NewRichTextSegmentFromText(j.owner.Name)
 		case 7:
@@ -155,17 +159,46 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 	}
 
 	if a.u.isDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop(headers, &a.jobsFiltered, makeCell, func(_ int, r industryJob) {
+		t := iwidget.MakeDataTableForDesktop(headers, &a.jobsFiltered, makeCell, func(_ int, r industryJob) {
 			a.showJob(r)
 		})
+		iconSortAsc := theme.NewPrimaryThemedResource(icons.SortAscendingSvg)
+		iconSortDesc := theme.NewPrimaryThemedResource(icons.SortDescendingSvg)
+		iconSortOff := theme.NewThemedResource(icons.SortSvg)
+		t.CreateHeader = func() fyne.CanvasObject {
+			icon := widget.NewIcon(iconSortOff)
+			label := kxwidget.NewTappableLabel("XXX", nil)
+			return container.NewBorder(nil, nil, nil, icon, label)
+		}
+		t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
+			h := headers[tci.Col]
+			row := co.(*fyne.Container).Objects
+			label := row[0].(*kxwidget.TappableLabel)
+			label.OnTapped = func() {
+				a.processJobs(tci.Col)
+			}
+			label.SetText(h.Text)
+			icon := row[1].(*widget.Icon)
+			switch a.colSort[tci.Col] {
+			case sortOff:
+				icon.SetResource(iconSortOff)
+			case sortAsc:
+				icon.SetResource(iconSortAsc)
+			case sortDesc:
+				icon.SetResource(iconSortDesc)
+			}
+		}
+		a.body = t
 	} else {
 		a.body = iwidget.MakeDataTableForMobile(headers, &a.jobsFiltered, makeCell, a.showJob)
 	}
 
+	a.colSort[4] = sortDesc // default sorting
+
 	a.search = widget.NewEntry()
 	a.search.PlaceHolder = "Search Blueprints"
 	a.search.OnChanged = func(_ string) {
-		a.filterJobs()
+		a.processJobs(-1)
 	}
 	a.search.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
@@ -176,7 +209,7 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		industryOwnerMe,
 		industryOwnerCorp,
 	}, func(_ string) {
-		a.filterJobs()
+		a.processJobs(-1)
 	})
 	a.selectOwner.Selected = industryOwnerMe
 
@@ -187,7 +220,7 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		industryStatusHalted,
 		industryStatusHistory,
 	}, func(_ string) {
-		a.filterJobs()
+		a.processJobs(-1)
 	})
 	a.selectStatus.Selected = industryStatusActive
 
@@ -200,7 +233,7 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		industryActivityInvention,
 		industryActivityReaction,
 	}, func(_ string) {
-		a.filterJobs()
+		a.processJobs(-1)
 	})
 	a.selectActivity.Selected = industryActivityAll
 
@@ -209,15 +242,18 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		industryInstallerMe,
 		industryInstallerCorpmates,
 	}, func(_ string) {
-		a.filterJobs()
+		a.processJobs(-1)
 	})
 	a.selectInstaller.Selected = industryInstallerAny
 
 	return a
 }
 
-func (a *industryJobs) filterJobs() {
+// processJobs applies all filters and sorting and freshes the list with the changed rows.
+// A new sorting can be applied by providing a sortCol. -1 does not change the current sorting.
+func (a *industryJobs) processJobs(sortCol int) {
 	jobs := slices.Clone(a.jobs)
+	// filter
 	jobs = xslices.Filter(jobs, func(o industryJob) bool {
 		switch a.selectStatus.Selected {
 		case industryStatusActive:
@@ -279,8 +315,62 @@ func (a *industryJobs) filterJobs() {
 			return strings.Contains(strings.ToLower(x.blueprintType.Name), strings.ToLower(s))
 		})
 	}
+	// sort
+	var order sortDir
+	if sortCol >= 0 {
+		order = a.colSort[sortCol]
+		order++
+		if order > sortDesc {
+			order = sortOff
+		}
+		for i := range a.colSort {
+			a.colSort[i] = sortOff
+		}
+		a.colSort[sortCol] = order
+	} else {
+		for i := range a.colSort {
+			if a.colSort[i] != sortOff {
+				order = a.colSort[i]
+				sortCol = i
+				break
+			}
+		}
+	}
+	if sortCol >= 0 && order != sortOff {
+		slices.SortFunc(jobs, func(j, k industryJob) int {
+			var c int
+			switch sortCol {
+			case 0:
+				c = strings.Compare(j.blueprintType.Name, k.blueprintType.Name)
+			case 1:
+				c = strings.Compare(j.status.String(), k.status.String())
+			case 2:
+				c = cmp.Compare(j.runs, k.runs)
+			case 3:
+				c = strings.Compare(j.activity.String(), k.activity.String())
+			case 4:
+				c = j.endDate.Compare(j.endDate)
+			case 5:
+				c = strings.Compare(j.location.Name.ValueOrZero(), k.location.Name.ValueOrZero())
+			case 6:
+				c = strings.Compare(j.owner.Name, k.owner.Name)
+			case 7:
+				c = strings.Compare(j.installer.Name, k.installer.Name)
+			}
+			if order == sortAsc {
+				return c
+			} else {
+				return -1 * c
+			}
+		})
+	}
+	// set data & refresh
 	a.jobsFiltered = jobs
 	a.body.Refresh()
+	switch x := a.body.(type) {
+	case *widget.Table:
+		x.ScrollToTop()
+	}
 }
 
 func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
@@ -425,7 +515,7 @@ func (a *industryJobs) update() {
 		a.search.SetText("")
 		a.top.Hide()
 		a.jobs = jobs
-		a.filterJobs()
+		a.processJobs(-1)
 	})
 }
 
