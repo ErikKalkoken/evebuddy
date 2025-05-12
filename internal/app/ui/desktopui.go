@@ -313,9 +313,11 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 
 	u.onSetCharacter = func(id int32) {
 		name := u.scs.CharacterName(id)
-		characterNav.SetTitle(name)
-		characterTab.Text = name
-		tabs.Refresh()
+		fyne.Do(func() {
+			characterNav.SetTitle(name)
+			characterTab.Text = name
+			tabs.Refresh()
+		})
 	}
 
 	// system tray menu

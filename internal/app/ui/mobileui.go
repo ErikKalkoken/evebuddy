@@ -482,7 +482,6 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		})
 	}
 	u.onSetCharacter = func(id int32) {
-		characterPage.SetTitle(u.scs.CharacterName(id))
 		go u.updateAvatar(id, func(r fyne.Resource) {
 			fyne.Do(func() {
 				characterSelector.SetIcon(r)
@@ -491,6 +490,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		u.characterMail.resetCurrentFolder()
 		u.characterCommunications.resetCurrentFolder()
 		fyne.Do(func() {
+			characterPage.SetTitle(u.scs.CharacterName(id))
 			characterNav.PopAll()
 		})
 	}
@@ -510,13 +510,12 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 				if status.Errors > 0 {
 					icon = theme.WarningIcon()
 					hasError = true
-					refreshMoreBadge()
 				} else {
 					icon = nil
 					hasError = false
-					refreshMoreBadge()
 				}
 				fyne.Do(func() {
+					refreshMoreBadge()
 					navItemUpdateStatus.Supporting = status.Display()
 					navItemUpdateStatus.Trailing = icon
 					moreList.Refresh()
