@@ -25,14 +25,6 @@ import (
 
 // TODO: Mobile: Add column sort
 
-type sortDir uint
-
-const (
-	sortOff sortDir = iota
-	sortAsc
-	sortDesc
-)
-
 type assetSearchRow struct {
 	characterID     int32
 	characterName   string
@@ -41,10 +33,10 @@ type assetSearchRow struct {
 	itemID          int64
 	location        *app.EveLocation
 	name            string
-	quantity        int
-	quantityDisplay string
 	price           float64
 	priceDisplay    string
+	quantity        int
+	quantityDisplay string
 	typeID          int32
 	typeName        string
 }
@@ -108,6 +100,7 @@ func NewOverviewAssets(u *BaseUI) *OverviewAssets {
 		}
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
+
 	if a.u.IsMobile() {
 		a.body = iwidget.MakeDataTableForMobile(headers, &a.assetsFiltered, makeCell, func(r *assetSearchRow) {
 			a.u.ShowTypeInfoWindow(r.typeID)

@@ -21,8 +21,6 @@ import (
 // MobileUI creates the UI for mobile.
 type MobileUI struct {
 	*BaseUI
-
-	navItemUpdateStatus *iwidget.ListItem
 }
 
 // NewUI build the UI and returns it.
@@ -214,50 +212,57 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		})
 	}
 
-	characterPage := newCharacterAppBar("Current Character", characterList)
+	characterPage := newCharacterAppBar("Character", characterList)
 	characterNav = iwidget.NewNavigatorWithAppBar(characterPage)
 
 	// characters cross destination
-	var crossNav *iwidget.Navigator
+	var homeNav *iwidget.Navigator
+	var homeList *iwidget.List
 	navItemWealth := iwidget.NewListItemWithIcon(
 		"Wealth",
 		theme.NewThemedResource(icons.GoldSvg),
 		func() {
-			crossNav.Push(iwidget.NewAppBar("Wealth", u.overviewWealth))
+			homeNav.Push(iwidget.NewAppBar("Wealth", u.overviewWealth))
 		},
 	)
 	navItemColonies2 := iwidget.NewListItemWithIcon(
 		"Colonies",
 		theme.NewThemedResource(icons.EarthSvg),
 		func() {
-			crossNav.Push(iwidget.NewAppBar("Colonies", u.colonies))
+			homeNav.Push(iwidget.NewAppBar("Colonies", u.colonies))
 		},
-	)
-	jobsActive := container.NewTabItem("Active", u.industryJobsActive)
-	jobsTab := container.NewAppTabs(
-		jobsActive,
-		container.NewTabItem("All", u.industryJobsAll),
 	)
 	navItemIndustry := iwidget.NewListItemWithIcon(
 		"Industry",
 		theme.NewThemedResource(icons.FactorySvg),
 		func() {
-			crossNav.Push(iwidget.NewAppBar("Industry", jobsTab))
+			homeNav.Push(iwidget.NewAppBar("Industry", u.industryJobs))
 		},
 	)
-	crossList := iwidget.NewNavList(
+	u.industryJobs.OnUpdate = func(count int) {
+		var badge string
+		if count > 0 {
+			badge = fmt.Sprintf("%s jobs ready", ihumanize.Comma(count))
+		}
+		fyne.Do(func() {
+			navItemIndustry.Supporting = badge
+			homeList.Refresh()
+		})
+	}
+
+	homeList = iwidget.NewNavList(
 		iwidget.NewListItemWithIcon(
 			"Characters",
 			theme.NewThemedResource(icons.PortraitSvg),
 			func() {
-				crossNav.Push(iwidget.NewAppBar("Characters", u.overviewCharacters))
+				homeNav.Push(iwidget.NewAppBar("Characters", u.overviewCharacters))
 			},
 		),
 		iwidget.NewListItemWithIcon(
 			"Assets",
 			theme.NewThemedResource(icons.Inventory2Svg),
 			func() {
-				crossNav.Push(iwidget.NewAppBar("Assets", u.overviewAssets))
+				homeNav.Push(iwidget.NewAppBar("Assets", u.overviewAssets))
 				u.overviewAssets.Focus()
 			},
 		),
@@ -265,7 +270,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 			"Clones",
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
 			func() {
-				crossNav.Push(iwidget.NewAppBar("Clones", u.overviewClones))
+				homeNav.Push(iwidget.NewAppBar("Clones", u.overviewClones))
 			},
 		),
 		iwidget.NewListItemWithIcon(
@@ -287,7 +292,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 						contractTabs.Refresh()
 					})
 				}
-				crossNav.Push(iwidget.NewAppBar("Contracts", contractTabs))
+				homeNav.Push(iwidget.NewAppBar("Contracts", contractTabs))
 			},
 		),
 		navItemColonies2,
@@ -296,23 +301,23 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 			"Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),
 			func() {
-				crossNav.Push(iwidget.NewAppBar("Locations", u.overviewLocations))
+				homeNav.Push(iwidget.NewAppBar("Locations", u.overviewLocations))
 			},
 		),
 		iwidget.NewListItemWithIcon(
 			"Training",
 			theme.NewThemedResource(icons.SchoolSvg),
 			func() {
-				crossNav.Push(iwidget.NewAppBar("Training", u.overviewTraining))
+				homeNav.Push(iwidget.NewAppBar("Training", u.overviewTraining))
 			},
 		),
 		navItemWealth,
 	)
-	crossNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("All Characters", crossList))
+	homeNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("Home", homeList))
 	u.colonies.OnUpdate = func(_, expired int) {
 		fyne.Do(func() {
 			navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
-			crossList.Refresh()
+			homeList.Refresh()
 		})
 	}
 	u.overviewWealth.OnUpdate = func(wallet, assets float64) {
@@ -322,22 +327,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 				ihumanize.Number(wallet, 1),
 				ihumanize.Number(assets, 1),
 			)
-			crossList.Refresh()
-		})
-	}
-	u.industryJobsActive.OnUpdate = func(count int) {
-		s := "Active"
-		var badge string
-		if count > 0 {
-			x := ihumanize.Comma(count)
-			s += fmt.Sprintf(" (%s)", x)
-			badge = fmt.Sprintf("%s jobs ready", x)
-		}
-		fyne.Do(func() {
-			jobsActive.Text = s
-			jobsTab.Refresh()
-			navItemIndustry.Supporting = badge
-			crossList.Refresh()
+			homeList.Refresh()
 		})
 	}
 
@@ -355,7 +345,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		}
 		return theme.MoreVerticalIcon(), fyne.NewMenu("", items...)
 	}
-	u.navItemUpdateStatus = iwidget.NewListItemWithIcon(
+	navItemUpdateStatus := iwidget.NewListItemWithIcon(
 		"Update status",
 		theme.NewThemedResource(icons.UpdateSvg),
 		func() {
@@ -413,7 +403,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 			moreNav.Push(iwidget.NewAppBar("About", u.makeAboutPage()))
 		},
 	)
-	toolsList := iwidget.NewNavList(
+	moreList := iwidget.NewNavList(
 		iwidget.NewListItemWithIcon(
 			"Settings",
 			theme.NewThemedResource(icons.CogSvg),
@@ -428,16 +418,16 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 			},
 		),
 		navItemManageCharacters,
-		u.navItemUpdateStatus,
+		navItemUpdateStatus,
 		navItemAbout,
 	)
 	u.manageCharacters.OnUpdate = func(characterCount int) {
 		fyne.Do(func() {
 			navItemManageCharacters.Supporting = fmt.Sprintf("%d characters", characterCount)
-			toolsList.Refresh()
+			moreList.Refresh()
 		})
 	}
-	moreNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("More", toolsList))
+	moreNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("More", moreList))
 
 	// navigation bar
 	characterDest := iwidget.NewDestinationDef("Character", theme.NewThemedResource(icons.AccountSvg), characterNav)
@@ -445,9 +435,9 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		characterNav.PopAll()
 	}
 
-	crossDest := iwidget.NewDestinationDef("Characters", theme.NewThemedResource(icons.AccountMultipleSvg), crossNav)
-	crossDest.OnSelectedAgain = func() {
-		crossNav.PopAll()
+	homeDest := iwidget.NewDestinationDef("Home", theme.NewThemedResource(theme.HomeIcon()), homeNav)
+	homeDest.OnSelectedAgain = func() {
+		homeNav.PopAll()
 	}
 
 	searchDest := iwidget.NewDestinationDef("Search", theme.SearchIcon(), searchNav)
@@ -463,7 +453,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		moreNav.PopAll()
 	}
 
-	navBar = iwidget.NewNavBar(crossDest, characterDest, searchDest, moreDest)
+	navBar = iwidget.NewNavBar(homeDest, characterDest, searchDest, moreDest)
 	characterNav.NavBar = navBar
 
 	u.onUpdateStatus = func() {
@@ -488,11 +478,11 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 				navBar.Enable(0)
 				navBar.Enable(1)
 				navBar.Enable(2)
-				navBar.Select(1)
 			}
 		})
 	}
 	u.onSetCharacter = func(id int32) {
+		characterPage.SetTitle(u.scs.CharacterName(id))
 		go u.updateAvatar(id, func(r fyne.Resource) {
 			fyne.Do(func() {
 				characterSelector.SetIcon(r)
@@ -502,18 +492,34 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		u.characterCommunications.resetCurrentFolder()
 		fyne.Do(func() {
 			characterNav.PopAll()
-			navBar.Select(1)
 		})
+	}
+
+	var hasUpdate bool
+	var hasError bool
+	refreshMoreBadge := func() {
+		navBar.SetBadge(3, hasUpdate || hasError)
 	}
 
 	u.onAppFirstStarted = func() {
 		tickerUpdateStatus := time.NewTicker(5 * time.Second)
 		go func() {
 			for {
-				x := u.scs.Summary()
+				var icon fyne.Resource
+				status := u.scs.Summary()
+				if status.Errors > 0 {
+					icon = theme.WarningIcon()
+					hasError = true
+					refreshMoreBadge()
+				} else {
+					icon = nil
+					hasError = false
+					refreshMoreBadge()
+				}
 				fyne.Do(func() {
-					u.navItemUpdateStatus.Supporting = x.Display()
-					toolsList.Refresh()
+					navItemUpdateStatus.Supporting = status.Display()
+					navItemUpdateStatus.Trailing = icon
+					moreList.Refresh()
 				})
 				<-tickerUpdateStatus.C
 			}
@@ -527,18 +533,20 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 				} else {
 					fyne.Do(func() {
 						if v.IsRemoteNewer {
-							navBar.SetBadge(3, true)
+							hasUpdate = true
+							refreshMoreBadge()
 							navItemAbout.Supporting = "Update available"
 							navItemAbout.Trailing = theme.NewPrimaryThemedResource(icons.Numeric1CircleSvg)
 						} else {
-							navBar.SetBadge(3, false)
+							hasUpdate = false
+							refreshMoreBadge()
 							navItemAbout.Supporting = ""
 							navItemAbout.Trailing = nil
 						}
 					})
 				}
 				fyne.Do(func() {
-					crossList.Refresh()
+					moreList.Refresh()
 				})
 				<-tickerNewVersion.C
 			}

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -48,11 +49,20 @@ const (
 	fallbackWebsiteURL = "https://github.com/ErikKalkoken/evebuddy"
 )
 
+// width of common columns in data tables
 const (
 	columnWidthCharacter = 200
 	columnWidthDateTime  = 150
 	columnWidthLocation  = 350
 	columnWidthRegion    = 150
+)
+
+type sortDir uint
+
+const (
+	sortOff sortDir = iota
+	sortAsc
+	sortDesc
 )
 
 // ticker
@@ -73,7 +83,7 @@ type services struct {
 type BaseUI struct {
 	DisableMenuShortcuts func()
 	EnableMenuShortcuts  func()
-	HideMailIndicator    func()
+	hideMailIndicator    func()
 	ShowMailIndicator    func()
 
 	onAppFirstStarted    func()
@@ -102,8 +112,7 @@ type BaseUI struct {
 	contractsActive            *Contracts
 	contractsAll               *Contracts
 	gameSearch                 *GameSearch
-	industryJobsActive         *IndustryJobs
-	industryJobsAll            *IndustryJobs
+	industryJobs               *industryJobs
 	manageCharacters           *ManageCharacters
 	overviewAssets             *OverviewAssets
 	overviewCharacters         *OverviewCharacters
@@ -208,8 +217,7 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 	u.contractsActive = NewContracts(u, true)
 	u.contractsAll = NewContracts(u, false)
 	u.gameSearch = NewGameSearch(u)
-	u.industryJobsActive = NewIndustryJobs(u, true)
-	u.industryJobsAll = NewIndustryJobs(u, false)
+	u.industryJobs = NewIndustryJobs(u)
 	u.manageCharacters = NewManageCharacters(u)
 	u.overviewAssets = NewOverviewAssets(u)
 	u.overviewCharacters = NewOverviewCharacters(u)
@@ -463,17 +471,16 @@ func (u *BaseUI) updateCharacter() {
 // updateCrossPages refreshed all pages that contain information about multiple characters.
 func (u *BaseUI) updateCrossPages() {
 	ff := map[string]func(){
-		"assetSearch":       u.overviewAssets.update,
-		"contractsAll":      u.contractsAll.update,
-		"contractsActive":   u.contractsActive.update,
-		"cloneSearch":       u.overviewClones.update,
-		"colony":            u.colonies.update,
-		"industryJobAll":    u.industryJobsAll.update,
-		"industryJobActive": u.industryJobsActive.update,
-		"locations":         u.overviewLocations.update,
-		"overview":          u.overviewCharacters.update,
-		"training":          u.overviewTraining.update,
-		"wealth":            u.overviewWealth.update,
+		"assetSearch":     u.overviewAssets.update,
+		"contractsAll":    u.contractsAll.update,
+		"contractsActive": u.contractsActive.update,
+		"cloneSearch":     u.overviewClones.update,
+		"colony":          u.colonies.update,
+		"industryJob":     u.industryJobs.update,
+		"locations":       u.overviewLocations.update,
+		"overview":        u.overviewCharacters.update,
+		"training":        u.overviewTraining.update,
+		"wealth":          u.overviewWealth.update,
 	}
 	runFunctionsWithProgressModal("Updating characters", ff, u.onRefreshCross, u.window)
 }
@@ -555,7 +562,7 @@ func (u *BaseUI) updateAvatar(id int32, setIcon func(fyne.Resource)) {
 }
 
 func (u *BaseUI) updateMailIndicator() {
-	if u.ShowMailIndicator == nil || u.HideMailIndicator == nil {
+	if u.ShowMailIndicator == nil || u.hideMailIndicator == nil {
 		return
 	}
 	if !u.settings.SysTrayEnabled() {
@@ -569,7 +576,7 @@ func (u *BaseUI) updateMailIndicator() {
 	if n > 0 {
 		u.ShowMailIndicator()
 	} else {
-		u.HideMailIndicator()
+		u.hideMailIndicator()
 	}
 }
 
@@ -758,6 +765,10 @@ func (u *BaseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 		return
 	}
 	slog.Debug("Starting to check character sections for update", "sections", sections)
+	_, err := u.cs.GetValidCharacterToken(ctx, characterID)
+	if err != nil {
+		slog.Error("Failed to refresh token for update", "characterID", characterID, "error", err)
+	}
 	for _, s := range sections {
 		go u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
 	}
@@ -826,8 +837,7 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionIndustryJobs:
 		if needsRefresh {
-			u.industryJobsAll.update()
-			u.industryJobsActive.update()
+			u.industryJobs.update()
 		}
 	case app.SectionLocation, app.SectionOnline, app.SectionShip:
 		if needsRefresh {
@@ -976,6 +986,15 @@ func (u *BaseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 	}
 	slog.Debug("Starting to check corporation sections for update", "sections", sections)
 	for _, s := range sections {
+		_, err := u.cs.ValidCharacterTokenForCorporation(ctx, corporationID, s.Role())
+		if err != nil {
+			slog.Error("Skipping corporation section update due to missing valid token", "error", err)
+			sections = slices.DeleteFunc(sections, func(x app.CorporationSection) bool {
+				return x == s
+			})
+		}
+	}
+	for _, s := range sections {
 		go u.updateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, s, forceUpdate)
 	}
 }
@@ -1000,8 +1019,7 @@ func (u *BaseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 	switch s {
 	case app.SectionCorporationIndustryJobs:
 		if needsRefresh {
-			u.industryJobsAll.update()
-			u.industryJobsActive.update()
+			u.industryJobs.update()
 		}
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the refresh ticker: %s", s))

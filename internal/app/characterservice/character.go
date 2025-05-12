@@ -637,7 +637,7 @@ func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg app.C
 // AddEveEntitiesFromSearchESI runs a search on ESI and adds the results as new EveEntity objects to the database.
 // This method performs a character specific search and needs a token.
 func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, characterID int32, search string) ([]int32, error) {
-	token, err := s.getValidCharacterToken(ctx, characterID)
+	token, err := s.GetValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
@@ -1278,7 +1278,7 @@ func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.Char
 
 // DeleteMail deletes a mail both on ESI and in the database.
 func (s *CharacterService) DeleteMail(ctx context.Context, characterID, mailID int32) error {
-	token, err := s.getValidCharacterToken(ctx, characterID)
+	token, err := s.GetValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return err
 	}
@@ -1379,7 +1379,7 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int32, subj
 	if err != nil {
 		return 0, err
 	}
-	token, err := s.getValidCharacterToken(ctx, characterID)
+	token, err := s.GetValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return 0, err
 	}
@@ -1715,7 +1715,7 @@ func (s *CharacterService) updateExistingMail(ctx context.Context, characterID i
 
 // UpdateMailRead updates an existing mail as read
 func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mailID int32) error {
-	token, err := s.getValidCharacterToken(ctx, characterID)
+	token, err := s.GetValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return err
 	}
@@ -2202,7 +2202,7 @@ func (s *CharacterService) SearchESI(
 	search string,
 	categories []app.SearchCategory, strict bool,
 ) (map[app.SearchCategory][]*app.EveEntity, int, error) {
-	token, err := s.getValidCharacterToken(ctx, characterID)
+	token, err := s.GetValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -2262,175 +2262,6 @@ func (s *CharacterService) SearchESI(
 		})
 	}
 	return r, ids.Size(), nil
-}
-
-// UpdateSectionIfNeeded updates a section from ESI if has expired and changed
-// and reports back if it has changed
-func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.CharacterID == 0 || arg.Section == "" {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
-	}
-	if !arg.ForceUpdate {
-		status, err := s.st.GetCharacterSectionStatus(ctx, arg.CharacterID, arg.Section)
-		if err != nil {
-			if !errors.Is(err, app.ErrNotFound) {
-				return false, err
-			}
-		} else {
-			if !status.HasError() && !status.IsExpired() {
-				return false, nil
-			}
-		}
-	}
-	var f func(context.Context, app.CharacterUpdateSectionParams) (bool, error)
-	switch arg.Section {
-	case app.SectionAssets:
-		f = s.updateAssetsESI
-	case app.SectionAttributes:
-		f = s.updateAttributesESI
-	case app.SectionContracts:
-		f = s.updateContractsESI
-	case app.SectionImplants:
-		f = s.updateImplantsESI
-	case app.SectionIndustryJobs:
-		f = s.updateIndustryJobsESI
-	case app.SectionJumpClones:
-		f = s.updateJumpClonesESI
-	case app.SectionLocation:
-		f = s.updateLocationESI
-	case app.SectionMails:
-		f = s.updateMailsESI
-	case app.SectionMailLabels:
-		f = s.updateMailLabelsESI
-	case app.SectionMailLists:
-		f = s.updateMailListsESI
-	case app.SectionNotifications:
-		f = s.updateNotificationsESI
-	case app.SectionOnline:
-		f = s.updateOnlineESI
-	case app.SectionRoles:
-		f = s.updateRolesESI
-	case app.SectionPlanets:
-		f = s.updatePlanetsESI
-	case app.SectionShip:
-		f = s.updateShipESI
-	case app.SectionSkillqueue:
-		f = s.UpdateSkillqueueESI
-	case app.SectionSkills:
-		f = s.updateSkillsESI
-	case app.SectionWalletBalance:
-		f = s.updateWalletBalanceESI
-	case app.SectionWalletJournal:
-		f = s.updateWalletJournalEntryESI
-	case app.SectionWalletTransactions:
-		f = s.updateWalletTransactionESI
-	default:
-		return false, fmt.Errorf("update section: unknown section: %s", arg.Section)
-	}
-	key := fmt.Sprintf("update-character-section-%s-%d", arg.Section, arg.CharacterID)
-	x, err, _ := s.sfg.Do(key, func() (any, error) {
-		return f(ctx, arg)
-	})
-	if err != nil {
-		errorMessage := err.Error()
-		startedAt := optional.Optional[time.Time]{}
-		arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
-			CharacterID:  arg.CharacterID,
-			Section:      arg.Section,
-			ErrorMessage: &errorMessage,
-			StartedAt:    &startedAt,
-		}
-		o, err2 := s.st.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
-		if err2 != nil {
-			slog.Error("record error for failed section update: %s", "error", err2)
-		}
-		s.scs.SetCharacterSection(o)
-		return false, fmt.Errorf("update character section from ESI for %v: %w", arg, err)
-	}
-	changed := x.(bool)
-	return changed, err
-}
-
-// updateSectionIfChanged updates a character section if it has changed
-// and reports whether it has changed
-func (s *CharacterService) updateSectionIfChanged(
-	ctx context.Context,
-	arg app.CharacterUpdateSectionParams,
-	fetch func(ctx context.Context, characterID int32) (any, error),
-	update func(ctx context.Context, characterID int32, data any) error,
-) (bool, error) {
-	startedAt := optional.From(time.Now())
-	arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
-		CharacterID: arg.CharacterID,
-		Section:     arg.Section,
-		StartedAt:   &startedAt,
-	}
-	o, err := s.st.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
-	if err != nil {
-		return false, err
-	}
-	s.scs.SetCharacterSection(o)
-	token, err := s.getValidCharacterToken(ctx, arg.CharacterID)
-	if err != nil {
-		return false, err
-	}
-	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
-	data, err := fetch(ctx, arg.CharacterID)
-	if err != nil {
-		return false, err
-	}
-	hash, err := calcContentHash(data)
-	if err != nil {
-		return false, err
-	}
-
-	// identify if changed
-	var notFound bool
-	u, err := s.st.GetCharacterSectionStatus(ctx, arg.CharacterID, arg.Section)
-	if errors.Is(err, app.ErrNotFound) {
-		notFound = true
-	} else if err != nil {
-		return false, err
-	}
-
-	// update if needed
-	hasChanged := u.ContentHash != hash
-	if arg.ForceUpdate || notFound || hasChanged {
-		if err := update(ctx, arg.CharacterID, data); err != nil {
-			return false, err
-		}
-	}
-
-	// record successful completion
-	completedAt := storage.NewNullTimeFromTime(time.Now())
-	errorMessage := ""
-	startedAt2 := optional.Optional[time.Time]{}
-	arg2 = storage.UpdateOrCreateCharacterSectionStatusParams{
-		CharacterID: arg.CharacterID,
-		Section:     arg.Section,
-
-		ErrorMessage: &errorMessage,
-		ContentHash:  &hash,
-		CompletedAt:  &completedAt,
-		StartedAt:    &startedAt2,
-	}
-	o, err = s.st.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
-	if err != nil {
-		return false, err
-	}
-	s.scs.SetCharacterSection(o)
-	slog.Debug("Has section changed", "characterID", arg.CharacterID, "section", arg.Section, "changed", hasChanged)
-	return hasChanged, nil
-}
-
-func calcContentHash(data any) (string, error) {
-	b, err := json.Marshal(data)
-	if err != nil {
-		return "", err
-	}
-	b2 := md5.Sum(b)
-	hash := hex.EncodeToString(b2[:])
-	return hash, nil
 }
 
 func (s *CharacterService) ListShipsAbilities(ctx context.Context, characterID int32, search string) ([]*app.CharacterShipAbility, error) {
@@ -2601,7 +2432,7 @@ func (s *CharacterService) ValidCharacterTokenForCorporation(ctx context.Context
 	for _, t := range token {
 		err := s.ensureValidCharacterToken(ctx, t)
 		if err != nil {
-			slog.Error("failed to refresh token", "ID", t.CharacterID)
+			slog.Error("Failed to refresh token for corporation", "characterID", t.CharacterID, "corporationID", corporationID, "role", role)
 			continue
 		}
 		return t, nil
@@ -2609,8 +2440,9 @@ func (s *CharacterService) ValidCharacterTokenForCorporation(ctx context.Context
 	return nil, app.ErrNotFound
 }
 
-// getValidCharacterToken returns a valid token for a character. Convenience function.
-func (s *CharacterService) getValidCharacterToken(ctx context.Context, characterID int32) (*app.CharacterToken, error) {
+// GetValidCharacterToken returns a valid token for a character.
+// Will automatically try to refresh a token if needed.
+func (s *CharacterService) GetValidCharacterToken(ctx context.Context, characterID int32) (*app.CharacterToken, error) {
 	t, err := s.st.GetCharacterToken(ctx, characterID)
 	if err != nil {
 		return nil, err
@@ -2623,21 +2455,22 @@ func (s *CharacterService) getValidCharacterToken(ctx context.Context, character
 
 // ensureValidCharacterToken will automatically try to refresh a token that is already or about to become invalid.
 func (s *CharacterService) ensureValidCharacterToken(ctx context.Context, t *app.CharacterToken) error {
-	if !t.RemainsValid(time.Second * 60) {
-		slog.Debug("Need to refresh token", "characterID", t.CharacterID)
-		rawToken, err := s.sso.RefreshToken(ctx, t.RefreshToken)
-		if err != nil {
-			return err
-		}
-		t.AccessToken = rawToken.AccessToken
-		t.RefreshToken = rawToken.RefreshToken
-		t.ExpiresAt = rawToken.ExpiresAt
-		err = s.st.UpdateOrCreateCharacterToken(ctx, t)
-		if err != nil {
-			return err
-		}
-		slog.Info("Token refreshed", "characterID", t.CharacterID)
+	if t.RemainsValid(time.Second * 60) {
+		return nil
 	}
+	slog.Debug("Need to refresh token", "characterID", t.CharacterID)
+	rawToken, err := s.sso.RefreshToken(ctx, t.RefreshToken)
+	if err != nil {
+		return err
+	}
+	t.AccessToken = rawToken.AccessToken
+	t.RefreshToken = rawToken.RefreshToken
+	t.ExpiresAt = rawToken.ExpiresAt
+	err = s.st.UpdateOrCreateCharacterToken(ctx, t)
+	if err != nil {
+		return err
+	}
+	slog.Info("Token refreshed", "characterID", t.CharacterID)
 	return nil
 }
 
@@ -2890,4 +2723,174 @@ func extractPageCount(r *http.Response) (int, error) {
 		return 0, err
 	}
 	return pages, nil
+}
+
+// UpdateSectionIfNeeded updates a section from ESI if has expired and changed
+// and reports back if it has changed
+func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+	if arg.CharacterID == 0 || arg.Section == "" {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+	}
+	if !arg.ForceUpdate {
+		status, err := s.st.GetCharacterSectionStatus(ctx, arg.CharacterID, arg.Section)
+		if err != nil {
+			if !errors.Is(err, app.ErrNotFound) {
+				return false, err
+			}
+		} else {
+			if !status.HasError() && !status.IsExpired() {
+				return false, nil
+			}
+		}
+	}
+	var f func(context.Context, app.CharacterUpdateSectionParams) (bool, error)
+	switch arg.Section {
+	case app.SectionAssets:
+		f = s.updateAssetsESI
+	case app.SectionAttributes:
+		f = s.updateAttributesESI
+	case app.SectionContracts:
+		f = s.updateContractsESI
+	case app.SectionImplants:
+		f = s.updateImplantsESI
+	case app.SectionIndustryJobs:
+		f = s.updateIndustryJobsESI
+	case app.SectionJumpClones:
+		f = s.updateJumpClonesESI
+	case app.SectionLocation:
+		f = s.updateLocationESI
+	case app.SectionMails:
+		f = s.updateMailsESI
+	case app.SectionMailLabels:
+		f = s.updateMailLabelsESI
+	case app.SectionMailLists:
+		f = s.updateMailListsESI
+	case app.SectionNotifications:
+		f = s.updateNotificationsESI
+	case app.SectionOnline:
+		f = s.updateOnlineESI
+	case app.SectionRoles:
+		f = s.updateRolesESI
+	case app.SectionPlanets:
+		f = s.updatePlanetsESI
+	case app.SectionShip:
+		f = s.updateShipESI
+	case app.SectionSkillqueue:
+		f = s.UpdateSkillqueueESI
+	case app.SectionSkills:
+		f = s.updateSkillsESI
+	case app.SectionWalletBalance:
+		f = s.updateWalletBalanceESI
+	case app.SectionWalletJournal:
+		f = s.updateWalletJournalEntryESI
+	case app.SectionWalletTransactions:
+		f = s.updateWalletTransactionESI
+	default:
+		return false, fmt.Errorf("update section: unknown section: %s", arg.Section)
+	}
+	key := fmt.Sprintf("update-character-section-%s-%d", arg.Section, arg.CharacterID)
+	x, err, _ := s.sfg.Do(key, func() (any, error) {
+		return f(ctx, arg)
+	})
+	if err != nil {
+		errorMessage := err.Error()
+		startedAt := optional.Optional[time.Time]{}
+		arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
+			CharacterID:  arg.CharacterID,
+			Section:      arg.Section,
+			ErrorMessage: &errorMessage,
+			StartedAt:    &startedAt,
+		}
+		o, err2 := s.st.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
+		if err2 != nil {
+			slog.Error("record error for failed section update: %s", "error", err2)
+		}
+		s.scs.SetCharacterSection(o)
+		return false, fmt.Errorf("update character section from ESI for %v: %w", arg, err)
+	}
+	changed := x.(bool)
+	slog.Info("Character section update completed", "characterID", arg.CharacterID, "section", arg.Section, "changed", changed)
+	return changed, err
+}
+
+// updateSectionIfChanged updates a character section if it has changed
+// and reports whether it has changed
+func (s *CharacterService) updateSectionIfChanged(
+	ctx context.Context,
+	arg app.CharacterUpdateSectionParams,
+	fetch func(ctx context.Context, characterID int32) (any, error),
+	update func(ctx context.Context, characterID int32, data any) error,
+) (bool, error) {
+	startedAt := optional.From(time.Now())
+	arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
+		CharacterID: arg.CharacterID,
+		Section:     arg.Section,
+		StartedAt:   &startedAt,
+	}
+	o, err := s.st.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
+	if err != nil {
+		return false, err
+	}
+	s.scs.SetCharacterSection(o)
+	token, err := s.GetValidCharacterToken(ctx, arg.CharacterID)
+	if err != nil {
+		return false, err
+	}
+	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+	data, err := fetch(ctx, arg.CharacterID)
+	if err != nil {
+		return false, err
+	}
+	hash, err := calcContentHash(data)
+	if err != nil {
+		return false, err
+	}
+
+	// identify if changed
+	var notFound bool
+	u, err := s.st.GetCharacterSectionStatus(ctx, arg.CharacterID, arg.Section)
+	if errors.Is(err, app.ErrNotFound) {
+		notFound = true
+	} else if err != nil {
+		return false, err
+	}
+
+	// update if needed
+	hasChanged := u.ContentHash != hash
+	if arg.ForceUpdate || notFound || hasChanged {
+		if err := update(ctx, arg.CharacterID, data); err != nil {
+			return false, err
+		}
+	}
+
+	// record successful completion
+	completedAt := storage.NewNullTimeFromTime(time.Now())
+	errorMessage := ""
+	startedAt2 := optional.Optional[time.Time]{}
+	arg2 = storage.UpdateOrCreateCharacterSectionStatusParams{
+		CharacterID: arg.CharacterID,
+		Section:     arg.Section,
+
+		ErrorMessage: &errorMessage,
+		ContentHash:  &hash,
+		CompletedAt:  &completedAt,
+		StartedAt:    &startedAt2,
+	}
+	o, err = s.st.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
+	if err != nil {
+		return false, err
+	}
+	s.scs.SetCharacterSection(o)
+	slog.Debug("Has section changed", "characterID", arg.CharacterID, "section", arg.Section, "changed", hasChanged)
+	return hasChanged, nil
+}
+
+func calcContentHash(data any) (string, error) {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return "", err
+	}
+	b2 := md5.Sum(b)
+	hash := hex.EncodeToString(b2[:])
+	return hash, nil
 }

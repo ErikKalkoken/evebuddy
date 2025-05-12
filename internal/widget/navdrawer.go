@@ -76,14 +76,14 @@ type NavDrawer struct {
 	list     *widget.List
 	pages    *fyne.Container
 	selected int
-	title    string
+	title    *Label
 }
 
 func NewNavDrawer(title string, items ...*NavItem) *NavDrawer {
 	w := &NavDrawer{
 		pages:    container.NewStack(),
 		selected: indexUndefined,
-		title:    title,
+		title:    NewLabelWithSize(title, theme.SizeNameSubHeadingText),
 	}
 	w.ExtendBaseWidget(w)
 	w.list = w.makeList()
@@ -290,6 +290,10 @@ func (w *NavDrawer) SelectedIndex() int {
 	return w.selected
 }
 
+func (w *NavDrawer) SetTitle(text string) {
+	w.title.SetText(text)
+}
+
 func (w *NavDrawer) SetItemBadge(item *NavItem, text string) {
 	id, ok := w.findItem(item)
 	if !ok {
@@ -309,7 +313,7 @@ func (w *NavDrawer) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			container.NewHBox(
 				container.NewBorder(
-					NewLabelWithSize(w.title, theme.SizeNameSubHeadingText),
+					w.title,
 					nil,
 					nil,
 					nil,

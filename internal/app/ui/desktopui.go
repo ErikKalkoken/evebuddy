@@ -65,7 +65,7 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 			deskApp.SetSystemTrayIcon(icons.IconmarkedPng)
 		})
 	}
-	u.HideMailIndicator = func() {
+	u.hideMailIndicator = func() {
 		fyne.Do(func() {
 			deskApp.SetSystemTrayIcon(icons.IconPng)
 		})
@@ -198,8 +198,8 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 		)
 	}
 
-	// All Characters
-	var collectiveNav *iwidget.NavDrawer
+	// Home
+	var homeNav *iwidget.NavDrawer
 	overview := iwidget.NewNavPage(
 		"Characters",
 		theme.NewThemedResource(icons.PortraitSvg),
@@ -247,35 +247,25 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 			s = fmt.Sprint(expired)
 		}
 		fyne.Do(func() {
-			collectiveNav.SetItemBadge(overviewColonies, s)
+			homeNav.SetItemBadge(overviewColonies, s)
 		})
 	}
 
-	industryJobsActive := container.NewTabItem("Active", u.industryJobsActive)
-	industryTabs := container.NewAppTabs(
-		industryJobsActive,
-		container.NewTabItem("All", u.industryJobsAll),
-	)
 	industry := iwidget.NewNavPage(
 		"Industry",
 		theme.NewThemedResource(icons.FactorySvg),
-		makePageWithTitle("Industry", industryTabs),
+		makePageWithTitle("Industry", u.industryJobs),
 	)
-	u.industryJobsActive.OnUpdate = func(count int) {
-		s := "Active"
+	u.industryJobs.OnUpdate = func(count int) {
 		var badge string
 		if count > 0 {
-			c := ihumanize.Comma(count)
-			s += fmt.Sprintf(" (%s)", c)
-			badge = c
+			badge = ihumanize.Comma(count)
 		}
 		fyne.Do(func() {
-			industryJobsActive.Text = s
-			industryTabs.Refresh()
-			collectiveNav.SetItemBadge(industry, badge)
+			homeNav.SetItemBadge(industry, badge)
 		})
 	}
-	collectiveNav = iwidget.NewNavDrawer("All Characters",
+	homeNav = iwidget.NewNavDrawer("Home",
 		overview,
 		allAssets,
 		iwidget.NewNavPage(
@@ -298,26 +288,35 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 		),
 		wealth,
 	)
-	collectiveNav.OnSelectItem = func(it *iwidget.NavItem) {
+	homeNav.OnSelectItem = func(it *iwidget.NavItem) {
 		if it == allAssets {
 			u.overviewAssets.Focus()
 		}
 	}
-	collectiveNav.MinWidth = minNavCharacterWidth
+	homeNav.MinWidth = minNavCharacterWidth
 
 	statusBar := newStatusBar(u)
 	toolbar := NewToolbar(u)
+	characterTab := container.NewTabItemWithIcon("Character", theme.AccountIcon(), characterNav)
+	tabs := container.NewAppTabs(
+		container.NewTabItemWithIcon("Home", theme.NewThemedResource(theme.HomeIcon()), homeNav),
+		characterTab,
+	)
 	mainContent := container.NewBorder(
 		toolbar,
 		statusBar,
 		nil,
 		nil,
-		container.NewAppTabs(
-			container.NewTabItemWithIcon("All Characters", theme.NewThemedResource(icons.GroupSvg), collectiveNav),
-			container.NewTabItemWithIcon("Current Character", theme.AccountIcon(), characterNav),
-		))
-
+		tabs,
+	)
 	u.MainWindow().SetContent(mainContent)
+
+	u.onSetCharacter = func(id int32) {
+		name := u.scs.CharacterName(id)
+		characterNav.SetTitle(name)
+		characterTab.Text = name
+		tabs.Refresh()
+	}
 
 	// system tray menu
 	if u.settings.SysTrayEnabled() {
@@ -337,20 +336,20 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 			u.MainWindow().Hide()
 		})
 	}
-	u.HideMailIndicator() // init system tray icon
+	u.hideMailIndicator() // init system tray icon
 	u.onUpdateCharacter = func(c *app.Character) {
 		go func() {
 			if !u.hasCharacter() {
 				fyne.Do(func() {
 					characterNav.Disable()
-					collectiveNav.Disable()
+					homeNav.Disable()
 					toolbar.ToogleSearchBar(false)
 				})
 				return
 			}
 			fyne.Do(func() {
 				characterNav.Enable()
-				collectiveNav.Enable()
+				homeNav.Enable()
 				toolbar.ToogleSearchBar(true)
 			})
 		}()
