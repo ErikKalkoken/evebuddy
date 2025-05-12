@@ -20,7 +20,7 @@ A companion app for Eve Online players available on Windows, Linux, macOS and An
   - [From source](#from-source)
 - [Updating](#updating)
 - [Uninstalling](#uninstalling)
-- [Troubleshooting](#troubleshooting)
+- [Logs](#logs)
 - [FAQ](#faq)
 - [Credits](#credits)
 
@@ -230,9 +230,16 @@ rm evebuddy
 
 On Android you can uninstall the app via Android Settings and it will also remove all data.
 
-## Troubleshooting
+## Logs
 
 The app has an application log and a crash file that can help with trouble shooting. You can export both logs from the Settings menu in the General section.
+
+Platform | Path
+-- | --
+Android | Export only
+Linux | `/home/{username}/.local/share/evebuddy/log`
+macOS | `/Users/{username}/Library/Application Support/evebuddy/log'`
+Windows | `C:\Users\{username}\AppData\Local\evebuddy\evebuddy\log`
 
 To view the logs on mobile you might want to install another app. While there are many decent apps for viewing log and text files on the Google Play store, we can recommend the following two apps:
 
