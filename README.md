@@ -26,37 +26,39 @@ A companion app for Eve Online players available on Windows, Linux, macOS and An
 
 ## Description
 
-EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) players available for desktop and mobile. It has three key features:
+EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) players available for desktop and mobile. It has four key features:
 
-- Give you access to your characters without having to log into the Eve client or switching your current Eve character
-- Provide you with helpful functions, that the Eve client is lacking, like asset search across all your characters
-- Notify you about important game events (e.g. structure attacked) and new Eve mails
+- Show consolidated information for all your characters, e.g. asset search over all characters or a combined view of industry jobs for all characters and corporations
+- Notify you about important game events (e.g. structure attacked) or updates (e.g. training queue is empty)
+- Allow you to monitor individual characters, e.g. inspect the current training queue of a character
+- Provides a full Eve mail client for each of your characters
 
 > [!IMPORTANT]
-> This is an early version and not yet considered fully stable. We would very much appreciate your feedback, so we can find and squash remaining bugs. If you encounter any problems please feel free to open an issue or chat with us on our [Discord server]((https://discord.gg/tVSCQEVJnJ)) in the support channel **#evebuddy**.<br>
-> Some features may not be fully implemented yet (e.g. some notification types). Our current focus is on bug fixing, rather then adding more features. But if you are missing anything important, please feel free to open a feature request.<br>
-> We very much welcome any contributions. If you like to provide a fix or add a feature please feel free top open a PR.
+> This app is in-development and we are constantly adding new features and other improvements. We would very much appreciate your feedback, so we can quicly find and squash potential bugs. If you encounter any problems please feel free to open an issue or chat with us on our [Discord server]((https://discord.gg/tVSCQEVJnJ)) in the support channel **#evebuddy**.<br>
+> Some features may not be fully implemented yet (e.g. some notification types). But if you are missing a feature that would make EVE Buddy more useful for you, please feel free to open a feature request.<br>
+
+> [!NOTE]
+> Help wanted! We would very much appreciate any contribution. If you like to provide a fix or add a feature please feel free top open a PR.
 
 ## Features
 
 A more detailed overview of the provided features:
 
-- Information about each character:
+- Assets: Assets of all characters with full text search feature
+- Clones: Jump clones of all characters with route search from any location
+- Colonies: Lost of all planetary industry colonies with current status
+- Contracts: Contracts of all characters
+- Industry: Active and history of industry jobs for all character an corporations
+- Location: Location in New Eden and current ships for all characters
+- Training: Queue status and skillpoints
+- Wealth: Charts showing wealth distribution across all characters
+- Additional information can be accessed for each character:
   - Assets: Browse through your assets at all your locations
   - Clones: Current augmentations, jump clones & jump cooldown timer
   - Mails: Full mail client for receiving and sending Eve mails
   - Communications: Browse through all communications
   - Skills: Training queue, catalogue of all trained skills and what ships can be flown
   - Wallet: Wallet and Wallet Transactions
-- Combined view over all characters:
-  - Assets: Assets of all characters with full text search feature
-  - Clones: Jump clones of all characters with route search from any location
-  - Colonies: Show list of all planetary industry colonies
-  - Contracts: Active and history of contracts
-  - Industry: Active and history of industry jobs
-  - Location: Location in New Eden and current ships for all characters
-  - Training: Queue status and skillpoints
-  - Wealth: Charts showing wealth distribution across all characters
 - Get notified about important events (e.g. structure attacked, training queue expired)
 - Ability to search New Eden (similar to in-game search bar)
 - Show information about various entities (e.g. character, alliance, location); similar to in-game information windows
