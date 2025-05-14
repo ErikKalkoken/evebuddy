@@ -403,6 +403,20 @@ func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *industryJobs) makeListForMobile() *widget.List {
+	statusMap := map[app.IndustryJobStatus]fyne.Resource{
+		app.JobDelivered: theme.NewThemedResource(icons.IndydeliveredSvg),
+		app.JobPaused:    theme.NewWarningThemedResource(icons.IndyhaltedSvg),
+		app.JobReady:     theme.NewSuccessThemedResource(icons.IndyreadySvg),
+		app.JobCancelled: theme.NewErrorThemedResource(icons.IndycanceledSvg),
+	}
+	activityMap := map[app.IndustryActivity]fyne.Resource{
+		app.Manufacturing:              theme.NewThemedResource(icons.IndymanufacturingSvg),
+		app.MaterialEfficiencyResearch: theme.NewThemedResource(icons.IndymaterialresearchSvg),
+		app.TimeEfficiencyResearch:     theme.NewThemedResource(icons.IndytimeresearchSvg),
+		app.Copying:                    theme.NewThemedResource(icons.IndycopyingSvg),
+		app.Invention:                  theme.NewThemedResource(icons.IndyinventionSvg),
+		app.Reactions:                  theme.NewThemedResource(icons.IndyreactionsSvg),
+	}
 	var l *widget.List
 	l = widget.NewList(
 		func() int {
@@ -413,19 +427,21 @@ func (a *industryJobs) makeListForMobile() *widget.List {
 			title.TextStyle.Bold = true
 			title.Wrapping = fyne.TextWrapWord
 			status := widget.NewRichText()
-			activity := widget.NewLabel("Template")
 			location := widget.NewLabel("Template")
 			location.Wrapping = fyne.TextWrapWord
 			completed := widget.NewLabel("Template")
 			p := theme.Padding()
+			activityIcon := widget.NewIcon(icons.BlankSvg)
+			statusIcon := widget.NewIcon(icons.BlankSvg)
+			spacer := canvas.NewRectangle(color.Transparent)
+			spacer.SetMinSize(fyne.NewSize(1, p))
 			return container.NewBorder(
 				nil,
 				nil,
-				nil,
-				status,
+				container.NewVBox(spacer, activityIcon),
+				container.NewStack(status, container.NewVBox(spacer, statusIcon)),
 				container.New(layout.NewCustomPaddedVBoxLayout(-p),
 					title,
-					activity,
 					location,
 					completed,
 				),
@@ -438,17 +454,39 @@ func (a *industryJobs) makeListForMobile() *widget.List {
 			j := a.jobsFiltered[id]
 			c1 := co.(*fyne.Container).Objects
 			c2 := c1[0].(*fyne.Container).Objects
-			c2[0].(*widget.Label).SetText(j.blueprintType.Name)
-			c2[1].(*widget.Label).SetText(fmt.Sprintf("%s x %s", j.activity.Display(), ihumanize.Comma(j.runs)))
-			c2[2].(*widget.Label).SetText(j.location.Name.ValueOrFallback("?"))
-			iwidget.SetRichText(c1[1].(*widget.RichText), j.StatusRichText()...)
-			completed := c2[3].(*widget.Label)
+			title := fmt.Sprintf("%s x%s", j.blueprintType.Name, ihumanize.Comma(j.runs))
+			c2[0].(*widget.Label).SetText(title)
+			c2[1].(*widget.Label).SetText(j.location.Name.ValueOrFallback("?"))
+
+			r, ok := activityMap[j.activity]
+			if !ok {
+				r = theme.NewThemedResource(icons.QuestionmarkSvg)
+			}
+			c1[1].(*fyne.Container).Objects[1].(*widget.Icon).SetResource(r)
+
+			statusStack := c1[2].(*fyne.Container).Objects
+			if j.status == app.JobActive {
+				iwidget.SetRichText(statusStack[0].(*widget.RichText), j.StatusRichText()...)
+				statusStack[0].Show()
+				statusStack[1].Hide()
+			} else {
+				r, ok := statusMap[j.status]
+				if !ok {
+					r = theme.NewThemedResource(icons.QuestionmarkSvg)
+				}
+				statusStack[1].(*fyne.Container).Objects[1].(*widget.Icon).SetResource(r)
+				statusStack[0].Hide()
+				statusStack[1].Show()
+			}
+
+			completed := c2[2].(*widget.Label)
 			if j.status == app.JobDelivered {
 				completed.SetText(humanize.Time(j.endDate))
 				completed.Show()
 			} else {
 				completed.Hide()
 			}
+
 			l.SetItemHeight(id, co.(*fyne.Container).MinSize().Height)
 		},
 	)
