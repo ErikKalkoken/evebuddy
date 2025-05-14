@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -112,6 +113,7 @@ type industryJobs struct {
 	selectInstaller *widget.Select
 	selectOwner     *widget.Select
 	selectStatus    *widget.Select
+	sortButton      *widget.Button
 	top             *widget.Label
 	u               *BaseUI
 }
@@ -194,8 +196,8 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 	} else {
 		a.body = a.makeListForMobile()
 	}
-
-	a.colSort[4] = sortDesc // default sorting
+	const defaultSortColumn = 4
+	a.colSort[defaultSortColumn] = sortDesc // default sorting
 
 	a.search = widget.NewEntry()
 	a.search.PlaceHolder = "Search Blueprints"
@@ -248,7 +250,110 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 	})
 	a.selectInstaller.Selected = industryInstallerMe
 
+	sortColumns := xslices.Map(headers, func(h iwidget.HeaderDef) string {
+		return h.Text
+	})
+	setSortButton := func(b *widget.Button) {
+		var text string
+		var icon fyne.Resource
+		for i, c := range a.colSort {
+			if c != sortOff {
+				text = sortColumns[i]
+				switch c {
+				case sortAsc:
+					icon = theme.NewThemedResource(icons.SortAscendingSvg)
+				case sortDesc:
+					icon = theme.NewThemedResource(icons.SortDescendingSvg)
+				}
+				break
+			}
+		}
+		b.Text = text
+		b.Icon = icon
+		b.Refresh()
+	}
+	mobileSortColumns := set.Of(0, 1, 2, 3, 4, 5)
+	a.sortButton = widget.NewButtonWithIcon("", icons.BlankSvg, func() {
+		var sortCol int
+		var order sortDir
+		for i, c := range a.colSort {
+			if c != sortOff {
+				sortCol = i
+				order = c
+			}
+		}
+		var fields []string
+		for i, h := range headers {
+			if mobileSortColumns.Contains(i) {
+				fields = append(fields, h.Text)
+			}
+		}
+		cols := widget.NewRadioGroup(fields, nil)
+		cols.Selected = sortColumns[sortCol]
+		dir := widget.NewRadioGroup([]string{"Ascending", "Descending"}, nil)
+		switch order {
+		case sortAsc:
+			dir.Selected = "Ascending"
+		case sortDesc:
+			dir.Selected = "Descending"
+		}
+		c := container.NewVBox(
+			widget.NewLabel("Field"),
+			cols,
+			widget.NewLabel("Direction"),
+			dir,
+		)
+		d := dialog.NewCustomConfirm("Sort By", "OK", "Cancel", c, func(ok bool) {
+			if !ok {
+				return
+			}
+			idx := slices.Index(sortColumns, cols.Selected)
+			if idx == -1 {
+				return
+			}
+			switch dir.Selected {
+			case "Ascending":
+				order = sortAsc
+			case "Descending":
+				order = sortDesc
+			}
+			a.setColSort(idx, order)
+			a.processJobs(-1)
+			setSortButton(a.sortButton)
+		}, a.u.window)
+		d.Show()
+	})
+	setSortButton(a.sortButton)
 	return a
+}
+
+func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
+	spacer := canvas.NewRectangle(color.Transparent)
+	spacer.SetMinSize(fyne.NewSize(180, 1))
+	selections := container.NewHBox(
+		container.NewStack(spacer, a.selectOwner),
+		container.NewStack(spacer, a.selectStatus),
+		container.NewStack(spacer, a.selectActivity),
+		container.NewStack(spacer, a.selectInstaller),
+	)
+	selections.Add(a.sortButton)
+	c := container.NewBorder(
+		container.NewVBox(
+			container.NewBorder(
+				nil,
+				container.NewHScroll(selections),
+				nil,
+				nil,
+				a.search,
+			),
+			a.top,
+		),
+		nil,
+		nil,
+		nil,
+		a.body,
+	)
+	return widget.NewSimpleRenderer(c)
 }
 
 // processJobs applies all filters and sorting and freshes the list with the changed rows.
@@ -325,10 +430,7 @@ func (a *industryJobs) processJobs(sortCol int) {
 		if order > sortDesc {
 			order = sortOff
 		}
-		for i := range a.colSort {
-			a.colSort[i] = sortOff
-		}
-		a.colSort[sortCol] = order
+		a.setColSort(sortCol, order)
 	} else {
 		for i := range a.colSort {
 			if a.colSort[i] != sortOff {
@@ -375,31 +477,11 @@ func (a *industryJobs) processJobs(sortCol int) {
 	}
 }
 
-func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
-	spacer := canvas.NewRectangle(color.Transparent)
-	spacer.SetMinSize(fyne.NewSize(180, 1))
-	c := container.NewBorder(
-		container.NewVBox(
-			container.NewBorder(
-				nil,
-				container.NewHScroll(container.NewHBox(
-					container.NewStack(spacer, a.selectOwner),
-					container.NewStack(spacer, a.selectStatus),
-					container.NewStack(spacer, a.selectActivity),
-					container.NewStack(spacer, a.selectInstaller),
-				)),
-				nil,
-				nil,
-				a.search,
-			),
-			a.top,
-		),
-		nil,
-		nil,
-		nil,
-		a.body,
-	)
-	return widget.NewSimpleRenderer(c)
+func (a *industryJobs) setColSort(sortCol int, order sortDir) {
+	for i := range a.colSort {
+		a.colSort[i] = sortOff
+	}
+	a.colSort[sortCol] = order
 }
 
 func (a *industryJobs) makeListForMobile() *widget.List {
