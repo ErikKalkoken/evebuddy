@@ -13,9 +13,11 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -78,6 +80,11 @@ type industryJob struct {
 }
 
 func (j industryJob) StatusRichText() []widget.RichTextSegment {
+	if j.status == app.JobActive {
+		return iwidget.NewRichTextSegmentFromText(ihumanize.Duration(time.Until(j.endDate)), widget.RichTextStyle{
+			ColorName: theme.ColorNamePrimary,
+		})
+	}
 	return iwidget.NewRichTextSegmentFromText(j.status.Display(), widget.RichTextStyle{
 		ColorName: j.status.Color(),
 	})
@@ -133,11 +140,6 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		case 0:
 			return iwidget.NewRichTextSegmentFromText(j.blueprintType.Name)
 		case 1:
-			if j.status == app.JobActive {
-				return iwidget.NewRichTextSegmentFromText(ihumanize.Duration(time.Until(j.endDate)), widget.RichTextStyle{
-					ColorName: theme.ColorNamePrimary,
-				})
-			}
 			return j.StatusRichText()
 		case 2:
 			return iwidget.NewRichTextSegmentFromText(
@@ -190,7 +192,7 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		}
 		a.body = t
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.jobsFiltered, makeCell, a.showJob)
+		a.body = a.makeListForMobile()
 	}
 
 	a.colSort[4] = sortDesc // default sorting
@@ -211,7 +213,7 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 	}, func(_ string) {
 		a.processJobs(-1)
 	})
-	a.selectOwner.Selected = industryOwnerMe
+	a.selectOwner.Selected = industryOwnerAny
 
 	a.selectStatus = widget.NewSelect([]string{
 		industryStatusActive,
@@ -244,7 +246,7 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 	}, func(_ string) {
 		a.processJobs(-1)
 	})
-	a.selectInstaller.Selected = industryInstallerAny
+	a.selectInstaller.Selected = industryInstallerMe
 
 	return a
 }
@@ -400,6 +402,66 @@ func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
+func (a *industryJobs) makeListForMobile() *widget.List {
+	var l *widget.List
+	l = widget.NewList(
+		func() int {
+			return len(a.jobsFiltered)
+		},
+		func() fyne.CanvasObject {
+			title := widget.NewLabel("Template")
+			title.TextStyle.Bold = true
+			title.Wrapping = fyne.TextWrapWord
+			status := widget.NewRichText()
+			activity := widget.NewLabel("Template")
+			location := widget.NewLabel("Template")
+			location.Wrapping = fyne.TextWrapWord
+			completed := widget.NewLabel("Template")
+			p := theme.Padding()
+			return container.NewBorder(
+				nil,
+				nil,
+				nil,
+				status,
+				container.New(layout.NewCustomPaddedVBoxLayout(-p),
+					title,
+					activity,
+					location,
+					completed,
+				),
+			)
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(a.jobsFiltered) || id < 0 {
+				return
+			}
+			j := a.jobsFiltered[id]
+			c1 := co.(*fyne.Container).Objects
+			c2 := c1[0].(*fyne.Container).Objects
+			c2[0].(*widget.Label).SetText(j.blueprintType.Name)
+			c2[1].(*widget.Label).SetText(fmt.Sprintf("%s x %s", j.activity.Display(), ihumanize.Comma(j.runs)))
+			c2[2].(*widget.Label).SetText(j.location.Name.ValueOrFallback("?"))
+			iwidget.SetRichText(c1[1].(*widget.RichText), j.StatusRichText()...)
+			completed := c2[3].(*widget.Label)
+			if j.status == app.JobDelivered {
+				completed.SetText(humanize.Time(j.endDate))
+				completed.Show()
+			} else {
+				completed.Hide()
+			}
+			l.SetItemHeight(id, co.(*fyne.Container).MinSize().Height)
+		},
+	)
+	l.OnSelected = func(id widget.ListItemID) {
+		defer l.UnselectAll()
+		if id >= len(a.jobsFiltered) || id < 0 {
+			return
+		}
+		a.showJob(a.jobsFiltered[id])
+	}
+	return l
+}
+
 func (a *industryJobs) update() {
 	reportError := func(err error) {
 		slog.Error("Failed to refresh industry jobs UI", "err", err)
@@ -411,7 +473,7 @@ func (a *industryJobs) update() {
 		})
 	}
 	fixStatus := func(s app.IndustryJobStatus, endDate time.Time) app.IndustryJobStatus {
-		if s == app.JobActive && endDate.Before(time.Now()) {
+		if s == app.JobActive && !endDate.IsZero() && endDate.Before(time.Now()) {
 			// Workaround for known bug: https://github.com/esi/esi-issues/issues/752
 			return app.JobReady
 		}
