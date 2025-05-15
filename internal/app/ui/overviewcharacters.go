@@ -37,8 +37,8 @@ type overviewCharacter struct {
 type OverviewCharacters struct {
 	widget.BaseWidget
 
-	rows []overviewCharacter
 	body fyne.CanvasObject
+	rows []overviewCharacter
 	top  *widget.Label
 	u    *BaseUI
 }
@@ -105,21 +105,8 @@ func NewOverviewCharacters(u *BaseUI) *OverviewCharacters {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, func(c int, oc overviewCharacter) {
-			switch c {
-			case 0:
-				u.ShowInfoWindow(app.EveEntityCharacter, oc.id)
-			case 1:
-				u.ShowInfoWindow(app.EveEntityCorporation, oc.corporation.ID)
-			case 2:
-				if oc.alliance != nil {
-					u.ShowInfoWindow(app.EveEntityAlliance, oc.alliance.ID)
-				}
-			case 8:
-				if oc.home != nil {
-					u.ShowLocationInfoWindow(oc.home.ID)
-				}
-			}
+		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, func(_ int, oc overviewCharacter) {
+			u.ShowInfoWindow(app.EveEntityCharacter, oc.id)
 		})
 	} else {
 		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeCell, func(oc overviewCharacter) {

@@ -36,14 +36,14 @@ type CharacterAssets struct {
 	OnSelected     func()
 	OnRedraw       func(string)
 
-	infoIcon         *widget.Icon
 	assetCollection  assetcollection.AssetCollection
 	assetGrid        *widget.GridWrap
 	assets           []*app.CharacterAsset
 	assetsBottom     *widget.Label
+	infoIcon         *widget.Icon
 	locationPath     *kxwidget.TappableLabel
-	locationsTop     *widget.Label
 	locations        *iwidget.Tree[locationNode]
+	locationsTop     *widget.Label
 	selectedLocation optional.Optional[locationNode]
 	u                *BaseUI
 }
