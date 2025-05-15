@@ -144,7 +144,7 @@ func (a *CharacterSkillCatalogue) makeGroupsGrid() fyne.CanvasObject {
 			a.skillsGrid.Refresh()
 		}
 	}
-	return makeGridOrList(a.u.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
+	return makeGridOrList(!a.u.isDesktop, length, makeCreateItem, updateItem, makeOnSelected)
 }
 
 func (a *CharacterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
@@ -186,7 +186,7 @@ func (a *CharacterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 			a.u.ShowTypeInfoWindow(skill.id)
 		}
 	}
-	return makeGridOrList(a.u.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
+	return makeGridOrList(!a.u.isDesktop, length, makeCreateItem, updateItem, makeOnSelected)
 }
 
 func (a *CharacterSkillCatalogue) update() {

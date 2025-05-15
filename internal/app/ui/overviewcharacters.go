@@ -104,7 +104,7 @@ func NewOverviewCharacters(u *BaseUI) *OverviewCharacters {
 		}
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
-	if a.u.isDesktop() {
+	if a.u.isDesktop {
 		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, func(c int, oc overviewCharacter) {
 			switch c {
 			case 0:

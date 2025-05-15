@@ -114,7 +114,7 @@ func NewOverviewClones(u *BaseUI) *OverviewClones {
 		}
 		return s
 	}
-	if a.u.isDesktop() {
+	if a.u.isDesktop {
 		t := iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, func(c int, r cloneSearchRow) {
 			switch c {
 			case 0:
@@ -178,7 +178,7 @@ func NewOverviewClones(u *BaseUI) *OverviewClones {
 func (a *OverviewClones) CreateRenderer() fyne.WidgetRenderer {
 	var route *fyne.Container
 	routeLabel := widget.NewLabelWithStyle("Route:", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
-	if a.u.isDesktop() {
+	if a.u.isDesktop {
 		route = container.NewBorder(
 			nil,
 			nil,

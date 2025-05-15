@@ -101,7 +101,7 @@ func NewOverviewAssets(u *BaseUI) *OverviewAssets {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 
-	if a.u.IsMobile() {
+	if !a.u.isDesktop {
 		a.body = iwidget.MakeDataTableForMobile(headers, &a.assetsFiltered, makeCell, func(r *assetSearchRow) {
 			a.u.ShowTypeInfoWindow(r.typeID)
 		})

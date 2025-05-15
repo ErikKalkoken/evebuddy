@@ -189,7 +189,7 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []settingAc
 			a.u.settings.SetSysTrayEnabled(v)
 		},
 	)
-	if a.u.isDesktop() {
+	if a.u.isDesktop {
 		items = slices.Insert(items, 2, systray)
 	}
 
@@ -264,7 +264,7 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []settingAc
 		},
 	}
 	actions := []settingAction{reset, clear, exportAppLog, exportCrashLog, deleteAppLog, deleteCrashLog}
-	if a.u.isDesktop() {
+	if a.u.isDesktop {
 		actions = append(actions, settingAction{
 			Label: "Resets main window size to defaults",
 			Action: func() {

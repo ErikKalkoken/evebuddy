@@ -54,7 +54,7 @@ const (
 )
 
 // industryJob represents a job row in the list widgets.
-// It combines character and corporation jobs and has precalcuated fields for filters.
+// It combines character and corporation jobs and has precalculated fields for filters.
 type industryJob struct {
 	activity           app.IndustryActivity
 	blueprintID        int64
@@ -162,7 +162,7 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 
-	if a.u.isDesktop() {
+	if a.u.isDesktop {
 		t := iwidget.MakeDataTableForDesktop(headers, &a.jobsFiltered, makeCell, func(_ int, r industryJob) {
 			a.showJob(r)
 		})
@@ -336,7 +336,9 @@ func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
 		container.NewStack(spacer, a.selectActivity),
 		container.NewStack(spacer, a.selectInstaller),
 	)
-	selections.Add(a.sortButton)
+	if !a.u.isDesktop {
+		selections.Add(a.sortButton)
+	}
 	c := container.NewBorder(
 		container.NewVBox(
 			container.NewBorder(

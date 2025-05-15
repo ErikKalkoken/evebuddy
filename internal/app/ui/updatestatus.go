@@ -107,7 +107,7 @@ func newUpdateStatus(u *BaseUI) *updateStatus {
 
 	a.top2 = container.NewVBox(a.sectionsTop, widget.NewSeparator())
 	a.top3 = container.NewVBox(a.detailsTop, widget.NewSeparator())
-	if u.IsMobile() {
+	if !u.isDesktop {
 		sections := container.NewBorder(a.top2, nil, nil, nil, a.sectionList)
 		details := container.NewBorder(a.top3, nil, nil, nil, a.details)
 		menu := iwidget.NewIconButtonWithMenu(
@@ -136,7 +136,7 @@ func newUpdateStatus(u *BaseUI) *updateStatus {
 
 func (a *updateStatus) CreateRenderer() fyne.WidgetRenderer {
 	var c fyne.CanvasObject
-	if a.u.IsMobile() {
+	if !a.u.isDesktop {
 		ab := iwidget.NewAppBar("Home", a.entities)
 		a.nav = iwidget.NewNavigatorWithAppBar(ab)
 		c = a.nav

@@ -99,7 +99,7 @@ func (iw *InfoWindow) show(v infoVariant, id int64) {
 	}
 
 	makeAppBarTitle := func(s string) string {
-		if iw.u.IsMobile() {
+		if !iw.u.isDesktop {
 			return s
 		}
 		return s + ": Information"
@@ -276,7 +276,7 @@ func (iw *InfoWindow) makeEveWhoIcon(id int32, v infoVariant) *iwidget.TappableI
 
 func (iw *InfoWindow) renderIconSize() fyne.Size {
 	var s float32
-	if iw.u.IsMobile() {
+	if !iw.u.isDesktop {
 		s = logoUnitSize
 	} else {
 		s = renderIconUnitSize

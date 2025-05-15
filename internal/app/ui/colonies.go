@@ -79,7 +79,7 @@ func NewColonies(u *BaseUI) *Colonies {
 		}
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
-	if a.u.isDesktop() {
+	if a.u.isDesktop {
 		a.body = iwidget.MakeDataTableForDesktop(headers, &a.planets, makeCell, func(_ int, r *app.CharacterPlanet) {
 			a.showColony(r)
 		})
@@ -200,7 +200,7 @@ func (a *Colonies) showColony(cp *app.CharacterPlanet) {
 	processes.Orientation = widget.Adaptive
 
 	top := container.NewHBox(infos, layout.NewSpacer())
-	if a.u.isDesktop() {
+	if a.u.isDesktop {
 		res, _ := cp.EvePlanet.Type.Icon()
 		image := iwidget.NewImageFromResource(res, fyne.NewSquareSize(100))
 		top.Add(container.NewVBox(container.NewPadded(image)))

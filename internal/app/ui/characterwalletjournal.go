@@ -111,7 +111,7 @@ func NewCharacterWalletJournal(u *BaseUI) *CharacterWalletJournal {
 			a.u.ShowInformationDialog("Reason", r.reason, a.u.MainWindow())
 		}
 	}
-	if a.u.isDesktop() {
+	if a.u.isDesktop {
 		a.body = iwidget.MakeDataTableForDesktop(headers, &a.entries, makeCell, func(_ int, r walletJournalEntry) {
 			showReasonDialog(r)
 		})

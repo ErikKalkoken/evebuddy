@@ -17,7 +17,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -130,6 +129,7 @@ type BaseUI struct {
 	eis                *eveimageservice.EveImageService
 	ess                *esistatusservice.ESIStatusService
 	eus                *eveuniverseservice.EveUniverseService
+	isDesktop          bool        // whether the app runs on a desktop. If false we assume it's on mobile.
 	isForeground       atomic.Bool // whether the app is currently shown in the foreground
 	isOffline          bool        // Run the app in offline mode
 	isStartupCompleted atomic.Bool // whether the app has completed startup (for testing)
@@ -159,9 +159,10 @@ type BaseUIParams struct {
 	StatusCacheService *statuscacheservice.StatusCacheService
 	// optional
 	ClearCacheFunc   func()
+	DataPaths        map[string]string
+	IsDesktop        bool
 	IsOffline        bool
 	IsUpdateDisabled bool
-	DataPaths        map[string]string
 }
 
 // NewBaseUI constructs and returns a new BaseUI.
@@ -174,6 +175,7 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 		eis:              args.EveImageService,
 		ess:              args.ESIStatusService,
 		eus:              args.EveUniverseService,
+		isDesktop:        args.IsDesktop,
 		isOffline:        args.IsOffline,
 		isUpdateDisabled: args.IsUpdateDisabled,
 		js:               args.JaniceService,
@@ -196,7 +198,7 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 		u.dataPaths = make(map[string]string)
 	}
 
-	if u.isDesktop() {
+	if u.isDesktop {
 		iwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
 		appwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
 	}
@@ -372,17 +374,8 @@ func (u *BaseUI) humanizeError(err error) string {
 	// return ihumanize.Error(err) TODO: Re-enable again when app is stable enough
 }
 
-func (u *BaseUI) isDesktop() bool {
-	_, ok := u.app.(desktop.App)
-	return ok
-}
-
-func (u *BaseUI) IsMobile() bool {
-	return fyne.CurrentDevice().IsMobile()
-}
-
 func (u *BaseUI) MakeWindowTitle(subTitle string) string {
-	if u.IsMobile() {
+	if !u.isDesktop {
 		return subTitle
 	}
 	return fmt.Sprintf("%s - %s", subTitle, u.appName())
@@ -646,7 +639,7 @@ func (u *BaseUI) startUpdateTickerGeneralSections() {
 }
 
 func (u *BaseUI) updateGeneralSectionsAndRefreshIfNeeded(forceUpdate bool) {
-	if !forceUpdate && u.IsMobile() && !u.isForeground.Load() {
+	if !forceUpdate && !u.isDesktop && !u.isForeground.Load() {
 		slog.Debug("Skipping general sections update while in background")
 		return
 	}
@@ -738,7 +731,7 @@ func (u *BaseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 		return
 	}
 	var sections []app.CharacterSection
-	if u.IsMobile() && !u.isForeground.Load() {
+	if !u.isDesktop && !u.isForeground.Load() {
 		// only update what is needed for notifications on mobile when running in background to save battery
 		if u.settings.NotifyCommunicationsEnabled() {
 			sections = append(sections, app.SectionNotifications)
@@ -976,7 +969,7 @@ func (u *BaseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 		return
 	}
 	var sections []app.CorporationSection
-	if u.IsMobile() && !u.isForeground.Load() {
+	if !u.isDesktop && !u.isForeground.Load() {
 		// nothing to update
 	} else {
 		sections = app.CorporationSections

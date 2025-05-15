@@ -183,7 +183,7 @@ func (a *CharacterSheet) CreateRenderer() fyne.WidgetRenderer {
 			),
 		),
 	)
-	if a.u.IsMobile() {
+	if !a.u.isDesktop {
 		portraitDesktop.Hide()
 	}
 	return widget.NewSimpleRenderer(c)

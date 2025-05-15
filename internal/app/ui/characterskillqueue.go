@@ -91,7 +91,7 @@ func (a *CharacterSkillQueue) makeSkillQueue() *widget.List {
 			{"Active?", isActive, false},
 		}
 		form := widget.NewForm()
-		if a.u.IsMobile() {
+		if !a.u.isDesktop {
 			form.Orientation = widget.Vertical
 		}
 		for _, row := range data {

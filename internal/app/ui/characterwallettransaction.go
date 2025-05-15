@@ -84,7 +84,7 @@ func NewCharacterWalletTransaction(u *BaseUI) *CharacterWalletTransaction {
 		}
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
-	if a.u.isDesktop() {
+	if a.u.isDesktop {
 		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, func(column int, r *app.CharacterWalletTransaction) {
 			switch column {
 			case 2:
