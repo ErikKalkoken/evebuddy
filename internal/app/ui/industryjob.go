@@ -129,7 +129,7 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		{Text: "Installer", Width: columnWidthCharacter},
 	}
 	a := &industryJobs{
-		sortedColumns: newSortedColumns(len(headers)),
+		sortedColumns: newSortedColumnsWithDefault(len(headers), 4, sortDesc),
 		jobs:          make([]industryJob, 0),
 		jobsFiltered:  make([]industryJob, 0),
 		top:           appwidget.MakeTopLabel(),
@@ -195,8 +195,6 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 	} else {
 		a.body = a.makeListForMobile()
 	}
-	const defaultSortColumn = 4
-	a.sortedColumns.set(defaultSortColumn, sortDesc) // default sorting
 
 	a.search = widget.NewEntry()
 	a.search.PlaceHolder = "Search Blueprints"
@@ -264,9 +262,9 @@ func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
 		container.NewStack(spacer, a.selectActivity),
 		container.NewStack(spacer, a.selectInstaller),
 	)
-	// if !a.u.isDesktop {
-	selections.Add(a.sortButton)
-	// }
+	if !a.u.isDesktop {
+		selections.Add(a.sortButton)
+	}
 	c := container.NewBorder(
 		container.NewVBox(
 			container.NewBorder(

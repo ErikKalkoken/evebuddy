@@ -20,10 +20,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
-
-// TODO: Mobile: Add column sort
 
 type assetSearchRow struct {
 	characterID     int32
@@ -47,12 +46,12 @@ type OverviewAssets struct {
 	assets         []*assetSearchRow
 	assetsFiltered []*assetSearchRow
 	body           fyne.CanvasObject
-	colSort        []sortDir
-	found          *widget.Label
 	entry          *widget.Entry
+	found          *widget.Label
+	sortButton     *widget.Button
+	sortedColumns  *sortedColumns
 	total          *widget.Label
 	u              *BaseUI
-	sortButton     *widget.Button
 }
 
 func NewOverviewAssets(u *BaseUI) *OverviewAssets {
@@ -65,7 +64,7 @@ func NewOverviewAssets(u *BaseUI) *OverviewAssets {
 		{Text: "Price", Width: 100},
 	}
 	a := &OverviewAssets{
-		colSort:        make([]sortDir, len(headers)),
+		sortedColumns:  newSortedColumns(len(headers)),
 		assetsFiltered: make([]*assetSearchRow, 0),
 		entry:          widget.NewEntry(),
 		found:          widget.NewLabel(""),
@@ -136,7 +135,7 @@ func NewOverviewAssets(u *BaseUI) *OverviewAssets {
 			}
 			label.SetText(h.Text)
 			icon := row[1].(*widget.Icon)
-			switch a.colSort[tci.Col] {
+			switch a.sortedColumns.column(tci.Col) {
 			case sortOff:
 				icon.SetResource(iconSortOff)
 			case sortAsc:
@@ -147,6 +146,9 @@ func NewOverviewAssets(u *BaseUI) *OverviewAssets {
 		}
 		a.body = t
 	}
+	a.sortButton = makeSortButton(headers, set.Of(0, 1, 2, 3, 4, 5), a.sortedColumns, func() {
+		a.processData(-1)
+	}, a.u.window)
 	return a
 }
 
@@ -155,6 +157,9 @@ func (a *OverviewAssets) CreateRenderer() fyne.WidgetRenderer {
 		container.NewBorder(nil, nil, nil, a.found, a.total),
 		a.entry,
 	)
+	if !a.u.isDesktop {
+		topBox.Add(container.NewHBox(a.sortButton))
+	}
 	c := container.NewBorder(topBox, nil, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
 }
@@ -164,25 +169,11 @@ func (a *OverviewAssets) Focus() {
 }
 
 func (a *OverviewAssets) processData(sortCol int) {
-	var order sortDir
+	var dir sortDir
 	if sortCol >= 0 {
-		order = a.colSort[sortCol]
-		order++
-		if order > sortDesc {
-			order = sortOff
-		}
-		for i := range a.colSort {
-			a.colSort[i] = sortOff
-		}
-		a.colSort[sortCol] = order
+		dir = a.sortedColumns.cycleColumn(sortCol)
 	} else {
-		for i := range a.colSort {
-			if a.colSort[i] != sortOff {
-				order = a.colSort[i]
-				sortCol = i
-				break
-			}
-		}
+		sortCol, dir = a.sortedColumns.current()
 	}
 	rows := make([]*assetSearchRow, 0)
 	search := strings.ToLower(a.entry.Text)
@@ -200,7 +191,7 @@ func (a *OverviewAssets) processData(sortCol int) {
 			rows = append(rows, r)
 		}
 	}
-	if sortCol >= 0 && order != sortOff {
+	if sortCol >= 0 && dir != sortOff {
 		slices.SortFunc(rows, func(a, b *assetSearchRow) int {
 			var x int
 			switch sortCol {
@@ -217,7 +208,7 @@ func (a *OverviewAssets) processData(sortCol int) {
 			case 5:
 				x = cmp.Compare(a.price, b.price)
 			}
-			if order == sortAsc {
+			if dir == sortAsc {
 				return x
 			} else {
 				return -1 * x
@@ -234,9 +225,6 @@ func (a *OverviewAssets) processData(sortCol int) {
 }
 
 func (a *OverviewAssets) resetSearch() {
-	for i := range a.colSort {
-		a.colSort[i] = sortOff
-	}
 	a.entry.SetText("")
 	a.processData(-1)
 }
