@@ -13,7 +13,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -65,6 +64,8 @@ type industryJob struct {
 	duration           int
 	endDate            time.Time
 	installer          *app.EveEntity
+	isInstallerMe      bool
+	isOwnerMe          bool
 	jobID              int32
 	licensedRuns       optional.Optional[int]
 	location           *app.EveLocationShort
@@ -76,8 +77,6 @@ type industryJob struct {
 	startDate          time.Time
 	status             app.IndustryJobStatus
 	successfulRuns     optional.Optional[int32]
-	isInstallerMe      bool
-	isOwnerMe          bool
 }
 
 func (j industryJob) StatusRichText() []widget.RichTextSegment {
@@ -105,7 +104,7 @@ type industryJobs struct {
 	OnUpdate func(count int)
 
 	body            fyne.CanvasObject
-	colSort         []sortDir
+	sortedColumns   *sortedColumns
 	jobs            []industryJob
 	jobsFiltered    []industryJob
 	search          *widget.Entry
@@ -130,11 +129,11 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		{Text: "Installer", Width: columnWidthCharacter},
 	}
 	a := &industryJobs{
-		colSort:      make([]sortDir, len(headers)),
-		jobs:         make([]industryJob, 0),
-		jobsFiltered: make([]industryJob, 0),
-		top:          appwidget.MakeTopLabel(),
-		u:            u,
+		sortedColumns: newSortedColumns(len(headers)),
+		jobs:          make([]industryJob, 0),
+		jobsFiltered:  make([]industryJob, 0),
+		top:           appwidget.MakeTopLabel(),
+		u:             u,
 	}
 	a.ExtendBaseWidget(a)
 	makeCell := func(col int, j industryJob) []widget.RichTextSegment {
@@ -183,7 +182,7 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 			}
 			label.SetText(h.Text)
 			icon := row[1].(*widget.Icon)
-			switch a.colSort[tci.Col] {
+			switch a.sortedColumns.column(tci.Col) {
 			case sortOff:
 				icon.SetResource(iconSortOff)
 			case sortAsc:
@@ -197,7 +196,7 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		a.body = a.makeListForMobile()
 	}
 	const defaultSortColumn = 4
-	a.colSort[defaultSortColumn] = sortDesc // default sorting
+	a.sortedColumns.set(defaultSortColumn, sortDesc) // default sorting
 
 	a.search = widget.NewEntry()
 	a.search.PlaceHolder = "Search Blueprints"
@@ -250,80 +249,9 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 	})
 	a.selectInstaller.Selected = industryInstallerMe
 
-	sortColumns := xslices.Map(headers, func(h iwidget.HeaderDef) string {
-		return h.Text
-	})
-	setSortButton := func(b *widget.Button) {
-		var text string
-		var icon fyne.Resource
-		for i, c := range a.colSort {
-			if c != sortOff {
-				text = sortColumns[i]
-				switch c {
-				case sortAsc:
-					icon = theme.NewThemedResource(icons.SortAscendingSvg)
-				case sortDesc:
-					icon = theme.NewThemedResource(icons.SortDescendingSvg)
-				}
-				break
-			}
-		}
-		b.Text = text
-		b.Icon = icon
-		b.Refresh()
-	}
-	mobileSortColumns := set.Of(0, 1, 2, 3, 4, 5)
-	a.sortButton = widget.NewButtonWithIcon("", icons.BlankSvg, func() {
-		var sortCol int
-		var order sortDir
-		for i, c := range a.colSort {
-			if c != sortOff {
-				sortCol = i
-				order = c
-			}
-		}
-		var fields []string
-		for i, h := range headers {
-			if mobileSortColumns.Contains(i) {
-				fields = append(fields, h.Text)
-			}
-		}
-		cols := widget.NewRadioGroup(fields, nil)
-		cols.Selected = sortColumns[sortCol]
-		dir := widget.NewRadioGroup([]string{"Ascending", "Descending"}, nil)
-		switch order {
-		case sortAsc:
-			dir.Selected = "Ascending"
-		case sortDesc:
-			dir.Selected = "Descending"
-		}
-		c := container.NewVBox(
-			widget.NewLabel("Field"),
-			cols,
-			widget.NewLabel("Direction"),
-			dir,
-		)
-		d := dialog.NewCustomConfirm("Sort By", "OK", "Cancel", c, func(ok bool) {
-			if !ok {
-				return
-			}
-			idx := slices.Index(sortColumns, cols.Selected)
-			if idx == -1 {
-				return
-			}
-			switch dir.Selected {
-			case "Ascending":
-				order = sortAsc
-			case "Descending":
-				order = sortDesc
-			}
-			a.setColSort(idx, order)
-			a.processJobs(-1)
-			setSortButton(a.sortButton)
-		}, a.u.window)
-		d.Show()
-	})
-	setSortButton(a.sortButton)
+	a.sortButton = makeSortButton(headers, set.Of(0, 1, 2, 3, 4, 5), a.sortedColumns, func() {
+		a.processJobs(-1)
+	}, a.u.window)
 	return a
 }
 
@@ -336,9 +264,9 @@ func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
 		container.NewStack(spacer, a.selectActivity),
 		container.NewStack(spacer, a.selectInstaller),
 	)
-	if !a.u.isDesktop {
-		selections.Add(a.sortButton)
-	}
+	// if !a.u.isDesktop {
+	selections.Add(a.sortButton)
+	// }
 	c := container.NewBorder(
 		container.NewVBox(
 			container.NewBorder(
@@ -425,24 +353,13 @@ func (a *industryJobs) processJobs(sortCol int) {
 		})
 	}
 	// sort
-	var order sortDir
+	var dir sortDir
 	if sortCol >= 0 {
-		order = a.colSort[sortCol]
-		order++
-		if order > sortDesc {
-			order = sortOff
-		}
-		a.setColSort(sortCol, order)
+		dir = a.sortedColumns.cycleColumn(sortCol)
 	} else {
-		for i := range a.colSort {
-			if a.colSort[i] != sortOff {
-				order = a.colSort[i]
-				sortCol = i
-				break
-			}
-		}
+		sortCol, dir = a.sortedColumns.current()
 	}
-	if sortCol >= 0 && order != sortOff {
+	if sortCol >= 0 && dir != sortOff {
 		slices.SortFunc(jobs, func(j, k industryJob) int {
 			var c int
 			switch sortCol {
@@ -463,7 +380,7 @@ func (a *industryJobs) processJobs(sortCol int) {
 			case 7:
 				c = strings.Compare(j.installer.Name, k.installer.Name)
 			}
-			if order == sortAsc {
+			if dir == sortAsc {
 				return c
 			} else {
 				return -1 * c
@@ -477,13 +394,6 @@ func (a *industryJobs) processJobs(sortCol int) {
 	case *widget.Table:
 		x.ScrollToTop()
 	}
-}
-
-func (a *industryJobs) setColSort(sortCol int, order sortDir) {
-	for i := range a.colSort {
-		a.colSort[i] = sortOff
-	}
-	a.colSort[sortCol] = order
 }
 
 func (a *industryJobs) makeListForMobile() *widget.List {

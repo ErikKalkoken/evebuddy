@@ -52,6 +52,7 @@ type OverviewAssets struct {
 	entry          *widget.Entry
 	total          *widget.Label
 	u              *BaseUI
+	sortButton     *widget.Button
 }
 
 func NewOverviewAssets(u *BaseUI) *OverviewAssets {
