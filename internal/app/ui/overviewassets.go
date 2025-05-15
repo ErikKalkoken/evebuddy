@@ -22,9 +22,16 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-type assetSearchRow struct {
+const (
+	selectOwnerAny    = "Any owner"
+	selectLocationAny = "Any location"
+)
+
+type assetRow struct {
 	characterID     int32
 	characterName   string
 	groupID         int32
@@ -43,13 +50,15 @@ type assetSearchRow struct {
 type OverviewAssets struct {
 	widget.BaseWidget
 
-	assets         []*assetSearchRow
-	assetsFiltered []*assetSearchRow
+	assets         []assetRow
+	assetsFiltered []assetRow
 	body           fyne.CanvasObject
 	entry          *widget.Entry
 	found          *widget.Label
 	sortButton     *widget.Button
 	sortedColumns  *sortedColumns
+	selectOwner    *widget.Select
+	selectLocation *widget.Select
 	total          *widget.Label
 	u              *BaseUI
 }
@@ -64,10 +73,10 @@ func NewOverviewAssets(u *BaseUI) *OverviewAssets {
 		{Text: "Price", Width: 100},
 	}
 	a := &OverviewAssets{
-		sortedColumns:  newSortedColumns(len(headers)),
-		assetsFiltered: make([]*assetSearchRow, 0),
+		assetsFiltered: make([]assetRow, 0),
 		entry:          widget.NewEntry(),
 		found:          widget.NewLabel(""),
+		sortedColumns:  newSortedColumns(len(headers)),
 		total:          appwidget.MakeTopLabel(),
 		u:              u,
 	}
@@ -81,7 +90,7 @@ func NewOverviewAssets(u *BaseUI) *OverviewAssets {
 	a.entry.PlaceHolder = "Search assets"
 	a.found.Hide()
 
-	makeCell := func(col int, r *assetSearchRow) []widget.RichTextSegment {
+	makeCell := func(col int, r assetRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
 			return iwidget.NewRichTextSegmentFromText(r.name)
@@ -102,11 +111,11 @@ func NewOverviewAssets(u *BaseUI) *OverviewAssets {
 	}
 
 	if !a.u.isDesktop {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.assetsFiltered, makeCell, func(r *assetSearchRow) {
+		a.body = iwidget.MakeDataTableForMobile(headers, &a.assetsFiltered, makeCell, func(r assetRow) {
 			a.u.ShowTypeInfoWindow(r.typeID)
 		})
 	} else {
-		t := iwidget.MakeDataTableForDesktop(headers, &a.assetsFiltered, makeCell, func(col int, r *assetSearchRow) {
+		t := iwidget.MakeDataTableForDesktop(headers, &a.assetsFiltered, makeCell, func(col int, r assetRow) {
 			switch col {
 			case 0:
 				a.u.ShowInfoWindow(app.EveEntityInventoryType, r.typeID)
@@ -146,6 +155,17 @@ func NewOverviewAssets(u *BaseUI) *OverviewAssets {
 		}
 		a.body = t
 	}
+
+	a.selectOwner = widget.NewSelect([]string{selectOwnerAny}, func(s string) {
+		a.processData(-1)
+	})
+	a.selectOwner.Selected = selectOwnerAny
+
+	a.selectLocation = widget.NewSelect([]string{selectLocationAny}, func(s string) {
+		a.processData(-1)
+	})
+	a.selectLocation.Selected = selectLocationAny
+
 	a.sortButton = makeSortButton(headers, set.Of(0, 1, 2, 3, 4, 5), a.sortedColumns, func() {
 		a.processData(-1)
 	}, a.u.window)
@@ -153,12 +173,14 @@ func NewOverviewAssets(u *BaseUI) *OverviewAssets {
 }
 
 func (a *OverviewAssets) CreateRenderer() fyne.WidgetRenderer {
+	config := container.NewHBox(a.selectLocation, a.selectOwner)
 	topBox := container.NewVBox(
 		container.NewBorder(nil, nil, nil, a.found, a.total),
 		a.entry,
+		config,
 	)
 	if !a.u.isDesktop {
-		topBox.Add(container.NewHBox(a.sortButton))
+		config.Add(container.NewHBox(a.sortButton))
 	}
 	c := container.NewBorder(topBox, nil, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
@@ -169,30 +191,46 @@ func (a *OverviewAssets) Focus() {
 }
 
 func (a *OverviewAssets) processData(sortCol int) {
+	// search filter
+	rows := make([]assetRow, 0)
+	if search := strings.ToLower(a.entry.Text); search == "" {
+		rows = slices.Clone(a.assets)
+	} else {
+		for _, r := range a.assets {
+			var matches bool
+			if search == "" {
+				matches = true
+			}
+			for _, cell := range []string{r.typeName, r.groupName} {
+				if search != "" {
+					matches = matches || strings.Contains(strings.ToLower(cell), search)
+				}
+			}
+			if matches {
+				rows = append(rows, r)
+			}
+		}
+	}
+	// other filter
+	if x := a.selectLocation.Selected; x != selectLocationAny {
+		rows = xslices.Filter(rows, func(o assetRow) bool {
+			return o.location.DisplayName() == x
+		})
+	}
+	if x := a.selectOwner.Selected; x != selectOwnerAny {
+		rows = xslices.Filter(rows, func(o assetRow) bool {
+			return o.characterName == x
+		})
+	}
+	// sort
 	var dir sortDir
 	if sortCol >= 0 {
 		dir = a.sortedColumns.cycleColumn(sortCol)
 	} else {
 		sortCol, dir = a.sortedColumns.current()
 	}
-	rows := make([]*assetSearchRow, 0)
-	search := strings.ToLower(a.entry.Text)
-	for _, r := range a.assets {
-		var matches bool
-		if search == "" {
-			matches = true
-		}
-		for _, cell := range []string{r.typeName, r.groupName, r.location.DisplayName(), r.characterName} {
-			if search != "" {
-				matches = matches || strings.Contains(strings.ToLower(cell), search)
-			}
-		}
-		if matches {
-			rows = append(rows, r)
-		}
-	}
 	if sortCol >= 0 && dir != sortOff {
-		slices.SortFunc(rows, func(a, b *assetSearchRow) int {
+		slices.SortFunc(rows, func(a, b assetRow) int {
 			var x int
 			switch sortCol {
 			case 0:
@@ -215,6 +253,20 @@ func (a *OverviewAssets) processData(sortCol int) {
 			}
 		})
 	}
+	locations := slices.Concat(
+		[]string{selectLocationAny},
+		slices.Sorted(set.Collect(xiter.MapSlice(rows, func(o assetRow) string {
+			return o.location.DisplayName()
+		})).All()),
+	)
+	owners := slices.Concat(
+		[]string{selectOwnerAny},
+		slices.Sorted(set.Collect(xiter.MapSlice(rows, func(o assetRow) string {
+			return o.characterName
+		})).All()),
+	)
+	a.selectLocation.SetOptions(locations)
+	a.selectOwner.SetOptions(owners)
 	a.assetsFiltered = rows
 	a.updateFoundInfo()
 	a.body.Refresh()
@@ -257,10 +309,11 @@ func (a *OverviewAssets) update() {
 		a.assetsFiltered = assets
 		a.assets = assets
 		a.body.Refresh()
+		a.processData(-1)
 	})
 }
 
-func (*OverviewAssets) loadData(s services) ([]*assetSearchRow, bool, error) {
+func (*OverviewAssets) loadData(s services) ([]assetRow, bool, error) {
 	ctx := context.Background()
 	cc, err := s.cs.ListCharactersShort(ctx)
 	if err != nil {
@@ -282,9 +335,9 @@ func (*OverviewAssets) loadData(s services) ([]*assetSearchRow, bool, error) {
 		return nil, false, err
 	}
 	assetCollection := assetcollection.New(assets, locations)
-	rows := make([]*assetSearchRow, len(assets))
+	rows := make([]assetRow, len(assets))
 	for i, ca := range assets {
-		r := &assetSearchRow{
+		r := assetRow{
 			characterID:   ca.CharacterID,
 			characterName: characterNames[ca.CharacterID],
 			groupID:       ca.Type.Group.ID,
@@ -321,7 +374,7 @@ func (*OverviewAssets) loadData(s services) ([]*assetSearchRow, bool, error) {
 
 func (a *OverviewAssets) updateFoundInfo() {
 	if c := len(a.assetsFiltered); c < len(a.assets) {
-		a.found.SetText(fmt.Sprintf("%d found", c))
+		a.found.SetText(fmt.Sprintf("%s found", ihumanize.Comma(c)))
 		a.found.Show()
 	} else {
 		a.found.Hide()

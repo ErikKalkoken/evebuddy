@@ -304,9 +304,9 @@ func (a *industryJobs) processJobs(sortCol int) {
 		}
 		return false
 	})
-	if a.selectInstaller.Selected != industryInstallerAny {
+	if x := a.selectInstaller.Selected; x != industryInstallerAny {
 		jobs = xslices.Filter(jobs, func(o industryJob) bool {
-			switch a.selectInstaller.Selected {
+			switch x {
 			case industryInstallerMe:
 				return o.isInstallerMe
 			case industryInstallerCorpmates:
@@ -315,9 +315,9 @@ func (a *industryJobs) processJobs(sortCol int) {
 			return false
 		})
 	}
-	if a.selectActivity.Selected != industryActivityAll {
+	if x := a.selectActivity.Selected; x != industryActivityAll {
 		jobs = xslices.Filter(jobs, func(o industryJob) bool {
-			switch a.selectActivity.Selected {
+			switch x {
 			case industryActivityCopying:
 				return o.activity == app.Copying
 			case industryActivityInvention:
@@ -334,9 +334,9 @@ func (a *industryJobs) processJobs(sortCol int) {
 			return false
 		})
 	}
-	if a.selectOwner.Selected != industryOwnerAny {
+	if x := a.selectOwner.Selected; x != industryOwnerAny {
 		jobs = xslices.Filter(jobs, func(o industryJob) bool {
-			switch a.selectOwner.Selected {
+			switch x {
 			case industryOwnerCorp:
 				return !o.isOwnerMe
 			case industryOwnerMe:
