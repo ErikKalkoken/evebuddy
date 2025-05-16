@@ -79,11 +79,11 @@ func NewColonies(u *BaseUI) *Colonies {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTableForDesktop(headers, &a.planets, makeCell, func(_ int, r *app.CharacterPlanet) {
+		a.body = makeDataTable(headers, &a.planets, makeCell, func(_ int, r *app.CharacterPlanet) {
 			a.showColony(r)
 		})
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.planets, makeCell, a.showColony)
+		a.body = makeDataList(headers, &a.planets, makeCell, a.showColony)
 	}
 	return a
 }

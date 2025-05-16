@@ -78,9 +78,9 @@ func NewOverviewTraining(u *BaseUI) *OverviewTraining {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTableForDesktop(headers, &a.rows, makeCell, nil)
+		a.body = makeDataTable(headers, &a.rows, makeCell, nil)
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.rows, makeCell, nil)
+		a.body = makeDataList(headers, &a.rows, makeCell, nil)
 	}
 	return a
 }

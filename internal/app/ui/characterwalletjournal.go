@@ -111,11 +111,11 @@ func NewCharacterWalletJournal(u *BaseUI) *CharacterWalletJournal {
 		}
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTableForDesktop(headers, &a.entries, makeCell, func(_ int, r walletJournalEntry) {
+		a.body = makeDataTable(headers, &a.entries, makeCell, func(_ int, r walletJournalEntry) {
 			showReasonDialog(r)
 		})
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.entries, makeCell, showReasonDialog)
+		a.body = makeDataList(headers, &a.entries, makeCell, showReasonDialog)
 	}
 	return a
 }

@@ -57,7 +57,7 @@ type OverviewClones struct {
 	widget.BaseWidget
 
 	body         fyne.CanvasObject
-	colSort      []sortDir
+	columnSorter *columnSorter
 	origin       *app.EveSolarSystem
 	originButton *widget.Button
 	originLabel  *iwidget.TappableRichText
@@ -76,11 +76,11 @@ func NewOverviewClones(u *BaseUI) *OverviewClones {
 		{Text: "Jumps", Width: 100},
 	}
 	a := &OverviewClones{
-		colSort:     make([]sortDir, len(headers)),
-		originLabel: iwidget.NewTappableRichTextWithText("?", nil),
-		rows:        make([]cloneSearchRow, 0),
-		top:         makeTopLabel(),
-		u:           u,
+		columnSorter: newColumnSorter(len(headers)),
+		originLabel:  iwidget.NewTappableRichTextWithText("?", nil),
+		rows:         make([]cloneSearchRow, 0),
+		top:          makeTopLabel(),
+		u:            u,
 	}
 	a.ExtendBaseWidget(a)
 	a.originLabel.Wrapping = fyne.TextWrapWord
@@ -114,7 +114,7 @@ func NewOverviewClones(u *BaseUI) *OverviewClones {
 		return s
 	}
 	if a.u.isDesktop {
-		t := makeDataTableForDesktop(headers, &a.rows, makeCell, func(c int, r cloneSearchRow) {
+		a.body = makeDataTableWithSort(headers, &a.rows, makeCell, a.columnSorter, a.sortRows, func(c int, r cloneSearchRow) {
 			switch c {
 			case 0:
 				a.u.ShowLocationInfoWindow(r.c.Location.ID)
@@ -136,35 +136,8 @@ func NewOverviewClones(u *BaseUI) *OverviewClones {
 				a.showRoute(r)
 			}
 		})
-		iconSortAsc := theme.NewPrimaryThemedResource(icons.SortAscendingSvg)
-		iconSortDesc := theme.NewPrimaryThemedResource(icons.SortDescendingSvg)
-		iconSortOff := theme.NewThemedResource(icons.SortSvg)
-		t.CreateHeader = func() fyne.CanvasObject {
-			icon := widget.NewIcon(iconSortOff)
-			label := kxwidget.NewTappableLabel("XXX", nil)
-			return container.NewBorder(nil, nil, nil, icon, label)
-		}
-		t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-			h := headers[tci.Col]
-			row := co.(*fyne.Container).Objects
-			label := row[0].(*kxwidget.TappableLabel)
-			label.SetText(h.Text)
-			label.OnTapped = func() {
-				a.sortRows(tci.Col)
-			}
-			icon := row[1].(*widget.Icon)
-			switch a.colSort[tci.Col] {
-			case sortOff:
-				icon.SetResource(iconSortOff)
-			case sortAsc:
-				icon.SetResource(iconSortAsc)
-			case sortDesc:
-				icon.SetResource(iconSortDesc)
-			}
-		}
-		a.body = t
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.rows, makeCell, func(r cloneSearchRow) {
+		a.body = makeDataList(headers, &a.rows, makeCell, func(r cloneSearchRow) {
 			if len(r.route) == 0 {
 				return
 			}
@@ -286,10 +259,7 @@ func (a *OverviewClones) updateRoutes(flag app.RoutePreference) {
 		return a.compare(b)
 	})
 	fyne.Do(func() {
-		for i := range a.colSort {
-			a.colSort[i] = sortOff
-		}
-		a.colSort[4] = sortAsc
+		a.columnSorter.set(4, sortAsc)
 		a.body.Refresh()
 	})
 }
@@ -395,27 +365,7 @@ func (a *OverviewClones) changeOrigin(w fyne.Window) {
 }
 
 func (a *OverviewClones) sortRows(sortCol int) {
-	var order sortDir
-	if sortCol >= 0 {
-		order = a.colSort[sortCol]
-		order++
-		if order > sortDesc {
-			order = sortOff
-		}
-		for i := range a.colSort {
-			a.colSort[i] = sortOff
-		}
-		a.colSort[sortCol] = order
-	} else {
-		for i := range a.colSort {
-			if a.colSort[i] != sortOff {
-				order = a.colSort[i]
-				sortCol = i
-				break
-			}
-		}
-	}
-	if sortCol >= 0 && order != sortOff {
+	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
 		slices.SortFunc(a.rows, func(a, b cloneSearchRow) int {
 			var x int
 			switch sortCol {
@@ -432,13 +382,13 @@ func (a *OverviewClones) sortRows(sortCol int) {
 			case 4:
 				x = cmp.Compare(a.sortValue(), b.sortValue())
 			}
-			if order == sortAsc {
+			if dir == sortAsc {
 				return x
 			} else {
 				return -1 * x
 			}
 		})
-	}
+	})
 	a.body.Refresh()
 }
 

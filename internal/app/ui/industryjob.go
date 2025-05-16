@@ -51,9 +51,9 @@ const (
 	industryStatusReady              = "Ready for delivery"
 )
 
-// industryJob represents a job row in the list widgets.
+// industryJobRow represents a job row in the list widgets.
 // It combines character and corporation jobs and has precalculated fields for filters.
-type industryJob struct {
+type industryJobRow struct {
 	activity           app.IndustryActivity
 	blueprintID        int64
 	blueprintType      *app.EntityShort[int32]
@@ -78,7 +78,7 @@ type industryJob struct {
 	successfulRuns     optional.Optional[int32]
 }
 
-func (j industryJob) StatusRichText() []widget.RichTextSegment {
+func (j industryJobRow) StatusRichText() []widget.RichTextSegment {
 	if j.status == app.JobActive {
 		return iwidget.NewRichTextSegmentFromText(ihumanize.Duration(time.Until(j.endDate)), widget.RichTextStyle{
 			ColorName: theme.ColorNamePrimary,
@@ -89,7 +89,7 @@ func (j industryJob) StatusRichText() []widget.RichTextSegment {
 	})
 }
 
-func (j industryJob) IsActive() bool {
+func (j industryJobRow) IsActive() bool {
 	switch j.status {
 	case app.JobActive, app.JobReady, app.JobPaused:
 		return true
@@ -103,9 +103,9 @@ type industryJobs struct {
 	OnUpdate func(count int)
 
 	body            fyne.CanvasObject
-	sortedColumns   *sortedColumns
-	jobs            []industryJob
-	jobsFiltered    []industryJob
+	columnSorter    *columnSorter
+	rows            []industryJobRow
+	rowsFiltered    []industryJobRow
 	search          *widget.Entry
 	selectActivity  *widget.Select
 	selectInstaller *widget.Select
@@ -128,14 +128,14 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		{Text: "Installer", Width: columnWidthCharacter},
 	}
 	a := &industryJobs{
-		sortedColumns: newSortedColumnsWithDefault(len(headers), 4, sortDesc),
-		jobs:          make([]industryJob, 0),
-		jobsFiltered:  make([]industryJob, 0),
-		top:           makeTopLabel(),
-		u:             u,
+		columnSorter: newColumnSorterWithInit(len(headers), 4, sortDesc),
+		rows:         make([]industryJobRow, 0),
+		rowsFiltered: make([]industryJobRow, 0),
+		top:          makeTopLabel(),
+		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	makeCell := func(col int, j industryJob) []widget.RichTextSegment {
+	makeCell := func(col int, j industryJobRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
 			return iwidget.NewRichTextSegmentFromText(j.blueprintType.Name)
@@ -161,44 +161,17 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 	}
 
 	if a.u.isDesktop {
-		t := makeDataTableForDesktop(headers, &a.jobsFiltered, makeCell, func(_ int, r industryJob) {
-			a.showJob(r)
+		a.body = makeDataTableWithSort(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, j industryJobRow) {
+			a.showJob(j)
 		})
-		iconSortAsc := theme.NewPrimaryThemedResource(icons.SortAscendingSvg)
-		iconSortDesc := theme.NewPrimaryThemedResource(icons.SortDescendingSvg)
-		iconSortOff := theme.NewThemedResource(icons.SortSvg)
-		t.CreateHeader = func() fyne.CanvasObject {
-			icon := widget.NewIcon(iconSortOff)
-			label := kxwidget.NewTappableLabel("XXX", nil)
-			return container.NewBorder(nil, nil, nil, icon, label)
-		}
-		t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-			h := headers[tci.Col]
-			row := co.(*fyne.Container).Objects
-			label := row[0].(*kxwidget.TappableLabel)
-			label.OnTapped = func() {
-				a.processJobs(tci.Col)
-			}
-			label.SetText(h.Text)
-			icon := row[1].(*widget.Icon)
-			switch a.sortedColumns.column(tci.Col) {
-			case sortOff:
-				icon.SetResource(iconSortOff)
-			case sortAsc:
-				icon.SetResource(iconSortAsc)
-			case sortDesc:
-				icon.SetResource(iconSortDesc)
-			}
-		}
-		a.body = t
 	} else {
-		a.body = a.makeListForMobile()
+		a.body = a.makeDataList()
 	}
 
 	a.search = widget.NewEntry()
 	a.search.PlaceHolder = "Search Blueprints"
 	a.search.OnChanged = func(_ string) {
-		a.processJobs(-1)
+		a.filterRows(-1)
 	}
 	a.search.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
@@ -209,7 +182,7 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		industryOwnerMe,
 		industryOwnerCorp,
 	}, func(_ string) {
-		a.processJobs(-1)
+		a.filterRows(-1)
 	})
 	a.selectOwner.Selected = industryOwnerAny
 
@@ -220,7 +193,7 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		industryStatusHalted,
 		industryStatusHistory,
 	}, func(_ string) {
-		a.processJobs(-1)
+		a.filterRows(-1)
 	})
 	a.selectStatus.Selected = industryStatusActive
 
@@ -233,7 +206,7 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		industryActivityInvention,
 		industryActivityReaction,
 	}, func(_ string) {
-		a.processJobs(-1)
+		a.filterRows(-1)
 	})
 	a.selectActivity.Selected = industryActivityAll
 
@@ -242,12 +215,12 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		industryInstallerMe,
 		industryInstallerCorpmates,
 	}, func(_ string) {
-		a.processJobs(-1)
+		a.filterRows(-1)
 	})
 	a.selectInstaller.Selected = industryInstallerMe
 
-	a.sortButton = makeSortButton(headers, set.Of(0, 1, 2, 3, 4, 5), a.sortedColumns, func() {
-		a.processJobs(-1)
+	a.sortButton = makeSortButton(headers, set.Of(0, 1, 2, 3, 4, 5), a.columnSorter, func() {
+		a.filterRows(-1)
 	}, a.u.window)
 	return a
 }
@@ -283,12 +256,12 @@ func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-// processJobs applies all filters and sorting and freshes the list with the changed rows.
+// filterRows applies all filters and sorting and freshes the list with the changed rows.
 // A new sorting can be applied by providing a sortCol. -1 does not change the current sorting.
-func (a *industryJobs) processJobs(sortCol int) {
-	jobs := slices.Clone(a.jobs)
+func (a *industryJobs) filterRows(sortCol int) {
+	jobs := slices.Clone(a.rows)
 	// filter
-	jobs = xslices.Filter(jobs, func(o industryJob) bool {
+	jobs = xslices.Filter(jobs, func(o industryJobRow) bool {
 		switch a.selectStatus.Selected {
 		case industryStatusActive:
 			return o.IsActive()
@@ -304,7 +277,7 @@ func (a *industryJobs) processJobs(sortCol int) {
 		return false
 	})
 	if x := a.selectInstaller.Selected; x != industryInstallerAny {
-		jobs = xslices.Filter(jobs, func(o industryJob) bool {
+		jobs = xslices.Filter(jobs, func(o industryJobRow) bool {
 			switch x {
 			case industryInstallerMe:
 				return o.isInstallerMe
@@ -315,7 +288,7 @@ func (a *industryJobs) processJobs(sortCol int) {
 		})
 	}
 	if x := a.selectActivity.Selected; x != industryActivityAll {
-		jobs = xslices.Filter(jobs, func(o industryJob) bool {
+		jobs = xslices.Filter(jobs, func(o industryJobRow) bool {
 			switch x {
 			case industryActivityCopying:
 				return o.activity == app.Copying
@@ -334,7 +307,7 @@ func (a *industryJobs) processJobs(sortCol int) {
 		})
 	}
 	if x := a.selectOwner.Selected; x != industryOwnerAny {
-		jobs = xslices.Filter(jobs, func(o industryJob) bool {
+		jobs = xslices.Filter(jobs, func(o industryJobRow) bool {
 			switch x {
 			case industryOwnerCorp:
 				return !o.isOwnerMe
@@ -345,19 +318,13 @@ func (a *industryJobs) processJobs(sortCol int) {
 		})
 	}
 	if s := a.search.Text; len(s) > 1 {
-		jobs = xslices.Filter(jobs, func(x industryJob) bool {
+		jobs = xslices.Filter(jobs, func(x industryJobRow) bool {
 			return strings.Contains(strings.ToLower(x.blueprintType.Name), strings.ToLower(s))
 		})
 	}
 	// sort
-	var dir sortDir
-	if sortCol >= 0 {
-		dir = a.sortedColumns.cycleColumn(sortCol)
-	} else {
-		sortCol, dir = a.sortedColumns.current()
-	}
-	if sortCol >= 0 && dir != sortOff {
-		slices.SortFunc(jobs, func(j, k industryJob) int {
+	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+		slices.SortFunc(jobs, func(j, k industryJobRow) int {
 			var c int
 			switch sortCol {
 			case 0:
@@ -383,9 +350,9 @@ func (a *industryJobs) processJobs(sortCol int) {
 				return -1 * c
 			}
 		})
-	}
+	})
 	// set data & refresh
-	a.jobsFiltered = jobs
+	a.rowsFiltered = jobs
 	a.body.Refresh()
 	switch x := a.body.(type) {
 	case *widget.Table:
@@ -393,7 +360,7 @@ func (a *industryJobs) processJobs(sortCol int) {
 	}
 }
 
-func (a *industryJobs) makeListForMobile() *widget.List {
+func (a *industryJobs) makeDataList() *widget.List {
 	statusMap := map[app.IndustryJobStatus]fyne.Resource{
 		app.JobDelivered: theme.NewThemedResource(icons.IndydeliveredSvg),
 		app.JobPaused:    theme.NewWarningThemedResource(icons.IndyhaltedSvg),
@@ -411,7 +378,7 @@ func (a *industryJobs) makeListForMobile() *widget.List {
 	var l *widget.List
 	l = widget.NewList(
 		func() int {
-			return len(a.jobsFiltered)
+			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
 			title := widget.NewLabel("Template")
@@ -439,10 +406,10 @@ func (a *industryJobs) makeListForMobile() *widget.List {
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(a.jobsFiltered) || id < 0 {
+			if id >= len(a.rowsFiltered) || id < 0 {
 				return
 			}
-			j := a.jobsFiltered[id]
+			j := a.rowsFiltered[id]
 			c1 := co.(*fyne.Container).Objects
 			c2 := c1[0].(*fyne.Container).Objects
 			title := fmt.Sprintf("%s x%s", j.blueprintType.Name, ihumanize.Comma(j.runs))
@@ -483,10 +450,10 @@ func (a *industryJobs) makeListForMobile() *widget.List {
 	)
 	l.OnSelected = func(id widget.ListItemID) {
 		defer l.UnselectAll()
-		if id >= len(a.jobsFiltered) || id < 0 {
+		if id >= len(a.rowsFiltered) || id < 0 {
 			return
 		}
-		a.showJob(a.jobsFiltered[id])
+		a.showJob(a.rowsFiltered[id])
 	}
 	return l
 }
@@ -538,8 +505,8 @@ func (a *industryJobs) update() {
 	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort[int32]) int32 {
 		return c.ID
 	})...)
-	characterJobs := xslices.Map(cj, func(cj *app.CharacterIndustryJob) industryJob {
-		j := industryJob{
+	characterJobs := xslices.Map(cj, func(cj *app.CharacterIndustryJob) industryJobRow {
+		j := industryJobRow{
 			activity:           cj.Activity,
 			blueprintID:        cj.BlueprintID,
 			blueprintType:      cj.BlueprintType,
@@ -565,8 +532,8 @@ func (a *industryJobs) update() {
 		}
 		return j
 	})
-	corporationJobs := xslices.Map(rj, func(rj *app.CorporationIndustryJob) industryJob {
-		j := industryJob{
+	corporationJobs := xslices.Map(rj, func(rj *app.CorporationIndustryJob) industryJobRow {
+		j := industryJobRow{
 			activity:           rj.Activity,
 			blueprintID:        rj.BlueprintID,
 			blueprintType:      rj.BlueprintType,
@@ -605,12 +572,12 @@ func (a *industryJobs) update() {
 	fyne.Do(func() {
 		a.search.SetText("")
 		a.top.Hide()
-		a.jobs = jobs
-		a.processJobs(-1)
+		a.rows = jobs
+		a.filterRows(-1)
 	})
 }
 
-func (a *industryJobs) showJob(r industryJob) {
+func (a *industryJobs) showJob(r industryJobRow) {
 	makeLocationWidget := func(o *app.EveLocationShort) *iwidget.TappableRichText {
 		x := iwidget.NewTappableRichText(func() {
 			a.u.ShowLocationInfoWindow(o.ID)

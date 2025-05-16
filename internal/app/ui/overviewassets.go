@@ -12,12 +12,10 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -49,15 +47,15 @@ type assetRow struct {
 type OverviewAssets struct {
 	widget.BaseWidget
 
-	assets         []assetRow
-	assetsFiltered []assetRow
 	body           fyne.CanvasObject
+	columnSorter   *columnSorter
 	entry          *widget.Entry
 	found          *widget.Label
-	sortButton     *widget.Button
-	sortedColumns  *sortedColumns
-	selectOwner    *widget.Select
+	rows           []assetRow
+	rowsFiltered   []assetRow
 	selectLocation *widget.Select
+	selectOwner    *widget.Select
+	sortButton     *widget.Button
 	total          *widget.Label
 	u              *BaseUI
 }
@@ -72,19 +70,19 @@ func NewOverviewAssets(u *BaseUI) *OverviewAssets {
 		{Text: "Price", Width: 100},
 	}
 	a := &OverviewAssets{
-		assetsFiltered: make([]assetRow, 0),
-		entry:          widget.NewEntry(),
-		found:          widget.NewLabel(""),
-		sortedColumns:  newSortedColumns(len(headers)),
-		total:          makeTopLabel(),
-		u:              u,
+		entry:        widget.NewEntry(),
+		found:        widget.NewLabel(""),
+		rowsFiltered: make([]assetRow, 0),
+		columnSorter: newColumnSorter(len(headers)),
+		total:        makeTopLabel(),
+		u:            u,
 	}
 	a.ExtendBaseWidget(a)
 	a.entry.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.resetSearch()
 	})
 	a.entry.OnChanged = func(s string) {
-		a.processData(-1)
+		a.filterRows(-1)
 	}
 	a.entry.PlaceHolder = "Search assets"
 	a.found.Hide()
@@ -110,63 +108,27 @@ func NewOverviewAssets(u *BaseUI) *OverviewAssets {
 	}
 
 	if !a.u.isDesktop {
-		a.body = makeDataTableForMobile(headers, &a.assetsFiltered, makeCell, func(r assetRow) {
+		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, func(r assetRow) {
 			a.u.ShowTypeInfoWindow(r.typeID)
 		})
 	} else {
-		t := makeDataTableForDesktop(headers, &a.assetsFiltered, makeCell, func(col int, r assetRow) {
-			switch col {
-			case 0:
-				a.u.ShowInfoWindow(app.EveEntityInventoryType, r.typeID)
-			case 2:
-				if r.location != nil {
-					a.u.ShowLocationInfoWindow(r.location.ID)
-				}
-			case 3:
-				a.u.ShowInfoWindow(app.EveEntityCharacter, r.characterID)
-			}
+		a.body = makeDataTableWithSort(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r assetRow) {
+			a.u.ShowTypeInfoWindow(r.typeID)
 		})
-		iconSortAsc := theme.NewPrimaryThemedResource(icons.SortAscendingSvg)
-		iconSortDesc := theme.NewPrimaryThemedResource(icons.SortDescendingSvg)
-		iconSortOff := theme.NewThemedResource(icons.SortSvg)
-		t.CreateHeader = func() fyne.CanvasObject {
-			icon := widget.NewIcon(iconSortOff)
-			label := kxwidget.NewTappableLabel("XXX", nil)
-			return container.NewBorder(nil, nil, nil, icon, label)
-		}
-		t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-			h := headers[tci.Col]
-			row := co.(*fyne.Container).Objects
-			label := row[0].(*kxwidget.TappableLabel)
-			label.OnTapped = func() {
-				a.processData(tci.Col)
-			}
-			label.SetText(h.Text)
-			icon := row[1].(*widget.Icon)
-			switch a.sortedColumns.column(tci.Col) {
-			case sortOff:
-				icon.SetResource(iconSortOff)
-			case sortAsc:
-				icon.SetResource(iconSortAsc)
-			case sortDesc:
-				icon.SetResource(iconSortDesc)
-			}
-		}
-		a.body = t
 	}
 
 	a.selectOwner = widget.NewSelect([]string{selectOwnerAny}, func(s string) {
-		a.processData(-1)
+		a.filterRows(-1)
 	})
 	a.selectOwner.Selected = selectOwnerAny
 
 	a.selectLocation = widget.NewSelect([]string{selectLocationAny}, func(s string) {
-		a.processData(-1)
+		a.filterRows(-1)
 	})
 	a.selectLocation.Selected = selectLocationAny
 
-	a.sortButton = makeSortButton(headers, set.Of(0, 1, 2, 3, 4, 5), a.sortedColumns, func() {
-		a.processData(-1)
+	a.sortButton = makeSortButton(headers, set.Of(0, 1, 2, 3, 4, 5), a.columnSorter, func() {
+		a.filterRows(-1)
 	}, a.u.window)
 	return a
 }
@@ -189,13 +151,13 @@ func (a *OverviewAssets) Focus() {
 	a.u.MainWindow().Canvas().Focus(a.entry)
 }
 
-func (a *OverviewAssets) processData(sortCol int) {
+func (a *OverviewAssets) filterRows(sortCol int) {
 	// search filter
 	rows := make([]assetRow, 0)
 	if search := strings.ToLower(a.entry.Text); search == "" {
-		rows = slices.Clone(a.assets)
+		rows = slices.Clone(a.rows)
 	} else {
-		for _, r := range a.assets {
+		for _, r := range a.rows {
 			var matches bool
 			if search == "" {
 				matches = true
@@ -222,13 +184,7 @@ func (a *OverviewAssets) processData(sortCol int) {
 		})
 	}
 	// sort
-	var dir sortDir
-	if sortCol >= 0 {
-		dir = a.sortedColumns.cycleColumn(sortCol)
-	} else {
-		sortCol, dir = a.sortedColumns.current()
-	}
-	if sortCol >= 0 && dir != sortOff {
+	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
 		slices.SortFunc(rows, func(a, b assetRow) int {
 			var x int
 			switch sortCol {
@@ -251,7 +207,7 @@ func (a *OverviewAssets) processData(sortCol int) {
 				return -1 * x
 			}
 		})
-	}
+	})
 	locations := slices.Concat(
 		[]string{selectLocationAny},
 		slices.Sorted(set.Collect(xiter.MapSlice(rows, func(o assetRow) string {
@@ -266,7 +222,7 @@ func (a *OverviewAssets) processData(sortCol int) {
 	)
 	a.selectLocation.SetOptions(locations)
 	a.selectOwner.SetOptions(owners)
-	a.assetsFiltered = rows
+	a.rowsFiltered = rows
 	a.updateFoundInfo()
 	a.body.Refresh()
 	switch x := a.body.(type) {
@@ -277,7 +233,7 @@ func (a *OverviewAssets) processData(sortCol int) {
 
 func (a *OverviewAssets) resetSearch() {
 	a.entry.SetText("")
-	a.processData(-1)
+	a.filterRows(-1)
 }
 
 func (a *OverviewAssets) update() {
@@ -305,10 +261,10 @@ func (a *OverviewAssets) update() {
 		a.total.Refresh()
 	})
 	fyne.Do(func() {
-		a.assetsFiltered = assets
-		a.assets = assets
+		a.rowsFiltered = assets
+		a.rows = assets
 		a.body.Refresh()
-		a.processData(-1)
+		a.filterRows(-1)
 	})
 }
 
@@ -372,7 +328,7 @@ func (*OverviewAssets) loadData(s services) ([]assetRow, bool, error) {
 }
 
 func (a *OverviewAssets) updateFoundInfo() {
-	if c := len(a.assetsFiltered); c < len(a.assets) {
+	if c := len(a.rowsFiltered); c < len(a.rows) {
 		a.found.SetText(fmt.Sprintf("%s found", ihumanize.Comma(c)))
 		a.found.Show()
 	} else {
@@ -392,7 +348,7 @@ func (a *OverviewAssets) characterCount() int {
 }
 
 func (a *OverviewAssets) makeTopText(c int) (string, widget.Importance) {
-	it := humanize.Comma(int64(len(a.assets)))
+	it := humanize.Comma(int64(len(a.rows)))
 	text := fmt.Sprintf("%d characters • %s items", c, it)
 	return text, widget.MediumImportance
 }
