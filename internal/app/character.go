@@ -749,11 +749,32 @@ type CharacterJumpClone2 struct {
 	Location      *EveLocation
 }
 
-func (j CharacterJumpClone2) SolarSystemName() string {
-	if s := j.Location.SolarSystem; s != nil {
-		return s.Name
+func (j CharacterJumpClone2) CharacterName() string {
+	if j.Character == nil {
+		return ""
 	}
-	return ""
+	return j.Character.Name
+}
+
+func (j CharacterJumpClone2) LocationName() string {
+	if j.Location == nil {
+		return ""
+	}
+	return j.Location.DisplayName()
+}
+
+func (j CharacterJumpClone2) SolarSystemName() string {
+	if j.Location == nil || j.Location.SolarSystem == nil {
+		return ""
+	}
+	return j.Location.SolarSystem.Name
+}
+
+func (j CharacterJumpClone2) RegionName() string {
+	if j.Location == nil || j.Location.SolarSystem == nil {
+		return ""
+	}
+	return j.Location.SolarSystem.Constellation.Region.Name
 }
 
 type CharacterJumpCloneImplant struct {

@@ -55,14 +55,6 @@ const (
 	columnWidthRegion    = 150
 )
 
-type sortDir uint
-
-const (
-	sortOff sortDir = iota
-	sortAsc
-	sortDesc
-)
-
 // ticker
 const (
 	characterSectionsUpdateTicker = 60 * time.Second

@@ -58,18 +58,20 @@ func (r cloneRow) jumps() string {
 type OverviewClones struct {
 	widget.BaseWidget
 
-	body         fyne.CanvasObject
-	changeOrigin *widget.Button
-	columnSorter *columnSorter
-	origin       *app.EveSolarSystem
-	originLabel  *widget.RichText
-	routePref    app.RoutePreference
-	rows         []cloneRow
-	rowsFiltered []cloneRow
-	sortButton   *widget.Button
-	top          *widget.Label
-	u            *BaseUI
-	selectOwner  *widget.Select
+	body              fyne.CanvasObject
+	changeOrigin      *widget.Button
+	columnSorter      *columnSorter
+	origin            *app.EveSolarSystem
+	originLabel       *widget.RichText
+	routePref         app.RoutePreference
+	rows              []cloneRow
+	rowsFiltered      []cloneRow
+	sortButton        *sortButton
+	top               *widget.Label
+	u                 *BaseUI
+	selectOwner       *selectFilter
+	selectRegion      *selectFilter
+	selectSolarSystem *selectFilter
 }
 
 func NewOverviewClones(u *BaseUI) *OverviewClones {
@@ -143,12 +145,19 @@ func NewOverviewClones(u *BaseUI) *OverviewClones {
 		})
 	}
 
-	a.selectOwner = widget.NewSelect([]string{selectOwnerAny}, func(s string) {
+	a.selectRegion = newSelectFilter("Any region", func() {
 		a.filterRows(-1)
 	})
-	a.selectOwner.Selected = selectOwnerAny
 
-	a.sortButton = makeSortButton(headers, set.Of(0, 1, 2, 3, 4), a.columnSorter, func() {
+	a.selectSolarSystem = newSelectFilter("Any system", func() {
+		a.filterRows(-1)
+	})
+
+	a.selectOwner = newSelectFilter("Any owner", func() {
+		a.filterRows(-1)
+	})
+
+	a.sortButton = a.columnSorter.newSortButton(headers, set.Of(0, 1, 2, 3, 4), func() {
 		a.filterRows(-1)
 	}, a.u.window)
 
@@ -163,8 +172,10 @@ func (a *OverviewClones) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		a.originLabel,
 	)
-	config := container.NewHBox(a.selectOwner)
-	config.Add(a.sortButton)
+	config := container.NewHBox(a.selectRegion, a.selectSolarSystem, a.selectOwner)
+	if !a.u.isDesktop {
+		config.Add(a.sortButton)
+	}
 	c := container.NewBorder(
 		container.NewVBox(
 			a.top,
@@ -379,11 +390,21 @@ func (a *OverviewClones) setOrigin(w fyne.Window) {
 func (a *OverviewClones) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
-	if x := a.selectOwner.Selected; x != selectOwnerAny {
+	a.selectOwner.applyFilter(func(selected string) {
 		rows = xslices.Filter(rows, func(o cloneRow) bool {
-			return o.c.Character.Name == x
+			return o.c.CharacterName() == selected
 		})
-	}
+	})
+	a.selectRegion.applyFilter(func(selected string) {
+		rows = xslices.Filter(rows, func(o cloneRow) bool {
+			return o.c.RegionName() == selected
+		})
+	})
+	a.selectSolarSystem.applyFilter(func(selected string) {
+		rows = xslices.Filter(rows, func(o cloneRow) bool {
+			return o.c.SolarSystemName() == selected
+		})
+	})
 
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
@@ -410,13 +431,15 @@ func (a *OverviewClones) filterRows(sortCol int) {
 			}
 		})
 	})
-	owners := slices.Concat(
-		[]string{selectOwnerAny},
-		slices.Sorted(set.Collect(xiter.MapSlice(rows, func(o cloneRow) string {
-			return o.c.Character.Name
-		})).All()),
-	)
-	a.selectOwner.SetOptions(owners)
+	a.selectOwner.setOptions(xiter.MapSlice(rows, func(o cloneRow) string {
+		return o.c.CharacterName()
+	}))
+	a.selectRegion.setOptions(xiter.MapSlice(rows, func(o cloneRow) string {
+		return o.c.RegionName()
+	}))
+	a.selectSolarSystem.setOptions(xiter.MapSlice(rows, func(o cloneRow) string {
+		return o.c.SolarSystemName()
+	}))
 	a.rowsFiltered = rows
 	a.body.Refresh()
 }

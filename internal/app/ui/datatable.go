@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"iter"
 	"log/slog"
 	"slices"
 
@@ -17,6 +18,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+)
+
+type sortDir uint
+
+const (
+	sortOff sortDir = iota
+	sortAsc
+	sortDesc
 )
 
 type headerDef struct {
@@ -235,7 +244,8 @@ func makeDataList[S ~[]E, E any](
 
 // columnSorter represents an ordered list of columns which can be sorted.
 type columnSorter struct {
-	cols []sortDir
+	cols       []sortDir
+	sortButton *sortButton
 }
 
 func newColumnSorter(n int) *columnSorter {
@@ -278,6 +288,9 @@ func (cs *columnSorter) reset() {
 func (cs *columnSorter) set(idx int, dir sortDir) {
 	cs.reset()
 	cs.cols[idx] = dir
+	if cs.sortButton != nil {
+		cs.sortButton.set(idx, dir)
+	}
 }
 
 // current returns which column is currently sorted or -1 if none are sorted.
@@ -302,71 +315,54 @@ func (cs *columnSorter) sort(idx int, f func(sortCol int, dir sortDir)) {
 	}
 }
 
-// makeSortButton returns a button widget that can be used to sort columns.
-func makeSortButton(headers []headerDef, columns set.Set[int], sc *columnSorter, process func(), window fyne.Window) *widget.Button {
+func (cs *columnSorter) newSortButton(headers []headerDef, columns set.Set[int], process func(), window fyne.Window) *sortButton {
 	sortColumns := xslices.Map(headers, func(h headerDef) string {
 		return h.Text
 	})
-	b := widget.NewButtonWithIcon("???", icons.BlankSvg, nil)
-	if len(headers) == 0 || sc.size() == 0 || columns.Size() == 0 || columns.Size() > len(headers) {
+	w := &sortButton{sortColumns: sortColumns}
+	w.ExtendBaseWidget(w)
+	w.Text = "???"
+	w.Icon = icons.BlankSvg
+	if len(headers) == 0 || cs.size() == 0 || columns.Size() == 0 || columns.Size() > len(headers) {
 		slog.Warn("makeSortButton called with invalid parameters")
-		return b // early exit when called without proper data
+		return w // early exit when called without proper data
 	}
-	setSortButton := func() {
-		var icon fyne.Resource
-		col, order := sc.current()
-		switch order {
-		case sortAsc:
-			icon = theme.NewThemedResource(icons.SortAscendingSvg)
-		case sortDesc:
-			icon = theme.NewThemedResource(icons.SortDescendingSvg)
-		default:
-			icon = theme.NewThemedResource(icons.SortSvg)
-		}
-		if col != -1 {
-			b.Text = sortColumns[col]
-		} else {
-			b.Text = "Sort"
-		}
-		b.Icon = icon
-		b.Refresh()
-	}
-	b.OnTapped = func() {
-		col, order := sc.current()
+	w.OnTapped = func() {
+		col, dir := cs.current()
 		var fields []string
 		for i, h := range headers {
 			if columns.Contains(i) {
 				fields = append(fields, h.Text)
 			}
 		}
-		cols := widget.NewRadioGroup(fields, nil)
+		radioCols := widget.NewRadioGroup(fields, nil)
 		if col != -1 {
-			cols.Selected = sortColumns[col]
+			radioCols.Selected = sortColumns[col]
 		} else {
-			cols.Selected = sortColumns[0] // default to first column
+			radioCols.Selected = sortColumns[0] // default to first column
 		}
-		dir := widget.NewRadioGroup([]string{"Ascending", "Descending"}, nil)
-		switch order {
+		radioDir := widget.NewRadioGroup([]string{"Ascending", "Descending"}, nil)
+		switch dir {
 		case sortDesc:
-			dir.Selected = "Descending"
+			radioDir.Selected = "Descending"
 		default:
-			dir.Selected = "Ascending"
+			radioDir.Selected = "Ascending"
 		}
 		var d dialog.Dialog
 		okButton := widget.NewButtonWithIcon("OK", theme.ConfirmIcon(), func() {
-			col := slices.Index(sortColumns, cols.Selected)
+			col := slices.Index(sortColumns, radioCols.Selected)
 			if col == -1 {
 				return
 			}
-			switch dir.Selected {
+			switch radioDir.Selected {
 			case "Ascending":
-				order = sortAsc
+				dir = sortAsc
 			case "Descending":
-				order = sortDesc
+				dir = sortDesc
 			}
-			sc.set(col, order)
+			cs.set(col, dir)
 			process()
-			setSortButton()
+			w.set(col, dir)
 			d.Hide()
 		})
 		okButton.Importance = widget.HighImportance
@@ -379,9 +375,9 @@ func makeSortButton(headers []headerDef, columns set.Set[int], sc *columnSorter,
 					d.Hide()
 				}),
 				widget.NewButtonWithIcon("Clear", theme.DeleteIcon(), func() {
-					sc.reset()
+					cs.reset()
 					process()
-					setSortButton()
+					w.set(col, dir)
 					d.Hide()
 				}),
 				okButton,
@@ -391,9 +387,9 @@ func makeSortButton(headers []headerDef, columns set.Set[int], sc *columnSorter,
 			nil,
 			container.NewVBox(
 				widget.NewLabel("Field"),
-				cols,
+				radioCols,
 				widget.NewLabel("Direction"),
-				dir,
+				radioDir,
 			),
 		)
 		d = dialog.NewCustomWithoutButtons("Sort By", c, window)
@@ -401,6 +397,56 @@ func makeSortButton(headers []headerDef, columns set.Set[int], sc *columnSorter,
 		d.Resize(fyne.NewSize(s.Width, s.Height*0.8))
 		d.Show()
 	}
-	setSortButton()
-	return b
+	w.set(cs.current())
+	cs.sortButton = w
+	return w
+}
+
+type sortButton struct {
+	widget.Button
+	sortColumns []string
+}
+
+func (w *sortButton) set(col int, dir sortDir) {
+	switch dir {
+	case sortAsc:
+		w.Icon = theme.NewThemedResource(icons.SortAscendingSvg)
+	case sortDesc:
+		w.Icon = theme.NewThemedResource(icons.SortDescendingSvg)
+	default:
+		w.Icon = theme.NewThemedResource(icons.SortSvg)
+	}
+	if col != -1 {
+		w.Text = w.sortColumns[col]
+	} else {
+		w.Text = "Sort"
+	}
+	w.Refresh()
+}
+
+type selectFilter struct {
+	widget.Select
+	anyOption string
+}
+
+func newSelectFilter(anyOption string, changed func()) *selectFilter {
+	w := &selectFilter{anyOption: anyOption}
+	w.ExtendBaseWidget(w)
+	w.Options = []string{anyOption}
+	w.OnChanged = func(_ string) {
+		changed()
+	}
+	w.Selected = anyOption
+	return w
+}
+
+func (w *selectFilter) applyFilter(f func(selected string)) {
+	if w.Selected == w.anyOption {
+		return
+	}
+	f(w.Selected)
+}
+
+func (w *selectFilter) setOptions(seq iter.Seq[string]) {
+	w.SetOptions(slices.Concat([]string{w.anyOption}, slices.Sorted(set.Collect(seq).All())))
 }

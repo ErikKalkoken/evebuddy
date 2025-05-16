@@ -23,11 +23,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-const (
-	selectOwnerAny    = "Any owner"
-	selectLocationAny = "Any location"
-)
-
 type assetRow struct {
 	characterID     int32
 	characterName   string
@@ -44,20 +39,27 @@ type assetRow struct {
 	typeName        string
 }
 
+func (r assetRow) SolarSystemName() string {
+	if r.location == nil || r.location.SolarSystem == nil {
+		return ""
+	}
+	return r.location.SolarSystem.Name
+}
+
 type OverviewAssets struct {
 	widget.BaseWidget
 
-	body           fyne.CanvasObject
-	columnSorter   *columnSorter
-	entry          *widget.Entry
-	found          *widget.Label
-	rows           []assetRow
-	rowsFiltered   []assetRow
-	selectLocation *widget.Select
-	selectOwner    *widget.Select
-	sortButton     *widget.Button
-	total          *widget.Label
-	u              *BaseUI
+	body              fyne.CanvasObject
+	columnSorter      *columnSorter
+	entry             *widget.Entry
+	found             *widget.Label
+	rows              []assetRow
+	rowsFiltered      []assetRow
+	selectSolarSystem *selectFilter
+	selectOwner       *selectFilter
+	sortButton        *sortButton
+	total             *widget.Label
+	u                 *BaseUI
 }
 
 func NewOverviewAssets(u *BaseUI) *OverviewAssets {
@@ -117,24 +119,22 @@ func NewOverviewAssets(u *BaseUI) *OverviewAssets {
 		})
 	}
 
-	a.selectOwner = widget.NewSelect([]string{selectOwnerAny}, func(s string) {
+	a.selectOwner = newSelectFilter("Any owner", func() {
 		a.filterRows(-1)
 	})
-	a.selectOwner.Selected = selectOwnerAny
 
-	a.selectLocation = widget.NewSelect([]string{selectLocationAny}, func(s string) {
+	a.selectSolarSystem = newSelectFilter("Any system", func() {
 		a.filterRows(-1)
 	})
-	a.selectLocation.Selected = selectLocationAny
 
-	a.sortButton = makeSortButton(headers, set.Of(0, 1, 2, 3, 4, 5), a.columnSorter, func() {
+	a.sortButton = a.columnSorter.newSortButton(headers, set.Of(0, 1, 2, 3, 4, 5), func() {
 		a.filterRows(-1)
 	}, a.u.window)
 	return a
 }
 
 func (a *OverviewAssets) CreateRenderer() fyne.WidgetRenderer {
-	config := container.NewHBox(a.selectLocation, a.selectOwner)
+	config := container.NewHBox(a.selectSolarSystem, a.selectOwner)
 	topBox := container.NewVBox(
 		container.NewBorder(nil, nil, nil, a.found, a.total),
 		a.entry,
@@ -173,16 +173,16 @@ func (a *OverviewAssets) filterRows(sortCol int) {
 		}
 	}
 	// other filter
-	if x := a.selectLocation.Selected; x != selectLocationAny {
+	a.selectSolarSystem.applyFilter(func(selected string) {
 		rows = xslices.Filter(rows, func(o assetRow) bool {
-			return o.location.DisplayName() == x
+			return o.SolarSystemName() == selected
 		})
-	}
-	if x := a.selectOwner.Selected; x != selectOwnerAny {
+	})
+	a.selectOwner.applyFilter(func(selected string) {
 		rows = xslices.Filter(rows, func(o assetRow) bool {
-			return o.characterName == x
+			return o.characterName == selected
 		})
-	}
+	})
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
 		slices.SortFunc(rows, func(a, b assetRow) int {
@@ -208,20 +208,12 @@ func (a *OverviewAssets) filterRows(sortCol int) {
 			}
 		})
 	})
-	locations := slices.Concat(
-		[]string{selectLocationAny},
-		slices.Sorted(set.Collect(xiter.MapSlice(rows, func(o assetRow) string {
-			return o.location.DisplayName()
-		})).All()),
-	)
-	owners := slices.Concat(
-		[]string{selectOwnerAny},
-		slices.Sorted(set.Collect(xiter.MapSlice(rows, func(o assetRow) string {
-			return o.characterName
-		})).All()),
-	)
-	a.selectLocation.SetOptions(locations)
-	a.selectOwner.SetOptions(owners)
+	a.selectSolarSystem.setOptions(xiter.MapSlice(rows, func(o assetRow) string {
+		return o.SolarSystemName()
+	}))
+	a.selectOwner.setOptions(xiter.MapSlice(rows, func(o assetRow) string {
+		return o.characterName
+	}))
 	a.rowsFiltered = rows
 	a.updateFoundInfo()
 	a.body.Refresh()

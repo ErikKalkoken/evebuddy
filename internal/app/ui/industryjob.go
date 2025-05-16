@@ -111,7 +111,7 @@ type industryJobs struct {
 	selectInstaller *widget.Select
 	selectOwner     *widget.Select
 	selectStatus    *widget.Select
-	sortButton      *widget.Button
+	sortButton      *sortButton
 	top             *widget.Label
 	u               *BaseUI
 }
@@ -219,7 +219,7 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 	})
 	a.selectInstaller.Selected = industryInstallerMe
 
-	a.sortButton = makeSortButton(headers, set.Of(0, 1, 2, 3, 4, 5), a.columnSorter, func() {
+	a.sortButton = a.columnSorter.newSortButton(headers, set.Of(0, 1, 2, 3, 4, 5), func() {
 		a.filterRows(-1)
 	}, a.u.window)
 	return a
