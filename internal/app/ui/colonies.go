@@ -51,7 +51,7 @@ func NewColonies(u *BaseUI) *Colonies {
 		u:       u,
 	}
 	a.ExtendBaseWidget(a)
-	headers := []iwidget.HeaderDef{
+	headers := []headerDef{
 		{Text: "Planet", Width: 150},
 		{Text: "Type", Width: 100},
 		{Text: "Extracting", Width: 200},
@@ -80,11 +80,11 @@ func NewColonies(u *BaseUI) *Colonies {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = iwidget.MakeDataTableForDesktop(headers, &a.planets, makeCell, func(_ int, r *app.CharacterPlanet) {
+		a.body = makeDataTableForDesktop(headers, &a.planets, makeCell, func(_ int, r *app.CharacterPlanet) {
 			a.showColony(r)
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.planets, makeCell, a.showColony)
+		a.body = makeDataTableForMobile(headers, &a.planets, makeCell, a.showColony)
 	}
 	return a
 }

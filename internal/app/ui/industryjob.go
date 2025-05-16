@@ -118,7 +118,7 @@ type industryJobs struct {
 }
 
 func NewIndustryJobs(u *BaseUI) *industryJobs {
-	headers := []iwidget.HeaderDef{
+	headers := []headerDef{
 		{Text: "Blueprint", Width: 250},
 		{Text: "Status", Width: 100, Refresh: true},
 		{Text: "Runs", Width: 75},
@@ -162,7 +162,7 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 	}
 
 	if a.u.isDesktop {
-		t := iwidget.MakeDataTableForDesktop(headers, &a.jobsFiltered, makeCell, func(_ int, r industryJob) {
+		t := makeDataTableForDesktop(headers, &a.jobsFiltered, makeCell, func(_ int, r industryJob) {
 			a.showJob(r)
 		})
 		iconSortAsc := theme.NewPrimaryThemedResource(icons.SortAscendingSvg)

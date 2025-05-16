@@ -12,7 +12,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -101,8 +100,8 @@ func (sc *sortedColumns) size() int {
 }
 
 // makeSortButton returns a button widget that can be used to sort columns.
-func makeSortButton(headers []iwidget.HeaderDef, columns set.Set[int], sc *sortedColumns, process func(), window fyne.Window) *widget.Button {
-	sortColumns := xslices.Map(headers, func(h iwidget.HeaderDef) string {
+func makeSortButton(headers []headerDef, columns set.Set[int], sc *sortedColumns, process func(), window fyne.Window) *widget.Button {
+	sortColumns := xslices.Map(headers, func(h headerDef) string {
 		return h.Text
 	})
 	b := widget.NewButtonWithIcon("???", icons.BlankSvg, nil)

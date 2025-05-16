@@ -50,7 +50,7 @@ func NewOverviewCharacters(u *BaseUI) *OverviewCharacters {
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)
-	headers := []iwidget.HeaderDef{
+	headers := []headerDef{
 		{Text: "Character", Width: columnWidthCharacter},
 		{Text: "Corporation", Width: 250},
 		{Text: "Alliance", Width: 250},
@@ -105,11 +105,11 @@ func NewOverviewCharacters(u *BaseUI) *OverviewCharacters {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, func(_ int, oc overviewCharacter) {
+		a.body = makeDataTableForDesktop(headers, &a.rows, makeCell, func(_ int, oc overviewCharacter) {
 			u.ShowInfoWindow(app.EveEntityCharacter, oc.id)
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeCell, func(oc overviewCharacter) {
+		a.body = makeDataTableForMobile(headers, &a.rows, makeCell, func(oc overviewCharacter) {
 			u.ShowInfoWindow(app.EveEntityCharacter, oc.id)
 		})
 	}

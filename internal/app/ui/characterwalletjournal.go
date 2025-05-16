@@ -64,7 +64,7 @@ func NewCharacterWalletJournal(u *BaseUI) *CharacterWalletJournal {
 		u:       u,
 	}
 	a.ExtendBaseWidget(a)
-	headers := []iwidget.HeaderDef{
+	headers := []headerDef{
 		{Text: "Date", Width: 150},
 		{Text: "Type", Width: 150},
 		{Text: "Amount", Width: 200},
@@ -112,11 +112,11 @@ func NewCharacterWalletJournal(u *BaseUI) *CharacterWalletJournal {
 		}
 	}
 	if a.u.isDesktop {
-		a.body = iwidget.MakeDataTableForDesktop(headers, &a.entries, makeCell, func(_ int, r walletJournalEntry) {
+		a.body = makeDataTableForDesktop(headers, &a.entries, makeCell, func(_ int, r walletJournalEntry) {
 			showReasonDialog(r)
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.entries, makeCell, showReasonDialog)
+		a.body = makeDataTableForMobile(headers, &a.entries, makeCell, showReasonDialog)
 	}
 	return a
 }

@@ -26,7 +26,7 @@ type CharacterWalletTransaction struct {
 }
 
 func NewCharacterWalletTransaction(u *BaseUI) *CharacterWalletTransaction {
-	headers := []iwidget.HeaderDef{
+	headers := []headerDef{
 		{Text: "Date", Width: 150},
 		{Text: "Quantity", Width: 130},
 		{Text: "Type", Width: 200},
@@ -85,7 +85,7 @@ func NewCharacterWalletTransaction(u *BaseUI) *CharacterWalletTransaction {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, func(column int, r *app.CharacterWalletTransaction) {
+		a.body = makeDataTableForDesktop(headers, &a.rows, makeCell, func(column int, r *app.CharacterWalletTransaction) {
 			switch column {
 			case 2:
 				a.u.ShowTypeInfoWindow(r.EveType.ID)
@@ -96,7 +96,7 @@ func NewCharacterWalletTransaction(u *BaseUI) *CharacterWalletTransaction {
 			}
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeCell, func(r *app.CharacterWalletTransaction) {
+		a.body = makeDataTableForMobile(headers, &a.rows, makeCell, func(r *app.CharacterWalletTransaction) {
 			a.u.ShowTypeInfoWindow(r.EveType.ID)
 		})
 	}

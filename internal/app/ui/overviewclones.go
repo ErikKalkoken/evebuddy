@@ -69,7 +69,7 @@ type OverviewClones struct {
 }
 
 func NewOverviewClones(u *BaseUI) *OverviewClones {
-	headers := []iwidget.HeaderDef{
+	headers := []headerDef{
 		{Text: "Location", Width: columnWidthLocation},
 		{Text: "Region", Width: columnWidthRegion},
 		{Text: "Impl.", Width: 100},
@@ -115,7 +115,7 @@ func NewOverviewClones(u *BaseUI) *OverviewClones {
 		return s
 	}
 	if a.u.isDesktop {
-		t := iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, func(c int, r cloneSearchRow) {
+		t := makeDataTableForDesktop(headers, &a.rows, makeCell, func(c int, r cloneSearchRow) {
 			switch c {
 			case 0:
 				a.u.ShowLocationInfoWindow(r.c.Location.ID)
@@ -165,7 +165,7 @@ func NewOverviewClones(u *BaseUI) *OverviewClones {
 		}
 		a.body = t
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeCell, func(r cloneSearchRow) {
+		a.body = makeDataTableForMobile(headers, &a.rows, makeCell, func(r cloneSearchRow) {
 			if len(r.route) == 0 {
 				return
 			}

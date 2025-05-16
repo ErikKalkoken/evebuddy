@@ -43,7 +43,7 @@ func NewContracts(u *BaseUI, showActiveOnly bool) *Contracts {
 	}
 	a.ExtendBaseWidget(a)
 	a.showActiveOnly.Store(showActiveOnly)
-	headers := []iwidget.HeaderDef{
+	headers := []headerDef{
 		{Text: "Contract", Width: 300},
 		{Text: "Type", Width: 120},
 		{Text: "From", Width: 150},
@@ -89,11 +89,11 @@ func NewContracts(u *BaseUI, showActiveOnly bool) *Contracts {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = iwidget.MakeDataTableForDesktop(headers, &a.contracts, makeCell, func(column int, r *app.CharacterContract) {
+		a.body = makeDataTableForDesktop(headers, &a.contracts, makeCell, func(column int, r *app.CharacterContract) {
 			a.showContract(r)
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.contracts, makeCell, a.showContract)
+		a.body = makeDataTableForMobile(headers, &a.contracts, makeCell, a.showContract)
 	}
 	return a
 }

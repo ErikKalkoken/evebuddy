@@ -64,7 +64,7 @@ type OverviewAssets struct {
 }
 
 func NewOverviewAssets(u *BaseUI) *OverviewAssets {
-	headers := []iwidget.HeaderDef{
+	headers := []headerDef{
 		{Text: "Item", Width: 300},
 		{Text: "Class", Width: 200},
 		{Text: "Location", Width: 350},
@@ -111,11 +111,11 @@ func NewOverviewAssets(u *BaseUI) *OverviewAssets {
 	}
 
 	if !a.u.isDesktop {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.assetsFiltered, makeCell, func(r assetRow) {
+		a.body = makeDataTableForMobile(headers, &a.assetsFiltered, makeCell, func(r assetRow) {
 			a.u.ShowTypeInfoWindow(r.typeID)
 		})
 	} else {
-		t := iwidget.MakeDataTableForDesktop(headers, &a.assetsFiltered, makeCell, func(col int, r assetRow) {
+		t := makeDataTableForDesktop(headers, &a.assetsFiltered, makeCell, func(col int, r assetRow) {
 			switch col {
 			case 0:
 				a.u.ShowInfoWindow(app.EveEntityInventoryType, r.typeID)

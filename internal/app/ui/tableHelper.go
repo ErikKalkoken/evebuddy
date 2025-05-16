@@ -1,4 +1,4 @@
-package widget
+package ui
 
 import (
 	"fyne.io/fyne/v2"
@@ -11,13 +11,13 @@ import (
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 )
 
-type HeaderDef struct {
+type headerDef struct {
 	Text    string
 	Width   float32
 	Refresh bool
 }
 
-func maxHeaderWidth(headers []HeaderDef) float32 {
+func maxHeaderWidth(headers []headerDef) float32 {
 	var m float32
 	for _, h := range headers {
 		l := widget.NewLabel(h.Text)
@@ -26,8 +26,8 @@ func maxHeaderWidth(headers []HeaderDef) float32 {
 	return m
 }
 
-func MakeDataTableForDesktop[S ~[]E, E any](
-	headers []HeaderDef,
+func makeDataTableForDesktop[S ~[]E, E any](
+	headers []headerDef,
 	data *S,
 	makeCell func(int, E) []widget.RichTextSegment,
 	onSelected func(int, E),
@@ -76,8 +76,8 @@ func MakeDataTableForDesktop[S ~[]E, E any](
 	return t
 }
 
-func MakeDataTableForMobile[S ~[]E, E any](
-	headers []HeaderDef,
+func makeDataTableForMobile[S ~[]E, E any](
+	headers []headerDef,
 	data *S,
 	makeCell func(int, E) []widget.RichTextSegment,
 	onSelected func(E),
