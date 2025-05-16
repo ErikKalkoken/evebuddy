@@ -60,7 +60,7 @@ jobs:
       run: go install fyne.io/tools/cmd/fyne@latest
 
     - name: Package Fyne app
-      run: fyne package --os linux --release --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
+      run: fyne package --os linux --release --tags migrated_fynedo --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
 
     - name: Inspect
       run: ls -R
@@ -109,7 +109,7 @@ jobs:
       run: go install fyne.io/tools/cmd/fyne@latest
 
     - name: Package
-      run: fyne package --os windows --release --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
+      run: fyne package --os windows --release --tags migrated_fynedo --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
 
     - name: Inspect
       run: ls -R
@@ -151,7 +151,7 @@ jobs:
       run: go install fyne.io/tools/cmd/fyne@latest
 
     - name: Package app bundles
-      run: fyne package --os darwin --release --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
+      run: fyne package --os darwin --release --tags migrated_fynedo --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
 
     - name: Inspect
       run: ls -R
@@ -193,7 +193,7 @@ jobs:
       run: go install fyne.io/tools/cmd/fyne@latest
 
     - name: Package app bundles
-      run: fyne package --os darwin --release --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
+      run: fyne package --os darwin --release --tags migrated_fynedo --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
 
     - name: Inspect
       run: ls -R
