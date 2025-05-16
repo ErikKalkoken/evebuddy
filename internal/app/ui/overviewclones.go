@@ -20,7 +20,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -80,7 +79,7 @@ func NewOverviewClones(u *BaseUI) *OverviewClones {
 		colSort:     make([]sortDir, len(headers)),
 		originLabel: iwidget.NewTappableRichTextWithText("?", nil),
 		rows:        make([]cloneSearchRow, 0),
-		top:         appwidget.MakeTopLabel(),
+		top:         makeTopLabel(),
 		u:           u,
 	}
 	a.ExtendBaseWidget(a)

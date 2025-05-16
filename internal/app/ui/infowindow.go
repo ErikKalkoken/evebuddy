@@ -28,7 +28,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
@@ -1905,14 +1904,14 @@ func (a *inventoryTypeInfo) makeAttributeTab(ctx context.Context, dogmaAttribute
 			return len(attributes)
 		},
 		func() fyne.CanvasObject {
-			return appwidget.NewTypeAttributeItem()
+			return NewTypeAttributeItem()
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(attributes) {
 				return
 			}
 			r := attributes[id]
-			item := co.(*appwidget.TypeAttributeItem)
+			item := co.(*TypeAttributeItem)
 			if r.isTitle {
 				item.SetTitle(r.label)
 			} else {
@@ -2207,11 +2206,11 @@ func (a *inventoryTypeInfo) makeFittingTab(ctx context.Context, dogmaAttributes 
 			return len(fittingData)
 		},
 		func() fyne.CanvasObject {
-			return appwidget.NewTypeAttributeItem()
+			return NewTypeAttributeItem()
 		},
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
 			r := fittingData[lii]
-			item := co.(*appwidget.TypeAttributeItem)
+			item := co.(*TypeAttributeItem)
 			item.SetRegular(r.icon, r.label, r.value)
 		},
 	)
@@ -2253,7 +2252,7 @@ func (a *inventoryTypeInfo) makeRequirementsTab(requiredSkills []requiredSkill) 
 				widget.NewLabel("Placeholder"),
 				layout.NewSpacer(),
 				widget.NewLabel("Check"),
-				appwidget.NewSkillLevel(),
+				newSkillLevel(),
 				widget.NewIcon(icons.QuestionmarkSvg),
 			)
 		},
@@ -2262,7 +2261,7 @@ func (a *inventoryTypeInfo) makeRequirementsTab(requiredSkills []requiredSkill) 
 			row := co.(*fyne.Container).Objects
 			skill := row[0].(*widget.Label)
 			text := row[2].(*widget.Label)
-			level := row[3].(*appwidget.SkillLevel)
+			level := row[3].(*skillLevel)
 			icon := row[4].(*widget.Icon)
 			skill.SetText(app.SkillDisplayName(o.name, o.requiredLevel))
 			if o.activeLevel == 0 && o.trainedLevel == 0 {

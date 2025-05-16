@@ -200,3 +200,10 @@ func makeSortButton(headers []headerDef, columns set.Set[int], sc *sortedColumns
 	setSortButton()
 	return b
 }
+
+// makeTopLabel returns a new empty label meant for the top bar on a screen.
+func makeTopLabel() *widget.Label {
+	l := widget.NewLabel("")
+	l.Wrapping = fyne.TextWrapWord
+	return l
+}

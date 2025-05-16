@@ -12,7 +12,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -30,7 +29,7 @@ type CharacterSkillQueue struct {
 
 func NewCharacterSkillQueue(u *BaseUI) *CharacterSkillQueue {
 	a := &CharacterSkillQueue{
-		top: appwidget.MakeTopLabel(),
+		top: makeTopLabel(),
 		sq:  app.NewCharacterSkillqueue(),
 		u:   u,
 	}
@@ -176,7 +175,7 @@ type SkillQueueItem struct {
 	duration   *widget.Label
 	progress   *widget.ProgressBar
 	name       *widget.Label
-	skillLevel *appwidget.SkillLevel
+	skillLevel *skillLevel
 	isMobile   bool
 }
 
@@ -188,7 +187,7 @@ func NewSkillQueueItem() *SkillQueueItem {
 		duration:   widget.NewLabel("duration"),
 		name:       name,
 		progress:   pb,
-		skillLevel: appwidget.NewSkillLevel(),
+		skillLevel: newSkillLevel(),
 		isMobile:   fyne.CurrentDevice().IsMobile(),
 	}
 	w.ExtendBaseWidget(w)

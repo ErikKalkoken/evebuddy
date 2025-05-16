@@ -13,7 +13,6 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -47,7 +46,7 @@ type Colonies struct {
 func NewColonies(u *BaseUI) *Colonies {
 	a := &Colonies{
 		planets: make([]*app.CharacterPlanet, 0),
-		top:     appwidget.MakeTopLabel(),
+		top:     makeTopLabel(),
 		u:       u,
 	}
 	a.ExtendBaseWidget(a)

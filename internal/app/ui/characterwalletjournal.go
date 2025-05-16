@@ -16,7 +16,6 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -60,7 +59,7 @@ type CharacterWalletJournal struct {
 func NewCharacterWalletJournal(u *BaseUI) *CharacterWalletJournal {
 	a := &CharacterWalletJournal{
 		entries: make([]walletJournalEntry, 0),
-		top:     appwidget.MakeTopLabel(),
+		top:     makeTopLabel(),
 		u:       u,
 	}
 	a.ExtendBaseWidget(a)

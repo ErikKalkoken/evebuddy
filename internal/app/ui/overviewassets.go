@@ -18,7 +18,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -77,7 +76,7 @@ func NewOverviewAssets(u *BaseUI) *OverviewAssets {
 		entry:          widget.NewEntry(),
 		found:          widget.NewLabel(""),
 		sortedColumns:  newSortedColumns(len(headers)),
-		total:          appwidget.MakeTopLabel(),
+		total:          makeTopLabel(),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)

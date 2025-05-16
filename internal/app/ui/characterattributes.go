@@ -14,7 +14,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -42,7 +41,7 @@ type CharacterAttributes struct {
 func NewCharacterAttributes(u *BaseUI) *CharacterAttributes {
 	w := &CharacterAttributes{
 		attributes: make([]attribute, 0),
-		top:        appwidget.MakeTopLabel(),
+		top:        makeTopLabel(),
 		u:          u,
 	}
 	w.list = w.makeAttributeList()

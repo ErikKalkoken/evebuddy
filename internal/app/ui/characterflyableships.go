@@ -22,8 +22,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/anthonynsimon/bild/effect"
-
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 )
 
 const (
@@ -277,7 +275,7 @@ func NewShipItem(eis *eveimageservice.EveImageService, cache *memcache.Cache, fa
 	lowRight := image.Point{128, 128}
 	image := canvas.NewImageFromImage(image.NewRGBA(image.Rectangle{upLeft, lowRight}))
 	image.FillMode = canvas.ImageFillContain
-	image.ScaleMode = appwidget.DefaultImageScaleMode
+	image.ScaleMode = defaultImageScaleMode
 	image.SetMinSize(fyne.NewSquareSize(128))
 	w := &ShipItem{
 		image:        image,

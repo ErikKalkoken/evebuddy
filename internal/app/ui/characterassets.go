@@ -21,7 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	ilayout "github.com/ErikKalkoken/evebuddy/internal/layout"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -55,7 +54,7 @@ func NewCharacterAssets(u *BaseUI) *CharacterAssets {
 		assets:       make([]*app.CharacterAsset, 0),
 		assetsBottom: widget.NewLabel(""),
 		locationPath: lp,
-		locationsTop: appwidget.MakeTopLabel(),
+		locationsTop: makeTopLabel(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)

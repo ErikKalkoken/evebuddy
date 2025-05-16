@@ -21,7 +21,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
@@ -132,7 +131,7 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		sortedColumns: newSortedColumnsWithDefault(len(headers), 4, sortDesc),
 		jobs:          make([]industryJob, 0),
 		jobsFiltered:  make([]industryJob, 0),
-		top:           appwidget.MakeTopLabel(),
+		top:           makeTopLabel(),
 		u:             u,
 	}
 	a.ExtendBaseWidget(a)

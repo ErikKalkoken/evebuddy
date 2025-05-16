@@ -15,7 +15,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/chartbuilder"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -38,7 +37,7 @@ type OverviewWealth struct {
 
 func NewOverviewWealth(u *BaseUI) *OverviewWealth {
 	a := &OverviewWealth{
-		top: appwidget.MakeTopLabel(),
+		top: makeTopLabel(),
 		u:   u,
 	}
 	a.ExtendBaseWidget(a)

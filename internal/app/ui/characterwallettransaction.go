@@ -12,7 +12,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -36,7 +35,7 @@ func NewCharacterWalletTransaction(u *BaseUI) *CharacterWalletTransaction {
 		{Text: "Where", Width: 350},
 	}
 	a := &CharacterWalletTransaction{
-		top:  appwidget.MakeTopLabel(),
+		top:  makeTopLabel(),
 		rows: make([]*app.CharacterWalletTransaction, 0),
 		u:    u,
 	}

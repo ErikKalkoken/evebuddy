@@ -32,7 +32,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
@@ -69,6 +68,9 @@ const (
 	characterSectionsUpdateTicker = 60 * time.Second
 	generalSectionsUpdateTicker   = 300 * time.Second
 )
+
+// Default ScaleMode for images
+var defaultImageScaleMode canvas.ImageScale
 
 // services represents a wrapper for passing the main services to functions.
 type services struct {
@@ -200,7 +202,7 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 
 	if u.isDesktop {
 		iwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
-		appwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
+		defaultImageScaleMode = canvas.ImageScaleFastest
 	}
 
 	u.characterAsset = NewCharacterAssets(u)

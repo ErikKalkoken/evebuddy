@@ -14,7 +14,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -30,7 +29,7 @@ type CharacterAugmentations struct {
 func NewCharacterAugmentations(u *BaseUI) *CharacterAugmentations {
 	a := &CharacterAugmentations{
 		implants: make([]*app.CharacterImplant, 0),
-		top:      appwidget.MakeTopLabel(),
+		top:      makeTopLabel(),
 		u:        u,
 	}
 	a.ExtendBaseWidget(a)
