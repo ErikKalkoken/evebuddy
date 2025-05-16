@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"log/slog"
 	"slices"
 
 	"fyne.io/fyne/v2"
@@ -307,7 +308,8 @@ func makeSortButton(headers []headerDef, columns set.Set[int], sc *columnSorter,
 		return h.Text
 	})
 	b := widget.NewButtonWithIcon("???", icons.BlankSvg, nil)
-	if len(headers) == 0 || sc.size() == 0 {
+	if len(headers) == 0 || sc.size() == 0 || columns.Size() == 0 || columns.Size() > len(headers) {
+		slog.Warn("makeSortButton called with invalid parameters")
 		return b // early exit when called without proper data
 	}
 	setSortButton := func() {

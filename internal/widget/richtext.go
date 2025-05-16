@@ -1,6 +1,10 @@
 package widget
 
-import "fyne.io/fyne/v2/widget"
+import (
+	"slices"
+
+	"fyne.io/fyne/v2/widget"
+)
 
 func NewRichTextSegmentFromText(s string, style ...widget.RichTextStyle) []widget.RichTextSegment {
 	seg := &widget.TextSegment{Text: s}
@@ -16,8 +20,10 @@ func SetRichText(w *widget.RichText, segs ...widget.RichTextSegment) {
 	w.Refresh()
 }
 
-func RichTextSegmentsSetInline(s []widget.RichTextSegment) []widget.RichTextSegment {
-	for _, x := range s {
+// InlineRichTextSegments returns an inlined copy of the segments, so they are rendered in the same line.
+func InlineRichTextSegments(s []widget.RichTextSegment) []widget.RichTextSegment {
+	s2 := slices.Clone(s)
+	for _, x := range s2[:len(s2)-1] {
 		t, ok := x.(*widget.TextSegment)
 		if !ok {
 			continue
