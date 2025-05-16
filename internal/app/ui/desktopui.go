@@ -290,7 +290,7 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 	)
 	homeNav.OnSelectItem = func(it *iwidget.NavItem) {
 		if it == allAssets {
-			u.overviewAssets.Focus()
+			u.overviewAssets.focus()
 		}
 	}
 	homeNav.MinWidth = minNavCharacterWidth

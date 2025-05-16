@@ -263,7 +263,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 			theme.NewThemedResource(icons.Inventory2Svg),
 			func() {
 				homeNav.Push(iwidget.NewAppBar("Assets", u.overviewAssets))
-				u.overviewAssets.Focus()
+				u.overviewAssets.focus()
 			},
 		),
 		iwidget.NewListItemWithIcon(

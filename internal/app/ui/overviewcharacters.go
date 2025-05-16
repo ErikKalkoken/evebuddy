@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
@@ -128,11 +129,11 @@ func NewOverviewCharacters(u *BaseUI) *OverviewCharacters {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTableWithSort(headers, &a.rows, makeCell, a.columnSorter, a.filterRows, func(_ int, oc characterRow) {
+		a.body = makeDataTableWithSort(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, oc characterRow) {
 			u.ShowInfoWindow(app.EveEntityCharacter, oc.id)
 		})
 	} else {
-		a.body = makeDataList(headers, &a.rows, makeCell, func(oc characterRow) {
+		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, func(oc characterRow) {
 			u.ShowInfoWindow(app.EveEntityCharacter, oc.id)
 		})
 	}
@@ -150,9 +151,12 @@ func NewOverviewCharacters(u *BaseUI) *OverviewCharacters {
 }
 
 func (a *OverviewCharacters) CreateRenderer() fyne.WidgetRenderer {
-	filters := container.NewHBox(a.selectAlliance, a.selectCorporation, a.sortButton)
+	filters := container.NewHBox(a.selectAlliance, a.selectCorporation)
+	if !a.u.isDesktop {
+		filters.Add(a.sortButton)
+	}
 	c := container.NewBorder(
-		container.NewVBox(a.top, filters),
+		container.NewVBox(a.top, container.NewHScroll(filters)),
 		nil,
 		nil,
 		nil,
@@ -181,6 +185,24 @@ func (a *OverviewCharacters) filterRows(sortCol int) {
 			switch sortCol {
 			case 0:
 				x = strings.Compare(a.name, b.name)
+			case 1:
+				x = strings.Compare(a.CorporationName(), b.CorporationName())
+			case 2:
+				x = strings.Compare(a.AllianceName(), b.AllianceName())
+			case 3:
+				x = cmp.Compare(a.security, b.security)
+			case 4:
+				x = cmp.Compare(a.unreadCount.ValueOrZero(), b.unreadCount.ValueOrZero())
+			case 5:
+				x = cmp.Compare(a.walletBalance.ValueOrZero(), b.walletBalance.ValueOrZero())
+			case 6:
+				x = cmp.Compare(a.assetValue.ValueOrZero(), b.assetValue.ValueOrZero())
+			case 7:
+				x = a.lastLoginAt.ValueOrZero().Compare(b.lastLoginAt.ValueOrZero())
+			case 8:
+				x = strings.Compare(a.home.DisplayName(), b.home.DisplayName())
+			case 9:
+				x = a.birthday.Compare(b.birthday)
 			}
 			if dir == sortAsc {
 				return x
@@ -234,7 +256,7 @@ func (a *OverviewCharacters) update() {
 	})
 	fyne.Do(func() {
 		a.rows = rows
-		a.body.Refresh()
+		a.filterRows(-1)
 	})
 }
 

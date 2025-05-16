@@ -55,7 +55,7 @@ func (r cloneRow) jumps() string {
 	return fmt.Sprint(len(r.route) - 1)
 }
 
-type OverviewClones struct {
+type overviewClones struct {
 	widget.BaseWidget
 
 	body              fyne.CanvasObject
@@ -74,7 +74,7 @@ type OverviewClones struct {
 	selectSolarSystem *selectFilter
 }
 
-func NewOverviewClones(u *BaseUI) *OverviewClones {
+func newOverviewClones(u *BaseUI) *overviewClones {
 	headers := []headerDef{
 		{Text: "Location", Width: columnWidthLocation},
 		{Text: "Region", Width: columnWidthRegion, SortDisabled: true},
@@ -82,7 +82,7 @@ func NewOverviewClones(u *BaseUI) *OverviewClones {
 		{Text: "Character", Width: columnWidthCharacter},
 		{Text: "Jumps", Width: 100},
 	}
-	a := &OverviewClones{
+	a := &overviewClones{
 		columnSorter: newColumnSorter(headers),
 		originLabel:  widget.NewRichTextWithText("(not set)"),
 		rows:         make([]cloneRow, 0),
@@ -164,7 +164,7 @@ func NewOverviewClones(u *BaseUI) *OverviewClones {
 	return a
 }
 
-func (a *OverviewClones) CreateRenderer() fyne.WidgetRenderer {
+func (a *overviewClones) CreateRenderer() fyne.WidgetRenderer {
 	route := container.NewBorder(
 		nil,
 		nil,
@@ -172,15 +172,15 @@ func (a *OverviewClones) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		a.originLabel,
 	)
-	config := container.NewHBox(a.selectRegion, a.selectSolarSystem, a.selectOwner)
+	filters := container.NewHBox(a.selectRegion, a.selectSolarSystem, a.selectOwner)
 	if !a.u.isDesktop {
-		config.Add(a.sortButton)
+		filters.Add(a.sortButton)
 	}
 	c := container.NewBorder(
 		container.NewVBox(
 			a.top,
 			route,
-			config,
+			container.NewHScroll(filters),
 		),
 		nil,
 		nil,
@@ -190,7 +190,7 @@ func (a *OverviewClones) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *OverviewClones) update() {
+func (a *overviewClones) update() {
 	rows := make([]cloneRow, 0)
 	t, i, err := func() (string, widget.Importance, error) {
 		rows2, err := a.fetchRows(a.u.services())
@@ -223,7 +223,7 @@ func (a *OverviewClones) update() {
 	})
 }
 
-func (*OverviewClones) fetchRows(s services) ([]cloneRow, error) {
+func (*overviewClones) fetchRows(s services) ([]cloneRow, error) {
 	ctx := context.Background()
 	oo, err := s.cs.ListAllJumpClones(ctx)
 	if err != nil {
@@ -238,7 +238,7 @@ func (*OverviewClones) fetchRows(s services) ([]cloneRow, error) {
 	return rows, nil
 }
 
-func (a *OverviewClones) updateRoutes() {
+func (a *overviewClones) updateRoutes() {
 	if a.origin == nil {
 		return
 	}
@@ -277,7 +277,7 @@ func (a *OverviewClones) updateRoutes() {
 	})
 }
 
-func (a *OverviewClones) setOrigin(w fyne.Window) {
+func (a *overviewClones) setOrigin(w fyne.Window) {
 	showErrorDialog := func(search string, err error) {
 		slog.Error("Failed to resolve names", "search", search, "error", err)
 		a.u.ShowErrorDialog("Something went wrong", err, w)
@@ -365,7 +365,7 @@ func (a *OverviewClones) setOrigin(w fyne.Window) {
 	note.Importance = widget.LowImportance
 	c := container.NewBorder(
 		container.NewBorder(
-			nil,
+			container.NewHBox(widget.NewLabel("Route preference:"), routePref),
 			nil,
 			nil,
 			widget.NewButton("Cancel", func() {
@@ -373,10 +373,7 @@ func (a *OverviewClones) setOrigin(w fyne.Window) {
 			}),
 			entry,
 		),
-		container.NewVBox(
-			container.NewHBox(widget.NewLabel("Route preference:"), routePref),
-			note,
-		),
+		note,
 		nil,
 		nil,
 		list,
@@ -387,7 +384,7 @@ func (a *OverviewClones) setOrigin(w fyne.Window) {
 	w.Canvas().Focus(entry)
 }
 
-func (a *OverviewClones) filterRows(sortCol int) {
+func (a *overviewClones) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
 	a.selectOwner.applyFilter(func(selected string) {
@@ -444,7 +441,7 @@ func (a *OverviewClones) filterRows(sortCol int) {
 	a.body.Refresh()
 }
 
-func (a *OverviewClones) showRoute(r cloneRow) {
+func (a *overviewClones) showRoute(r cloneRow) {
 	col := kxlayout.NewColumns(60)
 	list := widget.NewList(
 		func() int {
@@ -521,7 +518,7 @@ func (a *OverviewClones) showRoute(r cloneRow) {
 	w.Show()
 }
 
-func (a *OverviewClones) showClone(r cloneRow) {
+func (a *overviewClones) showClone(r cloneRow) {
 	clone, err := a.u.cs.GetJumpClone(context.Background(), r.c.Character.ID, r.c.CloneID)
 	if err != nil {
 		slog.Error("show clone", "error", err)

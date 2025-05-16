@@ -107,9 +107,9 @@ type BaseUI struct {
 	gameSearch                 *GameSearch
 	industryJobs               *industryJobs
 	manageCharacters           *ManageCharacters
-	overviewAssets             *OverviewAssets
+	overviewAssets             *overviewAssets
 	overviewCharacters         *OverviewCharacters
-	overviewClones             *OverviewClones
+	overviewClones             *overviewClones
 	colonies                   *Colonies
 	overviewLocations          *OverviewLocations
 	overviewTraining           *OverviewTraining
@@ -215,9 +215,9 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 	u.gameSearch = NewGameSearch(u)
 	u.industryJobs = NewIndustryJobs(u)
 	u.manageCharacters = NewManageCharacters(u)
-	u.overviewAssets = NewOverviewAssets(u)
+	u.overviewAssets = newOverviewAssets(u)
 	u.overviewCharacters = NewOverviewCharacters(u)
-	u.overviewClones = NewOverviewClones(u)
+	u.overviewClones = newOverviewClones(u)
 	u.colonies = NewColonies(u)
 	u.overviewLocations = NewOverviewLocations(u)
 	u.overviewTraining = NewOverviewTraining(u)

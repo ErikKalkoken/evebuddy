@@ -17,6 +17,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -482,5 +483,11 @@ func (w *selectFilter) applyFilter(f func(selected string)) {
 }
 
 func (w *selectFilter) setOptions(seq iter.Seq[string]) {
-	w.SetOptions(slices.Concat([]string{w.anyOption}, slices.Sorted(set.Collect(seq).All())))
+	w.SetOptions(
+		slices.Concat([]string{w.anyOption},
+			slices.Sorted(
+				set.Collect(
+					xiter.Filter(seq, func(s string) bool {
+						return s != ""
+					})).All())))
 }
