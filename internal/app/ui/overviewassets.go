@@ -75,7 +75,7 @@ func NewOverviewAssets(u *BaseUI) *OverviewAssets {
 		entry:        widget.NewEntry(),
 		found:        widget.NewLabel(""),
 		rowsFiltered: make([]assetRow, 0),
-		columnSorter: newColumnSorter(len(headers)),
+		columnSorter: newColumnSorter(headers),
 		total:        makeTopLabel(),
 		u:            u,
 	}

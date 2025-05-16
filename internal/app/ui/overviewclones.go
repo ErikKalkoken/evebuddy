@@ -77,13 +77,13 @@ type OverviewClones struct {
 func NewOverviewClones(u *BaseUI) *OverviewClones {
 	headers := []headerDef{
 		{Text: "Location", Width: columnWidthLocation},
-		{Text: "Region", Width: columnWidthRegion},
+		{Text: "Region", Width: columnWidthRegion, SortDisabled: true},
 		{Text: "Impl.", Width: 100},
 		{Text: "Character", Width: columnWidthCharacter},
 		{Text: "Jumps", Width: 100},
 	}
 	a := &OverviewClones{
-		columnSorter: newColumnSorter(len(headers)),
+		columnSorter: newColumnSorter(headers),
 		originLabel:  widget.NewRichTextWithText("(not set)"),
 		rows:         make([]cloneRow, 0),
 		rowsFiltered: make([]cloneRow, 0),

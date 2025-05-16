@@ -128,7 +128,7 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		{Text: "Installer", Width: columnWidthCharacter},
 	}
 	a := &industryJobs{
-		columnSorter: newColumnSorterWithInit(len(headers), 4, sortDesc),
+		columnSorter: newColumnSorterWithInit(headers, 4, sortDesc),
 		rows:         make([]industryJobRow, 0),
 		rowsFiltered: make([]industryJobRow, 0),
 		top:          makeTopLabel(),

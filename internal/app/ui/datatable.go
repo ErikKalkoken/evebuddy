@@ -12,26 +12,28 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
-	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
 type sortDir uint
 
 const (
-	sortOff sortDir = iota
+	sortNone sortDir = iota
+	sortOff
 	sortAsc
 	sortDesc
 )
 
 type headerDef struct {
-	Text    string
-	Width   float32
-	Refresh bool
+	Refresh      bool
+	SortDisabled bool
+	Text         string
+	Width        float32
 }
 
 func maxHeaderWidth(headers []headerDef) float32 {
@@ -123,31 +125,48 @@ func makeDataTableWithSort[S ~[]E, E any](
 	)
 	t.ShowHeaderRow = true
 	t.StickyColumnCount = 1
-	iconSortAsc := theme.NewPrimaryThemedResource(icons.SortAscendingSvg)
-	iconSortDesc := theme.NewPrimaryThemedResource(icons.SortDescendingSvg)
+	iconNone := theme.NewThemedResource(icons.BlankSvg)
 	iconSortOff := theme.NewThemedResource(icons.SortSvg)
 	t.CreateHeader = func() fyne.CanvasObject {
 		icon := widget.NewIcon(iconSortOff)
-		label := kxwidget.NewTappableLabel("Template", nil)
-		return container.NewBorder(nil, nil, nil, icon, label)
+		actionLabel := kxwidget.NewTappableLabel("Template", nil)
+		label := widget.NewLabel("Template")
+		return container.NewBorder(nil, nil, nil, icon, container.NewStack(actionLabel, label))
+	}
+	iconMap := map[sortDir]fyne.Resource{
+		sortOff:  iconSortOff,
+		sortAsc:  theme.NewPrimaryThemedResource(icons.SortAscendingSvg),
+		sortDesc: theme.NewPrimaryThemedResource(icons.SortDescendingSvg),
 	}
 	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
 		h := headers[tci.Col]
 		row := co.(*fyne.Container).Objects
-		label := row[0].(*kxwidget.TappableLabel)
-		label.OnTapped = func() {
+
+		actionLabel := row[0].(*fyne.Container).Objects[0].(*kxwidget.TappableLabel)
+		label := row[0].(*fyne.Container).Objects[1].(*widget.Label)
+		icon := row[1].(*widget.Icon)
+
+		dir := sortedColumns.column(tci.Col)
+		if dir == sortNone {
+			label.SetText(h.Text)
+			label.Show()
+			actionLabel.Hide()
+			icon.Hide()
+			return
+		}
+		actionLabel.OnTapped = func() {
 			filterRows(tci.Col)
 		}
-		label.SetText(h.Text)
-		icon := row[1].(*widget.Icon)
-		switch sortedColumns.column(tci.Col) {
-		case sortOff:
-			icon.SetResource(iconSortOff)
-		case sortAsc:
-			icon.SetResource(iconSortAsc)
-		case sortDesc:
-			icon.SetResource(iconSortDesc)
+		actionLabel.SetText(h.Text)
+		actionLabel.Show()
+		icon.Show()
+		label.Hide()
+
+		r, ok := iconMap[dir]
+		if !ok {
+			r = iconNone
 		}
+		icon.SetResource(r)
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
 		defer t.UnselectAll()
@@ -245,16 +264,21 @@ func makeDataList[S ~[]E, E any](
 // columnSorter represents an ordered list of columns which can be sorted.
 type columnSorter struct {
 	cols       []sortDir
+	headers    []headerDef
 	sortButton *sortButton
 }
 
-func newColumnSorter(n int) *columnSorter {
-	cs := &columnSorter{cols: make([]sortDir, n)}
+func newColumnSorter(headers []headerDef) *columnSorter {
+	cs := &columnSorter{
+		cols:    make([]sortDir, len(headers)),
+		headers: headers,
+	}
+	cs.reset()
 	return cs
 }
 
-func newColumnSorterWithInit(n int, idx int, dir sortDir) *columnSorter {
-	cs := newColumnSorter(n)
+func newColumnSorterWithInit(headers []headerDef, idx int, dir sortDir) *columnSorter {
+	cs := newColumnSorter(headers)
 	cs.set(idx, dir)
 	return cs
 }
@@ -277,10 +301,16 @@ func (cs *columnSorter) current() (int, sortDir) {
 	return -1, sortOff
 }
 
-// reset clears all columns.
+// reset sets all columns to their initial sort direction.
 func (cs *columnSorter) reset() {
 	for i := range cs.cols {
-		cs.cols[i] = sortOff
+		var dir sortDir
+		if cs.headers[i].SortDisabled {
+			dir = sortNone
+		} else {
+			dir = sortOff
+		}
+		cs.cols[i] = dir
 	}
 }
 
@@ -302,11 +332,15 @@ func (cs *columnSorter) sort(idx int, f func(sortCol int, dir sortDir)) {
 	var dir sortDir
 	if idx >= 0 {
 		dir = cs.cols[idx]
-		dir++
-		if dir > sortDesc {
-			dir = sortOff
+		if dir == sortNone {
+			return
+		} else {
+			dir++
+			if dir > sortDesc {
+				dir = sortOff
+			}
+			cs.set(idx, dir)
 		}
-		cs.set(idx, dir)
 	} else {
 		idx, dir = cs.current()
 	}
@@ -331,7 +365,7 @@ func (cs *columnSorter) newSortButton(headers []headerDef, columns set.Set[int],
 		col, dir := cs.current()
 		var fields []string
 		for i, h := range headers {
-			if columns.Contains(i) {
+			if !h.SortDisabled && columns.Contains(i) {
 				fields = append(fields, h.Text)
 			}
 		}
