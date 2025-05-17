@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -13,101 +15,285 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-// type colonyRow struct {
-// 	character     string
-// 	due           string
-// 	dueColor      fyne.ThemeColorName
-// 	extracting    string
-// 	isExpired     bool
-// 	planet        string
-// 	planetType    app.EntityShort[int32]
-// 	producing     string
-// 	region        app.EntityShort[int32]
-// 	security      string
-// 	securityColor fyne.ThemeColorName
-// 	solarSystemID int32
-// 	characterID   int32
-// }
+const (
+	colonyStatusAny        = "Any status"
+	colonyStatusExtracting = "Extracting"
+	colonyStatusOffline    = "Offline"
+)
 
-type Colonies struct {
+type colonyRow struct {
+	characterID     int32
+	due             time.Time
+	dueRT           []widget.RichTextSegment
+	isExpired       bool
+	extracting      set.Set[string]
+	extractingText  string
+	name            string
+	nameRT          []widget.RichTextSegment
+	ownerName       string
+	planetID        int32
+	producing       set.Set[string]
+	producingText   string
+	regionName      string
+	solarSystemName string
+	typeName        string
+}
+
+type colonies struct {
 	widget.BaseWidget
 
 	OnUpdate func(total, expired int)
 
-	body    fyne.CanvasObject
-	planets []*app.CharacterPlanet
-	top     *widget.Label
-	u       *BaseUI
+	body              fyne.CanvasObject
+	columnSorter      *columnSorter
+	rows              []colonyRow
+	rowsFiltered      []colonyRow
+	selectStatus      *widget.Select
+	selectExtracting  *selectFilter
+	selectOwner       *selectFilter
+	selectProducing   *selectFilter
+	selectRegion      *selectFilter
+	selectSolarSystem *selectFilter
+	selectType        *selectFilter
+	sortButton        *sortButton
+	top               *widget.Label
+	u                 *BaseUI
 }
 
-func NewColonies(u *BaseUI) *Colonies {
-	a := &Colonies{
-		planets: make([]*app.CharacterPlanet, 0),
-		top:     makeTopLabel(),
-		u:       u,
-	}
-	a.ExtendBaseWidget(a)
+func NewColonies(u *BaseUI) *colonies {
 	headers := []headerDef{
 		{Text: "Planet", Width: 150},
 		{Text: "Type", Width: 100},
-		{Text: "Extracting", Width: 200},
+		{Text: "Extracting", Width: 200, NotSortable: true},
 		{Text: "Due", Width: 150},
-		{Text: "Producing", Width: 200},
+		{Text: "Producing", Width: 200, NotSortable: true},
 		{Text: "Region", Width: 150},
 		{Text: "Character", Width: columnWidthCharacter},
 	}
-	makeCell := func(col int, r *app.CharacterPlanet) []widget.RichTextSegment {
+	a := &colonies{
+		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
+		rows:         make([]colonyRow, 0),
+		rowsFiltered: make([]colonyRow, 0),
+		top:          makeTopLabel(),
+		u:            u,
+	}
+	a.ExtendBaseWidget(a)
+
+	makeCell := func(col int, r colonyRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			return r.NameRichText()
+			return r.nameRT
 		case 1:
-			return iwidget.NewRichTextSegmentFromText(r.EvePlanet.TypeDisplay())
+			return iwidget.NewRichTextSegmentFromText(r.typeName)
 		case 2:
-			return iwidget.NewRichTextSegmentFromText(r.Extracting())
+			return iwidget.NewRichTextSegmentFromText(r.extractingText)
 		case 3:
-			return r.DueRichText()
+			return r.dueRT
 		case 4:
-			return iwidget.NewRichTextSegmentFromText(r.Producing())
+			return iwidget.NewRichTextSegmentFromText(r.producingText)
 		case 5:
-			return iwidget.NewRichTextSegmentFromText(r.EvePlanet.SolarSystem.Constellation.Region.Name)
+			return iwidget.NewRichTextSegmentFromText(r.regionName)
 		case 6:
-			return iwidget.NewRichTextSegmentFromText(a.u.scs.CharacterName(r.CharacterID))
+			return iwidget.NewRichTextSegmentFromText(r.ownerName)
 		}
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTable(headers, &a.planets, makeCell, func(_ int, r *app.CharacterPlanet) {
+		a.body = makeDataTableWithSort(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r colonyRow) {
 			a.showColony(r)
 		})
 	} else {
-		a.body = makeDataList(headers, &a.planets, makeCell, a.showColony)
+		a.body = makeDataList(headers, &a.rows, makeCell, a.showColony)
 	}
+
+	a.selectExtracting = newSelectFilter("All extracting", func() {
+		a.filterRows(-1)
+	})
+	a.selectOwner = newSelectFilter("Any owner", func() {
+		a.filterRows(-1)
+	})
+	a.selectProducing = newSelectFilter("All producting", func() {
+		a.filterRows(-1)
+	})
+	a.selectRegion = newSelectFilter("Any region", func() {
+		a.filterRows(-1)
+	})
+	a.selectSolarSystem = newSelectFilter("Any system", func() {
+		a.filterRows(-1)
+	})
+
+	a.selectStatus = widget.NewSelect([]string{
+		colonyStatusAny,
+		colonyStatusExtracting,
+		colonyStatusOffline,
+	}, func(string) {
+		a.filterRows(-1)
+	})
+	a.selectStatus.Selected = colonyStatusAny
+
+	a.selectType = newSelectFilter("Any type", func() {
+		a.filterRows(-1)
+	})
+
+	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+		a.filterRows(-1)
+	}, a.u.window)
 	return a
 }
 
-func (a *Colonies) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(a.top, nil, nil, nil, a.body)
+func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
+	filter := container.NewHBox(
+		a.selectSolarSystem,
+		a.selectType,
+		a.selectExtracting,
+		a.selectStatus,
+		a.selectProducing,
+		a.selectRegion,
+		a.selectOwner,
+	)
+	filter.Add(a.sortButton)
+	c := container.NewBorder(container.NewHScroll(filter), nil, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *Colonies) update() {
+func (a *colonies) filterRows(sortCol int) {
+	rows := slices.Clone(a.rows)
+	// filter
+	a.selectExtracting.applyFilter(func(selected string) {
+		rows = xslices.Filter(rows, func(r colonyRow) bool {
+			return r.extracting.Contains(selected)
+		})
+	})
+	a.selectOwner.applyFilter(func(selected string) {
+		rows = xslices.Filter(rows, func(r colonyRow) bool {
+			return r.ownerName == selected
+		})
+	})
+	a.selectProducing.applyFilter(func(selected string) {
+		rows = xslices.Filter(rows, func(r colonyRow) bool {
+			return r.producing.Contains(selected)
+		})
+	})
+	a.selectRegion.applyFilter(func(selected string) {
+		rows = xslices.Filter(rows, func(r colonyRow) bool {
+			return r.regionName == selected
+		})
+	})
+	a.selectSolarSystem.applyFilter(func(selected string) {
+		rows = xslices.Filter(rows, func(r colonyRow) bool {
+			return r.solarSystemName == selected
+		})
+	})
+	if x := a.selectStatus.Selected; x != colonyStatusAny {
+		rows = xslices.Filter(rows, func(r colonyRow) bool {
+			switch x {
+			case colonyStatusExtracting:
+				return !r.isExpired
+			case colonyStatusOffline:
+				return r.isExpired
+			}
+			return false
+		})
+	}
+	a.selectType.applyFilter(func(selected string) {
+		rows = xslices.Filter(rows, func(r colonyRow) bool {
+			return r.typeName == selected
+		})
+	})
+	// sort
+	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+		slices.SortFunc(rows, func(a, b colonyRow) int {
+			var x int
+			switch sortCol {
+			case 0:
+				x = strings.Compare(a.name, b.name)
+			case 1:
+				x = strings.Compare(a.typeName, b.typeName)
+			case 3:
+				x = a.due.Compare(b.due)
+			case 5:
+				x = strings.Compare(a.regionName, b.regionName)
+			case 6:
+				x = strings.Compare(a.ownerName, b.ownerName)
+			}
+			if dir == sortAsc {
+				return x
+			} else {
+				return -1 * x
+			}
+		})
+	})
+	a.selectOwner.setOptions(xiter.MapSlice(rows, func(r colonyRow) string {
+		return r.ownerName
+	}))
+	a.selectRegion.setOptions(xiter.MapSlice(rows, func(r colonyRow) string {
+		return r.regionName
+	}))
+	a.selectSolarSystem.setOptions(xiter.MapSlice(rows, func(r colonyRow) string {
+		return r.solarSystemName
+	}))
+	a.selectType.setOptions(xiter.MapSlice(rows, func(r colonyRow) string {
+		return r.typeName
+	}))
+	var extracting, producing set.Set[string]
+	for _, r := range rows {
+		extracting.AddSeq(r.extracting.All())
+		producing.AddSeq(r.producing.All())
+	}
+	a.selectExtracting.setOptions(extracting.All())
+	a.selectProducing.setOptions(producing.All())
+	a.rowsFiltered = rows
+	a.body.Refresh()
+}
+
+func (a *colonies) update() {
 	var s string
 	var i widget.Importance
 	var total, expired int
-	planets := make([]*app.CharacterPlanet, 0)
-	planets2, err := a.u.cs.ListAllPlanets(context.Background())
+	rows := make([]colonyRow, 0)
+	planets, err := a.u.cs.ListAllPlanets(context.Background())
 	if err != nil {
 		slog.Error("Failed to refresh colonies UI", "err", err)
 		s = "ERROR"
 		i = widget.DangerImportance
 	} else {
-		planets = planets2
 		total = len(planets)
-		for _, c := range a.planets {
-			if c.IsExpired() {
+		for _, p := range planets {
+			extracting := p.ExtractedTypeNames()
+			producing := p.ProducedSchematicNames()
+			r := colonyRow{
+				characterID:     p.CharacterID,
+				due:             p.ExtractionsExpiryTime(),
+				dueRT:           p.DueRichText(),
+				extracting:      set.Of(extracting...),
+				isExpired:       p.IsExpired(),
+				name:            p.EvePlanet.Name,
+				nameRT:          p.NameRichText(),
+				ownerName:       a.u.scs.CharacterName(p.CharacterID),
+				planetID:        p.EvePlanet.ID,
+				producing:       set.Of(producing...),
+				regionName:      p.EvePlanet.SolarSystem.Constellation.Region.Name,
+				solarSystemName: p.EvePlanet.SolarSystem.Name,
+				typeName:        p.EvePlanet.TypeDisplay(),
+			}
+			if len(extracting) == 0 {
+				r.extractingText = "-"
+			} else {
+				r.extractingText = strings.Join(extracting, ", ")
+			}
+			if len(producing) == 0 {
+				r.producingText = "-"
+			} else {
+				r.producingText = strings.Join(producing, ", ")
+			}
+			rows = append(rows, r)
+			if p.IsExpired() {
 				expired++
 			}
 		}
@@ -122,16 +308,19 @@ func (a *Colonies) update() {
 		a.top.Refresh()
 	})
 	fyne.Do(func() {
-		a.planets = planets
-		a.body.Refresh()
+		a.rows = rows
+		a.filterRows(-1)
 	})
 	if a.OnUpdate != nil {
 		a.OnUpdate(total, expired)
 	}
 }
 
-func (a *Colonies) showColony(cp *app.CharacterPlanet) {
-	characterName := a.u.scs.CharacterName(cp.CharacterID)
+func (a *colonies) showColony(r colonyRow) {
+	cp, err := a.u.cs.GetPlanet(context.Background(), r.characterID, r.planetID)
+	if err != nil {
+		panic(err)
+	}
 
 	fi := []*widget.FormItem{
 		widget.NewFormItem("Planet", iwidget.NewTappableRichText(
@@ -149,7 +338,7 @@ func (a *Colonies) showColony(cp *app.CharacterPlanet) {
 				a.u.ShowEveEntityInfoWindow(cp.EvePlanet.SolarSystem.Constellation.Region.ToEveEntity())
 			})),
 		widget.NewFormItem("Installations", widget.NewLabel(fmt.Sprint(len(cp.Pins)))),
-		widget.NewFormItem("Character", kxwidget.NewTappableLabel(characterName, func() {
+		widget.NewFormItem("Character", kxwidget.NewTappableLabel(r.ownerName, func() {
 			a.u.ShowInfoWindow(app.EveEntityCharacter, cp.CharacterID)
 		})),
 	}
@@ -206,7 +395,7 @@ func (a *Colonies) showColony(cp *app.CharacterPlanet) {
 	}
 	c := container.NewVBox(top, processes)
 
-	subTitle := fmt.Sprintf("%s - %s", cp.EvePlanet.Name, characterName)
+	subTitle := fmt.Sprintf("%s - %s", cp.EvePlanet.Name, r.ownerName)
 	w := a.u.makeDetailWindow("Colony", subTitle, c)
 	w.Show()
 }

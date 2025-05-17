@@ -1019,14 +1019,6 @@ func (cp CharacterPlanet) ExtractedTypeNames() []string {
 	})
 }
 
-func (cp CharacterPlanet) Extracting() string {
-	extractions := strings.Join(cp.ExtractedTypeNames(), ", ")
-	if extractions == "" {
-		extractions = "-"
-	}
-	return extractions
-}
-
 // ExtractionsExpiryTime returns the final expiry time for all extractions.
 // When no expiry data is found it will return a zero time.
 func (cp CharacterPlanet) ExtractionsExpiryTime() time.Time {
@@ -1073,14 +1065,6 @@ func (cp CharacterPlanet) IsExpired() bool {
 		return false
 	}
 	return due.Before(time.Now())
-}
-
-func (cp CharacterPlanet) Producing() string {
-	productions := strings.Join(cp.ProducedSchematicNames(), ", ")
-	if productions == "" {
-		productions = "-"
-	}
-	return productions
 }
 
 func (cp CharacterPlanet) DueRichText() []widget.RichTextSegment {
