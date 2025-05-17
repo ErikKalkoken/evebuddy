@@ -109,7 +109,7 @@ func newColonies(u *BaseUI) *colonies {
 			a.showColony(r)
 		})
 	} else {
-		a.body = makeDataList(headers, &a.rows, makeCell, a.showColony)
+		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, a.showColony)
 	}
 
 	a.selectExtracting = newSelectFilter("All extracting", func() {

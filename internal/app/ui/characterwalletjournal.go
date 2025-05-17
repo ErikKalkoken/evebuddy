@@ -118,7 +118,7 @@ func newCharacterWalletJournal(u *BaseUI) *characterWalletJournal {
 			showReasonDialog(r)
 		})
 	} else {
-		a.body = makeDataList(headers, &a.rows, makeCell, showReasonDialog)
+		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, showReasonDialog)
 	}
 
 	a.selectType = newSelectFilter("Any type", func() {
