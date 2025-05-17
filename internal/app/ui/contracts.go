@@ -100,7 +100,7 @@ func newContracts(u *BaseUI) *contracts {
 	}
 	a.ExtendBaseWidget(a)
 	if a.u.isDesktop {
-		a.body = makeDataTableWithSort(headers, &a.rowsFiltered,
+		a.body = makeDataTable(headers, &a.rowsFiltered,
 			func(col int, r contractRow) []widget.RichTextSegment {
 				switch col {
 				case 0:

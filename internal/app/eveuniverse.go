@@ -610,6 +610,10 @@ type EveLocationShort struct {
 	SecurityStatus optional.Optional[float32]
 }
 
+func (l EveLocationShort) DisplayName() string {
+	return l.Name.ValueOrFallback("?")
+}
+
 func (l EveLocationShort) DisplayRichText() []widget.RichTextSegment {
 	var s []widget.RichTextSegment
 	if !l.SecurityStatus.IsEmpty() {

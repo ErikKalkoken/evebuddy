@@ -3,6 +3,7 @@ package widget
 import (
 	"slices"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -20,7 +21,8 @@ func SetRichText(w *widget.RichText, segs ...widget.RichTextSegment) {
 	w.Refresh()
 }
 
-// InlineRichTextSegments returns an inlined copy of the segments, so they are rendered in the same line.
+// InlineRichTextSegments returns an inlined copy of the segments,
+// so they are all rendered in the same line.
 func InlineRichTextSegments(segs ...[]widget.RichTextSegment) []widget.RichTextSegment {
 	seg := slices.Concat(segs...)
 	for _, x := range seg[:len(seg)-1] {
@@ -33,15 +35,15 @@ func InlineRichTextSegments(segs ...[]widget.RichTextSegment) []widget.RichTextS
 	return seg
 }
 
-// StyleRichTextSegments returns a copy of the segments with the applied style.
-func StyleRichTextSegments(style widget.RichTextStyle, segs ...[]widget.RichTextSegment) []widget.RichTextSegment {
+// AlignRichTextSegments returns a copy where all segmens are aligned as given.
+func AlignRichTextSegments(align fyne.TextAlign, segs ...[]widget.RichTextSegment) []widget.RichTextSegment {
 	seg := slices.Concat(segs...)
-	for _, x := range seg[:len(seg)-1] {
+	for _, x := range seg {
 		t, ok := x.(*widget.TextSegment)
 		if !ok {
 			continue
 		}
-		t.Style = style
+		t.Style.Alignment = align
 	}
 	return seg
 }

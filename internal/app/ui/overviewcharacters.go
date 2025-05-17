@@ -128,7 +128,7 @@ func newOverviewCharacters(u *BaseUI) *OverviewCharacters {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTableWithSort(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, oc characterRow) {
+		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, oc characterRow) {
 			u.ShowInfoWindow(app.EveEntityCharacter, oc.id)
 		})
 	} else {

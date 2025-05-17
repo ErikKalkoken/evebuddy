@@ -113,7 +113,7 @@ func newOverviewClones(u *BaseUI) *overviewClones {
 		return s
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTableWithSort(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(c int, r cloneRow) {
+		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(c int, r cloneRow) {
 			switch c {
 			case 0:
 				a.u.ShowLocationInfoWindow(r.c.Location.ID)

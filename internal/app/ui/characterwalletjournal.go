@@ -114,7 +114,7 @@ func newCharacterWalletJournal(u *BaseUI) *characterWalletJournal {
 		}
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTableWithSort(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r walletJournalRow) {
+		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r walletJournalRow) {
 			showReasonDialog(r)
 		})
 	} else {
@@ -181,16 +181,16 @@ func (a *characterWalletJournal) filterRows(sortCol int) {
 
 func (a *characterWalletJournal) update() {
 	var err error
-	entries := make([]walletJournalRow, 0)
+	rows := make([]walletJournalRow, 0)
 	characterID := a.u.currentCharacterID()
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionWalletJournal)
 	if hasData {
-		entries2, err2 := a.fetchRows(characterID, a.u.services())
+		rows2, err2 := a.fetchRows(characterID, a.u.services())
 		if err2 != nil {
 			slog.Error("Failed to refresh wallet journal UI", "err", err2)
 			err = err2
 		} else {
-			entries = entries2
+			rows = rows2
 		}
 	}
 	t, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
@@ -208,7 +208,7 @@ func (a *characterWalletJournal) update() {
 		a.top.Refresh()
 	})
 	fyne.Do(func() {
-		a.rows = entries
+		a.rows = rows
 		a.filterRows(-1)
 	})
 }

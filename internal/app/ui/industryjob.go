@@ -161,7 +161,7 @@ func newIndustryJobs(u *BaseUI) *industryJobs {
 	}
 
 	if a.u.isDesktop {
-		a.body = makeDataTableWithSort(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, j industryJobRow) {
+		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, j industryJobRow) {
 			a.showJob(j)
 		})
 	} else {

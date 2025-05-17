@@ -93,7 +93,7 @@ func newOverviewAssets(u *BaseUI) *overviewAssets {
 	if !a.u.isDesktop {
 		a.body = a.makeDataList()
 	} else {
-		a.body = makeDataTableWithSort(headers, &a.rowsFiltered,
+		a.body = makeDataTable(headers, &a.rowsFiltered,
 			func(col int, r assetRow) []widget.RichTextSegment {
 				switch col {
 				case 0:

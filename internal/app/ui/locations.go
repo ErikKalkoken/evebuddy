@@ -59,7 +59,7 @@ func newLocations(u *BaseUI) *locations {
 	}
 	a.ExtendBaseWidget(a)
 	if a.u.isDesktop {
-		a.body = makeDataTableWithSort(
+		a.body = makeDataTable(
 			headers,
 			&a.rowsFiltered,
 			func(col int, r locationRow) []widget.RichTextSegment {

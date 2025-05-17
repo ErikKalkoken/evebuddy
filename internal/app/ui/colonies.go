@@ -105,7 +105,7 @@ func newColonies(u *BaseUI) *colonies {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTableWithSort(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r colonyRow) {
+		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r colonyRow) {
 			a.showColony(r)
 		})
 	} else {

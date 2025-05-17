@@ -17,6 +17,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -46,59 +47,8 @@ func maxHeaderWidth(headers []headerDef) float32 {
 	return m
 }
 
-// makeDataTable returns a table for showing data.
-func makeDataTable[S ~[]E, E any](
-	headers []headerDef,
-	data *S,
-	makeCell func(int, E) []widget.RichTextSegment,
-	onSelected func(int, E),
-) *widget.Table {
-	t := widget.NewTable(
-		func() (rows int, cols int) {
-			return len(*data), len(headers)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewRichText()
-		},
-		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			cell := co.(*widget.RichText)
-			if tci.Row >= len(*data) || tci.Row < 0 {
-				return
-			}
-			r := (*data)[tci.Row]
-			cell.Segments = makeCell(tci.Col, r)
-			cell.Truncation = fyne.TextTruncateClip
-			cell.Refresh()
-		},
-	)
-	t.ShowHeaderRow = true
-	t.StickyColumnCount = 1
-	t.CreateHeader = func() fyne.CanvasObject {
-		return widget.NewLabel("Template")
-	}
-	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		h := headers[tci.Col]
-		label := co.(*widget.Label)
-		label.SetText(h.Text)
-	}
-	t.OnSelected = func(tci widget.TableCellID) {
-		defer t.UnselectAll()
-		if onSelected != nil {
-			if tci.Row >= len(*data) || tci.Row < 0 {
-				return
-			}
-			r := (*data)[tci.Row]
-			onSelected(tci.Col, r)
-		}
-	}
-	for i, h := range headers {
-		t.SetColumnWidth(i, h.Width)
-	}
-	return t
-}
-
 // makeDataTable returns a table for showing data and which can be sorted.
-func makeDataTableWithSort[S ~[]E, E any](
+func makeDataTable[S ~[]E, E any](
 	headers []headerDef,
 	data *S,
 	makeCell func(int, E) []widget.RichTextSegment,
@@ -220,7 +170,7 @@ func makeDataList[S ~[]E, E any](
 			for col := range len(headers) {
 				row := f[col*2].(*fyne.Container).Objects[1].(*fyne.Container).Objects
 				data := row[1].(*widget.RichText)
-				data.Segments = makeCell(col, r)
+				data.Segments = iwidget.AlignRichTextSegments(fyne.TextAlignTrailing, makeCell(col, r))
 				data.Wrapping = fyne.TextWrapWord
 				bg := f[col*2].(*fyne.Container).Objects[0]
 				if col == 0 {

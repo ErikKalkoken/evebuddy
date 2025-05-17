@@ -101,7 +101,7 @@ type BaseUI struct {
 	characterSkillCatalogue    *CharacterSkillCatalogue
 	characterSkillQueue        *CharacterSkillQueue
 	characterWalletJournal     *characterWalletJournal
-	characterWalletTransaction *CharacterWalletTransaction
+	characterWalletTransaction *characterWalletTransaction
 	contracts                  *contracts
 	gameSearch                 *GameSearch
 	industryJobs               *industryJobs
