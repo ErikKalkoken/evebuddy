@@ -32,15 +32,15 @@ type locationRow struct {
 type locations struct {
 	widget.BaseWidget
 
+	body              fyne.CanvasObject
 	columnSorter      *columnSorter
 	rows              []locationRow
 	rowsFiltered      []locationRow
-	body              fyne.CanvasObject
+	selectRegion      *selectFilter
+	selectSolarSystem *selectFilter
+	sortButton        *sortButton
 	top               *widget.Label
 	u                 *BaseUI
-	selectSolarSystem *selectFilter
-	selectRegion      *selectFilter
-	sortButton        *sortButton
 }
 
 func newLocations(u *BaseUI) *locations {

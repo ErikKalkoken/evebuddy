@@ -136,9 +136,6 @@ func newContracts(u *BaseUI) *contracts {
 	a.selectType = newSelectFilter("Any type", func() {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.newSortButton(headers, func() {
-		a.filterRows(-1)
-	}, a.u.window)
 
 	a.selectStatus = widget.NewSelect([]string{
 		contractStatusAllActive,
@@ -150,6 +147,10 @@ func newContracts(u *BaseUI) *contracts {
 		a.filterRows(-1)
 	})
 	a.selectStatus.Selected = contractStatusAllActive
+
+	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+		a.filterRows(-1)
+	}, a.u.window)
 
 	return a
 }

@@ -32,3 +32,16 @@ func InlineRichTextSegments(segs ...[]widget.RichTextSegment) []widget.RichTextS
 	}
 	return seg
 }
+
+// StyleRichTextSegments returns a copy of the segments with the applied style.
+func StyleRichTextSegments(style widget.RichTextStyle, segs ...[]widget.RichTextSegment) []widget.RichTextSegment {
+	seg := slices.Concat(segs...)
+	for _, x := range seg[:len(seg)-1] {
+		t, ok := x.(*widget.TextSegment)
+		if !ok {
+			continue
+		}
+		t.Style = style
+	}
+	return seg
+}

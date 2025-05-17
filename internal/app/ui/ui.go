@@ -111,7 +111,7 @@ type BaseUI struct {
 	overviewClones             *overviewClones
 	colonies                   *colonies
 	overviewLocations          *locations
-	overviewTraining           *OverviewTraining
+	overviewTraining           *training
 	overviewWealth             *OverviewWealth
 	userSettings               *UserSettings
 
@@ -218,7 +218,7 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 	u.overviewClones = newOverviewClones(u)
 	u.colonies = NewColonies(u)
 	u.overviewLocations = newLocations(u)
-	u.overviewTraining = NewOverviewTraining(u)
+	u.overviewTraining = newTraining(u)
 	u.overviewWealth = NewOverviewWealth(u)
 	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.userSettings = NewSettings(u)
