@@ -31,10 +31,10 @@ const (
 )
 
 type headerDef struct {
-	Refresh      bool
-	SortDisabled bool
-	Text         string
-	Width        float32
+	NotSortable bool
+	Refresh     bool
+	Text        string
+	Width       float32
 }
 
 func maxHeaderWidth(headers []headerDef) float32 {
@@ -102,7 +102,7 @@ func makeDataTableWithSort[S ~[]E, E any](
 	headers []headerDef,
 	data *S,
 	makeCell func(int, E) []widget.RichTextSegment,
-	sortedColumns *columnSorter,
+	columnSorter *columnSorter,
 	filterRows func(int),
 	onSelected func(int, E),
 ) *widget.Table {
@@ -147,7 +147,7 @@ func makeDataTableWithSort[S ~[]E, E any](
 		label := row[0].(*fyne.Container).Objects[1].(*widget.Label)
 		icon := row[1].(*widget.Icon)
 
-		dir := sortedColumns.column(tci.Col)
+		dir := columnSorter.column(tci.Col)
 		if dir == sortNone {
 			label.SetText(h.Text)
 			label.Show()
@@ -267,19 +267,25 @@ type columnSorter struct {
 	cols       []sortDir
 	headers    []headerDef
 	sortButton *sortButton
+	defaultIdx int
+	defaultDir sortDir
 }
 
 func newColumnSorter(headers []headerDef) *columnSorter {
 	cs := &columnSorter{
-		cols:    make([]sortDir, len(headers)),
-		headers: headers,
+		cols:       make([]sortDir, len(headers)),
+		headers:    headers,
+		defaultIdx: -1,
+		defaultDir: sortOff,
 	}
-	cs.reset()
+	cs.clear()
 	return cs
 }
 
 func newColumnSorterWithInit(headers []headerDef, idx int, dir sortDir) *columnSorter {
 	cs := newColumnSorter(headers)
+	cs.defaultIdx = idx
+	cs.defaultDir = dir
 	cs.set(idx, dir)
 	return cs
 }
@@ -302,11 +308,16 @@ func (cs *columnSorter) current() (int, sortDir) {
 	return -1, sortOff
 }
 
-// reset sets all columns to their initial sort direction.
+// reset sets the columns to their default state.
 func (cs *columnSorter) reset() {
+	cs.set(cs.defaultIdx, cs.defaultDir)
+}
+
+// clear removes sorting from all colums.
+func (cs *columnSorter) clear() {
 	for i := range cs.cols {
 		var dir sortDir
-		if cs.headers[i].SortDisabled {
+		if cs.headers[i].NotSortable {
 			dir = sortNone
 		} else {
 			dir = sortOff
@@ -317,7 +328,7 @@ func (cs *columnSorter) reset() {
 
 // set sets the sort direction for a column.
 func (cs *columnSorter) set(idx int, dir sortDir) {
-	cs.reset()
+	cs.clear()
 	cs.cols[idx] = dir
 	if cs.sortButton != nil {
 		cs.sortButton.set(idx, dir)
@@ -350,23 +361,27 @@ func (cs *columnSorter) sort(idx int, f func(sortCol int, dir sortDir)) {
 	}
 }
 
-func (cs *columnSorter) newSortButton(headers []headerDef, columns set.Set[int], process func(), window fyne.Window) *sortButton {
+// newSortButton returns a new sortButton.
+func (cs *columnSorter) newSortButton(headers []headerDef, process func(), window fyne.Window, ignoredColumns ...int) *sortButton {
 	sortColumns := xslices.Map(headers, func(h headerDef) string {
 		return h.Text
 	})
-	w := &sortButton{sortColumns: sortColumns}
+	w := &sortButton{
+		sortColumns: sortColumns,
+	}
 	w.ExtendBaseWidget(w)
 	w.Text = "???"
 	w.Icon = icons.BlankSvg
-	if len(headers) == 0 || cs.size() == 0 || columns.Size() == 0 || columns.Size() > len(headers) {
+	if len(headers) == 0 || cs.size() == 0 || len(ignoredColumns) > len(headers) {
 		slog.Warn("makeSortButton called with invalid parameters")
 		return w // early exit when called without proper data
 	}
+	ignored := set.Of(ignoredColumns...)
 	w.OnTapped = func() {
 		col, dir := cs.current()
 		var fields []string
 		for i, h := range headers {
-			if !h.SortDisabled && columns.Contains(i) {
+			if !h.NotSortable && !ignored.Contains(i) {
 				fields = append(fields, h.Text)
 			}
 		}
@@ -384,7 +399,7 @@ func (cs *columnSorter) newSortButton(headers []headerDef, columns set.Set[int],
 			radioDir.Selected = "Ascending"
 		}
 		var d dialog.Dialog
-		okButton := widget.NewButtonWithIcon("OK", theme.ConfirmIcon(), func() {
+		okButton := widget.NewButtonWithIcon("Sort", theme.ConfirmIcon(), func() {
 			col := slices.Index(sortColumns, radioCols.Selected)
 			if col == -1 {
 				return
@@ -409,10 +424,9 @@ func (cs *columnSorter) newSortButton(headers []headerDef, columns set.Set[int],
 				widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
 					d.Hide()
 				}),
-				widget.NewButtonWithIcon("Clear", theme.DeleteIcon(), func() {
+				widget.NewButtonWithIcon("Reset", theme.DeleteIcon(), func() {
 					cs.reset()
 					process()
-					w.set(col, dir)
 					d.Hide()
 				}),
 				okButton,
@@ -439,6 +453,7 @@ func (cs *columnSorter) newSortButton(headers []headerDef, columns set.Set[int],
 
 type sortButton struct {
 	widget.Button
+
 	sortColumns []string
 }
 

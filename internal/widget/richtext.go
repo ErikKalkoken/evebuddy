@@ -21,14 +21,14 @@ func SetRichText(w *widget.RichText, segs ...widget.RichTextSegment) {
 }
 
 // InlineRichTextSegments returns an inlined copy of the segments, so they are rendered in the same line.
-func InlineRichTextSegments(s []widget.RichTextSegment) []widget.RichTextSegment {
-	s2 := slices.Clone(s)
-	for _, x := range s2[:len(s2)-1] {
+func InlineRichTextSegments(segs ...[]widget.RichTextSegment) []widget.RichTextSegment {
+	seg := slices.Concat(segs...)
+	for _, x := range seg[:len(seg)-1] {
 		t, ok := x.(*widget.TextSegment)
 		if !ok {
 			continue
 		}
 		t.Style.Inline = true
 	}
-	return s
+	return seg
 }

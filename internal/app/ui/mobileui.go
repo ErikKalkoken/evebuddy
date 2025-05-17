@@ -250,6 +250,13 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		})
 	}
 
+	navItemContracts := iwidget.NewListItemWithIcon(
+		"Contracts",
+		theme.NewThemedResource(icons.FileSignSvg),
+		func() {
+			homeNav.Push(iwidget.NewAppBar("Contracts", u.contracts))
+		},
+	)
 	homeList = iwidget.NewNavList(
 		iwidget.NewListItemWithIcon(
 			"Characters",
@@ -273,28 +280,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 				homeNav.Push(iwidget.NewAppBar("Clones", u.overviewClones))
 			},
 		),
-		iwidget.NewListItemWithIcon(
-			"Contracts",
-			theme.NewThemedResource(icons.FileSignSvg),
-			func() {
-				contractActive := container.NewTabItem("Active", u.contractsActive)
-				contractTabs := container.NewAppTabs(
-					contractActive,
-					container.NewTabItem("All", u.contractsAll),
-				)
-				u.contractsActive.OnUpdate = func(count int) {
-					s := "Active"
-					if count > 0 {
-						s += fmt.Sprintf(" (%d)", count)
-					}
-					fyne.Do(func() {
-						contractActive.Text = s
-						contractTabs.Refresh()
-					})
-				}
-				homeNav.Push(iwidget.NewAppBar("Contracts", contractTabs))
-			},
-		),
+		navItemContracts,
 		navItemColonies2,
 		navItemIndustry,
 		iwidget.NewListItemWithIcon(
@@ -314,6 +300,17 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		navItemWealth,
 	)
 	homeNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("Home", homeList))
+	u.contracts.OnUpdate = func(count int) {
+		s := "Active"
+		if count > 0 {
+			s += fmt.Sprintf(" (%d)", count)
+		}
+		fyne.Do(func() {
+			navItemContracts.Supporting = s
+			homeList.Refresh()
+		})
+	}
+
 	u.colonies.OnUpdate = func(_, expired int) {
 		fyne.Do(func() {
 			navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)

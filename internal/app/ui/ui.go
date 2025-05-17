@@ -102,15 +102,14 @@ type BaseUI struct {
 	characterSkillQueue        *CharacterSkillQueue
 	characterWalletJournal     *CharacterWalletJournal
 	characterWalletTransaction *CharacterWalletTransaction
-	contractsActive            *Contracts
-	contractsAll               *Contracts
+	contracts                  *contracts
 	gameSearch                 *GameSearch
 	industryJobs               *industryJobs
 	manageCharacters           *ManageCharacters
 	overviewAssets             *overviewAssets
 	overviewCharacters         *OverviewCharacters
 	overviewClones             *overviewClones
-	colonies                   *Colonies
+	colonies                   *colonies
 	overviewLocations          *OverviewLocations
 	overviewTraining           *OverviewTraining
 	overviewWealth             *OverviewWealth
@@ -210,8 +209,7 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 	u.characterSkillQueue = NewCharacterSkillQueue(u)
 	u.characterWalletJournal = NewCharacterWalletJournal(u)
 	u.characterWalletTransaction = NewCharacterWalletTransaction(u)
-	u.contractsActive = NewContracts(u, true)
-	u.contractsAll = NewContracts(u, false)
+	u.contracts = newContracts(u)
 	u.gameSearch = NewGameSearch(u)
 	u.industryJobs = NewIndustryJobs(u)
 	u.manageCharacters = NewManageCharacters(u)
@@ -458,16 +456,15 @@ func (u *BaseUI) updateCharacter() {
 // updateCrossPages refreshed all pages that contain information about multiple characters.
 func (u *BaseUI) updateCrossPages() {
 	ff := map[string]func(){
-		"assetSearch":     u.overviewAssets.update,
-		"contractsAll":    u.contractsAll.update,
-		"contractsActive": u.contractsActive.update,
-		"cloneSearch":     u.overviewClones.update,
-		"colony":          u.colonies.update,
-		"industryJob":     u.industryJobs.update,
-		"locations":       u.overviewLocations.update,
-		"overview":        u.overviewCharacters.update,
-		"training":        u.overviewTraining.update,
-		"wealth":          u.overviewWealth.update,
+		"assetSearch": u.overviewAssets.update,
+		"contracts":   u.contracts.update,
+		"cloneSearch": u.overviewClones.update,
+		"colony":      u.colonies.update,
+		"industryJob": u.industryJobs.update,
+		"locations":   u.overviewLocations.update,
+		"overview":    u.overviewCharacters.update,
+		"training":    u.overviewTraining.update,
+		"wealth":      u.overviewWealth.update,
 	}
 	runFunctionsWithProgressModal("Updating characters", ff, u.onRefreshCross, u.window)
 }
@@ -798,8 +795,7 @@ func (u *BaseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionContracts:
 		if needsRefresh {
-			u.contractsActive.update()
-			u.contractsAll.update()
+			u.contracts.update()
 		}
 		if u.settings.NotifyContractsEnabled() {
 			go func() {

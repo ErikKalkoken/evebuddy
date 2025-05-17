@@ -20,7 +20,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -77,7 +76,7 @@ type overviewClones struct {
 func newOverviewClones(u *BaseUI) *overviewClones {
 	headers := []headerDef{
 		{Text: "Location", Width: columnWidthLocation},
-		{Text: "Region", Width: columnWidthRegion, SortDisabled: true},
+		{Text: "Region", Width: columnWidthRegion, NotSortable: true},
 		{Text: "Impl.", Width: 100},
 		{Text: "Character", Width: columnWidthCharacter},
 		{Text: "Jumps", Width: 100},
@@ -157,7 +156,7 @@ func newOverviewClones(u *BaseUI) *overviewClones {
 		a.filterRows(-1)
 	})
 
-	a.sortButton = a.columnSorter.newSortButton(headers, set.Of(0, 1, 2, 3, 4), func() {
+	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
 
@@ -317,10 +316,10 @@ func (a *overviewClones) setOrigin(w fyne.Window) {
 		}
 		a.origin = s
 		a.routePref = app.RoutePreference(routePref.Selected)
-		a.originLabel.Segments = iwidget.InlineRichTextSegments(slices.Concat(
+		a.originLabel.Segments = iwidget.InlineRichTextSegments(
 			s.DisplayRichTextWithRegion(),
 			iwidget.NewRichTextSegmentFromText(fmt.Sprintf(" [%s]", a.routePref.String())),
-		))
+		)
 		a.originLabel.Refresh()
 		go a.updateRoutes()
 		d.Hide()

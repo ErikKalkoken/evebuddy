@@ -219,9 +219,9 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 	})
 	a.selectInstaller.Selected = industryInstallerMe
 
-	a.sortButton = a.columnSorter.newSortButton(headers, set.Of(0, 1, 2, 3, 4, 5), func() {
+	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
-	}, a.u.window)
+	}, a.u.window, 6, 7)
 	return a
 }
 
@@ -259,72 +259,72 @@ func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
 // filterRows applies all filters and sorting and freshes the list with the changed rows.
 // A new sorting can be applied by providing a sortCol. -1 does not change the current sorting.
 func (a *industryJobs) filterRows(sortCol int) {
-	jobs := slices.Clone(a.rows)
+	rows := slices.Clone(a.rows)
 	// filter
-	jobs = xslices.Filter(jobs, func(o industryJobRow) bool {
+	rows = xslices.Filter(rows, func(r industryJobRow) bool {
 		switch a.selectStatus.Selected {
 		case industryStatusActive:
-			return o.IsActive()
+			return r.IsActive()
 		case industryStatusInProgress:
-			return o.status == app.JobActive
+			return r.status == app.JobActive
 		case industryStatusReady:
-			return o.status == app.JobReady
+			return r.status == app.JobReady
 		case industryStatusHalted:
-			return o.status == app.JobPaused
+			return r.status == app.JobPaused
 		case industryStatusHistory:
-			return o.status == app.JobDelivered
+			return r.status == app.JobDelivered
 		}
 		return false
 	})
 	if x := a.selectInstaller.Selected; x != industryInstallerAny {
-		jobs = xslices.Filter(jobs, func(o industryJobRow) bool {
+		rows = xslices.Filter(rows, func(r industryJobRow) bool {
 			switch x {
 			case industryInstallerMe:
-				return o.isInstallerMe
+				return r.isInstallerMe
 			case industryInstallerCorpmates:
-				return !o.isInstallerMe
+				return !r.isInstallerMe
 			}
 			return false
 		})
 	}
 	if x := a.selectActivity.Selected; x != industryActivityAll {
-		jobs = xslices.Filter(jobs, func(o industryJobRow) bool {
+		rows = xslices.Filter(rows, func(r industryJobRow) bool {
 			switch x {
 			case industryActivityCopying:
-				return o.activity == app.Copying
+				return r.activity == app.Copying
 			case industryActivityInvention:
-				return o.activity == app.Invention
+				return r.activity == app.Invention
 			case industryActivityManufacturing:
-				return o.activity == app.Manufacturing
+				return r.activity == app.Manufacturing
 			case industryActivityMaterialResearch:
-				return o.activity == app.MaterialEfficiencyResearch
+				return r.activity == app.MaterialEfficiencyResearch
 			case industryActivityReaction:
-				return o.activity == app.Reactions
+				return r.activity == app.Reactions
 			case industryActivityTimeResearch:
-				return o.activity == app.TimeEfficiencyResearch
+				return r.activity == app.TimeEfficiencyResearch
 			}
 			return false
 		})
 	}
 	if x := a.selectOwner.Selected; x != industryOwnerAny {
-		jobs = xslices.Filter(jobs, func(o industryJobRow) bool {
+		rows = xslices.Filter(rows, func(r industryJobRow) bool {
 			switch x {
 			case industryOwnerCorp:
-				return !o.isOwnerMe
+				return !r.isOwnerMe
 			case industryOwnerMe:
-				return o.isOwnerMe
+				return r.isOwnerMe
 			}
 			return false
 		})
 	}
 	if s := a.search.Text; len(s) > 1 {
-		jobs = xslices.Filter(jobs, func(x industryJobRow) bool {
+		rows = xslices.Filter(rows, func(x industryJobRow) bool {
 			return strings.Contains(strings.ToLower(x.blueprintType.Name), strings.ToLower(s))
 		})
 	}
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
-		slices.SortFunc(jobs, func(j, k industryJobRow) int {
+		slices.SortFunc(rows, func(j, k industryJobRow) int {
 			var c int
 			switch sortCol {
 			case 0:
@@ -352,7 +352,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 		})
 	})
 	// set data & refresh
-	a.rowsFiltered = jobs
+	a.rowsFiltered = rows
 	a.body.Refresh()
 	switch x := a.body.(type) {
 	case *widget.Table:

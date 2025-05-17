@@ -660,6 +660,11 @@ func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, char
 	return missingIDs.Slice(), nil
 }
 
+// GetContract fetches and returns a contract from the database.
+func (s *CharacterService) GetContract(ctx context.Context, characterID, contractID int32) (*app.CharacterContract, error) {
+	return s.st.GetCharacterContract(ctx, characterID, contractID)
+}
+
 func (s *CharacterService) CountContractBids(ctx context.Context, contractID int64) (int, error) {
 	x, err := s.st.ListCharacterContractBidIDs(ctx, contractID)
 	if err != nil {
@@ -1974,6 +1979,10 @@ func (s *CharacterService) NotifyExpiredExtractions(ctx context.Context, charact
 		}
 	}
 	return nil
+}
+
+func (s *CharacterService) GetPlanet(ctx context.Context, characterID, planetID int32) (*app.CharacterPlanet, error) {
+	return s.st.GetCharacterPlanet(ctx, characterID, planetID)
 }
 
 func (s *CharacterService) ListAllPlanets(ctx context.Context) ([]*app.CharacterPlanet, error) {

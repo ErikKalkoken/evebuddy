@@ -18,7 +18,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -92,7 +91,7 @@ func newOverviewAssets(u *BaseUI) *overviewAssets {
 	a.found.Hide()
 
 	if !a.u.isDesktop {
-		a.body = a.makeDateList()
+		a.body = a.makeDataList()
 	} else {
 		a.body = makeDataTableWithSort(headers, &a.rowsFiltered,
 			func(col int, r assetRow) []widget.RichTextSegment {
@@ -127,7 +126,7 @@ func newOverviewAssets(u *BaseUI) *overviewAssets {
 		a.filterRows(-1)
 	})
 
-	a.sortButton = a.columnSorter.newSortButton(headers, set.Of(0, 1, 2, 3, 4, 5), func() {
+	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
 	return a
@@ -147,7 +146,7 @@ func (a *overviewAssets) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *overviewAssets) makeDateList() *widget.List {
+func (a *overviewAssets) makeDataList() *widget.List {
 	p := theme.Padding()
 	l := widget.NewList(
 		func() int {

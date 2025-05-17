@@ -18,7 +18,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -144,9 +143,9 @@ func NewOverviewCharacters(u *BaseUI) *OverviewCharacters {
 	a.selectCorporation = newSelectFilter("Any corporation", func() {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.newSortButton(headers, set.Of(0, 1, 2, 3, 4), func() {
+	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
-	}, a.u.window)
+	}, a.u.window, 5, 6, 7, 8, 9)
 	return a
 }
 

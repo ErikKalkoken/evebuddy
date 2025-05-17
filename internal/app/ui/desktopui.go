@@ -218,21 +218,18 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 		makePageWithTitle("Assets", u.overviewAssets),
 	)
 
-	contractActive := container.NewTabItem("Active", u.contractsActive)
-	contractTabs := container.NewAppTabs(contractActive, container.NewTabItem("All", u.contractsAll))
 	contracts := iwidget.NewNavPage(
 		"Contracts",
 		theme.NewThemedResource(icons.FileSignSvg),
-		makePageWithTitle("Contracts", contractTabs),
+		makePageWithTitle("Contracts", u.contracts),
 	)
-	u.contractsActive.OnUpdate = func(count int) {
-		s := "Active"
+	u.contracts.OnUpdate = func(count int) {
+		var s string
 		if count > 0 {
-			s += fmt.Sprintf(" (%d)", count)
+			s += ihumanize.Comma(count)
 		}
 		fyne.Do(func() {
-			contractActive.Text = s
-			contractTabs.Refresh()
+			homeNav.SetItemBadge(contracts, s)
 		})
 	}
 
