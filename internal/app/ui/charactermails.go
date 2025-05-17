@@ -19,7 +19,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -115,13 +114,13 @@ type CharacterMails struct {
 	currentFolder optional.Optional[FolderNode]
 }
 
-func NewCharacterMails(u *BaseUI) *CharacterMails {
+func newCharacterMails(u *BaseUI) *CharacterMails {
 	a := &CharacterMails{
 		body:      widget.NewLabel(""),
 		header:    NewMailHeader(u.eis, u.ShowEveEntityInfoWindow),
 		headers:   make([]*app.CharacterMailHeader, 0),
-		headerTop: appwidget.MakeTopLabel(),
-		folderTop: appwidget.MakeTopLabel(),
+		headerTop: makeTopLabel(),
+		folderTop: makeTopLabel(),
 		subject:   iwidget.NewLabelWithSize("", theme.SizeNameSubHeadingText),
 		u:         u,
 	}

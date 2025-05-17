@@ -28,7 +28,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
@@ -99,7 +98,7 @@ func (iw *InfoWindow) show(v infoVariant, id int64) {
 	}
 
 	makeAppBarTitle := func(s string) string {
-		if iw.u.IsMobile() {
+		if !iw.u.isDesktop {
 			return s
 		}
 		return s + ": Information"
@@ -276,7 +275,7 @@ func (iw *InfoWindow) makeEveWhoIcon(id int32, v infoVariant) *iwidget.TappableI
 
 func (iw *InfoWindow) renderIconSize() fyne.Size {
 	var s float32
-	if iw.u.IsMobile() {
+	if !iw.u.isDesktop {
 		s = logoUnitSize
 	} else {
 		s = renderIconUnitSize
@@ -496,18 +495,20 @@ type characterInfo struct {
 	baseInfo
 
 	alliance        *kxwidget.TappableLabel
+	attributes      *attributeList
 	bio             *widget.Label
 	corporation     *kxwidget.TappableLabel
 	corporationLogo *canvas.Image
 	description     *widget.Label
 	employeeHistory *entityList
 	id              int32
+	isOwned         bool
 	membership      *widget.Label
+	ownedIcon       *iwidget.TappableIcon
 	portrait        *kxwidget.TappableImage
 	security        *widget.Label
 	tabs            *container.AppTabs
 	title           *widget.Label
-	attributes      *attributeList
 }
 
 func newCharacterInfo(iw *InfoWindow, id int32) *characterInfo {
@@ -524,6 +525,8 @@ func newCharacterInfo(iw *InfoWindow, id int32) *characterInfo {
 	bio.Wrapping = fyne.TextWrapWord
 	description := widget.NewLabel("")
 	description.Wrapping = fyne.TextWrapWord
+	ownedIcon := iwidget.NewTappableIcon(theme.NewSuccessThemedResource(icons.CheckDecagramSvg), nil)
+	ownedIcon.SetToolTip("You own this character")
 	a := &characterInfo{
 		alliance:        alliance,
 		bio:             bio,
@@ -531,7 +534,9 @@ func newCharacterInfo(iw *InfoWindow, id int32) *characterInfo {
 		corporationLogo: iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
 		description:     description,
 		id:              id,
+		isOwned:         iw.u.scs.ListCharacterIDs().Contains(id),
 		membership:      widget.NewLabel(""),
+		ownedIcon:       ownedIcon,
 		portrait:        portrait,
 		security:        widget.NewLabel(""),
 		title:           title,
@@ -551,25 +556,36 @@ func newCharacterInfo(iw *InfoWindow, id int32) *characterInfo {
 		a.tabs.Append(container.NewTabItem("Employment History", a.employeeHistory))
 	}
 	a.tabs.Select(attributes)
+	if !a.isOwned {
+		a.ownedIcon.Hide()
+	}
 	return a
 }
 
 func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	main := container.NewVBox(
-		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
-			a.name,
-			a.title,
-		),
 		container.NewBorder(
 			nil,
 			nil,
-			a.corporationLogo,
 			nil,
-			container.New(
-				layout.NewCustomPaddedVBoxLayout(-2*p),
-				a.corporation,
-				a.membership,
+			container.NewPadded(a.ownedIcon),
+			container.NewVBox(
+				container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
+					a.name,
+					a.title,
+				),
+				container.NewBorder(
+					nil,
+					nil,
+					a.corporationLogo,
+					nil,
+					container.New(
+						layout.NewCustomPaddedVBoxLayout(-2*p),
+						a.corporation,
+						a.membership,
+					),
+				),
 			),
 		),
 		widget.NewSeparator(),
@@ -578,7 +594,7 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 			a.security,
 		),
 	)
-	name := a.iw.u.scs.CharacterName(a.id)
+	name := a.iw.u.scs.CharacterName(a.id) // FIXME: Does not work for most chars
 	name = strings.ReplaceAll(name, " ", "_")
 	forums := iwidget.NewTappableIcon(icons.EvelogoPng, func() {
 		a.iw.openURL(fmt.Sprintf("https://forums.eveonline.com/u/%s/summary", name))
@@ -679,7 +695,10 @@ func (a *characterInfo) update() error {
 			}
 			a.title.SetText("Title: " + o.Title)
 		})
-		attributes := a.makeAttributes(o)
+		attributes, err := a.makeAttributes(o)
+		if err != nil {
+			return err
+		}
 		fyne.Do(func() {
 			a.attributes.set(attributes)
 			a.tabs.Refresh()
@@ -728,7 +747,7 @@ func (a *characterInfo) update() error {
 	return nil
 }
 
-func (a *characterInfo) makeAttributes(o *app.EveCharacter) []attributeItem {
+func (a *characterInfo) makeAttributes(o *app.EveCharacter) ([]attributeItem, error) {
 	attributes := []attributeItem{
 		newAttributeItem("Born", o.Birthday.Format(app.DateTimeFormat)),
 		newAttributeItem("Race", o.Race),
@@ -748,6 +767,15 @@ func (a *characterInfo) makeAttributes(o *app.EveCharacter) []attributeItem {
 		u = v.ValueOrZero()
 	}
 	attributes = append(attributes, newAttributeItem("NPC", u))
+	if a.isOwned {
+		c, err := a.iw.u.cs.GetCharacter(context.Background(), a.id)
+		if err != nil {
+			return nil, err
+		}
+		attributes = append(attributes, newAttributeItem("Home", c.Home))
+		attributes = append(attributes, newAttributeItem("Location", c.Location))
+		attributes = append(attributes, newAttributeItem("Last Login", c.LastLoginAt.ValueOrZero()))
+	}
 	if a.iw.u.IsDeveloperMode() {
 		x := newAttributeItem("EVE ID", o.ID)
 		x.Action = func(_ any) {
@@ -755,7 +783,7 @@ func (a *characterInfo) makeAttributes(o *app.EveCharacter) []attributeItem {
 		}
 		attributes = append(attributes, x)
 	}
-	return attributes
+	return attributes, nil
 }
 
 func (a *characterInfo) makeRolesTab(roles []app.CharacterRole) (*container.TabItem, *widget.Entry) {
@@ -1876,14 +1904,14 @@ func (a *inventoryTypeInfo) makeAttributeTab(ctx context.Context, dogmaAttribute
 			return len(attributes)
 		},
 		func() fyne.CanvasObject {
-			return appwidget.NewTypeAttributeItem()
+			return NewTypeAttributeItem()
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(attributes) {
 				return
 			}
 			r := attributes[id]
-			item := co.(*appwidget.TypeAttributeItem)
+			item := co.(*TypeAttributeItem)
 			if r.isTitle {
 				item.SetTitle(r.label)
 			} else {
@@ -2178,11 +2206,11 @@ func (a *inventoryTypeInfo) makeFittingTab(ctx context.Context, dogmaAttributes 
 			return len(fittingData)
 		},
 		func() fyne.CanvasObject {
-			return appwidget.NewTypeAttributeItem()
+			return NewTypeAttributeItem()
 		},
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
 			r := fittingData[lii]
-			item := co.(*appwidget.TypeAttributeItem)
+			item := co.(*TypeAttributeItem)
 			item.SetRegular(r.icon, r.label, r.value)
 		},
 	)
@@ -2224,7 +2252,7 @@ func (a *inventoryTypeInfo) makeRequirementsTab(requiredSkills []requiredSkill) 
 				widget.NewLabel("Placeholder"),
 				layout.NewSpacer(),
 				widget.NewLabel("Check"),
-				appwidget.NewSkillLevel(),
+				newSkillLevel(),
 				widget.NewIcon(icons.QuestionmarkSvg),
 			)
 		},
@@ -2233,7 +2261,7 @@ func (a *inventoryTypeInfo) makeRequirementsTab(requiredSkills []requiredSkill) 
 			row := co.(*fyne.Container).Objects
 			skill := row[0].(*widget.Label)
 			text := row[2].(*widget.Label)
-			level := row[3].(*appwidget.SkillLevel)
+			level := row[3].(*skillLevel)
 			icon := row[4].(*widget.Icon)
 			skill.SetText(app.SkillDisplayName(o.name, o.requiredLevel))
 			if o.activeLevel == 0 && o.trainedLevel == 0 {
@@ -2450,20 +2478,42 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 			var i widget.Importance
 			switch x := it.Value.(type) {
 			case *app.EveEntity:
+				if x == nil {
+					s = "?"
+					break
+				}
 				s = x.Name
 				if supportedCategories.Contains(x.Category) {
 					icon.Show()
 				}
 			case *app.EveRace:
+				if x == nil {
+					s = "?"
+					break
+				}
 				s = x.Name
 				icon.Show()
+			case *app.EveLocation:
+				if x == nil {
+					s = "?"
+					break
+				}
+				s = x.DisplayName()
 			case *url.URL:
+				if x == nil {
+					s = "?"
+					break
+				}
 				s = x.String()
 				i = widget.HighImportance
 			case float32:
 				s = fmt.Sprintf("%.1f %%", x*100)
 			case time.Time:
-				s = x.Format(app.DateTimeFormat)
+				if x.IsZero() {
+					s = "-"
+				} else {
+					s = x.Format(app.DateTimeFormat)
+				}
 			case int:
 				s = humanize.Comma(int64(x))
 			case bool:
@@ -2491,13 +2541,21 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 		it := w.items[id]
 		switch x := it.Value.(type) {
 		case *app.EveEntity:
-			if supportedCategories.Contains(x.Category) {
+			if x != nil && supportedCategories.Contains(x.Category) {
 				w.iw.showEveEntity(x)
 			}
+		case *app.EveLocation:
+			if x != nil {
+				w.iw.showLocation(x.ID)
+			}
 		case *app.EveRace:
-			w.iw.showRace(x.ID)
+			if x != nil {
+				w.iw.showRace(x.ID)
+			}
 		case *url.URL:
-			w.openURL(x)
+			if x != nil {
+				w.openURL(x)
+			}
 			// TODO
 			// if err != nil {
 			// 	a.iw.u.ShowSnackbar(fmt.Sprintf("ERROR: Failed to open URL: %s", a.iw.u.ErrorDisplay(err)))

@@ -74,6 +74,7 @@ var (
 	dirsFlag           = flag.Bool("dirs", false, "Show directories for user data")
 	disableUpdatesFlag = flag.Bool("disable-updates", false, "Disable all periodic updates")
 	logLevelFlag       = flag.String("log-level", "", "Set log level for this session")
+	mobileFlag         = flag.Bool("mobile", false, "Run the app in forced mobile mode")
 	offlineFlag        = flag.Bool("offline", false, "Start app in offline mode")
 	pprofFlag          = flag.Bool("pprof", false, "Enable pprof web server")
 	resetSettingsFlag  = flag.Bool("reset-settings", false, "Resets desktop settings")
@@ -105,7 +106,10 @@ func main() {
 
 	// start fyne app
 	fyneApp := app.NewWithID(appID)
-	_, isDesktop := fyneApp.(desktop.App)
+	var isDesktop bool
+	if !*mobileFlag {
+		_, isDesktop = fyneApp.(desktop.App)
+	}
 
 	if *versionFlag {
 		fmt.Println(fyneApp.Metadata().Version)
@@ -273,26 +277,27 @@ func main() {
 	}
 	slog.Info("Janice API key", "value", obfuscate(key, 4))
 	bu := ui.NewBaseUI(ui.BaseUIParams{
-		App:                fyneApp,
-		CharacterService:   cs,
+		App:              fyneApp,
+		CharacterService: cs,
+		ClearCacheFunc: func() {
+			pc.Clear()
+			memCache.Clear()
+		},
 		CorporationService: rs,
-		ESIStatusService:   esistatusservice.New(esiClient),
-		EveImageService:    eveimageservice.New(pc, rhc.StandardClient(), *offlineFlag),
-		EveUniverseService: eus,
-		IsOffline:          *offlineFlag,
-		IsUpdateDisabled:   *disableUpdatesFlag,
-		JaniceService:      janiceservice.New(rhc.StandardClient(), key),
-		MemCache:           memCache,
-		StatusCacheService: scs,
 		DataPaths: map[string]string{
 			"db":        dbPath,
 			"log":       logFilePath,
 			"crashfile": crashFilePath,
 		},
-		ClearCacheFunc: func() {
-			pc.Clear()
-			memCache.Clear()
-		},
+		ESIStatusService:   esistatusservice.New(esiClient),
+		EveImageService:    eveimageservice.New(pc, rhc.StandardClient(), *offlineFlag),
+		EveUniverseService: eus,
+		IsDesktop:          isDesktop,
+		IsOffline:          *offlineFlag,
+		IsUpdateDisabled:   *disableUpdatesFlag,
+		JaniceService:      janiceservice.New(rhc.StandardClient(), key),
+		MemCache:           memCache,
+		StatusCacheService: scs,
 	})
 	if isDesktop {
 		u := ui.NewDesktopUI(bu)

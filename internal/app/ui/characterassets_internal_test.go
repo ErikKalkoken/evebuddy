@@ -81,7 +81,7 @@ func TestCharacterAssets(t *testing.T) {
 	t.Run("can update without data", func(t *testing.T) {
 		app := test.NewTempApp(t)
 		ui := NewBaseUI(BaseUIParams{App: app})
-		w := NewCharacterAssets(ui)
+		w := newCharacterAssets(ui)
 		w.update()
 	})
 }

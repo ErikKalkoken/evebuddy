@@ -19,7 +19,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -45,11 +44,11 @@ type ManageCharacters struct {
 	window       fyne.Window
 }
 
-func NewManageCharacters(u *BaseUI) *ManageCharacters {
+func newManageCharacters(u *BaseUI) *ManageCharacters {
 	a := &ManageCharacters{
 		characters:   make([]accountCharacter, 0),
 		showSnackbar: u.ShowSnackbar,
-		title:        appwidget.MakeTopLabel(),
+		title:        makeTopLabel(),
 		window:       u.MainWindow(),
 		u:            u,
 	}
@@ -67,7 +66,7 @@ func (a *ManageCharacters) CreateRenderer() fyne.WidgetRenderer {
 	if a.u.IsOffline() {
 		add.Disable()
 	}
-	if a.u.isDesktop() {
+	if a.u.isDesktop {
 		p := theme.Padding()
 		c = container.NewBorder(
 			a.title,

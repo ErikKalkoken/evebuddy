@@ -36,7 +36,7 @@ type CharacterSheet struct {
 	wealth          *widget.Label
 }
 
-func NewSheet(u *BaseUI) *CharacterSheet {
+func newSheet(u *BaseUI) *CharacterSheet {
 	makeLogo := func() *kxwidget.TappableImage {
 		ti := kxwidget.NewTappableImage(icons.BlankSvg, nil)
 		ti.SetFillMode(canvas.ImageFillContain)
@@ -183,7 +183,7 @@ func (a *CharacterSheet) CreateRenderer() fyne.WidgetRenderer {
 			),
 		),
 	)
-	if a.u.IsMobile() {
+	if !a.u.isDesktop {
 		portraitDesktop.Hide()
 	}
 	return widget.NewSimpleRenderer(c)

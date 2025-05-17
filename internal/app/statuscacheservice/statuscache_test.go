@@ -523,7 +523,7 @@ func TestStatusCacheSummary(t *testing.T) {
 	})
 }
 
-func TestUpdateAndList(t *testing.T) {
+func TestCharacter(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
 	cache := memcache.New()
@@ -533,18 +533,40 @@ func TestUpdateAndList(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		cache.Clear()
-		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Bruce"})
-		c := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
+		c := factory.CreateCharacter()
 		// when
 		if err := sc.UpdateCharacters(ctx); err != nil {
 			t.Fatal(err)
 		}
-		xx := sc.ListCharacters()
 		// then
-		assert.Len(t, xx, 1)
-		assert.Equal(t, c.ID, xx[0].ID)
-		assert.Equal(t, "Bruce", xx[0].Name)
+		got := sc.ListCharacters()
+		assert.Len(t, got, 1)
+		assert.Equal(t, c.ID, got[0].ID)
+		assert.Equal(t, c.EveCharacter.Name, got[0].Name)
 	})
+	t.Run("list character IDs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		cache.Clear()
+		c1 := factory.CreateCharacter()
+		c2 := factory.CreateCharacter()
+		if err := sc.UpdateCharacters(ctx); err != nil {
+			panic(err)
+		}
+		// when
+		got := sc.ListCharacterIDs()
+		// then
+		want := set.Of(c1.ID, c2.ID)
+		assert.True(t, got.Equal(want))
+	})
+}
+
+func TestCorporations(t *testing.T) {
+	db, st, factory := testutil.New()
+	defer db.Close()
+	cache := memcache.New()
+	sc := statuscacheservice.New(cache, st)
+	ctx := context.Background()
 	t.Run("update and list corporations", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -555,8 +577,8 @@ func TestUpdateAndList(t *testing.T) {
 		if err := sc.UpdateCorporations(ctx); err != nil {
 			t.Fatal(err)
 		}
-		xx := sc.ListCorporations()
 		// then
+		xx := sc.ListCorporations()
 		assert.Len(t, xx, 1)
 		assert.Equal(t, c.ID, xx[0].ID)
 		assert.Equal(t, "Alpha", xx[0].Name)

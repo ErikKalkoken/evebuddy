@@ -12,7 +12,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/dustin/go-humanize"
 
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
@@ -50,14 +49,14 @@ type CharacterSkillCatalogue struct {
 	u              *BaseUI
 }
 
-func NewCharacterSkillCatalogue(u *BaseUI) *CharacterSkillCatalogue {
+func newCharacterSkillCatalogue(u *BaseUI) *CharacterSkillCatalogue {
 	a := &CharacterSkillCatalogue{
 		groups:         make([]skillGroupProgress, 0),
 		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),
 		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
 		levelUnTrained: theme.NewDisabledResource(theme.MediaStopIcon()),
 		skills:         make([]skillTrained, 0),
-		total:          appwidget.MakeTopLabel(),
+		total:          makeTopLabel(),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
@@ -144,7 +143,7 @@ func (a *CharacterSkillCatalogue) makeGroupsGrid() fyne.CanvasObject {
 			a.skillsGrid.Refresh()
 		}
 	}
-	return makeGridOrList(a.u.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
+	return makeGridOrList(!a.u.isDesktop, length, makeCreateItem, updateItem, makeOnSelected)
 }
 
 func (a *CharacterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
@@ -158,7 +157,7 @@ func (a *CharacterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 			c := container.NewBorder(
 				nil,
 				nil,
-				appwidget.NewSkillLevel(),
+				newSkillLevel(),
 				nil,
 				title,
 			)
@@ -173,7 +172,7 @@ func (a *CharacterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 		row := co.(*fyne.Container).Objects
 		label := row[0].(*widget.Label)
 		label.SetText(skill.name)
-		level := row[1].(*appwidget.SkillLevel)
+		level := row[1].(*skillLevel)
 		level.Set(skill.activeLevel, skill.trainedLevel, 0)
 	}
 	makeOnSelected := func(unselectAll func()) func(int) {
@@ -186,7 +185,7 @@ func (a *CharacterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 			a.u.ShowTypeInfoWindow(skill.id)
 		}
 	}
-	return makeGridOrList(a.u.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
+	return makeGridOrList(!a.u.isDesktop, length, makeCreateItem, updateItem, makeOnSelected)
 }
 
 func (a *CharacterSkillCatalogue) update() {

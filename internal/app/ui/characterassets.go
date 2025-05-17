@@ -21,7 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	ilayout "github.com/ErikKalkoken/evebuddy/internal/layout"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -36,26 +35,26 @@ type CharacterAssets struct {
 	OnSelected     func()
 	OnRedraw       func(string)
 
-	infoIcon         *widget.Icon
 	assetCollection  assetcollection.AssetCollection
 	assetGrid        *widget.GridWrap
 	assets           []*app.CharacterAsset
 	assetsBottom     *widget.Label
+	infoIcon         *widget.Icon
 	locationPath     *kxwidget.TappableLabel
-	locationsTop     *widget.Label
 	locations        *iwidget.Tree[locationNode]
+	locationsTop     *widget.Label
 	selectedLocation optional.Optional[locationNode]
 	u                *BaseUI
 }
 
-func NewCharacterAssets(u *BaseUI) *CharacterAssets {
+func newCharacterAssets(u *BaseUI) *CharacterAssets {
 	lp := kxwidget.NewTappableLabel("", nil)
 	lp.Wrapping = fyne.TextWrapWord
 	a := &CharacterAssets{
 		assets:       make([]*app.CharacterAsset, 0),
 		assetsBottom: widget.NewLabel(""),
 		locationPath: lp,
-		locationsTop: appwidget.MakeTopLabel(),
+		locationsTop: makeTopLabel(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)

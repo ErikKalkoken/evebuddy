@@ -48,7 +48,7 @@ type CharacterCommunications struct {
 	u                *BaseUI
 }
 
-func NewCharacterCommunications(u *BaseUI) *CharacterCommunications {
+func newCharacterCommunications(u *BaseUI) *CharacterCommunications {
 	a := &CharacterCommunications{
 		folders:          make([]NotificationFolder, 0),
 		notifications:    make([]*app.CharacterNotification, 0),

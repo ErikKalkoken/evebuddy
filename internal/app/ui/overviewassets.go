@@ -10,201 +10,227 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
-	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-// TODO: Mobile: Add column sort
-
-type assetSearchRow struct {
+type assetRow struct {
 	characterID     int32
 	characterName   string
 	groupID         int32
 	groupName       string
+	isSingleton     bool
 	itemID          int64
 	location        *app.EveLocation
-	name            string
-	price           float64
 	priceDisplay    string
 	quantity        int
 	quantityDisplay string
+	total           float64
 	typeID          int32
 	typeName        string
+	typeNameDisplay string
 }
 
-type OverviewAssets struct {
+func (r assetRow) SolarSystemName() string {
+	if r.location == nil || r.location.SolarSystem == nil {
+		return ""
+	}
+	return r.location.SolarSystem.Name
+}
+
+type overviewAssets struct {
 	widget.BaseWidget
 
-	assets         []*assetSearchRow
-	assetsFiltered []*assetSearchRow
-	body           fyne.CanvasObject
-	colSort        []sortDir
-	found          *widget.Label
-	entry          *widget.Entry
-	total          *widget.Label
-	u              *BaseUI
+	body              fyne.CanvasObject
+	columnSorter      *columnSorter
+	entry             *widget.Entry
+	found             *widget.Label
+	rows              []assetRow
+	rowsFiltered      []assetRow
+	selectSolarSystem *selectFilter
+	selectOwner       *selectFilter
+	sortButton        *sortButton
+	total             *widget.Label
+	u                 *BaseUI
 }
 
-func NewOverviewAssets(u *BaseUI) *OverviewAssets {
-	headers := []iwidget.HeaderDef{
+func newOverviewAssets(u *BaseUI) *overviewAssets {
+	headers := []headerDef{
 		{Text: "Item", Width: 300},
 		{Text: "Class", Width: 200},
 		{Text: "Location", Width: 350},
 		{Text: "Owner", Width: 200},
 		{Text: "Qty.", Width: 75},
-		{Text: "Price", Width: 100},
+		{Text: "Total", Width: 100},
 	}
-	a := &OverviewAssets{
-		colSort:        make([]sortDir, len(headers)),
-		assetsFiltered: make([]*assetSearchRow, 0),
-		entry:          widget.NewEntry(),
-		found:          widget.NewLabel(""),
-		total:          appwidget.MakeTopLabel(),
-		u:              u,
+	a := &overviewAssets{
+		entry:        widget.NewEntry(),
+		found:        widget.NewLabel(""),
+		rowsFiltered: make([]assetRow, 0),
+		columnSorter: newColumnSorter(headers),
+		total:        makeTopLabel(),
+		u:            u,
 	}
 	a.ExtendBaseWidget(a)
 	a.entry.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.resetSearch()
 	})
 	a.entry.OnChanged = func(s string) {
-		a.processData(-1)
+		a.filterRows(-1)
 	}
-	a.entry.PlaceHolder = "Search assets"
+	a.entry.PlaceHolder = "Search items"
 	a.found.Hide()
 
-	makeCell := func(col int, r *assetSearchRow) []widget.RichTextSegment {
-		switch col {
-		case 0:
-			return iwidget.NewRichTextSegmentFromText(r.name)
-		case 1:
-			return iwidget.NewRichTextSegmentFromText(r.groupName)
-		case 2:
-			if r.location != nil {
-				return r.location.DisplayRichText()
-			}
-		case 3:
-			return iwidget.NewRichTextSegmentFromText(r.characterName)
-		case 4:
-			return iwidget.NewRichTextSegmentFromText(r.quantityDisplay)
-		case 5:
-			return iwidget.NewRichTextSegmentFromText(r.priceDisplay)
-		}
-		return iwidget.NewRichTextSegmentFromText("?")
+	if !a.u.isDesktop {
+		a.body = a.makeDataList()
+	} else {
+		a.body = makeDataTable(headers, &a.rowsFiltered,
+			func(col int, r assetRow) []widget.RichTextSegment {
+				switch col {
+				case 0:
+					return iwidget.NewRichTextSegmentFromText(r.typeNameDisplay)
+				case 1:
+					return iwidget.NewRichTextSegmentFromText(r.groupName)
+				case 2:
+					if r.location != nil {
+						return r.location.DisplayRichText()
+					}
+				case 3:
+					return iwidget.NewRichTextSegmentFromText(r.characterName)
+				case 4:
+					return iwidget.NewRichTextSegmentFromText(r.quantityDisplay)
+				case 5:
+					return iwidget.NewRichTextSegmentFromText(r.priceDisplay)
+				}
+				return iwidget.NewRichTextSegmentFromText("?")
+			},
+			a.columnSorter, a.filterRows, func(_ int, r assetRow) {
+				a.u.ShowTypeInfoWindow(r.typeID)
+			})
 	}
 
-	if a.u.IsMobile() {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.assetsFiltered, makeCell, func(r *assetSearchRow) {
-			a.u.ShowTypeInfoWindow(r.typeID)
-		})
-	} else {
-		t := iwidget.MakeDataTableForDesktop(headers, &a.assetsFiltered, makeCell, func(col int, r *assetSearchRow) {
-			switch col {
-			case 0:
-				a.u.ShowInfoWindow(app.EveEntityInventoryType, r.typeID)
-			case 2:
-				if r.location != nil {
-					a.u.ShowLocationInfoWindow(r.location.ID)
-				}
-			case 3:
-				a.u.ShowInfoWindow(app.EveEntityCharacter, r.characterID)
-			}
-		})
-		iconSortAsc := theme.NewPrimaryThemedResource(icons.SortAscendingSvg)
-		iconSortDesc := theme.NewPrimaryThemedResource(icons.SortDescendingSvg)
-		iconSortOff := theme.NewThemedResource(icons.SortSvg)
-		t.CreateHeader = func() fyne.CanvasObject {
-			icon := widget.NewIcon(iconSortOff)
-			label := kxwidget.NewTappableLabel("XXX", nil)
-			return container.NewBorder(nil, nil, nil, icon, label)
-		}
-		t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-			h := headers[tci.Col]
-			row := co.(*fyne.Container).Objects
-			label := row[0].(*kxwidget.TappableLabel)
-			label.OnTapped = func() {
-				a.processData(tci.Col)
-			}
-			label.SetText(h.Text)
-			icon := row[1].(*widget.Icon)
-			switch a.colSort[tci.Col] {
-			case sortOff:
-				icon.SetResource(iconSortOff)
-			case sortAsc:
-				icon.SetResource(iconSortAsc)
-			case sortDesc:
-				icon.SetResource(iconSortDesc)
-			}
-		}
-		a.body = t
-	}
+	a.selectOwner = newSelectFilter("Any owner", func() {
+		a.filterRows(-1)
+	})
+
+	a.selectSolarSystem = newSelectFilter("Any system", func() {
+		a.filterRows(-1)
+	})
+
+	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+		a.filterRows(-1)
+	}, a.u.window)
 	return a
 }
 
-func (a *OverviewAssets) CreateRenderer() fyne.WidgetRenderer {
+func (a *overviewAssets) CreateRenderer() fyne.WidgetRenderer {
+	filters := container.NewHBox(a.selectSolarSystem, a.selectOwner)
+	if !a.u.isDesktop {
+		filters.Add(container.NewHBox(a.sortButton))
+	}
 	topBox := container.NewVBox(
 		container.NewBorder(nil, nil, nil, a.found, a.total),
 		a.entry,
+		container.NewHScroll(filters),
 	)
 	c := container.NewBorder(topBox, nil, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *OverviewAssets) Focus() {
+func (a *overviewAssets) makeDataList() *widget.List {
+	p := theme.Padding()
+	l := widget.NewList(
+		func() int {
+			return len(a.rowsFiltered)
+		},
+		func() fyne.CanvasObject {
+			title := widget.NewLabelWithStyle("Template", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+			owner := widget.NewLabel("Template")
+			location := widget.NewRichTextWithText("Template")
+			price := widget.NewLabel("Template")
+			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
+				title,
+				location,
+				owner,
+				price,
+			)
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id < 0 || id >= len(a.rowsFiltered) {
+				return
+			}
+			r := a.rowsFiltered[id]
+			box := co.(*fyne.Container).Objects
+			var title string
+			if r.isSingleton {
+				title = r.typeNameDisplay
+			} else {
+				title = fmt.Sprintf("%s x%s", r.typeNameDisplay, r.quantityDisplay)
+			}
+			box[0].(*widget.Label).SetText(title)
+			iwidget.SetRichText(box[1].(*widget.RichText), r.location.DisplayRichText()...)
+			box[2].(*widget.Label).SetText(r.characterName)
+			box[3].(*widget.Label).SetText(r.priceDisplay)
+		},
+	)
+	l.OnSelected = func(id widget.ListItemID) {
+		if id < 0 || id >= len(a.rowsFiltered) {
+			return
+		}
+		a.u.ShowTypeInfoWindow(a.rowsFiltered[id].typeID)
+	}
+	return l
+}
+
+func (a *overviewAssets) focus() {
 	a.u.MainWindow().Canvas().Focus(a.entry)
 }
 
-func (a *OverviewAssets) processData(sortCol int) {
-	var order sortDir
-	if sortCol >= 0 {
-		order = a.colSort[sortCol]
-		order++
-		if order > sortDesc {
-			order = sortOff
-		}
-		for i := range a.colSort {
-			a.colSort[i] = sortOff
-		}
-		a.colSort[sortCol] = order
+func (a *overviewAssets) filterRows(sortCol int) {
+	// search filter
+	rows := make([]assetRow, 0)
+	if search := strings.ToLower(a.entry.Text); search == "" {
+		rows = slices.Clone(a.rows)
 	} else {
-		for i := range a.colSort {
-			if a.colSort[i] != sortOff {
-				order = a.colSort[i]
-				sortCol = i
-				break
+		for _, r := range a.rows {
+			var matches bool
+			if search == "" {
+				matches = true
+			} else {
+				matches = strings.Contains(strings.ToLower(r.typeNameDisplay), search)
+			}
+			if matches {
+				rows = append(rows, r)
 			}
 		}
 	}
-	rows := make([]*assetSearchRow, 0)
-	search := strings.ToLower(a.entry.Text)
-	for _, r := range a.assets {
-		var matches bool
-		if search == "" {
-			matches = true
-		}
-		for _, cell := range []string{r.typeName, r.groupName, r.location.DisplayName(), r.characterName} {
-			if search != "" {
-				matches = matches || strings.Contains(strings.ToLower(cell), search)
-			}
-		}
-		if matches {
-			rows = append(rows, r)
-		}
-	}
-	if sortCol >= 0 && order != sortOff {
-		slices.SortFunc(rows, func(a, b *assetSearchRow) int {
+	// other filter
+	a.selectSolarSystem.applyFilter(func(selected string) {
+		rows = xslices.Filter(rows, func(o assetRow) bool {
+			return o.SolarSystemName() == selected
+		})
+	})
+	a.selectOwner.applyFilter(func(selected string) {
+		rows = xslices.Filter(rows, func(o assetRow) bool {
+			return o.characterName == selected
+		})
+	})
+	// sort
+	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+		slices.SortFunc(rows, func(a, b assetRow) int {
 			var x int
 			switch sortCol {
 			case 0:
-				x = cmp.Compare(a.name, b.name)
+				x = cmp.Compare(a.typeNameDisplay, b.typeNameDisplay)
 			case 1:
 				x = cmp.Compare(a.groupName, b.groupName)
 			case 2:
@@ -214,16 +240,22 @@ func (a *OverviewAssets) processData(sortCol int) {
 			case 4:
 				x = cmp.Compare(a.quantity, b.quantity)
 			case 5:
-				x = cmp.Compare(a.price, b.price)
+				x = cmp.Compare(a.total, b.total)
 			}
-			if order == sortAsc {
+			if dir == sortAsc {
 				return x
 			} else {
 				return -1 * x
 			}
 		})
-	}
-	a.assetsFiltered = rows
+	})
+	a.selectSolarSystem.setOptions(xiter.MapSlice(rows, func(o assetRow) string {
+		return o.SolarSystemName()
+	}))
+	a.selectOwner.setOptions(xiter.MapSlice(rows, func(o assetRow) string {
+		return o.characterName
+	}))
+	a.rowsFiltered = rows
 	a.updateFoundInfo()
 	a.body.Refresh()
 	switch x := a.body.(type) {
@@ -232,15 +264,12 @@ func (a *OverviewAssets) processData(sortCol int) {
 	}
 }
 
-func (a *OverviewAssets) resetSearch() {
-	for i := range a.colSort {
-		a.colSort[i] = sortOff
-	}
+func (a *overviewAssets) resetSearch() {
 	a.entry.SetText("")
-	a.processData(-1)
+	a.filterRows(-1)
 }
 
-func (a *OverviewAssets) update() {
+func (a *overviewAssets) update() {
 	var t string
 	var i widget.Importance
 	characterCount := a.characterCount()
@@ -265,13 +294,14 @@ func (a *OverviewAssets) update() {
 		a.total.Refresh()
 	})
 	fyne.Do(func() {
-		a.assetsFiltered = assets
-		a.assets = assets
+		a.rowsFiltered = assets
+		a.rows = assets
 		a.body.Refresh()
+		a.filterRows(-1)
 	})
 }
 
-func (*OverviewAssets) loadData(s services) ([]*assetSearchRow, bool, error) {
+func (*overviewAssets) loadData(s services) ([]assetRow, bool, error) {
 	ctx := context.Background()
 	cc, err := s.cs.ListCharactersShort(ctx)
 	if err != nil {
@@ -293,18 +323,19 @@ func (*OverviewAssets) loadData(s services) ([]*assetSearchRow, bool, error) {
 		return nil, false, err
 	}
 	assetCollection := assetcollection.New(assets, locations)
-	rows := make([]*assetSearchRow, len(assets))
+	rows := make([]assetRow, len(assets))
 	for i, ca := range assets {
-		r := &assetSearchRow{
-			characterID:   ca.CharacterID,
-			characterName: characterNames[ca.CharacterID],
-			groupID:       ca.Type.Group.ID,
-			groupName:     ca.Type.Group.Name,
-			itemID:        ca.ItemID,
-			name:          ca.DisplayName2(),
-			price:         ca.Price.ValueOrZero(),
-			typeID:        ca.Type.ID,
-			typeName:      ca.Type.Name,
+		r := assetRow{
+			characterID:     ca.CharacterID,
+			characterName:   characterNames[ca.CharacterID],
+			groupID:         ca.Type.Group.ID,
+			groupName:       ca.Type.Group.Name,
+			isSingleton:     ca.IsSingleton,
+			itemID:          ca.ItemID,
+			total:           ca.Price.ValueOrZero(),
+			typeID:          ca.Type.ID,
+			typeName:        ca.Type.Name,
+			typeNameDisplay: ca.DisplayName2(),
 		}
 		if ca.IsSingleton {
 			r.quantityDisplay = "1*"
@@ -330,16 +361,16 @@ func (*OverviewAssets) loadData(s services) ([]*assetSearchRow, bool, error) {
 	return rows, true, nil
 }
 
-func (a *OverviewAssets) updateFoundInfo() {
-	if c := len(a.assetsFiltered); c < len(a.assets) {
-		a.found.SetText(fmt.Sprintf("%d found", c))
+func (a *overviewAssets) updateFoundInfo() {
+	if c := len(a.rowsFiltered); c < len(a.rows) {
+		a.found.SetText(fmt.Sprintf("%s found", ihumanize.Comma(c)))
 		a.found.Show()
 	} else {
 		a.found.Hide()
 	}
 }
 
-func (a *OverviewAssets) characterCount() int {
+func (a *overviewAssets) characterCount() int {
 	cc := a.u.scs.ListCharacters()
 	validCount := 0
 	for _, c := range cc {
@@ -350,8 +381,8 @@ func (a *OverviewAssets) characterCount() int {
 	return validCount
 }
 
-func (a *OverviewAssets) makeTopText(c int) (string, widget.Importance) {
-	it := humanize.Comma(int64(len(a.assets)))
+func (a *overviewAssets) makeTopText(c int) (string, widget.Importance) {
+	it := humanize.Comma(int64(len(a.rows)))
 	text := fmt.Sprintf("%d characters • %s items", c, it)
 	return text, widget.MediumImportance
 }

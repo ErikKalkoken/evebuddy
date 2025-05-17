@@ -20,21 +20,21 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-type cloneSearchRow struct {
+type cloneRow struct {
 	c     *app.CharacterJumpClone2
 	route []*app.EveSolarSystem
 }
 
-func (r cloneSearchRow) compare(other cloneSearchRow) int {
+func (r cloneRow) compare(other cloneRow) int {
 	return cmp.Compare(r.sortValue(), other.sortValue())
 }
 
-func (r cloneSearchRow) sortValue() int {
+func (r cloneRow) sortValue() int {
 	if r.route == nil {
 		return 10_000
 	}
@@ -44,7 +44,7 @@ func (r cloneSearchRow) sortValue() int {
 	return len(r.route) - 1
 }
 
-func (r cloneSearchRow) jumps() string {
+func (r cloneRow) jumps() string {
 	if r.route == nil {
 		return "?"
 	}
@@ -54,49 +54,47 @@ func (r cloneSearchRow) jumps() string {
 	return fmt.Sprint(len(r.route) - 1)
 }
 
-type OverviewClones struct {
+type overviewClones struct {
 	widget.BaseWidget
 
-	body         fyne.CanvasObject
-	colSort      []sortDir
-	origin       *app.EveSolarSystem
-	originButton *widget.Button
-	originLabel  *iwidget.TappableRichText
-	routePref    *widget.Select
-	rows         []cloneSearchRow
-	top          *widget.Label
-	u            *BaseUI
+	body              fyne.CanvasObject
+	changeOrigin      *widget.Button
+	columnSorter      *columnSorter
+	origin            *app.EveSolarSystem
+	originLabel       *widget.RichText
+	routePref         app.RoutePreference
+	rows              []cloneRow
+	rowsFiltered      []cloneRow
+	sortButton        *sortButton
+	top               *widget.Label
+	u                 *BaseUI
+	selectOwner       *selectFilter
+	selectRegion      *selectFilter
+	selectSolarSystem *selectFilter
 }
 
-func NewOverviewClones(u *BaseUI) *OverviewClones {
-	headers := []iwidget.HeaderDef{
+func newOverviewClones(u *BaseUI) *overviewClones {
+	headers := []headerDef{
 		{Text: "Location", Width: columnWidthLocation},
-		{Text: "Region", Width: columnWidthRegion},
+		{Text: "Region", Width: columnWidthRegion, NotSortable: true},
 		{Text: "Impl.", Width: 100},
 		{Text: "Character", Width: columnWidthCharacter},
 		{Text: "Jumps", Width: 100},
 	}
-	a := &OverviewClones{
-		colSort:     make([]sortDir, len(headers)),
-		originLabel: iwidget.NewTappableRichTextWithText("?", nil),
-		rows:        make([]cloneSearchRow, 0),
-		top:         appwidget.MakeTopLabel(),
-		u:           u,
+	a := &overviewClones{
+		columnSorter: newColumnSorter(headers),
+		originLabel:  widget.NewRichTextWithText("(not set)"),
+		rows:         make([]cloneRow, 0),
+		rowsFiltered: make([]cloneRow, 0),
+		top:          makeTopLabel(),
+		u:            u,
 	}
 	a.ExtendBaseWidget(a)
 	a.originLabel.Wrapping = fyne.TextWrapWord
-	a.originButton = widget.NewButton("Origin", func() {
-		a.changeOrigin(a.u.MainWindow())
+	a.changeOrigin = widget.NewButton("Route from", func() {
+		a.setOrigin(a.u.MainWindow())
 	})
-	xx := xslices.Map(app.RoutePreferences(), func(a app.RoutePreference) string {
-		return a.String()
-	})
-	a.routePref = widget.NewSelect(xx, func(s string) {})
-	a.routePref.Selected = app.RouteShortest.String()
-	a.routePref.OnChanged = func(s string) {
-		go a.updateRoutes(app.RoutePreference(s))
-	}
-	makeCell := func(col int, r cloneSearchRow) []widget.RichTextSegment {
+	makeCell := func(col int, r cloneRow) []widget.RichTextSegment {
 		var s []widget.RichTextSegment
 		switch col {
 		case 0:
@@ -114,8 +112,8 @@ func NewOverviewClones(u *BaseUI) *OverviewClones {
 		}
 		return s
 	}
-	if a.u.isDesktop() {
-		t := iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, func(c int, r cloneSearchRow) {
+	if a.u.isDesktop {
+		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(c int, r cloneRow) {
 			switch c {
 			case 0:
 				a.u.ShowLocationInfoWindow(r.c.Location.ID)
@@ -137,65 +135,51 @@ func NewOverviewClones(u *BaseUI) *OverviewClones {
 				a.showRoute(r)
 			}
 		})
-		iconSortAsc := theme.NewPrimaryThemedResource(icons.SortAscendingSvg)
-		iconSortDesc := theme.NewPrimaryThemedResource(icons.SortDescendingSvg)
-		iconSortOff := theme.NewThemedResource(icons.SortSvg)
-		t.CreateHeader = func() fyne.CanvasObject {
-			icon := widget.NewIcon(iconSortOff)
-			label := kxwidget.NewTappableLabel("XXX", nil)
-			return container.NewBorder(nil, nil, nil, icon, label)
-		}
-		t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-			h := headers[tci.Col]
-			row := co.(*fyne.Container).Objects
-			label := row[0].(*kxwidget.TappableLabel)
-			label.SetText(h.Text)
-			label.OnTapped = func() {
-				a.sortRows(tci.Col)
-			}
-			icon := row[1].(*widget.Icon)
-			switch a.colSort[tci.Col] {
-			case sortOff:
-				icon.SetResource(iconSortOff)
-			case sortAsc:
-				icon.SetResource(iconSortAsc)
-			case sortDesc:
-				icon.SetResource(iconSortDesc)
-			}
-		}
-		a.body = t
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeCell, func(r cloneSearchRow) {
+		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, func(r cloneRow) {
 			if len(r.route) == 0 {
 				return
 			}
 			a.showRoute(r)
 		})
 	}
+
+	a.selectRegion = newSelectFilter("Any region", func() {
+		a.filterRows(-1)
+	})
+
+	a.selectSolarSystem = newSelectFilter("Any system", func() {
+		a.filterRows(-1)
+	})
+
+	a.selectOwner = newSelectFilter("Any owner", func() {
+		a.filterRows(-1)
+	})
+
+	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+		a.filterRows(-1)
+	}, a.u.window)
+
 	return a
 }
 
-func (a *OverviewClones) CreateRenderer() fyne.WidgetRenderer {
-	var route *fyne.Container
-	routeLabel := widget.NewLabelWithStyle("Route:", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
-	if a.u.isDesktop() {
-		route = container.NewBorder(
-			nil,
-			nil,
-			container.NewHBox(routeLabel, a.routePref, a.originButton),
-			nil,
-			a.originLabel,
-		)
-	} else {
-		route = container.NewVBox(
-			container.NewHBox(routeLabel, a.routePref),
-			container.NewBorder(nil, nil, a.originButton, nil, a.originLabel),
-		)
+func (a *overviewClones) CreateRenderer() fyne.WidgetRenderer {
+	route := container.NewBorder(
+		nil,
+		nil,
+		a.changeOrigin,
+		nil,
+		a.originLabel,
+	)
+	filters := container.NewHBox(a.selectRegion, a.selectSolarSystem, a.selectOwner)
+	if !a.u.isDesktop {
+		filters.Add(a.sortButton)
 	}
 	c := container.NewBorder(
 		container.NewVBox(
 			a.top,
 			route,
+			container.NewHScroll(filters),
 		),
 		nil,
 		nil,
@@ -205,8 +189,8 @@ func (a *OverviewClones) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *OverviewClones) update() {
-	rows := make([]cloneSearchRow, 0)
+func (a *overviewClones) update() {
+	rows := make([]cloneRow, 0)
 	t, i, err := func() (string, widget.Importance, error) {
 		rows2, err := a.fetchRows(a.u.services())
 		if err != nil {
@@ -231,14 +215,14 @@ func (a *OverviewClones) update() {
 	})
 	fyne.Do(func() {
 		a.rows = rows
-		a.body.Refresh()
+		a.filterRows(-1)
 		if len(rows) > 0 && a.origin != nil {
-			go a.updateRoutes(app.RoutePreference(a.routePref.Selected))
+			go a.updateRoutes()
 		}
 	})
 }
 
-func (*OverviewClones) fetchRows(s services) ([]cloneSearchRow, error) {
+func (*overviewClones) fetchRows(s services) ([]cloneRow, error) {
 	ctx := context.Background()
 	oo, err := s.cs.ListAllJumpClones(ctx)
 	if err != nil {
@@ -247,13 +231,13 @@ func (*OverviewClones) fetchRows(s services) ([]cloneSearchRow, error) {
 	slices.SortFunc(oo, func(a, b *app.CharacterJumpClone2) int {
 		return cmp.Compare(a.SolarSystemName(), b.SolarSystemName())
 	})
-	rows := xslices.Map(oo, func(o *app.CharacterJumpClone2) cloneSearchRow {
-		return cloneSearchRow{c: o}
+	rows := xslices.Map(oo, func(o *app.CharacterJumpClone2) cloneRow {
+		return cloneRow{c: o}
 	})
 	return rows, nil
 }
 
-func (a *OverviewClones) updateRoutes(flag app.RoutePreference) {
+func (a *overviewClones) updateRoutes() {
 	if a.origin == nil {
 		return
 	}
@@ -271,7 +255,7 @@ func (a *OverviewClones) updateRoutes(flag app.RoutePreference) {
 			defer wg.Done()
 			dest := o.c.Location.SolarSystem
 			origin := a.origin
-			j, err := a.u.eus.FetchRoute(ctx, dest, origin, flag)
+			j, err := a.u.eus.FetchRoute(ctx, dest, origin, a.routePref)
 			if err != nil {
 				slog.Error("Failed to get route", "origin", origin.ID, "destination", dest.ID, "error", err)
 				return
@@ -283,25 +267,28 @@ func (a *OverviewClones) updateRoutes(flag app.RoutePreference) {
 		}()
 	}
 	wg.Wait()
-	slices.SortFunc(a.rows, func(a, b cloneSearchRow) int {
+	slices.SortFunc(a.rows, func(a, b cloneRow) int {
 		return a.compare(b)
 	})
 	fyne.Do(func() {
-		for i := range a.colSort {
-			a.colSort[i] = sortOff
-		}
-		a.colSort[4] = sortAsc
-		a.body.Refresh()
+		a.columnSorter.set(4, sortAsc)
+		a.filterRows(-1)
 	})
 }
 
-func (a *OverviewClones) changeOrigin(w fyne.Window) {
+func (a *overviewClones) setOrigin(w fyne.Window) {
 	showErrorDialog := func(search string, err error) {
 		slog.Error("Failed to resolve names", "search", search, "error", err)
 		a.u.ShowErrorDialog("Something went wrong", err, w)
 	}
 	var d dialog.Dialog
 	results := make([]*app.EveEntity, 0)
+	routePref := widget.NewSelect(
+		xslices.Map(app.RoutePreferences(), func(a app.RoutePreference) string {
+			return a.String()
+		}), nil,
+	)
+	routePref.Selected = app.RouteShortest.String()
 	list := widget.NewList(
 		func() int {
 			return len(results)
@@ -328,12 +315,13 @@ func (a *OverviewClones) changeOrigin(w fyne.Window) {
 			return
 		}
 		a.origin = s
-		a.originLabel.Segments = s.DisplayRichTextWithRegion()
-		a.originLabel.OnTapped = func() {
-			a.u.ShowInfoWindow(app.EveEntitySolarSystem, s.ID)
-		}
+		a.routePref = app.RoutePreference(routePref.Selected)
+		a.originLabel.Segments = iwidget.InlineRichTextSegments(
+			s.DisplayRichTextWithRegion(),
+			iwidget.NewRichTextSegmentFromText(fmt.Sprintf(" [%s]", a.routePref.String())),
+		)
 		a.originLabel.Refresh()
-		go a.updateRoutes(app.RoutePreference(a.routePref.Selected))
+		go a.updateRoutes()
 		d.Hide()
 	}
 	list.HideSeparators = true
@@ -376,7 +364,7 @@ func (a *OverviewClones) changeOrigin(w fyne.Window) {
 	note.Importance = widget.LowImportance
 	c := container.NewBorder(
 		container.NewBorder(
-			nil,
+			container.NewHBox(widget.NewLabel("Route preference:"), routePref),
 			nil,
 			nil,
 			widget.NewButton("Cancel", func() {
@@ -395,29 +383,28 @@ func (a *OverviewClones) changeOrigin(w fyne.Window) {
 	w.Canvas().Focus(entry)
 }
 
-func (a *OverviewClones) sortRows(sortCol int) {
-	var order sortDir
-	if sortCol >= 0 {
-		order = a.colSort[sortCol]
-		order++
-		if order > sortDesc {
-			order = sortOff
-		}
-		for i := range a.colSort {
-			a.colSort[i] = sortOff
-		}
-		a.colSort[sortCol] = order
-	} else {
-		for i := range a.colSort {
-			if a.colSort[i] != sortOff {
-				order = a.colSort[i]
-				sortCol = i
-				break
-			}
-		}
-	}
-	if sortCol >= 0 && order != sortOff {
-		slices.SortFunc(a.rows, func(a, b cloneSearchRow) int {
+func (a *overviewClones) filterRows(sortCol int) {
+	rows := slices.Clone(a.rows)
+	// filter
+	a.selectOwner.applyFilter(func(selected string) {
+		rows = xslices.Filter(rows, func(o cloneRow) bool {
+			return o.c.CharacterName() == selected
+		})
+	})
+	a.selectRegion.applyFilter(func(selected string) {
+		rows = xslices.Filter(rows, func(o cloneRow) bool {
+			return o.c.RegionName() == selected
+		})
+	})
+	a.selectSolarSystem.applyFilter(func(selected string) {
+		rows = xslices.Filter(rows, func(o cloneRow) bool {
+			return o.c.SolarSystemName() == selected
+		})
+	})
+
+	// sort
+	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+		slices.SortFunc(rows, func(a, b cloneRow) int {
 			var x int
 			switch sortCol {
 			case 0:
@@ -433,17 +420,27 @@ func (a *OverviewClones) sortRows(sortCol int) {
 			case 4:
 				x = cmp.Compare(a.sortValue(), b.sortValue())
 			}
-			if order == sortAsc {
+			if dir == sortAsc {
 				return x
 			} else {
 				return -1 * x
 			}
 		})
-	}
+	})
+	a.selectOwner.setOptions(xiter.MapSlice(rows, func(o cloneRow) string {
+		return o.c.CharacterName()
+	}))
+	a.selectRegion.setOptions(xiter.MapSlice(rows, func(o cloneRow) string {
+		return o.c.RegionName()
+	}))
+	a.selectSolarSystem.setOptions(xiter.MapSlice(rows, func(o cloneRow) string {
+		return o.c.SolarSystemName()
+	}))
+	a.rowsFiltered = rows
 	a.body.Refresh()
 }
 
-func (a *OverviewClones) showRoute(r cloneSearchRow) {
+func (a *overviewClones) showRoute(r cloneRow) {
 	col := kxlayout.NewColumns(60)
 	list := widget.NewList(
 		func() int {
@@ -487,7 +484,7 @@ func (a *OverviewClones) showRoute(r cloneSearchRow) {
 		},
 		r.c.Location.SolarSystem.DisplayRichTextWithRegion()...)
 	to.Wrapping = fyne.TextWrapWord
-	jumps := widget.NewLabel(fmt.Sprintf("%s (%s)", r.jumps(), a.routePref.Selected))
+	jumps := widget.NewLabel(fmt.Sprintf("%s (%s)", r.jumps(), a.routePref.String()))
 	top := container.New(
 		layout.NewCustomPaddedVBoxLayout(0),
 		container.New(
@@ -520,7 +517,7 @@ func (a *OverviewClones) showRoute(r cloneSearchRow) {
 	w.Show()
 }
 
-func (a *OverviewClones) showClone(r cloneSearchRow) {
+func (a *overviewClones) showClone(r cloneRow) {
 	clone, err := a.u.cs.GetJumpClone(context.Background(), r.c.Character.ID, r.c.CloneID)
 	if err != nil {
 		slog.Error("show clone", "error", err)

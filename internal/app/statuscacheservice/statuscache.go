@@ -5,11 +5,14 @@ package statuscacheservice
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 const (
@@ -228,6 +231,13 @@ func (sc *StatusCacheService) CharacterName(characterID int32) string {
 		}
 	}
 	return ""
+}
+
+// ListCharacterIDs returns the user's character IDs.
+func (sc *StatusCacheService) ListCharacterIDs() set.Set[int32] {
+	return set.Collect(xiter.Map(slices.Values(sc.ListCharacters()), func(x *app.EntityShort[int32]) int32 {
+		return x.ID
+	}))
 }
 
 // ListCharacters returns the user's characters in alphabetical order.
