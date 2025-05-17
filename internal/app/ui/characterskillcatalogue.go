@@ -49,7 +49,7 @@ type CharacterSkillCatalogue struct {
 	u              *BaseUI
 }
 
-func NewCharacterSkillCatalogue(u *BaseUI) *CharacterSkillCatalogue {
+func newCharacterSkillCatalogue(u *BaseUI) *CharacterSkillCatalogue {
 	a := &CharacterSkillCatalogue{
 		groups:         make([]skillGroupProgress, 0),
 		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),

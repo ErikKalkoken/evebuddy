@@ -36,7 +36,7 @@ type CharacterSheet struct {
 	wealth          *widget.Label
 }
 
-func NewSheet(u *BaseUI) *CharacterSheet {
+func newSheet(u *BaseUI) *CharacterSheet {
 	makeLogo := func() *kxwidget.TappableImage {
 		ti := kxwidget.NewTappableImage(icons.BlankSvg, nil)
 		ti.SetFillMode(canvas.ImageFillContain)

@@ -100,7 +100,7 @@ type BaseUI struct {
 	characterShips             *CharacterFlyableShips
 	characterSkillCatalogue    *CharacterSkillCatalogue
 	characterSkillQueue        *CharacterSkillQueue
-	characterWalletJournal     *CharacterWalletJournal
+	characterWalletJournal     *characterWalletJournal
 	characterWalletTransaction *CharacterWalletTransaction
 	contracts                  *contracts
 	gameSearch                 *GameSearch
@@ -196,32 +196,32 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 		defaultImageScaleMode = canvas.ImageScaleFastest
 	}
 
-	u.characterAsset = NewCharacterAssets(u)
-	u.characterAttributes = NewCharacterAttributes(u)
-	u.characterBiography = NewCharacterBiography(u)
-	u.characterCommunications = NewCharacterCommunications(u)
-	u.characterImplants = NewCharacterAugmentations(u)
-	u.characterJumpClones = NewCharacterJumpClones(u)
-	u.characterMail = NewCharacterMails(u)
-	u.characterSheet = NewSheet(u)
-	u.characterShips = NewCharacterFlyableShips(u)
-	u.characterSkillCatalogue = NewCharacterSkillCatalogue(u)
-	u.characterSkillQueue = NewCharacterSkillQueue(u)
-	u.characterWalletJournal = NewCharacterWalletJournal(u)
+	u.characterAsset = newCharacterAssets(u)
+	u.characterAttributes = newCharacterAttributes(u)
+	u.characterBiography = newCharacterBiography(u)
+	u.characterCommunications = newCharacterCommunications(u)
+	u.characterImplants = newCharacterAugmentations(u)
+	u.characterJumpClones = newCharacterJumpClones(u)
+	u.characterMail = newCharacterMails(u)
+	u.characterSheet = newSheet(u)
+	u.characterShips = newCharacterFlyableShips(u)
+	u.characterSkillCatalogue = newCharacterSkillCatalogue(u)
+	u.characterSkillQueue = newCharacterSkillQueue(u)
+	u.characterWalletJournal = newCharacterWalletJournal(u)
 	u.characterWalletTransaction = NewCharacterWalletTransaction(u)
 	u.contracts = newContracts(u)
-	u.gameSearch = NewGameSearch(u)
-	u.industryJobs = NewIndustryJobs(u)
-	u.manageCharacters = NewManageCharacters(u)
+	u.gameSearch = newGameSearch(u)
+	u.industryJobs = newIndustryJobs(u)
+	u.manageCharacters = newManageCharacters(u)
 	u.overviewAssets = newOverviewAssets(u)
-	u.overviewCharacters = NewOverviewCharacters(u)
+	u.overviewCharacters = newOverviewCharacters(u)
 	u.overviewClones = newOverviewClones(u)
-	u.colonies = NewColonies(u)
+	u.colonies = newColonies(u)
 	u.overviewLocations = newLocations(u)
 	u.overviewTraining = newTraining(u)
-	u.overviewWealth = NewOverviewWealth(u)
+	u.overviewWealth = newOverviewWealth(u)
 	u.snackbar = iwidget.NewSnackbar(u.window)
-	u.userSettings = NewSettings(u)
+	u.userSettings = newSettings(u)
 	u.MainWindow().SetMaster()
 
 	// SetOnStarted is called on initial start,

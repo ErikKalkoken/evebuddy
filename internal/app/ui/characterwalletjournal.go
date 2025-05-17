@@ -1,9 +1,11 @@
 package ui
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
@@ -12,70 +14,71 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-type walletJournalEntry struct {
-	amount      float64
-	balance     float64
-	date        time.Time
-	description string
-	refType     string
-	reason      string
+type walletJournalRow struct {
+	amount         float64
+	balance        float64
+	date           time.Time
+	description    string
+	refType        string
+	refTypeDisplay string
+	reason         string
 }
 
-func (e walletJournalEntry) hasReason() bool {
+func (e walletJournalRow) hasReason() bool {
 	return e.reason != ""
 }
 
-func (e walletJournalEntry) refTypeOutput() string {
-	titler := cases.Title(language.English)
-	return titler.String(strings.ReplaceAll(e.refType, "_", " "))
-}
-
-func (e walletJournalEntry) descriptionWithReason() string {
+func (e walletJournalRow) descriptionWithReason() string {
 	if e.reason == "" {
 		return e.description
 	}
 	return fmt.Sprintf("[r] %s", e.description)
 }
 
-type CharacterWalletJournal struct {
+type characterWalletJournal struct {
 	widget.BaseWidget
 
 	OnUpdate func(balance string)
 
-	entries []walletJournalEntry
-	body    fyne.CanvasObject
-	top     *widget.Label
-	u       *BaseUI
+	body         fyne.CanvasObject
+	columnSorter *columnSorter
+	rows         []walletJournalRow
+	rowsFiltered []walletJournalRow
+	selectType   *selectFilter
+	sortButton   *sortButton
+	top          *widget.Label
+	u            *BaseUI
 }
 
-func NewCharacterWalletJournal(u *BaseUI) *CharacterWalletJournal {
-	a := &CharacterWalletJournal{
-		entries: make([]walletJournalEntry, 0),
-		top:     makeTopLabel(),
-		u:       u,
-	}
-	a.ExtendBaseWidget(a)
+func newCharacterWalletJournal(u *BaseUI) *characterWalletJournal {
 	headers := []headerDef{
 		{Text: "Date", Width: 150},
 		{Text: "Type", Width: 150},
 		{Text: "Amount", Width: 200},
-		{Text: "Balance", Width: 200},
-		{Text: "Description", Width: 450},
+		{Text: "Balance", Width: 200, NotSortable: true},
+		{Text: "Description", Width: 450, NotSortable: true},
 	}
-	makeCell := func(col int, w walletJournalEntry) []widget.RichTextSegment {
+	a := &characterWalletJournal{
+		columnSorter: newColumnSorterWithInit(headers, 0, sortDesc),
+		rows:         make([]walletJournalRow, 0),
+		top:          makeTopLabel(),
+		u:            u,
+	}
+	a.ExtendBaseWidget(a)
+	makeCell := func(col int, w walletJournalRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
 			return iwidget.NewRichTextSegmentFromText(w.date.Format(app.DateTimeFormat))
 		case 1:
-			return iwidget.NewRichTextSegmentFromText(w.refTypeOutput())
+			return iwidget.NewRichTextSegmentFromText(w.refTypeDisplay)
 		case 2:
 			var color fyne.ThemeColorName
 			switch {
@@ -105,33 +108,84 @@ func NewCharacterWalletJournal(u *BaseUI) *CharacterWalletJournal {
 		}
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
-	showReasonDialog := func(r walletJournalEntry) {
+	showReasonDialog := func(r walletJournalRow) {
 		if r.hasReason() {
 			a.u.ShowInformationDialog("Reason", r.reason, a.u.MainWindow())
 		}
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTable(headers, &a.entries, makeCell, func(_ int, r walletJournalEntry) {
+		a.body = makeDataTableWithSort(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r walletJournalRow) {
 			showReasonDialog(r)
 		})
 	} else {
-		a.body = makeDataList(headers, &a.entries, makeCell, showReasonDialog)
+		a.body = makeDataList(headers, &a.rows, makeCell, showReasonDialog)
 	}
+
+	a.selectType = newSelectFilter("Any type", func() {
+		a.filterRows(-1)
+	})
+	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+		a.filterRows(-1)
+	}, a.u.window)
 	return a
 }
 
-func (a *CharacterWalletJournal) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(a.top, nil, nil, nil, a.body)
+func (a *characterWalletJournal) CreateRenderer() fyne.WidgetRenderer {
+	filter := container.NewHBox(a.selectType)
+	if !a.u.isDesktop {
+		filter.Add(a.sortButton)
+	}
+	c := container.NewBorder(
+		container.NewHScroll(filter),
+		nil,
+		nil,
+		nil,
+		a.body,
+	)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *CharacterWalletJournal) update() {
+func (a *characterWalletJournal) filterRows(sortCol int) {
+	rows := slices.Clone(a.rows)
+	// filter
+	a.selectType.applyFilter(func(selected string) {
+		rows = xslices.Filter(rows, func(r walletJournalRow) bool {
+			return r.refTypeDisplay == selected
+		})
+	})
+	// sort
+	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+		slices.SortFunc(rows, func(a, b walletJournalRow) int {
+			var x int
+			switch sortCol {
+			case 0:
+				x = a.date.Compare(b.date)
+			case 1:
+				x = strings.Compare(a.refType, b.refType)
+			case 2:
+				x = cmp.Compare(a.amount, b.amount)
+			}
+			if dir == sortAsc {
+				return x
+			} else {
+				return -1 * x
+			}
+		})
+	})
+	a.selectType.setOptions(xiter.MapSlice(rows, func(r walletJournalRow) string {
+		return r.refTypeDisplay
+	}))
+	a.rowsFiltered = rows
+	a.body.Refresh()
+}
+
+func (a *characterWalletJournal) update() {
 	var err error
-	entries := make([]walletJournalEntry, 0)
+	entries := make([]walletJournalRow, 0)
 	characterID := a.u.currentCharacterID()
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionWalletJournal)
 	if hasData {
-		entries2, err2 := a.updateEntries(characterID, a.u.services())
+		entries2, err2 := a.fetchRows(characterID, a.u.services())
 		if err2 != nil {
 			slog.Error("Failed to refresh wallet journal UI", "err", err2)
 			err = err2
@@ -142,8 +196,7 @@ func (a *CharacterWalletJournal) update() {
 	t, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
 		character := a.u.currentCharacter()
 		b := ihumanize.OptionalFloat(character.WalletBalance, 1, "?")
-		t := humanize.Comma(int64(len(entries)))
-		s := fmt.Sprintf("Balance: %s • Entries: %s", b, t)
+		s := fmt.Sprintf("Balance: %s", b)
 		if a.OnUpdate != nil {
 			a.OnUpdate(b)
 		}
@@ -155,26 +208,28 @@ func (a *CharacterWalletJournal) update() {
 		a.top.Refresh()
 	})
 	fyne.Do(func() {
-		a.entries = entries
-		a.body.Refresh()
+		a.rows = entries
+		a.filterRows(-1)
 	})
 }
 
-func (*CharacterWalletJournal) updateEntries(characterID int32, s services) ([]walletJournalEntry, error) {
-	ww, err := s.cs.ListWalletJournalEntries(context.TODO(), characterID)
+func (*characterWalletJournal) fetchRows(characterID int32, s services) ([]walletJournalRow, error) {
+	entries, err := s.cs.ListWalletJournalEntries(context.Background(), characterID)
 	if err != nil {
 		return nil, err
 	}
-	entries := make([]walletJournalEntry, len(ww))
-	for i, w := range ww {
-		var w2 walletJournalEntry
-		w2.amount = w.Amount
-		w2.balance = w.Balance
-		w2.date = w.Date
-		w2.description = w.Description
-		w2.reason = w.Reason
-		w2.refType = w.RefType
-		entries[i] = w2
+	rows := make([]walletJournalRow, len(entries))
+	for i, o := range entries {
+		r := walletJournalRow{
+			amount:         o.Amount,
+			balance:        o.Balance,
+			date:           o.Date,
+			description:    o.Description,
+			reason:         o.Reason,
+			refType:        o.RefType,
+			refTypeDisplay: o.RefTypeDisplay(),
+		}
+		rows[i] = r
 	}
-	return entries, nil
+	return rows, nil
 }

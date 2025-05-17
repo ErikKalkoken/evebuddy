@@ -47,7 +47,7 @@ type GameSearch struct {
 	w                   fyne.Window
 }
 
-func NewGameSearch(u *BaseUI) *GameSearch {
+func newGameSearch(u *BaseUI) *GameSearch {
 	a := &GameSearch{
 		defaultCategories:   makeOptions(),
 		entry:               widget.NewEntry(),

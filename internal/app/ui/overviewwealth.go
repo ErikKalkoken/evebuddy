@@ -35,7 +35,7 @@ type OverviewWealth struct {
 	u      *BaseUI
 }
 
-func NewOverviewWealth(u *BaseUI) *OverviewWealth {
+func newOverviewWealth(u *BaseUI) *OverviewWealth {
 	a := &OverviewWealth{
 		top: makeTopLabel(),
 		u:   u,

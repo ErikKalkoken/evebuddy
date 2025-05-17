@@ -48,7 +48,7 @@ type UserSettings struct {
 	w            fyne.Window
 }
 
-func NewSettings(u *BaseUI) *UserSettings {
+func newSettings(u *BaseUI) *UserSettings {
 	a := &UserSettings{
 		showSnackbar: u.ShowSnackbar,
 		u:            u,

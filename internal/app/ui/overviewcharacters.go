@@ -65,7 +65,7 @@ type OverviewCharacters struct {
 	u                 *BaseUI
 }
 
-func NewOverviewCharacters(u *BaseUI) *OverviewCharacters {
+func newOverviewCharacters(u *BaseUI) *OverviewCharacters {
 	headers := []headerDef{
 		{Text: "Character", Width: columnWidthCharacter},
 		{Text: "Corporation", Width: 250},

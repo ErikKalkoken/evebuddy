@@ -1342,6 +1342,11 @@ type CharacterWalletJournalEntry struct {
 	TaxReceiver   *EveEntity
 }
 
+func (we CharacterWalletJournalEntry) RefTypeDisplay() string {
+	titler := cases.Title(language.English)
+	return titler.String(strings.ReplaceAll(we.RefType, "_", " "))
+}
+
 type CharacterWalletTransaction struct {
 	CharacterID   int32
 	Client        *EveEntity

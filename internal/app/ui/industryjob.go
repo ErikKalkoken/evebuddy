@@ -116,7 +116,7 @@ type industryJobs struct {
 	u               *BaseUI
 }
 
-func NewIndustryJobs(u *BaseUI) *industryJobs {
+func newIndustryJobs(u *BaseUI) *industryJobs {
 	headers := []headerDef{
 		{Text: "Blueprint", Width: 250},
 		{Text: "Status", Width: 100, Refresh: true},

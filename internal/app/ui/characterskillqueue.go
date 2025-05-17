@@ -27,7 +27,7 @@ type CharacterSkillQueue struct {
 	u    *BaseUI
 }
 
-func NewCharacterSkillQueue(u *BaseUI) *CharacterSkillQueue {
+func newCharacterSkillQueue(u *BaseUI) *CharacterSkillQueue {
 	a := &CharacterSkillQueue{
 		top: makeTopLabel(),
 		sq:  app.NewCharacterSkillqueue(),

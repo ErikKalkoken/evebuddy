@@ -66,7 +66,7 @@ type colonies struct {
 	u                 *BaseUI
 }
 
-func NewColonies(u *BaseUI) *colonies {
+func newColonies(u *BaseUI) *colonies {
 	headers := []headerDef{
 		{Text: "Planet", Width: 150},
 		{Text: "Type", Width: 100},

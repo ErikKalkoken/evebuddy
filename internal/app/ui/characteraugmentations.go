@@ -26,7 +26,7 @@ type CharacterAugmentations struct {
 	u        *BaseUI
 }
 
-func NewCharacterAugmentations(u *BaseUI) *CharacterAugmentations {
+func newCharacterAugmentations(u *BaseUI) *CharacterAugmentations {
 	a := &CharacterAugmentations{
 		implants: make([]*app.CharacterImplant, 0),
 		top:      makeTopLabel(),

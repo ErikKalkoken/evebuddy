@@ -114,7 +114,7 @@ type CharacterMails struct {
 	currentFolder optional.Optional[FolderNode]
 }
 
-func NewCharacterMails(u *BaseUI) *CharacterMails {
+func newCharacterMails(u *BaseUI) *CharacterMails {
 	a := &CharacterMails{
 		body:      widget.NewLabel(""),
 		header:    NewMailHeader(u.eis, u.ShowEveEntityInfoWindow),

@@ -38,7 +38,7 @@ type CharacterAttributes struct {
 	u          *BaseUI
 }
 
-func NewCharacterAttributes(u *BaseUI) *CharacterAttributes {
+func newCharacterAttributes(u *BaseUI) *CharacterAttributes {
 	w := &CharacterAttributes{
 		attributes: make([]attribute, 0),
 		top:        makeTopLabel(),

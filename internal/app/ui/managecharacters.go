@@ -44,7 +44,7 @@ type ManageCharacters struct {
 	window       fyne.Window
 }
 
-func NewManageCharacters(u *BaseUI) *ManageCharacters {
+func newManageCharacters(u *BaseUI) *ManageCharacters {
 	a := &ManageCharacters{
 		characters:   make([]accountCharacter, 0),
 		showSnackbar: u.ShowSnackbar,

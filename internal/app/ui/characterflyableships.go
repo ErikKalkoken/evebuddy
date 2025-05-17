@@ -44,7 +44,7 @@ type CharacterFlyableShips struct {
 	u               *BaseUI
 }
 
-func NewCharacterFlyableShips(u *BaseUI) *CharacterFlyableShips {
+func newCharacterFlyableShips(u *BaseUI) *CharacterFlyableShips {
 	a := &CharacterFlyableShips{
 		ships:     make([]*app.CharacterShipAbility, 0),
 		top:       widget.NewLabel(""),

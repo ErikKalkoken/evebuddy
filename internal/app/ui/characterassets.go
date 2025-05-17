@@ -47,7 +47,7 @@ type CharacterAssets struct {
 	u                *BaseUI
 }
 
-func NewCharacterAssets(u *BaseUI) *CharacterAssets {
+func newCharacterAssets(u *BaseUI) *CharacterAssets {
 	lp := kxwidget.NewTappableLabel("", nil)
 	lp.Wrapping = fyne.TextWrapWord
 	a := &CharacterAssets{

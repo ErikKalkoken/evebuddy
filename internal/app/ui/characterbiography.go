@@ -14,7 +14,7 @@ type CharacterBiography struct {
 	u    *BaseUI
 }
 
-func NewCharacterBiography(u *BaseUI) *CharacterBiography {
+func newCharacterBiography(u *BaseUI) *CharacterBiography {
 	text := widget.NewLabel("")
 	text.Wrapping = fyne.TextWrapWord
 	w := &CharacterBiography{
