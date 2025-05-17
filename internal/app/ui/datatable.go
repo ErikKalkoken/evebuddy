@@ -313,7 +313,7 @@ func (cs *columnSorter) reset() {
 	cs.set(cs.defaultIdx, cs.defaultDir)
 }
 
-// clear removes sorting from all colums.
+// clear removes sorting from all columns.
 func (cs *columnSorter) clear() {
 	for i := range cs.cols {
 		var dir sortDir

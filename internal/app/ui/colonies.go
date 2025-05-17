@@ -157,7 +157,9 @@ func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
 		a.selectRegion,
 		a.selectOwner,
 	)
-	filter.Add(a.sortButton)
+	if !a.u.isDesktop {
+		filter.Add(a.sortButton)
+	}
 	c := container.NewBorder(container.NewHScroll(filter), nil, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
 }
