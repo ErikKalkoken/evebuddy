@@ -23,47 +23,53 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
+const (
+	assetsTotalAny = "Any total"
+	assetsTotalYes = "Has total"
+	assetsTotalNo  = "No total"
+)
+
 type assetRow struct {
+	categoryName    string
 	characterID     int32
 	characterName   string
 	groupID         int32
 	groupName       string
 	isSingleton     bool
 	itemID          int64
-	location        *app.EveLocation
-	priceDisplay    string
+	locationDisplay []widget.RichTextSegment
+	locationName    string
 	quantity        int
 	quantityDisplay string
+	regionName      string
+	searchTarget    string
 	total           float64
+	totalDisplay    string
 	typeID          int32
 	typeName        string
 	typeNameDisplay string
+	hasTotal        bool
 }
 
-func (r assetRow) SolarSystemName() string {
-	if r.location == nil || r.location.SolarSystem == nil {
-		return ""
-	}
-	return r.location.SolarSystem.Name
-}
-
-type overviewAssets struct {
+type assets struct {
 	widget.BaseWidget
 
-	body              fyne.CanvasObject
-	columnSorter      *columnSorter
-	entry             *widget.Entry
-	found             *widget.Label
-	rows              []assetRow
-	rowsFiltered      []assetRow
-	selectSolarSystem *selectFilter
-	selectOwner       *selectFilter
-	sortButton        *sortButton
-	total             *widget.Label
-	u                 *BaseUI
+	body           fyne.CanvasObject
+	columnSorter   *columnSorter
+	entry          *widget.Entry
+	found          *widget.Label
+	rows           []assetRow
+	rowsFiltered   []assetRow
+	selectCategory *selectFilter
+	selectRegion   *selectFilter
+	selectOwner    *selectFilter
+	selectTotal    *widget.Select
+	sortButton     *sortButton
+	total          *widget.Label
+	u              *BaseUI
 }
 
-func newOverviewAssets(u *BaseUI) *overviewAssets {
+func newAssets(u *BaseUI) *assets {
 	headers := []headerDef{
 		{Text: "Item", Width: 300},
 		{Text: "Class", Width: 200},
@@ -72,7 +78,7 @@ func newOverviewAssets(u *BaseUI) *overviewAssets {
 		{Text: "Qty.", Width: 75},
 		{Text: "Total", Width: 100},
 	}
-	a := &overviewAssets{
+	a := &assets{
 		entry:        widget.NewEntry(),
 		found:        widget.NewLabel(""),
 		rowsFiltered: make([]assetRow, 0),
@@ -87,7 +93,7 @@ func newOverviewAssets(u *BaseUI) *overviewAssets {
 	a.entry.OnChanged = func(s string) {
 		a.filterRows(-1)
 	}
-	a.entry.PlaceHolder = "Search items"
+	a.entry.PlaceHolder = "Search items and locations"
 	a.found.Hide()
 
 	if !a.u.isDesktop {
@@ -101,15 +107,13 @@ func newOverviewAssets(u *BaseUI) *overviewAssets {
 				case 1:
 					return iwidget.NewRichTextSegmentFromText(r.groupName)
 				case 2:
-					if r.location != nil {
-						return r.location.DisplayRichText()
-					}
+					return r.locationDisplay
 				case 3:
 					return iwidget.NewRichTextSegmentFromText(r.characterName)
 				case 4:
 					return iwidget.NewRichTextSegmentFromText(r.quantityDisplay)
 				case 5:
-					return iwidget.NewRichTextSegmentFromText(r.priceDisplay)
+					return iwidget.NewRichTextSegmentFromText(r.totalDisplay)
 				}
 				return iwidget.NewRichTextSegmentFromText("?")
 			},
@@ -118,13 +122,27 @@ func newOverviewAssets(u *BaseUI) *overviewAssets {
 			})
 	}
 
+	a.selectCategory = newSelectFilter("Any category", func() {
+		a.filterRows(-1)
+	})
 	a.selectOwner = newSelectFilter("Any owner", func() {
 		a.filterRows(-1)
 	})
-
-	a.selectSolarSystem = newSelectFilter("Any system", func() {
+	a.selectRegion = newSelectFilter("Any region", func() {
 		a.filterRows(-1)
 	})
+
+	a.selectTotal = widget.NewSelect(
+		[]string{
+			assetsTotalAny,
+			assetsTotalYes,
+			assetsTotalNo,
+		},
+		func(s string) {
+			a.filterRows(-1)
+		},
+	)
+	a.selectTotal.Selected = assetsTotalAny
 
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
@@ -132,8 +150,8 @@ func newOverviewAssets(u *BaseUI) *overviewAssets {
 	return a
 }
 
-func (a *overviewAssets) CreateRenderer() fyne.WidgetRenderer {
-	filters := container.NewHBox(a.selectSolarSystem, a.selectOwner)
+func (a *assets) CreateRenderer() fyne.WidgetRenderer {
+	filters := container.NewHBox(a.selectCategory, a.selectRegion, a.selectOwner, a.selectTotal)
 	if !a.u.isDesktop {
 		filters.Add(container.NewHBox(a.sortButton))
 	}
@@ -146,7 +164,7 @@ func (a *overviewAssets) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *overviewAssets) makeDataList() *widget.List {
+func (a *assets) makeDataList() *widget.List {
 	p := theme.Padding()
 	l := widget.NewList(
 		func() int {
@@ -177,9 +195,9 @@ func (a *overviewAssets) makeDataList() *widget.List {
 				title = fmt.Sprintf("%s x%s", r.typeNameDisplay, r.quantityDisplay)
 			}
 			box[0].(*widget.Label).SetText(title)
-			iwidget.SetRichText(box[1].(*widget.RichText), r.location.DisplayRichText()...)
+			iwidget.SetRichText(box[1].(*widget.RichText), r.locationDisplay...)
 			box[2].(*widget.Label).SetText(r.characterName)
-			box[3].(*widget.Label).SetText(r.priceDisplay)
+			box[3].(*widget.Label).SetText(r.totalDisplay)
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
@@ -191,11 +209,11 @@ func (a *overviewAssets) makeDataList() *widget.List {
 	return l
 }
 
-func (a *overviewAssets) focus() {
+func (a *assets) focus() {
 	a.u.MainWindow().Canvas().Focus(a.entry)
 }
 
-func (a *overviewAssets) filterRows(sortCol int) {
+func (a *assets) filterRows(sortCol int) {
 	// search filter
 	rows := make([]assetRow, 0)
 	if search := strings.ToLower(a.entry.Text); search == "" {
@@ -206,17 +224,17 @@ func (a *overviewAssets) filterRows(sortCol int) {
 			if search == "" {
 				matches = true
 			} else {
-				matches = strings.Contains(strings.ToLower(r.typeNameDisplay), search)
+				matches = strings.Contains(r.searchTarget, search)
 			}
 			if matches {
 				rows = append(rows, r)
 			}
 		}
 	}
-	// other filter
-	a.selectSolarSystem.applyFilter(func(selected string) {
+	// other filters
+	a.selectCategory.applyFilter(func(selected string) {
 		rows = xslices.Filter(rows, func(o assetRow) bool {
-			return o.SolarSystemName() == selected
+			return o.categoryName == selected
 		})
 	})
 	a.selectOwner.applyFilter(func(selected string) {
@@ -224,6 +242,22 @@ func (a *overviewAssets) filterRows(sortCol int) {
 			return o.characterName == selected
 		})
 	})
+	a.selectRegion.applyFilter(func(selected string) {
+		rows = xslices.Filter(rows, func(o assetRow) bool {
+			return o.regionName == selected
+		})
+	})
+	if x := a.selectTotal.Selected; x != assetsTotalAny {
+		rows = xslices.Filter(rows, func(r assetRow) bool {
+			switch x {
+			case assetsTotalYes:
+				return r.hasTotal
+			case assetsTotalNo:
+				return !r.hasTotal
+			}
+			return false
+		})
+	}
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
 		slices.SortFunc(rows, func(a, b assetRow) int {
@@ -234,7 +268,7 @@ func (a *overviewAssets) filterRows(sortCol int) {
 			case 1:
 				x = cmp.Compare(a.groupName, b.groupName)
 			case 2:
-				x = cmp.Compare(a.location.DisplayName(), b.location.DisplayName())
+				x = strings.Compare(a.locationName, b.locationName)
 			case 3:
 				x = cmp.Compare(a.characterName, b.characterName)
 			case 4:
@@ -249,11 +283,14 @@ func (a *overviewAssets) filterRows(sortCol int) {
 			}
 		})
 	})
-	a.selectSolarSystem.setOptions(xiter.MapSlice(rows, func(o assetRow) string {
-		return o.SolarSystemName()
+	a.selectCategory.setOptions(xiter.MapSlice(rows, func(o assetRow) string {
+		return o.categoryName
 	}))
 	a.selectOwner.setOptions(xiter.MapSlice(rows, func(o assetRow) string {
 		return o.characterName
+	}))
+	a.selectRegion.setOptions(xiter.MapSlice(rows, func(o assetRow) string {
+		return o.regionName
 	}))
 	a.rowsFiltered = rows
 	a.updateFoundInfo()
@@ -264,16 +301,16 @@ func (a *overviewAssets) filterRows(sortCol int) {
 	}
 }
 
-func (a *overviewAssets) resetSearch() {
+func (a *assets) resetSearch() {
 	a.entry.SetText("")
 	a.filterRows(-1)
 }
 
-func (a *overviewAssets) update() {
+func (a *assets) update() {
 	var t string
 	var i widget.Importance
 	characterCount := a.characterCount()
-	assets, hasData, err := a.loadData(a.u.services())
+	assets, hasData, err := a.fetchRows(a.u.services())
 	if err != nil {
 		slog.Error("Failed to refresh asset search data", "err", err)
 		t = "ERROR: " + a.u.humanizeError(err)
@@ -301,7 +338,7 @@ func (a *overviewAssets) update() {
 	})
 }
 
-func (*overviewAssets) loadData(s services) ([]assetRow, bool, error) {
+func (*assets) fetchRows(s services) ([]assetRow, bool, error) {
 	ctx := context.Background()
 	cc, err := s.cs.ListCharactersShort(ctx)
 	if err != nil {
@@ -326,6 +363,7 @@ func (*overviewAssets) loadData(s services) ([]assetRow, bool, error) {
 	rows := make([]assetRow, len(assets))
 	for i, ca := range assets {
 		r := assetRow{
+			categoryName:    ca.Type.Group.Category.Name,
 			characterID:     ca.CharacterID,
 			characterName:   characterNames[ca.CharacterID],
 			groupID:         ca.Type.Group.ID,
@@ -337,6 +375,7 @@ func (*overviewAssets) loadData(s services) ([]assetRow, bool, error) {
 			typeName:        ca.Type.Name,
 			typeNameDisplay: ca.DisplayName2(),
 		}
+		r.searchTarget = r.typeNameDisplay
 		if ca.IsSingleton {
 			r.quantityDisplay = "1*"
 			r.quantity = 1
@@ -346,22 +385,29 @@ func (*overviewAssets) loadData(s services) ([]assetRow, bool, error) {
 		}
 		location, ok := assetCollection.AssetParentLocation(ca.ItemID)
 		if ok {
-			r.location = location
+			r.locationName = location.DisplayName()
+			r.locationDisplay = location.DisplayRichText()
+			r.searchTarget += " " + r.locationName
+			if location.SolarSystem != nil {
+				r.regionName = location.SolarSystem.Constellation.Region.Name
+			}
+		} else {
+			r.locationDisplay = iwidget.NewRichTextSegmentFromText("?")
 		}
-		var price string
 		if ca.Price.IsEmpty() || ca.IsBlueprintCopy {
-			price = "?"
+			r.totalDisplay = "?"
 		} else {
 			t := ca.Price.ValueOrZero() * float64(ca.Quantity)
-			price = ihumanize.Number(t, 1)
+			r.totalDisplay = ihumanize.Number(t, 1)
+			r.hasTotal = true
 		}
-		r.priceDisplay = price
+		r.searchTarget = strings.ToLower(r.searchTarget)
 		rows[i] = r
 	}
 	return rows, true, nil
 }
 
-func (a *overviewAssets) updateFoundInfo() {
+func (a *assets) updateFoundInfo() {
 	if c := len(a.rowsFiltered); c < len(a.rows) {
 		a.found.SetText(fmt.Sprintf("%s found", ihumanize.Comma(c)))
 		a.found.Show()
@@ -370,7 +416,7 @@ func (a *overviewAssets) updateFoundInfo() {
 	}
 }
 
-func (a *overviewAssets) characterCount() int {
+func (a *assets) characterCount() int {
 	cc := a.u.scs.ListCharacters()
 	validCount := 0
 	for _, c := range cc {

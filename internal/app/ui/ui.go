@@ -105,12 +105,12 @@ type BaseUI struct {
 	gameSearch                 *GameSearch
 	industryJobs               *industryJobs
 	manageCharacters           *ManageCharacters
-	overviewAssets             *overviewAssets
+	overviewAssets             *assets
 	overviewCharacters         *OverviewCharacters
 	overviewClones             *clones
 	colonies                   *colonies
 	overviewLocations          *locations
-	overviewTraining           *training
+	overviewTraining           *trainings
 	overviewWealth             *wealth
 	userSettings               *UserSettings
 
@@ -212,12 +212,12 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 	u.gameSearch = newGameSearch(u)
 	u.industryJobs = newIndustryJobs(u)
 	u.manageCharacters = newManageCharacters(u)
-	u.overviewAssets = newOverviewAssets(u)
+	u.overviewAssets = newAssets(u)
 	u.overviewCharacters = newOverviewCharacters(u)
 	u.overviewClones = newClones(u)
 	u.colonies = newColonies(u)
 	u.overviewLocations = newLocations(u)
-	u.overviewTraining = newTraining(u)
+	u.overviewTraining = newTrainings(u)
 	u.overviewWealth = newWealth(u)
 	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.userSettings = newSettings(u)

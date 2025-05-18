@@ -42,7 +42,7 @@ func (r trainingRow) isActive() bool {
 	return !r.training.IsEmpty()
 }
 
-type training struct {
+type trainings struct {
 	widget.BaseWidget
 
 	body         fyne.CanvasObject
@@ -55,14 +55,14 @@ type training struct {
 	u            *BaseUI
 }
 
-func newTraining(u *BaseUI) *training {
+func newTrainings(u *BaseUI) *trainings {
 	headers := []headerDef{
 		{Text: "Name", Width: 250},
 		{Text: "SP", Width: 100},
 		{Text: "Unall. SP", Width: 100},
 		{Text: "Training", Width: 100},
 	}
-	a := &training{
+	a := &trainings{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
 		rows:         make([]trainingRow, 0),
 		rowsFiltered: make([]trainingRow, 0),
@@ -121,7 +121,7 @@ func newTraining(u *BaseUI) *training {
 	return a
 }
 
-func (a *training) CreateRenderer() fyne.WidgetRenderer {
+func (a *trainings) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectStatus)
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
@@ -136,7 +136,7 @@ func (a *training) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *training) makeDataList() *widget.List {
+func (a *trainings) makeDataList() *widget.List {
 	p := theme.Padding()
 	l := widget.NewList(
 		func() int {
@@ -170,12 +170,12 @@ func (a *training) makeDataList() *widget.List {
 	return l
 }
 
-func (a *training) filterRows(sortCol int) {
+func (a *trainings) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
 	if x := a.selectStatus.Selected; x != trainingStatusAny {
 		rows = xslices.Filter(rows, func(r trainingRow) bool {
-			switch a.selectStatus.Selected {
+			switch x {
 			case trainingStatusActive:
 				return r.isActive()
 			case trainingStatusInActive:
@@ -209,7 +209,7 @@ func (a *training) filterRows(sortCol int) {
 	a.body.Refresh()
 }
 
-func (a *training) update() {
+func (a *trainings) update() {
 	rows := make([]trainingRow, 0)
 	t, i, err := func() (string, widget.Importance, error) {
 		cc, err := a.fetchRows(a.u.services())
@@ -243,7 +243,7 @@ func (a *training) update() {
 	})
 }
 
-func (*training) fetchRows(s services) ([]trainingRow, error) {
+func (*trainings) fetchRows(s services) ([]trainingRow, error) {
 	ctx := context.Background()
 	characters, err := s.cs.ListCharacters(ctx)
 	if err != nil {
