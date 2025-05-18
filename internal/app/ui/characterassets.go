@@ -27,7 +27,7 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-type CharacterAssets struct {
+type characterAssets struct {
 	widget.BaseWidget
 
 	Locations      fyne.CanvasObject // TODO: Refactor into own widget
@@ -44,13 +44,13 @@ type CharacterAssets struct {
 	locations        *iwidget.Tree[locationNode]
 	locationsTop     *widget.Label
 	selectedLocation optional.Optional[locationNode]
-	u                *BaseUI
+	u                *baseUI
 }
 
-func newCharacterAssets(u *BaseUI) *CharacterAssets {
+func newCharacterAssets(u *baseUI) *characterAssets {
 	lp := kxwidget.NewTappableLabel("", nil)
 	lp.Wrapping = fyne.TextWrapWord
-	a := &CharacterAssets{
+	a := &characterAssets{
 		assets:       make([]*app.CharacterAsset, 0),
 		assetsBottom: widget.NewLabel(""),
 		locationPath: lp,
@@ -85,7 +85,7 @@ func newCharacterAssets(u *BaseUI) *CharacterAssets {
 	return a
 }
 
-func (a *CharacterAssets) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterAssets) CreateRenderer() fyne.WidgetRenderer {
 	main := container.NewHSplit(a.Locations, a.LocationAssets)
 	main.SetOffset(0.33)
 	p := theme.Padding()
@@ -99,7 +99,7 @@ func (a *CharacterAssets) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *CharacterAssets) makeLocationsTree() *iwidget.Tree[locationNode] {
+func (a *characterAssets) makeLocationsTree() *iwidget.Tree[locationNode] {
 	t := iwidget.NewTree(
 		func(isBranch bool) fyne.CanvasObject {
 			main := widget.NewLabel("Location")
@@ -154,13 +154,13 @@ func (a *CharacterAssets) makeLocationsTree() *iwidget.Tree[locationNode] {
 	return t
 }
 
-func (a *CharacterAssets) makeAssetGrid() *widget.GridWrap {
+func (a *characterAssets) makeAssetGrid() *widget.GridWrap {
 	g := widget.NewGridWrap(
 		func() int {
 			return len(a.assets)
 		},
 		func() fyne.CanvasObject {
-			return NewAssetItem(func(image *canvas.Image, ca *app.CharacterAsset) {
+			return newAssetItem(func(image *canvas.Image, ca *app.CharacterAsset) {
 				iwidget.RefreshImageAsync(image, func() (fyne.Resource, error) {
 					switch ca.Variant() {
 					case app.VariantSKIN:
@@ -180,7 +180,7 @@ func (a *CharacterAssets) makeAssetGrid() *widget.GridWrap {
 				return
 			}
 			ca := a.assets[id]
-			item := co.(*AssetItem)
+			item := co.(*assetItem)
 			item.Set(ca)
 		},
 	)
@@ -213,7 +213,7 @@ func (a *CharacterAssets) makeAssetGrid() *widget.GridWrap {
 	return g
 }
 
-func (a *CharacterAssets) update() {
+func (a *characterAssets) update() {
 	fyne.Do(func() {
 		a.locations.CloseAllBranches()
 		a.locations.ScrollToTop()
@@ -255,7 +255,7 @@ func (a *CharacterAssets) update() {
 	}
 }
 
-func (*CharacterAssets) fetchData(characterID int32, s services) (assetcollection.AssetCollection, *iwidget.TreeData[locationNode], error) {
+func (*characterAssets) fetchData(characterID int32, s services) (assetcollection.AssetCollection, *iwidget.TreeData[locationNode], error) {
 	var ac assetcollection.AssetCollection
 	if characterID == 0 {
 		return ac, iwidget.NewTreeData[locationNode](), nil
@@ -480,7 +480,7 @@ func makeLocationTreeData(locationNodes []assetcollection.LocationNode, characte
 	return tree
 }
 
-func (a *CharacterAssets) makeTopText(total int) (string, widget.Importance) {
+func (a *characterAssets) makeTopText(total int) (string, widget.Importance) {
 	c := a.u.currentCharacter()
 	if c == nil {
 		return "No character", widget.LowImportance
@@ -494,7 +494,7 @@ func (a *CharacterAssets) makeTopText(total int) (string, widget.Importance) {
 	return text, widget.MediumImportance
 }
 
-func (a *CharacterAssets) selectLocation(location locationNode) error {
+func (a *characterAssets) selectLocation(location locationNode) error {
 	a.assets = make([]*app.CharacterAsset, 0)
 	a.assetGrid.Refresh()
 	a.selectedLocation.Set(location)
@@ -620,7 +620,7 @@ func (a *CharacterAssets) selectLocation(location locationNode) error {
 	return nil
 }
 
-func (a *CharacterAssets) updateLocationPath(location locationNode) {
+func (a *characterAssets) updateLocationPath(location locationNode) {
 	path := make([]locationNode, 0)
 	for _, uid := range a.locations.Data().Path(location.UID()) {
 		n, ok := a.locations.Data().Node(uid)
@@ -711,7 +711,7 @@ type assetLabel struct {
 	label2 *canvas.Text
 }
 
-func NewAssetLabel() *assetLabel {
+func newAssetLabel() *assetLabel {
 	l1 := canvas.NewText("", theme.Color(theme.ColorNameForeground))
 	l1.TextSize = theme.CaptionTextSize()
 	l2 := canvas.NewText("", theme.Color(theme.ColorNameForeground))
@@ -797,7 +797,7 @@ type assetQuantityBadge struct {
 	bg       *canvas.Rectangle
 }
 
-func NewAssetQuantityBadge() *assetQuantityBadge {
+func newAssetQuantityBadge() *assetQuantityBadge {
 	q := canvas.NewText("", theme.Color(theme.ColorNameForeground))
 	q.TextSize = sizeLabelText
 	w := &assetQuantityBadge{
@@ -834,7 +834,7 @@ func (w *assetQuantityBadge) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-type AssetItem struct {
+type assetItem struct {
 	widget.BaseWidget
 
 	badge      *assetQuantityBadge
@@ -843,20 +843,20 @@ type AssetItem struct {
 	label      *assetLabel
 }
 
-func NewAssetItem(iconLoader func(image *canvas.Image, ca *app.CharacterAsset)) *AssetItem {
+func newAssetItem(iconLoader func(image *canvas.Image, ca *app.CharacterAsset)) *assetItem {
 	icon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(typeIconSize))
-	w := &AssetItem{
+	w := &assetItem{
 		icon:       icon,
-		label:      NewAssetLabel(),
+		label:      newAssetLabel(),
 		iconLoader: iconLoader,
-		badge:      NewAssetQuantityBadge(),
+		badge:      newAssetQuantityBadge(),
 	}
 	w.badge.Hide()
 	w.ExtendBaseWidget(w)
 	return w
 }
 
-func (o *AssetItem) Set(ca *app.CharacterAsset) {
+func (o *assetItem) Set(ca *app.CharacterAsset) {
 	o.label.SetText(ca.DisplayName())
 	if !ca.IsSingleton {
 		o.badge.SetQuantity(int(ca.Quantity))
@@ -867,7 +867,7 @@ func (o *AssetItem) Set(ca *app.CharacterAsset) {
 	o.iconLoader(o.icon, ca)
 }
 
-func (o *AssetItem) CreateRenderer() fyne.WidgetRenderer {
+func (o *assetItem) CreateRenderer() fyne.WidgetRenderer {
 	customVBox := layout.NewCustomPaddedVBoxLayout(0)
 	c := container.NewPadded(container.New(
 		customVBox,

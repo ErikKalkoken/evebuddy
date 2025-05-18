@@ -100,10 +100,10 @@ type industryJobs struct {
 	selectStatus    *iwidget.FilterChipSelect
 	sortButton      *sortButton
 	bottom          *widget.Label
-	u               *BaseUI
+	u               *baseUI
 }
 
-func newIndustryJobs(u *BaseUI) *industryJobs {
+func newIndustryJobs(u *baseUI) *industryJobs {
 	headers := []headerDef{
 		{Text: "Blueprint", Width: 250},
 		{Text: "Status", Width: 100, Refresh: true},

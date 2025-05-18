@@ -38,10 +38,10 @@ type locations struct {
 	selectSolarSystem *iwidget.FilterChipSelect
 	sortButton        *sortButton
 	bottom            *widget.Label
-	u                 *BaseUI
+	u                 *baseUI
 }
 
-func newLocations(u *BaseUI) *locations {
+func newLocations(u *baseUI) *locations {
 	headers := []headerDef{
 		{Text: "Character", Width: columnWidthCharacter},
 		{Text: "Location", Width: columnWidthLocation},

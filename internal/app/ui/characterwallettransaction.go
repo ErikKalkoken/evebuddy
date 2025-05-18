@@ -55,10 +55,10 @@ type characterWalletTransaction struct {
 	selectCategory *iwidget.FilterChipSelect
 	selectRegion   *iwidget.FilterChipSelect
 	sortButton     *sortButton
-	u              *BaseUI
+	u              *baseUI
 }
 
-func NewCharacterWalletTransaction(u *BaseUI) *characterWalletTransaction {
+func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 	headers := []headerDef{
 		{Text: "Date", Width: 150},
 		{Text: "Quantity", Width: 130},

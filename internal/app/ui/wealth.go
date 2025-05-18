@@ -32,10 +32,10 @@ type wealth struct {
 
 	charts *fyne.Container
 	top    *widget.Label
-	u      *BaseUI
+	u      *baseUI
 }
 
-func newWealth(u *BaseUI) *wealth {
+func newWealth(u *baseUI) *wealth {
 	a := &wealth{
 		top: makeTopLabel(),
 		u:   u,

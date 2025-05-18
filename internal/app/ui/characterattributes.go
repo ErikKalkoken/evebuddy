@@ -28,18 +28,18 @@ func (a attribute) isText() bool {
 	return a.points == 0
 }
 
-// CharacterAttributes shows the attributes for the current character.
-type CharacterAttributes struct {
+// characterAttributes shows the attributes for the current character.
+type characterAttributes struct {
 	widget.BaseWidget
 
 	attributes []attribute
 	list       *widget.List
 	top        *widget.Label
-	u          *BaseUI
+	u          *baseUI
 }
 
-func newCharacterAttributes(u *BaseUI) *CharacterAttributes {
-	w := &CharacterAttributes{
+func newCharacterAttributes(u *baseUI) *characterAttributes {
+	w := &characterAttributes{
 		attributes: make([]attribute, 0),
 		top:        makeTopLabel(),
 		u:          u,
@@ -49,12 +49,12 @@ func newCharacterAttributes(u *BaseUI) *CharacterAttributes {
 	return w
 }
 
-func (a *CharacterAttributes) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterAttributes) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(a.top, nil, nil, nil, a.list)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *CharacterAttributes) makeAttributeList() *widget.List {
+func (a *characterAttributes) makeAttributeList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.attributes)
@@ -98,7 +98,7 @@ func (a *CharacterAttributes) makeAttributeList() *widget.List {
 	return l
 }
 
-func (a *CharacterAttributes) update() {
+func (a *characterAttributes) update() {
 	var err error
 	var total int
 	attributes := make([]attribute, 0)
@@ -127,7 +127,7 @@ func (a *CharacterAttributes) update() {
 	})
 }
 
-func (*CharacterAttributes) fetchData(characterID int32, s services) (int, []attribute, error) {
+func (*characterAttributes) fetchData(characterID int32, s services) (int, []attribute, error) {
 	attributes := make([]attribute, 0, 6)
 	if characterID == 0 {
 		return 0, attributes, nil

@@ -65,10 +65,10 @@ type contracts struct {
 	selectType     *iwidget.FilterChipSelect
 	sortButton     *sortButton
 	bottom         *widget.Label
-	u              *BaseUI
+	u              *baseUI
 }
 
-func newContracts(u *BaseUI) *contracts {
+func newContracts(u *baseUI) *contracts {
 	headers := []headerDef{
 		{Text: "Contract", Width: 300},
 		{Text: "Type", Width: 120},

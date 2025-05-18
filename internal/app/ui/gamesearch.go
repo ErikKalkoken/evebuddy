@@ -26,7 +26,7 @@ const (
 	maxSearchResults = 500 // max results returned from the server
 )
 
-type GameSearch struct {
+type hameSearch struct {
 	widget.BaseWidget
 
 	categories          *iwidget.FilterChipGroup
@@ -43,12 +43,12 @@ type GameSearch struct {
 	searchOptions       *widget.Accordion
 	strict              *kxwidget.Switch
 	supportedCategories set.Set[app.EveEntityCategory]
-	u                   *BaseUI
+	u                   *baseUI
 	w                   fyne.Window
 }
 
-func newGameSearch(u *BaseUI) *GameSearch {
-	a := &GameSearch{
+func newGameSearch(u *baseUI) *hameSearch {
+	a := &hameSearch{
 		defaultCategories:   makeOptions(),
 		entry:               widget.NewEntry(),
 		indicator:           widget.NewProgressBarInfinite(),
@@ -128,7 +128,7 @@ func newGameSearch(u *BaseUI) *GameSearch {
 	return a
 }
 
-func (a *GameSearch) init() {
+func (a *hameSearch) init() {
 	ids := a.u.settings.RecentSearches()
 	if len(ids) == 0 {
 		return
@@ -144,13 +144,13 @@ func (a *GameSearch) init() {
 	})
 }
 
-func (a *GameSearch) resetOptions() {
+func (a *hameSearch) resetOptions() {
 	a.categories.SetSelected(a.defaultCategories)
 	a.strict.SetOn(false)
 	a.updateSearchOptionsTitle()
 }
 
-func (a *GameSearch) updateSearchOptionsTitle() {
+func (a *hameSearch) updateSearchOptionsTitle() {
 	isDefault := func() bool {
 		if a.strict.On {
 			return false
@@ -168,12 +168,12 @@ func (a *GameSearch) updateSearchOptionsTitle() {
 	a.searchOptions.Refresh()
 }
 
-func (a *GameSearch) doSearch(s string) {
+func (a *hameSearch) doSearch(s string) {
 	a.entry.SetText(s)
 	go a.doSearch2(s)
 }
 
-func (a *GameSearch) toogleOptions(enabled bool) {
+func (a *hameSearch) toogleOptions(enabled bool) {
 	if enabled {
 		a.searchOptions.Open(0)
 	} else {
@@ -182,21 +182,21 @@ func (a *GameSearch) toogleOptions(enabled bool) {
 	a.searchOptions.Refresh()
 }
 
-func (a *GameSearch) setRecentItems(ee []*app.EveEntity) {
+func (a *hameSearch) setRecentItems(ee []*app.EveEntity) {
 	a.mu.Lock()
 	a.recentItems = ee
 	a.mu.Unlock()
 	a.recent.Refresh()
 }
 
-func (a *GameSearch) storeRecentItems() {
+func (a *hameSearch) storeRecentItems() {
 	ids := xslices.Map(a.recentItems, func(x *app.EveEntity) int32 {
 		return x.ID
 	})
 	a.u.settings.SetRecentSearches(ids)
 }
 
-func (a *GameSearch) CreateRenderer() fyne.WidgetRenderer {
+func (a *hameSearch) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
 		container.NewVBox(
 			a.entry,
@@ -211,33 +211,33 @@ func (a *GameSearch) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *GameSearch) focus() {
+func (a *hameSearch) focus() {
 	a.w.Canvas().Focus(a.entry)
 }
 
-func (a *GameSearch) reset() {
+func (a *hameSearch) reset() {
 	a.entry.SetText("")
 	a.clearResults()
 }
 
-func (a *GameSearch) setWindow(w fyne.Window) {
+func (a *hameSearch) setWindow(w fyne.Window) {
 	a.w = w
 }
 
-func (a *GameSearch) makeResults() *iwidget.Tree[resultNode] {
+func (a *hameSearch) makeResults() *iwidget.Tree[resultNode] {
 	t := iwidget.NewTree(
 		func(isBranch bool) fyne.CanvasObject {
 			if isBranch {
 				return widget.NewLabel("Template")
 			}
-			return NewSearchResult(a.u, a.supportedCategories)
+			return newSearchResult(a.u, a.supportedCategories)
 		},
 		func(n resultNode, isBranch bool, co fyne.CanvasObject) {
 			if isBranch {
 				co.(*widget.Label).SetText(n.String())
 				return
 			}
-			co.(*SearchResult).set(n.ee)
+			co.(*searchResult).set(n.ee)
 		},
 	)
 	t.OnSelected = func(n resultNode) {
@@ -259,14 +259,14 @@ func (a *GameSearch) makeResults() *iwidget.Tree[resultNode] {
 	return t
 }
 
-func (a *GameSearch) showSupportedResult(o *app.EveEntity) {
+func (a *hameSearch) showSupportedResult(o *app.EveEntity) {
 	if !a.supportedCategories.Contains(o.Category) {
 		return
 	}
 	a.u.ShowEveEntityInfoWindow(o)
 }
 
-func (a *GameSearch) makeRecentSelected() *widget.List {
+func (a *hameSearch) makeRecentSelected() *widget.List {
 	l := widget.NewList(
 		func() int {
 			a.mu.RLock()
@@ -274,7 +274,7 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 			return len(a.recentItems)
 		},
 		func() fyne.CanvasObject {
-			return NewSearchResult(a.u, infoWindowSupportedEveEntities())
+			return newSearchResult(a.u, infoWindowSupportedEveEntities())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			a.mu.RLock()
@@ -283,7 +283,7 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 				return
 			}
 			it := a.recentItems[id]
-			co.(*SearchResult).set(it)
+			co.(*searchResult).set(it)
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
@@ -300,7 +300,7 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 	return l
 }
 
-func (a *GameSearch) clearResults() {
+func (a *hameSearch) clearResults() {
 	fyne.Do(func() {
 		a.results.Clear()
 		a.resultCount.Hide()
@@ -308,12 +308,12 @@ func (a *GameSearch) clearResults() {
 	})
 }
 
-func (a *GameSearch) showRecent() {
+func (a *hameSearch) showRecent() {
 	a.resultsPage.Hide()
 	a.recentPage.Show()
 }
 
-func (a *GameSearch) doSearch2(search string) {
+func (a *hameSearch) doSearch2(search string) {
 	if a.u.IsOffline() {
 		fyne.Do(func() {
 			a.u.ShowInformationDialog(
@@ -403,17 +403,17 @@ func (a *GameSearch) doSearch2(search string) {
 	})
 }
 
-type SearchResult struct {
+type searchResult struct {
 	widget.BaseWidget
 
 	name                *widget.Label
 	image               *canvas.Image
 	supportedCategories set.Set[app.EveEntityCategory]
-	u                   *BaseUI
+	u                   *baseUI
 }
 
-func NewSearchResult(u *BaseUI, supportedCategories set.Set[app.EveEntityCategory]) *SearchResult {
-	w := &SearchResult{
+func newSearchResult(u *baseUI, supportedCategories set.Set[app.EveEntityCategory]) *searchResult {
+	w := &searchResult{
 		supportedCategories: supportedCategories,
 		name:                widget.NewLabel(""),
 		image:               iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize)),
@@ -423,7 +423,7 @@ func NewSearchResult(u *BaseUI, supportedCategories set.Set[app.EveEntityCategor
 	return w
 }
 
-func (w *SearchResult) set(o *app.EveEntity) {
+func (w *searchResult) set(o *app.EveEntity) {
 	w.name.Text = o.Name
 	var i widget.Importance
 	if !w.supportedCategories.Contains(o.Category) {
@@ -469,7 +469,7 @@ func (w *SearchResult) set(o *app.EveEntity) {
 	}()
 }
 
-func (w *SearchResult) CreateRenderer() fyne.WidgetRenderer {
+func (w *searchResult) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(nil, nil, container.NewPadded(w.image), nil, w.name)
 	return widget.NewSimpleRenderer(c)
 }

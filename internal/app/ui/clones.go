@@ -70,10 +70,10 @@ type clones struct {
 	selectSolarSystem *iwidget.FilterChipSelect
 	sortButton        *sortButton
 	top               *widget.Label
-	u                 *BaseUI
+	u                 *baseUI
 }
 
-func newClones(u *BaseUI) *clones {
+func newClones(u *baseUI) *clones {
 	headers := []headerDef{
 		{Text: "Location", Width: columnWidthLocation},
 		{Text: "Region", Width: columnWidthRegion, NotSortable: true},

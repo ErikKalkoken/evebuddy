@@ -62,10 +62,10 @@ type colonies struct {
 	selectType        *iwidget.FilterChipSelect
 	sortButton        *sortButton
 	top               *widget.Label
-	u                 *BaseUI
+	u                 *baseUI
 }
 
-func newColonies(u *BaseUI) *colonies {
+func newColonies(u *baseUI) *colonies {
 	headers := []headerDef{
 		{Text: "Planet", Width: 150},
 		{Text: "Type", Width: 100},

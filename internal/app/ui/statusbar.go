@@ -39,14 +39,14 @@ const (
 type statusBar struct {
 	widget.BaseWidget
 
-	characterCount *StatusBarItem
-	eveClock       *StatusBarItem
-	eveStatus      *StatusBarItem
+	characterCount *statusBarItem
+	eveClock       *statusBarItem
+	eveStatus      *statusBarItem
 	eveStatusError string
 	infoText       *widget.Label
 	updateHint     *updateHint
 	u              *DesktopUI
-	updateStatus   *StatusBarItem
+	updateStatus   *statusBarItem
 	latestVersion  *widget.Label
 	currentVersion *widget.Label
 }
@@ -57,18 +57,18 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		u:        u,
 	}
 	a.ExtendBaseWidget(a)
-	a.characterCount = NewStatusBarItem(theme.NewThemedResource(icons.GroupSvg), "?", func() {
+	a.characterCount = newStatusBarItem(theme.NewThemedResource(icons.GroupSvg), "?", func() {
 		u.showManageCharactersWindow()
 	})
-	a.updateStatus = NewStatusBarItem(theme.NewThemedResource(icons.UpdateSvg), "?", func() {
+	a.updateStatus = newStatusBarItem(theme.NewThemedResource(icons.UpdateSvg), "?", func() {
 		u.showUpdateStatusWindow()
 	})
-	a.eveClock = NewStatusBarItem(
+	a.eveClock = newStatusBarItem(
 		theme.NewThemedResource(icons.AccesstimefilledSvg),
 		"?",
 		a.showClockDialog,
 	)
-	a.eveStatus = NewStatusBarItem(theme.MediaRecordIcon(), "?", a.showEveStatusDialog)
+	a.eveStatus = newStatusBarItem(theme.MediaRecordIcon(), "?", a.showEveStatusDialog)
 	a.updateHint = newUpdateHint(u)
 	a.updateHint.Hide()
 	return a
@@ -249,8 +249,8 @@ func (s *statusBar) setInfo(text string, importance widget.Importance) {
 	s.infoText.Refresh()
 }
 
-// StatusBarItem is a widget with a label and an optional icon, which can be tapped.
-type StatusBarItem struct {
+// statusBarItem is a widget with a label and an optional icon, which can be tapped.
+type statusBarItem struct {
 	widget.BaseWidget
 	icon  *widget.Icon
 	label *widget.Label
@@ -261,11 +261,11 @@ type StatusBarItem struct {
 	hovered bool
 }
 
-var _ fyne.Tappable = (*StatusBarItem)(nil)
-var _ desktop.Hoverable = (*StatusBarItem)(nil)
+var _ fyne.Tappable = (*statusBarItem)(nil)
+var _ desktop.Hoverable = (*statusBarItem)(nil)
 
-func NewStatusBarItem(res fyne.Resource, text string, tapped func()) *StatusBarItem {
-	w := &StatusBarItem{OnTapped: tapped, label: widget.NewLabel(text)}
+func newStatusBarItem(res fyne.Resource, text string, tapped func()) *statusBarItem {
+	w := &statusBarItem{OnTapped: tapped, label: widget.NewLabel(text)}
 	if res != nil {
 		w.icon = widget.NewIcon(res)
 	}
@@ -274,33 +274,33 @@ func NewStatusBarItem(res fyne.Resource, text string, tapped func()) *StatusBarI
 }
 
 // SetResource updates the icon's resource
-func (w *StatusBarItem) SetResource(icon fyne.Resource) {
+func (w *statusBarItem) SetResource(icon fyne.Resource) {
 	w.icon.SetResource(icon)
 }
 
 // SetText updates the label's text
-func (w *StatusBarItem) SetText(text string) {
+func (w *statusBarItem) SetText(text string) {
 	w.label.SetText(text)
 }
 
 // SetText updates the label's text and importance
-func (w *StatusBarItem) SetTextAndImportance(text string, importance widget.Importance) {
+func (w *statusBarItem) SetTextAndImportance(text string, importance widget.Importance) {
 	w.label.Text = text
 	w.label.Importance = importance
 	w.label.Refresh()
 }
 
-func (w *StatusBarItem) Tapped(_ *fyne.PointEvent) {
+func (w *statusBarItem) Tapped(_ *fyne.PointEvent) {
 	if w.OnTapped != nil {
 		w.OnTapped()
 	}
 }
 
-func (w *StatusBarItem) TappedSecondary(_ *fyne.PointEvent) {
+func (w *statusBarItem) TappedSecondary(_ *fyne.PointEvent) {
 }
 
 // Cursor returns the cursor type of this widget
-func (w *StatusBarItem) Cursor() desktop.Cursor {
+func (w *statusBarItem) Cursor() desktop.Cursor {
 	if w.hovered {
 		return desktop.PointerCursor
 	}
@@ -308,20 +308,20 @@ func (w *StatusBarItem) Cursor() desktop.Cursor {
 }
 
 // MouseIn is a hook that is called if the mouse pointer enters the element.
-func (w *StatusBarItem) MouseIn(e *desktop.MouseEvent) {
+func (w *statusBarItem) MouseIn(e *desktop.MouseEvent) {
 	w.hovered = true
 }
 
-func (w *StatusBarItem) MouseMoved(*desktop.MouseEvent) {
+func (w *statusBarItem) MouseMoved(*desktop.MouseEvent) {
 	// needed to satisfy the interface only
 }
 
 // MouseOut is a hook that is called if the mouse pointer leaves the element.
-func (w *StatusBarItem) MouseOut() {
+func (w *statusBarItem) MouseOut() {
 	w.hovered = false
 }
 
-func (w *StatusBarItem) CreateRenderer() fyne.WidgetRenderer {
+func (w *statusBarItem) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewHBox()
 	if w.icon != nil {
 		c.Add(w.icon)

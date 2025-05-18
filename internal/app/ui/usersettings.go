@@ -32,7 +32,7 @@ type settingAction struct {
 
 // TODO: Improve switch API to allow switch not to be set on error
 
-type UserSettings struct {
+type userSettings struct {
 	widget.BaseWidget
 
 	NotificationActions          []settingAction
@@ -44,12 +44,12 @@ type UserSettings struct {
 
 	showSnackbar func(string)
 	sb           *iwidget.Snackbar
-	u            *BaseUI
+	u            *baseUI
 	w            fyne.Window
 }
 
-func newSettings(u *BaseUI) *UserSettings {
-	a := &UserSettings{
+func newSettings(u *baseUI) *userSettings {
+	a := &userSettings{
 		showSnackbar: u.ShowSnackbar,
 		u:            u,
 		w:            u.MainWindow(),
@@ -60,7 +60,7 @@ func newSettings(u *BaseUI) *UserSettings {
 	return a
 }
 
-func (a *UserSettings) CreateRenderer() fyne.WidgetRenderer {
+func (a *userSettings) CreateRenderer() fyne.WidgetRenderer {
 	makeSettingsPage := func(title string, content fyne.CanvasObject, actions []settingAction) fyne.CanvasObject {
 		t := widget.NewLabel(title)
 		t.TextStyle.Bold = true
@@ -85,7 +85,7 @@ func (a *UserSettings) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(tabs)
 }
 
-func (a *UserSettings) SetWindow(w fyne.Window) {
+func (a *userSettings) SetWindow(w fyne.Window) {
 	a.w = w
 	if a.sb != nil {
 		a.sb.Stop()
@@ -97,11 +97,11 @@ func (a *UserSettings) SetWindow(w fyne.Window) {
 	}
 }
 
-func (a *UserSettings) currentWindow() fyne.Window {
+func (a *userSettings) currentWindow() fyne.Window {
 	return a.w
 }
 
-func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []settingAction) {
+func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []settingAction) {
 	logLevel := iwidget.NewSettingItemOptions(
 		"Log level",
 		"Set current log level",
@@ -276,7 +276,7 @@ func (a *UserSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []settingAc
 	return list, actions
 }
 
-func (a *UserSettings) showDeleteFileDialog(name, path string) {
+func (a *userSettings) showDeleteFileDialog(name, path string) {
 	a.u.ShowConfirmDialog(
 		"Delete File",
 		fmt.Sprintf("Are you sure you want to permanently delete this file?\n\n%s", name),
@@ -307,7 +307,7 @@ func (a *UserSettings) showDeleteFileDialog(name, path string) {
 		}, a.w)
 }
 
-func (a *UserSettings) showExportFileDialog(path string) {
+func (a *userSettings) showExportFileDialog(path string) {
 	filename := filepath.Base(path)
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -343,7 +343,7 @@ func (a *UserSettings) showExportFileDialog(path string) {
 	d.Show()
 }
 
-func (a *UserSettings) makeNotificationPage() (fyne.CanvasObject, []settingAction) {
+func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingAction) {
 	groupsAndTypes := make(map[app.NotificationGroup][]evenotification.Type)
 	for n := range evenotification.SupportedTypes().All() {
 		c := evenotification.Type2group[n]

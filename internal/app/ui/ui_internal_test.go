@@ -128,7 +128,7 @@ func (a *FakeApp) Clipboard() fyne.Clipboard {
 var _ fyne.App = (*FakeApp)(nil)
 var _ desktop.App = (*FakeApp)(nil)
 
-func NewFakeBaseUI(st *storage.Storage, app fyne.App) *BaseUI {
+func NewFakeBaseUI(st *storage.Storage, app fyne.App) *baseUI {
 	esiClient := goesi.NewAPIClient(nil, "dummy")
 	cache := memcache.New()
 	scs := statuscacheservice.New(cache, st)

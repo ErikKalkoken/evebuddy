@@ -56,10 +56,10 @@ type characterWalletJournal struct {
 	selectType   *iwidget.FilterChipSelect
 	sortButton   *sortButton
 	top          *widget.Label
-	u            *BaseUI
+	u            *baseUI
 }
 
-func newCharacterWalletJournal(u *BaseUI) *characterWalletJournal {
+func newCharacterWalletJournal(u *baseUI) *characterWalletJournal {
 	headers := []headerDef{
 		{Text: "Date", Width: 150},
 		{Text: "Type", Width: 150},

@@ -17,17 +17,17 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-type CharacterAugmentations struct {
+type characterAugmentations struct {
 	widget.BaseWidget
 
 	implants []*app.CharacterImplant
 	list     *widget.List
 	top      *widget.Label
-	u        *BaseUI
+	u        *baseUI
 }
 
-func newCharacterAugmentations(u *BaseUI) *CharacterAugmentations {
-	a := &CharacterAugmentations{
+func newCharacterAugmentations(u *baseUI) *characterAugmentations {
+	a := &characterAugmentations{
 		implants: make([]*app.CharacterImplant, 0),
 		top:      makeTopLabel(),
 		u:        u,
@@ -37,12 +37,12 @@ func newCharacterAugmentations(u *BaseUI) *CharacterAugmentations {
 	return a
 }
 
-func (a *CharacterAugmentations) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterAugmentations) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(a.top, nil, nil, nil, a.list)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *CharacterAugmentations) makeImplantList() *widget.List {
+func (a *characterAugmentations) makeImplantList() *widget.List {
 	p := theme.Padding()
 	l := widget.NewList(
 		func() int {
@@ -95,7 +95,7 @@ func (a *CharacterAugmentations) makeImplantList() *widget.List {
 	return l
 }
 
-func (a *CharacterAugmentations) update() {
+func (a *characterAugmentations) update() {
 	var err error
 	implants := make([]*app.CharacterImplant, 0)
 	characterID := a.u.currentCharacterID()

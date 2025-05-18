@@ -51,10 +51,10 @@ type trainings struct {
 	selectStatus *iwidget.FilterChipSelect
 	sortButton   *sortButton
 	bottom       *widget.Label
-	u            *BaseUI
+	u            *baseUI
 }
 
-func newTrainings(u *BaseUI) *trainings {
+func newTrainings(u *baseUI) *trainings {
 	headers := []headerDef{
 		{Text: "Name", Width: 250},
 		{Text: "SP", Width: 100},

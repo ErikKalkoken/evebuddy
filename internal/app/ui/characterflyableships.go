@@ -29,7 +29,7 @@ const (
 	flyableCanNot = "Can Not Fly"
 )
 
-type CharacterFlyableShips struct {
+type characterFlyableShips struct {
 	widget.BaseWidget
 
 	flyableSelect   *widget.Select
@@ -41,11 +41,11 @@ type CharacterFlyableShips struct {
 	ships           []*app.CharacterShipAbility
 	top             *widget.Label
 	foundText       *widget.Label
-	u               *BaseUI
+	u               *baseUI
 }
 
-func newCharacterFlyableShips(u *BaseUI) *CharacterFlyableShips {
-	a := &CharacterFlyableShips{
+func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
+	a := &characterFlyableShips{
 		ships:     make([]*app.CharacterShipAbility, 0),
 		top:       widget.NewLabel(""),
 		foundText: widget.NewLabel(""),
@@ -90,7 +90,7 @@ func newCharacterFlyableShips(u *BaseUI) *CharacterFlyableShips {
 	return a
 }
 
-func (a *CharacterFlyableShips) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterFlyableShips) CreateRenderer() fyne.WidgetRenderer {
 	top := container.NewHBox(
 		a.top,
 		a.foundText,
@@ -111,27 +111,27 @@ func (a *CharacterFlyableShips) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *CharacterFlyableShips) reset() {
+func (a *characterFlyableShips) reset() {
 	a.searchBox.SetText("")
 	a.groupSelect.ClearSelected()
 	a.flyableSelect.ClearSelected()
 	a.foundText.Hide()
 }
 
-func (a *CharacterFlyableShips) makeShipsGrid() *widget.GridWrap {
+func (a *characterFlyableShips) makeShipsGrid() *widget.GridWrap {
 	g := widget.NewGridWrap(
 		func() int {
 			return len(a.ships)
 		},
 		func() fyne.CanvasObject {
-			return NewShipItem(a.u.eis, a.u.memcache, icons.QuestionmarkSvg)
+			return newShipItem(a.u.eis, a.u.memcache, icons.QuestionmarkSvg)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.ships) {
 				return
 			}
 			o := a.ships[id]
-			item := co.(*ShipItem)
+			item := co.(*shipItem)
 			item.Set(o.Type.ID, o.Type.Name, o.CanFly)
 		})
 	g.OnSelected = func(id widget.GridWrapItemID) {
@@ -145,7 +145,7 @@ func (a *CharacterFlyableShips) makeShipsGrid() *widget.GridWrap {
 	return g
 }
 
-func (a *CharacterFlyableShips) update() {
+func (a *characterFlyableShips) update() {
 	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
 		hasData := a.u.scs.HasGeneralSection(app.SectionEveTypes)
 		if !hasData {
@@ -177,7 +177,7 @@ func (a *CharacterFlyableShips) update() {
 	})
 }
 
-func (a *CharacterFlyableShips) updateEntries() error {
+func (a *characterFlyableShips) updateEntries() error {
 	characterID := a.u.currentCharacterID()
 	if characterID == 0 {
 		fyne.Do(func() {
@@ -235,7 +235,7 @@ func (a *CharacterFlyableShips) updateEntries() error {
 	return nil
 }
 
-func (a *CharacterFlyableShips) makeTopText() (string, widget.Importance, bool, error) {
+func (a *characterFlyableShips) makeTopText() (string, widget.Importance, bool, error) {
 	if !a.u.hasCharacter() {
 		return "No character", widget.LowImportance, false, nil
 	}
@@ -259,8 +259,8 @@ func (a *CharacterFlyableShips) makeTopText() (string, widget.Importance, bool, 
 	return text, widget.MediumImportance, true, nil
 }
 
-// The ShipItem widget is used to render items on the type info window.
-type ShipItem struct {
+// The shipItem widget is used to render items on the type info window.
+type shipItem struct {
 	widget.BaseWidget
 
 	cache        *memcache.Cache
@@ -270,14 +270,14 @@ type ShipItem struct {
 	eis          *eveimageservice.EveImageService
 }
 
-func NewShipItem(eis *eveimageservice.EveImageService, cache *memcache.Cache, fallbackIcon fyne.Resource) *ShipItem {
+func newShipItem(eis *eveimageservice.EveImageService, cache *memcache.Cache, fallbackIcon fyne.Resource) *shipItem {
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{128, 128}
 	image := canvas.NewImageFromImage(image.NewRGBA(image.Rectangle{upLeft, lowRight}))
 	image.FillMode = canvas.ImageFillContain
 	image.ScaleMode = defaultImageScaleMode
 	image.SetMinSize(fyne.NewSquareSize(128))
-	w := &ShipItem{
+	w := &shipItem{
 		image:        image,
 		label:        widget.NewLabel("First line\nSecond Line\nThird Line"),
 		fallbackIcon: fallbackIcon,
@@ -288,7 +288,7 @@ func NewShipItem(eis *eveimageservice.EveImageService, cache *memcache.Cache, fa
 	return w
 }
 
-func (w *ShipItem) Set(typeID int32, label string, canFly bool) {
+func (w *shipItem) Set(typeID int32, label string, canFly bool) {
 	w.label.Importance = widget.MediumImportance
 	w.label.Text = label
 	w.label.Wrapping = fyne.TextWrapWord
@@ -333,7 +333,7 @@ func (w *ShipItem) Set(typeID int32, label string, canFly bool) {
 	}()
 }
 
-func (w *ShipItem) CreateRenderer() fyne.WidgetRenderer {
+func (w *shipItem) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewVBox(container.NewPadded(w.image), w.label)
 	return widget.NewSimpleRenderer(c)
 }

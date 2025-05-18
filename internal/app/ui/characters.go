@@ -51,7 +51,7 @@ func (r characterRow) CorporationName() string {
 	return r.corporation.Name
 }
 
-type OverviewCharacters struct {
+type characters struct {
 	widget.BaseWidget
 
 	body              fyne.CanvasObject
@@ -62,10 +62,10 @@ type OverviewCharacters struct {
 	selectCorporation *iwidget.FilterChipSelect
 	sortButton        *sortButton
 	top               *widget.Label
-	u                 *BaseUI
+	u                 *baseUI
 }
 
-func newOverviewCharacters(u *BaseUI) *OverviewCharacters {
+func newOverviewCharacters(u *baseUI) *characters {
 	headers := []headerDef{
 		{Text: "Character", Width: columnWidthCharacter},
 		{Text: "Corporation", Width: 250},
@@ -78,7 +78,7 @@ func newOverviewCharacters(u *BaseUI) *OverviewCharacters {
 		{Text: "Home", Width: columnWidthLocation},
 		{Text: "Age", Width: 100},
 	}
-	a := &OverviewCharacters{
+	a := &characters{
 		columnSorter: newColumnSorter(headers),
 		rows:         make([]characterRow, 0),
 		top:          makeTopLabel(),
@@ -149,7 +149,7 @@ func newOverviewCharacters(u *BaseUI) *OverviewCharacters {
 	return a
 }
 
-func (a *OverviewCharacters) CreateRenderer() fyne.WidgetRenderer {
+func (a *characters) CreateRenderer() fyne.WidgetRenderer {
 	filters := container.NewHBox(a.selectAlliance, a.selectCorporation)
 	if !a.u.isDesktop {
 		filters.Add(a.sortButton)
@@ -164,7 +164,7 @@ func (a *OverviewCharacters) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *OverviewCharacters) filterRows(sortCol int) {
+func (a *characters) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
 	if x := a.selectAlliance.Selected; x != "" {
@@ -220,7 +220,7 @@ func (a *OverviewCharacters) filterRows(sortCol int) {
 	a.body.Refresh()
 }
 
-func (a *OverviewCharacters) update() {
+func (a *characters) update() {
 	var rows []characterRow
 	t, i, err := func() (string, widget.Importance, error) {
 		cc, totals, err := a.fetchRows(a.u.services())
@@ -265,7 +265,7 @@ type overviewTotals struct {
 	assets optional.Optional[float64]
 }
 
-func (*OverviewCharacters) fetchRows(s services) ([]characterRow, overviewTotals, error) {
+func (*characters) fetchRows(s services) ([]characterRow, overviewTotals, error) {
 	var totals overviewTotals
 	ctx := context.Background()
 	characters, err := s.cs.ListCharacters(ctx)

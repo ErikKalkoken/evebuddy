@@ -46,8 +46,8 @@ const (
 	folderNodeUnread
 )
 
-// A FolderNode in the folder tree, e.g. the inbox
-type FolderNode struct {
+// A mailfolderNode in the folder tree, e.g. the inbox
+type mailfolderNode struct {
 	Category    folderNodeCategory
 	CharacterID int32
 	IsLeaf      bool
@@ -57,22 +57,22 @@ type FolderNode struct {
 	UnreadCount int
 }
 
-func (f FolderNode) IsEmpty() bool {
+func (f mailfolderNode) IsEmpty() bool {
 	return f.CharacterID == 0
 }
 
-func (f FolderNode) UID() widget.TreeNodeID {
+func (f mailfolderNode) UID() widget.TreeNodeID {
 	if f.CharacterID == 0 || f.Type == folderNodeUndefined {
 		panic("some IDs are not set")
 	}
 	return fmt.Sprintf("%d-%d-%d", f.CharacterID, f.Type, f.ObjID)
 }
 
-func (f FolderNode) isBranch() bool {
+func (f mailfolderNode) isBranch() bool {
 	return f.Category == nodeCategoryBranch
 }
 
-func (f FolderNode) icon() fyne.Resource {
+func (f mailfolderNode) icon() fyne.Resource {
 	switch f.Type {
 	case folderNodeInbox:
 		return theme.DownloadIcon()
@@ -84,9 +84,9 @@ func (f FolderNode) icon() fyne.Resource {
 	return theme.FolderIcon()
 }
 
-var emptyFolder = FolderNode{}
+var emptyFolder = mailfolderNode{}
 
-type CharacterMails struct {
+type characterMails struct {
 	widget.BaseWidget
 
 	Detail        fyne.CanvasObject
@@ -96,28 +96,28 @@ type CharacterMails struct {
 	onSendMessage func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail)
 
 	body          *widget.Label
-	folders       *iwidget.Tree[FolderNode]
+	folders       *iwidget.Tree[mailfolderNode]
 	folderTop     *widget.Label
-	header        *MailHeader
+	header        *mailHeader
 	headerList    *widget.List
 	headers       []*app.CharacterMailHeader
 	headerTop     *widget.Label
-	folderDefault FolderNode
+	folderDefault mailfolderNode
 	lastSelected  widget.ListItemID
-	lastFolder    FolderNode
+	lastFolder    mailfolderNode
 	mail          *app.CharacterMail
 	subject       *iwidget.Label
 	toolbar       *widget.Toolbar
-	u             *BaseUI
+	u             *baseUI
 
 	mu            sync.RWMutex
-	currentFolder optional.Optional[FolderNode]
+	currentFolder optional.Optional[mailfolderNode]
 }
 
-func newCharacterMails(u *BaseUI) *CharacterMails {
-	a := &CharacterMails{
+func newCharacterMails(u *baseUI) *characterMails {
+	a := &characterMails{
 		body:      widget.NewLabel(""),
-		header:    NewMailHeader(u.eis, u.ShowEveEntityInfoWindow),
+		header:    newMailHeader(u.eis, u.ShowEveEntityInfoWindow),
 		headers:   make([]*app.CharacterMailHeader, 0),
 		headerTop: makeTopLabel(),
 		folderTop: makeTopLabel(),
@@ -143,7 +143,7 @@ func newCharacterMails(u *BaseUI) *CharacterMails {
 	return a
 }
 
-func (a *CharacterMails) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterMails) CreateRenderer() fyne.WidgetRenderer {
 	detailWithToolbar := container.NewBorder(a.toolbar, nil, nil, nil, a.Detail)
 	split1 := container.NewHSplit(a.Headers, detailWithToolbar)
 	split1.SetOffset(0.35)
@@ -173,7 +173,7 @@ func (a *CharacterMails) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *CharacterMails) makeFolderTree() *iwidget.Tree[FolderNode] {
+func (a *characterMails) makeFolderTree() *iwidget.Tree[mailfolderNode] {
 	tree := iwidget.NewTree(
 		func(isBranch bool) fyne.CanvasObject {
 			return container.NewHBox(
@@ -183,7 +183,7 @@ func (a *CharacterMails) makeFolderTree() *iwidget.Tree[FolderNode] {
 				kwidget.NewBadge("999"),
 			)
 		},
-		func(n FolderNode, b bool, co fyne.CanvasObject) {
+		func(n mailfolderNode, b bool, co fyne.CanvasObject) {
 			hbox := co.(*fyne.Container).Objects
 			icon := hbox[0].(*widget.Icon)
 			icon.SetResource(n.icon())
@@ -201,7 +201,7 @@ func (a *CharacterMails) makeFolderTree() *iwidget.Tree[FolderNode] {
 			label.Refresh()
 		},
 	)
-	tree.OnSelected = func(n FolderNode) {
+	tree.OnSelected = func(n mailfolderNode) {
 		if n.isBranch() {
 			tree.UnselectAll()
 			return
@@ -212,11 +212,11 @@ func (a *CharacterMails) makeFolderTree() *iwidget.Tree[FolderNode] {
 	return tree
 }
 
-func (a *CharacterMails) update() {
+func (a *characterMails) update() {
 	characterID := a.u.currentCharacterID()
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionMails)
-	tree := iwidget.NewTreeData[FolderNode]()
-	folderAll := FolderNode{}
+	tree := iwidget.NewTreeData[mailfolderNode]()
+	folderAll := mailfolderNode{}
 	var err error
 	if hasData {
 		t, f, err2 := a.fetchFolders(characterID, a.u.services())
@@ -261,24 +261,24 @@ func (a *CharacterMails) update() {
 	}
 }
 
-func (*CharacterMails) fetchFolders(characterID int32, s services) (*iwidget.TreeData[FolderNode], FolderNode, error) {
-	tree := iwidget.NewTreeData[FolderNode]()
+func (*characterMails) fetchFolders(characterID int32, s services) (*iwidget.TreeData[mailfolderNode], mailfolderNode, error) {
+	tree := iwidget.NewTreeData[mailfolderNode]()
 	if characterID == 0 {
 		return tree, emptyFolder, nil
 	}
 	ctx := context.Background()
 	labelUnreadCounts, err := s.cs.GetMailLabelUnreadCounts(ctx, characterID)
 	if err != nil {
-		return nil, FolderNode{}, err
+		return nil, mailfolderNode{}, err
 	}
 	listUnreadCounts, err := s.cs.GetMailListUnreadCounts(ctx, characterID)
 	if err != nil {
-		return nil, FolderNode{}, err
+		return nil, mailfolderNode{}, err
 	}
 	totalUnreadCount, totalLabelsUnreadCount, totalListUnreadCount := calcUnreadTotals(labelUnreadCounts, listUnreadCounts)
 
 	// Add unread folder
-	folderUnread := FolderNode{
+	folderUnread := mailfolderNode{
 		Category:    nodeCategoryLabel,
 		CharacterID: characterID,
 		Type:        folderNodeUnread,
@@ -304,7 +304,7 @@ func (*CharacterMails) fetchFolders(characterID int32, s services) (*iwidget.Tre
 		if !ok {
 			u = 0
 		}
-		n := FolderNode{
+		n := mailfolderNode{
 			CharacterID: characterID,
 			Category:    nodeCategoryLabel,
 			Type:        o.nodeType,
@@ -318,10 +318,10 @@ func (*CharacterMails) fetchFolders(characterID int32, s services) (*iwidget.Tre
 	// Add custom labels
 	labels, err := s.cs.ListMailLabelsOrdered(ctx, characterID)
 	if err != nil {
-		return nil, FolderNode{}, err
+		return nil, mailfolderNode{}, err
 	}
 	if len(labels) > 0 {
-		n := FolderNode{
+		n := mailfolderNode{
 			CharacterID: characterID,
 			Type:        folderNodeLabel,
 			Name:        "Labels",
@@ -333,7 +333,7 @@ func (*CharacterMails) fetchFolders(characterID int32, s services) (*iwidget.Tre
 			if !ok {
 				u = 0
 			}
-			n := FolderNode{
+			n := mailfolderNode{
 				Category:    nodeCategoryLabel,
 				CharacterID: characterID,
 				Name:        l.Name,
@@ -348,10 +348,10 @@ func (*CharacterMails) fetchFolders(characterID int32, s services) (*iwidget.Tre
 	// Add mailing lists
 	lists, err := s.cs.ListMailLists(ctx, characterID)
 	if err != nil {
-		return nil, FolderNode{}, err
+		return nil, mailfolderNode{}, err
 	}
 	if len(lists) > 0 {
-		n := FolderNode{
+		n := mailfolderNode{
 			CharacterID: characterID,
 			Type:        folderNodeList,
 			Name:        "Mailing Lists",
@@ -363,7 +363,7 @@ func (*CharacterMails) fetchFolders(characterID int32, s services) (*iwidget.Tre
 			if !ok {
 				u = 0
 			}
-			n := FolderNode{
+			n := mailfolderNode{
 				Category:    nodeCategoryList,
 				CharacterID: characterID,
 				ObjID:       l.ID,
@@ -375,7 +375,7 @@ func (*CharacterMails) fetchFolders(characterID int32, s services) (*iwidget.Tre
 		}
 	}
 	// Add all folder
-	folderAll := FolderNode{
+	folderAll := mailfolderNode{
 		Category:    nodeCategoryLabel,
 		CharacterID: characterID,
 		Type:        folderNodeAll,
@@ -402,7 +402,7 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 	return total, labels, lists
 }
 
-func (a *CharacterMails) makeFolderMenu() []*fyne.MenuItem {
+func (a *characterMails) makeFolderMenu() []*fyne.MenuItem {
 	// current := u.MailArea.CurrentFolder.ValueOrZero()
 	items1 := make([]*fyne.MenuItem, 0)
 	for _, f := range a.folders.Data().Flat() {
@@ -421,13 +421,13 @@ func (a *CharacterMails) makeFolderMenu() []*fyne.MenuItem {
 	return items1
 }
 
-func (a *CharacterMails) makeHeaderList() *widget.List {
+func (a *characterMails) makeHeaderList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.headers)
 		},
 		func() fyne.CanvasObject {
-			return NewMailHeaderItem(a.u.eis)
+			return newMailHeaderItem(a.u.eis)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.headers) {
@@ -437,7 +437,7 @@ func (a *CharacterMails) makeHeaderList() *widget.List {
 			if !a.u.hasCharacter() {
 				return
 			}
-			item := co.(*MailHeaderItem)
+			item := co.(*mailHeaderItem)
 			item.Set(m.From, m.Subject, m.Timestamp, m.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
@@ -455,11 +455,11 @@ func (a *CharacterMails) makeHeaderList() *widget.List {
 	return l
 }
 
-func (a *CharacterMails) resetCurrentFolder() {
+func (a *characterMails) resetCurrentFolder() {
 	a.setCurrentFolder(a.folderDefault)
 }
 
-func (a *CharacterMails) setCurrentFolder(folder FolderNode) {
+func (a *characterMails) setCurrentFolder(folder mailfolderNode) {
 	a.mu.Lock()
 	a.currentFolder = optional.From(folder)
 	a.mu.Unlock()
@@ -472,9 +472,9 @@ func (a *CharacterMails) setCurrentFolder(folder FolderNode) {
 	})
 }
 
-func (a *CharacterMails) clearFolder() {
+func (a *characterMails) clearFolder() {
 	a.mu.Lock()
-	a.currentFolder = optional.Optional[FolderNode]{}
+	a.currentFolder = optional.Optional[mailfolderNode]{}
 	a.mu.Unlock()
 
 	a.headers = make([]*app.CharacterMailHeader, 0)
@@ -483,7 +483,7 @@ func (a *CharacterMails) clearFolder() {
 	a.clearMail()
 }
 
-func (a *CharacterMails) headerRefresh() {
+func (a *characterMails) headerRefresh() {
 	var err error
 	headers := make([]*app.CharacterMailHeader, 0)
 	a.mu.RLock()
@@ -520,7 +520,7 @@ func (a *CharacterMails) headerRefresh() {
 	})
 }
 
-func (*CharacterMails) fetchHeaders(folder FolderNode, s services) ([]*app.CharacterMailHeader, error) {
+func (*characterMails) fetchHeaders(folder mailfolderNode, s services) ([]*app.CharacterMailHeader, error) {
 	ctx := context.Background()
 	var headers []*app.CharacterMailHeader
 	var err error
@@ -541,7 +541,7 @@ func (*CharacterMails) fetchHeaders(folder FolderNode, s services) ([]*app.Chara
 	return headers, err
 }
 
-func (a *CharacterMails) doOnSendMessage(mode app.SendMailMode, mail *app.CharacterMail) {
+func (a *characterMails) doOnSendMessage(mode app.SendMailMode, mail *app.CharacterMail) {
 	if a.onSendMessage == nil {
 		return
 	}
@@ -552,13 +552,13 @@ func (a *CharacterMails) doOnSendMessage(mode app.SendMailMode, mail *app.Charac
 	a.onSendMessage(character, mode, mail)
 }
 
-func (a *CharacterMails) makeComposeMessageAction() (fyne.Resource, func()) {
+func (a *characterMails) makeComposeMessageAction() (fyne.Resource, func()) {
 	return theme.DocumentCreateIcon(), func() {
 		a.doOnSendMessage(app.SendMailNew, nil)
 	}
 }
 
-func (a *CharacterMails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
+func (a *characterMails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 	return theme.DeleteIcon(), func() {
 		a.u.ShowConfirmDialog(
 			"Delete mail",
@@ -592,25 +592,25 @@ func (a *CharacterMails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func
 	}
 }
 
-func (a *CharacterMails) MakeForwardAction() (fyne.Resource, func()) {
+func (a *characterMails) MakeForwardAction() (fyne.Resource, func()) {
 	return theme.MailForwardIcon(), func() {
 		a.doOnSendMessage(app.SendMailForward, a.mail)
 	}
 }
 
-func (a *CharacterMails) MakeReplyAction() (fyne.Resource, func()) {
+func (a *characterMails) MakeReplyAction() (fyne.Resource, func()) {
 	return theme.MailReplyIcon(), func() {
 		a.doOnSendMessage(app.SendMailReply, a.mail)
 	}
 }
 
-func (a *CharacterMails) MakeReplyAllAction() (fyne.Resource, func()) {
+func (a *characterMails) MakeReplyAllAction() (fyne.Resource, func()) {
 	return theme.MailReplyAllIcon(), func() {
 		a.doOnSendMessage(app.SendMailReplyAll, a.mail)
 	}
 }
 
-func (a *CharacterMails) makeToolbar() *widget.Toolbar {
+func (a *characterMails) makeToolbar() *widget.Toolbar {
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarAction(a.MakeReplyAction()),
 		widget.NewToolbarAction(a.MakeReplyAllAction()),
@@ -624,14 +624,14 @@ func (a *CharacterMails) makeToolbar() *widget.Toolbar {
 	return toolbar
 }
 
-func (a *CharacterMails) clearMail() {
+func (a *characterMails) clearMail() {
 	a.subject.SetText("")
 	a.header.Clear()
 	a.body.SetText("")
 	a.toolbar.Hide()
 }
 
-func (a *CharacterMails) setMail(mailID int32) {
+func (a *characterMails) setMail(mailID int32) {
 	ctx := context.TODO()
 	characterID := a.u.currentCharacterID()
 	var err error

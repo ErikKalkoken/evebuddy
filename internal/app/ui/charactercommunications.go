@@ -22,14 +22,14 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-type NotificationFolder struct {
+type notificationFolder struct {
 	group  app.NotificationGroup
 	Name   string
 	Unread optional.Optional[int]
 	Total  optional.Optional[int]
 }
 
-type CharacterCommunications struct {
+type characterCommunications struct {
 	widget.BaseWidget
 
 	Detail        *fyne.Container
@@ -40,17 +40,17 @@ type CharacterCommunications struct {
 
 	current          *app.CharacterNotification
 	folderList       *widget.List
-	folders          []NotificationFolder
+	folders          []notificationFolder
 	foldersTop       *widget.Label
 	notificationList *widget.List
 	notifications    []*app.CharacterNotification
 	notificationsTop *widget.Label
-	u                *BaseUI
+	u                *baseUI
 }
 
-func newCharacterCommunications(u *BaseUI) *CharacterCommunications {
-	a := &CharacterCommunications{
-		folders:          make([]NotificationFolder, 0),
+func newCharacterCommunications(u *baseUI) *characterCommunications {
+	a := &characterCommunications{
+		folders:          make([]notificationFolder, 0),
 		notifications:    make([]*app.CharacterNotification, 0),
 		notificationsTop: widget.NewLabel(""),
 		foldersTop:       widget.NewLabel(""),
@@ -66,7 +66,7 @@ func newCharacterCommunications(u *BaseUI) *CharacterCommunications {
 	return a
 }
 
-func (a *CharacterCommunications) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterCommunications) CreateRenderer() fyne.WidgetRenderer {
 	split1 := container.NewHSplit(
 		a.Notifications,
 		container.NewBorder(a.Toolbar, nil, nil, nil, a.Detail),
@@ -88,7 +88,7 @@ func (a *CharacterCommunications) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *CharacterCommunications) makeFolderMenu() []*fyne.MenuItem {
+func (a *characterCommunications) makeFolderMenu() []*fyne.MenuItem {
 	items2 := make([]*fyne.MenuItem, 0)
 	for _, f := range a.folders {
 		s := f.Name
@@ -103,7 +103,7 @@ func (a *CharacterCommunications) makeFolderMenu() []*fyne.MenuItem {
 	return items2
 }
 
-func (a *CharacterCommunications) makeFolderList() *widget.List {
+func (a *characterCommunications) makeFolderList() *widget.List {
 	maxGroup := slices.MaxFunc(app.NotificationGroups(), func(a, b app.NotificationGroup) int {
 		return strings.Compare(a.String(), b.String())
 	})
@@ -149,20 +149,20 @@ func (a *CharacterCommunications) makeFolderList() *widget.List {
 	return l
 }
 
-func (a *CharacterCommunications) makeNotificationList() *widget.List {
+func (a *characterCommunications) makeNotificationList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.notifications)
 		},
 		func() fyne.CanvasObject {
-			return NewMailHeaderItem(a.u.eis)
+			return newMailHeaderItem(a.u.eis)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.notifications) {
 				return
 			}
 			n := a.notifications[id]
-			item := co.(*MailHeaderItem)
+			item := co.(*mailHeaderItem)
 			item.Set(n.Sender, n.TitleDisplay(), n.Timestamp, n.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
@@ -181,7 +181,7 @@ func (a *CharacterCommunications) makeNotificationList() *widget.List {
 }
 
 // TODO: Refactor to avoid recreating the container every time
-func (a *CharacterCommunications) setDetail(n *app.CharacterNotification) {
+func (a *characterCommunications) setDetail(n *app.CharacterNotification) {
 	if n.RecipientName == "" && a.u.hasCharacter() {
 		n.RecipientName = a.u.currentCharacter().EveCharacter.Name
 	}
@@ -189,7 +189,7 @@ func (a *CharacterCommunications) setDetail(n *app.CharacterNotification) {
 	subject := iwidget.NewLabelWithSize(n.TitleDisplay(), theme.SizeNameSubHeadingText)
 	subject.Wrapping = fyne.TextWrapWord
 	a.Detail.Add(subject)
-	h := NewMailHeader(a.u.eis, a.u.ShowEveEntityInfoWindow)
+	h := newMailHeader(a.u.eis, a.u.ShowEveEntityInfoWindow)
 	h.Set(n.Sender, n.Timestamp, a.u.currentCharacter().EveCharacter.ToEveEntity())
 	a.Detail.Add(h)
 	s, err := n.BodyPlain() // using markdown blocked by #61
@@ -206,7 +206,7 @@ func (a *CharacterCommunications) setDetail(n *app.CharacterNotification) {
 	a.Toolbar.Show()
 }
 
-func (a *CharacterCommunications) makeToolbar() *widget.Toolbar {
+func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
 			if a.current == nil {
@@ -218,11 +218,11 @@ func (a *CharacterCommunications) makeToolbar() *widget.Toolbar {
 	return toolbar
 }
 
-func (a *CharacterCommunications) update() {
+func (a *characterCommunications) update() {
 	var err error
 	characterID := a.u.currentCharacterID()
 	hasData := a.u.scs.HasCharacterSection(a.u.currentCharacterID(), app.SectionNotifications)
-	groups := make([]NotificationFolder, 0)
+	groups := make([]notificationFolder, 0)
 	var unreadCount, totalCount optional.Optional[int]
 	if characterID != 0 && hasData {
 		groupCounts, err2 := a.u.cs.CountNotifications(context.Background(), characterID)
@@ -232,7 +232,7 @@ func (a *CharacterCommunications) update() {
 		}
 
 		for _, g := range app.NotificationGroups() {
-			nf := NotificationFolder{
+			nf := notificationFolder{
 				group: g,
 				Name:  g.String(),
 			}
@@ -247,17 +247,17 @@ func (a *CharacterCommunications) update() {
 				groups = append(groups, nf)
 			}
 		}
-		slices.SortFunc(groups, func(a, b NotificationFolder) int {
+		slices.SortFunc(groups, func(a, b notificationFolder) int {
 			return cmp.Compare(a.Name, b.Name)
 		})
 		if unreadCount.ValueOrZero() > 0 {
-			groups = slices.Insert(groups, 0, NotificationFolder{
+			groups = slices.Insert(groups, 0, notificationFolder{
 				group:  app.GroupUnread,
 				Name:   "Unread",
 				Unread: unreadCount,
 			})
 		}
-		groups = append(groups, NotificationFolder{
+		groups = append(groups, notificationFolder{
 			group:  app.GroupAll,
 			Name:   "All",
 			Unread: unreadCount,
@@ -280,14 +280,14 @@ func (a *CharacterCommunications) update() {
 	}
 }
 
-func (a *CharacterCommunications) resetCurrentFolder() {
+func (a *characterCommunications) resetCurrentFolder() {
 	a.setCurrentFolder(app.GroupUnread)
 	fyne.Do(func() {
 		a.notificationList.UnselectAll()
 	})
 }
 
-func (a *CharacterCommunications) setCurrentFolder(nc app.NotificationGroup) {
+func (a *characterCommunications) setCurrentFolder(nc app.NotificationGroup) {
 	var err error
 	characterID := a.u.currentCharacterID()
 	notifications := make([]*app.CharacterNotification, 0)
@@ -326,7 +326,7 @@ func (a *CharacterCommunications) setCurrentFolder(nc app.NotificationGroup) {
 	})
 }
 
-func (a *CharacterCommunications) clearDetail() {
+func (a *characterCommunications) clearDetail() {
 	a.Detail.RemoveAll()
 	a.Toolbar.Hide()
 	a.current = nil

@@ -19,7 +19,7 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-type CharacterSheet struct {
+type characterSheet struct {
 	widget.BaseWidget
 
 	allianceLogo    *kxwidget.TappableImage
@@ -32,11 +32,11 @@ type CharacterSheet struct {
 	race            *kxwidget.TappableLabel
 	security        *widget.Label
 	sp              *widget.Label
-	u               *BaseUI
+	u               *baseUI
 	wealth          *widget.Label
 }
 
-func newSheet(u *BaseUI) *CharacterSheet {
+func newSheet(u *baseUI) *characterSheet {
 	makeLogo := func() *kxwidget.TappableImage {
 		ti := kxwidget.NewTappableImage(icons.BlankSvg, nil)
 		ti.SetFillMode(canvas.ImageFillContain)
@@ -52,7 +52,7 @@ func newSheet(u *BaseUI) *CharacterSheet {
 	portrait := kxwidget.NewTappableImage(icons.BlankSvg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
 	portrait.SetMinSize(fyne.NewSquareSize(128))
-	w := &CharacterSheet{
+	w := &characterSheet{
 		allianceLogo:    makeLogo(),
 		born:            widget.NewLabel("?"),
 		corporationLogo: makeLogo(),
@@ -70,7 +70,7 @@ func newSheet(u *BaseUI) *CharacterSheet {
 	return w
 }
 
-func (a *CharacterSheet) update() {
+func (a *characterSheet) update() {
 	c := a.u.currentCharacter()
 	if c == nil || c.EveCharacter == nil {
 		fyne.Do(func() {
@@ -153,17 +153,17 @@ func (a *CharacterSheet) update() {
 	}
 }
 
-func (a *CharacterSheet) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterSheet) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	const width = 140
 	main := container.New(
 		layout.NewCustomPaddedVBoxLayout(-p),
-		NewDataRow(width, "Born", a.born),
-		NewDataRow(width, "Race", a.race),
-		NewDataRow(width, "Wealth", a.wealth),
-		NewDataRow(width, "Security Status", a.security),
-		NewDataRow(width, "Home Station", a.home),
-		NewDataRow(width, "Total Skill Points", a.sp),
+		newCharacterSheetRow(width, "Born", a.born),
+		newCharacterSheetRow(width, "Race", a.race),
+		newCharacterSheetRow(width, "Wealth", a.wealth),
+		newCharacterSheetRow(width, "Security Status", a.security),
+		newCharacterSheetRow(width, "Home Station", a.home),
+		newCharacterSheetRow(width, "Total Skill Points", a.sp),
 	)
 
 	portraitDesktop := container.NewVBox(container.NewPadded(a.portrait))
@@ -189,7 +189,7 @@ func (a *CharacterSheet) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-type DataRow struct {
+type characterSheetRow struct {
 	widget.BaseWidget
 
 	label   *widget.Label
@@ -197,8 +197,8 @@ type DataRow struct {
 	width   float32
 }
 
-func NewDataRow(width float32, label string, content fyne.CanvasObject) *DataRow {
-	w := &DataRow{
+func newCharacterSheetRow(width float32, label string, content fyne.CanvasObject) *characterSheetRow {
+	w := &characterSheetRow{
 		label:   widget.NewLabel(label + ":"),
 		content: content,
 		width:   width,
@@ -207,7 +207,7 @@ func NewDataRow(width float32, label string, content fyne.CanvasObject) *DataRow
 	return w
 }
 
-func (w *DataRow) CreateRenderer() fyne.WidgetRenderer {
+func (w *characterSheetRow) CreateRenderer() fyne.WidgetRenderer {
 	c := container.New(kxlayout.NewColumns(w.width), w.label, w.content)
 	return widget.NewSimpleRenderer(c)
 }

@@ -65,10 +65,10 @@ type assets struct {
 	selectTotal    *iwidget.FilterChipSelect
 	sortButton     *sortButton
 	total          *widget.Label
-	u              *BaseUI
+	u              *baseUI
 }
 
-func newAssets(u *BaseUI) *assets {
+func newAssets(u *baseUI) *assets {
 	headers := []headerDef{
 		{Text: "Item", Width: 300},
 		{Text: "Class", Width: 200},

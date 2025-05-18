@@ -44,18 +44,18 @@ const (
 	zoomImagePixelSize  = 512
 )
 
-// InfoWindow represents a dedicated window for showing information similar to the in-game info windows.
-type InfoWindow struct {
+// infoWindow represents a dedicated window for showing information similar to the in-game info windows.
+type infoWindow struct {
 	nav           *iwidget.Navigator
 	onClosedFuncs []func() // f runs when the window is closed. Useful for cleanup.
 	sb            *iwidget.Snackbar
-	u             *BaseUI
+	u             *baseUI
 	w             fyne.Window
 }
 
 // newInfoWindow returns a configured InfoWindow.
-func newInfoWindow(u *BaseUI) *InfoWindow {
-	iw := &InfoWindow{
+func newInfoWindow(u *baseUI) *infoWindow {
+	iw := &infoWindow{
 		u: u,
 		w: u.MainWindow(),
 	}
@@ -63,20 +63,20 @@ func newInfoWindow(u *BaseUI) *InfoWindow {
 }
 
 // Show shows a new info window for an EveEntity.
-func (iw *InfoWindow) showEveEntity(ee *app.EveEntity) {
+func (iw *infoWindow) showEveEntity(ee *app.EveEntity) {
 	iw.show(eveEntity2InfoVariant(ee), int64(ee.ID))
 }
 
 // Show shows a new info window for an EveEntity.
-func (iw *InfoWindow) Show(c app.EveEntityCategory, id int32) {
+func (iw *infoWindow) Show(c app.EveEntityCategory, id int32) {
 	iw.show(eveEntity2InfoVariant(&app.EveEntity{Category: c}), int64(id))
 }
 
-func (iw *InfoWindow) showLocation(id int64) {
+func (iw *infoWindow) showLocation(id int64) {
 	iw.show(infoLocation, id)
 }
 
-func (iw *InfoWindow) showRace(id int32) {
+func (iw *infoWindow) showRace(id int32) {
 	iw.show(infoRace, int64(id))
 }
 
@@ -87,7 +87,7 @@ type infoWidget interface {
 	setError(string)
 }
 
-func (iw *InfoWindow) show(v infoVariant, id int64) {
+func (iw *infoWindow) show(v infoVariant, id int64) {
 	if iw.u.IsOffline() {
 		iw.u.ShowInformationDialog(
 			"Offline",
@@ -178,7 +178,7 @@ func (iw *InfoWindow) show(v infoVariant, id int64) {
 	}()
 }
 
-func (iw *InfoWindow) showZoomWindow(title string, id int32, load func(int32, int) (fyne.Resource, error), w fyne.Window) {
+func (iw *infoWindow) showZoomWindow(title string, id int32, load func(int32, int) (fyne.Resource, error), w fyne.Window) {
 	s := float32(zoomImagePixelSize) / w.Canvas().Scale()
 	r, err := load(id, zoomImagePixelSize)
 	if err != nil {
@@ -191,7 +191,7 @@ func (iw *InfoWindow) showZoomWindow(title string, id int32, load func(int32, in
 	w2.Show()
 }
 
-func (iw *InfoWindow) openURL(s string) {
+func (iw *infoWindow) openURL(s string) {
 	x, err := url.ParseRequestURI(s)
 	if err != nil {
 		slog.Error("Construcing URL", "url", s, "error", err)
@@ -204,7 +204,7 @@ func (iw *InfoWindow) openURL(s string) {
 	}
 }
 
-func (iw *InfoWindow) makeZkillboardIcon(id int32, v infoVariant) *iwidget.TappableIcon {
+func (iw *infoWindow) makeZkillboardIcon(id int32, v infoVariant) *iwidget.TappableIcon {
 	m := map[infoVariant]string{
 		infoAlliance:    "alliance",
 		infoCharacter:   "character",
@@ -228,7 +228,7 @@ func (iw *InfoWindow) makeZkillboardIcon(id int32, v infoVariant) *iwidget.Tappa
 	return icon
 }
 
-func (iw *InfoWindow) makeDotlanIcon(id int32, v infoVariant) *iwidget.TappableIcon {
+func (iw *infoWindow) makeDotlanIcon(id int32, v infoVariant) *iwidget.TappableIcon {
 	m := map[infoVariant]string{
 		infoAlliance:    "alliance",
 		infoCorporation: "corp",
@@ -251,7 +251,7 @@ func (iw *InfoWindow) makeDotlanIcon(id int32, v infoVariant) *iwidget.TappableI
 	return icon
 }
 
-func (iw *InfoWindow) makeEveWhoIcon(id int32, v infoVariant) *iwidget.TappableIcon {
+func (iw *infoWindow) makeEveWhoIcon(id int32, v infoVariant) *iwidget.TappableIcon {
 	m := map[infoVariant]string{
 		infoAlliance:    "alliance",
 		infoCorporation: "corporation",
@@ -273,7 +273,7 @@ func (iw *InfoWindow) makeEveWhoIcon(id int32, v infoVariant) *iwidget.TappableI
 	return icon
 }
 
-func (iw *InfoWindow) renderIconSize() fyne.Size {
+func (iw *infoWindow) renderIconSize() fyne.Size {
 	var s float32
 	if !iw.u.isDesktop {
 		s = logoUnitSize
@@ -345,10 +345,10 @@ func infoWindowSupportedEveEntities() set.Set[app.EveEntityCategory] {
 // baseInfo represents shared functionality between all info widgets.
 type baseInfo struct {
 	name *kxwidget.TappableLabel
-	iw   *InfoWindow
+	iw   *infoWindow
 }
 
-func (b *baseInfo) initBase(iw *InfoWindow) {
+func (b *baseInfo) initBase(iw *infoWindow) {
 	b.iw = iw
 	b.name = kxwidget.NewTappableLabel("Loading...", func() {
 		b.iw.u.app.Clipboard().SetContent(b.name.Text)
@@ -376,7 +376,7 @@ type allianceInfo struct {
 	tabs       *container.AppTabs
 }
 
-func newAllianceInfo(iw *InfoWindow, id int32) *allianceInfo {
+func newAllianceInfo(iw *infoWindow, id int32) *allianceInfo {
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Wrapping = fyne.TextWrapWord
 	a := &allianceInfo{
@@ -511,7 +511,7 @@ type characterInfo struct {
 	title           *widget.Label
 }
 
-func newCharacterInfo(iw *InfoWindow, id int32) *characterInfo {
+func newCharacterInfo(iw *infoWindow, id int32) *characterInfo {
 	alliance := kxwidget.NewTappableLabel("", nil)
 	alliance.Wrapping = fyne.TextWrapWord
 	corporation := kxwidget.NewTappableLabel("", nil)
@@ -843,7 +843,7 @@ type constellationInfo struct {
 	tabs    *container.AppTabs
 }
 
-func newConstellationInfo(iw *InfoWindow, id int32) *constellationInfo {
+func newConstellationInfo(iw *infoWindow, id int32) *constellationInfo {
 	region := kxwidget.NewTappableLabel("", nil)
 	region.Wrapping = fyne.TextWrapWord
 	a := &constellationInfo{
@@ -931,7 +931,7 @@ type corporationInfo struct {
 	tabs            *container.AppTabs
 }
 
-func newCorporationInfo(iw *InfoWindow, id int32) *corporationInfo {
+func newCorporationInfo(iw *infoWindow, id int32) *corporationInfo {
 	alliance := kxwidget.NewTappableLabel("", nil)
 	alliance.Wrapping = fyne.TextWrapWord
 	hq := kxwidget.NewTappableLabel("", nil)
@@ -1153,7 +1153,7 @@ type locationInfo struct {
 	typeInfo    *kxwidget.TappableLabel
 }
 
-func newLocationInfo(iw *InfoWindow, id int64) *locationInfo {
+func newLocationInfo(iw *infoWindow, id int64) *locationInfo {
 	typeInfo := kxwidget.NewTappableLabel("", nil)
 	typeInfo.Wrapping = fyne.TextWrapWord
 	owner := kxwidget.NewTappableLabel("", nil)
@@ -1310,7 +1310,7 @@ type raceInfo struct {
 	description *widget.Label
 }
 
-func newRaceInfo(iw *InfoWindow, id int32) *raceInfo {
+func newRaceInfo(iw *infoWindow, id int32) *raceInfo {
 	description := widget.NewLabel("")
 	description.Wrapping = fyne.TextWrapWord
 	a := &raceInfo{
@@ -1395,7 +1395,7 @@ type regionInfo struct {
 	tabs           *container.AppTabs
 }
 
-func newRegionInfo(iw *InfoWindow, id int32) *regionInfo {
+func newRegionInfo(iw *infoWindow, id int32) *regionInfo {
 	description := widget.NewLabel("")
 	description.Wrapping = fyne.TextWrapWord
 	a := &regionInfo{
@@ -1476,7 +1476,7 @@ func (a *regionInfo) update() error {
 		if err != nil {
 			return err
 		}
-		items := xslices.Map(oo, NewEntityItemFromEveEntity)
+		items := xslices.Map(oo, newEntityItemFromEveEntity)
 		fyne.Do(func() {
 			a.constellations.set(items...)
 			a.tabs.Refresh()
@@ -1502,7 +1502,7 @@ type solarSystemInfo struct {
 	tabs          *container.AppTabs
 }
 
-func newSolarSystemInfo(iw *InfoWindow, id int32) *solarSystemInfo {
+func newSolarSystemInfo(iw *infoWindow, id int32) *solarSystemInfo {
 	region := kxwidget.NewTappableLabel("", nil)
 	region.Wrapping = fyne.TextWrapWord
 	constellation := kxwidget.NewTappableLabel("", nil)
@@ -1689,7 +1689,7 @@ type inventoryTypeInfo struct {
 	typeID           int32
 }
 
-func newInventoryTypeInfo(iw *InfoWindow, typeID, characterID int32) *inventoryTypeInfo {
+func newInventoryTypeInfo(iw *infoWindow, typeID, characterID int32) *inventoryTypeInfo {
 	description := widget.NewLabel("")
 	description.Wrapping = fyne.TextWrapWord
 	typeIcon := kxwidget.NewTappableImage(icons.BlankSvg, nil)
@@ -1904,14 +1904,14 @@ func (a *inventoryTypeInfo) makeAttributeTab(ctx context.Context, dogmaAttribute
 			return len(attributes)
 		},
 		func() fyne.CanvasObject {
-			return NewTypeAttributeItem()
+			return newTypeAttributeItem()
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(attributes) {
 				return
 			}
 			r := attributes[id]
-			item := co.(*TypeAttributeItem)
+			item := co.(*typeAttributeItem)
 			if r.isTitle {
 				item.SetTitle(r.label)
 			} else {
@@ -2079,7 +2079,7 @@ type attributeRow struct {
 	action  func(v string)
 }
 
-func (*inventoryTypeInfo) calcAttributesData(ctx context.Context, et *app.EveType, attributes map[int32]*app.EveTypeDogmaAttribute, u *BaseUI) []attributeRow {
+func (*inventoryTypeInfo) calcAttributesData(ctx context.Context, et *app.EveType, attributes map[int32]*app.EveTypeDogmaAttribute, u *baseUI) []attributeRow {
 	droneCapacity, ok := attributes[app.EveDogmaAttributeDroneCapacity]
 	hasDrones := ok && droneCapacity.Value > 0
 
@@ -2206,11 +2206,11 @@ func (a *inventoryTypeInfo) makeFittingTab(ctx context.Context, dogmaAttributes 
 			return len(fittingData)
 		},
 		func() fyne.CanvasObject {
-			return NewTypeAttributeItem()
+			return newTypeAttributeItem()
 		},
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
 			r := fittingData[lii]
-			item := co.(*TypeAttributeItem)
+			item := co.(*typeAttributeItem)
 			item.SetRegular(r.icon, r.label, r.value)
 		},
 	)
@@ -2220,7 +2220,7 @@ func (a *inventoryTypeInfo) makeFittingTab(ctx context.Context, dogmaAttributes 
 	return container.NewTabItem("Fittings", list)
 }
 
-func (*inventoryTypeInfo) calcFittingData(ctx context.Context, dogmaAttributes map[int32]*app.EveTypeDogmaAttribute, u *BaseUI) []attributeRow {
+func (*inventoryTypeInfo) calcFittingData(ctx context.Context, dogmaAttributes map[int32]*app.EveTypeDogmaAttribute, u *baseUI) []attributeRow {
 	data := make([]attributeRow, 0)
 	for _, da := range attributeGroupsMap[attributeGroupFitting] {
 		o, ok := dogmaAttributes[da]
@@ -2361,7 +2361,7 @@ type requiredSkill struct {
 	trainedLevel  int
 }
 
-func (*inventoryTypeInfo) calcRequiredSkills(ctx context.Context, characterID int32, attributes map[int32]*app.EveTypeDogmaAttribute, u *BaseUI) ([]requiredSkill, error) {
+func (*inventoryTypeInfo) calcRequiredSkills(ctx context.Context, characterID int32, attributes map[int32]*app.EveTypeDogmaAttribute, u *baseUI) ([]requiredSkill, error) {
 	skills := make([]requiredSkill, 0)
 	skillAttributes := []struct {
 		id    int32
@@ -2430,11 +2430,11 @@ type attributeList struct {
 	widget.BaseWidget
 
 	items   []attributeItem
-	iw      *InfoWindow
+	iw      *infoWindow
 	openURL func(*url.URL) error
 }
 
-func newAttributeList(iw *InfoWindow, items ...attributeItem) *attributeList {
+func newAttributeList(iw *infoWindow, items ...attributeItem) *attributeList {
 	w := &attributeList{
 		items:   items,
 		iw:      iw,
@@ -2604,7 +2604,7 @@ func newEntityItemFromEveSolarSystem(o *app.EveSolarSystem) entityItem {
 	}
 }
 
-func NewEntityItemFromEveEntity(ee *app.EveEntity) entityItem {
+func newEntityItemFromEveEntity(ee *app.EveEntity) entityItem {
 	return newEntityItem(int64(ee.ID), ee.CategoryDisplay(), ee.Name, eveEntity2InfoVariant(ee))
 }
 
