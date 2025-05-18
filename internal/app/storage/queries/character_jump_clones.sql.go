@@ -12,12 +12,7 @@ import (
 
 const createCharacterJumpClone = `-- name: CreateCharacterJumpClone :one
 INSERT INTO
-    character_jump_clones (
-        character_id,
-        jump_clone_id,
-        location_id,
-        name
-    )
+    character_jump_clones (character_id, jump_clone_id, location_id, name)
 VALUES
     (?, ?, ?, ?) RETURNING id
 `
@@ -59,8 +54,7 @@ func (q *Queries) CreateCharacterJumpCloneImplant(ctx context.Context, arg Creat
 }
 
 const deleteCharacterJumpClones = `-- name: DeleteCharacterJumpClones :exec
-DELETE FROM
-    character_jump_clones
+DELETE FROM character_jump_clones
 WHERE
     character_id = ?
 `
@@ -119,8 +113,8 @@ func (q *Queries) GetCharacterJumpClone(ctx context.Context, arg GetCharacterJum
 }
 
 const listAllCharacterJumpClones = `-- name: ListAllCharacterJumpClones :many
-SELECT
-    DISTINCT cjc.id,
+SELECT DISTINCT
+    cjc.id,
     cjc.character_id,
     ec.name as character_name,
     cjc.location_id,
@@ -192,8 +186,8 @@ func (q *Queries) ListAllCharacterJumpClones(ctx context.Context) ([]ListAllChar
 }
 
 const listCharacterJumpCloneImplant = `-- name: ListCharacterJumpCloneImplant :many
-SELECT
-    DISTINCT character_jump_clone_implants.id, character_jump_clone_implants.clone_id, character_jump_clone_implants.eve_type_id,
+SELECT DISTINCT
+    character_jump_clone_implants.id, character_jump_clone_implants.clone_id, character_jump_clone_implants.eve_type_id,
     eve_types.id, eve_types.eve_group_id, eve_types.capacity, eve_types.description, eve_types.graphic_id, eve_types.icon_id, eve_types.is_published, eve_types.market_group_id, eve_types.mass, eve_types.name, eve_types.packaged_volume, eve_types.portion_size, eve_types.radius, eve_types.volume,
     eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
     eve_categories.id, eve_categories.name, eve_categories.is_published,
@@ -274,8 +268,8 @@ func (q *Queries) ListCharacterJumpCloneImplant(ctx context.Context, arg ListCha
 }
 
 const listCharacterJumpClones = `-- name: ListCharacterJumpClones :many
-SELECT
-    DISTINCT cjc.id, cjc.character_id, cjc.jump_clone_id, cjc.location_id, cjc.name,
+SELECT DISTINCT
+    cjc.id, cjc.character_id, cjc.jump_clone_id, cjc.location_id, cjc.name,
     el.name as location_name,
     er.id as region_id,
     er.name as region_name,

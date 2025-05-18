@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"iter"
 	"log/slog"
 	"slices"
 
@@ -18,7 +17,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -422,37 +420,4 @@ func (w *sortButton) set(col int, dir sortDir) {
 		w.Text = "Sort"
 	}
 	w.Refresh()
-}
-
-type selectFilter struct {
-	widget.Select
-	anyOption string
-}
-
-func newSelectFilter(anyOption string, changed func()) *selectFilter {
-	w := &selectFilter{anyOption: anyOption}
-	w.ExtendBaseWidget(w)
-	w.Options = []string{anyOption}
-	w.OnChanged = func(_ string) {
-		changed()
-	}
-	w.Selected = anyOption
-	return w
-}
-
-func (w *selectFilter) applyFilter(f func(selected string)) {
-	if w.Selected == w.anyOption {
-		return
-	}
-	f(w.Selected)
-}
-
-func (w *selectFilter) setOptions(seq iter.Seq[string]) {
-	w.SetOptions(
-		slices.Concat([]string{w.anyOption},
-			slices.Sorted(
-				set.Collect(
-					xiter.Filter(seq, func(s string) bool {
-						return s != ""
-					})).All())))
 }

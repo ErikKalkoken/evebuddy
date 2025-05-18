@@ -65,12 +65,12 @@ type clones struct {
 	routePref         app.RoutePreference
 	rows              []cloneRow
 	rowsFiltered      []cloneRow
+	selectOwner       *iwidget.FilterChipSelect
+	selectRegion      *iwidget.FilterChipSelect
+	selectSolarSystem *iwidget.FilterChipSelect
 	sortButton        *sortButton
 	top               *widget.Label
 	u                 *BaseUI
-	selectOwner       *selectFilter
-	selectRegion      *selectFilter
-	selectSolarSystem *selectFilter
 }
 
 func newClones(u *BaseUI) *clones {
@@ -144,15 +144,15 @@ func newClones(u *BaseUI) *clones {
 		})
 	}
 
-	a.selectRegion = newSelectFilter("Any region", func() {
+	a.selectRegion = iwidget.NewFilterChipSelect("Region", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 
-	a.selectSolarSystem = newSelectFilter("Any system", func() {
+	a.selectSolarSystem = iwidget.NewFilterChipSelect("System", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 
-	a.selectOwner = newSelectFilter("Any owner", func() {
+	a.selectOwner = iwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 
@@ -386,21 +386,21 @@ func (a *clones) setOrigin(w fyne.Window) {
 func (a *clones) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
-	a.selectOwner.applyFilter(func(selected string) {
+	if x := a.selectOwner.Selected; x != "" {
 		rows = xslices.Filter(rows, func(o cloneRow) bool {
-			return o.c.CharacterName() == selected
+			return o.c.CharacterName() == x
 		})
-	})
-	a.selectRegion.applyFilter(func(selected string) {
+	}
+	if x := a.selectRegion.Selected; x != "" {
 		rows = xslices.Filter(rows, func(o cloneRow) bool {
-			return o.c.RegionName() == selected
+			return o.c.RegionName() == x
 		})
-	})
-	a.selectSolarSystem.applyFilter(func(selected string) {
+	}
+	if x := a.selectSolarSystem.Selected; x != "" {
 		rows = xslices.Filter(rows, func(o cloneRow) bool {
-			return o.c.SolarSystemName() == selected
+			return o.c.SolarSystemName() == x
 		})
-	})
+	}
 
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
@@ -427,13 +427,13 @@ func (a *clones) filterRows(sortCol int) {
 			}
 		})
 	})
-	a.selectOwner.setOptions(xiter.MapSlice(rows, func(o cloneRow) string {
+	a.selectOwner.SetOptionsFromSeq(xiter.MapSlice(rows, func(o cloneRow) string {
 		return o.c.CharacterName()
 	}))
-	a.selectRegion.setOptions(xiter.MapSlice(rows, func(o cloneRow) string {
+	a.selectRegion.SetOptionsFromSeq(xiter.MapSlice(rows, func(o cloneRow) string {
 		return o.c.RegionName()
 	}))
-	a.selectSolarSystem.setOptions(xiter.MapSlice(rows, func(o cloneRow) string {
+	a.selectSolarSystem.SetOptionsFromSeq(xiter.MapSlice(rows, func(o cloneRow) string {
 		return o.c.SolarSystemName()
 	}))
 	a.rowsFiltered = rows

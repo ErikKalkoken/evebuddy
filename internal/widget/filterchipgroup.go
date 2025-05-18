@@ -26,13 +26,13 @@ type FilterChip struct {
 	// OnChanged is called when the state changed
 	OnChanged func(selected bool)
 
-	hovered    bool
-	minSize    fyne.Size // cached for hover/top pos calcs
-	iconPadded *fyne.Container
-	icon       *widget.Icon
-	label      *widget.Label
 	bg         *canvas.Rectangle
 	focused    bool
+	hovered    bool
+	icon       *widget.Icon
+	iconPadded *fyne.Container
+	label      *widget.Label
+	minSize    fyne.Size // cached for hover/top pos calcs
 }
 
 var _ desktop.Hoverable = (*FilterChip)(nil)
@@ -48,6 +48,7 @@ func NewFilterChip(text string, changed func(selected bool)) *FilterChip {
 		OnChanged: changed,
 		Text:      text,
 	}
+	w.ExtendBaseWidget(w)
 	p := theme.Padding()
 	w.icon = widget.NewIcon(theme.ConfirmIcon())
 	w.iconPadded = container.New(layout.NewCustomPaddedLayout(0, 0, p, 0), w.icon)
@@ -55,7 +56,6 @@ func NewFilterChip(text string, changed func(selected bool)) *FilterChip {
 	w.bg = canvas.NewRectangle(color.Transparent)
 	w.bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder) * 2
 	w.bg.CornerRadius = theme.Size(theme.SizeNameInputRadius)
-	w.ExtendBaseWidget(w)
 	return w
 }
 

@@ -34,8 +34,8 @@ type locations struct {
 	columnSorter      *columnSorter
 	rows              []locationRow
 	rowsFiltered      []locationRow
-	selectRegion      *selectFilter
-	selectSolarSystem *selectFilter
+	selectRegion      *iwidget.FilterChipSelect
+	selectSolarSystem *iwidget.FilterChipSelect
 	sortButton        *sortButton
 	bottom            *widget.Label
 	u                 *BaseUI
@@ -81,10 +81,10 @@ func newLocations(u *BaseUI) *locations {
 		a.body = a.makeDataList()
 	}
 
-	a.selectRegion = newSelectFilter("Any region", func() {
+	a.selectRegion = iwidget.NewFilterChipSelect("Region", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.selectSolarSystem = newSelectFilter("Any system", func() {
+	a.selectSolarSystem = iwidget.NewFilterChipSelect("System", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 
@@ -146,16 +146,16 @@ func (a *locations) makeDataList() *widget.List {
 func (a *locations) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
-	a.selectRegion.applyFilter(func(selected string) {
+	if x := a.selectRegion.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r locationRow) bool {
-			return r.regionName == selected
+			return r.regionName == x
 		})
-	})
-	a.selectSolarSystem.applyFilter(func(selected string) {
+	}
+	if x := a.selectSolarSystem.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r locationRow) bool {
-			return r.solarSystemName == selected
+			return r.solarSystemName == x
 		})
-	})
+	}
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
 		slices.SortFunc(rows, func(a, b locationRow) int {
@@ -177,10 +177,10 @@ func (a *locations) filterRows(sortCol int) {
 			}
 		})
 	})
-	a.selectRegion.setOptions(xiter.MapSlice(rows, func(r locationRow) string {
+	a.selectRegion.SetOptionsFromSeq(xiter.MapSlice(rows, func(r locationRow) string {
 		return r.regionName
 	}))
-	a.selectSolarSystem.setOptions(xiter.MapSlice(rows, func(r locationRow) string {
+	a.selectSolarSystem.SetOptionsFromSeq(xiter.MapSlice(rows, func(r locationRow) string {
 		return r.solarSystemName
 	}))
 	a.rowsFiltered = rows

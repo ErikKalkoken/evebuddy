@@ -1352,14 +1352,15 @@ type CharacterWalletTransaction struct {
 	CharacterID   int32
 	Client        *EveEntity
 	Date          time.Time
-	EveType       *EntityShort[int32]
 	ID            int64
 	IsBuy         bool
 	IsPersonal    bool
 	JournalRefID  int64
 	Location      *EveLocationShort
+	Region        *EntityShort[int32]
 	Quantity      int32
 	TransactionID int64
+	Type          *EveType
 	UnitPrice     float64
 }
 

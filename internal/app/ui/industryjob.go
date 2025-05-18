@@ -31,17 +31,14 @@ import (
 
 // Options for industry job select widgets
 const (
-	industryActivityAll              = "All activities"
 	industryActivityCopying          = "Copying"
 	industryActivityInvention        = "Invention"
 	industryActivityManufacturing    = "Manufacturing"
 	industryActivityMaterialResearch = "Material efficiency research"
 	industryActivityReaction         = "Reactions"
 	industryActivityTimeResearch     = "Time efficiency research"
-	industryInstallerAny             = "Any installer"
 	industryInstallerCorpmates       = "Installed by corpmates"
 	industryInstallerMe              = "Installed by me"
-	industryOwnerAny                 = "Any owner"
 	industryOwnerCorp                = "Owned by corp"
 	industryOwnerMe                  = "Owned by me"
 	industryStatusActive             = "All active jobs"
@@ -75,18 +72,8 @@ type industryJobRow struct {
 	runs               int
 	startDate          time.Time
 	status             app.IndustryJobStatus
+	statusDisplay      []widget.RichTextSegment
 	successfulRuns     optional.Optional[int32]
-}
-
-func (j industryJobRow) StatusRichText() []widget.RichTextSegment {
-	if j.status == app.JobActive {
-		return iwidget.NewRichTextSegmentFromText(ihumanize.Duration(time.Until(j.endDate)), widget.RichTextStyle{
-			ColorName: theme.ColorNamePrimary,
-		})
-	}
-	return iwidget.NewRichTextSegmentFromText(j.status.Display(), widget.RichTextStyle{
-		ColorName: j.status.Color(),
-	})
 }
 
 func (j industryJobRow) IsActive() bool {
@@ -107,10 +94,10 @@ type industryJobs struct {
 	rows            []industryJobRow
 	rowsFiltered    []industryJobRow
 	search          *widget.Entry
-	selectActivity  *widget.Select
-	selectInstaller *widget.Select
-	selectOwner     *widget.Select
-	selectStatus    *widget.Select
+	selectActivity  *iwidget.FilterChipSelect
+	selectInstaller *iwidget.FilterChipSelect
+	selectOwner     *iwidget.FilterChipSelect
+	selectStatus    *iwidget.FilterChipSelect
 	sortButton      *sortButton
 	bottom          *widget.Label
 	u               *BaseUI
@@ -140,7 +127,7 @@ func newIndustryJobs(u *BaseUI) *industryJobs {
 		case 0:
 			return iwidget.NewRichTextSegmentFromText(j.blueprintType.Name)
 		case 1:
-			return j.StatusRichText()
+			return j.statusDisplay
 		case 2:
 			return iwidget.NewRichTextSegmentFromText(
 				ihumanize.Comma(j.runs),
@@ -177,16 +164,14 @@ func newIndustryJobs(u *BaseUI) *industryJobs {
 		a.search.SetText("")
 	})
 
-	a.selectOwner = widget.NewSelect([]string{
-		industryOwnerAny,
+	a.selectOwner = iwidget.NewFilterChipSelect("Owner", []string{
 		industryOwnerMe,
 		industryOwnerCorp,
 	}, func(_ string) {
 		a.filterRows(-1)
 	})
-	a.selectOwner.Selected = industryOwnerAny
 
-	a.selectStatus = widget.NewSelect([]string{
+	a.selectStatus = iwidget.NewFilterChipSelect("", []string{
 		industryStatusActive,
 		industryStatusInProgress,
 		industryStatusReady,
@@ -197,8 +182,7 @@ func newIndustryJobs(u *BaseUI) *industryJobs {
 	})
 	a.selectStatus.Selected = industryStatusActive
 
-	a.selectActivity = widget.NewSelect([]string{
-		industryActivityAll,
+	a.selectActivity = iwidget.NewFilterChipSelect("Activity", []string{
 		industryActivityManufacturing,
 		industryActivityMaterialResearch,
 		industryActivityTimeResearch,
@@ -208,10 +192,8 @@ func newIndustryJobs(u *BaseUI) *industryJobs {
 	}, func(_ string) {
 		a.filterRows(-1)
 	})
-	a.selectActivity.Selected = industryActivityAll
 
-	a.selectInstaller = widget.NewSelect([]string{
-		industryInstallerAny,
+	a.selectInstaller = iwidget.NewFilterChipSelect("Installer", []string{
 		industryInstallerMe,
 		industryInstallerCorpmates,
 	}, func(_ string) {
@@ -226,13 +208,11 @@ func newIndustryJobs(u *BaseUI) *industryJobs {
 }
 
 func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
-	spacer := canvas.NewRectangle(color.Transparent)
-	spacer.SetMinSize(fyne.NewSize(180, 1))
 	selections := container.NewHBox(
-		container.NewStack(spacer, a.selectOwner),
-		container.NewStack(spacer, a.selectStatus),
-		container.NewStack(spacer, a.selectActivity),
-		container.NewStack(spacer, a.selectInstaller),
+		a.selectOwner,
+		a.selectStatus,
+		a.selectActivity,
+		a.selectInstaller,
 	)
 	if !a.u.isDesktop {
 		selections.Add(a.sortButton)
@@ -273,7 +253,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 		}
 		return false
 	})
-	if x := a.selectInstaller.Selected; x != industryInstallerAny {
+	if x := a.selectInstaller.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r industryJobRow) bool {
 			switch x {
 			case industryInstallerMe:
@@ -284,7 +264,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 			return false
 		})
 	}
-	if x := a.selectActivity.Selected; x != industryActivityAll {
+	if x := a.selectActivity.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r industryJobRow) bool {
 			switch x {
 			case industryActivityCopying:
@@ -303,7 +283,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 			return false
 		})
 	}
-	if x := a.selectOwner.Selected; x != industryOwnerAny {
+	if x := a.selectOwner.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r industryJobRow) bool {
 			switch x {
 			case industryOwnerCorp:
@@ -421,7 +401,7 @@ func (a *industryJobs) makeDataList() *widget.List {
 
 			statusStack := c1[2].(*fyne.Container).Objects
 			if j.status == app.JobActive {
-				iwidget.SetRichText(statusStack[0].(*widget.RichText), j.StatusRichText()...)
+				iwidget.SetRichText(statusStack[0].(*widget.RichText), j.statusDisplay...)
 				statusStack[0].Show()
 				statusStack[1].Hide()
 			} else {
@@ -557,6 +537,19 @@ func (a *industryJobs) update() {
 		return j
 	})
 	jobs := slices.Concat(characterJobs, corporationJobs)
+	for i, j := range jobs {
+		var segs []widget.RichTextSegment
+		if j.status == app.JobActive {
+			segs = iwidget.NewRichTextSegmentFromText(ihumanize.Duration(time.Until(j.endDate)), widget.RichTextStyle{
+				ColorName: theme.ColorNamePrimary,
+			})
+		} else {
+			segs = iwidget.NewRichTextSegmentFromText(j.status.Display(), widget.RichTextStyle{
+				ColorName: j.status.Color(),
+			})
+		}
+		jobs[i].statusDisplay = segs
+	}
 	var readyCount int
 	for _, j := range jobs {
 		if j.status == app.JobReady && j.isInstallerMe {
@@ -605,7 +598,7 @@ func (a *industryJobs) showJob(r industryJobRow) {
 		))
 	}
 	items = slices.Concat(items, []*widget.FormItem{
-		widget.NewFormItem("Status", widget.NewRichText(r.StatusRichText()...)),
+		widget.NewFormItem("Status", widget.NewRichText(r.statusDisplay...)),
 		widget.NewFormItem("Runs", widget.NewLabel(ihumanize.Comma(r.runs))),
 	})
 

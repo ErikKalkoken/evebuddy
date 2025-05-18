@@ -23,6 +23,7 @@ import (
 )
 
 type walletTransactionRow struct {
+	categoryName     string
 	client           *app.EveEntity
 	clientName       string
 	date             time.Time
@@ -33,9 +34,10 @@ type walletTransactionRow struct {
 	price            float64
 	quantity         int
 	quantityDisplay  string
+	regionName       string
 	total            float64
-	totalText        string
 	totalColor       fyne.ThemeColorName
+	totalText        string
 	transactionID    int64
 	typeID           int32
 	typeName         string
@@ -46,13 +48,13 @@ type characterWalletTransaction struct {
 	widget.BaseWidget
 
 	body           fyne.CanvasObject
+	bottom         *widget.Label
 	columnSorter   *columnSorter
 	rows           []walletTransactionRow
 	rowsFiltered   []walletTransactionRow
-	selectClient   *selectFilter
-	selectLocation *selectFilter
+	selectCategory *iwidget.FilterChipSelect
+	selectRegion   *iwidget.FilterChipSelect
 	sortButton     *sortButton
-	bottom         *widget.Label
 	u              *BaseUI
 }
 
@@ -117,10 +119,10 @@ func NewCharacterWalletTransaction(u *BaseUI) *characterWalletTransaction {
 		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, a.showEntry)
 	}
 
-	a.selectClient = newSelectFilter("Any client", func() {
+	a.selectCategory = iwidget.NewFilterChipSelect("Category", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.selectLocation = newSelectFilter("Any location", func() {
+	a.selectRegion = iwidget.NewFilterChipSelect("Region", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
@@ -130,7 +132,7 @@ func NewCharacterWalletTransaction(u *BaseUI) *characterWalletTransaction {
 }
 
 func (a *characterWalletTransaction) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectClient, a.selectLocation)
+	filter := container.NewHBox(a.selectCategory, a.selectRegion)
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
 	}
@@ -147,16 +149,16 @@ func (a *characterWalletTransaction) CreateRenderer() fyne.WidgetRenderer {
 func (a *characterWalletTransaction) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
-	a.selectClient.applyFilter(func(selected string) {
+	if x := a.selectRegion.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
-			return r.clientName == selected
+			return r.regionName == x
 		})
-	})
-	a.selectLocation.applyFilter(func(selected string) {
+	}
+	if x := a.selectCategory.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
-			return r.locationName == selected
+			return r.categoryName == x
 		})
-	})
+	}
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
 		slices.SortFunc(rows, func(a, b walletTransactionRow) int {
@@ -184,11 +186,11 @@ func (a *characterWalletTransaction) filterRows(sortCol int) {
 			}
 		})
 	})
-	a.selectClient.setOptions(xiter.MapSlice(rows, func(r walletTransactionRow) string {
-		return r.clientName
+	a.selectRegion.SetOptionsFromSeq(xiter.MapSlice(rows, func(r walletTransactionRow) string {
+		return r.regionName
 	}))
-	a.selectLocation.setOptions(xiter.MapSlice(rows, func(r walletTransactionRow) string {
-		return r.locationName
+	a.selectCategory.SetOptionsFromSeq(xiter.MapSlice(rows, func(r walletTransactionRow) string {
+		return r.categoryName
 	}))
 	a.rowsFiltered = rows
 	a.body.Refresh()
@@ -245,6 +247,7 @@ func (a *characterWalletTransaction) fetchRows(characterID int32, s services) ([
 		totalText := humanize.FormatFloat(app.FloatFormat, total)
 		totalColor := color
 		r := walletTransactionRow{
+			categoryName:     o.Type.Group.Category.Name,
 			client:           o.Client,
 			clientName:       o.Client.Name,
 			date:             o.Date,
@@ -253,15 +256,18 @@ func (a *characterWalletTransaction) fetchRows(characterID int32, s services) ([
 			locationID:       o.Location.ID,
 			locationName:     o.Location.DisplayName(),
 			price:            o.UnitPrice,
-			unitPriceDisplay: humanize.FormatFloat(app.FloatFormat, o.UnitPrice),
 			quantity:         int(o.Quantity),
 			quantityDisplay:  humanize.Comma(int64(o.Quantity)),
 			total:            total,
-			totalText:        totalText,
 			totalColor:       totalColor,
-			typeID:           o.EveType.ID,
-			typeName:         o.EveType.Name,
+			totalText:        totalText,
 			transactionID:    o.TransactionID,
+			typeID:           o.Type.ID,
+			typeName:         o.Type.Name,
+			unitPriceDisplay: humanize.FormatFloat(app.FloatFormat, o.UnitPrice),
+		}
+		if o.Region != nil {
+			r.regionName = o.Region.Name
 		}
 		rows[i] = r
 	}

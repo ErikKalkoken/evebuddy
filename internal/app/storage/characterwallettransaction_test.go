@@ -41,24 +41,37 @@ func TestWalletTransaction(t *testing.T) {
 		// when
 		err := r.CreateCharacterWalletTransaction(ctx, arg)
 		// then
+		region := location.SolarSystem.Constellation.Region
 		if assert.NoError(t, err) {
 			i, err := r.GetCharacterWalletTransaction(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, client, i.Client)
 				assert.Equal(t, date.UTC(), i.Date.UTC())
-				assert.Equal(t, eveType.ID, i.EveType.ID)
-				assert.Equal(t, eveType.Name, i.EveType.Name)
+				assert.Equal(t, eveType.ID, i.Type.ID)
+				assert.Equal(t, eveType.Name, i.Type.Name)
 				assert.True(t, i.IsBuy)
 				assert.True(t, i.IsPersonal)
 				assert.Equal(t, int64(99), i.JournalRefID)
 				assert.Equal(t, location.ID, i.Location.ID)
-				assert.Equal(t, &app.EveLocationShort{
-					ID:             location.ID,
-					Name:           optional.From(location.Name),
-					SecurityStatus: i.Location.SecurityStatus}, i.Location)
+				assert.Equal(t,
+					&app.EveLocationShort{
+						ID:             location.ID,
+						Name:           optional.From(location.Name),
+						SecurityStatus: i.Location.SecurityStatus,
+					},
+					i.Location,
+				)
 				assert.Equal(t, c.ID, i.CharacterID)
 				assert.Equal(t, int32(7), i.Quantity)
 				assert.Equal(t, 123.45, i.UnitPrice)
+				assert.Equal(t, location.ID, i.Location.ID)
+				assert.Equal(t,
+					&app.EntityShort[int32]{
+						ID:   region.ID,
+						Name: region.Name,
+					},
+					i.Region,
+				)
 			}
 		}
 	})

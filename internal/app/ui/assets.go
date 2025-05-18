@@ -24,9 +24,8 @@ import (
 )
 
 const (
-	assetsTotalAny = "Any total"
 	assetsTotalYes = "Has total"
-	assetsTotalNo  = "No total"
+	assetsTotalNo  = "Has no total"
 )
 
 type assetRow struct {
@@ -35,6 +34,7 @@ type assetRow struct {
 	characterName   string
 	groupID         int32
 	groupName       string
+	hasTotal        bool
 	isSingleton     bool
 	itemID          int64
 	locationDisplay []widget.RichTextSegment
@@ -48,7 +48,6 @@ type assetRow struct {
 	typeID          int32
 	typeName        string
 	typeNameDisplay string
-	hasTotal        bool
 }
 
 type assets struct {
@@ -60,10 +59,10 @@ type assets struct {
 	found          *widget.Label
 	rows           []assetRow
 	rowsFiltered   []assetRow
-	selectCategory *selectFilter
-	selectRegion   *selectFilter
-	selectOwner    *selectFilter
-	selectTotal    *widget.Select
+	selectCategory *iwidget.FilterChipSelect
+	selectOwner    *iwidget.FilterChipSelect
+	selectRegion   *iwidget.FilterChipSelect
+	selectTotal    *iwidget.FilterChipSelect
 	sortButton     *sortButton
 	total          *widget.Label
 	u              *BaseUI
@@ -122,19 +121,18 @@ func newAssets(u *BaseUI) *assets {
 			})
 	}
 
-	a.selectCategory = newSelectFilter("Any category", func() {
+	a.selectCategory = iwidget.NewFilterChipSelect("Category", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.selectOwner = newSelectFilter("Any owner", func() {
+	a.selectOwner = iwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.selectRegion = newSelectFilter("Any region", func() {
+	a.selectRegion = iwidget.NewFilterChipSelect("Region", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 
-	a.selectTotal = widget.NewSelect(
+	a.selectTotal = iwidget.NewFilterChipSelect("Total",
 		[]string{
-			assetsTotalAny,
 			assetsTotalYes,
 			assetsTotalNo,
 		},
@@ -142,7 +140,6 @@ func newAssets(u *BaseUI) *assets {
 			a.filterRows(-1)
 		},
 	)
-	a.selectTotal.Selected = assetsTotalAny
 
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
@@ -232,22 +229,22 @@ func (a *assets) filterRows(sortCol int) {
 		}
 	}
 	// other filters
-	a.selectCategory.applyFilter(func(selected string) {
+	if x := a.selectCategory.Selected; x != "" {
 		rows = xslices.Filter(rows, func(o assetRow) bool {
-			return o.categoryName == selected
+			return o.categoryName == x
 		})
-	})
-	a.selectOwner.applyFilter(func(selected string) {
+	}
+	if x := a.selectOwner.Selected; x != "" {
 		rows = xslices.Filter(rows, func(o assetRow) bool {
-			return o.characterName == selected
+			return o.characterName == x
 		})
-	})
-	a.selectRegion.applyFilter(func(selected string) {
+	}
+	if x := a.selectRegion.Selected; x != "" {
 		rows = xslices.Filter(rows, func(o assetRow) bool {
-			return o.regionName == selected
+			return o.regionName == x
 		})
-	})
-	if x := a.selectTotal.Selected; x != assetsTotalAny {
+	}
+	if x := a.selectTotal.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r assetRow) bool {
 			switch x {
 			case assetsTotalYes:
@@ -283,13 +280,13 @@ func (a *assets) filterRows(sortCol int) {
 			}
 		})
 	})
-	a.selectCategory.setOptions(xiter.MapSlice(rows, func(o assetRow) string {
+	a.selectCategory.SetOptionsFromSeq(xiter.MapSlice(rows, func(o assetRow) string {
 		return o.categoryName
 	}))
-	a.selectOwner.setOptions(xiter.MapSlice(rows, func(o assetRow) string {
+	a.selectOwner.SetOptionsFromSeq(xiter.MapSlice(rows, func(o assetRow) string {
 		return o.characterName
 	}))
-	a.selectRegion.setOptions(xiter.MapSlice(rows, func(o assetRow) string {
+	a.selectRegion.SetOptionsFromSeq(xiter.MapSlice(rows, func(o assetRow) string {
 		return o.regionName
 	}))
 	a.rowsFiltered = rows

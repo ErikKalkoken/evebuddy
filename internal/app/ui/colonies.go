@@ -22,7 +22,6 @@ import (
 )
 
 const (
-	colonyStatusAny        = "Any status"
 	colonyStatusExtracting = "Extracting"
 	colonyStatusOffline    = "Offline"
 )
@@ -54,13 +53,13 @@ type colonies struct {
 	columnSorter      *columnSorter
 	rows              []colonyRow
 	rowsFiltered      []colonyRow
-	selectStatus      *widget.Select
-	selectExtracting  *selectFilter
-	selectOwner       *selectFilter
-	selectProducing   *selectFilter
-	selectRegion      *selectFilter
-	selectSolarSystem *selectFilter
-	selectType        *selectFilter
+	selectStatus      *iwidget.FilterChipSelect
+	selectExtracting  *iwidget.FilterChipSelect
+	selectOwner       *iwidget.FilterChipSelect
+	selectProducing   *iwidget.FilterChipSelect
+	selectRegion      *iwidget.FilterChipSelect
+	selectSolarSystem *iwidget.FilterChipSelect
+	selectType        *iwidget.FilterChipSelect
 	sortButton        *sortButton
 	top               *widget.Label
 	u                 *BaseUI
@@ -112,32 +111,30 @@ func newColonies(u *BaseUI) *colonies {
 		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, a.showColony)
 	}
 
-	a.selectExtracting = newSelectFilter("All extracting", func() {
+	a.selectExtracting = iwidget.NewFilterChipSelect("Extracted", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.selectOwner = newSelectFilter("Any owner", func() {
+	a.selectOwner = iwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.selectProducing = newSelectFilter("All producting", func() {
+	a.selectProducing = iwidget.NewFilterChipSelect("Produced", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.selectRegion = newSelectFilter("Any region", func() {
+	a.selectRegion = iwidget.NewFilterChipSelect("Region", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.selectSolarSystem = newSelectFilter("Any system", func() {
+	a.selectSolarSystem = iwidget.NewFilterChipSelect("System", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 
-	a.selectStatus = widget.NewSelect([]string{
-		colonyStatusAny,
+	a.selectStatus = iwidget.NewFilterChipSelect("Status", []string{
 		colonyStatusExtracting,
 		colonyStatusOffline,
 	}, func(string) {
 		a.filterRows(-1)
 	})
-	a.selectStatus.Selected = colonyStatusAny
 
-	a.selectType = newSelectFilter("Any type", func() {
+	a.selectType = iwidget.NewFilterChipSelect("Planet Type", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 
@@ -176,32 +173,32 @@ func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
 func (a *colonies) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
-	a.selectExtracting.applyFilter(func(selected string) {
+	if x := a.selectExtracting.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r colonyRow) bool {
-			return r.extracting.Contains(selected)
+			return r.extracting.Contains(x)
 		})
-	})
-	a.selectOwner.applyFilter(func(selected string) {
+	}
+	if x := a.selectOwner.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r colonyRow) bool {
-			return r.ownerName == selected
+			return r.ownerName == x
 		})
-	})
-	a.selectProducing.applyFilter(func(selected string) {
+	}
+	if x := a.selectProducing.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r colonyRow) bool {
-			return r.producing.Contains(selected)
+			return r.producing.Contains(x)
 		})
-	})
-	a.selectRegion.applyFilter(func(selected string) {
+	}
+	if x := a.selectRegion.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r colonyRow) bool {
-			return r.regionName == selected
+			return r.regionName == x
 		})
-	})
-	a.selectSolarSystem.applyFilter(func(selected string) {
+	}
+	if x := a.selectSolarSystem.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r colonyRow) bool {
-			return r.solarSystemName == selected
+			return r.solarSystemName == x
 		})
-	})
-	if x := a.selectStatus.Selected; x != colonyStatusAny {
+	}
+	if x := a.selectStatus.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r colonyRow) bool {
 			switch x {
 			case colonyStatusExtracting:
@@ -212,11 +209,11 @@ func (a *colonies) filterRows(sortCol int) {
 			return false
 		})
 	}
-	a.selectType.applyFilter(func(selected string) {
+	if x := a.selectType.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r colonyRow) bool {
-			return r.typeName == selected
+			return r.typeName == x
 		})
-	})
+	}
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
 		slices.SortFunc(rows, func(a, b colonyRow) int {
@@ -240,16 +237,16 @@ func (a *colonies) filterRows(sortCol int) {
 			}
 		})
 	})
-	a.selectOwner.setOptions(xiter.MapSlice(rows, func(r colonyRow) string {
+	a.selectOwner.SetOptionsFromSeq(xiter.MapSlice(rows, func(r colonyRow) string {
 		return r.ownerName
 	}))
-	a.selectRegion.setOptions(xiter.MapSlice(rows, func(r colonyRow) string {
+	a.selectRegion.SetOptionsFromSeq(xiter.MapSlice(rows, func(r colonyRow) string {
 		return r.regionName
 	}))
-	a.selectSolarSystem.setOptions(xiter.MapSlice(rows, func(r colonyRow) string {
+	a.selectSolarSystem.SetOptionsFromSeq(xiter.MapSlice(rows, func(r colonyRow) string {
 		return r.solarSystemName
 	}))
-	a.selectType.setOptions(xiter.MapSlice(rows, func(r colonyRow) string {
+	a.selectType.SetOptionsFromSeq(xiter.MapSlice(rows, func(r colonyRow) string {
 		return r.typeName
 	}))
 	var extracting, producing set.Set[string]
@@ -257,8 +254,8 @@ func (a *colonies) filterRows(sortCol int) {
 		extracting.AddSeq(r.extracting.All())
 		producing.AddSeq(r.producing.All())
 	}
-	a.selectExtracting.setOptions(extracting.All())
-	a.selectProducing.setOptions(producing.All())
+	a.selectExtracting.SetOptionsFromSeq(extracting.All())
+	a.selectProducing.SetOptionsFromSeq(producing.All())
 	a.rowsFiltered = rows
 	a.body.Refresh()
 }

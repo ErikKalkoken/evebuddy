@@ -58,8 +58,8 @@ type OverviewCharacters struct {
 	columnSorter      *columnSorter
 	rows              []characterRow
 	rowsFiltered      []characterRow
-	selectAlliance    *selectFilter
-	selectCorporation *selectFilter
+	selectAlliance    *iwidget.FilterChipSelect
+	selectCorporation *iwidget.FilterChipSelect
 	sortButton        *sortButton
 	top               *widget.Label
 	u                 *BaseUI
@@ -137,10 +137,10 @@ func newOverviewCharacters(u *BaseUI) *OverviewCharacters {
 		})
 	}
 
-	a.selectAlliance = newSelectFilter("Any alliance", func() {
+	a.selectAlliance = iwidget.NewFilterChipSelect("Alliance", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.selectCorporation = newSelectFilter("Any corporation", func() {
+	a.selectCorporation = iwidget.NewFilterChipSelect("Corporation", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
@@ -167,16 +167,16 @@ func (a *OverviewCharacters) CreateRenderer() fyne.WidgetRenderer {
 func (a *OverviewCharacters) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
-	a.selectAlliance.applyFilter(func(selected string) {
+	if x := a.selectAlliance.Selected; x != "" {
 		rows = xslices.Filter(rows, func(o characterRow) bool {
-			return o.AllianceName() == selected
+			return o.AllianceName() == x
 		})
-	})
-	a.selectCorporation.applyFilter(func(selected string) {
+	}
+	if x := a.selectCorporation.Selected; x != "" {
 		rows = xslices.Filter(rows, func(o characterRow) bool {
-			return o.CorporationName() == selected
+			return o.CorporationName() == x
 		})
-	})
+	}
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
 		slices.SortFunc(rows, func(a, b characterRow) int {
@@ -210,10 +210,10 @@ func (a *OverviewCharacters) filterRows(sortCol int) {
 			}
 		})
 	})
-	a.selectAlliance.setOptions(xiter.MapSlice(rows, func(r characterRow) string {
+	a.selectAlliance.SetOptionsFromSeq(xiter.MapSlice(rows, func(r characterRow) string {
 		return r.AllianceName()
 	}))
-	a.selectCorporation.setOptions(xiter.MapSlice(rows, func(r characterRow) string {
+	a.selectCorporation.SetOptionsFromSeq(xiter.MapSlice(rows, func(r characterRow) string {
 		return r.CorporationName()
 	}))
 	a.rowsFiltered = rows

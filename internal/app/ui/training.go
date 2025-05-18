@@ -22,7 +22,6 @@ import (
 )
 
 const (
-	trainingStatusAny      = "Any status"
 	trainingStatusActive   = "Active"
 	trainingStatusInActive = "Inactive"
 )
@@ -49,7 +48,7 @@ type trainings struct {
 	columnSorter *columnSorter
 	rows         []trainingRow
 	rowsFiltered []trainingRow
-	selectStatus *widget.Select
+	selectStatus *iwidget.FilterChipSelect
 	sortButton   *sortButton
 	bottom       *widget.Label
 	u            *BaseUI
@@ -106,14 +105,15 @@ func newTrainings(u *BaseUI) *trainings {
 		// a.body = makeDataList(headers, &a.rowsFiltered, makeCell, nil)
 		a.body = a.makeDataList()
 	}
-	a.selectStatus = widget.NewSelect([]string{
-		trainingStatusAny,
-		trainingStatusActive,
-		trainingStatusInActive,
-	}, func(string) {
-		a.filterRows(-1)
-	})
-	a.selectStatus.Selected = trainingStatusAny
+	a.selectStatus = iwidget.NewFilterChipSelect(
+		"Status",
+		[]string{
+			trainingStatusActive,
+			trainingStatusInActive,
+		}, func(string) {
+			a.filterRows(-1)
+		},
+	)
 
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
@@ -173,7 +173,7 @@ func (a *trainings) makeDataList() *widget.List {
 func (a *trainings) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
-	if x := a.selectStatus.Selected; x != trainingStatusAny {
+	if x := a.selectStatus.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r trainingRow) bool {
 			switch x {
 			case trainingStatusActive:

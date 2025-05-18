@@ -24,12 +24,13 @@ import (
 
 type walletJournalRow struct {
 	amount         float64
+	amountDisplay  []widget.RichTextSegment
 	balance        float64
 	date           time.Time
 	description    string
+	reason         string
 	refType        string
 	refTypeDisplay string
-	reason         string
 }
 
 func (e walletJournalRow) hasReason() bool {
@@ -52,7 +53,7 @@ type characterWalletJournal struct {
 	columnSorter *columnSorter
 	rows         []walletJournalRow
 	rowsFiltered []walletJournalRow
-	selectType   *selectFilter
+	selectType   *iwidget.FilterChipSelect
 	sortButton   *sortButton
 	top          *widget.Label
 	u            *BaseUI
@@ -73,38 +74,23 @@ func newCharacterWalletJournal(u *BaseUI) *characterWalletJournal {
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	makeCell := func(col int, w walletJournalRow) []widget.RichTextSegment {
+	makeCell := func(col int, r walletJournalRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			return iwidget.NewRichTextSegmentFromText(w.date.Format(app.DateTimeFormat))
+			return iwidget.NewRichTextSegmentFromText(r.date.Format(app.DateTimeFormat))
 		case 1:
-			return iwidget.NewRichTextSegmentFromText(w.refTypeDisplay)
+			return iwidget.NewRichTextSegmentFromText(r.refTypeDisplay)
 		case 2:
-			var color fyne.ThemeColorName
-			switch {
-			case w.amount < 0:
-				color = theme.ColorNameError
-			case w.amount > 0:
-				color = theme.ColorNameSuccess
-			default:
-				color = theme.ColorNameForeground
-			}
-			return iwidget.NewRichTextSegmentFromText(
-				humanize.FormatFloat(app.FloatFormat, w.amount),
-				widget.RichTextStyle{
-					Alignment: fyne.TextAlignTrailing,
-					ColorName: color,
-				},
-			)
+			return r.amountDisplay
 		case 3:
 			return iwidget.NewRichTextSegmentFromText(
-				humanize.FormatFloat(app.FloatFormat, w.balance),
+				humanize.FormatFloat(app.FloatFormat, r.balance),
 				widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				},
 			)
 		case 4:
-			return iwidget.NewRichTextSegmentFromText(w.descriptionWithReason())
+			return iwidget.NewRichTextSegmentFromText(r.descriptionWithReason())
 		}
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
@@ -121,7 +107,7 @@ func newCharacterWalletJournal(u *BaseUI) *characterWalletJournal {
 		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, showReasonDialog)
 	}
 
-	a.selectType = newSelectFilter("Any type", func() {
+	a.selectType = iwidget.NewFilterChipSelect("Type", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
@@ -148,11 +134,11 @@ func (a *characterWalletJournal) CreateRenderer() fyne.WidgetRenderer {
 func (a *characterWalletJournal) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
-	a.selectType.applyFilter(func(selected string) {
+	if x := a.selectType.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r walletJournalRow) bool {
-			return r.refTypeDisplay == selected
+			return r.refTypeDisplay == x
 		})
-	})
+	}
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
 		slices.SortFunc(rows, func(a, b walletJournalRow) int {
@@ -172,7 +158,7 @@ func (a *characterWalletJournal) filterRows(sortCol int) {
 			}
 		})
 	})
-	a.selectType.setOptions(xiter.MapSlice(rows, func(r walletJournalRow) string {
+	a.selectType.SetOptionsFromSeq(xiter.MapSlice(rows, func(r walletJournalRow) string {
 		return r.refTypeDisplay
 	}))
 	a.rowsFiltered = rows
@@ -229,6 +215,22 @@ func (*characterWalletJournal) fetchRows(characterID int32, s services) ([]walle
 			refType:        o.RefType,
 			refTypeDisplay: o.RefTypeDisplay(),
 		}
+		var color fyne.ThemeColorName
+		switch {
+		case o.Amount < 0:
+			color = theme.ColorNameError
+		case o.Amount > 0:
+			color = theme.ColorNameSuccess
+		default:
+			color = theme.ColorNameForeground
+		}
+		r.amountDisplay = iwidget.NewRichTextSegmentFromText(
+			humanize.FormatFloat(app.FloatFormat, o.Amount),
+			widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+				ColorName: color,
+			},
+		)
 		rows[i] = r
 	}
 	return rows, nil

@@ -62,9 +62,13 @@ func (st *Storage) GetCharacterWalletTransaction(ctx context.Context, characterI
 	o := characterWalletTransactionFromDBModel(
 		r.CharacterWalletTransaction,
 		r.EveEntity,
-		r.EveTypeName,
+		r.EveType,
+		r.EveGroup,
+		r.EveCategory,
 		r.LocationName,
 		r.SystemSecurityStatus,
+		r.RegionID,
+		r.RegionName,
 	)
 	return o, err
 }
@@ -87,9 +91,13 @@ func (st *Storage) ListCharacterWalletTransactions(ctx context.Context, characte
 		oo[i] = characterWalletTransactionFromDBModel(
 			r.CharacterWalletTransaction,
 			r.EveEntity,
-			r.EveTypeName,
+			r.EveType,
+			r.EveGroup,
+			r.EveCategory,
 			r.LocationName,
 			r.SystemSecurityStatus,
+			r.RegionID,
+			r.RegionName,
 		)
 	}
 	return oo, nil
@@ -98,14 +106,18 @@ func (st *Storage) ListCharacterWalletTransactions(ctx context.Context, characte
 func characterWalletTransactionFromDBModel(
 	o queries.CharacterWalletTransaction,
 	client queries.EveEntity,
-	eveTypeName string,
+	et queries.EveType,
+	eg queries.EveGroup,
+	ec queries.EveCategory,
 	locationName string,
 	systemSecurityStatus sql.NullFloat64,
+	regionID sql.NullInt64,
+	regionName sql.NullString,
 ) *app.CharacterWalletTransaction {
 	o2 := &app.CharacterWalletTransaction{
 		Client:       eveEntityFromDBModel(client),
 		Date:         o.Date,
-		EveType:      &app.EntityShort[int32]{ID: int32(o.EveTypeID), Name: eveTypeName},
+		Type:         eveTypeFromDBModel(et, eg, ec),
 		ID:           o.ID,
 		IsBuy:        o.IsBuy,
 		IsPersonal:   o.IsPersonal,
@@ -118,6 +130,12 @@ func characterWalletTransactionFromDBModel(
 		Quantity:      int32(o.Quantity),
 		TransactionID: o.TransactionID,
 		UnitPrice:     o.UnitPrice,
+	}
+	if regionID.Valid && regionName.Valid {
+		o2.Region = &app.EntityShort[int32]{
+			ID:   int32(regionID.Int64),
+			Name: regionName.String,
+		}
 	}
 	return o2
 }

@@ -10,15 +10,10 @@ import (
 )
 
 const createEvePlanet = `-- name: CreateEvePlanet :exec
-INSERT INTO eve_planets (
-    id,
-    name,
-    eve_solar_system_id,
-    eve_type_id
-)
-VALUES (
-    ?, ?, ?, ?
-)
+INSERT INTO
+    eve_planets (id, name, eve_solar_system_id, eve_type_id)
+VALUES
+    (?, ?, ?, ?)
 `
 
 type CreateEvePlanetParams struct {
@@ -39,15 +34,24 @@ func (q *Queries) CreateEvePlanet(ctx context.Context, arg CreateEvePlanetParams
 }
 
 const getEvePlanet = `-- name: GetEvePlanet :one
-SELECT ep.id, ep.name, ep.eve_solar_system_id, ep.eve_type_id, ess.id, ess.eve_constellation_id, ess.name, ess.security_status, ecn.id, ecn.eve_region_id, ecn.name, er.id, er.description, er.name, et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume, eg.id, eg.eve_category_id, eg.name, eg.is_published, ect.id, ect.name, ect.is_published
-FROM eve_planets ep
-JOIN eve_solar_systems ess ON ess.id = ep.eve_solar_system_id
-JOIN eve_constellations ecn ON ecn.id = ess.eve_constellation_id
-JOIN eve_regions er ON er.id = ecn.eve_region_id
-JOIN eve_types et ON et.id = ep.eve_type_id
-JOIN eve_groups eg ON eg.id = et.eve_group_id
-JOIN eve_categories ect ON ect.id = eg.eve_category_id
-WHERE ep.id = ?
+SELECT
+    ep.id, ep.name, ep.eve_solar_system_id, ep.eve_type_id,
+    ess.id, ess.eve_constellation_id, ess.name, ess.security_status,
+    ecn.id, ecn.eve_region_id, ecn.name,
+    er.id, er.description, er.name,
+    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
+    eg.id, eg.eve_category_id, eg.name, eg.is_published,
+    ect.id, ect.name, ect.is_published
+FROM
+    eve_planets ep
+    JOIN eve_solar_systems ess ON ess.id = ep.eve_solar_system_id
+    JOIN eve_constellations ecn ON ecn.id = ess.eve_constellation_id
+    JOIN eve_regions er ON er.id = ecn.eve_region_id
+    JOIN eve_types et ON et.id = ep.eve_type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ect ON ect.id = eg.eve_category_id
+WHERE
+    ep.id = ?
 `
 
 type GetEvePlanetRow struct {
