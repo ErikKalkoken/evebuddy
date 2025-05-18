@@ -507,7 +507,8 @@ type CharacterImplant struct {
 type Role uint
 
 const (
-	RoleAccountant Role = iota + 1
+	RoleUndefined Role = iota
+	RoleAccountant
 	RoleAccountTake1
 	RoleAccountTake2
 	RoleAccountTake3

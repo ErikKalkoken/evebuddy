@@ -108,6 +108,22 @@ var jobStatusFromESIValue = map[string]app.IndustryJobStatus{
 	"reverted":  app.JobReverted,
 }
 
+// ValidSections returns the sections for a corporation which have a valid token for update.
+func (s *CorporationService) ValidSections(ctx context.Context, corporationID int32) ([]app.CorporationSection, error) {
+	valid := make([]app.CorporationSection, 0)
+	for _, section := range app.CorporationSections {
+		_, err := s.cs.ValidCharacterTokenForCorporation(ctx, corporationID, section.Role())
+		if errors.Is(err, app.ErrNotFound) {
+			slog.Info("Can't update this corporation section due to missing valid token", "corporationID", corporationID, "error", err)
+			continue
+		} else if err != nil {
+			return nil, err
+		}
+		valid = append(valid, section)
+	}
+	return valid, nil
+}
+
 func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.CorporationUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionCorporationIndustryJobs {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
