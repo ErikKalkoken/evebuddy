@@ -52,7 +52,7 @@ type characterWalletTransaction struct {
 	selectClient   *selectFilter
 	selectLocation *selectFilter
 	sortButton     *sortButton
-	top            *widget.Label
+	bottom         *widget.Label
 	u              *BaseUI
 }
 
@@ -70,7 +70,7 @@ func NewCharacterWalletTransaction(u *BaseUI) *characterWalletTransaction {
 		columnSorter: newColumnSorterWithInit(headers, 0, sortDesc),
 		rows:         make([]walletTransactionRow, 0),
 		rowsFiltered: make([]walletTransactionRow, 0),
-		top:          makeTopLabel(),
+		bottom:       widget.NewLabel(""),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -136,7 +136,7 @@ func (a *characterWalletTransaction) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		container.NewHScroll(filter),
-		nil,
+		a.bottom,
 		nil,
 		nil,
 		a.body,
@@ -208,15 +208,16 @@ func (a *characterWalletTransaction) update() {
 			rows = rows2
 		}
 	}
-	t, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
-		t := humanize.Comma(int64(len(rows)))
-		s := fmt.Sprintf("Entries: %s", t)
-		return s, widget.MediumImportance
-	})
+	t, i := a.u.makeTopText(characterID, hasData, err, nil)
 	fyne.Do(func() {
-		a.top.Text = t
-		a.top.Importance = i
-		a.top.Refresh()
+		if t != "" {
+			a.bottom.Text = t
+			a.bottom.Importance = i
+			a.bottom.Refresh()
+			a.bottom.Show()
+		} else {
+			a.bottom.Hide()
+		}
 	})
 	fyne.Do(func() {
 		a.rows = rows

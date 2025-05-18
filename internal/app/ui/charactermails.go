@@ -228,7 +228,7 @@ func (a *CharacterMails) update() {
 			err = err2
 		}
 	}
-	t, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
+	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
 		return "", widget.MediumImportance
 	})
 	fyne.Do(func() {
@@ -500,7 +500,7 @@ func (a *CharacterMails) headerRefresh() {
 	}
 
 	f := currentFolder.ValueOrZero()
-	t, i := makeTopText(f.CharacterID, hasData, err, func() (string, widget.Importance) {
+	t, i := a.u.makeTopText(f.CharacterID, hasData, err, func() (string, widget.Importance) {
 		p := message.NewPrinter(language.English)
 		s := p.Sprintf("%s • %d mails", f.Name, len(headers))
 		return s, widget.MediumImportance

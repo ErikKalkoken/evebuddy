@@ -112,7 +112,7 @@ type industryJobs struct {
 	selectOwner     *widget.Select
 	selectStatus    *widget.Select
 	sortButton      *sortButton
-	top             *widget.Label
+	bottom          *widget.Label
 	u               *BaseUI
 }
 
@@ -131,7 +131,7 @@ func newIndustryJobs(u *BaseUI) *industryJobs {
 		columnSorter: newColumnSorterWithInit(headers, 4, sortDesc),
 		rows:         make([]industryJobRow, 0),
 		rowsFiltered: make([]industryJobRow, 0),
-		top:          makeTopLabel(),
+		bottom:       makeTopLabel(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -238,17 +238,14 @@ func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
 		selections.Add(a.sortButton)
 	}
 	c := container.NewBorder(
-		container.NewVBox(
-			container.NewBorder(
-				nil,
-				container.NewHScroll(selections),
-				nil,
-				nil,
-				a.search,
-			),
-			a.top,
+		container.NewBorder(
+			nil,
+			container.NewHScroll(selections),
+			nil,
+			nil,
+			a.search,
 		),
-		nil,
+		a.bottom,
 		nil,
 		nil,
 		a.body,
@@ -462,10 +459,10 @@ func (a *industryJobs) update() {
 	reportError := func(err error) {
 		slog.Error("Failed to refresh industry jobs UI", "err", err)
 		fyne.Do(func() {
-			a.top.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
-			a.top.Importance = widget.DangerImportance
-			a.top.Refresh()
-			a.top.Show()
+			a.bottom.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
+			a.bottom.Importance = widget.DangerImportance
+			a.bottom.Refresh()
+			a.bottom.Show()
 		})
 	}
 	fixStatus := func(s app.IndustryJobStatus, endDate time.Time) app.IndustryJobStatus {
@@ -571,7 +568,7 @@ func (a *industryJobs) update() {
 	}
 	fyne.Do(func() {
 		a.search.SetText("")
-		a.top.Hide()
+		a.bottom.Hide()
 		a.rows = jobs
 		a.filterRows(-1)
 	})

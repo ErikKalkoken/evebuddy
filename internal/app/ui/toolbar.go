@@ -16,7 +16,7 @@ const (
 	searchPlaceholderDisabled = "(Needs a character)"
 )
 
-type Toolbar struct {
+type toolbar struct {
 	widget.BaseWidget
 
 	searchbar *widget.Entry
@@ -24,7 +24,7 @@ type Toolbar struct {
 	u         *DesktopUI
 }
 
-func NewToolbar(u *DesktopUI) *Toolbar {
+func newToolbar(u *DesktopUI) *toolbar {
 	searchbar := widget.NewEntry()
 	searchbar.PlaceHolder = searchPlaceholderEnabled
 	searchbar.Scroll = container.ScrollNone
@@ -60,7 +60,7 @@ func NewToolbar(u *DesktopUI) *Toolbar {
 		fyne.NewMenuItemSeparator(),
 		makeMenuItem("Quit", u.shortcuts["quit"]),
 	)
-	a := &Toolbar{
+	a := &toolbar{
 		u:         u,
 		searchbar: searchbar,
 		hamburger: iwidget.NewIconButtonWithMenu(theme.MenuIcon(), menu),
@@ -69,7 +69,7 @@ func NewToolbar(u *DesktopUI) *Toolbar {
 	return a
 }
 
-func (a *Toolbar) ToogleSearchBar(enabled bool) {
+func (a *toolbar) ToogleSearchBar(enabled bool) {
 	if enabled {
 		a.searchbar.PlaceHolder = searchPlaceholderEnabled
 		a.searchbar.Enable()
@@ -79,7 +79,7 @@ func (a *Toolbar) ToogleSearchBar(enabled bool) {
 	}
 }
 
-func (a *Toolbar) CreateRenderer() fyne.WidgetRenderer {
+func (a *toolbar) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	x := container.NewGridWithColumns(
 		3,

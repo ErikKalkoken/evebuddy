@@ -78,7 +78,7 @@ type contracts struct {
 	selectStatus   *widget.Select
 	selectType     *selectFilter
 	sortButton     *sortButton
-	top            *widget.Label
+	bottom         *widget.Label
 	u              *BaseUI
 }
 
@@ -95,7 +95,7 @@ func newContracts(u *BaseUI) *contracts {
 	a := &contracts{
 		columnSorter: newColumnSorter(headers),
 		rows:         make([]contractRow, 0),
-		top:          makeTopLabel(),
+		bottom:       widget.NewLabel(""),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -161,7 +161,12 @@ func (a *contracts) CreateRenderer() fyne.WidgetRenderer {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(
-		container.NewVBox(a.top, container.NewHScroll(filter)), nil, nil, nil, a.body)
+		container.NewVBox(container.NewHScroll(filter)),
+		a.bottom,
+		nil,
+		nil,
+		a.body,
+	)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -299,10 +304,10 @@ func (a *contracts) update() {
 	if err != nil {
 		slog.Error("Failed to refresh contracts UI", "err", err)
 		fyne.Do(func() {
-			a.top.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
-			a.top.Importance = widget.DangerImportance
-			a.top.Refresh()
-			a.top.Show()
+			a.bottom.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
+			a.bottom.Importance = widget.DangerImportance
+			a.bottom.Refresh()
+			a.bottom.Show()
 		})
 		return
 	}
@@ -331,7 +336,7 @@ func (a *contracts) update() {
 		}
 	}
 	fyne.Do(func() {
-		a.top.Hide()
+		a.bottom.Hide()
 		a.rows = rows
 		a.filterRows(-1)
 	})

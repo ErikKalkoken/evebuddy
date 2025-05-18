@@ -202,7 +202,7 @@ func (a *CharacterSkillCatalogue) update() {
 			groups = groups2
 		}
 	}
-	t, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
+	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
 		character := a.u.currentCharacter()
 		total := ihumanize.Optional(character.TotalSP, "?")
 		unallocated := ihumanize.Optional(character.UnallocatedSP, "?")

@@ -107,11 +107,11 @@ type BaseUI struct {
 	manageCharacters           *ManageCharacters
 	overviewAssets             *overviewAssets
 	overviewCharacters         *OverviewCharacters
-	overviewClones             *overviewClones
+	overviewClones             *clones
 	colonies                   *colonies
 	overviewLocations          *locations
 	overviewTraining           *training
-	overviewWealth             *OverviewWealth
+	overviewWealth             *wealth
 	userSettings               *UserSettings
 
 	app                fyne.App
@@ -214,11 +214,11 @@ func NewBaseUI(args BaseUIParams) *BaseUI {
 	u.manageCharacters = newManageCharacters(u)
 	u.overviewAssets = newOverviewAssets(u)
 	u.overviewCharacters = newOverviewCharacters(u)
-	u.overviewClones = newOverviewClones(u)
+	u.overviewClones = newClones(u)
 	u.colonies = newColonies(u)
 	u.overviewLocations = newLocations(u)
 	u.overviewTraining = newTraining(u)
-	u.overviewWealth = newOverviewWealth(u)
+	u.overviewWealth = newWealth(u)
 	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.userSettings = newSettings(u)
 	u.MainWindow().SetMaster()
@@ -1225,15 +1225,18 @@ func (u *BaseUI) makeCopyToClipboardLabel(text string) *kxwidget.TappableLabel {
 }
 
 // makeTopText makes the content for the top label of a gui element.
-func makeTopText(characterID int32, hasData bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
+func (u *BaseUI) makeTopText(characterID int32, hasData bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
 	if err != nil {
-		return "ERROR", widget.DangerImportance
+		return "ERROR: " + u.humanizeError(err), widget.DangerImportance
 	}
 	if characterID == 0 {
 		return "No character...", widget.LowImportance
 	}
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
+	}
+	if make == nil {
+		return "", widget.MediumImportance
 	}
 	return make()
 }

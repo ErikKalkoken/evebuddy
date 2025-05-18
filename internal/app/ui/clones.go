@@ -54,7 +54,7 @@ func (r cloneRow) jumps() string {
 	return fmt.Sprint(len(r.route) - 1)
 }
 
-type overviewClones struct {
+type clones struct {
 	widget.BaseWidget
 
 	body              fyne.CanvasObject
@@ -73,7 +73,7 @@ type overviewClones struct {
 	selectSolarSystem *selectFilter
 }
 
-func newOverviewClones(u *BaseUI) *overviewClones {
+func newClones(u *BaseUI) *clones {
 	headers := []headerDef{
 		{Text: "Location", Width: columnWidthLocation},
 		{Text: "Region", Width: columnWidthRegion, NotSortable: true},
@@ -81,7 +81,7 @@ func newOverviewClones(u *BaseUI) *overviewClones {
 		{Text: "Character", Width: columnWidthCharacter},
 		{Text: "Jumps", Width: 100},
 	}
-	a := &overviewClones{
+	a := &clones{
 		columnSorter: newColumnSorter(headers),
 		originLabel:  widget.NewRichTextWithText("(not set)"),
 		rows:         make([]cloneRow, 0),
@@ -163,7 +163,7 @@ func newOverviewClones(u *BaseUI) *overviewClones {
 	return a
 }
 
-func (a *overviewClones) CreateRenderer() fyne.WidgetRenderer {
+func (a *clones) CreateRenderer() fyne.WidgetRenderer {
 	route := container.NewBorder(
 		nil,
 		nil,
@@ -189,7 +189,7 @@ func (a *overviewClones) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *overviewClones) update() {
+func (a *clones) update() {
 	rows := make([]cloneRow, 0)
 	t, i, err := func() (string, widget.Importance, error) {
 		rows2, err := a.fetchRows(a.u.services())
@@ -222,7 +222,7 @@ func (a *overviewClones) update() {
 	})
 }
 
-func (*overviewClones) fetchRows(s services) ([]cloneRow, error) {
+func (*clones) fetchRows(s services) ([]cloneRow, error) {
 	ctx := context.Background()
 	oo, err := s.cs.ListAllJumpClones(ctx)
 	if err != nil {
@@ -237,7 +237,7 @@ func (*overviewClones) fetchRows(s services) ([]cloneRow, error) {
 	return rows, nil
 }
 
-func (a *overviewClones) updateRoutes() {
+func (a *clones) updateRoutes() {
 	if a.origin == nil {
 		return
 	}
@@ -276,7 +276,7 @@ func (a *overviewClones) updateRoutes() {
 	})
 }
 
-func (a *overviewClones) setOrigin(w fyne.Window) {
+func (a *clones) setOrigin(w fyne.Window) {
 	showErrorDialog := func(search string, err error) {
 		slog.Error("Failed to resolve names", "search", search, "error", err)
 		a.u.ShowErrorDialog("Something went wrong", err, w)
@@ -383,7 +383,7 @@ func (a *overviewClones) setOrigin(w fyne.Window) {
 	w.Canvas().Focus(entry)
 }
 
-func (a *overviewClones) filterRows(sortCol int) {
+func (a *clones) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
 	a.selectOwner.applyFilter(func(selected string) {
@@ -440,7 +440,7 @@ func (a *overviewClones) filterRows(sortCol int) {
 	a.body.Refresh()
 }
 
-func (a *overviewClones) showRoute(r cloneRow) {
+func (a *clones) showRoute(r cloneRow) {
 	col := kxlayout.NewColumns(60)
 	list := widget.NewList(
 		func() int {
@@ -517,7 +517,7 @@ func (a *overviewClones) showRoute(r cloneRow) {
 	w.Show()
 }
 
-func (a *overviewClones) showClone(r cloneRow) {
+func (a *clones) showClone(r cloneRow) {
 	clone, err := a.u.cs.GetJumpClone(context.Background(), r.c.Character.ID, r.c.CloneID)
 	if err != nil {
 		slog.Error("show clone", "error", err)

@@ -193,7 +193,7 @@ func (a *characterWalletJournal) update() {
 			rows = rows2
 		}
 	}
-	t, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
+	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
 		character := a.u.currentCharacter()
 		b := ihumanize.OptionalFloat(character.WalletBalance, 1, "?")
 		s := fmt.Sprintf("Balance: %s", b)

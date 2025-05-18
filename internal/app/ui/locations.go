@@ -2,7 +2,6 @@ package ui
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
@@ -13,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -39,7 +37,7 @@ type locations struct {
 	selectRegion      *selectFilter
 	selectSolarSystem *selectFilter
 	sortButton        *sortButton
-	top               *widget.Label
+	bottom            *widget.Label
 	u                 *BaseUI
 }
 
@@ -54,7 +52,7 @@ func newLocations(u *BaseUI) *locations {
 		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
 		rows:         make([]locationRow, 0),
 		rowsFiltered: make([]locationRow, 0),
-		top:          makeTopLabel(),
+		bottom:       makeTopLabel(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -101,7 +99,7 @@ func (a *locations) CreateRenderer() fyne.WidgetRenderer {
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
 	}
-	c := container.NewBorder(container.NewHScroll(filter), nil, nil, nil, a.body)
+	c := container.NewBorder(container.NewHScroll(filter), a.bottom, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -192,7 +190,7 @@ func (a *locations) filterRows(sortCol int) {
 func (a *locations) update() {
 	rows := make([]locationRow, 0)
 	t, i, err := func() (string, widget.Importance, error) {
-		cc, count, err := a.fetchData(a.u.services())
+		cc, err := a.fetchData(a.u.services())
 		if err != nil {
 			return "", 0, err
 		}
@@ -200,8 +198,7 @@ func (a *locations) update() {
 			return "No characters", widget.LowImportance, nil
 		}
 		rows = cc
-		s := fmt.Sprintf("%d characters • %d locations", len(cc), count)
-		return s, widget.MediumImportance, nil
+		return "", widget.MediumImportance, nil
 	}()
 	if err != nil {
 		slog.Error("Failed to refresh locations UI", "err", err)
@@ -209,9 +206,14 @@ func (a *locations) update() {
 		i = widget.DangerImportance
 	}
 	fyne.Do(func() {
-		a.top.Text = t
-		a.top.Importance = i
-		a.top.Refresh()
+		if t != "" {
+			a.bottom.Text = t
+			a.bottom.Importance = i
+			a.bottom.Refresh()
+			a.bottom.Show()
+		} else {
+			a.bottom.Hide()
+		}
 	})
 	fyne.Do(func() {
 		a.rows = rows
@@ -219,13 +221,12 @@ func (a *locations) update() {
 	})
 }
 
-func (*locations) fetchData(s services) ([]locationRow, int, error) {
+func (*locations) fetchData(s services) ([]locationRow, error) {
 	ctx := context.TODO()
 	characters, err := s.cs.ListCharacters(ctx)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	var locationIDs set.Set[int64]
 	rows := make([]locationRow, 0)
 	for _, c := range characters {
 		if c.EveCharacter == nil || c.Location == nil {
@@ -245,7 +246,6 @@ func (*locations) fetchData(s services) ([]locationRow, int, error) {
 			r.shipName = c.Ship.Name
 		}
 		rows = append(rows, r)
-		locationIDs.Add(c.Location.ID)
 	}
-	return rows, locationIDs.Size(), nil
+	return rows, nil
 }

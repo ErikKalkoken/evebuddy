@@ -51,7 +51,7 @@ type training struct {
 	rowsFiltered []trainingRow
 	selectStatus *widget.Select
 	sortButton   *sortButton
-	top          *widget.Label
+	bottom       *widget.Label
 	u            *BaseUI
 }
 
@@ -66,42 +66,44 @@ func newTraining(u *BaseUI) *training {
 		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
 		rows:         make([]trainingRow, 0),
 		rowsFiltered: make([]trainingRow, 0),
-		top:          makeTopLabel(),
+		bottom:       widget.NewLabel(""),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
+	makeCell := func(col int, r trainingRow) []widget.RichTextSegment {
+		switch col {
+		case 0:
+			return iwidget.NewRichTextSegmentFromText(r.characterName)
+		case 1:
+			return iwidget.NewRichTextSegmentFromText(
+				r.totalSPDisplay,
+				widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+				},
+			)
+		case 2:
+			return iwidget.NewRichTextSegmentFromText(
+				r.unallocatedSPDisplay,
+				widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+				},
+			)
+		case 3:
+			return r.trainingDisplay
+		}
+		return iwidget.NewRichTextSegmentFromText("?")
+	}
 	if a.u.isDesktop {
 		a.body = makeDataTable(
 			headers,
 			&a.rowsFiltered,
-			func(col int, r trainingRow) []widget.RichTextSegment {
-				switch col {
-				case 0:
-					return iwidget.NewRichTextSegmentFromText(r.characterName)
-				case 1:
-					return iwidget.NewRichTextSegmentFromText(
-						r.totalSPDisplay,
-						widget.RichTextStyle{
-							Alignment: fyne.TextAlignTrailing,
-						},
-					)
-				case 2:
-					return iwidget.NewRichTextSegmentFromText(
-						r.unallocatedSPDisplay,
-						widget.RichTextStyle{
-							Alignment: fyne.TextAlignTrailing,
-						},
-					)
-				case 3:
-					return r.trainingDisplay
-				}
-				return iwidget.NewRichTextSegmentFromText("?")
-			},
+			makeCell,
 			a.columnSorter,
 			a.filterRows,
 			nil,
 		)
 	} else {
+		// a.body = makeDataList(headers, &a.rowsFiltered, makeCell, nil)
 		a.body = a.makeDataList()
 	}
 	a.selectStatus = widget.NewSelect([]string{
@@ -210,7 +212,7 @@ func (a *training) filterRows(sortCol int) {
 func (a *training) update() {
 	rows := make([]trainingRow, 0)
 	t, i, err := func() (string, widget.Importance, error) {
-		cc, totalSP, err := a.fetchRows(a.u.services())
+		cc, err := a.fetchRows(a.u.services())
 		if err != nil {
 			return "", 0, err
 		}
@@ -218,9 +220,7 @@ func (a *training) update() {
 			return "No characters", widget.LowImportance, nil
 		}
 		rows = cc
-		spText := ihumanize.Optional(totalSP, "?")
-		s := fmt.Sprintf("%d characters • %s Total SP", len(cc), spText)
-		return s, widget.MediumImportance, nil
+		return "", widget.MediumImportance, nil
 	}()
 	if err != nil {
 		slog.Error("Failed to refresh training UI", "err", err)
@@ -228,9 +228,14 @@ func (a *training) update() {
 		i = widget.DangerImportance
 	}
 	fyne.Do(func() {
-		a.top.Text = t
-		a.top.Importance = i
-		a.top.Refresh()
+		if t != "" {
+			a.bottom.Text = t
+			a.bottom.Importance = i
+			a.bottom.Refresh()
+			a.bottom.Show()
+		} else {
+			a.bottom.Hide()
+		}
 	})
 	fyne.Do(func() {
 		a.rows = rows
@@ -238,12 +243,11 @@ func (a *training) update() {
 	})
 }
 
-func (*training) fetchRows(s services) ([]trainingRow, optional.Optional[int], error) {
-	var totalSP optional.Optional[int]
+func (*training) fetchRows(s services) ([]trainingRow, error) {
 	ctx := context.Background()
 	characters, err := s.cs.ListCharacters(ctx)
 	if err != nil {
-		return nil, totalSP, err
+		return nil, err
 	}
 	rows := make([]trainingRow, len(characters))
 	for i, c := range characters {
@@ -260,7 +264,7 @@ func (*training) fetchRows(s services) ([]trainingRow, optional.Optional[int], e
 		}
 		x, err := s.cs.GetTotalTrainingTime(ctx, c.ID)
 		if err != nil {
-			return nil, totalSP, err
+			return nil, err
 		}
 		r.training = x
 		if x := r.training; x.IsEmpty() {
@@ -278,10 +282,7 @@ func (*training) fetchRows(s services) ([]trainingRow, optional.Optional[int], e
 				},
 			)
 		}
-		if !c.TotalSP.IsEmpty() {
-			totalSP.Set(totalSP.ValueOrZero() + c.TotalSP.ValueOrZero())
-		}
 		rows[i] = r
 	}
-	return rows, totalSP, nil
+	return rows, nil
 }

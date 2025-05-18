@@ -109,7 +109,7 @@ func (a *CharacterAugmentations) update() {
 			implants = implants2
 		}
 	}
-	t, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
+	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
 		return fmt.Sprintf("%d implants", len(implants)), widget.MediumImportance
 	})
 	fyne.Do(func() {

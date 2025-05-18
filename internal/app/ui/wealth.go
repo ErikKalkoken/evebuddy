@@ -25,7 +25,7 @@ const (
 	chartHeight   = chartBaseSize / 1.618
 )
 
-type OverviewWealth struct {
+type wealth struct {
 	widget.BaseWidget
 
 	OnUpdate func(wallet, assets float64)
@@ -35,8 +35,8 @@ type OverviewWealth struct {
 	u      *BaseUI
 }
 
-func newOverviewWealth(u *BaseUI) *OverviewWealth {
-	a := &OverviewWealth{
+func newWealth(u *BaseUI) *wealth {
+	a := &wealth{
 		top: makeTopLabel(),
 		u:   u,
 	}
@@ -45,7 +45,7 @@ func newOverviewWealth(u *BaseUI) *OverviewWealth {
 	return a
 }
 
-func (a *OverviewWealth) CreateRenderer() fyne.WidgetRenderer {
+func (a *wealth) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
 		a.top,
 		nil,
@@ -56,7 +56,7 @@ func (a *OverviewWealth) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *OverviewWealth) makeCharts() *fyne.Container {
+func (a *wealth) makeCharts() *fyne.Container {
 	makePlaceholder := func() fyne.CanvasObject {
 		x := iwidget.NewImageFromResource(theme.BrokenImageIcon(), fyne.NewSize(chartWidth, chartHeight))
 		return container.NewPadded(x)
@@ -71,7 +71,7 @@ func (a *OverviewWealth) makeCharts() *fyne.Container {
 	return c
 }
 
-func (a *OverviewWealth) update() {
+func (a *wealth) update() {
 	data, characters, err := a.compileData(a.u.services())
 	if err != nil {
 		slog.Error("Failed to fetch data for charts", "err", err)
@@ -163,7 +163,7 @@ type dataRow struct {
 	total  float64
 }
 
-func (*OverviewWealth) compileData(s services) ([]dataRow, int, error) {
+func (*wealth) compileData(s services) ([]dataRow, int, error) {
 	ctx := context.Background()
 	cc, err := s.cs.ListCharacters(ctx)
 	if err != nil {

@@ -285,7 +285,7 @@ func (a *overviewAssets) update() {
 		t = "No characters"
 		i = widget.LowImportance
 	} else {
-		t, i = a.makeTopText(characterCount)
+		t = fmt.Sprintf("%d characters • %s items", characterCount, ihumanize.Comma(len(assets)))
 	}
 	fyne.Do(func() {
 		a.updateFoundInfo()
@@ -379,10 +379,4 @@ func (a *overviewAssets) characterCount() int {
 		}
 	}
 	return validCount
-}
-
-func (a *overviewAssets) makeTopText(c int) (string, widget.Importance) {
-	it := humanize.Comma(int64(len(a.rows)))
-	text := fmt.Sprintf("%d characters • %s items", c, it)
-	return text, widget.MediumImportance
 }

@@ -160,7 +160,16 @@ func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
 	}
-	c := container.NewBorder(container.NewHScroll(filter), nil, nil, nil, a.body)
+	c := container.NewBorder(
+		container.NewVBox(
+			a.top,
+			container.NewHScroll(filter),
+		),
+		nil,
+		nil,
+		nil,
+		a.body,
+	)
 	return widget.NewSimpleRenderer(c)
 }
 

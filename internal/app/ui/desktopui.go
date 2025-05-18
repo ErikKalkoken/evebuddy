@@ -293,7 +293,7 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 	homeNav.MinWidth = minNavCharacterWidth
 
 	statusBar := newStatusBar(u)
-	toolbar := NewToolbar(u)
+	toolbar := newToolbar(u)
 	characterTab := container.NewTabItemWithIcon("Character", theme.AccountIcon(), characterNav)
 	tabs := container.NewAppTabs(
 		container.NewTabItemWithIcon("Home", theme.NewThemedResource(theme.HomeIcon()), homeNav),
