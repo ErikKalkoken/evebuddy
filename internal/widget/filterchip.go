@@ -271,7 +271,6 @@ func (w *FilterChipGroup) toggleOption(o string, selected bool) {
 func (w *FilterChipGroup) SetSelected(s []string) {
 	w.Selected = slices.Clone(s)
 	w.Refresh()
-
 }
 
 // Options returns the options.
@@ -550,7 +549,7 @@ func (w *FilterChipSelect) showSearchDialog() {
 		d.Hide()
 	})
 	if w.Selected != "" {
-		entry.Hide()
+		entry.Disable()
 		clear.Show()
 	} else {
 		clear.Hide()
@@ -567,8 +566,8 @@ func (w *FilterChipSelect) showSearchDialog() {
 	c := container.NewBorder(
 		container.NewBorder(
 			nil,
-			nil,
 			clear,
+			nil,
 			widget.NewButton("Cancel", func() {
 				d.Hide()
 			}),
