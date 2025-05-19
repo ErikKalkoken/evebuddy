@@ -14,7 +14,7 @@ func TestFilterChipGroup(t *testing.T) {
 		window := test.NewWindow(w)
 		defer window.Close()
 		w.Refresh()
-		assert.ElementsMatch(t, []string{"a", "b"}, w.Options())
+		assert.ElementsMatch(t, []string{"a", "b"}, w.Options)
 		assert.ElementsMatch(t, []string{}, w.Selected)
 		assert.False(t, w.chips[0].On)
 		assert.False(t, w.chips[1].On)
@@ -25,17 +25,10 @@ func TestFilterChipGroup(t *testing.T) {
 		window := test.NewWindow(w)
 		defer window.Close()
 		w.Refresh()
-		assert.ElementsMatch(t, []string{"a", "b"}, w.Options())
+		assert.ElementsMatch(t, []string{"a", "b"}, w.Options)
 		assert.ElementsMatch(t, []string{"b"}, w.Selected)
 		assert.False(t, w.chips[0].On)
 		assert.True(t, w.chips[1].On)
-	})
-	t.Run("should panic when selected has invalid value", func(t *testing.T) {
-		w := NewFilterChipGroup([]string{"a", "b"}, nil)
-		w.Selected = []string{"c"}
-		assert.Panics(t, func() {
-			test.NewWindow(w)
-		})
 	})
 	t.Run("can set selected", func(t *testing.T) {
 		w := NewFilterChipGroup([]string{"a", "b", "c"}, nil)
@@ -46,5 +39,26 @@ func TestFilterChipGroup(t *testing.T) {
 		assert.False(t, w.chips[0].On)
 		assert.True(t, w.chips[1].On)
 		assert.True(t, w.chips[2].On)
+	})
+}
+
+func TestDeduplicateSlice(t *testing.T) {
+	t.Run("can remove duplicate elements", func(t *testing.T) {
+		s := []string{"b", "a", "b"}
+		got := deduplicateSlice(s)
+		want := []string{"b", "a"}
+		assert.Equal(t, want, got)
+	})
+	t.Run("can process slices with no duplicates", func(t *testing.T) {
+		s := []string{"b", "a"}
+		got := deduplicateSlice(s)
+		want := []string{"b", "a"}
+		assert.Equal(t, want, got)
+	})
+	t.Run("can process empty slice", func(t *testing.T) {
+		s := []string{}
+		got := deduplicateSlice(s)
+		want := []string{}
+		assert.Equal(t, want, got)
 	})
 }

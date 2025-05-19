@@ -60,17 +60,16 @@ func newGameSearch(u *baseUI) *hameSearch {
 	}
 	a.ExtendBaseWidget(a)
 
-	a.categories = iwidget.NewFilterChipGroup(a.defaultCategories, nil)
-	a.categories.Selected = slices.Clone(a.defaultCategories)
-	a.categories.OnChanged = func(s []string) {
+	a.categories = iwidget.NewFilterChipGroup(a.defaultCategories, func(s []string) {
 		a.updateSearchOptionsTitle()
-	}
+	})
+	a.categories.Selected = a.defaultCategories
 
-	a.strict = kxwidget.NewSwitch(nil)
-	a.strict.On = false
-	a.strict.OnChanged = func(on bool) {
+	a.strict = kxwidget.NewSwitch(func(on bool) {
 		a.updateSearchOptionsTitle()
-	}
+	})
+	a.strict.On = false
+
 	a.resultCount = widget.NewLabel("")
 	a.resultCount.Hide()
 	a.results = a.makeResults()

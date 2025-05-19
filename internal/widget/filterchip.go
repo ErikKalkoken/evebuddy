@@ -223,99 +223,79 @@ func (w *FilterChip) CreateRenderer() fyne.WidgetRenderer {
 type FilterChipGroup struct {
 	widget.DisableableWidget
 
-	OnChanged func([]string)
-	Selected  []string
+	OnChanged func(selected []string)
 
-	options []string
-	chips   []*FilterChip
+	Options  []string // readonly TODO: Enable setting options
+	Selected []string // readonly after first render
+
+	chips    []*FilterChip
+	options  []string
+	selected []string
 }
 
 // NewFilterChipGroup returns a new [FilterChipGroup].
 func NewFilterChipGroup(options []string, changed func([]string)) *FilterChipGroup {
+	optionsCleaned := slices.DeleteFunc(deduplicateSlice(options), func(v string) bool {
+		return v == ""
+	})
 	w := &FilterChipGroup{
 		chips:     make([]*FilterChip, 0),
 		OnChanged: changed,
-		options:   options,
+		options:   optionsCleaned,
+		Options:   slices.Clone(optionsCleaned),
 		Selected:  make([]string, 0),
 	}
 	w.ExtendBaseWidget(w)
-	for _, o := range options {
-		if o == "" {
-			panic("Empty strings are not allowed as options")
-		}
-		w.chips = append(w.chips, NewFilterChip(o, func(selected bool) {
-			w.toggleOption(o, selected)
+	isSelected := make(map[string]bool)
+	for _, v := range w.options {
+		w.chips = append(w.chips, NewFilterChip(v, func(on bool) {
+			if on {
+				isSelected[v] = true
+			} else {
+				isSelected[v] = false
+			}
+			w.selected = make([]string, 0)
+			for _, o := range w.options {
+				if isSelected[o] {
+					w.selected = append(w.selected, o)
+				}
+			}
+			w.Selected = slices.Clone(w.selected)
 			if w.OnChanged != nil {
-				w.OnChanged(slices.Clone(w.Selected))
+				w.OnChanged(w.Selected)
 			}
 		}))
 	}
 	return w
 }
 
-func (w *FilterChipGroup) toggleOption(o string, selected bool) {
-	if selected {
-		if slices.IndexFunc(w.Selected, func(s string) bool {
-			return s == o
-		}) != 0 {
-			w.Selected = append(w.Selected, o)
-		}
-	} else {
-		w.Selected = slices.DeleteFunc(w.Selected, func(s string) bool {
-			return s == o
-		})
-	}
-}
-
-// SetSelected updates the selected options.
-func (w *FilterChipGroup) SetSelected(s []string) {
-	w.Selected = slices.Clone(s)
-	w.Refresh()
-}
-
-// Options returns the options.
-func (w *FilterChipGroup) Options() []string {
-	return slices.Clone(w.options)
-}
-
-func (w *FilterChipGroup) update() {
-	optionMap := make(map[string]bool)
-	for _, v := range w.options {
-		optionMap[v] = true
-	}
-	for _, v := range w.Selected {
-		if v == "" {
-			panic("Empty string in Selected")
-		}
-		if !optionMap[v] {
-			panic("Invalid value in Selected: " + v)
-		}
-	}
-	selected := make(map[string]bool)
-	for _, v := range w.Selected {
-		selected[v] = true
-	}
-	for i, v := range w.options {
-		w.chips[i].On = selected[v]
-	}
-}
-
-func (w *FilterChipGroup) Refresh() {
-	w.update()
-	for _, cf := range w.chips {
-		cf.Refresh()
-	}
-	w.BaseWidget.Refresh()
-}
-
 func (w *FilterChipGroup) CreateRenderer() fyne.WidgetRenderer {
-	w.update()
+	w.SetSelected(w.Selected)
 	p := w.Theme().Size(theme.SizeNamePadding)
 	box := container.New(ilayout.NewRowWrapLayoutWithCustomPadding(2*p, 2*p))
 	for _, c := range w.chips {
 		box.Add(c)
 	}
 	return widget.NewSimpleRenderer(container.New(layout.NewCustomPaddedLayout(2*p, 2*p, 0, 0), box))
+}
+
+// SetSelected updates the selected options.
+// Invalid elements including empty strings will be ignored.
+func (w *FilterChipGroup) SetSelected(s []string) {
+	isValid := make(map[string]bool)
+	for _, v := range w.options {
+		isValid[v] = true
+	}
+	isSelected := make(map[string]bool)
+	for _, v := range s {
+		if !isValid[v] {
+			continue
+		}
+		isSelected[v] = true
+	}
+	for i, v := range w.options {
+		w.chips[i].SetState(isSelected[v])
+	}
 }
 
 // FilterChipSelect represents a filter chip widget that shows a drop down with options.
@@ -325,12 +305,19 @@ func (w *FilterChipGroup) CreateRenderer() fyne.WidgetRenderer {
 type FilterChipSelect struct {
 	widget.DisableableWidget
 
-	ClearLabel  string
-	Placeholder string
-	Selected    string
+	// The label shown for clearing a selection.
+	ClearLabel string
 
-	// OnChanged is called when the state changed
 	OnChanged func(selected string)
+	Options   []string
+
+	// The Placeholder is shown when nothing is selected.
+	// To create a filter which is always selected leave placeholder empty
+	// and select an initial option.
+	// When in always selected state, the options are deduplicated, but not sorted.
+	Placeholder string
+
+	Selected string
 
 	bg         *canvas.Rectangle
 	focused    bool
@@ -340,7 +327,6 @@ type FilterChipSelect struct {
 	label      *widget.Label
 	minSize    fyne.Size // cached for hover/top pos calcs
 
-	options  []string
 	isMobile bool
 	window   fyne.Window
 }
@@ -352,8 +338,6 @@ var _ fyne.Tappable = (*FilterChipSelect)(nil)
 var _ fyne.Widget = (*FilterChipSelect)(nil)
 
 // NewFilterChipSelect returns a new [FilterChipSelect] widget with a drop down menu.
-// To create a filter without a clear option, leave placeholder empty and and set an initial option.
-// options can be left empty and set later.
 func NewFilterChipSelect(placeholder string, options []string, changed func(selected string)) *FilterChipSelect {
 	w := newFilterChipSelect(placeholder, options, changed, nil)
 	return w
@@ -361,6 +345,10 @@ func NewFilterChipSelect(placeholder string, options []string, changed func(sele
 
 // NewFilterChipSelectWithSearch returns a new [FilterChipSelect] widget with a search dialog.
 func NewFilterChipSelectWithSearch(placeholder string, options []string, changed func(selected string), window fyne.Window) *FilterChipSelect {
+	if placeholder == "" {
+		// This variant must not be created without a placeholder
+		placeholder = "PLACEHOLDER"
+	}
 	w := newFilterChipSelect(placeholder, options, changed, window)
 	return w
 }
@@ -382,11 +370,7 @@ func newFilterChipSelect(placeholder string, options []string, changed func(sele
 	w.bg = canvas.NewRectangle(color.Transparent)
 	w.bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder) * 2
 	w.bg.CornerRadius = theme.Size(theme.SizeNameInputRadius)
-	if window != nil {
-		w.setOptions(options)
-	} else {
-		w.options = options
-	}
+	w.setOptions(options)
 	return w
 }
 
@@ -402,7 +386,10 @@ func (w *FilterChipSelect) SetSelected(v string) {
 	if w.Selected == v {
 		return
 	}
-	if v != "" && !slices.Contains(w.options, v) {
+	if v != "" && !slices.Contains(w.Options, v) {
+		return
+	}
+	if v == "" && w.Placeholder == "" {
 		return
 	}
 	w.Selected = v
@@ -428,10 +415,14 @@ func (w *FilterChipSelect) setOptions(options []string) {
 	options = slices.DeleteFunc(options, func(s string) bool {
 		return s == ""
 	})
-	slices.SortFunc(options, func(a, b string) int {
-		return strings.Compare(strings.ToLower(a), strings.ToLower(b))
-	})
-	w.options = slices.Compact(options)
+	if w.Placeholder == "" {
+		w.Options = deduplicateSlice(options)
+	} else {
+		slices.SortFunc(options, func(a, b string) int {
+			return strings.Compare(strings.ToLower(a), strings.ToLower(b))
+		})
+		w.Options = slices.Compact(options)
+	}
 }
 
 func (w *FilterChipSelect) showInteraction() {
@@ -452,12 +443,12 @@ func (w *FilterChipSelect) showDropDownMenu() {
 		items = append(items, it)
 		items = append(items, fyne.NewMenuItemSeparator())
 	}
-	if len(w.options) == 0 {
+	if len(w.Options) == 0 {
 		it := fyne.NewMenuItem("No entries", nil)
 		it.Disabled = true
 		items = append(items, it)
 	} else {
-		for _, o := range w.options {
+		for _, o := range w.Options {
 			it := fyne.NewMenuItem(o, func() {
 				w.SetSelected(o)
 			})
@@ -477,7 +468,7 @@ func (w *FilterChipSelect) showDropDownMenu() {
 }
 
 func (w *FilterChipSelect) showSearchDialog() {
-	itemsFiltered := slices.Clone(w.options)
+	itemsFiltered := slices.Clone(w.Options)
 	var d dialog.Dialog
 	list := widget.NewList(
 		func() int {
@@ -531,13 +522,13 @@ func (w *FilterChipSelect) showSearchDialog() {
 	})
 	entry.OnChanged = func(search string) {
 		if len(search) < 2 {
-			itemsFiltered = slices.Clone(w.options)
+			itemsFiltered = slices.Clone(w.Options)
 			list.Refresh()
 			return
 		}
 		itemsFiltered = make([]string, 0)
 		search2 := strings.ToLower(search)
-		for _, s := range w.options {
+		for _, s := range w.Options {
 			if strings.Contains(strings.ToLower(s), search2) {
 				itemsFiltered = append(itemsFiltered, s)
 			}
@@ -556,7 +547,7 @@ func (w *FilterChipSelect) showSearchDialog() {
 	}
 	empty := widget.NewLabel("No entries")
 	empty.Importance = widget.LowImportance
-	if len(w.options) == 0 {
+	if len(w.Options) == 0 {
 		empty.Show()
 		entry.Disable()
 		clear.Hide()
@@ -731,4 +722,17 @@ func (w *FilterChipSelect) CreateRenderer() fyne.WidgetRenderer {
 			),
 		)))
 	return widget.NewSimpleRenderer(c)
+}
+
+func deduplicateSlice[S ~[]E, E comparable](s S) []E {
+	seen := make(map[E]bool)
+	s2 := make([]E, 0)
+	for _, v := range s {
+		if seen[v] {
+			continue
+		}
+		s2 = append(s2, v)
+		seen[v] = true
+	}
+	return s2
 }
