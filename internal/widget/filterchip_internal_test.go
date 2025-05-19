@@ -16,8 +16,8 @@ func TestFilterChipGroup(t *testing.T) {
 		w.Refresh()
 		assert.ElementsMatch(t, []string{"a", "b"}, w.Options())
 		assert.ElementsMatch(t, []string{}, w.Selected)
-		assert.False(t, w.chips[0].Selected)
-		assert.False(t, w.chips[1].Selected)
+		assert.False(t, w.chips[0].On)
+		assert.False(t, w.chips[1].On)
 	})
 	t.Run("can create widget with selected", func(t *testing.T) {
 		w := NewFilterChipGroup([]string{"a", "b"}, nil)
@@ -27,8 +27,8 @@ func TestFilterChipGroup(t *testing.T) {
 		w.Refresh()
 		assert.ElementsMatch(t, []string{"a", "b"}, w.Options())
 		assert.ElementsMatch(t, []string{"b"}, w.Selected)
-		assert.False(t, w.chips[0].Selected)
-		assert.True(t, w.chips[1].Selected)
+		assert.False(t, w.chips[0].On)
+		assert.True(t, w.chips[1].On)
 	})
 	t.Run("should panic when selected has invalid value", func(t *testing.T) {
 		w := NewFilterChipGroup([]string{"a", "b"}, nil)
@@ -43,8 +43,8 @@ func TestFilterChipGroup(t *testing.T) {
 		defer window.Close()
 		w.Refresh()
 		w.SetSelected([]string{"b", "c"})
-		assert.False(t, w.chips[0].Selected)
-		assert.True(t, w.chips[1].Selected)
-		assert.True(t, w.chips[2].Selected)
+		assert.False(t, w.chips[0].On)
+		assert.True(t, w.chips[1].On)
+		assert.True(t, w.chips[2].On)
 	})
 }

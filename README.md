@@ -4,6 +4,7 @@ A companion app for Eve Online players available on Windows, Linux, macOS and An
 
 [![GitHub Release](https://img.shields.io/github/v/release/ErikKalkoken/evebuddy)](https://github.com/ErikKalkoken/evebuddy/releases)
 [![build status](https://github.com/ErikKalkoken/evebuddy/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/ErikKalkoken/evebuddy/actions/workflows/ci-cd.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ErikKalkoken/evebuddy)](https://goreportcard.com/report/github.com/ErikKalkoken/evebuddy)
 [![GitHub License](https://img.shields.io/github/license/ErikKalkoken/evebuddy)](https://github.com/ErikKalkoken/evebuddy?tab=MIT-1-ov-file#readme)
 [![chat](https://img.shields.io/discord/790364535294132234)](https://discord.gg/tVSCQEVJnJ)
 [![GitHub Downloads](https://img.shields.io/github/downloads/ErikKalkoken/evebuddy/total)](https://tooomm.github.io/github-release-stats/?username=ErikKalkoken&repository=evebuddy)

@@ -14,14 +14,17 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/anthonynsimon/bild/effect"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/anthonynsimon/bild/effect"
+
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 const (
@@ -32,10 +35,10 @@ const (
 type characterFlyableShips struct {
 	widget.BaseWidget
 
-	flyableSelect   *widget.Select
+	flyableSelect   *iwidget.FilterChipSelect
 	flyableSelected string
 	grid            *widget.GridWrap
-	groupSelect     *widget.Select
+	groupSelect     *iwidget.FilterChipSelect
 	groupSelected   string
 	searchBox       *widget.Entry
 	ships           []*app.CharacterShipAbility
@@ -54,7 +57,10 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 	a.ExtendBaseWidget(a)
 
 	a.searchBox = widget.NewEntry()
-	a.searchBox.SetPlaceHolder("Filter by ship name")
+	a.searchBox.SetPlaceHolder("Search ships")
+	a.searchBox.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
+		a.searchBox.SetText("")
+	})
 	a.searchBox.OnChanged = func(s string) {
 		if len(s) == 1 {
 			return
@@ -66,17 +72,16 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 		a.grid.ScrollToTop()
 	}
 
-	a.groupSelect = widget.NewSelect([]string{}, func(s string) {
+	a.groupSelect = iwidget.NewFilterChipSelectWithSearch("Class", []string{}, func(s string) {
 		a.groupSelected = s
 		if err := a.updateEntries(); err != nil {
 			a.u.ShowErrorDialog("Failed to update ships", err, a.u.MainWindow())
 		}
 		a.grid.Refresh()
 		a.grid.ScrollToTop()
-	})
-	a.groupSelect.PlaceHolder = "(Ship Class)"
+	}, a.u.window)
 
-	a.flyableSelect = widget.NewSelect([]string{}, func(s string) {
+	a.flyableSelect = iwidget.NewFilterChipSelect("Flyable", []string{}, func(s string) {
 		a.flyableSelected = s
 		if err := a.updateEntries(); err != nil {
 			a.u.ShowErrorDialog("Failed to update ships", err, a.u.MainWindow())
@@ -84,30 +89,26 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 		a.grid.Refresh()
 		a.grid.ScrollToTop()
 	})
-	a.flyableSelect.PlaceHolder = "(Flyable)"
 
 	a.grid = a.makeShipsGrid()
 	return a
 }
 
 func (a *characterFlyableShips) CreateRenderer() fyne.WidgetRenderer {
-	top := container.NewHBox(
-		a.top,
-		a.foundText,
-		layout.NewSpacer(),
-		widget.NewButton("Reset", func() {
-			a.reset()
-		}))
-	topBox := container.NewVBox(
-		top,
-		container.NewBorder(
-			nil,
-			nil,
-			nil,
-			container.NewHBox(a.groupSelect, a.flyableSelect),
-			a.searchBox),
+	top := container.NewHBox(a.top, layout.NewSpacer(), a.foundText)
+	c := container.NewBorder(
+		container.NewVBox(
+			top,
+			a.searchBox,
+			container.NewHScroll(container.NewHBox(a.groupSelect, a.flyableSelect, widget.NewButton("Reset", func() {
+				a.reset()
+			}))),
+		),
+		nil,
+		nil,
+		nil,
+		a.grid,
 	)
-	c := container.NewBorder(topBox, nil, nil, nil, a.grid)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -115,7 +116,6 @@ func (a *characterFlyableShips) reset() {
 	a.searchBox.SetText("")
 	a.groupSelect.ClearSelected()
 	a.flyableSelect.ClearSelected()
-	a.foundText.Hide()
 }
 
 func (a *characterFlyableShips) makeShipsGrid() *widget.GridWrap {

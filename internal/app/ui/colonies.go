@@ -17,7 +17,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -59,7 +58,7 @@ type colonies struct {
 	selectProducing   *iwidget.FilterChipSelect
 	selectRegion      *iwidget.FilterChipSelect
 	selectSolarSystem *iwidget.FilterChipSelect
-	selectType        *iwidget.FilterChipSelect
+	selectPlanetType  *iwidget.FilterChipSelect
 	sortButton        *sortButton
 	top               *widget.Label
 	u                 *baseUI
@@ -111,21 +110,21 @@ func newColonies(u *baseUI) *colonies {
 		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, a.showColony)
 	}
 
-	a.selectExtracting = iwidget.NewFilterChipSelect("Extracted", []string{}, func(string) {
+	a.selectExtracting = iwidget.NewFilterChipSelectWithSearch("Extracted", []string{}, func(string) {
 		a.filterRows(-1)
-	})
+	}, a.u.window)
 	a.selectOwner = iwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.selectProducing = iwidget.NewFilterChipSelect("Produced", []string{}, func(string) {
+	a.selectProducing = iwidget.NewFilterChipSelectWithSearch("Produced", []string{}, func(string) {
 		a.filterRows(-1)
-	})
-	a.selectRegion = iwidget.NewFilterChipSelect("Region", []string{}, func(string) {
+	}, a.u.window)
+	a.selectRegion = iwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
 		a.filterRows(-1)
-	})
-	a.selectSolarSystem = iwidget.NewFilterChipSelect("System", []string{}, func(string) {
+	}, a.u.window)
+	a.selectSolarSystem = iwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
 		a.filterRows(-1)
-	})
+	}, a.u.window)
 
 	a.selectStatus = iwidget.NewFilterChipSelect("Status", []string{
 		colonyStatusExtracting,
@@ -134,7 +133,7 @@ func newColonies(u *baseUI) *colonies {
 		a.filterRows(-1)
 	})
 
-	a.selectType = iwidget.NewFilterChipSelect("Planet Type", []string{}, func(string) {
+	a.selectPlanetType = iwidget.NewFilterChipSelect("Planet Type", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 
@@ -147,7 +146,7 @@ func newColonies(u *baseUI) *colonies {
 func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(
 		a.selectSolarSystem,
-		a.selectType,
+		a.selectPlanetType,
 		a.selectExtracting,
 		a.selectStatus,
 		a.selectProducing,
@@ -209,7 +208,7 @@ func (a *colonies) filterRows(sortCol int) {
 			return false
 		})
 	}
-	if x := a.selectType.Selected; x != "" {
+	if x := a.selectPlanetType.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r colonyRow) bool {
 			return r.typeName == x
 		})
@@ -237,16 +236,16 @@ func (a *colonies) filterRows(sortCol int) {
 			}
 		})
 	})
-	a.selectOwner.SetOptionsFromSeq(xiter.MapSlice(rows, func(r colonyRow) string {
+	a.selectOwner.SetOptions(xslices.Map(rows, func(r colonyRow) string {
 		return r.ownerName
 	}))
-	a.selectRegion.SetOptionsFromSeq(xiter.MapSlice(rows, func(r colonyRow) string {
+	a.selectRegion.SetOptions(xslices.Map(rows, func(r colonyRow) string {
 		return r.regionName
 	}))
-	a.selectSolarSystem.SetOptionsFromSeq(xiter.MapSlice(rows, func(r colonyRow) string {
+	a.selectSolarSystem.SetOptions(xslices.Map(rows, func(r colonyRow) string {
 		return r.solarSystemName
 	}))
-	a.selectType.SetOptionsFromSeq(xiter.MapSlice(rows, func(r colonyRow) string {
+	a.selectPlanetType.SetOptions(xslices.Map(rows, func(r colonyRow) string {
 		return r.typeName
 	}))
 	var extracting, producing set.Set[string]
@@ -254,8 +253,8 @@ func (a *colonies) filterRows(sortCol int) {
 		extracting.AddSeq(r.extracting.All())
 		producing.AddSeq(r.producing.All())
 	}
-	a.selectExtracting.SetOptionsFromSeq(extracting.All())
-	a.selectProducing.SetOptionsFromSeq(producing.All())
+	a.selectExtracting.SetOptions(extracting.Slice())
+	a.selectProducing.SetOptions(producing.Slice())
 	a.rowsFiltered = rows
 	a.body.Refresh()
 }

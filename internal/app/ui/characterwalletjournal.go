@@ -18,7 +18,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -106,10 +105,9 @@ func newCharacterWalletJournal(u *baseUI) *characterWalletJournal {
 	} else {
 		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, showReasonDialog)
 	}
-
-	a.selectType = iwidget.NewFilterChipSelect("Type", []string{}, func(string) {
+	a.selectType = iwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
 		a.filterRows(-1)
-	})
+	}, a.u.window)
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
@@ -158,7 +156,8 @@ func (a *characterWalletJournal) filterRows(sortCol int) {
 			}
 		})
 	})
-	a.selectType.SetOptionsFromSeq(xiter.MapSlice(rows, func(r walletJournalRow) string {
+	// update filters
+	a.selectType.SetOptions(xslices.Map(rows, func(r walletJournalRow) string {
 		return r.refTypeDisplay
 	}))
 	a.rowsFiltered = rows

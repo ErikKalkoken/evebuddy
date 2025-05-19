@@ -13,7 +13,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -81,12 +80,12 @@ func newLocations(u *baseUI) *locations {
 		a.body = a.makeDataList()
 	}
 
-	a.selectRegion = iwidget.NewFilterChipSelect("Region", []string{}, func(string) {
+	a.selectRegion = iwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
 		a.filterRows(-1)
-	})
-	a.selectSolarSystem = iwidget.NewFilterChipSelect("System", []string{}, func(string) {
+	}, a.u.window)
+	a.selectSolarSystem = iwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
 		a.filterRows(-1)
-	})
+	}, a.u.window)
 
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
@@ -177,10 +176,10 @@ func (a *locations) filterRows(sortCol int) {
 			}
 		})
 	})
-	a.selectRegion.SetOptionsFromSeq(xiter.MapSlice(rows, func(r locationRow) string {
+	a.selectRegion.SetOptions(xslices.Map(rows, func(r locationRow) string {
 		return r.regionName
 	}))
-	a.selectSolarSystem.SetOptionsFromSeq(xiter.MapSlice(rows, func(r locationRow) string {
+	a.selectSolarSystem.SetOptions(xslices.Map(rows, func(r locationRow) string {
 		return r.solarSystemName
 	}))
 	a.rowsFiltered = rows

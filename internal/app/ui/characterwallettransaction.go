@@ -17,7 +17,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
@@ -53,7 +52,10 @@ type characterWalletTransaction struct {
 	rows           []walletTransactionRow
 	rowsFiltered   []walletTransactionRow
 	selectCategory *iwidget.FilterChipSelect
+	selectClient   *iwidget.FilterChipSelect
+	selectLocation *iwidget.FilterChipSelect
 	selectRegion   *iwidget.FilterChipSelect
+	selectType     *iwidget.FilterChipSelect
 	sortButton     *sortButton
 	u              *baseUI
 }
@@ -119,12 +121,39 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, a.showEntry)
 	}
 
-	a.selectCategory = iwidget.NewFilterChipSelect("Category", []string{}, func(string) {
+	a.selectCategory = iwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
 		a.filterRows(-1)
-	})
-	a.selectRegion = iwidget.NewFilterChipSelect("Region", []string{}, func(string) {
-		a.filterRows(-1)
-	})
+	}, a.u.window)
+	a.selectClient = iwidget.NewFilterChipSelectWithSearch(
+		"Client",
+		[]string{},
+		func(_ string) {
+			a.filterRows(-1)
+		},
+		a.u.window,
+	)
+	a.selectLocation = iwidget.NewFilterChipSelectWithSearch(
+		"Location",
+		[]string{},
+		func(_ string) {
+			a.filterRows(-1)
+		},
+		a.u.window,
+	)
+	a.selectType = iwidget.NewFilterChipSelectWithSearch(
+		"Type",
+		[]string{},
+		func(_ string) {
+			a.filterRows(-1)
+		},
+		a.u.window,
+	)
+	a.selectRegion = iwidget.NewFilterChipSelectWithSearch("Region",
+		[]string{}, func(string) {
+			a.filterRows(-1)
+		},
+		a.u.window,
+	)
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
@@ -132,7 +161,7 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 }
 
 func (a *characterWalletTransaction) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectCategory, a.selectRegion)
+	filter := container.NewHBox(a.selectCategory, a.selectType, a.selectClient, a.selectRegion, a.selectLocation)
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
 	}
@@ -149,14 +178,29 @@ func (a *characterWalletTransaction) CreateRenderer() fyne.WidgetRenderer {
 func (a *characterWalletTransaction) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
+	if x := a.selectCategory.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
+			return r.categoryName == x
+		})
+	}
+	if x := a.selectClient.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
+			return r.clientName == x
+		})
+	}
+	if x := a.selectLocation.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
+			return r.locationName == x
+		})
+	}
 	if x := a.selectRegion.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
 			return r.regionName == x
 		})
 	}
-	if x := a.selectCategory.Selected; x != "" {
+	if x := a.selectType.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
-			return r.categoryName == x
+			return r.typeName == x
 		})
 	}
 	// sort
@@ -186,11 +230,21 @@ func (a *characterWalletTransaction) filterRows(sortCol int) {
 			}
 		})
 	})
-	a.selectRegion.SetOptionsFromSeq(xiter.MapSlice(rows, func(r walletTransactionRow) string {
+	// update filters
+	a.selectCategory.SetOptions(xslices.Map(rows, func(r walletTransactionRow) string {
+		return r.categoryName
+	}))
+	a.selectClient.SetOptions(xslices.Map(rows, func(r walletTransactionRow) string {
+		return r.clientName
+	}))
+	a.selectLocation.SetOptions(xslices.Map(rows, func(r walletTransactionRow) string {
+		return r.locationName
+	}))
+	a.selectRegion.SetOptions(xslices.Map(rows, func(r walletTransactionRow) string {
 		return r.regionName
 	}))
-	a.selectCategory.SetOptionsFromSeq(xiter.MapSlice(rows, func(r walletTransactionRow) string {
-		return r.categoryName
+	a.selectType.SetOptions(xslices.Map(rows, func(r walletTransactionRow) string {
+		return r.typeName
 	}))
 	a.rowsFiltered = rows
 	a.body.Refresh()

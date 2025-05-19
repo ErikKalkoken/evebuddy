@@ -21,7 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -144,13 +143,13 @@ func newClones(u *baseUI) *clones {
 		})
 	}
 
-	a.selectRegion = iwidget.NewFilterChipSelect("Region", []string{}, func(string) {
+	a.selectRegion = iwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
 		a.filterRows(-1)
-	})
+	}, a.u.window)
 
-	a.selectSolarSystem = iwidget.NewFilterChipSelect("System", []string{}, func(string) {
+	a.selectSolarSystem = iwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
 		a.filterRows(-1)
-	})
+	}, a.u.window)
 
 	a.selectOwner = iwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
 		a.filterRows(-1)
@@ -378,7 +377,12 @@ func (a *clones) setOrigin(w fyne.Window) {
 		list,
 	)
 	d = dialog.NewCustomWithoutButtons("Change origin", c, w)
-	d.Resize(fyne.NewSize(600, 400))
+	_, s := w.Canvas().InteractiveArea()
+	if !a.u.isDesktop {
+		d.Resize(fyne.NewSize(s.Width, s.Height))
+	} else {
+		d.Resize(fyne.NewSize(600, max(400, s.Height*0.8)))
+	}
 	d.Show()
 	w.Canvas().Focus(entry)
 }
@@ -427,13 +431,13 @@ func (a *clones) filterRows(sortCol int) {
 			}
 		})
 	})
-	a.selectOwner.SetOptionsFromSeq(xiter.MapSlice(rows, func(o cloneRow) string {
+	a.selectOwner.SetOptions(xslices.Map(rows, func(o cloneRow) string {
 		return o.c.CharacterName()
 	}))
-	a.selectRegion.SetOptionsFromSeq(xiter.MapSlice(rows, func(o cloneRow) string {
+	a.selectRegion.SetOptions(xslices.Map(rows, func(o cloneRow) string {
 		return o.c.RegionName()
 	}))
-	a.selectSolarSystem.SetOptionsFromSeq(xiter.MapSlice(rows, func(o cloneRow) string {
+	a.selectSolarSystem.SetOptions(xslices.Map(rows, func(o cloneRow) string {
 		return o.c.SolarSystemName()
 	}))
 	a.rowsFiltered = rows

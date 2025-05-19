@@ -20,7 +20,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -113,12 +112,12 @@ func newContracts(u *baseUI) *contracts {
 		a.body = a.makeDataList()
 	}
 
-	a.selectAssignee = iwidget.NewFilterChipSelect("Assignee", []string{}, func(string) {
+	a.selectAssignee = iwidget.NewFilterChipSelectWithSearch("Assignee", []string{}, func(string) {
 		a.filterRows(-1)
-	})
-	a.selectIssuer = iwidget.NewFilterChipSelect("Issuer", []string{}, func(string) {
+	}, a.u.window)
+	a.selectIssuer = iwidget.NewFilterChipSelectWithSearch("Issuer", []string{}, func(string) {
 		a.filterRows(-1)
-	})
+	}, a.u.window)
 	a.selectType = iwidget.NewFilterChipSelect("Type", []string{}, func(string) {
 		a.filterRows(-1)
 	})
@@ -272,13 +271,13 @@ func (a *contracts) filterRows(sortCol int) {
 			}
 		})
 	})
-	a.selectIssuer.SetOptionsFromSeq(xiter.MapSlice(rows, func(r contractRow) string {
+	a.selectIssuer.SetOptions(xslices.Map(rows, func(r contractRow) string {
 		return r.issuerName
 	}))
-	a.selectAssignee.SetOptionsFromSeq(xiter.MapSlice(rows, func(r contractRow) string {
+	a.selectAssignee.SetOptions(xslices.Map(rows, func(r contractRow) string {
 		return r.assigneeName
 	}))
-	a.selectType.SetOptionsFromSeq(xiter.MapSlice(rows, func(r contractRow) string {
+	a.selectType.SetOptions(xslices.Map(rows, func(r contractRow) string {
 		return r.typeName
 	}))
 	a.rowsFiltered = rows

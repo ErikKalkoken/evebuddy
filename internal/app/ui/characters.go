@@ -19,7 +19,6 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -210,10 +209,10 @@ func (a *characters) filterRows(sortCol int) {
 			}
 		})
 	})
-	a.selectAlliance.SetOptionsFromSeq(xiter.MapSlice(rows, func(r characterRow) string {
+	a.selectAlliance.SetOptions(xslices.Map(rows, func(r characterRow) string {
 		return r.AllianceName()
 	}))
-	a.selectCorporation.SetOptionsFromSeq(xiter.MapSlice(rows, func(r characterRow) string {
+	a.selectCorporation.SetOptions(xslices.Map(rows, func(r characterRow) string {
 		return r.CorporationName()
 	}))
 	a.rowsFiltered = rows

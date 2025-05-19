@@ -19,7 +19,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -60,6 +59,7 @@ type assets struct {
 	rows           []assetRow
 	rowsFiltered   []assetRow
 	selectCategory *iwidget.FilterChipSelect
+	selectLocation *iwidget.FilterChipSelect
 	selectOwner    *iwidget.FilterChipSelect
 	selectRegion   *iwidget.FilterChipSelect
 	selectTotal    *iwidget.FilterChipSelect
@@ -92,7 +92,7 @@ func newAssets(u *baseUI) *assets {
 	a.entry.OnChanged = func(s string) {
 		a.filterRows(-1)
 	}
-	a.entry.PlaceHolder = "Search items and locations"
+	a.entry.PlaceHolder = "Search items"
 	a.found.Hide()
 
 	if !a.u.isDesktop {
@@ -121,15 +121,18 @@ func newAssets(u *baseUI) *assets {
 			})
 	}
 
-	a.selectCategory = iwidget.NewFilterChipSelect("Category", []string{}, func(string) {
+	a.selectCategory = iwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
 		a.filterRows(-1)
-	})
+	}, a.u.window)
 	a.selectOwner = iwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.selectRegion = iwidget.NewFilterChipSelect("Region", []string{}, func(string) {
+	a.selectRegion = iwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
 		a.filterRows(-1)
-	})
+	}, a.u.window)
+	a.selectLocation = iwidget.NewFilterChipSelectWithSearch("Location", []string{}, func(string) {
+		a.filterRows(-1)
+	}, a.u.window)
 
 	a.selectTotal = iwidget.NewFilterChipSelect("Total",
 		[]string{
@@ -148,7 +151,7 @@ func newAssets(u *baseUI) *assets {
 }
 
 func (a *assets) CreateRenderer() fyne.WidgetRenderer {
-	filters := container.NewHBox(a.selectCategory, a.selectRegion, a.selectOwner, a.selectTotal)
+	filters := container.NewHBox(a.selectCategory, a.selectRegion, a.selectLocation, a.selectOwner, a.selectTotal)
 	if !a.u.isDesktop {
 		filters.Add(container.NewHBox(a.sortButton))
 	}
@@ -244,6 +247,11 @@ func (a *assets) filterRows(sortCol int) {
 			return o.regionName == x
 		})
 	}
+	if x := a.selectLocation.Selected; x != "" {
+		rows = xslices.Filter(rows, func(o assetRow) bool {
+			return o.locationName == x
+		})
+	}
 	if x := a.selectTotal.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r assetRow) bool {
 			switch x {
@@ -280,14 +288,17 @@ func (a *assets) filterRows(sortCol int) {
 			}
 		})
 	})
-	a.selectCategory.SetOptionsFromSeq(xiter.MapSlice(rows, func(o assetRow) string {
+	a.selectCategory.SetOptions(xslices.Map(rows, func(o assetRow) string {
 		return o.categoryName
 	}))
-	a.selectOwner.SetOptionsFromSeq(xiter.MapSlice(rows, func(o assetRow) string {
+	a.selectOwner.SetOptions(xslices.Map(rows, func(o assetRow) string {
 		return o.characterName
 	}))
-	a.selectRegion.SetOptionsFromSeq(xiter.MapSlice(rows, func(o assetRow) string {
+	a.selectRegion.SetOptions(xslices.Map(rows, func(o assetRow) string {
 		return o.regionName
+	}))
+	a.selectLocation.SetOptions(xslices.Map(rows, func(o assetRow) string {
+		return o.locationName
 	}))
 	a.rowsFiltered = rows
 	a.updateFoundInfo()
@@ -372,7 +383,7 @@ func (*assets) fetchRows(s services) ([]assetRow, bool, error) {
 			typeName:        ca.Type.Name,
 			typeNameDisplay: ca.DisplayName2(),
 		}
-		r.searchTarget = r.typeNameDisplay
+		r.searchTarget = strings.ToLower(r.typeNameDisplay)
 		if ca.IsSingleton {
 			r.quantityDisplay = "1*"
 			r.quantity = 1
@@ -384,7 +395,6 @@ func (*assets) fetchRows(s services) ([]assetRow, bool, error) {
 		if ok {
 			r.locationName = location.DisplayName()
 			r.locationDisplay = location.DisplayRichText()
-			r.searchTarget += " " + r.locationName
 			if location.SolarSystem != nil {
 				r.regionName = location.SolarSystem.Constellation.Region.Name
 			}
@@ -398,7 +408,6 @@ func (*assets) fetchRows(s services) ([]assetRow, bool, error) {
 			r.totalDisplay = ihumanize.Number(t, 1)
 			r.hasTotal = true
 		}
-		r.searchTarget = strings.ToLower(r.searchTarget)
 		rows[i] = r
 	}
 	return rows, true, nil
