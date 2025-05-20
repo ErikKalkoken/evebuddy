@@ -20,12 +20,12 @@ import (
 
 // MobileUI creates the UI for mobile.
 type MobileUI struct {
-	*BaseUI
+	*baseUI
 }
 
 // NewUI build the UI and returns it.
-func NewMobileUI(bu *BaseUI) *MobileUI {
-	u := &MobileUI{BaseUI: bu}
+func NewMobileUI(bu *baseUI) *MobileUI {
+	u := &MobileUI{baseUI: bu}
 
 	var navBar *iwidget.NavBar
 
@@ -41,7 +41,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 	mailMenu := fyne.NewMenu("")
 	communicationsMenu := fyne.NewMenu("")
 	u.characterMail.onSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-		page := NewCharacterSendMail(bu, c, mode, mail)
+		page := newCharacterSendMail(bu, c, mode, mail)
 		if mode != app.SendMailNew {
 			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
 		}
@@ -222,7 +222,7 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		"Wealth",
 		theme.NewThemedResource(icons.GoldSvg),
 		func() {
-			homeNav.Push(iwidget.NewAppBar("Wealth", u.overviewWealth))
+			homeNav.Push(iwidget.NewAppBar("Wealth", u.wealth))
 		},
 	)
 	navItemColonies2 := iwidget.NewListItemWithIcon(
@@ -250,20 +250,27 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 		})
 	}
 
+	navItemContracts := iwidget.NewListItemWithIcon(
+		"Contracts",
+		theme.NewThemedResource(icons.FileSignSvg),
+		func() {
+			homeNav.Push(iwidget.NewAppBar("Contracts", u.contracts))
+		},
+	)
 	homeList = iwidget.NewNavList(
 		iwidget.NewListItemWithIcon(
 			"Characters",
 			theme.NewThemedResource(icons.PortraitSvg),
 			func() {
-				homeNav.Push(iwidget.NewAppBar("Characters", u.overviewCharacters))
+				homeNav.Push(iwidget.NewAppBar("Characters", u.characters))
 			},
 		),
 		iwidget.NewListItemWithIcon(
 			"Assets",
 			theme.NewThemedResource(icons.Inventory2Svg),
 			func() {
-				homeNav.Push(iwidget.NewAppBar("Assets", u.overviewAssets))
-				u.overviewAssets.Focus()
+				homeNav.Push(iwidget.NewAppBar("Assets", u.assets))
+				u.assets.focus()
 			},
 		),
 		iwidget.NewListItemWithIcon(
@@ -273,54 +280,44 @@ func NewMobileUI(bu *BaseUI) *MobileUI {
 				homeNav.Push(iwidget.NewAppBar("Clones", u.overviewClones))
 			},
 		),
-		iwidget.NewListItemWithIcon(
-			"Contracts",
-			theme.NewThemedResource(icons.FileSignSvg),
-			func() {
-				contractActive := container.NewTabItem("Active", u.contractsActive)
-				contractTabs := container.NewAppTabs(
-					contractActive,
-					container.NewTabItem("All", u.contractsAll),
-				)
-				u.contractsActive.OnUpdate = func(count int) {
-					s := "Active"
-					if count > 0 {
-						s += fmt.Sprintf(" (%d)", count)
-					}
-					fyne.Do(func() {
-						contractActive.Text = s
-						contractTabs.Refresh()
-					})
-				}
-				homeNav.Push(iwidget.NewAppBar("Contracts", contractTabs))
-			},
-		),
+		navItemContracts,
 		navItemColonies2,
 		navItemIndustry,
 		iwidget.NewListItemWithIcon(
 			"Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),
 			func() {
-				homeNav.Push(iwidget.NewAppBar("Locations", u.overviewLocations))
+				homeNav.Push(iwidget.NewAppBar("Locations", u.locations))
 			},
 		),
 		iwidget.NewListItemWithIcon(
 			"Training",
 			theme.NewThemedResource(icons.SchoolSvg),
 			func() {
-				homeNav.Push(iwidget.NewAppBar("Training", u.overviewTraining))
+				homeNav.Push(iwidget.NewAppBar("Training", u.training))
 			},
 		),
 		navItemWealth,
 	)
 	homeNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("Home", homeList))
+	u.contracts.OnUpdate = func(count int) {
+		s := "Active"
+		if count > 0 {
+			s += fmt.Sprintf(" (%d)", count)
+		}
+		fyne.Do(func() {
+			navItemContracts.Supporting = s
+			homeList.Refresh()
+		})
+	}
+
 	u.colonies.OnUpdate = func(_, expired int) {
 		fyne.Do(func() {
 			navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
 			homeList.Refresh()
 		})
 	}
-	u.overviewWealth.OnUpdate = func(wallet, assets float64) {
+	u.wealth.OnUpdate = func(wallet, assets float64) {
 		fyne.Do(func() {
 			navItemWealth.Supporting = fmt.Sprintf(
 				"Wallet: %s • Assets: %s",

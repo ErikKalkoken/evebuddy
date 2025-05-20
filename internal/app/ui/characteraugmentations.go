@@ -14,23 +14,22 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-type CharacterAugmentations struct {
+type characterAugmentations struct {
 	widget.BaseWidget
 
 	implants []*app.CharacterImplant
 	list     *widget.List
 	top      *widget.Label
-	u        *BaseUI
+	u        *baseUI
 }
 
-func NewCharacterAugmentations(u *BaseUI) *CharacterAugmentations {
-	a := &CharacterAugmentations{
+func newCharacterAugmentations(u *baseUI) *characterAugmentations {
+	a := &characterAugmentations{
 		implants: make([]*app.CharacterImplant, 0),
-		top:      appwidget.MakeTopLabel(),
+		top:      makeTopLabel(),
 		u:        u,
 	}
 	a.ExtendBaseWidget(a)
@@ -38,12 +37,12 @@ func NewCharacterAugmentations(u *BaseUI) *CharacterAugmentations {
 	return a
 }
 
-func (a *CharacterAugmentations) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterAugmentations) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(a.top, nil, nil, nil, a.list)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *CharacterAugmentations) makeImplantList() *widget.List {
+func (a *characterAugmentations) makeImplantList() *widget.List {
 	p := theme.Padding()
 	l := widget.NewList(
 		func() int {
@@ -96,7 +95,7 @@ func (a *CharacterAugmentations) makeImplantList() *widget.List {
 	return l
 }
 
-func (a *CharacterAugmentations) update() {
+func (a *characterAugmentations) update() {
 	var err error
 	implants := make([]*app.CharacterImplant, 0)
 	characterID := a.u.currentCharacterID()
@@ -110,7 +109,7 @@ func (a *CharacterAugmentations) update() {
 			implants = implants2
 		}
 	}
-	t, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
+	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
 		return fmt.Sprintf("%d implants", len(implants)), widget.MediumImportance
 	})
 	fyne.Do(func() {

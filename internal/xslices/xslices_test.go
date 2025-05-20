@@ -49,3 +49,24 @@ func TestReduce(t *testing.T) {
 		})
 	})
 }
+
+func TestDeduplicate(t *testing.T) {
+	t.Run("can remove duplucate elements", func(t *testing.T) {
+		s := []string{"b", "a", "b"}
+		got := xslices.Deduplicate(s)
+		want := []string{"b", "a"}
+		assert.Equal(t, want, got)
+	})
+	t.Run("can process slices with no duplicates", func(t *testing.T) {
+		s := []string{"b", "a"}
+		got := xslices.Deduplicate(s)
+		want := []string{"b", "a"}
+		assert.Equal(t, want, got)
+	})
+	t.Run("can processs empty slice", func(t *testing.T) {
+		s := []string{}
+		got := xslices.Deduplicate(s)
+		want := []string{}
+		assert.Equal(t, want, got)
+	})
+}

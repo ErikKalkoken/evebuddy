@@ -184,7 +184,7 @@ func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 			layout.NewCustomPaddedLayout(-p, -2*p, -p, -p),
 			container.NewStack(w.bg, container.NewPadded(row)),
 		)
-		main = container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), w.body)
+		main = container.New(layout.NewCustomPaddedLayout(2*p, p, 0, 0), w.body)
 	} else {
 		top = container.NewVBox(
 			row,

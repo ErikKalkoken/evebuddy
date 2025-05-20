@@ -19,7 +19,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -30,7 +29,7 @@ type accountCharacter struct {
 	missingToken bool
 }
 
-type ManageCharacters struct {
+type manageCharacters struct {
 	widget.BaseWidget
 
 	OnSelectCharacter func()
@@ -41,15 +40,15 @@ type ManageCharacters struct {
 	sb           *iwidget.Snackbar
 	showSnackbar func(string)
 	title        *widget.Label
-	u            *BaseUI
+	u            *baseUI
 	window       fyne.Window
 }
 
-func NewManageCharacters(u *BaseUI) *ManageCharacters {
-	a := &ManageCharacters{
+func newManageCharacters(u *baseUI) *manageCharacters {
+	a := &manageCharacters{
 		characters:   make([]accountCharacter, 0),
 		showSnackbar: u.ShowSnackbar,
-		title:        appwidget.MakeTopLabel(),
+		title:        makeTopLabel(),
 		window:       u.MainWindow(),
 		u:            u,
 	}
@@ -58,7 +57,7 @@ func NewManageCharacters(u *BaseUI) *ManageCharacters {
 	return a
 }
 
-func (a *ManageCharacters) CreateRenderer() fyne.WidgetRenderer {
+func (a *manageCharacters) CreateRenderer() fyne.WidgetRenderer {
 	var c fyne.CanvasObject
 	add := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		a.ShowAddCharacterDialog()
@@ -67,7 +66,7 @@ func (a *ManageCharacters) CreateRenderer() fyne.WidgetRenderer {
 	if a.u.IsOffline() {
 		add.Disable()
 	}
-	if a.u.isDesktop() {
+	if a.u.isDesktop {
 		p := theme.Padding()
 		c = container.NewBorder(
 			a.title,
@@ -88,7 +87,7 @@ func (a *ManageCharacters) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *ManageCharacters) SetWindow(w fyne.Window) {
+func (a *manageCharacters) SetWindow(w fyne.Window) {
 	a.window = w
 	if a.sb != nil {
 		a.sb.Stop()
@@ -100,7 +99,7 @@ func (a *ManageCharacters) SetWindow(w fyne.Window) {
 	}
 }
 
-func (a *ManageCharacters) makeCharacterList() *widget.List {
+func (a *manageCharacters) makeCharacterList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.characters)
@@ -165,7 +164,7 @@ func (a *ManageCharacters) makeCharacterList() *widget.List {
 	return l
 }
 
-func (a *ManageCharacters) showDeleteDialog(c accountCharacter) {
+func (a *manageCharacters) showDeleteDialog(c accountCharacter) {
 	a.u.ShowConfirmDialog(
 		"Delete Character",
 		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", c.name),
@@ -207,7 +206,7 @@ func (a *ManageCharacters) showDeleteDialog(c accountCharacter) {
 	)
 }
 
-func (a *ManageCharacters) update() {
+func (a *manageCharacters) update() {
 	characters := xslices.Map(a.u.scs.ListCharacters(), func(c *app.EntityShort[int32]) accountCharacter {
 		return accountCharacter{id: c.ID, name: c.Name}
 	})
@@ -226,7 +225,7 @@ func (a *ManageCharacters) update() {
 	}
 }
 
-func (a *ManageCharacters) ShowAddCharacterDialog() {
+func (a *manageCharacters) ShowAddCharacterDialog() {
 	cancelCTX, cancel := context.WithCancel(context.Background())
 	s := "Please follow instructions in your browser to add a new character."
 	infoText := binding.BindString(&s)

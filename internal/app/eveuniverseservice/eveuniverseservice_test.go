@@ -1625,20 +1625,47 @@ func TestGetOrCreateEveMoonESI(t *testing.T) {
 	})
 }
 
-func TestGetRouteESI(t *testing.T) {
-	db, st, factory := testutil.New()
+func TestFetchRoute(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
+	t.Run("should return route when valid", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		s1 := factory.CreateEveSolarSystem()
+		s2 := factory.CreateEveSolarSystem()
+		s3 := factory.CreateEveSolarSystem()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/route/%d/%d/", s1.ID, s3.ID),
+			httpmock.NewJsonResponderOrPanic(200, []int32{s1.ID, s2.ID, s3.ID}),
+		)
+		// when
+		x, err := s.FetchRoute(ctx, app.EveRouteHeader{
+			Destination: s3,
+			Origin:      s1,
+			Preference:  app.RouteShortest,
+		})
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, []*app.EveSolarSystem{s1, s2, s3}, x)
+		}
+	})
 	t.Run("should return short route when origin and dest the same", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		o := factory.CreateEveSolarSystem()
 		// when
-		x, err := s.FetchRoute(ctx, o, o, app.RouteShortest)
+		x, err := s.FetchRoute(ctx, app.EveRouteHeader{
+			Destination: o,
+			Origin:      o,
+			Preference:  app.RouteShortest,
+		})
 		// then
 		if assert.NoError(t, err) {
 			assert.ElementsMatch(t, []*app.EveSolarSystem{o}, x)
@@ -1652,22 +1679,56 @@ func TestGetRouteESI(t *testing.T) {
 		orig := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 31000001})
 		dest := factory.CreateEveSolarSystem()
 		// when
-		x, err := s.FetchRoute(ctx, dest, orig, app.RouteShortest)
+		x, err := s.FetchRoute(ctx, app.EveRouteHeader{
+			Destination: dest,
+			Origin:      orig,
+			Preference:  app.RouteShortest,
+		})
 		// then
 		if assert.NoError(t, err) {
 			assert.ElementsMatch(t, []*app.EveSolarSystem{}, x)
 		}
 	})
-	t.Run("should return error when called with invalid preference", func(t *testing.T) {
+	t.Run("should return error when called with invalid systems", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		orig := factory.CreateEveSolarSystem()
-		dest := factory.CreateEveSolarSystem()
 		// when
-		_, err := s.FetchRoute(ctx, dest, orig, app.RoutePreference("invalid"))
+		_, err := s.FetchRoute(ctx, app.EveRouteHeader{
+			Preference: app.RouteShortest,
+		})
 		// then
-		if assert.Error(t, err) {
+		if assert.ErrorIs(t, err, app.ErrInvalid) {
+			assert.Equal(t, 0, httpmock.GetTotalCallCount())
+		}
+	})
+	t.Run("should return error when called with invalid systems", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		x := factory.CreateEveSolarSystem()
+		// when
+		_, err := s.FetchRoute(ctx, app.EveRouteHeader{
+			Origin:     x,
+			Preference: app.RouteShortest,
+		})
+		// then
+		if assert.ErrorIs(t, err, app.ErrInvalid) {
+			assert.Equal(t, 0, httpmock.GetTotalCallCount())
+		}
+	})
+	t.Run("should return error when called with invalid systems", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		x := factory.CreateEveSolarSystem()
+		// when
+		_, err := s.FetchRoute(ctx, app.EveRouteHeader{
+			Destination: x,
+			Preference:  app.RouteShortest,
+		})
+		// then
+		if assert.ErrorIs(t, err, app.ErrInvalid) {
 			assert.Equal(t, 0, httpmock.GetTotalCallCount())
 		}
 	})
@@ -1678,31 +1739,63 @@ func TestGetRouteESI(t *testing.T) {
 		orig := factory.CreateEveSolarSystem()
 		dest := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 31000001})
 		// when
-		x, err := s.FetchRoute(ctx, dest, orig, app.RouteShortest)
+		x, err := s.FetchRoute(ctx, app.EveRouteHeader{
+			Destination: dest,
+			Origin:      orig,
+			Preference:  app.RouteShortest,
+		})
 		// then
 		if assert.NoError(t, err) {
 			assert.ElementsMatch(t, []*app.EveSolarSystem{}, x)
 		}
 	})
-	// FIXME
-	// t.Run("should return route when valid", func(t *testing.T) {
-	// 	// given
-	// 	testutil.TruncateTables(db)
-	// 	httpmock.Reset()
-	// 	s1 := factory.CreateEveSolarSystem()
-	// 	s2 := factory.CreateEveSolarSystem()
-	// 	s3 := factory.CreateEveSolarSystem()
-	// 	httpmock.RegisterResponder(
-	// 		"GET",
-	// 		fmt.Sprintf("https://esi.evetech.net/v1/route/%d/%d/", s1.ID, s3.ID),
-	// 		httpmock.NewJsonResponderOrPanic(200, []int32{s1.ID, s2.ID, s3.ID}))
-	// 	// when
-	// 	x, err := s.GetRouteESI(ctx, s3, s1, app.RouteShortest)
-	// 	// then
-	// 	if assert.NoError(t, err) {
-	// 		assert.Equal(t, []*app.EveSolarSystem{s1, s2, s3}, x)
-	// 	}
-	// })
+}
+
+func TestFetchRoutes(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := eveuniverseservice.NewTestService(st)
+	ctx := context.Background()
+	t.Run("should return routes", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		a1 := factory.CreateEveSolarSystem()
+		a2 := factory.CreateEveSolarSystem()
+		a3 := factory.CreateEveSolarSystem()
+		b1 := factory.CreateEveSolarSystem()
+		b2 := factory.CreateEveSolarSystem()
+		b3 := factory.CreateEveSolarSystem()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/route/%d/%d/", a1.ID, a3.ID),
+			httpmock.NewJsonResponderOrPanic(200, []int32{a1.ID, a2.ID, a3.ID}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/route/%d/%d/", b1.ID, b3.ID),
+			httpmock.NewJsonResponderOrPanic(200, []int32{b1.ID, b2.ID, b3.ID}),
+		)
+		// when
+		r1 := app.EveRouteHeader{
+			Destination: a3,
+			Origin:      a1,
+			Preference:  app.RouteShortest,
+		}
+		r2 := app.EveRouteHeader{
+			Destination: b3,
+			Origin:      b1,
+			Preference:  app.RouteShortest,
+		}
+		got, err := s.FetchRoutes(ctx, []app.EveRouteHeader{r1, r2})
+		// then
+		if assert.NoError(t, err) && assert.Len(t, got, 2) {
+			assert.Equal(t, []*app.EveSolarSystem{a1, a2, a3}, got[r1])
+			assert.Equal(t, []*app.EveSolarSystem{b1, b2, b3}, got[r2])
+		}
+	})
 }
 
 func TestMembershipHistory(t *testing.T) {

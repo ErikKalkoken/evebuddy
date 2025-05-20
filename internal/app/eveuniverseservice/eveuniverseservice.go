@@ -191,7 +191,7 @@ func (s *EveUniverseService) updateCharacterESI(ctx context.Context, characterID
 	if err != nil {
 		return err
 	}
-	// TODO: Refactor to use ToEntites()
+	// TODO: Refactor to use ToEntities()
 	g := new(errgroup.Group)
 	g.Go(func() error {
 		rr, _, err := s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{c.ID}, nil)
@@ -1076,7 +1076,7 @@ func (s *EveUniverseService) AddMissingLocations(ctx context.Context, ids set.Se
 }
 
 // EntityIDsFromLocationsESI returns the EveEntity IDs in EveLocation ids from ESI.
-// This methods allows bulkd resolving EveEntities before fetching many new locations from ESI.
+// This methods allows bulk resolving EveEntities before fetching many new locations from ESI.
 func (s *EveUniverseService) EntityIDsFromLocationsESI(ctx context.Context, ids []int64) (set.Set[int32], error) {
 	if len(ids) == 0 {
 		return set.Set[int32]{}, nil
@@ -1441,18 +1441,27 @@ func (s *EveUniverseService) GetOrCreateMoonESI(ctx context.Context, id int32) (
 
 // FetchRoute fetches a route between two solar systems from ESi and returns it.
 // When no route can be found it returns an empty slice.
-func (s *EveUniverseService) FetchRoute(ctx context.Context, destination, origin *app.EveSolarSystem, flag app.RoutePreference) ([]*app.EveSolarSystem, error) {
-	if slices.Index(app.RoutePreferences(), flag) == -1 {
-		return nil, fmt.Errorf("invalid flag: %s", flag)
+func (s *EveUniverseService) FetchRoute(ctx context.Context, args app.EveRouteHeader) ([]*app.EveSolarSystem, error) {
+	m := map[app.EveRoutePreference]string{
+		app.RouteShortest: "shortest",
+		app.RouteSecure:   "secure",
+		app.RouteInsecure: "insecure",
 	}
-	if destination.ID == origin.ID {
-		return []*app.EveSolarSystem{origin}, nil
+	flag, ok := m[args.Preference]
+	if !ok {
+		return nil, fmt.Errorf("FetchRoute: flag %s: %w", args.Preference, app.ErrInvalid)
 	}
-	if destination.IsWormholeSpace() || origin.IsWormholeSpace() {
+	if args.Destination == nil || args.Origin == nil {
+		return nil, app.ErrInvalid
+	}
+	if args.Destination.ID == args.Origin.ID {
+		return []*app.EveSolarSystem{args.Origin}, nil
+	}
+	if args.Destination.IsWormholeSpace() || args.Origin.IsWormholeSpace() {
 		return []*app.EveSolarSystem{}, nil // no route possible
 	}
-	ids, r, err := s.esiClient.ESI.RoutesApi.GetRouteOriginDestination(ctx, destination.ID, origin.ID, &esi.GetRouteOriginDestinationOpts{
-		Flag: esioptional.NewString(flag.String()),
+	ids, r, err := s.esiClient.ESI.RoutesApi.GetRouteOriginDestination(ctx, args.Destination.ID, args.Origin.ID, &esi.GetRouteOriginDestinationOpts{
+		Flag: esioptional.NewString(flag),
 	})
 	if err != nil {
 		if r.StatusCode == 404 {
@@ -1476,6 +1485,30 @@ func (s *EveUniverseService) FetchRoute(ctx context.Context, destination, origin
 		return nil, err
 	}
 	return systems, nil
+}
+
+// FetchRoutes returns routes for one or multiple headers.
+func (s *EveUniverseService) FetchRoutes(ctx context.Context, headers []app.EveRouteHeader) (map[app.EveRouteHeader][]*app.EveSolarSystem, error) {
+	results := make([][]*app.EveSolarSystem, len(headers))
+	g := new(errgroup.Group)
+	for i, h := range headers {
+		g.Go(func() error {
+			route, err := s.FetchRoute(ctx, h)
+			if err != nil {
+				return err
+			}
+			results[i] = route
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	results2 := make(map[app.EveRouteHeader][]*app.EveSolarSystem)
+	for i, h := range headers {
+		results2[h] = results[i]
+	}
+	return results2, nil
 }
 
 // TODO: Not fully thread safe: Might update for same ID multiple times.

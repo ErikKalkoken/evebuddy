@@ -529,7 +529,7 @@ func (el EveLocation) DisplayRichText() []widget.RichTextSegment {
 		iwidget.NewRichTextSegmentFromText(fmt.Sprintf("  %s", n)))
 }
 
-// DisplayName2 returns a user friendly name not including the sytem name.
+// DisplayName2 returns a user friendly name not including the system name.
 func (el EveLocation) DisplayName2() string {
 	if el.Name != "" {
 		if el.Variant() != EveLocationStructure {
@@ -603,11 +603,15 @@ func (el EveLocation) ToShort() *EveLocationShort {
 	return o
 }
 
-// EveLocationShort is a shortended representation of EveLocation.
+// EveLocationShort is a shortened representation of EveLocation.
 type EveLocationShort struct {
 	ID             int64
 	Name           optional.Optional[string]
 	SecurityStatus optional.Optional[float32]
+}
+
+func (l EveLocationShort) DisplayName() string {
+	return l.Name.ValueOrFallback("?")
 }
 
 func (l EveLocationShort) DisplayRichText() []widget.RichTextSegment {
@@ -708,20 +712,53 @@ func (er EveRegion) ToEveEntity() *EveEntity {
 	return &EveEntity{ID: er.ID, Name: er.Name, Category: EveEntityRegion}
 }
 
-type RoutePreference string
-
-const (
-	RouteShortest RoutePreference = "shortest"
-	RouteSecure   RoutePreference = "secure"
-	RouteInsecure RoutePreference = "insecure"
-)
-
-func (x RoutePreference) String() string {
-	return string(x)
+// EveRouteHeader describes the header for a route in EVE Online.
+type EveRouteHeader struct {
+	Origin      *EveSolarSystem
+	Destination *EveSolarSystem
+	Preference  EveRoutePreference
 }
 
-func RoutePreferences() []RoutePreference {
-	return []RoutePreference{RouteShortest, RouteSecure, RouteInsecure}
+func (x EveRouteHeader) String() string {
+	var originID, destinationID int32
+	if x.Origin != nil {
+		originID = x.Origin.ID
+	}
+	if x.Destination != nil {
+		destinationID = x.Destination.ID
+	}
+	return fmt.Sprintf("{Origin: %d Destination: %d Preference: %s}", originID, destinationID, x.Preference)
+}
+
+// EveRoutePreference represents the calculation preference when requesting a route from ESI.
+type EveRoutePreference uint
+
+const (
+	RouteShortest EveRoutePreference = iota
+	RouteSecure
+	RouteInsecure
+)
+
+func (x EveRoutePreference) String() string {
+	m := map[EveRoutePreference]string{
+		RouteShortest: "shortest",
+		RouteSecure:   "secure",
+		RouteInsecure: "insecure",
+	}
+	return m[x]
+}
+
+func EveRoutePreferenceFromString(s string) EveRoutePreference {
+	m := map[string]EveRoutePreference{
+		"shortest": RouteShortest,
+		"secure":   RouteSecure,
+		"insecure": RouteInsecure,
+	}
+	return m[s]
+}
+
+func EveRoutePreferences() []EveRoutePreference {
+	return []EveRoutePreference{RouteShortest, RouteSecure, RouteInsecure}
 }
 
 // EveSchematic is a schematic for planetary industry in Eve Online.

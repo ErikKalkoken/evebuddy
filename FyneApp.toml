@@ -4,8 +4,8 @@ Website = "https://github.com/ErikKalkoken/evebuddy"
   Icon = "icon.png"
   Name = "EVE Buddy"
   ID = "io.github.erikkalkoken.evebuddy"
-  Version = "0.27.1"
-  Build = 0
+  Version = "0.28.0"
+  Build = 1
 
 [Release]
   BuildName = "evebuddy"
@@ -19,6 +19,3 @@ Website = "https://github.com/ErikKalkoken/evebuddy"
   Categories = ["Game"]
   Comment = "A companion app for Eve Online players"
   Keywords = ["Eve Online", "characters"]
-
-[Migrations]
-  fyneDo = true

@@ -6,18 +6,18 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// CharacterBiography shows the attributes for the current character.
-type CharacterBiography struct {
+// characterBiography shows the attributes for the current character.
+type characterBiography struct {
 	widget.BaseWidget
 
 	body *widget.Label
-	u    *BaseUI
+	u    *baseUI
 }
 
-func NewCharacterBiography(u *BaseUI) *CharacterBiography {
+func newCharacterBiography(u *baseUI) *characterBiography {
 	text := widget.NewLabel("")
 	text.Wrapping = fyne.TextWrapWord
-	w := &CharacterBiography{
+	w := &characterBiography{
 		body: text,
 		u:    u,
 	}
@@ -25,12 +25,12 @@ func NewCharacterBiography(u *BaseUI) *CharacterBiography {
 	return w
 }
 
-func (a *CharacterBiography) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterBiography) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewVScroll(a.body)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *CharacterBiography) update() {
+func (a *characterBiography) update() {
 	character := a.u.currentCharacter()
 	if character == nil || character.EveCharacter == nil {
 		fyne.Do(func() {

@@ -46,18 +46,18 @@ func (n jumpCloneNode) UID() widget.TreeNodeID {
 	return fmt.Sprintf("%d-%d", n.jumpCloneID, n.implantTypeID)
 }
 
-type CharacterJumpClones struct {
+type characterJumpClones struct {
 	widget.BaseWidget
 
 	top  *widget.RichText
 	tree *iwidget.Tree[jumpCloneNode]
-	u    *BaseUI
+	u    *baseUI
 }
 
-func NewCharacterJumpClones(u *BaseUI) *CharacterJumpClones {
+func newCharacterJumpClones(u *baseUI) *characterJumpClones {
 	top := widget.NewRichText()
 	top.Wrapping = fyne.TextWrapWord
-	a := &CharacterJumpClones{
+	a := &characterJumpClones{
 		top: top,
 		u:   u,
 	}
@@ -66,12 +66,12 @@ func NewCharacterJumpClones(u *BaseUI) *CharacterJumpClones {
 	return a
 }
 
-func (a *CharacterJumpClones) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterJumpClones) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(a.top, nil, nil, nil, a.tree)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *CharacterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
+func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 	t := iwidget.NewTree(
 		func(branch bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
@@ -138,7 +138,7 @@ func (a *CharacterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 	return t
 }
 
-func (a *CharacterJumpClones) update() {
+func (a *characterJumpClones) update() {
 	td, err := a.newTreeData()
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
@@ -162,7 +162,7 @@ func cloneCount(td *iwidget.TreeData[jumpCloneNode]) int {
 
 }
 
-func (a *CharacterJumpClones) newTreeData() (*iwidget.TreeData[jumpCloneNode], error) {
+func (a *characterJumpClones) newTreeData() (*iwidget.TreeData[jumpCloneNode], error) {
 	tree := iwidget.NewTreeData[jumpCloneNode]()
 	if !a.u.hasCharacter() {
 		return tree, nil
@@ -203,14 +203,14 @@ func (a *CharacterJumpClones) newTreeData() (*iwidget.TreeData[jumpCloneNode], e
 	return tree, err
 }
 
-func (a *CharacterJumpClones) refreshTop(cloneCount int) {
+func (a *characterJumpClones) refreshTop(cloneCount int) {
 	segs := a.makeTopText(cloneCount, a.u.currentCharacter(), a.u.services())
 	fyne.Do(func() {
 		iwidget.SetRichText(a.top, segs...)
 	})
 }
 
-func (*CharacterJumpClones) makeTopText(cloneCount int, character *app.Character, s services) []widget.RichTextSegment {
+func (*characterJumpClones) makeTopText(cloneCount int, character *app.Character, s services) []widget.RichTextSegment {
 	defaultStyle := widget.RichTextStyle{
 		ColorName: theme.ColorNameForeground,
 	}
@@ -268,7 +268,7 @@ func (*CharacterJumpClones) makeTopText(cloneCount int, character *app.Character
 	return segs
 }
 
-func (a *CharacterJumpClones) StartUpdateTicker() {
+func (a *characterJumpClones) StartUpdateTicker() {
 	ticker := time.NewTicker(time.Second * 15)
 	go func() {
 		for {

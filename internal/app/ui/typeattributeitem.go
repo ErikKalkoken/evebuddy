@@ -1,4 +1,4 @@
-package widget
+package ui
 
 import (
 	"fyne.io/fyne/v2"
@@ -8,16 +8,16 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// The TypeAttributeItem widget is used to render items on the type info window.
-type TypeAttributeItem struct {
+// The typeAttributeItem widget is used to render items on the type info window.
+type typeAttributeItem struct {
 	widget.BaseWidget
 	icon  *widget.Icon
 	label *widget.Label
 	value *widget.Label
 }
 
-func NewTypeAttributeItem() *TypeAttributeItem {
-	w := &TypeAttributeItem{
+func newTypeAttributeItem() *typeAttributeItem {
+	w := &typeAttributeItem{
 		icon:  widget.NewIcon(theme.QuestionIcon()),
 		label: widget.NewLabel(""),
 		value: widget.NewLabel(""),
@@ -26,7 +26,7 @@ func NewTypeAttributeItem() *TypeAttributeItem {
 	return w
 }
 
-func (w *TypeAttributeItem) SetRegular(icon fyne.Resource, label, value string) {
+func (w *typeAttributeItem) SetRegular(icon fyne.Resource, label, value string) {
 	w.label.TextStyle.Bold = false
 	w.label.Importance = widget.MediumImportance
 	w.label.Text = label
@@ -37,7 +37,7 @@ func (w *TypeAttributeItem) SetRegular(icon fyne.Resource, label, value string) 
 	w.value.Show()
 }
 
-func (w *TypeAttributeItem) SetTitle(label string) {
+func (w *typeAttributeItem) SetTitle(label string) {
 	w.label.TextStyle.Bold = true
 	w.label.Importance = widget.HighImportance
 	w.label.Text = label
@@ -46,7 +46,7 @@ func (w *TypeAttributeItem) SetTitle(label string) {
 	w.value.Hide()
 }
 
-func (w *TypeAttributeItem) CreateRenderer() fyne.WidgetRenderer {
+func (w *typeAttributeItem) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewHBox(w.icon, w.label, layout.NewSpacer(), w.value)
 	return widget.NewSimpleRenderer(c)
 }

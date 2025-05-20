@@ -1,9 +1,12 @@
 package ui
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -13,14 +16,13 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-type overviewCharacter struct {
+type characterRow struct {
 	alliance      *app.EveEntity
 	assetValue    optional.Optional[float64]
 	birthday      time.Time
@@ -34,23 +36,36 @@ type overviewCharacter struct {
 	walletBalance optional.Optional[float64]
 }
 
-type OverviewCharacters struct {
-	widget.BaseWidget
-
-	rows []overviewCharacter
-	body fyne.CanvasObject
-	top  *widget.Label
-	u    *BaseUI
+func (r characterRow) AllianceName() string {
+	if r.alliance == nil {
+		return ""
+	}
+	return r.alliance.Name
 }
 
-func NewOverviewCharacters(u *BaseUI) *OverviewCharacters {
-	a := &OverviewCharacters{
-		rows: make([]overviewCharacter, 0),
-		top:  appwidget.MakeTopLabel(),
-		u:    u,
+func (r characterRow) CorporationName() string {
+	if r.corporation == nil {
+		return ""
 	}
-	a.ExtendBaseWidget(a)
-	headers := []iwidget.HeaderDef{
+	return r.corporation.Name
+}
+
+type characters struct {
+	widget.BaseWidget
+
+	body              fyne.CanvasObject
+	columnSorter      *columnSorter
+	rows              []characterRow
+	rowsFiltered      []characterRow
+	selectAlliance    *iwidget.FilterChipSelect
+	selectCorporation *iwidget.FilterChipSelect
+	sortButton        *sortButton
+	top               *widget.Label
+	u                 *baseUI
+}
+
+func newOverviewCharacters(u *baseUI) *characters {
+	headers := []headerDef{
 		{Text: "Character", Width: columnWidthCharacter},
 		{Text: "Corporation", Width: 250},
 		{Text: "Alliance", Width: 250},
@@ -62,7 +77,14 @@ func NewOverviewCharacters(u *BaseUI) *OverviewCharacters {
 		{Text: "Home", Width: columnWidthLocation},
 		{Text: "Age", Width: 100},
 	}
-	makeCell := func(col int, c overviewCharacter) []widget.RichTextSegment {
+	a := &characters{
+		columnSorter: newColumnSorter(headers),
+		rows:         make([]characterRow, 0),
+		top:          makeTopLabel(),
+		u:            u,
+	}
+	a.ExtendBaseWidget(a)
+	makeCell := func(col int, c characterRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
 			return iwidget.NewRichTextSegmentFromText(c.name)
@@ -104,38 +126,101 @@ func NewOverviewCharacters(u *BaseUI) *OverviewCharacters {
 		}
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
-	if a.u.isDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop(headers, &a.rows, makeCell, func(c int, oc overviewCharacter) {
-			switch c {
-			case 0:
-				u.ShowInfoWindow(app.EveEntityCharacter, oc.id)
-			case 1:
-				u.ShowInfoWindow(app.EveEntityCorporation, oc.corporation.ID)
-			case 2:
-				if oc.alliance != nil {
-					u.ShowInfoWindow(app.EveEntityAlliance, oc.alliance.ID)
-				}
-			case 8:
-				if oc.home != nil {
-					u.ShowLocationInfoWindow(oc.home.ID)
-				}
-			}
+	if a.u.isDesktop {
+		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, oc characterRow) {
+			u.ShowInfoWindow(app.EveEntityCharacter, oc.id)
 		})
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.rows, makeCell, func(oc overviewCharacter) {
+		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, func(oc characterRow) {
 			u.ShowInfoWindow(app.EveEntityCharacter, oc.id)
 		})
 	}
+
+	a.selectAlliance = iwidget.NewFilterChipSelect("Alliance", []string{}, func(string) {
+		a.filterRows(-1)
+	})
+	a.selectCorporation = iwidget.NewFilterChipSelect("Corporation", []string{}, func(string) {
+		a.filterRows(-1)
+	})
+	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+		a.filterRows(-1)
+	}, a.u.window, 5, 6, 7, 8, 9)
 	return a
 }
 
-func (a *OverviewCharacters) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(a.top, nil, nil, nil, a.body)
+func (a *characters) CreateRenderer() fyne.WidgetRenderer {
+	filters := container.NewHBox(a.selectAlliance, a.selectCorporation)
+	if !a.u.isDesktop {
+		filters.Add(a.sortButton)
+	}
+	c := container.NewBorder(
+		container.NewVBox(a.top, container.NewHScroll(filters)),
+		nil,
+		nil,
+		nil,
+		a.body,
+	)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *OverviewCharacters) update() {
-	var rows []overviewCharacter
+func (a *characters) filterRows(sortCol int) {
+	rows := slices.Clone(a.rows)
+	// filter
+	if x := a.selectAlliance.Selected; x != "" {
+		rows = xslices.Filter(rows, func(o characterRow) bool {
+			return o.AllianceName() == x
+		})
+	}
+	if x := a.selectCorporation.Selected; x != "" {
+		rows = xslices.Filter(rows, func(o characterRow) bool {
+			return o.CorporationName() == x
+		})
+	}
+	// sort
+	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+		slices.SortFunc(rows, func(a, b characterRow) int {
+			var x int
+			switch sortCol {
+			case 0:
+				x = strings.Compare(a.name, b.name)
+			case 1:
+				x = strings.Compare(a.CorporationName(), b.CorporationName())
+			case 2:
+				x = strings.Compare(a.AllianceName(), b.AllianceName())
+			case 3:
+				x = cmp.Compare(a.security, b.security)
+			case 4:
+				x = cmp.Compare(a.unreadCount.ValueOrZero(), b.unreadCount.ValueOrZero())
+			case 5:
+				x = cmp.Compare(a.walletBalance.ValueOrZero(), b.walletBalance.ValueOrZero())
+			case 6:
+				x = cmp.Compare(a.assetValue.ValueOrZero(), b.assetValue.ValueOrZero())
+			case 7:
+				x = a.lastLoginAt.ValueOrZero().Compare(b.lastLoginAt.ValueOrZero())
+			case 8:
+				x = strings.Compare(a.home.DisplayName(), b.home.DisplayName())
+			case 9:
+				x = a.birthday.Compare(b.birthday)
+			}
+			if dir == sortAsc {
+				return x
+			} else {
+				return -1 * x
+			}
+		})
+	})
+	a.selectAlliance.SetOptions(xslices.Map(rows, func(r characterRow) string {
+		return r.AllianceName()
+	}))
+	a.selectCorporation.SetOptions(xslices.Map(rows, func(r characterRow) string {
+		return r.CorporationName()
+	}))
+	a.rowsFiltered = rows
+	a.body.Refresh()
+}
+
+func (a *characters) update() {
+	var rows []characterRow
 	t, i, err := func() (string, widget.Importance, error) {
 		cc, totals, err := a.fetchRows(a.u.services())
 		if err != nil {
@@ -169,7 +254,7 @@ func (a *OverviewCharacters) update() {
 	})
 	fyne.Do(func() {
 		a.rows = rows
-		a.body.Refresh()
+		a.filterRows(-1)
 	})
 }
 
@@ -179,15 +264,15 @@ type overviewTotals struct {
 	assets optional.Optional[float64]
 }
 
-func (*OverviewCharacters) fetchRows(s services) ([]overviewCharacter, overviewTotals, error) {
+func (*characters) fetchRows(s services) ([]characterRow, overviewTotals, error) {
 	var totals overviewTotals
 	ctx := context.Background()
 	characters, err := s.cs.ListCharacters(ctx)
 	if err != nil {
 		return nil, totals, err
 	}
-	cc := xslices.Map(characters, func(m *app.Character) overviewCharacter {
-		return overviewCharacter{
+	cc := xslices.Map(characters, func(m *app.Character) characterRow {
+		return characterRow{
 			alliance:      m.EveCharacter.Alliance,
 			birthday:      m.EveCharacter.Birthday,
 			corporation:   m.EveCharacter.Corporation,

@@ -233,11 +233,11 @@ func (cca ContractAvailability) String() string {
 type contractConsolidatedStatus uint
 
 const (
-	contractUndefiend contractConsolidatedStatus = iota
-	contractOustanding
-	contractInProgress
-	contractHasIssue
-	contractCompleted
+	contractConcolidatedUndefined contractConsolidatedStatus = iota
+	contractConsolidatedOustanding
+	contractConsolidatedInProgress
+	contractConsolidatedHasIssue
+	contractConsolidatedHistory
 )
 
 // ContractStatus represents the original status of a contract.
@@ -257,7 +257,7 @@ const (
 	ContractStatusReversed
 )
 
-var ccs2String = map[ContractStatus]string{
+var cs2String = map[ContractStatus]string{
 	ContractStatusCancelled:          "cancelled",
 	ContractStatusDeleted:            "deleted",
 	ContractStatusFailed:             "failed",
@@ -270,33 +270,57 @@ var ccs2String = map[ContractStatus]string{
 	ContractStatusReversed:           "reversed",
 }
 
-func (ccs ContractStatus) String() string {
-	s, ok := ccs2String[ccs]
+func (cs ContractStatus) String() string {
+	s, ok := cs2String[cs]
 	if !ok {
 		return "?"
 	}
 	return s
 }
 
-func (cc ContractStatus) consolidated() contractConsolidatedStatus {
-	switch cc {
+func (cs ContractStatus) Display() string {
+	caser := cases.Title(language.English)
+	return caser.String(cs.String())
+}
+
+func (cs ContractStatus) DisplayRichText() []widget.RichTextSegment {
+	var color fyne.ThemeColorName
+	switch cs.consolidated() {
+	case contractConsolidatedOustanding:
+		color = theme.ColorNamePrimary
+	case contractConsolidatedInProgress:
+		color = theme.ColorNameWarning
+	case contractConsolidatedHistory:
+		color = theme.ColorNameSuccess
+	case contractConsolidatedHasIssue:
+		color = theme.ColorNameError
+	default:
+		color = theme.ColorNameForeground
+	}
+	return iwidget.NewRichTextSegmentFromText(cs.Display(), widget.RichTextStyle{
+		ColorName: color,
+	})
+}
+
+func (cs ContractStatus) consolidated() contractConsolidatedStatus {
+	switch cs {
 	case ContractStatusOutstanding:
-		return contractOustanding
+		return contractConsolidatedOustanding
 	case ContractStatusInProgress:
-		return contractInProgress
+		return contractConsolidatedInProgress
 	case
+		ContractStatusDeleted,
+		ContractStatusCancelled,
 		ContractStatusFinished,
 		ContractStatusFinishedContractor,
 		ContractStatusFinishedIssuer:
-		return contractCompleted
+		return contractConsolidatedHistory
 	case
-		ContractStatusCancelled,
-		ContractStatusDeleted,
 		ContractStatusFailed,
 		ContractStatusRejected:
-		return contractHasIssue
+		return contractConsolidatedHasIssue
 	}
-	return contractUndefiend
+	return contractConcolidatedUndefined
 }
 
 type ContractType uint
@@ -358,6 +382,13 @@ type CharacterContract struct {
 	Volume            float64
 }
 
+func (cc CharacterContract) AssigneeName() string {
+	if cc.Assignee == nil {
+		return ""
+	}
+	return cc.Assignee.Name
+}
+
 func (cc CharacterContract) AvailabilityDisplay() string {
 	titler := cases.Title(language.English)
 	s := titler.String(cc.Availability.String())
@@ -372,7 +403,7 @@ func (cc CharacterContract) ContractorDisplay() string {
 }
 
 func (cc CharacterContract) HasIssue() bool {
-	return cc.Status.consolidated() == contractHasIssue
+	return cc.Status.consolidated() == contractConsolidatedHasIssue || (cc.IsExpired() && cc.IsActive())
 }
 
 func (cc CharacterContract) IsExpired() bool {
@@ -380,11 +411,15 @@ func (cc CharacterContract) IsExpired() bool {
 }
 
 func (cc CharacterContract) IsActive() bool {
-	return cc.Status.consolidated() == contractInProgress || cc.Status.consolidated() == contractOustanding
+	switch cc.Status.consolidated() {
+	case contractConsolidatedInProgress, contractConsolidatedOustanding:
+		return true
+	}
+	return false
 }
 
 func (cc CharacterContract) IsCompleted() bool {
-	return cc.Status.consolidated() == contractCompleted
+	return cc.Status.consolidated() == contractConsolidatedHistory
 }
 
 func (cc CharacterContract) IssuerEffective() *EveEntity {
@@ -424,27 +459,11 @@ func (cc CharacterContract) NameDisplay() string {
 }
 
 func (cc CharacterContract) StatusDisplay() string {
-	caser := cases.Title(language.English)
-	return caser.String(cc.Status.String())
+	return cc.Status.Display()
 }
 
 func (cc CharacterContract) StatusDisplayRichText() []widget.RichTextSegment {
-	var color fyne.ThemeColorName
-	switch cc.Status.consolidated() {
-	case contractOustanding:
-		color = theme.ColorNamePrimary
-	case contractInProgress:
-		color = theme.ColorNameWarning
-	case contractCompleted:
-		color = theme.ColorNameSuccess
-	case contractHasIssue:
-		color = theme.ColorNameError
-	default:
-		color = theme.ColorNameForeground
-	}
-	return iwidget.NewRichTextSegmentFromText(cc.StatusDisplay(), widget.RichTextStyle{
-		ColorName: color,
-	})
+	return cc.Status.DisplayRichText()
 }
 
 func (cc CharacterContract) TitleDisplay() string {
@@ -488,7 +507,8 @@ type CharacterImplant struct {
 type Role uint
 
 const (
-	RoleAccountant Role = iota + 1
+	RoleUndefined Role = iota
+	RoleAccountant
 	RoleAccountTake1
 	RoleAccountTake2
 	RoleAccountTake3
@@ -749,11 +769,39 @@ type CharacterJumpClone2 struct {
 	Location      *EveLocation
 }
 
-func (j CharacterJumpClone2) SolarSystemName() string {
-	if s := j.Location.SolarSystem; s != nil {
-		return s.Name
+func (j CharacterJumpClone2) CharacterName() string {
+	if j.Character == nil {
+		return ""
 	}
-	return ""
+	return j.Character.Name
+}
+
+func (j CharacterJumpClone2) LocationName() string {
+	if j.Location == nil {
+		return ""
+	}
+	return j.Location.DisplayName()
+}
+
+func (j CharacterJumpClone2) SolarSystemName() string {
+	if j.Location == nil || j.Location.SolarSystem == nil {
+		return ""
+	}
+	return j.Location.SolarSystem.Name
+}
+
+func (j CharacterJumpClone2) SolarSystem() *EveSolarSystem {
+	if j.Location == nil || j.Location.SolarSystem == nil {
+		return nil
+	}
+	return j.Location.SolarSystem
+}
+
+func (j CharacterJumpClone2) RegionName() string {
+	if j.Location == nil || j.Location.SolarSystem == nil {
+		return ""
+	}
+	return j.Location.SolarSystem.Constellation.Region.Name
 }
 
 type CharacterJumpCloneImplant struct {
@@ -979,14 +1027,6 @@ func (cp CharacterPlanet) ExtractedTypeNames() []string {
 	})
 }
 
-func (cp CharacterPlanet) Extracting() string {
-	extractions := strings.Join(cp.ExtractedTypeNames(), ", ")
-	if extractions == "" {
-		extractions = "-"
-	}
-	return extractions
-}
-
 // ExtractionsExpiryTime returns the final expiry time for all extractions.
 // When no expiry data is found it will return a zero time.
 func (cp CharacterPlanet) ExtractionsExpiryTime() time.Time {
@@ -1033,14 +1073,6 @@ func (cp CharacterPlanet) IsExpired() bool {
 		return false
 	}
 	return due.Before(time.Now())
-}
-
-func (cp CharacterPlanet) Producing() string {
-	productions := strings.Join(cp.ProducedSchematicNames(), ", ")
-	if productions == "" {
-		productions = "-"
-	}
-	return productions
 }
 
 func (cp CharacterPlanet) DueRichText() []widget.RichTextSegment {
@@ -1318,18 +1350,24 @@ type CharacterWalletJournalEntry struct {
 	TaxReceiver   *EveEntity
 }
 
+func (we CharacterWalletJournalEntry) RefTypeDisplay() string {
+	titler := cases.Title(language.English)
+	return titler.String(strings.ReplaceAll(we.RefType, "_", " "))
+}
+
 type CharacterWalletTransaction struct {
 	CharacterID   int32
 	Client        *EveEntity
 	Date          time.Time
-	EveType       *EntityShort[int32]
 	ID            int64
 	IsBuy         bool
 	IsPersonal    bool
 	JournalRefID  int64
 	Location      *EveLocationShort
+	Region        *EntityShort[int32]
 	Quantity      int32
 	TransactionID int64
+	Type          *EveType
 	UnitPrice     float64
 }
 

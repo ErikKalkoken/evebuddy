@@ -39,7 +39,7 @@ type shortcutDef struct {
 
 // The DesktopUI creates the UI for desktop.
 type DesktopUI struct {
-	*BaseUI
+	*baseUI
 
 	accountWindow  fyne.Window
 	searchWindow   fyne.Window
@@ -50,17 +50,17 @@ type DesktopUI struct {
 }
 
 // NewDesktopUI build the UI and returns it.
-func NewDesktopUI(bu *BaseUI) *DesktopUI {
+func NewDesktopUI(bu *baseUI) *DesktopUI {
 	u := &DesktopUI{
 		sfg:    new(singleflight.Group),
-		BaseUI: bu,
+		baseUI: bu,
 	}
 	deskApp, ok := u.App().(desktop.App)
 	if !ok {
 		panic("Could not start in desktop mode")
 	}
 
-	u.ShowMailIndicator = func() {
+	u.showMailIndicator = func() {
 		fyne.Do(func() {
 			deskApp.SetSystemTrayIcon(icons.IconmarkedPng)
 		})
@@ -70,13 +70,13 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 			deskApp.SetSystemTrayIcon(icons.IconPng)
 		})
 	}
-	u.EnableMenuShortcuts = u.enableShortcuts
-	u.DisableMenuShortcuts = u.disableShortcuts
+	u.enableMenuShortcuts = u.enableShortcuts
+	u.disableMenuShortcuts = u.disableShortcuts
 
 	u.showManageCharacters = u.showManageCharactersWindow
 
 	u.defineShortcuts()
-	pageBars := NewPageBarCollection(u)
+	pageBars := newPageBarCollection(u)
 
 	var characterNav *iwidget.NavDrawer
 
@@ -203,36 +203,33 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 	overview := iwidget.NewNavPage(
 		"Characters",
 		theme.NewThemedResource(icons.PortraitSvg),
-		makePageWithTitle("Characters", u.overviewCharacters),
+		makePageWithTitle("Characters", u.characters),
 	)
 
 	wealth := iwidget.NewNavPage(
 		"Wealth",
 		theme.NewThemedResource(icons.GoldSvg),
-		makePageWithTitle("Wealth", u.overviewWealth),
+		makePageWithTitle("Wealth", u.wealth),
 	)
 
 	allAssets := iwidget.NewNavPage(
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
-		makePageWithTitle("Assets", u.overviewAssets),
+		makePageWithTitle("Assets", u.assets),
 	)
 
-	contractActive := container.NewTabItem("Active", u.contractsActive)
-	contractTabs := container.NewAppTabs(contractActive, container.NewTabItem("All", u.contractsAll))
 	contracts := iwidget.NewNavPage(
 		"Contracts",
 		theme.NewThemedResource(icons.FileSignSvg),
-		makePageWithTitle("Contracts", contractTabs),
+		makePageWithTitle("Contracts", u.contracts),
 	)
-	u.contractsActive.OnUpdate = func(count int) {
-		s := "Active"
+	u.contracts.OnUpdate = func(count int) {
+		var s string
 		if count > 0 {
-			s += fmt.Sprintf(" (%d)", count)
+			s += ihumanize.Comma(count)
 		}
 		fyne.Do(func() {
-			contractActive.Text = s
-			contractTabs.Refresh()
+			homeNav.SetItemBadge(contracts, s)
 		})
 	}
 
@@ -279,24 +276,24 @@ func NewDesktopUI(bu *BaseUI) *DesktopUI {
 		iwidget.NewNavPage(
 			"Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),
-			makePageWithTitle("Locations", u.overviewLocations),
+			makePageWithTitle("Locations", u.locations),
 		),
 		iwidget.NewNavPage(
 			"Training",
 			theme.NewThemedResource(icons.SchoolSvg),
-			makePageWithTitle("Training", u.overviewTraining),
+			makePageWithTitle("Training", u.training),
 		),
 		wealth,
 	)
 	homeNav.OnSelectItem = func(it *iwidget.NavItem) {
 		if it == allAssets {
-			u.overviewAssets.Focus()
+			u.assets.focus()
 		}
 	}
 	homeNav.MinWidth = minNavCharacterWidth
 
 	statusBar := newStatusBar(u)
-	toolbar := NewToolbar(u)
+	toolbar := newToolbar(u)
 	characterTab := container.NewTabItemWithIcon("Character", theme.AccountIcon(), characterNav)
 	tabs := container.NewAppTabs(
 		container.NewTabItemWithIcon("Home", theme.NewThemedResource(theme.HomeIcon()), homeNav),
@@ -406,7 +403,7 @@ func (u *DesktopUI) ShowSettingsWindow() {
 func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
 	w := u.App().NewWindow(u.MakeWindowTitle(title))
-	page := NewCharacterSendMail(u.BaseUI, c, mode, mail)
+	page := newCharacterSendMail(u.baseUI, c, mode, mail)
 	page.SetWindow(w)
 	send := widget.NewButtonWithIcon("Send", theme.MailSendIcon(), func() {
 		if page.SendAction() {
@@ -642,20 +639,20 @@ func makePathEntry(cb fyne.Clipboard, path string) *fyne.Container {
 		}))
 }
 
-type PageBar struct {
+type pageBar struct {
 	widget.BaseWidget
 
 	buttons []*widget.Button
 	icon    *kwidget.TappableImage
 	title   *iwidget.Label
-	u       *BaseUI
+	u       *baseUI
 }
 
-func newPageBar(title string, icon fyne.Resource, u *BaseUI, buttons ...*widget.Button) *PageBar {
+func newPageBar(title string, icon fyne.Resource, u *baseUI, buttons ...*widget.Button) *pageBar {
 	i := kwidget.NewTappableImageWithMenu(icon, fyne.NewMenu(""))
 	i.SetFillMode(canvas.ImageFillContain)
 	i.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
-	w := &PageBar{
+	w := &pageBar{
 		buttons: buttons,
 		icon:    i,
 		title:   iwidget.NewLabelWithSize(title, theme.SizeNameSubHeadingText),
@@ -665,15 +662,15 @@ func newPageBar(title string, icon fyne.Resource, u *BaseUI, buttons ...*widget.
 	return w
 }
 
-func (w *PageBar) SetIcon(r fyne.Resource) {
+func (w *pageBar) SetIcon(r fyne.Resource) {
 	w.icon.SetResource(r)
 }
 
-func (w *PageBar) SetMenu(items []*fyne.MenuItem) {
+func (w *pageBar) SetMenu(items []*fyne.MenuItem) {
 	w.icon.SetMenuItems(items)
 }
 
-func (w *PageBar) CreateRenderer() fyne.WidgetRenderer {
+func (w *pageBar) CreateRenderer() fyne.WidgetRenderer {
 	box := container.NewHBox(w.title, layout.NewSpacer())
 	if len(w.buttons) > 0 {
 		for _, b := range w.buttons {
@@ -684,34 +681,34 @@ func (w *PageBar) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(box)
 }
 
-type PageBarCollection struct {
-	bars         []*PageBar
+type pageBarCollection struct {
+	bars         []*pageBar
 	fallbackIcon fyne.Resource
 	u            *DesktopUI
 }
 
-func NewPageBarCollection(u *DesktopUI) *PageBarCollection {
+func newPageBarCollection(u *DesktopUI) *pageBarCollection {
 	fallback := icons.Characterplaceholder64Jpeg
 	icon, err := fynetools.MakeAvatar(fallback)
 	if err != nil {
 		slog.Error("failed to make avatar", "error", err)
 		icon = fallback
 	}
-	c := &PageBarCollection{
-		bars:         make([]*PageBar, 0),
+	c := &pageBarCollection{
+		bars:         make([]*pageBar, 0),
 		fallbackIcon: icon,
 		u:            u,
 	}
 	return c
 }
 
-func (c *PageBarCollection) NewPageBar(title string, buttons ...*widget.Button) *PageBar {
-	pb := newPageBar(title, c.fallbackIcon, c.u.BaseUI, buttons...)
+func (c *pageBarCollection) NewPageBar(title string, buttons ...*widget.Button) *pageBar {
+	pb := newPageBar(title, c.fallbackIcon, c.u.baseUI, buttons...)
 	c.bars = append(c.bars, pb)
 	return pb
 }
 
-func (c *PageBarCollection) update() {
+func (c *pageBarCollection) update() {
 	if !c.u.hasCharacter() {
 		for _, pb := range c.bars {
 			fyne.Do(func() {

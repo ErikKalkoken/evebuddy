@@ -19,27 +19,27 @@ import (
 
 const labelWith = 45
 
-type CharacterSendMail struct {
+type characterSendMail struct {
 	widget.BaseWidget
 
 	body      *widget.Entry
 	character *app.Character
-	from      *EveEntityEntry
+	from      *eveEntityEntry
 	subject   *widget.Entry
-	to        *EveEntityEntry
-	u         *BaseUI
+	to        *eveEntityEntry
+	u         *baseUI
 	w         fyne.Window
 }
 
-func NewCharacterSendMail(u *BaseUI, c *app.Character, mode app.SendMailMode, m *app.CharacterMail) *CharacterSendMail {
-	a := &CharacterSendMail{
+func newCharacterSendMail(u *baseUI, c *app.Character, mode app.SendMailMode, m *app.CharacterMail) *characterSendMail {
+	a := &characterSendMail{
 		character: c,
 		u:         u,
 		w:         u.MainWindow(),
 	}
 	a.ExtendBaseWidget(a)
 
-	a.from = NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.eis)
+	a.from = newEveEntityEntry(widget.NewLabel("From"), labelWith, u.eis)
 	a.from.ShowInfoWindow = u.ShowEveEntityInfoWindow
 	a.from.Set([]*app.EveEntity{{ID: c.ID, Name: c.EveCharacter.Name, Category: app.EveEntityCharacter}})
 	a.from.Disable()
@@ -49,7 +49,7 @@ func NewCharacterSendMail(u *BaseUI, c *app.Character, mode app.SendMailMode, m 
 			a.to.Add(ee)
 		}, a.w)
 	})
-	a.to = NewEveEntityEntry(toButton, labelWith, u.eis)
+	a.to = newEveEntityEntry(toButton, labelWith, u.eis)
 	a.to.ShowInfoWindow = u.ShowEveEntityInfoWindow
 	a.to.Placeholder = "Tap To-Button to add recipients..."
 
@@ -86,7 +86,7 @@ func NewCharacterSendMail(u *BaseUI, c *app.Character, mode app.SendMailMode, m 
 	return a
 }
 
-func (a *CharacterSendMail) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterSendMail) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
 		container.NewVBox(a.from, a.to, a.subject),
 		nil,
@@ -97,12 +97,12 @@ func (a *CharacterSendMail) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *CharacterSendMail) SetWindow(w fyne.Window) {
+func (a *characterSendMail) SetWindow(w fyne.Window) {
 	a.w = w
 }
 
 // sendAction tries to send the current mail and reports whether it was successful
-func (a *CharacterSendMail) SendAction() bool {
+func (a *characterSendMail) SendAction() bool {
 	showErrorDialog := func(message string) {
 		a.u.ShowInformationDialog("Failed to send mail", message, a.u.MainWindow())
 	}
@@ -144,7 +144,7 @@ func (a *CharacterSendMail) SendAction() bool {
 
 // }
 
-func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEntity), w fyne.Window) {
+func showAddDialog(u *baseUI, characterID int32, onSelected func(ee *app.EveEntity), w fyne.Window) {
 	var modal *widget.PopUp
 	results := make([]*app.EveEntity, 0)
 	fallbackIcon := icons.Questionmark32Png
@@ -174,7 +174,7 @@ func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEnti
 			row[0].(*widget.Label).SetText(ee.Name)
 			image := row[1].(*canvas.Image)
 			iwidget.RefreshImageAsync(image, func() (fyne.Resource, error) {
-				res, err := FetchEveEntityAvatar(u.eis, ee, fallbackIcon)
+				res, err := fetchEveEntityAvatar(u.eis, ee, fallbackIcon)
 				if err != nil {
 					return fallbackIcon, err
 				}

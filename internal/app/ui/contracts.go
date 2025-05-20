@@ -6,44 +6,69 @@ import (
 	"log/slog"
 	"math"
 	"slices"
-	"sync/atomic"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-type Contracts struct {
-	widget.BaseWidget
+const (
+	contractStatusAllActive   = "All active"
+	contractStatusOutstanding = "Outstanding"
+	contractStatusInProgress  = "In progress"
+	contractStatusHasIssue    = "Has issues"
+	contractStatusHistory     = "History"
+)
 
-	OnUpdate func(count int)
-
-	contracts      []*app.CharacterContract
-	showActiveOnly atomic.Bool
-	body           fyne.CanvasObject
-	top            *widget.Label
-	u              *BaseUI
+type contractRow struct {
+	assigneeName       string
+	characterID        int32
+	contractID         int32
+	dateExpired        time.Time
+	dateExpiredDisplay []widget.RichTextSegment
+	dateIssued         time.Time
+	isExpired          bool
+	issuerName         string
+	name               string
+	status             app.ContractStatus
+	statusText         string
+	typeName           string
+	isActive           bool
+	hasIssue           bool
+	isHistory          bool
 }
 
-func NewContracts(u *BaseUI, showActiveOnly bool) *Contracts {
-	a := &Contracts{
-		contracts: make([]*app.CharacterContract, 0),
-		top:       appwidget.MakeTopLabel(),
-		u:         u,
-	}
-	a.ExtendBaseWidget(a)
-	a.showActiveOnly.Store(showActiveOnly)
-	headers := []iwidget.HeaderDef{
+type contracts struct {
+	widget.BaseWidget
+
+	OnUpdate func(active int)
+
+	body           fyne.CanvasObject
+	columnSorter   *columnSorter
+	rows           []contractRow
+	rowsFiltered   []contractRow
+	selectAssignee *iwidget.FilterChipSelect
+	selectIssuer   *iwidget.FilterChipSelect
+	selectStatus   *iwidget.FilterChipSelect
+	selectType     *iwidget.FilterChipSelect
+	sortButton     *sortButton
+	bottom         *widget.Label
+	u              *baseUI
+}
+
+func newContracts(u *baseUI) *contracts {
+	headers := []headerDef{
 		{Text: "Contract", Width: 300},
 		{Text: "Type", Width: 120},
 		{Text: "From", Width: 150},
@@ -52,91 +77,276 @@ func NewContracts(u *BaseUI, showActiveOnly bool) *Contracts {
 		{Text: "Date Issued", Width: 150},
 		{Text: "Time Left", Width: 100},
 	}
-	makeCell := func(col int, o *app.CharacterContract) []widget.RichTextSegment {
-		switch col {
-		case 0:
-			return iwidget.NewRichTextSegmentFromText(o.NameDisplay())
-		case 1:
-			return iwidget.NewRichTextSegmentFromText(o.TypeDisplay())
-		case 2:
-			return iwidget.NewRichTextSegmentFromText(o.IssuerEffective().Name)
-		case 3:
-			var s string
-			if o.Assignee == nil {
-				s = ""
-			} else {
-				s = o.Assignee.Name
-			}
-			return iwidget.NewRichTextSegmentFromText(s)
-		case 4:
-			return o.StatusDisplayRichText()
-		case 5:
-			return iwidget.NewRichTextSegmentFromText(o.DateIssued.Format(app.DateTimeFormat))
-		case 6:
-			var text string
-			var color fyne.ThemeColorName
-			if o.IsExpired() {
-				text = "EXPIRED"
-				color = theme.ColorNameError
-			} else {
-				text = ihumanize.RelTime(o.DateExpired)
-				color = theme.ColorNameForeground
-			}
-			return iwidget.NewRichTextSegmentFromText(text, widget.RichTextStyle{
-				ColorName: color,
-			})
-		}
-		return iwidget.NewRichTextSegmentFromText("?")
+	a := &contracts{
+		columnSorter: newColumnSorter(headers),
+		rows:         make([]contractRow, 0),
+		bottom:       widget.NewLabel(""),
+		u:            u,
 	}
-	if a.u.isDesktop() {
-		a.body = iwidget.MakeDataTableForDesktop(headers, &a.contracts, makeCell, func(column int, r *app.CharacterContract) {
-			a.showContract(r)
-		})
+	a.ExtendBaseWidget(a)
+	if a.u.isDesktop {
+		a.body = makeDataTable(headers, &a.rowsFiltered,
+			func(col int, r contractRow) []widget.RichTextSegment {
+				switch col {
+				case 0:
+					return iwidget.NewRichTextSegmentFromText(r.name)
+				case 1:
+					return iwidget.NewRichTextSegmentFromText(r.typeName)
+				case 2:
+					return iwidget.NewRichTextSegmentFromText(r.issuerName)
+				case 3:
+					return iwidget.NewRichTextSegmentFromText(r.assigneeName)
+				case 4:
+					return r.status.DisplayRichText()
+				case 5:
+					return iwidget.NewRichTextSegmentFromText(r.dateIssued.Format(app.DateTimeFormat))
+				case 6:
+					return r.dateExpiredDisplay
+				}
+				return iwidget.NewRichTextSegmentFromText("?")
+			}, a.columnSorter, a.filterRows, func(column int, r contractRow) {
+				a.showContract(r)
+			},
+		)
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.contracts, makeCell, a.showContract)
+		a.body = a.makeDataList()
 	}
+
+	a.selectAssignee = iwidget.NewFilterChipSelectWithSearch("Assignee", []string{}, func(string) {
+		a.filterRows(-1)
+	}, a.u.window)
+	a.selectIssuer = iwidget.NewFilterChipSelectWithSearch("Issuer", []string{}, func(string) {
+		a.filterRows(-1)
+	}, a.u.window)
+	a.selectType = iwidget.NewFilterChipSelect("Type", []string{}, func(string) {
+		a.filterRows(-1)
+	})
+
+	a.selectStatus = iwidget.NewFilterChipSelect("", []string{
+		contractStatusAllActive,
+		contractStatusOutstanding,
+		contractStatusInProgress,
+		contractStatusHasIssue,
+		contractStatusHistory,
+	}, func(string) {
+		a.filterRows(-1)
+	})
+	a.selectStatus.Selected = contractStatusAllActive
+
+	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+		a.filterRows(-1)
+	}, a.u.window)
+
 	return a
 }
 
-func (a *Contracts) update() {
-	contracts, err := a.updateEntries()
+func (a *contracts) CreateRenderer() fyne.WidgetRenderer {
+	filter := container.NewHBox(a.selectType, a.selectIssuer, a.selectAssignee, a.selectStatus)
+	if !a.u.isDesktop {
+		filter.Add(a.sortButton)
+	}
+	c := container.NewBorder(
+		container.NewVBox(container.NewHScroll(filter)),
+		a.bottom,
+		nil,
+		nil,
+		a.body,
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *contracts) makeDataList() *widget.List {
+	p := theme.Padding()
+	l := widget.NewList(
+		func() int {
+			return len(a.rowsFiltered)
+		},
+		func() fyne.CanvasObject {
+			title := widget.NewLabelWithStyle("Template", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+			type_ := widget.NewLabel("Template")
+			status := widget.NewRichTextWithText("Template")
+			issuer := widget.NewLabel("Template")
+			assignee := widget.NewLabel("Template")
+			dateExpired := widget.NewRichTextWithText("Template")
+			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
+				title,
+				container.NewHBox(type_, layout.NewSpacer(), status),
+				issuer,
+				assignee,
+				dateExpired,
+			)
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id < 0 || id >= len(a.rowsFiltered) {
+				return
+			}
+			r := a.rowsFiltered[id]
+			main := co.(*fyne.Container).Objects
+			main[0].(*widget.Label).SetText(r.name)
+			box := main[1].(*fyne.Container).Objects
+			box[0].(*widget.Label).SetText(r.typeName)
+			iwidget.SetRichText(box[2].(*widget.RichText), r.status.DisplayRichText()...)
+
+			main[2].(*widget.Label).SetText("From " + r.issuerName)
+			assignee := "To "
+			if r.assigneeName == "" {
+				assignee += "..."
+			} else {
+				assignee += r.assigneeName
+			}
+			main[3].(*widget.Label).SetText(assignee)
+
+			iwidget.SetRichText(main[4].(*widget.RichText), iwidget.InlineRichTextSegments(
+				iwidget.NewRichTextSegmentFromText("Expires "),
+				r.dateExpiredDisplay,
+			)...)
+		},
+	)
+	l.OnSelected = func(id widget.ListItemID) {
+		if id < 0 || id >= len(a.rowsFiltered) {
+			return
+		}
+		a.showContract(a.rowsFiltered[id])
+	}
+	return l
+}
+
+func (a *contracts) filterRows(sortCol int) {
+	rows := slices.Clone(a.rows)
+	// filter
+	if x := a.selectIssuer.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r contractRow) bool {
+			return r.issuerName == x
+		})
+	}
+	if x := a.selectAssignee.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r contractRow) bool {
+			return r.assigneeName == x
+		})
+	}
+	rows = xslices.Filter(rows, func(r contractRow) bool {
+		switch a.selectStatus.Selected {
+		case contractStatusAllActive:
+			return r.isActive
+		case contractStatusOutstanding:
+			return r.status == app.ContractStatusOutstanding
+		case contractStatusInProgress:
+			return r.status == app.ContractStatusInProgress
+		case contractStatusHasIssue:
+			return r.hasIssue
+		case contractStatusHistory:
+			return r.isHistory
+		}
+		return false
+	})
+	if x := a.selectType.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r contractRow) bool {
+			return r.typeName == x
+		})
+	}
+	// sort
+	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+		slices.SortFunc(rows, func(a, b contractRow) int {
+			var x int
+			switch sortCol {
+			case 0:
+				x = strings.Compare(a.name, b.name)
+			case 1:
+				x = strings.Compare(a.typeName, b.typeName)
+			case 2:
+				x = strings.Compare(a.issuerName, b.issuerName)
+			case 3:
+				x = strings.Compare(a.assigneeName, b.assigneeName)
+			case 4:
+				x = strings.Compare(a.statusText, b.statusText)
+			case 5:
+				x = a.dateIssued.Compare(b.dateIssued)
+			case 6:
+				x = a.dateExpired.Compare(b.dateExpired)
+			}
+			if dir == sortAsc {
+				return x
+			} else {
+				return -1 * x
+			}
+		})
+	})
+	a.selectIssuer.SetOptions(xslices.Map(rows, func(r contractRow) string {
+		return r.issuerName
+	}))
+	a.selectAssignee.SetOptions(xslices.Map(rows, func(r contractRow) string {
+		return r.assigneeName
+	}))
+	a.selectType.SetOptions(xslices.Map(rows, func(r contractRow) string {
+		return r.typeName
+	}))
+	a.rowsFiltered = rows
+	a.body.Refresh()
+}
+
+func (a *contracts) update() {
+	contracts, err := a.u.cs.ListAllContracts(context.Background())
 	if err != nil {
 		slog.Error("Failed to refresh contracts UI", "err", err)
 		fyne.Do(func() {
-			a.top.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
-			a.top.Importance = widget.DangerImportance
-			a.top.Refresh()
-			a.top.Show()
+			a.bottom.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
+			a.bottom.Importance = widget.DangerImportance
+			a.bottom.Refresh()
+			a.bottom.Show()
 		})
 		return
 	}
+	rows := make([]contractRow, 0)
+	var activeCount int
+	for _, c := range contracts {
+		r := contractRow{
+			name:         c.NameDisplay(),
+			typeName:     c.TypeDisplay(),
+			issuerName:   c.IssuerEffective().Name,
+			assigneeName: c.AssigneeName(),
+			statusText:   c.StatusDisplay(),
+			status:       c.Status,
+			dateIssued:   c.DateIssued,
+			dateExpired:  c.DateExpired,
+			isExpired:    c.IsExpired(),
+			characterID:  c.CharacterID,
+			contractID:   c.ContractID,
+			isActive:     c.IsActive(),
+			isHistory:    c.IsCompleted(),
+			hasIssue:     c.HasIssue(),
+		}
+		var s string
+		var color fyne.ThemeColorName
+		if r.isExpired {
+			s = "EXPIRED"
+			color = theme.ColorNameError
+		} else {
+			s = ihumanize.RelTime(r.dateExpired)
+			color = theme.ColorNameForeground
+		}
+		r.dateExpiredDisplay = iwidget.NewRichTextSegmentFromText(s, widget.RichTextStyle{
+			ColorName: color,
+		})
+		rows = append(rows, r)
+		if c.IsActive() {
+			activeCount++
+		}
+	}
 	fyne.Do(func() {
-		a.top.Hide()
-		a.contracts = contracts
-		a.body.Refresh()
+		a.bottom.Hide()
+		a.rows = rows
+		a.filterRows(-1)
 	})
 	if a.OnUpdate != nil {
-		a.OnUpdate(len(contracts))
+		a.OnUpdate(activeCount)
 	}
 }
 
-func (a *Contracts) updateEntries() ([]*app.CharacterContract, error) {
-	var contracts []*app.CharacterContract
-	oo, err := a.u.cs.ListAllContracts(context.Background())
+func (a *contracts) showContract(r contractRow) {
+	c, err := a.u.cs.GetContract(context.Background(), r.characterID, r.contractID)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
-	if a.showActiveOnly.Load() {
-		contracts = xslices.Filter(oo, func(o *app.CharacterContract) bool {
-			return o.IsActive()
-		})
-	} else {
-		contracts = oo
-	}
-	return contracts, nil
-}
-
-func (a *Contracts) showContract(c *app.CharacterContract) {
 	var w fyne.Window
 	makeExpiresString := func(c *app.CharacterContract) string {
 		ts := c.DateExpired.Format(app.DateTimeFormat)
@@ -312,9 +522,4 @@ func (a *Contracts) showContract(c *app.CharacterContract) {
 	}
 	w = a.u.makeDetailWindow("Contract", subTitle, main)
 	w.Show()
-}
-
-func (a *Contracts) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(a.top, nil, nil, nil, a.body)
-	return widget.NewSimpleRenderer(c)
 }

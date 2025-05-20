@@ -65,15 +65,23 @@ const getCharacterWalletTransaction = `-- name: GetCharacterWalletTransaction :o
 SELECT
     cwt.id, cwt.character_id, cwt.client_id, cwt.date, cwt.eve_type_id, cwt.is_buy, cwt.is_personal, cwt.journal_ref_id, cwt.location_id, cwt.quantity, cwt.transaction_id, cwt.unit_price,
     ee.id, ee.category, ee.name,
-    et.name as eve_type_name,
+    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
+    eg.id, eg.eve_category_id, eg.name, eg.is_published,
+    ec.id, ec.name, ec.is_published,
     el.name as location_name,
-    ess.security_status as system_security_status
+    ess.security_status as system_security_status,
+    er.id as region_id,
+    er.name as region_name
 FROM
     character_wallet_transactions cwt
     JOIN eve_entities ee ON ee.id = cwt.client_id
     JOIN eve_types et ON et.id = cwt.eve_type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ec ON ec.id = eg.eve_category_id
     JOIN eve_locations el ON el.id = cwt.location_id
     LEFT JOIN eve_solar_systems ess ON ess.id = el.eve_solar_system_id
+    LEFT JOIN eve_constellations ON eve_constellations.id = ess.eve_constellation_id
+    LEFT JOIN eve_regions er ON er.id = eve_constellations.eve_region_id
 WHERE
     character_id = ?
     and transaction_id = ?
@@ -87,9 +95,13 @@ type GetCharacterWalletTransactionParams struct {
 type GetCharacterWalletTransactionRow struct {
 	CharacterWalletTransaction CharacterWalletTransaction
 	EveEntity                  EveEntity
-	EveTypeName                string
+	EveType                    EveType
+	EveGroup                   EveGroup
+	EveCategory                EveCategory
 	LocationName               string
 	SystemSecurityStatus       sql.NullFloat64
+	RegionID                   sql.NullInt64
+	RegionName                 sql.NullString
 }
 
 func (q *Queries) GetCharacterWalletTransaction(ctx context.Context, arg GetCharacterWalletTransactionParams) (GetCharacterWalletTransactionRow, error) {
@@ -111,9 +123,31 @@ func (q *Queries) GetCharacterWalletTransaction(ctx context.Context, arg GetChar
 		&i.EveEntity.ID,
 		&i.EveEntity.Category,
 		&i.EveEntity.Name,
-		&i.EveTypeName,
+		&i.EveType.ID,
+		&i.EveType.EveGroupID,
+		&i.EveType.Capacity,
+		&i.EveType.Description,
+		&i.EveType.GraphicID,
+		&i.EveType.IconID,
+		&i.EveType.IsPublished,
+		&i.EveType.MarketGroupID,
+		&i.EveType.Mass,
+		&i.EveType.Name,
+		&i.EveType.PackagedVolume,
+		&i.EveType.PortionSize,
+		&i.EveType.Radius,
+		&i.EveType.Volume,
+		&i.EveGroup.ID,
+		&i.EveGroup.EveCategoryID,
+		&i.EveGroup.Name,
+		&i.EveGroup.IsPublished,
+		&i.EveCategory.ID,
+		&i.EveCategory.Name,
+		&i.EveCategory.IsPublished,
 		&i.LocationName,
 		&i.SystemSecurityStatus,
+		&i.RegionID,
+		&i.RegionName,
 	)
 	return i, err
 }
@@ -154,15 +188,23 @@ const listCharacterWalletTransactions = `-- name: ListCharacterWalletTransaction
 SELECT
     cwt.id, cwt.character_id, cwt.client_id, cwt.date, cwt.eve_type_id, cwt.is_buy, cwt.is_personal, cwt.journal_ref_id, cwt.location_id, cwt.quantity, cwt.transaction_id, cwt.unit_price,
     ee.id, ee.category, ee.name,
-    et.name as eve_type_name,
+    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
+    eg.id, eg.eve_category_id, eg.name, eg.is_published,
+    ec.id, ec.name, ec.is_published,
     el.name as location_name,
-    ess.security_status as system_security_status
+    ess.security_status as system_security_status,
+     er.id as region_id,
+    er.name as region_name
 FROM
     character_wallet_transactions cwt
     JOIN eve_entities ee ON ee.id = cwt.client_id
     JOIN eve_types et ON et.id = cwt.eve_type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ec ON ec.id = eg.eve_category_id
     JOIN eve_locations el ON el.id = cwt.location_id
     LEFT JOIN eve_solar_systems ess ON ess.id = el.eve_solar_system_id
+    LEFT JOIN eve_constellations ON eve_constellations.id = ess.eve_constellation_id
+    LEFT JOIN eve_regions er ON er.id = eve_constellations.eve_region_id
 WHERE
     character_id = ?
 ORDER BY
@@ -172,9 +214,13 @@ ORDER BY
 type ListCharacterWalletTransactionsRow struct {
 	CharacterWalletTransaction CharacterWalletTransaction
 	EveEntity                  EveEntity
-	EveTypeName                string
+	EveType                    EveType
+	EveGroup                   EveGroup
+	EveCategory                EveCategory
 	LocationName               string
 	SystemSecurityStatus       sql.NullFloat64
+	RegionID                   sql.NullInt64
+	RegionName                 sql.NullString
 }
 
 func (q *Queries) ListCharacterWalletTransactions(ctx context.Context, characterID int64) ([]ListCharacterWalletTransactionsRow, error) {
@@ -202,9 +248,31 @@ func (q *Queries) ListCharacterWalletTransactions(ctx context.Context, character
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
-			&i.EveTypeName,
+			&i.EveType.ID,
+			&i.EveType.EveGroupID,
+			&i.EveType.Capacity,
+			&i.EveType.Description,
+			&i.EveType.GraphicID,
+			&i.EveType.IconID,
+			&i.EveType.IsPublished,
+			&i.EveType.MarketGroupID,
+			&i.EveType.Mass,
+			&i.EveType.Name,
+			&i.EveType.PackagedVolume,
+			&i.EveType.PortionSize,
+			&i.EveType.Radius,
+			&i.EveType.Volume,
+			&i.EveGroup.ID,
+			&i.EveGroup.EveCategoryID,
+			&i.EveGroup.Name,
+			&i.EveGroup.IsPublished,
+			&i.EveCategory.ID,
+			&i.EveCategory.Name,
+			&i.EveCategory.IsPublished,
 			&i.LocationName,
 			&i.SystemSecurityStatus,
+			&i.RegionID,
+			&i.RegionName,
 		); err != nil {
 			return nil, err
 		}

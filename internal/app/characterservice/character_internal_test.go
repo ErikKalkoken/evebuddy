@@ -2279,7 +2279,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 				assert.Equal(t, location.ID, e.Location.ID)
 				assert.Equal(t, int64(67890), e.JournalRefID)
 				assert.Equal(t, int32(1), e.Quantity)
-				assert.Equal(t, eveType.ID, e.EveType.ID)
+				assert.Equal(t, eveType.ID, e.Type.ID)
 				assert.Equal(t, 1.23, e.UnitPrice)
 			}
 			ids, err := st.ListCharacterWalletTransactionIDs(ctx, c.ID)
@@ -2332,7 +2332,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 				assert.Equal(t, location.ID, e.Location.ID)
 				assert.Equal(t, int64(67890), e.JournalRefID)
 				assert.Equal(t, int32(1), e.Quantity)
-				assert.Equal(t, eveType.ID, e.EveType.ID)
+				assert.Equal(t, eveType.ID, e.Type.ID)
 				assert.Equal(t, 1.23, e.UnitPrice)
 			}
 			ids, err := st.ListCharacterWalletTransactionIDs(ctx, c.ID)

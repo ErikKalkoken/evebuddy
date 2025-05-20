@@ -1,17 +1,11 @@
 -- name: CreateCharacterJumpClone :one
 INSERT INTO
-    character_jump_clones (
-        character_id,
-        jump_clone_id,
-        location_id,
-        name
-    )
+    character_jump_clones (character_id, jump_clone_id, location_id, name)
 VALUES
     (?, ?, ?, ?) RETURNING id;
 
 -- name: DeleteCharacterJumpClones :exec
-DELETE FROM
-    character_jump_clones
+DELETE FROM character_jump_clones
 WHERE
     character_id = ?;
 
@@ -33,8 +27,8 @@ WHERE
     AND jump_clone_id = ?;
 
 -- name: ListCharacterJumpClones :many
-SELECT
-    DISTINCT sqlc.embed(cjc),
+SELECT DISTINCT
+    sqlc.embed(cjc),
     el.name as location_name,
     er.id as region_id,
     er.name as region_name,
@@ -51,8 +45,8 @@ ORDER BY
     location_name;
 
 -- name: ListAllCharacterJumpClones :many
-SELECT
-    DISTINCT cjc.id,
+SELECT DISTINCT
+    cjc.id,
     cjc.character_id,
     ec.name as character_name,
     cjc.location_id,
@@ -82,8 +76,8 @@ VALUES
     (?, ?);
 
 -- name: ListCharacterJumpCloneImplant :many
-SELECT
-    DISTINCT sqlc.embed(character_jump_clone_implants),
+SELECT DISTINCT
+    sqlc.embed(character_jump_clone_implants),
     sqlc.embed(eve_types),
     sqlc.embed(eve_groups),
     sqlc.embed(eve_categories),

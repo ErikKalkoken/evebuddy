@@ -131,4 +131,10 @@ func TestToken(t *testing.T) {
 			assert.Equal(t, c1.ID, r[0].CharacterID)
 		}
 	})
+	t.Run("list for corporation returns not found error when no token", func(t *testing.T) {
+		testutil.TruncateTables(db)
+		corp := factory.CreateCorporation()
+		_, err := st.ListCharacterTokenForCorporation(ctx, corp.ID, app.RoleFactoryManager)
+		assert.Error(t, err, app.ErrNotFound)
+	})
 }

@@ -25,11 +25,11 @@ import (
 )
 
 const (
-	DefaultIconPixelSize = 64
+	defaultIconPixelSize = 64
 )
 
-// EveEntityEntry represents an entry widget for Eve Entity items.
-type EveEntityEntry struct {
+// eveEntityEntry represents an entry widget for Eve Entity items.
+type eveEntityEntry struct {
 	widget.DisableableWidget
 
 	Placeholder    string
@@ -45,12 +45,12 @@ type EveEntityEntry struct {
 	s           []*app.EveEntity
 }
 
-func NewEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis *eveimageservice.EveImageService) *EveEntityEntry {
+func newEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis *eveimageservice.EveImageService) *eveEntityEntry {
 	bg := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
 	bg.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
 	bg.CornerRadius = theme.Size(theme.SizeNameInputRadius)
-	w := &EveEntityEntry{
+	w := &eveEntityEntry{
 		field:      bg,
 		eis:        eis,
 		label:      label,
@@ -66,21 +66,21 @@ func NewEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis *eveimag
 }
 
 // Items returns the current list of EveEnties items.
-func (w *EveEntityEntry) Items() []*app.EveEntity {
+func (w *eveEntityEntry) Items() []*app.EveEntity {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	return w.s
 }
 
 // Set replaces the list of items.
-func (w *EveEntityEntry) Set(s []*app.EveEntity) {
+func (w *eveEntityEntry) Set(s []*app.EveEntity) {
 	w.mu.Lock()
 	w.s = s
 	w.mu.Unlock()
 	w.Refresh()
 }
 
-func (w *EveEntityEntry) Add(ee *app.EveEntity) {
+func (w *eveEntityEntry) Add(ee *app.EveEntity) {
 	added := func() bool {
 		w.mu.Lock()
 		defer w.mu.Unlock()
@@ -97,7 +97,7 @@ func (w *EveEntityEntry) Add(ee *app.EveEntity) {
 	}
 }
 
-func (w *EveEntityEntry) Remove(id int32) {
+func (w *eveEntityEntry) Remove(id int32) {
 	removed := func() bool {
 		w.mu.Lock()
 		defer w.mu.Unlock()
@@ -115,7 +115,7 @@ func (w *EveEntityEntry) Remove(id int32) {
 }
 
 // String returns a list of all entities as string.
-func (w *EveEntityEntry) String() string {
+func (w *eveEntityEntry) String() string {
 	s := make([]string, len(w.s))
 	for i, ee := range w.s {
 		s[i] = ee.Name
@@ -123,13 +123,13 @@ func (w *EveEntityEntry) String() string {
 	return strings.Join(s, ", ")
 }
 
-func (w *EveEntityEntry) IsEmpty() bool {
+func (w *eveEntityEntry) IsEmpty() bool {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	return len(w.s) == 0
 }
 
-func (w *EveEntityEntry) update() {
+func (w *eveEntityEntry) update() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.main.RemoveAll()
@@ -167,7 +167,7 @@ func (w *EveEntityEntry) update() {
 				pm := widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(badge))
 				pm.ShowAtRelativePosition(fyne.Position{}, badge)
 				go func() {
-					res, err := FetchEveEntityAvatar(w.eis, ee, icons.Questionmark32Png)
+					res, err := fetchEveEntityAvatar(w.eis, ee, icons.Questionmark32Png)
 					if err != nil {
 						slog.Error("fetch eve entity avatar", "error", err)
 						return
@@ -183,7 +183,7 @@ func (w *EveEntityEntry) update() {
 	}
 }
 
-func (w *EveEntityEntry) Refresh() {
+func (w *eveEntityEntry) Refresh() {
 	w.update()
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
@@ -195,7 +195,7 @@ func (w *EveEntityEntry) Refresh() {
 	w.placeholder.Refresh()
 }
 
-func (w *EveEntityEntry) MinSize() fyne.Size {
+func (w *eveEntityEntry) MinSize() fyne.Size {
 	th := w.Theme()
 	innerPadding := th.Size(theme.SizeNameInnerPadding)
 	textSize := th.Size(theme.SizeNameText)
@@ -205,7 +205,7 @@ func (w *EveEntityEntry) MinSize() fyne.Size {
 	return minSize.Max(w.BaseWidget.MinSize())
 }
 
-func (w *EveEntityEntry) CreateRenderer() fyne.WidgetRenderer {
+func (w *eveEntityEntry) CreateRenderer() fyne.WidgetRenderer {
 	w.update()
 	c := container.NewStack(w.field, w.main)
 	return widget.NewSimpleRenderer(c)
@@ -261,7 +261,7 @@ func (w *eveEntityBadge) CreateRenderer() fyne.WidgetRenderer {
 		),
 	)
 	go func() {
-		res, err := FetchEveEntityAvatar(w.eis, w.ee, w.fallbackIcon)
+		res, err := fetchEveEntityAvatar(w.eis, w.ee, w.fallbackIcon)
 		if err != nil {
 			slog.Error("fetch eve entity avatar", "error", err)
 			res = w.fallbackIcon
@@ -314,15 +314,15 @@ func (w *eveEntityBadge) MouseOut() {
 	w.hovered = false
 }
 
-// FetchEveEntityAvatar fetches an icon for an EveEntity and returns it in avatar style.
-func FetchEveEntityAvatar(eis *eveimageservice.EveImageService, ee *app.EveEntity, fallback fyne.Resource) (fyne.Resource, error) {
+// fetchEveEntityAvatar fetches an icon for an EveEntity and returns it in avatar style.
+func fetchEveEntityAvatar(eis *eveimageservice.EveImageService, ee *app.EveEntity, fallback fyne.Resource) (fyne.Resource, error) {
 	if ee == nil {
 		return fallback, nil
 	}
 	if ee.Category == app.EveEntityMailList {
 		return theme.MailComposeIcon(), nil
 	}
-	res, err := eis.EntityIcon(ee.ID, ee.Category.ToEveImage(), DefaultIconPixelSize)
+	res, err := eis.EntityIcon(ee.ID, ee.Category.ToEveImage(), defaultIconPixelSize)
 	if err != nil {
 		return nil, err
 	}

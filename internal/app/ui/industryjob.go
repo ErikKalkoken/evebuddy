@@ -13,13 +13,14 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
@@ -30,17 +31,14 @@ import (
 
 // Options for industry job select widgets
 const (
-	industryActivityAll              = "All activities"
 	industryActivityCopying          = "Copying"
 	industryActivityInvention        = "Invention"
 	industryActivityManufacturing    = "Manufacturing"
 	industryActivityMaterialResearch = "Material efficiency research"
 	industryActivityReaction         = "Reactions"
 	industryActivityTimeResearch     = "Time efficiency research"
-	industryInstallerAny             = "Any installer"
 	industryInstallerCorpmates       = "Installed by corpmates"
 	industryInstallerMe              = "Installed by me"
-	industryOwnerAny                 = "Any owner"
 	industryOwnerCorp                = "Owned by corp"
 	industryOwnerMe                  = "Owned by me"
 	industryStatusActive             = "All active jobs"
@@ -50,9 +48,9 @@ const (
 	industryStatusReady              = "Ready for delivery"
 )
 
-// industryJob represents a job row in the list widgets.
-// It combines character and corporation jobs and has precalcuated fields for filters.
-type industryJob struct {
+// industryJobRow represents a job row in the list widgets.
+// It combines character and corporation jobs and has precalculated fields for filters.
+type industryJobRow struct {
 	activity           app.IndustryActivity
 	blueprintID        int64
 	blueprintType      *app.EntityShort[int32]
@@ -62,6 +60,8 @@ type industryJob struct {
 	duration           int
 	endDate            time.Time
 	installer          *app.EveEntity
+	isInstallerMe      bool
+	isOwnerMe          bool
 	jobID              int32
 	licensedRuns       optional.Optional[int]
 	location           *app.EveLocationShort
@@ -72,18 +72,11 @@ type industryJob struct {
 	runs               int
 	startDate          time.Time
 	status             app.IndustryJobStatus
+	statusDisplay      []widget.RichTextSegment
 	successfulRuns     optional.Optional[int32]
-	isInstallerMe      bool
-	isOwnerMe          bool
 }
 
-func (j industryJob) StatusRichText() []widget.RichTextSegment {
-	return iwidget.NewRichTextSegmentFromText(j.status.Display(), widget.RichTextStyle{
-		ColorName: j.status.Color(),
-	})
-}
-
-func (j industryJob) IsActive() bool {
+func (j industryJobRow) IsActive() bool {
 	switch j.status {
 	case app.JobActive, app.JobReady, app.JobPaused:
 		return true
@@ -97,20 +90,21 @@ type industryJobs struct {
 	OnUpdate func(count int)
 
 	body            fyne.CanvasObject
-	colSort         []sortDir
-	jobs            []industryJob
-	jobsFiltered    []industryJob
+	columnSorter    *columnSorter
+	rows            []industryJobRow
+	rowsFiltered    []industryJobRow
 	search          *widget.Entry
-	selectActivity  *widget.Select
-	selectInstaller *widget.Select
-	selectOwner     *widget.Select
-	selectStatus    *widget.Select
-	top             *widget.Label
-	u               *BaseUI
+	selectActivity  *iwidget.FilterChipSelect
+	selectInstaller *iwidget.FilterChipSelect
+	selectOwner     *iwidget.FilterChipSelect
+	selectStatus    *iwidget.FilterChipSelect
+	sortButton      *sortButton
+	bottom          *widget.Label
+	u               *baseUI
 }
 
-func NewIndustryJobs(u *BaseUI) *industryJobs {
-	headers := []iwidget.HeaderDef{
+func newIndustryJobs(u *baseUI) *industryJobs {
+	headers := []headerDef{
 		{Text: "Blueprint", Width: 250},
 		{Text: "Status", Width: 100, Refresh: true},
 		{Text: "Runs", Width: 75},
@@ -121,24 +115,19 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		{Text: "Installer", Width: columnWidthCharacter},
 	}
 	a := &industryJobs{
-		colSort:      make([]sortDir, len(headers)),
-		jobs:         make([]industryJob, 0),
-		jobsFiltered: make([]industryJob, 0),
-		top:          appwidget.MakeTopLabel(),
+		columnSorter: newColumnSorterWithInit(headers, 4, sortDesc),
+		rows:         make([]industryJobRow, 0),
+		rowsFiltered: make([]industryJobRow, 0),
+		bottom:       makeTopLabel(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	makeCell := func(col int, j industryJob) []widget.RichTextSegment {
+	makeCell := func(col int, j industryJobRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
 			return iwidget.NewRichTextSegmentFromText(j.blueprintType.Name)
 		case 1:
-			if j.status == app.JobActive {
-				return iwidget.NewRichTextSegmentFromText(ihumanize.Duration(time.Until(j.endDate)), widget.RichTextStyle{
-					ColorName: theme.ColorNamePrimary,
-				})
-			}
-			return j.StatusRichText()
+			return j.statusDisplay
 		case 2:
 			return iwidget.NewRichTextSegmentFromText(
 				ihumanize.Comma(j.runs),
@@ -158,74 +147,42 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
 
-	if a.u.isDesktop() {
-		t := iwidget.MakeDataTableForDesktop(headers, &a.jobsFiltered, makeCell, func(_ int, r industryJob) {
-			a.showJob(r)
+	if a.u.isDesktop {
+		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, j industryJobRow) {
+			a.showJob(j)
 		})
-		iconSortAsc := theme.NewPrimaryThemedResource(icons.SortAscendingSvg)
-		iconSortDesc := theme.NewPrimaryThemedResource(icons.SortDescendingSvg)
-		iconSortOff := theme.NewThemedResource(icons.SortSvg)
-		t.CreateHeader = func() fyne.CanvasObject {
-			icon := widget.NewIcon(iconSortOff)
-			label := kxwidget.NewTappableLabel("XXX", nil)
-			return container.NewBorder(nil, nil, nil, icon, label)
-		}
-		t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-			h := headers[tci.Col]
-			row := co.(*fyne.Container).Objects
-			label := row[0].(*kxwidget.TappableLabel)
-			label.OnTapped = func() {
-				a.processJobs(tci.Col)
-			}
-			label.SetText(h.Text)
-			icon := row[1].(*widget.Icon)
-			switch a.colSort[tci.Col] {
-			case sortOff:
-				icon.SetResource(iconSortOff)
-			case sortAsc:
-				icon.SetResource(iconSortAsc)
-			case sortDesc:
-				icon.SetResource(iconSortDesc)
-			}
-		}
-		a.body = t
 	} else {
-		a.body = iwidget.MakeDataTableForMobile(headers, &a.jobsFiltered, makeCell, a.showJob)
+		a.body = a.makeDataList()
 	}
-
-	a.colSort[4] = sortDesc // default sorting
 
 	a.search = widget.NewEntry()
 	a.search.PlaceHolder = "Search Blueprints"
 	a.search.OnChanged = func(_ string) {
-		a.processJobs(-1)
+		a.filterRows(-1)
 	}
 	a.search.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
 	})
 
-	a.selectOwner = widget.NewSelect([]string{
-		industryOwnerAny,
+	a.selectOwner = iwidget.NewFilterChipSelect("Owner", []string{
 		industryOwnerMe,
 		industryOwnerCorp,
 	}, func(_ string) {
-		a.processJobs(-1)
+		a.filterRows(-1)
 	})
-	a.selectOwner.Selected = industryOwnerMe
 
-	a.selectStatus = widget.NewSelect([]string{
+	a.selectStatus = iwidget.NewFilterChipSelect("", []string{
 		industryStatusActive,
 		industryStatusInProgress,
 		industryStatusReady,
 		industryStatusHalted,
 		industryStatusHistory,
 	}, func(_ string) {
-		a.processJobs(-1)
+		a.filterRows(-1)
 	})
 	a.selectStatus.Selected = industryStatusActive
 
-	a.selectActivity = widget.NewSelect([]string{
-		industryActivityAll,
+	a.selectActivity = iwidget.NewFilterChipSelect("Activity", []string{
 		industryActivityManufacturing,
 		industryActivityMaterialResearch,
 		industryActivityTimeResearch,
@@ -233,111 +190,118 @@ func NewIndustryJobs(u *BaseUI) *industryJobs {
 		industryActivityInvention,
 		industryActivityReaction,
 	}, func(_ string) {
-		a.processJobs(-1)
+		a.filterRows(-1)
 	})
-	a.selectActivity.Selected = industryActivityAll
 
-	a.selectInstaller = widget.NewSelect([]string{
-		industryInstallerAny,
+	a.selectInstaller = iwidget.NewFilterChipSelect("Installer", []string{
 		industryInstallerMe,
 		industryInstallerCorpmates,
 	}, func(_ string) {
-		a.processJobs(-1)
+		a.filterRows(-1)
 	})
-	a.selectInstaller.Selected = industryInstallerAny
+	a.selectInstaller.Selected = industryInstallerMe
 
+	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+		a.filterRows(-1)
+	}, a.u.window, 6, 7)
 	return a
 }
 
-// processJobs applies all filters and sorting and freshes the list with the changed rows.
+func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
+	selections := container.NewHBox(
+		a.selectOwner,
+		a.selectStatus,
+		a.selectActivity,
+		a.selectInstaller,
+	)
+	if !a.u.isDesktop {
+		selections.Add(a.sortButton)
+	}
+	c := container.NewBorder(
+		container.NewBorder(
+			nil,
+			container.NewHScroll(selections),
+			nil,
+			nil,
+			a.search,
+		),
+		a.bottom,
+		nil,
+		nil,
+		a.body,
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+// filterRows applies all filters and sorting and freshes the list with the changed rows.
 // A new sorting can be applied by providing a sortCol. -1 does not change the current sorting.
-func (a *industryJobs) processJobs(sortCol int) {
-	jobs := slices.Clone(a.jobs)
+func (a *industryJobs) filterRows(sortCol int) {
+	rows := slices.Clone(a.rows)
 	// filter
-	jobs = xslices.Filter(jobs, func(o industryJob) bool {
+	rows = xslices.Filter(rows, func(r industryJobRow) bool {
 		switch a.selectStatus.Selected {
 		case industryStatusActive:
-			return o.IsActive()
+			return r.IsActive()
 		case industryStatusInProgress:
-			return o.status == app.JobActive
+			return r.status == app.JobActive
 		case industryStatusReady:
-			return o.status == app.JobReady
+			return r.status == app.JobReady
 		case industryStatusHalted:
-			return o.status == app.JobPaused
+			return r.status == app.JobPaused
 		case industryStatusHistory:
-			return o.status == app.JobDelivered
+			return r.status == app.JobDelivered
 		}
 		return false
 	})
-	if a.selectInstaller.Selected != industryInstallerAny {
-		jobs = xslices.Filter(jobs, func(o industryJob) bool {
-			switch a.selectInstaller.Selected {
+	if x := a.selectInstaller.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r industryJobRow) bool {
+			switch x {
 			case industryInstallerMe:
-				return o.isInstallerMe
+				return r.isInstallerMe
 			case industryInstallerCorpmates:
-				return !o.isInstallerMe
+				return !r.isInstallerMe
 			}
 			return false
 		})
 	}
-	if a.selectActivity.Selected != industryActivityAll {
-		jobs = xslices.Filter(jobs, func(o industryJob) bool {
-			switch a.selectActivity.Selected {
+	if x := a.selectActivity.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r industryJobRow) bool {
+			switch x {
 			case industryActivityCopying:
-				return o.activity == app.Copying
+				return r.activity == app.Copying
 			case industryActivityInvention:
-				return o.activity == app.Invention
+				return r.activity == app.Invention
 			case industryActivityManufacturing:
-				return o.activity == app.Manufacturing
+				return r.activity == app.Manufacturing
 			case industryActivityMaterialResearch:
-				return o.activity == app.MaterialEfficiencyResearch
+				return r.activity == app.MaterialEfficiencyResearch
 			case industryActivityReaction:
-				return o.activity == app.Reactions
+				return r.activity == app.Reactions
 			case industryActivityTimeResearch:
-				return o.activity == app.TimeEfficiencyResearch
+				return r.activity == app.TimeEfficiencyResearch
 			}
 			return false
 		})
 	}
-	if a.selectOwner.Selected != industryOwnerAny {
-		jobs = xslices.Filter(jobs, func(o industryJob) bool {
-			switch a.selectOwner.Selected {
+	if x := a.selectOwner.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r industryJobRow) bool {
+			switch x {
 			case industryOwnerCorp:
-				return !o.isOwnerMe
+				return !r.isOwnerMe
 			case industryOwnerMe:
-				return o.isOwnerMe
+				return r.isOwnerMe
 			}
 			return false
 		})
 	}
 	if s := a.search.Text; len(s) > 1 {
-		jobs = xslices.Filter(jobs, func(x industryJob) bool {
+		rows = xslices.Filter(rows, func(x industryJobRow) bool {
 			return strings.Contains(strings.ToLower(x.blueprintType.Name), strings.ToLower(s))
 		})
 	}
 	// sort
-	var order sortDir
-	if sortCol >= 0 {
-		order = a.colSort[sortCol]
-		order++
-		if order > sortDesc {
-			order = sortOff
-		}
-		for i := range a.colSort {
-			a.colSort[i] = sortOff
-		}
-		a.colSort[sortCol] = order
-	} else {
-		for i := range a.colSort {
-			if a.colSort[i] != sortOff {
-				order = a.colSort[i]
-				sortCol = i
-				break
-			}
-		}
-	}
-	if sortCol >= 0 && order != sortOff {
-		slices.SortFunc(jobs, func(j, k industryJob) int {
+	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+		slices.SortFunc(rows, func(j, k industryJobRow) int {
 			var c int
 			switch sortCol {
 			case 0:
@@ -357,15 +321,15 @@ func (a *industryJobs) processJobs(sortCol int) {
 			case 7:
 				c = strings.Compare(j.installer.Name, k.installer.Name)
 			}
-			if order == sortAsc {
+			if dir == sortAsc {
 				return c
 			} else {
 				return -1 * c
 			}
 		})
-	}
+	})
 	// set data & refresh
-	a.jobsFiltered = jobs
+	a.rowsFiltered = rows
 	a.body.Refresh()
 	switch x := a.body.(type) {
 	case *widget.Table:
@@ -373,45 +337,116 @@ func (a *industryJobs) processJobs(sortCol int) {
 	}
 }
 
-func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
-	spacer := canvas.NewRectangle(color.Transparent)
-	spacer.SetMinSize(fyne.NewSize(180, 1))
-	c := container.NewBorder(
-		container.NewVBox(
-			container.NewBorder(
+func (a *industryJobs) makeDataList() *widget.List {
+	statusMap := map[app.IndustryJobStatus]fyne.Resource{
+		app.JobDelivered: theme.NewThemedResource(icons.IndydeliveredSvg),
+		app.JobPaused:    theme.NewWarningThemedResource(icons.IndyhaltedSvg),
+		app.JobReady:     theme.NewSuccessThemedResource(icons.IndyreadySvg),
+		app.JobCancelled: theme.NewErrorThemedResource(icons.IndycanceledSvg),
+	}
+	activityMap := map[app.IndustryActivity]fyne.Resource{
+		app.Manufacturing:              theme.NewThemedResource(icons.IndymanufacturingSvg),
+		app.MaterialEfficiencyResearch: theme.NewThemedResource(icons.IndymaterialresearchSvg),
+		app.TimeEfficiencyResearch:     theme.NewThemedResource(icons.IndytimeresearchSvg),
+		app.Copying:                    theme.NewThemedResource(icons.IndycopyingSvg),
+		app.Invention:                  theme.NewThemedResource(icons.IndyinventionSvg),
+		app.Reactions:                  theme.NewThemedResource(icons.IndyreactionsSvg),
+	}
+	var l *widget.List
+	l = widget.NewList(
+		func() int {
+			return len(a.rowsFiltered)
+		},
+		func() fyne.CanvasObject {
+			title := widget.NewLabel("Template")
+			title.TextStyle.Bold = true
+			title.Wrapping = fyne.TextWrapWord
+			status := widget.NewRichText()
+			location := widget.NewLabel("Template")
+			location.Wrapping = fyne.TextWrapWord
+			completed := widget.NewLabel("Template")
+			p := theme.Padding()
+			activityIcon := widget.NewIcon(icons.BlankSvg)
+			statusIcon := widget.NewIcon(icons.BlankSvg)
+			spacer := canvas.NewRectangle(color.Transparent)
+			spacer.SetMinSize(fyne.NewSize(1, p))
+			return container.NewBorder(
 				nil,
-				container.NewHScroll(container.NewHBox(
-					container.NewStack(spacer, a.selectOwner),
-					container.NewStack(spacer, a.selectStatus),
-					container.NewStack(spacer, a.selectActivity),
-					container.NewStack(spacer, a.selectInstaller),
-				)),
 				nil,
-				nil,
-				a.search,
-			),
-			a.top,
-		),
-		nil,
-		nil,
-		nil,
-		a.body,
+				container.NewVBox(spacer, activityIcon),
+				container.NewStack(status, container.NewVBox(spacer, statusIcon)),
+				container.New(layout.NewCustomPaddedVBoxLayout(-p),
+					title,
+					location,
+					completed,
+				),
+			)
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(a.rowsFiltered) || id < 0 {
+				return
+			}
+			j := a.rowsFiltered[id]
+			c1 := co.(*fyne.Container).Objects
+			c2 := c1[0].(*fyne.Container).Objects
+			title := fmt.Sprintf("%s x%s", j.blueprintType.Name, ihumanize.Comma(j.runs))
+			c2[0].(*widget.Label).SetText(title)
+			c2[1].(*widget.Label).SetText(j.location.Name.ValueOrFallback("?"))
+
+			r, ok := activityMap[j.activity]
+			if !ok {
+				r = theme.NewThemedResource(icons.QuestionmarkSvg)
+			}
+			c1[1].(*fyne.Container).Objects[1].(*widget.Icon).SetResource(r)
+
+			statusStack := c1[2].(*fyne.Container).Objects
+			if j.status == app.JobActive {
+				iwidget.SetRichText(statusStack[0].(*widget.RichText), j.statusDisplay...)
+				statusStack[0].Show()
+				statusStack[1].Hide()
+			} else {
+				r, ok := statusMap[j.status]
+				if !ok {
+					r = theme.NewThemedResource(icons.QuestionmarkSvg)
+				}
+				statusStack[1].(*fyne.Container).Objects[1].(*widget.Icon).SetResource(r)
+				statusStack[0].Hide()
+				statusStack[1].Show()
+			}
+
+			completed := c2[2].(*widget.Label)
+			if j.status == app.JobDelivered {
+				completed.SetText(humanize.Time(j.endDate))
+				completed.Show()
+			} else {
+				completed.Hide()
+			}
+
+			l.SetItemHeight(id, co.(*fyne.Container).MinSize().Height)
+		},
 	)
-	return widget.NewSimpleRenderer(c)
+	l.OnSelected = func(id widget.ListItemID) {
+		defer l.UnselectAll()
+		if id >= len(a.rowsFiltered) || id < 0 {
+			return
+		}
+		a.showJob(a.rowsFiltered[id])
+	}
+	return l
 }
 
 func (a *industryJobs) update() {
 	reportError := func(err error) {
 		slog.Error("Failed to refresh industry jobs UI", "err", err)
 		fyne.Do(func() {
-			a.top.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
-			a.top.Importance = widget.DangerImportance
-			a.top.Refresh()
-			a.top.Show()
+			a.bottom.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
+			a.bottom.Importance = widget.DangerImportance
+			a.bottom.Refresh()
+			a.bottom.Show()
 		})
 	}
 	fixStatus := func(s app.IndustryJobStatus, endDate time.Time) app.IndustryJobStatus {
-		if s == app.JobActive && endDate.Before(time.Now()) {
+		if s == app.JobActive && !endDate.IsZero() && endDate.Before(time.Now()) {
 			// Workaround for known bug: https://github.com/esi/esi-issues/issues/752
 			return app.JobReady
 		}
@@ -447,8 +482,8 @@ func (a *industryJobs) update() {
 	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort[int32]) int32 {
 		return c.ID
 	})...)
-	characterJobs := xslices.Map(cj, func(cj *app.CharacterIndustryJob) industryJob {
-		j := industryJob{
+	characterJobs := xslices.Map(cj, func(cj *app.CharacterIndustryJob) industryJobRow {
+		j := industryJobRow{
 			activity:           cj.Activity,
 			blueprintID:        cj.BlueprintID,
 			blueprintType:      cj.BlueprintType,
@@ -474,8 +509,8 @@ func (a *industryJobs) update() {
 		}
 		return j
 	})
-	corporationJobs := xslices.Map(rj, func(rj *app.CorporationIndustryJob) industryJob {
-		j := industryJob{
+	corporationJobs := xslices.Map(rj, func(rj *app.CorporationIndustryJob) industryJobRow {
+		j := industryJobRow{
 			activity:           rj.Activity,
 			blueprintID:        rj.BlueprintID,
 			blueprintType:      rj.BlueprintType,
@@ -502,6 +537,19 @@ func (a *industryJobs) update() {
 		return j
 	})
 	jobs := slices.Concat(characterJobs, corporationJobs)
+	for i, j := range jobs {
+		var segs []widget.RichTextSegment
+		if j.status == app.JobActive {
+			segs = iwidget.NewRichTextSegmentFromText(ihumanize.Duration(time.Until(j.endDate)), widget.RichTextStyle{
+				ColorName: theme.ColorNamePrimary,
+			})
+		} else {
+			segs = iwidget.NewRichTextSegmentFromText(j.status.Display(), widget.RichTextStyle{
+				ColorName: j.status.Color(),
+			})
+		}
+		jobs[i].statusDisplay = segs
+	}
 	var readyCount int
 	for _, j := range jobs {
 		if j.status == app.JobReady && j.isInstallerMe {
@@ -513,13 +561,13 @@ func (a *industryJobs) update() {
 	}
 	fyne.Do(func() {
 		a.search.SetText("")
-		a.top.Hide()
-		a.jobs = jobs
-		a.processJobs(-1)
+		a.bottom.Hide()
+		a.rows = jobs
+		a.filterRows(-1)
 	})
 }
 
-func (a *industryJobs) showJob(r industryJob) {
+func (a *industryJobs) showJob(r industryJobRow) {
 	makeLocationWidget := func(o *app.EveLocationShort) *iwidget.TappableRichText {
 		x := iwidget.NewTappableRichText(func() {
 			a.u.ShowLocationInfoWindow(o.ID)
@@ -550,7 +598,7 @@ func (a *industryJobs) showJob(r industryJob) {
 		))
 	}
 	items = slices.Concat(items, []*widget.FormItem{
-		widget.NewFormItem("Status", widget.NewRichText(r.StatusRichText()...)),
+		widget.NewFormItem("Status", widget.NewRichText(r.statusDisplay...)),
 		widget.NewFormItem("Runs", widget.NewLabel(ihumanize.Comma(r.runs))),
 	})
 

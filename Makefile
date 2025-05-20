@@ -8,7 +8,9 @@ bundle:
 
 mapping:
 	go run ./tools/geneveicons/ -p eveicon > internal/eveicon/mapping.go
+	gofmt -s -w internal/eveicon/mapping.go
 	go run ./tools/genschematicids/ -p eveicon > internal/eveicon/schematic.go
+	gofmt -s -w internal/eveicon/schematic.go
 
 queries:
 	sqlc generate
@@ -17,7 +19,7 @@ build-appimage:
 	tools/build_appimage.sh
 
 release:
-	fyne package --os linux --release
+	fyne package --os linux --release --tags migrated_fynedo
 
 appimage: release build-appimage
 

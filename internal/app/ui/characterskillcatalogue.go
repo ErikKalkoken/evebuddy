@@ -12,7 +12,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/dustin/go-humanize"
 
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
@@ -36,7 +35,7 @@ type skillTrained struct {
 	trainedLevel int
 }
 
-type CharacterSkillCatalogue struct {
+type characterSkillCatalogue struct {
 	widget.BaseWidget
 
 	groups         []skillGroupProgress
@@ -47,17 +46,17 @@ type CharacterSkillCatalogue struct {
 	skills         []skillTrained
 	skillsGrid     fyne.CanvasObject
 	total          *widget.Label
-	u              *BaseUI
+	u              *baseUI
 }
 
-func NewCharacterSkillCatalogue(u *BaseUI) *CharacterSkillCatalogue {
-	a := &CharacterSkillCatalogue{
+func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
+	a := &characterSkillCatalogue{
 		groups:         make([]skillGroupProgress, 0),
 		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),
 		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
 		levelUnTrained: theme.NewDisabledResource(theme.MediaStopIcon()),
 		skills:         make([]skillTrained, 0),
-		total:          appwidget.MakeTopLabel(),
+		total:          makeTopLabel(),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
@@ -66,13 +65,13 @@ func NewCharacterSkillCatalogue(u *BaseUI) *CharacterSkillCatalogue {
 	return a
 }
 
-func (a *CharacterSkillCatalogue) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterSkillCatalogue) CreateRenderer() fyne.WidgetRenderer {
 	s := container.NewVSplit(a.groupsGrid, a.skillsGrid)
 	c := container.NewBorder(a.total, nil, nil, nil, s)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *CharacterSkillCatalogue) makeGroupsGrid() fyne.CanvasObject {
+func (a *characterSkillCatalogue) makeGroupsGrid() fyne.CanvasObject {
 	length := func() int {
 		return len(a.groups)
 	}
@@ -144,10 +143,10 @@ func (a *CharacterSkillCatalogue) makeGroupsGrid() fyne.CanvasObject {
 			a.skillsGrid.Refresh()
 		}
 	}
-	return makeGridOrList(a.u.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
+	return makeGridOrList(!a.u.isDesktop, length, makeCreateItem, updateItem, makeOnSelected)
 }
 
-func (a *CharacterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
+func (a *characterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 	length := func() int {
 		return len(a.skills)
 	}
@@ -158,7 +157,7 @@ func (a *CharacterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 			c := container.NewBorder(
 				nil,
 				nil,
-				appwidget.NewSkillLevel(),
+				newSkillLevel(),
 				nil,
 				title,
 			)
@@ -173,7 +172,7 @@ func (a *CharacterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 		row := co.(*fyne.Container).Objects
 		label := row[0].(*widget.Label)
 		label.SetText(skill.name)
-		level := row[1].(*appwidget.SkillLevel)
+		level := row[1].(*skillLevel)
 		level.Set(skill.activeLevel, skill.trainedLevel, 0)
 	}
 	makeOnSelected := func(unselectAll func()) func(int) {
@@ -186,10 +185,10 @@ func (a *CharacterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 			a.u.ShowTypeInfoWindow(skill.id)
 		}
 	}
-	return makeGridOrList(a.u.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
+	return makeGridOrList(!a.u.isDesktop, length, makeCreateItem, updateItem, makeOnSelected)
 }
 
-func (a *CharacterSkillCatalogue) update() {
+func (a *characterSkillCatalogue) update() {
 	var err error
 	groups := make([]skillGroupProgress, 0)
 	characterID := a.u.currentCharacterID()
@@ -203,7 +202,7 @@ func (a *CharacterSkillCatalogue) update() {
 			groups = groups2
 		}
 	}
-	t, i := makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
+	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
 		character := a.u.currentCharacter()
 		total := ihumanize.Optional(character.TotalSP, "?")
 		unallocated := ihumanize.Optional(character.UnallocatedSP, "?")
@@ -227,7 +226,7 @@ func (a *CharacterSkillCatalogue) update() {
 	})
 }
 
-func (*CharacterSkillCatalogue) updateGroups(characterID int32, s services) ([]skillGroupProgress, error) {
+func (*characterSkillCatalogue) updateGroups(characterID int32, s services) ([]skillGroupProgress, error) {
 	gg, err := s.cs.ListSkillGroupsProgress(context.TODO(), characterID)
 	if err != nil {
 		return nil, err

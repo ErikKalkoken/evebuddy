@@ -12,12 +12,11 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-type CharacterSkillQueue struct {
+type characterSkillQueue struct {
 	widget.BaseWidget
 
 	OnUpdate func(statusShort, statusLong string)
@@ -25,12 +24,12 @@ type CharacterSkillQueue struct {
 	list *widget.List
 	sq   *app.CharacterSkillqueue
 	top  *widget.Label
-	u    *BaseUI
+	u    *baseUI
 }
 
-func NewCharacterSkillQueue(u *BaseUI) *CharacterSkillQueue {
-	a := &CharacterSkillQueue{
-		top: appwidget.MakeTopLabel(),
+func newCharacterSkillQueue(u *baseUI) *characterSkillQueue {
+	a := &characterSkillQueue{
+		top: makeTopLabel(),
 		sq:  app.NewCharacterSkillqueue(),
 		u:   u,
 	}
@@ -39,25 +38,25 @@ func NewCharacterSkillQueue(u *BaseUI) *CharacterSkillQueue {
 	return a
 }
 
-func (a *CharacterSkillQueue) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterSkillQueue) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(a.top, nil, nil, nil, a.list)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *CharacterSkillQueue) makeSkillQueue() *widget.List {
+func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 	list := widget.NewList(
 		func() int {
 			return a.sq.Size()
 		},
 		func() fyne.CanvasObject {
-			return NewSkillQueueItem()
+			return newSkillQueueItem()
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			q := a.sq.Item(id)
 			if q == nil {
 				return
 			}
-			item := co.(*SkillQueueItem)
+			item := co.(*skillQueueItem)
 			item.Set(q)
 		})
 
@@ -91,7 +90,7 @@ func (a *CharacterSkillQueue) makeSkillQueue() *widget.List {
 			{"Active?", isActive, false},
 		}
 		form := widget.NewForm()
-		if a.u.IsMobile() {
+		if !a.u.isDesktop {
 			form.Orientation = widget.Vertical
 		}
 		for _, row := range data {
@@ -114,7 +113,7 @@ func (a *CharacterSkillQueue) makeSkillQueue() *widget.List {
 	return list
 }
 
-func (a *CharacterSkillQueue) update() {
+func (a *characterSkillQueue) update() {
 	var t string
 	var i widget.Importance
 	err := a.sq.Update(a.u.cs, a.u.currentCharacterID())
@@ -151,7 +150,7 @@ func (a *CharacterSkillQueue) update() {
 	})
 }
 
-func (a *CharacterSkillQueue) makeTopText(total optional.Optional[time.Duration]) (string, widget.Importance) {
+func (a *characterSkillQueue) makeTopText(total optional.Optional[time.Duration]) (string, widget.Importance) {
 	hasData := a.u.scs.HasCharacterSection(a.u.currentCharacterID(), app.SectionSkillqueue)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
@@ -170,25 +169,25 @@ func timeFormattedOrFallback(t time.Time, layout, fallback string) string {
 	return t.Format(layout)
 }
 
-type SkillQueueItem struct {
+type skillQueueItem struct {
 	widget.BaseWidget
 
 	duration   *widget.Label
 	progress   *widget.ProgressBar
 	name       *widget.Label
-	skillLevel *appwidget.SkillLevel
+	skillLevel *skillLevel
 	isMobile   bool
 }
 
-func NewSkillQueueItem() *SkillQueueItem {
+func newSkillQueueItem() *skillQueueItem {
 	name := widget.NewLabel("skill")
 	name.Truncation = fyne.TextTruncateEllipsis
 	pb := widget.NewProgressBar()
-	w := &SkillQueueItem{
+	w := &skillQueueItem{
 		duration:   widget.NewLabel("duration"),
 		name:       name,
 		progress:   pb,
-		skillLevel: appwidget.NewSkillLevel(),
+		skillLevel: newSkillLevel(),
 		isMobile:   fyne.CurrentDevice().IsMobile(),
 	}
 	w.ExtendBaseWidget(w)
@@ -203,7 +202,7 @@ func NewSkillQueueItem() *SkillQueueItem {
 
 // func (w *SkillQueueItem) Set(isActive bool, remaining, duration optional.Optional[time.Duration], completionP float64) {
 
-func (w *SkillQueueItem) Set(q *app.CharacterSkillqueueItem) {
+func (w *skillQueueItem) Set(q *app.CharacterSkillqueueItem) {
 	var (
 		i widget.Importance
 		d string
@@ -250,7 +249,7 @@ func (w *SkillQueueItem) Set(q *app.CharacterSkillqueueItem) {
 	w.skillLevel.Set(active, trained, required)
 }
 
-func (w *SkillQueueItem) CreateRenderer() fyne.WidgetRenderer {
+func (w *skillQueueItem) CreateRenderer() fyne.WidgetRenderer {
 	queue := container.NewStack(
 		w.progress,
 		container.NewBorder(nil, nil, nil, w.duration, w.name))
