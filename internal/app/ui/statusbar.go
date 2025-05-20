@@ -141,9 +141,8 @@ func (a *statusBar) startUpdateTicker() {
 	clockTicker := time.NewTicker(clockUpdateTicker)
 	go func() {
 		for {
-			t := time.Now().UTC().Format("15:04")
 			fyne.Do(func() {
-				a.eveClock.SetText(t)
+				a.eveClock.SetText(time.Now().UTC().Format("15:04"))
 			})
 			<-clockTicker.C
 		}
@@ -207,16 +206,16 @@ func (a *statusBar) startUpdateTicker() {
 }
 
 func (a *statusBar) update() {
-	x := a.u.scs.ListCharacters()
 	fyne.Do(func() {
+		x := a.u.scs.ListCharacters()
 		a.characterCount.SetText(strconv.Itoa(len(x)))
 	})
 	a.refreshUpdateStatus()
 }
 
 func (a *statusBar) refreshUpdateStatus() {
-	x := a.u.scs.Summary()
 	fyne.Do(func() {
+		x := a.u.scs.Summary()
 		a.updateStatus.SetTextAndImportance(x.Display(), x.Status().ToImportance())
 	})
 }
@@ -280,7 +279,7 @@ func (w *statusBarItem) SetResource(icon fyne.Resource) {
 
 // SetText updates the label's text
 func (w *statusBarItem) SetText(text string) {
-	w.label.SetText(text)
+	w.SetTextAndImportance(text, widget.MediumImportance)
 }
 
 // SetText updates the label's text and importance

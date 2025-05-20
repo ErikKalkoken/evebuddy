@@ -790,6 +790,13 @@ func (j CharacterJumpClone2) SolarSystemName() string {
 	return j.Location.SolarSystem.Name
 }
 
+func (j CharacterJumpClone2) SolarSystem() *EveSolarSystem {
+	if j.Location == nil || j.Location.SolarSystem == nil {
+		return nil
+	}
+	return j.Location.SolarSystem
+}
+
 func (j CharacterJumpClone2) RegionName() string {
 	if j.Location == nil || j.Location.SolarSystem == nil {
 		return ""

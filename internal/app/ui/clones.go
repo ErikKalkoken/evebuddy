@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -25,8 +24,9 @@ import (
 )
 
 type cloneRow struct {
-	c     *app.CharacterJumpClone2
-	route []*app.EveSolarSystem
+	c        *app.CharacterJumpClone2
+	route    []*app.EveSolarSystem
+	routeErr error
 }
 
 func (r cloneRow) compare(other cloneRow) int {
@@ -61,7 +61,7 @@ type clones struct {
 	columnSorter      *columnSorter
 	origin            *app.EveSolarSystem
 	originLabel       *widget.RichText
-	routePref         app.RoutePreference
+	routePref         app.EveRoutePreference
 	rows              []cloneRow
 	rowsFiltered      []cloneRow
 	selectOwner       *iwidget.FilterChipSelect
@@ -237,41 +237,52 @@ func (*clones) fetchRows(s services) ([]cloneRow, error) {
 }
 
 func (a *clones) updateRoutes() {
-	if a.origin == nil {
-		return
-	}
 	fyne.Do(func() {
 		for i := range a.rows {
 			a.rows[i].route = nil
 		}
 		a.body.Refresh()
 	})
-	ctx := context.Background()
-	wg := new(sync.WaitGroup)
-	for i, o := range a.rows {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			dest := o.c.Location.SolarSystem
-			origin := a.origin
-			j, err := a.u.eus.FetchRoute(ctx, dest, origin, a.routePref)
-			if err != nil {
-				slog.Error("Failed to get route", "origin", origin.ID, "destination", dest.ID, "error", err)
-				return
+	headers := make([]app.EveRouteHeader, 0)
+	fyne.DoAndWait(func() {
+		for _, r := range a.rows {
+			destination := r.c.SolarSystem()
+			if destination == nil {
+				continue
 			}
-			fyne.Do(func() {
-				a.rows[i].route = j
-				a.body.Refresh()
+			headers = append(headers, app.EveRouteHeader{
+				Origin:      a.origin,
+				Destination: destination,
+				Preference:  a.routePref,
 			})
-		}()
-	}
-	wg.Wait()
-	slices.SortFunc(a.rows, func(a, b cloneRow) int {
-		return a.compare(b)
+		}
 	})
+	routes, err := a.u.eus.FetchRoutes(context.Background(), headers)
+	if err != nil {
+		slog.Error("failed to fetch routes", "error", err)
+		fyne.Do(func() {
+			s := "Failed to fetch routes: " + a.u.humanizeError(err)
+			iwidget.SetRichText(a.originLabel, iwidget.NewRichTextSegmentFromText(s, widget.RichTextStyle{
+				ColorName: theme.ColorNameError,
+			})...)
+		})
+		return
+	}
+	m := make(map[int32][]*app.EveSolarSystem)
+	for h, route := range routes {
+		m[h.Destination.ID] = route
+	}
 	fyne.Do(func() {
-		a.columnSorter.set(4, sortAsc)
-		a.filterRows(-1)
+		for i, r := range a.rows {
+			solarSystem := r.c.SolarSystem()
+			if solarSystem == nil {
+				continue
+			}
+			a.rows[i].route = m[solarSystem.ID]
+		}
+		a.body.Refresh()
+		a.columnSorter.set(4, sortOff)
+		a.filterRows(4)
 	})
 }
 
@@ -283,7 +294,7 @@ func (a *clones) setOrigin(w fyne.Window) {
 	var d dialog.Dialog
 	results := make([]*app.EveEntity, 0)
 	routePref := widget.NewSelect(
-		xslices.Map(app.RoutePreferences(), func(a app.RoutePreference) string {
+		xslices.Map(app.EveRoutePreferences(), func(a app.EveRoutePreference) string {
 			return a.String()
 		}), nil,
 	)
@@ -314,7 +325,7 @@ func (a *clones) setOrigin(w fyne.Window) {
 			return
 		}
 		a.origin = s
-		a.routePref = app.RoutePreference(routePref.Selected)
+		a.routePref = app.EveRoutePreferenceFromString(routePref.Selected)
 		a.originLabel.Segments = iwidget.InlineRichTextSegments(
 			s.DisplayRichTextWithRegion(),
 			iwidget.NewRichTextSegmentFromText(fmt.Sprintf(" [%s]", a.routePref.String())),
@@ -350,11 +361,12 @@ func (a *clones) setOrigin(w fyne.Window) {
 				})
 				return
 			}
-			results = ee[app.SearchSolarSystem]
-			slices.SortFunc(results, func(a, b *app.EveEntity) int {
+			x := ee[app.SearchSolarSystem]
+			slices.SortFunc(x, func(a, b *app.EveEntity) int {
 				return a.Compare(b)
 			})
 			fyne.Do(func() {
+				results = x
 				list.Refresh()
 			})
 		}()
@@ -422,7 +434,7 @@ func (a *clones) filterRows(sortCol int) {
 			case 3:
 				x = cmp.Compare(a.c.Character.Name, b.c.Character.Name)
 			case 4:
-				x = cmp.Compare(a.sortValue(), b.sortValue())
+				x = a.compare(b)
 			}
 			if dir == sortAsc {
 				return x
@@ -480,13 +492,15 @@ func (a *clones) showRoute(r cloneRow) {
 		func() {
 			a.u.ShowInfoWindow(app.EveEntitySolarSystem, a.origin.ID)
 		},
-		a.origin.DisplayRichTextWithRegion()...)
+		a.origin.DisplayRichTextWithRegion()...,
+	)
 	from.Wrapping = fyne.TextWrapWord
 	to := iwidget.NewTappableRichText(
 		func() {
 			a.u.ShowInfoWindow(app.EveEntitySolarSystem, r.c.Location.SolarSystem.ID)
 		},
-		r.c.Location.SolarSystem.DisplayRichTextWithRegion()...)
+		r.c.Location.SolarSystem.DisplayRichTextWithRegion()...,
+	)
 	to.Wrapping = fyne.TextWrapWord
 	jumps := widget.NewLabel(fmt.Sprintf("%s (%s)", r.jumps(), a.routePref.String()))
 	top := container.New(

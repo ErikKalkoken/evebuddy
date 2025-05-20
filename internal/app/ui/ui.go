@@ -956,17 +956,12 @@ func (u *baseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 	if u.isOffline {
 		return
 	}
-	var sections []app.CorporationSection
 	if !u.isDesktop && !u.isForeground.Load() {
 		// nothing to update
 		return
 	}
+	sections := app.CorporationSections
 	slog.Debug("Starting to check corporation sections for update", "sections", sections)
-	sections, err := u.rs.ValidSections(ctx, corporationID)
-	if err != nil {
-		slog.Error("Failed to update corporation", "corporationID", corporationID, "error", err)
-		return
-	}
 	for _, s := range sections {
 		go u.updateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, s, forceUpdate)
 	}
