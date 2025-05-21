@@ -263,8 +263,9 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 		slog.Debug("Entered foreground")
 		u.isForeground.Store(true)
 		if !u.isOffline && !u.isUpdateDisabled {
-			u.updateCharactersIfNeeded(context.Background())
-			u.updateGeneralSectionsAndRefreshIfNeeded(false)
+			u.updateCharactersIfNeeded(context.Background(), false)
+			u.updateCorporationsIfNeeded(context.Background(), false)
+			u.updateGeneralSectionsIfNeeded(context.Background(), false)
 		}
 	})
 	u.app.Lifecycle().SetOnExitedForeground(func() {
@@ -621,22 +622,22 @@ func (u *baseUI) startUpdateTickerGeneralSections() {
 	ticker := time.NewTicker(generalSectionsUpdateTicker)
 	go func() {
 		for {
-			u.updateGeneralSectionsAndRefreshIfNeeded(false)
+			ctx := context.Background()
+			u.updateGeneralSectionsIfNeeded(ctx, false)
 			<-ticker.C
 		}
 	}()
 }
 
-func (u *baseUI) updateGeneralSectionsAndRefreshIfNeeded(forceUpdate bool) {
+func (u *baseUI) updateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate bool) {
 	if !forceUpdate && !u.isDesktop && !u.isForeground.Load() {
 		slog.Debug("Skipping general sections update while in background")
 		return
 	}
-	ctx := context.Background()
 	for _, s := range app.GeneralSections {
-		go func(s app.GeneralSection) {
+		go func() {
 			u.updateGeneralSectionAndRefreshIfNeeded(ctx, s, forceUpdate)
-		}(s)
+		}()
 	}
 }
 
@@ -674,10 +675,10 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 
 func (u *baseUI) startUpdateTickerCharacters() {
 	ticker := time.NewTicker(characterSectionsUpdateTicker)
-	ctx := context.Background()
 	go func() {
 		for {
-			if err := u.updateCharactersIfNeeded(ctx); err != nil {
+			ctx := context.Background()
+			if err := u.updateCharactersIfNeeded(ctx, false); err != nil {
 				slog.Error("Failed to update characters", "error", err)
 			}
 			if err := u.notifyCharactersIfNeeded(ctx); err != nil {
@@ -688,13 +689,13 @@ func (u *baseUI) startUpdateTickerCharacters() {
 	}()
 }
 
-func (u *baseUI) updateCharactersIfNeeded(ctx context.Context) error {
+func (u *baseUI) updateCharactersIfNeeded(ctx context.Context, forceUpdate bool) error {
 	cc, err := u.cs.ListCharactersShort(ctx)
 	if err != nil {
 		return err
 	}
 	for _, c := range cc {
-		go u.updateCharacterAndRefreshIfNeeded(ctx, c.ID, false)
+		go u.updateCharacterAndRefreshIfNeeded(ctx, c.ID, forceUpdate)
 	}
 	slog.Debug("started update status characters")
 	return nil
@@ -930,7 +931,7 @@ func (u *baseUI) startUpdateTickerCorporations() {
 	ctx := context.Background()
 	go func() {
 		for {
-			if err := u.updateCorporationsIfNeeded(ctx); err != nil {
+			if err := u.updateCorporationsIfNeeded(ctx, false); err != nil {
 				slog.Error("Failed to update corporations", "error", err)
 			}
 			<-ticker.C
@@ -938,13 +939,13 @@ func (u *baseUI) startUpdateTickerCorporations() {
 	}()
 }
 
-func (u *baseUI) updateCorporationsIfNeeded(ctx context.Context) error {
+func (u *baseUI) updateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error {
 	ids, err := u.rs.ListCorporationIDs(ctx)
 	if err != nil {
 		return err
 	}
 	for id := range ids.All() {
-		go u.updateCorporationAndRefreshIfNeeded(ctx, id, false)
+		go u.updateCorporationAndRefreshIfNeeded(ctx, id, forceUpdate)
 	}
 	slog.Debug("started update status corporations")
 	return nil

@@ -839,6 +839,7 @@ func (s *EveUniverseService) AddMissingTypes(ctx context.Context, ids set.Set[in
 
 func (s *EveUniverseService) UpdateCategoryWithChildrenESI(ctx context.Context, categoryID int32) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("UpdateCategoryWithChildrenESI-%d", categoryID), func() (any, error) {
+		var typeIds set.Set[int32]
 		_, err := s.GetOrCreateCategoryESI(ctx, categoryID)
 		if err != nil {
 			return nil, err
@@ -872,13 +873,13 @@ func (s *EveUniverseService) UpdateCategoryWithChildrenESI(ctx context.Context, 
 		if err := g.Wait(); err != nil {
 			return nil, err
 		}
-		var typeIds set.Set[int32]
 		for _, ids := range groupTypes {
 			typeIds.AddSeq(slices.Values(ids))
 		}
 		if err := s.AddMissingTypes(ctx, typeIds); err != nil {
 			return nil, err
 		}
+		slog.Info("Updated eve types", "categoryID", categoryID, "count", typeIds.Size())
 		return nil, nil
 	})
 	if err != nil {
