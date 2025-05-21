@@ -445,13 +445,6 @@ func (a *industryJobs) update() {
 			a.bottom.Show()
 		})
 	}
-	fixStatus := func(s app.IndustryJobStatus, endDate time.Time) app.IndustryJobStatus {
-		if s == app.JobActive && !endDate.IsZero() && endDate.Before(time.Now()) {
-			// Workaround for known bug: https://github.com/esi/esi-issues/issues/752
-			return app.JobReady
-		}
-		return s
-	}
 	cj, err := a.u.cs.ListAllCharacterIndustryJob(context.Background())
 	if err != nil {
 		reportError(err)
@@ -502,7 +495,7 @@ func (a *industryJobs) update() {
 			productType:        cj.ProductType,
 			runs:               cj.Runs,
 			startDate:          cj.StartDate,
-			status:             fixStatus(cj.Status, cj.EndDate),
+			status:             cj.Status,
 			successfulRuns:     cj.SuccessfulRuns,
 			isInstallerMe:      true,
 			isOwnerMe:          true,
@@ -529,7 +522,7 @@ func (a *industryJobs) update() {
 			productType:        rj.ProductType,
 			runs:               rj.Runs,
 			startDate:          rj.StartDate,
-			status:             fixStatus(rj.Status, rj.EndDate),
+			status:             rj.Status,
 			successfulRuns:     rj.SuccessfulRuns,
 			isInstallerMe:      myCharacters.Contains(rj.Installer.ID),
 			isOwnerMe:          false,

@@ -1141,6 +1141,10 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 				if !ok {
 					status = app.JobUndefined
 				}
+				if status == app.JobActive && !j.EndDate.IsZero() && j.EndDate.Before(time.Now()) {
+					// Workaround for known bug: https://github.com/esi/esi-issues/issues/752
+					status = app.JobReady
+				}
 				arg := storage.UpdateOrCreateCharacterIndustryJobParams{
 					ActivityID:           j.ActivityId,
 					BlueprintID:          j.BlueprintId,
