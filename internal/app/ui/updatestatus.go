@@ -131,9 +131,24 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 }
 
 func (a *updateStatus) CreateRenderer() fyne.WidgetRenderer {
+	updateMenu := fyne.NewMenu("",
+		fyne.NewMenuItem("Update all characters", func() {
+			a.u.updateCharactersIfNeeded(context.Background(), true)
+		}),
+		fyne.NewMenuItem("Update all corporations", func() {
+			a.u.updateCorporationsIfNeeded(context.Background(), true)
+		}),
+		fyne.NewMenuItem("Update all general topics", func() {
+			a.u.updateGeneralSectionsIfNeeded(context.Background(), true)
+		}),
+	)
+	updateEntities := iwidget.NewContextMenuButton("Force update all entities", updateMenu)
 	var c fyne.CanvasObject
 	if !a.u.isDesktop {
-		ab := iwidget.NewAppBar("Home", a.entities)
+		ab := iwidget.NewAppBar("Home", a.entities, iwidget.NewIconButtonWithMenu(
+			theme.MoreVerticalIcon(),
+			updateMenu,
+		))
 		a.nav = iwidget.NewNavigatorWithAppBar(ab)
 		c = a.nav
 	} else {
@@ -141,7 +156,7 @@ func (a *updateStatus) CreateRenderer() fyne.WidgetRenderer {
 		details := container.NewBorder(a.top3, a.updateSection, nil, nil, a.details)
 		vs := container.NewHSplit(sections, details)
 		vs.SetOffset(0.5)
-		hs := container.NewHSplit(a.entities, vs)
+		hs := container.NewHSplit(container.NewBorder(nil, updateEntities, nil, nil, a.entities), vs)
 		hs.SetOffset(0.33)
 		c = hs
 	}
@@ -245,14 +260,15 @@ func (a *updateStatus) makeEntityList() *widget.List {
 
 func (a *updateStatus) makeUpdateAllAction() func() {
 	return func() {
+		ctx := context.Background()
 		c := a.sectionEntities[a.selectedEntityID]
 		switch c.category {
 		case sectionGeneral:
-			a.u.updateGeneralSectionsAndRefreshIfNeeded(true)
+			a.u.updateGeneralSectionsIfNeeded(ctx, true)
 		case sectionCharacter:
-			a.u.updateCharacterAndRefreshIfNeeded(context.Background(), c.id, true)
+			a.u.updateCharacterAndRefreshIfNeeded(ctx, c.id, true)
 		case sectionCorporation:
-			a.u.updateCorporationAndRefreshIfNeeded(context.Background(), c.id, true)
+			a.u.updateCorporationAndRefreshIfNeeded(ctx, c.id, true)
 		default:
 			slog.Error("makeUpdateAllAction: Undefined category", "entity", c)
 		}

@@ -10,13 +10,19 @@ type ContextMenuButton struct {
 	menu *fyne.Menu
 }
 
+// NewContextMenuButton is a button that shows a context menu.
+func NewContextMenuButton(label string, menu *fyne.Menu) *ContextMenuButton {
+	return NewContextMenuButtonWithIcon(nil, label, menu)
+}
+
 // NewContextMenuButtonWithIcon is an icon button that shows a context menu. The label is optional.
 func NewContextMenuButtonWithIcon(icon fyne.Resource, label string, menu *fyne.Menu) *ContextMenuButton {
 	b := &ContextMenuButton{menu: menu}
-	b.Text = label
-	b.Icon = icon
-
 	b.ExtendBaseWidget(b)
+	b.Text = label
+	if icon != nil {
+		b.Icon = icon
+	}
 	return b
 }
 
