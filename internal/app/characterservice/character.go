@@ -2822,7 +2822,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 		return false, fmt.Errorf("update character section from ESI for %v: %w", arg, err)
 	}
 	changed := x.(bool)
-	slog.Info("Character section update completed", "characterID", arg.CharacterID, "section", arg.Section, "changed", changed)
+	slog.Info("Character section update completed", "characterID", arg.CharacterID, "section", arg.Section, "forced", arg.ForceUpdate, "changed", changed)
 	return changed, err
 }
 

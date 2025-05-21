@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -29,7 +30,7 @@ type sectionCategory uint
 
 const (
 	sectionCharacter sectionCategory = iota + 1
-	sectionCorpoation
+	sectionCorporation
 	sectionGeneral
 	sectionHeader
 )
@@ -40,10 +41,6 @@ type sectionEntity struct {
 	name     string
 	category sectionCategory
 	ss       app.StatusSummary
-}
-
-func (se sectionEntity) isGeneralSection() bool {
-	return se.category == sectionGeneral
 }
 
 type detailsItem struct {
@@ -57,10 +54,8 @@ type updateStatus struct {
 
 	charactersTop     *widget.Label
 	details           *updateStatusDetail
-	detailsButton     *widget.Button
 	detailsTop        *widget.Label
 	entities          fyne.CanvasObject
-	entitiesButton    *widget.Button
 	entityList        *widget.List
 	nav               *iwidget.Navigator
 	onEntitySelected  func(int)
@@ -74,6 +69,8 @@ type updateStatus struct {
 	top2              fyne.CanvasObject
 	top3              fyne.CanvasObject
 	u                 *baseUI
+	updateAllSections *widget.Button
+	updateSection     *widget.Button
 }
 
 func newUpdateStatus(u *baseUI) *updateStatus {
@@ -99,10 +96,10 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 	)
 
 	a.sectionList = a.makeSectionList()
-	a.entitiesButton = widget.NewButton("Force update all sections", nil)
-	a.entitiesButton.Disable()
-	a.detailsButton = widget.NewButton("Force update section", nil)
-	a.detailsButton.Disable()
+	a.updateAllSections = widget.NewButton("Force update all sections", nil)
+	a.updateAllSections.Disable()
+	a.updateSection = widget.NewButton("Force update section", nil)
+	a.updateSection.Disable()
 
 	a.top2 = container.NewVBox(a.sectionsTop, widget.NewSeparator())
 	a.top3 = container.NewVBox(a.detailsTop, widget.NewSeparator())
@@ -111,7 +108,7 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 		details := container.NewBorder(a.top3, nil, nil, nil, a.details)
 		menu := iwidget.NewIconButtonWithMenu(
 			theme.MoreVerticalIcon(),
-			fyne.NewMenu("", fyne.NewMenuItem(a.entitiesButton.Text, a.makeUpdateAllAction())),
+			fyne.NewMenu("", fyne.NewMenuItem(a.updateAllSections.Text, a.makeUpdateAllAction())),
 		)
 		a.onEntitySelected = func(id int) {
 			a.nav.Push(
@@ -123,7 +120,7 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 			menu := iwidget.NewIconButtonWithMenu(
 				theme.MoreVerticalIcon(),
 				fyne.NewMenu(
-					"", fyne.NewMenuItem(a.detailsButton.Text, a.makeDetailsAction(s.EntityID, s.SectionID))),
+					"", fyne.NewMenuItem(a.updateSection.Text, a.makeUpdateSectionAction(s.EntityID, s.SectionID))),
 			)
 			a.nav.Push(
 				iwidget.NewAppBar("Section Detail", details, menu),
@@ -140,8 +137,8 @@ func (a *updateStatus) CreateRenderer() fyne.WidgetRenderer {
 		a.nav = iwidget.NewNavigatorWithAppBar(ab)
 		c = a.nav
 	} else {
-		sections := container.NewBorder(a.top2, a.entitiesButton, nil, nil, a.sectionList)
-		details := container.NewBorder(a.top3, a.detailsButton, nil, nil, a.details)
+		sections := container.NewBorder(a.top2, a.updateAllSections, nil, nil, a.sectionList)
+		details := container.NewBorder(a.top3, a.updateSection, nil, nil, a.details)
 		vs := container.NewHSplit(sections, details)
 		vs.SetOffset(0.5)
 		hs := container.NewHSplit(a.entities, vs)
@@ -183,14 +180,14 @@ func (a *updateStatus) makeEntityList() *widget.List {
 				name.Refresh()
 				icon.Resource = eveicon.FromName(eveicon.StarMap)
 				icon.Refresh()
-			case sectionCharacter, sectionCorpoation:
+			case sectionCharacter, sectionCorporation:
 				name.TextStyle.Bold = false
 				name.Refresh()
 				iwidget.RefreshImageAsync(icon, func() (fyne.Resource, error) {
 					switch c.category {
 					case sectionCharacter:
 						return a.u.eis.CharacterPortrait(c.id, app.IconPixelSize)
-					case sectionCorpoation:
+					case sectionCorporation:
 						return a.u.eis.CorporationLogo(c.id, app.IconPixelSize)
 					}
 					return icons.BlankSvg, nil
@@ -233,8 +230,8 @@ func (a *updateStatus) makeEntityList() *widget.List {
 		a.sectionList.UnselectAll()
 
 		if !a.u.IsOffline() {
-			a.entitiesButton.OnTapped = a.makeUpdateAllAction()
-			a.entitiesButton.Enable()
+			a.updateAllSections.OnTapped = a.makeUpdateAllAction()
+			a.updateAllSections.Enable()
 		}
 		if a.onEntitySelected != nil {
 			a.onEntitySelected(id)
@@ -249,10 +246,15 @@ func (a *updateStatus) makeEntityList() *widget.List {
 func (a *updateStatus) makeUpdateAllAction() func() {
 	return func() {
 		c := a.sectionEntities[a.selectedEntityID]
-		if c.isGeneralSection() {
+		switch c.category {
+		case sectionGeneral:
 			a.u.updateGeneralSectionsAndRefreshIfNeeded(true)
-		} else {
+		case sectionCharacter:
 			a.u.updateCharacterAndRefreshIfNeeded(context.Background(), c.id, true)
+		case sectionCorporation:
+			a.u.updateCorporationAndRefreshIfNeeded(context.Background(), c.id, true)
+		default:
+			slog.Error("makeUpdateAllAction: Undefined category", "entity", c)
 		}
 	}
 }
@@ -294,7 +296,7 @@ func (*updateStatus) updateEntityList(s services) ([]sectionEntity, int) {
 		for _, r := range rr {
 			ss := s.scs.CorporationSectionSummary(r.ID)
 			o := sectionEntity{
-				category: sectionCorpoation,
+				category: sectionCorporation,
 				id:       r.ID,
 				name:     r.Name,
 				ss:       ss,
@@ -377,7 +379,7 @@ func (a *updateStatus) refreshSections() {
 	switch se.category {
 	case sectionCharacter:
 		a.sections = a.u.scs.ListCharacterSections(se.id)
-	case sectionCorpoation:
+	case sectionCorporation:
 		a.sections = a.u.scs.ListCorporationSections(se.id)
 	case sectionGeneral:
 		a.sections = a.u.scs.ListGeneralSections()
@@ -390,7 +392,7 @@ func (a *updateStatus) refreshDetails() {
 	id := a.selectedSectionID
 	if id == -1 || id >= len(a.sections) {
 		a.details.Hide()
-		a.detailsButton.Disable()
+		a.updateSection.Disable()
 		a.detailsTop.SetText("")
 		return
 	}
@@ -401,21 +403,32 @@ func (a *updateStatus) refreshDetails() {
 		a.detailsTop.SetText("")
 	}
 	if !a.u.IsOffline() {
-		a.detailsButton.OnTapped = a.makeDetailsAction(ss.EntityID, ss.SectionID)
-		a.detailsButton.Enable()
+		a.updateSection.OnTapped = a.makeUpdateSectionAction(ss.EntityID, ss.SectionID)
+		a.updateSection.Enable()
 	}
 	a.details.set(ss)
 	a.details.Show()
 }
 
-func (a *updateStatus) makeDetailsAction(entityID int32, sectionID string) func() {
+func (a *updateStatus) makeUpdateSectionAction(entityID int32, sectionID string) func() {
 	return func() {
-		if entityID == app.GeneralSectionEntityID {
+		ctx := context.Background()
+		c := a.sectionEntities[a.selectedEntityID]
+		switch c.category {
+		case sectionGeneral:
 			go a.u.updateGeneralSectionAndRefreshIfNeeded(
-				context.TODO(), app.GeneralSection(sectionID), true)
-		} else {
+				ctx, app.GeneralSection(sectionID), true,
+			)
+		case sectionCharacter:
 			go a.u.updateCharacterSectionAndRefreshIfNeeded(
-				context.TODO(), entityID, app.CharacterSection(sectionID), true)
+				ctx, entityID, app.CharacterSection(sectionID), true,
+			)
+		case sectionCorporation:
+			go a.u.updateCorporationSectionAndRefreshIfNeeded(
+				ctx, entityID, app.CorporationSection(sectionID), true,
+			)
+		default:
+			slog.Error("makeUpdateAllAction: Undefined category", "entity", c)
 		}
 	}
 }
