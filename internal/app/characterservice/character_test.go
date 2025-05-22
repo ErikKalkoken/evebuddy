@@ -1028,6 +1028,7 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("empty when no data", func(t *testing.T) {
+		testutil.TruncateTables(db)
 		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ManufacturingSlots)
 		if assert.NoError(t, err) {
 			assert.Len(t, got, 0)
@@ -1035,6 +1036,7 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 	})
 
 	t.Run("manufacturing slots for one character", func(t *testing.T) {
+		testutil.TruncateTables(db)
 		character := factory.CreateCharacter()
 		industry := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeIndustry})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
@@ -1092,6 +1094,7 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 	})
 
 	t.Run("research slots for one character", func(t *testing.T) {
+		testutil.TruncateTables(db)
 		character := factory.CreateCharacter()
 		laboratoryOperation := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeLaboratoryOperation})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
@@ -1142,6 +1145,7 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 		}
 	})
 	t.Run("reactions slots for one character", func(t *testing.T) {
+		testutil.TruncateTables(db)
 		character := factory.CreateCharacter()
 		massReactions := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeMassReactions})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
