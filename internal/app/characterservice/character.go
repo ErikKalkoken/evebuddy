@@ -2286,10 +2286,10 @@ func (s *CharacterService) GetSkill(ctx context.Context, characterID, typeID int
 	return s.st.GetCharacterSkill(ctx, characterID, typeID)
 }
 
-func (s *CharacterService) ListAllCharactersIndustrySlots(ctx context.Context, typ app.IndustrySlotType) ([]app.CharacterIndustrySlots, error) {
+func (s *CharacterService) ListAllCharactersIndustrySlots(ctx context.Context, typ app.IndustryJobType) ([]app.CharacterIndustrySlots, error) {
 	total := make(map[int32]int)
 	switch typ {
-	case app.ManufacturingSlots:
+	case app.ManufacturingJob:
 		industry1, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeIndustry)
 		if err != nil {
 			return nil, err
@@ -2313,7 +2313,7 @@ func (s *CharacterService) ListAllCharactersIndustrySlots(ctx context.Context, t
 		for _, r := range industry3 {
 			total[r.CharacterID] += r.Level
 		}
-	case app.ResearchSlots:
+	case app.ScienceJob:
 		research1, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeLaboratoryOperation)
 		if err != nil {
 			return nil, err
@@ -2328,7 +2328,7 @@ func (s *CharacterService) ListAllCharactersIndustrySlots(ctx context.Context, t
 		for _, r := range research2 {
 			total[r.CharacterID] += r.Level
 		}
-	case app.ReactionsSlots:
+	case app.ReactionJob:
 		reactions1, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeMassReactions)
 		if err != nil {
 			return nil, err

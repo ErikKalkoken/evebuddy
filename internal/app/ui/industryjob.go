@@ -575,11 +575,12 @@ func (a *industryJobs) showJob(r industryJobRow) {
 		x.Wrapping = fyne.TextWrapWord
 		return x
 	}
+	activity := fmt.Sprintf("%s (%s)", r.activity.Display(), r.activity.JobType().Display())
 	items := []*widget.FormItem{
 		widget.NewFormItem("Blueprint", newTappableLabelWithWrap(r.blueprintType.Name, func() {
 			a.u.ShowInfoWindow(app.EveEntityInventoryType, r.blueprintType.ID)
 		})),
-		widget.NewFormItem("Activity", widget.NewLabel(r.activity.Display())),
+		widget.NewFormItem("Activity", widget.NewLabel(activity)),
 	}
 	if !r.productType.IsEmpty() {
 		x := r.productType.MustValue()
@@ -646,7 +647,7 @@ func (a *industryJobs) showJob(r industryJobRow) {
 	if a.u.IsDeveloperMode() {
 		items = append(items, widget.NewFormItem("Job ID", a.u.makeCopyToClipboardLabel(fmt.Sprint(r.jobID))))
 	}
-	title := fmt.Sprintf("%s - %s - #%d", r.blueprintType.Name, r.activity.Display(), r.jobID)
+	title := fmt.Sprintf("%s - %s - %s", r.blueprintType.Name, r.activity.Display(), r.startDate.Format(app.DateTimeFormat))
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
 	w := a.u.makeDetailWindow("Industry Job", title, f)

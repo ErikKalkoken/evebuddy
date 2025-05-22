@@ -42,12 +42,12 @@ type industrySlots struct {
 	rowsFiltered    []industrySlotRow
 	totals          industrySlotRow
 	selectFreeSlots *iwidget.FilterChipSelect
-	slotType        app.IndustrySlotType
+	slotType        app.IndustryJobType
 	sortButton      *sortButton
 	u               *baseUI
 }
 
-func newIndustrySlots(u *baseUI, slotType app.IndustrySlotType) *industrySlots {
+func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	const columnWidthNumber = 75
 	headers := []headerDef{
 		{Text: "Character", Width: columnWidthCharacter},
@@ -277,7 +277,7 @@ func (a *industrySlots) update() {
 	})
 }
 
-func (*industrySlots) fetchData(s services, slotType app.IndustrySlotType) ([]industrySlotRow, error) {
+func (*industrySlots) fetchData(s services, slotType app.IndustryJobType) ([]industrySlotRow, error) {
 	oo, err := s.cs.ListAllCharactersIndustrySlots(context.Background(), slotType)
 	if err != nil {
 		return nil, err

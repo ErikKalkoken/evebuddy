@@ -255,7 +255,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			container.NewTabItem("Jobs", u.industryJobs),
 			container.NewTabItem("Slots", container.NewAppTabs(
 				container.NewTabItem("Manufacturing", u.slotsManufacturing),
-				container.NewTabItem("Research", u.slotsResearch),
+				container.NewTabItem("Science", u.slotsResearch),
 				container.NewTabItem("Reactions", u.slotsReactions),
 			))),
 		),

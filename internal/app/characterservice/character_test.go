@@ -1029,7 +1029,7 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 
 	t.Run("empty when no data", func(t *testing.T) {
 		testutil.TruncateTables(db)
-		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ManufacturingSlots)
+		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ManufacturingJob)
 		if assert.NoError(t, err) {
 			assert.Len(t, got, 0)
 		}
@@ -1076,11 +1076,11 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 			ActivityID:  int32(app.Manufacturing),
 			Status:      app.JobDelivered,
 		})
-		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ManufacturingSlots)
+		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ManufacturingJob)
 		if assert.NoError(t, err) {
 			want := []app.CharacterIndustrySlots{
 				{
-					Type:          app.ManufacturingSlots,
+					Type:          app.ManufacturingJob,
 					CharacterID:   character.ID,
 					CharacterName: character.EveCharacter.Name,
 					Busy:          2,
@@ -1128,11 +1128,11 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 			ActivityID:  int32(app.Copying),
 			Status:      app.JobDelivered,
 		})
-		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ResearchSlots)
+		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ScienceJob)
 		if assert.NoError(t, err) {
 			want := []app.CharacterIndustrySlots{
 				{
-					Type:          app.ResearchSlots,
+					Type:          app.ScienceJob,
 					CharacterID:   character.ID,
 					CharacterName: character.EveCharacter.Name,
 					Busy:          2,
@@ -1179,11 +1179,11 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 			ActivityID:  int32(app.Reactions),
 			Status:      app.JobDelivered,
 		})
-		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ReactionsSlots)
+		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ReactionJob)
 		if assert.NoError(t, err) {
 			want := []app.CharacterIndustrySlots{
 				{
-					Type:          app.ReactionsSlots,
+					Type:          app.ReactionJob,
 					CharacterID:   character.ID,
 					CharacterName: character.EveCharacter.Name,
 					Busy:          2,
