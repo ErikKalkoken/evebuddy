@@ -651,10 +651,11 @@ const (
 	ReactionsSlots
 )
 
+// Activities returns the industry activites that use a slot type.
 func (ic IndustrySlotType) Activities() set.Set[IndustryActivity] {
 	m := map[IndustrySlotType]set.Set[IndustryActivity]{
-		ManufacturingSlots: set.Of(Manufacturing, Invention),
-		ResearchSlots:      set.Of(TimeEfficiencyResearch, MaterialEfficiencyResearch, Copying),
+		ManufacturingSlots: set.Of(Manufacturing),
+		ResearchSlots:      set.Of(TimeEfficiencyResearch, MaterialEfficiencyResearch, Copying, Invention),
 		ReactionsSlots:     set.Of(Reactions),
 	}
 	return m[ic]
