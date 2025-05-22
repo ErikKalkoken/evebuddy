@@ -233,8 +233,8 @@ func (cca ContractAvailability) String() string {
 type contractConsolidatedStatus uint
 
 const (
-	contractConcolidatedUndefined contractConsolidatedStatus = iota
-	contractConsolidatedOustanding
+	contractConsolidatedUndefined contractConsolidatedStatus = iota
+	contractConsolidatedOutstanding
 	contractConsolidatedInProgress
 	contractConsolidatedHasIssue
 	contractConsolidatedHistory
@@ -286,7 +286,7 @@ func (cs ContractStatus) Display() string {
 func (cs ContractStatus) DisplayRichText() []widget.RichTextSegment {
 	var color fyne.ThemeColorName
 	switch cs.consolidated() {
-	case contractConsolidatedOustanding:
+	case contractConsolidatedOutstanding:
 		color = theme.ColorNamePrimary
 	case contractConsolidatedInProgress:
 		color = theme.ColorNameWarning
@@ -305,7 +305,7 @@ func (cs ContractStatus) DisplayRichText() []widget.RichTextSegment {
 func (cs ContractStatus) consolidated() contractConsolidatedStatus {
 	switch cs {
 	case ContractStatusOutstanding:
-		return contractConsolidatedOustanding
+		return contractConsolidatedOutstanding
 	case ContractStatusInProgress:
 		return contractConsolidatedInProgress
 	case
@@ -320,7 +320,7 @@ func (cs ContractStatus) consolidated() contractConsolidatedStatus {
 		ContractStatusRejected:
 		return contractConsolidatedHasIssue
 	}
-	return contractConcolidatedUndefined
+	return contractConsolidatedUndefined
 }
 
 type ContractType uint
@@ -412,7 +412,7 @@ func (cc CharacterContract) IsExpired() bool {
 
 func (cc CharacterContract) IsActive() bool {
 	switch cc.Status.consolidated() {
-	case contractConsolidatedInProgress, contractConsolidatedOustanding:
+	case contractConsolidatedInProgress, contractConsolidatedOutstanding:
 		return true
 	}
 	return false
@@ -503,7 +503,7 @@ type CharacterImplant struct {
 	SlotNum     int // 0 = unknown
 }
 
-// A Role is the in-game role of a character in a corporatipn.
+// A Role is the in-game role of a character in a corporation.
 type Role uint
 
 const (
@@ -639,116 +639,6 @@ type CharacterRole struct {
 	CharacterID int32
 	Role        Role
 	Granted     bool
-}
-
-// IndustryActivity represents the activity type of an industry job.
-// See also: https://github.com/esi/esi-issues/issues/894
-type IndustryActivity int32
-
-const (
-	None                       IndustryActivity = 0
-	Manufacturing              IndustryActivity = 1
-	TimeEfficiencyResearch     IndustryActivity = 3
-	MaterialEfficiencyResearch IndustryActivity = 4
-	Copying                    IndustryActivity = 5
-	Invention                  IndustryActivity = 8
-	Reactions                  IndustryActivity = 11
-)
-
-func (a IndustryActivity) String() string {
-	m := map[IndustryActivity]string{
-		None:                       "none",
-		Manufacturing:              "manufacturing",
-		TimeEfficiencyResearch:     "time efficiency research",
-		MaterialEfficiencyResearch: "material efficiency research",
-		Copying:                    "copying",
-		Invention:                  "invention",
-		Reactions:                  "reactions",
-	}
-	s, ok := m[a]
-	if !ok {
-		return "?"
-	}
-	return s
-}
-
-func (a IndustryActivity) Display() string {
-	titler := cases.Title(language.English)
-	return titler.String(a.String())
-}
-
-type IndustryJobStatus uint
-
-const (
-	JobUndefined IndustryJobStatus = iota
-	JobActive
-	JobCancelled
-	JobDelivered
-	JobPaused
-	JobReady
-	JobReverted
-)
-
-func (s IndustryJobStatus) String() string {
-	m := map[IndustryJobStatus]string{
-		JobUndefined: "undefined",
-		JobActive:    "in progress",
-		JobCancelled: "cancelled",
-		JobDelivered: "delivered",
-		JobPaused:    "halted",
-		JobReady:     "ready",
-		JobReverted:  "reverted",
-	}
-	x, ok := m[s]
-	if !ok {
-		return "?"
-	}
-	return x
-}
-
-func (s IndustryJobStatus) Display() string {
-	titler := cases.Title(language.English)
-	return titler.String(s.String())
-}
-
-func (s IndustryJobStatus) Color() fyne.ThemeColorName {
-	m := map[IndustryJobStatus]fyne.ThemeColorName{
-		JobActive:    theme.ColorNamePrimary,
-		JobCancelled: theme.ColorNameError,
-		JobPaused:    theme.ColorNameWarning,
-		JobReady:     theme.ColorNameSuccess,
-	}
-	c, ok := m[s]
-	if ok {
-		return c
-	}
-	return theme.ColorNameForeground
-}
-
-type CharacterIndustryJob struct {
-	Activity           IndustryActivity
-	BlueprintID        int64
-	BlueprintLocation  *EveLocationShort
-	BlueprintType      *EntityShort[int32]
-	CharacterID        int32
-	CompletedCharacter optional.Optional[*EveEntity]
-	CompletedDate      optional.Optional[time.Time]
-	Cost               optional.Optional[float64]
-	Duration           int
-	EndDate            time.Time
-	Facility           *EveLocationShort
-	Installer          *EveEntity
-	JobID              int32
-	LicensedRuns       optional.Optional[int]
-	OutputLocation     *EveLocationShort
-	PauseDate          optional.Optional[time.Time]
-	Probability        optional.Optional[float32]
-	ProductType        optional.Optional[*EntityShort[int32]]
-	Runs               int
-	StartDate          time.Time
-	Station            *EveLocationShort
-	Status             IndustryJobStatus
-	SuccessfulRuns     optional.Optional[int32]
 }
 
 type CharacterJumpClone struct {
@@ -1131,6 +1021,13 @@ type CharacterSkill struct {
 
 func SkillDisplayName[N int | int32 | int64 | uint | uint32 | uint64](name string, level N) string {
 	return fmt.Sprintf("%s %s", name, ihumanize.RomanLetter(level))
+}
+
+// CharacterActiveSkillLevel represents the active level of a character's skill.
+type CharacterActiveSkillLevel struct {
+	CharacterID int32
+	Level       int
+	TypeID      int32
 }
 
 type ListCharacterSkillGroupProgress struct {

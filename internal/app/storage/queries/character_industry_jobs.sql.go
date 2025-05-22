@@ -112,6 +112,75 @@ func (q *Queries) GetCharacterIndustryJob(ctx context.Context, arg GetCharacterI
 	return i, err
 }
 
+const listAllCharacterIndustryJobActiveCounts = `-- name: ListAllCharacterIndustryJobActiveCounts :many
+SELECT
+    installer_id,
+    activity_id,
+    status,
+    count(id) as number
+FROM
+    (
+        SELECT
+            id,
+            installer_id,
+            activity_id,
+            status
+        FROM
+            character_industry_jobs j1
+        UNION ALL
+        SELECT
+            j2.id,
+            installer_id,
+            activity_id,
+            status
+        FROM
+            corporation_industry_jobs j2
+            JOIN characters c ON c.id == j2.installer_id
+    ) AS jobs
+WHERE
+    status = "active"
+    OR status = "ready"
+GROUP BY
+    installer_id,
+    activity_id,
+    status
+`
+
+type ListAllCharacterIndustryJobActiveCountsRow struct {
+	InstallerID int64
+	ActivityID  int64
+	Status      string
+	Number      int64
+}
+
+func (q *Queries) ListAllCharacterIndustryJobActiveCounts(ctx context.Context) ([]ListAllCharacterIndustryJobActiveCountsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllCharacterIndustryJobActiveCounts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllCharacterIndustryJobActiveCountsRow
+	for rows.Next() {
+		var i ListAllCharacterIndustryJobActiveCountsRow
+		if err := rows.Scan(
+			&i.InstallerID,
+			&i.ActivityID,
+			&i.Status,
+			&i.Number,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllCharacterIndustryJobs = `-- name: ListAllCharacterIndustryJobs :many
 SELECT
     cij.id, cij.activity_id, cij.blueprint_id, cij.blueprint_location_id, cij.blueprint_type_id, cij.character_id, cij.completed_character_id, cij.completed_date, cij.cost, cij.duration, cij.end_date, cij.facility_id, cij.installer_id, cij.job_id, cij.licensed_runs, cij.output_location_id, cij.pause_date, cij.probability, cij.product_type_id, cij.runs, cij.start_date, cij.station_id, cij.status, cij.successful_runs,

@@ -392,6 +392,44 @@ func (q *Queries) ListCharacterSkillProgress(ctx context.Context, arg ListCharac
 	return items, nil
 }
 
+const listCharactersActiveSkillLevels = `-- name: ListCharactersActiveSkillLevels :many
+SELECT
+    c.id as character_id,
+    CAST(IFNULL(cs.active_skill_level, 0) as INT) as level
+FROM
+    characters c
+    LEFT JOIN character_skills cs ON cs.character_id = c.id
+    AND cs.eve_type_id = ?
+`
+
+type ListCharactersActiveSkillLevelsRow struct {
+	CharacterID int64
+	Level       int64
+}
+
+func (q *Queries) ListCharactersActiveSkillLevels(ctx context.Context, eveTypeID int64) ([]ListCharactersActiveSkillLevelsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharactersActiveSkillLevels, eveTypeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharactersActiveSkillLevelsRow
+	for rows.Next() {
+		var i ListCharactersActiveSkillLevelsRow
+		if err := rows.Scan(&i.CharacterID, &i.Level); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateOrCreateCharacterSkill = `-- name: UpdateOrCreateCharacterSkill :exec
 INSERT INTO
     character_skills (

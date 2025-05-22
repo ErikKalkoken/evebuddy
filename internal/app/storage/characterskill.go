@@ -39,6 +39,23 @@ func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int32, typ
 	return t2, nil
 }
 
+func (st *Storage) ListAllCharactersActiveSkillLevels(ctx context.Context, typeID int32) ([]app.CharacterActiveSkillLevel, error) {
+	rows, err := st.qRO.ListCharactersActiveSkillLevels(ctx, int64(typeID))
+	if err != nil {
+		return nil, fmt.Errorf("ListCharactersActiveSkillLevels for type ID: %d: %w", typeID, err)
+	}
+	oo := make([]app.CharacterActiveSkillLevel, len(rows))
+	for i, r := range rows {
+		oo[i] = app.CharacterActiveSkillLevel{
+			CharacterID: int32(r.CharacterID),
+			Level:       int(r.Level),
+			TypeID:      typeID,
+		}
+	}
+	return oo, nil
+
+}
+
 func (st *Storage) ListCharacterSkillIDs(ctx context.Context, characterID int32) (set.Set[int32], error) {
 	ids1, err := st.qRO.ListCharacterSkillIDs(ctx, int64(characterID))
 	if err != nil {

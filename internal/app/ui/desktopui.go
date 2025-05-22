@@ -251,7 +251,14 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	industry := iwidget.NewNavPage(
 		"Industry",
 		theme.NewThemedResource(icons.FactorySvg),
-		makePageWithTitle("Industry", u.industryJobs),
+		makePageWithTitle("Industry", container.NewAppTabs(
+			container.NewTabItem("Jobs", u.industryJobs),
+			container.NewTabItem("Slots", container.NewAppTabs(
+				container.NewTabItem("Manufacturing", u.slotsManufacturing),
+				container.NewTabItem("Science", u.slotsResearch),
+				container.NewTabItem("Reactions", u.slotsReactions),
+			))),
+		),
 	)
 	u.industryJobs.OnUpdate = func(count int) {
 		var badge string

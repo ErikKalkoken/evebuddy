@@ -893,6 +893,14 @@ const (
 	EveTypePlanetTemperate             = 11
 	EveTypeSolarSystem                 = 5
 	EveTypeTCU                         = 32226
+
+	EveTypeIndustry                    = 3380
+	EveTypeMassProduction              = 3387
+	EveTypeAdvancedMassProduction      = 24625
+	EveTypeLaboratoryOperation         = 3406
+	EveTypeAdvancedLaboratoryOperation = 24624
+	EveTypeMassReactions               = 45748
+	EveTypeAdvancedMassReactions       = 45749
 )
 
 // EveType is a type in Eve Online.

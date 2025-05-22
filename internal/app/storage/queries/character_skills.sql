@@ -19,6 +19,15 @@ WHERE
     character_id = ?
     AND eve_type_id IN (sqlc.slice ('eve_type_ids'));
 
+-- name: ListCharactersActiveSkillLevels :many
+SELECT
+    c.id as character_id,
+    CAST(IFNULL(cs.active_skill_level, 0) as INT) as level
+FROM
+    characters c
+    LEFT JOIN character_skills cs ON cs.character_id = c.id
+    AND cs.eve_type_id = ?;
+
 -- name: ListCharacterSkillIDs :many
 SELECT
     eve_type_id

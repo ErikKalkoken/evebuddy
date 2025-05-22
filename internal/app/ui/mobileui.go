@@ -236,7 +236,16 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		"Industry",
 		theme.NewThemedResource(icons.FactorySvg),
 		func() {
-			homeNav.Push(iwidget.NewAppBar("Industry", u.industryJobs))
+			homeNav.Push(iwidget.NewAppBar("Industry",
+				container.NewAppTabs(
+					container.NewTabItem("Jobs", u.industryJobs),
+					container.NewTabItem("Slots", container.NewAppTabs(
+						container.NewTabItem("Manufacturing", u.slotsManufacturing),
+						container.NewTabItem("Science", u.slotsResearch),
+						container.NewTabItem("Reactions", u.slotsReactions),
+					)),
+				),
+			))
 		},
 	)
 	u.industryJobs.OnUpdate = func(count int) {

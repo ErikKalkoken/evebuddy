@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"net/http"
 	"slices"
 	"strconv"
@@ -2283,6 +2284,104 @@ func (s *CharacterService) ListShipsAbilities(ctx context.Context, characterID i
 
 func (s *CharacterService) GetSkill(ctx context.Context, characterID, typeID int32) (*app.CharacterSkill, error) {
 	return s.st.GetCharacterSkill(ctx, characterID, typeID)
+}
+
+func (s *CharacterService) ListAllCharactersIndustrySlots(ctx context.Context, typ app.IndustryJobType) ([]app.CharacterIndustrySlots, error) {
+	total := make(map[int32]int)
+	switch typ {
+	case app.ManufacturingJob:
+		industry1, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeIndustry)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range industry1 {
+			if r.Level > 0 {
+				total[r.CharacterID] += 1
+			}
+		}
+		industry2, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeMassProduction)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range industry2 {
+			total[r.CharacterID] += r.Level
+		}
+		industry3, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeAdvancedMassProduction)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range industry3 {
+			total[r.CharacterID] += r.Level
+		}
+	case app.ScienceJob:
+		research1, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeLaboratoryOperation)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range research1 {
+			total[r.CharacterID] += r.Level + 1 // also adds base slot
+		}
+		research2, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeAdvancedLaboratoryOperation)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range research2 {
+			total[r.CharacterID] += r.Level
+		}
+	case app.ReactionJob:
+		reactions1, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeMassReactions)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range reactions1 {
+			total[r.CharacterID] += r.Level + 1 // also adds base slot
+		}
+		reactions2, err := s.st.ListAllCharactersActiveSkillLevels(ctx, app.EveTypeAdvancedMassReactions)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range reactions2 {
+			total[r.CharacterID] += r.Level
+		}
+	}
+	characters, err := s.st.ListCharactersShort(ctx)
+	if err != nil {
+		return nil, err
+	}
+	results := make(map[int32]app.CharacterIndustrySlots)
+	for _, c := range characters {
+		results[c.ID] = app.CharacterIndustrySlots{
+			CharacterID:   c.ID,
+			CharacterName: c.Name,
+			Type:          typ,
+			Total:         total[c.ID],
+		}
+	}
+	counts, err := s.st.ListAllCharacterIndustryJobActiveCounts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range counts {
+		if !typ.Activities().Contains(r.Activity) {
+			continue
+		}
+		x := results[r.InstallerID]
+		switch r.Status {
+		case app.JobActive:
+			x.Busy += r.Count
+		case app.JobReady:
+			x.Ready += r.Count
+		}
+		results[r.InstallerID] = x
+	}
+	for id, r := range results {
+		r.Free = r.Total - r.Busy - r.Ready
+		results[id] = r
+	}
+	rows := slices.SortedFunc(maps.Values(results), func(a, b app.CharacterIndustrySlots) int {
+		return strings.Compare(a.CharacterName, b.CharacterName)
+	})
+	return rows, nil
 }
 
 func (s *CharacterService) ListSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]app.ListSkillProgress, error) {
