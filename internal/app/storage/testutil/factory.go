@@ -371,9 +371,20 @@ func (f Factory) CreateCharacterIndustryJob(args ...storage.UpdateOrCreateCharac
 	if len(args) > 0 {
 		arg = args[0]
 	}
+	var character *app.Character
 	if arg.CharacterID == 0 {
-		x := f.CreateCharacter()
-		arg.CharacterID = x.ID
+		character = f.CreateCharacter()
+		arg.CharacterID = character.ID
+	} else {
+		x, err := f.st.GetCharacter(ctx, arg.CharacterID)
+		if err != nil {
+			panic(err)
+		}
+		character = x
+	}
+	if arg.StationID == 0 {
+		x := f.CreateEveLocationStructure()
+		arg.StationID = x.ID
 	}
 	if arg.ActivityID == 0 {
 		activities := []app.IndustryActivity{
@@ -390,8 +401,7 @@ func (f Factory) CreateCharacterIndustryJob(args ...storage.UpdateOrCreateCharac
 		arg.BlueprintID = rand.Int64N(10_000_000)
 	}
 	if arg.BlueprintLocationID == 0 {
-		x := f.CreateEveLocationStructure()
-		arg.BlueprintLocationID = x.ID
+		arg.BlueprintLocationID = arg.StationID
 	}
 	if arg.BlueprintTypeID == 0 {
 		x := f.CreateEveType()
@@ -401,8 +411,7 @@ func (f Factory) CreateCharacterIndustryJob(args ...storage.UpdateOrCreateCharac
 		arg.Duration = rand.Int32N(10_000)
 	}
 	if arg.FacilityID == 0 {
-		x := f.CreateEveLocationStructure()
-		arg.FacilityID = x.ID
+		arg.FacilityID = arg.StationID
 	}
 	if arg.JobID == 0 {
 		arg.JobID = int32(f.calcNewIDWithCharacter(
@@ -412,19 +421,18 @@ func (f Factory) CreateCharacterIndustryJob(args ...storage.UpdateOrCreateCharac
 		))
 	}
 	if arg.InstallerID == 0 {
-		x := f.CreateEveEntityCharacter()
-		arg.InstallerID = x.ID
+		f.st.GetOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
+			ID:       character.ID,
+			Name:     character.EveCharacter.Name,
+			Category: app.EveEntityCharacter,
+		})
+		arg.InstallerID = character.ID
 	}
 	if arg.OutputLocationID == 0 {
-		x := f.CreateEveLocationStructure()
-		arg.OutputLocationID = x.ID
+		arg.OutputLocationID = arg.StationID
 	}
 	if arg.Runs == 0 {
 		arg.Runs = rand.Int32N(50)
-	}
-	if arg.StationID == 0 {
-		x := f.CreateEveLocationStructure()
-		arg.StationID = x.ID
 	}
 	if arg.Status == 0 {
 		items := []app.IndustryJobStatus{

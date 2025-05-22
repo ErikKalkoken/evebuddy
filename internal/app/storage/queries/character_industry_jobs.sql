@@ -124,3 +124,36 @@ FROM
     LEFT JOIN eve_types pt ON pt.id = cij.product_type_id
 ORDER BY
     end_date DESC;
+
+-- name: ListAllCharacterIndustryJobActiveCounts :many
+SELECT
+    installer_id,
+    activity_id,
+    status,
+    count(id) as number
+FROM
+    (
+        SELECT
+            id,
+            installer_id,
+            activity_id,
+            status
+        FROM
+            character_industry_jobs j1
+        UNION ALL
+        SELECT
+            j2.id,
+            installer_id,
+            activity_id,
+            status
+        FROM
+            corporation_industry_jobs j2
+            JOIN characters c ON c.id == j2.installer_id
+    ) AS jobs
+WHERE
+    status = "active"
+    OR status = "ready"
+GROUP BY
+    installer_id,
+    activity_id,
+    status;

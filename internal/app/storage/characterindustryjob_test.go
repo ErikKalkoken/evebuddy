@@ -295,4 +295,57 @@ func TestCharacterIndustryJob(t *testing.T) {
 			assert.Len(t, x, 1)
 		}
 	})
+	t.Run("can list jobs activity counts", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		character1 := factory.CreateCharacter()
+		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: character1.ID,
+			ActivityID:  int32(app.Manufacturing),
+			Status:      app.JobActive,
+		})
+		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: character1.ID,
+			ActivityID:  int32(app.Manufacturing),
+			Status:      app.JobActive,
+		})
+		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: character1.ID,
+			ActivityID:  int32(app.Manufacturing),
+			Status:      app.JobReady,
+		})
+		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: character1.ID,
+			ActivityID:  int32(app.Manufacturing),
+			Status:      app.JobDelivered,
+		})
+		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: character1.ID,
+			ActivityID:  int32(app.Reactions),
+			Status:      app.JobActive,
+		})
+		character2 := factory.CreateCharacter()
+		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: character2.ID,
+			ActivityID:  int32(app.Manufacturing),
+			Status:      app.JobActive,
+		})
+		factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			InstallerID: character1.ID,
+			ActivityID:  int32(app.Manufacturing),
+			Status:      app.JobActive,
+		})
+		// when
+		got, err := st.ListAllCharacterIndustryJobActiveCounts(ctx)
+		// then
+		if assert.NoError(t, err) {
+			want := []app.IndustryJobActivityCount{
+				{InstallerID: character1.ID, Activity: app.Manufacturing, Status: app.JobActive, Count: 3},
+				{InstallerID: character1.ID, Activity: app.Manufacturing, Status: app.JobReady, Count: 1},
+				{InstallerID: character1.ID, Activity: app.Reactions, Status: app.JobActive, Count: 1},
+				{InstallerID: character2.ID, Activity: app.Manufacturing, Status: app.JobActive, Count: 1},
+			}
+			assert.ElementsMatch(t, want, got)
+		}
+	})
 }

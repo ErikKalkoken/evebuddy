@@ -19,6 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/yuin/goldmark"
@@ -233,8 +234,8 @@ func (cca ContractAvailability) String() string {
 type contractConsolidatedStatus uint
 
 const (
-	contractConcolidatedUndefined contractConsolidatedStatus = iota
-	contractConsolidatedOustanding
+	contractConsolidatedUndefined contractConsolidatedStatus = iota
+	contractConsolidatedOutstanding
 	contractConsolidatedInProgress
 	contractConsolidatedHasIssue
 	contractConsolidatedHistory
@@ -286,7 +287,7 @@ func (cs ContractStatus) Display() string {
 func (cs ContractStatus) DisplayRichText() []widget.RichTextSegment {
 	var color fyne.ThemeColorName
 	switch cs.consolidated() {
-	case contractConsolidatedOustanding:
+	case contractConsolidatedOutstanding:
 		color = theme.ColorNamePrimary
 	case contractConsolidatedInProgress:
 		color = theme.ColorNameWarning
@@ -305,7 +306,7 @@ func (cs ContractStatus) DisplayRichText() []widget.RichTextSegment {
 func (cs ContractStatus) consolidated() contractConsolidatedStatus {
 	switch cs {
 	case ContractStatusOutstanding:
-		return contractConsolidatedOustanding
+		return contractConsolidatedOutstanding
 	case ContractStatusInProgress:
 		return contractConsolidatedInProgress
 	case
@@ -320,7 +321,7 @@ func (cs ContractStatus) consolidated() contractConsolidatedStatus {
 		ContractStatusRejected:
 		return contractConsolidatedHasIssue
 	}
-	return contractConcolidatedUndefined
+	return contractConsolidatedUndefined
 }
 
 type ContractType uint
@@ -412,7 +413,7 @@ func (cc CharacterContract) IsExpired() bool {
 
 func (cc CharacterContract) IsActive() bool {
 	switch cc.Status.consolidated() {
-	case contractConsolidatedInProgress, contractConsolidatedOustanding:
+	case contractConsolidatedInProgress, contractConsolidatedOutstanding:
 		return true
 	}
 	return false
@@ -503,7 +504,7 @@ type CharacterImplant struct {
 	SlotNum     int // 0 = unknown
 }
 
-// A Role is the in-game role of a character in a corporatipn.
+// A Role is the in-game role of a character in a corporation.
 type Role uint
 
 const (
@@ -641,6 +642,35 @@ type CharacterRole struct {
 	Granted     bool
 }
 
+// IndustrySlotType represents the type of slot for industry jobs.
+type IndustrySlotType uint
+
+const (
+	ManufacturingSlots IndustrySlotType = iota + 1
+	ResearchSlots
+	ReactionsSlots
+)
+
+func (ic IndustrySlotType) Activities() set.Set[IndustryActivity] {
+	m := map[IndustrySlotType]set.Set[IndustryActivity]{
+		ManufacturingSlots: set.Of(Manufacturing, Invention),
+		ResearchSlots:      set.Of(TimeEfficiencyResearch, MaterialEfficiencyResearch, Copying),
+		ReactionsSlots:     set.Of(Reactions),
+	}
+	return m[ic]
+}
+
+// CharacterIndustrySlots represents counts of industry slots for a character.
+type CharacterIndustrySlots struct {
+	Busy          int
+	Free          int
+	Type          IndustrySlotType
+	CharacterID   int32
+	CharacterName string
+	Ready         int
+	Total         int
+}
+
 // IndustryActivity represents the activity type of an industry job.
 // See also: https://github.com/esi/esi-issues/issues/894
 type IndustryActivity int32
@@ -749,6 +779,13 @@ type CharacterIndustryJob struct {
 	Station            *EveLocationShort
 	Status             IndustryJobStatus
 	SuccessfulRuns     optional.Optional[int32]
+}
+
+type IndustryJobActivityCount struct {
+	InstallerID int32
+	Activity    IndustryActivity
+	Status      IndustryJobStatus
+	Count       int
 }
 
 type CharacterJumpClone struct {
@@ -1131,6 +1168,13 @@ type CharacterSkill struct {
 
 func SkillDisplayName[N int | int32 | int64 | uint | uint32 | uint64](name string, level N) string {
 	return fmt.Sprintf("%s %s", name, ihumanize.RomanLetter(level))
+}
+
+// CharacterActiveSkillLevel represents the active level of a character's skill.
+type CharacterActiveSkillLevel struct {
+	CharacterID int32
+	Level       int
+	TypeID      int32
 }
 
 type ListCharacterSkillGroupProgress struct {

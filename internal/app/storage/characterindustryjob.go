@@ -155,6 +155,23 @@ func characterIndustryJobFromDBModel(
 	return o2
 }
 
+func (st *Storage) ListAllCharacterIndustryJobActiveCounts(ctx context.Context) ([]app.IndustryJobActivityCount, error) {
+	rows, err := st.qRO.ListAllCharacterIndustryJobActiveCounts(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("ListAllCharacterIndustryJobActiveCounts: %w", err)
+	}
+	result := make([]app.IndustryJobActivityCount, 0)
+	for _, r := range rows {
+		result = append(result, app.IndustryJobActivityCount{
+			InstallerID: int32(r.InstallerID),
+			Activity:    app.IndustryActivity(r.ActivityID),
+			Status:      jobStatusFromDBValue[r.Status],
+			Count:       int(r.Number),
+		})
+	}
+	return result, nil
+}
+
 type UpdateOrCreateCharacterIndustryJobParams struct {
 	ActivityID           int32
 	BlueprintID          int64

@@ -145,3 +145,58 @@ func TestCharacterSkillLists(t *testing.T) {
 		}
 	})
 }
+
+func TestListCharactersActiveSkillLevels(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("returns skill level", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCharacter()
+		c2 := factory.CreateCharacter()
+		c3 := factory.CreateCharacter()
+		skill1 := factory.CreateEveType()
+		skill2 := factory.CreateEveType()
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID:       c1.ID,
+			EveTypeID:         skill1.ID,
+			ActiveSkillLevel:  3,
+			TrainedSkillLevel: 5,
+		})
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID:       c2.ID,
+			EveTypeID:         skill1.ID,
+			ActiveSkillLevel:  4,
+			TrainedSkillLevel: 5,
+		})
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID:       c1.ID,
+			EveTypeID:         skill2.ID,
+			ActiveSkillLevel:  5,
+			TrainedSkillLevel: 5,
+		})
+		// when
+		got, err := r.ListAllCharactersActiveSkillLevels(ctx, skill1.ID)
+		if assert.NoError(t, err) {
+			want := []app.CharacterActiveSkillLevel{
+				{
+					CharacterID: c1.ID,
+					TypeID:      skill1.ID,
+					Level:       3,
+				},
+				{
+					CharacterID: c2.ID,
+					TypeID:      skill1.ID,
+					Level:       4,
+				},
+				{
+					CharacterID: c3.ID,
+					TypeID:      skill1.ID,
+					Level:       0,
+				},
+			}
+			assert.ElementsMatch(t, want, got)
+		}
+	})
+}
