@@ -69,6 +69,7 @@ type industryJobRow struct {
 	pauseDate          optional.Optional[time.Time]
 	probability        optional.Optional[float32]
 	productType        optional.Optional[*app.EntityShort[int32]]
+	remaining          time.Duration
 	runs               int
 	startDate          time.Time
 	status             app.IndustryJobStatus
@@ -307,7 +308,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 			case 0:
 				c = strings.Compare(j.blueprintType.Name, k.blueprintType.Name)
 			case 1:
-				c = strings.Compare(j.status.String(), k.status.String())
+				c = cmp.Compare(j.remaining, k.remaining)
 			case 2:
 				c = cmp.Compare(j.runs, k.runs)
 			case 3:
@@ -531,9 +532,10 @@ func (a *industryJobs) update() {
 	})
 	jobs := slices.Concat(characterJobs, corporationJobs)
 	for i, j := range jobs {
+		remaining := time.Until(j.endDate)
 		var segs []widget.RichTextSegment
 		if j.status == app.JobActive {
-			segs = iwidget.NewRichTextSegmentFromText(ihumanize.Duration(time.Until(j.endDate)), widget.RichTextStyle{
+			segs = iwidget.NewRichTextSegmentFromText(ihumanize.Duration(remaining), widget.RichTextStyle{
 				ColorName: theme.ColorNamePrimary,
 			})
 		} else {
@@ -542,6 +544,7 @@ func (a *industryJobs) update() {
 			})
 		}
 		jobs[i].statusDisplay = segs
+		jobs[i].remaining = remaining
 	}
 	var readyCount int
 	for _, j := range jobs {

@@ -11,6 +11,7 @@ import (
 	"log"
 	"log/slog"
 	"maps"
+	"math"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -62,6 +63,7 @@ const (
 	mutexTimeout        = 250 * time.Millisecond
 	ssoClientID         = "11ae857fe4d149b2be60d875649c05f1"
 	userAgent           = "EveBuddy kalkoken87@gmail.com"
+	maxCPUShare         = 0.5
 )
 
 // Responses from these URLs will never be logged.
@@ -103,6 +105,12 @@ func main() {
 		}
 		slog.SetLogLoggerLevel(l)
 	}
+
+	// Set CPUs utilization limit
+	cpuTotal := runtime.NumCPU()
+	cpuLimit := max(1, int(math.Floor(float64(cpuTotal)*maxCPUShare)))
+	slog.Info("CPUs usage", "total", cpuTotal, "limit", cpuLimit)
+	runtime.GOMAXPROCS(cpuLimit)
 
 	// start fyne app
 	fyneApp := app.NewWithID(appID)
