@@ -27,7 +27,7 @@ var industryJobType2Activity = map[IndustryJobType]set.Set[IndustryActivity]{
 	ReactionJob:      set.Of(Reactions),
 }
 
-// Activities returns the industry activites that belong to a job type.
+// Activities returns the industry activities that belong to a job type.
 func (jt IndustryJobType) Activities() set.Set[IndustryActivity] {
 	return industryJobType2Activity[jt]
 }
