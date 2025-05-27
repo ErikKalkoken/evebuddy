@@ -394,4 +394,94 @@ func TestUpdateCharacterFields(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can disable all training watchers", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCharacter(storage.CreateCharacterParams{
+			IsTrainingWatched: true,
+		})
+		c2 := factory.CreateCharacter(storage.CreateCharacterParams{
+			IsTrainingWatched: true,
+		})
+		// when
+		err := r.DisableAllTrainingWatchers(ctx)
+		// then
+		if assert.NoError(t, err) {
+			c1, err := r.GetCharacter(ctx, c1.ID)
+			if assert.NoError(t, err) {
+				assert.False(t, c1.IsTrainingWatched)
+			}
+			c2, err := r.GetCharacter(ctx, c2.ID)
+			if assert.NoError(t, err) {
+				assert.False(t, c2.IsTrainingWatched)
+			}
+		}
+	})
+}
+
+func TestCharacterAssetValue(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("can update", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCharacter(storage.CreateCharacterParams{
+			AssetValue: optional.From(1.23),
+		})
+		v := 1234.6
+		// when
+		err := r.UpdateCharacterAssetValue(ctx, c1.ID, optional.From(v))
+		// then
+		if assert.NoError(t, err) {
+			c2, err := r.GetCharacter(ctx, c1.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, v, c2.AssetValue.ValueOrZero())
+			}
+		}
+	})
+	t.Run("can reset", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCharacter(storage.CreateCharacterParams{
+			AssetValue: optional.From(1.23),
+		})
+		// when
+		err := r.UpdateCharacterAssetValue(ctx, c1.ID, optional.Optional[float64]{})
+		// then
+		if assert.NoError(t, err) {
+			c2, err := r.GetCharacter(ctx, c1.ID)
+			if assert.NoError(t, err) {
+				assert.True(t, c2.AssetValue.IsEmpty())
+			}
+		}
+	})
+	t.Run("can get set value", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		v := 1234.6
+		c1 := factory.CreateCharacter(storage.CreateCharacterParams{
+			AssetValue: optional.From(v),
+		})
+		// when
+		got, err := r.GetCharacterAssetValue(ctx, c1.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, v, got.ValueOrZero())
+		}
+	})
+	t.Run("can get empty value", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCharacter()
+		if err := r.UpdateCharacterAssetValue(ctx, c1.ID, optional.Optional[float64]{}); err != nil {
+			t.Fatal(err)
+		}
+		// when
+		got, err := r.GetCharacterAssetValue(ctx, c1.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, got.IsEmpty())
+		}
+	})
 }

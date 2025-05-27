@@ -220,5 +220,12 @@ func TestCharacterAsset(t *testing.T) {
 			assert.InDelta(t, 500.5, got, 0.1)
 		}
 	})
-
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		_, err := r.GetCharacterAsset(ctx, 1, 2)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 }
