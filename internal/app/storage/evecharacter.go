@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"time"
 
@@ -67,10 +65,7 @@ func (st *Storage) DeleteEveCharacter(ctx context.Context, characterID int32) er
 func (st *Storage) GetEveCharacter(ctx context.Context, characterID int32) (*app.EveCharacter, error) {
 	r, err := st.qRO.GetEveCharacter(ctx, int64(characterID))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get EveCharacter %d: %w", characterID, err)
+		return nil, fmt.Errorf("get EveCharacter %d: %w", characterID, convertGetError(err))
 	}
 	alliance := nullEveEntry{
 		ID:       r.EveCharacter.AllianceID,

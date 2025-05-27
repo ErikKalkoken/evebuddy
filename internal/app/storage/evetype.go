@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -58,10 +56,7 @@ func (st *Storage) CreateEveType(ctx context.Context, arg CreateEveTypeParams) e
 func (st *Storage) GetEveType(ctx context.Context, id int32) (*app.EveType, error) {
 	row, err := st.qRO.GetEveType(ctx, int64(id))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get EveType for id %d: %w", id, err)
+		return nil, fmt.Errorf("get EveType for id %d: %w", id, convertGetError(err))
 	}
 	t := eveTypeFromDBModel(row.EveType, row.EveGroup, row.EveCategory)
 	return t, nil

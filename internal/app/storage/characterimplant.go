@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -27,10 +26,7 @@ func (st *Storage) GetCharacterImplant(ctx context.Context, characterID int32, t
 	}
 	row, err := st.qRO.GetCharacterImplant(ctx, arg)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get implant %d for character %d: %w", typeID, characterID, err)
+		return nil, fmt.Errorf("get implant %d for character %d: %w", typeID, characterID, convertGetError(err))
 	}
 	t2 := characterImplantFromDBModel(
 		row.CharacterImplant,

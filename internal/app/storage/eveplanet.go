@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -37,10 +35,7 @@ func (st *Storage) CreateEvePlanet(ctx context.Context, arg CreateEvePlanetParam
 func (st *Storage) GetEvePlanet(ctx context.Context, id int32) (*app.EvePlanet, error) {
 	row, err := st.qRO.GetEvePlanet(ctx, int64(id))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get EvePlanet for id %d: %w", id, err)
+		return nil, fmt.Errorf("get EvePlanet for id %d: %w", id, convertGetError(err))
 	}
 	g := evePlanetFromDBModel(
 		row.EvePlanet,

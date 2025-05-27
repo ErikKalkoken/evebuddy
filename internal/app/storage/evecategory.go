@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -35,10 +33,7 @@ func (st *Storage) CreateEveCategory(ctx context.Context, arg CreateEveCategoryP
 func (st *Storage) GetEveCategory(ctx context.Context, id int32) (*app.EveCategory, error) {
 	c, err := st.qRO.GetEveCategory(ctx, int64(id))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get EveCategory %+v: %w", id, err)
+		return nil, fmt.Errorf("get EveCategory %+v: %w", id, convertGetError(err))
 	}
 	return eveCategoryFromDBModel(c), nil
 }

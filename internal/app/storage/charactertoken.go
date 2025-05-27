@@ -14,10 +14,7 @@ import (
 func (st *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*app.CharacterToken, error) {
 	t, err := st.qRO.GetCharacterToken(ctx, int64(characterID))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get token for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get token for character %d: %w", characterID, convertGetError(err))
 	}
 	rows, err := st.qRO.ListCharacterTokenScopes(ctx, int64(characterID))
 	if err != nil {

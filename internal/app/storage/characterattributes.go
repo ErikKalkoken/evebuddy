@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"time"
 
@@ -26,10 +24,7 @@ type UpdateOrCreateCharacterAttributesParams struct {
 func (st *Storage) GetCharacterAttributes(ctx context.Context, characterID int32) (*app.CharacterAttributes, error) {
 	o, err := st.qRO.GetCharacterAttributes(ctx, int64(characterID))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get attributes for character ID %d: %w", characterID, err)
+		return nil, fmt.Errorf("get attributes for character ID %d: %w", characterID, convertGetError(err))
 	}
 	return characterAttributeFromDBModel(o), nil
 }

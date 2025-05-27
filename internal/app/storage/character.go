@@ -4,7 +4,6 @@ package storage
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"time"
 
@@ -73,10 +72,7 @@ func (st *Storage) DisableAllTrainingWatchers(ctx context.Context) error {
 func (st *Storage) GetCharacter(ctx context.Context, characterID int32) (*app.Character, error) {
 	r, err := st.qRO.GetCharacter(ctx, int64(characterID))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get character %d: %w", characterID, convertGetError(err))
 	}
 	alliance := nullEveEntry{
 		ID:       r.EveCharacter.AllianceID,

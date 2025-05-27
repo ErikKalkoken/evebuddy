@@ -19,10 +19,12 @@ func (st *Storage) GetCorporationSectionStatus(ctx context.Context, corporationI
 	}
 	s, err := st.qRO.GetCorporationSectionStatus(ctx, arg)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get status for corporation %d with section %s: %w", corporationID, section, err)
+		return nil, fmt.Errorf(
+			"get status for corporation %d with section %s: %w",
+			corporationID,
+			section,
+			convertGetError(err),
+		)
 	}
 	s2 := corporationSectionStatusFromDBModel(s)
 	return s2, nil

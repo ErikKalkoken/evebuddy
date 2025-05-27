@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -39,10 +37,7 @@ func (st *Storage) GetEveTypeDogmaEffect(ctx context.Context, eveTypeID, dogmaAt
 	}
 	row, err := st.qRO.GetEveTypeDogmaEffect(ctx, arg)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return false, fmt.Errorf("get EveTypeDogmaEffect for %v: %w", arg, err)
+		return false, fmt.Errorf("get EveTypeDogmaEffect for %v: %w", arg, convertGetError(err))
 	}
 	return row.IsDefault, nil
 }

@@ -53,10 +53,7 @@ func (st *Storage) DeleteCorporation(ctx context.Context, corporationID int32) e
 func (st *Storage) GetCorporation(ctx context.Context, corporationID int32) (*app.Corporation, error) {
 	r, err := st.qRO.GetCorporation(ctx, int64(corporationID))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get corporation %d: %w", corporationID, err)
+		return nil, fmt.Errorf("get corporation %d: %w", corporationID, convertGetError(err))
 	}
 	o := corporationFromDBModel(r)
 	return o, nil

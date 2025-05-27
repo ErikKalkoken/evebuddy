@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -109,10 +107,7 @@ func (st *Storage) GetCharacterMail(ctx context.Context, characterID, mailID int
 		}
 		row, err := st.qRO.GetMail(ctx, arg)
 		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				err = app.ErrNotFound
-			}
-			return nil, err
+			return nil, convertGetError(err)
 		}
 		ll, err := st.qRO.GetCharacterMailLabels(ctx, row.CharacterMail.ID)
 		if err != nil {

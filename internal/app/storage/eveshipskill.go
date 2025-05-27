@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -17,10 +16,7 @@ func (st *Storage) GetEveShipSkill(ctx context.Context, shipTypeID int32, rank u
 	}
 	row, err := st.qRO.GetShipSkill(ctx, arg)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get ShipSkill for %v: %w", arg, err)
+		return nil, fmt.Errorf("get ShipSkill for %v: %w", arg, convertGetError(err))
 	}
 	return eveShipSkillFromDBModel(row.Rank, row.ShipTypeID, row.SkillTypeID, row.SkillName, row.SkillLevel), nil
 }

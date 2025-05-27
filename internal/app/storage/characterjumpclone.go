@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -30,10 +29,7 @@ func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int32,
 	}
 	r, err := st.qRO.GetCharacterJumpClone(ctx, arg)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get jump clone for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get jump clone for character %d: %w", characterID, convertGetError(err))
 	}
 	o := characterJumpCloneFromDBModel(r.CharacterJumpClone, r.LocationName, r.RegionID, r.RegionName, r.LocationSecurity)
 	x, err := listCharacterJumpCloneImplants(ctx, st.qRO, o.ID)

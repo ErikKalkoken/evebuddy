@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"time"
 
@@ -59,10 +57,7 @@ func (st *Storage) GetPlanetPin(ctx context.Context, characterPlanetID, pinID in
 	}
 	r, err := st.qRO.GetPlanetPin(ctx, arg)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get PlanetPin for %+v: %w", arg, err)
+		return nil, fmt.Errorf("get PlanetPin for %+v: %w", arg, convertGetError(err))
 	}
 	return st.planetPinFromDBModel(ctx, r)
 }

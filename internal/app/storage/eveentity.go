@@ -96,10 +96,7 @@ func (st *Storage) GetOrCreateEveEntity(ctx context.Context, arg CreateEveEntity
 func (st *Storage) GetEveEntity(ctx context.Context, id int32) (*app.EveEntity, error) {
 	e, err := st.qRO.GetEveEntity(ctx, int64(id))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get eve entity for id %d: %w", id, err)
+		return nil, fmt.Errorf("get eve entity for id %d: %w", id, convertGetError(err))
 	}
 	return eveEntityFromDBModel(e), nil
 }

@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -37,10 +35,7 @@ func (st *Storage) CreateEveGroup(ctx context.Context, arg CreateEveGroupParams)
 func (st *Storage) GetEveGroup(ctx context.Context, id int32) (*app.EveGroup, error) {
 	row, err := st.qRO.GetEveGroup(ctx, int64(id))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get EveGroup for id %d: %w", id, err)
+		return nil, fmt.Errorf("get EveGroup for id %d: %w", id, convertGetError(err))
 	}
 	g := eveGroupFromDBModel(row.EveGroup, row.EveCategory)
 	return g, nil

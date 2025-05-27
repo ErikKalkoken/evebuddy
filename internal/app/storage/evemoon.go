@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -35,10 +33,7 @@ func (st *Storage) CreateEveMoon(ctx context.Context, arg CreateEveMoonParams) e
 func (st *Storage) GetEveMoon(ctx context.Context, id int32) (*app.EveMoon, error) {
 	row, err := st.qRO.GetEveMoon(ctx, int64(id))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get EveMoon for id %d: %w", id, err)
+		return nil, fmt.Errorf("get EveMoon for id %d: %w", id, convertGetError(err))
 	}
 	g := EveMoonFromDBModel(
 		row.EveMoon,
