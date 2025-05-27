@@ -36,7 +36,7 @@ func (st *Storage) GetCharacterIndustryJob(ctx context.Context, characterID, job
 	}
 	r, err := st.qRO.GetCharacterIndustryJob(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("get industry job for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get industry job for character %d: %w", characterID, convertGetError(err))
 	}
 	o := characterIndustryJobFromDBModel(
 		r.CharacterIndustryJob,

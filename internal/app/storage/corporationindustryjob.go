@@ -18,7 +18,7 @@ func (st *Storage) GetCorporationIndustryJob(ctx context.Context, corporationID,
 	}
 	r, err := st.qRO.GetCorporationIndustryJob(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("get industry job for corporation %d: %w", corporationID, err)
+		return nil, fmt.Errorf("get industry job for corporation %d: %w", corporationID, convertGetError(err))
 	}
 	o := corporationIndustryJobFromDBModel(corporationIndustryJobFromDBModelParams{
 		job:                    r.CorporationIndustryJob,

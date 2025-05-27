@@ -60,7 +60,7 @@ func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int
 	}
 	row, err := st.qRO.GetCharacterNotification(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("get character notification %+v: %w", arg, err)
+		return nil, fmt.Errorf("get character notification %+v: %w", arg, convertGetError(err))
 	}
 	return characterNotificationFromDBModel(row.CharacterNotification, row.EveEntity, row.NotificationType), err
 }

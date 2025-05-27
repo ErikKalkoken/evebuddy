@@ -72,7 +72,7 @@ func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, character
 	}
 	r, err := st.qRO.GetCharacterWalletJournalEntry(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("get wallet journal entry for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get wallet journal entry for character %d: %w", characterID, convertGetError(err))
 	}
 	o := r.CharacterWalletJournalEntry
 	firstParty := nullEveEntry{ID: o.FirstPartyID, Name: r.FirstName, Category: r.FirstCategory}

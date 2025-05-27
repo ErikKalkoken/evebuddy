@@ -328,7 +328,7 @@ func (st *Storage) characterFromDBModel(
 func (st *Storage) GetCharacterAssetValue(ctx context.Context, id int32) (optional.Optional[float64], error) {
 	v, err := st.qRO.GetCharacterAssetValue(ctx, int64(id))
 	if err != nil {
-		return optional.Optional[float64]{}, fmt.Errorf("get asset value for character %d: %w", id, err)
+		return optional.Optional[float64]{}, fmt.Errorf("get asset value for character %d: %w", id, convertGetError(err))
 	}
 	return optional.FromNullFloat64(v), nil
 }

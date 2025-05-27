@@ -26,7 +26,7 @@ func (st *Storage) GetCharacterTotalTrainingTime(ctx context.Context, characterI
 	var d optional.Optional[time.Duration]
 	x, err := st.qRO.GetTotalTrainingTime(ctx, int64(characterID))
 	if err != nil {
-		return d, fmt.Errorf("fetching total training time for character %d: %w", characterID, err)
+		return d, fmt.Errorf("fetching total training time for character %d: %w", characterID, convertGetError(err))
 	}
 	if !x.Valid {
 		return d, nil
@@ -83,7 +83,7 @@ func (st *Storage) GetCharacterSkillqueueItem(ctx context.Context, characterID i
 	}
 	row, err := st.qRO.GetCharacterSkillqueueItem(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("get skill queue item for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get skill queue item for character %d: %w", characterID, convertGetError(err))
 	}
 	return skillqueueItemFromDBModel(row.CharacterSkillqueueItem, row.SkillName, row.GroupName, row.SkillDescription), err
 }
