@@ -134,7 +134,7 @@ func (st *Storage) GetCharacterMailUnreadCount(ctx context.Context, id int32) (i
 	return int(count), err
 }
 
-func (st *Storage) GetAllCharacterMailUnreadCount(ctx context.Context) (int, error) {
+func (st *Storage) GetAllCharactersMailUnreadCount(ctx context.Context) (int, error) {
 	count, err := st.qRO.GetAllMailUnreadCount(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("get all mail unread count: %w", err)

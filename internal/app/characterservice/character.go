@@ -1310,7 +1310,7 @@ func (s *CharacterService) GetMail(ctx context.Context, characterID int32, mailI
 }
 
 func (s *CharacterService) GetAllMailUnreadCount(ctx context.Context) (int, error) {
-	return s.st.GetAllCharacterMailUnreadCount(ctx)
+	return s.st.GetAllCharactersMailUnreadCount(ctx)
 }
 
 // GetMailCounts returns the number of unread mail for a character.
