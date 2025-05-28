@@ -51,6 +51,7 @@ import (
 const (
 	appID               = "io.github.erikkalkoken.evebuddy"
 	appName             = "evebuddy"
+	sourceURL           = "https://github.com/ErikKalkoken/evebuddy"
 	cacheCleanUpTimeout = time.Minute * 30
 	crashFileName       = "crash.txt"
 	dbFileName          = appName + ".sqlite"
@@ -59,11 +60,11 @@ const (
 	logLevelDefault     = slog.LevelWarn // for startup only
 	logMaxBackups       = 3
 	logMaxSizeMB        = 50
+	maxCPUShare         = 0.5
 	mutexDelay          = 100 * time.Millisecond
 	mutexTimeout        = 250 * time.Millisecond
 	ssoClientID         = "11ae857fe4d149b2be60d875649c05f1"
-	userAgent           = "EveBuddy kalkoken87@gmail.com"
-	maxCPUShare         = 0.5
+	userAgentEmail      = "kalkoken87@gmail.com"
 )
 
 // Responses from these URLs will never be logged.
@@ -240,7 +241,9 @@ func main() {
 	rhc.ResponseLogHook = logResponse
 
 	// Initialize shared ESI client
+	userAgent := fmt.Sprintf("%s/%s (%s; +%s)", appName, fyneApp.Metadata().Version, userAgentEmail, sourceURL)
 	esiClient := goesi.NewAPIClient(rhc.StandardClient(), userAgent)
+	slog.Info("user agent", "str", userAgent)
 
 	// Init StatusCache service
 	scs := statuscacheservice.New(memCache, st)
