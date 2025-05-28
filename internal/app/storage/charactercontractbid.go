@@ -42,7 +42,7 @@ func (st *Storage) GetCharacterContractBid(ctx context.Context, contractID int64
 	}
 	r, err := st.qRO.GetCharacterContractBid(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("get contract bid %+v: %w", arg, err)
+		return nil, fmt.Errorf("get contract bid %+v: %w", arg, convertGetError(err))
 	}
 	return characterContractBidFromDBModel(r.CharacterContractBid, r.EveEntity), err
 }

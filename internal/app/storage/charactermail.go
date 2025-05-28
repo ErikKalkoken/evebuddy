@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -109,18 +107,15 @@ func (st *Storage) GetCharacterMail(ctx context.Context, characterID, mailID int
 		}
 		row, err := st.qRO.GetMail(ctx, arg)
 		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				err = app.ErrNotFound
-			}
-			return nil, err
+			return nil, convertGetError(err)
 		}
 		ll, err := st.qRO.GetCharacterMailLabels(ctx, row.CharacterMail.ID)
 		if err != nil {
-			return nil, err
+			return nil, convertGetError(err)
 		}
 		rr, err := st.qRO.GetMailRecipients(ctx, row.CharacterMail.ID)
 		if err != nil {
-			return nil, err
+			return nil, convertGetError(err)
 		}
 		mail := characterMailFromDBModel(row.CharacterMail, row.EveEntity, ll, rr)
 		return mail, nil
@@ -134,12 +129,12 @@ func (st *Storage) GetCharacterMail(ctx context.Context, characterID, mailID int
 func (st *Storage) GetCharacterMailUnreadCount(ctx context.Context, id int32) (int, error) {
 	count, err := st.qRO.GetMailUnreadCount(ctx, int64(id))
 	if err != nil {
-		return 0, fmt.Errorf("get mail unread count for character %d: %w", id, err)
+		return 0, fmt.Errorf("get mail unread count for character %d: %w", id, convertGetError(err))
 	}
 	return int(count), err
 }
 
-func (st *Storage) GetAllCharacterMailUnreadCount(ctx context.Context) (int, error) {
+func (st *Storage) GetAllCharactersMailUnreadCount(ctx context.Context) (int, error) {
 	count, err := st.qRO.GetAllMailUnreadCount(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("get all mail unread count: %w", err)
@@ -147,10 +142,10 @@ func (st *Storage) GetAllCharacterMailUnreadCount(ctx context.Context) (int, err
 	return int(count), err
 }
 
-func (st *Storage) GetCharacterMailCount(ctx context.Context, id int32) (int, error) {
-	count, err := st.qRO.GetMailCount(ctx, int64(id))
+func (st *Storage) GetCharacterMailCount(ctx context.Context, characterID int32) (int, error) {
+	count, err := st.qRO.GetMailCount(ctx, int64(characterID))
 	if err != nil {
-		return 0, fmt.Errorf("get mail count for character %d: %w", id, err)
+		return 0, fmt.Errorf("get mail count for character %d: %w", characterID, convertGetError(err))
 	}
 	return int(count), err
 }
@@ -170,7 +165,7 @@ func (st *Storage) DeleteCharacterMail(ctx context.Context, characterID, mailID 
 func (st *Storage) GetCharacterMailLabelUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {
 	rows, err := st.qRO.GetCharacterMailLabelUnreadCounts(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("get mail label unread counts for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get mail label unread counts for character %d: %w", characterID, convertGetError(err))
 	}
 	result := make(map[int32]int)
 	for _, r := range rows {
@@ -182,7 +177,7 @@ func (st *Storage) GetCharacterMailLabelUnreadCounts(ctx context.Context, charac
 func (st *Storage) GetCharacterMailListUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {
 	rows, err := st.qRO.GetCharacterMailListUnreadCounts(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("get mail list unread counts for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get mail list unread counts for character %d: %w", characterID, convertGetError(err))
 	}
 	result := make(map[int32]int)
 	for _, r := range rows {

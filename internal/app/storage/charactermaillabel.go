@@ -28,10 +28,12 @@ func (st *Storage) GetCharacterMailLabel(ctx context.Context, characterID, label
 	}
 	l, err := st.qRO.GetCharacterMailLabel(ctx, arg)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get mail label for character %d with label %d: %w", arg.CharacterID, arg.LabelID, err)
+		return nil, fmt.Errorf(
+			"get mail label for character %d with label %d: %w",
+			arg.CharacterID,
+			arg.LabelID,
+			convertGetError(err),
+		)
 	}
 	l2 := characterMailLabelFromDBModel(l)
 	return l2, nil

@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"time"
 
@@ -43,10 +42,7 @@ func (st *Storage) UpdateOrCreateEveLocation(ctx context.Context, arg UpdateOrCr
 func (st *Storage) GetLocation(ctx context.Context, id int64) (*app.EveLocation, error) {
 	o, err := st.qRO.GetLocation(ctx, id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get eve location for id %d: %w", id, err)
+		return nil, fmt.Errorf("get eve location for id %d: %w", id, convertGetError(err))
 	}
 	x, err := st.eveLocationFromDBModel(ctx, o)
 	if err != nil {

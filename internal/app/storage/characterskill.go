@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -30,10 +28,7 @@ func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int32, typ
 	}
 	r, err := st.qRO.GetCharacterSkill(ctx, arg)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get skill %d for character %d: %w", typeID, characterID, err)
+		return nil, fmt.Errorf("get skill %d for character %d: %w", typeID, characterID, convertGetError(err))
 	}
 	t2 := characterSkillFromDBModel(r.CharacterSkill, r.EveType, r.EveGroup, r.EveCategory)
 	return t2, nil

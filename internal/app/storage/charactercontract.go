@@ -135,7 +135,7 @@ func (st *Storage) GetCharacterContract(ctx context.Context, characterID, contra
 	}
 	r, err := st.qRO.GetCharacterContract(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("get contract for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get contract for character %d: %w", characterID, convertGetError(err))
 	}
 	o := r.CharacterContract
 	acceptor := nullEveEntry{ID: o.AcceptorID, Name: r.AcceptorName, Category: r.AcceptorCategory}

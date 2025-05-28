@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"time"
 
@@ -16,10 +14,7 @@ import (
 func (st *Storage) GetEveCorporation(ctx context.Context, corporationID int32) (*app.EveCorporation, error) {
 	r, err := st.qRO.GetEveCorporation(ctx, int64(corporationID))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get EveCorporation %d: %w", corporationID, err)
+		return nil, fmt.Errorf("get EveCorporation %d: %w", corporationID, convertGetError(err))
 	}
 	c := eveCorporationFromDBModel(eveCorporationFromDBModelParams{
 		corporation: r.EveCorporation,

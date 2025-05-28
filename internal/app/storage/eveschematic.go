@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -35,10 +33,7 @@ func (st *Storage) CreateEveSchematic(ctx context.Context, arg CreateEveSchemati
 func (st *Storage) GetEveSchematic(ctx context.Context, id int32) (*app.EveSchematic, error) {
 	c, err := st.qRO.GetEveSchematic(ctx, int64(id))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get EveSchematic for id %d: %w", id, err)
+		return nil, fmt.Errorf("get EveSchematic for id %d: %w", id, convertGetError(err))
 	}
 	return eveSchematicFromDBModel(c), nil
 }

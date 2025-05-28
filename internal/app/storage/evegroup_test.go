@@ -14,7 +14,7 @@ func TestEveGroup(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
-	t.Run("can create new", func(t *testing.T) {
+	t.Run("can create new and get", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateEveCategory()
@@ -35,6 +35,41 @@ func TestEveGroup(t *testing.T) {
 				assert.Equal(t, true, g.IsPublished)
 				assert.Equal(t, c, g.Category)
 			}
+		}
+	})
+	t.Run("can get already existing", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		g := factory.CreateEveGroup()
+		// when
+		got, err := r.GetOrCreateEveGroup(ctx, storage.CreateEveGroupParams{
+			ID: g.ID,
+		})
+		// then
+		if assert.NoError(t, err) {
+			assert.EqualValues(t, g.ID, got.ID)
+			assert.Equal(t, g.Name, got.Name)
+			assert.Equal(t, g.IsPublished, got.IsPublished)
+			assert.Equal(t, g.Category, got.Category)
+		}
+	})
+	t.Run("can create new when not existing", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateEveCategory()
+		// when
+		got, err := r.GetOrCreateEveGroup(ctx, storage.CreateEveGroupParams{
+			ID:          42,
+			Name:        "Alpha",
+			CategoryID:  c.ID,
+			IsPublished: true,
+		})
+		// then
+		if assert.NoError(t, err) {
+			assert.EqualValues(t, 42, got.ID)
+			assert.Equal(t, "Alpha", got.Name)
+			assert.True(t, got.IsPublished)
+			assert.Equal(t, c, got.Category)
 		}
 	})
 }

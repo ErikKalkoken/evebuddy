@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -30,10 +29,7 @@ func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int32,
 	}
 	r, err := st.qRO.GetCharacterJumpClone(ctx, arg)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get jump clone for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get jump clone for character %d: %w", characterID, convertGetError(err))
 	}
 	o := characterJumpCloneFromDBModel(r.CharacterJumpClone, r.LocationName, r.RegionID, r.RegionName, r.LocationSecurity)
 	x, err := listCharacterJumpCloneImplants(ctx, st.qRO, o.ID)
@@ -113,28 +109,25 @@ func (st *Storage) ListCharacterJumpClones(ctx context.Context, characterID int3
 }
 
 func (st *Storage) ReplaceCharacterJumpClones(ctx context.Context, characterID int32, args []CreateCharacterJumpCloneParams) error {
-	err := func() error {
-		tx, err := st.dbRW.Begin()
-		if err != nil {
-			return err
-		}
-		defer tx.Rollback()
-		qtx := st.qRW.WithTx(tx)
-		if err := qtx.DeleteCharacterJumpClones(ctx, int64(characterID)); err != nil {
-			return err
-		}
-		for _, arg := range args {
-			if err := createCharacterJumpClone(ctx, qtx, arg); err != nil {
-				return err
-			}
-		}
-		if err := tx.Commit(); err != nil {
-			return err
-		}
-		return nil
-	}()
+	wrapErr := func(err error) error {
+		return fmt.Errorf("replaceCharacterJumpClones for ID %d: %+v: %w", characterID, args, err)
+	}
+	tx, err := st.dbRW.Begin()
 	if err != nil {
-		return fmt.Errorf("replace jump clones for character %d: %w", characterID, err)
+		return wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	if err := qtx.DeleteCharacterJumpClones(ctx, int64(characterID)); err != nil {
+		return wrapErr(err)
+	}
+	for _, arg := range args {
+		if err := createCharacterJumpClone(ctx, qtx, arg); err != nil {
+			return wrapErr(err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return wrapErr(err)
 	}
 	return nil
 }

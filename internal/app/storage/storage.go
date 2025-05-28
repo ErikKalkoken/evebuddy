@@ -3,12 +3,14 @@ package storage
 import (
 	"database/sql"
 	"embed"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/url"
 
 	_ "github.com/mattn/go-sqlite3"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/migrate"
 )
@@ -82,4 +84,11 @@ func sqliteDSN(dsn string, isReadonly bool) string {
 	}
 	dsn2 := fmt.Sprintf("%s?%s", dsn, v.Encode())
 	return dsn2
+}
+
+func convertGetError(err error) error {
+	if errors.Is(err, sql.ErrNoRows) {
+		err = app.ErrNotFound
+	}
+	return err
 }

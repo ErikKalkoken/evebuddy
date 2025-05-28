@@ -15,10 +15,7 @@ import (
 func (st *Storage) GetGeneralSectionStatus(ctx context.Context, section app.GeneralSection) (*app.GeneralSectionStatus, error) {
 	s, err := st.qRO.GetGeneralSectionStatus(ctx, string(section))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get status for general section %s: %w", section, err)
+		return nil, fmt.Errorf("get status for general section %s: %w", section, convertGetError(err))
 	}
 	s2 := generalSectionStatusFromDBModel(s)
 	return s2, nil

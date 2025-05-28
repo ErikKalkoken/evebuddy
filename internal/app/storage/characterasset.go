@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -62,10 +61,7 @@ func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int32, ite
 	}
 	r, err := st.qRO.GetCharacterAsset(ctx, arg)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get character asset for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get character asset for character %d: %w", characterID, convertGetError(err))
 	}
 	o := characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
 	return o, nil

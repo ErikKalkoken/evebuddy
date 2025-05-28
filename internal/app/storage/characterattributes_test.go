@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 )
@@ -80,5 +81,12 @@ func TestCharacterAttributes(t *testing.T) {
 			}
 		}
 	})
-
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		_, err := r.GetCharacterAttributes(ctx, 1)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 }

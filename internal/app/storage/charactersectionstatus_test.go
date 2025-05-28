@@ -12,7 +12,7 @@ import (
 )
 
 func TestCharacterSectionStatus(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can list", func(t *testing.T) {
@@ -28,7 +28,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 			Section:     app.SectionImplants,
 		})
 		// when
-		oo, err := r.ListCharacterSectionStatus(ctx, c.ID)
+		oo, err := st.ListCharacterSectionStatus(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, oo, 2)
@@ -45,7 +45,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 			Section:      app.SectionImplants,
 			ErrorMessage: &error,
 		}
-		x1, err := r.UpdateOrCreateCharacterSectionStatus(ctx, arg)
+		x1, err := st.UpdateOrCreateCharacterSectionStatus(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			if assert.NoError(t, err) {
@@ -54,7 +54,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 				assert.True(t, x1.CompletedAt.IsZero())
 				assert.False(t, x1.UpdatedAt.IsZero())
 			}
-			x2, err := r.GetCharacterSectionStatus(ctx, c.ID, app.SectionImplants)
+			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, app.SectionImplants)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -75,7 +75,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 			Section:      x.Section,
 			ErrorMessage: &s,
 		}
-		x1, err := r.UpdateOrCreateCharacterSectionStatus(ctx, arg)
+		x1, err := st.UpdateOrCreateCharacterSectionStatus(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, x.ContentHash, x1.ContentHash)
@@ -83,7 +83,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 			assert.Equal(t, x.CompletedAt, x1.CompletedAt)
 			assert.Equal(t, x.StartedAt, x1.StartedAt)
 			assert.False(t, x1.UpdatedAt.IsZero())
-			x2, err := r.GetCharacterSectionStatus(ctx, c.ID, x.Section)
+			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, x.Section)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}

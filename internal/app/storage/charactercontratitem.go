@@ -44,7 +44,7 @@ func (st *Storage) GetCharacterContractItem(ctx context.Context, contractID, rec
 	}
 	r, err := st.qRO.GetCharacterContractItem(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("get contract item %+v: %w", arg, err)
+		return nil, fmt.Errorf("get contract item %+v: %w", arg, convertGetError(err))
 	}
 	return characterContractItemFromDBModel(r.CharacterContractItem, r.EveType, r.EveGroup, r.EveCategory), err
 }

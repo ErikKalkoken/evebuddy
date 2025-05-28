@@ -37,7 +37,7 @@ func FilterSlice[S ~[]E, E any](s S, f func(E) bool) iter.Seq[E] {
 	return Filter(slices.Values(s), f)
 }
 
-// Map returns an iterator that applies function f to every element of iterator it, yielding the results.
+// Map returns an iterator that maps each element X of sequence it to element Y through applying f.
 func Map[X, Y any](it iter.Seq[X], f func(X) Y) iter.Seq[Y] {
 	return func(yield func(Y) bool) {
 		for v := range it {
@@ -48,7 +48,18 @@ func Map[X, Y any](it iter.Seq[X], f func(X) Y) iter.Seq[Y] {
 	}
 }
 
-// MapSlice returns an iterator that aplies function f to every element of a slice s, yielding the results.
+// Map returns an iterator that maps each element of slice s to elements K, V through applying f.
+func MapSlice2[X, K, V any](s []X, f func(X) (K, V)) iter.Seq2[K, V] {
+	return func(yield func(K, V) bool) {
+		for _, v := range s {
+			if !yield(f(v)) {
+				return
+			}
+		}
+	}
+}
+
+// Map returns an iterator that maps each element of slice s to an element Y through applying f.
 func MapSlice[S ~[]X, X any, Y any](s S, f func(X) Y) iter.Seq[Y] {
 	return Map(slices.Values(s), f)
 }

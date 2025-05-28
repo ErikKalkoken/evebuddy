@@ -57,7 +57,7 @@ func (st *Storage) GetCharacterWalletTransaction(ctx context.Context, characterI
 	}
 	r, err := st.qRO.GetCharacterWalletTransaction(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("get wallet transaction for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get wallet transaction for character %d: %w", characterID, convertGetError(err))
 	}
 	o := characterWalletTransactionFromDBModel(
 		r.CharacterWalletTransaction,

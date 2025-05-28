@@ -54,7 +54,7 @@ func (st *Storage) GetCharacterPlanet(ctx context.Context, characterID int32, pl
 	}
 	r, err := st.qRO.GetCharacterPlanet(ctx, arg)
 	if err != nil {
-		return nil, err
+		return nil, convertGetError(err)
 	}
 	pp, err := st.ListPlanetPins(ctx, r.CharacterPlanet.ID)
 	if err != nil {

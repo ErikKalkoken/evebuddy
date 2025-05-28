@@ -14,10 +14,7 @@ import (
 func (st *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*app.CharacterToken, error) {
 	t, err := st.qRO.GetCharacterToken(ctx, int64(characterID))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("get token for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get token for character %d: %w", characterID, convertGetError(err))
 	}
 	rows, err := st.qRO.ListCharacterTokenScopes(ctx, int64(characterID))
 	if err != nil {
@@ -31,51 +28,48 @@ func (st *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*a
 }
 
 func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, t *app.CharacterToken) error {
-	err := func() error {
-		arg := queries.UpdateOrCreateCharacterTokenParams{
-			AccessToken:  t.AccessToken,
-			CharacterID:  int64(t.CharacterID),
-			ExpiresAt:    t.ExpiresAt,
-			RefreshToken: t.RefreshToken,
-			TokenType:    t.TokenType,
-		}
-		token, err := st.qRW.UpdateOrCreateCharacterToken(ctx, arg)
-		if err != nil {
-			return err
-		}
-		ss := make([]queries.Scope, len(t.Scopes))
-		for i, name := range t.Scopes {
-			s, err := st.getOrCreateScope(ctx, name)
-			if err != nil {
-				return err
-			}
-			ss[i] = s
-		}
-		tx, err := st.dbRW.Begin()
-		if err != nil {
-			return err
-		}
-		defer tx.Rollback()
-		qtx := st.qRW.WithTx(tx)
-		if err := qtx.ClearCharacterTokenScopes(ctx, int64(t.CharacterID)); err != nil {
-			return err
-		}
-		for _, s := range ss {
-			arg := queries.AddCharacterTokenScopeParams{
-				CharacterTokenID: token.ID,
-				ScopeID:          s.ID,
-			}
-			if err := qtx.AddCharacterTokenScope(ctx, arg); err != nil {
-				return err
-			}
-		}
-		if err := tx.Commit(); err != nil {
-			return err
-		}
-		return nil
-	}()
+	wrapErr := func(err error) error {
+		return fmt.Errorf("updateOrCreateCharacterToken: %+v: %w", *t, err)
+	}
+	arg := queries.UpdateOrCreateCharacterTokenParams{
+		AccessToken:  t.AccessToken,
+		CharacterID:  int64(t.CharacterID),
+		ExpiresAt:    t.ExpiresAt,
+		RefreshToken: t.RefreshToken,
+		TokenType:    t.TokenType,
+	}
+	token, err := st.qRW.UpdateOrCreateCharacterToken(ctx, arg)
 	if err != nil {
-		return fmt.Errorf("update or create token for character %d: %w", t.CharacterID, err)
+		return wrapErr(err)
+	}
+	ss := make([]queries.Scope, len(t.Scopes))
+	for i, name := range t.Scopes {
+		s, err := st.getOrCreateScope(ctx, name)
+		if err != nil {
+			return wrapErr(err)
+		}
+		ss[i] = s
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	if err := qtx.ClearCharacterTokenScopes(ctx, int64(t.CharacterID)); err != nil {
+		return wrapErr(err)
+	}
+	for _, s := range ss {
+		arg := queries.AddCharacterTokenScopeParams{
+			CharacterTokenID: token.ID,
+			ScopeID:          s.ID,
+		}
+		if err := qtx.AddCharacterTokenScope(ctx, arg); err != nil {
+			return wrapErr(err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return wrapErr(err)
 	}
 	return nil
 }

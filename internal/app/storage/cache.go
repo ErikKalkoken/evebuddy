@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -48,10 +47,7 @@ func (st *Storage) CacheGet(ctx context.Context, key string) ([]byte, error) {
 	}
 	x, err := st.qRO.CacheGet(ctx, arg)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = app.ErrNotFound
-		}
-		return nil, fmt.Errorf("cache get: %w", err)
+		return nil, fmt.Errorf("cache get: %w", convertGetError(err))
 	}
 	return x.Value, nil
 }
