@@ -53,7 +53,7 @@ func (f Factory) RandomTime() time.Time {
 }
 
 func (f Factory) CreateCharacter(args ...storage.CreateCharacterParams) *app.Character {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg storage.CreateCharacterParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -98,7 +98,7 @@ func (f Factory) CreateCharacter(args ...storage.CreateCharacterParams) *app.Cha
 }
 
 func (f Factory) CreateCharacterAttributes(args ...storage.UpdateOrCreateCharacterAttributesParams) *app.CharacterAttributes {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg storage.UpdateOrCreateCharacterAttributesParams
 	randomValue := func() int {
 		return 20 + rand.IntN(5)
@@ -136,7 +136,7 @@ func (f Factory) CreateCharacterAttributes(args ...storage.UpdateOrCreateCharact
 }
 
 func (f Factory) CreateCharacterAsset(args ...storage.CreateCharacterAssetParams) *app.CharacterAsset {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg storage.CreateCharacterAssetParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -183,7 +183,7 @@ func (f Factory) CreateCharacterAsset(args ...storage.CreateCharacterAssetParams
 }
 
 func (f Factory) CreateCharacterContract(args ...storage.CreateCharacterContractParams) *app.CharacterContract {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg storage.CreateCharacterContractParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -268,7 +268,7 @@ func (f Factory) CreateCharacterContractCourier(args ...storage.CreateCharacterC
 }
 
 func (f Factory) CreateCharacterContractBid(args ...storage.CreateCharacterContractBidParams) *app.CharacterContractBid {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg storage.CreateCharacterContractBidParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -306,7 +306,7 @@ func (f Factory) CreateCharacterContractBid(args ...storage.CreateCharacterContr
 }
 
 func (f Factory) CreateCharacterContractItem(args ...storage.CreateCharacterContractItemParams) *app.CharacterContractItem {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg storage.CreateCharacterContractItemParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -341,7 +341,7 @@ func (f Factory) CreateCharacterContractItem(args ...storage.CreateCharacterCont
 }
 
 func (f Factory) CreateCharacterImplant(args ...storage.CreateCharacterImplantParams) *app.CharacterImplant {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg storage.CreateCharacterImplantParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -366,7 +366,7 @@ func (f Factory) CreateCharacterImplant(args ...storage.CreateCharacterImplantPa
 }
 
 func (f Factory) CreateCharacterIndustryJob(args ...storage.UpdateOrCreateCharacterIndustryJobParams) *app.CharacterIndustryJob {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg storage.UpdateOrCreateCharacterIndustryJobParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -464,7 +464,7 @@ func (f Factory) CreateCharacterIndustryJob(args ...storage.UpdateOrCreateCharac
 }
 
 func (f Factory) CreateCharacterJumpClone(args ...storage.CreateCharacterJumpCloneParams) *app.CharacterJumpClone {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg storage.CreateCharacterJumpCloneParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -504,7 +504,7 @@ func (f Factory) CreateCharacterJumpClone(args ...storage.CreateCharacterJumpClo
 
 func (f Factory) CreateCharacterMail(args ...storage.CreateCharacterMailParams) *app.CharacterMail {
 	var arg storage.CreateCharacterMailParams
-	ctx := context.TODO()
+	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -548,7 +548,7 @@ func (f Factory) CreateCharacterMail(args ...storage.CreateCharacterMailParams) 
 }
 
 func (f Factory) CreateCharacterMailLabel(args ...app.CharacterMailLabel) *app.CharacterMailLabel {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg storage.MailLabelParams
 	if len(args) > 0 {
 		l := args[0]
@@ -586,7 +586,7 @@ func (f Factory) CreateCharacterMailLabel(args ...app.CharacterMailLabel) *app.C
 
 func (f Factory) CreateCharacterMailList(characterID int32, args ...app.EveEntity) *app.EveEntity {
 	var e app.EveEntity
-	ctx := context.TODO()
+	ctx := context.Background()
 	if len(args) > 0 {
 		e = args[0]
 	}
@@ -604,7 +604,7 @@ func (f Factory) CreateCharacterMailList(characterID int32, args ...app.EveEntit
 }
 
 func (f Factory) CreateCharacterPlanet(args ...storage.CreateCharacterPlanetParams) *app.CharacterPlanet {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg storage.CreateCharacterPlanetParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -635,7 +635,7 @@ func (f Factory) CreateCharacterPlanet(args ...storage.CreateCharacterPlanetPara
 }
 
 func (f Factory) CreatePlanetPin(args ...storage.CreatePlanetPinParams) *app.PlanetPin {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg storage.CreatePlanetPinParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -673,7 +673,7 @@ func (f Factory) CreatePlanetPinExtractor(args ...storage.CreatePlanetPinParams)
 }
 
 func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSkillParams) *app.CharacterSkill {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg storage.UpdateOrCreateCharacterSkillParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -707,7 +707,7 @@ func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSki
 }
 
 func (f Factory) CreateCharacterSkillqueueItem(args ...storage.SkillqueueItemParams) *app.CharacterSkillqueueItem {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg storage.SkillqueueItemParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -771,7 +771,7 @@ func (f Factory) CreateCharacterSkillqueueItem(args ...storage.SkillqueueItemPar
 
 func (f Factory) CreateCharacterToken(args ...app.CharacterToken) *app.CharacterToken {
 	var t app.CharacterToken
-	ctx := context.TODO()
+	ctx := context.Background()
 	if len(args) > 0 {
 		t = args[0]
 	}
@@ -808,7 +808,7 @@ type CharacterSectionStatusParams struct {
 }
 
 func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusParams) *app.CharacterSectionStatus {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg CharacterSectionStatusParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -849,7 +849,7 @@ func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusPara
 }
 
 func (f Factory) CreateCharacterWalletJournalEntry(args ...storage.CreateCharacterWalletJournalEntryParams) *app.CharacterWalletJournalEntry {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg storage.CreateCharacterWalletJournalEntryParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -912,7 +912,7 @@ func (f Factory) CreateCharacterWalletJournalEntry(args ...storage.CreateCharact
 }
 
 func (f Factory) CreateCharacterWalletTransaction(args ...storage.CreateCharacterWalletTransactionParams) *app.CharacterWalletTransaction {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg storage.CreateCharacterWalletTransactionParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -967,7 +967,7 @@ func (f Factory) CreateCharacterWalletTransaction(args ...storage.CreateCharacte
 }
 
 func (f Factory) CreateCharacterNotification(args ...storage.CreateCharacterNotificationParams) *app.CharacterNotification {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg storage.CreateCharacterNotificationParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -1024,7 +1024,7 @@ func (f Factory) CreateCorporation(corporationID ...int32) *app.Corporation {
 }
 
 func (f Factory) CreateCorporationIndustryJob(args ...storage.UpdateOrCreateCorporationIndustryJobParams) *app.CorporationIndustryJob {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg storage.UpdateOrCreateCorporationIndustryJobParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -1121,7 +1121,7 @@ type CorporationSectionStatusParams struct {
 }
 
 func (f Factory) CreateCorporationSectionStatus(args ...CorporationSectionStatusParams) *app.CorporationSectionStatus {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg CorporationSectionStatusParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -1163,7 +1163,7 @@ func (f Factory) CreateCorporationSectionStatus(args ...CorporationSectionStatus
 }
 
 func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *app.EveCharacter {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg storage.CreateEveCharacterParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -1247,7 +1247,7 @@ type GeneralSectionStatusParams struct {
 }
 
 func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) *app.GeneralSectionStatus {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var arg GeneralSectionStatusParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -1286,7 +1286,7 @@ func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) 
 
 func (f Factory) CreateEveEntity(args ...app.EveEntity) *app.EveEntity {
 	var arg app.EveEntity
-	ctx := context.TODO()
+	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -1365,7 +1365,7 @@ func eveEntityWithCategory(args []app.EveEntity, category app.EveEntityCategory)
 
 func (f Factory) CreateEveCategory(args ...storage.CreateEveCategoryParams) *app.EveCategory {
 	var arg storage.CreateEveCategoryParams
-	ctx := context.TODO()
+	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -1384,7 +1384,7 @@ func (f Factory) CreateEveCategory(args ...storage.CreateEveCategoryParams) *app
 
 func (f Factory) CreateEveGroup(args ...storage.CreateEveGroupParams) *app.EveGroup {
 	var arg storage.CreateEveGroupParams
-	ctx := context.TODO()
+	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -1409,9 +1409,40 @@ func (f Factory) CreateEveGroup(args ...storage.CreateEveGroupParams) *app.EveGr
 	return o
 }
 
+// func (f Factory) CreateEveShipSkill(args ...storage.CreateShipSkillParams) *app.EveShipSkill {
+// 	var arg storage.CreateShipSkillParams
+// 	ctx := context.Background()
+// 	if len(args) > 0 {
+// 		arg = args[0]
+// 	}
+// 	category, err := f.st.GetOrCreateEveCategory(ctx, storage.CreateEveCategoryParams{
+// 		ID:          app.EveCategoryShip,
+// 		IsPublished: true,
+// 		Name:        "Ship",
+// 	})
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	group, err := f.st.GetOrCreateEveGroup(ctx, storage.CreateEveGroupParams{
+// 		CategoryID:  category.ID,
+// 		ID:          app.EveGroupCarrier,
+// 		IsPublished: true,
+// 		Name:        "Carrier",
+// 	})
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	err := f.st.CreateEveShipSkill(ctx, arg)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	o, err := f.st.GetEveShipSkill(ctx, arg.ShipTypeID, arg.Rank)
+// 	return o
+// }
+
 func (f Factory) CreateEveType(args ...storage.CreateEveTypeParams) *app.EveType {
 	var arg storage.CreateEveTypeParams
-	ctx := context.TODO()
+	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -1456,7 +1487,7 @@ func (f Factory) CreateEveType(args ...storage.CreateEveTypeParams) *app.EveType
 
 func (f Factory) CreateEveTypeDogmaAttribute(args ...storage.CreateEveTypeDogmaAttributeParams) *app.EveTypeDogmaAttribute {
 	var arg storage.CreateEveTypeDogmaAttributeParams
-	ctx := context.TODO()
+	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -1496,7 +1527,7 @@ func (f Factory) CreateEveTypeDogmaAttribute(args ...storage.CreateEveTypeDogmaA
 
 func (f Factory) CreateEveDogmaAttribute(args ...storage.CreateEveDogmaAttributeParams) *app.EveDogmaAttribute {
 	var arg storage.CreateEveDogmaAttributeParams
-	ctx := context.TODO()
+	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -1530,7 +1561,7 @@ func (f Factory) CreateEveDogmaAttribute(args ...storage.CreateEveDogmaAttribute
 
 func (f Factory) CreateEveRegion(args ...storage.CreateEveRegionParams) *app.EveRegion {
 	var arg storage.CreateEveRegionParams
-	ctx := context.TODO()
+	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -1549,7 +1580,7 @@ func (f Factory) CreateEveRegion(args ...storage.CreateEveRegionParams) *app.Eve
 
 func (f Factory) CreateEveConstellation(args ...storage.CreateEveConstellationParams) *app.EveConstellation {
 	var arg storage.CreateEveConstellationParams
-	ctx := context.TODO()
+	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -1576,7 +1607,7 @@ func (f Factory) CreateEveConstellation(args ...storage.CreateEveConstellationPa
 
 func (f Factory) CreateEveSolarSystem(args ...storage.CreateEveSolarSystemParams) *app.EveSolarSystem {
 	var arg storage.CreateEveSolarSystemParams
-	ctx := context.TODO()
+	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -1606,7 +1637,7 @@ func (f Factory) CreateEveSolarSystem(args ...storage.CreateEveSolarSystemParams
 
 func (f Factory) CreateEvePlanet(args ...storage.CreateEvePlanetParams) *app.EvePlanet {
 	var arg storage.CreateEvePlanetParams
-	ctx := context.TODO()
+	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -1637,7 +1668,7 @@ func (f Factory) CreateEvePlanet(args ...storage.CreateEvePlanetParams) *app.Eve
 
 func (f Factory) CreateEveMoon(args ...storage.CreateEveMoonParams) *app.EveMoon {
 	var arg storage.CreateEveMoonParams
-	ctx := context.TODO()
+	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -1666,7 +1697,7 @@ func (f Factory) CreateEveMoon(args ...storage.CreateEveMoonParams) *app.EveMoon
 
 func (f Factory) CreateEveRace(args ...app.EveRace) *app.EveRace {
 	var arg app.EveRace
-	ctx := context.TODO()
+	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -1693,7 +1724,7 @@ func (f Factory) CreateEveRace(args ...app.EveRace) *app.EveRace {
 
 func (f Factory) CreateEveSchematic(args ...storage.CreateEveSchematicParams) *app.EveSchematic {
 	var arg storage.CreateEveSchematicParams
-	ctx := context.TODO()
+	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -1724,7 +1755,7 @@ func (f Factory) CreateEveLocationEmptyStructure(args ...storage.UpdateOrCreateL
 
 func (f Factory) createEveLocationStructure(startID int64, categoryID int32, isEmpty bool, args ...storage.UpdateOrCreateLocationParams) *app.EveLocation {
 	var arg storage.UpdateOrCreateLocationParams
-	ctx := context.TODO()
+	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -1771,7 +1802,7 @@ func (f Factory) createEveLocationStructure(startID int64, categoryID int32, isE
 
 func (f Factory) CreateEveMarketPrice(args ...storage.UpdateOrCreateEveMarketPriceParams) *app.EveMarketPrice {
 	var arg storage.UpdateOrCreateEveMarketPriceParams
-	ctx := context.TODO()
+	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
 	}

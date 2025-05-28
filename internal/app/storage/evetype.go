@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -27,8 +28,16 @@ type CreateEveTypeParams struct {
 }
 
 func (st *Storage) CreateEveType(ctx context.Context, arg CreateEveTypeParams) error {
+	return createEveType(ctx, st.qRW, arg)
+}
+
+func createEveType(ctx context.Context, q *queries.Queries, arg CreateEveTypeParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("createEveType: %+v: %w", arg, err)
+	}
+
 	if arg.ID == 0 || arg.GroupID == 0 {
-		return fmt.Errorf("CreateEveType: %+v: %w", arg, app.ErrInvalid)
+		return wrapErr(app.ErrInvalid)
 	}
 	arg2 := queries.CreateEveTypeParams{
 		ID:             int64(arg.ID),
@@ -46,30 +55,23 @@ func (st *Storage) CreateEveType(ctx context.Context, arg CreateEveTypeParams) e
 		Radius:         float64(arg.Radius),
 		Volume:         float64(arg.Volume),
 	}
-	err := st.qRW.CreateEveType(ctx, arg2)
+	err := q.CreateEveType(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("CreateEveType %+v: %w", arg, err)
+		return wrapErr(err)
 	}
 	return nil
 }
 
 func (st *Storage) GetEveType(ctx context.Context, id int32) (*app.EveType, error) {
-	row, err := st.qRO.GetEveType(ctx, int64(id))
-	if err != nil {
-		return nil, fmt.Errorf("get EveType for id %d: %w", id, convertGetError(err))
-	}
-	t := eveTypeFromDBModel(row.EveType, row.EveGroup, row.EveCategory)
-	return t, nil
+	return getEveType(ctx, st.qRO, id)
 }
 
-func (st *Storage) MissingEveTypes(ctx context.Context, ids set.Set[int32]) (set.Set[int32], error) {
-	currentIDs, err := st.qRO.ListEveTypeIDs(ctx)
+func getEveType(ctx context.Context, q *queries.Queries, id int32) (*app.EveType, error) {
+	r, err := q.GetEveType(ctx, int64(id))
 	if err != nil {
-		return set.Set[int32]{}, err
+		return nil, fmt.Errorf("getEveType for id %d: %w", id, convertGetError(err))
 	}
-	current := set.Of(convertNumericSlice[int32](currentIDs)...)
-	missing := set.Difference(ids, current)
-	return missing, nil
+	return eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory), nil
 }
 
 func eveTypeFromDBModel(t queries.EveType, g queries.EveGroup, c queries.EveCategory) *app.EveType {
@@ -89,4 +91,46 @@ func eveTypeFromDBModel(t queries.EveType, g queries.EveGroup, c queries.EveCate
 		Radius:         float32(t.Radius),
 		Volume:         float32(t.Volume),
 	}
+}
+
+func (st *Storage) GetOrCreateEveType(ctx context.Context, arg CreateEveTypeParams) (*app.EveType, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("GetOrCreateEveType: %+v: %w", arg, err)
+	}
+	var o *app.EveType
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	o, err = getEveType(ctx, qtx, arg.ID)
+	if err != nil {
+		if !errors.Is(err, app.ErrNotFound) {
+			return nil, err
+		}
+		err := createEveType(ctx, qtx, arg)
+		if err != nil {
+			return nil, err
+		}
+		x, err := getEveType(ctx, qtx, arg.ID)
+		if err != nil {
+			return nil, err
+		}
+		o = x
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return o, nil
+}
+
+func (st *Storage) MissingEveTypes(ctx context.Context, ids set.Set[int32]) (set.Set[int32], error) {
+	currentIDs, err := st.qRO.ListEveTypeIDs(ctx)
+	if err != nil {
+		return set.Set[int32]{}, err
+	}
+	current := set.Of(convertNumericSlice[int32](currentIDs)...)
+	missing := set.Difference(ids, current)
+	return missing, nil
 }
