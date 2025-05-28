@@ -106,8 +106,11 @@ type CreateShipSkillParams struct {
 }
 
 func (st *Storage) CreateEveShipSkill(ctx context.Context, arg CreateShipSkillParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("createEveShipSkill: %+v: %w", arg, err)
+	}
 	if arg.ShipTypeID == 0 || arg.SkillTypeID == 0 || arg.SkillLevel == 0 {
-		return fmt.Errorf("invalid arg %v", arg)
+		return wrapErr(app.ErrInvalid)
 	}
 	arg2 := queries.CreateShipSkillParams{
 		Rank:        int64(arg.Rank),
@@ -116,7 +119,7 @@ func (st *Storage) CreateEveShipSkill(ctx context.Context, arg CreateShipSkillPa
 		SkillLevel:  int64(arg.SkillLevel),
 	}
 	if err := st.qRW.CreateShipSkill(ctx, arg2); err != nil {
-		return fmt.Errorf("create ShipSkill %v, %w", arg2, err)
+		return wrapErr(err)
 	}
 	return nil
 }

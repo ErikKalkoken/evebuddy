@@ -35,7 +35,6 @@ func createEveType(ctx context.Context, q *queries.Queries, arg CreateEveTypePar
 	wrapErr := func(err error) error {
 		return fmt.Errorf("createEveType: %+v: %w", arg, err)
 	}
-
 	if arg.ID == 0 || arg.GroupID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}

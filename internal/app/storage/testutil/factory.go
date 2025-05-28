@@ -1375,11 +1375,11 @@ func (f Factory) CreateEveCategory(args ...storage.CreateEveCategoryParams) *app
 	if arg.Name == "" {
 		arg.Name = fake.Industry()
 	}
-	r, err := f.st.CreateEveCategory(ctx, arg)
+	o, err := f.st.GetOrCreateEveCategory(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	return r
+	return o
 }
 
 func (f Factory) CreateEveGroup(args ...storage.CreateEveGroupParams) *app.EveGroup {
@@ -1394,51 +1394,69 @@ func (f Factory) CreateEveGroup(args ...storage.CreateEveGroupParams) *app.EveGr
 	if arg.Name == "" {
 		arg.Name = fake.Brand()
 	}
-	if arg.CategoryID == 0 {
-		x := f.CreateEveCategory()
-		arg.CategoryID = x.ID
-	}
-	err := f.st.CreateEveGroup(ctx, arg)
-	if err != nil {
-		panic(err)
-	}
-	o, err := f.st.GetEveGroup(ctx, arg.ID)
+	x := f.CreateEveCategory(storage.CreateEveCategoryParams{ID: arg.CategoryID})
+	arg.CategoryID = x.ID
+	o, err := f.st.GetOrCreateEveGroup(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
 	return o
 }
 
-// func (f Factory) CreateEveShipSkill(args ...storage.CreateShipSkillParams) *app.EveShipSkill {
-// 	var arg storage.CreateShipSkillParams
-// 	ctx := context.Background()
-// 	if len(args) > 0 {
-// 		arg = args[0]
-// 	}
-// 	category, err := f.st.GetOrCreateEveCategory(ctx, storage.CreateEveCategoryParams{
-// 		ID:          app.EveCategoryShip,
-// 		IsPublished: true,
-// 		Name:        "Ship",
-// 	})
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	group, err := f.st.GetOrCreateEveGroup(ctx, storage.CreateEveGroupParams{
-// 		CategoryID:  category.ID,
-// 		ID:          app.EveGroupCarrier,
-// 		IsPublished: true,
-// 		Name:        "Carrier",
-// 	})
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	err := f.st.CreateEveShipSkill(ctx, arg)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	o, err := f.st.GetEveShipSkill(ctx, arg.ShipTypeID, arg.Rank)
-// 	return o
-// }
+func (f Factory) CreateEveShipSkill(args ...storage.CreateShipSkillParams) *app.EveShipSkill {
+	var arg storage.CreateShipSkillParams
+	ctx := context.Background()
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	ship := f.CreateEveCategory(storage.CreateEveCategoryParams{
+		ID:          app.EveCategoryShip,
+		IsPublished: true,
+		Name:        "Ship",
+	})
+	carrier := f.CreateEveGroup(storage.CreateEveGroupParams{
+		CategoryID:  ship.ID,
+		ID:          app.EveGroupCarrier,
+		IsPublished: true,
+		Name:        "Carrier",
+	})
+	shipType := f.CreateEveType(storage.CreateEveTypeParams{
+		GroupID:     carrier.ID,
+		ID:          arg.ShipTypeID,
+		IsPublished: true,
+	})
+	arg.ShipTypeID = shipType.ID
+	skill := f.CreateEveCategory(storage.CreateEveCategoryParams{
+		ID:          app.EveCategorySkill,
+		IsPublished: true,
+		Name:        "Skill",
+	})
+	skillGroup := f.CreateEveGroup(storage.CreateEveGroupParams{
+		CategoryID:  skill.ID,
+		IsPublished: true,
+	})
+	skillType := f.CreateEveType(storage.CreateEveTypeParams{
+		GroupID:     skillGroup.ID,
+		ID:          arg.SkillTypeID,
+		IsPublished: true,
+	})
+	arg.SkillTypeID = skillType.ID
+	if arg.Rank == 0 {
+		arg.Rank = 1
+	}
+	if arg.SkillLevel == 0 {
+		arg.SkillLevel = 1
+	}
+	err := f.st.CreateEveShipSkill(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetEveShipSkill(ctx, arg.ShipTypeID, arg.Rank)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
 
 func (f Factory) CreateEveType(args ...storage.CreateEveTypeParams) *app.EveType {
 	var arg storage.CreateEveTypeParams
@@ -1449,10 +1467,8 @@ func (f Factory) CreateEveType(args ...storage.CreateEveTypeParams) *app.EveType
 	if arg.ID == 0 {
 		arg.ID = int32(f.calcNewID("eve_types", "id", startIDInventoryType))
 	}
-	if arg.GroupID == 0 {
-		x := f.CreateEveGroup()
-		arg.GroupID = x.ID
-	}
+	x := f.CreateEveGroup(storage.CreateEveGroupParams{ID: arg.GroupID})
+	arg.GroupID = x.ID
 	if arg.Capacity == 0 {
 		arg.Capacity = rand.Float32() * 1_000_000
 	}
@@ -1474,11 +1490,7 @@ func (f Factory) CreateEveType(args ...storage.CreateEveTypeParams) *app.EveType
 	if arg.Volume == 0 {
 		arg.Volume = rand.Float32() * 10_000_000
 	}
-	err := f.st.CreateEveType(ctx, arg)
-	if err != nil {
-		panic(err)
-	}
-	o, err := f.st.GetEveType(ctx, arg.ID)
+	o, err := f.st.GetOrCreateEveType(ctx, arg)
 	if err != nil {
 		panic(err)
 	}

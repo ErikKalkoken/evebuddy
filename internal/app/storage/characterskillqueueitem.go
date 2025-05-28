@@ -101,29 +101,26 @@ func (st *Storage) ListCharacterSkillqueueItems(ctx context.Context, characterID
 }
 
 func (st *Storage) ReplaceCharacterSkillqueueItems(ctx context.Context, characterID int32, args []SkillqueueItemParams) error {
-	err := func() error {
-		tx, err := st.dbRW.Begin()
-		if err != nil {
-			return err
-		}
-		defer tx.Rollback()
-		qtx := st.qRW.WithTx(tx)
-		if err := qtx.DeleteCharacterSkillqueueItems(ctx, int64(characterID)); err != nil {
-			return err
-		}
-		for _, arg := range args {
-			err := createCharacterSkillqueueItem(ctx, qtx, arg)
-			if err != nil {
-				return err
-			}
-		}
-		if err := tx.Commit(); err != nil {
-			return err
-		}
-		return nil
-	}()
+	wrapErr := func(err error) error {
+		return fmt.Errorf("replaceCharacterSkillqueueItems for ID %d: %+v: %w", characterID, args, err)
+	}
+	tx, err := st.dbRW.Begin()
 	if err != nil {
-		return fmt.Errorf("replace skill queue items for character %d: %w", characterID, err)
+		return wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	if err := qtx.DeleteCharacterSkillqueueItems(ctx, int64(characterID)); err != nil {
+		return wrapErr(err)
+	}
+	for _, arg := range args {
+		err := createCharacterSkillqueueItem(ctx, qtx, arg)
+		if err != nil {
+			return wrapErr(err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return wrapErr(err)
 	}
 	return nil
 }

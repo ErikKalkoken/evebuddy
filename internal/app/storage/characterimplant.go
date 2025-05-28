@@ -58,29 +58,26 @@ func (st *Storage) ListCharacterImplants(ctx context.Context, characterID int32)
 }
 
 func (st *Storage) ReplaceCharacterImplants(ctx context.Context, characterID int32, args []CreateCharacterImplantParams) error {
-	err := func() error {
-		tx, err := st.dbRW.Begin()
-		if err != nil {
-			return err
-		}
-		defer tx.Rollback()
-		qtx := st.qRW.WithTx(tx)
-		if err := qtx.DeleteCharacterImplants(ctx, int64(characterID)); err != nil {
-			return err
-		}
-		for _, arg := range args {
-			err := createCharacterImplant(ctx, qtx, arg)
-			if err != nil {
-				return err
-			}
-		}
-		if err := tx.Commit(); err != nil {
-			return err
-		}
-		return nil
-	}()
+	wrapErr := func(err error) error {
+		return fmt.Errorf("replaceCharacterImplants for ID %d: %+v: %w", characterID, args, err)
+	}
+	tx, err := st.dbRW.Begin()
 	if err != nil {
-		return fmt.Errorf("replace implants for character ID %d: %w", characterID, err)
+		return wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	if err := qtx.DeleteCharacterImplants(ctx, int64(characterID)); err != nil {
+		return wrapErr(err)
+	}
+	for _, arg := range args {
+		err := createCharacterImplant(ctx, qtx, arg)
+		if err != nil {
+			return wrapErr(err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return wrapErr(err)
 	}
 	return nil
 }
