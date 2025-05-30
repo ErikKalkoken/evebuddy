@@ -4,7 +4,6 @@ package evehtml
 import (
 	"fmt"
 	"html"
-	"log"
 	"log/slog"
 	"net/url"
 	"regexp"
@@ -27,13 +26,13 @@ func ToPlain(xml string) string {
 }
 
 // ToMarkdown converts custom Eve Online HTML text to markdown and returns it.
-func ToMarkdown(xml string) string {
+func ToMarkdown(xml string) (string, error) {
 	t := strings.ReplaceAll(xml, "<loc>", "")
 	t = strings.ReplaceAll(t, "</loc>", "")
 	t = reHorizontalRuler.ReplaceAllString(t, `<br><hr><br>`)
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(t))
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 	doc.Find("a").Each(func(i int, s *goquery.Selection) {
 		href, ok := s.Attr("href")
@@ -71,7 +70,7 @@ func ToMarkdown(xml string) string {
 	})
 	converter := md.NewConverter("", true, nil)
 	textMD := converter.Convert(doc.Selection)
-	return patchLinks(textMD)
+	return patchLinks(textMD), nil
 }
 
 // patchLinks will apply a workaround to address fyne issue #4340
