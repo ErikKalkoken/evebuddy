@@ -530,8 +530,8 @@ func (w *updateStatusDetail) set(ss app.SectionStatus) {
 	w.issue.Text, w.issue.Importance = issue, issueImportance
 	w.issue.Refresh()
 
-	w.completedAt.SetText(ihumanize.Time(ss.CompletedAt, "?"))
-	w.startedAt.SetText(ihumanize.Time(ss.StartedAt, "-"))
+	w.completedAt.SetText(ihumanize.TimeWithFallback(ss.CompletedAt, "?"))
+	w.startedAt.SetText(ihumanize.TimeWithFallback(ss.StartedAt, "-"))
 	now := time.Now()
 	w.timeout.SetText(humanize.RelTime(now.Add(ss.Timeout), now, "", ""))
 }

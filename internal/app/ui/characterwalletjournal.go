@@ -180,7 +180,7 @@ func (a *characterWalletJournal) update() {
 	}
 	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
 		character := a.u.currentCharacter()
-		b := ihumanize.OptionalFloat(character.WalletBalance, 1, "?")
+		b := ihumanize.OptionalWithDecimals(character.WalletBalance, 1, "?")
 		s := fmt.Sprintf("Balance: %s", b)
 		if a.OnUpdate != nil {
 			a.OnUpdate(b)

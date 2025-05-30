@@ -112,9 +112,9 @@ func newOverviewCharacters(u *baseUI) *characters {
 		case 4:
 			return iwidget.NewRichTextSegmentFromText(ihumanize.Optional(c.unreadCount, "?"))
 		case 5:
-			return iwidget.NewRichTextSegmentFromText(ihumanize.OptionalFloat(c.walletBalance, 1, "?"))
+			return iwidget.NewRichTextSegmentFromText(ihumanize.OptionalWithDecimals(c.walletBalance, 1, "?"))
 		case 6:
-			return iwidget.NewRichTextSegmentFromText(ihumanize.OptionalFloat(c.assetValue, 1, "?"))
+			return iwidget.NewRichTextSegmentFromText(ihumanize.OptionalWithDecimals(c.assetValue, 1, "?"))
 		case 7:
 			return iwidget.NewRichTextSegmentFromText(ihumanize.Optional(c.lastLoginAt, "?"))
 		case 8:
@@ -230,8 +230,8 @@ func (a *characters) update() {
 			return "No characters", widget.LowImportance, nil
 		}
 		rows = cc
-		walletText := ihumanize.OptionalFloat(totals.wallet, 1, "?")
-		assetsText := ihumanize.OptionalFloat(totals.assets, 1, "?")
+		walletText := ihumanize.OptionalWithDecimals(totals.wallet, 1, "?")
+		assetsText := ihumanize.OptionalWithDecimals(totals.assets, 1, "?")
 		unreadText := ihumanize.Optional(totals.unread, "?")
 		s := fmt.Sprintf(
 			"%d characters • %s ISK wallet • %s ISK assets • %s unread",
