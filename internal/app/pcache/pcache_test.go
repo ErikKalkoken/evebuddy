@@ -17,14 +17,13 @@ func TestPCache(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := pcache.New(st, 0)
 		defer c.Close()
-		key := "key"
 		value := []byte("value")
 		// when
-		c.Set(key, value, time.Minute)
+		c.Set("key", value, time.Minute)
 		// then
-		x, found := c.Get(key)
+		got, found := c.Get("key")
 		if assert.True(t, found) {
-			assert.Equal(t, value, x)
+			assert.Equal(t, value, got)
 		}
 	})
 	t.Run("should create immortal cache", func(t *testing.T) {
@@ -32,15 +31,79 @@ func TestPCache(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := pcache.New(st, 0)
 		defer c.Close()
-		key := "key"
 		value := []byte("value")
 		// when
-		c.Set(key, value, 0)
+		c.Set("key", value, 0)
 		time.Sleep(250 * time.Millisecond)
 		// then
-		x, found := c.Get(key)
+		got, found := c.Get("key")
 		if assert.True(t, found) {
-			assert.Equal(t, value, x)
+			assert.Equal(t, value, got)
 		}
 	})
+	t.Run("can check key existance 1", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := pcache.New(st, 0)
+		defer c.Close()
+		c.Set("key", []byte("dummy"), 0)
+		// when
+		assert.True(t, c.Exists("key"))
+	})
+	t.Run("can check key existance 2", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := pcache.New(st, 0)
+		defer c.Close()
+		// when
+		assert.False(t, c.Exists("key"))
+	})
+	t.Run("can delete entry", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := pcache.New(st, 0)
+		defer c.Close()
+		c.Set("key", []byte("dummy"), 0)
+		// when
+		c.Delete("key")
+		// then
+		assert.False(t, c.Exists("key"))
+	})
+	t.Run("can clear all entries", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := pcache.New(st, 0)
+		defer c.Close()
+		c.Set("k1", []byte("dummy"), 0)
+		c.Set("k2", []byte("dummy"), 0)
+		// when
+		c.Clear()
+		// then
+		assert.False(t, c.Exists("k1"))
+		assert.False(t, c.Exists("k2"))
+	})
+	t.Run("can clear expired entries", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := pcache.New(st, 0)
+		defer c.Close()
+		c.Set("k1", []byte("dummy"), time.Millisecond)
+		c.Set("k2", []byte("dummy"), 0)
+		time.Sleep(50 * time.Millisecond)
+		// when
+		got := c.CleanUp()
+		// then
+		assert.False(t, c.Exists("k1"))
+		assert.True(t, c.Exists("k2"))
+		assert.Equal(t, 1, got)
+	})
+	t.Run("can start with cleanup", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		c := pcache.New(st, 10*time.Minute)
+		defer c.Close()
+		// then
+	})
+
 }

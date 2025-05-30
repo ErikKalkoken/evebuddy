@@ -54,14 +54,16 @@ func New(st *storage.Storage, cleanUpTimeout time.Duration) *PCache {
 }
 
 // CleanUp removes all expired items.
-func (c *PCache) CleanUp() {
+func (c *PCache) CleanUp() int {
 	slog.Debug("pcache clean-up: started")
 	n, err := c.st.CacheCleanUp(context.Background())
 	if err != nil {
 		slog.Error("cache failure", "error", err)
+		n = -1
 	}
 	c.mc.CleanUp()
 	slog.Debug("pcache clean-up: completed", "removed", n)
+	return n
 }
 
 // Clear removes all items.
