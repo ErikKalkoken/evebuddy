@@ -60,8 +60,10 @@ func TestXMLtoMarkdown(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("in: %s out: %s", tc.in, tc.want), func(t *testing.T) {
-			got := evehtml.ToMarkdown(tc.in)
-			assert.Equal(t, tc.want, got)
+			got, err := evehtml.ToMarkdown(tc.in)
+			if assert.NoError(t, err) {
+				assert.Equal(t, tc.want, got)
+			}
 		})
 	}
 }
@@ -69,5 +71,12 @@ func TestXMLtoMarkdown(t *testing.T) {
 func TestStrip(t *testing.T) {
 	got := evehtml.Strip(`<a href="showinfo:35835//1039523841193">Helgatild - 9-12</a>`)
 	want := "Helgatild - 9-12"
+	assert.Equal(t, want, got)
+}
+
+func TestToPlain(t *testing.T) {
+	xml := "<b>first</b><br>second"
+	got := evehtml.ToPlain(xml)
+	want := "first\nsecond"
 	assert.Equal(t, want, got)
 }
