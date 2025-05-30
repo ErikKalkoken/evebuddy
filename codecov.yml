@@ -6,6 +6,7 @@ ignore:
   - "internal/eveicon/resource.go"
   - "internal/eveicon/schematic.go"
   - "tools"
+
 coverage:
   status:
     project:
@@ -14,3 +15,7 @@ coverage:
     patch:
       default:
         informational: true
+
+  range: 50..75
+  round: down
+  precision: 1
