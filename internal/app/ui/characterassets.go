@@ -490,7 +490,7 @@ func (a *characterAssets) makeTopText(total int) (string, widget.Importance) {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
 	locations := humanize.Comma(int64(total))
-	text := fmt.Sprintf("%s locations • %s total value", locations, ihumanize.OptionalFloat(c.AssetValue, 1, "?"))
+	text := fmt.Sprintf("%s locations • %s total value", locations, ihumanize.OptionalWithDecimals(c.AssetValue, 1, "?"))
 	return text, widget.MediumImportance
 }
 

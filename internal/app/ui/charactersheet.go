@@ -113,7 +113,7 @@ func (a *characterSheet) update() {
 		a.home.Refresh()
 	})
 	fyne.Do(func() {
-		a.sp.SetText(ihumanize.OptionalComma(c.TotalSP, "?"))
+		a.sp.SetText(ihumanize.OptionalWithComma(c.TotalSP, "?"))
 		if c.AssetValue.IsEmpty() || c.WalletBalance.IsEmpty() {
 			a.wealth.SetText("?")
 			return

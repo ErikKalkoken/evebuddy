@@ -93,7 +93,7 @@ func (a *characterCommunications) makeFolderMenu() []*fyne.MenuItem {
 	for _, f := range a.folders {
 		s := f.Name
 		if f.Unread.ValueOrZero() > 0 {
-			s += fmt.Sprintf(" (%s)", ihumanize.OptionalComma(f.Unread, "?"))
+			s += fmt.Sprintf(" (%s)", ihumanize.OptionalWithComma(f.Unread, "?"))
 		}
 		it := fyne.NewMenuItem(s, func() {
 			a.setCurrentFolder(f.group)
@@ -127,7 +127,7 @@ func (a *characterCommunications) makeFolderList() *widget.List {
 			text := c.Name
 			if c.Unread.ValueOrZero() > 0 {
 				label.TextStyle.Bold = true
-				badge.SetText(ihumanize.OptionalComma(c.Unread, "?"))
+				badge.SetText(ihumanize.OptionalWithComma(c.Unread, "?"))
 				badge.Show()
 			} else {
 				label.TextStyle.Bold = false
@@ -264,7 +264,7 @@ func (a *characterCommunications) update() {
 		})
 	}
 	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
-		return fmt.Sprintf("%s messages", ihumanize.OptionalComma(totalCount, "?")), widget.MediumImportance
+		return fmt.Sprintf("%s messages", ihumanize.OptionalWithComma(totalCount, "?")), widget.MediumImportance
 	})
 	a.resetCurrentFolder()
 	fyne.Do(func() {

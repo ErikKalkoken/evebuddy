@@ -85,11 +85,16 @@ func RelTime(t time.Time) string {
 	return Duration(time.Until(t))
 }
 
-// Comma produces a string form of the given number in base 10 with commas after every three orders of magnitude.
+// Comma produces a string form of the given number in base 10
+// with commas after every three orders of magnitude.
+// This is a variation of Comma from the external humanize package,
+// that works with any integer like type.
 func Comma[T constraints.Integer](x T) string {
 	return humanize.Comma(int64(x))
 }
 
+// Optional returns a string representation of on optional value when set
+// or the fallback when not set.
 func Optional[T any](o optional.Optional[T], fallback string) string {
 	if o.IsEmpty() {
 		return fallback
@@ -117,25 +122,18 @@ func Optional[T any](o optional.Optional[T], fallback string) string {
 	return fmt.Sprint(v)
 }
 
-func OptionalComma[T constraints.Integer](o optional.Optional[T], fallback string) string {
+func OptionalWithComma[T constraints.Integer](o optional.Optional[T], fallback string) string {
 	if o.IsEmpty() {
 		return fallback
 	}
 	return humanize.Comma(int64(o.ValueOrZero()))
 }
 
-func OptionalFloat[T float32 | float64](o optional.Optional[T], decimals int, fallback string) string {
+func OptionalWithDecimals[T float32 | float64](o optional.Optional[T], decimals int, fallback string) string {
 	if o.IsEmpty() {
 		return fallback
 	}
-	v := o.ValueOrZero()
-	switch x := any(v).(type) {
-	case float32:
-		return Number(float64(x), decimals)
-	case float64:
-		return Number(float64(x), decimals)
-	}
-	panic("not implemented")
+	return Number(float64(o.ValueOrZero()), decimals)
 }
 
 // RomanLetter returns a number as roman letters.
@@ -154,7 +152,9 @@ func RomanLetter[T constraints.Integer](v T) string {
 	return r
 }
 
-func Time(v time.Time, fallback string) string {
+// TimeWithFallback returns a given time as relative string.
+// Or returns the fallback when time is zero.
+func TimeWithFallback(v time.Time, fallback string) string {
 	if v.IsZero() {
 		return fallback
 	}
