@@ -1645,7 +1645,7 @@ func (a *solarSystemInfo) update() error {
 		return nil
 	})
 	g.Go(func() error {
-		ss, err := a.iw.u.eus.GetStargateSolarSystemsESI(ctx, stargateIDs)
+		ss, err := a.iw.u.eus.GetStargatesSolarSystemsESI(ctx, stargateIDs)
 		if err != nil {
 			return err
 		}
