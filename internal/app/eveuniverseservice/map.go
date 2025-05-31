@@ -44,7 +44,7 @@ func (s *EveUniverseService) FetchRoute(ctx context.Context, args app.EveRouteHe
 		Flag: esioptional.NewString(flag),
 	})
 	if err != nil {
-		if r.StatusCode == 404 {
+		if r != nil && r.StatusCode == 404 {
 			return []*app.EveSolarSystem{}, nil // no route found
 		}
 		return nil, err
@@ -91,7 +91,8 @@ func (s *EveUniverseService) FetchRoutes(ctx context.Context, headers []app.EveR
 	return results2, nil
 }
 
-func (s *EveUniverseService) GetStargateSolarSystemsESI(ctx context.Context, stargateIDs []int32) ([]*app.EveSolarSystem, error) {
+// GetStargatesSolarSystemsESI fetches and returns the solar systems which relates to given stargates from ESI.
+func (s *EveUniverseService) GetStargatesSolarSystemsESI(ctx context.Context, stargateIDs []int32) ([]*app.EveSolarSystem, error) {
 	g := new(errgroup.Group)
 	systemIDs := make([]int32, len(stargateIDs))
 	for i, id := range stargateIDs {
@@ -128,6 +129,7 @@ func (s *EveUniverseService) GetStargateSolarSystemsESI(ctx context.Context, sta
 	return systems, nil
 }
 
+// GetSolarSystemPlanets fetches and returns the planets for a solar system from ESI.
 func (s *EveUniverseService) GetSolarSystemPlanets(ctx context.Context, planets []app.EveSolarSystemPlanet) ([]*app.EvePlanet, error) {
 	oo := make([]*app.EvePlanet, len(planets))
 	g := new(errgroup.Group)
@@ -150,12 +152,13 @@ func (s *EveUniverseService) GetSolarSystemPlanets(ctx context.Context, planets 
 	return oo, nil
 }
 
-func (s *EveUniverseService) GetSolarSystemInfoESI(ctx context.Context, solarSystemID int32) (int32, []app.EveSolarSystemPlanet, []int32, []*app.EveEntity, []*app.EveLocation, error) {
+// GetSolarSystemInfoESI fetches and returns details about a solar system from ESI.
+func (s *EveUniverseService) GetSolarSystemInfoESI(ctx context.Context, solarSystemID int32) (starID int32, planets []app.EveSolarSystemPlanet, stargateIDs []int32, stations []*app.EveEntity, structures []*app.EveLocation, err error) {
 	x, _, err := s.esiClient.ESI.UniverseApi.GetUniverseSystemsSystemId(ctx, solarSystemID, nil)
 	if err != nil {
 		return 0, nil, nil, nil, nil, err
 	}
-	planets := xslices.Map(x.Planets, func(p esi.GetUniverseSystemsSystemIdPlanet) app.EveSolarSystemPlanet {
+	planets = xslices.Map(x.Planets, func(p esi.GetUniverseSystemsSystemIdPlanet) app.EveSolarSystemPlanet {
 		return app.EveSolarSystemPlanet{
 			AsteroidBeltIDs: p.AsteroidBelts,
 			MoonIDs:         p.Moons,
@@ -167,7 +170,7 @@ func (s *EveUniverseService) GetSolarSystemInfoESI(ctx context.Context, solarSys
 	if err != nil {
 		return 0, nil, nil, nil, nil, err
 	}
-	stations := make([]*app.EveEntity, len(x.Stations))
+	stations = make([]*app.EveEntity, len(x.Stations))
 	for i, id := range x.Stations {
 		st, err := s.getValidEntity(ctx, id)
 		if err != nil {
@@ -182,28 +185,30 @@ func (s *EveUniverseService) GetSolarSystemInfoESI(ctx context.Context, solarSys
 	if err != nil {
 		return 0, nil, nil, nil, nil, err
 	}
-	structures := xslices.Filter(xx, func(x *app.EveLocation) bool {
+	structures = xslices.Filter(xx, func(x *app.EveLocation) bool {
 		return x.Variant() == app.EveLocationStructure
 	})
 	return x.StarId, planets, x.Stargates, stations, structures, nil
 }
 
+// GetRegionConstellationsESI fetches and returns the constellations for a region.
 func (s *EveUniverseService) GetRegionConstellationsESI(ctx context.Context, id int32) ([]*app.EveEntity, error) {
 	region, _, err := s.esiClient.ESI.UniverseApi.GetUniverseRegionsRegionId(ctx, id, nil)
 	if err != nil {
 		return nil, err
 	}
-	xx, err := s.ToEntities(ctx, set.Of(region.Constellations...))
+	ee, err := s.ToEntities(ctx, set.Of(region.Constellations...))
 	if err != nil {
 		return nil, err
 	}
-	oo := slices.Collect(maps.Values(xx))
+	oo := slices.Collect(maps.Values(ee))
 	slices.SortFunc(oo, func(a, b *app.EveEntity) int {
 		return a.Compare(b)
 	})
 	return oo, nil
 }
 
+// GetConstellationSolarSystemsESI fetches and returns the solar systems for a constellations from ESI.
 func (s *EveUniverseService) GetConstellationSolarSystemsESI(ctx context.Context, id int32) ([]*app.EveSolarSystem, error) {
 	o, _, err := s.esiClient.ESI.UniverseApi.GetUniverseConstellationsConstellationId(ctx, id, nil)
 	if err != nil {
