@@ -25,7 +25,7 @@ func (st *Storage) UpdateOrCreateEveLocation(ctx context.Context, arg UpdateOrCr
 	if arg.ID == 0 {
 		return fmt.Errorf("UpdateOrCreateEveLocation: %+v: %w", arg, app.ErrInvalid)
 	}
-	arg2 := queries.UpdateOrCreateLocationParams{
+	arg2 := queries.UpdateOrCreateEveLocationParams{
 		ID:               int64(arg.ID),
 		EveSolarSystemID: optional.ToNullInt64(arg.EveSolarSystemID),
 		EveTypeID:        optional.ToNullInt64(arg.EveTypeID),
@@ -33,14 +33,14 @@ func (st *Storage) UpdateOrCreateEveLocation(ctx context.Context, arg UpdateOrCr
 		OwnerID:          optional.ToNullInt64(arg.OwnerID),
 		UpdatedAt:        arg.UpdatedAt,
 	}
-	if err := st.qRW.UpdateOrCreateLocation(ctx, arg2); err != nil {
+	if err := st.qRW.UpdateOrCreateEveLocation(ctx, arg2); err != nil {
 		return fmt.Errorf("update or create eve location %v, %w", arg, err)
 	}
 	return nil
 }
 
 func (st *Storage) GetLocation(ctx context.Context, id int64) (*app.EveLocation, error) {
-	o, err := st.qRO.GetLocation(ctx, id)
+	o, err := st.qRO.GetEveLocation(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("get eve location for id %d: %w", id, convertGetError(err))
 	}
@@ -67,6 +67,14 @@ func (st *Storage) ListEveLocation(ctx context.Context) ([]*app.EveLocation, err
 	return oo, nil
 }
 
+func (st *Storage) ListEveLocationIDs(ctx context.Context) (set.Set[int64], error) {
+	ids, err := st.qRO.ListEveLocationIDs(ctx)
+	if err != nil {
+		return set.Set[int64]{}, fmt.Errorf("list eve locations: %w", err)
+	}
+	return set.Of(ids...), nil
+}
+
 func (st *Storage) ListEveLocationInSolarSystem(ctx context.Context, solarSystemID int32) ([]*app.EveLocation, error) {
 	rows, err := st.qRO.ListEveLocationsInSolarSystem(ctx, sql.NullInt64{Int64: int64(solarSystemID), Valid: true})
 	if err != nil {
@@ -85,7 +93,7 @@ func (st *Storage) ListEveLocationInSolarSystem(ctx context.Context, solarSystem
 
 // MissingEveLocations returns which ids for eve locations are missing.
 func (st *Storage) MissingEveLocations(ctx context.Context, ids set.Set[int64]) (set.Set[int64], error) {
-	currentIDs, err := st.qRO.ListLocationIDs(ctx)
+	currentIDs, err := st.qRO.ListEveLocationIDs(ctx)
 	if err != nil {
 		return set.Set[int64]{}, err
 	}

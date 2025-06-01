@@ -1,4 +1,4 @@
--- name: GetLocation :one
+-- name: GetEveLocation :one
 SELECT
     *
 FROM
@@ -6,7 +6,7 @@ FROM
 WHERE
     id = ?;
 
--- name: ListLocationIDs :many
+-- name: ListEveLocationIDs :many
 SELECT
     id
 FROM
@@ -28,7 +28,7 @@ WHERE
 ORDER BY
     name;
 
--- name: UpdateOrCreateLocation :exec
+-- name: UpdateOrCreateEveLocation :exec
 INSERT INTO
     eve_locations (
         id,

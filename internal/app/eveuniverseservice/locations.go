@@ -18,21 +18,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func (s *EveUniverseService) GetStationServicesESI(ctx context.Context, id int32) ([]string, error) {
-	o, _, err := s.esiClient.ESI.UniverseApi.GetUniverseStationsStationId(ctx, id, nil)
-	if err != nil {
-		return nil, err
-	}
-	slices.Sort(o.Services)
-	return o.Services, nil
-}
-
 func (s *EveUniverseService) GetLocation(ctx context.Context, id int64) (*app.EveLocation, error) {
-	o, err := s.st.GetLocation(ctx, id)
-	if errors.Is(err, app.ErrNotFound) {
-		return nil, app.ErrNotFound
-	}
-	return o, err
+	return s.st.GetLocation(ctx, id)
 }
 
 func (s *EveUniverseService) ListLocations(ctx context.Context) ([]*app.EveLocation, error) {
@@ -174,9 +161,15 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 
 // AddMissingLocations adds missing EveLocations from ESI.
 func (s *EveUniverseService) AddMissingLocations(ctx context.Context, ids set.Set[int64]) error {
+	if ids.Size() == 0 {
+		return nil
+	}
 	missing, err := s.st.MissingEveLocations(ctx, ids)
 	if err != nil {
 		return err
+	}
+	if missing.Size() == 0 {
+		return nil
 	}
 	entities, err := s.EntityIDsFromLocationsESI(ctx, missing.Slice())
 	if err != nil {
@@ -204,7 +197,7 @@ func (s *EveUniverseService) EntityIDsFromLocationsESI(ctx context.Context, ids 
 	for _, id := range ids {
 		if app.LocationVariantFromID(id) == app.EveLocationStructure {
 			if ctx.Value(goesi.ContextAccessToken) == nil {
-				return set.Set[int32]{}, fmt.Errorf("eve location: token not set for fetching structure: %d", id)
+				return set.Set[int32]{}, fmt.Errorf("EntityIDsFromLocationsESI: token not set for location ID %d: %w", id, app.ErrInvalid)
 			}
 			break
 		}
@@ -242,4 +235,14 @@ func (s *EveUniverseService) EntityIDsFromLocationsESI(ctx context.Context, ids 
 		return x != 0 && x != 1 && x != -1
 	})...)
 	return r, nil
+}
+
+// GetStationServicesESI fetches and returns the services of a station from ESI.
+func (s *EveUniverseService) GetStationServicesESI(ctx context.Context, id int32) ([]string, error) {
+	o, _, err := s.esiClient.ESI.UniverseApi.GetUniverseStationsStationId(ctx, id, nil)
+	if err != nil {
+		return nil, err
+	}
+	slices.Sort(o.Services)
+	return o.Services, nil
 }

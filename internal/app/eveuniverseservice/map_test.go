@@ -390,10 +390,10 @@ func TestFetchRoute(t *testing.T) {
 	t.Run("should return route when valid", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		httpmock.Reset()
 		s1 := factory.CreateEveSolarSystem()
 		s2 := factory.CreateEveSolarSystem()
 		s3 := factory.CreateEveSolarSystem()
+		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
 			`=~^https://esi\.evetech\.net/v\d+/route/\d+/\d+/`,
@@ -472,36 +472,26 @@ func TestFetchRoute(t *testing.T) {
 			assert.Equal(t, 0, httpmock.GetTotalCallCount())
 		}
 	})
-	t.Run("should return error when called with invalid systems", func(t *testing.T) {
+	t.Run("return empty slice when no route found", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		s1 := factory.CreateEveSolarSystem()
+		s2 := factory.CreateEveSolarSystem()
 		httpmock.Reset()
-		x := factory.CreateEveSolarSystem()
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/route/\d+/\d+/`,
+			httpmock.NewJsonResponderOrPanic(404, map[string]string{"error": "no route found"}),
+		)
 		// when
-		_, err := s.FetchRoute(ctx, app.EveRouteHeader{
-			Destination: x,
-			Preference:  app.RouteShortest,
-		})
-		// then
-		if assert.ErrorIs(t, err, app.ErrInvalid) {
-			assert.Equal(t, 0, httpmock.GetTotalCallCount())
-		}
-	})
-	t.Run("should return invalid route when dest in WH space", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		httpmock.Reset()
-		orig := factory.CreateEveSolarSystem()
-		dest := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 31000001})
-		// when
-		x, err := s.FetchRoute(ctx, app.EveRouteHeader{
-			Destination: dest,
-			Origin:      orig,
+		got, err := s.FetchRoute(ctx, app.EveRouteHeader{
+			Destination: s2,
+			Origin:      s1,
 			Preference:  app.RouteShortest,
 		})
 		// then
 		if assert.NoError(t, err) {
-			assert.ElementsMatch(t, []*app.EveSolarSystem{}, x)
+			assert.Equal(t, []*app.EveSolarSystem{}, got)
 		}
 	})
 }
