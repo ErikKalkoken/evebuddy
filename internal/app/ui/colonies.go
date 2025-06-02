@@ -326,7 +326,8 @@ func (a *colonies) update() {
 func (a *colonies) showColony(r colonyRow) {
 	cp, err := a.u.cs.GetPlanet(context.Background(), r.characterID, r.planetID)
 	if err != nil {
-		panic(err)
+		a.u.ShowErrorDialog("Failed to show colony", err, a.u.window)
+		return
 	}
 
 	fi := []*widget.FormItem{

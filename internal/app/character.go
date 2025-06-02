@@ -759,7 +759,12 @@ func (cm CharacterMail) RecipientNames() []string {
 }
 
 func (cm CharacterMail) BodyToMarkdown() string {
-	return evehtml.ToMarkdown(cm.Body)
+	s, err := evehtml.ToMarkdown(cm.Body)
+	if err != nil {
+		slog.Error("Failed to convert mail body to markdown", "characterID", cm.CharacterID, "mailID", cm.MailID, "error", err)
+		return ""
+	}
+	return s
 }
 
 type CharacterNotification struct {

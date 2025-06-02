@@ -14,7 +14,7 @@ import (
 func TestLoadResourceFromURL(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	dat, err := os.ReadFile("testdata/character_93330670_64.jpeg")
+	dat, err := os.ReadFile("testdata/character.jpeg")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func TestImageFetching(t *testing.T) {
 	c := newCache()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	dat, err := os.ReadFile("testdata/character_93330670_64.jpeg")
+	dat, err := os.ReadFile("testdata/character.jpeg")
 	if err != nil {
 		t.Fatal(err)
 	}

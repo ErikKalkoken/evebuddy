@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const getLocation = `-- name: GetLocation :one
+const getEveLocation = `-- name: GetEveLocation :one
 SELECT
     id, eve_solar_system_id, eve_type_id, name, owner_id, updated_at
 FROM
@@ -20,8 +20,8 @@ WHERE
     id = ?
 `
 
-func (q *Queries) GetLocation(ctx context.Context, id int64) (EveLocation, error) {
-	row := q.db.QueryRowContext(ctx, getLocation, id)
+func (q *Queries) GetEveLocation(ctx context.Context, id int64) (EveLocation, error) {
+	row := q.db.QueryRowContext(ctx, getEveLocation, id)
 	var i EveLocation
 	err := row.Scan(
 		&i.ID,
@@ -32,6 +32,36 @@ func (q *Queries) GetLocation(ctx context.Context, id int64) (EveLocation, error
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const listEveLocationIDs = `-- name: ListEveLocationIDs :many
+SELECT
+    id
+FROM
+    eve_locations
+`
+
+func (q *Queries) ListEveLocationIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listEveLocationIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listEveLocations = `-- name: ListEveLocations :many
@@ -112,37 +142,7 @@ func (q *Queries) ListEveLocationsInSolarSystem(ctx context.Context, eveSolarSys
 	return items, nil
 }
 
-const listLocationIDs = `-- name: ListLocationIDs :many
-SELECT
-    id
-FROM
-    eve_locations
-`
-
-func (q *Queries) ListLocationIDs(ctx context.Context) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listLocationIDs)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []int64
-	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-		items = append(items, id)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const updateOrCreateLocation = `-- name: UpdateOrCreateLocation :exec
+const updateOrCreateEveLocation = `-- name: UpdateOrCreateEveLocation :exec
 INSERT INTO
     eve_locations (
         id,
@@ -163,7 +163,7 @@ SET
     updated_at = ?6
 `
 
-type UpdateOrCreateLocationParams struct {
+type UpdateOrCreateEveLocationParams struct {
 	ID               int64
 	EveSolarSystemID sql.NullInt64
 	EveTypeID        sql.NullInt64
@@ -172,8 +172,8 @@ type UpdateOrCreateLocationParams struct {
 	UpdatedAt        time.Time
 }
 
-func (q *Queries) UpdateOrCreateLocation(ctx context.Context, arg UpdateOrCreateLocationParams) error {
-	_, err := q.db.ExecContext(ctx, updateOrCreateLocation,
+func (q *Queries) UpdateOrCreateEveLocation(ctx context.Context, arg UpdateOrCreateEveLocationParams) error {
+	_, err := q.db.ExecContext(ctx, updateOrCreateEveLocation,
 		arg.ID,
 		arg.EveSolarSystemID,
 		arg.EveTypeID,

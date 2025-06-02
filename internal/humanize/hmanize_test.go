@@ -92,8 +92,57 @@ func TestRomanLetters(t *testing.T) {
 }
 
 func TestOptional(t *testing.T) {
-	t.Run("can format optional number", func(t *testing.T) {
-		assert.Equal(t, "42", humanize.Optional(optional.From(42), ""))
-		assert.Equal(t, "XX", humanize.Optional(optional.Optional[int]{}, "XX"))
+	t.Run("fallback when empty", func(t *testing.T) {
+		assert.Equal(t, "fallback", humanize.Optional(optional.Optional[int]{}, "fallback"))
 	})
+	t.Run("time", func(t *testing.T) {
+		x := time.Now().Add(5 * time.Minute)
+		assert.Equal(t, "0h 5m", humanize.Optional(optional.From(x), ""))
+	})
+	t.Run("time", func(t *testing.T) {
+		x := 5 * time.Minute
+		assert.Equal(t, "0h 5m", humanize.Optional(optional.From(x), ""))
+	})
+	t.Run("string", func(t *testing.T) {
+		assert.Equal(t, "alpha", humanize.Optional(optional.From("alpha"), ""))
+	})
+	t.Run("number", func(t *testing.T) {
+		assert.Equal(t, "42", humanize.Optional(optional.From(int(42)), ""))
+		assert.Equal(t, "42", humanize.Optional(optional.From(int32(42)), ""))
+		assert.Equal(t, "42", humanize.Optional(optional.From(int64(42)), ""))
+	})
+	t.Run("bool", func(t *testing.T) {
+		assert.Equal(t, "yes", humanize.Optional(optional.From(true), ""))
+		assert.Equal(t, "no", humanize.Optional(optional.From(false), ""))
+	})
+	t.Run("other", func(t *testing.T) {
+		x := []int{1, 2, 3}
+		assert.Equal(t, "[1 2 3]", humanize.Optional(optional.From(x), ""))
+	})
+}
+
+func TestOptionalWithComma(t *testing.T) {
+	assert.Equal(t, "fallback", humanize.OptionalWithComma(optional.Optional[int]{}, "fallback"))
+	assert.Equal(t, "1,234", humanize.OptionalWithComma(optional.From(1234), ""))
+}
+
+func TestOptionalWithDecemals(t *testing.T) {
+	assert.Equal(t, "fallback", humanize.OptionalWithDecimals(optional.Optional[float64]{}, 1, "fallback"))
+	assert.Equal(t, "1.2", humanize.OptionalWithDecimals(optional.From(float64(1.23)), 1, ""))
+	assert.Equal(t, "1.2", humanize.OptionalWithDecimals(optional.From(float32(1.23)), 1, ""))
+}
+
+func TestComma(t *testing.T) {
+	assert.Equal(t, "1,234", humanize.Comma(int(1234)))
+	assert.Equal(t, "1,234", humanize.Comma(int32(1234)))
+	assert.Equal(t, "1,234", humanize.Comma(int64(1234)))
+	assert.Equal(t, "1,234", humanize.Comma(uint(1234)))
+	assert.Equal(t, "1,234", humanize.Comma(uint32(1234)))
+	assert.Equal(t, "1,234", humanize.Comma(uint64(1234)))
+}
+
+func TestTimeWithFallback(t *testing.T) {
+	x := time.Now().Add(-21 * 24 * time.Hour)
+	assert.Equal(t, "3 weeks ago", humanize.TimeWithFallback(x, ""))
+	assert.Equal(t, "fallback", humanize.TimeWithFallback(time.Time{}, "fallback"))
 }

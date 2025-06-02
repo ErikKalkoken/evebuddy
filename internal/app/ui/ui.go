@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"net/url"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -37,6 +39,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 // update info
@@ -433,6 +436,19 @@ func (u *baseUI) updateCharacter() {
 	} else {
 		slog.Debug("Updating without character")
 	}
+	runFunctionsWithProgressModal("Loading character", u.defineCharacterUpdates(), func() {
+		if u.onUpdateCharacter != nil {
+			u.onUpdateCharacter(c)
+		}
+		if c != nil && !u.isUpdateDisabled {
+			u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
+		}
+	},
+		u.window,
+	)
+}
+
+func (u *baseUI) defineCharacterUpdates() map[string]func() {
 	ff := map[string]func(){
 		"assets":            u.characterAsset.update,
 		"attributes":        u.characterAttributes.update,
@@ -448,18 +464,15 @@ func (u *baseUI) updateCharacter() {
 		"walletJournal":     u.characterWalletJournal.update,
 		"walletTransaction": u.characterWalletTransaction.update,
 	}
-	runFunctionsWithProgressModal("Loading character", ff, func() {
-		if u.onUpdateCharacter != nil {
-			u.onUpdateCharacter(c)
-		}
-		if c != nil && !u.isUpdateDisabled {
-			u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
-		}
-	}, u.window)
+	return ff
 }
 
 // updateCrossPages refreshed all pages that contain information about multiple characters.
 func (u *baseUI) updateCrossPages() {
+	runFunctionsWithProgressModal("Updating characters", u.defineCrossUpdates(), u.onRefreshCross, u.window)
+}
+
+func (u *baseUI) defineCrossUpdates() map[string]func() {
 	ff := map[string]func(){
 		"assetSearch":        u.assets.update,
 		"contracts":          u.contracts.update,
@@ -474,7 +487,15 @@ func (u *baseUI) updateCrossPages() {
 		"training":           u.training.update,
 		"wealth":             u.wealth.update,
 	}
-	runFunctionsWithProgressModal("Updating characters", ff, u.onRefreshCross, u.window)
+	return ff
+}
+
+// UpdateAll updates all UI elements. This method is usually only called from tests.
+func (u *baseUI) UpdateAll() {
+	updates := slices.Collect(xiter.Chain(maps.Values(u.defineCharacterUpdates()), maps.Values(u.defineCrossUpdates())))
+	for _, f := range updates {
+		f()
+	}
 }
 
 // TODO: Replace with "infinite" variant, because progress can not be shown correctly.

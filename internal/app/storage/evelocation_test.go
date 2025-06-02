@@ -121,6 +121,18 @@ func TestLocation(t *testing.T) {
 			assert.Equal(t, want, got)
 		}
 	})
+	t.Run("can list location IDs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		l1 := factory.CreateEveLocationStructure()
+		l2 := factory.CreateEveLocationStructure()
+		// when
+		got, err := r.ListEveLocationIDs(ctx)
+		if assert.NoError(t, err) {
+			want := set.Of(l1.ID, l2.ID)
+			assert.True(t, got.Equal(want))
+		}
+	})
 	t.Run("can list locations in solar system", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)

@@ -494,8 +494,6 @@ const (
 	EveLocationSolarSystem
 )
 
-const LocationUnknownID = 888 // custom ID to signify a location that is not known
-
 // EveLocation is a location in Eve Online.
 type EveLocation struct {
 	ID          int64
@@ -565,11 +563,16 @@ func (el EveLocation) Variant() EveLocationVariant {
 	return LocationVariantFromID(el.ID)
 }
 
+const (
+	unknownLocationID     = 888 // custom ID to signify a location that is not known
+	assetSafetyLocationID = 2004
+)
+
 func LocationVariantFromID(id int64) EveLocationVariant {
 	switch {
-	case id == LocationUnknownID:
+	case id == unknownLocationID:
 		return EveLocationUnknown
-	case id == 2004:
+	case id == assetSafetyLocationID:
 		return EveLocationAssetSafety
 	case id >= 30_000_000 && id < 33_000_000:
 		return EveLocationSolarSystem

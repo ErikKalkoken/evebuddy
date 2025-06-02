@@ -14,6 +14,12 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+// type Category string
+
+// const (
+// 	Alliance Category = "alliance"
+// )
+
 // cache timeouts per image category
 const (
 	timeoutAlliance    = time.Hour * 24 * 7
@@ -174,26 +180,26 @@ func (m *EveImageService) InventoryTypeSKIN(id int32, size int) (fyne.Resource, 
 
 // EntityIcon returns the icon for several entity categories.
 func (s *EveImageService) EntityIcon(id int32, category string, size int) (fyne.Resource, error) {
-	res, err := func() (fyne.Resource, error) {
-		switch category {
-		case "character":
-			return s.CharacterPortrait(id, size)
-		case "alliance":
-			return s.AllianceLogo(id, size)
-		case "corporation":
-			return s.CorporationLogo(id, size)
-		case "faction":
-			return s.FactionLogo(id, size)
-		case "inventory_type":
-			return s.InventoryTypeIcon(id, size)
-		default:
-			return nil, fmt.Errorf("unsuported category: %s", category)
-		}
-	}()
+	var r fyne.Resource
+	var err error
+	switch category {
+	case "character":
+		r, err = s.CharacterPortrait(id, size)
+	case "alliance":
+		r, err = s.AllianceLogo(id, size)
+	case "corporation":
+		r, err = s.CorporationLogo(id, size)
+	case "faction":
+		r, err = s.FactionLogo(id, size)
+	case "inventory_type":
+		r, err = s.InventoryTypeIcon(id, size)
+	default:
+		r, err = nil, fmt.Errorf("unsuported category: %s", category)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("entity icon {id %d, category %s, size %d}: %w", id, category, size, err)
 	}
-	return res, nil
+	return r, nil
 }
 
 // image returns an Eve image as fyne resource.
