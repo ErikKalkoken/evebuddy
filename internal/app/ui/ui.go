@@ -109,7 +109,7 @@ type baseUI struct {
 	manageCharacters           *manageCharacters
 	assets                     *assets
 	characters                 *characters
-	overviewClones             *clones
+	clones                     *clones
 	colonies                   *colonies
 	locations                  *locations
 	training                   *trainings
@@ -219,7 +219,7 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	u.manageCharacters = newManageCharacters(u)
 	u.assets = newAssets(u)
 	u.characters = newOverviewCharacters(u)
-	u.overviewClones = newClones(u)
+	u.clones = newClones(u)
 	u.colonies = newColonies(u)
 	u.locations = newLocations(u)
 	u.training = newTrainings(u)
@@ -463,7 +463,7 @@ func (u *baseUI) updateCrossPages() {
 	ff := map[string]func(){
 		"assetSearch":        u.assets.update,
 		"contracts":          u.contracts.update,
-		"cloneSearch":        u.overviewClones.update,
+		"cloneSearch":        u.clones.update,
 		"colony":             u.colonies.update,
 		"industryJobs":       u.industryJobs.update,
 		"slotsManufacturing": u.slotsManufacturing.update,
@@ -820,7 +820,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	case app.SectionJumpClones:
 		if needsRefresh {
 			u.characters.update()
-			u.overviewClones.update()
+			u.clones.update()
 			if isShown {
 				u.reloadCurrentCharacter()
 				u.characterJumpClones.update()
