@@ -275,7 +275,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		iwidget.NewNavPage(
 			"Clones",
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
-			makePageWithTitle("Clones", u.overviewClones),
+			makePageWithTitle("Clones", u.clones),
 		),
 		contracts,
 		overviewColonies,

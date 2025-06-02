@@ -286,7 +286,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			"Clones",
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
 			func() {
-				homeNav.Push(iwidget.NewAppBar("Clones", u.overviewClones))
+				homeNav.Push(iwidget.NewAppBar("Clones", u.clones))
 			},
 		),
 		navItemContracts,

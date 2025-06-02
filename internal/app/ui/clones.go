@@ -24,7 +24,7 @@ import (
 )
 
 type cloneRow struct {
-	c        *app.CharacterJumpClone2
+	jc       *app.CharacterJumpClone2
 	route    []*app.EveSolarSystem
 	routeErr error
 }
@@ -97,15 +97,13 @@ func newClones(u *baseUI) *clones {
 		var s []widget.RichTextSegment
 		switch col {
 		case 0:
-			s = r.c.Location.DisplayRichText()
+			s = r.jc.Location.DisplayRichText()
 		case 1:
-			if r.c.Location.SolarSystem != nil {
-				s = iwidget.NewRichTextSegmentFromText(r.c.Location.SolarSystem.Constellation.Region.Name)
-			}
+			s = iwidget.NewRichTextSegmentFromText(r.jc.Location.RegionName())
 		case 2:
-			s = iwidget.NewRichTextSegmentFromText(fmt.Sprint(r.c.ImplantsCount))
+			s = iwidget.NewRichTextSegmentFromText(fmt.Sprint(r.jc.ImplantsCount))
 		case 3:
-			s = iwidget.NewRichTextSegmentFromText(r.c.Character.Name)
+			s = iwidget.NewRichTextSegmentFromText(r.jc.Character.Name)
 		case 4:
 			s = iwidget.NewRichTextSegmentFromText(r.jumps())
 		}
@@ -115,18 +113,18 @@ func newClones(u *baseUI) *clones {
 		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(c int, r cloneRow) {
 			switch c {
 			case 0:
-				a.u.ShowLocationInfoWindow(r.c.Location.ID)
+				a.u.ShowLocationInfoWindow(r.jc.Location.ID)
 			case 1:
-				if r.c.Location.SolarSystem != nil {
-					a.u.ShowInfoWindow(app.EveEntityRegion, r.c.Location.SolarSystem.Constellation.Region.ID)
+				if r.jc.Location.SolarSystem != nil {
+					a.u.ShowInfoWindow(app.EveEntityRegion, r.jc.Location.SolarSystem.Constellation.Region.ID)
 				}
 			case 2:
-				if r.c.ImplantsCount == 0 {
+				if r.jc.ImplantsCount == 0 {
 					return
 				}
 				a.showClone(r)
 			case 3:
-				a.u.ShowInfoWindow(app.EveEntityCharacter, r.c.Character.ID)
+				a.u.ShowInfoWindow(app.EveEntityCharacter, r.jc.Character.ID)
 			case 4:
 				if len(r.route) == 0 {
 					return
@@ -228,10 +226,10 @@ func (*clones) fetchRows(s services) ([]cloneRow, error) {
 		return nil, err
 	}
 	slices.SortFunc(oo, func(a, b *app.CharacterJumpClone2) int {
-		return cmp.Compare(a.SolarSystemName(), b.SolarSystemName())
+		return cmp.Compare(a.Location.SolarSystemName(), b.Location.SolarSystemName())
 	})
 	rows := xslices.Map(oo, func(o *app.CharacterJumpClone2) cloneRow {
-		return cloneRow{c: o}
+		return cloneRow{jc: o}
 	})
 	return rows, nil
 }
@@ -246,7 +244,7 @@ func (a *clones) updateRoutes() {
 	headers := make([]app.EveRouteHeader, 0)
 	fyne.DoAndWait(func() {
 		for _, r := range a.rows {
-			destination := r.c.SolarSystem()
+			destination := r.jc.Location.SolarSystem
 			if destination == nil {
 				continue
 			}
@@ -274,7 +272,7 @@ func (a *clones) updateRoutes() {
 	}
 	fyne.Do(func() {
 		for i, r := range a.rows {
-			solarSystem := r.c.SolarSystem()
+			solarSystem := r.jc.Location.SolarSystem
 			if solarSystem == nil {
 				continue
 			}
@@ -404,17 +402,17 @@ func (a *clones) filterRows(sortCol int) {
 	// filter
 	if x := a.selectOwner.Selected; x != "" {
 		rows = xslices.Filter(rows, func(o cloneRow) bool {
-			return o.c.CharacterName() == x
+			return o.jc.Character.Name == x
 		})
 	}
 	if x := a.selectRegion.Selected; x != "" {
 		rows = xslices.Filter(rows, func(o cloneRow) bool {
-			return o.c.RegionName() == x
+			return o.jc.Location.RegionName() == x
 		})
 	}
 	if x := a.selectSolarSystem.Selected; x != "" {
 		rows = xslices.Filter(rows, func(o cloneRow) bool {
-			return o.c.SolarSystemName() == x
+			return o.jc.Location.SolarSystemName() == x
 		})
 	}
 
@@ -424,15 +422,13 @@ func (a *clones) filterRows(sortCol int) {
 			var x int
 			switch sortCol {
 			case 0:
-				x = cmp.Compare(a.c.Location.DisplayName(), b.c.Location.DisplayName())
+				x = cmp.Compare(a.jc.Location.DisplayName(), b.jc.Location.DisplayName())
 			case 1:
-				x = cmp.Compare(
-					a.c.Location.SolarSystem.Constellation.Region.Name,
-					b.c.Location.SolarSystem.Constellation.Region.Name)
+				x = cmp.Compare(a.jc.Location.RegionName(), b.jc.Location.RegionName())
 			case 2:
-				x = cmp.Compare(a.c.ImplantsCount, b.c.ImplantsCount)
+				x = cmp.Compare(a.jc.ImplantsCount, b.jc.ImplantsCount)
 			case 3:
-				x = cmp.Compare(a.c.Character.Name, b.c.Character.Name)
+				x = cmp.Compare(a.jc.Character.Name, b.jc.Character.Name)
 			case 4:
 				x = a.compare(b)
 			}
@@ -444,13 +440,13 @@ func (a *clones) filterRows(sortCol int) {
 		})
 	})
 	a.selectOwner.SetOptions(xslices.Map(rows, func(o cloneRow) string {
-		return o.c.CharacterName()
+		return o.jc.Character.Name
 	}))
 	a.selectRegion.SetOptions(xslices.Map(rows, func(o cloneRow) string {
-		return o.c.RegionName()
+		return o.jc.Location.RegionName()
 	}))
 	a.selectSolarSystem.SetOptions(xslices.Map(rows, func(o cloneRow) string {
-		return o.c.SolarSystemName()
+		return o.jc.Location.SolarSystemName()
 	}))
 	a.rowsFiltered = rows
 	a.body.Refresh()
@@ -488,20 +484,35 @@ func (a *clones) showRoute(r cloneRow) {
 		a.u.ShowInfoWindow(app.EveEntitySolarSystem, s.ID)
 
 	}
+
+	var fromText []widget.RichTextSegment
+	if a.origin != nil {
+		fromText = a.origin.DisplayRichTextWithRegion()
+	}
 	from := iwidget.NewTappableRichText(
 		func() {
-			a.u.ShowInfoWindow(app.EveEntitySolarSystem, a.origin.ID)
+			if a.origin != nil {
+				a.u.ShowInfoWindow(app.EveEntitySolarSystem, a.origin.ID)
+			}
 		},
-		a.origin.DisplayRichTextWithRegion()...,
+		fromText...,
 	)
 	from.Wrapping = fyne.TextWrapWord
+
+	var toText []widget.RichTextSegment
+	if r.jc.Location.SolarSystem != nil {
+		toText = r.jc.Location.SolarSystem.DisplayRichTextWithRegion()
+	}
 	to := iwidget.NewTappableRichText(
 		func() {
-			a.u.ShowInfoWindow(app.EveEntitySolarSystem, r.c.Location.SolarSystem.ID)
+			if r.jc.Location.SolarSystem != nil {
+				a.u.ShowInfoWindow(app.EveEntitySolarSystem, r.jc.Location.SolarSystem.ID)
+			}
 		},
-		r.c.Location.SolarSystem.DisplayRichTextWithRegion()...,
+		toText...,
 	)
 	to.Wrapping = fyne.TextWrapWord
+
 	jumps := widget.NewLabel(fmt.Sprintf("%s (%s)", r.jumps(), a.routePref.String()))
 	top := container.New(
 		layout.NewCustomPaddedVBoxLayout(0),
@@ -528,7 +539,7 @@ func (a *clones) showRoute(r cloneRow) {
 		nil,
 		list,
 	)
-	title := fmt.Sprintf("Route: %s -> %s", a.origin.Name, r.c.Location.SolarSystem.Name)
+	title := fmt.Sprintf("Route: %s -> %s", a.origin.Name, r.jc.Location.SolarSystemName())
 	w := a.u.App().NewWindow(a.u.MakeWindowTitle(title))
 	w.SetContent(c)
 	w.Resize(fyne.NewSize(600, 400))
@@ -536,7 +547,7 @@ func (a *clones) showRoute(r cloneRow) {
 }
 
 func (a *clones) showClone(r cloneRow) {
-	clone, err := a.u.cs.GetJumpClone(context.Background(), r.c.Character.ID, r.c.CloneID)
+	clone, err := a.u.cs.GetJumpClone(context.Background(), r.jc.Character.ID, r.jc.CloneID)
 	if err != nil {
 		slog.Error("show clone", "error", err)
 		a.u.ShowErrorDialog("failed to load clone", err, a.u.MainWindow())
@@ -587,12 +598,12 @@ func (a *clones) showClone(r cloneRow) {
 	}
 	location := iwidget.NewTappableRichText(
 		func() {
-			a.u.ShowLocationInfoWindow(r.c.Location.ID)
+			a.u.ShowLocationInfoWindow(r.jc.Location.ID)
 		},
-		r.c.Location.DisplayRichText()...)
+		r.jc.Location.DisplayRichText()...)
 	location.Wrapping = fyne.TextWrapWord
-	character := kxwidget.NewTappableLabel(r.c.Character.Name, func() {
-		a.u.ShowInfoWindow(app.EveEntityCharacter, r.c.Character.ID)
+	character := kxwidget.NewTappableLabel(r.jc.Character.Name, func() {
+		a.u.ShowInfoWindow(app.EveEntityCharacter, r.jc.Character.ID)
 	})
 	character.Wrapping = fyne.TextWrapWord
 	implants := widget.NewLabel(fmt.Sprint(len(clone.Implants)))

@@ -499,10 +499,10 @@ const LocationUnknownID = 888 // custom ID to signify a location that is not kno
 // EveLocation is a location in Eve Online.
 type EveLocation struct {
 	ID          int64
-	SolarSystem *EveSolarSystem
-	Type        *EveType
+	SolarSystem *EveSolarSystem // optional
+	Type        *EveType        // optional
 	Name        string
-	Owner       *EveEntity
+	Owner       *EveEntity // optional
 	UpdatedAt   time.Time
 }
 
@@ -601,6 +601,20 @@ func (el EveLocation) ToShort() *EveLocationShort {
 		o.SecurityStatus = optional.From(el.SolarSystem.SecurityStatus)
 	}
 	return o
+}
+
+func (el EveLocation) SolarSystemName() string {
+	if el.SolarSystem == nil {
+		return ""
+	}
+	return el.SolarSystem.Name
+}
+
+func (el EveLocation) RegionName() string {
+	if el.SolarSystem == nil {
+		return ""
+	}
+	return el.SolarSystem.Constellation.Region.Name
 }
 
 // EveLocationShort is a shortened representation of EveLocation.
