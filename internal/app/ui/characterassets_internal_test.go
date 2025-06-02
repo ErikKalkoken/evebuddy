@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2/test"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -78,10 +79,15 @@ func TestSplitLines(t *testing.T) {
 }
 
 func TestCharacterAssets(t *testing.T) {
+	db, st, factory := testutil.New()
+	defer db.Close()
+	t.Run("can update with data", func(t *testing.T) {
+		bu := NewFakeBaseUI(st, test.NewTempApp(t))
+		factory.CreateCharacterAsset()
+		bu.characterAsset.update()
+	})
 	t.Run("can update without data", func(t *testing.T) {
-		app := test.NewTempApp(t)
-		ui := NewBaseUI(BaseUIParams{App: app})
-		w := newCharacterAssets(ui)
-		w.update()
+		bu := NewFakeBaseUI(st, test.NewTempApp(t))
+		bu.characterAsset.update()
 	})
 }

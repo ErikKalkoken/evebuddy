@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"fyne.io/fyne/v2/test"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
@@ -68,4 +69,32 @@ func TestUIStartWithCharacter(t *testing.T) {
 	}()
 	u.ShowAndRun()
 	assert.Equal(t, 0, httpmock.GetTotalCallCount())
+}
+
+func TestCanUpdateAllEmpty(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t.TempDir())
+	defer db.Close()
+	bu := ui.NewFakeBaseUI(st, test.NewTempApp(t))
+	bu.UpdateAll()
+}
+
+func TestCanUpdateAllWithData(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	defer db.Close()
+	bu := ui.NewFakeBaseUI(st, test.NewTempApp(t))
+	character := factory.CreateCharacter()
+	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: character.ID})
+	factory.CreateCharacterAttributes(storage.UpdateOrCreateCharacterAttributesParams{CharacterID: character.ID})
+	factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: character.ID})
+	factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: character.ID})
+	factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{CharacterID: character.ID})
+	factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{CharacterID: character.ID})
+	factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: character.ID})
+	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: character.ID})
+	factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: character.ID})
+	factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: character.ID})
+	factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: character.ID})
+	factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: character.ID})
+	factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: character.ID})
+	bu.UpdateAll()
 }

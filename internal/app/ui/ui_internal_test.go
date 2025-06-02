@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/test"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
@@ -143,9 +144,17 @@ func NewFakeBaseUI(st *storage.Storage, app fyne.App) *baseUI {
 		StatusCacheService: scs,
 		Storage:            st,
 	})
+	rs := corporationservice.New(corporationservice.Params{
+		CharacterService:   cs,
+		EsiClient:          esiClient,
+		EveUniverseService: eus,
+		StatusCacheService: scs,
+		Storage:            st,
+	})
 	bu := NewBaseUI(BaseUIParams{
 		App:                app,
 		CharacterService:   cs,
+		CorporationService: rs,
 		ESIStatusService:   esistatusservice.New(esiClient),
 		EveImageService:    eis,
 		EveUniverseService: eus,
