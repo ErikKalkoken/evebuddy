@@ -3,6 +3,7 @@
 A companion app for Eve Online players available on Windows, Linux, macOS and Android.
 
 [![GitHub Release](https://img.shields.io/github/v/release/ErikKalkoken/evebuddy)](https://github.com/ErikKalkoken/evebuddy/releases)
+[![Fyne](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fgithub.com%2FErikKalkoken%2Fevebuddy%2Fblob%2Fmain%2Fgo.mod&search=fyne%5C.io%5C%2Ffyne%5C%2Fv2%20(v%5Cd*%5C.%5Cd*%5C.%5Cd*)&replace=%241&label=Fyne&cacheSeconds=https%3A%2F%2Fgithub.com%2Ffyne-io%2Ffyne)](https://github.com/fyne-io/fyne)
 [![build status](https://github.com/ErikKalkoken/evebuddy/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/ErikKalkoken/evebuddy/actions/workflows/ci-cd.yml)
 [![codecov](https://codecov.io/gh/ErikKalkoken/evebuddy/graph/badge.svg?token=2wG1bixLjo)](https://codecov.io/gh/ErikKalkoken/evebuddy)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ErikKalkoken/evebuddy)](https://goreportcard.com/report/github.com/ErikKalkoken/evebuddy)
@@ -40,7 +41,7 @@ EVE Buddy is a multi-platform companion app for [Eve Online](https://www.eveonli
 EVE Buddy is available for Windows, Linux, macOS and Android.
 
 > [!IMPORTANT]
-> This app is in-development and we are constantly adding new features and other improvements. We would very much appreciate your feedback, so we can quicly find and squash potential bugs. If you encounter any problems please feel free to open an issue or chat with us on our [Discord server]((https://discord.gg/tVSCQEVJnJ)) in the support channel **#evebuddy**.<br>
+> This app is in-development and we are constantly adding new features and other improvements. We would very much appreciate your feedback, so we can quickly find and squash potential bugs. If you encounter any problems please feel free to open an issue or chat with us on our [Discord server]((https://discord.gg/tVSCQEVJnJ)) in the support channel **#evebuddy**.<br>
 > Some features may not be fully implemented yet (e.g. some notification types). But if you are missing a feature that would make EVE Buddy more useful for you, please feel free to open a feature request.<br>
 
 > [!NOTE]
