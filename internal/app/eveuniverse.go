@@ -31,8 +31,8 @@ type EveAlliance struct {
 	Ticker              string
 }
 
-func (x EveAlliance) ToEveEntity() *EveEntity {
-	return &EveEntity{ID: x.ID, Name: x.Name, Category: EveEntityAlliance}
+func (ea EveAlliance) ToEveEntity() *EveEntity {
+	return &EveEntity{ID: ea.ID, Name: ea.Name, Category: EveEntityAlliance}
 }
 
 const (
@@ -550,13 +550,13 @@ func (el EveLocation) alternativeName() string {
 		return "Asset Safety"
 	case EveLocationSolarSystem:
 		if el.SolarSystem == nil {
-			return fmt.Sprintf("Unknown solar system #%d", el.ID)
+			return fmt.Sprintf("Unknown solar system %d", el.ID)
 		}
 		return el.SolarSystem.Name
 	case EveLocationStructure:
-		return fmt.Sprintf("Unknown structure #%d", el.ID)
+		return fmt.Sprintf("Unknown structure %d", el.ID)
 	}
-	return fmt.Sprintf("Unknown location #%d", el.ID)
+	return fmt.Sprintf("Unknown location %d", el.ID)
 }
 
 func (el EveLocation) Variant() EveLocationVariant {
@@ -588,7 +588,7 @@ func LocationVariantFromID(id int64) EveLocationVariant {
 func (el EveLocation) ToEveEntity() *EveEntity {
 	switch el.Variant() {
 	case EveLocationSolarSystem:
-		return &EveEntity{ID: int32(el.ID), Name: el.Name, Category: EveEntitySolarSystem}
+		return &EveEntity{ID: int32(el.ID), Name: el.SolarSystemName(), Category: EveEntitySolarSystem}
 	case EveLocationStation:
 		return &EveEntity{ID: int32(el.ID), Name: el.Name, Category: EveEntityStation}
 	}

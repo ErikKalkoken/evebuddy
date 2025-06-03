@@ -11,7 +11,116 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLocationVariantFromID(t *testing.T) {
+func TestEveAlliance(t *testing.T) {
+	x := &app.EveAlliance{
+		ID:   42,
+		Name: "name",
+	}
+	ee := x.ToEveEntity()
+	assert.EqualValues(t, 42, ee.ID)
+	assert.EqualValues(t, "name", ee.Name)
+	assert.EqualValues(t, app.EveEntityAlliance, ee.Category)
+}
+
+func TestEveCharacterAlliance(t *testing.T) {
+	x1 := &app.EveCharacter{
+		Alliance: &app.EveEntity{
+			Name: "alliance",
+		},
+	}
+	assert.Equal(t, "alliance", x1.AllianceName())
+	assert.True(t, x1.HasAlliance())
+
+	x2 := &app.EveCharacter{}
+	assert.Equal(t, "", x2.AllianceName())
+	assert.False(t, x2.HasAlliance())
+}
+
+func TestEveCharacterDescription(t *testing.T) {
+	x := &app.EveCharacter{Description: "alpha<br>bravo"}
+	assert.Equal(t, "alpha\nbravo", x.DescriptionPlain())
+}
+
+func TestEveCharacterFaction(t *testing.T) {
+	x1 := &app.EveCharacter{
+		Faction: &app.EveEntity{
+			Name: "faction",
+		},
+	}
+	assert.Equal(t, "faction", x1.FactionName())
+	assert.True(t, x1.HasFaction())
+
+	x2 := &app.EveCharacter{}
+	assert.Equal(t, "", x2.FactionName())
+	assert.False(t, x2.HasFaction())
+}
+
+func TestEveCharacterRace(t *testing.T) {
+	x1 := &app.EveCharacter{Race: &app.EveRace{Description: "description"}}
+	assert.Equal(t, "description", x1.RaceDescription())
+
+	x2 := &app.EveCharacter{}
+	assert.Equal(t, "", x2.RaceDescription())
+}
+
+func TestEveCharacterEveEntity(t *testing.T) {
+	x1 := &app.EveCharacter{ID: 42, Name: "name"}
+	x2 := x1.ToEveEntity()
+	assert.EqualValues(t, 42, x2.ID)
+	assert.EqualValues(t, "name", x2.Name)
+	assert.EqualValues(t, app.EveEntityCharacter, x2.Category)
+}
+
+func TestEveConstellationEveEntity(t *testing.T) {
+	x1 := &app.EveConstellation{ID: 42, Name: "name"}
+	x2 := x1.ToEveEntity()
+	assert.EqualValues(t, 42, x2.ID)
+	assert.EqualValues(t, "name", x2.Name)
+	assert.EqualValues(t, app.EveEntityConstellation, x2.Category)
+}
+
+func TestEveCorporationAlliance(t *testing.T) {
+	x1 := &app.EveCorporation{Alliance: &app.EveEntity{}}
+	assert.True(t, x1.HasAlliance())
+
+	x2 := &app.EveCorporation{}
+	assert.False(t, x2.HasAlliance())
+}
+
+func TestEveCorporationFaction(t *testing.T) {
+	x1 := &app.EveCorporation{Faction: &app.EveEntity{}}
+	assert.True(t, x1.HasFaction())
+
+	x2 := &app.EveCorporation{}
+	assert.False(t, x2.HasFaction())
+}
+
+func TestEveCorporationEveEntity(t *testing.T) {
+	x1 := &app.EveCorporation{ID: 42, Name: "name"}
+	x2 := x1.ToEveEntity()
+	assert.EqualValues(t, 42, x2.ID)
+	assert.EqualValues(t, "name", x2.Name)
+	assert.EqualValues(t, app.EveEntityCorporation, x2.Category)
+}
+
+func TestEveCorporationDescription(t *testing.T) {
+	x := &app.EveCorporation{Description: "alpha<br>bravo"}
+	assert.Equal(t, "alpha\nbravo", x.DescriptionPlain())
+}
+
+func TestEveEntityCategory(t *testing.T) {
+	x := &app.EveEntity{Category: app.EveEntityAlliance}
+	assert.Equal(t, "Alliance", x.CategoryDisplay())
+}
+
+func TestEveEntityIsCharacter(t *testing.T) {
+	x1 := &app.EveEntity{Category: app.EveEntityCharacter}
+	assert.True(t, x1.IsCharacter())
+	x2 := &app.EveEntity{Category: app.EveEntityAlliance}
+	assert.False(t, x2.IsCharacter())
+}
+
+func TestEveLocationVariantFromID(t *testing.T) {
 	cases := []struct {
 		in  int64
 		out app.EveLocationVariant
@@ -49,6 +158,33 @@ func TestEveLocationDisplayName2(t *testing.T) {
 	}
 }
 
+func TestEveLocationDisplayName(t *testing.T) {
+	cases := []struct {
+		description string
+		id          int64
+		name        string
+		ess         *app.EveSolarSystem
+		want        string
+	}{
+		{"unknown", 888, "", nil, "Unknown"},
+		{"asset safety", 2004, "", nil, "Asset Safety"},
+		{"known solar system", 30000001, "", &app.EveSolarSystem{Name: "system"}, "system"},
+		{"unknown solar system", 30000001, "", nil, "Unknown solar system 30000001"},
+		{"station", 60000001, "name", nil, "name"},
+		{"unknown structure", 1000000000001, "", nil, "Unknown structure 1000000000001"},
+		{"unknown location", 60000001, "", nil, "Unknown location 60000001"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.description, func(t *testing.T) {
+			x := app.EveLocation{
+				ID:          tc.id,
+				Name:        tc.name,
+				SolarSystem: tc.ess,
+			}
+			assert.Equal(t, tc.want, x.DisplayName())
+		})
+	}
+}
 func TestEveLocationDisplayRichText(t *testing.T) {
 	t.Run("can return as rich text", func(t *testing.T) {
 		ss := &app.EveSolarSystem{SecurityStatus: 0.5}
@@ -78,6 +214,78 @@ func TestEveLocationDisplayRichText(t *testing.T) {
 		}
 		assert.Equal(t, want, got)
 	})
+}
+
+func TestEveLocationRegionName(t *testing.T) {
+	o1 := app.EveLocation{
+		SolarSystem: &app.EveSolarSystem{
+			Constellation: &app.EveConstellation{
+				Region: &app.EveRegion{
+					Name: "region",
+				},
+			},
+		},
+	}
+	assert.Equal(t, "region", o1.RegionName())
+	assert.Equal(t, "", app.EveLocation{}.RegionName())
+}
+
+func TestEveLocationSolarSystemName(t *testing.T) {
+	o1 := app.EveLocation{
+		SolarSystem: &app.EveSolarSystem{
+			Name: "system",
+		},
+	}
+	assert.Equal(t, "system", o1.SolarSystemName())
+	assert.Equal(t, "", app.EveLocation{}.SolarSystemName())
+}
+
+func TestEveLocationToEveEntity(t *testing.T) {
+	cases := []struct {
+		name string
+		in   *app.EveLocation
+		want *app.EveEntity
+	}{
+		{
+			"solar system",
+			&app.EveLocation{
+				ID: 30000001,
+				SolarSystem: &app.EveSolarSystem{
+					Name: "system",
+				},
+			},
+			&app.EveEntity{
+				ID:       30000001,
+				Name:     "system",
+				Category: app.EveEntitySolarSystem,
+			},
+		},
+		{
+			"station",
+			&app.EveLocation{
+				ID:   60000001,
+				Name: "station",
+			},
+			&app.EveEntity{
+				ID:       60000001,
+				Name:     "station",
+				Category: app.EveEntityStation,
+			},
+		},
+		{
+			"structure",
+			&app.EveLocation{
+				ID:   1000000000001,
+				Name: "structure",
+			},
+			nil,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, tc.in.ToEveEntity())
+		})
+	}
 }
 
 func TestEvePlanetTypeDisplay(t *testing.T) {
