@@ -396,7 +396,7 @@ func (a *contracts) showContract(r contractRow) {
 		fi = append(fi, widget.NewFormItem("Contract ID", a.u.makeCopyToClipboardLabel(fmt.Sprint(c.ContractID))))
 	}
 	if c.Type == app.ContractTypeCourier {
-		fi = append(fi, widget.NewFormItem("Contractor", widget.NewLabel(c.ContractorDisplay())))
+		fi = append(fi, widget.NewFormItem("Contractor", widget.NewLabel(c.AcceptorDisplay())))
 	}
 	fi = append(fi, widget.NewFormItem("Status", widget.NewRichText(c.StatusDisplayRichText()...)))
 	fi = append(fi, widget.NewFormItem("Location", makeLocation(c.StartLocation)))
