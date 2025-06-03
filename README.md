@@ -10,6 +10,8 @@ A companion app for Eve Online players available on Windows, Linux, macOS and An
 [![chat](https://img.shields.io/discord/790364535294132234)](https://discord.gg/tVSCQEVJnJ)
 [![GitHub Downloads](https://img.shields.io/github/downloads/ErikKalkoken/evebuddy/total)](https://tooomm.github.io/github-release-stats/?username=ErikKalkoken&repository=evebuddy)
 
+[![download](https://github.com/user-attachments/assets/c8de336f-8c42-4501-86bb-dbc9c66db1f0)](https://github.com/ErikKalkoken/evebuddy/releases/latest)
+
 ## Contents
 
 - [Description](#description)
@@ -28,12 +30,14 @@ A companion app for Eve Online players available on Windows, Linux, macOS and An
 
 ## Description
 
-EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) players available for desktop and mobile. It has four key features:
+EVE Buddy is a multi-platform companion app for [Eve Online](https://www.eveonline.com/) players. It has four key features:
 
 - Show consolidated information for all your characters, e.g. asset search over all characters or a combined view of industry jobs for all characters and corporations
 - Notify you about important game events (e.g. structure attacked) or updates (e.g. training queue is empty)
 - Allow you to monitor individual characters, e.g. inspect the current training queue of a character
 - Provides a full Eve mail client for each of your characters
+
+EVE Buddy is available for Windows, Linux, macOS and Android.
 
 > [!IMPORTANT]
 > This app is in-development and we are constantly adding new features and other improvements. We would very much appreciate your feedback, so we can quicly find and squash potential bugs. If you encounter any problems please feel free to open an issue or chat with us on our [Discord server]((https://discord.gg/tVSCQEVJnJ)) in the support channel **#evebuddy**.<br>
