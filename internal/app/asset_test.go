@@ -7,6 +7,73 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestCharacterAssetDisplayName(t *testing.T) {
+	cases := []struct {
+		name string
+		ca   *app.CharacterAsset
+		want string
+	}{
+		{"asset name", &app.CharacterAsset{Name: "name"}, "name"},
+		{"type name", &app.CharacterAsset{Type: &app.EveType{Name: "type"}}, "type"},
+		{
+			"BPC name",
+			&app.CharacterAsset{
+				Type: &app.EveType{
+					Name: "type",
+				},
+				IsBlueprintCopy: true,
+			},
+			"type (Copy)",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, tc.ca.DisplayName())
+		})
+	}
+}
+
+func TestCharacterAssetDisplayName2(t *testing.T) {
+	cases := []struct {
+		name string
+		ca   *app.CharacterAsset
+		want string
+	}{
+		{
+			"asset name",
+			&app.CharacterAsset{
+				Name: "name",
+				Type: &app.EveType{Name: "type"},
+			},
+			"type \"name\"",
+		},
+		{
+			"type name",
+			&app.CharacterAsset{
+				Type: &app.EveType{
+					Name: "type",
+				},
+			},
+			"type",
+		},
+		{
+			"BPC name",
+			&app.CharacterAsset{
+				Type: &app.EveType{
+					Name: "type",
+				},
+				IsBlueprintCopy: true,
+			},
+			"type (Copy)",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, tc.ca.DisplayName2())
+		})
+	}
+}
+
 func TestCharacterAssetIsContainer(t *testing.T) {
 	cases := []struct {
 		IsSingleton   bool
@@ -41,4 +108,63 @@ func TestCharacterAssetTypeName(t *testing.T) {
 		ca := &app.CharacterAsset{}
 		assert.Equal(t, "", ca.TypeName())
 	})
+}
+
+func TestCharacterAssetVariant(t *testing.T) {
+	cases := []struct {
+		name string
+		ca   *app.CharacterAsset
+		want app.EveTypeVariant
+	}{
+		{
+			"bpo",
+			&app.CharacterAsset{
+				Type: &app.EveType{
+					Group: &app.EveGroup{
+						Category: &app.EveCategory{
+							ID: app.EveCategoryBlueprint,
+						}}},
+			},
+			app.VariantBPO,
+		},
+		{
+			"bpc",
+			&app.CharacterAsset{
+				Type: &app.EveType{
+					Group: &app.EveGroup{
+						Category: &app.EveCategory{
+							ID: app.EveCategoryBlueprint,
+						}}},
+				IsBlueprintCopy: true,
+			},
+			app.VariantBPC,
+		},
+		{
+			"skin",
+			&app.CharacterAsset{
+				Type: &app.EveType{
+					Group: &app.EveGroup{
+						Category: &app.EveCategory{
+							ID: app.EveCategorySKINs,
+						}}},
+			},
+			app.VariantSKIN,
+		},
+		{
+			"other",
+			&app.CharacterAsset{
+				Type: &app.EveType{
+					Group: &app.EveGroup{
+						Category: &app.EveCategory{
+							ID: app.EveCategoryShip,
+						}}},
+			},
+			app.VariantRegular,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, tc.ca.Variant())
+		})
+	}
 }

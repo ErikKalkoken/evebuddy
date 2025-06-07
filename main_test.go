@@ -14,6 +14,8 @@ import (
 	"testing"
 	"testing/iotest"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -207,7 +209,7 @@ func TestObfuscate(t *testing.T) {
 		{"normal", "123456789", 4, "XXXXX6789"},
 		{"s too short", "123", 4, "XXX"},
 		{"n is zero", "123456789", 0, "XXXXXXXXX"},
-		{"n is negativ", "123456789", -5, "XXXXXXXXX"},
+		{"n is negative", "123456789", -5, "XXXXXXXXX"},
 		{"s is empty", "", 4, ""},
 	}
 	for _, tc := range cases {
@@ -216,4 +218,31 @@ func TestObfuscate(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
+}
+
+func TestCacheAdapter(t *testing.T) {
+	db, st, _ := testutil.New()
+	defer db.Close()
+	pc := pcache.New(st, 0)
+	ca := newCacheAdapter(pc, "prefix", 0)
+	t.Run("get existing key", func(t *testing.T) {
+		pc.Clear()
+		ca.Set("a", []byte("alpha"))
+		got, ok := ca.Get("a")
+		if assert.True(t, ok) {
+			assert.Equal(t, []byte("alpha"), got)
+		}
+	})
+	t.Run("get non existing key", func(t *testing.T) {
+		pc.Clear()
+		_, ok := ca.Get("a")
+		assert.False(t, ok)
+	})
+	t.Run("delete existing key", func(t *testing.T) {
+		pc.Clear()
+		ca.Set("a", []byte("alpha"))
+		ca.Delete("a")
+		_, ok := ca.Get("a")
+		assert.False(t, ok)
+	})
 }

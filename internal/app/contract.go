@@ -20,7 +20,7 @@ const (
 	ContractAvailabilityUndefined ContractAvailability = iota
 	ContractAvailabilityAlliance
 	ContractAvailabilityCorporation
-	ContractAvailabilityPersonal
+	ContractAvailabilityPrivate
 	ContractAvailabilityPublic
 )
 
@@ -28,7 +28,7 @@ func (cca ContractAvailability) String() string {
 	var m = map[ContractAvailability]string{
 		ContractAvailabilityAlliance:    "alliance",
 		ContractAvailabilityCorporation: "corporation",
-		ContractAvailabilityPersonal:    "private",
+		ContractAvailabilityPrivate:     "private",
 		ContractAvailabilityPublic:      "public",
 	}
 	s, ok := m[cca]

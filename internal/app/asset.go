@@ -151,7 +151,7 @@ func (ca CharacterAsset) Variant() EveTypeVariant {
 	} else if ca.IsBPO() {
 		return VariantBPO
 	} else if ca.IsBlueprintCopy {
-		return VariantBPO
+		return VariantBPC
 	}
 	return VariantRegular
 }

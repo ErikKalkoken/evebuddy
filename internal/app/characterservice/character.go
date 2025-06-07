@@ -749,7 +749,7 @@ func (s *CharacterService) ListContractItems(ctx context.Context, contractID int
 var contractAvailabilityFromESIValue = map[string]app.ContractAvailability{
 	"alliance":    app.ContractAvailabilityAlliance,
 	"corporation": app.ContractAvailabilityCorporation,
-	"personal":    app.ContractAvailabilityPersonal,
+	"personal":    app.ContractAvailabilityPrivate,
 	"public":      app.ContractAvailabilityPublic,
 }
 
