@@ -652,7 +652,7 @@ func TestNotifyCommunications(t *testing.T) {
 	}
 }
 
-func TestCountNotificatios(t *testing.T) {
+func TestCountNotifications(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
 	// given

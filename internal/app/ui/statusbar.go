@@ -94,7 +94,8 @@ func (a *statusBar) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *statusBar) showClockDialog() {
-	clock := iwidget.NewLabelWithSize("", theme.SizeNameHeadingText)
+	clock := widget.NewLabel("")
+	clock.SizeName = theme.SizeNameHeadingText
 	d := dialog.NewCustom("EVE Clock", "Close", clock, a.u.MainWindow())
 	a.u.ModifyShortcutsForDialog(d, a.u.MainWindow())
 	stop := make(chan struct{})

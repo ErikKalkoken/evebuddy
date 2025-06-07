@@ -714,16 +714,16 @@ func (s *CharacterService) NotifyUpdatedContracts(ctx context.Context, character
 		case app.ContractTypeCourier:
 			switch c.Status {
 			case app.ContractStatusInProgress:
-				content = fmt.Sprintf("Contract %s has been accepted by %s", name, c.ContractorDisplay())
+				content = fmt.Sprintf("Contract %s has been accepted by %s", name, c.AcceptorDisplay())
 			case app.ContractStatusFinished:
 				content = fmt.Sprintf("Contract %s has been delivered", name)
 			case app.ContractStatusFailed:
-				content = fmt.Sprintf("Contract %s has been failed by %s", name, c.ContractorDisplay())
+				content = fmt.Sprintf("Contract %s has been failed by %s", name, c.AcceptorDisplay())
 			}
 		case app.ContractTypeItemExchange:
 			switch c.Status {
 			case app.ContractStatusFinished:
-				content = fmt.Sprintf("Contract %s has been accepted by %s", name, c.ContractorDisplay())
+				content = fmt.Sprintf("Contract %s has been accepted by %s", name, c.AcceptorDisplay())
 			}
 		}
 		if content == "" {
@@ -749,7 +749,7 @@ func (s *CharacterService) ListContractItems(ctx context.Context, contractID int
 var contractAvailabilityFromESIValue = map[string]app.ContractAvailability{
 	"alliance":    app.ContractAvailabilityAlliance,
 	"corporation": app.ContractAvailabilityCorporation,
-	"personal":    app.ContractAvailabilityPersonal,
+	"personal":    app.ContractAvailabilityPrivate,
 	"public":      app.ContractAvailabilityPublic,
 }
 

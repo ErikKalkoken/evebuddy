@@ -53,7 +53,7 @@ func NewIconButtonWithMenu(icon fyne.Resource, menu *fyne.Menu) *IconButton {
 // SetIcon replaces the current icon.
 func (w *IconButton) SetIcon(icon fyne.Resource) {
 	w.icon.Resource = icon
-	w.icon.Refresh()
+	w.Refresh()
 }
 
 // SetMenuItems replaces the menu items.
@@ -62,11 +62,19 @@ func (w *IconButton) SetMenuItems(menuItems []*fyne.MenuItem) {
 		return
 	}
 	w.menu.Items = menuItems
-	w.menu.Refresh()
+	w.Refresh()
+}
+
+func (w *IconButton) Refresh() {
+	w.updateState()
+	w.icon.Refresh()
+	if w.menu != nil {
+		w.menu.Refresh()
+	}
 }
 
 func (w *IconButton) Tapped(_ *fyne.PointEvent) {
-	if w.OnTapped != nil {
+	if !w.Disabled() && w.OnTapped != nil {
 		w.OnTapped()
 	}
 }
@@ -97,5 +105,14 @@ func (w *IconButton) MouseOut() {
 }
 
 func (w *IconButton) CreateRenderer() fyne.WidgetRenderer {
+	w.updateState()
 	return widget.NewSimpleRenderer(container.NewPadded(w.icon))
+}
+
+func (w *IconButton) updateState() {
+	if w.Disabled() {
+		w.icon.Resource = theme.NewDisabledResource(w.icon.Resource)
+	} else {
+		w.icon.Resource = theme.NewThemedResource(w.icon.Resource)
+	}
 }

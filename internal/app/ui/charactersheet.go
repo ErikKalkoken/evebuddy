@@ -27,7 +27,7 @@ type characterSheet struct {
 	corporationLogo *kxwidget.TappableImage
 	factionLogo     *kxwidget.TappableImage
 	home            *iwidget.TappableRichText
-	name            *iwidget.Label
+	name            *widget.Label
 	portrait        *kxwidget.TappableImage
 	race            *kxwidget.TappableLabel
 	security        *widget.Label
@@ -44,7 +44,8 @@ func newSheet(u *baseUI) *characterSheet {
 		return ti
 	}
 
-	name := iwidget.NewLabelWithSize("", theme.SizeNameSubHeadingText)
+	name := widget.NewLabel("")
+	name.SizeName = theme.SizeNameSubHeadingText
 	name.Wrapping = fyne.TextWrapWord
 	home := iwidget.NewTappableRichTextWithText("?", nil)
 	home.Wrapping = fyne.TextWrapWord

@@ -120,7 +120,7 @@ type AppBar struct {
 	body     fyne.CanvasObject
 	isMobile bool
 	items    []*IconButton
-	title    *Label
+	title    *widget.Label
 }
 
 // NewAppBar returns a new AppBar. The toolbar items are optional.
@@ -136,7 +136,8 @@ func NewAppBar(title string, body fyne.CanvasObject, items ...*IconButton) *AppB
 	if !w.isMobile {
 		w.bg.Hide()
 	}
-	w.title = NewLabelWithSize(title, theme.SizeNameSubHeadingText)
+	w.title = widget.NewLabel(title)
+	w.title.SizeName = theme.SizeNameSubHeadingText
 	w.title.Truncation = fyne.TextTruncateEllipsis
 	return w
 }

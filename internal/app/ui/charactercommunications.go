@@ -19,7 +19,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type notificationFolder struct {
@@ -186,7 +185,8 @@ func (a *characterCommunications) setDetail(n *app.CharacterNotification) {
 		n.RecipientName = a.u.currentCharacter().EveCharacter.Name
 	}
 	a.Detail.RemoveAll()
-	subject := iwidget.NewLabelWithSize(n.TitleDisplay(), theme.SizeNameSubHeadingText)
+	subject := widget.NewLabel(n.TitleDisplay())
+	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Wrapping = fyne.TextWrapWord
 	a.Detail.Add(subject)
 	h := newMailHeader(a.u.eis, a.u.ShowEveEntityInfoWindow)

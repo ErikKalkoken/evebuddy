@@ -76,14 +76,16 @@ type NavDrawer struct {
 	list     *widget.List
 	pages    *fyne.Container
 	selected int
-	title    *Label
+	title    *widget.Label
 }
 
 func NewNavDrawer(title string, items ...*NavItem) *NavDrawer {
+	label := widget.NewLabel(title)
+	label.SizeName = theme.SizeNameSubHeadingText
 	w := &NavDrawer{
 		pages:    container.NewStack(),
 		selected: indexUndefined,
-		title:    NewLabelWithSize(title, theme.SizeNameSubHeadingText),
+		title:    label,
 	}
 	w.ExtendBaseWidget(w)
 	w.list = w.makeList()
@@ -118,7 +120,7 @@ func (w *NavDrawer) makeList() *widget.List {
 			spacer := canvas.NewRectangle(color.Transparent)
 			spacer.SetMinSize(fyne.NewSize(p, 1))
 			icon := widget.NewIcon(iconBlankSvg)
-			text := NewLabelWithSize("Template", theme.SizeNameText)
+			text := widget.NewLabel("Template")
 			badge := widget.NewLabel("999+")
 			return container.NewStack(
 				container.New(layout.NewCustomPaddedLayout(0, 0, p, p),
@@ -147,7 +149,7 @@ func (w *NavDrawer) makeList() *widget.List {
 			box := main.(*fyne.Container).Objects[0].(*fyne.Container).Objects
 			spacer := box[0]
 			icon := box[1].(*widget.Icon)
-			title := box[2].(*Label)
+			title := box[2].(*widget.Label)
 			badge := box[4].(*widget.Label)
 			showIcon := func() {
 				var r fyne.Resource

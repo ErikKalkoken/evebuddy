@@ -26,7 +26,7 @@ func TestCharacterContract(t *testing.T) {
 		dateExpired := time.Now().Add(12 * time.Hour).UTC()
 		dateIssued := time.Now().UTC()
 		arg := storage.CreateCharacterContractParams{
-			Availability:        app.ContractAvailabilityPersonal,
+			Availability:        app.ContractAvailabilityPrivate,
 			CharacterID:         c.ID,
 			ContractID:          42,
 			DateExpired:         dateExpired,
@@ -45,7 +45,7 @@ func TestCharacterContract(t *testing.T) {
 				assert.Equal(t, id, o.ID)
 				assert.Equal(t, issuer, o.Issuer)
 				assert.Equal(t, dateExpired, o.DateExpired)
-				assert.Equal(t, app.ContractAvailabilityPersonal, o.Availability)
+				assert.Equal(t, app.ContractAvailabilityPrivate, o.Availability)
 				assert.Equal(t, app.ContractStatusOutstanding, o.Status)
 				assert.Equal(t, app.ContractTypeCourier, o.Type)
 				assert.WithinDuration(t, time.Now().UTC(), o.UpdatedAt, 5*time.Second)
@@ -63,7 +63,7 @@ func TestCharacterContract(t *testing.T) {
 		startLocation := factory.CreateEveLocationStructure()
 		endLocation := factory.CreateEveLocationStructure()
 		arg := storage.CreateCharacterContractParams{
-			Availability:        app.ContractAvailabilityPersonal,
+			Availability:        app.ContractAvailabilityPrivate,
 			CharacterID:         c.ID,
 			ContractID:          42,
 			DateExpired:         dateExpired,
@@ -84,7 +84,7 @@ func TestCharacterContract(t *testing.T) {
 				assert.Equal(t, id, o.ID)
 				assert.Equal(t, issuer, o.Issuer)
 				assert.Equal(t, dateExpired, o.DateExpired)
-				assert.Equal(t, app.ContractAvailabilityPersonal, o.Availability)
+				assert.Equal(t, app.ContractAvailabilityPrivate, o.Availability)
 				assert.Equal(t, app.ContractStatusOutstanding, o.Status)
 				assert.Equal(t, app.ContractTypeCourier, o.Type)
 				assert.Equal(t, endLocation.ToShort(), o.EndLocation)
