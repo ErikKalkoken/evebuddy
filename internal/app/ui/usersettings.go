@@ -159,7 +159,7 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []settingAc
 	)
 	developerMode := iwidget.NewSettingItemSwitch(
 		"Developer Mode",
-		"App shows addditional technical information like Character IDs",
+		"App shows additional technical information like Character IDs",
 		func() bool {
 			return a.u.settings.DeveloperMode()
 		},
@@ -173,13 +173,13 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []settingAc
 		logLevel,
 		preferMarketTab,
 		developerMode,
-		iwidget.NewSettingItemSeperator(),
+		iwidget.NewSettingItemSeparator(),
 		iwidget.NewSettingItemHeading("EVE Online"),
 		maxMail,
 		maxWallet,
 	}
 
-	systray := iwidget.NewSettingItemSwitch(
+	sysTray := iwidget.NewSettingItemSwitch(
 		"Close button",
 		"App will minimize to system tray when closed (requires restart)",
 		func() bool {
@@ -190,7 +190,7 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []settingAc
 		},
 	)
 	if a.u.isDesktop {
-		items = slices.Insert(items, 2, systray)
+		items = slices.Insert(items, 2, sysTray)
 	}
 
 	list := iwidget.NewSettingList(items)
@@ -401,7 +401,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 	)
 	notifyTraining := iwidget.NewSettingItemSwitch(
 		"Notify Training",
-		"Whether to notify abouthen skillqueue is empty",
+		"Whether to notify when skillqueue is empty",
 		func() bool {
 			return a.u.settings.NotifyTrainingEnabled()
 		},
@@ -461,11 +461,11 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 		notifyContracts,
 		notifTimeout,
 	}
-	items = append(items, iwidget.NewSettingItemSeperator())
+	items = append(items, iwidget.NewSettingItemSeparator())
 	items = append(items, iwidget.NewSettingItemHeading("Communication Groups"))
 
 	// add communication groups
-	const groupHint = "Choose which communications to notfy about"
+	const groupHint = "Choose which communications to notify about"
 	type groupPage struct {
 		content fyne.CanvasObject
 		actions []settingAction
@@ -537,7 +537,8 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 			func(it iwidget.SettingItem, refresh func()) {
 				p := groupPages[g]
 				title := g.String()
-				hint := iwidget.NewLabelWithSize(groupHint, theme.SizeNameCaptionText)
+				hint := widget.NewLabel(groupHint)
+				hint.SizeName = theme.SizeNameCaptionText
 				if a.OnCommunicationGroupSelected != nil {
 					c := container.NewBorder(hint, nil, nil, nil, p.content)
 					a.OnCommunicationGroupSelected(title, c, p.actions)

@@ -182,7 +182,9 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	characterNav.MinWidth = minNavCharacterWidth
 
 	makePageWithTitle := func(title string, content fyne.CanvasObject, buttons ...*widget.Button) fyne.CanvasObject {
-		c := container.NewHBox(iwidget.NewLabelWithSize(title, theme.SizeNameSubHeadingText))
+		l := widget.NewLabel(title)
+		l.SizeName = theme.SizeNameSubHeadingText
+		c := container.NewHBox(l)
 		if len(buttons) > 0 {
 			c.Add(layout.NewSpacer())
 			for _, b := range buttons {
@@ -651,7 +653,7 @@ type pageBar struct {
 
 	buttons []*widget.Button
 	icon    *kwidget.TappableImage
-	title   *iwidget.Label
+	title   *widget.Label
 	u       *baseUI
 }
 
@@ -659,10 +661,12 @@ func newPageBar(title string, icon fyne.Resource, u *baseUI, buttons ...*widget.
 	i := kwidget.NewTappableImageWithMenu(icon, fyne.NewMenu(""))
 	i.SetFillMode(canvas.ImageFillContain)
 	i.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
+	l := widget.NewLabel(title)
+	l.SizeName = theme.SizeNameSubHeadingText
 	w := &pageBar{
 		buttons: buttons,
 		icon:    i,
-		title:   iwidget.NewLabelWithSize(title, theme.SizeNameSubHeadingText),
+		title:   l,
 		u:       u,
 	}
 	w.ExtendBaseWidget(w)

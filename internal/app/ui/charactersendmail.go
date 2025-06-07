@@ -155,7 +155,8 @@ func showAddDialog(u *baseUI, characterID int32, onSelected func(ee *app.EveEnti
 		func() fyne.CanvasObject {
 			name := widget.NewLabel("Template")
 			name.Truncation = fyne.TextTruncateClip
-			category := iwidget.NewLabelWithSize("Template", theme.SizeNameCaptionText)
+			category := widget.NewLabel("Template")
+			category.SizeName = theme.SizeNameCaptionText
 			icon := iwidget.NewImageFromResource(icons.Questionmark32Png, fyne.NewSquareSize(app.IconUnitSize))
 			return container.NewBorder(
 				nil,
@@ -180,7 +181,7 @@ func showAddDialog(u *baseUI, characterID int32, onSelected func(ee *app.EveEnti
 				}
 				return res, nil
 			})
-			row[2].(*iwidget.Label).SetText(ee.CategoryDisplay())
+			row[2].(*widget.Label).SetText(ee.CategoryDisplay())
 		},
 	)
 	list.HideSeparators = true

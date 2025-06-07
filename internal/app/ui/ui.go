@@ -1215,7 +1215,8 @@ func (u *baseUI) makeAboutPage() fyne.CanvasObject {
 			latest.Show()
 		})
 	}()
-	title := iwidget.NewLabelWithSize(u.appName(), theme.SizeNameSubHeadingText)
+	title := widget.NewLabel(u.appName())
+	title.SizeName = theme.SizeNameSubHeadingText
 	title.TextStyle.Bold = true
 	c := container.New(
 		layout.NewCustomPaddedVBoxLayout(0),
@@ -1236,7 +1237,8 @@ func (u *baseUI) makeAboutPage() fyne.CanvasObject {
 
 func (u *baseUI) makeDetailWindow(title, subTitle string, content fyne.CanvasObject) fyne.Window {
 	w := u.App().NewWindow(u.MakeWindowTitle(title))
-	t := iwidget.NewLabelWithSize(subTitle, theme.SizeNameSubHeadingText)
+	t := widget.NewLabel(subTitle)
+	t.SizeName = theme.SizeNameSubHeadingText
 	top := container.NewVBox(t, widget.NewSeparator())
 	vs := container.NewVScroll(content)
 	vs.SetMinSize(fyne.NewSize(600, 500))

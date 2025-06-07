@@ -16,7 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	ilayout "github.com/ErikKalkoken/evebuddy/internal/layout"
-	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widget"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type mailHeaderItem struct {
@@ -27,12 +27,13 @@ type mailHeaderItem struct {
 	eis       *eveimageservice.EveImageService
 	from      *widget.Label
 	icon      *canvas.Image
-	subject   *iwidgets.Label
+	subject   *widget.Label
 	timestamp *widget.Label
 }
 
 func newMailHeaderItem(eis *eveimageservice.EveImageService) *mailHeaderItem {
-	subject := iwidgets.NewLabelWithSize("", theme.SizeNameSubHeadingText)
+	subject := widget.NewLabel("")
+	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Truncation = fyne.TextTruncateEllipsis
 	from := widget.NewLabel("")
 	from.Truncation = fyne.TextTruncateEllipsis
@@ -43,7 +44,7 @@ func newMailHeaderItem(eis *eveimageservice.EveImageService) *mailHeaderItem {
 		subject:      subject,
 		timestamp:    widget.NewLabel(""),
 	}
-	w.icon = iwidgets.NewImageFromResource(w.FallbackIcon, fyne.NewSquareSize(app.IconUnitSize))
+	w.icon = iwidget.NewImageFromResource(w.FallbackIcon, fyne.NewSquareSize(app.IconUnitSize))
 	w.ExtendBaseWidget(w)
 	return w
 }
