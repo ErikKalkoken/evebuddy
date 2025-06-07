@@ -210,8 +210,8 @@ func (w *FilterChip) CreateRenderer() fyne.WidgetRenderer {
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(0),
 				layout.NewSpacer(),
-				w.iconPadded,
-				w.label,
+				container.NewVBox(layout.NewSpacer(), w.iconPadded, layout.NewSpacer()),
+				container.NewVBox(layout.NewSpacer(), w.label, layout.NewSpacer()),
 				layout.NewSpacer(),
 			),
 		)))

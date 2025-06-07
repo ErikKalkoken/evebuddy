@@ -3,31 +3,126 @@ package widget_test
 import (
 	"testing"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/test"
 
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFilterChip(t *testing.T) {
+func TestFilterChip_EnabledOff(t *testing.T) {
 	test.NewTempApp(t)
-	t.Run("can set state", func(t *testing.T) {
-		x := iwidget.NewFilterChip("dummy", nil)
-		x.SetState(true)
-		assert.True(t, x.On)
-		x.SetState(false)
-		assert.False(t, x.On)
+	test.ApplyTheme(t, test.Theme())
+
+	chip := iwidget.NewFilterChip("Test", nil)
+	w := test.NewWindow(container.NewCenter(chip))
+	defer w.Close()
+
+	test.AssertImageMatches(t, "filterchip/enabled_off.png", w.Canvas().Capture())
+}
+
+func TestFilterChip_DisabledOff(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	chip := iwidget.NewFilterChip("Test", nil)
+	w := test.NewWindow(container.NewCenter(chip))
+	defer w.Close()
+	chip.Disable()
+
+	test.AssertImageMatches(t, "filterchip/disabled_off.png", w.Canvas().Capture())
+}
+
+func TestFilterChip_EnabledOn(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	chip := iwidget.NewFilterChip("Test", nil)
+	chip.On = true
+	w := test.NewWindow(container.NewCenter(chip))
+	defer w.Close()
+
+	test.AssertImageMatches(t, "filterchip/enabled_on.png", w.Canvas().Capture())
+}
+
+func TestFilterChip_DisabledOn(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	chip := iwidget.NewFilterChip("Test", nil)
+	chip.On = true
+	chip.Disable()
+	w := test.NewWindow(container.NewCenter(chip))
+	defer w.Close()
+
+	test.AssertImageMatches(t, "filterchip/disabled_on.png", w.Canvas().Capture())
+}
+
+func TestFilterChip_CanSwitchOnWhenEnabled(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+	var tapped bool
+	chip := iwidget.NewFilterChip("Test", func(on bool) {
+		tapped = true
 	})
-	t.Run("cb is called on change", func(t *testing.T) {
-		var isCalled, v bool
-		x := iwidget.NewFilterChip("dummy", func(on bool) {
-			isCalled = true
-			v = on
-		})
-		x.SetState(true)
-		assert.True(t, isCalled)
-		assert.True(t, v)
+	w := test.NewWindow(container.NewCenter(chip))
+	defer w.Close()
+	w.Resize(fyne.NewSize(150, 50))
+
+	test.Tap(chip)
+	assert.True(t, tapped)
+	test.AssertImageMatches(t, "filterchip/tapped_enabled_on.png", w.Canvas().Capture())
+}
+
+func TestFilterChip_CanSwitchOffWhenEnabled(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+	var tapped bool
+	chip := iwidget.NewFilterChip("Test", func(on bool) {
+		tapped = true
 	})
+	chip.On = true
+	w := test.NewWindow(container.NewCenter(chip))
+	defer w.Close()
+	w.Resize(fyne.NewSize(150, 50))
+
+	test.Tap(chip)
+	assert.True(t, tapped)
+	test.AssertImageMatches(t, "filterchip/tapped_enabled_off.png", w.Canvas().Capture())
+}
+
+func TestFilterChip_CanNotSwitchWhenDisabledOff(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+	var tapped bool
+	chip := iwidget.NewFilterChip("Test", func(on bool) {
+		tapped = true
+	})
+	chip.Disable()
+	w := test.NewWindow(container.NewCenter(chip))
+	defer w.Close()
+
+	test.Tap(chip)
+	assert.False(t, tapped)
+	test.AssertImageMatches(t, "filterchip/disabled_off.png", w.Canvas().Capture())
+}
+
+func TestFilterChip_CanNotSwitchWhenDisabledOn(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+	var tapped bool
+	chip := iwidget.NewFilterChip("Test", func(on bool) {
+		tapped = true
+	})
+	chip.On = true
+	chip.Disable()
+	w := test.NewWindow(container.NewCenter(chip))
+	defer w.Close()
+
+	test.Tap(chip)
+	assert.False(t, tapped)
+	test.AssertImageMatches(t, "filterchip/disabled_on.png", w.Canvas().Capture())
 }
 
 func TestFilterChipSelect(t *testing.T) {
