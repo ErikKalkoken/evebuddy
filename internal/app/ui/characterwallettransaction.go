@@ -62,13 +62,13 @@ type characterWalletTransaction struct {
 
 func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 	headers := []headerDef{
-		{Text: "Date", Width: 150},
-		{Text: "Quantity", Width: 130},
-		{Text: "Type", Width: 200},
-		{Text: "Unit Price", Width: 200},
-		{Text: "Total", Width: 200},
-		{Text: "Client", Width: 250},
-		{Text: "Where", Width: 350},
+		{Label: "Date", Width: 150},
+		{Label: "Quantity", Width: 130},
+		{Label: "Type", Width: 200},
+		{Label: "Unit Price", Width: 200},
+		{Label: "Total", Width: 200},
+		{Label: "Client", Width: 250},
+		{Label: "Where", Width: 350},
 	}
 	a := &characterWalletTransaction{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortDesc),
@@ -349,7 +349,7 @@ func (a *characterWalletTransaction) showEntry(r walletTransactionRow) {
 			a.u.ShowInfoWindow(app.EveEntityInventoryType, r.typeID)
 		})),
 		widget.NewFormItem("Unit price", widget.NewLabel(r.unitPriceDisplay)),
-		widget.NewFormItem("Total", widget.NewRichText(
+		widget.NewFormItem("Total", iwidget.NewRichText(
 			iwidget.NewRichTextSegmentFromText(
 				r.totalText, widget.RichTextStyle{
 					ColorName: r.totalColor,

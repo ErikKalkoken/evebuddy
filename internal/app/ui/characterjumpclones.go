@@ -49,13 +49,13 @@ func (n jumpCloneNode) UID() widget.TreeNodeID {
 type characterJumpClones struct {
 	widget.BaseWidget
 
-	top  *widget.RichText
+	top  *iwidget.RichText
 	tree *iwidget.Tree[jumpCloneNode]
 	u    *baseUI
 }
 
 func newCharacterJumpClones(u *baseUI) *characterJumpClones {
-	top := widget.NewRichText()
+	top := iwidget.NewRichText()
 	top.Wrapping = fyne.TextWrapWord
 	a := &characterJumpClones{
 		top: top,
@@ -143,11 +143,9 @@ func (a *characterJumpClones) update() {
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
 		fyne.Do(func() {
-			iwidget.SetRichText(a.top, &widget.TextSegment{
-				Text: "ERROR: " + a.u.humanizeError(err),
-				Style: widget.RichTextStyle{
-					ColorName: theme.ColorNameError,
-				}})
+			a.top.Set(iwidget.NewRichTextSegmentFromText("ERROR: "+a.u.humanizeError(err), widget.RichTextStyle{
+				ColorName: theme.ColorNameError,
+			}))
 		})
 	} else {
 		a.refreshTop(cloneCount(td))
@@ -206,7 +204,7 @@ func (a *characterJumpClones) newTreeData() (*iwidget.TreeData[jumpCloneNode], e
 func (a *characterJumpClones) refreshTop(cloneCount int) {
 	segs := a.makeTopText(cloneCount, a.u.currentCharacter(), a.u.services())
 	fyne.Do(func() {
-		iwidget.SetRichText(a.top, segs...)
+		a.top.Set(segs)
 	})
 }
 

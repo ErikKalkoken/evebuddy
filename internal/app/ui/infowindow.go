@@ -2657,7 +2657,7 @@ func (w *entityList) CreateRenderer() fyne.WidgetRenderer {
 		func() fyne.CanvasObject {
 			category := widget.NewLabel("Category")
 			category.SizeName = theme.SizeNameCaptionText
-			text := widget.NewRichText()
+			text := iwidget.NewRichText()
 			text.Truncation = fyne.TextTruncateEllipsis
 			icon := widget.NewIcon(theme.InfoIcon())
 			p := theme.Padding()
@@ -2687,12 +2687,11 @@ func (w *entityList) CreateRenderer() fyne.WidgetRenderer {
 			} else {
 				icon.Show()
 			}
-			text := border2[1].(*fyne.Container).Objects[0].(*widget.RichText)
+			text := border2[1].(*fyne.Container).Objects[0].(*iwidget.RichText)
 			if len(it.textSegments) != 0 {
-				text.Segments = it.textSegments
-				text.Refresh()
+				text.Set(it.textSegments)
 			} else {
-				text.ParseMarkdown(it.text)
+				text.SetWithText(it.text)
 			}
 		},
 	)

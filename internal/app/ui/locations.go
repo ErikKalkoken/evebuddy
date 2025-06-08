@@ -42,10 +42,10 @@ type locations struct {
 
 func newLocations(u *baseUI) *locations {
 	headers := []headerDef{
-		{Text: "Character", Width: columnWidthCharacter},
-		{Text: "Location", Width: columnWidthLocation},
-		{Text: "Region", Width: columnWidthRegion},
-		{Text: "Ship", Width: 150},
+		{Label: "Character", Width: columnWidthCharacter},
+		{Label: "Location", Width: columnWidthLocation},
+		{Label: "Region", Width: columnWidthRegion},
+		{Label: "Ship", Width: 150},
 	}
 	a := &locations{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
@@ -112,7 +112,7 @@ func (a *locations) makeDataList() *widget.List {
 		func() fyne.CanvasObject {
 			title := widget.NewLabelWithStyle("Template", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 			title.Wrapping = fyne.TextWrapWord
-			location := widget.NewRichTextWithText("Template")
+			location := iwidget.NewRichTextWithText("Template")
 			location.Wrapping = fyne.TextWrapWord
 			ship := widget.NewLabel("Template")
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
@@ -128,7 +128,7 @@ func (a *locations) makeDataList() *widget.List {
 			r := a.rowsFiltered[id]
 			c := co.(*fyne.Container).Objects
 			c[0].(*widget.Label).SetText(r.characterName)
-			iwidget.SetRichText(c[1].(*widget.RichText), r.locationDisplay...)
+			c[1].(*iwidget.RichText).Set(r.locationDisplay)
 			c[2].(*widget.Label).SetText(r.shipName)
 			l.SetItemHeight(id, co.(*fyne.Container).MinSize().Height)
 		},

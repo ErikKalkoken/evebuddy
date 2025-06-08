@@ -70,12 +70,12 @@ type assets struct {
 
 func newAssets(u *baseUI) *assets {
 	headers := []headerDef{
-		{Text: "Item", Width: 300},
-		{Text: "Class", Width: 200},
-		{Text: "Location", Width: 350},
-		{Text: "Owner", Width: 200},
-		{Text: "Qty.", Width: 75},
-		{Text: "Total", Width: 100},
+		{Label: "Item", Width: 300},
+		{Label: "Class", Width: 200},
+		{Label: "Location", Width: 350},
+		{Label: "Owner", Width: 200},
+		{Label: "Qty.", Width: 75},
+		{Label: "Total", Width: 100},
 	}
 	a := &assets{
 		entry:        widget.NewEntry(),
@@ -173,7 +173,7 @@ func (a *assets) makeDataList() *widget.List {
 		func() fyne.CanvasObject {
 			title := widget.NewLabelWithStyle("Template", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 			owner := widget.NewLabel("Template")
-			location := widget.NewRichTextWithText("Template")
+			location := iwidget.NewRichTextWithText("Template")
 			price := widget.NewLabel("Template")
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
 				title,
@@ -195,7 +195,7 @@ func (a *assets) makeDataList() *widget.List {
 				title = fmt.Sprintf("%s x%s", r.typeNameDisplay, r.quantityDisplay)
 			}
 			box[0].(*widget.Label).SetText(title)
-			iwidget.SetRichText(box[1].(*widget.RichText), r.locationDisplay...)
+			box[1].(*iwidget.RichText).Set(r.locationDisplay)
 			box[2].(*widget.Label).SetText(r.characterName)
 			box[3].(*widget.Label).SetText(r.totalDisplay)
 		},

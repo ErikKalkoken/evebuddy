@@ -66,16 +66,16 @@ type characters struct {
 
 func newOverviewCharacters(u *baseUI) *characters {
 	headers := []headerDef{
-		{Text: "Character", Width: columnWidthCharacter},
-		{Text: "Corporation", Width: 250},
-		{Text: "Alliance", Width: 250},
-		{Text: "Sec.", Width: 50},
-		{Text: "Unread", Width: 100},
-		{Text: "Wallet", Width: 100},
-		{Text: "Assets", Width: 100},
-		{Text: "Last Login", Width: 100},
-		{Text: "Home", Width: columnWidthLocation},
-		{Text: "Age", Width: 100},
+		{Label: "Character", Width: columnWidthCharacter},
+		{Label: "Corporation", Width: 250},
+		{Label: "Alliance", Width: 250},
+		{Label: "Sec.", Width: 50},
+		{Label: "Unread", Width: 100},
+		{Label: "Wallet", Width: 100},
+		{Label: "Assets", Width: 100},
+		{Label: "Last Login", Width: 100},
+		{Label: "Home", Width: columnWidthLocation},
+		{Label: "Age", Width: 100},
 	}
 	a := &characters{
 		columnSorter: newColumnSorter(headers),

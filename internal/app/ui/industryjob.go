@@ -106,14 +106,14 @@ type industryJobs struct {
 
 func newIndustryJobs(u *baseUI) *industryJobs {
 	headers := []headerDef{
-		{Text: "Blueprint", Width: 250},
-		{Text: "Status", Width: 100, Refresh: true},
-		{Text: "Runs", Width: 75},
-		{Text: "Activity", Width: 200},
-		{Text: "End date", Width: columnWidthDateTime},
-		{Text: "Location", Width: columnWidthLocation},
-		{Text: "Owner", Width: columnWidthCharacter},
-		{Text: "Installer", Width: columnWidthCharacter},
+		{Label: "Blueprint", Width: 250},
+		{Label: "Status", Width: 100, Refresh: true},
+		{Label: "Runs", Width: 75},
+		{Label: "Activity", Width: 200},
+		{Label: "End date", Width: columnWidthDateTime},
+		{Label: "Location", Width: columnWidthLocation},
+		{Label: "Owner", Width: columnWidthCharacter},
+		{Label: "Installer", Width: columnWidthCharacter},
 	}
 	a := &industryJobs{
 		columnSorter: newColumnSorterWithInit(headers, 4, sortDesc),
@@ -362,7 +362,7 @@ func (a *industryJobs) makeDataList() *widget.List {
 			title := widget.NewLabel("Template")
 			title.TextStyle.Bold = true
 			title.Wrapping = fyne.TextWrapWord
-			status := widget.NewRichText()
+			status := iwidget.NewRichText()
 			location := widget.NewLabel("Template")
 			location.Wrapping = fyne.TextWrapWord
 			completed := widget.NewLabel("Template")
@@ -402,7 +402,7 @@ func (a *industryJobs) makeDataList() *widget.List {
 
 			statusStack := c1[2].(*fyne.Container).Objects
 			if j.status == app.JobActive {
-				iwidget.SetRichText(statusStack[0].(*widget.RichText), j.statusDisplay...)
+				statusStack[0].(*iwidget.RichText).Set(j.statusDisplay)
 				statusStack[0].Show()
 				statusStack[1].Hide()
 			} else {
@@ -593,7 +593,7 @@ func (a *industryJobs) showJob(r industryJobRow) {
 		))
 	}
 	items = slices.Concat(items, []*widget.FormItem{
-		widget.NewFormItem("Status", widget.NewRichText(r.statusDisplay...)),
+		widget.NewFormItem("Status", iwidget.NewRichText(r.statusDisplay...)),
 		widget.NewFormItem("Runs", widget.NewLabel(ihumanize.Comma(r.runs))),
 	})
 

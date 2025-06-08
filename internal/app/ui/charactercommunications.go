@@ -19,6 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type notificationFolder struct {
@@ -196,7 +197,7 @@ func (a *characterCommunications) setDetail(n *app.CharacterNotification) {
 	if err != nil {
 		slog.Warn("failed to convert markdown", "notificationID", n.ID, "text", n.Body.ValueOrZero())
 	}
-	body := widget.NewRichTextWithText(s.ValueOrZero())
+	body := iwidget.NewRichTextWithText(s.ValueOrZero())
 	body.Wrapping = fyne.TextWrapWord
 	if n.Body.IsEmpty() {
 		body.ParseMarkdown("*This notification type is not fully supported yet*")

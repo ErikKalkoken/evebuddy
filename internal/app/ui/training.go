@@ -56,10 +56,10 @@ type trainings struct {
 
 func newTrainings(u *baseUI) *trainings {
 	headers := []headerDef{
-		{Text: "Name", Width: 250},
-		{Text: "SP", Width: 100},
-		{Text: "Unall. SP", Width: 100},
-		{Text: "Training", Width: 100},
+		{Label: "Name", Width: 250},
+		{Label: "SP", Width: 100},
+		{Label: "Unall. SP", Width: 100},
+		{Label: "Training", Width: 100},
 	}
 	a := &trainings{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
@@ -145,7 +145,7 @@ func (a *trainings) makeDataList() *widget.List {
 		func() fyne.CanvasObject {
 			title := widget.NewLabelWithStyle("Template", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 			title.Wrapping = fyne.TextWrapWord
-			training := widget.NewRichTextWithText("Template")
+			training := iwidget.NewRichTextWithText("Template")
 			sp := widget.NewLabel("Template")
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
 				title,
@@ -160,7 +160,7 @@ func (a *trainings) makeDataList() *widget.List {
 			r := a.rowsFiltered[id]
 			c := co.(*fyne.Container).Objects
 			c[0].(*widget.Label).SetText(r.characterName)
-			iwidget.SetRichText(c[1].(*widget.RichText), r.trainingDisplay...)
+			c[1].(*iwidget.RichText).Set(r.trainingDisplay)
 			c[2].(*widget.Label).SetText(fmt.Sprintf("%s (%s) SP", r.totalSPDisplay, r.unallocatedSPDisplay))
 		},
 	)

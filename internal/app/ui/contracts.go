@@ -69,13 +69,13 @@ type contracts struct {
 
 func newContracts(u *baseUI) *contracts {
 	headers := []headerDef{
-		{Text: "Contract", Width: 300},
-		{Text: "Type", Width: 120},
-		{Text: "From", Width: 150},
-		{Text: "To", Width: 150},
-		{Text: "Status", Width: 100},
-		{Text: "Date Issued", Width: 150},
-		{Text: "Time Left", Width: 100},
+		{Label: "Contract", Width: 300},
+		{Label: "Type", Width: 120},
+		{Label: "From", Width: 150},
+		{Label: "To", Width: 150},
+		{Label: "Status", Width: 100},
+		{Label: "Date Issued", Width: 150},
+		{Label: "Time Left", Width: 100},
 	}
 	a := &contracts{
 		columnSorter: newColumnSorter(headers),
@@ -164,10 +164,10 @@ func (a *contracts) makeDataList() *widget.List {
 		func() fyne.CanvasObject {
 			title := widget.NewLabelWithStyle("Template", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 			type_ := widget.NewLabel("Template")
-			status := widget.NewRichTextWithText("Template")
+			status := iwidget.NewRichTextWithText("Template")
 			issuer := widget.NewLabel("Template")
 			assignee := widget.NewLabel("Template")
-			dateExpired := widget.NewRichTextWithText("Template")
+			dateExpired := iwidget.NewRichTextWithText("Template")
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
 				title,
 				container.NewHBox(type_, layout.NewSpacer(), status),
@@ -185,7 +185,7 @@ func (a *contracts) makeDataList() *widget.List {
 			main[0].(*widget.Label).SetText(r.name)
 			box := main[1].(*fyne.Container).Objects
 			box[0].(*widget.Label).SetText(r.typeName)
-			iwidget.SetRichText(box[2].(*widget.RichText), r.status.DisplayRichText()...)
+			(box[2].(*iwidget.RichText).Set(r.status.DisplayRichText()))
 
 			main[2].(*widget.Label).SetText("From " + r.issuerName)
 			assignee := "To "
@@ -196,10 +196,10 @@ func (a *contracts) makeDataList() *widget.List {
 			}
 			main[3].(*widget.Label).SetText(assignee)
 
-			iwidget.SetRichText(main[4].(*widget.RichText), iwidget.InlineRichTextSegments(
+			main[4].(*iwidget.RichText).Set(iwidget.InlineRichTextSegments(
 				iwidget.NewRichTextSegmentFromText("Expires "),
 				r.dateExpiredDisplay,
-			)...)
+			))
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
@@ -396,7 +396,7 @@ func (a *contracts) showContract(r contractRow) {
 	if c.Type == app.ContractTypeCourier {
 		fi = append(fi, widget.NewFormItem("Contractor", widget.NewLabel(c.AcceptorDisplay())))
 	}
-	fi = append(fi, widget.NewFormItem("Status", widget.NewRichText(c.StatusDisplayRichText()...)))
+	fi = append(fi, widget.NewFormItem("Status", iwidget.NewRichText(c.StatusDisplayRichText()...)))
 	fi = append(fi, widget.NewFormItem("Location", makeLocation(c.StartLocation)))
 
 	if c.Type == app.ContractTypeCourier || c.Type == app.ContractTypeItemExchange {

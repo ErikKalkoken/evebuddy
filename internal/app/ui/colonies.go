@@ -66,13 +66,13 @@ type colonies struct {
 
 func newColonies(u *baseUI) *colonies {
 	headers := []headerDef{
-		{Text: "Planet", Width: 150},
-		{Text: "Type", Width: 100},
-		{Text: "Extracting", Width: 200, NotSortable: true},
-		{Text: "Due", Width: 150},
-		{Text: "Producing", Width: 200, NotSortable: true},
-		{Text: "Region", Width: 150},
-		{Text: "Character", Width: columnWidthCharacter},
+		{Label: "Planet", Width: 150},
+		{Label: "Type", Width: 100},
+		{Label: "Extracting", Width: 200, NotSortable: true},
+		{Label: "Due", Width: 150},
+		{Label: "Producing", Width: 200, NotSortable: true},
+		{Label: "Region", Width: 150},
+		{Label: "Character", Width: columnWidthCharacter},
 	}
 	a := &colonies{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),

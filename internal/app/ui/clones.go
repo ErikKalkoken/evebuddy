@@ -60,7 +60,7 @@ type clones struct {
 	changeOrigin      *widget.Button
 	columnSorter      *columnSorter
 	origin            *app.EveSolarSystem
-	originLabel       *widget.RichText
+	originLabel       *iwidget.RichText
 	routePref         app.EveRoutePreference
 	rows              []cloneRow
 	rowsFiltered      []cloneRow
@@ -74,15 +74,15 @@ type clones struct {
 
 func newClones(u *baseUI) *clones {
 	headers := []headerDef{
-		{Text: "Location", Width: columnWidthLocation},
-		{Text: "Region", Width: columnWidthRegion, NotSortable: true},
-		{Text: "Impl.", Width: 100},
-		{Text: "Character", Width: columnWidthCharacter},
-		{Text: "Jumps", Width: 100},
+		{Label: "Location", Width: columnWidthLocation},
+		{Label: "Region", Width: columnWidthRegion, NotSortable: true},
+		{Label: "Impl.", Width: 100},
+		{Label: "Character", Width: columnWidthCharacter},
+		{Label: "Jumps", Width: 100},
 	}
 	a := &clones{
 		columnSorter: newColumnSorter(headers),
-		originLabel:  widget.NewRichTextWithText("(not set)"),
+		originLabel:  iwidget.NewRichTextWithText("(not set)"),
 		rows:         make([]cloneRow, 0),
 		rowsFiltered: make([]cloneRow, 0),
 		top:          makeTopLabel(),
@@ -260,9 +260,9 @@ func (a *clones) updateRoutes() {
 		slog.Error("failed to fetch routes", "error", err)
 		fyne.Do(func() {
 			s := "Failed to fetch routes: " + a.u.humanizeError(err)
-			iwidget.SetRichText(a.originLabel, iwidget.NewRichTextSegmentFromText(s, widget.RichTextStyle{
+			a.originLabel.Set(iwidget.NewRichTextSegmentFromText(s, widget.RichTextStyle{
 				ColorName: theme.ColorNameError,
-			})...)
+			}))
 		})
 		return
 	}
@@ -324,11 +324,10 @@ func (a *clones) setOrigin(w fyne.Window) {
 		}
 		a.origin = s
 		a.routePref = app.EveRoutePreferenceFromString(routePref.Selected)
-		a.originLabel.Segments = iwidget.InlineRichTextSegments(
+		a.originLabel.Set(iwidget.InlineRichTextSegments(
 			s.DisplayRichTextWithRegion(),
 			iwidget.NewRichTextSegmentFromText(fmt.Sprintf(" [%s]", a.routePref.String())),
-		)
-		a.originLabel.Refresh()
+		))
 		go a.updateRoutes()
 		d.Hide()
 	}
@@ -459,7 +458,7 @@ func (a *clones) showRoute(r cloneRow) {
 			return len(r.route)
 		},
 		func() fyne.CanvasObject {
-			return container.New(col, widget.NewLabel(""), widget.NewRichText())
+			return container.New(col, widget.NewLabel(""), iwidget.NewRichText())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(r.route) {
@@ -469,9 +468,7 @@ func (a *clones) showRoute(r cloneRow) {
 			border := co.(*fyne.Container).Objects
 			num := border[0].(*widget.Label)
 			num.SetText(fmt.Sprint(id))
-			name := border[1].(*widget.RichText)
-			name.Segments = s.DisplayRichTextWithRegion()
-			name.Refresh()
+			border[1].(*iwidget.RichText).Set(s.DisplayRichTextWithRegion())
 		},
 	)
 	list.HideSeparators = true

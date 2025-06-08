@@ -8,9 +8,9 @@ import (
 
 func TestSortedColumsColumn(t *testing.T) {
 	headers := []headerDef{
-		{Text: "Alpha"},
-		{Text: "Bravo"},
-		{Text: "Charlie"},
+		{Label: "Alpha"},
+		{Label: "Bravo"},
+		{Label: "Charlie"},
 	}
 	t.Run("return value", func(t *testing.T) {
 		sc := newColumnSorter(headers)
@@ -32,9 +32,9 @@ func TestSortedColumsColumn(t *testing.T) {
 
 func TestSortedColumsCurrent(t *testing.T) {
 	headers := []headerDef{
-		{Text: "Alpha"},
-		{Text: "Bravo"},
-		{Text: "Charlie"},
+		{Label: "Alpha"},
+		{Label: "Bravo"},
+		{Label: "Charlie"},
 	}
 	t.Run("return currently sorted column", func(t *testing.T) {
 		sc := newColumnSorter(headers)
