@@ -12,7 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-func TestFilterChip_EnabledOff(t *testing.T) {
+func TestFilterChip_CanCreateEnabledOff(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 
@@ -23,7 +23,7 @@ func TestFilterChip_EnabledOff(t *testing.T) {
 	test.AssertImageMatches(t, "filterchip/enabled_off.png", w.Canvas().Capture())
 }
 
-func TestFilterChip_DisabledOff(t *testing.T) {
+func TestFilterChip_CanCreateDisabledOff(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 
@@ -35,7 +35,7 @@ func TestFilterChip_DisabledOff(t *testing.T) {
 	test.AssertImageMatches(t, "filterchip/disabled_off.png", w.Canvas().Capture())
 }
 
-func TestFilterChip_EnabledOn(t *testing.T) {
+func TestFilterChip_CanCreateEnabledOn(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 
@@ -47,7 +47,7 @@ func TestFilterChip_EnabledOn(t *testing.T) {
 	test.AssertImageMatches(t, "filterchip/enabled_on.png", w.Canvas().Capture())
 }
 
-func TestFilterChip_DisabledOn(t *testing.T) {
+func TestFilterChip_CanCreateDisabledOn(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 
