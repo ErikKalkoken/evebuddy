@@ -113,6 +113,7 @@ func TestCharacterAsset_CanRenderWithData(t *testing.T) {
 		CharacterID: character.ID,
 		Section:     app.SectionAssets,
 	})
+	test.ApplyTheme(t, test.Theme())
 	ui := NewFakeBaseUI(st, test.NewTempApp(t))
 	ui.setCharacter(character)
 	x := ui.characterAsset

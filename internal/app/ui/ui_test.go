@@ -82,6 +82,7 @@ func TestCanUpdateAllEmpty(t *testing.T) {
 func TestCanUpdateAllWithData(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
 	defer db.Close()
+	test.ApplyTheme(t, test.Theme())
 	bu := ui.NewFakeBaseUI(st, ui.NewFakeApp(t))
 	character := factory.CreateCharacter()
 	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: character.ID})
