@@ -489,28 +489,22 @@ func (a *clones) showRoute(r cloneRow) {
 	if a.origin != nil {
 		fromText = a.origin.DisplayRichTextWithRegion()
 	}
-	from := iwidget.NewTappableRichText(
-		func() {
-			if a.origin != nil {
-				a.u.ShowInfoWindow(app.EveEntitySolarSystem, a.origin.ID)
-			}
-		},
-		fromText...,
-	)
+	from := iwidget.NewTappableRichText(fromText, func() {
+		if a.origin != nil {
+			a.u.ShowInfoWindow(app.EveEntitySolarSystem, a.origin.ID)
+		}
+	})
 	from.Wrapping = fyne.TextWrapWord
 
 	var toText []widget.RichTextSegment
 	if r.jc.Location.SolarSystem != nil {
 		toText = r.jc.Location.SolarSystem.DisplayRichTextWithRegion()
 	}
-	to := iwidget.NewTappableRichText(
-		func() {
-			if r.jc.Location.SolarSystem != nil {
-				a.u.ShowInfoWindow(app.EveEntitySolarSystem, r.jc.Location.SolarSystem.ID)
-			}
-		},
-		toText...,
-	)
+	to := iwidget.NewTappableRichText(toText, func() {
+		if r.jc.Location.SolarSystem != nil {
+			a.u.ShowInfoWindow(app.EveEntitySolarSystem, r.jc.Location.SolarSystem.ID)
+		}
+	})
 	to.Wrapping = fyne.TextWrapWord
 
 	jumps := widget.NewLabel(fmt.Sprintf("%s (%s)", r.jumps(), a.routePref.String()))
@@ -596,11 +590,9 @@ func (a *clones) showClone(r cloneRow) {
 		a.u.ShowInfoWindow(app.EveEntityInventoryType, im.EveType.ID)
 
 	}
-	location := iwidget.NewTappableRichText(
-		func() {
-			a.u.ShowLocationInfoWindow(r.jc.Location.ID)
-		},
-		r.jc.Location.DisplayRichText()...)
+	location := iwidget.NewTappableRichText(r.jc.Location.DisplayRichText(), func() {
+		a.u.ShowLocationInfoWindow(r.jc.Location.ID)
+	})
 	location.Wrapping = fyne.TextWrapWord
 	character := kxwidget.NewTappableLabel(r.jc.Character.Name, func() {
 		a.u.ShowInfoWindow(app.EveEntityCharacter, r.jc.Character.ID)

@@ -367,11 +367,9 @@ func (a *contracts) showContract(r contractRow) {
 		if l == nil {
 			return iwidget.NewTappableRichTextWithText("?", nil)
 		}
-		x := iwidget.NewTappableRichText(func() {
+		x := iwidget.NewTappableRichText(l.DisplayRichText(), func() {
 			a.u.ShowLocationInfoWindow(l.ID)
-		},
-			l.DisplayRichText()...,
-		)
+		})
 		return x
 	}
 	makeISKString := func(v float64) string {

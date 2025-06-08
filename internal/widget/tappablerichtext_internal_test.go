@@ -14,7 +14,7 @@ func TestTappableRichText_CanHover(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 
-	icon := NewTappableRichText(nil, NewRichTextSegmentFromText("Test")...)
+	icon := NewTappableRichText(NewRichTextSegmentFromText("Test"), nil)
 	w := test.NewWindow(icon)
 	defer w.Close()
 

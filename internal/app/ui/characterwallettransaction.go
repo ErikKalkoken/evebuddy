@@ -334,12 +334,9 @@ func (a *characterWalletTransaction) showEntry(r walletTransactionRow) {
 		x.Wrapping = fyne.TextWrapWord
 		return x
 	}
-	location := iwidget.NewTappableRichText(
-		func() {
-			a.u.ShowLocationInfoWindow(r.locationID)
-		},
-		r.locationDisplay...,
-	)
+	location := iwidget.NewTappableRichText(r.locationDisplay, func() {
+		a.u.ShowLocationInfoWindow(r.locationID)
+	})
 	location.Wrapping = fyne.TextWrapWord
 	client := newTappableLabelWithWrap(r.clientName, func() {
 		a.u.ShowEveEntityInfoWindow(r.client)

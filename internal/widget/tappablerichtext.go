@@ -21,12 +21,12 @@ var _ fyne.Tappable = (*TappableRichText)(nil)
 var _ desktop.Hoverable = (*TappableRichText)(nil)
 
 func NewTappableRichTextWithText(text string, tapped func()) *TappableRichText {
-	w := NewTappableRichText(tapped, NewRichTextSegmentFromText(text)...)
+	w := NewTappableRichText(NewRichTextSegmentFromText(text), tapped)
 	return w
 }
 
 // NewTappableRichText returns a new TappableRichText instance.
-func NewTappableRichText(tapped func(), segments ...widget.RichTextSegment) *TappableRichText {
+func NewTappableRichText(segments []widget.RichTextSegment, tapped func()) *TappableRichText {
 	w := &TappableRichText{OnTapped: tapped}
 	w.ExtendBaseWidget(w)
 	w.Segments = segments

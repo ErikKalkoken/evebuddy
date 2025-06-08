@@ -331,12 +331,9 @@ func (a *colonies) showColony(r colonyRow) {
 	}
 
 	fi := []*widget.FormItem{
-		widget.NewFormItem("Planet", iwidget.NewTappableRichText(
-			func() {
-				a.u.ShowEveEntityInfoWindow(cp.EvePlanet.SolarSystem.ToEveEntity())
-			},
-			cp.NameRichText()...,
-		)),
+		widget.NewFormItem("Planet", iwidget.NewTappableRichText(cp.NameRichText(), func() {
+			a.u.ShowEveEntityInfoWindow(cp.EvePlanet.SolarSystem.ToEveEntity())
+		})),
 		widget.NewFormItem("Type", kxwidget.NewTappableLabel(cp.EvePlanet.TypeDisplay(), func() {
 			a.u.ShowEveEntityInfoWindow(cp.EvePlanet.Type.ToEveEntity())
 		})),

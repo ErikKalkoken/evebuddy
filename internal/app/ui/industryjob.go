@@ -565,11 +565,9 @@ func (a *industryJobs) update() {
 
 func (a *industryJobs) showJob(r industryJobRow) {
 	makeLocationWidget := func(o *app.EveLocationShort) *iwidget.TappableRichText {
-		x := iwidget.NewTappableRichText(func() {
+		x := iwidget.NewTappableRichText(o.DisplayRichText(), func() {
 			a.u.ShowLocationInfoWindow(o.ID)
-		},
-			o.DisplayRichText()...,
-		)
+		})
 		x.Wrapping = fyne.TextWrapWord
 		return x
 	}
