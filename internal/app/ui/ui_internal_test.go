@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"net/url"
 	"testing"
 	"time"
@@ -133,6 +134,9 @@ func NewFakeBaseUI(st *storage.Storage, app fyne.App) *baseUI {
 	esiClient := goesi.NewAPIClient(nil, "dummy")
 	cache := memcache.New()
 	scs := statuscacheservice.New(cache, st)
+	if err := scs.InitCache(context.Background()); err != nil {
+		panic(err)
+	}
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
 		ESIClient:          esiClient,
 		StatusCacheService: scs,

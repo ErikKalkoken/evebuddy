@@ -43,7 +43,7 @@ func (ck cacheKey) String() string {
 }
 
 type cacheValue struct {
-	Commment     string
+	Comment      string
 	CompletedAt  time.Time
 	ErrorMessage string
 	StartedAt    time.Time
@@ -289,7 +289,7 @@ func (sc *StatusCacheService) CorporationSection(corporationID int32, section ap
 	x, ok := sc.cache.Get(k.String())
 	if ok {
 		v := x.(cacheValue)
-		o.Comment = v.Commment
+		o.Comment = v.Comment
 		o.CompletedAt = v.CompletedAt
 		o.ErrorMessage = v.ErrorMessage
 		o.StartedAt = v.StartedAt
@@ -352,7 +352,7 @@ func (sc *StatusCacheService) SetCorporationSection(o *app.CorporationSectionSta
 		section: string(o.Section),
 	}
 	v := cacheValue{
-		Commment:     o.Comment,
+		Comment:      o.Comment,
 		ErrorMessage: o.ErrorMessage,
 		CompletedAt:  o.CompletedAt,
 		StartedAt:    o.StartedAt,

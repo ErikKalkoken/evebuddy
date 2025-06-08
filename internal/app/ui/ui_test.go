@@ -8,6 +8,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -81,7 +82,7 @@ func TestCanUpdateAllEmpty(t *testing.T) {
 func TestCanUpdateAllWithData(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
 	defer db.Close()
-	bu := ui.NewFakeBaseUI(st, test.NewTempApp(t))
+	bu := ui.NewFakeBaseUI(st, ui.NewFakeApp(t))
 	character := factory.CreateCharacter()
 	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: character.ID})
 	factory.CreateCharacterAttributes(storage.UpdateOrCreateCharacterAttributesParams{CharacterID: character.ID})
@@ -96,5 +97,13 @@ func TestCanUpdateAllWithData(t *testing.T) {
 	factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: character.ID})
 	factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: character.ID})
 	factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: character.ID})
+	for _, s := range app.CharacterSections {
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: character.ID,
+			Section:     s,
+		})
+	}
 	bu.UpdateAll()
+	u := ui.NewDesktopUI(bu)
+	test.RenderToMarkup(u.MainWindow().Canvas())
 }
