@@ -13,12 +13,12 @@ import (
 )
 
 type UpdateOrCreateLocationParams struct {
-	ID               int64
-	EveSolarSystemID optional.Optional[int32]
-	EveTypeID        optional.Optional[int32]
-	Name             string
-	OwnerID          optional.Optional[int32]
-	UpdatedAt        time.Time
+	ID            int64
+	Name          string
+	OwnerID       optional.Optional[int32]
+	SolarSystemID optional.Optional[int32]
+	TypeID        optional.Optional[int32]
+	UpdatedAt     time.Time
 }
 
 func (st *Storage) UpdateOrCreateEveLocation(ctx context.Context, arg UpdateOrCreateLocationParams) error {
@@ -27,8 +27,8 @@ func (st *Storage) UpdateOrCreateEveLocation(ctx context.Context, arg UpdateOrCr
 	}
 	arg2 := queries.UpdateOrCreateEveLocationParams{
 		ID:               int64(arg.ID),
-		EveSolarSystemID: optional.ToNullInt64(arg.EveSolarSystemID),
-		EveTypeID:        optional.ToNullInt64(arg.EveTypeID),
+		EveSolarSystemID: optional.ToNullInt64(arg.SolarSystemID),
+		EveTypeID:        optional.ToNullInt64(arg.TypeID),
 		Name:             arg.Name,
 		OwnerID:          optional.ToNullInt64(arg.OwnerID),
 		UpdatedAt:        arg.UpdatedAt,

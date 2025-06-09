@@ -685,7 +685,7 @@ func TestGetSolarSystemInfoESI(t *testing.T) {
 	factory.CreateEveEntity(*system.ToEveEntity())
 	station := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityStation})
 	structure := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{
-		EveSolarSystemID: optional.From(system.ID),
+		SolarSystemID: optional.From(system.ID),
 	})
 	httpmock.RegisterResponder(
 		"GET",

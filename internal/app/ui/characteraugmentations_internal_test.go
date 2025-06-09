@@ -32,7 +32,7 @@ func TestCharacterImplants_CanRenderWithData(t *testing.T) {
 		Section:     app.SectionImplants,
 	})
 	test.ApplyTheme(t, test.Theme())
-	ui := NewFakeBaseUI(st, test.NewTempApp(t))
+	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
 	ui.setCharacter(character)
 	x := ui.characterImplants
 	w := test.NewWindow(x)

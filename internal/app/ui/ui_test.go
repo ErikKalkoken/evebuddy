@@ -20,7 +20,7 @@ func TestUIStartEmpty(t *testing.T) {
 	httpmock.RegisterNoResponder(httpmock.NewNotFoundResponder(t.Fatal)) // fails on any HTTP request
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	bu := ui.NewFakeBaseUI(st, ui.NewFakeApp(t))
+	bu := ui.NewFakeBaseUI(st, ui.NewFakeApp(t), true)
 	u := ui.NewDesktopUI(bu)
 	go func() {
 		ticker := time.NewTicker(50 * time.Millisecond)
@@ -57,7 +57,7 @@ func TestUIStartWithCharacter(t *testing.T) {
 	factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: character.ID})
 	factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: character.ID})
 
-	bu := ui.NewFakeBaseUI(st, ui.NewFakeApp(t))
+	bu := ui.NewFakeBaseUI(st, ui.NewFakeApp(t), true)
 	u := ui.NewDesktopUI(bu)
 	go func() {
 		ticker := time.NewTicker(50 * time.Millisecond)
@@ -75,7 +75,7 @@ func TestUIStartWithCharacter(t *testing.T) {
 func TestCanUpdateAllEmpty(t *testing.T) {
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	bu := ui.NewFakeBaseUI(st, test.NewTempApp(t))
+	bu := ui.NewFakeBaseUI(st, test.NewTempApp(t), true)
 	bu.UpdateAll()
 }
 
@@ -83,7 +83,7 @@ func TestCanUpdateAllWithData(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	test.ApplyTheme(t, test.Theme())
-	bu := ui.NewFakeBaseUI(st, ui.NewFakeApp(t))
+	bu := ui.NewFakeBaseUI(st, ui.NewFakeApp(t), true)
 	character := factory.CreateCharacter()
 	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: character.ID})
 	factory.CreateCharacterAttributes(storage.UpdateOrCreateCharacterAttributesParams{CharacterID: character.ID})

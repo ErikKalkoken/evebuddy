@@ -146,3 +146,20 @@ func TestTimeWithFallback(t *testing.T) {
 	assert.Equal(t, "3 weeks ago", humanize.TimeWithFallback(x, ""))
 	assert.Equal(t, "fallback", humanize.TimeWithFallback(time.Time{}, "fallback"))
 }
+
+func TestRelTime(t *testing.T) {
+	var cases = []struct {
+		name string
+		in   time.Time
+		want string
+	}{
+		{"future", time.Now().Add(3 * time.Minute), "0h 3m"},
+		{"past", time.Now().Add(-3 * time.Minute), "0h 3m"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := humanize.RelTime(tc.in)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}

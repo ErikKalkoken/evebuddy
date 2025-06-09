@@ -1,61 +1,60 @@
 package ui
 
-// FIXME
+import (
+	"testing"
+	"time"
 
-// func TestOverviewUpdateCharacters(t *testing.T) {
-// 	db, st, factory := testutil.New()
-// 	defer db.Close()
-// 	u := newUI(st)
-// 	ctx := context.Background()
-// 	t.Run("can update a character", func(t *testing.T) {
-// 		// given
-// 		testutil.TruncateTables(db)
-// 		a := CharacterOverview{
-// 			u: u,
-// 		}
-// 		factory.CreateCharacter()
-// 		// when
-// 		_, err := a.updateCharacters()
-// 		// then
-// 		if assert.NoError(t, err) {
-// 			assert.Len(t, a.rows, 1)
-// 		}
-// 	})
-// 	t.Run("can handle empty location", func(t *testing.T) {
-// 		// given
-// 		testutil.TruncateTables(db)
-// 		a := CharacterOverview{
-// 			u: u,
-// 		}
-// 		if err := st.UpdateOrCreateEveLocation(ctx, storage.UpdateOrCreateLocationParams{
-// 			ID:   99,
-// 			Name: "Dummy",
-// 		}); err != nil {
-// 			t.Fatal(err)
-// 		}
-// 		factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{
-// 			LocationID: optional.New(int64(99)),
-// 		})
-// 		// when
-// 		_, err := a.updateCharacters()
-// 		// then
-// 		if assert.NoError(t, err) {
-// 			assert.Len(t, a.rows, 1)
-// 		}
-// 	})
-// }
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
 
-// func newUI(st *storage.Storage) *BaseUI {
-// 	u := &BaseUI{cs: newCharacterService(st)}
-// 	return u
-// }
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+)
 
-// func newCharacterService(st *storage.Storage) app.CharacterService {
-// 	sc := statuscache.New(memcache.New())
-// 	eu := eveuniverse.New(st, nil)
-// 	eu.StatusCacheService = sc
-// 	s := character.New(st, nil, nil)
-// 	s.EveUniverseService = eu
-// 	s.StatusCacheService = sc
-// 	return s
-// }
+func TestCharacters_CanRenderWithData(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	alliance := factory.CreateEveEntityAlliance(app.EveEntity{
+		Name: "Wayne Inc.",
+	})
+	corporation := factory.CreateEveEntityCorporation(app.EveEntity{
+		Name: "Wayne Technolgy",
+	})
+	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+		AllianceID:     alliance.ID,
+		Birthday:       time.Now().Add(-24 * 365 * 3 * time.Hour),
+		CorporationID:  corporation.ID,
+		Name:           "Bruce Wayne",
+		SecurityStatus: -10.0,
+	})
+	homeSystem := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
+		SecurityStatus: 0.3,
+	})
+	home := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{
+		Name:          "Batcave",
+		SolarSystemID: optional.From(homeSystem.ID),
+	})
+	character := factory.CreateCharacter(storage.CreateCharacterParams{
+		AssetValue:    optional.From(12_000_000_000.0),
+		HomeID:        optional.From(home.ID),
+		ID:            ec.ID,
+		WalletBalance: optional.From(23_000_000.0),
+		LastLoginAt:   optional.From(time.Now().Add(-24 * 7 * 2 * time.Hour)),
+	})
+	factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+		CharacterID: character.ID,
+		IsRead:      false,
+	})
+	test.ApplyTheme(t, test.Theme())
+	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
+	x := ui.characters
+	w := test.NewWindow(x)
+	defer w.Close()
+	w.Resize(fyne.NewSize(1700, 300))
+
+	x.update()
+
+	test.AssertImageMatches(t, "characters/master.png", w.Canvas().Capture())
+}

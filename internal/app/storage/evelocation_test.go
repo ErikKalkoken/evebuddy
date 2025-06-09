@@ -47,12 +47,12 @@ func TestLocation(t *testing.T) {
 		myType := factory.CreateEveType()
 		updatedAt := time.Now()
 		arg := storage.UpdateOrCreateLocationParams{
-			ID:               42,
-			EveSolarSystemID: optional.From(system.ID),
-			EveTypeID:        optional.From(myType.ID),
-			Name:             "Alpha",
-			OwnerID:          optional.From(owner.ID),
-			UpdatedAt:        updatedAt,
+			ID:            42,
+			SolarSystemID: optional.From(system.ID),
+			TypeID:        optional.From(myType.ID),
+			Name:          "Alpha",
+			OwnerID:       optional.From(owner.ID),
+			UpdatedAt:     updatedAt,
 		}
 		// when
 		err := r.UpdateOrCreateEveLocation(ctx, arg)
@@ -88,12 +88,12 @@ func TestLocation(t *testing.T) {
 		myType := factory.CreateEveType()
 		updatedAt := time.Now()
 		arg := storage.UpdateOrCreateLocationParams{
-			ID:               42,
-			EveSolarSystemID: optional.From(system.ID),
-			EveTypeID:        optional.From(myType.ID),
-			Name:             "Alpha",
-			OwnerID:          optional.From(owner.ID),
-			UpdatedAt:        updatedAt,
+			ID:            42,
+			SolarSystemID: optional.From(system.ID),
+			TypeID:        optional.From(myType.ID),
+			Name:          "Alpha",
+			OwnerID:       optional.From(owner.ID),
+			UpdatedAt:     updatedAt,
 		}
 		// when
 		err := r.UpdateOrCreateEveLocation(ctx, arg)
@@ -137,8 +137,8 @@ func TestLocation(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		s := factory.CreateEveSolarSystem()
-		l1 := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{EveSolarSystemID: optional.From(s.ID)})
-		l2 := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{EveSolarSystemID: optional.From(s.ID)})
+		l1 := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{SolarSystemID: optional.From(s.ID)})
+		l2 := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{SolarSystemID: optional.From(s.ID)})
 		factory.CreateEveLocationStructure()
 		// when
 		got, err := r.ListEveLocationInSolarSystem(ctx, s.ID)

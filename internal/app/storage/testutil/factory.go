@@ -1777,15 +1777,15 @@ func (f Factory) createEveLocationStructure(startID int64, categoryID int32, isE
 	if arg.Name == "" {
 		arg.Name = fake.Color() + " " + fake.Brand()
 	}
-	if !isEmpty && arg.EveSolarSystemID.IsEmpty() {
+	if !isEmpty && arg.SolarSystemID.IsEmpty() {
 		x := f.CreateEveSolarSystem()
-		arg.EveSolarSystemID = optional.From(x.ID)
+		arg.SolarSystemID = optional.From(x.ID)
 	}
 	if !isEmpty && arg.OwnerID.IsEmpty() {
 		x := f.CreateEveEntityCorporation()
 		arg.OwnerID = optional.From(x.ID)
 	}
-	if !isEmpty && arg.EveTypeID.IsEmpty() {
+	if !isEmpty && arg.TypeID.IsEmpty() {
 		ec, err := f.st.GetEveCategory(ctx, categoryID)
 		if err != nil {
 			if errors.Is(err, app.ErrNotFound) {
@@ -1796,7 +1796,7 @@ func (f Factory) createEveLocationStructure(startID int64, categoryID int32, isE
 		}
 		eg := f.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: ec.ID})
 		et := f.CreateEveType(storage.CreateEveTypeParams{GroupID: eg.ID})
-		arg.EveTypeID = optional.From(et.ID)
+		arg.TypeID = optional.From(et.ID)
 	}
 	if arg.UpdatedAt.IsZero() {
 		arg.UpdatedAt = time.Now()

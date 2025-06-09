@@ -11,7 +11,7 @@ import (
 func TestClones(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	bu := NewFakeBaseUI(st, test.NewTempApp(t))
+	bu := NewFakeBaseUI(st, test.NewTempApp(t), true)
 	t.Run("can handle empty clone location", func(t *testing.T) {
 		character := factory.CreateCharacter()
 		factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{

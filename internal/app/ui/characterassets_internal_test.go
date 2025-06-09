@@ -97,8 +97,8 @@ func TestCharacterAsset_CanRenderWithData(t *testing.T) {
 		SecurityStatus: 0.2,
 	})
 	loc := factory.CreateEveLocationStation(storage.UpdateOrCreateLocationParams{
-		Name:             "Abune - My castle",
-		EveSolarSystemID: optional.From(system.ID),
+		Name:          "Abune - My castle",
+		SolarSystemID: optional.From(system.ID),
 	})
 	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
 		CharacterID:  character.ID,
@@ -113,7 +113,7 @@ func TestCharacterAsset_CanRenderWithData(t *testing.T) {
 		Section:     app.SectionAssets,
 	})
 	test.ApplyTheme(t, test.Theme())
-	ui := NewFakeBaseUI(st, test.NewTempApp(t))
+	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
 	ui.setCharacter(character)
 	x := ui.characterAsset
 	w := test.NewWindow(x)
