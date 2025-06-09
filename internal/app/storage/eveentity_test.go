@@ -15,7 +15,7 @@ import (
 )
 
 func TestEveEntityUpdateOrCreate(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can update existing", func(t *testing.T) {
@@ -51,7 +51,7 @@ func TestEveEntityUpdateOrCreate(t *testing.T) {
 }
 
 func TestEveEntity(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -135,7 +135,7 @@ func TestEveEntity(t *testing.T) {
 }
 
 func TestListEveEntitiesForIDs(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("should return objs with matching ids in requested order", func(t *testing.T) {
@@ -209,7 +209,7 @@ func TestListEveEntitiesForIDs(t *testing.T) {
 }
 
 func TestEveEntityGetOrCreate(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("should create new when not exist", func(t *testing.T) {
@@ -259,7 +259,7 @@ func TestEveEntityGetOrCreate(t *testing.T) {
 }
 
 func TestEveEntityIDs(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("should list existing entity IDs", func(t *testing.T) {
@@ -290,7 +290,7 @@ func TestEveEntityIDs(t *testing.T) {
 }
 
 func TestEveEntityCanCreateAllCategories(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	testutil.TruncateTables(db)

@@ -11,7 +11,7 @@ import (
 )
 
 func TestSkillqueueItems(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -79,7 +79,7 @@ func TestSkillqueueItems(t *testing.T) {
 }
 
 func TestSkillqueueItemsCalculateTrainingTime(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can calculate total training time", func(t *testing.T) {

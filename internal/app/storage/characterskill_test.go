@@ -12,7 +12,7 @@ import (
 )
 
 func TestCharacterSkill(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -105,7 +105,7 @@ func TestCharacterSkill(t *testing.T) {
 }
 
 func TestCharacterSkillLists(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("should return list of skill groups with progress", func(t *testing.T) {
@@ -147,7 +147,7 @@ func TestCharacterSkillLists(t *testing.T) {
 }
 
 func TestListCharactersActiveSkillLevels(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("returns skill level", func(t *testing.T) {

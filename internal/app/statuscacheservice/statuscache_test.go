@@ -17,7 +17,7 @@ import (
 )
 
 func TestInit(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cache := memcache.New()
 	sc := statuscacheservice.New(cache, st)
@@ -81,7 +81,7 @@ func TestInit(t *testing.T) {
 }
 
 func TestStatusCacheSummary(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cache := memcache.New()
 	sc := statuscacheservice.New(cache, st)
@@ -524,7 +524,7 @@ func TestStatusCacheSummary(t *testing.T) {
 }
 
 func TestCharacter(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cache := memcache.New()
 	sc := statuscacheservice.New(cache, st)
@@ -562,7 +562,7 @@ func TestCharacter(t *testing.T) {
 }
 
 func TestCorporations(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cache := memcache.New()
 	sc := statuscacheservice.New(cache, st)
@@ -586,7 +586,7 @@ func TestCorporations(t *testing.T) {
 }
 
 func TestCharacterSections(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cache := memcache.New()
 	sc := statuscacheservice.New(cache, st)
@@ -680,7 +680,7 @@ func TestCharacterSections(t *testing.T) {
 }
 
 func TestCorporationSections(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cache := memcache.New()
 	sc := statuscacheservice.New(cache, st)
@@ -772,7 +772,7 @@ func TestCorporationSections(t *testing.T) {
 }
 
 func TestGeneralSections(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cache := memcache.New()
 	sc := statuscacheservice.New(cache, st)

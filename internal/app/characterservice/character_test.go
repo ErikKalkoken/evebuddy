@@ -21,7 +21,7 @@ import (
 )
 
 func TestGetCharacter(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
@@ -47,7 +47,7 @@ func TestGetCharacter(t *testing.T) {
 }
 
 func TestGetAnyCharacter(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
@@ -86,7 +86,7 @@ func (s ssoFake) RefreshToken(ctx context.Context, refreshToken string) (*app.To
 }
 
 func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	test.NewTempApp(t)
@@ -156,7 +156,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 }
 
 func TestTrainingWatchers(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
@@ -231,7 +231,7 @@ func TestTrainingWatchers(t *testing.T) {
 }
 
 func TestNotifyUpdatedContracts(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
@@ -288,7 +288,7 @@ func TestNotifyUpdatedContracts(t *testing.T) {
 }
 
 func TestUpdateMail(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -539,7 +539,7 @@ func TestUpdateMail(t *testing.T) {
 }
 
 func TestNotifyMails(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
@@ -577,7 +577,7 @@ func TestNotifyMails(t *testing.T) {
 }
 
 func TestSendMail(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	httpmock.Activate()
@@ -609,7 +609,7 @@ func TestSendMail(t *testing.T) {
 }
 
 func TestNotifyCommunications(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
@@ -653,7 +653,7 @@ func TestNotifyCommunications(t *testing.T) {
 }
 
 func TestCountNotifications(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	// given
 	cs := characterservice.NewFake(st)
@@ -685,7 +685,7 @@ func TestCountNotifications(t *testing.T) {
 }
 
 func TestNotifyExpiredExtractions(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
@@ -739,7 +739,7 @@ func TestNotifyExpiredExtractions(t *testing.T) {
 }
 
 func TestUpdateCharacterSection(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -927,7 +927,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 }
 
 func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
@@ -977,7 +977,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 }
 
 func TestDeleteCharacter(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
@@ -1022,7 +1022,7 @@ func TestDeleteCharacter(t *testing.T) {
 }
 
 func TestListAllCharactersIndustrySlots(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()

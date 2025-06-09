@@ -221,7 +221,7 @@ func TestObfuscate(t *testing.T) {
 }
 
 func TestCacheAdapter(t *testing.T) {
-	db, st, _ := testutil.New()
+	db, st, _ := testutil.NewDBInMemory()
 	defer db.Close()
 	pc := pcache.New(st, 0)
 	ca := newCacheAdapter(pc, "prefix", 0)

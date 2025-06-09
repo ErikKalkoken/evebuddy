@@ -14,7 +14,7 @@ import (
 )
 
 func TestGetOrCreateEveCategoryESI(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -62,7 +62,7 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 }
 
 func TestGetOrCreateEveGroupESI(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -113,7 +113,7 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 }
 
 func TestGetOrCreateEveTypeESI(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -245,7 +245,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 }
 
 func TestAddMissingEveTypes(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	httpmock.Activate()
@@ -266,7 +266,7 @@ func TestAddMissingEveTypes(t *testing.T) {
 }
 
 func TestGetOrCreateEveRaceESI(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -336,7 +336,7 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 }
 
 func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -395,7 +395,7 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 }
 
 func TestMarketPrice(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()

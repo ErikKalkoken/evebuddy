@@ -22,7 +22,7 @@ const (
 )
 
 func TestEveLocation(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -141,7 +141,7 @@ func TestEveLocation(t *testing.T) {
 }
 
 func TestLocationStructures(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -296,7 +296,7 @@ func TestGetStationServicesESI(t *testing.T) {
 }
 
 func TestAddMissingLocations(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()

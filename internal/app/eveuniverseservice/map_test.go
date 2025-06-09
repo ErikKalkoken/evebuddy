@@ -16,7 +16,7 @@ import (
 )
 
 func TestGetOrCreateEveRegionESI(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -63,7 +63,7 @@ func TestGetOrCreateEveRegionESI(t *testing.T) {
 }
 
 func TestGetOrCreateEveConstellationESI(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -117,7 +117,7 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 }
 
 func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -280,7 +280,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 }
 
 func TestGetOrCreateEvePlanetESI(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -332,7 +332,7 @@ func TestGetOrCreateEvePlanetESI(t *testing.T) {
 }
 
 func TestGetOrCreateEveMoonESI(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -381,7 +381,7 @@ func TestGetOrCreateEveMoonESI(t *testing.T) {
 }
 
 func TestFetchRoute(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -497,7 +497,7 @@ func TestFetchRoute(t *testing.T) {
 }
 
 func TestFetchRoutes(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -544,7 +544,7 @@ func TestFetchRoutes(t *testing.T) {
 }
 
 func TestMembershipHistory(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -641,7 +641,7 @@ func TestMembershipHistory(t *testing.T) {
 }
 
 func TestGetStarTypeID(t *testing.T) {
-	db, st, _ := testutil.New()
+	db, st, _ := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -674,7 +674,7 @@ func TestGetStarTypeID(t *testing.T) {
 
 func TestGetSolarSystemInfoESI(t *testing.T) {
 	// given
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -741,7 +741,7 @@ func TestGetSolarSystemInfoESI(t *testing.T) {
 
 func TestGetRegionConstellationsESI(t *testing.T) {
 	// given
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -776,7 +776,7 @@ func TestGetRegionConstellationsESI(t *testing.T) {
 
 func TestGetConstellationSolarSystemsESI(t *testing.T) {
 	// given
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -810,7 +810,7 @@ func TestGetConstellationSolarSystemsESI(t *testing.T) {
 
 func TestGetStargateSolarSystemsESI(t *testing.T) {
 	// given
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -847,7 +847,7 @@ func TestGetStargateSolarSystemsESI(t *testing.T) {
 
 func TestGetSolarSystemPlanets(t *testing.T) {
 	// given
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()

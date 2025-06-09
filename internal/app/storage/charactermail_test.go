@@ -14,7 +14,7 @@ import (
 )
 
 func TestCharacterMail(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -126,7 +126,7 @@ func TestCharacterMail(t *testing.T) {
 }
 
 func TestFetchUnreadCounts(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can get mail label unread counts", func(t *testing.T) {
@@ -174,7 +174,7 @@ func TestFetchUnreadCounts(t *testing.T) {
 }
 
 func TestUnreadMailCounts(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("should return correct unread count when mails exists", func(t *testing.T) {
@@ -255,7 +255,7 @@ func TestUnreadMailCounts(t *testing.T) {
 }
 
 func TestMailCounts(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("character has mail", func(t *testing.T) {

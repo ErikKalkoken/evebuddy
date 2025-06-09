@@ -34,7 +34,7 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 	if err := json.Unmarshal(data, &notifications); err != nil {
 		panic(err)
 	}
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()

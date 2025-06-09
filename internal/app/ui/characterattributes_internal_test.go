@@ -11,7 +11,7 @@ import (
 )
 
 func TestCharacterAttributes_CanRenderWithData(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	character := factory.CreateCharacter()
 	factory.CreateCharacterAttributes(storage.UpdateOrCreateCharacterAttributesParams{

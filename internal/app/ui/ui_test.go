@@ -18,7 +18,7 @@ func TestUIStartEmpty(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	httpmock.RegisterNoResponder(httpmock.NewNotFoundResponder(t.Fatal)) // fails on any HTTP request
-	db, st, _ := testutil.NewDBOnDisk(t.TempDir())
+	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	bu := ui.NewFakeBaseUI(st, ui.NewFakeApp(t))
 	u := ui.NewDesktopUI(bu)
@@ -39,7 +39,7 @@ func TestUIStartWithCharacter(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	httpmock.RegisterNoResponder(httpmock.NewNotFoundResponder(t.Fatal)) // fails on any HTTP request
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 
 	character := factory.CreateCharacter()
@@ -73,14 +73,14 @@ func TestUIStartWithCharacter(t *testing.T) {
 }
 
 func TestCanUpdateAllEmpty(t *testing.T) {
-	db, st, _ := testutil.NewDBOnDisk(t.TempDir())
+	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	bu := ui.NewFakeBaseUI(st, test.NewTempApp(t))
 	bu.UpdateAll()
 }
 
 func TestCanUpdateAllWithData(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	test.ApplyTheme(t, test.Theme())
 	bu := ui.NewFakeBaseUI(st, ui.NewFakeApp(t))

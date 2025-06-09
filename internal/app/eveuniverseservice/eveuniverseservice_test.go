@@ -18,7 +18,7 @@ import (
 )
 
 func TestFetchAlliance(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -88,7 +88,7 @@ func TestFetchAlliance(t *testing.T) {
 }
 
 func TestFetchAllianceCorporations(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -143,7 +143,7 @@ func TestFetchAllianceCorporations(t *testing.T) {
 }
 
 func TestGetOrCreateEveCharacterESI(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -255,7 +255,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 }
 
 func TestUpdateAllEveCharactersESI(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -314,7 +314,7 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 }
 
 func TestGetOrCreateEveCorporationESI(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -403,7 +403,7 @@ func TestGetOrCreateEveCorporationESI(t *testing.T) {
 	})
 }
 func TestGetOrCreateEveSchematicESI(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()

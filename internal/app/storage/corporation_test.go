@@ -13,7 +13,7 @@ import (
 )
 
 func TestCorporation(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -75,7 +75,7 @@ func TestCorporation(t *testing.T) {
 }
 
 func TestListOrphanedCorporationIDs(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("orphaned corporation exists", func(t *testing.T) {

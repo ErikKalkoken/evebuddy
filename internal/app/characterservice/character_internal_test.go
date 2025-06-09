@@ -52,7 +52,7 @@ func TestNoScopeDuplicates(t *testing.T) {
 }
 
 func TestUpdateCharacterAssetsESI(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -282,7 +282,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 }
 
 func TestUpdateCharacterAttributesESI(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -327,7 +327,7 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 }
 
 func TestGetAttributes(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	cs := NewFake(st)
 	ctx := context.Background()
@@ -353,7 +353,7 @@ func TestGetAttributes(t *testing.T) {
 }
 
 func TestUpdateContractESI(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -658,7 +658,7 @@ func TestUpdateContractESI(t *testing.T) {
 }
 
 func TestUpdateCharacterImplantsESI(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -699,7 +699,7 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 }
 
 func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -938,7 +938,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 }
 
 func TestUpdateCharacterJumpClonesESI(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -1038,7 +1038,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 }
 
 func TestCharacterNextAvailableCloneJump(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	cs := NewFake(st)
 	ctx := context.Background()
@@ -1120,7 +1120,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 
 func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 	// given
-	db, st, _ := testutil.NewDBOnDisk(t.TempDir())
+	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ctx := context.Background()
 	httpmock.Activate()
@@ -1170,7 +1170,7 @@ func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 
 func TestUpdateMailLabel(t *testing.T) {
 	// given
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -1268,7 +1268,7 @@ func TestUpdateMailLabel(t *testing.T) {
 }
 
 func TestUpdateCharacterNotificationsESI(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -1403,7 +1403,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 }
 
 func TestListCharacterNotifications(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	s := NewFake(st)
 	ctx := context.Background()
@@ -1424,7 +1424,7 @@ func TestListCharacterNotifications(t *testing.T) {
 }
 
 func TestUpdateCharacterPlanetsESI(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -1703,7 +1703,7 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 }
 
 func TestUpdateCharacterRolesESI(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -1745,7 +1745,7 @@ func TestUpdateCharacterRolesESI(t *testing.T) {
 // TODO: Add tests for UpdateSectionIfNeeded()
 
 func TestUpdateCharacterSectionIfChanged(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	s := NewFake(st)
 	ctx := context.Background()
 	t.Run("should report as changed and run update when new", func(t *testing.T) {
@@ -1850,7 +1850,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 }
 
 func TestUpdateCharacterSkillsESI(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -1982,7 +1982,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 // }
 
 func TestUpdateSkillqueueESI(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -2040,7 +2040,7 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 }
 
 func TestHasTokenWithScopes(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	s := NewFake(st)
 	ctx := context.Background()
@@ -2084,7 +2084,7 @@ func TestHasTokenWithScopes(t *testing.T) {
 }
 
 func TestUpdateWalletJournalEntryESI(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -2304,7 +2304,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 }
 
 func TestListWalletJournalEntries(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	s := NewFake(st)
 	ctx := context.Background()
@@ -2325,7 +2325,7 @@ func TestListWalletJournalEntries(t *testing.T) {
 }
 
 func TestUpdateWalletTransactionESI(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -2538,7 +2538,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 }
 
 func TestListWalletTransactions(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	s := NewFake(st)
 	ctx := context.Background()

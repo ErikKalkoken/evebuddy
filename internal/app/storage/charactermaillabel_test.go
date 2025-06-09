@@ -12,7 +12,7 @@ import (
 )
 
 func TestMailLabel(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -147,7 +147,7 @@ func TestMailLabel(t *testing.T) {
 }
 
 func TestDeleteObsoleteMailLabels(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can delete obsolete mail labels for a character", func(t *testing.T) {

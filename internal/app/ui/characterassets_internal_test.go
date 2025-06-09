@@ -3,10 +3,15 @@ package ui
 import (
 	"testing"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func TestCharacterAssetsMakeLocationTreeData(t *testing.T) {
@@ -77,54 +82,45 @@ func TestSplitLines(t *testing.T) {
 	}
 }
 
-// FIXME: Fails on GH CI
+func TestCharacterAsset_CanRenderWithData(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	character := factory.CreateCharacter(storage.CreateCharacterParams{
+		AssetValue: optional.From(1000000000.0),
+	})
+	et := factory.CreateEveType(storage.CreateEveTypeParams{
+		ID:   42,
+		Name: "Merlin",
+	})
+	system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
+		ID:             1001,
+		SecurityStatus: 0.2,
+	})
+	loc := factory.CreateEveLocationStation(storage.UpdateOrCreateLocationParams{
+		Name:             "Abune - My castle",
+		EveSolarSystemID: optional.From(system.ID),
+	})
+	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+		CharacterID:  character.ID,
+		EveTypeID:    et.ID,
+		Quantity:     10,
+		LocationID:   loc.ID,
+		LocationType: "other",
+		LocationFlag: "Hangar",
+	})
+	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+		CharacterID: character.ID,
+		Section:     app.SectionAssets,
+	})
+	test.ApplyTheme(t, test.Theme())
+	ui := NewFakeBaseUI(st, test.NewTempApp(t))
+	ui.setCharacter(character)
+	x := ui.characterAsset
+	w := test.NewWindow(x)
+	defer w.Close()
+	w.Resize(fyne.NewSize(600, 300))
 
-// func TestCharacterAsset_CanRenderWithData(t *testing.T) {
-// 	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
-// 	defer db.Close()
-// 	character := factory.CreateCharacter(storage.CreateCharacterParams{
-// 		AssetValue: optional.From(1000000000.0),
-// 	})
-// 	et := factory.CreateEveType(storage.CreateEveTypeParams{
-// 		ID:   42,
-// 		Name: "Merlin",
-// 	})
-// 	system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
-// 		ID:             1001,
-// 		SecurityStatus: 0.2,
-// 	})
-// 	loc := factory.CreateEveLocationStation(storage.UpdateOrCreateLocationParams{
-// 		Name:             "Abune - My castle",
-// 		EveSolarSystemID: optional.From(system.ID),
-// 	})
-// 	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
-// 		CharacterID:  character.ID,
-// 		EveTypeID:    et.ID,
-// 		Quantity:     10,
-// 		LocationID:   loc.ID,
-// 		LocationType: "other",
-// 		LocationFlag: "Hangar",
-// 	})
-// 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-// 		CharacterID: character.ID,
-// 		Section:     app.SectionAssets,
-// 	})
-// 	test.ApplyTheme(t, test.Theme())
-// 	ui := NewFakeBaseUI(st, test.NewTempApp(t))
-// 	ui.setCharacter(character)
-// 	x := ui.characterAsset
-// 	w := test.NewWindow(x)
-// 	defer w.Close()
-// 	w.Resize(fyne.NewSize(600, 300))
+	x.update()
 
-// 	x.update()
-// 	data := x.locations.Data()
-// 	ids := data.ChildUIDs(iwidget.RootUID)
-// 	assert.Len(t, ids, 1)
-// 	childs := data.ChildUIDs(ids[0])
-// 	assert.Len(t, childs, 2)
-// 	n := data.MustNode(childs[1])
-// 	x.locations.Select(n)
-
-// 	test.AssertImageMatches(t, "characterasset/master.png", w.Canvas().Capture())
-// }
+	test.AssertImageMatches(t, "characterasset/master.png", w.Canvas().Capture())
+}

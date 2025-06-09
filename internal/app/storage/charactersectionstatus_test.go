@@ -12,7 +12,7 @@ import (
 )
 
 func TestCharacterSectionStatus(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can list", func(t *testing.T) {

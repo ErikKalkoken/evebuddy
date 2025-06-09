@@ -12,7 +12,7 @@ import (
 )
 
 func TestCacheGet(t *testing.T) {
-	db, r, _ := testutil.New()
+	db, r, _ := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can get and existing entry", func(t *testing.T) {
@@ -84,7 +84,7 @@ func TestCacheGet(t *testing.T) {
 }
 
 func TestCacheExists(t *testing.T) {
-	db, r, _ := testutil.New()
+	db, r, _ := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("should return true when entry exists", func(t *testing.T) {
@@ -176,7 +176,7 @@ func TestCacheExists(t *testing.T) {
 }
 
 func TestCacheSet(t *testing.T) {
-	db, r, _ := testutil.New()
+	db, r, _ := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can update existing entry", func(t *testing.T) {
@@ -217,7 +217,7 @@ func TestCacheSet(t *testing.T) {
 }
 
 func TestCacheOther(t *testing.T) {
-	db, r, _ := testutil.New()
+	db, r, _ := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can delete entries", func(t *testing.T) {

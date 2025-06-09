@@ -15,7 +15,7 @@ import (
 )
 
 func TestCharacter(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can get with all dependencies", func(t *testing.T) {
@@ -95,7 +95,7 @@ func TestCharacter(t *testing.T) {
 }
 
 func TestCharacterCreate(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
@@ -165,7 +165,7 @@ func TestCharacterCreate(t *testing.T) {
 }
 
 func TestListCharactersShort(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("listed characters have all fields populated", func(t *testing.T) {
@@ -197,7 +197,7 @@ func TestListCharactersShort(t *testing.T) {
 }
 
 func TestListCharacters(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("listed characters have all fields populated", func(t *testing.T) {
@@ -226,7 +226,7 @@ func TestListCharacters(t *testing.T) {
 }
 
 func TestUpdateCharacterFields(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can update home", func(t *testing.T) {
@@ -420,7 +420,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 }
 
 func TestCharacterAssetValue(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can update", func(t *testing.T) {

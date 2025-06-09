@@ -12,7 +12,7 @@ import (
 )
 
 func TestListMailHeaders(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("should return mail for selected label only", func(t *testing.T) {

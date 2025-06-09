@@ -13,7 +13,7 @@ import (
 )
 
 func TestListCharacterShipsAbilities(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	// given
@@ -43,7 +43,7 @@ func TestListCharacterShipsAbilities(t *testing.T) {
 }
 
 func TestListCharacterShipsSkills(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	// given

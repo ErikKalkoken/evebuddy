@@ -11,7 +11,7 @@ import (
 )
 
 func TestEveRegion(t *testing.T) {
-	db, r, _ := testutil.New()
+	db, r, _ := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
