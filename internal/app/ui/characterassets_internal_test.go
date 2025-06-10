@@ -85,7 +85,7 @@ func TestSplitLines(t *testing.T) {
 func TestCharacterAsset_CanRenderWithData(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	character := factory.CreateCharacter(storage.CreateCharacterParams{
+	character := factory.CreateCharacterFull(storage.CreateCharacterParams{
 		AssetValue: optional.From(1000000000.0),
 	})
 	et := factory.CreateEveType(storage.CreateEveTypeParams{

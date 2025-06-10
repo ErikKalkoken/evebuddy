@@ -20,7 +20,7 @@ func TestCharacterContract(t *testing.T) {
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		issuer := factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		issuerCorporation := c.EveCharacter.Corporation
 		dateExpired := time.Now().Add(12 * time.Hour).UTC()
@@ -55,7 +55,7 @@ func TestCharacterContract(t *testing.T) {
 	t.Run("can create new full", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		issuer := factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		issuerCorporation := c.EveCharacter.Corporation
 		dateExpired := time.Now().Add(12 * time.Hour).UTC()
@@ -145,7 +145,7 @@ func TestCharacterContract(t *testing.T) {
 	t.Run("can list IDs of existing entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		e1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
 		e2 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
 		e3 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
@@ -175,7 +175,7 @@ func TestCharacterContract(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		now := time.Now().UTC()
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
 		factory.CreateCharacterContract(storage.CreateCharacterContractParams{
 			CharacterID: c.ID,

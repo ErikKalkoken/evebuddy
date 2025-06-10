@@ -18,7 +18,7 @@ func TestListMailHeaders(t *testing.T) {
 	t.Run("should return mail for selected label only", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
 		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
 		m1 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -120)})
@@ -37,7 +37,7 @@ func TestListMailHeaders(t *testing.T) {
 	t.Run("can fetch for all labels", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
 		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
 		m1 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -120)})
@@ -56,7 +56,7 @@ func TestListMailHeaders(t *testing.T) {
 	t.Run("should return mail without label only", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		l := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
 			CharacterID: c.ID,
@@ -76,7 +76,7 @@ func TestListMailHeaders(t *testing.T) {
 	t.Run("should return empty when no match", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		// when
 		mm, err := r.ListCharacterMailHeadersForLabelOrdered(ctx, c.ID, 99)
 		// then
@@ -87,13 +87,13 @@ func TestListMailHeaders(t *testing.T) {
 	t.Run("different characters can have same label ID", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateCharacter()
+		c1 := factory.CreateCharacterFull()
 		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c1.ID, LabelID: 1})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
 			CharacterID: c1.ID,
 			LabelIDs:    []int32{l1.LabelID},
 		})
-		c2 := factory.CreateCharacter()
+		c2 := factory.CreateCharacterFull()
 		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c2.ID, LabelID: 1})
 		from := factory.CreateEveEntity()
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
@@ -110,7 +110,7 @@ func TestListMailHeaders(t *testing.T) {
 	t.Run("should return mail for selected list only", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		l1 := factory.CreateCharacterMailList(c.ID)
 		m1 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
 			CharacterID:  c.ID,
@@ -135,7 +135,7 @@ func TestListMailHeaders(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		now := time.Now().UTC()
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		m1 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
 			CharacterID: c.ID,
 			IsProcessed: false,

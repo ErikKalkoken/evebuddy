@@ -36,7 +36,7 @@ func TestCharacters_CanRenderWithData(t *testing.T) {
 		Name:          "Batcave",
 		SolarSystemID: optional.From(homeSystem.ID),
 	})
-	character := factory.CreateCharacter(storage.CreateCharacterParams{
+	character := factory.CreateCharacterFull(storage.CreateCharacterParams{
 		AssetValue:    optional.From(12_000_000_000.0),
 		HomeID:        optional.From(home.ID),
 		ID:            ec.ID,
@@ -57,4 +57,31 @@ func TestCharacters_CanRenderWithData(t *testing.T) {
 	x.update()
 
 	test.AssertImageMatches(t, "characters/master.png", w.Canvas().Capture())
+}
+
+func TestCharacters_CanRenderWitoutData(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	corporation := factory.CreateEveEntityCorporation(app.EveEntity{
+		Name: "Wayne Technolgy",
+	})
+	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+		Birthday:       time.Now().Add(-24 * 365 * 3 * time.Hour),
+		CorporationID:  corporation.ID,
+		Name:           "Bruce Wayne",
+		SecurityStatus: -10.0,
+	})
+	factory.CreateCharacterMinimal(storage.CreateCharacterParams{
+		ID: ec.ID,
+	})
+	test.ApplyTheme(t, test.Theme())
+	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
+	x := ui.characters
+	w := test.NewWindow(x)
+	defer w.Close()
+	w.Resize(fyne.NewSize(1700, 300))
+
+	x.update()
+
+	test.AssertImageMatches(t, "characters/minimal.png", w.Canvas().Capture())
 }

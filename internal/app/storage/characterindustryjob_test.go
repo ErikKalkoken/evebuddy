@@ -22,7 +22,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		now := time.Now().UTC()
 		blueprintLocation := factory.CreateEveLocationStructure()
 		blueprintType := factory.CreateEveType()
@@ -101,7 +101,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 	t.Run("can create new full", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		now := time.Now().UTC()
 		installer := factory.CreateEveEntityCharacter()
 		blueprintLocation := factory.CreateEveLocationStructure()
@@ -172,7 +172,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		now := time.Now().UTC()
 		blueprintLocation := factory.CreateEveLocationStructure()
 		blueprintType := factory.CreateEveType()
@@ -298,7 +298,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 	t.Run("can list jobs activity counts", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		character1 := factory.CreateCharacter()
+		character1 := factory.CreateCharacterFull()
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character1.ID,
 			ActivityID:  int32(app.Manufacturing),
@@ -324,7 +324,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 			ActivityID:  int32(app.Reactions),
 			Status:      app.JobActive,
 		})
-		character2 := factory.CreateCharacter()
+		character2 := factory.CreateCharacterFull()
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character2.ID,
 			ActivityID:  int32(app.Manufacturing),

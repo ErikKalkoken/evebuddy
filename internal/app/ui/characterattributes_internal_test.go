@@ -13,7 +13,7 @@ import (
 func TestCharacterAttributes_CanRenderWithData(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	character := factory.CreateCharacter()
+	character := factory.CreateCharacterFull()
 	factory.CreateCharacterAttributes(storage.UpdateOrCreateCharacterAttributesParams{
 		CharacterID:  character.ID,
 		Charisma:     21,

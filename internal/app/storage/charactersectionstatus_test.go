@@ -18,7 +18,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 	t.Run("can list", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     app.SectionSkillqueue,
@@ -37,7 +37,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 	t.Run("can set from scratch", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		// when
 		error := "error"
 		arg := storage.UpdateOrCreateCharacterSectionStatusParams{
@@ -63,7 +63,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 	t.Run("can set existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		x := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     app.SectionImplants,

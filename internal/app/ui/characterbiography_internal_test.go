@@ -16,7 +16,7 @@ func TestCharacterBiography_CanRenderWithData(t *testing.T) {
 	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 		Description: "This is a description",
 	})
-	character := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
+	character := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: ec.ID})
 	test.ApplyTheme(t, test.Theme())
 	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
 	ui.setCharacter(character)

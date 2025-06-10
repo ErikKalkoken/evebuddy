@@ -19,7 +19,7 @@ func TestCharacterNotification(t *testing.T) {
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		timestamp := time.Now().UTC()
 		sender := factory.CreateEveEntityCharacter()
 		arg := storage.CreateCharacterNotificationParams{
@@ -50,7 +50,7 @@ func TestCharacterNotification(t *testing.T) {
 	t.Run("can create new full", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		timestamp := time.Now().UTC()
 		sender := factory.CreateEveEntityCharacter()
 		arg := storage.CreateCharacterNotificationParams{
@@ -85,7 +85,7 @@ func TestCharacterNotification(t *testing.T) {
 	t.Run("can list IDs of existing entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		e1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
 		e2 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
 		e3 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
@@ -100,7 +100,7 @@ func TestCharacterNotification(t *testing.T) {
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "bravo"})
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha"})
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha"})
@@ -196,7 +196,7 @@ func TestCharacterNotification(t *testing.T) {
 	t.Run("can calculate counts", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "bravo"})
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha"})
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha", IsRead: true})
@@ -215,7 +215,7 @@ func TestCharacterNotification(t *testing.T) {
 	t.Run("can list unread notifs", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 			CharacterID: c.ID,
 			Type:        "bravo",
@@ -239,7 +239,7 @@ func TestCharacterNotification(t *testing.T) {
 	t.Run("can list unprocessed notifs", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		now := time.Now().UTC()
 		o := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 			Body:        optional.From("title"),

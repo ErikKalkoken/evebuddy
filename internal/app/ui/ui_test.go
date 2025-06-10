@@ -42,7 +42,7 @@ func TestUIStartWithCharacter(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 
-	character := factory.CreateCharacter()
+	character := factory.CreateCharacterFull()
 	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: character.ID})
 	factory.CreateCharacterAttributes(storage.UpdateOrCreateCharacterAttributesParams{CharacterID: character.ID})
 	factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: character.ID})
@@ -84,7 +84,7 @@ func TestCanUpdateAllWithData(t *testing.T) {
 	defer db.Close()
 	test.ApplyTheme(t, test.Theme())
 	bu := ui.NewFakeBaseUI(st, ui.NewFakeApp(t), true)
-	character := factory.CreateCharacter()
+	character := factory.CreateCharacterFull()
 	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: character.ID})
 	factory.CreateCharacterAttributes(storage.UpdateOrCreateCharacterAttributesParams{CharacterID: character.ID})
 	factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: character.ID})

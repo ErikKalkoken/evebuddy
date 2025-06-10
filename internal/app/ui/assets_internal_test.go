@@ -18,7 +18,7 @@ func TestAssets_CanRenderWithData(t *testing.T) {
 	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 		Name: "Bruce Wayne",
 	})
-	character := factory.CreateCharacter(storage.CreateCharacterParams{
+	character := factory.CreateCharacterFull(storage.CreateCharacterParams{
 		AssetValue: optional.From(1000000000.0),
 		ID:         ec.ID,
 	})

@@ -22,7 +22,7 @@ func TestListCharacterShipsAbilities(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := factory.CreateCharacter()
+	c := factory.CreateCharacterFull()
 	factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 		ActiveSkillLevel: 1,
 		CharacterID:      c.ID,
@@ -54,7 +54,7 @@ func TestListCharacterShipsSkills(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := factory.CreateCharacter()
+	c := factory.CreateCharacterFull()
 	factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 		ActiveSkillLevel: 1,
 		CharacterID:      c.ID,

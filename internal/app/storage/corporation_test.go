@@ -85,7 +85,7 @@ func TestListOrphanedCorporationIDs(t *testing.T) {
 		factory.CreateCorporation(ec.ID)
 		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
 		x := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
-		factory.CreateCharacter(storage.CreateCharacterParams{ID: x.ID})
+		factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x.ID})
 		corporation2 := factory.CreateCorporation()
 		// when
 		got, err := st.ListOrphanedCorporationIDs(ctx)
@@ -102,7 +102,7 @@ func TestListOrphanedCorporationIDs(t *testing.T) {
 		factory.CreateCorporation(ec.ID)
 		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
 		x := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
-		factory.CreateCharacter(storage.CreateCharacterParams{ID: x.ID})
+		factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x.ID})
 		// when
 		got, err := st.ListOrphanedCorporationIDs(ctx)
 		// then

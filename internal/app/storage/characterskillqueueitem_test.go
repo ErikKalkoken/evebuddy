@@ -17,7 +17,7 @@ func TestSkillqueueItems(t *testing.T) {
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		eveType := factory.CreateEveType()
 		arg := storage.SkillqueueItemParams{
 			EveTypeID:     eveType.ID,
@@ -38,7 +38,7 @@ func TestSkillqueueItems(t *testing.T) {
 	t.Run("can list items", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
@@ -52,7 +52,7 @@ func TestSkillqueueItems(t *testing.T) {
 	t.Run("can replace items", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
@@ -86,7 +86,7 @@ func TestSkillqueueItemsCalculateTrainingTime(t *testing.T) {
 		// given
 		now := time.Now()
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
 			CharacterID: c.ID,
 			StartDate:   now.Add(1 * time.Hour),

@@ -19,7 +19,7 @@ func TestCharacterJumpClone(t *testing.T) {
 	t.Run("can create new empty clone", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		location := factory.CreateEveLocationStructure()
 		arg := storage.CreateCharacterJumpCloneParams{
 			CharacterID: c.ID,
@@ -44,7 +44,7 @@ func TestCharacterJumpClone(t *testing.T) {
 	t.Run("can create new clone with implants", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		location := factory.CreateEveLocationStructure()
 		eveType := factory.CreateEveType()
 		arg := storage.CreateCharacterJumpCloneParams{
@@ -71,7 +71,7 @@ func TestCharacterJumpClone(t *testing.T) {
 	t.Run("can replace existing clone", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{
 			CharacterID: c.ID,
 		})
@@ -102,7 +102,7 @@ func TestCharacterJumpClone(t *testing.T) {
 	t.Run("can list clones for a character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		x1 := factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{
 			CharacterID: c.ID,
 		})

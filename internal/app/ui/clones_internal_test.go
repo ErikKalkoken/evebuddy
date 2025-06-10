@@ -13,7 +13,7 @@ func TestClones(t *testing.T) {
 	defer db.Close()
 	bu := NewFakeBaseUI(st, test.NewTempApp(t), true)
 	t.Run("can handle empty clone location", func(t *testing.T) {
-		character := factory.CreateCharacter()
+		character := factory.CreateCharacterFull()
 		factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{
 			CharacterID: character.ID,
 		})
