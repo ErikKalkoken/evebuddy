@@ -64,10 +64,19 @@ func newLocations(u *baseUI) *locations {
 				case 0:
 					return iwidget.NewRichTextSegmentFromText(r.characterName)
 				case 1:
+					if r.locationID == 0 {
+						r.locationDisplay = iwidget.NewRichTextSegmentFromText("?")
+					}
 					return r.locationDisplay
 				case 2:
+					if r.regionName == "" {
+						r.regionName = "?"
+					}
 					return iwidget.NewRichTextSegmentFromText(r.regionName)
 				case 3:
+					if r.shipName == "" {
+						r.shipName = "?"
+					}
 					return iwidget.NewRichTextSegmentFromText(r.shipName)
 				}
 				return iwidget.NewRichTextSegmentFromText("?")
@@ -228,18 +237,20 @@ func (*locations) fetchData(s services) ([]locationRow, error) {
 	}
 	rows := make([]locationRow, 0)
 	for _, c := range characters {
-		if c.EveCharacter == nil || c.Location == nil {
+		if c.EveCharacter == nil {
 			continue
 		}
 		r := locationRow{
-			characterName:   c.EveCharacter.Name,
-			locationDisplay: c.Location.DisplayRichText(),
-			locationID:      c.Location.ID,
-			locationName:    c.Location.DisplayName(),
+			characterName: c.EveCharacter.Name,
 		}
-		if c.Location.SolarSystem != nil {
-			r.regionName = c.Location.SolarSystem.Constellation.Region.Name
-			r.solarSystemName = c.Location.SolarSystem.Name
+		if c.Location != nil {
+			r.locationDisplay = c.Location.DisplayRichText()
+			r.locationID = c.Location.ID
+			r.locationName = c.Location.DisplayName()
+			if c.Location.SolarSystem != nil {
+				r.regionName = c.Location.SolarSystem.Constellation.Region.Name
+				r.solarSystemName = c.Location.SolarSystem.Name
+			}
 		}
 		if c.Ship != nil {
 			r.shipName = c.Ship.Name

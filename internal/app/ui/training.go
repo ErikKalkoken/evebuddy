@@ -262,12 +262,14 @@ func (*trainings) fetchRows(s services) ([]trainingRow, error) {
 			unallocatedSP:        c.UnallocatedSP,
 			unallocatedSPDisplay: ihumanize.Optional(c.UnallocatedSP, "?"),
 		}
-		x, err := s.cs.GetTotalTrainingTime(ctx, c.ID)
+		trainingTime, err := s.cs.TotalTrainingTime(ctx, c.ID)
 		if err != nil {
 			return nil, err
 		}
-		r.training = x
+		r.training = trainingTime
 		if x := r.training; x.IsEmpty() {
+			r.trainingDisplay = iwidget.NewRichTextSegmentFromText("?")
+		} else if x.ValueOrZero() == 0 {
 			r.trainingDisplay = iwidget.NewRichTextSegmentFromText(
 				"Inactive",
 				widget.RichTextStyle{

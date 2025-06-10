@@ -30,14 +30,17 @@ func TestCharacter(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c1.ID, c2.ID)
-			assert.Equal(t, c1.LastLoginAt.ValueOrZero().UTC(), c2.LastLoginAt.ValueOrZero().UTC())
-			assert.Equal(t, c1.Ship, c2.Ship)
-			assert.Equal(t, c1.Location, c2.Location)
-			assert.Equal(t, c1.TotalSP, c2.TotalSP)
-			assert.Equal(t, c1.WalletBalance, c2.WalletBalance)
+			assert.Equal(t, c1.AssetValue, c2.AssetValue)
 			assert.Equal(t, c1.EveCharacter.ID, c2.EveCharacter.ID)
-			assert.Equal(t, c1.EveCharacter.Alliance, c2.EveCharacter.Alliance)
-			assert.Equal(t, c1.EveCharacter.Faction, c2.EveCharacter.Faction)
+			assert.Equal(t, c1.Home.ID, c2.Home.ID)
+			assert.Equal(t, c1.IsTrainingWatched, c2.IsTrainingWatched)
+			assert.Equal(t, c1.LastCloneJumpAt, c2.LastCloneJumpAt)
+			assert.Equal(t, c1.LastLoginAt, c2.LastLoginAt)
+			assert.Equal(t, c1.Location.ID, c2.Location.ID)
+			assert.Equal(t, c1.Ship.ID, c2.Ship.ID)
+			assert.Equal(t, c1.TotalSP, c2.TotalSP)
+			assert.Equal(t, c1.UnallocatedSP, c2.UnallocatedSP)
+			assert.Equal(t, c1.WalletBalance, c2.WalletBalance)
 		}
 	})
 	t.Run("can delete", func(t *testing.T) {

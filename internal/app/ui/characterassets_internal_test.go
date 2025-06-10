@@ -122,5 +122,28 @@ func TestCharacterAsset_CanRenderWithData(t *testing.T) {
 
 	x.update()
 
-	test.AssertImageMatches(t, "characterasset/master.png", w.Canvas().Capture())
+	test.AssertImageMatches(t, "characterasset/full.png", w.Canvas().Capture())
+}
+
+func TestCharacterAsset_CanRenderWithoutData(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	character := factory.CreateCharacterMinimal(storage.CreateCharacterParams{
+		AssetValue: optional.From(1000000000.0),
+	})
+	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+		CharacterID: character.ID,
+		Section:     app.SectionAssets,
+	})
+	test.ApplyTheme(t, test.Theme())
+	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
+	ui.setCharacter(character)
+	x := ui.characterAsset
+	w := test.NewWindow(x)
+	defer w.Close()
+	w.Resize(fyne.NewSize(600, 300))
+
+	x.update()
+
+	test.AssertImageMatches(t, "characterasset/minimal.png", w.Canvas().Capture())
 }

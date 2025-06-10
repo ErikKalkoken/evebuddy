@@ -56,7 +56,7 @@ func TestCharacters_CanRenderWithData(t *testing.T) {
 
 	x.update()
 
-	test.AssertImageMatches(t, "characters/master.png", w.Canvas().Capture())
+	test.AssertImageMatches(t, "characters/full.png", w.Canvas().Capture())
 }
 
 func TestCharacters_CanRenderWitoutData(t *testing.T) {

@@ -51,3 +51,24 @@ func TestCharacterUpdateStatusIsOK(t *testing.T) {
 		})
 	}
 }
+
+func TestCharacterUpdateStatusIsMissing(t *testing.T) {
+	cases := []struct {
+		completedAt time.Time
+		want        bool
+	}{
+		{time.Now(), false},
+		{time.Time{}, true},
+	}
+	for _, tc := range cases {
+		t.Run("can report when status is missing", func(t *testing.T) {
+			// given
+			o := app.CharacterSectionStatus{
+				Section:     app.SectionSkillqueue,
+				CompletedAt: tc.completedAt,
+			}
+			// when/then
+			assert.Equal(t, tc.want, o.IsMissing())
+		})
+	}
+}

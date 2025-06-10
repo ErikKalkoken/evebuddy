@@ -133,6 +133,10 @@ func (s CharacterSectionStatus) IsExpired() bool {
 	return time.Now().After(deadline)
 }
 
+func (s CharacterSectionStatus) IsMissing() bool {
+	return s.CompletedAt.IsZero()
+}
+
 const (
 	corporationSectionDefaultTimeout = 3600 * time.Second
 )
