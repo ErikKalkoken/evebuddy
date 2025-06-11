@@ -34,12 +34,11 @@ func TestCharacterImplants_CanRenderWithData(t *testing.T) {
 	test.ApplyTheme(t, test.Theme())
 	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
 	ui.setCharacter(character)
-	x := ui.characterImplants
-	w := test.NewWindow(x)
+	w := test.NewWindow(ui.characterImplants)
 	defer w.Close()
 	w.Resize(fyne.NewSize(600, 300))
 
-	x.update()
+	ui.characterImplants.update()
 
 	test.AssertImageMatches(t, "characterimplants/master.png", w.Canvas().Capture())
 }

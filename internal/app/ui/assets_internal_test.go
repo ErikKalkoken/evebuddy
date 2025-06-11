@@ -57,12 +57,11 @@ func TestAssets_CanRenderWithData(t *testing.T) {
 	test.ApplyTheme(t, test.Theme())
 	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
 	ui.setCharacter(character)
-	x := ui.assets
-	w := test.NewWindow(x)
+	w := test.NewWindow(ui.assets)
 	defer w.Close()
 	w.Resize(fyne.NewSize(1400, 300))
 
-	x.update()
+	ui.assets.update()
 
 	test.AssertImageMatches(t, "assets/master.png", w.Canvas().Capture())
 }

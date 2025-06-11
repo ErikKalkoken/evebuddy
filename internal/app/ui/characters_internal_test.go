@@ -14,8 +14,10 @@ import (
 )
 
 func TestCharacters_CanRenderWithData(t *testing.T) {
+	test.ApplyTheme(t, test.Theme())
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
+
 	alliance := factory.CreateEveEntityAlliance(app.EveEntity{
 		Name: "Wayne Inc.",
 	})
@@ -47,21 +49,35 @@ func TestCharacters_CanRenderWithData(t *testing.T) {
 		CharacterID: character.ID,
 		IsRead:      false,
 	})
-	test.ApplyTheme(t, test.Theme())
-	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
-	x := ui.characters
-	w := test.NewWindow(x)
-	defer w.Close()
-	w.Resize(fyne.NewSize(1700, 300))
 
-	x.update()
+	cases := []struct {
+		name      string
+		isDesktop bool
+		filename  string
+		size      fyne.Size
+	}{
+		{"desktop", true, "desktop_full", fyne.NewSize(1700, 300)},
+		{"mobile", false, "mobile_full", fyne.NewSize(500, 800)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ui := NewFakeBaseUI(st, test.NewTempApp(t), tc.isDesktop)
+			w := test.NewWindow(ui.characters)
+			defer w.Close()
+			w.Resize(tc.size)
 
-	test.AssertImageMatches(t, "characters/full.png", w.Canvas().Capture())
+			ui.characters.update()
+
+			test.AssertImageMatches(t, "characters/"+tc.filename+".png", w.Canvas().Capture())
+		})
+	}
 }
 
 func TestCharacters_CanRenderWitoutData(t *testing.T) {
+	test.ApplyTheme(t, test.Theme())
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
+
 	corporation := factory.CreateEveEntityCorporation(app.EveEntity{
 		Name: "Wayne Technolgy",
 	})
@@ -74,14 +90,26 @@ func TestCharacters_CanRenderWitoutData(t *testing.T) {
 	factory.CreateCharacterMinimal(storage.CreateCharacterParams{
 		ID: ec.ID,
 	})
-	test.ApplyTheme(t, test.Theme())
-	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
-	x := ui.characters
-	w := test.NewWindow(x)
-	defer w.Close()
-	w.Resize(fyne.NewSize(1700, 300))
 
-	x.update()
+	cases := []struct {
+		name      string
+		isDesktop bool
+		filename  string
+		size      fyne.Size
+	}{
+		{"desktop", true, "desktop_minimal", fyne.NewSize(1700, 300)},
+		{"mobile", false, "mobile_minimal", fyne.NewSize(500, 800)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ui := NewFakeBaseUI(st, test.NewTempApp(t), tc.isDesktop)
+			w := test.NewWindow(ui.characters)
+			defer w.Close()
+			w.Resize(tc.size)
 
-	test.AssertImageMatches(t, "characters/minimal.png", w.Canvas().Capture())
+			ui.characters.update()
+
+			test.AssertImageMatches(t, "characters/"+tc.filename+".png", w.Canvas().Capture())
+		})
+	}
 }
