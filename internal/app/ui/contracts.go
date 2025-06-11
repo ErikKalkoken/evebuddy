@@ -132,6 +132,7 @@ func newContracts(u *baseUI) *contracts {
 		a.filterRows(-1)
 	})
 	a.selectStatus.Selected = contractStatusAllActive
+	a.selectStatus.SortDisabled = true
 
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)

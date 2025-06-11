@@ -182,6 +182,7 @@ func newIndustryJobs(u *baseUI) *industryJobs {
 		a.filterRows(-1)
 	})
 	a.selectStatus.Selected = industryStatusActive
+	a.selectStatus.SortDisabled = true
 
 	a.selectActivity = iwidget.NewFilterChipSelect("Activity", []string{
 		industryActivityManufacturing,

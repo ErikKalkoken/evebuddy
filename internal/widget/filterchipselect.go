@@ -15,10 +15,11 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// FilterChipSelect represents a filter chip widget that shows a drop down with options.
+// FilterChipSelect represents a filter chip widget that allows users to select from a list of options.
 //
-// Differences to the standard Select widget:
-// Shows more clearly whether a filter is enabled and does not truncate the option names.
+// There are two variants:
+//   - Option can be selected from a drop down list (better for few options)
+//   - Option can be selected with a search dialog (better for many options)
 type FilterChipSelect struct {
 	widget.DisableableWidget
 
@@ -28,26 +29,31 @@ type FilterChipSelect struct {
 	OnChanged func(selected string)
 	Options   []string
 
-	// The Placeholder is shown when nothing is selected.
-	// To create a filter which is always selected leave placeholder empty
+	// The Text is shown when nothing is selected.
+	// To create a filter which is always selected leave Text empty
 	// and select an initial option.
 	// When in always selected state, the options are deduplicated, but not sorted.
-	Placeholder string
+	Text string
 
+	// The currently selected option or empty when nothing is selected.
+	// This can also be used to set an initial option.
 	Selected string
 
-	bg                *canvas.Rectangle
-	focused           bool
-	hovered           bool
-	iconLeading       *widget.Icon
-	iconLeadingPadded *fyne.Container
-	iconTrailing      *widget.Icon
-	isMobile          bool
-	label             *widget.Label
-	minSize           fyne.Size // cached for hover/top pos calcs
-	resourceLeading   fyne.Resource
-	resourceTrailing  fyne.Resource
-	window            fyne.Window
+	// Whether to disable sorting of options.
+	SortDisabled bool
+
+	bg                   *canvas.Rectangle
+	focused              bool
+	hovered              bool
+	iconOn               *widget.Icon
+	iconOnPadded         *fyne.Container
+	iconTrailing         *widget.Icon
+	isMobile             bool
+	label                *widget.Label
+	minSize              fyne.Size // cached for hover/top pos calcs
+	resourceIconOn       fyne.Resource
+	resourceIconTrailing fyne.Resource
+	window               fyne.Window
 }
 
 var _ desktop.Hoverable = (*FilterChipSelect)(nil)
@@ -65,7 +71,7 @@ func NewFilterChipSelect(placeholder string, options []string, changed func(sele
 // NewFilterChipSelectWithSearch returns a new [FilterChipSelect] widget with a search dialog.
 func NewFilterChipSelectWithSearch(placeholder string, options []string, changed func(selected string), window fyne.Window) *FilterChipSelect {
 	if placeholder == "" {
-		// This variant must not be created without a placeholder
+		// This variant requires a placeholder
 		placeholder = "PLACEHOLDER"
 	}
 	w := newFilterChipSelect(placeholder, options, changed, window)
@@ -74,20 +80,20 @@ func NewFilterChipSelectWithSearch(placeholder string, options []string, changed
 
 func newFilterChipSelect(placeholder string, options []string, changed func(selected string), window fyne.Window) *FilterChipSelect {
 	w := &FilterChipSelect{
-		ClearLabel:       "Clear",
-		iconTrailing:     widget.NewIcon(theme.MenuDropDownIcon()),
-		isMobile:         fyne.CurrentDevice().IsMobile(),
-		OnChanged:        changed,
-		Placeholder:      placeholder,
-		resourceLeading:  theme.ConfirmIcon(),
-		resourceTrailing: theme.MenuDropDownIcon(),
-		window:           window,
+		ClearLabel:           "Clear",
+		iconTrailing:         widget.NewIcon(theme.MenuDropDownIcon()),
+		isMobile:             fyne.CurrentDevice().IsMobile(),
+		OnChanged:            changed,
+		Text:                 placeholder,
+		resourceIconOn:       theme.ConfirmIcon(),
+		resourceIconTrailing: theme.MenuDropDownIcon(),
+		window:               window,
 	}
 	w.ExtendBaseWidget(w)
-	w.label = widget.NewLabel(w.Placeholder)
-	w.iconLeading = widget.NewIcon(theme.ConfirmIcon())
+	w.label = widget.NewLabel(w.Text)
+	w.iconOn = widget.NewIcon(theme.ConfirmIcon())
 	p := theme.Padding()
-	w.iconLeadingPadded = container.New(layout.NewCustomPaddedLayout(0, 0, p, 0), w.iconLeading)
+	w.iconOnPadded = container.New(layout.NewCustomPaddedLayout(0, 0, p, 0), w.iconOn)
 	w.bg = canvas.NewRectangle(color.Transparent)
 	w.bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder) * 2
 	w.bg.CornerRadius = theme.Size(theme.SizeNameInputRadius)
@@ -110,7 +116,7 @@ func (w *FilterChipSelect) SetSelected(v string) {
 	if v != "" && !slices.Contains(w.Options, v) {
 		return
 	}
-	if v == "" && w.Placeholder == "" {
+	if v == "" && w.Text == "" {
 		return
 	}
 	w.Selected = v
@@ -136,14 +142,7 @@ func (w *FilterChipSelect) setOptions(options []string) {
 	options = slices.DeleteFunc(options, func(s string) bool {
 		return s == ""
 	})
-	if w.Placeholder == "" {
-		w.Options = deduplicateSlice(options)
-	} else {
-		slices.SortFunc(options, func(a, b string) int {
-			return strings.Compare(strings.ToLower(a), strings.ToLower(b))
-		})
-		w.Options = slices.Compact(options)
-	}
+	w.Options = deduplicateSlice(options)
 }
 
 func (w *FilterChipSelect) showInteraction() {
@@ -156,7 +155,7 @@ func (w *FilterChipSelect) showInteraction() {
 
 func (w *FilterChipSelect) showDropDownMenu() {
 	items := make([]*fyne.MenuItem, 0)
-	if w.Placeholder != "" && w.Selected != "" {
+	if w.Text != "" && w.Selected != "" {
 		it := fyne.NewMenuItem(w.ClearLabel, func() {
 			w.SetSelected("")
 		})
@@ -169,7 +168,13 @@ func (w *FilterChipSelect) showDropDownMenu() {
 		it.Disabled = true
 		items = append(items, it)
 	} else {
-		for _, o := range w.Options {
+		options := slices.Clone(w.Options)
+		if !w.SortDisabled {
+			slices.SortFunc(options, func(a, b string) int {
+				return strings.Compare(strings.ToLower(a), strings.ToLower(b))
+			})
+		}
+		for _, o := range options {
 			it := fyne.NewMenuItem(o, func() {
 				w.SetSelected(o)
 			})
@@ -190,6 +195,11 @@ func (w *FilterChipSelect) showDropDownMenu() {
 
 func (w *FilterChipSelect) showSearchDialog() {
 	itemsFiltered := slices.Clone(w.Options)
+	if !w.SortDisabled {
+		slices.SortFunc(itemsFiltered, func(a, b string) int {
+			return strings.Compare(strings.ToLower(a), strings.ToLower(b))
+		})
+	}
 	var d dialog.Dialog
 	list := widget.NewList(
 		func() int {
@@ -290,7 +300,7 @@ func (w *FilterChipSelect) showSearchDialog() {
 		nil,
 		list,
 	)
-	d = dialog.NewCustomWithoutButtons("Filter by "+w.Placeholder, c, w.window)
+	d = dialog.NewCustomWithoutButtons("Filter by "+w.Text, c, w.window)
 	_, s := w.window.Canvas().InteractiveArea()
 	if w.isMobile {
 		d.Resize(fyne.NewSize(s.Width, s.Height))
@@ -307,18 +317,18 @@ func (w *FilterChipSelect) updateState() {
 
 	if w.Disabled() {
 		w.label.Importance = widget.LowImportance
-		w.iconLeading.Resource = theme.NewDisabledResource(w.resourceLeading)
+		w.iconOn.Resource = theme.NewDisabledResource(w.resourceIconOn)
 		w.bg.StrokeColor = th.Color(theme.ColorNameDisabled, v)
-		w.iconTrailing.Resource = theme.NewDisabledResource(w.resourceTrailing)
+		w.iconTrailing.Resource = theme.NewDisabledResource(w.resourceIconTrailing)
 	} else {
 		w.label.Importance = widget.MediumImportance
-		w.iconLeading.Resource = w.resourceLeading
+		w.iconOn.Resource = w.resourceIconOn
 		w.bg.StrokeColor = th.Color(theme.ColorNameInputBorder, v)
-		w.iconTrailing.Resource = theme.NewThemedResource(w.resourceTrailing)
+		w.iconTrailing.Resource = theme.NewThemedResource(w.resourceIconTrailing)
 	}
 	if w.Selected != "" {
 		w.label.Text = w.Selected
-		w.iconLeadingPadded.Show()
+		w.iconOnPadded.Show()
 		if w.Disabled() {
 			w.bg.FillColor = th.Color(theme.ColorNameDisabledButton, v)
 			w.bg.StrokeColor = th.Color(theme.ColorNameDisabledButton, v)
@@ -327,8 +337,8 @@ func (w *FilterChipSelect) updateState() {
 			w.bg.StrokeColor = th.Color(theme.ColorNameButton, v)
 		}
 	} else {
-		w.label.Text = w.Placeholder
-		w.iconLeadingPadded.Hide()
+		w.label.Text = w.Text
+		w.iconOnPadded.Hide()
 		w.bg.FillColor = color.Transparent
 	}
 
@@ -341,7 +351,7 @@ func (w *FilterChipSelect) Refresh() {
 	w.updateState()
 	w.bg.Refresh()
 	w.label.Refresh()
-	w.iconLeading.Refresh()
+	w.iconOn.Refresh()
 	w.iconTrailing.Refresh()
 	w.BaseWidget.Refresh()
 }
@@ -439,9 +449,9 @@ func (w *FilterChipSelect) CreateRenderer() fyne.WidgetRenderer {
 			layout.NewCustomPaddedLayout(0, 0, p, p),
 			container.New(layout.NewCustomPaddedHBoxLayout(0),
 				layout.NewSpacer(),
-				w.iconLeadingPadded,
-				w.label,
-				w.iconTrailing,
+				container.NewVBox(layout.NewSpacer(), w.iconOnPadded, layout.NewSpacer()),
+				container.NewVBox(layout.NewSpacer(), w.label, layout.NewSpacer()),
+				container.NewVBox(layout.NewSpacer(), w.iconTrailing, layout.NewSpacer()),
 				layout.NewSpacer(),
 			),
 		)))
