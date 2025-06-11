@@ -8,8 +8,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	ilayout "github.com/ErikKalkoken/evebuddy/internal/layout"
+	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 )
 
 // FilterCheckGround represents a group of filter chips.
@@ -66,7 +65,7 @@ func NewFilterChipGroup(options []string, changed func([]string)) *FilterChipGro
 func (w *FilterChipGroup) CreateRenderer() fyne.WidgetRenderer {
 	w.SetSelected(w.Selected)
 	p := w.Theme().Size(theme.SizeNamePadding)
-	box := container.New(ilayout.NewRowWrapLayoutWithCustomPadding(2*p, 2*p))
+	box := container.New(kxlayout.NewRowWrapLayoutWithCustomPadding(2*p, 2*p))
 	for _, c := range w.chips {
 		box.Add(c)
 	}

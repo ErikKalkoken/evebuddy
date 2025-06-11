@@ -10,12 +10,12 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
-	ilayout "github.com/ErikKalkoken/evebuddy/internal/layout"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -106,7 +106,7 @@ func newMailHeader(eis *eveimageservice.EveImageService, show func(*app.EveEntit
 	p := theme.Padding()
 	w := &mailHeader{
 		from:       from,
-		recipients: container.New(ilayout.NewRowWrapLayoutWithCustomPadding(0, -3*p)),
+		recipients: container.New(kxlayout.NewRowWrapLayoutWithCustomPadding(0, -3*p)),
 		showInfo:   show,
 		timestamp:  widget.NewLabel(""),
 		eis:        eis,
