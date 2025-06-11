@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -33,8 +34,8 @@ type locations struct {
 	columnSorter      *columnSorter
 	rows              []locationRow
 	rowsFiltered      []locationRow
-	selectRegion      *iwidget.FilterChipSelect
-	selectSolarSystem *iwidget.FilterChipSelect
+	selectRegion      *kxwidget.FilterChipSelect
+	selectSolarSystem *kxwidget.FilterChipSelect
 	sortButton        *sortButton
 	bottom            *widget.Label
 	u                 *baseUI
@@ -89,10 +90,10 @@ func newLocations(u *baseUI) *locations {
 		a.body = a.makeDataList()
 	}
 
-	a.selectRegion = iwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
+	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
-	a.selectSolarSystem = iwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
+	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
 

@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -41,7 +42,7 @@ type industrySlots struct {
 	rows            []industrySlotRow
 	rowsFiltered    []industrySlotRow
 	totals          industrySlotRow
-	selectFreeSlots *iwidget.FilterChipSelect
+	selectFreeSlots *kxwidget.FilterChipSelect
 	slotType        app.IndustryJobType
 	sortButton      *sortButton
 	u               *baseUI
@@ -128,7 +129,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 		a.body = a.makeDataList(headers, makeCell)
 	}
 
-	a.selectFreeSlots = iwidget.NewFilterChipSelect("Free slots", []string{
+	a.selectFreeSlots = kxwidget.NewFilterChipSelect("Free slots", []string{
 		slotsFreeSome,
 		slotsFreeNone,
 	}, func(string) {

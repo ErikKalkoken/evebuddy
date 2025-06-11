@@ -52,13 +52,13 @@ type colonies struct {
 	columnSorter      *columnSorter
 	rows              []colonyRow
 	rowsFiltered      []colonyRow
-	selectStatus      *iwidget.FilterChipSelect
-	selectExtracting  *iwidget.FilterChipSelect
-	selectOwner       *iwidget.FilterChipSelect
-	selectProducing   *iwidget.FilterChipSelect
-	selectRegion      *iwidget.FilterChipSelect
-	selectSolarSystem *iwidget.FilterChipSelect
-	selectPlanetType  *iwidget.FilterChipSelect
+	selectStatus      *kxwidget.FilterChipSelect
+	selectExtracting  *kxwidget.FilterChipSelect
+	selectOwner       *kxwidget.FilterChipSelect
+	selectProducing   *kxwidget.FilterChipSelect
+	selectRegion      *kxwidget.FilterChipSelect
+	selectSolarSystem *kxwidget.FilterChipSelect
+	selectPlanetType  *kxwidget.FilterChipSelect
 	sortButton        *sortButton
 	top               *widget.Label
 	u                 *baseUI
@@ -110,30 +110,30 @@ func newColonies(u *baseUI) *colonies {
 		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, a.showColony)
 	}
 
-	a.selectExtracting = iwidget.NewFilterChipSelectWithSearch("Extracted", []string{}, func(string) {
+	a.selectExtracting = kxwidget.NewFilterChipSelectWithSearch("Extracted", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
-	a.selectOwner = iwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
+	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.selectProducing = iwidget.NewFilterChipSelectWithSearch("Produced", []string{}, func(string) {
+	a.selectProducing = kxwidget.NewFilterChipSelectWithSearch("Produced", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
-	a.selectRegion = iwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
+	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
-	a.selectSolarSystem = iwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
+	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
 
-	a.selectStatus = iwidget.NewFilterChipSelect("Status", []string{
+	a.selectStatus = kxwidget.NewFilterChipSelect("Status", []string{
 		colonyStatusExtracting,
 		colonyStatusOffline,
 	}, func(string) {
 		a.filterRows(-1)
 	})
 
-	a.selectPlanetType = iwidget.NewFilterChipSelect("Planet Type", []string{}, func(string) {
+	a.selectPlanetType = kxwidget.NewFilterChipSelect("Planet Type", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 

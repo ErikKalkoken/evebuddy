@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -52,7 +53,7 @@ type characterWalletJournal struct {
 	columnSorter *columnSorter
 	rows         []walletJournalRow
 	rowsFiltered []walletJournalRow
-	selectType   *iwidget.FilterChipSelect
+	selectType   *kxwidget.FilterChipSelect
 	sortButton   *sortButton
 	top          *widget.Label
 	u            *baseUI
@@ -105,7 +106,7 @@ func newCharacterWalletJournal(u *baseUI) *characterWalletJournal {
 	} else {
 		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, showReasonDialog)
 	}
-	a.selectType = iwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
+	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {

@@ -7,8 +7,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
 const (
@@ -19,21 +18,21 @@ const (
 type toolbar struct {
 	widget.BaseWidget
 
-	searchbar *widget.Entry
-	hamburger *iwidget.IconButton
+	searchBar *widget.Entry
+	hamburger *kxwidget.IconButton
 	u         *DesktopUI
 }
 
 func newToolbar(u *DesktopUI) *toolbar {
-	searchbar := widget.NewEntry()
-	searchbar.PlaceHolder = searchPlaceholderEnabled
-	searchbar.Scroll = container.ScrollNone
-	searchbar.Wrapping = fyne.TextWrapOff
-	searchbar.OnSubmitted = func(s string) {
+	searchBar := widget.NewEntry()
+	searchBar.PlaceHolder = searchPlaceholderEnabled
+	searchBar.Scroll = container.ScrollNone
+	searchBar.Wrapping = fyne.TextWrapOff
+	searchBar.OnSubmitted = func(s string) {
 		u.PerformSearch(s)
 	}
-	searchbar.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
-		searchbar.SetText("")
+	searchBar.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
+		searchBar.SetText("")
 	})
 	makeMenuItem := func(title string, sc shortcutDef) *fyne.MenuItem {
 		it := fyne.NewMenuItem(title, func() {
@@ -62,8 +61,8 @@ func newToolbar(u *DesktopUI) *toolbar {
 	)
 	a := &toolbar{
 		u:         u,
-		searchbar: searchbar,
-		hamburger: iwidget.NewIconButtonWithMenu(theme.MenuIcon(), menu),
+		searchBar: searchBar,
+		hamburger: kxwidget.NewIconButtonWithMenu(theme.MenuIcon(), menu),
 	}
 	a.ExtendBaseWidget(a)
 	return a
@@ -71,11 +70,11 @@ func newToolbar(u *DesktopUI) *toolbar {
 
 func (a *toolbar) ToogleSearchBar(enabled bool) {
 	if enabled {
-		a.searchbar.PlaceHolder = searchPlaceholderEnabled
-		a.searchbar.Enable()
+		a.searchBar.PlaceHolder = searchPlaceholderEnabled
+		a.searchBar.Enable()
 	} else {
-		a.searchbar.PlaceHolder = searchPlaceholderDisabled
-		a.searchbar.Disable()
+		a.searchBar.PlaceHolder = searchPlaceholderDisabled
+		a.searchBar.Disable()
 	}
 }
 
@@ -84,10 +83,10 @@ func (a *toolbar) CreateRenderer() fyne.WidgetRenderer {
 	x := container.NewGridWithColumns(
 		3,
 		container.NewHBox(),
-		container.NewBorder(nil, nil, nil, iwidget.NewIconButton(theme.SearchIcon(), func() {
+		container.NewBorder(nil, nil, nil, kxwidget.NewIconButton(theme.SearchIcon(), func() {
 			a.u.showAdvancedSearch()
 		}),
-			a.searchbar,
+			a.searchBar,
 		),
 		container.New(layout.NewCustomPaddedHBoxLayout(2*p), layout.NewSpacer(), a.hamburger),
 	)

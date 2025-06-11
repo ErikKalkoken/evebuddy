@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -199,7 +200,7 @@ func showAddDialog(u *baseUI, characterID int32, onSelected func(ee *app.EveEnti
 	}
 	entry := widget.NewEntry()
 	entry.PlaceHolder = "Type to start searching..."
-	entry.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
+	entry.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		entry.SetText("")
 	})
 	entry.OnChanged = func(search string) {

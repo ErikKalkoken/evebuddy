@@ -95,10 +95,10 @@ type industryJobs struct {
 	rows            []industryJobRow
 	rowsFiltered    []industryJobRow
 	search          *widget.Entry
-	selectActivity  *iwidget.FilterChipSelect
-	selectInstaller *iwidget.FilterChipSelect
-	selectOwner     *iwidget.FilterChipSelect
-	selectStatus    *iwidget.FilterChipSelect
+	selectActivity  *kxwidget.FilterChipSelect
+	selectInstaller *kxwidget.FilterChipSelect
+	selectOwner     *kxwidget.FilterChipSelect
+	selectStatus    *kxwidget.FilterChipSelect
 	sortButton      *sortButton
 	bottom          *widget.Label
 	u               *baseUI
@@ -161,18 +161,18 @@ func newIndustryJobs(u *baseUI) *industryJobs {
 	a.search.OnChanged = func(_ string) {
 		a.filterRows(-1)
 	}
-	a.search.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
+	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
 	})
 
-	a.selectOwner = iwidget.NewFilterChipSelect("Owner", []string{
+	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{
 		industryOwnerMe,
 		industryOwnerCorp,
 	}, func(_ string) {
 		a.filterRows(-1)
 	})
 
-	a.selectStatus = iwidget.NewFilterChipSelect("", []string{
+	a.selectStatus = kxwidget.NewFilterChipSelect("", []string{
 		industryStatusActive,
 		industryStatusInProgress,
 		industryStatusReady,
@@ -184,7 +184,7 @@ func newIndustryJobs(u *baseUI) *industryJobs {
 	a.selectStatus.Selected = industryStatusActive
 	a.selectStatus.SortDisabled = true
 
-	a.selectActivity = iwidget.NewFilterChipSelect("Activity", []string{
+	a.selectActivity = kxwidget.NewFilterChipSelect("Activity", []string{
 		industryActivityManufacturing,
 		industryActivityMaterialResearch,
 		industryActivityTimeResearch,
@@ -195,7 +195,7 @@ func newIndustryJobs(u *baseUI) *industryJobs {
 		a.filterRows(-1)
 	})
 
-	a.selectInstaller = iwidget.NewFilterChipSelect("Installer", []string{
+	a.selectInstaller = kxwidget.NewFilterChipSelect("Installer", []string{
 		industryInstallerMe,
 		industryInstallerCorpmates,
 	}, func(_ string) {

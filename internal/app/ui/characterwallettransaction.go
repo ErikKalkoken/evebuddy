@@ -51,11 +51,11 @@ type characterWalletTransaction struct {
 	columnSorter   *columnSorter
 	rows           []walletTransactionRow
 	rowsFiltered   []walletTransactionRow
-	selectCategory *iwidget.FilterChipSelect
-	selectClient   *iwidget.FilterChipSelect
-	selectLocation *iwidget.FilterChipSelect
-	selectRegion   *iwidget.FilterChipSelect
-	selectType     *iwidget.FilterChipSelect
+	selectCategory *kxwidget.FilterChipSelect
+	selectClient   *kxwidget.FilterChipSelect
+	selectLocation *kxwidget.FilterChipSelect
+	selectRegion   *kxwidget.FilterChipSelect
+	selectType     *kxwidget.FilterChipSelect
 	sortButton     *sortButton
 	u              *baseUI
 }
@@ -121,10 +121,10 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, a.showEntry)
 	}
 
-	a.selectCategory = iwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
+	a.selectCategory = kxwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
-	a.selectClient = iwidget.NewFilterChipSelectWithSearch(
+	a.selectClient = kxwidget.NewFilterChipSelectWithSearch(
 		"Client",
 		[]string{},
 		func(_ string) {
@@ -132,7 +132,7 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 		},
 		a.u.window,
 	)
-	a.selectLocation = iwidget.NewFilterChipSelectWithSearch(
+	a.selectLocation = kxwidget.NewFilterChipSelectWithSearch(
 		"Location",
 		[]string{},
 		func(_ string) {
@@ -140,7 +140,7 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 		},
 		a.u.window,
 	)
-	a.selectType = iwidget.NewFilterChipSelectWithSearch(
+	a.selectType = kxwidget.NewFilterChipSelectWithSearch(
 		"Type",
 		[]string{},
 		func(_ string) {
@@ -148,7 +148,7 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 		},
 		a.u.window,
 	)
-	a.selectRegion = iwidget.NewFilterChipSelectWithSearch("Region",
+	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region",
 		[]string{}, func(string) {
 			a.filterRows(-1)
 		},

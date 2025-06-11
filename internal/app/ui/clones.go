@@ -64,9 +64,9 @@ type clones struct {
 	routePref         app.EveRoutePreference
 	rows              []cloneRow
 	rowsFiltered      []cloneRow
-	selectOwner       *iwidget.FilterChipSelect
-	selectRegion      *iwidget.FilterChipSelect
-	selectSolarSystem *iwidget.FilterChipSelect
+	selectOwner       *kxwidget.FilterChipSelect
+	selectRegion      *kxwidget.FilterChipSelect
+	selectSolarSystem *kxwidget.FilterChipSelect
 	sortButton        *sortButton
 	top               *widget.Label
 	u                 *baseUI
@@ -141,15 +141,15 @@ func newClones(u *baseUI) *clones {
 		})
 	}
 
-	a.selectRegion = iwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
+	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
 
-	a.selectSolarSystem = iwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
+	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
 
-	a.selectOwner = iwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
+	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 
@@ -334,7 +334,7 @@ func (a *clones) setOrigin(w fyne.Window) {
 	list.HideSeparators = true
 	entry := widget.NewEntry()
 	entry.PlaceHolder = "Type to start searching..."
-	entry.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
+	entry.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		entry.SetText("")
 	})
 	entry.OnChanged = func(search string) {

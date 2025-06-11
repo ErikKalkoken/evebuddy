@@ -825,7 +825,7 @@ func (a *characterInfo) makeRolesTab(roles []app.CharacterRole) (*container.TabI
 		})
 		list.Refresh()
 	}
-	search.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
+	search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		search.SetText("")
 	})
 	rolesTab := container.NewTabItem("Roles", container.NewBorder(search, nil, nil, nil, list))

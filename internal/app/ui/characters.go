@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -57,8 +58,8 @@ type characters struct {
 	columnSorter      *columnSorter
 	rows              []characterRow
 	rowsFiltered      []characterRow
-	selectAlliance    *iwidget.FilterChipSelect
-	selectCorporation *iwidget.FilterChipSelect
+	selectAlliance    *kxwidget.FilterChipSelect
+	selectCorporation *kxwidget.FilterChipSelect
 	sortButton        *sortButton
 	top               *widget.Label
 	u                 *baseUI
@@ -136,10 +137,10 @@ func newOverviewCharacters(u *baseUI) *characters {
 		})
 	}
 
-	a.selectAlliance = iwidget.NewFilterChipSelect("Alliance", []string{}, func(string) {
+	a.selectAlliance = kxwidget.NewFilterChipSelect("Alliance", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.selectCorporation = iwidget.NewFilterChipSelect("Corporation", []string{}, func(string) {
+	a.selectCorporation = kxwidget.NewFilterChipSelect("Corporation", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {

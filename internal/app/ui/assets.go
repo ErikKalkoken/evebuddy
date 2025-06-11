@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -58,11 +59,11 @@ type assets struct {
 	found          *widget.Label
 	rows           []assetRow
 	rowsFiltered   []assetRow
-	selectCategory *iwidget.FilterChipSelect
-	selectLocation *iwidget.FilterChipSelect
-	selectOwner    *iwidget.FilterChipSelect
-	selectRegion   *iwidget.FilterChipSelect
-	selectTotal    *iwidget.FilterChipSelect
+	selectCategory *kxwidget.FilterChipSelect
+	selectLocation *kxwidget.FilterChipSelect
+	selectOwner    *kxwidget.FilterChipSelect
+	selectRegion   *kxwidget.FilterChipSelect
+	selectTotal    *kxwidget.FilterChipSelect
 	sortButton     *sortButton
 	total          *widget.Label
 	u              *baseUI
@@ -86,7 +87,7 @@ func newAssets(u *baseUI) *assets {
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	a.entry.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
+	a.entry.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.resetSearch()
 	})
 	a.entry.OnChanged = func(s string) {
@@ -121,20 +122,20 @@ func newAssets(u *baseUI) *assets {
 			})
 	}
 
-	a.selectCategory = iwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
+	a.selectCategory = kxwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
-	a.selectOwner = iwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
+	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.selectRegion = iwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
+	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
-	a.selectLocation = iwidget.NewFilterChipSelectWithSearch("Location", []string{}, func(string) {
+	a.selectLocation = kxwidget.NewFilterChipSelectWithSearch("Location", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
 
-	a.selectTotal = iwidget.NewFilterChipSelect("Total",
+	a.selectTotal = kxwidget.NewFilterChipSelect("Total",
 		[]string{
 			assetsTotalYes,
 			assetsTotalNo,

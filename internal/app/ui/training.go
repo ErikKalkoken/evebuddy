@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -48,7 +49,7 @@ type trainings struct {
 	columnSorter *columnSorter
 	rows         []trainingRow
 	rowsFiltered []trainingRow
-	selectStatus *iwidget.FilterChipSelect
+	selectStatus *kxwidget.FilterChipSelect
 	sortButton   *sortButton
 	bottom       *widget.Label
 	u            *baseUI
@@ -105,7 +106,7 @@ func newTrainings(u *baseUI) *trainings {
 		// a.body = makeDataList(headers, &a.rowsFiltered, makeCell, nil)
 		a.body = a.makeDataList()
 	}
-	a.selectStatus = iwidget.NewFilterChipSelect(
+	a.selectStatus = kxwidget.NewFilterChipSelect(
 		"Status",
 		[]string{
 			trainingStatusActive,

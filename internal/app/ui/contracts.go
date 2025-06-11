@@ -58,10 +58,10 @@ type contracts struct {
 	columnSorter   *columnSorter
 	rows           []contractRow
 	rowsFiltered   []contractRow
-	selectAssignee *iwidget.FilterChipSelect
-	selectIssuer   *iwidget.FilterChipSelect
-	selectStatus   *iwidget.FilterChipSelect
-	selectType     *iwidget.FilterChipSelect
+	selectAssignee *kxwidget.FilterChipSelect
+	selectIssuer   *kxwidget.FilterChipSelect
+	selectStatus   *kxwidget.FilterChipSelect
+	selectType     *kxwidget.FilterChipSelect
 	sortButton     *sortButton
 	bottom         *widget.Label
 	u              *baseUI
@@ -112,17 +112,17 @@ func newContracts(u *baseUI) *contracts {
 		a.body = a.makeDataList()
 	}
 
-	a.selectAssignee = iwidget.NewFilterChipSelectWithSearch("Assignee", []string{}, func(string) {
+	a.selectAssignee = kxwidget.NewFilterChipSelectWithSearch("Assignee", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
-	a.selectIssuer = iwidget.NewFilterChipSelectWithSearch("Issuer", []string{}, func(string) {
+	a.selectIssuer = kxwidget.NewFilterChipSelectWithSearch("Issuer", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
-	a.selectType = iwidget.NewFilterChipSelect("Type", []string{}, func(string) {
+	a.selectType = kxwidget.NewFilterChipSelect("Type", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 
-	a.selectStatus = iwidget.NewFilterChipSelect("", []string{
+	a.selectStatus = kxwidget.NewFilterChipSelect("", []string{
 		contractStatusAllActive,
 		contractStatusOutstanding,
 		contractStatusInProgress,
