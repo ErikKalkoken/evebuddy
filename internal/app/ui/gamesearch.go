@@ -239,10 +239,10 @@ func (a *hameSearch) makeResults() *iwidget.Tree[resultNode] {
 			co.(*searchResult).set(n.ee)
 		},
 	)
-	t.OnSelected = func(n resultNode) {
+	t.OnSelectedNode = func(n resultNode) {
 		defer t.UnselectAll()
 		if n.isCategory() {
-			t.ToggleBranch(n)
+			t.ToggleBranch(n.UID())
 			return
 		}
 		a.showSupportedResult(n.ee)

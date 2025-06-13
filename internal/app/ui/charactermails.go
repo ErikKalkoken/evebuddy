@@ -203,7 +203,7 @@ func (a *characterMails) makeFolderTree() *iwidget.Tree[mailFolderNode] {
 			label.Refresh()
 		},
 	)
-	tree.OnSelected = func(n mailFolderNode) {
+	tree.OnSelectedNode = func(n mailFolderNode) {
 		if n.isBranch() {
 			tree.UnselectAll()
 			return
@@ -255,7 +255,7 @@ func (a *characterMails) update() {
 		}
 		a.folders.UnselectAll()
 		a.folders.ScrollToTop()
-		a.folders.Select(folderAll)
+		a.folders.Select(folderAll.UID())
 		a.setCurrentFolder(folderAll)
 	})
 	if a.onUpdate != nil {
@@ -407,7 +407,7 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 func (a *characterMails) makeFolderMenu() []*fyne.MenuItem {
 	// current := u.MailArea.CurrentFolder.ValueOrZero()
 	items1 := make([]*fyne.MenuItem, 0)
-	for _, f := range a.folders.Data().Flat() {
+	for f := range a.folders.Nodes().All() {
 		s := f.Name
 		if f.UnreadCount > 0 {
 			s += fmt.Sprintf(" (%d)", f.UnreadCount)

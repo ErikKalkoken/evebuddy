@@ -137,9 +137,9 @@ func (a *characterAssets) makeLocationsTree() *iwidget.Tree[locationNode] {
 			}
 		},
 	)
-	t.OnSelected = func(n locationNode) {
+	t.OnSelectedNode = func(n locationNode) {
 		if n.variant == nodeLocation {
-			t.OpenBranch(n)
+			t.OpenBranch(n.UID())
 			t.UnselectAll()
 			return
 		}
@@ -195,8 +195,8 @@ func (a *characterAssets) makeAssetGrid() *widget.GridWrap {
 				return
 			}
 			location := a.selectedLocation.ValueOrZero()
-			for _, uid := range a.locations.Data().ChildUIDs(location.UID()) {
-				n, ok := a.locations.Data().Node(uid)
+			for _, uid := range a.locations.Nodes().ChildUIDs(location.UID()) {
+				n, ok := a.locations.Nodes().Node(uid)
 				if !ok {
 					continue
 				}
@@ -500,15 +500,15 @@ func (a *characterAssets) selectLocation(location locationNode) error {
 	a.assetGrid.Refresh()
 	a.selectedLocation.Set(location)
 	selectedUID := location.UID()
-	for _, uid := range a.locations.Data().Path(selectedUID) {
-		n, ok := a.locations.Data().Node(uid)
+	for _, uid := range a.locations.Nodes().Path(selectedUID) {
+		n, ok := a.locations.Nodes().Node(uid)
 		if !ok {
 			continue
 		}
-		a.locations.OpenBranch(n)
+		a.locations.OpenBranch(n.UID())
 	}
-	a.locations.ScrollTo(location)
-	a.locations.Select(location)
+	a.locations.ScrollTo(location.UID())
+	a.locations.Select(location.UID())
 	var f func(context.Context, int32, int64) ([]*app.CharacterAsset, error)
 	switch location.variant {
 	case nodeShipHangar:
@@ -623,8 +623,8 @@ func (a *characterAssets) selectLocation(location locationNode) error {
 
 func (a *characterAssets) updateLocationPath(location locationNode) {
 	path := make([]locationNode, 0)
-	for _, uid := range a.locations.Data().Path(location.UID()) {
-		n, ok := a.locations.Data().Node(uid)
+	for _, uid := range a.locations.Nodes().Path(location.UID()) {
+		n, ok := a.locations.Nodes().Node(uid)
 		if !ok {
 			continue
 		}
