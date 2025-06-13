@@ -125,7 +125,7 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 			}
 		},
 	)
-	t.OnSelected = func(n jumpCloneNode) {
+	t.OnSelectedNode = func(n jumpCloneNode) {
 		defer t.UnselectAll()
 		if n.IsRoot() {
 			if !n.isUnknown {
@@ -155,13 +155,13 @@ func (a *characterJumpClones) update() {
 	}
 }
 
-func cloneCount(td *iwidget.TreeData[jumpCloneNode]) int {
+func cloneCount(td iwidget.TreeNodes[jumpCloneNode]) int {
 	return len(td.ChildUIDs(""))
 
 }
 
-func (a *characterJumpClones) newTreeData() (*iwidget.TreeData[jumpCloneNode], error) {
-	tree := iwidget.NewTreeData[jumpCloneNode]()
+func (a *characterJumpClones) newTreeData() (iwidget.TreeNodes[jumpCloneNode], error) {
+	var tree iwidget.TreeNodes[jumpCloneNode]
 	if !a.u.hasCharacter() {
 		return tree, nil
 	}
@@ -272,7 +272,7 @@ func (a *characterJumpClones) StartUpdateTicker() {
 		for {
 			var c int
 			fyne.DoAndWait(func() {
-				c = cloneCount(a.tree.Data())
+				c = cloneCount(a.tree.Nodes())
 			})
 			a.refreshTop(c)
 			<-ticker.C

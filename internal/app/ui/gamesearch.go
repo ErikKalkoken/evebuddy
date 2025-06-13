@@ -239,10 +239,10 @@ func (a *hameSearch) makeResults() *iwidget.Tree[resultNode] {
 			co.(*searchResult).set(n.ee)
 		},
 	)
-	t.OnSelected = func(n resultNode) {
+	t.OnSelectedNode = func(n resultNode) {
 		defer t.UnselectAll()
 		if n.isCategory() {
-			t.ToggleBranch(n)
+			t.ToggleBranch(n.UID())
 			return
 		}
 		a.showSupportedResult(n.ee)
@@ -375,7 +375,7 @@ func (a *hameSearch) doSearch2(search string) {
 	if total == 0 {
 		return
 	}
-	t := iwidget.NewTreeData[resultNode]()
+	var t iwidget.TreeNodes[resultNode]
 	var categoriesFound int
 	for _, c := range categories {
 		_, ok := results[c]
