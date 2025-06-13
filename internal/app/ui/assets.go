@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -58,11 +59,11 @@ type assets struct {
 	found          *widget.Label
 	rows           []assetRow
 	rowsFiltered   []assetRow
-	selectCategory *iwidget.FilterChipSelect
-	selectLocation *iwidget.FilterChipSelect
-	selectOwner    *iwidget.FilterChipSelect
-	selectRegion   *iwidget.FilterChipSelect
-	selectTotal    *iwidget.FilterChipSelect
+	selectCategory *kxwidget.FilterChipSelect
+	selectLocation *kxwidget.FilterChipSelect
+	selectOwner    *kxwidget.FilterChipSelect
+	selectRegion   *kxwidget.FilterChipSelect
+	selectTotal    *kxwidget.FilterChipSelect
 	sortButton     *sortButton
 	total          *widget.Label
 	u              *baseUI
@@ -70,12 +71,12 @@ type assets struct {
 
 func newAssets(u *baseUI) *assets {
 	headers := []headerDef{
-		{Text: "Item", Width: 300},
-		{Text: "Class", Width: 200},
-		{Text: "Location", Width: 350},
-		{Text: "Owner", Width: 200},
-		{Text: "Qty.", Width: 75},
-		{Text: "Total", Width: 100},
+		{Label: "Item", Width: 300},
+		{Label: "Class", Width: 200},
+		{Label: "Location", Width: 350},
+		{Label: "Owner", Width: 200},
+		{Label: "Qty.", Width: 75},
+		{Label: "Total", Width: 100},
 	}
 	a := &assets{
 		entry:        widget.NewEntry(),
@@ -86,7 +87,7 @@ func newAssets(u *baseUI) *assets {
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	a.entry.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
+	a.entry.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.resetSearch()
 	})
 	a.entry.OnChanged = func(s string) {
@@ -121,20 +122,20 @@ func newAssets(u *baseUI) *assets {
 			})
 	}
 
-	a.selectCategory = iwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
+	a.selectCategory = kxwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
-	a.selectOwner = iwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
+	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.selectRegion = iwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
+	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
-	a.selectLocation = iwidget.NewFilterChipSelectWithSearch("Location", []string{}, func(string) {
+	a.selectLocation = kxwidget.NewFilterChipSelectWithSearch("Location", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
 
-	a.selectTotal = iwidget.NewFilterChipSelect("Total",
+	a.selectTotal = kxwidget.NewFilterChipSelect("Total",
 		[]string{
 			assetsTotalYes,
 			assetsTotalNo,
@@ -173,7 +174,7 @@ func (a *assets) makeDataList() *widget.List {
 		func() fyne.CanvasObject {
 			title := widget.NewLabelWithStyle("Template", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 			owner := widget.NewLabel("Template")
-			location := widget.NewRichTextWithText("Template")
+			location := iwidget.NewRichTextWithText("Template")
 			price := widget.NewLabel("Template")
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
 				title,
@@ -195,7 +196,7 @@ func (a *assets) makeDataList() *widget.List {
 				title = fmt.Sprintf("%s x%s", r.typeNameDisplay, r.quantityDisplay)
 			}
 			box[0].(*widget.Label).SetText(title)
-			iwidget.SetRichText(box[1].(*widget.RichText), r.locationDisplay...)
+			box[1].(*iwidget.RichText).Set(r.locationDisplay)
 			box[2].(*widget.Label).SetText(r.characterName)
 			box[3].(*widget.Label).SetText(r.totalDisplay)
 		},

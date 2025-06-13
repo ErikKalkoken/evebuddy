@@ -9,6 +9,8 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
 // Navigator is a container that allows the user to navigate to a new page
@@ -119,12 +121,12 @@ type AppBar struct {
 	bg       *canvas.Rectangle
 	body     fyne.CanvasObject
 	isMobile bool
-	items    []*IconButton
-	title    *Label
+	items    []*kxwidget.IconButton
+	title    *widget.Label
 }
 
 // NewAppBar returns a new AppBar. The toolbar items are optional.
-func NewAppBar(title string, body fyne.CanvasObject, items ...*IconButton) *AppBar {
+func NewAppBar(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *AppBar {
 	w := &AppBar{
 		body:     body,
 		isMobile: fyne.CurrentDevice().IsMobile(),
@@ -136,7 +138,8 @@ func NewAppBar(title string, body fyne.CanvasObject, items ...*IconButton) *AppB
 	if !w.isMobile {
 		w.bg.Hide()
 	}
-	w.title = NewLabelWithSize(title, theme.SizeNameSubHeadingText)
+	w.title = widget.NewLabel(title)
+	w.title.SizeName = theme.SizeNameSubHeadingText
 	w.title.Truncation = fyne.TextTruncateEllipsis
 	return w
 }
@@ -164,7 +167,7 @@ func (w *AppBar) Refresh() {
 func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 	var left, right fyne.CanvasObject
 	if w.Navigator != nil {
-		left = NewIconButton(theme.NavigateBackIcon(), func() {
+		left = kxwidget.NewIconButton(theme.NavigateBackIcon(), func() {
 			w.Navigator.Pop()
 		})
 	}

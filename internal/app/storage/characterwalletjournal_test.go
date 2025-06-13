@@ -12,13 +12,13 @@ import (
 )
 
 func TestWalletJournalEntry(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		date := time.Now()
 		arg := storage.CreateCharacterWalletJournalEntryParams{
 			Amount:        123.45,
@@ -54,7 +54,7 @@ func TestWalletJournalEntry(t *testing.T) {
 	t.Run("can create new full", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		e1 := factory.CreateEveEntity()
 		e2 := factory.CreateEveEntity()
 		e3 := factory.CreateEveEntity()
@@ -99,7 +99,7 @@ func TestWalletJournalEntry(t *testing.T) {
 	t.Run("can list IDs of existing entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		e1 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		e2 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		e3 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
@@ -114,7 +114,7 @@ func TestWalletJournalEntry(t *testing.T) {
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})

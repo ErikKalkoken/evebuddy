@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -52,7 +53,7 @@ type characterWalletJournal struct {
 	columnSorter *columnSorter
 	rows         []walletJournalRow
 	rowsFiltered []walletJournalRow
-	selectType   *iwidget.FilterChipSelect
+	selectType   *kxwidget.FilterChipSelect
 	sortButton   *sortButton
 	top          *widget.Label
 	u            *baseUI
@@ -60,11 +61,11 @@ type characterWalletJournal struct {
 
 func newCharacterWalletJournal(u *baseUI) *characterWalletJournal {
 	headers := []headerDef{
-		{Text: "Date", Width: 150},
-		{Text: "Type", Width: 150},
-		{Text: "Amount", Width: 200},
-		{Text: "Balance", Width: 200, NotSortable: true},
-		{Text: "Description", Width: 450, NotSortable: true},
+		{Label: "Date", Width: 150},
+		{Label: "Type", Width: 150},
+		{Label: "Amount", Width: 200},
+		{Label: "Balance", Width: 200, NotSortable: true},
+		{Label: "Description", Width: 450, NotSortable: true},
 	}
 	a := &characterWalletJournal{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortDesc),
@@ -105,7 +106,7 @@ func newCharacterWalletJournal(u *baseUI) *characterWalletJournal {
 	} else {
 		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, showReasonDialog)
 	}
-	a.selectType = iwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
+	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {

@@ -12,13 +12,13 @@ import (
 )
 
 func TestMailLabel(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		arg := storage.MailLabelParams{
 			CharacterID: c.ID,
 			Color:       "xyz",
@@ -41,7 +41,7 @@ func TestMailLabel(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: 42})
 		arg := storage.MailLabelParams{
 			CharacterID: c.ID,
@@ -65,7 +65,7 @@ func TestMailLabel(t *testing.T) {
 	t.Run("can get or create existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: 42, Name: "Dummy"})
 		arg := storage.MailLabelParams{
 			CharacterID: c.ID,
@@ -87,7 +87,7 @@ func TestMailLabel(t *testing.T) {
 	t.Run("can get or create when not existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		arg := storage.MailLabelParams{
 			CharacterID: c.ID,
 			Color:       "xyz",
@@ -108,7 +108,7 @@ func TestMailLabel(t *testing.T) {
 	t.Run("can return all mail labels for a character ordered by name", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, Name: "bravo"})
 		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, Name: "alpha"})
 		factory.CreateCharacterMailLabel()
@@ -122,7 +122,7 @@ func TestMailLabel(t *testing.T) {
 	t.Run("can return all mail labels for a character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, Name: "bravo"})
 		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, Name: "alpha"})
 		factory.CreateCharacterMailLabel()
@@ -136,7 +136,7 @@ func TestMailLabel(t *testing.T) {
 	t.Run("should return empty list when character has no mail labels", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterMailLabel()
 		// when
 		labels, err := r.ListCharacterMailLabelsOrdered(ctx, c.ID)
@@ -147,17 +147,17 @@ func TestMailLabel(t *testing.T) {
 }
 
 func TestDeleteObsoleteMailLabels(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can delete obsolete mail labels for a character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateCharacter()
+		c1 := factory.CreateCharacterFull()
 		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c1.ID})
 		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c1.ID}) // to delete
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c1.ID, LabelIDs: []int32{l1.LabelID}})
-		c2 := factory.CreateCharacter()
+		c2 := factory.CreateCharacterFull()
 		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c2.ID})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c2.ID, LabelIDs: []int32{l2.LabelID}})
 		// when

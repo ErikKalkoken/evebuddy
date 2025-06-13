@@ -16,7 +16,7 @@ var contractAvailabilityFromDBValue = map[string]app.ContractAvailability{
 	"":            app.ContractAvailabilityUndefined,
 	"alliance":    app.ContractAvailabilityAlliance,
 	"corporation": app.ContractAvailabilityCorporation,
-	"personal":    app.ContractAvailabilityPersonal,
+	"personal":    app.ContractAvailabilityPrivate,
 	"public":      app.ContractAvailabilityPublic,
 }
 

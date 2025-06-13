@@ -82,7 +82,11 @@ func Duration(duration time.Duration) string {
 
 // RelTime returns the duration until a time in the future.
 func RelTime(t time.Time) string {
-	return Duration(time.Until(t))
+	d := time.Until(t)
+	if d < 0 {
+		d = -1 * d
+	}
+	return Duration(d)
 }
 
 // Comma produces a string form of the given number in base 10

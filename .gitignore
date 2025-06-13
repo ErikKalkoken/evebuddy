@@ -16,3 +16,4 @@ __debug_*
 fyne_metadata_init.go
 EVE Buddy.exe
 playground/
+**/testdata/failed

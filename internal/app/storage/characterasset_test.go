@@ -13,13 +13,13 @@ import (
 )
 
 func TestCharacterAsset(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		eveType := factory.CreateEveType()
 		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
 			TypeID: eveType.ID, AveragePrice: 1.24,
@@ -59,7 +59,7 @@ func TestCharacterAsset(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		x1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
 		arg := storage.UpdateCharacterAssetParams{
 			CharacterID:  c.ID,
@@ -87,7 +87,7 @@ func TestCharacterAsset(t *testing.T) {
 	t.Run("can list assets in ship hangar", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		location := factory.CreateEveLocationStructure()
 		shipCategory := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategoryShip})
 		shipGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: shipCategory.ID})
@@ -115,7 +115,7 @@ func TestCharacterAsset(t *testing.T) {
 	t.Run("can delete assets", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		x1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
 		x2 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
 		// when
@@ -132,7 +132,7 @@ func TestCharacterAsset(t *testing.T) {
 	t.Run("can list assets for character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		ca1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
 		ca2 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
 		// when
@@ -146,7 +146,7 @@ func TestCharacterAsset(t *testing.T) {
 	t.Run("can list assets for character in item hangar", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		location := factory.CreateEveLocationStructure()
 		ca1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
 			CharacterID:  c.ID,
@@ -169,7 +169,7 @@ func TestCharacterAsset(t *testing.T) {
 	t.Run("can list assets for character in location", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		ca1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
 		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
 		// when
@@ -196,7 +196,7 @@ func TestCharacterAsset(t *testing.T) {
 	t.Run("can calculate total asset value for character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		ca1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
 			CharacterID: c.ID,
 			Quantity:    1,

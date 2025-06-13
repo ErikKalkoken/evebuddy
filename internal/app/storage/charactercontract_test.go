@@ -14,19 +14,19 @@ import (
 )
 
 func TestCharacterContract(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		issuer := factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		issuerCorporation := c.EveCharacter.Corporation
 		dateExpired := time.Now().Add(12 * time.Hour).UTC()
 		dateIssued := time.Now().UTC()
 		arg := storage.CreateCharacterContractParams{
-			Availability:        app.ContractAvailabilityPersonal,
+			Availability:        app.ContractAvailabilityPrivate,
 			CharacterID:         c.ID,
 			ContractID:          42,
 			DateExpired:         dateExpired,
@@ -45,7 +45,7 @@ func TestCharacterContract(t *testing.T) {
 				assert.Equal(t, id, o.ID)
 				assert.Equal(t, issuer, o.Issuer)
 				assert.Equal(t, dateExpired, o.DateExpired)
-				assert.Equal(t, app.ContractAvailabilityPersonal, o.Availability)
+				assert.Equal(t, app.ContractAvailabilityPrivate, o.Availability)
 				assert.Equal(t, app.ContractStatusOutstanding, o.Status)
 				assert.Equal(t, app.ContractTypeCourier, o.Type)
 				assert.WithinDuration(t, time.Now().UTC(), o.UpdatedAt, 5*time.Second)
@@ -55,7 +55,7 @@ func TestCharacterContract(t *testing.T) {
 	t.Run("can create new full", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		issuer := factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		issuerCorporation := c.EveCharacter.Corporation
 		dateExpired := time.Now().Add(12 * time.Hour).UTC()
@@ -63,7 +63,7 @@ func TestCharacterContract(t *testing.T) {
 		startLocation := factory.CreateEveLocationStructure()
 		endLocation := factory.CreateEveLocationStructure()
 		arg := storage.CreateCharacterContractParams{
-			Availability:        app.ContractAvailabilityPersonal,
+			Availability:        app.ContractAvailabilityPrivate,
 			CharacterID:         c.ID,
 			ContractID:          42,
 			DateExpired:         dateExpired,
@@ -84,7 +84,7 @@ func TestCharacterContract(t *testing.T) {
 				assert.Equal(t, id, o.ID)
 				assert.Equal(t, issuer, o.Issuer)
 				assert.Equal(t, dateExpired, o.DateExpired)
-				assert.Equal(t, app.ContractAvailabilityPersonal, o.Availability)
+				assert.Equal(t, app.ContractAvailabilityPrivate, o.Availability)
 				assert.Equal(t, app.ContractStatusOutstanding, o.Status)
 				assert.Equal(t, app.ContractTypeCourier, o.Type)
 				assert.Equal(t, endLocation.ToShort(), o.EndLocation)
@@ -145,7 +145,7 @@ func TestCharacterContract(t *testing.T) {
 	t.Run("can list IDs of existing entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		e1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
 		e2 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
 		e3 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
@@ -175,7 +175,7 @@ func TestCharacterContract(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		now := time.Now().UTC()
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
 		factory.CreateCharacterContract(storage.CreateCharacterContractParams{
 			CharacterID: c.ID,

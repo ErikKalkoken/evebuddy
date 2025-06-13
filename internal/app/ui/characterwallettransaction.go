@@ -51,24 +51,24 @@ type characterWalletTransaction struct {
 	columnSorter   *columnSorter
 	rows           []walletTransactionRow
 	rowsFiltered   []walletTransactionRow
-	selectCategory *iwidget.FilterChipSelect
-	selectClient   *iwidget.FilterChipSelect
-	selectLocation *iwidget.FilterChipSelect
-	selectRegion   *iwidget.FilterChipSelect
-	selectType     *iwidget.FilterChipSelect
+	selectCategory *kxwidget.FilterChipSelect
+	selectClient   *kxwidget.FilterChipSelect
+	selectLocation *kxwidget.FilterChipSelect
+	selectRegion   *kxwidget.FilterChipSelect
+	selectType     *kxwidget.FilterChipSelect
 	sortButton     *sortButton
 	u              *baseUI
 }
 
 func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 	headers := []headerDef{
-		{Text: "Date", Width: 150},
-		{Text: "Quantity", Width: 130},
-		{Text: "Type", Width: 200},
-		{Text: "Unit Price", Width: 200},
-		{Text: "Total", Width: 200},
-		{Text: "Client", Width: 250},
-		{Text: "Where", Width: 350},
+		{Label: "Date", Width: 150},
+		{Label: "Quantity", Width: 130},
+		{Label: "Type", Width: 200},
+		{Label: "Unit Price", Width: 200},
+		{Label: "Total", Width: 200},
+		{Label: "Client", Width: 250},
+		{Label: "Where", Width: 350},
 	}
 	a := &characterWalletTransaction{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortDesc),
@@ -121,10 +121,10 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, a.showEntry)
 	}
 
-	a.selectCategory = iwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
+	a.selectCategory = kxwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
-	a.selectClient = iwidget.NewFilterChipSelectWithSearch(
+	a.selectClient = kxwidget.NewFilterChipSelectWithSearch(
 		"Client",
 		[]string{},
 		func(_ string) {
@@ -132,7 +132,7 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 		},
 		a.u.window,
 	)
-	a.selectLocation = iwidget.NewFilterChipSelectWithSearch(
+	a.selectLocation = kxwidget.NewFilterChipSelectWithSearch(
 		"Location",
 		[]string{},
 		func(_ string) {
@@ -140,7 +140,7 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 		},
 		a.u.window,
 	)
-	a.selectType = iwidget.NewFilterChipSelectWithSearch(
+	a.selectType = kxwidget.NewFilterChipSelectWithSearch(
 		"Type",
 		[]string{},
 		func(_ string) {
@@ -148,7 +148,7 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 		},
 		a.u.window,
 	)
-	a.selectRegion = iwidget.NewFilterChipSelectWithSearch("Region",
+	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region",
 		[]string{}, func(string) {
 			a.filterRows(-1)
 		},
@@ -334,12 +334,9 @@ func (a *characterWalletTransaction) showEntry(r walletTransactionRow) {
 		x.Wrapping = fyne.TextWrapWord
 		return x
 	}
-	location := iwidget.NewTappableRichText(
-		func() {
-			a.u.ShowLocationInfoWindow(r.locationID)
-		},
-		r.locationDisplay...,
-	)
+	location := iwidget.NewTappableRichText(r.locationDisplay, func() {
+		a.u.ShowLocationInfoWindow(r.locationID)
+	})
 	location.Wrapping = fyne.TextWrapWord
 	client := newTappableLabelWithWrap(r.clientName, func() {
 		a.u.ShowEveEntityInfoWindow(r.client)
@@ -352,7 +349,7 @@ func (a *characterWalletTransaction) showEntry(r walletTransactionRow) {
 			a.u.ShowInfoWindow(app.EveEntityInventoryType, r.typeID)
 		})),
 		widget.NewFormItem("Unit price", widget.NewLabel(r.unitPriceDisplay)),
-		widget.NewFormItem("Total", widget.NewRichText(
+		widget.NewFormItem("Total", iwidget.NewRichText(
 			iwidget.NewRichTextSegmentFromText(
 				r.totalText, widget.RichTextStyle{
 					ColorName: r.totalColor,

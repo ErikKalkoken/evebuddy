@@ -80,7 +80,7 @@ func (iw *infoWindow) showRace(id int32) {
 	iw.show(infoRace, int64(id))
 }
 
-// infowidget defines common functionality for all info widgets.
+// infoWidget defines common functionality for all info widgets.
 type infoWidget interface {
 	fyne.CanvasObject
 	update() error
@@ -194,7 +194,7 @@ func (iw *infoWindow) showZoomWindow(title string, id int32, load func(int32, in
 func (iw *infoWindow) openURL(s string) {
 	x, err := url.ParseRequestURI(s)
 	if err != nil {
-		slog.Error("Construcing URL", "url", s, "error", err)
+		slog.Error("Constructing URL", "url", s, "error", err)
 		return
 	}
 	err = iw.u.App().OpenURL(x)
@@ -204,7 +204,7 @@ func (iw *infoWindow) openURL(s string) {
 	}
 }
 
-func (iw *infoWindow) makeZkillboardIcon(id int32, v infoVariant) *iwidget.TappableIcon {
+func (iw *infoWindow) makeZKillboardIcon(id int32, v infoVariant) *iwidget.TappableIcon {
 	m := map[infoVariant]string{
 		infoAlliance:    "alliance",
 		infoCharacter:   "character",
@@ -406,7 +406,7 @@ func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(3*p),
 				layout.NewSpacer(),
-				a.iw.makeZkillboardIcon(a.id, infoAlliance),
+				a.iw.makeZKillboardIcon(a.id, infoAlliance),
 				a.iw.makeDotlanIcon(a.id, infoAlliance),
 				a.iw.makeEveWhoIcon(a.id, infoAlliance),
 				layout.NewSpacer(),
@@ -609,7 +609,7 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(3*p),
 				layout.NewSpacer(),
-				a.iw.makeZkillboardIcon(a.id, infoCharacter),
+				a.iw.makeZKillboardIcon(a.id, infoCharacter),
 				a.iw.makeEveWhoIcon(a.id, infoCharacter),
 				forums,
 				layout.NewSpacer(),
@@ -825,7 +825,7 @@ func (a *characterInfo) makeRolesTab(roles []app.CharacterRole) (*container.TabI
 		})
 		list.Refresh()
 	}
-	search.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
+	search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		search.SetText("")
 	})
 	rolesTab := container.NewTabItem("Roles", container.NewBorder(search, nil, nil, nil, list))
@@ -864,7 +864,7 @@ func newConstellationInfo(iw *infoWindow, id int32) *constellationInfo {
 }
 
 func (a *constellationInfo) CreateRenderer() fyne.WidgetRenderer {
-	colums := kxlayout.NewColumns(120)
+	columns := kxlayout.NewColumns(120)
 	p := theme.Padding()
 	main := container.NewVBox(
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
@@ -872,7 +872,7 @@ func (a *constellationInfo) CreateRenderer() fyne.WidgetRenderer {
 			widget.NewLabel("Region"),
 		),
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
-			container.New(colums, widget.NewLabel("Region"), a.region),
+			container.New(columns, widget.NewLabel("Region"), a.region),
 		))
 	top := container.NewBorder(nil, nil, container.NewVBox(container.NewPadded(a.logo)), nil, main)
 	c := container.NewBorder(top, nil, nil, nil, a.tabs)
@@ -986,7 +986,7 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(3*p),
 				layout.NewSpacer(),
-				a.iw.makeZkillboardIcon(a.id, infoCorporation),
+				a.iw.makeZKillboardIcon(a.id, infoCorporation),
 				a.iw.makeDotlanIcon(a.id, infoCorporation),
 				a.iw.makeEveWhoIcon(a.id, infoCorporation),
 				layout.NewSpacer(),
@@ -1120,7 +1120,7 @@ func (a *corporationInfo) makeAttributes(o *app.EveCorporation) []attributeItem 
 	if o.TaxRate != 0 {
 		attributes = append(attributes, newAttributeItem("ISK Tax Rate", o.TaxRate))
 	}
-	attributes = append(attributes, newAttributeItem("War Eligability", o.WarEligible))
+	attributes = append(attributes, newAttributeItem("War Eligibility", o.WarEligible))
 	if o.URL != "" {
 		u, err := url.ParseRequestURI(o.URL)
 		if err == nil && u.Host != "" {
@@ -1433,7 +1433,7 @@ func (a *regionInfo) CreateRenderer() fyne.WidgetRenderer {
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(3*p),
 				layout.NewSpacer(),
-				a.iw.makeZkillboardIcon(a.id, infoRegion),
+				a.iw.makeZKillboardIcon(a.id, infoRegion),
 				a.iw.makeDotlanIcon(a.id, infoRegion),
 				layout.NewSpacer(),
 			),
@@ -1539,7 +1539,7 @@ func newSolarSystemInfo(iw *infoWindow, id int32) *solarSystemInfo {
 }
 
 func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
-	colums := kxlayout.NewColumns(120)
+	columns := kxlayout.NewColumns(120)
 	p := theme.Padding()
 	main := container.NewVBox(
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
@@ -1547,9 +1547,9 @@ func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
 			widget.NewLabel("Solar System"),
 		),
 		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
-			container.New(colums, widget.NewLabel("Region"), a.region),
-			container.New(colums, widget.NewLabel("Constellation"), a.constellation),
-			container.New(colums, widget.NewLabel("Security"), a.security),
+			container.New(columns, widget.NewLabel("Region"), a.region),
+			container.New(columns, widget.NewLabel("Constellation"), a.constellation),
+			container.New(columns, widget.NewLabel("Security"), a.security),
 		),
 	)
 	top := container.NewBorder(
@@ -1560,7 +1560,7 @@ func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(3*p),
 				layout.NewSpacer(),
-				a.iw.makeZkillboardIcon(a.id, infoSolarSystem),
+				a.iw.makeZKillboardIcon(a.id, infoSolarSystem),
 				a.iw.makeDotlanIcon(a.id, infoSolarSystem),
 				layout.NewSpacer(),
 			),
@@ -1682,7 +1682,7 @@ type inventoryTypeInfo struct {
 	characterName    *kxwidget.TappableLabel
 	checkIcon        *widget.Icon
 	description      *widget.Label
-	evemarketbrowser *fyne.Container
+	eveMarketBrowser *fyne.Container
 	janice           *fyne.Container
 	tabs             *container.AppTabs
 	typeIcon         *kxwidget.TappableImage
@@ -1716,8 +1716,8 @@ func newInventoryTypeInfo(iw *infoWindow, typeID, characterID int32) *inventoryT
 		a.iw.openURL(fmt.Sprintf("https://evemarketbrowser.com/region/0/type/%d", a.typeID))
 	})
 	emb.SetToolTip("Show on evemarketbrowser.com")
-	a.evemarketbrowser = container.NewStack(canvas.NewRectangle(theme.Color(theme.ColorNameButton)), emb)
-	a.evemarketbrowser.Hide()
+	a.eveMarketBrowser = container.NewStack(canvas.NewRectangle(theme.Color(theme.ColorNameButton)), emb)
+	a.eveMarketBrowser.Hide()
 
 	j := iwidget.NewTappableIcon(icons.JanicePng, func() {
 		a.iw.openURL(fmt.Sprintf("https://janice.e-351.com/i/%d", a.typeID))
@@ -1739,7 +1739,7 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(3*theme.Padding()),
 				layout.NewSpacer(),
-				a.evemarketbrowser,
+				a.eveMarketBrowser,
 				a.janice,
 				layout.NewSpacer(),
 			),
@@ -1769,7 +1769,7 @@ func (a *inventoryTypeInfo) update() error {
 		a.name.SetText(et.Name)
 		a.setTitle(et.Group.Name)
 		if et.IsTradeable() {
-			a.evemarketbrowser.Show()
+			a.eveMarketBrowser.Show()
 			a.janice.Show()
 		}
 		s := et.DescriptionPlain()
@@ -2572,7 +2572,7 @@ type entityItem struct {
 	id           int64
 	category     string
 	text         string                   // text in markdown
-	textSegments []widget.RichTextSegment // takes precendence over text when not empty
+	textSegments []widget.RichTextSegment // takes precedence over text when not empty
 	infoVariant  infoVariant
 }
 
@@ -2655,8 +2655,9 @@ func (w *entityList) CreateRenderer() fyne.WidgetRenderer {
 			return len(w.items)
 		},
 		func() fyne.CanvasObject {
-			category := iwidget.NewLabelWithSize("Category", theme.SizeNameCaptionText)
-			text := widget.NewRichText()
+			category := widget.NewLabel("Category")
+			category.SizeName = theme.SizeNameCaptionText
+			text := iwidget.NewRichText()
 			text.Truncation = fyne.TextTruncateEllipsis
 			icon := widget.NewIcon(theme.InfoIcon())
 			p := theme.Padding()
@@ -2679,19 +2680,18 @@ func (w *entityList) CreateRenderer() fyne.WidgetRenderer {
 			border1 := co.(*fyne.Container).Objects
 			border2 := border1[0].(*fyne.Container).Objects
 			icon := border1[1].(*fyne.Container).Objects[1]
-			category := border2[0].(*fyne.Container).Objects[0].(*iwidget.Label)
+			category := border2[0].(*fyne.Container).Objects[0].(*widget.Label)
 			category.SetText(it.category)
 			if it.infoVariant == infoNotSupported {
 				icon.Hide()
 			} else {
 				icon.Show()
 			}
-			text := border2[1].(*fyne.Container).Objects[0].(*widget.RichText)
+			text := border2[1].(*fyne.Container).Objects[0].(*iwidget.RichText)
 			if len(it.textSegments) != 0 {
-				text.Segments = it.textSegments
-				text.Refresh()
+				text.Set(it.textSegments)
 			} else {
-				text.ParseMarkdown(it.text)
+				text.SetWithText(it.text)
 			}
 		},
 	)

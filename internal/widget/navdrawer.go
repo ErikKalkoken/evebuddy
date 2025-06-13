@@ -27,64 +27,30 @@ const (
 	navSeparator
 )
 
-type NavItem struct {
-	action     func()
-	badge      string
-	content    fyne.CanvasObject
-	icon       fyne.Resource
-	isDisabled bool
-	isSelected bool
-	stackIndex int
-	text       string
-	variant    navItemVariant
-}
-
-func NewNavPage(text string, icon fyne.Resource, content fyne.CanvasObject) *NavItem {
-	it := newNavItem(navPage)
-	it.text = text
-	it.icon = icon
-	it.content = content
-	return it
-}
-
-func NewNavSectionLabel(text string) *NavItem {
-	it := newNavItem(navSectionLabel)
-	it.text = text
-	return it
-}
-
-func NewNavSeparator() *NavItem {
-	return newNavItem(navSeparator)
-}
-
-func newNavItem(variant navItemVariant) *NavItem {
-	it := &NavItem{
-		stackIndex: indexUndefined,
-		variant:    variant,
-	}
-	return it
-}
-
 // Navigation drawers let people switch between UI views on larger devices.
 type NavDrawer struct {
 	widget.DisableableWidget
 
 	MinWidth     float32        // minimum width of the navigation area
 	OnSelectItem func(*NavItem) // called when an item is selected
+	Title        string         // Text of a title. Title will not be rendered if left blank.
 
 	items    []*NavItem
 	list     *widget.List
 	pages    *fyne.Container
 	selected int
-	title    *Label
+	title    *widget.Label
 }
 
-func NewNavDrawer(title string, items ...*NavItem) *NavDrawer {
+func NewNavDrawer(items ...*NavItem) *NavDrawer {
+	label := widget.NewLabel("")
+	label.SizeName = theme.SizeNameSubHeadingText
 	w := &NavDrawer{
 		pages:    container.NewStack(),
 		selected: indexUndefined,
-		title:    NewLabelWithSize(title, theme.SizeNameSubHeadingText),
+		title:    label,
 	}
+	label.Hide()
 	w.ExtendBaseWidget(w)
 	w.list = w.makeList()
 	for _, p := range items {
@@ -118,7 +84,7 @@ func (w *NavDrawer) makeList() *widget.List {
 			spacer := canvas.NewRectangle(color.Transparent)
 			spacer.SetMinSize(fyne.NewSize(p, 1))
 			icon := widget.NewIcon(iconBlankSvg)
-			text := NewLabelWithSize("Template", theme.SizeNameText)
+			text := widget.NewLabel("Template")
 			badge := widget.NewLabel("999+")
 			return container.NewStack(
 				container.New(layout.NewCustomPaddedLayout(0, 0, p, p),
@@ -147,7 +113,7 @@ func (w *NavDrawer) makeList() *widget.List {
 			box := main.(*fyne.Container).Objects[0].(*fyne.Container).Objects
 			spacer := box[0]
 			icon := box[1].(*widget.Icon)
-			title := box[2].(*Label)
+			title := box[2].(*widget.Label)
 			badge := box[4].(*widget.Label)
 			showIcon := func() {
 				var r fyne.Resource
@@ -291,7 +257,8 @@ func (w *NavDrawer) SelectedIndex() int {
 }
 
 func (w *NavDrawer) SetTitle(text string) {
-	w.title.SetText(text)
+	w.Title = text
+	w.Refresh()
 }
 
 func (w *NavDrawer) SetItemBadge(item *NavItem, text string) {
@@ -303,7 +270,21 @@ func (w *NavDrawer) SetItemBadge(item *NavItem, text string) {
 	w.list.RefreshItem(id)
 }
 
+func (w *NavDrawer) Refresh() {
+	w.updateTitle()
+}
+
+func (w *NavDrawer) updateTitle() {
+	if w.Title != "" {
+		w.title.SetText(w.Title)
+		w.title.Show()
+	} else {
+		w.title.Hide()
+	}
+}
+
 func (w *NavDrawer) CreateRenderer() fyne.WidgetRenderer {
+	w.updateTitle()
 	p := theme.Padding()
 	spacer := canvas.NewRectangle(color.Transparent)
 	spacer.SetMinSize(fyne.NewSize(w.MinWidth, 1))
@@ -325,4 +306,42 @@ func (w *NavDrawer) CreateRenderer() fyne.WidgetRenderer {
 			w.pages,
 		))
 	return widget.NewSimpleRenderer(c)
+}
+
+type NavItem struct {
+	action     func()
+	badge      string
+	content    fyne.CanvasObject
+	icon       fyne.Resource
+	isDisabled bool
+	isSelected bool
+	stackIndex int
+	text       string
+	variant    navItemVariant
+}
+
+func NewNavPage(text string, icon fyne.Resource, content fyne.CanvasObject) *NavItem {
+	it := newNavItem(navPage)
+	it.text = text
+	it.icon = icon
+	it.content = content
+	return it
+}
+
+func NewNavSectionLabel(text string) *NavItem {
+	it := newNavItem(navSectionLabel)
+	it.text = text
+	return it
+}
+
+func NewNavSeparator() *NavItem {
+	return newNavItem(navSeparator)
+}
+
+func newNavItem(variant navItemVariant) *NavItem {
+	it := &NavItem{
+		stackIndex: indexUndefined,
+		variant:    variant,
+	}
+	return it
 }

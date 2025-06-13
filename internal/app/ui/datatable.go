@@ -30,16 +30,16 @@ const (
 )
 
 type headerDef struct {
+	Label       string
 	NotSortable bool
 	Refresh     bool
-	Text        string
 	Width       float32
 }
 
 func maxHeaderWidth(headers []headerDef) float32 {
 	var m float32
 	for _, h := range headers {
-		l := widget.NewLabel(h.Text)
+		l := widget.NewLabel(h.Label)
 		m = max(l.MinSize().Width, m)
 	}
 	return m
@@ -59,10 +59,10 @@ func makeDataTable[S ~[]E, E any](
 			return len(*data), len(headers)
 		},
 		func() fyne.CanvasObject {
-			return widget.NewRichText()
+			return iwidget.NewRichText()
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			cell := co.(*widget.RichText)
+			cell := co.(*iwidget.RichText)
 			if tci.Row >= len(*data) || tci.Row < 0 {
 				return
 			}
@@ -97,7 +97,7 @@ func makeDataTable[S ~[]E, E any](
 
 		dir := columnSorter.column(tci.Col)
 		if dir == sortNone {
-			label.SetText(h.Text)
+			label.SetText(h.Label)
 			label.Show()
 			actionLabel.Hide()
 			icon.Hide()
@@ -106,7 +106,7 @@ func makeDataTable[S ~[]E, E any](
 		actionLabel.OnTapped = func() {
 			filterRows(tci.Col)
 		}
-		actionLabel.SetText(h.Text)
+		actionLabel.SetText(h.Label)
 		actionLabel.Show()
 		icon.Show()
 		label.Hide()
@@ -151,7 +151,7 @@ func makeDataList[S ~[]E, E any](
 			rowLayout := kxlayout.NewColumns(maxHeaderWidth(headers) + theme.Padding())
 			c := container.New(layout.NewCustomPaddedVBoxLayout(0))
 			for _, h := range headers {
-				row := container.New(rowLayout, widget.NewLabel(h.Text), widget.NewRichText())
+				row := container.New(rowLayout, widget.NewLabel(h.Label), iwidget.NewRichText())
 				bg := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
 				bg.Hide()
 				c.Add(container.NewStack(bg, row))
@@ -167,7 +167,7 @@ func makeDataList[S ~[]E, E any](
 			r := (*data)[id]
 			for col := range len(headers) {
 				row := f[col*2].(*fyne.Container).Objects[1].(*fyne.Container).Objects
-				data := row[1].(*widget.RichText)
+				data := row[1].(*iwidget.RichText)
 				data.Segments = iwidget.AlignRichTextSegments(fyne.TextAlignTrailing, makeCell(col, r))
 				data.Wrapping = fyne.TextWrapWord
 				bg := f[col*2].(*fyne.Container).Objects[0]
@@ -312,7 +312,7 @@ func (cs *columnSorter) sort(idx int, f func(sortCol int, dir sortDir)) {
 // newSortButton returns a new sortButton.
 func (cs *columnSorter) newSortButton(headers []headerDef, process func(), window fyne.Window, ignoredColumns ...int) *sortButton {
 	sortColumns := xslices.Map(headers, func(h headerDef) string {
-		return h.Text
+		return h.Label
 	})
 	w := &sortButton{
 		sortColumns: sortColumns,
@@ -330,7 +330,7 @@ func (cs *columnSorter) newSortButton(headers []headerDef, process func(), windo
 		var fields []string
 		for i, h := range headers {
 			if !h.NotSortable && !ignored.Contains(i) {
-				fields = append(fields, h.Text)
+				fields = append(fields, h.Label)
 			}
 		}
 		radioCols := widget.NewRadioGroup(fields, nil)

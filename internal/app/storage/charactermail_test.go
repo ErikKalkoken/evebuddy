@@ -14,13 +14,13 @@ import (
 )
 
 func TestCharacterMail(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		f := factory.CreateEveEntity()
 		recipient := factory.CreateEveEntity()
 		label := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
@@ -55,7 +55,7 @@ func TestCharacterMail(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
 			CharacterID: c.ID,
 			IsRead:      false,
@@ -88,7 +88,7 @@ func TestCharacterMail(t *testing.T) {
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		// when
 		_, err := st.GetCharacterMail(ctx, c.ID, 99)
 		// then
@@ -97,7 +97,7 @@ func TestCharacterMail(t *testing.T) {
 	t.Run("can list mail IDs", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		for i := range 3 {
 			factory.CreateCharacterMail(storage.CreateCharacterMailParams{
 				CharacterID: c.ID,
@@ -126,13 +126,13 @@ func TestCharacterMail(t *testing.T) {
 }
 
 func TestFetchUnreadCounts(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can get mail label unread counts", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		corp := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelCorp})
 		inbox := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelInbox})
 		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelAlliance})
@@ -150,7 +150,7 @@ func TestFetchUnreadCounts(t *testing.T) {
 	t.Run("can get mail list unread counts", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		l1 := factory.CreateCharacterMailList(c.ID)
 		factory.CreateCharacterMailList(c.ID)
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
@@ -174,13 +174,13 @@ func TestFetchUnreadCounts(t *testing.T) {
 }
 
 func TestUnreadMailCounts(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("should return correct unread count when mails exists", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		corp := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelCorp})
 		inbox := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelInbox})
 		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelAlliance})
@@ -211,7 +211,7 @@ func TestUnreadMailCounts(t *testing.T) {
 	t.Run("should return null when no mail exists", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		// when
 		r, err := r.GetCharacterMailUnreadCount(ctx, c.ID)
 		if assert.NoError(t, err) {
@@ -221,7 +221,7 @@ func TestUnreadMailCounts(t *testing.T) {
 	t.Run("unread count for all characters", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		character1 := factory.CreateCharacter()
+		character1 := factory.CreateCharacterFull()
 		corp := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: character1.ID, LabelID: app.MailLabelCorp})
 		inbox := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: character1.ID, LabelID: app.MailLabelInbox})
 		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: character1.ID, LabelID: app.MailLabelAlliance})
@@ -243,7 +243,7 @@ func TestUnreadMailCounts(t *testing.T) {
 			IsRead:       true,
 		})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: character1.ID})
-		character2 := factory.CreateCharacter()
+		character2 := factory.CreateCharacterFull()
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: character2.ID, IsRead: false})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: character2.ID, IsRead: true})
 		// when
@@ -255,13 +255,13 @@ func TestUnreadMailCounts(t *testing.T) {
 }
 
 func TestMailCounts(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("character has mail", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		character := factory.CreateCharacter()
+		character := factory.CreateCharacterFull()
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: character.ID, IsRead: false})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: character.ID, IsRead: true})
 		factory.CreateCharacterMail()
@@ -274,7 +274,7 @@ func TestMailCounts(t *testing.T) {
 	t.Run("character has no mail", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		character := factory.CreateCharacter()
+		character := factory.CreateCharacterFull()
 		factory.CreateCharacterMail()
 		// when
 		got, err := r.GetCharacterMailCount(ctx, character.ID)

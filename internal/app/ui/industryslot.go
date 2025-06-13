@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -41,7 +42,7 @@ type industrySlots struct {
 	rows            []industrySlotRow
 	rowsFiltered    []industrySlotRow
 	totals          industrySlotRow
-	selectFreeSlots *iwidget.FilterChipSelect
+	selectFreeSlots *kxwidget.FilterChipSelect
 	slotType        app.IndustryJobType
 	sortButton      *sortButton
 	u               *baseUI
@@ -50,11 +51,11 @@ type industrySlots struct {
 func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	const columnWidthNumber = 75
 	headers := []headerDef{
-		{Text: "Character", Width: columnWidthCharacter},
-		{Text: "Busy", Width: columnWidthNumber},
-		{Text: "Ready", Width: columnWidthNumber},
-		{Text: "Free", Width: columnWidthNumber},
-		{Text: "Total", Width: columnWidthNumber},
+		{Label: "Character", Width: columnWidthCharacter},
+		{Label: "Busy", Width: columnWidthNumber},
+		{Label: "Ready", Width: columnWidthNumber},
+		{Label: "Free", Width: columnWidthNumber},
+		{Label: "Total", Width: columnWidthNumber},
 	}
 	a := &industrySlots{
 		bottom:       makeTopLabel(),
@@ -128,7 +129,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 		a.body = a.makeDataList(headers, makeCell)
 	}
 
-	a.selectFreeSlots = iwidget.NewFilterChipSelect("Free slots", []string{
+	a.selectFreeSlots = kxwidget.NewFilterChipSelect("Free slots", []string{
 		slotsFreeSome,
 		slotsFreeNone,
 	}, func(string) {
@@ -158,14 +159,14 @@ func (a *industrySlots) makeDataList(headers []headerDef, makeCell func(col int,
 			return len(a.rowsFiltered), 4
 		},
 		func() fyne.CanvasObject {
-			return widget.NewRichText()
+			return iwidget.NewRichText()
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
 			if tci.Row >= len(a.rowsFiltered) {
 				return
 			}
 			r := a.rowsFiltered[tci.Row]
-			iwidget.SetRichText(co.(*widget.RichText), makeCell(tci.Col, r)...)
+			co.(*iwidget.RichText).Set(makeCell(tci.Col, r))
 		},
 	)
 	w.ShowHeaderRow = true
@@ -174,7 +175,7 @@ func (a *industrySlots) makeDataList(headers []headerDef, makeCell func(col int,
 		return widget.NewLabel("")
 	}
 	w.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		co.(*widget.Label).SetText(headers[tci.Col].Text)
+		co.(*widget.Label).SetText(headers[tci.Col].Label)
 	}
 	for id, width := range map[int]float32{
 		0: 175,

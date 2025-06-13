@@ -52,8 +52,8 @@ func (f Factory) RandomTime() time.Time {
 	return time.Now().Add(-d).UTC()
 }
 
-func (f Factory) CreateCharacter(args ...storage.CreateCharacterParams) *app.Character {
-	ctx := context.Background()
+// CreateCharacterMinimal creates and returns a new character. Empty optional values are not filled.
+func (f Factory) CreateCharacterMinimal(args ...storage.CreateCharacterParams) *app.Character {
 	var arg storage.CreateCharacterParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -62,12 +62,40 @@ func (f Factory) CreateCharacter(args ...storage.CreateCharacterParams) *app.Cha
 		c := f.CreateEveCharacter()
 		arg.ID = c.ID
 	}
+	ctx := context.Background()
+	err := f.st.CreateCharacter(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	c, err := f.st.GetCharacter(ctx, arg.ID)
+	if err != nil {
+		panic(err)
+	}
+	return c
+}
+
+// CreateCharacterFull creates and returns a new character. Empty optionals are filled with random values.
+func (f Factory) CreateCharacterFull(args ...storage.CreateCharacterParams) *app.Character {
+	var arg storage.CreateCharacterParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ID == 0 {
+		c := f.CreateEveCharacter()
+		arg.ID = c.ID
+	}
+	if arg.AssetValue.IsEmpty() {
+		arg.AssetValue = optional.From(rand.Float64() * 100_000_000_000)
+	}
 	if arg.HomeID.IsEmpty() {
 		x := f.CreateEveLocationStructure()
 		arg.HomeID = optional.From(x.ID)
 	}
+	if arg.LastCloneJumpAt.IsEmpty() {
+		arg.LastCloneJumpAt = optional.From(time.Now().Add(-time.Duration(rand.IntN(10)) * time.Hour * 24).UTC())
+	}
 	if arg.LastLoginAt.IsEmpty() {
-		arg.LastLoginAt = optional.From(time.Now())
+		arg.LastLoginAt = optional.From(time.Now().Add(-time.Duration(rand.IntN(10)) * time.Hour * 24).UTC())
 	}
 	if arg.LocationID.IsEmpty() {
 		x := f.CreateEveLocationStructure()
@@ -80,12 +108,13 @@ func (f Factory) CreateCharacter(args ...storage.CreateCharacterParams) *app.Cha
 	if arg.TotalSP.IsEmpty() {
 		arg.TotalSP = optional.From(rand.IntN(100_000_000))
 	}
+	if arg.UnallocatedSP.IsEmpty() {
+		arg.UnallocatedSP = optional.From(rand.IntN(10_000_000))
+	}
 	if arg.WalletBalance.IsEmpty() {
 		arg.WalletBalance = optional.From(rand.Float64() * 100_000_000_000)
 	}
-	if arg.AssetValue.IsEmpty() {
-		arg.AssetValue = optional.From(rand.Float64() * 100_000_000_000)
-	}
+	ctx := context.Background()
 	err := f.st.CreateCharacter(ctx, arg)
 	if err != nil {
 		panic(err)
@@ -107,7 +136,7 @@ func (f Factory) CreateCharacterAttributes(args ...storage.UpdateOrCreateCharact
 		arg = args[0]
 	}
 	if arg.CharacterID == 0 {
-		x := f.CreateCharacter()
+		x := f.CreateCharacterFull()
 		arg.CharacterID = x.ID
 	}
 	if arg.Charisma == 0 {
@@ -142,7 +171,7 @@ func (f Factory) CreateCharacterAsset(args ...storage.CreateCharacterAssetParams
 		arg = args[0]
 	}
 	if arg.CharacterID == 0 {
-		x := f.CreateCharacter()
+		x := f.CreateCharacterFull()
 		arg.CharacterID = x.ID
 	}
 	if arg.EveTypeID == 0 {
@@ -192,7 +221,7 @@ func (f Factory) CreateCharacterContract(args ...storage.CreateCharacterContract
 		arg.Availability = app.ContractAvailabilityPublic
 	}
 	if arg.CharacterID == 0 {
-		x := f.CreateCharacter()
+		x := f.CreateCharacterFull()
 		arg.CharacterID = x.ID
 	}
 	if arg.ContractID == 0 {
@@ -347,7 +376,7 @@ func (f Factory) CreateCharacterImplant(args ...storage.CreateCharacterImplantPa
 		arg = args[0]
 	}
 	if arg.CharacterID == 0 {
-		x := f.CreateCharacter()
+		x := f.CreateCharacterFull()
 		arg.CharacterID = x.ID
 	}
 	if arg.EveTypeID == 0 {
@@ -373,7 +402,7 @@ func (f Factory) CreateCharacterIndustryJob(args ...storage.UpdateOrCreateCharac
 	}
 	var character *app.Character
 	if arg.CharacterID == 0 {
-		character = f.CreateCharacter()
+		character = f.CreateCharacterFull()
 		arg.CharacterID = character.ID
 	} else {
 		x, err := f.st.GetCharacter(ctx, arg.CharacterID)
@@ -470,7 +499,7 @@ func (f Factory) CreateCharacterJumpClone(args ...storage.CreateCharacterJumpClo
 		arg = args[0]
 	}
 	if arg.CharacterID == 0 {
-		x := f.CreateCharacter()
+		x := f.CreateCharacterFull()
 		arg.CharacterID = x.ID
 	}
 	if arg.JumpCloneID == 0 {
@@ -509,7 +538,7 @@ func (f Factory) CreateCharacterMail(args ...storage.CreateCharacterMailParams) 
 		arg = args[0]
 	}
 	if arg.CharacterID == 0 {
-		c := f.CreateCharacter()
+		c := f.CreateCharacterFull()
 		arg.CharacterID = c.ID
 	}
 	if arg.FromID == 0 {
@@ -530,7 +559,7 @@ func (f Factory) CreateCharacterMail(args ...storage.CreateCharacterMailParams) 
 		arg.Subject = fake.Sentence()
 	}
 	if arg.Timestamp.IsZero() {
-		arg.Timestamp = time.Now()
+		arg.Timestamp = time.Now().UTC()
 	}
 	if len(arg.RecipientIDs) == 0 {
 		e1 := f.CreateEveEntityCharacter()
@@ -561,7 +590,7 @@ func (f Factory) CreateCharacterMailLabel(args ...app.CharacterMailLabel) *app.C
 		}
 	}
 	if arg.CharacterID == 0 {
-		c := f.CreateCharacter()
+		c := f.CreateCharacterFull()
 		arg.CharacterID = c.ID
 	}
 	if arg.LabelID == 0 {
@@ -591,7 +620,7 @@ func (f Factory) CreateCharacterMailList(characterID int32, args ...app.EveEntit
 		e = args[0]
 	}
 	if characterID == 0 {
-		c := f.CreateCharacter()
+		c := f.CreateCharacterFull()
 		characterID = c.ID
 	}
 	if e.ID == 0 {
@@ -610,7 +639,7 @@ func (f Factory) CreateCharacterPlanet(args ...storage.CreateCharacterPlanetPara
 		arg = args[0]
 	}
 	if arg.CharacterID == 0 {
-		x := f.CreateCharacter()
+		x := f.CreateCharacterFull()
 		arg.CharacterID = x.ID
 	}
 	if arg.EvePlanetID == 0 {
@@ -679,7 +708,7 @@ func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSki
 		arg = args[0]
 	}
 	if arg.CharacterID == 0 {
-		x := f.CreateCharacter()
+		x := f.CreateCharacterFull()
 		arg.CharacterID = x.ID
 	}
 	if arg.EveTypeID == 0 {
@@ -717,7 +746,7 @@ func (f Factory) CreateCharacterSkillqueueItem(args ...storage.SkillqueueItemPar
 		arg.EveTypeID = x.ID
 	}
 	if arg.CharacterID == 0 {
-		x := f.CreateCharacter()
+		x := f.CreateCharacterFull()
 		arg.CharacterID = x.ID
 	}
 	if arg.FinishedLevel == 0 {
@@ -745,7 +774,7 @@ func (f Factory) CreateCharacterSkillqueueItem(args ...storage.SkillqueueItemPar
 			panic(err)
 		}
 		if !v.Valid {
-			arg.StartDate = time.Now()
+			arg.StartDate = time.Now().UTC()
 		} else {
 			maxFinishDate, err := time.Parse("2006-01-02 15:04:05.999999999-07:00", v.String)
 			if err != nil {
@@ -782,13 +811,13 @@ func (f Factory) CreateCharacterToken(args ...app.CharacterToken) *app.Character
 		t.RefreshToken = fmt.Sprintf("GeneratedRefreshToken#%d", rand.IntN(1000000))
 	}
 	if t.ExpiresAt.IsZero() {
-		t.ExpiresAt = time.Now().Add(time.Minute * 20)
+		t.ExpiresAt = time.Now().Add(time.Minute * 20).UTC()
 	}
 	if t.TokenType == "" {
 		t.TokenType = "Bearer"
 	}
 	if t.CharacterID == 0 {
-		c := f.CreateCharacter()
+		c := f.CreateCharacterFull()
 		t.CharacterID = c.ID
 	}
 	err := f.st.UpdateOrCreateCharacterToken(ctx, &t)
@@ -814,7 +843,7 @@ func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusPara
 		arg = args[0]
 	}
 	if arg.CharacterID == 0 {
-		c := f.CreateCharacter()
+		c := f.CreateCharacterFull()
 		arg.CharacterID = c.ID
 	}
 	if arg.Section == "" {
@@ -824,10 +853,10 @@ func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusPara
 		arg.Data = fmt.Sprintf("content-hash-%d-%s-%s", arg.CharacterID, arg.Section, time.Now())
 	}
 	if arg.CompletedAt.IsZero() {
-		arg.CompletedAt = time.Now()
+		arg.CompletedAt = time.Now().UTC()
 	}
 	if arg.StartedAt.IsZero() {
-		arg.StartedAt = time.Now().Add(-1 * time.Duration(rand.IntN(60)) * time.Second)
+		arg.StartedAt = time.Now().Add(-1 * time.Duration(rand.IntN(60)) * time.Second).UTC()
 	}
 	hash, err := calcContentHash(arg.Data)
 	if err != nil {
@@ -855,7 +884,7 @@ func (f Factory) CreateCharacterWalletJournalEntry(args ...storage.CreateCharact
 		arg = args[0]
 	}
 	if arg.CharacterID == 0 {
-		x := f.CreateCharacter()
+		x := f.CreateCharacterFull()
 		arg.CharacterID = x.ID
 	}
 	if arg.RefID == 0 {
@@ -874,7 +903,7 @@ func (f Factory) CreateCharacterWalletJournalEntry(args ...storage.CreateCharact
 		arg.Balance = rand.Float64() * 100_000_000_000
 	}
 	if arg.Date.IsZero() {
-		arg.Date = time.Now()
+		arg.Date = time.Now().UTC()
 	}
 	if arg.Description == "" {
 		arg.Description = fake.Sentence()
@@ -922,7 +951,7 @@ func (f Factory) CreateCharacterWalletTransaction(args ...storage.CreateCharacte
 		arg.ClientID = x.ID
 	}
 	if arg.Date.IsZero() {
-		arg.Date = time.Now()
+		arg.Date = time.Now().UTC()
 	}
 	if arg.EveTypeID == 0 {
 		x := f.CreateEveType()
@@ -933,7 +962,7 @@ func (f Factory) CreateCharacterWalletTransaction(args ...storage.CreateCharacte
 		arg.LocationID = x.ID
 	}
 	if arg.CharacterID == 0 {
-		x := f.CreateCharacter()
+		x := f.CreateCharacterFull()
 		arg.CharacterID = x.ID
 	}
 	if arg.TransactionID == 0 {
@@ -973,7 +1002,7 @@ func (f Factory) CreateCharacterNotification(args ...storage.CreateCharacterNoti
 		arg = args[0]
 	}
 	if arg.CharacterID == 0 {
-		x := f.CreateCharacter()
+		x := f.CreateCharacterFull()
 		arg.CharacterID = x.ID
 	}
 	if arg.NotificationID == 0 {
@@ -1137,10 +1166,10 @@ func (f Factory) CreateCorporationSectionStatus(args ...CorporationSectionStatus
 		arg.Data = fmt.Sprintf("content-hash-%d-%s-%s", arg.CorporationID, arg.Section, time.Now())
 	}
 	if arg.CompletedAt.IsZero() {
-		arg.CompletedAt = time.Now()
+		arg.CompletedAt = time.Now().UTC()
 	}
 	if arg.StartedAt.IsZero() {
-		arg.StartedAt = time.Now().Add(-1 * time.Duration(rand.IntN(60)) * time.Second)
+		arg.StartedAt = time.Now().Add(-1 * time.Duration(rand.IntN(60)) * time.Second).UTC()
 	}
 	hash, err := calcContentHash(arg.Data)
 	if err != nil {
@@ -1179,7 +1208,7 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *a
 		arg.CorporationID = c.ID
 	}
 	if arg.Birthday.IsZero() {
-		arg.Birthday = time.Now()
+		arg.Birthday = time.Now().UTC().Add(-time.Duration(rand.IntN(10000)) * time.Hour * 24)
 	}
 	if arg.Description == "" {
 		arg.Description = fake.Paragraphs()
@@ -1219,7 +1248,7 @@ func (f Factory) CreateEveCorporation(args ...storage.UpdateOrCreateEveCorporati
 		arg.CreatorID.Set(c.ID)
 	}
 	if arg.DateFounded.IsEmpty() {
-		arg.DateFounded = optional.From(time.Now().Add(-100 * time.Hour))
+		arg.DateFounded = optional.From(time.Now().Add(-100 * time.Hour).UTC())
 	}
 	if arg.Description == "" {
 		arg.Description = fake.Paragraphs()
@@ -1259,10 +1288,10 @@ func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) 
 		arg.Data = fmt.Sprintf("content-hash-%s-%s", arg.Section, time.Now())
 	}
 	if arg.CompletedAt.IsZero() {
-		arg.CompletedAt = time.Now()
+		arg.CompletedAt = time.Now().UTC()
 	}
 	if arg.StartedAt.IsZero() {
-		arg.StartedAt = time.Now().Add(-1 * time.Duration(rand.IntN(60)) * time.Second)
+		arg.StartedAt = time.Now().Add(-1 * time.Duration(rand.IntN(60)) * time.Second).UTC()
 	}
 	hash, err := calcContentHash(arg.Data)
 	if err != nil {
@@ -1777,15 +1806,15 @@ func (f Factory) createEveLocationStructure(startID int64, categoryID int32, isE
 	if arg.Name == "" {
 		arg.Name = fake.Color() + " " + fake.Brand()
 	}
-	if !isEmpty && arg.EveSolarSystemID.IsEmpty() {
+	if !isEmpty && arg.SolarSystemID.IsEmpty() {
 		x := f.CreateEveSolarSystem()
-		arg.EveSolarSystemID = optional.From(x.ID)
+		arg.SolarSystemID = optional.From(x.ID)
 	}
 	if !isEmpty && arg.OwnerID.IsEmpty() {
 		x := f.CreateEveEntityCorporation()
 		arg.OwnerID = optional.From(x.ID)
 	}
-	if !isEmpty && arg.EveTypeID.IsEmpty() {
+	if !isEmpty && arg.TypeID.IsEmpty() {
 		ec, err := f.st.GetEveCategory(ctx, categoryID)
 		if err != nil {
 			if errors.Is(err, app.ErrNotFound) {
@@ -1796,10 +1825,10 @@ func (f Factory) createEveLocationStructure(startID int64, categoryID int32, isE
 		}
 		eg := f.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: ec.ID})
 		et := f.CreateEveType(storage.CreateEveTypeParams{GroupID: eg.ID})
-		arg.EveTypeID = optional.From(et.ID)
+		arg.TypeID = optional.From(et.ID)
 	}
 	if arg.UpdatedAt.IsZero() {
-		arg.UpdatedAt = time.Now()
+		arg.UpdatedAt = time.Now().UTC()
 	}
 	err := f.st.UpdateOrCreateEveLocation(ctx, arg)
 	if err != nil {
@@ -1843,7 +1872,7 @@ func (f *Factory) CreateToken(args ...app.Token) *app.Token {
 		AccessToken:   "AccessToken",
 		CharacterID:   42,
 		CharacterName: "Bruce Wayne",
-		ExpiresAt:     time.Now().Add(20 * time.Minute),
+		ExpiresAt:     time.Now().Add(20 * time.Minute).UTC(),
 		RefreshToken:  "RefreshToken",
 		Scopes:        []string{},
 		TokenType:     "Character",

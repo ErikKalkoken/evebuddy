@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -33,8 +34,8 @@ type locations struct {
 	columnSorter      *columnSorter
 	rows              []locationRow
 	rowsFiltered      []locationRow
-	selectRegion      *iwidget.FilterChipSelect
-	selectSolarSystem *iwidget.FilterChipSelect
+	selectRegion      *kxwidget.FilterChipSelect
+	selectSolarSystem *kxwidget.FilterChipSelect
 	sortButton        *sortButton
 	bottom            *widget.Label
 	u                 *baseUI
@@ -42,10 +43,10 @@ type locations struct {
 
 func newLocations(u *baseUI) *locations {
 	headers := []headerDef{
-		{Text: "Character", Width: columnWidthCharacter},
-		{Text: "Location", Width: columnWidthLocation},
-		{Text: "Region", Width: columnWidthRegion},
-		{Text: "Ship", Width: 150},
+		{Label: "Character", Width: columnWidthCharacter},
+		{Label: "Location", Width: columnWidthLocation},
+		{Label: "Region", Width: columnWidthRegion},
+		{Label: "Ship", Width: 150},
 	}
 	a := &locations{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
@@ -64,10 +65,19 @@ func newLocations(u *baseUI) *locations {
 				case 0:
 					return iwidget.NewRichTextSegmentFromText(r.characterName)
 				case 1:
+					if r.locationID == 0 {
+						r.locationDisplay = iwidget.NewRichTextSegmentFromText("?")
+					}
 					return r.locationDisplay
 				case 2:
+					if r.regionName == "" {
+						r.regionName = "?"
+					}
 					return iwidget.NewRichTextSegmentFromText(r.regionName)
 				case 3:
+					if r.shipName == "" {
+						r.shipName = "?"
+					}
 					return iwidget.NewRichTextSegmentFromText(r.shipName)
 				}
 				return iwidget.NewRichTextSegmentFromText("?")
@@ -80,10 +90,10 @@ func newLocations(u *baseUI) *locations {
 		a.body = a.makeDataList()
 	}
 
-	a.selectRegion = iwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
+	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
-	a.selectSolarSystem = iwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
+	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
 
@@ -112,7 +122,7 @@ func (a *locations) makeDataList() *widget.List {
 		func() fyne.CanvasObject {
 			title := widget.NewLabelWithStyle("Template", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 			title.Wrapping = fyne.TextWrapWord
-			location := widget.NewRichTextWithText("Template")
+			location := iwidget.NewRichTextWithText("Template")
 			location.Wrapping = fyne.TextWrapWord
 			ship := widget.NewLabel("Template")
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
@@ -128,7 +138,7 @@ func (a *locations) makeDataList() *widget.List {
 			r := a.rowsFiltered[id]
 			c := co.(*fyne.Container).Objects
 			c[0].(*widget.Label).SetText(r.characterName)
-			iwidget.SetRichText(c[1].(*widget.RichText), r.locationDisplay...)
+			c[1].(*iwidget.RichText).Set(r.locationDisplay)
 			c[2].(*widget.Label).SetText(r.shipName)
 			l.SetItemHeight(id, co.(*fyne.Container).MinSize().Height)
 		},
@@ -228,18 +238,20 @@ func (*locations) fetchData(s services) ([]locationRow, error) {
 	}
 	rows := make([]locationRow, 0)
 	for _, c := range characters {
-		if c.EveCharacter == nil || c.Location == nil {
+		if c.EveCharacter == nil {
 			continue
 		}
 		r := locationRow{
-			characterName:   c.EveCharacter.Name,
-			locationDisplay: c.Location.DisplayRichText(),
-			locationID:      c.Location.ID,
-			locationName:    c.Location.DisplayName(),
+			characterName: c.EveCharacter.Name,
 		}
-		if c.Location.SolarSystem != nil {
-			r.regionName = c.Location.SolarSystem.Constellation.Region.Name
-			r.solarSystemName = c.Location.SolarSystem.Name
+		if c.Location != nil {
+			r.locationDisplay = c.Location.DisplayRichText()
+			r.locationID = c.Location.ID
+			r.locationName = c.Location.DisplayName()
+			if c.Location.SolarSystem != nil {
+				r.regionName = c.Location.SolarSystem.Constellation.Region.Name
+				r.solarSystemName = c.Location.SolarSystem.Name
+			}
 		}
 		if c.Ship != nil {
 			r.shipName = c.Ship.Name

@@ -11,7 +11,7 @@ import (
 )
 
 func TestEveGroup(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new and get", func(t *testing.T) {

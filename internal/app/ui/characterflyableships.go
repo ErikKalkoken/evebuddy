@@ -16,6 +16,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/anthonynsimon/bild/effect"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -23,8 +24,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 const (
@@ -35,10 +34,10 @@ const (
 type characterFlyableShips struct {
 	widget.BaseWidget
 
-	flyableSelect   *iwidget.FilterChipSelect
+	flyableSelect   *kxwidget.FilterChipSelect
 	flyableSelected string
 	grid            *widget.GridWrap
-	groupSelect     *iwidget.FilterChipSelect
+	groupSelect     *kxwidget.FilterChipSelect
 	groupSelected   string
 	searchBox       *widget.Entry
 	ships           []*app.CharacterShipAbility
@@ -58,7 +57,7 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 
 	a.searchBox = widget.NewEntry()
 	a.searchBox.SetPlaceHolder("Search ships")
-	a.searchBox.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
+	a.searchBox.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.searchBox.SetText("")
 	})
 	a.searchBox.OnChanged = func(s string) {
@@ -72,7 +71,7 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 		a.grid.ScrollToTop()
 	}
 
-	a.groupSelect = iwidget.NewFilterChipSelectWithSearch("Class", []string{}, func(s string) {
+	a.groupSelect = kxwidget.NewFilterChipSelectWithSearch("Class", []string{}, func(s string) {
 		a.groupSelected = s
 		if err := a.updateEntries(); err != nil {
 			a.u.ShowErrorDialog("Failed to update ships", err, a.u.MainWindow())
@@ -81,7 +80,7 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 		a.grid.ScrollToTop()
 	}, a.u.window)
 
-	a.flyableSelect = iwidget.NewFilterChipSelect("Flyable", []string{}, func(s string) {
+	a.flyableSelect = kxwidget.NewFilterChipSelect("Flyable", []string{}, func(s string) {
 		a.flyableSelected = s
 		if err := a.updateEntries(); err != nil {
 			a.u.ShowErrorDialog("Failed to update ships", err, a.u.MainWindow())

@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -106,7 +107,7 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 	if !u.isDesktop {
 		sections := container.NewBorder(a.top2, nil, nil, nil, a.sectionList)
 		details := container.NewBorder(a.top3, nil, nil, nil, a.details)
-		menu := iwidget.NewIconButtonWithMenu(
+		menu := kxwidget.NewIconButtonWithMenu(
 			theme.MoreVerticalIcon(),
 			fyne.NewMenu("", fyne.NewMenuItem(a.updateAllSections.Text, a.makeUpdateAllAction())),
 		)
@@ -117,7 +118,7 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 		}
 		a.onSectionSelected = func(id int) {
 			s := a.sections[id]
-			menu := iwidget.NewIconButtonWithMenu(
+			menu := kxwidget.NewIconButtonWithMenu(
 				theme.MoreVerticalIcon(),
 				fyne.NewMenu(
 					"", fyne.NewMenuItem(a.updateSection.Text, a.makeUpdateSectionAction(s.EntityID, s.SectionID))),
@@ -145,7 +146,7 @@ func (a *updateStatus) CreateRenderer() fyne.WidgetRenderer {
 	updateEntities := iwidget.NewContextMenuButton("Force update all entities", updateMenu)
 	var c fyne.CanvasObject
 	if !a.u.isDesktop {
-		ab := iwidget.NewAppBar("Home", a.entities, iwidget.NewIconButtonWithMenu(
+		ab := iwidget.NewAppBar("Home", a.entities, kxwidget.NewIconButtonWithMenu(
 			theme.MoreVerticalIcon(),
 			updateMenu,
 		))

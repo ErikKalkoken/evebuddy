@@ -60,13 +60,13 @@ type clones struct {
 	changeOrigin      *widget.Button
 	columnSorter      *columnSorter
 	origin            *app.EveSolarSystem
-	originLabel       *widget.RichText
+	originLabel       *iwidget.RichText
 	routePref         app.EveRoutePreference
 	rows              []cloneRow
 	rowsFiltered      []cloneRow
-	selectOwner       *iwidget.FilterChipSelect
-	selectRegion      *iwidget.FilterChipSelect
-	selectSolarSystem *iwidget.FilterChipSelect
+	selectOwner       *kxwidget.FilterChipSelect
+	selectRegion      *kxwidget.FilterChipSelect
+	selectSolarSystem *kxwidget.FilterChipSelect
 	sortButton        *sortButton
 	top               *widget.Label
 	u                 *baseUI
@@ -74,15 +74,15 @@ type clones struct {
 
 func newClones(u *baseUI) *clones {
 	headers := []headerDef{
-		{Text: "Location", Width: columnWidthLocation},
-		{Text: "Region", Width: columnWidthRegion, NotSortable: true},
-		{Text: "Impl.", Width: 100},
-		{Text: "Character", Width: columnWidthCharacter},
-		{Text: "Jumps", Width: 100},
+		{Label: "Location", Width: columnWidthLocation},
+		{Label: "Region", Width: columnWidthRegion, NotSortable: true},
+		{Label: "Impl.", Width: 100},
+		{Label: "Character", Width: columnWidthCharacter},
+		{Label: "Jumps", Width: 100},
 	}
 	a := &clones{
 		columnSorter: newColumnSorter(headers),
-		originLabel:  widget.NewRichTextWithText("(not set)"),
+		originLabel:  iwidget.NewRichTextWithText("(not set)"),
 		rows:         make([]cloneRow, 0),
 		rowsFiltered: make([]cloneRow, 0),
 		top:          makeTopLabel(),
@@ -141,15 +141,15 @@ func newClones(u *baseUI) *clones {
 		})
 	}
 
-	a.selectRegion = iwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
+	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
 
-	a.selectSolarSystem = iwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
+	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
 
-	a.selectOwner = iwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
+	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 
@@ -260,9 +260,9 @@ func (a *clones) updateRoutes() {
 		slog.Error("failed to fetch routes", "error", err)
 		fyne.Do(func() {
 			s := "Failed to fetch routes: " + a.u.humanizeError(err)
-			iwidget.SetRichText(a.originLabel, iwidget.NewRichTextSegmentFromText(s, widget.RichTextStyle{
+			a.originLabel.Set(iwidget.NewRichTextSegmentFromText(s, widget.RichTextStyle{
 				ColorName: theme.ColorNameError,
-			})...)
+			}))
 		})
 		return
 	}
@@ -324,18 +324,17 @@ func (a *clones) setOrigin(w fyne.Window) {
 		}
 		a.origin = s
 		a.routePref = app.EveRoutePreferenceFromString(routePref.Selected)
-		a.originLabel.Segments = iwidget.InlineRichTextSegments(
+		a.originLabel.Set(iwidget.InlineRichTextSegments(
 			s.DisplayRichTextWithRegion(),
 			iwidget.NewRichTextSegmentFromText(fmt.Sprintf(" [%s]", a.routePref.String())),
-		)
-		a.originLabel.Refresh()
+		))
 		go a.updateRoutes()
 		d.Hide()
 	}
 	list.HideSeparators = true
 	entry := widget.NewEntry()
 	entry.PlaceHolder = "Type to start searching..."
-	entry.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
+	entry.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		entry.SetText("")
 	})
 	entry.OnChanged = func(search string) {
@@ -459,7 +458,7 @@ func (a *clones) showRoute(r cloneRow) {
 			return len(r.route)
 		},
 		func() fyne.CanvasObject {
-			return container.New(col, widget.NewLabel(""), widget.NewRichText())
+			return container.New(col, widget.NewLabel(""), iwidget.NewRichText())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(r.route) {
@@ -469,9 +468,7 @@ func (a *clones) showRoute(r cloneRow) {
 			border := co.(*fyne.Container).Objects
 			num := border[0].(*widget.Label)
 			num.SetText(fmt.Sprint(id))
-			name := border[1].(*widget.RichText)
-			name.Segments = s.DisplayRichTextWithRegion()
-			name.Refresh()
+			border[1].(*iwidget.RichText).Set(s.DisplayRichTextWithRegion())
 		},
 	)
 	list.HideSeparators = true
@@ -489,28 +486,22 @@ func (a *clones) showRoute(r cloneRow) {
 	if a.origin != nil {
 		fromText = a.origin.DisplayRichTextWithRegion()
 	}
-	from := iwidget.NewTappableRichText(
-		func() {
-			if a.origin != nil {
-				a.u.ShowInfoWindow(app.EveEntitySolarSystem, a.origin.ID)
-			}
-		},
-		fromText...,
-	)
+	from := iwidget.NewTappableRichText(fromText, func() {
+		if a.origin != nil {
+			a.u.ShowInfoWindow(app.EveEntitySolarSystem, a.origin.ID)
+		}
+	})
 	from.Wrapping = fyne.TextWrapWord
 
 	var toText []widget.RichTextSegment
 	if r.jc.Location.SolarSystem != nil {
 		toText = r.jc.Location.SolarSystem.DisplayRichTextWithRegion()
 	}
-	to := iwidget.NewTappableRichText(
-		func() {
-			if r.jc.Location.SolarSystem != nil {
-				a.u.ShowInfoWindow(app.EveEntitySolarSystem, r.jc.Location.SolarSystem.ID)
-			}
-		},
-		toText...,
-	)
+	to := iwidget.NewTappableRichText(toText, func() {
+		if r.jc.Location.SolarSystem != nil {
+			a.u.ShowInfoWindow(app.EveEntitySolarSystem, r.jc.Location.SolarSystem.ID)
+		}
+	})
 	to.Wrapping = fyne.TextWrapWord
 
 	jumps := widget.NewLabel(fmt.Sprintf("%s (%s)", r.jumps(), a.routePref.String()))
@@ -596,11 +587,9 @@ func (a *clones) showClone(r cloneRow) {
 		a.u.ShowInfoWindow(app.EveEntityInventoryType, im.EveType.ID)
 
 	}
-	location := iwidget.NewTappableRichText(
-		func() {
-			a.u.ShowLocationInfoWindow(r.jc.Location.ID)
-		},
-		r.jc.Location.DisplayRichText()...)
+	location := iwidget.NewTappableRichText(r.jc.Location.DisplayRichText(), func() {
+		a.u.ShowLocationInfoWindow(r.jc.Location.ID)
+	})
 	location.Wrapping = fyne.TextWrapWord
 	character := kxwidget.NewTappableLabel(r.jc.Character.Name, func() {
 		a.u.ShowInfoWindow(app.EveEntityCharacter, r.jc.Character.ID)

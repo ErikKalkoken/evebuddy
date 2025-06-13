@@ -17,7 +17,7 @@ import (
 )
 
 func TestInit(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cache := memcache.New()
 	sc := statuscacheservice.New(cache, st)
@@ -27,7 +27,7 @@ func TestInit(t *testing.T) {
 		testutil.TruncateTables(db)
 		cache.Clear()
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Bruce"})
-		c := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
+		c := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: ec.ID})
 		section1 := app.SectionImplants
 		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
@@ -81,7 +81,7 @@ func TestInit(t *testing.T) {
 }
 
 func TestStatusCacheSummary(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cache := memcache.New()
 	sc := statuscacheservice.New(cache, st)
@@ -91,7 +91,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		testutil.TruncateTables(db)
 		cache.Clear()
 		for range 2 {
-			c := factory.CreateCharacter()
+			c := factory.CreateCharacterFull()
 			for _, section := range app.CharacterSections {
 				o := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 					CharacterID:  c.ID,
@@ -139,7 +139,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		cache.Clear()
 		characters := make([]int32, 0)
 		for range 2 {
-			c := factory.CreateCharacter()
+			c := factory.CreateCharacterFull()
 			characters = append(characters, c.ID)
 			for _, section := range app.CharacterSections {
 				o := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
@@ -196,7 +196,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		cache.Clear()
 		corporations := make([]int32, 0)
 		for range 2 {
-			c := factory.CreateCharacter()
+			c := factory.CreateCharacterFull()
 			for _, section := range app.CharacterSections {
 				o := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 					CharacterID:  c.ID,
@@ -252,7 +252,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		testutil.TruncateTables(db)
 		cache.Clear()
 		for range 2 {
-			c := factory.CreateCharacter()
+			c := factory.CreateCharacterFull()
 			for _, section := range app.CharacterSections {
 				o := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 					CharacterID:  c.ID,
@@ -307,7 +307,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		cache.Clear()
 		characterSections := app.CharacterSections[:len(app.CharacterSections)-1]
 		for range 2 {
-			c := factory.CreateCharacter()
+			c := factory.CreateCharacterFull()
 			for _, section := range characterSections {
 				o := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 					CharacterID:  c.ID,
@@ -356,7 +356,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		testutil.TruncateTables(db)
 		cache.Clear()
 		for range 2 {
-			c := factory.CreateCharacter()
+			c := factory.CreateCharacterFull()
 			for _, section := range app.CharacterSections {
 				o := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 					CharacterID:  c.ID,
@@ -404,7 +404,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		testutil.TruncateTables(db)
 		cache.Clear()
 		for range 2 {
-			c := factory.CreateCharacter()
+			c := factory.CreateCharacterFull()
 			for _, section := range app.CharacterSections {
 				o := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 					CharacterID:  c.ID,
@@ -442,7 +442,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		cache.Clear()
 		characters := make([]int32, 0)
 		for range 2 {
-			c := factory.CreateCharacter()
+			c := factory.CreateCharacterFull()
 			characters = append(characters, c.ID)
 			for _, section := range app.CharacterSections {
 				o := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
@@ -485,7 +485,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		testutil.TruncateTables(db)
 		cache.Clear()
 		for range 2 {
-			c := factory.CreateCharacter()
+			c := factory.CreateCharacterFull()
 			for _, section := range app.CharacterSections {
 				o := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 					CharacterID:  c.ID,
@@ -524,7 +524,7 @@ func TestStatusCacheSummary(t *testing.T) {
 }
 
 func TestCharacter(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cache := memcache.New()
 	sc := statuscacheservice.New(cache, st)
@@ -533,7 +533,7 @@ func TestCharacter(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		cache.Clear()
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		// when
 		if err := sc.UpdateCharacters(ctx); err != nil {
 			t.Fatal(err)
@@ -548,8 +548,8 @@ func TestCharacter(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		cache.Clear()
-		c1 := factory.CreateCharacter()
-		c2 := factory.CreateCharacter()
+		c1 := factory.CreateCharacterFull()
+		c2 := factory.CreateCharacterFull()
 		if err := sc.UpdateCharacters(ctx); err != nil {
 			panic(err)
 		}
@@ -562,7 +562,7 @@ func TestCharacter(t *testing.T) {
 }
 
 func TestCorporations(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cache := memcache.New()
 	sc := statuscacheservice.New(cache, st)
@@ -586,7 +586,7 @@ func TestCorporations(t *testing.T) {
 }
 
 func TestCharacterSections(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cache := memcache.New()
 	sc := statuscacheservice.New(cache, st)
@@ -595,7 +595,7 @@ func TestCharacterSections(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		cache.Clear()
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		section := app.SectionImplants
 		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
@@ -617,7 +617,7 @@ func TestCharacterSections(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		cache.Clear()
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		section := app.SectionImplants
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
@@ -636,7 +636,7 @@ func TestCharacterSections(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		cache.Clear()
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     app.SectionAssets,
@@ -661,7 +661,7 @@ func TestCharacterSections(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		cache.Clear()
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
 		}
@@ -680,7 +680,7 @@ func TestCharacterSections(t *testing.T) {
 }
 
 func TestCorporationSections(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cache := memcache.New()
 	sc := statuscacheservice.New(cache, st)
@@ -772,7 +772,7 @@ func TestCorporationSections(t *testing.T) {
 }
 
 func TestGeneralSections(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cache := memcache.New()
 	sc := statuscacheservice.New(cache, st)

@@ -11,13 +11,13 @@ import (
 )
 
 func TestSkillqueueItems(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		eveType := factory.CreateEveType()
 		arg := storage.SkillqueueItemParams{
 			EveTypeID:     eveType.ID,
@@ -38,7 +38,7 @@ func TestSkillqueueItems(t *testing.T) {
 	t.Run("can list items", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
@@ -52,7 +52,7 @@ func TestSkillqueueItems(t *testing.T) {
 	t.Run("can replace items", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
@@ -79,14 +79,14 @@ func TestSkillqueueItems(t *testing.T) {
 }
 
 func TestSkillqueueItemsCalculateTrainingTime(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can calculate total training time", func(t *testing.T) {
 		// given
 		now := time.Now()
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
 			CharacterID: c.ID,
 			StartDate:   now.Add(1 * time.Hour),
@@ -101,7 +101,24 @@ func TestSkillqueueItemsCalculateTrainingTime(t *testing.T) {
 		v, err := r.GetCharacterTotalTrainingTime(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.InDelta(t, 3*time.Hour, v.MustValue(), float64(time.Second*1))
+			assert.InDelta(t, 3*time.Hour, v, float64(time.Second*1))
+		}
+	})
+	t.Run("should return 0 when training is not active", func(t *testing.T) {
+		// given
+		now := time.Now()
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
+			CharacterID: c.ID,
+			StartDate:   now.Add(-3 * time.Hour),
+			FinishDate:  now.Add(-1 * time.Hour),
+		})
+		// when
+		v, err := r.GetCharacterTotalTrainingTime(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.EqualValues(t, 0, v)
 		}
 	})
 }

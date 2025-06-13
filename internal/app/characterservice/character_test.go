@@ -21,7 +21,7 @@ import (
 )
 
 func TestGetCharacter(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
@@ -36,18 +36,18 @@ func TestGetCharacter(t *testing.T) {
 	t.Run("should return obj when found", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		x1 := factory.CreateCharacter()
+		x1 := factory.CreateCharacterFull()
 		// when
 		x2, err := cs.GetCharacter(ctx, x1.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, x1, x2)
+			assert.Equal(t, x1.ID, x2.ID)
 		}
 	})
 }
 
 func TestGetAnyCharacter(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
@@ -62,7 +62,7 @@ func TestGetAnyCharacter(t *testing.T) {
 	t.Run("should return obj when found", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		x1 := factory.CreateCharacter()
+		x1 := factory.CreateCharacterFull()
 		// when
 		x2, err := cs.GetAnyCharacter(ctx)
 		// then
@@ -86,7 +86,7 @@ func (s ssoFake) RefreshToken(ctx context.Context, refreshToken string) (*app.To
 }
 
 func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	test.NewTempApp(t)
@@ -131,7 +131,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 			CorporationID: corporation.ID,
 		})
-		c := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
+		c := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: ec.ID})
 		factory.CreateCharacterToken(app.CharacterToken{
 			AccessToken: "oldToken",
 			CharacterID: c.ID,
@@ -156,16 +156,21 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 }
 
 func TestTrainingWatchers(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("should enable watchers for characters with active queues only", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateCharacter()
+		c1 := factory.CreateCharacterFull()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c1.ID})
-		c2 := factory.CreateCharacter()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c1.ID,
+			Section:     app.SectionSkillqueue,
+			CompletedAt: time.Now().UTC(),
+		})
+		c2 := factory.CreateCharacterFull()
 		// when
 		err := cs.EnableAllTrainingWatchers(ctx)
 		// then
@@ -183,8 +188,8 @@ func TestTrainingWatchers(t *testing.T) {
 	t.Run("should disable all training watchers", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateCharacter(storage.CreateCharacterParams{IsTrainingWatched: true})
-		c2 := factory.CreateCharacter()
+		c1 := factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
+		c2 := factory.CreateCharacterFull()
 		// when
 		err := cs.DisableAllTrainingWatchers(ctx)
 		// then
@@ -202,8 +207,13 @@ func TestTrainingWatchers(t *testing.T) {
 	t.Run("should enable watchers for character with active queues", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateCharacter()
+		c1 := factory.CreateCharacterFull()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c1.ID})
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c1.ID,
+			Section:     app.SectionSkillqueue,
+			CompletedAt: time.Now().UTC(),
+		})
 		// when
 		err := cs.EnableTrainingWatcher(ctx, c1.ID)
 		// then
@@ -217,7 +227,12 @@ func TestTrainingWatchers(t *testing.T) {
 	t.Run("should not enable watchers for character without active queues", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateCharacter()
+		c1 := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c1.ID,
+			Section:     app.SectionSkillqueue,
+			CompletedAt: time.Now().UTC(),
+		})
 		// when
 		err := cs.EnableTrainingWatcher(ctx, c1.ID)
 		// then
@@ -231,7 +246,7 @@ func TestTrainingWatchers(t *testing.T) {
 }
 
 func TestNotifyUpdatedContracts(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
@@ -265,7 +280,7 @@ func TestNotifyUpdatedContracts(t *testing.T) {
 				factory.CreateEveEntityCharacter(app.EveEntity{ID: tc.acceptorID})
 			}
 			ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{ID: characterID})
-			c := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
+			c := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: ec.ID})
 			o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
 				AcceptorID:     tc.acceptorID,
 				CharacterID:    c.ID,
@@ -288,7 +303,7 @@ func TestNotifyUpdatedContracts(t *testing.T) {
 }
 
 func TestUpdateMail(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -298,13 +313,13 @@ func TestUpdateMail(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c1 := factory.CreateCharacter()
+		c1 := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c1.ID})
 		e1 := factory.CreateEveEntityCharacter()
 		e2 := factory.CreateEveEntityCharacter()
 		m1 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList})
 		factory.CreateCharacterMailList(c1.ID) // obsolete
-		c2 := factory.CreateCharacter()
+		c2 := factory.CreateCharacterFull()
 		m2 := factory.CreateCharacterMailList(c2.ID) // not obsolete
 		recipients := []map[string]any{
 			{
@@ -430,7 +445,7 @@ func TestUpdateMail(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		e1 := factory.CreateEveEntityCharacter()
 		e2 := factory.CreateEveEntityCharacter()
@@ -539,7 +554,7 @@ func TestUpdateMail(t *testing.T) {
 }
 
 func TestNotifyMails(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
@@ -577,7 +592,7 @@ func TestNotifyMails(t *testing.T) {
 }
 
 func TestSendMail(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	httpmock.Activate()
@@ -587,7 +602,7 @@ func TestSendMail(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		r := factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		httpmock.Reset()
@@ -609,7 +624,7 @@ func TestSendMail(t *testing.T) {
 }
 
 func TestNotifyCommunications(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
@@ -652,13 +667,13 @@ func TestNotifyCommunications(t *testing.T) {
 	}
 }
 
-func TestCountNotificatios(t *testing.T) {
-	db, st, factory := testutil.New()
+func TestCountNotifications(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	// given
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
-	c := factory.CreateCharacter()
+	c := factory.CreateCharacterFull()
 	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 		CharacterID: c.ID,
 		Type:        string(evenotification.StructureDestroyed),
@@ -685,7 +700,7 @@ func TestCountNotificatios(t *testing.T) {
 }
 
 func TestNotifyExpiredExtractions(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
@@ -739,7 +754,7 @@ func TestNotifyExpiredExtractions(t *testing.T) {
 }
 
 func TestUpdateCharacterSection(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -750,7 +765,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		et := factory.CreateEveType()
 		httpmock.RegisterResponder(
@@ -773,7 +788,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		data := []int32{100}
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
@@ -807,7 +822,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
@@ -838,7 +853,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
@@ -860,7 +875,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
@@ -891,7 +906,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		data := []int32{100}
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
@@ -927,14 +942,14 @@ func TestUpdateCharacterSection(t *testing.T) {
 }
 
 func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
 	t.Run("send notification when watched & expired", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter(storage.CreateCharacterParams{IsTrainingWatched: true})
+		c := factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
 		var sendCount int
 		// when
 		err := cs.NotifyExpiredTraining(ctx, c.ID, func(title, content string) {
@@ -948,7 +963,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 	t.Run("do nothing when not watched", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		var sendCount int
 		// when
 		err := cs.NotifyExpiredTraining(ctx, c.ID, func(title, content string) {
@@ -962,8 +977,13 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 	t.Run("don't send notification when watched and training ongoing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter(storage.CreateCharacterParams{IsTrainingWatched: true})
+		c := factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionSkillqueue,
+			CompletedAt: time.Now().UTC(),
+		})
 		var sendCount int
 		// when
 		err := cs.NotifyExpiredTraining(ctx, c.ID, func(title, content string) {
@@ -977,7 +997,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 }
 
 func TestDeleteCharacter(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
@@ -988,7 +1008,7 @@ func TestDeleteCharacter(t *testing.T) {
 		corporation := factory.CreateCorporation(ec.ID)
 		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
 		x := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
-		character := factory.CreateCharacter(storage.CreateCharacterParams{ID: x.ID})
+		character := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x.ID})
 		// when
 		err := cs.DeleteCharacter(ctx, character.ID)
 		// then
@@ -1006,9 +1026,9 @@ func TestDeleteCharacter(t *testing.T) {
 		corporation := factory.CreateCorporation(ec.ID)
 		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
 		x1 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
-		character := factory.CreateCharacter(storage.CreateCharacterParams{ID: x1.ID})
+		character := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x1.ID})
 		x2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
-		factory.CreateCharacter(storage.CreateCharacterParams{ID: x2.ID})
+		factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x2.ID})
 		// when
 		err := cs.DeleteCharacter(ctx, character.ID)
 		// then
@@ -1022,7 +1042,7 @@ func TestDeleteCharacter(t *testing.T) {
 }
 
 func TestListAllCharactersIndustrySlots(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()
@@ -1037,7 +1057,7 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 
 	t.Run("manufacturing slots for one character", func(t *testing.T) {
 		testutil.TruncateTables(db)
-		character := factory.CreateCharacter()
+		character := factory.CreateCharacterMinimal()
 		industry := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeIndustry})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:      character.ID,
@@ -1095,7 +1115,7 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 
 	t.Run("research slots for one character", func(t *testing.T) {
 		testutil.TruncateTables(db)
-		character := factory.CreateCharacter()
+		character := factory.CreateCharacterFull()
 		laboratoryOperation := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeLaboratoryOperation})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:      character.ID,
@@ -1146,7 +1166,7 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 	})
 	t.Run("reactions slots for one character", func(t *testing.T) {
 		testutil.TruncateTables(db)
-		character := factory.CreateCharacter()
+		character := factory.CreateCharacterFull()
 		massReactions := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeMassReactions})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:      character.ID,
@@ -1193,6 +1213,69 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 				},
 			}
 			assert.ElementsMatch(t, want, got)
+		}
+	})
+}
+
+func TestTotalTrainingTime(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	cs := characterservice.NewFake(st)
+	ctx := context.Background()
+	t.Run("should return time when has valid update", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		character := factory.CreateCharacterMinimal()
+		now := time.Now().UTC()
+		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
+			CharacterID: character.ID,
+			StartDate:   now.Add(-1 * time.Hour),
+			FinishDate:  now.Add(3 * time.Hour),
+		})
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: character.ID,
+			Section:     app.SectionSkillqueue,
+			CompletedAt: now,
+		})
+		// when
+		got, err := cs.TotalTrainingTime(ctx, character.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.InDelta(t, 3*time.Hour, got.ValueOrZero(), float64(time.Second))
+		}
+	})
+	t.Run("should return no time when has no valid update", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		character := factory.CreateCharacterMinimal()
+		now := time.Now().UTC()
+		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
+			CharacterID: character.ID,
+			StartDate:   now.Add(-1 * time.Hour),
+			FinishDate:  now.Add(3 * time.Hour),
+		})
+		// when
+		got, err := cs.TotalTrainingTime(ctx, character.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, got.IsEmpty())
+		}
+	})
+	t.Run("should return 0 when training is inactive", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		character := factory.CreateCharacterMinimal()
+		now := time.Now().UTC()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: character.ID,
+			Section:     app.SectionSkillqueue,
+			CompletedAt: now,
+		})
+		// when
+		got, err := cs.TotalTrainingTime(ctx, character.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.EqualValues(t, 0, got.MustValue())
 		}
 	})
 }

@@ -13,7 +13,7 @@ import (
 )
 
 func TestCorporation(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -75,7 +75,7 @@ func TestCorporation(t *testing.T) {
 }
 
 func TestListOrphanedCorporationIDs(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("orphaned corporation exists", func(t *testing.T) {
@@ -85,7 +85,7 @@ func TestListOrphanedCorporationIDs(t *testing.T) {
 		factory.CreateCorporation(ec.ID)
 		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
 		x := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
-		factory.CreateCharacter(storage.CreateCharacterParams{ID: x.ID})
+		factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x.ID})
 		corporation2 := factory.CreateCorporation()
 		// when
 		got, err := st.ListOrphanedCorporationIDs(ctx)
@@ -102,7 +102,7 @@ func TestListOrphanedCorporationIDs(t *testing.T) {
 		factory.CreateCorporation(ec.ID)
 		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
 		x := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
-		factory.CreateCharacter(storage.CreateCharacterParams{ID: x.ID})
+		factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x.ID})
 		// when
 		got, err := st.ListOrphanedCorporationIDs(ctx)
 		// then

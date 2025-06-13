@@ -25,7 +25,7 @@ const (
 	settingUndefined settingVariant = iota
 	settingCustom
 	settingHeading
-	settingSeperator
+	settingSeparator
 	settingSwitch
 )
 
@@ -45,9 +45,9 @@ func NewSettingItemHeading(label string) SettingItem {
 	return SettingItem{Label: label, variant: settingHeading}
 }
 
-// NewSettingItemSeperator creates a seperator in a setting list.
-func NewSettingItemSeperator() SettingItem {
-	return SettingItem{variant: settingSeperator}
+// NewSettingItemSeparator creates a separator in a setting list.
+func NewSettingItemSeparator() SettingItem {
+	return SettingItem{variant: settingSeparator}
 }
 
 // NewSettingItemSwitch creates a switch setting in a setting list.
@@ -108,7 +108,7 @@ func NewSettingItemSlider(
 			case int:
 				setter(float64(x))
 			default:
-				panic("setting item: unsurported type: " + label)
+				panic("setting item: unsupported type: " + label)
 			}
 		},
 		onSelected: func(it SettingItem, refresh func()) {
@@ -185,12 +185,11 @@ func makeSettingDialog(
 			reset()
 		}),
 	)
+	l := widget.NewLabel(hint)
+	l.SizeName = theme.SizeNameCaptionText
 	c := container.NewBorder(
 		nil,
-		container.NewVBox(
-			NewLabelWithSize(hint, theme.SizeNameCaptionText),
-			buttons,
-		),
+		container.NewVBox(l, buttons),
 		nil,
 		nil,
 		setting,
@@ -226,8 +225,9 @@ func NewSettingList(items []SettingItem) *SettingList {
 		// p := theme.Padding()
 		label := widget.NewLabel("Template")
 		label.Truncation = fyne.TextTruncateClip
-		hint := NewLabelWithSize("", theme.SizeNameCaptionText)
+		hint := widget.NewLabel("")
 		hint.Truncation = fyne.TextTruncateClip
+		hint.SizeName = theme.SizeNameCaptionText
 		c := container.NewPadded(container.NewBorder(
 			nil,
 			container.New(layout.NewCustomPaddedLayout(0, 0, 0, 0), widget.NewSeparator()),
@@ -247,7 +247,7 @@ func NewSettingList(items []SettingItem) *SettingList {
 		sw := right[0].(*kxwidget.Switch)
 		value := right[1].(*widget.Label)
 		main := border[0].(*fyne.Container).Objects
-		hint := main[2].(*Label)
+		hint := main[2].(*widget.Label)
 		if it.Hint != "" {
 			hint.SetText(it.Hint)
 			hint.Show()
@@ -276,7 +276,7 @@ func NewSettingList(items []SettingItem) *SettingList {
 			sw.Hide()
 		}
 		sep := border[1].(*fyne.Container)
-		if it.variant == settingSeperator {
+		if it.variant == settingSeparator {
 			sep.Show()
 			value.Hide()
 			sw.Hide()

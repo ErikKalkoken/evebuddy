@@ -10,6 +10,8 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+
 	"github.com/ErikKalkoken/evebuddy/internal/syncqueue"
 )
 
@@ -23,14 +25,14 @@ type snackbarMessage struct {
 	timeout time.Duration // Duration the snackbar is shown before it disappears on it's own
 }
 
-// Snackbars show short updates about app processes at the bottom of the screen
-// and disapear on their own after a short while. Or after the user clicks on the window to dismiss them.
+// A Snackbar shows short updates about app processes at the bottom of the screen
+// and disappear on their own after a short while. Or after the user clicks on the window to dismiss them.
 //
 // Snackbars are designed to be created once for each window and then re-used. The can be used concurrently.
 //
 // When a snackbar receives several texts at the same time, it will queue them and display them one after the other.
 type Snackbar struct {
-	button    *IconButton
+	button    *kxwidget.IconButton
 	hideC     chan struct{}
 	isRunning atomic.Bool
 	label     *widget.Label
@@ -47,19 +49,19 @@ func NewSnackbar(win fyne.Window) *Snackbar {
 		q:     syncqueue.New[snackbarMessage](),
 		stopC: make(chan struct{}),
 	}
-	sb.button = NewIconButton(theme.WindowCloseIcon(), func() {
+	sb.button = kxwidget.NewIconButton(theme.WindowCloseIcon(), func() {
 		sb.hideC <- struct{}{}
 	})
 	sb.popup = widget.NewPopUp(container.NewBorder(nil, nil, nil, sb.button, sb.label), win.Canvas())
 	return sb
 }
 
-// Show displays a SnackBar with a messsage and the the default timeout.
+// Show displays a SnackBar with a message and the the default timeout.
 func (sb *Snackbar) Show(text string) {
 	sb.q.Put(snackbarMessage{text: text, timeout: snackbarTimeoutDefault})
 }
 
-// Show displays a SnackBar with a messsage and the a custom timeout.
+// Show displays a SnackBar with a message and the a custom timeout.
 func (sb *Snackbar) ShowWithTimeout(text string, timeout time.Duration) {
 	sb.q.Put(snackbarMessage{text: text, timeout: timeout})
 }
@@ -105,7 +107,7 @@ func (sb *Snackbar) Start() {
 	slog.Debug("Snackbar started")
 }
 
-// Stop stopps a running snackbar and allows the gc to clean up it's resources.
+// Stop stops a running snackbar and allows the gc to clean up it's resources.
 func (sb *Snackbar) Stop() {
 	if !sb.isRunning.Load() {
 		return
@@ -122,12 +124,12 @@ func (sb *Snackbar) show(text string) {
 	_, canvasSize := sb.popup.Canvas.InteractiveArea()
 	padding := theme.Padding()
 	bWidth := sb.button.MinSize().Width + 2*padding + shadowWidth
-	maxw := canvasSize.Width - bWidth
+	maxW := canvasSize.Width - bWidth
 	lSize := widget.NewLabel(text).MinSize()
 	var cSize fyne.Size
-	if lSize.Width > maxw {
-		h := lSize.Height * lSize.Width / maxw
-		cSize = fyne.NewSize(maxw, h)
+	if lSize.Width > maxW {
+		h := lSize.Height * lSize.Width / maxW
+		cSize = fyne.NewSize(maxW, h)
 		sb.label.Wrapping = fyne.TextWrapWord
 	} else {
 		cSize = lSize

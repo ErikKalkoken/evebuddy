@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -48,7 +49,7 @@ type trainings struct {
 	columnSorter *columnSorter
 	rows         []trainingRow
 	rowsFiltered []trainingRow
-	selectStatus *iwidget.FilterChipSelect
+	selectStatus *kxwidget.FilterChipSelect
 	sortButton   *sortButton
 	bottom       *widget.Label
 	u            *baseUI
@@ -56,10 +57,10 @@ type trainings struct {
 
 func newTrainings(u *baseUI) *trainings {
 	headers := []headerDef{
-		{Text: "Name", Width: 250},
-		{Text: "SP", Width: 100},
-		{Text: "Unall. SP", Width: 100},
-		{Text: "Training", Width: 100},
+		{Label: "Name", Width: 250},
+		{Label: "SP", Width: 100},
+		{Label: "Unall. SP", Width: 100},
+		{Label: "Training", Width: 100},
 	}
 	a := &trainings{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
@@ -105,7 +106,7 @@ func newTrainings(u *baseUI) *trainings {
 		// a.body = makeDataList(headers, &a.rowsFiltered, makeCell, nil)
 		a.body = a.makeDataList()
 	}
-	a.selectStatus = iwidget.NewFilterChipSelect(
+	a.selectStatus = kxwidget.NewFilterChipSelect(
 		"Status",
 		[]string{
 			trainingStatusActive,
@@ -145,7 +146,7 @@ func (a *trainings) makeDataList() *widget.List {
 		func() fyne.CanvasObject {
 			title := widget.NewLabelWithStyle("Template", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 			title.Wrapping = fyne.TextWrapWord
-			training := widget.NewRichTextWithText("Template")
+			training := iwidget.NewRichTextWithText("Template")
 			sp := widget.NewLabel("Template")
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
 				title,
@@ -160,7 +161,7 @@ func (a *trainings) makeDataList() *widget.List {
 			r := a.rowsFiltered[id]
 			c := co.(*fyne.Container).Objects
 			c[0].(*widget.Label).SetText(r.characterName)
-			iwidget.SetRichText(c[1].(*widget.RichText), r.trainingDisplay...)
+			c[1].(*iwidget.RichText).Set(r.trainingDisplay)
 			c[2].(*widget.Label).SetText(fmt.Sprintf("%s (%s) SP", r.totalSPDisplay, r.unallocatedSPDisplay))
 		},
 	)
@@ -262,12 +263,14 @@ func (*trainings) fetchRows(s services) ([]trainingRow, error) {
 			unallocatedSP:        c.UnallocatedSP,
 			unallocatedSPDisplay: ihumanize.Optional(c.UnallocatedSP, "?"),
 		}
-		x, err := s.cs.GetTotalTrainingTime(ctx, c.ID)
+		trainingTime, err := s.cs.TotalTrainingTime(ctx, c.ID)
 		if err != nil {
 			return nil, err
 		}
-		r.training = x
+		r.training = trainingTime
 		if x := r.training; x.IsEmpty() {
+			r.trainingDisplay = iwidget.NewRichTextSegmentFromText("?")
+		} else if x.ValueOrZero() == 0 {
 			r.trainingDisplay = iwidget.NewRichTextSegmentFromText(
 				"Inactive",
 				widget.RichTextStyle{

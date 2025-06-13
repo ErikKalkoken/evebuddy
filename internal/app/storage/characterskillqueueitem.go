@@ -7,7 +7,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type SkillqueueItemParams struct {
@@ -22,16 +21,17 @@ type SkillqueueItemParams struct {
 	TrainingStartSP int
 }
 
-func (st *Storage) GetCharacterTotalTrainingTime(ctx context.Context, characterID int32) (optional.Optional[time.Duration], error) {
-	var d optional.Optional[time.Duration]
+// GetCharacterTotalTrainingTime returns the total training time for a character.
+// It returns 0 when there is no active training.
+func (st *Storage) GetCharacterTotalTrainingTime(ctx context.Context, characterID int32) (time.Duration, error) {
 	x, err := st.qRO.GetTotalTrainingTime(ctx, int64(characterID))
 	if err != nil {
-		return d, fmt.Errorf("fetching total training time for character %d: %w", characterID, convertGetError(err))
+		return 0, fmt.Errorf("fetching total training time for character %d: %w", characterID, convertGetError(err))
 	}
 	if !x.Valid {
-		return d, nil
+		return 0, nil
 	}
-	d = optional.From(time.Duration(float64(time.Hour) * 24 * x.Float64))
+	d := time.Duration(float64(time.Hour) * 24 * x.Float64)
 	return d, nil
 }
 

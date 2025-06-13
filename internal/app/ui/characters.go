@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -57,8 +58,8 @@ type characters struct {
 	columnSorter      *columnSorter
 	rows              []characterRow
 	rowsFiltered      []characterRow
-	selectAlliance    *iwidget.FilterChipSelect
-	selectCorporation *iwidget.FilterChipSelect
+	selectAlliance    *kxwidget.FilterChipSelect
+	selectCorporation *kxwidget.FilterChipSelect
 	sortButton        *sortButton
 	top               *widget.Label
 	u                 *baseUI
@@ -66,16 +67,16 @@ type characters struct {
 
 func newOverviewCharacters(u *baseUI) *characters {
 	headers := []headerDef{
-		{Text: "Character", Width: columnWidthCharacter},
-		{Text: "Corporation", Width: 250},
-		{Text: "Alliance", Width: 250},
-		{Text: "Sec.", Width: 50},
-		{Text: "Unread", Width: 100},
-		{Text: "Wallet", Width: 100},
-		{Text: "Assets", Width: 100},
-		{Text: "Last Login", Width: 100},
-		{Text: "Home", Width: columnWidthLocation},
-		{Text: "Age", Width: 100},
+		{Label: "Character", Width: columnWidthCharacter},
+		{Label: "Corporation", Width: 250},
+		{Label: "Alliance", Width: 250},
+		{Label: "Sec.", Width: 50},
+		{Label: "Unread", Width: 100},
+		{Label: "Wallet", Width: 100},
+		{Label: "Assets", Width: 100},
+		{Label: "Last Login", Width: 100},
+		{Label: "Home", Width: columnWidthLocation},
+		{Label: "Age", Width: 100},
 	}
 	a := &characters{
 		columnSorter: newColumnSorter(headers),
@@ -136,10 +137,10 @@ func newOverviewCharacters(u *baseUI) *characters {
 		})
 	}
 
-	a.selectAlliance = iwidget.NewFilterChipSelect("Alliance", []string{}, func(string) {
+	a.selectAlliance = kxwidget.NewFilterChipSelect("Alliance", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.selectCorporation = iwidget.NewFilterChipSelect("Corporation", []string{}, func(string) {
+	a.selectCorporation = kxwidget.NewFilterChipSelect("Corporation", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {

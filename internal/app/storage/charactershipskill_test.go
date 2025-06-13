@@ -13,7 +13,7 @@ import (
 )
 
 func TestListCharacterShipsAbilities(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	// given
@@ -22,7 +22,7 @@ func TestListCharacterShipsAbilities(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := factory.CreateCharacter()
+	c := factory.CreateCharacterFull()
 	factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 		ActiveSkillLevel: 1,
 		CharacterID:      c.ID,
@@ -43,7 +43,7 @@ func TestListCharacterShipsAbilities(t *testing.T) {
 }
 
 func TestListCharacterShipsSkills(t *testing.T) {
-	db, st, factory := testutil.New()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	// given
@@ -54,7 +54,7 @@ func TestListCharacterShipsSkills(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := factory.CreateCharacter()
+	c := factory.CreateCharacterFull()
 	factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 		ActiveSkillLevel: 1,
 		CharacterID:      c.ID,

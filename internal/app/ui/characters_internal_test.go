@@ -1,61 +1,115 @@
 package ui
 
-// FIXME
+import (
+	"testing"
+	"time"
 
-// func TestOverviewUpdateCharacters(t *testing.T) {
-// 	db, st, factory := testutil.New()
-// 	defer db.Close()
-// 	u := newUI(st)
-// 	ctx := context.Background()
-// 	t.Run("can update a character", func(t *testing.T) {
-// 		// given
-// 		testutil.TruncateTables(db)
-// 		a := CharacterOverview{
-// 			u: u,
-// 		}
-// 		factory.CreateCharacter()
-// 		// when
-// 		_, err := a.updateCharacters()
-// 		// then
-// 		if assert.NoError(t, err) {
-// 			assert.Len(t, a.rows, 1)
-// 		}
-// 	})
-// 	t.Run("can handle empty location", func(t *testing.T) {
-// 		// given
-// 		testutil.TruncateTables(db)
-// 		a := CharacterOverview{
-// 			u: u,
-// 		}
-// 		if err := st.UpdateOrCreateEveLocation(ctx, storage.UpdateOrCreateLocationParams{
-// 			ID:   99,
-// 			Name: "Dummy",
-// 		}); err != nil {
-// 			t.Fatal(err)
-// 		}
-// 		factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{
-// 			LocationID: optional.New(int64(99)),
-// 		})
-// 		// when
-// 		_, err := a.updateCharacters()
-// 		// then
-// 		if assert.NoError(t, err) {
-// 			assert.Len(t, a.rows, 1)
-// 		}
-// 	})
-// }
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
 
-// func newUI(st *storage.Storage) *BaseUI {
-// 	u := &BaseUI{cs: newCharacterService(st)}
-// 	return u
-// }
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+)
 
-// func newCharacterService(st *storage.Storage) app.CharacterService {
-// 	sc := statuscache.New(memcache.New())
-// 	eu := eveuniverse.New(st, nil)
-// 	eu.StatusCacheService = sc
-// 	s := character.New(st, nil, nil)
-// 	s.EveUniverseService = eu
-// 	s.StatusCacheService = sc
-// 	return s
-// }
+func TestCharacters_CanRenderWithData(t *testing.T) {
+	test.ApplyTheme(t, test.Theme())
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+
+	alliance := factory.CreateEveEntityAlliance(app.EveEntity{
+		Name: "Wayne Inc.",
+	})
+	corporation := factory.CreateEveEntityCorporation(app.EveEntity{
+		Name: "Wayne Technolgy",
+	})
+	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+		AllianceID:     alliance.ID,
+		Birthday:       time.Now().Add(-24 * 365 * 3 * time.Hour),
+		CorporationID:  corporation.ID,
+		Name:           "Bruce Wayne",
+		SecurityStatus: -10.0,
+	})
+	homeSystem := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
+		SecurityStatus: 0.3,
+	})
+	home := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{
+		Name:          "Batcave",
+		SolarSystemID: optional.From(homeSystem.ID),
+	})
+	character := factory.CreateCharacterFull(storage.CreateCharacterParams{
+		AssetValue:    optional.From(12_000_000_000.0),
+		HomeID:        optional.From(home.ID),
+		ID:            ec.ID,
+		WalletBalance: optional.From(23_000_000.0),
+		LastLoginAt:   optional.From(time.Now().Add(-24 * 7 * 2 * time.Hour)),
+	})
+	factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+		CharacterID: character.ID,
+		IsRead:      false,
+	})
+
+	cases := []struct {
+		name      string
+		isDesktop bool
+		filename  string
+		size      fyne.Size
+	}{
+		{"desktop", true, "desktop_full", fyne.NewSize(1700, 300)},
+		{"mobile", false, "mobile_full", fyne.NewSize(500, 800)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ui := NewFakeBaseUI(st, test.NewTempApp(t), tc.isDesktop)
+			w := test.NewWindow(ui.characters)
+			defer w.Close()
+			w.Resize(tc.size)
+
+			ui.characters.update()
+
+			test.AssertImageMatches(t, "characters/"+tc.filename+".png", w.Canvas().Capture())
+		})
+	}
+}
+
+func TestCharacters_CanRenderWitoutData(t *testing.T) {
+	test.ApplyTheme(t, test.Theme())
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+
+	corporation := factory.CreateEveEntityCorporation(app.EveEntity{
+		Name: "Wayne Technolgy",
+	})
+	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+		Birthday:       time.Now().Add(-24 * 365 * 3 * time.Hour),
+		CorporationID:  corporation.ID,
+		Name:           "Bruce Wayne",
+		SecurityStatus: -10.0,
+	})
+	factory.CreateCharacterMinimal(storage.CreateCharacterParams{
+		ID: ec.ID,
+	})
+
+	cases := []struct {
+		name      string
+		isDesktop bool
+		filename  string
+		size      fyne.Size
+	}{
+		{"desktop", true, "desktop_minimal", fyne.NewSize(1700, 300)},
+		{"mobile", false, "mobile_minimal", fyne.NewSize(500, 800)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ui := NewFakeBaseUI(st, test.NewTempApp(t), tc.isDesktop)
+			w := test.NewWindow(ui.characters)
+			defer w.Close()
+			w.Resize(tc.size)
+
+			ui.characters.update()
+
+			test.AssertImageMatches(t, "characters/"+tc.filename+".png", w.Canvas().Capture())
+		})
+	}
+}

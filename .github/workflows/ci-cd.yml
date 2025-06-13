@@ -1,4 +1,5 @@
 # Main workflow for testing and releasing
+# spellchecker: disable
 
 name: CI/CD
 

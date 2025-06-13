@@ -8,6 +8,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -17,9 +18,9 @@ func TestUIStartEmpty(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	httpmock.RegisterNoResponder(httpmock.NewNotFoundResponder(t.Fatal)) // fails on any HTTP request
-	db, st, _ := testutil.NewDBOnDisk(t.TempDir())
+	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	bu := ui.NewFakeBaseUI(st, ui.NewFakeApp(t))
+	bu := ui.NewFakeBaseUI(st, ui.NewFakeApp(t), true)
 	u := ui.NewDesktopUI(bu)
 	go func() {
 		ticker := time.NewTicker(50 * time.Millisecond)
@@ -38,10 +39,10 @@ func TestUIStartWithCharacter(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	httpmock.RegisterNoResponder(httpmock.NewNotFoundResponder(t.Fatal)) // fails on any HTTP request
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 
-	character := factory.CreateCharacter()
+	character := factory.CreateCharacterFull()
 	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: character.ID})
 	factory.CreateCharacterAttributes(storage.UpdateOrCreateCharacterAttributesParams{CharacterID: character.ID})
 	factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: character.ID})
@@ -56,7 +57,7 @@ func TestUIStartWithCharacter(t *testing.T) {
 	factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: character.ID})
 	factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: character.ID})
 
-	bu := ui.NewFakeBaseUI(st, ui.NewFakeApp(t))
+	bu := ui.NewFakeBaseUI(st, ui.NewFakeApp(t), true)
 	u := ui.NewDesktopUI(bu)
 	go func() {
 		ticker := time.NewTicker(50 * time.Millisecond)
@@ -72,17 +73,18 @@ func TestUIStartWithCharacter(t *testing.T) {
 }
 
 func TestCanUpdateAllEmpty(t *testing.T) {
-	db, st, _ := testutil.NewDBOnDisk(t.TempDir())
+	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	bu := ui.NewFakeBaseUI(st, test.NewTempApp(t))
+	bu := ui.NewFakeBaseUI(st, test.NewTempApp(t), true)
 	bu.UpdateAll()
 }
 
 func TestCanUpdateAllWithData(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t.TempDir())
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	bu := ui.NewFakeBaseUI(st, test.NewTempApp(t))
-	character := factory.CreateCharacter()
+	test.ApplyTheme(t, test.Theme())
+	bu := ui.NewFakeBaseUI(st, ui.NewFakeApp(t), true)
+	character := factory.CreateCharacterFull()
 	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: character.ID})
 	factory.CreateCharacterAttributes(storage.UpdateOrCreateCharacterAttributesParams{CharacterID: character.ID})
 	factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: character.ID})
@@ -96,5 +98,13 @@ func TestCanUpdateAllWithData(t *testing.T) {
 	factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: character.ID})
 	factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: character.ID})
 	factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: character.ID})
+	for _, s := range app.CharacterSections {
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: character.ID,
+			Section:     s,
+		})
+	}
 	bu.UpdateAll()
+	u := ui.NewDesktopUI(bu)
+	test.RenderToMarkup(u.MainWindow().Canvas())
 }

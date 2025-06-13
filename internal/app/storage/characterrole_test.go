@@ -12,13 +12,13 @@ import (
 )
 
 func TestCharacterRole(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can update roles from scratch", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		r1 := set.Of(app.RoleAccountant, app.RoleAuditor)
 		// when
 		err := r.UpdateCharacterRoles(ctx, c.ID, r1)
@@ -33,7 +33,7 @@ func TestCharacterRole(t *testing.T) {
 	t.Run("can add roles", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		if err := r.UpdateCharacterRoles(ctx, c.ID, set.Of(app.RoleBrandManager)); err != nil {
 			panic(err)
 		}
@@ -51,7 +51,7 @@ func TestCharacterRole(t *testing.T) {
 	t.Run("can remove roles", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		if err := r.UpdateCharacterRoles(ctx, c.ID, set.Of(app.RoleDiplomat, app.RoleBrandManager)); err != nil {
 			panic(err)
 		}

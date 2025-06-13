@@ -95,10 +95,10 @@ type industryJobs struct {
 	rows            []industryJobRow
 	rowsFiltered    []industryJobRow
 	search          *widget.Entry
-	selectActivity  *iwidget.FilterChipSelect
-	selectInstaller *iwidget.FilterChipSelect
-	selectOwner     *iwidget.FilterChipSelect
-	selectStatus    *iwidget.FilterChipSelect
+	selectActivity  *kxwidget.FilterChipSelect
+	selectInstaller *kxwidget.FilterChipSelect
+	selectOwner     *kxwidget.FilterChipSelect
+	selectStatus    *kxwidget.FilterChipSelect
 	sortButton      *sortButton
 	bottom          *widget.Label
 	u               *baseUI
@@ -106,14 +106,14 @@ type industryJobs struct {
 
 func newIndustryJobs(u *baseUI) *industryJobs {
 	headers := []headerDef{
-		{Text: "Blueprint", Width: 250},
-		{Text: "Status", Width: 100, Refresh: true},
-		{Text: "Runs", Width: 75},
-		{Text: "Activity", Width: 200},
-		{Text: "End date", Width: columnWidthDateTime},
-		{Text: "Location", Width: columnWidthLocation},
-		{Text: "Owner", Width: columnWidthCharacter},
-		{Text: "Installer", Width: columnWidthCharacter},
+		{Label: "Blueprint", Width: 250},
+		{Label: "Status", Width: 100, Refresh: true},
+		{Label: "Runs", Width: 75},
+		{Label: "Activity", Width: 200},
+		{Label: "End date", Width: columnWidthDateTime},
+		{Label: "Location", Width: columnWidthLocation},
+		{Label: "Owner", Width: columnWidthCharacter},
+		{Label: "Installer", Width: columnWidthCharacter},
 	}
 	a := &industryJobs{
 		columnSorter: newColumnSorterWithInit(headers, 4, sortDesc),
@@ -161,18 +161,18 @@ func newIndustryJobs(u *baseUI) *industryJobs {
 	a.search.OnChanged = func(_ string) {
 		a.filterRows(-1)
 	}
-	a.search.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
+	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
 	})
 
-	a.selectOwner = iwidget.NewFilterChipSelect("Owner", []string{
+	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{
 		industryOwnerMe,
 		industryOwnerCorp,
 	}, func(_ string) {
 		a.filterRows(-1)
 	})
 
-	a.selectStatus = iwidget.NewFilterChipSelect("", []string{
+	a.selectStatus = kxwidget.NewFilterChipSelect("", []string{
 		industryStatusActive,
 		industryStatusInProgress,
 		industryStatusReady,
@@ -182,8 +182,9 @@ func newIndustryJobs(u *baseUI) *industryJobs {
 		a.filterRows(-1)
 	})
 	a.selectStatus.Selected = industryStatusActive
+	a.selectStatus.SortDisabled = true
 
-	a.selectActivity = iwidget.NewFilterChipSelect("Activity", []string{
+	a.selectActivity = kxwidget.NewFilterChipSelect("Activity", []string{
 		industryActivityManufacturing,
 		industryActivityMaterialResearch,
 		industryActivityTimeResearch,
@@ -194,7 +195,7 @@ func newIndustryJobs(u *baseUI) *industryJobs {
 		a.filterRows(-1)
 	})
 
-	a.selectInstaller = iwidget.NewFilterChipSelect("Installer", []string{
+	a.selectInstaller = kxwidget.NewFilterChipSelect("Installer", []string{
 		industryInstallerMe,
 		industryInstallerCorpmates,
 	}, func(_ string) {
@@ -362,7 +363,7 @@ func (a *industryJobs) makeDataList() *widget.List {
 			title := widget.NewLabel("Template")
 			title.TextStyle.Bold = true
 			title.Wrapping = fyne.TextWrapWord
-			status := widget.NewRichText()
+			status := iwidget.NewRichText()
 			location := widget.NewLabel("Template")
 			location.Wrapping = fyne.TextWrapWord
 			completed := widget.NewLabel("Template")
@@ -402,7 +403,7 @@ func (a *industryJobs) makeDataList() *widget.List {
 
 			statusStack := c1[2].(*fyne.Container).Objects
 			if j.status == app.JobActive {
-				iwidget.SetRichText(statusStack[0].(*widget.RichText), j.statusDisplay...)
+				statusStack[0].(*iwidget.RichText).Set(j.statusDisplay)
 				statusStack[0].Show()
 				statusStack[1].Hide()
 			} else {
@@ -565,11 +566,9 @@ func (a *industryJobs) update() {
 
 func (a *industryJobs) showJob(r industryJobRow) {
 	makeLocationWidget := func(o *app.EveLocationShort) *iwidget.TappableRichText {
-		x := iwidget.NewTappableRichText(func() {
+		x := iwidget.NewTappableRichText(o.DisplayRichText(), func() {
 			a.u.ShowLocationInfoWindow(o.ID)
-		},
-			o.DisplayRichText()...,
-		)
+		})
 		x.Wrapping = fyne.TextWrapWord
 		return x
 	}
@@ -595,7 +594,7 @@ func (a *industryJobs) showJob(r industryJobRow) {
 		))
 	}
 	items = slices.Concat(items, []*widget.FormItem{
-		widget.NewFormItem("Status", widget.NewRichText(r.statusDisplay...)),
+		widget.NewFormItem("Status", iwidget.NewRichText(r.statusDisplay...)),
 		widget.NewFormItem("Runs", widget.NewLabel(ihumanize.Comma(r.runs))),
 	})
 

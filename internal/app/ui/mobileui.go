@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -31,8 +32,8 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	// character destination
 	fallbackAvatar, _ := fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)
-	characterSelector := iwidget.NewIconButtonWithMenu(fallbackAvatar, fyne.NewMenu(""))
-	newCharacterAppBar := func(title string, body fyne.CanvasObject, items ...*iwidget.IconButton) *iwidget.AppBar {
+	characterSelector := kxwidget.NewIconButtonWithMenu(fallbackAvatar, fyne.NewMenu(""))
+	newCharacterAppBar := func(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *iwidget.AppBar {
 		items = append(items, characterSelector)
 		return iwidget.NewAppBar(title, body, items...)
 	}
@@ -49,7 +50,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			newCharacterAppBar(
 				"",
 				page,
-				iwidget.NewIconButton(theme.MailSendIcon(), func() {
+				kxwidget.NewIconButton(theme.MailSendIcon(), func() {
 					if page.SendAction() {
 						characterNav.Pop()
 					}
@@ -81,7 +82,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				newCharacterAppBar(
 					"Communications",
 					u.characterCommunications.Notifications,
-					iwidget.NewIconButtonWithMenu(theme.FolderIcon(), communicationsMenu),
+					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), communicationsMenu),
 				),
 			)
 		},
@@ -95,10 +96,10 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 					newCharacterAppBar(
 						"Mail",
 						u.characterMail.Detail,
-						iwidget.NewIconButton(u.characterMail.MakeReplyAction()),
-						iwidget.NewIconButton(u.characterMail.MakeReplyAllAction()),
-						iwidget.NewIconButton(u.characterMail.MakeForwardAction()),
-						iwidget.NewIconButton(u.characterMail.MakeDeleteAction(func() {
+						kxwidget.NewIconButton(u.characterMail.MakeReplyAction()),
+						kxwidget.NewIconButton(u.characterMail.MakeReplyAllAction()),
+						kxwidget.NewIconButton(u.characterMail.MakeForwardAction()),
+						kxwidget.NewIconButton(u.characterMail.MakeDeleteAction(func() {
 							characterNav.Pop()
 						})),
 					),
@@ -108,8 +109,8 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				newCharacterAppBar(
 					"Mail",
 					u.characterMail.Headers,
-					iwidget.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
-					iwidget.NewIconButton(u.characterMail.makeComposeMessageAction()),
+					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
+					kxwidget.NewIconButton(u.characterMail.makeComposeMessageAction()),
 				))
 		},
 	)
@@ -365,7 +366,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			moreNav.Push(iwidget.NewAppBar(
 				"Manage characters",
 				u.manageCharacters,
-				iwidget.NewIconButton(
+				kxwidget.NewIconButton(
 					theme.NewPrimaryThemedResource(theme.ContentAddIcon()),
 					u.manageCharacters.ShowAddCharacterDialog,
 				),
@@ -378,7 +379,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			moreNav.Push(iwidget.NewAppBar(
 				"General",
 				u.userSettings.GeneralContent,
-				iwidget.NewIconButtonWithMenu(makeSettingsMenu(u.userSettings.GeneralActions)),
+				kxwidget.NewIconButtonWithMenu(makeSettingsMenu(u.userSettings.GeneralActions)),
 			))
 		},
 	)
@@ -391,13 +392,13 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				moreNav.Push(iwidget.NewAppBar(
 					title,
 					content,
-					iwidget.NewIconButtonWithMenu(makeSettingsMenu(actions)),
+					kxwidget.NewIconButtonWithMenu(makeSettingsMenu(actions)),
 				))
 			}
 			moreNav.Push(iwidget.NewAppBar(
 				"Notifications",
 				u.userSettings.NotificationSettings,
-				iwidget.NewIconButtonWithMenu(makeSettingsMenu(u.userSettings.NotificationActions)),
+				kxwidget.NewIconButtonWithMenu(makeSettingsMenu(u.userSettings.NotificationActions)),
 			))
 		},
 	)

@@ -41,7 +41,7 @@ type eveEntityEntry struct {
 	labelWidth  float32
 	main        *fyne.Container
 	mu          sync.Mutex
-	placeholder *widget.RichText
+	placeholder *iwidget.RichText
 	s           []*app.EveEntity
 }
 
@@ -56,7 +56,7 @@ func newEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis *eveimag
 		label:      label,
 		labelWidth: labelWidth,
 		main:       container.New(layout.NewCustomPaddedVBoxLayout(0)),
-		placeholder: widget.NewRichText(&widget.TextSegment{
+		placeholder: iwidget.NewRichText(&widget.TextSegment{
 			Style: widget.RichTextStyle{ColorName: theme.ColorNamePlaceHolder},
 		}),
 		s: make([]*app.EveEntity, 0),
@@ -65,7 +65,7 @@ func newEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis *eveimag
 	return w
 }
 
-// Items returns the current list of EveEnties items.
+// Items returns the current list of EveEntities items.
 func (w *eveEntityEntry) Items() []*app.EveEntity {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -133,10 +133,10 @@ func (w *eveEntityEntry) update() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.main.RemoveAll()
-	colums := kxlayout.NewColumns(w.labelWidth)
+	columns := kxlayout.NewColumns(w.labelWidth)
 	if len(w.s) == 0 {
-		w.placeholder.Segments[0].(*widget.TextSegment).Text = w.Placeholder
-		w.main.Add(container.New(colums, w.label, w.placeholder))
+		w.placeholder.SetWithText(w.Placeholder)
+		w.main.Add(container.New(columns, w.label, w.placeholder))
 	} else {
 		firstRow := true
 		isDisabled := w.Disabled()
@@ -178,7 +178,7 @@ func (w *eveEntityEntry) update() {
 					})
 				}()
 			}
-			w.main.Add(container.New(colums, label, badge))
+			w.main.Add(container.New(columns, label, badge))
 		}
 	}
 }

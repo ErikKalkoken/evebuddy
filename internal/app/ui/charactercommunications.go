@@ -186,7 +186,8 @@ func (a *characterCommunications) setDetail(n *app.CharacterNotification) {
 		n.RecipientName = a.u.currentCharacter().EveCharacter.Name
 	}
 	a.Detail.RemoveAll()
-	subject := iwidget.NewLabelWithSize(n.TitleDisplay(), theme.SizeNameSubHeadingText)
+	subject := widget.NewLabel(n.TitleDisplay())
+	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Wrapping = fyne.TextWrapWord
 	a.Detail.Add(subject)
 	h := newMailHeader(a.u.eis, a.u.ShowEveEntityInfoWindow)
@@ -196,7 +197,7 @@ func (a *characterCommunications) setDetail(n *app.CharacterNotification) {
 	if err != nil {
 		slog.Warn("failed to convert markdown", "notificationID", n.ID, "text", n.Body.ValueOrZero())
 	}
-	body := widget.NewRichTextWithText(s.ValueOrZero())
+	body := iwidget.NewRichTextWithText(s.ValueOrZero())
 	body.Wrapping = fyne.TextWrapWord
 	if n.Body.IsEmpty() {
 		body.ParseMarkdown("*This notification type is not fully supported yet*")

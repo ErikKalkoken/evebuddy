@@ -11,13 +11,13 @@ import (
 )
 
 func TestPlanet(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		lastUpdate := time.Now().UTC()
 		evePlanet := factory.CreateEvePlanet()
 		arg := storage.UpdateOrCreateCharacterPlanetParams{
@@ -42,7 +42,7 @@ func TestPlanet(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		evePlanet := factory.CreateEvePlanet()
 		lastNotified := time.Now().Add(-5 * time.Minute).UTC()
 		factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{
@@ -76,7 +76,7 @@ func TestPlanet(t *testing.T) {
 	t.Run("can list planets", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		p1 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
 		p2 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
 		p3 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
@@ -95,7 +95,7 @@ func TestPlanet(t *testing.T) {
 	t.Run("can delete planets", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		p1 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
 		p2 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
 		p3 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
@@ -134,10 +134,10 @@ func TestPlanet(t *testing.T) {
 	t.Run("can list planets from all characters", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateCharacter()
+		c1 := factory.CreateCharacterFull()
 		p1 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c1.ID})
 		p2 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c1.ID})
-		c2 := factory.CreateCharacter()
+		c2 := factory.CreateCharacterFull()
 		p3 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c2.ID})
 		// when
 		oo, err := r.ListAllCharacterPlanets(ctx)

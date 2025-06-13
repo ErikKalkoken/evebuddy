@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"net/url"
 	"testing"
 	"time"
@@ -129,10 +130,16 @@ func (a *FakeApp) Clipboard() fyne.Clipboard {
 var _ fyne.App = (*FakeApp)(nil)
 var _ desktop.App = (*FakeApp)(nil)
 
-func NewFakeBaseUI(st *storage.Storage, app fyne.App) *baseUI {
+type NewFakeBaseUIParams struct {
+}
+
+func NewFakeBaseUI(st *storage.Storage, app fyne.App, isDesktop bool) *baseUI {
 	esiClient := goesi.NewAPIClient(nil, "dummy")
 	cache := memcache.New()
 	scs := statuscacheservice.New(cache, st)
+	if err := scs.InitCache(context.Background()); err != nil {
+		panic(err)
+	}
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
 		ESIClient:          esiClient,
 		StatusCacheService: scs,
@@ -161,6 +168,7 @@ func NewFakeBaseUI(st *storage.Storage, app fyne.App) *baseUI {
 		MemCache:           cache,
 		StatusCacheService: scs,
 		IsOffline:          true,
+		IsDesktop:          isDesktop,
 	})
 	return bu
 }

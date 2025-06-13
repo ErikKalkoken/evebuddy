@@ -29,7 +29,7 @@ const (
 type hameSearch struct {
 	widget.BaseWidget
 
-	categories          *iwidget.FilterChipGroup
+	categories          *kxwidget.FilterChipGroup
 	defaultCategories   []string
 	entry               *widget.Entry
 	indicator           *widget.ProgressBarInfinite
@@ -60,7 +60,7 @@ func newGameSearch(u *baseUI) *hameSearch {
 	}
 	a.ExtendBaseWidget(a)
 
-	a.categories = iwidget.NewFilterChipGroup(a.defaultCategories, func(s []string) {
+	a.categories = kxwidget.NewFilterChipGroup(a.defaultCategories, func(s []string) {
 		a.updateSearchOptionsTitle()
 	})
 	a.categories.Selected = a.defaultCategories
@@ -73,7 +73,7 @@ func newGameSearch(u *baseUI) *hameSearch {
 	a.resultCount = widget.NewLabel("")
 	a.resultCount.Hide()
 	a.results = a.makeResults()
-	a.entry.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
+	a.entry.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.reset()
 	})
 	a.entry.PlaceHolder = "Search New Eden"

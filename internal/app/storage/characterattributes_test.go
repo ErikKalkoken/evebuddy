@@ -13,13 +13,13 @@ import (
 )
 
 func TestCharacterAttributes(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create from scratch", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		lastRemapDate := time.Now().UTC()
 		arg := storage.UpdateOrCreateCharacterAttributesParams{
 			CharacterID:   c.ID,
@@ -50,7 +50,7 @@ func TestCharacterAttributes(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateCharacterFull()
 		factory.CreateCharacterAttributes(storage.UpdateOrCreateCharacterAttributesParams{
 			CharacterID: c.ID,
 		})

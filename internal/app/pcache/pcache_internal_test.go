@@ -9,7 +9,7 @@ import (
 )
 
 func TestPCache(t *testing.T) {
-	db, st, _ := testutil.New()
+	db, st, _ := testutil.NewDBInMemory()
 	defer db.Close()
 	t.Run("should create immortal cache on disk", func(t *testing.T) {
 		// given

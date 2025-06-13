@@ -60,9 +60,9 @@ func (a *characterAttributes) makeAttributeList() *widget.List {
 			return len(a.attributes)
 		},
 		func() fyne.CanvasObject {
-			icon := iwidget.NewImageFromResource(icons.QuestionmarkSvg, fyne.NewSquareSize(app.IconUnitSize))
+			icon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
 			return container.NewHBox(
-				icon, widget.NewLabel("placeholder"), layout.NewSpacer(), widget.NewLabel("points"))
+				icon, widget.NewLabel("placeholder"), layout.NewSpacer(), widget.NewLabel("88 points"))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.attributes) {
