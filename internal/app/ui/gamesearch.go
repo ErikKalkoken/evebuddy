@@ -375,7 +375,7 @@ func (a *hameSearch) doSearch2(search string) {
 	if total == 0 {
 		return
 	}
-	t := iwidget.NewTreeData[resultNode]()
+	var t iwidget.TreeData[resultNode]
 	var categoriesFound int
 	for _, c := range categories {
 		_, ok := results[c]

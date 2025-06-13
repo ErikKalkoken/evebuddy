@@ -217,7 +217,7 @@ func (a *characterMails) makeFolderTree() *iwidget.Tree[mailFolderNode] {
 func (a *characterMails) update() {
 	characterID := a.u.currentCharacterID()
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionMails)
-	tree := iwidget.NewTreeData[mailFolderNode]()
+	var tree iwidget.TreeData[mailFolderNode]
 	folderAll := mailFolderNode{}
 	var err error
 	if hasData {
@@ -263,19 +263,19 @@ func (a *characterMails) update() {
 	}
 }
 
-func (*characterMails) fetchFolders(characterID int32, s services) (*iwidget.TreeData[mailFolderNode], mailFolderNode, error) {
-	tree := iwidget.NewTreeData[mailFolderNode]()
+func (*characterMails) fetchFolders(characterID int32, s services) (iwidget.TreeData[mailFolderNode], mailFolderNode, error) {
+	var tree iwidget.TreeData[mailFolderNode]
 	if characterID == 0 {
 		return tree, emptyFolder, nil
 	}
 	ctx := context.Background()
 	labelUnreadCounts, err := s.cs.GetMailLabelUnreadCounts(ctx, characterID)
 	if err != nil {
-		return nil, mailFolderNode{}, err
+		return tree, mailFolderNode{}, err
 	}
 	listUnreadCounts, err := s.cs.GetMailListUnreadCounts(ctx, characterID)
 	if err != nil {
-		return nil, mailFolderNode{}, err
+		return tree, mailFolderNode{}, err
 	}
 	totalUnreadCount, totalLabelsUnreadCount, totalListUnreadCount := calcUnreadTotals(labelUnreadCounts, listUnreadCounts)
 
@@ -320,7 +320,7 @@ func (*characterMails) fetchFolders(characterID int32, s services) (*iwidget.Tre
 	// Add custom labels
 	labels, err := s.cs.ListMailLabelsOrdered(ctx, characterID)
 	if err != nil {
-		return nil, mailFolderNode{}, err
+		return tree, mailFolderNode{}, err
 	}
 	if len(labels) > 0 {
 		n := mailFolderNode{
@@ -350,7 +350,7 @@ func (*characterMails) fetchFolders(characterID int32, s services) (*iwidget.Tre
 	// Add mailing lists
 	lists, err := s.cs.ListMailLists(ctx, characterID)
 	if err != nil {
-		return nil, mailFolderNode{}, err
+		return tree, mailFolderNode{}, err
 	}
 	if len(lists) > 0 {
 		n := mailFolderNode{

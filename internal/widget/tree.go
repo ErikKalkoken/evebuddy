@@ -13,7 +13,7 @@ type Tree[T TreeNode] struct {
 
 	OnSelected func(n T)
 
-	data *TreeData[T]
+	data TreeData[T]
 	tree *widget.Tree
 }
 
@@ -23,7 +23,7 @@ func NewTree[T TreeNode](
 	update func(n T, isBranch bool, co fyne.CanvasObject),
 ) *Tree[T] {
 	w := &Tree[T]{
-		data: NewTreeData[T](),
+		data: TreeData[T]{},
 	}
 	w.tree = widget.NewTree(
 		func(uid widget.TreeNodeID) []widget.TreeNodeID {
@@ -56,18 +56,18 @@ func NewTree[T TreeNode](
 
 // Clear removes all nodes from the tree.
 func (w *Tree[T]) Clear() {
-	w.data = NewTreeData[T]()
+	w.data.Clear()
 	w.Refresh()
 }
 
-// Set updates the all nodes of a tree.
-func (w *Tree[T]) Set(data *TreeData[T]) {
+// Set updates all nodes of a tree.
+func (w *Tree[T]) Set(data TreeData[T]) {
 	w.data = data
 	w.Refresh()
 }
 
-// Data returns the tree data for a tree.
-func (w *Tree[T]) Data() *TreeData[T] {
+// Data returns the data for a tree.
+func (w *Tree[T]) Data() TreeData[T] {
 	return w.data
 }
 

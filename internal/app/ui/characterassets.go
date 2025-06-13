@@ -255,31 +255,32 @@ func (a *characterAssets) update() {
 	}
 }
 
-func (*characterAssets) fetchData(characterID int32, s services) (assetcollection.AssetCollection, *iwidget.TreeData[locationNode], error) {
+func (*characterAssets) fetchData(characterID int32, s services) (assetcollection.AssetCollection, iwidget.TreeData[locationNode], error) {
 	var ac assetcollection.AssetCollection
+	var locations iwidget.TreeData[locationNode]
 	if characterID == 0 {
-		return ac, iwidget.NewTreeData[locationNode](), nil
+		return ac, locations, nil
 	}
 	ctx := context.Background()
 	assets, err := s.cs.ListAssets(ctx, characterID)
 	if err != nil {
-		return ac, nil, err
+		return ac, locations, err
 	}
 	el, err := s.eus.ListLocations(ctx)
 	if err != nil {
-		return ac, nil, err
+		return ac, locations, err
 	}
 	ac = assetcollection.New(assets, el)
 	locationNodes := ac.Locations()
 	slices.SortFunc(locationNodes, func(x assetcollection.LocationNode, y assetcollection.LocationNode) int {
 		return cmp.Compare(x.Location.DisplayName(), y.Location.DisplayName())
 	})
-	locations := makeLocationTreeData(locationNodes, characterID)
+	locations = makeLocationTreeData(locationNodes, characterID)
 	return ac, locations, nil
 }
 
-func makeLocationTreeData(locationNodes []assetcollection.LocationNode, characterID int32) *iwidget.TreeData[locationNode] {
-	tree := iwidget.NewTreeData[locationNode]()
+func makeLocationTreeData(locationNodes []assetcollection.LocationNode, characterID int32) iwidget.TreeData[locationNode] {
+	var tree iwidget.TreeData[locationNode]
 	for _, ln := range locationNodes {
 		location := locationNode{
 			characterID: characterID,
