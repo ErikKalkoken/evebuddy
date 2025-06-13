@@ -155,13 +155,13 @@ func (a *characterJumpClones) update() {
 	}
 }
 
-func cloneCount(td iwidget.TreeData[jumpCloneNode]) int {
+func cloneCount(td iwidget.TreeNodes[jumpCloneNode]) int {
 	return len(td.ChildUIDs(""))
 
 }
 
-func (a *characterJumpClones) newTreeData() (iwidget.TreeData[jumpCloneNode], error) {
-	var tree iwidget.TreeData[jumpCloneNode]
+func (a *characterJumpClones) newTreeData() (iwidget.TreeNodes[jumpCloneNode], error) {
+	var tree iwidget.TreeNodes[jumpCloneNode]
 	if !a.u.hasCharacter() {
 		return tree, nil
 	}

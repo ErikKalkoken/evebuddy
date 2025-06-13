@@ -255,9 +255,9 @@ func (a *characterAssets) update() {
 	}
 }
 
-func (*characterAssets) fetchData(characterID int32, s services) (assetcollection.AssetCollection, iwidget.TreeData[locationNode], error) {
+func (*characterAssets) fetchData(characterID int32, s services) (assetcollection.AssetCollection, iwidget.TreeNodes[locationNode], error) {
 	var ac assetcollection.AssetCollection
-	var locations iwidget.TreeData[locationNode]
+	var locations iwidget.TreeNodes[locationNode]
 	if characterID == 0 {
 		return ac, locations, nil
 	}
@@ -279,8 +279,8 @@ func (*characterAssets) fetchData(characterID int32, s services) (assetcollectio
 	return ac, locations, nil
 }
 
-func makeLocationTreeData(locationNodes []assetcollection.LocationNode, characterID int32) iwidget.TreeData[locationNode] {
-	var tree iwidget.TreeData[locationNode]
+func makeLocationTreeData(locationNodes []assetcollection.LocationNode, characterID int32) iwidget.TreeNodes[locationNode] {
+	var tree iwidget.TreeNodes[locationNode]
 	for _, ln := range locationNodes {
 		location := locationNode{
 			characterID: characterID,
