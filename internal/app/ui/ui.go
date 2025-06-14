@@ -49,6 +49,12 @@ const (
 	fallbackWebsiteURL = "https://github.com/ErikKalkoken/evebuddy"
 )
 
+// daily downtime
+const (
+	downtimeStart    = "11:00"
+	downtimeDuration = 15 * time.Minute
+)
+
 // width of common columns in data tables
 const (
 	columnWidthCharacter = 200
@@ -664,6 +670,10 @@ func (u *baseUI) updateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate 
 		slog.Debug("Skipping general sections update while in background")
 		return
 	}
+	if !forceUpdate && isNowDailyDowntime() {
+		slog.Info("Skipping regular update of general sections during daily downtime")
+		return
+	}
 	for _, s := range app.GeneralSections {
 		go func() {
 			u.updateGeneralSectionAndRefreshIfNeeded(ctx, s, forceUpdate)
@@ -720,6 +730,10 @@ func (u *baseUI) startUpdateTickerCharacters() {
 }
 
 func (u *baseUI) updateCharactersIfNeeded(ctx context.Context, forceUpdate bool) error {
+	if !forceUpdate && isNowDailyDowntime() {
+		slog.Info("Skipping regular update of characters during daily downtime")
+		return nil
+	}
 	cc, err := u.cs.ListCharactersShort(ctx)
 	if err != nil {
 		return err
@@ -976,6 +990,10 @@ func (u *baseUI) startUpdateTickerCorporations() {
 }
 
 func (u *baseUI) updateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error {
+	if !forceUpdate && isNowDailyDowntime() {
+		slog.Info("Skipping regular update of corporations during daily downtime")
+		return nil
+	}
 	ids, err := u.rs.ListCorporationIDs(ctx)
 	if err != nil {
 		return err
@@ -1275,4 +1293,28 @@ func (u *baseUI) makeTopText(characterID int32, hasData bool, err error, make fu
 		return "", widget.MediumImportance
 	}
 	return make()
+}
+
+// isNowDailyDowntime reports whether the daily downtime is expected to happen currently.
+func isNowDailyDowntime() bool {
+	return isTimeWithinRange(downtimeStart, downtimeDuration, time.Now())
+}
+
+func isTimeWithinRange(start string, duration time.Duration, t time.Time) bool {
+	t2, err := time.Parse("15:04", t.UTC().Format("15:04"))
+	if err != nil {
+		panic(err)
+	}
+	start2, err := time.Parse("15:04", start)
+	if err != nil {
+		panic(err)
+	}
+	end := start2.Add(duration)
+	if t2.Before(start2) {
+		return false
+	}
+	if t2.After(end) {
+		return false
+	}
+	return true
 }

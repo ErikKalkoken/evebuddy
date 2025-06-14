@@ -18,6 +18,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/antihax/goesi"
+	"github.com/stretchr/testify/assert"
 )
 
 type FakeCache map[string][]byte
@@ -171,4 +172,28 @@ func NewFakeBaseUI(st *storage.Storage, app fyne.App, isDesktop bool) *baseUI {
 		IsDesktop:          isDesktop,
 	})
 	return bu
+}
+
+func TestIsTimeWithinRange(t *testing.T) {
+	start := "11:00"
+	duration := 15 * time.Minute
+	cases := []struct {
+		name string
+		t    time.Time
+		want bool
+	}{
+
+		{"in range", time.Date(2025, 1, 1, 11, 3, 0, 0, time.UTC), true},
+		{"equal start", time.Date(2025, 1, 1, 11, 0, 0, 0, time.UTC), true},
+		{"equal end", time.Date(2025, 1, 1, 11, 15, 0, 0, time.UTC), true},
+		{"after 1", time.Date(2025, 1, 1, 11, 16, 0, 0, time.UTC), false},
+		{"after 2", time.Date(2025, 1, 1, 12, 10, 0, 0, time.UTC), false},
+		{"before", time.Date(2025, 1, 1, 10, 16, 0, 0, time.UTC), false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := isTimeWithinRange(start, duration, tc.t)
+			assert.Equal(t, tc.want, got)
+		})
+	}
 }
