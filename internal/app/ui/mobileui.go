@@ -402,7 +402,16 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			))
 		},
 	)
-
+	navItemTags := iwidget.NewListItem(
+		"Tags",
+		func() {
+			moreNav.Push(iwidget.NewAppBar(
+				"Tags",
+				u.userSettings.Tags,
+				kxwidget.NewIconButtonWithMenu(makeSettingsMenu(u.userSettings.TagsActions)),
+			))
+		},
+	)
 	navItemAbout := iwidget.NewListItemWithIcon(
 		"About",
 		theme.InfoIcon(),
@@ -420,6 +429,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 					iwidget.NewNavList(
 						navItemGeneralSettings,
 						navItemNotificationSettings,
+						navItemTags,
 					),
 				))
 			},

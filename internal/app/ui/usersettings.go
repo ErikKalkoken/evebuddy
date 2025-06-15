@@ -8,21 +8,27 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type settingAction struct {
@@ -35,11 +41,14 @@ type settingAction struct {
 type userSettings struct {
 	widget.BaseWidget
 
-	NotificationActions          []settingAction
-	NotificationSettings         fyne.CanvasObject // TODO: Refactor into widget
-	GeneralActions               []settingAction
-	GeneralContent               fyne.CanvasObject // TODO: Refactor into widget
-	CommunicationGroupContent    fyne.CanvasObject // TODO: Refactor into widget
+	NotificationActions       []settingAction
+	NotificationSettings      fyne.CanvasObject // TODO: Refactor into widget
+	GeneralActions            []settingAction
+	GeneralContent            fyne.CanvasObject // TODO: Refactor into widget
+	CommunicationGroupContent fyne.CanvasObject // TODO: Refactor into widget
+	Tags                      fyne.CanvasObject
+	TagsActions               []settingAction
+
 	OnCommunicationGroupSelected func(title string, content fyne.CanvasObject, actions []settingAction)
 
 	showSnackbar func(string)
@@ -57,6 +66,7 @@ func newSettings(u *baseUI) *userSettings {
 	a.ExtendBaseWidget(a)
 	a.GeneralContent, a.GeneralActions = a.makeGeneralSettingsPage()
 	a.NotificationSettings, a.NotificationActions = a.makeNotificationPage()
+	a.Tags, a.TagsActions = a.makeTagsPage()
 	return a
 }
 
@@ -68,7 +78,10 @@ func (a *userSettings) CreateRenderer() fyne.WidgetRenderer {
 		for _, a := range actions {
 			items = append(items, fyne.NewMenuItem(a.Label, a.Action))
 		}
-		options := iwidget.NewContextMenuButtonWithIcon(theme.MoreHorizontalIcon(), "", fyne.NewMenu("", items...))
+		options := iwidget.NewContextMenuButtonWithIcon("", theme.MoreHorizontalIcon(), fyne.NewMenu("", items...))
+		if len(actions) == 0 {
+			options.Hide()
+		}
 		return container.NewBorder(
 			container.NewVBox(container.NewHBox(t, layout.NewSpacer(), options), widget.NewSeparator()),
 			nil,
@@ -80,6 +93,7 @@ func (a *userSettings) CreateRenderer() fyne.WidgetRenderer {
 	tabs := container.NewAppTabs(
 		container.NewTabItem("General", makeSettingsPage("General", a.GeneralContent, a.GeneralActions)),
 		container.NewTabItem("Notifications", makeSettingsPage("Notifications", a.NotificationSettings, a.NotificationActions)),
+		container.NewTabItem("Tags", makeSettingsPage("Tags", a.Tags, a.TagsActions)),
 	)
 	tabs.SetTabLocation(container.TabLocationLeading)
 	return widget.NewSimpleRenderer(tabs)
@@ -610,4 +624,328 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 		},
 	}
 	return list, []settingAction{reset, all, none, send}
+}
+
+// TODO: Refactor tags page into custom widget
+
+func (a *userSettings) makeTagsPage() (fyne.CanvasObject, []settingAction) {
+	var selectedTag *app.Tag
+	var characterList *widget.List
+	characters := make([]*app.EntityShort[int32], 0)
+	var updateCharacters func(tag *app.Tag)
+
+	addCharacter := widget.NewButtonWithIcon("Add character", theme.ContentAddIcon(), func() {
+		if selectedTag == nil {
+			return
+		}
+		window := a.currentWindow()
+		_, others, err := a.u.cs.ListCharactersForTag(context.Background(), selectedTag.ID)
+		if err != nil {
+			a.u.ShowErrorDialog("Failed to list characters for tag", err, window)
+			characters = make([]*app.EntityShort[int32], 0)
+			return
+		}
+		if len(others) == 0 {
+			return
+		}
+		selected := make(map[int32]bool)
+		list := widget.NewList(
+			func() int {
+				return len(others)
+			},
+			func() fyne.CanvasObject {
+				check := widget.NewIcon(theme.CheckButtonIcon())
+				portrait := iwidget.NewImageFromResource(
+					icons.Characterplaceholder64Jpeg,
+					fyne.NewSquareSize(app.IconUnitSize),
+				)
+				return container.NewBorder(
+					nil,
+					nil,
+					container.NewHBox(check, portrait),
+					nil,
+					widget.NewLabel("Template"),
+				)
+			},
+			func(id widget.ListItemID, co fyne.CanvasObject) {
+				if id >= len(others) {
+					return
+				}
+				box := co.(*fyne.Container).Objects
+				character := others[id]
+				box[0].(*widget.Label).SetText(character.Name)
+				icons := box[1].(*fyne.Container).Objects
+
+				portrait := icons[1].(*canvas.Image)
+				go a.u.updateAvatar(character.ID, func(r fyne.Resource) {
+					fyne.Do(func() {
+						portrait.Resource = r
+						portrait.Refresh()
+					})
+				})
+
+				check := icons[0].(*widget.Icon)
+				if selected[character.ID] {
+					check.SetResource(theme.CheckButtonCheckedIcon())
+				} else {
+					check.SetResource(theme.CheckButtonIcon())
+				}
+			},
+		)
+		list.HideSeparators = true
+		list.OnSelected = func(id widget.ListItemID) {
+			list.UnselectAll()
+			if id >= len(others) {
+				return
+			}
+			character := others[id]
+			selected[character.ID] = !selected[character.ID]
+			list.RefreshItem(id)
+		}
+		d := dialog.NewCustomConfirm(
+			"Add characters to tag: "+selectedTag.Name,
+			"Add",
+			"Cancel",
+			list,
+			func(confirmed bool) {
+				if !confirmed {
+					return
+				}
+				for characterID, v := range selected {
+					if !v {
+						return
+					}
+					err := a.u.cs.AddTagToCharacter(context.Background(), characterID, selectedTag.ID)
+					if err != nil {
+						a.u.ShowErrorDialog("Failed to add tag to character", err, window)
+						return
+					}
+				}
+				updateCharacters(selectedTag)
+			},
+			window,
+		)
+		a.u.ModifyShortcutsForDialog(d, window)
+		d.Show()
+		_, s := window.Canvas().InteractiveArea()
+		d.Resize(fyne.NewSize(s.Width*0.8, s.Height*0.8))
+	})
+	addCharacter.Disable()
+
+	charactersTop := widget.NewLabel("Template")
+	charactersTop.TextStyle.Bold = true
+	charactersTop.Hide()
+
+	updateCharacters = func(tag *app.Tag) {
+		if tag == nil {
+			return
+		}
+		selectedTag = tag
+		charactersTop.SetText("Tag: " + tag.Name)
+		charactersTop.Show()
+		tagged, others, err := a.u.cs.ListCharactersForTag(context.Background(), tag.ID)
+		if err != nil {
+			a.u.ShowErrorDialog("Failed to list characters for tag", err, a.currentWindow())
+			characters = make([]*app.EntityShort[int32], 0)
+			return
+		}
+		characters = tagged
+		characterList.Refresh()
+		if len(others) > 0 {
+			addCharacter.Enable()
+		} else {
+			addCharacter.Disable()
+		}
+	}
+
+	characterList = widget.NewList(
+		func() int {
+			return len(characters)
+		},
+		func() fyne.CanvasObject {
+			delete := iwidget.NewTappableIcon(theme.CancelIcon(), nil)
+			delete.SetToolTip("Remove character from tag")
+			portrait := iwidget.NewImageFromResource(
+				icons.Characterplaceholder64Jpeg,
+				fyne.NewSquareSize(app.IconUnitSize),
+			)
+			name := widget.NewLabel("Template")
+			return container.NewBorder(
+				nil,
+				nil,
+				portrait,
+				delete,
+				name,
+			)
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(characters) {
+				return
+			}
+			character := characters[id]
+			box := co.(*fyne.Container).Objects
+			box[0].(*widget.Label).SetText(character.Name)
+
+			portrait := box[1].(*canvas.Image)
+			go a.u.updateAvatar(character.ID, func(r fyne.Resource) {
+				fyne.Do(func() {
+					portrait.Resource = r
+					portrait.Refresh()
+				})
+			})
+
+			box[2].(*iwidget.TappableIcon).OnTapped = func() {
+				if selectedTag == nil {
+					return
+				}
+				err := a.u.cs.RemoveTagFromCharacter(context.Background(), character.ID, selectedTag.ID)
+				if err != nil {
+					a.u.ShowErrorDialog("Failed to list characters", err, a.currentWindow())
+					return
+				}
+				updateCharacters(selectedTag)
+			}
+		},
+	)
+	characterList.HideSeparators = true
+	characterList.OnSelected = func(id widget.ListItemID) {
+		characterList.UnselectAll()
+	}
+	manageCharacters := container.NewBorder(
+		charactersTop,
+		addCharacter,
+		nil,
+		nil,
+		characterList,
+	)
+
+	tags := make([]*app.Tag, 0)
+	var tagList *widget.List
+
+	updateTags := func() {
+		rows, err := a.u.cs.ListTags(context.Background())
+		if err != nil {
+			a.u.ShowErrorDialog("Failed to list tags", err, a.currentWindow())
+			tags = make([]*app.Tag, 0)
+			return
+		}
+		tags = rows
+		tagList.Refresh()
+	}
+
+	modifyTag := func(title, confirm string, execute func(name string) error) {
+		window := a.currentWindow()
+		names := set.Of(xslices.Map(tags, func(x *app.Tag) string {
+			return strings.ToLower(x.Name)
+		})...)
+		name := widget.NewEntry()
+		name.Validator = func(s string) error {
+			if len(s) == 0 {
+				return errors.New("can not be empty")
+			}
+			if names.Contains(strings.ToLower(s)) {
+				return errors.New("tag with same name already exists")
+			}
+			return nil
+		}
+		d := dialog.NewForm(title, confirm, "Cancel", []*widget.FormItem{
+			widget.NewFormItem("Name", name),
+		}, func(confirmed bool) {
+			if !confirmed {
+				return
+			}
+			if err := execute(name.Text); err != nil {
+				a.u.ShowErrorDialog("Failed to modify tag", err, window)
+				return
+			}
+
+			updateTags()
+		}, window,
+		)
+		a.u.ModifyShortcutsForDialog(d, window)
+		d.Show()
+		d.Resize(fyne.NewSize(300, 200))
+		window.Canvas().Focus(name)
+	}
+
+	tagList = widget.NewList(
+		func() int {
+			return len(tags)
+		},
+		func() fyne.CanvasObject {
+			delete := ttwidget.NewButtonWithIcon("", theme.DeleteIcon(), nil)
+			delete.Importance = widget.DangerImportance
+			delete.SetToolTip("Delete tag")
+			rename := ttwidget.NewButtonWithIcon("", theme.DocumentCreateIcon(), nil)
+			rename.SetToolTip("Rename tag")
+			name := widget.NewLabel("Template")
+			return container.NewBorder(
+				nil,
+				nil,
+				nil,
+				container.NewHBox(rename, delete),
+				name,
+			)
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(tags) {
+				return
+			}
+			tag := tags[id]
+			box := co.(*fyne.Container).Objects
+			box[0].(*widget.Label).SetText(tag.Name)
+			icons := box[1].(*fyne.Container).Objects
+			icons[0].(*ttwidget.Button).OnTapped = func() {
+				modifyTag("Rename tag: "+tag.Name, "Rename", func(name string) error {
+					return a.u.cs.RenameTag(context.Background(), tag.ID, name)
+				})
+			}
+			icons[1].(*ttwidget.Button).OnTapped = func() {
+				window := a.currentWindow()
+				s := "Are you sure you want to delete tag " + tag.Name + "?"
+				a.u.ShowConfirmDialog("Delete Tag", s, "Delete", func(confirmed bool) {
+					if !confirmed {
+						return
+					}
+					err := a.u.cs.DeleteTag(context.Background(), tag.ID)
+					if err != nil {
+						a.u.ShowErrorDialog("Failed to delete tag", err, window)
+						return
+					}
+					updateTags()
+					tagList.UnselectAll()
+					selectedTag = nil
+					characters = make([]*app.EntityShort[int32], 0)
+					addCharacter.Disable()
+					characterList.Refresh()
+					addCharacter.Disable()
+					charactersTop.Hide()
+				}, window)
+			}
+		},
+	)
+	tagList.HideSeparators = true
+	tagList.OnSelected = func(id widget.ListItemID) {
+		if id >= len(tags) {
+			tagList.UnselectAll()
+			return
+		}
+		tag := tags[id]
+		updateCharacters(tag)
+	}
+
+	create := settingAction{
+		Label: "Create new tag",
+		Action: func() {
+			modifyTag("Create Tag", "Create", func(name string) error {
+				_, err := a.u.cs.CreateTag(context.Background(), name)
+				return err
+			})
+		},
+	}
+	updateTags()
+
+	content := container.NewHSplit(tagList, manageCharacters)
+	content.Offset = 0.33
+	return content, []settingAction{create}
 }

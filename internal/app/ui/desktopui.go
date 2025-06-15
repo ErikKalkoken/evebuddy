@@ -16,6 +16,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	fynetooltip "github.com/dweymouth/fyne-tooltip"
 	"github.com/icrowley/fake"
 	"golang.org/x/sync/singleflight"
 
@@ -403,10 +404,11 @@ func (u *DesktopUI) ShowSettingsWindow() {
 	}
 	w := u.App().NewWindow(u.MakeWindowTitle("Settings"))
 	u.userSettings.SetWindow(w)
-	w.SetContent(u.userSettings)
+	w.SetContent(fynetooltip.AddWindowToolTipLayer(u.userSettings, w.Canvas()))
 	w.Resize(fyne.Size{Width: 700, Height: 500})
 	w.SetOnClosed(func() {
 		u.settingsWindow = nil
+		u.updateCrossPages()
 	})
 	w.Show()
 }

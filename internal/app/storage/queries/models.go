@@ -303,6 +303,11 @@ type CharacterWalletTransaction struct {
 	UnitPrice     float64
 }
 
+type CharactersTag struct {
+	CharacterID int64
+	TagID       int64
+}
+
 type Corporation struct {
 	ID        int64
 	CreatedAt time.Time
@@ -542,4 +547,10 @@ type PlanetPin struct {
 type Scope struct {
 	ID   int64
 	Name string
+}
+
+type Tag struct {
+	ID          int64
+	Name        string
+	Description string
 }

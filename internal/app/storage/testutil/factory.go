@@ -1867,6 +1867,25 @@ func (f Factory) CreateEveMarketPrice(args ...storage.UpdateOrCreateEveMarketPri
 	return o
 }
 
+func (f Factory) CreateTag(args ...storage.CreateTagParams) *app.Tag {
+	var arg storage.CreateTagParams
+	ctx := context.Background()
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("%s #%d", fake.Color(), rand.IntN(1000))
+	}
+	if arg.Description == "" {
+		arg.Description = fake.Paragraph()
+	}
+	r, err := f.st.CreateTag(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	return r
+}
+
 func (f *Factory) CreateToken(args ...app.Token) *app.Token {
 	o := &app.Token{
 		AccessToken:   "AccessToken",

@@ -15,7 +15,9 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -31,6 +33,7 @@ type industrySlotRow struct {
 	free          int
 	total         int
 	isSummary     bool
+	tags          set.Set[string]
 }
 
 type industrySlots struct {
@@ -43,6 +46,7 @@ type industrySlots struct {
 	rowsFiltered    []industrySlotRow
 	totals          industrySlotRow
 	selectFreeSlots *kxwidget.FilterChipSelect
+	selectTag       *kxwidget.FilterChipSelect
 	slotType        app.IndustryJobType
 	sortButton      *sortButton
 	u               *baseUI
@@ -134,18 +138,18 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 		slotsFreeNone,
 	}, func(string) {
 		a.filterRows(-1)
-	},
-	)
-
+	})
+	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
+		a.filterRows(-1)
+	})
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
-	}, a.u.window,
-	)
+	}, a.u.window)
 	return a
 }
 
 func (a *industrySlots) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectFreeSlots)
+	filter := container.NewHBox(a.selectFreeSlots, a.selectTag)
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
 	}
@@ -202,6 +206,11 @@ func (a *industrySlots) filterRows(sortCol int) {
 			return false
 		})
 	}
+	if x := a.selectTag.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r industrySlotRow) bool {
+			return r.tags.Contains(x)
+		})
+	}
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
 		slices.SortFunc(rows, func(a, b industrySlotRow) int {
@@ -240,6 +249,15 @@ func (a *industrySlots) filterRows(sortCol int) {
 		total:     total,
 		isSummary: true,
 	})
+	// set data & refresh
+	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r industrySlotRow) set.Set[string] {
+		return r.tags
+	})...).All()))
+	if len(a.selectTag.Options) == 0 {
+		a.selectTag.Disable()
+	} else {
+		a.selectTag.Enable()
+	}
 	a.rowsFiltered = rows
 	a.body.Refresh()
 }
@@ -279,7 +297,8 @@ func (a *industrySlots) update() {
 }
 
 func (*industrySlots) fetchData(s services, slotType app.IndustryJobType) ([]industrySlotRow, error) {
-	oo, err := s.cs.ListAllCharactersIndustrySlots(context.Background(), slotType)
+	ctx := context.Background()
+	oo, err := s.cs.ListAllCharactersIndustrySlots(ctx, slotType)
 	if err != nil {
 		return nil, err
 	}
@@ -292,6 +311,13 @@ func (*industrySlots) fetchData(s services, slotType app.IndustryJobType) ([]ind
 			free:          o.Free,
 			total:         o.Total,
 		}
+		tags, err := s.cs.ListTagsForCharacter(ctx, o.CharacterID)
+		if err != nil {
+			return nil, err
+		}
+		r.tags = set.Collect(xiter.MapSlice(tags, func(x *app.Tag) string {
+			return x.Name
+		}))
 		rows = append(rows, r)
 	}
 	return rows, nil
