@@ -345,18 +345,11 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	// more destination
 	var moreNav *iwidget.Navigator
-	makeSettingsMenu := func(actions []settingAction) (fyne.Resource, *fyne.Menu) {
-		items := make([]*fyne.MenuItem, 0)
-		for _, a := range actions {
-			items = append(items, fyne.NewMenuItem(a.Label, a.Action))
-		}
-		return theme.MoreVerticalIcon(), fyne.NewMenu("", items...)
-	}
 	navItemUpdateStatus := iwidget.NewListItemWithIcon(
 		"Update status",
 		theme.NewThemedResource(icons.UpdateSvg),
 		func() {
-			u.showUpdateStatusWindow()
+			showUpdateStatusWindow(u.baseUI)
 		},
 	)
 	navItemManageCharacters := iwidget.NewListItemWithIcon(
@@ -373,45 +366,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			))
 		},
 	)
-	navItemGeneralSettings := iwidget.NewListItem(
-		"General",
-		func() {
-			moreNav.Push(iwidget.NewAppBar(
-				"General",
-				u.userSettings.GeneralContent,
-				kxwidget.NewIconButtonWithMenu(makeSettingsMenu(u.userSettings.GeneralActions)),
-			))
-		},
-	)
-	navItemNotificationSettings := iwidget.NewListItem(
-		"Notifications",
-		func() {
-			u.userSettings.OnCommunicationGroupSelected = func(
-				title string, content fyne.CanvasObject, actions []settingAction,
-			) {
-				moreNav.Push(iwidget.NewAppBar(
-					title,
-					content,
-					kxwidget.NewIconButtonWithMenu(makeSettingsMenu(actions)),
-				))
-			}
-			moreNav.Push(iwidget.NewAppBar(
-				"Notifications",
-				u.userSettings.NotificationSettings,
-				kxwidget.NewIconButtonWithMenu(makeSettingsMenu(u.userSettings.NotificationActions)),
-			))
-		},
-	)
-	navItemTags := iwidget.NewListItem(
-		"Tags",
-		func() {
-			moreNav.Push(iwidget.NewAppBar(
-				"Tags",
-				u.userSettings.Tags,
-				kxwidget.NewIconButtonWithMenu(makeSettingsMenu(u.userSettings.TagsActions)),
-			))
-		},
-	)
+
 	navItemAbout := iwidget.NewListItemWithIcon(
 		"About",
 		theme.InfoIcon(),
@@ -424,14 +379,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			"Settings",
 			theme.NewThemedResource(icons.CogSvg),
 			func() {
-				moreNav.Push(iwidget.NewAppBar(
-					"Settings",
-					iwidget.NewNavList(
-						navItemGeneralSettings,
-						navItemNotificationSettings,
-						navItemTags,
-					),
-				))
+				showSettingsWindow(u.baseUI)
 			},
 		),
 		navItemManageCharacters,

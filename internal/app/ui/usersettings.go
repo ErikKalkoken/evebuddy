@@ -19,6 +19,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	fynetooltip "github.com/dweymouth/fyne-tooltip"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -35,88 +37,77 @@ type settingAction struct {
 	Label  string
 	Action func()
 }
-
-// TODO: Improve switch API to allow switch not to be set on error
-
 type userSettings struct {
 	widget.BaseWidget
 
-	NotificationActions       []settingAction
-	NotificationSettings      fyne.CanvasObject // TODO: Refactor into widget
-	GeneralActions            []settingAction
-	GeneralContent            fyne.CanvasObject // TODO: Refactor into widget
-	CommunicationGroupContent fyne.CanvasObject // TODO: Refactor into widget
-	Tags                      fyne.CanvasObject
-	TagsActions               []settingAction
-
-	OnCommunicationGroupSelected func(title string, content fyne.CanvasObject, actions []settingAction)
-
-	showSnackbar func(string)
-	sb           *iwidget.Snackbar
-	u            *baseUI
-	w            fyne.Window
+	needUpdate bool
+	sb         *iwidget.Snackbar
+	u          *baseUI
+	w          fyne.Window
 }
 
-func newSettings(u *baseUI) *userSettings {
+func showSettingsWindow(u *baseUI) {
+	title := u.MakeWindowTitle("Settings")
+	for _, w := range u.app.Driver().AllWindows() {
+		if w.Title() == title {
+			w.Show()
+			return
+		}
+	}
+	w := u.app.NewWindow(title)
+	a := newSettings(u, w)
+	w.SetContent(fynetooltip.AddWindowToolTipLayer(a, w.Canvas()))
+	w.Resize(fyne.Size{Width: 700, Height: 500})
+	w.Show()
+}
+
+func newSettings(u *baseUI, w fyne.Window) *userSettings {
 	a := &userSettings{
-		showSnackbar: u.ShowSnackbar,
-		u:            u,
-		w:            u.MainWindow(),
+		sb: iwidget.NewSnackbar(w),
+		u:  u,
+		w:  w,
 	}
 	a.ExtendBaseWidget(a)
-	a.GeneralContent, a.GeneralActions = a.makeGeneralSettingsPage()
-	a.NotificationSettings, a.NotificationActions = a.makeNotificationPage()
-	a.Tags, a.TagsActions = a.makeTagsPage()
+	a.sb.Start()
+	w.SetOnClosed(func() {
+		if a.needUpdate {
+			u.updateCrossPages()
+		}
+		a.sb.Stop()
+	})
 	return a
 }
 
 func (a *userSettings) CreateRenderer() fyne.WidgetRenderer {
-	makeSettingsPage := func(title string, content fyne.CanvasObject, actions []settingAction) fyne.CanvasObject {
-		t := widget.NewLabel(title)
-		t.TextStyle.Bold = true
-		items := make([]*fyne.MenuItem, 0)
-		for _, a := range actions {
-			items = append(items, fyne.NewMenuItem(a.Label, a.Action))
-		}
-		options := iwidget.NewContextMenuButtonWithIcon("", theme.MoreHorizontalIcon(), fyne.NewMenu("", items...))
-		if len(actions) == 0 {
-			options.Hide()
-		}
-		return container.NewBorder(
-			container.NewVBox(container.NewHBox(t, layout.NewSpacer(), options), widget.NewSeparator()),
-			nil,
-			nil,
-			nil,
-			container.NewScroll(content),
-		)
+	makeSettingsPage := func(title string, content fyne.CanvasObject, action *kxwidget.IconButton) fyne.CanvasObject {
+		return iwidget.NewAppBar(title, content, action)
 	}
+	generalContent, generalActions := a.makeGeneralSettingsPage()
+	notificationContent, notificationActions := a.makeNotificationPage()
+	tagsContent, tagsActions := a.makeTagsPage()
 	tabs := container.NewAppTabs(
-		container.NewTabItem("General", makeSettingsPage("General", a.GeneralContent, a.GeneralActions)),
-		container.NewTabItem("Notifications", makeSettingsPage("Notifications", a.NotificationSettings, a.NotificationActions)),
-		container.NewTabItem("Tags", makeSettingsPage("Tags", a.Tags, a.TagsActions)),
+		container.NewTabItem("General", makeSettingsPage(
+			"General",
+			generalContent,
+			generalActions,
+		)),
+		container.NewTabItem("Notifications", makeSettingsPage(
+			"Notifications",
+			notificationContent,
+			notificationActions,
+		)),
+		container.NewTabItem("Tags", makeSettingsPage(
+			"Tags",
+			tagsContent,
+			tagsActions,
+		)),
 	)
 	tabs.SetTabLocation(container.TabLocationLeading)
 	return widget.NewSimpleRenderer(tabs)
 }
 
-func (a *userSettings) SetWindow(w fyne.Window) {
-	a.w = w
-	if a.sb != nil {
-		a.sb.Stop()
-	}
-	a.sb = iwidget.NewSnackbar(w)
-	a.sb.Start()
-	a.showSnackbar = func(s string) {
-		a.sb.Show(s)
-	}
-}
-
-func (a *userSettings) currentWindow() fyne.Window {
-	return a.w
-}
-
-func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []settingAction) {
-	logLevel := iwidget.NewSettingItemOptions(
+func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.IconButton) {
+	logLevel := NewSettingItemOptions(
 		"Log level",
 		"Set current log level",
 		a.u.settings.LogLevelNames(),
@@ -129,10 +120,10 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []settingAc
 			s.SetLogLevel(v)
 			slog.SetLogLoggerLevel(s.LogLevelSlog())
 		},
-		a.currentWindow,
+		a.w,
 	)
 	vMin, vMax, vDef := a.u.settings.MaxMailsPresets()
-	maxMail := iwidget.NewSettingItemSlider(
+	maxMail := NewSettingItemSlider(
 		"Maximum mails",
 		"Max number of mails downloaded. 0 = unlimited.",
 		float64(vMin),
@@ -144,10 +135,10 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []settingAc
 		func(v float64) {
 			a.u.settings.SetMaxMails(int(v))
 		},
-		a.currentWindow,
+		a.w,
 	)
 	vMin, vMax, vDef = a.u.settings.MaxWalletTransactionsPresets()
-	maxWallet := iwidget.NewSettingItemSlider(
+	maxWallet := NewSettingItemSlider(
 		"Maximum wallet transaction",
 		"Max wallet transactions downloaded. 0 = unlimited.",
 		float64(vMin),
@@ -159,9 +150,9 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []settingAc
 		func(v float64) {
 			a.u.settings.SetMaxWalletTransactions(int(v))
 		},
-		a.currentWindow,
+		a.w,
 	)
-	preferMarketTab := iwidget.NewSettingItemSwitch(
+	preferMarketTab := NewSettingItemSwitch(
 		"Prefer market tab",
 		"Show market tab for tradeable items",
 		func() bool {
@@ -171,7 +162,7 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []settingAc
 			a.u.settings.SetPreferMarketTab(v)
 		},
 	)
-	developerMode := iwidget.NewSettingItemSwitch(
+	developerMode := NewSettingItemSwitch(
 		"Developer Mode",
 		"App shows additional technical information like Character IDs",
 		func() bool {
@@ -182,18 +173,18 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []settingAc
 		},
 	)
 
-	items := []iwidget.SettingItem{
-		iwidget.NewSettingItemHeading("Application"),
+	items := []SettingItem{
+		NewSettingItemHeading("Application"),
 		logLevel,
 		preferMarketTab,
 		developerMode,
-		iwidget.NewSettingItemSeparator(),
-		iwidget.NewSettingItemHeading("EVE Online"),
+		NewSettingItemSeparator(),
+		NewSettingItemHeading("EVE Online"),
 		maxMail,
 		maxWallet,
 	}
 
-	sysTray := iwidget.NewSettingItemSwitch(
+	sysTray := NewSettingItemSwitch(
 		"Close button",
 		"App will minimize to system tray when closed (requires restart)",
 		func() bool {
@@ -207,12 +198,12 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []settingAc
 		items = slices.Insert(items, 2, sysTray)
 	}
 
-	list := iwidget.NewSettingList(items)
+	list := NewSettingList(items)
 
 	clear := settingAction{
 		Label: "Clear cache",
 		Action: func() {
-			w := a.currentWindow()
+			w := a.w
 			a.u.ShowConfirmDialog(
 				"Clear Cache",
 				"Are you sure you want to clear the cache?",
@@ -287,7 +278,7 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, []settingAc
 			},
 		})
 	}
-	return list, actions
+	return list, makeIconButtonFromActions(actions)
 }
 
 func (a *userSettings) showDeleteFileDialog(name, path string) {
@@ -313,10 +304,10 @@ func (a *userSettings) showDeleteFileDialog(name, path string) {
 			}()
 			if err != nil {
 				slog.Error("delete "+name, "path", path, "error", err)
-				a.showSnackbar("ERROR: Failed to delete " + name)
+				a.sb.Show("ERROR: Failed to delete " + name)
 			} else {
 				titler := cases.Title(language.English)
-				a.showSnackbar(titler.String(name) + " deleted")
+				a.sb.Show(titler.String(name) + " deleted")
 			}
 		}, a.w)
 }
@@ -325,7 +316,7 @@ func (a *userSettings) showExportFileDialog(path string) {
 	filename := filepath.Base(path)
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
-		a.showSnackbar("No file to export: " + filename)
+		a.sb.Show("No file to export: " + filename)
 		return
 	} else if err != nil {
 		a.u.ShowErrorDialog("Failed to open "+filename, err, a.w)
@@ -344,7 +335,7 @@ func (a *userSettings) showExportFileDialog(path string) {
 				if _, err := writer.Write(data); err != nil {
 					return err
 				}
-				a.showSnackbar("File " + filename + " exported")
+				a.sb.Show("File " + filename + " exported")
 				return nil
 			}()
 			if err2 != nil {
@@ -357,7 +348,7 @@ func (a *userSettings) showExportFileDialog(path string) {
 	d.Show()
 }
 
-func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingAction) {
+func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 	groupsAndTypes := make(map[app.NotificationGroup][]evenotification.Type)
 	for n := range evenotification.SupportedTypes().All() {
 		c := evenotification.Type2group[n]
@@ -374,7 +365,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 	typesEnabled := a.u.settings.NotificationTypesEnabled()
 
 	// add global items
-	notifyCommunications := iwidget.NewSettingItemSwitch(
+	notifyCommunications := NewSettingItemSwitch(
 		"Notify communications",
 		"Whether to notify new communications",
 		func() bool {
@@ -387,7 +378,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 			}
 		},
 	)
-	notifyMails := iwidget.NewSettingItemSwitch(
+	notifyMails := NewSettingItemSwitch(
 		"Notify mails",
 		"Whether to notify new mails",
 		func() bool {
@@ -400,7 +391,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 			}
 		},
 	)
-	notifyPI := iwidget.NewSettingItemSwitch(
+	notifyPI := NewSettingItemSwitch(
 		"Planetary Industry",
 		"Whether to notify about expired extractions",
 		func() bool {
@@ -413,7 +404,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 			}
 		},
 	)
-	notifyTraining := iwidget.NewSettingItemSwitch(
+	notifyTraining := NewSettingItemSwitch(
 		"Notify Training",
 		"Whether to notify when skillqueue is empty",
 		func() bool {
@@ -424,21 +415,21 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 			if on {
 				err := a.u.cs.EnableAllTrainingWatchers(ctx)
 				if err != nil {
-					a.u.ShowErrorDialog("failed to enable training notification", err, a.currentWindow())
+					a.u.ShowErrorDialog("failed to enable training notification", err, a.w)
 				} else {
 					a.u.settings.SetNotifyTrainingEnabled(on)
 				}
 			} else {
 				err := a.u.cs.DisableAllTrainingWatchers(ctx)
 				if err != nil {
-					a.u.ShowErrorDialog("failed to disable training notification", err, a.currentWindow())
+					a.u.ShowErrorDialog("failed to disable training notification", err, a.w)
 				} else {
 					a.u.settings.SetNotifyCommunicationsEnabled(false)
 				}
 			}
 		},
 	)
-	notifyContracts := iwidget.NewSettingItemSwitch(
+	notifyContracts := NewSettingItemSwitch(
 		"Notify Contracts",
 		"Whether to notify when contract status changes",
 		func() bool {
@@ -452,7 +443,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 		},
 	)
 	vMin, vMax, vDef := a.u.settings.NotifyTimeoutHoursPresets()
-	notifTimeout := iwidget.NewSettingItemSlider(
+	notifTimeout := NewSettingItemSlider(
 		"Notify Timeout",
 		"Events older then this value in hours will not be notified",
 		float64(vMin),
@@ -464,10 +455,10 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 		func(v float64) {
 			a.u.settings.SetNotifyTimeoutHours(int(v))
 		},
-		a.currentWindow,
+		a.w,
 	)
-	items := []iwidget.SettingItem{
-		iwidget.NewSettingItemHeading("Global"),
+	items := []SettingItem{
+		NewSettingItemHeading("Global"),
 		notifyCommunications,
 		notifyMails,
 		notifyPI,
@@ -475,8 +466,8 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 		notifyContracts,
 		notifTimeout,
 	}
-	items = append(items, iwidget.NewSettingItemSeparator())
-	items = append(items, iwidget.NewSettingItemHeading("Communication Groups"))
+	items = append(items, NewSettingItemSeparator())
+	items = append(items, NewSettingItemHeading("Communication Groups"))
 
 	// add communication groups
 	const groupHint = "Choose which communications to notify about"
@@ -487,11 +478,11 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 	groupPages := make(map[app.NotificationGroup]groupPage) // for pre-constructing group pages
 	for _, g := range groups {
 		groupPages[g] = func() groupPage {
-			items2 := make([]iwidget.SettingItem, 0)
+			items2 := make([]SettingItem, 0)
 			for _, nt := range groupsAndTypes[g] {
 				ntStr := nt.String()
 				ntDisplay := nt.Display()
-				it := iwidget.NewSettingItemSwitch(
+				it := NewSettingItemSwitch(
 					ntDisplay,
 					"",
 					func() bool {
@@ -508,7 +499,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 				)
 				items2 = append(items2, it)
 			}
-			list2 := iwidget.NewSettingList(items2)
+			list2 := NewSettingList(items2)
 			enableAll := settingAction{
 				Label: "Enable all",
 				Action: func() {
@@ -533,7 +524,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 			}
 		}()
 
-		it := iwidget.NewSettingItemCustom(g.String(), groupHint,
+		it := NewSettingItemCustom(g.String(), groupHint,
 			func() any {
 				var enabled int
 				for _, nt := range groupsAndTypes[g] {
@@ -548,16 +539,11 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 				}
 				return "Off"
 			},
-			func(it iwidget.SettingItem, refresh func()) {
+			func(it SettingItem, refresh func()) {
 				p := groupPages[g]
 				title := g.String()
 				hint := widget.NewLabel(groupHint)
 				hint.SizeName = theme.SizeNameCaptionText
-				if a.OnCommunicationGroupSelected != nil {
-					c := container.NewBorder(hint, nil, nil, nil, p.content)
-					a.OnCommunicationGroupSelected(title, c, p.actions)
-					return
-				}
 				var d dialog.Dialog
 				buttons := container.NewHBox(
 					widget.NewButton("Close", func() {
@@ -569,7 +555,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 					buttons.Add(widget.NewButton(a.Label, a.Action))
 				}
 				c := container.NewBorder(nil, container.NewVBox(hint, buttons), nil, nil, p.content)
-				w := a.currentWindow()
+				w := a.w
 				d = dialog.NewCustomWithoutButtons(title, c, w)
 				a.u.ModifyShortcutsForDialog(d, w)
 				d.Show()
@@ -581,7 +567,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 		items = append(items, it)
 	}
 
-	list := iwidget.NewSettingList(items)
+	list := NewSettingList(items)
 	reset := settingAction{
 		Label: "Reset to defaults",
 		Action: func() {
@@ -623,25 +609,22 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, []settingActio
 			a.u.App().SendNotification(n)
 		},
 	}
-	return list, []settingAction{reset, all, none, send}
+	return list, makeIconButtonFromActions([]settingAction{reset, all, none, send})
 }
 
-// TODO: Refactor tags page into custom widget
-
-func (a *userSettings) makeTagsPage() (fyne.CanvasObject, []settingAction) {
+func (a *userSettings) makeTagsPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 	var selectedTag *app.Tag
 	var characterList *widget.List
 	characters := make([]*app.EntityShort[int32], 0)
 	var updateCharacters func(tag *app.Tag)
 
-	addCharacter := widget.NewButtonWithIcon("Add character", theme.ContentAddIcon(), func() {
+	addCharacter := kxwidget.NewIconButton(theme.ContentAddIcon(), func() {
 		if selectedTag == nil {
 			return
 		}
-		window := a.currentWindow()
 		_, others, err := a.u.cs.ListCharactersForTag(context.Background(), selectedTag.ID)
 		if err != nil {
-			a.u.ShowErrorDialog("Failed to list characters for tag", err, window)
+			a.u.ShowErrorDialog("Failed to list characters for tag", err, a.w)
 			characters = make([]*app.EntityShort[int32], 0)
 			return
 		}
@@ -717,35 +700,34 @@ func (a *userSettings) makeTagsPage() (fyne.CanvasObject, []settingAction) {
 					}
 					err := a.u.cs.AddTagToCharacter(context.Background(), characterID, selectedTag.ID)
 					if err != nil {
-						a.u.ShowErrorDialog("Failed to add tag to character", err, window)
+						a.u.ShowErrorDialog("Failed to add tag to character", err, a.w)
 						return
 					}
 				}
 				updateCharacters(selectedTag)
+				a.needUpdate = true
 			},
-			window,
+			a.w,
 		)
-		a.u.ModifyShortcutsForDialog(d, window)
+		a.u.ModifyShortcutsForDialog(d, a.w)
 		d.Show()
-		_, s := window.Canvas().InteractiveArea()
+		_, s := a.w.Canvas().InteractiveArea()
 		d.Resize(fyne.NewSize(s.Width*0.8, s.Height*0.8))
 	})
 	addCharacter.Disable()
 
-	charactersTop := widget.NewLabel("Template")
-	charactersTop.TextStyle.Bold = true
-	charactersTop.Hide()
+	var manageCharacters *iwidget.AppBar
 
 	updateCharacters = func(tag *app.Tag) {
 		if tag == nil {
 			return
 		}
 		selectedTag = tag
-		charactersTop.SetText("Tag: " + tag.Name)
-		charactersTop.Show()
+		manageCharacters.SetTitle("Tag: " + tag.Name)
+		manageCharacters.Show()
 		tagged, others, err := a.u.cs.ListCharactersForTag(context.Background(), tag.ID)
 		if err != nil {
-			a.u.ShowErrorDialog("Failed to list characters for tag", err, a.currentWindow())
+			a.u.ShowErrorDialog("Failed to list characters for tag", err, a.w)
 			characters = make([]*app.EntityShort[int32], 0)
 			return
 		}
@@ -758,24 +740,28 @@ func (a *userSettings) makeTagsPage() (fyne.CanvasObject, []settingAction) {
 		}
 	}
 
+	p := theme.Padding()
 	characterList = widget.NewList(
 		func() int {
 			return len(characters)
 		},
 		func() fyne.CanvasObject {
-			delete := iwidget.NewTappableIcon(theme.CancelIcon(), nil)
-			delete.SetToolTip("Remove character from tag")
+			remove := iwidget.NewTappableIcon(theme.CancelIcon(), nil)
+			remove.SetToolTip("Remove character from tag")
 			portrait := iwidget.NewImageFromResource(
 				icons.Characterplaceholder64Jpeg,
 				fyne.NewSquareSize(app.IconUnitSize),
 			)
 			name := widget.NewLabel("Template")
-			return container.NewBorder(
-				nil,
-				nil,
-				portrait,
-				delete,
-				name,
+			return container.New(
+				layout.NewCustomPaddedLayout(p, p, p, p),
+				container.NewBorder(
+					nil,
+					nil,
+					portrait,
+					remove,
+					name,
+				),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -783,7 +769,7 @@ func (a *userSettings) makeTagsPage() (fyne.CanvasObject, []settingAction) {
 				return
 			}
 			character := characters[id]
-			box := co.(*fyne.Container).Objects
+			box := co.(*fyne.Container).Objects[0].(*fyne.Container).Objects
 			box[0].(*widget.Label).SetText(character.Name)
 
 			portrait := box[1].(*canvas.Image)
@@ -794,16 +780,18 @@ func (a *userSettings) makeTagsPage() (fyne.CanvasObject, []settingAction) {
 				})
 			})
 
-			box[2].(*iwidget.TappableIcon).OnTapped = func() {
+			remove := box[2].(*iwidget.TappableIcon)
+			remove.OnTapped = func() {
 				if selectedTag == nil {
 					return
 				}
 				err := a.u.cs.RemoveTagFromCharacter(context.Background(), character.ID, selectedTag.ID)
 				if err != nil {
-					a.u.ShowErrorDialog("Failed to list characters", err, a.currentWindow())
+					a.u.ShowErrorDialog("Failed to list characters", err, a.w)
 					return
 				}
 				updateCharacters(selectedTag)
+				a.needUpdate = true
 			}
 		},
 	)
@@ -811,13 +799,6 @@ func (a *userSettings) makeTagsPage() (fyne.CanvasObject, []settingAction) {
 	characterList.OnSelected = func(id widget.ListItemID) {
 		characterList.UnselectAll()
 	}
-	manageCharacters := container.NewBorder(
-		charactersTop,
-		addCharacter,
-		nil,
-		nil,
-		characterList,
-	)
 
 	tags := make([]*app.Tag, 0)
 	var tagList *widget.List
@@ -825,7 +806,7 @@ func (a *userSettings) makeTagsPage() (fyne.CanvasObject, []settingAction) {
 	updateTags := func() {
 		rows, err := a.u.cs.ListTags(context.Background())
 		if err != nil {
-			a.u.ShowErrorDialog("Failed to list tags", err, a.currentWindow())
+			a.u.ShowErrorDialog("Failed to list tags", err, a.w)
 			tags = make([]*app.Tag, 0)
 			return
 		}
@@ -834,7 +815,6 @@ func (a *userSettings) makeTagsPage() (fyne.CanvasObject, []settingAction) {
 	}
 
 	modifyTag := func(title, confirm string, execute func(name string) error) {
-		window := a.currentWindow()
 		names := set.Of(xslices.Map(tags, func(x *app.Tag) string {
 			return strings.ToLower(x.Name)
 		})...)
@@ -855,17 +835,18 @@ func (a *userSettings) makeTagsPage() (fyne.CanvasObject, []settingAction) {
 				return
 			}
 			if err := execute(name.Text); err != nil {
-				a.u.ShowErrorDialog("Failed to modify tag", err, window)
+				a.u.ShowErrorDialog("Failed to modify tag", err, a.w)
 				return
 			}
 
 			updateTags()
-		}, window,
+			a.needUpdate = true
+		}, a.w,
 		)
-		a.u.ModifyShortcutsForDialog(d, window)
+		a.u.ModifyShortcutsForDialog(d, a.w)
 		d.Show()
 		d.Resize(fyne.NewSize(300, 200))
-		window.Canvas().Focus(name)
+		a.w.Canvas().Focus(name)
 	}
 
 	tagList = widget.NewList(
@@ -901,7 +882,6 @@ func (a *userSettings) makeTagsPage() (fyne.CanvasObject, []settingAction) {
 				})
 			}
 			icons[1].(*ttwidget.Button).OnTapped = func() {
-				window := a.currentWindow()
 				s := "Are you sure you want to delete tag " + tag.Name + "?"
 				a.u.ShowConfirmDialog("Delete Tag", s, "Delete", func(confirmed bool) {
 					if !confirmed {
@@ -909,7 +889,7 @@ func (a *userSettings) makeTagsPage() (fyne.CanvasObject, []settingAction) {
 					}
 					err := a.u.cs.DeleteTag(context.Background(), tag.ID)
 					if err != nil {
-						a.u.ShowErrorDialog("Failed to delete tag", err, window)
+						a.u.ShowErrorDialog("Failed to delete tag", err, a.w)
 						return
 					}
 					updateTags()
@@ -919,8 +899,8 @@ func (a *userSettings) makeTagsPage() (fyne.CanvasObject, []settingAction) {
 					addCharacter.Disable()
 					characterList.Refresh()
 					addCharacter.Disable()
-					charactersTop.Hide()
-				}, window)
+					manageCharacters.Hide()
+				}, a.w)
 			}
 		},
 	)
@@ -934,18 +914,327 @@ func (a *userSettings) makeTagsPage() (fyne.CanvasObject, []settingAction) {
 		updateCharacters(tag)
 	}
 
-	create := settingAction{
-		Label: "Create new tag",
-		Action: func() {
+	updateTags()
+
+	manageCharacters = iwidget.NewAppBar("", container.NewPadded(characterList), addCharacter)
+	manageCharacters.Hide()
+
+	action := kxwidget.NewIconButton(
+		theme.ContentAddIcon(), func() {
 			modifyTag("Create Tag", "Create", func(name string) error {
 				_, err := a.u.cs.CreateTag(context.Background(), name)
 				return err
 			})
 		},
-	}
-	updateTags()
+	)
+	return container.NewVSplit(container.NewPadded(tagList), manageCharacters), action
+}
 
-	content := container.NewHSplit(tagList, manageCharacters)
-	content.Offset = 0.33
-	return content, []settingAction{create}
+func makeIconButtonFromActions(actions []settingAction) *kxwidget.IconButton {
+	items := make([]*fyne.MenuItem, 0)
+	for _, a := range actions {
+		items = append(items, fyne.NewMenuItem(a.Label, a.Action))
+	}
+	return kxwidget.NewIconButtonWithMenu(
+		theme.MoreHorizontalIcon(),
+		fyne.NewMenu("", items...),
+	)
+}
+
+// relative size of dialog window to current window
+const (
+	dialogWidthScale = 0.8 // except on mobile it is always 100%
+	dialogHeightMin  = 100
+)
+
+type settingVariant uint
+
+const (
+	settingUndefined settingVariant = iota
+	settingCustom
+	settingHeading
+	settingSeparator
+	settingSwitch
+)
+
+// SettingItem represents an item in a setting list.
+type SettingItem struct {
+	Hint   string      // optional hint text
+	Label  string      // label
+	Getter func() any  // returns the current value for this setting
+	Setter func(v any) // sets the value for this setting
+
+	onSelected func(it SettingItem, refresh func()) // action called when selected
+	variant    settingVariant                       // the setting variant of this item
+}
+
+// NewSettingItemHeading creates a heading in a setting list.
+func NewSettingItemHeading(label string) SettingItem {
+	return SettingItem{Label: label, variant: settingHeading}
+}
+
+// NewSettingItemSeparator creates a separator in a setting list.
+func NewSettingItemSeparator() SettingItem {
+	return SettingItem{variant: settingSeparator}
+}
+
+// NewSettingItemSwitch creates a switch setting in a setting list.
+func NewSettingItemSwitch(
+	label, hint string,
+	getter func() bool,
+	onChanged func(bool),
+) SettingItem {
+	return SettingItem{
+		Label: label,
+		Hint:  hint,
+		Getter: func() any {
+			return getter()
+		},
+		Setter: func(v any) {
+			onChanged(v.(bool))
+		},
+		onSelected: func(it SettingItem, refresh func()) {
+			it.Setter(!it.Getter().(bool))
+			refresh()
+		},
+		variant: settingSwitch,
+	}
+}
+
+// NewSettingItemCustom creates a custom setting in a setting list.
+func NewSettingItemCustom(
+	label, hint string,
+	getter func() any,
+	onSelected func(it SettingItem, refresh func()),
+) SettingItem {
+	return SettingItem{
+		Label:      label,
+		Hint:       hint,
+		Getter:     getter,
+		onSelected: onSelected,
+		variant:    settingCustom,
+	}
+}
+
+func NewSettingItemSlider(
+	label, hint string,
+	minV, maxV, defaultV float64,
+	getter func() float64,
+	setter func(v float64),
+	window fyne.Window,
+) SettingItem {
+	return SettingItem{
+		Label: label,
+		Hint:  hint,
+		Getter: func() any {
+			return getter()
+		},
+		Setter: func(v any) {
+			switch x := v.(type) {
+			case float64:
+				setter(x)
+			case int:
+				setter(float64(x))
+			default:
+				panic("setting item: unsupported type: " + label)
+			}
+		},
+		onSelected: func(it SettingItem, refresh func()) {
+			sl := kxwidget.NewSlider(minV, maxV)
+			sl.SetValue(float64(getter()))
+			sl.OnChangeEnded = setter
+			d := makeSettingDialog(
+				sl,
+				it.Label,
+				it.Hint,
+				func() {
+					sl.SetValue(defaultV)
+				},
+				refresh,
+				window,
+			)
+			d.Show()
+		},
+		variant: settingCustom,
+	}
+}
+
+func NewSettingItemOptions(
+	label, hint string,
+	options []string,
+	defaultV string,
+	getter func() string,
+	setter func(v string),
+	window fyne.Window,
+) SettingItem {
+	return SettingItem{
+		Label: label,
+		Hint:  hint,
+		Getter: func() any {
+			return getter()
+		},
+		Setter: func(v any) {
+			setter(v.(string))
+		},
+		onSelected: func(it SettingItem, refresh func()) {
+			sel := widget.NewRadioGroup(options, setter)
+			sel.SetSelected(it.Getter().(string))
+			d := makeSettingDialog(
+				sel,
+				it.Label,
+				it.Hint,
+				func() {
+					sel.SetSelected(defaultV)
+				},
+				refresh,
+				window,
+			)
+			d.Show()
+		},
+		variant: settingCustom,
+	}
+}
+
+func makeSettingDialog(
+	setting fyne.CanvasObject,
+	label, hint string,
+	reset, refresh func(),
+	w fyne.Window,
+) dialog.Dialog {
+	var d dialog.Dialog
+	buttons := container.NewHBox(
+		widget.NewButton("Close", func() {
+			d.Hide()
+		}),
+		layout.NewSpacer(),
+		widget.NewButton("Reset", func() {
+			reset()
+		}),
+	)
+	l := widget.NewLabel(hint)
+	l.SizeName = theme.SizeNameCaptionText
+	c := container.NewBorder(
+		nil,
+		container.NewVBox(l, buttons),
+		nil,
+		nil,
+		setting,
+	)
+	// TODO: add modify shortcuts
+	d = dialog.NewCustomWithoutButtons(label, c, w)
+	_, s := w.Canvas().InteractiveArea()
+	var width float32
+	if fyne.CurrentDevice().IsMobile() {
+		width = s.Width
+	} else {
+		width = s.Width * dialogWidthScale
+	}
+	d.Resize(fyne.NewSize(width, dialogHeightMin))
+	d.SetOnClosed(refresh)
+	return d
+}
+
+// SettingList is a custom list widget for settings.
+type SettingList struct {
+	widget.List
+
+	SelectDelay time.Duration
+}
+
+// NewSettingList returns a new SettingList widget.
+func NewSettingList(items []SettingItem) *SettingList {
+	w := &SettingList{SelectDelay: 200 * time.Millisecond}
+	w.Length = func() int {
+		return len(items)
+	}
+	w.CreateItem = func() fyne.CanvasObject {
+		// p := theme.Padding()
+		label := widget.NewLabel("Template")
+		label.Truncation = fyne.TextTruncateClip
+		hint := widget.NewLabel("")
+		hint.Truncation = fyne.TextTruncateClip
+		hint.SizeName = theme.SizeNameCaptionText
+		c := container.NewPadded(container.NewBorder(
+			nil,
+			container.New(layout.NewCustomPaddedLayout(0, 0, 0, 0), widget.NewSeparator()),
+			nil,
+			container.NewVBox(layout.NewSpacer(), container.NewStack(kxwidget.NewSwitch(nil), widget.NewLabel("")), layout.NewSpacer()),
+			container.New(layout.NewCustomPaddedVBoxLayout(0), layout.NewSpacer(), label, hint, layout.NewSpacer()),
+		))
+		return c
+	}
+	w.UpdateItem = func(id widget.ListItemID, co fyne.CanvasObject) {
+		if id >= len(items) {
+			return
+		}
+		it := items[id]
+		border := co.(*fyne.Container).Objects[0].(*fyne.Container).Objects
+		right := border[2].(*fyne.Container).Objects[1].(*fyne.Container).Objects
+		sw := right[0].(*kxwidget.Switch)
+		value := right[1].(*widget.Label)
+		main := border[0].(*fyne.Container).Objects
+		hint := main[2].(*widget.Label)
+		if it.Hint != "" {
+			hint.SetText(it.Hint)
+			hint.Show()
+		} else {
+			hint.Hide()
+		}
+		label := main[1].(*widget.Label)
+		label.Text = it.Label
+		label.TextStyle.Bold = false
+		switch it.variant {
+		case settingHeading:
+			label.TextStyle.Bold = true
+			value.Hide()
+			sw.Hide()
+		case settingSwitch:
+			value.Hide()
+			sw.OnChanged = func(v bool) {
+				it.Setter(v)
+			}
+			sw.On = it.Getter().(bool)
+			sw.Show()
+			sw.Refresh()
+		case settingCustom:
+			value.SetText(fmt.Sprint(it.Getter()))
+			value.Show()
+			sw.Hide()
+		}
+		sep := border[1].(*fyne.Container)
+		if it.variant == settingSeparator {
+			sep.Show()
+			value.Hide()
+			sw.Hide()
+			label.Hide()
+		} else {
+			sep.Hide()
+			label.Show()
+			label.Refresh()
+		}
+		w.SetItemHeight(id, co.(*fyne.Container).MinSize().Height)
+	}
+	w.OnSelected = func(id widget.ListItemID) {
+		if id >= len(items) {
+			w.UnselectAll()
+			return
+		}
+		it := items[id]
+		if it.onSelected == nil {
+			w.UnselectAll()
+			return
+		}
+		it.onSelected(it, func() {
+			w.RefreshItem(id)
+		})
+		go func() {
+			time.Sleep(w.SelectDelay)
+			fyne.Do(func() {
+				w.UnselectAll()
+			})
+		}()
+	}
+	w.HideSeparators = true
+	w.ExtendBaseWidget(w)
+	return w
 }

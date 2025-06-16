@@ -131,6 +131,27 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 	return a
 }
 
+func showUpdateStatusWindow(u *baseUI) {
+	title := u.MakeWindowTitle("Update Status")
+	for _, w := range u.app.Driver().AllWindows() {
+		if w.Title() == title {
+			w.Show()
+			return
+		}
+	}
+	w := u.app.NewWindow(title)
+	a := newUpdateStatus(u)
+	a.update()
+	w.SetContent(a)
+	w.Resize(fyne.Size{Width: 1100, Height: 500})
+	ctx, cancel := context.WithCancel(context.Background())
+	a.startTicker(ctx)
+	w.SetOnClosed(func() {
+		cancel()
+	})
+	w.Show()
+}
+
 func (a *updateStatus) CreateRenderer() fyne.WidgetRenderer {
 	updateMenu := fyne.NewMenu("",
 		fyne.NewMenuItem("Update all characters", func() {

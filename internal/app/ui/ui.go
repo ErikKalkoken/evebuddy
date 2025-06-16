@@ -123,7 +123,6 @@ type baseUI struct {
 	locations                  *locations
 	training                   *trainings
 	wealth                     *wealth
-	userSettings               *userSettings
 
 	app                fyne.App
 	clearCache         func() // clear all caches
@@ -143,7 +142,6 @@ type baseUI struct {
 	scs                *statuscacheservice.StatusCacheService
 	settings           *settings.Settings
 	snackbar           *iwidget.Snackbar
-	statusWindow       fyne.Window
 	wasStarted         atomic.Bool // whether the app has already been started at least once
 	window             fyne.Window
 
@@ -234,7 +232,6 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	u.training = newTrainings(u)
 	u.wealth = newWealth(u)
 	u.snackbar = iwidget.NewSnackbar(u.window)
-	u.userSettings = newSettings(u)
 	u.MainWindow().SetMaster()
 
 	// SetOnStarted is called on initial start,
@@ -1125,26 +1122,6 @@ func (u *baseUI) ModifyShortcutsForDialog(d dialog.Dialog, w fyne.Window) {
 			u.enableMenuShortcuts()
 		})
 	}
-}
-
-func (u *baseUI) showUpdateStatusWindow() {
-	if u.statusWindow != nil {
-		u.statusWindow.Show()
-		return
-	}
-	w := u.app.NewWindow(u.MakeWindowTitle("Update Status"))
-	a := newUpdateStatus(u)
-	a.update()
-	w.SetContent(a)
-	w.Resize(fyne.Size{Width: 1100, Height: 500})
-	ctx, cancel := context.WithCancel(context.Background())
-	a.startTicker(ctx)
-	w.SetOnClosed(func() {
-		cancel()
-		u.statusWindow = nil
-	})
-	u.statusWindow = w
-	w.Show()
 }
 
 func (u *baseUI) ShowLocationInfoWindow(id int64) {

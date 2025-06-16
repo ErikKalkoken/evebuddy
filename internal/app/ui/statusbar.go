@@ -61,7 +61,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		u.showManageCharactersWindow()
 	})
 	a.updateStatus = newStatusBarItem(theme.NewThemedResource(icons.UpdateSvg), "?", func() {
-		u.showUpdateStatusWindow()
+		showUpdateStatusWindow(u.baseUI)
 	})
 	a.eveClock = newStatusBarItem(
 		theme.NewThemedResource(icons.AccesstimefilledSvg),

@@ -16,7 +16,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	fynetooltip "github.com/dweymouth/fyne-tooltip"
 	"github.com/icrowley/fake"
 	"golang.org/x/sync/singleflight"
 
@@ -397,22 +396,6 @@ func (u *DesktopUI) ResetDesktopSettings() {
 	u.settings.ResetSysTrayEnabled()
 }
 
-func (u *DesktopUI) ShowSettingsWindow() {
-	if u.settingsWindow != nil {
-		u.settingsWindow.Show()
-		return
-	}
-	w := u.App().NewWindow(u.MakeWindowTitle("Settings"))
-	u.userSettings.SetWindow(w)
-	w.SetContent(fynetooltip.AddWindowToolTipLayer(u.userSettings, w.Canvas()))
-	w.Resize(fyne.Size{Width: 700, Height: 500})
-	w.SetOnClosed(func() {
-		u.settingsWindow = nil
-		u.updateCrossPages()
-	})
-	w.Show()
-}
-
 func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
 	w := u.App().NewWindow(u.MakeWindowTitle(title))
@@ -571,7 +554,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierControl,
 			},
 			func(fyne.Shortcut) {
-				u.ShowSettingsWindow()
+				showSettingsWindow(u.baseUI)
 			}},
 		"manageCharacters": {
 			&desktop.CustomShortcut{
@@ -587,7 +570,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt,
 			},
 			func(fyne.Shortcut) {
-				u.showUpdateStatusWindow()
+				showUpdateStatusWindow(u.baseUI)
 			}},
 		"quit": {
 			&desktop.CustomShortcut{
