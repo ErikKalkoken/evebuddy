@@ -13,7 +13,10 @@ import (
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -25,6 +28,7 @@ type locationRow struct {
 	regionName      string
 	solarSystemName string
 	shipName        string
+	tags            set.Set[string]
 }
 
 type locations struct {
@@ -36,6 +40,7 @@ type locations struct {
 	rowsFiltered      []locationRow
 	selectRegion      *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
+	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *sortButton
 	bottom            *widget.Label
 	u                 *baseUI
@@ -96,7 +101,9 @@ func newLocations(u *baseUI) *locations {
 	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
-
+	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
+		a.filterRows(-1)
+	})
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
@@ -104,7 +111,7 @@ func newLocations(u *baseUI) *locations {
 }
 
 func (a *locations) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectSolarSystem, a.selectRegion)
+	filter := container.NewHBox(a.selectSolarSystem, a.selectRegion, a.selectTag)
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
 	}
@@ -165,6 +172,11 @@ func (a *locations) filterRows(sortCol int) {
 			return r.solarSystemName == x
 		})
 	}
+	if x := a.selectTag.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r locationRow) bool {
+			return r.tags.Contains(x)
+		})
+	}
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
 		slices.SortFunc(rows, func(a, b locationRow) int {
@@ -186,6 +198,10 @@ func (a *locations) filterRows(sortCol int) {
 			}
 		})
 	})
+	// set data & refresh
+	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r locationRow) set.Set[string] {
+		return r.tags
+	})...).All()))
 	a.selectRegion.SetOptions(xslices.Map(rows, func(r locationRow) string {
 		return r.regionName
 	}))
@@ -256,6 +272,13 @@ func (*locations) fetchData(s services) ([]locationRow, error) {
 		if c.Ship != nil {
 			r.shipName = c.Ship.Name
 		}
+		tags, err := s.cs.ListTagsForCharacter(ctx, c.ID)
+		if err != nil {
+			return nil, err
+		}
+		r.tags = set.Collect(xiter.MapSlice(tags, func(x *app.Tag) string {
+			return x.Name
+		}))
 		rows = append(rows, r)
 	}
 	return rows, nil

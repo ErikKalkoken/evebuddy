@@ -232,12 +232,6 @@ func (a *characters) filterRows(sortCol int) {
 	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r characterRow) set.Set[string] {
 		return r.tags
 	})...).All()))
-	if len(a.selectTag.Options) == 0 {
-		a.selectTag.Disable()
-	} else {
-		a.selectTag.Enable()
-	}
-
 	a.rowsFiltered = rows
 	a.body.Refresh()
 }

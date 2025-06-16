@@ -338,11 +338,6 @@ func (a *industryJobs) filterRows(sortCol int) {
 	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r industryJobRow) set.Set[string] {
 		return r.tags
 	})...).All()))
-	if len(a.selectTag.Options) == 0 {
-		a.selectTag.Disable()
-	} else {
-		a.selectTag.Enable()
-	}
 	a.rowsFiltered = rows
 	a.body.Refresh()
 	switch x := a.body.(type) {

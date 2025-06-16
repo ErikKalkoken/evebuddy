@@ -160,3 +160,10 @@ func TestMapSlice2(t *testing.T) {
 		assert.Equal(t, want, got)
 	})
 }
+
+func TestUnique(t *testing.T) {
+	s := []int{1, 1, 2}
+	got := slices.Collect(xiter.Unique(slices.Values(s)))
+	want := []int{1, 2}
+	assert.ElementsMatch(t, want, got)
+}
