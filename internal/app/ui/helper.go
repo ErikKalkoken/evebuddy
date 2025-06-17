@@ -1,8 +1,13 @@
 package ui
 
 import (
+	"fmt"
+	"math"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/dustin/go-humanize"
 )
 
 // makeGridOrList makes and returns a GridWrap on desktop and a List on mobile.
@@ -31,4 +36,12 @@ func makeTopLabel() *widget.Label {
 	l := widget.NewLabel("")
 	l.Wrapping = fyne.TextWrapWord
 	return l
+}
+
+func formatISKAmount(v float64) string {
+	t := humanize.Commaf(v) + " ISK"
+	if math.Abs(v) > 999 {
+		t += fmt.Sprintf(" (%s)", ihumanize.Number(v, 2))
+	}
+	return t
 }

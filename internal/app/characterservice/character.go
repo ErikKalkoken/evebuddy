@@ -2602,6 +2602,10 @@ func (s *CharacterService) ensureValidCharacterToken(ctx context.Context, t *app
 	return nil
 }
 
+func (s *CharacterService) GetWalletJournalEntry(ctx context.Context, characterID int32, refID int64) (*app.CharacterWalletJournalEntry, error) {
+	return s.st.GetCharacterWalletJournalEntry(ctx, characterID, refID)
+}
+
 func (s *CharacterService) ListWalletJournalEntries(ctx context.Context, characterID int32) ([]*app.CharacterWalletJournalEntry, error) {
 	return s.st.ListCharacterWalletJournalEntries(ctx, characterID)
 }

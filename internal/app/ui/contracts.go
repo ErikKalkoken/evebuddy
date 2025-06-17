@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"math"
 	"slices"
 	"strings"
 	"time"
@@ -410,13 +409,6 @@ func (a *contracts) showContract(r contractRow) {
 		})
 		return x
 	}
-	makeISKString := func(v float64) string {
-		t := humanize.Commaf(v) + " ISK"
-		if math.Abs(v) > 999 {
-			t += fmt.Sprintf(" (%s)", ihumanize.Number(v, 1))
-		}
-		return t
-	}
 
 	availability := container.NewHBox(widget.NewLabel(c.AvailabilityDisplay()))
 	if c.Assignee != nil {
@@ -454,22 +446,22 @@ func (a *contracts) showContract(r contractRow) {
 		if c.Collateral == 0 {
 			collateral = "(None)"
 		} else {
-			collateral = makeISKString(c.Collateral)
+			collateral = formatISKAmount(c.Collateral)
 		}
 		fi = slices.Concat(fi, []*widget.FormItem{
 			{Text: "Complete In", Widget: widget.NewLabel(fmt.Sprintf("%d days", c.DaysToComplete))},
 			{Text: "Volume", Widget: widget.NewLabel(fmt.Sprintf("%f m3", c.Volume))},
-			{Text: "Reward", Widget: widget.NewLabel(makeISKString(c.Reward))},
+			{Text: "Reward", Widget: widget.NewLabel(formatISKAmount(c.Reward))},
 			{Text: "Collateral", Widget: widget.NewLabel(collateral)},
 			{Text: "Destination", Widget: makeLocation(c.EndLocation)},
 		})
 	case app.ContractTypeItemExchange:
 		if c.Price > 0 {
-			x := widget.NewLabel(makeISKString(c.Price))
+			x := widget.NewLabel(formatISKAmount(c.Price))
 			x.Importance = widget.DangerImportance
 			fi = append(fi, widget.NewFormItem("Buyer Will Pay", x))
 		} else {
-			x := widget.NewLabel(makeISKString(c.Reward))
+			x := widget.NewLabel(formatISKAmount(c.Reward))
 			x.Importance = widget.SuccessImportance
 			fi = append(fi, widget.NewFormItem("Buyer Will Get", x))
 		}
@@ -491,11 +483,11 @@ func (a *contracts) showContract(r contractRow) {
 				d.SetOnClosed(w.Hide)
 				d.Show()
 			}
-			currentBid = fmt.Sprintf("%s (%d bids so far)", makeISKString(float64(top.Amount)), total)
+			currentBid = fmt.Sprintf("%s (%d bids so far)", formatISKAmount(float64(top.Amount)), total)
 		}
 		fi = slices.Concat(fi, []*widget.FormItem{
-			{Text: "Starting Bid", Widget: widget.NewLabel(makeISKString(c.Price))},
-			{Text: "Buyout Price", Widget: widget.NewLabel(makeISKString(c.Buyout))},
+			{Text: "Starting Bid", Widget: widget.NewLabel(formatISKAmount(c.Price))},
+			{Text: "Buyout Price", Widget: widget.NewLabel(formatISKAmount(c.Buyout))},
 			{Text: "Current Bid", Widget: widget.NewLabel(currentBid)},
 			{Text: "Expires", Widget: widget.NewLabel(makeExpiresString(c))},
 		})

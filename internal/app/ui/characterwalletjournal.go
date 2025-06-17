@@ -25,20 +25,18 @@ import (
 
 type walletJournalRow struct {
 	amount           float64
-	amountFormatted  string
 	amountDisplay    []widget.RichTextSegment
+	amountFormatted  string
 	balance          float64
 	balanceFormatted string
+	characterID      int32
 	date             time.Time
 	dateFormatted    string
 	description      string
 	reason           string
+	refID            int64
 	refType          string
 	refTypeDisplay   string
-}
-
-func (e walletJournalRow) hasReason() bool {
-	return e.reason != ""
 }
 
 func (e walletJournalRow) descriptionWithReason() string {
@@ -46,6 +44,15 @@ func (e walletJournalRow) descriptionWithReason() string {
 		return e.description
 	}
 	return fmt.Sprintf("[r] %s", e.description)
+}
+
+func (r walletJournalRow) amountImportance() widget.Importance {
+	if r.amount > 0 {
+		return widget.SuccessImportance
+	} else if r.amount < 0 {
+		return widget.DangerImportance
+	}
+	return widget.MediumImportance
 }
 
 type characterWalletJournal struct {
@@ -98,14 +105,9 @@ func newCharacterWalletJournal(u *baseUI) *characterWalletJournal {
 		}
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
-	showReasonDialog := func(r walletJournalRow) {
-		if r.hasReason() {
-			a.u.ShowInformationDialog("Reason", r.reason, a.u.MainWindow())
-		}
-	}
 	if a.u.isDesktop {
 		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r walletJournalRow) {
-			showReasonDialog(r)
+			a.showEntry(r)
 		})
 	} else {
 		a.body = a.makeDataList()
@@ -152,8 +154,8 @@ func (a *characterWalletJournal) makeDataList() *widget.List {
 			description := widget.NewLabel("Template")
 			description.Truncation = fyne.TextTruncateClip
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
-				container.NewBorder(nil, nil, nil, balance, date),
-				container.NewBorder(nil, nil, nil, value, refType),
+				container.NewBorder(nil, nil, nil, value, date),
+				container.NewBorder(nil, nil, nil, balance, refType),
 				description,
 			)
 		},
@@ -166,29 +168,24 @@ func (a *characterWalletJournal) makeDataList() *widget.List {
 
 			b0 := c[0].(*fyne.Container).Objects
 			b0[0].(*widget.Label).SetText(r.dateFormatted)
-			b0[1].(*widget.Label).SetText(r.balanceFormatted)
+			amount := b0[1].(*widget.Label)
+			amount.Text = r.amountFormatted
+			amount.Importance = r.amountImportance()
+			amount.Refresh()
 
 			b1 := c[1].(*fyne.Container).Objects
 			b1[0].(*widget.Label).SetText(r.refTypeDisplay)
-			amount := b1[1].(*widget.Label)
-			amount.Text = r.amountFormatted
-			if r.amount > 0 {
-				amount.Importance = widget.SuccessImportance
-			} else if r.amount < 0 {
-				amount.Importance = widget.DangerImportance
-			} else {
-				amount.Importance = widget.MediumImportance
-			}
-			amount.Refresh()
+			b1[1].(*widget.Label).SetText(r.balanceFormatted)
 
 			c[2].(*widget.Label).SetText(r.description)
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
+		defer l.UnselectAll() // TODO: Show detail window
 		if id < 0 || id >= len(a.rowsFiltered) {
 			return
 		}
-		l.UnselectAll() // TODO: Show detail window
+		a.showEntry(a.rowsFiltered[id])
 	}
 	return l
 }
@@ -274,10 +271,12 @@ func (*characterWalletJournal) fetchRows(characterID int32, s services) ([]walle
 			amountFormatted:  humanize.FormatFloat(app.FloatFormat, o.Amount),
 			balance:          o.Balance,
 			balanceFormatted: humanize.FormatFloat(app.FloatFormat, o.Balance),
+			characterID:      characterID,
 			date:             o.Date,
 			dateFormatted:    o.Date.Format(app.DateTimeFormat),
 			description:      o.Description,
 			reason:           o.Reason,
+			refID:            o.RefID,
 			refType:          o.RefType,
 			refTypeDisplay:   o.RefTypeDisplay(),
 		}
@@ -300,4 +299,55 @@ func (*characterWalletJournal) fetchRows(characterID int32, s services) ([]walle
 		rows[i] = r
 	}
 	return rows, nil
+}
+
+func (a *characterWalletJournal) showEntry(r walletJournalRow) {
+	entry, err := a.u.cs.GetWalletJournalEntry(context.Background(), r.characterID, r.refID)
+	if err != nil {
+		a.u.showErrorDialog("Failed to fetch wallet journal entry", err, a.u.window)
+		return
+	}
+	makeLabelWithWrapping := func(s string) *widget.Label {
+		l := widget.NewLabel(s)
+		l.Wrapping = fyne.TextWrapWord
+		return l
+	}
+	newEveEntityLabel := func(o *app.EveEntity) *kxwidget.TappableLabel {
+		x := kxwidget.NewTappableLabel(o.Name, func() {
+			a.u.ShowEveEntityInfoWindow(o)
+		})
+		x.Wrapping = fyne.TextWrapWord
+		return x
+	}
+	amount := widget.NewLabel(formatISKAmount(r.amount))
+	amount.Importance = r.amountImportance()
+	reason := r.reason
+	if reason == "" {
+		reason = "-"
+	}
+	items := []*widget.FormItem{
+		widget.NewFormItem("Date", widget.NewLabel(entry.Date.Format(app.DateTimeFormatWithSeconds))),
+		widget.NewFormItem("Type", makeLabelWithWrapping(r.refTypeDisplay)),
+		widget.NewFormItem("Amount", amount),
+		widget.NewFormItem("Balance", widget.NewLabel(formatISKAmount(r.balance))),
+		widget.NewFormItem("Description", makeLabelWithWrapping(r.description)),
+		widget.NewFormItem("Reason", makeLabelWithWrapping(reason)),
+	}
+	if entry.FirstParty != nil {
+		items = append(items, widget.NewFormItem("First Party", newEveEntityLabel(entry.FirstParty)))
+	}
+	if entry.SecondParty != nil {
+		items = append(items, widget.NewFormItem("Second Party", newEveEntityLabel(entry.SecondParty)))
+	}
+	if entry.TaxReceiver != nil {
+		items = append(items, widget.NewFormItem("Tax Receiver", newEveEntityLabel(entry.TaxReceiver)))
+	}
+	if a.u.IsDeveloperMode() {
+		items = append(items, widget.NewFormItem("Ref ID", a.u.makeCopyToClipboardLabel(fmt.Sprint(r.refID))))
+	}
+	title := fmt.Sprintf("Entry #%d", r.refID)
+	f := widget.NewForm(items...)
+	f.Orientation = widget.Adaptive
+	w := a.u.makeDetailWindow("Wallet Journal Entry", title, f)
+	w.Show()
 }
