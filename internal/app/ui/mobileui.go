@@ -74,9 +74,9 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
 			u.characterAsset.OnSelected = func() {
-				characterNav.Push(newCharacterAppBar("Assets", u.characterAsset.LocationAssets))
+				characterNav.PushAndHideNavBar(newCharacterAppBar("Assets", u.characterAsset.LocationAssets))
 			}
-			characterNav.PushAndHideNavBar(newCharacterAppBar("Assets", container.NewHScroll(u.characterAsset.Locations)))
+			characterNav.Push(newCharacterAppBar("Assets", container.NewHScroll(u.characterAsset.Locations)))
 		},
 	)
 	navItemCommunications := iwidget.NewListItemWithIcon(
@@ -88,7 +88,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 					newCharacterAppBar("Communications", u.characterCommunications.Detail),
 				)
 			}
-			characterNav.PushAndHideNavBar(
+			characterNav.Push(
 				newCharacterAppBar(
 					"Communications",
 					u.characterCommunications.Notifications,
@@ -102,7 +102,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		theme.MailComposeIcon(),
 		func() {
 			u.characterMail.onSelected = func() {
-				characterNav.Push(
+				characterNav.PushAndHideNavBar(
 					newCharacterAppBar(
 						"Mail",
 						u.characterMail.Detail,
@@ -115,7 +115,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 					),
 				)
 			}
-			characterNav.PushAndHideNavBar(
+			characterNav.Push(
 				newCharacterAppBar(
 					"Mail",
 					u.characterMail.Headers,
@@ -128,7 +128,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		"Skills",
 		theme.NewThemedResource(icons.SchoolSvg),
 		func() {
-			characterNav.PushAndHideNavBar(
+			characterNav.Push(
 				newCharacterAppBar(
 					"Skills",
 					container.NewAppTabs(
@@ -143,7 +143,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		"Wallet",
 		theme.NewThemedResource(icons.AttachmoneySvg),
 		func() {
-			characterNav.PushAndHideNavBar(
+			characterNav.Push(
 				newCharacterAppBar(
 					"Wallet",
 					container.NewAppTabs(
@@ -226,132 +226,9 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	characterPage := newCharacterAppBar("Character", characterList)
 	characterNav = iwidget.NewNavigatorWithAppBar(characterPage)
 
-	// home destination
-	var homeNav *iwidget.Navigator
-	var homeList *iwidget.List
-	navItemColonies2 := iwidget.NewListItemWithIcon(
-		"Colonies",
-		theme.NewThemedResource(icons.EarthSvg),
-		func() {
-			homeNav.PushAndHideNavBar(iwidget.NewAppBar("Colonies", u.colonies))
-		},
-	)
-	navItemIndustry := iwidget.NewListItemWithIcon(
-		"Industry",
-		theme.NewThemedResource(icons.FactorySvg),
-		func() {
-			homeNav.PushAndHideNavBar(iwidget.NewAppBar("Industry",
-				container.NewAppTabs(
-					container.NewTabItem("Jobs", u.industryJobs),
-					container.NewTabItem("Slots", container.NewAppTabs(
-						container.NewTabItem("Manufacturing", u.slotsManufacturing),
-						container.NewTabItem("Science", u.slotsResearch),
-						container.NewTabItem("Reactions", u.slotsReactions),
-					)),
-				),
-			))
-		},
-	)
-	u.industryJobs.OnUpdate = func(count int) {
-		var badge string
-		if count > 0 {
-			badge = fmt.Sprintf("%s jobs ready", ihumanize.Comma(count))
-		}
-		fyne.Do(func() {
-			navItemIndustry.Supporting = badge
-			homeList.Refresh()
-		})
-	}
+	homeNav := makeHomeNav(u)
 
-	navItemContracts := iwidget.NewListItemWithIcon(
-		"Contracts",
-		theme.NewThemedResource(icons.FileSignSvg),
-		func() {
-			homeNav.PushAndHideNavBar(iwidget.NewAppBar("Contracts", u.contracts))
-		},
-	)
-	navItemWealth := iwidget.NewListItemWithIcon(
-		"Wealth",
-		theme.NewThemedResource(icons.GoldSvg),
-		func() {
-			homeNav.PushAndHideNavBar(iwidget.NewAppBar("Wealth", u.wealth))
-		},
-	)
-	homeList = iwidget.NewNavList(
-		iwidget.NewListItemWithIcon(
-			"Characters",
-			theme.NewThemedResource(icons.PortraitSvg),
-			func() {
-				homeNav.PushAndHideNavBar(iwidget.NewAppBar("Characters", u.characters))
-			},
-		),
-		iwidget.NewListItemWithIcon(
-			"Assets",
-			theme.NewThemedResource(icons.Inventory2Svg),
-			func() {
-				homeNav.PushAndHideNavBar(iwidget.NewAppBar("Assets", u.assets))
-				u.assets.focus()
-			},
-		),
-		iwidget.NewListItemWithIcon(
-			"Clones",
-			theme.NewThemedResource(icons.HeadSnowflakeSvg),
-			func() {
-				homeNav.PushAndHideNavBar(iwidget.NewAppBar("Clones", u.clones))
-			},
-		),
-		navItemContracts,
-		navItemColonies2,
-		navItemIndustry,
-		iwidget.NewListItemWithIcon(
-			"Locations",
-			theme.NewThemedResource(icons.MapMarkerSvg),
-			func() {
-				homeNav.PushAndHideNavBar(iwidget.NewAppBar("Locations", u.locations))
-			},
-		),
-		iwidget.NewListItemWithIcon(
-			"Training",
-			theme.NewThemedResource(icons.SchoolSvg),
-			func() {
-				homeNav.PushAndHideNavBar(iwidget.NewAppBar("Training", u.training))
-			},
-		),
-		navItemWealth,
-	)
-	u.contracts.OnUpdate = func(count int) {
-		s := "Active"
-		if count > 0 {
-			s += fmt.Sprintf(" (%d)", count)
-		}
-		fyne.Do(func() {
-			navItemContracts.Supporting = s
-			homeList.Refresh()
-		})
-	}
-
-	u.colonies.OnUpdate = func(_, expired int) {
-		fyne.Do(func() {
-			navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
-			homeList.Refresh()
-		})
-	}
-	u.wealth.OnUpdate = func(wallet, assets float64) {
-		fyne.Do(func() {
-			navItemWealth.Supporting = fmt.Sprintf(
-				"Wallet: %s • Assets: %s",
-				ihumanize.Number(wallet, 1),
-				ihumanize.Number(assets, 1),
-			)
-			homeList.Refresh()
-		})
-	}
-	homeNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("Home", homeList))
-
-	// info destination
-	searchNav := iwidget.NewNavigatorWithAppBar(
-		newCharacterAppBar("Search", u.gameSearch),
-	)
+	searchNav := makeSearchNav(newCharacterAppBar, u)
 
 	// more destination
 	var moreNav *iwidget.Navigator
@@ -532,4 +409,135 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	u.MainWindow().SetContent(navBar)
 	return u
+}
+
+func makeSearchNav(newCharacterAppBar func(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *iwidget.AppBar, u *MobileUI) *iwidget.Navigator {
+	searchNav := iwidget.NewNavigatorWithAppBar(
+		newCharacterAppBar("Search", u.gameSearch),
+	)
+	return searchNav
+}
+
+func makeHomeNav(u *MobileUI) *iwidget.Navigator {
+	var homeNav *iwidget.Navigator
+	var homeList *iwidget.List
+	navItemColonies2 := iwidget.NewListItemWithIcon(
+		"Colonies",
+		theme.NewThemedResource(icons.EarthSvg),
+		func() {
+			homeNav.PushAndHideNavBar(iwidget.NewAppBar("Colonies", u.colonies))
+		},
+	)
+	navItemIndustry := iwidget.NewListItemWithIcon(
+		"Industry",
+		theme.NewThemedResource(icons.FactorySvg),
+		func() {
+			homeNav.Push(iwidget.NewAppBar("Industry",
+				container.NewAppTabs(
+					container.NewTabItem("Jobs", u.industryJobs),
+					container.NewTabItem("Slots", container.NewAppTabs(
+						container.NewTabItem("Manufacturing", u.slotsManufacturing),
+						container.NewTabItem("Science", u.slotsResearch),
+						container.NewTabItem("Reactions", u.slotsReactions),
+					)),
+				),
+			))
+		},
+	)
+	u.industryJobs.OnUpdate = func(count int) {
+		var badge string
+		if count > 0 {
+			badge = fmt.Sprintf("%s jobs ready", ihumanize.Comma(count))
+		}
+		fyne.Do(func() {
+			navItemIndustry.Supporting = badge
+			homeList.Refresh()
+		})
+	}
+
+	navItemContracts := iwidget.NewListItemWithIcon(
+		"Contracts",
+		theme.NewThemedResource(icons.FileSignSvg),
+		func() {
+			homeNav.Push(iwidget.NewAppBar("Contracts", u.contracts))
+		},
+	)
+	navItemWealth := iwidget.NewListItemWithIcon(
+		"Wealth",
+		theme.NewThemedResource(icons.GoldSvg),
+		func() {
+			homeNav.Push(iwidget.NewAppBar("Wealth", u.wealth))
+		},
+	)
+	homeList = iwidget.NewNavList(
+		iwidget.NewListItemWithIcon(
+			"Characters",
+			theme.NewThemedResource(icons.PortraitSvg),
+			func() {
+				homeNav.Push(iwidget.NewAppBar("Characters", u.characters))
+			},
+		),
+		iwidget.NewListItemWithIcon(
+			"Assets",
+			theme.NewThemedResource(icons.Inventory2Svg),
+			func() {
+				homeNav.Push(iwidget.NewAppBar("Assets", u.assets))
+				u.assets.focus()
+			},
+		),
+		iwidget.NewListItemWithIcon(
+			"Clones",
+			theme.NewThemedResource(icons.HeadSnowflakeSvg),
+			func() {
+				homeNav.Push(iwidget.NewAppBar("Clones", u.clones))
+			},
+		),
+		navItemContracts,
+		navItemColonies2,
+		navItemIndustry,
+		iwidget.NewListItemWithIcon(
+			"Locations",
+			theme.NewThemedResource(icons.MapMarkerSvg),
+			func() {
+				homeNav.Push(iwidget.NewAppBar("Locations", u.locations))
+			},
+		),
+		iwidget.NewListItemWithIcon(
+			"Training",
+			theme.NewThemedResource(icons.SchoolSvg),
+			func() {
+				homeNav.Push(iwidget.NewAppBar("Training", u.training))
+			},
+		),
+		navItemWealth,
+	)
+	u.contracts.OnUpdate = func(count int) {
+		s := "Active"
+		if count > 0 {
+			s += fmt.Sprintf(" (%d)", count)
+		}
+		fyne.Do(func() {
+			navItemContracts.Supporting = s
+			homeList.Refresh()
+		})
+	}
+
+	u.colonies.OnUpdate = func(_, expired int) {
+		fyne.Do(func() {
+			navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
+			homeList.Refresh()
+		})
+	}
+	u.wealth.OnUpdate = func(wallet, assets float64) {
+		fyne.Do(func() {
+			navItemWealth.Supporting = fmt.Sprintf(
+				"Wallet: %s • Assets: %s",
+				ihumanize.Number(wallet, 1),
+				ihumanize.Number(assets, 1),
+			)
+			homeList.Refresh()
+		})
+	}
+	homeNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("Home", homeList))
+	return homeNav
 }

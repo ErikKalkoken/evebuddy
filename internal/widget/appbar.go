@@ -86,15 +86,7 @@ func (n *Navigator) Pop() {
 	n.pages.Remove(n.topPage())
 	n.hideNavBar.Pop()
 	n.topPage().Show()
-	if n.NavBar != nil {
-		v, err := n.hideNavBar.Peek()
-		if err != nil {
-			panic(err)
-		}
-		if !v {
-			n.NavBar.ShowBar()
-		}
-	}
+	n.showNavBarWhenRequired()
 }
 
 // PopAll removes all additional pages and shows the root page.
@@ -105,11 +97,24 @@ func (n *Navigator) PopAll() {
 	}
 	for len(n.pages.Objects) > 1 {
 		n.pages.Remove(n.topPage())
+		n.hideNavBar.Pop()
 	}
 	n.topPage().Show()
-	if n.NavBar != nil {
+	n.showNavBarWhenRequired()
+}
+
+func (n *Navigator) showNavBarWhenRequired() {
+	if n.NavBar == nil {
+		return
+	}
+	v, err := n.hideNavBar.Peek()
+	if err != nil {
+		panic(err)
+	}
+	if !v {
 		n.NavBar.ShowBar()
 	}
+
 }
 
 func (n *Navigator) topPage() fyne.CanvasObject {
