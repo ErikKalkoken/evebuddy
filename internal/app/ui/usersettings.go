@@ -80,7 +80,7 @@ func newSettings(u *baseUI, w fyne.Window) *userSettings {
 
 func (a *userSettings) CreateRenderer() fyne.WidgetRenderer {
 	makeSettingsPage := func(title string, content fyne.CanvasObject, action *kxwidget.IconButton) fyne.CanvasObject {
-		return iwidget.NewAppBar(title, content, action)
+		return iwidget.NewAppBarWithTrailing(title, content, action)
 	}
 	generalContent, generalActions := a.makeGeneralSettingsPage()
 	notificationContent, notificationActions := a.makeNotificationPage()
@@ -916,7 +916,7 @@ func (a *userSettings) makeTagsPage() (fyne.CanvasObject, *kxwidget.IconButton) 
 
 	updateTags()
 
-	manageCharacters = iwidget.NewAppBar("", container.NewPadded(characterList), addCharacter)
+	manageCharacters = iwidget.NewAppBarWithTrailing("", container.NewPadded(characterList), addCharacter)
 	manageCharacters.Hide()
 
 	action := kxwidget.NewIconButton(

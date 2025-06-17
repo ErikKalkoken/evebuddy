@@ -15,7 +15,6 @@ import (
 
 // Navigator is a container that allows the user to navigate to a new page
 // and return back to the previous one.
-// Navigation between pages will replace the shown content of the container.
 // Supports nested navigation.
 type Navigator struct {
 	widget.BaseWidget
@@ -58,8 +57,6 @@ func (n *Navigator) IsEmpty() bool {
 }
 
 // PushHideNavBar adds a new page and shows it while hiding the navbar.
-//
-// Will panic if pushed under an existing page with an already deactivated nav bar.
 func (n *Navigator) PushHideNavBar(ab *AppBar) {
 	n.push(ab, true)
 }
@@ -121,16 +118,21 @@ type AppBar struct {
 	bg       *canvas.Rectangle
 	body     fyne.CanvasObject
 	isMobile bool
-	items    []*kxwidget.IconButton
+	trailing fyne.CanvasObject
 	title    *widget.Label
 }
 
-// NewAppBar returns a new AppBar. The toolbar items are optional.
-func NewAppBar(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *AppBar {
+// NewAppBar returns a new AppBar.
+func NewAppBar(title string, body fyne.CanvasObject) *AppBar {
+	return NewAppBarWithTrailing(title, body, nil)
+}
+
+// NewAppBar returns a new AppBar.
+func NewAppBarWithTrailing(title string, body fyne.CanvasObject, trailing fyne.CanvasObject) *AppBar {
 	w := &AppBar{
 		body:     body,
 		isMobile: fyne.CurrentDevice().IsMobile(),
-		items:    items,
+		trailing: trailing,
 	}
 	w.ExtendBaseWidget(w)
 	w.bg = canvas.NewRectangle(theme.Color(colorBarBackground))
@@ -172,13 +174,8 @@ func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 		})
 	}
 	p := theme.Padding()
-	is := theme.IconInlineSize()
-	if len(w.items) > 0 {
-		icons := container.New(layout.NewCustomPaddedHBoxLayout(is))
-		for _, ib := range w.items {
-			icons.Add(ib)
-		}
-		right = container.New(layout.NewCustomPaddedLayout(0, 0, 0, p), icons)
+	if w.trailing != nil {
+		right = container.New(layout.NewCustomPaddedLayout(0, 0, 0, p), w.trailing)
 	}
 	row := container.NewBorder(nil, nil, left, right, w.title)
 	var top, main fyne.CanvasObject

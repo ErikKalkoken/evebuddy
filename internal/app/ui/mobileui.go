@@ -7,6 +7,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
@@ -30,12 +31,21 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	var navBar *iwidget.NavBar
 
+	makeAppBarIcons := func(items ...*kxwidget.IconButton) fyne.CanvasObject {
+		is := theme.IconInlineSize()
+		icons := container.New(layout.NewCustomPaddedHBoxLayout(is))
+		for _, ib := range items {
+			icons.Add(ib)
+		}
+		return icons
+	}
+
 	// character destination
 	fallbackAvatar, _ := fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)
 	characterSelector := kxwidget.NewIconButtonWithMenu(fallbackAvatar, fyne.NewMenu(""))
 	newCharacterAppBar := func(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *iwidget.AppBar {
 		items = append(items, characterSelector)
-		return iwidget.NewAppBar(title, body, items...)
+		return iwidget.NewAppBarWithTrailing(title, body, makeAppBarIcons(items...))
 	}
 
 	var characterNav *iwidget.Navigator
@@ -356,13 +366,14 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		"Manage characters",
 		theme.NewThemedResource(icons.ManageaccountsSvg),
 		func() {
-			moreNav.Push(iwidget.NewAppBar(
+			moreNav.Push(iwidget.NewAppBarWithTrailing(
 				"Manage characters",
 				u.manageCharacters,
-				kxwidget.NewIconButton(
-					theme.NewPrimaryThemedResource(theme.ContentAddIcon()),
-					u.manageCharacters.ShowAddCharacterDialog,
-				),
+				makeAppBarIcons(
+					kxwidget.NewIconButton(
+						theme.NewPrimaryThemedResource(theme.ContentAddIcon()),
+						u.manageCharacters.ShowAddCharacterDialog,
+					)),
 			))
 		},
 	)

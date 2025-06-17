@@ -113,7 +113,7 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 		)
 		a.onEntitySelected = func(id int) {
 			a.nav.Push(
-				iwidget.NewAppBar("Sections", sections, menu),
+				iwidget.NewAppBarWithTrailing("Sections", sections, menu),
 			)
 		}
 		a.onSectionSelected = func(id int) {
@@ -124,7 +124,7 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 					"", fyne.NewMenuItem(a.updateSection.Text, a.makeUpdateSectionAction(s.EntityID, s.SectionID))),
 			)
 			a.nav.Push(
-				iwidget.NewAppBar("Section Detail", details, menu),
+				iwidget.NewAppBarWithTrailing("Section Detail", details, menu),
 			)
 		}
 	}
@@ -167,7 +167,7 @@ func (a *updateStatus) CreateRenderer() fyne.WidgetRenderer {
 	updateEntities := iwidget.NewContextMenuButton("Force update all entities", updateMenu)
 	var c fyne.CanvasObject
 	if !a.u.isDesktop {
-		ab := iwidget.NewAppBar("Home", a.entities, kxwidget.NewIconButtonWithMenu(
+		ab := iwidget.NewAppBarWithTrailing("Home", a.entities, kxwidget.NewIconButtonWithMenu(
 			theme.MoreVerticalIcon(),
 			updateMenu,
 		))
