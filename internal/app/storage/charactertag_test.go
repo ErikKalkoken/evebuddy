@@ -20,15 +20,11 @@ func TestTag(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		got, err := st.CreateTag(ctx, storage.CreateTagParams{
-			Name:        "name",
-			Description: "description",
-		})
+		got, err := st.CreateTag(ctx, "name")
 		// then
 		if assert.NoError(t, err) {
 			assert.NotEqual(t, got.ID, 0)
 			assert.Equal(t, got.Name, "name")
-			assert.Equal(t, got.Description, "description")
 		}
 	})
 	t.Run("can get by ID", func(t *testing.T) {
@@ -45,14 +41,14 @@ func TestTag(t *testing.T) {
 	t.Run("can list ordered by name", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		t1 := factory.CreateTag(storage.CreateTagParams{Name: "Charlie"})
-		t2 := factory.CreateTag(storage.CreateTagParams{Name: "Alpha"})
+		t1 := factory.CreateTag("Charlie")
+		t2 := factory.CreateTag("Alpha")
 		// when
 		oo, err := st.ListTagsByName(ctx)
 		// then
 		if assert.NoError(t, err) {
 			want := []int64{t2.ID, t1.ID}
-			got := xslices.Map(oo, func(x *app.Tag) int64 {
+			got := xslices.Map(oo, func(x *app.CharacterTag) int64 {
 				return x.ID
 			})
 			assert.Equal(t, want, got)
@@ -63,7 +59,7 @@ func TestTag(t *testing.T) {
 		testutil.TruncateTables(db)
 		tag := factory.CreateTag()
 		// when
-		_, err := st.CreateTag(ctx, storage.CreateTagParams{Name: tag.Name})
+		_, err := st.CreateTag(ctx, tag.Name)
 		// then
 		assert.ErrorIs(t, err, app.ErrAlreadyExists)
 	})
@@ -77,23 +73,7 @@ func TestTag(t *testing.T) {
 		if assert.NoError(t, err) {
 			t2, err := st.GetTag(ctx, t1.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, t1.Description, t2.Description)
 				assert.Equal(t, "alpha", t2.Name)
-			}
-		}
-	})
-	t.Run("can update description", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		t1 := factory.CreateTag()
-		// when
-		err := st.UpdateTagDescription(ctx, t1.ID, "alpha")
-		// then
-		if assert.NoError(t, err) {
-			t2, err := st.GetTag(ctx, t1.ID)
-			if assert.NoError(t, err) {
-				assert.Equal(t, t1.Name, t2.Name)
-				assert.Equal(t, "alpha", t2.Description)
 			}
 		}
 	})
@@ -122,13 +102,13 @@ func TestCharacterTag(t *testing.T) {
 		character1 := factory.CreateCharacterMinimal()
 		factory.CreateCharacterMinimal()
 		// when
-		err := st.CreateCharacterTag(ctx, storage.CreateCharacterTagParams{
+		err := st.CreateCharactersCharacterTag(ctx, storage.CreateCharacterTagParams{
 			CharacterID: character1.ID,
 			TagID:       tag.ID,
 		})
 		// then
 		if assert.NoError(t, err) {
-			got, err := st.ListCharactersForTag(ctx, tag.ID)
+			got, err := st.ListCharactersForCharacterTag(ctx, tag.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(
 					t,
@@ -148,7 +128,7 @@ func TestCharacterTag(t *testing.T) {
 		testutil.TruncateTables(db)
 		tag := factory.CreateTag()
 		character1 := factory.CreateCharacterMinimal()
-		err := st.CreateCharacterTag(ctx, storage.CreateCharacterTagParams{
+		err := st.CreateCharactersCharacterTag(ctx, storage.CreateCharacterTagParams{
 			CharacterID: character1.ID,
 			TagID:       tag.ID,
 		})
@@ -156,7 +136,7 @@ func TestCharacterTag(t *testing.T) {
 			t.Fatal(err)
 		}
 		character2 := factory.CreateCharacterMinimal()
-		err = st.CreateCharacterTag(ctx, storage.CreateCharacterTagParams{
+		err = st.CreateCharactersCharacterTag(ctx, storage.CreateCharacterTagParams{
 			CharacterID: character2.ID,
 			TagID:       tag.ID,
 		})
@@ -164,13 +144,13 @@ func TestCharacterTag(t *testing.T) {
 			t.Fatal(err)
 		}
 		// when
-		err = st.DeleteCharacterTag(ctx, storage.CreateCharacterTagParams{
+		err = st.DeleteCharactersCharacterTag(ctx, storage.CreateCharacterTagParams{
 			CharacterID: character1.ID,
 			TagID:       tag.ID,
 		})
 		// then
 		if assert.NoError(t, err) {
-			cc, err := st.ListCharactersForTag(ctx, tag.ID)
+			cc, err := st.ListCharactersForCharacterTag(ctx, tag.ID)
 			if assert.NoError(t, err) {
 				want := set.Of(character2.ID)
 				got := set.Of(xslices.Map(cc, func(x *app.EntityShort[int32]) int32 {
@@ -188,15 +168,15 @@ func TestCharacterTag(t *testing.T) {
 		character := factory.CreateCharacterMinimal()
 		factory.CreateCharacterMinimal()
 		// when
-		err := st.CreateCharacterTag(ctx, storage.CreateCharacterTagParams{
+		err := st.CreateCharactersCharacterTag(ctx, storage.CreateCharacterTagParams{
 			CharacterID: character.ID,
 			TagID:       tag.ID,
 		})
 		// then
 		if assert.NoError(t, err) {
-			got, err := st.ListTagsForCharacter(ctx, character.ID)
+			got, err := st.ListCharacterTagsForCharacter(ctx, character.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, []*app.Tag{tag}, got)
+				assert.Equal(t, []*app.CharacterTag{tag}, got)
 			}
 		}
 	})

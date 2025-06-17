@@ -124,8 +124,10 @@ func (u *UI) removeFolders(ctx context.Context, pb *widget.ProgressBar) error {
 			if err := os.RemoveAll(p); err != nil {
 				return err
 			}
-			pb.SetValue(float64(i+1) / float64(len(folders)))
 			slog.Info("Deleted directory", "path", p)
+			fyne.Do(func() {
+				pb.SetValue(float64(i+1) / float64(len(folders)))
+			})
 		}
 	}
 	keys := set.Of(settings.Keys()...)

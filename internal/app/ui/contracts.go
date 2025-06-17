@@ -369,7 +369,7 @@ func (a *contracts) fetchRows(s services) ([]contractRow, int, error) {
 		if err != nil {
 			return nil, 0, err
 		}
-		r.tags = set.Collect(xiter.MapSlice(tags, func(x *app.Tag) string {
+		r.tags = set.Collect(xiter.MapSlice(tags, func(x *app.CharacterTag) string {
 			return x.Name
 		}))
 		rows = append(rows, r)

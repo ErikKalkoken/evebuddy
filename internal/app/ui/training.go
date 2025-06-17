@@ -283,7 +283,7 @@ func (*trainings) fetchRows(s services) ([]trainingRow, error) {
 		if err != nil {
 			return nil, err
 		}
-		r.tags = set.Collect(xiter.MapSlice(tags, func(x *app.Tag) string {
+		r.tags = set.Collect(xiter.MapSlice(tags, func(x *app.CharacterTag) string {
 			return x.Name
 		}))
 		trainingTime, err := s.cs.TotalTrainingTime(ctx, c.ID)

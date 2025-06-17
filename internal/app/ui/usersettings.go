@@ -613,10 +613,10 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 }
 
 func (a *userSettings) makeTagsPage() (fyne.CanvasObject, *kxwidget.IconButton) {
-	var selectedTag *app.Tag
+	var selectedTag *app.CharacterTag
 	var characterList *widget.List
 	characters := make([]*app.EntityShort[int32], 0)
-	var updateCharacters func(tag *app.Tag)
+	var updateCharacters func(tag *app.CharacterTag)
 
 	addCharacter := kxwidget.NewIconButton(theme.ContentAddIcon(), func() {
 		if selectedTag == nil {
@@ -718,7 +718,7 @@ func (a *userSettings) makeTagsPage() (fyne.CanvasObject, *kxwidget.IconButton) 
 
 	var manageCharacters *iwidget.AppBar
 
-	updateCharacters = func(tag *app.Tag) {
+	updateCharacters = func(tag *app.CharacterTag) {
 		if tag == nil {
 			return
 		}
@@ -800,14 +800,14 @@ func (a *userSettings) makeTagsPage() (fyne.CanvasObject, *kxwidget.IconButton) 
 		characterList.UnselectAll()
 	}
 
-	tags := make([]*app.Tag, 0)
+	tags := make([]*app.CharacterTag, 0)
 	var tagList *widget.List
 
 	updateTags := func() {
 		rows, err := a.u.cs.ListTags(context.Background())
 		if err != nil {
 			a.u.ShowErrorDialog("Failed to list tags", err, a.w)
-			tags = make([]*app.Tag, 0)
+			tags = make([]*app.CharacterTag, 0)
 			return
 		}
 		tags = rows
@@ -815,7 +815,7 @@ func (a *userSettings) makeTagsPage() (fyne.CanvasObject, *kxwidget.IconButton) 
 	}
 
 	modifyTag := func(title, confirm string, execute func(name string) error) {
-		names := set.Of(xslices.Map(tags, func(x *app.Tag) string {
+		names := set.Of(xslices.Map(tags, func(x *app.CharacterTag) string {
 			return strings.ToLower(x.Name)
 		})...)
 		name := widget.NewEntry()

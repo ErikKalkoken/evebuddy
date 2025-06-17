@@ -309,7 +309,7 @@ func (*clones) fetchRows(s services) ([]cloneRow, error) {
 		if err != nil {
 			return nil, err
 		}
-		r.tags = set.Collect(xiter.MapSlice(tags, func(x *app.Tag) string {
+		r.tags = set.Collect(xiter.MapSlice(tags, func(x *app.CharacterTag) string {
 			return x.Name
 		}))
 		rows = append(rows, r)

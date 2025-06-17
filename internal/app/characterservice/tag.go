@@ -9,17 +9,15 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-func (s *CharacterService) CreateTag(ctx context.Context, name string) (*app.Tag, error) {
-	return s.st.CreateTag(ctx, storage.CreateTagParams{
-		Name: name,
-	})
+func (s *CharacterService) CreateTag(ctx context.Context, name string) (*app.CharacterTag, error) {
+	return s.st.CreateTag(ctx, name)
 }
 
 func (s *CharacterService) DeleteTag(ctx context.Context, id int64) error {
 	return s.st.DeleteTag(ctx, id)
 }
 
-func (s *CharacterService) ListTags(ctx context.Context) ([]*app.Tag, error) {
+func (s *CharacterService) ListTags(ctx context.Context) ([]*app.CharacterTag, error) {
 	return s.st.ListTagsByName(ctx)
 }
 
@@ -28,21 +26,21 @@ func (s *CharacterService) RenameTag(ctx context.Context, id int64, name string)
 }
 
 func (s *CharacterService) AddTagToCharacter(ctx context.Context, characterID int32, tagID int64) error {
-	return s.st.CreateCharacterTag(ctx, storage.CreateCharacterTagParams{
+	return s.st.CreateCharactersCharacterTag(ctx, storage.CreateCharacterTagParams{
 		CharacterID: characterID,
 		TagID:       tagID,
 	})
 }
 
 func (s *CharacterService) RemoveTagFromCharacter(ctx context.Context, characterID int32, tagID int64) error {
-	return s.st.DeleteCharacterTag(ctx, storage.CreateCharacterTagParams{
+	return s.st.DeleteCharactersCharacterTag(ctx, storage.CreateCharacterTagParams{
 		CharacterID: characterID,
 		TagID:       tagID,
 	})
 }
 
 func (s *CharacterService) ListCharactersForTag(ctx context.Context, tagID int64) (tagged []*app.EntityShort[int32], others []*app.EntityShort[int32], err error) {
-	tagged, err = s.st.ListCharactersForTag(ctx, tagID)
+	tagged, err = s.st.ListCharactersForCharacterTag(ctx, tagID)
 	if err != nil {
 		return
 	}
@@ -59,6 +57,6 @@ func (s *CharacterService) ListCharactersForTag(ctx context.Context, tagID int64
 	return
 }
 
-func (s *CharacterService) ListTagsForCharacter(ctx context.Context, characterID int32) ([]*app.Tag, error) {
-	return s.st.ListTagsForCharacter(ctx, characterID)
+func (s *CharacterService) ListTagsForCharacter(ctx context.Context, characterID int32) ([]*app.CharacterTag, error) {
+	return s.st.ListCharacterTagsForCharacter(ctx, characterID)
 }

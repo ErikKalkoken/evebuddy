@@ -333,7 +333,7 @@ func (*characters) fetchRows(s services) ([]characterRow, overviewTotals, error)
 		if err != nil {
 			return nil, totals, err
 		}
-		cc[i].tags = set.Collect(xiter.MapSlice(tags, func(x *app.Tag) string {
+		cc[i].tags = set.Collect(xiter.MapSlice(tags, func(x *app.CharacterTag) string {
 			return x.Name
 		}))
 	}

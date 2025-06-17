@@ -388,7 +388,7 @@ func (*assets) fetchRows(s services) ([]assetRow, bool, error) {
 		if err != nil {
 			return nil, false, nil
 		}
-		tagsPerCharacter[c.ID] = set.Collect(xiter.MapSlice(tags, func(x *app.Tag) string {
+		tagsPerCharacter[c.ID] = set.Collect(xiter.MapSlice(tags, func(x *app.CharacterTag) string {
 			return x.Name
 		}))
 	}
