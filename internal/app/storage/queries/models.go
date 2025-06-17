@@ -255,6 +255,11 @@ type CharacterSkillqueueItem struct {
 	TrainingStartSp sql.NullInt64
 }
 
+type CharacterTag struct {
+	ID   int64
+	Name string
+}
+
 type CharacterToken struct {
 	ID           int64
 	AccessToken  string
@@ -301,6 +306,11 @@ type CharacterWalletTransaction struct {
 	Quantity      int64
 	TransactionID int64
 	UnitPrice     float64
+}
+
+type CharactersCharacterTag struct {
+	CharacterID int64
+	TagID       int64
 }
 
 type Corporation struct {

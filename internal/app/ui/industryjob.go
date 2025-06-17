@@ -75,6 +75,7 @@ type industryJobRow struct {
 	status             app.IndustryJobStatus
 	statusDisplay      []widget.RichTextSegment
 	successfulRuns     optional.Optional[int32]
+	tags               set.Set[string]
 }
 
 func (j industryJobRow) IsActive() bool {
@@ -99,6 +100,7 @@ type industryJobs struct {
 	selectInstaller *kxwidget.FilterChipSelect
 	selectOwner     *kxwidget.FilterChipSelect
 	selectStatus    *kxwidget.FilterChipSelect
+	selectTag       *kxwidget.FilterChipSelect
 	sortButton      *sortButton
 	bottom          *widget.Label
 	u               *baseUI
@@ -164,7 +166,9 @@ func newIndustryJobs(u *baseUI) *industryJobs {
 	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
 		a.search.SetText("")
 	})
-
+	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
+		a.filterRows(-1)
+	})
 	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{
 		industryOwnerMe,
 		industryOwnerCorp,
@@ -210,12 +214,7 @@ func newIndustryJobs(u *baseUI) *industryJobs {
 }
 
 func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
-	selections := container.NewHBox(
-		a.selectOwner,
-		a.selectStatus,
-		a.selectActivity,
-		a.selectInstaller,
-	)
+	selections := container.NewHBox(a.selectOwner, a.selectStatus, a.selectActivity, a.selectInstaller, a.selectTag)
 	if !a.u.isDesktop {
 		selections.Add(a.sortButton)
 	}
@@ -297,8 +296,13 @@ func (a *industryJobs) filterRows(sortCol int) {
 		})
 	}
 	if s := a.search.Text; len(s) > 1 {
-		rows = xslices.Filter(rows, func(x industryJobRow) bool {
-			return strings.Contains(strings.ToLower(x.blueprintType.Name), strings.ToLower(s))
+		rows = xslices.Filter(rows, func(r industryJobRow) bool {
+			return strings.Contains(strings.ToLower(r.blueprintType.Name), strings.ToLower(s))
+		})
+	}
+	if x := a.selectTag.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r industryJobRow) bool {
+			return r.tags.Contains(x)
 		})
 	}
 	// sort
@@ -331,6 +335,9 @@ func (a *industryJobs) filterRows(sortCol int) {
 		})
 	})
 	// set data & refresh
+	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r industryJobRow) set.Set[string] {
+		return r.tags
+	})...).All()))
 	a.rowsFiltered = rows
 	a.body.Refresh()
 	switch x := a.body.(type) {
@@ -447,12 +454,13 @@ func (a *industryJobs) update() {
 			a.bottom.Show()
 		})
 	}
-	cj, err := a.u.cs.ListAllCharacterIndustryJob(context.Background())
+	ctx := context.Background()
+	cj, err := a.u.cs.ListAllCharacterIndustryJob(ctx)
 	if err != nil {
 		reportError(err)
 		return
 	}
-	rj, err := a.u.rs.ListAllCorporationIndustryJobs(context.Background())
+	rj, err := a.u.rs.ListAllCorporationIndustryJobs(ctx)
 	if err != nil {
 		reportError(err)
 		return
@@ -464,15 +472,26 @@ func (a *industryJobs) update() {
 		return x.CorporationID
 	}))
 	ids := set.Union(ids1, ids2)
-	eeMap, err := a.u.eus.ToEntities(context.Background(), ids)
+	eeMap, err := a.u.eus.ToEntities(ctx, ids)
 	if err != nil {
 		reportError(err)
 		return
 	}
-	cc, err := a.u.cs.ListCharactersShort(context.Background())
+	cc, err := a.u.cs.ListCharactersShort(ctx)
 	if err != nil {
 		reportError(err)
 		return
+	}
+	tagsPerCharacter := make(map[int32]set.Set[string])
+	for _, c := range cc {
+		tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
+		if err != nil {
+			reportError(err)
+			return
+		}
+		tagsPerCharacter[c.ID] = set.Collect(xiter.MapSlice(tags, func(x *app.CharacterTag) string {
+			return x.Name
+		}))
 	}
 	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort[int32]) int32 {
 		return c.ID
@@ -501,6 +520,7 @@ func (a *industryJobs) update() {
 			successfulRuns:     cj.SuccessfulRuns,
 			isInstallerMe:      true,
 			isOwnerMe:          true,
+			tags:               tagsPerCharacter[cj.Installer.ID],
 		}
 		return j
 	})
@@ -528,6 +548,7 @@ func (a *industryJobs) update() {
 			successfulRuns:     rj.SuccessfulRuns,
 			isInstallerMe:      myCharacters.Contains(rj.Installer.ID),
 			isOwnerMe:          false,
+			tags:               tagsPerCharacter[rj.Installer.ID],
 		}
 		return j
 	})

@@ -53,6 +53,7 @@ type listItem struct {
 	trailingWrapped *fyne.Container
 	trailing        *canvas.Image
 	IsDisabled      bool
+	headlineSize    fyne.ThemeSizeName
 }
 
 func newListItem(leading, trailing fyne.Resource, headline, supporting string) *listItem {
@@ -65,14 +66,15 @@ func newListItem(leading, trailing fyne.Resource, headline, supporting string) *
 	}
 	i2 := NewImageFromResource(trailing, fyne.NewSquareSize(theme.Size(theme.SizeNameInlineIcon)))
 	h := canvas.NewText(headline, theme.Color(theme.ColorNameForeground))
-	h.TextSize = theme.Size(theme.SizeNameSubHeadingText)
+	h.TextSize = theme.Size(theme.SizeNameText)
 	t := canvas.NewText(supporting, theme.Color(theme.ColorNameForeground))
 	t.TextSize = theme.Size(theme.SizeNameText)
 	w := &listItem{
-		headline:   h,
-		supporting: t,
-		leading:    i1,
-		trailing:   i2,
+		headline:     h,
+		supporting:   t,
+		leading:      i1,
+		trailing:     i2,
+		headlineSize: theme.SizeNameSubHeadingText,
 	}
 	p := theme.Padding()
 	w.leadingWrapped = container.NewCenter(container.New(layout.NewCustomPaddedLayout(0, 0, p, p), w.leading))
@@ -90,6 +92,10 @@ func (w *listItem) Set(it *ListItem) {
 	w.IsDisabled = it.IsDisabled
 	w.updateVisibility(it.Leading, it.Trailing, it.Supporting)
 	w.Refresh()
+}
+
+func (w *listItem) updateSizes() {
+	w.headline.TextSize = theme.Size(w.headlineSize)
 }
 
 func (w *listItem) updateVisibility(leading fyne.Resource, trailing fyne.Resource, supporting string) {
@@ -124,6 +130,7 @@ func (w *listItem) Refresh() {
 		w.supporting.Color = c
 	}
 
+	w.updateSizes()
 	w.leading.Refresh()
 	w.trailing.Refresh()
 	w.headline.Refresh()
@@ -132,6 +139,7 @@ func (w *listItem) Refresh() {
 }
 
 func (w *listItem) CreateRenderer() fyne.WidgetRenderer {
+	w.updateSizes()
 	c := container.NewPadded(container.NewBorder(
 		nil,
 		nil,
@@ -154,7 +162,8 @@ func (w *listItem) CreateRenderer() fyne.WidgetRenderer {
 type List struct {
 	widget.BaseWidget
 
-	SelectDelay time.Duration
+	SelectDelay  time.Duration
+	HeadlineSize fyne.ThemeSizeName
 
 	title string
 	items []*ListItem
@@ -166,9 +175,10 @@ func NewNavList(items ...*ListItem) *List {
 
 func NewNavListWithTitle(title string, items ...*ListItem) *List {
 	w := &List{
-		items:       items,
-		SelectDelay: 500 * time.Millisecond,
-		title:       title,
+		items:        items,
+		SelectDelay:  500 * time.Millisecond,
+		title:        title,
+		HeadlineSize: theme.SizeNameSubHeadingText,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -180,7 +190,9 @@ func (w *List) CreateRenderer() fyne.WidgetRenderer {
 			return len(w.items)
 		},
 		func() fyne.CanvasObject {
-			return newListItem(iconBlankSvg, iconBlankSvg, "Headline", "Supporting")
+			x := newListItem(iconBlankSvg, iconBlankSvg, "Headline", "Supporting")
+			x.headlineSize = w.HeadlineSize
+			return x
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(w.items) {

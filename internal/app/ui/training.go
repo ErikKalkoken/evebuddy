@@ -16,9 +16,12 @@ import (
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -30,6 +33,7 @@ const (
 type trainingRow struct {
 	characterID          int32
 	characterName        string
+	tags                 set.Set[string]
 	totalSP              optional.Optional[int]
 	totalSPDisplay       string
 	training             optional.Optional[time.Duration]
@@ -50,6 +54,7 @@ type trainings struct {
 	rows         []trainingRow
 	rowsFiltered []trainingRow
 	selectStatus *kxwidget.FilterChipSelect
+	selectTag    *kxwidget.FilterChipSelect
 	sortButton   *sortButton
 	bottom       *widget.Label
 	u            *baseUI
@@ -115,7 +120,9 @@ func newTrainings(u *baseUI) *trainings {
 			a.filterRows(-1)
 		},
 	)
-
+	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
+		a.filterRows(-1)
+	})
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
@@ -123,7 +130,7 @@ func newTrainings(u *baseUI) *trainings {
 }
 
 func (a *trainings) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectStatus)
+	filter := container.NewHBox(a.selectStatus, a.selectTag)
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
 	}
@@ -185,6 +192,11 @@ func (a *trainings) filterRows(sortCol int) {
 			return false
 		})
 	}
+	if x := a.selectTag.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r trainingRow) bool {
+			return r.tags.Contains(x)
+		})
+	}
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
 		slices.SortFunc(rows, func(a, b trainingRow) int {
@@ -206,6 +218,10 @@ func (a *trainings) filterRows(sortCol int) {
 			}
 		})
 	})
+	// set data & refresh
+	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r trainingRow) set.Set[string] {
+		return r.tags
+	})...).All()))
 	a.rowsFiltered = rows
 	a.body.Refresh()
 }
@@ -263,6 +279,13 @@ func (*trainings) fetchRows(s services) ([]trainingRow, error) {
 			unallocatedSP:        c.UnallocatedSP,
 			unallocatedSPDisplay: ihumanize.Optional(c.UnallocatedSP, "?"),
 		}
+		tags, err := s.cs.ListTagsForCharacter(ctx, c.ID)
+		if err != nil {
+			return nil, err
+		}
+		r.tags = set.Collect(xiter.MapSlice(tags, func(x *app.CharacterTag) string {
+			return x.Name
+		}))
 		trainingTime, err := s.cs.TotalTrainingTime(ctx, c.ID)
 		if err != nil {
 			return nil, err

@@ -61,7 +61,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		u.showManageCharactersWindow()
 	})
 	a.updateStatus = newStatusBarItem(theme.NewThemedResource(icons.UpdateSvg), "?", func() {
-		u.showUpdateStatusWindow()
+		showUpdateStatusWindow(u.baseUI)
 	})
 	a.eveClock = newStatusBarItem(
 		theme.NewThemedResource(icons.AccesstimefilledSvg),
@@ -365,7 +365,7 @@ func (w *updateHint) CreateRenderer() fyne.WidgetRenderer {
 				return
 			}
 			if err := w.u.App().OpenURL(u); err != nil {
-				w.u.ShowErrorDialog("Failed to open download page", err, w.u.MainWindow())
+				w.u.showErrorDialog("Failed to open download page", err, w.u.MainWindow())
 			}
 		}, w.u.MainWindow(),
 		)

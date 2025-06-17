@@ -19,7 +19,9 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -27,6 +29,7 @@ type cloneRow struct {
 	jc       *app.CharacterJumpClone2
 	route    []*app.EveSolarSystem
 	routeErr error
+	tags     set.Set[string]
 }
 
 func (r cloneRow) compare(other cloneRow) int {
@@ -67,6 +70,7 @@ type clones struct {
 	selectOwner       *kxwidget.FilterChipSelect
 	selectRegion      *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
+	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *sortButton
 	top               *widget.Label
 	u                 *baseUI
@@ -152,7 +156,9 @@ func newClones(u *baseUI) *clones {
 	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-
+	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
+		a.filterRows(-1)
+	})
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
@@ -168,7 +174,12 @@ func (a *clones) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		a.originLabel,
 	)
-	filters := container.NewHBox(a.selectRegion, a.selectSolarSystem, a.selectOwner)
+	filters := container.NewHBox(
+		a.selectRegion,
+		a.selectSolarSystem,
+		a.selectOwner,
+		a.selectTag,
+	)
 	if !a.u.isDesktop {
 		filters.Add(a.sortButton)
 	}
@@ -184,6 +195,69 @@ func (a *clones) CreateRenderer() fyne.WidgetRenderer {
 		a.body,
 	)
 	return widget.NewSimpleRenderer(c)
+}
+
+func (a *clones) filterRows(sortCol int) {
+	rows := slices.Clone(a.rows)
+	// filter
+	if x := a.selectOwner.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r cloneRow) bool {
+			return r.jc.Character.Name == x
+		})
+	}
+	if x := a.selectRegion.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r cloneRow) bool {
+			return r.jc.Location.RegionName() == x
+		})
+	}
+	if x := a.selectSolarSystem.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r cloneRow) bool {
+			return r.jc.Location.SolarSystemName() == x
+		})
+	}
+	if x := a.selectTag.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r cloneRow) bool {
+			return r.tags.Contains(x)
+		})
+	}
+	// sort
+	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+		slices.SortFunc(rows, func(a, b cloneRow) int {
+			var x int
+			switch sortCol {
+			case 0:
+				x = cmp.Compare(a.jc.Location.DisplayName(), b.jc.Location.DisplayName())
+			case 1:
+				x = cmp.Compare(a.jc.Location.RegionName(), b.jc.Location.RegionName())
+			case 2:
+				x = cmp.Compare(a.jc.ImplantsCount, b.jc.ImplantsCount)
+			case 3:
+				x = cmp.Compare(a.jc.Character.Name, b.jc.Character.Name)
+			case 4:
+				x = a.compare(b)
+			}
+			if dir == sortAsc {
+				return x
+			} else {
+				return -1 * x
+			}
+		})
+	})
+	// set data & refresh
+	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r cloneRow) set.Set[string] {
+		return r.tags
+	})...).All()))
+	a.selectOwner.SetOptions(xslices.Map(rows, func(r cloneRow) string {
+		return r.jc.Character.Name
+	}))
+	a.selectRegion.SetOptions(xslices.Map(rows, func(r cloneRow) string {
+		return r.jc.Location.RegionName()
+	}))
+	a.selectSolarSystem.SetOptions(xslices.Map(rows, func(r cloneRow) string {
+		return r.jc.Location.SolarSystemName()
+	}))
+	a.rowsFiltered = rows
+	a.body.Refresh()
 }
 
 func (a *clones) update() {
@@ -228,9 +302,18 @@ func (*clones) fetchRows(s services) ([]cloneRow, error) {
 	slices.SortFunc(oo, func(a, b *app.CharacterJumpClone2) int {
 		return cmp.Compare(a.Location.SolarSystemName(), b.Location.SolarSystemName())
 	})
-	rows := xslices.Map(oo, func(o *app.CharacterJumpClone2) cloneRow {
-		return cloneRow{jc: o}
-	})
+	rows := make([]cloneRow, 0)
+	for _, o := range oo {
+		r := cloneRow{jc: o}
+		tags, err := s.cs.ListTagsForCharacter(ctx, o.Character.ID)
+		if err != nil {
+			return nil, err
+		}
+		r.tags = set.Collect(xiter.MapSlice(tags, func(x *app.CharacterTag) string {
+			return x.Name
+		}))
+		rows = append(rows, r)
+	}
 	return rows, nil
 }
 
@@ -287,7 +370,7 @@ func (a *clones) updateRoutes() {
 func (a *clones) setOrigin(w fyne.Window) {
 	showErrorDialog := func(search string, err error) {
 		slog.Error("Failed to resolve names", "search", search, "error", err)
-		a.u.ShowErrorDialog("Something went wrong", err, w)
+		a.u.showErrorDialog("Something went wrong", err, w)
 	}
 	var d dialog.Dialog
 	results := make([]*app.EveEntity, 0)
@@ -396,61 +479,6 @@ func (a *clones) setOrigin(w fyne.Window) {
 	w.Canvas().Focus(entry)
 }
 
-func (a *clones) filterRows(sortCol int) {
-	rows := slices.Clone(a.rows)
-	// filter
-	if x := a.selectOwner.Selected; x != "" {
-		rows = xslices.Filter(rows, func(o cloneRow) bool {
-			return o.jc.Character.Name == x
-		})
-	}
-	if x := a.selectRegion.Selected; x != "" {
-		rows = xslices.Filter(rows, func(o cloneRow) bool {
-			return o.jc.Location.RegionName() == x
-		})
-	}
-	if x := a.selectSolarSystem.Selected; x != "" {
-		rows = xslices.Filter(rows, func(o cloneRow) bool {
-			return o.jc.Location.SolarSystemName() == x
-		})
-	}
-
-	// sort
-	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
-		slices.SortFunc(rows, func(a, b cloneRow) int {
-			var x int
-			switch sortCol {
-			case 0:
-				x = cmp.Compare(a.jc.Location.DisplayName(), b.jc.Location.DisplayName())
-			case 1:
-				x = cmp.Compare(a.jc.Location.RegionName(), b.jc.Location.RegionName())
-			case 2:
-				x = cmp.Compare(a.jc.ImplantsCount, b.jc.ImplantsCount)
-			case 3:
-				x = cmp.Compare(a.jc.Character.Name, b.jc.Character.Name)
-			case 4:
-				x = a.compare(b)
-			}
-			if dir == sortAsc {
-				return x
-			} else {
-				return -1 * x
-			}
-		})
-	})
-	a.selectOwner.SetOptions(xslices.Map(rows, func(o cloneRow) string {
-		return o.jc.Character.Name
-	}))
-	a.selectRegion.SetOptions(xslices.Map(rows, func(o cloneRow) string {
-		return o.jc.Location.RegionName()
-	}))
-	a.selectSolarSystem.SetOptions(xslices.Map(rows, func(o cloneRow) string {
-		return o.jc.Location.SolarSystemName()
-	}))
-	a.rowsFiltered = rows
-	a.body.Refresh()
-}
-
 func (a *clones) showRoute(r cloneRow) {
 	col := kxlayout.NewColumns(60)
 	list := widget.NewList(
@@ -541,7 +569,7 @@ func (a *clones) showClone(r cloneRow) {
 	clone, err := a.u.cs.GetJumpClone(context.Background(), r.jc.Character.ID, r.jc.CloneID)
 	if err != nil {
 		slog.Error("show clone", "error", err)
-		a.u.ShowErrorDialog("failed to load clone", err, a.u.MainWindow())
+		a.u.showErrorDialog("failed to load clone", err, a.u.MainWindow())
 		return
 	}
 	list := widget.NewList(

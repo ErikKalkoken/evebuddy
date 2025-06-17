@@ -19,7 +19,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -43,6 +45,7 @@ type assetRow struct {
 	quantityDisplay string
 	regionName      string
 	searchTarget    string
+	tags            set.Set[string]
 	total           float64
 	totalDisplay    string
 	typeID          int32
@@ -63,6 +66,7 @@ type assets struct {
 	selectLocation *kxwidget.FilterChipSelect
 	selectOwner    *kxwidget.FilterChipSelect
 	selectRegion   *kxwidget.FilterChipSelect
+	selectTag      *kxwidget.FilterChipSelect
 	selectTotal    *kxwidget.FilterChipSelect
 	sortButton     *sortButton
 	total          *widget.Label
@@ -144,7 +148,9 @@ func newAssets(u *baseUI) *assets {
 			a.filterRows(-1)
 		},
 	)
-
+	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
+		a.filterRows(-1)
+	})
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
@@ -152,7 +158,14 @@ func newAssets(u *baseUI) *assets {
 }
 
 func (a *assets) CreateRenderer() fyne.WidgetRenderer {
-	filters := container.NewHBox(a.selectCategory, a.selectRegion, a.selectLocation, a.selectOwner, a.selectTotal)
+	filters := container.NewHBox(
+		a.selectCategory,
+		a.selectRegion,
+		a.selectLocation,
+		a.selectOwner,
+		a.selectTotal,
+		a.selectTag,
+	)
 	if !a.u.isDesktop {
 		filters.Add(container.NewHBox(a.sortButton))
 	}
@@ -215,23 +228,7 @@ func (a *assets) focus() {
 }
 
 func (a *assets) filterRows(sortCol int) {
-	// search filter
-	rows := make([]assetRow, 0)
-	if search := strings.ToLower(a.entry.Text); search == "" {
-		rows = slices.Clone(a.rows)
-	} else {
-		for _, r := range a.rows {
-			var matches bool
-			if search == "" {
-				matches = true
-			} else {
-				matches = strings.Contains(r.searchTarget, search)
-			}
-			if matches {
-				rows = append(rows, r)
-			}
-		}
-	}
+	rows := slices.Clone(a.rows)
 	// other filters
 	if x := a.selectCategory.Selected; x != "" {
 		rows = xslices.Filter(rows, func(o assetRow) bool {
@@ -264,6 +261,27 @@ func (a *assets) filterRows(sortCol int) {
 			return false
 		})
 	}
+	if x := a.selectTag.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r assetRow) bool {
+			return r.tags.Contains(x)
+		})
+	}
+	// search filter
+	if search := strings.ToLower(a.entry.Text); search != "" {
+		rows2 := make([]assetRow, 0)
+		for _, r := range rows {
+			var matches bool
+			if search == "" {
+				matches = true
+			} else {
+				matches = strings.Contains(r.searchTarget, search)
+			}
+			if matches {
+				rows2 = append(rows2, r)
+			}
+		}
+		rows = rows2
+	}
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
 		slices.SortFunc(rows, func(a, b assetRow) int {
@@ -289,6 +307,10 @@ func (a *assets) filterRows(sortCol int) {
 			}
 		})
 	})
+	// set data & refresh
+	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r assetRow) set.Set[string] {
+		return r.tags
+	})...).All()))
 	a.selectCategory.SetOptions(xslices.Map(rows, func(o assetRow) string {
 		return o.categoryName
 	}))
@@ -360,6 +382,16 @@ func (*assets) fetchRows(s services) ([]assetRow, bool, error) {
 	for _, o := range cc {
 		characterNames[o.ID] = o.Name
 	}
+	tagsPerCharacter := make(map[int32]set.Set[string])
+	for _, c := range cc {
+		tags, err := s.cs.ListTagsForCharacter(ctx, c.ID)
+		if err != nil {
+			return nil, false, nil
+		}
+		tagsPerCharacter[c.ID] = set.Collect(xiter.MapSlice(tags, func(x *app.CharacterTag) string {
+			return x.Name
+		}))
+	}
 	assets, err := s.cs.ListAllAssets(ctx)
 	if err != nil {
 		return nil, false, err
@@ -383,6 +415,7 @@ func (*assets) fetchRows(s services) ([]assetRow, bool, error) {
 			typeID:          ca.Type.ID,
 			typeName:        ca.Type.Name,
 			typeNameDisplay: ca.DisplayName2(),
+			tags:            tagsPerCharacter[ca.CharacterID],
 		}
 		r.searchTarget = strings.ToLower(r.typeNameDisplay)
 		if ca.IsSingleton {

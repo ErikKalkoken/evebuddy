@@ -100,7 +100,7 @@ type baseUI struct {
 	characterAttributes        *characterAttributes
 	characterBiography         *characterBiography
 	characterCommunications    *characterCommunications
-	characterImplants          *characterAugmentations
+	characterAugmentations     *characterAugmentations
 	characterJumpClones        *characterJumpClones
 	characterMail              *characterMails
 	characterSheet             *characterSheet
@@ -123,7 +123,6 @@ type baseUI struct {
 	locations                  *locations
 	training                   *trainings
 	wealth                     *wealth
-	userSettings               *userSettings
 
 	app                fyne.App
 	clearCache         func() // clear all caches
@@ -143,7 +142,6 @@ type baseUI struct {
 	scs                *statuscacheservice.StatusCacheService
 	settings           *settings.Settings
 	snackbar           *iwidget.Snackbar
-	statusWindow       fyne.Window
 	wasStarted         atomic.Bool // whether the app has already been started at least once
 	window             fyne.Window
 
@@ -210,7 +208,7 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	u.characterAttributes = newCharacterAttributes(u)
 	u.characterBiography = newCharacterBiography(u)
 	u.characterCommunications = newCharacterCommunications(u)
-	u.characterImplants = newCharacterAugmentations(u)
+	u.characterAugmentations = newCharacterAugmentations(u)
 	u.characterJumpClones = newCharacterJumpClones(u)
 	u.characterMail = newCharacterMails(u)
 	u.characterSheet = newSheet(u)
@@ -234,7 +232,6 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	u.training = newTrainings(u)
 	u.wealth = newWealth(u)
 	u.snackbar = iwidget.NewSnackbar(u.window)
-	u.userSettings = newSettings(u)
 	u.MainWindow().SetMaster()
 
 	// SetOnStarted is called on initial start,
@@ -459,7 +456,7 @@ func (u *baseUI) defineCharacterUpdates() map[string]func() {
 		"assets":            u.characterAsset.update,
 		"attributes":        u.characterAttributes.update,
 		"biography":         u.characterBiography.update,
-		"implants":          u.characterImplants.update,
+		"implants":          u.characterAugmentations.update,
 		"jumpClones":        u.characterJumpClones.update,
 		"mail":              u.characterMail.update,
 		"notifications":     u.characterCommunications.update,
@@ -850,7 +847,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionImplants:
 		if isShown && needsRefresh {
-			u.characterImplants.update()
+			u.characterAugmentations.update()
 		}
 	case app.SectionJumpClones:
 		if needsRefresh {
@@ -1111,7 +1108,7 @@ func (u *baseUI) NewErrorDialog(message string, err error, parent fyne.Window) d
 	return d
 }
 
-func (u *baseUI) ShowErrorDialog(message string, err error, parent fyne.Window) {
+func (u *baseUI) showErrorDialog(message string, err error, parent fyne.Window) {
 	d := u.NewErrorDialog(message, err, parent)
 	d.Show()
 }
@@ -1125,26 +1122,6 @@ func (u *baseUI) ModifyShortcutsForDialog(d dialog.Dialog, w fyne.Window) {
 			u.enableMenuShortcuts()
 		})
 	}
-}
-
-func (u *baseUI) showUpdateStatusWindow() {
-	if u.statusWindow != nil {
-		u.statusWindow.Show()
-		return
-	}
-	w := u.app.NewWindow(u.MakeWindowTitle("Update Status"))
-	a := newUpdateStatus(u)
-	a.update()
-	w.SetContent(a)
-	w.Resize(fyne.Size{Width: 1100, Height: 500})
-	ctx, cancel := context.WithCancel(context.Background())
-	a.startTicker(ctx)
-	w.SetOnClosed(func() {
-		cancel()
-		u.statusWindow = nil
-	})
-	u.statusWindow = w
-	w.Show()
 }
 
 func (u *baseUI) ShowLocationInfoWindow(id int64) {

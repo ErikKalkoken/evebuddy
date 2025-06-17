@@ -3,6 +3,7 @@ package xiter
 
 import (
 	"iter"
+	"maps"
 	"slices"
 )
 
@@ -75,4 +76,14 @@ func MapSlice2[X, K, V any](s []X, f func(X) (K, V)) iter.Seq2[K, V] {
 			}
 		}
 	}
+}
+
+// Unique returns an iterator over a unique subset of the items of sequence seq.
+// The order of the returned items is undefined.
+func Unique[T comparable](seq iter.Seq[T]) iter.Seq[T] {
+	m := make(map[T]struct{})
+	for v := range seq {
+		m[v] = struct{}{}
+	}
+	return maps.Keys(m)
 }

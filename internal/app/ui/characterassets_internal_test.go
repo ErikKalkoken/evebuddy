@@ -117,7 +117,7 @@ func TestCharacterAsset_CanRenderWithData(t *testing.T) {
 	ui.setCharacter(character)
 	w := test.NewWindow(ui.characterAsset)
 	defer w.Close()
-	w.Resize(fyne.NewSize(600, 300))
+	w.Resize(fyne.NewSize(1700, 300))
 
 	ui.characterAsset.update()
 
@@ -139,7 +139,7 @@ func TestCharacterAsset_CanRenderWithoutData(t *testing.T) {
 	ui.setCharacter(character)
 	w := test.NewWindow(ui.characterAsset)
 	defer w.Close()
-	w.Resize(fyne.NewSize(600, 300))
+	w.Resize(fyne.NewSize(1700, 300))
 
 	ui.characterAsset.update()
 

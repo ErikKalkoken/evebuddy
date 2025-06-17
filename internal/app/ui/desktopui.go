@@ -164,7 +164,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			theme.NewThemedResource(icons.PortraitSvg),
 			makePageWithPageBar("Character Sheet", container.NewAppTabs(
 				container.NewTabItem("Character", u.characterSheet),
-				container.NewTabItem("Augmentations", u.characterImplants),
+				container.NewTabItem("Augmentations", u.characterAugmentations),
 				container.NewTabItem("Jump Clones", u.characterJumpClones),
 				container.NewTabItem("Attributes", u.characterAttributes),
 				container.NewTabItem("Biography", u.characterBiography),
@@ -396,21 +396,6 @@ func (u *DesktopUI) ResetDesktopSettings() {
 	u.settings.ResetSysTrayEnabled()
 }
 
-func (u *DesktopUI) ShowSettingsWindow() {
-	if u.settingsWindow != nil {
-		u.settingsWindow.Show()
-		return
-	}
-	w := u.App().NewWindow(u.MakeWindowTitle("Settings"))
-	u.userSettings.SetWindow(w)
-	w.SetContent(u.userSettings)
-	w.Resize(fyne.Size{Width: 700, Height: 500})
-	w.SetOnClosed(func() {
-		u.settingsWindow = nil
-	})
-	w.Show()
-}
-
 func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
 	w := u.App().NewWindow(u.MakeWindowTitle(title))
@@ -569,7 +554,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierControl,
 			},
 			func(fyne.Shortcut) {
-				u.ShowSettingsWindow()
+				showSettingsWindow(u.baseUI)
 			}},
 		"manageCharacters": {
 			&desktop.CustomShortcut{
@@ -585,7 +570,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt,
 			},
 			func(fyne.Shortcut) {
-				u.showUpdateStatusWindow()
+				showUpdateStatusWindow(u.baseUI)
 			}},
 		"quit": {
 			&desktop.CustomShortcut{

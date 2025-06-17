@@ -19,7 +19,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -33,6 +35,7 @@ type characterRow struct {
 	lastLoginAt   optional.Optional[time.Time]
 	name          string
 	security      float64
+	tags          set.Set[string]
 	unreadCount   optional.Optional[int]
 	walletBalance optional.Optional[float64]
 }
@@ -60,6 +63,7 @@ type characters struct {
 	rowsFiltered      []characterRow
 	selectAlliance    *kxwidget.FilterChipSelect
 	selectCorporation *kxwidget.FilterChipSelect
+	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *sortButton
 	top               *widget.Label
 	u                 *baseUI
@@ -143,6 +147,9 @@ func newOverviewCharacters(u *baseUI) *characters {
 	a.selectCorporation = kxwidget.NewFilterChipSelect("Corporation", []string{}, func(string) {
 		a.filterRows(-1)
 	})
+	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
+		a.filterRows(-1)
+	})
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window, 5, 6, 7, 8, 9)
@@ -150,7 +157,7 @@ func newOverviewCharacters(u *baseUI) *characters {
 }
 
 func (a *characters) CreateRenderer() fyne.WidgetRenderer {
-	filters := container.NewHBox(a.selectAlliance, a.selectCorporation)
+	filters := container.NewHBox(a.selectAlliance, a.selectCorporation, a.selectTag)
 	if !a.u.isDesktop {
 		filters.Add(a.sortButton)
 	}
@@ -168,13 +175,18 @@ func (a *characters) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
 	if x := a.selectAlliance.Selected; x != "" {
-		rows = xslices.Filter(rows, func(o characterRow) bool {
-			return o.AllianceName() == x
+		rows = xslices.Filter(rows, func(r characterRow) bool {
+			return r.AllianceName() == x
 		})
 	}
 	if x := a.selectCorporation.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r characterRow) bool {
+			return r.CorporationName() == x
+		})
+	}
+	if x := a.selectTag.Selected; x != "" {
 		rows = xslices.Filter(rows, func(o characterRow) bool {
-			return o.CorporationName() == x
+			return o.tags.Contains(x)
 		})
 	}
 	// sort
@@ -216,6 +228,10 @@ func (a *characters) filterRows(sortCol int) {
 	a.selectCorporation.SetOptions(xslices.Map(rows, func(r characterRow) string {
 		return r.CorporationName()
 	}))
+
+	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r characterRow) set.Set[string] {
+		return r.tags
+	})...).All()))
 	a.rowsFiltered = rows
 	a.body.Refresh()
 }
@@ -311,6 +327,15 @@ func (*characters) fetchRows(s services) ([]characterRow, overviewTotals, error)
 		if !c.assetValue.IsEmpty() {
 			totals.assets.Set(totals.assets.ValueOrZero() + c.assetValue.ValueOrZero())
 		}
+	}
+	for i, c := range cc {
+		tags, err := s.cs.ListTagsForCharacter(ctx, c.id)
+		if err != nil {
+			return nil, totals, err
+		}
+		cc[i].tags = set.Collect(xiter.MapSlice(tags, func(x *app.CharacterTag) string {
+			return x.Name
+		}))
 	}
 	return cc, totals, nil
 }

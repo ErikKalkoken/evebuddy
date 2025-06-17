@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -29,9 +30,9 @@ type colonyRow struct {
 	characterID     int32
 	due             time.Time
 	dueRT           []widget.RichTextSegment
-	isExpired       bool
 	extracting      set.Set[string]
 	extractingText  string
+	isExpired       bool
 	name            string
 	nameRT          []widget.RichTextSegment
 	ownerName       string
@@ -40,6 +41,7 @@ type colonyRow struct {
 	producingText   string
 	regionName      string
 	solarSystemName string
+	tags            set.Set[string]
 	typeName        string
 }
 
@@ -59,6 +61,7 @@ type colonies struct {
 	selectRegion      *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectPlanetType  *kxwidget.FilterChipSelect
+	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *sortButton
 	top               *widget.Label
 	u                 *baseUI
@@ -125,18 +128,18 @@ func newColonies(u *baseUI) *colonies {
 	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
-
 	a.selectStatus = kxwidget.NewFilterChipSelect("Status", []string{
 		colonyStatusExtracting,
 		colonyStatusOffline,
 	}, func(string) {
 		a.filterRows(-1)
 	})
-
 	a.selectPlanetType = kxwidget.NewFilterChipSelect("Planet Type", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-
+	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
+		a.filterRows(-1)
+	})
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
@@ -152,6 +155,7 @@ func (a *colonies) CreateRenderer() fyne.WidgetRenderer {
 		a.selectProducing,
 		a.selectRegion,
 		a.selectOwner,
+		a.selectTag,
 	)
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
@@ -213,6 +217,11 @@ func (a *colonies) filterRows(sortCol int) {
 			return r.typeName == x
 		})
 	}
+	if x := a.selectTag.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r colonyRow) bool {
+			return r.tags.Contains(x)
+		})
+	}
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
 		slices.SortFunc(rows, func(a, b colonyRow) int {
@@ -236,6 +245,10 @@ func (a *colonies) filterRows(sortCol int) {
 			}
 		})
 	})
+	// set data & refresh
+	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r colonyRow) set.Set[string] {
+		return r.tags
+	})...).All()))
 	a.selectOwner.SetOptions(xslices.Map(rows, func(r colonyRow) string {
 		return r.ownerName
 	}))
@@ -262,49 +275,13 @@ func (a *colonies) filterRows(sortCol int) {
 func (a *colonies) update() {
 	var s string
 	var i widget.Importance
-	var total, expired int
-	rows := make([]colonyRow, 0)
-	planets, err := a.u.cs.ListAllPlanets(context.Background())
+	rows, expired, err := a.fetchRows(a.u.services())
 	if err != nil {
-		slog.Error("Failed to refresh colonies UI", "err", err)
-		s = "ERROR"
+		slog.Error("Failed to refresh colony UI", "err", err)
+		s = "ERROR: " + a.u.humanizeError(err)
 		i = widget.DangerImportance
 	} else {
-		total = len(planets)
-		for _, p := range planets {
-			extracting := p.ExtractedTypeNames()
-			producing := p.ProducedSchematicNames()
-			r := colonyRow{
-				characterID:     p.CharacterID,
-				due:             p.ExtractionsExpiryTime(),
-				dueRT:           p.DueRichText(),
-				extracting:      set.Of(extracting...),
-				isExpired:       p.IsExpired(),
-				name:            p.EvePlanet.Name,
-				nameRT:          p.NameRichText(),
-				ownerName:       a.u.scs.CharacterName(p.CharacterID),
-				planetID:        p.EvePlanet.ID,
-				producing:       set.Of(producing...),
-				regionName:      p.EvePlanet.SolarSystem.Constellation.Region.Name,
-				solarSystemName: p.EvePlanet.SolarSystem.Name,
-				typeName:        p.EvePlanet.TypeDisplay(),
-			}
-			if len(extracting) == 0 {
-				r.extractingText = "-"
-			} else {
-				r.extractingText = strings.Join(extracting, ", ")
-			}
-			if len(producing) == 0 {
-				r.producingText = "-"
-			} else {
-				r.producingText = strings.Join(producing, ", ")
-			}
-			rows = append(rows, r)
-			if p.IsExpired() {
-				expired++
-			}
-		}
-		s = fmt.Sprintf("%d colonies", total)
+		s = fmt.Sprintf("%d colonies", len(rows))
 		if expired > 0 {
 			s += fmt.Sprintf(" • %d expired", expired)
 		}
@@ -319,14 +296,66 @@ func (a *colonies) update() {
 		a.filterRows(-1)
 	})
 	if a.OnUpdate != nil {
-		a.OnUpdate(total, expired)
+		a.OnUpdate(len(rows), expired)
 	}
+}
+
+func (a *colonies) fetchRows(s services) ([]colonyRow, int, error) {
+	var expired int
+	rows := make([]colonyRow, 0)
+	ctx := context.Background()
+
+	planets, err := s.cs.ListAllPlanets(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	for _, p := range planets {
+		extracting := p.ExtractedTypeNames()
+		producing := p.ProducedSchematicNames()
+		r := colonyRow{
+			characterID:     p.CharacterID,
+			due:             p.ExtractionsExpiryTime(),
+			dueRT:           p.DueRichText(),
+			extracting:      set.Of(extracting...),
+			isExpired:       p.IsExpired(),
+			name:            p.EvePlanet.Name,
+			nameRT:          p.NameRichText(),
+			ownerName:       a.u.scs.CharacterName(p.CharacterID),
+			planetID:        p.EvePlanet.ID,
+			producing:       set.Of(producing...),
+			regionName:      p.EvePlanet.SolarSystem.Constellation.Region.Name,
+			solarSystemName: p.EvePlanet.SolarSystem.Name,
+			typeName:        p.EvePlanet.TypeDisplay(),
+		}
+		if len(extracting) == 0 {
+			r.extractingText = "-"
+		} else {
+			r.extractingText = strings.Join(extracting, ", ")
+		}
+		if len(producing) == 0 {
+			r.producingText = "-"
+		} else {
+			r.producingText = strings.Join(producing, ", ")
+		}
+		tags, err := s.cs.ListTagsForCharacter(ctx, p.CharacterID)
+		if err != nil {
+			return nil, 0, err
+		}
+		r.tags = set.Collect(xiter.MapSlice(tags, func(x *app.CharacterTag) string {
+			return x.Name
+		}))
+		rows = append(rows, r)
+		if p.IsExpired() {
+			expired++
+		}
+	}
+	return rows, expired, nil
 }
 
 func (a *colonies) showColony(r colonyRow) {
 	cp, err := a.u.cs.GetPlanet(context.Background(), r.characterID, r.planetID)
 	if err != nil {
-		a.u.ShowErrorDialog("Failed to show colony", err, a.u.window)
+		a.u.showErrorDialog("Failed to show colony", err, a.u.window)
 		return
 	}
 
