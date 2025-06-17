@@ -246,7 +246,7 @@ func (w *NavBar) Disable(id int) {
 
 // HideBar hides the nav bar, while still showing the rest of the page.
 func (w *NavBar) HideBar() {
-	w.destinations.Hide()
+	w.bar.Hide()
 }
 
 // Select switches to a new destination.
@@ -265,7 +265,7 @@ func (w *NavBar) Select(id int) {
 
 // ShowBar shows the nav bar again.
 func (w *NavBar) ShowBar() {
-	w.destinations.Show()
+	w.bar.Show()
 }
 
 // SetBadge shows or hides the badge of a destination.
