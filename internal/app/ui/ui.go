@@ -100,7 +100,7 @@ type baseUI struct {
 	characterAttributes        *characterAttributes
 	characterBiography         *characterBiography
 	characterCommunications    *characterCommunications
-	characterImplants          *characterAugmentations
+	characterAugmentations     *characterAugmentations
 	characterJumpClones        *characterJumpClones
 	characterMail              *characterMails
 	characterSheet             *characterSheet
@@ -208,7 +208,7 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	u.characterAttributes = newCharacterAttributes(u)
 	u.characterBiography = newCharacterBiography(u)
 	u.characterCommunications = newCharacterCommunications(u)
-	u.characterImplants = newCharacterAugmentations(u)
+	u.characterAugmentations = newCharacterAugmentations(u)
 	u.characterJumpClones = newCharacterJumpClones(u)
 	u.characterMail = newCharacterMails(u)
 	u.characterSheet = newSheet(u)
@@ -456,7 +456,7 @@ func (u *baseUI) defineCharacterUpdates() map[string]func() {
 		"assets":            u.characterAsset.update,
 		"attributes":        u.characterAttributes.update,
 		"biography":         u.characterBiography.update,
-		"implants":          u.characterImplants.update,
+		"implants":          u.characterAugmentations.update,
 		"jumpClones":        u.characterJumpClones.update,
 		"mail":              u.characterMail.update,
 		"notifications":     u.characterCommunications.update,
@@ -847,7 +847,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionImplants:
 		if isShown && needsRefresh {
-			u.characterImplants.update()
+			u.characterAugmentations.update()
 		}
 	case app.SectionJumpClones:
 		if needsRefresh {

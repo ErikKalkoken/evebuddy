@@ -163,7 +163,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 						"Character Sheet",
 						container.NewAppTabs(
 							container.NewTabItem("Character", u.characterSheet),
-							container.NewTabItem("Augmentations", u.characterImplants),
+							container.NewTabItem("Augmentations", u.characterAugmentations),
 							container.NewTabItem("Clones", u.characterJumpClones),
 							container.NewTabItem("Attributes", u.characterAttributes),
 							container.NewTabItem("Bio", u.characterBiography),

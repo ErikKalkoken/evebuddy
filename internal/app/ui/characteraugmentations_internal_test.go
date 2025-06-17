@@ -10,10 +10,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 )
 
-func TestCharacterImplants_CanRenderWithData(t *testing.T) {
+func TestCharacterAugmentations_CanRenderWithData(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	character := factory.CreateCharacterFull()
+	character := factory.CreateCharacterMinimal()
 	et := factory.CreateEveType(storage.CreateEveTypeParams{
 		Name: "Dummy Implant",
 	})
@@ -34,11 +34,11 @@ func TestCharacterImplants_CanRenderWithData(t *testing.T) {
 	test.ApplyTheme(t, test.Theme())
 	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
 	ui.setCharacter(character)
-	w := test.NewWindow(ui.characterImplants)
+	w := test.NewWindow(ui.characterAugmentations)
 	defer w.Close()
 	w.Resize(fyne.NewSize(600, 300))
 
-	ui.characterImplants.update()
+	ui.characterAugmentations.update()
 
-	test.AssertImageMatches(t, "characterimplants/master.png", w.Canvas().Capture())
+	test.AssertImageMatches(t, "characteraugmentations/master.png", w.Canvas().Capture())
 }

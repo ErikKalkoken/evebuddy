@@ -164,7 +164,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			theme.NewThemedResource(icons.PortraitSvg),
 			makePageWithPageBar("Character Sheet", container.NewAppTabs(
 				container.NewTabItem("Character", u.characterSheet),
-				container.NewTabItem("Augmentations", u.characterImplants),
+				container.NewTabItem("Augmentations", u.characterAugmentations),
 				container.NewTabItem("Jump Clones", u.characterJumpClones),
 				container.NewTabItem("Attributes", u.characterAttributes),
 				container.NewTabItem("Biography", u.characterBiography),
