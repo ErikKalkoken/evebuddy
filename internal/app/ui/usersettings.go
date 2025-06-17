@@ -79,12 +79,12 @@ func newSettings(u *baseUI, w fyne.Window) *userSettings {
 }
 
 func (a *userSettings) CreateRenderer() fyne.WidgetRenderer {
-	makeSettingsPage := func(title string, content fyne.CanvasObject, action *kxwidget.IconButton) fyne.CanvasObject {
-		return iwidget.NewAppBarWithTrailing(title, content, action)
+	makeSettingsPage := func(title string, content fyne.CanvasObject, actions fyne.CanvasObject) fyne.CanvasObject {
+		return iwidget.NewAppBarWithTrailing(title, content, actions)
 	}
 	generalContent, generalActions := a.makeGeneralSettingsPage()
 	notificationContent, notificationActions := a.makeNotificationPage()
-	tagsContent, tagsActions := a.makeTagsPage()
+	tagsContent, tagsActions := a.makeCharacterTagsPage()
 	tabs := container.NewAppTabs(
 		container.NewTabItem("General", makeSettingsPage(
 			"General",
@@ -96,8 +96,8 @@ func (a *userSettings) CreateRenderer() fyne.WidgetRenderer {
 			notificationContent,
 			notificationActions,
 		)),
-		container.NewTabItem("Tags", makeSettingsPage(
-			"Tags",
+		container.NewTabItem("Character Tags", makeSettingsPage(
+			"Character Tags",
 			tagsContent,
 			tagsActions,
 		)),
@@ -612,13 +612,13 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 	return list, makeIconButtonFromActions([]settingAction{reset, all, none, send})
 }
 
-func (a *userSettings) makeTagsPage() (fyne.CanvasObject, *kxwidget.IconButton) {
+func (a *userSettings) makeCharacterTagsPage() (body fyne.CanvasObject, actions fyne.CanvasObject) {
 	var selectedTag *app.CharacterTag
 	var characterList *widget.List
 	characters := make([]*app.EntityShort[int32], 0)
 	var updateCharacters func(tag *app.CharacterTag)
 
-	addCharacter := kxwidget.NewIconButton(theme.ContentAddIcon(), func() {
+	addCharacter := iwidget.NewTappableIcon(theme.ContentAddIcon(), func() {
 		if selectedTag == nil {
 			return
 		}
@@ -714,6 +714,7 @@ func (a *userSettings) makeTagsPage() (fyne.CanvasObject, *kxwidget.IconButton) 
 		_, s := a.w.Canvas().InteractiveArea()
 		d.Resize(fyne.NewSize(s.Width*0.8, s.Height*0.8))
 	})
+	addCharacter.SetToolTip("Add character")
 	addCharacter.Disable()
 
 	var manageCharacters *iwidget.AppBar
@@ -916,17 +917,24 @@ func (a *userSettings) makeTagsPage() (fyne.CanvasObject, *kxwidget.IconButton) 
 
 	updateTags()
 
-	manageCharacters = iwidget.NewAppBarWithTrailing("", container.NewPadded(characterList), addCharacter)
+	manageCharacters = iwidget.NewAppBarWithTrailing(
+		"",
+		container.NewPadded(characterList),
+		container.New(layout.NewCustomPaddedLayout(0, 0, 0, p), addCharacter),
+	)
 	manageCharacters.Hide()
 
-	action := kxwidget.NewIconButton(
+	addTag := iwidget.NewTappableIcon(
 		theme.ContentAddIcon(), func() {
-			modifyTag("Create Tag", "Create", func(name string) error {
+			modifyTag("Create Character Tag", "Create", func(name string) error {
 				_, err := a.u.cs.CreateTag(context.Background(), name)
 				return err
 			})
 		},
 	)
+	addTag.SetToolTip("Add new tag")
+	action := container.New(layout.NewCustomPaddedLayout(0, 0, 0, p), addTag)
+
 	return container.NewVSplit(container.NewPadded(tagList), manageCharacters), action
 }
 
