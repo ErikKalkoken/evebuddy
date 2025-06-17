@@ -11,6 +11,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -23,14 +24,17 @@ import (
 )
 
 type walletJournalRow struct {
-	amount         float64
-	amountDisplay  []widget.RichTextSegment
-	balance        float64
-	date           time.Time
-	description    string
-	reason         string
-	refType        string
-	refTypeDisplay string
+	amount           float64
+	amountFormatted  string
+	amountDisplay    []widget.RichTextSegment
+	balance          float64
+	balanceFormatted string
+	date             time.Time
+	dateFormatted    string
+	description      string
+	reason           string
+	refType          string
+	refTypeDisplay   string
 }
 
 func (e walletJournalRow) hasReason() bool {
@@ -77,7 +81,7 @@ func newCharacterWalletJournal(u *baseUI) *characterWalletJournal {
 	makeCell := func(col int, r walletJournalRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			return iwidget.NewRichTextSegmentFromText(r.date.Format(app.DateTimeFormat))
+			return iwidget.NewRichTextSegmentFromText(r.dateFormatted)
 		case 1:
 			return iwidget.NewRichTextSegmentFromText(r.refTypeDisplay)
 		case 2:
@@ -104,7 +108,7 @@ func newCharacterWalletJournal(u *baseUI) *characterWalletJournal {
 			showReasonDialog(r)
 		})
 	} else {
-		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, showReasonDialog)
+		a.body = a.makeDataList()
 	}
 	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
 		a.filterRows(-1)
@@ -128,6 +132,65 @@ func (a *characterWalletJournal) CreateRenderer() fyne.WidgetRenderer {
 		a.body,
 	)
 	return widget.NewSimpleRenderer(c)
+}
+
+func (a *characterWalletJournal) makeDataList() *widget.List {
+	p := theme.Padding()
+	l := widget.NewList(
+		func() int {
+			return len(a.rowsFiltered)
+		},
+		func() fyne.CanvasObject {
+			date := widget.NewLabel("Template")
+			date.Truncation = fyne.TextTruncateClip
+			balance := widget.NewLabel("Template")
+			balance.Alignment = fyne.TextAlignTrailing
+			refType := widget.NewLabel("Template")
+			refType.Truncation = fyne.TextTruncateClip
+			value := widget.NewLabel("Template")
+			value.Alignment = fyne.TextAlignTrailing
+			description := widget.NewLabel("Template")
+			description.Truncation = fyne.TextTruncateClip
+			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
+				container.NewBorder(nil, nil, nil, balance, date),
+				container.NewBorder(nil, nil, nil, value, refType),
+				description,
+			)
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id < 0 || id >= len(a.rowsFiltered) {
+				return
+			}
+			r := a.rowsFiltered[id]
+			c := co.(*fyne.Container).Objects
+
+			b0 := c[0].(*fyne.Container).Objects
+			b0[0].(*widget.Label).SetText(r.dateFormatted)
+			b0[1].(*widget.Label).SetText(r.balanceFormatted)
+
+			b1 := c[1].(*fyne.Container).Objects
+			b1[0].(*widget.Label).SetText(r.refTypeDisplay)
+			amount := b1[1].(*widget.Label)
+			amount.Text = r.amountFormatted
+			if r.amount > 0 {
+				amount.Importance = widget.SuccessImportance
+			} else if r.amount < 0 {
+				amount.Importance = widget.DangerImportance
+			} else {
+				amount.Importance = widget.MediumImportance
+			}
+			amount.Refresh()
+
+			c[2].(*widget.Label).SetText(r.description)
+		},
+	)
+	l.OnSelected = func(id widget.ListItemID) {
+		if id < 0 || id >= len(a.rowsFiltered) {
+			return
+		}
+		l.UnselectAll() // TODO: Show detail window
+	}
+	return l
 }
 
 func (a *characterWalletJournal) filterRows(sortCol int) {
@@ -207,13 +270,16 @@ func (*characterWalletJournal) fetchRows(characterID int32, s services) ([]walle
 	rows := make([]walletJournalRow, len(entries))
 	for i, o := range entries {
 		r := walletJournalRow{
-			amount:         o.Amount,
-			balance:        o.Balance,
-			date:           o.Date,
-			description:    o.Description,
-			reason:         o.Reason,
-			refType:        o.RefType,
-			refTypeDisplay: o.RefTypeDisplay(),
+			amount:           o.Amount,
+			amountFormatted:  humanize.FormatFloat(app.FloatFormat, o.Amount),
+			balance:          o.Balance,
+			balanceFormatted: humanize.FormatFloat(app.FloatFormat, o.Balance),
+			date:             o.Date,
+			dateFormatted:    o.Date.Format(app.DateTimeFormat),
+			description:      o.Description,
+			reason:           o.Reason,
+			refType:          o.RefType,
+			refTypeDisplay:   o.RefTypeDisplay(),
 		}
 		var color fyne.ThemeColorName
 		switch {
@@ -225,7 +291,7 @@ func (*characterWalletJournal) fetchRows(characterID int32, s services) ([]walle
 			color = theme.ColorNameForeground
 		}
 		r.amountDisplay = iwidget.NewRichTextSegmentFromText(
-			humanize.FormatFloat(app.FloatFormat, o.Amount),
+			r.amountFormatted,
 			widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 				ColorName: color,
