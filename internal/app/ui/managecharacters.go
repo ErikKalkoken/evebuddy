@@ -252,7 +252,7 @@ func (a *manageCharacters) ShowAddCharacterDialog() {
 			if err != nil && !errors.Is(err, app.ErrAborted) {
 				s := "Failed to add a new character"
 				slog.Error(s, "error", err)
-				a.u.ShowErrorDialog(s, err, a.window)
+				a.u.showErrorDialog(s, err, a.window)
 				return
 			}
 			go func() {

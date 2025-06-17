@@ -351,7 +351,7 @@ func (a *hameSearch) doSearch2(search string) {
 	)
 	if err != nil {
 		fyne.Do(func() {
-			a.u.ShowErrorDialog("Search failed", err, a.u.MainWindow())
+			a.u.showErrorDialog("Search failed", err, a.u.MainWindow())
 		})
 		return
 	}

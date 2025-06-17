@@ -182,7 +182,7 @@ func (iw *infoWindow) showZoomWindow(title string, id int32, load func(int32, in
 	s := float32(zoomImagePixelSize) / w.Canvas().Scale()
 	r, err := load(id, zoomImagePixelSize)
 	if err != nil {
-		iw.u.ShowErrorDialog("Failed to load image", err, w)
+		iw.u.showErrorDialog("Failed to load image", err, w)
 	}
 	i := iwidget.NewImageFromResource(r, fyne.NewSquareSize(s))
 	p := theme.Padding()

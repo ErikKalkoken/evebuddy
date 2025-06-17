@@ -230,8 +230,10 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 						a.u.ShowSnackbar(fmt.Sprintf("Failed to clear cache: %s", a.u.humanizeError(err)))
 					}
 					m.Start()
-				}, w)
-		}}
+				}, w,
+			)
+		},
+	}
 	reset := settingAction{
 		Label: "Reset to defaults",
 		Action: func() {
@@ -278,6 +280,14 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 			},
 		})
 	}
+	if a.u.IsDeveloperMode() {
+		actions = append(actions, settingAction{
+			Label: "Show snackbar test",
+			Action: func() {
+				a.sb.Show("This is a test")
+			},
+		})
+	}
 	return list, makeIconButtonFromActions(actions)
 }
 
@@ -319,7 +329,7 @@ func (a *userSettings) showExportFileDialog(path string) {
 		a.sb.Show("No file to export: " + filename)
 		return
 	} else if err != nil {
-		a.u.ShowErrorDialog("Failed to open "+filename, err, a.w)
+		a.u.showErrorDialog("Failed to open "+filename, err, a.w)
 		return
 	}
 	d := dialog.NewFileSave(
@@ -339,7 +349,7 @@ func (a *userSettings) showExportFileDialog(path string) {
 				return nil
 			}()
 			if err2 != nil {
-				a.u.ShowErrorDialog("Failed to export "+filename, err, a.w)
+				a.u.showErrorDialog("Failed to export "+filename, err, a.w)
 			}
 		}, a.w,
 	)
@@ -415,14 +425,14 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 			if on {
 				err := a.u.cs.EnableAllTrainingWatchers(ctx)
 				if err != nil {
-					a.u.ShowErrorDialog("failed to enable training notification", err, a.w)
+					a.u.showErrorDialog("Failed to enable training notification", err, a.w)
 				} else {
 					a.u.settings.SetNotifyTrainingEnabled(on)
 				}
 			} else {
 				err := a.u.cs.DisableAllTrainingWatchers(ctx)
 				if err != nil {
-					a.u.ShowErrorDialog("failed to disable training notification", err, a.w)
+					a.u.showErrorDialog("Failed to disable training notification", err, a.w)
 				} else {
 					a.u.settings.SetNotifyCommunicationsEnabled(false)
 				}
@@ -618,13 +628,18 @@ func (a *userSettings) makeCharacterTagsPage() (body fyne.CanvasObject, actions 
 	characters := make([]*app.EntityShort[int32], 0)
 	var updateCharacters func(tag *app.CharacterTag)
 
+	reportError := func(text string, err error) {
+		slog.Error(text, "error", err)
+		a.sb.Show(fmt.Sprintf("ERROR: %s: %s", text, err))
+	}
+
 	addCharacter := iwidget.NewTappableIcon(theme.ContentAddIcon(), func() {
 		if selectedTag == nil {
 			return
 		}
 		_, others, err := a.u.cs.ListCharactersForTag(context.Background(), selectedTag.ID)
 		if err != nil {
-			a.u.ShowErrorDialog("Failed to list characters for tag", err, a.w)
+			reportError("Failed to list characters", err)
 			characters = make([]*app.EntityShort[int32], 0)
 			return
 		}
@@ -700,7 +715,7 @@ func (a *userSettings) makeCharacterTagsPage() (body fyne.CanvasObject, actions 
 					}
 					err := a.u.cs.AddTagToCharacter(context.Background(), characterID, selectedTag.ID)
 					if err != nil {
-						a.u.ShowErrorDialog("Failed to add tag to character", err, a.w)
+						reportError("Failed to add tag to character", err)
 						return
 					}
 				}
@@ -728,7 +743,7 @@ func (a *userSettings) makeCharacterTagsPage() (body fyne.CanvasObject, actions 
 		manageCharacters.Show()
 		tagged, others, err := a.u.cs.ListCharactersForTag(context.Background(), tag.ID)
 		if err != nil {
-			a.u.ShowErrorDialog("Failed to list characters for tag", err, a.w)
+			reportError("Failed to list characters for "+tag.Name, err)
 			characters = make([]*app.EntityShort[int32], 0)
 			return
 		}
@@ -788,7 +803,7 @@ func (a *userSettings) makeCharacterTagsPage() (body fyne.CanvasObject, actions 
 				}
 				err := a.u.cs.RemoveTagFromCharacter(context.Background(), character.ID, selectedTag.ID)
 				if err != nil {
-					a.u.ShowErrorDialog("Failed to list characters", err, a.w)
+					reportError("Failed to remove tag from character: "+selectedTag.Name, err)
 					return
 				}
 				updateCharacters(selectedTag)
@@ -807,7 +822,7 @@ func (a *userSettings) makeCharacterTagsPage() (body fyne.CanvasObject, actions 
 	updateTags := func() {
 		rows, err := a.u.cs.ListTags(context.Background())
 		if err != nil {
-			a.u.ShowErrorDialog("Failed to list tags", err, a.w)
+			reportError("Failed to list tags", err)
 			tags = make([]*app.CharacterTag, 0)
 			return
 		}
@@ -836,7 +851,7 @@ func (a *userSettings) makeCharacterTagsPage() (body fyne.CanvasObject, actions 
 				return
 			}
 			if err := execute(name.Text); err != nil {
-				a.u.ShowErrorDialog("Failed to modify tag", err, a.w)
+				a.u.showErrorDialog("Failed to modify tag", err, a.w)
 				return
 			}
 
@@ -890,7 +905,7 @@ func (a *userSettings) makeCharacterTagsPage() (body fyne.CanvasObject, actions 
 					}
 					err := a.u.cs.DeleteTag(context.Background(), tag.ID)
 					if err != nil {
-						a.u.ShowErrorDialog("Failed to delete tag", err, a.w)
+						a.u.showErrorDialog("Failed to delete tag", err, a.w)
 						return
 					}
 					updateTags()

@@ -355,7 +355,7 @@ func (a *colonies) fetchRows(s services) ([]colonyRow, int, error) {
 func (a *colonies) showColony(r colonyRow) {
 	cp, err := a.u.cs.GetPlanet(context.Background(), r.characterID, r.planetID)
 	if err != nil {
-		a.u.ShowErrorDialog("Failed to show colony", err, a.u.window)
+		a.u.showErrorDialog("Failed to show colony", err, a.u.window)
 		return
 	}
 

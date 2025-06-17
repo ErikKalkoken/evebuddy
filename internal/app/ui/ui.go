@@ -1108,7 +1108,7 @@ func (u *baseUI) NewErrorDialog(message string, err error, parent fyne.Window) d
 	return d
 }
 
-func (u *baseUI) ShowErrorDialog(message string, err error, parent fyne.Window) {
+func (u *baseUI) showErrorDialog(message string, err error, parent fyne.Window) {
 	d := u.NewErrorDialog(message, err, parent)
 	d.Show()
 }

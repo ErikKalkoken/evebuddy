@@ -65,7 +65,7 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 			return
 		}
 		if err := a.updateEntries(); err != nil {
-			a.u.ShowErrorDialog("Failed to update ships", err, a.u.MainWindow())
+			a.u.showErrorDialog("Failed to update ships", err, a.u.MainWindow())
 		}
 		a.grid.Refresh()
 		a.grid.ScrollToTop()
@@ -74,7 +74,7 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 	a.groupSelect = kxwidget.NewFilterChipSelectWithSearch("Class", []string{}, func(s string) {
 		a.groupSelected = s
 		if err := a.updateEntries(); err != nil {
-			a.u.ShowErrorDialog("Failed to update ships", err, a.u.MainWindow())
+			a.u.showErrorDialog("Failed to update ships", err, a.u.MainWindow())
 		}
 		a.grid.Refresh()
 		a.grid.ScrollToTop()
@@ -83,7 +83,7 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 	a.flyableSelect = kxwidget.NewFilterChipSelect("Flyable", []string{}, func(s string) {
 		a.flyableSelected = s
 		if err := a.updateEntries(); err != nil {
-			a.u.ShowErrorDialog("Failed to update ships", err, a.u.MainWindow())
+			a.u.showErrorDialog("Failed to update ships", err, a.u.MainWindow())
 		}
 		a.grid.Refresh()
 		a.grid.ScrollToTop()
