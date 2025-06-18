@@ -46,15 +46,6 @@ func (e walletJournalRow) descriptionWithReason() string {
 	return fmt.Sprintf("[r] %s", e.description)
 }
 
-func (r walletJournalRow) amountImportance() widget.Importance {
-	if r.amount > 0 {
-		return widget.SuccessImportance
-	} else if r.amount < 0 {
-		return widget.DangerImportance
-	}
-	return widget.MediumImportance
-}
-
 type characterWalletJournal struct {
 	widget.BaseWidget
 
@@ -107,7 +98,7 @@ func newCharacterWalletJournal(u *baseUI) *characterWalletJournal {
 	}
 	if a.u.isDesktop {
 		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r walletJournalRow) {
-			a.showEntry(r)
+			showCharacterWalletJournalEntry(a.u, r.characterID, r.refID)
 		})
 	} else {
 		a.body = a.makeDataList()
@@ -170,7 +161,7 @@ func (a *characterWalletJournal) makeDataList() *widget.List {
 			b0[0].(*widget.Label).SetText(r.dateFormatted)
 			amount := b0[1].(*widget.Label)
 			amount.Text = r.amountFormatted
-			amount.Importance = r.amountImportance()
+			amount.Importance = importanceISKAmount(r.amount)
 			amount.Refresh()
 
 			b1 := c[1].(*fyne.Container).Objects
@@ -185,7 +176,8 @@ func (a *characterWalletJournal) makeDataList() *widget.List {
 		if id < 0 || id >= len(a.rowsFiltered) {
 			return
 		}
-		a.showEntry(a.rowsFiltered[id])
+		r := a.rowsFiltered[id]
+		showCharacterWalletJournalEntry(a.u, r.characterID, r.refID)
 	}
 	return l
 }
@@ -301,53 +293,44 @@ func (*characterWalletJournal) fetchRows(characterID int32, s services) ([]walle
 	return rows, nil
 }
 
-func (a *characterWalletJournal) showEntry(r walletJournalRow) {
-	entry, err := a.u.cs.GetWalletJournalEntry(context.Background(), r.characterID, r.refID)
+// showCharacterWalletJournalEntry shows a wallet journal entry for a character in a new window.
+func showCharacterWalletJournalEntry(u *baseUI, characterID int32, refID int64) {
+	o, err := u.cs.GetWalletJournalEntry(context.Background(), characterID, refID)
 	if err != nil {
-		a.u.showErrorDialog("Failed to fetch wallet journal entry", err, a.u.window)
+		u.showErrorDialog("Failed to fetch wallet journal entry", err, u.window)
 		return
 	}
-	makeLabelWithWrapping := func(s string) *widget.Label {
-		l := widget.NewLabel(s)
-		l.Wrapping = fyne.TextWrapWord
-		return l
-	}
-	newEveEntityLabel := func(o *app.EveEntity) *kxwidget.TappableLabel {
-		x := kxwidget.NewTappableLabel(o.Name, func() {
-			a.u.ShowEveEntityInfoWindow(o)
-		})
-		x.Wrapping = fyne.TextWrapWord
-		return x
-	}
-	amount := widget.NewLabel(formatISKAmount(r.amount))
-	amount.Importance = r.amountImportance()
-	reason := r.reason
+	amount := widget.NewLabel(formatISKAmount(o.Amount))
+	amount.Importance = importanceISKAmount(o.Amount)
+	reason := o.Reason
 	if reason == "" {
 		reason = "-"
 	}
 	items := []*widget.FormItem{
-		widget.NewFormItem("Date", widget.NewLabel(entry.Date.Format(app.DateTimeFormatWithSeconds))),
-		widget.NewFormItem("Type", makeLabelWithWrapping(r.refTypeDisplay)),
+		widget.NewFormItem("Owner", makeLabelWithWrap(u.scs.CharacterName(characterID))),
+		widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
+		widget.NewFormItem("Type", makeLabelWithWrap(o.RefTypeDisplay())),
 		widget.NewFormItem("Amount", amount),
-		widget.NewFormItem("Balance", widget.NewLabel(formatISKAmount(r.balance))),
-		widget.NewFormItem("Description", makeLabelWithWrapping(r.description)),
-		widget.NewFormItem("Reason", makeLabelWithWrapping(reason)),
+		widget.NewFormItem("Balance", widget.NewLabel(formatISKAmount(o.Balance))),
+		widget.NewFormItem("Description", makeLabelWithWrap(o.Description)),
+		widget.NewFormItem("Reason", makeLabelWithWrap(reason)),
 	}
-	if entry.FirstParty != nil {
-		items = append(items, widget.NewFormItem("First Party", newEveEntityLabel(entry.FirstParty)))
+	if o.FirstParty != nil {
+		items = append(items, widget.NewFormItem("First Party", makeEveEntityActionLabel(o.FirstParty, u.ShowEveEntityInfoWindow)))
 	}
-	if entry.SecondParty != nil {
-		items = append(items, widget.NewFormItem("Second Party", newEveEntityLabel(entry.SecondParty)))
+	if o.SecondParty != nil {
+		items = append(items, widget.NewFormItem("Second Party", makeEveEntityActionLabel(o.SecondParty, u.ShowEveEntityInfoWindow)))
 	}
-	if entry.TaxReceiver != nil {
-		items = append(items, widget.NewFormItem("Tax Receiver", newEveEntityLabel(entry.TaxReceiver)))
+	if o.TaxReceiver != nil {
+		items = append(items, widget.NewFormItem("Tax", widget.NewLabel(formatISKAmount(o.Tax))))
+		items = append(items, widget.NewFormItem("Tax Receiver", makeEveEntityActionLabel(o.TaxReceiver, u.ShowEveEntityInfoWindow)))
 	}
-	if a.u.IsDeveloperMode() {
-		items = append(items, widget.NewFormItem("Ref ID", a.u.makeCopyToClipboardLabel(fmt.Sprint(r.refID))))
+	if u.IsDeveloperMode() {
+		items = append(items, widget.NewFormItem("Ref ID", u.makeCopyToClipboardLabel(fmt.Sprint(refID))))
 	}
-	title := fmt.Sprintf("Entry #%d", r.refID)
+	title := fmt.Sprintf("Wallet Journal #%d", refID)
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	w := a.u.makeDetailWindow("Wallet Journal Entry", title, f)
+	w := u.makeDetailWindow("Wallet Journal Entry", title, f)
 	w.Show()
 }

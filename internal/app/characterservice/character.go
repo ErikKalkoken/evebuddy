@@ -2695,6 +2695,10 @@ const (
 	maxTransactionsPerPage = 2_500 // maximum objects returned per page
 )
 
+func (s *CharacterService) GetWalletTransactions(ctx context.Context, characterID int32, transactionID int64) (*app.CharacterWalletTransaction, error) {
+	return s.st.GetCharacterWalletTransaction(ctx, characterID, transactionID)
+}
+
 func (s *CharacterService) ListWalletTransactions(ctx context.Context, characterID int32) ([]*app.CharacterWalletTransaction, error) {
 	return s.st.ListCharacterWalletTransactions(ctx, characterID)
 }

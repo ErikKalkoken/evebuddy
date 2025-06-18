@@ -6,7 +6,9 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 )
 
@@ -44,4 +46,34 @@ func formatISKAmount(v float64) string {
 		t += fmt.Sprintf(" (%s)", ihumanize.Number(v, 2))
 	}
 	return t
+}
+
+func importanceISKAmount(v float64) widget.Importance {
+	if v > 0 {
+		return widget.SuccessImportance
+	} else if v < 0 {
+		return widget.DangerImportance
+	}
+	return widget.MediumImportance
+}
+
+func makeTappableLabelWithWrap(text string, action func()) *kxwidget.TappableLabel {
+	x := kxwidget.NewTappableLabel(text, action)
+	x.Wrapping = fyne.TextWrapWord
+	return x
+}
+
+func makeEveEntityActionLabel(o *app.EveEntity, action func(o *app.EveEntity)) *kxwidget.TappableLabel {
+	if o == nil {
+		return kxwidget.NewTappableLabel("-", nil)
+	}
+	return makeTappableLabelWithWrap(o.Name, func() {
+		action(o)
+	})
+}
+
+func makeLabelWithWrap(s string) *widget.Label {
+	l := widget.NewLabel(s)
+	l.Wrapping = fyne.TextWrapWord
+	return l
 }
