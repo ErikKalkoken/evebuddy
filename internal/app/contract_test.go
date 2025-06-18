@@ -78,7 +78,7 @@ func TestContractTitleDisplay(t *testing.T) {
 	})
 	t.Run("missing", func(t *testing.T) {
 		x := &app.CharacterContract{Title: ""}
-		assert.Equal(t, "(None)", x.TitleDisplay())
+		assert.Equal(t, "-", x.TitleDisplay())
 	})
 }
 

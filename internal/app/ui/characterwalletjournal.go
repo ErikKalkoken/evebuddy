@@ -356,12 +356,12 @@ func showCharacterWalletJournalEntry(u *baseUI, characterID int32, refID int64) 
 			break
 		}
 		contextItem.Text = "Related contract"
-		contextItem.Widget = makeTappableLabelWithWrap(c.NameDisplay(), func() {
+		contextItem.Widget = makeLinkLabelWithWrap(c.NameDisplay(), func() {
 			showContract(u, c.CharacterID, c.ContractID)
 		})
 	case "market_transaction_id":
 		contextItem.Text = "Related market transaction"
-		contextItem.Widget = makeTappableLabelWithWrap(fmt.Sprintf("#%d", o.ContextID), func() {
+		contextItem.Widget = makeLinkLabelWithWrap(fmt.Sprintf("#%d", o.ContextID), func() {
 			showCharacterWalletTransaction(u, o.CharacterID, o.ContextID)
 		})
 	case "station_id", "structure_id":
@@ -383,7 +383,11 @@ func showCharacterWalletJournalEntry(u *baseUI, characterID int32, refID int64) 
 		}()
 	}
 	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeLabelWithWrap(u.scs.CharacterName(characterID))),
+		widget.NewFormItem("Owner", makeOwnerActionLabel(
+			characterID,
+			u.scs.CharacterName(characterID),
+			u.ShowEveEntityInfoWindow,
+		)),
 		widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
 		widget.NewFormItem("Type", makeLabelWithWrap(o.RefTypeDisplay())),
 		widget.NewFormItem("Amount", amount),

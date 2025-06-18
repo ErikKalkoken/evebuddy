@@ -615,14 +615,11 @@ func (a *clones) showClone(r cloneRow) {
 		a.u.ShowInfoWindow(app.EveEntityInventoryType, im.EveType.ID)
 
 	}
-	location := iwidget.NewTappableRichText(r.jc.Location.DisplayRichText(), func() {
-		a.u.ShowLocationInfoWindow(r.jc.Location.ID)
-	})
-	location.Wrapping = fyne.TextWrapWord
-	character := kxwidget.NewTappableLabel(r.jc.Character.Name, func() {
+
+	location := makeLocationLabel(r.jc.Location.ToShort(), a.u.ShowLocationInfoWindow)
+	character := makeLinkLabelWithWrap(r.jc.Character.Name, func() {
 		a.u.ShowInfoWindow(app.EveEntityCharacter, r.jc.Character.ID)
 	})
-	character.Wrapping = fyne.TextWrapWord
 	implants := widget.NewLabel(fmt.Sprint(len(clone.Implants)))
 	col := kxlayout.NewColumns(80)
 	top := container.New(

@@ -7,10 +7,9 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
+
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
 // makeGridOrList makes and returns a GridWrap on desktop and a List on mobile.
@@ -58,17 +57,32 @@ func importanceISKAmount(v float64) widget.Importance {
 	return widget.MediumImportance
 }
 
-func makeTappableLabelWithWrap(text string, action func()) *kxwidget.TappableLabel {
-	x := kxwidget.NewTappableLabel(text, action)
+func makeLinkLabelWithWrap(text string, action func()) *widget.Hyperlink {
+	x := makeLinkLabel(text, action)
 	x.Wrapping = fyne.TextWrapWord
 	return x
 }
 
-func makeEveEntityActionLabel(o *app.EveEntity, action func(o *app.EveEntity)) *kxwidget.TappableLabel {
-	if o == nil {
-		return kxwidget.NewTappableLabel("-", nil)
+func makeLinkLabel(text string, action func()) *widget.Hyperlink {
+	x := widget.NewHyperlink(text, nil)
+	x.OnTapped = action
+	return x
+}
+
+func makeOwnerActionLabel(id int32, name string, action func(o *app.EveEntity)) fyne.CanvasObject {
+	o := &app.EveEntity{
+		ID:       id,
+		Name:     name,
+		Category: app.EveEntityCharacter,
 	}
-	return makeTappableLabelWithWrap(o.Name, func() {
+	return makeEveEntityActionLabel(o, action)
+}
+
+func makeEveEntityActionLabel(o *app.EveEntity, action func(o *app.EveEntity)) fyne.CanvasObject {
+	if o == nil {
+		return widget.NewLabel("-")
+	}
+	return makeLinkLabelWithWrap(o.Name, func() {
 		action(o)
 	})
 }
@@ -79,11 +93,11 @@ func makeLabelWithWrap(s string) *widget.Label {
 	return l
 }
 
-func makeLocationLabel(o *app.EveLocationShort, show func(int64)) *iwidget.TappableRichText {
+func makeLocationLabel(o *app.EveLocationShort, show func(int64)) fyne.CanvasObject {
 	if o == nil {
-		return iwidget.NewTappableRichTextWithText("?", nil)
+		return widget.NewLabel("?")
 	}
-	x := iwidget.NewTappableRichText(o.DisplayRichText(), func() {
+	x := makeLinkLabelWithWrap(o.DisplayName(), func() {
 		show(o.ID)
 	})
 	x.Wrapping = fyne.TextWrapWord

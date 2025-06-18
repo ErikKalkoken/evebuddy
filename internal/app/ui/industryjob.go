@@ -588,7 +588,12 @@ func (a *industryJobs) update() {
 func (a *industryJobs) showIndustryJob(r industryJobRow) {
 	activity := fmt.Sprintf("%s (%s)", r.activity.Display(), r.activity.JobType().Display())
 	items := []*widget.FormItem{
-		widget.NewFormItem("Blueprint", makeTappableLabelWithWrap(r.blueprintType.Name, func() {
+		widget.NewFormItem("Owner", makeOwnerActionLabel(
+			r.owner.ID,
+			r.owner.Name,
+			a.u.ShowEveEntityInfoWindow,
+		)),
+		widget.NewFormItem("Blueprint", makeLinkLabelWithWrap(r.blueprintType.Name, func() {
 			a.u.ShowInfoWindow(app.EveEntityInventoryType, r.blueprintType.ID)
 		})),
 		widget.NewFormItem("Activity", widget.NewLabel(activity)),
@@ -597,7 +602,7 @@ func (a *industryJobs) showIndustryJob(r industryJobRow) {
 		x := r.productType.MustValue()
 		items = append(items, widget.NewFormItem(
 			"Product Type",
-			makeTappableLabelWithWrap(x.Name, func() {
+			makeLinkLabelWithWrap(x.Name, func() {
 				a.u.ShowInfoWindow(app.EveEntityInventoryType, x.ID)
 			}),
 		))
@@ -641,17 +646,14 @@ func (a *industryJobs) showIndustryJob(r industryJobRow) {
 	}
 	items = slices.Concat(items, []*widget.FormItem{
 		widget.NewFormItem("Location", makeLocationLabel(r.location, a.u.ShowLocationInfoWindow)),
-		widget.NewFormItem("Installer", makeTappableLabelWithWrap(r.installer.Name, func() {
+		widget.NewFormItem("Installer", makeLinkLabelWithWrap(r.installer.Name, func() {
 			a.u.ShowEveEntityInfoWindow(r.installer)
-		})),
-		widget.NewFormItem("Owner", makeTappableLabelWithWrap(r.owner.Name, func() {
-			a.u.ShowEveEntityInfoWindow(r.owner)
 		})),
 		widget.NewFormItem("Type", widget.NewLabel(r.owner.CategoryDisplay())),
 	})
 	if !r.completedCharacter.IsEmpty() {
 		x := r.completedCharacter.MustValue()
-		items = append(items, widget.NewFormItem("Completed By", makeTappableLabelWithWrap(x.Name, func() {
+		items = append(items, widget.NewFormItem("Completed By", makeLinkLabelWithWrap(x.Name, func() {
 			a.u.ShowEveEntityInfoWindow(x)
 		})))
 	}

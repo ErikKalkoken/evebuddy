@@ -277,7 +277,7 @@ func (cc CharacterContract) StatusDisplayRichText() []widget.RichTextSegment {
 
 func (cc CharacterContract) TitleDisplay() string {
 	if cc.Title == "" {
-		return "(None)"
+		return "-"
 	}
 	return cc.Title
 }
