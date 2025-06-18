@@ -39,7 +39,6 @@ func (w *typeAttributeItem) SetRegular(icon fyne.Resource, label, value string) 
 
 func (w *typeAttributeItem) SetTitle(label string) {
 	w.label.TextStyle.Bold = true
-	w.label.Importance = widget.HighImportance
 	w.label.Text = label
 	w.label.Refresh()
 	w.icon.Hide()

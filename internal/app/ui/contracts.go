@@ -421,7 +421,11 @@ func showContract(u *baseUI, characterID, contractID int32) {
 		availability = availabilityLabel
 	}
 	fi := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeLabelWithWrap(u.scs.CharacterName(characterID))),
+		widget.NewFormItem("Owner", makeOwnerActionLabel(
+			characterID,
+			u.scs.CharacterName(characterID),
+			u.ShowEveEntityInfoWindow,
+		)),
 		widget.NewFormItem("Info by issuer", widget.NewLabel(o.TitleDisplay())),
 		widget.NewFormItem("Type", widget.NewLabel(o.TypeDisplay())),
 		widget.NewFormItem("Issued By", makeEveEntityActionLabel(o.IssuerEffective(), u.ShowEveEntityInfoWindow)),
@@ -517,14 +521,14 @@ func showContract(u *baseUI, characterID, contractID int32) {
 			}
 		}
 		makeItem := func(it *app.CharacterContractItem) fyne.CanvasObject {
-			x := kxwidget.NewTappableLabel(it.Type.Name, func() {
-				u.ShowTypeInfoWindow(it.Type.ID)
-			})
-			return container.NewHBox(
-				x,
+			c := container.NewHBox(
+				makeLinkLabel(it.Type.Name, func() {
+					u.ShowTypeInfoWindow(it.Type.ID)
+				}),
 				widget.NewLabel(fmt.Sprintf("(%s)", it.Type.Group.Name)),
 				widget.NewLabel(fmt.Sprintf("x %s ", humanize.Comma(int64(it.Quantity)))),
 			)
+			return c
 		}
 		// included items
 		if len(itemsIncluded) > 0 {

@@ -500,7 +500,7 @@ func statusDisplay(ss app.SectionStatus) (string, widget.Importance) {
 		i = widget.MediumImportance
 	} else if !ss.IsCurrent() {
 		s = "Stale"
-		i = widget.HighImportance
+		i = widget.WarningImportance
 	} else {
 		s = "OK"
 		i = widget.SuccessImportance

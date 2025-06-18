@@ -96,9 +96,9 @@ func (cs ContractStatus) DisplayRichText() []widget.RichTextSegment {
 	var color fyne.ThemeColorName
 	switch cs.consolidated() {
 	case contractConsolidatedOutstanding:
-		color = theme.ColorNamePrimary
-	case contractConsolidatedInProgress:
 		color = theme.ColorNameWarning
+	case contractConsolidatedInProgress:
+		color = theme.ColorNameForeground
 	case contractConsolidatedHistory:
 		color = theme.ColorNameSuccess
 	case contractConsolidatedHasIssue:
@@ -277,7 +277,7 @@ func (cc CharacterContract) StatusDisplayRichText() []widget.RichTextSegment {
 
 func (cc CharacterContract) TitleDisplay() string {
 	if cc.Title == "" {
-		return "(None)"
+		return "-"
 	}
 	return cc.Title
 }

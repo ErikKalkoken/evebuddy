@@ -80,15 +80,27 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 			}
 			return iwidget.NewRichTextSegmentFromText(r.characterName)
 		case 1:
+			var c fyne.ThemeColorName
+			switch {
+			case r.busy == 0:
+				c = theme.ColorNameSuccess
+			case r.busy == r.total:
+				c = theme.ColorNameError
+			default:
+				c = theme.ColorNameWarning
+			}
 			return iwidget.NewRichTextSegmentFromText(fmt.Sprint(r.busy), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
+				ColorName: c,
 				TextStyle: fyne.TextStyle{Bold: r.isSummary},
 			})
 		case 2:
 			var c fyne.ThemeColorName
 			switch {
 			case r.ready > 0:
-				c = theme.ColorNamePrimary
+				c = theme.ColorNameWarning
+			case r.ready == 0:
+				c = theme.ColorNameSuccess
 			default:
 				c = theme.ColorNameForeground
 			}

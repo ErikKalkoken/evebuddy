@@ -369,7 +369,7 @@ type allianceInfo struct {
 	baseInfo
 
 	attributes *attributeList
-	hq         *kxwidget.TappableLabel
+	hq         *widget.Hyperlink
 	id         int32
 	logo       *canvas.Image
 	members    *entityList
@@ -377,7 +377,7 @@ type allianceInfo struct {
 }
 
 func newAllianceInfo(iw *infoWindow, id int32) *allianceInfo {
-	hq := kxwidget.NewTappableLabel("", nil)
+	hq := widget.NewHyperlink("", nil)
 	hq.Wrapping = fyne.TextWrapWord
 	a := &allianceInfo{
 		id:   id,
@@ -494,10 +494,10 @@ type characterInfo struct {
 	widget.BaseWidget
 	baseInfo
 
-	alliance        *kxwidget.TappableLabel
+	alliance        *widget.Hyperlink
 	attributes      *attributeList
 	bio             *widget.Label
-	corporation     *kxwidget.TappableLabel
+	corporation     *widget.Hyperlink
 	corporationLogo *canvas.Image
 	description     *widget.Label
 	employeeHistory *entityList
@@ -512,9 +512,9 @@ type characterInfo struct {
 }
 
 func newCharacterInfo(iw *infoWindow, id int32) *characterInfo {
-	alliance := kxwidget.NewTappableLabel("", nil)
+	alliance := widget.NewHyperlink("", nil)
 	alliance.Wrapping = fyne.TextWrapWord
-	corporation := kxwidget.NewTappableLabel("", nil)
+	corporation := widget.NewHyperlink("", nil)
 	corporation.Wrapping = fyne.TextWrapWord
 	portrait := kxwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
@@ -838,13 +838,13 @@ type constellationInfo struct {
 
 	id      int32
 	logo    *canvas.Image
-	region  *kxwidget.TappableLabel
+	region  *widget.Hyperlink
 	systems *entityList
 	tabs    *container.AppTabs
 }
 
 func newConstellationInfo(iw *infoWindow, id int32) *constellationInfo {
-	region := kxwidget.NewTappableLabel("", nil)
+	region := widget.NewHyperlink("", nil)
 	region.Wrapping = fyne.TextWrapWord
 	a := &constellationInfo{
 
@@ -920,21 +920,21 @@ type corporationInfo struct {
 	widget.BaseWidget
 	baseInfo
 
-	alliance        *kxwidget.TappableLabel
+	alliance        *widget.Hyperlink
 	allianceHistory *entityList
 	allianceLogo    *canvas.Image
 	attributes      *attributeList
 	description     *widget.Label
-	hq              *kxwidget.TappableLabel
+	hq              *widget.Hyperlink
 	id              int32
 	logo            *canvas.Image
 	tabs            *container.AppTabs
 }
 
 func newCorporationInfo(iw *infoWindow, id int32) *corporationInfo {
-	alliance := kxwidget.NewTappableLabel("", nil)
+	alliance := widget.NewHyperlink("", nil)
 	alliance.Wrapping = fyne.TextWrapWord
-	hq := kxwidget.NewTappableLabel("", nil)
+	hq := widget.NewHyperlink("", nil)
 	hq.Wrapping = fyne.TextWrapWord
 	description := widget.NewLabel("")
 	description.Wrapping = fyne.TextWrapWord
@@ -1145,18 +1145,18 @@ type locationInfo struct {
 	description *widget.Label
 	id          int64
 	location    *entityList
-	owner       *kxwidget.TappableLabel
+	owner       *widget.Hyperlink
 	ownerLogo   *canvas.Image
 	services    *entityList
 	tabs        *container.AppTabs
 	typeImage   *kxwidget.TappableImage
-	typeInfo    *kxwidget.TappableLabel
+	typeInfo    *widget.Hyperlink
 }
 
 func newLocationInfo(iw *infoWindow, id int64) *locationInfo {
-	typeInfo := kxwidget.NewTappableLabel("", nil)
+	typeInfo := widget.NewHyperlink("", nil)
 	typeInfo.Wrapping = fyne.TextWrapWord
-	owner := kxwidget.NewTappableLabel("", nil)
+	owner := widget.NewHyperlink("", nil)
 	owner.Wrapping = fyne.TextWrapWord
 	description := widget.NewLabel("")
 	description.Wrapping = fyne.TextWrapWord
@@ -1490,11 +1490,11 @@ type solarSystemInfo struct {
 	widget.BaseWidget
 	baseInfo
 
-	constellation *kxwidget.TappableLabel
+	constellation *widget.Hyperlink
 	id            int32
 	logo          *canvas.Image
 	planets       *entityList
-	region        *kxwidget.TappableLabel
+	region        *widget.Hyperlink
 	security      *widget.Label
 	stargates     *entityList
 	stations      *entityList
@@ -1503,9 +1503,9 @@ type solarSystemInfo struct {
 }
 
 func newSolarSystemInfo(iw *infoWindow, id int32) *solarSystemInfo {
-	region := kxwidget.NewTappableLabel("", nil)
+	region := widget.NewHyperlink("", nil)
 	region.Wrapping = fyne.TextWrapWord
-	constellation := kxwidget.NewTappableLabel("", nil)
+	constellation := widget.NewHyperlink("", nil)
 	constellation.Wrapping = fyne.TextWrapWord
 	a := &solarSystemInfo{
 		id:            id,
@@ -1679,7 +1679,7 @@ type inventoryTypeInfo struct {
 	setTitle         func(string) // for setting the title during update
 	characterIcon    *canvas.Image
 	characterID      int32
-	characterName    *kxwidget.TappableLabel
+	characterName    *widget.Hyperlink
 	checkIcon        *widget.Icon
 	description      *widget.Label
 	eveMarketBrowser *fyne.Container
@@ -1708,7 +1708,7 @@ func newInventoryTypeInfo(iw *infoWindow, typeID, characterID int32) *inventoryT
 
 	a.checkIcon.Hide()
 	a.characterIcon.Hide()
-	a.characterName = kxwidget.NewTappableLabel("", nil)
+	a.characterName = widget.NewHyperlink("", nil)
 	a.characterName.Wrapping = fyne.TextWrapWord
 	a.characterName.Hide()
 
@@ -2459,9 +2459,8 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 			value := widget.NewLabel("Value")
 			value.Truncation = fyne.TextTruncateEllipsis
 			value.Alignment = fyne.TextAlignTrailing
-			icon := widget.NewIcon(theme.InfoIcon())
 			label := widget.NewLabel("Label")
-			return container.NewBorder(nil, nil, label, icon, value)
+			return container.NewBorder(nil, nil, label, nil, value)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(w.items) {
@@ -2472,8 +2471,6 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 			label := border[1].(*widget.Label)
 			label.SetText(it.Label)
 			value := border[0].(*widget.Label)
-			icon := border[2]
-			icon.Hide()
 			var s string
 			var i widget.Importance
 			switch x := it.Value.(type) {
@@ -2484,7 +2481,7 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 				}
 				s = x.Name
 				if supportedCategories.Contains(x.Category) {
-					icon.Show()
+					i = widget.HighImportance
 				}
 			case *app.EveRace:
 				if x == nil {
@@ -2492,13 +2489,14 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 					break
 				}
 				s = x.Name
-				icon.Show()
+				i = widget.HighImportance
 			case *app.EveLocation:
 				if x == nil {
 					s = "?"
 					break
 				}
 				s = x.DisplayName()
+				i = widget.HighImportance
 			case *url.URL:
 				if x == nil {
 					s = "?"
@@ -2691,7 +2689,7 @@ func (w *entityList) CreateRenderer() fyne.WidgetRenderer {
 			if len(it.textSegments) != 0 {
 				text.Set(it.textSegments)
 			} else {
-				text.SetWithText(it.text)
+				text.ParseMarkdown(it.text)
 			}
 		},
 	)

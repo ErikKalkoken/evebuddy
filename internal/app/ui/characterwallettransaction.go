@@ -391,23 +391,23 @@ func showCharacterWalletTransaction(u *baseUI, characterID int32, transactionID 
 		u.showErrorDialog("Failed to fetch market transaction", err, u.window)
 		return
 	}
-	location := iwidget.NewTappableRichText(o.Location.DisplayRichText(), func() {
-		u.ShowLocationInfoWindow(o.Location.ID)
-	})
-	location.Wrapping = fyne.TextWrapWord
 	totalAmount := o.Total()
 	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeLabelWithWrap(u.scs.CharacterName(characterID))),
+		widget.NewFormItem("Owner", makeOwnerActionLabel(
+			characterID,
+			u.scs.CharacterName(characterID),
+			u.ShowEveEntityInfoWindow,
+		)),
 		widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
 		widget.NewFormItem("Quantity", widget.NewLabel(humanize.Comma(int64(o.Quantity)))),
-		widget.NewFormItem("Type", makeTappableLabelWithWrap(o.Type.Name, func() {
+		widget.NewFormItem("Type", makeLinkLabelWithWrap(o.Type.Name, func() {
 			u.ShowInfoWindow(app.EveEntityInventoryType, o.Type.ID)
 		})),
 		widget.NewFormItem("Unit price", widget.NewLabel(formatISKAmount(o.UnitPrice))),
 		widget.NewFormItem("Total", widget.NewLabel(formatISKAmount(totalAmount))),
 		widget.NewFormItem("Client", makeEveEntityActionLabel(o.Client, u.ShowEveEntityInfoWindow)),
-		widget.NewFormItem("Location", location),
-		widget.NewFormItem("Related Journal Entry", makeTappableLabelWithWrap(
+		widget.NewFormItem("Location", makeLocationLabel(o.Location, u.ShowLocationInfoWindow)),
+		widget.NewFormItem("Related Journal Entry", makeLinkLabelWithWrap(
 			fmt.Sprintf("#%d", o.JournalRefID), func() {
 				showCharacterWalletJournalEntry(u, characterID, o.JournalRefID)
 			},

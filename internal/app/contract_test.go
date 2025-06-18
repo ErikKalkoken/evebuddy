@@ -43,8 +43,8 @@ func TestContractStatusDisplayRichText(t *testing.T) {
 		wantText  string
 		wantColor fyne.ThemeColorName
 	}{
-		{app.ContractStatusOutstanding, "Outstanding", theme.ColorNamePrimary},
-		{app.ContractStatusInProgress, "In Progress", theme.ColorNameWarning},
+		{app.ContractStatusOutstanding, "Outstanding", theme.ColorNameWarning},
+		{app.ContractStatusInProgress, "In Progress", theme.ColorNameForeground},
 		{app.ContractStatusFinished, "Finished", theme.ColorNameSuccess},
 		{app.ContractStatusFailed, "Failed", theme.ColorNameError},
 		{app.ContractStatusReversed, "Reversed", theme.ColorNameForeground},
@@ -78,7 +78,7 @@ func TestContractTitleDisplay(t *testing.T) {
 	})
 	t.Run("missing", func(t *testing.T) {
 		x := &app.CharacterContract{Title: ""}
-		assert.Equal(t, "(None)", x.TitleDisplay())
+		assert.Equal(t, "-", x.TitleDisplay())
 	})
 }
 
