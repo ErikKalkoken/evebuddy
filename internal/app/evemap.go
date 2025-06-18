@@ -50,9 +50,7 @@ const (
 // ToImportance returns the importance value for a security type.
 func (t SolarSystemSecurityType) ToImportance() widget.Importance {
 	switch t {
-	case SuperHighSec:
-		return widget.HighImportance
-	case HighSec:
+	case SuperHighSec, HighSec:
 		return widget.SuccessImportance
 	case LowSec:
 		return widget.WarningImportance
@@ -64,9 +62,7 @@ func (t SolarSystemSecurityType) ToImportance() widget.Importance {
 
 func (t SolarSystemSecurityType) ToColorName() fyne.ThemeColorName {
 	switch t {
-	case SuperHighSec:
-		return theme.ColorNamePrimary
-	case HighSec:
+	case HighSec, SuperHighSec:
 		return theme.ColorNameSuccess
 	case LowSec:
 		return theme.ColorNameWarning

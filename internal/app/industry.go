@@ -138,7 +138,7 @@ func (s IndustryJobStatus) Display() string {
 
 func (s IndustryJobStatus) Color() fyne.ThemeColorName {
 	m := map[IndustryJobStatus]fyne.ThemeColorName{
-		JobActive:    theme.ColorNamePrimary,
+		JobActive:    theme.ColorNameForeground,
 		JobCancelled: theme.ColorNameError,
 		JobPaused:    theme.ColorNameWarning,
 		JobReady:     theme.ColorNameSuccess,

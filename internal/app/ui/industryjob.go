@@ -558,7 +558,7 @@ func (a *industryJobs) update() {
 		var segs []widget.RichTextSegment
 		if j.status == app.JobActive {
 			segs = iwidget.NewRichTextSegmentFromText(ihumanize.Duration(remaining), widget.RichTextStyle{
-				ColorName: theme.ColorNamePrimary,
+				ColorName: theme.ColorNameForeground,
 			})
 		} else {
 			segs = iwidget.NewRichTextSegmentFromText(j.status.Display(), widget.RichTextStyle{

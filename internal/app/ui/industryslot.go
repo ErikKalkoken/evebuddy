@@ -88,7 +88,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 			var c fyne.ThemeColorName
 			switch {
 			case r.ready > 0:
-				c = theme.ColorNamePrimary
+				c = theme.ColorNameSuccess
 			default:
 				c = theme.ColorNameForeground
 			}
