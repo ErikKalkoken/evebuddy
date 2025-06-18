@@ -330,10 +330,20 @@ func (a *contracts) update() {
 
 func (a *contracts) fetchRows(s services) ([]contractRow, int, error) {
 	ctx := context.Background()
-	contracts, err := s.cs.ListAllContracts(ctx)
+	oo, err := s.cs.ListAllContracts(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
+	// Remove duplicate contracts between the user's own characters
+	contracts := slices.CompactFunc(oo, func(a, b *app.CharacterContract) bool {
+		return a.Assignee != nil &&
+			b.Assignee != nil &&
+			a.ContractID == b.ContractID &&
+			a.Type == b.Type &&
+			a.Issuer.ID == b.Issuer.ID &&
+			a.Assignee.ID == b.Assignee.ID &&
+			a.DateIssued.Equal(b.DateIssued)
+	})
 	rows := make([]contractRow, 0)
 	var activeCount int
 	for _, c := range contracts {
@@ -383,7 +393,7 @@ func (a *contracts) fetchRows(s services) ([]contractRow, int, error) {
 func showContract(u *baseUI, characterID, contractID int32) {
 	o, err := u.cs.GetContract(context.Background(), characterID, contractID)
 	if err != nil {
-		u.showErrorDialog("Failed to show contacts", err, u.window)
+		u.showErrorDialog("Failed to show contracts", err, u.window)
 	}
 	var w fyne.Window
 	makeExpiresString := func(c *app.CharacterContract) string {
@@ -406,11 +416,21 @@ func showContract(u *baseUI, characterID, contractID int32) {
 		return x
 	}
 
-	availability := container.NewHBox(widget.NewLabel(o.AvailabilityDisplay()))
+	var availability fyne.CanvasObject
+	availabilityLabel := widget.NewLabel(o.AvailabilityDisplay())
 	if o.Assignee != nil {
-		availability.Add(makeEveEntityActionLabel(o.Assignee, u.ShowEveEntityInfoWindow))
+		availability = container.NewBorder(
+			nil,
+			nil,
+			availabilityLabel,
+			nil,
+			makeEveEntityActionLabel(o.Assignee, u.ShowEveEntityInfoWindow),
+		)
+	} else {
+		availability = availabilityLabel
 	}
 	fi := []*widget.FormItem{
+		widget.NewFormItem("Owner", makeLabelWithWrap(u.scs.CharacterName(characterID))),
 		widget.NewFormItem("Info by issuer", widget.NewLabel(o.TitleDisplay())),
 		widget.NewFormItem("Type", widget.NewLabel(o.TypeDisplay())),
 		widget.NewFormItem("Issued By", makeEveEntityActionLabel(o.IssuerEffective(), u.ShowEveEntityInfoWindow)),
