@@ -1075,6 +1075,10 @@ func (s *CharacterService) updateImplantsESI(ctx context.Context, arg app.Charac
 		})
 }
 
+func (s *CharacterService) GetCharacterIndustryJob(ctx context.Context, characterID, jobID int32) (*app.CharacterIndustryJob, error) {
+	return s.st.GetCharacterIndustryJob(ctx, characterID, jobID)
+}
+
 // ListAllCharacterIndustryJob returns all industry jobs from characters.
 func (s *CharacterService) ListAllCharacterIndustryJob(ctx context.Context) ([]*app.CharacterIndustryJob, error) {
 	return s.st.ListAllCharacterIndustryJob(ctx)

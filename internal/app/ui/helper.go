@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 )
@@ -76,4 +77,15 @@ func makeLabelWithWrap(s string) *widget.Label {
 	l := widget.NewLabel(s)
 	l.Wrapping = fyne.TextWrapWord
 	return l
+}
+
+func makeLocationLabel(o *app.EveLocationShort, show func(int64)) *iwidget.TappableRichText {
+	if o == nil {
+		return iwidget.NewTappableRichTextWithText("?", nil)
+	}
+	x := iwidget.NewTappableRichText(o.DisplayRichText(), func() {
+		show(o.ID)
+	})
+	x.Wrapping = fyne.TextWrapWord
+	return x
 }

@@ -340,7 +340,7 @@ func (a *characterWalletTransaction) fetchRows(characterID int32, s services) ([
 func showCharacterWalletTransaction(u *baseUI, characterID int32, transactionID int64) {
 	o, err := u.cs.GetWalletTransactions(context.Background(), characterID, transactionID)
 	if err != nil {
-		u.showErrorDialog("Failed to fetch wallet transaction", err, u.window)
+		u.showErrorDialog("Failed to fetch market transaction", err, u.window)
 		return
 	}
 	location := iwidget.NewTappableRichText(o.Location.DisplayRichText(), func() {
@@ -361,7 +361,7 @@ func showCharacterWalletTransaction(u *baseUI, characterID int32, transactionID 
 		widget.NewFormItem("Total", total),
 		widget.NewFormItem("Client", makeEveEntityActionLabel(o.Client, u.ShowEveEntityInfoWindow)),
 		widget.NewFormItem("Location", location),
-		widget.NewFormItem("Journal Entry", makeTappableLabelWithWrap(
+		widget.NewFormItem("Related Journal Entry", makeTappableLabelWithWrap(
 			fmt.Sprintf("#%d", o.JournalRefID), func() {
 				showCharacterWalletJournalEntry(u, characterID, o.JournalRefID)
 			},
@@ -374,9 +374,9 @@ func showCharacterWalletTransaction(u *baseUI, characterID int32, transactionID 
 			u.makeCopyToClipboardLabel(fmt.Sprint(transactionID)),
 		))
 	}
-	title := fmt.Sprintf("Wallet Transaction #%d", transactionID)
+	title := fmt.Sprintf("Market Transaction #%d", transactionID)
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	w := u.makeDetailWindow("Wallet Transaction Entry", title, f)
+	w := u.makeDetailWindow("Market Transaction Entry", title, f)
 	w.Show()
 }

@@ -406,15 +406,6 @@ func showContract(u *baseUI, characterID, contractID int32) {
 		}
 		return fmt.Sprintf("%s (%s)", ts, ds)
 	}
-	makeLocation := func(l *app.EveLocationShort) *iwidget.TappableRichText {
-		if l == nil {
-			return iwidget.NewTappableRichTextWithText("?", nil)
-		}
-		x := iwidget.NewTappableRichText(l.DisplayRichText(), func() {
-			u.ShowLocationInfoWindow(l.ID)
-		})
-		return x
-	}
 
 	var availability fyne.CanvasObject
 	availabilityLabel := widget.NewLabel(o.AvailabilityDisplay())
@@ -443,7 +434,7 @@ func showContract(u *baseUI, characterID, contractID int32) {
 		fi = append(fi, widget.NewFormItem("Contractor", widget.NewLabel(o.AcceptorDisplay())))
 	}
 	fi = append(fi, widget.NewFormItem("Status", iwidget.NewRichText(o.StatusDisplayRichText()...)))
-	fi = append(fi, widget.NewFormItem("Location", makeLocation(o.StartLocation)))
+	fi = append(fi, widget.NewFormItem("Location", makeLocationLabel(o.StartLocation, u.ShowLocationInfoWindow)))
 
 	if o.Type == app.ContractTypeCourier || o.Type == app.ContractTypeItemExchange {
 		fi = append(fi, widget.NewFormItem("Date Issued", widget.NewLabel(o.DateIssued.Format(app.DateTimeFormat))))
@@ -469,7 +460,7 @@ func showContract(u *baseUI, characterID, contractID int32) {
 			{Text: "Volume", Widget: widget.NewLabel(fmt.Sprintf("%f m3", o.Volume))},
 			{Text: "Reward", Widget: widget.NewLabel(formatISKAmount(o.Reward))},
 			{Text: "Collateral", Widget: widget.NewLabel(collateral)},
-			{Text: "Destination", Widget: makeLocation(o.EndLocation)},
+			{Text: "Destination", Widget: makeLocationLabel(o.EndLocation, u.ShowLocationInfoWindow)},
 		})
 	case app.ContractTypeItemExchange:
 		if o.Price > 0 {

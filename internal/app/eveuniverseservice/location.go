@@ -26,10 +26,10 @@ func (s *EveUniverseService) ListLocations(ctx context.Context) ([]*app.EveLocat
 	return s.st.ListEveLocation(ctx)
 }
 
-// GetOrCreateLocationESI return a structure when it already exists
-// or else tries to fetch and create a new structure from ESI.
+// GetOrCreateLocationESI return a location.
+// When the location does not yet exist in storage it tries to fetch and create a new location from ESI.
 //
-// Important: A token with the structure scope must be set in the context
+// Important: For creating structures a valid token with the structure scope must be set in the context or an error will be returned
 func (s *EveUniverseService) GetOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
 	o, err := s.st.GetLocation(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {
@@ -38,9 +38,9 @@ func (s *EveUniverseService) GetOrCreateLocationESI(ctx context.Context, id int6
 	return o, err
 }
 
-// UpdateOrCreateLocationESI tries to fetch and create a new structure from ESI.
+// UpdateOrCreateLocationESI tries to fetch and create a new location from ESI.
 //
-// Important: A token with the structure scope must be set in the context when trying to fetch a structure.
+// Important: For creating structures a valid token with the structure scope must be set in the context or an error will be returned
 func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
 	y, err, _ := s.sfg.Do(fmt.Sprintf("updateOrCreateLocationESI-%d", id), func() (any, error) {
 		o, err := s.st.GetLocation(ctx, id)

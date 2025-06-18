@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/antihax/goesi"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -300,11 +301,69 @@ func showCharacterWalletJournalEntry(u *baseUI, characterID int32, refID int64) 
 		u.showErrorDialog("Failed to fetch wallet journal entry", err, u.window)
 		return
 	}
+
+	f := widget.NewForm()
+	f.Orientation = widget.Adaptive
+
 	amount := widget.NewLabel(formatISKAmount(o.Amount))
 	amount.Importance = importanceISKAmount(o.Amount)
 	reason := o.Reason
 	if reason == "" {
 		reason = "-"
+	}
+
+	contextDefaultWidget := widget.NewLabel("?")
+	contextItem := widget.NewFormItem("Related item", contextDefaultWidget)
+	ctx := context.Background()
+	reportError := func(o *app.CharacterWalletJournalEntry, err error) {
+		slog.Error("Failed to fetch related context", "contextIDType", o.ContextIDType, "contextID", o.ContextID, "error", err)
+		contextDefaultWidget.SetText("Failed to load related item: " + u.humanizeError(err))
+	}
+	// TODO: Add support for industry jobs
+	switch o.ContextIDType {
+	case "alliance_id", "character_id", "corporation_id", "system_id", "type_id":
+		go func() {
+			ee, err := u.eus.GetOrCreateEntityESI(ctx, int32(o.ContextID))
+			if err != nil {
+				reportError(o, err)
+				return
+			}
+			contextItem.Text = "Related " + ee.CategoryDisplay()
+			contextItem.Widget = makeEveEntityActionLabel(ee, u.ShowEveEntityInfoWindow)
+			f.Refresh()
+		}()
+	case "contract_id":
+		c, err := u.cs.GetContract(ctx, characterID, int32(o.ContextID))
+		if err != nil {
+			reportError(o, err)
+			break
+		}
+		contextItem.Text = "Related contract"
+		contextItem.Widget = makeTappableLabelWithWrap(c.NameDisplay(), func() {
+			showContract(u, c.CharacterID, c.ContractID)
+		})
+	case "market_transaction_id":
+		contextItem.Text = "Related market transaction"
+		contextItem.Widget = makeTappableLabelWithWrap(fmt.Sprintf("#%d", o.ContextID), func() {
+			showCharacterWalletTransaction(u, o.CharacterID, o.ContextID)
+		})
+	case "station_id", "structure_id":
+		contextItem.Text = "Related location"
+		go func() {
+			token, err := u.cs.GetValidCharacterToken(ctx, characterID)
+			if err != nil {
+				reportError(o, err)
+				return
+			}
+			ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+			el, err := u.eus.GetOrCreateLocationESI(ctx, o.ContextID)
+			if err != nil {
+				reportError(o, err)
+				return
+			}
+			contextItem.Widget = makeLocationLabel(el.ToShort(), u.ShowLocationInfoWindow)
+			f.Refresh()
+		}()
 	}
 	items := []*widget.FormItem{
 		widget.NewFormItem("Owner", makeLabelWithWrap(u.scs.CharacterName(characterID))),
@@ -316,21 +375,36 @@ func showCharacterWalletJournalEntry(u *baseUI, characterID int32, refID int64) 
 		widget.NewFormItem("Reason", makeLabelWithWrap(reason)),
 	}
 	if o.FirstParty != nil {
-		items = append(items, widget.NewFormItem("First Party", makeEveEntityActionLabel(o.FirstParty, u.ShowEveEntityInfoWindow)))
+		items = append(items, widget.NewFormItem(
+			"First Party",
+			makeEveEntityActionLabel(o.FirstParty, u.ShowEveEntityInfoWindow),
+		))
 	}
 	if o.SecondParty != nil {
-		items = append(items, widget.NewFormItem("Second Party", makeEveEntityActionLabel(o.SecondParty, u.ShowEveEntityInfoWindow)))
+		items = append(items, widget.NewFormItem(
+			"Second Party",
+			makeEveEntityActionLabel(o.SecondParty, u.ShowEveEntityInfoWindow),
+		))
 	}
 	if o.TaxReceiver != nil {
-		items = append(items, widget.NewFormItem("Tax", widget.NewLabel(formatISKAmount(o.Tax))))
-		items = append(items, widget.NewFormItem("Tax Receiver", makeEveEntityActionLabel(o.TaxReceiver, u.ShowEveEntityInfoWindow)))
+		items = append(items, widget.NewFormItem(
+			"Tax",
+			widget.NewLabel(formatISKAmount(o.Tax))),
+		)
+		items = append(items, widget.NewFormItem(
+			"Tax Receiver",
+			makeEveEntityActionLabel(o.TaxReceiver, u.ShowEveEntityInfoWindow)),
+		)
 	}
+	items = append(items, contextItem)
 	if u.IsDeveloperMode() {
 		items = append(items, widget.NewFormItem("Ref ID", u.makeCopyToClipboardLabel(fmt.Sprint(refID))))
 	}
+
+	for _, it := range items {
+		f.AppendItem(it)
+	}
 	title := fmt.Sprintf("Wallet Journal #%d", refID)
-	f := widget.NewForm(items...)
-	f.Orientation = widget.Adaptive
 	w := u.makeDetailWindow("Wallet Journal Entry", title, f)
 	w.Show()
 }
