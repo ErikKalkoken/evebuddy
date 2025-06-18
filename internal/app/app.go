@@ -17,11 +17,12 @@ import (
 
 // Default formats and sizes
 const (
-	DateTimeFormat = "2006.01.02 15:04"
-	DateFormat     = "2006.01.02"
-	FloatFormat    = "#,###.##"
-	IconPixelSize  = 64
-	IconUnitSize   = 28
+	DateTimeFormat            = "2006.01.02 15:04"
+	DateTimeFormatWithSeconds = "2006.01.02 15:04:05"
+	DateFormat                = "2006.01.02"
+	FloatFormat               = "#,###.##"
+	IconPixelSize             = 64
+	IconUnitSize              = 28
 )
 
 // EntityShort is a short representation of an entity.

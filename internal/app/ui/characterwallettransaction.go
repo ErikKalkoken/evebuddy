@@ -4,13 +4,16 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"image/color"
 	"log/slog"
 	"slices"
 	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
@@ -23,20 +26,22 @@ import (
 
 type walletTransactionRow struct {
 	categoryName     string
+	characterID      int32
 	client           *app.EveEntity
 	clientName       string
 	date             time.Time
-	dateDisplay      string
+	dateFormatted    string
 	locationDisplay  []widget.RichTextSegment
 	locationID       int64
 	locationName     string
-	price            float64
+	unitPrice        float64
 	quantity         int
 	quantityDisplay  string
 	regionName       string
 	total            float64
 	totalColor       fyne.ThemeColorName
-	totalText        string
+	totalImportance  widget.Importance
+	totalFormatted   string
 	transactionID    int64
 	typeID           int32
 	typeName         string
@@ -63,10 +68,10 @@ type characterWalletTransaction struct {
 func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 	headers := []headerDef{
 		{Label: "Date", Width: 150},
-		{Label: "Quantity", Width: 130},
+		{Label: "Qty.", Width: 75},
 		{Label: "Type", Width: 200},
-		{Label: "Unit Price", Width: 200},
-		{Label: "Total", Width: 200},
+		{Label: "Unit Price", Width: 150},
+		{Label: "Total", Width: 150},
 		{Label: "Client", Width: 250},
 		{Label: "Where", Width: 350},
 	}
@@ -81,7 +86,7 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 	makeCell := func(col int, r walletTransactionRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			return iwidget.NewRichTextSegmentFromText(r.dateDisplay)
+			return iwidget.NewRichTextSegmentFromText(r.dateFormatted)
 		case 1:
 			return iwidget.NewRichTextSegmentFromText(r.quantityDisplay,
 				widget.RichTextStyle{
@@ -96,10 +101,7 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 					Alignment: fyne.TextAlignTrailing,
 				})
 		case 4:
-			return iwidget.NewRichTextSegmentFromText(r.totalText, widget.RichTextStyle{
-				ColorName: r.totalColor,
-				Alignment: fyne.TextAlignTrailing,
-			})
+			return iwidget.NewRichTextSegmentFromText(r.totalFormatted)
 		case 5:
 			return iwidget.NewRichTextSegmentFromText(r.clientName)
 		case 6:
@@ -115,10 +117,10 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 			a.columnSorter,
 			a.filterRows,
 			func(_ int, r walletTransactionRow) {
-				a.showEntry(r)
+				showCharacterWalletTransaction(a.u, r.characterID, r.transactionID)
 			})
 	} else {
-		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, a.showEntry)
+		a.body = a.makeDataList()
 	}
 
 	a.selectCategory = kxwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
@@ -175,6 +177,72 @@ func (a *characterWalletTransaction) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
+func (a *characterWalletTransaction) makeDataList() *widget.List {
+	p := theme.Padding()
+	bgColor := theme.Color(theme.ColorNameInputBackground)
+	l := widget.NewList(
+		func() int {
+			return len(a.rowsFiltered)
+		},
+		func() fyne.CanvasObject {
+			date := widget.NewLabel("Template")
+			date.Truncation = fyne.TextTruncateClip
+			total := widget.NewLabel("Template")
+			total.Alignment = fyne.TextAlignTrailing
+			invType := widget.NewLabel("Template")
+			invType.Truncation = fyne.TextTruncateClip
+			amount := widget.NewLabel("Template")
+			amount.Alignment = fyne.TextAlignTrailing
+			location := widget.NewLabel("Template")
+			location.Truncation = fyne.TextTruncateClip
+			return container.NewStack(
+				canvas.NewRectangle(color.Transparent),
+				container.New(layout.NewCustomPaddedVBoxLayout(-p),
+					container.NewBorder(nil, nil, nil, amount, date),
+					container.NewBorder(nil, nil, nil, total, invType),
+					location,
+				))
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id < 0 || id >= len(a.rowsFiltered) {
+				return
+			}
+			r := a.rowsFiltered[id]
+			x := co.(*fyne.Container).Objects
+
+			bg := x[0].(*canvas.Rectangle)
+			if id%2 == 0 {
+				bg.FillColor = bgColor
+			} else {
+				bg.FillColor = color.Transparent
+			}
+			bg.Refresh()
+
+			c := x[1].(*fyne.Container).Objects
+
+			b0 := c[0].(*fyne.Container).Objects
+			b0[0].(*widget.Label).SetText(r.dateFormatted)
+			b0[1].(*widget.Label).SetText(r.totalFormatted)
+
+			b1 := c[1].(*fyne.Container).Objects
+			b1[0].(*widget.Label).SetText(r.typeName)
+			b1[1].(*widget.Label).SetText("x" + r.quantityDisplay)
+
+			c[2].(*widget.Label).SetText(r.locationName)
+		},
+	)
+	l.OnSelected = func(id widget.ListItemID) {
+		defer l.UnselectAll()
+		if id < 0 || id >= len(a.rowsFiltered) {
+			return
+		}
+		r := a.rowsFiltered[id]
+		showCharacterWalletTransaction(a.u, r.characterID, r.transactionID)
+	}
+	l.HideSeparators = true
+	return l
+}
+
 func (a *characterWalletTransaction) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
@@ -215,7 +283,7 @@ func (a *characterWalletTransaction) filterRows(sortCol int) {
 			case 2:
 				x = strings.Compare(a.typeName, b.typeName)
 			case 3:
-				x = cmp.Compare(a.price, b.price)
+				x = cmp.Compare(a.unitPrice, b.unitPrice)
 			case 4:
 				x = cmp.Compare(a.total, b.total)
 			case 5:
@@ -288,36 +356,25 @@ func (a *characterWalletTransaction) fetchRows(characterID int32, s services) ([
 	}
 	rows := make([]walletTransactionRow, len(entries))
 	for i, o := range entries {
-		total := o.UnitPrice * float64(o.Quantity)
-		var color fyne.ThemeColorName
-		switch {
-		case total < 0:
-			color = theme.ColorNameError
-		case total > 0:
-			color = theme.ColorNameSuccess
-		default:
-			color = theme.ColorNameForeground
-		}
-		totalText := humanize.FormatFloat(app.FloatFormat, total)
-		totalColor := color
+		total := o.Total()
 		r := walletTransactionRow{
 			categoryName:     o.Type.Group.Category.Name,
+			characterID:      characterID,
 			client:           o.Client,
 			clientName:       o.Client.Name,
 			date:             o.Date,
-			dateDisplay:      o.Date.Format(app.DateTimeFormat),
+			dateFormatted:    o.Date.Format(app.DateTimeFormat),
 			locationDisplay:  o.Location.DisplayRichText(),
 			locationID:       o.Location.ID,
 			locationName:     o.Location.DisplayName(),
-			price:            o.UnitPrice,
 			quantity:         int(o.Quantity),
 			quantityDisplay:  humanize.Comma(int64(o.Quantity)),
 			total:            total,
-			totalColor:       totalColor,
-			totalText:        totalText,
+			totalFormatted:   humanize.FormatFloat(app.FloatFormat, total),
 			transactionID:    o.TransactionID,
 			typeID:           o.Type.ID,
 			typeName:         o.Type.Name,
+			unitPrice:        o.UnitPrice,
 			unitPriceDisplay: humanize.FormatFloat(app.FloatFormat, o.UnitPrice),
 		}
 		if o.Region != nil {
@@ -328,46 +385,44 @@ func (a *characterWalletTransaction) fetchRows(characterID int32, s services) ([
 	return rows, nil
 }
 
-func (a *characterWalletTransaction) showEntry(r walletTransactionRow) {
-	newTappableLabelWithWrap := func(text string, f func()) *kxwidget.TappableLabel {
-		x := kxwidget.NewTappableLabel(text, f)
-		x.Wrapping = fyne.TextWrapWord
-		return x
+func showCharacterWalletTransaction(u *baseUI, characterID int32, transactionID int64) {
+	o, err := u.cs.GetWalletTransactions(context.Background(), characterID, transactionID)
+	if err != nil {
+		u.showErrorDialog("Failed to fetch market transaction", err, u.window)
+		return
 	}
-	location := iwidget.NewTappableRichText(r.locationDisplay, func() {
-		a.u.ShowLocationInfoWindow(r.locationID)
+	location := iwidget.NewTappableRichText(o.Location.DisplayRichText(), func() {
+		u.ShowLocationInfoWindow(o.Location.ID)
 	})
 	location.Wrapping = fyne.TextWrapWord
-	client := newTappableLabelWithWrap(r.clientName, func() {
-		a.u.ShowEveEntityInfoWindow(r.client)
-	})
-	client.Wrapping = fyne.TextWrapWord
+	totalAmount := o.Total()
 	items := []*widget.FormItem{
-		widget.NewFormItem("Date", widget.NewLabel(r.dateDisplay)),
-		widget.NewFormItem("Quantity", widget.NewLabel(r.quantityDisplay)),
-		widget.NewFormItem("Type", newTappableLabelWithWrap(r.typeName, func() {
-			a.u.ShowInfoWindow(app.EveEntityInventoryType, r.typeID)
+		widget.NewFormItem("Owner", makeLabelWithWrap(u.scs.CharacterName(characterID))),
+		widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
+		widget.NewFormItem("Quantity", widget.NewLabel(humanize.Comma(int64(o.Quantity)))),
+		widget.NewFormItem("Type", makeTappableLabelWithWrap(o.Type.Name, func() {
+			u.ShowInfoWindow(app.EveEntityInventoryType, o.Type.ID)
 		})),
-		widget.NewFormItem("Unit price", widget.NewLabel(r.unitPriceDisplay)),
-		widget.NewFormItem("Total", iwidget.NewRichText(
-			iwidget.NewRichTextSegmentFromText(
-				r.totalText, widget.RichTextStyle{
-					ColorName: r.totalColor,
-				})...,
-		)),
-		widget.NewFormItem("Client", client),
+		widget.NewFormItem("Unit price", widget.NewLabel(formatISKAmount(o.UnitPrice))),
+		widget.NewFormItem("Total", widget.NewLabel(formatISKAmount(totalAmount))),
+		widget.NewFormItem("Client", makeEveEntityActionLabel(o.Client, u.ShowEveEntityInfoWindow)),
 		widget.NewFormItem("Location", location),
+		widget.NewFormItem("Related Journal Entry", makeTappableLabelWithWrap(
+			fmt.Sprintf("#%d", o.JournalRefID), func() {
+				showCharacterWalletJournalEntry(u, characterID, o.JournalRefID)
+			},
+		)),
 	}
 
-	if a.u.IsDeveloperMode() {
+	if u.IsDeveloperMode() {
 		items = append(items, widget.NewFormItem(
 			"Transaction ID",
-			a.u.makeCopyToClipboardLabel(fmt.Sprint(r.transactionID)),
+			u.makeCopyToClipboardLabel(fmt.Sprint(transactionID)),
 		))
 	}
-	title := fmt.Sprintf("Entry #%d", r.transactionID)
+	title := fmt.Sprintf("Market Transaction #%d", transactionID)
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	w := a.u.makeDetailWindow("Wallet Transaction Entry", title, f)
+	w := u.makeDetailWindow("Market Transaction Entry", title, f)
 	w.Show()
 }

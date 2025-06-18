@@ -131,7 +131,7 @@ func (s Set[E]) Delete(v E) bool {
 }
 
 // DeleteFunc deletes the elements in s for which del returns true.
-// It returns the numnber of deleted elements.
+// It returns the number of deleted elements.
 func (s *Set[E]) DeleteFunc(del func(E) bool) int {
 	if del == nil {
 		return 0
@@ -148,7 +148,7 @@ func (s *Set[E]) DeleteFunc(del func(E) bool) int {
 
 // DeleteSeq deletes the elements in seq from s.
 // Elements that are not present are ignored.
-// It returns the numnber of deleted elements.
+// It returns the number of deleted elements.
 func (s *Set[E]) DeleteSeq(seq iter.Seq[E]) int {
 	var c int
 	for v := range seq {
@@ -189,6 +189,7 @@ func (s Set[E]) String() string {
 	for v := range s.All() {
 		p = append(p, fmt.Sprint(v))
 	}
+	slices.Sort(p)
 	return "{" + strings.Join(p, " ") + "}"
 }
 

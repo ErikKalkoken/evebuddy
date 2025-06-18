@@ -1,8 +1,16 @@
 package ui
 
 import (
+	"fmt"
+	"math"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/dustin/go-humanize"
 )
 
 // makeGridOrList makes and returns a GridWrap on desktop and a List on mobile.
@@ -31,4 +39,53 @@ func makeTopLabel() *widget.Label {
 	l := widget.NewLabel("")
 	l.Wrapping = fyne.TextWrapWord
 	return l
+}
+
+func formatISKAmount(v float64) string {
+	t := humanize.Commaf(v) + " ISK"
+	if math.Abs(v) > 999 {
+		t += fmt.Sprintf(" (%s)", ihumanize.Number(v, 2))
+	}
+	return t
+}
+
+func importanceISKAmount(v float64) widget.Importance {
+	if v > 0 {
+		return widget.SuccessImportance
+	} else if v < 0 {
+		return widget.DangerImportance
+	}
+	return widget.MediumImportance
+}
+
+func makeTappableLabelWithWrap(text string, action func()) *kxwidget.TappableLabel {
+	x := kxwidget.NewTappableLabel(text, action)
+	x.Wrapping = fyne.TextWrapWord
+	return x
+}
+
+func makeEveEntityActionLabel(o *app.EveEntity, action func(o *app.EveEntity)) *kxwidget.TappableLabel {
+	if o == nil {
+		return kxwidget.NewTappableLabel("-", nil)
+	}
+	return makeTappableLabelWithWrap(o.Name, func() {
+		action(o)
+	})
+}
+
+func makeLabelWithWrap(s string) *widget.Label {
+	l := widget.NewLabel(s)
+	l.Wrapping = fyne.TextWrapWord
+	return l
+}
+
+func makeLocationLabel(o *app.EveLocationShort, show func(int64)) *iwidget.TappableRichText {
+	if o == nil {
+		return iwidget.NewTappableRichTextWithText("?", nil)
+	}
+	x := iwidget.NewTappableRichText(o.DisplayRichText(), func() {
+		show(o.ID)
+	})
+	x.Wrapping = fyne.TextWrapWord
+	return x
 }

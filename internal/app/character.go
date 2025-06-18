@@ -797,6 +797,10 @@ type CharacterWalletTransaction struct {
 	UnitPrice     float64
 }
 
+func (wt *CharacterWalletTransaction) Total() float64 {
+	return wt.UnitPrice * float64(wt.Quantity)
+}
+
 type NotificationGroup uint
 
 const (

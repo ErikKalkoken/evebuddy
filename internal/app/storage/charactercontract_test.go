@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -158,17 +159,23 @@ func TestCharacterContract(t *testing.T) {
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
-	t.Run("can list existing contracts", func(t *testing.T) {
+	t.Run("can list contracts for multiple characters", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		factory.CreateCharacterContract()
-		factory.CreateCharacterContract(storage.CreateCharacterContractParams{ContractID: 42})
-		factory.CreateCharacterContract(storage.CreateCharacterContractParams{ContractID: 42})
+		character1 := factory.CreateCharacterMinimal()
+		c1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: character1.ID})
+		c2 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: character1.ID})
+		character2 := factory.CreateCharacterMinimal()
+		c3 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: character2.ID})
 		// when
 		oo, err := r.ListAllCharacterContracts(ctx)
 		// then
 		if assert.NoError(t, err) {
-			assert.Len(t, oo, 2)
+			want := set.Of(c1.ID, c2.ID, c3.ID)
+			got := set.Of(xslices.Map(oo, func(x *app.CharacterContract) int64 {
+				return x.ID
+			})...)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 	t.Run("can list existing contracts for notify", func(t *testing.T) {

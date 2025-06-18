@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/stack"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
@@ -21,17 +22,19 @@ type Navigator struct {
 
 	NavBar *NavBar // Current navbar. Required for hide feature.
 
-	stack *fyne.Container // stack of pages. First object is the root page.
+	pages      *fyne.Container // stack of pages. First object is the root page.
+	hideNavBar stack.Stack[bool]
 }
 
 // NewNavigatorWithAppBar return a new Navigator and defines the root page.
 func NewNavigatorWithAppBar(ab *AppBar) *Navigator {
 	n := &Navigator{
-		stack: container.NewStack(),
+		pages: container.NewStack(),
 	}
 	n.ExtendBaseWidget(n)
 	if ab != nil {
-		n.stack.Add(ab)
+		n.pages.Add(ab)
+		n.hideNavBar.Push(false)
 	}
 	return n
 }
@@ -47,17 +50,19 @@ func (n *Navigator) Push(ab *AppBar) {
 }
 
 func (n *Navigator) Set(ab *AppBar) {
-	n.stack.RemoveAll()
-	n.stack.Add(ab)
+	n.pages.RemoveAll()
+	n.pages.Add(ab)
+	n.hideNavBar.Clear()
+	n.hideNavBar.Push(false)
 	n.Refresh()
 }
 
 func (n *Navigator) IsEmpty() bool {
-	return len(n.stack.Objects) == 0
+	return len(n.pages.Objects) == 0
 }
 
-// PushHideNavBar adds a new page and shows it while hiding the navbar.
-func (n *Navigator) PushHideNavBar(ab *AppBar) {
+// PushAndHideNavBar adds a new page and shows it while hiding the navbar.
+func (n *Navigator) PushAndHideNavBar(ab *AppBar) {
 	n.push(ab, true)
 }
 
@@ -67,44 +72,57 @@ func (n *Navigator) push(ab *AppBar, hideNavBar bool) {
 		n.NavBar.HideBar()
 	}
 	previous := n.topPage()
-	n.stack.Add(ab)
+	n.pages.Add(ab)
+	n.hideNavBar.Push(hideNavBar)
 	previous.Hide()
 }
 
 // Pop removes the current page and shows the previous page.
 // Does nothing when the root page is shown.
 func (n *Navigator) Pop() {
-	if len(n.stack.Objects) < 2 {
+	if len(n.pages.Objects) < 2 {
 		return
 	}
-	n.stack.Remove(n.topPage())
+	n.pages.Remove(n.topPage())
+	n.hideNavBar.Pop()
 	n.topPage().Show()
-	if n.NavBar != nil {
-		n.NavBar.ShowBar()
-	}
+	n.showNavBarWhenRequired()
 }
 
 // PopAll removes all additional pages and shows the root page.
 // Does nothing when the root page is shown.
 func (n *Navigator) PopAll() {
-	if len(n.stack.Objects) == 0 {
+	if len(n.pages.Objects) == 0 {
 		return
 	}
-	for len(n.stack.Objects) > 1 {
-		n.stack.Remove(n.topPage())
+	for len(n.pages.Objects) > 1 {
+		n.pages.Remove(n.topPage())
+		n.hideNavBar.Pop()
 	}
 	n.topPage().Show()
-	if n.NavBar != nil {
+	n.showNavBarWhenRequired()
+}
+
+func (n *Navigator) showNavBarWhenRequired() {
+	if n.NavBar == nil {
+		return
+	}
+	v, err := n.hideNavBar.Peek()
+	if err != nil {
+		panic(err)
+	}
+	if !v {
 		n.NavBar.ShowBar()
 	}
+
 }
 
 func (n *Navigator) topPage() fyne.CanvasObject {
-	return n.stack.Objects[len(n.stack.Objects)-1]
+	return n.pages.Objects[len(n.pages.Objects)-1]
 }
 
 func (n *Navigator) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(n.stack)
+	return widget.NewSimpleRenderer(n.pages)
 }
 
 // An AppBar displays navigation, actions, and text at the top of a screen.

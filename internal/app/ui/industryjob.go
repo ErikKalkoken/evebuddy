@@ -152,7 +152,7 @@ func newIndustryJobs(u *baseUI) *industryJobs {
 
 	if a.u.isDesktop {
 		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, j industryJobRow) {
-			a.showJob(j)
+			a.showIndustryJob(j)
 		})
 	} else {
 		a.body = a.makeDataList()
@@ -439,7 +439,7 @@ func (a *industryJobs) makeDataList() *widget.List {
 		if id >= len(a.rowsFiltered) || id < 0 {
 			return
 		}
-		a.showJob(a.rowsFiltered[id])
+		a.showIndustryJob(a.rowsFiltered[id])
 	}
 	return l
 }
@@ -585,22 +585,10 @@ func (a *industryJobs) update() {
 	})
 }
 
-func (a *industryJobs) showJob(r industryJobRow) {
-	makeLocationWidget := func(o *app.EveLocationShort) *iwidget.TappableRichText {
-		x := iwidget.NewTappableRichText(o.DisplayRichText(), func() {
-			a.u.ShowLocationInfoWindow(o.ID)
-		})
-		x.Wrapping = fyne.TextWrapWord
-		return x
-	}
-	newTappableLabelWithWrap := func(text string, f func()) *kxwidget.TappableLabel {
-		x := kxwidget.NewTappableLabel(text, f)
-		x.Wrapping = fyne.TextWrapWord
-		return x
-	}
+func (a *industryJobs) showIndustryJob(r industryJobRow) {
 	activity := fmt.Sprintf("%s (%s)", r.activity.Display(), r.activity.JobType().Display())
 	items := []*widget.FormItem{
-		widget.NewFormItem("Blueprint", newTappableLabelWithWrap(r.blueprintType.Name, func() {
+		widget.NewFormItem("Blueprint", makeTappableLabelWithWrap(r.blueprintType.Name, func() {
 			a.u.ShowInfoWindow(app.EveEntityInventoryType, r.blueprintType.ID)
 		})),
 		widget.NewFormItem("Activity", widget.NewLabel(activity)),
@@ -609,7 +597,7 @@ func (a *industryJobs) showJob(r industryJobRow) {
 		x := r.productType.MustValue()
 		items = append(items, widget.NewFormItem(
 			"Product Type",
-			newTappableLabelWithWrap(x.Name, func() {
+			makeTappableLabelWithWrap(x.Name, func() {
 				a.u.ShowInfoWindow(app.EveEntityInventoryType, x.ID)
 			}),
 		))
@@ -652,18 +640,18 @@ func (a *industryJobs) showJob(r industryJobRow) {
 		)
 	}
 	items = slices.Concat(items, []*widget.FormItem{
-		widget.NewFormItem("Location", makeLocationWidget(r.location)),
-		widget.NewFormItem("Installer", newTappableLabelWithWrap(r.installer.Name, func() {
+		widget.NewFormItem("Location", makeLocationLabel(r.location, a.u.ShowLocationInfoWindow)),
+		widget.NewFormItem("Installer", makeTappableLabelWithWrap(r.installer.Name, func() {
 			a.u.ShowEveEntityInfoWindow(r.installer)
 		})),
-		widget.NewFormItem("Owner", newTappableLabelWithWrap(r.owner.Name, func() {
+		widget.NewFormItem("Owner", makeTappableLabelWithWrap(r.owner.Name, func() {
 			a.u.ShowEveEntityInfoWindow(r.owner)
 		})),
 		widget.NewFormItem("Type", widget.NewLabel(r.owner.CategoryDisplay())),
 	})
 	if !r.completedCharacter.IsEmpty() {
 		x := r.completedCharacter.MustValue()
-		items = append(items, widget.NewFormItem("Completed By", newTappableLabelWithWrap(x.Name, func() {
+		items = append(items, widget.NewFormItem("Completed By", makeTappableLabelWithWrap(x.Name, func() {
 			a.u.ShowEveEntityInfoWindow(x)
 		})))
 	}

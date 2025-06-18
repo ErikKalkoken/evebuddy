@@ -4,16 +4,20 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"image/color"
 	"log/slog"
 	"slices"
 	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/antihax/goesi"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -23,18 +27,19 @@ import (
 )
 
 type walletJournalRow struct {
-	amount         float64
-	amountDisplay  []widget.RichTextSegment
-	balance        float64
-	date           time.Time
-	description    string
-	reason         string
-	refType        string
-	refTypeDisplay string
-}
-
-func (e walletJournalRow) hasReason() bool {
-	return e.reason != ""
+	amount           float64
+	amountDisplay    []widget.RichTextSegment
+	amountFormatted  string
+	balance          float64
+	balanceFormatted string
+	characterID      int32
+	date             time.Time
+	dateFormatted    string
+	description      string
+	reason           string
+	refID            int64
+	refType          string
+	refTypeDisplay   string
 }
 
 func (e walletJournalRow) descriptionWithReason() string {
@@ -77,7 +82,7 @@ func newCharacterWalletJournal(u *baseUI) *characterWalletJournal {
 	makeCell := func(col int, r walletJournalRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			return iwidget.NewRichTextSegmentFromText(r.date.Format(app.DateTimeFormat))
+			return iwidget.NewRichTextSegmentFromText(r.dateFormatted)
 		case 1:
 			return iwidget.NewRichTextSegmentFromText(r.refTypeDisplay)
 		case 2:
@@ -94,17 +99,12 @@ func newCharacterWalletJournal(u *baseUI) *characterWalletJournal {
 		}
 		return iwidget.NewRichTextSegmentFromText("?")
 	}
-	showReasonDialog := func(r walletJournalRow) {
-		if r.hasReason() {
-			a.u.ShowInformationDialog("Reason", r.reason, a.u.MainWindow())
-		}
-	}
 	if a.u.isDesktop {
 		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r walletJournalRow) {
-			showReasonDialog(r)
+			showCharacterWalletJournalEntry(a.u, r.characterID, r.refID)
 		})
 	} else {
-		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, showReasonDialog)
+		a.body = a.makeDataList()
 	}
 	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
 		a.filterRows(-1)
@@ -128,6 +128,76 @@ func (a *characterWalletJournal) CreateRenderer() fyne.WidgetRenderer {
 		a.body,
 	)
 	return widget.NewSimpleRenderer(c)
+}
+
+func (a *characterWalletJournal) makeDataList() *widget.List {
+	p := theme.Padding()
+	bgColor := theme.Color(theme.ColorNameInputBackground)
+	l := widget.NewList(
+		func() int {
+			return len(a.rowsFiltered)
+		},
+		func() fyne.CanvasObject {
+			date := widget.NewLabel("Template")
+			date.Truncation = fyne.TextTruncateClip
+			balance := widget.NewLabel("Template")
+			balance.Alignment = fyne.TextAlignTrailing
+			refType := widget.NewLabel("Template")
+			refType.Truncation = fyne.TextTruncateClip
+			value := widget.NewLabel("Template")
+			value.Alignment = fyne.TextAlignTrailing
+			description := widget.NewLabel("Template")
+			description.Truncation = fyne.TextTruncateClip
+			return container.NewStack(
+				canvas.NewRectangle(color.Transparent),
+				container.New(layout.NewCustomPaddedVBoxLayout(-p),
+					container.NewBorder(nil, nil, nil, value, date),
+					container.NewBorder(nil, nil, nil, balance, refType),
+					description,
+				))
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id < 0 || id >= len(a.rowsFiltered) {
+				return
+			}
+			r := a.rowsFiltered[id]
+
+			x := co.(*fyne.Container).Objects
+
+			bg := x[0].(*canvas.Rectangle)
+			if id%2 == 0 {
+				bg.FillColor = bgColor
+			} else {
+				bg.FillColor = color.Transparent
+			}
+			bg.Refresh()
+
+			c := x[1].(*fyne.Container).Objects
+
+			b0 := c[0].(*fyne.Container).Objects
+			b0[0].(*widget.Label).SetText(r.dateFormatted)
+			amount := b0[1].(*widget.Label)
+			amount.Text = r.amountFormatted
+			amount.Importance = importanceISKAmount(r.amount)
+			amount.Refresh()
+
+			b1 := c[1].(*fyne.Container).Objects
+			b1[0].(*widget.Label).SetText(r.refTypeDisplay)
+			b1[1].(*widget.Label).SetText(r.balanceFormatted)
+
+			c[2].(*widget.Label).SetText(r.description)
+		},
+	)
+	l.OnSelected = func(id widget.ListItemID) {
+		defer l.UnselectAll() // TODO: Show detail window
+		if id < 0 || id >= len(a.rowsFiltered) {
+			return
+		}
+		r := a.rowsFiltered[id]
+		showCharacterWalletJournalEntry(a.u, r.characterID, r.refID)
+	}
+	l.HideSeparators = true
+	return l
 }
 
 func (a *characterWalletJournal) filterRows(sortCol int) {
@@ -207,13 +277,18 @@ func (*characterWalletJournal) fetchRows(characterID int32, s services) ([]walle
 	rows := make([]walletJournalRow, len(entries))
 	for i, o := range entries {
 		r := walletJournalRow{
-			amount:         o.Amount,
-			balance:        o.Balance,
-			date:           o.Date,
-			description:    o.Description,
-			reason:         o.Reason,
-			refType:        o.RefType,
-			refTypeDisplay: o.RefTypeDisplay(),
+			amount:           o.Amount,
+			amountFormatted:  humanize.FormatFloat(app.FloatFormat, o.Amount),
+			balance:          o.Balance,
+			balanceFormatted: humanize.FormatFloat(app.FloatFormat, o.Balance),
+			characterID:      characterID,
+			date:             o.Date,
+			dateFormatted:    o.Date.Format(app.DateTimeFormat),
+			description:      o.Description,
+			reason:           o.Reason,
+			refID:            o.RefID,
+			refType:          o.RefType,
+			refTypeDisplay:   o.RefTypeDisplay(),
 		}
 		var color fyne.ThemeColorName
 		switch {
@@ -225,7 +300,7 @@ func (*characterWalletJournal) fetchRows(characterID int32, s services) ([]walle
 			color = theme.ColorNameForeground
 		}
 		r.amountDisplay = iwidget.NewRichTextSegmentFromText(
-			humanize.FormatFloat(app.FloatFormat, o.Amount),
+			r.amountFormatted,
 			widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 				ColorName: color,
@@ -234,4 +309,119 @@ func (*characterWalletJournal) fetchRows(characterID int32, s services) ([]walle
 		rows[i] = r
 	}
 	return rows, nil
+}
+
+// showCharacterWalletJournalEntry shows a wallet journal entry for a character in a new window.
+func showCharacterWalletJournalEntry(u *baseUI, characterID int32, refID int64) {
+	o, err := u.cs.GetWalletJournalEntry(context.Background(), characterID, refID)
+	if err != nil {
+		u.showErrorDialog("Failed to fetch wallet journal entry", err, u.window)
+		return
+	}
+
+	f := widget.NewForm()
+	f.Orientation = widget.Adaptive
+
+	amount := widget.NewLabel(formatISKAmount(o.Amount))
+	amount.Importance = importanceISKAmount(o.Amount)
+	reason := o.Reason
+	if reason == "" {
+		reason = "-"
+	}
+
+	contextDefaultWidget := widget.NewLabel("?")
+	contextItem := widget.NewFormItem("Related item", contextDefaultWidget)
+	ctx := context.Background()
+	reportError := func(o *app.CharacterWalletJournalEntry, err error) {
+		slog.Error("Failed to fetch related context", "contextIDType", o.ContextIDType, "contextID", o.ContextID, "error", err)
+		contextDefaultWidget.SetText("Failed to load related item: " + u.humanizeError(err))
+	}
+	// TODO: Add support for industry jobs
+	switch o.ContextIDType {
+	case "alliance_id", "character_id", "corporation_id", "system_id", "type_id":
+		go func() {
+			ee, err := u.eus.GetOrCreateEntityESI(ctx, int32(o.ContextID))
+			if err != nil {
+				reportError(o, err)
+				return
+			}
+			contextItem.Text = "Related " + ee.CategoryDisplay()
+			contextItem.Widget = makeEveEntityActionLabel(ee, u.ShowEveEntityInfoWindow)
+			f.Refresh()
+		}()
+	case "contract_id":
+		c, err := u.cs.GetContract(ctx, characterID, int32(o.ContextID))
+		if err != nil {
+			reportError(o, err)
+			break
+		}
+		contextItem.Text = "Related contract"
+		contextItem.Widget = makeTappableLabelWithWrap(c.NameDisplay(), func() {
+			showContract(u, c.CharacterID, c.ContractID)
+		})
+	case "market_transaction_id":
+		contextItem.Text = "Related market transaction"
+		contextItem.Widget = makeTappableLabelWithWrap(fmt.Sprintf("#%d", o.ContextID), func() {
+			showCharacterWalletTransaction(u, o.CharacterID, o.ContextID)
+		})
+	case "station_id", "structure_id":
+		contextItem.Text = "Related location"
+		go func() {
+			token, err := u.cs.GetValidCharacterToken(ctx, characterID)
+			if err != nil {
+				reportError(o, err)
+				return
+			}
+			ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+			el, err := u.eus.GetOrCreateLocationESI(ctx, o.ContextID)
+			if err != nil {
+				reportError(o, err)
+				return
+			}
+			contextItem.Widget = makeLocationLabel(el.ToShort(), u.ShowLocationInfoWindow)
+			f.Refresh()
+		}()
+	}
+	items := []*widget.FormItem{
+		widget.NewFormItem("Owner", makeLabelWithWrap(u.scs.CharacterName(characterID))),
+		widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
+		widget.NewFormItem("Type", makeLabelWithWrap(o.RefTypeDisplay())),
+		widget.NewFormItem("Amount", amount),
+		widget.NewFormItem("Balance", widget.NewLabel(formatISKAmount(o.Balance))),
+		widget.NewFormItem("Description", makeLabelWithWrap(o.Description)),
+		widget.NewFormItem("Reason", makeLabelWithWrap(reason)),
+	}
+	if o.FirstParty != nil {
+		items = append(items, widget.NewFormItem(
+			"First Party",
+			makeEveEntityActionLabel(o.FirstParty, u.ShowEveEntityInfoWindow),
+		))
+	}
+	if o.SecondParty != nil {
+		items = append(items, widget.NewFormItem(
+			"Second Party",
+			makeEveEntityActionLabel(o.SecondParty, u.ShowEveEntityInfoWindow),
+		))
+	}
+	if o.TaxReceiver != nil {
+		items = append(items, widget.NewFormItem(
+			"Tax",
+			widget.NewLabel(formatISKAmount(o.Tax))),
+		)
+		items = append(items, widget.NewFormItem(
+			"Tax Receiver",
+			makeEveEntityActionLabel(o.TaxReceiver, u.ShowEveEntityInfoWindow)),
+		)
+	}
+	items = append(items, contextItem)
+	if u.IsDeveloperMode() {
+		items = append(items, widget.NewFormItem("Ref ID", u.makeCopyToClipboardLabel(fmt.Sprint(refID))))
+	}
+
+	for _, it := range items {
+		f.AppendItem(it)
+	}
+	title := fmt.Sprintf("Wallet Journal #%d", refID)
+	w := u.makeDetailWindow("Wallet Journal Entry", title, f)
+	w.Show()
 }

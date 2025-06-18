@@ -14,18 +14,20 @@ import (
 const (
 	assetItemsPerLocation      = 100
 	assetTypes                 = 10
+	contracts                  = 1
+	contractItems              = 1
 	implants                   = 2
 	jumpClones                 = 2
 	locations                  = 5
 	mailEntities               = 50
-	mailMaxRecipients          = 3
-	mails                      = 1000
 	mailLabels                 = 10
 	mailLists                  = 10
+	mailMaxRecipients          = 3
+	mails                      = 1000
 	notifications              = 1000
+	skillGroups                = 2
 	skillqueue                 = 2
 	skills                     = 5
-	skillGroups                = 2
 	walletJournalEntries       = 1000
 	walletJournalEntryEntities = 25
 	walletTransactionClients   = 25
@@ -61,6 +63,7 @@ func (b *CharacterBuilder) Create() {
 	b.createAttributes()
 	b.createImplants()
 	b.createAssets()
+	b.createContracts()
 	b.createJumpClones()
 	b.createMail()
 	b.createNotifications()
@@ -121,6 +124,27 @@ func (b *CharacterBuilder) createCharacter() {
 	})
 	b.f.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 	fmt.Printf("Creating new character %s with factor %d\n", b.c.EveCharacter.Name, b.Factor)
+}
+
+func (b *CharacterBuilder) createContracts() {
+	makeTypeID := b.makeRandomTypes(assetTypes * b.Factor)
+	var count int
+	for range contracts * b.Factor {
+		o := b.f.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: b.c.ID,
+			Type:        app.ContractTypeItemExchange,
+			Price:       float64(rand.IntN(10_000_000*100)) / 100,
+		})
+		for range contractItems {
+			b.f.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{
+				ContractID: o.ID,
+				TypeID:     makeTypeID(),
+				IsIncluded: true,
+			})
+		}
+		count++
+	}
+	printSummary("contracts", count)
 }
 
 func (b *CharacterBuilder) createImplants() {
