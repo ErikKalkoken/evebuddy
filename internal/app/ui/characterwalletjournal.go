@@ -4,12 +4,14 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"image/color"
 	"log/slog"
 	"slices"
 	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -130,6 +132,7 @@ func (a *characterWalletJournal) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *characterWalletJournal) makeDataList() *widget.List {
 	p := theme.Padding()
+	bgColor := theme.Color(theme.ColorNameInputBackground)
 	l := widget.NewList(
 		func() int {
 			return len(a.rowsFiltered)
@@ -145,18 +148,31 @@ func (a *characterWalletJournal) makeDataList() *widget.List {
 			value.Alignment = fyne.TextAlignTrailing
 			description := widget.NewLabel("Template")
 			description.Truncation = fyne.TextTruncateClip
-			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
-				container.NewBorder(nil, nil, nil, value, date),
-				container.NewBorder(nil, nil, nil, balance, refType),
-				description,
-			)
+			return container.NewStack(
+				canvas.NewRectangle(color.Transparent),
+				container.New(layout.NewCustomPaddedVBoxLayout(-p),
+					container.NewBorder(nil, nil, nil, value, date),
+					container.NewBorder(nil, nil, nil, balance, refType),
+					description,
+				))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id < 0 || id >= len(a.rowsFiltered) {
 				return
 			}
 			r := a.rowsFiltered[id]
-			c := co.(*fyne.Container).Objects
+
+			x := co.(*fyne.Container).Objects
+
+			bg := x[0].(*canvas.Rectangle)
+			if id%2 == 0 {
+				bg.FillColor = bgColor
+			} else {
+				bg.FillColor = color.Transparent
+			}
+			bg.Refresh()
+
+			c := x[1].(*fyne.Container).Objects
 
 			b0 := c[0].(*fyne.Container).Objects
 			b0[0].(*widget.Label).SetText(r.dateFormatted)
@@ -180,6 +196,7 @@ func (a *characterWalletJournal) makeDataList() *widget.List {
 		r := a.rowsFiltered[id]
 		showCharacterWalletJournalEntry(a.u, r.characterID, r.refID)
 	}
+	l.HideSeparators = true
 	return l
 }
 
