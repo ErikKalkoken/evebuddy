@@ -41,4 +41,14 @@ func TestAppSettings(t *testing.T) {
 		want := s.NotificationTypesEnabled()
 		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 	})
+	t.Run("Color theme", func(t *testing.T) {
+		s := settings.New(settings.NewMyPref())
+
+		x1 := s.ColorTheme()
+		assert.Equal(t, "", x1)
+
+		s.SetColorTheme("alpha")
+		x2 := s.ColorTheme()
+		assert.Equal(t, "alpha", x2)
+	})
 }

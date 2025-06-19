@@ -11,8 +11,18 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
+type ColorTheme string
+
+const (
+	Auto  ColorTheme = "Auto"
+	Light ColorTheme = "Light"
+	Dark  ColorTheme = "Dark"
+)
+
 const (
 	notifyEarliestFallback                    = 24 * time.Hour
+	settingColorTheme                         = "color-theme"
+	settingColorThemeDefault                  = Auto
 	settingDeveloperMode                      = "developer-mode"
 	settingDeveloperModeDefault               = false
 	settingLastCharacterID                    = "settingLastCharacterID"
@@ -399,6 +409,23 @@ func (s Settings) ResetPreferMarketTab() {
 
 func (s Settings) SetPreferMarketTab(v bool) {
 	s.p.SetBool(settingPreferMarketTab, v)
+}
+
+func (s Settings) ColorTheme() ColorTheme {
+	x := s.p.StringWithFallback(settingColorTheme, string(settingColorThemeDefault))
+	return ColorTheme(x)
+}
+
+func (s Settings) ColorThemeDefault() ColorTheme {
+	return settingColorThemeDefault
+}
+
+func (s Settings) ResetColorTheme() {
+	s.SetColorTheme(settingColorThemeDefault)
+}
+
+func (s Settings) SetColorTheme(v ColorTheme) {
+	s.p.SetString(settingColorTheme, string(v))
 }
 
 // Keys returns all setting keys. Mostly to know what to delete.

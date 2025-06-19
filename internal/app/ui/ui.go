@@ -23,6 +23,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
+	kxtheme "github.com/ErikKalkoken/fyne-kx/theme"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -249,6 +250,7 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 		} else {
 			slog.Info("App started")
 		}
+		u.setColorTheme(u.settings.ColorTheme())
 		u.isForeground.Store(true)
 		u.snackbar.Start()
 		go func() {
@@ -575,6 +577,17 @@ func (u *baseUI) updateAvatar(id int32, setIcon func(fyne.Resource)) {
 		r2 = icons.Characterplaceholder64Jpeg
 	}
 	setIcon(r2)
+}
+
+func (u *baseUI) setColorTheme(s settings.ColorTheme) {
+	switch s {
+	case settings.Light:
+		u.app.Settings().SetTheme(kxtheme.DefaultWithFixedVariant(theme.VariantLight))
+	case settings.Dark:
+		u.app.Settings().SetTheme(kxtheme.DefaultWithFixedVariant(theme.VariantDark))
+	default:
+		u.app.Settings().SetTheme(theme.DefaultTheme())
+	}
 }
 
 func (u *baseUI) updateMailIndicator() {

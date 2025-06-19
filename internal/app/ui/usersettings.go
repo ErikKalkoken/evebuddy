@@ -28,6 +28,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -118,6 +119,7 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 		},
 		a.w,
 	)
+
 	vMin, vMax, vDef := a.u.settings.MaxMailsPresets()
 	maxMail := NewSettingItemSlider(
 		"Maximum mails",
@@ -133,6 +135,7 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 		},
 		a.w,
 	)
+
 	vMin, vMax, vDef = a.u.settings.MaxWalletTransactionsPresets()
 	maxWallet := NewSettingItemSlider(
 		"Maximum wallet transaction",
@@ -148,6 +151,7 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 		},
 		a.w,
 	)
+
 	preferMarketTab := NewSettingItemSwitch(
 		"Prefer market tab",
 		"Show market tab for tradeable items",
@@ -158,6 +162,23 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 			a.u.settings.SetPreferMarketTab(v)
 		},
 	)
+
+	colorTheme := NewSettingItemOptions(
+		"Appearance",
+		"Choose the color scheme. 'Auto' uses the current OS theme.",
+		[]string{string(settings.Auto), string(settings.Light), string(settings.Dark)},
+		string(a.u.settings.ColorThemeDefault()),
+		func() string {
+			return string(a.u.settings.ColorTheme())
+		},
+		func(v string) {
+			s := a.u.settings
+			s.SetColorTheme(settings.ColorTheme(v))
+			a.u.setColorTheme(settings.ColorTheme(v))
+		},
+		a.w,
+	)
+
 	developerMode := NewSettingItemSwitch(
 		"Developer Mode",
 		"App shows additional technical information like Character IDs",
@@ -172,6 +193,7 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 	items := []SettingItem{
 		NewSettingItemHeading("Application"),
 		logLevel,
+		colorTheme,
 		preferMarketTab,
 		developerMode,
 		NewSettingItemSeparator(),
