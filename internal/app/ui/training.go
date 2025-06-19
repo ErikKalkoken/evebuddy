@@ -40,10 +40,7 @@ type trainingRow struct {
 	trainingDisplay      []widget.RichTextSegment
 	unallocatedSP        optional.Optional[int]
 	unallocatedSPDisplay string
-}
-
-func (r trainingRow) isActive() bool {
-	return !r.training.IsEmpty()
+	isActive             bool
 }
 
 type trainings struct {
@@ -185,9 +182,9 @@ func (a *trainings) filterRows(sortCol int) {
 		rows = xslices.Filter(rows, func(r trainingRow) bool {
 			switch x {
 			case trainingStatusActive:
-				return r.isActive()
+				return r.isActive
 			case trainingStatusInActive:
-				return !r.isActive()
+				return !r.isActive
 			}
 			return false
 		})
@@ -307,6 +304,7 @@ func (*trainings) fetchRows(s services) ([]trainingRow, error) {
 					ColorName: theme.ColorNameSuccess,
 				},
 			)
+			r.isActive = true
 		}
 		rows[i] = r
 	}

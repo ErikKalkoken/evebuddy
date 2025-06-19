@@ -30,7 +30,7 @@ func TestTag(t *testing.T) {
 	t.Run("can get by ID", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		t1 := factory.CreateTag()
+		t1 := factory.CreateCharacterTag()
 		// when
 		t2, err := st.GetTag(ctx, t1.ID)
 		// then
@@ -41,8 +41,8 @@ func TestTag(t *testing.T) {
 	t.Run("can list ordered by name", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		t1 := factory.CreateTag("Charlie")
-		t2 := factory.CreateTag("Alpha")
+		t1 := factory.CreateCharacterTag("Charlie")
+		t2 := factory.CreateCharacterTag("Alpha")
 		// when
 		oo, err := st.ListTagsByName(ctx)
 		// then
@@ -57,7 +57,7 @@ func TestTag(t *testing.T) {
 	t.Run("raise specfic error when tyring to create new with existing name", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		tag := factory.CreateTag()
+		tag := factory.CreateCharacterTag()
 		// when
 		_, err := st.CreateTag(ctx, tag.Name)
 		// then
@@ -66,7 +66,7 @@ func TestTag(t *testing.T) {
 	t.Run("can update name", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		t1 := factory.CreateTag()
+		t1 := factory.CreateCharacterTag()
 		// when
 		err := st.UpdateTagName(ctx, t1.ID, "alpha")
 		// then
@@ -80,7 +80,7 @@ func TestTag(t *testing.T) {
 	t.Run("can delete tag", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		t1 := factory.CreateTag()
+		t1 := factory.CreateCharacterTag()
 		// when
 		err := st.DeleteTag(ctx, t1.ID)
 		// then
@@ -98,7 +98,7 @@ func TestCharacterTag(t *testing.T) {
 	t.Run("can add tag to character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		tag := factory.CreateTag()
+		tag := factory.CreateCharacterTag()
 		character1 := factory.CreateCharacterMinimal()
 		factory.CreateCharacterMinimal()
 		// when
@@ -126,7 +126,7 @@ func TestCharacterTag(t *testing.T) {
 	t.Run("can remove tag from character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		tag := factory.CreateTag()
+		tag := factory.CreateCharacterTag()
 		character1 := factory.CreateCharacterMinimal()
 		err := st.CreateCharactersCharacterTag(ctx, storage.CreateCharacterTagParams{
 			CharacterID: character1.ID,
@@ -163,8 +163,8 @@ func TestCharacterTag(t *testing.T) {
 	t.Run("can list tags for character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		tag := factory.CreateTag()
-		factory.CreateTag()
+		tag := factory.CreateCharacterTag()
+		factory.CreateCharacterTag()
 		character := factory.CreateCharacterMinimal()
 		factory.CreateCharacterMinimal()
 		// when

@@ -1867,7 +1867,7 @@ func (f Factory) CreateEveMarketPrice(args ...storage.UpdateOrCreateEveMarketPri
 	return o
 }
 
-func (f Factory) CreateTag(names ...string) *app.CharacterTag {
+func (f Factory) CreateCharacterTag(names ...string) *app.CharacterTag {
 	var name string
 	if len(names) > 0 {
 		name = names[0]
@@ -1881,6 +1881,16 @@ func (f Factory) CreateTag(names ...string) *app.CharacterTag {
 		panic(err)
 	}
 	return r
+}
+
+func (f Factory) AddCharacterToTag(tag *app.CharacterTag, character *app.Character) {
+	err := f.st.CreateCharactersCharacterTag(context.Background(), storage.CreateCharacterTagParams{
+		CharacterID: character.ID,
+		TagID:       tag.ID,
+	})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (f *Factory) CreateToken(args ...app.Token) *app.Token {
