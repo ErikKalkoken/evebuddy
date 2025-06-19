@@ -96,7 +96,7 @@ func (a *userSettings) CreateRenderer() fyne.WidgetRenderer {
 			notificationContent,
 			notificationActions,
 		)),
-		container.NewTabItem("Character Tags", characterTags),
+		container.NewTabItem("Tags", characterTags),
 	)
 	tabs.SetTabLocation(container.TabLocationLeading)
 	return widget.NewSimpleRenderer(tabs)
@@ -621,24 +621,35 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 type characterTags struct {
 	widget.BaseWidget
 
-	addCharacter     *iwidget.TappableIcon
-	characterList    *widget.List
-	characters       []*app.EntityShort[int32]
-	manageCharacters *iwidget.AppBar
-	selectedTag      *app.CharacterTag
-	tagList          *widget.List
-	tags             []*app.CharacterTag
-	us               *userSettings
+	addCharacterIcon    *iwidget.TappableIcon
+	characterList       *widget.List
+	characters          []*app.EntityShort[int32]
+	emptyCharactersHint fyne.CanvasObject
+	emptyTagsHint       fyne.CanvasObject
+	manageCharacters    *iwidget.AppBar
+	selectedTag         *app.CharacterTag
+	tagList             *widget.List
+	tags                []*app.CharacterTag
+	us                  *userSettings
 }
 
 func newCharacterTags(us *userSettings) *characterTags {
 	a := &characterTags{
 		characters: make([]*app.EntityShort[int32], 0),
+		tags:       make([]*app.CharacterTag, 0),
 		us:         us,
 	}
 	a.ExtendBaseWidget(a)
 
-	a.addCharacter = a.makeAddCharacterButton()
+	l := widget.NewLabel("Click + to add a character to this tag")
+	l.Importance = widget.LowImportance
+	a.emptyCharactersHint = container.NewCenter(l)
+
+	l = widget.NewLabel("Click + to add a tag")
+	l.Importance = widget.LowImportance
+	a.emptyTagsHint = container.NewCenter(l)
+
+	a.addCharacterIcon = a.makeAddCharacterButton()
 	a.characterList = a.makeCharacterList()
 	a.manageCharacters = a.makeManageCharacters()
 	a.tagList = a.makeTagList()
@@ -661,11 +672,14 @@ func (a *characterTags) CreateRenderer() fyne.WidgetRenderer {
 	)
 	addTag.SetToolTip("Add new tag")
 	manageTags := iwidget.NewAppBarWithTrailing(
-		"Character Tags",
+		"Tags",
 		container.NewPadded(a.tagList),
 		container.New(layout.NewCustomPaddedLayout(0, 0, 0, p), addTag),
 	)
-	c := container.NewVSplit(manageTags, a.manageCharacters)
+	c := container.NewVSplit(
+		container.NewStack(manageTags, a.emptyTagsHint),
+		container.NewStack(a.manageCharacters, a.emptyCharactersHint),
+	)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -674,7 +688,7 @@ func (a *characterTags) makeManageCharacters() *iwidget.AppBar {
 	ab := iwidget.NewAppBarWithTrailing(
 		"",
 		container.NewPadded(a.characterList),
-		container.New(layout.NewCustomPaddedLayout(0, 0, 0, p), a.addCharacter),
+		container.New(layout.NewCustomPaddedLayout(0, 0, 0, p), a.addCharacterIcon),
 	)
 	ab.Hide()
 	return ab
@@ -840,9 +854,9 @@ func (a *characterTags) makeTagList() *widget.List {
 						a.tagList.UnselectAll()
 						a.selectedTag = nil
 						a.characters = make([]*app.EntityShort[int32], 0)
-						a.addCharacter.Disable()
+						a.addCharacterIcon.Disable()
 						a.characterList.Refresh()
-						a.addCharacter.Disable()
+						a.addCharacterIcon.Disable()
 						a.manageCharacters.Hide()
 					}, a.us.w,
 				)
@@ -944,9 +958,14 @@ func (a *characterTags) updateCharacters(tag *app.CharacterTag) {
 	a.characters = tagged
 	a.characterList.Refresh()
 	if len(others) > 0 {
-		a.addCharacter.Enable()
+		a.addCharacterIcon.Enable()
 	} else {
-		a.addCharacter.Disable()
+		a.addCharacterIcon.Disable()
+	}
+	if len(tagged) > 0 {
+		a.emptyCharactersHint.Hide()
+	} else {
+		a.emptyCharactersHint.Show()
 	}
 }
 
@@ -1012,6 +1031,11 @@ func (a *characterTags) updateTags() {
 	}
 	a.tags = tags
 	a.tagList.Refresh()
+	if len(tags) > 0 {
+		a.emptyTagsHint.Hide()
+	} else {
+		a.emptyTagsHint.Show()
+	}
 }
 
 func makeIconButtonFromActions(actions []settingAction) *kxwidget.IconButton {
