@@ -17,7 +17,7 @@ func (s *CharacterService) DeleteTag(ctx context.Context, id int64) error {
 	return s.st.DeleteTag(ctx, id)
 }
 
-func (s *CharacterService) ListTags(ctx context.Context) ([]*app.CharacterTag, error) {
+func (s *CharacterService) ListTagsByName(ctx context.Context) ([]*app.CharacterTag, error) {
 	return s.st.ListTagsByName(ctx)
 }
 

@@ -169,7 +169,6 @@ func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) error {
 		return nil
 	}
 	g := new(errgroup.Group)
-	g.SetLimit(5)
 	for id := range ids.All() {
 		id := id
 		g.Go(func() error {
@@ -316,7 +315,6 @@ func (s *EveUniverseService) UpdateAllCorporationsESI(ctx context.Context) error
 		return nil
 	}
 	g := new(errgroup.Group)
-	g.SetLimit(5)
 	for id := range ids.All() {
 		g.Go(func() error {
 			_, err := s.UpdateOrCreateCorporationFromESI(ctx, id)
