@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAppSettings(t *testing.T) {
+func TestSettings(t *testing.T) {
 	t.Run("Window size", func(t *testing.T) {
 		p := settings.NewMyPref()
 		s := settings.New(p)
@@ -41,14 +41,18 @@ func TestAppSettings(t *testing.T) {
 		want := s.NotificationTypesEnabled()
 		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 	})
-	t.Run("Color theme", func(t *testing.T) {
+}
+
+func TestColorTheme(t *testing.T) {
+	t.Run("Default theme", func(t *testing.T) {
 		s := settings.New(settings.NewMyPref())
-
 		x1 := s.ColorTheme()
-		assert.Equal(t, "", x1)
-
-		s.SetColorTheme("alpha")
-		x2 := s.ColorTheme()
-		assert.Equal(t, "alpha", x2)
+		assert.Equal(t, settings.Auto, x1)
+	})
+	t.Run("Can set and get theme", func(t *testing.T) {
+		s := settings.New(settings.NewMyPref())
+		s.SetColorTheme(settings.Dark)
+		x1 := s.ColorTheme()
+		assert.Equal(t, settings.Dark, x1)
 	})
 }
