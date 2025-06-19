@@ -40,10 +40,10 @@ type settingAction struct {
 type userSettings struct {
 	widget.BaseWidget
 
-	needUpdate bool
-	sb         *iwidget.Snackbar
-	u          *baseUI
-	w          fyne.Window
+	tagsChanged bool
+	sb          *iwidget.Snackbar
+	u           *baseUI
+	w           fyne.Window
 }
 
 func showSettingsWindow(u *baseUI) {
@@ -70,7 +70,7 @@ func newSettings(u *baseUI, w fyne.Window) *userSettings {
 	a.ExtendBaseWidget(a)
 	a.sb.Start()
 	w.SetOnClosed(func() {
-		if a.needUpdate {
+		if a.tagsChanged {
 			u.updateCrossPages()
 		}
 		a.sb.Stop()
@@ -720,7 +720,7 @@ func (a *userSettings) makeCharacterTagsPage() (body fyne.CanvasObject, actions 
 					}
 				}
 				updateCharacters(selectedTag)
-				a.needUpdate = true
+				a.tagsChanged = true
 			},
 			a.w,
 		)
@@ -807,7 +807,7 @@ func (a *userSettings) makeCharacterTagsPage() (body fyne.CanvasObject, actions 
 					return
 				}
 				updateCharacters(selectedTag)
-				a.needUpdate = true
+				a.tagsChanged = true
 			}
 		},
 	)
@@ -844,20 +844,26 @@ func (a *userSettings) makeCharacterTagsPage() (body fyne.CanvasObject, actions 
 			}
 			return nil
 		}
-		d := dialog.NewForm(title, confirm, "Cancel", []*widget.FormItem{
+		items := []*widget.FormItem{
 			widget.NewFormItem("Name", name),
-		}, func(confirmed bool) {
-			if !confirmed {
-				return
-			}
-			if err := execute(name.Text); err != nil {
-				a.u.showErrorDialog("Failed to modify tag", err, a.w)
-				return
-			}
-
-			updateTags()
-			a.needUpdate = true
-		}, a.w,
+		}
+		d := dialog.NewForm(
+			title, confirm, "Cancel", items, func(confirmed bool) {
+				if !confirmed {
+					return
+				}
+				if err := execute(name.Text); err != nil {
+					a.u.showErrorDialog("Failed to modify tag", err, a.w)
+					return
+				}
+				updateTags()
+				a.tagsChanged = true
+				for id, t := range tags {
+					if t.Name == name.Text {
+						tagList.Select(id)
+					}
+				}
+			}, a.w,
 		)
 		a.u.ModifyShortcutsForDialog(d, a.w)
 		d.Show()
@@ -908,7 +914,12 @@ func (a *userSettings) makeCharacterTagsPage() (body fyne.CanvasObject, actions 
 						a.u.showErrorDialog("Failed to delete tag", err, a.w)
 						return
 					}
+					a.tagsChanged = true
 					updateTags()
+					if len(tags) > 0 {
+						tagList.Select(0)
+						return
+					}
 					tagList.UnselectAll()
 					selectedTag = nil
 					characters = make([]*app.EntityShort[int32], 0)
@@ -950,6 +961,9 @@ func (a *userSettings) makeCharacterTagsPage() (body fyne.CanvasObject, actions 
 	addTag.SetToolTip("Add new tag")
 	action := container.New(layout.NewCustomPaddedLayout(0, 0, 0, p), addTag)
 
+	if len(tags) > 0 {
+		tagList.Select(0)
+	}
 	return container.NewVSplit(container.NewPadded(tagList), manageCharacters), action
 }
 
