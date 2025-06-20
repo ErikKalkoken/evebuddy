@@ -346,7 +346,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 	}
 }
 
-func (a *industryJobs) makeDataList() *widget.List {
+func (a *industryJobs) makeDataList() *iwidget.StrippedList {
 	statusMap := map[app.IndustryJobStatus]fyne.Resource{
 		app.JobDelivered: theme.NewThemedResource(icons.IndydeliveredSvg),
 		app.JobPaused:    theme.NewWarningThemedResource(icons.IndyhaltedSvg),
@@ -361,8 +361,8 @@ func (a *industryJobs) makeDataList() *widget.List {
 		app.Invention:                  theme.NewThemedResource(icons.IndyinventionSvg),
 		app.Reactions:                  theme.NewThemedResource(icons.IndyreactionsSvg),
 	}
-	var l *widget.List
-	l = widget.NewList(
+	var l *iwidget.StrippedList
+	l = iwidget.NewStrippedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},

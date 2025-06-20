@@ -4,14 +4,12 @@ import (
 	"cmp"
 	"context"
 	"fmt"
-	"image/color"
 	"log/slog"
 	"slices"
 	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -177,10 +175,9 @@ func (a *characterWalletTransaction) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterWalletTransaction) makeDataList() *widget.List {
+func (a *characterWalletTransaction) makeDataList() *iwidget.StrippedList {
 	p := theme.Padding()
-	bgColor := theme.Color(theme.ColorNameInputBackground)
-	l := widget.NewList(
+	l := iwidget.NewStrippedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},
@@ -195,30 +192,18 @@ func (a *characterWalletTransaction) makeDataList() *widget.List {
 			amount.Alignment = fyne.TextAlignTrailing
 			location := widget.NewLabel("Template")
 			location.Truncation = fyne.TextTruncateClip
-			return container.NewStack(
-				canvas.NewRectangle(color.Transparent),
-				container.New(layout.NewCustomPaddedVBoxLayout(-p),
-					container.NewBorder(nil, nil, nil, amount, date),
-					container.NewBorder(nil, nil, nil, total, invType),
-					location,
-				))
+			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
+				container.NewBorder(nil, nil, nil, amount, date),
+				container.NewBorder(nil, nil, nil, total, invType),
+				location,
+			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id < 0 || id >= len(a.rowsFiltered) {
 				return
 			}
 			r := a.rowsFiltered[id]
-			x := co.(*fyne.Container).Objects
-
-			bg := x[0].(*canvas.Rectangle)
-			if id%2 == 0 {
-				bg.FillColor = bgColor
-			} else {
-				bg.FillColor = color.Transparent
-			}
-			bg.Refresh()
-
-			c := x[1].(*fyne.Container).Objects
+			c := co.(*fyne.Container).Objects
 
 			b0 := c[0].(*fyne.Container).Objects
 			b0[0].(*widget.Label).SetText(r.dateFormatted)

@@ -27,7 +27,7 @@ const (
 	navSeparator
 )
 
-// Navigation drawers let people switch between UI views on larger devices.
+// NavDrawer let people switch between UI views on larger devices.
 type NavDrawer struct {
 	widget.DisableableWidget
 

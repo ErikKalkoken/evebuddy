@@ -83,10 +83,10 @@ func newAssets(u *baseUI) *assets {
 		{Label: "Total", Width: 100},
 	}
 	a := &assets{
+		columnSorter: newColumnSorter(headers),
 		entry:        widget.NewEntry(),
 		found:        widget.NewLabel(""),
 		rowsFiltered: make([]assetRow, 0),
-		columnSorter: newColumnSorter(headers),
 		total:        makeTopLabel(),
 		u:            u,
 	}
@@ -178,9 +178,9 @@ func (a *assets) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *assets) makeDataList() *widget.List {
+func (a *assets) makeDataList() *iwidget.StrippedList {
 	p := theme.Padding()
-	l := widget.NewList(
+	l := iwidget.NewStrippedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},

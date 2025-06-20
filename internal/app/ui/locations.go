@@ -119,10 +119,10 @@ func (a *locations) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *locations) makeDataList() *widget.List {
+func (a *locations) makeDataList() *iwidget.StrippedList {
 	p := theme.Padding()
-	var l *widget.List
-	l = widget.NewList(
+	var l *iwidget.StrippedList
+	l = iwidget.NewStrippedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},

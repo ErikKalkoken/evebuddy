@@ -142,7 +142,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 			nil,
 		)
 	} else {
-		a.body = a.makeDataList(headers, makeCell)
+		a.body = a.makeDataTable(headers, makeCell)
 	}
 
 	a.selectFreeSlots = kxwidget.NewFilterChipSelect("Free slots", []string{
@@ -169,7 +169,7 @@ func (a *industrySlots) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *industrySlots) makeDataList(headers []headerDef, makeCell func(col int, r industrySlotRow) []widget.RichTextSegment) *widget.Table {
+func (a *industrySlots) makeDataTable(headers []headerDef, makeCell func(col int, r industrySlotRow) []widget.RichTextSegment) *widget.Table {
 	w := widget.NewTable(
 		func() (rows int, cols int) {
 			return len(a.rowsFiltered), 4
