@@ -220,7 +220,7 @@ const (
 	generalSectionDefaultTimeout = 24 * time.Hour
 )
 
-// A general section represents a topic that can be updated, e.g. market prices
+// GeneralSection represents a topic that can be updated, e.g. market prices
 type GeneralSection string
 
 const (
@@ -261,7 +261,7 @@ func (gs GeneralSection) Timeout() time.Duration {
 	return duration
 }
 
-// Updates status of a general section
+// GeneralSectionStatus represents the status of a general section.
 type GeneralSectionStatus struct {
 	ContentHash  string
 	ErrorMessage string

@@ -82,8 +82,8 @@ type Params struct {
 	StatusCacheService     *statuscacheservice.StatusCacheService
 	Storage                *storage.Storage
 	// optional
-	HttpClient *http.Client
-	EsiClient  *goesi.APIClient
+	HTTPClient *http.Client
+	ESIClient  *goesi.APIClient
 }
 
 // New creates a new character service and returns it.
@@ -97,15 +97,15 @@ func New(args Params) *CharacterService {
 		st:  args.Storage,
 		sfg: new(singleflight.Group),
 	}
-	if args.HttpClient == nil {
+	if args.HTTPClient == nil {
 		s.httpClient = http.DefaultClient
 	} else {
-		s.httpClient = args.HttpClient
+		s.httpClient = args.HTTPClient
 	}
-	if args.EsiClient == nil {
+	if args.ESIClient == nil {
 		s.esiClient = goesi.NewAPIClient(s.httpClient, "")
 	} else {
-		s.esiClient = args.EsiClient
+		s.esiClient = args.ESIClient
 	}
 	return s
 }
@@ -1365,7 +1365,7 @@ func (s *CharacterService) ListMailLists(ctx context.Context, characterID int32)
 	return s.st.ListCharacterMailListsOrdered(ctx, characterID)
 }
 
-// ListMailsForLabel returns a character's mails for a label in descending order by timestamp.
+// ListMailHeadersForLabelOrdered returns a character's mails for a label in descending order by timestamp.
 func (s *CharacterService) ListMailHeadersForLabelOrdered(ctx context.Context, characterID int32, labelID int32) ([]*app.CharacterMailHeader, error) {
 	return s.st.ListCharacterMailHeadersForLabelOrdered(ctx, characterID, labelID)
 }
@@ -2449,6 +2449,20 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 			}
 			return nil
 		})
+}
+
+// SkillInTraining returns the current skill in training or nil if training is not active
+func (s *CharacterService) SkillInTraining(ctx context.Context, characterID int32) (*app.CharacterSkillqueueItem, error) {
+	oo, err := s.st.ListCharacterSkillqueueItems(ctx, characterID)
+	if err != nil {
+		return nil, err
+	}
+	for _, o := range oo {
+		if o.IsActive() {
+			return o, nil
+		}
+	}
+	return nil, nil
 }
 
 // TotalTrainingTime returns the total remaining training time for a character.

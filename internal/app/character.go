@@ -25,7 +25,7 @@ import (
 	"golang.org/x/text/language"
 )
 
-// An Eve Online character owners by the user.
+// Character is an Eve Online character owned by the user.
 type Character struct {
 	AssetValue        optional.Optional[float64]
 	EveCharacter      *EveCharacter
@@ -244,7 +244,7 @@ const (
 	MailLabelAlliance = 8
 )
 
-// A mail label for an Eve mail belonging to a character.
+// CharacterMailLabel is a mail label for an EVE mail belonging to a character.
 type CharacterMailLabel struct {
 	ID          int64
 	CharacterID int32
@@ -254,7 +254,7 @@ type CharacterMailLabel struct {
 	UnreadCount int
 }
 
-// An Eve mail belonging to a character.
+// CharacterMail is an EVE mail belonging to a character.
 type CharacterMail struct {
 	Body        string
 	CharacterID int32
@@ -269,7 +269,7 @@ type CharacterMail struct {
 	Timestamp   time.Time
 }
 
-// An Eve mail header belonging to a character.
+// CharacterMailHeader is an EVE mail header belonging to a character.
 type CharacterMailHeader struct {
 	CharacterID int32
 	From        *EveEntity
@@ -421,7 +421,7 @@ type CharacterPlanet struct {
 func (cp CharacterPlanet) NameRichText() []widget.RichTextSegment {
 	return slices.Concat(
 		cp.EvePlanet.SolarSystem.SecurityStatusRichText(),
-		iwidget.NewRichTextSegmentFromText("  "+cp.EvePlanet.Name),
+		iwidget.RichTextSegmentsFromText("  "+cp.EvePlanet.Name),
 	)
 }
 
@@ -496,13 +496,13 @@ func (cp CharacterPlanet) IsExpired() bool {
 
 func (cp CharacterPlanet) DueRichText() []widget.RichTextSegment {
 	if cp.IsExpired() {
-		return iwidget.NewRichTextSegmentFromText("OFFLINE", widget.RichTextStyle{ColorName: theme.ColorNameError})
+		return iwidget.RichTextSegmentsFromText("OFFLINE", widget.RichTextStyle{ColorName: theme.ColorNameError})
 	}
 	due := cp.ExtractionsExpiryTime()
 	if due.IsZero() {
-		return iwidget.NewRichTextSegmentFromText("-")
+		return iwidget.RichTextSegmentsFromText("-")
 	}
-	return iwidget.NewRichTextSegmentFromText(due.Format(DateTimeFormat))
+	return iwidget.RichTextSegmentsFromText(due.Format(DateTimeFormat))
 }
 
 func extractedStringsSorted[T any](s []T, extract func(a T) string) []string {
@@ -695,6 +695,7 @@ func (qi CharacterSkillqueueItem) String() string {
 	return fmt.Sprintf("%s %s", qi.SkillName, ihumanize.RomanLetter(qi.FinishedLevel))
 }
 
+// IsActive reports whether a skill is active.
 func (qi CharacterSkillqueueItem) IsActive() bool {
 	now := time.Now()
 	return !qi.StartDate.IsZero() && qi.StartDate.Before(now) && qi.FinishDate.After(now)
@@ -742,7 +743,7 @@ func (qi CharacterSkillqueueItem) Remaining() optional.Optional[time.Duration] {
 	return optional.From(time.Duration(float64(d.ValueOrZero()) * remainingP))
 }
 
-// A SSO token belonging to a character in Eve Online.
+// CharacterToken is a SSO token belonging to a character in Eve Online.
 type CharacterToken struct {
 	AccessToken  string
 	CharacterID  int32
@@ -844,7 +845,7 @@ var group2Name = map[NotificationGroup]string{
 	GroupWar:            "War",
 }
 
-// Groups returns a slice of all normal groups in alphabetical order.
+// NotificationGroups returns a slice of all normal groups in alphabetical order.
 func NotificationGroups() []NotificationGroup {
 	return []NotificationGroup{
 		GroupBills,

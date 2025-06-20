@@ -30,16 +30,24 @@ const (
 )
 
 type headerDef struct {
-	Label       string
-	NotSortable bool
-	Refresh     bool
-	Width       float32
+	label       string
+	notSortable bool
+	refresh     bool
+	width       float32
+}
+
+func (h headerDef) Width() float32 {
+	if h.width > 0 {
+		return h.width
+	}
+	x := widget.NewLabel(h.label)
+	return x.MinSize().Width
 }
 
 func maxHeaderWidth(headers []headerDef) float32 {
 	var m float32
 	for _, h := range headers {
-		l := widget.NewLabel(h.Label)
+		l := widget.NewLabel(h.label)
 		m = max(l.MinSize().Width, m)
 	}
 	return m
@@ -97,7 +105,7 @@ func makeDataTable[S ~[]E, E any](
 
 		dir := columnSorter.column(tci.Col)
 		if dir == sortNone {
-			label.SetText(h.Label)
+			label.SetText(h.label)
 			label.Show()
 			actionLabel.Hide()
 			icon.Hide()
@@ -106,7 +114,7 @@ func makeDataTable[S ~[]E, E any](
 		actionLabel.OnTapped = func() {
 			filterRows(tci.Col)
 		}
-		actionLabel.SetText(h.Label)
+		actionLabel.SetText(h.label)
 		actionLabel.Show()
 		icon.Show()
 		label.Hide()
@@ -127,8 +135,9 @@ func makeDataTable[S ~[]E, E any](
 			onSelected(tci.Col, r)
 		}
 	}
+	w := theme.Padding() + theme.IconInlineSize()
 	for i, h := range headers {
-		t.SetColumnWidth(i, h.Width)
+		t.SetColumnWidth(i, h.Width()+w)
 	}
 	return t
 }
@@ -151,7 +160,7 @@ func makeDataList[S ~[]E, E any](
 			rowLayout := kxlayout.NewColumns(maxHeaderWidth(headers) + theme.Padding())
 			c := container.New(layout.NewCustomPaddedVBoxLayout(0))
 			for _, h := range headers {
-				row := container.New(rowLayout, widget.NewLabel(h.Label), iwidget.NewRichText())
+				row := container.New(rowLayout, widget.NewLabel(h.label), iwidget.NewRichText())
 				bg := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
 				bg.Hide()
 				c.Add(container.NewStack(bg, row))
@@ -265,7 +274,7 @@ func (cs *columnSorter) reset() {
 func (cs *columnSorter) clear() {
 	for i := range cs.cols {
 		var dir sortDir
-		if cs.headers[i].NotSortable {
+		if cs.headers[i].notSortable {
 			dir = sortNone
 		} else {
 			dir = sortOff
@@ -312,7 +321,7 @@ func (cs *columnSorter) sort(idx int, f func(sortCol int, dir sortDir)) {
 // newSortButton returns a new sortButton.
 func (cs *columnSorter) newSortButton(headers []headerDef, process func(), window fyne.Window, ignoredColumns ...int) *sortButton {
 	sortColumns := xslices.Map(headers, func(h headerDef) string {
-		return h.Label
+		return h.label
 	})
 	w := &sortButton{
 		sortColumns: sortColumns,
@@ -329,8 +338,8 @@ func (cs *columnSorter) newSortButton(headers []headerDef, process func(), windo
 		col, dir := cs.current()
 		var fields []string
 		for i, h := range headers {
-			if !h.NotSortable && !ignored.Contains(i) {
-				fields = append(fields, h.Label)
+			if !h.notSortable && !ignored.Contains(i) {
+				fields = append(fields, h.label)
 			}
 		}
 		radioCols := widget.NewRadioGroup(fields, nil)

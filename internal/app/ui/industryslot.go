@@ -55,11 +55,11 @@ type industrySlots struct {
 func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	const columnWidthNumber = 75
 	headers := []headerDef{
-		{Label: "Character", Width: columnWidthCharacter},
-		{Label: "Busy", Width: columnWidthNumber},
-		{Label: "Ready", Width: columnWidthNumber},
-		{Label: "Free", Width: columnWidthNumber},
-		{Label: "Total", Width: columnWidthNumber},
+		{label: "Character", width: columnWidthCharacter},
+		{label: "Busy", width: columnWidthNumber},
+		{label: "Ready", width: columnWidthNumber},
+		{label: "Free", width: columnWidthNumber},
+		{label: "Total", width: columnWidthNumber},
 	}
 	a := &industrySlots{
 		bottom:       makeTopLabel(),
@@ -74,11 +74,11 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 		switch col {
 		case 0:
 			if r.isSummary {
-				return iwidget.NewRichTextSegmentFromText("Totals", widget.RichTextStyle{
+				return iwidget.RichTextSegmentsFromText("Totals", widget.RichTextStyle{
 					TextStyle: fyne.TextStyle{Bold: true},
 				})
 			}
-			return iwidget.NewRichTextSegmentFromText(r.characterName)
+			return iwidget.RichTextSegmentsFromText(r.characterName)
 		case 1:
 			var c fyne.ThemeColorName
 			switch {
@@ -89,7 +89,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 			default:
 				c = theme.ColorNameWarning
 			}
-			return iwidget.NewRichTextSegmentFromText(fmt.Sprint(r.busy), widget.RichTextStyle{
+			return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.busy), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 				ColorName: c,
 				TextStyle: fyne.TextStyle{Bold: r.isSummary},
@@ -104,7 +104,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 			default:
 				c = theme.ColorNameForeground
 			}
-			return iwidget.NewRichTextSegmentFromText(fmt.Sprint(r.ready), widget.RichTextStyle{
+			return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.ready), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 				ColorName: c,
 				TextStyle: fyne.TextStyle{Bold: r.isSummary},
@@ -119,18 +119,18 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 			case r.free == 0:
 				c = theme.ColorNameError
 			}
-			return iwidget.NewRichTextSegmentFromText(fmt.Sprint(r.free), widget.RichTextStyle{
+			return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.free), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 				ColorName: c,
 				TextStyle: fyne.TextStyle{Bold: r.isSummary},
 			})
 		case 4:
-			return iwidget.NewRichTextSegmentFromText(fmt.Sprint(r.total), widget.RichTextStyle{
+			return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.total), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 				TextStyle: fyne.TextStyle{Bold: r.isSummary},
 			})
 		}
-		return iwidget.NewRichTextSegmentFromText("?")
+		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
 		a.body = makeDataTable(
@@ -191,7 +191,7 @@ func (a *industrySlots) makeDataTable(headers []headerDef, makeCell func(col int
 		return widget.NewLabel("")
 	}
 	w.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		co.(*widget.Label).SetText(headers[tci.Col].Label)
+		co.(*widget.Label).SetText(headers[tci.Col].label)
 	}
 	for id, width := range map[int]float32{
 		0: 175,

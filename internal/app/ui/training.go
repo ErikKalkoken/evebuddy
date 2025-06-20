@@ -31,16 +31,20 @@ const (
 )
 
 type trainingRow struct {
-	characterID          int32
-	characterName        string
-	tags                 set.Set[string]
-	totalSP              optional.Optional[int]
-	totalSPDisplay       string
-	training             optional.Optional[time.Duration]
-	trainingDisplay      []widget.RichTextSegment
-	unallocatedSP        optional.Optional[int]
-	unallocatedSPDisplay string
-	isActive             bool
+	characterID             int32
+	characterName           string
+	currentSkill            string
+	currentSkillDisplay     []widget.RichTextSegment
+	currentRemaining        optional.Optional[time.Duration]
+	currentRemainingDisplay []widget.RichTextSegment
+	isActive                bool
+	tags                    set.Set[string]
+	totalRemaining          optional.Optional[time.Duration]
+	totalRemainingDisplay   []widget.RichTextSegment
+	totalSP                 optional.Optional[int]
+	totalSPDisplay          string
+	unallocatedSP           optional.Optional[int]
+	unallocatedSPDisplay    string
 }
 
 type trainings struct {
@@ -59,10 +63,12 @@ type trainings struct {
 
 func newTrainings(u *baseUI) *trainings {
 	headers := []headerDef{
-		{Label: "Name", Width: 250},
-		{Label: "SP", Width: 100},
-		{Label: "Unall. SP", Width: 100},
-		{Label: "Training", Width: 100},
+		{label: "Name", width: 250},
+		{label: "SP", width: 75},
+		{label: "Unall. SP", width: 75},
+		{label: "Skill", width: 250},
+		{label: "Skill Remaining", width: 0},
+		{label: "Queue Remaining", width: 0},
 	}
 	a := &trainings{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
@@ -75,25 +81,29 @@ func newTrainings(u *baseUI) *trainings {
 	makeCell := func(col int, r trainingRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			return iwidget.NewRichTextSegmentFromText(r.characterName)
+			return iwidget.RichTextSegmentsFromText(r.characterName)
 		case 1:
-			return iwidget.NewRichTextSegmentFromText(
+			return iwidget.RichTextSegmentsFromText(
 				r.totalSPDisplay,
 				widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				},
 			)
 		case 2:
-			return iwidget.NewRichTextSegmentFromText(
+			return iwidget.RichTextSegmentsFromText(
 				r.unallocatedSPDisplay,
 				widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				},
 			)
 		case 3:
-			return r.trainingDisplay
+			return r.currentSkillDisplay
+		case 4:
+			return r.currentRemainingDisplay
+		case 5:
+			return r.totalRemainingDisplay
 		}
-		return iwidget.NewRichTextSegmentFromText("?")
+		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
 		a.body = makeDataTable(
@@ -165,7 +175,7 @@ func (a *trainings) makeDataList() *iwidget.StripedList {
 			r := a.rowsFiltered[id]
 			c := co.(*fyne.Container).Objects
 			c[0].(*widget.Label).SetText(r.characterName)
-			c[1].(*iwidget.RichText).Set(r.trainingDisplay)
+			c[1].(*iwidget.RichText).Set(r.totalRemainingDisplay)
 			c[2].(*widget.Label).SetText(fmt.Sprintf("%s (%s) SP", r.totalSPDisplay, r.unallocatedSPDisplay))
 		},
 	)
@@ -206,7 +216,11 @@ func (a *trainings) filterRows(sortCol int) {
 			case 2:
 				x = cmp.Compare(a.unallocatedSP.ValueOrZero(), b.unallocatedSP.ValueOrZero())
 			case 3:
-				x = cmp.Compare(a.training.ValueOrZero(), b.training.ValueOrZero())
+				x = strings.Compare(a.currentSkill, b.currentSkill)
+			case 4:
+				x = cmp.Compare(a.currentRemaining.ValueOrZero(), b.currentRemaining.ValueOrZero())
+			case 5:
+				x = cmp.Compare(a.totalRemaining.ValueOrZero(), b.totalRemaining.ValueOrZero())
 			}
 			if dir == sortAsc {
 				return x
@@ -283,28 +297,40 @@ func (*trainings) fetchRows(s services) ([]trainingRow, error) {
 		r.tags = set.Collect(xiter.MapSlice(tags, func(x *app.CharacterTag) string {
 			return x.Name
 		}))
-		trainingTime, err := s.cs.TotalTrainingTime(ctx, c.ID)
+		item, err := s.cs.SkillInTraining(ctx, c.ID)
 		if err != nil {
 			return nil, err
 		}
-		r.training = trainingTime
-		if x := r.training; x.IsEmpty() {
-			r.trainingDisplay = iwidget.NewRichTextSegmentFromText("?")
-		} else if x.ValueOrZero() == 0 {
-			r.trainingDisplay = iwidget.NewRichTextSegmentFromText(
+		if item != nil {
+			r.isActive = true
+			r.currentSkill = app.SkillDisplayName(item.SkillName, item.FinishedLevel)
+			r.currentSkillDisplay = iwidget.RichTextSegmentsFromText(r.currentSkill)
+			r.currentRemaining = item.Remaining()
+			r.currentRemainingDisplay = iwidget.RichTextSegmentsFromText(
+				ihumanize.Duration(item.Remaining().ValueOrZero()),
+			)
+		} else {
+			r.currentSkillDisplay = iwidget.RichTextSegmentsFromText(
 				"Inactive",
 				widget.RichTextStyle{
 					ColorName: theme.ColorNameWarning,
 				},
 			)
+			r.currentRemainingDisplay = iwidget.RichTextSegmentsFromText("N/A")
+		}
+		trainingTime, err := s.cs.TotalTrainingTime(ctx, c.ID)
+		if err != nil {
+			return nil, err
+		}
+		r.totalRemaining = trainingTime
+		if x := r.totalRemaining; !x.IsEmpty() && x.ValueOrZero() == 0 {
+			r.totalRemainingDisplay = iwidget.RichTextSegmentsFromText("N/A")
+		} else if x.IsEmpty() {
+			r.totalRemainingDisplay = iwidget.RichTextSegmentsFromText("?")
 		} else {
-			r.trainingDisplay = iwidget.NewRichTextSegmentFromText(
+			r.totalRemainingDisplay = iwidget.RichTextSegmentsFromText(
 				ihumanize.Duration(x.ValueOrZero()),
-				widget.RichTextStyle{
-					ColorName: theme.ColorNameSuccess,
-				},
 			)
-			r.isActive = true
 		}
 		rows[i] = r
 	}

@@ -71,16 +71,16 @@ type characters struct {
 
 func newOverviewCharacters(u *baseUI) *characters {
 	headers := []headerDef{
-		{Label: "Character", Width: columnWidthCharacter},
-		{Label: "Corporation", Width: 250},
-		{Label: "Alliance", Width: 250},
-		{Label: "Sec.", Width: 50},
-		{Label: "Unread", Width: 100},
-		{Label: "Wallet", Width: 100},
-		{Label: "Assets", Width: 100},
-		{Label: "Last Login", Width: 100},
-		{Label: "Home", Width: columnWidthLocation},
-		{Label: "Age", Width: 100},
+		{label: "Character", width: columnWidthCharacter},
+		{label: "Corporation", width: 250},
+		{label: "Alliance", width: 250},
+		{label: "Sec.", width: 50},
+		{label: "Unread", width: 100},
+		{label: "Wallet", width: 100},
+		{label: "Assets", width: 100},
+		{label: "Last Login", width: 100},
+		{label: "Home", width: columnWidthLocation},
+		{label: "Age", width: 100},
 	}
 	a := &characters{
 		columnSorter: newColumnSorter(headers),
@@ -92,15 +92,15 @@ func newOverviewCharacters(u *baseUI) *characters {
 	makeCell := func(col int, c characterRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			return iwidget.NewRichTextSegmentFromText(c.name)
+			return iwidget.RichTextSegmentsFromText(c.name)
 		case 1:
-			return iwidget.NewRichTextSegmentFromText(c.corporation.Name)
+			return iwidget.RichTextSegmentsFromText(c.corporation.Name)
 		case 2:
 			var s string
 			if c.alliance != nil {
 				s = c.alliance.Name
 			}
-			return iwidget.NewRichTextSegmentFromText(s)
+			return iwidget.RichTextSegmentsFromText(s)
 		case 3:
 			var color fyne.ThemeColorName
 			text := fmt.Sprintf("%.1f", c.security)
@@ -111,25 +111,25 @@ func newOverviewCharacters(u *baseUI) *characters {
 			} else {
 				color = theme.ColorNameForeground
 			}
-			return iwidget.NewRichTextSegmentFromText(text, widget.RichTextStyle{
+			return iwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
 				ColorName: color,
 			})
 		case 4:
-			return iwidget.NewRichTextSegmentFromText(ihumanize.Optional(c.unreadCount, "?"))
+			return iwidget.RichTextSegmentsFromText(ihumanize.Optional(c.unreadCount, "?"))
 		case 5:
-			return iwidget.NewRichTextSegmentFromText(ihumanize.OptionalWithDecimals(c.walletBalance, 1, "?"))
+			return iwidget.RichTextSegmentsFromText(ihumanize.OptionalWithDecimals(c.walletBalance, 1, "?"))
 		case 6:
-			return iwidget.NewRichTextSegmentFromText(ihumanize.OptionalWithDecimals(c.assetValue, 1, "?"))
+			return iwidget.RichTextSegmentsFromText(ihumanize.OptionalWithDecimals(c.assetValue, 1, "?"))
 		case 7:
-			return iwidget.NewRichTextSegmentFromText(ihumanize.Optional(c.lastLoginAt, "?"))
+			return iwidget.RichTextSegmentsFromText(ihumanize.Optional(c.lastLoginAt, "?"))
 		case 8:
 			if c.home != nil {
 				return c.home.DisplayRichText()
 			}
 		case 9:
-			return iwidget.NewRichTextSegmentFromText(humanize.RelTime(c.birthday, time.Now(), "", ""))
+			return iwidget.RichTextSegmentsFromText(humanize.RelTime(c.birthday, time.Now(), "", ""))
 		}
-		return iwidget.NewRichTextSegmentFromText("?")
+		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
 		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, oc characterRow) {

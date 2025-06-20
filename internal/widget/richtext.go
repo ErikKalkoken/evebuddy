@@ -9,7 +9,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func NewRichTextSegmentFromText(s string, style ...widget.RichTextStyle) []widget.RichTextSegment {
+func RichTextSegmentsFromText(s string, style ...widget.RichTextStyle) []widget.RichTextSegment {
 	seg := &widget.TextSegment{Text: s}
 	if len(style) > 0 {
 		seg.Style = style[0]
@@ -69,7 +69,7 @@ func NewRichText(segments ...widget.RichTextSegment) *RichText {
 }
 
 func NewRichTextWithText(text string) *RichText {
-	return NewRichText(NewRichTextSegmentFromText(text)...)
+	return NewRichText(RichTextSegmentsFromText(text)...)
 }
 
 func (w *RichText) Set(segments []widget.RichTextSegment) {
@@ -78,5 +78,5 @@ func (w *RichText) Set(segments []widget.RichTextSegment) {
 }
 
 func (w *RichText) SetWithText(text string) {
-	w.Set(NewRichTextSegmentFromText(text))
+	w.Set(RichTextSegmentsFromText(text))
 }

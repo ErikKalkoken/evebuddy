@@ -69,13 +69,13 @@ type colonies struct {
 
 func newColonies(u *baseUI) *colonies {
 	headers := []headerDef{
-		{Label: "Planet", Width: 150},
-		{Label: "Type", Width: 100},
-		{Label: "Extracting", Width: 200, NotSortable: true},
-		{Label: "Due", Width: 150},
-		{Label: "Producing", Width: 200, NotSortable: true},
-		{Label: "Region", Width: 150},
-		{Label: "Character", Width: columnWidthCharacter},
+		{label: "Planet", width: 150},
+		{label: "Type", width: 100},
+		{label: "Extracting", width: 200, notSortable: true},
+		{label: "Due", width: 150},
+		{label: "Producing", width: 200, notSortable: true},
+		{label: "Region", width: 150},
+		{label: "Character", width: columnWidthCharacter},
 	}
 	a := &colonies{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
@@ -91,19 +91,19 @@ func newColonies(u *baseUI) *colonies {
 		case 0:
 			return r.nameRT
 		case 1:
-			return iwidget.NewRichTextSegmentFromText(r.typeName)
+			return iwidget.RichTextSegmentsFromText(r.typeName)
 		case 2:
-			return iwidget.NewRichTextSegmentFromText(r.extractingText)
+			return iwidget.RichTextSegmentsFromText(r.extractingText)
 		case 3:
 			return r.dueRT
 		case 4:
-			return iwidget.NewRichTextSegmentFromText(r.producingText)
+			return iwidget.RichTextSegmentsFromText(r.producingText)
 		case 5:
-			return iwidget.NewRichTextSegmentFromText(r.regionName)
+			return iwidget.RichTextSegmentsFromText(r.regionName)
 		case 6:
-			return iwidget.NewRichTextSegmentFromText(r.ownerName)
+			return iwidget.RichTextSegmentsFromText(r.ownerName)
 		}
-		return iwidget.NewRichTextSegmentFromText("?")
+		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
 		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r colonyRow) {

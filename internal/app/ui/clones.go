@@ -78,11 +78,11 @@ type clones struct {
 
 func newClones(u *baseUI) *clones {
 	headers := []headerDef{
-		{Label: "Location", Width: columnWidthLocation},
-		{Label: "Region", Width: columnWidthRegion, NotSortable: true},
-		{Label: "Impl.", Width: 100},
-		{Label: "Character", Width: columnWidthCharacter},
-		{Label: "Jumps", Width: 100},
+		{label: "Location", width: columnWidthLocation},
+		{label: "Region", width: columnWidthRegion, notSortable: true},
+		{label: "Impl.", width: 100},
+		{label: "Character", width: columnWidthCharacter},
+		{label: "Jumps", width: 100},
 	}
 	a := &clones{
 		columnSorter: newColumnSorter(headers),
@@ -103,13 +103,13 @@ func newClones(u *baseUI) *clones {
 		case 0:
 			s = r.jc.Location.DisplayRichText()
 		case 1:
-			s = iwidget.NewRichTextSegmentFromText(r.jc.Location.RegionName())
+			s = iwidget.RichTextSegmentsFromText(r.jc.Location.RegionName())
 		case 2:
-			s = iwidget.NewRichTextSegmentFromText(fmt.Sprint(r.jc.ImplantsCount))
+			s = iwidget.RichTextSegmentsFromText(fmt.Sprint(r.jc.ImplantsCount))
 		case 3:
-			s = iwidget.NewRichTextSegmentFromText(r.jc.Character.Name)
+			s = iwidget.RichTextSegmentsFromText(r.jc.Character.Name)
 		case 4:
-			s = iwidget.NewRichTextSegmentFromText(r.jumps())
+			s = iwidget.RichTextSegmentsFromText(r.jumps())
 		}
 		return s
 	}
@@ -343,7 +343,7 @@ func (a *clones) updateRoutes() {
 		slog.Error("failed to fetch routes", "error", err)
 		fyne.Do(func() {
 			s := "Failed to fetch routes: " + a.u.humanizeError(err)
-			a.originLabel.Set(iwidget.NewRichTextSegmentFromText(s, widget.RichTextStyle{
+			a.originLabel.Set(iwidget.RichTextSegmentsFromText(s, widget.RichTextStyle{
 				ColorName: theme.ColorNameError,
 			}))
 		})
@@ -409,7 +409,7 @@ func (a *clones) setOrigin(w fyne.Window) {
 		a.routePref = app.EveRoutePreferenceFromString(routePref.Selected)
 		a.originLabel.Set(iwidget.InlineRichTextSegments(
 			s.DisplayRichTextWithRegion(),
-			iwidget.NewRichTextSegmentFromText(fmt.Sprintf(" [%s]", a.routePref.String())),
+			iwidget.RichTextSegmentsFromText(fmt.Sprintf(" [%s]", a.routePref.String())),
 		))
 		go a.updateRoutes()
 		d.Hide()

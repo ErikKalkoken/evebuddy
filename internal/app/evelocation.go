@@ -48,11 +48,11 @@ func (el EveLocation) DisplayRichText() []widget.RichTextSegment {
 		n = el.alternativeName()
 	}
 	if el.SolarSystem == nil {
-		return iwidget.NewRichTextSegmentFromText(n)
+		return iwidget.RichTextSegmentsFromText(n)
 	}
 	return slices.Concat(
 		el.SolarSystem.SecurityStatusRichText(),
-		iwidget.NewRichTextSegmentFromText(fmt.Sprintf("  %s", n)))
+		iwidget.RichTextSegmentsFromText(fmt.Sprintf("  %s", n)))
 }
 
 // DisplayName2 returns a user friendly name not including the system name.
@@ -164,7 +164,7 @@ func (l EveLocationShort) DisplayRichText() []widget.RichTextSegment {
 	if !l.SecurityStatus.IsEmpty() {
 		secValue := l.SecurityStatus.MustValue()
 		secType := NewSolarSystemSecurityTypeFromValue(secValue)
-		s = slices.Concat(s, iwidget.NewRichTextSegmentFromText(
+		s = slices.Concat(s, iwidget.RichTextSegmentsFromText(
 			fmt.Sprintf("%.1f", secValue),
 			widget.RichTextStyle{ColorName: secType.ToColorName(), Inline: true},
 		))
@@ -174,7 +174,7 @@ func (l EveLocationShort) DisplayRichText() []widget.RichTextSegment {
 		name += "   "
 	}
 	name += humanize.Optional(l.Name, "?")
-	s = slices.Concat(s, iwidget.NewRichTextSegmentFromText(name))
+	s = slices.Concat(s, iwidget.RichTextSegmentsFromText(name))
 	return s
 }
 

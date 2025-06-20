@@ -21,7 +21,7 @@ var _ fyne.Tappable = (*TappableRichText)(nil)
 var _ desktop.Hoverable = (*TappableRichText)(nil)
 
 func NewTappableRichTextWithText(text string, tapped func()) *TappableRichText {
-	w := NewTappableRichText(NewRichTextSegmentFromText(text), tapped)
+	w := NewTappableRichText(RichTextSegmentsFromText(text), tapped)
 	return w
 }
 

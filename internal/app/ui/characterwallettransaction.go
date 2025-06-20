@@ -65,13 +65,13 @@ type characterWalletTransaction struct {
 
 func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 	headers := []headerDef{
-		{Label: "Date", Width: 150},
-		{Label: "Qty.", Width: 75},
-		{Label: "Type", Width: 200},
-		{Label: "Unit Price", Width: 150},
-		{Label: "Total", Width: 150},
-		{Label: "Client", Width: 250},
-		{Label: "Where", Width: 350},
+		{label: "Date", width: 150},
+		{label: "Qty.", width: 75},
+		{label: "Type", width: 200},
+		{label: "Unit Price", width: 150},
+		{label: "Total", width: 150},
+		{label: "Client", width: 250},
+		{label: "Where", width: 350},
 	}
 	a := &characterWalletTransaction{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortDesc),
@@ -84,28 +84,28 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 	makeCell := func(col int, r walletTransactionRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			return iwidget.NewRichTextSegmentFromText(r.dateFormatted)
+			return iwidget.RichTextSegmentsFromText(r.dateFormatted)
 		case 1:
-			return iwidget.NewRichTextSegmentFromText(r.quantityDisplay,
+			return iwidget.RichTextSegmentsFromText(r.quantityDisplay,
 				widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				})
 		case 2:
-			return iwidget.NewRichTextSegmentFromText(r.typeName)
+			return iwidget.RichTextSegmentsFromText(r.typeName)
 		case 3:
-			return iwidget.NewRichTextSegmentFromText(
+			return iwidget.RichTextSegmentsFromText(
 				r.unitPriceDisplay,
 				widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				})
 		case 4:
-			return iwidget.NewRichTextSegmentFromText(r.totalFormatted)
+			return iwidget.RichTextSegmentsFromText(r.totalFormatted)
 		case 5:
-			return iwidget.NewRichTextSegmentFromText(r.clientName)
+			return iwidget.RichTextSegmentsFromText(r.clientName)
 		case 6:
 			return r.locationDisplay
 		}
-		return iwidget.NewRichTextSegmentFromText("?")
+		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
 		a.body = makeDataTable(
