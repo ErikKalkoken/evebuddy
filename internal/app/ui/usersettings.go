@@ -1208,7 +1208,7 @@ func NewSettingItemOptions(
 		},
 		onSelected: func(it SettingItem, refresh func()) {
 			sel := widget.NewRadioGroup(options, setter)
-			sel.SetSelected(it.Getter().(string))
+			sel.Selected = it.Getter().(string)
 			d := makeSettingDialog(
 				sel,
 				it.Label,

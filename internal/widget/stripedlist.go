@@ -10,16 +10,16 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// StrippedList is List with stripped rows.
-type StrippedList struct {
+// StripedList is List with stripped rows.
+type StripedList struct {
 	widget.List
 	bgColor color.Color
 
 	BackgroundColorName fyne.ThemeColorName
 }
 
-func NewStrippedList(length func() int, createItem func() fyne.CanvasObject, updateItem func(widget.ListItemID, fyne.CanvasObject)) *StrippedList {
-	w := &StrippedList{
+func NewStripedList(length func() int, createItem func() fyne.CanvasObject, updateItem func(widget.ListItemID, fyne.CanvasObject)) *StripedList {
+	w := &StripedList{
 		BackgroundColorName: theme.ColorNameInputBackground,
 	}
 	w.ExtendBaseWidget(w)
@@ -46,12 +46,12 @@ func NewStrippedList(length func() int, createItem func() fyne.CanvasObject, upd
 	return w
 }
 
-func (w *StrippedList) Refresh() {
+func (w *StripedList) Refresh() {
 	w.applyTheme()
 	w.List.Refresh()
 }
 
-func (w *StrippedList) applyTheme() {
+func (w *StripedList) applyTheme() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 	w.bgColor = th.Color(w.BackgroundColorName, v)

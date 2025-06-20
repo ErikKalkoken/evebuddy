@@ -178,9 +178,9 @@ func (a *assets) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *assets) makeDataList() *iwidget.StrippedList {
+func (a *assets) makeDataList() *iwidget.StripedList {
 	p := theme.Padding()
-	l := iwidget.NewStrippedList(
+	l := iwidget.NewStripedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},

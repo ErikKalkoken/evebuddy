@@ -128,9 +128,9 @@ func (a *characterWalletJournal) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterWalletJournal) makeDataList() *iwidget.StrippedList {
+func (a *characterWalletJournal) makeDataList() *iwidget.StripedList {
 	p := theme.Padding()
-	l := iwidget.NewStrippedList(
+	l := iwidget.NewStripedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},

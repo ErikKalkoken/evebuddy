@@ -383,13 +383,13 @@ func setupCrashFile(logDir string) (path string) {
 // It logs all HTTP errors and also the complete response when log level is DEBUG.
 func logResponse(l retryablehttp.Logger, r *http.Response) {
 	isDebug := slog.Default().Enabled(context.Background(), slog.LevelDebug)
-	isHttpError := r.StatusCode >= 400
-	if !isDebug && !isHttpError {
+	isHTTPError := r.StatusCode >= 400
+	if !isDebug && !isHTTPError {
 		return
 	}
 
 	var level slog.Level
-	if isHttpError {
+	if isHTTPError {
 		level = slog.LevelWarn
 	} else {
 		level = slog.LevelDebug
