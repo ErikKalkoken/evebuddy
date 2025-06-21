@@ -273,12 +273,6 @@ func (s *EveUniverseService) GetOrCreateCorporationESI(ctx context.Context, id i
 
 func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Context, id int32) (*app.EveCorporation, error) {
 	x, err, _ := s.sfg.Do(fmt.Sprintf("UpdateOrCreateCorporationFromESI-%d", id), func() (any, error) {
-		o, err := s.st.GetEveCorporation(ctx, id)
-		if err == nil {
-			return o, err
-		} else if !errors.Is(err, app.ErrNotFound) {
-			return nil, err
-		}
 		r, _, err := s.esiClient.ESI.CorporationApi.GetCorporationsCorporationId(ctx, id, nil)
 		if err != nil {
 			return nil, err

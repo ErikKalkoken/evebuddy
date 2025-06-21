@@ -18,42 +18,137 @@ func TestEveCorporation(t *testing.T) {
 	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
-	t.Run("can create new", func(t *testing.T) {
+	t.Run("can create new minimal", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		arg := storage.UpdateOrCreateEveCorporationParams{
-			ID:   1,
-			Name: "Alpha",
+			Description: "description",
+			ID:          42,
+			MemberCount: 888,
+			Name:        "name",
+			TaxRate:     0.12,
+			Ticker:      "ticker",
+			URL:         "url",
+			WarEligible: false,
 		}
 		// when
 		err := r.UpdateOrCreateEveCorporation(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			r, err := r.GetEveCorporation(ctx, arg.ID)
+			got, err := r.GetEveCorporation(ctx, arg.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, arg.Name, r.Name)
+				assert.Nil(t, got.Alliance)
+				assert.Nil(t, got.Faction)
+				assert.Nil(t, got.Ceo)
+				assert.Nil(t, got.Creator)
+				assert.Nil(t, got.HomeStation)
+				assert.EqualValues(t, arg.Description, got.Description)
+				assert.EqualValues(t, arg.ID, got.ID)
+				assert.EqualValues(t, arg.MemberCount, got.MemberCount)
+				assert.EqualValues(t, arg.Name, got.Name)
+				assert.EqualValues(t, arg.TaxRate, got.TaxRate)
+				assert.EqualValues(t, arg.Ticker, got.Ticker)
+				assert.EqualValues(t, arg.URL, got.URL)
+				assert.EqualValues(t, arg.WarEligible, got.WarEligible)
 			}
 		}
 	})
-	t.Run("can update existing", func(t *testing.T) {
+	t.Run("can create new full", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{MemberCount: 42})
-		ceo := factory.CreateEveEntityCharacter(app.EveEntity{ID: 180548812})
+		alliance := factory.CreateEveEntityAlliance()
+		faction := factory.CreateEveEntity()
+		station := factory.CreateEveEntity()
+		ceo := factory.CreateEveEntityCharacter()
+		creator := factory.CreateEveEntityCharacter()
+		dateFounded := factory.RandomTime()
 		arg := storage.UpdateOrCreateEveCorporationParams{
-			ID:          c1.ID,
-			MemberCount: 99,
-			CeoID:       optional.From(ceo.ID),
+			AllianceID:    optional.From(alliance.ID),
+			CeoID:         optional.From(ceo.ID),
+			CreatorID:     optional.From(creator.ID),
+			DateFounded:   optional.From(dateFounded),
+			Description:   "description",
+			FactionID:     optional.From(faction.ID),
+			HomeStationID: optional.From(station.ID),
+			ID:            42,
+			MemberCount:   888,
+			Name:          "name",
+			Shares:        optional.From(int64(987)),
+			TaxRate:       0.12,
+			Ticker:        "ticker",
+			URL:           "url",
+			WarEligible:   false,
 		}
 		// when
 		err := r.UpdateOrCreateEveCorporation(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			// assert.False(t, created)
-			r, err := r.GetEveCorporation(ctx, arg.ID)
+			got, err := r.GetEveCorporation(ctx, arg.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, 99, r.MemberCount)
-				assert.Equal(t, ceo, r.Ceo)
+				assert.Equal(t, alliance, got.Alliance)
+				assert.Equal(t, ceo, got.Ceo)
+				assert.Equal(t, creator, got.Creator)
+				assert.EqualValues(t, dateFounded, got.DateFounded.ValueOrZero())
+				assert.EqualValues(t, arg.Description, got.Description)
+				assert.Equal(t, faction, got.Faction)
+				assert.Equal(t, station, got.HomeStation)
+				assert.EqualValues(t, arg.ID, got.ID)
+				assert.EqualValues(t, arg.MemberCount, got.MemberCount)
+				assert.EqualValues(t, arg.Name, got.Name)
+				assert.EqualValues(t, arg.TaxRate, got.TaxRate)
+				assert.EqualValues(t, arg.Ticker, got.Ticker)
+				assert.EqualValues(t, arg.Shares.ValueOrZero(), got.Shares.ValueOrZero())
+				assert.EqualValues(t, arg.URL, got.URL)
+				assert.EqualValues(t, arg.WarEligible, got.WarEligible)
+			}
+		}
+	})
+	t.Run("can update existing full", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{
+			ID: 42,
+		})
+		alliance := factory.CreateEveEntityAlliance()
+		faction := factory.CreateEveEntity()
+		station := factory.CreateEveEntity()
+		ceo := factory.CreateEveEntityCharacter()
+		creator := factory.CreateEveEntityCharacter()
+		arg := storage.UpdateOrCreateEveCorporationParams{
+			AllianceID:    optional.From(alliance.ID),
+			CeoID:         optional.From(ceo.ID),
+			CreatorID:     optional.From(creator.ID),
+			Description:   "description",
+			FactionID:     optional.From(faction.ID),
+			HomeStationID: optional.From(station.ID),
+			ID:            42,
+			MemberCount:   888,
+			Name:          "name",
+			Shares:        optional.From(int64(987)),
+			TaxRate:       0.12,
+			Ticker:        "ticker",
+			URL:           "url",
+			WarEligible:   false,
+		}
+		// when
+		err := r.UpdateOrCreateEveCorporation(ctx, arg)
+		// then
+		if assert.NoError(t, err) {
+			got, err := r.GetEveCorporation(ctx, arg.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, alliance, got.Alliance)
+				assert.Equal(t, ceo, got.Ceo)
+				assert.EqualValues(t, arg.Description, got.Description)
+				assert.Equal(t, faction, got.Faction)
+				assert.Equal(t, station, got.HomeStation)
+				assert.EqualValues(t, arg.ID, got.ID)
+				assert.EqualValues(t, arg.MemberCount, got.MemberCount)
+				assert.EqualValues(t, arg.Name, got.Name)
+				assert.EqualValues(t, arg.TaxRate, got.TaxRate)
+				assert.EqualValues(t, arg.Ticker, got.Ticker)
+				assert.EqualValues(t, arg.Shares.ValueOrZero(), got.Shares.ValueOrZero())
+				assert.EqualValues(t, arg.URL, got.URL)
+				assert.EqualValues(t, arg.WarEligible, got.WarEligible)
 			}
 		}
 	})

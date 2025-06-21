@@ -1,4 +1,4 @@
-// Package factory contains factories for creating test objects in the repository
+// Package testutil contains factories for creating test objects in the repository
 package testutil
 
 import (
@@ -1928,39 +1928,39 @@ func (f *Factory) CreateToken(args ...app.Token) *app.Token {
 	return o
 }
 
-func (f *Factory) calcNewID(table, id_field string, start int64) int64 {
+func (f *Factory) calcNewID(table, idField string, start int64) int64 {
 	if start < 1 {
 		panic("start must be a positive number")
 	}
 	var vMax sql.NullInt64
-	if err := f.dbRO.QueryRow(fmt.Sprintf("SELECT MAX(%s) FROM %s;", id_field, table)).Scan(&vMax); err != nil {
+	if err := f.dbRO.QueryRow(fmt.Sprintf("SELECT MAX(%s) FROM %s;", idField, table)).Scan(&vMax); err != nil {
 		panic(err)
 	}
 	return max(vMax.Int64+1, start)
 }
 
-func (f *Factory) calcNewIDWithCharacter(table, id_field string, characterID int32) int64 {
+func (f *Factory) calcNewIDWithCharacter(table, idField string, characterID int32) int64 {
 	var max sql.NullInt64
-	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE character_id = ?;", id_field, table)
+	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE character_id = ?;", idField, table)
 	if err := f.dbRO.QueryRow(sql, characterID).Scan(&max); err != nil {
 		panic(err)
 	}
 	return max.Int64 + 1
 }
 
-func (f *Factory) calcNewIDWithCorporation(table, id_field string, corporationID int32) int64 {
+func (f *Factory) calcNewIDWithCorporation(table, idField string, corporationID int32) int64 {
 	var max sql.NullInt64
-	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE corporation_id = ?;", id_field, table)
+	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE corporation_id = ?;", idField, table)
 	if err := f.dbRO.QueryRow(sql, corporationID).Scan(&max); err != nil {
 		panic(err)
 	}
 	return max.Int64 + 1
 }
 
-func (f *Factory) calcNewIDWithParam(table, id_field, where_field string, where_value int64) int64 {
+func (f *Factory) calcNewIDWithParam(table, idField, whereField string, whereValue int64) int64 {
 	var max sql.NullInt64
-	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE %s = ?;", id_field, table, where_field)
-	if err := f.dbRO.QueryRow(sql, where_value).Scan(&max); err != nil {
+	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE %s = ?;", idField, table, whereField)
+	if err := f.dbRO.QueryRow(sql, whereValue).Scan(&max); err != nil {
 		panic(err)
 	}
 	return max.Int64 + 1
