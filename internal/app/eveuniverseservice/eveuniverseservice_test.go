@@ -303,6 +303,7 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 		if assert.NoError(t, err) {
 			x, err := st.GetEveCharacter(ctx, characterID)
 			if assert.NoError(t, err) {
+				assert.Equal(t, "CCP Bartender", x.Name)
 				assert.Equal(t, alliance, x.Alliance)
 				assert.Equal(t, corporation, x.Corporation)
 				assert.Equal(t, "bla bla", x.Description)

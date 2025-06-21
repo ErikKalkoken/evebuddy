@@ -12,22 +12,22 @@ import (
 )
 
 const createEveCharacter = `-- name: CreateEveCharacter :exec
-INSERT INTO eve_characters (
-    id,
-    alliance_id,
-    birthday,
-    corporation_id,
-    description,
-    faction_id,
-    gender,
-    name,
-    race_id,
-    security_status,
-    title
-)
-VALUES (
-    ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?
-)
+INSERT INTO
+    eve_characters (
+        id,
+        alliance_id,
+        birthday,
+        corporation_id,
+        description,
+        faction_id,
+        gender,
+        name,
+        race_id,
+        security_status,
+        title
+    )
+VALUES
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateEveCharacterParams struct {
@@ -63,7 +63,8 @@ func (q *Queries) CreateEveCharacter(ctx context.Context, arg CreateEveCharacter
 
 const deleteEveCharacter = `-- name: DeleteEveCharacter :exec
 DELETE FROM eve_characters
-WHERE id = ?
+WHERE
+    id = ?
 `
 
 func (q *Queries) DeleteEveCharacter(ctx context.Context, id int64) error {
@@ -80,12 +81,14 @@ SELECT
     eea.category as alliance_category,
     eef.name as faction_name,
     eef.category as faction_category
-FROM eve_characters ec
-JOIN eve_entities AS eec ON eec.id = ec.corporation_id
-JOIN eve_races er ON er.id = ec.race_id
-LEFT JOIN eve_entities as eea ON eea.id = ec.alliance_id
-LEFT JOIN eve_entities as eef ON eef.id = ec.faction_id
-WHERE ec.id = ?
+FROM
+    eve_characters ec
+    JOIN eve_entities AS eec ON eec.id = ec.corporation_id
+    JOIN eve_races er ON er.id = ec.race_id
+    LEFT JOIN eve_entities as eea ON eea.id = ec.alliance_id
+    LEFT JOIN eve_entities as eef ON eef.id = ec.faction_id
+WHERE
+    ec.id = ?
 `
 
 type GetEveCharacterRow struct {
@@ -128,8 +131,10 @@ func (q *Queries) GetEveCharacter(ctx context.Context, id int64) (GetEveCharacte
 }
 
 const listEveCharacterIDs = `-- name: ListEveCharacterIDs :many
-SELECT id
-FROM eve_characters
+SELECT
+    id
+FROM
+    eve_characters
 `
 
 func (q *Queries) ListEveCharacterIDs(ctx context.Context) ([]int64, error) {
@@ -165,7 +170,8 @@ SET
     name = ?,
     security_status = ?,
     title = ?
-WHERE id = ?
+WHERE
+    id = ?
 `
 
 type UpdateEveCharacterParams struct {
@@ -190,5 +196,23 @@ func (q *Queries) UpdateEveCharacter(ctx context.Context, arg UpdateEveCharacter
 		arg.Title,
 		arg.ID,
 	)
+	return err
+}
+
+const updateEveCharacterName = `-- name: UpdateEveCharacterName :exec
+UPDATE eve_characters
+SET
+    name = ?
+WHERE
+    id = ?
+`
+
+type UpdateEveCharacterNameParams struct {
+	Name string
+	ID   int64
+}
+
+func (q *Queries) UpdateEveCharacterName(ctx context.Context, arg UpdateEveCharacterNameParams) error {
+	_, err := q.db.ExecContext(ctx, updateEveCharacterName, arg.Name, arg.ID)
 	return err
 }

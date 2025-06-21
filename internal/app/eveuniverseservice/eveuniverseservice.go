@@ -14,6 +14,7 @@ import (
 
 	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
+	"github.com/icrowley/fake"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/singleflight"
 
@@ -159,6 +160,24 @@ func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, id int
 	return x.(*app.EveCharacter), nil
 }
 
+// ObfuscateAllCharacterNames randomizes the names of all characters.
+func (s *EveUniverseService) ObfuscateAllCharacterNames(ctx context.Context) error {
+	ids, err := s.st.ListEveCharacterIDs(ctx)
+	if err != nil {
+		return err
+	}
+	if ids.Size() == 0 {
+		return nil
+	}
+	for id := range ids.All() {
+		err := s.st.UpdateEveCharacterName(ctx, id, fake.FullName())
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // UpdateAllCharactersESI updates all known Eve characters from ESI.
 func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) error {
 	ids, err := s.st.ListEveCharacterIDs(ctx)
@@ -170,7 +189,6 @@ func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) error {
 	}
 	g := new(errgroup.Group)
 	for id := range ids.All() {
-		id := id
 		g.Go(func() error {
 			return s.updateCharacterESI(ctx, id)
 		})
@@ -228,6 +246,7 @@ func (s *EveUniverseService) updateCharacterESI(ctx context.Context, characterID
 		if err != nil {
 			return err
 		}
+		c.Name = r2.Name
 		c.Description = r2.Description
 		c.SecurityStatus = float64(r2.SecurityStatus)
 		c.Title = r2.Title
@@ -239,6 +258,7 @@ func (s *EveUniverseService) updateCharacterESI(ctx context.Context, characterID
 	if err := s.st.UpdateEveCharacter(ctx, c); err != nil {
 		return err
 	}
+	// TODO: Also update related EveEntity
 	slog.Info("Updated eve character from ESI", "characterID", c.ID)
 	return nil
 }
@@ -350,7 +370,7 @@ func (s *EveUniverseService) FetchCharacterCorporationHistory(ctx context.Contex
 	return s.makeMembershipHistory(ctx, items2)
 }
 
-// CharacterCorporationHistory returns a list of all the alliances a corporation has been a member of in descending order.
+// FetchCorporationAllianceHistory returns a list of all the alliances a corporation has been a member of in descending order.
 func (s *EveUniverseService) FetchCorporationAllianceHistory(ctx context.Context, corporationID int32) ([]app.MembershipHistoryItem, error) {
 	items, _, err := s.esiClient.ESI.CorporationApi.GetCorporationsCorporationIdAlliancehistory(ctx, corporationID, nil)
 	if err != nil {
