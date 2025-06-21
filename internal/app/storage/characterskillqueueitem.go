@@ -77,25 +77,41 @@ func createCharacterSkillqueueItem(ctx context.Context, q *queries.Queries, arg 
 }
 
 func (st *Storage) GetCharacterSkillqueueItem(ctx context.Context, characterID int32, pos int) (*app.CharacterSkillqueueItem, error) {
+	if characterID == 0 {
+		return nil, fmt.Errorf("GetCharacterSkillqueueItem: %w", app.ErrInvalid)
+	}
 	arg := queries.GetCharacterSkillqueueItemParams{
 		CharacterID:   int64(characterID),
 		QueuePosition: int64(pos),
 	}
-	row, err := st.qRO.GetCharacterSkillqueueItem(ctx, arg)
+	r, err := st.qRO.GetCharacterSkillqueueItem(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("get skill queue item for character %d: %w", characterID, convertGetError(err))
 	}
-	return skillqueueItemFromDBModel(row.CharacterSkillqueueItem, row.SkillName, row.GroupName, row.SkillDescription), err
+	return skillqueueItemFromDBModel(skillqueueItemFromDBModelParams{
+		description: r.SkillDescription,
+		groupName:   r.GroupName,
+		o:           r.CharacterSkillqueueItem,
+		skillName:   r.SkillName,
+	}), err
 }
 
 func (st *Storage) ListCharacterSkillqueueItems(ctx context.Context, characterID int32) ([]*app.CharacterSkillqueueItem, error) {
+	if characterID == 0 {
+		return nil, fmt.Errorf("ListCharacterSkillqueueItems: %w", app.ErrInvalid)
+	}
 	rows, err := st.qRO.ListCharacterSkillqueueItems(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list skill queue items for character %d: %w", characterID, err)
 	}
 	ii2 := make([]*app.CharacterSkillqueueItem, len(rows))
-	for i, row := range rows {
-		ii2[i] = skillqueueItemFromDBModel(row.CharacterSkillqueueItem, row.SkillName, row.GroupName, row.SkillDescription)
+	for i, r := range rows {
+		ii2[i] = skillqueueItemFromDBModel(skillqueueItemFromDBModelParams{
+			description: r.SkillDescription,
+			groupName:   r.GroupName,
+			o:           r.CharacterSkillqueueItem,
+			skillName:   r.SkillName,
+		})
 	}
 	return ii2, nil
 }
@@ -125,30 +141,38 @@ func (st *Storage) ReplaceCharacterSkillqueueItems(ctx context.Context, characte
 	return nil
 }
 
-func skillqueueItemFromDBModel(o queries.CharacterSkillqueueItem, skillName, groupName, description string) *app.CharacterSkillqueueItem {
+type skillqueueItemFromDBModelParams struct {
+	description string
+	groupName   string
+	o           queries.CharacterSkillqueueItem
+	skillName   string
+}
+
+func skillqueueItemFromDBModel(arg skillqueueItemFromDBModelParams) *app.CharacterSkillqueueItem {
 	i2 := &app.CharacterSkillqueueItem{
-		CharacterID:      int32(o.CharacterID),
-		GroupName:        groupName,
-		FinishedLevel:    int(o.FinishedLevel),
-		ID:               o.ID,
-		QueuePosition:    int(o.QueuePosition),
-		SkillName:        skillName,
-		SkillDescription: description,
+		CharacterID:      int32(arg.o.CharacterID),
+		GroupName:        arg.groupName,
+		FinishedLevel:    int(arg.o.FinishedLevel),
+		ID:               arg.o.ID,
+		QueuePosition:    int(arg.o.QueuePosition),
+		SkillID:          int32(arg.o.EveTypeID),
+		SkillName:        arg.skillName,
+		SkillDescription: arg.description,
 	}
-	if o.FinishDate.Valid {
-		i2.FinishDate = o.FinishDate.Time
+	if arg.o.FinishDate.Valid {
+		i2.FinishDate = arg.o.FinishDate.Time
 	}
-	if o.LevelEndSp.Valid {
-		i2.LevelEndSP = int(o.LevelEndSp.Int64)
+	if arg.o.LevelEndSp.Valid {
+		i2.LevelEndSP = int(arg.o.LevelEndSp.Int64)
 	}
-	if o.LevelStartSp.Valid {
-		i2.LevelStartSP = int(o.LevelStartSp.Int64)
+	if arg.o.LevelStartSp.Valid {
+		i2.LevelStartSP = int(arg.o.LevelStartSp.Int64)
 	}
-	if o.StartDate.Valid {
-		i2.StartDate = o.StartDate.Time
+	if arg.o.StartDate.Valid {
+		i2.StartDate = arg.o.StartDate.Time
 	}
-	if o.TrainingStartSp.Valid {
-		i2.TrainingStartSP = int(o.TrainingStartSp.Int64)
+	if arg.o.TrainingStartSp.Valid {
+		i2.TrainingStartSP = int(arg.o.TrainingStartSp.Int64)
 	}
 	return i2
 }

@@ -2,21 +2,18 @@ package app
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"iter"
 	"log/slog"
 	"maps"
 	"slices"
 	"strings"
-	"sync"
 	"time"
 	"unicode"
 
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -537,210 +534,6 @@ type CharacterShipAbility struct {
 	Type   EntityShort[int32]
 	Group  EntityShort[int32]
 	CanFly bool
-}
-
-type CharacterSkill struct {
-	ActiveSkillLevel   int
-	CharacterID        int32
-	EveType            *EveType
-	ID                 int64
-	SkillPointsInSkill int
-	TrainedSkillLevel  int
-}
-
-func SkillDisplayName[N int | int32 | int64 | uint | uint32 | uint64](name string, level N) string {
-	return fmt.Sprintf("%s %s", name, ihumanize.RomanLetter(level))
-}
-
-// CharacterActiveSkillLevel represents the active level of a character's skill.
-type CharacterActiveSkillLevel struct {
-	CharacterID int32
-	Level       int
-	TypeID      int32
-}
-
-type ListCharacterSkillGroupProgress struct {
-	GroupID   int32
-	GroupName string
-	Total     float64
-	Trained   float64
-}
-
-type ListSkillProgress struct {
-	ActiveSkillLevel  int
-	TrainedSkillLevel int
-	TypeID            int32
-	TypeDescription   string
-	TypeName          string
-}
-
-type CharacterShipSkill struct {
-	ActiveSkillLevel  optional.Optional[int]
-	ID                int64
-	CharacterID       int32
-	Rank              uint
-	ShipTypeID        int32
-	SkillTypeID       int32
-	SkillName         string
-	SkillLevel        uint
-	TrainedSkillLevel optional.Optional[int]
-}
-
-type CharacterServiceSkillqueue interface {
-	ListSkillqueueItems(context.Context, int32) ([]*CharacterSkillqueueItem, error)
-}
-
-// CharacterSkillqueue represents the skillqueue of a character.
-type CharacterSkillqueue struct {
-	mu          sync.RWMutex
-	characterID int32
-	items       []*CharacterSkillqueueItem
-}
-
-func NewCharacterSkillqueue() *CharacterSkillqueue {
-	sq := &CharacterSkillqueue{items: make([]*CharacterSkillqueueItem, 0)}
-	return sq
-}
-
-func (sq *CharacterSkillqueue) CharacterID() int32 {
-	return sq.characterID
-}
-
-func (sq *CharacterSkillqueue) Current() *CharacterSkillqueueItem {
-	sq.mu.RLock()
-	defer sq.mu.RUnlock()
-	for _, item := range sq.items {
-		if item.IsActive() {
-			return item
-		}
-	}
-	return nil
-}
-
-func (sq *CharacterSkillqueue) Completion() optional.Optional[float64] {
-	c := sq.Current()
-	if c == nil {
-		return optional.Optional[float64]{}
-	}
-	return optional.From(c.CompletionP())
-}
-
-func (sq *CharacterSkillqueue) IsActive() bool {
-	c := sq.Current()
-	if c == nil {
-		return false
-	}
-	return sq.Remaining().ValueOrZero() > 0
-}
-
-func (sq *CharacterSkillqueue) Item(id int) *CharacterSkillqueueItem {
-	sq.mu.RLock()
-	defer sq.mu.RUnlock()
-	if id < 0 || id >= len(sq.items) {
-		return nil
-	}
-	return sq.items[id]
-}
-
-func (sq *CharacterSkillqueue) Size() int {
-	sq.mu.RLock()
-	defer sq.mu.RUnlock()
-	return len(sq.items)
-}
-
-func (sq *CharacterSkillqueue) Remaining() optional.Optional[time.Duration] {
-	sq.mu.RLock()
-	defer sq.mu.RUnlock()
-	var r optional.Optional[time.Duration]
-	for _, item := range sq.items {
-		r = optional.From(r.ValueOrZero() + item.Remaining().ValueOrZero())
-	}
-	return r
-}
-
-func (sq *CharacterSkillqueue) Update(cs CharacterServiceSkillqueue, characterID int32) error {
-	var items []*CharacterSkillqueueItem
-	if characterID == 0 {
-		items = []*CharacterSkillqueueItem{}
-	} else {
-		var err error
-		items, err = cs.ListSkillqueueItems(context.Background(), characterID)
-		if err != nil {
-			return err
-		}
-	}
-	sq.mu.Lock()
-	defer sq.mu.Unlock()
-	sq.items = items
-	sq.characterID = characterID
-	return nil
-}
-
-type CharacterSkillqueueItem struct {
-	CharacterID      int32
-	GroupName        string
-	FinishDate       time.Time
-	FinishedLevel    int
-	LevelEndSP       int
-	LevelStartSP     int
-	ID               int64
-	QueuePosition    int
-	StartDate        time.Time
-	SkillName        string
-	SkillDescription string
-	TrainingStartSP  int
-}
-
-func (qi CharacterSkillqueueItem) String() string {
-	return fmt.Sprintf("%s %s", qi.SkillName, ihumanize.RomanLetter(qi.FinishedLevel))
-}
-
-// IsActive reports whether a skill is active.
-func (qi CharacterSkillqueueItem) IsActive() bool {
-	now := time.Now()
-	return !qi.StartDate.IsZero() && qi.StartDate.Before(now) && qi.FinishDate.After(now)
-}
-
-func (qi CharacterSkillqueueItem) IsCompleted() bool {
-	return qi.CompletionP() == 1
-}
-
-func (qi CharacterSkillqueueItem) CompletionP() float64 {
-	d := qi.Duration()
-	if d.IsEmpty() {
-		return 0
-	}
-	duration := d.ValueOrZero()
-	now := time.Now()
-	if qi.FinishDate.Before(now) {
-		return 1
-	}
-	if qi.StartDate.After(now) {
-		return 0
-	}
-	if duration == 0 {
-		return 0
-	}
-	remaining := qi.FinishDate.Sub(now)
-	c := remaining.Seconds() / duration.Seconds()
-	base := float64(qi.LevelEndSP-qi.TrainingStartSP) / float64(qi.LevelEndSP-qi.LevelStartSP)
-	return 1 - (c * base)
-}
-
-func (qi CharacterSkillqueueItem) Duration() optional.Optional[time.Duration] {
-	if qi.StartDate.IsZero() || qi.FinishDate.IsZero() {
-		return optional.Optional[time.Duration]{}
-	}
-	return optional.From(qi.FinishDate.Sub(qi.StartDate))
-}
-
-func (qi CharacterSkillqueueItem) Remaining() optional.Optional[time.Duration] {
-	if qi.StartDate.IsZero() || qi.FinishDate.IsZero() {
-		return optional.Optional[time.Duration]{}
-	}
-	remainingP := 1 - qi.CompletionP()
-	d := qi.Duration()
-	return optional.From(time.Duration(float64(d.ValueOrZero()) * remainingP))
 }
 
 // CharacterToken is a SSO token belonging to a character in Eve Online.

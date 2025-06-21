@@ -72,7 +72,7 @@ func newColonies(u *baseUI) *colonies {
 		{label: "Planet", width: 150},
 		{label: "Type", width: 100},
 		{label: "Extracting", width: 200, notSortable: true},
-		{label: "Due", width: 150},
+		{label: "Due", width: columnWidthDateTime},
 		{label: "Producing", width: 200, notSortable: true},
 		{label: "Region", width: 150},
 		{label: "Character", width: columnWidthCharacter},

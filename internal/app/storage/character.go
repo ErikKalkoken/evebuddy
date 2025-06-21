@@ -1,4 +1,4 @@
-// Package sqlite contains the logic for storing application data into a local SQLite database.
+// Package storage contains the logic for storing application data into a local SQLite database.
 package storage
 
 import (

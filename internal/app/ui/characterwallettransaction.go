@@ -65,13 +65,13 @@ type characterWalletTransaction struct {
 
 func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 	headers := []headerDef{
-		{label: "Date", width: 150},
+		{label: "Date", width: columnWidthDateTime},
 		{label: "Qty.", width: 75},
 		{label: "Type", width: 200},
 		{label: "Unit Price", width: 150},
 		{label: "Total", width: 150},
-		{label: "Client", width: 250},
-		{label: "Where", width: 350},
+		{label: "Client", width: columnWidthCharacter},
+		{label: "Where", width: columnWidthLocation},
 	}
 	a := &characterWalletTransaction{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortDesc),

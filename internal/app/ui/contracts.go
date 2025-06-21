@@ -77,7 +77,7 @@ func newContracts(u *baseUI) *contracts {
 		{label: "From", width: 150},
 		{label: "To", width: 150},
 		{label: "Status", width: 100},
-		{label: "Date Issued", width: 150},
+		{label: "Date Issued", width: columnWidthDateTime},
 		{label: "Time Left", width: 100},
 	}
 	a := &contracts{

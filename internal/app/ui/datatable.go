@@ -20,6 +20,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
+// width of common columns in data tables
+const (
+	columnWidthCharacter = 200
+	columnWidthDateTime  = 150
+	columnWidthLocation  = 350
+	columnWidthRegion    = 150
+)
+
 type sortDir uint
 
 const (

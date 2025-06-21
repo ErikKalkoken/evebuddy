@@ -2451,20 +2451,6 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 		})
 }
 
-// SkillInTraining returns the current skill in training or nil if training is not active
-func (s *CharacterService) SkillInTraining(ctx context.Context, characterID int32) (*app.CharacterSkillqueueItem, error) {
-	oo, err := s.st.ListCharacterSkillqueueItems(ctx, characterID)
-	if err != nil {
-		return nil, err
-	}
-	for _, o := range oo {
-		if o.IsActive() {
-			return o, nil
-		}
-	}
-	return nil, nil
-}
-
 // TotalTrainingTime returns the total remaining training time for a character.
 // It returns 0 when training is inactive.
 // It returns empty when the training status is unknown.
@@ -2507,6 +2493,15 @@ func (s *CharacterService) NotifyExpiredTraining(ctx context.Context, characterI
 }
 
 func (s *CharacterService) ListSkillqueueItems(ctx context.Context, characterID int32) ([]*app.CharacterSkillqueueItem, error) {
+	// status, err := s.st.GetCharacterSectionStatus(ctx, characterID, app.SectionSkillqueue)
+	// if errors.Is(err, app.ErrNotFound) {
+	// 	return []*app.CharacterSkillqueueItem{}, nil
+	// } else if err != nil {
+	// 	return nil, err
+	// }
+	// if status.IsMissing() {
+	// 	return []*app.CharacterSkillqueueItem{}, nil
+	// }
 	return s.st.ListCharacterSkillqueueItems(ctx, characterID)
 }
 

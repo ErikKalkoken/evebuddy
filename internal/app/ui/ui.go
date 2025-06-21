@@ -56,14 +56,6 @@ const (
 	downtimeDuration = 15 * time.Minute
 )
 
-// width of common columns in data tables
-const (
-	columnWidthCharacter = 200
-	columnWidthDateTime  = 150
-	columnWidthLocation  = 350
-	columnWidthRegion    = 150
-)
-
 // ticker
 const (
 	characterSectionsUpdateTicker = 60 * time.Second
@@ -1244,12 +1236,16 @@ func (u *baseUI) makeAboutPage() fyne.CanvasObject {
 }
 
 func (u *baseUI) makeDetailWindow(title, subTitle string, content fyne.CanvasObject) fyne.Window {
+	return u.makeDetailWindowWithSize(title, subTitle, fyne.NewSize(600, 500), content)
+}
+
+func (u *baseUI) makeDetailWindowWithSize(title, subTitle string, minSize fyne.Size, content fyne.CanvasObject) fyne.Window {
 	w := u.App().NewWindow(u.MakeWindowTitle(title))
 	t := widget.NewLabel(subTitle)
 	t.SizeName = theme.SizeNameSubHeadingText
 	top := container.NewVBox(t, widget.NewSeparator())
 	vs := container.NewVScroll(content)
-	vs.SetMinSize(fyne.NewSize(600, 500))
+	vs.SetMinSize(minSize)
 	c := container.NewBorder(
 		top,
 		nil,

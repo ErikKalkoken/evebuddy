@@ -77,8 +77,8 @@ func newAssets(u *baseUI) *assets {
 	headers := []headerDef{
 		{label: "Item", width: 300},
 		{label: "Class", width: 200},
-		{label: "Location", width: 350},
-		{label: "Owner", width: 200},
+		{label: "Location", width: columnWidthLocation},
+		{label: "Owner", width: columnWidthCharacter},
 		{label: "Qty.", width: 75},
 		{label: "Total", width: 100},
 	}
