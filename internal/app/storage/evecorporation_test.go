@@ -39,9 +39,11 @@ func TestEveCorporation(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c1 := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{MemberCount: 42})
+		ceo := factory.CreateEveEntityCharacter(app.EveEntity{ID: 180548812})
 		arg := storage.UpdateOrCreateEveCorporationParams{
 			ID:          c1.ID,
 			MemberCount: 99,
+			CeoID:       optional.From(ceo.ID),
 		}
 		// when
 		err := r.UpdateOrCreateEveCorporation(ctx, arg)
@@ -51,6 +53,7 @@ func TestEveCorporation(t *testing.T) {
 			r, err := r.GetEveCorporation(ctx, arg.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, 99, r.MemberCount)
+				assert.Equal(t, ceo, r.Ceo)
 			}
 		}
 	})
@@ -123,6 +126,21 @@ func TestEveCorporation(t *testing.T) {
 		if assert.NoError(t, err) {
 			want := set.Of(c1.ID, c2.ID)
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		}
+	})
+	t.Run("can update name", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateEveCorporation()
+		// when
+		err := r.UpdateEveCorporationName(ctx, c1.ID, "Alpha")
+		// then
+		if assert.NoError(t, err) {
+			// assert.False(t, created)
+			r, err := r.GetEveCorporation(ctx, c1.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, "Alpha", r.Name)
+			}
 		}
 	})
 }
