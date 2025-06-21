@@ -160,8 +160,8 @@ func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, id int
 	return x.(*app.EveCharacter), nil
 }
 
-// ObfuscateAllCharacterNames randomizes the names of all characters.
-func (s *EveUniverseService) ObfuscateAllCharacterNames(ctx context.Context) error {
+// RandomizeAllCharacterNames randomizes the names of all characters.
+func (s *EveUniverseService) RandomizeAllCharacterNames(ctx context.Context) error {
 	ids, err := s.st.ListEveCharacterIDs(ctx)
 	if err != nil {
 		return err
@@ -175,7 +175,7 @@ func (s *EveUniverseService) ObfuscateAllCharacterNames(ctx context.Context) err
 			return err
 		}
 	}
-	return nil
+	return s.scs.UpdateCharacters(ctx)
 }
 
 // UpdateAllCharactersESI updates all known Eve characters from ESI.
@@ -340,6 +340,24 @@ func (s *EveUniverseService) UpdateAllCorporationsESI(ctx context.Context) error
 	}
 	slog.Info("Finished updating eve corporations", "count", ids.Size())
 	return nil
+}
+
+// RandomizeAllCorporationName randomizes the names of all characters.
+func (s *EveUniverseService) RandomizeAllCorporationName(ctx context.Context) error {
+	ids, err := s.st.ListEveCorporationIDs(ctx)
+	if err != nil {
+		return err
+	}
+	if ids.Size() == 0 {
+		return nil
+	}
+	for id := range ids.All() {
+		err := s.st.UpdateEveCorporationName(ctx, id, fake.Company())
+		if err != nil {
+			return err
+		}
+	}
+	return s.scs.UpdateCorporations(ctx)
 }
 
 func (s *EveUniverseService) UpdateShipSkills(ctx context.Context) error {

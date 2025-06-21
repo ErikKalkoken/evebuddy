@@ -306,13 +306,19 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 			},
 		})
 		actions = append(actions, settingAction{
-			Label: "Randomize character names",
+			Label: "Randomize names",
 			Action: func() {
-				pg := kxmodal.NewProgressInfinite("Randomize character names", "Please wait...", func() error {
-					return a.u.eus.ObfuscateAllCharacterNames(context.Background())
+				pg := kxmodal.NewProgressInfinite("Randomize names", "Please wait...", func() error {
+					if err := a.u.eus.RandomizeAllCharacterNames(context.Background()); err != nil {
+						return err
+					}
+					if err := a.u.eus.RandomizeAllCorporationName(context.Background()); err != nil {
+						return err
+					}
+					return nil
 				}, a.w)
 				pg.OnError = func(err error) {
-					a.reportError("Failed to randomize characters", err)
+					a.reportError("Failed to randomize names", err)
 				}
 				pg.OnSuccess = func() {
 					a.u.updateCrossPages()
@@ -322,10 +328,11 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 			},
 		})
 		actions = append(actions, settingAction{
-			Label: "Restore character names",
+			Label: "Restore names",
 			Action: func() {
-				pg := kxmodal.NewProgressInfinite("Restore character names", "Please wait...", func() error {
+				pg := kxmodal.NewProgressInfinite("Restore names", "Please wait...", func() error {
 					a.u.updateGeneralSectionAndRefreshIfNeeded(context.Background(), app.SectionEveCharacters, true)
+					a.u.updateGeneralSectionAndRefreshIfNeeded(context.Background(), app.SectionEveCorporations, true)
 					return nil
 				}, a.w)
 				pg.OnSuccess = func() {
