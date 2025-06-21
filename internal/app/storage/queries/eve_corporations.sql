@@ -78,3 +78,10 @@ SET
     ticker = ?13,
     url = ?14,
     war_eligible = ?15;
+
+-- name: UpdateEveCorporationName :exec
+UPDATE eve_corporations
+SET
+    name = ?
+WHERE
+    id = ?;

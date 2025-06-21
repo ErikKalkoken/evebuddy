@@ -61,6 +61,7 @@ func listCharacterJumpCloneImplants(ctx context.Context, q *queries.Queries, clo
 }
 
 // TODO: Refactor SQL for better performance
+
 func (st *Storage) ListAllCharacterJumpClones(ctx context.Context) ([]*app.CharacterJumpClone2, error) {
 	rows, err := st.qRO.ListAllCharacterJumpClones(ctx)
 	if err != nil {

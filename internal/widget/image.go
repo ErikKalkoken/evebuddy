@@ -9,7 +9,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
-// Default ScaleMode for images
+// DefaultImageScaleMode for images
 var DefaultImageScaleMode canvas.ImageScale
 
 // NewImageFromResource creates an canvas.Image with defaults.

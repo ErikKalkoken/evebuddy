@@ -4,14 +4,12 @@ import (
 	"cmp"
 	"context"
 	"fmt"
-	"image/color"
 	"log/slog"
 	"slices"
 	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -66,11 +64,11 @@ type characterWalletJournal struct {
 
 func newCharacterWalletJournal(u *baseUI) *characterWalletJournal {
 	headers := []headerDef{
-		{Label: "Date", Width: 150},
-		{Label: "Type", Width: 150},
-		{Label: "Amount", Width: 200},
-		{Label: "Balance", Width: 200, NotSortable: true},
-		{Label: "Description", Width: 450, NotSortable: true},
+		{label: "Date", width: 150},
+		{label: "Type", width: 150},
+		{label: "Amount", width: 200},
+		{label: "Balance", width: 200, notSortable: true},
+		{label: "Description", width: 450, notSortable: true},
 	}
 	a := &characterWalletJournal{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortDesc),
@@ -82,22 +80,22 @@ func newCharacterWalletJournal(u *baseUI) *characterWalletJournal {
 	makeCell := func(col int, r walletJournalRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			return iwidget.NewRichTextSegmentFromText(r.dateFormatted)
+			return iwidget.RichTextSegmentsFromText(r.dateFormatted)
 		case 1:
-			return iwidget.NewRichTextSegmentFromText(r.refTypeDisplay)
+			return iwidget.RichTextSegmentsFromText(r.refTypeDisplay)
 		case 2:
 			return r.amountDisplay
 		case 3:
-			return iwidget.NewRichTextSegmentFromText(
+			return iwidget.RichTextSegmentsFromText(
 				humanize.FormatFloat(app.FloatFormat, r.balance),
 				widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				},
 			)
 		case 4:
-			return iwidget.NewRichTextSegmentFromText(r.descriptionWithReason())
+			return iwidget.RichTextSegmentsFromText(r.descriptionWithReason())
 		}
-		return iwidget.NewRichTextSegmentFromText("?")
+		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
 		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r walletJournalRow) {
@@ -130,10 +128,9 @@ func (a *characterWalletJournal) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterWalletJournal) makeDataList() *widget.List {
+func (a *characterWalletJournal) makeDataList() *iwidget.StripedList {
 	p := theme.Padding()
-	bgColor := theme.Color(theme.ColorNameInputBackground)
-	l := widget.NewList(
+	l := iwidget.NewStripedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},
@@ -148,31 +145,18 @@ func (a *characterWalletJournal) makeDataList() *widget.List {
 			value.Alignment = fyne.TextAlignTrailing
 			description := widget.NewLabel("Template")
 			description.Truncation = fyne.TextTruncateClip
-			return container.NewStack(
-				canvas.NewRectangle(color.Transparent),
-				container.New(layout.NewCustomPaddedVBoxLayout(-p),
-					container.NewBorder(nil, nil, nil, value, date),
-					container.NewBorder(nil, nil, nil, balance, refType),
-					description,
-				))
+			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
+				container.NewBorder(nil, nil, nil, value, date),
+				container.NewBorder(nil, nil, nil, balance, refType),
+				description,
+			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id < 0 || id >= len(a.rowsFiltered) {
 				return
 			}
 			r := a.rowsFiltered[id]
-
-			x := co.(*fyne.Container).Objects
-
-			bg := x[0].(*canvas.Rectangle)
-			if id%2 == 0 {
-				bg.FillColor = bgColor
-			} else {
-				bg.FillColor = color.Transparent
-			}
-			bg.Refresh()
-
-			c := x[1].(*fyne.Container).Objects
+			c := co.(*fyne.Container).Objects
 
 			b0 := c[0].(*fyne.Container).Objects
 			b0[0].(*widget.Label).SetText(r.dateFormatted)
@@ -299,7 +283,7 @@ func (*characterWalletJournal) fetchRows(characterID int32, s services) ([]walle
 		default:
 			color = theme.ColorNameForeground
 		}
-		r.amountDisplay = iwidget.NewRichTextSegmentFromText(
+		r.amountDisplay = iwidget.RichTextSegmentsFromText(
 			r.amountFormatted,
 			widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,

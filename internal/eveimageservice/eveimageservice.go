@@ -29,12 +29,12 @@ const (
 )
 
 var (
-	ErrHttpError   = errors.New("http error")
+	ErrHTTPError   = errors.New("http error")
 	ErrNoImage     = errors.New("no image from API")
 	ErrInvalidSize = errors.New("invalid size")
 )
 
-// Defines a cache service
+// CacheService defines a cache service
 type CacheService interface {
 	Clear()
 	Get(string) ([]byte, bool)
@@ -59,23 +59,23 @@ func New(cache CacheService, httpClient *http.Client, isOffline bool) *EveImageS
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
-	m := &EveImageService{
+	s := &EveImageService{
 		cache:      cache,
 		httpClient: httpClient,
 		isOffline:  isOffline,
 		sfg:        new(singleflight.Group),
 	}
-	return m
+	return s
 }
 
 // ClearCache clears the images cache and returns the number of deleted entries.
-func (m *EveImageService) ClearCache() error {
-	m.cache.Clear()
+func (s *EveImageService) ClearCache() error {
+	s.cache.Clear()
 	return nil
 }
 
 // AllianceLogo returns the logo for an alliance.
-func (m *EveImageService) AllianceLogo(id int32, size int) (fyne.Resource, error) {
+func (s *EveImageService) AllianceLogo(id int32, size int) (fyne.Resource, error) {
 	url, err := AllianceLogoURL(id, size)
 	if err != nil {
 		if errors.Is(err, ErrInvalidSize) {
@@ -83,11 +83,11 @@ func (m *EveImageService) AllianceLogo(id int32, size int) (fyne.Resource, error
 		}
 		return nil, err
 	}
-	return m.image(url, timeoutAlliance)
+	return s.image(url, timeoutAlliance)
 }
 
 // CharacterPortrait returns the portrait for a character.
-func (m *EveImageService) CharacterPortrait(id int32, size int) (fyne.Resource, error) {
+func (s *EveImageService) CharacterPortrait(id int32, size int) (fyne.Resource, error) {
 	url, err := CharacterPortraitURL(id, size)
 	if err != nil {
 		if errors.Is(err, ErrInvalidSize) {
@@ -95,11 +95,11 @@ func (m *EveImageService) CharacterPortrait(id int32, size int) (fyne.Resource, 
 		}
 		return nil, err
 	}
-	return m.image(url, timeoutCharacter)
+	return s.image(url, timeoutCharacter)
 }
 
 // CorporationLogo returns the logo for a corporation.
-func (m *EveImageService) CorporationLogo(id int32, size int) (fyne.Resource, error) {
+func (s *EveImageService) CorporationLogo(id int32, size int) (fyne.Resource, error) {
 	url, err := CorporationLogoURL(id, size)
 	if err != nil {
 		if errors.Is(err, ErrInvalidSize) {
@@ -107,11 +107,11 @@ func (m *EveImageService) CorporationLogo(id int32, size int) (fyne.Resource, er
 		}
 		return nil, err
 	}
-	return m.image(url, timeoutCorporation)
+	return s.image(url, timeoutCorporation)
 }
 
 // FactionLogo returns the logo for a faction.
-func (m *EveImageService) FactionLogo(id int32, size int) (fyne.Resource, error) {
+func (s *EveImageService) FactionLogo(id int32, size int) (fyne.Resource, error) {
 	url, err := FactionLogoURL(id, size)
 	if err != nil {
 		if errors.Is(err, ErrInvalidSize) {
@@ -119,11 +119,11 @@ func (m *EveImageService) FactionLogo(id int32, size int) (fyne.Resource, error)
 		}
 		return nil, err
 	}
-	return m.image(url, timeoutNeverExpire)
+	return s.image(url, timeoutNeverExpire)
 }
 
 // InventoryTypeRender returns the render for a type. Note that not ever type has a render.
-func (m *EveImageService) InventoryTypeRender(id int32, size int) (fyne.Resource, error) {
+func (s *EveImageService) InventoryTypeRender(id int32, size int) (fyne.Resource, error) {
 	url, err := InventoryTypeRenderURL(id, size)
 	if err != nil {
 		if errors.Is(err, ErrInvalidSize) {
@@ -131,11 +131,11 @@ func (m *EveImageService) InventoryTypeRender(id int32, size int) (fyne.Resource
 		}
 		return nil, err
 	}
-	return m.image(url, timeoutNeverExpire)
+	return s.image(url, timeoutNeverExpire)
 }
 
 // InventoryTypeIcon returns the icon for a type.
-func (m *EveImageService) InventoryTypeIcon(id int32, size int) (fyne.Resource, error) {
+func (s *EveImageService) InventoryTypeIcon(id int32, size int) (fyne.Resource, error) {
 	url, err := InventoryTypeIconURL(id, size)
 	if err != nil {
 		if errors.Is(err, ErrInvalidSize) {
@@ -143,11 +143,11 @@ func (m *EveImageService) InventoryTypeIcon(id int32, size int) (fyne.Resource, 
 		}
 		return nil, err
 	}
-	return m.image(url, timeoutNeverExpire)
+	return s.image(url, timeoutNeverExpire)
 }
 
 // InventoryTypeBPO returns the icon for a BPO type.
-func (m *EveImageService) InventoryTypeBPO(id int32, size int) (fyne.Resource, error) {
+func (s *EveImageService) InventoryTypeBPO(id int32, size int) (fyne.Resource, error) {
 	url, err := InventoryTypeBPOURL(id, size)
 	if err != nil {
 		if errors.Is(err, ErrInvalidSize) {
@@ -155,11 +155,11 @@ func (m *EveImageService) InventoryTypeBPO(id int32, size int) (fyne.Resource, e
 		}
 		return nil, err
 	}
-	return m.image(url, timeoutNeverExpire)
+	return s.image(url, timeoutNeverExpire)
 }
 
 // InventoryTypeBPC returns the icon for a BPC type.
-func (m *EveImageService) InventoryTypeBPC(id int32, size int) (fyne.Resource, error) {
+func (s *EveImageService) InventoryTypeBPC(id int32, size int) (fyne.Resource, error) {
 	url, err := InventoryTypeBPCURL(id, size)
 	if err != nil {
 		if errors.Is(err, ErrInvalidSize) {
@@ -167,11 +167,11 @@ func (m *EveImageService) InventoryTypeBPC(id int32, size int) (fyne.Resource, e
 		}
 		return nil, err
 	}
-	return m.image(url, timeoutNeverExpire)
+	return s.image(url, timeoutNeverExpire)
 }
 
 // InventoryTypeSKIN returns the icon for a SKIN type.
-func (m *EveImageService) InventoryTypeSKIN(id int32, size int) (fyne.Resource, error) {
+func (s *EveImageService) InventoryTypeSKIN(id int32, size int) (fyne.Resource, error) {
 	if size != 64 {
 		return nil, ErrInvalidSize
 	}
@@ -204,21 +204,21 @@ func (s *EveImageService) EntityIcon(id int32, category string, size int) (fyne.
 
 // image returns an Eve image as fyne resource.
 // It returns it from cache or - if not found - will try to fetch it from the Internet.
-func (m *EveImageService) image(url string, timeout time.Duration) (fyne.Resource, error) {
+func (s *EveImageService) image(url string, timeout time.Duration) (fyne.Resource, error) {
 	key := "eveimage-" + makeMD5Hash(url)
 	var dat []byte
 	var found bool
-	dat, found = m.cache.Get(key)
+	dat, found = s.cache.Get(key)
 	if !found {
-		if m.isOffline {
+		if s.isOffline {
 			return resourceQuestionmark32Png, nil
 		}
-		x, err, _ := m.sfg.Do(key, func() (any, error) {
-			byt, err := loadDataFromURL(url, m.httpClient)
+		x, err, _ := s.sfg.Do(key, func() (any, error) {
+			byt, err := loadDataFromURL(url, s.httpClient)
 			if err != nil {
 				return nil, err
 			}
-			m.cache.Set(key, byt, timeout)
+			s.cache.Set(key, byt, timeout)
 			return byt, nil
 		})
 		if err != nil {

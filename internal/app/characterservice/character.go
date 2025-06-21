@@ -82,8 +82,8 @@ type Params struct {
 	StatusCacheService     *statuscacheservice.StatusCacheService
 	Storage                *storage.Storage
 	// optional
-	HttpClient *http.Client
-	EsiClient  *goesi.APIClient
+	HTTPClient *http.Client
+	ESIClient  *goesi.APIClient
 }
 
 // New creates a new character service and returns it.
@@ -97,15 +97,15 @@ func New(args Params) *CharacterService {
 		st:  args.Storage,
 		sfg: new(singleflight.Group),
 	}
-	if args.HttpClient == nil {
+	if args.HTTPClient == nil {
 		s.httpClient = http.DefaultClient
 	} else {
-		s.httpClient = args.HttpClient
+		s.httpClient = args.HTTPClient
 	}
-	if args.EsiClient == nil {
+	if args.ESIClient == nil {
 		s.esiClient = goesi.NewAPIClient(s.httpClient, "")
 	} else {
-		s.esiClient = args.EsiClient
+		s.esiClient = args.ESIClient
 	}
 	return s
 }
@@ -1365,7 +1365,7 @@ func (s *CharacterService) ListMailLists(ctx context.Context, characterID int32)
 	return s.st.ListCharacterMailListsOrdered(ctx, characterID)
 }
 
-// ListMailsForLabel returns a character's mails for a label in descending order by timestamp.
+// ListMailHeadersForLabelOrdered returns a character's mails for a label in descending order by timestamp.
 func (s *CharacterService) ListMailHeadersForLabelOrdered(ctx context.Context, characterID int32, labelID int32) ([]*app.CharacterMailHeader, error) {
 	return s.st.ListCharacterMailHeadersForLabelOrdered(ctx, characterID, labelID)
 }
@@ -1527,7 +1527,11 @@ func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.Chara
 		func(ctx context.Context, characterID int32, data any) error {
 			lists := data.([]esi.GetCharactersCharacterIdMailLists200Ok)
 			for _, o := range lists {
-				_, err := s.st.UpdateOrCreateEveEntity(ctx, o.MailingListId, o.Name, app.EveEntityMailList)
+				_, err := s.st.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
+					ID:       o.MailingListId,
+					Name:     o.Name,
+					Category: app.EveEntityMailList,
+				})
 				if err != nil {
 					return err
 				}
@@ -2493,6 +2497,15 @@ func (s *CharacterService) NotifyExpiredTraining(ctx context.Context, characterI
 }
 
 func (s *CharacterService) ListSkillqueueItems(ctx context.Context, characterID int32) ([]*app.CharacterSkillqueueItem, error) {
+	// status, err := s.st.GetCharacterSectionStatus(ctx, characterID, app.SectionSkillqueue)
+	// if errors.Is(err, app.ErrNotFound) {
+	// 	return []*app.CharacterSkillqueueItem{}, nil
+	// } else if err != nil {
+	// 	return nil, err
+	// }
+	// if status.IsMissing() {
+	// 	return []*app.CharacterSkillqueueItem{}, nil
+	// }
 	return s.st.ListCharacterSkillqueueItems(ctx, characterID)
 }
 

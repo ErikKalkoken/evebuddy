@@ -305,6 +305,55 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 				a.sb.Show("This is a test")
 			},
 		})
+		actions = append(actions, settingAction{
+			Label: "Randomize names",
+			Action: func() {
+				pg := kxmodal.NewProgressInfinite("Randomize names", "Please wait...", func() error {
+					ctx := context.Background()
+					if err := a.u.eus.RandomizeAllCharacterNames(ctx); err != nil {
+						return err
+					}
+					if err := a.u.eus.RandomizeAllCorporationNames(ctx); err != nil {
+						return err
+					}
+					if err := a.u.eus.RandomizeAllAllianceNames(ctx); err != nil {
+						return err
+					}
+					return nil
+				}, a.w)
+				pg.OnError = func(err error) {
+					a.reportError("Failed to randomize names", err)
+				}
+				pg.OnSuccess = func() {
+					a.u.updateCrossPages()
+					a.u.updateCharacter()
+				}
+				pg.Start()
+			},
+		})
+		actions = append(actions, settingAction{
+			Label: "Restore names",
+			Action: func() {
+				pg := kxmodal.NewProgressInfinite("Restore names", "Please wait...", func() error {
+					ctx := context.Background()
+					if err := a.u.eus.UpdateAllCharactersESI(ctx); err != nil {
+						return err
+					}
+					if err := a.u.eus.UpdateAllCorporationsESI(ctx); err != nil {
+						return err
+					}
+					if err := a.u.eus.UpdateAllEntitiesESI(ctx); err != nil {
+						return err
+					}
+					return nil
+				}, a.w)
+				pg.OnSuccess = func() {
+					a.u.updateCrossPages()
+					a.u.updateCharacter()
+				}
+				pg.Start()
+			},
+		})
 	}
 	return list, makeIconButtonFromActions(actions)
 }
@@ -640,6 +689,11 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 	return list, makeIconButtonFromActions([]settingAction{reset, all, none, send})
 }
 
+func (a *userSettings) reportError(text string, err error) {
+	slog.Error(text, "error", err)
+	a.sb.Show(fmt.Sprintf("ERROR: %s: %s", text, err))
+}
+
 type characterTags struct {
 	widget.BaseWidget
 
@@ -723,7 +777,7 @@ func (a *characterTags) makeAddCharacterButton() *iwidget.TappableIcon {
 		}
 		_, others, err := a.us.u.cs.ListCharactersForTag(context.Background(), a.selectedTag.ID)
 		if err != nil {
-			a.reportError("Failed to list characters", err)
+			a.us.reportError("Failed to list characters", err)
 			a.characters = make([]*app.EntityShort[int32], 0)
 			return
 		}
@@ -803,7 +857,7 @@ func (a *characterTags) makeAddCharacterButton() *iwidget.TappableIcon {
 						a.selectedTag.ID,
 					)
 					if err != nil {
-						a.reportError("Failed to add tag to character", err)
+						a.us.reportError("Failed to add tag to character", err)
 						return
 					}
 				}
@@ -949,7 +1003,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 					a.selectedTag.ID,
 				)
 				if err != nil {
-					a.reportError("Failed to remove tag from character: "+a.selectedTag.Name, err)
+					a.us.reportError("Failed to remove tag from character: "+a.selectedTag.Name, err)
 					return
 				}
 				a.updateCharacters(a.selectedTag)
@@ -973,7 +1027,7 @@ func (a *characterTags) updateCharacters(tag *app.CharacterTag) {
 	a.manageCharacters.Show()
 	tagged, others, err := a.us.u.cs.ListCharactersForTag(context.Background(), tag.ID)
 	if err != nil {
-		a.reportError("Failed to list characters for "+tag.Name, err)
+		a.us.reportError("Failed to list characters for "+tag.Name, err)
 		a.characters = make([]*app.EntityShort[int32], 0)
 		return
 	}
@@ -989,12 +1043,6 @@ func (a *characterTags) updateCharacters(tag *app.CharacterTag) {
 	} else {
 		a.emptyCharactersHint.Show()
 	}
-}
-
-func (a *characterTags) reportError(text string, err error) {
-	slog.Error(text, "error", err)
-	a.us.sb.Show(fmt.Sprintf("ERROR: %s: %s", text, err))
-
 }
 
 func (a *characterTags) modifyTag(title, confirm string, execute func(name string) error) {
@@ -1047,7 +1095,7 @@ func (a *characterTags) selectTagByName(name string) {
 func (a *characterTags) updateTags() {
 	tags, err := a.us.u.cs.ListTagsByName(context.Background())
 	if err != nil {
-		a.reportError("Failed to list tags", err)
+		a.us.reportError("Failed to list tags", err)
 		a.tags = make([]*app.CharacterTag, 0)
 		return
 	}
@@ -1208,7 +1256,7 @@ func NewSettingItemOptions(
 		},
 		onSelected: func(it SettingItem, refresh func()) {
 			sel := widget.NewRadioGroup(options, setter)
-			sel.SetSelected(it.Getter().(string))
+			sel.Selected = it.Getter().(string)
 			d := makeSettingDialog(
 				sel,
 				it.Label,

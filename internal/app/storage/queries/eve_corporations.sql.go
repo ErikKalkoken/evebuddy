@@ -111,6 +111,24 @@ func (q *Queries) ListEveCorporationIDs(ctx context.Context) ([]int64, error) {
 	return items, nil
 }
 
+const updateEveCorporationName = `-- name: UpdateEveCorporationName :exec
+UPDATE eve_corporations
+SET
+    name = ?
+WHERE
+    id = ?
+`
+
+type UpdateEveCorporationNameParams struct {
+	Name string
+	ID   int64
+}
+
+func (q *Queries) UpdateEveCorporationName(ctx context.Context, arg UpdateEveCorporationNameParams) error {
+	_, err := q.db.ExecContext(ctx, updateEveCorporationName, arg.Name, arg.ID)
+	return err
+}
+
 const updateOrCreateEveCorporation = `-- name: UpdateOrCreateEveCorporation :exec
 INSERT INTO
     eve_corporations (

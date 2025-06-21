@@ -145,7 +145,7 @@ func NewAppBar(title string, body fyne.CanvasObject) *AppBar {
 	return NewAppBarWithTrailing(title, body, nil)
 }
 
-// NewAppBar returns a new AppBar.
+// NewAppBarWithTrailing returns a new AppBar.
 func NewAppBarWithTrailing(title string, body fyne.CanvasObject, trailing fyne.CanvasObject) *AppBar {
 	w := &AppBar{
 		body:     body,

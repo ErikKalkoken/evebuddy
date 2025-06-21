@@ -251,7 +251,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	})
 }
 
-func TestGerOrCreateEntityESI(t *testing.T) {
+func TestGetOrCreateEntityESI(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
@@ -326,4 +326,32 @@ func TestToEveEntities(t *testing.T) {
 			assert.EqualValues(t, &app.EveEntity{ID: 1, Name: "?", Category: app.EveEntityUnknown}, oo[1])
 		}
 	})
+}
+
+func TestUpdateAllEntityESI(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := eveuniverseservice.NewTestService(st)
+	factory.CreateEveEntityCharacter(app.EveEntity{ID: 42})
+	httpmock.RegisterResponder(
+		"POST",
+		`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+		httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+			{"id": 42, "name": "Erik", "category": "character"},
+		}),
+	)
+	// when
+	err := s.UpdateAllEntitiesESI(ctx)
+	// then
+	if assert.NoError(t, err) {
+		got, err := st.GetEveEntity(ctx, 42)
+		if assert.NoError(t, err) {
+			assert.EqualValues(t, 42, got.ID)
+			assert.Equal(t, "Erik", got.Name)
+			assert.Equal(t, app.EveEntityCharacter, got.Category)
+		}
+	}
 }

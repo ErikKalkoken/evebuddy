@@ -48,10 +48,10 @@ type locations struct {
 
 func newLocations(u *baseUI) *locations {
 	headers := []headerDef{
-		{Label: "Character", Width: columnWidthCharacter},
-		{Label: "Location", Width: columnWidthLocation},
-		{Label: "Region", Width: columnWidthRegion},
-		{Label: "Ship", Width: 150},
+		{label: "Character", width: columnWidthCharacter},
+		{label: "Location", width: columnWidthLocation},
+		{label: "Region", width: columnWidthRegion},
+		{label: "Ship", width: 150},
 	}
 	a := &locations{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
@@ -68,24 +68,24 @@ func newLocations(u *baseUI) *locations {
 			func(col int, r locationRow) []widget.RichTextSegment {
 				switch col {
 				case 0:
-					return iwidget.NewRichTextSegmentFromText(r.characterName)
+					return iwidget.RichTextSegmentsFromText(r.characterName)
 				case 1:
 					if r.locationID == 0 {
-						r.locationDisplay = iwidget.NewRichTextSegmentFromText("?")
+						r.locationDisplay = iwidget.RichTextSegmentsFromText("?")
 					}
 					return r.locationDisplay
 				case 2:
 					if r.regionName == "" {
 						r.regionName = "?"
 					}
-					return iwidget.NewRichTextSegmentFromText(r.regionName)
+					return iwidget.RichTextSegmentsFromText(r.regionName)
 				case 3:
 					if r.shipName == "" {
 						r.shipName = "?"
 					}
-					return iwidget.NewRichTextSegmentFromText(r.shipName)
+					return iwidget.RichTextSegmentsFromText(r.shipName)
 				}
-				return iwidget.NewRichTextSegmentFromText("?")
+				return iwidget.RichTextSegmentsFromText("?")
 			},
 			a.columnSorter,
 			a.filterRows, func(_ int, r locationRow) {
@@ -119,10 +119,10 @@ func (a *locations) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *locations) makeDataList() *widget.List {
+func (a *locations) makeDataList() *iwidget.StripedList {
 	p := theme.Padding()
-	var l *widget.List
-	l = widget.NewList(
+	var l *iwidget.StripedList
+	l = iwidget.NewStripedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},

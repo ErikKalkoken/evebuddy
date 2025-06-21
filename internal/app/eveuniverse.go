@@ -26,7 +26,7 @@ func (ea EveAlliance) ToEveEntity() *EveEntity {
 
 // TODO: Add Bloodline (e.g. to show in character description)
 
-// An Eve Online character.
+// EveCharacter is a character in Eve Online.
 type EveCharacter struct {
 	Alliance       *EveEntity
 	Birthday       time.Time
@@ -80,7 +80,7 @@ func (ec EveCharacter) ToEveEntity() *EveEntity {
 	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityCharacter}
 }
 
-// An Eve Online corporation.
+// EveCorporation is a corporation in Eve Online.
 type EveCorporation struct {
 	Alliance    *EveEntity
 	Ceo         *EveEntity

@@ -9,7 +9,7 @@ var (
 	ErrTokenError = errors.New("token error")
 )
 
-// OAuth Token for a character in Eve Online.
+// Token represents an OAuth token for a character in Eve Online.
 type Token struct {
 	AccessToken   string
 	CharacterID   int32

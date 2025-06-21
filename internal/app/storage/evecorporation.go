@@ -102,6 +102,19 @@ func (st *Storage) UpdateOrCreateEveCorporation(ctx context.Context, arg UpdateO
 	return nil
 }
 
+func (st *Storage) UpdateEveCorporationName(ctx context.Context, corporationID int32, name string) error {
+	if corporationID == 0 || name == "" {
+		return fmt.Errorf("UpdateEveCorporationName: %w", app.ErrInvalid)
+	}
+	if err := st.qRW.UpdateEveCorporationName(ctx, queries.UpdateEveCorporationNameParams{
+		ID:   int64(corporationID),
+		Name: name,
+	}); err != nil {
+		return fmt.Errorf("UpdateEveCorporationName %d: %w", corporationID, err)
+	}
+	return nil
+}
+
 type eveCorporationFromDBModelParams struct {
 	corporation queries.EveCorporation
 	ceo         nullEveEntry

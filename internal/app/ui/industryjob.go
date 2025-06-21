@@ -108,14 +108,14 @@ type industryJobs struct {
 
 func newIndustryJobs(u *baseUI) *industryJobs {
 	headers := []headerDef{
-		{Label: "Blueprint", Width: 250},
-		{Label: "Status", Width: 100, Refresh: true},
-		{Label: "Runs", Width: 75},
-		{Label: "Activity", Width: 200},
-		{Label: "End date", Width: columnWidthDateTime},
-		{Label: "Location", Width: columnWidthLocation},
-		{Label: "Owner", Width: columnWidthCharacter},
-		{Label: "Installer", Width: columnWidthCharacter},
+		{label: "Blueprint", width: 250},
+		{label: "Status", width: 100, refresh: true},
+		{label: "Runs", width: 75},
+		{label: "Activity", width: 200},
+		{label: "End date", width: columnWidthDateTime},
+		{label: "Location", width: columnWidthLocation},
+		{label: "Owner", width: columnWidthCharacter},
+		{label: "Installer", width: columnWidthCharacter},
 	}
 	a := &industryJobs{
 		columnSorter: newColumnSorterWithInit(headers, 4, sortDesc),
@@ -128,26 +128,26 @@ func newIndustryJobs(u *baseUI) *industryJobs {
 	makeCell := func(col int, j industryJobRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			return iwidget.NewRichTextSegmentFromText(j.blueprintType.Name)
+			return iwidget.RichTextSegmentsFromText(j.blueprintType.Name)
 		case 1:
 			return j.statusDisplay
 		case 2:
-			return iwidget.NewRichTextSegmentFromText(
+			return iwidget.RichTextSegmentsFromText(
 				ihumanize.Comma(j.runs),
 				widget.RichTextStyle{Alignment: fyne.TextAlignTrailing},
 			)
 		case 3:
-			return iwidget.NewRichTextSegmentFromText(j.activity.Display())
+			return iwidget.RichTextSegmentsFromText(j.activity.Display())
 		case 4:
-			return iwidget.NewRichTextSegmentFromText(j.endDate.Format(app.DateTimeFormat))
+			return iwidget.RichTextSegmentsFromText(j.endDate.Format(app.DateTimeFormat))
 		case 5:
-			return iwidget.NewRichTextSegmentFromText(j.location.Name.ValueOrZero())
+			return iwidget.RichTextSegmentsFromText(j.location.Name.ValueOrZero())
 		case 6:
-			return iwidget.NewRichTextSegmentFromText(j.owner.Name)
+			return iwidget.RichTextSegmentsFromText(j.owner.Name)
 		case 7:
-			return iwidget.NewRichTextSegmentFromText(j.installer.Name)
+			return iwidget.RichTextSegmentsFromText(j.installer.Name)
 		}
-		return iwidget.NewRichTextSegmentFromText("?")
+		return iwidget.RichTextSegmentsFromText("?")
 	}
 
 	if a.u.isDesktop {
@@ -346,7 +346,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 	}
 }
 
-func (a *industryJobs) makeDataList() *widget.List {
+func (a *industryJobs) makeDataList() *iwidget.StripedList {
 	statusMap := map[app.IndustryJobStatus]fyne.Resource{
 		app.JobDelivered: theme.NewThemedResource(icons.IndydeliveredSvg),
 		app.JobPaused:    theme.NewWarningThemedResource(icons.IndyhaltedSvg),
@@ -361,8 +361,8 @@ func (a *industryJobs) makeDataList() *widget.List {
 		app.Invention:                  theme.NewThemedResource(icons.IndyinventionSvg),
 		app.Reactions:                  theme.NewThemedResource(icons.IndyreactionsSvg),
 	}
-	var l *widget.List
-	l = widget.NewList(
+	var l *iwidget.StripedList
+	l = iwidget.NewStripedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},
@@ -557,11 +557,11 @@ func (a *industryJobs) update() {
 		remaining := time.Until(j.endDate)
 		var segs []widget.RichTextSegment
 		if j.status == app.JobActive {
-			segs = iwidget.NewRichTextSegmentFromText(ihumanize.Duration(remaining), widget.RichTextStyle{
+			segs = iwidget.RichTextSegmentsFromText(ihumanize.Duration(remaining), widget.RichTextStyle{
 				ColorName: theme.ColorNameForeground,
 			})
 		} else {
-			segs = iwidget.NewRichTextSegmentFromText(j.status.Display(), widget.RichTextStyle{
+			segs = iwidget.RichTextSegmentsFromText(j.status.Display(), widget.RichTextStyle{
 				ColorName: j.status.Color(),
 			})
 		}

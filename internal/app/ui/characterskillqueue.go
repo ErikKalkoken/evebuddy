@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"time"
@@ -116,7 +117,7 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 func (a *characterSkillQueue) update() {
 	var t string
 	var i widget.Importance
-	err := a.sq.Update(a.u.cs, a.u.currentCharacterID())
+	err := a.sq.Update(context.Background(), a.u.cs, a.u.currentCharacterID())
 	if err != nil {
 		slog.Error("Failed to refresh skill queue UI", "err", err)
 		t = "ERROR"
@@ -127,7 +128,7 @@ func (a *characterSkillQueue) update() {
 		if !isActive {
 			s1 = "!"
 			s2 = "training paused"
-		} else if c := a.sq.Completion(); c.ValueOrZero() < 1 {
+		} else if c := a.sq.CompletionP(); c.ValueOrZero() < 1 {
 			s1 = fmt.Sprintf("%.0f%%", c.ValueOrZero()*100)
 			s2 = fmt.Sprintf("%s (%s)", a.sq.Current(), s1)
 		}
@@ -136,7 +137,7 @@ func (a *characterSkillQueue) update() {
 		}
 		var total optional.Optional[time.Duration]
 		if isActive {
-			total = a.sq.Remaining()
+			total = a.sq.RemainingTime()
 		}
 		t, i = a.makeTopText(total)
 	}

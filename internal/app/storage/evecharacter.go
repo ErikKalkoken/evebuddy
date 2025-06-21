@@ -114,7 +114,20 @@ func (st *Storage) UpdateEveCharacter(ctx context.Context, c *app.EveCharacter) 
 		arg.FactionID.Valid = true
 	}
 	if err := st.qRW.UpdateEveCharacter(ctx, arg); err != nil {
-		return fmt.Errorf("update or create EveCharacter %d: %w", c.ID, err)
+		return fmt.Errorf("update EveCharacter %d: %w", c.ID, err)
+	}
+	return nil
+}
+
+func (st *Storage) UpdateEveCharacterName(ctx context.Context, characterID int32, name string) error {
+	if characterID == 0 || name == "" {
+		return fmt.Errorf("UpdateEveCharacterName: %w", app.ErrInvalid)
+	}
+	if err := st.qRW.UpdateEveCharacterName(ctx, queries.UpdateEveCharacterNameParams{
+		ID:   int64(characterID),
+		Name: name,
+	}); err != nil {
+		return fmt.Errorf("UpdateEveCharacterName %d: %w", characterID, err)
 	}
 	return nil
 }

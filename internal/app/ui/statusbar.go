@@ -239,14 +239,14 @@ func (a *statusBar) setEveStatus(status eveStatus, title, errorMessage string) {
 	a.eveStatus.SetText(title)
 }
 
-func (s *statusBar) SetInfo(text string) {
-	s.setInfo(text, widget.MediumImportance)
+func (a *statusBar) SetInfo(text string) {
+	a.setInfo(text, widget.MediumImportance)
 }
 
-func (s *statusBar) setInfo(text string, importance widget.Importance) {
-	s.infoText.Text = text
-	s.infoText.Importance = importance
-	s.infoText.Refresh()
+func (a *statusBar) setInfo(text string, importance widget.Importance) {
+	a.infoText.Text = text
+	a.infoText.Importance = importance
+	a.infoText.Refresh()
 }
 
 // statusBarItem is a widget with a label and an optional icon, which can be tapped.

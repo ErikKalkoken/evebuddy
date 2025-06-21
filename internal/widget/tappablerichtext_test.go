@@ -13,7 +13,7 @@ func TestTappableRichText_CanCreate(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 
-	text := iwidget.NewTappableRichText(iwidget.NewRichTextSegmentFromText("Test"), nil)
+	text := iwidget.NewTappableRichText(iwidget.RichTextSegmentsFromText("Test"), nil)
 	w := test.NewWindow(text)
 	defer w.Close()
 
@@ -35,7 +35,7 @@ func TestTappableRichText_CanTap(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 	var tapped bool
-	text := iwidget.NewTappableRichText(iwidget.NewRichTextSegmentFromText("Test"), func() {
+	text := iwidget.NewTappableRichText(iwidget.RichTextSegmentsFromText("Test"), func() {
 		tapped = true
 		test.ApplyTheme(t, test.Theme())
 	})
@@ -49,7 +49,7 @@ func TestTappableRichText_CanTap(t *testing.T) {
 func TestTappableRichText_IgnoreTapWhenNoCallback(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
-	text := iwidget.NewTappableRichText(iwidget.NewRichTextSegmentFromText("Test"), nil)
+	text := iwidget.NewTappableRichText(iwidget.RichTextSegmentsFromText("Test"), nil)
 	w := test.NewWindow(text)
 	defer w.Close()
 

@@ -9,7 +9,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 )
 
-// ListMailsForLabel returns a character's mails for a label in descending order by timestamp.
+// ListCharacterMailHeadersForLabelOrdered returns a character's mails for a label
+// in descending order by timestamp.
 // Return mails for all labels, when labelID = 0
 func (st *Storage) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, characterID int32, labelID int32) ([]*app.CharacterMailHeader, error) {
 	switch labelID {

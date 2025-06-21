@@ -61,7 +61,7 @@ func (sb *Snackbar) Show(text string) {
 	sb.q.Put(snackbarMessage{text: text, timeout: snackbarTimeoutDefault})
 }
 
-// Show displays a SnackBar with a message and the a custom timeout.
+// ShowWithTimeout displays a SnackBar with a message and the a custom timeout.
 func (sb *Snackbar) ShowWithTimeout(text string, timeout time.Duration) {
 	sb.q.Put(snackbarMessage{text: text, timeout: timeout})
 }

@@ -108,4 +108,18 @@ func TestEveCharacter(t *testing.T) {
 			assert.Equal(t, c1.Name, c2.Name)
 		}
 	})
+	t.Run("can update name", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateEveCharacter()
+		// when
+		err := r.UpdateEveCharacterName(ctx, c1.ID, "Erik")
+		// then
+		if assert.NoError(t, err) {
+			c2, err := r.GetEveCharacter(ctx, c1.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, "Erik", c2.Name)
+			}
+		}
+	})
 }

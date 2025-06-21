@@ -29,9 +29,11 @@ func TestSkillqueueItems(t *testing.T) {
 		err := r.CreateCharacterSkillqueueItem(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			i, err := r.GetCharacterSkillqueueItem(ctx, c.ID, 4)
+			got, err := r.GetCharacterSkillqueueItem(ctx, c.ID, 4)
 			if assert.NoError(t, err) {
-				assert.Equal(t, 5, i.FinishedLevel)
+				assert.Equal(t, c.ID, got.CharacterID)
+				assert.Equal(t, 5, got.FinishedLevel)
+				assert.Equal(t, eveType.ID, got.SkillID)
 			}
 		}
 	})

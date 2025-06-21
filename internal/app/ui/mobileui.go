@@ -25,7 +25,7 @@ type MobileUI struct {
 	*baseUI
 }
 
-// NewUI build the UI and returns it.
+// NewMobileUI builds the UI and returns it.
 func NewMobileUI(bu *baseUI) *MobileUI {
 	u := &MobileUI{baseUI: bu}
 

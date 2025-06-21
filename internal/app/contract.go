@@ -106,7 +106,7 @@ func (cs ContractStatus) DisplayRichText() []widget.RichTextSegment {
 	default:
 		color = theme.ColorNameForeground
 	}
-	return iwidget.NewRichTextSegmentFromText(cs.Display(), widget.RichTextStyle{
+	return iwidget.RichTextSegmentsFromText(cs.Display(), widget.RichTextStyle{
 		ColorName: color,
 	})
 }

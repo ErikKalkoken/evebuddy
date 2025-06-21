@@ -27,10 +27,13 @@ func TestTraining_CanRenderWithActiveTraining(t *testing.T) {
 		UnallocatedSP: optional.From(1_000_000),
 	})
 	now := time.Now().UTC()
+	et := factory.CreateEveType(storage.CreateEveTypeParams{Name: "Dummy Skill"})
 	factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
-		CharacterID: character.ID,
-		StartDate:   now.Add(-1 * time.Hour),
-		FinishDate:  now.Add(3 * time.Hour),
+		CharacterID:   character.ID,
+		StartDate:     now.Add(-1 * time.Hour),
+		FinishDate:    now.Add(3 * time.Hour),
+		EveTypeID:     et.ID,
+		FinishedLevel: 3,
 	})
 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 		CharacterID: character.ID,

@@ -10,7 +10,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/antihax/goesi/esi"
+)
+
+const (
+	esiPostUniverseNamesMax = 1000
 )
 
 // known invalid IDs
@@ -109,7 +114,7 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 			slog.Debug("Trying to resolve EveEntity IDs from ESI", "ids", missing)
 		}
 		var ee []esi.PostUniverseNames200Ok
-		for chunk := range slices.Chunk(missing.Slice(), 1000) { // PostUniverseNames max is 1000 IDs
+		for chunk := range slices.Chunk(missing.Slice(), esiPostUniverseNamesMax) {
 			eeChunk, badChunk, err := s.resolveIDsFromESI(ctx, chunk)
 			if err != nil {
 				return err
@@ -122,8 +127,7 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 				ID:       entity.Id,
 				Name:     entity.Name,
 				Category: eveEntityCategoryFromESICategory(entity.Category),
-			},
-			)
+			})
 			if err != nil {
 				return err
 			}
@@ -178,6 +182,51 @@ func (s *EveUniverseService) resolveIDsFromESI(ctx context.Context, ids []int32)
 func (s *EveUniverseService) ListEntitiesByPartialName(ctx context.Context, partial string) ([]*app.EveEntity, error) {
 	return s.st.ListEveEntitiesByPartialName(ctx, partial)
 }
+
 func (s *EveUniverseService) ListEntitiesForIDs(ctx context.Context, ids []int32) ([]*app.EveEntity, error) {
 	return s.st.ListEveEntitiesForIDs(ctx, ids)
+}
+
+func (s *EveUniverseService) UpdateAllEntitiesESI(ctx context.Context) error {
+	oo, err := s.st.ListEveEntities(ctx)
+	if err != nil {
+		return err
+	}
+	selectedCategories := set.Of(
+		app.EveEntityAlliance,
+		app.EveEntityCharacter,
+		app.EveEntityCorporation,
+	)
+	ids := slices.Collect(xiter.Map(xiter.Filter(slices.Values(oo), func(x *app.EveEntity) bool {
+		return x.IsValid() && selectedCategories.Contains(x.Category)
+	}), func(x *app.EveEntity) int32 {
+		return x.ID
+	}))
+	var ee []esi.PostUniverseNames200Ok
+	for chunk := range slices.Chunk(ids, esiPostUniverseNamesMax) {
+		eeChunk, _, err := s.resolveIDsFromESI(ctx, chunk)
+		if err != nil {
+			return err
+		}
+		ee = append(ee, eeChunk...)
+	}
+	for _, entity := range ee {
+		err := s.st.UpdateEveEntity(ctx, entity.Id, entity.Name)
+		if err != nil {
+			return err
+		}
+	}
+	slog.Info("Updated Eve Entities", "count", len(ee))
+	return nil
+}
+
+func (s *EveUniverseService) updateEntityNameIfExists(ctx context.Context, id int32, name string) error {
+	o, err := s.st.GetEveEntity(ctx, id)
+	if errors.Is(err, app.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	return s.st.UpdateEveEntity(ctx, o.ID, name)
 }

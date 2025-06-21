@@ -11,20 +11,20 @@ import (
 )
 
 const createCharacterSkillqueueItem = `-- name: CreateCharacterSkillqueueItem :exec
-INSERT INTO character_skillqueue_items (
-    eve_type_id,
-    finish_date,
-    finished_level,
-    level_end_sp,
-    level_start_sp,
-    queue_position,
-    character_id,
-    start_date,
-    training_start_sp
-)
-VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?
-)
+INSERT INTO
+    character_skillqueue_items (
+        eve_type_id,
+        finish_date,
+        finished_level,
+        level_end_sp,
+        level_start_sp,
+        queue_position,
+        character_id,
+        start_date,
+        training_start_sp
+    )
+VALUES
+    (?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateCharacterSkillqueueItemParams struct {
@@ -56,7 +56,8 @@ func (q *Queries) CreateCharacterSkillqueueItem(ctx context.Context, arg CreateC
 
 const deleteCharacterSkillqueueItems = `-- name: DeleteCharacterSkillqueueItems :exec
 DELETE FROM character_skillqueue_items
-WHERE character_id = ?
+WHERE
+    character_id = ?
 `
 
 func (q *Queries) DeleteCharacterSkillqueueItems(ctx context.Context, characterID int64) error {
@@ -65,11 +66,18 @@ func (q *Queries) DeleteCharacterSkillqueueItems(ctx context.Context, characterI
 }
 
 const getCharacterSkillqueueItem = `-- name: GetCharacterSkillqueueItem :one
-SELECT character_skillqueue_items.id, character_skillqueue_items.character_id, character_skillqueue_items.eve_type_id, character_skillqueue_items.finish_date, character_skillqueue_items.finished_level, character_skillqueue_items.level_end_sp, character_skillqueue_items.level_start_sp, character_skillqueue_items.queue_position, character_skillqueue_items.start_date, character_skillqueue_items.training_start_sp, eve_types.name as skill_name, eve_groups.name as group_name, eve_types.description as skill_description
-FROM character_skillqueue_items
-JOIN eve_types ON eve_types.id = character_skillqueue_items.eve_type_id
-JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
-WHERE character_id = ? and queue_position = ?
+SELECT
+    csi.id, csi.character_id, csi.eve_type_id, csi.finish_date, csi.finished_level, csi.level_end_sp, csi.level_start_sp, csi.queue_position, csi.start_date, csi.training_start_sp,
+    et.name as skill_name,
+    et.description as skill_description,
+    eg.name as group_name
+FROM
+    character_skillqueue_items csi
+    JOIN eve_types et ON et.id = csi.eve_type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+WHERE
+    character_id = ?
+    and queue_position = ?
 `
 
 type GetCharacterSkillqueueItemParams struct {
@@ -80,8 +88,8 @@ type GetCharacterSkillqueueItemParams struct {
 type GetCharacterSkillqueueItemRow struct {
 	CharacterSkillqueueItem CharacterSkillqueueItem
 	SkillName               string
-	GroupName               string
 	SkillDescription        string
+	GroupName               string
 }
 
 func (q *Queries) GetCharacterSkillqueueItem(ctx context.Context, arg GetCharacterSkillqueueItemParams) (GetCharacterSkillqueueItemRow, error) {
@@ -99,19 +107,24 @@ func (q *Queries) GetCharacterSkillqueueItem(ctx context.Context, arg GetCharact
 		&i.CharacterSkillqueueItem.StartDate,
 		&i.CharacterSkillqueueItem.TrainingStartSp,
 		&i.SkillName,
-		&i.GroupName,
 		&i.SkillDescription,
+		&i.GroupName,
 	)
 	return i, err
 }
 
 const getTotalTrainingTime = `-- name: GetTotalTrainingTime :one
-SELECT SUM(julianday(finish_date) - julianday(max(start_date, datetime())))
-FROM character_skillqueue_items
-WHERE character_id = ?
-AND start_date IS NOT NULL
-AND finish_date IS NOT NULL
-AND datetime(finish_date) > datetime()
+SELECT
+    SUM(
+        julianday(finish_date) - julianday(max(start_date, datetime()))
+    )
+FROM
+    character_skillqueue_items
+WHERE
+    character_id = ?
+    AND start_date IS NOT NULL
+    AND finish_date IS NOT NULL
+    AND datetime(finish_date) > datetime()
 `
 
 func (q *Queries) GetTotalTrainingTime(ctx context.Context, characterID int64) (sql.NullFloat64, error) {
@@ -122,21 +135,28 @@ func (q *Queries) GetTotalTrainingTime(ctx context.Context, characterID int64) (
 }
 
 const listCharacterSkillqueueItems = `-- name: ListCharacterSkillqueueItems :many
-SELECT character_skillqueue_items.id, character_skillqueue_items.character_id, character_skillqueue_items.eve_type_id, character_skillqueue_items.finish_date, character_skillqueue_items.finished_level, character_skillqueue_items.level_end_sp, character_skillqueue_items.level_start_sp, character_skillqueue_items.queue_position, character_skillqueue_items.start_date, character_skillqueue_items.training_start_sp, eve_types.name as skill_name, eve_groups.name as group_name, eve_types.description as skill_description
-FROM character_skillqueue_items
-JOIN eve_types ON eve_types.id = character_skillqueue_items.eve_type_id
-JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
-WHERE character_id = ?
-AND start_date IS NOT NULL
-AND finish_date IS NOT NULL
-ORDER BY queue_position
+SELECT
+    csi.id, csi.character_id, csi.eve_type_id, csi.finish_date, csi.finished_level, csi.level_end_sp, csi.level_start_sp, csi.queue_position, csi.start_date, csi.training_start_sp,
+    et.name as skill_name,
+    et.description as skill_description,
+    eg.name as group_name
+FROM
+    character_skillqueue_items csi
+    JOIN eve_types et ON et.id = csi.eve_type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+WHERE
+    character_id = ?
+    AND start_date IS NOT NULL
+    AND finish_date IS NOT NULL
+ORDER BY
+    queue_position
 `
 
 type ListCharacterSkillqueueItemsRow struct {
 	CharacterSkillqueueItem CharacterSkillqueueItem
 	SkillName               string
-	GroupName               string
 	SkillDescription        string
+	GroupName               string
 }
 
 func (q *Queries) ListCharacterSkillqueueItems(ctx context.Context, characterID int64) ([]ListCharacterSkillqueueItemsRow, error) {
@@ -160,8 +180,8 @@ func (q *Queries) ListCharacterSkillqueueItems(ctx context.Context, characterID 
 			&i.CharacterSkillqueueItem.StartDate,
 			&i.CharacterSkillqueueItem.TrainingStartSp,
 			&i.SkillName,
-			&i.GroupName,
 			&i.SkillDescription,
+			&i.GroupName,
 		); err != nil {
 			return nil, err
 		}
