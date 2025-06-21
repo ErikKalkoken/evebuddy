@@ -309,10 +309,14 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 			Label: "Randomize names",
 			Action: func() {
 				pg := kxmodal.NewProgressInfinite("Randomize names", "Please wait...", func() error {
-					if err := a.u.eus.RandomizeAllCharacterNames(context.Background()); err != nil {
+					ctx := context.Background()
+					if err := a.u.eus.RandomizeAllCharacterNames(ctx); err != nil {
 						return err
 					}
-					if err := a.u.eus.RandomizeAllCorporationName(context.Background()); err != nil {
+					if err := a.u.eus.RandomizeAllCorporationNames(ctx); err != nil {
+						return err
+					}
+					if err := a.u.eus.RandomizeAllAllianceNames(ctx); err != nil {
 						return err
 					}
 					return nil
@@ -331,8 +335,16 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 			Label: "Restore names",
 			Action: func() {
 				pg := kxmodal.NewProgressInfinite("Restore names", "Please wait...", func() error {
-					a.u.updateGeneralSectionAndRefreshIfNeeded(context.Background(), app.SectionEveCharacters, true)
-					a.u.updateGeneralSectionAndRefreshIfNeeded(context.Background(), app.SectionEveCorporations, true)
+					ctx := context.Background()
+					if err := a.u.eus.UpdateAllCharactersESI(ctx); err != nil {
+						return err
+					}
+					if err := a.u.eus.UpdateAllCorporationsESI(ctx); err != nil {
+						return err
+					}
+					if err := a.u.eus.UpdateAllEntitiesESI(ctx); err != nil {
+						return err
+					}
 					return nil
 				}, a.w)
 				pg.OnSuccess = func() {

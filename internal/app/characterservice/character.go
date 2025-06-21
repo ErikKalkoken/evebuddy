@@ -1527,7 +1527,11 @@ func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.Chara
 		func(ctx context.Context, characterID int32, data any) error {
 			lists := data.([]esi.GetCharactersCharacterIdMailLists200Ok)
 			for _, o := range lists {
-				_, err := s.st.UpdateOrCreateEveEntity(ctx, o.MailingListId, o.Name, app.EveEntityMailList)
+				_, err := s.st.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
+					ID:       o.MailingListId,
+					Name:     o.Name,
+					Category: app.EveEntityMailList,
+				})
 				if err != nil {
 					return err
 				}

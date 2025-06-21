@@ -29,7 +29,11 @@ func TestEveEntityUpdateOrCreate(t *testing.T) {
 				Category: app.EveEntityCharacter,
 			})
 		// when
-		_, err := r.UpdateOrCreateEveEntity(ctx, e1.ID, "Erik", app.EveEntityCorporation)
+		_, err := r.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
+			ID:       e1.ID,
+			Name:     "Erik",
+			Category: app.EveEntityCorporation,
+		})
 		// then
 		if assert.NoError(t, err) {
 			e2, err := r.GetEveEntity(ctx, e1.ID)
@@ -44,9 +48,41 @@ func TestEveEntityUpdateOrCreate(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, err := r.UpdateOrCreateEveEntity(ctx, 0, "Dummy", app.EveEntityAlliance)
+		_, err := r.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
+			ID:       0,
+			Name:     "Dummy",
+			Category: app.EveEntityAlliance,
+		})
 		// then
 		assert.Error(t, err)
+	})
+}
+
+func TestUpdateEveEntity(t *testing.T) {
+	db, r, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("can update existing", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// given
+		e1 := factory.CreateEveEntity(
+			app.EveEntity{
+				ID:       42,
+				Name:     "Alpha",
+				Category: app.EveEntityCharacter,
+			})
+		// when
+		err := r.UpdateEveEntity(ctx, e1.ID, "Erik")
+		// then
+		if assert.NoError(t, err) {
+			e2, err := r.GetEveEntity(ctx, e1.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, e1.ID, e2.ID)
+				assert.Equal(t, "Erik", e2.Name)
+				assert.Equal(t, app.EveEntityCharacter, e2.Category)
+			}
+		}
 	})
 }
 
@@ -205,6 +241,28 @@ func TestListEveEntitiesForIDs(t *testing.T) {
 		_, err := st.ListEveEntitiesForIDs(ctx, []int32{1, 2})
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+}
+
+func TestListEveEntities(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should return objs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		o1 := factory.CreateEveEntity()
+		o2 := factory.CreateEveEntity()
+		// when
+		got, err := st.ListEveEntities(ctx)
+		// then
+		if assert.NoError(t, err) {
+			got := xslices.Map(got, func(a *app.EveEntity) int32 {
+				return a.ID
+			})
+			want := []int32{o1.ID, o2.ID}
+			assert.Equal(t, want, got)
+		}
 	})
 }
 

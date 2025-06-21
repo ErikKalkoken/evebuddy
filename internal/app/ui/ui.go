@@ -691,6 +691,11 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 	}
 	needsRefresh := hasChanged || forceUpdate
 	switch section {
+	case app.SectionEveEntities:
+		if needsRefresh {
+			u.updateCrossPages()
+			u.updateCharacter()
+		}
 	case app.SectionEveTypes:
 		if needsRefresh {
 			u.characterShips.update()

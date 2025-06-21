@@ -226,6 +226,7 @@ type GeneralSection string
 const (
 	SectionEveCharacters   GeneralSection = "characters"
 	SectionEveCorporations GeneralSection = "corporations"
+	SectionEveEntities     GeneralSection = "entities"
 	SectionEveMarketPrices GeneralSection = "market_prices"
 	SectionEveTypes        GeneralSection = "types"
 )
@@ -233,6 +234,7 @@ const (
 var GeneralSections = []GeneralSection{
 	SectionEveCharacters,
 	SectionEveCorporations,
+	SectionEveEntities,
 	SectionEveMarketPrices,
 	SectionEveTypes,
 }
@@ -240,6 +242,7 @@ var GeneralSections = []GeneralSection{
 var generalSectionTimeouts = map[GeneralSection]time.Duration{
 	SectionEveCharacters:   4 * time.Hour,
 	SectionEveCorporations: 4 * time.Hour,
+	SectionEveEntities:     24 * time.Hour,
 	SectionEveMarketPrices: 6 * time.Hour,
 	SectionEveTypes:        24 * time.Hour,
 }

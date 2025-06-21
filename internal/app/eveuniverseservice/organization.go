@@ -72,6 +72,26 @@ func (s *EveUniverseService) FetchAllianceCorporations(ctx context.Context, alli
 	})
 	return oo, nil
 }
+
+// RandomizeAllAllianceNames randomizes the names of all alliances.
+func (s *EveUniverseService) RandomizeAllAllianceNames(ctx context.Context) error {
+	ee, err := s.st.ListEveEntities(ctx)
+	if err != nil {
+		return err
+	}
+	alliances := xslices.Filter(ee, func(x *app.EveEntity) bool {
+		return x.Category == app.EveEntityAlliance
+	})
+	for _, alliance := range alliances {
+		name := fake.Company()
+		err = s.updateEntityNameIfExists(ctx, alliance.ID, name)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *EveUniverseService) GetOrCreateCorporationESI(ctx context.Context, id int32) (*app.EveCorporation, error) {
 	o, err := s.st.GetEveCorporation(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {
@@ -151,8 +171,8 @@ func (s *EveUniverseService) UpdateAllCorporationsESI(ctx context.Context) error
 	return nil
 }
 
-// RandomizeAllCorporationName randomizes the names of all characters.
-func (s *EveUniverseService) RandomizeAllCorporationName(ctx context.Context) error {
+// RandomizeAllCorporationNames randomizes the names of all characters.
+func (s *EveUniverseService) RandomizeAllCorporationNames(ctx context.Context) error {
 	ids, err := s.st.ListEveCorporationIDs(ctx)
 	if err != nil {
 		return err
@@ -161,16 +181,18 @@ func (s *EveUniverseService) RandomizeAllCorporationName(ctx context.Context) er
 		return nil
 	}
 	for id := range ids.All() {
-		err := s.st.UpdateEveCorporationName(ctx, id, fake.Company())
+		name := fake.Company()
+		err := s.st.UpdateEveCorporationName(ctx, id, name)
 		if err != nil {
 			return err
 		}
+		err = s.updateEntityNameIfExists(ctx, id, name)
+		if err != nil {
+			return err
+		}
+
 	}
 	return s.scs.UpdateCorporations(ctx)
-}
-
-func (s *EveUniverseService) UpdateShipSkills(ctx context.Context) error {
-	return s.st.UpdateEveShipSkills(ctx)
 }
 
 // FetchCharacterCorporationHistory returns a list of all the corporations a character has been a member of in descending order.

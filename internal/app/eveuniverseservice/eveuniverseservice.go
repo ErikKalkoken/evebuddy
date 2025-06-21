@@ -143,6 +143,8 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 		f = s.UpdateAllCorporationsESI
 	case app.SectionEveMarketPrices:
 		f = s.updateMarketPricesESI
+	case app.SectionEveEntities:
+		f = s.UpdateAllEntitiesESI
 	default:
 		slog.Warn("encountered unknown section", "section", section)
 	}
@@ -210,4 +212,8 @@ func (s *EveUniverseService) updateCategories(ctx context.Context) error {
 		return err
 	}
 	return nil
+}
+
+func (s *EveUniverseService) UpdateShipSkills(ctx context.Context) error {
+	return s.st.UpdateEveShipSkills(ctx)
 }

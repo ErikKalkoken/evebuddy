@@ -75,7 +75,12 @@ func (s *EveUniverseService) RandomizeAllCharacterNames(ctx context.Context) err
 		return nil
 	}
 	for id := range ids.All() {
-		err := s.st.UpdateEveCharacterName(ctx, id, fake.FullName())
+		name := fake.FullName()
+		err := s.st.UpdateEveCharacterName(ctx, id, name)
+		if err != nil {
+			return err
+		}
+		err = s.updateEntityNameIfExists(ctx, id, name)
 		if err != nil {
 			return err
 		}

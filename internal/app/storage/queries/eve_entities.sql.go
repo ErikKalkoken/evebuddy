@@ -46,17 +46,15 @@ func (q *Queries) GetEveEntity(ctx context.Context, id int64) (EveEntity, error)
 	return i, err
 }
 
-const listEveEntitiesByName = `-- name: ListEveEntitiesByName :many
+const listEveEntities = `-- name: ListEveEntities :many
 SELECT
     id, category, name
 FROM
     eve_entities
-WHERE
-    name = ?
 `
 
-func (q *Queries) ListEveEntitiesByName(ctx context.Context, name string) ([]EveEntity, error) {
-	rows, err := q.db.QueryContext(ctx, listEveEntitiesByName, name)
+func (q *Queries) ListEveEntities(ctx context.Context) ([]EveEntity, error) {
+	rows, err := q.db.QueryContext(ctx, listEveEntities)
 	if err != nil {
 		return nil, err
 	}
@@ -222,6 +220,24 @@ func (q *Queries) ListEveEntityIDs(ctx context.Context) ([]int64, error) {
 	return items, nil
 }
 
+const updateEveEntity = `-- name: UpdateEveEntity :exec
+UPDATE eve_entities
+SET
+    name = ?
+WHERE
+    id = ?
+`
+
+type UpdateEveEntityParams struct {
+	Name string
+	ID   int64
+}
+
+func (q *Queries) UpdateEveEntity(ctx context.Context, arg UpdateEveEntityParams) error {
+	_, err := q.db.ExecContext(ctx, updateEveEntity, arg.Name, arg.ID)
+	return err
+}
+
 const updateOrCreateEveEntity = `-- name: UpdateOrCreateEveEntity :one
 INSERT INTO
     eve_entities (id, category, name)
@@ -230,8 +246,7 @@ VALUES
 ON CONFLICT (id) DO UPDATE
 SET
     category = ?2,
-    name = ?3
-RETURNING id, category, name
+    name = ?3 RETURNING id, category, name
 `
 
 type UpdateOrCreateEveEntityParams struct {

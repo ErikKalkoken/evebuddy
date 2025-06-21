@@ -927,7 +927,7 @@ func TestGeneralSectionSummary(t *testing.T) {
 		Current:   1,
 		Errors:    1,
 		IsRunning: true,
-		Total:     4,
+		Total:     5,
 	}
 	assert.Equal(t, want, got)
 }
