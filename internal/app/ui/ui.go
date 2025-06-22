@@ -114,7 +114,7 @@ type baseUI struct {
 	clones                     *clones
 	colonies                   *colonies
 	locations                  *locations
-	training                   *trainings
+	training                   *training
 	wealth                     *wealth
 
 	app                fyne.App
@@ -222,7 +222,7 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	u.clones = newClones(u)
 	u.colonies = newColonies(u)
 	u.locations = newLocations(u)
-	u.training = newTrainings(u)
+	u.training = newTraining(u)
 	u.wealth = newWealth(u)
 	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.MainWindow().SetMaster()
@@ -251,7 +251,8 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 			u.updateCrossPages()
 			u.updateStatus()
 			u.isStartupCompleted.Store(true)
-			u.characterJumpClones.StartUpdateTicker()
+			u.training.startUpdateTicker()
+			u.characterJumpClones.startUpdateTicker()
 			if !u.isOffline && !u.isUpdateDisabled {
 				time.Sleep(5 * time.Second) // Workaround to prevent concurrent updates from happening at startup.
 				u.startUpdateTickerGeneralSections()

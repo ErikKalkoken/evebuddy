@@ -266,7 +266,7 @@ func (*characterJumpClones) makeTopText(cloneCount int, character *app.Character
 	return segs
 }
 
-func (a *characterJumpClones) StartUpdateTicker() {
+func (a *characterJumpClones) startUpdateTicker() {
 	ticker := time.NewTicker(time.Second * 15)
 	go func() {
 		for {

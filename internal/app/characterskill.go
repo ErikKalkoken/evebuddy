@@ -159,6 +159,19 @@ func (sq *CharacterSkillqueue) RemainingTime() optional.Optional[time.Duration] 
 	return r
 }
 
+// FinishDateEstimate returns the estimated finish date of all remaining skills in the queue.
+func (sq *CharacterSkillqueue) FinishDateEstimate() optional.Optional[time.Time] {
+	d := sq.RemainingTime()
+	if d.IsEmpty() {
+		return optional.Optional[time.Time]{}
+	}
+	d2 := d.MustValue()
+	if d2 == 0 {
+		return optional.From(time.Time{})
+	}
+	return optional.From(time.Now().UTC().Add(d2))
+}
+
 // Update replaces the content of the queue with a new version from the service.
 func (sq *CharacterSkillqueue) Update(ctx context.Context, cs CharacterServiceSkillqueue, characterID int32) error {
 	items, err := sq.fetchItems(ctx, cs, characterID)
@@ -250,4 +263,19 @@ func (qi CharacterSkillqueueItem) Remaining() optional.Optional[time.Duration] {
 	remainingP := 1 - qi.CompletionP()
 	d := qi.Duration()
 	return optional.From(time.Duration(float64(d.ValueOrZero()) * remainingP))
+}
+
+func (qi CharacterSkillqueueItem) FinishDateEstimate() optional.Optional[time.Time] {
+	if !qi.FinishDate.IsZero() {
+		return optional.From(qi.FinishDate)
+	}
+	d := qi.Remaining()
+	if d.IsEmpty() {
+		return optional.Optional[time.Time]{}
+	}
+	d2 := d.MustValue()
+	if d2 == 0 {
+		return optional.From(time.Time{})
+	}
+	return optional.From(time.Now().UTC().Add(d2))
 }

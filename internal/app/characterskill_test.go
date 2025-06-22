@@ -34,6 +34,7 @@ func TestCharacterSkillqueue(t *testing.T) {
 			assert.WithinDuration(t, toTime(7*time.Hour), toTime(sq.RemainingTime().ValueOrZero()), 10*time.Second)
 			assert.True(t, sq.IsActive())
 			assert.Equal(t, 2, sq.RemainingCount().ValueOrZero())
+			assert.WithinDuration(t, toTime(7*time.Hour), sq.FinishDateEstimate().ValueOrZero(), 10*time.Second)
 		}
 	})
 	t.Run("can return information about an empty skill queue", func(t *testing.T) {
@@ -45,6 +46,7 @@ func TestCharacterSkillqueue(t *testing.T) {
 		assert.True(t, sq.CompletionP().IsEmpty())
 		assert.False(t, sq.IsActive())
 		assert.True(t, sq.RemainingCount().IsEmpty())
+		assert.True(t, sq.FinishDateEstimate().IsEmpty())
 	})
 }
 
@@ -112,6 +114,10 @@ func TestSkillqueueItemCompletion(t *testing.T) {
 			FinishDate: now.Add(time.Hour * -1),
 		}
 		assert.Equal(t, 1.0, q.CompletionP())
+	})
+	t.Run("should return 0 when empty", func(t *testing.T) {
+		q := app.CharacterSkillqueueItem{}
+		assert.Equal(t, 0.0, q.CompletionP())
 	})
 }
 
