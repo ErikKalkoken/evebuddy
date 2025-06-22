@@ -127,13 +127,14 @@ func (a *locations) makeDataList() *iwidget.StripedList {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			title := widget.NewLabelWithStyle("Template", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
-			title.Wrapping = fyne.TextWrapWord
+			character := widget.NewLabel("Template")
+			character.Wrapping = fyne.TextWrapWord
+			character.SizeName = theme.SizeNameSubHeadingText
 			location := iwidget.NewRichTextWithText("Template")
 			location.Wrapping = fyne.TextWrapWord
 			ship := widget.NewLabel("Template")
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
-				title,
+				character,
 				location,
 				ship,
 			)
