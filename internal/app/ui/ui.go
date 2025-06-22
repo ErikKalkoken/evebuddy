@@ -56,14 +56,6 @@ const (
 	downtimeDuration = 15 * time.Minute
 )
 
-// width of common columns in data tables
-const (
-	columnWidthCharacter = 200
-	columnWidthDateTime  = 150
-	columnWidthLocation  = 350
-	columnWidthRegion    = 150
-)
-
 // ticker
 const (
 	characterSectionsUpdateTicker = 60 * time.Second
@@ -122,7 +114,7 @@ type baseUI struct {
 	clones                     *clones
 	colonies                   *colonies
 	locations                  *locations
-	training                   *trainings
+	training                   *training
 	wealth                     *wealth
 
 	app                fyne.App
@@ -230,7 +222,7 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	u.clones = newClones(u)
 	u.colonies = newColonies(u)
 	u.locations = newLocations(u)
-	u.training = newTrainings(u)
+	u.training = newTraining(u)
 	u.wealth = newWealth(u)
 	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.MainWindow().SetMaster()
@@ -259,7 +251,8 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 			u.updateCrossPages()
 			u.updateStatus()
 			u.isStartupCompleted.Store(true)
-			u.characterJumpClones.StartUpdateTicker()
+			u.training.startUpdateTicker()
+			u.characterJumpClones.startUpdateTicker()
 			if !u.isOffline && !u.isUpdateDisabled {
 				time.Sleep(5 * time.Second) // Workaround to prevent concurrent updates from happening at startup.
 				u.startUpdateTickerGeneralSections()
@@ -699,6 +692,11 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 	}
 	needsRefresh := hasChanged || forceUpdate
 	switch section {
+	case app.SectionEveEntities:
+		if needsRefresh {
+			u.updateCrossPages()
+			u.updateCharacter()
+		}
 	case app.SectionEveTypes:
 		if needsRefresh {
 			u.characterShips.update()
@@ -1244,12 +1242,16 @@ func (u *baseUI) makeAboutPage() fyne.CanvasObject {
 }
 
 func (u *baseUI) makeDetailWindow(title, subTitle string, content fyne.CanvasObject) fyne.Window {
+	return u.makeDetailWindowWithSize(title, subTitle, fyne.NewSize(600, 500), content)
+}
+
+func (u *baseUI) makeDetailWindowWithSize(title, subTitle string, minSize fyne.Size, content fyne.CanvasObject) fyne.Window {
 	w := u.App().NewWindow(u.MakeWindowTitle(title))
 	t := widget.NewLabel(subTitle)
 	t.SizeName = theme.SizeNameSubHeadingText
 	top := container.NewVBox(t, widget.NewSeparator())
 	vs := container.NewVScroll(content)
-	vs.SetMinSize(fyne.NewSize(600, 500))
+	vs.SetMinSize(minSize)
 	c := container.NewBorder(
 		top,
 		nil,

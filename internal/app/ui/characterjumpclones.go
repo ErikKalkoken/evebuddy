@@ -143,7 +143,7 @@ func (a *characterJumpClones) update() {
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
 		fyne.Do(func() {
-			a.top.Set(iwidget.NewRichTextSegmentFromText("ERROR: "+a.u.humanizeError(err), widget.RichTextStyle{
+			a.top.Set(iwidget.RichTextSegmentsFromText("ERROR: "+a.u.humanizeError(err), widget.RichTextStyle{
 				ColorName: theme.ColorNameError,
 			}))
 		})
@@ -266,7 +266,7 @@ func (*characterJumpClones) makeTopText(cloneCount int, character *app.Character
 	return segs
 }
 
-func (a *characterJumpClones) StartUpdateTicker() {
+func (a *characterJumpClones) startUpdateTicker() {
 	ticker := time.NewTicker(time.Second * 15)
 	go func() {
 		for {

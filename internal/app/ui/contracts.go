@@ -72,13 +72,13 @@ type contracts struct {
 
 func newContracts(u *baseUI) *contracts {
 	headers := []headerDef{
-		{Label: "Contract", Width: 300},
-		{Label: "Type", Width: 120},
-		{Label: "From", Width: 150},
-		{Label: "To", Width: 150},
-		{Label: "Status", Width: 100},
-		{Label: "Date Issued", Width: 150},
-		{Label: "Time Left", Width: 100},
+		{label: "Contract", width: 300},
+		{label: "Type", width: 120},
+		{label: "From", width: 150},
+		{label: "To", width: 150},
+		{label: "Status", width: 100},
+		{label: "Date Issued", width: columnWidthDateTime},
+		{label: "Time Left", width: 100},
 	}
 	a := &contracts{
 		columnSorter: newColumnSorter(headers),
@@ -92,21 +92,21 @@ func newContracts(u *baseUI) *contracts {
 			func(col int, r contractRow) []widget.RichTextSegment {
 				switch col {
 				case 0:
-					return iwidget.NewRichTextSegmentFromText(r.name)
+					return iwidget.RichTextSegmentsFromText(r.name)
 				case 1:
-					return iwidget.NewRichTextSegmentFromText(r.typeName)
+					return iwidget.RichTextSegmentsFromText(r.typeName)
 				case 2:
-					return iwidget.NewRichTextSegmentFromText(r.issuerName)
+					return iwidget.RichTextSegmentsFromText(r.issuerName)
 				case 3:
-					return iwidget.NewRichTextSegmentFromText(r.assigneeName)
+					return iwidget.RichTextSegmentsFromText(r.assigneeName)
 				case 4:
 					return r.status.DisplayRichText()
 				case 5:
-					return iwidget.NewRichTextSegmentFromText(r.dateIssued.Format(app.DateTimeFormat))
+					return iwidget.RichTextSegmentsFromText(r.dateIssued.Format(app.DateTimeFormat))
 				case 6:
 					return r.dateExpiredDisplay
 				}
-				return iwidget.NewRichTextSegmentFromText("?")
+				return iwidget.RichTextSegmentsFromText("?")
 			}, a.columnSorter, a.filterRows, func(column int, r contractRow) {
 				showContract(a.u, r.characterID, r.contractID)
 			},
@@ -167,9 +167,9 @@ func (a *contracts) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *contracts) makeDataList() *widget.List {
+func (a *contracts) makeDataList() *iwidget.StripedList {
 	p := theme.Padding()
-	l := widget.NewList(
+	l := iwidget.NewStripedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},
@@ -209,7 +209,7 @@ func (a *contracts) makeDataList() *widget.List {
 			main[3].(*widget.Label).SetText(assignee)
 
 			main[4].(*iwidget.RichText).Set(iwidget.InlineRichTextSegments(
-				iwidget.NewRichTextSegmentFromText("Expires "),
+				iwidget.RichTextSegmentsFromText("Expires "),
 				r.dateExpiredDisplay,
 			))
 		},
@@ -372,7 +372,7 @@ func (a *contracts) fetchRows(s services) ([]contractRow, int, error) {
 			text = ihumanize.RelTime(r.dateExpired)
 			color = theme.ColorNameForeground
 		}
-		r.dateExpiredDisplay = iwidget.NewRichTextSegmentFromText(text, widget.RichTextStyle{
+		r.dateExpiredDisplay = iwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
 			ColorName: color,
 		})
 		tags, err := s.cs.ListTagsForCharacter(ctx, c.CharacterID)

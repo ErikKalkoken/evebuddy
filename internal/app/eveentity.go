@@ -4,6 +4,7 @@ import (
 	"cmp"
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -25,6 +26,11 @@ type EveEntity struct {
 func (ee EveEntity) CategoryDisplay() string {
 	titler := cases.Title(language.English)
 	return titler.String(ee.Category.String())
+}
+
+// IsValid reports whether an entity is valid.
+func (ee EveEntity) IsValid() bool {
+	return ee.Category.IsKnown()
 }
 
 // IsCharacter reports whether an entity is a character.
@@ -120,4 +126,18 @@ func (eec EveEntityCategory) ToEveImage() string {
 	default:
 		return ""
 	}
+}
+
+func EveEntityValidCategories() set.Set[EveEntityCategory] {
+	return set.Of(
+		EveEntityAlliance,
+		EveEntityCharacter,
+		EveEntityConstellation,
+		EveEntityCorporation,
+		EveEntityFaction,
+		EveEntityInventoryType,
+		EveEntityRegion,
+		EveEntitySolarSystem,
+		EveEntityStation,
+	)
 }

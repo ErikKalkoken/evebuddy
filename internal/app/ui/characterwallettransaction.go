@@ -4,14 +4,12 @@ import (
 	"cmp"
 	"context"
 	"fmt"
-	"image/color"
 	"log/slog"
 	"slices"
 	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -67,13 +65,13 @@ type characterWalletTransaction struct {
 
 func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 	headers := []headerDef{
-		{Label: "Date", Width: 150},
-		{Label: "Qty.", Width: 75},
-		{Label: "Type", Width: 200},
-		{Label: "Unit Price", Width: 150},
-		{Label: "Total", Width: 150},
-		{Label: "Client", Width: 250},
-		{Label: "Where", Width: 350},
+		{label: "Date", width: columnWidthDateTime},
+		{label: "Qty.", width: 75},
+		{label: "Type", width: 200},
+		{label: "Unit Price", width: 150},
+		{label: "Total", width: 150},
+		{label: "Client", width: columnWidthCharacter},
+		{label: "Where", width: columnWidthLocation},
 	}
 	a := &characterWalletTransaction{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortDesc),
@@ -86,28 +84,28 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 	makeCell := func(col int, r walletTransactionRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			return iwidget.NewRichTextSegmentFromText(r.dateFormatted)
+			return iwidget.RichTextSegmentsFromText(r.dateFormatted)
 		case 1:
-			return iwidget.NewRichTextSegmentFromText(r.quantityDisplay,
+			return iwidget.RichTextSegmentsFromText(r.quantityDisplay,
 				widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				})
 		case 2:
-			return iwidget.NewRichTextSegmentFromText(r.typeName)
+			return iwidget.RichTextSegmentsFromText(r.typeName)
 		case 3:
-			return iwidget.NewRichTextSegmentFromText(
+			return iwidget.RichTextSegmentsFromText(
 				r.unitPriceDisplay,
 				widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				})
 		case 4:
-			return iwidget.NewRichTextSegmentFromText(r.totalFormatted)
+			return iwidget.RichTextSegmentsFromText(r.totalFormatted)
 		case 5:
-			return iwidget.NewRichTextSegmentFromText(r.clientName)
+			return iwidget.RichTextSegmentsFromText(r.clientName)
 		case 6:
 			return r.locationDisplay
 		}
-		return iwidget.NewRichTextSegmentFromText("?")
+		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
 		a.body = makeDataTable(
@@ -177,10 +175,9 @@ func (a *characterWalletTransaction) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterWalletTransaction) makeDataList() *widget.List {
+func (a *characterWalletTransaction) makeDataList() *iwidget.StripedList {
 	p := theme.Padding()
-	bgColor := theme.Color(theme.ColorNameInputBackground)
-	l := widget.NewList(
+	l := iwidget.NewStripedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},
@@ -195,30 +192,18 @@ func (a *characterWalletTransaction) makeDataList() *widget.List {
 			amount.Alignment = fyne.TextAlignTrailing
 			location := widget.NewLabel("Template")
 			location.Truncation = fyne.TextTruncateClip
-			return container.NewStack(
-				canvas.NewRectangle(color.Transparent),
-				container.New(layout.NewCustomPaddedVBoxLayout(-p),
-					container.NewBorder(nil, nil, nil, amount, date),
-					container.NewBorder(nil, nil, nil, total, invType),
-					location,
-				))
+			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
+				container.NewBorder(nil, nil, nil, amount, date),
+				container.NewBorder(nil, nil, nil, total, invType),
+				location,
+			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id < 0 || id >= len(a.rowsFiltered) {
 				return
 			}
 			r := a.rowsFiltered[id]
-			x := co.(*fyne.Container).Objects
-
-			bg := x[0].(*canvas.Rectangle)
-			if id%2 == 0 {
-				bg.FillColor = bgColor
-			} else {
-				bg.FillColor = color.Transparent
-			}
-			bg.Refresh()
-
-			c := x[1].(*fyne.Container).Objects
+			c := co.(*fyne.Container).Objects
 
 			b0 := c[0].(*fyne.Container).Objects
 			b0[0].(*widget.Label).SetText(r.dateFormatted)

@@ -1,4 +1,4 @@
-// Package widgets contains generic Fyne widgets.
+// Package widget contains generic Fyne widgets.
 package widget
 
 import (

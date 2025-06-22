@@ -21,17 +21,17 @@ func TestDataTable_CreateBasic(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 	headers := []headerDef{
-		{Label: "ID", Width: 100},
-		{Label: "Planet", Width: 100},
+		{label: "ID", width: 100},
+		{label: "Planet", width: 100},
 	}
 	data := []myRow{{3, "Mercury"}, {8, "Venus"}, {42, "Earth"}}
 	x := makeDataTable(
 		headers, &data, func(col int, r myRow) []widget.RichTextSegment {
 			switch col {
 			case 0:
-				return iwidget.NewRichTextSegmentFromText(fmt.Sprint(r.id))
+				return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.id))
 			case 1:
-				return iwidget.NewRichTextSegmentFromText(r.planet)
+				return iwidget.RichTextSegmentsFromText(r.planet)
 			}
 			panic(fmt.Sprintf("invalid col: %d", col))
 		},
@@ -50,9 +50,9 @@ func TestDataTable_CreateBasic(t *testing.T) {
 
 func TestSortedColumsColumn(t *testing.T) {
 	headers := []headerDef{
-		{Label: "Alpha"},
-		{Label: "Bravo"},
-		{Label: "Charlie"},
+		{label: "Alpha"},
+		{label: "Bravo"},
+		{label: "Charlie"},
 	}
 	t.Run("return value", func(t *testing.T) {
 		sc := newColumnSorter(headers)
@@ -74,9 +74,9 @@ func TestSortedColumsColumn(t *testing.T) {
 
 func TestSortedColumsCurrent(t *testing.T) {
 	headers := []headerDef{
-		{Label: "Alpha"},
-		{Label: "Bravo"},
-		{Label: "Charlie"},
+		{label: "Alpha"},
+		{label: "Bravo"},
+		{label: "Charlie"},
 	}
 	t.Run("return currently sorted column", func(t *testing.T) {
 		sc := newColumnSorter(headers)

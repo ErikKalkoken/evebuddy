@@ -52,7 +52,7 @@ func TestContractStatusDisplayRichText(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.status.String(), func(t *testing.T) {
 			got := tc.status.DisplayRichText()
-			want := iwidget.NewRichTextSegmentFromText(tc.wantText,
+			want := iwidget.RichTextSegmentsFromText(tc.wantText,
 				widget.RichTextStyle{
 					ColorName: tc.wantColor,
 				},

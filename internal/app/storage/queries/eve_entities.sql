@@ -29,13 +29,11 @@ WHERE
     name = ?
     AND category = ?;
 
--- name: ListEveEntitiesByName :many
+-- name: ListEveEntities :many
 SELECT
     *
 FROM
-    eve_entities
-WHERE
-    name = ?;
+    eve_entities;
 
 -- name: ListEveEntitiesByPartialName :many
 SELECT
@@ -61,5 +59,11 @@ VALUES
 ON CONFLICT (id) DO UPDATE
 SET
     category = ?2,
-    name = ?3
-RETURNING *;
+    name = ?3 RETURNING *;
+
+-- name: UpdateEveEntity :exec
+UPDATE eve_entities
+SET
+    name = ?
+WHERE
+    id = ?;

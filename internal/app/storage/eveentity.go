@@ -138,19 +138,19 @@ func (st *Storage) ListEveEntityIDs(ctx context.Context) (set.Set[int32], error)
 	return ids2, nil
 }
 
-func (st *Storage) ListEveEntitiesByName(ctx context.Context, name string) ([]*app.EveEntity, error) {
-	ee, err := st.qRO.ListEveEntitiesByName(ctx, name)
+func (st *Storage) ListEveEntities(ctx context.Context) ([]*app.EveEntity, error) {
+	rows, err := st.qRO.ListEveEntities(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("list eve entities by name %s: %w", name, err)
+		return nil, fmt.Errorf("list eve entities: %w", err)
 	}
-	ee2 := make([]*app.EveEntity, len(ee))
-	for i, e := range ee {
-		ee2[i] = eveEntityFromDBModel(e)
+	oo := make([]*app.EveEntity, len(rows))
+	for i, r := range rows {
+		oo[i] = eveEntityFromDBModel(r)
 	}
-	return ee2, nil
+	return oo, nil
 }
 
-// ListEveEntitiesForIDs returns a slice of EveEntites in the same order as ids.
+// ListEveEntitiesForIDs returns a slice of EveEntities in the same order as ids.
 //
 // Returns an error if at least one object can not be found.
 func (st *Storage) ListEveEntitiesForIDs(ctx context.Context, ids []int32) ([]*app.EveEntity, error) {
@@ -190,22 +190,42 @@ func (st *Storage) MissingEveEntityIDs(ctx context.Context, ids set.Set[int32]) 
 	return missing, nil
 }
 
-func (st *Storage) UpdateOrCreateEveEntity(ctx context.Context, id int32, name string, category app.EveEntityCategory) (*app.EveEntity, error) {
-	if id == 0 {
-		return nil, fmt.Errorf("can't update or create eve entity with ID %d", id)
+func (st *Storage) UpdateOrCreateEveEntity(ctx context.Context, arg CreateEveEntityParams) (*app.EveEntity, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateOrCreateEveEntity: %+v: %w", arg, err)
 	}
-	categoryDB := eveEntityDBModelCategoryFromCategory(category)
-	arg := queries.UpdateOrCreateEveEntityParams{
-		ID:       int64(id),
-		Name:     name,
+	if !arg.isValid() {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	categoryDB := eveEntityDBModelCategoryFromCategory(arg.Category)
+	o, err := st.qRW.UpdateOrCreateEveEntity(ctx, queries.UpdateOrCreateEveEntityParams{
+		ID:       int64(arg.ID),
+		Name:     arg.Name,
 		Category: categoryDB,
-	}
-	e, err := st.qRW.UpdateOrCreateEveEntity(ctx, arg)
+	})
 	if err != nil {
-		return nil, fmt.Errorf("update or create eve entity %d: %w", id, err)
+		return nil, wrapErr(err)
 	}
-	slog.Info("Stored updated Eve Entities", "ID", id)
-	return eveEntityFromDBModel(e), nil
+	slog.Info("Stored updated Eve Entity", "ID", arg.ID)
+	return eveEntityFromDBModel(o), nil
+}
+
+func (st *Storage) UpdateEveEntity(ctx context.Context, id int32, name string) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateEveEntity: %d: %w", id, err)
+	}
+	if id == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	err := st.qRW.UpdateEveEntity(ctx, queries.UpdateEveEntityParams{
+		ID:   int64(id),
+		Name: name,
+	})
+	if err != nil {
+		return wrapErr(err)
+	}
+	slog.Info("Updated Eve Entity", "ID", id)
+	return nil
 }
 
 func eveEntityCategoryFromDBModel(c string) app.EveEntityCategory {

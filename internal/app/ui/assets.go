@@ -75,18 +75,18 @@ type assets struct {
 
 func newAssets(u *baseUI) *assets {
 	headers := []headerDef{
-		{Label: "Item", Width: 300},
-		{Label: "Class", Width: 200},
-		{Label: "Location", Width: 350},
-		{Label: "Owner", Width: 200},
-		{Label: "Qty.", Width: 75},
-		{Label: "Total", Width: 100},
+		{label: "Item", width: 300},
+		{label: "Class", width: 200},
+		{label: "Location", width: columnWidthLocation},
+		{label: "Owner", width: columnWidthCharacter},
+		{label: "Qty.", width: 75},
+		{label: "Total", width: 100},
 	}
 	a := &assets{
+		columnSorter: newColumnSorter(headers),
 		entry:        widget.NewEntry(),
 		found:        widget.NewLabel(""),
 		rowsFiltered: make([]assetRow, 0),
-		columnSorter: newColumnSorter(headers),
 		total:        makeTopLabel(),
 		u:            u,
 	}
@@ -107,19 +107,19 @@ func newAssets(u *baseUI) *assets {
 			func(col int, r assetRow) []widget.RichTextSegment {
 				switch col {
 				case 0:
-					return iwidget.NewRichTextSegmentFromText(r.typeNameDisplay)
+					return iwidget.RichTextSegmentsFromText(r.typeNameDisplay)
 				case 1:
-					return iwidget.NewRichTextSegmentFromText(r.groupName)
+					return iwidget.RichTextSegmentsFromText(r.groupName)
 				case 2:
 					return r.locationDisplay
 				case 3:
-					return iwidget.NewRichTextSegmentFromText(r.characterName)
+					return iwidget.RichTextSegmentsFromText(r.characterName)
 				case 4:
-					return iwidget.NewRichTextSegmentFromText(r.quantityDisplay)
+					return iwidget.RichTextSegmentsFromText(r.quantityDisplay)
 				case 5:
-					return iwidget.NewRichTextSegmentFromText(r.totalDisplay)
+					return iwidget.RichTextSegmentsFromText(r.totalDisplay)
 				}
-				return iwidget.NewRichTextSegmentFromText("?")
+				return iwidget.RichTextSegmentsFromText("?")
 			},
 			a.columnSorter, a.filterRows, func(_ int, r assetRow) {
 				a.u.ShowTypeInfoWindow(r.typeID)
@@ -178,9 +178,9 @@ func (a *assets) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *assets) makeDataList() *widget.List {
+func (a *assets) makeDataList() *iwidget.StripedList {
 	p := theme.Padding()
-	l := widget.NewList(
+	l := iwidget.NewStripedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},
@@ -433,7 +433,7 @@ func (*assets) fetchRows(s services) ([]assetRow, bool, error) {
 				r.regionName = location.SolarSystem.Constellation.Region.Name
 			}
 		} else {
-			r.locationDisplay = iwidget.NewRichTextSegmentFromText("?")
+			r.locationDisplay = iwidget.RichTextSegmentsFromText("?")
 		}
 		if ca.Price.IsEmpty() || ca.IsBlueprintCopy {
 			r.totalDisplay = "?"
