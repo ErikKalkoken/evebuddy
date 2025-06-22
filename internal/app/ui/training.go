@@ -207,7 +207,7 @@ func (a *training) makeDataList() *iwidget.StripedList {
 		func() fyne.CanvasObject {
 			character := widget.NewLabel("Template")
 			character.Truncation = fyne.TextTruncateClip
-			character.TextStyle.Bold = true
+			character.SizeName = theme.SizeNameSubHeadingText
 			status := widget.NewLabel("Template")
 			queueRemaining := widget.NewLabel("Template")
 			queueCount := widget.NewLabel("Template")
