@@ -194,6 +194,8 @@ func timeFormattedOrFallback(t time.Time, layout, fallback string) string {
 type skillQueueItem struct {
 	widget.BaseWidget
 
+	Placeholder string
+
 	duration *widget.Label
 	isMobile bool
 	name     *widget.Label
@@ -201,16 +203,16 @@ type skillQueueItem struct {
 }
 
 func newSkillQueueItem() *skillQueueItem {
-	name := widget.NewLabel("N/A")
-	name.Truncation = fyne.TextTruncateEllipsis
 	pb := widget.NewProgressBar()
 	w := &skillQueueItem{
-		duration: widget.NewLabel(""),
-		name:     name,
-		progress: pb,
-		isMobile: fyne.CurrentDevice().IsMobile(),
+		Placeholder: "N/A",
+		duration:    widget.NewLabel(""),
+		progress:    pb,
+		isMobile:    fyne.CurrentDevice().IsMobile(),
 	}
 	w.ExtendBaseWidget(w)
+	w.name = widget.NewLabel(w.Placeholder)
+	w.name.Truncation = fyne.TextTruncateEllipsis
 	pb.Hide()
 	if w.isMobile {
 		pb.TextFormatter = func() string {
@@ -229,7 +231,7 @@ func (w *skillQueueItem) Set(qi *app.CharacterSkillqueueItem) {
 		name        string
 	)
 	if qi == nil {
-		return
+		name = w.Placeholder
 	} else {
 		isActive = qi.IsActive()
 		completionP = qi.CompletionP()
