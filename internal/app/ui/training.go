@@ -4,12 +4,14 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"image/color"
 	"log/slog"
 	"slices"
 	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -33,25 +35,27 @@ const (
 type trainingRow struct {
 	characterID                int32
 	characterName              string
-	currentFinishDate          optional.Optional[time.Time]
-	currentSkillDisplay        []widget.RichTextSegment
-	currentSkillID             int32
-	currentSkillName           string
 	isActive                   bool
+	skill                      *app.CharacterSkillqueueItem
+	skillDisplay               []widget.RichTextSegment
+	skillFinishDate            optional.Optional[time.Time]
+	skillID                    int32
+	skillName                  string
+	skillProgress              optional.Optional[float64]
+	statusImportance           widget.Importance
+	statusText                 string
 	tags                       set.Set[string]
+	totalFinishDate            optional.Optional[time.Time]
 	totalRemainingCount        optional.Optional[int]
 	totalRemainingCountDisplay string
-	totalFinishDate            optional.Optional[time.Time]
 	totalSP                    optional.Optional[int]
 	totalSPDisplay             string
 	unallocatedSP              optional.Optional[int]
 	unallocatedSPDisplay       string
-	statusText                 string
-	statusImportance           widget.Importance
 }
 
 func (r trainingRow) currentRemainingTime() optional.Optional[time.Duration] {
-	return r.remainingTime(r.currentFinishDate)
+	return r.remainingTime(r.skillFinishDate)
 }
 
 func (r trainingRow) currentRemainingTimeString() string {
@@ -123,7 +127,7 @@ func newTraining(u *baseUI) *training {
 		case 0:
 			return iwidget.RichTextSegmentsFromText(r.characterName)
 		case 1:
-			return r.currentSkillDisplay
+			return r.skillDisplay
 		case 2:
 			return iwidget.RichTextSegmentsFromText(r.currentRemainingTimeString())
 		case 3:
@@ -203,21 +207,25 @@ func (a *training) makeDataList() *iwidget.StripedList {
 		func() fyne.CanvasObject {
 			character := widget.NewLabel("Template")
 			character.Truncation = fyne.TextTruncateClip
+			character.TextStyle.Bold = true
 			status := widget.NewLabel("Template")
-			totalRemaining := widget.NewLabel("Template")
-			totalCount := widget.NewLabel("Template")
-			totalCount.Truncation = fyne.TextTruncateClip
-			currentName := widget.NewLabel("Template")
-			currentName.Truncation = fyne.TextTruncateClip
-			currentRemaining := widget.NewLabel("Template")
+			queueRemaining := widget.NewLabel("Template")
+			queueCount := widget.NewLabel("Template")
+			queueCount.Truncation = fyne.TextTruncateClip
 			totalSP := widget.NewLabel("Template")
 			totalSP.Truncation = fyne.TextTruncateClip
 			unallocatedSP := widget.NewLabel("Template")
+			spacer1 := canvas.NewRectangle(color.Transparent)
+			spacer1.SetMinSize(fyne.NewSize(1, 2*p))
+			spacer2 := canvas.NewRectangle(color.Transparent)
+			spacer2.SetMinSize(fyne.NewSize(1, 4*p))
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
 				container.NewBorder(nil, nil, nil, status, character),
-				container.NewBorder(nil, nil, nil, totalRemaining, totalCount),
-				container.NewBorder(nil, nil, nil, currentRemaining, currentName),
+				spacer1,
+				newSkillQueueItem(),
+				container.NewBorder(nil, nil, nil, queueRemaining, queueCount),
 				container.NewBorder(nil, nil, nil, unallocatedSP, totalSP),
+				spacer2,
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -227,26 +235,37 @@ func (a *training) makeDataList() *iwidget.StripedList {
 			r := a.rowsFiltered[id]
 			c := co.(*fyne.Container).Objects
 
-			b0 := c[0].(*fyne.Container).Objects
-			b0[0].(*widget.Label).SetText(r.characterName)
-			status := b0[1].(*widget.Label)
+			c0 := c[0].(*fyne.Container).Objects
+			c0[0].(*widget.Label).SetText(r.characterName)
+			status := c0[1].(*widget.Label)
 			status.Text = r.statusText
 			status.Importance = r.statusImportance
 			status.Refresh()
 
-			b1 := c[1].(*fyne.Container).Objects
-			b1[0].(*widget.Label).SetText(r.totalRemainingCountDisplay + " skills queued")
-			b1[1].(*widget.Label).SetText(r.totalRemainingTimeString())
+			c1 := c[2].(*skillQueueItem)
+			c1.Set(r.skill)
 
-			b2 := c[2].(*fyne.Container).Objects
-			b2[0].(*widget.Label).SetText(r.currentSkillName)
-			b2[1].(*widget.Label).SetText(r.currentRemainingTimeString())
+			c2 := c[3].(*fyne.Container).Objects
+			queueCount := c2[0].(*widget.Label)
+			queueRemaining := c2[1].(*widget.Label)
+			if r.totalRemainingCount.IsEmpty() {
+				queueCount.Text = "N/A"
+				queueRemaining.Text = ""
+			} else {
+				queueCount.Text = r.totalRemainingCountDisplay + " skills queued"
+				queueRemaining.Text = r.totalRemainingTimeString()
+			}
+			queueCount.Refresh()
+			queueRemaining.Refresh()
 
-			b3 := c[3].(*fyne.Container).Objects
-			b3[0].(*widget.Label).SetText(r.totalSPDisplay + " total SP")
-			unallocated := b3[1].(*widget.Label)
-			unallocated.Text = r.unallocatedSPDisplay + " unallocated SP"
-			unallocated.TextStyle.Bold = r.unallocatedSP.ValueOrZero() > 0
+			c3 := c[4].(*fyne.Container).Objects
+			c3[0].(*widget.Label).SetText(r.totalSPDisplay + " total SP")
+			unallocated := c3[1].(*widget.Label)
+			if r.unallocatedSP.ValueOrZero() == 0 {
+				unallocated.Text = ""
+			} else {
+				unallocated.Text = r.unallocatedSPDisplay + " unallocated SP"
+			}
 			unallocated.Refresh()
 		},
 	)
@@ -287,7 +306,7 @@ func (a *training) filterRows(sortCol int) {
 			case 0:
 				x = strings.Compare(a.characterName, b.characterName)
 			case 1:
-				x = strings.Compare(a.currentSkillName, b.currentSkillName)
+				x = strings.Compare(a.skillName, b.skillName)
 			case 2:
 				x = cmp.Compare(a.currentRemainingTime().ValueOrZero(), b.currentRemainingTime().ValueOrZero())
 			case 3:
@@ -378,20 +397,21 @@ func (*training) fetchRows(s services) ([]trainingRow, error) {
 		if err := queue.Update(ctx, s.cs, c.ID); err != nil {
 			return nil, err
 		}
-		current := queue.Current()
-		if current != nil {
+		r.skill = queue.Current()
+		if r.skill != nil {
 			r.isActive = true
 			r.statusText = "Active"
 			r.statusImportance = widget.SuccessImportance
-			r.currentSkillID = current.SkillID
-			r.currentSkillName = app.SkillDisplayName(current.SkillName, current.FinishedLevel)
-			r.currentSkillDisplay = iwidget.RichTextSegmentsFromText(r.currentSkillName)
-			r.currentFinishDate = current.FinishDateEstimate()
+			r.skillID = r.skill.SkillID
+			r.skillName = app.SkillDisplayName(r.skill.SkillName, r.skill.FinishedLevel)
+			r.skillDisplay = iwidget.RichTextSegmentsFromText(r.skillName)
+			r.skillFinishDate = r.skill.FinishDateEstimate()
+			r.skillProgress.Set(r.skill.CompletionP())
 		} else {
 			r.statusText = "Inactive"
 			r.statusImportance = widget.WarningImportance
-			r.currentSkillName = "N/A"
-			r.currentSkillDisplay = iwidget.RichTextSegmentsFromText(
+			r.skillName = "N/A"
+			r.skillDisplay = iwidget.RichTextSegmentsFromText(
 				"Inactive",
 				widget.RichTextStyle{
 					ColorName: theme.ColorNameWarning,
@@ -423,11 +443,11 @@ func (a *training) showDetails(r trainingRow) {
 	status.Importance = r.statusImportance
 	var skill fyne.CanvasObject
 	if r.isActive {
-		skill = makeLinkLabelWithWrap(r.currentSkillName, func() {
-			a.u.ShowInfoWindow(app.EveEntityInventoryType, r.currentSkillID)
+		skill = makeLinkLabelWithWrap(r.skillName, func() {
+			a.u.ShowInfoWindow(app.EveEntityInventoryType, r.skillID)
 		})
 	} else {
-		skill = widget.NewLabel(r.currentSkillName)
+		skill = widget.NewLabel(r.skillName)
 	}
 	items := []*widget.FormItem{
 		widget.NewFormItem("Owner", makeOwnerActionLabel(
@@ -435,11 +455,12 @@ func (a *training) showDetails(r trainingRow) {
 			r.characterName,
 			a.u.ShowEveEntityInfoWindow,
 		)),
-		widget.NewFormItem("Skillpoints", widget.NewLabel(r.totalSPDisplay)),
-		widget.NewFormItem("Unalloc. SP", widget.NewLabel(r.unallocatedSPDisplay)),
 		widget.NewFormItem("Status", status),
 		widget.NewFormItem("Current skill", skill),
-		widget.NewFormItem("Current skill finished", widget.NewLabel(r.currentFinishDate.StringFunc("?", func(v time.Time) string {
+		widget.NewFormItem("Current skill progress", widget.NewLabel(r.skillProgress.StringFunc("N/A", func(v float64) string {
+			return fmt.Sprintf("%.0f%%", v*100)
+		}))),
+		widget.NewFormItem("Current skill finished", widget.NewLabel(r.skillFinishDate.StringFunc("N/A", func(v time.Time) string {
 			return v.Format(app.DateTimeFormat)
 		}))),
 		widget.NewFormItem("Current skill remaining", widget.NewLabel(r.currentRemainingTimeString())),
@@ -448,11 +469,13 @@ func (a *training) showDetails(r trainingRow) {
 			return v.Format(app.DateTimeFormat)
 		}))),
 		widget.NewFormItem("Queue time remaining", widget.NewLabel(r.totalRemainingTimeString())),
+		widget.NewFormItem("Skillpoints", widget.NewLabel(r.totalSPDisplay)),
+		widget.NewFormItem("Unalloc. SP", widget.NewLabel(r.unallocatedSPDisplay)),
 	}
 
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
 	title := fmt.Sprintf("Training info for %s", r.characterName)
-	w := a.u.makeDetailWindowWithSize("Training info", title, fyne.NewSize(500, 400), f)
+	w := a.u.makeDetailWindowWithSize("Training info", title, fyne.NewSize(500, 450), f)
 	w.Show()
 }

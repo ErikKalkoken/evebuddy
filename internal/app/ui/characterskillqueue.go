@@ -50,15 +50,36 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 			return a.sq.Size()
 		},
 		func() fyne.CanvasObject {
-			return newSkillQueueItem()
+			level := newSkillLevel()
+			if !a.u.isDesktop {
+				level.Hide()
+			}
+			return container.NewBorder(nil, nil, level, nil, newSkillQueueItem())
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			q := a.sq.Item(id)
-			if q == nil {
+			qi := a.sq.Item(id)
+			if qi == nil {
 				return
 			}
-			item := co.(*skillQueueItem)
-			item.Set(q)
+			c := co.(*fyne.Container).Objects
+			c[0].(*skillQueueItem).Set(qi)
+
+			level := c[1].(*skillLevel)
+			var active, trained, required int
+			if qi.IsCompleted() {
+				active = qi.FinishedLevel
+				trained = qi.FinishedLevel
+				required = qi.FinishedLevel
+			} else if qi.IsActive() {
+				active = qi.FinishedLevel - 1
+				trained = qi.FinishedLevel - 1
+				required = 0
+			} else {
+				active = qi.FinishedLevel - 1
+				trained = qi.FinishedLevel - 1
+				required = qi.FinishedLevel
+			}
+			level.Set(active, trained, required)
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
@@ -173,23 +194,21 @@ func timeFormattedOrFallback(t time.Time, layout, fallback string) string {
 type skillQueueItem struct {
 	widget.BaseWidget
 
-	duration   *widget.Label
-	progress   *widget.ProgressBar
-	name       *widget.Label
-	skillLevel *skillLevel
-	isMobile   bool
+	duration *widget.Label
+	isMobile bool
+	name     *widget.Label
+	progress *widget.ProgressBar
 }
 
 func newSkillQueueItem() *skillQueueItem {
-	name := widget.NewLabel("skill")
+	name := widget.NewLabel("N/A")
 	name.Truncation = fyne.TextTruncateEllipsis
 	pb := widget.NewProgressBar()
 	w := &skillQueueItem{
-		duration:   widget.NewLabel("duration"),
-		name:       name,
-		progress:   pb,
-		skillLevel: newSkillLevel(),
-		isMobile:   fyne.CurrentDevice().IsMobile(),
+		duration: widget.NewLabel(""),
+		name:     name,
+		progress: pb,
+		isMobile: fyne.CurrentDevice().IsMobile(),
 	}
 	w.ExtendBaseWidget(w)
 	pb.Hide()
@@ -201,31 +220,41 @@ func newSkillQueueItem() *skillQueueItem {
 	return w
 }
 
-// func (w *SkillQueueItem) Set(isActive bool, remaining, duration optional.Optional[time.Duration], completionP float64) {
-
-func (w *skillQueueItem) Set(q *app.CharacterSkillqueueItem) {
+func (w *skillQueueItem) Set(qi *app.CharacterSkillqueueItem) {
 	var (
-		i widget.Importance
-		d string
+		completionP float64
+		importance  widget.Importance
+		isActive    bool
+		s           string
+		name        string
 	)
-	isActive := q.IsActive()
-	completionP := q.CompletionP()
-	isCompleted := completionP == 1
-	if isCompleted {
-		i = widget.LowImportance
-		d = "Completed"
-	} else if isActive {
-		i = widget.MediumImportance
-		d = ihumanize.Optional(q.Remaining(), "?")
+	if qi == nil {
+		return
 	} else {
-		i = widget.MediumImportance
-		d = ihumanize.Optional(q.Duration(), "?")
+		isActive = qi.IsActive()
+		completionP = qi.CompletionP()
+		isCompleted := qi.IsCompleted()
+		if isCompleted {
+			importance = widget.LowImportance
+			s = "Completed"
+		} else if isActive {
+			importance = widget.MediumImportance
+			s = ihumanize.Optional(qi.Remaining(), "?")
+		} else {
+			importance = widget.MediumImportance
+			s = ihumanize.Optional(qi.Duration(), "?")
+		}
+		if w.isMobile {
+			name = qi.StringShortened()
+		} else {
+			name = qi.String()
+		}
 	}
-	w.name.Importance = i
-	w.name.Text = q.String()
+	w.name.Importance = importance
+	w.name.Text = name
 	w.name.Refresh()
-	w.duration.Text = d
-	w.duration.Importance = i
+	w.duration.Text = s
+	w.duration.Importance = importance
 	w.duration.Refresh()
 	if isActive {
 		w.progress.SetValue(completionP)
@@ -233,30 +262,12 @@ func (w *skillQueueItem) Set(q *app.CharacterSkillqueueItem) {
 	} else {
 		w.progress.Hide()
 	}
-	var active, trained, required int
-	if isCompleted {
-		active = q.FinishedLevel
-		trained = q.FinishedLevel
-		required = q.FinishedLevel
-	} else if isActive {
-		active = q.FinishedLevel - 1
-		trained = q.FinishedLevel - 1
-		required = 0
-	} else {
-		active = q.FinishedLevel - 1
-		trained = q.FinishedLevel - 1
-		required = q.FinishedLevel
-	}
-	w.skillLevel.Set(active, trained, required)
 }
 
 func (w *skillQueueItem) CreateRenderer() fyne.WidgetRenderer {
-	queue := container.NewStack(
+	c := container.NewStack(
 		w.progress,
-		container.NewBorder(nil, nil, nil, w.duration, w.name))
-	if w.isMobile {
-		return widget.NewSimpleRenderer(queue)
-	}
-	c := container.NewBorder(nil, nil, w.skillLevel, nil, queue)
+		container.NewBorder(nil, nil, nil, w.duration, w.name),
+	)
 	return widget.NewSimpleRenderer(c)
 }

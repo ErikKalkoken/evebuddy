@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -215,6 +216,12 @@ type CharacterSkillqueueItem struct {
 
 func (qi CharacterSkillqueueItem) String() string {
 	return fmt.Sprintf("%s %s", qi.SkillName, ihumanize.RomanLetter(qi.FinishedLevel))
+}
+
+// StringShortened returns a string where some names are abbreviated.
+func (qi CharacterSkillqueueItem) StringShortened() string {
+	name := strings.ReplaceAll(qi.SkillName, "Specialization", "Spec.")
+	return fmt.Sprintf("%s %s", name, ihumanize.RomanLetter(qi.FinishedLevel))
 }
 
 // IsActive reports whether a skill is active.
