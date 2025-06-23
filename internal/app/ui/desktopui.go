@@ -41,10 +41,6 @@ type shortcutDef struct {
 type DesktopUI struct {
 	*baseUI
 
-	accountWindow  fyne.Window
-	searchWindow   fyne.Window
-	settingsWindow fyne.Window
-
 	shortcuts map[string]shortcutDef
 	sfg       *singleflight.Group
 }
@@ -73,7 +69,9 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	u.enableMenuShortcuts = u.enableShortcuts
 	u.disableMenuShortcuts = u.disableShortcuts
 
-	u.showManageCharacters = u.showManageCharactersWindow
+	u.showManageCharacters = func() {
+		showManageCharactersWindow(u)
+	}
 
 	u.defineShortcuts()
 	pageBars := newPageBarCollection(u)
@@ -398,7 +396,7 @@ func (u *DesktopUI) ResetDesktopSettings() {
 
 func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
-	w := u.App().NewWindow(u.MakeWindowTitle(title))
+	w := u.App().NewWindow(u.makeWindowTitle(title))
 	page := newCharacterSendMail(u.baseUI, c, mode, mail)
 	page.SetWindow(w)
 	send := widget.NewButtonWithIcon("Send", theme.MailSendIcon(), func() {
@@ -420,25 +418,6 @@ func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, 
 	w.Show()
 }
 
-func (u *DesktopUI) showManageCharactersWindow() {
-	if u.accountWindow != nil {
-		u.accountWindow.Show()
-		return
-	}
-	w := u.App().NewWindow(u.MakeWindowTitle("Manage Characters"))
-	u.accountWindow = w
-	w.SetOnClosed(func() {
-		u.accountWindow = nil
-	})
-	w.Resize(fyne.Size{Width: 500, Height: 300})
-	w.SetContent(u.manageCharacters)
-	u.manageCharacters.SetWindow(w)
-	w.Show()
-	u.manageCharacters.OnSelectCharacter = func() {
-		w.Hide()
-	}
-}
-
 func (u *DesktopUI) PerformSearch(s string) {
 	u.gameSearch.resetOptions()
 	u.gameSearch.toogleOptions(false)
@@ -452,10 +431,6 @@ func (u *DesktopUI) showAdvancedSearch() {
 }
 
 func (u *DesktopUI) showSearchWindow() {
-	if u.searchWindow != nil {
-		u.searchWindow.Show()
-		return
-	}
 	c := u.currentCharacter()
 	var n string
 	if c != nil {
@@ -463,11 +438,11 @@ func (u *DesktopUI) showSearchWindow() {
 	} else {
 		n = "No Character"
 	}
-	w := u.App().NewWindow(u.MakeWindowTitle(fmt.Sprintf("Search New Eden [%s]", n)))
-	u.searchWindow = w
-	w.SetOnClosed(func() {
-		u.searchWindow = nil
-	})
+	w, created := u.getOrCreateWindow(fmt.Sprintf("search-%s", n), fmt.Sprintf("Search New Eden [%s]", n))
+	if !created {
+		w.Show()
+		return
+	}
 	w.Resize(fyne.Size{Width: 700, Height: 400})
 	w.SetContent(u.gameSearch)
 	w.Show()

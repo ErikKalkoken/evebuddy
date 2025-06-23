@@ -147,7 +147,7 @@ func (iw *infoWindow) show(v infoVariant, id int64) {
 	}
 	ab = iwidget.NewAppBar(makeAppBarTitle(title), page)
 	if iw.nav == nil {
-		w := iw.u.App().NewWindow(iw.u.MakeWindowTitle("Information"))
+		w := iw.u.App().NewWindow(iw.u.makeWindowTitle("Information"))
 		iw.w = w
 		iw.sb = iwidget.NewSnackbar(w)
 		iw.sb.Start()
@@ -186,8 +186,10 @@ func (iw *infoWindow) showZoomWindow(title string, id int32, load func(int32, in
 	}
 	i := iwidget.NewImageFromResource(r, fyne.NewSquareSize(s))
 	p := theme.Padding()
-	w2 := iw.u.App().NewWindow(iw.u.MakeWindowTitle(title))
-	w2.SetContent(container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), i))
+	w2, created := iw.u.getOrCreateWindow(fmt.Sprintf("zoom-window-%d", id), title)
+	if created {
+		w2.SetContent(container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), i))
+	}
 	w2.Show()
 }
 

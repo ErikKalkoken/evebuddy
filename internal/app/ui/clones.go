@@ -32,6 +32,17 @@ type cloneRow struct {
 	tags     set.Set[string]
 }
 
+func (r cloneRow) id() string {
+	if r.jc == nil {
+		return ""
+	}
+	id := fmt.Sprint(r.jc.ID)
+	for _, s := range r.route {
+		id += fmt.Sprintf("-%d", s.ID)
+	}
+	return id
+}
+
 func (r cloneRow) compare(other cloneRow) int {
 	return cmp.Compare(r.sortValue(), other.sortValue())
 }
@@ -123,10 +134,10 @@ func newClones(u *baseUI) *clones {
 					a.u.ShowInfoWindow(app.EveEntityRegion, r.jc.Location.SolarSystem.Constellation.Region.ID)
 				}
 			case 2:
-				if r.jc.ImplantsCount == 0 {
+				if r.jc == nil || r.jc.ImplantsCount == 0 {
 					return
 				}
-				a.showClone(r)
+				a.showClone(r.jc)
 			case 3:
 				a.u.ShowInfoWindow(app.EveEntityCharacter, r.jc.Character.ID)
 			case 4:
@@ -480,6 +491,15 @@ func (a *clones) setOrigin(w fyne.Window) {
 }
 
 func (a *clones) showRoute(r cloneRow) {
+	if r.jc == nil {
+		return
+	}
+	title := fmt.Sprintf("Route: %s -> %s", a.origin.Name, r.jc.Location.SolarSystemName())
+	w, ok := a.u.getOrCreateWindow(r.id(), title, r.jc.Character.Name)
+	if !ok {
+		w.Show()
+		return
+	}
 	col := kxlayout.NewColumns(60)
 	list := widget.NewList(
 		func() int {
@@ -558,15 +578,21 @@ func (a *clones) showRoute(r cloneRow) {
 		nil,
 		list,
 	)
-	title := fmt.Sprintf("Route: %s -> %s", a.origin.Name, r.jc.Location.SolarSystemName())
-	w := a.u.App().NewWindow(a.u.MakeWindowTitle(title))
-	w.SetContent(c)
-	w.Resize(fyne.NewSize(600, 400))
+	setDetailWindow(title, c, w)
 	w.Show()
 }
 
-func (a *clones) showClone(r cloneRow) {
-	clone, err := a.u.cs.GetJumpClone(context.Background(), r.jc.Character.ID, r.jc.CloneID)
+func (a *clones) showClone(jc *app.CharacterJumpClone2) {
+	if jc == nil {
+		return
+	}
+	title := fmt.Sprintf("Clone #%d", jc.CloneID)
+	w, ok := a.u.getOrCreateWindow(fmt.Sprint(jc.ID), title, jc.Character.Name)
+	if !ok {
+		w.Show()
+		return
+	}
+	clone, err := a.u.cs.GetJumpClone(context.Background(), jc.Character.ID, jc.CloneID)
 	if err != nil {
 		slog.Error("show clone", "error", err)
 		a.u.showErrorDialog("failed to load clone", err, a.u.MainWindow())
@@ -616,9 +642,9 @@ func (a *clones) showClone(r cloneRow) {
 
 	}
 
-	location := makeLocationLabel(r.jc.Location.ToShort(), a.u.ShowLocationInfoWindow)
-	character := makeLinkLabelWithWrap(r.jc.Character.Name, func() {
-		a.u.ShowInfoWindow(app.EveEntityCharacter, r.jc.Character.ID)
+	location := makeLocationLabel(jc.Location.ToShort(), a.u.ShowLocationInfoWindow)
+	character := makeLinkLabelWithWrap(jc.Character.Name, func() {
+		a.u.ShowInfoWindow(app.EveEntityCharacter, jc.Character.ID)
 	})
 	implants := widget.NewLabel(fmt.Sprint(len(clone.Implants)))
 	col := kxlayout.NewColumns(80)
@@ -647,8 +673,6 @@ func (a *clones) showClone(r cloneRow) {
 		nil,
 		list,
 	)
-	w := a.u.App().NewWindow(a.u.MakeWindowTitle("Clone"))
-	w.SetContent(c)
-	w.Resize(fyne.NewSize(600, 400))
+	setDetailWindow(title, c, w)
 	w.Show()
 }

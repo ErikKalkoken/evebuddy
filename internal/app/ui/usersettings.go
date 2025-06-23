@@ -48,17 +48,23 @@ type userSettings struct {
 }
 
 func showSettingsWindow(u *baseUI) {
-	title := u.MakeWindowTitle("Settings")
-	for _, w := range u.app.Driver().AllWindows() {
-		if w.Title() == title {
-			w.Show()
-			return
-		}
+	w, ok, onClosed := u.getOrCreateWindowWithOnClosed("user-settings", "Settings")
+	if !ok {
+		w.Show()
+		return
 	}
-	w := u.app.NewWindow(title)
 	a := newSettings(u, w)
 	w.SetContent(fynetooltip.AddWindowToolTipLayer(a, w.Canvas()))
 	w.Resize(fyne.Size{Width: 700, Height: 500})
+	w.SetOnClosed(func() {
+		if onClosed != nil {
+			onClosed()
+		}
+		if a.tagsChanged {
+			u.updateCrossPages()
+		}
+		a.sb.Stop()
+	})
 	w.Show()
 }
 
@@ -70,12 +76,6 @@ func newSettings(u *baseUI, w fyne.Window) *userSettings {
 	}
 	a.ExtendBaseWidget(a)
 	a.sb.Start()
-	w.SetOnClosed(func() {
-		if a.tagsChanged {
-			u.updateCrossPages()
-		}
-		a.sb.Stop()
-	})
 	return a
 }
 
