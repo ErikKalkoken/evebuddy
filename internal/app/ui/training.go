@@ -433,7 +433,9 @@ func (a *training) startUpdateTicker() {
 	go func() {
 		for {
 			<-ticker.C
-			a.body.Refresh()
+			fyne.DoAndWait(func() {
+				a.body.Refresh()
+			})
 		}
 	}()
 }
