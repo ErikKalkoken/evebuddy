@@ -360,21 +360,22 @@ func (a *colonies) showColony(r colonyRow) {
 	}
 
 	fi := []*widget.FormItem{
-		widget.NewFormItem("Planet", iwidget.NewTappableRichText(cp.NameRichText(), func() {
-			a.u.ShowEveEntityInfoWindow(cp.EvePlanet.SolarSystem.ToEveEntity())
+		widget.NewFormItem("Owner", makeLinkLabel(r.ownerName, func() {
+			a.u.ShowInfoWindow(app.EveEntityCharacter, cp.CharacterID)
 		})),
-		widget.NewFormItem("Type", kxwidget.NewTappableLabel(cp.EvePlanet.TypeDisplay(), func() {
+		widget.NewFormItem("Planet", widget.NewLabel(cp.EvePlanet.Name)),
+		widget.NewFormItem("Type", makeLinkLabel(cp.EvePlanet.TypeDisplay(), func() {
 			a.u.ShowEveEntityInfoWindow(cp.EvePlanet.Type.ToEveEntity())
 		})),
-		widget.NewFormItem("Region", kxwidget.NewTappableLabel(
+		widget.NewFormItem("System", makeLinkLabel(cp.EvePlanet.SolarSystem.Name, func() {
+			a.u.ShowEveEntityInfoWindow(cp.EvePlanet.SolarSystem.ToEveEntity())
+		})),
+		widget.NewFormItem("Region", makeLinkLabel(
 			cp.EvePlanet.SolarSystem.Constellation.Region.Name,
 			func() {
 				a.u.ShowEveEntityInfoWindow(cp.EvePlanet.SolarSystem.Constellation.Region.ToEveEntity())
 			})),
 		widget.NewFormItem("Installations", widget.NewLabel(fmt.Sprint(len(cp.Pins)))),
-		widget.NewFormItem("Character", kxwidget.NewTappableLabel(r.ownerName, func() {
-			a.u.ShowInfoWindow(app.EveEntityCharacter, cp.CharacterID)
-		})),
 	}
 	infos := widget.NewForm(fi...)
 	infos.Orientation = widget.Adaptive
@@ -386,7 +387,7 @@ func (a *colonies) showColony(r colonyRow) {
 		}
 		expiryTime := pp.ExpiryTime.ValueOrZero()
 		icon, _ := pp.ExtractorProductType.Icon()
-		product := kxwidget.NewTappableLabel(pp.ExtractorProductType.Name, func() {
+		product := makeLinkLabel(pp.ExtractorProductType.Name, func() {
 			a.u.ShowEveEntityInfoWindow(pp.ExtractorProductType.ToEveEntity())
 		})
 		row := container.NewHBox(
