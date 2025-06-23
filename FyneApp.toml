@@ -4,7 +4,7 @@ Website = "https://github.com/ErikKalkoken/evebuddy"
   Icon = "icon.png"
   Name = "EVE Buddy"
   ID = "io.github.erikkalkoken.evebuddy"
-  Version = "0.32.2"
+  Version = "0.32.3"
   Build = 0
 
 [Release]

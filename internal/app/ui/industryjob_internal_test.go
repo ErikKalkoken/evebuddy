@@ -11,6 +11,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestIndustryJob_CanRenderWithData(t *testing.T) {
@@ -107,4 +109,55 @@ func TestIndustryJob_CanRenderEmpty(t *testing.T) {
 			test.AssertImageMatches(t, "industryjobs/"+tc.filename+".png", w.Canvas().Capture())
 		})
 	}
+}
+
+func TestIndustryJob_Filter(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	j1 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+		ActivityID: int32(app.Manufacturing),
+		Status:     app.JobReady,
+	})
+	j2 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+		ActivityID: int32(app.Copying),
+		Status:     app.JobReady,
+	})
+	j3 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+		ActivityID: int32(app.Reactions1),
+		Status:     app.JobReady,
+	})
+	j4 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+		ActivityID: int32(app.Reactions2),
+		Status:     app.JobReady,
+	})
+	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
+	ui.industryJobs.update()
+
+	t.Run("no filter", func(t *testing.T) {
+		ui.industryJobs.selectActivity.SetSelected("")
+
+		got := xslices.Map(ui.industryJobs.rowsFiltered, func(r industryJobRow) int32 {
+			return r.jobID
+		})
+		want := []int32{j1.JobID, j2.JobID, j3.JobID, j4.JobID}
+		assert.ElementsMatch(t, want, got)
+	})
+	t.Run("can filter manufacturing", func(t *testing.T) {
+		ui.industryJobs.selectActivity.SetSelected("Manufacturing")
+
+		got := xslices.Map(ui.industryJobs.rowsFiltered, func(r industryJobRow) int32 {
+			return r.jobID
+		})
+		want := []int32{j1.JobID}
+		assert.ElementsMatch(t, want, got)
+	})
+	t.Run("can filter reactions", func(t *testing.T) {
+		ui.industryJobs.selectActivity.SetSelected("Reactions")
+
+		got := xslices.Map(ui.industryJobs.rowsFiltered, func(r industryJobRow) int32 {
+			return r.jobID
+		})
+		want := []int32{j3.JobID, j4.JobID}
+		assert.ElementsMatch(t, want, got)
+	})
 }

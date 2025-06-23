@@ -276,7 +276,7 @@ func main() {
 		CharacterService:   cs,
 		EsiClient:          esiClient,
 		EveUniverseService: eus,
-		HttpClient:         rhc.StandardClient(),
+		HTTPClient:         rhc.StandardClient(),
 		StatusCacheService: scs,
 		Storage:            st,
 	})

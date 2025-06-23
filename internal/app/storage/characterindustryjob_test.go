@@ -321,7 +321,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character1.ID,
-			ActivityID:  int32(app.Reactions),
+			ActivityID:  int32(app.Reactions2),
 			Status:      app.JobActive,
 		})
 		character2 := factory.CreateCharacterFull()
@@ -342,7 +342,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 			want := []app.IndustryJobActivityCount{
 				{InstallerID: character1.ID, Activity: app.Manufacturing, Status: app.JobActive, Count: 3},
 				{InstallerID: character1.ID, Activity: app.Manufacturing, Status: app.JobReady, Count: 1},
-				{InstallerID: character1.ID, Activity: app.Reactions, Status: app.JobActive, Count: 1},
+				{InstallerID: character1.ID, Activity: app.Reactions2, Status: app.JobActive, Count: 1},
 				{InstallerID: character2.ID, Activity: app.Manufacturing, Status: app.JobActive, Count: 1},
 			}
 			assert.ElementsMatch(t, want, got)

@@ -2,6 +2,7 @@ package corporationservice
 
 import (
 	"context"
+	"maps"
 	"testing"
 	"time"
 
@@ -287,6 +288,75 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			x, err := st.GetCorporationIndustryJob(ctx, c.ID, 229136101)
 			if assert.NoError(t, err) {
 				assert.Equal(t, app.JobActive, x.Status)
+			}
+		}
+	})
+	t.Run("should support all activity IDs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		c := factory.CreateCorporation()
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2046})
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: 498338451})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
+		startDate := time.Now().Add(-24 * time.Hour)
+		endDate := time.Now().Add(+3 * time.Hour)
+
+		makeObj := func(jobID, activityID int32) map[string]any {
+			template := map[string]any{
+				"activity_id":           activityID,
+				"blueprint_id":          1015116533326,
+				"blueprint_location_id": 11,
+				"blueprint_type_id":     2047,
+				"cost":                  118.01,
+				"duration":              548,
+				"end_date":              endDate.Format("2006-01-02T15:04:05Z"),
+				"facility_id":           12,
+				"installer_id":          498338451,
+				"job_id":                jobID,
+				"licensed_runs":         200,
+				"location_id":           60006382,
+				"output_location_id":    13,
+				"product_type_id":       2046,
+				"runs":                  1,
+				"start_date":            startDate.Format("2006-01-02T15:04:05Z"),
+				"status":                "active",
+			}
+			return maps.Clone(template)
+		}
+		objs := make([]map[string]any, 0)
+		activities := []int32{
+			int32(app.Manufacturing),
+			int32(app.Copying),
+			int32(app.Invention),
+			int32(app.MaterialEfficiencyResearch),
+			int32(app.TimeEfficiencyResearch),
+			int32(app.Reactions1),
+			int32(app.Reactions2),
+		}
+		for jobID, activityID := range activities {
+			objs = append(objs, makeObj(int32(jobID), activityID))
+		}
+
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/industry/jobs/\?include_completed=true`,
+			httpmock.NewJsonResponderOrPanic(200, objs))
+
+		// when
+		_, err := s.updateIndustryJobsESI(ctx, app.CorporationUpdateSectionParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationIndustryJobs,
+		})
+		// then
+		if assert.NoError(t, err) {
+			for jobID, activityID := range activities {
+				j, err := st.GetCorporationIndustryJob(ctx, c.ID, int32(jobID))
+				if assert.NoError(t, err) {
+					assert.Equal(t, activityID, int32(j.Activity))
+				}
 			}
 		}
 	})

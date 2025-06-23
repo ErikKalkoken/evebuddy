@@ -422,7 +422,7 @@ func (f Factory) CreateCharacterIndustryJob(args ...storage.UpdateOrCreateCharac
 			app.MaterialEfficiencyResearch,
 			app.Copying,
 			app.Invention,
-			app.Reactions,
+			app.Reactions2,
 		}
 		arg.ActivityID = int32(activities[rand.IntN(len(activities))])
 	}
@@ -1069,7 +1069,7 @@ func (f Factory) CreateCorporationIndustryJob(args ...storage.UpdateOrCreateCorp
 			app.MaterialEfficiencyResearch,
 			app.Copying,
 			app.Invention,
-			app.Reactions,
+			app.Reactions2,
 		}
 		arg.ActivityID = int32(activities[rand.IntN(len(activities))])
 	}
