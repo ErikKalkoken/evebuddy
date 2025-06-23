@@ -357,7 +357,7 @@ func (s *SSOService) fetchNewToken(code, codeVerifier string) (*tokenPayload, er
 	return &token, nil
 }
 
-// Update given token with new instance from SSO API
+// RefreshToken fetches and returns a refreshed token from SSO API.
 func (s *SSOService) RefreshToken(ctx context.Context, refreshToken string) (*app.Token, error) {
 	if refreshToken == "" {
 		return nil, errMissingRefreshToken
