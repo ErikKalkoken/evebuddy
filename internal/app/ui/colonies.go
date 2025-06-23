@@ -37,6 +37,7 @@ type colonyRow struct {
 	nameRT          []widget.RichTextSegment
 	ownerName       string
 	planetID        int32
+	planetName      string
 	producing       set.Set[string]
 	producingText   string
 	regionName      string
@@ -322,6 +323,7 @@ func (a *colonies) fetchRows(s services) ([]colonyRow, int, error) {
 			nameRT:          p.NameRichText(),
 			ownerName:       a.u.scs.CharacterName(p.CharacterID),
 			planetID:        p.EvePlanet.ID,
+			planetName:      p.EvePlanet.Name,
 			producing:       set.Of(producing...),
 			regionName:      p.EvePlanet.SolarSystem.Constellation.Region.Name,
 			solarSystemName: p.EvePlanet.SolarSystem.Name,
@@ -353,6 +355,12 @@ func (a *colonies) fetchRows(s services) ([]colonyRow, int, error) {
 }
 
 func (a *colonies) showColony(r colonyRow) {
+	title := fmt.Sprintf("Colony %s", r.planetName)
+	w, ok := a.u.getOrCreateWindow(fmt.Sprintf("%d-%d", r.characterID, r.planetID), title, r.ownerName)
+	if !ok {
+		w.Show()
+		return
+	}
 	cp, err := a.u.cs.GetPlanet(context.Background(), r.characterID, r.planetID)
 	if err != nil {
 		a.u.showErrorDialog("Failed to show colony", err, a.u.window)
@@ -360,21 +368,22 @@ func (a *colonies) showColony(r colonyRow) {
 	}
 
 	fi := []*widget.FormItem{
-		widget.NewFormItem("Planet", iwidget.NewTappableRichText(cp.NameRichText(), func() {
-			a.u.ShowEveEntityInfoWindow(cp.EvePlanet.SolarSystem.ToEveEntity())
+		widget.NewFormItem("Owner", makeLinkLabel(r.ownerName, func() {
+			a.u.ShowInfoWindow(app.EveEntityCharacter, cp.CharacterID)
 		})),
-		widget.NewFormItem("Type", kxwidget.NewTappableLabel(cp.EvePlanet.TypeDisplay(), func() {
+		widget.NewFormItem("Planet", widget.NewLabel(cp.EvePlanet.Name)),
+		widget.NewFormItem("Type", makeLinkLabel(cp.EvePlanet.TypeDisplay(), func() {
 			a.u.ShowEveEntityInfoWindow(cp.EvePlanet.Type.ToEveEntity())
 		})),
-		widget.NewFormItem("Region", kxwidget.NewTappableLabel(
+		widget.NewFormItem("System", makeLinkLabel(cp.EvePlanet.SolarSystem.Name, func() {
+			a.u.ShowEveEntityInfoWindow(cp.EvePlanet.SolarSystem.ToEveEntity())
+		})),
+		widget.NewFormItem("Region", makeLinkLabel(
 			cp.EvePlanet.SolarSystem.Constellation.Region.Name,
 			func() {
 				a.u.ShowEveEntityInfoWindow(cp.EvePlanet.SolarSystem.Constellation.Region.ToEveEntity())
 			})),
 		widget.NewFormItem("Installations", widget.NewLabel(fmt.Sprint(len(cp.Pins)))),
-		widget.NewFormItem("Character", kxwidget.NewTappableLabel(r.ownerName, func() {
-			a.u.ShowInfoWindow(app.EveEntityCharacter, cp.CharacterID)
-		})),
 	}
 	infos := widget.NewForm(fi...)
 	infos.Orientation = widget.Adaptive
@@ -386,7 +395,7 @@ func (a *colonies) showColony(r colonyRow) {
 		}
 		expiryTime := pp.ExpiryTime.ValueOrZero()
 		icon, _ := pp.ExtractorProductType.Icon()
-		product := kxwidget.NewTappableLabel(pp.ExtractorProductType.Name, func() {
+		product := makeLinkLabel(pp.ExtractorProductType.Name, func() {
 			a.u.ShowEveEntityInfoWindow(pp.ExtractorProductType.ToEveEntity())
 		})
 		row := container.NewHBox(
@@ -429,7 +438,6 @@ func (a *colonies) showColony(r colonyRow) {
 	}
 	c := container.NewVBox(top, processes)
 
-	subTitle := fmt.Sprintf("%s - %s", cp.EvePlanet.Name, r.ownerName)
-	w := a.u.makeDetailWindow("Colony", subTitle, c)
+	setDetailWindow(title, c, w)
 	w.Show()
 }

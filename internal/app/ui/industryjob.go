@@ -586,6 +586,12 @@ func (a *industryJobs) update() {
 }
 
 func (a *industryJobs) showIndustryJob(r industryJobRow) {
+	title := fmt.Sprintf("Industry Job #%d", r.jobID)
+	w, ok := a.u.getOrCreateWindow(fmt.Sprintf("%d-%d", r.owner.ID, r.jobID), title, r.owner.Name)
+	if !ok {
+		w.Show()
+		return
+	}
 	activity := fmt.Sprintf("%s (%s)", r.activity.Display(), r.activity.JobType().Display())
 	items := []*widget.FormItem{
 		widget.NewFormItem("Owner", makeOwnerActionLabel(
@@ -660,9 +666,8 @@ func (a *industryJobs) showIndustryJob(r industryJobRow) {
 	if a.u.IsDeveloperMode() {
 		items = append(items, widget.NewFormItem("Job ID", a.u.makeCopyToClipboardLabel(fmt.Sprint(r.jobID))))
 	}
-	title := fmt.Sprintf("%s - %s - %s", r.blueprintType.Name, r.activity.Display(), r.startDate.Format(app.DateTimeFormat))
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	w := a.u.makeDetailWindow("Industry Job", title, f)
+	setDetailWindow(title, f, w)
 	w.Show()
 }

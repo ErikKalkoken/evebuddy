@@ -371,9 +371,15 @@ func (a *characterWalletTransaction) fetchRows(characterID int32, s services) ([
 }
 
 func showCharacterWalletTransaction(u *baseUI, characterID int32, transactionID int64) {
+	title := fmt.Sprintf("Market Transaction #%d", transactionID)
+	w, ok := u.getOrCreateWindow(fmt.Sprintf("%d-%d", characterID, transactionID), title, u.scs.CharacterName(characterID))
+	if !ok {
+		w.Show()
+		return
+	}
 	o, err := u.cs.GetWalletTransactions(context.Background(), characterID, transactionID)
 	if err != nil {
-		u.showErrorDialog("Failed to fetch market transaction", err, u.window)
+		u.showErrorDialog("Failed to show market transaction", err, u.window)
 		return
 	}
 	totalAmount := o.Total()
@@ -405,9 +411,8 @@ func showCharacterWalletTransaction(u *baseUI, characterID int32, transactionID 
 			u.makeCopyToClipboardLabel(fmt.Sprint(transactionID)),
 		))
 	}
-	title := fmt.Sprintf("Market Transaction #%d", transactionID)
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	w := u.makeDetailWindow("Market Transaction Entry", title, f)
+	setDetailWindow(title, f, w)
 	w.Show()
 }

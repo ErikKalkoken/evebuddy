@@ -58,7 +58,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 	}
 	a.ExtendBaseWidget(a)
 	a.characterCount = newStatusBarItem(theme.NewThemedResource(icons.GroupSvg), "?", func() {
-		u.showManageCharactersWindow()
+		showManageCharactersWindow(u)
 	})
 	a.updateStatus = newStatusBarItem(theme.NewThemedResource(icons.UpdateSvg), "?", func() {
 		showUpdateStatusWindow(u.baseUI)

@@ -197,3 +197,52 @@ func TestIsTimeWithinRange(t *testing.T) {
 		})
 	}
 }
+
+func TestMakeOrFindWindow(t *testing.T) {
+	t.Run("should create new window when it does not yet exist", func(t *testing.T) {
+		ui := NewBaseUI(BaseUIParams{App: test.NewTempApp(t)})
+		w, ok := ui.getOrCreateWindow("abc", "title")
+		assert.True(t, ok)
+		assert.Equal(t, "title", w.Title())
+	})
+	t.Run("should return existing window", func(t *testing.T) {
+		ui := NewBaseUI(BaseUIParams{App: test.NewTempApp(t)})
+		ui.getOrCreateWindow("abc", "title-old")
+		w, ok := ui.getOrCreateWindow("abc", "title-new")
+		assert.False(t, ok)
+		assert.Equal(t, "title-old", w.Title())
+	})
+	t.Run("should create new window when previous one was closed", func(t *testing.T) {
+		ui := NewBaseUI(BaseUIParams{App: test.NewTempApp(t)})
+		w, _ := ui.getOrCreateWindow("abc", "title-old")
+		w.Close()
+		w, ok := ui.getOrCreateWindow("abc", "title-new")
+		assert.True(t, ok)
+		assert.Equal(t, "title-new", w.Title())
+	})
+	t.Run("should create new window when previous one was reshown and then closed", func(t *testing.T) {
+		ui := NewBaseUI(BaseUIParams{App: test.NewTempApp(t)})
+		ui.getOrCreateWindow("abc", "title-old")
+		w, ok := ui.getOrCreateWindow("abc", "title-new")
+		assert.False(t, ok)
+		assert.Equal(t, "title-old", w.Title())
+		w.Close()
+		w, ok = ui.getOrCreateWindow("abc", "title-new")
+		assert.True(t, ok)
+		assert.Equal(t, "title-new", w.Title())
+	})
+	t.Run("should allow setting onClose calback by caller", func(t *testing.T) {
+		ui := NewBaseUI(BaseUIParams{App: test.NewTempApp(t)})
+		w, _, onClosed := ui.getOrCreateWindowWithOnClosed("abc", "title-old")
+		var called bool
+		w.SetOnClosed(func() {
+			onClosed()
+			called = true
+		})
+		w.Close()
+		w, ok := ui.getOrCreateWindow("abc", "title-new")
+		assert.True(t, ok)
+		assert.True(t, called)
+		assert.Equal(t, "title-new", w.Title())
+	})
+}

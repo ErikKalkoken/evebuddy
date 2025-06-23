@@ -147,7 +147,7 @@ func (iw *infoWindow) show(v infoVariant, id int64) {
 	}
 	ab = iwidget.NewAppBar(makeAppBarTitle(title), page)
 	if iw.nav == nil {
-		w := iw.u.App().NewWindow(iw.u.MakeWindowTitle("Information"))
+		w := iw.u.App().NewWindow(iw.u.makeWindowTitle("Information"))
 		iw.w = w
 		iw.sb = iwidget.NewSnackbar(w)
 		iw.sb.Start()
@@ -186,8 +186,10 @@ func (iw *infoWindow) showZoomWindow(title string, id int32, load func(int32, in
 	}
 	i := iwidget.NewImageFromResource(r, fyne.NewSquareSize(s))
 	p := theme.Padding()
-	w2 := iw.u.App().NewWindow(iw.u.MakeWindowTitle(title))
-	w2.SetContent(container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), i))
+	w2, created := iw.u.getOrCreateWindow(fmt.Sprintf("zoom-window-%d", id), title)
+	if created {
+		w2.SetContent(container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), i))
+	}
 	w2.Show()
 }
 
@@ -582,7 +584,13 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 					nil,
 					container.New(
 						layout.NewCustomPaddedVBoxLayout(-2*p),
-						a.corporation,
+						container.NewBorder(
+							nil,
+							nil,
+							container.New(layout.NewCustomPaddedLayout(0, 0, 0, -3*p), widget.NewLabel("Member of")),
+							nil,
+							a.corporation,
+						),
 						a.membership,
 					),
 				),
@@ -663,7 +671,7 @@ func (a *characterInfo) update() error {
 		fyne.Do(func() {
 			a.name.SetText(o.Name)
 			a.security.SetText(fmt.Sprintf("Security Status: %.1f", o.SecurityStatus))
-			a.corporation.SetText(fmt.Sprintf("Member of %s", o.Corporation.Name))
+			a.corporation.SetText(o.Corporation.Name)
 			a.corporation.OnTapped = func() {
 				a.iw.showEveEntity(o.Corporation)
 			}
@@ -923,6 +931,7 @@ type corporationInfo struct {
 	alliance        *widget.Hyperlink
 	allianceHistory *entityList
 	allianceLogo    *canvas.Image
+	allianceBox     fyne.CanvasObject
 	attributes      *attributeList
 	description     *widget.Label
 	hq              *widget.Hyperlink
@@ -960,6 +969,14 @@ func newCorporationInfo(iw *infoWindow, id int32) *corporationInfo {
 		a.tabs.Append(container.NewTabItem("Alliance History", a.allianceHistory))
 	}
 	a.tabs.Select(attributes)
+	p := theme.Padding()
+	a.allianceBox = container.NewBorder(
+		nil,
+		nil,
+		container.NewHBox(a.allianceLogo, container.New(layout.NewCustomPaddedLayout(0, 0, 0, -3*p), widget.NewLabel("Member of"))),
+		nil,
+		a.alliance,
+	)
 	return a
 }
 
@@ -970,13 +987,7 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 			a.name,
 			a.hq,
 		),
-		container.NewBorder(
-			nil,
-			nil,
-			a.allianceLogo,
-			nil,
-			a.alliance,
-		),
+		a.allianceBox,
 	)
 	top := container.NewBorder(
 		nil,
@@ -1027,11 +1038,10 @@ func (a *corporationInfo) update() error {
 		})
 		fyne.Do(func() {
 			if o.Alliance == nil {
-				a.alliance.Hide()
-				a.allianceLogo.Hide()
+				a.allianceBox.Hide()
 				return
 			}
-			a.alliance.SetText("Member of " + o.Alliance.Name)
+			a.alliance.SetText(o.Alliance.Name)
 			a.alliance.OnTapped = func() {
 				a.iw.showEveEntity(o.Alliance)
 			}

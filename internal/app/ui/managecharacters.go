@@ -44,6 +44,27 @@ type manageCharacters struct {
 	window       fyne.Window
 }
 
+func showManageCharactersWindow(u *DesktopUI) {
+	w, created, onClosed := u.getOrCreateWindowWithOnClosed("manage-characters", "Manage Characters")
+	if !created {
+		w.Show()
+		return
+	}
+	w.Resize(fyne.Size{Width: 500, Height: 300})
+	w.SetContent(u.manageCharacters)
+	u.manageCharacters.SetWindow(w)
+	u.manageCharacters.OnSelectCharacter = func() {
+		w.Close()
+	}
+	w.SetOnClosed(func() {
+		if u.manageCharacters.sb != nil {
+			u.manageCharacters.sb.Stop()
+		}
+		onClosed()
+	})
+	w.Show()
+}
+
 func newManageCharacters(u *baseUI) *manageCharacters {
 	a := &manageCharacters{
 		characters:   make([]accountCharacter, 0),

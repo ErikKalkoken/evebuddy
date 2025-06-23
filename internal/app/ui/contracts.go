@@ -391,11 +391,17 @@ func (a *contracts) fetchRows(s services) ([]contractRow, int, error) {
 }
 
 func showContract(u *baseUI, characterID, contractID int32) {
+	title := fmt.Sprintf("Contract #%d", contractID)
+	w, ok := u.getOrCreateWindow(fmt.Sprintf("%d-%d", characterID, contractID), title, u.scs.CharacterName(characterID))
+	if !ok {
+		w.Show()
+		return
+	}
 	o, err := u.cs.GetContract(context.Background(), characterID, contractID)
 	if err != nil {
-		u.showErrorDialog("Failed to show contracts", err, u.window)
+		u.showErrorDialog("Failed to show contract", err, u.window)
+		return
 	}
-	var w fyne.Window
 	makeExpiresString := func(c *app.CharacterContract) string {
 		ts := c.DateExpired.Format(app.DateTimeFormat)
 		var ds string
@@ -480,9 +486,8 @@ func showContract(u *baseUI, characterID, contractID int32) {
 		ctx := context.TODO()
 		total, err := u.cs.CountContractBids(ctx, o.ID)
 		if err != nil {
-			d := u.NewErrorDialog("Failed to count contract bids", err, w)
-			d.SetOnClosed(w.Hide)
-			d.Show()
+			u.showErrorDialog("Failed to show contract bids", err, u.window)
+			return
 		}
 		var currentBid string
 		if total == 0 {
@@ -490,9 +495,8 @@ func showContract(u *baseUI, characterID, contractID int32) {
 		} else {
 			top, err := u.cs.GetContractTopBid(ctx, o.ID)
 			if err != nil {
-				d := u.NewErrorDialog("Failed to get top bid", err, w)
-				d.SetOnClosed(w.Hide)
-				d.Show()
+				u.showErrorDialog("Failed to show contract top bid", err, u.window)
+				return
 			}
 			currentBid = fmt.Sprintf("%s (%d bids so far)", formatISKAmount(float64(top.Amount)), total)
 		}
@@ -504,13 +508,12 @@ func showContract(u *baseUI, characterID, contractID int32) {
 		})
 	}
 
-	makeItemsInfo := func(c *app.CharacterContract) fyne.CanvasObject {
+	makeItemsInfo := func(c *app.CharacterContract) (fyne.CanvasObject, error) {
 		vb := container.NewVBox()
 		items, err := u.cs.ListContractItems(context.TODO(), c.ID)
 		if err != nil {
-			d := u.NewErrorDialog("Failed to fetch contract items", err, w)
-			d.SetOnClosed(w.Hide)
-			d.Show()
+			return nil, err
+
 		}
 		var itemsIncluded, itemsRequested []*app.CharacterContractItem
 		for _, it := range items {
@@ -548,7 +551,7 @@ func showContract(u *baseUI, characterID, contractID int32) {
 				vb.Add(makeItem(it))
 			}
 		}
-		return vb
+		return vb, nil
 	}
 
 	subTitle := fmt.Sprintf("%s (%s)", o.NameDisplay(), o.TypeDisplay())
@@ -557,8 +560,13 @@ func showContract(u *baseUI, characterID, contractID int32) {
 	main := container.NewVBox(f)
 	if o.Type == app.ContractTypeItemExchange || o.Type == app.ContractTypeAuction {
 		main.Add(widget.NewSeparator())
-		main.Add(makeItemsInfo(o))
+		x, err := makeItemsInfo(o)
+		if err != nil {
+			u.showErrorDialog("Failed to show contract items", err, u.window)
+			return
+		}
+		main.Add(x)
 	}
-	w = u.makeDetailWindow("Contract", subTitle, main)
+	setDetailWindow(subTitle, main, w)
 	w.Show()
 }

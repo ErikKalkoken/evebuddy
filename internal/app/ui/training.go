@@ -433,12 +433,19 @@ func (a *training) startUpdateTicker() {
 	go func() {
 		for {
 			<-ticker.C
-			a.body.Refresh()
+			fyne.DoAndWait(func() {
+				a.body.Refresh()
+			})
 		}
 	}()
 }
 
 func (a *training) showDetails(r trainingRow) {
+	w, ok := a.u.getOrCreateWindow(fmt.Sprint(r.characterID), "Training: Information", r.characterName)
+	if !ok {
+		w.Show()
+		return
+	}
 	status := widget.NewLabel(r.statusText)
 	status.Importance = r.statusImportance
 	var skill fyne.CanvasObject
@@ -475,7 +482,7 @@ func (a *training) showDetails(r trainingRow) {
 
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	title := fmt.Sprintf("Training info for %s", r.characterName)
-	w := a.u.makeDetailWindowWithSize("Training info", title, fyne.NewSize(500, 450), f)
+	subTitle := fmt.Sprintf("Training info for %s", r.characterName)
+	setDetailWindowWithSize(subTitle, fyne.NewSize(500, 450), f, w)
 	w.Show()
 }

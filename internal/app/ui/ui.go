@@ -9,6 +9,7 @@ import (
 	"maps"
 	"net/url"
 	"slices"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -135,8 +136,9 @@ type baseUI struct {
 	scs                *statuscacheservice.StatusCacheService
 	settings           *settings.Settings
 	snackbar           *iwidget.Snackbar
-	wasStarted         atomic.Bool // whether the app has already been started at least once
-	window             fyne.Window
+	wasStarted         atomic.Bool            // whether the app has already been started at least once
+	window             fyne.Window            // main window
+	windows            map[string]fyne.Window // child windows
 
 	character atomic.Pointer[app.Character]
 }
@@ -177,6 +179,7 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 		rs:               args.CorporationService,
 		scs:              args.StatusCacheService,
 		settings:         settings.New(args.App.Preferences()),
+		windows:          make(map[string]fyne.Window),
 	}
 	u.window = u.app.NewWindow(u.appName())
 
@@ -370,13 +373,6 @@ func (u *baseUI) humanizeError(err error) string {
 	}
 	return err.Error()
 	// return ihumanize.Error(err) TODO: Re-enable again when app is stable enough
-}
-
-func (u *baseUI) MakeWindowTitle(subTitle string) string {
-	if !u.isDesktop {
-		return subTitle
-	}
-	return fmt.Sprintf("%s - %s", subTitle, u.appName())
 }
 
 // currentCharacterID returns the ID of the current character or 0 if non is set.
@@ -1241,27 +1237,41 @@ func (u *baseUI) makeAboutPage() fyne.CanvasObject {
 	return c
 }
 
-func (u *baseUI) makeDetailWindow(title, subTitle string, content fyne.CanvasObject) fyne.Window {
-	return u.makeDetailWindowWithSize(title, subTitle, fyne.NewSize(600, 500), content)
+// getOrCreateWindow returns a unique window as defined by the given id string
+// and reports whether a new window was created or the window already exists.
+func (u *baseUI) getOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool) {
+	w, ok, f := u.getOrCreateWindowWithOnClosed(id, titles...)
+	if f != nil {
+		w.SetOnClosed(f)
+	}
+	return w, ok
 }
 
-func (u *baseUI) makeDetailWindowWithSize(title, subTitle string, minSize fyne.Size, content fyne.CanvasObject) fyne.Window {
-	w := u.App().NewWindow(u.MakeWindowTitle(title))
-	t := widget.NewLabel(subTitle)
-	t.SizeName = theme.SizeNameSubHeadingText
-	top := container.NewVBox(t, widget.NewSeparator())
-	vs := container.NewVScroll(content)
-	vs.SetMinSize(minSize)
-	c := container.NewBorder(
-		top,
-		nil,
-		nil,
-		nil,
-		vs,
-	)
-	c.Refresh()
-	w.SetContent(container.NewPadded(c))
-	return w
+// getOrCreateWindowWithOnClosed is like makeOrFindWindow,
+// but returns an additional onClosed function which must be called when the window is closed.
+// This variant allows constructing a custom onClosed callback for the window.
+func (u *baseUI) getOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func()) {
+	w, ok := u.windows[id]
+	if ok {
+		return w, false, nil
+	}
+	w = u.App().NewWindow(u.makeWindowTitle(titles...))
+	u.windows[id] = w
+	f := func() {
+		delete(u.windows, id)
+	}
+	return w, true, f
+}
+
+func (u *baseUI) makeWindowTitle(parts ...string) string {
+	if len(parts) == 0 {
+		parts = append(parts, "PLACEHOLDER")
+	}
+	if !u.isDesktop {
+		return parts[0]
+	}
+	parts = append(parts, u.appName())
+	return strings.Join(parts, " - ")
 }
 
 func (u *baseUI) makeCopyToClipboardLabel(text string) *kxwidget.TappableLabel {

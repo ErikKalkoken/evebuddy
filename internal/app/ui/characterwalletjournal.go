@@ -297,9 +297,15 @@ func (*characterWalletJournal) fetchRows(characterID int32, s services) ([]walle
 
 // showCharacterWalletJournalEntry shows a wallet journal entry for a character in a new window.
 func showCharacterWalletJournalEntry(u *baseUI, characterID int32, refID int64) {
+	title := fmt.Sprintf("Wallet Transaction #%d", refID)
+	w, ok := u.getOrCreateWindow(fmt.Sprintf("%d-%d", characterID, refID), title, u.scs.CharacterName(characterID))
+	if !ok {
+		w.Show()
+		return
+	}
 	o, err := u.cs.GetWalletJournalEntry(context.Background(), characterID, refID)
 	if err != nil {
-		u.showErrorDialog("Failed to fetch wallet journal entry", err, u.window)
+		u.showErrorDialog("Failed to show wallet transaction", err, u.window)
 		return
 	}
 
@@ -409,7 +415,6 @@ func showCharacterWalletJournalEntry(u *baseUI, characterID int32, refID int64) 
 	for _, it := range items {
 		f.AppendItem(it)
 	}
-	title := fmt.Sprintf("Wallet Journal #%d", refID)
-	w := u.makeDetailWindow("Wallet Journal Entry", title, f)
+	setDetailWindow(title, f, w)
 	w.Show()
 }
