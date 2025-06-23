@@ -1181,22 +1181,22 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character.ID,
-			ActivityID:  int32(app.Reactions),
+			ActivityID:  int32(app.Reactions1),
 			Status:      app.JobActive,
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character.ID,
-			ActivityID:  int32(app.Reactions),
+			ActivityID:  int32(app.Reactions2),
 			Status:      app.JobActive,
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character.ID,
-			ActivityID:  int32(app.Reactions),
+			ActivityID:  int32(app.Reactions2),
 			Status:      app.JobReady,
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character.ID,
-			ActivityID:  int32(app.Reactions),
+			ActivityID:  int32(app.Reactions2),
 			Status:      app.JobDelivered,
 		})
 		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ReactionJob)

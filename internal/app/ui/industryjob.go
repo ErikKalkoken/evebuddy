@@ -277,7 +277,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 			case industryActivityMaterialResearch:
 				return r.activity == app.MaterialEfficiencyResearch
 			case industryActivityReaction:
-				return r.activity == app.Reactions
+				return r.activity == app.Reactions1 || r.activity == app.Reactions2
 			case industryActivityTimeResearch:
 				return r.activity == app.TimeEfficiencyResearch
 			}
@@ -359,7 +359,7 @@ func (a *industryJobs) makeDataList() *iwidget.StripedList {
 		app.TimeEfficiencyResearch:     theme.NewThemedResource(icons.IndytimeresearchSvg),
 		app.Copying:                    theme.NewThemedResource(icons.IndycopyingSvg),
 		app.Invention:                  theme.NewThemedResource(icons.IndyinventionSvg),
-		app.Reactions:                  theme.NewThemedResource(icons.IndyreactionsSvg),
+		app.Reactions2:                 theme.NewThemedResource(icons.IndyreactionsSvg),
 	}
 	var l *iwidget.StripedList
 	l = iwidget.NewStripedList(

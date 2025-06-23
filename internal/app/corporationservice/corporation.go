@@ -1,3 +1,4 @@
+// Package corporationservice contains the corporation service.
 package corporationservice
 
 import (
@@ -46,7 +47,7 @@ type Params struct {
 	StatusCacheService *statuscacheservice.StatusCacheService
 	Storage            *storage.Storage
 	// optional
-	HttpClient *http.Client
+	HTTPClient *http.Client
 	EsiClient  *goesi.APIClient
 }
 
@@ -60,10 +61,10 @@ func New(args Params) *CorporationService {
 		st:  args.Storage,
 		sfg: new(singleflight.Group),
 	}
-	if args.HttpClient == nil {
+	if args.HTTPClient == nil {
 		s.httpClient = http.DefaultClient
 	} else {
-		s.httpClient = args.HttpClient
+		s.httpClient = args.HTTPClient
 	}
 	if args.EsiClient == nil {
 		s.esiClient = goesi.NewAPIClient(s.httpClient, "")

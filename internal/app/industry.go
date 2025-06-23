@@ -24,7 +24,7 @@ const (
 var industryJobType2Activity = map[IndustryJobType]set.Set[IndustryActivity]{
 	ManufacturingJob: set.Of(Manufacturing),
 	ScienceJob:       set.Of(TimeEfficiencyResearch, MaterialEfficiencyResearch, Copying, Invention),
-	ReactionJob:      set.Of(Reactions),
+	ReactionJob:      set.Of(Reactions1, Reactions2),
 }
 
 // Activities returns the industry activities that belong to a job type.
@@ -68,7 +68,8 @@ const (
 	MaterialEfficiencyResearch IndustryActivity = 4
 	Copying                    IndustryActivity = 5
 	Invention                  IndustryActivity = 8
-	Reactions                  IndustryActivity = 11
+	Reactions1                 IndustryActivity = 9
+	Reactions2                 IndustryActivity = 11
 )
 
 func (a IndustryActivity) String() string {
@@ -79,7 +80,8 @@ func (a IndustryActivity) String() string {
 		MaterialEfficiencyResearch: "material efficiency research",
 		Copying:                    "copying",
 		Invention:                  "invention",
-		Reactions:                  "reactions",
+		Reactions1:                 "reactions",
+		Reactions2:                 "reactions",
 	}
 	s, ok := m[a]
 	if !ok {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"slices"
 	"testing"
@@ -716,7 +717,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/industry/jobs/?include_completed=true", c.ID),
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/industry/jobs/\?include_completed=true`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"activity_id":           1,
@@ -788,7 +789,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/industry/jobs/?include_completed=true", c.ID),
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/industry/jobs/\?include_completed=true`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"activity_id":           1,
@@ -849,7 +850,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/industry/jobs/?include_completed=true", c.ID),
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/industry/jobs/\?include_completed=true`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"activity_id":           1,
@@ -899,7 +900,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		endDate := time.Now().Add(+3 * time.Hour)
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/industry/jobs/?include_completed=true", c.ID),
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/industry/jobs/\?include_completed=true`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"activity_id":           1,
@@ -932,6 +933,73 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			x, err := st.GetCharacterIndustryJob(ctx, c.ID, 229136101)
 			if assert.NoError(t, err) {
 				assert.Equal(t, app.JobActive, x.Status)
+			}
+		}
+	})
+	t.Run("should support all activity IDs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: 498338451})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
+		startDate := time.Now().Add(-24 * time.Hour)
+		endDate := time.Now().Add(+3 * time.Hour)
+
+		makeObj := func(jobID, activityID int32) map[string]any {
+			template := map[string]any{
+				"activity_id":           activityID,
+				"blueprint_id":          1015116533326,
+				"blueprint_location_id": 60006382,
+				"blueprint_type_id":     2047,
+				"cost":                  118.01,
+				"duration":              548,
+				"end_date":              endDate.Format("2006-01-02T15:04:05Z"),
+				"facility_id":           60006382,
+				"installer_id":          498338451,
+				"job_id":                jobID,
+				"licensed_runs":         200,
+				"output_location_id":    60006382,
+				"runs":                  1,
+				"start_date":            startDate.Format("2006-01-02T15:04:05Z"),
+				"station_id":            60006382,
+				"status":                "active",
+			}
+			return maps.Clone(template)
+		}
+		objs := make([]map[string]any, 0)
+		activities := []int32{
+			int32(app.Manufacturing),
+			int32(app.Copying),
+			int32(app.Invention),
+			int32(app.MaterialEfficiencyResearch),
+			int32(app.TimeEfficiencyResearch),
+			int32(app.Reactions1),
+			int32(app.Reactions2),
+		}
+		for jobID, activityID := range activities {
+			objs = append(objs, makeObj(int32(jobID), activityID))
+		}
+
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/industry/jobs/\?include_completed=true`,
+			httpmock.NewJsonResponderOrPanic(200, objs))
+
+		// when
+		_, err := s.updateIndustryJobsESI(ctx, app.CharacterUpdateSectionParams{
+			CharacterID: c.ID,
+			Section:     app.SectionIndustryJobs,
+		})
+		// then
+		if assert.NoError(t, err) {
+			for jobID, activityID := range activities {
+				j, err := st.GetCharacterIndustryJob(ctx, c.ID, int32(jobID))
+				if assert.NoError(t, err) {
+					assert.Equal(t, activityID, int32(j.Activity))
+				}
 			}
 		}
 	})
