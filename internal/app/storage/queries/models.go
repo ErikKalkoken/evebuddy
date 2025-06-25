@@ -318,6 +318,13 @@ type Corporation struct {
 	CreatedAt time.Time
 }
 
+type CorporationHangarName struct {
+	ID            int64
+	CorporationID int64
+	DivisionID    int64
+	Name          string
+}
+
 type CorporationIndustryJob struct {
 	ID                   int64
 	ActivityID           int64
@@ -399,7 +406,6 @@ type CorporationWalletTransaction struct {
 	DivisionID    int64
 	EveTypeID     int64
 	IsBuy         bool
-	IsPersonal    bool
 	JournalRefID  int64
 	LocationID    int64
 	Quantity      int64

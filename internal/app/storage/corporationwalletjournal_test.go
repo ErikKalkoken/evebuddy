@@ -167,4 +167,40 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
+	t.Run("can store multiple", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCorporation()
+		date := time.Now()
+		arg := storage.CreateCorporationWalletJournalEntryParams{
+			Amount:        123.45,
+			Balance:       234.56,
+			ContextID:     42,
+			ContextIDType: "corporation",
+			Date:          date,
+			Description:   "bla bla",
+			DivisionID:    1,
+			RefID:         4,
+			CorporationID: c.ID,
+			Reason:        "my reason",
+			RefType:       "player_donation",
+			Tax:           0.12,
+		}
+
+		err := r.CreateCorporationWalletJournalEntry(ctx, arg)
+		if assert.NoError(t, err) {
+			arg.RefID = 5
+			err := r.CreateCorporationWalletJournalEntry(ctx, arg)
+			if assert.NoError(t, err) {
+				got, err := r.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
+					CorporationID: c.ID,
+					DivisionID:    1,
+				})
+				if assert.NoError(t, err) {
+					want := set.Of[int64](4, 5)
+					assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+				}
+			}
+		}
+	})
 }

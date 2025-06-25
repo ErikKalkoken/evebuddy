@@ -6,7 +6,6 @@ INSERT INTO
         division_id,
         eve_type_id,
         is_buy,
-        is_personal,
         journal_ref_id,
         corporation_id,
         location_id,
@@ -15,7 +14,7 @@ INSERT INTO
         unit_price
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: GetCorporationWalletTransaction :one
 SELECT

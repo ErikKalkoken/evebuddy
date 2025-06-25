@@ -25,6 +25,24 @@ func (st *Storage) GetCorporationWalletName(ctx context.Context, arg Corporation
 	return corporationWalletNameFromDBModel(o), nil
 }
 
+func (st *Storage) ListCorporationWalletNames(ctx context.Context, corporationID int32) ([]*app.CorporationWalletName, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCorporationWalletNames for id %d: %w", corporationID, err)
+	}
+	if corporationID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	rows, err := st.qRO.ListCorporationWalletNames(ctx, int64(corporationID))
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	oo := make([]*app.CorporationWalletName, len(rows))
+	for i, r := range rows {
+		oo[i] = corporationWalletNameFromDBModel(r)
+	}
+	return oo, nil
+}
+
 type UpdateOrCreateCorporationWalletNameParams struct {
 	CorporationID int32
 	DivisionID    int32
