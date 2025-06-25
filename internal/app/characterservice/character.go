@@ -2620,7 +2620,10 @@ func (s *CharacterService) ensureValidCharacterToken(ctx context.Context, t *app
 }
 
 func (s *CharacterService) GetWalletJournalEntry(ctx context.Context, characterID int32, refID int64) (*app.CharacterWalletJournalEntry, error) {
-	return s.st.GetCharacterWalletJournalEntry(ctx, characterID, refID)
+	return s.st.GetCharacterWalletJournalEntry(ctx, storage.GetCharacterWalletJournalEntryParams{
+		CharacterID: characterID,
+		RefID:       refID,
+	})
 }
 
 func (s *CharacterService) ListWalletJournalEntries(ctx context.Context, characterID int32) ([]*app.CharacterWalletJournalEntry, error) {
@@ -2713,7 +2716,10 @@ const (
 )
 
 func (s *CharacterService) GetWalletTransactions(ctx context.Context, characterID int32, transactionID int64) (*app.CharacterWalletTransaction, error) {
-	return s.st.GetCharacterWalletTransaction(ctx, characterID, transactionID)
+	return s.st.GetCharacterWalletTransaction(ctx, storage.GetCharacterWalletTransactionParams{
+		CharacterID:   characterID,
+		TransactionID: transactionID,
+	})
 }
 
 func (s *CharacterService) ListWalletTransactions(ctx context.Context, characterID int32) ([]*app.CharacterWalletTransaction, error) {

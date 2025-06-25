@@ -5,47 +5,50 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
-	"github.com/stretchr/testify/assert"
 )
 
-func TestCharacterWalletTransaction(t *testing.T) {
+func TestCorporationWalletTransaction(t *testing.T) {
 	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCorporation()
 		date := time.Now()
-		client := factory.CreateEveEntityCharacter()
+		client := factory.CreateEveEntityCorporation()
 		eveType := factory.CreateEveType()
 		location := factory.CreateEveLocationStructure()
-		arg := storage.CreateCharacterWalletTransactionParams{
+		arg := storage.CreateCorporationWalletTransactionParams{
 			ClientID:      client.ID,
 			Date:          date,
+			DivisionID:    1,
 			EveTypeID:     eveType.ID,
 			IsBuy:         true,
 			IsPersonal:    true,
 			JournalRefID:  99,
 			LocationID:    location.ID,
-			CharacterID:   c.ID,
+			CorporationID: c.ID,
 			Quantity:      7,
 			UnitPrice:     123.45,
 			TransactionID: 42,
 		}
 		// when
-		err := r.CreateCharacterWalletTransaction(ctx, arg)
+		err := r.CreateCorporationWalletTransaction(ctx, arg)
 		// then
 		region := location.SolarSystem.Constellation.Region
 		if assert.NoError(t, err) {
-			i, err := r.GetCharacterWalletTransaction(ctx, storage.GetCharacterWalletTransactionParams{
-				CharacterID:   c.ID,
+			i, err := r.GetCorporationWalletTransaction(ctx, storage.GetCorporationWalletTransactionParams{
+				CorporationID: c.ID,
+				DivisionID:    1,
 				TransactionID: 42,
 			})
 			if assert.NoError(t, err) {
@@ -65,7 +68,7 @@ func TestCharacterWalletTransaction(t *testing.T) {
 					},
 					i.Location,
 				)
-				assert.Equal(t, c.ID, i.CharacterID)
+				assert.Equal(t, c.ID, i.CorporationID)
 				assert.Equal(t, int32(7), i.Quantity)
 				assert.Equal(t, 123.45, i.UnitPrice)
 				assert.Equal(t, location.ID, i.Location.ID)
@@ -79,33 +82,59 @@ func TestCharacterWalletTransaction(t *testing.T) {
 			}
 		}
 	})
-	t.Run("can list IDs of existing entries for a character", func(t *testing.T) {
+	t.Run("can list IDs of existing entries for a corporation", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterFull()
-		e1 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
-		e2 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
-		factory.CreateCharacterWalletTransaction()
+		c := factory.CreateCorporation()
+		t1 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
+		t2 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    2,
+		})
+		factory.CreateCorporationWalletTransaction()
 		// when
-		got, err := r.ListCharacterWalletTransactionIDs(ctx, c.ID)
+		got, err := r.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
 		// then
 		if assert.NoError(t, err) {
-			want := set.Of(e1.TransactionID, e2.TransactionID)
+			want := set.Of(t1.TransactionID, t2.TransactionID)
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
-	t.Run("can list existing entries for a character", func(t *testing.T) {
+	t.Run("can list existing entries for a corporation", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterFull()
-		t1 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
-		t2 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
-		factory.CreateCharacterWalletTransaction()
+		c := factory.CreateCorporation()
+		t1 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
+		t2 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    2,
+		})
+		factory.CreateCorporationWalletTransaction()
 		// when
-		oo, err := r.ListCharacterWalletTransactions(ctx, c.ID)
+		oo, err := r.ListCorporationWalletTransactions(ctx, storage.CorporationDivision{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
 		// then
 		if assert.NoError(t, err) {
-			got := set.Of(xslices.Map(oo, func(x *app.CharacterWalletTransaction) int64 {
+			got := set.Of(xslices.Map(oo, func(x *app.CorporationWalletTransaction) int64 {
 				return x.TransactionID
 			})...)
 			want := set.Of(t1.TransactionID, t2.TransactionID)

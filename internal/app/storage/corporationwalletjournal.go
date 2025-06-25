@@ -10,18 +10,17 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
-// FIXME: Wrong unique clause and missing index for ref_id
-
-type CreateCharacterWalletJournalEntryParams struct {
+type CreateCorporationWalletJournalEntryParams struct {
 	Amount        float64
 	Balance       float64
 	ContextID     int64
 	ContextIDType string
 	Date          time.Time
 	Description   string
+	DivisionID    int32
 	FirstPartyID  int32
 	RefID         int64
-	CharacterID   int32
+	CorporationID int32
 	Reason        string
 	RefType       string
 	SecondPartyID int32
@@ -29,22 +28,23 @@ type CreateCharacterWalletJournalEntryParams struct {
 	TaxReceiverID int32
 }
 
-func (st *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg CreateCharacterWalletJournalEntryParams) error {
+func (st *Storage) CreateCorporationWalletJournalEntry(ctx context.Context, arg CreateCorporationWalletJournalEntryParams) error {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("CreateCharacterWalletJournalEntry: %+v: %w", arg, err)
+		return fmt.Errorf("CreateCorporationWalletJournalEntry: %+v: %w", arg, err)
 	}
-	if arg.CharacterID == 0 || arg.RefID == 0 {
+	if arg.CorporationID == 0 || arg.DivisionID == 0 || arg.RefID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	arg2 := queries.CreateCharacterWalletJournalEntryParams{
+	arg2 := queries.CreateCorporationWalletJournalEntryParams{
 		Amount:        arg.Amount,
 		Balance:       arg.Balance,
 		ContextID:     arg.ContextID,
 		ContextIDType: arg.ContextIDType,
 		Date:          arg.Date,
 		Description:   arg.Description,
+		DivisionID:    int64(arg.DivisionID),
 		RefID:         arg.RefID,
-		CharacterID:   int64(arg.CharacterID),
+		CorporationID: int64(arg.CorporationID),
 		RefType:       arg.RefType,
 		Reason:        arg.Reason,
 		Tax:           arg.Tax,
@@ -61,90 +61,108 @@ func (st *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg Cr
 		arg2.TaxReceiverID.Int64 = int64(arg.TaxReceiverID)
 		arg2.TaxReceiverID.Valid = true
 	}
-	err := st.qRW.CreateCharacterWalletJournalEntry(ctx, arg2)
+	err := st.qRW.CreateCorporationWalletJournalEntry(ctx, arg2)
 	if err != nil {
 		return wrapErr(err)
 	}
 	return nil
 }
 
-type GetCharacterWalletJournalEntryParams struct {
-	CharacterID int32
-	RefID       int64
+type GetCorporationWalletJournalEntryParams struct {
+	CorporationID int32
+	DivisionID    int32
+	RefID         int64
 }
 
-func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, arg GetCharacterWalletJournalEntryParams) (*app.CharacterWalletJournalEntry, error) {
+func (st *Storage) GetCorporationWalletJournalEntry(ctx context.Context, arg GetCorporationWalletJournalEntryParams) (*app.CorporationWalletJournalEntry, error) {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("GetCharacterWalletJournalEntry: %+v: %w", arg, err)
+		return fmt.Errorf("GetCorporationWalletJournalEntry: %+v: %w", arg, err)
 	}
-	if arg.CharacterID == 0 || arg.RefID == 0 {
+	if arg.CorporationID == 0 || arg.DivisionID == 0 || arg.RefID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	r, err := st.qRO.GetCharacterWalletJournalEntry(ctx, queries.GetCharacterWalletJournalEntryParams{
-		CharacterID: int64(arg.CharacterID),
-		RefID:       arg.RefID,
+	r, err := st.qRO.GetCorporationWalletJournalEntry(ctx, queries.GetCorporationWalletJournalEntryParams{
+		CorporationID: int64(arg.CorporationID),
+		DivisionID:    int64(arg.DivisionID),
+		RefID:         arg.RefID,
 	})
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	o := r.CharacterWalletJournalEntry
+	o := r.CorporationWalletJournalEntry
 	firstParty := nullEveEntry{ID: o.FirstPartyID, Name: r.FirstName, Category: r.FirstCategory}
 	secondParty := nullEveEntry{ID: o.SecondPartyID, Name: r.SecondName, Category: r.SecondCategory}
 	taxReceiver := nullEveEntry{ID: o.TaxReceiverID, Name: r.TaxName, Category: r.TaxCategory}
-	return characterWalletJournalEntryFromDBModel(o, firstParty, secondParty, taxReceiver), err
+	return corporationWalletJournalEntryFromDBModel(o, firstParty, secondParty, taxReceiver), err
 }
 
-func (st *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
+type CorporationDivision struct {
+	CorporationID int32
+	DivisionID    int32
+}
+
+func (cd CorporationDivision) IsInvalid() bool {
+	return cd.CorporationID <= 0 || cd.DivisionID <= 0
+}
+
+func (st *Storage) ListCorporationWalletJournalEntryIDs(ctx context.Context, arg CorporationDivision) (set.Set[int64], error) {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("list wallet journal entry ids for character %d: %w", characterID, err)
+		return fmt.Errorf("ListCorporationWalletJournalEntryIDs: %+v: %w", arg, err)
 	}
-	if characterID == 0 {
+	if arg.IsInvalid() {
 		return set.Set[int64]{}, wrapErr(app.ErrInvalid)
 	}
-	ids, err := st.qRO.ListCharacterWalletJournalEntryRefIDs(ctx, int64(characterID))
+	ids, err := st.qRO.ListCorporationWalletJournalEntryRefIDs(ctx, queries.ListCorporationWalletJournalEntryRefIDsParams{
+		CorporationID: int64(arg.CorporationID),
+		DivisionID:    int64(arg.DivisionID),
+	})
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
 	}
 	return set.Of(ids...), nil
 }
 
-func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, characterID int32) ([]*app.CharacterWalletJournalEntry, error) {
+func (st *Storage) ListCorporationWalletJournalEntries(ctx context.Context, arg CorporationDivision) ([]*app.CorporationWalletJournalEntry, error) {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("list wallet journal entries for character %d: %w", characterID, err)
+		return fmt.Errorf("ListCorporationWalletJournalEntries: %+v: %w", arg, err)
 	}
-	if characterID == 0 {
+	if arg.IsInvalid() {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	rows, err := st.qRO.ListCharacterWalletJournalEntries(ctx, int64(characterID))
+	rows, err := st.qRO.ListCorporationWalletJournalEntries(ctx, queries.ListCorporationWalletJournalEntriesParams{
+		CorporationID: int64(arg.CorporationID),
+		DivisionID:    int64(arg.DivisionID),
+	})
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	ee := make([]*app.CharacterWalletJournalEntry, len(rows))
+	ee := make([]*app.CorporationWalletJournalEntry, len(rows))
 	for i, r := range rows {
-		o := r.CharacterWalletJournalEntry
+		o := r.CorporationWalletJournalEntry
 		firstParty := nullEveEntry{ID: o.FirstPartyID, Name: r.FirstName, Category: r.FirstCategory}
 		secondParty := nullEveEntry{ID: o.SecondPartyID, Name: r.SecondName, Category: r.SecondCategory}
 		taxReceiver := nullEveEntry{ID: o.TaxReceiverID, Name: r.TaxName, Category: r.TaxCategory}
-		ee[i] = characterWalletJournalEntryFromDBModel(o, firstParty, secondParty, taxReceiver)
+		ee[i] = corporationWalletJournalEntryFromDBModel(o, firstParty, secondParty, taxReceiver)
 	}
 	return ee, nil
 }
 
-func characterWalletJournalEntryFromDBModel(
-	o queries.CharacterWalletJournalEntry,
+func corporationWalletJournalEntryFromDBModel(
+	o queries.CorporationWalletJournalEntry,
 	firstParty, secondParty, taxReceiver nullEveEntry,
-) *app.CharacterWalletJournalEntry {
-	o2 := &app.CharacterWalletJournalEntry{
+) *app.CorporationWalletJournalEntry {
+	o2 := &app.CorporationWalletJournalEntry{
 		Amount:        o.Amount,
 		Balance:       o.Balance,
 		ContextID:     o.ContextID,
 		ContextIDType: o.ContextIDType,
 		Date:          o.Date,
 		Description:   o.Description,
+		DivisionID:    int32(o.DivisionID),
 		FirstParty:    eveEntityFromNullableDBModel(firstParty),
 		ID:            o.ID,
 		RefID:         o.RefID,
-		CharacterID:   int32(o.CharacterID),
+		CorporationID: int32(o.CorporationID),
 		Reason:        o.Reason,
 		RefType:       o.RefType,
 		SecondParty:   eveEntityFromNullableDBModel(secondParty),
