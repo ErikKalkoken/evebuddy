@@ -145,11 +145,43 @@ type CorporationSection string
 
 // Updated corporation sections
 const (
-	SectionCorporationIndustryJobs CorporationSection = "industry_jobs"
+	SectionCorporationDivisions           CorporationSection = "divisions"
+	SectionCorporationIndustryJobs        CorporationSection = "industry_jobs"
+	SectionCorporationWalletBalances      CorporationSection = "wallet_balances"
+	SectionCorporationWalletJournal1      CorporationSection = "wallet_journal_1"
+	SectionCorporationWalletJournal2      CorporationSection = "wallet_journal_2"
+	SectionCorporationWalletJournal3      CorporationSection = "wallet_journal_3"
+	SectionCorporationWalletJournal4      CorporationSection = "wallet_journal_4"
+	SectionCorporationWalletJournal5      CorporationSection = "wallet_journal_5"
+	SectionCorporationWalletJournal6      CorporationSection = "wallet_journal_6"
+	SectionCorporationWalletJournal7      CorporationSection = "wallet_journal_7"
+	SectionCorporationWalletTransactions1 CorporationSection = "wallet_transactions_1"
+	SectionCorporationWalletTransactions2 CorporationSection = "wallet_transactions_2"
+	SectionCorporationWalletTransactions3 CorporationSection = "wallet_transactions_3"
+	SectionCorporationWalletTransactions4 CorporationSection = "wallet_transactions_4"
+	SectionCorporationWalletTransactions5 CorporationSection = "wallet_transactions_5"
+	SectionCorporationWalletTransactions6 CorporationSection = "wallet_transactions_6"
+	SectionCorporationWalletTransactions7 CorporationSection = "wallet_transactions_7"
 )
 
 var CorporationSections = []CorporationSection{
+	SectionCorporationDivisions,
 	SectionCorporationIndustryJobs,
+	SectionCorporationWalletBalances,
+	SectionCorporationWalletJournal1,
+	SectionCorporationWalletJournal2,
+	SectionCorporationWalletJournal3,
+	SectionCorporationWalletJournal4,
+	SectionCorporationWalletJournal5,
+	SectionCorporationWalletJournal6,
+	SectionCorporationWalletJournal7,
+	SectionCorporationWalletTransactions1,
+	SectionCorporationWalletTransactions2,
+	SectionCorporationWalletTransactions3,
+	SectionCorporationWalletTransactions4,
+	SectionCorporationWalletTransactions5,
+	SectionCorporationWalletTransactions6,
+	SectionCorporationWalletTransactions7,
 }
 
 func (cs CorporationSection) DisplayName() string {
@@ -159,10 +191,35 @@ func (cs CorporationSection) DisplayName() string {
 	return t
 }
 
+// DivisionID returns the division ID this section is related to or 0 if it has none.
+func (cs CorporationSection) DivisionID() int32 {
+	m := map[CorporationSection]int32{
+		SectionCorporationWalletJournal1:      1,
+		SectionCorporationWalletJournal2:      2,
+		SectionCorporationWalletJournal3:      3,
+		SectionCorporationWalletJournal4:      4,
+		SectionCorporationWalletJournal5:      5,
+		SectionCorporationWalletJournal6:      6,
+		SectionCorporationWalletJournal7:      7,
+		SectionCorporationWalletTransactions1: 1,
+		SectionCorporationWalletTransactions2: 2,
+		SectionCorporationWalletTransactions3: 3,
+		SectionCorporationWalletTransactions4: 4,
+		SectionCorporationWalletTransactions5: 5,
+		SectionCorporationWalletTransactions6: 6,
+		SectionCorporationWalletTransactions7: 7,
+	}
+	return m[cs]
+}
+
 // Timeout returns the time until the data of an update section becomes stale.
 func (cs CorporationSection) Timeout() time.Duration {
 	m := map[CorporationSection]time.Duration{
-		SectionCorporationIndustryJobs: 300 * time.Second,
+		SectionCorporationIndustryJobs:        300 * time.Second,
+		SectionCorporationWalletBalances:      300 * time.Second,
+		SectionCorporationWalletJournal1:      3600 * time.Second,
+		SectionCorporationDivisions:           3600 * time.Second,
+		SectionCorporationWalletTransactions1: 3600 * time.Second,
 	}
 	duration, ok := m[cs]
 	if !ok {
@@ -172,10 +229,16 @@ func (cs CorporationSection) Timeout() time.Duration {
 	return duration
 }
 
+// TODO: Extend to multiple roles per sections
+
 // Role returns the required role for fetching data for a section from ESI.
 func (cs CorporationSection) Role() Role {
 	m := map[CorporationSection]Role{
-		SectionCorporationIndustryJobs: RoleFactoryManager,
+		SectionCorporationIndustryJobs:        RoleFactoryManager,
+		SectionCorporationWalletBalances:      RoleAccountant,
+		SectionCorporationWalletJournal1:      RoleAccountant,
+		SectionCorporationDivisions:           RoleDirector,
+		SectionCorporationWalletTransactions1: RoleAccountant,
 	}
 	role, ok := m[cs]
 	if !ok {
@@ -186,9 +249,10 @@ func (cs CorporationSection) Role() Role {
 }
 
 type CorporationUpdateSectionParams struct {
-	CorporationID int32
-	Section       CorporationSection
-	ForceUpdate   bool
+	CorporationID         int32
+	ForceUpdate           bool
+	MaxWalletTransactions int
+	Section               CorporationSection
 }
 
 type CorporationSectionStatus struct {

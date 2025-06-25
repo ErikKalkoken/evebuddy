@@ -36,6 +36,43 @@ func (q *Queries) GetCorporationWalletBalance(ctx context.Context, arg GetCorpor
 	return i, err
 }
 
+const listCorporationWalletBalances = `-- name: ListCorporationWalletBalances :many
+SELECT
+    id, corporation_id, division_id, balance
+FROM
+    corporation_wallet_balances
+WHERE
+    corporation_id = ?
+`
+
+func (q *Queries) ListCorporationWalletBalances(ctx context.Context, corporationID int64) ([]CorporationWalletBalance, error) {
+	rows, err := q.db.QueryContext(ctx, listCorporationWalletBalances, corporationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CorporationWalletBalance
+	for rows.Next() {
+		var i CorporationWalletBalance
+		if err := rows.Scan(
+			&i.ID,
+			&i.CorporationID,
+			&i.DivisionID,
+			&i.Balance,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateOrCreateCorporationWalletBalance = `-- name: UpdateOrCreateCorporationWalletBalance :exec
 INSERT INTO
     corporation_wallet_balances (corporation_id, division_id, balance)

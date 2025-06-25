@@ -25,6 +25,24 @@ func (st *Storage) GetCorporationWalletBalance(ctx context.Context, arg Corporat
 	return corporationWalletBalanceFromDBModel(o), nil
 }
 
+func (st *Storage) ListCorporationWalletBalances(ctx context.Context, corporationID int32) ([]*app.CorporationWalletBalance, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCorporationWalletBalances for id %d: %w", corporationID, err)
+	}
+	if corporationID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	rows, err := st.qRO.ListCorporationWalletBalances(ctx, int64(corporationID))
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	ee := make([]*app.CorporationWalletBalance, len(rows))
+	for i, r := range rows {
+		ee[i] = corporationWalletBalanceFromDBModel(r)
+	}
+	return ee, nil
+}
+
 type UpdateOrCreateCorporationWalletBalanceParams struct {
 	CorporationID int32
 	DivisionID    int32

@@ -14,8 +14,6 @@ import (
 
 	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
-	esioptional "github.com/antihax/goesi/optional"
-	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -90,110 +88,41 @@ func (s *CorporationService) ListCorporationIDs(ctx context.Context) (set.Set[in
 	return s.st.ListCorporationIDs(ctx)
 }
 
-// GetCorporationIndustryJob returns an industry job.
-func (s *CorporationService) GetCorporationIndustryJob(ctx context.Context, corporationID, jobID int32) (*app.CorporationIndustryJob, error) {
-	return s.st.GetCorporationIndustryJob(ctx, corporationID, jobID)
-}
-
-// ListAllCorporationIndustryJobs returns all industry jobs from corporations.
-func (s *CorporationService) ListAllCorporationIndustryJobs(ctx context.Context) ([]*app.CorporationIndustryJob, error) {
-	return s.st.ListAllCorporationIndustryJobs(ctx)
-}
-
-var jobStatusFromESIValue = map[string]app.IndustryJobStatus{
-	"active":    app.JobActive,
-	"cancelled": app.JobCancelled,
-	"delivered": app.JobDelivered,
-	"paused":    app.JobPaused,
-	"ready":     app.JobReady,
-	"reverted":  app.JobReverted,
-}
-
-func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.CorporationUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionCorporationIndustryJobs {
+func (s *CorporationService) updateDivisionsESI(ctx context.Context, arg app.CorporationUpdateSectionParams) (bool, error) {
+	if arg.Section != app.SectionCorporationDivisions {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, corporationID int32) (any, error) {
-			jobs, _, err := s.esiClient.ESI.IndustryApi.GetCorporationsCorporationIdIndustryJobs(ctx, corporationID, &esi.GetCorporationsCorporationIdIndustryJobsOpts{
-				IncludeCompleted: esioptional.NewBool(true),
-			})
+		func(ctx context.Context, arg app.CorporationUpdateSectionParams) (any, error) {
+			divisions, _, err := s.esiClient.ESI.CorporationApi.GetCorporationsCorporationIdDivisions(ctx, arg.CorporationID, nil)
 			if err != nil {
 				return false, err
 			}
-			slog.Debug("Received industry jobs from ESI", "corporationID", corporationID, "count", len(jobs))
-			return jobs, nil
+			return divisions, nil
 		},
-		func(ctx context.Context, corporationID int32, data any) error {
-			jobs := data.([]esi.GetCorporationsCorporationIdIndustryJobs200Ok)
-			entityIDs := set.Of[int32]()
-			typeIDs := set.Of[int32]()
-			locationIDs := set.Of[int64]()
-			for _, j := range jobs {
-				entityIDs.Add(j.InstallerId)
-				if j.CompletedCharacterId != 0 {
-					entityIDs.Add(j.CompletedCharacterId)
-				}
-				locationIDs.Add(j.LocationId)
-				typeIDs.Add(j.BlueprintTypeId)
-				if j.ProductTypeId != 0 {
-					typeIDs.Add(j.ProductTypeId)
+		func(ctx context.Context, arg app.CorporationUpdateSectionParams, data any) error {
+			divisions := data.(esi.GetCorporationsCorporationIdDivisionsOk)
+			for _, w := range divisions.Hangar {
+				if err := s.st.UpdateOrCreateCorporationHangarName(ctx, storage.UpdateOrCreateCorporationHangarNameParams{
+					CorporationID: arg.CorporationID,
+					DivisionID:    w.Division,
+					Name:          w.Name,
+				}); err != nil {
+					return err
 				}
 			}
-			g := new(errgroup.Group)
-			g.Go(func() error {
-				_, err := s.eus.AddMissingEntities(ctx, entityIDs)
-				return err
-			})
-			g.Go(func() error {
-				return s.eus.AddMissingLocations(ctx, locationIDs)
-			})
-			g.Go(func() error {
-				return s.eus.AddMissingTypes(ctx, typeIDs)
-			})
-			if err := g.Wait(); err != nil {
-				return err
-			}
-			for _, j := range jobs {
-				status, ok := jobStatusFromESIValue[j.Status]
-				if !ok {
-					status = app.JobUndefined
-				}
-				if status == app.JobActive && !j.EndDate.IsZero() && j.EndDate.Before(time.Now()) {
-					// Workaround for known bug: https://github.com/esi/esi-issues/issues/752
-					status = app.JobReady
-				}
-				arg := storage.UpdateOrCreateCorporationIndustryJobParams{
-					ActivityID:           j.ActivityId,
-					BlueprintID:          j.BlueprintId,
-					BlueprintLocationID:  j.BlueprintLocationId,
-					BlueprintTypeID:      j.BlueprintTypeId,
-					CompletedCharacterID: j.CompletedCharacterId,
-					CompletedDate:        j.CompletedDate,
-					CorporationID:        corporationID,
-					Cost:                 j.Cost,
-					Duration:             j.Duration,
-					EndDate:              j.EndDate,
-					FacilityID:           j.FacilityId,
-					InstallerID:          j.InstallerId,
-					JobID:                j.JobId,
-					LicensedRuns:         j.LicensedRuns,
-					LocationID:           j.LocationId,
-					OutputLocationID:     j.OutputLocationId,
-					PauseDate:            j.PauseDate,
-					Probability:          j.Probability,
-					ProductTypeID:        j.ProductTypeId,
-					Runs:                 j.Runs,
-					StartDate:            j.StartDate,
-					Status:               status,
-					SuccessfulRuns:       j.SuccessfulRuns,
-				}
-				if err := s.st.UpdateOrCreateCorporationIndustryJob(ctx, arg); err != nil {
-					return nil
+			slog.Info("Updated corporation hangar names", "corporationID", arg.CorporationID)
+			for _, w := range divisions.Wallet {
+				if err := s.st.UpdateOrCreateCorporationWalletName(ctx, storage.UpdateOrCreateCorporationWalletNameParams{
+					CorporationID: arg.CorporationID,
+					DivisionID:    w.Division,
+					Name:          w.Name,
+				}); err != nil {
+					return err
 				}
 			}
-			slog.Info("Updated industry jobs", "corporationID", corporationID, "count", len(jobs))
+			slog.Info("Updated corporation wallet names", "corporationID", arg.CorporationID)
 			return nil
 		})
 }
@@ -218,8 +147,30 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 	}
 	var f func(context.Context, app.CorporationUpdateSectionParams) (bool, error)
 	switch arg.Section {
+	case app.SectionCorporationDivisions:
+		f = s.updateDivisionsESI
 	case app.SectionCorporationIndustryJobs:
 		f = s.updateIndustryJobsESI
+	case app.SectionCorporationWalletBalances:
+		f = s.updateWalletBalancesESI
+	case
+		app.SectionCorporationWalletJournal1,
+		app.SectionCorporationWalletJournal2,
+		app.SectionCorporationWalletJournal3,
+		app.SectionCorporationWalletJournal4,
+		app.SectionCorporationWalletJournal5,
+		app.SectionCorporationWalletJournal6,
+		app.SectionCorporationWalletJournal7:
+		f = s.updateWalletJournalESI
+	case
+		app.SectionCorporationWalletTransactions1,
+		app.SectionCorporationWalletTransactions2,
+		app.SectionCorporationWalletTransactions3,
+		app.SectionCorporationWalletTransactions4,
+		app.SectionCorporationWalletTransactions5,
+		app.SectionCorporationWalletTransactions6,
+		app.SectionCorporationWalletTransactions7:
+		f = s.updateWalletTransactionESI
 	default:
 		return false, fmt.Errorf("update section: unknown section: %s", arg.Section)
 	}
@@ -253,8 +204,8 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 func (s *CorporationService) updateSectionIfChanged(
 	ctx context.Context,
 	arg app.CorporationUpdateSectionParams,
-	fetch func(ctx context.Context, corporationID int32) (any, error),
-	update func(ctx context.Context, corporationID int32, data any) error,
+	fetch func(ctx context.Context, arg app.CorporationUpdateSectionParams) (any, error),
+	update func(ctx context.Context, arg app.CorporationUpdateSectionParams, data any) error,
 ) (bool, error) {
 	startedAt := optional.From(time.Now())
 	arg2 := storage.UpdateOrCreateCorporationSectionStatusParams{
@@ -278,7 +229,7 @@ func (s *CorporationService) updateSectionIfChanged(
 		return false, err
 	} else {
 		ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
-		data, err := fetch(ctx, arg.CorporationID)
+		data, err := fetch(ctx, arg)
 		if err != nil {
 			return false, err
 		}
@@ -300,7 +251,7 @@ func (s *CorporationService) updateSectionIfChanged(
 		// update if needed
 		hasChanged = u.ContentHash != hash
 		if arg.ForceUpdate || notFound || hasChanged {
-			if err := update(ctx, arg.CorporationID, data); err != nil {
+			if err := update(ctx, arg, data); err != nil {
 				return false, err
 			}
 		}

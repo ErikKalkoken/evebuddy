@@ -13,6 +13,12 @@ type Corporation struct {
 	Corporation *EveCorporation
 }
 
+type CorporationHangarName struct {
+	CorporationID int32
+	DivisionID    int32
+	Name          string
+}
+
 type CorporationWalletBalance struct {
 	CorporationID int32
 	DivisionID    int32
@@ -56,7 +62,6 @@ type CorporationWalletTransaction struct {
 	DivisionID    int32
 	ID            int64
 	IsBuy         bool
-	IsPersonal    bool
 	JournalRefID  int64
 	Location      *EveLocationShort
 	Region        *EntityShort[int32]

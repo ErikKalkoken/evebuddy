@@ -12,7 +12,6 @@ import (
 	"maps"
 	"net/http"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -30,6 +29,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -42,6 +42,7 @@ var esiScopes = []string{
 	"esi-clones.read_clones.v1",
 	"esi-clones.read_implants.v1",
 	"esi-contracts.read_character_contracts.v1",
+	"esi-corporations.read_divisions.v1",
 	"esi-industry.read_character_jobs.v1",
 	"esi-industry.read_corporation_jobs.v1",
 	"esi-location.read_location.v1",
@@ -56,6 +57,7 @@ var esiScopes = []string{
 	"esi-skills.read_skills.v1",
 	"esi-universe.read_structures.v1",
 	"esi-wallet.read_character_wallet.v1",
+	"esi-wallet.read_corporation_wallets.v1",
 }
 
 type SSOService interface {
@@ -146,7 +148,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 	hasChanged, err := s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			assets, err := fetchFromESIWithPaging(
+			assets, err := xesi.FetchWithPaging(
 				func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 					arg := &esi.GetCharactersCharacterIdAssetsOpts{
 						Page: esioptional.NewInt32(int32(pageNum)),
@@ -782,7 +784,7 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			contracts, err := fetchFromESIWithPaging(
+			contracts, err := xesi.FetchWithPaging(
 				func(pageNum int) ([]esi.GetCharactersCharacterIdContracts200Ok, *http.Response, error) {
 					arg := &esi.GetCharactersCharacterIdContractsOpts{
 						Page: esioptional.NewInt32(int32(pageNum)),
@@ -2617,271 +2619,6 @@ func (s *CharacterService) ensureValidCharacterToken(ctx context.Context, t *app
 	}
 	slog.Info("Token refreshed", "characterID", t.CharacterID)
 	return nil
-}
-
-func (s *CharacterService) GetWalletJournalEntry(ctx context.Context, characterID int32, refID int64) (*app.CharacterWalletJournalEntry, error) {
-	return s.st.GetCharacterWalletJournalEntry(ctx, storage.GetCharacterWalletJournalEntryParams{
-		CharacterID: characterID,
-		RefID:       refID,
-	})
-}
-
-func (s *CharacterService) ListWalletJournalEntries(ctx context.Context, characterID int32) ([]*app.CharacterWalletJournalEntry, error) {
-	return s.st.ListCharacterWalletJournalEntries(ctx, characterID)
-}
-
-// updateWalletJournalEntryESI updates the wallet journal from ESI and reports whether it has changed.
-func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionWalletJournal {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
-	}
-	return s.updateSectionIfChanged(
-		ctx, arg,
-		func(ctx context.Context, characterID int32) (any, error) {
-			entries, err := fetchFromESIWithPaging(
-				func(pageNum int) ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
-					arg := &esi.GetCharactersCharacterIdWalletJournalOpts{
-						Page: esioptional.NewInt32(int32(pageNum)),
-					}
-					return s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWalletJournal(ctx, characterID, arg)
-				})
-			if err != nil {
-				return false, err
-			}
-			slog.Debug("Received wallet journal from ESI", "entries", len(entries), "characterID", characterID)
-			return entries, nil
-		},
-		func(ctx context.Context, characterID int32, data any) error {
-			entries := data.([]esi.GetCharactersCharacterIdWalletJournal200Ok)
-			existingIDs, err := s.st.ListCharacterWalletJournalEntryIDs(ctx, characterID)
-			if err != nil {
-				return err
-			}
-			var newEntries []esi.GetCharactersCharacterIdWalletJournal200Ok
-			for _, e := range entries {
-				if existingIDs.Contains(e.Id) {
-					continue
-				}
-				newEntries = append(newEntries, e)
-			}
-			slog.Debug("wallet journal", "existing", existingIDs, "entries", entries)
-			if len(newEntries) == 0 {
-				slog.Info("No new wallet journal entries", "characterID", characterID)
-				return nil
-			}
-			ids := set.Of[int32]()
-			for _, e := range newEntries {
-				if e.FirstPartyId != 0 {
-					ids.Add(e.FirstPartyId)
-				}
-				if e.SecondPartyId != 0 {
-					ids.Add(e.SecondPartyId)
-				}
-				if e.TaxReceiverId != 0 {
-					ids.Add(e.TaxReceiverId)
-				}
-			}
-			_, err = s.eus.AddMissingEntities(ctx, ids)
-			if err != nil {
-				return err
-			}
-			for _, o := range newEntries {
-				arg := storage.CreateCharacterWalletJournalEntryParams{
-					Amount:        o.Amount,
-					Balance:       o.Balance,
-					ContextID:     o.ContextId,
-					ContextIDType: o.ContextIdType,
-					Date:          o.Date,
-					Description:   o.Description,
-					FirstPartyID:  o.FirstPartyId,
-					RefID:         o.Id,
-					CharacterID:   characterID,
-					RefType:       o.RefType,
-					Reason:        o.Reason,
-					SecondPartyID: o.SecondPartyId,
-					Tax:           o.Tax,
-					TaxReceiverID: o.TaxReceiverId,
-				}
-				if err := s.st.CreateCharacterWalletJournalEntry(ctx, arg); err != nil {
-					return err
-				}
-			}
-			slog.Info("Stored new wallet journal entries", "characterID", characterID, "entries", len(newEntries))
-			return nil
-		})
-}
-
-const (
-	maxTransactionsPerPage = 2_500 // maximum objects returned per page
-)
-
-func (s *CharacterService) GetWalletTransactions(ctx context.Context, characterID int32, transactionID int64) (*app.CharacterWalletTransaction, error) {
-	return s.st.GetCharacterWalletTransaction(ctx, storage.GetCharacterWalletTransactionParams{
-		CharacterID:   characterID,
-		TransactionID: transactionID,
-	})
-}
-
-func (s *CharacterService) ListWalletTransactions(ctx context.Context, characterID int32) ([]*app.CharacterWalletTransaction, error) {
-	return s.st.ListCharacterWalletTransactions(ctx, characterID)
-}
-
-// updateWalletTransactionESI updates the wallet journal from ESI and reports whether it has changed.
-func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionWalletTransactions {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
-	}
-	return s.updateSectionIfChanged(
-		ctx, arg,
-		func(ctx context.Context, characterID int32) (any, error) {
-			transactions, err := s.fetchWalletTransactionsESI(ctx, characterID, arg.MaxWalletTransactions)
-			if err != nil {
-				return false, err
-			}
-			return transactions, nil
-		},
-		func(ctx context.Context, characterID int32, data any) error {
-			transactions := data.([]esi.GetCharactersCharacterIdWalletTransactions200Ok)
-			existingIDs, err := s.st.ListCharacterWalletTransactionIDs(ctx, characterID)
-			if err != nil {
-				return err
-			}
-			var newEntries []esi.GetCharactersCharacterIdWalletTransactions200Ok
-			for _, e := range transactions {
-				if existingIDs.Contains(e.TransactionId) {
-					continue
-				}
-				newEntries = append(newEntries, e)
-			}
-			slog.Debug("wallet transaction", "existing", existingIDs, "entries", transactions)
-			if len(newEntries) == 0 {
-				slog.Info("No new wallet transactions", "characterID", characterID)
-				return nil
-			}
-			var entityIDs, typeIDs set.Set[int32]
-			var locationIDs set.Set[int64]
-			for _, en := range newEntries {
-				if en.ClientId != 0 {
-					entityIDs.Add(en.ClientId)
-				}
-				locationIDs.Add(en.LocationId)
-				typeIDs.Add(en.TypeId)
-			}
-			g := new(errgroup.Group)
-			g.Go(func() error {
-				_, err := s.eus.AddMissingEntities(ctx, entityIDs)
-				return err
-			})
-			g.Go(func() error {
-				return s.eus.AddMissingLocations(ctx, locationIDs)
-			})
-			g.Go(func() error {
-				return s.eus.AddMissingTypes(ctx, typeIDs)
-			})
-			if err := g.Wait(); err != nil {
-				return err
-			}
-			for _, o := range newEntries {
-				arg := storage.CreateCharacterWalletTransactionParams{
-					ClientID:      o.ClientId,
-					Date:          o.Date,
-					EveTypeID:     o.TypeId,
-					IsBuy:         o.IsBuy,
-					IsPersonal:    o.IsPersonal,
-					JournalRefID:  o.JournalRefId,
-					LocationID:    o.LocationId,
-					CharacterID:   characterID,
-					Quantity:      o.Quantity,
-					TransactionID: o.TransactionId,
-					UnitPrice:     o.UnitPrice,
-				}
-				if err := s.st.CreateCharacterWalletTransaction(ctx, arg); err != nil {
-					return err
-				}
-			}
-			slog.Info("Stored new wallet transactions", "characterID", characterID, "entries", len(newEntries))
-			return nil
-		})
-}
-
-// fetchWalletTransactionsESI fetches wallet transactions from ESI with paging and returns them.
-func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, characterID int32, maxTransactions int) ([]esi.GetCharactersCharacterIdWalletTransactions200Ok, error) {
-	var oo2 []esi.GetCharactersCharacterIdWalletTransactions200Ok
-	lastID := int64(0)
-	for {
-		var opts *esi.GetCharactersCharacterIdWalletTransactionsOpts
-		if lastID > 0 {
-			opts = &esi.GetCharactersCharacterIdWalletTransactionsOpts{FromId: esioptional.NewInt64(lastID)}
-		} else {
-			opts = nil
-		}
-		oo, _, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWalletTransactions(ctx, characterID, opts)
-		if err != nil {
-			return nil, err
-		}
-		oo2 = slices.Concat(oo2, oo)
-		isLimitExceeded := (maxTransactions != 0 && len(oo2)+maxTransactionsPerPage > maxTransactions)
-		if len(oo) < maxTransactionsPerPage || isLimitExceeded {
-			break
-		}
-		ids := make([]int64, len(oo))
-		for i, o := range oo {
-			ids[i] = o.TransactionId
-		}
-		lastID = slices.Min(ids)
-	}
-	slog.Debug("Received wallet transactions", "characterID", characterID, "count", len(oo2))
-	return oo2, nil
-}
-
-// fetchFromESIWithPaging returns the combined list of items from all pages of an ESI endpoint.
-// This only works for ESI endpoints which support the X-Pages pattern and return a list.
-func fetchFromESIWithPaging[T any](fetch func(int) ([]T, *http.Response, error)) ([]T, error) {
-	result, r, err := fetch(1)
-	if err != nil {
-		return nil, err
-	}
-	pages, err := extractPageCount(r)
-	if err != nil {
-		return nil, err
-	}
-	if pages < 2 {
-		return result, nil
-	}
-	results := make([][]T, pages)
-	results[0] = result
-	g := new(errgroup.Group)
-	for p := 2; p <= pages; p++ {
-		p := p
-		g.Go(func() error {
-			result, _, err := fetch(p)
-			if err != nil {
-				return err
-			}
-			results[p-1] = result
-			return nil
-		})
-	}
-	if err := g.Wait(); err != nil {
-		return nil, err
-	}
-	combined := make([]T, 0)
-	for _, result := range results {
-		combined = slices.Concat(combined, result)
-	}
-	return combined, nil
-}
-
-func extractPageCount(r *http.Response) (int, error) {
-	x := r.Header.Get("X-Pages")
-	if x == "" {
-		return 1, nil
-	}
-	pages, err := strconv.Atoi(x)
-	if err != nil {
-		return 0, err
-	}
-	return pages, nil
 }
 
 // UpdateSectionIfNeeded updates a section from ESI if has expired and changed

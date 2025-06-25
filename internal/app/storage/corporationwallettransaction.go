@@ -18,7 +18,6 @@ type CreateCorporationWalletTransactionParams struct {
 	DivisionID    int32
 	EveTypeID     int32
 	IsBuy         bool
-	IsPersonal    bool
 	JournalRefID  int64
 	LocationID    int64
 	CorporationID int32
@@ -40,7 +39,6 @@ func (st *Storage) CreateCorporationWalletTransaction(ctx context.Context, arg C
 		DivisionID:    int64(arg.DivisionID),
 		EveTypeID:     int64(arg.EveTypeID),
 		IsBuy:         arg.IsBuy,
-		IsPersonal:    arg.IsPersonal,
 		JournalRefID:  arg.JournalRefID,
 		LocationID:    arg.LocationID,
 		CorporationID: int64(arg.CorporationID),
@@ -155,7 +153,6 @@ func corporationWalletTransactionFromDBModel(
 		Type:         eveTypeFromDBModel(et, eg, ec),
 		ID:           o.ID,
 		IsBuy:        o.IsBuy,
-		IsPersonal:   o.IsPersonal,
 		JournalRefID: o.JournalRefID,
 		Location: &app.EveLocationShort{
 			ID:             o.LocationID,

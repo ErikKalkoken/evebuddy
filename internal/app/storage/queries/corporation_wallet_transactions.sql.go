@@ -19,7 +19,6 @@ INSERT INTO
         division_id,
         eve_type_id,
         is_buy,
-        is_personal,
         journal_ref_id,
         corporation_id,
         location_id,
@@ -28,7 +27,7 @@ INSERT INTO
         unit_price
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateCorporationWalletTransactionParams struct {
@@ -37,7 +36,6 @@ type CreateCorporationWalletTransactionParams struct {
 	DivisionID    int64
 	EveTypeID     int64
 	IsBuy         bool
-	IsPersonal    bool
 	JournalRefID  int64
 	CorporationID int64
 	LocationID    int64
@@ -53,7 +51,6 @@ func (q *Queries) CreateCorporationWalletTransaction(ctx context.Context, arg Cr
 		arg.DivisionID,
 		arg.EveTypeID,
 		arg.IsBuy,
-		arg.IsPersonal,
 		arg.JournalRefID,
 		arg.CorporationID,
 		arg.LocationID,
@@ -66,7 +63,7 @@ func (q *Queries) CreateCorporationWalletTransaction(ctx context.Context, arg Cr
 
 const getCorporationWalletTransaction = `-- name: GetCorporationWalletTransaction :one
 SELECT
-    cwt.id, cwt.corporation_id, cwt.client_id, cwt.date, cwt.division_id, cwt.eve_type_id, cwt.is_buy, cwt.is_personal, cwt.journal_ref_id, cwt.location_id, cwt.quantity, cwt.transaction_id, cwt.unit_price,
+    cwt.id, cwt.corporation_id, cwt.client_id, cwt.date, cwt.division_id, cwt.eve_type_id, cwt.is_buy, cwt.journal_ref_id, cwt.location_id, cwt.quantity, cwt.transaction_id, cwt.unit_price,
     ee.id, ee.category, ee.name,
     et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
     eg.id, eg.eve_category_id, eg.name, eg.is_published,
@@ -120,7 +117,6 @@ func (q *Queries) GetCorporationWalletTransaction(ctx context.Context, arg GetCo
 		&i.CorporationWalletTransaction.DivisionID,
 		&i.CorporationWalletTransaction.EveTypeID,
 		&i.CorporationWalletTransaction.IsBuy,
-		&i.CorporationWalletTransaction.IsPersonal,
 		&i.CorporationWalletTransaction.JournalRefID,
 		&i.CorporationWalletTransaction.LocationID,
 		&i.CorporationWalletTransaction.Quantity,
@@ -198,7 +194,7 @@ func (q *Queries) ListCorporationWalletTransactionIDs(ctx context.Context, arg L
 
 const listCorporationWalletTransactions = `-- name: ListCorporationWalletTransactions :many
 SELECT
-    cwt.id, cwt.corporation_id, cwt.client_id, cwt.date, cwt.division_id, cwt.eve_type_id, cwt.is_buy, cwt.is_personal, cwt.journal_ref_id, cwt.location_id, cwt.quantity, cwt.transaction_id, cwt.unit_price,
+    cwt.id, cwt.corporation_id, cwt.client_id, cwt.date, cwt.division_id, cwt.eve_type_id, cwt.is_buy, cwt.journal_ref_id, cwt.location_id, cwt.quantity, cwt.transaction_id, cwt.unit_price,
     ee.id, ee.category, ee.name,
     et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
     eg.id, eg.eve_category_id, eg.name, eg.is_published,
@@ -258,7 +254,6 @@ func (q *Queries) ListCorporationWalletTransactions(ctx context.Context, arg Lis
 			&i.CorporationWalletTransaction.DivisionID,
 			&i.CorporationWalletTransaction.EveTypeID,
 			&i.CorporationWalletTransaction.IsBuy,
-			&i.CorporationWalletTransaction.IsPersonal,
 			&i.CorporationWalletTransaction.JournalRefID,
 			&i.CorporationWalletTransaction.LocationID,
 			&i.CorporationWalletTransaction.Quantity,

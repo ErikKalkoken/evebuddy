@@ -895,7 +895,7 @@ func TestCorporationSectionSummary(t *testing.T) {
 		Current:   0,
 		Errors:    1,
 		IsRunning: false,
-		Total:     1,
+		Total:     len(app.CorporationSections),
 	}
 	assert.Equal(t, want, got)
 }

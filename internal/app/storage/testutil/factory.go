@@ -1059,6 +1059,36 @@ func (f Factory) CreateCorporation(corporationID ...int32) *app.Corporation {
 	return c
 }
 
+func (f Factory) CreateCorporationHangarName(args ...storage.UpdateOrCreateCorporationHangarNameParams) *app.CorporationHangarName {
+	ctx := context.Background()
+	var arg storage.UpdateOrCreateCorporationHangarNameParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CorporationID == 0 {
+		x := f.CreateCorporation()
+		arg.CorporationID = x.ID
+	}
+	if arg.DivisionID == 0 {
+		arg.DivisionID = 1
+	}
+	if arg.Name == "" {
+		arg.Name = fake.Color()
+	}
+	err := f.st.UpdateOrCreateCorporationHangarName(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	x, err := f.st.GetCorporationHangarName(ctx, storage.CorporationDivision{
+		CorporationID: arg.CorporationID,
+		DivisionID:    arg.DivisionID,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return x
+}
+
 func (f Factory) CreateCorporationIndustryJob(args ...storage.UpdateOrCreateCorporationIndustryJobParams) *app.CorporationIndustryJob {
 	ctx := context.Background()
 	var arg storage.UpdateOrCreateCorporationIndustryJobParams

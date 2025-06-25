@@ -36,6 +36,43 @@ func (q *Queries) GetCorporationWalletName(ctx context.Context, arg GetCorporati
 	return i, err
 }
 
+const listCorporationWalletNames = `-- name: ListCorporationWalletNames :many
+SELECT
+    id, corporation_id, division_id, name
+FROM
+    corporation_wallet_names
+WHERE
+    corporation_id = ?
+`
+
+func (q *Queries) ListCorporationWalletNames(ctx context.Context, corporationID int64) ([]CorporationWalletName, error) {
+	rows, err := q.db.QueryContext(ctx, listCorporationWalletNames, corporationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CorporationWalletName
+	for rows.Next() {
+		var i CorporationWalletName
+		if err := rows.Scan(
+			&i.ID,
+			&i.CorporationID,
+			&i.DivisionID,
+			&i.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateOrCreateCorporationWalletName = `-- name: UpdateOrCreateCorporationWalletName :exec
 INSERT INTO
     corporation_wallet_names (corporation_id, division_id, name)
