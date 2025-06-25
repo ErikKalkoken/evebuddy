@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand/v2"
+	"strings"
 	"time"
 
 	"github.com/icrowley/fake"
@@ -933,7 +934,10 @@ func (f Factory) CreateCharacterWalletJournalEntry(args ...storage.CreateCharact
 	if err != nil {
 		panic(fmt.Sprintf("%s|%+v", err, arg))
 	}
-	i, err := f.st.GetCharacterWalletJournalEntry(ctx, arg.CharacterID, arg.RefID)
+	i, err := f.st.GetCharacterWalletJournalEntry(ctx, storage.GetCharacterWalletJournalEntryParams{
+		CharacterID: arg.CharacterID,
+		RefID:       arg.RefID,
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -988,7 +992,10 @@ func (f Factory) CreateCharacterWalletTransaction(args ...storage.CreateCharacte
 	if err != nil {
 		panic(err)
 	}
-	x, err := f.st.GetCharacterWalletTransaction(ctx, arg.CharacterID, arg.TransactionID)
+	x, err := f.st.GetCharacterWalletTransaction(ctx, storage.GetCharacterWalletTransactionParams{
+		CharacterID:   arg.CharacterID,
+		TransactionID: arg.TransactionID,
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -1189,6 +1196,204 @@ func (f Factory) CreateCorporationSectionStatus(args ...CorporationSectionStatus
 		panic(err)
 	}
 	return o
+}
+
+func (f Factory) CreateCorporationWalletBalance(args ...storage.UpdateOrCreateCorporationWalletBalanceParams) *app.CorporationWalletBalance {
+	ctx := context.Background()
+	var arg storage.UpdateOrCreateCorporationWalletBalanceParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CorporationID == 0 {
+		x := f.CreateCorporation()
+		arg.CorporationID = x.ID
+	}
+	if arg.DivisionID == 0 {
+		arg.DivisionID = 1
+	}
+	if arg.Balance == 0 {
+		arg.Balance = rand.Float64()*100_000_000_000 + rand.Float64()
+	}
+	err := f.st.UpdateOrCreateCorporationWalletBalance(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	x, err := f.st.GetCorporationWalletBalance(ctx, storage.CorporationDivision{
+		CorporationID: arg.CorporationID,
+		DivisionID:    arg.DivisionID,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return x
+}
+
+func (f Factory) CreateCorporationWalletName(args ...storage.UpdateOrCreateCorporationWalletNameParams) *app.CorporationWalletName {
+	ctx := context.Background()
+	var arg storage.UpdateOrCreateCorporationWalletNameParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CorporationID == 0 {
+		x := f.CreateCorporation()
+		arg.CorporationID = x.ID
+	}
+	if arg.DivisionID == 0 {
+		arg.DivisionID = 1
+	}
+	if arg.Name == "" {
+		arg.Name = fake.Color()
+	}
+	err := f.st.UpdateOrCreateCorporationWalletName(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	x, err := f.st.GetCorporationWalletName(ctx, storage.CorporationDivision{
+		CorporationID: arg.CorporationID,
+		DivisionID:    arg.DivisionID,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return x
+}
+
+func (f Factory) CreateCorporationWalletJournalEntry(args ...storage.CreateCorporationWalletJournalEntryParams) *app.CorporationWalletJournalEntry {
+	ctx := context.Background()
+	var arg storage.CreateCorporationWalletJournalEntryParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CorporationID == 0 {
+		x := f.CreateCorporation()
+		arg.CorporationID = x.ID
+	}
+	if arg.DivisionID == 0 {
+		arg.DivisionID = 1
+	}
+	if arg.RefID == 0 {
+		arg.RefID = int64(f.calcNewIDWithParams("corporation_wallet_journal_entries", "id", map[string]any{
+			"corporation_id": arg.CorporationID,
+			"division_id":    arg.DivisionID,
+		}))
+	}
+	if arg.Amount == 0 {
+		var f float64
+		if rand.Float32() > 0.5 {
+			f = 1
+		} else {
+			f = -1
+		}
+		arg.Amount = rand.Float64() * 10_000_000_000 * f
+	}
+	if arg.Balance == 0 {
+		arg.Balance = rand.Float64() * 100_000_000_000
+	}
+	if arg.Date.IsZero() {
+		arg.Date = time.Now().UTC()
+	}
+	if arg.Description == "" {
+		arg.Description = fake.Sentence()
+	}
+	if arg.Reason == "" {
+		arg.Reason = fake.Sentence()
+	}
+	if arg.RefType == "" {
+		arg.RefType = "player_donation"
+	}
+	if arg.Tax == 0 {
+		arg.Tax = rand.Float64()
+	}
+	if arg.FirstPartyID == 0 {
+		e := f.CreateEveEntityCorporation()
+		arg.FirstPartyID = e.ID
+	}
+	if arg.SecondPartyID == 0 {
+		e := f.CreateEveEntityCorporation()
+		arg.SecondPartyID = e.ID
+	}
+	if arg.TaxReceiverID == 0 {
+		e := f.CreateEveEntityCorporation()
+		arg.TaxReceiverID = e.ID
+	}
+	err := f.st.CreateCorporationWalletJournalEntry(ctx, arg)
+	if err != nil {
+		panic(fmt.Sprintf("%s|%+v", err, arg))
+	}
+	i, err := f.st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
+		CorporationID: arg.CorporationID,
+		DivisionID:    arg.DivisionID,
+		RefID:         arg.RefID,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return i
+}
+
+func (f Factory) CreateCorporationWalletTransaction(args ...storage.CreateCorporationWalletTransactionParams) *app.CorporationWalletTransaction {
+	ctx := context.Background()
+	var arg storage.CreateCorporationWalletTransactionParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CorporationID == 0 {
+		x := f.CreateCorporation()
+		arg.CorporationID = x.ID
+	}
+	if arg.DivisionID == 0 {
+		arg.DivisionID = 1
+	}
+	if arg.TransactionID == 0 {
+		arg.TransactionID = f.calcNewIDWithParams(
+			"corporation_wallet_transactions",
+			"transaction_id",
+			map[string]any{
+				"corporation_id": arg.CorporationID,
+				"division_id":    arg.DivisionID,
+			},
+		)
+	}
+	if arg.ClientID == 0 {
+		x := f.CreateEveEntityCorporation()
+		arg.ClientID = x.ID
+	}
+	if arg.Date.IsZero() {
+		arg.Date = time.Now().UTC()
+	}
+	if arg.EveTypeID == 0 {
+		x := f.CreateEveType()
+		arg.EveTypeID = x.ID
+	}
+	if arg.LocationID == 0 {
+		x := f.CreateEveLocationStructure()
+		arg.LocationID = x.ID
+	}
+	if arg.UnitPrice == 0 {
+		arg.UnitPrice = rand.Float64() * 100_000_000
+	}
+	if arg.Quantity == 0 {
+		arg.Quantity = rand.Int32N(100_000)
+	}
+	if arg.JournalRefID == 0 {
+		x := f.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
+			CorporationID: arg.CorporationID,
+		})
+		arg.JournalRefID = x.ID
+	}
+	err := f.st.CreateCorporationWalletTransaction(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	x, err := f.st.GetCorporationWalletTransaction(ctx, storage.GetCorporationWalletTransactionParams{
+		CorporationID: arg.CorporationID,
+		DivisionID:    arg.DivisionID,
+		TransactionID: arg.TransactionID,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return x
 }
 
 func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *app.EveCharacter {
@@ -1961,6 +2166,20 @@ func (f *Factory) calcNewIDWithParam(table, idField, whereField string, whereVal
 	var max sql.NullInt64
 	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE %s = ?;", idField, table, whereField)
 	if err := f.dbRO.QueryRow(sql, whereValue).Scan(&max); err != nil {
+		panic(err)
+	}
+	return max.Int64 + 1
+}
+
+func (f *Factory) calcNewIDWithParams(table, idField string, clauses map[string]any) int64 {
+	var max sql.NullInt64
+	parts := make([]string, 0)
+	for f, v := range clauses {
+		parts = append(parts, fmt.Sprintf("%s = %v", f, v))
+	}
+	clausesStr := strings.Join(parts, " AND ")
+	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE %s;", idField, table, clausesStr)
+	if err := f.dbRO.QueryRow(sql).Scan(&max); err != nil {
 		panic(err)
 	}
 	return max.Int64 + 1

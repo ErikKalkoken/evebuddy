@@ -9,6 +9,20 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 )
 
+func (st *Storage) GetCharacterAttributes(ctx context.Context, characterID int32) (*app.CharacterAttributes, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateOrCreGetCharacterAttributesateCharacterAttributes character ID %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	o, err := st.qRO.GetCharacterAttributes(ctx, int64(characterID))
+	if err != nil {
+		return nil, wrapErr(convertGetError(err))
+	}
+	return characterAttributeFromDBModel(o), nil
+}
+
 type UpdateOrCreateCharacterAttributesParams struct {
 	ID            int64
 	BonusRemaps   int
@@ -21,15 +35,13 @@ type UpdateOrCreateCharacterAttributesParams struct {
 	Willpower     int
 }
 
-func (st *Storage) GetCharacterAttributes(ctx context.Context, characterID int32) (*app.CharacterAttributes, error) {
-	o, err := st.qRO.GetCharacterAttributes(ctx, int64(characterID))
-	if err != nil {
-		return nil, fmt.Errorf("get attributes for character ID %d: %w", characterID, convertGetError(err))
-	}
-	return characterAttributeFromDBModel(o), nil
-}
-
 func (st *Storage) UpdateOrCreateCharacterAttributes(ctx context.Context, arg UpdateOrCreateCharacterAttributesParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateOrCreateCharacterAttributes %+v: %w", arg, err)
+	}
+	if arg.CharacterID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
 	arg2 := queries.UpdateOrCreateCharacterAttributesParams{
 		CharacterID:  int64(arg.CharacterID),
 		BonusRemaps:  int64(arg.BonusRemaps),
@@ -43,7 +55,11 @@ func (st *Storage) UpdateOrCreateCharacterAttributes(ctx context.Context, arg Up
 		arg2.LastRemapDate.Time = arg.LastRemapDate
 		arg2.LastRemapDate.Valid = true
 	}
-	return st.qRW.UpdateOrCreateCharacterAttributes(ctx, arg2)
+	err := st.qRW.UpdateOrCreateCharacterAttributes(ctx, arg2)
+	if err != nil {
+		return wrapErr(err)
+	}
+	return nil
 }
 
 func characterAttributeFromDBModel(o queries.CharacterAttribute) *app.CharacterAttributes {

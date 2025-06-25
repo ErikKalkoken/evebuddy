@@ -2192,7 +2192,10 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			e, err := st.GetCharacterWalletJournalEntry(ctx, c.ID, 89)
+			e, err := st.GetCharacterWalletJournalEntry(ctx, storage.GetCharacterWalletJournalEntryParams{
+				CharacterID: c.ID,
+				RefID:       89,
+			})
 			if assert.NoError(t, err) {
 				assert.Equal(t, -100000.0, e.Amount)
 				assert.Equal(t, 500000.4316, e.Balance)
@@ -2245,7 +2248,10 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			e2, err := st.GetCharacterWalletJournalEntry(ctx, c.ID, 89)
+			e2, err := st.GetCharacterWalletJournalEntry(ctx, storage.GetCharacterWalletJournalEntryParams{
+				CharacterID: c.ID,
+				RefID:       89,
+			})
 			if assert.NoError(t, err) {
 				assert.Equal(t, "Contract Deposit", e2.Description)
 			}
@@ -2293,7 +2299,10 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		})
 		// then
 		if assert.NoError(t, err) {
-			e2, err := st.GetCharacterWalletJournalEntry(ctx, c.ID, 89)
+			e2, err := st.GetCharacterWalletJournalEntry(ctx, storage.GetCharacterWalletJournalEntryParams{
+				CharacterID: c.ID,
+				RefID:       89,
+			})
 			if assert.NoError(t, err) {
 				assert.Equal(t, "existing", e2.Description)
 			}
@@ -2357,11 +2366,17 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			ids, err := st.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				if assert.Equal(t, 2, ids.Size()) {
-					x1, err := st.GetCharacterWalletJournalEntry(ctx, c.ID, 89)
+					x1, err := st.GetCharacterWalletJournalEntry(ctx, storage.GetCharacterWalletJournalEntryParams{
+						CharacterID: c.ID,
+						RefID:       89,
+					})
 					if assert.NoError(t, err) {
 						assert.Equal(t, "First", x1.Description)
 					}
-					x2, err := st.GetCharacterWalletJournalEntry(ctx, c.ID, 90)
+					x2, err := st.GetCharacterWalletJournalEntry(ctx, storage.GetCharacterWalletJournalEntryParams{
+						CharacterID: c.ID,
+						RefID:       90,
+					})
 					if assert.NoError(t, err) {
 						assert.Equal(t, "Second", x2.Description)
 					}
@@ -2433,7 +2448,10 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			e, err := st.GetCharacterWalletTransaction(ctx, c.ID, 1234567890)
+			e, err := st.GetCharacterWalletTransaction(ctx, storage.GetCharacterWalletTransactionParams{
+				CharacterID:   c.ID,
+				TransactionID: 1234567890,
+			})
 			if assert.NoError(t, err) {
 				assert.Equal(t, client, e.Client)
 				assert.Equal(t, time.Date(2016, 10, 24, 9, 0, 0, 0, time.UTC), e.Date)
@@ -2486,7 +2504,10 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			e, err := st.GetCharacterWalletTransaction(ctx, c.ID, 1234567890)
+			e, err := st.GetCharacterWalletTransaction(ctx, storage.GetCharacterWalletTransactionParams{
+				CharacterID:   c.ID,
+				TransactionID: 1234567890,
+			})
 			if assert.NoError(t, err) {
 				assert.Equal(t, client, e.Client)
 				assert.Equal(t, time.Date(2016, 10, 24, 9, 0, 0, 0, time.UTC), e.Date)
