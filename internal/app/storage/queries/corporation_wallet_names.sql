@@ -15,3 +15,11 @@ FROM
 WHERE
     corporation_id = ?
     AND division_id = ?;
+
+-- name: ListCorporationWalletNames :many
+SELECT
+    *
+FROM
+    corporation_wallet_names
+WHERE
+    corporation_id = ?;

@@ -1031,9 +1031,10 @@ func (u *baseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context, corporationID int32, s app.CorporationSection, forceUpdate bool) {
 	hasChanged, err := u.rs.UpdateSectionIfNeeded(
 		ctx, app.CorporationUpdateSectionParams{
-			CorporationID: corporationID,
-			Section:       s,
-			ForceUpdate:   forceUpdate,
+			CorporationID:         corporationID,
+			ForceUpdate:           forceUpdate,
+			MaxWalletTransactions: u.settings.MaxWalletTransactions(),
+			Section:               s,
 		})
 	if err != nil {
 		slog.Error("Failed to update corporation section", "corporationID", corporationID, "section", s, "err", err)

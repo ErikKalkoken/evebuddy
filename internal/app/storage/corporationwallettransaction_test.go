@@ -33,7 +33,6 @@ func TestCorporationWalletTransaction(t *testing.T) {
 			DivisionID:    1,
 			EveTypeID:     eveType.ID,
 			IsBuy:         true,
-			IsPersonal:    true,
 			JournalRefID:  99,
 			LocationID:    location.ID,
 			CorporationID: c.ID,
@@ -57,7 +56,6 @@ func TestCorporationWalletTransaction(t *testing.T) {
 				assert.Equal(t, eveType.ID, i.Type.ID)
 				assert.Equal(t, eveType.Name, i.Type.Name)
 				assert.True(t, i.IsBuy)
-				assert.True(t, i.IsPersonal)
 				assert.Equal(t, int64(99), i.JournalRefID)
 				assert.Equal(t, location.ID, i.Location.ID)
 				assert.Equal(t,

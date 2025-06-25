@@ -13,7 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
-func TestCorporationWalletBalance(t *testing.T) {
+func TestCorporationHangarName(t *testing.T) {
 	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
@@ -22,42 +22,42 @@ func TestCorporationWalletBalance(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCorporation()
 		// when
-		err := r.UpdateOrCreateCorporationWalletBalance(ctx, storage.UpdateOrCreateCorporationWalletBalanceParams{
+		err := r.UpdateOrCreateCorporationHangarName(ctx, storage.UpdateOrCreateCorporationHangarNameParams{
 			CorporationID: c.ID,
 			DivisionID:    3,
-			Balance:       12.34,
+			Name:          "Alpha",
 		})
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetCorporationWalletBalance(ctx, storage.CorporationDivision{
+			x, err := r.GetCorporationHangarName(ctx, storage.CorporationDivision{
 				CorporationID: c.ID,
 				DivisionID:    3,
 			})
 			if assert.NoError(t, err) {
 				assert.EqualValues(t, c.ID, x.CorporationID)
 				assert.EqualValues(t, 3, x.DivisionID)
-				assert.EqualValues(t, 12.34, x.Balance)
+				assert.EqualValues(t, "Alpha", x.Name)
 			}
 		}
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		x1 := factory.CreateCorporationWalletBalance()
+		x1 := factory.CreateCorporationHangarName()
 		// when
-		err := r.UpdateOrCreateCorporationWalletBalance(ctx, storage.UpdateOrCreateCorporationWalletBalanceParams{
+		err := r.UpdateOrCreateCorporationHangarName(ctx, storage.UpdateOrCreateCorporationHangarNameParams{
 			CorporationID: x1.CorporationID,
 			DivisionID:    x1.DivisionID,
-			Balance:       12.34,
+			Name:          "Alpha",
 		})
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetCorporationWalletBalance(ctx, storage.CorporationDivision{
+			x, err := r.GetCorporationHangarName(ctx, storage.CorporationDivision{
 				CorporationID: x1.CorporationID,
 				DivisionID:    x1.DivisionID,
 			})
 			if assert.NoError(t, err) {
-				assert.EqualValues(t, 12.34, x.Balance)
+				assert.EqualValues(t, "Alpha", x.Name)
 			}
 		}
 	})
@@ -65,25 +65,25 @@ func TestCorporationWalletBalance(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCorporation()
-		e1 := factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
+		e1 := factory.CreateCorporationHangarName(storage.UpdateOrCreateCorporationHangarNameParams{
 			CorporationID: c.ID,
 			DivisionID:    1,
 		})
-		e2 := factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
+		e2 := factory.CreateCorporationHangarName(storage.UpdateOrCreateCorporationHangarNameParams{
 			CorporationID: c.ID,
 			DivisionID:    2,
 		})
-		factory.CreateCorporationWalletJournalEntry()
+		factory.CreateCorporationHangarName()
 		// when
-		oo, err := r.ListCorporationWalletBalances(ctx, c.ID)
+		oo, err := r.ListCorporationHangarNames(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletBalance) (int32, float64) {
-				return x.DivisionID, x.Balance
+			got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationHangarName) (int32, string) {
+				return x.DivisionID, x.Name
 			}))
-			want := map[int32]float64{
-				e1.DivisionID: e1.Balance,
-				e2.DivisionID: e2.Balance,
+			want := map[int32]string{
+				e1.DivisionID: e1.Name,
+				e2.DivisionID: e2.Name,
 			}
 			assert.Equal(t, want, got)
 		}

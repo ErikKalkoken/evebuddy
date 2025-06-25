@@ -1,3 +1,15 @@
+CREATE TABLE corporation_hangar_names (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    corporation_id INTEGER NOT NULL,
+    division_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    FOREIGN KEY (corporation_id) REFERENCES corporations (id) ON DELETE CASCADE,
+    UNIQUE (corporation_id, division_id)
+);
+
+CREATE INDEX corporation_hangar_names_idx1 ON corporation_hangar_names (corporation_id);
+
+
 CREATE TABLE corporation_wallet_balances (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     corporation_id INTEGER NOT NULL,
@@ -66,7 +78,6 @@ CREATE TABLE corporation_wallet_transactions (
     division_id INTEGER NOT NULL,
     eve_type_id INTEGER NOT NULL,
     is_buy BOOL NOT NULL,
-    is_personal BOOL NOT NULL,
     journal_ref_id INTEGER NOT NULL,
     location_id INTEGER NOT NULL,
     quantity INTEGER NOT NULL,
