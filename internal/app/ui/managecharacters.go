@@ -149,7 +149,7 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 			name.SetText(c.name)
 
 			portrait := row[0].(*canvas.Image)
-			go a.u.updateAvatar(c.id, func(r fyne.Resource) {
+			go a.u.updateCharacterAvatar(c.id, func(r fyne.Resource) {
 				fyne.Do(func() {
 					portrait.Resource = r
 					portrait.Refresh()
@@ -212,7 +212,7 @@ func (a *manageCharacters) showDeleteDialog(c accountCharacter) {
 						if a.u.currentCharacterID() == c.id {
 							a.u.setAnyCharacter()
 						}
-						a.u.updateCrossPages()
+						a.u.updateHome()
 						a.u.updateStatus()
 					}()
 				}
@@ -281,7 +281,7 @@ func (a *manageCharacters) ShowAddCharacterDialog() {
 					a.u.loadCharacter(characterID)
 				}
 				a.u.updateStatus()
-				a.u.updateCrossPages()
+				a.u.updateHome()
 				if a.u.isUpdateDisabled { // FIXME: temporary for testing. should be removed again.
 					return
 				}

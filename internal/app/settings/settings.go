@@ -1,3 +1,4 @@
+// Package settings provides an API for reading and writing the app's settings.
 package settings
 
 import (
@@ -26,6 +27,7 @@ const (
 	settingDeveloperMode                      = "developer-mode"
 	settingDeveloperModeDefault               = false
 	settingLastCharacterID                    = "settingLastCharacterID"
+	settingLastCorporationID                  = "settingLastCorporationID"
 	settingLogLevel                           = "logLevel"
 	settingLogLevelDefault                    = "info"
 	settingMaxMails                           = "settingMaxMails"
@@ -190,6 +192,18 @@ func (s Settings) ResetLastCharacterID() {
 
 func (s Settings) SetLastCharacterID(id int32) {
 	s.p.SetInt(settingLastCharacterID, int(id))
+}
+
+func (s Settings) LastCorporationID() int32 {
+	return int32(s.p.Int(settingLastCorporationID))
+}
+
+func (s Settings) ResetLastCorporationID() {
+	s.SetLastCorporationID(0)
+}
+
+func (s Settings) SetLastCorporationID(id int32) {
+	s.p.SetInt(settingLastCorporationID, int(id))
 }
 
 func (s Settings) MaxWalletTransactions() int {

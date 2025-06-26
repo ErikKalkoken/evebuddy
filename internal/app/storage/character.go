@@ -103,20 +103,26 @@ func (st *Storage) GetCharacter(ctx context.Context, characterID int32) (*app.Ch
 }
 
 func (st *Storage) GetAnyCharacter(ctx context.Context) (*app.Character, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("GetAnyCharacter: %w", err)
+	}
 	ids, err := st.ListCharacterIDs(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("list first character: %w", err)
+		return nil, wrapErr(err)
 	}
 	if ids.Size() == 0 {
-		return nil, app.ErrNotFound
+		return nil, wrapErr(app.ErrNotFound)
 	}
 	var id int32
 	for v := range ids.All() {
 		id = v
 		break
 	}
-	return st.GetCharacter(ctx, id)
-
+	o, err := st.GetCharacter(ctx, id)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	return o, nil
 }
 
 func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error) {

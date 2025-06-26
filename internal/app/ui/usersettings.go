@@ -61,7 +61,7 @@ func showSettingsWindow(u *baseUI) {
 			onClosed()
 		}
 		if a.tagsChanged {
-			u.updateCrossPages()
+			u.updateHome()
 		}
 		a.sb.Stop()
 	})
@@ -325,7 +325,7 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 					a.reportError("Failed to randomize names", err)
 				}
 				pg.OnSuccess = func() {
-					a.u.updateCrossPages()
+					a.u.updateHome()
 					a.u.updateCharacter()
 				}
 				pg.Start()
@@ -348,7 +348,7 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 					return nil
 				}, a.w)
 				pg.OnSuccess = func() {
-					a.u.updateCrossPages()
+					a.u.updateHome()
 					a.u.updateCharacter()
 				}
 				pg.Start()
@@ -813,7 +813,7 @@ func (a *characterTags) makeAddCharacterButton() *iwidget.TappableIcon {
 				icons := box[1].(*fyne.Container).Objects
 
 				portrait := icons[1].(*canvas.Image)
-				go a.us.u.updateAvatar(character.ID, func(r fyne.Resource) {
+				go a.us.u.updateCharacterAvatar(character.ID, func(r fyne.Resource) {
 					fyne.Do(func() {
 						portrait.Resource = r
 						portrait.Refresh()
@@ -985,7 +985,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 			box[0].(*widget.Label).SetText(character.Name)
 
 			portrait := box[1].(*canvas.Image)
-			go a.us.u.updateAvatar(character.ID, func(r fyne.Resource) {
+			go a.us.u.updateCharacterAvatar(character.ID, func(r fyne.Resource) {
 				fyne.Do(func() {
 					portrait.Resource = r
 					portrait.Refresh()

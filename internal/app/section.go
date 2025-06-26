@@ -191,23 +191,23 @@ func (cs CorporationSection) DisplayName() string {
 	return t
 }
 
-// DivisionID returns the division ID this section is related to or 0 if it has none.
-func (cs CorporationSection) DivisionID() int32 {
-	m := map[CorporationSection]int32{
-		SectionCorporationWalletJournal1:      1,
-		SectionCorporationWalletJournal2:      2,
-		SectionCorporationWalletJournal3:      3,
-		SectionCorporationWalletJournal4:      4,
-		SectionCorporationWalletJournal5:      5,
-		SectionCorporationWalletJournal6:      6,
-		SectionCorporationWalletJournal7:      7,
-		SectionCorporationWalletTransactions1: 1,
-		SectionCorporationWalletTransactions2: 2,
-		SectionCorporationWalletTransactions3: 3,
-		SectionCorporationWalletTransactions4: 4,
-		SectionCorporationWalletTransactions5: 5,
-		SectionCorporationWalletTransactions6: 6,
-		SectionCorporationWalletTransactions7: 7,
+// Division returns the division ID this section is related to or 0 if it has none.
+func (cs CorporationSection) Division() Division {
+	m := map[CorporationSection]Division{
+		SectionCorporationWalletJournal1:      Division1,
+		SectionCorporationWalletJournal2:      Division2,
+		SectionCorporationWalletJournal3:      Division3,
+		SectionCorporationWalletJournal4:      Division4,
+		SectionCorporationWalletJournal5:      Division5,
+		SectionCorporationWalletJournal6:      Division6,
+		SectionCorporationWalletJournal7:      Division7,
+		SectionCorporationWalletTransactions1: Division1,
+		SectionCorporationWalletTransactions2: Division2,
+		SectionCorporationWalletTransactions3: Division3,
+		SectionCorporationWalletTransactions4: Division4,
+		SectionCorporationWalletTransactions5: Division5,
+		SectionCorporationWalletTransactions6: Division6,
+		SectionCorporationWalletTransactions7: Division7,
 	}
 	return m[cs]
 }
@@ -218,8 +218,20 @@ func (cs CorporationSection) Timeout() time.Duration {
 		SectionCorporationIndustryJobs:        300 * time.Second,
 		SectionCorporationWalletBalances:      300 * time.Second,
 		SectionCorporationWalletJournal1:      3600 * time.Second,
+		SectionCorporationWalletJournal2:      3600 * time.Second,
+		SectionCorporationWalletJournal3:      3600 * time.Second,
+		SectionCorporationWalletJournal4:      3600 * time.Second,
+		SectionCorporationWalletJournal5:      3600 * time.Second,
+		SectionCorporationWalletJournal6:      3600 * time.Second,
+		SectionCorporationWalletJournal7:      3600 * time.Second,
 		SectionCorporationDivisions:           3600 * time.Second,
 		SectionCorporationWalletTransactions1: 3600 * time.Second,
+		SectionCorporationWalletTransactions2: 3600 * time.Second,
+		SectionCorporationWalletTransactions3: 3600 * time.Second,
+		SectionCorporationWalletTransactions4: 3600 * time.Second,
+		SectionCorporationWalletTransactions5: 3600 * time.Second,
+		SectionCorporationWalletTransactions6: 3600 * time.Second,
+		SectionCorporationWalletTransactions7: 3600 * time.Second,
 	}
 	duration, ok := m[cs]
 	if !ok {

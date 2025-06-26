@@ -48,7 +48,7 @@ type locations struct {
 
 func newLocations(u *baseUI) *locations {
 	headers := []headerDef{
-		{label: "Character", width: columnWidthCharacter},
+		{label: "Character", width: columnWidthEntity},
 		{label: "Location", width: columnWidthLocation},
 		{label: "Region", width: columnWidthRegion},
 		{label: "Ship", width: 150},

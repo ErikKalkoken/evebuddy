@@ -71,7 +71,7 @@ type characters struct {
 
 func newOverviewCharacters(u *baseUI) *characters {
 	headers := []headerDef{
-		{label: "Character", width: columnWidthCharacter},
+		{label: "Character", width: columnWidthEntity},
 		{label: "Corporation", width: 250},
 		{label: "Alliance", width: 250},
 		{label: "Sec.", width: 50},
