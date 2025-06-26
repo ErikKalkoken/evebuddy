@@ -270,6 +270,15 @@ func (w *NavDrawer) SetItemBadge(item *NavItem, text string) {
 	w.list.RefreshItem(id)
 }
 
+func (w *NavDrawer) SetItemText(item *NavItem, text string) {
+	id, ok := w.findItem(item)
+	if !ok {
+		return
+	}
+	w.items[id].text = text
+	w.list.RefreshItem(id)
+}
+
 func (w *NavDrawer) Refresh() {
 	w.updateTitle()
 }

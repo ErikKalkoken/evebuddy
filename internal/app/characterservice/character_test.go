@@ -119,7 +119,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			}
 			x, err := st.GetCorporation(ctx, corporation.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, corporation, x.Corporation)
+				assert.Equal(t, corporation, x.EveCorporation)
 			}
 		}
 	})

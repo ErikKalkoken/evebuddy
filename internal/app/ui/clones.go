@@ -92,7 +92,7 @@ func newClones(u *baseUI) *clones {
 		{label: "Location", width: columnWidthLocation},
 		{label: "Region", width: columnWidthRegion, notSortable: true},
 		{label: "Impl.", width: 100},
-		{label: "Character", width: columnWidthCharacter},
+		{label: "Character", width: columnWidthEntity},
 		{label: "Jumps", width: 100},
 	}
 	a := &clones{

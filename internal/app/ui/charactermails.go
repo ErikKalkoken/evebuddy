@@ -653,7 +653,7 @@ func (a *characterMails) setMail(mailID int32) {
 			}
 			a.update()
 			a.headerRefresh()
-			a.u.updateCrossPages()
+			a.u.updateHome()
 			a.u.updateMailIndicator()
 		}()
 	}

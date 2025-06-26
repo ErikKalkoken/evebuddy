@@ -8,9 +8,38 @@ import (
 	"golang.org/x/text/language"
 )
 
+// Division represents a division in an EVE Online corporation.
+type Division uint
+
+const (
+	Division1 Division = iota + 1
+	Division2
+	Division3
+	Division4
+	Division5
+	Division6
+	Division7
+)
+
+// TODO: Move ID resolution into storage layer
+
+func (d Division) ID() int32 {
+	return int32(d)
+}
+
+var Divisions = []Division{
+	Division1,
+	Division2,
+	Division3,
+	Division4,
+	Division5,
+	Division6,
+	Division7,
+}
+
 type Corporation struct {
-	ID          int32
-	Corporation *EveCorporation
+	ID             int32
+	EveCorporation *EveCorporation
 }
 
 type CorporationHangarName struct {

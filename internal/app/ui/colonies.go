@@ -76,7 +76,7 @@ func newColonies(u *baseUI) *colonies {
 		{label: "Due", width: columnWidthDateTime},
 		{label: "Producing", width: 200, notSortable: true},
 		{label: "Region", width: 150},
-		{label: "Character", width: columnWidthCharacter},
+		{label: "Character", width: columnWidthEntity},
 	}
 	a := &colonies{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
