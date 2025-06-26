@@ -79,7 +79,7 @@ func showManageCharactersWindow(u *baseUI) {
 			onClosed()
 		}
 		if mcw.tagsChanged {
-			u.updateCrossPages()
+			u.updateHome()
 		}
 		mcw.sb.Stop()
 	})
@@ -146,7 +146,7 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 			row := co.(*fyne.Container).Objects
 
 			portrait := row[0].(*canvas.Image)
-			go a.mcw.u.updateAvatar(c.id, func(r fyne.Resource) {
+			go a.mcw.u.updateCharacterAvatar(c.id, func(r fyne.Resource) {
 				fyne.Do(func() {
 					portrait.Resource = r
 					portrait.Refresh()
@@ -211,7 +211,7 @@ func (a *manageCharacters) showDeleteDialog(c accountCharacter) {
 						if a.mcw.u.currentCharacterID() == c.id {
 							a.mcw.u.setAnyCharacter()
 						}
-						a.mcw.u.updateCrossPages()
+						a.mcw.u.updateHome()
 						a.mcw.u.updateStatus()
 					}()
 				}
@@ -276,7 +276,7 @@ func (a *manageCharacters) ShowAddCharacterDialog() {
 					a.mcw.u.loadCharacter(characterID)
 				}
 				a.mcw.u.updateStatus()
-				a.mcw.u.updateCrossPages()
+				a.mcw.u.updateHome()
 				if a.mcw.u.isUpdateDisabled { // FIXME: temporary for testing. should be removed again.
 					return
 				}
@@ -411,7 +411,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 				icons := box[1].(*fyne.Container).Objects
 
 				portrait := icons[1].(*canvas.Image)
-				go a.mcw.u.updateAvatar(character.ID, func(r fyne.Resource) {
+				go a.mcw.u.updateCharacterAvatar(character.ID, func(r fyne.Resource) {
 					fyne.Do(func() {
 						portrait.Resource = r
 						portrait.Refresh()
@@ -579,7 +579,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 			box[0].(*widget.Label).SetText(character.Name)
 
 			portrait := box[1].(*canvas.Image)
-			go a.mcw.u.updateAvatar(character.ID, func(r fyne.Resource) {
+			go a.mcw.u.updateCharacterAvatar(character.ID, func(r fyne.Resource) {
 				fyne.Do(func() {
 					portrait.Resource = r
 					portrait.Refresh()

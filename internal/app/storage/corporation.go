@@ -58,6 +58,29 @@ func (st *Storage) GetCorporation(ctx context.Context, corporationID int32) (*ap
 	return o, nil
 }
 
+func (st *Storage) GetAnyCorporation(ctx context.Context) (*app.Corporation, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("GetAnyCorporation: %w", err)
+	}
+	ids, err := st.ListCorporationIDs(ctx)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	if ids.Size() == 0 {
+		return nil, wrapErr(app.ErrNotFound)
+	}
+	var id int32
+	for v := range ids.All() {
+		id = v
+		break
+	}
+	o, err := st.GetCorporation(ctx, id)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	return o, nil
+}
+
 func corporationFromDBModel(r queries.GetCorporationRow) *app.Corporation {
 	ec := eveCorporationFromDBModel(eveCorporationFromDBModelParams{
 		corporation: r.EveCorporation,
@@ -88,8 +111,8 @@ func corporationFromDBModel(r queries.GetCorporationRow) *app.Corporation {
 		},
 	})
 	o := &app.Corporation{
-		ID:          int32(r.EveCorporation.ID),
-		Corporation: ec,
+		ID:             int32(r.EveCorporation.ID),
+		EveCorporation: ec,
 	}
 	return o
 }

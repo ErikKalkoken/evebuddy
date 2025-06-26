@@ -114,8 +114,8 @@ func newIndustryJobs(u *baseUI) *industryJobs {
 		{label: "Activity", width: 200},
 		{label: "End date", width: columnWidthDateTime},
 		{label: "Location", width: columnWidthLocation},
-		{label: "Owner", width: columnWidthCharacter},
-		{label: "Installer", width: columnWidthCharacter},
+		{label: "Owner", width: columnWidthEntity},
+		{label: "Installer", width: columnWidthEntity},
 	}
 	a := &industryJobs{
 		columnSorter: newColumnSorterWithInit(headers, 4, sortDesc),

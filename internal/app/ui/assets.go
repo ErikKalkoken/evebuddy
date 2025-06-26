@@ -78,7 +78,7 @@ func newAssets(u *baseUI) *assets {
 		{label: "Item", width: 300},
 		{label: "Class", width: 200},
 		{label: "Location", width: columnWidthLocation},
-		{label: "Owner", width: columnWidthCharacter},
+		{label: "Owner", width: columnWidthEntity},
 		{label: "Qty.", width: 75},
 		{label: "Total", width: 100},
 	}

@@ -72,6 +72,18 @@ func New(args Params) *CorporationService {
 	return s
 }
 
+// GetCorporation returns a corporation from storage.
+// Returns [app.ErrNotFound] if the corporation does not exist.
+func (s *CorporationService) GetCorporation(ctx context.Context, corporationID int32) (*app.Corporation, error) {
+	return s.st.GetCorporation(ctx, corporationID)
+}
+
+// GetAnyCorporation returns a random corporation from storage.
+// Returns [app.ErrNotFound] if no corporation is found.
+func (s *CorporationService) GetAnyCorporation(ctx context.Context) (*app.Corporation, error) {
+	return s.st.GetAnyCorporation(ctx)
+}
+
 func (s *CorporationService) GetOrCreateCorporation(ctx context.Context, corporationID int32) (*app.Corporation, error) {
 	o, err := s.st.GetOrCreateCorporation(ctx, corporationID)
 	if err != nil {

@@ -327,7 +327,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		})
 	}
 	u.onSetCharacter = func(id int32) {
-		go u.updateAvatar(id, func(r fyne.Resource) {
+		go u.updateCharacterAvatar(id, func(r fyne.Resource) {
 			fyne.Do(func() {
 				characterSelector.SetIcon(r)
 			})
@@ -335,7 +335,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		u.characterMail.resetCurrentFolder()
 		u.characterCommunications.resetCurrentFolder()
 		fyne.Do(func() {
-			characterPage.SetTitle(u.scs.CharacterName(id))
+			// characterPage.SetTitle(u.scs.CharacterName(id))
 			characterNav.PopAll()
 		})
 	}

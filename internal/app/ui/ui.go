@@ -71,11 +71,13 @@ type services struct {
 	cs  *characterservice.CharacterService
 	eis *eveimageservice.EveImageService
 	eus *eveuniverseservice.EveUniverseService
+	rs  *corporationservice.CorporationService
 	scs *statuscacheservice.StatusCacheService
 }
 
 // baseUI represents the core UI logic and is used by both the desktop and mobile UI.
 type baseUI struct {
+	clearCache           func() // clear all caches
 	disableMenuShortcuts func()
 	enableMenuShortcuts  func()
 	hideMailIndicator    func()
@@ -84,41 +86,47 @@ type baseUI struct {
 	onAppTerminated      func()
 	onRefreshCross       func()
 	onSetCharacter       func(int32)
+	onSetCorporation     func(int32)
 	onShowAndRun         func()
 	onUpdateCharacter    func(*app.Character)
+	onUpdateCorporation  func(*app.Corporation)
 	onUpdateStatus       func()
 	showMailIndicator    func()
 	showManageCharacters func()
 
-	characterAsset             *characterAssets
-	characterAttributes        *characterAttributes
-	characterBiography         *characterBiography
-	characterCommunications    *characterCommunications
-	characterAugmentations     *characterAugmentations
-	characterJumpClones        *characterJumpClones
-	characterMail              *characterMails
-	characterSheet             *characterSheet
-	characterShips             *characterFlyableShips
-	characterSkillCatalogue    *characterSkillCatalogue
-	characterSkillQueue        *characterSkillQueue
-	characterWalletJournal     *characterWalletJournal
-	characterWalletTransaction *characterWalletTransaction
-	contracts                  *contracts
-	gameSearch                 *hameSearch
-	industryJobs               *industryJobs
-	slotsManufacturing         *industrySlots
-	slotsResearch              *industrySlots
-	slotsReactions             *industrySlots
-	assets                     *assets
-	characters                 *characters
-	clones                     *clones
-	colonies                   *colonies
-	locations                  *locations
-	training                   *training
-	wealth                     *wealth
+	characterAsset                *characterAssets
+	characterAttributes           *characterAttributes
+	characterBiography            *characterBiography
+	characterCommunications       *characterCommunications
+	characterAugmentations        *characterAugmentations
+	characterJumpClones           *characterJumpClones
+	characterMail                 *characterMails
+	characterSheet                *characterSheet
+	characterShips                *characterFlyableShips
+	characterSkillCatalogue       *characterSkillCatalogue
+	characterSkillQueue           *characterSkillQueue
+	characterWalletJournal        *characterWalletJournal
+	characterWalletTransaction    *characterWalletTransaction
+	corporationWalletJournals     map[app.Division]*corporationWalletJournal
+	corporationWalletTransactions map[app.Division]*corporationWalletTransaction
+	contracts                     *contracts
+	gameSearch                    *hameSearch
+	industryJobs                  *industryJobs
+	slotsManufacturing            *industrySlots
+	slotsResearch                 *industrySlots
+	slotsReactions                *industrySlots
+	manageCharacters              *manageCharacters
+	assets                        *assets
+	characters                    *characters
+	clones                        *clones
+	colonies                      *colonies
+	locations                     *locations
+	training                      *training
+	wealth                        *wealth
 
 	app                fyne.App
-	clearCache         func() // clear all caches
+	character          atomic.Pointer[app.Character]
+	corporation        atomic.Pointer[app.Corporation]
 	cs                 *characterservice.CharacterService
 	dataPaths          map[string]string // Paths to user data
 	eis                *eveimageservice.EveImageService
@@ -138,8 +146,6 @@ type baseUI struct {
 	wasStarted         atomic.Bool            // whether the app has already been started at least once
 	window             fyne.Window            // main window
 	windows            map[string]fyne.Window // child windows
-
-	character atomic.Pointer[app.Character]
 }
 
 type BaseUIParams struct {
@@ -165,20 +171,22 @@ type BaseUIParams struct {
 // Note:Types embedding BaseUI should define callbacks instead of overwriting methods.
 func NewBaseUI(args BaseUIParams) *baseUI {
 	u := &baseUI{
-		app:              args.App,
-		cs:               args.CharacterService,
-		eis:              args.EveImageService,
-		ess:              args.ESIStatusService,
-		eus:              args.EveUniverseService,
-		isDesktop:        args.IsDesktop,
-		isOffline:        args.IsOffline,
-		isUpdateDisabled: args.IsUpdateDisabled,
-		js:               args.JaniceService,
-		memcache:         args.MemCache,
-		rs:               args.CorporationService,
-		scs:              args.StatusCacheService,
-		settings:         settings.New(args.App.Preferences()),
-		windows:          make(map[string]fyne.Window),
+		app:                           args.App,
+		corporationWalletJournals:     make(map[app.Division]*corporationWalletJournal),
+		corporationWalletTransactions: make(map[app.Division]*corporationWalletTransaction),
+		cs:                            args.CharacterService,
+		eis:                           args.EveImageService,
+		ess:                           args.ESIStatusService,
+		eus:                           args.EveUniverseService,
+		isDesktop:                     args.IsDesktop,
+		isOffline:                     args.IsOffline,
+		isUpdateDisabled:              args.IsUpdateDisabled,
+		js:                            args.JaniceService,
+		memcache:                      args.MemCache,
+		rs:                            args.CorporationService,
+		scs:                           args.StatusCacheService,
+		settings:                      settings.New(args.App.Preferences()),
+		windows:                       make(map[string]fyne.Window),
 	}
 	u.window = u.app.NewWindow(u.appName())
 
@@ -212,6 +220,10 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	u.characterSkillQueue = newCharacterSkillQueue(u)
 	u.characterWalletJournal = newCharacterWalletJournal(u)
 	u.characterWalletTransaction = newCharacterWalletTransaction(u)
+	for _, d := range app.Divisions {
+		u.corporationWalletJournals[d] = newCorporationWalletJournal(u, d)
+		u.corporationWalletTransactions[d] = newCorporationWalletTransaction(u, d)
+	}
 	u.contracts = newContracts(u)
 	u.gameSearch = newGameSearch(u)
 	u.industryJobs = newIndustryJobs(u)
@@ -248,7 +260,9 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 		u.snackbar.Start()
 		go func() {
 			u.initCharacter()
-			u.updateCrossPages()
+			u.initCorporation()
+			u.manageCharacters.update()
+			u.updateHome()
 			u.updateStatus()
 			u.isStartupCompleted.Store(true)
 			u.training.startUpdateTicker()
@@ -288,33 +302,6 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	return u
 }
 
-func (u *baseUI) initCharacter() {
-	var c *app.Character
-	var err error
-	ctx := context.Background()
-	if cID := u.settings.LastCharacterID(); cID != 0 {
-		c, err = u.cs.GetCharacter(ctx, int32(cID))
-		if err != nil {
-			if !errors.Is(err, app.ErrNotFound) {
-				slog.Error("Failed to load character", "error", err)
-			}
-		}
-	}
-	if c == nil {
-		c, err = u.cs.GetAnyCharacter(ctx)
-		if err != nil {
-			if !errors.Is(err, app.ErrNotFound) {
-				slog.Error("Failed to load character", "error", err)
-			}
-		}
-	}
-	if c == nil {
-		u.resetCharacter()
-		return
-	}
-	u.setCharacter(c)
-}
-
 // ShowAndRun shows the UI and runs the Fyne loop (blocking),
 func (u *baseUI) ShowAndRun() {
 	if u.onShowAndRun != nil {
@@ -332,6 +319,7 @@ func (u *baseUI) services() services {
 		cs:  u.cs,
 		eis: u.eis,
 		eus: u.eus,
+		rs:  u.rs,
 		scs: u.scs,
 	}
 }
@@ -370,6 +358,36 @@ func (u *baseUI) humanizeError(err error) string {
 	}
 	return err.Error()
 	// return ihumanize.Error(err) TODO: Re-enable again when app is stable enough
+}
+
+//////////////////
+// Current character
+
+func (u *baseUI) initCharacter() {
+	var c *app.Character
+	var err error
+	ctx := context.Background()
+	if cID := u.settings.LastCharacterID(); cID != 0 {
+		c, err = u.cs.GetCharacter(ctx, int32(cID))
+		if err != nil {
+			if !errors.Is(err, app.ErrNotFound) {
+				slog.Error("Failed to load character", "error", err)
+			}
+		}
+	}
+	if c == nil {
+		c, err = u.cs.GetAnyCharacter(ctx)
+		if err != nil {
+			if !errors.Is(err, app.ErrNotFound) {
+				slog.Error("Failed to load character", "error", err)
+			}
+		}
+	}
+	if c == nil {
+		u.resetCharacter()
+		return
+	}
+	u.setCharacter(c)
 }
 
 // currentCharacterID returns the ID of the current character or 0 if non is set.
@@ -411,12 +429,33 @@ func (u *baseUI) reloadCurrentCharacter() {
 	u.character.Store(c)
 }
 
-// updateStatus refreshed all status information pages.
-func (u *baseUI) updateStatus() {
-	if u.onUpdateStatus == nil {
-		return
+func (u *baseUI) resetCharacter() {
+	u.character.Store(nil)
+	u.settings.ResetLastCharacterID()
+	u.updateCharacter()
+	u.updateStatus()
+}
+
+func (u *baseUI) setCharacter(c *app.Character) {
+	u.character.Store(c)
+	u.settings.SetLastCharacterID(c.ID)
+	u.updateCharacter()
+	u.updateStatus()
+	if u.onSetCharacter != nil {
+		u.onSetCharacter(c.ID)
 	}
-	u.onUpdateStatus()
+}
+
+func (u *baseUI) setAnyCharacter() error {
+	c, err := u.cs.GetAnyCharacter(context.Background())
+	if errors.Is(err, app.ErrNotFound) {
+		u.resetCharacter()
+		return nil
+	} else if err != nil {
+		return err
+	}
+	u.setCharacter(c)
+	return nil
 }
 
 // updateCharacter updates all pages for the current character.
@@ -458,12 +497,147 @@ func (u *baseUI) defineCharacterUpdates() map[string]func() {
 	return ff
 }
 
-// updateCrossPages refreshed all pages that contain information about multiple characters.
-func (u *baseUI) updateCrossPages() {
-	runFunctionsWithProgressModal("Updating characters", u.defineCrossUpdates(), u.onRefreshCross, u.window)
+func (u *baseUI) updateCharacterAvatar(id int32, setIcon func(fyne.Resource)) {
+	r, err := u.eis.CharacterPortrait(id, app.IconPixelSize)
+	if err != nil {
+		slog.Error("Failed to fetch character portrait", "characterID", id, "err", err)
+		r = icons.Characterplaceholder64Jpeg
+	}
+	r2, err := fynetools.MakeAvatar(r)
+	if err != nil {
+		slog.Error("Failed to make avatar", "characterID", id, "err", err)
+		r2 = icons.Characterplaceholder64Jpeg
+	}
+	setIcon(r2)
 }
 
-func (u *baseUI) defineCrossUpdates() map[string]func() {
+//////////////////
+// Current corporation
+
+func (u *baseUI) initCorporation() {
+	var c *app.Corporation
+	var err error
+	ctx := context.Background()
+	if cID := u.settings.LastCorporationID(); cID != 0 {
+		c, err = u.rs.GetCorporation(ctx, int32(cID))
+		if err != nil {
+			if !errors.Is(err, app.ErrNotFound) {
+				slog.Error("Failed to load corporation", "error", err)
+			}
+		}
+	}
+	if c == nil {
+		c, err = u.rs.GetAnyCorporation(ctx)
+		if err != nil {
+			if !errors.Is(err, app.ErrNotFound) {
+				slog.Error("Failed to load corporation", "error", err)
+			}
+		}
+	}
+	if c == nil {
+		u.resetCorporation()
+		return
+	}
+	u.setCorporation(c)
+}
+
+// currentCorporationID returns the ID of the current corporation or 0 if non is set.
+func (u *baseUI) currentCorporationID() int32 {
+	c := u.currentCorporation()
+	if c == nil {
+		return 0
+	}
+	return c.ID
+}
+
+func (u *baseUI) currentCorporation() *app.Corporation {
+	return u.corporation.Load()
+}
+
+func (u *baseUI) hasCorporation() bool {
+	return u.currentCorporation() != nil
+}
+
+func (u *baseUI) loadCorporation(id int32) error {
+	c, err := u.rs.GetCorporation(context.Background(), id)
+	if err != nil {
+		return fmt.Errorf("load corporation ID %d: %w", id, err)
+	}
+	u.setCorporation(c)
+	return nil
+}
+
+func (u *baseUI) resetCorporation() {
+	u.corporation.Store(nil)
+	u.settings.ResetLastCorporationID()
+	u.updateCorporation()
+	u.updateStatus()
+}
+
+func (u *baseUI) setCorporation(c *app.Corporation) {
+	u.corporation.Store(c)
+	u.settings.SetLastCorporationID(c.ID)
+	u.updateCorporation()
+	u.updateStatus()
+	if u.onSetCorporation != nil {
+		u.onSetCorporation(c.ID)
+	}
+}
+
+// updateCorporation updates all pages for the current corporation.
+func (u *baseUI) updateCorporation() {
+	c := u.currentCorporation()
+	if c != nil {
+		slog.Debug("Updating corporation", "ID", c.EveCorporation.ID, "name", c.EveCorporation.Name)
+	} else {
+		slog.Debug("Updating without corporation")
+	}
+	runFunctionsWithProgressModal("Loading corporation", u.defineCorporationUpdates(), func() {
+		if u.onUpdateCorporation != nil {
+			u.onUpdateCorporation(c)
+		}
+		if c != nil && !u.isUpdateDisabled {
+			u.updateCorporationAndRefreshIfNeeded(context.Background(), c.ID, false)
+		}
+	},
+		u.window,
+	)
+}
+
+func (u *baseUI) defineCorporationUpdates() map[string]func() {
+	ff := make(map[string]func())
+	for id, w := range u.corporationWalletJournals {
+		ff[fmt.Sprintf("walletJournal%d", id)] = w.update
+	}
+	for id, w := range u.corporationWalletTransactions {
+		ff[fmt.Sprintf("walletTransaction%d", id)] = w.update
+	}
+	return ff
+}
+
+func (u *baseUI) updateCorporationAvatar(id int32, setIcon func(fyne.Resource)) {
+	r, err := u.eis.CorporationLogo(id, app.IconPixelSize)
+	if err != nil {
+		slog.Error("Failed to fetch corporation logo", "corporationID", id, "err", err)
+		r = icons.Corporationplaceholder64Png
+	}
+	r2, err := fynetools.MakeAvatar(r)
+	if err != nil {
+		slog.Error("Failed to make avatar", "corporationID", id, "err", err)
+		r2 = icons.Corporationplaceholder64Png
+	}
+	setIcon(r2)
+}
+
+//////////////////
+// Home
+
+// updateHome refreshed all pages that contain information about multiple characters.
+func (u *baseUI) updateHome() {
+	runFunctionsWithProgressModal("Updating home", u.defineHomeUpdates(), u.onRefreshCross, u.window)
+}
+
+func (u *baseUI) defineHomeUpdates() map[string]func() {
 	ff := map[string]func(){
 		"assetSearch":        u.assets.update,
 		"contracts":          u.contracts.update,
@@ -483,7 +657,7 @@ func (u *baseUI) defineCrossUpdates() map[string]func() {
 
 // UpdateAll updates all UI elements. This method is usually only called from tests.
 func (u *baseUI) UpdateAll() {
-	updates := slices.Collect(xiter.Chain(maps.Values(u.defineCharacterUpdates()), maps.Values(u.defineCrossUpdates())))
+	updates := slices.Collect(xiter.Chain(maps.Values(u.defineCharacterUpdates()), maps.Values(u.defineHomeUpdates())))
 	for _, f := range updates {
 		f()
 	}
@@ -522,47 +696,12 @@ func runFunctionsWithProgressModal(title string, ff map[string]func(), onSuccess
 	})
 }
 
-func (u *baseUI) resetCharacter() {
-	u.character.Store(nil)
-	u.settings.ResetLastCharacterID()
-	u.updateCharacter()
-	u.updateStatus()
-}
-
-func (u *baseUI) setCharacter(c *app.Character) {
-	u.character.Store(c)
-	u.settings.SetLastCharacterID(c.ID)
-	u.updateCharacter()
-	u.updateStatus()
-	if u.onSetCharacter != nil {
-		u.onSetCharacter(c.ID)
+// updateStatus refreshed all status information pages.
+func (u *baseUI) updateStatus() {
+	if u.onUpdateStatus == nil {
+		return
 	}
-}
-
-func (u *baseUI) setAnyCharacter() error {
-	c, err := u.cs.GetAnyCharacter(context.Background())
-	if errors.Is(err, app.ErrNotFound) {
-		u.resetCharacter()
-		return nil
-	} else if err != nil {
-		return err
-	}
-	u.setCharacter(c)
-	return nil
-}
-
-func (u *baseUI) updateAvatar(id int32, setIcon func(fyne.Resource)) {
-	r, err := u.eis.CharacterPortrait(id, app.IconPixelSize)
-	if err != nil {
-		slog.Error("Failed to fetch character portrait", "characterID", id, "err", err)
-		r = icons.Characterplaceholder64Jpeg
-	}
-	r2, err := fynetools.MakeAvatar(r)
-	if err != nil {
-		slog.Error("Failed to make avatar", "characterID", id, "err", err)
-		r2 = icons.Characterplaceholder64Jpeg
-	}
-	setIcon(r2)
+	u.onUpdateStatus()
 }
 
 func (u *baseUI) setColorTheme(s settings.ColorTheme) {
@@ -623,7 +762,7 @@ func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 		} else {
 			it.Icon = fallbackIcon
 			wg.Add(1)
-			go u.updateAvatar(c.ID, func(r fyne.Resource) {
+			go u.updateCharacterAvatar(c.ID, func(r fyne.Resource) {
 				defer wg.Done()
 				fyne.Do(func() {
 					it.Icon = r
@@ -687,7 +826,7 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 	switch section {
 	case app.SectionEveEntities:
 		if needsRefresh {
-			u.updateCrossPages()
+			u.updateHome()
 			u.updateCharacter()
 		}
 	case app.SectionEveTypes:
@@ -1040,6 +1179,7 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 		slog.Error("Failed to update corporation section", "corporationID", corporationID, "section", s, "err", err)
 		return
 	}
+	isShown := corporationID == u.currentCharacterID()
 	needsRefresh := hasChanged || forceUpdate
 	switch s {
 	case app.SectionCorporationIndustryJobs:
@@ -1048,6 +1188,62 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 			u.slotsManufacturing.update()
 			u.slotsReactions.update()
 			u.slotsResearch.update()
+		}
+	case app.SectionCorporationWalletJournal1:
+		if isShown && needsRefresh {
+			u.corporationWalletJournals[app.Division1].update()
+		}
+	case app.SectionCorporationWalletJournal2:
+		if isShown && needsRefresh {
+			u.corporationWalletJournals[app.Division2].update()
+		}
+	case app.SectionCorporationWalletJournal3:
+		if isShown && needsRefresh {
+			u.corporationWalletJournals[app.Division3].update()
+		}
+	case app.SectionCorporationWalletJournal4:
+		if isShown && needsRefresh {
+			u.corporationWalletJournals[app.Division4].update()
+		}
+	case app.SectionCorporationWalletJournal5:
+		if isShown && needsRefresh {
+			u.corporationWalletJournals[app.Division5].update()
+		}
+	case app.SectionCorporationWalletJournal6:
+		if isShown && needsRefresh {
+			u.corporationWalletJournals[app.Division6].update()
+		}
+	case app.SectionCorporationWalletJournal7:
+		if isShown && needsRefresh {
+			u.corporationWalletJournals[app.Division7].update()
+		}
+	case app.SectionCorporationWalletTransactions1:
+		if isShown && needsRefresh {
+			u.corporationWalletTransactions[app.Division1].update()
+		}
+	case app.SectionCorporationWalletTransactions2:
+		if isShown && needsRefresh {
+			u.corporationWalletTransactions[app.Division2].update()
+		}
+	case app.SectionCorporationWalletTransactions3:
+		if isShown && needsRefresh {
+			u.corporationWalletTransactions[app.Division3].update()
+		}
+	case app.SectionCorporationWalletTransactions4:
+		if isShown && needsRefresh {
+			u.corporationWalletTransactions[app.Division4].update()
+		}
+	case app.SectionCorporationWalletTransactions5:
+		if isShown && needsRefresh {
+			u.corporationWalletTransactions[app.Division5].update()
+		}
+	case app.SectionCorporationWalletTransactions6:
+		if isShown && needsRefresh {
+			u.corporationWalletTransactions[app.Division6].update()
+		}
+	case app.SectionCorporationWalletTransactions7:
+		if isShown && needsRefresh {
+			u.corporationWalletTransactions[app.Division7].update()
 		}
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the refresh ticker: %s", s))

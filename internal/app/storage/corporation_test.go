@@ -26,7 +26,7 @@ func TestCorporation(t *testing.T) {
 		if assert.NoError(t, err) {
 			r, err := st.GetCorporation(ctx, ec.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, ec.Name, r.Corporation.Name)
+				assert.Equal(t, ec.Name, r.EveCorporation.Name)
 			}
 		}
 	})
@@ -47,7 +47,7 @@ func TestCorporation(t *testing.T) {
 		c2, err := st.GetEveCorporation(ctx, c1.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, c1.Corporation.Name, c2.Name)
+			assert.Equal(t, c1.EveCorporation.Name, c2.Name)
 		}
 	})
 	t.Run("can create when not exists", func(t *testing.T) {
@@ -58,7 +58,7 @@ func TestCorporation(t *testing.T) {
 		c, err := st.GetOrCreateCorporation(ctx, ec.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, ec.Name, c.Corporation.Name)
+			assert.Equal(t, ec.Name, c.EveCorporation.Name)
 		}
 	})
 	t.Run("can get when exists", func(t *testing.T) {
@@ -110,5 +110,31 @@ func TestListOrphanedCorporationIDs(t *testing.T) {
 			want := set.Of[int32]()
 			assert.True(t, got.Equal(want))
 		}
+	})
+}
+
+func TestGetAnyCorporation(t *testing.T) {
+	db, r, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should return a character", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCorporation()
+		c2 := factory.CreateCorporation()
+		// when
+		c, err := r.GetAnyCorporation(ctx)
+		// then
+		if assert.NoError(t, err) {
+			assert.Contains(t, []int32{c1.ID, c2.ID}, c.ID)
+		}
+	})
+	t.Run("should return correct error when not found", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		_, err := r.GetAnyCorporation(ctx)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }

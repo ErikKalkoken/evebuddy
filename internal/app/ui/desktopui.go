@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"path/filepath"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
@@ -19,12 +19,10 @@ import (
 	"github.com/icrowley/fake"
 	"golang.org/x/sync/singleflight"
 
-	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -45,13 +43,15 @@ type DesktopUI struct {
 
 	shortcuts map[string]shortcutDef
 	sfg       *singleflight.Group
+	wallets   map[app.Division]*iwidget.NavItem
 }
 
 // NewDesktopUI build the UI and returns it.
 func NewDesktopUI(bu *baseUI) *DesktopUI {
 	u := &DesktopUI{
-		sfg:    new(singleflight.Group),
-		baseUI: bu,
+		sfg:     new(singleflight.Group),
+		baseUI:  bu,
+		wallets: make(map[app.Division]*iwidget.NavItem),
 	}
 	deskApp, ok := u.App().(desktop.App)
 	if !ok {
@@ -76,9 +76,8 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 
 	u.defineShortcuts()
-	pageBars := newPageBarCollection(u)
-
-	var characterNav *iwidget.NavDrawer
+	characterPageBars := newPageBarCollectionForCharacters(u)
+	corporationPageBars := newPageBarCollectionForCorporations(u)
 
 	formatBadge := func(v, mx int) string {
 		if v == 0 {
@@ -90,98 +89,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		return fmt.Sprint(v)
 	}
 
-	makePageWithPageBar := func(title string, content fyne.CanvasObject, buttons ...*widget.Button) fyne.CanvasObject {
-		bar := pageBars.NewPageBar(title, buttons...)
-		return container.NewBorder(
-			bar,
-			nil,
-			nil,
-			nil,
-			content,
-		)
-	}
-
-	// current character
-
-	mail := iwidget.NewNavPage(
-		"Mail",
-		theme.MailComposeIcon(),
-		makePageWithPageBar("Mail", u.characterMail),
-	)
-	u.characterMail.onUpdate = func(count int) {
-		fyne.Do(func() {
-			characterNav.SetItemBadge(mail, formatBadge(count, 99))
-		})
-	}
-	u.characterMail.onSendMessage = u.showSendMailWindow
-
-	communications := iwidget.NewNavPage(
-		"Communications",
-		theme.NewThemedResource(icons.MessageSvg),
-		makePageWithPageBar("Communications", u.characterCommunications),
-	)
-	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
-		var s string
-		if count.IsEmpty() {
-			s = "?"
-		} else if count.ValueOrZero() > 0 {
-			s = formatBadge(count.ValueOrZero(), 999)
-		}
-		fyne.Do(func() {
-			characterNav.SetItemBadge(communications, s)
-		})
-	}
-
-	skills := iwidget.NewNavPage(
-		"Skills",
-		theme.NewThemedResource(icons.SchoolSvg),
-		makePageWithPageBar(
-			"Skills",
-			container.NewAppTabs(
-				container.NewTabItem("Training Queue", u.characterSkillQueue),
-				container.NewTabItem("Skill Catalogue", u.characterSkillCatalogue),
-				container.NewTabItem("Ships", u.characterShips),
-			),
-		),
-	)
-
-	u.characterSkillQueue.OnUpdate = func(status, _ string) {
-		fyne.Do(func() {
-			characterNav.SetItemBadge(skills, status)
-		})
-	}
-
-	wallet := iwidget.NewNavPage("Wallet",
-		theme.NewThemedResource(icons.AttachmoneySvg),
-		makePageWithPageBar("Wallet", container.NewAppTabs(
-			container.NewTabItem("Transactions", u.characterWalletJournal),
-			container.NewTabItem("Market Transactions", u.characterWalletTransaction),
-		)))
-
-	characterNav = iwidget.NewNavDrawer(
-		iwidget.NewNavPage(
-			"Character Sheet",
-			theme.NewThemedResource(icons.PortraitSvg),
-			makePageWithPageBar("Character Sheet", container.NewAppTabs(
-				container.NewTabItem("Character", u.characterSheet),
-				container.NewTabItem("Augmentations", u.characterAugmentations),
-				container.NewTabItem("Jump Clones", u.characterJumpClones),
-				container.NewTabItem("Attributes", u.characterAttributes),
-				container.NewTabItem("Biography", u.characterBiography),
-			))),
-		iwidget.NewNavPage(
-			"Assets",
-			theme.NewThemedResource(icons.Inventory2Svg),
-			makePageWithPageBar("Assets", u.characterAsset),
-		),
-		communications,
-		mail,
-		skills,
-		wallet,
-	)
-	characterNav.Title = "Current Character"
-	characterNav.MinWidth = minNavCharacterWidth
-
+	// Home
 	makePageWithTitle := func(title string, content fyne.CanvasObject, buttons ...*widget.Button) fyne.CanvasObject {
 		l := widget.NewLabel(title)
 		l.SizeName = theme.SizeNameSubHeadingText
@@ -201,7 +109,6 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		)
 	}
 
-	// Home
 	var homeNav *iwidget.NavDrawer
 	overview := iwidget.NewNavPage(
 		"Characters",
@@ -303,12 +210,145 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 	homeNav.MinWidth = minNavCharacterWidth
 
+	// current character
+	makePageWithPageBarForCharacter := func(title string, content fyne.CanvasObject, buttons ...*widget.Button) fyne.CanvasObject {
+		bar := characterPageBars.NewPageBar(title, buttons...)
+		return container.NewBorder(
+			bar,
+			nil,
+			nil,
+			nil,
+			content,
+		)
+	}
+
+	var characterNav *iwidget.NavDrawer
+
+	mail := iwidget.NewNavPage(
+		"Mail",
+		theme.MailComposeIcon(),
+		makePageWithPageBarForCharacter("Mail", u.characterMail),
+	)
+	u.characterMail.onUpdate = func(count int) {
+		fyne.Do(func() {
+			characterNav.SetItemBadge(mail, formatBadge(count, 99))
+		})
+	}
+	u.characterMail.onSendMessage = u.showSendMailWindow
+
+	communications := iwidget.NewNavPage(
+		"Communications",
+		theme.NewThemedResource(icons.MessageSvg),
+		makePageWithPageBarForCharacter("Communications", u.characterCommunications),
+	)
+	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
+		var s string
+		if count.IsEmpty() {
+			s = "?"
+		} else if count.ValueOrZero() > 0 {
+			s = formatBadge(count.ValueOrZero(), 999)
+		}
+		fyne.Do(func() {
+			characterNav.SetItemBadge(communications, s)
+		})
+	}
+
+	skills := iwidget.NewNavPage(
+		"Skills",
+		theme.NewThemedResource(icons.SchoolSvg),
+		makePageWithPageBarForCharacter(
+			"Skills",
+			container.NewAppTabs(
+				container.NewTabItem("Training Queue", u.characterSkillQueue),
+				container.NewTabItem("Skill Catalogue", u.characterSkillCatalogue),
+				container.NewTabItem("Ships", u.characterShips),
+			),
+		),
+	)
+
+	u.characterSkillQueue.OnUpdate = func(status, _ string) {
+		fyne.Do(func() {
+			characterNav.SetItemBadge(skills, status)
+		})
+	}
+
+	characterWallet := iwidget.NewNavPage("Wallet",
+		theme.NewThemedResource(icons.AttachmoneySvg),
+		makePageWithPageBarForCharacter("Wallet", container.NewAppTabs(
+			container.NewTabItem("Transactions", u.characterWalletJournal),
+			container.NewTabItem("Market Transactions", u.characterWalletTransaction),
+		)))
+
+	characterNav = iwidget.NewNavDrawer(
+		iwidget.NewNavPage(
+			"Character Sheet",
+			theme.NewThemedResource(icons.PortraitSvg),
+			makePageWithPageBarForCharacter("Character Sheet", container.NewAppTabs(
+				container.NewTabItem("Character", u.characterSheet),
+				container.NewTabItem("Augmentations", u.characterAugmentations),
+				container.NewTabItem("Jump Clones", u.characterJumpClones),
+				container.NewTabItem("Attributes", u.characterAttributes),
+				container.NewTabItem("Biography", u.characterBiography),
+			))),
+		iwidget.NewNavPage(
+			"Assets",
+			theme.NewThemedResource(icons.Inventory2Svg),
+			makePageWithPageBarForCharacter("Assets", u.characterAsset),
+		),
+		communications,
+		mail,
+		skills,
+		characterWallet,
+	)
+	characterNav.Title = "Character"
+	characterNav.MinWidth = minNavCharacterWidth
+
+	// Corporation
+	makePageWithPageBarForCorporation := func(title string, content fyne.CanvasObject, buttons ...*widget.Button) fyne.CanvasObject {
+		bar := corporationPageBars.NewPageBar(title, buttons...)
+		return container.NewBorder(
+			bar,
+			nil,
+			nil,
+			nil,
+			content,
+		)
+	}
+
+	corpItems := []*iwidget.NavItem{
+		iwidget.NewNavSectionLabel("Wallets"),
+	}
+
+	for _, d := range app.Divisions {
+		name := fmt.Sprintf("Wallet %d", d)
+		u.wallets[d] = iwidget.NewNavPage(
+			name,
+			theme.NewThemedResource(icons.AttachmoneySvg),
+			makePageWithPageBarForCorporation(
+				name,
+				container.NewAppTabs(
+					container.NewTabItem("Transactions", u.corporationWalletJournals[d]),
+					container.NewTabItem("Market Transactions", u.corporationWalletTransactions[d]),
+				),
+			),
+		)
+		corpItems = append(corpItems, u.wallets[d])
+	}
+
+	corporationNav := iwidget.NewNavDrawer(corpItems...)
+	corporationNav.Title = "Corporation"
+	corporationNav.MinWidth = minNavCharacterWidth
+
+	// Make overall UI
+
 	statusBar := newStatusBar(u)
 	toolbar := newToolbar(u)
 	characterTab := container.NewTabItemWithIcon("Character", theme.AccountIcon(), characterNav)
+	corporationTab := container.NewTabItemWithIcon("Corporation", theme.NewThemedResource(icons.StarCircleOutlineSvg), corporationNav)
 	tabs := container.NewAppTabs(
 		container.NewTabItemWithIcon("Home", theme.NewThemedResource(theme.HomeIcon()), homeNav),
 		characterTab,
+		corporationTab,
 	)
 	mainContent := container.NewBorder(
 		toolbar,
@@ -325,7 +365,22 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		name := u.scs.CharacterName(id)
 		fyne.Do(func() {
 			characterNav.SetTitle(name)
-			characterTab.Text = name
+			// characterTab.Text = name
+			tabs.Refresh()
+		})
+	}
+
+	u.onSetCorporation = func(id int32) {
+		walletNames := u.rs.ListWalletNames(context.Background(), id)
+		for _, d := range app.Divisions {
+			fyne.Do(func() {
+				corporationNav.SetItemText(u.wallets[d], walletNames[d])
+			})
+		}
+		name := u.scs.CorporationName(id)
+		fyne.Do(func() {
+			corporationNav.SetTitle(name)
+			// corporationTab.Text = name
 			tabs.Refresh()
 		})
 	}
@@ -379,7 +434,8 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 	u.onUpdateStatus = func() {
 		go statusBar.update()
-		go pageBars.update()
+		go characterPageBars.update()
+		go corporationPageBars.update()
 	}
 	return u
 }
@@ -612,105 +668,4 @@ func makePathEntry(cb fyne.Clipboard, path string) *fyne.Container {
 		widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
 			cb.SetContent(p)
 		}))
-}
-
-type pageBar struct {
-	widget.BaseWidget
-
-	buttons []*widget.Button
-	icon    *kwidget.TappableImage
-	title   *widget.Label
-	u       *baseUI
-}
-
-func newPageBar(title string, icon fyne.Resource, u *baseUI, buttons ...*widget.Button) *pageBar {
-	i := kwidget.NewTappableImageWithMenu(icon, fyne.NewMenu(""))
-	i.SetFillMode(canvas.ImageFillContain)
-	i.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
-	l := widget.NewLabel(title)
-	l.SizeName = theme.SizeNameSubHeadingText
-	w := &pageBar{
-		buttons: buttons,
-		icon:    i,
-		title:   l,
-		u:       u,
-	}
-	w.ExtendBaseWidget(w)
-	return w
-}
-
-func (w *pageBar) SetIcon(r fyne.Resource) {
-	w.icon.SetResource(r)
-}
-
-func (w *pageBar) SetMenu(items []*fyne.MenuItem) {
-	w.icon.SetMenuItems(items)
-}
-
-func (w *pageBar) CreateRenderer() fyne.WidgetRenderer {
-	box := container.NewHBox(w.title, layout.NewSpacer())
-	if len(w.buttons) > 0 {
-		for _, b := range w.buttons {
-			box.Add(container.NewCenter(b))
-		}
-	}
-	box.Add(container.NewCenter(w.icon))
-	return widget.NewSimpleRenderer(box)
-}
-
-type pageBarCollection struct {
-	bars         []*pageBar
-	fallbackIcon fyne.Resource
-	u            *DesktopUI
-}
-
-func newPageBarCollection(u *DesktopUI) *pageBarCollection {
-	fallback := icons.Characterplaceholder64Jpeg
-	icon, err := fynetools.MakeAvatar(fallback)
-	if err != nil {
-		slog.Error("failed to make avatar", "error", err)
-		icon = fallback
-	}
-	c := &pageBarCollection{
-		bars:         make([]*pageBar, 0),
-		fallbackIcon: icon,
-		u:            u,
-	}
-	return c
-}
-
-func (c *pageBarCollection) NewPageBar(title string, buttons ...*widget.Button) *pageBar {
-	pb := newPageBar(title, c.fallbackIcon, c.u.baseUI, buttons...)
-	c.bars = append(c.bars, pb)
-	return pb
-}
-
-func (c *pageBarCollection) update() {
-	if !c.u.hasCharacter() {
-		for _, pb := range c.bars {
-			fyne.Do(func() {
-				pb.SetIcon(c.fallbackIcon)
-			})
-		}
-		return
-	}
-	go c.u.updateAvatar(c.u.currentCharacterID(), func(r fyne.Resource) {
-		for _, pb := range c.bars {
-			fyne.Do(func() {
-				pb.SetIcon(r)
-			})
-		}
-	})
-	items := c.u.makeCharacterSwitchMenu(func() {
-		for _, pb := range c.bars {
-			fyne.Do(func() {
-				pb.Refresh()
-			})
-		}
-	})
-	for _, pb := range c.bars {
-		fyne.Do(func() {
-			pb.SetMenu(items)
-		})
-	}
 }

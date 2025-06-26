@@ -63,6 +63,24 @@ func TestCharacter(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
+	t.Run("can fetch character by ID with minimal fields populated only", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCharacterFull()
+		// when
+		c2, err := r.GetCharacter(ctx, c1.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, c1.ID, c2.ID)
+			assert.Equal(t, c1.Location, c2.Location)
+		}
+	})
+}
+
+func TestGetAnyCharacter(t *testing.T) {
+	db, r, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
 	t.Run("should return a character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -82,18 +100,6 @@ func TestCharacter(t *testing.T) {
 		_, err := r.GetAnyCharacter(ctx)
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
-	})
-	t.Run("can fetch character by ID with minimal fields populated only", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		c1 := factory.CreateCharacterFull()
-		// when
-		c2, err := r.GetCharacter(ctx, c1.ID)
-		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, c1.ID, c2.ID)
-			assert.Equal(t, c1.Location, c2.Location)
-		}
 	})
 }
 

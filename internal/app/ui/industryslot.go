@@ -55,7 +55,7 @@ type industrySlots struct {
 func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	const columnWidthNumber = 75
 	headers := []headerDef{
-		{label: "Character", width: columnWidthCharacter},
+		{label: "Character", width: columnWidthEntity},
 		{label: "Busy", width: columnWidthNumber},
 		{label: "Ready", width: columnWidthNumber},
 		{label: "Free", width: columnWidthNumber},

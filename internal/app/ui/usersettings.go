@@ -317,7 +317,7 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 					a.reportError("Failed to randomize names", err)
 				}
 				pg.OnSuccess = func() {
-					a.u.updateCrossPages()
+					a.u.updateHome()
 					a.u.updateCharacter()
 				}
 				pg.Start()
@@ -340,7 +340,7 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 					return nil
 				}, a.w)
 				pg.OnSuccess = func() {
-					a.u.updateCrossPages()
+					a.u.updateHome()
 					a.u.updateCharacter()
 				}
 				pg.Start()
