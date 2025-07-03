@@ -96,6 +96,7 @@ func (st *Storage) GetCharacterSkillqueueItem(ctx context.Context, characterID i
 	}), err
 }
 
+// ListCharacterSkillqueueItems returns the skillqueue for a character. Items are ordered by queue position.
 func (st *Storage) ListCharacterSkillqueueItems(ctx context.Context, characterID int32) ([]*app.CharacterSkillqueueItem, error) {
 	if characterID == 0 {
 		return nil, fmt.Errorf("ListCharacterSkillqueueItems: %w", app.ErrInvalid)

@@ -397,7 +397,7 @@ func (*training) fetchRows(s services) ([]trainingRow, error) {
 		if err := queue.Update(ctx, s.cs, c.ID); err != nil {
 			return nil, err
 		}
-		r.skill = queue.Current()
+		r.skill = queue.Active()
 		if r.skill != nil {
 			r.isActive = true
 			r.statusText = "Active"
@@ -418,7 +418,7 @@ func (*training) fetchRows(s services) ([]trainingRow, error) {
 				},
 			)
 		}
-		r.totalFinishDate = queue.FinishDateEstimate()
+		r.totalFinishDate = queue.FinishDate()
 		r.totalRemainingCount = queue.RemainingCount()
 		r.totalRemainingCountDisplay = r.totalRemainingCount.StringFunc("N/A", func(v int) string {
 			return ihumanize.Comma(v)

@@ -151,7 +151,7 @@ func (a *characterSkillQueue) update() {
 			s2 = "training paused"
 		} else if c := a.sq.CompletionP(); c.ValueOrZero() < 1 {
 			s1 = fmt.Sprintf("%.0f%%", c.ValueOrZero()*100)
-			s2 = fmt.Sprintf("%s (%s)", a.sq.Current(), s1)
+			s2 = fmt.Sprintf("%s (%s)", a.sq.Active(), s1)
 		}
 		if a.OnUpdate != nil {
 			a.OnUpdate(s1, s2)
