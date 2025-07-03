@@ -16,42 +16,90 @@ func TestCharacterSkillqueue(t *testing.T) {
 	t.Run("can return information about an active skill queue", func(t *testing.T) {
 		sq := app.NewCharacterSkillqueue()
 		item1 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
-			StartDate:  time.Now().Add(-3 * time.Hour),
-			FinishDate: time.Now().Add(3 * time.Hour),
+			StartDate:     time.Now().Add(-3 * time.Hour),
+			FinishDate:    time.Now().Add(3 * time.Hour),
+			QueuePosition: 1,
 		})
 		item2 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
-			StartDate:  time.Now().Add(3 * time.Hour),
-			FinishDate: time.Now().Add(7 * time.Hour),
+			StartDate:     time.Now().Add(3 * time.Hour),
+			FinishDate:    time.Now().Add(7 * time.Hour),
+			QueuePosition: 2,
 		})
 		cs := MyCS{items: []*app.CharacterSkillqueueItem{item1, item2}}
 		err := sq.Update(ctx, cs, characterID)
 		if assert.NoError(t, err) {
 			assert.Equal(t, characterID, sq.CharacterID())
 			assert.Equal(t, 2, sq.Size())
-			assert.Equal(t, item1, sq.Current())
+			assert.Equal(t, item1, sq.Active())
 			assert.Equal(t, item2, sq.Item(1))
 			assert.InDelta(t, 0.5, sq.CompletionP().ValueOrZero(), 0.01)
-			assert.WithinDuration(t, toTime(7*time.Hour), toTime(sq.RemainingTime().ValueOrZero()), 10*time.Second)
 			assert.True(t, sq.IsActive())
 			assert.Equal(t, 2, sq.RemainingCount().ValueOrZero())
-			assert.WithinDuration(t, toTime(7*time.Hour), sq.FinishDateEstimate().ValueOrZero(), 10*time.Second)
 		}
 	})
 	t.Run("can return information about an empty skill queue", func(t *testing.T) {
 		sq := app.NewCharacterSkillqueue()
 		assert.Equal(t, int32(0), sq.CharacterID())
 		assert.Equal(t, 0, sq.Size())
-		assert.Nil(t, sq.Current())
+		assert.Nil(t, sq.Active())
 		assert.Nil(t, sq.Item(1))
 		assert.True(t, sq.CompletionP().IsEmpty())
 		assert.False(t, sq.IsActive())
 		assert.True(t, sq.RemainingCount().IsEmpty())
-		assert.True(t, sq.FinishDateEstimate().IsEmpty())
 	})
 }
 
-func toTime(d time.Duration) time.Time {
-	return time.Now().Add(d)
+func TestCharacterSkillqueueRemainingTime(t *testing.T) {
+	characterID := int32(42)
+	ctx := context.Background()
+	t.Run("can return correct remainaing time for active skill queue 1", func(t *testing.T) {
+		sq := app.NewCharacterSkillqueue()
+		item1 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
+			StartDate:     time.Now().Add(-3 * time.Hour),
+			FinishDate:    time.Now().Add(3 * time.Hour),
+			QueuePosition: 1,
+		})
+		item2 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
+			StartDate:     time.Now().Add(3 * time.Hour),
+			FinishDate:    time.Now().Add(7 * time.Hour),
+			QueuePosition: 2,
+		})
+		cs := MyCS{items: []*app.CharacterSkillqueueItem{item1, item2}}
+		err := sq.Update(ctx, cs, characterID)
+		if assert.NoError(t, err) {
+			assert.WithinDuration(t, toTime(7*time.Hour), toTime(sq.RemainingTime().ValueOrZero()), 1*time.Second)
+			assert.WithinDuration(t, toTime(7*time.Hour), sq.FinishDate().ValueOrZero(), 1*time.Second)
+		}
+	})
+	t.Run("should ignore finished skills in caluclation", func(t *testing.T) {
+		sq := app.NewCharacterSkillqueue()
+		item0 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
+			StartDate:     time.Now().Add(-6 * time.Hour),
+			FinishDate:    time.Now().Add(-3 * time.Hour),
+			QueuePosition: 1,
+		})
+		item1 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
+			StartDate:     time.Now().Add(-3 * time.Hour),
+			FinishDate:    time.Now().Add(3 * time.Hour),
+			QueuePosition: 2,
+		})
+		item2 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
+			StartDate:     time.Now().Add(3 * time.Hour),
+			FinishDate:    time.Now().Add(7 * time.Hour),
+			QueuePosition: 3,
+		})
+		cs := MyCS{items: []*app.CharacterSkillqueueItem{item0, item1, item2}}
+		err := sq.Update(ctx, cs, characterID)
+		if assert.NoError(t, err) {
+			assert.WithinDuration(t, toTime(7*time.Hour), toTime(sq.RemainingTime().ValueOrZero()), 1*time.Second)
+			assert.WithinDuration(t, toTime(7*time.Hour), sq.FinishDate().ValueOrZero(), 1*time.Second)
+		}
+	})
+	t.Run("returns empty remainaing time for empty skill queue", func(t *testing.T) {
+		sq := app.NewCharacterSkillqueue()
+		assert.True(t, sq.RemainingTime().IsEmpty())
+		assert.True(t, sq.FinishDate().IsEmpty())
+	})
 }
 
 func TestSkillqueueItemCompletion(t *testing.T) {
@@ -139,7 +187,7 @@ func TestSkillqueueItemDuration(t *testing.T) {
 		d := q.Duration()
 		assert.True(t, d.IsEmpty())
 	})
-	t.Run("should return null when duration can not be calculated 2", func(t *testing.T) {
+	t.Run("should return empty when duration can not be calculated 2", func(t *testing.T) {
 		now := time.Now()
 		q := app.CharacterSkillqueueItem{
 			FinishDate: now.Add(time.Hour * +1),
@@ -147,7 +195,7 @@ func TestSkillqueueItemDuration(t *testing.T) {
 		d := q.Duration()
 		assert.True(t, d.IsEmpty())
 	})
-	t.Run("should return null when duration can not be calculated 3", func(t *testing.T) {
+	t.Run("should return empty when duration can not be calculated 3", func(t *testing.T) {
 		q := app.CharacterSkillqueueItem{}
 		d := q.Duration()
 		assert.True(t, d.IsEmpty())
@@ -204,6 +252,9 @@ func makeSkillQueueItem(characterID int32, args ...app.CharacterSkillqueueItem) 
 	if len(args) > 0 {
 		arg = args[0]
 	}
+	if arg.QueuePosition == 0 {
+		panic("must define QueuePosition")
+	}
 	now := time.Now()
 	arg.CharacterID = characterID
 	if arg.FinishedLevel == 0 {
@@ -240,4 +291,8 @@ func makeItem(startDate, finishDate time.Time) app.CharacterSkillqueueItem {
 		LevelEndSP:      1000,
 		TrainingStartSP: 0,
 	}
+}
+
+func toTime(d time.Duration) time.Time {
+	return time.Now().Add(d)
 }

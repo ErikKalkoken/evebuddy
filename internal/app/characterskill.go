@@ -1,8 +1,10 @@
 package app
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -83,8 +85,8 @@ func (sq *CharacterSkillqueue) CharacterID() int32 {
 	return sq.characterID
 }
 
-// Current returns the current skill in training or nil if training is inactive.
-func (sq *CharacterSkillqueue) Current() *CharacterSkillqueueItem {
+// Active returns the skill currently in training or nil if training is inactive.
+func (sq *CharacterSkillqueue) Active() *CharacterSkillqueueItem {
 	sq.mu.RLock()
 	defer sq.mu.RUnlock()
 	for _, item := range sq.items {
@@ -95,9 +97,20 @@ func (sq *CharacterSkillqueue) Current() *CharacterSkillqueueItem {
 	return nil
 }
 
+// Last returns the last skill in the queue or nil if the queue is empty.
+func (sq *CharacterSkillqueue) Last() *CharacterSkillqueueItem {
+	sq.mu.RLock()
+	defer sq.mu.RUnlock()
+	length := len(sq.items)
+	if length == 0 {
+		return nil
+	}
+	return sq.items[length-1]
+}
+
 // CompletionP returns the completion percentage of the current skill in training (if any).
 func (sq *CharacterSkillqueue) CompletionP() optional.Optional[float64] {
-	c := sq.Current()
+	c := sq.Active()
 	if c == nil {
 		return optional.Optional[float64]{}
 	}
@@ -106,7 +119,7 @@ func (sq *CharacterSkillqueue) CompletionP() optional.Optional[float64] {
 
 // IsActive reports whether training is active.
 func (sq *CharacterSkillqueue) IsActive() bool {
-	c := sq.Current()
+	c := sq.Active()
 	if c == nil {
 		return false
 	}
@@ -151,26 +164,25 @@ func (sq *CharacterSkillqueue) RemainingCount() optional.Optional[int] {
 
 // RemainingTime returns the total remaining training time of all skills in the queue.
 func (sq *CharacterSkillqueue) RemainingTime() optional.Optional[time.Duration] {
-	sq.mu.RLock()
-	defer sq.mu.RUnlock()
-	var r optional.Optional[time.Duration]
-	for _, item := range sq.items {
-		r = optional.From(r.ValueOrZero() + item.Remaining().ValueOrZero())
+	zero := optional.Optional[time.Duration]{}
+	t := sq.FinishDate()
+	if t.IsEmpty() {
+		return zero
 	}
-	return r
+	d := time.Until(t.MustValue())
+	if d < 0 {
+		return zero
+	}
+	return optional.From(d)
 }
 
-// FinishDateEstimate returns the estimated finish date of all remaining skills in the queue.
-func (sq *CharacterSkillqueue) FinishDateEstimate() optional.Optional[time.Time] {
-	d := sq.RemainingTime()
-	if d.IsEmpty() {
+// FinishDate returns the finish date of last skill in the queue.
+func (sq *CharacterSkillqueue) FinishDate() optional.Optional[time.Time] {
+	last := sq.Last()
+	if last == nil || last.FinishDate.IsZero() {
 		return optional.Optional[time.Time]{}
 	}
-	d2 := d.MustValue()
-	if d2 == 0 {
-		return optional.From(time.Time{})
-	}
-	return optional.From(time.Now().UTC().Add(d2))
+	return optional.From(last.FinishDate)
 }
 
 // Update replaces the content of the queue with a new version from the service.
@@ -195,6 +207,9 @@ func (sq *CharacterSkillqueue) fetchItems(ctx context.Context, cs CharacterServi
 	if err != nil {
 		return nil, err
 	}
+	slices.SortFunc(items, func(a, b *CharacterSkillqueueItem) int {
+		return cmp.Compare(a.QueuePosition, b.QueuePosition)
+	})
 	return items, nil
 }
 
