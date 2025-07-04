@@ -252,7 +252,7 @@ func (a *industrySlots) filterRows(sortCol int) {
 		active += r.busy
 		ready += r.ready
 		free += r.free
-		total += r.free
+		total += r.total
 	}
 	rows = append(rows, industrySlotRow{
 		busy:      active,
