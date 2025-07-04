@@ -283,3 +283,28 @@ func TestTokenRemainsValid(t *testing.T) {
 		assert.False(t, x.RemainsValid(65*time.Second))
 	})
 }
+
+func TestCharacterWalletTransaction_Total(t *testing.T) {
+	cases := []struct {
+		name      string
+		IsBuy     bool
+		UnitPrice float64
+		Quantity  int32
+		want      float64
+	}{
+		{"buy", true, 1.2, 3, -3.6},
+		{"sell", false, 1.2, 3, 3.6},
+		{"zero", false, 0, 0, 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			o := app.CharacterWalletTransaction{
+				IsBuy:     tc.IsBuy,
+				UnitPrice: tc.UnitPrice,
+				Quantity:  tc.Quantity,
+			}
+			got := o.Total()
+			assert.InDelta(t, tc.want, got, 0.1)
+		})
+	}
+}

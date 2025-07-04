@@ -22,6 +22,12 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
+// Options for industry job select widgets
+const (
+	marketTransactionActivityBuy  = "Buy"
+	marketTransactionActivitySell = "Sell"
+)
+
 type walletTransactionRow struct {
 	categoryName     string
 	characterID      int32
@@ -29,20 +35,21 @@ type walletTransactionRow struct {
 	clientName       string
 	date             time.Time
 	dateFormatted    string
+	isBuy            bool
 	locationDisplay  []widget.RichTextSegment
 	locationID       int64
 	locationName     string
-	unitPrice        float64
 	quantity         int
 	quantityDisplay  string
 	regionName       string
 	total            float64
 	totalColor       fyne.ThemeColorName
-	totalImportance  widget.Importance
 	totalFormatted   string
+	totalImportance  widget.Importance
 	transactionID    int64
 	typeID           int32
 	typeName         string
+	unitPrice        float64
 	unitPriceDisplay string
 }
 
@@ -54,6 +61,7 @@ type characterWalletTransaction struct {
 	columnSorter   *columnSorter
 	rows           []walletTransactionRow
 	rowsFiltered   []walletTransactionRow
+	selectActivity *kxwidget.FilterChipSelect
 	selectCategory *kxwidget.FilterChipSelect
 	selectClient   *kxwidget.FilterChipSelect
 	selectLocation *kxwidget.FilterChipSelect
@@ -99,7 +107,9 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 					Alignment: fyne.TextAlignTrailing,
 				})
 		case 4:
-			return iwidget.RichTextSegmentsFromText(r.totalFormatted)
+			return iwidget.RichTextSegmentsFromText(r.totalFormatted, widget.RichTextStyle{
+				ColorName: r.totalColor,
+			})
 		case 5:
 			return iwidget.RichTextSegmentsFromText(r.clientName)
 		case 6:
@@ -121,6 +131,12 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 		a.body = a.makeDataList()
 	}
 
+	a.selectActivity = kxwidget.NewFilterChipSelect("Activity", []string{
+		marketTransactionActivityBuy,
+		marketTransactionActivitySell,
+	}, func(_ string) {
+		a.filterRows(-1)
+	})
 	a.selectCategory = kxwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
@@ -161,7 +177,7 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 }
 
 func (a *characterWalletTransaction) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectCategory, a.selectType, a.selectClient, a.selectRegion, a.selectLocation)
+	filter := container.NewHBox(a.selectActivity, a.selectCategory, a.selectType, a.selectClient, a.selectRegion, a.selectLocation)
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
 	}
@@ -207,7 +223,10 @@ func (a *characterWalletTransaction) makeDataList() *iwidget.StripedList {
 
 			b0 := c[0].(*fyne.Container).Objects
 			b0[0].(*widget.Label).SetText(r.dateFormatted)
-			b0[1].(*widget.Label).SetText(r.totalFormatted)
+			total := b0[1].(*widget.Label)
+			total.Text = r.totalFormatted
+			total.Importance = r.totalImportance
+			total.Refresh()
 
 			b1 := c[1].(*fyne.Container).Objects
 			b1[0].(*widget.Label).SetText(r.typeName)
@@ -231,6 +250,17 @@ func (a *characterWalletTransaction) makeDataList() *iwidget.StripedList {
 func (a *characterWalletTransaction) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
+	if x := a.selectActivity.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
+			switch x {
+			case marketTransactionActivityBuy:
+				return r.isBuy
+			case marketTransactionActivitySell:
+				return !r.isBuy
+			}
+			return false
+		})
+	}
 	if x := a.selectCategory.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
 			return r.categoryName == x
@@ -349,6 +379,7 @@ func (a *characterWalletTransaction) fetchRows(characterID int32, s services) ([
 			clientName:       o.Client.Name,
 			date:             o.Date,
 			dateFormatted:    o.Date.Format(app.DateTimeFormat),
+			isBuy:            o.IsBuy,
 			locationDisplay:  o.Location.DisplayRichText(),
 			locationID:       o.Location.ID,
 			locationName:     o.Location.DisplayName(),
@@ -361,6 +392,13 @@ func (a *characterWalletTransaction) fetchRows(characterID int32, s services) ([
 			typeName:         o.Type.Name,
 			unitPrice:        o.UnitPrice,
 			unitPriceDisplay: humanize.FormatFloat(app.FloatFormat, o.UnitPrice),
+		}
+		if o.IsBuy {
+			r.totalColor = theme.ColorNameError
+			r.totalImportance = widget.DangerImportance
+		} else {
+			r.totalColor = theme.ColorNameSuccess
+			r.totalImportance = widget.SuccessImportance
 		}
 		if o.Region != nil {
 			r.regionName = o.Region.Name
@@ -382,7 +420,15 @@ func showCharacterWalletTransaction(u *baseUI, characterID int32, transactionID 
 		u.showErrorDialog("Failed to show market transaction", err, u.window)
 		return
 	}
-	totalAmount := o.Total()
+	var activity string
+	total := widget.NewLabel(formatISKAmount(o.Total()))
+	if o.IsBuy {
+		total.Importance = widget.DangerImportance
+		activity = "Buy"
+	} else {
+		total.Importance = widget.SuccessImportance
+		activity = "Sell"
+	}
 	items := []*widget.FormItem{
 		widget.NewFormItem("Owner", makeOwnerActionLabel(
 			characterID,
@@ -390,12 +436,13 @@ func showCharacterWalletTransaction(u *baseUI, characterID int32, transactionID 
 			u.ShowEveEntityInfoWindow,
 		)),
 		widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
+		widget.NewFormItem("Activity", widget.NewLabel(activity)),
 		widget.NewFormItem("Quantity", widget.NewLabel(humanize.Comma(int64(o.Quantity)))),
 		widget.NewFormItem("Type", makeLinkLabelWithWrap(o.Type.Name, func() {
 			u.ShowInfoWindow(app.EveEntityInventoryType, o.Type.ID)
 		})),
 		widget.NewFormItem("Unit price", widget.NewLabel(formatISKAmount(o.UnitPrice))),
-		widget.NewFormItem("Total", widget.NewLabel(formatISKAmount(totalAmount))),
+		widget.NewFormItem("Total", total),
 		widget.NewFormItem("Client", makeEveEntityActionLabel(o.Client, u.ShowEveEntityInfoWindow)),
 		widget.NewFormItem("Location", makeLocationLabel(o.Location, u.ShowLocationInfoWindow)),
 		widget.NewFormItem("Related Journal Entry", makeLinkLabelWithWrap(

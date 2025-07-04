@@ -93,11 +93,11 @@ func (b *CharacterBuilder) createTypes() {
 
 func (b *CharacterBuilder) createAssets() {
 	randomTypeID := b.makeRandomTypes(assetTypes * b.Factor)
-	for i, locationId := range b.locationIDs {
+	for i, locationID := range b.locationIDs {
 		for range assetItemsPerLocation * b.Factor {
 			b.f.CreateCharacterAsset(storage.CreateCharacterAssetParams{
 				CharacterID: b.c.ID,
-				LocationID:  locationId,
+				LocationID:  locationID,
 				EveTypeID:   randomTypeID(),
 			})
 		}
