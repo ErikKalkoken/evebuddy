@@ -32,49 +32,46 @@ type accountCharacter struct {
 type manageCharacters struct {
 	widget.BaseWidget
 
-	OnSelectCharacter func()
-	OnUpdate          func(characterCount int)
-
 	characters   []accountCharacter
 	list         *widget.List
 	sb           *iwidget.Snackbar
 	showSnackbar func(string)
 	title        *widget.Label
 	u            *baseUI
-	window       fyne.Window
+	w            fyne.Window
 }
 
-func showManageCharactersWindow(u *DesktopUI) {
+func showManageCharactersWindow(u *baseUI) {
 	w, created, onClosed := u.getOrCreateWindowWithOnClosed("manage-characters", "Manage Characters")
 	if !created {
 		w.Show()
 		return
 	}
+	a := newManageCharacters(u, w)
+	a.update()
+	w.SetContent(a)
 	w.Resize(fyne.Size{Width: 500, Height: 300})
-	w.SetContent(u.manageCharacters)
-	u.manageCharacters.SetWindow(w)
-	u.manageCharacters.OnSelectCharacter = func() {
-		w.Close()
-	}
 	w.SetOnClosed(func() {
-		if u.manageCharacters.sb != nil {
-			u.manageCharacters.sb.Stop()
+		if onClosed != nil {
+			onClosed()
 		}
-		onClosed()
+		a.sb.Stop()
 	})
 	w.Show()
 }
 
-func newManageCharacters(u *baseUI) *manageCharacters {
+func newManageCharacters(u *baseUI, w fyne.Window) *manageCharacters {
 	a := &manageCharacters{
 		characters:   make([]accountCharacter, 0),
 		showSnackbar: u.ShowSnackbar,
 		title:        makeTopLabel(),
-		window:       u.MainWindow(),
+		w:            w,
 		u:            u,
+		sb:           iwidget.NewSnackbar(w),
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeCharacterList()
+	a.sb.Start()
 	return a
 }
 
@@ -87,34 +84,22 @@ func (a *manageCharacters) CreateRenderer() fyne.WidgetRenderer {
 	if a.u.IsOffline() {
 		add.Disable()
 	}
-	if a.u.isDesktop {
-		p := theme.Padding()
-		c = container.NewBorder(
-			a.title,
-			container.NewCenter(container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), add)),
-			nil,
-			nil,
-			a.list,
-		)
-	} else {
-		c = container.NewBorder(
-			a.title,
-			nil,
-			nil,
-			nil,
-			a.list,
-		)
-	}
+	p := theme.Padding()
+	c = container.NewBorder(
+		a.title,
+		container.NewCenter(container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), add)),
+		nil,
+		nil,
+		a.list,
+	)
 	return widget.NewSimpleRenderer(c)
 }
 
 func (a *manageCharacters) SetWindow(w fyne.Window) {
-	a.window = w
+	a.w = w
 	if a.sb != nil {
 		a.sb.Stop()
 	}
-	a.sb = iwidget.NewSnackbar(w)
-	a.sb.Start()
 	a.showSnackbar = func(s string) {
 		a.sb.Show(s)
 	}
@@ -178,9 +163,7 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 			return
 		}
 		a.u.updateStatus()
-		if a.OnSelectCharacter != nil {
-			a.OnSelectCharacter()
-		}
+		a.w.Close()
 	}
 	return l
 }
@@ -203,7 +186,7 @@ func (a *manageCharacters) showDeleteDialog(c accountCharacter) {
 						a.update()
 						return nil
 					},
-					a.window,
+					a.w,
 				)
 				m.OnSuccess = func() {
 					a.showSnackbar(fmt.Sprintf("Character %s deleted", c.name))
@@ -223,7 +206,7 @@ func (a *manageCharacters) showDeleteDialog(c accountCharacter) {
 				m.Start()
 			}
 		},
-		a.window,
+		a.w,
 	)
 }
 
@@ -241,9 +224,6 @@ func (a *manageCharacters) update() {
 		a.list.Refresh()
 		a.title.SetText(fmt.Sprintf("Characters (%d)", len(characters)))
 	})
-	if a.OnUpdate != nil {
-		a.OnUpdate(len(characters))
-	}
 }
 
 func (a *manageCharacters) ShowAddCharacterDialog() {
@@ -255,9 +235,9 @@ func (a *manageCharacters) ShowAddCharacterDialog() {
 		"Add Character",
 		"Cancel",
 		content,
-		a.window,
+		a.w,
 	)
-	a.u.ModifyShortcutsForDialog(d1, a.window)
+	a.u.ModifyShortcutsForDialog(d1, a.w)
 	d1.SetOnClosed(cancel)
 	go func() {
 		characterID, err := func() (int32, error) {
@@ -273,7 +253,7 @@ func (a *manageCharacters) ShowAddCharacterDialog() {
 			if err != nil && !errors.Is(err, app.ErrAborted) {
 				s := "Failed to add a new character"
 				slog.Error(s, "error", err)
-				a.u.showErrorDialog(s, err, a.window)
+				a.u.showErrorDialog(s, err, a.w)
 				return
 			}
 			go func() {
