@@ -592,7 +592,11 @@ type CharacterWalletTransaction struct {
 }
 
 func (wt *CharacterWalletTransaction) Total() float64 {
-	return wt.UnitPrice * float64(wt.Quantity)
+	x := wt.UnitPrice * float64(wt.Quantity)
+	if wt.IsBuy {
+		return -1 * x
+	}
+	return x
 }
 
 type NotificationGroup uint
