@@ -16,6 +16,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
+	fynetooltip "github.com/dweymouth/fyne-tooltip"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -32,11 +34,11 @@ type accountCharacter struct {
 type manageCharacters struct {
 	widget.BaseWidget
 
+	ab           *iwidget.AppBar
 	characters   []accountCharacter
 	list         *widget.List
 	sb           *iwidget.Snackbar
 	showSnackbar func(string)
-	title        *widget.Label
 	u            *baseUI
 	w            fyne.Window
 }
@@ -49,7 +51,7 @@ func showManageCharactersWindow(u *baseUI) {
 	}
 	a := newManageCharacters(u, w)
 	a.update()
-	w.SetContent(a)
+	w.SetContent(fynetooltip.AddWindowToolTipLayer(a, w.Canvas()))
 	w.Resize(fyne.Size{Width: 500, Height: 300})
 	w.SetOnClosed(func() {
 		if onClosed != nil {
@@ -64,7 +66,6 @@ func newManageCharacters(u *baseUI, w fyne.Window) *manageCharacters {
 	a := &manageCharacters{
 		characters:   make([]accountCharacter, 0),
 		showSnackbar: u.ShowSnackbar,
-		title:        makeTopLabel(),
 		w:            w,
 		u:            u,
 		sb:           iwidget.NewSnackbar(w),
@@ -72,11 +73,6 @@ func newManageCharacters(u *baseUI, w fyne.Window) *manageCharacters {
 	a.ExtendBaseWidget(a)
 	a.list = a.makeCharacterList()
 	a.sb.Start()
-	return a
-}
-
-func (a *manageCharacters) CreateRenderer() fyne.WidgetRenderer {
-	var c fyne.CanvasObject
 	add := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		a.ShowAddCharacterDialog()
 	})
@@ -85,24 +81,18 @@ func (a *manageCharacters) CreateRenderer() fyne.WidgetRenderer {
 		add.Disable()
 	}
 	p := theme.Padding()
-	c = container.NewBorder(
-		a.title,
-		container.NewCenter(container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), add)),
+	a.ab = iwidget.NewAppBar("Characters", container.NewBorder(
+		nil,
+		container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), add),
 		nil,
 		nil,
 		a.list,
-	)
-	return widget.NewSimpleRenderer(c)
+	))
+	return a
 }
 
-func (a *manageCharacters) SetWindow(w fyne.Window) {
-	a.w = w
-	if a.sb != nil {
-		a.sb.Stop()
-	}
-	a.showSnackbar = func(s string) {
-		a.sb.Show(s)
-	}
+func (a *manageCharacters) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(a.ab)
 }
 
 func (a *manageCharacters) makeCharacterList() *widget.List {
@@ -116,12 +106,13 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 				fyne.NewSquareSize(app.IconUnitSize),
 			)
 			name := widget.NewLabel("Template")
-			button := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {})
-			button.Importance = widget.DangerImportance
+			delete := ttwidget.NewButtonWithIcon("", theme.DeleteIcon(), func() {})
+			delete.Importance = widget.DangerImportance
+			delete.SetToolTip("Delete character")
 			issue := widget.NewLabel("Scope issue - please re-add!")
 			issue.Importance = widget.WarningImportance
 			issue.Hide()
-			row := container.NewHBox(portrait, name, issue, layout.NewSpacer(), button)
+			row := container.NewHBox(portrait, name, issue, layout.NewSpacer(), delete)
 			return row
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -130,8 +121,6 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 			}
 			c := a.characters[id]
 			row := co.(*fyne.Container).Objects
-			name := row[1].(*widget.Label)
-			name.SetText(c.name)
 
 			portrait := row[0].(*canvas.Image)
 			go a.u.updateAvatar(c.id, func(r fyne.Resource) {
@@ -141,6 +130,9 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 				})
 			})
 
+			name := row[1].(*widget.Label)
+			name.SetText(c.name)
+
 			issue := row[2].(*widget.Label)
 			if c.missingToken {
 				issue.Show()
@@ -148,7 +140,8 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 				issue.Hide()
 			}
 
-			row[4].(*widget.Button).OnTapped = func() {
+			delete := row[4].(*ttwidget.Button)
+			delete.OnTapped = func() {
 				a.showDeleteDialog(c)
 			}
 		})
@@ -222,7 +215,7 @@ func (a *manageCharacters) update() {
 	fyne.Do(func() {
 		a.characters = characters
 		a.list.Refresh()
-		a.title.SetText(fmt.Sprintf("Characters (%d)", len(characters)))
+		a.ab.SetTitle(fmt.Sprintf("Characters (%d)", len(characters)))
 	})
 }
 
