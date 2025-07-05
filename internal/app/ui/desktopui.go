@@ -19,13 +19,15 @@ import (
 	"github.com/icrowley/fake"
 	"golang.org/x/sync/singleflight"
 
+	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	fynetooltip "github.com/dweymouth/fyne-tooltip"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
 const (
@@ -315,7 +317,9 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		nil,
 		tabs,
 	)
-	u.MainWindow().SetContent(mainContent)
+
+	w := u.MainWindow()
+	w.SetContent(fynetooltip.AddWindowToolTipLayer(mainContent, w.Canvas()))
 
 	u.onSetCharacter = func(id int32) {
 		name := u.scs.CharacterName(id)

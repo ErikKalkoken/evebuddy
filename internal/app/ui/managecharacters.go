@@ -83,6 +83,10 @@ func showManageCharactersWindow(u *baseUI) {
 		}
 		mcw.sb.Stop()
 	})
+	w.SetCloseIntercept(func() {
+		w.Close()
+		fynetooltip.DestroyWindowToolTipLayer(w.Canvas())
+	})
 	w.Show()
 }
 

@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
@@ -40,15 +41,15 @@ type statusBar struct {
 	widget.BaseWidget
 
 	characterCount *statusBarItem
+	currentVersion *widget.Label
 	eveClock       *statusBarItem
 	eveStatus      *statusBarItem
 	eveStatusError string
 	infoText       *widget.Label
-	updateHint     *updateHint
-	u              *DesktopUI
-	updateStatus   *statusBarItem
 	latestVersion  *widget.Label
-	currentVersion *widget.Label
+	u              *DesktopUI
+	updateHint     *updateHint
+	updateStatus   *statusBarItem
 }
 
 func newStatusBar(u *DesktopUI) *statusBar {
@@ -60,15 +61,19 @@ func newStatusBar(u *DesktopUI) *statusBar {
 	a.characterCount = newStatusBarItem(theme.NewThemedResource(icons.GroupSvg), "?", func() {
 		showManageCharactersWindow(u.baseUI)
 	})
+	a.characterCount.SetToolTip("Number of characters - click to manage")
 	a.updateStatus = newStatusBarItem(theme.NewThemedResource(icons.UpdateSvg), "?", func() {
 		showUpdateStatusWindow(u.baseUI)
 	})
+	a.updateStatus.SetToolTip("Current update status - click for details")
 	a.eveClock = newStatusBarItem(
 		theme.NewThemedResource(icons.AccesstimefilledSvg),
 		"?",
 		a.showClockDialog,
 	)
+	a.eveClock.SetToolTip("Current EVE time - click to enlarge")
 	a.eveStatus = newStatusBarItem(theme.MediaRecordIcon(), "?", a.showEveStatusDialog)
+	a.eveStatus.SetToolTip("EVE server status - click for details")
 	a.updateHint = newUpdateHint(u)
 	a.updateHint.Hide()
 	return a
@@ -251,7 +256,8 @@ func (a *statusBar) setInfo(text string, importance widget.Importance) {
 
 // statusBarItem is a widget with a label and an optional icon, which can be tapped.
 type statusBarItem struct {
-	widget.BaseWidget
+	ttwidget.ToolTipWidget
+
 	icon  *widget.Icon
 	label *widget.Label
 
@@ -309,15 +315,17 @@ func (w *statusBarItem) Cursor() desktop.Cursor {
 
 // MouseIn is a hook that is called if the mouse pointer enters the element.
 func (w *statusBarItem) MouseIn(e *desktop.MouseEvent) {
+	w.ToolTipWidget.MouseIn(e)
 	w.hovered = true
 }
 
-func (w *statusBarItem) MouseMoved(*desktop.MouseEvent) {
-	// needed to satisfy the interface only
+func (w *statusBarItem) MouseMoved(e *desktop.MouseEvent) {
+	w.ToolTipWidget.MouseMoved(e)
 }
 
 // MouseOut is a hook that is called if the mouse pointer leaves the element.
 func (w *statusBarItem) MouseOut() {
+	w.ToolTipWidget.MouseOut()
 	w.hovered = false
 }
 

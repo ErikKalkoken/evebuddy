@@ -7,7 +7,10 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	// ttwidget "github.com/dweymouth/fyne-tooltip/widget"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 const (
@@ -31,9 +34,11 @@ func newToolbar(u *DesktopUI) *toolbar {
 	searchBar.OnSubmitted = func(s string) {
 		u.PerformSearch(s)
 	}
-	searchBar.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
+	clearSearch := iwidget.NewTappableIcon(theme.CancelIcon(), func() {
 		searchBar.SetText("")
 	})
+	clearSearch.SetToolTip("Clear search bar")
+	searchBar.ActionItem = container.NewPadded(clearSearch)
 	makeMenuItem := func(title string, sc shortcutDef) *fyne.MenuItem {
 		it := fyne.NewMenuItem(title, func() {
 			sc.handler(sc.shortcut)
@@ -80,12 +85,14 @@ func (a *toolbar) ToogleSearchBar(enabled bool) {
 
 func (a *toolbar) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
+	searchIcon := iwidget.NewTappableIcon(theme.SearchIcon(), func() {
+		a.u.showAdvancedSearch()
+	})
+	searchIcon.SetToolTip("Advanced search")
 	x := container.NewGridWithColumns(
 		3,
 		container.NewHBox(),
-		container.NewBorder(nil, nil, nil, kxwidget.NewIconButton(theme.SearchIcon(), func() {
-			a.u.showAdvancedSearch()
-		}),
+		container.NewBorder(nil, nil, nil, searchIcon,
 			a.searchBar,
 		),
 		container.New(layout.NewCustomPaddedHBoxLayout(2*p), layout.NewSpacer(), a.hamburger),
