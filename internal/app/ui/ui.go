@@ -109,7 +109,6 @@ type baseUI struct {
 	slotsManufacturing         *industrySlots
 	slotsResearch              *industrySlots
 	slotsReactions             *industrySlots
-	manageCharacters           *manageCharacters
 	assets                     *assets
 	characters                 *characters
 	clones                     *clones
@@ -219,7 +218,6 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	u.slotsManufacturing = newIndustrySlots(u, app.ManufacturingJob)
 	u.slotsReactions = newIndustrySlots(u, app.ReactionJob)
 	u.slotsResearch = newIndustrySlots(u, app.ScienceJob)
-	u.manageCharacters = newManageCharacters(u)
 	u.assets = newAssets(u)
 	u.characters = newOverviewCharacters(u)
 	u.clones = newClones(u)
@@ -250,7 +248,6 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 		u.snackbar.Start()
 		go func() {
 			u.initCharacter()
-			u.manageCharacters.update()
 			u.updateCrossPages()
 			u.updateStatus()
 			u.isStartupCompleted.Store(true)

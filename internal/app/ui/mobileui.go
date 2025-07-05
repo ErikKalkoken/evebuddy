@@ -243,15 +243,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		"Manage characters",
 		theme.NewThemedResource(icons.ManageaccountsSvg),
 		func() {
-			moreNav.Push(iwidget.NewAppBarWithTrailing(
-				"Manage characters",
-				u.manageCharacters,
-				makeAppBarIcons(
-					kxwidget.NewIconButton(
-						theme.NewPrimaryThemedResource(theme.ContentAddIcon()),
-						u.manageCharacters.ShowAddCharacterDialog,
-					)),
-			))
+			showManageCharactersWindow(u.baseUI)
 		},
 	)
 
@@ -274,12 +266,6 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		navItemUpdateStatus,
 		navItemAbout,
 	)
-	u.manageCharacters.OnUpdate = func(characterCount int) {
-		fyne.Do(func() {
-			navItemManageCharacters.Supporting = fmt.Sprintf("%d characters", characterCount)
-			moreList.Refresh()
-		})
-	}
 	moreNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("More", moreList))
 
 	// navigation bar
@@ -313,6 +299,10 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	u.onUpdateStatus = func() {
 		go func() {
+			fyne.Do(func() {
+				navItemManageCharacters.Supporting = fmt.Sprintf("%d characters", u.scs.ListCharacterIDs().Size())
+				moreList.Refresh()
+			})
 			fyne.Do(func() {
 				characterSelector.SetMenuItems(u.makeCharacterSwitchMenu(characterSelector.Refresh))
 			})
