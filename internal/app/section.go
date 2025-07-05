@@ -214,24 +214,28 @@ func (cs CorporationSection) Division() Division {
 
 // Timeout returns the time until the data of an update section becomes stale.
 func (cs CorporationSection) Timeout() time.Duration {
+	const (
+		walletTransactions = 3600 * time.Second
+		walletJournal      = 3600 * time.Second
+	)
 	m := map[CorporationSection]time.Duration{
 		SectionCorporationIndustryJobs:        300 * time.Second,
 		SectionCorporationWalletBalances:      300 * time.Second,
-		SectionCorporationWalletJournal1:      3600 * time.Second,
-		SectionCorporationWalletJournal2:      3600 * time.Second,
-		SectionCorporationWalletJournal3:      3600 * time.Second,
-		SectionCorporationWalletJournal4:      3600 * time.Second,
-		SectionCorporationWalletJournal5:      3600 * time.Second,
-		SectionCorporationWalletJournal6:      3600 * time.Second,
-		SectionCorporationWalletJournal7:      3600 * time.Second,
+		SectionCorporationWalletJournal1:      walletJournal,
+		SectionCorporationWalletJournal2:      walletJournal,
+		SectionCorporationWalletJournal3:      walletJournal,
+		SectionCorporationWalletJournal4:      walletJournal,
+		SectionCorporationWalletJournal5:      walletJournal,
+		SectionCorporationWalletJournal6:      walletJournal,
+		SectionCorporationWalletJournal7:      walletJournal,
 		SectionCorporationDivisions:           3600 * time.Second,
-		SectionCorporationWalletTransactions1: 3600 * time.Second,
-		SectionCorporationWalletTransactions2: 3600 * time.Second,
-		SectionCorporationWalletTransactions3: 3600 * time.Second,
-		SectionCorporationWalletTransactions4: 3600 * time.Second,
-		SectionCorporationWalletTransactions5: 3600 * time.Second,
-		SectionCorporationWalletTransactions6: 3600 * time.Second,
-		SectionCorporationWalletTransactions7: 3600 * time.Second,
+		SectionCorporationWalletTransactions1: walletTransactions,
+		SectionCorporationWalletTransactions2: walletTransactions,
+		SectionCorporationWalletTransactions3: walletTransactions,
+		SectionCorporationWalletTransactions4: walletTransactions,
+		SectionCorporationWalletTransactions5: walletTransactions,
+		SectionCorporationWalletTransactions6: walletTransactions,
+		SectionCorporationWalletTransactions7: walletTransactions,
 	}
 	duration, ok := m[cs]
 	if !ok {
@@ -245,12 +249,28 @@ func (cs CorporationSection) Timeout() time.Duration {
 
 // Role returns the required role for fetching data for a section from ESI.
 func (cs CorporationSection) Role() Role {
+	const (
+		walletTransactions = RoleAccountant
+		walletJournal      = RoleAccountant
+	)
 	m := map[CorporationSection]Role{
 		SectionCorporationIndustryJobs:        RoleFactoryManager,
 		SectionCorporationWalletBalances:      RoleAccountant,
-		SectionCorporationWalletJournal1:      RoleAccountant,
+		SectionCorporationWalletJournal1:      walletJournal,
+		SectionCorporationWalletJournal2:      walletJournal,
+		SectionCorporationWalletJournal3:      walletJournal,
+		SectionCorporationWalletJournal4:      walletJournal,
+		SectionCorporationWalletJournal5:      walletJournal,
+		SectionCorporationWalletJournal6:      walletJournal,
+		SectionCorporationWalletJournal7:      walletJournal,
 		SectionCorporationDivisions:           RoleDirector,
-		SectionCorporationWalletTransactions1: RoleAccountant,
+		SectionCorporationWalletTransactions1: walletTransactions,
+		SectionCorporationWalletTransactions2: walletTransactions,
+		SectionCorporationWalletTransactions3: walletTransactions,
+		SectionCorporationWalletTransactions4: walletTransactions,
+		SectionCorporationWalletTransactions5: walletTransactions,
+		SectionCorporationWalletTransactions6: walletTransactions,
+		SectionCorporationWalletTransactions7: walletTransactions,
 	}
 	role, ok := m[cs]
 	if !ok {

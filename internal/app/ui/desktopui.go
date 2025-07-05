@@ -111,9 +111,9 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 
 	var homeNav *iwidget.NavDrawer
 	overview := iwidget.NewNavPage(
-		"Characters",
+		"Character Overview",
 		theme.NewThemedResource(icons.PortraitSvg),
-		makePageWithTitle("Characters", u.characters),
+		makePageWithTitle("Character Overview", u.characters),
 	)
 
 	wealth := iwidget.NewNavPage(
@@ -285,6 +285,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			theme.NewThemedResource(icons.PortraitSvg),
 			makePageWithPageBarForCharacter("Character Sheet", container.NewAppTabs(
 				container.NewTabItem("Character", u.characterSheet),
+				container.NewTabItem("Corporation", u.characterCorporation),
 				container.NewTabItem("Augmentations", u.characterAugmentations),
 				container.NewTabItem("Jump Clones", u.characterJumpClones),
 				container.NewTabItem("Attributes", u.characterAttributes),
@@ -300,7 +301,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		skills,
 		characterWallet,
 	)
-	characterNav.Title = "Character"
+	characterNav.Title = "Characters"
 	characterNav.MinWidth = minNavCharacterWidth
 
 	// Corporation
@@ -336,15 +337,15 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 
 	corporationNav := iwidget.NewNavDrawer(corpItems...)
-	corporationNav.Title = "Corporation"
+	corporationNav.Title = "Corporations"
 	corporationNav.MinWidth = minNavCharacterWidth
 
 	// Make overall UI
 
 	statusBar := newStatusBar(u)
 	toolbar := newToolbar(u)
-	characterTab := container.NewTabItemWithIcon("Character", theme.AccountIcon(), characterNav)
-	corporationTab := container.NewTabItemWithIcon("Corporation", theme.NewThemedResource(icons.StarCircleOutlineSvg), corporationNav)
+	characterTab := container.NewTabItemWithIcon("Characters", theme.AccountIcon(), characterNav)
+	corporationTab := container.NewTabItemWithIcon("Corporations", theme.NewThemedResource(icons.StarCircleOutlineSvg), corporationNav)
 	tabs := container.NewAppTabs(
 		container.NewTabItemWithIcon("Home", theme.NewThemedResource(theme.HomeIcon()), homeNav),
 		characterTab,

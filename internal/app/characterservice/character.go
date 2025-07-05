@@ -2120,13 +2120,20 @@ func (s *CharacterService) ListRoles(ctx context.Context, characterID int32) ([]
 		return strings.Compare(a.String(), b.String())
 	})
 	roles := make([]app.CharacterRole, 0)
+	if granted.Contains(app.RoleDirector) {
+		roles = append(roles, app.CharacterRole{
+			CharacterID: characterID,
+			Role:        app.RoleDirector,
+			Granted:     true,
+		})
+		return roles, nil
+	}
 	for _, r := range rolesSorted {
-		o := app.CharacterRole{
+		roles = append(roles, app.CharacterRole{
 			CharacterID: characterID,
 			Role:        r,
 			Granted:     granted.Contains(r),
-		}
-		roles = append(roles, o)
+		})
 	}
 	return roles, nil
 }

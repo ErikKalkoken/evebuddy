@@ -96,9 +96,10 @@ type baseUI struct {
 
 	characterAsset                *characterAssets
 	characterAttributes           *characterAttributes
+	characterAugmentations        *characterAugmentations
 	characterBiography            *characterBiography
 	characterCommunications       *characterCommunications
-	characterAugmentations        *characterAugmentations
+	characterCorporation          *characterCorporation
 	characterJumpClones           *characterJumpClones
 	characterMail                 *characterMails
 	characterSheet                *characterSheet
@@ -115,7 +116,6 @@ type baseUI struct {
 	slotsManufacturing            *industrySlots
 	slotsResearch                 *industrySlots
 	slotsReactions                *industrySlots
-	manageCharacters              *manageCharacters
 	assets                        *assets
 	characters                    *characters
 	clones                        *clones
@@ -214,7 +214,8 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	u.characterAugmentations = newCharacterAugmentations(u)
 	u.characterJumpClones = newCharacterJumpClones(u)
 	u.characterMail = newCharacterMails(u)
-	u.characterSheet = newSheet(u)
+	u.characterSheet = newCharacterSheet(u)
+	u.characterCorporation = newCharacterCorporation(u)
 	u.characterShips = newCharacterFlyableShips(u)
 	u.characterSkillCatalogue = newCharacterSkillCatalogue(u)
 	u.characterSkillQueue = newCharacterSkillQueue(u)
@@ -261,7 +262,6 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 		go func() {
 			u.initCharacter()
 			u.initCorporation()
-			u.manageCharacters.update()
 			u.updateHome()
 			u.updateStatus()
 			u.isStartupCompleted.Store(true)
@@ -480,19 +480,20 @@ func (u *baseUI) updateCharacter() {
 
 func (u *baseUI) defineCharacterUpdates() map[string]func() {
 	ff := map[string]func(){
-		"assets":            u.characterAsset.update,
-		"attributes":        u.characterAttributes.update,
-		"biography":         u.characterBiography.update,
-		"implants":          u.characterAugmentations.update,
-		"jumpClones":        u.characterJumpClones.update,
-		"mail":              u.characterMail.update,
-		"notifications":     u.characterCommunications.update,
-		"sheet":             u.characterSheet.update,
-		"ships":             u.characterShips.update,
-		"skillCatalogue":    u.characterSkillCatalogue.update,
-		"skillqueue":        u.characterSkillQueue.update,
-		"walletJournal":     u.characterWalletJournal.update,
-		"walletTransaction": u.characterWalletTransaction.update,
+		"assets":               u.characterAsset.update,
+		"attributes":           u.characterAttributes.update,
+		"biography":            u.characterBiography.update,
+		"implants":             u.characterAugmentations.update,
+		"jumpClones":           u.characterJumpClones.update,
+		"mail":                 u.characterMail.update,
+		"notifications":        u.characterCommunications.update,
+		"characterSheet":       u.characterSheet.update,
+		"characterCorporation": u.characterCorporation.update,
+		"ships":                u.characterShips.update,
+		"skillCatalogue":       u.characterSkillCatalogue.update,
+		"skillqueue":           u.characterSkillQueue.update,
+		"walletJournal":        u.characterWalletJournal.update,
+		"walletTransaction":    u.characterWalletTransaction.update,
 	}
 	return ff
 }
@@ -840,7 +841,7 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 			u.characters.update()
 		}
 	case app.SectionEveCorporations:
-		// nothing to do
+		u.characterCorporation.update()
 	case app.SectionEveMarketPrices:
 		u.characterAsset.update()
 		u.characters.update()
@@ -1064,7 +1065,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			}()
 		}
 	case app.SectionRoles:
-		// nothing to do
+		u.characterCorporation.update()
 	case app.SectionSkills:
 		if needsRefresh {
 			u.training.update()
