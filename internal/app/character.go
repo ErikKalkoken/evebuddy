@@ -13,13 +13,14 @@ import (
 
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/yuin/goldmark"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
-	"github.com/yuin/goldmark"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 // Character is an Eve Online character owned by the user.

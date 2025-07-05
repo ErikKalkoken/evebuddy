@@ -55,6 +55,10 @@ func showSettingsWindow(u *baseUI) {
 		}
 		a.sb.Stop()
 	})
+	w.SetCloseIntercept(func() {
+		w.Close()
+		fynetooltip.DestroyWindowToolTipLayer(w.Canvas())
+	})
 	w.Show()
 }
 
