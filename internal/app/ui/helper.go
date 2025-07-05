@@ -2,9 +2,11 @@ package ui
 
 import (
 	"fmt"
+	"image/color"
 	"math"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -127,4 +129,14 @@ func setDetailWindowWithSize(title string, minSize fyne.Size, content fyne.Canva
 	)
 	c.Refresh()
 	w.SetContent(container.NewPadded(c))
+}
+
+func newSpacer(s fyne.Size) fyne.CanvasObject {
+	w := canvas.NewRectangle(color.Transparent)
+	w.SetMinSize(s)
+	return w
+}
+
+func newStandardSpacer() fyne.CanvasObject {
+	return newSpacer(fyne.NewSquareSize(theme.Padding()))
 }
