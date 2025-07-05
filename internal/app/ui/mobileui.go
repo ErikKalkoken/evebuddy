@@ -163,6 +163,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 						"Character Sheet",
 						container.NewAppTabs(
 							container.NewTabItem("Character", u.characterSheet),
+							container.NewTabItem("Corporation", u.characterCorporation),
 							container.NewTabItem("Augmentations", u.characterAugmentations),
 							container.NewTabItem("Clones", u.characterJumpClones),
 							container.NewTabItem("Attributes", u.characterAttributes),
@@ -223,7 +224,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		})
 	}
 
-	characterPage := newCharacterAppBar("Character", characterList)
+	characterPage := newCharacterAppBar("Characters", characterList)
 	characterNav = iwidget.NewNavigatorWithAppBar(characterPage)
 
 	homeNav := makeHomeNav(u)
@@ -269,7 +270,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	moreNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("More", moreList))
 
 	// navigation bar
-	characterDest := iwidget.NewDestinationDef("Character", theme.NewThemedResource(icons.AccountSvg), characterNav)
+	characterDest := iwidget.NewDestinationDef("Characters", theme.NewThemedResource(icons.AccountSvg), characterNav)
 	characterDest.OnSelectedAgain = func() {
 		characterNav.PopAll()
 	}
@@ -461,10 +462,10 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 	)
 	homeList = iwidget.NewNavList(
 		iwidget.NewListItemWithIcon(
-			"Characters",
+			"Character Overview",
 			theme.NewThemedResource(icons.PortraitSvg),
 			func() {
-				homeNav.Push(iwidget.NewAppBar("Characters", u.characters))
+				homeNav.Push(iwidget.NewAppBar("Character Overview", u.characters))
 			},
 		),
 		iwidget.NewListItemWithIcon(
