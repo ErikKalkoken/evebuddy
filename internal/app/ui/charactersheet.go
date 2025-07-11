@@ -39,19 +39,14 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 		return ti
 	}
 
-	name := widget.NewHyperlink("", nil)
-	name.Wrapping = fyne.TextWrapWord
-	home := widget.NewHyperlink("", nil)
-	home.Wrapping = fyne.TextWrapWord
-
 	portrait := kxwidget.NewTappableImage(icons.BlankSvg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
 	portrait.SetMinSize(fyne.NewSquareSize(128))
 	w := &characterSheet{
 		born:        widget.NewLabel("?"),
 		factionLogo: makeLogo(),
-		home:        home,
-		name:        name,
+		home:        widget.NewHyperlink("", nil),
+		name:        widget.NewHyperlink("", nil),
 		portrait:    portrait,
 		race:        widget.NewHyperlink("", nil),
 		security:    widget.NewLabel("?"),

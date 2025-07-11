@@ -272,13 +272,6 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		})
 	}
 
-	characterWallet := iwidget.NewNavPage("Wallet",
-		theme.NewThemedResource(icons.AttachmoneySvg),
-		makePageWithPageBarForCharacter("Wallet", container.NewAppTabs(
-			container.NewTabItem("Transactions", u.characterWalletJournal),
-			container.NewTabItem("Market Transactions", u.characterWalletTransaction),
-		)))
-
 	characterNav = iwidget.NewNavDrawer(
 		iwidget.NewNavPage(
 			"Character Sheet",
@@ -290,7 +283,8 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 				container.NewTabItem("Jump Clones", u.characterJumpClones),
 				container.NewTabItem("Attributes", u.characterAttributes),
 				container.NewTabItem("Biography", u.characterBiography),
-			))),
+			)),
+		),
 		iwidget.NewNavPage(
 			"Assets",
 			theme.NewThemedResource(icons.Inventory2Svg),
@@ -299,7 +293,13 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		communications,
 		mail,
 		skills,
-		characterWallet,
+		iwidget.NewNavPage("Wallet",
+			theme.NewThemedResource(icons.AttachmoneySvg),
+			makePageWithPageBarForCharacter("Wallet", container.NewAppTabs(
+				container.NewTabItem("Transactions", u.characterWalletJournal),
+				container.NewTabItem("Market Transactions", u.characterWalletTransaction),
+			)),
+		),
 	)
 	characterNav.Title = "Characters"
 	characterNav.MinWidth = minNavCharacterWidth
@@ -344,12 +344,10 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 
 	statusBar := newStatusBar(u)
 	toolbar := newToolbar(u)
-	characterTab := container.NewTabItemWithIcon("Characters", theme.AccountIcon(), characterNav)
-	corporationTab := container.NewTabItemWithIcon("Corporations", theme.NewThemedResource(icons.StarCircleOutlineSvg), corporationNav)
 	tabs := container.NewAppTabs(
 		container.NewTabItemWithIcon("Home", theme.NewThemedResource(theme.HomeIcon()), homeNav),
-		characterTab,
-		corporationTab,
+		container.NewTabItemWithIcon("Characters", theme.AccountIcon(), characterNav),
+		container.NewTabItemWithIcon("Corporations", theme.NewThemedResource(icons.StarCircleOutlineSvg), corporationNav),
 	)
 	mainContent := container.NewBorder(
 		toolbar,
