@@ -46,10 +46,6 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 	return s
 }
 
-func TestNoScopeDuplicates(t *testing.T) {
-	assert.ElementsMatch(t, esiScopes, set.Of(esiScopes...).Slice())
-}
-
 func TestUpdateCharacterAssetsESI(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -2114,7 +2110,7 @@ func TestHasTokenWithScopes(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID, Scopes: esiScopes})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID, Scopes: app.Scopes().Slice()})
 		// when
 		x, err := s.HasTokenWithScopes(ctx, c.ID)
 		// then
@@ -2139,7 +2135,7 @@ func TestHasTokenWithScopes(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID, Scopes: slices.Concat(esiScopes, []string{"extra"})})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID, Scopes: slices.Concat(app.Scopes().Slice(), []string{"extra"})})
 		// when
 		x, err := s.HasTokenWithScopes(ctx, c.ID)
 		// then

@@ -34,32 +34,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-var esiScopes = []string{
-	"esi-assets.read_assets.v1",
-	"esi-characters.read_contacts.v1",
-	"esi-characters.read_corporation_roles.v1",
-	"esi-characters.read_notifications.v1",
-	"esi-clones.read_clones.v1",
-	"esi-clones.read_implants.v1",
-	"esi-contracts.read_character_contracts.v1",
-	"esi-corporations.read_divisions.v1",
-	"esi-industry.read_character_jobs.v1",
-	"esi-industry.read_corporation_jobs.v1",
-	"esi-location.read_location.v1",
-	"esi-location.read_online.v1",
-	"esi-location.read_ship_type.v1",
-	"esi-mail.organize_mail.v1",
-	"esi-mail.read_mail.v1",
-	"esi-mail.send_mail.v1",
-	"esi-planets.manage_planets.v1",
-	"esi-search.search_structures.v1",
-	"esi-skills.read_skillqueue.v1",
-	"esi-skills.read_skills.v1",
-	"esi-universe.read_structures.v1",
-	"esi-wallet.read_character_wallet.v1",
-	"esi-wallet.read_corporation_wallets.v1",
-}
-
 type SSOService interface {
 	Authenticate(ctx context.Context, scopes []string) (*app.Token, error)
 	RefreshToken(ctx context.Context, refreshToken string) (*app.Token, error)
@@ -480,7 +454,7 @@ func (s *CharacterService) HasCharacter(ctx context.Context, id int32) (bool, er
 // UpdateOrCreateCharacterFromSSO creates or updates a character via SSO authentication.
 // The provided context is used for the SSO authentication process only and can be canceled.
 func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText binding.ExternalString) (int32, error) {
-	ssoToken, err := s.sso.Authenticate(ctx, esiScopes)
+	ssoToken, err := s.sso.Authenticate(ctx, app.Scopes().Slice())
 	if err != nil {
 		return 0, err
 	}
@@ -2573,7 +2547,7 @@ func (s *CharacterService) HasTokenWithScopes(ctx context.Context, characterID i
 		return false, err
 	}
 	current := set.Of(t.Scopes...)
-	required := set.Of(esiScopes...)
+	required := app.Scopes()
 	hasScope := current.ContainsAll(required.All())
 	return hasScope, nil
 }
