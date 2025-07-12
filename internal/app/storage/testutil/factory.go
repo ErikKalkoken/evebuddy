@@ -799,33 +799,37 @@ func (f Factory) CreateCharacterSkillqueueItem(args ...storage.SkillqueueItemPar
 	return i
 }
 
-func (f Factory) CreateCharacterToken(args ...app.CharacterToken) *app.CharacterToken {
-	var t app.CharacterToken
+func (f Factory) CreateCharacterToken(args ...storage.UpdateOrCreateCharacterTokenParams) *app.CharacterToken {
+	var arg storage.UpdateOrCreateCharacterTokenParams
 	ctx := context.Background()
 	if len(args) > 0 {
-		t = args[0]
+		arg = args[0]
 	}
-	if t.AccessToken == "" {
-		t.AccessToken = fmt.Sprintf("GeneratedAccessToken#%d", rand.IntN(1000000))
+	if arg.AccessToken == "" {
+		arg.AccessToken = fmt.Sprintf("GeneratedAccessToken#%d", rand.IntN(1000000))
 	}
-	if t.RefreshToken == "" {
-		t.RefreshToken = fmt.Sprintf("GeneratedRefreshToken#%d", rand.IntN(1000000))
+	if arg.RefreshToken == "" {
+		arg.RefreshToken = fmt.Sprintf("GeneratedRefreshToken#%d", rand.IntN(1000000))
 	}
-	if t.ExpiresAt.IsZero() {
-		t.ExpiresAt = time.Now().Add(time.Minute * 20).UTC()
+	if arg.ExpiresAt.IsZero() {
+		arg.ExpiresAt = time.Now().Add(time.Minute * 20).UTC()
 	}
-	if t.TokenType == "" {
-		t.TokenType = "Bearer"
+	if arg.TokenType == "" {
+		arg.TokenType = "Bearer"
 	}
-	if t.CharacterID == 0 {
+	if arg.CharacterID == 0 {
 		c := f.CreateCharacterFull()
-		t.CharacterID = c.ID
+		arg.CharacterID = c.ID
 	}
-	err := f.st.UpdateOrCreateCharacterToken(ctx, &t)
+	err := f.st.UpdateOrCreateCharacterToken(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	return &t
+	x, err := f.st.GetCharacterToken(ctx, arg.CharacterID)
+	if err != nil {
+		panic(err)
+	}
+	return x
 }
 
 type CharacterSectionStatusParams struct {

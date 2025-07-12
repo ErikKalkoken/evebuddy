@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
@@ -27,23 +28,42 @@ func (st *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*a
 	return t2, nil
 }
 
-func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, t *app.CharacterToken) error {
+type UpdateOrCreateCharacterTokenParams struct {
+	AccessToken  string
+	CharacterID  int32
+	ExpiresAt    time.Time
+	RefreshToken string
+	Scopes       []string
+	TokenType    string
+}
+
+func UpdateOrCreateCharacterTokenParamsFromToken(o *app.CharacterToken) UpdateOrCreateCharacterTokenParams {
+	return UpdateOrCreateCharacterTokenParams{
+		AccessToken:  o.AccessToken,
+		CharacterID:  o.CharacterID,
+		ExpiresAt:    o.ExpiresAt,
+		RefreshToken: o.RefreshToken,
+		Scopes:       o.Scopes,
+		TokenType:    o.TokenType,
+	}
+}
+
+func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, arg UpdateOrCreateCharacterTokenParams) error {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("updateOrCreateCharacterToken: %+v: %w", *t, err)
+		return fmt.Errorf("updateOrCreateCharacterToken: %+v: %w", arg, err)
 	}
-	arg := queries.UpdateOrCreateCharacterTokenParams{
-		AccessToken:  t.AccessToken,
-		CharacterID:  int64(t.CharacterID),
-		ExpiresAt:    t.ExpiresAt,
-		RefreshToken: t.RefreshToken,
-		TokenType:    t.TokenType,
-	}
-	token, err := st.qRW.UpdateOrCreateCharacterToken(ctx, arg)
+	token, err := st.qRW.UpdateOrCreateCharacterToken(ctx, queries.UpdateOrCreateCharacterTokenParams{
+		AccessToken:  arg.AccessToken,
+		CharacterID:  int64(arg.CharacterID),
+		ExpiresAt:    arg.ExpiresAt,
+		RefreshToken: arg.RefreshToken,
+		TokenType:    arg.TokenType,
+	})
 	if err != nil {
 		return wrapErr(err)
 	}
-	ss := make([]queries.Scope, len(t.Scopes))
-	for i, name := range t.Scopes {
+	ss := make([]queries.Scope, len(arg.Scopes))
+	for i, name := range arg.Scopes {
 		s, err := st.getOrCreateScope(ctx, name)
 		if err != nil {
 			return wrapErr(err)
@@ -56,7 +76,7 @@ func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, t *app.Char
 	}
 	defer tx.Rollback()
 	qtx := st.qRW.WithTx(tx)
-	if err := qtx.ClearCharacterTokenScopes(ctx, int64(t.CharacterID)); err != nil {
+	if err := qtx.ClearCharacterTokenScopes(ctx, int64(arg.CharacterID)); err != nil {
 		return wrapErr(err)
 	}
 	for _, s := range ss {

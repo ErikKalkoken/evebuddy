@@ -132,7 +132,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			CorporationID: corporation.ID,
 		})
 		c := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: ec.ID})
-		factory.CreateCharacterToken(app.CharacterToken{
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
 			AccessToken: "oldToken",
 			CharacterID: c.ID,
 		})
@@ -314,7 +314,7 @@ func TestUpdateMail(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c1 := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c1.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c1.ID})
 		e1 := factory.CreateEveEntityCharacter()
 		e2 := factory.CreateEveEntityCharacter()
 		m1 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList})
@@ -446,7 +446,7 @@ func TestUpdateMail(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		e1 := factory.CreateEveEntityCharacter()
 		e2 := factory.CreateEveEntityCharacter()
 		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: 16})
@@ -603,7 +603,7 @@ func TestSendMail(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		r := factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		httpmock.Reset()
 		httpmock.RegisterResponder(
@@ -766,7 +766,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		et := factory.CreateEveType()
 		httpmock.RegisterResponder(
 			"GET",
@@ -796,7 +796,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			CompletedAt: time.Now().Add(-6 * time.Hour),
 			Data:        data,
 		})
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
@@ -827,7 +827,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			CharacterID: c.ID,
 			Section:     section,
 		})
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		et := factory.CreateEveType()
 		httpmock.RegisterResponder(
 			"GET",
@@ -854,7 +854,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
@@ -880,7 +880,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			CharacterID: c.ID,
 			Section:     section,
 		})
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		et := factory.CreateEveType()
 		httpmock.RegisterResponder(
 			"GET",
@@ -914,7 +914,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			CompletedAt: time.Now().Add(-6 * time.Hour),
 			Data:        data,
 		})
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),

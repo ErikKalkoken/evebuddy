@@ -122,7 +122,7 @@ func (b *CharacterBuilder) createCharacter() {
 	b.c = b.f.CreateCharacterFull(storage.CreateCharacterParams{
 		ID: ec.ID,
 	})
-	b.f.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+	b.f.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 	fmt.Printf("Creating new character %s with factor %d\n", b.c.EveCharacter.Name, b.Factor)
 }
 
