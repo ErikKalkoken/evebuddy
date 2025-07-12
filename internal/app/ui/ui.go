@@ -1074,18 +1074,30 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionRoles:
 		if needsRefresh {
-			u.industryJobs.update()
-			u.slotsManufacturing.update()
-			u.slotsReactions.update()
-			u.slotsResearch.update()
 			if isCharacterShown {
 				u.characterSheet.update()
 			}
+			if corporationID == 0 {
+				break
+			}
+			var wg sync.WaitGroup
+			for _, s := range app.CorporationSections {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					u.updateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, s, true)
+				}()
+			}
+			wg.Wait()
+			go u.industryJobs.update()
+			go u.slotsManufacturing.update()
+			go u.slotsReactions.update()
+			go u.slotsResearch.update()
 			if isCorporationShown {
 				u.characterCorporation.update()
 				for _, d := range app.Divisions {
-					u.corporationWalletJournals[d].update()
-					u.corporationWalletTransactions[d].update()
+					go u.corporationWalletJournals[d].update()
+					go u.corporationWalletTransactions[d].update()
 				}
 			}
 		}

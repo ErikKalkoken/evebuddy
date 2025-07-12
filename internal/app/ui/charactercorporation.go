@@ -29,8 +29,6 @@ type characterCorporation struct {
 }
 
 func newCharacterCorporation(u *baseUI) *characterCorporation {
-	name := widget.NewHyperlink("", nil)
-	name.Wrapping = fyne.TextWrapWord
 	roles := widget.NewLabel("")
 	roles.Truncation = fyne.TextTruncateEllipsis
 	logo := kxwidget.NewTappableImage(icons.BlankSvg, nil)
@@ -38,7 +36,7 @@ func newCharacterCorporation(u *baseUI) *characterCorporation {
 	logo.SetMinSize(fyne.NewSquareSize(128))
 	w := &characterCorporation{
 		roles:    roles,
-		name:     name,
+		name:     widget.NewHyperlink("", nil),
 		logo:     logo,
 		alliance: widget.NewHyperlink("", nil),
 		u:        u,
