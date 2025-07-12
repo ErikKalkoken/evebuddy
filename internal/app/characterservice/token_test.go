@@ -20,13 +20,13 @@ func TestHasTokenWithScopes(t *testing.T) {
 	t.Run("should return true when token has same scopes", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacterMinimal()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
 			CharacterID: c.ID,
-			Scopes:      app.Scopes(),
+			Scopes:      set.Of("alpha", "bravo"),
 		})
 		// when
-		x, err := s.HasTokenWithScopes(ctx, c.ID)
+		x, err := s.HasTokenWithScopes(ctx, c.ID, set.Of("alpha", "bravo"))
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, x)
@@ -35,13 +35,13 @@ func TestHasTokenWithScopes(t *testing.T) {
 	t.Run("should return false when token is missing scopes", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacterMinimal()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
 			CharacterID: c.ID,
-			Scopes:      set.Of("esi-assets.read_assets.v1"),
+			Scopes:      set.Of("alpha"),
 		})
 		// when
-		x, err := s.HasTokenWithScopes(ctx, c.ID)
+		x, err := s.HasTokenWithScopes(ctx, c.ID, set.Of("alpha", "bravo"))
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, x)
@@ -50,13 +50,13 @@ func TestHasTokenWithScopes(t *testing.T) {
 	t.Run("should return true when token has at least requested scopes", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacterMinimal()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
 			CharacterID: c.ID,
-			Scopes:      set.Union(app.Scopes(), set.Of("extra")),
+			Scopes:      set.Of("alpha", "bravo", "charlie"),
 		})
 		// when
-		x, err := s.HasTokenWithScopes(ctx, c.ID)
+		x, err := s.HasTokenWithScopes(ctx, c.ID, set.Of("alpha", "bravo"))
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, x)

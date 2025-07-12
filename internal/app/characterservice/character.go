@@ -2648,6 +2648,9 @@ func (s *CharacterService) updateSectionIfChanged(
 	if err != nil {
 		return false, err
 	}
+	if !token.HasScopes(arg.Section.Scopes()) {
+		return false, app.ErrNotFound
+	}
 	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
 	data, err := fetch(ctx, arg.CharacterID)
 	if err != nil {
