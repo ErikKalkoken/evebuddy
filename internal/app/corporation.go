@@ -49,9 +49,16 @@ type CorporationHangarName struct {
 }
 
 type CorporationWalletBalance struct {
+	Balance       float64
 	CorporationID int32
 	DivisionID    int32
+}
+
+type CorporationWalletBalanceWithName struct {
 	Balance       float64
+	CorporationID int32
+	DivisionID    int32
+	Name          string
 }
 
 type CorporationWalletName struct {

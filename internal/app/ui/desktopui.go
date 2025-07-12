@@ -294,7 +294,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		mail,
 		skills,
 		iwidget.NewNavPage("Wallet",
-			theme.NewThemedResource(icons.AttachmoneySvg),
+			theme.NewThemedResource(icons.CashSvg),
 			makePageWithPageBarForCharacter("Wallet", container.NewAppTabs(
 				container.NewTabItem("Transactions", u.characterWalletJournal),
 				container.NewTabItem("Market Transactions", u.characterWalletTransaction),
@@ -319,12 +319,19 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	corpItems := []*iwidget.NavItem{
 		iwidget.NewNavSectionLabel("Wallets"),
 	}
-
+	corpItems = append(corpItems, iwidget.NewNavPage(
+		"Balances",
+		theme.NewThemedResource(icons.CashSvg),
+		makePageWithPageBarForCorporation(
+			"Wallet Balances",
+			u.corporationWallets,
+		),
+	))
 	for _, d := range app.Divisions {
 		name := fmt.Sprintf("Wallet %d", d)
 		u.wallets[d] = iwidget.NewNavPage(
 			name,
-			theme.NewThemedResource(icons.AttachmoneySvg),
+			theme.NewThemedResource(icons.CashSvg),
 			makePageWithPageBarForCorporation(
 				name,
 				container.NewAppTabs(
