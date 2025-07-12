@@ -817,6 +817,9 @@ func (f Factory) CreateCharacterToken(args ...storage.UpdateOrCreateCharacterTok
 	if arg.TokenType == "" {
 		arg.TokenType = "Bearer"
 	}
+	if arg.Scopes.Size() == 0 {
+		arg.Scopes = app.Scopes()
+	}
 	if arg.CharacterID == 0 {
 		c := f.CreateCharacterFull()
 		arg.CharacterID = c.ID

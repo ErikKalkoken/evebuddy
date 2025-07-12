@@ -2,7 +2,6 @@ package characterservice_test
 
 import (
 	"context"
-	"slices"
 	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -22,7 +21,10 @@ func TestHasTokenWithScopes(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID, Scopes: app.Scopes().Slice()})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c.ID,
+			Scopes:      app.Scopes(),
+		})
 		// when
 		x, err := s.HasTokenWithScopes(ctx, c.ID)
 		// then
@@ -34,8 +36,10 @@ func TestHasTokenWithScopes(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
-		esiScopes2 := []string{"esi-assets.read_assets.v1"}
-		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID, Scopes: esiScopes2})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c.ID,
+			Scopes:      set.Of("esi-assets.read_assets.v1"),
+		})
 		// when
 		x, err := s.HasTokenWithScopes(ctx, c.ID)
 		// then
@@ -47,7 +51,10 @@ func TestHasTokenWithScopes(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID, Scopes: slices.Concat(app.Scopes().Slice(), []string{"extra"})})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c.ID,
+			Scopes:      set.Union(app.Scopes(), set.Of("extra")),
+		})
 		// when
 		x, err := s.HasTokenWithScopes(ctx, c.ID)
 		// then
@@ -69,13 +76,13 @@ func TestValidCharacterTokenForCorporation(t *testing.T) {
 		c := factory.CreateCharacterMinimal()
 		o1 := factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
 			CharacterID: c.ID,
-			Scopes:      app.Scopes().Slice(),
+			Scopes:      app.Scopes(),
 		})
 		if err := st.UpdateCharacterRoles(ctx, c.ID, set.Of(app.RoleAccountant)); err != nil {
 			t.Fatal(err)
 		}
 		// when
-		o2, err := s.ValidCharacterTokenForCorporation(ctx, c.EveCharacter.Corporation.ID, app.RoleAccountant)
+		o2, err := s.ValidCharacterTokenForCorporation(ctx, c.EveCharacter.Corporation.ID, app.RoleAccountant, set.Set[string]{})
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, o1.ID, o2.ID)
@@ -87,13 +94,13 @@ func TestValidCharacterTokenForCorporation(t *testing.T) {
 		c := factory.CreateCharacterMinimal()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
 			CharacterID: c.ID,
-			Scopes:      app.Scopes().Slice(),
+			Scopes:      app.Scopes(),
 		})
 		if err := st.UpdateCharacterRoles(ctx, c.ID, set.Of(app.RoleBrandManager)); err != nil {
 			t.Fatal(err)
 		}
 		// when
-		_, err := s.ValidCharacterTokenForCorporation(ctx, c.EveCharacter.Corporation.ID, app.RoleAccountant)
+		_, err := s.ValidCharacterTokenForCorporation(ctx, c.EveCharacter.Corporation.ID, app.RoleAccountant, set.Set[string]{})
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})

@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -21,7 +22,7 @@ type CharacterServiceFake struct {
 	Error error
 }
 
-func (s CharacterServiceFake) ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, role app.Role) (*app.CharacterToken, error) {
+func (s CharacterServiceFake) ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, role app.Role, scopes set.Set[string]) (*app.CharacterToken, error) {
 	return s.Token, s.Error
 }
 

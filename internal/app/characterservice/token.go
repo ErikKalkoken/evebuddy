@@ -20,21 +20,19 @@ func (s *CharacterService) HasTokenWithScopes(ctx context.Context, characterID i
 	if err != nil {
 		return false, err
 	}
-	current := set.Of(t.Scopes...)
-	required := app.Scopes()
-	hasScope := current.ContainsAll(required.All())
+	hasScope := t.Scopes.ContainsAll(app.Scopes().All())
 	return hasScope, nil
 }
 
-func (s *CharacterService) ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, role app.Role) (*app.CharacterToken, error) {
-	token, err := s.st.ListCharacterTokenForCorporation(ctx, corporationID, role)
+func (s *CharacterService) ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, role app.Role, scopes set.Set[string]) (*app.CharacterToken, error) {
+	token, err := s.st.ListCharacterTokenForCorporation(ctx, corporationID, role, scopes)
 	if err != nil {
 		return nil, err
 	}
 	for _, t := range token {
 		err := s.ensureValidCharacterToken(ctx, t)
 		if err != nil {
-			slog.Error("Failed to refresh token for corporation", "characterID", t.CharacterID, "corporationID", corporationID, "role", role)
+			slog.Error("Failed to refresh token for corporation", "characterID", t.CharacterID, "corporationID", corporationID, "role", role, "scopes", scopes)
 			continue
 		}
 		return t, nil
@@ -65,14 +63,11 @@ func (s *CharacterService) ensureValidCharacterToken(ctx context.Context, t *app
 	if err != nil {
 		return err
 	}
-	err = s.st.UpdateOrCreateCharacterToken(ctx, storage.UpdateOrCreateCharacterTokenParams{
-		AccessToken:  rawToken.AccessToken,
-		CharacterID:  t.CharacterID,
-		ExpiresAt:    rawToken.ExpiresAt,
-		RefreshToken: rawToken.RefreshToken,
-		Scopes:       t.Scopes,
-		TokenType:    t.TokenType,
-	})
+	arg := storage.UpdateOrCreateCharacterTokenParamsFromToken(t)
+	arg.AccessToken = rawToken.AccessToken
+	arg.RefreshToken = rawToken.RefreshToken
+	arg.ExpiresAt = rawToken.ExpiresAt
+	err = s.st.UpdateOrCreateCharacterToken(ctx, arg)
 	if err != nil {
 		return err
 	}

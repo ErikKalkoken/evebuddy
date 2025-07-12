@@ -9,6 +9,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -21,9 +22,9 @@ func (st *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*a
 	if err != nil {
 		return nil, err
 	}
-	scopes := xslices.Map(rows, func(x queries.Scope) string {
+	scopes := set.Of(xslices.Map(rows, func(x queries.Scope) string {
 		return x.Name
-	})
+	})...)
 	t2 := characterTokenFromDBModel(t, scopes)
 	return t2, nil
 }
@@ -33,7 +34,7 @@ type UpdateOrCreateCharacterTokenParams struct {
 	CharacterID  int32
 	ExpiresAt    time.Time
 	RefreshToken string
-	Scopes       []string
+	Scopes       set.Set[string]
 	TokenType    string
 }
 
@@ -62,13 +63,13 @@ func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, arg UpdateO
 	if err != nil {
 		return wrapErr(err)
 	}
-	ss := make([]queries.Scope, len(arg.Scopes))
-	for i, name := range arg.Scopes {
+	ss := make([]queries.Scope, 0)
+	for name := range arg.Scopes.All() {
 		s, err := st.getOrCreateScope(ctx, name)
 		if err != nil {
 			return wrapErr(err)
 		}
-		ss[i] = s
+		ss = append(ss, s)
 	}
 	tx, err := st.dbRW.Begin()
 	if err != nil {
@@ -120,43 +121,42 @@ func (st *Storage) getOrCreateScope(ctx context.Context, name string) (queries.S
 	return s, nil
 }
 
-func (st *Storage) ListCharacterTokenForCorporation(ctx context.Context, corporationID int32, role app.Role) ([]*app.CharacterToken, error) {
-	tokens, err := func() ([]*app.CharacterToken, error) {
-		if corporationID == 0 || role == app.RoleUndefined {
-			return nil, app.ErrInvalid
-		}
-		arg := queries.ListCharacterTokenForCorporationParams{
-			CorporationID: int64(corporationID),
-			Name:          role2String[role],
-		}
-		rows, err := st.qRO.ListCharacterTokenForCorporation(ctx, arg)
-		if err != nil {
-			return nil, err
-		}
-		if len(rows) == 0 {
-			return nil, app.ErrNotFound
-		}
-		tokens := make([]*app.CharacterToken, 0)
-		for _, r := range rows {
-			ss, err := st.qRO.ListCharacterTokenScopes(ctx, r.CharacterID)
-			if err != nil {
-				return nil, err
-			}
-			scopes := xslices.Map(ss, func(x queries.Scope) string {
-				return x.Name
-			})
-			t := characterTokenFromDBModel(r, scopes)
-			tokens = append(tokens, t)
-		}
-		return tokens, nil
-	}()
+func (st *Storage) ListCharacterTokenForCorporation(ctx context.Context, corporationID int32, role app.Role, scopes set.Set[string]) ([]*app.CharacterToken, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCharacterTokenForCorporation: ID %d, role %s, scopes %s: %w", corporationID, role.String(), scopes, err)
+	}
+	if corporationID == 0 || role == app.RoleUndefined {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	arg := queries.ListCharacterTokenForCorporationParams{
+		CorporationID: int64(corporationID),
+		Name:          role2String[role],
+	}
+	rows, err := st.qRO.ListCharacterTokenForCorporation(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("ListCharacterTokenForCorporation: %d %s: %w", corporationID, role.String(), err)
+		return nil, wrapErr(err)
+	}
+	if len(rows) == 0 {
+		return nil, wrapErr(app.ErrNotFound)
+	}
+	tokens := make([]*app.CharacterToken, 0)
+	for _, r := range rows {
+		ss, err := st.qRO.ListCharacterTokenScopes(ctx, r.CharacterID)
+		if err != nil {
+			return nil, wrapErr(err)
+		}
+		scopes2 := set.Of(xslices.Map(ss, func(x queries.Scope) string {
+			return x.Name
+		})...)
+		if !scopes2.ContainsAll(scopes.All()) {
+			continue
+		}
+		tokens = append(tokens, characterTokenFromDBModel(r, scopes2))
 	}
 	return tokens, nil
 }
 
-func characterTokenFromDBModel(o queries.CharacterToken, scopes []string) *app.CharacterToken {
+func characterTokenFromDBModel(o queries.CharacterToken, scopes set.Set[string]) *app.CharacterToken {
 	if o.CharacterID == 0 {
 		panic("missing character ID")
 	}
