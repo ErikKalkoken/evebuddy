@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -99,6 +100,38 @@ func (cs CharacterSection) Timeout() time.Duration {
 		return characterSectionDefaultTimeout
 	}
 	return duration
+}
+
+// Scopes returns the required scopes for fetching data for a section from ESI.
+func (cs CharacterSection) Scopes() set.Set[string] {
+	m := map[CharacterSection][]string{
+		SectionAssets:             {"esi-assets.read_assets.v1", "esi-universe.read_structures.v1"},
+		SectionAttributes:         {"esi-skills.read_skills.v1"},
+		SectionContracts:          {"esi-contracts.read_character_contracts.v1", "esi-universe.read_structures.v1"},
+		SectionImplants:           {"esi-clones.read_implants.v1"},
+		SectionIndustryJobs:       {"esi-industry.read_character_jobs.v1", "esi-universe.read_structures.v1"},
+		SectionJumpClones:         {"esi-clones.read_clones.v1", "esi-universe.read_structures.v1"},
+		SectionLocation:           {"esi-location.read_location.v1", "esi-universe.read_structures.v1"},
+		SectionMailLabels:         {"esi-mail.read_mail.v1"},
+		SectionMailLists:          {"esi-mail.read_mail.v1"},
+		SectionMails:              {"esi-mail.organize_mail.v1", "esi-mail.read_mail.v1"},
+		SectionNotifications:      {"esi-characters.read_notifications.v1", "esi-universe.read_structures.v1"},
+		SectionOnline:             {"esi-location.read_online.v1"},
+		SectionPlanets:            {"esi-planets.manage_planets.v1"},
+		SectionRoles:              {"esi-characters.read_corporation_roles.v1"},
+		SectionShip:               {"esi-location.read_ship_type.v1"},
+		SectionSkillqueue:         {"esi-skills.read_skillqueue.v1"},
+		SectionSkills:             {"esi-skills.read_skills.v1"},
+		SectionWalletBalance:      {"esi-wallet.read_character_wallet.v1"},
+		SectionWalletJournal:      {"esi-wallet.read_character_wallet.v1"},
+		SectionWalletTransactions: {"esi-wallet.read_character_wallet.v1", "esi-universe.read_structures.v1"},
+	}
+	scopes, ok := m[cs]
+	if !ok {
+		slog.Warn("Requested scopes for unknown section. Using default.", "section", cs)
+		return set.Of[string]()
+	}
+	return set.Of(scopes...)
 }
 
 type CharacterUpdateSectionParams struct {
@@ -280,6 +313,37 @@ func (cs CorporationSection) Role() Role {
 	return role
 }
 
+// Scopes returns the required scopes for fetching data for a section from ESI.
+func (cs CorporationSection) Scopes() set.Set[string] {
+	journal := []string{"esi-wallet.read_corporation_wallets.v1"}
+	transactions := []string{"esi-wallet.read_corporation_wallets.v1", "esi-universe.read_structures.v1"}
+	m := map[CorporationSection][]string{
+		SectionCorporationIndustryJobs:        {"esi-industry.read_corporation_jobs.v1"},
+		SectionCorporationWalletBalances:      {"esi-wallet.read_corporation_wallets.v1"},
+		SectionCorporationWalletJournal1:      journal,
+		SectionCorporationWalletJournal2:      journal,
+		SectionCorporationWalletJournal3:      journal,
+		SectionCorporationWalletJournal4:      journal,
+		SectionCorporationWalletJournal5:      journal,
+		SectionCorporationWalletJournal6:      journal,
+		SectionCorporationWalletJournal7:      journal,
+		SectionCorporationDivisions:           {"esi-corporations.read_divisions.v1"},
+		SectionCorporationWalletTransactions1: transactions,
+		SectionCorporationWalletTransactions2: transactions,
+		SectionCorporationWalletTransactions3: transactions,
+		SectionCorporationWalletTransactions4: transactions,
+		SectionCorporationWalletTransactions5: transactions,
+		SectionCorporationWalletTransactions6: transactions,
+		SectionCorporationWalletTransactions7: transactions,
+	}
+	scopes, ok := m[cs]
+	if !ok {
+		slog.Warn("Requested scopes for unknown section. Using default.", "section", cs)
+		return set.Set[string]{}
+	}
+	return set.Of(scopes...)
+}
+
 type CorporationUpdateSectionParams struct {
 	CorporationID         int32
 	ForceUpdate           bool
@@ -381,4 +445,20 @@ func (s GeneralSectionStatus) IsExpired() bool {
 	timeout := s.Section.Timeout()
 	deadline := s.CompletedAt.Add(timeout)
 	return time.Now().After(deadline)
+}
+
+// Scopes returns all required ESI scopes.
+func Scopes() set.Set[string] {
+	scopes := set.Of(
+		"esi-characters.read_contacts.v1", // already requested and for planned feature
+		"esi-mail.send_mail.v1",           // required for sending mail
+		"esi-search.search_structures.v1", // required for new eden search
+	)
+	for _, s := range CharacterSections {
+		scopes.AddSeq(s.Scopes().All())
+	}
+	for _, s := range CorporationSections {
+		scopes.AddSeq(s.Scopes().All())
+	}
+	return scopes
 }
