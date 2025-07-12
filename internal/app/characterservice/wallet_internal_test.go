@@ -26,7 +26,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		firstParty := factory.CreateEveEntityCharacter(app.EveEntity{ID: 2112625428})
 		secondParty := factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
 		data := []map[string]any{
@@ -82,7 +82,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 2112625428})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
 		data := []map[string]any{
@@ -134,7 +134,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			RefID:       89,
 			Description: "existing",
 		})
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 2112625428})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
 		data := []map[string]any{
@@ -180,7 +180,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 2112625428})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
 		pages := "2"
@@ -282,7 +282,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		client := factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
 		location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
 		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
@@ -338,7 +338,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		client := factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
 		location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
 		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
@@ -397,7 +397,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			CharacterID:   c.ID,
 			TransactionID: 1234567890,
 		})
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		data := []map[string]any{
 			{
 				"client_id":      54321,
@@ -433,7 +433,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})

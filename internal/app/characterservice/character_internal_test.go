@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"maps"
 	"net/http"
-	"slices"
 	"testing"
 	"time"
 
@@ -58,7 +57,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 3516})
 		location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
 		httpmock.RegisterResponder(
@@ -134,7 +133,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 3516})
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
 		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
@@ -197,7 +196,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 3516})
 		location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
 		pages := "2"
@@ -288,7 +287,7 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		data := map[string]int{
 			"charisma":     20,
 			"intelligence": 21,
@@ -360,7 +359,7 @@ func TestUpdateContractESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		contractID := int32(42)
 		startLocation := factory.CreateEveLocationStructure()
 		endLocation := factory.CreateEveLocationStructure()
@@ -445,7 +444,7 @@ func TestUpdateContractESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		contractID := int32(42)
 		startLocation := factory.CreateEveLocationStructure()
 		buyout := 10000000000.01
@@ -548,7 +547,7 @@ func TestUpdateContractESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		o1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
 			CharacterID:  c.ID,
 			Availability: app.ContractAvailabilityPublic,
@@ -607,7 +606,7 @@ func TestUpdateContractESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		o1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
 			CharacterID:  c.ID,
 			Availability: app.ContractAvailabilityPublic,
@@ -664,7 +663,7 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		t1 := factory.CreateEveType()
 		t2 := factory.CreateEveType()
 		httpmock.RegisterResponder(
@@ -705,7 +704,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 498338451})
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
@@ -766,7 +765,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		blueprintType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
 		installer := factory.CreateEveEntityCharacter(app.EveEntity{ID: 498338451})
 		location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
@@ -838,7 +837,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 498338451})
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
@@ -886,7 +885,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 498338451})
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
@@ -935,7 +934,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 498338451})
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
@@ -1026,7 +1025,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 22118})
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60003463})
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 1021348135816})
@@ -1060,7 +1059,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		implant1 := factory.CreateEveType(storage.CreateEveTypeParams{ID: 22118})
 		implant2 := factory.CreateEveType()
 		station := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60003463})
@@ -1243,7 +1242,7 @@ func TestUpdateMailLabel(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/mail/labels/", c.ID),
@@ -1283,7 +1282,7 @@ func TestUpdateMailLabel(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{
 			CharacterID: c.ID,
 			LabelID:     16,
@@ -1341,7 +1340,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		sender := factory.CreateEveEntityCorporation(app.EveEntity{ID: 54321})
 		data := []map[string]any{{
 			"is_read":         true,
@@ -1384,7 +1383,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		sender := factory.CreateEveEntityCorporation(app.EveEntity{ID: 54321})
 		data := []map[string]any{{
 			"is_read":         true,
@@ -1430,7 +1429,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			CharacterID:    c.ID,
 			NotificationID: 42,
 		})
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		sender := factory.CreateEveEntityCorporation(app.EveEntity{ID: 54321})
 		data := []map[string]any{{
 			"is_read":         true,
@@ -1497,7 +1496,7 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEvePlanet(storage.CreateEvePlanetParams{ID: 40023691})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2254})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2256})
@@ -1579,7 +1578,7 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEvePlanet(storage.CreateEvePlanetParams{ID: 40023691})
 		contentType := factory.CreateEveType()
 		productType := factory.CreateEveType()
@@ -1681,7 +1680,7 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEvePlanet(storage.CreateEvePlanetParams{ID: 40023691})
 		factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{
 			CharacterID: c.ID,
@@ -1776,7 +1775,7 @@ func TestUpdateCharacterRolesESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
 			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/roles/`,
@@ -1814,7 +1813,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
-		token := factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		token := factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		section := app.SectionImplants
 		hasUpdated := false
 		accessToken := ""
@@ -1845,7 +1844,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		section := app.SectionImplants
 		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID:  c.ID,
@@ -1879,7 +1878,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		section := app.SectionImplants
 		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
@@ -1923,7 +1922,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 41})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 42})
 		data := map[string]any{
@@ -1979,7 +1978,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 41})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 42})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
@@ -2055,7 +2054,7 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		t1 := factory.CreateEveType()
 		t2 := factory.CreateEveType()
 		data := []map[string]any{
@@ -2097,50 +2096,6 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Len(t, ii, 3)
 			}
-		}
-	})
-}
-
-func TestHasTokenWithScopes(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t)
-	defer db.Close()
-	s := NewFake(st)
-	ctx := context.Background()
-	t.Run("should return true when token has same scopes", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID, Scopes: app.Scopes().Slice()})
-		// when
-		x, err := s.HasTokenWithScopes(ctx, c.ID)
-		// then
-		if assert.NoError(t, err) {
-			assert.True(t, x)
-		}
-	})
-	t.Run("should return false when token is missing scopes", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		c := factory.CreateCharacterFull()
-		esiScopes2 := []string{"esi-assets.read_assets.v1"}
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID, Scopes: esiScopes2})
-		// when
-		x, err := s.HasTokenWithScopes(ctx, c.ID)
-		// then
-		if assert.NoError(t, err) {
-			assert.False(t, x)
-		}
-	})
-	t.Run("should return true when token has at least requested scopes", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID, Scopes: slices.Concat(app.Scopes().Slice(), []string{"extra"})})
-		// when
-		x, err := s.HasTokenWithScopes(ctx, c.ID)
-		// then
-		if assert.NoError(t, err) {
-			assert.True(t, x)
 		}
 	})
 }

@@ -22,7 +22,7 @@ func TestToken(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
 		now := time.Now()
-		o1 := app.CharacterToken{
+		o1 := storage.UpdateOrCreateCharacterTokenParams{
 			AccessToken:  "access",
 			CharacterID:  c.ID,
 			ExpiresAt:    now,
@@ -31,7 +31,7 @@ func TestToken(t *testing.T) {
 			TokenType:    "xxx",
 		}
 		// when
-		err := st.UpdateOrCreateCharacterToken(ctx, &o1)
+		err := st.UpdateOrCreateCharacterToken(ctx, o1)
 		// then
 		assert.NoError(t, err)
 		assert.Equal(t, "access", o1.AccessToken)
@@ -67,19 +67,20 @@ func TestToken(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
-		o1 := factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		o1.AccessToken = "changed"
-		o1.Scopes = []string{"alpha", "bravo"}
+		o1 := factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		arg := storage.UpdateOrCreateCharacterTokenParamsFromToken(o1)
+		arg.AccessToken = "changed"
+		arg.Scopes = []string{"alpha", "bravo"}
 		// when
-		err := st.UpdateOrCreateCharacterToken(ctx, o1)
+		err := st.UpdateOrCreateCharacterToken(ctx, arg)
 		// then
 		assert.NoError(t, err)
 		o2, err := st.GetCharacterToken(ctx, c.ID)
 		if assert.NoError(t, err) {
-			assert.Equal(t, o1.AccessToken, o2.AccessToken)
+			assert.Equal(t, "changed", o2.AccessToken)
 			assert.Equal(t, c.ID, o2.CharacterID)
 			assert.Equal(t, o1.ExpiresAt.UTC(), o2.ExpiresAt.UTC())
-			assert.Equal(t, o1.Scopes, o2.Scopes)
+			assert.Equal(t, []string{"alpha", "bravo"}, o2.Scopes)
 			assert.Equal(t, o1.TokenType, o2.TokenType)
 		}
 	})
@@ -105,7 +106,7 @@ func TestToken(t *testing.T) {
 		if err := st.UpdateCharacterRoles(ctx, c1.ID, set.Of(app.RoleFactoryManager)); err != nil {
 			panic(err)
 		}
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c1.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c1.ID})
 
 		// token with correct corp and wrong role
 		ec2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: corp1.ID})
@@ -113,7 +114,7 @@ func TestToken(t *testing.T) {
 		if err := st.UpdateCharacterRoles(ctx, c2.ID, set.Of(app.RoleAccountant)); err != nil {
 			panic(err)
 		}
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c2.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c2.ID})
 
 		// token with wrong corp and correct role
 		ec3 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: corp2.ID})
@@ -121,7 +122,7 @@ func TestToken(t *testing.T) {
 		if err := st.UpdateCharacterRoles(ctx, c3.ID, set.Of(app.RoleAccountant)); err != nil {
 			panic(err)
 		}
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c3.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c3.ID})
 
 		// when
 		r, err := st.ListCharacterTokenForCorporation(ctx, c1.EveCharacter.Corporation.ID, app.RoleFactoryManager)
