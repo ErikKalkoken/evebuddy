@@ -960,21 +960,29 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
 		return
 	}
-	isShown := characterID == u.currentCharacterID()
+	isCharacterShown := characterID == u.currentCharacterID()
+
+	var isCorporationShown bool
+	var corporationID int32
+	character := u.currentCharacter()
+	if character != nil {
+		corporationID = character.EveCharacter.Corporation.ID
+		isCorporationShown = corporationID == u.currentCorporationID()
+	}
 	needsRefresh := hasChanged || forceUpdate
 	switch s {
 	case app.SectionAssets:
 		if needsRefresh {
 			u.assets.update()
 			u.wealth.update()
-			if isShown {
+			if isCharacterShown {
 				u.reloadCurrentCharacter()
 				u.characterAsset.update()
 				u.characterSheet.update()
 			}
 		}
 	case app.SectionAttributes:
-		if isShown && needsRefresh {
+		if isCharacterShown && needsRefresh {
 			u.characterAttributes.update()
 		}
 	case app.SectionContracts:
@@ -990,14 +998,14 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			}()
 		}
 	case app.SectionImplants:
-		if isShown && needsRefresh {
+		if isCharacterShown && needsRefresh {
 			u.characterAugmentations.update()
 		}
 	case app.SectionJumpClones:
 		if needsRefresh {
 			u.characters.update()
 			u.clones.update()
-			if isShown {
+			if isCharacterShown {
 				u.reloadCurrentCharacter()
 				u.characterJumpClones.update()
 			}
@@ -1012,19 +1020,14 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	case app.SectionLocation, app.SectionOnline, app.SectionShip:
 		if needsRefresh {
 			u.locations.update()
-			if isShown {
+			if isCharacterShown {
 				u.reloadCurrentCharacter()
 			}
-		}
-	case app.SectionPlanets:
-		if needsRefresh {
-			u.colonies.update()
-			u.notifyExpiredExtractionsIfNeeded(ctx, characterID)
 		}
 	case app.SectionMailLabels, app.SectionMailLists:
 		if needsRefresh {
 			u.characters.update()
-			if isShown {
+			if isCharacterShown {
 				u.characterMail.update()
 			}
 		}
@@ -1032,7 +1035,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		if needsRefresh {
 			go u.characters.update()
 			go u.updateMailIndicator()
-			if isShown {
+			if isCharacterShown {
 				u.characterMail.update()
 			}
 		}
@@ -1045,7 +1048,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			}()
 		}
 	case app.SectionNotifications:
-		if isShown && needsRefresh {
+		if isCharacterShown && needsRefresh {
 			u.characterCommunications.update()
 		}
 		if u.settings.NotifyCommunicationsEnabled() {
@@ -1064,15 +1067,35 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 				}
 			}()
 		}
+	case app.SectionPlanets:
+		if needsRefresh {
+			u.colonies.update()
+			u.notifyExpiredExtractionsIfNeeded(ctx, characterID)
+		}
 	case app.SectionRoles:
-		u.characterCorporation.update()
+		if needsRefresh {
+			u.industryJobs.update()
+			u.slotsManufacturing.update()
+			u.slotsReactions.update()
+			u.slotsResearch.update()
+			if isCharacterShown {
+				u.characterSheet.update()
+			}
+			if isCorporationShown {
+				u.characterCorporation.update()
+				for _, d := range app.Divisions {
+					u.corporationWalletJournals[d].update()
+					u.corporationWalletTransactions[d].update()
+				}
+			}
+		}
 	case app.SectionSkills:
 		if needsRefresh {
 			u.training.update()
 			u.slotsManufacturing.update()
 			u.slotsReactions.update()
 			u.slotsResearch.update()
-			if isShown {
+			if isCharacterShown {
 				u.reloadCurrentCharacter()
 				u.characterSkillCatalogue.update()
 				u.characterShips.update()
@@ -1086,7 +1109,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 				slog.Error("Failed to enable training watcher", "characterID", characterID, "error", err)
 			}
 		}
-		if isShown {
+		if isCharacterShown {
 			u.characterSkillQueue.update()
 		}
 		if needsRefresh {
@@ -1097,17 +1120,17 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		if needsRefresh {
 			u.characters.update()
 			u.wealth.update()
-			if isShown {
+			if isCharacterShown {
 				u.reloadCurrentCharacter()
 				u.characterAsset.update()
 			}
 		}
 	case app.SectionWalletJournal:
-		if isShown && needsRefresh {
+		if isCharacterShown && needsRefresh {
 			u.characterWalletJournal.update()
 		}
 	case app.SectionWalletTransactions:
-		if isShown && needsRefresh {
+		if isCharacterShown && needsRefresh {
 			u.characterWalletTransaction.update()
 		}
 	default:

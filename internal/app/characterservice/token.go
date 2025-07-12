@@ -12,7 +12,7 @@ import (
 )
 
 // HasTokenWithScopes reports whether a character's token has the requested scopes.
-func (s *CharacterService) HasTokenWithScopes(ctx context.Context, characterID int32) (bool, error) {
+func (s *CharacterService) HasTokenWithScopes(ctx context.Context, characterID int32, scopes set.Set[string]) (bool, error) {
 	t, err := s.st.GetCharacterToken(ctx, characterID)
 	if errors.Is(err, app.ErrNotFound) {
 		return false, nil
@@ -20,8 +20,7 @@ func (s *CharacterService) HasTokenWithScopes(ctx context.Context, characterID i
 	if err != nil {
 		return false, err
 	}
-	hasScope := t.Scopes.ContainsAll(app.Scopes().All())
-	return hasScope, nil
+	return t.HasScopes(scopes), nil
 }
 
 func (s *CharacterService) ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, role app.Role, scopes set.Set[string]) (*app.CharacterToken, error) {

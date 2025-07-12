@@ -554,6 +554,10 @@ func (ct CharacterToken) RemainsValid(d time.Duration) bool {
 	return ct.ExpiresAt.After(time.Now().Add(d))
 }
 
+func (ct CharacterToken) HasScopes(scopes set.Set[string]) bool {
+	return ct.Scopes.ContainsAll(scopes.All())
+}
+
 type CharacterWalletJournalEntry struct {
 	Amount        float64
 	Balance       float64
