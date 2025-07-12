@@ -1,9 +1,11 @@
 package corporationservice
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"net/http"
 	"slices"
 
@@ -50,6 +52,32 @@ func (s *CorporationService) GetWalletBalance(ctx context.Context, corporationID
 		return 0, err
 	}
 	return x.Balance, nil
+}
+
+// ListCorporationWalletBalances returns a list of corporation
+func (s *CorporationService) ListCorporationWalletBalances(ctx context.Context, corporationID int32) ([]app.CorporationWalletBalanceWithName, error) {
+	oo, err := s.st.ListCorporationWalletBalances(ctx, corporationID)
+	if err != nil {
+		return nil, err
+	}
+	m := make(map[app.Division]app.CorporationWalletBalanceWithName)
+	for _, o := range oo {
+		d := app.Division(o.DivisionID)
+		m[d] = app.CorporationWalletBalanceWithName{
+			Balance:       o.Balance,
+			CorporationID: o.CorporationID,
+			DivisionID:    o.DivisionID,
+		}
+	}
+	for d, n := range s.ListWalletNames(ctx, corporationID) {
+		x := m[d]
+		x.Name = n
+		m[d] = x
+	}
+	w := slices.SortedFunc(maps.Values(m), func(a, b app.CorporationWalletBalanceWithName) int {
+		return cmp.Compare(a.DivisionID, b.DivisionID)
+	})
+	return w, nil
 }
 
 func (s *CorporationService) updateWalletBalancesESI(ctx context.Context, arg app.CorporationUpdateSectionParams) (bool, error) {

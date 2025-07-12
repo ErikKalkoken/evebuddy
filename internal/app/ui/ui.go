@@ -108,6 +108,7 @@ type baseUI struct {
 	characterSkillQueue           *characterSkillQueue
 	characterWalletJournal        *characterWalletJournal
 	characterWalletTransaction    *characterWalletTransaction
+	corporationWallets            *corporationWallets
 	corporationWalletJournals     map[app.Division]*corporationWalletJournal
 	corporationWalletTransactions map[app.Division]*corporationWalletTransaction
 	contracts                     *contracts
@@ -221,6 +222,7 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	u.characterSkillQueue = newCharacterSkillQueue(u)
 	u.characterWalletJournal = newCharacterWalletJournal(u)
 	u.characterWalletTransaction = newCharacterWalletTransaction(u)
+	u.corporationWallets = newCorporationWallets(u)
 	for _, d := range app.Divisions {
 		u.corporationWalletJournals[d] = newCorporationWalletJournal(u, d)
 		u.corporationWalletTransactions[d] = newCorporationWalletTransaction(u, d)
@@ -607,6 +609,7 @@ func (u *baseUI) updateCorporation() {
 
 func (u *baseUI) defineCorporationUpdates() map[string]func() {
 	ff := make(map[string]func())
+	ff["walletBalances"] = u.corporationWallets.update
 	for id, w := range u.corporationWalletJournals {
 		ff[fmt.Sprintf("walletJournal%d", id)] = w.update
 	}
@@ -1224,6 +1227,14 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 			u.slotsManufacturing.update()
 			u.slotsReactions.update()
 			u.slotsResearch.update()
+		}
+	case app.SectionCorporationDivisions:
+		if isShown && needsRefresh {
+			u.corporationWallets.update()
+		}
+	case app.SectionCorporationWalletBalances:
+		if isShown && needsRefresh {
+			u.corporationWallets.update()
 		}
 	case app.SectionCorporationWalletJournal1:
 		if isShown && needsRefresh {
