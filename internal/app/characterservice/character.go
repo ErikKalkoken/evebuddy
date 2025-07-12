@@ -468,7 +468,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 		CharacterID:  charID,
 		ExpiresAt:    ssoToken.ExpiresAt,
 		RefreshToken: ssoToken.RefreshToken,
-		Scopes:       ssoToken.Scopes,
+		Scopes:       set.Of(ssoToken.Scopes...),
 		TokenType:    ssoToken.TokenType,
 	}
 	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)

@@ -25,7 +25,7 @@ import (
 )
 
 type CharacterService interface {
-	ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, role app.Role) (*app.CharacterToken, error)
+	ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, role app.Role, scopes set.Set[string]) (*app.CharacterToken, error)
 }
 
 // CorporationService provides access to all managed Eve Online corporations both online and from local storage.
@@ -232,11 +232,13 @@ func (s *CorporationService) updateSectionIfChanged(
 	s.scs.SetCorporationSection(o)
 	var hash, comment string
 	var hasChanged bool
-	token, err := s.cs.ValidCharacterTokenForCorporation(ctx, arg.CorporationID, arg.Section.Role())
+	token, err := s.cs.ValidCharacterTokenForCorporation(ctx, arg.CorporationID, arg.Section.Role(), arg.Section.Scopes())
 	if errors.Is(err, app.ErrNotFound) {
-		msg := "update skipped due to missing corporation member with required role"
-		comment = msg + ": " + arg.Section.Role().Display()
-		slog.Info("Section "+comment, "corporationID", arg.CorporationID, "section", arg.Section, "role", arg.Section.Role())
+		comment = fmt.Sprintf(
+			"update skipped due to missing corporation member with required roles (%s) and/or missing or invalid token",
+			arg.Section.Role().Display(),
+		)
+		slog.Info("Section "+comment, "corporationID", arg.CorporationID, "section", arg.Section, "role", arg.Section.Role(), "scopes", arg.Section.Scopes())
 	} else if err != nil {
 		return false, err
 	} else {

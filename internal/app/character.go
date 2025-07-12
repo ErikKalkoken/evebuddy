@@ -19,6 +19,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
@@ -544,7 +545,7 @@ type CharacterToken struct {
 	ExpiresAt    time.Time
 	ID           int64
 	RefreshToken string
-	Scopes       []string
+	Scopes       set.Set[string]
 	TokenType    string
 }
 
