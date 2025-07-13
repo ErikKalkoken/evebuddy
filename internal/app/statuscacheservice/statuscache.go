@@ -219,7 +219,7 @@ func (sc *StatusCacheService) SetCharacterSection(o *app.CharacterSectionStatus)
 	sc.cache.Set(k.String(), v, 0)
 }
 
-// Return the name of a character by ID or an empty string if not found.
+// CharacterName returns the name of a character by ID or an empty string if not found.
 func (sc *StatusCacheService) CharacterName(characterID int32) string {
 	cc := sc.ListCharacters()
 	if len(cc) == 0 {
@@ -360,7 +360,7 @@ func (sc *StatusCacheService) SetCorporationSection(o *app.CorporationSectionSta
 	sc.cache.Set(k.String(), v, 0)
 }
 
-// Return the name of a corporation by ID or an empty string if not found.
+// CorporationName return the name of a corporation by ID or an empty string if not found.
 func (sc *StatusCacheService) CorporationName(corporationID int32) string {
 	cc := sc.ListCorporations()
 	if len(cc) == 0 {

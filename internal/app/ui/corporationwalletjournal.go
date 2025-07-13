@@ -3,6 +3,7 @@ package ui
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -299,11 +300,14 @@ func (*corporationWalletJournal) fetchRows(corporationID int32, division app.Div
 		)
 		rows[i] = r
 	}
-	b, err := s.rs.GetWalletBalance(ctx, corporationID, 1)
-	if err != nil {
+	b, err := s.rs.GetWalletBalance(ctx, corporationID, division)
+	if errors.Is(err, app.ErrNotFound) {
+		// ignore
+	} else if err != nil {
 		return nil, balance, err
+	} else {
+		balance.Set(b)
 	}
-	balance.Set(b)
 	return rows, balance, nil
 }
 

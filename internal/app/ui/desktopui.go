@@ -351,11 +351,22 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 
 	statusBar := newStatusBar(u)
 	toolbar := newToolbar(u)
-	tabs := container.NewAppTabs(
-		container.NewTabItemWithIcon("Home", theme.NewThemedResource(theme.HomeIcon()), homeNav),
-		container.NewTabItemWithIcon("Characters", theme.AccountIcon(), characterNav),
-		container.NewTabItemWithIcon("Corporations", theme.NewThemedResource(icons.StarCircleOutlineSvg), corporationNav),
+	homeTab := container.NewTabItemWithIcon(
+		"Home",
+		theme.NewThemedResource(theme.HomeIcon()),
+		homeNav,
 	)
+	characterTab := container.NewTabItemWithIcon(
+		"Characters",
+		theme.AccountIcon(),
+		characterNav,
+	)
+	corporationTab := container.NewTabItemWithIcon(
+		"Corporations",
+		theme.NewThemedResource(icons.StarCircleOutlineSvg),
+		corporationNav,
+	)
+	tabs := container.NewAppTabs(homeTab, characterTab, corporationTab)
 	mainContent := container.NewBorder(
 		toolbar,
 		statusBar,
@@ -414,17 +425,26 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		go func() {
 			if !u.hasCharacter() {
 				fyne.Do(func() {
-					characterNav.Disable()
+					tabs.DisableItem(characterTab)
 					homeNav.Disable()
 					toolbar.ToogleSearchBar(false)
 				})
-				return
+			} else {
+				fyne.Do(func() {
+					tabs.EnableItem(characterTab)
+					homeNav.Enable()
+					toolbar.ToogleSearchBar(true)
+				})
 			}
-			fyne.Do(func() {
-				characterNav.Enable()
-				homeNav.Enable()
-				toolbar.ToogleSearchBar(true)
-			})
+			if !u.hasCorporation() {
+				fyne.Do(func() {
+					tabs.DisableItem(corporationTab)
+				})
+			} else {
+				fyne.Do(func() {
+					tabs.EnableItem(corporationTab)
+				})
+			}
 		}()
 	}
 	u.onShowAndRun = func() {

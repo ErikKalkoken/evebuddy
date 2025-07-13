@@ -486,13 +486,14 @@ func TestDeleteCharacter(t *testing.T) {
 		x := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
 		character := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x.ID})
 		// when
-		err := cs.DeleteCharacter(ctx, character.ID)
+		got, err := cs.DeleteCharacter(ctx, character.ID)
 		// then
 		if assert.NoError(t, err) {
 			_, err = st.GetCharacter(ctx, character.ID)
 			assert.ErrorIs(t, err, app.ErrNotFound)
 			_, err = st.GetCorporation(ctx, corporation.ID)
 			assert.ErrorIs(t, err, app.ErrNotFound)
+			assert.True(t, got)
 		}
 	})
 	t.Run("delete character and keep corporation when it still has members", func(t *testing.T) {
@@ -506,13 +507,14 @@ func TestDeleteCharacter(t *testing.T) {
 		x2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
 		factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x2.ID})
 		// when
-		err := cs.DeleteCharacter(ctx, character.ID)
+		got, err := cs.DeleteCharacter(ctx, character.ID)
 		// then
 		if assert.NoError(t, err) {
 			_, err = st.GetCharacter(ctx, character.ID)
 			assert.ErrorIs(t, err, app.ErrNotFound)
 			_, err = st.GetCorporation(ctx, corporation.ID)
 			assert.NoError(t, err)
+			assert.False(t, got)
 		}
 	})
 }

@@ -98,7 +98,7 @@ func newManageCharacters(mcw *manageCharactersWindow) *manageCharacters {
 	a.ExtendBaseWidget(a)
 	a.list = a.makeCharacterList()
 	add := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
-		a.ShowAddCharacterDialog()
+		a.showAddCharacterDialog()
 	})
 	add.Importance = widget.HighImportance
 	if a.mcw.u.IsOffline() {
@@ -184,47 +184,6 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 	return l
 }
 
-func (a *manageCharacters) showDeleteDialog(c accountCharacter) {
-	a.mcw.u.ShowConfirmDialog(
-		"Delete Character",
-		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", c.name),
-		"Delete",
-		func(confirmed bool) {
-			if confirmed {
-				m := kmodal.NewProgressInfinite(
-					"Deleting character",
-					fmt.Sprintf("Deleting %s...", c.name),
-					func() error {
-						err := a.mcw.u.cs.DeleteCharacter(context.TODO(), c.id)
-						if err != nil {
-							return err
-						}
-						a.update()
-						return nil
-					},
-					a.mcw.w,
-				)
-				m.OnSuccess = func() {
-					a.mcw.sb.Show(fmt.Sprintf("Character %s deleted", c.name))
-					go func() {
-						a.update()
-						if a.mcw.u.currentCharacterID() == c.id {
-							a.mcw.u.setAnyCharacter()
-						}
-						a.mcw.u.updateHome()
-						a.mcw.u.updateStatus()
-					}()
-				}
-				m.OnError = func(err error) {
-					a.mcw.reportError(fmt.Sprintf("ERROR: Failed to delete character %s", c.name), err)
-				}
-				m.Start()
-			}
-		},
-		a.mcw.w,
-	)
-}
-
 func (a *manageCharacters) update() {
 	characters := xslices.Map(a.mcw.u.scs.ListCharacters(), func(c *app.EntityShort[int32]) accountCharacter {
 		return accountCharacter{id: c.ID, name: c.Name}
@@ -241,7 +200,7 @@ func (a *manageCharacters) update() {
 	})
 }
 
-func (a *manageCharacters) ShowAddCharacterDialog() {
+func (a *manageCharacters) showAddCharacterDialog() {
 	cancelCTX, cancel := context.WithCancel(context.Background())
 	s := "Please follow instructions in your browser to add a new character."
 	infoText := binding.BindString(&s)
@@ -275,18 +234,74 @@ func (a *manageCharacters) ShowAddCharacterDialog() {
 				if !a.mcw.u.hasCharacter() {
 					a.mcw.u.loadCharacter(characterID)
 				}
+				var corporationID int32
+				character := a.mcw.u.currentCharacter()
+				if character != nil {
+					if corp := character.EveCharacter.Corporation; !corp.IsNPC().ValueOrZero() {
+						corporationID = corp.ID
+						a.mcw.u.loadCorporation(corporationID)
+					}
+				}
+				if !a.mcw.u.hasCorporation() && corporationID != 0 {
+					a.mcw.u.loadCorporation(corporationID)
+				}
 				a.mcw.u.updateStatus()
 				a.mcw.u.updateHome()
-				if a.mcw.u.isUpdateDisabled { // FIXME: temporary for testing. should be removed again.
+				if a.mcw.u.isUpdateDisabled {
 					return
 				}
-				go a.mcw.u.updateCharacterAndRefreshIfNeeded(context.Background(), characterID, true)
+				ctx := context.Background()
+				go a.mcw.u.updateCharacterAndRefreshIfNeeded(ctx, characterID, true)
+				if corporationID != 0 {
+					go a.mcw.u.updateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
+				}
 			}()
 		})
 	}()
 	fyne.Do(func() {
 		d1.Show()
 	})
+}
+
+func (a *manageCharacters) showDeleteDialog(c accountCharacter) {
+	a.mcw.u.ShowConfirmDialog(
+		"Delete Character",
+		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", c.name),
+		"Delete",
+		func(confirmed bool) {
+			if confirmed {
+				m := kmodal.NewProgressInfinite(
+					"Deleting character",
+					fmt.Sprintf("Deleting %s...", c.name),
+					func() error {
+						corpDeleted, err := a.mcw.u.cs.DeleteCharacter(context.Background(), c.id)
+						if err != nil {
+							return err
+						}
+						a.update()
+						if a.mcw.u.currentCharacterID() == c.id {
+							a.mcw.u.setAnyCharacter()
+						}
+						if corpDeleted {
+							a.mcw.u.setAnyCorporation()
+						}
+						a.mcw.u.updateHome()
+						a.mcw.u.updateStatus()
+						return nil
+					},
+					a.mcw.w,
+				)
+				m.OnSuccess = func() {
+					a.mcw.sb.Show(fmt.Sprintf("Character %s deleted", c.name))
+				}
+				m.OnError = func(err error) {
+					a.mcw.reportError(fmt.Sprintf("ERROR: Failed to delete character %s", c.name), err)
+				}
+				m.Start()
+			}
+		},
+		a.mcw.w,
+	)
 }
 
 type characterTags struct {

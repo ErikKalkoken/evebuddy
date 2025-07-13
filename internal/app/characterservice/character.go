@@ -281,29 +281,34 @@ func (s *CharacterService) UpdateAssetTotalValue(ctx context.Context, characterI
 	return v, nil
 }
 
-func (s *CharacterService) DeleteCharacter(ctx context.Context, id int32) error {
+// DeleteCharacter deletes a character and corporations which have become orphaned as a result.
+// It reports whether the related corporation was also deleted.
+func (s *CharacterService) DeleteCharacter(ctx context.Context, id int32) (bool, error) {
 	if err := s.st.DeleteCharacter(ctx, id); err != nil {
-		return err
+		return false, err
 	}
 	slog.Info("Character deleted", "characterID", id)
 	if err := s.scs.UpdateCharacters(ctx); err != nil {
-		return err
+		return false, err
 	}
 	ids, err := s.st.ListOrphanedCorporationIDs(ctx)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if ids.Size() == 0 {
-		return nil
+		return false, nil
 	}
 	for id := range ids.All() {
 		err := s.st.DeleteCorporation(ctx, id)
 		if err != nil {
-			return nil
+			return false, err
 		}
 		slog.Info("Corporation deleted", "corporationID", id)
 	}
-	return s.scs.UpdateCorporations(ctx)
+	if err := s.scs.UpdateCorporations(ctx); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // EnableTrainingWatcher enables training watcher for a character when it has an active training queue.

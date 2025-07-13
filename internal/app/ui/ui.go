@@ -587,6 +587,18 @@ func (u *baseUI) setCorporation(c *app.Corporation) {
 	}
 }
 
+func (u *baseUI) setAnyCorporation() error {
+	c, err := u.rs.GetAnyCorporation(context.Background())
+	if errors.Is(err, app.ErrNotFound) {
+		u.resetCorporation()
+		return nil
+	} else if err != nil {
+		return err
+	}
+	u.setCorporation(c)
+	return nil
+}
+
 // updateCorporation updates all pages for the current corporation.
 func (u *baseUI) updateCorporation() {
 	c := u.currentCorporation()
@@ -1218,7 +1230,7 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 		slog.Error("Failed to update corporation section", "corporationID", corporationID, "section", s, "err", err)
 		return
 	}
-	isShown := corporationID == u.currentCharacterID()
+	isShown := corporationID == u.currentCorporationID()
 	needsRefresh := hasChanged || forceUpdate
 	switch s {
 	case app.SectionCorporationIndustryJobs:
