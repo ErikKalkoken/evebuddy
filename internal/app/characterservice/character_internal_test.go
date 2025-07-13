@@ -43,6 +43,19 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 	return s
 }
 
+type SSOFake struct {
+	Token *app.Token
+	Err   error
+}
+
+func (s SSOFake) Authenticate(ctx context.Context, scopes []string) (*app.Token, error) {
+	return s.Token, s.Err
+}
+
+func (s SSOFake) RefreshToken(ctx context.Context, refreshToken string) (*app.Token, error) {
+	return s.Token, s.Err
+}
+
 func TestUpdateCharacterAssetsESI(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()

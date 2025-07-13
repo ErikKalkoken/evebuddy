@@ -70,19 +70,6 @@ func TestGetAnyCharacter(t *testing.T) {
 	})
 }
 
-type ssoFake struct {
-	token *app.Token
-	err   error
-}
-
-func (s ssoFake) Authenticate(ctx context.Context, scopes []string) (*app.Token, error) {
-	return s.token, s.err
-}
-
-func (s ssoFake) RefreshToken(ctx context.Context, refreshToken string) (*app.Token, error) {
-	return s.token, s.err
-}
-
 func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
@@ -97,7 +84,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			CorporationID: corporation.ID,
 		})
 		cs := characterservice.NewFake(st, characterservice.Params{
-			SSOService: ssoFake{token: factory.CreateToken(app.Token{
+			SSOService: characterservice.SSOFake{Token: factory.CreateToken(app.Token{
 				CharacterID:   character.ID,
 				CharacterName: character.Name})},
 		})
@@ -135,7 +122,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			CharacterID: c.ID,
 		})
 		cs := characterservice.NewFake(st, characterservice.Params{
-			SSOService: ssoFake{token: factory.CreateToken(app.Token{
+			SSOService: characterservice.SSOFake{Token: factory.CreateToken(app.Token{
 				CharacterID:   c.ID,
 				CharacterName: c.EveCharacter.Name})},
 		})

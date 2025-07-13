@@ -70,6 +70,9 @@ func (s *CharacterService) ensureValidCharacterToken(ctx context.Context, t *app
 	if err != nil {
 		return err
 	}
+	t.AccessToken = rawToken.AccessToken
+	t.RefreshToken = rawToken.RefreshToken
+	t.ExpiresAt = rawToken.ExpiresAt
 	slog.Info("Token refreshed", "characterID", t.CharacterID)
 	return nil
 }

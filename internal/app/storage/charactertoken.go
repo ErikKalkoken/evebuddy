@@ -14,7 +14,7 @@ import (
 )
 
 func (st *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*app.CharacterToken, error) {
-	t, err := st.qRO.GetCharacterToken(ctx, int64(characterID))
+	r, err := st.qRO.GetCharacterToken(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("get token for character %d: %w", characterID, convertGetError(err))
 	}
@@ -25,7 +25,7 @@ func (st *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*a
 	scopes := set.Of(xslices.Map(rows, func(x queries.Scope) string {
 		return x.Name
 	})...)
-	t2 := characterTokenFromDBModel(t, scopes)
+	t2 := characterTokenFromDBModel(r, scopes)
 	return t2, nil
 }
 
