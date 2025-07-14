@@ -787,6 +787,52 @@ func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 	return items
 }
 
+func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
+	cc := u.scs.ListCorporations()
+	items := make([]*fyne.MenuItem, 0)
+	if len(cc) == 0 {
+		it := fyne.NewMenuItem("No corporations", nil)
+		it.Disabled = true
+		return append(items, it)
+	}
+	it := fyne.NewMenuItem("Switch to...", nil)
+	it.Disabled = true
+	items = append(items, it)
+	var wg sync.WaitGroup
+	currentID := u.currentCorporationID()
+	fallbackIcon, _ := fynetools.MakeAvatar(icons.Corporationplaceholder64Png)
+	for _, c := range cc {
+		it := fyne.NewMenuItem(c.Name, func() {
+			err := u.loadCorporation(c.ID)
+			if err != nil {
+				slog.Error("make corporation switch menu", "error", err)
+				u.snackbar.Show("ERROR: Failed to switch corporation")
+			}
+		})
+		if c.ID == currentID {
+			it.Icon = theme.AccountIcon()
+			it.Disabled = true
+		} else {
+			it.Icon = fallbackIcon
+			wg.Add(1)
+			go u.updateCorporationAvatar(c.ID, func(r fyne.Resource) {
+				defer wg.Done()
+				fyne.Do(func() {
+					it.Icon = r
+				})
+			})
+		}
+		items = append(items, it)
+	}
+	go func() {
+		wg.Wait()
+		fyne.Do(func() {
+			refresh()
+		})
+	}()
+	return items
+}
+
 func (u *baseUI) sendDesktopNotification(title, content string) {
 	fyne.Do(func() {
 		u.app.SendNotification(fyne.NewNotification(title, content))
@@ -1540,7 +1586,7 @@ func (u *baseUI) makeTopText(entityID int32, hasData bool, err error, make func(
 		return "No entity...", widget.LowImportance
 	}
 	if !hasData {
-		return "Waiting for character data to be loaded...", widget.WarningImportance
+		return "Waiting for data to be loaded...", widget.WarningImportance
 	}
 	if make == nil {
 		return "", widget.MediumImportance
