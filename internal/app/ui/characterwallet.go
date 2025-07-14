@@ -61,7 +61,7 @@ func (a *characterWallet) updateBalance() {
 	var err error
 	var balance float64
 	characterID := a.u.currentCharacterID()
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionWalletBalance)
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterWalletBalance)
 	if hasData {
 		c, err2 := a.u.cs.GetCharacter(context.Background(), characterID)
 		if errors.Is(err2, app.ErrNotFound) {

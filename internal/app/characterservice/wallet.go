@@ -30,7 +30,7 @@ func (s *CharacterService) ListWalletJournalEntries(ctx context.Context, charact
 
 // updateWalletJournalEntryESI updates the wallet journal from ESI and reports whether it has changed.
 func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionWalletJournal {
+	if arg.Section != app.SectionCharacterWalletJournal {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
@@ -126,7 +126,7 @@ func (s *CharacterService) ListWalletTransactions(ctx context.Context, character
 
 // updateWalletTransactionESI updates the wallet journal from ESI and reports whether it has changed.
 func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionWalletTransactions {
+	if arg.Section != app.SectionCharacterWalletTransactions {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(

@@ -486,7 +486,7 @@ func (a *characterAssets) makeTopText(total int) (string, widget.Importance) {
 	if c == nil {
 		return "No character", widget.LowImportance
 	}
-	hasData := a.u.scs.HasCharacterSection(c.ID, app.SectionAssets)
+	hasData := a.u.scs.HasCharacterSection(c.ID, app.SectionCharacterAssets)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

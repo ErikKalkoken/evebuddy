@@ -337,7 +337,7 @@ func (a *characterWalletTransactions) update() {
 	var err error
 	rows := make([]characterWalletTransactionRow, 0)
 	characterID := a.u.currentCharacterID()
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionWalletTransactions)
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterWalletTransactions)
 	if hasData {
 		rows2, err2 := a.fetchRows(characterID, a.u.services())
 		if err2 != nil {

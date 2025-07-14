@@ -173,7 +173,7 @@ func (a *characterSkillQueue) update() {
 }
 
 func (a *characterSkillQueue) makeTopText(total optional.Optional[time.Duration]) (string, widget.Importance) {
-	hasData := a.u.scs.HasCharacterSection(a.u.currentCharacterID(), app.SectionSkillqueue)
+	hasData := a.u.scs.HasCharacterSection(a.u.currentCharacterID(), app.SectionCharacterSkillqueue)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

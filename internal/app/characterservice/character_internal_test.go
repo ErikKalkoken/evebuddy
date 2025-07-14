@@ -112,7 +112,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		// when
 		changed, err := s.updateAssetsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionAssets,
+			Section:     app.SectionCharacterAssets,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -191,7 +191,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		// when
 		changed, err := s.updateAssetsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionAssets,
+			Section:     app.SectionCharacterAssets,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -257,7 +257,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		// when
 		changed, err := s.updateAssetsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionAssets,
+			Section:     app.SectionCharacterAssets,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -352,7 +352,7 @@ func TestUpdateContractESI(t *testing.T) {
 		// when
 		changed, err := s.updateContractsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionContracts,
+			Section:     app.SectionCharacterContracts,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -451,7 +451,7 @@ func TestUpdateContractESI(t *testing.T) {
 		// when
 		changed, err := s.updateContractsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionContracts,
+			Section:     app.SectionCharacterContracts,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -524,7 +524,7 @@ func TestUpdateContractESI(t *testing.T) {
 		// when
 		changed, err := s.updateContractsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionContracts,
+			Section:     app.SectionCharacterContracts,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -578,7 +578,7 @@ func TestUpdateContractESI(t *testing.T) {
 		// when
 		changed, err := s.updateContractsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionContracts,
+			Section:     app.SectionCharacterContracts,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -614,7 +614,7 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 		// when
 		changed, err := s.updateImplantsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionImplants,
+			Section:     app.SectionCharacterImplants,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -675,7 +675,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		// when
 		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionIndustryJobs,
+			Section:     app.SectionCharacterIndustryJobs,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -747,7 +747,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		// when
 		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionIndustryJobs,
+			Section:     app.SectionCharacterIndustryJobs,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -808,7 +808,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		// when
 		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionIndustryJobs,
+			Section:     app.SectionCharacterIndustryJobs,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -858,7 +858,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		// when
 		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionIndustryJobs,
+			Section:     app.SectionCharacterIndustryJobs,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -924,7 +924,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		// when
 		_, err := s.updateIndustryJobsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionIndustryJobs,
+			Section:     app.SectionCharacterIndustryJobs,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -977,7 +977,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 		// when
 		changed, err := s.updateJumpClonesESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionJumpClones,
+			Section:     app.SectionCharacterJumpClones,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -1019,7 +1019,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 		// when
 		changed, err := s.updateJumpClonesESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionJumpClones,
+			Section:     app.SectionCharacterJumpClones,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -1148,7 +1148,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		// when
 		changed, err := s.updateNotificationsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionNotifications,
+			Section:     app.SectionCharacterNotifications,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -1191,7 +1191,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		// when
 		changed, err := s.updateNotificationsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionNotifications,
+			Section:     app.SectionCharacterNotifications,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -1237,7 +1237,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 		// when
 		changed, err := s.updateNotificationsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionNotifications,
+			Section:     app.SectionCharacterNotifications,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -1344,7 +1344,7 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 		// when
 		changed, err := s.updatePlanetsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionPlanets,
+			Section:     app.SectionCharacterPlanets,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -1442,7 +1442,7 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 		// when
 		changed, err := s.updatePlanetsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionPlanets,
+			Section:     app.SectionCharacterPlanets,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -1536,7 +1536,7 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 		// when
 		changed, err := s.updatePlanetsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionPlanets,
+			Section:     app.SectionCharacterPlanets,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -1580,7 +1580,7 @@ func TestUpdateCharacterRolesESI(t *testing.T) {
 		// when
 		changed, err := s.updateRolesESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionRoles,
+			Section:     app.SectionCharacterRoles,
 		})
 		// then
 		if assert.NoError(t, err) {

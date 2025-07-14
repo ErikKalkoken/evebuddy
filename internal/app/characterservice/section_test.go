@@ -20,7 +20,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := characterservice.NewFake(st)
-	section := app.SectionImplants
+	section := app.SectionCharacterImplants
 	ctx := context.Background()
 	t.Run("should report true when changed", func(t *testing.T) {
 		// given

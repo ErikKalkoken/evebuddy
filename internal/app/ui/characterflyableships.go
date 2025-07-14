@@ -239,7 +239,7 @@ func (a *characterFlyableShips) makeTopText() (string, widget.Importance, bool, 
 		return "No character", widget.LowImportance, false, nil
 	}
 	characterID := a.u.currentCharacterID()
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionSkills)
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterSkills)
 	if !hasData {
 		return "Waiting for skills to be loaded...", widget.WarningImportance, false, nil
 	}

@@ -112,7 +112,7 @@ type esiCharacterAssetPlus struct {
 }
 
 func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionAssets {
+	if arg.Section != app.SectionCharacterAssets {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	hasChanged, err := s.updateSectionIfChanged(
@@ -472,7 +472,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 }
 
 func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionLocation {
+	if arg.Section != app.SectionCharacterLocation {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
@@ -507,7 +507,7 @@ func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.Charac
 }
 
 func (s *CharacterService) updateOnlineESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionOnline {
+	if arg.Section != app.SectionCharacterOnline {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
@@ -529,7 +529,7 @@ func (s *CharacterService) updateOnlineESI(ctx context.Context, arg app.Characte
 }
 
 func (s *CharacterService) updateShipESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionShip {
+	if arg.Section != app.SectionCharacterShip {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
@@ -555,7 +555,7 @@ func (s *CharacterService) updateShipESI(ctx context.Context, arg app.CharacterU
 }
 
 func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionWalletBalance {
+	if arg.Section != app.SectionCharacterWalletBalance {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
@@ -717,7 +717,7 @@ var contractTypeFromESIValue = map[string]app.ContractType{
 
 // updateContractsESI updates the wallet journal from ESI and reports whether it has changed.
 func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionContracts {
+	if arg.Section != app.SectionCharacterContracts {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
@@ -983,7 +983,7 @@ func (s *CharacterService) ListImplants(ctx context.Context, characterID int32) 
 }
 
 func (s *CharacterService) updateImplantsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionImplants {
+	if arg.Section != app.SectionCharacterImplants {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
@@ -1035,7 +1035,7 @@ var jobStatusFromESIValue = map[string]app.IndustryJobStatus{
 }
 
 func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionIndustryJobs {
+	if arg.Section != app.SectionCharacterIndustryJobs {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
@@ -1168,7 +1168,7 @@ func (s *CharacterService) calcNextCloneJump(ctx context.Context, c *app.Charact
 // TODO: Consolidate with updating home in separate function
 
 func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionJumpClones {
+	if arg.Section != app.SectionCharacterJumpClones {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
@@ -1277,7 +1277,7 @@ func (s *CharacterService) ListNotificationsUnread(ctx context.Context, characte
 }
 
 func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionNotifications {
+	if arg.Section != app.SectionCharacterNotifications {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
@@ -1464,7 +1464,7 @@ func (s *CharacterService) ListPlanets(ctx context.Context, characterID int32) (
 // TODO: Improve update logic to only update changes
 
 func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionPlanets {
+	if arg.Section != app.SectionCharacterPlanets {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
@@ -1593,7 +1593,7 @@ func (s *CharacterService) ListRoles(ctx context.Context, characterID int32) ([]
 
 // Roles
 func (s *CharacterService) updateRolesESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionRoles {
+	if arg.Section != app.SectionCharacterRoles {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	roleMap := map[string]app.Role{

@@ -919,22 +919,22 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	if !u.isDesktop && !u.isForeground.Load() {
 		// only update what is needed for notifications on mobile when running in background to save battery
 		if u.settings.NotifyCommunicationsEnabled() {
-			sections = append(sections, app.SectionNotifications)
+			sections = append(sections, app.SectionCharacterNotifications)
 		}
 		if u.settings.NotifyContractsEnabled() {
-			sections = append(sections, app.SectionContracts)
+			sections = append(sections, app.SectionCharacterContracts)
 		}
 		if u.settings.NotifyMailsEnabled() {
-			sections = append(sections, app.SectionMailLabels)
-			sections = append(sections, app.SectionMailLists)
-			sections = append(sections, app.SectionMails)
+			sections = append(sections, app.SectionCharacterMailLabels)
+			sections = append(sections, app.SectionCharacterMailLists)
+			sections = append(sections, app.SectionCharacterMails)
 		}
 		if u.settings.NotifyPIEnabled() {
-			sections = append(sections, app.SectionPlanets)
+			sections = append(sections, app.SectionCharacterPlanets)
 		}
 		if u.settings.NotifyTrainingEnabled() {
-			sections = append(sections, app.SectionSkillqueue)
-			sections = append(sections, app.SectionSkills)
+			sections = append(sections, app.SectionCharacterSkillqueue)
+			sections = append(sections, app.SectionCharacterSkills)
 		}
 	} else {
 		sections = app.CharacterSections
@@ -981,7 +981,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	}
 	needsRefresh := hasChanged || forceUpdate
 	switch s {
-	case app.SectionAssets:
+	case app.SectionCharacterAssets:
 		if needsRefresh {
 			u.assets.update()
 			u.wealth.update()
@@ -991,11 +991,11 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 				u.characterSheet.update()
 			}
 		}
-	case app.SectionAttributes:
+	case app.SectionCharacterAttributes:
 		if isCharacterShown && needsRefresh {
 			u.characterAttributes.update()
 		}
-	case app.SectionContracts:
+	case app.SectionCharacterContracts:
 		if needsRefresh {
 			u.contracts.update()
 		}
@@ -1007,11 +1007,11 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 				}
 			}()
 		}
-	case app.SectionImplants:
+	case app.SectionCharacterImplants:
 		if isCharacterShown && needsRefresh {
 			u.characterAugmentations.update()
 		}
-	case app.SectionJumpClones:
+	case app.SectionCharacterJumpClones:
 		if needsRefresh {
 			u.characters.update()
 			u.clones.update()
@@ -1020,28 +1020,28 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 				u.characterJumpClones.update()
 			}
 		}
-	case app.SectionIndustryJobs:
+	case app.SectionCharacterIndustryJobs:
 		if needsRefresh {
 			u.industryJobs.update()
 			u.slotsManufacturing.update()
 			u.slotsReactions.update()
 			u.slotsResearch.update()
 		}
-	case app.SectionLocation, app.SectionOnline, app.SectionShip:
+	case app.SectionCharacterLocation, app.SectionCharacterOnline, app.SectionCharacterShip:
 		if needsRefresh {
 			u.locations.update()
 			if isCharacterShown {
 				u.reloadCurrentCharacter()
 			}
 		}
-	case app.SectionMailLabels, app.SectionMailLists:
+	case app.SectionCharacterMailLabels, app.SectionCharacterMailLists:
 		if needsRefresh {
 			u.characters.update()
 			if isCharacterShown {
 				u.characterMail.update()
 			}
 		}
-	case app.SectionMails:
+	case app.SectionCharacterMails:
 		if needsRefresh {
 			go u.characters.update()
 			go u.updateMailIndicator()
@@ -1057,7 +1057,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 				}
 			}()
 		}
-	case app.SectionNotifications:
+	case app.SectionCharacterNotifications:
 		if isCharacterShown && needsRefresh {
 			u.characterCommunications.update()
 		}
@@ -1077,12 +1077,12 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 				}
 			}()
 		}
-	case app.SectionPlanets:
+	case app.SectionCharacterPlanets:
 		if needsRefresh {
 			u.colonies.update()
 			u.notifyExpiredExtractionsIfNeeded(ctx, characterID)
 		}
-	case app.SectionRoles:
+	case app.SectionCharacterRoles:
 		if needsRefresh {
 			if isCharacterShown {
 				u.characterSheet.update()
@@ -1110,7 +1110,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 				}
 			}
 		}
-	case app.SectionSkills:
+	case app.SectionCharacterSkills:
 		if needsRefresh {
 			u.training.update()
 			u.slotsManufacturing.update()
@@ -1123,7 +1123,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			}
 		}
 
-	case app.SectionSkillqueue:
+	case app.SectionCharacterSkillqueue:
 		if u.settings.NotifyTrainingEnabled() {
 			err := u.cs.EnableTrainingWatcher(ctx, characterID)
 			if err != nil {
@@ -1137,20 +1137,20 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			u.training.update()
 			u.notifyExpiredTrainingIfNeeded(ctx, characterID)
 		}
-	case app.SectionWalletBalance:
+	case app.SectionCharacterWalletBalance:
 		if needsRefresh {
 			u.characters.update()
 			u.wealth.update()
 			if isCharacterShown {
 				u.reloadCurrentCharacter()
-				u.characterAsset.update()
+				u.characterWallet.update()
 			}
 		}
-	case app.SectionWalletJournal:
+	case app.SectionCharacterWalletJournal:
 		if isCharacterShown && needsRefresh {
 			u.characterWallet.journal.update()
 		}
-	case app.SectionWalletTransactions:
+	case app.SectionCharacterWalletTransactions:
 		if isCharacterShown && needsRefresh {
 			u.characterWallet.transactions.update()
 		}

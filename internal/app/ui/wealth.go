@@ -171,8 +171,8 @@ func (*wealth) compileData(s services) ([]dataRow, int, error) {
 	}
 	selected := make([]*app.Character, 0)
 	for _, c := range cc {
-		hasAssets := s.scs.HasCharacterSection(c.ID, app.SectionAssets)
-		hasWallet := s.scs.HasCharacterSection(c.ID, app.SectionWalletBalance)
+		hasAssets := s.scs.HasCharacterSection(c.ID, app.SectionCharacterAssets)
+		hasWallet := s.scs.HasCharacterSection(c.ID, app.SectionCharacterWalletBalance)
 		if hasAssets && hasWallet {
 			selected = append(selected, c)
 		}

@@ -50,7 +50,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// when
 		changed, err := s.updateWalletJournalEntryESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionWalletJournal,
+			Section:     app.SectionCharacterWalletJournal,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -106,7 +106,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// when
 		changed, err := s.updateWalletJournalEntryESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionWalletJournal,
+			Section:     app.SectionCharacterWalletJournal,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -158,7 +158,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// when
 		_, err := s.updateWalletJournalEntryESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionWalletJournal,
+			Section:     app.SectionCharacterWalletJournal,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -221,7 +221,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// when
 		changed, err := s.updateWalletJournalEntryESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionWalletJournal,
+			Section:     app.SectionCharacterWalletJournal,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -306,7 +306,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// when
 		changed, err := s.updateWalletTransactionESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionWalletTransactions,
+			Section:     app.SectionCharacterWalletTransactions,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -362,7 +362,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// when
 		changed, err := s.updateWalletTransactionESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionWalletTransactions,
+			Section:     app.SectionCharacterWalletTransactions,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -418,7 +418,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// when
 		_, err := s.updateWalletTransactionESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionWalletTransactions,
+			Section:     app.SectionCharacterWalletTransactions,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -477,7 +477,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// when
 		_, err := s.updateWalletTransactionESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     app.SectionWalletTransactions,
+			Section:     app.SectionCharacterWalletTransactions,
 		})
 		// then
 		if assert.NoError(t, err) {

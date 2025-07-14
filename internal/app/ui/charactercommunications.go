@@ -222,7 +222,7 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 func (a *characterCommunications) update() {
 	var err error
 	characterID := a.u.currentCharacterID()
-	hasData := a.u.scs.HasCharacterSection(a.u.currentCharacterID(), app.SectionNotifications)
+	hasData := a.u.scs.HasCharacterSection(a.u.currentCharacterID(), app.SectionCharacterNotifications)
 	groups := make([]notificationFolder, 0)
 	var unreadCount, totalCount optional.Optional[int]
 	if characterID != 0 && hasData {
@@ -292,7 +292,7 @@ func (a *characterCommunications) setCurrentFolder(nc app.NotificationGroup) {
 	var err error
 	characterID := a.u.currentCharacterID()
 	notifications := make([]*app.CharacterNotification, 0)
-	hasData := a.u.scs.HasCharacterSection(a.u.currentCharacterID(), app.SectionNotifications)
+	hasData := a.u.scs.HasCharacterSection(a.u.currentCharacterID(), app.SectionCharacterNotifications)
 	if hasData {
 		var err2 error
 		var n []*app.CharacterNotification

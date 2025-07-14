@@ -22,7 +22,7 @@ func TestCharacterUpdateStatusIsExpired(t *testing.T) {
 		t.Run("Can report when section update is expired", func(t *testing.T) {
 			// given
 			o := app.CharacterSectionStatus{
-				Section:     app.SectionSkillqueue,
+				Section:     app.SectionCharacterSkillqueue,
 				CompletedAt: tc.completedAt,
 			}
 			// when/then
@@ -43,7 +43,7 @@ func TestCharacterUpdateStatusIsOK(t *testing.T) {
 		t.Run("Can report when update is ok", func(t *testing.T) {
 			// given
 			o := app.CharacterSectionStatus{
-				Section:      app.SectionSkillqueue,
+				Section:      app.SectionCharacterSkillqueue,
 				ErrorMessage: tc.errorMessage,
 			}
 			// when/then
@@ -64,7 +64,7 @@ func TestCharacterUpdateStatusIsMissing(t *testing.T) {
 		t.Run("can report when status is missing", func(t *testing.T) {
 			// given
 			o := app.CharacterSectionStatus{
-				Section:     app.SectionSkillqueue,
+				Section:     app.SectionCharacterSkillqueue,
 				CompletedAt: tc.completedAt,
 			}
 			// when/then

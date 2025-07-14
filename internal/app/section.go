@@ -18,49 +18,49 @@ type CharacterSection string
 
 // Updated character sections
 const (
-	SectionAssets             CharacterSection = "assets"
-	SectionAttributes         CharacterSection = "attributes"
-	SectionContracts          CharacterSection = "contracts"
-	SectionImplants           CharacterSection = "implants"
-	SectionIndustryJobs       CharacterSection = "industry_jobs"
-	SectionJumpClones         CharacterSection = "jump_clones"
-	SectionLocation           CharacterSection = "location"
-	SectionMailLabels         CharacterSection = "mail_labels"
-	SectionMailLists          CharacterSection = "mail_lists"
-	SectionMails              CharacterSection = "mails"
-	SectionNotifications      CharacterSection = "notifications"
-	SectionOnline             CharacterSection = "online"
-	SectionPlanets            CharacterSection = "planets"
-	SectionRoles              CharacterSection = "roles"
-	SectionShip               CharacterSection = "ship"
-	SectionSkillqueue         CharacterSection = "skillqueue"
-	SectionSkills             CharacterSection = "skills"
-	SectionWalletBalance      CharacterSection = "wallet_balance"
-	SectionWalletJournal      CharacterSection = "wallet_journal"
-	SectionWalletTransactions CharacterSection = "wallet_transactions"
+	SectionCharacterAssets             CharacterSection = "assets"
+	SectionCharacterAttributes         CharacterSection = "attributes"
+	SectionCharacterContracts          CharacterSection = "contracts"
+	SectionCharacterImplants           CharacterSection = "implants"
+	SectionCharacterIndustryJobs       CharacterSection = "industry_jobs"
+	SectionCharacterJumpClones         CharacterSection = "jump_clones"
+	SectionCharacterLocation           CharacterSection = "location"
+	SectionCharacterMailLabels         CharacterSection = "mail_labels"
+	SectionCharacterMailLists          CharacterSection = "mail_lists"
+	SectionCharacterMails              CharacterSection = "mails"
+	SectionCharacterNotifications      CharacterSection = "notifications"
+	SectionCharacterOnline             CharacterSection = "online"
+	SectionCharacterPlanets            CharacterSection = "planets"
+	SectionCharacterRoles              CharacterSection = "roles"
+	SectionCharacterShip               CharacterSection = "ship"
+	SectionCharacterSkillqueue         CharacterSection = "skillqueue"
+	SectionCharacterSkills             CharacterSection = "skills"
+	SectionCharacterWalletBalance      CharacterSection = "wallet_balance"
+	SectionCharacterWalletJournal      CharacterSection = "wallet_journal"
+	SectionCharacterWalletTransactions CharacterSection = "wallet_transactions"
 )
 
 var CharacterSections = []CharacterSection{
-	SectionAssets,
-	SectionAttributes,
-	SectionContracts,
-	SectionImplants,
-	SectionIndustryJobs,
-	SectionJumpClones,
-	SectionLocation,
-	SectionMailLabels,
-	SectionMailLists,
-	SectionMails,
-	SectionNotifications,
-	SectionOnline,
-	SectionPlanets,
-	SectionRoles,
-	SectionShip,
-	SectionSkillqueue,
-	SectionSkills,
-	SectionWalletBalance,
-	SectionWalletJournal,
-	SectionWalletTransactions,
+	SectionCharacterAssets,
+	SectionCharacterAttributes,
+	SectionCharacterContracts,
+	SectionCharacterImplants,
+	SectionCharacterIndustryJobs,
+	SectionCharacterJumpClones,
+	SectionCharacterLocation,
+	SectionCharacterMailLabels,
+	SectionCharacterMailLists,
+	SectionCharacterMails,
+	SectionCharacterNotifications,
+	SectionCharacterOnline,
+	SectionCharacterPlanets,
+	SectionCharacterRoles,
+	SectionCharacterShip,
+	SectionCharacterSkillqueue,
+	SectionCharacterSkills,
+	SectionCharacterWalletBalance,
+	SectionCharacterWalletJournal,
+	SectionCharacterWalletTransactions,
 }
 
 func (cs CharacterSection) DisplayName() string {
@@ -73,26 +73,26 @@ func (cs CharacterSection) DisplayName() string {
 // Timeout returns the time until the data of an update section becomes stale.
 func (cs CharacterSection) Timeout() time.Duration {
 	var m = map[CharacterSection]time.Duration{
-		SectionAssets:             3600 * time.Second,
-		SectionAttributes:         120 * time.Second,
-		SectionContracts:          300 * time.Second,
-		SectionImplants:           120 * time.Second,
-		SectionIndustryJobs:       300 * time.Second,
-		SectionJumpClones:         120 * time.Second,
-		SectionLocation:           300 * time.Second, // minimum 5 seconds
-		SectionMailLabels:         60 * time.Second,  // minimum 30 seconds
-		SectionMailLists:          120 * time.Second,
-		SectionMails:              60 * time.Second, // minimum 30 seconds
-		SectionNotifications:      600 * time.Second,
-		SectionOnline:             300 * time.Second, // minimum 30 seconds
-		SectionPlanets:            600 * time.Second,
-		SectionRoles:              3600 * time.Second,
-		SectionShip:               300 * time.Second, // minimum 5 seconds
-		SectionSkillqueue:         120 * time.Second,
-		SectionSkills:             120 * time.Second,
-		SectionWalletBalance:      120 * time.Second,
-		SectionWalletJournal:      3600 * time.Second,
-		SectionWalletTransactions: 3600 * time.Second,
+		SectionCharacterAssets:             3600 * time.Second,
+		SectionCharacterAttributes:         120 * time.Second,
+		SectionCharacterContracts:          300 * time.Second,
+		SectionCharacterImplants:           120 * time.Second,
+		SectionCharacterIndustryJobs:       300 * time.Second,
+		SectionCharacterJumpClones:         120 * time.Second,
+		SectionCharacterLocation:           300 * time.Second, // minimum 5 seconds
+		SectionCharacterMailLabels:         60 * time.Second,  // minimum 30 seconds
+		SectionCharacterMailLists:          120 * time.Second,
+		SectionCharacterMails:              60 * time.Second, // minimum 30 seconds
+		SectionCharacterNotifications:      600 * time.Second,
+		SectionCharacterOnline:             300 * time.Second, // minimum 30 seconds
+		SectionCharacterPlanets:            600 * time.Second,
+		SectionCharacterRoles:              3600 * time.Second,
+		SectionCharacterShip:               300 * time.Second, // minimum 5 seconds
+		SectionCharacterSkillqueue:         120 * time.Second,
+		SectionCharacterSkills:             120 * time.Second,
+		SectionCharacterWalletBalance:      120 * time.Second,
+		SectionCharacterWalletJournal:      3600 * time.Second,
+		SectionCharacterWalletTransactions: 3600 * time.Second,
 	}
 	duration, ok := m[cs]
 	if !ok {
@@ -105,26 +105,26 @@ func (cs CharacterSection) Timeout() time.Duration {
 // Scopes returns the required scopes for fetching data for a section from ESI.
 func (cs CharacterSection) Scopes() set.Set[string] {
 	m := map[CharacterSection][]string{
-		SectionAssets:             {"esi-assets.read_assets.v1", "esi-universe.read_structures.v1"},
-		SectionAttributes:         {"esi-skills.read_skills.v1"},
-		SectionContracts:          {"esi-contracts.read_character_contracts.v1", "esi-universe.read_structures.v1"},
-		SectionImplants:           {"esi-clones.read_implants.v1"},
-		SectionIndustryJobs:       {"esi-industry.read_character_jobs.v1", "esi-universe.read_structures.v1"},
-		SectionJumpClones:         {"esi-clones.read_clones.v1", "esi-universe.read_structures.v1"},
-		SectionLocation:           {"esi-location.read_location.v1", "esi-universe.read_structures.v1"},
-		SectionMailLabels:         {"esi-mail.read_mail.v1"},
-		SectionMailLists:          {"esi-mail.read_mail.v1"},
-		SectionMails:              {"esi-mail.organize_mail.v1", "esi-mail.read_mail.v1"},
-		SectionNotifications:      {"esi-characters.read_notifications.v1", "esi-universe.read_structures.v1"},
-		SectionOnline:             {"esi-location.read_online.v1"},
-		SectionPlanets:            {"esi-planets.manage_planets.v1"},
-		SectionRoles:              {"esi-characters.read_corporation_roles.v1"},
-		SectionShip:               {"esi-location.read_ship_type.v1"},
-		SectionSkillqueue:         {"esi-skills.read_skillqueue.v1"},
-		SectionSkills:             {"esi-skills.read_skills.v1"},
-		SectionWalletBalance:      {"esi-wallet.read_character_wallet.v1"},
-		SectionWalletJournal:      {"esi-wallet.read_character_wallet.v1"},
-		SectionWalletTransactions: {"esi-wallet.read_character_wallet.v1", "esi-universe.read_structures.v1"},
+		SectionCharacterAssets:             {"esi-assets.read_assets.v1", "esi-universe.read_structures.v1"},
+		SectionCharacterAttributes:         {"esi-skills.read_skills.v1"},
+		SectionCharacterContracts:          {"esi-contracts.read_character_contracts.v1", "esi-universe.read_structures.v1"},
+		SectionCharacterImplants:           {"esi-clones.read_implants.v1"},
+		SectionCharacterIndustryJobs:       {"esi-industry.read_character_jobs.v1", "esi-universe.read_structures.v1"},
+		SectionCharacterJumpClones:         {"esi-clones.read_clones.v1", "esi-universe.read_structures.v1"},
+		SectionCharacterLocation:           {"esi-location.read_location.v1", "esi-universe.read_structures.v1"},
+		SectionCharacterMailLabels:         {"esi-mail.read_mail.v1"},
+		SectionCharacterMailLists:          {"esi-mail.read_mail.v1"},
+		SectionCharacterMails:              {"esi-mail.organize_mail.v1", "esi-mail.read_mail.v1"},
+		SectionCharacterNotifications:      {"esi-characters.read_notifications.v1", "esi-universe.read_structures.v1"},
+		SectionCharacterOnline:             {"esi-location.read_online.v1"},
+		SectionCharacterPlanets:            {"esi-planets.manage_planets.v1"},
+		SectionCharacterRoles:              {"esi-characters.read_corporation_roles.v1"},
+		SectionCharacterShip:               {"esi-location.read_ship_type.v1"},
+		SectionCharacterSkillqueue:         {"esi-skills.read_skillqueue.v1"},
+		SectionCharacterSkills:             {"esi-skills.read_skills.v1"},
+		SectionCharacterWalletBalance:      {"esi-wallet.read_character_wallet.v1"},
+		SectionCharacterWalletJournal:      {"esi-wallet.read_character_wallet.v1"},
+		SectionCharacterWalletTransactions: {"esi-wallet.read_character_wallet.v1", "esi-universe.read_structures.v1"},
 	}
 	scopes, ok := m[cs]
 	if !ok {

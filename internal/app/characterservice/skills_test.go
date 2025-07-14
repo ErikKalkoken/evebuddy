@@ -29,7 +29,7 @@ func TestTotalTrainingTime(t *testing.T) {
 		})
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: character.ID,
-			Section:     app.SectionSkillqueue,
+			Section:     app.SectionCharacterSkillqueue,
 			CompletedAt: now,
 		})
 		// when
@@ -63,7 +63,7 @@ func TestTotalTrainingTime(t *testing.T) {
 		now := time.Now().UTC()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: character.ID,
-			Section:     app.SectionSkillqueue,
+			Section:     app.SectionCharacterSkillqueue,
 			CompletedAt: now,
 		})
 		// when

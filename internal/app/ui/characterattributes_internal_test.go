@@ -24,7 +24,7 @@ func TestCharacterAttributes_CanRenderWithData(t *testing.T) {
 	})
 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 		CharacterID: character.ID,
-		Section:     app.SectionAttributes,
+		Section:     app.SectionCharacterAttributes,
 	})
 	test.ApplyTheme(t, test.Theme())
 	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)

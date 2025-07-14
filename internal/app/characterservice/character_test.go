@@ -152,7 +152,7 @@ func TestTrainingWatchers(t *testing.T) {
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c1.ID})
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c1.ID,
-			Section:     app.SectionSkillqueue,
+			Section:     app.SectionCharacterSkillqueue,
 			CompletedAt: time.Now().UTC(),
 		})
 		c2 := factory.CreateCharacterFull()
@@ -196,7 +196,7 @@ func TestTrainingWatchers(t *testing.T) {
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c1.ID})
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c1.ID,
-			Section:     app.SectionSkillqueue,
+			Section:     app.SectionCharacterSkillqueue,
 			CompletedAt: time.Now().UTC(),
 		})
 		// when
@@ -215,7 +215,7 @@ func TestTrainingWatchers(t *testing.T) {
 		c1 := factory.CreateCharacterFull()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c1.ID,
-			Section:     app.SectionSkillqueue,
+			Section:     app.SectionCharacterSkillqueue,
 			CompletedAt: time.Now().UTC(),
 		})
 		// when
@@ -457,7 +457,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
-			Section:     app.SectionSkillqueue,
+			Section:     app.SectionCharacterSkillqueue,
 			CompletedAt: time.Now().UTC(),
 		})
 		var sendCount int

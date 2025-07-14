@@ -103,7 +103,7 @@ func (a *characterAttributes) update() {
 	var total int
 	attributes := make([]attribute, 0)
 	characterID := a.u.currentCharacterID()
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionAttributes)
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterAttributes)
 	if hasData {
 		total2, attributes2, err2 := a.fetchData(a.u.currentCharacterID(), a.u.services())
 		if err2 != nil {

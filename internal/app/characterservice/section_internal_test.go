@@ -23,7 +23,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
 		token := factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
-		section := app.SectionImplants
+		section := app.SectionCharacterImplants
 		hasUpdated := false
 		accessToken := ""
 		arg := app.CharacterUpdateSectionParams{CharacterID: c.ID, Section: section}
@@ -54,7 +54,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
-		section := app.SectionImplants
+		section := app.SectionCharacterImplants
 		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID:  c.ID,
 			Section:      section,
@@ -88,7 +88,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
-		section := app.SectionImplants
+		section := app.SectionCharacterImplants
 		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section,

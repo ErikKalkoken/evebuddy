@@ -21,11 +21,11 @@ func TestCharacterSectionStatus(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
-			Section:     app.SectionSkillqueue,
+			Section:     app.SectionCharacterSkillqueue,
 		})
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
-			Section:     app.SectionImplants,
+			Section:     app.SectionCharacterImplants,
 		})
 		// when
 		oo, err := st.ListCharacterSectionStatus(ctx, c.ID)
@@ -42,7 +42,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 		error := "error"
 		arg := storage.UpdateOrCreateCharacterSectionStatusParams{
 			CharacterID:  c.ID,
-			Section:      app.SectionImplants,
+			Section:      app.SectionCharacterImplants,
 			ErrorMessage: &error,
 		}
 		x1, err := st.UpdateOrCreateCharacterSectionStatus(ctx, arg)
@@ -54,7 +54,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 				assert.True(t, x1.CompletedAt.IsZero())
 				assert.False(t, x1.UpdatedAt.IsZero())
 			}
-			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, app.SectionImplants)
+			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, app.SectionCharacterImplants)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -66,7 +66,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		x := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
-			Section:     app.SectionImplants,
+			Section:     app.SectionCharacterImplants,
 		})
 		// when
 		s := "error"

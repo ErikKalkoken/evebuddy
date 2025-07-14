@@ -22,7 +22,7 @@ func (s *CharacterService) GetAttributes(ctx context.Context, characterID int32)
 }
 
 func (s *CharacterService) updateAttributesESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionAttributes {
+	if arg.Section != app.SectionCharacterAttributes {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
@@ -168,7 +168,7 @@ func (s *CharacterService) ListSkillGroupsProgress(ctx context.Context, characte
 }
 
 func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionSkills {
+	if arg.Section != app.SectionCharacterSkills {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
@@ -226,7 +226,7 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 // It returns 0 when training is inactive.
 // It returns empty when the training status is unknown.
 func (s *CharacterService) TotalTrainingTime(ctx context.Context, characterID int32) (optional.Optional[time.Duration], error) {
-	status, err := s.st.GetCharacterSectionStatus(ctx, characterID, app.SectionSkillqueue)
+	status, err := s.st.GetCharacterSectionStatus(ctx, characterID, app.SectionCharacterSkillqueue)
 	if errors.Is(err, app.ErrNotFound) {
 		return optional.Optional[time.Duration]{}, nil
 	} else if err != nil {
@@ -279,7 +279,7 @@ func (s *CharacterService) ListSkillqueueItems(ctx context.Context, characterID 
 // UpdateSkillqueueESI updates the skillqueue for a character from ESI
 // and reports whether it has changed.
 func (s *CharacterService) UpdateSkillqueueESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
-	if arg.Section != app.SectionSkillqueue {
+	if arg.Section != app.SectionCharacterSkillqueue {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(

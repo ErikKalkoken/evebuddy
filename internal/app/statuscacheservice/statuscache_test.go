@@ -28,7 +28,7 @@ func TestInit(t *testing.T) {
 		cache.Clear()
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Bruce"})
 		c := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: ec.ID})
-		section1 := app.SectionImplants
+		section1 := app.SectionCharacterImplants
 		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section1,
@@ -179,7 +179,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		}
 		o := &app.CharacterSectionStatus{
 			CharacterID:  characters[0],
-			Section:      app.SectionLocation,
+			Section:      app.SectionCharacterLocation,
 			ErrorMessage: "error",
 		}
 		sc.SetCharacterSection(o)
@@ -469,7 +469,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		}
 		o := &app.CharacterSectionStatus{
 			CharacterID: characters[0],
-			Section:     app.SectionLocation,
+			Section:     app.SectionCharacterLocation,
 			CompletedAt: time.Now().Add(-1 * time.Hour),
 		}
 		sc.SetCharacterSection(o)
@@ -596,7 +596,7 @@ func TestCharacterSections(t *testing.T) {
 		testutil.TruncateTables(db)
 		cache.Clear()
 		c := factory.CreateCharacterFull()
-		section := app.SectionImplants
+		section := app.SectionCharacterImplants
 		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
@@ -618,7 +618,7 @@ func TestCharacterSections(t *testing.T) {
 		testutil.TruncateTables(db)
 		cache.Clear()
 		c := factory.CreateCharacterFull()
-		section := app.SectionImplants
+		section := app.SectionCharacterImplants
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
@@ -627,10 +627,10 @@ func TestCharacterSections(t *testing.T) {
 			t.Fatal(err)
 		}
 		// when/then
-		assert.True(t, sc.HasCharacterSection(c.ID, app.SectionImplants))
-		assert.False(t, sc.HasCharacterSection(99, app.SectionImplants))
-		assert.False(t, sc.HasCharacterSection(c.ID, app.SectionAssets))
-		assert.False(t, sc.HasCharacterSection(0, app.SectionAssets))
+		assert.True(t, sc.HasCharacterSection(c.ID, app.SectionCharacterImplants))
+		assert.False(t, sc.HasCharacterSection(99, app.SectionCharacterImplants))
+		assert.False(t, sc.HasCharacterSection(c.ID, app.SectionCharacterAssets))
+		assert.False(t, sc.HasCharacterSection(0, app.SectionCharacterAssets))
 	})
 	t.Run("list character sections", func(t *testing.T) {
 		// given
@@ -639,7 +639,7 @@ func TestCharacterSections(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
-			Section:     app.SectionAssets,
+			Section:     app.SectionCharacterAssets,
 		})
 		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
@@ -654,8 +654,8 @@ func TestCharacterSections(t *testing.T) {
 		got := set.Collect(maps.Keys(m))
 		want := set.Of(app.CharacterSections...)
 		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
-		assert.False(t, m[app.SectionAssets].IsMissing())
-		assert.True(t, m[app.SectionImplants].IsMissing())
+		assert.False(t, m[app.SectionCharacterAssets].IsMissing())
+		assert.True(t, m[app.SectionCharacterImplants].IsMissing())
 	})
 	t.Run("list character sections all empty", func(t *testing.T) {
 		// given
@@ -675,7 +675,7 @@ func TestCharacterSections(t *testing.T) {
 		got := set.Collect(maps.Keys(m))
 		want := set.Of(app.CharacterSections...)
 		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
-		assert.True(t, m[app.SectionImplants].IsMissing())
+		assert.True(t, m[app.SectionCharacterImplants].IsMissing())
 	})
 }
 
@@ -851,17 +851,17 @@ func TestCharacterSectionSummary(t *testing.T) {
 	cache.Clear()
 	sc.SetCharacterSection(&app.CharacterSectionStatus{
 		CharacterID:  characterID,
-		Section:      app.SectionImplants,
+		Section:      app.SectionCharacterImplants,
 		ErrorMessage: "ERROR",
 	})
 	sc.SetCharacterSection(&app.CharacterSectionStatus{
 		CharacterID: characterID,
-		Section:     app.SectionAssets,
+		Section:     app.SectionCharacterAssets,
 		CompletedAt: time.Now(),
 	})
 	sc.SetCharacterSection(&app.CharacterSectionStatus{
 		CharacterID: characterID,
-		Section:     app.SectionIndustryJobs,
+		Section:     app.SectionCharacterIndustryJobs,
 		StartedAt:   time.Now().Add(-10 * time.Second),
 	})
 	// when
