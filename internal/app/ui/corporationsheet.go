@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -102,35 +103,36 @@ func (a *corporationSheet) update() {
 		}
 	} else {
 		character := a.u.currentCharacter()
-		if character == nil || character.EveCharacter == nil {
-			return
-		}
-		var roles string
-		oo, err := a.u.cs.ListRoles(ctx, character.ID)
-		if err != nil {
-			slog.Error("Failed to fetch roles", "error", err)
-			roles = "?"
-		} else {
-			x := slices.Sorted(xiter.Map(xiter.FilterSlice(oo, func(x app.CharacterRole) bool {
-				return x.Granted
-			}), func(x app.CharacterRole) string {
-				return x.Role.Display()
-			}))
-			if len(x) == 0 {
-				roles = "-"
+		if character != nil && character.EveCharacter != nil {
+			var roles string
+			oo, err := a.u.cs.ListRoles(ctx, character.ID)
+			if err != nil {
+				slog.Error("Failed to fetch roles", "error", err)
+				roles = "?"
 			} else {
-				roles = strings.Join(x, "\n")
+				x := slices.Sorted(xiter.Map(xiter.FilterSlice(oo, func(x app.CharacterRole) bool {
+					return x.Granted
+				}), func(x app.CharacterRole) string {
+					return x.Role.Display()
+				}))
+				if len(x) == 0 {
+					roles = "-"
+				} else {
+					roles = strings.Join(x, "\n")
+				}
 			}
-		}
-		fyne.Do(func() {
-			a.roles.SetText(roles)
-		})
-		corporationID := character.EveCharacter.Corporation.ID
-		c, err := a.u.eus.GetEveCorporation(ctx, corporationID)
-		if err != nil {
-			slog.Error("Failed to fetch eve corporation", "id", corporationID, "error", err)
-		} else {
-			corporation = c
+			fyne.Do(func() {
+				a.roles.SetText(roles)
+			})
+			corporationID := character.EveCharacter.Corporation.ID
+			c, err := a.u.eus.GetEveCorporation(ctx, corporationID)
+			if errors.Is(err, app.ErrNotFound) {
+				// ignore
+			} else if err != nil {
+				slog.Error("Failed to fetch eve corporation", "id", corporationID, "error", err)
+			} else {
+				corporation = c
+			}
 		}
 	}
 	if corporation == nil {

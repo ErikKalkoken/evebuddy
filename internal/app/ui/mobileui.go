@@ -144,13 +144,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		theme.NewThemedResource(icons.AttachmoneySvg),
 		func() {
 			characterNav.Push(
-				newCharacterAppBar(
-					"Wallet",
-					container.NewAppTabs(
-						container.NewTabItem("Transactions", u.characterWalletJournal),
-						container.NewTabItem("Market Transactions", u.characterWalletTransaction),
-					),
-				))
+				newCharacterAppBar("Wallet", u.characterWallet))
 		},
 	)
 	characterList := iwidget.NewNavList(
@@ -217,7 +211,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		})
 	}
 
-	u.characterWalletJournal.OnUpdate = func(b string) {
+	u.characterWallet.OnUpdate = func(b string) {
 		fyne.Do(func() {
 			navItemWallet.Supporting = "Balance: " + b
 			characterList.Refresh()

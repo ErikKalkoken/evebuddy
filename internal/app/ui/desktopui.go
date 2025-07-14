@@ -43,15 +43,13 @@ type DesktopUI struct {
 
 	shortcuts map[string]shortcutDef
 	sfg       *singleflight.Group
-	wallets   map[app.Division]*iwidget.NavItem
 }
 
 // NewDesktopUI build the UI and returns it.
 func NewDesktopUI(bu *baseUI) *DesktopUI {
 	u := &DesktopUI{
-		sfg:     new(singleflight.Group),
-		baseUI:  bu,
-		wallets: make(map[app.Division]*iwidget.NavItem),
+		sfg:    new(singleflight.Group),
+		baseUI: bu,
 	}
 	deskApp, ok := u.App().(desktop.App)
 	if !ok {
@@ -224,14 +222,14 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 
 	var characterNav *iwidget.NavDrawer
 
-	mail := iwidget.NewNavPage(
+	characterMailNav := iwidget.NewNavPage(
 		"Mail",
 		theme.MailComposeIcon(),
 		makePageWithPageBarForCharacter("Mail", u.characterMail),
 	)
 	u.characterMail.onUpdate = func(count int) {
 		fyne.Do(func() {
-			characterNav.SetItemBadge(mail, formatBadge(count, 99))
+			characterNav.SetItemBadge(characterMailNav, formatBadge(count, 99))
 		})
 	}
 	u.characterMail.onSendMessage = u.showSendMailWindow
@@ -253,7 +251,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		})
 	}
 
-	skills := iwidget.NewNavPage(
+	characterSkillsNav := iwidget.NewNavPage(
 		"Skills",
 		theme.NewThemedResource(icons.SchoolSvg),
 		makePageWithPageBarForCharacter(
@@ -268,10 +266,14 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 
 	u.characterSkillQueue.OnUpdate = func(status, _ string) {
 		fyne.Do(func() {
-			characterNav.SetItemBadge(skills, status)
+			characterNav.SetItemBadge(characterSkillsNav, status)
 		})
 	}
 
+	characterWalletNav := iwidget.NewNavPage("Wallet",
+		theme.NewThemedResource(icons.CashSvg),
+		makePageWithPageBarForCharacter("Wallet", u.characterWallet),
+	)
 	characterNav = iwidget.NewNavDrawer(
 		iwidget.NewNavPage(
 			"Character Sheet",
@@ -291,19 +293,17 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			makePageWithPageBarForCharacter("Assets", u.characterAsset),
 		),
 		communications,
-		mail,
-		skills,
-		iwidget.NewNavPage("Wallet",
-			theme.NewThemedResource(icons.CashSvg),
-			makePageWithPageBarForCharacter("Wallet", container.NewAppTabs(
-				container.NewTabItem("Transactions", u.characterWalletJournal),
-				container.NewTabItem("Market Transactions", u.characterWalletTransaction),
-			)),
-		),
+		characterMailNav,
+		characterSkillsNav,
+		characterWalletNav,
 	)
 	characterNav.Title = "Characters"
 	characterNav.MinWidth = minNavCharacterWidth
-
+	u.characterWallet.OnUpdate = func(balance string) {
+		fyne.Do(func() {
+			characterNav.SetItemBadge(characterWalletNav, balance)
+		})
+	}
 	// Corporation
 	makePageWithPageBarForCorporation := func(title string, content fyne.CanvasObject, buttons ...*widget.Button) fyne.CanvasObject {
 		bar := corporationPageBars.NewPageBar(title, buttons...)
@@ -318,29 +318,16 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 
 	corpWalletItems := []*iwidget.NavItem{
 		iwidget.NewNavSectionLabel("Wallets"),
-		iwidget.NewNavPage(
-			"Balances",
-			theme.NewThemedResource(icons.CashSvg),
-			makePageWithPageBarForCorporation(
-				"Wallet Balances",
-				u.corporationWallets,
-			),
-		),
 	}
+	corporationWalletNavs := make(map[app.Division]*iwidget.NavItem)
 	for _, d := range app.Divisions {
-		name := fmt.Sprintf("Wallet %d", d)
-		u.wallets[d] = iwidget.NewNavPage(
+		name := d.DefaultWalletName()
+		corporationWalletNavs[d] = iwidget.NewNavPage(
 			name,
 			theme.NewThemedResource(icons.CashSvg),
-			makePageWithPageBarForCorporation(
-				name,
-				container.NewAppTabs(
-					container.NewTabItem("Transactions", u.corporationWalletJournals[d]),
-					container.NewTabItem("Market Transactions", u.corporationWalletTransactions[d]),
-				),
-			),
+			makePageWithPageBarForCorporation(name, u.corporationWallets[d]),
 		)
-		corpWalletItems = append(corpWalletItems, u.wallets[d])
+		corpWalletItems = append(corpWalletItems, corporationWalletNavs[d])
 	}
 
 	corporationNav := iwidget.NewNavDrawer(
@@ -359,6 +346,14 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	)
 	corporationNav.Title = "Corporations"
 	corporationNav.MinWidth = minNavCharacterWidth
+
+	for _, d := range app.Divisions {
+		u.corporationWallets[d].OnUpdate = func(balance string) {
+			fyne.Do(func() {
+				corporationNav.SetItemBadge(corporationWalletNavs[d], balance)
+			})
+		}
+	}
 
 	// Make overall UI
 
@@ -401,12 +396,6 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 
 	u.onSetCorporation = func(id int32) {
-		walletNames := u.rs.ListWalletNames(context.Background(), id)
-		for _, d := range app.Divisions {
-			fyne.Do(func() {
-				corporationNav.SetItemText(u.wallets[d], walletNames[d])
-			})
-		}
 		name := u.scs.CorporationName(id)
 		fyne.Do(func() {
 			corporationNav.SetTitle(name)

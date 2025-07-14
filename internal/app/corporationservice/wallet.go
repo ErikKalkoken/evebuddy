@@ -19,6 +19,17 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 )
 
+func (s *CorporationService) GetWalletName(ctx context.Context, corporationID int32, division app.Division) (string, error) {
+	n, err := s.st.GetCorporationWalletName(ctx, storage.CorporationDivision{
+		CorporationID: corporationID,
+		DivisionID:    division.ID(),
+	})
+	if err != nil {
+		return "", err
+	}
+	return n.Name, nil
+}
+
 func (s *CorporationService) ListWalletNames(ctx context.Context, corporationID int32) map[app.Division]string {
 	m := map[app.Division]string{
 		app.Division1: "Master Wallet",

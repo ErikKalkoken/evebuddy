@@ -19,7 +19,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -49,8 +48,6 @@ func (e characterWalletJournalRow) descriptionWithReason() string {
 
 type characterWalletJournal struct {
 	widget.BaseWidget
-
-	OnUpdate func(balance string)
 
 	body         fyne.CanvasObject
 	columnSorter *columnSorter
@@ -234,13 +231,7 @@ func (a *characterWalletJournal) update() {
 		}
 	}
 	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
-		character := a.u.currentCharacter()
-		b := ihumanize.OptionalWithDecimals(character.WalletBalance, 1, "?")
-		s := fmt.Sprintf("Balance: %s", b)
-		if a.OnUpdate != nil {
-			a.OnUpdate(b)
-		}
-		return s, widget.MediumImportance
+		return "", widget.MediumImportance
 	})
 	fyne.Do(func() {
 		a.top.Text = t

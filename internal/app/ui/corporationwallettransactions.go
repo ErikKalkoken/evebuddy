@@ -47,7 +47,7 @@ type corporationWalletTransactionRow struct {
 	unitPriceDisplay string
 }
 
-type corporationWalletTransaction struct {
+type corporationWalletTransactions struct {
 	widget.BaseWidget
 
 	body           fyne.CanvasObject
@@ -65,7 +65,7 @@ type corporationWalletTransaction struct {
 	u              *baseUI
 }
 
-func newCorporationWalletTransaction(u *baseUI, d app.Division) *corporationWalletTransaction {
+func newCorporationWalletTransactions(u *baseUI, d app.Division) *corporationWalletTransactions {
 	headers := []headerDef{
 		{label: "Date", width: columnWidthDateTime},
 		{label: "Qty.", width: 75},
@@ -75,7 +75,7 @@ func newCorporationWalletTransaction(u *baseUI, d app.Division) *corporationWall
 		{label: "Client", width: columnWidthEntity},
 		{label: "Where", width: columnWidthLocation},
 	}
-	a := &corporationWalletTransaction{
+	a := &corporationWalletTransactions{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortDesc),
 		division:     d,
 		rows:         make([]corporationWalletTransactionRow, 0),
@@ -163,7 +163,7 @@ func newCorporationWalletTransaction(u *baseUI, d app.Division) *corporationWall
 	return a
 }
 
-func (a *corporationWalletTransaction) CreateRenderer() fyne.WidgetRenderer {
+func (a *corporationWalletTransactions) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectCategory, a.selectType, a.selectClient, a.selectRegion, a.selectLocation)
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
@@ -178,7 +178,7 @@ func (a *corporationWalletTransaction) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *corporationWalletTransaction) makeDataList() *iwidget.StripedList {
+func (a *corporationWalletTransactions) makeDataList() *iwidget.StripedList {
 	p := theme.Padding()
 	l := iwidget.NewStripedList(
 		func() int {
@@ -231,7 +231,7 @@ func (a *corporationWalletTransaction) makeDataList() *iwidget.StripedList {
 	return l
 }
 
-func (a *corporationWalletTransaction) filterRows(sortCol int) {
+func (a *corporationWalletTransactions) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
 	if x := a.selectCategory.Selected; x != "" {
@@ -306,11 +306,20 @@ func (a *corporationWalletTransaction) filterRows(sortCol int) {
 	a.body.Refresh()
 }
 
-func (a *corporationWalletTransaction) update() {
+func (a *corporationWalletTransactions) update() {
 	var err error
 	rows := make([]corporationWalletTransactionRow, 0)
 	corporationID := a.u.currentCorporationID()
-	hasData := a.u.scs.HasCorporationSection(corporationID, app.SectionCorporationWalletTransactions1)
+	section := map[app.Division]app.CorporationSection{
+		app.Division1: app.SectionCorporationWalletTransactions1,
+		app.Division2: app.SectionCorporationWalletTransactions2,
+		app.Division3: app.SectionCorporationWalletTransactions3,
+		app.Division4: app.SectionCorporationWalletTransactions4,
+		app.Division5: app.SectionCorporationWalletTransactions5,
+		app.Division6: app.SectionCorporationWalletTransactions6,
+		app.Division7: app.SectionCorporationWalletTransactions7,
+	}
+	hasData := a.u.scs.HasCorporationSection(corporationID, section[a.division])
 	if hasData {
 		rows2, err2 := a.fetchRows(corporationID, a.division, a.u.services())
 		if err2 != nil {
@@ -337,7 +346,7 @@ func (a *corporationWalletTransaction) update() {
 	})
 }
 
-func (a *corporationWalletTransaction) fetchRows(corporationID int32, division app.Division, s services) ([]corporationWalletTransactionRow, error) {
+func (a *corporationWalletTransactions) fetchRows(corporationID int32, division app.Division, s services) ([]corporationWalletTransactionRow, error) {
 	entries, err := s.rs.ListWalletTransactions(context.Background(), corporationID, division)
 	if err != nil {
 		return nil, err

@@ -53,7 +53,7 @@ type characterWalletTransactionRow struct {
 	unitPriceDisplay string
 }
 
-type characterWalletTransaction struct {
+type characterWalletTransactions struct {
 	widget.BaseWidget
 
 	body           fyne.CanvasObject
@@ -71,7 +71,7 @@ type characterWalletTransaction struct {
 	u              *baseUI
 }
 
-func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
+func newCharacterWalletTransaction(u *baseUI) *characterWalletTransactions {
 	headers := []headerDef{
 		{label: "Date", width: columnWidthDateTime},
 		{label: "Qty.", width: 75},
@@ -81,7 +81,7 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 		{label: "Client", width: columnWidthEntity},
 		{label: "Where", width: columnWidthLocation},
 	}
-	a := &characterWalletTransaction{
+	a := &characterWalletTransactions{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortDesc),
 		rows:         make([]characterWalletTransactionRow, 0),
 		rowsFiltered: make([]characterWalletTransactionRow, 0),
@@ -176,7 +176,7 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransaction {
 	return a
 }
 
-func (a *characterWalletTransaction) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterWalletTransactions) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectActivity, a.selectCategory, a.selectType, a.selectClient, a.selectRegion, a.selectLocation)
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
@@ -191,7 +191,7 @@ func (a *characterWalletTransaction) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterWalletTransaction) makeDataList() *iwidget.StripedList {
+func (a *characterWalletTransactions) makeDataList() *iwidget.StripedList {
 	p := theme.Padding()
 	l := iwidget.NewStripedList(
 		func() int {
@@ -247,7 +247,7 @@ func (a *characterWalletTransaction) makeDataList() *iwidget.StripedList {
 	return l
 }
 
-func (a *characterWalletTransaction) filterRows(sortCol int) {
+func (a *characterWalletTransactions) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
 	if x := a.selectActivity.Selected; x != "" {
@@ -333,7 +333,7 @@ func (a *characterWalletTransaction) filterRows(sortCol int) {
 	a.body.Refresh()
 }
 
-func (a *characterWalletTransaction) update() {
+func (a *characterWalletTransactions) update() {
 	var err error
 	rows := make([]characterWalletTransactionRow, 0)
 	characterID := a.u.currentCharacterID()
@@ -364,7 +364,7 @@ func (a *characterWalletTransaction) update() {
 	})
 }
 
-func (a *characterWalletTransaction) fetchRows(characterID int32, s services) ([]characterWalletTransactionRow, error) {
+func (a *characterWalletTransactions) fetchRows(characterID int32, s services) ([]characterWalletTransactionRow, error) {
 	entries, err := s.cs.ListWalletTransactions(context.Background(), characterID)
 	if err != nil {
 		return nil, err

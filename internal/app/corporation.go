@@ -27,6 +27,19 @@ func (d Division) ID() int32 {
 	return int32(d)
 }
 
+func (d Division) DefaultWalletName() string {
+	m := map[Division]string{
+		Division1: "Master Wallet",
+		Division2: "2nd Wallet",
+		Division3: "3rd Wallet",
+		Division4: "4th Wallet",
+		Division5: "5th Wallet",
+		Division6: "6th Wallet",
+		Division7: "7th Wallet",
+	}
+	return m[d]
+}
+
 var Divisions = []Division{
 	Division1,
 	Division2,

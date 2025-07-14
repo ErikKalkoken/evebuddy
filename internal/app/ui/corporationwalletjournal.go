@@ -3,7 +3,6 @@ package ui
 import (
 	"cmp"
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -19,8 +18,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -51,8 +48,6 @@ func (e corporationWalletJournalRow) descriptionWithReason() string {
 
 type corporationWalletJournal struct {
 	widget.BaseWidget
-
-	OnUpdate func(balance string)
 
 	body         fyne.CanvasObject
 	columnSorter *columnSorter
@@ -226,26 +221,28 @@ func (a *corporationWalletJournal) filterRows(sortCol int) {
 func (a *corporationWalletJournal) update() {
 	var err error
 	rows := make([]corporationWalletJournalRow, 0)
-	var balance optional.Optional[float64]
 	corporationID := a.u.currentCorporationID()
-	hasData := a.u.scs.HasCorporationSection(corporationID, app.SectionCorporationWalletJournal1)
+	section := map[app.Division]app.CorporationSection{
+		app.Division1: app.SectionCorporationWalletJournal1,
+		app.Division2: app.SectionCorporationWalletJournal2,
+		app.Division3: app.SectionCorporationWalletJournal3,
+		app.Division4: app.SectionCorporationWalletJournal4,
+		app.Division5: app.SectionCorporationWalletJournal5,
+		app.Division6: app.SectionCorporationWalletJournal6,
+		app.Division7: app.SectionCorporationWalletJournal7,
+	}
+	hasData := a.u.scs.HasCorporationSection(corporationID, section[a.division])
 	if hasData {
-		rows2, balance2, err2 := a.fetchRows(corporationID, a.division, a.u.services())
+		rows2, err2 := a.fetchRows(corporationID, a.division, a.u.services())
 		if err2 != nil {
 			slog.Error("Failed to refresh wallet journal UI", "err", err2)
 			err = err2
 		} else {
 			rows = rows2
-			balance = balance2
 		}
 	}
 	t, i := a.u.makeTopText(corporationID, hasData, err, func() (string, widget.Importance) {
-		b := ihumanize.OptionalWithDecimals(balance, 1, "?")
-		s := fmt.Sprintf("Balance: %s", b)
-		if a.OnUpdate != nil {
-			a.OnUpdate(b)
-		}
-		return s, widget.MediumImportance
+		return "", widget.MediumImportance
 	})
 	fyne.Do(func() {
 		a.top.Text = t
@@ -258,12 +255,11 @@ func (a *corporationWalletJournal) update() {
 	})
 }
 
-func (*corporationWalletJournal) fetchRows(corporationID int32, division app.Division, s services) ([]corporationWalletJournalRow, optional.Optional[float64], error) {
-	var balance optional.Optional[float64]
+func (*corporationWalletJournal) fetchRows(corporationID int32, division app.Division, s services) ([]corporationWalletJournalRow, error) {
 	ctx := context.Background()
 	entries, err := s.rs.ListWalletJournalEntries(ctx, corporationID, division)
 	if err != nil {
-		return nil, balance, err
+		return nil, err
 	}
 	rows := make([]corporationWalletJournalRow, len(entries))
 	for i, o := range entries {
@@ -300,15 +296,7 @@ func (*corporationWalletJournal) fetchRows(corporationID int32, division app.Div
 		)
 		rows[i] = r
 	}
-	b, err := s.rs.GetWalletBalance(ctx, corporationID, division)
-	if errors.Is(err, app.ErrNotFound) {
-		// ignore
-	} else if err != nil {
-		return nil, balance, err
-	} else {
-		balance.Set(b)
-	}
-	return rows, balance, nil
+	return rows, nil
 }
 
 // showCorporationWalletJournalEntry shows a wallet journal entry for a corporation in a new window.

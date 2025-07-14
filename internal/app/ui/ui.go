@@ -94,37 +94,34 @@ type baseUI struct {
 	showMailIndicator    func()
 	showManageCharacters func()
 
-	assets                        *assets
-	characterAsset                *characterAssets
-	characterAttributes           *characterAttributes
-	characterAugmentations        *characterAugmentations
-	characterBiography            *characterBiography
-	characterCommunications       *characterCommunications
-	characterCorporation          *corporationSheet
-	characterJumpClones           *characterJumpClones
-	characterMail                 *characterMails
-	characters                    *characters
-	characterSheet                *characterSheet
-	characterShips                *characterFlyableShips
-	characterSkillCatalogue       *characterSkillCatalogue
-	characterSkillQueue           *characterSkillQueue
-	characterWalletJournal        *characterWalletJournal
-	characterWalletTransaction    *characterWalletTransaction
-	clones                        *clones
-	colonies                      *colonies
-	contracts                     *contracts
-	corporationSheet              *corporationSheet
-	corporationWalletJournals     map[app.Division]*corporationWalletJournal
-	corporationWallets            *corporationWallets
-	corporationWalletTransactions map[app.Division]*corporationWalletTransaction
-	gameSearch                    *hameSearch
-	industryJobs                  *industryJobs
-	locations                     *locations
-	slotsManufacturing            *industrySlots
-	slotsReactions                *industrySlots
-	slotsResearch                 *industrySlots
-	training                      *training
-	wealth                        *wealth
+	assets                  *assets
+	characterAsset          *characterAssets
+	characterAttributes     *characterAttributes
+	characterAugmentations  *characterAugmentations
+	characterBiography      *characterBiography
+	characterCommunications *characterCommunications
+	characterCorporation    *corporationSheet
+	characterJumpClones     *characterJumpClones
+	characterMail           *characterMails
+	characters              *characters
+	characterSheet          *characterSheet
+	characterShips          *characterFlyableShips
+	characterSkillCatalogue *characterSkillCatalogue
+	characterSkillQueue     *characterSkillQueue
+	characterWallet         *characterWallet
+	clones                  *clones
+	colonies                *colonies
+	contracts               *contracts
+	corporationSheet        *corporationSheet
+	corporationWallets      map[app.Division]*corporationWallet
+	gameSearch              *hameSearch
+	industryJobs            *industryJobs
+	locations               *locations
+	slotsManufacturing      *industrySlots
+	slotsReactions          *industrySlots
+	slotsResearch           *industrySlots
+	training                *training
+	wealth                  *wealth
 
 	app                fyne.App
 	character          atomic.Pointer[app.Character]
@@ -173,22 +170,21 @@ type BaseUIParams struct {
 // Note:Types embedding BaseUI should define callbacks instead of overwriting methods.
 func NewBaseUI(args BaseUIParams) *baseUI {
 	u := &baseUI{
-		app:                           args.App,
-		corporationWalletJournals:     make(map[app.Division]*corporationWalletJournal),
-		corporationWalletTransactions: make(map[app.Division]*corporationWalletTransaction),
-		cs:                            args.CharacterService,
-		eis:                           args.EveImageService,
-		ess:                           args.ESIStatusService,
-		eus:                           args.EveUniverseService,
-		isDesktop:                     args.IsDesktop,
-		isOffline:                     args.IsOffline,
-		isUpdateDisabled:              args.IsUpdateDisabled,
-		js:                            args.JaniceService,
-		memcache:                      args.MemCache,
-		rs:                            args.CorporationService,
-		scs:                           args.StatusCacheService,
-		settings:                      settings.New(args.App.Preferences()),
-		windows:                       make(map[string]fyne.Window),
+		app:                args.App,
+		corporationWallets: make(map[app.Division]*corporationWallet),
+		cs:                 args.CharacterService,
+		eis:                args.EveImageService,
+		ess:                args.ESIStatusService,
+		eus:                args.EveUniverseService,
+		isDesktop:          args.IsDesktop,
+		isOffline:          args.IsOffline,
+		isUpdateDisabled:   args.IsUpdateDisabled,
+		js:                 args.JaniceService,
+		memcache:           args.MemCache,
+		rs:                 args.CorporationService,
+		scs:                args.StatusCacheService,
+		settings:           settings.New(args.App.Preferences()),
+		windows:            make(map[string]fyne.Window),
 	}
 	u.window = u.app.NewWindow(u.appName())
 
@@ -221,13 +217,10 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	u.characterShips = newCharacterFlyableShips(u)
 	u.characterSkillCatalogue = newCharacterSkillCatalogue(u)
 	u.characterSkillQueue = newCharacterSkillQueue(u)
-	u.characterWalletJournal = newCharacterWalletJournal(u)
-	u.characterWalletTransaction = newCharacterWalletTransaction(u)
+	u.characterWallet = newCharacterWallet(u)
 	u.corporationSheet = newCorporationSheet(u, true)
-	u.corporationWallets = newCorporationWallets(u)
 	for _, d := range app.Divisions {
-		u.corporationWalletJournals[d] = newCorporationWalletJournal(u, d)
-		u.corporationWalletTransactions[d] = newCorporationWalletTransaction(u, d)
+		u.corporationWallets[d] = newCorporationWallet(u, d)
 	}
 	u.contracts = newContracts(u)
 	u.gameSearch = newGameSearch(u)
@@ -496,8 +489,7 @@ func (u *baseUI) defineCharacterUpdates() map[string]func() {
 		"ships":                u.characterShips.update,
 		"skillCatalogue":       u.characterSkillCatalogue.update,
 		"skillqueue":           u.characterSkillQueue.update,
-		"walletJournal":        u.characterWalletJournal.update,
-		"walletTransaction":    u.characterWalletTransaction.update,
+		"wallet":               u.characterWallet.update,
 	}
 	return ff
 }
@@ -624,12 +616,8 @@ func (u *baseUI) updateCorporation() {
 func (u *baseUI) defineCorporationUpdates() map[string]func() {
 	ff := make(map[string]func())
 	ff["corporationSheet"] = u.corporationSheet.update
-	ff["walletBalances"] = u.corporationWallets.update
-	for id, w := range u.corporationWalletJournals {
+	for id, w := range u.corporationWallets {
 		ff[fmt.Sprintf("walletJournal%d", id)] = w.update
-	}
-	for id, w := range u.corporationWalletTransactions {
-		ff[fmt.Sprintf("walletTransaction%d", id)] = w.update
 	}
 	return ff
 }
@@ -1118,8 +1106,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			if isCorporationShown {
 				u.characterCorporation.update()
 				for _, d := range app.Divisions {
-					go u.corporationWalletJournals[d].update()
-					go u.corporationWalletTransactions[d].update()
+					go u.corporationWallets[d].update()
 				}
 			}
 		}
@@ -1161,11 +1148,11 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionWalletJournal:
 		if isCharacterShown && needsRefresh {
-			u.characterWalletJournal.update()
+			u.characterWallet.journal.update()
 		}
 	case app.SectionWalletTransactions:
 		if isCharacterShown && needsRefresh {
-			u.characterWalletTransaction.update()
+			u.characterWallet.transactions.update()
 		}
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the refresh ticker: %s", s))
@@ -1249,67 +1236,71 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 		}
 	case app.SectionCorporationDivisions:
 		if isShown && needsRefresh {
-			u.corporationWallets.update()
+			for _, d := range app.Divisions {
+				u.corporationWallets[d].updateName()
+			}
 		}
 	case app.SectionCorporationWalletBalances:
 		if isShown && needsRefresh {
-			u.corporationWallets.update()
+			for _, d := range app.Divisions {
+				u.corporationWallets[d].updateBalance()
+			}
 		}
 	case app.SectionCorporationWalletJournal1:
 		if isShown && needsRefresh {
-			u.corporationWalletJournals[app.Division1].update()
+			u.corporationWallets[app.Division1].journal.update()
 		}
 	case app.SectionCorporationWalletJournal2:
 		if isShown && needsRefresh {
-			u.corporationWalletJournals[app.Division2].update()
+			u.corporationWallets[app.Division2].journal.update()
 		}
 	case app.SectionCorporationWalletJournal3:
 		if isShown && needsRefresh {
-			u.corporationWalletJournals[app.Division3].update()
+			u.corporationWallets[app.Division3].journal.update()
 		}
 	case app.SectionCorporationWalletJournal4:
 		if isShown && needsRefresh {
-			u.corporationWalletJournals[app.Division4].update()
+			u.corporationWallets[app.Division4].journal.update()
 		}
 	case app.SectionCorporationWalletJournal5:
 		if isShown && needsRefresh {
-			u.corporationWalletJournals[app.Division5].update()
+			u.corporationWallets[app.Division5].journal.update()
 		}
 	case app.SectionCorporationWalletJournal6:
 		if isShown && needsRefresh {
-			u.corporationWalletJournals[app.Division6].update()
+			u.corporationWallets[app.Division6].journal.update()
 		}
 	case app.SectionCorporationWalletJournal7:
 		if isShown && needsRefresh {
-			u.corporationWalletJournals[app.Division7].update()
+			u.corporationWallets[app.Division7].journal.update()
 		}
 	case app.SectionCorporationWalletTransactions1:
 		if isShown && needsRefresh {
-			u.corporationWalletTransactions[app.Division1].update()
+			u.corporationWallets[app.Division1].transactions.update()
 		}
 	case app.SectionCorporationWalletTransactions2:
 		if isShown && needsRefresh {
-			u.corporationWalletTransactions[app.Division2].update()
+			u.corporationWallets[app.Division2].transactions.update()
 		}
 	case app.SectionCorporationWalletTransactions3:
 		if isShown && needsRefresh {
-			u.corporationWalletTransactions[app.Division3].update()
+			u.corporationWallets[app.Division3].transactions.update()
 		}
 	case app.SectionCorporationWalletTransactions4:
 		if isShown && needsRefresh {
-			u.corporationWalletTransactions[app.Division4].update()
+			u.corporationWallets[app.Division4].transactions.update()
 		}
 	case app.SectionCorporationWalletTransactions5:
 		if isShown && needsRefresh {
-			u.corporationWalletTransactions[app.Division5].update()
+			u.corporationWallets[app.Division5].transactions.update()
 		}
 	case app.SectionCorporationWalletTransactions6:
 		if isShown && needsRefresh {
-			u.corporationWalletTransactions[app.Division6].update()
+			u.corporationWallets[app.Division6].transactions.update()
 		}
 	case app.SectionCorporationWalletTransactions7:
 		if isShown && needsRefresh {
-			u.corporationWalletTransactions[app.Division7].update()
+			u.corporationWallets[app.Division7].transactions.update()
 		}
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the refresh ticker: %s", s))
@@ -1541,12 +1532,12 @@ func (u *baseUI) makeCopyToClipboardLabel(text string) *kxwidget.TappableLabel {
 }
 
 // makeTopText makes the content for the top label of a gui element.
-func (u *baseUI) makeTopText(characterID int32, hasData bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
+func (u *baseUI) makeTopText(entityID int32, hasData bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
 	if err != nil {
 		return "ERROR: " + u.humanizeError(err), widget.DangerImportance
 	}
-	if characterID == 0 {
-		return "No character...", widget.LowImportance
+	if entityID == 0 {
+		return "No entity...", widget.LowImportance
 	}
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
