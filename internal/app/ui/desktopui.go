@@ -234,7 +234,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 	u.characterMail.onSendMessage = u.showSendMailWindow
 
-	communications := iwidget.NewNavPage(
+	characterCommunicationsNav := iwidget.NewNavPage(
 		"Communications",
 		theme.NewThemedResource(icons.MessageSvg),
 		makePageWithPageBarForCharacter("Communications", u.characterCommunications),
@@ -247,7 +247,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			s = formatBadge(count.ValueOrZero(), 999)
 		}
 		fyne.Do(func() {
-			characterNav.SetItemBadge(communications, s)
+			characterNav.SetItemBadge(characterCommunicationsNav, s)
 		})
 	}
 
@@ -274,6 +274,11 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		theme.NewThemedResource(icons.CashSvg),
 		makePageWithPageBarForCharacter("Wallet", u.characterWallet),
 	)
+	characterAssetsNav := iwidget.NewNavPage(
+		"Assets",
+		theme.NewThemedResource(icons.Inventory2Svg),
+		makePageWithPageBarForCharacter("Assets", u.characterAsset),
+	)
 	characterNav = iwidget.NewNavDrawer(
 		iwidget.NewNavPage(
 			"Character Sheet",
@@ -287,12 +292,8 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 				container.NewTabItem("Biography", u.characterBiography),
 			)),
 		),
-		iwidget.NewNavPage(
-			"Assets",
-			theme.NewThemedResource(icons.Inventory2Svg),
-			makePageWithPageBarForCharacter("Assets", u.characterAsset),
-		),
-		communications,
+		characterAssetsNav,
+		characterCommunicationsNav,
 		characterMailNav,
 		characterSkillsNav,
 		characterWalletNav,
@@ -302,6 +303,11 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	u.characterWallet.OnUpdate = func(balance string) {
 		fyne.Do(func() {
 			characterNav.SetItemBadge(characterWalletNav, balance)
+		})
+	}
+	u.characterAsset.OnRedraw = func(s string) {
+		fyne.Do(func() {
+			characterNav.SetItemBadge(characterAssetsNav, s)
 		})
 	}
 	// Corporation

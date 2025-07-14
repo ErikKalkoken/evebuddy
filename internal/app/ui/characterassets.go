@@ -251,7 +251,11 @@ func (a *characterAssets) update() {
 		a.locations.Refresh()
 	})
 	if a.OnRedraw != nil {
-		a.OnRedraw(t)
+		c := a.u.currentCharacter()
+		if c != nil {
+			s := ihumanize.OptionalWithDecimals(c.AssetValue, 1, "?")
+			a.OnRedraw(s)
+		}
 	}
 }
 
