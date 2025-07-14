@@ -13,8 +13,32 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi"
 )
+
+// EnabledSections returns which sections are enabled,
+// i.e. the user has a character with the required roles and scopes.
+func (s *CorporationService) EnabledSections(ctx context.Context, corporationID int32) (set.Set[app.CorporationSection], error) {
+	var enabled set.Set[app.CorporationSection]
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CorporationService.EnabledSections %d: %w", corporationID, err)
+	}
+	if corporationID == 0 {
+		return enabled, wrapErr(app.ErrInvalid)
+	}
+	for _, section := range app.CorporationSections {
+		_, err := s.cs.ValidCharacterTokenForCorporation(ctx, corporationID, section.Role(), section.Scopes())
+		if errors.Is(err, app.ErrNotFound) {
+			continue
+		}
+		if err != nil {
+			return enabled, wrapErr(err)
+		}
+		enabled.Add(section)
+	}
+	return enabled, nil
+}
 
 // UpdateSectionIfNeeded updates a section from ESI if has expired and changed
 // and reports back if it has changed

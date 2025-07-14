@@ -92,6 +92,10 @@ func (s *EveUniverseService) RandomizeAllAllianceNames(ctx context.Context) erro
 	return nil
 }
 
+func (s *EveUniverseService) GetEveCorporation(ctx context.Context, corporationID int32) (*app.EveCorporation, error) {
+	return s.st.GetEveCorporation(ctx, corporationID)
+}
+
 func (s *EveUniverseService) GetOrCreateCorporationESI(ctx context.Context, id int32) (*app.EveCorporation, error) {
 	o, err := s.st.GetEveCorporation(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {

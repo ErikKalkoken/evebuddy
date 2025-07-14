@@ -135,6 +135,7 @@ func (a *characterSheet) CreateRenderer() fyne.WidgetRenderer {
 		widget.NewFormItem("Home Station", a.home),
 		widget.NewFormItem("Total Skill Points", a.sp),
 	)
+	main.Orientation = widget.Adaptive
 
 	portraitDesktop := container.NewVBox(container.NewPadded(a.portrait))
 	c := container.NewBorder(

@@ -154,6 +154,11 @@ func (w *NavDrawer) makeList() *widget.List {
 				title.SizeName = theme.SizeNameScrollBar
 				toUpper := cases.Upper(language.English)
 				title.Text = toUpper.String(it.text)
+				if it.isDisabled {
+					title.Importance = widget.LowImportance
+				} else {
+					title.Importance = widget.MediumImportance
+				}
 				title.Refresh()
 				icon.Hide()
 				spacer.Hide()
@@ -281,6 +286,7 @@ func (w *NavDrawer) SetItemText(item *NavItem, text string) {
 
 func (w *NavDrawer) Refresh() {
 	w.updateTitle()
+	w.list.Refresh()
 }
 
 func (w *NavDrawer) updateTitle() {
@@ -353,4 +359,12 @@ func newNavItem(variant navItemVariant) *NavItem {
 		variant:    variant,
 	}
 	return it
+}
+
+func (ni *NavItem) Enable() {
+	ni.isDisabled = false
+}
+
+func (ni *NavItem) Disable() {
+	ni.isDisabled = true
 }

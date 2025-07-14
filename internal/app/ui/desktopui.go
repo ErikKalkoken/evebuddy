@@ -316,17 +316,17 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		)
 	}
 
-	corpItems := []*iwidget.NavItem{
+	corpWalletItems := []*iwidget.NavItem{
 		iwidget.NewNavSectionLabel("Wallets"),
-	}
-	corpItems = append(corpItems, iwidget.NewNavPage(
-		"Balances",
-		theme.NewThemedResource(icons.CashSvg),
-		makePageWithPageBarForCorporation(
-			"Wallet Balances",
-			u.corporationWallets,
+		iwidget.NewNavPage(
+			"Balances",
+			theme.NewThemedResource(icons.CashSvg),
+			makePageWithPageBarForCorporation(
+				"Wallet Balances",
+				u.corporationWallets,
+			),
 		),
-	))
+	}
 	for _, d := range app.Divisions {
 		name := fmt.Sprintf("Wallet %d", d)
 		u.wallets[d] = iwidget.NewNavPage(
@@ -340,10 +340,23 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 				),
 			),
 		)
-		corpItems = append(corpItems, u.wallets[d])
+		corpWalletItems = append(corpWalletItems, u.wallets[d])
 	}
 
-	corporationNav := iwidget.NewNavDrawer(corpItems...)
+	corporationNav := iwidget.NewNavDrawer(
+		slices.Concat(
+			[]*iwidget.NavItem{
+				iwidget.NewNavPage(
+					"Corporation Sheet",
+					theme.NewThemedResource(icons.StarCircleOutlineSvg),
+					makePageWithPageBarForCorporation("Corporation Sheet", container.NewAppTabs(
+						container.NewTabItem("Corporation", u.corporationSheet),
+					)),
+				),
+			},
+			corpWalletItems,
+		)...,
+	)
 	corporationNav.Title = "Corporations"
 	corporationNav.MinWidth = minNavCharacterWidth
 
@@ -397,7 +410,6 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		name := u.scs.CorporationName(id)
 		fyne.Do(func() {
 			corporationNav.SetTitle(name)
-			// corporationTab.Text = name
 			tabs.Refresh()
 		})
 	}
@@ -421,31 +433,51 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		})
 	}
 	u.hideMailIndicator() // init system tray icon
-	u.onUpdateCharacter = func(c *app.Character) {
+	u.onUpdateCharacter = func(character *app.Character) {
 		go func() {
-			if !u.hasCharacter() {
+			if character == nil {
 				fyne.Do(func() {
 					tabs.DisableItem(characterTab)
 					homeNav.Disable()
 					toolbar.ToogleSearchBar(false)
+					characterNav.SelectIndex(0)
 				})
-			} else {
-				fyne.Do(func() {
-					tabs.EnableItem(characterTab)
-					homeNav.Enable()
-					toolbar.ToogleSearchBar(true)
-				})
+				return
 			}
-			if !u.hasCorporation() {
-				fyne.Do(func() {
-					tabs.DisableItem(corporationTab)
-				})
-			} else {
-				fyne.Do(func() {
-					tabs.EnableItem(corporationTab)
-				})
-			}
+			fyne.Do(func() {
+				tabs.EnableItem(characterTab)
+				homeNav.Enable()
+				toolbar.ToogleSearchBar(true)
+			})
 		}()
+	}
+	u.onUpdateCorporation = func(corporation *app.Corporation) {
+		if corporation == nil {
+			fyne.Do(func() {
+				corporationNav.SelectIndex(0)
+				tabs.DisableItem(corporationTab)
+			})
+			return
+		}
+		sections, err := u.rs.EnabledSections(context.Background(), corporation.ID)
+		if err != nil {
+			slog.Error("Failed to enable corporation tab", "error", err)
+			return
+		}
+		fyne.Do(func() {
+			if sections.Contains(app.SectionCorporationWalletBalances) {
+				for _, it := range corpWalletItems {
+					it.Enable()
+				}
+			} else {
+				for _, it := range corpWalletItems {
+					it.Disable()
+				}
+				corporationNav.SelectIndex(0)
+			}
+			corporationNav.Refresh()
+			tabs.EnableItem(corporationTab)
+		})
 	}
 	u.onShowAndRun = func() {
 		u.MainWindow().Resize(u.settings.WindowSize())

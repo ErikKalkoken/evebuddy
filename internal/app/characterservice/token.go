@@ -23,6 +23,8 @@ func (s *CharacterService) HasTokenWithScopes(ctx context.Context, characterID i
 	return t.HasScopes(scopes), nil
 }
 
+// ValidCharacterTokenForCorporation returns a valid token with a specific scope and from a character with a specific role.
+// It returns [app.ErrNotFound] if no such token exists.
 func (s *CharacterService) ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, role app.Role, scopes set.Set[string]) (*app.CharacterToken, error) {
 	token, err := s.st.ListCharacterTokenForCorporation(ctx, corporationID, role, scopes)
 	if err != nil {

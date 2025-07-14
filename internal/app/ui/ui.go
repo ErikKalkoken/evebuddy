@@ -94,34 +94,35 @@ type baseUI struct {
 	showMailIndicator    func()
 	showManageCharacters func()
 
+	assets                        *assets
 	characterAsset                *characterAssets
 	characterAttributes           *characterAttributes
 	characterAugmentations        *characterAugmentations
 	characterBiography            *characterBiography
 	characterCommunications       *characterCommunications
-	characterCorporation          *characterCorporation
+	characterCorporation          *corporationSheet
 	characterJumpClones           *characterJumpClones
 	characterMail                 *characterMails
+	characters                    *characters
 	characterSheet                *characterSheet
 	characterShips                *characterFlyableShips
 	characterSkillCatalogue       *characterSkillCatalogue
 	characterSkillQueue           *characterSkillQueue
 	characterWalletJournal        *characterWalletJournal
 	characterWalletTransaction    *characterWalletTransaction
-	corporationWallets            *corporationWallets
-	corporationWalletJournals     map[app.Division]*corporationWalletJournal
-	corporationWalletTransactions map[app.Division]*corporationWalletTransaction
-	contracts                     *contracts
-	gameSearch                    *hameSearch
-	industryJobs                  *industryJobs
-	slotsManufacturing            *industrySlots
-	slotsResearch                 *industrySlots
-	slotsReactions                *industrySlots
-	assets                        *assets
-	characters                    *characters
 	clones                        *clones
 	colonies                      *colonies
+	contracts                     *contracts
+	corporationSheet              *corporationSheet
+	corporationWalletJournals     map[app.Division]*corporationWalletJournal
+	corporationWallets            *corporationWallets
+	corporationWalletTransactions map[app.Division]*corporationWalletTransaction
+	gameSearch                    *hameSearch
+	industryJobs                  *industryJobs
 	locations                     *locations
+	slotsManufacturing            *industrySlots
+	slotsReactions                *industrySlots
+	slotsResearch                 *industrySlots
 	training                      *training
 	wealth                        *wealth
 
@@ -216,12 +217,13 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	u.characterJumpClones = newCharacterJumpClones(u)
 	u.characterMail = newCharacterMails(u)
 	u.characterSheet = newCharacterSheet(u)
-	u.characterCorporation = newCharacterCorporation(u)
+	u.characterCorporation = newCorporationSheet(u, false)
 	u.characterShips = newCharacterFlyableShips(u)
 	u.characterSkillCatalogue = newCharacterSkillCatalogue(u)
 	u.characterSkillQueue = newCharacterSkillQueue(u)
 	u.characterWalletJournal = newCharacterWalletJournal(u)
 	u.characterWalletTransaction = newCharacterWalletTransaction(u)
+	u.corporationSheet = newCorporationSheet(u, true)
 	u.corporationWallets = newCorporationWallets(u)
 	for _, d := range app.Divisions {
 		u.corporationWalletJournals[d] = newCorporationWalletJournal(u, d)
@@ -621,6 +623,7 @@ func (u *baseUI) updateCorporation() {
 
 func (u *baseUI) defineCorporationUpdates() map[string]func() {
 	ff := make(map[string]func())
+	ff["corporationSheet"] = u.corporationSheet.update
 	ff["walletBalances"] = u.corporationWallets.update
 	for id, w := range u.corporationWalletJournals {
 		ff[fmt.Sprintf("walletJournal%d", id)] = w.update
@@ -856,7 +859,11 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 			u.characters.update()
 		}
 	case app.SectionEveCorporations:
-		u.characterCorporation.update()
+		// TODO: Only update when shown entity changed
+		if needsRefresh {
+			u.characterCorporation.update()
+			u.corporationSheet.update()
+		}
 	case app.SectionEveMarketPrices:
 		u.characterAsset.update()
 		u.characters.update()
