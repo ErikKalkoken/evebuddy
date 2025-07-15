@@ -230,7 +230,7 @@ func (a *characterWalletJournal) update() {
 			rows = rows2
 		}
 	}
-	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
+	t, i := a.u.makeTopTextCharacter(characterID, hasData, err, func() (string, widget.Importance) {
 		return "", widget.MediumImportance
 	})
 	fyne.Do(func() {

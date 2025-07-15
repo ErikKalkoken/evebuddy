@@ -40,6 +40,14 @@ func (s *CorporationService) EnabledSections(ctx context.Context, corporationID 
 	return enabled, nil
 }
 
+func (s *CorporationService) EnabledSection(ctx context.Context, corporationID int32, section app.CorporationSection) (bool, error) {
+	sections, err := s.EnabledSections(ctx, corporationID)
+	if err != nil {
+		return false, err
+	}
+	return sections.Contains(section), nil
+}
+
 // UpdateSectionIfNeeded updates a section from ESI if has expired and changed
 // and reports back if it has changed
 func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.CorporationUpdateSectionParams) (bool, error) {

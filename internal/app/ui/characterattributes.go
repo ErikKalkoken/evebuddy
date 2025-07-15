@@ -114,7 +114,7 @@ func (a *characterAttributes) update() {
 			total = total2
 		}
 	}
-	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
+	t, i := a.u.makeTopTextCharacter(characterID, hasData, err, func() (string, widget.Importance) {
 		return fmt.Sprintf("Total points: %d", total), widget.MediumImportance
 	})
 	fyne.Do(func() {

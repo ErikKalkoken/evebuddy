@@ -17,7 +17,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -673,34 +672,26 @@ func (u *baseUI) UpdateAll() {
 	}
 }
 
-// TODO: Replace with "infinite" variant, because progress can not be shown correctly.
 func runFunctionsWithProgressModal(title string, ff map[string]func(), onSuccess func(), w fyne.Window) {
 	fyne.Do(func() {
-		m := kxmodal.NewProgress("Updating", title, func(p binding.Float) error {
+		m := kxmodal.NewProgressInfinite("Updating", title, func() error {
 			start := time.Now()
 			myLog := slog.With("title", title)
 			myLog.Debug("started")
 			var wg sync.WaitGroup
-			var completed atomic.Int64
 			for name, f := range ff {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
 					start2 := time.Now()
 					f()
-					x := completed.Add(1)
-					fyne.Do(func() {
-						if err := p.Set(float64(x)); err != nil {
-							myLog.Warn("failed set progress", "error", err)
-						}
-					})
 					myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
 				}()
 			}
 			wg.Wait()
 			myLog.Debug("completed", "duration", time.Since(start).Milliseconds())
 			return nil
-		}, float64(len(ff)), w)
+		}, w)
 		m.OnSuccess = onSuccess
 		m.Start()
 	})
@@ -1358,21 +1349,32 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 }
 
 func (u *baseUI) updateCorporationWalletTotal() {
-	if u.onCorporationWalletTotalUpdate == nil {
-		return
-	}
-	corporationID := u.currentCorporationID()
-	if corporationID == 0 {
-		return
-	}
-	b, err := u.rs.GetWalletBalancesTotal(context.Background(), corporationID)
-	if err != nil {
-		slog.Error("Failed to update wallet total", "corporationID", corporationID, "error", err)
-		return
-	}
-	u.onCorporationWalletTotalUpdate(b.StringFunc("", func(v float64) string {
-		return humanize.Number(b.ValueOrZero(), 1)
-	}))
+	s := func() string {
+		if u.onCorporationWalletTotalUpdate == nil {
+			return ""
+		}
+		corporationID := u.currentCorporationID()
+		if corporationID == 0 {
+			return ""
+		}
+		hasRole, err := u.rs.EnabledSection(context.Background(), corporationID, app.SectionCorporationWalletBalances)
+		if err != nil {
+			slog.Error("Failed to determine role for corporation wallet", "error", err)
+			return ""
+		}
+		if !hasRole {
+			return ""
+		}
+		b, err := u.rs.GetWalletBalancesTotal(context.Background(), corporationID)
+		if err != nil {
+			slog.Error("Failed to update wallet total", "corporationID", corporationID, "error", err)
+			return ""
+		}
+		return b.StringFunc("", func(v float64) string {
+			return humanize.Number(b.ValueOrZero(), 1)
+		})
+	}()
+	u.onCorporationWalletTotalUpdate(s)
 }
 
 func (u *baseUI) notifyExpiredTrainingIfNeeded(ctx context.Context, characterID int32) {
@@ -1599,13 +1601,33 @@ func (u *baseUI) makeCopyToClipboardLabel(text string) *kxwidget.TappableLabel {
 	})
 }
 
-// makeTopText makes the content for the top label of a gui element.
-func (u *baseUI) makeTopText(entityID int32, hasData bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
+// makeTopTextCharacter makes the content for the top label of a gui element.
+func (u *baseUI) makeTopTextCharacter(characterID int32, hasData bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
 	if err != nil {
 		return "ERROR: " + u.humanizeError(err), widget.DangerImportance
 	}
-	if entityID == 0 {
+	if characterID == 0 {
+		return "No character...", widget.LowImportance
+	}
+	if !hasData {
+		return "Waiting for data to be loaded...", widget.WarningImportance
+	}
+	if make == nil {
+		return "", widget.MediumImportance
+	}
+	return make()
+}
+
+// makeTopTextCorporation makes the content for the top label of a gui element.
+func (u *baseUI) makeTopTextCorporation(corporationID int32, hasData bool, hasRole bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
+	if err != nil {
+		return "ERROR: " + u.humanizeError(err), widget.DangerImportance
+	}
+	if corporationID == 0 {
 		return "No entity...", widget.LowImportance
+	}
+	if !hasRole {
+		return "No permission", widget.LowImportance
 	}
 	if !hasData {
 		return "Waiting for data to be loaded...", widget.WarningImportance

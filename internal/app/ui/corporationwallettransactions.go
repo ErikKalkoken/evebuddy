@@ -320,7 +320,11 @@ func (a *corporationWalletTransactions) update() {
 		app.Division7: app.SectionCorporationWalletTransactions7,
 	}
 	hasData := a.u.scs.HasCorporationSection(corporationID, section[a.division])
-	if hasData {
+	hasRole, err := a.u.rs.EnabledSection(context.Background(), corporationID, section[a.division])
+	if err != nil {
+		slog.Error("Failed to determine role for corporation wallet journal", "error", err)
+	}
+	if hasData && hasRole {
 		rows2, err2 := a.fetchRows(corporationID, a.division, a.u.services())
 		if err2 != nil {
 			slog.Error("Failed to refresh wallet transaction UI", "err", err2)
@@ -329,7 +333,7 @@ func (a *corporationWalletTransactions) update() {
 			rows = rows2
 		}
 	}
-	t, i := a.u.makeTopText(corporationID, hasData, err, nil)
+	t, i := a.u.makeTopTextCorporation(corporationID, hasData, hasRole, err, nil)
 	fyne.Do(func() {
 		if t != "" {
 			a.bottom.Text = t
