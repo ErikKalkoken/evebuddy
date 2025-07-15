@@ -152,6 +152,7 @@ func (a *locations) makeDataList() *iwidget.StripedList {
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
+		defer l.UnselectAll()
 		if id < 0 || id >= len(a.rowsFiltered) {
 			return
 		}

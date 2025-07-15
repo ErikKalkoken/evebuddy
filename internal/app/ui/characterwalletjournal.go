@@ -173,7 +173,7 @@ func (a *characterWalletJournal) makeDataList() *iwidget.StripedList {
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
-		defer l.UnselectAll() // TODO: Show detail window
+		defer l.UnselectAll()
 		if id < 0 || id >= len(a.rowsFiltered) {
 			return
 		}
