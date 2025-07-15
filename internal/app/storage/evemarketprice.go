@@ -30,7 +30,7 @@ func (st *Storage) UpdateOrCreateEveMarketPrice(ctx context.Context, arg UpdateO
 		AveragePrice:  arg.AveragePrice,
 	}
 	if err := st.qRW.UpdateOrCreateEveMarketPrice(ctx, arg2); err != nil {
-		return fmt.Errorf("update or create eve market price %v: %w", arg, err)
+		return fmt.Errorf("update or create eve market price %+v: %w", arg, err)
 	}
 	return nil
 }

@@ -41,7 +41,7 @@ func (st *Storage) CreateCharacterAsset(ctx context.Context, arg CreateCharacter
 		Quantity:        int64(arg.Quantity),
 	}
 	if err := st.qRW.CreateCharacterAsset(ctx, arg2); err != nil {
-		return fmt.Errorf("create character asset %v, %w", arg, err)
+		return fmt.Errorf("create character asset %+v, %w", arg, err)
 	}
 	return nil
 }
@@ -147,7 +147,7 @@ type UpdateCharacterAssetParams struct {
 
 func (st *Storage) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacterAssetParams) error {
 	if arg.CharacterID == 0 || arg.ItemID == 0 {
-		return fmt.Errorf("IDs must not be zero %v", arg)
+		return fmt.Errorf("IDs must not be zero %+v", arg)
 	}
 	arg2 := queries.UpdateCharacterAssetParams{
 		CharacterID:  int64(arg.CharacterID),
@@ -159,7 +159,7 @@ func (st *Storage) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacter
 		Quantity:     int64(arg.Quantity),
 	}
 	if err := st.qRW.UpdateCharacterAsset(ctx, arg2); err != nil {
-		return fmt.Errorf("update character asset %v, %w", arg, err)
+		return fmt.Errorf("update character asset %+v, %w", arg, err)
 	}
 	return nil
 }

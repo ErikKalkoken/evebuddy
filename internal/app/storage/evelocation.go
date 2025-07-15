@@ -34,7 +34,7 @@ func (st *Storage) UpdateOrCreateEveLocation(ctx context.Context, arg UpdateOrCr
 		UpdatedAt:        arg.UpdatedAt,
 	}
 	if err := st.qRW.UpdateOrCreateEveLocation(ctx, arg2); err != nil {
-		return fmt.Errorf("update or create eve location %v, %w", arg, err)
+		return fmt.Errorf("update or create eve location %+v, %w", arg, err)
 	}
 	return nil
 }

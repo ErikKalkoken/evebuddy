@@ -25,7 +25,7 @@ func (st *Storage) CreateEveSchematic(ctx context.Context, arg CreateEveSchemati
 	}
 	e, err := st.qRW.CreateEveSchematic(ctx, arg2)
 	if err != nil {
-		return nil, fmt.Errorf("create EveSchematic %v, %w", arg, err)
+		return nil, fmt.Errorf("create EveSchematic %+v, %w", arg, err)
 	}
 	return eveSchematicFromDBModel(e), nil
 }

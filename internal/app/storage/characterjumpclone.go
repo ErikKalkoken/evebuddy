@@ -145,7 +145,7 @@ func createCharacterJumpClone(ctx context.Context, q *queries.Queries, arg Creat
 	}
 	cloneID, err := q.CreateCharacterJumpClone(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("create character jump clone %v, %w", arg, err)
+		return fmt.Errorf("create character jump clone %+v, %w", arg, err)
 	}
 	for _, eveTypeID := range arg.Implants {
 		arg3 := queries.CreateCharacterJumpCloneImplantParams{
@@ -153,7 +153,7 @@ func createCharacterJumpClone(ctx context.Context, q *queries.Queries, arg Creat
 			EveTypeID: int64(eveTypeID),
 		}
 		if err := q.CreateCharacterJumpCloneImplant(ctx, arg3); err != nil {
-			return fmt.Errorf("create character jump clone implant %v, %w", arg, err)
+			return fmt.Errorf("create character jump clone implant %+v, %w", arg, err)
 		}
 	}
 	return nil

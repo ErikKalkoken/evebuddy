@@ -38,7 +38,7 @@ func (st *Storage) CreatePlanetPin(ctx context.Context, arg CreatePlanetPinParam
 		PinID:                  arg.PinID,
 	}
 	if err := st.qRW.CreatePlanetPin(ctx, arg2); err != nil {
-		return fmt.Errorf("create PlanetPin %v, %w", arg, err)
+		return fmt.Errorf("create PlanetPin %+v, %w", arg, err)
 	}
 	return nil
 }

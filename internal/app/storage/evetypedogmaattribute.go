@@ -37,7 +37,7 @@ func (st *Storage) GetEveTypeDogmaAttribute(ctx context.Context, eveTypeID, dogm
 	}
 	row, err := st.qRO.GetEveTypeDogmaAttribute(ctx, arg)
 	if err != nil {
-		return 0, fmt.Errorf("get EveTypeDogmaAttribute for %v: %w", arg, convertGetError(err))
+		return 0, fmt.Errorf("get EveTypeDogmaAttribute for %+v: %w", arg, convertGetError(err))
 	}
 	return float32(row.Value), nil
 }
