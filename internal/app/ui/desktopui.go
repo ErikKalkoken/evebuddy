@@ -300,7 +300,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	)
 	characterNav.Title = "Characters"
 	characterNav.MinWidth = minNavCharacterWidth
-	u.characterWallet.OnUpdate = func(balance string) {
+	u.characterWallet.onUpdate = func(balance string) {
 		fyne.Do(func() {
 			characterNav.SetItemBadge(characterWalletNav, balance)
 		})
@@ -322,9 +322,8 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		)
 	}
 
-	corpWalletItems := []*iwidget.NavItem{
-		iwidget.NewNavSectionLabel("Wallets"),
-	}
+	walletsNav := iwidget.NewNavSectionLabel("Wallets")
+	corpWalletItems := []*iwidget.NavItem{walletsNav}
 	corporationWalletNavs := make(map[app.Division]*iwidget.NavItem)
 	for _, d := range app.Divisions {
 		name := d.DefaultWalletName()
@@ -354,11 +353,16 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	corporationNav.MinWidth = minNavCharacterWidth
 
 	for _, d := range app.Divisions {
-		u.corporationWallets[d].OnUpdate = func(balance string) {
+		u.corporationWallets[d].onUpdate = func(balance string) {
 			fyne.Do(func() {
 				corporationNav.SetItemBadge(corporationWalletNavs[d], balance)
 			})
 		}
+	}
+	u.onCorporationWalletTotalUpdate = func(balance string) {
+		fyne.Do(func() {
+			corporationNav.SetItemBadge(walletsNav, balance)
+		})
 	}
 
 	// Make overall UI
@@ -389,25 +393,14 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		tabs,
 	)
 
+	// initial state is disabled
+	tabs.DisableItem(characterTab)
+	tabs.DisableItem(corporationTab)
+	homeNav.Disable()
+	toolbar.ToogleSearchBar(false)
+
 	w := u.MainWindow()
 	w.SetContent(fynetooltip.AddWindowToolTipLayer(mainContent, w.Canvas()))
-
-	u.onSetCharacter = func(id int32) {
-		name := u.scs.CharacterName(id)
-		fyne.Do(func() {
-			characterNav.SetTitle(name)
-			// characterTab.Text = name
-			tabs.Refresh()
-		})
-	}
-
-	u.onSetCorporation = func(id int32) {
-		name := u.scs.CorporationName(id)
-		fyne.Do(func() {
-			corporationNav.SetTitle(name)
-			tabs.Refresh()
-		})
-	}
 
 	// system tray menu
 	if u.settings.SysTrayEnabled() {
@@ -428,6 +421,23 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		})
 	}
 	u.hideMailIndicator() // init system tray icon
+
+	u.onSetCharacter = func(id int32) {
+		name := u.scs.CharacterName(id)
+		fyne.Do(func() {
+			characterNav.SetTitle(name)
+			tabs.Refresh()
+		})
+	}
+
+	u.onSetCorporation = func(id int32) {
+		name := u.scs.CorporationName(id)
+		fyne.Do(func() {
+			corporationNav.SetTitle(name)
+			tabs.Refresh()
+		})
+	}
+
 	u.onUpdateCharacter = func(character *app.Character) {
 		go func() {
 			if character == nil {

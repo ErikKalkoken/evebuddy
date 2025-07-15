@@ -213,7 +213,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		})
 	}
 
-	u.characterWallet.OnUpdate = func(b string) {
+	u.characterWallet.onUpdate = func(b string) {
 		fyne.Do(func() {
 			navItemWallet.Supporting = "Balance: " + b
 			characterList.Refresh()
@@ -261,7 +261,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 	for _, d := range app.Divisions {
-		u.corporationWallets[d].OnUpdate = func(balance string) {
+		u.corporationWallets[d].onUpdate = func(balance string) {
 			fyne.Do(func() {
 				corporationWalletNavs[d].Supporting = balance
 				corpWalletList.Refresh()
@@ -287,6 +287,12 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			corpWalletNav,
 		})...,
 	)
+	u.onCorporationWalletTotalUpdate = func(balance string) {
+		fyne.Do(func() {
+			corpWalletNav.Supporting = balance
+			corpList.Refresh()
+		})
+	}
 
 	corpPage := newCorpAppBar("Corporations", corpList)
 	corpNav = iwidget.NewNavigatorWithAppBar(corpPage)
@@ -369,6 +375,13 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	characterNav.NavBar = navBar
 	corpNav.NavBar = navBar
 	searchNav.NavBar = navBar
+
+	// initial state
+	navBar.Disable(0)
+	navBar.Disable(1)
+	navBar.Disable(2)
+	navBar.Disable(3)
+	navBar.Select(4)
 
 	u.onUpdateStatus = func() {
 		go func() {

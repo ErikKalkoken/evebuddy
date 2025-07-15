@@ -390,7 +390,7 @@ func showCorporationWalletTransaction(u *baseUI, corporationID int32, division a
 		w.Show()
 		return
 	}
-	o, err := u.rs.GetWalletTransactions(context.Background(), corporationID, division, transactionID)
+	o, err := u.rs.GetWalletTransaction(context.Background(), corporationID, division, transactionID)
 	if err != nil {
 		u.showErrorDialog("Failed to show market transaction", err, u.window)
 		return

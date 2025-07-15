@@ -38,6 +38,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -77,22 +78,23 @@ type services struct {
 
 // baseUI represents the core UI logic and is used by both the desktop and mobile UI.
 type baseUI struct {
-	clearCache           func() // clear all caches
-	disableMenuShortcuts func()
-	enableMenuShortcuts  func()
-	hideMailIndicator    func()
-	onAppFirstStarted    func()
-	onAppStopped         func()
-	onAppTerminated      func()
-	onRefreshCross       func()
-	onSetCharacter       func(int32)
-	onSetCorporation     func(int32)
-	onShowAndRun         func()
-	onUpdateCharacter    func(*app.Character)
-	onUpdateCorporation  func(*app.Corporation)
-	onUpdateStatus       func()
-	showMailIndicator    func()
-	showManageCharacters func()
+	clearCache                     func() // clear all caches
+	disableMenuShortcuts           func()
+	enableMenuShortcuts            func()
+	hideMailIndicator              func()
+	onAppFirstStarted              func()
+	onAppStopped                   func()
+	onAppTerminated                func()
+	onCorporationWalletTotalUpdate func(balance string)
+	onRefreshCross                 func()
+	onSetCharacter                 func(int32)
+	onSetCorporation               func(int32)
+	onShowAndRun                   func()
+	onUpdateCharacter              func(*app.Character)
+	onUpdateCorporation            func(*app.Corporation)
+	onUpdateStatus                 func()
+	showMailIndicator              func()
+	showManageCharacters           func()
 
 	assets                  *assets
 	characterAsset          *characterAssets
@@ -616,6 +618,7 @@ func (u *baseUI) updateCorporation() {
 func (u *baseUI) defineCorporationUpdates() map[string]func() {
 	ff := make(map[string]func())
 	ff["corporationSheet"] = u.corporationSheet.update
+	ff["corporationWalletTotal"] = u.updateCorporationWalletTotal
 	for id, w := range u.corporationWallets {
 		ff[fmt.Sprintf("walletJournal%d", id)] = w.update
 	}
@@ -1291,6 +1294,7 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 			for _, d := range app.Divisions {
 				u.corporationWallets[d].updateBalance()
 			}
+			u.updateCorporationWalletTotal()
 		}
 	case app.SectionCorporationWalletJournal1:
 		if isShown && needsRefresh {
@@ -1351,6 +1355,24 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the refresh ticker: %s", s))
 	}
+}
+
+func (u *baseUI) updateCorporationWalletTotal() {
+	if u.onCorporationWalletTotalUpdate == nil {
+		return
+	}
+	corporationID := u.currentCorporationID()
+	if corporationID == 0 {
+		return
+	}
+	b, err := u.rs.GetWalletBalancesTotal(context.Background(), corporationID)
+	if err != nil {
+		slog.Error("Failed to update wallet total", "corporationID", corporationID, "error", err)
+		return
+	}
+	u.onCorporationWalletTotalUpdate(b.StringFunc("", func(v float64) string {
+		return humanize.Number(b.ValueOrZero(), 1)
+	}))
 }
 
 func (u *baseUI) notifyExpiredTrainingIfNeeded(ctx context.Context, characterID int32) {

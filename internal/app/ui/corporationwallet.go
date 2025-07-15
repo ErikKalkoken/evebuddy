@@ -18,7 +18,7 @@ import (
 type corporationWallet struct {
 	widget.BaseWidget
 
-	OnUpdate func(balance string)
+	onUpdate func(balance string)
 
 	balance      *widget.Label
 	division     app.Division
@@ -83,11 +83,18 @@ func (a *corporationWallet) updateBalance() {
 		b1 := humanize.FormatFloat(app.FloatFormat, balance)
 		b2 := ihumanize.Number(balance, 2)
 		s := fmt.Sprintf("Balance: %s ISK (%s)", b1, b2)
-		if a.OnUpdate != nil {
-			a.OnUpdate(b2)
-		}
+
 		return s, widget.MediumImportance
 	})
+	var s string
+	if !hasData || err != nil {
+		s = ""
+	} else {
+		s = ihumanize.Number(balance, 1)
+	}
+	if a.onUpdate != nil {
+		a.onUpdate(s)
+	}
 	fyne.Do(func() {
 		a.balance.Text = t
 		a.balance.Importance = i

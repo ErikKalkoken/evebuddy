@@ -15,6 +15,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 )
@@ -65,8 +66,8 @@ func (s *CorporationService) GetWalletBalance(ctx context.Context, corporationID
 	return x.Balance, nil
 }
 
-// ListCorporationWalletBalances returns a list of corporation
-func (s *CorporationService) ListCorporationWalletBalances(ctx context.Context, corporationID int32) ([]app.CorporationWalletBalanceWithName, error) {
+// ListWalletBalances returns the wallet balances for all divisions.
+func (s *CorporationService) ListWalletBalances(ctx context.Context, corporationID int32) ([]app.CorporationWalletBalanceWithName, error) {
 	oo, err := s.st.ListCorporationWalletBalances(ctx, corporationID)
 	if err != nil {
 		return nil, err
@@ -89,6 +90,23 @@ func (s *CorporationService) ListCorporationWalletBalances(ctx context.Context, 
 		return cmp.Compare(a.DivisionID, b.DivisionID)
 	})
 	return w, nil
+}
+
+// GetWalletBalancesTotal returns the sum of all wallet balances.
+// It returns empty if there was no data.
+func (s *CorporationService) GetWalletBalancesTotal(ctx context.Context, corporationID int32) (optional.Optional[float64], error) {
+	var b optional.Optional[float64]
+	oo, err := s.st.ListCorporationWalletBalances(ctx, corporationID)
+	if err != nil {
+		return b, err
+	}
+	if len(oo) == 0 {
+		return b, nil
+	}
+	for _, o := range oo {
+		b.Set(b.ValueOrZero() + o.Balance)
+	}
+	return b, nil
 }
 
 func (s *CorporationService) updateWalletBalancesESI(ctx context.Context, arg app.CorporationUpdateSectionParams) (bool, error) {
@@ -251,7 +269,7 @@ const (
 	maxTransactionsPerPage = 2_500 // maximum objects returned per page
 )
 
-func (s *CorporationService) GetWalletTransactions(ctx context.Context, corporationID int32, division app.Division, transactionID int64) (*app.CorporationWalletTransaction, error) {
+func (s *CorporationService) GetWalletTransaction(ctx context.Context, corporationID int32, division app.Division, transactionID int64) (*app.CorporationWalletTransaction, error) {
 	return s.st.GetCorporationWalletTransaction(ctx, storage.GetCorporationWalletTransactionParams{
 		CorporationID: corporationID,
 		DivisionID:    division.ID(),

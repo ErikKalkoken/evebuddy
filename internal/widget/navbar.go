@@ -41,7 +41,7 @@ var _ fyne.Tappable = (*destination)(nil)
 
 func newDestination(icon fyne.Resource, label string, nb *NavBar, id int, onSelected func(), onSelectedAgain func()) *destination {
 	l := canvas.NewText(label, theme.Color(colorForeground))
-	l.TextSize = theme.Size(theme.SizeNameCaptionText)
+	l.TextSize = 10
 	iconImage := NewImageFromResource(theme.NewThemedResource(icon), fyne.NewSquareSize(1.5*theme.Size(theme.SizeNameInlineIcon)))
 	pill := canvas.NewRectangle(theme.Color(colorIndicator))
 	pill.CornerRadius = 12

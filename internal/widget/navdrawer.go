@@ -126,18 +126,7 @@ func (w *NavDrawer) makeList() *widget.List {
 				icon.Show()
 				spacer.Show()
 			}
-			switch it.variant {
-			case navPage:
-				title.SizeName = theme.SizeNameText
-				title.Text = it.text
-				title.TextStyle.Bold = it.isSelected
-				if it.isDisabled {
-					title.Importance = widget.LowImportance
-				} else {
-					title.Importance = widget.MediumImportance
-				}
-				title.Refresh()
-				showIcon()
+			updateBadge := func() {
 				if it.badge != "" {
 					badge.Text = it.badge
 					if it.isDisabled {
@@ -150,6 +139,20 @@ func (w *NavDrawer) makeList() *widget.List {
 				} else {
 					badge.Hide()
 				}
+			}
+			switch it.variant {
+			case navPage:
+				title.SizeName = theme.SizeNameText
+				title.Text = it.text
+				title.TextStyle.Bold = it.isSelected
+				if it.isDisabled {
+					title.Importance = widget.LowImportance
+				} else {
+					title.Importance = widget.MediumImportance
+				}
+				title.Refresh()
+				showIcon()
+				updateBadge()
 			case navSectionLabel:
 				title.SizeName = theme.SizeNameScrollBar
 				toUpper := cases.Upper(language.English)
@@ -162,7 +165,7 @@ func (w *NavDrawer) makeList() *widget.List {
 				title.Refresh()
 				icon.Hide()
 				spacer.Hide()
-				badge.Hide()
+				updateBadge()
 			}
 			list.SetItemHeight(id, co.(*fyne.Container).MinSize().Height)
 		},
