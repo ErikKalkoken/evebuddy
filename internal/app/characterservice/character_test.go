@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/test"
 	"github.com/stretchr/testify/assert"
 
@@ -89,8 +88,9 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 				CharacterName: character.Name})},
 		})
 		var info string
-		b := binding.BindString(&info)
-		got, err := cs.UpdateOrCreateCharacterFromSSO(ctx, b)
+		got, err := cs.UpdateOrCreateCharacterFromSSO(ctx, func(s string) {
+			info = s
+		})
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, character.ID, got)
@@ -106,6 +106,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, corporation, x.EveCorporation)
 			}
+			assert.NotZero(t, info)
 		}
 	})
 	t.Run("update existing character", func(t *testing.T) {
@@ -127,8 +128,9 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 				CharacterName: c.EveCharacter.Name})},
 		})
 		var info string
-		b := binding.BindString(&info)
-		got, err := cs.UpdateOrCreateCharacterFromSSO(ctx, b)
+		got, err := cs.UpdateOrCreateCharacterFromSSO(ctx, func(s string) {
+			info = s
+		})
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c.ID, got)
@@ -136,6 +138,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, token.CharacterID, c.ID)
 			}
+			assert.NotZero(t, info)
 		}
 	})
 }

@@ -10,7 +10,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -202,9 +201,9 @@ func (a *manageCharacters) update() {
 
 func (a *manageCharacters) showAddCharacterDialog() {
 	cancelCTX, cancel := context.WithCancel(context.Background())
-	s := "Please follow instructions in your browser to add a new character."
-	infoText := binding.BindString(&s)
-	content := widget.NewLabelWithData(infoText)
+	infoText := widget.NewLabel("Please follow instructions in your browser to add a new character.")
+	activity := widget.NewActivity()
+	content := container.NewHBox(infoText, activity)
 	d1 := dialog.NewCustom(
 		"Add Character",
 		"Cancel",
@@ -215,7 +214,12 @@ func (a *manageCharacters) showAddCharacterDialog() {
 	d1.SetOnClosed(cancel)
 	go func() {
 		characterID, err := func() (int32, error) {
-			characterID, err := a.mcw.u.cs.UpdateOrCreateCharacterFromSSO(cancelCTX, infoText)
+			characterID, err := a.mcw.u.cs.UpdateOrCreateCharacterFromSSO(cancelCTX, func(s string) {
+				fyne.Do(func() {
+					infoText.SetText(s)
+					activity.Start()
+				})
+			})
 			if err != nil {
 				return 0, err
 			}

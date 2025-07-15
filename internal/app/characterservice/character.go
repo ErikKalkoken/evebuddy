@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"fyne.io/fyne/v2/data/binding"
 	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
@@ -418,15 +417,14 @@ func (s *CharacterService) HasCharacter(ctx context.Context, id int32) (bool, er
 
 // UpdateOrCreateCharacterFromSSO creates or updates a character via SSO authentication.
 // The provided context is used for the SSO authentication process only and can be canceled.
-func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText binding.ExternalString) (int32, error) {
+// the setInfo callback is used to update info text in a dialog.
+func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, setInfo func(s string)) (int32, error) {
 	ssoToken, err := s.sso.Authenticate(ctx, app.Scopes().Slice())
 	if err != nil {
 		return 0, err
 	}
 	slog.Info("Created new SSO token", "characterID", ssoToken.CharacterID, "scopes", ssoToken.Scopes)
-	if err := infoText.Set("Fetching character from game server. Please wait..."); err != nil {
-		slog.Warn("failed to set info text", "error", err)
-	}
+	setInfo("Fetching character from game server. Please wait...")
 	charID := ssoToken.CharacterID
 	token := storage.UpdateOrCreateCharacterTokenParams{
 		AccessToken:  ssoToken.AccessToken,
@@ -452,9 +450,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 		return 0, err
 	}
 	if x := character.Corporation.IsNPC(); !x.IsEmpty() && !x.ValueOrZero() {
-		if err := infoText.Set("Fetching corporation from game server. Please wait..."); err != nil {
-			slog.Warn("failed to set info text", "error", err)
-		}
+		setInfo("Fetching corporation from game server. Please wait...")
 		if _, err := s.eus.GetOrCreateCorporationESI(ctx, character.Corporation.ID); err != nil {
 			return 0, err
 		}
@@ -465,9 +461,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 			return 0, err
 		}
 	}
-	if err := infoText.Set("Character added successfully"); err != nil {
-		slog.Warn("failed to set info text", "error", err)
-	}
+	setInfo("Character added successfully")
 	return token.CharacterID, nil
 }
 
