@@ -37,7 +37,7 @@ func (st *Storage) GetEveTypeDogmaEffect(ctx context.Context, eveTypeID, dogmaAt
 	}
 	row, err := st.qRO.GetEveTypeDogmaEffect(ctx, arg)
 	if err != nil {
-		return false, fmt.Errorf("get EveTypeDogmaEffect for %v: %w", arg, convertGetError(err))
+		return false, fmt.Errorf("get EveTypeDogmaEffect for %+v: %w", arg, convertGetError(err))
 	}
 	return row.IsDefault, nil
 }

@@ -16,7 +16,7 @@ func (st *Storage) GetEveShipSkill(ctx context.Context, shipTypeID int32, rank u
 	}
 	row, err := st.qRO.GetShipSkill(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("get ShipSkill for %v: %w", arg, convertGetError(err))
+		return nil, fmt.Errorf("get ShipSkill for %+v: %w", arg, convertGetError(err))
 	}
 	return eveShipSkillFromDBModel(row.Rank, row.ShipTypeID, row.SkillTypeID, row.SkillName, row.SkillLevel), nil
 }
@@ -92,7 +92,7 @@ func (st *Storage) createShipSkillIfExists(ctx context.Context, q *queries.Queri
 			SkillLevel:  level.Int64,
 		}
 		if err := q.CreateShipSkill(ctx, arg); err != nil {
-			return fmt.Errorf("create ship skill: %v, %w", arg, err)
+			return fmt.Errorf("create ship skill: %+v, %w", arg, err)
 		}
 	}
 	return nil

@@ -88,8 +88,11 @@ type CreateCharacterContractParams struct {
 }
 
 func (st *Storage) CreateCharacterContract(ctx context.Context, arg CreateCharacterContractParams) (int64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CreateCharacterContract: %+v: %w", arg, err)
+	}
 	if arg.CharacterID == 0 || arg.ContractID == 0 {
-		return 0, fmt.Errorf("create character contract: %+v: %w", arg, app.ErrInvalid)
+		return 0, wrapErr(app.ErrInvalid)
 	}
 	if arg.UpdatedAt.IsZero() {
 		arg.UpdatedAt = time.Now().UTC()
@@ -123,7 +126,7 @@ func (st *Storage) CreateCharacterContract(ctx context.Context, arg CreateCharac
 	}
 	id, err := st.qRW.CreateCharacterContract(ctx, arg2)
 	if err != nil {
-		return 0, fmt.Errorf("create contract: %v: %w", arg, err)
+		return 0, wrapErr(err)
 	}
 	return id, nil
 }
@@ -242,7 +245,7 @@ type UpdateCharacterContractParams struct {
 
 func (st *Storage) UpdateCharacterContract(ctx context.Context, arg UpdateCharacterContractParams) error {
 	if arg.CharacterID == 0 || arg.ContractID == 0 {
-		return fmt.Errorf("update character contract. IDs not set: %v", arg)
+		return fmt.Errorf("update character contract. IDs not set: %+v", arg)
 	}
 	arg2 := queries.UpdateCharacterContractParams{
 		CharacterID:   int64(arg.CharacterID),

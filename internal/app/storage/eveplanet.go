@@ -27,7 +27,7 @@ func (st *Storage) CreateEvePlanet(ctx context.Context, arg CreateEvePlanetParam
 	}
 	err := st.qRW.CreateEvePlanet(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("create EvePlanet %v, %w", arg, err)
+		return fmt.Errorf("create EvePlanet %+v, %w", arg, err)
 	}
 	return nil
 }

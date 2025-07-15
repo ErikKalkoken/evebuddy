@@ -92,7 +92,7 @@ func createCharacterImplant(ctx context.Context, q *queries.Queries, arg CreateC
 	}
 	err := q.CreateCharacterImplant(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("create character implant %v, %w", arg, err)
+		return fmt.Errorf("create character implant %+v, %w", arg, err)
 	}
 	return nil
 }

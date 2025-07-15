@@ -27,7 +27,7 @@ func (st *Storage) CreateEveSolarSystem(ctx context.Context, arg CreateEveSolarS
 	}
 	err := st.qRW.CreateEveSolarSystem(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("create EveSolarSystem %v, %w", arg, err)
+		return fmt.Errorf("create EveSolarSystem %+v, %w", arg, err)
 	}
 	return nil
 }
