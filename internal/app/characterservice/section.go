@@ -141,16 +141,17 @@ func (s *CharacterService) updateSectionIfChanged(
 	}
 
 	// identify if changed
-	var notFound bool
+	var notFound, hasChanged bool
 	u, err := s.st.GetCharacterSectionStatus(ctx, arg.CharacterID, arg.Section)
 	if errors.Is(err, app.ErrNotFound) {
 		notFound = true
 	} else if err != nil {
 		return false, err
+	} else {
+		hasChanged = u.ContentHash != hash
 	}
 
 	// update if needed
-	hasChanged := u.ContentHash != hash
 	if arg.ForceUpdate || notFound || hasChanged {
 		if err := update(ctx, arg.CharacterID, data); err != nil {
 			return false, err

@@ -15,7 +15,11 @@ func TestGetWalletBalance(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ctx := context.Background()
-	s := corporationservice.NewFake(st)
+	s := corporationservice.NewFake(st, corporationservice.Params{
+		CharacterService: &corporationservice.CharacterServiceFake{
+			Token: &app.CharacterToken{AccessToken: "accessToken"},
+		}},
+	)
 	b := factory.CreateCorporationWalletBalance()
 	t.Run("return existing balance", func(t *testing.T) {
 
@@ -41,7 +45,11 @@ func TestWalletBalancesTotal(t *testing.T) {
 	t.Run("return existing balance", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		s := corporationservice.NewFake(st)
+		s := corporationservice.NewFake(st, corporationservice.Params{
+			CharacterService: &corporationservice.CharacterServiceFake{
+				Token: &app.CharacterToken{AccessToken: "accessToken"},
+			}},
+		)
 		c := factory.CreateCorporation()
 		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
@@ -63,7 +71,11 @@ func TestWalletBalancesTotal(t *testing.T) {
 	t.Run("return empty when no balances found", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		s := corporationservice.NewFake(st)
+		s := corporationservice.NewFake(st, corporationservice.Params{
+			CharacterService: &corporationservice.CharacterServiceFake{
+				Token: &app.CharacterToken{AccessToken: "accessToken"},
+			}},
+		)
 		c := factory.CreateCorporation()
 		// when
 		got, err := s.GetWalletBalancesTotal(ctx, c.ID)

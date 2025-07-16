@@ -61,7 +61,13 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 				return false, err
 			}
 		} else {
-			if !status.HasError() && !status.IsExpired() {
+			enabled, err := s.EnabledSection(ctx, arg.CorporationID, arg.Section)
+			if err != nil {
+				slog.Error("Failed to check enabled sections", "error", err)
+				enabled = false
+			}
+			enabledRole := enabled && !status.HasContent()
+			if !enabledRole && !status.HasError() && !status.IsExpired() {
 				return false, nil
 			}
 		}
@@ -96,7 +102,7 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 		return false, fmt.Errorf("update section: unknown section: %s", arg.Section)
 	}
 	key := fmt.Sprintf("update-corporation-section-%s-%d", arg.Section, arg.CorporationID)
-	x, err, _ := s.sfg.Do(key, func() (any, error) {
+	v, err, _ := s.sfg.Do(key, func() (any, error) {
 		return f(ctx, arg)
 	})
 	if err != nil {
@@ -115,7 +121,7 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 		s.scs.SetCorporationSection(o)
 		return false, fmt.Errorf("update corporation section from ESI for %v: %w", arg, err)
 	}
-	changed := x.(bool)
+	changed := v.(bool)
 	slog.Info("Corporation section update completed", "corporationID", arg.CorporationID, "section", arg.Section, "forced", arg.ForceUpdate, "changed", changed)
 	return changed, err
 }
@@ -169,10 +175,11 @@ func (s *CorporationService) updateSectionIfChanged(
 			notFound = true
 		} else if err != nil {
 			return false, err
+		} else {
+			hasChanged = u.ContentHash != hash
 		}
 
 		// update if needed
-		hasChanged = u.ContentHash != hash
 		if arg.ForceUpdate || notFound || hasChanged {
 			if err := update(ctx, arg, data); err != nil {
 				return false, err

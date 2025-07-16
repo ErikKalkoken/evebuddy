@@ -287,8 +287,19 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			corpWalletNav,
 		})...,
 	)
-	u.onCorporationWalletTotalUpdate = func(balance string) {
+	u.onUpdateCorporationWalletTotals = func(balance string) {
+		sections, err := u.rs.EnabledSections(context.Background(), u.currentCorporationID())
+		if err != nil {
+			slog.Error("Failed to enable corporation tab", "error", err)
+			sections.Clear()
+			balance = ""
+		}
 		fyne.Do(func() {
+			if sections.Contains(app.SectionCorporationWalletBalances) {
+				corpWalletNav.IsDisabled = false
+			} else {
+				corpWalletNav.IsDisabled = true
+			}
 			corpWalletNav.Supporting = balance
 			corpList.Refresh()
 		})
@@ -423,19 +434,6 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			return
 		}
 		navBar.Enable(3)
-		sections, err := u.rs.EnabledSections(context.Background(), corporation.ID)
-		if err != nil {
-			slog.Error("Failed to enable corporation tab", "error", err)
-			return
-		}
-		fyne.Do(func() {
-			if sections.Contains(app.SectionCorporationWalletBalances) {
-				corpWalletNav.IsDisabled = false
-			} else {
-				corpWalletNav.IsDisabled = true
-			}
-			corpList.Refresh()
-		})
 	}
 	u.onSetCharacter = func(id int32) {
 		go u.updateCharacterAvatar(id, func(r fyne.Resource) {

@@ -422,7 +422,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 func TestListWalletJournalEntries(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	s := NewFake(st)
+	s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 	ctx := context.Background()
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
@@ -690,7 +690,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 func TestListWalletTransactions(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	s := NewFake(st)
+	s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 	ctx := context.Background()
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given

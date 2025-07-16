@@ -78,23 +78,23 @@ type services struct {
 
 // baseUI represents the core UI logic and is used by both the desktop and mobile UI.
 type baseUI struct {
-	clearCache                     func() // clear all caches
-	disableMenuShortcuts           func()
-	enableMenuShortcuts            func()
-	hideMailIndicator              func()
-	onAppFirstStarted              func()
-	onAppStopped                   func()
-	onAppTerminated                func()
-	onCorporationWalletTotalUpdate func(balance string)
-	onRefreshCross                 func()
-	onSetCharacter                 func(int32)
-	onSetCorporation               func(int32)
-	onShowAndRun                   func()
-	onUpdateCharacter              func(*app.Character)
-	onUpdateCorporation            func(*app.Corporation)
-	onUpdateStatus                 func()
-	showMailIndicator              func()
-	showManageCharacters           func()
+	clearCache                      func() // clear all caches
+	disableMenuShortcuts            func()
+	enableMenuShortcuts             func()
+	hideMailIndicator               func()
+	onAppFirstStarted               func()
+	onAppStopped                    func()
+	onAppTerminated                 func()
+	onRefreshCross                  func()
+	onSetCharacter                  func(int32)
+	onSetCorporation                func(int32)
+	onShowAndRun                    func()
+	onUpdateCharacter               func(*app.Character)
+	onUpdateCorporation             func(*app.Corporation)
+	onUpdateCorporationWalletTotals func(balance string)
+	onUpdateStatus                  func()
+	showMailIndicator               func()
+	showManageCharacters            func()
 
 	assets                  *assets
 	characterAsset          *characterAssets
@@ -604,11 +604,11 @@ func (u *baseUI) updateCorporation() {
 		slog.Debug("Updating without corporation")
 	}
 	runFunctionsWithProgressModal("Loading corporation", u.defineCorporationUpdates(), func() {
-		if u.onUpdateCorporation != nil {
-			u.onUpdateCorporation(c)
-		}
 		if c != nil && !u.isUpdateDisabled {
 			u.updateCorporationAndRefreshIfNeeded(context.Background(), c.ID, false)
+		}
+		if u.onUpdateCorporation != nil {
+			u.onUpdateCorporation(c)
 		}
 	},
 		u.window,
@@ -1020,12 +1020,10 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	}
 	isCharacterShown := characterID == u.currentCharacterID()
 
-	var isCorporationShown bool
 	var corporationID int32
 	character := u.currentCharacter()
 	if character != nil {
 		corporationID = character.EveCharacter.Corporation.ID
-		isCorporationShown = corporationID == u.currentCorporationID()
 	}
 	needsRefresh := hasChanged || forceUpdate
 	switch s {
@@ -1138,25 +1136,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			if corporationID == 0 {
 				break
 			}
-			var wg sync.WaitGroup
-			for _, s := range app.CorporationSections {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					u.updateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, s, true)
-				}()
-			}
-			wg.Wait()
-			go u.industryJobs.update()
-			go u.slotsManufacturing.update()
-			go u.slotsReactions.update()
-			go u.slotsResearch.update()
-			if isCorporationShown {
-				u.characterCorporation.update()
-				for _, d := range app.Divisions {
-					go u.corporationWallets[d].update()
-				}
-			}
+			u.updateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
 		}
 	case app.SectionCharacterSkills:
 		if needsRefresh {
@@ -1244,7 +1224,7 @@ func (u *baseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 	if u.isOffline {
 		return
 	}
-	if !u.isDesktop && !u.isForeground.Load() {
+	if !u.isDesktop && !u.isForeground.Load() && !forceUpdate {
 		// nothing to update
 		return
 	}
@@ -1358,7 +1338,7 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 
 func (u *baseUI) updateCorporationWalletTotal() {
 	s := func() string {
-		if u.onCorporationWalletTotalUpdate == nil {
+		if u.onUpdateCorporationWalletTotals == nil {
 			return ""
 		}
 		corporationID := u.currentCorporationID()
@@ -1382,7 +1362,7 @@ func (u *baseUI) updateCorporationWalletTotal() {
 			return humanize.Number(b.ValueOrZero(), 1)
 		})
 	}()
-	u.onCorporationWalletTotalUpdate(s)
+	u.onUpdateCorporationWalletTotals(s)
 }
 
 func (u *baseUI) notifyExpiredTrainingIfNeeded(ctx context.Context, characterID int32) {

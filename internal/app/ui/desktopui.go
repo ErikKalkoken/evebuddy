@@ -370,8 +370,24 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			})
 		}
 	}
-	u.onCorporationWalletTotalUpdate = func(balance string) {
+	u.onUpdateCorporationWalletTotals = func(balance string) {
+		sections, err := u.rs.EnabledSections(context.Background(), u.currentCorporationID())
+		if err != nil {
+			slog.Error("Failed to enable corporation tab", "error", err)
+			sections.Clear()
+			balance = ""
+		}
 		fyne.Do(func() {
+			if sections.Contains(app.SectionCorporationWalletBalances) {
+				for _, it := range corpWalletItems {
+					it.Enable()
+				}
+			} else {
+				for _, it := range corpWalletItems {
+					it.Disable()
+				}
+			}
+			corporationNav.Refresh()
 			corporationNav.SetItemBadge(walletsNav, balance)
 		})
 	}
@@ -467,6 +483,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			})
 		}()
 	}
+
 	u.onUpdateCorporation = func(corporation *app.Corporation) {
 		if corporation == nil {
 			fyne.Do(func() {
@@ -475,23 +492,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			})
 			return
 		}
-		sections, err := u.rs.EnabledSections(context.Background(), corporation.ID)
-		if err != nil {
-			slog.Error("Failed to enable corporation tab", "error", err)
-			return
-		}
 		fyne.Do(func() {
-			if sections.Contains(app.SectionCorporationWalletBalances) {
-				for _, it := range corpWalletItems {
-					it.Enable()
-				}
-			} else {
-				for _, it := range corpWalletItems {
-					it.Disable()
-				}
-				corporationNav.SelectIndex(0)
-			}
-			corporationNav.Refresh()
 			tabs.EnableItem(corporationTab)
 		})
 	}

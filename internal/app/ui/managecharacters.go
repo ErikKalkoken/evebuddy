@@ -26,10 +26,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-type accountCharacter struct {
-	id           int32
-	name         string
-	missingToken bool
+type manageCharacterRow struct {
+	characterID   int32
+	corporationID int32
+	name          string
+	missingToken  bool
 }
 
 type manageCharactersWindow struct {
@@ -48,7 +49,7 @@ type manageCharacters struct {
 	widget.BaseWidget
 
 	ab         *iwidget.AppBar
-	characters []accountCharacter
+	characters []manageCharacterRow
 	list       *widget.List
 	mcw        *manageCharactersWindow
 }
@@ -91,7 +92,7 @@ func showManageCharactersWindow(u *baseUI) {
 
 func newManageCharacters(mcw *manageCharactersWindow) *manageCharacters {
 	a := &manageCharacters{
-		characters: make([]accountCharacter, 0),
+		characters: make([]manageCharacterRow, 0),
 		mcw:        mcw,
 	}
 	a.ExtendBaseWidget(a)
@@ -145,7 +146,7 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 			row := co.(*fyne.Container).Objects
 
 			portrait := row[0].(*canvas.Image)
-			go a.mcw.u.updateCharacterAvatar(c.id, func(r fyne.Resource) {
+			go a.mcw.u.updateCharacterAvatar(c.characterID, func(r fyne.Resource) {
 				fyne.Do(func() {
 					portrait.Resource = r
 					portrait.Refresh()
@@ -173,7 +174,7 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 			return
 		}
 		c := a.characters[id]
-		if err := a.mcw.u.loadCharacter(c.id); err != nil {
+		if err := a.mcw.u.loadCharacter(c.characterID); err != nil {
 			slog.Error("load current character", "char", c, "err", err)
 			return
 		}
@@ -184,19 +185,28 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 }
 
 func (a *manageCharacters) update() {
-	characters := xslices.Map(a.mcw.u.scs.ListCharacters(), func(c *app.EntityShort[int32]) accountCharacter {
-		return accountCharacter{id: c.ID, name: c.Name}
-	})
-	// hasToken, err := a.mcw.u.cs.HasTokenWithScopes(context.Background(), c.ID)
-	// if err != nil {
-	// 	slog.Error("Tried to check if character has token", "err", err)
-	// 	hasToken = true // do not report error when state is unclear
-	// }
+	characters := a.fetchRows()
 	fyne.Do(func() {
 		a.characters = characters
 		a.list.Refresh()
 		a.ab.SetTitle(fmt.Sprintf("Characters (%d)", len(characters)))
 	})
+}
+
+func (a *manageCharacters) fetchRows() []manageCharacterRow {
+	cc, err := a.mcw.u.cs.ListCharacters(context.Background())
+	if err != nil {
+		slog.Error("Failed to update managed characters", "error", err)
+		return []manageCharacterRow{}
+	}
+	characters := xslices.Map(cc, func(c *app.Character) manageCharacterRow {
+		return manageCharacterRow{
+			characterID:   c.ID,
+			corporationID: c.EveCharacter.Corporation.ID,
+			name:          c.EveCharacter.Name,
+		}
+	})
+	return characters
 }
 
 func (a *manageCharacters) showAddCharacterDialog() {
@@ -256,9 +266,6 @@ func (a *manageCharacters) showAddCharacterDialog() {
 				}
 				ctx := context.Background()
 				go a.mcw.u.updateCharacterAndRefreshIfNeeded(ctx, characterID, true)
-				if corporationID != 0 {
-					go a.mcw.u.updateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
-				}
 			}()
 		})
 	}()
@@ -267,27 +274,30 @@ func (a *manageCharacters) showAddCharacterDialog() {
 	})
 }
 
-func (a *manageCharacters) showDeleteDialog(c accountCharacter) {
+func (a *manageCharacters) showDeleteDialog(r manageCharacterRow) {
 	a.mcw.u.ShowConfirmDialog(
 		"Delete Character",
-		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", c.name),
+		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", r.name),
 		"Delete",
 		func(confirmed bool) {
 			if confirmed {
 				m := kmodal.NewProgressInfinite(
 					"Deleting character",
-					fmt.Sprintf("Deleting %s...", c.name),
+					fmt.Sprintf("Deleting %s...", r.name),
 					func() error {
-						corpDeleted, err := a.mcw.u.cs.DeleteCharacter(context.Background(), c.id)
+						ctx := context.Background()
+						corpDeleted, err := a.mcw.u.cs.DeleteCharacter(ctx, r.characterID)
 						if err != nil {
 							return err
 						}
 						a.update()
-						if a.mcw.u.currentCharacterID() == c.id {
+						if a.mcw.u.currentCharacterID() == r.characterID {
 							a.mcw.u.setAnyCharacter()
 						}
 						if corpDeleted {
 							a.mcw.u.setAnyCorporation()
+						} else {
+							go a.mcw.u.updateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
 						}
 						a.mcw.u.updateHome()
 						a.mcw.u.updateStatus()
@@ -296,10 +306,10 @@ func (a *manageCharacters) showDeleteDialog(c accountCharacter) {
 					a.mcw.w,
 				)
 				m.OnSuccess = func() {
-					a.mcw.sb.Show(fmt.Sprintf("Character %s deleted", c.name))
+					a.mcw.sb.Show(fmt.Sprintf("Character %s deleted", r.name))
 				}
 				m.OnError = func(err error) {
-					a.mcw.reportError(fmt.Sprintf("ERROR: Failed to delete character %s", c.name), err)
+					a.mcw.reportError(fmt.Sprintf("ERROR: Failed to delete character %s", r.name), err)
 				}
 				m.Start()
 			}

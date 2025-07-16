@@ -389,6 +389,10 @@ type CorporationSectionStatus struct {
 	UpdatedAt       time.Time
 }
 
+func (s CorporationSectionStatus) HasContent() bool {
+	return s.ContentHash != ""
+}
+
 func (s CorporationSectionStatus) HasError() bool {
 	return s.ErrorMessage != ""
 }
