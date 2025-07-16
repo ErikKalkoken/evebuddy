@@ -371,7 +371,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		}
 	}
 	u.onUpdateCorporationWalletTotals = func(balance string) {
-		sections, err := u.rs.EnabledSections(context.Background(), u.currentCorporationID())
+		sections, err := u.rs.PermittedSections(context.Background(), u.currentCorporationID())
 		if err != nil {
 			slog.Error("Failed to enable corporation tab", "error", err)
 			sections.Clear()

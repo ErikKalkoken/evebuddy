@@ -56,7 +56,7 @@ func (s *CorporationService) ListWalletNames(ctx context.Context, corporationID 
 }
 
 func (s *CorporationService) GetWalletBalance(ctx context.Context, corporationID int32, division app.Division) (float64, error) {
-	enabled, err := s.EnabledSection(ctx, corporationID, app.SectionCorporationWalletBalances)
+	enabled, err := s.PermittedSection(ctx, corporationID, app.SectionCorporationWalletBalances)
 	if err != nil {
 		return 0, err
 	}
@@ -75,7 +75,7 @@ func (s *CorporationService) GetWalletBalance(ctx context.Context, corporationID
 
 // ListWalletBalances returns the wallet balances for all divisions.
 func (s *CorporationService) ListWalletBalances(ctx context.Context, corporationID int32) ([]app.CorporationWalletBalanceWithName, error) {
-	enabled, err := s.EnabledSection(ctx, corporationID, app.SectionCorporationWalletBalances)
+	enabled, err := s.PermittedSection(ctx, corporationID, app.SectionCorporationWalletBalances)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (s *CorporationService) ListWalletBalances(ctx context.Context, corporation
 // It returns empty if there was no data.
 func (s *CorporationService) GetWalletBalancesTotal(ctx context.Context, corporationID int32) (optional.Optional[float64], error) {
 	var b optional.Optional[float64]
-	enabled, err := s.EnabledSection(ctx, corporationID, app.SectionCorporationWalletBalances)
+	enabled, err := s.PermittedSection(ctx, corporationID, app.SectionCorporationWalletBalances)
 	if err != nil {
 		return b, err
 	}
@@ -160,7 +160,7 @@ func (s *CorporationService) updateWalletBalancesESI(ctx context.Context, arg ap
 }
 
 func (s *CorporationService) GetWalletJournalEntry(ctx context.Context, corporationID int32, d app.Division, refID int64) (*app.CorporationWalletJournalEntry, error) {
-	enabled, err := s.EnabledSection(ctx, corporationID, app.CorporationSectionWalletJournal(d))
+	enabled, err := s.PermittedSection(ctx, corporationID, app.CorporationSectionWalletJournal(d))
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func (s *CorporationService) GetWalletJournalEntry(ctx context.Context, corporat
 }
 
 func (s *CorporationService) ListWalletJournalEntries(ctx context.Context, corporationID int32, d app.Division) ([]*app.CorporationWalletJournalEntry, error) {
-	enabled, err := s.EnabledSection(ctx, corporationID, app.CorporationSectionWalletJournal(d))
+	enabled, err := s.PermittedSection(ctx, corporationID, app.CorporationSectionWalletJournal(d))
 	if err != nil {
 		return nil, err
 	}
@@ -305,7 +305,7 @@ const (
 )
 
 func (s *CorporationService) GetWalletTransaction(ctx context.Context, corporationID int32, d app.Division, transactionID int64) (*app.CorporationWalletTransaction, error) {
-	enabled, err := s.EnabledSection(ctx, corporationID, app.CorporationSectionWalletTransactions(d))
+	enabled, err := s.PermittedSection(ctx, corporationID, app.CorporationSectionWalletTransactions(d))
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +320,7 @@ func (s *CorporationService) GetWalletTransaction(ctx context.Context, corporati
 }
 
 func (s *CorporationService) ListWalletTransactions(ctx context.Context, corporationID int32, d app.Division) ([]*app.CorporationWalletTransaction, error) {
-	enabled, err := s.EnabledSection(ctx, corporationID, app.CorporationSectionWalletTransactions(d))
+	enabled, err := s.PermittedSection(ctx, corporationID, app.CorporationSectionWalletTransactions(d))
 	if err != nil {
 		return nil, err
 	}

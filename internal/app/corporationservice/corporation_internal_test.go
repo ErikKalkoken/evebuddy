@@ -22,7 +22,7 @@ type CharacterServiceFake struct {
 	Error error
 }
 
-func (s CharacterServiceFake) ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, role app.Role, scopes set.Set[string]) (*app.CharacterToken, error) {
+func (s CharacterServiceFake) ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, roles set.Set[app.Role], scopes set.Set[string]) (*app.CharacterToken, error) {
 	return s.Token, s.Error
 }
 

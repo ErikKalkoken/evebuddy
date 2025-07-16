@@ -17,9 +17,22 @@ import (
 	"github.com/antihax/goesi"
 )
 
-// EnabledSections returns which sections are enabled,
+// func (s *CorporationService) RemoveDataWithLostPermission(ctx context.Context, corporationID int32) error {
+// 	enabled, err := s.EnabledSections(ctx, corporationID)
+// 	if err != nil{
+// 		return err
+// 	}
+// 	for _, section := range app.CorporationSections{
+// 		if !enabled.Contains(section) && section.Role(){
+
+// 		}
+// 	}
+// 	return nil
+// }
+
+// PermittedSections returns which sections the user has permission to access.
 // i.e. the user has a character with the required roles and scopes.
-func (s *CorporationService) EnabledSections(ctx context.Context, corporationID int32) (set.Set[app.CorporationSection], error) {
+func (s *CorporationService) PermittedSections(ctx context.Context, corporationID int32) (set.Set[app.CorporationSection], error) {
 	var enabled set.Set[app.CorporationSection]
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CorporationService.EnabledSections %d: %w", corporationID, err)
@@ -28,7 +41,7 @@ func (s *CorporationService) EnabledSections(ctx context.Context, corporationID 
 		return enabled, wrapErr(app.ErrInvalid)
 	}
 	for _, section := range app.CorporationSections {
-		_, err := s.cs.ValidCharacterTokenForCorporation(ctx, corporationID, section.Role(), section.Scopes())
+		_, err := s.cs.ValidCharacterTokenForCorporation(ctx, corporationID, section.Roles(), section.Scopes())
 		if errors.Is(err, app.ErrNotFound) {
 			continue
 		}
@@ -40,8 +53,9 @@ func (s *CorporationService) EnabledSections(ctx context.Context, corporationID 
 	return enabled, nil
 }
 
-func (s *CorporationService) EnabledSection(ctx context.Context, corporationID int32, section app.CorporationSection) (bool, error) {
-	sections, err := s.EnabledSections(ctx, corporationID)
+// PermittedSection reports whether the user has permission to access a section.
+func (s *CorporationService) PermittedSection(ctx context.Context, corporationID int32, section app.CorporationSection) (bool, error) {
+	sections, err := s.PermittedSections(ctx, corporationID)
 	if err != nil {
 		return false, err
 	}
@@ -61,7 +75,7 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 				return false, err
 			}
 		} else {
-			enabled, err := s.EnabledSection(ctx, arg.CorporationID, arg.Section)
+			enabled, err := s.PermittedSection(ctx, arg.CorporationID, arg.Section)
 			if err != nil {
 				slog.Error("Failed to check enabled sections", "error", err)
 				enabled = false
@@ -147,13 +161,13 @@ func (s *CorporationService) updateSectionIfChanged(
 	s.scs.SetCorporationSection(o)
 	var hash, comment string
 	var hasChanged bool
-	token, err := s.cs.ValidCharacterTokenForCorporation(ctx, arg.CorporationID, arg.Section.Role(), arg.Section.Scopes())
+	token, err := s.cs.ValidCharacterTokenForCorporation(ctx, arg.CorporationID, arg.Section.Roles(), arg.Section.Scopes())
 	if errors.Is(err, app.ErrNotFound) {
 		comment = fmt.Sprintf(
 			"update skipped due to missing corporation member with required roles (%s) and/or missing or invalid token",
-			arg.Section.Role().Display(),
+			arg.Section.Roles(),
 		)
-		slog.Info("Section "+comment, "corporationID", arg.CorporationID, "section", arg.Section, "role", arg.Section.Role(), "scopes", arg.Section.Scopes())
+		slog.Info("Section "+comment, "corporationID", arg.CorporationID, "section", arg.Section, "role", arg.Section.Roles(), "scopes", arg.Section.Scopes())
 	} else if err != nil {
 		return false, err
 	} else {

@@ -304,39 +304,36 @@ func (cs CorporationSection) Timeout() time.Duration {
 	return duration
 }
 
-// TODO: Extend to multiple roles per sections
-
-// Role returns the required role for fetching data for a section from ESI.
-func (cs CorporationSection) Role() Role {
-	const (
-		walletTransactions = RoleAccountant
-		walletJournal      = RoleAccountant
+// Roles returns which roles are required for fetching data for a section from ESI.
+func (cs CorporationSection) Roles() set.Set[Role] {
+	var (
+		anyAccountant = []Role{RoleAccountant, RoleJuniorAccountant}
 	)
-	m := map[CorporationSection]Role{
-		SectionCorporationIndustryJobs:        RoleFactoryManager,
-		SectionCorporationWalletBalances:      RoleAccountant,
-		SectionCorporationWalletJournal1:      walletJournal,
-		SectionCorporationWalletJournal2:      walletJournal,
-		SectionCorporationWalletJournal3:      walletJournal,
-		SectionCorporationWalletJournal4:      walletJournal,
-		SectionCorporationWalletJournal5:      walletJournal,
-		SectionCorporationWalletJournal6:      walletJournal,
-		SectionCorporationWalletJournal7:      walletJournal,
-		SectionCorporationDivisions:           RoleDirector,
-		SectionCorporationWalletTransactions1: walletTransactions,
-		SectionCorporationWalletTransactions2: walletTransactions,
-		SectionCorporationWalletTransactions3: walletTransactions,
-		SectionCorporationWalletTransactions4: walletTransactions,
-		SectionCorporationWalletTransactions5: walletTransactions,
-		SectionCorporationWalletTransactions6: walletTransactions,
-		SectionCorporationWalletTransactions7: walletTransactions,
+	m := map[CorporationSection][]Role{
+		SectionCorporationDivisions:           {RoleDirector},
+		SectionCorporationIndustryJobs:        {RoleFactoryManager},
+		SectionCorporationWalletBalances:      anyAccountant,
+		SectionCorporationWalletJournal1:      anyAccountant,
+		SectionCorporationWalletJournal2:      anyAccountant,
+		SectionCorporationWalletJournal3:      anyAccountant,
+		SectionCorporationWalletJournal4:      anyAccountant,
+		SectionCorporationWalletJournal5:      anyAccountant,
+		SectionCorporationWalletJournal6:      anyAccountant,
+		SectionCorporationWalletJournal7:      anyAccountant,
+		SectionCorporationWalletTransactions1: anyAccountant,
+		SectionCorporationWalletTransactions2: anyAccountant,
+		SectionCorporationWalletTransactions3: anyAccountant,
+		SectionCorporationWalletTransactions4: anyAccountant,
+		SectionCorporationWalletTransactions5: anyAccountant,
+		SectionCorporationWalletTransactions6: anyAccountant,
+		SectionCorporationWalletTransactions7: anyAccountant,
 	}
 	role, ok := m[cs]
 	if !ok {
 		slog.Warn("Requested role for unknown section. Using default.", "section", cs)
-		return RoleDirector
+		return set.Of(RoleDirector)
 	}
-	return role
+	return set.Of(role...)
 }
 
 // Scopes returns the required scopes for fetching data for a section from ESI.

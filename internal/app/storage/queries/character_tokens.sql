@@ -33,7 +33,7 @@ FROM
     JOIN character_roles cr ON cr.character_id = ct.character_id
 WHERE
     corporation_id = ?
-    AND cr.name = ?;
+    AND cr.name IN (sqlc.slice ('roles'));
 
 -- name: ListCharacterTokenScopes :many
 SELECT

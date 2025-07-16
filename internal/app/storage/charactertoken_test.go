@@ -90,6 +90,12 @@ func TestToken(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
+}
+
+func TestListCharacterTokenForCorporation(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
 	t.Run("return matching token only", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -129,7 +135,12 @@ func TestToken(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c4.ID, Scopes: set.Of("bravo")})
 
 		// when
-		r, err := st.ListCharacterTokenForCorporation(ctx, c1.EveCharacter.Corporation.ID, app.RoleFactoryManager, set.Of("alpha", "bravo"))
+		r, err := st.ListCharacterTokenForCorporation(
+			ctx,
+			c1.EveCharacter.Corporation.ID,
+			set.Of(app.RoleFactoryManager, app.RoleAccountant),
+			set.Of("alpha", "bravo"),
+		)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, r, 1)
@@ -139,7 +150,7 @@ func TestToken(t *testing.T) {
 	t.Run("list for corporation returns not found error when no token", func(t *testing.T) {
 		testutil.TruncateTables(db)
 		corp := factory.CreateCorporation()
-		_, err := st.ListCharacterTokenForCorporation(ctx, corp.ID, app.RoleFactoryManager, set.Of("alpha"))
+		_, err := st.ListCharacterTokenForCorporation(ctx, corp.ID, set.Of(app.RoleFactoryManager), set.Of("alpha"))
 		assert.Error(t, err, app.ErrNotFound)
 	})
 }

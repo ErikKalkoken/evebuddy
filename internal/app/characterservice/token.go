@@ -24,16 +24,23 @@ func (s *CharacterService) HasTokenWithScopes(ctx context.Context, characterID i
 }
 
 // ValidCharacterTokenForCorporation returns a valid token with a specific scope and from a character with a specific role.
+// Will be valid when any of the given roles and scopes match.
 // It returns [app.ErrNotFound] if no such token exists.
-func (s *CharacterService) ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, role app.Role, scopes set.Set[string]) (*app.CharacterToken, error) {
-	token, err := s.st.ListCharacterTokenForCorporation(ctx, corporationID, role, scopes)
+func (s *CharacterService) ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, roles set.Set[app.Role], scopes set.Set[string]) (*app.CharacterToken, error) {
+	token, err := s.st.ListCharacterTokenForCorporation(ctx, corporationID, roles, scopes)
 	if err != nil {
 		return nil, err
 	}
 	for _, t := range token {
 		err := s.ensureValidCharacterToken(ctx, t)
 		if err != nil {
-			slog.Error("Failed to refresh token for corporation", "characterID", t.CharacterID, "corporationID", corporationID, "role", role, "scopes", scopes)
+			slog.Error(
+				"Failed to refresh token for corporation",
+				"characterID", t.CharacterID,
+				"corporationID", corporationID,
+				"roles", roles,
+				"scopes", scopes,
+			)
 			continue
 		}
 		return t, nil

@@ -121,16 +121,20 @@ func (st *Storage) getOrCreateScope(ctx context.Context, name string) (queries.S
 	return s, nil
 }
 
-func (st *Storage) ListCharacterTokenForCorporation(ctx context.Context, corporationID int32, role app.Role, scopes set.Set[string]) ([]*app.CharacterToken, error) {
+func (st *Storage) ListCharacterTokenForCorporation(ctx context.Context, corporationID int32, roles set.Set[app.Role], scopes set.Set[string]) ([]*app.CharacterToken, error) {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("ListCharacterTokenForCorporation: ID %d, role %s, scopes %s: %w", corporationID, role.String(), scopes, err)
+		return fmt.Errorf("ListCharacterTokenForCorporation: ID %d, roles %s, scopes %s: %w", corporationID, roles, scopes, err)
 	}
-	if corporationID == 0 || role == app.RoleUndefined {
+	if corporationID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
+	}
+	roleNames := make([]string, 0)
+	for r := range roles.All() {
+		roleNames = append(roleNames, role2String[r])
 	}
 	arg := queries.ListCharacterTokenForCorporationParams{
 		CorporationID: int64(corporationID),
-		Name:          role2String[role],
+		Roles:         roleNames,
 	}
 	rows, err := st.qRO.ListCharacterTokenForCorporation(ctx, arg)
 	if err != nil {

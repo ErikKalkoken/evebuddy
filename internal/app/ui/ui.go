@@ -1345,7 +1345,7 @@ func (u *baseUI) updateCorporationWalletTotal() {
 		if corporationID == 0 {
 			return ""
 		}
-		hasRole, err := u.rs.EnabledSection(context.Background(), corporationID, app.SectionCorporationWalletBalances)
+		hasRole, err := u.rs.PermittedSection(context.Background(), corporationID, app.SectionCorporationWalletBalances)
 		if err != nil {
 			slog.Error("Failed to determine role for corporation wallet", "error", err)
 			return ""
