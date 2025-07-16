@@ -56,6 +56,13 @@ func (s *CorporationService) ListWalletNames(ctx context.Context, corporationID 
 }
 
 func (s *CorporationService) GetWalletBalance(ctx context.Context, corporationID int32, division app.Division) (float64, error) {
+	enabled, err := s.EnabledSection(ctx, corporationID, app.SectionCorporationWalletBalances)
+	if err != nil {
+		return 0, err
+	}
+	if !enabled {
+		return 0, app.ErrNotFound
+	}
 	x, err := s.st.GetCorporationWalletBalance(ctx, storage.CorporationDivision{
 		CorporationID: corporationID,
 		DivisionID:    division.ID(),
@@ -68,6 +75,13 @@ func (s *CorporationService) GetWalletBalance(ctx context.Context, corporationID
 
 // ListWalletBalances returns the wallet balances for all divisions.
 func (s *CorporationService) ListWalletBalances(ctx context.Context, corporationID int32) ([]app.CorporationWalletBalanceWithName, error) {
+	enabled, err := s.EnabledSection(ctx, corporationID, app.SectionCorporationWalletBalances)
+	if err != nil {
+		return nil, err
+	}
+	if !enabled {
+		return []app.CorporationWalletBalanceWithName{}, nil
+	}
 	oo, err := s.st.ListCorporationWalletBalances(ctx, corporationID)
 	if err != nil {
 		return nil, err
@@ -96,6 +110,13 @@ func (s *CorporationService) ListWalletBalances(ctx context.Context, corporation
 // It returns empty if there was no data.
 func (s *CorporationService) GetWalletBalancesTotal(ctx context.Context, corporationID int32) (optional.Optional[float64], error) {
 	var b optional.Optional[float64]
+	enabled, err := s.EnabledSection(ctx, corporationID, app.SectionCorporationWalletBalances)
+	if err != nil {
+		return b, err
+	}
+	if !enabled {
+		return b, nil
+	}
 	oo, err := s.st.ListCorporationWalletBalances(ctx, corporationID)
 	if err != nil {
 		return b, err
@@ -138,18 +159,32 @@ func (s *CorporationService) updateWalletBalancesESI(ctx context.Context, arg ap
 		})
 }
 
-func (s *CorporationService) GetWalletJournalEntry(ctx context.Context, corporationID int32, division app.Division, refID int64) (*app.CorporationWalletJournalEntry, error) {
+func (s *CorporationService) GetWalletJournalEntry(ctx context.Context, corporationID int32, d app.Division, refID int64) (*app.CorporationWalletJournalEntry, error) {
+	enabled, err := s.EnabledSection(ctx, corporationID, app.CorporationSectionWalletJournal(d))
+	if err != nil {
+		return nil, err
+	}
+	if !enabled {
+		return nil, app.ErrNotFound
+	}
 	return s.st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
 		CorporationID: corporationID,
-		DivisionID:    division.ID(),
+		DivisionID:    d.ID(),
 		RefID:         refID,
 	})
 }
 
-func (s *CorporationService) ListWalletJournalEntries(ctx context.Context, corporationID int32, division app.Division) ([]*app.CorporationWalletJournalEntry, error) {
+func (s *CorporationService) ListWalletJournalEntries(ctx context.Context, corporationID int32, d app.Division) ([]*app.CorporationWalletJournalEntry, error) {
+	enabled, err := s.EnabledSection(ctx, corporationID, app.CorporationSectionWalletJournal(d))
+	if err != nil {
+		return nil, err
+	}
+	if !enabled {
+		return []*app.CorporationWalletJournalEntry{}, nil
+	}
 	return s.st.ListCorporationWalletJournalEntries(ctx, storage.CorporationDivision{
 		CorporationID: corporationID,
-		DivisionID:    division.ID(),
+		DivisionID:    d.ID(),
 	})
 }
 
@@ -269,18 +304,32 @@ const (
 	maxTransactionsPerPage = 2_500 // maximum objects returned per page
 )
 
-func (s *CorporationService) GetWalletTransaction(ctx context.Context, corporationID int32, division app.Division, transactionID int64) (*app.CorporationWalletTransaction, error) {
+func (s *CorporationService) GetWalletTransaction(ctx context.Context, corporationID int32, d app.Division, transactionID int64) (*app.CorporationWalletTransaction, error) {
+	enabled, err := s.EnabledSection(ctx, corporationID, app.CorporationSectionWalletTransactions(d))
+	if err != nil {
+		return nil, err
+	}
+	if !enabled {
+		return nil, app.ErrNotFound
+	}
 	return s.st.GetCorporationWalletTransaction(ctx, storage.GetCorporationWalletTransactionParams{
 		CorporationID: corporationID,
-		DivisionID:    division.ID(),
+		DivisionID:    d.ID(),
 		TransactionID: transactionID,
 	})
 }
 
-func (s *CorporationService) ListWalletTransactions(ctx context.Context, corporationID int32, division app.Division) ([]*app.CorporationWalletTransaction, error) {
+func (s *CorporationService) ListWalletTransactions(ctx context.Context, corporationID int32, d app.Division) ([]*app.CorporationWalletTransaction, error) {
+	enabled, err := s.EnabledSection(ctx, corporationID, app.CorporationSectionWalletTransactions(d))
+	if err != nil {
+		return nil, err
+	}
+	if !enabled {
+		return []*app.CorporationWalletTransaction{}, nil
+	}
 	return s.st.ListCorporationWalletTransactions(ctx, storage.CorporationDivision{
 		CorporationID: corporationID,
-		DivisionID:    division.ID(),
+		DivisionID:    d.ID(),
 	})
 }
 

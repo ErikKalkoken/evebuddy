@@ -310,21 +310,8 @@ func (a *corporationWalletTransactions) update() {
 	var err error
 	rows := make([]corporationWalletTransactionRow, 0)
 	corporationID := a.u.currentCorporationID()
-	section := map[app.Division]app.CorporationSection{
-		app.Division1: app.SectionCorporationWalletTransactions1,
-		app.Division2: app.SectionCorporationWalletTransactions2,
-		app.Division3: app.SectionCorporationWalletTransactions3,
-		app.Division4: app.SectionCorporationWalletTransactions4,
-		app.Division5: app.SectionCorporationWalletTransactions5,
-		app.Division6: app.SectionCorporationWalletTransactions6,
-		app.Division7: app.SectionCorporationWalletTransactions7,
-	}
-	hasData := a.u.scs.HasCorporationSection(corporationID, section[a.division])
-	hasRole, err := a.u.rs.EnabledSection(context.Background(), corporationID, section[a.division])
-	if err != nil {
-		slog.Error("Failed to determine role for corporation wallet journal", "error", err)
-	}
-	if hasData && hasRole {
+	hasData := a.u.scs.HasCorporationSection(corporationID, app.CorporationSectionWalletTransactions(a.division))
+	if hasData {
 		rows2, err2 := a.fetchRows(corporationID, a.division, a.u.services())
 		if err2 != nil {
 			slog.Error("Failed to refresh wallet transaction UI", "err", err2)
@@ -333,7 +320,7 @@ func (a *corporationWalletTransactions) update() {
 			rows = rows2
 		}
 	}
-	t, i := a.u.makeTopTextCorporation(corporationID, hasData, hasRole, err, nil)
+	t, i := a.u.makeTopTextCorporation(corporationID, hasData, err, nil)
 	fyne.Do(func() {
 		if t != "" {
 			a.bottom.Text = t

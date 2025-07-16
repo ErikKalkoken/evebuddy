@@ -217,6 +217,32 @@ var CorporationSections = []CorporationSection{
 	SectionCorporationWalletTransactions7,
 }
 
+func CorporationSectionWalletJournal(d Division) CorporationSection {
+	section := map[Division]CorporationSection{
+		Division1: SectionCorporationWalletJournal1,
+		Division2: SectionCorporationWalletJournal2,
+		Division3: SectionCorporationWalletJournal3,
+		Division4: SectionCorporationWalletJournal4,
+		Division5: SectionCorporationWalletJournal5,
+		Division6: SectionCorporationWalletJournal6,
+		Division7: SectionCorporationWalletJournal7,
+	}
+	return section[d]
+}
+
+func CorporationSectionWalletTransactions(d Division) CorporationSection {
+	section := map[Division]CorporationSection{
+		Division1: SectionCorporationWalletTransactions1,
+		Division2: SectionCorporationWalletTransactions2,
+		Division3: SectionCorporationWalletTransactions3,
+		Division4: SectionCorporationWalletTransactions4,
+		Division5: SectionCorporationWalletTransactions5,
+		Division6: SectionCorporationWalletTransactions6,
+		Division7: SectionCorporationWalletTransactions7,
+	}
+	return section[d]
+}
+
 func (cs CorporationSection) DisplayName() string {
 	t := strings.ReplaceAll(string(cs), "_", " ")
 	c := cases.Title(language.English)

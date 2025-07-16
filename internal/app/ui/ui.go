@@ -1627,15 +1627,12 @@ func (u *baseUI) makeTopTextCharacter(characterID int32, hasData bool, err error
 }
 
 // makeTopTextCorporation makes the content for the top label of a gui element.
-func (u *baseUI) makeTopTextCorporation(corporationID int32, hasData bool, hasRole bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
+func (u *baseUI) makeTopTextCorporation(corporationID int32, hasData bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
 	if err != nil {
 		return "ERROR: " + u.humanizeError(err), widget.DangerImportance
 	}
 	if corporationID == 0 {
 		return "No entity...", widget.LowImportance
-	}
-	if !hasRole {
-		return "No permission", widget.LowImportance
 	}
 	if !hasData {
 		return "Waiting for data to be loaded...", widget.WarningImportance

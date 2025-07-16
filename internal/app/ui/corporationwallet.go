@@ -68,11 +68,7 @@ func (a *corporationWallet) updateBalance() {
 	var balance float64
 	corporationID := a.u.currentCorporationID()
 	hasData := a.u.scs.HasCorporationSection(corporationID, app.SectionCorporationWalletBalances)
-	hasRole, err := a.u.rs.EnabledSection(context.Background(), corporationID, app.SectionCorporationWalletBalances)
-	if err != nil {
-		slog.Error("Failed to determine role for corporation wallet", "error", err)
-	}
-	if hasData && hasRole {
+	if hasData {
 		b, err2 := a.u.rs.GetWalletBalance(context.Background(), corporationID, a.division)
 		if errors.Is(err2, app.ErrNotFound) {
 			hasData = false
@@ -83,7 +79,7 @@ func (a *corporationWallet) updateBalance() {
 			balance = b
 		}
 	}
-	t, i := a.u.makeTopTextCorporation(corporationID, hasData, hasRole, err, func() (string, widget.Importance) {
+	t, i := a.u.makeTopTextCorporation(corporationID, hasData, err, func() (string, widget.Importance) {
 		b1 := humanize.FormatFloat(app.FloatFormat, balance)
 		b2 := ihumanize.Number(balance, 1)
 		s := fmt.Sprintf("Balance: %s ISK (%s)", b1, b2)
@@ -91,7 +87,7 @@ func (a *corporationWallet) updateBalance() {
 		return s, widget.MediumImportance
 	})
 	var s string
-	if !hasData || !hasRole || err != nil {
+	if !hasData || err != nil {
 		s = ""
 	} else {
 		s = ihumanize.Number(balance, 1)

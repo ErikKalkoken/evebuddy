@@ -222,21 +222,8 @@ func (a *corporationWalletJournal) update() {
 	var err error
 	rows := make([]corporationWalletJournalRow, 0)
 	corporationID := a.u.currentCorporationID()
-	section := map[app.Division]app.CorporationSection{
-		app.Division1: app.SectionCorporationWalletJournal1,
-		app.Division2: app.SectionCorporationWalletJournal2,
-		app.Division3: app.SectionCorporationWalletJournal3,
-		app.Division4: app.SectionCorporationWalletJournal4,
-		app.Division5: app.SectionCorporationWalletJournal5,
-		app.Division6: app.SectionCorporationWalletJournal6,
-		app.Division7: app.SectionCorporationWalletJournal7,
-	}
-	hasData := a.u.scs.HasCorporationSection(corporationID, section[a.division])
-	hasRole, err := a.u.rs.EnabledSection(context.Background(), corporationID, section[a.division])
-	if err != nil {
-		slog.Error("Failed to determine role for corporation wallet journal", "error", err)
-	}
-	if hasData && hasRole {
+	hasData := a.u.scs.HasCorporationSection(corporationID, app.CorporationSectionWalletJournal(a.division))
+	if hasData {
 		rows2, err2 := a.fetchRows(corporationID, a.division, a.u.services())
 		if err2 != nil {
 			slog.Error("Failed to refresh wallet journal UI", "err", err2)
@@ -245,7 +232,7 @@ func (a *corporationWalletJournal) update() {
 			rows = rows2
 		}
 	}
-	t, i := a.u.makeTopTextCorporation(corporationID, hasData, hasRole, err, func() (string, widget.Importance) {
+	t, i := a.u.makeTopTextCorporation(corporationID, hasData, err, func() (string, widget.Importance) {
 		return "", widget.MediumImportance
 	})
 	fyne.Do(func() {
