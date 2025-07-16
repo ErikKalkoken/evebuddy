@@ -8,7 +8,7 @@ env:
   NAME: "evebuddy"
   FULLNAME: "EVE Buddy"
   FULLNAME2: "EVE_Buddy"  # for AppImage file, e.g. with spaces replaced by underscores
-  VERSION: "0.0.0"
+  VERSION: ${{ github.ref_name }}
 
 on: push
 
@@ -40,7 +40,48 @@ jobs:
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
 
+
   package_linux:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GOVERSION }}
+
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install gcc libgl1-mesa-dev xorg-dev libfuse2
+
+    - name: Install Fyne tool
+      run: go install fyne.io/tools/cmd/fyne@latest
+
+    - name: Set version
+      run: |
+        VERSION=${{ github.ref_name }}
+        echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
+
+    - name: Package Fyne app
+      run: |
+        fyne package --os linux --release --tags migrated_fynedo --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
+        mv 'EVE Buddy.tar.xz' ${{ env.NAME }}-${{ env.VERSION }}-linux-amd64.tar.xz
+
+    - name: Inspect
+      run: ls -R
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.NAME }}-linux
+        path: ${{ env.NAME }}-${{ env.VERSION }}-linux-amd64.tar.xz
+        if-no-files-found: error
+        overwrite: true
+
+  package_appimage:
     if: startsWith(github.ref, 'refs/tags/')
     needs: test
     runs-on: ubuntu-22.04  # oldest available image = best AppImage compatibility
@@ -76,7 +117,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: ${{ env.NAME }}-linux
+        name: ${{ env.NAME }}-appimage
         path: ${{ env.FULLNAME2 }}-${{ env.VERSION }}-x86_64.AppImage
         if-no-files-found: error
         overwrite: true
@@ -255,7 +296,7 @@ jobs:
 
   release:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [package_linux, package_darwin_arm, package_darwin_intel, package_windows, package_android]
+    needs: [package_appimage, package_linux, package_darwin_arm, package_darwin_intel, package_windows, package_android]
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
@@ -273,10 +314,10 @@ jobs:
     - name: Create release
       uses: softprops/action-gh-release@v2
       with:
-        fail_on_unmatched_files: true
         files: |
           ${{ env.NAME }}-${{ env.VERSION }}-windows-x64.zip
           ${{ env.FULLNAME2 }}-${{ env.VERSION }}-x86_64.AppImage
+          ${{ env.NAME }}-${{ env.VERSION }}-linux-amd64.tar.xz
           ${{ env.NAME }}-${{ env.VERSION }}-darwin-arm64.zip
           ${{ env.NAME }}-${{ env.VERSION }}-darwin-intel64.zip
           ${{ env.FULLNAME2 }}.apk
