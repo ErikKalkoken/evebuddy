@@ -119,12 +119,23 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		theme.NewThemedResource(icons.GoldSvg),
 		makePageWithTitle("Wealth", u.wealth),
 	)
+	u.wealth.onUpdate = func(wallet, assets float64) {
+		fyne.Do(func() {
+			x := ihumanize.Number(wallet+assets, 1)
+			homeNav.SetItemBadge(wealth, x)
+		})
+	}
 
 	allAssets := iwidget.NewNavPage(
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
 		makePageWithTitle("Assets", u.assets),
 	)
+	u.assets.onUpdate = func(total string) {
+		fyne.Do(func() {
+			homeNav.SetItemBadge(allAssets, total)
+		})
+	}
 
 	contracts := iwidget.NewNavPage(
 		"Contracts",

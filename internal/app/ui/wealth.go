@@ -28,7 +28,7 @@ const (
 type wealth struct {
 	widget.BaseWidget
 
-	OnUpdate func(wallet, assets float64)
+	onUpdate func(wallet, assets float64)
 
 	charts *fyne.Container
 	top    *widget.Label
@@ -151,8 +151,8 @@ func (a *wealth) update() {
 		a.charts.Refresh()
 	})
 
-	if a.OnUpdate != nil {
-		a.OnUpdate(totalWallet, totalAssets)
+	if a.onUpdate != nil {
+		a.onUpdate(totalWallet, totalAssets)
 	}
 }
 

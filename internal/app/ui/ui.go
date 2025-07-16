@@ -17,6 +17,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -674,24 +675,31 @@ func (u *baseUI) UpdateAll() {
 
 func runFunctionsWithProgressModal(title string, ff map[string]func(), onSuccess func(), w fyne.Window) {
 	fyne.Do(func() {
-		m := kxmodal.NewProgressInfinite("Updating", title, func() error {
+		m := kxmodal.NewProgress("Updating", title, func(p binding.Float) error {
 			start := time.Now()
 			myLog := slog.With("title", title)
 			myLog.Debug("started")
 			var wg sync.WaitGroup
+			var completed atomic.Int64
 			for name, f := range ff {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
 					start2 := time.Now()
 					f()
+					x := completed.Add(1)
+					fyne.Do(func() {
+						if err := p.Set(float64(x)); err != nil {
+							myLog.Warn("failed set progress", "error", err)
+						}
+					})
 					myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
 				}()
 			}
 			wg.Wait()
 			myLog.Debug("completed", "duration", time.Since(start).Milliseconds())
 			return nil
-		}, w)
+		}, float64(len(ff)), w)
 		m.OnSuccess = onSuccess
 		m.Start()
 	})

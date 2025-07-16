@@ -641,7 +641,7 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 			homeList.Refresh()
 		})
 	}
-	u.wealth.OnUpdate = func(wallet, assets float64) {
+	u.wealth.onUpdate = func(wallet, assets float64) {
 		fyne.Do(func() {
 			navItemWealth.Supporting = fmt.Sprintf(
 				"Wallet: %s • Assets: %s",

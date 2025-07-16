@@ -56,6 +56,8 @@ type assetRow struct {
 type assets struct {
 	widget.BaseWidget
 
+	onUpdate func(total string)
+
 	body           fyne.CanvasObject
 	columnSorter   *columnSorter
 	entry          *widget.Entry
@@ -356,6 +358,17 @@ func (a *assets) update() {
 	} else {
 		t = fmt.Sprintf("%d characters • %s items", characterCount, ihumanize.Comma(len(assets)))
 	}
+	if a.onUpdate != nil {
+		var s string
+		if hasData && err == nil {
+			var total float64
+			for _, a := range assets {
+				total += a.total
+			}
+			s = ihumanize.Number(total, 1)
+		}
+		a.onUpdate(s)
+	}
 	fyne.Do(func() {
 		a.updateFoundInfo()
 		a.total.Text = t
@@ -412,7 +425,6 @@ func (*assets) fetchRows(s services) ([]assetRow, bool, error) {
 			groupName:       ca.Type.Group.Name,
 			isSingleton:     ca.IsSingleton,
 			itemID:          ca.ItemID,
-			total:           ca.Price.ValueOrZero(),
 			typeID:          ca.Type.ID,
 			typeName:        ca.Type.Name,
 			typeNameDisplay: ca.DisplayName2(),
@@ -439,8 +451,8 @@ func (*assets) fetchRows(s services) ([]assetRow, bool, error) {
 		if ca.Price.IsEmpty() || ca.IsBlueprintCopy {
 			r.totalDisplay = "?"
 		} else {
-			t := ca.Price.ValueOrZero() * float64(ca.Quantity)
-			r.totalDisplay = ihumanize.Number(t, 1)
+			r.total = ca.Price.ValueOrZero() * float64(ca.Quantity)
+			r.totalDisplay = ihumanize.Number(r.total, 1)
 			r.hasTotal = true
 		}
 		rows[i] = r
