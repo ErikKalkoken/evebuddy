@@ -18,11 +18,10 @@ A companion app for Eve Online players available on Windows, Linux, macOS and An
 - [Description](#description)
 - [Highlights](#highlights)
 - [Installing](#installing)
-  - [Linux](#linux)
   - [Windows](#windows)
   - [macOS](#mac-os)
+  - [Linux](#linux)
   - [Android](#android)
-  - [From source](#from-source)
 - [Updating](#updating)
 - [Uninstalling](#uninstalling)
 - [Logs](#logs)
@@ -144,17 +143,6 @@ To install EVE buddy just download the latest release from the releases page to 
 
 You find the latest packages for download on the [releases page](https://github.com/ErikKalkoken/evebuddy/releases).
 
-### Linux
-
-> [!NOTE]
-> The app is shipped in the [AppImage](https://appimage.org/) format, so it can be used without requiring installation and run on many different Linux distributions.
-
-1. Download the latest AppImage file from the releases page and make it executable.
-1. Execute it to start the app.
-
-> [!TIP]
-> Should you get the following error: `AppImages require FUSE to run.`, you need to first install FUSE on your system. Thi s is a library required by all AppImages to function. Please see [this page](https://docs.appimage.org/user-guide/troubleshooting/fuse.html#the-appimage-tells-me-it-needs-fuse-to-run) for details.
-
 ### Windows
 
 1. Download the windows zip file from the latest release on Github.
@@ -170,6 +158,35 @@ You find the latest packages for download on the [releases page](https://github.
 > MacOS may report this app incorrectly as "damaged", because it is not signed with an Apple certificate. You can remove this error by opening a terminal and running the following command. For more information please see [Fyne Troubleshooting](https://docs.fyne.io/faq/troubleshoot#distribution):
 >
 > ```sudo xattr -r -d com.apple.quarantine "EVE Buddy.app"```
+
+### Linux
+
+We are providing two variants for installing on Linux desktop:
+
+- AppImage: The AppImage variant allows you to run the app directly from the executable without requiring installation or root access
+- Tar file: The tar file requires installation, but also allows you to integrate the app into your desktop environment
+
+#### AppImage
+
+> [!NOTE]
+> The app is shipped in the [AppImage](https://appimage.org/) format, so it can be used without requiring installation and run on many different Linux distributions.
+
+1. Download the latest AppImage file from the releases page
+1. Make the AppImage file executable
+1. Execute the AppImage file to start the app
+
+> [!TIP]
+> Should you get the following error: `AppImages require FUSE to run.`, you need to first install FUSE on your system. Thi s is a library required by all AppImages to function. Please see [this page](https://docs.appimage.org/user-guide/troubleshooting/fuse.html#the-appimage-tells-me-it-needs-fuse-to-run) for details.
+
+#### Tar file
+
+1. Download the latest tar file from the releases page
+1. Decompress the tar file, for example with: `tar xf evebuddy-0.33.0-linux-amd64.tar.xz`
+1. Run `make user-install` to install the app for the current user or run `sudo make install` to install the app on the system
+
+You should now have a shortcut in your desktop environment's launcher for starting the app.
+
+To uninstall the app again run either: `make user-uninstall` or `sudo make uninstall` depending on how you installed it.
 
 ### Android
 
@@ -194,18 +211,9 @@ To enable notifications:
 
 You should now see a test notification.
 
-> [!NOTE]
+> [!IMPORTANT]
 > EVE Buddy needs unrestricted background usage in order to function probably. The reason is that Android otherwise  automatically suspends apps when you switch to another app. Then you can no longer add new characters, because it requires you to switch to your browser app, but EVE Buddy needs to keep running for the process to work. Also EVE Buddy needs to keep running in order to pick up events for notifications.
-
-### From source
-
-It is also possible to build and run the app directly from the source on the github repository. For that to work your system needs to be setup for building Fyne apps, which requires you to have installed the Go tools, a C compiler and a systems graphics driver. For details please see [Fyne - Getting started](https://docs.fyne.io/started/).
-
-When you have all necessary tools installed, you can build and run this app direct from the repository with:
-
-```sh
-go run github.com/ErikKalkoken/evebuddy@latest
-```
+Please also make sure you do not have Power saving mode enabled (e.g. on Samsung Galaxy), which would also restrict background app usage.
 
 ## Updating
 

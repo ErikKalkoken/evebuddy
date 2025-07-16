@@ -8,7 +8,7 @@ env:
   NAME: "evebuddy"
   FULLNAME: "EVE Buddy"
   FULLNAME2: "EVE_Buddy"  # for AppImage file, e.g. with spaces replaced by underscores
-  VERSION: ${{ github.ref_name }}
+  VERSION: "0.0.0"
 
 on: push
 
@@ -284,7 +284,7 @@ jobs:
     - name: Package Fyne app
       run: |
         export ANDROID_NDK_HOME="$PWD/android-ndk-r27c"
-        fyne package --os android --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
+        fyne package --os android --release --tags migrated_fynedo --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
         ls
 
     - uses: actions/upload-artifact@v4

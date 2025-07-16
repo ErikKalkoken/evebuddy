@@ -29,7 +29,7 @@ loc:
 deploy-android: check-device make-android install-android
 
 make-android:
-	fyne package -os android
+	fyne package -os android --release --tags migrated_fynedo
 
 install-android:
 	adb install -r -d EVE_Buddy.apk
