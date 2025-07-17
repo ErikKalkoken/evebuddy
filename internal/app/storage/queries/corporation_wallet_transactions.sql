@@ -16,6 +16,12 @@ INSERT INTO
 VALUES
     (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
+-- name: DeleteCorporationWalletTransactions :exec
+DELETE FROM corporation_wallet_transactions
+WHERE
+    corporation_id = ?
+    AND division_id = ?;
+
 -- name: GetCorporationWalletTransaction :one
 SELECT
     sqlc.embed(cwt),

@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -65,6 +66,24 @@ func (st *Storage) CreateCorporationWalletJournalEntry(ctx context.Context, arg 
 	if err != nil {
 		return wrapErr(err)
 	}
+	return nil
+}
+
+func (st *Storage) DeleteCorporationWalletJournal(ctx context.Context, corporationID int32, d app.Division) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("DeleteCorporationWalletJournalEntries: %d %d: %w", corporationID, d, err)
+	}
+	if corporationID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	err := st.qRW.DeleteCorporationWalletJournalEntries(ctx, queries.DeleteCorporationWalletJournalEntriesParams{
+		CorporationID: int64(corporationID),
+		DivisionID:    int64(d.ID()),
+	})
+	if err != nil {
+		return wrapErr(err)
+	}
+	slog.Info("Wallet journal deleted for corporation", "corporationID", corporationID)
 	return nil
 }
 

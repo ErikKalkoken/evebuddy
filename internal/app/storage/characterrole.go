@@ -87,8 +87,8 @@ func (st *Storage) ListCharacterRoles(ctx context.Context, characterID int32) (s
 	return r, err
 }
 
-func (st *Storage) UpdateCharacterRoles(ctx context.Context, characterID int32, names set.Set[app.Role]) error {
-	incoming := set.Collect(xiter.Map(names.All(), func(r app.Role) string {
+func (st *Storage) UpdateCharacterRoles(ctx context.Context, characterID int32, roles set.Set[app.Role]) error {
+	incoming := set.Collect(xiter.Map(roles.All(), func(r app.Role) string {
 		return role2String[r]
 	}))
 	s, err := st.qRO.ListCharacterRoles(ctx, int64(characterID))

@@ -14,7 +14,7 @@ import (
 )
 
 func TestCorporationWalletBalance(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create from scratch", func(t *testing.T) {
@@ -22,14 +22,14 @@ func TestCorporationWalletBalance(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCorporation()
 		// when
-		err := r.UpdateOrCreateCorporationWalletBalance(ctx, storage.UpdateOrCreateCorporationWalletBalanceParams{
+		err := st.UpdateOrCreateCorporationWalletBalance(ctx, storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
 			DivisionID:    3,
 			Balance:       12.34,
 		})
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetCorporationWalletBalance(ctx, storage.CorporationDivision{
+			x, err := st.GetCorporationWalletBalance(ctx, storage.CorporationDivision{
 				CorporationID: c.ID,
 				DivisionID:    3,
 			})
@@ -45,14 +45,14 @@ func TestCorporationWalletBalance(t *testing.T) {
 		testutil.TruncateTables(db)
 		x1 := factory.CreateCorporationWalletBalance()
 		// when
-		err := r.UpdateOrCreateCorporationWalletBalance(ctx, storage.UpdateOrCreateCorporationWalletBalanceParams{
+		err := st.UpdateOrCreateCorporationWalletBalance(ctx, storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: x1.CorporationID,
 			DivisionID:    x1.DivisionID,
 			Balance:       12.34,
 		})
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetCorporationWalletBalance(ctx, storage.CorporationDivision{
+			x, err := st.GetCorporationWalletBalance(ctx, storage.CorporationDivision{
 				CorporationID: x1.CorporationID,
 				DivisionID:    x1.DivisionID,
 			})
@@ -75,7 +75,7 @@ func TestCorporationWalletBalance(t *testing.T) {
 		})
 		factory.CreateCorporationWalletJournalEntry()
 		// when
-		oo, err := r.ListCorporationWalletBalances(ctx, c.ID)
+		oo, err := st.ListCorporationWalletBalances(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletBalance) (int32, float64) {
@@ -86,6 +86,25 @@ func TestCorporationWalletBalance(t *testing.T) {
 				e2.DivisionID: e2.Balance,
 			}
 			assert.Equal(t, want, got)
+		}
+	})
+	t.Run("can delete entries", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		e1 := factory.CreateCorporationWalletBalance()
+		e2 := factory.CreateCorporationWalletBalance()
+		// when
+		err := st.DeleteCorporationWalletBalance(ctx, e1.CorporationID)
+		// then
+		if assert.NoError(t, err) {
+			x1, err := st.ListCorporationWalletBalances(ctx, e1.CorporationID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, 0, len(x1))
+			}
+			x2, err := st.ListCorporationWalletBalances(ctx, e2.CorporationID)
+			if assert.NoError(t, err) {
+				assert.Greater(t, len(x2), 0)
+			}
 		}
 	})
 }

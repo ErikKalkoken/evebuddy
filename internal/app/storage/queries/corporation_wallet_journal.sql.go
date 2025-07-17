@@ -73,6 +73,23 @@ func (q *Queries) CreateCorporationWalletJournalEntry(ctx context.Context, arg C
 	return err
 }
 
+const deleteCorporationWalletJournalEntries = `-- name: DeleteCorporationWalletJournalEntries :exec
+DELETE FROM corporation_wallet_journal_entries
+WHERE
+    corporation_id = ?
+    AND division_id = ?
+`
+
+type DeleteCorporationWalletJournalEntriesParams struct {
+	CorporationID int64
+	DivisionID    int64
+}
+
+func (q *Queries) DeleteCorporationWalletJournalEntries(ctx context.Context, arg DeleteCorporationWalletJournalEntriesParams) error {
+	_, err := q.db.ExecContext(ctx, deleteCorporationWalletJournalEntries, arg.CorporationID, arg.DivisionID)
+	return err
+}
+
 const getCorporationWalletJournalEntry = `-- name: GetCorporationWalletJournalEntry :one
 SELECT
     wje.id, wje.amount, wje.balance, wje.corporation_id, wje.context_id, wje.context_id_type, wje.date, wje.description, wje.division_id, wje.first_party_id, wje.ref_id, wje.reason, wje.ref_type, wje.second_party_id, wje.tax, wje.tax_receiver_id,

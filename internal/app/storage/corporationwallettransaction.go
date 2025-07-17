@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -49,6 +50,24 @@ func (st *Storage) CreateCorporationWalletTransaction(ctx context.Context, arg C
 	if err != nil {
 		return wrapErr(err)
 	}
+	return nil
+}
+
+func (st *Storage) DeleteCorporationWalletTransactions(ctx context.Context, corporationID int32, d app.Division) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("DeleteCorporationWalletTransactions: %d %d %w", corporationID, d, err)
+	}
+	if corporationID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	err := st.qRW.DeleteCorporationWalletTransactions(ctx, queries.DeleteCorporationWalletTransactionsParams{
+		CorporationID: int64(corporationID),
+		DivisionID:    int64(d.ID()),
+	})
+	if err != nil {
+		return wrapErr(err)
+	}
+	slog.Info("Wallet transactions deleted for corporation", "corporationID", corporationID)
 	return nil
 }
 

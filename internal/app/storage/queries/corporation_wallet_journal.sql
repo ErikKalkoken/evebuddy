@@ -20,6 +20,12 @@ INSERT INTO
 VALUES
     (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
+-- name: DeleteCorporationWalletJournalEntries :exec
+DELETE FROM corporation_wallet_journal_entries
+WHERE
+    corporation_id = ?
+    AND division_id = ?;
+
 -- name: GetCorporationWalletJournalEntry :one
 SELECT
     sqlc.embed(wje),

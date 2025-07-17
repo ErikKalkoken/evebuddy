@@ -110,10 +110,7 @@ func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 		if err != nil {
 			return nil, err
 		}
-		ids := set.Of(id, r.CeoId, r.CreatorId, r.AllianceId, r.FactionId, r.HomeStationId)
-		ids.DeleteFunc(func(id int32) bool {
-			return id < 2
-		})
+		ids := set.Of(id, r.AllianceId, r.CeoId, r.CreatorId, r.FactionId, r.HomeStationId)
 		if _, err := s.AddMissingEntities(ctx, ids); err != nil {
 			return nil, err
 		}

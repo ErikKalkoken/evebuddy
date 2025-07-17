@@ -12,6 +12,33 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
+type CorporationSectionParams struct {
+	CorporationID int32
+	Section       app.CorporationSection
+}
+
+func (x CorporationSectionParams) IsInvalid() bool {
+	return x.CorporationID == 0
+}
+
+func (st *Storage) ResetCorporationSectionStatusContentHash(ctx context.Context, arg CorporationSectionParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ResetCorporationSectionStatusContentHash: %+v: %w", arg, err)
+	}
+	if arg.IsInvalid() {
+		return wrapErr(app.ErrInvalid)
+	}
+	err := st.qRW.UpdateCorporationSectionStatusContentHash(ctx, queries.UpdateCorporationSectionStatusContentHashParams{
+		ContentHash:   "",
+		CorporationID: int64(arg.CorporationID),
+		SectionID:     string(arg.Section),
+	})
+	if err != nil {
+		return wrapErr(err)
+	}
+	return nil
+}
+
 func (st *Storage) GetCorporationSectionStatus(ctx context.Context, corporationID int32, section app.CorporationSection) (*app.CorporationSectionStatus, error) {
 	arg := queries.GetCorporationSectionStatusParams{
 		CorporationID: int64(corporationID),

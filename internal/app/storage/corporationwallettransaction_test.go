@@ -139,4 +139,29 @@ func TestCorporationWalletTransaction(t *testing.T) {
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
+	t.Run("can delete transactions", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		e1 := factory.CreateCorporationWalletTransaction()
+		e2 := factory.CreateCorporationWalletTransaction()
+		// when
+		err := r.DeleteCorporationWalletTransactions(ctx, e1.CorporationID, app.Division(e1.DivisionID))
+		// then
+		if assert.NoError(t, err) {
+			x1, err := r.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
+				CorporationID: e1.CorporationID,
+				DivisionID:    e1.DivisionID,
+			})
+			if assert.NoError(t, err) {
+				assert.Equal(t, 0, x1.Size())
+			}
+			x2, err := r.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
+				CorporationID: e2.CorporationID,
+				DivisionID:    e2.DivisionID,
+			})
+			if assert.NoError(t, err) {
+				assert.Greater(t, x2.Size(), 0)
+			}
+		}
+	})
 }

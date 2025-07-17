@@ -10,25 +10,71 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/antihax/goesi"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/antihax/goesi"
 )
 
-// func (s *CorporationService) RemoveDataWithLostPermission(ctx context.Context, corporationID int32) error {
-// 	enabled, err := s.EnabledSections(ctx, corporationID)
-// 	if err != nil{
-// 		return err
-// 	}
-// 	for _, section := range app.CorporationSections{
-// 		if !enabled.Contains(section) && section.Role(){
-
-// 		}
-// 	}
-// 	return nil
-// }
+// RemoveSectionDataWhenPermissionLost removes all data related to a corporation section after the permission was lost.
+// This can happen after a character has lost a role or a character was deleted.
+func (s *CorporationService) RemoveSectionDataWhenPermissionLost(ctx context.Context, corporationID int32) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("RemoveSectionDataWhenNoPermission: CorporationID %d: %w", corporationID, err)
+	}
+	permitted, err := s.PermittedSections(ctx, corporationID)
+	if err != nil {
+		return wrapErr(err)
+	}
+	for _, section := range app.CorporationSections {
+		if !permitted.Contains(section) {
+			switch section {
+			case app.SectionCorporationWalletBalances:
+				if err := s.st.DeleteCorporationWalletBalance(ctx, corporationID); err != nil {
+					return wrapErr(err)
+				}
+			case
+				app.SectionCorporationWalletJournal1,
+				app.SectionCorporationWalletJournal2,
+				app.SectionCorporationWalletJournal3,
+				app.SectionCorporationWalletJournal4,
+				app.SectionCorporationWalletJournal5,
+				app.SectionCorporationWalletJournal6,
+				app.SectionCorporationWalletJournal7:
+				if err := s.st.DeleteCorporationWalletJournal(ctx, corporationID, section.Division()); err != nil {
+					return wrapErr(err)
+				}
+			case
+				app.SectionCorporationWalletTransactions1,
+				app.SectionCorporationWalletTransactions2,
+				app.SectionCorporationWalletTransactions3,
+				app.SectionCorporationWalletTransactions4,
+				app.SectionCorporationWalletTransactions5,
+				app.SectionCorporationWalletTransactions6,
+				app.SectionCorporationWalletTransactions7:
+				if err := s.st.DeleteCorporationWalletTransactions(ctx, corporationID, section.Division()); err != nil {
+					return wrapErr(err)
+				}
+			case app.SectionCorporationIndustryJobs:
+				if err := s.st.DeleteCorporationIndustryJobs(ctx, corporationID); err != nil {
+					return wrapErr(err)
+				}
+			default:
+				continue
+			}
+			err := s.st.ResetCorporationSectionStatusContentHash(ctx, storage.CorporationSectionParams{
+				CorporationID: corporationID,
+				Section:       section,
+			})
+			if err != nil {
+				return wrapErr(err)
+			}
+		}
+	}
+	return nil
+}
 
 // PermittedSections returns which sections the user has permission to access.
 // i.e. the user has a character with the required roles and scopes.

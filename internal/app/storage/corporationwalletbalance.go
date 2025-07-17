@@ -3,10 +3,26 @@ package storage
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 )
+
+func (st *Storage) DeleteCorporationWalletBalance(ctx context.Context, corporationID int32) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("DeleteCorporationWalletBalance: CorporationID %d: %w", corporationID, err)
+	}
+	if corporationID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	err := st.qRW.DeleteCorporationWalletBalances(ctx, int64(corporationID))
+	if err != nil {
+		return wrapErr(err)
+	}
+	slog.Info("Wallet balances deleted for corporation", "corporationID", corporationID)
+	return nil
+}
 
 func (st *Storage) GetCorporationWalletBalance(ctx context.Context, arg CorporationDivision) (*app.CorporationWalletBalance, error) {
 	wrapErr := func(err error) error {

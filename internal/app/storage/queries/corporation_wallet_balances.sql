@@ -23,3 +23,8 @@ FROM
     corporation_wallet_balances
 WHERE
     corporation_id = ?;
+
+-- name: DeleteCorporationWalletBalances :exec
+DELETE FROM corporation_wallet_balances
+WHERE
+    corporation_id = ?;

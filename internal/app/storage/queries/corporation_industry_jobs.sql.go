@@ -11,6 +11,17 @@ import (
 	"time"
 )
 
+const deleteCorporationIndustryJobs = `-- name: DeleteCorporationIndustryJobs :exec
+DELETE FROM corporation_industry_jobs
+WHERE
+    corporation_id = ?
+`
+
+func (q *Queries) DeleteCorporationIndustryJobs(ctx context.Context, corporationID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteCorporationIndustryJobs, corporationID)
+	return err
+}
+
 const getCorporationIndustryJob = `-- name: GetCorporationIndustryJob :one
 SELECT
     cij.id, cij.activity_id, cij.blueprint_id, cij.blueprint_location_id, cij.blueprint_type_id, cij.corporation_id, cij.completed_character_id, cij.completed_date, cij.cost, cij.duration, cij.end_date, cij.facility_id, cij.installer_id, cij.job_id, cij.licensed_runs, cij.output_location_id, cij.pause_date, cij.probability, cij.product_type_id, cij.runs, cij.start_date, cij.location_id, cij.status, cij.successful_runs,

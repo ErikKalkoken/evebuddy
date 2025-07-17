@@ -297,6 +297,9 @@ func (a *manageCharacters) showDeleteDialog(r manageCharacterRow) {
 						if corpDeleted {
 							a.mcw.u.setAnyCorporation()
 						} else {
+							if err := a.mcw.u.rs.RemoveSectionDataWhenPermissionLost(ctx, r.corporationID); err != nil {
+								slog.Error("Failed to remove corp data after character was deleted", "characterID", r.characterID, "error", err)
+							}
 							go a.mcw.u.updateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
 						}
 						a.mcw.u.updateHome()

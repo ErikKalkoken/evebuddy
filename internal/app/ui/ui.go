@@ -1136,6 +1136,9 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			if corporationID == 0 {
 				break
 			}
+			if err := u.rs.RemoveSectionDataWhenPermissionLost(ctx, corporationID); err != nil {
+				slog.Error("Failed to remove corp data after character role change", "characterID", characterID, "error", err)
+			}
 			u.updateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
 		}
 	case app.SectionCharacterSkills:

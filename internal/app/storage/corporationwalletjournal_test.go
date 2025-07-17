@@ -14,7 +14,7 @@ import (
 )
 
 func TestCorporationWalletJournalEntry(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
@@ -37,10 +37,10 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 			Tax:           0.12,
 		}
 		// when
-		err := r.CreateCorporationWalletJournalEntry(ctx, arg)
+		err := st.CreateCorporationWalletJournalEntry(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			i, err := r.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
+			i, err := st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
 				CorporationID: c.ID,
 				DivisionID:    1,
 				RefID:         4,
@@ -84,10 +84,10 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 			TaxReceiverID: e3.ID,
 		}
 		// when
-		err := r.CreateCorporationWalletJournalEntry(ctx, arg)
+		err := st.CreateCorporationWalletJournalEntry(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			i, err := r.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
+			i, err := st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
 				CorporationID: c.ID,
 				DivisionID:    1,
 				RefID:         4,
@@ -126,7 +126,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		})
 		factory.CreateCorporationWalletJournalEntry()
 		// when
-		got, err := r.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
+		got, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
 			DivisionID:    1,
 		})
@@ -154,7 +154,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		})
 		factory.CreateCorporationWalletJournalEntry()
 		// when
-		oo, err := r.ListCorporationWalletJournalEntries(ctx, storage.CorporationDivision{
+		oo, err := st.ListCorporationWalletJournalEntries(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
 			DivisionID:    1,
 		})
@@ -187,12 +187,12 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 			Tax:           0.12,
 		}
 
-		err := r.CreateCorporationWalletJournalEntry(ctx, arg)
+		err := st.CreateCorporationWalletJournalEntry(ctx, arg)
 		if assert.NoError(t, err) {
 			arg.RefID = 5
-			err := r.CreateCorporationWalletJournalEntry(ctx, arg)
+			err := st.CreateCorporationWalletJournalEntry(ctx, arg)
 			if assert.NoError(t, err) {
-				got, err := r.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
+				got, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
 					CorporationID: c.ID,
 					DivisionID:    1,
 				})
@@ -200,6 +200,31 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 					want := set.Of[int64](4, 5)
 					assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 				}
+			}
+		}
+	})
+	t.Run("can delete journal", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		e1 := factory.CreateCorporationWalletJournalEntry()
+		e2 := factory.CreateCorporationWalletJournalEntry()
+		// when
+		err := st.DeleteCorporationWalletJournal(ctx, e1.CorporationID, app.Division(e1.DivisionID))
+		// then
+		if assert.NoError(t, err) {
+			x1, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
+				CorporationID: e1.CorporationID,
+				DivisionID:    e1.DivisionID,
+			})
+			if assert.NoError(t, err) {
+				assert.Equal(t, 0, x1.Size())
+			}
+			x2, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
+				CorporationID: e2.CorporationID,
+				DivisionID:    e2.DivisionID,
+			})
+			if assert.NoError(t, err) {
+				assert.Greater(t, x2.Size(), 0)
 			}
 		}
 	})
