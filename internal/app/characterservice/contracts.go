@@ -9,7 +9,6 @@ import (
 
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -158,33 +157,11 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 			var entityIDs set.Set[int32]
 			var locationIDs set.Set[int64]
 			for _, c := range contracts {
-				entityIDs.Add(c.IssuerId)
-				entityIDs.Add(c.IssuerCorporationId)
-				if c.AcceptorId != 0 {
-					entityIDs.Add(c.AcceptorId)
-				}
-				if c.AssigneeId != 0 {
-					entityIDs.Add(c.AssigneeId)
-				}
-				if c.StartLocationId != 0 {
-					locationIDs.Add(c.StartLocationId)
-				}
-				if c.EndLocationId != 0 {
-					locationIDs.Add(c.EndLocationId)
-				}
+				entityIDs.Add(c.AcceptorId, c.AssigneeId, c.IssuerId, c.IssuerCorporationId)
+				locationIDs.Add(c.StartLocationId, c.EndLocationId)
 			}
-			g := new(errgroup.Group)
-			g.Go(func() error {
-				_, err := s.eus.AddMissingEntities(ctx, entityIDs)
-				return err
-			})
-			g.Go(func() error {
-				return s.eus.AddMissingLocations(ctx, locationIDs)
-			})
-			if err := g.Wait(); err != nil {
-				return err
-			}
-			if err := s.eus.AddMissingLocations(ctx, locationIDs); err != nil {
+			err := s.addMissingEveEntitiesAndLocations(ctx, entityIDs, locationIDs)
+			if err != nil {
 				return err
 			}
 			// identify new contracts
@@ -243,6 +220,13 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 }
 
 func (s *CharacterService) createNewContract(ctx context.Context, characterID int32, c esi.GetCharactersCharacterIdContracts200Ok) error {
+	// Ensuring again all related objects are created to prevent occasional FK constraint error
+	entityIDs := set.Of(c.AcceptorId, c.AssigneeId, c.IssuerId, c.IssuerCorporationId)
+	locationIDs := set.Of(c.StartLocationId, c.EndLocationId)
+	err := s.addMissingEveEntitiesAndLocations(ctx, entityIDs, locationIDs)
+	if err != nil {
+		return err
+	}
 	availability, ok := contractAvailabilityFromESIValue[c.Availability]
 	if !ok {
 		return fmt.Errorf("unknown availability: %s", c.Availability)

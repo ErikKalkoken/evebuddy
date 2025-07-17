@@ -54,17 +54,9 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 			typeIDs := set.Of[int32]()
 			locationIDs := set.Of[int64]()
 			for _, j := range jobs {
-				entityIDs.Add(j.InstallerId)
-				if j.CompletedCharacterId != 0 {
-					entityIDs.Add(j.CompletedCharacterId)
-				}
-				locationIDs.Add(j.BlueprintLocationId)
-				locationIDs.Add(j.OutputLocationId)
-				locationIDs.Add(j.StationId)
-				typeIDs.Add(j.BlueprintTypeId)
-				if j.ProductTypeId != 0 {
-					typeIDs.Add(j.ProductTypeId)
-				}
+				entityIDs.Add(j.InstallerId, j.CompletedCharacterId)
+				locationIDs.Add(j.BlueprintLocationId, j.OutputLocationId, j.StationId)
+				typeIDs.Add(j.BlueprintTypeId, j.ProductTypeId)
 			}
 			g := new(errgroup.Group)
 			g.Go(func() error {

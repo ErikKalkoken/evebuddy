@@ -10,6 +10,7 @@ import (
 
 	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -361,4 +362,23 @@ func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg app.C
 			}
 			return nil
 		})
+}
+
+func (s *CharacterService) addMissingEveEntitiesAndLocations(ctx context.Context, entityIDs set.Set[int32], locationIDs set.Set[int64]) error {
+	g := new(errgroup.Group)
+	if entityIDs.Size() > 0 {
+		g.Go(func() error {
+			_, err := s.eus.AddMissingEntities(ctx, entityIDs)
+			return err
+		})
+	}
+	if locationIDs.Size() > 0 {
+		g.Go(func() error {
+			return s.eus.AddMissingLocations(ctx, locationIDs)
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return err
+	}
+	return nil
 }

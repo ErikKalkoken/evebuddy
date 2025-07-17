@@ -160,11 +160,14 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 }
 
 // AddMissingLocations adds missing EveLocations from ESI.
+// Invalid IDs (e.g. ID 0) will be ignored.
 func (s *EveUniverseService) AddMissingLocations(ctx context.Context, ids set.Set[int64]) error {
-	if ids.Size() == 0 {
+	ids2 := ids.Clone()
+	ids2.Delete(0)
+	if ids2.Size() == 0 {
 		return nil
 	}
-	missing, err := s.st.MissingEveLocations(ctx, ids)
+	missing, err := s.st.MissingEveLocations(ctx, ids2)
 	if err != nil {
 		return err
 	}

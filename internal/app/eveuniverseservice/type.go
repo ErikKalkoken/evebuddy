@@ -190,8 +190,14 @@ func (s *EveUniverseService) GetOrCreateTypeESI(ctx context.Context, id int32) (
 }
 
 // AddMissingTypes fetches missing typeIDs from ESI.
+// Invalid IDs (e.g. 0) will be ignored
 func (s *EveUniverseService) AddMissingTypes(ctx context.Context, ids set.Set[int32]) error {
-	missing, err := s.st.MissingEveTypes(ctx, ids)
+	ids2 := ids.Clone()
+	ids2.Delete(0) // ignore invalid ID
+	if ids.Size() == 0 {
+		return nil
+	}
+	missing, err := s.st.MissingEveTypes(ctx, ids2)
 	if err != nil {
 		return err
 	}

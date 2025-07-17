@@ -263,6 +263,18 @@ func TestAddMissingEveTypes(t *testing.T) {
 			assert.Equal(t, 0, httpmock.GetTotalCallCount())
 		}
 	})
+	t.Run("ignore invalid IDs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		x1 := factory.CreateEveType()
+		// when
+		err := s.AddMissingTypes(ctx, set.Of(x1.ID, 0))
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, 0, httpmock.GetTotalCallCount())
+		}
+	})
 }
 
 func TestGetOrCreateEveRaceESI(t *testing.T) {

@@ -384,9 +384,7 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 			var entityIDs, typeIDs set.Set[int32]
 			var locationIDs set.Set[int64]
 			for _, en := range newEntries {
-				if en.ClientId != 0 {
-					entityIDs.Add(en.ClientId)
-				}
+				entityIDs.Add(en.ClientId)
 				locationIDs.Add(en.LocationId)
 				typeIDs.Add(en.TypeId)
 			}

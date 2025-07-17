@@ -67,19 +67,11 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 				slog.Info("No new wallet journal entries", "characterID", characterID)
 				return nil
 			}
-			ids := set.Of[int32]()
+			var entityIDs set.Set[int32]
 			for _, e := range newEntries {
-				if e.FirstPartyId != 0 {
-					ids.Add(e.FirstPartyId)
-				}
-				if e.SecondPartyId != 0 {
-					ids.Add(e.SecondPartyId)
-				}
-				if e.TaxReceiverId != 0 {
-					ids.Add(e.TaxReceiverId)
-				}
+				entityIDs.Add(e.FirstPartyId, e.SecondPartyId, e.TaxReceiverId)
 			}
-			_, err = s.eus.AddMissingEntities(ctx, ids)
+			_, err = s.eus.AddMissingEntities(ctx, entityIDs)
 			if err != nil {
 				return err
 			}
@@ -159,9 +151,7 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg a
 			var entityIDs, typeIDs set.Set[int32]
 			var locationIDs set.Set[int64]
 			for _, en := range newEntries {
-				if en.ClientId != 0 {
-					entityIDs.Add(en.ClientId)
-				}
+				entityIDs.Add(en.ClientId)
 				locationIDs.Add(en.LocationId)
 				typeIDs.Add(en.TypeId)
 			}

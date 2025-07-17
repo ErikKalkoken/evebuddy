@@ -324,6 +324,18 @@ func TestAddMissingLocations(t *testing.T) {
 			}
 		}
 	})
+	t.Run("ignores invalid location IDs", func(t *testing.T) {
+		testutil.TruncateTables(db)
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeAssetSafetyWrap})
+		err := s.AddMissingLocations(ctx, set.Of[int64](2004, 0))
+		if assert.NoError(t, err) {
+			got, err := st.ListEveLocationIDs(ctx)
+			if assert.NoError(t, err) {
+				want := set.Of[int64](2004)
+				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			}
+		}
+	})
 	t.Run("can create missing locations only", func(t *testing.T) {
 		testutil.TruncateTables(db)
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeAssetSafetyWrap})
