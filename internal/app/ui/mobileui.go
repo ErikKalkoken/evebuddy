@@ -433,7 +433,9 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			})
 			return
 		}
-		navBar.Enable(3)
+		fyne.Do(func() {
+			navBar.Enable(3)
+		})
 	}
 	u.onSetCharacter = func(id int32) {
 		go u.updateCharacterAvatar(id, func(r fyne.Resource) {
@@ -580,6 +582,20 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 			homeNav.Push(iwidget.NewAppBar("Wealth", u.wealth))
 		},
 	)
+	navItemAssets := iwidget.NewListItemWithIcon(
+		"Assets",
+		theme.NewThemedResource(icons.Inventory2Svg),
+		func() {
+			homeNav.Push(iwidget.NewAppBar("Assets", u.assets))
+			u.assets.focus()
+		},
+	)
+	u.assets.onUpdate = func(total string) {
+		fyne.Do(func() {
+			navItemAssets.Supporting = fmt.Sprintf("Value: %s", total)
+			homeList.Refresh()
+		})
+	}
 	homeList = iwidget.NewNavList(
 		iwidget.NewListItemWithIcon(
 			"Character Overview",
@@ -588,14 +604,7 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 				homeNav.Push(iwidget.NewAppBar("Character Overview", u.characters))
 			},
 		),
-		iwidget.NewListItemWithIcon(
-			"Assets",
-			theme.NewThemedResource(icons.Inventory2Svg),
-			func() {
-				homeNav.Push(iwidget.NewAppBar("Assets", u.assets))
-				u.assets.focus()
-			},
-		),
+		navItemAssets,
 		iwidget.NewListItemWithIcon(
 			"Clones",
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
