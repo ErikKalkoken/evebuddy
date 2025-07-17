@@ -379,7 +379,7 @@ func (a *walletTransactions) updateCharacter() {
 			rows = rows2
 		}
 	}
-	t, i := a.u.makeTopTextCharacter(characterID, hasData, err, nil)
+	t, i := a.u.makeTopText(characterID, hasData, err, nil)
 	fyne.Do(func() {
 		if t != "" {
 			a.bottom.Text = t
@@ -454,7 +454,7 @@ func (a *walletTransactions) updateCorporation() {
 			rows = rows2
 		}
 	}
-	t, i := a.u.makeTopTextCharacter(corporationID, hasData, err, nil)
+	t, i := a.u.makeTopText(corporationID, hasData, err, nil)
 	fyne.Do(func() {
 		if t != "" {
 			a.bottom.Text = t

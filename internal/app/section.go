@@ -180,6 +180,7 @@ type CorporationSection string
 const (
 	SectionCorporationDivisions           CorporationSection = "divisions"
 	SectionCorporationIndustryJobs        CorporationSection = "industry_jobs"
+	SectionCorporationMembers             CorporationSection = "members"
 	SectionCorporationWalletBalances      CorporationSection = "wallet_balances"
 	SectionCorporationWalletJournal1      CorporationSection = "wallet_journal_1"
 	SectionCorporationWalletJournal2      CorporationSection = "wallet_journal_2"
@@ -200,6 +201,7 @@ const (
 var CorporationSections = []CorporationSection{
 	SectionCorporationDivisions,
 	SectionCorporationIndustryJobs,
+	SectionCorporationMembers,
 	SectionCorporationWalletBalances,
 	SectionCorporationWalletJournal1,
 	SectionCorporationWalletJournal2,
@@ -278,7 +280,9 @@ func (cs CorporationSection) Timeout() time.Duration {
 		walletJournal      = 3600 * time.Second
 	)
 	m := map[CorporationSection]time.Duration{
+		SectionCorporationDivisions:           3600 * time.Second,
 		SectionCorporationIndustryJobs:        300 * time.Second,
+		SectionCorporationMembers:             3600 * time.Second,
 		SectionCorporationWalletBalances:      300 * time.Second,
 		SectionCorporationWalletJournal1:      walletJournal,
 		SectionCorporationWalletJournal2:      walletJournal,
@@ -287,7 +291,6 @@ func (cs CorporationSection) Timeout() time.Duration {
 		SectionCorporationWalletJournal5:      walletJournal,
 		SectionCorporationWalletJournal6:      walletJournal,
 		SectionCorporationWalletJournal7:      walletJournal,
-		SectionCorporationDivisions:           3600 * time.Second,
 		SectionCorporationWalletTransactions1: walletTransactions,
 		SectionCorporationWalletTransactions2: walletTransactions,
 		SectionCorporationWalletTransactions3: walletTransactions,
@@ -312,6 +315,7 @@ func (cs CorporationSection) Roles() set.Set[Role] {
 	m := map[CorporationSection][]Role{
 		SectionCorporationDivisions:           {RoleDirector},
 		SectionCorporationIndustryJobs:        {RoleFactoryManager},
+		SectionCorporationMembers:             {},
 		SectionCorporationWalletBalances:      anyAccountant,
 		SectionCorporationWalletJournal1:      anyAccountant,
 		SectionCorporationWalletJournal2:      anyAccountant,
@@ -341,7 +345,9 @@ func (cs CorporationSection) Scopes() set.Set[string] {
 	journal := []string{"esi-wallet.read_corporation_wallets.v1"}
 	transactions := []string{"esi-wallet.read_corporation_wallets.v1", "esi-universe.read_structures.v1"}
 	m := map[CorporationSection][]string{
+		SectionCorporationDivisions:           {"esi-corporations.read_divisions.v1"},
 		SectionCorporationIndustryJobs:        {"esi-industry.read_corporation_jobs.v1"},
+		SectionCorporationMembers:             {"esi-corporations.read_corporation_membership.v1"},
 		SectionCorporationWalletBalances:      {"esi-wallet.read_corporation_wallets.v1"},
 		SectionCorporationWalletJournal1:      journal,
 		SectionCorporationWalletJournal2:      journal,
@@ -350,7 +356,6 @@ func (cs CorporationSection) Scopes() set.Set[string] {
 		SectionCorporationWalletJournal5:      journal,
 		SectionCorporationWalletJournal6:      journal,
 		SectionCorporationWalletJournal7:      journal,
-		SectionCorporationDivisions:           {"esi-corporations.read_divisions.v1"},
 		SectionCorporationWalletTransactions1: transactions,
 		SectionCorporationWalletTransactions2: transactions,
 		SectionCorporationWalletTransactions3: transactions,

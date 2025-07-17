@@ -147,6 +147,39 @@ func TestListCharacterTokenForCorporation(t *testing.T) {
 			assert.Equal(t, c1.ID, r[0].CharacterID)
 		}
 	})
+	t.Run("matches any when no roles", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateEveEntityCorporation()
+
+		// token with no role
+		ec1 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: c.ID})
+		c1 := factory.CreateCharacterMinimal(storage.CreateCharacterParams{ID: ec1.ID})
+		if err := st.UpdateCharacterRoles(ctx, c1.ID, set.Of[app.Role]()); err != nil {
+			panic(err)
+		}
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c1.ID, Scopes: set.Of("alpha", "bravo")})
+
+		// token with other role
+		ec2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: c.ID})
+		c2 := factory.CreateCharacterMinimal(storage.CreateCharacterParams{ID: ec2.ID})
+		if err := st.UpdateCharacterRoles(ctx, c2.ID, set.Of(app.RoleAuditor)); err != nil {
+			panic(err)
+		}
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c2.ID, Scopes: set.Of("alpha", "bravo")})
+
+		// when
+		r, err := st.ListCharacterTokenForCorporation(
+			ctx,
+			c1.EveCharacter.Corporation.ID,
+			set.Of[app.Role](),
+			set.Of("alpha", "bravo"),
+		)
+		// then
+		if assert.NoError(t, err) {
+			assert.Len(t, r, 2)
+		}
+	})
 	t.Run("list for corporation returns not found error when no token", func(t *testing.T) {
 		testutil.TruncateTables(db)
 		corp := factory.CreateCorporation()

@@ -1,0 +1,139 @@
+package ui
+
+import (
+	"context"
+	"fmt"
+	"slices"
+	"strings"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+)
+
+type corporationMemberRow struct {
+	id   int32
+	name string
+}
+
+type corporationMember struct {
+	widget.BaseWidget
+
+	rows []corporationMemberRow
+	list *widget.List
+	top  *widget.Label
+	u    *baseUI
+}
+
+func newCorporationMember(u *baseUI) *corporationMember {
+	a := &corporationMember{
+		rows: make([]corporationMemberRow, 0),
+		top:  widget.NewLabel(""),
+		u:    u,
+	}
+	a.list = a.makeList()
+	a.ExtendBaseWidget(a)
+	return a
+}
+
+func (a *corporationMember) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewBorder(
+		a.top,
+		nil,
+		nil,
+		nil,
+		a.list,
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (a *corporationMember) makeList() *widget.List {
+	l := widget.NewList(
+		func() int {
+			return len(a.rows)
+		},
+		func() fyne.CanvasObject {
+			icon := iwidget.NewImageFromResource(
+				icons.Characterplaceholder64Jpeg,
+				fyne.NewSquareSize(app.IconUnitSize),
+			)
+			return container.NewBorder(
+				nil,
+				nil,
+				icon,
+				nil,
+				widget.NewLabel("Template"),
+			)
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(a.rows) {
+				return
+			}
+			r := a.rows[id]
+			border := co.(*fyne.Container).Objects
+			border[0].(*widget.Label).SetText(r.name)
+			icon := border[1].(*canvas.Image)
+			iwidget.RefreshImageAsync(icon, func() (fyne.Resource, error) {
+				return a.u.eis.CharacterPortrait(r.id, app.IconPixelSize)
+			})
+		},
+	)
+	l.OnSelected = func(id widget.ListItemID) {
+		defer l.UnselectAll()
+		if id >= len(a.rows) {
+			return
+		}
+		r := a.rows[id]
+		a.u.ShowEveEntityInfoWindow(&app.EveEntity{ID: r.id, Category: app.EveEntityCharacter})
+	}
+	return l
+}
+
+func (a *corporationMember) update() {
+	var rows []corporationMemberRow
+	var err error
+	corporationID := a.u.currentCorporationID()
+	hasData := a.u.scs.HasCorporationSection(corporationID, app.SectionCorporationMembers)
+	if hasData {
+		rows2, err2 := a.fetchRows(corporationID)
+		if err2 != nil {
+			err = err2
+		} else {
+			rows = rows2
+			hasData = len(rows2) > 0
+		}
+	}
+	t, i := a.u.makeTopText(corporationID, hasData, err, func() (string, widget.Importance) {
+		return fmt.Sprintf("Members: %d", len(rows)), widget.MediumImportance
+	})
+	fyne.Do(func() {
+		a.top.Text, a.top.Importance = t, i
+		a.top.Refresh()
+	})
+	fyne.Do(func() {
+		a.rows = rows
+		a.list.Refresh()
+	})
+}
+
+func (a *corporationMember) fetchRows(corporationID int32) ([]corporationMemberRow, error) {
+	oo, err := a.u.rs.ListMembers(context.Background(), corporationID)
+	if err != nil {
+		return nil, err
+	}
+	rows := xslices.Map(oo, func(o *app.CorporationMember) corporationMemberRow {
+		return corporationMemberRow{
+			id:   o.Character.ID,
+			name: o.Character.Name,
+		}
+	})
+	slices.SortFunc(rows, func(a, b corporationMemberRow) int {
+		return strings.Compare(a.name, b.name)
+	})
+	return rows, nil
+}

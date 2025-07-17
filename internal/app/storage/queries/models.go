@@ -352,6 +352,12 @@ type CorporationIndustryJob struct {
 	SuccessfulRuns       sql.NullInt64
 }
 
+type CorporationMember struct {
+	ID            int64
+	CorporationID int64
+	CharacterID   int64
+}
+
 type CorporationSectionStatus struct {
 	ID            int64
 	Comment       string

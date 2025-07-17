@@ -79,7 +79,7 @@ func (a *corporationWallet) updateBalance() {
 			balance = b
 		}
 	}
-	t, i := a.u.makeTopTextCharacter(corporationID, hasData, err, func() (string, widget.Importance) {
+	t, i := a.u.makeTopText(corporationID, hasData, err, func() (string, widget.Importance) {
 		b1 := humanize.FormatFloat(app.FloatFormat, balance)
 		b2 := ihumanize.Number(balance, 1)
 		s := fmt.Sprintf("Balance: %s ISK (%s)", b1, b2)

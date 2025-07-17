@@ -24,7 +24,7 @@ FROM
 WHERE
     character_id = ?;
 
--- name: ListCharacterTokenForCorporation :many
+-- name: ListCharacterTokenForCorporationWithRoles :many
 SELECT
     ct.*
 FROM
@@ -32,8 +32,17 @@ FROM
     JOIN eve_characters ec ON ec.id = ct.character_id
     JOIN character_roles cr ON cr.character_id = ct.character_id
 WHERE
-    corporation_id = ?
+    ec.corporation_id = ?
     AND cr.name IN (sqlc.slice ('roles'));
+
+-- name: ListCharacterTokenForCorporation :many
+SELECT
+    ct.*
+FROM
+    character_tokens ct
+    JOIN eve_characters ec ON ec.id = ct.character_id
+WHERE
+    ec.corporation_id = ?;
 
 -- name: ListCharacterTokenScopes :many
 SELECT

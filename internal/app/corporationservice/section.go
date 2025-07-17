@@ -138,6 +138,8 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 		f = s.updateDivisionsESI
 	case app.SectionCorporationIndustryJobs:
 		f = s.updateIndustryJobsESI
+	case app.SectionCorporationMembers:
+		f = s.updateMembersESI
 	case app.SectionCorporationWalletBalances:
 		f = s.updateWalletBalancesESI
 	case
@@ -210,7 +212,7 @@ func (s *CorporationService) updateSectionIfChanged(
 	token, err := s.cs.ValidCharacterTokenForCorporation(ctx, arg.CorporationID, arg.Section.Roles(), arg.Section.Scopes())
 	if errors.Is(err, app.ErrNotFound) {
 		comment = fmt.Sprintf(
-			"update skipped due to missing corporation member with required roles (%s) and/or missing or invalid token",
+			"update skipped due to missing corporation member with required roles %s and/or missing or invalid token",
 			arg.Section.Roles(),
 		)
 		slog.Info("Section "+comment, "corporationID", arg.CorporationID, "section", arg.Section, "role", arg.Section.Roles(), "scopes", arg.Section.Scopes())

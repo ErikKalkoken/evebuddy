@@ -114,6 +114,7 @@ type baseUI struct {
 	clones                  *clones
 	colonies                *colonies
 	contracts               *contracts
+	corporationMember       *corporationMember
 	corporationSheet        *corporationSheet
 	corporationWallets      map[app.Division]*corporationWallet
 	gameSearch              *hameSearch
@@ -221,6 +222,7 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	u.characterSkillQueue = newCharacterSkillQueue(u)
 	u.characterWallet = newCharacterWallet(u)
 	u.corporationSheet = newCorporationSheet(u, true)
+	u.corporationMember = newCorporationMember(u)
 	for _, d := range app.Divisions {
 		u.corporationWallets[d] = newCorporationWallet(u, d)
 	}
@@ -618,6 +620,7 @@ func (u *baseUI) updateCorporation() {
 func (u *baseUI) defineCorporationUpdates() map[string]func() {
 	ff := make(map[string]func())
 	ff["corporationSheet"] = u.corporationSheet.update
+	ff["corporationMember"] = u.corporationMember.update
 	ff["corporationWalletTotal"] = u.updateCorporationWalletTotal
 	for id, w := range u.corporationWallets {
 		ff[fmt.Sprintf("walletJournal%d", id)] = w.update
@@ -1024,6 +1027,13 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	character := u.currentCharacter()
 	if character != nil {
 		corporationID = character.EveCharacter.Corporation.ID
+		ok, err := u.rs.HasCorporation(ctx, corporationID)
+		if err != nil {
+			slog.Error("Failed to check corporation exists", "error", err)
+		}
+		if !ok {
+			corporationID = 0
+		}
 	}
 	needsRefresh := hasChanged || forceUpdate
 	switch s {
@@ -1134,7 +1144,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 				u.characterSheet.update()
 			}
 			if corporationID == 0 {
-				break
+				return
 			}
 			if err := u.rs.RemoveSectionDataWhenPermissionLost(ctx, corporationID); err != nil {
 				slog.Error("Failed to remove corp data after character role change", "characterID", characterID, "error", err)
@@ -1264,6 +1274,10 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 			u.slotsManufacturing.update()
 			u.slotsReactions.update()
 			u.slotsResearch.update()
+		}
+	case app.SectionCorporationMembers:
+		if isShown && needsRefresh {
+			u.corporationMember.update()
 		}
 	case app.SectionCorporationDivisions:
 		if isShown && needsRefresh {
@@ -1592,16 +1606,16 @@ func (u *baseUI) makeCopyToClipboardLabel(text string) *kxwidget.TappableLabel {
 	})
 }
 
-// makeTopTextCharacter makes the content for the top label of a gui element.
-func (u *baseUI) makeTopTextCharacter(characterID int32, hasData bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
+// makeTopText makes the content for the top label of a gui element.
+func (u *baseUI) makeTopText(characterID int32, hasData bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
 	if err != nil {
 		return "ERROR: " + u.humanizeError(err), widget.DangerImportance
 	}
 	if characterID == 0 {
-		return "No character...", widget.LowImportance
+		return "No entity", widget.LowImportance
 	}
 	if !hasData {
-		return "Waiting for data to be loaded...", widget.WarningImportance
+		return "No data", widget.WarningImportance
 	}
 	if make == nil {
 		return "", widget.MediumImportance

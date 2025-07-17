@@ -89,6 +89,18 @@ func (s *CorporationService) GetOrCreateCorporation(ctx context.Context, corpora
 	return o, nil
 }
 
+// HasCorporation reports whether we have access to a corporation via an owned character.
+func (s *CorporationService) HasCorporation(ctx context.Context, corporationID int32) (bool, error) {
+	if corporationID == 0 {
+		return false, nil
+	}
+	ids, err := s.st.ListCorporationIDs(ctx)
+	if err != nil {
+		return false, err
+	}
+	return ids.Contains(corporationID), nil
+}
+
 // ListCorporationIDs returns all corporation IDs.
 func (s *CorporationService) ListCorporationIDs(ctx context.Context) (set.Set[int32], error) {
 	return s.st.ListCorporationIDs(ctx)

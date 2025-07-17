@@ -124,3 +124,9 @@ type CorporationWalletTransaction struct {
 func (wt *CorporationWalletTransaction) Total() float64 {
 	return wt.UnitPrice * float64(wt.Quantity)
 }
+
+// CorporationMember represents a member in an EVE Online corporation.
+type CorporationMember struct {
+	CorporationID int32
+	Character     *EveEntity
+}

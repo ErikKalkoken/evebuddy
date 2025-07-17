@@ -1096,6 +1096,31 @@ func (f Factory) CreateCorporationHangarName(args ...storage.UpdateOrCreateCorpo
 	return x
 }
 
+func (f Factory) CreateCorporationMember(args ...storage.CorporationMemberParams) *app.CorporationMember {
+	ctx := context.Background()
+	var arg storage.CorporationMemberParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CorporationID == 0 {
+		x := f.CreateCorporation()
+		arg.CorporationID = x.ID
+	}
+	if arg.CharacterID == 0 {
+		x := f.CreateEveEntityCharacter()
+		arg.CharacterID = x.ID
+	}
+	err := f.st.CreateCorporationMember(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	x, err := f.st.GetCorporationMember(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	return x
+}
+
 func (f Factory) CreateCorporationIndustryJob(args ...storage.UpdateOrCreateCorporationIndustryJobParams) *app.CorporationIndustryJob {
 	ctx := context.Background()
 	var arg storage.UpdateOrCreateCorporationIndustryJobParams

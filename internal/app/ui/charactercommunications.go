@@ -264,7 +264,7 @@ func (a *characterCommunications) update() {
 			Unread: unreadCount,
 		})
 	}
-	t, i := a.u.makeTopTextCharacter(characterID, hasData, err, func() (string, widget.Importance) {
+	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
 		return fmt.Sprintf("%s messages", ihumanize.OptionalWithComma(totalCount, "?")), widget.MediumImportance
 	})
 	a.resetCurrentFolder()
@@ -312,7 +312,7 @@ func (a *characterCommunications) setCurrentFolder(nc app.NotificationGroup) {
 			err = err2
 		}
 	}
-	t, i := a.u.makeTopTextCharacter(characterID, hasData, err, func() (string, widget.Importance) {
+	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
 		s := humanize.Comma(int64(len(notifications)))
 		return fmt.Sprintf("%s • %s messages", nc.String(), s), widget.MediumImportance
 	})

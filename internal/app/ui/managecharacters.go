@@ -297,10 +297,16 @@ func (a *manageCharacters) showDeleteDialog(r manageCharacterRow) {
 						if corpDeleted {
 							a.mcw.u.setAnyCorporation()
 						} else {
-							if err := a.mcw.u.rs.RemoveSectionDataWhenPermissionLost(ctx, r.corporationID); err != nil {
-								slog.Error("Failed to remove corp data after character was deleted", "characterID", r.characterID, "error", err)
+							ok, err := a.mcw.u.rs.HasCorporation(ctx, r.corporationID)
+							if err != nil {
+								slog.Error("Failed to determine if corp exists", "err", err)
 							}
-							go a.mcw.u.updateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
+							if ok {
+								if err := a.mcw.u.rs.RemoveSectionDataWhenPermissionLost(ctx, r.corporationID); err != nil {
+									slog.Error("Failed to remove corp data after character was deleted", "characterID", r.characterID, "error", err)
+								}
+								go a.mcw.u.updateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
+							}
 						}
 						a.mcw.u.updateHome()
 						a.mcw.u.updateStatus()

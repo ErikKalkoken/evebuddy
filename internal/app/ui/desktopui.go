@@ -354,6 +354,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 					theme.NewThemedResource(icons.StarCircleOutlineSvg),
 					makePageWithPageBarForCorporation("Corporation Sheet", container.NewAppTabs(
 						container.NewTabItem("Corporation", u.corporationSheet),
+						container.NewTabItem("Members", u.corporationMember),
 					)),
 				),
 			},

@@ -132,13 +132,22 @@ func (st *Storage) ListCharacterTokenForCorporation(ctx context.Context, corpora
 	for r := range roles.All() {
 		roleNames = append(roleNames, role2String[r])
 	}
-	arg := queries.ListCharacterTokenForCorporationParams{
-		CorporationID: int64(corporationID),
-		Roles:         roleNames,
-	}
-	rows, err := st.qRO.ListCharacterTokenForCorporation(ctx, arg)
-	if err != nil {
-		return nil, wrapErr(err)
+	var rows []queries.CharacterToken
+	var err error
+	if roles.Size() == 0 {
+		rows, err = st.qRO.ListCharacterTokenForCorporation(ctx, int64(corporationID))
+		if err != nil {
+			return nil, wrapErr(err)
+		}
+	} else {
+		arg := queries.ListCharacterTokenForCorporationWithRolesParams{
+			CorporationID: int64(corporationID),
+			Roles:         roleNames,
+		}
+		rows, err = st.qRO.ListCharacterTokenForCorporationWithRoles(ctx, arg)
+		if err != nil {
+			return nil, wrapErr(err)
+		}
 	}
 	if len(rows) == 0 {
 		return nil, wrapErr(app.ErrNotFound)

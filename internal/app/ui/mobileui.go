@@ -280,6 +280,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 							"Corporation Sheet",
 							container.NewAppTabs(
 								container.NewTabItem("Corporation", u.corporationSheet),
+								container.NewTabItem("Members", u.corporationMember),
 							),
 						))
 				},
