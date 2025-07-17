@@ -9,10 +9,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-/*
-- TODO: Make widgets thread safe
-*/
-
 const (
 	colorIndicator = theme.ColorNameInputBorder
 	colorBadge     = theme.ColorNamePrimary
@@ -144,13 +140,15 @@ func (w *destination) CreateRenderer() fyne.WidgetRenderer {
 		defaultAnimationDuration,
 		func(s fyne.Size) {
 			w.indicator.Resize(s)
-			w.indicator.Move(fyne.NewPos(-s.Width/2, -s.Height/2))
+			w.indicator.Move(fyne.NewPos(-s.Width/2, -s.Height/2+0.5))
 		},
 	)
-	p := theme.Padding()
 	w.tapAnim.Curve = fyne.AnimationEaseOut
+
 	w.badge.Resize(fyne.NewSquareSize(6))
 	w.badge.Hide()
+
+	p := theme.Padding()
 	c := container.New(
 		layout.NewCustomPaddedVBoxLayout(p*1.2),
 		container.NewStack(
