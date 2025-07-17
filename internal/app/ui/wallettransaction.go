@@ -28,13 +28,15 @@ const (
 	marketTransactionActivitySell = "Sell"
 )
 
-type characterWalletTransactionRow struct {
+type walletTransactionRow struct {
 	categoryName     string
 	characterID      int32
 	client           *app.EveEntity
 	clientName       string
 	date             time.Time
 	dateFormatted    string
+	corporationID    int32
+	division         app.Division
 	isBuy            bool
 	locationDisplay  []widget.RichTextSegment
 	locationID       int64
@@ -53,15 +55,16 @@ type characterWalletTransactionRow struct {
 	unitPriceDisplay string
 }
 
-type characterWalletTransactions struct {
+type walletTransactions struct {
 	widget.BaseWidget
 
 	body           fyne.CanvasObject
 	bottom         *widget.Label
 	columnSorter   *columnSorter
+	division       app.Division
+	rows           []walletTransactionRow
+	rowsFiltered   []walletTransactionRow
 	selectActivity *kxwidget.FilterChipSelect
-	rows           []characterWalletTransactionRow
-	rowsFiltered   []characterWalletTransactionRow
 	selectCategory *kxwidget.FilterChipSelect
 	selectClient   *kxwidget.FilterChipSelect
 	selectLocation *kxwidget.FilterChipSelect
@@ -71,7 +74,15 @@ type characterWalletTransactions struct {
 	u              *baseUI
 }
 
-func newCharacterWalletTransaction(u *baseUI) *characterWalletTransactions {
+func newCharacterWalletTransaction(u *baseUI) *walletTransactions {
+	return newWalletTransaction(u, app.DivisionZero)
+}
+
+func newCorporationWalletTransactions(u *baseUI, d app.Division) *walletTransactions {
+	return newWalletTransaction(u, d)
+}
+
+func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 	headers := []headerDef{
 		{label: "Date", width: columnWidthDateTime},
 		{label: "Qty.", width: 75},
@@ -81,15 +92,16 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransactions {
 		{label: "Client", width: columnWidthEntity},
 		{label: "Where", width: columnWidthLocation},
 	}
-	a := &characterWalletTransactions{
-		columnSorter: newColumnSorterWithInit(headers, 0, sortDesc),
-		rows:         make([]characterWalletTransactionRow, 0),
-		rowsFiltered: make([]characterWalletTransactionRow, 0),
+	a := &walletTransactions{
 		bottom:       widget.NewLabel(""),
+		columnSorter: newColumnSorterWithInit(headers, 0, sortDesc),
+		division:     d,
+		rows:         make([]walletTransactionRow, 0),
+		rowsFiltered: make([]walletTransactionRow, 0),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	makeCell := func(col int, r characterWalletTransactionRow) []widget.RichTextSegment {
+	makeCell := func(col int, r walletTransactionRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
 			return iwidget.RichTextSegmentsFromText(r.dateFormatted)
@@ -124,8 +136,12 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransactions {
 			makeCell,
 			a.columnSorter,
 			a.filterRows,
-			func(_ int, r characterWalletTransactionRow) {
-				showCharacterWalletTransaction(a.u, r.characterID, r.transactionID)
+			func(_ int, r walletTransactionRow) {
+				if a.isCorporation() {
+					showCorporationWalletTransaction(a.u, r.characterID, r.division, r.transactionID)
+				} else {
+					showCharacterWalletTransaction(a.u, r.characterID, r.transactionID)
+				}
 			})
 	} else {
 		a.body = a.makeDataList()
@@ -176,7 +192,7 @@ func newCharacterWalletTransaction(u *baseUI) *characterWalletTransactions {
 	return a
 }
 
-func (a *characterWalletTransactions) CreateRenderer() fyne.WidgetRenderer {
+func (a *walletTransactions) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectActivity, a.selectCategory, a.selectType, a.selectClient, a.selectRegion, a.selectLocation)
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
@@ -191,7 +207,11 @@ func (a *characterWalletTransactions) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characterWalletTransactions) makeDataList() *iwidget.StripedList {
+func (a *walletTransactions) isCorporation() bool {
+	return a.division != app.DivisionZero
+}
+
+func (a *walletTransactions) makeDataList() *iwidget.StripedList {
 	p := theme.Padding()
 	l := iwidget.NewStripedList(
 		func() int {
@@ -241,17 +261,21 @@ func (a *characterWalletTransactions) makeDataList() *iwidget.StripedList {
 			return
 		}
 		r := a.rowsFiltered[id]
-		showCharacterWalletTransaction(a.u, r.characterID, r.transactionID)
+		if a.isCorporation() {
+			showCorporationWalletTransaction(a.u, r.characterID, r.division, r.transactionID)
+		} else {
+			showCharacterWalletTransaction(a.u, r.characterID, r.transactionID)
+		}
 	}
 	l.HideSeparators = true
 	return l
 }
 
-func (a *characterWalletTransactions) filterRows(sortCol int) {
+func (a *walletTransactions) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
 	if x := a.selectActivity.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r characterWalletTransactionRow) bool {
+		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
 			switch x {
 			case marketTransactionActivityBuy:
 				return r.isBuy
@@ -262,33 +286,33 @@ func (a *characterWalletTransactions) filterRows(sortCol int) {
 		})
 	}
 	if x := a.selectCategory.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r characterWalletTransactionRow) bool {
+		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
 			return r.categoryName == x
 		})
 	}
 	if x := a.selectClient.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r characterWalletTransactionRow) bool {
+		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
 			return r.clientName == x
 		})
 	}
 	if x := a.selectLocation.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r characterWalletTransactionRow) bool {
+		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
 			return r.locationName == x
 		})
 	}
 	if x := a.selectRegion.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r characterWalletTransactionRow) bool {
+		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
 			return r.regionName == x
 		})
 	}
 	if x := a.selectType.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r characterWalletTransactionRow) bool {
+		rows = xslices.Filter(rows, func(r walletTransactionRow) bool {
 			return r.typeName == x
 		})
 	}
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
-		slices.SortFunc(rows, func(a, b characterWalletTransactionRow) int {
+		slices.SortFunc(rows, func(a, b walletTransactionRow) int {
 			var x int
 			switch sortCol {
 			case 0:
@@ -314,32 +338,40 @@ func (a *characterWalletTransactions) filterRows(sortCol int) {
 		})
 	})
 	// update filters
-	a.selectCategory.SetOptions(xslices.Map(rows, func(r characterWalletTransactionRow) string {
+	a.selectCategory.SetOptions(xslices.Map(rows, func(r walletTransactionRow) string {
 		return r.categoryName
 	}))
-	a.selectClient.SetOptions(xslices.Map(rows, func(r characterWalletTransactionRow) string {
+	a.selectClient.SetOptions(xslices.Map(rows, func(r walletTransactionRow) string {
 		return r.clientName
 	}))
-	a.selectLocation.SetOptions(xslices.Map(rows, func(r characterWalletTransactionRow) string {
+	a.selectLocation.SetOptions(xslices.Map(rows, func(r walletTransactionRow) string {
 		return r.locationName
 	}))
-	a.selectRegion.SetOptions(xslices.Map(rows, func(r characterWalletTransactionRow) string {
+	a.selectRegion.SetOptions(xslices.Map(rows, func(r walletTransactionRow) string {
 		return r.regionName
 	}))
-	a.selectType.SetOptions(xslices.Map(rows, func(r characterWalletTransactionRow) string {
+	a.selectType.SetOptions(xslices.Map(rows, func(r walletTransactionRow) string {
 		return r.typeName
 	}))
 	a.rowsFiltered = rows
 	a.body.Refresh()
 }
 
-func (a *characterWalletTransactions) update() {
+func (a *walletTransactions) update() {
+	if a.isCorporation() {
+		a.updateCorporation()
+	} else {
+		a.updateCharacter()
+	}
+}
+
+func (a *walletTransactions) updateCharacter() {
 	var err error
-	rows := make([]characterWalletTransactionRow, 0)
+	rows := make([]walletTransactionRow, 0)
 	characterID := a.u.currentCharacterID()
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterWalletTransactions)
 	if hasData {
-		rows2, err2 := a.fetchRows(characterID, a.u.services())
+		rows2, err2 := a.fetchCharacterRows(characterID, a.u.services())
 		if err2 != nil {
 			slog.Error("Failed to refresh wallet transaction UI", "err", err2)
 			err = err2
@@ -364,15 +396,15 @@ func (a *characterWalletTransactions) update() {
 	})
 }
 
-func (a *characterWalletTransactions) fetchRows(characterID int32, s services) ([]characterWalletTransactionRow, error) {
+func (a *walletTransactions) fetchCharacterRows(characterID int32, s services) ([]walletTransactionRow, error) {
 	entries, err := s.cs.ListWalletTransactions(context.Background(), characterID)
 	if err != nil {
 		return nil, err
 	}
-	rows := make([]characterWalletTransactionRow, len(entries))
+	rows := make([]walletTransactionRow, len(entries))
 	for i, o := range entries {
 		total := o.Total()
-		r := characterWalletTransactionRow{
+		r := walletTransactionRow{
 			categoryName:     o.Type.Group.Category.Name,
 			characterID:      characterID,
 			client:           o.Client,
@@ -408,8 +440,76 @@ func (a *characterWalletTransactions) fetchRows(characterID int32, s services) (
 	return rows, nil
 }
 
+func (a *walletTransactions) updateCorporation() {
+	var err error
+	rows := make([]walletTransactionRow, 0)
+	corporationID := a.u.currentCorporationID()
+	hasData := a.u.scs.HasCorporationSection(corporationID, app.CorporationSectionWalletTransactions(a.division))
+	if hasData {
+		rows2, err2 := a.fetchCorporationRows(corporationID, a.division, a.u.services())
+		if err2 != nil {
+			slog.Error("Failed to refresh wallet transaction UI", "err", err2)
+			err = err2
+		} else {
+			rows = rows2
+		}
+	}
+	t, i := a.u.makeTopTextCharacter(corporationID, hasData, err, nil)
+	fyne.Do(func() {
+		if t != "" {
+			a.bottom.Text = t
+			a.bottom.Importance = i
+			a.bottom.Refresh()
+			a.bottom.Show()
+		} else {
+			a.bottom.Hide()
+		}
+	})
+	fyne.Do(func() {
+		a.rows = rows
+		a.filterRows(-1)
+	})
+}
+
+func (a *walletTransactions) fetchCorporationRows(corporationID int32, division app.Division, s services) ([]walletTransactionRow, error) {
+	entries, err := s.rs.ListWalletTransactions(context.Background(), corporationID, division)
+	if err != nil {
+		return nil, err
+	}
+	rows := make([]walletTransactionRow, len(entries))
+	for i, o := range entries {
+		total := o.Total()
+		r := walletTransactionRow{
+			categoryName:     o.Type.Group.Category.Name,
+			corporationID:    corporationID,
+			client:           o.Client,
+			clientName:       o.Client.Name,
+			date:             o.Date,
+			division:         division,
+			dateFormatted:    o.Date.Format(app.DateTimeFormat),
+			locationDisplay:  o.Location.DisplayRichText(),
+			locationID:       o.Location.ID,
+			locationName:     o.Location.DisplayName(),
+			quantity:         int(o.Quantity),
+			quantityDisplay:  humanize.Comma(int64(o.Quantity)),
+			total:            total,
+			totalFormatted:   humanize.FormatFloat(app.FloatFormat, total),
+			transactionID:    o.TransactionID,
+			typeID:           o.Type.ID,
+			typeName:         o.Type.Name,
+			unitPrice:        o.UnitPrice,
+			unitPriceDisplay: humanize.FormatFloat(app.FloatFormat, o.UnitPrice),
+		}
+		if o.Region != nil {
+			r.regionName = o.Region.Name
+		}
+		rows[i] = r
+	}
+	return rows, nil
+}
+
 func showCharacterWalletTransaction(u *baseUI, characterID int32, transactionID int64) {
-	title := fmt.Sprintf("Market Transaction #%d", transactionID)
+	title := fmt.Sprintf("Character Market Transaction #%d", transactionID)
 	w, ok := u.getOrCreateWindow(fmt.Sprintf("%d-%d", characterID, transactionID), title, u.scs.CharacterName(characterID))
 	if !ok {
 		w.Show()
@@ -448,6 +548,53 @@ func showCharacterWalletTransaction(u *baseUI, characterID int32, transactionID 
 		widget.NewFormItem("Related Journal Entry", makeLinkLabelWithWrap(
 			fmt.Sprintf("#%d", o.JournalRefID), func() {
 				showCharacterWalletJournalEntry(u, characterID, o.JournalRefID)
+			},
+		)),
+	}
+
+	if u.IsDeveloperMode() {
+		items = append(items, widget.NewFormItem(
+			"Transaction ID",
+			u.makeCopyToClipboardLabel(fmt.Sprint(transactionID)),
+		))
+	}
+	f := widget.NewForm(items...)
+	f.Orientation = widget.Adaptive
+	setDetailWindow(title, f, w)
+	w.Show()
+}
+
+func showCorporationWalletTransaction(u *baseUI, corporationID int32, division app.Division, transactionID int64) {
+	title := fmt.Sprintf("Corporation Market Transaction #%d", transactionID)
+	w, ok := u.getOrCreateWindow(fmt.Sprintf("%d-%d", corporationID, transactionID), title, u.scs.CorporationName(corporationID))
+	if !ok {
+		w.Show()
+		return
+	}
+	o, err := u.rs.GetWalletTransaction(context.Background(), corporationID, division, transactionID)
+	if err != nil {
+		u.showErrorDialog("Failed to show market transaction", err, u.window)
+		return
+	}
+	totalAmount := o.Total()
+	items := []*widget.FormItem{
+		widget.NewFormItem("Owner", makeOwnerActionLabel(
+			corporationID,
+			u.scs.CorporationName(corporationID),
+			u.ShowEveEntityInfoWindow,
+		)),
+		widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
+		widget.NewFormItem("Quantity", widget.NewLabel(humanize.Comma(int64(o.Quantity)))),
+		widget.NewFormItem("Type", makeLinkLabelWithWrap(o.Type.Name, func() {
+			u.ShowInfoWindow(app.EveEntityInventoryType, o.Type.ID)
+		})),
+		widget.NewFormItem("Unit price", widget.NewLabel(formatISKAmount(o.UnitPrice))),
+		widget.NewFormItem("Total", widget.NewLabel(formatISKAmount(totalAmount))),
+		widget.NewFormItem("Client", makeEveEntityActionLabel(o.Client, u.ShowEveEntityInfoWindow)),
+		widget.NewFormItem("Location", makeLocationLabel(o.Location, u.ShowLocationInfoWindow)),
+		widget.NewFormItem("Related Journal Entry", makeLinkLabelWithWrap(
+			fmt.Sprintf("#%d", o.JournalRefID), func() {
+				showCorporationWalletJournalEntry(u, corporationID, division, o.JournalRefID)
 			},
 		)),
 	}

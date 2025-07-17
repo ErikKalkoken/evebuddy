@@ -12,7 +12,8 @@ import (
 type Division uint
 
 const (
-	Division1 Division = iota + 1
+	DivisionZero Division = iota
+	Division1
 	Division2
 	Division3
 	Division4

@@ -1609,23 +1609,6 @@ func (u *baseUI) makeTopTextCharacter(characterID int32, hasData bool, err error
 	return make()
 }
 
-// makeTopTextCorporation makes the content for the top label of a gui element.
-func (u *baseUI) makeTopTextCorporation(corporationID int32, hasData bool, err error, make func() (string, widget.Importance)) (string, widget.Importance) {
-	if err != nil {
-		return "ERROR: " + u.humanizeError(err), widget.DangerImportance
-	}
-	if corporationID == 0 {
-		return "No entity...", widget.LowImportance
-	}
-	if !hasData {
-		return "Waiting for data to be loaded...", widget.WarningImportance
-	}
-	if make == nil {
-		return "", widget.MediumImportance
-	}
-	return make()
-}
-
 // isNowDailyDowntime reports whether the daily downtime is expected to happen currently.
 func isNowDailyDowntime() bool {
 	return isTimeWithinRange(downtimeStart, downtimeDuration, time.Now())

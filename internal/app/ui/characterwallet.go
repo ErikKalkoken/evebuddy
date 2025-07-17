@@ -21,8 +21,8 @@ type characterWallet struct {
 	onUpdate func(balance string)
 
 	balance      *widget.Label
-	journal      *characterWalletJournal
-	transactions *characterWalletTransactions
+	journal      *walletJournal
+	transactions *walletTransactions
 	u            *baseUI
 }
 
