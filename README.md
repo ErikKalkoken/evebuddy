@@ -34,7 +34,7 @@ EVE Buddy is a multi-platform companion app for [Eve Online](https://www.eveonli
 
 - Show consolidated information for all your characters, e.g. asset search over all characters or a combined view of industry jobs for all characters and corporations
 - Notify you about important game events (e.g. structure attacked) or updates (e.g. training queue is empty)
-- Allow you to monitor individual characters, e.g. inspect the current training queue of a character
+- Allow you to monitor your characters and corporations, e.g. inspect the current training queue of a character
 - Provides a full Eve mail client for each of your characters
 
 EVE Buddy is available for Windows, Linux, macOS and Android.
@@ -58,13 +58,16 @@ A more detailed overview of the provided features:
 - Location: Location in New Eden and current ships for all characters
 - Training: Queue status and skillpoints
 - Wealth: Charts showing wealth distribution across all characters
-- Additional information can be accessed for each character:
+- Character specific:
   - Assets: Browse through your assets at all your locations
   - Clones: Current augmentations, jump clones & jump cooldown timer
   - Mails: Full mail client for receiving and sending Eve mails
   - Communications: Browse through all communications
   - Skills: Training queue, catalogue of all trained skills and what ships can be flown
-  - Wallet: Wallet and Wallet Transactions
+  - Wallet: Wallet and market Transactions
+- Corporation specific:
+  - Members: List of all current corporation members
+  - Wallets: Wallet and market transactions for all corporation wallets
 - Get notified about important events (e.g. structure attacked, training queue expired)
 - Ability to search New Eden (similar to in-game search bar)
 - Show information about various entities (e.g. character, alliance, location); similar to in-game information windows
