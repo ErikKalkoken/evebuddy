@@ -92,6 +92,10 @@ func (s *EveUniverseService) RandomizeAllAllianceNames(ctx context.Context) erro
 	return nil
 }
 
+func (s *EveUniverseService) GetEveCorporation(ctx context.Context, corporationID int32) (*app.EveCorporation, error) {
+	return s.st.GetEveCorporation(ctx, corporationID)
+}
+
 func (s *EveUniverseService) GetOrCreateCorporationESI(ctx context.Context, id int32) (*app.EveCorporation, error) {
 	o, err := s.st.GetEveCorporation(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {
@@ -106,10 +110,7 @@ func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 		if err != nil {
 			return nil, err
 		}
-		ids := set.Of(id, r.CeoId, r.CreatorId, r.AllianceId, r.FactionId, r.HomeStationId)
-		ids.DeleteFunc(func(id int32) bool {
-			return id < 2
-		})
+		ids := set.Of(id, r.AllianceId, r.CeoId, r.CreatorId, r.FactionId, r.HomeStationId)
 		if _, err := s.AddMissingEntities(ctx, ids); err != nil {
 			return nil, err
 		}

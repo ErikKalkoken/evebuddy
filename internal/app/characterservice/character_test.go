@@ -2,13 +2,10 @@ package characterservice_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/test"
-	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -72,19 +69,6 @@ func TestGetAnyCharacter(t *testing.T) {
 	})
 }
 
-type ssoFake struct {
-	token *app.Token
-	err   error
-}
-
-func (s ssoFake) Authenticate(ctx context.Context, scopes []string) (*app.Token, error) {
-	return s.token, s.err
-}
-
-func (s ssoFake) RefreshToken(ctx context.Context, refreshToken string) (*app.Token, error) {
-	return s.token, s.err
-}
-
 func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
@@ -99,13 +83,14 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			CorporationID: corporation.ID,
 		})
 		cs := characterservice.NewFake(st, characterservice.Params{
-			SSOService: ssoFake{token: factory.CreateToken(app.Token{
+			SSOService: characterservice.SSOFake{Token: factory.CreateToken(app.Token{
 				CharacterID:   character.ID,
 				CharacterName: character.Name})},
 		})
 		var info string
-		b := binding.BindString(&info)
-		got, err := cs.UpdateOrCreateCharacterFromSSO(ctx, b)
+		got, err := cs.UpdateOrCreateCharacterFromSSO(ctx, func(s string) {
+			info = s
+		})
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, character.ID, got)
@@ -119,8 +104,9 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			}
 			x, err := st.GetCorporation(ctx, corporation.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, corporation, x.Corporation)
+				assert.Equal(t, corporation, x.EveCorporation)
 			}
+			assert.NotZero(t, info)
 		}
 	})
 	t.Run("update existing character", func(t *testing.T) {
@@ -132,18 +118,19 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			CorporationID: corporation.ID,
 		})
 		c := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: ec.ID})
-		factory.CreateCharacterToken(app.CharacterToken{
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
 			AccessToken: "oldToken",
 			CharacterID: c.ID,
 		})
 		cs := characterservice.NewFake(st, characterservice.Params{
-			SSOService: ssoFake{token: factory.CreateToken(app.Token{
+			SSOService: characterservice.SSOFake{Token: factory.CreateToken(app.Token{
 				CharacterID:   c.ID,
 				CharacterName: c.EveCharacter.Name})},
 		})
 		var info string
-		b := binding.BindString(&info)
-		got, err := cs.UpdateOrCreateCharacterFromSSO(ctx, b)
+		got, err := cs.UpdateOrCreateCharacterFromSSO(ctx, func(s string) {
+			info = s
+		})
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c.ID, got)
@@ -151,6 +138,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, token.CharacterID, c.ID)
 			}
+			assert.NotZero(t, info)
 		}
 	})
 }
@@ -167,7 +155,7 @@ func TestTrainingWatchers(t *testing.T) {
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c1.ID})
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c1.ID,
-			Section:     app.SectionSkillqueue,
+			Section:     app.SectionCharacterSkillqueue,
 			CompletedAt: time.Now().UTC(),
 		})
 		c2 := factory.CreateCharacterFull()
@@ -211,7 +199,7 @@ func TestTrainingWatchers(t *testing.T) {
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c1.ID})
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c1.ID,
-			Section:     app.SectionSkillqueue,
+			Section:     app.SectionCharacterSkillqueue,
 			CompletedAt: time.Now().UTC(),
 		})
 		// when
@@ -230,7 +218,7 @@ func TestTrainingWatchers(t *testing.T) {
 		c1 := factory.CreateCharacterFull()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c1.ID,
-			Section:     app.SectionSkillqueue,
+			Section:     app.SectionCharacterSkillqueue,
 			CompletedAt: time.Now().UTC(),
 		})
 		// when
@@ -300,327 +288,6 @@ func TestNotifyUpdatedContracts(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestUpdateMail(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
-	defer db.Close()
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-	s := characterservice.NewFake(st)
-	ctx := context.Background()
-	t.Run("Can fetch new mail", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		httpmock.Reset()
-		c1 := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c1.ID})
-		e1 := factory.CreateEveEntityCharacter()
-		e2 := factory.CreateEveEntityCharacter()
-		m1 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList})
-		factory.CreateCharacterMailList(c1.ID) // obsolete
-		c2 := factory.CreateCharacterFull()
-		m2 := factory.CreateCharacterMailList(c2.ID) // not obsolete
-		recipients := []map[string]any{
-			{
-				"recipient_id":   e2.ID,
-				"recipient_type": "character",
-			},
-			{
-				"recipient_id":   m1.ID,
-				"recipient_type": "mail_list",
-			},
-		}
-		mailID := 7
-		labelIDs := []int32{16, 32}
-		timestamp := "2015-09-30T16:07:00Z"
-		subject := "test"
-		dataHeader := []map[string]any{
-			{
-				"from":       e1.ID,
-				"is_read":    true,
-				"labels":     labelIDs,
-				"mail_id":    mailID,
-				"recipients": recipients,
-				"subject":    subject,
-				"timestamp":  timestamp,
-			},
-		}
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/", c1.ID),
-			httpmock.NewJsonResponderOrPanic(200, dataHeader),
-		)
-		dataMail := map[string]any{
-			"body":       "blah blah blah",
-			"from":       e1.ID,
-			"labels":     labelIDs,
-			"read":       true,
-			"recipients": recipients,
-			"subject":    "test",
-			"timestamp":  timestamp,
-		}
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/%d/", c1.ID, mailID),
-			httpmock.NewJsonResponderOrPanic(200, dataMail),
-		)
-		dataMailList := []map[string]any{
-			{
-				"mailing_list_id": m1.ID,
-				"name":            "test_mailing_list",
-			},
-		}
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/lists/", c1.ID),
-			httpmock.NewJsonResponderOrPanic(200, dataMailList),
-		)
-		dataMailLabel := map[string]any{
-			"labels": []map[string]any{
-				{
-					"color":        "#660066",
-					"label_id":     16,
-					"name":         "PINK",
-					"unread_count": 4,
-				},
-				{
-					"color":        "#FFFFFF",
-					"label_id":     32,
-					"name":         "WHITE",
-					"unread_count": 0,
-				},
-			},
-			"total_unread_count": 4,
-		}
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/mail/labels/", c1.ID),
-			httpmock.NewJsonResponderOrPanic(200, dataMailLabel),
-		)
-		// when
-		_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterUpdateSectionParams{
-			CharacterID: c1.ID,
-			Section:     app.SectionMailLabels,
-		})
-		if assert.NoError(t, err) {
-			_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterUpdateSectionParams{
-				CharacterID: c1.ID,
-				Section:     app.SectionMailLists,
-			})
-			if assert.NoError(t, err) {
-				_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterUpdateSectionParams{
-					CharacterID: c1.ID,
-					Section:     app.SectionMails,
-				})
-				// then
-				if assert.NoError(t, err) {
-					m, err := s.GetMail(ctx, c1.ID, int32(mailID))
-					if assert.NoError(t, err) {
-						assert.Equal(t, "blah blah blah", m.Body)
-					}
-					labels, err := st.ListCharacterMailLabelsOrdered(ctx, c1.ID)
-					if assert.NoError(t, err) {
-						got := set.Of[int32]()
-						for _, l := range labels {
-							got.Add(l.LabelID)
-						}
-						want := set.Of(labelIDs...)
-						assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
-					}
-					lists, err := st.ListCharacterMailListsOrdered(ctx, c2.ID)
-					if assert.NoError(t, err) {
-						got := set.Of[int32]()
-						for _, l := range lists {
-							got.Add(l.ID)
-						}
-						want := set.Of(m2.ID)
-						assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
-					}
-				}
-			}
-		}
-	})
-	t.Run("Can update existing mail", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		httpmock.Reset()
-		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		e1 := factory.CreateEveEntityCharacter()
-		e2 := factory.CreateEveEntityCharacter()
-		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: 16})
-		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: 32}) // obsolete
-		m1 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList})
-		timestamp, _ := time.Parse("2006-01-02T15:04:05.999MST", "2015-09-30T16:07:00Z")
-		mailID := int32(7)
-		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
-			Body:         "blah blah blah",
-			CharacterID:  c.ID,
-			FromID:       e1.ID,
-			LabelIDs:     []int32{16},
-			MailID:       mailID,
-			IsRead:       false,
-			RecipientIDs: []int32{e2.ID, m1.ID},
-			Subject:      "test",
-			Timestamp:    timestamp,
-		})
-
-		dataMailList := []map[string]any{
-			{
-				"mailing_list_id": m1.ID,
-				"name":            "test_mailing_list",
-			},
-		}
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/lists/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, dataMailList),
-		)
-		dataMailLabel := map[string]any{
-			"labels": []map[string]any{
-				{
-					"color":        "#660066",
-					"label_id":     16,
-					"name":         "PINK",
-					"unread_count": 4,
-				},
-				{
-					"color":        "#FFFFFF",
-					"label_id":     32,
-					"name":         "WHITE",
-					"unread_count": 0,
-				},
-			},
-			"total_unread_count": 4,
-		}
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/mail/labels/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, dataMailLabel),
-		)
-		recipients := []map[string]any{
-			{
-				"recipient_id":   e2.ID,
-				"recipient_type": "character",
-			},
-			{
-				"recipient_id":   m1.ID,
-				"recipient_type": "mail_list",
-			},
-		}
-		dataHeader := []map[string]any{
-			{
-				"from":       e1.ID,
-				"is_read":    true,
-				"labels":     []int{32},
-				"mail_id":    mailID,
-				"recipients": recipients,
-				"subject":    "test",
-				"timestamp":  "2015-09-30T16:07:00Z",
-			},
-		}
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, dataHeader),
-		)
-		// when
-		_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterUpdateSectionParams{
-			CharacterID: c.ID,
-			Section:     app.SectionMails,
-		})
-		// then
-		if assert.NoError(t, err) {
-			m, err := s.GetMail(ctx, c.ID, mailID)
-			if assert.NoError(t, err) {
-				assert.Equal(t, "blah blah blah", m.Body)
-				assert.True(t, m.IsRead)
-				assert.Len(t, m.Labels, 1)
-				assert.Equal(t, int32(32), m.Labels[0].LabelID)
-				assert.Len(t, m.Recipients, 2)
-			}
-			labels, err := st.ListCharacterMailLabelsOrdered(ctx, c.ID)
-			if assert.NoError(t, err) {
-				got := set.Of[int32]()
-				for _, l := range labels {
-					got.Add(l.LabelID)
-				}
-				want := set.Of[int32](16, 32)
-				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
-			}
-		}
-	})
-}
-
-func TestNotifyMails(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
-	defer db.Close()
-	cs := characterservice.NewFake(st)
-	ctx := context.Background()
-	now := time.Now().UTC()
-	earliest := now.Add(-12 * time.Hour)
-	cases := []struct {
-		name         string
-		timestamp    time.Time
-		isProcessed  bool
-		shouldNotify bool
-	}{
-		{"send unprocessed", now, false, true},
-		{"don't send processed", now, true, false},
-		{"don't send old", now.Add(-16 * time.Hour), false, false},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			// given
-			testutil.TruncateTables(db)
-			n := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
-				IsProcessed: tc.isProcessed,
-				Timestamp:   tc.timestamp,
-			})
-			var sendCount int
-			// when
-			err := cs.NotifyMails(ctx, n.CharacterID, earliest, func(title string, content string) {
-				sendCount++
-			})
-			// then
-			if assert.NoError(t, err) {
-				assert.Equal(t, tc.shouldNotify, sendCount == 1)
-			}
-		})
-	}
-}
-
-func TestSendMail(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
-	defer db.Close()
-	ctx := context.Background()
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-	s := characterservice.NewFake(st)
-	t.Run("Can send mail", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		httpmock.Reset()
-		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		r := factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
-		httpmock.Reset()
-		httpmock.RegisterResponder(
-			"POST",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/", c.ID),
-			httpmock.NewJsonResponderOrPanic(201, 123))
-
-		// when
-		mailID, err := s.SendMail(ctx, c.ID, "subject", []*app.EveEntity{r}, "body")
-		// then
-		if assert.NoError(t, err) {
-			m, err := s.GetMail(ctx, c.ID, mailID)
-			if assert.NoError(t, err) {
-				assert.Equal(t, "body", m.Body)
-			}
-		}
-	})
 }
 
 func TestNotifyCommunications(t *testing.T) {
@@ -753,194 +420,6 @@ func TestNotifyExpiredExtractions(t *testing.T) {
 	}
 }
 
-func TestUpdateCharacterSection(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
-	defer db.Close()
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-	s := characterservice.NewFake(st)
-	section := app.SectionImplants
-	ctx := context.Background()
-	t.Run("should report true when changed", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		httpmock.Reset()
-		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		et := factory.CreateEveType()
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []int32{et.ID}))
-		// when
-		changed, err := s.UpdateSectionIfNeeded(
-			ctx, app.CharacterUpdateSectionParams{CharacterID: c.ID, Section: section})
-		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
-			if assert.NoError(t, err) {
-				assert.False(t, x.HasError())
-			}
-		}
-	})
-	t.Run("should not update and report false when not changed", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		httpmock.Reset()
-		c := factory.CreateCharacterFull()
-		data := []int32{100}
-		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-			CharacterID: c.ID,
-			Section:     section,
-			CompletedAt: time.Now().Add(-6 * time.Hour),
-			Data:        data,
-		})
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, data))
-		// when
-		changed, err := s.UpdateSectionIfNeeded(
-			ctx, app.CharacterUpdateSectionParams{CharacterID: c.ID, Section: section})
-		// then
-		if assert.NoError(t, err) {
-			assert.False(t, changed)
-			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
-			if assert.NoError(t, err) {
-				assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
-			}
-			assert.Equal(t, 1, httpmock.GetTotalCallCount())
-			xx, err := st.ListCharacterImplants(ctx, c.ID)
-			if assert.NoError(t, err) {
-				assert.Len(t, xx, 0)
-			}
-		}
-	})
-	t.Run("should not fetch or update when not expired and report false", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		httpmock.Reset()
-		c := factory.CreateCharacterFull()
-		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-			CharacterID: c.ID,
-			Section:     section,
-		})
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		et := factory.CreateEveType()
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []int32{et.ID}))
-		// when
-		changed, err := s.UpdateSectionIfNeeded(
-			ctx, app.CharacterUpdateSectionParams{
-				CharacterID: c.ID,
-				Section:     section,
-			})
-		// then
-		if assert.NoError(t, err) {
-			assert.False(t, changed)
-			assert.Equal(t, 0, httpmock.GetTotalCallCount())
-			xx, err := st.ListCharacterImplants(ctx, c.ID)
-			if assert.NoError(t, err) {
-				assert.Len(t, xx, 0)
-			}
-		}
-	})
-	t.Run("should record when update failed", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		httpmock.Reset()
-		c := factory.CreateCharacterFull()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
-			httpmock.NewJsonResponderOrPanic(500, map[string]string{"error": "dummy error"}))
-		// when
-		_, err := s.UpdateSectionIfNeeded(
-			ctx, app.CharacterUpdateSectionParams{CharacterID: c.ID, Section: section})
-		// then
-		if assert.Error(t, err) {
-			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
-			if assert.NoError(t, err) {
-				assert.True(t, x.HasError())
-				assert.Equal(t, "500 Internal Server Error", x.ErrorMessage)
-			}
-		}
-	})
-	t.Run("should fetch and update when not expired and force update requested", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		httpmock.Reset()
-		c := factory.CreateCharacterFull()
-		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-			CharacterID: c.ID,
-			Section:     section,
-		})
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		et := factory.CreateEveType()
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []int32{et.ID}))
-		// when
-		_, err := s.UpdateSectionIfNeeded(
-			ctx, app.CharacterUpdateSectionParams{
-				CharacterID: c.ID,
-				Section:     section,
-				ForceUpdate: true,
-			})
-		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, 1, httpmock.GetTotalCallCount())
-			xx, err := st.ListCharacterImplants(ctx, c.ID)
-			if assert.NoError(t, err) {
-				assert.Len(t, xx, 1)
-			}
-		}
-	})
-	t.Run("should update when not changed and force update requested", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		httpmock.Reset()
-		c := factory.CreateCharacterFull()
-		data := []int32{100}
-		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-			CharacterID: c.ID,
-			Section:     section,
-			CompletedAt: time.Now().Add(-6 * time.Hour),
-			Data:        data,
-		})
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, data))
-		// when
-		_, err := s.UpdateSectionIfNeeded(
-			ctx, app.CharacterUpdateSectionParams{
-				CharacterID: c.ID,
-				Section:     section,
-				ForceUpdate: true,
-			})
-		// then
-		if assert.NoError(t, err) {
-			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
-			if assert.NoError(t, err) {
-				assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
-			}
-			assert.Equal(t, 1, httpmock.GetTotalCallCount())
-			xx, err := st.ListCharacterImplants(ctx, c.ID)
-			if assert.NoError(t, err) {
-				assert.Len(t, xx, 1)
-			}
-		}
-	})
-}
-
 func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
@@ -981,7 +460,7 @@ func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
-			Section:     app.SectionSkillqueue,
+			Section:     app.SectionCharacterSkillqueue,
 			CompletedAt: time.Now().UTC(),
 		})
 		var sendCount int
@@ -1010,13 +489,14 @@ func TestDeleteCharacter(t *testing.T) {
 		x := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
 		character := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x.ID})
 		// when
-		err := cs.DeleteCharacter(ctx, character.ID)
+		got, err := cs.DeleteCharacter(ctx, character.ID)
 		// then
 		if assert.NoError(t, err) {
 			_, err = st.GetCharacter(ctx, character.ID)
 			assert.ErrorIs(t, err, app.ErrNotFound)
 			_, err = st.GetCorporation(ctx, corporation.ID)
 			assert.ErrorIs(t, err, app.ErrNotFound)
+			assert.True(t, got)
 		}
 	})
 	t.Run("delete character and keep corporation when it still has members", func(t *testing.T) {
@@ -1030,252 +510,14 @@ func TestDeleteCharacter(t *testing.T) {
 		x2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
 		factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x2.ID})
 		// when
-		err := cs.DeleteCharacter(ctx, character.ID)
+		got, err := cs.DeleteCharacter(ctx, character.ID)
 		// then
 		if assert.NoError(t, err) {
 			_, err = st.GetCharacter(ctx, character.ID)
 			assert.ErrorIs(t, err, app.ErrNotFound)
 			_, err = st.GetCorporation(ctx, corporation.ID)
 			assert.NoError(t, err)
-		}
-	})
-}
-
-func TestListAllCharactersIndustrySlots(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
-	defer db.Close()
-	cs := characterservice.NewFake(st)
-	ctx := context.Background()
-
-	t.Run("empty when no data", func(t *testing.T) {
-		testutil.TruncateTables(db)
-		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ManufacturingJob)
-		if assert.NoError(t, err) {
-			assert.Len(t, got, 0)
-		}
-	})
-
-	t.Run("manufacturing slots for one character", func(t *testing.T) {
-		testutil.TruncateTables(db)
-		character := factory.CreateCharacterMinimal()
-		industry := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeIndustry})
-		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
-			CharacterID:      character.ID,
-			EveTypeID:        industry.ID,
-			ActiveSkillLevel: 5,
-		})
-		massProduction := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeMassProduction})
-		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
-			CharacterID:      character.ID,
-			EveTypeID:        massProduction.ID,
-			ActiveSkillLevel: 5,
-		})
-		advancedMassProduction := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeAdvancedMassProduction})
-		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
-			CharacterID:      character.ID,
-			EveTypeID:        advancedMassProduction.ID,
-			ActiveSkillLevel: 3,
-		})
-		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			CharacterID: character.ID,
-			ActivityID:  int32(app.Manufacturing),
-			Status:      app.JobActive,
-		})
-		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			CharacterID: character.ID,
-			ActivityID:  int32(app.Manufacturing),
-			Status:      app.JobActive,
-		})
-		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			CharacterID: character.ID,
-			ActivityID:  int32(app.Manufacturing),
-			Status:      app.JobReady,
-		})
-		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			CharacterID: character.ID,
-			ActivityID:  int32(app.Manufacturing),
-			Status:      app.JobDelivered,
-		})
-		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ManufacturingJob)
-		if assert.NoError(t, err) {
-			want := []app.CharacterIndustrySlots{
-				{
-					Type:          app.ManufacturingJob,
-					CharacterID:   character.ID,
-					CharacterName: character.EveCharacter.Name,
-					Busy:          2,
-					Ready:         1,
-					Total:         9,
-					Free:          6,
-				},
-			}
-			assert.ElementsMatch(t, want, got)
-		}
-	})
-
-	t.Run("research slots for one character", func(t *testing.T) {
-		testutil.TruncateTables(db)
-		character := factory.CreateCharacterFull()
-		laboratoryOperation := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeLaboratoryOperation})
-		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
-			CharacterID:      character.ID,
-			EveTypeID:        laboratoryOperation.ID,
-			ActiveSkillLevel: 5,
-		})
-		advancedLaboratoryOperation := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeAdvancedLaboratoryOperation})
-		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
-			CharacterID:      character.ID,
-			EveTypeID:        advancedLaboratoryOperation.ID,
-			ActiveSkillLevel: 3,
-		})
-		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			CharacterID: character.ID,
-			ActivityID:  int32(app.TimeEfficiencyResearch),
-			Status:      app.JobActive,
-		})
-		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			CharacterID: character.ID,
-			ActivityID:  int32(app.MaterialEfficiencyResearch),
-			Status:      app.JobActive,
-		})
-		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			CharacterID: character.ID,
-			ActivityID:  int32(app.Copying),
-			Status:      app.JobReady,
-		})
-		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			CharacterID: character.ID,
-			ActivityID:  int32(app.Copying),
-			Status:      app.JobDelivered,
-		})
-		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ScienceJob)
-		if assert.NoError(t, err) {
-			want := []app.CharacterIndustrySlots{
-				{
-					Type:          app.ScienceJob,
-					CharacterID:   character.ID,
-					CharacterName: character.EveCharacter.Name,
-					Busy:          2,
-					Ready:         1,
-					Total:         9,
-					Free:          6,
-				},
-			}
-			assert.ElementsMatch(t, want, got)
-		}
-	})
-	t.Run("reactions slots for one character", func(t *testing.T) {
-		testutil.TruncateTables(db)
-		character := factory.CreateCharacterFull()
-		massReactions := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeMassReactions})
-		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
-			CharacterID:      character.ID,
-			EveTypeID:        massReactions.ID,
-			ActiveSkillLevel: 5,
-		})
-		advancedMassReactions := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeAdvancedMassReactions})
-		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
-			CharacterID:      character.ID,
-			EveTypeID:        advancedMassReactions.ID,
-			ActiveSkillLevel: 3,
-		})
-		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			CharacterID: character.ID,
-			ActivityID:  int32(app.Reactions1),
-			Status:      app.JobActive,
-		})
-		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			CharacterID: character.ID,
-			ActivityID:  int32(app.Reactions2),
-			Status:      app.JobActive,
-		})
-		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			CharacterID: character.ID,
-			ActivityID:  int32(app.Reactions2),
-			Status:      app.JobReady,
-		})
-		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			CharacterID: character.ID,
-			ActivityID:  int32(app.Reactions2),
-			Status:      app.JobDelivered,
-		})
-		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ReactionJob)
-		if assert.NoError(t, err) {
-			want := []app.CharacterIndustrySlots{
-				{
-					Type:          app.ReactionJob,
-					CharacterID:   character.ID,
-					CharacterName: character.EveCharacter.Name,
-					Busy:          2,
-					Ready:         1,
-					Total:         9,
-					Free:          6,
-				},
-			}
-			assert.ElementsMatch(t, want, got)
-		}
-	})
-}
-
-func TestTotalTrainingTime(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
-	defer db.Close()
-	cs := characterservice.NewFake(st)
-	ctx := context.Background()
-	t.Run("should return time when has valid update", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		character := factory.CreateCharacterMinimal()
-		now := time.Now().UTC()
-		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
-			CharacterID: character.ID,
-			StartDate:   now.Add(-1 * time.Hour),
-			FinishDate:  now.Add(3 * time.Hour),
-		})
-		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-			CharacterID: character.ID,
-			Section:     app.SectionSkillqueue,
-			CompletedAt: now,
-		})
-		// when
-		got, err := cs.TotalTrainingTime(ctx, character.ID)
-		// then
-		if assert.NoError(t, err) {
-			assert.InDelta(t, 3*time.Hour, got.ValueOrZero(), float64(time.Second))
-		}
-	})
-	t.Run("should return no time when has no valid update", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		character := factory.CreateCharacterMinimal()
-		now := time.Now().UTC()
-		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
-			CharacterID: character.ID,
-			StartDate:   now.Add(-1 * time.Hour),
-			FinishDate:  now.Add(3 * time.Hour),
-		})
-		// when
-		got, err := cs.TotalTrainingTime(ctx, character.ID)
-		// then
-		if assert.NoError(t, err) {
-			assert.True(t, got.IsEmpty())
-		}
-	})
-	t.Run("should return 0 when training is inactive", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		character := factory.CreateCharacterMinimal()
-		now := time.Now().UTC()
-		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-			CharacterID: character.ID,
-			Section:     app.SectionSkillqueue,
-			CompletedAt: now,
-		})
-		// when
-		got, err := cs.TotalTrainingTime(ctx, character.ID)
-		// then
-		if assert.NoError(t, err) {
-			assert.EqualValues(t, 0, got.MustValue())
+			assert.False(t, got)
 		}
 	})
 }

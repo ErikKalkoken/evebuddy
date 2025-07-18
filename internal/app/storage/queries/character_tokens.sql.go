@@ -7,6 +7,7 @@ package queries
 
 import (
 	"context"
+	"strings"
 	"time"
 )
 
@@ -74,19 +75,70 @@ SELECT
 FROM
     character_tokens ct
     JOIN eve_characters ec ON ec.id = ct.character_id
-    JOIN character_roles cr ON cr.character_id = ct.character_id
 WHERE
-    corporation_id = ?
-    AND cr.name = ?
+    ec.corporation_id = ?
 `
 
-type ListCharacterTokenForCorporationParams struct {
-	CorporationID int64
-	Name          string
+func (q *Queries) ListCharacterTokenForCorporation(ctx context.Context, corporationID int64) ([]CharacterToken, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterTokenForCorporation, corporationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CharacterToken
+	for rows.Next() {
+		var i CharacterToken
+		if err := rows.Scan(
+			&i.ID,
+			&i.AccessToken,
+			&i.CharacterID,
+			&i.ExpiresAt,
+			&i.RefreshToken,
+			&i.TokenType,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
-func (q *Queries) ListCharacterTokenForCorporation(ctx context.Context, arg ListCharacterTokenForCorporationParams) ([]CharacterToken, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterTokenForCorporation, arg.CorporationID, arg.Name)
+const listCharacterTokenForCorporationWithRoles = `-- name: ListCharacterTokenForCorporationWithRoles :many
+SELECT
+    ct.id, ct.access_token, ct.character_id, ct.expires_at, ct.refresh_token, ct.token_type
+FROM
+    character_tokens ct
+    JOIN eve_characters ec ON ec.id = ct.character_id
+    JOIN character_roles cr ON cr.character_id = ct.character_id
+WHERE
+    ec.corporation_id = ?
+    AND cr.name IN (/*SLICE:roles*/?)
+`
+
+type ListCharacterTokenForCorporationWithRolesParams struct {
+	CorporationID int64
+	Roles         []string
+}
+
+func (q *Queries) ListCharacterTokenForCorporationWithRoles(ctx context.Context, arg ListCharacterTokenForCorporationWithRolesParams) ([]CharacterToken, error) {
+	query := listCharacterTokenForCorporationWithRoles
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CorporationID)
+	if len(arg.Roles) > 0 {
+		for _, v := range arg.Roles {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:roles*/?", strings.Repeat(",?", len(arg.Roles))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:roles*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}

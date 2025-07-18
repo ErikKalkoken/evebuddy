@@ -30,8 +30,11 @@ type CreateCharacterWalletJournalEntryParams struct {
 }
 
 func (st *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg CreateCharacterWalletJournalEntryParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CreateCharacterWalletJournalEntry: %+v: %w", arg, err)
+	}
 	if arg.CharacterID == 0 || arg.RefID == 0 {
-		return fmt.Errorf("CreateCharacterWalletJournalEntry: %+v: %w", arg, app.ErrInvalid)
+		return wrapErr(app.ErrInvalid)
 	}
 	arg2 := queries.CreateCharacterWalletJournalEntryParams{
 		Amount:        arg.Amount,
@@ -60,19 +63,29 @@ func (st *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg Cr
 	}
 	err := st.qRW.CreateCharacterWalletJournalEntry(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("create wallet journal entry for character %d: %w", arg.CharacterID, err)
+		return wrapErr(err)
 	}
 	return nil
 }
 
-func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, characterID int32, refID int64) (*app.CharacterWalletJournalEntry, error) {
-	arg := queries.GetCharacterWalletJournalEntryParams{
-		CharacterID: int64(characterID),
-		RefID:       refID,
+type GetCharacterWalletJournalEntryParams struct {
+	CharacterID int32
+	RefID       int64
+}
+
+func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, arg GetCharacterWalletJournalEntryParams) (*app.CharacterWalletJournalEntry, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("GetCharacterWalletJournalEntry: %+v: %w", arg, err)
 	}
-	r, err := st.qRO.GetCharacterWalletJournalEntry(ctx, arg)
+	if arg.CharacterID == 0 || arg.RefID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	r, err := st.qRO.GetCharacterWalletJournalEntry(ctx, queries.GetCharacterWalletJournalEntryParams{
+		CharacterID: int64(arg.CharacterID),
+		RefID:       arg.RefID,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("get wallet journal entry for character %d: %w", characterID, convertGetError(err))
+		return nil, wrapErr(convertGetError(err))
 	}
 	o := r.CharacterWalletJournalEntry
 	firstParty := nullEveEntry{ID: o.FirstPartyID, Name: r.FirstName, Category: r.FirstCategory}
@@ -82,17 +95,29 @@ func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, character
 }
 
 func (st *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("list wallet journal entry ids for character %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return set.Set[int64]{}, wrapErr(app.ErrInvalid)
+	}
 	ids, err := st.qRO.ListCharacterWalletJournalEntryRefIDs(ctx, int64(characterID))
 	if err != nil {
-		return set.Set[int64]{}, fmt.Errorf("list wallet journal entry ids for character %d: %w", characterID, err)
+		return set.Set[int64]{}, wrapErr(err)
 	}
 	return set.Of(ids...), nil
 }
 
-func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, id int32) ([]*app.CharacterWalletJournalEntry, error) {
-	rows, err := st.qRO.ListCharacterWalletJournalEntries(ctx, int64(id))
+func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, characterID int32) ([]*app.CharacterWalletJournalEntry, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("list wallet journal entries for character %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	rows, err := st.qRO.ListCharacterWalletJournalEntries(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("list wallet journal entries for character %d: %w", id, err)
+		return nil, wrapErr(err)
 	}
 	ee := make([]*app.CharacterWalletJournalEntry, len(rows))
 	for i, r := range rows {

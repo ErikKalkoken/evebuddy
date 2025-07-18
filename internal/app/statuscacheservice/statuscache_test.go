@@ -28,7 +28,7 @@ func TestInit(t *testing.T) {
 		cache.Clear()
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Bruce"})
 		c := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: ec.ID})
-		section1 := app.SectionImplants
+		section1 := app.SectionCharacterImplants
 		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section1,
@@ -51,7 +51,7 @@ func TestInit(t *testing.T) {
 			x2, ok := sc.CharacterSection(c.ID, section1)
 			assert.True(t, ok)
 			assert.Equal(t, x1.CharacterID, x2.EntityID)
-			assert.Equal(t, string(x1.Section), x2.SectionID)
+			assert.Equal(t, x1.Section.String(), x2.SectionID)
 			assert.Equal(t, x1.CompletedAt, x2.CompletedAt)
 			assert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
 			assert.Equal(t, x1.StartedAt, x2.StartedAt)
@@ -61,7 +61,7 @@ func TestInit(t *testing.T) {
 			y2, ok := sc.GeneralSection(section2)
 			assert.True(t, ok)
 			assert.Equal(t, int32(app.GeneralSectionEntityID), y2.EntityID)
-			assert.Equal(t, string(y1.Section), y2.SectionID)
+			assert.Equal(t, y1.Section.String(), y2.SectionID)
 			assert.Equal(t, y1.CompletedAt, y2.CompletedAt)
 			assert.Equal(t, y1.ErrorMessage, y2.ErrorMessage)
 			assert.Equal(t, y1.StartedAt, y2.StartedAt)
@@ -70,7 +70,7 @@ func TestInit(t *testing.T) {
 			z2, ok := sc.CorporationSection(r.ID, section3)
 			assert.True(t, ok)
 			assert.Equal(t, z1.CorporationID, z2.EntityID)
-			assert.Equal(t, string(z1.Section), z2.SectionID)
+			assert.Equal(t, z1.Section.String(), z2.SectionID)
 			assert.Equal(t, z1.CompletedAt, z2.CompletedAt)
 			assert.Equal(t, z1.ErrorMessage, z2.ErrorMessage)
 			assert.Equal(t, z1.StartedAt, z2.StartedAt)
@@ -178,9 +178,11 @@ func TestStatusCacheSummary(t *testing.T) {
 			t.Fatal(err)
 		}
 		o := &app.CharacterSectionStatus{
-			CharacterID:  characters[0],
-			Section:      app.SectionLocation,
-			ErrorMessage: "error",
+			CharacterID: characters[0],
+			SectionStatus: app.SectionStatus{
+				ErrorMessage: "error",
+				Section:      app.SectionCharacterLocation,
+			},
 		}
 		sc.SetCharacterSection(o)
 		// when
@@ -236,8 +238,10 @@ func TestStatusCacheSummary(t *testing.T) {
 		}
 		o := &app.CorporationSectionStatus{
 			CorporationID: corporations[0],
-			Section:       app.SectionCorporationIndustryJobs,
-			ErrorMessage:  "error",
+			SectionStatus: app.SectionStatus{
+				ErrorMessage: "error",
+				Section:      app.SectionCorporationIndustryJobs,
+			},
 		}
 		sc.SetCorporationSection(o)
 		// when
@@ -290,8 +294,10 @@ func TestStatusCacheSummary(t *testing.T) {
 			t.Fatal(err)
 		}
 		o := &app.GeneralSectionStatus{
-			Section:      app.SectionEveCharacters,
-			ErrorMessage: "error",
+			SectionStatus: app.SectionStatus{
+				ErrorMessage: "error",
+				Section:      app.SectionEveCharacters,
+			},
 		}
 		sc.SetGeneralSection(o)
 		ss := sc.Summary()
@@ -469,8 +475,10 @@ func TestStatusCacheSummary(t *testing.T) {
 		}
 		o := &app.CharacterSectionStatus{
 			CharacterID: characters[0],
-			Section:     app.SectionLocation,
-			CompletedAt: time.Now().Add(-1 * time.Hour),
+			SectionStatus: app.SectionStatus{
+				CompletedAt: time.Now().Add(-1 * time.Hour),
+				Section:     app.SectionCharacterLocation,
+			},
 		}
 		sc.SetCharacterSection(o)
 		// when
@@ -510,8 +518,10 @@ func TestStatusCacheSummary(t *testing.T) {
 			t.Fatal(err)
 		}
 		o := &app.GeneralSectionStatus{
-			Section:     app.SectionEveCharacters,
-			CompletedAt: time.Now().Add(-30 * time.Hour),
+			SectionStatus: app.SectionStatus{
+				CompletedAt: time.Now().Add(-30 * time.Hour),
+				Section:     app.SectionEveCharacters,
+			},
 		}
 		sc.SetGeneralSection(o)
 		// when
@@ -596,7 +606,7 @@ func TestCharacterSections(t *testing.T) {
 		testutil.TruncateTables(db)
 		cache.Clear()
 		c := factory.CreateCharacterFull()
-		section := app.SectionImplants
+		section := app.SectionCharacterImplants
 		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
@@ -607,7 +617,7 @@ func TestCharacterSections(t *testing.T) {
 		// then
 		assert.True(t, ok)
 		assert.Equal(t, x1.CharacterID, x2.EntityID)
-		assert.Equal(t, string(x1.Section), x2.SectionID)
+		assert.Equal(t, x1.Section.String(), x2.SectionID)
 		assert.Equal(t, x1.CompletedAt, x2.CompletedAt)
 		assert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
 		assert.Equal(t, x1.StartedAt, x2.StartedAt)
@@ -618,7 +628,7 @@ func TestCharacterSections(t *testing.T) {
 		testutil.TruncateTables(db)
 		cache.Clear()
 		c := factory.CreateCharacterFull()
-		section := app.SectionImplants
+		section := app.SectionCharacterImplants
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
@@ -627,10 +637,10 @@ func TestCharacterSections(t *testing.T) {
 			t.Fatal(err)
 		}
 		// when/then
-		assert.True(t, sc.HasCharacterSection(c.ID, app.SectionImplants))
-		assert.False(t, sc.HasCharacterSection(99, app.SectionImplants))
-		assert.False(t, sc.HasCharacterSection(c.ID, app.SectionAssets))
-		assert.False(t, sc.HasCharacterSection(0, app.SectionAssets))
+		assert.True(t, sc.HasCharacterSection(c.ID, app.SectionCharacterImplants))
+		assert.False(t, sc.HasCharacterSection(99, app.SectionCharacterImplants))
+		assert.False(t, sc.HasCharacterSection(c.ID, app.SectionCharacterAssets))
+		assert.False(t, sc.HasCharacterSection(0, app.SectionCharacterAssets))
 	})
 	t.Run("list character sections", func(t *testing.T) {
 		// given
@@ -639,7 +649,7 @@ func TestCharacterSections(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
-			Section:     app.SectionAssets,
+			Section:     app.SectionCharacterAssets,
 		})
 		if err := sc.InitCache(ctx); err != nil {
 			t.Fatal(err)
@@ -647,15 +657,15 @@ func TestCharacterSections(t *testing.T) {
 		// when
 		x := sc.ListCharacterSections(c.ID)
 		// then
-		m := make(map[app.CharacterSection]app.SectionStatus)
+		m := make(map[app.CharacterSection]app.CacheSectionStatus)
 		for _, s := range x {
 			m[app.CharacterSection(s.SectionID)] = s
 		}
 		got := set.Collect(maps.Keys(m))
 		want := set.Of(app.CharacterSections...)
 		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
-		assert.False(t, m[app.SectionAssets].IsMissing())
-		assert.True(t, m[app.SectionImplants].IsMissing())
+		assert.False(t, m[app.SectionCharacterAssets].IsMissing())
+		assert.True(t, m[app.SectionCharacterImplants].IsMissing())
 	})
 	t.Run("list character sections all empty", func(t *testing.T) {
 		// given
@@ -668,14 +678,14 @@ func TestCharacterSections(t *testing.T) {
 		// when
 		x := sc.ListCharacterSections(c.ID)
 		// then
-		m := make(map[app.CharacterSection]app.SectionStatus)
+		m := make(map[app.CharacterSection]app.CacheSectionStatus)
 		for _, s := range x {
 			m[app.CharacterSection(s.SectionID)] = s
 		}
 		got := set.Collect(maps.Keys(m))
 		want := set.Of(app.CharacterSections...)
 		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
-		assert.True(t, m[app.SectionImplants].IsMissing())
+		assert.True(t, m[app.SectionCharacterImplants].IsMissing())
 	})
 }
 
@@ -702,7 +712,7 @@ func TestCorporationSections(t *testing.T) {
 		// then
 		assert.True(t, ok)
 		assert.Equal(t, x1.CorporationID, x2.EntityID)
-		assert.Equal(t, string(x1.Section), x2.SectionID)
+		assert.Equal(t, x1.Section.String(), x2.SectionID)
 		assert.Equal(t, x1.CompletedAt, x2.CompletedAt)
 		assert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
 		assert.Equal(t, x1.StartedAt, x2.StartedAt)
@@ -740,7 +750,7 @@ func TestCorporationSections(t *testing.T) {
 		// when
 		x := sc.ListCorporationSections(c.ID)
 		// then
-		m := make(map[app.CorporationSection]app.SectionStatus)
+		m := make(map[app.CorporationSection]app.CacheSectionStatus)
 		for _, s := range x {
 			m[app.CorporationSection(s.SectionID)] = s
 		}
@@ -760,7 +770,7 @@ func TestCorporationSections(t *testing.T) {
 		// when
 		x := sc.ListCorporationSections(c.ID)
 		// then
-		m := make(map[app.CorporationSection]app.SectionStatus)
+		m := make(map[app.CorporationSection]app.CacheSectionStatus)
 		for _, s := range x {
 			m[app.CorporationSection(s.SectionID)] = s
 		}
@@ -829,7 +839,7 @@ func TestGeneralSections(t *testing.T) {
 		// when
 		x := sc.ListGeneralSections()
 		// then
-		m := make(map[app.GeneralSection]app.SectionStatus)
+		m := make(map[app.GeneralSection]app.CacheSectionStatus)
 		for _, s := range x {
 			m[app.GeneralSection(s.SectionID)] = s
 		}
@@ -850,19 +860,25 @@ func TestCharacterSectionSummary(t *testing.T) {
 	)
 	cache.Clear()
 	sc.SetCharacterSection(&app.CharacterSectionStatus{
-		CharacterID:  characterID,
-		Section:      app.SectionImplants,
-		ErrorMessage: "ERROR",
+		CharacterID: characterID,
+		SectionStatus: app.SectionStatus{
+			ErrorMessage: "ERROR",
+			Section:      app.SectionCharacterImplants,
+		},
 	})
 	sc.SetCharacterSection(&app.CharacterSectionStatus{
 		CharacterID: characterID,
-		Section:     app.SectionAssets,
-		CompletedAt: time.Now(),
+		SectionStatus: app.SectionStatus{
+			CompletedAt: time.Now(),
+			Section:     app.SectionCharacterAssets,
+		},
 	})
 	sc.SetCharacterSection(&app.CharacterSectionStatus{
 		CharacterID: characterID,
-		Section:     app.SectionIndustryJobs,
-		StartedAt:   time.Now().Add(-10 * time.Second),
+		SectionStatus: app.SectionStatus{
+			StartedAt: time.Now().Add(-10 * time.Second),
+			Section:   app.SectionCharacterIndustryJobs,
+		},
 	})
 	// when
 	got := sc.CharacterSectionSummary(characterID)
@@ -885,8 +901,10 @@ func TestCorporationSectionSummary(t *testing.T) {
 	)
 	sc.SetCorporationSection(&app.CorporationSectionStatus{
 		CorporationID: corporationID,
-		Section:       app.SectionCorporationIndustryJobs,
-		ErrorMessage:  "ERROR",
+		SectionStatus: app.SectionStatus{
+			ErrorMessage: "error",
+			Section:      app.SectionCorporationIndustryJobs,
+		},
 	})
 	// when
 	got := sc.CorporationSectionSummary(corporationID)
@@ -895,7 +913,7 @@ func TestCorporationSectionSummary(t *testing.T) {
 		Current:   0,
 		Errors:    1,
 		IsRunning: false,
-		Total:     1,
+		Total:     len(app.CorporationSections),
 	}
 	assert.Equal(t, want, got)
 }
@@ -908,17 +926,22 @@ func TestGeneralSectionSummary(t *testing.T) {
 	)
 	cache.Clear()
 	sc.SetGeneralSection(&app.GeneralSectionStatus{
-		Section:      app.SectionEveTypes,
-		ErrorMessage: "ERROR",
+		SectionStatus: app.SectionStatus{
+			ErrorMessage: "error",
+			Section:      app.SectionEveTypes,
+		},
 	})
 	sc.SetGeneralSection(&app.GeneralSectionStatus{
-		Section:     app.SectionEveCharacters,
-		CompletedAt: time.Now(),
+		SectionStatus: app.SectionStatus{
+			CompletedAt: time.Now(),
+			Section:     app.SectionEveCharacters,
+		},
 	})
 	sc.SetGeneralSection(&app.GeneralSectionStatus{
-		Section: app.SectionEveMarketPrices,
-
-		StartedAt: time.Now().Add(-10 * time.Second),
+		SectionStatus: app.SectionStatus{
+			StartedAt: time.Now().Add(-10 * time.Second),
+			Section:   app.SectionEveMarketPrices,
+		},
 	})
 	// when
 	got := sc.GeneralSectionSummary()

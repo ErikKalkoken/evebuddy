@@ -6,10 +6,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
@@ -22,21 +19,19 @@ import (
 type characterSheet struct {
 	widget.BaseWidget
 
-	allianceLogo    *kxwidget.TappableImage
-	born            *widget.Label
-	corporationLogo *kxwidget.TappableImage
-	factionLogo     *kxwidget.TappableImage
-	home            *iwidget.TappableRichText
-	name            *widget.Label
-	portrait        *kxwidget.TappableImage
-	race            *kxwidget.TappableLabel
-	security        *widget.Label
-	sp              *widget.Label
-	u               *baseUI
-	wealth          *widget.Label
+	born        *widget.Label
+	factionLogo *kxwidget.TappableImage
+	home        *widget.Hyperlink
+	name        *widget.Hyperlink
+	portrait    *kxwidget.TappableImage
+	race        *widget.Hyperlink
+	security    *widget.Label
+	sp          *widget.Label
+	u           *baseUI
+	wealth      *widget.Label
 }
 
-func newSheet(u *baseUI) *characterSheet {
+func newCharacterSheet(u *baseUI) *characterSheet {
 	makeLogo := func() *kxwidget.TappableImage {
 		ti := kxwidget.NewTappableImage(icons.BlankSvg, nil)
 		ti.SetFillMode(canvas.ImageFillContain)
@@ -44,28 +39,20 @@ func newSheet(u *baseUI) *characterSheet {
 		return ti
 	}
 
-	name := widget.NewLabel("")
-	name.SizeName = theme.SizeNameSubHeadingText
-	name.Wrapping = fyne.TextWrapWord
-	home := iwidget.NewTappableRichTextWithText("?", nil)
-	home.Wrapping = fyne.TextWrapWord
-
 	portrait := kxwidget.NewTappableImage(icons.BlankSvg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
 	portrait.SetMinSize(fyne.NewSquareSize(128))
 	w := &characterSheet{
-		allianceLogo:    makeLogo(),
-		born:            widget.NewLabel("?"),
-		corporationLogo: makeLogo(),
-		factionLogo:     makeLogo(),
-		home:            home,
-		name:            name,
-		portrait:        portrait,
-		race:            kxwidget.NewTappableLabel("?", nil),
-		security:        widget.NewLabel("?"),
-		sp:              widget.NewLabel("?"),
-		u:               u,
-		wealth:          widget.NewLabel("?"),
+		born:        widget.NewLabel("?"),
+		factionLogo: makeLogo(),
+		home:        widget.NewHyperlink("", nil),
+		name:        widget.NewHyperlink("", nil),
+		portrait:    portrait,
+		race:        widget.NewHyperlink("", nil),
+		security:    widget.NewLabel("?"),
+		sp:          widget.NewLabel("?"),
+		u:           u,
+		wealth:      widget.NewLabel("?"),
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -76,38 +63,36 @@ func (a *characterSheet) update() {
 	if c == nil || c.EveCharacter == nil {
 		fyne.Do(func() {
 			a.name.Text = "No character..."
-			a.name.Importance = widget.WarningImportance
+			a.name.OnTapped = nil
 			a.name.Refresh()
 		})
 		return
 	}
 	fyne.Do(func() {
 		a.name.SetText(c.EveCharacter.Name)
-		a.race.SetText(c.EveCharacter.Race.Name)
-		a.born.SetText(c.EveCharacter.Birthday.Format(app.DateTimeFormat))
-		a.security.SetText(fmt.Sprintf("%.1f", c.EveCharacter.SecurityStatus))
-		a.portrait.OnTapped = func() {
+		a.name.OnTapped = func() {
 			a.u.ShowInfoWindow(app.EveEntityCharacter, c.ID)
 		}
-		a.corporationLogo.OnTapped = func() {
-			a.u.ShowInfoWindow(app.EveEntityCorporation, c.EveCharacter.Corporation.ID)
-		}
+		a.portrait.OnTapped = a.name.OnTapped
+
+		a.race.SetText(c.EveCharacter.Race.Name)
 		a.race.OnTapped = func() {
 			a.u.ShowRaceInfoWindow(c.EveCharacter.Race.ID)
 		}
+
+		a.born.SetText(c.EveCharacter.Birthday.Format(app.DateTimeFormat))
+		a.security.SetText(fmt.Sprintf("%.1f", c.EveCharacter.SecurityStatus))
 	})
 	iwidget.RefreshTappableImageAsync(a.portrait, func() (fyne.Resource, error) {
 		return a.u.eis.CharacterPortrait(c.ID, 512)
 	})
-	iwidget.RefreshTappableImageAsync(a.corporationLogo, func() (fyne.Resource, error) {
-		return a.u.eis.CorporationLogo(c.EveCharacter.Corporation.ID, app.IconPixelSize)
-	})
 	fyne.Do(func() {
 		if c.Home == nil {
-			a.home.ParseMarkdown("")
+			a.home.SetText("?")
+			a.home.OnTapped = nil
 			return
 		}
-		a.home.Segments = c.Home.DisplayRichText()
+		a.home.SetText(c.Home.DisplayName())
 		a.home.OnTapped = func() {
 			a.u.ShowLocationInfoWindow(c.Home.ID)
 		}
@@ -122,21 +107,6 @@ func (a *characterSheet) update() {
 		v := c.AssetValue.ValueOrZero() + c.WalletBalance.ValueOrZero()
 		a.wealth.SetText(humanize.Comma(int64(v)) + " ISK")
 	})
-	fyne.Do(func() {
-		if c.EveCharacter.Alliance == nil {
-			a.allianceLogo.Hide()
-			return
-		}
-		a.allianceLogo.Show()
-		a.allianceLogo.OnTapped = func() {
-			a.u.ShowInfoWindow(app.EveEntityAlliance, c.EveCharacter.Alliance.ID)
-		}
-	})
-	if c.EveCharacter.Alliance != nil {
-		iwidget.RefreshTappableImageAsync(a.allianceLogo, func() (fyne.Resource, error) {
-			return a.u.eis.AllianceLogo(c.EveCharacter.Alliance.ID, app.IconPixelSize)
-		})
-	}
 	fyne.Do(func() {
 		if c.EveCharacter.Faction == nil {
 			a.factionLogo.Hide()
@@ -155,60 +125,32 @@ func (a *characterSheet) update() {
 }
 
 func (a *characterSheet) CreateRenderer() fyne.WidgetRenderer {
-	p := theme.Padding()
 	const width = 140
-	main := container.New(
-		layout.NewCustomPaddedVBoxLayout(-p),
-		newCharacterSheetRow(width, "Born", a.born),
-		newCharacterSheetRow(width, "Race", a.race),
-		newCharacterSheetRow(width, "Wealth", a.wealth),
-		newCharacterSheetRow(width, "Security Status", a.security),
-		newCharacterSheetRow(width, "Home Station", a.home),
-		newCharacterSheetRow(width, "Total Skill Points", a.sp),
+	main := widget.NewForm(
+		widget.NewFormItem("Name", a.name),
+		widget.NewFormItem("Born", a.born),
+		widget.NewFormItem("Race", a.race),
+		widget.NewFormItem("Wealth", a.wealth),
+		widget.NewFormItem("Security Status", a.security),
+		widget.NewFormItem("Home Station", a.home),
+		widget.NewFormItem("Total Skill Points", a.sp),
 	)
+	main.Orientation = widget.Adaptive
 
 	portraitDesktop := container.NewVBox(container.NewPadded(a.portrait))
-	c := container.NewVBox(
-		a.name,
-		container.NewBorder(
-			nil,
-			nil,
-			nil,
-			portraitDesktop,
-			container.NewVBox(
-				main,
-				container.NewHBox(
-					container.NewPadded(a.corporationLogo),
-					container.NewPadded(a.allianceLogo),
-					container.NewPadded(a.factionLogo)),
-			),
+	c := container.NewBorder(
+		nil,
+		nil,
+		nil,
+		portraitDesktop,
+		container.NewVBox(
+			main,
+			container.NewHBox(
+				container.NewPadded(a.factionLogo)),
 		),
 	)
 	if !a.u.isDesktop {
 		portraitDesktop.Hide()
 	}
-	return widget.NewSimpleRenderer(c)
-}
-
-type characterSheetRow struct {
-	widget.BaseWidget
-
-	label   *widget.Label
-	content fyne.CanvasObject
-	width   float32
-}
-
-func newCharacterSheetRow(width float32, label string, content fyne.CanvasObject) *characterSheetRow {
-	w := &characterSheetRow{
-		label:   widget.NewLabel(label + ":"),
-		content: content,
-		width:   width,
-	}
-	w.ExtendBaseWidget(w)
-	return w
-}
-
-func (w *characterSheetRow) CreateRenderer() fyne.WidgetRenderer {
-	c := container.New(kxlayout.NewColumns(w.width), w.label, w.content)
 	return widget.NewSimpleRenderer(c)
 }

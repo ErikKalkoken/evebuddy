@@ -106,7 +106,7 @@ type training struct {
 
 func newTraining(u *baseUI) *training {
 	headers := []headerDef{
-		{label: "Name", width: columnWidthCharacter},
+		{label: "Name", width: columnWidthEntity},
 		{label: "Current Skill", width: 250},
 		{label: "Current Remaining", width: 0},
 		{label: "Queued", width: 0},

@@ -36,5 +36,12 @@ SET
     content_hash = ?5,
     error = ?6,
     started_at = ?7,
-    updated_at = ?8
-RETURNING *;
+    updated_at = ?8 RETURNING *;
+
+-- name: UpdateCorporationSectionStatusContentHash :exec
+UPDATE corporation_section_status
+SET
+    content_hash = ?
+WHERE
+    corporation_id = ?
+    AND section_id = ?;

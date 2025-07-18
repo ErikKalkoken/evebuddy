@@ -190,8 +190,14 @@ func (s *EveUniverseService) GetOrCreateTypeESI(ctx context.Context, id int32) (
 }
 
 // AddMissingTypes fetches missing typeIDs from ESI.
+// Invalid IDs (e.g. 0) will be ignored
 func (s *EveUniverseService) AddMissingTypes(ctx context.Context, ids set.Set[int32]) error {
-	missing, err := s.st.MissingEveTypes(ctx, ids)
+	ids2 := ids.Clone()
+	ids2.Delete(0) // ignore invalid ID
+	if ids.Size() == 0 {
+		return nil
+	}
+	missing, err := s.st.MissingEveTypes(ctx, ids2)
 	if err != nil {
 		return err
 	}
@@ -446,4 +452,25 @@ func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) error {
 		return nil, nil
 	})
 	return err
+}
+
+func (s *EveUniverseService) updateCategories(ctx context.Context) error {
+	g := new(errgroup.Group)
+	g.Go(func() error {
+		return s.UpdateCategoryWithChildrenESI(ctx, app.EveCategorySkill)
+	})
+	g.Go(func() error {
+		return s.UpdateCategoryWithChildrenESI(ctx, app.EveCategoryShip)
+	})
+	if err := g.Wait(); err != nil {
+		return err
+	}
+	if err := s.UpdateShipSkills(ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *EveUniverseService) UpdateShipSkills(ctx context.Context) error {
+	return s.st.UpdateEveShipSkills(ctx)
 }

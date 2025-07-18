@@ -14,7 +14,7 @@ import (
 )
 
 func TestCorporationSectionStatus(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can list", func(t *testing.T) {
@@ -26,7 +26,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 			Section:       app.SectionCorporationIndustryJobs,
 		})
 		// when
-		oo, err := r.ListCorporationSectionStatus(ctx, c.ID)
+		oo, err := st.ListCorporationSectionStatus(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, oo, 1)
@@ -43,7 +43,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 			Section:       app.SectionCorporationIndustryJobs,
 			ErrorMessage:  &error,
 		}
-		x1, err := r.UpdateOrCreateCorporationSectionStatus(ctx, arg)
+		x1, err := st.UpdateOrCreateCorporationSectionStatus(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			if assert.NoError(t, err) {
@@ -52,7 +52,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 				assert.True(t, x1.CompletedAt.IsZero())
 				assert.False(t, x1.UpdatedAt.IsZero())
 			}
-			x2, err := r.GetCorporationSectionStatus(ctx, c.ID, app.SectionCorporationIndustryJobs)
+			x2, err := st.GetCorporationSectionStatus(ctx, c.ID, app.SectionCorporationIndustryJobs)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -70,10 +70,10 @@ func TestCorporationSectionStatus(t *testing.T) {
 		s := "error"
 		arg := storage.UpdateOrCreateCorporationSectionStatusParams{
 			CorporationID: c.ID,
-			Section:       x.Section,
+			Section:       x.Section.(app.CorporationSection),
 			ErrorMessage:  &s,
 		}
-		x1, err := r.UpdateOrCreateCorporationSectionStatus(ctx, arg)
+		x1, err := st.UpdateOrCreateCorporationSectionStatus(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, x.ContentHash, x1.ContentHash)
@@ -81,7 +81,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 			assert.Equal(t, x.CompletedAt, x1.CompletedAt)
 			assert.Equal(t, x.StartedAt, x1.StartedAt)
 			assert.False(t, x1.UpdatedAt.IsZero())
-			x2, err := r.GetCorporationSectionStatus(ctx, c.ID, x.Section)
+			x2, err := st.GetCorporationSectionStatus(ctx, c.ID, x.Section.(app.CorporationSection))
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -103,14 +103,14 @@ func TestCorporationSectionStatus(t *testing.T) {
 		completedAt := storage.NewNullTimeFromTime(time.Now())
 		arg := storage.UpdateOrCreateCorporationSectionStatusParams{
 			CorporationID: c.ID,
-			Section:       x.Section,
+			Section:       x.Section.(app.CorporationSection),
 			ErrorMessage:  &e,
 			Comment:       &comment,
 			CompletedAt:   &completedAt,
 			ContentHash:   &hash,
 			StartedAt:     &startedAt,
 		}
-		x1, err := r.UpdateOrCreateCorporationSectionStatus(ctx, arg)
+		x1, err := st.UpdateOrCreateCorporationSectionStatus(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, comment, x1.Comment)
@@ -119,9 +119,30 @@ func TestCorporationSectionStatus(t *testing.T) {
 			assert.True(t, x1.CompletedAt.Equal(completedAt.Time))
 			assert.True(t, x1.StartedAt.Equal(startedAt.ValueOrZero()))
 			assert.False(t, x1.UpdatedAt.IsZero())
-			x2, err := r.GetCorporationSectionStatus(ctx, c.ID, x.Section)
+			x2, err := st.GetCorporationSectionStatus(ctx, c.ID, x.Section.(app.CorporationSection))
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
+			}
+		}
+	})
+	t.Run("can reset content hash", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCorporation()
+		x := factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationIndustryJobs,
+		})
+		// when
+		err := st.ResetCorporationSectionStatusContentHash(ctx, storage.CorporationSectionParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationIndustryJobs,
+		})
+		// then
+		if assert.NoError(t, err) {
+			x2, err := st.GetCorporationSectionStatus(ctx, c.ID, x.Section.(app.CorporationSection))
+			if assert.NoError(t, err) {
+				assert.False(t, x2.HasContent())
 			}
 		}
 	})

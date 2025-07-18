@@ -51,18 +51,18 @@ type Set[E comparable] struct {
 // Of returns a set of the elements v.
 func Of[E comparable](v ...E) Set[E] {
 	var s Set[E]
-	for _, w := range v {
-		s.Add(w)
-	}
+	s.Add(v...)
 	return s
 }
 
-// Add adds element v to set s.
-func (s *Set[E]) Add(v E) {
+// Add adds elements v to set s.
+func (s *Set[E]) Add(v ...E) {
 	if s.m == nil {
 		s.m = make(map[E]struct{})
 	}
-	s.m[v] = struct{}{}
+	for _, w := range v {
+		s.m[w] = struct{}{}
+	}
 }
 
 // AddSeq adds the values from seq to s.

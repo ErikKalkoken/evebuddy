@@ -12,10 +12,37 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
+type CorporationSectionParams struct {
+	CorporationID int32
+	Section       app.CorporationSection
+}
+
+func (x CorporationSectionParams) IsInvalid() bool {
+	return x.CorporationID == 0
+}
+
+func (st *Storage) ResetCorporationSectionStatusContentHash(ctx context.Context, arg CorporationSectionParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ResetCorporationSectionStatusContentHash: %+v: %w", arg, err)
+	}
+	if arg.IsInvalid() {
+		return wrapErr(app.ErrInvalid)
+	}
+	err := st.qRW.UpdateCorporationSectionStatusContentHash(ctx, queries.UpdateCorporationSectionStatusContentHashParams{
+		ContentHash:   "",
+		CorporationID: int64(arg.CorporationID),
+		SectionID:     arg.Section.String(),
+	})
+	if err != nil {
+		return wrapErr(err)
+	}
+	return nil
+}
+
 func (st *Storage) GetCorporationSectionStatus(ctx context.Context, corporationID int32, section app.CorporationSection) (*app.CorporationSectionStatus, error) {
 	arg := queries.GetCorporationSectionStatusParams{
 		CorporationID: int64(corporationID),
-		SectionID:     string(section),
+		SectionID:     section.String(),
 	}
 	s, err := st.qRO.GetCorporationSectionStatus(ctx, arg)
 	if err != nil {
@@ -68,19 +95,19 @@ func (st *Storage) UpdateOrCreateCorporationSectionStatus(ctx context.Context, a
 		var arg2 queries.UpdateOrCreateCorporationSectionStatusParams
 		old, err := qtx.GetCorporationSectionStatus(ctx, queries.GetCorporationSectionStatusParams{
 			CorporationID: int64(arg.CorporationID),
-			SectionID:     string(arg.Section),
+			SectionID:     arg.Section.String(),
 		})
 		if errors.Is(err, sql.ErrNoRows) {
 			arg2 = queries.UpdateOrCreateCorporationSectionStatusParams{
 				CorporationID: int64(arg.CorporationID),
-				SectionID:     string(arg.Section),
+				SectionID:     arg.Section.String(),
 			}
 		} else if err != nil {
 			return nil, err
 		} else {
 			arg2 = queries.UpdateOrCreateCorporationSectionStatusParams{
 				CorporationID: int64(arg.CorporationID),
-				SectionID:     string(arg.Section),
+				SectionID:     arg.Section.String(),
 				CompletedAt:   old.CompletedAt,
 				ContentHash:   old.ContentHash,
 				Error:         old.Error,
@@ -122,10 +149,12 @@ func corporationSectionStatusFromDBModel(o queries.CorporationSectionStatus) *ap
 	x := &app.CorporationSectionStatus{
 		Comment:       o.Comment,
 		CorporationID: int32(o.CorporationID),
-		ErrorMessage:  o.Error,
-		Section:       app.CorporationSection(o.SectionID),
-		ContentHash:   o.ContentHash,
-		UpdatedAt:     o.UpdatedAt,
+		SectionStatus: app.SectionStatus{
+			ContentHash:  o.ContentHash,
+			ErrorMessage: o.Error,
+			Section:      app.CorporationSection(o.SectionID),
+			UpdatedAt:    o.UpdatedAt,
+		},
 	}
 	if o.CompletedAt.Valid {
 		x.CompletedAt = o.CompletedAt.Time

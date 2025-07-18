@@ -4,12 +4,28 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
+
+func (st *Storage) DeleteCorporationIndustryJobs(ctx context.Context, corporationID int32) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("DeleteCorporationWalletJournalEntries: %d: %w", corporationID, err)
+	}
+	if corporationID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	err := st.qRW.DeleteCorporationIndustryJobs(ctx, int64(corporationID))
+	if err != nil {
+		return wrapErr(err)
+	}
+	slog.Info("Industry jobs deleted for corporation", "corporationID", corporationID)
+	return nil
+}
 
 func (st *Storage) GetCorporationIndustryJob(ctx context.Context, corporationID, jobID int32) (*app.CorporationIndustryJob, error) {
 	arg := queries.GetCorporationIndustryJobParams{

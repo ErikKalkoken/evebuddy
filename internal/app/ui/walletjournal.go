@@ -19,7 +19,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -31,9 +30,11 @@ type walletJournalRow struct {
 	balance          float64
 	balanceFormatted string
 	characterID      int32
+	corporationID    int32
 	date             time.Time
 	dateFormatted    string
 	description      string
+	division         app.Division
 	reason           string
 	refID            int64
 	refType          string
@@ -47,13 +48,13 @@ func (e walletJournalRow) descriptionWithReason() string {
 	return fmt.Sprintf("[r] %s", e.description)
 }
 
-type characterWalletJournal struct {
+// walletJournal is a widget for showing wallet journals for both characters and corporations.
+type walletJournal struct {
 	widget.BaseWidget
-
-	OnUpdate func(balance string)
 
 	body         fyne.CanvasObject
 	columnSorter *columnSorter
+	division     app.Division
 	rows         []walletJournalRow
 	rowsFiltered []walletJournalRow
 	selectType   *kxwidget.FilterChipSelect
@@ -62,7 +63,15 @@ type characterWalletJournal struct {
 	u            *baseUI
 }
 
-func newCharacterWalletJournal(u *baseUI) *characterWalletJournal {
+func newCharacterWalletJournal(u *baseUI) *walletJournal {
+	return newWalletJournal(u, app.DivisionZero)
+}
+
+func newCorporationWalletJournal(u *baseUI, division app.Division) *walletJournal {
+	return newWalletJournal(u, division)
+}
+
+func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 	headers := []headerDef{
 		{label: "Date", width: 150},
 		{label: "Type", width: 150},
@@ -70,8 +79,9 @@ func newCharacterWalletJournal(u *baseUI) *characterWalletJournal {
 		{label: "Balance", width: 200, notSortable: true},
 		{label: "Description", width: 450, notSortable: true},
 	}
-	a := &characterWalletJournal{
+	a := &walletJournal{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortDesc),
+		division:     division,
 		rows:         make([]walletJournalRow, 0),
 		top:          makeTopLabel(),
 		u:            u,
@@ -99,7 +109,11 @@ func newCharacterWalletJournal(u *baseUI) *characterWalletJournal {
 	}
 	if a.u.isDesktop {
 		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r walletJournalRow) {
-			showCharacterWalletJournalEntry(a.u, r.characterID, r.refID)
+			if a.isCorporation() {
+				showCorporationWalletJournalEntry(a.u, r.corporationID, r.division, r.refID)
+			} else {
+				showCharacterWalletJournalEntry(a.u, r.characterID, r.refID)
+			}
 		})
 	} else {
 		a.body = a.makeDataList()
@@ -113,7 +127,7 @@ func newCharacterWalletJournal(u *baseUI) *characterWalletJournal {
 	return a
 }
 
-func (a *characterWalletJournal) CreateRenderer() fyne.WidgetRenderer {
+func (a *walletJournal) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectType)
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
@@ -127,8 +141,11 @@ func (a *characterWalletJournal) CreateRenderer() fyne.WidgetRenderer {
 	)
 	return widget.NewSimpleRenderer(c)
 }
+func (a *walletJournal) isCorporation() bool {
+	return a.division != app.DivisionZero
+}
 
-func (a *characterWalletJournal) makeDataList() *iwidget.StripedList {
+func (a *walletJournal) makeDataList() *iwidget.StripedList {
 	p := theme.Padding()
 	l := iwidget.NewStripedList(
 		func() int {
@@ -178,13 +195,17 @@ func (a *characterWalletJournal) makeDataList() *iwidget.StripedList {
 			return
 		}
 		r := a.rowsFiltered[id]
-		showCharacterWalletJournalEntry(a.u, r.characterID, r.refID)
+		if a.isCorporation() {
+			showCorporationWalletJournalEntry(a.u, r.corporationID, r.division, r.refID)
+		} else {
+			showCharacterWalletJournalEntry(a.u, r.characterID, r.refID)
+		}
 	}
 	l.HideSeparators = true
 	return l
 }
 
-func (a *characterWalletJournal) filterRows(sortCol int) {
+func (a *walletJournal) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
 	if x := a.selectType.Selected; x != "" {
@@ -219,13 +240,21 @@ func (a *characterWalletJournal) filterRows(sortCol int) {
 	a.body.Refresh()
 }
 
-func (a *characterWalletJournal) update() {
+func (a *walletJournal) update() {
+	if a.isCorporation() {
+		a.updateCorporation()
+	} else {
+		a.updateCharacter()
+	}
+}
+
+func (a *walletJournal) updateCharacter() {
 	var err error
 	rows := make([]walletJournalRow, 0)
 	characterID := a.u.currentCharacterID()
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionWalletJournal)
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterWalletJournal)
 	if hasData {
-		rows2, err2 := a.fetchRows(characterID, a.u.services())
+		rows2, err2 := a.fetchCharacterRows(characterID, a.u.services())
 		if err2 != nil {
 			slog.Error("Failed to refresh wallet journal UI", "err", err2)
 			err = err2
@@ -234,13 +263,7 @@ func (a *characterWalletJournal) update() {
 		}
 	}
 	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
-		character := a.u.currentCharacter()
-		b := ihumanize.OptionalWithDecimals(character.WalletBalance, 1, "?")
-		s := fmt.Sprintf("Balance: %s", b)
-		if a.OnUpdate != nil {
-			a.OnUpdate(b)
-		}
-		return s, widget.MediumImportance
+		return "", widget.MediumImportance
 	})
 	fyne.Do(func() {
 		a.top.Text = t
@@ -253,7 +276,35 @@ func (a *characterWalletJournal) update() {
 	})
 }
 
-func (*characterWalletJournal) fetchRows(characterID int32, s services) ([]walletJournalRow, error) {
+func (a *walletJournal) updateCorporation() {
+	var err error
+	rows := make([]walletJournalRow, 0)
+	corporationID := a.u.currentCorporationID()
+	hasData := a.u.scs.HasCorporationSection(corporationID, app.CorporationSectionWalletJournal(a.division))
+	if hasData {
+		rows2, err2 := a.fetchCorporationRows(corporationID, a.division, a.u.services())
+		if err2 != nil {
+			slog.Error("Failed to refresh wallet journal UI", "err", err2)
+			err = err2
+		} else {
+			rows = rows2
+		}
+	}
+	t, i := a.u.makeTopText(corporationID, hasData, err, func() (string, widget.Importance) {
+		return "", widget.MediumImportance
+	})
+	fyne.Do(func() {
+		a.top.Text = t
+		a.top.Importance = i
+		a.top.Refresh()
+	})
+	fyne.Do(func() {
+		a.rows = rows
+		a.filterRows(-1)
+	})
+}
+
+func (*walletJournal) fetchCharacterRows(characterID int32, s services) ([]walletJournalRow, error) {
 	entries, err := s.cs.ListWalletJournalEntries(context.Background(), characterID)
 	if err != nil {
 		return nil, err
@@ -295,9 +346,53 @@ func (*characterWalletJournal) fetchRows(characterID int32, s services) ([]walle
 	return rows, nil
 }
 
+func (*walletJournal) fetchCorporationRows(corporationID int32, division app.Division, s services) ([]walletJournalRow, error) {
+	ctx := context.Background()
+	entries, err := s.rs.ListWalletJournalEntries(ctx, corporationID, division)
+	if err != nil {
+		return nil, err
+	}
+	rows := make([]walletJournalRow, len(entries))
+	for i, o := range entries {
+		r := walletJournalRow{
+			amount:           o.Amount,
+			amountFormatted:  humanize.FormatFloat(app.FloatFormat, o.Amount),
+			balance:          o.Balance,
+			balanceFormatted: humanize.FormatFloat(app.FloatFormat, o.Balance),
+			corporationID:    corporationID,
+			division:         division,
+			date:             o.Date,
+			dateFormatted:    o.Date.Format(app.DateTimeFormat),
+			description:      o.Description,
+			reason:           o.Reason,
+			refID:            o.RefID,
+			refType:          o.RefType,
+			refTypeDisplay:   o.RefTypeDisplay(),
+		}
+		var color fyne.ThemeColorName
+		switch {
+		case o.Amount < 0:
+			color = theme.ColorNameError
+		case o.Amount > 0:
+			color = theme.ColorNameSuccess
+		default:
+			color = theme.ColorNameForeground
+		}
+		r.amountDisplay = iwidget.RichTextSegmentsFromText(
+			r.amountFormatted,
+			widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+				ColorName: color,
+			},
+		)
+		rows[i] = r
+	}
+	return rows, nil
+}
+
 // showCharacterWalletJournalEntry shows a wallet journal entry for a character in a new window.
 func showCharacterWalletJournalEntry(u *baseUI, characterID int32, refID int64) {
-	title := fmt.Sprintf("Wallet Transaction #%d", refID)
+	title := fmt.Sprintf("Character Wallet Transaction #%d", refID)
 	w, ok := u.getOrCreateWindow(fmt.Sprintf("%d-%d", characterID, refID), title, u.scs.CharacterName(characterID))
 	if !ok {
 		w.Show()
@@ -376,6 +471,130 @@ func showCharacterWalletJournalEntry(u *baseUI, characterID int32, refID int64) 
 		widget.NewFormItem("Owner", makeOwnerActionLabel(
 			characterID,
 			u.scs.CharacterName(characterID),
+			u.ShowEveEntityInfoWindow,
+		)),
+		widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
+		widget.NewFormItem("Type", makeLabelWithWrap(o.RefTypeDisplay())),
+		widget.NewFormItem("Amount", amount),
+		widget.NewFormItem("Balance", widget.NewLabel(formatISKAmount(o.Balance))),
+		widget.NewFormItem("Description", makeLabelWithWrap(o.Description)),
+		widget.NewFormItem("Reason", makeLabelWithWrap(reason)),
+	}
+	if o.FirstParty != nil {
+		items = append(items, widget.NewFormItem(
+			"First Party",
+			makeEveEntityActionLabel(o.FirstParty, u.ShowEveEntityInfoWindow),
+		))
+	}
+	if o.SecondParty != nil {
+		items = append(items, widget.NewFormItem(
+			"Second Party",
+			makeEveEntityActionLabel(o.SecondParty, u.ShowEveEntityInfoWindow),
+		))
+	}
+	if o.TaxReceiver != nil {
+		items = append(items, widget.NewFormItem(
+			"Tax",
+			widget.NewLabel(formatISKAmount(o.Tax))),
+		)
+		items = append(items, widget.NewFormItem(
+			"Tax Receiver",
+			makeEveEntityActionLabel(o.TaxReceiver, u.ShowEveEntityInfoWindow)),
+		)
+	}
+	items = append(items, contextItem)
+	if u.IsDeveloperMode() {
+		items = append(items, widget.NewFormItem("Ref ID", u.makeCopyToClipboardLabel(fmt.Sprint(refID))))
+	}
+
+	for _, it := range items {
+		f.AppendItem(it)
+	}
+	setDetailWindow(title, f, w)
+	w.Show()
+}
+
+// showCorporationWalletJournalEntry shows a wallet journal entry for a corporation in a new window.
+func showCorporationWalletJournalEntry(u *baseUI, corporationID int32, division app.Division, refID int64) {
+	title := fmt.Sprintf("Corporation Wallet Transaction #%d", refID)
+	w, ok := u.getOrCreateWindow(fmt.Sprintf("%d-%d", corporationID, refID), title, u.scs.CorporationName(corporationID))
+	if !ok {
+		w.Show()
+		return
+	}
+	o, err := u.rs.GetWalletJournalEntry(context.Background(), corporationID, division, refID)
+	if err != nil {
+		u.showErrorDialog("Failed to show wallet transaction", err, u.window)
+		return
+	}
+
+	f := widget.NewForm()
+	f.Orientation = widget.Adaptive
+
+	amount := widget.NewLabel(formatISKAmount(o.Amount))
+	amount.Importance = importanceISKAmount(o.Amount)
+	reason := o.Reason
+	if reason == "" {
+		reason = "-"
+	}
+
+	contextDefaultWidget := widget.NewLabel("?")
+	contextItem := widget.NewFormItem("Related item", contextDefaultWidget)
+	// ctx := context.Background()
+	// reportError := func(o *app.CorporationWalletJournalEntry, err error) {
+	// 	slog.Error("Failed to fetch related context", "contextIDType", o.ContextIDType, "contextID", o.ContextID, "error", err)
+	// 	contextDefaultWidget.SetText("Failed to load related item: " + u.humanizeError(err))
+	// }
+	// TODO: Add support for industry jobs
+	// switch o.ContextIDType {
+	// case "alliance_id", "character_id", "corporation_id", "system_id", "type_id":
+	// 	go func() {
+	// 		ee, err := u.eus.GetOrCreateEntityESI(ctx, int32(o.ContextID))
+	// 		if err != nil {
+	// 			reportError(o, err)
+	// 			return
+	// 		}
+	// 		contextItem.Text = "Related " + ee.CategoryDisplay()
+	// 		contextItem.Widget = makeEveEntityActionLabel(ee, u.ShowEveEntityInfoWindow)
+	// 		f.Refresh()
+	// 	}()
+	// case "contract_id":
+	// 	c, err := u.cs.GetContract(ctx, corporationID, int32(o.ContextID))
+	// 	if err != nil {
+	// 		reportError(o, err)
+	// 		break
+	// 	}
+	// 	contextItem.Text = "Related contract"
+	// 	contextItem.Widget = makeLinkLabelWithWrap(c.NameDisplay(), func() {
+	// 		showContract(u, c.CorporationID, c.ContractID)
+	// 	})
+	// case "market_transaction_id":
+	// 	contextItem.Text = "Related market transaction"
+	// 	contextItem.Widget = makeLinkLabelWithWrap(fmt.Sprintf("#%d", o.ContextID), func() {
+	// 		showCorporationWalletTransaction(u, o.CorporationID, o.ContextID)
+	// 	})
+	// case "station_id", "structure_id":
+	// 	contextItem.Text = "Related location"
+	// 	go func() {
+	// 		token, err := u.cs.GetValidCorporationToken(ctx, corporationID)
+	// 		if err != nil {
+	// 			reportError(o, err)
+	// 			return
+	// 		}
+	// 		ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+	// 		el, err := u.eus.GetOrCreateLocationESI(ctx, o.ContextID)
+	// 		if err != nil {
+	// 			reportError(o, err)
+	// 			return
+	// 		}
+	// 		contextItem.Widget = makeLocationLabel(el.ToShort(), u.ShowLocationInfoWindow)
+	// 		f.Refresh()
+	// 	}()
+	// }
+	items := []*widget.FormItem{
+		widget.NewFormItem("Owner", makeOwnerActionLabel(
+			corporationID,
+			u.scs.CorporationName(corporationID),
 			u.ShowEveEntityInfoWindow,
 		)),
 		widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),

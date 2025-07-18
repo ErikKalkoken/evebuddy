@@ -110,7 +110,7 @@ func TestCharacterAsset_CanRenderWithData(t *testing.T) {
 	})
 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 		CharacterID: character.ID,
-		Section:     app.SectionAssets,
+		Section:     app.SectionCharacterAssets,
 	})
 	test.ApplyTheme(t, test.Theme())
 	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
@@ -132,7 +132,7 @@ func TestCharacterAsset_CanRenderWithoutData(t *testing.T) {
 	})
 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 		CharacterID: character.ID,
-		Section:     app.SectionAssets,
+		Section:     app.SectionCharacterAssets,
 	})
 	test.ApplyTheme(t, test.Theme())
 	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)

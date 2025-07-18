@@ -221,7 +221,7 @@ func (*characterJumpClones) makeTopText(cloneCount int, character *app.Character
 		ts.Style.ColorName = theme.ColorNameDisabled
 		return []widget.RichTextSegment{ts}
 	}
-	hasData := s.scs.HasCharacterSection(character.ID, app.SectionJumpClones)
+	hasData := s.scs.HasCharacterSection(character.ID, app.SectionCharacterJumpClones)
 	if !hasData {
 		ts.Text = "Waiting for character data to be loaded..."
 		ts.Style.ColorName = theme.ColorNameWarning

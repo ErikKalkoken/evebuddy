@@ -13,7 +13,7 @@ import (
 )
 
 func (st *Storage) GetGeneralSectionStatus(ctx context.Context, section app.GeneralSection) (*app.GeneralSectionStatus, error) {
-	s, err := st.qRO.GetGeneralSectionStatus(ctx, string(section))
+	s, err := st.qRO.GetGeneralSectionStatus(ctx, section.String())
 	if err != nil {
 		return nil, fmt.Errorf("get status for general section %s: %w", section, convertGetError(err))
 	}
@@ -44,7 +44,7 @@ type UpdateOrCreateGeneralSectionStatusParams struct {
 }
 
 func (st *Storage) UpdateOrCreateGeneralSectionStatus(ctx context.Context, arg UpdateOrCreateGeneralSectionStatusParams) (*app.GeneralSectionStatus, error) {
-	if string(arg.Section) == "" {
+	if arg.Section.String() == "" {
 		return nil, fmt.Errorf("UpdateOrCreateGeneralSectionStatus: %+v: %w", arg, app.ErrInvalid)
 	}
 	tx, err := st.dbRW.Begin()
@@ -54,16 +54,16 @@ func (st *Storage) UpdateOrCreateGeneralSectionStatus(ctx context.Context, arg U
 	defer tx.Rollback()
 	qtx := st.qRW.WithTx(tx)
 	var arg2 queries.UpdateOrCreateGeneralSectionStatusParams
-	old, err := qtx.GetGeneralSectionStatus(ctx, string(arg.Section))
+	old, err := qtx.GetGeneralSectionStatus(ctx, arg.Section.String())
 	if errors.Is(err, sql.ErrNoRows) {
 		arg2 = queries.UpdateOrCreateGeneralSectionStatusParams{
-			SectionID: string(arg.Section),
+			SectionID: arg.Section.String(),
 		}
 	} else if err != nil {
 		return nil, err
 	} else {
 		arg2 = queries.UpdateOrCreateGeneralSectionStatusParams{
-			SectionID:   string(arg.Section),
+			SectionID:   arg.Section.String(),
 			CompletedAt: old.CompletedAt,
 			ContentHash: old.ContentHash,
 			Error:       old.Error,
@@ -94,10 +94,12 @@ func (st *Storage) UpdateOrCreateGeneralSectionStatus(ctx context.Context, arg U
 
 func generalSectionStatusFromDBModel(o queries.GeneralSectionStatus) *app.GeneralSectionStatus {
 	x := &app.GeneralSectionStatus{
-		ErrorMessage: o.Error,
-		Section:      app.GeneralSection(o.SectionID),
-		ContentHash:  o.ContentHash,
-		UpdatedAt:    o.UpdatedAt,
+		SectionStatus: app.SectionStatus{
+			ErrorMessage: o.Error,
+			ContentHash:  o.ContentHash,
+			Section:      app.GeneralSection(o.SectionID),
+			UpdatedAt:    o.UpdatedAt,
+		},
 	}
 	if o.CompletedAt.Valid {
 		x.CompletedAt = o.CompletedAt.Time

@@ -10,10 +10,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWalletTransaction(t *testing.T) {
+func TestCharacterWalletTransaction(t *testing.T) {
 	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
@@ -43,7 +44,10 @@ func TestWalletTransaction(t *testing.T) {
 		// then
 		region := location.SolarSystem.Constellation.Region
 		if assert.NoError(t, err) {
-			i, err := r.GetCharacterWalletTransaction(ctx, c.ID, 42)
+			i, err := r.GetCharacterWalletTransaction(ctx, storage.GetCharacterWalletTransactionParams{
+				CharacterID:   c.ID,
+				TransactionID: 42,
+			})
 			if assert.NoError(t, err) {
 				assert.Equal(t, client, i.Client)
 				assert.Equal(t, date.UTC(), i.Date.UTC())
@@ -75,33 +79,37 @@ func TestWalletTransaction(t *testing.T) {
 			}
 		}
 	})
-	t.Run("can list IDs of existing entries", func(t *testing.T) {
+	t.Run("can list IDs of existing entries for a character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
 		e1 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		e2 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
-		e3 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		factory.CreateCharacterWalletTransaction()
 		// when
 		got, err := r.ListCharacterWalletTransactionIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			want := set.Of(e1.TransactionID, e2.TransactionID, e3.TransactionID)
+			want := set.Of(e1.TransactionID, e2.TransactionID)
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
-	t.Run("can list existing entries", func(t *testing.T) {
+	t.Run("can list existing entries for a character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
-		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
-		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		t1 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		t2 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		factory.CreateCharacterWalletTransaction()
 		// when
-		ee, err := r.ListCharacterWalletTransactions(ctx, c.ID)
+		oo, err := r.ListCharacterWalletTransactions(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Len(t, ee, 3)
+			got := set.Of(xslices.Map(oo, func(x *app.CharacterWalletTransaction) int64 {
+				return x.TransactionID
+			})...)
+			want := set.Of(t1.TransactionID, t2.TransactionID)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 }

@@ -37,7 +37,7 @@ func TestTraining_CanRenderWithActiveTraining(t *testing.T) {
 	})
 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 		CharacterID: character.ID,
-		Section:     app.SectionSkillqueue,
+		Section:     app.SectionCharacterSkillqueue,
 		CompletedAt: now,
 	})
 	test.ApplyTheme(t, test.Theme())
@@ -65,7 +65,7 @@ func TestTraining_CanRenderWithInActiveTraining(t *testing.T) {
 	now := time.Now().UTC()
 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 		CharacterID: character.ID,
-		Section:     app.SectionSkillqueue,
+		Section:     app.SectionCharacterSkillqueue,
 		CompletedAt: now,
 	})
 	test.ApplyTheme(t, test.Theme())
@@ -118,7 +118,7 @@ func TestTraining_Filter(t *testing.T) {
 	})
 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 		CharacterID: character1.ID,
-		Section:     app.SectionSkillqueue,
+		Section:     app.SectionCharacterSkillqueue,
 		CompletedAt: now,
 	})
 
@@ -132,7 +132,7 @@ func TestTraining_Filter(t *testing.T) {
 	})
 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 		CharacterID: character2.ID,
-		Section:     app.SectionSkillqueue,
+		Section:     app.SectionCharacterSkillqueue,
 		CompletedAt: now,
 	})
 	tag := factory.CreateCharacterTag()

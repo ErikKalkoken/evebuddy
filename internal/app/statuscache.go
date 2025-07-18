@@ -83,7 +83,7 @@ const (
 	GeneralSectionEntityName = "Eve Universe"
 )
 
-type SectionStatus struct {
+type CacheSectionStatus struct {
 	EntityID     int32
 	EntityName   string
 	Comment      string
@@ -96,19 +96,19 @@ type SectionStatus struct {
 	Timeout      time.Duration
 }
 
-func (s SectionStatus) IsGeneralSection() bool {
+func (s CacheSectionStatus) IsGeneralSection() bool {
 	return s.EntityID == GeneralSectionEntityID
 }
 
-func (s SectionStatus) HasError() bool {
+func (s CacheSectionStatus) HasError() bool {
 	return s.ErrorMessage != ""
 }
 
-func (s SectionStatus) HasComment() bool {
+func (s CacheSectionStatus) HasComment() bool {
 	return s.Comment != ""
 }
 
-func (s SectionStatus) IsExpired() bool {
+func (s CacheSectionStatus) IsExpired() bool {
 	if s.CompletedAt.IsZero() {
 		return true
 	}
@@ -116,17 +116,17 @@ func (s SectionStatus) IsExpired() bool {
 	return time.Now().After(deadline)
 }
 
-func (s SectionStatus) IsCurrent() bool {
+func (s CacheSectionStatus) IsCurrent() bool {
 	if s.CompletedAt.IsZero() {
 		return false
 	}
 	return time.Now().Before(s.CompletedAt.Add(s.Timeout * 2))
 }
 
-func (s SectionStatus) IsMissing() bool {
+func (s CacheSectionStatus) IsMissing() bool {
 	return s.CompletedAt.IsZero()
 }
 
-func (s SectionStatus) IsRunning() bool {
+func (s CacheSectionStatus) IsRunning() bool {
 	return !s.StartedAt.IsZero()
 }

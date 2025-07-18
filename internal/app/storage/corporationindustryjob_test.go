@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -254,6 +255,25 @@ func TestCorporationIndustryJob(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, x, 1)
+		}
+	})
+	t.Run("can delete jobs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		j1 := factory.CreateCorporationIndustryJob()
+		j2 := factory.CreateCorporationIndustryJob()
+		// when
+		err := st.DeleteCorporationIndustryJobs(ctx, j1.CorporationID)
+		// then
+		if assert.NoError(t, err) {
+			oo, err := st.ListAllCorporationIndustryJobs(ctx)
+			if assert.NoError(t, err) {
+				corporationIDs := xslices.Map(oo, func(x *app.CorporationIndustryJob) int32 {
+					return x.CorporationID
+				})
+				assert.NotContains(t, corporationIDs, j1.CorporationID)
+				assert.Contains(t, corporationIDs, j2.CorporationID)
+			}
 		}
 	})
 }

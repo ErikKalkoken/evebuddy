@@ -28,7 +28,7 @@ const (
 type wealth struct {
 	widget.BaseWidget
 
-	OnUpdate func(wallet, assets float64)
+	onUpdate func(wallet, assets float64)
 
 	charts *fyne.Container
 	top    *widget.Label
@@ -151,8 +151,8 @@ func (a *wealth) update() {
 		a.charts.Refresh()
 	})
 
-	if a.OnUpdate != nil {
-		a.OnUpdate(totalWallet, totalAssets)
+	if a.onUpdate != nil {
+		a.onUpdate(totalWallet, totalAssets)
 	}
 }
 
@@ -171,8 +171,8 @@ func (*wealth) compileData(s services) ([]dataRow, int, error) {
 	}
 	selected := make([]*app.Character, 0)
 	for _, c := range cc {
-		hasAssets := s.scs.HasCharacterSection(c.ID, app.SectionAssets)
-		hasWallet := s.scs.HasCharacterSection(c.ID, app.SectionWalletBalance)
+		hasAssets := s.scs.HasCharacterSection(c.ID, app.SectionCharacterAssets)
+		hasWallet := s.scs.HasCharacterSection(c.ID, app.SectionCharacterWalletBalance)
 		if hasAssets && hasWallet {
 			selected = append(selected, c)
 		}

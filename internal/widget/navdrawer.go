@@ -126,18 +126,7 @@ func (w *NavDrawer) makeList() *widget.List {
 				icon.Show()
 				spacer.Show()
 			}
-			switch it.variant {
-			case navPage:
-				title.SizeName = theme.SizeNameText
-				title.Text = it.text
-				title.TextStyle.Bold = it.isSelected
-				if it.isDisabled {
-					title.Importance = widget.LowImportance
-				} else {
-					title.Importance = widget.MediumImportance
-				}
-				title.Refresh()
-				showIcon()
+			updateBadge := func() {
 				if it.badge != "" {
 					badge.Text = it.badge
 					if it.isDisabled {
@@ -150,14 +139,33 @@ func (w *NavDrawer) makeList() *widget.List {
 				} else {
 					badge.Hide()
 				}
+			}
+			switch it.variant {
+			case navPage:
+				title.SizeName = theme.SizeNameText
+				title.Text = it.text
+				title.TextStyle.Bold = it.isSelected
+				if it.isDisabled {
+					title.Importance = widget.LowImportance
+				} else {
+					title.Importance = widget.MediumImportance
+				}
+				title.Refresh()
+				showIcon()
+				updateBadge()
 			case navSectionLabel:
 				title.SizeName = theme.SizeNameScrollBar
 				toUpper := cases.Upper(language.English)
 				title.Text = toUpper.String(it.text)
+				if it.isDisabled {
+					title.Importance = widget.LowImportance
+				} else {
+					title.Importance = widget.MediumImportance
+				}
 				title.Refresh()
 				icon.Hide()
 				spacer.Hide()
-				badge.Hide()
+				updateBadge()
 			}
 			list.SetItemHeight(id, co.(*fyne.Container).MinSize().Height)
 		},
@@ -270,8 +278,18 @@ func (w *NavDrawer) SetItemBadge(item *NavItem, text string) {
 	w.list.RefreshItem(id)
 }
 
+func (w *NavDrawer) SetItemText(item *NavItem, text string) {
+	id, ok := w.findItem(item)
+	if !ok {
+		return
+	}
+	w.items[id].text = text
+	w.list.RefreshItem(id)
+}
+
 func (w *NavDrawer) Refresh() {
 	w.updateTitle()
+	w.list.Refresh()
 }
 
 func (w *NavDrawer) updateTitle() {
@@ -344,4 +362,12 @@ func newNavItem(variant navItemVariant) *NavItem {
 		variant:    variant,
 	}
 	return it
+}
+
+func (ni *NavItem) Enable() {
+	ni.isDisabled = false
+}
+
+func (ni *NavItem) Disable() {
+	ni.isDisabled = true
 }

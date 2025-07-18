@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWalletJournalEntry(t *testing.T) {
+func TestCharacterWalletJournalEntry(t *testing.T) {
 	db, r, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
@@ -37,7 +37,10 @@ func TestWalletJournalEntry(t *testing.T) {
 		err := r.CreateCharacterWalletJournalEntry(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			i, err := r.GetCharacterWalletJournalEntry(ctx, c.ID, 4)
+			i, err := r.GetCharacterWalletJournalEntry(ctx, storage.GetCharacterWalletJournalEntryParams{
+				CharacterID: c.ID,
+				RefID:       4,
+			})
 			if assert.NoError(t, err) {
 				assert.Equal(t, 123.45, i.Amount)
 				assert.Equal(t, 234.56, i.Balance)
@@ -79,7 +82,10 @@ func TestWalletJournalEntry(t *testing.T) {
 		err := r.CreateCharacterWalletJournalEntry(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			i, err := r.GetCharacterWalletJournalEntry(ctx, c.ID, 4)
+			i, err := r.GetCharacterWalletJournalEntry(ctx, storage.GetCharacterWalletJournalEntryParams{
+				CharacterID: c.ID,
+				RefID:       4,
+			})
 			if assert.NoError(t, err) {
 				assert.Equal(t, 123.45, i.Amount)
 				assert.Equal(t, 234.56, i.Balance)

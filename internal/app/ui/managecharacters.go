@@ -10,7 +10,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -27,10 +26,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-type accountCharacter struct {
-	id           int32
-	name         string
-	missingToken bool
+type manageCharacterRow struct {
+	characterID   int32
+	corporationID int32
+	name          string
+	missingToken  bool
 }
 
 type manageCharactersWindow struct {
@@ -49,7 +49,7 @@ type manageCharacters struct {
 	widget.BaseWidget
 
 	ab         *iwidget.AppBar
-	characters []accountCharacter
+	characters []manageCharacterRow
 	list       *widget.List
 	mcw        *manageCharactersWindow
 }
@@ -79,7 +79,7 @@ func showManageCharactersWindow(u *baseUI) {
 			onClosed()
 		}
 		if mcw.tagsChanged {
-			u.updateCrossPages()
+			u.updateHome()
 		}
 		mcw.sb.Stop()
 	})
@@ -92,13 +92,13 @@ func showManageCharactersWindow(u *baseUI) {
 
 func newManageCharacters(mcw *manageCharactersWindow) *manageCharacters {
 	a := &manageCharacters{
-		characters: make([]accountCharacter, 0),
+		characters: make([]manageCharacterRow, 0),
 		mcw:        mcw,
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeCharacterList()
 	add := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
-		a.ShowAddCharacterDialog()
+		a.showAddCharacterDialog()
 	})
 	add.Importance = widget.HighImportance
 	if a.mcw.u.IsOffline() {
@@ -146,7 +146,7 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 			row := co.(*fyne.Container).Objects
 
 			portrait := row[0].(*canvas.Image)
-			go a.mcw.u.updateAvatar(c.id, func(r fyne.Resource) {
+			go a.mcw.u.updateCharacterAvatar(c.characterID, func(r fyne.Resource) {
 				fyne.Do(func() {
 					portrait.Resource = r
 					portrait.Refresh()
@@ -174,7 +174,7 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 			return
 		}
 		c := a.characters[id]
-		if err := a.mcw.u.loadCharacter(c.id); err != nil {
+		if err := a.mcw.u.loadCharacter(c.characterID); err != nil {
 			slog.Error("load current character", "char", c, "err", err)
 			return
 		}
@@ -184,56 +184,8 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 	return l
 }
 
-func (a *manageCharacters) showDeleteDialog(c accountCharacter) {
-	a.mcw.u.ShowConfirmDialog(
-		"Delete Character",
-		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", c.name),
-		"Delete",
-		func(confirmed bool) {
-			if confirmed {
-				m := kmodal.NewProgressInfinite(
-					"Deleting character",
-					fmt.Sprintf("Deleting %s...", c.name),
-					func() error {
-						err := a.mcw.u.cs.DeleteCharacter(context.TODO(), c.id)
-						if err != nil {
-							return err
-						}
-						a.update()
-						return nil
-					},
-					a.mcw.w,
-				)
-				m.OnSuccess = func() {
-					a.mcw.sb.Show(fmt.Sprintf("Character %s deleted", c.name))
-					go func() {
-						a.update()
-						if a.mcw.u.currentCharacterID() == c.id {
-							a.mcw.u.setAnyCharacter()
-						}
-						a.mcw.u.updateCrossPages()
-						a.mcw.u.updateStatus()
-					}()
-				}
-				m.OnError = func(err error) {
-					a.mcw.reportError(fmt.Sprintf("ERROR: Failed to delete character %s", c.name), err)
-				}
-				m.Start()
-			}
-		},
-		a.mcw.w,
-	)
-}
-
 func (a *manageCharacters) update() {
-	characters := xslices.Map(a.mcw.u.scs.ListCharacters(), func(c *app.EntityShort[int32]) accountCharacter {
-		return accountCharacter{id: c.ID, name: c.Name}
-	})
-	// hasToken, err := a.mcw.u.cs.HasTokenWithScopes(context.Background(), c.ID)
-	// if err != nil {
-	// 	slog.Error("Tried to check if character has token", "err", err)
-	// 	hasToken = true // do not report error when state is unclear
-	// }
+	characters := a.fetchRows()
 	fyne.Do(func() {
 		a.characters = characters
 		a.list.Refresh()
@@ -241,11 +193,27 @@ func (a *manageCharacters) update() {
 	})
 }
 
-func (a *manageCharacters) ShowAddCharacterDialog() {
+func (a *manageCharacters) fetchRows() []manageCharacterRow {
+	cc, err := a.mcw.u.cs.ListCharacters(context.Background())
+	if err != nil {
+		slog.Error("Failed to update managed characters", "error", err)
+		return []manageCharacterRow{}
+	}
+	characters := xslices.Map(cc, func(c *app.Character) manageCharacterRow {
+		return manageCharacterRow{
+			characterID:   c.ID,
+			corporationID: c.EveCharacter.Corporation.ID,
+			name:          c.EveCharacter.Name,
+		}
+	})
+	return characters
+}
+
+func (a *manageCharacters) showAddCharacterDialog() {
 	cancelCTX, cancel := context.WithCancel(context.Background())
-	s := "Please follow instructions in your browser to add a new character."
-	infoText := binding.BindString(&s)
-	content := widget.NewLabelWithData(infoText)
+	infoText := widget.NewLabel("Please follow instructions in your browser to add a new character.")
+	activity := widget.NewActivity()
+	content := container.NewHBox(infoText, activity)
 	d1 := dialog.NewCustom(
 		"Add Character",
 		"Cancel",
@@ -256,7 +224,12 @@ func (a *manageCharacters) ShowAddCharacterDialog() {
 	d1.SetOnClosed(cancel)
 	go func() {
 		characterID, err := func() (int32, error) {
-			characterID, err := a.mcw.u.cs.UpdateOrCreateCharacterFromSSO(cancelCTX, infoText)
+			characterID, err := a.mcw.u.cs.UpdateOrCreateCharacterFromSSO(cancelCTX, func(s string) {
+				fyne.Do(func() {
+					infoText.SetText(s)
+					activity.Start()
+				})
+			})
 			if err != nil {
 				return 0, err
 			}
@@ -275,18 +248,83 @@ func (a *manageCharacters) ShowAddCharacterDialog() {
 				if !a.mcw.u.hasCharacter() {
 					a.mcw.u.loadCharacter(characterID)
 				}
+				var corporationID int32
+				character := a.mcw.u.currentCharacter()
+				if character != nil {
+					if corp := character.EveCharacter.Corporation; !corp.IsNPC().ValueOrZero() {
+						corporationID = corp.ID
+						a.mcw.u.loadCorporation(corporationID)
+					}
+				}
+				if !a.mcw.u.hasCorporation() && corporationID != 0 {
+					a.mcw.u.loadCorporation(corporationID)
+				}
 				a.mcw.u.updateStatus()
-				a.mcw.u.updateCrossPages()
-				if a.mcw.u.isUpdateDisabled { // FIXME: temporary for testing. should be removed again.
+				a.mcw.u.updateHome()
+				if a.mcw.u.isUpdateDisabled {
 					return
 				}
-				go a.mcw.u.updateCharacterAndRefreshIfNeeded(context.Background(), characterID, true)
+				ctx := context.Background()
+				go a.mcw.u.updateCharacterAndRefreshIfNeeded(ctx, characterID, true)
 			}()
 		})
 	}()
 	fyne.Do(func() {
 		d1.Show()
 	})
+}
+
+func (a *manageCharacters) showDeleteDialog(r manageCharacterRow) {
+	a.mcw.u.ShowConfirmDialog(
+		"Delete Character",
+		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", r.name),
+		"Delete",
+		func(confirmed bool) {
+			if confirmed {
+				m := kmodal.NewProgressInfinite(
+					"Deleting character",
+					fmt.Sprintf("Deleting %s...", r.name),
+					func() error {
+						ctx := context.Background()
+						corpDeleted, err := a.mcw.u.cs.DeleteCharacter(ctx, r.characterID)
+						if err != nil {
+							return err
+						}
+						a.update()
+						if a.mcw.u.currentCharacterID() == r.characterID {
+							a.mcw.u.setAnyCharacter()
+						}
+						if corpDeleted {
+							a.mcw.u.setAnyCorporation()
+						} else {
+							ok, err := a.mcw.u.rs.HasCorporation(ctx, r.corporationID)
+							if err != nil {
+								slog.Error("Failed to determine if corp exists", "err", err)
+							}
+							if ok {
+								if err := a.mcw.u.rs.RemoveSectionDataWhenPermissionLost(ctx, r.corporationID); err != nil {
+									slog.Error("Failed to remove corp data after character was deleted", "characterID", r.characterID, "error", err)
+								}
+								go a.mcw.u.updateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
+							}
+						}
+						a.mcw.u.updateHome()
+						a.mcw.u.updateStatus()
+						return nil
+					},
+					a.mcw.w,
+				)
+				m.OnSuccess = func() {
+					a.mcw.sb.Show(fmt.Sprintf("Character %s deleted", r.name))
+				}
+				m.OnError = func(err error) {
+					a.mcw.reportError(fmt.Sprintf("ERROR: Failed to delete character %s", r.name), err)
+				}
+				m.Start()
+			}
+		},
+		a.mcw.w,
+	)
 }
 
 type characterTags struct {
@@ -411,7 +449,7 @@ func (a *characterTags) makeAddCharacterButton() *widget.Button {
 				icons := box[1].(*fyne.Container).Objects
 
 				portrait := icons[1].(*canvas.Image)
-				go a.mcw.u.updateAvatar(character.ID, func(r fyne.Resource) {
+				go a.mcw.u.updateCharacterAvatar(character.ID, func(r fyne.Resource) {
 					fyne.Do(func() {
 						portrait.Resource = r
 						portrait.Refresh()
@@ -579,7 +617,7 @@ func (a *characterTags) makeCharacterList() *widget.List {
 			box[0].(*widget.Label).SetText(character.Name)
 
 			portrait := box[1].(*canvas.Image)
-			go a.mcw.u.updateAvatar(character.ID, func(r fyne.Resource) {
+			go a.mcw.u.updateCharacterAvatar(character.ID, func(r fyne.Resource) {
 				fyne.Do(func() {
 					portrait.Resource = r
 					portrait.Refresh()

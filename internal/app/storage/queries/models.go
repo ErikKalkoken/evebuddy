@@ -318,6 +318,13 @@ type Corporation struct {
 	CreatedAt time.Time
 }
 
+type CorporationHangarName struct {
+	ID            int64
+	CorporationID int64
+	DivisionID    int64
+	Name          string
+}
+
 type CorporationIndustryJob struct {
 	ID                   int64
 	ActivityID           int64
@@ -345,6 +352,12 @@ type CorporationIndustryJob struct {
 	SuccessfulRuns       sql.NullInt64
 }
 
+type CorporationMember struct {
+	ID            int64
+	CorporationID int64
+	CharacterID   int64
+}
+
 type CorporationSectionStatus struct {
 	ID            int64
 	Comment       string
@@ -356,6 +369,54 @@ type CorporationSectionStatus struct {
 	CompletedAt   sql.NullTime
 	Error         string
 	StartedAt     sql.NullTime
+}
+
+type CorporationWalletBalance struct {
+	ID            int64
+	CorporationID int64
+	DivisionID    int64
+	Balance       float64
+}
+
+type CorporationWalletJournalEntry struct {
+	ID            int64
+	Amount        float64
+	Balance       float64
+	CorporationID int64
+	ContextID     int64
+	ContextIDType string
+	Date          time.Time
+	Description   string
+	DivisionID    int64
+	FirstPartyID  sql.NullInt64
+	RefID         int64
+	Reason        string
+	RefType       string
+	SecondPartyID sql.NullInt64
+	Tax           float64
+	TaxReceiverID sql.NullInt64
+}
+
+type CorporationWalletName struct {
+	ID            int64
+	CorporationID int64
+	DivisionID    int64
+	Name          string
+}
+
+type CorporationWalletTransaction struct {
+	ID            int64
+	CorporationID int64
+	ClientID      int64
+	Date          time.Time
+	DivisionID    int64
+	EveTypeID     int64
+	IsBuy         bool
+	JournalRefID  int64
+	LocationID    int64
+	Quantity      int64
+	TransactionID int64
+	UnitPrice     float64
 }
 
 type EveCategory struct {

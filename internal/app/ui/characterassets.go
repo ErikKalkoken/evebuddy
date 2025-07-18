@@ -251,7 +251,11 @@ func (a *characterAssets) update() {
 		a.locations.Refresh()
 	})
 	if a.OnRedraw != nil {
-		a.OnRedraw(t)
+		c := a.u.currentCharacter()
+		if c != nil {
+			s := ihumanize.OptionalWithDecimals(c.AssetValue, 1, "?")
+			a.OnRedraw(s)
+		}
 	}
 }
 
@@ -486,7 +490,7 @@ func (a *characterAssets) makeTopText(total int) (string, widget.Importance) {
 	if c == nil {
 		return "No character", widget.LowImportance
 	}
-	hasData := a.u.scs.HasCharacterSection(c.ID, app.SectionAssets)
+	hasData := a.u.scs.HasCharacterSection(c.ID, app.SectionCharacterAssets)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

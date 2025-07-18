@@ -9,10 +9,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-/*
-- TODO: Make widgets thread safe
-*/
-
 const (
 	colorIndicator = theme.ColorNameInputBorder
 	colorBadge     = theme.ColorNamePrimary
@@ -41,8 +37,11 @@ var _ fyne.Tappable = (*destination)(nil)
 
 func newDestination(icon fyne.Resource, label string, nb *NavBar, id int, onSelected func(), onSelectedAgain func()) *destination {
 	l := canvas.NewText(label, theme.Color(colorForeground))
-	l.TextSize = theme.Size(theme.SizeNameCaptionText)
-	iconImage := NewImageFromResource(theme.NewThemedResource(icon), fyne.NewSquareSize(1.5*theme.Size(theme.SizeNameInlineIcon)))
+	l.TextSize = 10
+	iconImage := NewImageFromResource(
+		theme.NewThemedResource(icon),
+		fyne.NewSquareSize(1.2*theme.Size(theme.SizeNameInlineIcon)),
+	)
 	pill := canvas.NewRectangle(theme.Color(colorIndicator))
 	pill.CornerRadius = 12
 	badge := canvas.NewCircle(theme.Color(colorBadge))
@@ -136,14 +135,22 @@ func (w *destination) indicatorSize() fyne.Size {
 func (w *destination) CreateRenderer() fyne.WidgetRenderer {
 	s := w.indicatorSize()
 	w.tapAnim = canvas.NewSizeAnimation(
-		s.SubtractWidthHeight(s.Width*0.95, 0), s, defaultAnimationDuration, func(s fyne.Size) {
+		s.SubtractWidthHeight(s.Width*0.95, 0),
+		s,
+		defaultAnimationDuration,
+		func(s fyne.Size) {
 			w.indicator.Resize(s)
-			w.indicator.Move(fyne.NewPos(-s.Width/2, -s.Height/2))
-		})
+			w.indicator.Move(fyne.NewPos(-s.Width/2, -s.Height/2+0.5))
+		},
+	)
 	w.tapAnim.Curve = fyne.AnimationEaseOut
+
 	w.badge.Resize(fyne.NewSquareSize(6))
 	w.badge.Hide()
-	c := container.NewVBox(
+
+	p := theme.Padding()
+	c := container.New(
+		layout.NewCustomPaddedVBoxLayout(p*1.2),
 		container.NewStack(
 			container.NewCenter(container.NewWithoutLayout(w.indicator)),
 			container.NewCenter(

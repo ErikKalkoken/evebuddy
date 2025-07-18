@@ -60,7 +60,7 @@ func (w *TappableIcon) TappedSecondary(_ *fyne.PointEvent) {
 
 // Cursor returns the cursor type of this widget
 func (w *TappableIcon) Cursor() desktop.Cursor {
-	if w.hovered {
+	if w.OnTapped != nil && w.hovered {
 		return desktop.PointerCursor
 	}
 	return desktop.DefaultCursor
@@ -69,7 +69,7 @@ func (w *TappableIcon) Cursor() desktop.Cursor {
 // MouseIn is a hook that is called if the mouse pointer enters the element.
 func (w *TappableIcon) MouseIn(e *desktop.MouseEvent) {
 	w.ToolTipWidgetExtend.MouseIn(e)
-	if w.disabled {
+	if w.disabled || w.OnTapped == nil {
 		return
 	}
 	w.hovered = true

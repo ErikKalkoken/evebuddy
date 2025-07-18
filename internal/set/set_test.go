@@ -13,17 +13,19 @@ func TestAdd(t *testing.T) {
 	cases := []struct {
 		name string
 		s    set.Set[int]
-		v    int
+		v    []int
 		want set.Set[int]
 	}{
-		{"add to empty", set.Of[int](), 1, set.Of(1)},
-		{"add to zero", set.Set[int]{}, 1, set.Of(1)},
-		{"add new to non-empty", set.Of(1), 2, set.Of(1, 2)},
-		{"add existing to non-empty", set.Of(1), 1, set.Of(1)},
+		{"add to empty", set.Of[int](), []int{1}, set.Of(1)},
+		{"add to zero", set.Set[int]{}, []int{1}, set.Of(1)},
+		{"add new to non-empty", set.Of(1), []int{2}, set.Of(1, 2)},
+		{"add existing to non-empty", set.Of(1), []int{1}, set.Of(1)},
+		{"add multiple", set.Of[int](), []int{2, 1}, set.Of(1, 2)},
+		{"add nothing", set.Of[int](), []int{}, set.Of[int]()},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.s.Add(tc.v)
+			tc.s.Add(tc.v...)
 			if !tc.s.Equal(tc.want) {
 				t.Errorf("got %q, wanted %q", tc.s, tc.want)
 			}
