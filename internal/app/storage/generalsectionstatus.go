@@ -94,10 +94,12 @@ func (st *Storage) UpdateOrCreateGeneralSectionStatus(ctx context.Context, arg U
 
 func generalSectionStatusFromDBModel(o queries.GeneralSectionStatus) *app.GeneralSectionStatus {
 	x := &app.GeneralSectionStatus{
-		ErrorMessage: o.Error,
-		Section:      app.GeneralSection(o.SectionID),
-		ContentHash:  o.ContentHash,
-		UpdatedAt:    o.UpdatedAt,
+		Section: app.GeneralSection(o.SectionID),
+		SectionStatus: app.SectionStatus{
+			ErrorMessage: o.Error,
+			ContentHash:  o.ContentHash,
+			UpdatedAt:    o.UpdatedAt,
+		},
 	}
 	if o.CompletedAt.Valid {
 		x.CompletedAt = o.CompletedAt.Time

@@ -453,3 +453,24 @@ func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) error {
 	})
 	return err
 }
+
+func (s *EveUniverseService) updateCategories(ctx context.Context) error {
+	g := new(errgroup.Group)
+	g.Go(func() error {
+		return s.UpdateCategoryWithChildrenESI(ctx, app.EveCategorySkill)
+	})
+	g.Go(func() error {
+		return s.UpdateCategoryWithChildrenESI(ctx, app.EveCategoryShip)
+	})
+	if err := g.Wait(); err != nil {
+		return err
+	}
+	if err := s.UpdateShipSkills(ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *EveUniverseService) UpdateShipSkills(ctx context.Context) error {
+	return s.st.UpdateEveShipSkills(ctx)
+}

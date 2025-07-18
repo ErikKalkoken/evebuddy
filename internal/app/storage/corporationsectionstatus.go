@@ -149,10 +149,12 @@ func corporationSectionStatusFromDBModel(o queries.CorporationSectionStatus) *ap
 	x := &app.CorporationSectionStatus{
 		Comment:       o.Comment,
 		CorporationID: int32(o.CorporationID),
-		ErrorMessage:  o.Error,
 		Section:       app.CorporationSection(o.SectionID),
-		ContentHash:   o.ContentHash,
-		UpdatedAt:     o.UpdatedAt,
+		SectionStatus: app.SectionStatus{
+			ErrorMessage: o.Error,
+			ContentHash:  o.ContentHash,
+			UpdatedAt:    o.UpdatedAt,
+		},
 	}
 	if o.CompletedAt.Valid {
 		x.CompletedAt = o.CompletedAt.Time

@@ -178,9 +178,9 @@ func TestStatusCacheSummary(t *testing.T) {
 			t.Fatal(err)
 		}
 		o := &app.CharacterSectionStatus{
-			CharacterID:  characters[0],
-			Section:      app.SectionCharacterLocation,
-			ErrorMessage: "error",
+			CharacterID:   characters[0],
+			Section:       app.SectionCharacterLocation,
+			SectionStatus: app.SectionStatus{ErrorMessage: "error"},
 		}
 		sc.SetCharacterSection(o)
 		// when
@@ -237,7 +237,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		o := &app.CorporationSectionStatus{
 			CorporationID: corporations[0],
 			Section:       app.SectionCorporationIndustryJobs,
-			ErrorMessage:  "error",
+			SectionStatus: app.SectionStatus{ErrorMessage: "error"},
 		}
 		sc.SetCorporationSection(o)
 		// when
@@ -290,8 +290,8 @@ func TestStatusCacheSummary(t *testing.T) {
 			t.Fatal(err)
 		}
 		o := &app.GeneralSectionStatus{
-			Section:      app.SectionEveCharacters,
-			ErrorMessage: "error",
+			Section:       app.SectionEveCharacters,
+			SectionStatus: app.SectionStatus{ErrorMessage: "error"},
 		}
 		sc.SetGeneralSection(o)
 		ss := sc.Summary()
@@ -468,9 +468,9 @@ func TestStatusCacheSummary(t *testing.T) {
 			t.Fatal(err)
 		}
 		o := &app.CharacterSectionStatus{
-			CharacterID: characters[0],
-			Section:     app.SectionCharacterLocation,
-			CompletedAt: time.Now().Add(-1 * time.Hour),
+			CharacterID:   characters[0],
+			Section:       app.SectionCharacterLocation,
+			SectionStatus: app.SectionStatus{CompletedAt: time.Now().Add(-1 * time.Hour)},
 		}
 		sc.SetCharacterSection(o)
 		// when
@@ -510,8 +510,8 @@ func TestStatusCacheSummary(t *testing.T) {
 			t.Fatal(err)
 		}
 		o := &app.GeneralSectionStatus{
-			Section:     app.SectionEveCharacters,
-			CompletedAt: time.Now().Add(-30 * time.Hour),
+			Section:       app.SectionEveCharacters,
+			SectionStatus: app.SectionStatus{CompletedAt: time.Now().Add(-30 * time.Hour)},
 		}
 		sc.SetGeneralSection(o)
 		// when
@@ -850,19 +850,25 @@ func TestCharacterSectionSummary(t *testing.T) {
 	)
 	cache.Clear()
 	sc.SetCharacterSection(&app.CharacterSectionStatus{
-		CharacterID:  characterID,
-		Section:      app.SectionCharacterImplants,
-		ErrorMessage: "ERROR",
+		CharacterID: characterID,
+		Section:     app.SectionCharacterImplants,
+		SectionStatus: app.SectionStatus{
+			ErrorMessage: "ERROR",
+		},
 	})
 	sc.SetCharacterSection(&app.CharacterSectionStatus{
 		CharacterID: characterID,
 		Section:     app.SectionCharacterAssets,
-		CompletedAt: time.Now(),
+		SectionStatus: app.SectionStatus{
+			CompletedAt: time.Now(),
+		},
 	})
 	sc.SetCharacterSection(&app.CharacterSectionStatus{
 		CharacterID: characterID,
 		Section:     app.SectionCharacterIndustryJobs,
-		StartedAt:   time.Now().Add(-10 * time.Second),
+		SectionStatus: app.SectionStatus{
+			StartedAt: time.Now().Add(-10 * time.Second),
+		},
 	})
 	// when
 	got := sc.CharacterSectionSummary(characterID)
@@ -886,7 +892,7 @@ func TestCorporationSectionSummary(t *testing.T) {
 	sc.SetCorporationSection(&app.CorporationSectionStatus{
 		CorporationID: corporationID,
 		Section:       app.SectionCorporationIndustryJobs,
-		ErrorMessage:  "ERROR",
+		SectionStatus: app.SectionStatus{ErrorMessage: "error"},
 	})
 	// when
 	got := sc.CorporationSectionSummary(corporationID)
@@ -908,17 +914,16 @@ func TestGeneralSectionSummary(t *testing.T) {
 	)
 	cache.Clear()
 	sc.SetGeneralSection(&app.GeneralSectionStatus{
-		Section:      app.SectionEveTypes,
-		ErrorMessage: "ERROR",
+		Section:       app.SectionEveTypes,
+		SectionStatus: app.SectionStatus{ErrorMessage: "error"},
 	})
 	sc.SetGeneralSection(&app.GeneralSectionStatus{
-		Section:     app.SectionEveCharacters,
-		CompletedAt: time.Now(),
+		Section:       app.SectionEveCharacters,
+		SectionStatus: app.SectionStatus{CompletedAt: time.Now()},
 	})
 	sc.SetGeneralSection(&app.GeneralSectionStatus{
-		Section: app.SectionEveMarketPrices,
-
-		StartedAt: time.Now().Add(-10 * time.Second),
+		Section:       app.SectionEveMarketPrices,
+		SectionStatus: app.SectionStatus{StartedAt: time.Now().Add(-10 * time.Second)},
 	})
 	// when
 	got := sc.GeneralSectionSummary()

@@ -31,7 +31,8 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 		} else {
 			if !status.HasError() && !status.IsExpired() {
 				return false, nil
-			} else if status.HasError() && !status.HasErrorTimedOut() {
+			}
+			if status.HasError() && !status.WasUpdatedWithinErrorTimedOut() {
 				return false, nil
 			}
 		}

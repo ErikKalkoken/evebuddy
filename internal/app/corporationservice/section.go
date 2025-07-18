@@ -130,6 +130,9 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 			if !enabledRole && !status.HasError() && !status.IsExpired() {
 				return false, nil
 			}
+			if status.HasError() && !status.WasUpdatedWithinErrorTimedOut() {
+				return false, nil
+			}
 		}
 	}
 	var f func(context.Context, app.CorporationUpdateSectionParams) (bool, error)

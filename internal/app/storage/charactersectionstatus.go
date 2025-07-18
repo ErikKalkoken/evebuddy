@@ -131,11 +131,13 @@ func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg
 
 func characterSectionStatusFromDBModel(o queries.CharacterSectionStatus) *app.CharacterSectionStatus {
 	x := &app.CharacterSectionStatus{
-		CharacterID:  int32(o.CharacterID),
-		ErrorMessage: o.Error,
-		Section:      app.CharacterSection(o.SectionID),
-		ContentHash:  o.ContentHash,
-		UpdatedAt:    o.UpdatedAt,
+		CharacterID: int32(o.CharacterID),
+		Section:     app.CharacterSection(o.SectionID),
+		SectionStatus: app.SectionStatus{
+			ErrorMessage: o.Error,
+			ContentHash:  o.ContentHash,
+			UpdatedAt:    o.UpdatedAt,
+		},
 	}
 	if o.CompletedAt.Valid {
 		x.CompletedAt = o.CompletedAt.Time
