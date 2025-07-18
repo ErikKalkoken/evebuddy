@@ -3,6 +3,7 @@ package storage_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -83,6 +84,35 @@ func TestCharacterSectionStatus(t *testing.T) {
 			assert.Equal(t, x.CompletedAt, x1.CompletedAt)
 			assert.Equal(t, x.StartedAt, x1.StartedAt)
 			assert.False(t, x1.UpdatedAt.IsZero())
+			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, x.Section)
+			if assert.NoError(t, err) {
+				assert.Equal(t, x1, x2)
+			}
+		}
+	})
+	t.Run("can set udpated at", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacterFull()
+		x := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterImplants,
+		})
+		// when
+		ua := time.Now().UTC().Add(-12 * time.Hour)
+		arg := storage.UpdateOrCreateCharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     x.Section,
+			UpdatedAt:   &ua,
+		}
+		x1, err := st.UpdateOrCreateCharacterSectionStatus(ctx, arg)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, x.ContentHash, x1.ContentHash)
+			assert.Equal(t, x.ErrorMessage, x1.ErrorMessage)
+			assert.Equal(t, x.CompletedAt, x1.CompletedAt)
+			assert.Equal(t, x.StartedAt, x1.StartedAt)
+			assert.Equal(t, ua, x1.UpdatedAt)
 			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, x.Section)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)

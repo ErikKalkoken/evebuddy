@@ -138,8 +138,8 @@ func (sc *StatusCacheService) HasCharacterSection(characterID int32, section app
 	return !x.IsMissing()
 }
 
-func (sc *StatusCacheService) CharacterSection(characterID int32, section app.CharacterSection) (app.SectionStatus, bool) {
-	o := app.SectionStatus{
+func (sc *StatusCacheService) CharacterSection(characterID int32, section app.CharacterSection) (app.CacheSectionStatus, bool) {
+	o := app.CacheSectionStatus{
 		EntityID:    characterID,
 		EntityName:  sc.CharacterName(characterID),
 		SectionID:   string(section),
@@ -157,12 +157,12 @@ func (sc *StatusCacheService) CharacterSection(characterID int32, section app.Ch
 	return o, ok
 }
 
-func (sc *StatusCacheService) ListCharacterSections(characterID int32) []app.SectionStatus {
-	list := make([]app.SectionStatus, 0)
+func (sc *StatusCacheService) ListCharacterSections(characterID int32) []app.CacheSectionStatus {
+	list := make([]app.CacheSectionStatus, 0)
 	for _, section := range app.CharacterSections {
 		v, ok := sc.CharacterSection(characterID, section)
 		if !ok {
-			v = app.SectionStatus{
+			v = app.CacheSectionStatus{
 				EntityID:    characterID,
 				EntityName:  sc.CharacterName(characterID),
 				SectionID:   string(section),
@@ -277,8 +277,8 @@ func (sc *StatusCacheService) HasCorporationSection(corporationID int32, section
 	return !x.IsMissing()
 }
 
-func (sc *StatusCacheService) CorporationSection(corporationID int32, section app.CorporationSection) (app.SectionStatus, bool) {
-	o := app.SectionStatus{
+func (sc *StatusCacheService) CorporationSection(corporationID int32, section app.CorporationSection) (app.CacheSectionStatus, bool) {
+	o := app.CacheSectionStatus{
 		EntityID:    corporationID,
 		EntityName:  sc.CorporationName(corporationID),
 		SectionID:   string(section),
@@ -297,12 +297,12 @@ func (sc *StatusCacheService) CorporationSection(corporationID int32, section ap
 	return o, ok
 }
 
-func (sc *StatusCacheService) ListCorporationSections(corporationID int32) []app.SectionStatus {
-	list := make([]app.SectionStatus, 0)
+func (sc *StatusCacheService) ListCorporationSections(corporationID int32) []app.CacheSectionStatus {
+	list := make([]app.CacheSectionStatus, 0)
 	for _, section := range app.CorporationSections {
 		v, ok := sc.CorporationSection(corporationID, section)
 		if !ok {
-			v = app.SectionStatus{
+			v = app.CacheSectionStatus{
 				EntityID:    corporationID,
 				EntityName:  sc.CorporationName(corporationID),
 				SectionID:   string(section),
@@ -407,8 +407,8 @@ func (sc *StatusCacheService) HasGeneralSection(section app.GeneralSection) bool
 	return !x.IsMissing()
 }
 
-func (sc *StatusCacheService) GeneralSection(section app.GeneralSection) (app.SectionStatus, bool) {
-	o := app.SectionStatus{
+func (sc *StatusCacheService) GeneralSection(section app.GeneralSection) (app.CacheSectionStatus, bool) {
+	o := app.CacheSectionStatus{
 		EntityID:    app.GeneralSectionEntityID,
 		EntityName:  app.GeneralSectionEntityName,
 		SectionID:   string(section),
@@ -426,12 +426,12 @@ func (sc *StatusCacheService) GeneralSection(section app.GeneralSection) (app.Se
 	return o, ok
 }
 
-func (sc *StatusCacheService) ListGeneralSections() []app.SectionStatus {
-	list := make([]app.SectionStatus, 0)
+func (sc *StatusCacheService) ListGeneralSections() []app.CacheSectionStatus {
+	list := make([]app.CacheSectionStatus, 0)
 	for _, section := range app.GeneralSections {
 		v, ok := sc.GeneralSection(section)
 		if !ok {
-			v = app.SectionStatus{
+			v = app.CacheSectionStatus{
 				EntityID:    app.GeneralSectionEntityID,
 				EntityName:  app.GeneralSectionEntityName,
 				SectionID:   string(section),

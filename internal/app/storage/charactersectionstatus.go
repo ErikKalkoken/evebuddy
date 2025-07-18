@@ -61,6 +61,7 @@ type UpdateOrCreateCharacterSectionStatusParams struct {
 	ContentHash  *string
 	ErrorMessage *string
 	StartedAt    *optional.Optional[time.Time]
+	UpdatedAt    *time.Time
 }
 
 func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg UpdateOrCreateCharacterSectionStatusParams) (*app.CharacterSectionStatus, error) {
@@ -96,7 +97,11 @@ func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg
 				StartedAt:   old.StartedAt,
 			}
 		}
-		arg2.UpdatedAt = time.Now().UTC()
+		if arg.UpdatedAt != nil {
+			arg2.UpdatedAt = *arg.UpdatedAt
+		} else {
+			arg2.UpdatedAt = time.Now().UTC()
+		}
 		if arg.CompletedAt != nil {
 			arg2.CompletedAt = *arg.CompletedAt
 		}

@@ -837,11 +837,12 @@ func (f Factory) CreateCharacterToken(args ...storage.UpdateOrCreateCharacterTok
 
 type CharacterSectionStatusParams struct {
 	CharacterID  int32
-	Section      app.CharacterSection
-	ErrorMessage string
 	CompletedAt  time.Time
-	StartedAt    time.Time
 	Data         any
+	ErrorMessage string
+	Section      app.CharacterSection
+	StartedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusParams) *app.CharacterSectionStatus {
@@ -863,6 +864,9 @@ func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusPara
 	if arg.CompletedAt.IsZero() {
 		arg.CompletedAt = time.Now().UTC()
 	}
+	if arg.UpdatedAt.IsZero() {
+		arg.UpdatedAt = time.Now().UTC()
+	}
 	if arg.StartedAt.IsZero() {
 		arg.StartedAt = time.Now().Add(-1 * time.Duration(rand.IntN(60)) * time.Second).UTC()
 	}
@@ -871,14 +875,14 @@ func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusPara
 		panic(err)
 	}
 	t := storage.NewNullTimeFromTime(arg.CompletedAt)
-	arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
+	o, err := f.st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{
 		CharacterID:  arg.CharacterID,
 		Section:      arg.Section,
 		ErrorMessage: &arg.ErrorMessage,
 		CompletedAt:  &t,
 		ContentHash:  &hash,
-	}
-	o, err := f.st.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
+		UpdatedAt:    &arg.UpdatedAt,
+	})
 	if err != nil {
 		panic(err)
 	}

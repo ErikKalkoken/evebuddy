@@ -11,7 +11,10 @@ import (
 )
 
 const (
-	characterSectionDefaultTimeout = 3600 * time.Second
+	characterSectionDefaultTimeout   = 3600 * time.Second
+	corporationSectionDefaultTimeout = 3600 * time.Second
+	generalSectionDefaultTimeout     = 24 * time.Hour
+	sectionErrorTimeout              = 60 * time.Second
 )
 
 type CharacterSection string
@@ -157,6 +160,11 @@ func (s CharacterSectionStatus) HasError() bool {
 	return s.ErrorMessage != ""
 }
 
+func (s CharacterSectionStatus) HasErrorTimedOut() bool {
+	x := time.Since(s.UpdatedAt)
+	return x > sectionErrorTimeout
+}
+
 func (s CharacterSectionStatus) IsExpired() bool {
 	if s.CompletedAt.IsZero() {
 		return true
@@ -169,10 +177,6 @@ func (s CharacterSectionStatus) IsExpired() bool {
 func (s CharacterSectionStatus) IsMissing() bool {
 	return s.CompletedAt.IsZero()
 }
-
-const (
-	corporationSectionDefaultTimeout = 3600 * time.Second
-)
 
 type CorporationSection string
 
@@ -407,10 +411,6 @@ func (s CorporationSectionStatus) IsExpired() bool {
 	deadline := s.CompletedAt.Add(timeout)
 	return time.Now().After(deadline)
 }
-
-const (
-	generalSectionDefaultTimeout = 24 * time.Hour
-)
 
 // GeneralSection represents a topic that can be updated, e.g. market prices
 type GeneralSection string

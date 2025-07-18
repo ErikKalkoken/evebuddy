@@ -63,7 +63,7 @@ type updateStatus struct {
 	onSectionSelected func(int)
 	sectionEntities   []sectionEntity
 	sectionList       *widget.List
-	sections          []app.SectionStatus
+	sections          []app.CacheSectionStatus
 	sectionsTop       *widget.Label
 	selectedEntityID  int
 	selectedSectionID int
@@ -99,7 +99,7 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 		details:           newUpdateStatusDetail(),
 		detailsTop:        makeTopLabel(),
 		sectionEntities:   make([]sectionEntity, 0),
-		sections:          make([]app.SectionStatus, 0),
+		sections:          make([]app.CacheSectionStatus, 0),
 		sectionsTop:       makeTopLabel(),
 		selectedEntityID:  -1,
 		selectedSectionID: -1,
@@ -484,7 +484,7 @@ func (a *updateStatus) startTicker(ctx context.Context) {
 	}()
 }
 
-func statusDisplay(ss app.SectionStatus) (string, widget.Importance) {
+func statusDisplay(ss app.CacheSectionStatus) (string, widget.Importance) {
 	var s string
 	var i widget.Importance
 	if ss.HasError() {
@@ -533,7 +533,7 @@ func newUpdateStatusDetail() *updateStatusDetail {
 	return w
 }
 
-func (w *updateStatusDetail) set(ss app.SectionStatus) {
+func (w *updateStatusDetail) set(ss app.CacheSectionStatus) {
 	w.status.Text, w.status.Importance = statusDisplay(ss)
 	w.status.Refresh()
 

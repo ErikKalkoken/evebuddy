@@ -647,7 +647,7 @@ func TestCharacterSections(t *testing.T) {
 		// when
 		x := sc.ListCharacterSections(c.ID)
 		// then
-		m := make(map[app.CharacterSection]app.SectionStatus)
+		m := make(map[app.CharacterSection]app.CacheSectionStatus)
 		for _, s := range x {
 			m[app.CharacterSection(s.SectionID)] = s
 		}
@@ -668,7 +668,7 @@ func TestCharacterSections(t *testing.T) {
 		// when
 		x := sc.ListCharacterSections(c.ID)
 		// then
-		m := make(map[app.CharacterSection]app.SectionStatus)
+		m := make(map[app.CharacterSection]app.CacheSectionStatus)
 		for _, s := range x {
 			m[app.CharacterSection(s.SectionID)] = s
 		}
@@ -740,7 +740,7 @@ func TestCorporationSections(t *testing.T) {
 		// when
 		x := sc.ListCorporationSections(c.ID)
 		// then
-		m := make(map[app.CorporationSection]app.SectionStatus)
+		m := make(map[app.CorporationSection]app.CacheSectionStatus)
 		for _, s := range x {
 			m[app.CorporationSection(s.SectionID)] = s
 		}
@@ -760,7 +760,7 @@ func TestCorporationSections(t *testing.T) {
 		// when
 		x := sc.ListCorporationSections(c.ID)
 		// then
-		m := make(map[app.CorporationSection]app.SectionStatus)
+		m := make(map[app.CorporationSection]app.CacheSectionStatus)
 		for _, s := range x {
 			m[app.CorporationSection(s.SectionID)] = s
 		}
@@ -829,7 +829,7 @@ func TestGeneralSections(t *testing.T) {
 		// when
 		x := sc.ListGeneralSections()
 		// then
-		m := make(map[app.GeneralSection]app.SectionStatus)
+		m := make(map[app.GeneralSection]app.CacheSectionStatus)
 		for _, s := range x {
 			m[app.GeneralSection(s.SectionID)] = s
 		}
