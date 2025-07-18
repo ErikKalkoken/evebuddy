@@ -11,24 +11,29 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type corporationMemberRow struct {
-	id    int32
-	name  string
-	isCEO bool
+	id           int32
+	name         string
+	isCEO        bool
+	searchTarget string
 }
 
 type corporationMember struct {
 	widget.BaseWidget
 
-	rows []corporationMemberRow
-	list *widget.List
-	top  *widget.Label
-	u    *baseUI
+	rows         []corporationMemberRow
+	rowsFiltered []corporationMemberRow
+	list         *widget.List
+	searchBox    *widget.Entry
+	top          *widget.Label
+	u            *baseUI
 }
 
 func newCorporationMember(u *baseUI) *corporationMember {
@@ -39,12 +44,25 @@ func newCorporationMember(u *baseUI) *corporationMember {
 	}
 	a.list = a.makeList()
 	a.ExtendBaseWidget(a)
+
+	a.searchBox = widget.NewEntry()
+	a.searchBox.SetPlaceHolder("Search members")
+	a.searchBox.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
+		a.searchBox.SetText("")
+	})
+	a.searchBox.OnChanged = func(s string) {
+		if len(s) == 1 {
+			return
+		}
+		a.filterRows()
+		a.list.ScrollToTop()
+	}
 	return a
 }
 
 func (a *corporationMember) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
-		a.top,
+		container.NewVBox(a.top, a.searchBox),
 		nil,
 		nil,
 		nil,
@@ -58,7 +76,7 @@ func (a *corporationMember) makeList() *widget.List {
 	ceoIcon := theme.NewThemedResource(icons.CrownSvg)
 	l := widget.NewList(
 		func() int {
-			return len(a.rows)
+			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
 			portrait := iwidget.NewImageFromResource(
@@ -70,10 +88,10 @@ func (a *corporationMember) makeList() *widget.List {
 			return container.NewHBox(portrait, name, icon)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(a.rows) {
+			if id >= len(a.rowsFiltered) {
 				return
 			}
-			r := a.rows[id]
+			r := a.rowsFiltered[id]
 			box := co.(*fyne.Container).Objects
 			portrait := box[0].(*canvas.Image)
 			iwidget.RefreshImageAsync(portrait, func() (fyne.Resource, error) {
@@ -90,13 +108,38 @@ func (a *corporationMember) makeList() *widget.List {
 	)
 	l.OnSelected = func(id widget.ListItemID) {
 		defer l.UnselectAll()
-		if id >= len(a.rows) {
+		if id >= len(a.rowsFiltered) {
 			return
 		}
-		r := a.rows[id]
+		r := a.rowsFiltered[id]
 		a.u.ShowEveEntityInfoWindow(&app.EveEntity{ID: r.id, Category: app.EveEntityCharacter})
 	}
 	return l
+}
+
+func (a *corporationMember) filterRows() {
+	rows := slices.Clone(a.rows)
+	// search filter
+	if search := strings.ToLower(a.searchBox.Text); search != "" {
+		rows2 := make([]corporationMemberRow, 0)
+		for _, r := range rows {
+			var matches bool
+			if search == "" {
+				matches = true
+			} else {
+				matches = strings.Contains(r.searchTarget, search)
+			}
+			if matches {
+				rows2 = append(rows2, r)
+			}
+		}
+		rows = rows2
+	}
+	slices.SortFunc(rows, func(a, b corporationMemberRow) int {
+		return strings.Compare(a.name, b.name)
+	})
+	a.rowsFiltered = rows
+	a.list.Refresh()
 }
 
 func (a *corporationMember) update() {
@@ -126,7 +169,7 @@ func (a *corporationMember) update() {
 	})
 	fyne.Do(func() {
 		a.rows = rows
-		a.list.Refresh()
+		a.filterRows()
 	})
 }
 
@@ -138,13 +181,11 @@ func (a *corporationMember) fetchRows(corporationID, ceoID int32) ([]corporation
 	rows := make([]corporationMemberRow, 0)
 	for _, o := range oo {
 		rows = append(rows, corporationMemberRow{
-			id:    o.Character.ID,
-			name:  o.Character.Name,
-			isCEO: o.Character.ID == ceoID,
+			id:           o.Character.ID,
+			name:         o.Character.Name,
+			isCEO:        o.Character.ID == ceoID,
+			searchTarget: strings.ToLower(o.Character.Name),
 		})
 	}
-	slices.SortFunc(rows, func(a, b corporationMemberRow) int {
-		return strings.Compare(a.name, b.name)
-	})
 	return rows, nil
 }
