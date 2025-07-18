@@ -8,7 +8,7 @@ type SectionStatus struct {
 	CompletedAt  time.Time
 	ContentHash  string
 	ErrorMessage string
-	Section      Section
+	Section      section
 	StartedAt    time.Time
 	UpdatedAt    time.Time
 }

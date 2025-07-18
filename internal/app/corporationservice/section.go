@@ -84,7 +84,7 @@ func (s *CorporationService) PermittedSections(ctx context.Context, corporationI
 		return fmt.Errorf("CorporationService.EnabledSections %d: %w", corporationID, err)
 	}
 	if corporationID == 0 {
-		return enabled, wrapErr(app.ErrInvalid)
+		return enabled, nil
 	}
 	for _, section := range app.CorporationSections {
 		_, err := s.cs.ValidCharacterTokenForCorporation(ctx, corporationID, section.Roles(), section.Scopes())

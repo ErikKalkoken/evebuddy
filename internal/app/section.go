@@ -18,14 +18,14 @@ const (
 	sectionErrorTimeout              = 120 * time.Second
 )
 
-type Section interface {
+type section interface {
 	DisplayName() string
 	Scopes() set.Set[string]
 	String() string
 	Timeout() time.Duration
 }
 
-func makeSectionDisplayName(cs Section) string {
+func makeSectionDisplayName(cs section) string {
 	t := strings.ReplaceAll(cs.String(), "_", " ")
 	c := cases.Title(language.English)
 	t = c.String(t)
@@ -34,7 +34,7 @@ func makeSectionDisplayName(cs Section) string {
 
 type CharacterSection string
 
-var _ Section = (*CharacterSection)(nil)
+var _ section = (*CharacterSection)(nil)
 
 // Updated character sections
 const (
@@ -157,7 +157,7 @@ func (cs CharacterSection) Scopes() set.Set[string] {
 
 type CorporationSection string
 
-var _ Section = (*CorporationSection)(nil)
+var _ section = (*CorporationSection)(nil)
 
 // Updated corporation sections
 const (
@@ -359,7 +359,7 @@ func (cs CorporationSection) Scopes() set.Set[string] {
 // GeneralSection represents a topic that can be updated, e.g. market prices
 type GeneralSection string
 
-var _ Section = (*GeneralSection)(nil)
+var _ section = (*GeneralSection)(nil)
 
 const (
 	SectionEveCharacters   GeneralSection = "characters"

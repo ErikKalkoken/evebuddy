@@ -9,7 +9,6 @@ CREATE TABLE corporation_hangar_names (
 
 CREATE INDEX corporation_hangar_names_idx1 ON corporation_hangar_names (corporation_id);
 
-
 CREATE TABLE corporation_wallet_balances (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     corporation_id INTEGER NOT NULL,
@@ -105,3 +104,16 @@ CREATE INDEX corporation_wallet_transactions_idx6 ON corporation_wallet_transact
 CREATE INDEX corporation_wallet_transactions_idx7 ON corporation_wallet_transactions (location_id);
 
 CREATE INDEX corporation_wallet_transactions_idx8 ON corporation_wallet_transactions (transaction_id);
+
+CREATE TABLE corporation_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    corporation_id INTEGER NOT NULL,
+    character_id INTEGER NOT NULL,
+    FOREIGN KEY (corporation_id) REFERENCES corporations (id) ON DELETE CASCADE,
+    FOREIGN KEY (character_id) REFERENCES eve_entities (id) ON DELETE CASCADE,
+    UNIQUE (corporation_id, character_id)
+);
+
+CREATE INDEX corporation_members_idx1 ON corporation_members (corporation_id);
+
+CREATE INDEX corporation_members_idx2 ON corporation_members (character_id);

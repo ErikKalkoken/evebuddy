@@ -8,7 +8,7 @@ import (
 
 func TestMakeSectionDisplayName(t *testing.T) {
 	cases := []struct {
-		section Section
+		section section
 		want    string
 	}{
 		{SectionCharacterAssets, "Assets"},
