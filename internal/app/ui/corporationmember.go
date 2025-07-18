@@ -9,16 +9,17 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type corporationMemberRow struct {
-	id   int32
-	name string
+	id    int32
+	name  string
+	isCEO bool
 }
 
 type corporationMember struct {
@@ -53,34 +54,38 @@ func (a *corporationMember) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *corporationMember) makeList() *widget.List {
+	blankIcon := theme.NewThemedResource(icons.BlankSvg)
+	ceoIcon := theme.NewThemedResource(icons.CrownSvg)
 	l := widget.NewList(
 		func() int {
 			return len(a.rows)
 		},
 		func() fyne.CanvasObject {
-			icon := iwidget.NewImageFromResource(
+			portrait := iwidget.NewImageFromResource(
 				icons.Characterplaceholder64Jpeg,
 				fyne.NewSquareSize(app.IconUnitSize),
 			)
-			return container.NewBorder(
-				nil,
-				nil,
-				icon,
-				nil,
-				widget.NewLabel("Template"),
-			)
+			name := widget.NewLabel("Template")
+			icon := widget.NewIcon(blankIcon)
+			return container.NewHBox(portrait, name, icon)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rows) {
 				return
 			}
 			r := a.rows[id]
-			border := co.(*fyne.Container).Objects
-			border[0].(*widget.Label).SetText(r.name)
-			icon := border[1].(*canvas.Image)
-			iwidget.RefreshImageAsync(icon, func() (fyne.Resource, error) {
+			box := co.(*fyne.Container).Objects
+			portrait := box[0].(*canvas.Image)
+			iwidget.RefreshImageAsync(portrait, func() (fyne.Resource, error) {
 				return a.u.eis.CharacterPortrait(r.id, app.IconPixelSize)
 			})
+			box[1].(*widget.Label).SetText(r.name)
+			icon := box[2].(*widget.Icon)
+			if r.isCEO {
+				icon.SetResource(ceoIcon)
+			} else {
+				icon.SetResource(blankIcon)
+			}
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
@@ -95,12 +100,16 @@ func (a *corporationMember) makeList() *widget.List {
 }
 
 func (a *corporationMember) update() {
+	var corporationID, ceoID int32
+	if c := a.u.currentCorporation(); c != nil {
+		corporationID = c.ID
+		ceoID = c.EveCorporation.Ceo.ID
+	}
 	var rows []corporationMemberRow
 	var err error
-	corporationID := a.u.currentCorporationID()
 	hasData := a.u.scs.HasCorporationSection(corporationID, app.SectionCorporationMembers)
 	if hasData {
-		rows2, err2 := a.fetchRows(corporationID)
+		rows2, err2 := a.fetchRows(corporationID, ceoID)
 		if err2 != nil {
 			err = err2
 		} else {
@@ -121,17 +130,19 @@ func (a *corporationMember) update() {
 	})
 }
 
-func (a *corporationMember) fetchRows(corporationID int32) ([]corporationMemberRow, error) {
+func (a *corporationMember) fetchRows(corporationID, ceoID int32) ([]corporationMemberRow, error) {
 	oo, err := a.u.rs.ListMembers(context.Background(), corporationID)
 	if err != nil {
 		return nil, err
 	}
-	rows := xslices.Map(oo, func(o *app.CorporationMember) corporationMemberRow {
-		return corporationMemberRow{
-			id:   o.Character.ID,
-			name: o.Character.Name,
-		}
-	})
+	rows := make([]corporationMemberRow, 0)
+	for _, o := range oo {
+		rows = append(rows, corporationMemberRow{
+			id:    o.Character.ID,
+			name:  o.Character.Name,
+			isCEO: o.Character.ID == ceoID,
+		})
+	}
 	slices.SortFunc(rows, func(a, b corporationMemberRow) int {
 		return strings.Compare(a.name, b.name)
 	})
