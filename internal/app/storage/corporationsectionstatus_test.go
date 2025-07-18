@@ -70,7 +70,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 		s := "error"
 		arg := storage.UpdateOrCreateCorporationSectionStatusParams{
 			CorporationID: c.ID,
-			Section:       x.Section,
+			Section:       x.Section.(app.CorporationSection),
 			ErrorMessage:  &s,
 		}
 		x1, err := st.UpdateOrCreateCorporationSectionStatus(ctx, arg)
@@ -81,7 +81,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 			assert.Equal(t, x.CompletedAt, x1.CompletedAt)
 			assert.Equal(t, x.StartedAt, x1.StartedAt)
 			assert.False(t, x1.UpdatedAt.IsZero())
-			x2, err := st.GetCorporationSectionStatus(ctx, c.ID, x.Section)
+			x2, err := st.GetCorporationSectionStatus(ctx, c.ID, x.Section.(app.CorporationSection))
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -103,7 +103,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 		completedAt := storage.NewNullTimeFromTime(time.Now())
 		arg := storage.UpdateOrCreateCorporationSectionStatusParams{
 			CorporationID: c.ID,
-			Section:       x.Section,
+			Section:       x.Section.(app.CorporationSection),
 			ErrorMessage:  &e,
 			Comment:       &comment,
 			CompletedAt:   &completedAt,
@@ -119,7 +119,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 			assert.True(t, x1.CompletedAt.Equal(completedAt.Time))
 			assert.True(t, x1.StartedAt.Equal(startedAt.ValueOrZero()))
 			assert.False(t, x1.UpdatedAt.IsZero())
-			x2, err := st.GetCorporationSectionStatus(ctx, c.ID, x.Section)
+			x2, err := st.GetCorporationSectionStatus(ctx, c.ID, x.Section.(app.CorporationSection))
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -140,7 +140,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 		})
 		// then
 		if assert.NoError(t, err) {
-			x2, err := st.GetCorporationSectionStatus(ctx, c.ID, x.Section)
+			x2, err := st.GetCorporationSectionStatus(ctx, c.ID, x.Section.(app.CorporationSection))
 			if assert.NoError(t, err) {
 				assert.False(t, x2.HasContent())
 			}

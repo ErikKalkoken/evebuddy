@@ -73,7 +73,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 		s := "error"
 		arg := storage.UpdateOrCreateCharacterSectionStatusParams{
 			CharacterID:  c.ID,
-			Section:      x.Section,
+			Section:      x.Section.(app.CharacterSection),
 			ErrorMessage: &s,
 		}
 		x1, err := st.UpdateOrCreateCharacterSectionStatus(ctx, arg)
@@ -84,7 +84,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 			assert.Equal(t, x.CompletedAt, x1.CompletedAt)
 			assert.Equal(t, x.StartedAt, x1.StartedAt)
 			assert.False(t, x1.UpdatedAt.IsZero())
-			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, x.Section)
+			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, x.Section.(app.CharacterSection))
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -102,7 +102,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 		ua := time.Now().UTC().Add(-12 * time.Hour)
 		arg := storage.UpdateOrCreateCharacterSectionStatusParams{
 			CharacterID: c.ID,
-			Section:     x.Section,
+			Section:     x.Section.(app.CharacterSection),
 			UpdatedAt:   &ua,
 		}
 		x1, err := st.UpdateOrCreateCharacterSectionStatus(ctx, arg)
@@ -113,7 +113,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 			assert.Equal(t, x.CompletedAt, x1.CompletedAt)
 			assert.Equal(t, x.StartedAt, x1.StartedAt)
 			assert.Equal(t, ua, x1.UpdatedAt)
-			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, x.Section)
+			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, x.Section.(app.CharacterSection))
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}

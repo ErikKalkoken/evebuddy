@@ -31,7 +31,7 @@ func (st *Storage) ResetCorporationSectionStatusContentHash(ctx context.Context,
 	err := st.qRW.UpdateCorporationSectionStatusContentHash(ctx, queries.UpdateCorporationSectionStatusContentHashParams{
 		ContentHash:   "",
 		CorporationID: int64(arg.CorporationID),
-		SectionID:     string(arg.Section),
+		SectionID:     arg.Section.String(),
 	})
 	if err != nil {
 		return wrapErr(err)
@@ -42,7 +42,7 @@ func (st *Storage) ResetCorporationSectionStatusContentHash(ctx context.Context,
 func (st *Storage) GetCorporationSectionStatus(ctx context.Context, corporationID int32, section app.CorporationSection) (*app.CorporationSectionStatus, error) {
 	arg := queries.GetCorporationSectionStatusParams{
 		CorporationID: int64(corporationID),
-		SectionID:     string(section),
+		SectionID:     section.String(),
 	}
 	s, err := st.qRO.GetCorporationSectionStatus(ctx, arg)
 	if err != nil {
@@ -95,19 +95,19 @@ func (st *Storage) UpdateOrCreateCorporationSectionStatus(ctx context.Context, a
 		var arg2 queries.UpdateOrCreateCorporationSectionStatusParams
 		old, err := qtx.GetCorporationSectionStatus(ctx, queries.GetCorporationSectionStatusParams{
 			CorporationID: int64(arg.CorporationID),
-			SectionID:     string(arg.Section),
+			SectionID:     arg.Section.String(),
 		})
 		if errors.Is(err, sql.ErrNoRows) {
 			arg2 = queries.UpdateOrCreateCorporationSectionStatusParams{
 				CorporationID: int64(arg.CorporationID),
-				SectionID:     string(arg.Section),
+				SectionID:     arg.Section.String(),
 			}
 		} else if err != nil {
 			return nil, err
 		} else {
 			arg2 = queries.UpdateOrCreateCorporationSectionStatusParams{
 				CorporationID: int64(arg.CorporationID),
-				SectionID:     string(arg.Section),
+				SectionID:     arg.Section.String(),
 				CompletedAt:   old.CompletedAt,
 				ContentHash:   old.ContentHash,
 				Error:         old.Error,
@@ -149,10 +149,10 @@ func corporationSectionStatusFromDBModel(o queries.CorporationSectionStatus) *ap
 	x := &app.CorporationSectionStatus{
 		Comment:       o.Comment,
 		CorporationID: int32(o.CorporationID),
-		Section:       app.CorporationSection(o.SectionID),
 		SectionStatus: app.SectionStatus{
-			ErrorMessage: o.Error,
 			ContentHash:  o.ContentHash,
+			ErrorMessage: o.Error,
+			Section:      app.CorporationSection(o.SectionID),
 			UpdatedAt:    o.UpdatedAt,
 		},
 	}

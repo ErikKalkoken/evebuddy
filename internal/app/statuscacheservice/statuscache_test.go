@@ -51,7 +51,7 @@ func TestInit(t *testing.T) {
 			x2, ok := sc.CharacterSection(c.ID, section1)
 			assert.True(t, ok)
 			assert.Equal(t, x1.CharacterID, x2.EntityID)
-			assert.Equal(t, string(x1.Section), x2.SectionID)
+			assert.Equal(t, x1.Section.String(), x2.SectionID)
 			assert.Equal(t, x1.CompletedAt, x2.CompletedAt)
 			assert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
 			assert.Equal(t, x1.StartedAt, x2.StartedAt)
@@ -61,7 +61,7 @@ func TestInit(t *testing.T) {
 			y2, ok := sc.GeneralSection(section2)
 			assert.True(t, ok)
 			assert.Equal(t, int32(app.GeneralSectionEntityID), y2.EntityID)
-			assert.Equal(t, string(y1.Section), y2.SectionID)
+			assert.Equal(t, y1.Section.String(), y2.SectionID)
 			assert.Equal(t, y1.CompletedAt, y2.CompletedAt)
 			assert.Equal(t, y1.ErrorMessage, y2.ErrorMessage)
 			assert.Equal(t, y1.StartedAt, y2.StartedAt)
@@ -70,7 +70,7 @@ func TestInit(t *testing.T) {
 			z2, ok := sc.CorporationSection(r.ID, section3)
 			assert.True(t, ok)
 			assert.Equal(t, z1.CorporationID, z2.EntityID)
-			assert.Equal(t, string(z1.Section), z2.SectionID)
+			assert.Equal(t, z1.Section.String(), z2.SectionID)
 			assert.Equal(t, z1.CompletedAt, z2.CompletedAt)
 			assert.Equal(t, z1.ErrorMessage, z2.ErrorMessage)
 			assert.Equal(t, z1.StartedAt, z2.StartedAt)
@@ -178,9 +178,11 @@ func TestStatusCacheSummary(t *testing.T) {
 			t.Fatal(err)
 		}
 		o := &app.CharacterSectionStatus{
-			CharacterID:   characters[0],
-			Section:       app.SectionCharacterLocation,
-			SectionStatus: app.SectionStatus{ErrorMessage: "error"},
+			CharacterID: characters[0],
+			SectionStatus: app.SectionStatus{
+				ErrorMessage: "error",
+				Section:      app.SectionCharacterLocation,
+			},
 		}
 		sc.SetCharacterSection(o)
 		// when
@@ -236,8 +238,10 @@ func TestStatusCacheSummary(t *testing.T) {
 		}
 		o := &app.CorporationSectionStatus{
 			CorporationID: corporations[0],
-			Section:       app.SectionCorporationIndustryJobs,
-			SectionStatus: app.SectionStatus{ErrorMessage: "error"},
+			SectionStatus: app.SectionStatus{
+				ErrorMessage: "error",
+				Section:      app.SectionCorporationIndustryJobs,
+			},
 		}
 		sc.SetCorporationSection(o)
 		// when
@@ -290,8 +294,10 @@ func TestStatusCacheSummary(t *testing.T) {
 			t.Fatal(err)
 		}
 		o := &app.GeneralSectionStatus{
-			Section:       app.SectionEveCharacters,
-			SectionStatus: app.SectionStatus{ErrorMessage: "error"},
+			SectionStatus: app.SectionStatus{
+				ErrorMessage: "error",
+				Section:      app.SectionEveCharacters,
+			},
 		}
 		sc.SetGeneralSection(o)
 		ss := sc.Summary()
@@ -468,9 +474,11 @@ func TestStatusCacheSummary(t *testing.T) {
 			t.Fatal(err)
 		}
 		o := &app.CharacterSectionStatus{
-			CharacterID:   characters[0],
-			Section:       app.SectionCharacterLocation,
-			SectionStatus: app.SectionStatus{CompletedAt: time.Now().Add(-1 * time.Hour)},
+			CharacterID: characters[0],
+			SectionStatus: app.SectionStatus{
+				CompletedAt: time.Now().Add(-1 * time.Hour),
+				Section:     app.SectionCharacterLocation,
+			},
 		}
 		sc.SetCharacterSection(o)
 		// when
@@ -510,8 +518,10 @@ func TestStatusCacheSummary(t *testing.T) {
 			t.Fatal(err)
 		}
 		o := &app.GeneralSectionStatus{
-			Section:       app.SectionEveCharacters,
-			SectionStatus: app.SectionStatus{CompletedAt: time.Now().Add(-30 * time.Hour)},
+			SectionStatus: app.SectionStatus{
+				CompletedAt: time.Now().Add(-30 * time.Hour),
+				Section:     app.SectionEveCharacters,
+			},
 		}
 		sc.SetGeneralSection(o)
 		// when
@@ -607,7 +617,7 @@ func TestCharacterSections(t *testing.T) {
 		// then
 		assert.True(t, ok)
 		assert.Equal(t, x1.CharacterID, x2.EntityID)
-		assert.Equal(t, string(x1.Section), x2.SectionID)
+		assert.Equal(t, x1.Section.String(), x2.SectionID)
 		assert.Equal(t, x1.CompletedAt, x2.CompletedAt)
 		assert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
 		assert.Equal(t, x1.StartedAt, x2.StartedAt)
@@ -702,7 +712,7 @@ func TestCorporationSections(t *testing.T) {
 		// then
 		assert.True(t, ok)
 		assert.Equal(t, x1.CorporationID, x2.EntityID)
-		assert.Equal(t, string(x1.Section), x2.SectionID)
+		assert.Equal(t, x1.Section.String(), x2.SectionID)
 		assert.Equal(t, x1.CompletedAt, x2.CompletedAt)
 		assert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
 		assert.Equal(t, x1.StartedAt, x2.StartedAt)
@@ -851,23 +861,23 @@ func TestCharacterSectionSummary(t *testing.T) {
 	cache.Clear()
 	sc.SetCharacterSection(&app.CharacterSectionStatus{
 		CharacterID: characterID,
-		Section:     app.SectionCharacterImplants,
 		SectionStatus: app.SectionStatus{
 			ErrorMessage: "ERROR",
+			Section:      app.SectionCharacterImplants,
 		},
 	})
 	sc.SetCharacterSection(&app.CharacterSectionStatus{
 		CharacterID: characterID,
-		Section:     app.SectionCharacterAssets,
 		SectionStatus: app.SectionStatus{
 			CompletedAt: time.Now(),
+			Section:     app.SectionCharacterAssets,
 		},
 	})
 	sc.SetCharacterSection(&app.CharacterSectionStatus{
 		CharacterID: characterID,
-		Section:     app.SectionCharacterIndustryJobs,
 		SectionStatus: app.SectionStatus{
 			StartedAt: time.Now().Add(-10 * time.Second),
+			Section:   app.SectionCharacterIndustryJobs,
 		},
 	})
 	// when
@@ -891,8 +901,10 @@ func TestCorporationSectionSummary(t *testing.T) {
 	)
 	sc.SetCorporationSection(&app.CorporationSectionStatus{
 		CorporationID: corporationID,
-		Section:       app.SectionCorporationIndustryJobs,
-		SectionStatus: app.SectionStatus{ErrorMessage: "error"},
+		SectionStatus: app.SectionStatus{
+			ErrorMessage: "error",
+			Section:      app.SectionCorporationIndustryJobs,
+		},
 	})
 	// when
 	got := sc.CorporationSectionSummary(corporationID)
@@ -914,16 +926,22 @@ func TestGeneralSectionSummary(t *testing.T) {
 	)
 	cache.Clear()
 	sc.SetGeneralSection(&app.GeneralSectionStatus{
-		Section:       app.SectionEveTypes,
-		SectionStatus: app.SectionStatus{ErrorMessage: "error"},
+		SectionStatus: app.SectionStatus{
+			ErrorMessage: "error",
+			Section:      app.SectionEveTypes,
+		},
 	})
 	sc.SetGeneralSection(&app.GeneralSectionStatus{
-		Section:       app.SectionEveCharacters,
-		SectionStatus: app.SectionStatus{CompletedAt: time.Now()},
+		SectionStatus: app.SectionStatus{
+			CompletedAt: time.Now(),
+			Section:     app.SectionEveCharacters,
+		},
 	})
 	sc.SetGeneralSection(&app.GeneralSectionStatus{
-		Section:       app.SectionEveMarketPrices,
-		SectionStatus: app.SectionStatus{StartedAt: time.Now().Add(-10 * time.Second)},
+		SectionStatus: app.SectionStatus{
+			StartedAt: time.Now().Add(-10 * time.Second),
+			Section:   app.SectionEveMarketPrices,
+		},
 	})
 	// when
 	got := sc.GeneralSectionSummary()

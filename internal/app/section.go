@@ -5,9 +5,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 const (
@@ -17,7 +18,23 @@ const (
 	sectionErrorTimeout              = 120 * time.Second
 )
 
+type Section interface {
+	DisplayName() string
+	Scopes() set.Set[string]
+	String() string
+	Timeout() time.Duration
+}
+
+func makeSectionDisplayName(cs Section) string {
+	t := strings.ReplaceAll(cs.String(), "_", " ")
+	c := cases.Title(language.English)
+	t = c.String(t)
+	return t
+}
+
 type CharacterSection string
+
+var _ Section = (*CharacterSection)(nil)
 
 // Updated character sections
 const (
@@ -67,10 +84,11 @@ var CharacterSections = []CharacterSection{
 }
 
 func (cs CharacterSection) DisplayName() string {
-	t := strings.ReplaceAll(string(cs), "_", " ")
-	c := cases.Title(language.English)
-	t = c.String(t)
-	return t
+	return makeSectionDisplayName(cs)
+}
+
+func (cs CharacterSection) String() string {
+	return string(cs)
 }
 
 // Timeout returns the time until the data of an update section becomes stale.
@@ -137,63 +155,9 @@ func (cs CharacterSection) Scopes() set.Set[string] {
 	return set.Of(scopes...)
 }
 
-type CharacterUpdateSectionParams struct {
-	CharacterID           int32
-	Section               CharacterSection
-	ForceUpdate           bool
-	MaxMails              int
-	MaxWalletTransactions int
-}
-
-// A SectionStatus represents the latest status of an update from ESI for a section.
-// This type contains the shared functionality among all kinds of section status.
-type SectionStatus struct {
-	CompletedAt  time.Time
-	ContentHash  string
-	ErrorMessage string
-	StartedAt    time.Time
-	UpdatedAt    time.Time
-}
-
-// HasContent reports whether a section has data.
-func (s SectionStatus) HasContent() bool {
-	return s.ContentHash != ""
-}
-
-// HasError reports whether the last update of a section resulted in an error.
-func (s SectionStatus) HasError() bool {
-	return s.ErrorMessage != ""
-}
-
-// WasUpdatedWithinErrorTimedOut reports whether the last update was within the error timeout.
-func (s SectionStatus) WasUpdatedWithinErrorTimedOut() bool {
-	x := time.Since(s.UpdatedAt)
-	return x > sectionErrorTimeout
-}
-
-// IsMissing reports whether this section has ever been successfully updated.
-func (s SectionStatus) IsMissing() bool {
-	return s.CompletedAt.IsZero()
-}
-
-// CharacterSectionStatus represents the status for a character's section.
-type CharacterSectionStatus struct {
-	SectionStatus
-	CharacterID   int32
-	CharacterName string
-	Section       CharacterSection
-}
-
-func (s CharacterSectionStatus) IsExpired() bool {
-	if s.CompletedAt.IsZero() {
-		return true
-	}
-	timeout := s.Section.Timeout()
-	deadline := s.CompletedAt.Add(timeout)
-	return time.Now().After(deadline)
-}
-
 type CorporationSection string
+
+var _ Section = (*CorporationSection)(nil)
 
 // Updated corporation sections
 const (
@@ -265,10 +229,7 @@ func CorporationSectionWalletTransactions(d Division) CorporationSection {
 }
 
 func (cs CorporationSection) DisplayName() string {
-	t := strings.ReplaceAll(string(cs), "_", " ")
-	c := cases.Title(language.English)
-	t = c.String(t)
-	return t
+	return makeSectionDisplayName(cs)
 }
 
 // Division returns the division ID this section is related to or 0 if it has none.
@@ -290,6 +251,10 @@ func (cs CorporationSection) Division() Division {
 		SectionCorporationWalletTransactions7: Division7,
 	}
 	return m[cs]
+}
+
+func (cs CorporationSection) String() string {
+	return string(cs)
 }
 
 // Timeout returns the time until the data of an update section becomes stale.
@@ -391,32 +356,10 @@ func (cs CorporationSection) Scopes() set.Set[string] {
 	return set.Of(scopes...)
 }
 
-type CorporationUpdateSectionParams struct {
-	CorporationID         int32
-	ForceUpdate           bool
-	MaxWalletTransactions int
-	Section               CorporationSection
-}
-
-type CorporationSectionStatus struct {
-	SectionStatus
-	Comment         string
-	CorporationID   int32
-	CorporationName string
-	Section         CorporationSection
-}
-
-func (s CorporationSectionStatus) IsExpired() bool {
-	if s.CompletedAt.IsZero() {
-		return true
-	}
-	timeout := s.Section.Timeout()
-	deadline := s.CompletedAt.Add(timeout)
-	return time.Now().After(deadline)
-}
-
 // GeneralSection represents a topic that can be updated, e.g. market prices
 type GeneralSection string
+
+var _ Section = (*GeneralSection)(nil)
 
 const (
 	SectionEveCharacters   GeneralSection = "characters"
@@ -443,10 +386,7 @@ var generalSectionTimeouts = map[GeneralSection]time.Duration{
 }
 
 func (gs GeneralSection) DisplayName() string {
-	t := strings.ReplaceAll(string(gs), "_", " ")
-	c := cases.Title(language.English)
-	t = c.String(t)
-	return t
+	return makeSectionDisplayName(gs)
 }
 
 // Timeout returns the time until the data of an update section becomes stale.
@@ -459,19 +399,12 @@ func (gs GeneralSection) Timeout() time.Duration {
 	return duration
 }
 
-// GeneralSectionStatus represents the status of a general section.
-type GeneralSectionStatus struct {
-	SectionStatus
-	Section GeneralSection
+func (gs GeneralSection) Scopes() set.Set[string] {
+	return set.Set[string]{}
 }
 
-func (s GeneralSectionStatus) IsExpired() bool {
-	if s.CompletedAt.IsZero() {
-		return true
-	}
-	timeout := s.Section.Timeout()
-	deadline := s.CompletedAt.Add(timeout)
-	return time.Now().After(deadline)
+func (gs GeneralSection) String() string {
+	return string(gs)
 }
 
 // Scopes returns all required ESI scopes.
@@ -488,4 +421,19 @@ func Scopes() set.Set[string] {
 		scopes.AddSeq(s.Scopes().All())
 	}
 	return scopes
+}
+
+type CharacterUpdateSectionParams struct {
+	CharacterID           int32
+	Section               CharacterSection
+	ForceUpdate           bool
+	MaxMails              int
+	MaxWalletTransactions int
+}
+
+type CorporationUpdateSectionParams struct {
+	CorporationID         int32
+	ForceUpdate           bool
+	MaxWalletTransactions int
+	Section               CorporationSection
 }

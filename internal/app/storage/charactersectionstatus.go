@@ -25,7 +25,7 @@ type CharacterSectionStatusParams struct {
 func (st *Storage) GetCharacterSectionStatus(ctx context.Context, characterID int32, section app.CharacterSection) (*app.CharacterSectionStatus, error) {
 	arg := queries.GetCharacterSectionStatusParams{
 		CharacterID: int64(characterID),
-		SectionID:   string(section),
+		SectionID:   section.String(),
 	}
 	s, err := st.qRO.GetCharacterSectionStatus(ctx, arg)
 	if err != nil {
@@ -78,19 +78,19 @@ func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg
 		var arg2 queries.UpdateOrCreateCharacterSectionStatusParams
 		old, err := qtx.GetCharacterSectionStatus(ctx, queries.GetCharacterSectionStatusParams{
 			CharacterID: int64(arg.CharacterID),
-			SectionID:   string(arg.Section),
+			SectionID:   arg.Section.String(),
 		})
 		if errors.Is(err, sql.ErrNoRows) {
 			arg2 = queries.UpdateOrCreateCharacterSectionStatusParams{
 				CharacterID: int64(arg.CharacterID),
-				SectionID:   string(arg.Section),
+				SectionID:   arg.Section.String(),
 			}
 		} else if err != nil {
 			return nil, err
 		} else {
 			arg2 = queries.UpdateOrCreateCharacterSectionStatusParams{
 				CharacterID: int64(arg.CharacterID),
-				SectionID:   string(arg.Section),
+				SectionID:   arg.Section.String(),
 				CompletedAt: old.CompletedAt,
 				ContentHash: old.ContentHash,
 				Error:       old.Error,
@@ -132,10 +132,10 @@ func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg
 func characterSectionStatusFromDBModel(o queries.CharacterSectionStatus) *app.CharacterSectionStatus {
 	x := &app.CharacterSectionStatus{
 		CharacterID: int32(o.CharacterID),
-		Section:     app.CharacterSection(o.SectionID),
 		SectionStatus: app.SectionStatus{
 			ErrorMessage: o.Error,
 			ContentHash:  o.ContentHash,
+			Section:      app.CharacterSection(o.SectionID),
 			UpdatedAt:    o.UpdatedAt,
 		},
 	}
