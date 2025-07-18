@@ -15,6 +15,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -22,6 +23,7 @@ type corporationMemberRow struct {
 	id           int32
 	name         string
 	isCEO        bool
+	isOwned      bool
 	searchTarget string
 }
 
@@ -72,8 +74,6 @@ func (a *corporationMember) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *corporationMember) makeList() *widget.List {
-	blankIcon := theme.NewThemedResource(icons.BlankSvg)
-	ceoIcon := theme.NewThemedResource(icons.CrownSvg)
 	l := widget.NewList(
 		func() int {
 			return len(a.rowsFiltered)
@@ -84,8 +84,11 @@ func (a *corporationMember) makeList() *widget.List {
 				fyne.NewSquareSize(app.IconUnitSize),
 			)
 			name := widget.NewLabel("Template")
-			icon := widget.NewIcon(blankIcon)
-			return container.NewHBox(portrait, name, icon)
+			owned := iwidget.NewTappableIcon(theme.NewSuccessThemedResource(icons.CheckDecagramSvg), nil)
+			owned.SetToolTip("You own this character")
+			ceo := iwidget.NewTappableIcon(theme.NewWarningThemedResource(icons.CrownSvg), nil)
+			ceo.SetToolTip("CEO of this corporation")
+			return container.NewHBox(portrait, name, owned, ceo)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
@@ -98,11 +101,17 @@ func (a *corporationMember) makeList() *widget.List {
 				return a.u.eis.CharacterPortrait(r.id, app.IconPixelSize)
 			})
 			box[1].(*widget.Label).SetText(r.name)
-			icon := box[2].(*widget.Icon)
-			if r.isCEO {
-				icon.SetResource(ceoIcon)
+			owned := box[2]
+			if r.isOwned {
+				owned.Show()
 			} else {
-				icon.SetResource(blankIcon)
+				owned.Hide()
+			}
+			ceo := box[3]
+			if r.isCEO {
+				ceo.Show()
+			} else {
+				ceo.Hide()
 			}
 		},
 	)
@@ -174,7 +183,18 @@ func (a *corporationMember) update() {
 }
 
 func (a *corporationMember) fetchRows(corporationID, ceoID int32) ([]corporationMemberRow, error) {
-	oo, err := a.u.rs.ListMembers(context.Background(), corporationID)
+	ctx := context.Background()
+	cc, err := a.u.cs.ListCharacters(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var owned set.Set[int32]
+	for _, c := range cc {
+		if c.EveCharacter.Corporation.ID == corporationID {
+			owned.Add(c.ID)
+		}
+	}
+	oo, err := a.u.rs.ListMembers(ctx, corporationID)
 	if err != nil {
 		return nil, err
 	}
@@ -184,6 +204,7 @@ func (a *corporationMember) fetchRows(corporationID, ceoID int32) ([]corporation
 			id:           o.Character.ID,
 			name:         o.Character.Name,
 			isCEO:        o.Character.ID == ceoID,
+			isOwned:      owned.Contains(o.Character.ID),
 			searchTarget: strings.ToLower(o.Character.Name),
 		})
 	}
