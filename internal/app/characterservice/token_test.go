@@ -64,6 +64,56 @@ func TestHasTokenWithScopes(t *testing.T) {
 	})
 }
 
+func TestMissingScopes(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := characterservice.NewFake(st)
+	ctx := context.Background()
+	t.Run("should return empty when token has all scopes", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacterMinimal()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c.ID,
+			Scopes:      set.Of("alpha", "bravo"),
+		})
+		// when
+		got, err := s.MissingScopes(ctx, c.ID, set.Of("alpha", "bravo"))
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, 0, got.Size())
+		}
+	})
+	t.Run("should return scopes that are missing", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacterMinimal()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c.ID,
+			Scopes:      set.Of("alpha"),
+		})
+		// when
+		got, err := s.MissingScopes(ctx, c.ID, set.Of("alpha", "bravo"))
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of("bravo")
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		}
+	})
+	t.Run("when no token found all scopes are missing", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacterMinimal()
+		// when
+		got, err := s.MissingScopes(ctx, c.ID, set.Of("alpha", "bravo"))
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of("alpha", "bravo")
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		}
+	})
+}
+
 func TestValidCharacterTokenForCorporation(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()

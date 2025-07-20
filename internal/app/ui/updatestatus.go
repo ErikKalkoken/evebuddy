@@ -377,7 +377,7 @@ func (a *updateStatus) makeSectionList() *widget.List {
 			name := hbox[0].(*widget.Label)
 			status := hbox[3].(*widget.Label)
 			name.SetText(cs.SectionName)
-			s, i := statusDisplay(cs)
+			s, i := cs.Display()
 			status.Text = s
 			status.Importance = i
 			status.Refresh()
@@ -484,28 +484,6 @@ func (a *updateStatus) startTicker(ctx context.Context) {
 	}()
 }
 
-func statusDisplay(ss app.CacheSectionStatus) (string, widget.Importance) {
-	var s string
-	var i widget.Importance
-	if ss.HasError() {
-		s = "ERROR"
-		i = widget.DangerImportance
-	} else if ss.IsMissing() {
-		s = "Missing"
-		i = widget.WarningImportance
-	} else if ss.HasComment() {
-		s = "Skipped"
-		i = widget.MediumImportance
-	} else if !ss.IsCurrent() {
-		s = "Stale"
-		i = widget.WarningImportance
-	} else {
-		s = "OK"
-		i = widget.SuccessImportance
-	}
-	return s, i
-}
-
 type updateStatusDetail struct {
 	widget.BaseWidget
 
@@ -534,7 +512,7 @@ func newUpdateStatusDetail() *updateStatusDetail {
 }
 
 func (w *updateStatusDetail) set(ss app.CacheSectionStatus) {
-	w.status.Text, w.status.Importance = statusDisplay(ss)
+	w.status.Text, w.status.Importance = ss.Display()
 	w.status.Refresh()
 
 	var issue string

@@ -13,14 +13,23 @@ import (
 
 // HasTokenWithScopes reports whether a character's token has the requested scopes.
 func (s *CharacterService) HasTokenWithScopes(ctx context.Context, characterID int32, scopes set.Set[string]) (bool, error) {
-	t, err := s.st.GetCharacterToken(ctx, characterID)
-	if errors.Is(err, app.ErrNotFound) {
-		return false, nil
-	}
+	missing, err := s.MissingScopes(ctx, characterID, scopes)
 	if err != nil {
 		return false, err
 	}
-	return t.HasScopes(scopes), nil
+	return missing.Size() == 0, nil
+}
+
+func (s *CharacterService) MissingScopes(ctx context.Context, characterID int32, scopes set.Set[string]) (set.Set[string], error) {
+	var missing set.Set[string]
+	t, err := s.st.GetCharacterToken(ctx, characterID)
+	if errors.Is(err, app.ErrNotFound) {
+		return scopes, nil
+	}
+	if err != nil {
+		return missing, err
+	}
+	return set.Difference(scopes, t.Scopes), nil
 }
 
 // ValidCharacterTokenForCorporation returns a valid token with a specific scope and from a character with a specific role.

@@ -1,3 +1,4 @@
+# spellchecker: disable
 generate: bundle queries mapping
 
 bundle:

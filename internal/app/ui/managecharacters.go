@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -26,13 +27,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-type manageCharacterRow struct {
-	characterID   int32
-	corporationID int32
-	name          string
-	missingToken  bool
-}
-
 type manageCharactersWindow struct {
 	sb          *iwidget.Snackbar
 	tagsChanged bool
@@ -43,6 +37,13 @@ type manageCharactersWindow struct {
 func (a *manageCharactersWindow) reportError(text string, err error) {
 	slog.Error(text, "error", err)
 	a.sb.Show(fmt.Sprintf("ERROR: %s: %s", text, err))
+}
+
+type manageCharacterRow struct {
+	characterID   int32
+	corporationID int32
+	characterName string
+	missingScopes set.Set[string]
 }
 
 type manageCharacters struct {
@@ -119,6 +120,7 @@ func (a *manageCharacters) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *manageCharacters) makeCharacterList() *widget.List {
+	p := theme.Padding()
 	l := widget.NewList(
 		func() int {
 			return len(a.characters)
@@ -132,10 +134,16 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 			delete := ttwidget.NewButtonWithIcon("", theme.DeleteIcon(), func() {})
 			delete.Importance = widget.DangerImportance
 			delete.SetToolTip("Delete character")
-			issue := widget.NewLabel("Scope issue - please re-add!")
-			issue.Importance = widget.WarningImportance
-			issue.Hide()
-			row := container.NewHBox(portrait, name, issue, layout.NewSpacer(), delete)
+			issueLabel := ttwidget.NewLabel("Missing scopes")
+			issueLabel.Importance = widget.WarningImportance
+			issueIcon := iwidget.NewTappableIcon(theme.NewWarningThemedResource(theme.WarningIcon()), nil)
+			issueBox := container.New(
+				layout.NewCustomPaddedHBoxLayout(-p),
+				issueIcon,
+				issueLabel,
+			)
+			issueBox.Hide()
+			row := container.NewHBox(portrait, name, issueBox, layout.NewSpacer(), delete)
 			return row
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -154,13 +162,19 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 			})
 
 			name := row[1].(*widget.Label)
-			name.SetText(c.name)
+			name.SetText(c.characterName)
 
-			issue := row[2].(*widget.Label)
-			if c.missingToken {
-				issue.Show()
+			issueBox := row[2].(*fyne.Container)
+			issueIcon := issueBox.Objects[0].(*iwidget.TappableIcon)
+			issueLabel := issueBox.Objects[1].(*ttwidget.Label)
+			if c.missingScopes.Size() != 0 {
+				x := slices.Sorted(c.missingScopes.All())
+				s := "Please re-add to approve missing scopes: " + strings.Join(x, ", ")
+				issueIcon.SetToolTip(s)
+				issueLabel.SetToolTip(s)
+				issueBox.Show()
 			} else {
-				issue.Hide()
+				issueBox.Hide()
 			}
 
 			delete := row[4].(*ttwidget.Button)
@@ -185,7 +199,11 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 }
 
 func (a *manageCharacters) update() {
-	characters := a.fetchRows()
+	characters, err := a.fetchRows()
+	if err != nil {
+		a.mcw.reportError("Failed to update characters", err)
+		return
+	}
 	fyne.Do(func() {
 		a.characters = characters
 		a.list.Refresh()
@@ -193,20 +211,27 @@ func (a *manageCharacters) update() {
 	})
 }
 
-func (a *manageCharacters) fetchRows() []manageCharacterRow {
-	cc, err := a.mcw.u.cs.ListCharacters(context.Background())
+func (a *manageCharacters) fetchRows() ([]manageCharacterRow, error) {
+	ctx := context.Background()
+	rows := make([]manageCharacterRow, 0)
+	cc, err := a.mcw.u.cs.ListCharacters(ctx)
 	if err != nil {
-		slog.Error("Failed to update managed characters", "error", err)
-		return []manageCharacterRow{}
+		return rows, err
 	}
-	characters := xslices.Map(cc, func(c *app.Character) manageCharacterRow {
-		return manageCharacterRow{
+	for _, c := range cc {
+		missing, err := a.mcw.u.cs.MissingScopes(ctx, c.ID, app.Scopes())
+		if err != nil {
+			return rows, err
+		}
+		r := manageCharacterRow{
 			characterID:   c.ID,
 			corporationID: c.EveCharacter.Corporation.ID,
-			name:          c.EveCharacter.Name,
+			characterName: c.EveCharacter.Name,
+			missingScopes: missing,
 		}
-	})
-	return characters
+		rows = append(rows, r)
+	}
+	return rows, nil
 }
 
 func (a *manageCharacters) showAddCharacterDialog() {
@@ -277,13 +302,13 @@ func (a *manageCharacters) showAddCharacterDialog() {
 func (a *manageCharacters) showDeleteDialog(r manageCharacterRow) {
 	a.mcw.u.ShowConfirmDialog(
 		"Delete Character",
-		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", r.name),
+		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", r.characterName),
 		"Delete",
 		func(confirmed bool) {
 			if confirmed {
 				m := kmodal.NewProgressInfinite(
 					"Deleting character",
-					fmt.Sprintf("Deleting %s...", r.name),
+					fmt.Sprintf("Deleting %s...", r.characterName),
 					func() error {
 						ctx := context.Background()
 						corpDeleted, err := a.mcw.u.cs.DeleteCharacter(ctx, r.characterID)
@@ -315,10 +340,10 @@ func (a *manageCharacters) showDeleteDialog(r manageCharacterRow) {
 					a.mcw.w,
 				)
 				m.OnSuccess = func() {
-					a.mcw.sb.Show(fmt.Sprintf("Character %s deleted", r.name))
+					a.mcw.sb.Show(fmt.Sprintf("Character %s deleted", r.characterName))
 				}
 				m.OnError = func(err error) {
-					a.mcw.reportError(fmt.Sprintf("ERROR: Failed to delete character %s", r.name), err)
+					a.mcw.reportError(fmt.Sprintf("ERROR: Failed to delete character %s", r.characterName), err)
 				}
 				m.Start()
 			}
@@ -350,13 +375,13 @@ func newCharacterTags(mcw *manageCharactersWindow) *characterTags {
 	}
 	a.ExtendBaseWidget(a)
 
-	l := widget.NewLabel("Click + to add a character to this tag")
-	l.Importance = widget.LowImportance
-	a.emptyCharactersHint = container.NewCenter(l)
+	l1 := widget.NewLabel("No tags")
+	l1.Importance = widget.LowImportance
+	a.emptyTagsHint = container.NewCenter(l1)
 
-	l = widget.NewLabel("Click + to add a tag")
-	l.Importance = widget.LowImportance
-	a.emptyTagsHint = container.NewCenter(l)
+	l2 := widget.NewLabel("No characters")
+	l2.Importance = widget.LowImportance
+	a.emptyCharactersHint = container.NewCenter(l2)
 
 	a.addCharactersButton = a.makeAddCharacterButton()
 	a.characterList = a.makeCharacterList()

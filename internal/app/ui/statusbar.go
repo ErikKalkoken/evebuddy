@@ -222,7 +222,7 @@ func (a *statusBar) update() {
 func (a *statusBar) refreshUpdateStatus() {
 	fyne.Do(func() {
 		x := a.u.scs.Summary()
-		a.updateStatus.SetTextAndImportance(x.Display(), x.Status().ToImportance())
+		a.updateStatus.SetTextAndImportance(x.DisplayShort(), x.Status().ToImportance())
 	})
 }
 
