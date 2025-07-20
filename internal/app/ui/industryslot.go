@@ -44,7 +44,6 @@ type industrySlots struct {
 	columnSorter    *columnSorter
 	rows            []industrySlotRow
 	rowsFiltered    []industrySlotRow
-	totals          industrySlotRow
 	selectFreeSlots *kxwidget.FilterChipSelect
 	selectTag       *kxwidget.FilterChipSelect
 	slotType        app.IndustryJobType

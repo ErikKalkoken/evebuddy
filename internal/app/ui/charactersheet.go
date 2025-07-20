@@ -125,7 +125,6 @@ func (a *characterSheet) update() {
 }
 
 func (a *characterSheet) CreateRenderer() fyne.WidgetRenderer {
-	const width = 140
 	main := widget.NewForm(
 		widget.NewFormItem("Name", a.name),
 		widget.NewFormItem("Born", a.born),
