@@ -166,8 +166,8 @@ You find the latest packages for download on the [releases page](https://github.
 
 We are providing two variants for installing on Linux desktop:
 
-- AppImage: The AppImage variant allows you to run the app directly from the executable without requiring installation or root access
-- Tar file: The tar file requires installation, but also allows you to integrate the app into your desktop environment
+- AppImage: The AppImage variant allows you to run the app directly from the executable without requiring installation or root access.
+- Tarball: The tar file requires installation, but also allows you to integrate the app into your desktop environment. The tarball also has wider compatibility among different Linux versions.
 
 #### AppImage
 
@@ -181,7 +181,7 @@ We are providing two variants for installing on Linux desktop:
 > [!TIP]
 > Should you get the following error: `AppImages require FUSE to run.`, you need to first install FUSE on your system. Thi s is a library required by all AppImages to function. Please see [this page](https://docs.appimage.org/user-guide/troubleshooting/fuse.html#the-appimage-tells-me-it-needs-fuse-to-run) for details.
 
-#### Tar file
+#### Tarball
 
 1. Download the latest tar file from the releases page
 1. Decompress the tar file, for example with: `tar xf evebuddy-0.33.0-linux-amd64.tar.xz`
