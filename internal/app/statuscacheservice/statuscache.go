@@ -24,12 +24,16 @@ type statusSummary struct {
 	current   int
 	errors    int
 	isRunning bool
+	missing   int
+	skipped   int
 }
 
 // add ads the content of another statusSummary (Mutating).
 func (ss *statusSummary) add(other statusSummary) {
 	ss.current += other.current
 	ss.errors += other.errors
+	ss.missing += other.missing
+	ss.skipped += other.skipped
 	ss.isRunning = ss.isRunning || other.isRunning
 }
 
@@ -115,11 +119,14 @@ func (sc *StatusCacheService) Summary() app.StatusSummary {
 		ss.add(sc.calcCorporationSectionSummary(r.ID))
 	}
 	ss.add(sc.calcGeneralSectionSummary())
+	total := len(app.CharacterSections)*len(cc) + len(app.CorporationSections)*len(rr) + len(app.GeneralSections)
 	s := app.StatusSummary{
 		Current:   ss.current,
 		Errors:    ss.errors,
 		IsRunning: ss.isRunning,
-		Total:     len(app.CharacterSections)*len(cc) + len(app.CorporationSections)*len(rr) + len(app.GeneralSections),
+		Missing:   ss.missing,
+		Skipped:   ss.skipped,
+		Total:     total,
 	}
 	return s
 }
@@ -322,6 +329,8 @@ func (sc *StatusCacheService) CorporationSectionSummary(corporationID int32) app
 		Current:   ss.current,
 		Errors:    ss.errors,
 		IsRunning: ss.isRunning,
+		Missing:   ss.missing,
+		Skipped:   ss.skipped,
 		Total:     total,
 	}
 	return s
@@ -333,6 +342,10 @@ func (sc *StatusCacheService) calcCorporationSectionSummary(corporationID int32)
 	for _, o := range csl {
 		if o.HasError() {
 			ss.errors++
+		} else if o.IsMissing() {
+			ss.missing++
+		} else if o.HasComment() {
+			ss.skipped++
 		} else if o.IsCurrent() {
 			ss.current++
 		}

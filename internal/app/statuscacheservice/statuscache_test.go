@@ -912,6 +912,7 @@ func TestCorporationSectionSummary(t *testing.T) {
 	want := app.StatusSummary{
 		Current:   0,
 		Errors:    1,
+		Missing:   len(app.CorporationSections) - 1,
 		IsRunning: false,
 		Total:     len(app.CorporationSections),
 	}
