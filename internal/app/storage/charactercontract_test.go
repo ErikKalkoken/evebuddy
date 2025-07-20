@@ -120,8 +120,8 @@ func TestCharacterContract(t *testing.T) {
 			o2, err := r.GetCharacterContract(ctx, o1.CharacterID, o1.ContractID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, app.ContractStatusFinished, o2.Status)
-				assert.Equal(t, optional.From(dateAccepted), o2.DateAccepted)
-				assert.Equal(t, optional.From(dateCompleted), o2.DateCompleted)
+				assert.Equal(t, optional.New(dateAccepted), o2.DateAccepted)
+				assert.Equal(t, optional.New(dateCompleted), o2.DateCompleted)
 				assert.Less(t, o1.UpdatedAt, o2.UpdatedAt)
 			}
 		}
@@ -162,10 +162,10 @@ func TestCharacterContract(t *testing.T) {
 	t.Run("can list contracts for multiple characters", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		character1 := factory.CreateCharacterMinimal()
+		character1 := factory.CreateCharacter()
 		c1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: character1.ID})
 		c2 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: character1.ID})
-		character2 := factory.CreateCharacterMinimal()
+		character2 := factory.CreateCharacter()
 		c3 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: character2.ID})
 		// when
 		oo, err := r.ListAllCharacterContracts(ctx)

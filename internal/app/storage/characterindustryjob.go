@@ -102,7 +102,7 @@ func characterIndustryJobFromDBModel(
 		BlueprintID: o.BlueprintID,
 		BlueprintLocation: &app.EveLocationShort{
 			ID:             o.BlueprintLocationID,
-			Name:           optional.From(blueprintLocationName),
+			Name:           optional.New(blueprintLocationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(blueprintLocationSecurity),
 		},
 		BlueprintType: &app.EntityShort[int32]{
@@ -116,7 +116,7 @@ func characterIndustryJobFromDBModel(
 		EndDate:       o.EndDate,
 		Facility: &app.EveLocationShort{
 			ID:             o.FacilityID,
-			Name:           optional.From(facilityName),
+			Name:           optional.New(facilityName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(facilitySecurity),
 		},
 		Installer:    eveEntityFromDBModel(installer),
@@ -124,7 +124,7 @@ func characterIndustryJobFromDBModel(
 		LicensedRuns: optional.FromNullInt64ToInteger[int](o.LicensedRuns),
 		OutputLocation: &app.EveLocationShort{
 			ID:             o.OutputLocationID,
-			Name:           optional.From(outputLocationName),
+			Name:           optional.New(outputLocationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(outputLocationSecurity),
 		},
 		PauseDate:   optional.FromNullTime(o.PauseDate),
@@ -132,7 +132,7 @@ func characterIndustryJobFromDBModel(
 		Runs:        int(o.Runs),
 		Station: &app.EveLocationShort{
 			ID:             o.StationID,
-			Name:           optional.From(stationName),
+			Name:           optional.New(stationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(stationSecurity),
 		},
 		StartDate:      o.StartDate,
@@ -140,14 +140,14 @@ func characterIndustryJobFromDBModel(
 		SuccessfulRuns: optional.FromNullInt64ToInteger[int32](o.SuccessfulRuns),
 	}
 	if o.CompletedCharacterID.Valid && completedCharacterName.Valid {
-		o2.CompletedCharacter = optional.From(&app.EveEntity{
+		o2.CompletedCharacter = optional.New(&app.EveEntity{
 			ID:       int32(o.CompletedCharacterID.Int64),
 			Name:     completedCharacterName.String,
 			Category: app.EveEntityCharacter,
 		})
 	}
 	if o.ProductTypeID.Valid && productTypeName.Valid {
-		o2.ProductType = optional.From(&app.EntityShort[int32]{
+		o2.ProductType = optional.New(&app.EntityShort[int32]{
 			ID:   int32(o.ProductTypeID.Int64),
 			Name: productTypeName.String,
 		})

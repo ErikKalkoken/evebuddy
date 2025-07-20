@@ -12,7 +12,7 @@ func FromNullFloat64(v sql.NullFloat64) Optional[float64] {
 	if !v.Valid {
 		return Optional[float64]{}
 	}
-	return From(v.Float64)
+	return New(v.Float64)
 }
 
 // FromNullFloat64ToFloat32 converts a sql.Null variable to it's Optional equivalent and returns it.
@@ -20,7 +20,7 @@ func FromNullFloat64ToFloat32(v sql.NullFloat64) Optional[float32] {
 	if !v.Valid {
 		return Optional[float32]{}
 	}
-	return From(float32(v.Float64))
+	return New(float32(v.Float64))
 }
 
 // FromNullInt64 converts a sql.Null variable to it's Optional equivalent and returns it.
@@ -28,7 +28,7 @@ func FromNullInt64(v sql.NullInt64) Optional[int64] {
 	if !v.Valid {
 		return Optional[int64]{}
 	}
-	return From(v.Int64)
+	return New(v.Int64)
 }
 
 // FromNullInt64ToInteger converts an sql.Null variable to an Optional of a different integer type and returns it.
@@ -36,15 +36,15 @@ func FromNullInt64ToInteger[T constraints.Integer](v sql.NullInt64) Optional[T] 
 	if !v.Valid {
 		return Optional[T]{}
 	}
-	return From(T(v.Int64))
+	return New(T(v.Int64))
 }
 
-// FromNullInt64 converts a sql.Null variable to it's Optional equivalent and returns it.
+// FromNullString converts a sql.Null variable to it's Optional equivalent and returns it.
 func FromNullString(v sql.NullString) Optional[string] {
 	if !v.Valid {
 		return Optional[string]{}
 	}
-	return From(v.String)
+	return New(v.String)
 }
 
 // FromNullTime converts a sql.Null variable to it's Optional equivalent and returns it.
@@ -52,7 +52,7 @@ func FromNullTime(v sql.NullTime) Optional[time.Time] {
 	if !v.Valid {
 		return Optional[time.Time]{}
 	}
-	return From(v.Time)
+	return New(v.Time)
 }
 
 // ToNullFloat64 converts an Optional variable to it's sql.Null equivalent and returns it.

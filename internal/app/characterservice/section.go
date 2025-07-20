@@ -115,7 +115,7 @@ func (s *CharacterService) updateSectionIfChanged(
 	fetch func(ctx context.Context, characterID int32) (any, error),
 	update func(ctx context.Context, characterID int32, data any) error,
 ) (bool, error) {
-	startedAt := optional.From(time.Now())
+	startedAt := optional.New(time.Now())
 	arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
 		CharacterID: arg.CharacterID,
 		Section:     arg.Section,

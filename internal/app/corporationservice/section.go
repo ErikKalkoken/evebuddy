@@ -199,7 +199,7 @@ func (s *CorporationService) updateSectionIfChanged(
 	fetch func(ctx context.Context, arg app.CorporationUpdateSectionParams) (any, error),
 	update func(ctx context.Context, arg app.CorporationUpdateSectionParams, data any) error,
 ) (bool, error) {
-	startedAt := optional.From(time.Now())
+	startedAt := optional.New(time.Now())
 	arg2 := storage.UpdateOrCreateCorporationSectionStatusParams{
 		CorporationID: arg.CorporationID,
 		Section:       arg.Section,

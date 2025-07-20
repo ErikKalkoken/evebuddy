@@ -169,7 +169,7 @@ func characterJumpCloneFromDBModel(o queries.CharacterJumpClone, locationName st
 		CloneID:     int32(o.JumpCloneID),
 		Location: &app.EveLocationShort{
 			ID:             o.LocationID,
-			Name:           optional.From(locationName),
+			Name:           optional.New(locationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(locationSecurity)},
 		Name: o.Name,
 	}

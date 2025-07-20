@@ -32,10 +32,10 @@ func TestEveEntityIsNPC(t *testing.T) {
 		category app.EveEntityCategory
 		want     optional.Optional[bool]
 	}{
-		{"npc character", 3_000_001, app.EveEntityCharacter, optional.From(true)},
-		{"non-npc character", 10_000_001, app.EveEntityCharacter, optional.From(false)},
-		{"npc corporation", 1_000_001, app.EveEntityCorporation, optional.From(true)},
-		{"non-npc character", 5_000_001, app.EveEntityCorporation, optional.From(false)},
+		{"npc character", 3_000_001, app.EveEntityCharacter, optional.New(true)},
+		{"non-npc character", 10_000_001, app.EveEntityCharacter, optional.New(false)},
+		{"npc corporation", 1_000_001, app.EveEntityCorporation, optional.New(true)},
+		{"non-npc character", 5_000_001, app.EveEntityCorporation, optional.New(false)},
 		{"some alliance", 5_000_001, app.EveEntityAlliance, optional.Optional[bool]{}},
 		{"some type", 5_000_001, app.EveEntityInventoryType, optional.Optional[bool]{}},
 	}

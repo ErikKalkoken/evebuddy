@@ -74,8 +74,8 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 
 	u.defineShortcuts()
-	characterPageBars := newPageBarCollectionForCharacters(u)
-	corporationPageBars := newPageBarCollectionForCorporations(u)
+	characterPageBars := NewPageBarCollectionForCharacters(u)
+	corporationPageBars := NewPageBarCollectionForCorporations(u)
 
 	formatBadge := func(v, mx int) string {
 		if v == 0 {
@@ -220,23 +220,12 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	homeNav.MinWidth = minNavCharacterWidth
 
 	// current character
-	makePageWithPageBarForCharacter := func(title string, content fyne.CanvasObject, buttons ...*widget.Button) fyne.CanvasObject {
-		bar := characterPageBars.NewPageBar(title, buttons...)
-		return container.NewBorder(
-			bar,
-			nil,
-			nil,
-			nil,
-			content,
-		)
-	}
-
 	var characterNav *iwidget.NavDrawer
 
 	characterMailNav := iwidget.NewNavPage(
 		"Mail",
 		theme.MailComposeIcon(),
-		makePageWithPageBarForCharacter("Mail", u.characterMail),
+		NewPageBarPage(characterPageBars, "Mail", u.characterMail),
 	)
 	u.characterMail.onUpdate = func(count int) {
 		fyne.Do(func() {
@@ -248,7 +237,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	characterCommunicationsNav := iwidget.NewNavPage(
 		"Communications",
 		theme.NewThemedResource(icons.MessageSvg),
-		makePageWithPageBarForCharacter("Communications", u.characterCommunications),
+		NewPageBarPage(characterPageBars, "Communications", u.characterCommunications),
 	)
 	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
 		var s string
@@ -265,7 +254,8 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	characterSkillsNav := iwidget.NewNavPage(
 		"Skills",
 		theme.NewThemedResource(icons.SchoolSvg),
-		makePageWithPageBarForCharacter(
+		NewPageBarPage(
+			characterPageBars,
 			"Skills",
 			container.NewAppTabs(
 				container.NewTabItem("Training Queue", u.characterSkillQueue),
@@ -283,18 +273,18 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 
 	characterWalletNav := iwidget.NewNavPage("Wallet",
 		theme.NewThemedResource(icons.CashSvg),
-		makePageWithPageBarForCharacter("Wallet", u.characterWallet),
+		NewPageBarPage(characterPageBars, "Wallet", u.characterWallet),
 	)
 	characterAssetsNav := iwidget.NewNavPage(
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
-		makePageWithPageBarForCharacter("Assets", u.characterAsset),
+		NewPageBarPage(characterPageBars, "Assets", u.characterAsset),
 	)
 	characterNav = iwidget.NewNavDrawer(
 		iwidget.NewNavPage(
 			"Character Sheet",
 			theme.NewThemedResource(icons.PortraitSvg),
-			makePageWithPageBarForCharacter("Character Sheet", container.NewAppTabs(
+			NewPageBarPage(characterPageBars, "Character Sheet", container.NewAppTabs(
 				container.NewTabItem("Character", u.characterSheet),
 				container.NewTabItem("Corporation", u.characterCorporation),
 				container.NewTabItem("Augmentations", u.characterAugmentations),
@@ -321,27 +311,23 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			characterNav.SetItemBadge(characterAssetsNav, s)
 		})
 	}
-	// Corporation
-	makePageWithPageBarForCorporation := func(title string, content fyne.CanvasObject, buttons ...*widget.Button) fyne.CanvasObject {
-		bar := corporationPageBars.NewPageBar(title, buttons...)
-		return container.NewBorder(
-			bar,
-			nil,
-			nil,
-			nil,
-			content,
-		)
-	}
 
+	// Corporation
 	walletsNav := iwidget.NewNavSectionLabel("Wallets")
 	corpWalletItems := []*iwidget.NavItem{walletsNav}
 	corporationWalletNavs := make(map[app.Division]*iwidget.NavItem)
+	corporationWalletPages := make(map[app.Division]*PageBarPage)
 	for _, d := range app.Divisions {
 		name := d.DefaultWalletName()
+		corporationWalletPages[d] = NewPageBarPage(
+			corporationPageBars,
+			name,
+			u.corporationWallets[d],
+		)
 		corporationWalletNavs[d] = iwidget.NewNavPage(
 			name,
 			theme.NewThemedResource(icons.CashSvg),
-			makePageWithPageBarForCorporation(name, u.corporationWallets[d]),
+			corporationWalletPages[d],
 		)
 		corpWalletItems = append(corpWalletItems, corporationWalletNavs[d])
 	}
@@ -352,7 +338,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 				iwidget.NewNavPage(
 					"Corporation Sheet",
 					theme.NewThemedResource(icons.StarCircleOutlineSvg),
-					makePageWithPageBarForCorporation("Corporation Sheet", container.NewAppTabs(
+					NewPageBarPage(corporationPageBars, "Corporation Sheet", container.NewAppTabs(
 						container.NewTabItem("Corporation", u.corporationSheet),
 						container.NewTabItem("Members", u.corporationMember),
 					)),
@@ -365,9 +351,15 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	corporationNav.MinWidth = minNavCharacterWidth
 
 	for _, d := range app.Divisions {
-		u.corporationWallets[d].onUpdate = func(balance string) {
+		u.corporationWallets[d].onBalanceUpdate = func(balance string) {
 			fyne.Do(func() {
 				corporationNav.SetItemBadge(corporationWalletNavs[d], balance)
+			})
+		}
+		u.corporationWallets[d].onNameUpdate = func(name string) {
+			fyne.Do(func() {
+				corporationNav.SetItemText(corporationWalletNavs[d], name)
+				corporationWalletPages[d].SetTitle(name)
 			})
 		}
 	}

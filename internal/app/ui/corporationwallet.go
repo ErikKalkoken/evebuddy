@@ -18,7 +18,8 @@ import (
 type corporationWallet struct {
 	widget.BaseWidget
 
-	onUpdate func(balance string)
+	onBalanceUpdate func(balance string)
+	onNameUpdate    func(name string)
 
 	balance      *widget.Label
 	division     app.Division
@@ -92,8 +93,8 @@ func (a *corporationWallet) updateBalance() {
 	} else {
 		s = ihumanize.Number(balance, 1)
 	}
-	if a.onUpdate != nil {
-		a.onUpdate(s)
+	if a.onBalanceUpdate != nil {
+		a.onBalanceUpdate(s)
 	}
 	fyne.Do(func() {
 		a.balance.Text = t
@@ -119,12 +120,18 @@ func (a *corporationWallet) updateName() {
 		}
 	}
 	if !hasData || name == "" || err != nil {
+		name = a.division.DefaultWalletName()
 		fyne.Do(func() {
 			a.name.Hide()
 		})
+	} else {
+		fyne.Do(func() {
+			a.name.SetText(a.division.DefaultWalletName())
+			a.name.Show()
+		})
 	}
-	fyne.Do(func() {
-		a.name.SetText(name)
-		a.name.Show()
-	})
+	if a.onNameUpdate != nil {
+		a.onNameUpdate(name)
+	}
+
 }

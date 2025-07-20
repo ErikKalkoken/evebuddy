@@ -26,12 +26,12 @@ func TestIndustryJob_CanRenderWithData(t *testing.T) {
 	})
 	location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{
 		Name:          "Batcave",
-		SolarSystemID: optional.From(system.ID),
+		SolarSystemID: optional.New(system.ID),
 	})
 	ec1 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 		Name: "Bruce Wayne",
 	})
-	character1 := factory.CreateCharacterMinimal(storage.CreateCharacterParams{
+	character1 := factory.CreateCharacter(storage.CreateCharacterParams{
 		ID: ec1.ID,
 	})
 	bp1 := factory.CreateEveType(storage.CreateEveTypeParams{Name: "Merlin Blueprint"})
@@ -47,7 +47,7 @@ func TestIndustryJob_CanRenderWithData(t *testing.T) {
 	ec2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 		Name: "Clark Kent",
 	})
-	character2 := factory.CreateCharacterMinimal(storage.CreateCharacterParams{
+	character2 := factory.CreateCharacter(storage.CreateCharacterParams{
 		ID: ec2.ID,
 	})
 	bp2 := factory.CreateEveType(storage.CreateEveTypeParams{Name: "Caracal Blueprint"})

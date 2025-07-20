@@ -114,7 +114,7 @@ func (sq *CharacterSkillqueue) CompletionP() optional.Optional[float64] {
 	if c == nil {
 		return optional.Optional[float64]{}
 	}
-	return optional.From(c.CompletionP())
+	return optional.New(c.CompletionP())
 }
 
 // IsActive reports whether training is active.
@@ -159,7 +159,7 @@ func (sq *CharacterSkillqueue) RemainingCount() optional.Optional[int] {
 	if !isActive {
 		return optional.Optional[int]{}
 	}
-	return optional.From(count)
+	return optional.New(count)
 }
 
 // RemainingTime returns the total remaining training time of all skills in the queue.
@@ -173,7 +173,7 @@ func (sq *CharacterSkillqueue) RemainingTime() optional.Optional[time.Duration] 
 	if d < 0 {
 		return zero
 	}
-	return optional.From(d)
+	return optional.New(d)
 }
 
 // FinishDate returns the finish date of last skill in the queue.
@@ -182,7 +182,7 @@ func (sq *CharacterSkillqueue) FinishDate() optional.Optional[time.Time] {
 	if last == nil || last.FinishDate.IsZero() {
 		return optional.Optional[time.Time]{}
 	}
-	return optional.From(last.FinishDate)
+	return optional.New(last.FinishDate)
 }
 
 // Update replaces the content of the queue with a new version from the service.
@@ -275,7 +275,7 @@ func (qi CharacterSkillqueueItem) Duration() optional.Optional[time.Duration] {
 	if qi.StartDate.IsZero() || qi.FinishDate.IsZero() {
 		return optional.Optional[time.Duration]{}
 	}
-	return optional.From(qi.FinishDate.Sub(qi.StartDate))
+	return optional.New(qi.FinishDate.Sub(qi.StartDate))
 }
 
 func (qi CharacterSkillqueueItem) Remaining() optional.Optional[time.Duration] {
@@ -284,12 +284,12 @@ func (qi CharacterSkillqueueItem) Remaining() optional.Optional[time.Duration] {
 	}
 	remainingP := 1 - qi.CompletionP()
 	d := qi.Duration()
-	return optional.From(time.Duration(float64(d.ValueOrZero()) * remainingP))
+	return optional.New(time.Duration(float64(d.ValueOrZero()) * remainingP))
 }
 
 func (qi CharacterSkillqueueItem) FinishDateEstimate() optional.Optional[time.Time] {
 	if !qi.FinishDate.IsZero() {
-		return optional.From(qi.FinishDate)
+		return optional.New(qi.FinishDate)
 	}
 	d := qi.Remaining()
 	if d.IsEmpty() {
@@ -297,7 +297,7 @@ func (qi CharacterSkillqueueItem) FinishDateEstimate() optional.Optional[time.Ti
 	}
 	d2 := d.MustValue()
 	if d2 == 0 {
-		return optional.From(time.Time{})
+		return optional.New(time.Time{})
 	}
-	return optional.From(time.Now().UTC().Add(d2))
+	return optional.New(time.Now().UTC().Add(d2))
 }

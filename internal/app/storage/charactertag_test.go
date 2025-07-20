@@ -99,8 +99,8 @@ func TestCharacterTag(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		tag := factory.CreateCharacterTag()
-		character1 := factory.CreateCharacterMinimal()
-		factory.CreateCharacterMinimal()
+		character1 := factory.CreateCharacter()
+		factory.CreateCharacter()
 		// when
 		err := st.CreateCharactersCharacterTag(ctx, storage.CreateCharacterTagParams{
 			CharacterID: character1.ID,
@@ -127,7 +127,7 @@ func TestCharacterTag(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		tag := factory.CreateCharacterTag()
-		character1 := factory.CreateCharacterMinimal()
+		character1 := factory.CreateCharacter()
 		err := st.CreateCharactersCharacterTag(ctx, storage.CreateCharacterTagParams{
 			CharacterID: character1.ID,
 			TagID:       tag.ID,
@@ -135,7 +135,7 @@ func TestCharacterTag(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		character2 := factory.CreateCharacterMinimal()
+		character2 := factory.CreateCharacter()
 		err = st.CreateCharactersCharacterTag(ctx, storage.CreateCharacterTagParams{
 			CharacterID: character2.ID,
 			TagID:       tag.ID,
@@ -165,8 +165,8 @@ func TestCharacterTag(t *testing.T) {
 		testutil.TruncateTables(db)
 		tag := factory.CreateCharacterTag()
 		factory.CreateCharacterTag()
-		character := factory.CreateCharacterMinimal()
-		factory.CreateCharacterMinimal()
+		character := factory.CreateCharacter()
+		factory.CreateCharacter()
 		// when
 		err := st.CreateCharactersCharacterTag(ctx, storage.CreateCharacterTagParams{
 			CharacterID: character.ID,

@@ -101,21 +101,21 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 						if err != nil {
 							return err
 						}
-						arg.ExtractorProductTypeID = optional.From(et.ID)
+						arg.ExtractorProductTypeID = optional.New(et.ID)
 					}
 					if pin.FactoryDetails.SchematicId != 0 {
 						es, err := s.eus.GetOrCreateSchematicESI(ctx, pin.FactoryDetails.SchematicId)
 						if err != nil {
 							return err
 						}
-						arg.FactorySchemaID = optional.From(es.ID)
+						arg.FactorySchemaID = optional.New(es.ID)
 					}
 					if pin.SchematicId != 0 {
 						es, err := s.eus.GetOrCreateSchematicESI(ctx, pin.SchematicId)
 						if err != nil {
 							return err
 						}
-						arg.SchematicID = optional.From(es.ID)
+						arg.SchematicID = optional.New(es.ID)
 					}
 					if err := s.st.CreatePlanetPin(ctx, arg); err != nil {
 						return err

@@ -13,7 +13,7 @@ import (
 func TestCharacterAugmentations_CanRenderWithData(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	character := factory.CreateCharacterMinimal()
+	character := factory.CreateCharacter()
 	et := factory.CreateEveType(storage.CreateEveTypeParams{
 		Name: "Dummy Implant",
 	})

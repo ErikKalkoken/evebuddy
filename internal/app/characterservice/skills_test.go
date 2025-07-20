@@ -20,7 +20,7 @@ func TestTotalTrainingTime(t *testing.T) {
 	t.Run("should return time when has valid update", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		character := factory.CreateCharacterMinimal()
+		character := factory.CreateCharacter()
 		now := time.Now().UTC()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
 			CharacterID: character.ID,
@@ -42,7 +42,7 @@ func TestTotalTrainingTime(t *testing.T) {
 	t.Run("should return no time when has no valid update", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		character := factory.CreateCharacterMinimal()
+		character := factory.CreateCharacter()
 		now := time.Now().UTC()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
 			CharacterID: character.ID,
@@ -59,7 +59,7 @@ func TestTotalTrainingTime(t *testing.T) {
 	t.Run("should return 0 when training is inactive", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		character := factory.CreateCharacterMinimal()
+		character := factory.CreateCharacter()
 		now := time.Now().UTC()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: character.ID,

@@ -47,8 +47,8 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 	structureType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 35835})
 	factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{
 		ID:            1000000000001,
-		SolarSystemID: optional.From(solarSystem.ID),
-		TypeID:        optional.From(structureType.ID),
+		SolarSystemID: optional.New(solarSystem.ID),
+		TypeID:        optional.New(structureType.ID),
 	})
 	factory.CreateEveEntityCharacter(app.EveEntity{ID: 1000134})
 	factory.CreateEveEntityCharacter(app.EveEntity{ID: 1001})

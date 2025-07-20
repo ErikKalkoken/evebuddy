@@ -101,7 +101,7 @@ func corporationIndustryJobFromDBModel(arg corporationIndustryJobFromDBModelPara
 		Runs:          int(arg.job.Runs),
 		Location: &app.EveLocationShort{
 			ID:             arg.job.LocationID,
-			Name:           optional.From(arg.locationName),
+			Name:           optional.New(arg.locationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.locationSecurity),
 		},
 		OutputLocationID: arg.job.OutputLocationID,
@@ -110,14 +110,14 @@ func corporationIndustryJobFromDBModel(arg corporationIndustryJobFromDBModelPara
 		SuccessfulRuns:   optional.FromNullInt64ToInteger[int32](arg.job.SuccessfulRuns),
 	}
 	if arg.job.CompletedCharacterID.Valid && arg.completedCharacterName.Valid {
-		o2.CompletedCharacter = optional.From(&app.EveEntity{
+		o2.CompletedCharacter = optional.New(&app.EveEntity{
 			ID:       int32(arg.job.CompletedCharacterID.Int64),
 			Name:     arg.completedCharacterName.String,
 			Category: app.EveEntityCharacter,
 		})
 	}
 	if arg.job.ProductTypeID.Valid && arg.productTypeName.Valid {
-		o2.ProductType = optional.From(&app.EntityShort[int32]{
+		o2.ProductType = optional.New(&app.EntityShort[int32]{
 			ID:   int32(arg.job.ProductTypeID.Int64),
 			Name: arg.productTypeName.String,
 		})

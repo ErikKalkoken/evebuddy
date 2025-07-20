@@ -1,4 +1,4 @@
-// Package Stack provides a simple Stack container.
+// Package stack provides a simple Stack container.
 package stack
 
 import (

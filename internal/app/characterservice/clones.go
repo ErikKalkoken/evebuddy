@@ -51,9 +51,9 @@ func (s *CharacterService) calcNextCloneJump(ctx context.Context, c *app.Charact
 
 	nextJump := lastJump.Add(time.Duration(24-skillLevel) * time.Hour)
 	if nextJump.Before(time.Now()) {
-		return optional.From(time.Time{}), nil
+		return optional.New(time.Time{}), nil
 	}
-	return optional.From(nextJump), nil
+	return optional.New(nextJump), nil
 }
 
 // TODO: Consolidate with updating home in separate function
@@ -115,7 +115,7 @@ func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.Char
 			if err := s.st.UpdateCharacterHome(ctx, characterID, home); err != nil {
 				return err
 			}
-			if err := s.st.UpdateCharacterLastCloneJump(ctx, characterID, optional.From(clones.LastCloneJumpDate)); err != nil {
+			if err := s.st.UpdateCharacterLastCloneJump(ctx, characterID, optional.New(clones.LastCloneJumpDate)); err != nil {
 				return err
 			}
 			return nil

@@ -148,7 +148,7 @@ func characterWalletTransactionFromDBModel(
 		JournalRefID: o.JournalRefID,
 		Location: &app.EveLocationShort{
 			ID:             o.LocationID,
-			Name:           optional.From(locationName),
+			Name:           optional.New(locationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(systemSecurityStatus)},
 		CharacterID:   int32(o.CharacterID),
 		Quantity:      int32(o.Quantity),

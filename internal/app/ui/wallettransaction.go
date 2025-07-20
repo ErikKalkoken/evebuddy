@@ -481,12 +481,13 @@ func (a *walletTransactions) fetchCorporationRows(corporationID int32, division 
 		total := o.Total()
 		r := walletTransactionRow{
 			categoryName:     o.Type.Group.Category.Name,
-			corporationID:    corporationID,
 			client:           o.Client,
 			clientName:       o.Client.Name,
+			corporationID:    corporationID,
 			date:             o.Date,
-			division:         division,
 			dateFormatted:    o.Date.Format(app.DateTimeFormat),
+			division:         division,
+			isBuy:            o.IsBuy,
 			locationDisplay:  o.Location.DisplayRichText(),
 			locationID:       o.Location.ID,
 			locationName:     o.Location.DisplayName(),
@@ -499,6 +500,13 @@ func (a *walletTransactions) fetchCorporationRows(corporationID int32, division 
 			typeName:         o.Type.Name,
 			unitPrice:        o.UnitPrice,
 			unitPriceDisplay: humanize.FormatFloat(app.FloatFormat, o.UnitPrice),
+		}
+		if o.IsBuy {
+			r.totalColor = theme.ColorNameError
+			r.totalImportance = widget.DangerImportance
+		} else {
+			r.totalColor = theme.ColorNameSuccess
+			r.totalImportance = widget.SuccessImportance
 		}
 		if o.Region != nil {
 			r.regionName = o.Region.Name

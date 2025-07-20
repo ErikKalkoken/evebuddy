@@ -48,10 +48,10 @@ func TestLocation(t *testing.T) {
 		updatedAt := time.Now()
 		arg := storage.UpdateOrCreateLocationParams{
 			ID:            42,
-			SolarSystemID: optional.From(system.ID),
-			TypeID:        optional.From(myType.ID),
+			SolarSystemID: optional.New(system.ID),
+			TypeID:        optional.New(myType.ID),
 			Name:          "Alpha",
-			OwnerID:       optional.From(owner.ID),
+			OwnerID:       optional.New(owner.ID),
 			UpdatedAt:     updatedAt,
 		}
 		// when
@@ -89,10 +89,10 @@ func TestLocation(t *testing.T) {
 		updatedAt := time.Now()
 		arg := storage.UpdateOrCreateLocationParams{
 			ID:            42,
-			SolarSystemID: optional.From(system.ID),
-			TypeID:        optional.From(myType.ID),
+			SolarSystemID: optional.New(system.ID),
+			TypeID:        optional.New(myType.ID),
 			Name:          "Alpha",
-			OwnerID:       optional.From(owner.ID),
+			OwnerID:       optional.New(owner.ID),
 			UpdatedAt:     updatedAt,
 		}
 		// when
@@ -137,8 +137,8 @@ func TestLocation(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		s := factory.CreateEveSolarSystem()
-		l1 := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{SolarSystemID: optional.From(s.ID)})
-		l2 := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{SolarSystemID: optional.From(s.ID)})
+		l1 := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{SolarSystemID: optional.New(s.ID)})
+		l2 := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{SolarSystemID: optional.New(s.ID)})
 		factory.CreateEveLocationStructure()
 		// when
 		got, err := r.ListEveLocationInSolarSystem(ctx, s.ID)

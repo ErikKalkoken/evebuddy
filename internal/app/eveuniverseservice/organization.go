@@ -118,7 +118,7 @@ func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 			if v == 0 || v == 1 {
 				return optional.Optional[int32]{}
 			}
-			return optional.From(v)
+			return optional.New(v)
 		}
 		arg := storage.UpdateOrCreateEveCorporationParams{
 			AllianceID:    optional.FromIntegerWithZero(r.AllianceId),

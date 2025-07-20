@@ -126,10 +126,10 @@ func (el EveLocation) ToEveEntity() *EveEntity {
 func (el EveLocation) ToShort() *EveLocationShort {
 	o := &EveLocationShort{
 		ID:   el.ID,
-		Name: optional.From(el.Name),
+		Name: optional.New(el.Name),
 	}
 	if el.SolarSystem != nil {
-		o.SecurityStatus = optional.From(el.SolarSystem.SecurityStatus)
+		o.SecurityStatus = optional.New(el.SolarSystem.SecurityStatus)
 	}
 	return o
 }
@@ -182,5 +182,5 @@ func (l EveLocationShort) SecurityType() optional.Optional[SolarSystemSecurityTy
 	if l.SecurityStatus.IsEmpty() {
 		return optional.Optional[SolarSystemSecurityType]{}
 	}
-	return optional.From(NewSolarSystemSecurityTypeFromValue(l.SecurityStatus.MustValue()))
+	return optional.New(NewSolarSystemSecurityTypeFromValue(l.SecurityStatus.MustValue()))
 }

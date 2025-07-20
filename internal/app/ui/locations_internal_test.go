@@ -25,13 +25,13 @@ func TestLocations_CanRenderWithData(t *testing.T) {
 	})
 	location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{
 		Name:          "Batcave",
-		SolarSystemID: optional.From(system.ID),
+		SolarSystemID: optional.New(system.ID),
 	})
 	ship := factory.CreateEveType(storage.CreateEveTypeParams{Name: "Merlin"})
-	factory.CreateCharacterMinimal(storage.CreateCharacterParams{
-		LocationID: optional.From(location.ID),
+	factory.CreateCharacter(storage.CreateCharacterParams{
+		LocationID: optional.New(location.ID),
 		ID:         ec.ID,
-		ShipID:     optional.From(ship.ID),
+		ShipID:     optional.New(ship.ID),
 	})
 	test.ApplyTheme(t, test.Theme())
 	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
@@ -50,7 +50,7 @@ func TestLocations_CanRenderWithoutData(t *testing.T) {
 	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 		Name: "Bruce Wayne",
 	})
-	factory.CreateCharacterMinimal(storage.CreateCharacterParams{
+	factory.CreateCharacter(storage.CreateCharacterParams{
 		ID: ec.ID,
 	})
 	test.ApplyTheme(t, test.Theme())

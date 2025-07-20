@@ -1354,10 +1354,10 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 }
 
 func (u *baseUI) updateCorporationWalletTotal() {
+	if u.onUpdateCorporationWalletTotals == nil {
+		return
+	}
 	s := func() string {
-		if u.onUpdateCorporationWalletTotals == nil {
-			return ""
-		}
 		corporationID := u.currentCorporationID()
 		if corporationID == 0 {
 			return ""
