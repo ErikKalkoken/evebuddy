@@ -18,7 +18,7 @@ func TestManagedCharacters_CanRenderWithData(t *testing.T) {
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 			Name: "Bruce Wayne",
 		})
-		character := factory.CreateCharacterMinimal(storage.CreateCharacterParams{
+		character := factory.CreateCharacter(storage.CreateCharacterParams{
 			ID: ec.ID,
 		})
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{

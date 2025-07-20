@@ -17,7 +17,7 @@ func TestClones_CanRenderLocationWithoutSystem(t *testing.T) {
 	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 		Name: "Bruce Wayne",
 	})
-	character := factory.CreateCharacterMinimal(storage.CreateCharacterParams{
+	character := factory.CreateCharacter(storage.CreateCharacterParams{
 		ID: ec.ID,
 	})
 
@@ -85,7 +85,7 @@ func TestClones_CanRenderFull(t *testing.T) {
 	ec1 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 		Name: "Bruce Wayne",
 	})
-	character1 := factory.CreateCharacterMinimal(storage.CreateCharacterParams{
+	character1 := factory.CreateCharacter(storage.CreateCharacterParams{
 		ID: ec1.ID,
 	})
 	factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{
@@ -96,7 +96,7 @@ func TestClones_CanRenderFull(t *testing.T) {
 	ec2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 		Name: "Clark Kent",
 	})
-	character2 := factory.CreateCharacterMinimal(storage.CreateCharacterParams{
+	character2 := factory.CreateCharacter(storage.CreateCharacterParams{
 		ID: ec2.ID,
 	})
 	i1 := factory.CreateEveType()

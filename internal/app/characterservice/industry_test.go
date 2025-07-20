@@ -28,7 +28,7 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 
 	t.Run("manufacturing slots for one character", func(t *testing.T) {
 		testutil.TruncateTables(db)
-		character := factory.CreateCharacterMinimal()
+		character := factory.CreateCharacter()
 		industry := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeIndustry})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:      character.ID,

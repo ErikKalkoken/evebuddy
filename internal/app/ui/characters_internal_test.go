@@ -87,7 +87,7 @@ func TestCharacters_CanRenderWitoutData(t *testing.T) {
 		Name:           "Bruce Wayne",
 		SecurityStatus: -10.0,
 	})
-	factory.CreateCharacterMinimal(storage.CreateCharacterParams{
+	factory.CreateCharacter(storage.CreateCharacterParams{
 		ID: ec.ID,
 	})
 

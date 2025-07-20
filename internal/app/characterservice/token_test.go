@@ -20,7 +20,7 @@ func TestHasTokenWithScopes(t *testing.T) {
 	t.Run("should return true when token has same scopes", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterMinimal()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
 			CharacterID: c.ID,
 			Scopes:      set.Of("alpha", "bravo"),
@@ -35,7 +35,7 @@ func TestHasTokenWithScopes(t *testing.T) {
 	t.Run("should return false when token is missing scopes", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterMinimal()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
 			CharacterID: c.ID,
 			Scopes:      set.Of("alpha"),
@@ -50,7 +50,7 @@ func TestHasTokenWithScopes(t *testing.T) {
 	t.Run("should return true when token has at least requested scopes", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterMinimal()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
 			CharacterID: c.ID,
 			Scopes:      set.Of("alpha", "bravo", "charlie"),
@@ -72,7 +72,7 @@ func TestMissingScopes(t *testing.T) {
 	t.Run("should return empty when token has all scopes", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterMinimal()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
 			CharacterID: c.ID,
 			Scopes:      set.Of("alpha", "bravo"),
@@ -87,7 +87,7 @@ func TestMissingScopes(t *testing.T) {
 	t.Run("should return scopes that are missing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterMinimal()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
 			CharacterID: c.ID,
 			Scopes:      set.Of("alpha"),
@@ -103,7 +103,7 @@ func TestMissingScopes(t *testing.T) {
 	t.Run("when no token found all scopes are missing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterMinimal()
+		c := factory.CreateCharacter()
 		// when
 		got, err := s.MissingScopes(ctx, c.ID, set.Of("alpha", "bravo"))
 		// then
@@ -123,7 +123,7 @@ func TestValidCharacterTokenForCorporation(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		factory.CreateCharacterToken()
-		c := factory.CreateCharacterMinimal()
+		c := factory.CreateCharacter()
 		o1 := factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
 			CharacterID: c.ID,
 			Scopes:      app.Scopes(),
@@ -141,7 +141,7 @@ func TestValidCharacterTokenForCorporation(t *testing.T) {
 	t.Run("should report not found when token exists and role not matching", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterMinimal()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
 			CharacterID: c.ID,
 			Scopes:      app.Scopes(),

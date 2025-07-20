@@ -18,6 +18,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 // EVE IDs
@@ -53,8 +54,8 @@ func (f Factory) RandomTime() time.Time {
 	return time.Now().Add(-d).UTC()
 }
 
-// CreateCharacterMinimal creates and returns a new character. Empty optional values are not filled.
-func (f Factory) CreateCharacterMinimal(args ...storage.CreateCharacterParams) *app.Character {
+// CreateCharacter creates and returns a new character. Empty optional values are not filled.
+func (f Factory) CreateCharacter(args ...storage.CreateCharacterParams) *app.Character {
 	var arg storage.CreateCharacterParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -73,6 +74,13 @@ func (f Factory) CreateCharacterMinimal(args ...storage.CreateCharacterParams) *
 		panic(err)
 	}
 	return c
+}
+
+func (f Factory) SetCharacterRoles(characterID int32, roles set.Set[app.Role]) {
+	err := f.st.UpdateCharacterRoles(context.Background(), characterID, roles)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // CreateCharacterFull creates and returns a new character. Empty optionals are filled with random values.

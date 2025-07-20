@@ -127,7 +127,7 @@ func TestCharacterAsset_CanRenderWithData(t *testing.T) {
 func TestCharacterAsset_CanRenderWithoutData(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	character := factory.CreateCharacterMinimal(storage.CreateCharacterParams{
+	character := factory.CreateCharacter(storage.CreateCharacterParams{
 		AssetValue: optional.New(1000000000.0),
 	})
 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{

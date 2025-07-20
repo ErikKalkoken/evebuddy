@@ -287,7 +287,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 	t.Run("should return empty when last clone jump not updated", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateCharacterMinimal()
+		c1 := factory.CreateCharacter()
 		// when
 		c2, err := r.GetCharacter(ctx, c1.ID)
 		if assert.NoError(t, err) {

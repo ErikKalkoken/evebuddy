@@ -182,7 +182,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 	t.Run("should return empty time when last jump not found", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterMinimal()
+		c := factory.CreateCharacter()
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeInfomorphSynchronizing})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:      c.ID,
