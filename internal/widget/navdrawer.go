@@ -84,11 +84,12 @@ func (w *NavDrawer) makeList() *widget.List {
 			spacer := canvas.NewRectangle(color.Transparent)
 			spacer.SetMinSize(fyne.NewSize(p, 1))
 			icon := widget.NewIcon(iconBlankSvg)
-			text := widget.NewLabel("Template")
+			title := widget.NewLabel("Template")
+			title.Truncation = fyne.TextTruncateEllipsis
 			badge := widget.NewLabel("999+")
 			return container.NewStack(
 				container.New(layout.NewCustomPaddedLayout(0, 0, p, p),
-					container.NewHBox(spacer, icon, text, layout.NewSpacer(), badge),
+					container.NewBorder(nil, nil, container.NewHBox(spacer, icon), badge, title),
 				),
 				container.New(layout.NewCustomPaddedLayout(0, 0, 2*p, 2*p),
 					widget.NewSeparator(),
@@ -110,11 +111,12 @@ func (w *NavDrawer) makeList() *widget.List {
 				separator.Hide()
 				main.Show()
 			}
-			box := main.(*fyne.Container).Objects[0].(*fyne.Container).Objects
+			border := main.(*fyne.Container).Objects[0].(*fyne.Container).Objects
+			title := border[0].(*widget.Label)
+			box := border[1].(*fyne.Container).Objects
 			spacer := box[0]
 			icon := box[1].(*widget.Icon)
-			title := box[2].(*widget.Label)
-			badge := box[4].(*widget.Label)
+			badge := border[2].(*widget.Label)
 			showIcon := func() {
 				var r fyne.Resource
 				if it.isDisabled {

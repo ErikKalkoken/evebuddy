@@ -234,14 +234,13 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	corpWalletItems := make([]*iwidget.ListItem, 0)
 	corporationWalletNavs := make(map[app.Division]*iwidget.ListItem)
 	for _, d := range app.Divisions {
-		name := d.DefaultWalletName()
 		corporationWalletNavs[d] = iwidget.NewListItemWithIcon(
-			name,
+			d.DefaultWalletName(),
 			theme.NewThemedResource(icons.CashSvg),
 			func() {
 				corpNav.Push(
 					newCorpAppBar(
-						name,
+						corporationWalletNavs[d].Headline,
 						u.corporationWallets[d],
 					))
 			},
@@ -261,9 +260,15 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		},
 	)
 	for _, d := range app.Divisions {
-		u.corporationWallets[d].onUpdate = func(balance string) {
+		u.corporationWallets[d].onBalanceUpdate = func(balance string) {
 			fyne.Do(func() {
 				corporationWalletNavs[d].Supporting = balance
+				corpWalletList.Refresh()
+			})
+		}
+		u.corporationWallets[d].onNameUpdate = func(name string) {
+			fyne.Do(func() {
+				corporationWalletNavs[d].Headline = name
 				corpWalletList.Refresh()
 			})
 		}
