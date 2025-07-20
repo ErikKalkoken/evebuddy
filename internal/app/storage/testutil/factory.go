@@ -86,34 +86,34 @@ func (f Factory) CreateCharacterFull(args ...storage.CreateCharacterParams) *app
 		arg.ID = c.ID
 	}
 	if arg.AssetValue.IsEmpty() {
-		arg.AssetValue = optional.From(rand.Float64() * 100_000_000_000)
+		arg.AssetValue = optional.New(rand.Float64() * 100_000_000_000)
 	}
 	if arg.HomeID.IsEmpty() {
 		x := f.CreateEveLocationStructure()
-		arg.HomeID = optional.From(x.ID)
+		arg.HomeID = optional.New(x.ID)
 	}
 	if arg.LastCloneJumpAt.IsEmpty() {
-		arg.LastCloneJumpAt = optional.From(time.Now().Add(-time.Duration(rand.IntN(10)) * time.Hour * 24).UTC())
+		arg.LastCloneJumpAt = optional.New(time.Now().Add(-time.Duration(rand.IntN(10)) * time.Hour * 24).UTC())
 	}
 	if arg.LastLoginAt.IsEmpty() {
-		arg.LastLoginAt = optional.From(time.Now().Add(-time.Duration(rand.IntN(10)) * time.Hour * 24).UTC())
+		arg.LastLoginAt = optional.New(time.Now().Add(-time.Duration(rand.IntN(10)) * time.Hour * 24).UTC())
 	}
 	if arg.LocationID.IsEmpty() {
 		x := f.CreateEveLocationStructure()
-		arg.LocationID = optional.From(x.ID)
+		arg.LocationID = optional.New(x.ID)
 	}
 	if arg.ShipID.IsEmpty() {
 		x := f.CreateEveType()
-		arg.ShipID = optional.From(x.ID)
+		arg.ShipID = optional.New(x.ID)
 	}
 	if arg.TotalSP.IsEmpty() {
-		arg.TotalSP = optional.From(rand.IntN(100_000_000))
+		arg.TotalSP = optional.New(rand.IntN(100_000_000))
 	}
 	if arg.UnallocatedSP.IsEmpty() {
-		arg.UnallocatedSP = optional.From(rand.IntN(10_000_000))
+		arg.UnallocatedSP = optional.New(rand.IntN(10_000_000))
 	}
 	if arg.WalletBalance.IsEmpty() {
-		arg.WalletBalance = optional.From(rand.Float64() * 100_000_000_000)
+		arg.WalletBalance = optional.New(rand.Float64() * 100_000_000_000)
 	}
 	ctx := context.Background()
 	err := f.st.CreateCharacter(ctx, arg)
@@ -1519,7 +1519,7 @@ func (f Factory) CreateEveCorporation(args ...storage.UpdateOrCreateEveCorporati
 		arg.CreatorID.Set(c.ID)
 	}
 	if arg.DateFounded.IsEmpty() {
-		arg.DateFounded = optional.From(time.Now().Add(-100 * time.Hour).UTC())
+		arg.DateFounded = optional.New(time.Now().Add(-100 * time.Hour).UTC())
 	}
 	if arg.Description == "" {
 		arg.Description = fake.Paragraphs()
@@ -2079,11 +2079,11 @@ func (f Factory) createEveLocationStructure(startID int64, categoryID int32, isE
 	}
 	if !isEmpty && arg.SolarSystemID.IsEmpty() {
 		x := f.CreateEveSolarSystem()
-		arg.SolarSystemID = optional.From(x.ID)
+		arg.SolarSystemID = optional.New(x.ID)
 	}
 	if !isEmpty && arg.OwnerID.IsEmpty() {
 		x := f.CreateEveEntityCorporation()
-		arg.OwnerID = optional.From(x.ID)
+		arg.OwnerID = optional.New(x.ID)
 	}
 	if !isEmpty && arg.TypeID.IsEmpty() {
 		ec, err := f.st.GetEveCategory(ctx, categoryID)
@@ -2096,7 +2096,7 @@ func (f Factory) createEveLocationStructure(startID int64, categoryID int32, isE
 		}
 		eg := f.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: ec.ID})
 		et := f.CreateEveType(storage.CreateEveTypeParams{GroupID: eg.ID})
-		arg.TypeID = optional.From(et.ID)
+		arg.TypeID = optional.New(et.ID)
 	}
 	if arg.UpdatedAt.IsZero() {
 		arg.UpdatedAt = time.Now().UTC()

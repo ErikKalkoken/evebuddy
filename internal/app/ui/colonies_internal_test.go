@@ -84,7 +84,7 @@ func TestColonies_CanRenderFull(t *testing.T) {
 		CharacterPlanetID:      p.ID,
 		TypeID:                 extractor.ID,
 		ExpiryTime:             time.Now().UTC().Add(-time.Hour),
-		ExtractorProductTypeID: optional.From(extracted.ID),
+		ExtractorProductTypeID: optional.New(extracted.ID),
 	})
 	processorGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{
 		ID: app.EveGroupProcessors,
@@ -96,7 +96,7 @@ func TestColonies_CanRenderFull(t *testing.T) {
 	factory.CreatePlanetPin(storage.CreatePlanetPinParams{
 		CharacterPlanetID: p.ID,
 		TypeID:            processor.ID,
-		SchematicID:       optional.From(schematic.ID),
+		SchematicID:       optional.New(schematic.ID),
 	})
 
 	cases := []struct {

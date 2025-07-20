@@ -60,7 +60,7 @@ func TestCharacterWalletTransaction(t *testing.T) {
 				assert.Equal(t,
 					&app.EveLocationShort{
 						ID:             location.ID,
-						Name:           optional.From(location.Name),
+						Name:           optional.New(location.Name),
 						SecurityStatus: i.Location.SecurityStatus,
 					},
 					i.Location,

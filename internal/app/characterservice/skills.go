@@ -183,8 +183,8 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			skills := data.(esi.GetCharactersCharacterIdSkillsOk)
-			total := optional.From(int(skills.TotalSp))
-			unallocated := optional.From(int(skills.UnallocatedSp))
+			total := optional.New(int(skills.TotalSp))
+			unallocated := optional.New(int(skills.UnallocatedSp))
 			if err := s.st.UpdateCharacterSkillPoints(ctx, characterID, total, unallocated); err != nil {
 				return err
 			}
@@ -239,7 +239,7 @@ func (s *CharacterService) TotalTrainingTime(ctx context.Context, characterID in
 	if err != nil {
 		return optional.Optional[time.Duration]{}, err
 	}
-	return optional.From(v), nil
+	return optional.New(v), nil
 }
 
 func (s *CharacterService) NotifyExpiredTraining(ctx context.Context, characterID int32, notify func(title, content string)) error {

@@ -58,7 +58,7 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 			}
 			arg = storage.UpdateOrCreateLocationParams{
 				ID:     id,
-				TypeID: optional.From(t.ID),
+				TypeID: optional.New(t.ID),
 			}
 		case app.EveLocationAssetSafety:
 			t, err := s.GetOrCreateTypeESI(ctx, app.EveTypeAssetSafetyWrap)
@@ -67,7 +67,7 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 			}
 			arg = storage.UpdateOrCreateLocationParams{
 				ID:     id,
-				TypeID: optional.From(t.ID),
+				TypeID: optional.New(t.ID),
 			}
 		case app.EveLocationSolarSystem:
 			et, err := s.GetOrCreateTypeESI(ctx, app.EveTypeSolarSystem)
@@ -80,8 +80,8 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 			}
 			arg = storage.UpdateOrCreateLocationParams{
 				ID:            id,
-				TypeID:        optional.From(et.ID),
-				SolarSystemID: optional.From(es.ID),
+				TypeID:        optional.New(et.ID),
+				SolarSystemID: optional.New(es.ID),
 			}
 		case app.EveLocationStation:
 			station, _, err := s.esiClient.ESI.UniverseApi.GetUniverseStationsStationId(ctx, int32(id), nil)
@@ -96,11 +96,11 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 			if err != nil {
 				return nil, err
 			}
-			arg.TypeID = optional.From(station.TypeId)
+			arg.TypeID = optional.New(station.TypeId)
 			arg = storage.UpdateOrCreateLocationParams{
 				ID:            id,
-				SolarSystemID: optional.From(station.SystemId),
-				TypeID:        optional.From(station.TypeId),
+				SolarSystemID: optional.New(station.SystemId),
+				TypeID:        optional.New(station.TypeId),
 				Name:          station.Name,
 			}
 			if station.Owner != 0 {
@@ -108,7 +108,7 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 				if err != nil {
 					return nil, err
 				}
-				arg.OwnerID = optional.From(station.Owner)
+				arg.OwnerID = optional.New(station.Owner)
 			}
 		case app.EveLocationStructure:
 			if ctx.Value(goesi.ContextAccessToken) == nil {
@@ -132,16 +132,16 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 			}
 			arg = storage.UpdateOrCreateLocationParams{
 				ID:            id,
-				SolarSystemID: optional.From(structure.SolarSystemId),
+				SolarSystemID: optional.New(structure.SolarSystemId),
 				Name:          structure.Name,
-				OwnerID:       optional.From(structure.OwnerId),
+				OwnerID:       optional.New(structure.OwnerId),
 			}
 			if structure.TypeId != 0 {
 				myType, err := s.GetOrCreateTypeESI(ctx, structure.TypeId)
 				if err != nil {
 					return nil, err
 				}
-				arg.TypeID = optional.From(myType.ID)
+				arg.TypeID = optional.New(myType.ID)
 			}
 		default:
 			return nil, fmt.Errorf("eve location: invalid ID in update or create: %d", id)

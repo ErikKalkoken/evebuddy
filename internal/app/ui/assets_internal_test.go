@@ -19,7 +19,7 @@ func TestAssets_CanRenderWithData(t *testing.T) {
 		Name: "Bruce Wayne",
 	})
 	character := factory.CreateCharacterFull(storage.CreateCharacterParams{
-		AssetValue: optional.From(1000000000.0),
+		AssetValue: optional.New(1000000000.0),
 		ID:         ec.ID,
 	})
 	eg := factory.CreateEveGroup(storage.CreateEveGroupParams{
@@ -40,7 +40,7 @@ func TestAssets_CanRenderWithData(t *testing.T) {
 	})
 	loc := factory.CreateEveLocationStation(storage.UpdateOrCreateLocationParams{
 		Name:          "Abune - My castle",
-		SolarSystemID: optional.From(system.ID),
+		SolarSystemID: optional.New(system.ID),
 	})
 	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
 		CharacterID:  character.ID,

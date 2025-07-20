@@ -76,9 +76,9 @@ func (trainingRow) remainingTime(t optional.Optional[time.Time]) optional.Option
 	}
 	d := time.Until(t.MustValue())
 	if d < 0 {
-		return optional.From(time.Duration(0))
+		return optional.New(time.Duration(0))
 	}
-	return optional.From(time.Duration(d))
+	return optional.New(time.Duration(d))
 }
 
 func (r trainingRow) remainingTimeString(d optional.Optional[time.Duration]) string {

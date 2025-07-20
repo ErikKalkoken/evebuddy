@@ -67,8 +67,8 @@ func TestCorporationIndustryJob(t *testing.T) {
 				assert.EqualValues(
 					t, &app.EveLocationShort{
 						ID:             location.ID,
-						Name:           optional.From(location.Name),
-						SecurityStatus: optional.From(location.SolarSystem.SecurityStatus),
+						Name:           optional.New(location.Name),
+						SecurityStatus: optional.New(location.SolarSystem.SecurityStatus),
 					},
 					o.Location,
 				)

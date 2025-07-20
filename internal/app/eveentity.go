@@ -44,9 +44,9 @@ func (ee EveEntity) IsCharacter() bool {
 func (ee EveEntity) IsNPC() optional.Optional[bool] {
 	switch ee.Category {
 	case EveEntityCharacter:
-		return optional.From(ee.ID >= npcCharacterIDBegin && ee.ID < npcCharacterIDEnd)
+		return optional.New(ee.ID >= npcCharacterIDBegin && ee.ID < npcCharacterIDEnd)
 	case EveEntityCorporation:
-		return optional.From(ee.ID >= npcCorporationIDBegin && ee.ID < npcCorporationIDEnd)
+		return optional.New(ee.ID >= npcCorporationIDBegin && ee.ID < npcCorporationIDEnd)
 	}
 	return optional.Optional[bool]{}
 }

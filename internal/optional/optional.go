@@ -25,8 +25,8 @@ type Optional[T any] struct {
 	isPresent bool
 }
 
-// From returns a new Optional from v.
-func From[T any](v T) Optional[T] {
+// New returns a new Optional with the value v.
+func New[T any](v T) Optional[T] {
 	o := Optional[T]{value: v, isPresent: true}
 	return o
 }
@@ -105,7 +105,7 @@ func ConvertNumeric[X Numeric, Y Numeric](o Optional[X]) Optional[Y] {
 	if o.IsEmpty() {
 		return Optional[Y]{}
 	}
-	return From(Y(o.ValueOrZero()))
+	return New(Y(o.ValueOrZero()))
 }
 
 // FromIntegerWithZero returns an optional from an integer
@@ -114,7 +114,7 @@ func FromIntegerWithZero[T constraints.Integer](v T) Optional[T] {
 	if v == 0 {
 		return Optional[T]{}
 	}
-	return From(v)
+	return New(v)
 }
 
 // FromTimeWithZero returns an optional from a [time.Time]
@@ -123,5 +123,5 @@ func FromTimeWithZero(v time.Time) Optional[time.Time] {
 	if v.IsZero() {
 		return Optional[time.Time]{}
 	}
-	return From(v)
+	return New(v)
 }

@@ -287,7 +287,7 @@ func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.Charac
 			if err != nil {
 				return err
 			}
-			if err := s.st.UpdateCharacterLocation(ctx, characterID, optional.From(locationID)); err != nil {
+			if err := s.st.UpdateCharacterLocation(ctx, characterID, optional.New(locationID)); err != nil {
 				return err
 			}
 			return nil
@@ -309,7 +309,7 @@ func (s *CharacterService) updateOnlineESI(ctx context.Context, arg app.Characte
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			online := data.(esi.GetCharactersCharacterIdOnlineOk)
-			if err := s.st.UpdateCharacterLastLoginAt(ctx, characterID, optional.From(online.LastLogin)); err != nil {
+			if err := s.st.UpdateCharacterLastLoginAt(ctx, characterID, optional.New(online.LastLogin)); err != nil {
 				return err
 			}
 			return nil
@@ -335,7 +335,7 @@ func (s *CharacterService) updateShipESI(ctx context.Context, arg app.CharacterU
 			if err != nil {
 				return err
 			}
-			if err := s.st.UpdateCharacterShip(ctx, characterID, optional.From(ship.ShipTypeId)); err != nil {
+			if err := s.st.UpdateCharacterShip(ctx, characterID, optional.New(ship.ShipTypeId)); err != nil {
 				return err
 			}
 			return nil
@@ -357,7 +357,7 @@ func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg app.C
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			balance := data.(float64)
-			if err := s.st.UpdateCharacterWalletBalance(ctx, characterID, optional.From(balance)); err != nil {
+			if err := s.st.UpdateCharacterWalletBalance(ctx, characterID, optional.New(balance)); err != nil {
 				return err
 			}
 			return nil

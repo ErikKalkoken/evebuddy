@@ -36,14 +36,14 @@ func TestCharacters_CanRenderWithData(t *testing.T) {
 	})
 	home := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{
 		Name:          "Batcave",
-		SolarSystemID: optional.From(homeSystem.ID),
+		SolarSystemID: optional.New(homeSystem.ID),
 	})
 	character := factory.CreateCharacterFull(storage.CreateCharacterParams{
-		AssetValue:    optional.From(12_000_000_000.0),
-		HomeID:        optional.From(home.ID),
+		AssetValue:    optional.New(12_000_000_000.0),
+		HomeID:        optional.New(home.ID),
 		ID:            ec.ID,
-		WalletBalance: optional.From(23_000_000.0),
-		LastLoginAt:   optional.From(time.Now().Add(-24 * 7 * 2 * time.Hour)),
+		WalletBalance: optional.New(23_000_000.0),
+		LastLoginAt:   optional.New(time.Now().Add(-24 * 7 * 2 * time.Hour)),
 	})
 	factory.CreateCharacterMail(storage.CreateCharacterMailParams{
 		CharacterID: character.ID,

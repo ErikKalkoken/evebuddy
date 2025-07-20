@@ -99,7 +99,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 		e := "error"
 		comment := "comment"
 		hash := "hash"
-		startedAt := optional.From(time.Now())
+		startedAt := optional.New(time.Now())
 		completedAt := storage.NewNullTimeFromTime(time.Now())
 		arg := storage.UpdateOrCreateCorporationSectionStatusParams{
 			CorporationID: c.ID,

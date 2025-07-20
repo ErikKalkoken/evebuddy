@@ -427,7 +427,7 @@ func (s *EveUniverseService) MarketPrice(ctx context.Context, typeID int32) (opt
 	} else if err != nil {
 		return v, err
 	}
-	return optional.From(o.AveragePrice), nil
+	return optional.New(o.AveragePrice), nil
 }
 
 // TODO: Change to bulk create

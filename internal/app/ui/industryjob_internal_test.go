@@ -26,7 +26,7 @@ func TestIndustryJob_CanRenderWithData(t *testing.T) {
 	})
 	location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{
 		Name:          "Batcave",
-		SolarSystemID: optional.From(system.ID),
+		SolarSystemID: optional.New(system.ID),
 	})
 	ec1 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 		Name: "Bruce Wayne",

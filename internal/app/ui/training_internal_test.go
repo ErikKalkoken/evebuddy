@@ -23,8 +23,8 @@ func TestTraining_CanRenderWithActiveTraining(t *testing.T) {
 	})
 	character := factory.CreateCharacterMinimal(storage.CreateCharacterParams{
 		ID:            ec.ID,
-		TotalSP:       optional.From(10_000_000),
-		UnallocatedSP: optional.From(1_000_000),
+		TotalSP:       optional.New(10_000_000),
+		UnallocatedSP: optional.New(1_000_000),
 	})
 	now := time.Now().UTC()
 	et := factory.CreateEveType(storage.CreateEveTypeParams{Name: "Dummy Skill"})
@@ -59,8 +59,8 @@ func TestTraining_CanRenderWithInActiveTraining(t *testing.T) {
 	})
 	character := factory.CreateCharacterMinimal(storage.CreateCharacterParams{
 		ID:            ec.ID,
-		TotalSP:       optional.From(10_000_000),
-		UnallocatedSP: optional.From(1_000_000),
+		TotalSP:       optional.New(10_000_000),
+		UnallocatedSP: optional.New(1_000_000),
 	})
 	now := time.Now().UTC()
 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
@@ -108,8 +108,8 @@ func TestTraining_Filter(t *testing.T) {
 	})
 	character1 := factory.CreateCharacterMinimal(storage.CreateCharacterParams{
 		ID:            ec1.ID,
-		TotalSP:       optional.From(10_000_000),
-		UnallocatedSP: optional.From(1_000_000),
+		TotalSP:       optional.New(10_000_000),
+		UnallocatedSP: optional.New(1_000_000),
 	})
 	factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
 		CharacterID: character1.ID,
@@ -127,8 +127,8 @@ func TestTraining_Filter(t *testing.T) {
 	})
 	character2 := factory.CreateCharacterMinimal(storage.CreateCharacterParams{
 		ID:            ec2.ID,
-		TotalSP:       optional.From(10_000_000),
-		UnallocatedSP: optional.From(1_000_000),
+		TotalSP:       optional.New(10_000_000),
+		UnallocatedSP: optional.New(1_000_000),
 	})
 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 		CharacterID: character2.ID,

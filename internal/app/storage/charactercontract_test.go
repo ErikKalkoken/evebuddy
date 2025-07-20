@@ -120,8 +120,8 @@ func TestCharacterContract(t *testing.T) {
 			o2, err := r.GetCharacterContract(ctx, o1.CharacterID, o1.ContractID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, app.ContractStatusFinished, o2.Status)
-				assert.Equal(t, optional.From(dateAccepted), o2.DateAccepted)
-				assert.Equal(t, optional.From(dateCompleted), o2.DateCompleted)
+				assert.Equal(t, optional.New(dateAccepted), o2.DateAccepted)
+				assert.Equal(t, optional.New(dateCompleted), o2.DateCompleted)
 				assert.Less(t, o1.UpdatedAt, o2.UpdatedAt)
 			}
 		}

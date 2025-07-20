@@ -50,7 +50,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	}
 	_, err, _ = s.sfg.Do(fmt.Sprintf("update-general-section-%s", section), func() (any, error) {
 		slog.Debug("Started updating eveuniverse section", "section", section)
-		startedAt := optional.From(time.Now())
+		startedAt := optional.New(time.Now())
 		arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
 			Section:   section,
 			StartedAt: &startedAt,

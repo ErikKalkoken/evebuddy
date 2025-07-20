@@ -175,7 +175,7 @@ func corporationWalletTransactionFromDBModel(
 		JournalRefID: o.JournalRefID,
 		Location: &app.EveLocationShort{
 			ID:             o.LocationID,
-			Name:           optional.From(locationName),
+			Name:           optional.New(locationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(systemSecurityStatus)},
 		CorporationID: int32(o.CorporationID),
 		Quantity:      int32(o.Quantity),

@@ -467,7 +467,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	var hasUpdate bool
 	var hasError bool
 	refreshMoreBadge := func() {
-		navBar.SetBadge(3, hasUpdate || hasError)
+		navBar.SetBadge(4, hasUpdate || hasError)
 	}
 
 	u.onAppFirstStarted = func() {

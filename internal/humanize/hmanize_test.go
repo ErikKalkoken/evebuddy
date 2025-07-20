@@ -97,39 +97,39 @@ func TestOptional(t *testing.T) {
 	})
 	t.Run("time", func(t *testing.T) {
 		x := time.Now().Add(5 * time.Minute)
-		assert.Equal(t, "0h 5m", humanize.Optional(optional.From(x), ""))
+		assert.Equal(t, "0h 5m", humanize.Optional(optional.New(x), ""))
 	})
 	t.Run("time", func(t *testing.T) {
 		x := 5 * time.Minute
-		assert.Equal(t, "0h 5m", humanize.Optional(optional.From(x), ""))
+		assert.Equal(t, "0h 5m", humanize.Optional(optional.New(x), ""))
 	})
 	t.Run("string", func(t *testing.T) {
-		assert.Equal(t, "alpha", humanize.Optional(optional.From("alpha"), ""))
+		assert.Equal(t, "alpha", humanize.Optional(optional.New("alpha"), ""))
 	})
 	t.Run("number", func(t *testing.T) {
-		assert.Equal(t, "42", humanize.Optional(optional.From(int(42)), ""))
-		assert.Equal(t, "42", humanize.Optional(optional.From(int32(42)), ""))
-		assert.Equal(t, "42", humanize.Optional(optional.From(int64(42)), ""))
+		assert.Equal(t, "42", humanize.Optional(optional.New(int(42)), ""))
+		assert.Equal(t, "42", humanize.Optional(optional.New(int32(42)), ""))
+		assert.Equal(t, "42", humanize.Optional(optional.New(int64(42)), ""))
 	})
 	t.Run("bool", func(t *testing.T) {
-		assert.Equal(t, "yes", humanize.Optional(optional.From(true), ""))
-		assert.Equal(t, "no", humanize.Optional(optional.From(false), ""))
+		assert.Equal(t, "yes", humanize.Optional(optional.New(true), ""))
+		assert.Equal(t, "no", humanize.Optional(optional.New(false), ""))
 	})
 	t.Run("other", func(t *testing.T) {
 		x := []int{1, 2, 3}
-		assert.Equal(t, "[1 2 3]", humanize.Optional(optional.From(x), ""))
+		assert.Equal(t, "[1 2 3]", humanize.Optional(optional.New(x), ""))
 	})
 }
 
 func TestOptionalWithComma(t *testing.T) {
 	assert.Equal(t, "fallback", humanize.OptionalWithComma(optional.Optional[int]{}, "fallback"))
-	assert.Equal(t, "1,234", humanize.OptionalWithComma(optional.From(1234), ""))
+	assert.Equal(t, "1,234", humanize.OptionalWithComma(optional.New(1234), ""))
 }
 
 func TestOptionalWithDecemals(t *testing.T) {
 	assert.Equal(t, "fallback", humanize.OptionalWithDecimals(optional.Optional[float64]{}, 1, "fallback"))
-	assert.Equal(t, "1.2", humanize.OptionalWithDecimals(optional.From(float64(1.23)), 1, ""))
-	assert.Equal(t, "1.2", humanize.OptionalWithDecimals(optional.From(float32(1.23)), 1, ""))
+	assert.Equal(t, "1.2", humanize.OptionalWithDecimals(optional.New(float64(1.23)), 1, ""))
+	assert.Equal(t, "1.2", humanize.OptionalWithDecimals(optional.New(float32(1.23)), 1, ""))
 }
 
 func TestComma(t *testing.T) {

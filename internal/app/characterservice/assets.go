@@ -211,7 +211,7 @@ func (s *CharacterService) UpdateAssetTotalValue(ctx context.Context, characterI
 	if err != nil {
 		return 0, err
 	}
-	if err := s.st.UpdateCharacterAssetValue(ctx, characterID, optional.From(v)); err != nil {
+	if err := s.st.UpdateCharacterAssetValue(ctx, characterID, optional.New(v)); err != nil {
 		return 0, err
 	}
 	return v, nil
