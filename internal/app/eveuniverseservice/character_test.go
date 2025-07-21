@@ -2,7 +2,6 @@ package eveuniverseservice_test
 
 import (
 	"context"
-	"fmt"
 
 	"testing"
 	"time"
@@ -49,7 +48,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/", characterID),
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"birthday":        "2015-03-24T11:37:00Z",
 				"bloodline_id":    3,
@@ -92,7 +91,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/", characterID),
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"birthday":        "2015-03-24T11:37:00Z",
 				"bloodline_id":    3,

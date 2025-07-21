@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/icrowley/fake"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/icrowley/fake"
-	"golang.org/x/sync/errgroup"
 )
 
 func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, id int32) (*app.EveCharacter, error) {
