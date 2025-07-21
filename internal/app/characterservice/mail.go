@@ -66,24 +66,30 @@ func (s *CharacterService) GetMailListUnreadCounts(ctx context.Context, characte
 }
 
 func (s *CharacterService) NotifyMails(ctx context.Context, characterID int32, earliest time.Time, notify func(title, content string)) error {
-	mm, err := s.st.ListCharacterMailHeadersForUnprocessed(ctx, characterID, earliest)
-	if err != nil {
-		return err
-	}
-	characterName, err := s.getCharacterName(ctx, characterID)
-	if err != nil {
-		return err
-	}
-	for _, m := range mm {
-		if m.Timestamp.Before(earliest) {
-			continue
+	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyMails-%d", characterID), func() (any, error) {
+		mm, err := s.st.ListCharacterMailHeadersForUnprocessed(ctx, characterID, earliest)
+		if err != nil {
+			return nil, err
 		}
-		title := fmt.Sprintf("%s: New Mail from %s", characterName, m.From.Name)
-		content := m.Subject
-		notify(title, content)
-		if err := s.st.UpdateCharacterMailSetProcessed(ctx, m.ID); err != nil {
-			return err
+		characterName, err := s.getCharacterName(ctx, characterID)
+		if err != nil {
+			return nil, err
 		}
+		for _, m := range mm {
+			if m.Timestamp.Before(earliest) {
+				continue
+			}
+			title := fmt.Sprintf("%s: New Mail from %s", characterName, m.From.Name)
+			content := m.Subject
+			notify(title, content)
+			if err := s.st.UpdateCharacterMailSetProcessed(ctx, m.ID); err != nil {
+				return nil, err
+			}
+		}
+		return nil, nil
+	})
+	if err != nil {
+		return fmt.Errorf("NotifyMails for character %d: %w", characterID, err)
 	}
 	return nil
 }
@@ -236,7 +242,7 @@ func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.Char
 		})
 }
 
-// updateMailListsESI updates the mailling lists for a character from ESI
+// updateMailListsESI updates the mailing lists for a character from ESI
 // and reports whether it has changed.
 func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionCharacterMailLists {
