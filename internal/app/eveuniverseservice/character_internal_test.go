@@ -70,4 +70,50 @@ func TestUpdateEveCharacterESI(t *testing.T) {
 			}
 		}
 	})
+	t.Run("should remove affiliations", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		o1 := factory.CreateEveCharacter()
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: o1.ID})
+		corporation := factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/`,
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"birthday":        "2015-03-24T11:37:00Z",
+				"bloodline_id":    3,
+				"corporation_id":  109299958,
+				"description":     "bla bla",
+				"gender":          "male",
+				"name":            "CCP Bartender",
+				"race_id":         2,
+				"security_status": -9.9,
+				"title":           "All round pretty awesome guy",
+			}))
+		httpmock.RegisterResponder(
+			"POST",
+			`=~^https://esi\.evetech\.net/v\d+/characters/affiliation/`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"character_id":   o1.ID,
+					"corporation_id": corporation.ID,
+				}}),
+		)
+		// when
+		err := s.updateCharacterESI(ctx, o1.ID)
+		// then
+		if assert.NoError(t, err) {
+			o2, err := st.GetEveCharacter(ctx, o1.ID)
+			if assert.NoError(t, err) {
+				assert.Nil(t, o2.Alliance)
+				assert.Equal(t, corporation, o2.Corporation)
+				assert.Nil(t, o2.Faction)
+				assert.Equal(t, "bla bla", o2.Description)
+				assert.Equal(t, "CCP Bartender", o2.Name)
+				assert.Equal(t, "All round pretty awesome guy", o2.Title)
+				assert.InDelta(t, -9.9, o2.SecurityStatus, 0.01)
+			}
+		}
+	})
 }

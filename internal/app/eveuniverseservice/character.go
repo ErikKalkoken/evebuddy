@@ -116,51 +116,36 @@ func (s *EveUniverseService) updateCharacterESI(ctx context.Context, characterID
 	if err != nil {
 		return err
 	}
-	// TODO: Refactor to use ToEntities()
 	g := new(errgroup.Group)
 	g.Go(func() error {
-		rr, _, err := s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{c.ID}, nil)
+		oo, _, err := s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{c.ID}, nil)
 		if err != nil {
 			return err
 		}
-		if len(rr) == 0 {
+		if len(oo) == 0 {
 			return nil
 		}
-		r := rr[0]
-		_, err = s.AddMissingEntities(ctx, set.Of(c.ID, r.CorporationId, r.AllianceId, r.FactionId))
+		o := oo[0]
+		ids := set.Of(c.ID, o.CorporationId, o.AllianceId, o.FactionId)
+		ids.Delete(0)
+		m, err := s.ToEntities(ctx, ids)
 		if err != nil {
 			return err
 		}
-		corporation, err := s.st.GetEveEntity(ctx, r.CorporationId)
-		if err != nil {
-			return err
-		}
-		c.Corporation = corporation
-		if r.AllianceId != 0 {
-			alliance, err := s.st.GetEveEntity(ctx, r.AllianceId)
-			if err != nil {
-				return err
-			}
-			c.Alliance = alliance
-		}
-		if r.FactionId != 0 {
-			faction, err := s.st.GetEveEntity(ctx, r.FactionId)
-			if err != nil {
-				return err
-			}
-			c.Faction = faction
-		}
+		c.Alliance = m[o.AllianceId]
+		c.Corporation = m[o.CorporationId]
+		c.Faction = m[o.FactionId]
 		return nil
 	})
 	g.Go(func() error {
-		r2, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, c.ID, nil)
+		o, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, c.ID, nil)
 		if err != nil {
 			return err
 		}
-		c.Name = r2.Name
-		c.Description = r2.Description
-		c.SecurityStatus = float64(r2.SecurityStatus)
-		c.Title = r2.Title
+		c.Name = o.Name
+		c.Description = o.Description
+		c.SecurityStatus = float64(o.SecurityStatus)
+		c.Title = o.Title
 		return nil
 	})
 	if err := g.Wait(); err != nil {
