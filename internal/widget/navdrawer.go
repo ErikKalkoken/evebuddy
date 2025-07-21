@@ -329,7 +329,6 @@ func (w *NavDrawer) CreateRenderer() fyne.WidgetRenderer {
 }
 
 type NavItem struct {
-	action     func()
 	badge      string
 	content    fyne.CanvasObject
 	icon       fyne.Resource

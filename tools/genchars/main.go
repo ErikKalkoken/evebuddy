@@ -10,10 +10,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 )
 
-const (
-	dbFileName = "evebuddy.sqlite"
-)
-
 var factorFlag = flag.Int("f", 1, "factor to apply to default quantities")
 var numberFlag = flag.Int("n", 1, "number of characters to generate")
 var randomFlag = flag.Bool("random", false, "whether to apply the factor with randomness (requires f > 1)")

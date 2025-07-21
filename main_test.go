@@ -21,10 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type myLogger struct {
-	retryablehttp.Logger
-}
-
 func TestLogResponse(t *testing.T) {
 	var logBuf bytes.Buffer
 	log.SetOutput(&logBuf)

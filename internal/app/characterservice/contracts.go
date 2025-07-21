@@ -49,47 +49,53 @@ func (s *CharacterService) GetContractTopBid(ctx context.Context, contractID int
 }
 
 func (s *CharacterService) NotifyUpdatedContracts(ctx context.Context, characterID int32, earliest time.Time, notify func(title, content string)) error {
-	cc, err := s.st.ListCharacterContractsForNotify(ctx, characterID, earliest)
-	if err != nil {
-		return err
-	}
-	characterName, err := s.getCharacterName(ctx, characterID)
-	if err != nil {
-		return err
-	}
-	for _, c := range cc {
-		if c.Status == c.StatusNotified {
-			continue
+	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyUpdatedContracts-%d", characterID), func() (any, error) {
+		cc, err := s.st.ListCharacterContractsForNotify(ctx, characterID, earliest)
+		if err != nil {
+			return nil, err
 		}
-		if c.Acceptor != nil && c.Acceptor.ID == characterID {
-			continue // ignore status changed caused by the current character
+		characterName, err := s.getCharacterName(ctx, characterID)
+		if err != nil {
+			return nil, err
 		}
-		var content string
-		name := "'" + c.NameDisplay() + "'"
-		switch c.Type {
-		case app.ContractTypeCourier:
-			switch c.Status {
-			case app.ContractStatusInProgress:
-				content = fmt.Sprintf("Contract %s has been accepted by %s", name, c.AcceptorDisplay())
-			case app.ContractStatusFinished:
-				content = fmt.Sprintf("Contract %s has been delivered", name)
-			case app.ContractStatusFailed:
-				content = fmt.Sprintf("Contract %s has been failed by %s", name, c.AcceptorDisplay())
+		for _, c := range cc {
+			if c.Status == c.StatusNotified {
+				continue
 			}
-		case app.ContractTypeItemExchange:
-			switch c.Status {
-			case app.ContractStatusFinished:
-				content = fmt.Sprintf("Contract %s has been accepted by %s", name, c.AcceptorDisplay())
+			if c.Acceptor != nil && c.Acceptor.ID == characterID {
+				continue // ignore status changed caused by the current character
+			}
+			var content string
+			name := "'" + c.NameDisplay() + "'"
+			switch c.Type {
+			case app.ContractTypeCourier:
+				switch c.Status {
+				case app.ContractStatusInProgress:
+					content = fmt.Sprintf("Contract %s has been accepted by %s", name, c.AcceptorDisplay())
+				case app.ContractStatusFinished:
+					content = fmt.Sprintf("Contract %s has been delivered", name)
+				case app.ContractStatusFailed:
+					content = fmt.Sprintf("Contract %s has been failed by %s", name, c.AcceptorDisplay())
+				}
+			case app.ContractTypeItemExchange:
+				switch c.Status {
+				case app.ContractStatusFinished:
+					content = fmt.Sprintf("Contract %s has been accepted by %s", name, c.AcceptorDisplay())
+				}
+			}
+			if content == "" {
+				continue
+			}
+			title := fmt.Sprintf("%s: Contract updated", characterName)
+			notify(title, content)
+			if err := s.st.UpdateCharacterContractNotified(ctx, c.ID, c.Status); err != nil {
+				return nil, err
 			}
 		}
-		if content == "" {
-			continue
-		}
-		title := fmt.Sprintf("%s: Contract updated", characterName)
-		notify(title, content)
-		if err := s.st.UpdateCharacterContractNotified(ctx, c.ID, c.Status); err != nil {
-			return fmt.Errorf("record contract notification: %w", err)
-		}
+		return nil, nil
+	})
+	if err != nil {
+		return fmt.Errorf("NotifyUpdatedContracts for character %d: %w", characterID, err)
 	}
 	return nil
 }

@@ -267,7 +267,7 @@ func TestUpdateMail(t *testing.T) {
 }
 
 func TestNotifyMails(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	cs := characterservice.NewFake(st)
 	ctx := context.Background()

@@ -63,7 +63,6 @@ func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
 }
 
 func (a *corporationSheet) CreateRenderer() fyne.WidgetRenderer {
-	const width = 140
 	items := []*widget.FormItem{
 		widget.NewFormItem("Name", a.name),
 		widget.NewFormItem("Ticker", a.ticker),

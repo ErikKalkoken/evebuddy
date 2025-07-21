@@ -922,9 +922,6 @@ func TestGeneralSectionSummary(t *testing.T) {
 	cache := memcache.New()
 	sc := statuscacheservice.New(cache, nil)
 	// given
-	const (
-		characterID = 42
-	)
 	cache.Clear()
 	sc.SetGeneralSection(&app.GeneralSectionStatus{
 		SectionStatus: app.SectionStatus{

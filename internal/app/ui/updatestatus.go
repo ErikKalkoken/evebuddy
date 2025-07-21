@@ -44,12 +44,6 @@ type sectionEntity struct {
 	ss       app.StatusSummary
 }
 
-type detailsItem struct {
-	label      string
-	value      string
-	importance widget.Importance
-}
-
 type updateStatus struct {
 	widget.BaseWidget
 

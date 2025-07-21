@@ -28,7 +28,7 @@ import (
 type cloneRow struct {
 	jc       *app.CharacterJumpClone2
 	route    []*app.EveSolarSystem
-	routeErr error
+	routeErr error // TODO: not used, remove?
 	tags     set.Set[string]
 }
 

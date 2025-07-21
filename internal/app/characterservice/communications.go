@@ -16,30 +16,34 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// TODO: Add tests for NotifyCommunications
-
 func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID int32, earliest time.Time, typesEnabled set.Set[string], notify func(title, content string)) error {
-	nn, err := s.st.ListCharacterNotificationsUnprocessed(ctx, characterID, earliest)
-	if err != nil {
-		return err
-	}
-	if len(nn) == 0 {
-		return nil
-	}
-	characterName, err := s.getCharacterName(ctx, characterID)
-	if err != nil {
-		return err
-	}
-	for _, n := range nn {
-		if !typesEnabled.Contains(n.Type) {
-			continue
+	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyCommunications-%d", characterID), func() (any, error) {
+		nn, err := s.st.ListCharacterNotificationsUnprocessed(ctx, characterID, earliest)
+		if err != nil {
+			return nil, err
 		}
-		title := fmt.Sprintf("%s: New Communication from %s", characterName, n.Sender.Name)
-		content := n.Title.ValueOrZero()
-		notify(title, content)
-		if err := s.st.UpdateCharacterNotificationSetProcessed(ctx, n.ID); err != nil {
-			return err
+		if len(nn) == 0 {
+			return nil, nil
 		}
+		characterName, err := s.getCharacterName(ctx, characterID)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range nn {
+			if !typesEnabled.Contains(n.Type) {
+				continue
+			}
+			title := fmt.Sprintf("%s: New Communication from %s", characterName, n.Sender.Name)
+			content := n.Title.ValueOrZero()
+			notify(title, content)
+			if err := s.st.UpdateCharacterNotificationSetProcessed(ctx, n.ID); err != nil {
+				return nil, err
+			}
+		}
+		return nil, nil
+	})
+	if err != nil {
+		return fmt.Errorf("NotifyCommunications for character %d: %w", characterID, err)
 	}
 	return nil
 }
@@ -202,34 +206,40 @@ func (s *CharacterService) loadEntitiesForNotifications(ctx context.Context, not
 }
 
 func (s *CharacterService) NotifyExpiredExtractions(ctx context.Context, characterID int32, earliest time.Time, notify func(title, content string)) error {
-	planets, err := s.ListPlanets(ctx, characterID)
+	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyExpiredExtractions-%d", characterID), func() (any, error) {
+		planets, err := s.ListPlanets(ctx, characterID)
+		if err != nil {
+			return nil, err
+		}
+		characterName, err := s.getCharacterName(ctx, characterID)
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range planets {
+			expiration := p.ExtractionsExpiryTime()
+			if expiration.IsZero() || expiration.After(time.Now()) || expiration.Before(earliest) {
+				continue
+			}
+			if p.LastNotified.ValueOrZero().Equal(expiration) {
+				continue
+			}
+			title := fmt.Sprintf("%s: PI extraction expired", characterName)
+			extracted := strings.Join(p.ExtractedTypeNames(), ",")
+			content := fmt.Sprintf("Extraction expired at %s for %s", p.EvePlanet.Name, extracted)
+			notify(title, content)
+			arg := storage.UpdateCharacterPlanetLastNotifiedParams{
+				CharacterID:  characterID,
+				EvePlanetID:  p.EvePlanet.ID,
+				LastNotified: expiration,
+			}
+			if err := s.st.UpdateCharacterPlanetLastNotified(ctx, arg); err != nil {
+				return nil, err
+			}
+		}
+		return nil, nil
+	})
 	if err != nil {
-		return err
-	}
-	characterName, err := s.getCharacterName(ctx, characterID)
-	if err != nil {
-		return err
-	}
-	for _, p := range planets {
-		expiration := p.ExtractionsExpiryTime()
-		if expiration.IsZero() || expiration.After(time.Now()) || expiration.Before(earliest) {
-			continue
-		}
-		if p.LastNotified.ValueOrZero().Equal(expiration) {
-			continue
-		}
-		title := fmt.Sprintf("%s: PI extraction expired", characterName)
-		extracted := strings.Join(p.ExtractedTypeNames(), ",")
-		content := fmt.Sprintf("Extraction expired at %s for %s", p.EvePlanet.Name, extracted)
-		notify(title, content)
-		arg := storage.UpdateCharacterPlanetLastNotifiedParams{
-			CharacterID:  characterID,
-			EvePlanetID:  p.EvePlanet.ID,
-			LastNotified: expiration,
-		}
-		if err := s.st.UpdateCharacterPlanetLastNotified(ctx, arg); err != nil {
-			return err
-		}
+		return fmt.Errorf("NotifyExpiredExtractions for character %d: %w", characterID, err)
 	}
 	return nil
 }

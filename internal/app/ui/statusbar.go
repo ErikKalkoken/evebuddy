@@ -41,12 +41,10 @@ type statusBar struct {
 	widget.BaseWidget
 
 	characterCount *statusBarItem
-	currentVersion *widget.Label
 	eveClock       *statusBarItem
 	eveStatus      *statusBarItem
 	eveStatusError string
 	infoText       *widget.Label
-	latestVersion  *widget.Label
 	u              *DesktopUI
 	updateHint     *updateHint
 	updateStatus   *statusBarItem

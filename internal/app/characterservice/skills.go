@@ -243,24 +243,30 @@ func (s *CharacterService) TotalTrainingTime(ctx context.Context, characterID in
 }
 
 func (s *CharacterService) NotifyExpiredTraining(ctx context.Context, characterID int32, notify func(title, content string)) error {
-	c, err := s.GetCharacter(ctx, characterID)
+	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyExpiredTraining-%d", characterID), func() (any, error) {
+		c, err := s.GetCharacter(ctx, characterID)
+		if err != nil {
+			return nil, err
+		}
+		if !c.IsTrainingWatched {
+			return nil, nil
+		}
+		t, err := s.TotalTrainingTime(ctx, characterID)
+		if err != nil {
+			return nil, err
+		}
+		if !t.IsEmpty() {
+			return nil, nil
+		}
+		title := fmt.Sprintf("%s: No skill in training", c.EveCharacter.Name)
+		content := "There is currently no skill being trained for this character."
+		notify(title, content)
+		return nil, s.UpdateIsTrainingWatched(ctx, characterID, false)
+	})
 	if err != nil {
-		return err
+		return fmt.Errorf("NotifyExpiredTraining for character %d: %w", characterID, err)
 	}
-	if !c.IsTrainingWatched {
-		return nil
-	}
-	t, err := s.TotalTrainingTime(ctx, characterID)
-	if err != nil {
-		return err
-	}
-	if !t.IsEmpty() {
-		return nil
-	}
-	title := fmt.Sprintf("%s: No skill in training", c.EveCharacter.Name)
-	content := "There is currently no skill being trained for this character."
-	notify(title, content)
-	return s.UpdateIsTrainingWatched(ctx, characterID, false)
+	return nil
 }
 
 func (s *CharacterService) ListSkillqueueItems(ctx context.Context, characterID int32) ([]*app.CharacterSkillqueueItem, error) {

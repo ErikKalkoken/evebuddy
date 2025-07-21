@@ -25,8 +25,11 @@ type CreateEveCharacterParams struct {
 }
 
 func (st *Storage) CreateEveCharacter(ctx context.Context, arg CreateEveCharacterParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CreateEveCharacter: %+v: %w", arg, err)
+	}
 	if arg.ID == 0 || arg.CorporationID == 0 {
-		return fmt.Errorf("CreateEveCharacter: %+v: %w", arg, app.ErrInvalid)
+		return wrapErr(app.ErrInvalid)
 	}
 	arg2 := queries.CreateEveCharacterParams{
 		ID:             int64(arg.ID),
@@ -49,7 +52,7 @@ func (st *Storage) CreateEveCharacter(ctx context.Context, arg CreateEveCharacte
 	}
 	err := st.qRW.CreateEveCharacter(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("CreateEveCharacter: %+v: %w", arg, err)
+		return wrapErr(err)
 	}
 	return nil
 }
@@ -113,8 +116,14 @@ func (st *Storage) UpdateEveCharacter(ctx context.Context, c *app.EveCharacter) 
 		arg.FactionID.Int64 = int64(c.Faction.ID)
 		arg.FactionID.Valid = true
 	}
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateEveCharacter: %+v: %w", arg, err)
+	}
+	if arg.ID == 0 || arg.CorporationID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
 	if err := st.qRW.UpdateEveCharacter(ctx, arg); err != nil {
-		return fmt.Errorf("update EveCharacter %d: %w", c.ID, err)
+		return wrapErr(err)
 	}
 	return nil
 }
