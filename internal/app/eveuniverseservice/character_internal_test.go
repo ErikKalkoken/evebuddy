@@ -2,6 +2,7 @@ package eveuniverseservice
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -33,9 +34,7 @@ func TestUpdateEveCharacterESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"birthday":        "2015-03-24T11:37:00Z",
 				"bloodline_id":    3,
-				"alliance_id":     434243723,
 				"corporation_id":  109299958,
-				"faction_id":      500004,
 				"description":     "bla bla",
 				"gender":          "male",
 				"name":            "CCP Bartender",
@@ -114,6 +113,33 @@ func TestUpdateEveCharacterESI(t *testing.T) {
 				assert.Equal(t, "All round pretty awesome guy", o2.Title)
 				assert.InDelta(t, -9.9, o2.SecurityStatus, 0.01)
 			}
+		}
+	})
+	t.Run("should delete when no longer exists", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		o1 := factory.CreateEveCharacter()
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/`,
+			httpmock.NewJsonResponderOrPanic(http.StatusNotFound, map[string]any{
+				"error": "not found",
+			}))
+		httpmock.RegisterResponder(
+			"POST",
+			`=~^https://esi\.evetech\.net/v\d+/characters/affiliation/`,
+			httpmock.NewJsonResponderOrPanic(http.StatusNotFound, []map[string]any{
+				{
+					"error": "not found",
+				}}),
+		)
+		// when
+		err := s.updateCharacterESI(ctx, o1.ID)
+		// then
+		if assert.NoError(t, err) {
+			_, err := st.GetEveCharacter(ctx, o1.ID)
+			assert.ErrorIs(t, err, app.ErrNotFound)
 		}
 	})
 }
