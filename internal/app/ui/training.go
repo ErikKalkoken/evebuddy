@@ -451,7 +451,7 @@ func (a *training) showDetails(r trainingRow) {
 	var skill fyne.CanvasObject
 	if r.isActive {
 		skill = makeLinkLabelWithWrap(r.skillName, func() {
-			a.u.ShowInfoWindow(app.EveEntityInventoryType, r.skillID)
+			a.u.ShowTypeInfoWindowWithCharacter(r.skillID, r.characterID)
 		})
 	} else {
 		skill = widget.NewLabel(r.skillName)

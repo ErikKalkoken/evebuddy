@@ -152,7 +152,7 @@ func newIndustryJobs(u *baseUI) *industryJobs {
 
 	if a.u.isDesktop {
 		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, j industryJobRow) {
-			a.showIndustryJob(j)
+			a.showIndustryJobWindow(j)
 		})
 	} else {
 		a.body = a.makeDataList()
@@ -439,7 +439,7 @@ func (a *industryJobs) makeDataList() *iwidget.StripedList {
 		if id >= len(a.rowsFiltered) || id < 0 {
 			return
 		}
-		a.showIndustryJob(a.rowsFiltered[id])
+		a.showIndustryJobWindow(a.rowsFiltered[id])
 	}
 	return l
 }
@@ -585,7 +585,8 @@ func (a *industryJobs) update() {
 	})
 }
 
-func (a *industryJobs) showIndustryJob(r industryJobRow) {
+// showIndustryJobWindow shows the details of a industry job in a window.
+func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 	title := fmt.Sprintf("Industry Job #%d", r.jobID)
 	w, ok := a.u.getOrCreateWindow(fmt.Sprintf("%d-%d", r.owner.ID, r.jobID), title, r.owner.Name)
 	if !ok {

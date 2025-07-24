@@ -44,8 +44,10 @@ func makeTopLabel() *widget.Label {
 	return l
 }
 
+// formatISKAmount returns a formatted ISK amount.
+// This format is mainly used in detail windows.
 func formatISKAmount(v float64) string {
-	t := humanize.Commaf(v) + " ISK"
+	t := humanize.FormatFloat(app.FloatFormat, v) + " ISK"
 	if math.Abs(v) > 999 {
 		t += fmt.Sprintf(" (%s)", ihumanize.Number(v, 2))
 	}

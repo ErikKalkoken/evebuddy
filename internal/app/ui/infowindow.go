@@ -88,6 +88,10 @@ type infoWidget interface {
 }
 
 func (iw *infoWindow) show(v infoVariant, id int64) {
+	iw.showWithCharacterID(v, id, iw.u.currentCharacterID())
+}
+
+func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, characterID int32) {
 	if iw.u.IsOffline() {
 		iw.u.ShowInformationDialog(
 			"Offline",
@@ -110,33 +114,33 @@ func (iw *infoWindow) show(v infoVariant, id int64) {
 	switch v {
 	case infoAlliance:
 		title = "Alliance"
-		page = newAllianceInfo(iw, int32(id))
+		page = newAllianceInfo(iw, int32(entityID))
 	case infoCharacter:
 		title = "Character"
-		page = newCharacterInfo(iw, int32(id))
+		page = newCharacterInfo(iw, int32(entityID))
 	case infoConstellation:
 		title = "Constellation"
-		page = newConstellationInfo(iw, int32(id))
+		page = newConstellationInfo(iw, int32(entityID))
 	case infoCorporation:
 		title = "Corporation"
-		page = newCorporationInfo(iw, int32(id))
+		page = newCorporationInfo(iw, int32(entityID))
 	case infoInventoryType:
-		x := newInventoryTypeInfo(iw, int32(id), iw.u.currentCharacterID())
+		x := newInventoryTypeInfo(iw, int32(entityID), characterID)
 		x.setTitle = func(s string) { ab.SetTitle(makeAppBarTitle(s)) }
 		page = x
 		title = "Item"
 	case infoRace:
 		title = "Race"
-		page = newRaceInfo(iw, int32(id))
+		page = newRaceInfo(iw, int32(entityID))
 	case infoRegion:
 		title = "Region"
-		page = newRegionInfo(iw, int32(id))
+		page = newRegionInfo(iw, int32(entityID))
 	case infoSolarSystem:
 		title = "Solar System"
-		page = newSolarSystemInfo(iw, int32(id))
+		page = newSolarSystemInfo(iw, int32(entityID))
 	case infoLocation:
 		title = "Location"
-		page = newLocationInfo(iw, id)
+		page = newLocationInfo(iw, entityID)
 	default:
 		iw.u.ShowInformationDialog(
 			"Warning",
@@ -170,7 +174,7 @@ func (iw *infoWindow) show(v infoVariant, id int64) {
 	go func() {
 		err := page.update()
 		if err != nil {
-			slog.Error("info widget load", "variant", v, "id", id, "error", err)
+			slog.Error("info widget load", "variant", v, "id", entityID, "error", err)
 			fyne.Do(func() {
 				page.setError("ERROR: " + iw.u.humanizeError(err))
 			})

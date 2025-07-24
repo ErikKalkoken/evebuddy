@@ -108,7 +108,7 @@ func newContracts(u *baseUI) *contracts {
 				}
 				return iwidget.RichTextSegmentsFromText("?")
 			}, a.columnSorter, a.filterRows, func(column int, r contractRow) {
-				showContract(a.u, r.characterID, r.contractID)
+				showContractWindow(a.u, r.characterID, r.contractID)
 			},
 		)
 	} else {
@@ -220,7 +220,7 @@ func (a *contracts) makeDataList() *iwidget.StripedList {
 			return
 		}
 		r := a.rowsFiltered[id]
-		showContract(a.u, r.characterID, r.contractID)
+		showContractWindow(a.u, r.characterID, r.contractID)
 	}
 	return l
 }
@@ -391,7 +391,8 @@ func (a *contracts) fetchRows(s services) ([]contractRow, int, error) {
 	return rows, activeCount, nil
 }
 
-func showContract(u *baseUI, characterID, contractID int32) {
+// showContractWindow shows the details of a contract in a window.
+func showContractWindow(u *baseUI, characterID, contractID int32) {
 	title := fmt.Sprintf("Contract #%d", contractID)
 	w, ok := u.getOrCreateWindow(fmt.Sprintf("%d-%d", characterID, contractID), title, u.scs.CharacterName(characterID))
 	if !ok {
@@ -527,7 +528,7 @@ func showContract(u *baseUI, characterID, contractID int32) {
 		makeItem := func(it *app.CharacterContractItem) fyne.CanvasObject {
 			c := container.NewHBox(
 				makeLinkLabel(it.Type.Name, func() {
-					u.ShowTypeInfoWindow(it.Type.ID)
+					u.ShowTypeInfoWindowWithCharacter(it.Type.ID, characterID)
 				}),
 				widget.NewLabel(fmt.Sprintf("(%s)", it.Type.Group.Name)),
 				widget.NewLabel(fmt.Sprintf("x %s ", humanize.Comma(int64(it.Quantity)))),

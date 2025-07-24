@@ -44,7 +44,7 @@ EVE Buddy is available for Windows, Linux, macOS and Android.
 > Some features may not be fully implemented yet (e.g. some notification types). But if you are missing a feature that would make EVE Buddy more useful for you, please feel free to open a feature request.<br>
 
 > [!NOTE]
-> Help wanted! We would very much appreciate any contribution. If you like to provide a fix or add a feature please feel free top open a PR.
+> Help wanted! We would very much appreciate any contribution. If you like to provide a fix or add a feature please feel free top open a PR. Or if you have any questions please contact us on Discord.
 
 ## Features
 
@@ -58,17 +58,17 @@ A more detailed overview of the provided features:
 - Location: Location in New Eden and current ships for all characters
 - Training: Queue status and skillpoints
 - Wealth: Charts showing wealth distribution across all characters
-- Character specific:
+- Characters:
   - Assets: Browse through your assets at all your locations
   - Clones: Current augmentations, jump clones & jump cooldown timer
   - Mails: Full mail client for receiving and sending Eve mails
   - Communications: Browse through all communications
   - Skills: Training queue, catalogue of all trained skills and what ships can be flown
   - Wallet: Wallet and market Transactions
-- Corporation specific:
-  - Members: List of all current corporation members
-  - Wallets: Wallet and market transactions for all corporation wallets
-- Get notified about important events (e.g. structure attacked, training queue expired)
+- Corporations:
+  - Members: List of current corporation members
+  - Wallets: Wallet, market transactions and balances for corporation wallets
+- Can generate desktop/mobile notifications for EVE notification and other important events (e.g. structure attacked, training queue expired)
 - Ability to search New Eden (similar to in-game search bar)
 - Show information about various entities (e.g. character, alliance, location); similar to in-game information windows
 - Can minimize to system tray and show indicator for new mail (desktop only)

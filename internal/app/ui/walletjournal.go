@@ -110,9 +110,9 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 	if a.u.isDesktop {
 		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r walletJournalRow) {
 			if a.isCorporation() {
-				showCorporationWalletJournalEntry(a.u, r.corporationID, r.division, r.refID)
+				showCorporationWalletJournalEntryWindow(a.u, r.corporationID, r.division, r.refID)
 			} else {
-				showCharacterWalletJournalEntry(a.u, r.characterID, r.refID)
+				showCharacterWalletJournalEntryWindow(a.u, r.characterID, r.refID)
 			}
 		})
 	} else {
@@ -196,9 +196,9 @@ func (a *walletJournal) makeDataList() *iwidget.StripedList {
 		}
 		r := a.rowsFiltered[id]
 		if a.isCorporation() {
-			showCorporationWalletJournalEntry(a.u, r.corporationID, r.division, r.refID)
+			showCorporationWalletJournalEntryWindow(a.u, r.corporationID, r.division, r.refID)
 		} else {
-			showCharacterWalletJournalEntry(a.u, r.characterID, r.refID)
+			showCharacterWalletJournalEntryWindow(a.u, r.characterID, r.refID)
 		}
 	}
 	l.HideSeparators = true
@@ -390,8 +390,8 @@ func (*walletJournal) fetchCorporationRows(corporationID int32, division app.Div
 	return rows, nil
 }
 
-// showCharacterWalletJournalEntry shows a wallet journal entry for a character in a new window.
-func showCharacterWalletJournalEntry(u *baseUI, characterID int32, refID int64) {
+// showCharacterWalletJournalEntryWindow shows a wallet journal entry for a character in a new window.
+func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID int64) {
 	title := fmt.Sprintf("Character Wallet Transaction #%d", refID)
 	w, ok := u.getOrCreateWindow(fmt.Sprintf("%d-%d", characterID, refID), title, u.scs.CharacterName(characterID))
 	if !ok {
@@ -442,12 +442,12 @@ func showCharacterWalletJournalEntry(u *baseUI, characterID int32, refID int64) 
 		}
 		contextItem.Text = "Related contract"
 		contextItem.Widget = makeLinkLabelWithWrap(c.NameDisplay(), func() {
-			showContract(u, c.CharacterID, c.ContractID)
+			showContractWindow(u, c.CharacterID, c.ContractID)
 		})
 	case "market_transaction_id":
 		contextItem.Text = "Related market transaction"
 		contextItem.Widget = makeLinkLabelWithWrap(fmt.Sprintf("#%d", o.ContextID), func() {
-			showCharacterWalletTransaction(u, o.CharacterID, o.ContextID)
+			showCharacterWalletTransactionWindow(u, o.CharacterID, o.ContextID)
 		})
 	case "station_id", "structure_id":
 		contextItem.Text = "Related location"
@@ -514,8 +514,8 @@ func showCharacterWalletJournalEntry(u *baseUI, characterID int32, refID int64) 
 	w.Show()
 }
 
-// showCorporationWalletJournalEntry shows a wallet journal entry for a corporation in a new window.
-func showCorporationWalletJournalEntry(u *baseUI, corporationID int32, division app.Division, refID int64) {
+// showCorporationWalletJournalEntryWindow shows a wallet journal entry for a corporation in a new window.
+func showCorporationWalletJournalEntryWindow(u *baseUI, corporationID int32, division app.Division, refID int64) {
 	title := fmt.Sprintf("Corporation Wallet Transaction #%d", refID)
 	w, ok := u.getOrCreateWindow(fmt.Sprintf("%d-%d", corporationID, refID), title, u.scs.CorporationName(corporationID))
 	if !ok {

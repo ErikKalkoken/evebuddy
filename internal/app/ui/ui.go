@@ -880,29 +880,23 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 		slog.Error("Failed to update general section", "section", section, "err", err)
 		return
 	}
-	needsRefresh := hasChanged || forceUpdate
+	if !hasChanged && !forceUpdate {
+		return
+	}
 	switch section {
 	case app.SectionEveEntities:
-		if needsRefresh {
-			u.updateHome()
-			u.updateCharacter()
-		}
+		u.updateHome()
+		u.updateCharacter()
 	case app.SectionEveTypes:
-		if needsRefresh {
-			u.characterShips.update()
-			u.characterSkillCatalogue.update()
-		}
+		u.characterShips.update()
+		u.characterSkillCatalogue.update()
 	case app.SectionEveCharacters:
-		if needsRefresh {
-			u.reloadCurrentCharacter()
-			u.characters.update()
-		}
+		u.reloadCurrentCharacter()
+		u.characters.update()
 	case app.SectionEveCorporations:
 		// TODO: Only update when shown entity changed
-		if needsRefresh {
-			u.characterCorporation.update()
-			u.corporationSheet.update()
-		}
+		u.characterCorporation.update()
+		u.corporationSheet.update()
 	case app.SectionEveMarketPrices:
 		u.characterAsset.update()
 		u.characters.update()
@@ -1021,7 +1015,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
 		return
 	}
-	isCharacterShown := characterID == u.currentCharacterID()
+	isShown := characterID == u.currentCharacterID()
 
 	var corporationID int32
 	character := u.currentCharacter()
@@ -1041,14 +1035,14 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		if needsRefresh {
 			u.assets.update()
 			u.wealth.update()
-			if isCharacterShown {
+			if isShown {
 				u.reloadCurrentCharacter()
 				u.characterAsset.update()
 				u.characterSheet.update()
 			}
 		}
 	case app.SectionCharacterAttributes:
-		if isCharacterShown && needsRefresh {
+		if isShown && needsRefresh {
 			u.characterAttributes.update()
 		}
 	case app.SectionCharacterContracts:
@@ -1064,14 +1058,14 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			}()
 		}
 	case app.SectionCharacterImplants:
-		if isCharacterShown && needsRefresh {
+		if isShown && needsRefresh {
 			u.characterAugmentations.update()
 		}
 	case app.SectionCharacterJumpClones:
 		if needsRefresh {
 			u.characters.update()
 			u.clones.update()
-			if isCharacterShown {
+			if isShown {
 				u.reloadCurrentCharacter()
 				u.characterJumpClones.update()
 			}
@@ -1086,14 +1080,14 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	case app.SectionCharacterLocation, app.SectionCharacterOnline, app.SectionCharacterShip:
 		if needsRefresh {
 			u.locations.update()
-			if isCharacterShown {
+			if isShown {
 				u.reloadCurrentCharacter()
 			}
 		}
 	case app.SectionCharacterMailLabels, app.SectionCharacterMailLists:
 		if needsRefresh {
 			u.characters.update()
-			if isCharacterShown {
+			if isShown {
 				u.characterMail.update()
 			}
 		}
@@ -1101,7 +1095,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		if needsRefresh {
 			go u.characters.update()
 			go u.updateMailIndicator()
-			if isCharacterShown {
+			if isShown {
 				u.characterMail.update()
 			}
 		}
@@ -1114,7 +1108,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			}()
 		}
 	case app.SectionCharacterNotifications:
-		if isCharacterShown && needsRefresh {
+		if isShown && needsRefresh {
 			u.characterCommunications.update()
 		}
 		if u.settings.NotifyCommunicationsEnabled() {
@@ -1140,7 +1134,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionCharacterRoles:
 		if needsRefresh {
-			if isCharacterShown {
+			if isShown {
 				u.characterSheet.update()
 			}
 			if corporationID == 0 {
@@ -1157,7 +1151,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			u.slotsManufacturing.update()
 			u.slotsReactions.update()
 			u.slotsResearch.update()
-			if isCharacterShown {
+			if isShown {
 				u.reloadCurrentCharacter()
 				u.characterSkillCatalogue.update()
 				u.characterShips.update()
@@ -1165,34 +1159,34 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 
 	case app.SectionCharacterSkillqueue:
+		if isShown {
+			u.characterSkillQueue.update() // TODO: Move into widget
+		}
+		if needsRefresh {
+			u.training.update()
+			u.notifyExpiredTrainingIfNeeded(ctx, characterID)
+		}
 		if u.settings.NotifyTrainingEnabled() {
 			err := u.cs.EnableTrainingWatcher(ctx, characterID)
 			if err != nil {
 				slog.Error("Failed to enable training watcher", "characterID", characterID, "error", err)
 			}
 		}
-		if isCharacterShown {
-			u.characterSkillQueue.update()
-		}
-		if needsRefresh {
-			u.training.update()
-			u.notifyExpiredTrainingIfNeeded(ctx, characterID)
-		}
 	case app.SectionCharacterWalletBalance:
 		if needsRefresh {
 			u.characters.update()
 			u.wealth.update()
-			if isCharacterShown {
+			if isShown {
 				u.reloadCurrentCharacter()
 				u.characterWallet.update()
 			}
 		}
 	case app.SectionCharacterWalletJournal:
-		if isCharacterShown && needsRefresh {
+		if isShown && needsRefresh {
 			u.characterWallet.journal.update()
 		}
 	case app.SectionCharacterWalletTransactions:
-		if isCharacterShown && needsRefresh {
+		if isShown && needsRefresh {
 			u.characterWallet.transactions.update()
 		}
 	default:
@@ -1265,87 +1259,87 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 		slog.Error("Failed to update corporation section", "corporationID", corporationID, "section", s, "err", err)
 		return
 	}
+	if !hasChanged && !forceUpdate {
+		return
+	}
 	isShown := corporationID == u.currentCorporationID()
-	needsRefresh := hasChanged || forceUpdate
 	switch s {
 	case app.SectionCorporationIndustryJobs:
-		if needsRefresh {
-			u.industryJobs.update()
-			u.slotsManufacturing.update()
-			u.slotsReactions.update()
-			u.slotsResearch.update()
-		}
+		u.industryJobs.update()
+		u.slotsManufacturing.update()
+		u.slotsReactions.update()
+		u.slotsResearch.update()
 	case app.SectionCorporationMembers:
-		if isShown && needsRefresh {
+		if isShown {
 			u.corporationMember.update()
 		}
 	case app.SectionCorporationDivisions:
-		if isShown && needsRefresh {
+		if isShown {
 			for _, d := range app.Divisions {
 				u.corporationWallets[d].updateName()
 			}
 		}
 	case app.SectionCorporationWalletBalances:
-		if isShown && needsRefresh {
+		if isShown {
 			for _, d := range app.Divisions {
 				u.corporationWallets[d].updateBalance()
 			}
 			u.updateCorporationWalletTotal()
 		}
 	case app.SectionCorporationWalletJournal1:
-		if isShown && needsRefresh {
+		if isShown {
 			u.corporationWallets[app.Division1].journal.update()
 		}
 	case app.SectionCorporationWalletJournal2:
-		if isShown && needsRefresh {
+		if isShown {
 			u.corporationWallets[app.Division2].journal.update()
 		}
 	case app.SectionCorporationWalletJournal3:
-		if isShown && needsRefresh {
+		if isShown {
 			u.corporationWallets[app.Division3].journal.update()
 		}
 	case app.SectionCorporationWalletJournal4:
-		if isShown && needsRefresh {
+		if isShown {
 			u.corporationWallets[app.Division4].journal.update()
 		}
 	case app.SectionCorporationWalletJournal5:
-		if isShown && needsRefresh {
+		if isShown {
 			u.corporationWallets[app.Division5].journal.update()
 		}
 	case app.SectionCorporationWalletJournal6:
-		if isShown && needsRefresh {
+		if isShown {
 			u.corporationWallets[app.Division6].journal.update()
 		}
 	case app.SectionCorporationWalletJournal7:
-		if isShown && needsRefresh {
+		if isShown {
 			u.corporationWallets[app.Division7].journal.update()
 		}
 	case app.SectionCorporationWalletTransactions1:
-		if isShown && needsRefresh {
+		if isShown {
 			u.corporationWallets[app.Division1].transactions.update()
 		}
 	case app.SectionCorporationWalletTransactions2:
-		if isShown && needsRefresh {
+		if isShown {
 			u.corporationWallets[app.Division2].transactions.update()
 		}
 	case app.SectionCorporationWalletTransactions3:
-		if isShown && needsRefresh {
+		if isShown {
 			u.corporationWallets[app.Division3].transactions.update()
 		}
 	case app.SectionCorporationWalletTransactions4:
-		if isShown && needsRefresh {
+		if isShown {
 			u.corporationWallets[app.Division4].transactions.update()
 		}
 	case app.SectionCorporationWalletTransactions5:
-		if isShown && needsRefresh {
+		if isShown {
 			u.corporationWallets[app.Division5].transactions.update()
 		}
 	case app.SectionCorporationWalletTransactions6:
-		if isShown && needsRefresh {
+		if isShown {
 			u.corporationWallets[app.Division6].transactions.update()
 		}
 	case app.SectionCorporationWalletTransactions7:
-		if isShown && needsRefresh {
+		if isShown {
 			u.corporationWallets[app.Division7].transactions.update()
 		}
 	default:
@@ -1470,6 +1464,11 @@ func (u *baseUI) ShowRaceInfoWindow(id int32) {
 func (u *baseUI) ShowTypeInfoWindow(id int32) {
 	iw := newInfoWindow(u)
 	iw.Show(app.EveEntityInventoryType, id)
+}
+
+func (u *baseUI) ShowTypeInfoWindowWithCharacter(entityID, characterID int32) {
+	iw := newInfoWindow(u)
+	iw.showWithCharacterID(infoInventoryType, int64(entityID), characterID)
 }
 
 func (u *baseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
