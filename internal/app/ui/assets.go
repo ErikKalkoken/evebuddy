@@ -173,7 +173,7 @@ func newAssets(u *baseUI) *assets {
 				return iwidget.RichTextSegmentsFromText("?")
 			},
 			a.columnSorter, a.filterRows, func(_ int, r assetRow) {
-				showAssetDetail(u, r)
+				showAssetDetailWindow(u, r)
 			})
 	}
 
@@ -271,7 +271,7 @@ func (a *assets) makeDataList() *iwidget.StripedList {
 			return
 		}
 		r := a.rowsFiltered[id]
-		showAssetDetail(a.u, r)
+		showAssetDetailWindow(a.u, r)
 	}
 	return l
 }
@@ -497,8 +497,9 @@ func (a *assets) characterCount() int {
 	return validCount
 }
 
-func showAssetDetail(u *baseUI, r assetRow) {
-	w, ok := u.getOrCreateWindow(fmt.Sprint(r.characterID), "Asset: Information", r.characterName)
+// showAssetDetailWindow shows the details for a character assets in a new window.
+func showAssetDetailWindow(u *baseUI, r assetRow) {
+	w, ok := u.getOrCreateWindow(fmt.Sprintf("%d-%d", r.characterID, r.itemID), "Asset: Information", r.characterName)
 	if !ok {
 		w.Show()
 		return

@@ -207,7 +207,7 @@ func (a *characterAssets) makeAssetGrid() *widget.GridWrap {
 				}
 			}
 		} else {
-			showAssetDetail(a.u, newAssetRow(ca, a.assetCollection, a.u.scs.CharacterName))
+			showAssetDetailWindow(a.u, newAssetRow(ca, a.assetCollection, a.u.scs.CharacterName))
 		}
 	}
 	return g

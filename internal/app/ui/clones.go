@@ -137,14 +137,14 @@ func newClones(u *baseUI) *clones {
 				if r.jc == nil || r.jc.ImplantsCount == 0 {
 					return
 				}
-				a.showClone(r.jc)
+				a.showCloneWindow(r.jc)
 			case 3:
 				a.u.ShowInfoWindow(app.EveEntityCharacter, r.jc.Character.ID)
 			case 4:
 				if len(r.route) == 0 {
 					return
 				}
-				a.showRoute(r)
+				a.showRouteWindow(r)
 			}
 		})
 	} else {
@@ -152,7 +152,7 @@ func newClones(u *baseUI) *clones {
 			if len(r.route) == 0 {
 				return
 			}
-			a.showRoute(r)
+			a.showRouteWindow(r)
 		})
 	}
 
@@ -490,7 +490,7 @@ func (a *clones) setOrigin(w fyne.Window) {
 	w.Canvas().Focus(entry)
 }
 
-func (a *clones) showRoute(r cloneRow) {
+func (a *clones) showRouteWindow(r cloneRow) {
 	if r.jc == nil {
 		return
 	}
@@ -582,12 +582,12 @@ func (a *clones) showRoute(r cloneRow) {
 	w.Show()
 }
 
-func (a *clones) showClone(jc *app.CharacterJumpClone2) {
+func (a *clones) showCloneWindow(jc *app.CharacterJumpClone2) {
 	if jc == nil {
 		return
 	}
 	title := fmt.Sprintf("Clone #%d", jc.CloneID)
-	w, ok := a.u.getOrCreateWindow(fmt.Sprint(jc.ID), title, jc.Character.Name)
+	w, ok := a.u.getOrCreateWindow(fmt.Sprintf("%d-%d", jc.Character.ID, jc.ID), title, jc.Character.Name)
 	if !ok {
 		w.Show()
 		return

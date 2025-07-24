@@ -138,9 +138,9 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 			a.filterRows,
 			func(_ int, r walletTransactionRow) {
 				if a.isCorporation() {
-					showCorporationWalletTransaction(a.u, r.characterID, r.division, r.transactionID)
+					showCorporationWalletTransactionWindow(a.u, r.characterID, r.division, r.transactionID)
 				} else {
-					showCharacterWalletTransaction(a.u, r.characterID, r.transactionID)
+					showCharacterWalletTransactionWindow(a.u, r.characterID, r.transactionID)
 				}
 			})
 	} else {
@@ -262,9 +262,9 @@ func (a *walletTransactions) makeDataList() *iwidget.StripedList {
 		}
 		r := a.rowsFiltered[id]
 		if a.isCorporation() {
-			showCorporationWalletTransaction(a.u, r.characterID, r.division, r.transactionID)
+			showCorporationWalletTransactionWindow(a.u, r.characterID, r.division, r.transactionID)
 		} else {
-			showCharacterWalletTransaction(a.u, r.characterID, r.transactionID)
+			showCharacterWalletTransactionWindow(a.u, r.characterID, r.transactionID)
 		}
 	}
 	l.HideSeparators = true
@@ -516,7 +516,8 @@ func (a *walletTransactions) fetchCorporationRows(corporationID int32, division 
 	return rows, nil
 }
 
-func showCharacterWalletTransaction(u *baseUI, characterID int32, transactionID int64) {
+// showCharacterWalletTransactionWindow shows the detail of a character wallet transaction in a window.
+func showCharacterWalletTransactionWindow(u *baseUI, characterID int32, transactionID int64) {
 	title := fmt.Sprintf("Character Market Transaction #%d", transactionID)
 	w, ok := u.getOrCreateWindow(fmt.Sprintf("%d-%d", characterID, transactionID), title, u.scs.CharacterName(characterID))
 	if !ok {
@@ -555,7 +556,7 @@ func showCharacterWalletTransaction(u *baseUI, characterID int32, transactionID 
 		widget.NewFormItem("Location", makeLocationLabel(o.Location, u.ShowLocationInfoWindow)),
 		widget.NewFormItem("Related Journal Entry", makeLinkLabelWithWrap(
 			fmt.Sprintf("#%d", o.JournalRefID), func() {
-				showCharacterWalletJournalEntry(u, characterID, o.JournalRefID)
+				showCharacterWalletJournalEntryWindow(u, characterID, o.JournalRefID)
 			},
 		)),
 	}
@@ -572,7 +573,8 @@ func showCharacterWalletTransaction(u *baseUI, characterID int32, transactionID 
 	w.Show()
 }
 
-func showCorporationWalletTransaction(u *baseUI, corporationID int32, division app.Division, transactionID int64) {
+// showCorporationWalletTransactionWindow shows the detail of a corporation wallet transaction in a window.
+func showCorporationWalletTransactionWindow(u *baseUI, corporationID int32, division app.Division, transactionID int64) {
 	title := fmt.Sprintf("Corporation Market Transaction #%d", transactionID)
 	w, ok := u.getOrCreateWindow(fmt.Sprintf("%d-%d", corporationID, transactionID), title, u.scs.CorporationName(corporationID))
 	if !ok {
@@ -602,7 +604,7 @@ func showCorporationWalletTransaction(u *baseUI, corporationID int32, division a
 		widget.NewFormItem("Location", makeLocationLabel(o.Location, u.ShowLocationInfoWindow)),
 		widget.NewFormItem("Related Journal Entry", makeLinkLabelWithWrap(
 			fmt.Sprintf("#%d", o.JournalRefID), func() {
-				showCorporationWalletJournalEntry(u, corporationID, division, o.JournalRefID)
+				showCorporationWalletJournalEntryWindow(u, corporationID, division, o.JournalRefID)
 			},
 		)),
 	}

@@ -108,10 +108,10 @@ func newColonies(u *baseUI) *colonies {
 	}
 	if a.u.isDesktop {
 		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r colonyRow) {
-			a.showColony(r)
+			a.showColonyWindow(r)
 		})
 	} else {
-		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, a.showColony)
+		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, a.showColonyWindow)
 	}
 
 	a.selectExtracting = kxwidget.NewFilterChipSelectWithSearch("Extracted", []string{}, func(string) {
@@ -354,7 +354,8 @@ func (a *colonies) fetchRows(s services) ([]colonyRow, int, error) {
 	return rows, expired, nil
 }
 
-func (a *colonies) showColony(r colonyRow) {
+// showColonyWindow shows the details of a colony in a window.
+func (a *colonies) showColonyWindow(r colonyRow) {
 	title := fmt.Sprintf("Colony %s", r.planetName)
 	w, ok := a.u.getOrCreateWindow(fmt.Sprintf("%d-%d", r.characterID, r.planetID), title, r.ownerName)
 	if !ok {
