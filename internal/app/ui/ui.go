@@ -1472,6 +1472,11 @@ func (u *baseUI) ShowTypeInfoWindow(id int32) {
 	iw.Show(app.EveEntityInventoryType, id)
 }
 
+func (u *baseUI) ShowTypeInfoWindowWithCharacter(entityID, characterID int32) {
+	iw := newInfoWindow(u)
+	iw.showWithCharacterID(infoInventoryType, int64(entityID), characterID)
+}
+
 func (u *baseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
 	iw := newInfoWindow(u)
 	iw.showEveEntity(o)

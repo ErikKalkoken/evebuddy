@@ -124,7 +124,7 @@ func newAssets(u *baseUI) *assets {
 				return iwidget.RichTextSegmentsFromText("?")
 			},
 			a.columnSorter, a.filterRows, func(_ int, r assetRow) {
-				a.u.ShowTypeInfoWindow(r.typeID)
+				a.u.ShowTypeInfoWindowWithCharacter(r.typeID, r.characterID)
 			})
 	}
 
@@ -221,7 +221,8 @@ func (a *assets) makeDataList() *iwidget.StripedList {
 		if id < 0 || id >= len(a.rowsFiltered) {
 			return
 		}
-		a.u.ShowTypeInfoWindow(a.rowsFiltered[id].typeID)
+		r := a.rowsFiltered[id]
+		a.u.ShowTypeInfoWindowWithCharacter(r.typeID, r.characterID)
 	}
 	return l
 }

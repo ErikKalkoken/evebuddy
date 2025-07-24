@@ -527,7 +527,7 @@ func showContract(u *baseUI, characterID, contractID int32) {
 		makeItem := func(it *app.CharacterContractItem) fyne.CanvasObject {
 			c := container.NewHBox(
 				makeLinkLabel(it.Type.Name, func() {
-					u.ShowTypeInfoWindow(it.Type.ID)
+					u.ShowTypeInfoWindowWithCharacter(it.Type.ID, characterID)
 				}),
 				widget.NewLabel(fmt.Sprintf("(%s)", it.Type.Group.Name)),
 				widget.NewLabel(fmt.Sprintf("x %s ", humanize.Comma(int64(it.Quantity)))),
