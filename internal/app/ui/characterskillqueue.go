@@ -198,7 +198,7 @@ func (a *characterSkillQueue) makeTopText(total optional.Optional[time.Duration]
 
 func showSkillInTrainingWindow(u *baseUI, q *app.CharacterSkillqueueItem) {
 	characterName := u.scs.CharacterName(q.CharacterID)
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("%d-%d", q.CharacterID, q.SkillID), "Skill: Information", characterName)
+	w, ok := u.getOrCreateWindow(fmt.Sprintf("skill-%d-%d", q.CharacterID, q.SkillID), "Skill: Information", characterName)
 	if !ok {
 		w.Show()
 		return

@@ -448,7 +448,7 @@ func (a *training) startUpdateTicker() {
 }
 
 func (a *training) showTrainingQueueWindow(r trainingRow) {
-	w, ok, onClosed := a.u.getOrCreateWindowWithOnClosed(fmt.Sprintf("%d-skillqueue", r.characterID), "Skill Queue", r.characterName)
+	w, ok, onClosed := a.u.getOrCreateWindowWithOnClosed(fmt.Sprintf("skillqueue-%d", r.characterID), "Skill Queue", r.characterName)
 	if !ok {
 		w.Show()
 		return

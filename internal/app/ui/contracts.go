@@ -394,7 +394,7 @@ func (a *contracts) fetchRows(s services) ([]contractRow, int, error) {
 // showContractWindow shows the details of a contract in a window.
 func showContractWindow(u *baseUI, characterID, contractID int32) {
 	title := fmt.Sprintf("Contract #%d", contractID)
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("%d-%d", characterID, contractID), title, u.scs.CharacterName(characterID))
+	w, ok := u.getOrCreateWindow(fmt.Sprintf("contract-%d-%d", characterID, contractID), title, u.scs.CharacterName(characterID))
 	if !ok {
 		w.Show()
 		return

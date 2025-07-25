@@ -357,7 +357,7 @@ func (a *colonies) fetchRows(s services) ([]colonyRow, int, error) {
 // showColonyWindow shows the details of a colony in a window.
 func (a *colonies) showColonyWindow(r colonyRow) {
 	title := fmt.Sprintf("Colony %s", r.planetName)
-	w, ok := a.u.getOrCreateWindow(fmt.Sprintf("%d-%d", r.characterID, r.planetID), title, r.ownerName)
+	w, ok := a.u.getOrCreateWindow(fmt.Sprintf("colony-%d-%d", r.characterID, r.planetID), title, r.ownerName)
 	if !ok {
 		w.Show()
 		return

@@ -393,7 +393,7 @@ func (*walletJournal) fetchCorporationRows(corporationID int32, division app.Div
 // showCharacterWalletJournalEntryWindow shows a wallet journal entry for a character in a new window.
 func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID int64) {
 	title := fmt.Sprintf("Character Wallet Transaction #%d", refID)
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("%d-%d", characterID, refID), title, u.scs.CharacterName(characterID))
+	w, ok := u.getOrCreateWindow(fmt.Sprintf("walletjournalentry-%d-%d", characterID, refID), title, u.scs.CharacterName(characterID))
 	if !ok {
 		w.Show()
 		return
@@ -517,7 +517,7 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID i
 // showCorporationWalletJournalEntryWindow shows a wallet journal entry for a corporation in a new window.
 func showCorporationWalletJournalEntryWindow(u *baseUI, corporationID int32, division app.Division, refID int64) {
 	title := fmt.Sprintf("Corporation Wallet Transaction #%d", refID)
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("%d-%d", corporationID, refID), title, u.scs.CorporationName(corporationID))
+	w, ok := u.getOrCreateWindow(fmt.Sprintf("walletjournalentry-%d-%d", corporationID, refID), title, u.scs.CorporationName(corporationID))
 	if !ok {
 		w.Show()
 		return

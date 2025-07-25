@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
@@ -284,4 +285,51 @@ func (*locations) fetchData(s services) ([]locationRow, error) {
 		rows = append(rows, r)
 	}
 	return rows, nil
+}
+
+// showLocationDetailWindow shows the details for a character assets in a new window.
+func showLocationDetailWindow(u *baseUI, r assetRow) {
+	w, ok := u.getOrCreateWindow(fmt.Sprintf("location-%d-%d", r.characterID, r.itemID), "Asset: Information", r.characterName)
+	if !ok {
+		w.Show()
+		return
+	}
+	item := makeLinkLabelWithWrap(r.typeNameDisplay, func() {
+		u.ShowTypeInfoWindowWithCharacter(r.typeID, r.characterID)
+	})
+	var location fyne.CanvasObject
+	if r.location != nil {
+		location = makeLocationLabel(r.location, u.ShowLocationInfoWindow)
+	} else {
+		location = widget.NewLabel("?")
+	}
+	fi := []*widget.FormItem{
+		widget.NewFormItem("Owner", makeOwnerActionLabel(
+			r.characterID,
+			r.characterName,
+			u.ShowEveEntityInfoWindow,
+		)),
+		widget.NewFormItem("Item", item),
+		widget.NewFormItem("Class", widget.NewLabel(r.groupName)),
+		widget.NewFormItem("Location", location),
+		widget.NewFormItem(
+			"Price",
+			widget.NewLabel(r.price.StringFunc("?", func(v float64) string {
+				return formatISKAmount(v)
+			})),
+		),
+		widget.NewFormItem("Quantity", widget.NewLabel(r.quantityDisplay)),
+		widget.NewFormItem(
+			"Total",
+			widget.NewLabel(r.total.StringFunc("?", func(v float64) string {
+				return formatISKAmount(v)
+			})),
+		),
+	}
+
+	f := widget.NewForm(fi...)
+	f.Orientation = widget.Adaptive
+	subTitle := fmt.Sprintf("Asset #%d", r.itemID)
+	setDetailWindowWithSize(subTitle, fyne.NewSize(500, 450), f, w)
+	w.Show()
 }

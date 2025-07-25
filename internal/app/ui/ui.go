@@ -1586,9 +1586,9 @@ func (u *baseUI) getOrCreateWindow(id string, titles ...string) (window fyne.Win
 	return w, ok
 }
 
-// getOrCreateWindowWithOnClosed is like makeOrFindWindow,
+// getOrCreateWindowWithOnClosed is like getOrCreateWindow,
 // but returns an additional onClosed function which must be called when the window is closed.
-// This variant allows constructing a custom onClosed callback for the window.
+// This allows constructing a custom onClosed callback for the window.
 func (u *baseUI) getOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func()) {
 	w, ok := u.windows[id]
 	if ok {

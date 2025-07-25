@@ -588,7 +588,7 @@ func (a *industryJobs) update() {
 // showIndustryJobWindow shows the details of a industry job in a window.
 func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 	title := fmt.Sprintf("Industry Job #%d", r.jobID)
-	w, ok := a.u.getOrCreateWindow(fmt.Sprintf("%d-%d", r.owner.ID, r.jobID), title, r.owner.Name)
+	w, ok := a.u.getOrCreateWindow(fmt.Sprintf("industryjob-%d-%d", r.owner.ID, r.jobID), title, r.owner.Name)
 	if !ok {
 		w.Show()
 		return
