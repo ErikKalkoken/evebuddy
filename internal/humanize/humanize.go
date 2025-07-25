@@ -58,7 +58,7 @@ func Number(value float64, decimals int) string {
 // Rounds to full minutes.
 // Negative durations are returned as "0 m"
 func Duration(duration time.Duration) string {
-	if duration < 0 {
+	if duration <= 0 {
 		return "0m"
 	}
 	mRaw := duration.Abs().Minutes()

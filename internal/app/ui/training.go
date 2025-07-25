@@ -159,7 +159,10 @@ func newTraining(u *baseUI) *training {
 			a.columnSorter,
 			a.filterRows,
 			func(_ int, r trainingRow) {
-				a.showDetails(r)
+				if !r.isActive {
+					return
+				}
+				a.showTrainingQueueWindow(r)
 			},
 		)
 	} else {
@@ -274,7 +277,11 @@ func (a *training) makeDataList() *iwidget.StripedList {
 		if id < 0 || id >= len(a.rowsFiltered) {
 			return
 		}
-		a.showDetails(a.rowsFiltered[id])
+		r := a.rowsFiltered[id]
+		if !r.isActive {
+			return
+		}
+		a.showTrainingQueueWindow(r)
 	}
 	return l
 }
@@ -440,49 +447,27 @@ func (a *training) startUpdateTicker() {
 	}()
 }
 
-func (a *training) showDetails(r trainingRow) {
-	w, ok := a.u.getOrCreateWindow(fmt.Sprint(r.characterID), "Training: Information", r.characterName)
+func (a *training) showTrainingQueueWindow(r trainingRow) {
+	w, ok, onClosed := a.u.getOrCreateWindowWithOnClosed(fmt.Sprintf("%d-skillqueue", r.characterID), "Skill Queue", r.characterName)
 	if !ok {
 		w.Show()
 		return
 	}
-	status := widget.NewLabel(r.statusText)
-	status.Importance = r.statusImportance
-	var skill fyne.CanvasObject
-	if r.isActive {
-		skill = makeLinkLabelWithWrap(r.skillName, func() {
-			a.u.ShowTypeInfoWindowWithCharacter(r.skillID, r.characterID)
-		})
-	} else {
-		skill = widget.NewLabel(r.skillName)
+	c, err := a.u.cs.GetCharacter(context.Background(), r.characterID)
+	if err != nil {
+		a.u.showErrorDialog("Failed to fetch character", err, a.u.MainWindow())
+		return
 	}
-	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeOwnerActionLabel(
-			r.characterID,
-			r.characterName,
-			a.u.ShowEveEntityInfoWindow,
-		)),
-		widget.NewFormItem("Status", status),
-		widget.NewFormItem("Current skill", skill),
-		widget.NewFormItem("Current skill progress", widget.NewLabel(r.skillProgress.StringFunc("N/A", func(v float64) string {
-			return fmt.Sprintf("%.0f%%", v*100)
-		}))),
-		widget.NewFormItem("Current skill finished", widget.NewLabel(r.skillFinishDate.StringFunc("N/A", func(v time.Time) string {
-			return v.Format(app.DateTimeFormat)
-		}))),
-		widget.NewFormItem("Current skill remaining", widget.NewLabel(r.currentRemainingTimeString())),
-		widget.NewFormItem("Skills queued", widget.NewLabel(r.totalRemainingCountDisplay)),
-		widget.NewFormItem("Queue est. finished", widget.NewLabel(r.totalFinishDate.StringFunc("?", func(v time.Time) string {
-			return v.Format(app.DateTimeFormat)
-		}))),
-		widget.NewFormItem("Queue time remaining", widget.NewLabel(r.totalRemainingTimeString())),
-		widget.NewFormItem("Skillpoints", widget.NewLabel(r.totalSPDisplay)),
-		widget.NewFormItem("Unalloc. SP", widget.NewLabel(r.unallocatedSPDisplay)),
-	}
-
-	f := widget.NewForm(items...)
-	f.Orientation = widget.Adaptive
-	subTitle := fmt.Sprintf("Training info for %s", r.characterName)
-	setDetailWindowWithSize(subTitle, fyne.NewSize(500, 450), f, w)
+	sq := newCharacterSkillQueueWithCharacter(a.u, c)
+	sq.update()
+	sq.start()
+	w.SetOnClosed(func() {
+		if onClosed != nil {
+			onClosed()
+		}
+		sq.stop()
+	})
+	subTitle := fmt.Sprintf("Skill Queue for %s", r.characterName)
+	setDetailWindowWithSize(subTitle, fyne.NewSize(800, 450), sq, w)
 	w.Show()
 }

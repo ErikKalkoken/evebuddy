@@ -26,6 +26,7 @@ import (
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 	kxtheme "github.com/ErikKalkoken/fyne-kx/theme"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/maniartech/signals"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
@@ -126,6 +127,9 @@ type baseUI struct {
 	training                *training
 	wealth                  *wealth
 
+	characterSectionUpdated signals.Signal[app.CharacterUpdateSectionParams]
+	characterChanged        signals.Signal[*app.Character]
+
 	app                fyne.App
 	character          atomic.Pointer[app.Character]
 	corporation        atomic.Pointer[app.Corporation]
@@ -173,21 +177,23 @@ type BaseUIParams struct {
 // Note:Types embedding BaseUI should define callbacks instead of overwriting methods.
 func NewBaseUI(args BaseUIParams) *baseUI {
 	u := &baseUI{
-		app:                args.App,
-		corporationWallets: make(map[app.Division]*corporationWallet),
-		cs:                 args.CharacterService,
-		eis:                args.EveImageService,
-		ess:                args.ESIStatusService,
-		eus:                args.EveUniverseService,
-		isDesktop:          args.IsDesktop,
-		isOffline:          args.IsOffline,
-		isUpdateDisabled:   args.IsUpdateDisabled,
-		js:                 args.JaniceService,
-		memcache:           args.MemCache,
-		rs:                 args.CorporationService,
-		scs:                args.StatusCacheService,
-		settings:           settings.New(args.App.Preferences()),
-		windows:            make(map[string]fyne.Window),
+		app:                     args.App,
+		characterChanged:        signals.New[*app.Character](),
+		characterSectionUpdated: signals.New[app.CharacterUpdateSectionParams](),
+		corporationWallets:      make(map[app.Division]*corporationWallet),
+		cs:                      args.CharacterService,
+		eis:                     args.EveImageService,
+		ess:                     args.ESIStatusService,
+		eus:                     args.EveUniverseService,
+		isDesktop:               args.IsDesktop,
+		isOffline:               args.IsOffline,
+		isUpdateDisabled:        args.IsUpdateDisabled,
+		js:                      args.JaniceService,
+		memcache:                args.MemCache,
+		rs:                      args.CorporationService,
+		scs:                     args.StatusCacheService,
+		settings:                settings.New(args.App.Preferences()),
+		windows:                 make(map[string]fyne.Window),
 	}
 	u.window = u.app.NewWindow(u.appName())
 
@@ -261,6 +267,7 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 		u.isForeground.Store(true)
 		u.snackbar.Start()
 		go func() {
+			u.characterSkillQueue.start()
 			u.initCharacter()
 			u.initCorporation()
 			u.updateHome()
@@ -268,7 +275,6 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 			u.isStartupCompleted.Store(true)
 			u.training.startUpdateTicker()
 			u.characterJumpClones.startUpdateTicker()
-			u.characterSkillQueue.startUpdateTicker()
 			if !u.isOffline && !u.isUpdateDisabled {
 				time.Sleep(5 * time.Second) // Workaround to prevent concurrent updates from happening at startup.
 				u.startUpdateTickerGeneralSections()
@@ -433,6 +439,7 @@ func (u *baseUI) reloadCurrentCharacter() {
 
 func (u *baseUI) resetCharacter() {
 	u.character.Store(nil)
+	u.characterChanged.Emit(context.Background(), nil)
 	u.settings.ResetLastCharacterID()
 	u.updateCharacter()
 	u.updateStatus()
@@ -440,6 +447,7 @@ func (u *baseUI) resetCharacter() {
 
 func (u *baseUI) setCharacter(c *app.Character) {
 	u.character.Store(c)
+	u.characterChanged.Emit(context.Background(), c)
 	u.settings.SetLastCharacterID(c.ID)
 	u.updateCharacter()
 	u.updateStatus()
@@ -493,8 +501,8 @@ func (u *baseUI) defineCharacterUpdates() map[string]func() {
 		"characterCorporation": u.characterCorporation.update,
 		"ships":                u.characterShips.update,
 		"skillCatalogue":       u.characterSkillCatalogue.update,
-		"skillqueue":           u.characterSkillQueue.update,
-		"wallet":               u.characterWallet.update,
+		// "skillqueue":           u.characterSkillQueue.update,
+		"wallet": u.characterWallet.update,
 	}
 	return ff
 }
@@ -1004,14 +1012,14 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 // All UI areas showing data based on character sections needs to be included
 // to make sure they are refreshed when data changes.
 func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s app.CharacterSection, forceUpdate bool) {
-	hasChanged, err := u.cs.UpdateSectionIfNeeded(
-		ctx, app.CharacterUpdateSectionParams{
-			CharacterID:           characterID,
-			Section:               s,
-			ForceUpdate:           forceUpdate,
-			MaxMails:              u.settings.MaxMails(),
-			MaxWalletTransactions: u.settings.MaxWalletTransactions(),
-		})
+	updateArg := app.CharacterUpdateSectionParams{
+		CharacterID:           characterID,
+		Section:               s,
+		ForceUpdate:           forceUpdate,
+		MaxMails:              u.settings.MaxMails(),
+		MaxWalletTransactions: u.settings.MaxWalletTransactions(),
+	}
+	hasChanged, err := u.cs.UpdateSectionIfNeeded(ctx, updateArg)
 	if err != nil {
 		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
 		return
@@ -1030,7 +1038,12 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			corporationID = 0
 		}
 	}
+
 	needsRefresh := hasChanged || forceUpdate
+	if needsRefresh {
+		u.characterSectionUpdated.Emit(ctx, updateArg)
+	}
+
 	switch s {
 	case app.SectionCharacterAssets:
 		if needsRefresh {
@@ -1163,9 +1176,9 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		if needsRefresh {
 			u.training.update()
 			u.notifyExpiredTrainingIfNeeded(ctx, characterID)
-			if isShown {
-				u.characterSkillQueue.update()
-			}
+			// if isShown {
+			// 	u.characterSkillQueue.update()
+			// }
 		}
 		if u.settings.NotifyTrainingEnabled() {
 			err := u.cs.EnableTrainingWatcher(ctx, characterID)

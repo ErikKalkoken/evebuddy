@@ -1,9 +1,12 @@
 package ui
 
 import (
+	"crypto/rand"
 	"fmt"
 	"image/color"
 	"math"
+	"math/big"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -119,6 +122,7 @@ func setDetailWindow(title string, content fyne.CanvasObject, window fyne.Window
 func setDetailWindowWithSize(title string, minSize fyne.Size, content fyne.CanvasObject, w fyne.Window) {
 	t := widget.NewLabel(title)
 	t.SizeName = theme.SizeNameSubHeadingText
+	t.Truncation = fyne.TextTruncateEllipsis
 	top := container.NewVBox(t, widget.NewSeparator())
 	vs := container.NewVScroll(content)
 	vs.SetMinSize(minSize)
@@ -141,4 +145,26 @@ func newSpacer(s fyne.Size) fyne.CanvasObject {
 
 func newStandardSpacer() fyne.CanvasObject {
 	return newSpacer(fyne.NewSquareSize(theme.Padding()))
+}
+
+// characterIDOrZero returns the ID of a character or 0 if the c does not exist.
+func characterIDOrZero(c *app.Character) int32 {
+	if c == nil {
+		return 0
+	}
+	return c.ID
+}
+
+// generateUniqueID returns a unique ID.
+func generateUniqueID() string {
+	currentTime := time.Now().UnixNano()
+	randomNumber, _ := rand.Int(rand.Reader, big.NewInt(1000000))
+	return fmt.Sprintf("%d-%d", currentTime, randomNumber)
+}
+
+func timeFormattedOrFallback(t time.Time, layout, fallback string) string {
+	if t.IsZero() {
+		return fallback
+	}
+	return t.Format(layout)
 }
