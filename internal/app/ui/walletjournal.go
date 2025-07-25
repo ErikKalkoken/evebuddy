@@ -510,7 +510,11 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID i
 	for _, it := range items {
 		f.AppendItem(it)
 	}
-	setDetailWindow(title, f, w)
+	setDetailWindow(detailWindowParams{
+		title:   title,
+		content: f,
+		window:  w,
+	})
 	w.Show()
 }
 
@@ -634,6 +638,10 @@ func showCorporationWalletJournalEntryWindow(u *baseUI, corporationID int32, div
 	for _, it := range items {
 		f.AppendItem(it)
 	}
-	setDetailWindow(title, f, w)
+	setDetailWindow(detailWindowParams{
+		title:   title,
+		content: f,
+		window:  w,
+	})
 	w.Show()
 }

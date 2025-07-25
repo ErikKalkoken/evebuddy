@@ -233,7 +233,12 @@ func showSkillInTrainingWindow(u *baseUI, q *app.CharacterSkillqueueItem) {
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
 	subTitle := fmt.Sprintf("%s by %s", app.SkillDisplayName(q.SkillName, q.FinishedLevel), characterName)
-	setDetailWindowWithSize(subTitle, fyne.NewSize(500, 450), f, w)
+	setDetailWindow(detailWindowParams{
+		title:   subTitle,
+		minSize: fyne.NewSize(500, 450),
+		content: f,
+		window:  w,
+	})
 	w.Show()
 }
 

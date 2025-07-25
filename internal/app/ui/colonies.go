@@ -438,7 +438,10 @@ func (a *colonies) showColonyWindow(r colonyRow) {
 		top.Add(container.NewVBox(container.NewPadded(image)))
 	}
 	c := container.NewVBox(top, processes)
-
-	setDetailWindow(title, c, w)
+	setDetailWindow(detailWindowParams{
+		title:   title,
+		content: c,
+		window:  w,
+	})
 	w.Show()
 }

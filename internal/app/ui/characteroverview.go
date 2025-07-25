@@ -384,6 +384,11 @@ func showCharacterOverviewDetailWindow(u *baseUI, r characterOverviewRow) {
 	f := widget.NewForm(fi...)
 	f.Orientation = widget.Adaptive
 	subTitle := fmt.Sprintf("Overview of %s", r.characterName)
-	setDetailWindowWithSize(subTitle, fyne.NewSize(500, 450), f, w)
+	setDetailWindow(detailWindowParams{
+		title:   subTitle,
+		minSize: fyne.NewSize(500, 450),
+		content: f,
+		window:  w,
+	})
 	w.Show()
 }

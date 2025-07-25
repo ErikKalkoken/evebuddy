@@ -569,7 +569,11 @@ func showCharacterWalletTransactionWindow(u *baseUI, characterID int32, transact
 	}
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	setDetailWindow(title, f, w)
+	setDetailWindow(detailWindowParams{
+		title:   title,
+		content: f,
+		window:  w,
+	})
 	w.Show()
 }
 
@@ -617,6 +621,10 @@ func showCorporationWalletTransactionWindow(u *baseUI, corporationID int32, divi
 	}
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	setDetailWindow(title, f, w)
+	setDetailWindow(detailWindowParams{
+		title:   title,
+		content: f,
+		window:  w,
+	})
 	w.Show()
 }

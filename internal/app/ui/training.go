@@ -468,6 +468,11 @@ func (a *training) showTrainingQueueWindow(r trainingRow) {
 		sq.stop()
 	})
 	subTitle := fmt.Sprintf("Skill Queue for %s", r.characterName)
-	setDetailWindowWithSize(subTitle, fyne.NewSize(800, 450), sq, w)
+	setDetailWindow(detailWindowParams{
+		title:   subTitle,
+		minSize: fyne.NewSize(800, 450),
+		content: sq,
+		window:  w,
+	})
 	w.Show()
 }

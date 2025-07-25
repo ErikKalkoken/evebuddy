@@ -569,6 +569,10 @@ func showContractWindow(u *baseUI, characterID, contractID int32) {
 		}
 		main.Add(x)
 	}
-	setDetailWindow(subTitle, main, w)
+	setDetailWindow(detailWindowParams{
+		title:   subTitle,
+		content: main,
+		window:  w,
+	})
 	w.Show()
 }

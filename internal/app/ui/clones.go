@@ -578,7 +578,11 @@ func (a *clones) showRouteWindow(r cloneRow) {
 		nil,
 		list,
 	)
-	setDetailWindow(title, c, w)
+	setDetailWindow(detailWindowParams{
+		title:   title,
+		content: c,
+		window:  w,
+	})
 	w.Show()
 }
 
@@ -673,6 +677,10 @@ func (a *clones) showCloneWindow(jc *app.CharacterJumpClone2) {
 		nil,
 		list,
 	)
-	setDetailWindow(title, c, w)
+	setDetailWindow(detailWindowParams{
+		title:   title,
+		content: c,
+		window:  w,
+	})
 	w.Show()
 }

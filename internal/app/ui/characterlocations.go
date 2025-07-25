@@ -334,6 +334,11 @@ func showCharacterLocationWindow(u *baseUI, r characterLocationRow) {
 	f := widget.NewForm(fi...)
 	f.Orientation = widget.Adaptive
 	subTitle := fmt.Sprintf("Location of %s", r.characterName)
-	setDetailWindowWithSize(subTitle, fyne.NewSize(500, 250), f, w)
+	setDetailWindow(detailWindowParams{
+		title:   subTitle,
+		minSize: fyne.NewSize(500, 250),
+		content: f,
+		window:  w,
+	})
 	w.Show()
 }

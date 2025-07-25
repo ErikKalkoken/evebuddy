@@ -669,6 +669,10 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 	}
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	setDetailWindow(title, f, w)
+	setDetailWindow(detailWindowParams{
+		title:   title,
+		content: f,
+		window:  w,
+	})
 	w.Show()
 }

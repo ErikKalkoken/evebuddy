@@ -540,6 +540,11 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 	f := widget.NewForm(fi...)
 	f.Orientation = widget.Adaptive
 	subTitle := fmt.Sprintf("Asset #%d", r.itemID)
-	setDetailWindowWithSize(subTitle, fyne.NewSize(500, 450), f, w)
+	setDetailWindow(detailWindowParams{
+		title:   subTitle,
+		minSize: fyne.NewSize(500, 450),
+		content: f,
+		window:  w,
+	})
 	w.Show()
 }

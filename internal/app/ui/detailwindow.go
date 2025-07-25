@@ -1,0 +1,41 @@
+package ui
+
+import (
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
+)
+
+type detailWindowParams struct {
+	content fyne.CanvasObject
+	minSize fyne.Size
+	title   string
+	window  fyne.Window
+}
+
+// setDetailWindow sets the content of a window to create a "detail window".
+// Detail windows are used to show more information about objects in data lists.
+func setDetailWindow(arg detailWindowParams) {
+	if arg.window == nil {
+		panic("must define window for detailWindow")
+	}
+	if arg.minSize.IsZero() {
+		arg.minSize = fyne.NewSize(600, 500)
+	}
+	t := widget.NewLabel(arg.title)
+	t.SizeName = theme.SizeNameSubHeadingText
+	t.Truncation = fyne.TextTruncateEllipsis
+	top := container.NewVBox(t, widget.NewSeparator())
+	vs := container.NewVScroll(arg.content)
+	vs.SetMinSize(arg.minSize)
+	c := container.NewBorder(
+		top,
+		nil,
+		nil,
+		nil,
+		vs,
+	)
+	c.Refresh()
+	arg.window.SetContent(container.NewPadded(c))
+}

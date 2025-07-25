@@ -10,7 +10,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
-	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -111,30 +110,6 @@ func makeLocationLabel(o *app.EveLocationShort, show func(int64)) fyne.CanvasObj
 	})
 	x.Wrapping = fyne.TextWrapWord
 	return x
-}
-
-// setDetailWindow sets the content of a window to create a "detail window".
-// Detail windows are used to show more information about objects in data lists.
-func setDetailWindow(title string, content fyne.CanvasObject, window fyne.Window) {
-	setDetailWindowWithSize(title, fyne.NewSize(600, 500), content, window)
-}
-
-func setDetailWindowWithSize(title string, minSize fyne.Size, content fyne.CanvasObject, w fyne.Window) {
-	t := widget.NewLabel(title)
-	t.SizeName = theme.SizeNameSubHeadingText
-	t.Truncation = fyne.TextTruncateEllipsis
-	top := container.NewVBox(t, widget.NewSeparator())
-	vs := container.NewVScroll(content)
-	vs.SetMinSize(minSize)
-	c := container.NewBorder(
-		top,
-		nil,
-		nil,
-		nil,
-		vs,
-	)
-	c.Refresh()
-	w.SetContent(container.NewPadded(c))
 }
 
 func newSpacer(s fyne.Size) fyne.CanvasObject {
