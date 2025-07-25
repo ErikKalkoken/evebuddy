@@ -126,10 +126,11 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		})
 	}
 
+	const assetsTitle = "Character Assets"
 	allAssets := iwidget.NewNavPage(
-		"Assets",
+		assetsTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
-		makePageWithTitle("Assets", u.assets),
+		makePageWithTitle(assetsTitle, u.assets),
 	)
 	u.assets.onUpdate = func(total string) {
 		fyne.Do(func() {

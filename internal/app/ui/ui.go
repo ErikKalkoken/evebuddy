@@ -79,6 +79,7 @@ type services struct {
 
 // baseUI represents the core UI logic and is used by both the desktop and mobile UI.
 type baseUI struct {
+	// Callbacks
 	clearCache                      func() // clear all caches
 	disableMenuShortcuts            func()
 	enableMenuShortcuts             func()
@@ -97,6 +98,7 @@ type baseUI struct {
 	showMailIndicator               func()
 	showManageCharacters            func()
 
+	// UI elements
 	assets                  *assets
 	characterAsset          *characterAssets
 	characterAttributes     *characterAttributes
@@ -105,6 +107,7 @@ type baseUI struct {
 	characterCommunications *characterCommunications
 	characterCorporation    *corporationSheet
 	characterJumpClones     *characterJumpClones
+	characterLocations      *characterLocations
 	characterMail           *characterMails
 	characters              *characters
 	characterSheet          *characterSheet
@@ -120,35 +123,38 @@ type baseUI struct {
 	corporationWallets      map[app.Division]*corporationWallet
 	gameSearch              *hameSearch
 	industryJobs            *industryJobs
-	characterLocations      *characterLocations
 	slotsManufacturing      *industrySlots
 	slotsReactions          *industrySlots
 	slotsResearch           *industrySlots
+	snackbar                *iwidget.Snackbar
 	training                *training
 	wealth                  *wealth
 
+	// Signals
 	characterSectionUpdated signals.Signal[app.CharacterUpdateSectionParams]
 	characterChanged        signals.Signal[*app.Character]
 
+	// Services
+	cs       *characterservice.CharacterService
+	eis      *eveimageservice.EveImageService
+	ess      *esistatusservice.ESIStatusService
+	eus      *eveuniverseservice.EveUniverseService
+	js       *janiceservice.JaniceService
+	memcache *memcache.Cache
+	rs       *corporationservice.CorporationService
+	scs      *statuscacheservice.StatusCacheService
+	settings *settings.Settings
+
+	// UI state
 	app                fyne.App
 	character          atomic.Pointer[app.Character]
 	corporation        atomic.Pointer[app.Corporation]
-	cs                 *characterservice.CharacterService
-	dataPaths          map[string]string // Paths to user data
-	eis                *eveimageservice.EveImageService
-	ess                *esistatusservice.ESIStatusService
-	eus                *eveuniverseservice.EveUniverseService
-	isDesktop          bool        // whether the app runs on a desktop. If false we assume it's on mobile.
-	isForeground       atomic.Bool // whether the app is currently shown in the foreground
-	isOffline          bool        // Run the app in offline mode
-	isStartupCompleted atomic.Bool // whether the app has completed startup (for testing)
-	isUpdateDisabled   bool        // Whether to disable update tickers (useful for debugging)
-	js                 *janiceservice.JaniceService
-	memcache           *memcache.Cache
-	rs                 *corporationservice.CorporationService
-	scs                *statuscacheservice.StatusCacheService
-	settings           *settings.Settings
-	snackbar           *iwidget.Snackbar
+	dataPaths          map[string]string      // Paths to user data
+	isDesktop          bool                   // whether the app runs on a desktop. If false we assume it's on mobile.
+	isForeground       atomic.Bool            // whether the app is currently shown in the foreground
+	isOffline          bool                   // Run the app in offline mode
+	isStartupCompleted atomic.Bool            // whether the app has completed startup (for testing)
+	isUpdateDisabled   bool                   // Whether to disable update tickers (useful for debugging)
 	wasStarted         atomic.Bool            // whether the app has already been started at least once
 	window             fyne.Window            // main window
 	windows            map[string]fyne.Window // child windows

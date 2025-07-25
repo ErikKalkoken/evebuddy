@@ -70,15 +70,15 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			),
 		)
 	}
-
+	const assetsTitle = "Character Assets"
 	navItemAssets := iwidget.NewListItemWithIcon(
-		"Assets",
+		assetsTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
 			u.characterAsset.OnSelected = func() {
-				characterNav.PushAndHideNavBar(newCharacterAppBar("Assets", u.characterAsset.LocationAssets))
+				characterNav.PushAndHideNavBar(newCharacterAppBar(assetsTitle, u.characterAsset.LocationAssets))
 			}
-			characterNav.Push(newCharacterAppBar("Assets", container.NewHScroll(u.characterAsset.Locations)))
+			characterNav.Push(newCharacterAppBar(assetsTitle, container.NewHScroll(u.characterAsset.Locations)))
 		},
 	)
 	navItemCommunications := iwidget.NewListItemWithIcon(
