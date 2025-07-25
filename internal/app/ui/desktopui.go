@@ -111,7 +111,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	overview := iwidget.NewNavPage(
 		"Character Overview",
 		theme.NewThemedResource(icons.PortraitSvg),
-		makePageWithTitle("Character Overview", u.characters),
+		makePageWithTitle("Character Overview", u.characterOverview),
 	)
 
 	wealth := iwidget.NewNavPage(
@@ -126,10 +126,11 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		})
 	}
 
+	const assetsTitle = "Character Assets"
 	allAssets := iwidget.NewNavPage(
-		"Assets",
+		assetsTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
-		makePageWithTitle("Assets", u.assets),
+		makePageWithTitle(assetsTitle, u.assets),
 	)
 	u.assets.onUpdate = func(total string) {
 		fyne.Do(func() {
@@ -200,9 +201,9 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		overviewColonies,
 		industry,
 		iwidget.NewNavPage(
-			"Locations",
+			"Character Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),
-			makePageWithTitle("Locations", u.locations),
+			makePageWithTitle("Character Locations", u.characterLocations),
 		),
 		iwidget.NewNavPage(
 			"Training",

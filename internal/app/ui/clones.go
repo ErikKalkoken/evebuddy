@@ -495,7 +495,7 @@ func (a *clones) showRouteWindow(r cloneRow) {
 		return
 	}
 	title := fmt.Sprintf("Route: %s -> %s", a.origin.Name, r.jc.Location.SolarSystemName())
-	w, ok := a.u.getOrCreateWindow(r.id(), title, r.jc.Character.Name)
+	w, ok := a.u.getOrCreateWindow(fmt.Sprintf("route-%s", r.id()), title, r.jc.Character.Name)
 	if !ok {
 		w.Show()
 		return
@@ -578,7 +578,11 @@ func (a *clones) showRouteWindow(r cloneRow) {
 		nil,
 		list,
 	)
-	setDetailWindow(title, c, w)
+	setDetailWindow(detailWindowParams{
+		title:   title,
+		content: c,
+		window:  w,
+	})
 	w.Show()
 }
 
@@ -587,7 +591,7 @@ func (a *clones) showCloneWindow(jc *app.CharacterJumpClone2) {
 		return
 	}
 	title := fmt.Sprintf("Clone #%d", jc.CloneID)
-	w, ok := a.u.getOrCreateWindow(fmt.Sprintf("%d-%d", jc.Character.ID, jc.ID), title, jc.Character.Name)
+	w, ok := a.u.getOrCreateWindow(fmt.Sprintf("clone-%d-%d", jc.Character.ID, jc.ID), title, jc.Character.Name)
 	if !ok {
 		w.Show()
 		return
@@ -673,6 +677,10 @@ func (a *clones) showCloneWindow(jc *app.CharacterJumpClone2) {
 		nil,
 		list,
 	)
-	setDetailWindow(title, c, w)
+	setDetailWindow(detailWindowParams{
+		title:   title,
+		content: c,
+		window:  w,
+	})
 	w.Show()
 }

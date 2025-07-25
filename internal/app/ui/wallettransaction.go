@@ -519,7 +519,7 @@ func (a *walletTransactions) fetchCorporationRows(corporationID int32, division 
 // showCharacterWalletTransactionWindow shows the detail of a character wallet transaction in a window.
 func showCharacterWalletTransactionWindow(u *baseUI, characterID int32, transactionID int64) {
 	title := fmt.Sprintf("Character Market Transaction #%d", transactionID)
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("%d-%d", characterID, transactionID), title, u.scs.CharacterName(characterID))
+	w, ok := u.getOrCreateWindow(fmt.Sprintf("wallettransaction-%d-%d", characterID, transactionID), title, u.scs.CharacterName(characterID))
 	if !ok {
 		w.Show()
 		return
@@ -569,14 +569,24 @@ func showCharacterWalletTransactionWindow(u *baseUI, characterID int32, transact
 	}
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	setDetailWindow(title, f, w)
+	setDetailWindow(detailWindowParams{
+		content: f,
+		imageAction: func() {
+			u.ShowTypeInfoWindow(o.Type.ID)
+		},
+		imageLoader: func() (fyne.Resource, error) {
+			return u.eis.InventoryTypeIcon(o.Type.ID, 256)
+		},
+		title:  title,
+		window: w,
+	})
 	w.Show()
 }
 
 // showCorporationWalletTransactionWindow shows the detail of a corporation wallet transaction in a window.
 func showCorporationWalletTransactionWindow(u *baseUI, corporationID int32, division app.Division, transactionID int64) {
 	title := fmt.Sprintf("Corporation Market Transaction #%d", transactionID)
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("%d-%d", corporationID, transactionID), title, u.scs.CorporationName(corporationID))
+	w, ok := u.getOrCreateWindow(fmt.Sprintf("wallettransaction-%d-%d", corporationID, transactionID), title, u.scs.CorporationName(corporationID))
 	if !ok {
 		w.Show()
 		return
@@ -617,6 +627,16 @@ func showCorporationWalletTransactionWindow(u *baseUI, corporationID int32, divi
 	}
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	setDetailWindow(title, f, w)
+	setDetailWindow(detailWindowParams{
+		content: f,
+		imageAction: func() {
+			u.ShowTypeInfoWindow(o.Type.ID)
+		},
+		imageLoader: func() (fyne.Resource, error) {
+			return u.eis.InventoryTypeIcon(o.Type.ID, 256)
+		},
+		title:  title,
+		window: w,
+	})
 	w.Show()
 }

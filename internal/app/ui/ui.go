@@ -26,6 +26,7 @@ import (
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 	kxtheme "github.com/ErikKalkoken/fyne-kx/theme"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/maniartech/signals"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
@@ -78,6 +79,7 @@ type services struct {
 
 // baseUI represents the core UI logic and is used by both the desktop and mobile UI.
 type baseUI struct {
+	// Callbacks
 	clearCache                      func() // clear all caches
 	disableMenuShortcuts            func()
 	enableMenuShortcuts             func()
@@ -96,6 +98,7 @@ type baseUI struct {
 	showMailIndicator               func()
 	showManageCharacters            func()
 
+	// UI elements
 	assets                  *assets
 	characterAsset          *characterAssets
 	characterAttributes     *characterAttributes
@@ -104,8 +107,9 @@ type baseUI struct {
 	characterCommunications *characterCommunications
 	characterCorporation    *corporationSheet
 	characterJumpClones     *characterJumpClones
+	characterLocations      *characterLocations
 	characterMail           *characterMails
-	characters              *characters
+	characterOverview       *characterOverview
 	characterSheet          *characterSheet
 	characterShips          *characterFlyableShips
 	characterSkillCatalogue *characterSkillCatalogue
@@ -117,34 +121,40 @@ type baseUI struct {
 	corporationMember       *corporationMember
 	corporationSheet        *corporationSheet
 	corporationWallets      map[app.Division]*corporationWallet
-	gameSearch              *hameSearch
+	gameSearch              *gameSearch
 	industryJobs            *industryJobs
-	locations               *locations
 	slotsManufacturing      *industrySlots
 	slotsReactions          *industrySlots
 	slotsResearch           *industrySlots
+	snackbar                *iwidget.Snackbar
 	training                *training
 	wealth                  *wealth
 
+	// Signals
+	characterSectionUpdated signals.Signal[app.CharacterUpdateSectionParams]
+	characterChanged        signals.Signal[*app.Character]
+
+	// Services
+	cs       *characterservice.CharacterService
+	eis      *eveimageservice.EveImageService
+	ess      *esistatusservice.ESIStatusService
+	eus      *eveuniverseservice.EveUniverseService
+	js       *janiceservice.JaniceService
+	memcache *memcache.Cache
+	rs       *corporationservice.CorporationService
+	scs      *statuscacheservice.StatusCacheService
+	settings *settings.Settings
+
+	// UI state
 	app                fyne.App
 	character          atomic.Pointer[app.Character]
 	corporation        atomic.Pointer[app.Corporation]
-	cs                 *characterservice.CharacterService
-	dataPaths          map[string]string // Paths to user data
-	eis                *eveimageservice.EveImageService
-	ess                *esistatusservice.ESIStatusService
-	eus                *eveuniverseservice.EveUniverseService
-	isDesktop          bool        // whether the app runs on a desktop. If false we assume it's on mobile.
-	isForeground       atomic.Bool // whether the app is currently shown in the foreground
-	isOffline          bool        // Run the app in offline mode
-	isStartupCompleted atomic.Bool // whether the app has completed startup (for testing)
-	isUpdateDisabled   bool        // Whether to disable update tickers (useful for debugging)
-	js                 *janiceservice.JaniceService
-	memcache           *memcache.Cache
-	rs                 *corporationservice.CorporationService
-	scs                *statuscacheservice.StatusCacheService
-	settings           *settings.Settings
-	snackbar           *iwidget.Snackbar
+	dataPaths          map[string]string      // Paths to user data
+	isDesktop          bool                   // whether the app runs on a desktop. If false we assume it's on mobile.
+	isForeground       atomic.Bool            // whether the app is currently shown in the foreground
+	isOffline          bool                   // Run the app in offline mode
+	isStartupCompleted atomic.Bool            // whether the app has completed startup (for testing)
+	isUpdateDisabled   bool                   // Whether to disable update tickers (useful for debugging)
 	wasStarted         atomic.Bool            // whether the app has already been started at least once
 	window             fyne.Window            // main window
 	windows            map[string]fyne.Window // child windows
@@ -173,21 +183,23 @@ type BaseUIParams struct {
 // Note:Types embedding BaseUI should define callbacks instead of overwriting methods.
 func NewBaseUI(args BaseUIParams) *baseUI {
 	u := &baseUI{
-		app:                args.App,
-		corporationWallets: make(map[app.Division]*corporationWallet),
-		cs:                 args.CharacterService,
-		eis:                args.EveImageService,
-		ess:                args.ESIStatusService,
-		eus:                args.EveUniverseService,
-		isDesktop:          args.IsDesktop,
-		isOffline:          args.IsOffline,
-		isUpdateDisabled:   args.IsUpdateDisabled,
-		js:                 args.JaniceService,
-		memcache:           args.MemCache,
-		rs:                 args.CorporationService,
-		scs:                args.StatusCacheService,
-		settings:           settings.New(args.App.Preferences()),
-		windows:            make(map[string]fyne.Window),
+		app:                     args.App,
+		characterChanged:        signals.New[*app.Character](),
+		characterSectionUpdated: signals.New[app.CharacterUpdateSectionParams](),
+		corporationWallets:      make(map[app.Division]*corporationWallet),
+		cs:                      args.CharacterService,
+		eis:                     args.EveImageService,
+		ess:                     args.ESIStatusService,
+		eus:                     args.EveUniverseService,
+		isDesktop:               args.IsDesktop,
+		isOffline:               args.IsOffline,
+		isUpdateDisabled:        args.IsUpdateDisabled,
+		js:                      args.JaniceService,
+		memcache:                args.MemCache,
+		rs:                      args.CorporationService,
+		scs:                     args.StatusCacheService,
+		settings:                settings.New(args.App.Preferences()),
+		windows:                 make(map[string]fyne.Window),
 	}
 	u.window = u.app.NewWindow(u.appName())
 
@@ -233,10 +245,10 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	u.slotsReactions = newIndustrySlots(u, app.ReactionJob)
 	u.slotsResearch = newIndustrySlots(u, app.ScienceJob)
 	u.assets = newAssets(u)
-	u.characters = newOverviewCharacters(u)
+	u.characterOverview = newCharacterOverview(u)
 	u.clones = newClones(u)
 	u.colonies = newColonies(u)
-	u.locations = newLocations(u)
+	u.characterLocations = newCharacterLocations(u)
 	u.training = newTraining(u)
 	u.wealth = newWealth(u)
 	u.snackbar = iwidget.NewSnackbar(u.window)
@@ -261,6 +273,7 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 		u.isForeground.Store(true)
 		u.snackbar.Start()
 		go func() {
+			u.characterSkillQueue.start()
 			u.initCharacter()
 			u.initCorporation()
 			u.updateHome()
@@ -432,6 +445,7 @@ func (u *baseUI) reloadCurrentCharacter() {
 
 func (u *baseUI) resetCharacter() {
 	u.character.Store(nil)
+	u.characterChanged.Emit(context.Background(), nil)
 	u.settings.ResetLastCharacterID()
 	u.updateCharacter()
 	u.updateStatus()
@@ -439,6 +453,7 @@ func (u *baseUI) resetCharacter() {
 
 func (u *baseUI) setCharacter(c *app.Character) {
 	u.character.Store(c)
+	u.characterChanged.Emit(context.Background(), c)
 	u.settings.SetLastCharacterID(c.ID)
 	u.updateCharacter()
 	u.updateStatus()
@@ -492,8 +507,8 @@ func (u *baseUI) defineCharacterUpdates() map[string]func() {
 		"characterCorporation": u.characterCorporation.update,
 		"ships":                u.characterShips.update,
 		"skillCatalogue":       u.characterSkillCatalogue.update,
-		"skillqueue":           u.characterSkillQueue.update,
-		"wallet":               u.characterWallet.update,
+		// "skillqueue":           u.characterSkillQueue.update,
+		"wallet": u.characterWallet.update,
 	}
 	return ff
 }
@@ -660,8 +675,8 @@ func (u *baseUI) defineHomeUpdates() map[string]func() {
 		"slotsManufacturing": u.slotsManufacturing.update,
 		"slotsReactions":     u.slotsReactions.update,
 		"slotsResearch":      u.slotsResearch.update,
-		"locations":          u.locations.update,
-		"overview":           u.characters.update,
+		"locations":          u.characterLocations.update,
+		"overview":           u.characterOverview.update,
 		"training":           u.training.update,
 		"wealth":             u.wealth.update,
 	}
@@ -892,14 +907,14 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 		u.characterSkillCatalogue.update()
 	case app.SectionEveCharacters:
 		u.reloadCurrentCharacter()
-		u.characters.update()
+		u.characterOverview.update()
 	case app.SectionEveCorporations:
 		// TODO: Only update when shown entity changed
 		u.characterCorporation.update()
 		u.corporationSheet.update()
 	case app.SectionEveMarketPrices:
 		u.characterAsset.update()
-		u.characters.update()
+		u.characterOverview.update()
 		u.assets.update()
 		u.reloadCurrentCharacter()
 	default:
@@ -1003,14 +1018,14 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 // All UI areas showing data based on character sections needs to be included
 // to make sure they are refreshed when data changes.
 func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s app.CharacterSection, forceUpdate bool) {
-	hasChanged, err := u.cs.UpdateSectionIfNeeded(
-		ctx, app.CharacterUpdateSectionParams{
-			CharacterID:           characterID,
-			Section:               s,
-			ForceUpdate:           forceUpdate,
-			MaxMails:              u.settings.MaxMails(),
-			MaxWalletTransactions: u.settings.MaxWalletTransactions(),
-		})
+	updateArg := app.CharacterUpdateSectionParams{
+		CharacterID:           characterID,
+		Section:               s,
+		ForceUpdate:           forceUpdate,
+		MaxMails:              u.settings.MaxMails(),
+		MaxWalletTransactions: u.settings.MaxWalletTransactions(),
+	}
+	hasChanged, err := u.cs.UpdateSectionIfNeeded(ctx, updateArg)
 	if err != nil {
 		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
 		return
@@ -1029,7 +1044,12 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			corporationID = 0
 		}
 	}
+
 	needsRefresh := hasChanged || forceUpdate
+	if needsRefresh {
+		u.characterSectionUpdated.Emit(ctx, updateArg)
+	}
+
 	switch s {
 	case app.SectionCharacterAssets:
 		if needsRefresh {
@@ -1063,7 +1083,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionCharacterJumpClones:
 		if needsRefresh {
-			u.characters.update()
+			u.characterOverview.update()
 			u.clones.update()
 			if isShown {
 				u.reloadCurrentCharacter()
@@ -1079,21 +1099,21 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionCharacterLocation, app.SectionCharacterOnline, app.SectionCharacterShip:
 		if needsRefresh {
-			u.locations.update()
+			u.characterLocations.update()
 			if isShown {
 				u.reloadCurrentCharacter()
 			}
 		}
 	case app.SectionCharacterMailLabels, app.SectionCharacterMailLists:
 		if needsRefresh {
-			u.characters.update()
+			u.characterOverview.update()
 			if isShown {
 				u.characterMail.update()
 			}
 		}
 	case app.SectionCharacterMails:
 		if needsRefresh {
-			go u.characters.update()
+			go u.characterOverview.update()
 			go u.updateMailIndicator()
 			if isShown {
 				u.characterMail.update()
@@ -1159,12 +1179,12 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 
 	case app.SectionCharacterSkillqueue:
-		if isShown {
-			u.characterSkillQueue.update() // TODO: Move into widget
-		}
 		if needsRefresh {
 			u.training.update()
 			u.notifyExpiredTrainingIfNeeded(ctx, characterID)
+			// if isShown {
+			// 	u.characterSkillQueue.update()
+			// }
 		}
 		if u.settings.NotifyTrainingEnabled() {
 			err := u.cs.EnableTrainingWatcher(ctx, characterID)
@@ -1174,7 +1194,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionCharacterWalletBalance:
 		if needsRefresh {
-			u.characters.update()
+			u.characterOverview.update()
 			u.wealth.update()
 			if isShown {
 				u.reloadCurrentCharacter()
@@ -1572,9 +1592,9 @@ func (u *baseUI) getOrCreateWindow(id string, titles ...string) (window fyne.Win
 	return w, ok
 }
 
-// getOrCreateWindowWithOnClosed is like makeOrFindWindow,
+// getOrCreateWindowWithOnClosed is like getOrCreateWindow,
 // but returns an additional onClosed function which must be called when the window is closed.
-// This variant allows constructing a custom onClosed callback for the window.
+// This allows constructing a custom onClosed callback for the window.
 func (u *baseUI) getOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func()) {
 	w, ok := u.windows[id]
 	if ok {

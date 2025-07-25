@@ -8,13 +8,12 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/dustin/go-humanize"
 )
 
 type characterSkillQueue struct {
@@ -22,17 +21,31 @@ type characterSkillQueue struct {
 
 	OnUpdate func(statusShort, statusLong string)
 
-	list *widget.List
-	sq   *app.CharacterSkillqueue
-	top  *widget.Label
-	u    *baseUI
+	character          *app.Character
+	done               chan bool
+	isCharacterUpdated bool
+	list               *widget.List
+	signalKey          string
+	sq                 *app.CharacterSkillqueue
+	top                *widget.Label
+	u                  *baseUI
+	updatedKey         string
 }
 
+// newCharacterSkillQueue returns a new characterSkillQueue object with dynamic character.
 func newCharacterSkillQueue(u *baseUI) *characterSkillQueue {
+	return newCharacterSkillQueueWithCharacter(u, nil)
+}
+
+// newCharacterSkillQueue returns a new characterSkillQueue object with static character.
+func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *characterSkillQueue {
 	a := &characterSkillQueue{
-		top: makeTopLabel(),
-		sq:  app.NewCharacterSkillqueue(),
-		u:   u,
+		character:          c,
+		done:               make(chan bool),
+		isCharacterUpdated: c == nil,
+		sq:                 app.NewCharacterSkillqueue(),
+		top:                makeTopLabel(),
+		u:                  u,
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeSkillQueue()
@@ -88,57 +101,56 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 			list.UnselectAll()
 			return
 		}
-		var isActive string
-		if q.IsActive() {
-			isActive = "yes"
-		} else {
-			isActive = "no"
-		}
-		var data = []struct {
-			label string
-			value string
-			wrap  bool
-		}{
-			{"Name", app.SkillDisplayName(q.SkillName, q.FinishedLevel), false},
-			{"Group", q.GroupName, false},
-			{"Description", q.SkillDescription, true},
-			{"Start date", timeFormattedOrFallback(q.StartDate, app.DateTimeFormat, "?"), false},
-			{"Finish date", timeFormattedOrFallback(q.FinishDate, app.DateTimeFormat, "?"), false},
-			{"Duration", ihumanize.Optional(q.Duration(), "?"), false},
-			{"Remaining", ihumanize.Optional(q.Remaining(), "?"), false},
-			{"Completed", fmt.Sprintf("%.0f%%", q.CompletionP()*100), false},
-			{"SP at start", humanize.Comma(int64(q.TrainingStartSP - q.LevelStartSP)), false},
-			{"Total SP", humanize.Comma(int64(q.LevelEndSP - q.LevelStartSP)), false},
-			{"Active?", isActive, false},
-		}
-		form := widget.NewForm()
-		if !a.u.isDesktop {
-			form.Orientation = widget.Vertical
-		}
-		for _, row := range data {
-			c := widget.NewLabel(row.value)
-			if row.wrap {
-				c.Wrapping = fyne.TextWrapWord
-			}
-			form.Append(row.label, c)
-
-		}
-		s := container.NewScroll(form)
-		s.SetMinSize(fyne.NewSize(500, 300))
-		d := dialog.NewCustom("Skill Details", "OK", s, a.u.MainWindow())
-		a.u.ModifyShortcutsForDialog(d, a.u.MainWindow())
-		d.SetOnClosed(func() {
-			list.UnselectAll()
-		})
-		d.Show()
+		showSkillInTrainingWindow(a.u, q)
 	}
 	return list
+}
+
+func (a *characterSkillQueue) start() {
+	a.signalKey = generateUniqueID()
+	if a.isCharacterUpdated {
+		a.u.characterChanged.AddListener(
+			func(_ context.Context, c *app.Character) {
+				a.character = c
+				a.update()
+			},
+			a.signalKey,
+		)
+	}
+	a.u.characterSectionUpdated.AddListener(
+		func(_ context.Context, arg app.CharacterUpdateSectionParams) {
+			if arg.Section == app.SectionCharacterSkillqueue && characterIDOrZero(a.character) == a.character.ID {
+				a.update()
+			}
+		},
+		a.signalKey,
+	)
+	ticker := time.NewTicker(time.Second * 60)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				a.update()
+			case <-a.done:
+				return
+			}
+		}
+	}()
+	ticker.Stop()
+}
+
+func (a *characterSkillQueue) stop() {
+	if a.isCharacterUpdated {
+		a.u.characterChanged.RemoveListener(a.signalKey)
+	}
+	a.u.characterSectionUpdated.RemoveListener(a.signalKey)
+	a.done <- true
 }
 
 func (a *characterSkillQueue) update() {
 	var t string
 	var i widget.Importance
-	err := a.sq.Update(context.Background(), a.u.cs, a.u.currentCharacterID())
+	err := a.sq.Update(context.Background(), a.u.cs, characterIDOrZero(a.character))
 	if err != nil {
 		slog.Error("Failed to refresh skill queue UI", "err", err)
 		t = "ERROR"
@@ -173,7 +185,7 @@ func (a *characterSkillQueue) update() {
 }
 
 func (a *characterSkillQueue) makeTopText(total optional.Optional[time.Duration]) (string, widget.Importance) {
-	hasData := a.u.scs.HasCharacterSection(a.u.currentCharacterID(), app.SectionCharacterSkillqueue)
+	hasData := a.u.scs.HasCharacterSection(characterIDOrZero(a.character), app.SectionCharacterSkillqueue)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
@@ -184,11 +196,58 @@ func (a *characterSkillQueue) makeTopText(total optional.Optional[time.Duration]
 	return t, widget.MediumImportance
 }
 
-func timeFormattedOrFallback(t time.Time, layout, fallback string) string {
-	if t.IsZero() {
-		return fallback
+func showSkillInTrainingWindow(u *baseUI, r *app.CharacterSkillqueueItem) {
+	characterName := u.scs.CharacterName(r.CharacterID)
+	w, ok := u.getOrCreateWindow(fmt.Sprintf("skill-%d-%d", r.CharacterID, r.SkillID), "Skill: Information", characterName)
+	if !ok {
+		w.Show()
+		return
 	}
-	return t.Format(layout)
+	description := widget.NewLabel(r.SkillDescription)
+	description.Wrapping = fyne.TextWrapWord
+	var isActive *widget.Label
+	if r.IsActive() {
+		isActive = widget.NewLabel("active")
+		isActive.Importance = widget.SuccessImportance
+	} else {
+		isActive = widget.NewLabel("inactive")
+		isActive.Importance = widget.DangerImportance
+	}
+	items := []*widget.FormItem{
+		widget.NewFormItem(
+			"Owner",
+			makeOwnerActionLabel(r.CharacterID, characterName, u.ShowEveEntityInfoWindow),
+		),
+		widget.NewFormItem("Skill", makeLinkLabel(app.SkillDisplayName(r.SkillName, r.FinishedLevel), func() {
+			u.ShowTypeInfoWindowWithCharacter(r.SkillID, r.CharacterID)
+		})),
+		widget.NewFormItem("Group", widget.NewLabel(r.GroupName)),
+		widget.NewFormItem("Description", description),
+		widget.NewFormItem("Active?", isActive),
+		widget.NewFormItem("Completed", widget.NewLabel(fmt.Sprintf("%.0f%%", r.CompletionP()*100))),
+		widget.NewFormItem("Remaining", widget.NewLabel(ihumanize.Optional(r.Remaining(), "?"))),
+		widget.NewFormItem("Duration", widget.NewLabel(ihumanize.Optional(r.Duration(), "?"))),
+		widget.NewFormItem("Start date", widget.NewLabel(timeFormattedOrFallback(r.StartDate, app.DateTimeFormat, "?"))),
+		widget.NewFormItem("End date", widget.NewLabel(timeFormattedOrFallback(r.FinishDate, app.DateTimeFormat, "?"))),
+		widget.NewFormItem("SP at start", widget.NewLabel(humanize.Comma(int64(r.TrainingStartSP-r.LevelStartSP)))),
+		widget.NewFormItem("Total SP", widget.NewLabel(humanize.Comma(int64(r.LevelEndSP-r.LevelStartSP)))),
+	}
+	f := widget.NewForm(items...)
+	f.Orientation = widget.Adaptive
+	subTitle := fmt.Sprintf("%s by %s", app.SkillDisplayName(r.SkillName, r.FinishedLevel), characterName)
+	setDetailWindow(detailWindowParams{
+		content: f,
+		imageAction: func() {
+			u.ShowTypeInfoWindow(r.SkillID)
+		},
+		imageLoader: func() (fyne.Resource, error) {
+			return u.eis.InventoryTypeIcon(r.SkillID, 256)
+		},
+		minSize: fyne.NewSize(500, 450),
+		title:   subTitle,
+		window:  w,
+	})
+	w.Show()
 }
 
 type skillQueueItem struct {

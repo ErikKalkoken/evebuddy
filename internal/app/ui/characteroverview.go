@@ -25,42 +25,44 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-type characterRow struct {
-	alliance      *app.EveEntity
-	assetValue    optional.Optional[float64]
-	birthday      time.Time
-	corporation   *app.EveEntity
-	home          *app.EveLocation
-	id            int32
-	lastLoginAt   optional.Optional[time.Time]
-	name          string
-	security      float64
-	tags          set.Set[string]
-	unreadCount   optional.Optional[int]
-	walletBalance optional.Optional[float64]
+type characterOverviewRow struct {
+	alliance        *app.EveEntity
+	assetValue      optional.Optional[float64]
+	birthday        time.Time
+	characterID     int32
+	characterName   string
+	corporation     *app.EveEntity
+	faction         *app.EveEntity
+	home            *app.EveLocation
+	lastLoginAt     optional.Optional[time.Time]
+	security        float64
+	securityDisplay []widget.RichTextSegment
+	tags            set.Set[string]
+	unreadCount     optional.Optional[int]
+	walletBalance   optional.Optional[float64]
 }
 
-func (r characterRow) AllianceName() string {
+func (r characterOverviewRow) AllianceName() string {
 	if r.alliance == nil {
 		return ""
 	}
 	return r.alliance.Name
 }
 
-func (r characterRow) CorporationName() string {
+func (r characterOverviewRow) CorporationName() string {
 	if r.corporation == nil {
 		return ""
 	}
 	return r.corporation.Name
 }
 
-type characters struct {
+type characterOverview struct {
 	widget.BaseWidget
 
 	body              fyne.CanvasObject
 	columnSorter      *columnSorter
-	rows              []characterRow
-	rowsFiltered      []characterRow
+	rows              []characterOverviewRow
+	rowsFiltered      []characterOverviewRow
 	selectAlliance    *kxwidget.FilterChipSelect
 	selectCorporation *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
@@ -69,7 +71,7 @@ type characters struct {
 	u                 *baseUI
 }
 
-func newOverviewCharacters(u *baseUI) *characters {
+func newCharacterOverview(u *baseUI) *characterOverview {
 	headers := []headerDef{
 		{label: "Character", width: columnWidthEntity},
 		{label: "Corporation", width: 250},
@@ -82,62 +84,51 @@ func newOverviewCharacters(u *baseUI) *characters {
 		{label: "Home", width: columnWidthLocation},
 		{label: "Age", width: 100},
 	}
-	a := &characters{
+	a := &characterOverview{
 		columnSorter: newColumnSorter(headers),
-		rows:         make([]characterRow, 0),
+		rows:         make([]characterOverviewRow, 0),
 		top:          makeTopLabel(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	makeCell := func(col int, c characterRow) []widget.RichTextSegment {
+	makeCell := func(col int, r characterOverviewRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			return iwidget.RichTextSegmentsFromText(c.name)
+			return iwidget.RichTextSegmentsFromText(r.characterName)
 		case 1:
-			return iwidget.RichTextSegmentsFromText(c.corporation.Name)
+			return iwidget.RichTextSegmentsFromText(r.corporation.Name)
 		case 2:
 			var s string
-			if c.alliance != nil {
-				s = c.alliance.Name
+			if r.alliance != nil {
+				s = r.alliance.Name
 			}
 			return iwidget.RichTextSegmentsFromText(s)
 		case 3:
-			var color fyne.ThemeColorName
-			text := fmt.Sprintf("%.1f", c.security)
-			if c.security > 0 {
-				color = theme.ColorNameSuccess
-			} else if c.security < 0 {
-				color = theme.ColorNameError
-			} else {
-				color = theme.ColorNameForeground
-			}
-			return iwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
-				ColorName: color,
-			})
+			return r.securityDisplay
 		case 4:
-			return iwidget.RichTextSegmentsFromText(ihumanize.Optional(c.unreadCount, "?"))
+			return iwidget.RichTextSegmentsFromText(ihumanize.Optional(r.unreadCount, "?"))
 		case 5:
-			return iwidget.RichTextSegmentsFromText(ihumanize.OptionalWithDecimals(c.walletBalance, 1, "?"))
+			return iwidget.RichTextSegmentsFromText(ihumanize.OptionalWithDecimals(r.walletBalance, 1, "?"))
 		case 6:
-			return iwidget.RichTextSegmentsFromText(ihumanize.OptionalWithDecimals(c.assetValue, 1, "?"))
+			return iwidget.RichTextSegmentsFromText(ihumanize.OptionalWithDecimals(r.assetValue, 1, "?"))
 		case 7:
-			return iwidget.RichTextSegmentsFromText(ihumanize.Optional(c.lastLoginAt, "?"))
+			return iwidget.RichTextSegmentsFromText(ihumanize.Optional(r.lastLoginAt, "?"))
 		case 8:
-			if c.home != nil {
-				return c.home.DisplayRichText()
+			if r.home != nil {
+				return r.home.DisplayRichText()
 			}
 		case 9:
-			return iwidget.RichTextSegmentsFromText(humanize.RelTime(c.birthday, time.Now(), "", ""))
+			return iwidget.RichTextSegmentsFromText(humanize.RelTime(r.birthday, time.Now(), "", ""))
 		}
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, oc characterRow) {
-			u.ShowInfoWindow(app.EveEntityCharacter, oc.id)
+		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r characterOverviewRow) {
+			showCharacterOverviewDetailWindow(a.u, r)
 		})
 	} else {
-		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, func(oc characterRow) {
-			u.ShowInfoWindow(app.EveEntityCharacter, oc.id)
+		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, func(r characterOverviewRow) {
+			showCharacterOverviewDetailWindow(a.u, r)
 		})
 	}
 
@@ -156,7 +147,7 @@ func newOverviewCharacters(u *baseUI) *characters {
 	return a
 }
 
-func (a *characters) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterOverview) CreateRenderer() fyne.WidgetRenderer {
 	filters := container.NewHBox(a.selectAlliance, a.selectCorporation, a.selectTag)
 	if !a.u.isDesktop {
 		filters.Add(a.sortButton)
@@ -171,31 +162,31 @@ func (a *characters) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characters) filterRows(sortCol int) {
+func (a *characterOverview) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
 	if x := a.selectAlliance.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r characterRow) bool {
+		rows = xslices.Filter(rows, func(r characterOverviewRow) bool {
 			return r.AllianceName() == x
 		})
 	}
 	if x := a.selectCorporation.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r characterRow) bool {
+		rows = xslices.Filter(rows, func(r characterOverviewRow) bool {
 			return r.CorporationName() == x
 		})
 	}
 	if x := a.selectTag.Selected; x != "" {
-		rows = xslices.Filter(rows, func(o characterRow) bool {
+		rows = xslices.Filter(rows, func(o characterOverviewRow) bool {
 			return o.tags.Contains(x)
 		})
 	}
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
-		slices.SortFunc(rows, func(a, b characterRow) int {
+		slices.SortFunc(rows, func(a, b characterOverviewRow) int {
 			var x int
 			switch sortCol {
 			case 0:
-				x = strings.Compare(a.name, b.name)
+				x = strings.Compare(a.characterName, b.characterName)
 			case 1:
 				x = strings.Compare(a.CorporationName(), b.CorporationName())
 			case 2:
@@ -222,22 +213,22 @@ func (a *characters) filterRows(sortCol int) {
 			}
 		})
 	})
-	a.selectAlliance.SetOptions(xslices.Map(rows, func(r characterRow) string {
+	a.selectAlliance.SetOptions(xslices.Map(rows, func(r characterOverviewRow) string {
 		return r.AllianceName()
 	}))
-	a.selectCorporation.SetOptions(xslices.Map(rows, func(r characterRow) string {
+	a.selectCorporation.SetOptions(xslices.Map(rows, func(r characterOverviewRow) string {
 		return r.CorporationName()
 	}))
 
-	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r characterRow) set.Set[string] {
+	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r characterOverviewRow) set.Set[string] {
 		return r.tags
 	})...).All()))
 	a.rowsFiltered = rows
 	a.body.Refresh()
 }
 
-func (a *characters) update() {
-	var rows []characterRow
+func (a *characterOverview) update() {
+	var rows []characterOverviewRow
 	t, i, err := func() (string, widget.Importance, error) {
 		cc, totals, err := a.fetchRows(a.u.services())
 		if err != nil {
@@ -281,28 +272,42 @@ type overviewTotals struct {
 	assets optional.Optional[float64]
 }
 
-func (*characters) fetchRows(s services) ([]characterRow, overviewTotals, error) {
+func (*characterOverview) fetchRows(s services) ([]characterOverviewRow, overviewTotals, error) {
 	var totals overviewTotals
 	ctx := context.Background()
 	characters, err := s.cs.ListCharacters(ctx)
 	if err != nil {
 		return nil, totals, err
 	}
-	cc := xslices.Map(characters, func(m *app.Character) characterRow {
-		return characterRow{
+	cc := xslices.Map(characters, func(m *app.Character) characterOverviewRow {
+		r := characterOverviewRow{
 			alliance:      m.EveCharacter.Alliance,
 			birthday:      m.EveCharacter.Birthday,
+			characterID:   m.ID,
+			characterName: m.EveCharacter.Name,
 			corporation:   m.EveCharacter.Corporation,
+			faction:       m.EveCharacter.Faction,
+			home:          m.Home,
 			lastLoginAt:   m.LastLoginAt,
-			id:            m.ID,
-			name:          m.EveCharacter.Name,
 			security:      m.EveCharacter.SecurityStatus,
 			walletBalance: m.WalletBalance,
-			home:          m.Home,
 		}
+		var color fyne.ThemeColorName
+		text := fmt.Sprintf("%.1f", r.security)
+		if r.security > 0 {
+			color = theme.ColorNameSuccess
+		} else if r.security < 0 {
+			color = theme.ColorNameError
+		} else {
+			color = theme.ColorNameForeground
+		}
+		r.securityDisplay = iwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
+			ColorName: color,
+		})
+		return r
 	})
 	for i, c := range cc {
-		total, unread, err := s.cs.GetMailCounts(ctx, c.id)
+		total, unread, err := s.cs.GetMailCounts(ctx, c.characterID)
 		if err != nil {
 			return nil, totals, err
 		}
@@ -311,7 +316,7 @@ func (*characters) fetchRows(s services) ([]characterRow, overviewTotals, error)
 		}
 	}
 	for i, c := range cc {
-		v, err := s.cs.AssetTotalValue(ctx, c.id)
+		v, err := s.cs.AssetTotalValue(ctx, c.characterID)
 		if err != nil {
 			return nil, totals, err
 		}
@@ -329,7 +334,7 @@ func (*characters) fetchRows(s services) ([]characterRow, overviewTotals, error)
 		}
 	}
 	for i, c := range cc {
-		tags, err := s.cs.ListTagsForCharacter(ctx, c.id)
+		tags, err := s.cs.ListTagsForCharacter(ctx, c.characterID)
 		if err != nil {
 			return nil, totals, err
 		}
@@ -338,4 +343,58 @@ func (*characters) fetchRows(s services) ([]characterRow, overviewTotals, error)
 		}))
 	}
 	return cc, totals, nil
+}
+
+// showCharacterOverviewDetailWindow shows details for a character overview in a new window.
+func showCharacterOverviewDetailWindow(u *baseUI, r characterOverviewRow) {
+	w, ok := u.getOrCreateWindow(fmt.Sprintf("characteroverview-%d", r.characterID), "Character: Overview", r.characterName)
+	if !ok {
+		w.Show()
+		return
+	}
+	var home fyne.CanvasObject
+	if r.home != nil {
+		home = makeLocationLabel(r.home.ToShort(), u.ShowLocationInfoWindow)
+	} else {
+		home = widget.NewLabel("?")
+	}
+
+	fi := []*widget.FormItem{
+		widget.NewFormItem("Owner", makeOwnerActionLabel(
+			r.characterID,
+			r.characterName,
+			u.ShowEveEntityInfoWindow,
+		)),
+		widget.NewFormItem("Corporation", makeEveEntityActionLabel(r.corporation, u.ShowEveEntityInfoWindow)),
+		widget.NewFormItem("Alliance", makeEveEntityActionLabel(r.alliance, u.ShowEveEntityInfoWindow)),
+		widget.NewFormItem("Faction", makeEveEntityActionLabel(r.faction, u.ShowEveEntityInfoWindow)),
+		widget.NewFormItem("Security Status", widget.NewRichText(r.securityDisplay...)),
+		widget.NewFormItem("Unread Mails", widget.NewLabel(ihumanize.Optional(r.unreadCount, "?"))),
+		widget.NewFormItem("Wallet", widget.NewLabel(r.walletBalance.StringFunc("?", func(v float64) string {
+			return formatISKAmount(v)
+		}))),
+		widget.NewFormItem("Assets", widget.NewLabel(r.assetValue.StringFunc("?", func(v float64) string {
+			return formatISKAmount(v)
+		}))),
+		widget.NewFormItem("Last Login", widget.NewLabel(ihumanize.Optional(r.lastLoginAt, "?"))),
+		widget.NewFormItem("Home", home),
+		widget.NewFormItem("Age", widget.NewLabel(humanize.RelTime(r.birthday, time.Now(), "", ""))),
+	}
+
+	f := widget.NewForm(fi...)
+	f.Orientation = widget.Adaptive
+	subTitle := fmt.Sprintf("Overview of %s", r.characterName)
+	setDetailWindow(detailWindowParams{
+		content: f,
+		imageLoader: func() (fyne.Resource, error) {
+			return u.eis.CharacterPortrait(r.characterID, 256)
+		},
+		imageAction: func() {
+			u.ShowInfoWindow(app.EveEntityCharacter, r.characterID)
+		},
+		minSize: fyne.NewSize(500, 450),
+		title:   subTitle,
+		window:  w,
+	})
+	w.Show()
 }

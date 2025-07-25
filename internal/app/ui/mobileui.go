@@ -70,15 +70,15 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			),
 		)
 	}
-
+	const assetsTitle = "Character Assets"
 	navItemAssets := iwidget.NewListItemWithIcon(
-		"Assets",
+		assetsTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
 			u.characterAsset.OnSelected = func() {
-				characterNav.PushAndHideNavBar(newCharacterAppBar("Assets", u.characterAsset.LocationAssets))
+				characterNav.PushAndHideNavBar(newCharacterAppBar(assetsTitle, u.characterAsset.LocationAssets))
 			}
-			characterNav.Push(newCharacterAppBar("Assets", container.NewHScroll(u.characterAsset.Locations)))
+			characterNav.Push(newCharacterAppBar(assetsTitle, container.NewHScroll(u.characterAsset.Locations)))
 		},
 	)
 	navItemCommunications := iwidget.NewListItemWithIcon(
@@ -249,12 +249,12 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	}
 	corpWalletList := iwidget.NewNavList(corpWalletItems...)
 	corpWalletNav := iwidget.NewListItemWithIcon(
-		"Wallet",
+		"Wallets",
 		theme.NewThemedResource(icons.CashSvg),
 		func() {
 			corpNav.Push(
 				newCorpAppBar(
-					"Wallet",
+					"Wallets",
 					corpWalletList,
 				))
 		},
@@ -607,7 +607,7 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 			"Character Overview",
 			theme.NewThemedResource(icons.PortraitSvg),
 			func() {
-				homeNav.Push(iwidget.NewAppBar("Character Overview", u.characters))
+				homeNav.Push(iwidget.NewAppBar("Character Overview", u.characterOverview))
 			},
 		),
 		navItemAssets,
@@ -622,10 +622,10 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		navItemColonies2,
 		navItemIndustry,
 		iwidget.NewListItemWithIcon(
-			"Locations",
+			"Character Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),
 			func() {
-				homeNav.Push(iwidget.NewAppBar("Locations", u.locations))
+				homeNav.Push(iwidget.NewAppBar("Character Locations", u.characterLocations))
 			},
 		),
 		iwidget.NewListItemWithIcon(
