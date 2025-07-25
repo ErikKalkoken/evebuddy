@@ -5,10 +5,12 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type detailWindowParams struct {
 	content fyne.CanvasObject
+	image   fyne.Resource
 	minSize fyne.Size
 	title   string
 	window  fyne.Window
@@ -29,11 +31,16 @@ func setDetailWindow(arg detailWindowParams) {
 	top := container.NewVBox(t, widget.NewSeparator())
 	vs := container.NewVScroll(arg.content)
 	vs.SetMinSize(arg.minSize)
+	var image fyne.CanvasObject
+	if arg.image != nil && !fyne.CurrentDevice().IsMobile() {
+		x := iwidget.NewImageFromResource(arg.image, fyne.NewSquareSize(100))
+		image = container.NewVBox(container.NewPadded(x))
+	}
 	c := container.NewBorder(
 		top,
 		nil,
 		nil,
-		nil,
+		image,
 		vs,
 	)
 	c.Refresh()

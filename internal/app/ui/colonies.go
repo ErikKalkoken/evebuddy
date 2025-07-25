@@ -10,7 +10,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
@@ -431,16 +430,12 @@ func (a *colonies) showColonyWindow(r colonyRow) {
 	)
 	processes.Orientation = widget.Adaptive
 
-	top := container.NewHBox(infos, layout.NewSpacer())
-	if a.u.isDesktop {
-		res, _ := cp.EvePlanet.Type.Icon()
-		image := iwidget.NewImageFromResource(res, fyne.NewSquareSize(100))
-		top.Add(container.NewVBox(container.NewPadded(image)))
-	}
-	c := container.NewVBox(top, processes)
+	c := container.NewVBox(infos, processes)
+	res, _ := cp.EvePlanet.Type.Icon()
 	setDetailWindow(detailWindowParams{
-		title:   title,
 		content: c,
+		title:   title,
+		image:   res,
 		window:  w,
 	})
 	w.Show()
