@@ -270,12 +270,12 @@ func (a *characterJumpClones) startUpdateTicker() {
 	ticker := time.NewTicker(time.Second * 15)
 	go func() {
 		for {
+			<-ticker.C
 			var c int
 			fyne.DoAndWait(func() {
 				c = cloneCount(a.tree.Nodes())
 			})
 			a.refreshTop(c)
-			<-ticker.C
 		}
 	}()
 }

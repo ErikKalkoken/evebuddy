@@ -268,6 +268,7 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 			u.isStartupCompleted.Store(true)
 			u.training.startUpdateTicker()
 			u.characterJumpClones.startUpdateTicker()
+			u.characterSkillQueue.startUpdateTicker()
 			if !u.isOffline && !u.isUpdateDisabled {
 				time.Sleep(5 * time.Second) // Workaround to prevent concurrent updates from happening at startup.
 				u.startUpdateTickerGeneralSections()
@@ -1159,12 +1160,12 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 
 	case app.SectionCharacterSkillqueue:
-		if isShown {
-			u.characterSkillQueue.update() // TODO: Move into widget
-		}
 		if needsRefresh {
 			u.training.update()
 			u.notifyExpiredTrainingIfNeeded(ctx, characterID)
+			if isShown {
+				u.characterSkillQueue.update()
+			}
 		}
 		if u.settings.NotifyTrainingEnabled() {
 			err := u.cs.EnableTrainingWatcher(ctx, characterID)

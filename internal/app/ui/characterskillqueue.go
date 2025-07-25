@@ -135,6 +135,16 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 	return list
 }
 
+func (a *characterSkillQueue) startUpdateTicker() {
+	ticker := time.NewTicker(time.Second * 60)
+	go func() {
+		for {
+			<-ticker.C
+			a.update()
+		}
+	}()
+}
+
 func (a *characterSkillQueue) update() {
 	var t string
 	var i widget.Importance
