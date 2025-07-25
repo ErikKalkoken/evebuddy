@@ -120,7 +120,7 @@ type baseUI struct {
 	corporationWallets      map[app.Division]*corporationWallet
 	gameSearch              *hameSearch
 	industryJobs            *industryJobs
-	locations               *locations
+	characterLocations      *characterLocations
 	slotsManufacturing      *industrySlots
 	slotsReactions          *industrySlots
 	slotsResearch           *industrySlots
@@ -242,7 +242,7 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	u.characters = newOverviewCharacters(u)
 	u.clones = newClones(u)
 	u.colonies = newColonies(u)
-	u.locations = newLocations(u)
+	u.characterLocations = newCharacterLocations(u)
 	u.training = newTraining(u)
 	u.wealth = newWealth(u)
 	u.snackbar = iwidget.NewSnackbar(u.window)
@@ -669,7 +669,7 @@ func (u *baseUI) defineHomeUpdates() map[string]func() {
 		"slotsManufacturing": u.slotsManufacturing.update,
 		"slotsReactions":     u.slotsReactions.update,
 		"slotsResearch":      u.slotsResearch.update,
-		"locations":          u.locations.update,
+		"locations":          u.characterLocations.update,
 		"overview":           u.characters.update,
 		"training":           u.training.update,
 		"wealth":             u.wealth.update,
@@ -1093,7 +1093,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionCharacterLocation, app.SectionCharacterOnline, app.SectionCharacterShip:
 		if needsRefresh {
-			u.locations.update()
+			u.characterLocations.update()
 			if isShown {
 				u.reloadCurrentCharacter()
 			}

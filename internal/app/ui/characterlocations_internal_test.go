@@ -35,11 +35,11 @@ func TestLocations_CanRenderWithData(t *testing.T) {
 	})
 	test.ApplyTheme(t, test.Theme())
 	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
-	w := test.NewWindow(ui.locations)
+	w := test.NewWindow(ui.characterLocations)
 	defer w.Close()
 	w.Resize(fyne.NewSize(1700, 300))
 
-	ui.locations.update()
+	ui.characterLocations.update()
 
 	test.AssertImageMatches(t, "locations/full.png", w.Canvas().Capture())
 }
@@ -55,11 +55,11 @@ func TestLocations_CanRenderWithoutData(t *testing.T) {
 	})
 	test.ApplyTheme(t, test.Theme())
 	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
-	w := test.NewWindow(ui.locations)
+	w := test.NewWindow(ui.characterLocations)
 	defer w.Close()
 	w.Resize(fyne.NewSize(1700, 300))
 
-	ui.locations.update()
+	ui.characterLocations.update()
 
 	test.AssertImageMatches(t, "locations/minimal.png", w.Canvas().Capture())
 }

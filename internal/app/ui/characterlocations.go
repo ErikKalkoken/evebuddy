@@ -21,24 +21,28 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-type locationRow struct {
+type characterLocationRow struct {
+	characterID     int32
 	characterName   string
+	location        *app.EveLocationShort
 	locationDisplay []widget.RichTextSegment
 	locationID      int64
 	locationName    string
+	regionID        int32
 	regionName      string
-	solarSystemName string
 	shipName        string
+	shipTypeID      int32
+	solarSystemName string
 	tags            set.Set[string]
 }
 
-type locations struct {
+type characterLocations struct {
 	widget.BaseWidget
 
 	body              fyne.CanvasObject
 	columnSorter      *columnSorter
-	rows              []locationRow
-	rowsFiltered      []locationRow
+	rows              []characterLocationRow
+	rowsFiltered      []characterLocationRow
 	selectRegion      *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
@@ -47,17 +51,17 @@ type locations struct {
 	u                 *baseUI
 }
 
-func newLocations(u *baseUI) *locations {
+func newCharacterLocations(u *baseUI) *characterLocations {
 	headers := []headerDef{
 		{label: "Character", width: columnWidthEntity},
 		{label: "Location", width: columnWidthLocation},
 		{label: "Region", width: columnWidthRegion},
 		{label: "Ship", width: 150},
 	}
-	a := &locations{
+	a := &characterLocations{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
-		rows:         make([]locationRow, 0),
-		rowsFiltered: make([]locationRow, 0),
+		rows:         make([]characterLocationRow, 0),
+		rowsFiltered: make([]characterLocationRow, 0),
 		bottom:       makeTopLabel(),
 		u:            u,
 	}
@@ -66,7 +70,7 @@ func newLocations(u *baseUI) *locations {
 		a.body = makeDataTable(
 			headers,
 			&a.rowsFiltered,
-			func(col int, r locationRow) []widget.RichTextSegment {
+			func(col int, r characterLocationRow) []widget.RichTextSegment {
 				switch col {
 				case 0:
 					return iwidget.RichTextSegmentsFromText(r.characterName)
@@ -89,8 +93,8 @@ func newLocations(u *baseUI) *locations {
 				return iwidget.RichTextSegmentsFromText("?")
 			},
 			a.columnSorter,
-			a.filterRows, func(_ int, r locationRow) {
-				a.u.ShowLocationInfoWindow(r.locationID)
+			a.filterRows, func(_ int, r characterLocationRow) {
+				showCharacterLocationWindow(a.u, r)
 			})
 	} else {
 		a.body = a.makeDataList()
@@ -111,7 +115,7 @@ func newLocations(u *baseUI) *locations {
 	return a
 }
 
-func (a *locations) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterLocations) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectSolarSystem, a.selectRegion, a.selectTag)
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
@@ -120,7 +124,7 @@ func (a *locations) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *locations) makeDataList() *iwidget.StripedList {
+func (a *characterLocations) makeDataList() *iwidget.StripedList {
 	p := theme.Padding()
 	var l *iwidget.StripedList
 	l = iwidget.NewStripedList(
@@ -157,32 +161,33 @@ func (a *locations) makeDataList() *iwidget.StripedList {
 		if id < 0 || id >= len(a.rowsFiltered) {
 			return
 		}
-		a.u.ShowLocationInfoWindow(a.rowsFiltered[id].locationID)
+		r := a.rowsFiltered[id]
+		showCharacterLocationWindow(a.u, r)
 	}
 	return l
 }
 
-func (a *locations) filterRows(sortCol int) {
+func (a *characterLocations) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
 	if x := a.selectRegion.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r locationRow) bool {
+		rows = xslices.Filter(rows, func(r characterLocationRow) bool {
 			return r.regionName == x
 		})
 	}
 	if x := a.selectSolarSystem.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r locationRow) bool {
+		rows = xslices.Filter(rows, func(r characterLocationRow) bool {
 			return r.solarSystemName == x
 		})
 	}
 	if x := a.selectTag.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r locationRow) bool {
+		rows = xslices.Filter(rows, func(r characterLocationRow) bool {
 			return r.tags.Contains(x)
 		})
 	}
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
-		slices.SortFunc(rows, func(a, b locationRow) int {
+		slices.SortFunc(rows, func(a, b characterLocationRow) int {
 			var x int
 			switch sortCol {
 			case 0:
@@ -202,21 +207,21 @@ func (a *locations) filterRows(sortCol int) {
 		})
 	})
 	// set data & refresh
-	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r locationRow) set.Set[string] {
+	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r characterLocationRow) set.Set[string] {
 		return r.tags
 	})...).All()))
-	a.selectRegion.SetOptions(xslices.Map(rows, func(r locationRow) string {
+	a.selectRegion.SetOptions(xslices.Map(rows, func(r characterLocationRow) string {
 		return r.regionName
 	}))
-	a.selectSolarSystem.SetOptions(xslices.Map(rows, func(r locationRow) string {
+	a.selectSolarSystem.SetOptions(xslices.Map(rows, func(r characterLocationRow) string {
 		return r.solarSystemName
 	}))
 	a.rowsFiltered = rows
 	a.body.Refresh()
 }
 
-func (a *locations) update() {
-	rows := make([]locationRow, 0)
+func (a *characterLocations) update() {
+	rows := make([]characterLocationRow, 0)
 	t, i, err := func() (string, widget.Importance, error) {
 		cc, err := a.fetchData(a.u.services())
 		if err != nil {
@@ -249,18 +254,19 @@ func (a *locations) update() {
 	})
 }
 
-func (*locations) fetchData(s services) ([]locationRow, error) {
+func (*characterLocations) fetchData(s services) ([]characterLocationRow, error) {
 	ctx := context.TODO()
 	characters, err := s.cs.ListCharacters(ctx)
 	if err != nil {
 		return nil, err
 	}
-	rows := make([]locationRow, 0)
+	rows := make([]characterLocationRow, 0)
 	for _, c := range characters {
 		if c.EveCharacter == nil {
 			continue
 		}
-		r := locationRow{
+		r := characterLocationRow{
+			characterID:   c.EveCharacter.ID,
 			characterName: c.EveCharacter.Name,
 		}
 		if c.Location != nil {
@@ -268,12 +274,15 @@ func (*locations) fetchData(s services) ([]locationRow, error) {
 			r.locationID = c.Location.ID
 			r.locationName = c.Location.DisplayName()
 			if c.Location.SolarSystem != nil {
+				r.regionID = c.Location.SolarSystem.Constellation.Region.ID
 				r.regionName = c.Location.SolarSystem.Constellation.Region.Name
 				r.solarSystemName = c.Location.SolarSystem.Name
 			}
+			r.location = c.Location.ToShort()
 		}
 		if c.Ship != nil {
 			r.shipName = c.Ship.Name
+			r.shipTypeID = c.Ship.ID
 		}
 		tags, err := s.cs.ListTagsForCharacter(ctx, c.ID)
 		if err != nil {
@@ -287,15 +296,15 @@ func (*locations) fetchData(s services) ([]locationRow, error) {
 	return rows, nil
 }
 
-// showLocationDetailWindow shows the details for a character assets in a new window.
-func showLocationDetailWindow(u *baseUI, r assetRow) {
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("location-%d-%d", r.characterID, r.itemID), "Asset: Information", r.characterName)
+// showCharacterLocationWindow shows the location of a character in a new window.
+func showCharacterLocationWindow(u *baseUI, r characterLocationRow) {
+	w, ok := u.getOrCreateWindow(fmt.Sprintf("location-%d", r.characterID), "Character Location", r.characterName)
 	if !ok {
 		w.Show()
 		return
 	}
-	item := makeLinkLabelWithWrap(r.typeNameDisplay, func() {
-		u.ShowTypeInfoWindowWithCharacter(r.typeID, r.characterID)
+	ship := makeLinkLabelWithWrap(r.shipName, func() {
+		u.ShowTypeInfoWindowWithCharacter(r.shipTypeID, r.characterID)
 	})
 	var location fyne.CanvasObject
 	if r.location != nil {
@@ -303,33 +312,28 @@ func showLocationDetailWindow(u *baseUI, r assetRow) {
 	} else {
 		location = widget.NewLabel("?")
 	}
+	var region fyne.CanvasObject
+	if r.regionID != 0 {
+		region = makeLinkLabel(r.regionName, func() {
+			u.ShowInfoWindow(app.EveEntityRegion, r.regionID)
+		})
+	} else {
+		region = widget.NewLabel(r.regionName)
+	}
 	fi := []*widget.FormItem{
 		widget.NewFormItem("Owner", makeOwnerActionLabel(
 			r.characterID,
 			r.characterName,
 			u.ShowEveEntityInfoWindow,
 		)),
-		widget.NewFormItem("Item", item),
-		widget.NewFormItem("Class", widget.NewLabel(r.groupName)),
 		widget.NewFormItem("Location", location),
-		widget.NewFormItem(
-			"Price",
-			widget.NewLabel(r.price.StringFunc("?", func(v float64) string {
-				return formatISKAmount(v)
-			})),
-		),
-		widget.NewFormItem("Quantity", widget.NewLabel(r.quantityDisplay)),
-		widget.NewFormItem(
-			"Total",
-			widget.NewLabel(r.total.StringFunc("?", func(v float64) string {
-				return formatISKAmount(v)
-			})),
-		),
+		widget.NewFormItem("Region", region),
+		widget.NewFormItem("Ship", ship),
 	}
 
 	f := widget.NewForm(fi...)
 	f.Orientation = widget.Adaptive
-	subTitle := fmt.Sprintf("Asset #%d", r.itemID)
-	setDetailWindowWithSize(subTitle, fyne.NewSize(500, 450), f, w)
+	subTitle := fmt.Sprintf("Location of %s", r.characterName)
+	setDetailWindowWithSize(subTitle, fyne.NewSize(500, 250), f, w)
 	w.Show()
 }

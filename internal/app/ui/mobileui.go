@@ -622,10 +622,10 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		navItemColonies2,
 		navItemIndustry,
 		iwidget.NewListItemWithIcon(
-			"Locations",
+			"Character Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),
 			func() {
-				homeNav.Push(iwidget.NewAppBar("Locations", u.locations))
+				homeNav.Push(iwidget.NewAppBar("Character Locations", u.characterLocations))
 			},
 		),
 		iwidget.NewListItemWithIcon(

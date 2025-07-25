@@ -200,9 +200,9 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		overviewColonies,
 		industry,
 		iwidget.NewNavPage(
-			"Locations",
+			"Character Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),
-			makePageWithTitle("Locations", u.locations),
+			makePageWithTitle("Character Locations", u.characterLocations),
 		),
 		iwidget.NewNavPage(
 			"Training",
