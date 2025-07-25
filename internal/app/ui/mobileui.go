@@ -249,12 +249,12 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	}
 	corpWalletList := iwidget.NewNavList(corpWalletItems...)
 	corpWalletNav := iwidget.NewListItemWithIcon(
-		"Wallet",
+		"Wallets",
 		theme.NewThemedResource(icons.CashSvg),
 		func() {
 			corpNav.Push(
 				newCorpAppBar(
-					"Wallet",
+					"Wallets",
 					corpWalletList,
 				))
 		},

@@ -243,11 +243,11 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 	if err := s.scs.UpdateCharacters(ctx); err != nil {
 		return 0, err
 	}
+	setInfo("Fetching corporation from game server. Please wait...")
+	if _, err := s.eus.GetOrCreateCorporationESI(ctx, character.Corporation.ID); err != nil {
+		return 0, err
+	}
 	if x := character.Corporation.IsNPC(); !x.IsEmpty() && !x.ValueOrZero() {
-		setInfo("Fetching corporation from game server. Please wait...")
-		if _, err := s.eus.GetOrCreateCorporationESI(ctx, character.Corporation.ID); err != nil {
-			return 0, err
-		}
 		if _, err = s.st.GetOrCreateCorporation(ctx, character.Corporation.ID); err != nil {
 			return 0, err
 		}

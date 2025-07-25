@@ -136,8 +136,17 @@ func (a *corporationSheet) update() {
 	}
 	if corporation == nil {
 		fyne.Do(func() {
-			a.name.SetText("No corporation...")
+			a.alliance.SetText("")
+			a.ceo.SetText("")
+			a.faction.SetText("")
+			a.home.SetText("")
+			a.logo.SetResource(icons.BlankSvg)
+			a.members.SetText("")
 			a.name.OnTapped = nil
+			a.name.SetText("No corporation...")
+			a.roles.SetText("")
+			a.taxRate.SetText("")
+			a.ticker.SetText("")
 		})
 		return
 	}
