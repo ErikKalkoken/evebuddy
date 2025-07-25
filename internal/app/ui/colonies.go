@@ -28,21 +28,22 @@ const (
 type colonyRow struct {
 	characterID     int32
 	due             time.Time
-	dueRT           []widget.RichTextSegment
+	dueDisplay      []widget.RichTextSegment
 	extracting      set.Set[string]
 	extractingText  string
 	isExpired       bool
 	name            string
-	nameRT          []widget.RichTextSegment
+	nameDisplay     []widget.RichTextSegment
 	ownerName       string
 	planetID        int32
 	planetName      string
+	planetTypeID    int32
+	planetTypeName  string
 	producing       set.Set[string]
 	producingText   string
 	regionName      string
 	solarSystemName string
 	tags            set.Set[string]
-	typeName        string
 }
 
 type colonies struct {
@@ -89,13 +90,13 @@ func newColonies(u *baseUI) *colonies {
 	makeCell := func(col int, r colonyRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
-			return r.nameRT
+			return r.nameDisplay
 		case 1:
-			return iwidget.RichTextSegmentsFromText(r.typeName)
+			return iwidget.RichTextSegmentsFromText(r.planetTypeName)
 		case 2:
 			return iwidget.RichTextSegmentsFromText(r.extractingText)
 		case 3:
-			return r.dueRT
+			return r.dueDisplay
 		case 4:
 			return iwidget.RichTextSegmentsFromText(r.producingText)
 		case 5:
@@ -214,7 +215,7 @@ func (a *colonies) filterRows(sortCol int) {
 	}
 	if x := a.selectPlanetType.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r colonyRow) bool {
-			return r.typeName == x
+			return r.planetTypeName == x
 		})
 	}
 	if x := a.selectTag.Selected; x != "" {
@@ -230,7 +231,7 @@ func (a *colonies) filterRows(sortCol int) {
 			case 0:
 				x = strings.Compare(a.name, b.name)
 			case 1:
-				x = strings.Compare(a.typeName, b.typeName)
+				x = strings.Compare(a.planetTypeName, b.planetTypeName)
 			case 3:
 				x = a.due.Compare(b.due)
 			case 5:
@@ -259,7 +260,7 @@ func (a *colonies) filterRows(sortCol int) {
 		return r.solarSystemName
 	}))
 	a.selectPlanetType.SetOptions(xslices.Map(rows, func(r colonyRow) string {
-		return r.typeName
+		return r.planetTypeName
 	}))
 	var extracting, producing set.Set[string]
 	for _, r := range rows {
@@ -315,18 +316,19 @@ func (a *colonies) fetchRows(s services) ([]colonyRow, int, error) {
 		r := colonyRow{
 			characterID:     p.CharacterID,
 			due:             p.ExtractionsExpiryTime(),
-			dueRT:           p.DueRichText(),
+			dueDisplay:      p.DueRichText(),
 			extracting:      set.Of(extracting...),
 			isExpired:       p.IsExpired(),
 			name:            p.EvePlanet.Name,
-			nameRT:          p.NameRichText(),
+			nameDisplay:     p.NameRichText(),
 			ownerName:       a.u.scs.CharacterName(p.CharacterID),
 			planetID:        p.EvePlanet.ID,
 			planetName:      p.EvePlanet.Name,
 			producing:       set.Of(producing...),
 			regionName:      p.EvePlanet.SolarSystem.Constellation.Region.Name,
 			solarSystemName: p.EvePlanet.SolarSystem.Name,
-			typeName:        p.EvePlanet.TypeDisplay(),
+			planetTypeName:  p.EvePlanet.TypeDisplay(),
+			planetTypeID:    p.EvePlanet.Type.ID,
 		}
 		if len(extracting) == 0 {
 			r.extractingText = "-"
@@ -394,20 +396,23 @@ func (a *colonies) showColonyWindow(r colonyRow) {
 			continue
 		}
 		expiryTime := pp.ExpiryTime.ValueOrZero()
+		due := widget.NewLabel("")
+		if expiryTime.Before(time.Now()) {
+			due.Text = "OFFLINE"
+			due.Importance = widget.DangerImportance
+		} else {
+			due.Text = expiryTime.Format(app.DateTimeFormat)
+		}
 		icon, _ := pp.ExtractorProductType.Icon()
 		product := makeLinkLabel(pp.ExtractorProductType.Name, func() {
 			a.u.ShowEveEntityInfoWindow(pp.ExtractorProductType.ToEveEntity())
 		})
 		row := container.NewHBox(
-			iwidget.NewImageFromResource(icon, fyne.NewSquareSize(app.IconUnitSize)),
-			product,
-			container.NewHBox(widget.NewLabel(expiryTime.Format(app.DateTimeFormat))),
+			container.NewHBox(
+				iwidget.NewImageFromResource(icon, fyne.NewSquareSize(app.IconUnitSize)), product,
+			),
+			due,
 		)
-		if expiryTime.Before(time.Now()) {
-			l := widget.NewLabel("EXPIRED")
-			l.Importance = widget.DangerImportance
-			row.Add(l)
-		}
 		extracting.Add(row)
 	}
 	if len(extracting.Objects) == 0 {
@@ -431,12 +436,17 @@ func (a *colonies) showColonyWindow(r colonyRow) {
 	processes.Orientation = widget.Adaptive
 
 	c := container.NewVBox(infos, processes)
-	res, _ := cp.EvePlanet.Type.Icon()
 	setDetailWindow(detailWindowParams{
 		content: c,
 		title:   title,
-		image:   res,
-		window:  w,
+		imageAction: func() {
+			a.u.ShowTypeInfoWindow(cp.EvePlanet.Type.ID)
+		},
+		imageLoader: func() (fyne.Resource, error) {
+			r, _ := cp.EvePlanet.Type.Icon()
+			return r, nil
+		},
+		window: w,
 	})
 	w.Show()
 }

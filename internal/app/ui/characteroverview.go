@@ -385,9 +385,15 @@ func showCharacterOverviewDetailWindow(u *baseUI, r characterOverviewRow) {
 	f.Orientation = widget.Adaptive
 	subTitle := fmt.Sprintf("Overview of %s", r.characterName)
 	setDetailWindow(detailWindowParams{
-		title:   subTitle,
-		minSize: fyne.NewSize(500, 450),
 		content: f,
+		imageLoader: func() (fyne.Resource, error) {
+			return u.eis.CharacterPortrait(r.characterID, 256)
+		},
+		imageAction: func() {
+			u.ShowInfoWindow(app.EveEntityCharacter, r.characterID)
+		},
+		minSize: fyne.NewSize(500, 450),
+		title:   subTitle,
 		window:  w,
 	})
 	w.Show()

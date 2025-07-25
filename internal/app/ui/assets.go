@@ -54,6 +54,7 @@ type assetRow struct {
 	typeID          int32
 	typeName        string
 	typeNameDisplay string
+	variant         app.EveTypeVariant
 }
 
 func newAssetRow(ca *app.CharacterAsset, assetCollection assetcollection.AssetCollection, characterName func(int32) string) assetRow {
@@ -68,6 +69,7 @@ func newAssetRow(ca *app.CharacterAsset, assetCollection assetcollection.AssetCo
 		typeID:          ca.Type.ID,
 		typeName:        ca.Type.Name,
 		typeNameDisplay: ca.DisplayName2(),
+		variant:         ca.Variant(),
 	}
 	if ca.IsSingleton {
 		r.quantityDisplay = "1*"
@@ -541,9 +543,24 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 	f.Orientation = widget.Adaptive
 	subTitle := fmt.Sprintf("Asset #%d", r.itemID)
 	setDetailWindow(detailWindowParams{
-		title:   subTitle,
-		minSize: fyne.NewSize(500, 450),
 		content: f,
+		imageAction: func() {
+			u.ShowTypeInfoWindow(r.typeID)
+		},
+		imageLoader: func() (fyne.Resource, error) {
+			switch r.variant {
+			case app.VariantSKIN:
+				return u.eis.InventoryTypeSKIN(r.typeID, app.IconPixelSize)
+			case app.VariantBPO:
+				return u.eis.InventoryTypeBPO(r.typeID, app.IconPixelSize)
+			case app.VariantBPC:
+				return u.eis.InventoryTypeBPC(r.typeID, app.IconPixelSize)
+			default:
+				return u.eis.InventoryTypeIcon(r.typeID, app.IconPixelSize)
+			}
+		},
+		minSize: fyne.NewSize(500, 450),
+		title:   subTitle,
 		window:  w,
 	})
 	w.Show()

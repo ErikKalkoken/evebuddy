@@ -196,17 +196,17 @@ func (a *characterSkillQueue) makeTopText(total optional.Optional[time.Duration]
 	return t, widget.MediumImportance
 }
 
-func showSkillInTrainingWindow(u *baseUI, q *app.CharacterSkillqueueItem) {
-	characterName := u.scs.CharacterName(q.CharacterID)
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("skill-%d-%d", q.CharacterID, q.SkillID), "Skill: Information", characterName)
+func showSkillInTrainingWindow(u *baseUI, r *app.CharacterSkillqueueItem) {
+	characterName := u.scs.CharacterName(r.CharacterID)
+	w, ok := u.getOrCreateWindow(fmt.Sprintf("skill-%d-%d", r.CharacterID, r.SkillID), "Skill: Information", characterName)
 	if !ok {
 		w.Show()
 		return
 	}
-	description := widget.NewLabel(q.SkillDescription)
+	description := widget.NewLabel(r.SkillDescription)
 	description.Wrapping = fyne.TextWrapWord
 	var isActive *widget.Label
-	if q.IsActive() {
+	if r.IsActive() {
 		isActive = widget.NewLabel("active")
 		isActive.Importance = widget.SuccessImportance
 	} else {
@@ -216,27 +216,35 @@ func showSkillInTrainingWindow(u *baseUI, q *app.CharacterSkillqueueItem) {
 	items := []*widget.FormItem{
 		widget.NewFormItem(
 			"Owner",
-			makeOwnerActionLabel(q.CharacterID, characterName, u.ShowEveEntityInfoWindow),
+			makeOwnerActionLabel(r.CharacterID, characterName, u.ShowEveEntityInfoWindow),
 		),
-		widget.NewFormItem("Skill", widget.NewLabel(app.SkillDisplayName(q.SkillName, q.FinishedLevel))),
-		widget.NewFormItem("Group", widget.NewLabel(q.GroupName)),
+		widget.NewFormItem("Skill", makeLinkLabel(app.SkillDisplayName(r.SkillName, r.FinishedLevel), func() {
+			u.ShowTypeInfoWindowWithCharacter(r.SkillID, r.CharacterID)
+		})),
+		widget.NewFormItem("Group", widget.NewLabel(r.GroupName)),
 		widget.NewFormItem("Description", description),
 		widget.NewFormItem("Active?", isActive),
-		widget.NewFormItem("Completed", widget.NewLabel(fmt.Sprintf("%.0f%%", q.CompletionP()*100))),
-		widget.NewFormItem("Remaining", widget.NewLabel(ihumanize.Optional(q.Remaining(), "?"))),
-		widget.NewFormItem("Duration", widget.NewLabel(ihumanize.Optional(q.Duration(), "?"))),
-		widget.NewFormItem("Start date", widget.NewLabel(timeFormattedOrFallback(q.StartDate, app.DateTimeFormat, "?"))),
-		widget.NewFormItem("End date", widget.NewLabel(timeFormattedOrFallback(q.FinishDate, app.DateTimeFormat, "?"))),
-		widget.NewFormItem("SP at start", widget.NewLabel(humanize.Comma(int64(q.TrainingStartSP-q.LevelStartSP)))),
-		widget.NewFormItem("Total SP", widget.NewLabel(humanize.Comma(int64(q.LevelEndSP-q.LevelStartSP)))),
+		widget.NewFormItem("Completed", widget.NewLabel(fmt.Sprintf("%.0f%%", r.CompletionP()*100))),
+		widget.NewFormItem("Remaining", widget.NewLabel(ihumanize.Optional(r.Remaining(), "?"))),
+		widget.NewFormItem("Duration", widget.NewLabel(ihumanize.Optional(r.Duration(), "?"))),
+		widget.NewFormItem("Start date", widget.NewLabel(timeFormattedOrFallback(r.StartDate, app.DateTimeFormat, "?"))),
+		widget.NewFormItem("End date", widget.NewLabel(timeFormattedOrFallback(r.FinishDate, app.DateTimeFormat, "?"))),
+		widget.NewFormItem("SP at start", widget.NewLabel(humanize.Comma(int64(r.TrainingStartSP-r.LevelStartSP)))),
+		widget.NewFormItem("Total SP", widget.NewLabel(humanize.Comma(int64(r.LevelEndSP-r.LevelStartSP)))),
 	}
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	subTitle := fmt.Sprintf("%s by %s", app.SkillDisplayName(q.SkillName, q.FinishedLevel), characterName)
+	subTitle := fmt.Sprintf("%s by %s", app.SkillDisplayName(r.SkillName, r.FinishedLevel), characterName)
 	setDetailWindow(detailWindowParams{
-		title:   subTitle,
-		minSize: fyne.NewSize(500, 450),
 		content: f,
+		imageAction: func() {
+			u.ShowTypeInfoWindow(r.SkillID)
+		},
+		imageLoader: func() (fyne.Resource, error) {
+			return u.eis.InventoryTypeIcon(r.SkillID, 256)
+		},
+		minSize: fyne.NewSize(500, 450),
+		title:   subTitle,
 		window:  w,
 	})
 	w.Show()

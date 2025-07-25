@@ -335,10 +335,16 @@ func showCharacterLocationWindow(u *baseUI, r characterLocationRow) {
 	f.Orientation = widget.Adaptive
 	subTitle := fmt.Sprintf("Location of %s", r.characterName)
 	setDetailWindow(detailWindowParams{
-		title:   subTitle,
-		minSize: fyne.NewSize(500, 250),
 		content: f,
-		window:  w,
+		minSize: fyne.NewSize(500, 250),
+		imageAction: func() {
+			u.ShowInfoWindow(app.EveEntityCharacter, r.characterID)
+		},
+		imageLoader: func() (fyne.Resource, error) {
+			return u.eis.CharacterPortrait(r.characterID, 512)
+		},
+		title:  subTitle,
+		window: w,
 	})
 	w.Show()
 }

@@ -670,9 +670,15 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
 	setDetailWindow(detailWindowParams{
-		title:   title,
 		content: f,
-		window:  w,
+		imageAction: func() {
+			a.u.ShowTypeInfoWindow(r.blueprintType.ID)
+		},
+		imageLoader: func() (fyne.Resource, error) {
+			return a.u.eis.InventoryTypeBPO(r.blueprintType.ID, 256)
+		},
+		title:  title,
+		window: w,
 	})
 	w.Show()
 }
