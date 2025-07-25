@@ -25,7 +25,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-type characterRow struct {
+type characterOverviewRow struct {
 	alliance        *app.EveEntity
 	assetValue      optional.Optional[float64]
 	birthday        time.Time
@@ -42,27 +42,27 @@ type characterRow struct {
 	walletBalance   optional.Optional[float64]
 }
 
-func (r characterRow) AllianceName() string {
+func (r characterOverviewRow) AllianceName() string {
 	if r.alliance == nil {
 		return ""
 	}
 	return r.alliance.Name
 }
 
-func (r characterRow) CorporationName() string {
+func (r characterOverviewRow) CorporationName() string {
 	if r.corporation == nil {
 		return ""
 	}
 	return r.corporation.Name
 }
 
-type characters struct {
+type characterOverview struct {
 	widget.BaseWidget
 
 	body              fyne.CanvasObject
 	columnSorter      *columnSorter
-	rows              []characterRow
-	rowsFiltered      []characterRow
+	rows              []characterOverviewRow
+	rowsFiltered      []characterOverviewRow
 	selectAlliance    *kxwidget.FilterChipSelect
 	selectCorporation *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
@@ -71,7 +71,7 @@ type characters struct {
 	u                 *baseUI
 }
 
-func newOverviewCharacters(u *baseUI) *characters {
+func newCharacterOverview(u *baseUI) *characterOverview {
 	headers := []headerDef{
 		{label: "Character", width: columnWidthEntity},
 		{label: "Corporation", width: 250},
@@ -84,14 +84,14 @@ func newOverviewCharacters(u *baseUI) *characters {
 		{label: "Home", width: columnWidthLocation},
 		{label: "Age", width: 100},
 	}
-	a := &characters{
+	a := &characterOverview{
 		columnSorter: newColumnSorter(headers),
-		rows:         make([]characterRow, 0),
+		rows:         make([]characterOverviewRow, 0),
 		top:          makeTopLabel(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	makeCell := func(col int, r characterRow) []widget.RichTextSegment {
+	makeCell := func(col int, r characterOverviewRow) []widget.RichTextSegment {
 		switch col {
 		case 0:
 			return iwidget.RichTextSegmentsFromText(r.characterName)
@@ -123,12 +123,12 @@ func newOverviewCharacters(u *baseUI) *characters {
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r characterRow) {
-			showCharacterDetailWindow(a.u, r)
+		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r characterOverviewRow) {
+			showCharacterOverviewDetailWindow(a.u, r)
 		})
 	} else {
-		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, func(r characterRow) {
-			showCharacterDetailWindow(a.u, r)
+		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, func(r characterOverviewRow) {
+			showCharacterOverviewDetailWindow(a.u, r)
 		})
 	}
 
@@ -147,7 +147,7 @@ func newOverviewCharacters(u *baseUI) *characters {
 	return a
 }
 
-func (a *characters) CreateRenderer() fyne.WidgetRenderer {
+func (a *characterOverview) CreateRenderer() fyne.WidgetRenderer {
 	filters := container.NewHBox(a.selectAlliance, a.selectCorporation, a.selectTag)
 	if !a.u.isDesktop {
 		filters.Add(a.sortButton)
@@ -162,27 +162,27 @@ func (a *characters) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *characters) filterRows(sortCol int) {
+func (a *characterOverview) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
 	if x := a.selectAlliance.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r characterRow) bool {
+		rows = xslices.Filter(rows, func(r characterOverviewRow) bool {
 			return r.AllianceName() == x
 		})
 	}
 	if x := a.selectCorporation.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r characterRow) bool {
+		rows = xslices.Filter(rows, func(r characterOverviewRow) bool {
 			return r.CorporationName() == x
 		})
 	}
 	if x := a.selectTag.Selected; x != "" {
-		rows = xslices.Filter(rows, func(o characterRow) bool {
+		rows = xslices.Filter(rows, func(o characterOverviewRow) bool {
 			return o.tags.Contains(x)
 		})
 	}
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
-		slices.SortFunc(rows, func(a, b characterRow) int {
+		slices.SortFunc(rows, func(a, b characterOverviewRow) int {
 			var x int
 			switch sortCol {
 			case 0:
@@ -213,22 +213,22 @@ func (a *characters) filterRows(sortCol int) {
 			}
 		})
 	})
-	a.selectAlliance.SetOptions(xslices.Map(rows, func(r characterRow) string {
+	a.selectAlliance.SetOptions(xslices.Map(rows, func(r characterOverviewRow) string {
 		return r.AllianceName()
 	}))
-	a.selectCorporation.SetOptions(xslices.Map(rows, func(r characterRow) string {
+	a.selectCorporation.SetOptions(xslices.Map(rows, func(r characterOverviewRow) string {
 		return r.CorporationName()
 	}))
 
-	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r characterRow) set.Set[string] {
+	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r characterOverviewRow) set.Set[string] {
 		return r.tags
 	})...).All()))
 	a.rowsFiltered = rows
 	a.body.Refresh()
 }
 
-func (a *characters) update() {
-	var rows []characterRow
+func (a *characterOverview) update() {
+	var rows []characterOverviewRow
 	t, i, err := func() (string, widget.Importance, error) {
 		cc, totals, err := a.fetchRows(a.u.services())
 		if err != nil {
@@ -272,15 +272,15 @@ type overviewTotals struct {
 	assets optional.Optional[float64]
 }
 
-func (*characters) fetchRows(s services) ([]characterRow, overviewTotals, error) {
+func (*characterOverview) fetchRows(s services) ([]characterOverviewRow, overviewTotals, error) {
 	var totals overviewTotals
 	ctx := context.Background()
 	characters, err := s.cs.ListCharacters(ctx)
 	if err != nil {
 		return nil, totals, err
 	}
-	cc := xslices.Map(characters, func(m *app.Character) characterRow {
-		r := characterRow{
+	cc := xslices.Map(characters, func(m *app.Character) characterOverviewRow {
+		r := characterOverviewRow{
 			alliance:      m.EveCharacter.Alliance,
 			birthday:      m.EveCharacter.Birthday,
 			characterID:   m.ID,
@@ -345,8 +345,8 @@ func (*characters) fetchRows(s services) ([]characterRow, overviewTotals, error)
 	return cc, totals, nil
 }
 
-// showCharacterDetailWindow shows details for a character in a new window.
-func showCharacterDetailWindow(u *baseUI, r characterRow) {
+// showCharacterOverviewDetailWindow shows details for a character overview in a new window.
+func showCharacterOverviewDetailWindow(u *baseUI, r characterOverviewRow) {
 	w, ok := u.getOrCreateWindow(fmt.Sprintf("characteroverview-%d", r.characterID), "Character: Overview", r.characterName)
 	if !ok {
 		w.Show()

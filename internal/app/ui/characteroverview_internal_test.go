@@ -62,11 +62,11 @@ func TestCharacters_CanRenderWithData(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			ui := NewFakeBaseUI(st, test.NewTempApp(t), tc.isDesktop)
-			w := test.NewWindow(ui.characters)
+			w := test.NewWindow(ui.characterOverview)
 			defer w.Close()
 			w.Resize(tc.size)
 
-			ui.characters.update()
+			ui.characterOverview.update()
 
 			test.AssertImageMatches(t, "characters/"+tc.filename+".png", w.Canvas().Capture())
 		})
@@ -103,11 +103,11 @@ func TestCharacters_CanRenderWitoutData(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			ui := NewFakeBaseUI(st, test.NewTempApp(t), tc.isDesktop)
-			w := test.NewWindow(ui.characters)
+			w := test.NewWindow(ui.characterOverview)
 			defer w.Close()
 			w.Resize(tc.size)
 
-			ui.characters.update()
+			ui.characterOverview.update()
 
 			test.AssertImageMatches(t, "characters/"+tc.filename+".png", w.Canvas().Capture())
 		})

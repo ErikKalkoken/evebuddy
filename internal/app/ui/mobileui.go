@@ -607,7 +607,7 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 			"Character Overview",
 			theme.NewThemedResource(icons.PortraitSvg),
 			func() {
-				homeNav.Push(iwidget.NewAppBar("Character Overview", u.characters))
+				homeNav.Push(iwidget.NewAppBar("Character Overview", u.characterOverview))
 			},
 		),
 		navItemAssets,

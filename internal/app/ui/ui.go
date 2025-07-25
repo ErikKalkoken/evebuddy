@@ -109,7 +109,7 @@ type baseUI struct {
 	characterJumpClones     *characterJumpClones
 	characterLocations      *characterLocations
 	characterMail           *characterMails
-	characters              *characters
+	characterOverview       *characterOverview
 	characterSheet          *characterSheet
 	characterShips          *characterFlyableShips
 	characterSkillCatalogue *characterSkillCatalogue
@@ -121,7 +121,7 @@ type baseUI struct {
 	corporationMember       *corporationMember
 	corporationSheet        *corporationSheet
 	corporationWallets      map[app.Division]*corporationWallet
-	gameSearch              *hameSearch
+	gameSearch              *gameSearch
 	industryJobs            *industryJobs
 	slotsManufacturing      *industrySlots
 	slotsReactions          *industrySlots
@@ -245,7 +245,7 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	u.slotsReactions = newIndustrySlots(u, app.ReactionJob)
 	u.slotsResearch = newIndustrySlots(u, app.ScienceJob)
 	u.assets = newAssets(u)
-	u.characters = newOverviewCharacters(u)
+	u.characterOverview = newCharacterOverview(u)
 	u.clones = newClones(u)
 	u.colonies = newColonies(u)
 	u.characterLocations = newCharacterLocations(u)
@@ -676,7 +676,7 @@ func (u *baseUI) defineHomeUpdates() map[string]func() {
 		"slotsReactions":     u.slotsReactions.update,
 		"slotsResearch":      u.slotsResearch.update,
 		"locations":          u.characterLocations.update,
-		"overview":           u.characters.update,
+		"overview":           u.characterOverview.update,
 		"training":           u.training.update,
 		"wealth":             u.wealth.update,
 	}
@@ -907,14 +907,14 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 		u.characterSkillCatalogue.update()
 	case app.SectionEveCharacters:
 		u.reloadCurrentCharacter()
-		u.characters.update()
+		u.characterOverview.update()
 	case app.SectionEveCorporations:
 		// TODO: Only update when shown entity changed
 		u.characterCorporation.update()
 		u.corporationSheet.update()
 	case app.SectionEveMarketPrices:
 		u.characterAsset.update()
-		u.characters.update()
+		u.characterOverview.update()
 		u.assets.update()
 		u.reloadCurrentCharacter()
 	default:
@@ -1083,7 +1083,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionCharacterJumpClones:
 		if needsRefresh {
-			u.characters.update()
+			u.characterOverview.update()
 			u.clones.update()
 			if isShown {
 				u.reloadCurrentCharacter()
@@ -1106,14 +1106,14 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionCharacterMailLabels, app.SectionCharacterMailLists:
 		if needsRefresh {
-			u.characters.update()
+			u.characterOverview.update()
 			if isShown {
 				u.characterMail.update()
 			}
 		}
 	case app.SectionCharacterMails:
 		if needsRefresh {
-			go u.characters.update()
+			go u.characterOverview.update()
 			go u.updateMailIndicator()
 			if isShown {
 				u.characterMail.update()
@@ -1194,7 +1194,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionCharacterWalletBalance:
 		if needsRefresh {
-			u.characters.update()
+			u.characterOverview.update()
 			u.wealth.update()
 			if isShown {
 				u.reloadCurrentCharacter()

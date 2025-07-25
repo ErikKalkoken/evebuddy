@@ -111,7 +111,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	overview := iwidget.NewNavPage(
 		"Character Overview",
 		theme.NewThemedResource(icons.PortraitSvg),
-		makePageWithTitle("Character Overview", u.characters),
+		makePageWithTitle("Character Overview", u.characterOverview),
 	)
 
 	wealth := iwidget.NewNavPage(
