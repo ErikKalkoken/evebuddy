@@ -30,12 +30,17 @@ A companion app for Eve Online players available on Windows, Linux, macOS and An
 
 ## Description
 
-EVE Buddy is a multi-platform companion app for [Eve Online](https://www.eveonline.com/) players. It has four key features:
+EVE Buddy is a multi-platform companion app for [Eve Online](https://www.eveonline.com/) players. It provides the following key features:
 
-- Show consolidated information for all your characters, e.g. asset search over all characters or a combined view of industry jobs for all characters and corporations
-- Notify you about important game events (e.g. structure attacked) or updates (e.g. training queue is empty)
-- Allow you to monitor your characters and corporations, e.g. inspect the current training queue of a character
-- Provides a full Eve mail client for each of your characters
+- **Character monitor**: Check current information about each of your characters, e.g. inspect the training queue of a character or browse it's assets.
+- **Corporation monitor**: Check current information about each of your corporations: e.g. check corporation wallets or see all current members.
+- **Overviews**: Keep track of and get unique insights about all your characters and corporations with consolidated views, e.g. find assets across of your characters or see which character has manufacturing slots available.
+- **Notifications**: Get notified on your desktop or mobile about new EVE communications and other important updates, e.g. a structure was attacked or a training queue became empty.
+- **New Eden search**: Search live on the game server, similar to in-game search bar, e.g. search for characters, corporations solar systems.
+- **Information windows**: Show additional information for most objects on screen, similar to in-game information windows, e.g. sender of a mail:
+- **Mail client**: Send and receive EVE mails for all your characters
+- **Run in Background**: The app can run in the background and continue to notify you while you are doing something else (e.g. play Eve Online)
+- **Theming**: Configurable color theme
 
 EVE Buddy is available for Windows, Linux, macOS and Android.
 
@@ -48,33 +53,62 @@ EVE Buddy is available for Windows, Linux, macOS and Android.
 
 ## Features
 
-A more detailed overview of the provided features:
+The following is a detailed list of EVE Buddy's features. All features are available for both desktop and mobile:
 
-- Assets: Assets of all characters with full text search feature
-- Clones: Jump clones of all characters with route search from any location
-- Colonies: Lost of all planetary industry colonies with current status
-- Contracts: Contracts of all characters
-- Industry: Active and history of industry jobs for all character an corporations
-- Location: Location in New Eden and current ships for all characters
-- Training: Queue status and skillpoints
-- Wealth: Charts showing wealth distribution across all characters
-- Characters:
+- **Overviews**: Keep track of and get unique insights about all your characters and corporations with consolidated views:
+  - Assets: Search assets across all characters
+  - Clones: Search nearest available jump clones across all characters
+  - Colonies: Browse PI colonies across all characters
+  - Contracts: Browse contracts of all characters
+  - Industry: Browse industry jobs for all characters and related corporations
+  - Location: Browse the location of all characters and their current ships
+  - Training: Keep track of the training status for all characters
+  - Wealth: Charts showing wealth distribution across all characters
+
+- **Character monitor**: Check current information about each of your characters:
   - Assets: Browse through your assets at all your locations
   - Clones: Current augmentations, jump clones & jump cooldown timer
-  - Mails: Full mail client for receiving and sending Eve mails
+  - Mails: Browser through all mails
   - Communications: Browse through all communications
   - Skills: Training queue, catalogue of all trained skills and what ships can be flown
   - Wallet: Wallet and market Transactions
-- Corporations:
+
+- **Corporation monitor**: Check current information about each of your corporations: (depending on their roles)
   - Members: List of current corporation members
   - Wallets: Wallet, market transactions and balances for corporation wallets
-- Can generate desktop/mobile notifications for EVE notification and other important events (e.g. structure attacked, training queue expired)
-- Ability to search New Eden (similar to in-game search bar)
-- Show information about various entities (e.g. character, alliance, location); similar to in-game information windows
-- Can minimize to system tray and show indicator for new mail (desktop only)
-- Available for desktop (Windows, macOS, Linux) and mobile (Android)
-- Automatic dark and light theme
-- Offline mode
+
+- **Notifications**: Get notified on your desktop or mobile about new EVE communications and other important updates:
+  - Training queue became empty
+  - Contract status changed
+  - PI extraction went offline
+  - New EVE communication received (e.g. structure attacked)
+  - New EVE mail received
+
+- **New Eden search**: Search live on the game server, similar to in-game search bar:
+  - Search for: Agents, Alliances, Characters, Constellations, Corporations, Factions, Regions, Stations, Systems, Types
+  - Simple or advanced search with filters
+  - Search history
+
+- **Information windows**: Show additional information for most objects on screen, similar to in-game information windows:
+  - Alliances
+  - Characters
+  - Constellations
+  - Corporations
+  - Factions
+  - Locations (i.e. structure or station)
+  - Regions
+  - Systems
+  - Types
+
+- **Mail client**: Full mail client for receiving and sending Eve mails
+
+- **Run in Background**: The app can run in the background and continue to notify you while you are doing something else (e.g. play Eve Online)
+  - Desktop: Can minimize to system tray and show an indicator for new EVE mail
+  - Mobile: Will continue running in the background after switching to another app
+
+- **Theming**: Configurable color theme:
+  - Dark theme
+  - Light theme
 
 ## Highlights
 
