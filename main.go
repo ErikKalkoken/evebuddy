@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/driver/desktop"
 	"github.com/antihax/goesi"
@@ -46,6 +47,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
+	"github.com/ErikKalkoken/evebuddy/internal/remoteservice"
 )
 
 const (
@@ -196,6 +198,14 @@ func main() {
 	if isDesktop {
 		// ensure single instance
 		mu, err := ensureSingleInstance()
+		if errors.Is(err, mutex.ErrTimeout) {
+			err := remoteservice.ShowMainInstance()
+			if err != nil {
+				log.Fatal(err)
+			}
+			slog.Info("Terminating secondary instance")
+			os.Exit(0)
+		}
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -315,6 +325,13 @@ func main() {
 		if *resetSettingsFlag {
 			u.ResetDesktopSettings()
 		}
+		if err := remoteservice.Start(func() {
+			fyne.Do(func() {
+				u.MainWindow().Show()
+			})
+		}); err != nil {
+			log.Fatal(err)
+		}
 		u.ShowAndRun()
 	} else {
 		u := ui.NewMobileUI(bu)
@@ -357,8 +374,9 @@ func ensureSingleInstance() (mutex.Releaser, error) {
 		Timeout: mutexTimeout,
 	})
 	if errors.Is(err, mutex.ErrTimeout) {
-		return nil, fmt.Errorf("another instance running")
-	} else if err != nil {
+		return nil, fmt.Errorf("another instance running: %w", err)
+	}
+	if err != nil {
 		return nil, fmt.Errorf("acquire mutex: %w", err)
 	}
 	slog.Info("No other instances running")
