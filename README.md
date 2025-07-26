@@ -116,7 +116,7 @@ The following is a detailed list of EVE Buddy's features. All features are avail
 
 You can search for assets across all characters.
 
-![Screenshot from 2025-04-03](https://cdn.imgpile.com/f/qN4Wj7K_xl.png)
+<img width="1920" height="1046" alt="desktop_asset_search" src="https://github.com/user-attachments/assets/c82a47eb-f3ae-4c14-b1b2-20f85b47507c" />
 
 ### Notifications
 
@@ -170,9 +170,10 @@ You can see all colonies used for planetary industry from all your characters at
 
 EVE Buddy also works on Android and has a mobile friendly navigation:
 
-Character navigation | Mail browser | Asset browser
--- | -- | --
-![Screenshot_20250301-001409](https://github.com/user-attachments/assets/05b4d70c-65b5-49c6-95ab-d2a6dff846af)|![Screenshot_20250301-002237](https://github.com/user-attachments/assets/d8eec777-2690-49e6-8def-c38ee91ca81e)|![Screenshot_20250301-002825](https://github.com/user-attachments/assets/415956cd-c1d1-471d-afa5-51ff8034dbce)
+Home navigation | Training overview | Communications
+-- | -- | ---
+<img width="864" height="1920" alt="mobile_home" src="https://github.com/user-attachments/assets/43799cea-f164-4315-9a3b-6c99c86091d8" />|<img width="864" height="1920" alt="mobile_training" src="https://github.com/user-attachments/assets/7bf832f3-c0a0-43f0-905b-87e5ebdd88db" />|<img width="864" height="1920" alt="mobile_communications" src="https://github.com/user-attachments/assets/c7681b0d-8147-4031-867b-c9a01229ff2b" />
+
 
 ## Installing
 
