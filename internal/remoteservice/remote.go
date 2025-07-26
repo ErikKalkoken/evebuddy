@@ -2,6 +2,7 @@
 package remoteservice
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -50,7 +51,7 @@ func Start(showInstance func()) error {
 	go func() {
 		slog.Info("Remote service running", "port", remoteServicePort)
 		err := http.Serve(l, nil)
-		if err != nil {
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("Remote service: terminated prematurely", "error", err)
 		}
 	}()
