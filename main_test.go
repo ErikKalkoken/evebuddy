@@ -140,7 +140,7 @@ func TestBodyToString(t *testing.T) {
 				URL: u,
 			},
 		}
-		x := bodyToString(r)
+		x := copyResponseBody(r)
 		assert.Equal(t, "test", x)
 	})
 	t.Run("should return empty when no body", func(t *testing.T) {
@@ -150,7 +150,7 @@ func TestBodyToString(t *testing.T) {
 				URL: u,
 			},
 		}
-		x := bodyToString(r)
+		x := copyResponseBody(r)
 		assert.Equal(t, "", x)
 	})
 	t.Run("should redact blocked URL", func(t *testing.T) {
@@ -161,7 +161,7 @@ func TestBodyToString(t *testing.T) {
 				URL: u,
 			},
 		}
-		x := bodyToString(r)
+		x := copyResponseBody(r)
 		assert.Equal(t, "xxxxx", x)
 	})
 	t.Run("can handle error in reading body", func(t *testing.T) {
@@ -173,7 +173,7 @@ func TestBodyToString(t *testing.T) {
 			},
 			Body: b,
 		}
-		x := bodyToString(r)
+		x := copyResponseBody(r)
 		assert.Equal(t, "ERROR: custom error", x)
 	})
 }
@@ -210,7 +210,7 @@ func TestObfuscate(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := obfuscate(tc.s, tc.n)
+			got := obfuscate(tc.s, tc.n, "X")
 			assert.Equal(t, tc.want, got)
 		})
 	}
@@ -241,4 +241,13 @@ func TestCacheAdapter(t *testing.T) {
 		_, ok := ca.Get("a")
 		assert.False(t, ok)
 	})
+}
+
+func TestSetupCrashFile(t *testing.T) {
+	td := t.TempDir()
+	p, err := setupCrashFile(td)
+	if assert.NoError(t, err) {
+		_, err := os.Stat(p)
+		assert.NoError(t, err)
+	}
 }
