@@ -83,41 +83,38 @@ func (s *EveUniverseService) ToEntities(ctx context.Context, ids set.Set[int32])
 //
 // Invalid IDs (e.g. 0, 1) will be ignored.
 func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set[int32]) (set.Set[int32], error) {
+	var bad, missing set.Set[int32]
 	ids2 := ids.Clone()
-	ids2.Delete(0) // ignore invalid ID
+	ids2.Delete(0) // ignore zero ID
 	if ids2.Size() == 0 {
-		return set.Set[int32]{}, nil
+		return missing, nil
 	}
 	// Filter out known invalid IDs before continuing
-	var bad, missing set.Set[int32]
-	err := func() error {
-		for _, id := range invalidEveEntityIDs {
-			if ids2.Contains(id) {
-				bad.Add(1)
-				ids2.Delete(1)
-			}
+	for _, id := range invalidEveEntityIDs {
+		if ids2.Contains(id) {
+			bad.Add(id)
+			ids2.Delete(id)
 		}
-		if ids2.Size() == 0 {
-			return nil
-		}
+	}
+	wrapErr := func(err error) error {
+		return fmt.Errorf("AddMissingEntities: %w", err)
+	}
+	if ids2.Size() > 0 {
 		// Identify missing IDs
 		var err error
 		missing, err = s.st.MissingEveEntityIDs(ctx, ids2)
 		if err != nil {
-			return err
+			return missing, wrapErr(err)
 		}
-		if missing.Size() == 0 {
-			return nil
-		}
+	}
+	if missing.Size() > 0 {
 		// Call ESI to resolve missing IDs
-		if missing.Size() > 0 {
-			slog.Debug("Trying to resolve EveEntity IDs from ESI", "ids", missing)
-		}
+		slog.Debug("Trying to resolve EveEntity IDs from ESI", "ids", missing)
 		var ee []esi.PostUniverseNames200Ok
 		for chunk := range slices.Chunk(missing.Slice(), esiPostUniverseNamesMax) {
 			eeChunk, badChunk, err := s.resolveIDsFromESI(ctx, chunk)
 			if err != nil {
-				return err
+				return missing, wrapErr(err)
 			}
 			ee = append(ee, eeChunk...)
 			bad.AddSeq(slices.Values(badChunk))
@@ -129,16 +126,13 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 				Category: eveEntityCategoryFromESICategory(entity.Category),
 			})
 			if err != nil {
-				return err
+				return missing, wrapErr(err)
 			}
 		}
 		slog.Info("Stored newly resolved EveEntities", "count", len(ee))
-		return nil
-	}()
-	if err != nil {
-		return set.Set[int32]{}, fmt.Errorf("AddMissingEntities: %w", err)
 	}
 	if bad.Size() > 0 {
+		// Mark unresolvable IDs
 		for id := range bad.All() {
 			arg := storage.CreateEveEntityParams{
 				ID:       id,
