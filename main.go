@@ -157,15 +157,12 @@ func main() {
 		return
 	}
 
-	// desktop related init
-	if isDesktop {
-		// start uninstall app if requested
-		if *deleteDataFlag {
-			u := deleteapp.NewUI(fyneApp)
-			u.DataDir = dataDir
-			u.ShowAndRun()
-			return
-		}
+	// start uninstall app if requested
+	if isDesktop && *deleteDataFlag {
+		u := deleteapp.NewUI(fyneApp)
+		u.DataDir = dataDir
+		u.ShowAndRun()
+		return
 	}
 
 	// setup logfile for desktop
@@ -199,7 +196,7 @@ func main() {
 		// ensure single instance
 		mu, err := ensureSingleInstance()
 		if errors.Is(err, mutex.ErrTimeout) {
-			err := remoteservice.ShowMainInstance()
+			err := remoteservice.ShowPrimaryInstance()
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -210,9 +207,13 @@ func main() {
 			log.Fatal(err)
 		}
 		defer mu.Release()
+		slog.Info("Identified as primary instance")
 	}
 
-	crashFilePath := setupCrashFile(logDir)
+	crashFilePath, err := setupCrashFile(logDir)
+	if err != nil {
+		log.Fatalf("Failed to setup crash report file: %s", err)
+	}
 
 	// start pprof web server
 	if *pprofFlag {
@@ -296,7 +297,7 @@ func main() {
 	if key == "" {
 		key = fyneApp.Metadata().Custom["janiceAPIKey"]
 	}
-	slog.Info("Janice API key", "value", obfuscate(key, 4))
+	slog.Info("Janice API key", "value", obfuscate(key, 4, "X"))
 	bu := ui.NewBaseUI(ui.BaseUIParams{
 		App:              fyneApp,
 		CharacterService: cs,
@@ -339,15 +340,16 @@ func main() {
 	}
 }
 
-// obfuscate returns a new string of the same length as s, but only containing the last n characters from s.
-func obfuscate(s string, n int) string {
-	const X = "X"
+// obfuscate returns a new string of the same length as s with all characters replaced
+// with a placeholder, except for the last n characters.
+func obfuscate(s string, n int, placeholder string) string {
 	if n > len(s) || n < 0 {
-		return strings.Repeat(X, len(s))
+		return strings.Repeat(placeholder, len(s))
 	}
-	return strings.Repeat(X, len(s)-n) + s[len(s)-n:]
+	return strings.Repeat(placeholder, len(s)-n) + s[len(s)-n:]
 }
 
+// realtime represents the current time.
 type realtime struct{}
 
 func (r realtime) After(d time.Duration) <-chan time.Time {
@@ -383,21 +385,21 @@ func ensureSingleInstance() (mutex.Releaser, error) {
 	return mu, nil
 }
 
-func setupCrashFile(logDir string) (path string) {
-	path = filepath.Join(logDir, crashFileName)
+// setupCrashFile create a dedicated file for storing crash reports and returns it's path.
+func setupCrashFile(logDir string) (string, error) {
+	path := filepath.Join(logDir, crashFileName)
 	crashFile, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
-		slog.Error("Failed to open crash report file", "error", err)
-		return
+		return "", err
 	}
 	if err := debug.SetCrashOutput(crashFile, debug.CrashOptions{}); err != nil {
-		slog.Error("Failed to setup crash report", "error", err)
+		return "", err
 	}
 	crashFile.Close()
-	return
+	return path, nil
 }
 
-// logResponse is a callback for retryable logger, which is called for every response.
+// logResponse is a callback for retryablehttp.
 // It logs all HTTP errors and also the complete response when log level is DEBUG.
 func logResponse(l retryablehttp.Logger, r *http.Response) {
 	isDebug := slog.Default().Enabled(context.Background(), slog.LevelDebug)
@@ -414,7 +416,7 @@ func logResponse(l retryablehttp.Logger, r *http.Response) {
 
 	}
 	status := statusText(r)
-	body := bodyToString(r)
+	body := copyResponseBody(r)
 	var args []any
 	if isDebug {
 		args = []any{
@@ -436,7 +438,8 @@ func logResponse(l retryablehttp.Logger, r *http.Response) {
 	slog.Log(context.Background(), level, "HTTP response", args...)
 }
 
-func bodyToString(r *http.Response) string {
+// copyResponseBody returns a copy of the response body r. It preserves the body.
+func copyResponseBody(r *http.Response) string {
 	if r.Body == nil {
 		return ""
 	}
@@ -457,6 +460,7 @@ func bodyToString(r *http.Response) string {
 	return s
 }
 
+// statusText returns the status code of a response with adding information.
 func statusText(r *http.Response) string {
 	var s string
 	if r.StatusCode == 420 {
@@ -467,7 +471,7 @@ func statusText(r *http.Response) string {
 	return fmt.Sprintf("%d %s", r.StatusCode, s)
 }
 
-// cacheAdapter enabled the use of pcache with httpcache
+// cacheAdapter adopts pcache to be used with httpcache.
 type cacheAdapter struct {
 	c       *pcache.PCache
 	prefix  string

@@ -58,9 +58,9 @@ func Start(showInstance func()) error {
 	return nil
 }
 
-// ShowMainInstance sends a request the main instance to show it.
-// This function should be called by the client.
-func ShowMainInstance() error {
+// ShowPrimaryInstance sends a request to the primary instance to show it.
+// This function should be called by a secondary instance.
+func ShowPrimaryInstance() error {
 	client, err := rpc.DialHTTP("tcp", fmt.Sprintf("localhost:%d", remoteServicePort))
 	if err != nil {
 		return fmt.Errorf("dial remote service: %w", err)

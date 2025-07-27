@@ -13,7 +13,7 @@ func TestRemoteService(t *testing.T) {
 		isCalled = true
 	})
 	if assert.NoError(t, err) {
-		err := remoteservice.ShowMainInstance()
+		err := remoteservice.ShowPrimaryInstance()
 		if assert.NoError(t, err) {
 			assert.True(t, isCalled)
 		}
