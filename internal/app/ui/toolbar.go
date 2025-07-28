@@ -46,10 +46,10 @@ func newToolbar(u *DesktopUI) *toolbar {
 		it.Shortcut = sc.shortcut
 		return it
 	}
-	quit := fyne.NewMenuItem("Quit", func() {
-		u.App().Quit()
+	close := fyne.NewMenuItem("Close", func() {
+		u.MainWindow().Hide()
 	})
-	quit.Shortcut = &desktop.CustomShortcut{
+	close.Shortcut = &desktop.CustomShortcut{
 		KeyName:  fyne.KeyF4,
 		Modifier: fyne.KeyModifierAlt,
 	}
@@ -62,6 +62,7 @@ func newToolbar(u *DesktopUI) *toolbar {
 		fyne.NewMenuItem("User Data", u.showUserDataDialog),
 		fyne.NewMenuItem("About", u.ShowAboutDialog),
 		fyne.NewMenuItemSeparator(),
+		close,
 		makeMenuItem("Quit", u.shortcuts["quit"]),
 	)
 	a := &toolbar{
