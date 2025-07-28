@@ -4,13 +4,13 @@ Website = "https://github.com/ErikKalkoken/evebuddy"
   Icon = "icon.png"
   Name = "EVE Buddy"
   ID = "io.github.erikkalkoken.evebuddy"
-  Version = "0.37.0"
+  Version = "0.38.0"
   Build = 0
 
 [Release]
   BuildName = "evebuddy"
   ContentRating = "oars-1.1"
-  Description = "<p>EVE Buddy is a companion app for Eve Online players available on Windows, macOS, Linux and Android. Please see website for details.</p>"
+  Description = "<p>EVE Buddy is a multi-platform companion app for Eve Online players available on Windows, macOS, Linux and Android. Please see website for details.</p>"
   License = "MIT"
   Screenshots = "https://cdn.imgpile.com/f/aD27GDt_xl.png"
 
