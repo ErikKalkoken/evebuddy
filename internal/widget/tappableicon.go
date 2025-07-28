@@ -24,6 +24,26 @@ type TappableIcon struct {
 var _ fyne.Tappable = (*TappableIcon)(nil)
 var _ desktop.Hoverable = (*TappableIcon)(nil)
 
+// NewTappableIconWithMenu returns a new instance of a [TappableIcon] widget
+// that shows a pop up menu when tapped.
+func NewTappableIconWithMenu(res fyne.Resource, menu *fyne.Menu) *TappableIcon {
+	w := NewTappableIcon(res, nil)
+	w.OnTapped = func() {
+		if len(menu.Items) == 0 {
+			return
+		}
+		m := widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(w))
+		m.ShowAtRelativePosition(
+			fyne.NewPos(
+				-m.Size().Width+w.Size().Width,
+				w.Size().Height,
+			),
+			w,
+		)
+	}
+	return w
+}
+
 // NewTappableIcon returns a new instance of a [TappableIcon] widget.
 func NewTappableIcon(res fyne.Resource, tapped func()) *TappableIcon {
 	w := &TappableIcon{OnTapped: tapped, resource: res}
