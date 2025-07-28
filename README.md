@@ -1,6 +1,6 @@
 # EVE Buddy
 
-A companion app for Eve Online players available on Windows, Linux, macOS and Android.
+A multi-platform companion app for Eve Online players available on Windows, Linux, macOS and Android.
 
 [![GitHub Release](https://img.shields.io/github/v/release/ErikKalkoken/evebuddy)](https://github.com/ErikKalkoken/evebuddy/releases)
 [![Fyne](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fgithub.com%2FErikKalkoken%2Fevebuddy%2Fblob%2Fmain%2Fgo.mod&search=fyne%5C.io%5C%2Ffyne%5C%2Fv2%20(v%5Cd*%5C.%5Cd*%5C.%5Cd*)&replace=%241&label=Fyne&cacheSeconds=https%3A%2F%2Fgithub.com%2Ffyne-io%2Ffyne)](https://github.com/fyne-io/fyne)
@@ -174,7 +174,6 @@ Home navigation | Training overview | Communications
 -- | -- | ---
 <img width="864" height="1920" alt="mobile_home" src="https://github.com/user-attachments/assets/43799cea-f164-4315-9a3b-6c99c86091d8" />|<img width="864" height="1920" alt="mobile_training" src="https://github.com/user-attachments/assets/7bf832f3-c0a0-43f0-905b-87e5ebdd88db" />|<img width="864" height="1920" alt="mobile_communications" src="https://github.com/user-attachments/assets/c7681b0d-8147-4031-867b-c9a01229ff2b" />
 
-
 ## Installing
 
 To install EVE buddy just download the latest release from the releases page to your computer or mobile. The app ships as a single executable file that can be run directly. When you run the app for the first time it will automatically install itself for the current user (i.e. by creating folders in the home folder for the current user).
@@ -186,14 +185,17 @@ You find the latest packages for download on the [releases page](https://github.
 1. Download the windows zip file from the latest release on Github.
 1. Unzip the file into a directory of your choice and run the .exe file to start the app.
 
+> [!TIP]
+> Windows defender may report EVE Buddy incorrectly as containing a trojan. This is a [known issue](https://github.com/microsoft/go/issues/1255) with programs made with the Go programming language. Also, each EVE Buddy release is build from scratch on a fresh Windows container on Github, so it is highly unlikely to be infected. If this happens to you, please exclude EVE Buddy's executable from Windows defender to proceed.
+
 ### Mac OS
 
 1. Download the darwin zip file from the latest release on Github for your respective platform (arm or intel).
-1. Unzip the file into a directory of your choice
+1. Unzip the file into a directory of your choice.
 1. Run the .app file to start the app.
 
 > [!TIP]
-> MacOS may report this app incorrectly as "damaged", because it is not signed with an Apple certificate. You can remove this error by opening a terminal and running the following command. For more information please see [Fyne Troubleshooting](https://docs.fyne.io/faq/troubleshoot#distribution):
+> MacOS may report EVE Buddy incorrectly as "damaged", because it is not signed with an Apple certificate. You can remove this error by opening a terminal and running the following command. For more information please see [Fyne Troubleshooting](https://docs.fyne.io/faq/troubleshoot#distribution):
 >
 > ```sudo xattr -r -d com.apple.quarantine "EVE Buddy.app"```
 
