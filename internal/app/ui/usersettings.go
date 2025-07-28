@@ -195,8 +195,8 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 	}
 
 	sysTray := NewSettingItemSwitch(
-		"Close button",
-		"App will minimize to system tray when closed (requires restart)",
+		"Run in background",
+		"App will continue to run in background after window is closed (requires restart)",
 		func() bool {
 			return a.u.settings.SysTrayEnabled()
 		},

@@ -37,7 +37,7 @@ func NewUI(fyneApp fyne.App) UI {
 	return x
 }
 
-// RunApp runs the delete data app
+// ShowAndRun runs the delete data app
 func (u *UI) ShowAndRun() {
 	c := u.makePage()
 	u.window.SetContent(c)
@@ -69,7 +69,12 @@ func (u *UI) makePage() *fyne.Container {
 		)
 		u.window.SetContent(c)
 		go func() {
-			if err := u.removeFolders(ctx, pb); err == ErrCancel {
+			RemoveSettings(u.app)
+			if err := RemoveFolders(ctx, u.DataDir, func(p float64) {
+				fyne.Do(func() {
+					pb.SetValue(p)
+				})
+			}); err == ErrCancel {
 				fyne.Do(func() {
 					title.SetText("Data delete aborted")
 				})
@@ -114,8 +119,8 @@ func (u *UI) closeWithDialog(message string) {
 	d.Show()
 }
 
-func (u *UI) removeFolders(ctx context.Context, pb *widget.ProgressBar) error {
-	folders := []string{u.DataDir}
+func RemoveFolders(ctx context.Context, dir string, update func(p float64)) error {
+	folders := []string{dir}
 	for i, p := range folders {
 		select {
 		case <-ctx.Done():
@@ -125,15 +130,18 @@ func (u *UI) removeFolders(ctx context.Context, pb *widget.ProgressBar) error {
 				return err
 			}
 			slog.Info("Deleted directory", "path", p)
-			fyne.Do(func() {
-				pb.SetValue(float64(i+1) / float64(len(folders)))
-			})
+			if update != nil {
+				update(float64(i+1) / float64(len(folders)))
+			}
 		}
 	}
+	return nil
+}
+
+func RemoveSettings(app fyne.App) {
 	keys := set.Of(settings.Keys()...)
 	for k := range keys.All() {
-		u.app.Preferences().RemoveValue(k)
+		app.Preferences().RemoveValue(k)
 	}
 	slog.Info("Deleted setting keys", "count", keys.Size())
-	return nil
 }

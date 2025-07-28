@@ -8,8 +8,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-	// ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -22,7 +20,7 @@ type toolbar struct {
 	widget.BaseWidget
 
 	searchBar *widget.Entry
-	hamburger *kxwidget.IconButton
+	hamburger *iwidget.TappableIcon
 	u         *DesktopUI
 }
 
@@ -46,10 +44,10 @@ func newToolbar(u *DesktopUI) *toolbar {
 		it.Shortcut = sc.shortcut
 		return it
 	}
-	quit := fyne.NewMenuItem("Quit", func() {
-		u.App().Quit()
+	close := fyne.NewMenuItem("Close", func() {
+		u.MainWindow().Hide()
 	})
-	quit.Shortcut = &desktop.CustomShortcut{
+	close.Shortcut = &desktop.CustomShortcut{
 		KeyName:  fyne.KeyF4,
 		Modifier: fyne.KeyModifierAlt,
 	}
@@ -62,12 +60,15 @@ func newToolbar(u *DesktopUI) *toolbar {
 		fyne.NewMenuItem("User Data", u.showUserDataDialog),
 		fyne.NewMenuItem("About", u.ShowAboutDialog),
 		fyne.NewMenuItemSeparator(),
+		close,
 		makeMenuItem("Quit", u.shortcuts["quit"]),
 	)
+	hamburger := iwidget.NewTappableIconWithMenu(theme.MenuIcon(), menu)
+	hamburger.SetToolTip("Main menu")
 	a := &toolbar{
 		u:         u,
 		searchBar: searchBar,
-		hamburger: kxwidget.NewIconButtonWithMenu(theme.MenuIcon(), menu),
+		hamburger: hamburger,
 	}
 	a.ExtendBaseWidget(a)
 	return a

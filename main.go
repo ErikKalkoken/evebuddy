@@ -74,7 +74,12 @@ var blacklistedURLs = []string{"login.eveonline.com/v2/oauth/token"}
 
 // define flags
 var (
-	deleteDataFlag     = flag.Bool("delete-data", false, "Delete user data")
+	deleteDataFlag          = flag.Bool("delete-data", false, "Delete user data")
+	deleteDataNoConfirmFlag = flag.Bool(
+		"delete-data-no-confirm",
+		false,
+		"Delete user data without asking for confirmation",
+	)
 	developFlag        = flag.Bool("dev", false, "Enable developer features")
 	dirsFlag           = flag.Bool("dirs", false, "Show directories for user data")
 	disableUpdatesFlag = flag.Bool("disable-updates", false, "Disable all periodic updates")
@@ -154,6 +159,15 @@ func main() {
 	if *dirsFlag {
 		fmt.Println(dataDir)
 		fmt.Println(fyneApp.Storage().RootURI().Path())
+		return
+	}
+
+	if *deleteDataNoConfirmFlag {
+		deleteapp.RemoveSettings(fyneApp)
+		err := deleteapp.RemoveFolders(context.Background(), dataDir, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
 		return
 	}
 

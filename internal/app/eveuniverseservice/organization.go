@@ -121,13 +121,13 @@ func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 			return optional.New(v)
 		}
 		arg := storage.UpdateOrCreateEveCorporationParams{
-			AllianceID:    optional.FromIntegerWithZero(r.AllianceId),
+			AllianceID:    optionalFromSpecialEntityID(r.AllianceId),
 			CeoID:         optionalFromSpecialEntityID(r.CeoId),
 			CreatorID:     optionalFromSpecialEntityID(r.CreatorId),
-			FactionID:     optional.FromIntegerWithZero(r.FactionId),
+			FactionID:     optionalFromSpecialEntityID(r.FactionId),
 			DateFounded:   optional.FromTimeWithZero(r.DateFounded),
 			Description:   r.Description,
-			HomeStationID: optional.FromIntegerWithZero(r.HomeStationId),
+			HomeStationID: optionalFromSpecialEntityID(r.HomeStationId),
 			ID:            id,
 			MemberCount:   r.MemberCount,
 			Name:          r.Name,

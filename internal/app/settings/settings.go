@@ -58,7 +58,7 @@ const (
 	settingNotifyTrainingEnabledDefault       = false
 	settingRecentSearches                     = "settingRecentSearches"
 	settingSysTrayEnabled                     = "settingSysTrayEnabled"
-	settingSysTrayEnabledDefault              = false
+	settingSysTrayEnabledDefault              = true
 	settingTabsMainID                         = "tabs-main-id"
 	settingTabsMainIDDefault                  = -1
 	settingWindowHeightDefault                = 600

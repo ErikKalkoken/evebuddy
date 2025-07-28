@@ -15,7 +15,7 @@ import (
 )
 
 func TestEveCorporation(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
@@ -32,10 +32,10 @@ func TestEveCorporation(t *testing.T) {
 			WarEligible: false,
 		}
 		// when
-		err := r.UpdateOrCreateEveCorporation(ctx, arg)
+		err := st.UpdateOrCreateEveCorporation(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			got, err := r.GetEveCorporation(ctx, arg.ID)
+			got, err := st.GetEveCorporation(ctx, arg.ID)
 			if assert.NoError(t, err) {
 				assert.Nil(t, got.Alliance)
 				assert.Nil(t, got.Faction)
@@ -80,10 +80,10 @@ func TestEveCorporation(t *testing.T) {
 			WarEligible:   false,
 		}
 		// when
-		err := r.UpdateOrCreateEveCorporation(ctx, arg)
+		err := st.UpdateOrCreateEveCorporation(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			got, err := r.GetEveCorporation(ctx, arg.ID)
+			got, err := st.GetEveCorporation(ctx, arg.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, alliance, got.Alliance)
 				assert.Equal(t, ceo, got.Ceo)
@@ -131,10 +131,10 @@ func TestEveCorporation(t *testing.T) {
 			WarEligible:   false,
 		}
 		// when
-		err := r.UpdateOrCreateEveCorporation(ctx, arg)
+		err := st.UpdateOrCreateEveCorporation(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			got, err := r.GetEveCorporation(ctx, arg.ID)
+			got, err := st.GetEveCorporation(ctx, arg.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, alliance, got.Alliance)
 				assert.Equal(t, ceo, got.Ceo)
@@ -157,7 +157,7 @@ func TestEveCorporation(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateEveCorporation()
 		// when
-		c2, err := r.GetEveCorporation(ctx, c1.ID)
+		c2, err := st.GetEveCorporation(ctx, c1.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c1.Name, c2.Name)
@@ -190,7 +190,7 @@ func TestEveCorporation(t *testing.T) {
 			WarEligible:   true,
 		})
 		// when
-		c2, err := r.GetEveCorporation(ctx, c1.ID)
+		c2, err := st.GetEveCorporation(ctx, c1.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, alliance, c2.Alliance)
@@ -216,7 +216,7 @@ func TestEveCorporation(t *testing.T) {
 		c1 := factory.CreateEveCorporation()
 		c2 := factory.CreateEveCorporation()
 		// when
-		got, err := r.ListEveCorporationIDs(ctx)
+		got, err := st.ListEveCorporationIDs(ctx)
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(c1.ID, c2.ID)
@@ -228,11 +228,11 @@ func TestEveCorporation(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateEveCorporation()
 		// when
-		err := r.UpdateEveCorporationName(ctx, c1.ID, "Alpha")
+		err := st.UpdateEveCorporationName(ctx, c1.ID, "Alpha")
 		// then
 		if assert.NoError(t, err) {
 			// assert.False(t, created)
-			r, err := r.GetEveCorporation(ctx, c1.ID)
+			r, err := st.GetEveCorporation(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "Alpha", r.Name)
 			}
