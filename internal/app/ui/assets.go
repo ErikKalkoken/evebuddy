@@ -46,6 +46,7 @@ type assetRow struct {
 	priceDisplay    string
 	quantity        int
 	quantityDisplay string
+	regionID        int32
 	regionName      string
 	searchTarget    string
 	tags            set.Set[string]
@@ -85,6 +86,7 @@ func newAssetRow(ca *app.CharacterAsset, assetCollection assetcollection.AssetCo
 		r.locationDisplay = location.DisplayRichText()
 		if location.SolarSystem != nil {
 			r.regionName = location.SolarSystem.Constellation.Region.Name
+			r.regionID = location.SolarSystem.Constellation.Region.ID
 		}
 	} else {
 		r.locationDisplay = iwidget.RichTextSegmentsFromText("?")
@@ -116,6 +118,7 @@ type assets struct {
 	rows           []assetRow
 	rowsFiltered   []assetRow
 	selectCategory *kxwidget.FilterChipSelect
+	selectGroup    *kxwidget.FilterChipSelect
 	selectLocation *kxwidget.FilterChipSelect
 	selectOwner    *kxwidget.FilterChipSelect
 	selectRegion   *kxwidget.FilterChipSelect
@@ -129,7 +132,7 @@ type assets struct {
 func newAssets(u *baseUI) *assets {
 	headers := []headerDef{
 		{label: "Item", width: 300},
-		{label: "Class", width: 200},
+		{label: "Group", width: 200},
 		{label: "Location", width: columnWidthLocation},
 		{label: "Owner", width: columnWidthEntity},
 		{label: "Qty.", width: 75},
@@ -182,6 +185,9 @@ func newAssets(u *baseUI) *assets {
 	a.selectCategory = kxwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
+	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Group", []string{}, func(string) {
+		a.filterRows(-1)
+	}, a.u.window)
 	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
 		a.filterRows(-1)
 	})
@@ -213,6 +219,7 @@ func newAssets(u *baseUI) *assets {
 func (a *assets) CreateRenderer() fyne.WidgetRenderer {
 	filters := container.NewHBox(
 		a.selectCategory,
+		a.selectGroup,
 		a.selectRegion,
 		a.selectLocation,
 		a.selectOwner,
@@ -288,6 +295,11 @@ func (a *assets) filterRows(sortCol int) {
 	if x := a.selectCategory.Selected; x != "" {
 		rows = xslices.Filter(rows, func(o assetRow) bool {
 			return o.categoryName == x
+		})
+	}
+	if x := a.selectGroup.Selected; x != "" {
+		rows = xslices.Filter(rows, func(o assetRow) bool {
+			return o.groupName == x
 		})
 	}
 	if x := a.selectOwner.Selected; x != "" {
@@ -368,6 +380,9 @@ func (a *assets) filterRows(sortCol int) {
 	})...).All()))
 	a.selectCategory.SetOptions(xslices.Map(rows, func(o assetRow) string {
 		return o.categoryName
+	}))
+	a.selectGroup.SetOptions(xslices.Map(rows, func(o assetRow) string {
+		return o.groupName
 	}))
 	a.selectOwner.SetOptions(xslices.Map(rows, func(o assetRow) string {
 		return o.characterName
@@ -509,11 +524,15 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 	item := makeLinkLabelWithWrap(r.typeNameDisplay, func() {
 		u.ShowTypeInfoWindowWithCharacter(r.typeID, r.characterID)
 	})
-	var location fyne.CanvasObject
+	var location, region fyne.CanvasObject
 	if r.location != nil {
 		location = makeLocationLabel(r.location, u.ShowLocationInfoWindow)
+		region = makeLinkLabel(r.regionName, func() {
+			u.ShowInfoWindow(app.EveEntityRegion, r.regionID)
+		})
 	} else {
 		location = widget.NewLabel("?")
+		region = widget.NewLabel("?")
 	}
 	fi := []*widget.FormItem{
 		widget.NewFormItem("Owner", makeOwnerActionLabel(
@@ -522,8 +541,10 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 			u.ShowEveEntityInfoWindow,
 		)),
 		widget.NewFormItem("Item", item),
-		widget.NewFormItem("Class", widget.NewLabel(r.groupName)),
+		widget.NewFormItem("Group", widget.NewLabel(r.groupName)),
+		widget.NewFormItem("Category", widget.NewLabel(r.categoryName)),
 		widget.NewFormItem("Location", location),
+		widget.NewFormItem("Region", region),
 		widget.NewFormItem(
 			"Price",
 			widget.NewLabel(r.price.StringFunc("?", func(v float64) string {
