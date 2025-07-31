@@ -77,7 +77,7 @@ func (a *userSettings) CreateRenderer() fyne.WidgetRenderer {
 	makeSettingsPage := func(title string, content fyne.CanvasObject, actions fyne.CanvasObject) fyne.CanvasObject {
 		return iwidget.NewAppBarWithTrailing(title, content, actions)
 	}
-	generalContent, generalActions := a.makeGeneralSettingsPage()
+	generalContent, generalActions := a.makeGeneralPage()
 	notificationContent, notificationActions := a.makeNotificationPage()
 	tabs := container.NewAppTabs(
 		container.NewTabItem("General", makeSettingsPage(
@@ -95,7 +95,7 @@ func (a *userSettings) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(tabs)
 }
 
-func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.IconButton) {
+func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 	logLevel := NewSettingItemOptions(SettingItemOptions{
 		label:        "Log level",
 		hint:         "Set current log level",
@@ -110,46 +110,6 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 		window: a.w,
 	})
 
-	vMin, vMax, vDef := a.u.settings.MaxMailsPresets()
-	maxMail := NewSettingItemSlider(SettingItemSliderParams{
-		label:        "Maximum mails",
-		hint:         "Max number of mails downloaded. 0 = unlimited.",
-		minValue:     float64(vMin),
-		maxValue:     float64(vMax),
-		defaultValue: float64(vDef),
-		step:         1,
-		getter: func() float64 {
-			return float64(a.u.settings.MaxMails())
-		},
-		setter: func(v float64) {
-			a.u.settings.SetMaxMails(int(v))
-		},
-		window: a.w,
-	})
-
-	vMin, vMax, vDef = a.u.settings.MaxWalletTransactionsPresets()
-	maxWallet := NewSettingItemSlider(SettingItemSliderParams{
-		label:        "Maximum wallet transaction",
-		hint:         "Max wallet transactions downloaded. 0 = unlimited.",
-		minValue:     float64(vMin),
-		maxValue:     float64(vMax),
-		defaultValue: float64(vDef),
-		step:         1,
-		getter: func() float64 {
-			return float64(a.u.settings.MaxWalletTransactions())
-		},
-		setter: func(v float64) {
-			a.u.settings.SetMaxWalletTransactions(int(v))
-		},
-		window: a.w,
-	})
-	preferMarketTab := NewSettingItemSwitch(SettingItemSwitch{
-		label:     "Prefer market tab",
-		hint:      "Show market tab for tradeable items",
-		getter:    a.u.settings.PreferMarketTab,
-		onChanged: a.u.settings.SetPreferMarketTab,
-	})
-
 	developerMode := NewSettingItemSwitch(SettingItemSwitch{
 		label:     "Developer Mode",
 		hint:      "App shows additional technical information like Character IDs",
@@ -157,6 +117,19 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 		onChanged: a.u.settings.SetDeveloperMode,
 	})
 
+	items := []SettingItem{
+		NewSettingItemHeading("Application"),
+		logLevel,
+		developerMode,
+	}
+
+	sysTray := NewSettingItemSwitch(SettingItemSwitch{
+		defaultValue: a.u.settings.SysTrayEnabledDefault(),
+		label:        "Run in background",
+		hint:         "App will continue to run in background after window is closed (requires restart)",
+		getter:       a.u.settings.SysTrayEnabled,
+		onChanged:    a.u.settings.SetSysTrayEnabled,
+	})
 	colorTheme := NewSettingItemOptions(SettingItemOptions{
 		label:        "Appearance",
 		hint:         "Choose the color scheme. 'Auto' uses the current OS theme.",
@@ -199,31 +172,62 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 		onChanged: a.u.settings.SetDisableDPIDetection,
 	})
 
-	items := []SettingItem{
-		NewSettingItemHeading("Application"),
-		logLevel,
-		preferMarketTab,
-		developerMode,
-		NewSettingItemSeparator(),
-		NewSettingItemHeading("UI"),
-		colorTheme,
-		fyneScale,
-		disableDPIDetection,
-		NewSettingItemSeparator(),
-		NewSettingItemHeading("EVE Online"),
-		maxMail,
-		maxWallet,
+	preferMarketTab := NewSettingItemSwitch(SettingItemSwitch{
+		label:     "Prefer market tab",
+		hint:      "Show market tab for tradeable items",
+		getter:    a.u.settings.PreferMarketTab,
+		onChanged: a.u.settings.SetPreferMarketTab,
+	})
+
+	if a.u.isDesktop {
+		items = slices.Concat(items, []SettingItem{
+			sysTray,
+			NewSettingItemHeading("UI"),
+			colorTheme,
+			fyneScale,
+			disableDPIDetection,
+			preferMarketTab,
+		})
 	}
 
-	sysTray := NewSettingItemSwitch(SettingItemSwitch{
-		label:     "Run in background",
-		hint:      "App will continue to run in background after window is closed (requires restart)",
-		getter:    a.u.settings.SysTrayEnabled,
-		onChanged: a.u.settings.SetSysTrayEnabled,
+	vMin, vMax, vDef := a.u.settings.MaxMailsPresets()
+	maxMail := NewSettingItemSlider(SettingItemSliderParams{
+		label:        "Maximum mails",
+		hint:         "Max number of mails downloaded. 0 = unlimited.",
+		minValue:     float64(vMin),
+		maxValue:     float64(vMax),
+		defaultValue: float64(vDef),
+		step:         1,
+		getter: func() float64 {
+			return float64(a.u.settings.MaxMails())
+		},
+		setter: func(v float64) {
+			a.u.settings.SetMaxMails(int(v))
+		},
+		window: a.w,
 	})
-	if a.u.isDesktop {
-		items = slices.Insert(items, 2, sysTray)
-	}
+
+	vMin, vMax, vDef = a.u.settings.MaxWalletTransactionsPresets()
+	maxWallet := NewSettingItemSlider(SettingItemSliderParams{
+		label:        "Maximum wallet transaction",
+		hint:         "Max wallet transactions downloaded. 0 = unlimited.",
+		minValue:     float64(vMin),
+		maxValue:     float64(vMax),
+		defaultValue: float64(vDef),
+		step:         1,
+		getter: func() float64 {
+			return float64(a.u.settings.MaxWalletTransactions())
+		},
+		setter: func(v float64) {
+			a.u.settings.SetMaxWalletTransactions(int(v))
+		},
+		window: a.w,
+	})
+	items = slices.Concat(items, []SettingItem{
+		NewSettingItemHeading("Updates"),
+		maxMail,
+		maxWallet,
+	})
 
 	list := NewSettingList(items)
 
@@ -264,16 +268,16 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 	reset := settingAction{
 		Label: "Reset to defaults",
 		Action: func() {
-			colorTheme.Reset()
+			developerMode.Reset()
 			logLevel.Reset()
-			a.u.settings.ResetDeveloperMode()
-			a.u.settings.ResetMaxMails()
-			a.u.settings.ResetMaxWalletTransactions()
-			a.u.settings.ResetPreferMarketTab()
-			a.u.settings.ResetSysTrayEnabled()
-			a.u.settings.ResetFyneScale()
-			a.u.settings.ResetDisableDPIDetection()
+			sysTray.Reset()
 			list.Refresh()
+			colorTheme.Reset()
+			disableDPIDetection.Reset()
+			fyneScale.Reset()
+			preferMarketTab.Reset()
+			maxMail.Reset()
+			maxWallet.Reset()
 		},
 	}
 	exportAppLog := settingAction{
@@ -455,15 +459,17 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 
 	// add global items
 	notifyCommunications := NewSettingItemSwitch(SettingItemSwitch{
-		label:     "Notify communications",
-		hint:      "Whether to notify new communications",
-		getter:    a.u.settings.NotifyCommunicationsEnabled,
-		onChanged: a.u.settings.SetNotifyCommunicationsEnabled,
+		defaultValue: a.u.settings.NotifyCommunicationsEnabledDefault(),
+		label:        "Notify communications",
+		hint:         "Whether to notify new communications",
+		getter:       a.u.settings.NotifyCommunicationsEnabled,
+		onChanged:    a.u.settings.SetNotifyCommunicationsEnabled,
 	})
 	notifyMails := NewSettingItemSwitch(SettingItemSwitch{
-		label:  "Notify mails",
-		hint:   "Whether to notify new mails",
-		getter: a.u.settings.NotifyMailsEnabled,
+		defaultValue: a.u.settings.NotifyMailsEnabledDefault(),
+		label:        "Notify mails",
+		hint:         "Whether to notify new mails",
+		getter:       a.u.settings.NotifyMailsEnabled,
 		onChanged: func(on bool) {
 			a.u.settings.SetNotifyMailsEnabled(on)
 			if on {
@@ -472,9 +478,10 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 		},
 	})
 	notifyPI := NewSettingItemSwitch(SettingItemSwitch{
-		label:  "Planetary Industry",
-		hint:   "Whether to notify about expired extractions",
-		getter: a.u.settings.NotifyPIEnabled,
+		defaultValue: a.u.settings.NotifyPIEnabled(),
+		label:        "Planetary Industry",
+		hint:         "Whether to notify about expired extractions",
+		getter:       a.u.settings.NotifyPIEnabled,
 		onChanged: func(on bool) {
 			a.u.settings.SetNotifyPIEnabled(on)
 			if on {
@@ -484,9 +491,10 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 	})
 
 	notifyTraining := NewSettingItemSwitch(SettingItemSwitch{
-		label:  "Notify Training",
-		hint:   "Whether to notify when skillqueue is empty",
-		getter: a.u.settings.NotifyTrainingEnabled,
+		defaultValue: a.u.settings.NotifyTrainingEnabled(),
+		label:        "Notify Training",
+		hint:         "Whether to notify when skillqueue is empty",
+		getter:       a.u.settings.NotifyTrainingEnabled,
 		onChanged: func(on bool) {
 			ctx := context.Background()
 			if on {
@@ -508,9 +516,10 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 	})
 
 	notifyContracts := NewSettingItemSwitch(SettingItemSwitch{
-		label:  "Notify Contracts",
-		hint:   "Whether to notify when contract status changes",
-		getter: a.u.settings.NotifyContractsEnabled,
+		defaultValue: a.u.settings.NotifyContractsEnabledDefault(),
+		label:        "Notify Contracts",
+		hint:         "Whether to notify when contract status changes",
+		getter:       a.u.settings.NotifyContractsEnabled,
 		onChanged: func(on bool) {
 			a.u.settings.SetNotifyContractsEnabled(on)
 			if on {
@@ -652,12 +661,12 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 	reset := settingAction{
 		Label: "Reset to defaults",
 		Action: func() {
-			a.u.settings.ResetNotifyCommunicationsEnabled()
-			a.u.settings.ResetNotifyContractsEnabled()
-			a.u.settings.ResetNotifyMailsEnabled()
-			a.u.settings.ResetNotifyPIEnabled()
-			a.u.settings.ResetNotifyTimeoutHours()
-			a.u.settings.ResetNotifyTrainingEnabled()
+			notifyCommunications.Reset()
+			notifyContracts.Reset()
+			notifyPI.Reset()
+			notifyTraining.Reset()
+			notifyMails.Reset()
+			notifTimeout.Reset()
 			typesEnabled.Clear()
 			a.u.settings.ResetNotificationTypesEnabled()
 			list.Refresh()
@@ -742,6 +751,9 @@ func (si SettingItem) Reset() {
 	if si.Setter == nil || si.Default == nil {
 		return
 	}
+	if si.Getter() == si.Default {
+		return
+	}
 	si.Setter(si.Default)
 }
 
@@ -816,8 +828,9 @@ type SettingItemSliderParams struct {
 
 func NewSettingItemSlider(arg SettingItemSliderParams) SettingItem {
 	return SettingItem{
-		Label: arg.label,
-		Hint:  arg.hint,
+		Default: arg.defaultValue,
+		Label:   arg.label,
+		Hint:    arg.hint,
 		Getter: func() any {
 			return arg.getter()
 		},
