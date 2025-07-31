@@ -122,6 +122,7 @@ func main() {
 
 	// start fyne app
 	fyneApp := app.NewWithID(appID)
+	appSettings := settings.New(fyneApp.Preferences())
 	var isDesktop bool
 	if !*mobileFlag {
 		_, isDesktop = fyneApp.(desktop.App)
@@ -136,8 +137,8 @@ func main() {
 
 	// set log level from settings
 	if *logLevelFlag == "" {
-		s := settings.New(fyneApp.Preferences())
-		if l := s.LogLevelSlog(); l != logLevelDefault {
+
+		if l := appSettings.LogLevelSlog(); l != logLevelDefault {
 			slog.Info("Setting log level", "level", l)
 			slog.SetLogLoggerLevel(l)
 		}
@@ -307,6 +308,8 @@ func main() {
 	})
 
 	// Init UI
+	os.Setenv("FYNE_SCALE", fmt.Sprint(appSettings.FyneScale()))
+	os.Setenv("FYNE_DISABLE_DPI_DETECTION", fmt.Sprint(appSettings.FyneDisableDPIDetection()))
 	key := os.Getenv("JANICE_API_KEY")
 	if key == "" {
 		key = fyneApp.Metadata().Custom["janiceAPIKey"]

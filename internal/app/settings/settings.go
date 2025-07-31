@@ -56,15 +56,18 @@ const (
 	settingNotifyTrainingEarliest             = "settingNotifyTrainingEarliest"
 	settingNotifyTrainingEnabled              = "settingNotifyTrainingEnabled"
 	settingNotifyTrainingEnabledDefault       = false
+	settingPreferMarketTab                    = "settingPreferMarketTab"
 	settingRecentSearches                     = "settingRecentSearches"
 	settingSysTrayEnabled                     = "settingSysTrayEnabled"
 	settingSysTrayEnabledDefault              = true
 	settingTabsMainID                         = "tabs-main-id"
 	settingTabsMainIDDefault                  = -1
+	settingFyneDisableDPIDetection            = "settingFyneDisableDPIDetection"
+	settingFyneScale                          = "settingFyneScale"
+	settingFyneScaleDefault                   = 1.0
 	settingWindowHeightDefault                = 600
 	settingWindowsSize                        = "window-size"
 	settingWindowWidthDefault                 = 1000
-	settingPreferMarketTab                    = "settingPreferMarketTab"
 )
 
 // Settings represents the settings for the app and provides an API for reading and writing settings.
@@ -440,6 +443,34 @@ func (s Settings) ResetColorTheme() {
 
 func (s Settings) SetColorTheme(v ColorTheme) {
 	s.p.SetString(settingColorTheme, string(v))
+}
+
+func (s Settings) FyneScale() float64 {
+	return s.p.FloatWithFallback(settingFyneScale, settingFyneScaleDefault)
+}
+
+func (s Settings) FyneScaleDefault() float64 {
+	return settingFyneScaleDefault
+}
+
+func (s Settings) ResetFyneScale() {
+	s.SetFyneScale(settingFyneScaleDefault)
+}
+
+func (s Settings) SetFyneScale(v float64) {
+	s.p.SetFloat(settingFyneScale, v)
+}
+
+func (s Settings) FyneDisableDPIDetection() bool {
+	return s.p.Bool(settingFyneDisableDPIDetection)
+}
+
+func (s Settings) ResetSetFyneDisableDPIDetection() {
+	s.SetFyneDisableDPIDetection(false)
+}
+
+func (s Settings) SetFyneDisableDPIDetection(v bool) {
+	s.p.SetBool(settingFyneDisableDPIDetection, v)
 }
 
 // Keys returns all setting keys. Mostly to know what to delete.

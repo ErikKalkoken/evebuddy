@@ -113,37 +113,38 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 	)
 
 	vMin, vMax, vDef := a.u.settings.MaxMailsPresets()
-	maxMail := NewSettingItemSlider(
-		"Maximum mails",
-		"Max number of mails downloaded. 0 = unlimited.",
-		float64(vMin),
-		float64(vMax),
-		float64(vDef),
-		func() float64 {
+	maxMail := NewSettingItemSlider(SettingItemSliderParams{
+		label:        "Maximum mails",
+		hint:         "Max number of mails downloaded. 0 = unlimited.",
+		minValue:     float64(vMin),
+		maxValue:     float64(vMax),
+		defaultValue: float64(vDef),
+		step:         1,
+		getter: func() float64 {
 			return float64(a.u.settings.MaxMails())
 		},
-		func(v float64) {
+		setter: func(v float64) {
 			a.u.settings.SetMaxMails(int(v))
 		},
-		a.w,
-	)
+		window: a.w,
+	})
 
 	vMin, vMax, vDef = a.u.settings.MaxWalletTransactionsPresets()
-	maxWallet := NewSettingItemSlider(
-		"Maximum wallet transaction",
-		"Max wallet transactions downloaded. 0 = unlimited.",
-		float64(vMin),
-		float64(vMax),
-		float64(vDef),
-		func() float64 {
+	maxWallet := NewSettingItemSlider(SettingItemSliderParams{
+		label:        "Maximum wallet transaction",
+		hint:         "Max wallet transactions downloaded. 0 = unlimited.",
+		minValue:     float64(vMin),
+		maxValue:     float64(vMax),
+		defaultValue: float64(vDef),
+		step:         1,
+		getter: func() float64 {
 			return float64(a.u.settings.MaxWalletTransactions())
 		},
-		func(v float64) {
+		setter: func(v float64) {
 			a.u.settings.SetMaxWalletTransactions(int(v))
 		},
-		a.w,
-	)
-
+		window: a.w,
+	})
 	preferMarketTab := NewSettingItemSwitch(
 		"Prefer market tab",
 		"Show market tab for tradeable items",
@@ -182,12 +183,26 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 		},
 	)
 
+	fyneScale := NewSettingItemSlider(SettingItemSliderParams{
+		label:        "UI Scale",
+		hint:         "Scale factor for all UI elements. Required restart.",
+		minValue:     0.5,
+		maxValue:     2.0,
+		defaultValue: a.u.settings.FyneScaleDefault(),
+		step:         0.1,
+		getter:       a.u.settings.FyneScale,
+		setter:       a.u.settings.SetFyneScale,
+		window:       a.w,
+	})
 	items := []SettingItem{
 		NewSettingItemHeading("Application"),
 		logLevel,
-		colorTheme,
 		preferMarketTab,
 		developerMode,
+		NewSettingItemSeparator(),
+		NewSettingItemHeading("UI"),
+		colorTheme,
+		fyneScale,
 		NewSettingItemSeparator(),
 		NewSettingItemHeading("EVE Online"),
 		maxMail,
@@ -247,12 +262,14 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 	reset := settingAction{
 		Label: "Reset to defaults",
 		Action: func() {
-			a.u.settings.ResetPreferMarketTab()
+			a.u.settings.ResetColorTheme()
 			a.u.settings.ResetDeveloperMode()
 			a.u.settings.ResetLogLevel()
 			a.u.settings.ResetMaxMails()
 			a.u.settings.ResetMaxWalletTransactions()
+			a.u.settings.ResetPreferMarketTab()
 			a.u.settings.ResetSysTrayEnabled()
+			a.u.settings.ResetFyneScale()
 			list.Refresh()
 		},
 	}
@@ -512,20 +529,21 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 		},
 	)
 	vMin, vMax, vDef := a.u.settings.NotifyTimeoutHoursPresets()
-	notifTimeout := NewSettingItemSlider(
-		"Notify Timeout",
-		"Events older then this value in hours will not be notified",
-		float64(vMin),
-		float64(vMax),
-		float64(vDef),
-		func() float64 {
+	notifTimeout := NewSettingItemSlider(SettingItemSliderParams{
+		label:        "Notify Timeout",
+		hint:         "Events older then this value in hours will not be notified",
+		minValue:     float64(vMin),
+		maxValue:     float64(vMax),
+		defaultValue: float64(vDef),
+		step:         1.0,
+		getter: func() float64 {
 			return float64(a.u.settings.NotifyTimeoutHours())
 		},
-		func(v float64) {
+		setter: func(v float64) {
 			a.u.settings.SetNotifyTimeoutHours(int(v))
 		},
-		a.w,
-	)
+		window: a.w,
+	})
 	items := []SettingItem{
 		NewSettingItemHeading("Global"),
 		notifyCommunications,
@@ -772,42 +790,49 @@ func NewSettingItemCustom(
 	}
 }
 
-func NewSettingItemSlider(
-	label, hint string,
-	minV, maxV, defaultV float64,
-	getter func() float64,
-	setter func(v float64),
-	window fyne.Window,
-) SettingItem {
+type SettingItemSliderParams struct {
+	defaultValue float64
+	getter       func() float64
+	hint         string
+	label        string
+	maxValue     float64
+	minValue     float64
+	setter       func(v float64)
+	step         float64
+	window       fyne.Window
+}
+
+func NewSettingItemSlider(arg SettingItemSliderParams) SettingItem {
 	return SettingItem{
-		Label: label,
-		Hint:  hint,
+		Label: arg.label,
+		Hint:  arg.hint,
 		Getter: func() any {
-			return getter()
+			return arg.getter()
 		},
 		Setter: func(v any) {
 			switch x := v.(type) {
 			case float64:
-				setter(x)
+				arg.setter(x)
 			case int:
-				setter(float64(x))
+				arg.setter(float64(x))
 			default:
-				panic("setting item: unsupported type: " + label)
+				panic("setting item: unsupported type: " + arg.label)
 			}
 		},
 		onSelected: func(it SettingItem, refresh func()) {
-			sl := kxwidget.NewSlider(minV, maxV)
-			sl.SetValue(float64(getter()))
-			sl.OnChangeEnded = setter
+			sl := kxwidget.NewSlider(arg.minValue, arg.maxValue)
+			sl.SetValue(arg.getter())
+			sl.SetStep(arg.step)
+			sl.OnChangeEnded = arg.setter
 			d := makeSettingDialog(
 				sl,
 				it.Label,
 				it.Hint,
 				func() {
-					sl.SetValue(defaultV)
+					sl.SetValue(arg.defaultValue)
 				},
 				refresh,
-				window,
+				arg.window,
 			)
 			d.Show()
 		},

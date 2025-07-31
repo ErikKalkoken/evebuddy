@@ -62,16 +62,16 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCorporation()
-		e1 := factory.CreateEveEntity()
-		e2 := factory.CreateEveEntity()
-		e3 := factory.CreateEveEntity()
+		firstParty := factory.CreateEveEntity()
+		secondParty := factory.CreateEveEntity()
+		taxReceiver := factory.CreateEveEntity()
 		date := time.Now()
 		arg := storage.CreateCorporationWalletJournalEntryParams{
 			Amount:        123.45,
 			Balance:       234.56,
 			ContextID:     42,
 			ContextIDType: "corporation",
-			FirstPartyID:  e1.ID,
+			FirstPartyID:  firstParty.ID,
 			Date:          date,
 			Description:   "bla bla",
 			DivisionID:    1,
@@ -79,9 +79,9 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 			CorporationID: c.ID,
 			Reason:        "my reason",
 			RefType:       "player_donation",
-			SecondPartyID: e2.ID,
+			SecondPartyID: secondParty.ID,
 			Tax:           0.12,
-			TaxReceiverID: e3.ID,
+			TaxReceiverID: taxReceiver.ID,
 		}
 		// when
 		err := st.CreateCorporationWalletJournalEntry(ctx, arg)
@@ -97,13 +97,13 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 				assert.Equal(t, 234.56, i.Balance)
 				assert.Equal(t, int64(42), i.ContextID)
 				assert.Equal(t, "corporation", i.ContextIDType)
-				assert.Equal(t, e1, i.FirstParty)
+				assert.Equal(t, firstParty, i.FirstParty)
 				assert.Equal(t, date.UTC(), i.Date.UTC())
 				assert.Equal(t, "bla bla", i.Description)
 				assert.Equal(t, "player_donation", i.RefType)
 				assert.Equal(t, "my reason", i.Reason)
-				assert.Equal(t, e2, i.SecondParty)
-				assert.Equal(t, e3, i.TaxReceiver)
+				assert.Equal(t, secondParty, i.SecondParty)
+				assert.Equal(t, taxReceiver, i.TaxReceiver)
 				assert.Equal(t, 0.12, i.Tax)
 			}
 		}
