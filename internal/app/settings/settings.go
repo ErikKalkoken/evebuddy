@@ -62,7 +62,7 @@ const (
 	settingSysTrayEnabledDefault              = true
 	settingTabsMainID                         = "tabs-main-id"
 	settingTabsMainIDDefault                  = -1
-	settingFyneDisableDPIDetection            = "settingFyneDisableDPIDetection"
+	settingDisableDPIDetection                = "settingFyneDisableDPIDetection"
 	settingFyneScale                          = "settingFyneScale"
 	settingFyneScaleDefault                   = 1.0
 	settingWindowHeightDefault                = 600
@@ -461,16 +461,25 @@ func (s Settings) SetFyneScale(v float64) {
 	s.p.SetFloat(settingFyneScale, v)
 }
 
-func (s Settings) FyneDisableDPIDetection() bool {
-	return s.p.Bool(settingFyneDisableDPIDetection)
+func (s Settings) DisableDPIDetection() bool {
+	return s.p.Bool(settingDisableDPIDetection)
 }
 
-func (s Settings) ResetSetFyneDisableDPIDetection() {
-	s.SetFyneDisableDPIDetection(false)
+func (s Settings) ResetDisableDPIDetection() {
+	s.SetDisableDPIDetection(false)
 }
 
-func (s Settings) SetFyneDisableDPIDetection(v bool) {
-	s.p.SetBool(settingFyneDisableDPIDetection, v)
+func (s Settings) SetDisableDPIDetection(v bool) {
+	s.p.SetBool(settingDisableDPIDetection, v)
+}
+
+// ResetUI resets all UI related settings to default.
+func (s Settings) ResetUI() {
+	s.ResetTabsMainID()
+	s.ResetWindowSize()
+	s.ResetColorTheme()
+	s.ResetFyneScale()
+	s.ResetDisableDPIDetection()
 }
 
 // Keys returns all setting keys. Mostly to know what to delete.

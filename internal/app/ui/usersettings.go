@@ -192,8 +192,23 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 		step:         0.1,
 		getter:       a.u.settings.FyneScale,
 		setter:       a.u.settings.SetFyneScale,
-		window:       a.w,
+		formatter: func(v any) string {
+			return fmt.Sprintf("%.1fx", v)
+		},
+		window: a.w,
 	})
+
+	disableDPIDetection := NewSettingItemSwitch(
+		"Disable DPI detection",
+		"Disabled the automatic DPI detection. Requires restart.",
+		func() bool {
+			return a.u.settings.DisableDPIDetection()
+		},
+		func(v bool) {
+			a.u.settings.SetDisableDPIDetection(v)
+		},
+	)
+
 	items := []SettingItem{
 		NewSettingItemHeading("Application"),
 		logLevel,
@@ -203,6 +218,7 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 		NewSettingItemHeading("UI"),
 		colorTheme,
 		fyneScale,
+		disableDPIDetection,
 		NewSettingItemSeparator(),
 		NewSettingItemHeading("EVE Online"),
 		maxMail,
@@ -270,6 +286,7 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 			a.u.settings.ResetPreferMarketTab()
 			a.u.settings.ResetSysTrayEnabled()
 			a.u.settings.ResetFyneScale()
+			a.u.settings.ResetDisableDPIDetection()
 			list.Refresh()
 		},
 	}
@@ -733,10 +750,11 @@ const (
 
 // SettingItem represents an item in a setting list.
 type SettingItem struct {
-	Hint   string      // optional hint text
-	Label  string      // label
-	Getter func() any  // returns the current value for this setting
-	Setter func(v any) // sets the value for this setting
+	Hint      string             // optional hint text
+	Label     string             // label
+	Getter    func() any         // returns the current value for this setting
+	Setter    func(v any)        // sets the value for this setting
+	Formatter func(v any) string // func to format the value
 
 	onSelected func(it SettingItem, refresh func()) // action called when selected
 	variant    settingVariant                       // the setting variant of this item
@@ -792,6 +810,7 @@ func NewSettingItemCustom(
 
 type SettingItemSliderParams struct {
 	defaultValue float64
+	formatter    func(v any) string
 	getter       func() float64
 	hint         string
 	label        string
@@ -809,6 +828,7 @@ func NewSettingItemSlider(arg SettingItemSliderParams) SettingItem {
 		Getter: func() any {
 			return arg.getter()
 		},
+		Formatter: arg.formatter,
 		Setter: func(v any) {
 			switch x := v.(type) {
 			case float64:
@@ -824,16 +844,16 @@ func NewSettingItemSlider(arg SettingItemSliderParams) SettingItem {
 			sl.SetValue(arg.getter())
 			sl.SetStep(arg.step)
 			sl.OnChangeEnded = arg.setter
-			d := makeSettingDialog(
-				sl,
-				it.Label,
-				it.Hint,
-				func() {
+			d := makeSettingDialog(makeSettingDialogParams{
+				setting: sl,
+				label:   it.Label,
+				hint:    it.Hint,
+				reset: func() {
 					sl.SetValue(arg.defaultValue)
 				},
-				refresh,
-				arg.window,
-			)
+				refresh: refresh,
+				window:  arg.window,
+			})
 			d.Show()
 		},
 		variant: settingCustom,
@@ -860,28 +880,33 @@ func NewSettingItemOptions(
 		onSelected: func(it SettingItem, refresh func()) {
 			sel := widget.NewRadioGroup(options, setter)
 			sel.Selected = it.Getter().(string)
-			d := makeSettingDialog(
-				sel,
-				it.Label,
-				it.Hint,
-				func() {
+			d := makeSettingDialog(makeSettingDialogParams{
+				setting: sel,
+				label:   it.Label,
+				hint:    it.Hint,
+				reset: func() {
 					sel.SetSelected(defaultV)
 				},
-				refresh,
-				window,
-			)
+				refresh: refresh,
+				window:  window,
+			})
 			d.Show()
 		},
-		variant: settingCustom,
+		variant:   settingCustom,
+		Formatter: nil,
 	}
 }
 
-func makeSettingDialog(
-	setting fyne.CanvasObject,
-	label, hint string,
-	reset, refresh func(),
-	w fyne.Window,
-) dialog.Dialog {
+type makeSettingDialogParams struct {
+	hint    string
+	label   string
+	refresh func()
+	reset   func()
+	setting fyne.CanvasObject
+	window  fyne.Window
+}
+
+func makeSettingDialog(arg makeSettingDialogParams) dialog.Dialog {
 	var d dialog.Dialog
 	buttons := container.NewHBox(
 		widget.NewButton("Close", func() {
@@ -889,21 +914,21 @@ func makeSettingDialog(
 		}),
 		layout.NewSpacer(),
 		widget.NewButton("Reset", func() {
-			reset()
+			arg.reset()
 		}),
 	)
-	l := widget.NewLabel(hint)
+	l := widget.NewLabel(arg.hint)
 	l.SizeName = theme.SizeNameCaptionText
 	c := container.NewBorder(
 		nil,
 		container.NewVBox(l, buttons),
 		nil,
 		nil,
-		setting,
+		arg.setting,
 	)
 	// TODO: add modify shortcuts
-	d = dialog.NewCustomWithoutButtons(label, c, w)
-	_, s := w.Canvas().InteractiveArea()
+	d = dialog.NewCustomWithoutButtons(arg.label, c, arg.window)
+	_, s := arg.window.Canvas().InteractiveArea()
 	var width float32
 	if fyne.CurrentDevice().IsMobile() {
 		width = s.Width
@@ -911,7 +936,7 @@ func makeSettingDialog(
 		width = s.Width * dialogWidthScale
 	}
 	d.Resize(fyne.NewSize(width, dialogHeightMin))
-	d.SetOnClosed(refresh)
+	d.SetOnClosed(arg.refresh)
 	return d
 }
 
@@ -978,7 +1003,13 @@ func NewSettingList(items []SettingItem) *SettingList {
 			sw.Show()
 			sw.Refresh()
 		case settingCustom:
-			value.SetText(fmt.Sprint(it.Getter()))
+			formatter := it.Formatter
+			if formatter == nil {
+				formatter = func(v any) string {
+					return fmt.Sprint(v)
+				}
+			}
+			value.SetText(formatter(it.Getter()))
 			value.Show()
 			sw.Hide()
 		}
