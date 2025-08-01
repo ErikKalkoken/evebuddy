@@ -130,6 +130,22 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		getter:       a.u.settings.SysTrayEnabled,
 		onChanged:    a.u.settings.SetSysTrayEnabled,
 	})
+
+	if a.u.isDesktop {
+		items = append(items, sysTray)
+	}
+	preferMarketTab := NewSettingItemSwitch(SettingItemSwitch{
+		label:     "Prefer market tab",
+		hint:      "Show market tab first for tradeable items",
+		getter:    a.u.settings.PreferMarketTab,
+		onChanged: a.u.settings.SetPreferMarketTab,
+	})
+
+	items = slices.Concat(items, []SettingItem{
+		NewSettingItemHeading("UI"),
+		preferMarketTab,
+	})
+
 	colorTheme := NewSettingItemOptions(SettingItemOptions{
 		label:        "Appearance",
 		hint:         "Choose the color scheme. 'Auto' uses the current OS theme.",
@@ -148,11 +164,11 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 
 	fyneScale := NewSettingItemSlider(SettingItemSliderParams{
 		label:        "UI Scale",
-		hint:         "Scale factor in percent for UI. Requires restart.",
+		hint:         "Scaling factor of the user interface in percent. Requires restart.",
 		minValue:     50,
 		maxValue:     200,
 		defaultValue: a.u.settings.FyneScaleDefault() * 100,
-		step:         10,
+		step:         5,
 		getter: func() float64 {
 			return a.u.settings.FyneScale() * 100
 		},
@@ -160,33 +176,23 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 			a.u.settings.SetFyneScale(v / 100.0)
 		},
 		formatter: func(v any) string {
-			return fmt.Sprintf("%v%%", v)
+			return fmt.Sprintf("%v %%", v)
 		},
 		window: a.w,
 	})
 
 	disableDPIDetection := NewSettingItemSwitch(SettingItemSwitch{
 		label:     "Disable DPI detection",
-		hint:      "Disabled the automatic DPI detection. Requires restart.",
+		hint:      "Disables the automatic DPI detection. Requires restart.",
 		getter:    a.u.settings.DisableDPIDetection,
 		onChanged: a.u.settings.SetDisableDPIDetection,
 	})
 
-	preferMarketTab := NewSettingItemSwitch(SettingItemSwitch{
-		label:     "Prefer market tab",
-		hint:      "Show market tab for tradeable items",
-		getter:    a.u.settings.PreferMarketTab,
-		onChanged: a.u.settings.SetPreferMarketTab,
-	})
-
 	if a.u.isDesktop {
 		items = slices.Concat(items, []SettingItem{
-			sysTray,
-			NewSettingItemHeading("UI"),
 			colorTheme,
 			fyneScale,
 			disableDPIDetection,
-			preferMarketTab,
 		})
 	}
 
@@ -224,7 +230,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		window: a.w,
 	})
 	items = slices.Concat(items, []SettingItem{
-		NewSettingItemHeading("Updates"),
+		NewSettingItemHeading("Section updates"),
 		maxMail,
 		maxWallet,
 	})

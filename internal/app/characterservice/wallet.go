@@ -28,6 +28,8 @@ func (s *CharacterService) ListWalletJournalEntries(ctx context.Context, charact
 	return s.st.ListCharacterWalletJournalEntries(ctx, characterID)
 }
 
+// TODO: Add limit when fetching wallet journal
+
 // updateWalletJournalEntryESI updates the wallet journal from ESI and reports whether it has changed.
 func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionCharacterWalletJournal {
