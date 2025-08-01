@@ -40,7 +40,8 @@ func TestLogResponse(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			"https://www.example.com/",
-			httpmock.NewStringResponder(http.StatusOK, "orange").HeaderSet(http.Header{"dummy": []string{"alpha"}}))
+			httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]bool{"alpha": true}).HeaderSet(http.Header{"dummy": []string{"alpha"}}),
+		)
 
 		// when
 		r, err := rhc.Get("https://www.example.com/")
@@ -50,7 +51,7 @@ func TestLogResponse(t *testing.T) {
 			assert.Equal(t, http.StatusOK, r.StatusCode)
 			assert.Conditionf(t, func() bool {
 				m, err := regexp.MatchString(
-					`DEBUG HTTP response method=GET .*status="200.*header=.*Dummy:\[alpha\].*.*body=orange`,
+					`DEBUG HTTP response method=GET .*status="200.*header=.*Dummy:\[alpha\].*.*body=map\[alpha:true\]`,
 					logBuf.String(),
 				)
 				if err != nil {
@@ -131,8 +132,8 @@ func TestLogResponse(t *testing.T) {
 	})
 }
 
-func TestBodyToString(t *testing.T) {
-	t.Run("should return body", func(t *testing.T) {
+func TestExtractBody(t *testing.T) {
+	t.Run("should return copy of the body", func(t *testing.T) {
 		u, _ := url.Parse("http://www.example.com")
 		r := &http.Response{
 			Body: io.NopCloser(strings.NewReader("test")),
@@ -140,8 +141,24 @@ func TestBodyToString(t *testing.T) {
 				URL: u,
 			},
 		}
-		x := copyResponseBody(r)
-		assert.Equal(t, "test", x)
+		x, err := extractBodyForLog(r)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "test", x)
+		}
+	})
+	t.Run("should return copy of the body as JSON", func(t *testing.T) {
+		u, _ := url.Parse("http://www.example.com")
+		r := &http.Response{
+			Body: io.NopCloser(strings.NewReader("{\"alpha\": true}")),
+			Request: &http.Request{
+				URL: u,
+			},
+			Header: http.Header{headerContentTypeKey: []string{headerContentTypeJSON}},
+		}
+		x, err := extractBodyForLog(r)
+		if assert.NoError(t, err) {
+			assert.Equal(t, map[string]any{"alpha": true}, x)
+		}
 	})
 	t.Run("should return empty when no body", func(t *testing.T) {
 		u, _ := url.Parse("http://www.example.com")
@@ -150,8 +167,10 @@ func TestBodyToString(t *testing.T) {
 				URL: u,
 			},
 		}
-		x := copyResponseBody(r)
-		assert.Equal(t, "", x)
+		x, err := extractBodyForLog(r)
+		if assert.NoError(t, err) {
+			assert.Nil(t, x)
+		}
 	})
 	t.Run("should redact blocked URL", func(t *testing.T) {
 		u, _ := url.Parse("https://login.eveonline.com/v2/oauth/token")
@@ -161,10 +180,26 @@ func TestBodyToString(t *testing.T) {
 				URL: u,
 			},
 		}
-		x := copyResponseBody(r)
-		assert.Equal(t, "xxxxx", x)
+		x, err := extractBodyForLog(r)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "xxxxx", x)
+		}
 	})
-	t.Run("can handle error in reading body", func(t *testing.T) {
+	t.Run("should redact blocked URL", func(t *testing.T) {
+		u, _ := url.Parse("https://login.eveonline.com/v2/oauth/token")
+		r := &http.Response{
+			Body: io.NopCloser(strings.NewReader("test")),
+			Request: &http.Request{
+				URL: u,
+			},
+			Header: http.Header{headerContentTypeKey: []string{"application/json; charset=UTF-8"}},
+		}
+		x, err := extractBodyForLog(r)
+		if assert.NoError(t, err) {
+			assert.Equal(t, map[string]bool(map[string]bool{"redacted": true}), x)
+		}
+	})
+	t.Run("should return error", func(t *testing.T) {
 		u, _ := url.Parse("http://www.example.com")
 		b := io.NopCloser(iotest.ErrReader(errors.New("custom error")))
 		r := &http.Response{
@@ -173,8 +208,8 @@ func TestBodyToString(t *testing.T) {
 			},
 			Body: b,
 		}
-		x := copyResponseBody(r)
-		assert.Equal(t, "ERROR: custom error", x)
+		_, err := extractBodyForLog(r)
+		assert.Error(t, err)
 	})
 }
 
