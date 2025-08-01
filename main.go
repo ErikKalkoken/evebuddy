@@ -87,7 +87,7 @@ var (
 	mobileFlag         = flag.Bool("mobile", false, "Run the app in forced mobile mode")
 	offlineFlag        = flag.Bool("offline", false, "Start app in offline mode")
 	pprofFlag          = flag.Bool("pprof", false, "Enable pprof web server")
-	resetSettingsFlag  = flag.Bool("reset-settings", false, "Resets desktop settings")
+	resetUIFlag        = flag.Bool("reset-ui", false, "Resets UI settings to defaults")
 	versionFlag        = flag.Bool("v", false, "Show version")
 	ssoDemoFlag        = flag.Bool("sso-demo", false, "Start SSO serer in demo mode")
 )
@@ -122,11 +122,6 @@ func main() {
 
 	// start fyne app
 	fyneApp := app.NewWithID(appID)
-	var isDesktop bool
-	if !*mobileFlag {
-		_, isDesktop = fyneApp.(desktop.App)
-	}
-
 	if *versionFlag {
 		fmt.Println(fyneApp.Metadata().Version)
 		return
@@ -134,18 +129,26 @@ func main() {
 
 	log.Printf("INFO EVE Buddy version=%s", fyneApp.Metadata().Version)
 
+	appSettings := settings.New(fyneApp.Preferences())
+	if *resetUIFlag {
+		appSettings.ResetUI()
+	}
+
 	// set log level from settings
 	if *logLevelFlag == "" {
-		s := settings.New(fyneApp.Preferences())
-		if l := s.LogLevelSlog(); l != logLevelDefault {
+
+		if l := appSettings.LogLevelSlog(); l != logLevelDefault {
 			slog.Info("Setting log level", "level", l)
 			slog.SetLogLoggerLevel(l)
 		}
 	}
 
-	var dataDir string
-
 	// data dir
+	var dataDir string
+	var isDesktop bool
+	if !*mobileFlag {
+		_, isDesktop = fyneApp.(desktop.App)
+	}
 	if isDesktop || *developFlag {
 		ad := appdirs.New(appName)
 		dataDir = ad.UserData()
@@ -307,6 +310,8 @@ func main() {
 	})
 
 	// Init UI
+	os.Setenv("FYNE_SCALE", fmt.Sprint(appSettings.FyneScale()))
+	os.Setenv("FYNE_DISABLE_DPI_DETECTION", fmt.Sprint(appSettings.DisableDPIDetection()))
 	key := os.Getenv("JANICE_API_KEY")
 	if key == "" {
 		key = fyneApp.Metadata().Custom["janiceAPIKey"]
@@ -337,9 +342,6 @@ func main() {
 	})
 	if isDesktop {
 		u := ui.NewDesktopUI(bu)
-		if *resetSettingsFlag {
-			u.ResetDesktopSettings()
-		}
 		if err := remoteservice.Start(func() {
 			fyne.Do(func() {
 				u.MainWindow().Show()

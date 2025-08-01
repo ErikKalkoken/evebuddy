@@ -77,7 +77,7 @@ func (a *userSettings) CreateRenderer() fyne.WidgetRenderer {
 	makeSettingsPage := func(title string, content fyne.CanvasObject, actions fyne.CanvasObject) fyne.CanvasObject {
 		return iwidget.NewAppBarWithTrailing(title, content, actions)
 	}
-	generalContent, generalActions := a.makeGeneralSettingsPage()
+	generalContent, generalActions := a.makeGeneralPage()
 	notificationContent, notificationActions := a.makeNotificationPage()
 	tabs := container.NewAppTabs(
 		container.NewTabItem("General", makeSettingsPage(
@@ -95,118 +95,145 @@ func (a *userSettings) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(tabs)
 }
 
-func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.IconButton) {
-	logLevel := NewSettingItemOptions(
-		"Log level",
-		"Set current log level",
-		a.u.settings.LogLevelNames(),
-		a.u.settings.LogLevelDefault(),
-		func() string {
-			return a.u.settings.LogLevel()
-		},
-		func(v string) {
+func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
+	logLevel := NewSettingItemOptions(SettingItemOptions{
+		label:        "Log level",
+		hint:         "Set current log level",
+		options:      a.u.settings.LogLevelNames(),
+		defaultValue: a.u.settings.LogLevelDefault(),
+		getter:       a.u.settings.LogLevel,
+		setter: func(v string) {
 			s := a.u.settings
 			s.SetLogLevel(v)
 			slog.SetLogLoggerLevel(s.LogLevelSlog())
 		},
-		a.w,
-	)
+		window: a.w,
+	})
 
-	vMin, vMax, vDef := a.u.settings.MaxMailsPresets()
-	maxMail := NewSettingItemSlider(
-		"Maximum mails",
-		"Max number of mails downloaded. 0 = unlimited.",
-		float64(vMin),
-		float64(vMax),
-		float64(vDef),
-		func() float64 {
-			return float64(a.u.settings.MaxMails())
-		},
-		func(v float64) {
-			a.u.settings.SetMaxMails(int(v))
-		},
-		a.w,
-	)
-
-	vMin, vMax, vDef = a.u.settings.MaxWalletTransactionsPresets()
-	maxWallet := NewSettingItemSlider(
-		"Maximum wallet transaction",
-		"Max wallet transactions downloaded. 0 = unlimited.",
-		float64(vMin),
-		float64(vMax),
-		float64(vDef),
-		func() float64 {
-			return float64(a.u.settings.MaxWalletTransactions())
-		},
-		func(v float64) {
-			a.u.settings.SetMaxWalletTransactions(int(v))
-		},
-		a.w,
-	)
-
-	preferMarketTab := NewSettingItemSwitch(
-		"Prefer market tab",
-		"Show market tab for tradeable items",
-		func() bool {
-			return a.u.settings.PreferMarketTab()
-		},
-		func(v bool) {
-			a.u.settings.SetPreferMarketTab(v)
-		},
-	)
-
-	colorTheme := NewSettingItemOptions(
-		"Appearance",
-		"Choose the color scheme. 'Auto' uses the current OS theme.",
-		[]string{string(settings.Auto), string(settings.Light), string(settings.Dark)},
-		string(a.u.settings.ColorThemeDefault()),
-		func() string {
-			return string(a.u.settings.ColorTheme())
-		},
-		func(v string) {
-			s := a.u.settings
-			s.SetColorTheme(settings.ColorTheme(v))
-			a.u.setColorTheme(settings.ColorTheme(v))
-		},
-		a.w,
-	)
-
-	developerMode := NewSettingItemSwitch(
-		"Developer Mode",
-		"App shows additional technical information like Character IDs",
-		func() bool {
-			return a.u.settings.DeveloperMode()
-		},
-		func(v bool) {
-			a.u.settings.SetDeveloperMode(v)
-		},
-	)
+	developerMode := NewSettingItemSwitch(SettingItemSwitch{
+		label:     "Developer Mode",
+		hint:      "App shows additional technical information like Character IDs",
+		getter:    a.u.settings.DeveloperMode,
+		onChanged: a.u.settings.SetDeveloperMode,
+	})
 
 	items := []SettingItem{
 		NewSettingItemHeading("Application"),
 		logLevel,
-		colorTheme,
-		preferMarketTab,
 		developerMode,
-		NewSettingItemSeparator(),
-		NewSettingItemHeading("EVE Online"),
-		maxMail,
-		maxWallet,
 	}
 
-	sysTray := NewSettingItemSwitch(
-		"Run in background",
-		"App will continue to run in background after window is closed (requires restart)",
-		func() bool {
-			return a.u.settings.SysTrayEnabled()
-		},
-		func(v bool) {
-			a.u.settings.SetSysTrayEnabled(v)
-		},
-	)
+	sysTray := NewSettingItemSwitch(SettingItemSwitch{
+		defaultValue: a.u.settings.SysTrayEnabledDefault(),
+		label:        "Run in background",
+		hint:         "App will continue to run in background after window is closed (requires restart)",
+		getter:       a.u.settings.SysTrayEnabled,
+		onChanged:    a.u.settings.SetSysTrayEnabled,
+	})
+
 	if a.u.isDesktop {
-		items = slices.Insert(items, 2, sysTray)
+		items = append(items, sysTray)
 	}
+	preferMarketTab := NewSettingItemSwitch(SettingItemSwitch{
+		label:     "Prefer market tab",
+		hint:      "Show market tab first for tradeable items",
+		getter:    a.u.settings.PreferMarketTab,
+		onChanged: a.u.settings.SetPreferMarketTab,
+	})
+
+	items = slices.Concat(items, []SettingItem{
+		NewSettingItemHeading("UI"),
+		preferMarketTab,
+	})
+
+	colorTheme := NewSettingItemOptions(SettingItemOptions{
+		label:        "Appearance",
+		hint:         "Choose the color scheme. 'Auto' uses the current OS theme.",
+		options:      []string{string(settings.Auto), string(settings.Light), string(settings.Dark)},
+		defaultValue: string(a.u.settings.ColorThemeDefault()),
+		getter: func() string {
+			return string(a.u.settings.ColorTheme())
+		},
+		setter: func(v string) {
+			s := a.u.settings
+			s.SetColorTheme(settings.ColorTheme(v))
+			a.u.setColorTheme(settings.ColorTheme(v))
+		},
+		window: a.w,
+	})
+
+	fyneScale := NewSettingItemSlider(SettingItemSliderParams{
+		label:        "UI Scale",
+		hint:         "Scaling factor of the user interface in percent. Requires restart.",
+		minValue:     50,
+		maxValue:     200,
+		defaultValue: a.u.settings.FyneScaleDefault() * 100,
+		step:         5,
+		getter: func() float64 {
+			return a.u.settings.FyneScale() * 100
+		},
+		setter: func(v float64) {
+			a.u.settings.SetFyneScale(v / 100.0)
+		},
+		formatter: func(v any) string {
+			return fmt.Sprintf("%v %%", v)
+		},
+		window: a.w,
+	})
+
+	disableDPIDetection := NewSettingItemSwitch(SettingItemSwitch{
+		label:     "Disable DPI detection",
+		hint:      "Disables the automatic DPI detection. Requires restart.",
+		getter:    a.u.settings.DisableDPIDetection,
+		onChanged: a.u.settings.SetDisableDPIDetection,
+	})
+
+	if a.u.isDesktop {
+		items = slices.Concat(items, []SettingItem{
+			colorTheme,
+			fyneScale,
+			disableDPIDetection,
+		})
+	}
+
+	vMin, vMax, vDef := a.u.settings.MaxMailsPresets()
+	maxMail := NewSettingItemSlider(SettingItemSliderParams{
+		label:        "Maximum mails",
+		hint:         "Max number of mails downloaded. 0 = unlimited.",
+		minValue:     float64(vMin),
+		maxValue:     float64(vMax),
+		defaultValue: float64(vDef),
+		step:         1,
+		getter: func() float64 {
+			return float64(a.u.settings.MaxMails())
+		},
+		setter: func(v float64) {
+			a.u.settings.SetMaxMails(int(v))
+		},
+		window: a.w,
+	})
+
+	vMin, vMax, vDef = a.u.settings.MaxWalletTransactionsPresets()
+	maxWallet := NewSettingItemSlider(SettingItemSliderParams{
+		label:        "Maximum wallet transaction",
+		hint:         "Max wallet transactions downloaded. 0 = unlimited.",
+		minValue:     float64(vMin),
+		maxValue:     float64(vMax),
+		defaultValue: float64(vDef),
+		step:         1,
+		getter: func() float64 {
+			return float64(a.u.settings.MaxWalletTransactions())
+		},
+		setter: func(v float64) {
+			a.u.settings.SetMaxWalletTransactions(int(v))
+		},
+		window: a.w,
+	})
+	items = slices.Concat(items, []SettingItem{
+		NewSettingItemHeading("Section updates"),
+		maxMail,
+		maxWallet,
+	})
 
 	list := NewSettingList(items)
 
@@ -247,13 +274,16 @@ func (a *userSettings) makeGeneralSettingsPage() (fyne.CanvasObject, *kxwidget.I
 	reset := settingAction{
 		Label: "Reset to defaults",
 		Action: func() {
-			a.u.settings.ResetPreferMarketTab()
-			a.u.settings.ResetDeveloperMode()
-			a.u.settings.ResetLogLevel()
-			a.u.settings.ResetMaxMails()
-			a.u.settings.ResetMaxWalletTransactions()
-			a.u.settings.ResetSysTrayEnabled()
+			developerMode.Reset()
+			logLevel.Reset()
+			sysTray.Reset()
 			list.Refresh()
+			colorTheme.Reset()
+			disableDPIDetection.Reset()
+			fyneScale.Reset()
+			preferMarketTab.Reset()
+			maxMail.Reset()
+			maxWallet.Reset()
 		},
 	}
 	exportAppLog := settingAction{
@@ -434,52 +464,44 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 	typesEnabled := a.u.settings.NotificationTypesEnabled()
 
 	// add global items
-	notifyCommunications := NewSettingItemSwitch(
-		"Notify communications",
-		"Whether to notify new communications",
-		func() bool {
-			return a.u.settings.NotifyCommunicationsEnabled()
-		},
-		func(on bool) {
-			a.u.settings.SetNotifyCommunicationsEnabled(on)
-			if on {
-				a.u.settings.SetNotifyCommunicationsEarliest(time.Now())
-			}
-		},
-	)
-	notifyMails := NewSettingItemSwitch(
-		"Notify mails",
-		"Whether to notify new mails",
-		func() bool {
-			return a.u.settings.NotifyMailsEnabled()
-		},
-		func(on bool) {
+	notifyCommunications := NewSettingItemSwitch(SettingItemSwitch{
+		defaultValue: a.u.settings.NotifyCommunicationsEnabledDefault(),
+		label:        "Notify communications",
+		hint:         "Whether to notify new communications",
+		getter:       a.u.settings.NotifyCommunicationsEnabled,
+		onChanged:    a.u.settings.SetNotifyCommunicationsEnabled,
+	})
+	notifyMails := NewSettingItemSwitch(SettingItemSwitch{
+		defaultValue: a.u.settings.NotifyMailsEnabledDefault(),
+		label:        "Notify mails",
+		hint:         "Whether to notify new mails",
+		getter:       a.u.settings.NotifyMailsEnabled,
+		onChanged: func(on bool) {
 			a.u.settings.SetNotifyMailsEnabled(on)
 			if on {
 				a.u.settings.SetNotifyMailsEarliest(time.Now())
 			}
 		},
-	)
-	notifyPI := NewSettingItemSwitch(
-		"Planetary Industry",
-		"Whether to notify about expired extractions",
-		func() bool {
-			return a.u.settings.NotifyPIEnabled()
-		},
-		func(on bool) {
+	})
+	notifyPI := NewSettingItemSwitch(SettingItemSwitch{
+		defaultValue: a.u.settings.NotifyPIEnabled(),
+		label:        "Planetary Industry",
+		hint:         "Whether to notify about expired extractions",
+		getter:       a.u.settings.NotifyPIEnabled,
+		onChanged: func(on bool) {
 			a.u.settings.SetNotifyPIEnabled(on)
 			if on {
 				a.u.settings.SetNotifyPIEarliest(time.Now())
 			}
 		},
-	)
-	notifyTraining := NewSettingItemSwitch(
-		"Notify Training",
-		"Whether to notify when skillqueue is empty",
-		func() bool {
-			return a.u.settings.NotifyTrainingEnabled()
-		},
-		func(on bool) {
+	})
+
+	notifyTraining := NewSettingItemSwitch(SettingItemSwitch{
+		defaultValue: a.u.settings.NotifyTrainingEnabled(),
+		label:        "Notify Training",
+		hint:         "Whether to notify when skillqueue is empty",
+		getter:       a.u.settings.NotifyTrainingEnabled,
+		onChanged: func(on bool) {
 			ctx := context.Background()
 			if on {
 				err := a.u.cs.EnableAllTrainingWatchers(ctx)
@@ -497,35 +519,38 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 				}
 			}
 		},
-	)
-	notifyContracts := NewSettingItemSwitch(
-		"Notify Contracts",
-		"Whether to notify when contract status changes",
-		func() bool {
-			return a.u.settings.NotifyContractsEnabled()
-		},
-		func(on bool) {
+	})
+
+	notifyContracts := NewSettingItemSwitch(SettingItemSwitch{
+		defaultValue: a.u.settings.NotifyContractsEnabledDefault(),
+		label:        "Notify Contracts",
+		hint:         "Whether to notify when contract status changes",
+		getter:       a.u.settings.NotifyContractsEnabled,
+		onChanged: func(on bool) {
 			a.u.settings.SetNotifyContractsEnabled(on)
 			if on {
 				a.u.settings.SetNotifyContractsEarliest(time.Now())
 			}
 		},
-	)
+	})
+
 	vMin, vMax, vDef := a.u.settings.NotifyTimeoutHoursPresets()
-	notifTimeout := NewSettingItemSlider(
-		"Notify Timeout",
-		"Events older then this value in hours will not be notified",
-		float64(vMin),
-		float64(vMax),
-		float64(vDef),
-		func() float64 {
+	notifTimeout := NewSettingItemSlider(SettingItemSliderParams{
+		label:        "Notify Timeout",
+		hint:         "Events older then this value in hours will not be notified",
+		minValue:     float64(vMin),
+		maxValue:     float64(vMax),
+		defaultValue: float64(vDef),
+		step:         1.0,
+		getter: func() float64 {
 			return float64(a.u.settings.NotifyTimeoutHours())
 		},
-		func(v float64) {
+		setter: func(v float64) {
 			a.u.settings.SetNotifyTimeoutHours(int(v))
 		},
-		a.w,
-	)
+		window: a.w,
+	})
+
 	items := []SettingItem{
 		NewSettingItemHeading("Global"),
 		notifyCommunications,
@@ -551,13 +576,13 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 			for _, nt := range groupsAndTypes[g] {
 				ntStr := nt.String()
 				ntDisplay := nt.Display()
-				it := NewSettingItemSwitch(
-					ntDisplay,
-					"",
-					func() bool {
+				it := NewSettingItemSwitch(SettingItemSwitch{
+					label: ntDisplay,
+					hint:  "",
+					getter: func() bool {
 						return typesEnabled.Contains(ntStr)
 					},
-					func(on bool) {
+					onChanged: func(on bool) {
 						if on {
 							typesEnabled.Add(ntStr)
 						} else {
@@ -565,7 +590,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 						}
 						a.u.settings.SetNotificationTypesEnabled(typesEnabled)
 					},
-				)
+				})
 				items2 = append(items2, it)
 			}
 			list2 := NewSettingList(items2)
@@ -593,8 +618,10 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 			}
 		}()
 
-		it := NewSettingItemCustom(g.String(), groupHint,
-			func() any {
+		it := NewSettingItemCustom(SettingItemCustom{
+			label: g.String(),
+			hint:  groupHint,
+			getter: func() any {
 				var enabled int
 				for _, nt := range groupsAndTypes[g] {
 					if typesEnabled.Contains(nt.String()) {
@@ -608,14 +635,14 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 				}
 				return "Off"
 			},
-			func(it SettingItem, refresh func()) {
+			onSelected: func(it SettingItem, refresh func()) {
 				p := groupPages[g]
 				title := g.String()
 				hint := widget.NewLabel(groupHint)
 				hint.SizeName = theme.SizeNameCaptionText
 				var d dialog.Dialog
 				buttons := container.NewHBox(
-					widget.NewButton("Close", func() {
+					widget.NewButton("OK", func() {
 						d.Hide()
 					}),
 					layout.NewSpacer(),
@@ -632,7 +659,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 				d.Resize(fyne.NewSize(s.Width*0.8, s.Height*0.8))
 				d.SetOnClosed(refresh)
 			},
-		)
+		})
 		items = append(items, it)
 	}
 
@@ -640,12 +667,12 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 	reset := settingAction{
 		Label: "Reset to defaults",
 		Action: func() {
-			a.u.settings.ResetNotifyCommunicationsEnabled()
-			a.u.settings.ResetNotifyContractsEnabled()
-			a.u.settings.ResetNotifyMailsEnabled()
-			a.u.settings.ResetNotifyPIEnabled()
-			a.u.settings.ResetNotifyTimeoutHours()
-			a.u.settings.ResetNotifyTrainingEnabled()
+			notifyCommunications.Reset()
+			notifyContracts.Reset()
+			notifyPI.Reset()
+			notifyTraining.Reset()
+			notifyMails.Reset()
+			notifTimeout.Reset()
 			typesEnabled.Clear()
 			a.u.settings.ResetNotificationTypesEnabled()
 			list.Refresh()
@@ -715,13 +742,25 @@ const (
 
 // SettingItem represents an item in a setting list.
 type SettingItem struct {
-	Hint   string      // optional hint text
-	Label  string      // label
-	Getter func() any  // returns the current value for this setting
-	Setter func(v any) // sets the value for this setting
+	Default   any
+	Hint      string             // optional hint text
+	Label     string             // label
+	Getter    func() any         // returns the current value for this setting
+	Setter    func(v any)        // sets the value for this setting
+	Formatter func(v any) string // func to format the value
 
 	onSelected func(it SettingItem, refresh func()) // action called when selected
 	variant    settingVariant                       // the setting variant of this item
+}
+
+func (si SettingItem) Reset() {
+	if si.Setter == nil || si.Default == nil {
+		return
+	}
+	if si.Getter() == si.Default {
+		return
+	}
+	si.Setter(si.Default)
 }
 
 // NewSettingItemHeading creates a heading in a setting list.
@@ -734,20 +773,25 @@ func NewSettingItemSeparator() SettingItem {
 	return SettingItem{variant: settingSeparator}
 }
 
+type SettingItemSwitch struct {
+	defaultValue bool
+	getter       func() bool
+	hint         string
+	label        string
+	onChanged    func(bool)
+}
+
 // NewSettingItemSwitch creates a switch setting in a setting list.
-func NewSettingItemSwitch(
-	label, hint string,
-	getter func() bool,
-	onChanged func(bool),
-) SettingItem {
+func NewSettingItemSwitch(arg SettingItemSwitch) SettingItem {
 	return SettingItem{
-		Label: label,
-		Hint:  hint,
+		Default: arg.defaultValue,
+		Label:   arg.label,
+		Hint:    arg.hint,
 		Getter: func() any {
-			return getter()
+			return arg.getter()
 		},
 		Setter: func(v any) {
-			onChanged(v.(bool))
+			arg.onChanged(v.(bool))
 		},
 		onSelected: func(it SettingItem, refresh func()) {
 			it.Setter(!it.Getter().(bool))
@@ -757,128 +801,150 @@ func NewSettingItemSwitch(
 	}
 }
 
+type SettingItemCustom struct {
+	label      string
+	hint       string
+	getter     func() any
+	onSelected func(it SettingItem, refresh func())
+}
+
 // NewSettingItemCustom creates a custom setting in a setting list.
-func NewSettingItemCustom(
-	label, hint string,
-	getter func() any,
-	onSelected func(it SettingItem, refresh func()),
-) SettingItem {
+func NewSettingItemCustom(arg SettingItemCustom) SettingItem {
 	return SettingItem{
-		Label:      label,
-		Hint:       hint,
-		Getter:     getter,
-		onSelected: onSelected,
+		Label:      arg.label,
+		Hint:       arg.hint,
+		Getter:     arg.getter,
+		onSelected: arg.onSelected,
 		variant:    settingCustom,
 	}
 }
 
-func NewSettingItemSlider(
-	label, hint string,
-	minV, maxV, defaultV float64,
-	getter func() float64,
-	setter func(v float64),
-	window fyne.Window,
-) SettingItem {
+type SettingItemSliderParams struct {
+	defaultValue float64
+	formatter    func(v any) string
+	getter       func() float64
+	hint         string
+	label        string
+	maxValue     float64
+	minValue     float64
+	setter       func(v float64)
+	step         float64
+	window       fyne.Window
+}
+
+func NewSettingItemSlider(arg SettingItemSliderParams) SettingItem {
 	return SettingItem{
-		Label: label,
-		Hint:  hint,
+		Default: arg.defaultValue,
+		Label:   arg.label,
+		Hint:    arg.hint,
 		Getter: func() any {
-			return getter()
+			return arg.getter()
 		},
+		Formatter: arg.formatter,
 		Setter: func(v any) {
 			switch x := v.(type) {
 			case float64:
-				setter(x)
+				arg.setter(x)
 			case int:
-				setter(float64(x))
+				arg.setter(float64(x))
 			default:
-				panic("setting item: unsupported type: " + label)
+				panic("setting item: unsupported type: " + arg.label)
 			}
 		},
 		onSelected: func(it SettingItem, refresh func()) {
-			sl := kxwidget.NewSlider(minV, maxV)
-			sl.SetValue(float64(getter()))
-			sl.OnChangeEnded = setter
-			d := makeSettingDialog(
-				sl,
-				it.Label,
-				it.Hint,
-				func() {
-					sl.SetValue(defaultV)
+			sl := kxwidget.NewSlider(arg.minValue, arg.maxValue)
+			sl.SetValue(arg.getter())
+			sl.SetStep(arg.step)
+			sl.OnChangeEnded = arg.setter
+			d := makeSettingDialog(makeSettingDialogParams{
+				setting: sl,
+				label:   it.Label,
+				hint:    it.Hint,
+				reset: func() {
+					sl.SetValue(arg.defaultValue)
 				},
-				refresh,
-				window,
-			)
+				refresh: refresh,
+				window:  arg.window,
+			})
 			d.Show()
 		},
 		variant: settingCustom,
 	}
 }
 
-func NewSettingItemOptions(
-	label, hint string,
-	options []string,
-	defaultV string,
-	getter func() string,
-	setter func(v string),
-	window fyne.Window,
-) SettingItem {
+type SettingItemOptions struct {
+	defaultValue string
+	getter       func() string
+	hint         string
+	label        string
+	options      []string
+	setter       func(v string)
+	window       fyne.Window
+}
+
+func NewSettingItemOptions(arg SettingItemOptions) SettingItem {
 	return SettingItem{
-		Label: label,
-		Hint:  hint,
+		Default: arg.defaultValue,
+		Label:   arg.label,
+		Hint:    arg.hint,
 		Getter: func() any {
-			return getter()
+			return arg.getter()
 		},
 		Setter: func(v any) {
-			setter(v.(string))
+			arg.setter(v.(string))
 		},
 		onSelected: func(it SettingItem, refresh func()) {
-			sel := widget.NewRadioGroup(options, setter)
+			sel := widget.NewRadioGroup(arg.options, arg.setter)
 			sel.Selected = it.Getter().(string)
-			d := makeSettingDialog(
-				sel,
-				it.Label,
-				it.Hint,
-				func() {
-					sel.SetSelected(defaultV)
+			d := makeSettingDialog(makeSettingDialogParams{
+				setting: sel,
+				label:   it.Label,
+				hint:    it.Hint,
+				reset: func() {
+					sel.SetSelected(arg.defaultValue)
 				},
-				refresh,
-				window,
-			)
+				refresh: refresh,
+				window:  arg.window,
+			})
 			d.Show()
 		},
-		variant: settingCustom,
+		variant:   settingCustom,
+		Formatter: nil,
 	}
 }
 
-func makeSettingDialog(
-	setting fyne.CanvasObject,
-	label, hint string,
-	reset, refresh func(),
-	w fyne.Window,
-) dialog.Dialog {
+type makeSettingDialogParams struct {
+	hint    string
+	label   string
+	refresh func()
+	reset   func()
+	setting fyne.CanvasObject
+	window  fyne.Window
+}
+
+func makeSettingDialog(arg makeSettingDialogParams) dialog.Dialog {
 	var d dialog.Dialog
 	buttons := container.NewHBox(
-		widget.NewButton("Close", func() {
+		widget.NewButton("OK", func() {
 			d.Hide()
 		}),
 		layout.NewSpacer(),
 		widget.NewButton("Reset", func() {
-			reset()
+			arg.reset()
 		}),
 	)
-	l := widget.NewLabel(hint)
+	l := widget.NewLabel(arg.hint)
 	l.SizeName = theme.SizeNameCaptionText
 	c := container.NewBorder(
 		nil,
 		container.NewVBox(l, buttons),
 		nil,
 		nil,
-		setting,
+		arg.setting,
 	)
 	// TODO: add modify shortcuts
-	d = dialog.NewCustomWithoutButtons(label, c, w)
-	_, s := w.Canvas().InteractiveArea()
+	d = dialog.NewCustomWithoutButtons(arg.label, c, arg.window)
+	_, s := arg.window.Canvas().InteractiveArea()
 	var width float32
 	if fyne.CurrentDevice().IsMobile() {
 		width = s.Width
@@ -886,7 +952,7 @@ func makeSettingDialog(
 		width = s.Width * dialogWidthScale
 	}
 	d.Resize(fyne.NewSize(width, dialogHeightMin))
-	d.SetOnClosed(refresh)
+	d.SetOnClosed(arg.refresh)
 	return d
 }
 
@@ -953,7 +1019,13 @@ func NewSettingList(items []SettingItem) *SettingList {
 			sw.Show()
 			sw.Refresh()
 		case settingCustom:
-			value.SetText(fmt.Sprint(it.Getter()))
+			formatter := it.Formatter
+			if formatter == nil {
+				formatter = func(v any) string {
+					return fmt.Sprint(v)
+				}
+			}
+			value.SetText(formatter(it.Getter()))
 			value.Show()
 			sw.Hide()
 		}

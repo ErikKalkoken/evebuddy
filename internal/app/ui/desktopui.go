@@ -517,12 +517,6 @@ func (u *DesktopUI) saveAppState() {
 	slog.Debug("Saved app state")
 }
 
-func (u *DesktopUI) ResetDesktopSettings() {
-	u.settings.ResetTabsMainID()
-	u.settings.ResetWindowSize()
-	u.settings.ResetSysTrayEnabled()
-}
-
 func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
 	w := u.App().NewWindow(u.makeWindowTitle(title))

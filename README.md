@@ -39,8 +39,8 @@ EVE Buddy is a multi-platform companion app for [Eve Online](https://www.eveonli
 - **New Eden search**: Search live on the game server, similar to in-game search bar, e.g. search for characters, corporations solar systems.
 - **Information windows**: Show additional information for most objects on screen, similar to in-game information windows, e.g. sender of a mail:
 - **Mail client**: Send and receive EVE mails for all your characters
-- **Run in Background**: The app can run in the background and continue to notify you while you are doing something else (e.g. play Eve Online)
-- **Theming**: Configurable color theme
+- **Run in Background**: The app can run in the background and continue to notify you while you are doing something else, e.g. play Eve Online
+- **Customizable UI**: UI can be customized, e.g. dark and light color theme
 
 EVE Buddy is available for Windows, Linux, macOS and Android.
 
@@ -53,7 +53,7 @@ EVE Buddy is available for Windows, Linux, macOS and Android.
 
 ## Features
 
-The following is a detailed list of EVE Buddy's features. All features are available for both desktop and mobile:
+The following is a detailed list of EVE Buddy's features. Most features are available for both desktop and mobile:
 
 - **Overviews**: Keep track of and get unique insights about all your characters and corporations with consolidated views:
   - Assets: Search assets across all characters
@@ -106,9 +106,9 @@ The following is a detailed list of EVE Buddy's features. All features are avail
   - Desktop: Can minimize to system tray and show an indicator for new EVE mail
   - Mobile: Will continue running in the background after switching to another app
 
-- **Theming**: Configurable color theme:
-  - Dark theme
-  - Light theme
+- **Customizable UI**: The UI can be customized:
+  - Color theme: Dark or Light theme
+  - UI scaling: Custom scaling of the whole UI (desktop only)
 
 ## Highlights
 

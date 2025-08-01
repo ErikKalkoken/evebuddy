@@ -20,12 +20,13 @@ const (
 	Dark  ColorTheme = "Dark"
 )
 
+// Keys, defaults and presets for settings.
+// Keys without default have the zero value as default.
 const (
 	notifyEarliestFallback                    = 24 * time.Hour
 	settingColorTheme                         = "color-theme"
 	settingColorThemeDefault                  = Auto
 	settingDeveloperMode                      = "developer-mode"
-	settingDeveloperModeDefault               = false
 	settingLastCharacterID                    = "settingLastCharacterID"
 	settingLastCorporationID                  = "settingLastCorporationID"
 	settingLogLevel                           = "logLevel"
@@ -56,15 +57,18 @@ const (
 	settingNotifyTrainingEarliest             = "settingNotifyTrainingEarliest"
 	settingNotifyTrainingEnabled              = "settingNotifyTrainingEnabled"
 	settingNotifyTrainingEnabledDefault       = false
+	settingPreferMarketTab                    = "settingPreferMarketTab"
 	settingRecentSearches                     = "settingRecentSearches"
 	settingSysTrayEnabled                     = "settingSysTrayEnabled"
 	settingSysTrayEnabledDefault              = true
 	settingTabsMainID                         = "tabs-main-id"
 	settingTabsMainIDDefault                  = -1
+	settingDisableDPIDetection                = "settingFyneDisableDPIDetection"
+	settingFyneScale                          = "settingFyneScale"
+	settingFyneScaleDefault                   = 1.0
 	settingWindowHeightDefault                = 600
 	settingWindowsSize                        = "window-size"
 	settingWindowWidthDefault                 = 1000
-	settingPreferMarketTab                    = "settingPreferMarketTab"
 )
 
 // Settings represents the settings for the app and provides an API for reading and writing settings.
@@ -79,11 +83,7 @@ func New(p fyne.Preferences) *Settings {
 }
 
 func (s Settings) DeveloperMode() bool {
-	return s.p.BoolWithFallback(settingDeveloperMode, settingDeveloperModeDefault)
-}
-
-func (s Settings) ResetDeveloperMode() {
-	s.SetDeveloperMode(settingDeveloperModeDefault)
+	return s.p.Bool(settingDeveloperMode)
 }
 
 func (s Settings) SetDeveloperMode(v bool) {
@@ -139,10 +139,6 @@ func (s Settings) MaxMailsPresets() (min int, max int, def int) {
 	return
 }
 
-func (s Settings) ResetMaxMails() {
-	s.SetMaxMails(settingMaxMailsDefault)
-}
-
 func (s Settings) SetMaxMails(v int) {
 	s.p.SetInt(settingMaxMails, v)
 }
@@ -150,8 +146,9 @@ func (s Settings) SetMaxMails(v int) {
 func (s Settings) SysTrayEnabled() bool {
 	return s.p.BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault)
 }
-func (s Settings) ResetSysTrayEnabled() {
-	s.SetSysTrayEnabled(settingSysTrayEnabledDefault)
+
+func (s Settings) SysTrayEnabledDefault() bool {
+	return settingSysTrayEnabledDefault
 }
 
 func (s Settings) SetSysTrayEnabled(v bool) {
@@ -346,8 +343,9 @@ func string2time(s string) (time.Time, bool) {
 func (s Settings) NotifyCommunicationsEnabled() bool {
 	return s.p.BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault)
 }
-func (s Settings) ResetNotifyCommunicationsEnabled() {
-	s.SetNotifyCommunicationsEnabled(settingNotifyCommunicationsEnabledDefault)
+
+func (s Settings) NotifyCommunicationsEnabledDefault() bool {
+	return settingNotifyCommunicationsEnabledDefault
 }
 
 func (s Settings) SetNotifyCommunicationsEnabled(v bool) {
@@ -357,8 +355,9 @@ func (s Settings) SetNotifyCommunicationsEnabled(v bool) {
 func (s Settings) NotifyContractsEnabled() bool {
 	return s.p.BoolWithFallback(settingNotifyContractsEnabled, settingNotifyContractsEnabledDefault)
 }
-func (s Settings) ResetNotifyContractsEnabled() {
-	s.SetNotifyContractsEnabled(settingNotifyContractsEnabledDefault)
+
+func (s Settings) NotifyContractsEnabledDefault() bool {
+	return settingNotifyContractsEnabledDefault
 }
 
 func (s Settings) SetNotifyContractsEnabled(v bool) {
@@ -368,8 +367,9 @@ func (s Settings) SetNotifyContractsEnabled(v bool) {
 func (s Settings) NotifyMailsEnabled() bool {
 	return s.p.BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault)
 }
-func (s Settings) ResetNotifyMailsEnabled() {
-	s.SetNotifyMailsEnabled(settingNotifyMailsEnabledDefault)
+
+func (s Settings) NotifyMailsEnabledDefault() bool {
+	return settingNotifyMailsEnabledDefault
 }
 
 func (s Settings) SetNotifyMailsEnabled(v bool) {
@@ -379,8 +379,9 @@ func (s Settings) SetNotifyMailsEnabled(v bool) {
 func (s Settings) NotifyPIEnabled() bool {
 	return s.p.BoolWithFallback(settingNotifyPIEnabled, settingNotifyPIEnabledDefault)
 }
-func (s Settings) ResetNotifyPIEnabled() {
-	s.SetNotifyPIEnabled(settingNotifyPIEnabledDefault)
+
+func (s Settings) NotifyPIEnabledDefault() bool {
+	return settingNotifyPIEnabledDefault
 }
 
 func (s Settings) SetNotifyPIEnabled(v bool) {
@@ -391,8 +392,8 @@ func (s Settings) NotifyTrainingEnabled() bool {
 	return s.p.BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault)
 }
 
-func (s Settings) ResetNotifyTrainingEnabled() {
-	s.SetNotifyTrainingEnabled(settingNotifyTrainingEnabledDefault)
+func (s Settings) NotifyTrainingEnabledDefault() bool {
+	return settingNotifyTrainingEnabledDefault
 }
 
 func (s Settings) SetNotifyTrainingEnabled(v bool) {
@@ -440,6 +441,43 @@ func (s Settings) ResetColorTheme() {
 
 func (s Settings) SetColorTheme(v ColorTheme) {
 	s.p.SetString(settingColorTheme, string(v))
+}
+
+func (s Settings) FyneScale() float64 {
+	return s.p.FloatWithFallback(settingFyneScale, settingFyneScaleDefault)
+}
+
+func (s Settings) FyneScaleDefault() float64 {
+	return settingFyneScaleDefault
+}
+
+func (s Settings) ResetFyneScale() {
+	s.SetFyneScale(settingFyneScaleDefault)
+}
+
+func (s Settings) SetFyneScale(v float64) {
+	s.p.SetFloat(settingFyneScale, v)
+}
+
+func (s Settings) DisableDPIDetection() bool {
+	return s.p.Bool(settingDisableDPIDetection)
+}
+
+func (s Settings) ResetDisableDPIDetection() {
+	s.SetDisableDPIDetection(false)
+}
+
+func (s Settings) SetDisableDPIDetection(v bool) {
+	s.p.SetBool(settingDisableDPIDetection, v)
+}
+
+// ResetUI resets all UI related settings to default.
+func (s Settings) ResetUI() {
+	s.ResetTabsMainID()
+	s.ResetWindowSize()
+	s.ResetColorTheme()
+	s.ResetFyneScale()
+	s.ResetDisableDPIDetection()
 }
 
 // Keys returns all setting keys. Mostly to know what to delete.

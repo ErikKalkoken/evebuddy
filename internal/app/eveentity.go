@@ -4,7 +4,6 @@ import (
 	"cmp"
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -126,18 +125,4 @@ func (eec EveEntityCategory) ToEveImage() string {
 	default:
 		return ""
 	}
-}
-
-func EveEntityValidCategories() set.Set[EveEntityCategory] {
-	return set.Of(
-		EveEntityAlliance,
-		EveEntityCharacter,
-		EveEntityConstellation,
-		EveEntityCorporation,
-		EveEntityFaction,
-		EveEntityInventoryType,
-		EveEntityRegion,
-		EveEntitySolarSystem,
-		EveEntityStation,
-	)
 }
