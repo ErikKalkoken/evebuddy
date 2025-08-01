@@ -3,12 +3,15 @@ package corporationservice
 import (
 	"context"
 	"maps"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -23,7 +26,9 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
 		c := factory.CreateCorporation()
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2046})
@@ -88,7 +93,9 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
 		c := factory.CreateCorporation()
 		blueprintType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
 		productType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 2046})
@@ -165,7 +172,9 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
 		c := factory.CreateCorporation()
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2046})
@@ -214,7 +223,9 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
 		c := factory.CreateCorporation()
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2046})
@@ -265,7 +276,9 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
 		c := factory.CreateCorporation()
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2046})
@@ -327,6 +340,86 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 				if assert.NoError(t, err) {
 					assert.Equal(t, activityID, int32(j.Activity))
 				}
+			}
+		}
+	})
+	t.Run("can fetch jobs from multiple pages", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
+		c := factory.CreateCorporation()
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2046})
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: 498338451})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
+		pages := "2"
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/industry/jobs/\?include_completed=true&page=1`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"activity_id":           1,
+					"blueprint_id":          1015116533326,
+					"blueprint_location_id": 11,
+					"blueprint_type_id":     2047,
+					"cost":                  118.01,
+					"duration":              548,
+					"end_date":              "2014-07-19T15:56:14Z",
+					"facility_id":           12,
+					"installer_id":          498338451,
+					"job_id":                229136101,
+					"licensed_runs":         200,
+					"location_id":           60006382,
+					"output_location_id":    13,
+					"product_type_id":       2046,
+					"runs":                  1,
+					"start_date":            "2014-07-19T15:47:06Z",
+					"status":                "active",
+				},
+			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/industry/jobs/\?include_completed=true&page=2`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"activity_id":           1,
+					"blueprint_id":          1015116533326,
+					"blueprint_location_id": 11,
+					"blueprint_type_id":     2047,
+					"cost":                  118.01,
+					"duration":              548,
+					"end_date":              "2014-07-19T15:56:14Z",
+					"facility_id":           12,
+					"installer_id":          498338451,
+					"job_id":                229136102,
+					"licensed_runs":         200,
+					"location_id":           60006382,
+					"output_location_id":    13,
+					"product_type_id":       2046,
+					"runs":                  1,
+					"start_date":            "2014-07-19T15:47:06Z",
+					"status":                "active",
+				},
+			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
+		)
+		// when
+		_, err := s.updateIndustryJobsESI(ctx, app.CorporationUpdateSectionParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationIndustryJobs,
+		})
+		// then
+		if assert.NoError(t, err) {
+			jobs, err := st.ListAllCorporationIndustryJobs(ctx)
+			if assert.NoError(t, err) {
+				got := set.Of(xslices.Map(jobs, func(x *app.CorporationIndustryJob) int32 {
+					return x.JobID
+				})...)
+				want := set.Of[int32](229136101, 229136102)
+				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 			}
 		}
 	})

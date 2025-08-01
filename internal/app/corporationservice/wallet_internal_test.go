@@ -95,7 +95,9 @@ func TestUpdateWalletBalancesESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
 		c := factory.CreateCorporation()
 		for id := range 7 {
 			err := st.UpdateOrCreateCorporationWalletBalance(ctx, storage.UpdateOrCreateCorporationWalletBalanceParams{
@@ -344,7 +346,9 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
 		c := factory.CreateCorporation()
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 2112625428})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
@@ -365,7 +369,8 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 					"ref_type":        "contract_deposit",
 					"second_party_id": 1000132,
 				},
-			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
+			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
+		)
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v3/corporations/%d/wallets/%d/journal/?page=2", c.ID, 1),
@@ -382,7 +387,8 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 					"ref_type":        "contract_deposit",
 					"second_party_id": 1000132,
 				},
-			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
+			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
+		)
 		// when
 		changed, err := s.updateWalletJournalESI(ctx, app.CorporationUpdateSectionParams{
 			CorporationID: c.ID,

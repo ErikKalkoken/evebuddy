@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/antihax/goesi/esi"
@@ -13,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 )
 
 // GetCorporationIndustryJob returns an industry job.
@@ -41,9 +43,16 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, arg app.CorporationUpdateSectionParams) (any, error) {
-			jobs, _, err := s.esiClient.ESI.IndustryApi.GetCorporationsCorporationIdIndustryJobs(ctx, arg.CorporationID, &esi.GetCorporationsCorporationIdIndustryJobsOpts{
-				IncludeCompleted: esioptional.NewBool(true),
-			})
+			jobs, err := xesi.FetchWithPaging(
+				func(pageNum int) ([]esi.GetCorporationsCorporationIdIndustryJobs200Ok, *http.Response, error) {
+					return s.esiClient.ESI.IndustryApi.GetCorporationsCorporationIdIndustryJobs(
+						ctx, arg.CorporationID, &esi.GetCorporationsCorporationIdIndustryJobsOpts{
+							IncludeCompleted: esioptional.NewBool(true),
+							Page:             esioptional.NewInt32(int32(pageNum)),
+						},
+					)
+				},
+			)
 			if err != nil {
 				return false, err
 			}
