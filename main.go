@@ -4,6 +4,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -48,6 +49,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/remoteservice"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 const (
@@ -67,6 +69,11 @@ const (
 	mutexTimeout        = 250 * time.Millisecond
 	ssoClientID         = "11ae857fe4d149b2be60d875649c05f1"
 	userAgentEmail      = "kalkoken87@gmail.com"
+)
+
+const (
+	headerContentTypeKey  = "Content-Type"
+	headerContentTypeJSON = "application/json"
 )
 
 // Responses from these URLs will never be logged.
@@ -431,8 +438,14 @@ func logResponse(l retryablehttp.Logger, r *http.Response) {
 		level = slog.LevelDebug
 
 	}
+
+	data, err := extractBodyForLog(r)
+	if err != nil {
+		slog.Error("Failed to extract response body", "error", err)
+		data = nil
+	}
+
 	status := statusText(r)
-	body := copyResponseBody(r)
 	var args []any
 	if isDebug {
 		args = []any{
@@ -440,40 +453,63 @@ func logResponse(l retryablehttp.Logger, r *http.Response) {
 			"url", r.Request.URL,
 			"status", status,
 			"header", r.Header,
-			"body", body,
+			"body", data,
 		}
 	} else {
 		args = []any{
 			"method", r.Request.Method,
 			"url", r.Request.URL,
 			"status", status,
-			"body", body,
+			"body", data,
 		}
 	}
 
 	slog.Log(context.Background(), level, "HTTP response", args...)
 }
 
-// copyResponseBody returns a copy of the response body r. It preserves the body.
-func copyResponseBody(r *http.Response) string {
-	if r.Body == nil {
-		return ""
-	}
-	hasBlockedURL := slices.ContainsFunc(blacklistedURLs, func(x string) bool {
+func extractBodyForLog(r *http.Response) (any, error) {
+	x := r.Header.Get(headerContentTypeKey)
+	parts := xslices.Map(strings.Split(x, ";"), func(s string) string {
+		return strings.Trim(s, " ")
+	})
+	isJSON := slices.Contains(parts, headerContentTypeJSON)
+	hasBlacklistedURL := slices.ContainsFunc(blacklistedURLs, func(x string) bool {
 		return strings.Contains(r.Request.URL.String(), x)
 	})
-	if hasBlockedURL {
-		return "xxxxx"
+	if hasBlacklistedURL {
+		if !isJSON {
+			return "xxxxx", nil
+		}
+		return map[string]bool{"redacted": true}, nil
 	}
-	var s string
+	body, err := copyResponseBody(r)
+	if err != nil {
+		return nil, err
+	}
+	if body == nil {
+		return nil, nil
+	}
+	if !isJSON {
+		return string(body), nil
+	}
+	var v any
+	if err := json.Unmarshal(body, &v); err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
+// copyResponseBody returns a copy of the response body r. It preserves the body.
+func copyResponseBody(r *http.Response) ([]byte, error) {
+	if r.Body == nil {
+		return nil, nil
+	}
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		s = "ERROR: " + err.Error()
-	} else {
-		s = string(body)
+		return nil, err
 	}
 	r.Body = io.NopCloser(bytes.NewBuffer(body))
-	return s
+	return body, nil
 }
 
 // statusText returns the status code of a response with adding information.
