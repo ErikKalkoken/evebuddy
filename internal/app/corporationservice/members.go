@@ -33,10 +33,10 @@ func (s *CorporationService) updateMembersESI(ctx context.Context, arg app.Corpo
 			if err != nil {
 				return err
 			}
-			added := set.Difference(incoming, current)
-			if _, err := s.eus.AddMissingEntities(ctx, added); err != nil {
+			if _, err := s.eus.AddMissingEntities(ctx, incoming); err != nil {
 				return err
 			}
+			added := set.Difference(incoming, current)
 			for characterID := range added.All() {
 				err := s.st.CreateCorporationMember(ctx, storage.CorporationMemberParams{
 					CorporationID: arg.CorporationID,

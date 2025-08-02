@@ -162,7 +162,13 @@ func (s *EveUniverseService) updateCharacterESI(ctx context.Context, characterID
 		if err := s.st.UpdateEveCharacter(ctx, c); err != nil {
 			return nil, err
 		}
-		// TODO: Also update related EveEntity
+		if _, err := s.st.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
+			Category: app.EveEntityCharacter,
+			ID:       characterID,
+			Name:     c.Name,
+		}); err != nil {
+			return nil, err
+		}
 		slog.Info("Updated eve character from ESI", "characterID", c.ID)
 		return nil, nil
 	})

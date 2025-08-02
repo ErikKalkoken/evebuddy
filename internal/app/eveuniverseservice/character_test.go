@@ -175,14 +175,19 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 		err := s.UpdateAllCharactersESI(ctx)
 		// then
 		if assert.NoError(t, err) {
-			x, err := st.GetEveCharacter(ctx, characterID)
+			ec, err := st.GetEveCharacter(ctx, characterID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, "CCP Bartender", x.Name)
-				assert.Equal(t, alliance, x.Alliance)
-				assert.Equal(t, corporation, x.Corporation)
-				assert.Equal(t, "bla bla", x.Description)
-				assert.InDelta(t, -9.9, x.SecurityStatus, 0.01)
-				assert.Equal(t, "All round pretty awesome guy", x.Title)
+				assert.Equal(t, "CCP Bartender", ec.Name)
+				assert.Equal(t, alliance, ec.Alliance)
+				assert.Equal(t, corporation, ec.Corporation)
+				assert.Equal(t, "bla bla", ec.Description)
+				assert.InDelta(t, -9.9, ec.SecurityStatus, 0.01)
+				assert.Equal(t, "All round pretty awesome guy", ec.Title)
+			}
+			ee, err := st.GetEveEntity(ctx, characterID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, "CCP Bartender", ee.Name)
+				assert.Equal(t, app.EveEntityCharacter, ee.Category)
 			}
 		}
 	})
