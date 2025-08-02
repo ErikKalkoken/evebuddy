@@ -371,20 +371,25 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 	err := s.UpdateAllCorporationsESI(ctx)
 	// then
 	if assert.NoError(t, err) {
-		o, err := st.GetEveCorporation(ctx, 109299958)
+		ec, err := st.GetEveCorporation(ctx, 109299958)
 		if assert.NoError(t, err) {
-			assert.Equal(t, alliance, o.Alliance)
-			assert.Equal(t, orig.Creator, o.Creator)
-			assert.Equal(t, ceo, o.Ceo)
-			assert.Equal(t, orig.DateFounded.MustValue(), o.DateFounded.MustValue())
-			assert.Equal(t, "This is a corporation description, it's basically just a string", o.Description)
-			assert.Equal(t, faction, o.Faction)
-			assert.Equal(t, station, o.HomeStation)
-			assert.Equal(t, 656, o.MemberCount)
-			assert.Equal(t, "C C P", o.Name)
-			assert.Equal(t, float32(0.256), o.TaxRate)
-			assert.Equal(t, "-CCP-", o.Ticker)
-			assert.Equal(t, "http://www.eveonline.com", o.URL)
+			assert.Equal(t, alliance, ec.Alliance)
+			assert.Equal(t, orig.Creator, ec.Creator)
+			assert.Equal(t, ceo, ec.Ceo)
+			assert.Equal(t, orig.DateFounded.MustValue(), ec.DateFounded.MustValue())
+			assert.Equal(t, "This is a corporation description, it's basically just a string", ec.Description)
+			assert.Equal(t, faction, ec.Faction)
+			assert.Equal(t, station, ec.HomeStation)
+			assert.Equal(t, 656, ec.MemberCount)
+			assert.Equal(t, "C C P", ec.Name)
+			assert.Equal(t, float32(0.256), ec.TaxRate)
+			assert.Equal(t, "-CCP-", ec.Ticker)
+			assert.Equal(t, "http://www.eveonline.com", ec.URL)
+		}
+		ee, err := st.GetEveEntity(ctx, 109299958)
+		if assert.NoError(t, err) {
+			assert.Equal(t, ec.Name, ee.Name)
+			assert.Equal(t, app.EveEntityCorporation, ee.Category)
 		}
 	}
 }

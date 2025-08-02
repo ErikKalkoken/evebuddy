@@ -161,7 +161,15 @@ func (s *EveUniverseService) UpdateAllCorporationsESI(ctx context.Context) error
 	g := new(errgroup.Group)
 	for id := range ids.All() {
 		g.Go(func() error {
-			_, err := s.UpdateOrCreateCorporationFromESI(ctx, id)
+			c, err := s.UpdateOrCreateCorporationFromESI(ctx, id)
+			if err != nil {
+				return err
+			}
+			_, err = s.st.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
+				ID:       id,
+				Category: app.EveEntityCorporation,
+				Name:     c.Name,
+			})
 			return err
 		})
 	}
