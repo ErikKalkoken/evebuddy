@@ -9,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
 	"golang.org/x/sync/errgroup"
@@ -107,10 +108,35 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 					SuccessfulRuns:       j.SuccessfulRuns,
 				}
 				if err := s.st.UpdateOrCreateCharacterIndustryJob(ctx, arg); err != nil {
-					return nil
+					return err
 				}
 			}
 			slog.Info("Updated industry jobs", "characterID", characterID, "count", len(jobs))
+
+			incoming := set.Collect(xiter.MapSlice(jobs, func(x esi.GetCharactersCharacterIdIndustryJobs200Ok) int32 {
+				return x.JobId
+			}))
+			current, err := s.st.ListCharacterIndustryJobs(ctx, characterID)
+			if err != nil {
+				return err
+			}
+			running := set.Collect(xiter.Map(xiter.FilterSlice(current, func(x *app.CharacterIndustryJob) bool {
+				return !x.Status.IsHistory()
+			}), func(x *app.CharacterIndustryJob) int32 {
+				return x.JobID
+			}))
+			orphans := set.Difference(running, incoming)
+			if orphans.Size() > 0 {
+				// The ESI response only returns jobs from the last 90 days.
+				// It can therefore happen that a long running job vanishes from the response,
+				// without the app having received a final status (e.g. delivered or canceled).
+				// Since the status of the job is undetermined we can only delete it.
+				err := s.st.DeleteCharacterIndustryJobsByID(ctx, characterID, orphans)
+				if err != nil {
+					return err
+				}
+				slog.Info("Deleted orphaned industry jobs", "characterID", characterID, "count", orphans.Size())
+			}
 			return nil
 		})
 }

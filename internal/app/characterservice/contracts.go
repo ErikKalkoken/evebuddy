@@ -146,11 +146,13 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 		func(ctx context.Context, characterID int32) (any, error) {
 			contracts, err := xesi.FetchWithPaging(
 				func(pageNum int) ([]esi.GetCharactersCharacterIdContracts200Ok, *http.Response, error) {
-					arg := &esi.GetCharactersCharacterIdContractsOpts{
-						Page: esioptional.NewInt32(int32(pageNum)),
-					}
-					return s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContracts(ctx, characterID, arg)
-				})
+					return s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContracts(
+						ctx, characterID, &esi.GetCharactersCharacterIdContractsOpts{
+							Page: esioptional.NewInt32(int32(pageNum)),
+						},
+					)
+				},
+			)
 			if err != nil {
 				return false, err
 			}

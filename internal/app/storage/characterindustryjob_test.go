@@ -242,6 +242,28 @@ func TestCharacterIndustryJob(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can list jobs for a character", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		j1 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+		})
+		j2 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+		})
+		factory.CreateCharacterIndustryJob()
+		// when
+		s, err := st.ListCharacterIndustryJobs(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of(j1.JobID, j2.JobID)
+			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterIndustryJob) int32 {
+				return x.JobID
+			}))
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		}
+	})
 	t.Run("can list jobs for all characters", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -255,7 +277,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterIndustryJob) int32 {
 				return x.JobID
 			}))
-			assert.True(t, got.Equal(want))
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 	t.Run("can get jobs with incomplete locations", func(t *testing.T) {
@@ -346,6 +368,35 @@ func TestCharacterIndustryJob(t *testing.T) {
 				{InstallerID: character2.ID, Activity: app.Manufacturing, Status: app.JobActive, Count: 1},
 			}
 			assert.ElementsMatch(t, want, got)
+		}
+	})
+	t.Run("can delete selected jobs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		j1 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+		})
+		j2 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+		})
+		j3 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+		})
+		j4 := factory.CreateCharacterIndustryJob()
+		// when
+		err := st.DeleteCharacterIndustryJobsByID(ctx, c.ID, set.Of(j1.JobID, j2.JobID))
+		// then
+		if assert.NoError(t, err) {
+			s, err := st.ListAllCharacterIndustryJob(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterIndustryJob) int64 {
+				return x.ID
+			}))
+			want := set.Of(j3.ID, j4.ID)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 }

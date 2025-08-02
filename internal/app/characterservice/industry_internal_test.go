@@ -9,6 +9,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -51,8 +53,8 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 					"station_id":            60006382,
 					"status":                "active",
 				},
-			}))
-
+			}),
+		)
 		// when
 		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
@@ -88,43 +90,55 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		blueprintType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
+		completer := factory.CreateEveEntityCharacter()
 		installer := factory.CreateEveEntityCharacter(app.EveEntity{ID: 498338451})
 		location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
+		productType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 2046})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			CharacterID:         c.ID,
-			BlueprintTypeID:     blueprintType.ID,
-			InstallerID:         installer.ID,
+			ActivityID:          1,
+			BlueprintID:         1015116533326,
 			BlueprintLocationID: location.ID,
-			OutputLocationID:    location.ID,
+			BlueprintTypeID:     blueprintType.ID,
+			CharacterID:         c.ID,
+			Cost:                118.01,
+			Duration:            548,
 			FacilityID:          location.ID,
+			InstallerID:         installer.ID,
+			ProductTypeID:       productType.ID,
+			JobID:               229136101,
+			LicensedRuns:        200,
+			OutputLocationID:    location.ID,
+			Runs:                1,
 			StationID:           location.ID,
 			Status:              app.JobActive,
-			EndDate:             time.Now(),
 		})
 		httpmock.RegisterResponder(
 			"GET",
 			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/industry/jobs/\?include_completed=true`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
-					"activity_id":           1,
-					"blueprint_id":          1015116533326,
-					"blueprint_location_id": 60006382,
-					"blueprint_type_id":     2047,
-					"cost":                  118.01,
-					"duration":              548,
-					"end_date":              "2014-07-19T15:56:14Z",
-					"facility_id":           60006382,
-					"installer_id":          498338451,
-					"job_id":                229136101,
-					"licensed_runs":         200,
-					"output_location_id":    60006382,
-					"runs":                  1,
-					"start_date":            "2014-07-19T15:47:06Z",
-					"station_id":            60006382,
-					"status":                "delivered",
+					"activity_id":            1,
+					"blueprint_id":           1015116533326,
+					"blueprint_location_id":  60006382,
+					"blueprint_type_id":      2047,
+					"completed_character_id": completer.ID,
+					"completed_date":         "2014-07-20T15:56:14Z",
+					"cost":                   118.01,
+					"duration":               548,
+					"end_date":               "2014-07-19T15:56:14Z",
+					"facility_id":            60006382,
+					"installer_id":           498338451,
+					"job_id":                 229136101,
+					"licensed_runs":          200,
+					"output_location_id":     60006382,
+					"runs":                   1,
+					"start_date":             "2014-07-19T15:47:06Z",
+					"station_id":             60006382,
+					"status":                 "delivered",
+					"successful_runs":        42,
 				},
-			}))
-
+			}),
+		)
 		// when
 		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
@@ -133,23 +147,16 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			x, err := st.GetCharacterIndustryJob(ctx, c.ID, 229136101)
+			xx, err := st.ListAllCharacterIndustryJob(ctx)
 			if assert.NoError(t, err) {
-				assert.Equal(t, app.Manufacturing, x.Activity)
-				assert.EqualValues(t, 1015116533326, x.BlueprintID)
-				assert.EqualValues(t, 60006382, x.BlueprintLocation.ID)
-				assert.EqualValues(t, 118.01, x.Cost.MustValue())
-				assert.EqualValues(t, 548, x.Duration)
-				assert.Equal(t, time.Date(2014, 7, 19, 15, 56, 14, 0, time.UTC), x.EndDate)
-				assert.EqualValues(t, 60006382, x.Facility.ID)
-				assert.EqualValues(t, 498338451, x.Installer.ID)
-				assert.EqualValues(t, 229136101, x.JobID)
-				assert.EqualValues(t, 200, x.LicensedRuns.MustValue())
-				assert.EqualValues(t, 60006382, x.OutputLocation.ID)
-				assert.EqualValues(t, 1, x.Runs)
-				assert.Equal(t, time.Date(2014, 7, 19, 15, 47, 6, 0, time.UTC), x.StartDate)
-				assert.EqualValues(t, 60006382, x.Station.ID)
+				assert.Len(t, xx, 1)
+				x := xx[0]
+				assert.Equal(t, c.ID, x.CharacterID)
 				assert.Equal(t, app.JobDelivered, x.Status)
+				assert.EqualValues(t, 42, x.SuccessfulRuns.MustValue())
+				assert.Equal(t, time.Date(2014, 7, 19, 15, 56, 14, 0, time.UTC), x.EndDate)
+				assert.Equal(t, time.Date(2014, 7, 20, 15, 56, 14, 0, time.UTC), x.CompletedDate.MustValue())
+				assert.EqualValues(t, completer, x.CompletedCharacter.MustValue())
 			}
 		}
 	})
@@ -184,8 +191,8 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 					"station_id":            60006382,
 					"status":                "active",
 				},
-			}))
-
+			}),
+		)
 		// when
 		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
@@ -234,8 +241,8 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 					"station_id":            60006382,
 					"status":                "active",
 				},
-			}))
-
+			}),
+		)
 		// when
 		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
@@ -261,7 +268,6 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
 		startDate := time.Now().Add(-24 * time.Hour)
 		endDate := time.Now().Add(+3 * time.Hour)
-
 		makeObj := func(jobID, activityID int32) map[string]any {
 			template := map[string]any{
 				"activity_id":           activityID,
@@ -314,6 +320,73 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 				if assert.NoError(t, err) {
 					assert.Equal(t, activityID, int32(j.Activity))
 				}
+			}
+		}
+	})
+	t.Run("should remove orphaned jobs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		j1 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+			Status:      app.JobDelivered,
+		})
+		j2 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+			Status:      app.JobCancelled,
+		})
+		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+			Status:      app.JobActive,
+		})
+		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+			Status:      app.JobReady,
+		})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: 498338451})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/industry/jobs/\?include_completed=true`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"activity_id":           1,
+					"blueprint_id":          1015116533326,
+					"blueprint_location_id": 60006382,
+					"blueprint_type_id":     2047,
+					"cost":                  118.01,
+					"duration":              548,
+					"end_date":              "2014-07-19T15:56:14Z",
+					"facility_id":           60006382,
+					"installer_id":          498338451,
+					"job_id":                229136101,
+					"licensed_runs":         200,
+					"output_location_id":    60006382,
+					"runs":                  1,
+					"start_date":            "2014-07-19T15:47:06Z",
+					"station_id":            60006382,
+					"status":                "active",
+				},
+			}),
+		)
+		// when
+		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterUpdateSectionParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterIndustryJobs,
+		})
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, changed)
+			oo, err := st.ListAllCharacterIndustryJob(ctx)
+			if assert.NoError(t, err) {
+				got := set.Of(xslices.Map(oo, func(x *app.CharacterIndustryJob) int32 {
+					return x.JobID
+				})...)
+				want := set.Of(j1.JobID, j2.JobID, 229136101)
+				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 			}
 		}
 	})

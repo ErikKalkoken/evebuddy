@@ -78,14 +78,6 @@ type industryJobRow struct {
 	tags               set.Set[string]
 }
 
-func (j industryJobRow) IsActive() bool {
-	switch j.status {
-	case app.JobActive, app.JobReady, app.JobPaused:
-		return true
-	}
-	return false
-}
-
 type industryJobs struct {
 	widget.BaseWidget
 
@@ -242,7 +234,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 	rows = xslices.Filter(rows, func(r industryJobRow) bool {
 		switch a.selectStatus.Selected {
 		case industryStatusActive:
-			return r.IsActive()
+			return r.status.IsActive()
 		case industryStatusInProgress:
 			return r.status == app.JobActive
 		case industryStatusReady:
@@ -250,7 +242,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 		case industryStatusHalted:
 			return r.status == app.JobPaused
 		case industryStatusHistory:
-			return r.status == app.JobDelivered
+			return r.status.IsHistory()
 		}
 		return false
 	})

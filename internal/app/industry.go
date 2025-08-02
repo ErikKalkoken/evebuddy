@@ -133,6 +133,22 @@ func (s IndustryJobStatus) String() string {
 	return x
 }
 
+func (s IndustryJobStatus) IsActive() bool {
+	switch s {
+	case JobActive, JobReady, JobPaused:
+		return true
+	}
+	return false
+}
+
+func (s IndustryJobStatus) IsHistory() bool {
+	switch s {
+	case JobDelivered, JobCancelled:
+		return true
+	}
+	return false
+}
+
 func (s IndustryJobStatus) Display() string {
 	titler := cases.Title(language.English)
 	return titler.String(s.String())
@@ -164,6 +180,7 @@ type CharacterIndustryJob struct {
 	Duration           int
 	EndDate            time.Time
 	Facility           *EveLocationShort
+	ID                 int64
 	Installer          *EveEntity
 	JobID              int32
 	LicensedRuns       optional.Optional[int]
@@ -198,6 +215,7 @@ type CorporationIndustryJob struct {
 	EndDate             time.Time
 	FacilityID          int64 // can be a corp hanger or container. not supported.
 	Installer           *EveEntity
+	ID                  int64
 	JobID               int32
 	LicensedRuns        optional.Optional[int]
 	OutputLocationID    int64 // can be a corp hanger or container. not supported.

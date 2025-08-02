@@ -130,7 +130,7 @@ func TestLocation(t *testing.T) {
 		got, err := r.ListEveLocationIDs(ctx)
 		if assert.NoError(t, err) {
 			want := set.Of(l1.ID, l2.ID)
-			assert.True(t, got.Equal(want))
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 	t.Run("can list locations in solar system", func(t *testing.T) {
@@ -159,7 +159,7 @@ func TestLocation(t *testing.T) {
 		got, err := r.MissingEveLocations(ctx, set.Of[int64](42, 99))
 		if assert.NoError(t, err) {
 			want := set.Of[int64](99)
-			assert.True(t, got.Equal(want))
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 }

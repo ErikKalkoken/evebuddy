@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/antihax/goesi/esi"
@@ -13,6 +14,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 // GetCorporationIndustryJob returns an industry job.
@@ -41,9 +44,16 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, arg app.CorporationUpdateSectionParams) (any, error) {
-			jobs, _, err := s.esiClient.ESI.IndustryApi.GetCorporationsCorporationIdIndustryJobs(ctx, arg.CorporationID, &esi.GetCorporationsCorporationIdIndustryJobsOpts{
-				IncludeCompleted: esioptional.NewBool(true),
-			})
+			jobs, err := xesi.FetchWithPaging(
+				func(pageNum int) ([]esi.GetCorporationsCorporationIdIndustryJobs200Ok, *http.Response, error) {
+					return s.esiClient.ESI.IndustryApi.GetCorporationsCorporationIdIndustryJobs(
+						ctx, arg.CorporationID, &esi.GetCorporationsCorporationIdIndustryJobsOpts{
+							IncludeCompleted: esioptional.NewBool(true),
+							Page:             esioptional.NewInt32(int32(pageNum)),
+						},
+					)
+				},
+			)
 			if err != nil {
 				return false, err
 			}
@@ -109,10 +119,35 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 					SuccessfulRuns:       j.SuccessfulRuns,
 				}
 				if err := s.st.UpdateOrCreateCorporationIndustryJob(ctx, arg); err != nil {
-					return nil
+					return err
 				}
 			}
 			slog.Info("Updated industry jobs", "corporationID", arg.CorporationID, "count", len(jobs))
+
+			incoming := set.Collect(xiter.MapSlice(jobs, func(x esi.GetCorporationsCorporationIdIndustryJobs200Ok) int32 {
+				return x.JobId
+			}))
+			current, err := s.st.ListCorporationIndustryJobs(ctx, arg.CorporationID)
+			if err != nil {
+				return err
+			}
+			running := set.Collect(xiter.Map(xiter.FilterSlice(current, func(x *app.CorporationIndustryJob) bool {
+				return !x.Status.IsHistory()
+			}), func(x *app.CorporationIndustryJob) int32 {
+				return x.JobID
+			}))
+			orphans := set.Difference(running, incoming)
+			if orphans.Size() > 0 {
+				// The ESI response only returns jobs from the last 90 days.
+				// It can therefore happen that a long running job vanishes from the response,
+				// without the app having received a final status (e.g. delivered or canceled).
+				// Since the status of the job is undetermined we can only delete it.
+				err := s.st.DeleteCorporationIndustryJobsByID(ctx, arg.CorporationID, orphans)
+				if err != nil {
+					return err
+				}
+				slog.Info("Deleted orphaned industry jobs", "corporationID", arg.CorporationID, "count", orphans.Size())
+			}
 			return nil
 		})
 }
