@@ -92,7 +92,7 @@ func TestListOrphanedCorporationIDs(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(corporation2.ID)
-			assert.True(t, got.Equal(want))
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 	t.Run("orphaned corporation does not exist", func(t *testing.T) {
@@ -108,7 +108,7 @@ func TestListOrphanedCorporationIDs(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int32]()
-			assert.True(t, got.Equal(want))
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 }

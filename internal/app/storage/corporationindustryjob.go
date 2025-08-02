@@ -10,11 +10,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func (st *Storage) DeleteCorporationIndustryJobs(ctx context.Context, corporationID int32) error {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("DeleteCorporationWalletJournalEntries: %d: %w", corporationID, err)
+		return fmt.Errorf("DeleteCorporationIndustryJobs: %d: %w", corporationID, err)
 	}
 	if corporationID == 0 {
 		return wrapErr(app.ErrInvalid)
@@ -27,6 +28,26 @@ func (st *Storage) DeleteCorporationIndustryJobs(ctx context.Context, corporatio
 	return nil
 }
 
+func (st *Storage) DeleteCorporationIndustryJobsByID(ctx context.Context, corporationID int32, jobIDs set.Set[int32]) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("DeleteCorporationIndustryJobsByID: corporation %d jobIDs %v: %w", corporationID, jobIDs, err)
+	}
+	if corporationID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	if jobIDs.Size() == 0 {
+		return nil
+	}
+	err := st.qRW.DeleteCorporationIndustryJobsByID(ctx, queries.DeleteCorporationIndustryJobsByIDParams{
+		CorporationID: int64(corporationID),
+		JobIds:        convertNumericSlice[int64](jobIDs.Slice()),
+	})
+	if err != nil {
+		return wrapErr(err)
+	}
+	slog.Info("Industry jobs deleted for corporation", "corporationID", corporationID, "jobIDs", jobIDs)
+	return nil
+}
 func (st *Storage) GetCorporationIndustryJob(ctx context.Context, corporationID, jobID int32) (*app.CorporationIndustryJob, error) {
 	arg := queries.GetCorporationIndustryJobParams{
 		CorporationID: int64(corporationID),
@@ -37,15 +58,41 @@ func (st *Storage) GetCorporationIndustryJob(ctx context.Context, corporationID,
 		return nil, fmt.Errorf("get industry job for corporation %d: %w", corporationID, convertGetError(err))
 	}
 	o := corporationIndustryJobFromDBModel(corporationIndustryJobFromDBModelParams{
-		job:                    r.CorporationIndustryJob,
-		installer:              r.EveEntity,
 		blueprintTypeName:      r.BlueprintTypeName,
 		completedCharacterName: r.CompletedCharacterName,
-		productTypeName:        r.ProductTypeName,
+		installer:              r.EveEntity,
+		job:                    r.CorporationIndustryJob,
 		locationName:           r.LocationName,
 		locationSecurity:       r.StationSecurity,
+		productTypeName:        r.ProductTypeName,
 	})
 	return o, err
+}
+
+func (st *Storage) ListCorporationIndustryJobs(ctx context.Context, corporationID int32) ([]*app.CorporationIndustryJob, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCorporationIndustryJobs: corporationID: %d: %w", corporationID, err)
+	}
+	if corporationID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	rows, err := st.qRO.ListCorporationIndustryJobs(ctx, int64(corporationID))
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	oo := make([]*app.CorporationIndustryJob, len(rows))
+	for i, r := range rows {
+		oo[i] = corporationIndustryJobFromDBModel(corporationIndustryJobFromDBModelParams{
+			job:                    r.CorporationIndustryJob,
+			installer:              r.EveEntity,
+			blueprintTypeName:      r.BlueprintTypeName,
+			completedCharacterName: r.CompletedCharacterName,
+			productTypeName:        r.ProductTypeName,
+			locationName:           r.LocationName,
+			locationSecurity:       r.StationSecurity,
+		})
+	}
+	return oo, nil
 }
 
 func (st *Storage) ListAllCorporationIndustryJobs(ctx context.Context) ([]*app.CorporationIndustryJob, error) {
@@ -69,13 +116,13 @@ func (st *Storage) ListAllCorporationIndustryJobs(ctx context.Context) ([]*app.C
 }
 
 type corporationIndustryJobFromDBModelParams struct {
-	job                    queries.CorporationIndustryJob
-	installer              queries.EveEntity
 	blueprintTypeName      string
 	completedCharacterName sql.NullString
-	productTypeName        sql.NullString
+	installer              queries.EveEntity
+	job                    queries.CorporationIndustryJob
 	locationName           string
 	locationSecurity       sql.NullFloat64
+	productTypeName        sql.NullString
 }
 
 func corporationIndustryJobFromDBModel(arg corporationIndustryJobFromDBModelParams) *app.CorporationIndustryJob {
@@ -93,6 +140,7 @@ func corporationIndustryJobFromDBModel(arg corporationIndustryJobFromDBModelPara
 		Duration:      int(arg.job.Duration),
 		EndDate:       arg.job.EndDate,
 		FacilityID:    arg.job.FacilityID,
+		ID:            arg.job.ID,
 		Installer:     eveEntityFromDBModel(arg.installer),
 		JobID:         int32(arg.job.JobID),
 		LicensedRuns:  optional.FromNullInt64ToInteger[int](arg.job.LicensedRuns),

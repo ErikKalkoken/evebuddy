@@ -3,6 +3,12 @@ DELETE FROM corporation_industry_jobs
 WHERE
     corporation_id = ?;
 
+-- name: DeleteCorporationIndustryJobsByID :exec
+DELETE FROM corporation_industry_jobs
+WHERE
+    corporation_id = ?
+    AND job_id IN (sqlc.slice('job_ids'));
+
 -- name: GetCorporationIndustryJob :one
 SELECT
     sqlc.embed(cij),
@@ -23,6 +29,26 @@ FROM
 WHERE
     corporation_id = ?
     AND job_id = ?;
+
+-- name: ListCorporationIndustryJobs :many
+SELECT
+    sqlc.embed(cij),
+    sqlc.embed(ic),
+    bt.name AS blueprint_type_name,
+    cc.name AS completed_character_name,
+    pt.name AS product_type_name,
+    lo.name AS location_name,
+    los.security_status as station_security
+FROM
+    corporation_industry_jobs cij
+    JOIN eve_types bt ON bt.id = cij.blueprint_type_id
+    JOIN eve_entities ic ON ic.id = cij.installer_id
+    JOIN eve_locations lo ON lo.id = cij.location_id
+    LEFT JOIN eve_solar_systems los ON los.id = lo.eve_solar_system_id
+    LEFT JOIN eve_entities cc ON cc.id = cij.completed_character_id
+    LEFT JOIN eve_types pt ON pt.id = cij.product_type_id
+WHERE
+    corporation_id = ?;
 
 -- name: ListAllCorporationIndustryJobs :many
 SELECT

@@ -213,6 +213,28 @@ func TestCorporationIndustryJob(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can list jobs for a corporations", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCorporation()
+		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: c.ID,
+		})
+		j2 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: c.ID,
+		})
+		factory.CreateCorporationIndustryJob()
+		// when
+		s, err := st.ListCorporationIndustryJobs(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of(j1.ID, j2.ID)
+			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CorporationIndustryJob) int64 {
+				return x.ID
+			}))
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		}
+	})
 	t.Run("can list jobs for all corporations", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -222,11 +244,11 @@ func TestCorporationIndustryJob(t *testing.T) {
 		s, err := st.ListAllCorporationIndustryJobs(ctx)
 		// then
 		if assert.NoError(t, err) {
-			want := set.Of(j1.JobID, j2.JobID)
-			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CorporationIndustryJob) int32 {
-				return x.JobID
+			want := set.Of(j1.ID, j2.ID)
+			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CorporationIndustryJob) int64 {
+				return x.ID
 			}))
-			assert.True(t, got.Equal(want))
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 	t.Run("can get jobs with incomplete locations", func(t *testing.T) {
@@ -257,7 +279,7 @@ func TestCorporationIndustryJob(t *testing.T) {
 			assert.Len(t, x, 1)
 		}
 	})
-	t.Run("can delete jobs", func(t *testing.T) {
+	t.Run("can delete all jobs", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		j1 := factory.CreateCorporationIndustryJob()
@@ -273,6 +295,34 @@ func TestCorporationIndustryJob(t *testing.T) {
 				})
 				assert.NotContains(t, corporationIDs, j1.CorporationID)
 				assert.Contains(t, corporationIDs, j2.CorporationID)
+			}
+		}
+	})
+	t.Run("can delete selected jobs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCorporation()
+		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: c.ID,
+		})
+		j2 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: c.ID,
+		})
+		j3 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: c.ID,
+		})
+		j4 := factory.CreateCorporationIndustryJob()
+		// when
+		err := st.DeleteCorporationIndustryJobsByID(ctx, c.ID, set.Of(j1.JobID, j2.JobID))
+		// then
+		if assert.NoError(t, err) {
+			oo, err := st.ListAllCorporationIndustryJobs(ctx)
+			if assert.NoError(t, err) {
+				got := set.Collect(xiter.MapSlice(oo, func(x *app.CorporationIndustryJob) int64 {
+					return x.ID
+				}))
+				want := set.Of(j3.ID, j4.ID)
+				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 			}
 		}
 	})

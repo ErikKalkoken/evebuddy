@@ -567,7 +567,7 @@ func TestCharacter(t *testing.T) {
 		got := sc.ListCharacterIDs()
 		// then
 		want := set.Of(c1.ID, c2.ID)
-		assert.True(t, got.Equal(want))
+		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 	})
 }
 

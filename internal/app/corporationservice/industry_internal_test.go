@@ -156,18 +156,16 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
+			xx, err := st.ListAllCorporationIndustryJobs(ctx)
 			if assert.NoError(t, err) {
-				xx, err := st.ListAllCorporationIndustryJobs(ctx)
-				if assert.NoError(t, err) {
-					assert.Len(t, xx, 1)
-					x := xx[0]
-					assert.Equal(t, c.ID, x.CorporationID)
-					assert.Equal(t, app.JobDelivered, x.Status)
-					assert.EqualValues(t, 42, x.SuccessfulRuns.MustValue())
-					assert.Equal(t, time.Date(2014, 7, 19, 15, 56, 14, 0, time.UTC), x.EndDate)
-					assert.Equal(t, time.Date(2014, 7, 20, 15, 56, 14, 0, time.UTC), x.CompletedDate.MustValue())
-					assert.EqualValues(t, completer, x.CompletedCharacter.MustValue())
-				}
+				assert.Len(t, xx, 1)
+				x := xx[0]
+				assert.Equal(t, c.ID, x.CorporationID)
+				assert.Equal(t, app.JobDelivered, x.Status)
+				assert.EqualValues(t, 42, x.SuccessfulRuns.MustValue())
+				assert.Equal(t, time.Date(2014, 7, 19, 15, 56, 14, 0, time.UTC), x.EndDate)
+				assert.Equal(t, time.Date(2014, 7, 20, 15, 56, 14, 0, time.UTC), x.CompletedDate.MustValue())
+				assert.EqualValues(t, completer, x.CompletedCharacter.MustValue())
 			}
 		}
 	})
@@ -422,6 +420,77 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 					return x.JobID
 				})...)
 				want := set.Of[int32](229136101, 229136102)
+				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			}
+		}
+	})
+	t.Run("should remove orphaned jobs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
+		c := factory.CreateCorporation()
+		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: c.ID,
+			Status:        app.JobDelivered,
+		})
+		j2 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: c.ID,
+			Status:        app.JobCancelled,
+		})
+		factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: c.ID,
+			Status:        app.JobActive,
+		})
+		factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: c.ID,
+			Status:        app.JobReady,
+		})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2046})
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: 498338451})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/industry/jobs/\?include_completed=true`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"activity_id":           1,
+					"blueprint_id":          1015116533326,
+					"blueprint_location_id": 11,
+					"blueprint_type_id":     2047,
+					"cost":                  118.01,
+					"duration":              548,
+					"end_date":              "2014-07-19T15:56:14Z",
+					"facility_id":           12,
+					"installer_id":          498338451,
+					"job_id":                229136101,
+					"licensed_runs":         200,
+					"location_id":           60006382,
+					"output_location_id":    13,
+					"product_type_id":       2046,
+					"runs":                  1,
+					"start_date":            "2014-07-19T15:47:06Z",
+					"status":                "active",
+				},
+			}),
+		)
+		// when
+		changed, err := s.updateIndustryJobsESI(ctx, app.CorporationUpdateSectionParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationIndustryJobs,
+		})
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, changed)
+			oo, err := st.ListAllCorporationIndustryJobs(ctx)
+			if assert.NoError(t, err) {
+				got := set.Of(xslices.Map(oo, func(x *app.CorporationIndustryJob) int32 {
+					return x.JobID
+				})...)
+				want := set.Of(j1.JobID, j2.JobID, 229136101)
 				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 			}
 		}

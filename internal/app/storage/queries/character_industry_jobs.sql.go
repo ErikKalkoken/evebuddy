@@ -8,8 +8,37 @@ package queries
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 )
+
+const deleteCharacterIndustryJobs = `-- name: DeleteCharacterIndustryJobs :exec
+DELETE FROM character_industry_jobs
+WHERE
+    character_id = ?
+    AND job_id IN (/*SLICE:job_ids*/?)
+`
+
+type DeleteCharacterIndustryJobsParams struct {
+	CharacterID int64
+	JobIds      []int64
+}
+
+func (q *Queries) DeleteCharacterIndustryJobs(ctx context.Context, arg DeleteCharacterIndustryJobsParams) error {
+	query := deleteCharacterIndustryJobs
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CharacterID)
+	if len(arg.JobIds) > 0 {
+		for _, v := range arg.JobIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:job_ids*/?", strings.Repeat(",?", len(arg.JobIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:job_ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
 
 const getCharacterIndustryJob = `-- name: GetCharacterIndustryJob :one
 SELECT
@@ -210,8 +239,6 @@ FROM
     LEFT JOIN eve_solar_systems sls ON sls.id = sl.eve_solar_system_id
     LEFT JOIN eve_entities cc ON cc.id = cij.completed_character_id
     LEFT JOIN eve_types pt ON pt.id = cij.product_type_id
-ORDER BY
-    end_date DESC
 `
 
 type ListAllCharacterIndustryJobsRow struct {
@@ -239,6 +266,117 @@ func (q *Queries) ListAllCharacterIndustryJobs(ctx context.Context) ([]ListAllCh
 	var items []ListAllCharacterIndustryJobsRow
 	for rows.Next() {
 		var i ListAllCharacterIndustryJobsRow
+		if err := rows.Scan(
+			&i.CharacterIndustryJob.ID,
+			&i.CharacterIndustryJob.ActivityID,
+			&i.CharacterIndustryJob.BlueprintID,
+			&i.CharacterIndustryJob.BlueprintLocationID,
+			&i.CharacterIndustryJob.BlueprintTypeID,
+			&i.CharacterIndustryJob.CharacterID,
+			&i.CharacterIndustryJob.CompletedCharacterID,
+			&i.CharacterIndustryJob.CompletedDate,
+			&i.CharacterIndustryJob.Cost,
+			&i.CharacterIndustryJob.Duration,
+			&i.CharacterIndustryJob.EndDate,
+			&i.CharacterIndustryJob.FacilityID,
+			&i.CharacterIndustryJob.InstallerID,
+			&i.CharacterIndustryJob.JobID,
+			&i.CharacterIndustryJob.LicensedRuns,
+			&i.CharacterIndustryJob.OutputLocationID,
+			&i.CharacterIndustryJob.PauseDate,
+			&i.CharacterIndustryJob.Probability,
+			&i.CharacterIndustryJob.ProductTypeID,
+			&i.CharacterIndustryJob.Runs,
+			&i.CharacterIndustryJob.StartDate,
+			&i.CharacterIndustryJob.StationID,
+			&i.CharacterIndustryJob.Status,
+			&i.CharacterIndustryJob.SuccessfulRuns,
+			&i.EveEntity.ID,
+			&i.EveEntity.Category,
+			&i.EveEntity.Name,
+			&i.BlueprintLocationName,
+			&i.BlueprintLocationSecurity,
+			&i.BlueprintTypeName,
+			&i.CompletedCharacterName,
+			&i.FacilityName,
+			&i.FacilitySecurity,
+			&i.OutputLocationName,
+			&i.OutputLocationSecurity,
+			&i.ProductTypeName,
+			&i.StationName,
+			&i.StationSecurity,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCharacterIndustryJobs = `-- name: ListCharacterIndustryJobs :many
+SELECT
+    cij.id, cij.activity_id, cij.blueprint_id, cij.blueprint_location_id, cij.blueprint_type_id, cij.character_id, cij.completed_character_id, cij.completed_date, cij.cost, cij.duration, cij.end_date, cij.facility_id, cij.installer_id, cij.job_id, cij.licensed_runs, cij.output_location_id, cij.pause_date, cij.probability, cij.product_type_id, cij.runs, cij.start_date, cij.station_id, cij.status, cij.successful_runs,
+    ic.id, ic.category, ic.name,
+    bl.name AS blueprint_location_name,
+    bls.security_status as blueprint_location_security,
+    bt.name AS blueprint_type_name,
+    cc.name AS completed_character_name,
+    fc.name AS facility_name,
+    fcs.security_status as facility_security,
+    ol.name AS output_location_name,
+    ols.security_status as output_location_security,
+    pt.name AS product_type_name,
+    sl.name AS station_name,
+    sls.security_status as station_security
+FROM
+    character_industry_jobs cij
+    JOIN eve_locations bl ON bl.id = cij.blueprint_location_id
+    JOIN eve_types bt ON bt.id = cij.blueprint_type_id
+    JOIN eve_locations fc ON fc.id = cij.facility_id
+    JOIN eve_entities ic ON ic.id = cij.installer_id
+    JOIN eve_locations ol ON ol.id = cij.output_location_id
+    JOIN eve_locations sl ON sl.id = cij.station_id
+    LEFT JOIN eve_solar_systems bls ON bls.id = bl.eve_solar_system_id
+    LEFT JOIN eve_solar_systems fcs ON fcs.id = fc.eve_solar_system_id
+    LEFT JOIN eve_solar_systems ols ON ols.id = ol.eve_solar_system_id
+    LEFT JOIN eve_solar_systems sls ON sls.id = sl.eve_solar_system_id
+    LEFT JOIN eve_entities cc ON cc.id = cij.completed_character_id
+    LEFT JOIN eve_types pt ON pt.id = cij.product_type_id
+WHERE
+    character_id = ?
+`
+
+type ListCharacterIndustryJobsRow struct {
+	CharacterIndustryJob      CharacterIndustryJob
+	EveEntity                 EveEntity
+	BlueprintLocationName     string
+	BlueprintLocationSecurity sql.NullFloat64
+	BlueprintTypeName         string
+	CompletedCharacterName    sql.NullString
+	FacilityName              string
+	FacilitySecurity          sql.NullFloat64
+	OutputLocationName        string
+	OutputLocationSecurity    sql.NullFloat64
+	ProductTypeName           sql.NullString
+	StationName               string
+	StationSecurity           sql.NullFloat64
+}
+
+func (q *Queries) ListCharacterIndustryJobs(ctx context.Context, characterID int64) ([]ListCharacterIndustryJobsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterIndustryJobs, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterIndustryJobsRow
+	for rows.Next() {
+		var i ListCharacterIndustryJobsRow
 		if err := rows.Scan(
 			&i.CharacterIndustryJob.ID,
 			&i.CharacterIndustryJob.ActivityID,

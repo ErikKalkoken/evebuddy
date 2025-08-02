@@ -4,11 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 var jobStatusFromDBValue = map[string]app.IndustryJobStatus{
@@ -29,6 +31,27 @@ func init() {
 	}
 }
 
+func (st *Storage) DeleteCharacterIndustryJobsByID(ctx context.Context, characterID int32, jobIDs set.Set[int32]) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("DeleteCharacterIndustryJobs for character %d and job IDs: %v: %w", characterID, jobIDs, err)
+	}
+	if characterID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	if jobIDs.Size() == 0 {
+		return nil
+	}
+	err := st.qRW.DeleteCharacterIndustryJobs(ctx, queries.DeleteCharacterIndustryJobsParams{
+		CharacterID: int64(characterID),
+		JobIds:      convertNumericSlice[int64](jobIDs.Slice()),
+	})
+	if err != nil {
+		return wrapErr(err)
+	}
+	slog.Info("Industry jobs deleted for character", "characterID", characterID, "jobIDs", jobIDs)
+	return nil
+}
+
 func (st *Storage) GetCharacterIndustryJob(ctx context.Context, characterID, jobID int32) (*app.CharacterIndustryJob, error) {
 	arg := queries.GetCharacterIndustryJobParams{
 		CharacterID: int64(characterID),
@@ -38,118 +61,147 @@ func (st *Storage) GetCharacterIndustryJob(ctx context.Context, characterID, job
 	if err != nil {
 		return nil, fmt.Errorf("get industry job for character %d: %w", characterID, convertGetError(err))
 	}
-	o := characterIndustryJobFromDBModel(
-		r.CharacterIndustryJob,
-		r.EveEntity,
-		r.BlueprintLocationName,
-		r.BlueprintLocationSecurity,
-		r.BlueprintTypeName,
-		r.CompletedCharacterName,
-		r.FacilityName,
-		r.FacilitySecurity,
-		r.OutputLocationName,
-		r.OutputLocationSecurity,
-		r.ProductTypeName,
-		r.StationName,
-		r.StationSecurity,
-	)
+	o := characterIndustryJobFromDBModel(characterIndustryJobFromDBModelParams{
+		blueprintLocationName:     r.BlueprintLocationName,
+		blueprintLocationSecurity: r.BlueprintLocationSecurity,
+		blueprintTypeName:         r.BlueprintTypeName,
+		completedCharacterName:    r.CompletedCharacterName,
+		facilityName:              r.FacilityName,
+		facilitySecurity:          r.FacilitySecurity,
+		installer:                 r.EveEntity,
+		job:                       r.CharacterIndustryJob,
+		outputLocationName:        r.OutputLocationName,
+		outputLocationSecurity:    r.OutputLocationSecurity,
+		productTypeName:           r.ProductTypeName,
+		stationName:               r.StationName,
+		stationSecurity:           r.StationSecurity,
+	})
 	return o, err
 }
 
 func (st *Storage) ListAllCharacterIndustryJob(ctx context.Context) ([]*app.CharacterIndustryJob, error) {
 	rows, err := st.qRO.ListAllCharacterIndustryJobs(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("list industry jobs for all characters: %w", err)
+		return nil, fmt.Errorf("ListAllCharacterIndustryJob: %w", err)
 	}
 	oo := make([]*app.CharacterIndustryJob, len(rows))
 	for i, r := range rows {
-		oo[i] = characterIndustryJobFromDBModel(
-			r.CharacterIndustryJob,
-			r.EveEntity,
-			r.BlueprintLocationName,
-			r.BlueprintLocationSecurity,
-			r.BlueprintTypeName,
-			r.CompletedCharacterName,
-			r.FacilityName,
-			r.FacilitySecurity,
-			r.OutputLocationName,
-			r.OutputLocationSecurity,
-			r.ProductTypeName,
-			r.StationName,
-			r.StationSecurity,
-		)
+		oo[i] = characterIndustryJobFromDBModel(characterIndustryJobFromDBModelParams{
+			blueprintLocationName:     r.BlueprintLocationName,
+			blueprintLocationSecurity: r.BlueprintLocationSecurity,
+			blueprintTypeName:         r.BlueprintTypeName,
+			completedCharacterName:    r.CompletedCharacterName,
+			facilityName:              r.FacilityName,
+			facilitySecurity:          r.FacilitySecurity,
+			installer:                 r.EveEntity,
+			job:                       r.CharacterIndustryJob,
+			outputLocationName:        r.OutputLocationName,
+			outputLocationSecurity:    r.OutputLocationSecurity,
+			productTypeName:           r.ProductTypeName,
+			stationName:               r.StationName,
+			stationSecurity:           r.StationSecurity,
+		})
 	}
 	return oo, nil
 }
 
-func characterIndustryJobFromDBModel(
-	o queries.CharacterIndustryJob,
-	installer queries.EveEntity,
-	blueprintLocationName string,
-	blueprintLocationSecurity sql.NullFloat64,
-	blueprintTypeName string,
-	completedCharacterName sql.NullString,
-	facilityName string,
-	facilitySecurity sql.NullFloat64,
-	outputLocationName string,
-	outputLocationSecurity sql.NullFloat64,
-	productTypeName sql.NullString,
-	stationName string,
-	stationSecurity sql.NullFloat64,
-) *app.CharacterIndustryJob {
+func (st *Storage) ListCharacterIndustryJobs(ctx context.Context, characterID int32) ([]*app.CharacterIndustryJob, error) {
+	rows, err := st.qRO.ListCharacterIndustryJobs(ctx, int64(characterID))
+	if err != nil {
+		return nil, fmt.Errorf("ListCharacterIndustryJob for character %d: %w", characterID, err)
+	}
+	oo := make([]*app.CharacterIndustryJob, len(rows))
+	for i, r := range rows {
+		oo[i] = characterIndustryJobFromDBModel(characterIndustryJobFromDBModelParams{
+			blueprintLocationName:     r.BlueprintLocationName,
+			blueprintLocationSecurity: r.BlueprintLocationSecurity,
+			blueprintTypeName:         r.BlueprintTypeName,
+			completedCharacterName:    r.CompletedCharacterName,
+			facilityName:              r.FacilityName,
+			facilitySecurity:          r.FacilitySecurity,
+			installer:                 r.EveEntity,
+			job:                       r.CharacterIndustryJob,
+			outputLocationName:        r.OutputLocationName,
+			outputLocationSecurity:    r.OutputLocationSecurity,
+			productTypeName:           r.ProductTypeName,
+			stationName:               r.StationName,
+			stationSecurity:           r.StationSecurity,
+		})
+	}
+	return oo, nil
+}
+
+type characterIndustryJobFromDBModelParams struct {
+	blueprintLocationName     string
+	blueprintLocationSecurity sql.NullFloat64
+	blueprintTypeName         string
+	completedCharacterName    sql.NullString
+	facilityName              string
+	facilitySecurity          sql.NullFloat64
+	installer                 queries.EveEntity
+	job                       queries.CharacterIndustryJob
+	outputLocationName        string
+	outputLocationSecurity    sql.NullFloat64
+	productTypeName           sql.NullString
+	stationName               string
+	stationSecurity           sql.NullFloat64
+}
+
+func characterIndustryJobFromDBModel(arg characterIndustryJobFromDBModelParams) *app.CharacterIndustryJob {
 	o2 := &app.CharacterIndustryJob{
-		Activity:    app.IndustryActivity(o.ActivityID),
-		BlueprintID: o.BlueprintID,
+		Activity:    app.IndustryActivity(arg.job.ActivityID),
+		BlueprintID: arg.job.BlueprintID,
 		BlueprintLocation: &app.EveLocationShort{
-			ID:             o.BlueprintLocationID,
-			Name:           optional.New(blueprintLocationName),
-			SecurityStatus: optional.FromNullFloat64ToFloat32(blueprintLocationSecurity),
+			ID:             arg.job.BlueprintLocationID,
+			Name:           optional.New(arg.blueprintLocationName),
+			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.blueprintLocationSecurity),
 		},
 		BlueprintType: &app.EntityShort[int32]{
-			ID:   int32(o.BlueprintTypeID),
-			Name: blueprintTypeName,
+			ID:   int32(arg.job.BlueprintTypeID),
+			Name: arg.blueprintTypeName,
 		},
-		CharacterID:   int32(o.CharacterID),
-		CompletedDate: optional.FromNullTime(o.CompletedDate),
-		Cost:          optional.FromNullFloat64(o.Cost),
-		Duration:      int(o.Duration),
-		EndDate:       o.EndDate,
+		CharacterID:   int32(arg.job.CharacterID),
+		CompletedDate: optional.FromNullTime(arg.job.CompletedDate),
+		Cost:          optional.FromNullFloat64(arg.job.Cost),
+		Duration:      int(arg.job.Duration),
+		EndDate:       arg.job.EndDate,
 		Facility: &app.EveLocationShort{
-			ID:             o.FacilityID,
-			Name:           optional.New(facilityName),
-			SecurityStatus: optional.FromNullFloat64ToFloat32(facilitySecurity),
+			ID:             arg.job.FacilityID,
+			Name:           optional.New(arg.facilityName),
+			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.facilitySecurity),
 		},
-		Installer:    eveEntityFromDBModel(installer),
-		JobID:        int32(o.JobID),
-		LicensedRuns: optional.FromNullInt64ToInteger[int](o.LicensedRuns),
+		ID:           arg.job.ID,
+		Installer:    eveEntityFromDBModel(arg.installer),
+		JobID:        int32(arg.job.JobID),
+		LicensedRuns: optional.FromNullInt64ToInteger[int](arg.job.LicensedRuns),
 		OutputLocation: &app.EveLocationShort{
-			ID:             o.OutputLocationID,
-			Name:           optional.New(outputLocationName),
-			SecurityStatus: optional.FromNullFloat64ToFloat32(outputLocationSecurity),
+			ID:             arg.job.OutputLocationID,
+			Name:           optional.New(arg.outputLocationName),
+			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.outputLocationSecurity),
 		},
-		PauseDate:   optional.FromNullTime(o.PauseDate),
-		Probability: optional.FromNullFloat64ToFloat32(o.Probability),
-		Runs:        int(o.Runs),
+		PauseDate:   optional.FromNullTime(arg.job.PauseDate),
+		Probability: optional.FromNullFloat64ToFloat32(arg.job.Probability),
+		Runs:        int(arg.job.Runs),
 		Station: &app.EveLocationShort{
-			ID:             o.StationID,
-			Name:           optional.New(stationName),
-			SecurityStatus: optional.FromNullFloat64ToFloat32(stationSecurity),
+			ID:             arg.job.StationID,
+			Name:           optional.New(arg.stationName),
+			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.stationSecurity),
 		},
-		StartDate:      o.StartDate,
-		Status:         jobStatusFromDBValue[o.Status],
-		SuccessfulRuns: optional.FromNullInt64ToInteger[int32](o.SuccessfulRuns),
+		StartDate:      arg.job.StartDate,
+		Status:         jobStatusFromDBValue[arg.job.Status],
+		SuccessfulRuns: optional.FromNullInt64ToInteger[int32](arg.job.SuccessfulRuns),
 	}
-	if o.CompletedCharacterID.Valid && completedCharacterName.Valid {
+	if arg.job.CompletedCharacterID.Valid && arg.completedCharacterName.Valid {
 		o2.CompletedCharacter = optional.New(&app.EveEntity{
-			ID:       int32(o.CompletedCharacterID.Int64),
-			Name:     completedCharacterName.String,
+			ID:       int32(arg.job.CompletedCharacterID.Int64),
+			Name:     arg.completedCharacterName.String,
 			Category: app.EveEntityCharacter,
 		})
 	}
-	if o.ProductTypeID.Valid && productTypeName.Valid {
+	if arg.job.ProductTypeID.Valid && arg.productTypeName.Valid {
 		o2.ProductType = optional.New(&app.EntityShort[int32]{
-			ID:   int32(o.ProductTypeID.Int64),
-			Name: productTypeName.String,
+			ID:   int32(arg.job.ProductTypeID.Int64),
+			Name: arg.productTypeName.String,
 		})
 	}
 	return o2
