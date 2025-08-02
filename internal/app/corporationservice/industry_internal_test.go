@@ -98,19 +98,26 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		}}})
 		c := factory.CreateCorporation()
 		blueprintType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
+		completer := factory.CreateEveEntityCharacter()
 		productType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 2046})
 		installer := factory.CreateEveEntityCharacter(app.EveEntity{ID: 498338451})
 		location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
 		factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			ActivityID:          1,
+			BlueprintID:         1015116533326,
 			BlueprintLocationID: location.ID,
 			BlueprintTypeID:     blueprintType.ID,
 			CorporationID:       c.ID,
-			EndDate:             time.Now(),
+			Cost:                118.01,
+			Duration:            548,
 			FacilityID:          location.ID,
 			InstallerID:         installer.ID,
+			JobID:               229136101,
+			LicensedRuns:        200,
 			LocationID:          location.ID,
 			OutputLocationID:    location.ID,
 			ProductTypeID:       productType.ID,
+			Runs:                1,
 			Status:              app.JobActive,
 		})
 		httpmock.RegisterResponder(
@@ -118,23 +125,26 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/industry/jobs/\?include_completed=true`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
-					"activity_id":           1,
-					"blueprint_id":          1015116533326,
-					"blueprint_location_id": 11,
-					"blueprint_type_id":     2047,
-					"cost":                  118.01,
-					"duration":              548,
-					"end_date":              "2014-07-19T15:56:14Z",
-					"facility_id":           12,
-					"installer_id":          498338451,
-					"job_id":                229136101,
-					"licensed_runs":         200,
-					"location_id":           60006382,
-					"output_location_id":    13,
-					"product_type_id":       2046,
-					"runs":                  1,
-					"start_date":            "2014-07-19T15:47:06Z",
-					"status":                "delivered",
+					"activity_id":            1,
+					"blueprint_id":           1015116533326,
+					"blueprint_location_id":  11,
+					"blueprint_type_id":      2047,
+					"completed_character_id": completer.ID,
+					"completed_date":         "2014-07-20T15:56:14Z",
+					"cost":                   118.01,
+					"duration":               548,
+					"end_date":               "2014-07-19T15:56:14Z",
+					"facility_id":            12,
+					"installer_id":           498338451,
+					"job_id":                 229136101,
+					"licensed_runs":          200,
+					"location_id":            60006382,
+					"output_location_id":     13,
+					"product_type_id":        2046,
+					"runs":                   1,
+					"start_date":             "2014-07-19T15:47:06Z",
+					"status":                 "delivered",
+					"successful_runs":        42,
 				},
 			}),
 		)
@@ -146,25 +156,18 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			x, err := st.GetCorporationIndustryJob(ctx, c.ID, 229136101)
 			if assert.NoError(t, err) {
-				assert.Equal(t, app.Manufacturing, x.Activity)
-				assert.EqualValues(t, 1015116533326, x.BlueprintID)
-				assert.EqualValues(t, 2047, x.BlueprintType.ID)
-				assert.EqualValues(t, 11, x.BlueprintLocationID)
-				assert.EqualValues(t, 118.01, x.Cost.MustValue())
-				assert.EqualValues(t, 548, x.Duration)
-				assert.Equal(t, time.Date(2014, 7, 19, 15, 56, 14, 0, time.UTC), x.EndDate)
-				assert.EqualValues(t, 12, x.FacilityID)
-				assert.EqualValues(t, 498338451, x.Installer.ID)
-				assert.EqualValues(t, 229136101, x.JobID)
-				assert.EqualValues(t, 200, x.LicensedRuns.MustValue())
-				assert.EqualValues(t, 13, x.OutputLocationID)
-				assert.EqualValues(t, 1, x.Runs)
-				assert.Equal(t, time.Date(2014, 7, 19, 15, 47, 6, 0, time.UTC), x.StartDate)
-				assert.EqualValues(t, 60006382, x.Location.ID)
-				assert.Equal(t, app.JobDelivered, x.Status)
-
+				xx, err := st.ListAllCorporationIndustryJobs(ctx)
+				if assert.NoError(t, err) {
+					assert.Len(t, xx, 1)
+					x := xx[0]
+					assert.Equal(t, c.ID, x.CorporationID)
+					assert.Equal(t, app.JobDelivered, x.Status)
+					assert.EqualValues(t, 42, x.SuccessfulRuns.MustValue())
+					assert.Equal(t, time.Date(2014, 7, 19, 15, 56, 14, 0, time.UTC), x.EndDate)
+					assert.Equal(t, time.Date(2014, 7, 20, 15, 56, 14, 0, time.UTC), x.CompletedDate.MustValue())
+					assert.EqualValues(t, completer, x.CompletedCharacter.MustValue())
+				}
 			}
 		}
 	})
