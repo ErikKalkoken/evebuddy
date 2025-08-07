@@ -51,7 +51,8 @@ EVE Buddy is available for Windows, Linux, macOS and Android.
 > [!NOTE]
 > Help wanted! We would very much appreciate any contribution. If you like to provide a fix or add a feature please feel free top open a PR. Or if you have any questions please contact us on Discord.
 
-## Features
+> [!NOTE]
+> EVE Buddy have been mentioned in Eve Online's [Community Beat newsletter 22 November 2024](https://www.eveonline.com/news/view/community-beat-for-22-november).
 
 The following is a detailed list of EVE Buddy's features. Most features are available for both desktop and mobile:
 
