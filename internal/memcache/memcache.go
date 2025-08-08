@@ -1,4 +1,4 @@
-// Package cache implements a simple in-memory cache.
+// Package memcache implements a simple in-memory cache.
 package memcache
 
 import (
@@ -11,7 +11,7 @@ const (
 	cleanUpTimeOutDefault = time.Minute * 10
 )
 
-// An in-memory cache.
+// Cache represents an in-memory cache.
 type Cache struct {
 	items  sync.Map
 	closeC chan struct{}

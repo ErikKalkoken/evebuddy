@@ -197,6 +197,10 @@ func (s *CharacterService) ListCharactersShort(ctx context.Context) ([]*app.Enti
 	return s.st.ListCharactersShort(ctx)
 }
 
+func (s *CharacterService) ListCharacterCorporationIDs(ctx context.Context) (set.Set[int32], error) {
+	return s.st.ListCharacterCorporationIDs(ctx)
+}
+
 // HasCharacter reports whether a character exists.
 func (s *CharacterService) HasCharacter(ctx context.Context, id int32) (bool, error) {
 	_, err := s.GetCharacter(ctx, id)

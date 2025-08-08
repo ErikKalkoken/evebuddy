@@ -19,6 +19,7 @@ import (
 )
 
 type CharacterService interface {
+	ListCharacterCorporationIDs(ctx context.Context) (set.Set[int32], error)
 	ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, roles set.Set[app.Role], scopes set.Set[string]) (*app.CharacterToken, error)
 }
 
@@ -104,6 +105,36 @@ func (s *CorporationService) HasCorporation(ctx context.Context, corporationID i
 // ListCorporationIDs returns all corporation IDs.
 func (s *CorporationService) ListCorporationIDs(ctx context.Context) (set.Set[int32], error) {
 	return s.st.ListCorporationIDs(ctx)
+}
+
+// RemoveStaleCorporations removes all corporations which no longer have a user's character as member.
+// And report whether any corporation was removed.
+func (s *CorporationService) RemoveStaleCorporations(ctx context.Context) (bool, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("RemoveStaleCorporations: %w", err)
+	}
+	all, err := s.ListCorporationIDs(ctx)
+	if err != nil {
+		return false, wrapErr(err)
+	}
+	if all.Size() == 0 {
+		return false, nil
+	}
+	current, err := s.cs.ListCharacterCorporationIDs(ctx)
+	if err != nil {
+		return false, wrapErr(err)
+	}
+	stale := set.Difference(all, current)
+	if stale.Size() == 0 {
+		return false, nil
+	}
+	for id := range stale.All() {
+		if err := s.st.DeleteCorporation(ctx, id); err != nil {
+			return false, wrapErr(err)
+		}
+	}
+	slog.Info("Deleted stale corporations", "corporationIDs", stale)
+	return true, nil
 }
 
 func (s *CorporationService) updateDivisionsESI(ctx context.Context, arg app.CorporationUpdateSectionParams) (bool, error) {

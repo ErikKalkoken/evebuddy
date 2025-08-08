@@ -1234,11 +1234,18 @@ func (u *baseUI) updateCorporationsIfNeeded(ctx context.Context, forceUpdate boo
 		slog.Info("Skipping regular update of corporations during daily downtime")
 		return nil
 	}
-	ids, err := u.rs.ListCorporationIDs(ctx)
+	removed, err := u.rs.RemoveStaleCorporations(ctx)
 	if err != nil {
 		return err
 	}
-	for id := range ids.All() {
+	if removed {
+		u.updateStatus()
+	}
+	all, err := u.rs.ListCorporationIDs(ctx)
+	if err != nil {
+		return err
+	}
+	for id := range all.All() {
 		go u.updateCorporationAndRefreshIfNeeded(ctx, id, forceUpdate)
 	}
 	slog.Debug("started update status corporations")

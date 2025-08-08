@@ -61,8 +61,7 @@ func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams
 }
 
 const deleteCharacter = `-- name: DeleteCharacter :exec
-DELETE FROM
-    characters
+DELETE FROM characters
 WHERE
     id = ?
 `
@@ -73,8 +72,7 @@ func (q *Queries) DeleteCharacter(ctx context.Context, id int64) error {
 }
 
 const disableAllTrainingWatchers = `-- name: DisableAllTrainingWatchers :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     is_training_watched = FALSE
 `
@@ -181,6 +179,37 @@ func (q *Queries) GetCharacterAssetValue(ctx context.Context, id int64) (sql.Nul
 	return asset_value, err
 }
 
+const listCharacterCorporationIDs = `-- name: ListCharacterCorporationIDs :many
+SELECT
+    corporation_id
+FROM
+    characters c
+    JOIN eve_characters ec ON ec.id = c.id
+`
+
+func (q *Queries) ListCharacterCorporationIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterCorporationIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var corporation_id int64
+		if err := rows.Scan(&corporation_id); err != nil {
+			return nil, err
+		}
+		items = append(items, corporation_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterIDs = `-- name: ListCharacterIDs :many
 SELECT
     id
@@ -212,8 +241,8 @@ func (q *Queries) ListCharacterIDs(ctx context.Context) ([]int64, error) {
 }
 
 const listCharacters = `-- name: ListCharacters :many
-SELECT
-    DISTINCT cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance, cc.is_training_watched, cc.last_clone_jump_at,
+SELECT DISTINCT
+    cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance, cc.is_training_watched, cc.last_clone_jump_at,
     ec.alliance_id, ec.birthday, ec.corporation_id, ec.description, ec.gender, ec.faction_id, ec.id, ec.name, ec.race_id, ec.security_status, ec.title,
     eec.id, eec.category, eec.name,
     er.id, er.description, er.name,
@@ -309,14 +338,14 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 }
 
 const listCharactersShort = `-- name: ListCharactersShort :many
-SELECT
-    DISTINCT eve_characters.id,
-    eve_characters.name
+SELECT DISTINCT
+    ec.id,
+    ec.name
 FROM
-    characters
-    JOIN eve_characters ON eve_characters.id = characters.id
+    characters c
+    JOIN eve_characters ec ON ec.id = c.id
 ORDER BY
-    eve_characters.name
+    ec.name
 `
 
 type ListCharactersShortRow struct {
@@ -348,8 +377,7 @@ func (q *Queries) ListCharactersShort(ctx context.Context) ([]ListCharactersShor
 }
 
 const updateCharacterAssetValue = `-- name: UpdateCharacterAssetValue :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     asset_value = ?
 WHERE
@@ -367,8 +395,7 @@ func (q *Queries) UpdateCharacterAssetValue(ctx context.Context, arg UpdateChara
 }
 
 const updateCharacterHomeId = `-- name: UpdateCharacterHomeId :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     home_id = ?
 WHERE
@@ -386,8 +413,7 @@ func (q *Queries) UpdateCharacterHomeId(ctx context.Context, arg UpdateCharacter
 }
 
 const updateCharacterIsTrainingWatched = `-- name: UpdateCharacterIsTrainingWatched :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     is_training_watched = ?
 WHERE
@@ -405,8 +431,7 @@ func (q *Queries) UpdateCharacterIsTrainingWatched(ctx context.Context, arg Upda
 }
 
 const updateCharacterLastCloneJump = `-- name: UpdateCharacterLastCloneJump :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     last_clone_jump_at = ?
 WHERE
@@ -424,8 +449,7 @@ func (q *Queries) UpdateCharacterLastCloneJump(ctx context.Context, arg UpdateCh
 }
 
 const updateCharacterLastLoginAt = `-- name: UpdateCharacterLastLoginAt :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     last_login_at = ?
 WHERE
@@ -443,8 +467,7 @@ func (q *Queries) UpdateCharacterLastLoginAt(ctx context.Context, arg UpdateChar
 }
 
 const updateCharacterLocationID = `-- name: UpdateCharacterLocationID :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     location_id = ?
 WHERE
@@ -462,8 +485,7 @@ func (q *Queries) UpdateCharacterLocationID(ctx context.Context, arg UpdateChara
 }
 
 const updateCharacterSP = `-- name: UpdateCharacterSP :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     total_sp = ?,
     unallocated_sp = ?
@@ -483,8 +505,7 @@ func (q *Queries) UpdateCharacterSP(ctx context.Context, arg UpdateCharacterSPPa
 }
 
 const updateCharacterShipID = `-- name: UpdateCharacterShipID :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     ship_id = ?
 WHERE
@@ -502,8 +523,7 @@ func (q *Queries) UpdateCharacterShipID(ctx context.Context, arg UpdateCharacter
 }
 
 const updateCharacterWalletBalance = `-- name: UpdateCharacterWalletBalance :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     wallet_balance = ?
 WHERE

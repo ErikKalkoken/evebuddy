@@ -1066,6 +1066,14 @@ func (f Factory) CreateCorporation(corporationID ...int32) *app.Corporation {
 		id = ec.ID
 	} else {
 		id = corporationID[0]
+		_, err := f.st.GetEveCorporation(context.Background(), id)
+		if errors.Is(err, app.ErrNotFound) {
+			f.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{
+				ID: corporationID[0],
+			})
+		} else if err != nil {
+			panic(err)
+		}
 	}
 	err := f.st.CreateCorporation(context.Background(), id)
 	if err != nil {

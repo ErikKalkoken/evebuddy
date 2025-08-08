@@ -70,9 +70,15 @@ func (st *Storage) DisableAllTrainingWatchers(ctx context.Context) error {
 }
 
 func (st *Storage) GetCharacter(ctx context.Context, characterID int32) (*app.Character, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("GetCharacter %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
 	r, err := st.qRO.GetCharacter(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("get character %d: %w", characterID, convertGetError(err))
+		return nil, wrapErr(convertGetError(err))
 	}
 	alliance := nullEveEntry{
 		ID:       r.EveCharacter.AllianceID,
@@ -97,7 +103,7 @@ func (st *Storage) GetCharacter(ctx context.Context, characterID int32) (*app.Ch
 		r.ShipID,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("get character %d: %w", characterID, err)
+		return nil, wrapErr(err)
 	}
 	return c, nil
 }
@@ -173,6 +179,15 @@ func (st *Storage) ListCharactersShort(ctx context.Context) ([]*app.EntityShort[
 		cc[i] = &app.EntityShort[int32]{ID: int32(row.ID), Name: row.Name}
 	}
 	return cc, nil
+}
+
+func (st *Storage) ListCharacterCorporationIDs(ctx context.Context) (set.Set[int32], error) {
+	ids, err := st.qRO.ListCharacterCorporationIDs(ctx)
+	if err != nil {
+		return set.Set[int32]{}, fmt.Errorf("ListCharacterCorporationIDs: %w", err)
+	}
+	ids2 := set.Of(convertNumericSlice[int32](ids)...)
+	return ids2, nil
 }
 
 func (st *Storage) ListCharacterIDs(ctx context.Context) (set.Set[int32], error) {
