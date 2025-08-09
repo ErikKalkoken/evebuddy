@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -68,7 +69,7 @@ func TestEveCharacter_EveEntity(t *testing.T) {
 	assert.EqualValues(t, app.EveEntityCharacter, x2.Category)
 }
 
-func TestEveCharacter_IsSame(t *testing.T) {
+func TestEveCharacter_IsIdentical(t *testing.T) {
 	t.Run("should report when same", func(t *testing.T) {
 		x1 := app.EveCharacter{
 			Alliance:       &app.EveEntity{ID: 1},
@@ -84,7 +85,7 @@ func TestEveCharacter_IsSame(t *testing.T) {
 			Title:          "def",
 		}
 		x2 := x1
-		assert.True(t, x1.IsIdentical(&x2))
+		assert.True(t, x1.IsIdentical(x2))
 	})
 	t.Run("should report when not same", func(t *testing.T) {
 		x1 := app.EveCharacter{
@@ -103,7 +104,7 @@ func TestEveCharacter_IsSame(t *testing.T) {
 		x2 := app.EveCharacter{
 			ID: 4,
 		}
-		assert.False(t, x1.IsIdentical(&x2))
+		assert.False(t, x1.IsIdentical(x2))
 	})
 }
 
@@ -129,6 +130,55 @@ func TestEveCorporation_EveEntity(t *testing.T) {
 	assert.EqualValues(t, 42, x2.ID)
 	assert.EqualValues(t, "name", x2.Name)
 	assert.EqualValues(t, app.EveEntityCorporation, x2.Category)
+}
+
+func TestEveCorporation_IsIdentical(t *testing.T) {
+	t.Run("should report when same", func(t *testing.T) {
+		x1 := app.EveCorporation{
+			Alliance:    &app.EveEntity{ID: 1},
+			Ceo:         &app.EveEntity{ID: 2},
+			Creator:     &app.EveEntity{ID: 3},
+			DateFounded: optional.New(time.Now().Add(-3 * time.Hour)),
+			Description: "abc",
+			Faction:     &app.EveEntity{ID: 4},
+			HomeStation: &app.EveEntity{ID: 5},
+			ID:          6,
+			MemberCount: 7,
+			Name:        "def",
+			Shares:      optional.New(8),
+			TaxRate:     9.1,
+			Ticker:      "ghi",
+			URL:         "jkl",
+			WarEligible: true,
+			Timestamp:   time.Now(),
+		}
+		x2 := x1
+		assert.True(t, x1.IsIdentical(x2))
+	})
+	t.Run("should report when not same", func(t *testing.T) {
+		x1 := app.EveCorporation{
+			Alliance:    &app.EveEntity{ID: 1},
+			Ceo:         &app.EveEntity{ID: 2},
+			Creator:     &app.EveEntity{ID: 3},
+			DateFounded: optional.New(time.Now().Add(-3 * time.Hour)),
+			Description: "abc",
+			Faction:     &app.EveEntity{ID: 4},
+			HomeStation: &app.EveEntity{ID: 5},
+			ID:          6,
+			MemberCount: 7,
+			Name:        "def",
+			Shares:      optional.New(8),
+			TaxRate:     9.1,
+			Ticker:      "ghi",
+			URL:         "jkl",
+			WarEligible: true,
+			Timestamp:   time.Now(),
+		}
+		x2 := app.EveCorporation{
+			ID: 4,
+		}
+		assert.False(t, x1.IsIdentical(x2))
+	})
 }
 
 func TestEveSchematic(t *testing.T) {

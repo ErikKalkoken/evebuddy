@@ -97,10 +97,7 @@ func (ec EveCharacter) ToEveEntity() *EveEntity {
 
 // IsIdentical reports whether two characters are identical.
 // Two characters must have the same values in all fields to be identical.
-func (ec EveCharacter) IsIdentical(other *EveCharacter) bool {
-	if other == nil {
-		return false
-	}
+func (ec EveCharacter) IsIdentical(other EveCharacter) bool {
 	return ec.ID == other.ID &&
 		ec.AllianceID() == other.AllianceID() &&
 		ec.Birthday.Equal(other.Birthday) &&
@@ -134,6 +131,20 @@ type EveCorporation struct {
 	Timestamp   time.Time
 }
 
+func (ec EveCorporation) AllianceID() int32 {
+	if !ec.HasAlliance() {
+		return 0
+	}
+	return ec.Alliance.ID
+}
+
+func (ec EveCorporation) FactionID() int32 {
+	if !ec.HasFaction() {
+		return 0
+	}
+	return ec.Faction.ID
+}
+
 func (ec EveCorporation) HasAlliance() bool {
 	return ec.Alliance != nil
 }
@@ -142,12 +153,35 @@ func (ec EveCorporation) HasFaction() bool {
 	return ec.Faction != nil
 }
 
+func (ec EveCorporation) HomeStationID() int32 {
+	if ec.HomeStation == nil {
+		return 0
+	}
+	return ec.HomeStation.ID
+}
 func (ec EveCorporation) DescriptionPlain() string {
 	return evehtml.ToPlain(ec.Description)
 }
 
 func (ec EveCorporation) ToEveEntity() *EveEntity {
 	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityCorporation}
+}
+
+// IsIdentical reports whether two characters are identical.
+// Two characters must have the same values in all fields to be identical.
+func (ec EveCorporation) IsIdentical(other EveCorporation) bool {
+	return ec.ID == other.ID &&
+		ec.AllianceID() == other.AllianceID() &&
+		ec.Ceo.ID == other.Ceo.ID &&
+		ec.Creator.ID == other.Creator.ID &&
+		ec.DateFounded.ValueOrZero().Equal(other.DateFounded.ValueOrZero()) &&
+		ec.Description == other.Description &&
+		ec.FactionID() == other.FactionID() &&
+		ec.HomeStationID() == other.HomeStationID() &&
+		ec.MemberCount == other.MemberCount &&
+		ec.Name == other.Name &&
+		ec.Shares == other.Shares &&
+		math.Abs(float64(ec.TaxRate-other.TaxRate)) < 0.01
 }
 
 // TODO: Add race alliance

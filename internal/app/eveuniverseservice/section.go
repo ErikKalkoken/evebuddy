@@ -45,10 +45,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	case app.SectionEveCharacters:
 		f = s.UpdateAllCharactersESI
 	case app.SectionEveCorporations:
-		f = func(ctx context.Context) (set.Set[int32], error) {
-			err := s.UpdateAllCorporationsESI(ctx)
-			return set.Of[int32](0), err // FIXME: Fake change
-		}
+		f = s.UpdateAllCorporationsESI
 	case app.SectionEveMarketPrices:
 		f = func(ctx context.Context) (set.Set[int32], error) {
 			err := s.updateMarketPricesESI(ctx)

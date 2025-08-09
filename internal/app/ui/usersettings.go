@@ -373,7 +373,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 					if _, err := a.u.eus.UpdateAllCharactersESI(ctx); err != nil {
 						return err
 					}
-					if err := a.u.eus.UpdateAllCorporationsESI(ctx); err != nil {
+					if _, err := a.u.eus.UpdateAllCorporationsESI(ctx); err != nil {
 						return err
 					}
 					if err := a.u.eus.UpdateAllEntitiesESI(ctx); err != nil {
