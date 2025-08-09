@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func (s *EveUniverseService) getSectionStatus(ctx context.Context, section app.GeneralSection) (*app.GeneralSectionStatus, error) {
@@ -20,35 +21,48 @@ func (s *EveUniverseService) getSectionStatus(ctx context.Context, section app.G
 	return o, err
 }
 
-func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.GeneralSection, forceUpdate bool) (bool, error) {
+// UpdateSection updates a section from ESI and returns the IDs of changed objects if there are any.
+func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.GeneralSection, forceUpdate bool) (set.Set[int32], error) {
 	status, err := s.getSectionStatus(ctx, section)
 	if err != nil {
-		return false, err
+		return set.Set[int32]{}, err
 	}
 	if !forceUpdate && status != nil {
 		if !status.HasError() && !status.IsExpired() {
-			return false, nil
+			return set.Set[int32]{}, nil
 		}
 		if status.HasError() && !status.WasUpdatedWithinErrorTimedOut() {
-			return false, nil
+			return set.Set[int32]{}, nil
 		}
 	}
-	var f func(context.Context) error
+	var f func(context.Context) (set.Set[int32], error)
 	switch section {
 	case app.SectionEveTypes:
-		f = s.updateCategories
+		f = func(ctx context.Context) (set.Set[int32], error) {
+			err := s.updateCategories(ctx)
+			return set.Of[int32](0), err // FIXME: Fake change
+		}
 	case app.SectionEveCharacters:
 		f = s.UpdateAllCharactersESI
 	case app.SectionEveCorporations:
-		f = s.UpdateAllCorporationsESI
+		f = func(ctx context.Context) (set.Set[int32], error) {
+			err := s.UpdateAllCorporationsESI(ctx)
+			return set.Of[int32](0), err // FIXME: Fake change
+		}
 	case app.SectionEveMarketPrices:
-		f = s.updateMarketPricesESI
+		f = func(ctx context.Context) (set.Set[int32], error) {
+			err := s.updateMarketPricesESI(ctx)
+			return set.Of[int32](0), err // FIXME: Fake change
+		}
 	case app.SectionEveEntities:
-		f = s.UpdateAllEntitiesESI
+		f = func(ctx context.Context) (set.Set[int32], error) {
+			err := s.UpdateAllEntitiesESI(ctx)
+			return set.Of[int32](0), err // FIXME: Fake change
+		}
 	default:
 		slog.Warn("encountered unknown section", "section", section)
 	}
-	_, err, _ = s.sfg.Do(fmt.Sprintf("update-general-section-%s", section), func() (any, error) {
+	x, err, _ := s.sfg.Do(fmt.Sprintf("update-general-section-%s", section), func() (any, error) {
 		slog.Debug("Started updating eveuniverse section", "section", section)
 		startedAt := optional.New(time.Now())
 		arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
@@ -60,9 +74,9 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 			return false, err
 		}
 		s.scs.SetGeneralSection(o)
-		err = f(ctx)
+		changed, err := f(ctx)
 		slog.Debug("Finished updating eveuniverse section", "section", section)
-		return nil, err
+		return changed, err
 	})
 	if err != nil {
 		errorMessage := app.ErrorDisplay(err)
@@ -74,11 +88,12 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 		}
 		o, err := s.st.UpdateOrCreateGeneralSectionStatus(ctx, arg2)
 		if err != nil {
-			return false, err
+			return set.Set[int32]{}, err
 		}
 		s.scs.SetGeneralSection(o)
-		return false, err
+		return set.Set[int32]{}, err
 	}
+	changed := x.(set.Set[int32])
 	completedAt := storage.NewNullTimeFromTime(time.Now())
 	errorMessage := ""
 	startedAt2 := optional.Optional[time.Time]{}
@@ -91,8 +106,8 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	}
 	o, err := s.st.UpdateOrCreateGeneralSectionStatus(ctx, arg2)
 	if err != nil {
-		return false, err
+		return set.Set[int32]{}, err
 	}
 	s.scs.SetGeneralSection(o)
-	return true, nil
+	return changed, nil
 }

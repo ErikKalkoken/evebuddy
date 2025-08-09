@@ -90,43 +90,59 @@ func (s *EveUniverseService) RandomizeAllCharacterNames(ctx context.Context) err
 	return s.scs.UpdateCharacters(ctx)
 }
 
-// UpdateAllCharactersESI updates all known Eve characters from ESI.
-func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) error {
+// UpdateAllCharactersESI updates all known Eve characters from ESI
+// and returns the IDs of all changed characters.
+func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) (set.Set[int32], error) {
+	var changed set.Set[int32]
 	ids, err := s.st.ListEveCharacterIDs(ctx)
 	if err != nil {
-		return err
+		return changed, err
 	}
 	if ids.Size() == 0 {
-		return nil
+		return changed, nil
 	}
+	ids2 := ids.Slice()
+	hasChanged := make([]bool, len(ids2))
 	g := new(errgroup.Group)
-	for id := range ids.All() {
+	for i, id := range ids2 {
 		g.Go(func() error {
-			return s.updateCharacterESI(ctx, id)
+			changed, err := s.updateCharacterESI(ctx, id)
+			if err != nil {
+				return err
+			}
+			hasChanged[i] = changed
+			return nil
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return err
+		return changed, err
+	}
+	for i, id := range ids2 {
+		if hasChanged[i] {
+			changed.Add(id)
+		}
 	}
 	slog.Info("Finished updating eve characters", "count", ids.Size())
-	return nil
+	return changed, nil
 }
 
-func (s *EveUniverseService) updateCharacterESI(ctx context.Context, characterID int32) error {
-	_, err, _ := s.sfg.Do(fmt.Sprintf("updateCharacterESI-%d", characterID), func() (any, error) {
+// updateCharacterESI updates a character from ESI and reports whether it has changed.
+func (s *EveUniverseService) updateCharacterESI(ctx context.Context, characterID int32) (bool, error) {
+	x, err, _ := s.sfg.Do(fmt.Sprintf("updateCharacterESI-%d", characterID), func() (any, error) {
 		c, err := s.st.GetEveCharacter(ctx, characterID)
 		if err != nil {
-			return nil, err
+			return false, err
 		}
+		old := *c
 		// Fetch character
 		o, r, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, c.ID, nil)
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
 				s.st.DeleteEveCharacter(ctx, characterID)
 				slog.Info("EVE Character no longer exists and was deleted", "characterID", characterID)
-				return nil, nil
+				return true, nil
 			}
-			return nil, err
+			return false, err
 		}
 		c.Name = o.Name
 		c.Description = o.Description
@@ -136,23 +152,23 @@ func (s *EveUniverseService) updateCharacterESI(ctx context.Context, characterID
 		ids.Delete(0)
 		m, err := s.ToEntities(ctx, ids)
 		if err != nil {
-			return nil, err
+			return false, err
 		}
 		c.Alliance = m[o.AllianceId]
 		c.Corporation = m[o.CorporationId]
 		c.Faction = m[o.FactionId]
 		// Fetch affiliations
-		xx, _, err := s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{c.ID}, nil)
+		affiliations, _, err := s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{c.ID}, nil)
 		if err != nil {
-			return nil, err
+			return false, err
 		}
-		if len(xx) > 0 {
-			x := xx[0]
+		if len(affiliations) > 0 {
+			x := affiliations[0]
 			ids := set.Of(c.ID, x.CorporationId, x.AllianceId, x.FactionId)
 			ids.Delete(0)
 			m, err := s.ToEntities(ctx, ids)
 			if err != nil {
-				return nil, err
+				return false, err
 			}
 			c.Alliance = m[x.AllianceId]
 			c.Corporation = m[x.CorporationId]
@@ -160,20 +176,21 @@ func (s *EveUniverseService) updateCharacterESI(ctx context.Context, characterID
 		}
 		// Update
 		if err := s.st.UpdateEveCharacter(ctx, c); err != nil {
-			return nil, err
+			return false, err
 		}
 		if _, err := s.st.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
 			Category: app.EveEntityCharacter,
 			ID:       characterID,
 			Name:     c.Name,
 		}); err != nil {
-			return nil, err
+			return false, err
 		}
-		slog.Info("Updated eve character from ESI", "characterID", c.ID)
-		return nil, nil
+		hasChanged := !old.IsIdentical(c)
+		slog.Info("Updated eve character from ESI", "characterID", c.ID, "changed", hasChanged)
+		return hasChanged, nil
 	})
 	if err != nil {
-		return fmt.Errorf("updateCharacterESI: %w", err)
+		return false, fmt.Errorf("updateCharacterESI: %w", err)
 	}
-	return nil
+	return x.(bool), nil
 }

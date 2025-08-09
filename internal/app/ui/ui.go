@@ -907,12 +907,12 @@ func (u *baseUI) updateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate 
 }
 
 func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
-	hasChanged, err := u.eus.UpdateSection(ctx, section, forceUpdate)
+	changed, err := u.eus.UpdateSection(ctx, section, forceUpdate)
 	if err != nil {
 		slog.Error("Failed to update general section", "section", section, "err", err)
 		return
 	}
-	if !hasChanged && !forceUpdate {
+	if changed.Size() == 0 && !forceUpdate {
 		return
 	}
 	switch section {
