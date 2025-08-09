@@ -815,7 +815,7 @@ func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
 	if u.settings.HideLimitedCorporations() {
 		cc, err = u.rs.ListPrivilegedCorporations(context.Background())
 	} else {
-		cc, err = u.rs.ListCorporationsShort(context.Background())
+		cc, err = u.cs.ListCharacterCorporations(context.Background())
 	}
 	if err != nil {
 		slog.Error("Failed to fetch corporations", "error", err)

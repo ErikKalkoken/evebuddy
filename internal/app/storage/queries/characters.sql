@@ -96,12 +96,14 @@ SELECT
 FROM
     characters;
 
--- name: ListCharacterCorporationIDs :many
+-- name: ListCharacterCorporations :many
 SELECT
-    corporation_id
+    ee.id,
+    ee.name
 FROM
-    characters c
-    JOIN eve_characters ec ON ec.id = c.id;
+    characters ch
+    JOIN eve_characters ec ON ec.id = ch.id
+    JOIN eve_entities ee ON ee.id = ec.corporation_id;
 
 -- name: UpdateCharacterLastCloneJump :exec
 UPDATE characters

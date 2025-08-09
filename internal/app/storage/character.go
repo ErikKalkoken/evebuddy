@@ -181,13 +181,16 @@ func (st *Storage) ListCharactersShort(ctx context.Context) ([]*app.EntityShort[
 	return cc, nil
 }
 
-func (st *Storage) ListCharacterCorporationIDs(ctx context.Context) (set.Set[int32], error) {
-	ids, err := st.qRO.ListCharacterCorporationIDs(ctx)
+func (st *Storage) ListCharacterCorporations(ctx context.Context) ([]*app.EntityShort[int32], error) {
+	rows, err := st.qRO.ListCharacterCorporations(ctx)
 	if err != nil {
-		return set.Set[int32]{}, fmt.Errorf("ListCharacterCorporationIDs: %w", err)
+		return nil, fmt.Errorf("ListCharacterCorporations: %w", err)
 	}
-	ids2 := set.Of(convertNumericSlice[int32](ids)...)
-	return ids2, nil
+	cc := make([]*app.EntityShort[int32], len(rows))
+	for i, row := range rows {
+		cc[i] = &app.EntityShort[int32]{ID: int32(row.ID), Name: row.Name}
+	}
+	return cc, nil
 }
 
 func (st *Storage) ListCharacterIDs(ctx context.Context) (set.Set[int32], error) {

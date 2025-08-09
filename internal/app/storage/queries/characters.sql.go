@@ -179,27 +179,34 @@ func (q *Queries) GetCharacterAssetValue(ctx context.Context, id int64) (sql.Nul
 	return asset_value, err
 }
 
-const listCharacterCorporationIDs = `-- name: ListCharacterCorporationIDs :many
+const listCharacterCorporations = `-- name: ListCharacterCorporations :many
 SELECT
-    corporation_id
+    ee.id,
+    ee.name
 FROM
-    characters c
-    JOIN eve_characters ec ON ec.id = c.id
+    characters ch
+    JOIN eve_characters ec ON ec.id = ch.id
+    JOIN eve_entities ee ON ee.id = ec.corporation_id
 `
 
-func (q *Queries) ListCharacterCorporationIDs(ctx context.Context) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterCorporationIDs)
+type ListCharacterCorporationsRow struct {
+	ID   int64
+	Name string
+}
+
+func (q *Queries) ListCharacterCorporations(ctx context.Context) ([]ListCharacterCorporationsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterCorporations)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []int64
+	var items []ListCharacterCorporationsRow
 	for rows.Next() {
-		var corporation_id int64
-		if err := rows.Scan(&corporation_id); err != nil {
+		var i ListCharacterCorporationsRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
 			return nil, err
 		}
-		items = append(items, corporation_id)
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 type CharacterService interface {
@@ -133,10 +134,13 @@ func (s *CorporationService) RemoveStaleCorporations(ctx context.Context) (bool,
 	if all.Size() == 0 {
 		return false, nil
 	}
-	current, err := s.st.ListCharacterCorporationIDs(ctx)
+	cc, err := s.st.ListCharacterCorporations(ctx)
 	if err != nil {
 		return false, wrapErr(err)
 	}
+	current := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort[int32]) int32 {
+		return x.ID
+	}))
 	stale := set.Difference(all, current)
 	if stale.Size() == 0 {
 		return false, nil
