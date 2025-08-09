@@ -457,7 +457,7 @@ func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) (set.Set
 			if err != nil {
 				return changed, err
 			}
-			if o1 != nil && !o2.Equal(*o1) {
+			if o1 == nil || !o2.Equal(*o1) {
 				changed.Add(o2.TypeID)
 			}
 		}
