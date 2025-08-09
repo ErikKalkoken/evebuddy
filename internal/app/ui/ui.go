@@ -42,6 +42,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
@@ -808,12 +809,28 @@ func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 }
 
 func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
-	cc := u.scs.ListCorporations()
 	items := make([]*fyne.MenuItem, 0)
+	var err error
+	var cc []*app.EntityShort[int32]
+	if u.settings.HideLimitedCorporations() {
+		cc, err = u.rs.ListPrivilegedCorporations(context.Background())
+	} else {
+		cc, err = u.cs.ListCharacterCorporations(context.Background())
+	}
+	if err != nil {
+		slog.Error("Failed to fetch corporations", "error", err)
+		return items
+	}
 	if len(cc) == 0 {
 		it := fyne.NewMenuItem("No corporations", nil)
 		it.Disabled = true
 		return append(items, it)
+	}
+	corporations := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort[int32]) int32 {
+		return x.ID
+	}))
+	if !corporations.Contains(u.currentCorporationID()) {
+		go u.setAnyCorporation()
 	}
 	it := fyne.NewMenuItem("Switch to...", nil)
 	it.Disabled = true
@@ -890,12 +907,15 @@ func (u *baseUI) updateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate 
 }
 
 func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
-	hasChanged, err := u.eus.UpdateSection(ctx, section, forceUpdate)
-	if err != nil {
+	logErr := func(err error) {
 		slog.Error("Failed to update general section", "section", section, "err", err)
+	}
+	changed, err := u.eus.UpdateSection(ctx, section, forceUpdate)
+	if err != nil {
+		logErr(err)
 		return
 	}
-	if !hasChanged && !forceUpdate {
+	if changed.Size() == 0 && !forceUpdate {
 		return
 	}
 	switch section {
@@ -906,13 +926,48 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 		u.characterShips.update()
 		u.characterSkillCatalogue.update()
 	case app.SectionEveCharacters:
-		u.reloadCurrentCharacter()
-		u.characterOverview.update()
+		if changed.Contains(u.currentCharacterID()) {
+			u.reloadCurrentCharacter()
+		}
+		characters, err := u.cs.ListCharacterIDs(ctx)
+		if err != nil {
+			logErr(err)
+			return
+		}
+		if characters.ContainsAny(changed.All()) {
+			u.characterOverview.update()
+			u.updateStatus()
+		}
 	case app.SectionEveCorporations:
-		// TODO: Only update when shown entity changed
-		u.characterCorporation.update()
-		u.corporationSheet.update()
+		if changed.Contains(u.currentCorporationID()) {
+			u.corporationSheet.update()
+		}
+		c := u.currentCharacter()
+		if c == nil {
+			break
+		}
+		if changed.Contains(c.EveCharacter.Corporation.ID) {
+			u.characterCorporation.update()
+		}
+		cc, err := u.cs.ListCharacterCorporations(ctx)
+		if err != nil {
+			logErr(err)
+			return
+		}
+		if changed.ContainsAny(xiter.MapSlice(cc, func(x *app.EntityShort[int32]) int32 {
+			return x.ID
+		})) {
+			u.updateStatus()
+		}
 	case app.SectionEveMarketPrices:
+		types, err := u.eus.ListEveTypeIDs(ctx)
+		if err != nil {
+			logErr(err)
+			return
+		}
+		if !changed.ContainsAny(types.All()) {
+			break
+		}
 		u.characterAsset.update()
 		u.characterOverview.update()
 		u.assets.update()
@@ -1164,6 +1219,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 				slog.Error("Failed to remove corp data after character role change", "characterID", characterID, "error", err)
 			}
 			u.updateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
+			u.updateStatus()
 		}
 	case app.SectionCharacterSkills:
 		if needsRefresh {
@@ -1234,11 +1290,18 @@ func (u *baseUI) updateCorporationsIfNeeded(ctx context.Context, forceUpdate boo
 		slog.Info("Skipping regular update of corporations during daily downtime")
 		return nil
 	}
-	ids, err := u.rs.ListCorporationIDs(ctx)
+	removed, err := u.rs.RemoveStaleCorporations(ctx)
 	if err != nil {
 		return err
 	}
-	for id := range ids.All() {
+	if removed {
+		u.updateStatus()
+	}
+	all, err := u.rs.ListCorporationIDs(ctx)
+	if err != nil {
+		return err
+	}
+	for id := range all.All() {
 		go u.updateCorporationAndRefreshIfNeeded(ctx, id, forceUpdate)
 	}
 	slog.Debug("started update status corporations")

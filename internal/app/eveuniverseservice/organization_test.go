@@ -14,6 +14,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -335,61 +337,118 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 }
 
 func TestUpdateAllEveCorporationESI(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
-	orig := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{ID: 109299958})
-	factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
-	alliance := factory.CreateEveEntityAlliance(app.EveEntity{ID: 434243723})
-	faction := factory.CreateEveEntity(app.EveEntity{ID: 123, Category: app.EveEntityFaction})
-	station := factory.CreateEveEntity(app.EveEntity{ID: 456, Category: app.EveEntityStation})
-	ceo := factory.CreateEveEntityCharacter(app.EveEntity{ID: 180548812})
-	creator := factory.CreateEveEntityCharacter()
-	httpmock.Reset()
-	httpmock.RegisterResponder(
-		"GET",
-		`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/`,
-		httpmock.NewJsonResponderOrPanic(200, map[string]any{
-			"alliance_id":     434243723,
-			"ceo_id":          180548812,
-			"creator_id":      creator.ID,
-			"date_founded":    "2004-11-28T16:42:51Z",
-			"description":     "This is a corporation description, it's basically just a string",
-			"faction_id":      123,
-			"home_station_id": 456,
-			"member_count":    656,
-			"name":            "C C P",
-			"tax_rate":        0.256,
-			"ticker":          "-CCP-",
-			"url":             "http://www.eveonline.com",
-		}),
-	)
-	// when
-	err := s.UpdateAllCorporationsESI(ctx)
-	// then
-	if assert.NoError(t, err) {
-		ec, err := st.GetEveCorporation(ctx, 109299958)
+	t.Run("can update from ESI and report changed IDs", func(t *testing.T) {
+		testutil.TruncateTables(db)
+		orig := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{ID: 109299958})
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
+		alliance := factory.CreateEveEntityAlliance(app.EveEntity{ID: 434243723})
+		faction := factory.CreateEveEntity(app.EveEntity{ID: 123, Category: app.EveEntityFaction})
+		station := factory.CreateEveEntity(app.EveEntity{ID: 456, Category: app.EveEntityStation})
+		ceo := factory.CreateEveEntityCharacter(app.EveEntity{ID: 180548812})
+		creator := factory.CreateEveEntityCharacter()
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/`,
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"alliance_id":     434243723,
+				"ceo_id":          180548812,
+				"creator_id":      creator.ID,
+				"date_founded":    "2004-11-28T16:42:51Z",
+				"description":     "This is a corporation description, it's basically just a string",
+				"faction_id":      123,
+				"home_station_id": 456,
+				"member_count":    656,
+				"name":            "C C P",
+				"tax_rate":        0.256,
+				"ticker":          "-CCP-",
+				"url":             "http://www.eveonline.com",
+			}),
+		)
+		// when
+		got, err := s.UpdateAllCorporationsESI(ctx)
+		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, alliance, ec.Alliance)
-			assert.Equal(t, orig.Creator, ec.Creator)
-			assert.Equal(t, ceo, ec.Ceo)
-			assert.Equal(t, orig.DateFounded.MustValue(), ec.DateFounded.MustValue())
-			assert.Equal(t, "This is a corporation description, it's basically just a string", ec.Description)
-			assert.Equal(t, faction, ec.Faction)
-			assert.Equal(t, station, ec.HomeStation)
-			assert.Equal(t, 656, ec.MemberCount)
-			assert.Equal(t, "C C P", ec.Name)
-			assert.Equal(t, float32(0.256), ec.TaxRate)
-			assert.Equal(t, "-CCP-", ec.Ticker)
-			assert.Equal(t, "http://www.eveonline.com", ec.URL)
+			want := set.Of[int32](109299958)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			ec, err := st.GetEveCorporation(ctx, 109299958)
+			if assert.NoError(t, err) {
+				assert.Equal(t, alliance, ec.Alliance)
+				assert.Equal(t, orig.Creator, ec.Creator)
+				assert.Equal(t, ceo, ec.Ceo)
+				assert.Equal(t, orig.DateFounded.MustValue(), ec.DateFounded.MustValue())
+				assert.Equal(t, "This is a corporation description, it's basically just a string", ec.Description)
+				assert.Equal(t, faction, ec.Faction)
+				assert.Equal(t, station, ec.HomeStation)
+				assert.Equal(t, 656, ec.MemberCount)
+				assert.Equal(t, "C C P", ec.Name)
+				assert.Equal(t, float32(0.256), ec.TaxRate)
+				assert.Equal(t, "-CCP-", ec.Ticker)
+				assert.Equal(t, "http://www.eveonline.com", ec.URL)
+			}
+			ee, err := st.GetEveEntity(ctx, 109299958)
+			if assert.NoError(t, err) {
+				assert.Equal(t, ec.Name, ee.Name)
+				assert.Equal(t, app.EveEntityCorporation, ee.Category)
+			}
 		}
-		ee, err := st.GetEveEntity(ctx, 109299958)
+	})
+	t.Run("can report when not changed", func(t *testing.T) {
+		testutil.TruncateTables(db)
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
+		alliance := factory.CreateEveEntityAlliance(app.EveEntity{ID: 434243723})
+		faction := factory.CreateEveEntity(app.EveEntity{ID: 123, Category: app.EveEntityFaction})
+		station := factory.CreateEveEntity(app.EveEntity{ID: 456, Category: app.EveEntityStation})
+		ceo := factory.CreateEveEntityCharacter(app.EveEntity{ID: 180548812})
+		creator := factory.CreateEveEntityCharacter()
+		factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{
+			ID:            109299958,
+			AllianceID:    optional.New(alliance.ID),
+			CeoID:         optional.New(ceo.ID),
+			CreatorID:     optional.New(creator.ID),
+			DateFounded:   optional.New(time.Date(2004, 11, 28, 16, 42, 51, 0, time.UTC)),
+			Description:   "This is a corporation description, it's basically just a string",
+			FactionID:     optional.New(faction.ID),
+			HomeStationID: optional.New(station.ID),
+			MemberCount:   656,
+			Name:          "C C P",
+			TaxRate:       0.256,
+			Ticker:        "-CCP-",
+			URL:           "http://www.eveonline.com",
+			WarEligible:   false,
+		})
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/`,
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"alliance_id":     434243723,
+				"ceo_id":          180548812,
+				"creator_id":      creator.ID,
+				"date_founded":    "2004-11-28T16:42:51Z",
+				"description":     "This is a corporation description, it's basically just a string",
+				"faction_id":      123,
+				"home_station_id": 456,
+				"member_count":    656,
+				"name":            "C C P",
+				"tax_rate":        0.256,
+				"ticker":          "-CCP-",
+				"url":             "http://www.eveonline.com",
+			}),
+		)
+		// when
+		got, err := s.UpdateAllCorporationsESI(ctx)
+		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, ec.Name, ee.Name)
-			assert.Equal(t, app.EveEntityCorporation, ee.Category)
+			want := set.Of[int32]()
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+
 		}
-	}
+	})
 }

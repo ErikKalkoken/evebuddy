@@ -14,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func TestGetOrCreateEveCharacterESI(t *testing.T) {
@@ -172,9 +173,11 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 				}}),
 		)
 		// when
-		err := s.UpdateAllCharactersESI(ctx)
+		got, err := s.UpdateAllCharactersESI(ctx)
 		// then
 		if assert.NoError(t, err) {
+			want := set.Of[int32](characterID)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 			ec, err := st.GetEveCharacter(ctx, characterID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "CCP Bartender", ec.Name)

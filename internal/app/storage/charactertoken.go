@@ -128,10 +128,6 @@ func (st *Storage) ListCharacterTokenForCorporation(ctx context.Context, corpora
 	if corporationID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	roleNames := make([]string, 0)
-	for r := range roles.All() {
-		roleNames = append(roleNames, role2String[r])
-	}
 	var rows []queries.CharacterToken
 	var err error
 	if roles.Size() == 0 {
@@ -142,7 +138,7 @@ func (st *Storage) ListCharacterTokenForCorporation(ctx context.Context, corpora
 	} else {
 		arg := queries.ListCharacterTokenForCorporationWithRolesParams{
 			CorporationID: int64(corporationID),
-			Roles:         roleNames,
+			Roles:         roles2names(roles).Slice(),
 		}
 		rows, err = st.qRO.ListCharacterTokenForCorporationWithRoles(ctx, arg)
 		if err != nil {

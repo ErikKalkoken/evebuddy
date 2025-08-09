@@ -111,6 +111,19 @@ func TestEveType(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can list IDs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		x1 := factory.CreateEveType()
+		x2 := factory.CreateEveType()
+		// when
+		got, err := st.ListEveTypeIDs(ctx)
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of(x1.ID, x2.ID)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		}
+	})
 	t.Run("can identify missing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)

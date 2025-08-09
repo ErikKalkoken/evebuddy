@@ -335,23 +335,49 @@ func TestUpdateAllEntityESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := eveuniverseservice.NewTestService(st)
-	factory.CreateEveEntityCharacter(app.EveEntity{ID: 42})
-	httpmock.RegisterResponder(
-		"POST",
-		`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
-		httpmock.NewJsonResponderOrPanic(200, []map[string]any{
-			{"id": 42, "name": "Erik", "category": "character"},
-		}),
-	)
-	// when
-	err := s.UpdateAllEntitiesESI(ctx)
-	// then
-	if assert.NoError(t, err) {
-		got, err := st.GetEveEntity(ctx, 42)
+	t.Run("should update existing entity", func(t *testing.T) {
+		testutil.TruncateTables(db)
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: 42})
+		httpmock.RegisterResponder(
+			"POST",
+			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{"id": 42, "name": "Erik", "category": "character"},
+			}),
+		)
+		// when
+		got, err := s.UpdateAllEntitiesESI(ctx)
+		// then
 		if assert.NoError(t, err) {
-			assert.EqualValues(t, 42, got.ID)
-			assert.Equal(t, "Erik", got.Name)
-			assert.Equal(t, app.EveEntityCharacter, got.Category)
+			want := set.Of[int32](42)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			o2, err := st.GetEveEntity(ctx, 42)
+			if assert.NoError(t, err) {
+				assert.EqualValues(t, 42, o2.ID)
+				assert.Equal(t, "Erik", o2.Name)
+				assert.Equal(t, app.EveEntityCharacter, o2.Category)
+			}
 		}
-	}
+	})
+	t.Run("should detect when not changed", func(t *testing.T) {
+		testutil.TruncateTables(db)
+		factory.CreateEveEntityCharacter(app.EveEntity{
+			ID:   42,
+			Name: "Erik",
+		})
+		httpmock.RegisterResponder(
+			"POST",
+			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{"id": 42, "name": "Erik", "category": "character"},
+			}),
+		)
+		// when
+		got, err := s.UpdateAllEntitiesESI(ctx)
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of[int32]()
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		}
+	})
 }

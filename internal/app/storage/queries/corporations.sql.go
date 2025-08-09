@@ -8,6 +8,7 @@ package queries
 import (
 	"context"
 	"database/sql"
+	"strings"
 )
 
 const createCorporation = `-- name: CreateCorporation :exec
@@ -137,11 +138,11 @@ func (q *Queries) ListCorporationIDs(ctx context.Context) ([]int64, error) {
 
 const listCorporationsShort = `-- name: ListCorporationsShort :many
 SELECT
-    co.id,
+    cp.id,
     ec.name
 FROM
-    corporations co
-    JOIN eve_corporations ec ON ec.id = co.id
+    corporations cp
+    JOIN eve_corporations ec ON ec.id = cp.id
 ORDER BY
     ec.name
 `
@@ -202,6 +203,66 @@ func (q *Queries) ListOrphanedCorporationIDs(ctx context.Context) ([]int64, erro
 			return nil, err
 		}
 		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPrivilegedCorporationsShort = `-- name: ListPrivilegedCorporationsShort :many
+SELECT
+    cp.id,
+    ec.name
+FROM
+    corporations cp
+    JOIN eve_corporations ec ON ec.id = cp.id
+WHERE
+    cp.id IN (
+        SELECT DISTINCT
+            cp.id
+        FROM
+            corporations cp
+            JOIN eve_characters ec ON ec.corporation_id == cp.id
+            JOIN character_roles cr ON cr.character_id = ec.id
+        WHERE
+            cr.name IN (/*SLICE:required_roles*/?)
+    )
+ORDER BY
+    ec.name
+`
+
+type ListPrivilegedCorporationsShortRow struct {
+	ID   int64
+	Name string
+}
+
+func (q *Queries) ListPrivilegedCorporationsShort(ctx context.Context, requiredRoles []string) ([]ListPrivilegedCorporationsShortRow, error) {
+	query := listPrivilegedCorporationsShort
+	var queryParams []interface{}
+	if len(requiredRoles) > 0 {
+		for _, v := range requiredRoles {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:required_roles*/?", strings.Repeat(",?", len(requiredRoles))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:required_roles*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPrivilegedCorporationsShortRow
+	for rows.Next() {
+		var i ListPrivilegedCorporationsShortRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

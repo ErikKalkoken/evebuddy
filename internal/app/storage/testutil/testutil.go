@@ -88,9 +88,9 @@ func TruncateTables(dbRW *sql.DB) {
 
 // DumpTables returns the current content of the given SQL tables as JSON string.
 // When no tables are given all non-empty tables will be dumped.
-func DumpTables(dbRW *sql.DB, tables ...string) string {
+func DumpTables(db *sql.DB, tables ...string) string {
 	sql := `SELECT name FROM sqlite_master WHERE type = "table"`
-	rows, err := dbRW.Query(sql)
+	rows, err := db.Query(sql)
 	if err != nil {
 		panic(err)
 	}
@@ -116,7 +116,7 @@ func DumpTables(dbRW *sql.DB, tables ...string) string {
 	world := make(map[string]any)
 	for _, table := range tables {
 		sql := fmt.Sprintf("SELECT * FROM %s;", table)
-		rows, err := dbRW.Query(sql)
+		rows, err := db.Query(sql)
 		if err != nil {
 			panic(err)
 		}
@@ -151,4 +151,27 @@ func DumpTables(dbRW *sql.DB, tables ...string) string {
 		panic(err)
 	}
 	return (string(b))
+}
+
+// ErrGroupDebug represents a replacement for errgroup.Group with the same API,
+// but it runs the callbacks without Goroutines, which makes debugging much easier.
+type ErrGroupDebug struct {
+	ff []func() error
+}
+
+func (g *ErrGroupDebug) Go(f func() error) {
+	if g.ff == nil {
+		g.ff = make([]func() error, 0)
+	}
+	g.ff = append(g.ff, f)
+}
+
+func (g *ErrGroupDebug) Wait() error {
+	for _, f := range g.ff {
+		err := f()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

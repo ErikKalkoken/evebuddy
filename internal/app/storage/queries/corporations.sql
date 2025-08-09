@@ -55,10 +55,31 @@ FROM
 
 -- name: ListCorporationsShort :many
 SELECT
-    co.id,
+    cp.id,
     ec.name
 FROM
-    corporations co
-    JOIN eve_corporations ec ON ec.id = co.id
+    corporations cp
+    JOIN eve_corporations ec ON ec.id = cp.id
+ORDER BY
+    ec.name;
+
+-- name: ListPrivilegedCorporationsShort :many
+SELECT
+    cp.id,
+    ec.name
+FROM
+    corporations cp
+    JOIN eve_corporations ec ON ec.id = cp.id
+WHERE
+    cp.id IN (
+        SELECT DISTINCT
+            cp.id
+        FROM
+            corporations cp
+            JOIN eve_characters ec ON ec.corporation_id == cp.id
+            JOIN character_roles cr ON cr.character_id = ec.id
+        WHERE
+            cr.name IN (sqlc.slice('required_roles'))
+    )
 ORDER BY
     ec.name;

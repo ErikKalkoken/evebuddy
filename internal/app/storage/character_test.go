@@ -12,6 +12,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 func TestCharacter(t *testing.T) {
@@ -230,6 +232,35 @@ func TestListCharacters(t *testing.T) {
 				assert.Equal(t, c1.EveCharacter.Alliance, c2.EveCharacter.Alliance)
 				assert.Equal(t, c1.EveCharacter.Faction, c2.EveCharacter.Faction)
 			}
+		}
+	})
+	t.Run("can list character IDs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCharacter()
+		c2 := factory.CreateCharacter()
+		// when
+		got, err := r.ListCharacterIDs(ctx)
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of(c1.ID, c2.ID)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		}
+	})
+	t.Run("can list character's corporation IDs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCharacter()
+		c2 := factory.CreateCharacter()
+		// when
+		cc, err := r.ListCharacterCorporations(ctx)
+		// then
+		if assert.NoError(t, err) {
+			got := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort[int32]) int32 {
+				return x.ID
+			}))
+			want := set.Of(c1.EveCharacter.Corporation.ID, c2.EveCharacter.Corporation.ID)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 }

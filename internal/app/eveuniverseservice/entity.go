@@ -181,37 +181,46 @@ func (s *EveUniverseService) ListEntitiesForIDs(ctx context.Context, ids []int32
 	return s.st.ListEveEntitiesForIDs(ctx, ids)
 }
 
-func (s *EveUniverseService) UpdateAllEntitiesESI(ctx context.Context) error {
-	oo, err := s.st.ListEveEntities(ctx)
+func (s *EveUniverseService) UpdateAllEntitiesESI(ctx context.Context) (set.Set[int32], error) {
+	var changed set.Set[int32]
+	ee, err := s.st.ListEveEntities(ctx)
 	if err != nil {
-		return err
+		return changed, err
 	}
 	selectedCategories := set.Of(
 		app.EveEntityAlliance,
 		app.EveEntityCharacter,
 		app.EveEntityCorporation,
 	)
-	ids := slices.Collect(xiter.Map(xiter.Filter(slices.Values(oo), func(x *app.EveEntity) bool {
+	ids := slices.Collect(xiter.Map(xiter.Filter(slices.Values(ee), func(x *app.EveEntity) bool {
 		return x.IsValid() && selectedCategories.Contains(x.Category)
 	}), func(x *app.EveEntity) int32 {
 		return x.ID
 	}))
-	var ee []esi.PostUniverseNames200Ok
+	var objs []esi.PostUniverseNames200Ok
 	for chunk := range slices.Chunk(ids, esiPostUniverseNamesMax) {
-		eeChunk, _, err := s.resolveIDsFromESI(ctx, chunk)
+		objsChunk, _, err := s.resolveIDsFromESI(ctx, chunk)
 		if err != nil {
-			return err
+			return changed, err
 		}
-		ee = append(ee, eeChunk...)
+		objs = append(objs, objsChunk...)
 	}
-	for _, entity := range ee {
-		err := s.st.UpdateEveEntity(ctx, entity.Id, entity.Name)
-		if err != nil {
-			return err
+	incoming := make(map[int32]esi.PostUniverseNames200Ok)
+	for _, o := range objs {
+		incoming[o.Id] = o
+	}
+	for _, e := range ee {
+		o, ok := incoming[e.ID]
+		if !ok || o.Name == e.Name {
+			continue
 		}
+		if err := s.st.UpdateEveEntity(ctx, o.Id, o.Name); err != nil {
+			return changed, err
+		}
+		changed.Add(o.Id)
 	}
-	slog.Info("Updated Eve Entities", "count", len(ee))
-	return nil
+	slog.Info("Updated Eve Entities", "count", len(objs), "changed", changed)
+	return changed, nil
 }
 
 func (s *EveUniverseService) updateEntityNameIfExists(ctx context.Context, id int32, name string) error {

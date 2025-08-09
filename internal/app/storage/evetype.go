@@ -124,6 +124,15 @@ func (st *Storage) GetOrCreateEveType(ctx context.Context, arg CreateEveTypePara
 	return o, nil
 }
 
+func (st *Storage) ListEveTypeIDs(ctx context.Context) (set.Set[int32], error) {
+	ids, err := st.qRO.ListEveTypeIDs(ctx)
+	if err != nil {
+		return set.Set[int32]{}, fmt.Errorf("ListEveTypeIDs: %w", err)
+	}
+	ids2 := set.Of(convertNumericSlice[int32](ids)...)
+	return ids2, nil
+}
+
 func (st *Storage) MissingEveTypes(ctx context.Context, ids set.Set[int32]) (set.Set[int32], error) {
 	currentIDs, err := st.qRO.ListEveTypeIDs(ctx)
 	if err != nil {

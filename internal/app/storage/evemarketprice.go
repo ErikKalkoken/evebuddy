@@ -23,16 +23,22 @@ type UpdateOrCreateEveMarketPriceParams struct {
 	AveragePrice  float64
 }
 
-func (st *Storage) UpdateOrCreateEveMarketPrice(ctx context.Context, arg UpdateOrCreateEveMarketPriceParams) error {
-	arg2 := queries.UpdateOrCreateEveMarketPriceParams{
+func (st *Storage) UpdateOrCreateEveMarketPrice(ctx context.Context, arg UpdateOrCreateEveMarketPriceParams) (*app.EveMarketPrice, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateOrCreateEveMarketPrice %+v: %w", arg, err)
+	}
+	if arg.TypeID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	r, err := st.qRW.UpdateOrCreateEveMarketPrice(ctx, queries.UpdateOrCreateEveMarketPriceParams{
 		TypeID:        int64(arg.TypeID),
 		AdjustedPrice: arg.AdjustedPrice,
 		AveragePrice:  arg.AveragePrice,
+	})
+	if err != nil {
+		return nil, wrapErr(err)
 	}
-	if err := st.qRW.UpdateOrCreateEveMarketPrice(ctx, arg2); err != nil {
-		return fmt.Errorf("update or create eve market price %+v: %w", arg, err)
-	}
-	return nil
+	return eveMarketPriceFromDBModel(r), nil
 }
 
 func eveMarketPriceFromDBModel(o queries.EveMarketPrice) *app.EveMarketPrice {

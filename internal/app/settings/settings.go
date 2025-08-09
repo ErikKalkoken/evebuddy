@@ -69,6 +69,8 @@ const (
 	settingWindowHeightDefault                = 600
 	settingWindowsSize                        = "window-size"
 	settingWindowWidthDefault                 = 1000
+	settingHideLimitedCorporations            = "settingHideLimitedCorporations"
+	settingHideLimitedCorporationsDefault     = false
 )
 
 // Settings represents the settings for the app and provides an API for reading and writing settings.
@@ -424,6 +426,17 @@ func (s Settings) ResetPreferMarketTab() {
 
 func (s Settings) SetPreferMarketTab(v bool) {
 	s.p.SetBool(settingPreferMarketTab, v)
+}
+
+func (s Settings) HideLimitedCorporations() bool {
+	return s.p.Bool(settingHideLimitedCorporations)
+}
+func (s Settings) HideLimitedCorporationsDefault() bool {
+	return settingHideLimitedCorporationsDefault
+}
+
+func (s Settings) SetHideLimitedCorporations(v bool) {
+	s.p.SetBool(settingHideLimitedCorporations, v)
 }
 
 func (s Settings) ColorTheme() ColorTheme {
