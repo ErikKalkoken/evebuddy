@@ -454,7 +454,15 @@ func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) error {
 	return err
 }
 
-func (s *EveUniverseService) updateCategories(ctx context.Context) error {
+// TODO: Add updating of all types
+
+// updateTypes updates all existing type from ESI
+// and returns the IDs of added types if there were any.
+func (s *EveUniverseService) updateTypes(ctx context.Context) (set.Set[int32], error) {
+	old, err := s.st.ListEveTypeIDs(ctx)
+	if err != nil {
+		return set.Set[int32]{}, err
+	}
 	g := new(errgroup.Group)
 	g.Go(func() error {
 		return s.UpdateCategoryWithChildrenESI(ctx, app.EveCategorySkill)
@@ -463,12 +471,17 @@ func (s *EveUniverseService) updateCategories(ctx context.Context) error {
 		return s.UpdateCategoryWithChildrenESI(ctx, app.EveCategoryShip)
 	})
 	if err := g.Wait(); err != nil {
-		return err
+		return set.Set[int32]{}, err
 	}
 	if err := s.UpdateShipSkills(ctx); err != nil {
-		return err
+		return set.Set[int32]{}, err
 	}
-	return nil
+	current, err := s.st.ListEveTypeIDs(ctx)
+	if err != nil {
+		return set.Set[int32]{}, err
+	}
+	added := set.Difference(current, old)
+	return added, nil
 }
 
 func (s *EveUniverseService) UpdateShipSkills(ctx context.Context) error {

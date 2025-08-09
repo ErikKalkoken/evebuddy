@@ -38,10 +38,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	var f func(context.Context) (set.Set[int32], error)
 	switch section {
 	case app.SectionEveTypes:
-		f = func(ctx context.Context) (set.Set[int32], error) {
-			err := s.updateCategories(ctx)
-			return set.Of[int32](0), err // FIXME: Fake change
-		}
+		f = s.updateTypes
 	case app.SectionEveCharacters:
 		f = s.UpdateAllCharactersESI
 	case app.SectionEveCorporations:
