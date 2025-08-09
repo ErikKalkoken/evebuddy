@@ -7,6 +7,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -33,9 +34,11 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 				},
 			}))
 		// when
-		err := s.updateMarketPricesESI(ctx)
+		got, err := s.updateMarketPricesESI(ctx)
 		// then
 		if assert.NoError(t, err) {
+			want := set.Of[int32](32772)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 			o, err := st.GetEveMarketPrice(ctx, 32772)
 			if assert.NoError(t, err) {
 				assert.Equal(t, 306988.09, o.AdjustedPrice)
@@ -63,14 +66,43 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 				},
 			}))
 		// when
-		err := s.updateMarketPricesESI(ctx)
+		got, err := s.updateMarketPricesESI(ctx)
 		// then
 		if assert.NoError(t, err) {
+			want := set.Of[int32](32772)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 			o, err := st.GetEveMarketPrice(ctx, 32772)
 			if assert.NoError(t, err) {
 				assert.Equal(t, 306988.09, o.AdjustedPrice)
 				assert.Equal(t, 306292.67, o.AveragePrice)
 			}
+		}
+	})
+	t.Run("should detect when object has not changed", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:        32772,
+			AdjustedPrice: 306988.09,
+			AveragePrice:  306292.67,
+		})
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/v1/markets/prices/",
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"adjusted_price": 306988.09,
+					"average_price":  306292.67,
+					"type_id":        32772,
+				},
+			}))
+		// when
+		got, err := s.updateMarketPricesESI(ctx)
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of[int32]()
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 }

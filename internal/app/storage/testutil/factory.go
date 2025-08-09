@@ -2143,11 +2143,7 @@ func (f Factory) CreateEveMarketPrice(args ...storage.UpdateOrCreateEveMarketPri
 	if arg.AveragePrice == 0 {
 		arg.AveragePrice = rand.Float64() * 100_000
 	}
-	err := f.st.UpdateOrCreateEveMarketPrice(ctx, arg)
-	if err != nil {
-		panic(err)
-	}
-	o, err := f.st.GetEveMarketPrice(ctx, arg.TypeID)
+	o, err := f.st.UpdateOrCreateEveMarketPrice(ctx, arg)
 	if err != nil {
 		panic(err)
 	}

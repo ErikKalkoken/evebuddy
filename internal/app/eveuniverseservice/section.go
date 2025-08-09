@@ -44,15 +44,9 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	case app.SectionEveCorporations:
 		f = s.UpdateAllCorporationsESI
 	case app.SectionEveMarketPrices:
-		f = func(ctx context.Context) (set.Set[int32], error) {
-			err := s.updateMarketPricesESI(ctx)
-			return set.Of[int32](0), err // FIXME: Fake change
-		}
+		f = s.updateMarketPricesESI
 	case app.SectionEveEntities:
-		f = func(ctx context.Context) (set.Set[int32], error) {
-			err := s.UpdateAllEntitiesESI(ctx)
-			return set.Of[int32](0), err // FIXME: Fake change
-		}
+		f = s.UpdateAllEntitiesESI
 	default:
 		slog.Warn("encountered unknown section", "section", section)
 	}

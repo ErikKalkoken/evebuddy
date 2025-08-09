@@ -95,9 +95,9 @@ func (ec EveCharacter) ToEveEntity() *EveEntity {
 	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityCharacter}
 }
 
-// IsIdentical reports whether two characters are identical.
-// Two characters must have the same values in all fields to be identical.
-func (ec EveCharacter) IsIdentical(other EveCharacter) bool {
+// Equal reports whether two characters are equal.
+// Two characters must have the same values in all fields to be equal.
+func (ec EveCharacter) Equal(other EveCharacter) bool {
 	return ec.ID == other.ID &&
 		ec.AllianceID() == other.AllianceID() &&
 		ec.Birthday.Equal(other.Birthday) &&
@@ -167,9 +167,9 @@ func (ec EveCorporation) ToEveEntity() *EveEntity {
 	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityCorporation}
 }
 
-// IsIdentical reports whether two characters are identical.
-// Two characters must have the same values in all fields to be identical.
-func (ec EveCorporation) IsIdentical(other EveCorporation) bool {
+// Equal reports whether two characters are equal.
+// Two characters must have the same values in all fields to be equal.
+func (ec EveCorporation) Equal(other EveCorporation) bool {
 	return ec.ID == other.ID &&
 		ec.AllianceID() == other.AllianceID() &&
 		ec.Ceo.ID == other.Ceo.ID &&

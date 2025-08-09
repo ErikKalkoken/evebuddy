@@ -185,7 +185,7 @@ func (s *EveUniverseService) updateCharacterESI(ctx context.Context, characterID
 		}); err != nil {
 			return false, err
 		}
-		hasChanged := !old.IsIdentical(*c)
+		hasChanged := !old.Equal(*c)
 		slog.Info("Updated eve character from ESI", "characterID", c.ID, "changed", hasChanged)
 		return hasChanged, nil
 	})

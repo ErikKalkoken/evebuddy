@@ -85,7 +85,7 @@ func TestEveCharacter_IsIdentical(t *testing.T) {
 			Title:          "def",
 		}
 		x2 := x1
-		assert.True(t, x1.IsIdentical(x2))
+		assert.True(t, x1.Equal(x2))
 	})
 	t.Run("should report when not same", func(t *testing.T) {
 		x1 := app.EveCharacter{
@@ -104,7 +104,7 @@ func TestEveCharacter_IsIdentical(t *testing.T) {
 		x2 := app.EveCharacter{
 			ID: 4,
 		}
-		assert.False(t, x1.IsIdentical(x2))
+		assert.False(t, x1.Equal(x2))
 	})
 }
 
@@ -153,7 +153,7 @@ func TestEveCorporation_IsIdentical(t *testing.T) {
 			Timestamp:   time.Now(),
 		}
 		x2 := x1
-		assert.True(t, x1.IsIdentical(x2))
+		assert.True(t, x1.Equal(x2))
 	})
 	t.Run("should report when not same", func(t *testing.T) {
 		x1 := app.EveCorporation{
@@ -177,7 +177,7 @@ func TestEveCorporation_IsIdentical(t *testing.T) {
 		x2 := app.EveCorporation{
 			ID: 4,
 		}
-		assert.False(t, x1.IsIdentical(x2))
+		assert.False(t, x1.Equal(x2))
 	})
 }
 

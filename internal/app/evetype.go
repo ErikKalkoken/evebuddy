@@ -1,6 +1,8 @@
 package app
 
 import (
+	"math"
+
 	"fyne.io/fyne/v2"
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
@@ -354,4 +356,11 @@ type EveMarketPrice struct {
 	TypeID        int32
 	AdjustedPrice float64
 	AveragePrice  float64
+}
+
+// Equal reports whether two objects are equal.
+func (x EveMarketPrice) Equal(other EveMarketPrice) bool {
+	return x.TypeID == other.TypeID &&
+		math.Abs(float64(x.AdjustedPrice-other.AdjustedPrice)) < 0.001 &&
+		math.Abs(float64(x.AveragePrice-other.AveragePrice)) < 0.001
 }

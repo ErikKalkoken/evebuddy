@@ -177,7 +177,7 @@ func (s *EveUniverseService) UpdateAllCorporationsESI(ctx context.Context) (set.
 				Category: app.EveEntityCorporation,
 				Name:     c2.Name,
 			})
-			hasChanged[i] = !c1.IsIdentical(*c2)
+			hasChanged[i] = !c1.Equal(*c2)
 			return err
 		})
 	}

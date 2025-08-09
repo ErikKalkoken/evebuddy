@@ -432,26 +432,35 @@ func (s *EveUniverseService) MarketPrice(ctx context.Context, typeID int32) (opt
 
 // TODO: Change to bulk create
 
-func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) error {
-	_, err, _ := s.sfg.Do("updateMarketPricesESI", func() (any, error) {
+func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) (set.Set[int32], error) {
+	x, err, _ := s.sfg.Do("updateMarketPricesESI", func() (any, error) {
+		var changed set.Set[int32]
 		prices, _, err := s.esiClient.ESI.MarketApi.GetMarketsPrices(ctx, nil)
 		if err != nil {
-			return nil, err
+			return changed, err
 		}
 		for _, p := range prices {
+			o1, err := s.st.GetEveMarketPrice(ctx, p.TypeId)
+			if err != nil && !errors.Is(err, app.ErrNotFound) {
+				return changed, err
+			}
 			arg := storage.UpdateOrCreateEveMarketPriceParams{
 				TypeID:        p.TypeId,
 				AdjustedPrice: p.AdjustedPrice,
 				AveragePrice:  p.AveragePrice,
 			}
-			if err := s.st.UpdateOrCreateEveMarketPrice(ctx, arg); err != nil {
-				return nil, err
+			o2, err := s.st.UpdateOrCreateEveMarketPrice(ctx, arg)
+			if err != nil {
+				return changed, err
+			}
+			if o1 != nil && !o2.Equal(*o1) {
+				changed.Add(o2.TypeID)
 			}
 		}
-		slog.Info("Updated market prices", "count", len(prices))
-		return nil, nil
+		slog.Info("Updated market prices", "count", len(prices), "changed", changed)
+		return changed, nil
 	})
-	return err
+	return x.(set.Set[int32]), err
 }
 
 // TODO: Add updating of all types

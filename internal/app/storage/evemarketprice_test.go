@@ -23,15 +23,12 @@ func TestEveMarketPrice(t *testing.T) {
 			AveragePrice:  4.56,
 		}
 		// when
-		err := r.UpdateOrCreateEveMarketPrice(ctx, arg)
+		x, err := r.UpdateOrCreateEveMarketPrice(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			o, err := r.GetEveMarketPrice(ctx, 42)
-			if assert.NoError(t, err) {
-				assert.Equal(t, int32(42), o.TypeID)
-				assert.Equal(t, 1.23, o.AdjustedPrice)
-				assert.Equal(t, 4.56, o.AveragePrice)
-			}
+			assert.Equal(t, int32(42), x.TypeID)
+			assert.Equal(t, 1.23, x.AdjustedPrice)
+			assert.Equal(t, 4.56, x.AveragePrice)
 		}
 	})
 	t.Run("can update existing", func(t *testing.T) {
@@ -48,15 +45,12 @@ func TestEveMarketPrice(t *testing.T) {
 			AveragePrice:  4.56,
 		}
 		// when
-		err := r.UpdateOrCreateEveMarketPrice(ctx, arg)
+		x, err := r.UpdateOrCreateEveMarketPrice(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			o, err := r.GetEveMarketPrice(ctx, 42)
-			if assert.NoError(t, err) {
-				assert.Equal(t, int32(42), o.TypeID)
-				assert.Equal(t, 1.23, o.AdjustedPrice)
-				assert.Equal(t, 4.56, o.AveragePrice)
-			}
+			assert.Equal(t, int32(42), x.TypeID)
+			assert.Equal(t, 1.23, x.AdjustedPrice)
+			assert.Equal(t, 4.56, x.AveragePrice)
 		}
 	})
 }
