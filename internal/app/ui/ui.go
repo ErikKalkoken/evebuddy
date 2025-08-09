@@ -907,9 +907,12 @@ func (u *baseUI) updateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate 
 }
 
 func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
+	logErr := func(err error) {
+		slog.Error("Failed to update general section", "section", section, "err", err)
+	}
 	changed, err := u.eus.UpdateSection(ctx, section, forceUpdate)
 	if err != nil {
-		slog.Error("Failed to update general section", "section", section, "err", err)
+		logErr(err)
 		return
 	}
 	if changed.Size() == 0 && !forceUpdate {
@@ -923,13 +926,48 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 		u.characterShips.update()
 		u.characterSkillCatalogue.update()
 	case app.SectionEveCharacters:
-		u.reloadCurrentCharacter()
-		u.characterOverview.update()
+		if changed.Contains(u.currentCharacterID()) {
+			u.reloadCurrentCharacter()
+		}
+		characters, err := u.cs.ListCharacterIDs(ctx)
+		if err != nil {
+			logErr(err)
+			return
+		}
+		if characters.ContainsAny(changed.All()) {
+			u.characterOverview.update()
+			u.updateStatus()
+		}
 	case app.SectionEveCorporations:
-		// TODO: Only update when shown entity changed
-		u.characterCorporation.update()
-		u.corporationSheet.update()
+		if changed.Contains(u.currentCorporationID()) {
+			u.corporationSheet.update()
+		}
+		c := u.currentCharacter()
+		if c == nil {
+			break
+		}
+		if changed.Contains(c.EveCharacter.Corporation.ID) {
+			u.characterCorporation.update()
+		}
+		cc, err := u.cs.ListCharacterCorporations(ctx)
+		if err != nil {
+			logErr(err)
+			return
+		}
+		if changed.ContainsAny(xiter.MapSlice(cc, func(x *app.EntityShort[int32]) int32 {
+			return x.ID
+		})) {
+			u.updateStatus()
+		}
 	case app.SectionEveMarketPrices:
+		types, err := u.eus.ListEveTypeIDs(ctx)
+		if err != nil {
+			logErr(err)
+			return
+		}
+		if !changed.ContainsAny(types.All()) {
+			break
+		}
 		u.characterAsset.update()
 		u.characterOverview.update()
 		u.assets.update()

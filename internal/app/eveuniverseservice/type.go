@@ -189,6 +189,10 @@ func (s *EveUniverseService) GetOrCreateTypeESI(ctx context.Context, id int32) (
 	return x.(*app.EveType), nil
 }
 
+func (s *EveUniverseService) ListEveTypeIDs(ctx context.Context) (set.Set[int32], error) {
+	return s.st.ListEveTypeIDs(ctx)
+}
+
 // AddMissingTypes fetches missing typeIDs from ESI.
 // Invalid IDs (e.g. 0) will be ignored
 func (s *EveUniverseService) AddMissingTypes(ctx context.Context, ids set.Set[int32]) error {

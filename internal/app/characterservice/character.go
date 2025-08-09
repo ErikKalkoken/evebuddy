@@ -20,6 +20,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 type SSOService interface {
@@ -191,6 +192,17 @@ func (s *CharacterService) getCharacterName(ctx context.Context, characterID int
 
 func (s *CharacterService) ListCharacters(ctx context.Context) ([]*app.Character, error) {
 	return s.st.ListCharacters(ctx)
+}
+
+func (s *CharacterService) ListCharacterIDs(ctx context.Context) (set.Set[int32], error) {
+	cc, err := s.st.ListCharactersShort(ctx)
+	if err != nil {
+		return set.Set[int32]{}, err
+	}
+	ids := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort[int32]) int32 {
+		return x.ID
+	}))
+	return ids, nil
 }
 
 func (s *CharacterService) ListCharactersShort(ctx context.Context) ([]*app.EntityShort[int32], error) {

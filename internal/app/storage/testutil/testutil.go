@@ -152,3 +152,26 @@ func DumpTables(db *sql.DB, tables ...string) string {
 	}
 	return (string(b))
 }
+
+// ErrGroupDebug represents a replacement for errgroup.Group with the same API,
+// but it runs the callbacks without Goroutines, which makes debugging much easier.
+type ErrGroupDebug struct {
+	ff []func() error
+}
+
+func (g *ErrGroupDebug) Go(f func() error) {
+	if g.ff == nil {
+		g.ff = make([]func() error, 0)
+	}
+	g.ff = append(g.ff, f)
+}
+
+func (g *ErrGroupDebug) Wait() error {
+	for _, f := range g.ff {
+		err := f()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

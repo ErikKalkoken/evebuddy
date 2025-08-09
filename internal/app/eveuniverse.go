@@ -138,6 +138,20 @@ func (ec EveCorporation) AllianceID() int32 {
 	return ec.Alliance.ID
 }
 
+func (ec EveCorporation) CeoID() int32 {
+	if ec.Ceo == nil {
+		return 0
+	}
+	return ec.Ceo.ID
+}
+
+func (ec EveCorporation) CreatorID() int32 {
+	if ec.Creator == nil {
+		return 0
+	}
+	return ec.Creator.ID
+}
+
 func (ec EveCorporation) FactionID() int32 {
 	if !ec.HasFaction() {
 		return 0
@@ -172,8 +186,8 @@ func (ec EveCorporation) ToEveEntity() *EveEntity {
 func (ec EveCorporation) Equal(other EveCorporation) bool {
 	return ec.ID == other.ID &&
 		ec.AllianceID() == other.AllianceID() &&
-		ec.Ceo.ID == other.Ceo.ID &&
-		ec.Creator.ID == other.Creator.ID &&
+		ec.CeoID() == other.CeoID() &&
+		ec.CreatorID() == other.CreatorID() &&
 		ec.DateFounded.ValueOrZero().Equal(other.DateFounded.ValueOrZero()) &&
 		ec.Description == other.Description &&
 		ec.FactionID() == other.FactionID() &&
