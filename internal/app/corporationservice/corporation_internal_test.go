@@ -27,10 +27,6 @@ func (s *CharacterServiceFake) ValidCharacterTokenForCorporation(ctx context.Con
 	return s.Token, s.Error
 }
 
-func (s *CharacterServiceFake) ListCharacterCorporationIDs(ctx context.Context) (set.Set[int32], error) {
-	return s.CorporationIDs, s.Error
-}
-
 func NewFake(st *storage.Storage, args ...Params) *CorporationService {
 	scs := statuscacheservice.New(memcache.New(), st)
 	eus := eveuniverseservice.New(eveuniverseservice.Params{

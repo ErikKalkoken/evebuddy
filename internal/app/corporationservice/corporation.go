@@ -19,7 +19,6 @@ import (
 )
 
 type CharacterService interface {
-	ListCharacterCorporationIDs(ctx context.Context) (set.Set[int32], error)
 	ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, roles set.Set[app.Role], scopes set.Set[string]) (*app.CharacterToken, error)
 }
 
@@ -102,6 +101,20 @@ func (s *CorporationService) HasCorporation(ctx context.Context, corporationID i
 	return ids.Contains(corporationID), nil
 }
 
+// ListCorporationsShort returns all corporations in short form.
+func (s *CorporationService) ListCorporationsShort(ctx context.Context) ([]*app.EntityShort[int32], error) {
+	return s.st.ListCorporationsShort(ctx)
+}
+
+// ListPrivilegedCorporations returns all corporations with privileged access.
+func (s *CorporationService) ListPrivilegedCorporations(ctx context.Context) ([]*app.EntityShort[int32], error) {
+	var roles set.Set[app.Role]
+	for _, s := range []app.CorporationSection{app.CorporationSectionWalletJournal(app.Division1)} {
+		roles.AddSeq(s.Roles().All())
+	}
+	return s.st.ListPrivilegedCorporationsShort(ctx, roles)
+}
+
 // ListCorporationIDs returns all corporation IDs.
 func (s *CorporationService) ListCorporationIDs(ctx context.Context) (set.Set[int32], error) {
 	return s.st.ListCorporationIDs(ctx)
@@ -120,7 +133,7 @@ func (s *CorporationService) RemoveStaleCorporations(ctx context.Context) (bool,
 	if all.Size() == 0 {
 		return false, nil
 	}
-	current, err := s.cs.ListCharacterCorporationIDs(ctx)
+	current, err := s.st.ListCharacterCorporationIDs(ctx)
 	if err != nil {
 		return false, wrapErr(err)
 	}

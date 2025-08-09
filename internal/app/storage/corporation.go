@@ -184,3 +184,18 @@ func (st *Storage) ListCorporationsShort(ctx context.Context) ([]*app.EntityShor
 	}
 	return cc, nil
 }
+
+// ListPrivilegedCorporationsShort returns a list of corporations where characters exist
+// which have at least one role in requiredRoles.
+func (st *Storage) ListPrivilegedCorporationsShort(ctx context.Context, requiredRoles set.Set[app.Role]) ([]*app.EntityShort[int32], error) {
+	rows, err := st.qRO.ListPrivilegedCorporationsShort(ctx, roles2names(requiredRoles).Slice())
+	if err != nil {
+		return nil, fmt.Errorf("ListPrivilegedCorporationsShort: %w", err)
+
+	}
+	cc := make([]*app.EntityShort[int32], 0)
+	for _, r := range rows {
+		cc = append(cc, &app.EntityShort[int32]{ID: int32(r.ID), Name: r.Name})
+	}
+	return cc, nil
+}

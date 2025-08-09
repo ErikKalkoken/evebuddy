@@ -14,14 +14,12 @@ func TestCorporation(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ctx := context.Background()
+	s := corporationservice.NewFake(st)
 	t.Run("can delete corporations with no member character", func(t *testing.T) {
 		testutil.TruncateTables(db)
-		corp := factory.CreateCorporation()
+		character := factory.CreateCharacter()
+		corp := factory.CreateCorporation(character.EveCharacter.Corporation.ID)
 		factory.CreateCorporation()
-		s := corporationservice.NewFake(st, corporationservice.Params{
-			CharacterService: &corporationservice.CharacterServiceFake{
-				CorporationIDs: set.Of(corp.ID),
-			}})
 		changed, err := s.RemoveStaleCorporations(ctx)
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
@@ -34,11 +32,8 @@ func TestCorporation(t *testing.T) {
 	})
 	t.Run("report false when nothing deleted", func(t *testing.T) {
 		testutil.TruncateTables(db)
-		corp := factory.CreateCorporation()
-		s := corporationservice.NewFake(st, corporationservice.Params{
-			CharacterService: &corporationservice.CharacterServiceFake{
-				CorporationIDs: set.Of(corp.ID),
-			}})
+		character := factory.CreateCharacter()
+		corp := factory.CreateCorporation(character.EveCharacter.Corporation.ID)
 		changed, err := s.RemoveStaleCorporations(ctx)
 		if assert.NoError(t, err) {
 			assert.False(t, changed)
@@ -51,10 +46,6 @@ func TestCorporation(t *testing.T) {
 	})
 	t.Run("report false when no corporations", func(t *testing.T) {
 		testutil.TruncateTables(db)
-		s := corporationservice.NewFake(st, corporationservice.Params{
-			CharacterService: &corporationservice.CharacterServiceFake{
-				CorporationIDs: set.Of[int32](),
-			}})
 		changed, err := s.RemoveStaleCorporations(ctx)
 		if assert.NoError(t, err) {
 			assert.False(t, changed)

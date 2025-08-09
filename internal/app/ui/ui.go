@@ -42,6 +42,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
@@ -808,12 +809,28 @@ func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 }
 
 func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
-	cc := u.scs.ListCorporations()
 	items := make([]*fyne.MenuItem, 0)
+	var err error
+	var cc []*app.EntityShort[int32]
+	if u.settings.HideLimitedCorporations() {
+		cc, err = u.rs.ListPrivilegedCorporations(context.Background())
+	} else {
+		cc, err = u.rs.ListCorporationsShort(context.Background())
+	}
+	if err != nil {
+		slog.Error("Failed to fetch corporations", "error", err)
+		return items
+	}
 	if len(cc) == 0 {
 		it := fyne.NewMenuItem("No corporations", nil)
 		it.Disabled = true
 		return append(items, it)
+	}
+	corporations := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort[int32]) int32 {
+		return x.ID
+	}))
+	if !corporations.Contains(u.currentCorporationID()) {
+		go u.setAnyCorporation()
 	}
 	it := fyne.NewMenuItem("Switch to...", nil)
 	it.Disabled = true
@@ -1164,6 +1181,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 				slog.Error("Failed to remove corp data after character role change", "characterID", characterID, "error", err)
 			}
 			u.updateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
+			u.updateStatus()
 		}
 	case app.SectionCharacterSkills:
 		if needsRefresh {
