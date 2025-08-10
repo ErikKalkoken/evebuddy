@@ -274,7 +274,12 @@ func (t TreeNodes[T]) Parent(uid widget.TreeNodeID) (parent widget.TreeNodeID, o
 	return
 }
 
-// Size returns the number of nodes in the tree
+// Size returns the total number of nodes in the tree.
 func (t TreeNodes[T]) Size() int {
 	return len(t.nodes)
+}
+
+// RootSize returns the number of children of the root node.
+func (t TreeNodes[T]) RootSize() int {
+	return len(t.ChildUIDs(RootUID))
 }

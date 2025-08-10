@@ -139,7 +139,7 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 }
 
 func (a *characterJumpClones) update() {
-	td, err := a.newTreeData()
+	td, err := a.updateTreeData()
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
 		fyne.Do(func() {
@@ -148,19 +148,14 @@ func (a *characterJumpClones) update() {
 			}))
 		})
 	} else {
-		a.refreshTop(cloneCount(td))
+		a.refreshTop(td.RootSize())
 		fyne.Do(func() {
 			a.tree.Set(td)
 		})
 	}
 }
 
-func cloneCount(td iwidget.TreeNodes[jumpCloneNode]) int {
-	return len(td.ChildUIDs(""))
-
-}
-
-func (a *characterJumpClones) newTreeData() (iwidget.TreeNodes[jumpCloneNode], error) {
+func (a *characterJumpClones) updateTreeData() (iwidget.TreeNodes[jumpCloneNode], error) {
 	var tree iwidget.TreeNodes[jumpCloneNode]
 	if !a.u.hasCharacter() {
 		return tree, nil
@@ -273,7 +268,7 @@ func (a *characterJumpClones) startUpdateTicker() {
 			<-ticker.C
 			var c int
 			fyne.DoAndWait(func() {
-				c = cloneCount(a.tree.Nodes())
+				c = a.tree.Nodes().RootSize()
 			})
 			a.refreshTop(c)
 		}
