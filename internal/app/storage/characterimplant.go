@@ -37,24 +37,40 @@ func (st *Storage) GetCharacterImplant(ctx context.Context, characterID int32, t
 }
 
 func (st *Storage) ListCharacterImplants(ctx context.Context, characterID int32) ([]*app.CharacterImplant, error) {
-	arg := queries.ListCharacterImplantsParams{
+	rows, err := st.qRO.ListCharacterImplants(ctx, queries.ListCharacterImplantsParams{
 		DogmaAttributeID: app.EveDogmaAttributeImplantSlot,
 		CharacterID:      int64(characterID),
-	}
-	rows, err := st.qRO.ListCharacterImplants(ctx, arg)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("list implants for character ID %d: %w", characterID, err)
 	}
-	ii2 := make([]*app.CharacterImplant, len(rows))
-	for i, row := range rows {
-		ii2[i] = characterImplantFromDBModel(
-			row.CharacterImplant,
-			row.EveType,
-			row.EveGroup,
-			row.EveCategory,
-			row.SlotNum)
+	oo := make([]*app.CharacterImplant, len(rows))
+	for i, r := range rows {
+		oo[i] = characterImplantFromDBModel(
+			r.CharacterImplant,
+			r.EveType,
+			r.EveGroup,
+			r.EveCategory,
+			r.SlotNum)
 	}
-	return ii2, nil
+	return oo, nil
+}
+
+func (st *Storage) ListAllCharacterImplants(ctx context.Context) ([]*app.CharacterImplant, error) {
+	rows, err := st.qRO.ListAllCharacterImplants(ctx, app.EveDogmaAttributeImplantSlot)
+	if err != nil {
+		return nil, fmt.Errorf("list implants for all characters: %w", err)
+	}
+	oo := make([]*app.CharacterImplant, len(rows))
+	for i, r := range rows {
+		oo[i] = characterImplantFromDBModel(
+			r.CharacterImplant,
+			r.EveType,
+			r.EveGroup,
+			r.EveCategory,
+			r.SlotNum)
+	}
+	return oo, nil
 }
 
 func (st *Storage) ReplaceCharacterImplants(ctx context.Context, characterID int32, args []CreateCharacterImplantParams) error {

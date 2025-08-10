@@ -205,6 +205,7 @@ func (s *CharacterService) ListCharacterIDs(ctx context.Context) (set.Set[int32]
 	return ids, nil
 }
 
+// ListCharactersShort returns all characters in short form and ordered by name.
 func (s *CharacterService) ListCharactersShort(ctx context.Context) ([]*app.EntityShort[int32], error) {
 	return s.st.ListCharactersShort(ctx)
 }
