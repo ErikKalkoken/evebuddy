@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -66,7 +67,7 @@ func (a *augmentations) makeTree() *iwidget.Tree[characterImplantsNode] {
 	t := iwidget.NewTree(
 		func(branch bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
-			main := widget.NewLabel("Template")
+			main := ttwidget.NewLabel("Template")
 			total := widget.NewLabel("9")
 			return container.NewBorder(
 				nil,
@@ -79,7 +80,7 @@ func (a *augmentations) makeTree() *iwidget.Tree[characterImplantsNode] {
 		func(n characterImplantsNode, b bool, co fyne.CanvasObject) {
 			border := co.(*fyne.Container).Objects
 			hbox := border[0].(*fyne.Container).Objects
-			main := hbox[0].(*widget.Label)
+			main := hbox[0].(*ttwidget.Label)
 			total := hbox[1].(*widget.Label)
 			iconMain := border[1].(*canvas.Image)
 			if n.IsRoot() {
@@ -90,18 +91,19 @@ func (a *augmentations) makeTree() *iwidget.Tree[characterImplantsNode] {
 					})
 				})
 				main.SetText(n.characterName)
+				main.SetToolTip("")
 				if n.implantCount > 0 {
 					total.SetText(fmt.Sprint(n.implantCount))
 					total.Show()
 				} else {
 					total.Hide()
 				}
-
 			} else {
 				iwidget.RefreshImageAsync(iconMain, func() (fyne.Resource, error) {
 					return a.u.eis.InventoryTypeIcon(n.implantTypeID, app.IconPixelSize)
 				})
 				main.SetText(n.implantTypeName)
+				main.SetToolTip(n.implantTypeDescription)
 				total.Hide()
 			}
 		},

@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -75,7 +76,7 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 	t := iwidget.NewTree(
 		func(branch bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
-			main := widget.NewLabel("Template")
+			main := ttwidget.NewLabel("Template")
 			main.Truncation = fyne.TextTruncateEllipsis
 			iconInfo := widget.NewIcon(theme.InfoIcon())
 			spacer := canvas.NewRectangle(color.Transparent)
@@ -91,7 +92,7 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 		},
 		func(n jumpCloneNode, b bool, co fyne.CanvasObject) {
 			border := co.(*fyne.Container).Objects
-			main := border[0].(*widget.Label)
+			main := border[0].(*ttwidget.Label)
 			hbox := border[1].(*fyne.Container).Objects
 			iconMain := hbox[0].(*canvas.Image)
 			spacer := hbox[1].(*fyne.Container).Objects[0]
@@ -106,6 +107,7 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 					iconInfo.Hide()
 				}
 				main.SetText(n.locationName)
+				main.SetToolTip("")
 				if !n.isUnknown {
 					prefix.Text = fmt.Sprintf("%.1f", n.systemSecurityValue)
 					prefix.Importance = n.systemSecurityType.ToImportance()
@@ -120,6 +122,7 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 					return a.u.eis.InventoryTypeIcon(n.implantTypeID, app.IconPixelSize)
 				})
 				main.SetText(n.implantTypeName)
+				main.SetToolTip(n.implantTypeDescription)
 				prefix.Hide()
 				spacer.Hide()
 			}

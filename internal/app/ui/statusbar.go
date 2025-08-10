@@ -220,7 +220,11 @@ func (a *statusBar) update() {
 func (a *statusBar) refreshUpdateStatus() {
 	fyne.Do(func() {
 		x := a.u.scs.Summary()
-		a.updateStatus.SetTextAndImportance(x.DisplayShort(), x.Status().ToImportance())
+		status := x.DisplayShort()
+		if a.u.isUpdateDisabled {
+			status += " [disabled]"
+		}
+		a.updateStatus.SetTextAndImportance(status, x.Status().ToImportance())
 	})
 }
 
