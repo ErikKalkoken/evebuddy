@@ -217,7 +217,7 @@ func (a *characterMails) makeFolderTree() *iwidget.Tree[mailFolderNode] {
 func (a *characterMails) update() {
 	characterID := a.u.currentCharacterID()
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterMails)
-	var tree iwidget.TreeNodes[mailFolderNode]
+	var tree iwidget.TreeData[mailFolderNode]
 	folderAll := mailFolderNode{}
 	var err error
 	if hasData {
@@ -263,8 +263,8 @@ func (a *characterMails) update() {
 	}
 }
 
-func (*characterMails) fetchFolders(characterID int32, s services) (iwidget.TreeNodes[mailFolderNode], mailFolderNode, error) {
-	var tree iwidget.TreeNodes[mailFolderNode]
+func (*characterMails) fetchFolders(characterID int32, s services) (iwidget.TreeData[mailFolderNode], mailFolderNode, error) {
+	var tree iwidget.TreeData[mailFolderNode]
 	if characterID == 0 {
 		return tree, emptyFolder, nil
 	}

@@ -137,8 +137,8 @@ func (a *augmentations) update() {
 	})
 }
 
-func (a *augmentations) updateTreeData() (iwidget.TreeNodes[characterImplantsNode], error) {
-	var tree iwidget.TreeNodes[characterImplantsNode]
+func (a *augmentations) updateTreeData() (iwidget.TreeData[characterImplantsNode], error) {
+	var tree iwidget.TreeData[characterImplantsNode]
 	ctx := context.Background()
 	characters, err := a.u.cs.ListCharactersShort(ctx)
 	if err != nil {

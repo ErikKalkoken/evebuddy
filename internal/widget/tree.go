@@ -77,7 +77,7 @@ type Tree[T TreeNode] struct {
 
 	OnSelectedNode func(n T)
 
-	nodes TreeNodes[T]
+	nodes TreeData[T]
 }
 
 // NewTree returns a new [Tree] object.
@@ -86,7 +86,7 @@ func NewTree[T TreeNode](
 	update func(n T, isBranch bool, co fyne.CanvasObject),
 ) *Tree[T] {
 	w := &Tree[T]{
-		nodes: TreeNodes[T]{},
+		nodes: TreeData[T]{},
 	}
 	w.ChildUIDs = func(uid widget.TreeNodeID) []widget.TreeNodeID {
 		return w.nodes.ChildUIDs(uid)
@@ -122,17 +122,17 @@ func (w *Tree[T]) Clear() {
 }
 
 // Set updates all nodes of a tree.
-func (w *Tree[T]) Set(nodes TreeNodes[T]) {
+func (w *Tree[T]) Set(nodes TreeData[T]) {
 	w.nodes = nodes
 	w.Refresh()
 }
 
 // Nodes returns the nodes for a tree.
-func (w *Tree[T]) Nodes() TreeNodes[T] {
+func (w *Tree[T]) Nodes() TreeData[T] {
 	return w.nodes
 }
 
-// TreeNodes holds all the nodes for rendering a [Tree] widget.
+// TreeData holds all the nodes for rendering a [Tree] widget.
 //
 // It is designed to make it easier to construct tree data structures for a widget
 // by hiding some of the complexity behind a simpler API and by performing sanity checks.
@@ -145,7 +145,7 @@ func (w *Tree[T]) Nodes() TreeNodes[T] {
 //
 // The zero value is an empty tree ready to use.
 // This type is not thread safe.
-type TreeNodes[T TreeNode] struct {
+type TreeData[T TreeNode] struct {
 	ids     map[widget.TreeNodeID][]widget.TreeNodeID
 	parents map[widget.TreeNodeID]widget.TreeNodeID
 	nodes   map[widget.TreeNodeID]T
@@ -155,7 +155,7 @@ type TreeNodes[T TreeNode] struct {
 //
 // Use [RootUID] as parentUID for adding nodes at the top level.
 // Nodes will be rendered in the same order as they are added.
-func (t *TreeNodes[T]) Add(parentUID widget.TreeNodeID, node T) (widget.TreeNodeID, error) {
+func (t *TreeData[T]) Add(parentUID widget.TreeNodeID, node T) (widget.TreeNodeID, error) {
 	if t == nil {
 		return RootUID, ErrUndefined
 	}
@@ -182,7 +182,7 @@ func (t *TreeNodes[T]) Add(parentUID widget.TreeNodeID, node T) (widget.TreeNode
 	return uid, nil
 }
 
-func (t *TreeNodes[T]) init() {
+func (t *TreeData[T]) init() {
 	t.ids = make(map[widget.TreeNodeID][]widget.TreeNodeID)
 	t.parents = make(map[widget.TreeNodeID]widget.TreeNodeID)
 	t.nodes = make(map[widget.TreeNodeID]T)
@@ -190,12 +190,12 @@ func (t *TreeNodes[T]) init() {
 
 // All returns an iterator over all nodes.
 // The nodes will be have no specific order.
-func (t TreeNodes[T]) All() iter.Seq[T] {
+func (t TreeData[T]) All() iter.Seq[T] {
 	return maps.Values(t.nodes)
 }
 
 // Clear removes all nodes.
-func (t *TreeNodes[T]) Clear() {
+func (t *TreeData[T]) Clear() {
 	if t == nil {
 		panic(ErrUndefined)
 	}
@@ -203,24 +203,24 @@ func (t *TreeNodes[T]) Clear() {
 }
 
 // ChildUIDs returns the child UIDs of a node.
-func (t TreeNodes[T]) ChildUIDs(uid widget.TreeNodeID) []widget.TreeNodeID {
+func (t TreeData[T]) ChildUIDs(uid widget.TreeNodeID) []widget.TreeNodeID {
 	return t.ids[uid]
 }
 
 // Equal reports whether two set of nodes are equal.
 // Individual nodes are equal when their UIDs are equal.
-func (t TreeNodes[T]) Equal(n TreeNodes[T]) bool {
+func (t TreeData[T]) Equal(n TreeData[T]) bool {
 	return reflect.DeepEqual(t.ids, n.ids)
 }
 
 // IsBranch reports whether a node is a branch.
-func (t TreeNodes[T]) IsBranch(uid widget.TreeNodeID) bool {
+func (t TreeData[T]) IsBranch(uid widget.TreeNodeID) bool {
 	_, found := t.ids[uid]
 	return found
 }
 
 // MustAdd adds a node or panics if the node can not be added.
-func (t *TreeNodes[T]) MustAdd(parentUID widget.TreeNodeID, node T) widget.TreeNodeID {
+func (t *TreeData[T]) MustAdd(parentUID widget.TreeNodeID, node T) widget.TreeNodeID {
 	uid, err := t.Add(parentUID, node)
 	if err != nil {
 		panic(err)
@@ -230,7 +230,7 @@ func (t *TreeNodes[T]) MustAdd(parentUID widget.TreeNodeID, node T) widget.TreeN
 
 // MustNode returns a node or panics if the node does not exist.
 // This method mainly exists to simplify test code and should not be used in production code.
-func (t TreeNodes[T]) MustNode(uid widget.TreeNodeID) T {
+func (t TreeData[T]) MustNode(uid widget.TreeNodeID) T {
 	v, ok := t.Node(uid)
 	if !ok {
 		panic(fmt.Sprintf("node %s does not exist", uid))
@@ -243,19 +243,19 @@ func (t TreeNodes[T]) MustNode(uid widget.TreeNodeID) T {
 // Note that when using this method with a Fyne widget it is possible,
 // that a UID forwarded by the widget no longer exists due to race conditions.
 // It is therefore recommended to always check the ok value.
-func (t TreeNodes[T]) Node(uid widget.TreeNodeID) (node T, ok bool) {
+func (t TreeData[T]) Node(uid widget.TreeNodeID) (node T, ok bool) {
 	node, ok = t.node(uid)
 	return
 }
 
 // node returns a node by UID and reports whether it exists.
-func (t TreeNodes[T]) node(uid widget.TreeNodeID) (T, bool) {
+func (t TreeData[T]) node(uid widget.TreeNodeID) (T, bool) {
 	v, ok := t.nodes[uid]
 	return v, ok
 }
 
 // Path returns the UIDs of nodes between a given node and the root.
-func (t TreeNodes[T]) Path(uid widget.TreeNodeID) []widget.TreeNodeID {
+func (t TreeData[T]) Path(uid widget.TreeNodeID) []widget.TreeNodeID {
 	path := make([]widget.TreeNodeID, 0)
 	for {
 		uid = t.parents[uid]
@@ -269,17 +269,17 @@ func (t TreeNodes[T]) Path(uid widget.TreeNodeID) []widget.TreeNodeID {
 }
 
 // Parent returns the UID of the parent node.
-func (t TreeNodes[T]) Parent(uid widget.TreeNodeID) (parent widget.TreeNodeID, ok bool) {
+func (t TreeData[T]) Parent(uid widget.TreeNodeID) (parent widget.TreeNodeID, ok bool) {
 	parent, ok = t.parents[uid]
 	return
 }
 
 // Size returns the total number of nodes in the tree.
-func (t TreeNodes[T]) Size() int {
+func (t TreeData[T]) Size() int {
 	return len(t.nodes)
 }
 
 // RootSize returns the number of children of the root node.
-func (t TreeNodes[T]) RootSize() int {
+func (t TreeData[T]) RootSize() int {
 	return len(t.ChildUIDs(RootUID))
 }

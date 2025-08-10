@@ -158,8 +158,8 @@ func (a *characterJumpClones) update() {
 	}
 }
 
-func (a *characterJumpClones) updateTreeData() (iwidget.TreeNodes[jumpCloneNode], error) {
-	var tree iwidget.TreeNodes[jumpCloneNode]
+func (a *characterJumpClones) updateTreeData() (iwidget.TreeData[jumpCloneNode], error) {
+	var tree iwidget.TreeData[jumpCloneNode]
 	if !a.u.hasCharacter() {
 		return tree, nil
 	}

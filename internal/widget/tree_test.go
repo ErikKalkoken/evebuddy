@@ -33,7 +33,7 @@ func TestTree_CanCreate(t *testing.T) {
 			co.(*widget.Label).SetText(n.Value)
 		},
 	)
-	var nodes iwidget.TreeNodes[MyNode]
+	var nodes iwidget.TreeData[MyNode]
 	root := nodes.MustAdd(iwidget.RootUID, MyNode{"1", "Root"})
 	nodes.Add(root, MyNode{"2", "Alpha"})
 	nodes.Add(root, MyNode{"3", "Bravo"})
@@ -57,7 +57,7 @@ func TestTree_CanReturnNodes(t *testing.T) {
 			co.(*widget.Label).SetText(n.Value)
 		},
 	)
-	var nodes iwidget.TreeNodes[MyNode]
+	var nodes iwidget.TreeData[MyNode]
 	root := nodes.MustAdd(iwidget.RootUID, MyNode{"1", "Root"})
 	nodes.Add(root, MyNode{"2", "Alpha"})
 	nodes.Add(root, MyNode{"3", "Bravo"})
@@ -78,7 +78,7 @@ func TestTree_CanClear(t *testing.T) {
 			co.(*widget.Label).SetText(n.Value)
 		},
 	)
-	var nodes iwidget.TreeNodes[MyNode]
+	var nodes iwidget.TreeData[MyNode]
 	root := nodes.MustAdd(iwidget.RootUID, MyNode{"1", "Root"})
 	nodes.Add(root, MyNode{"2", "Alpha"})
 	nodes.Add(root, MyNode{"3", "Bravo"})
@@ -106,7 +106,7 @@ func TestTree_OnSelectedNode(t *testing.T) {
 	tree.OnSelectedNode = func(n MyNode) {
 		selected = n
 	}
-	var nodes iwidget.TreeNodes[MyNode]
+	var nodes iwidget.TreeData[MyNode]
 	root := nodes.MustAdd(iwidget.RootUID, MyNode{"1", "Root"})
 	alpha := MyNode{"2", "Alpha"}
 	nodes.Add(root, alpha)
@@ -120,7 +120,7 @@ func TestTree_OnSelectedNode(t *testing.T) {
 
 func TestTreeNodes_Create(t *testing.T) {
 	t.Run("can create tree", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		n1 := tree.MustAdd(iwidget.RootUID, MyNode{"1", "Alpha"})
 		n11 := tree.MustAdd(n1, MyNode{"11", "one"})
 		n12 := tree.MustAdd(n1, MyNode{"12", "two"})
@@ -148,7 +148,7 @@ func TestTreeNodes_Create(t *testing.T) {
 
 func TestTreeNodes_Add(t *testing.T) {
 	t.Run("can add a node", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		n := MyNode{"1", "Alpha"}
 		uid, err := tree.Add(iwidget.RootUID, n)
 		if assert.NoError(t, err) {
@@ -156,12 +156,12 @@ func TestTreeNodes_Add(t *testing.T) {
 		}
 	})
 	t.Run("should return error when node parent UID does not exist", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		_, err := tree.Add("invalid", MyNode{"1", "Alpha"})
 		assert.Error(t, err)
 	})
 	t.Run("can add a node to zero value", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		n := MyNode{"1", "Alpha"}
 		uid, err := tree.Add(iwidget.RootUID, n)
 		if assert.NoError(t, err) {
@@ -169,7 +169,7 @@ func TestTreeNodes_Add(t *testing.T) {
 		}
 	})
 	t.Run("should return error when trying to add to a nil pointer", func(t *testing.T) {
-		var tree *iwidget.TreeNodes[MyNode]
+		var tree *iwidget.TreeData[MyNode]
 		_, err := tree.Add(iwidget.RootUID, MyNode{"1", "Alpha"})
 		assert.ErrorIs(t, err, iwidget.ErrUndefined)
 	})
@@ -177,37 +177,37 @@ func TestTreeNodes_Add(t *testing.T) {
 
 func TestTreeNodes_MustAdd(t *testing.T) {
 	t.Run("can add a node", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		n := MyNode{"1", "Alpha"}
 		uid := tree.MustAdd(iwidget.RootUID, n)
 		assert.Equal(t, n, tree.MustNode(uid))
 	})
 	t.Run("should return error when node UID already exists", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		tree.MustAdd(iwidget.RootUID, MyNode{"1", "Alpha"})
 		_, err := tree.Add(iwidget.RootUID, MyNode{"1", "Bravo"})
 		assert.Error(t, err)
 	})
 	t.Run("should return error when node UID is root", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		tree.MustAdd(iwidget.RootUID, MyNode{"1", "Alpha"})
 		_, err := tree.Add(iwidget.RootUID, MyNode{iwidget.RootUID, "Bravo"})
 		assert.Error(t, err)
 	})
 	t.Run("should panic when node node can not be added", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		assert.Panics(t, func() {
 			tree.MustAdd("invalid", MyNode{"1", "Alpha"})
 		})
 	})
 	t.Run("can add a node to zero value", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		n := MyNode{"1", "Alpha"}
 		uid := tree.MustAdd(iwidget.RootUID, n)
 		assert.Equal(t, n, tree.MustNode(uid))
 	})
 	t.Run("should panic when object is invalid", func(t *testing.T) {
-		var tree *iwidget.TreeNodes[MyNode]
+		var tree *iwidget.TreeData[MyNode]
 		assert.PanicsWithError(t, iwidget.ErrUndefined.Error(), func() {
 			tree.MustAdd(iwidget.RootUID, MyNode{"1", "Alpha"})
 		})
@@ -216,7 +216,7 @@ func TestTreeNodes_MustAdd(t *testing.T) {
 
 func TestTreeNodes_Node(t *testing.T) {
 	t.Run("should return node when it exists", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		n1 := MyNode{"1", "Alpha"}
 		uid := tree.MustAdd(iwidget.RootUID, n1)
 		n2, ok := tree.Node(uid)
@@ -225,7 +225,7 @@ func TestTreeNodes_Node(t *testing.T) {
 
 	})
 	t.Run("should report when node does not exist", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		_, ok := tree.Node("invalid")
 		assert.False(t, ok)
 	})
@@ -233,14 +233,14 @@ func TestTreeNodes_Node(t *testing.T) {
 
 func TestTreeNodes_MustNode(t *testing.T) {
 	t.Run("can return a node", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		n1 := MyNode{"1", "Alpha"}
 		uid := tree.MustAdd(iwidget.RootUID, n1)
 		n2 := tree.MustNode(uid)
 		assert.Equal(t, n1, n2)
 	})
 	t.Run("should panic when node does not exist", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		assert.Panics(t, func() {
 			tree.MustNode("invalid")
 
@@ -250,7 +250,7 @@ func TestTreeNodes_MustNode(t *testing.T) {
 
 func TestTreeNodes_Path(t *testing.T) {
 	t.Run("should return path for an existing node", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		uid1 := tree.MustAdd(iwidget.RootUID, MyNode{"1", "Alpha"})
 		uid2 := tree.MustAdd(uid1, MyNode{"2", "Bravo"})
 		uid3 := tree.MustAdd(uid2, MyNode{"3", "Charlie"})
@@ -258,12 +258,12 @@ func TestTreeNodes_Path(t *testing.T) {
 		assert.Equal(t, []widget.TreeNodeID{uid1, uid2}, p)
 	})
 	t.Run("should return empty array for root node", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		p := tree.Path(iwidget.RootUID)
 		assert.Equal(t, []widget.TreeNodeID{}, p)
 	})
 	t.Run("should return empty array for a top node", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		uid := tree.MustAdd(iwidget.RootUID, MyNode{"1", "Alpha"})
 		p := tree.Path(uid)
 		assert.Equal(t, []widget.TreeNodeID{}, p)
@@ -272,7 +272,7 @@ func TestTreeNodes_Path(t *testing.T) {
 
 func TestTreeNodes_Parent(t *testing.T) {
 	t.Run("can return parent of a top node", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		uid := tree.MustAdd(iwidget.RootUID, MyNode{"1", "Alpha"})
 		p, ok := tree.Parent(uid)
 		assert.True(t, ok)
@@ -280,7 +280,7 @@ func TestTreeNodes_Parent(t *testing.T) {
 	})
 
 	t.Run("can return parent of a random node", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		uid1 := tree.MustAdd(iwidget.RootUID, MyNode{"1", "Alpha"})
 		uid2 := tree.MustAdd(uid1, MyNode{"2", "Bravo"})
 		p, ok := tree.Parent(uid2)
@@ -288,7 +288,7 @@ func TestTreeNodes_Parent(t *testing.T) {
 		assert.Equal(t, uid1, p)
 	})
 	t.Run("can report when a parent does not exist", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		_, ok := tree.Parent("1")
 		assert.False(t, ok)
 	})
@@ -296,13 +296,13 @@ func TestTreeNodes_Parent(t *testing.T) {
 
 func TestTreeNodes_Size(t *testing.T) {
 	t.Run("can return size of tree with nodes", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		tree.MustAdd(iwidget.RootUID, MyNode{"1", "Alpha"})
 		got := tree.Size()
 		assert.Equal(t, 1, got)
 	})
 	t.Run("can return size of zero tree", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		got := tree.Size()
 		assert.Equal(t, 0, got)
 	})
@@ -310,18 +310,18 @@ func TestTreeNodes_Size(t *testing.T) {
 
 func TestTreeNodes_Clear(t *testing.T) {
 	t.Run("can clear tree with nodes", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		tree.MustAdd(iwidget.RootUID, MyNode{"1", "Alpha"})
 		tree.Clear()
 		assert.Equal(t, 0, tree.Size())
 	})
 	t.Run("can clear empty tree", func(t *testing.T) {
-		var tree iwidget.TreeNodes[MyNode]
+		var tree iwidget.TreeData[MyNode]
 		tree.Clear()
 		assert.Equal(t, 0, tree.Size())
 	})
 	t.Run("panics with specific error when object is undefined", func(t *testing.T) {
-		var tree *iwidget.TreeNodes[MyNode]
+		var tree *iwidget.TreeData[MyNode]
 		assert.PanicsWithError(t, iwidget.ErrUndefined.Error(), func() {
 			tree.Clear()
 		})
@@ -330,7 +330,7 @@ func TestTreeNodes_Clear(t *testing.T) {
 
 func TestTreeNodes_All(t *testing.T) {
 	t.Run("returns list of all nodes", func(t *testing.T) {
-		var nodes iwidget.TreeNodes[MyNode]
+		var nodes iwidget.TreeData[MyNode]
 		root := MyNode{"1", "Root"}
 		nodes.MustAdd(iwidget.RootUID, root)
 		alpha := MyNode{"2", "Alpha"}
@@ -345,7 +345,7 @@ func TestTreeNodes_All(t *testing.T) {
 
 func TestTreeNodes_Equal(t *testing.T) {
 	t.Run("report equal", func(t *testing.T) {
-		var n1, n2 iwidget.TreeNodes[MyNode]
+		var n1, n2 iwidget.TreeData[MyNode]
 		root1 := n1.MustAdd(iwidget.RootUID, MyNode{"1", "Root"})
 		n1.Add(root1, MyNode{"2", "Alpha"})
 		n1.Add(root1, MyNode{"3", "Bravo"})
@@ -355,7 +355,7 @@ func TestTreeNodes_Equal(t *testing.T) {
 		assert.True(t, n1.Equal(n2))
 	})
 	t.Run("report not equal", func(t *testing.T) {
-		var n1, n2 iwidget.TreeNodes[MyNode]
+		var n1, n2 iwidget.TreeData[MyNode]
 		root1 := n1.MustAdd(iwidget.RootUID, MyNode{"1", "Root"})
 		n1.Add(root1, MyNode{"2", "Alpha"})
 		n1.Add(root1, MyNode{"3", "Bravo"})
