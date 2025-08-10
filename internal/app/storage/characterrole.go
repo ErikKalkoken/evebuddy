@@ -88,9 +88,7 @@ func (st *Storage) ListCharacterRoles(ctx context.Context, characterID int32) (s
 }
 
 func (st *Storage) UpdateCharacterRoles(ctx context.Context, characterID int32, roles set.Set[app.Role]) error {
-	incoming := set.Collect(xiter.Map(roles.All(), func(r app.Role) string {
-		return role2String[r]
-	}))
+	incoming := roles2names(roles)
 	s, err := st.qRO.ListCharacterRoles(ctx, int64(characterID))
 	if err != nil {
 		return err
@@ -117,4 +115,10 @@ func (st *Storage) UpdateCharacterRoles(ctx context.Context, characterID int32, 
 		}
 	}
 	return nil
+}
+
+func roles2names(roles set.Set[app.Role]) set.Set[string] {
+	return set.Collect(xiter.Map(roles.All(), func(r app.Role) string {
+		return role2String[r]
+	}))
 }

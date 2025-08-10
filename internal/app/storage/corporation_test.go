@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 func TestCorporation(t *testing.T) {
@@ -70,6 +71,59 @@ func TestCorporation(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c2, c1)
+		}
+	})
+}
+
+func TestListCorporations(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("can list corporation IDs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCorporation()
+		c2 := factory.CreateCorporation()
+		// when
+		got, err := st.ListCorporationIDs(ctx)
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of(c1.ID, c2.ID)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		}
+	})
+	t.Run("can list corporations in short form", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCorporation()
+		c2 := factory.CreateCorporation()
+		// when
+		xx, err := st.ListCorporationsShort(ctx)
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of(c1.ID, c2.ID)
+			got := set.Collect(xiter.MapSlice(xx, func(x *app.EntityShort[int32]) int32 {
+				return x.ID
+			}))
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		}
+	})
+	t.Run("can list priviledged corporations", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		corp1 := factory.CreateCorporation(c.EveCharacter.Corporation.ID)
+		factory.SetCharacterRoles(c.ID, set.Of(app.RoleBrandManager))
+		factory.CreateCorporation()
+		// when
+		xx, err := st.ListPrivilegedCorporationsShort(ctx, set.Of(app.RoleBrandManager, app.RoleAccountant))
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of(corp1.ID)
+			got := set.Collect(xiter.MapSlice(xx, func(x *app.EntityShort[int32]) int32 {
+				return x.ID
+			}))
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 }

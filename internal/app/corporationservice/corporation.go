@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 type CharacterService interface {
@@ -101,9 +102,56 @@ func (s *CorporationService) HasCorporation(ctx context.Context, corporationID i
 	return ids.Contains(corporationID), nil
 }
 
+// ListCorporationsShort returns all corporations in short form.
+func (s *CorporationService) ListCorporationsShort(ctx context.Context) ([]*app.EntityShort[int32], error) {
+	return s.st.ListCorporationsShort(ctx)
+}
+
+// ListPrivilegedCorporations returns all corporations with privileged access.
+func (s *CorporationService) ListPrivilegedCorporations(ctx context.Context) ([]*app.EntityShort[int32], error) {
+	var roles set.Set[app.Role]
+	for _, s := range []app.CorporationSection{app.CorporationSectionWalletJournal(app.Division1)} {
+		roles.AddSeq(s.Roles().All())
+	}
+	return s.st.ListPrivilegedCorporationsShort(ctx, roles)
+}
+
 // ListCorporationIDs returns all corporation IDs.
 func (s *CorporationService) ListCorporationIDs(ctx context.Context) (set.Set[int32], error) {
 	return s.st.ListCorporationIDs(ctx)
+}
+
+// RemoveStaleCorporations removes all corporations which no longer have a user's character as member.
+// And report whether any corporation was removed.
+func (s *CorporationService) RemoveStaleCorporations(ctx context.Context) (bool, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("RemoveStaleCorporations: %w", err)
+	}
+	all, err := s.ListCorporationIDs(ctx)
+	if err != nil {
+		return false, wrapErr(err)
+	}
+	if all.Size() == 0 {
+		return false, nil
+	}
+	cc, err := s.st.ListCharacterCorporations(ctx)
+	if err != nil {
+		return false, wrapErr(err)
+	}
+	current := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort[int32]) int32 {
+		return x.ID
+	}))
+	stale := set.Difference(all, current)
+	if stale.Size() == 0 {
+		return false, nil
+	}
+	for id := range stale.All() {
+		if err := s.st.DeleteCorporation(ctx, id); err != nil {
+			return false, wrapErr(err)
+		}
+	}
+	slog.Info("Deleted stale corporations", "corporationIDs", stale)
+	return true, nil
 }
 
 func (s *CorporationService) updateDivisionsESI(ctx context.Context, arg app.CorporationUpdateSectionParams) (bool, error) {

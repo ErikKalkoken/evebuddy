@@ -18,11 +18,12 @@ import (
 )
 
 type CharacterServiceFake struct {
-	Token *app.CharacterToken
-	Error error
+	Token          *app.CharacterToken
+	CorporationIDs set.Set[int32]
+	Error          error
 }
 
-func (s CharacterServiceFake) ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, roles set.Set[app.Role], scopes set.Set[string]) (*app.CharacterToken, error) {
+func (s *CharacterServiceFake) ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, roles set.Set[app.Role], scopes set.Set[string]) (*app.CharacterToken, error) {
 	return s.Token, s.Error
 }
 
@@ -54,7 +55,9 @@ func TestUpdateDivisionsESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{
+			Token: &app.CharacterToken{AccessToken: "accessToken"},
+		}})
 		c := factory.CreateCorporation()
 		data := map[string]any{
 			"hangar": []map[string]any{

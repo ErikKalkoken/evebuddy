@@ -1,6 +1,7 @@
 package app
 
 import (
+	"math"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -41,11 +42,25 @@ type EveCharacter struct {
 	Title          string
 }
 
+func (ec EveCharacter) AllianceID() int32 {
+	if !ec.HasAlliance() {
+		return 0
+	}
+	return ec.Alliance.ID
+}
+
 func (ec EveCharacter) AllianceName() string {
 	if !ec.HasAlliance() {
 		return ""
 	}
 	return ec.Alliance.Name
+}
+
+func (ec EveCharacter) FactionID() int32 {
+	if !ec.HasFaction() {
+		return 0
+	}
+	return ec.Faction.ID
 }
 
 func (ec EveCharacter) FactionName() string {
@@ -80,6 +95,22 @@ func (ec EveCharacter) ToEveEntity() *EveEntity {
 	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityCharacter}
 }
 
+// Equal reports whether two characters are equal.
+// Two characters must have the same values in all fields to be equal.
+func (ec EveCharacter) Equal(other EveCharacter) bool {
+	return ec.ID == other.ID &&
+		ec.AllianceID() == other.AllianceID() &&
+		ec.Birthday.Equal(other.Birthday) &&
+		ec.Corporation.ID == other.Corporation.ID &&
+		ec.Description == other.Description &&
+		ec.FactionID() == other.FactionID() &&
+		ec.Gender == other.Gender &&
+		ec.Name == other.Name &&
+		ec.Race.ID == other.Race.ID &&
+		math.Abs(ec.SecurityStatus-other.SecurityStatus) < 0.01 &&
+		ec.Title == other.Title
+}
+
 // EveCorporation is a corporation in Eve Online.
 type EveCorporation struct {
 	Alliance    *EveEntity
@@ -100,6 +131,34 @@ type EveCorporation struct {
 	Timestamp   time.Time
 }
 
+func (ec EveCorporation) AllianceID() int32 {
+	if !ec.HasAlliance() {
+		return 0
+	}
+	return ec.Alliance.ID
+}
+
+func (ec EveCorporation) CeoID() int32 {
+	if ec.Ceo == nil {
+		return 0
+	}
+	return ec.Ceo.ID
+}
+
+func (ec EveCorporation) CreatorID() int32 {
+	if ec.Creator == nil {
+		return 0
+	}
+	return ec.Creator.ID
+}
+
+func (ec EveCorporation) FactionID() int32 {
+	if !ec.HasFaction() {
+		return 0
+	}
+	return ec.Faction.ID
+}
+
 func (ec EveCorporation) HasAlliance() bool {
 	return ec.Alliance != nil
 }
@@ -108,12 +167,35 @@ func (ec EveCorporation) HasFaction() bool {
 	return ec.Faction != nil
 }
 
+func (ec EveCorporation) HomeStationID() int32 {
+	if ec.HomeStation == nil {
+		return 0
+	}
+	return ec.HomeStation.ID
+}
 func (ec EveCorporation) DescriptionPlain() string {
 	return evehtml.ToPlain(ec.Description)
 }
 
 func (ec EveCorporation) ToEveEntity() *EveEntity {
 	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityCorporation}
+}
+
+// Equal reports whether two characters are equal.
+// Two characters must have the same values in all fields to be equal.
+func (ec EveCorporation) Equal(other EveCorporation) bool {
+	return ec.ID == other.ID &&
+		ec.AllianceID() == other.AllianceID() &&
+		ec.CeoID() == other.CeoID() &&
+		ec.CreatorID() == other.CreatorID() &&
+		ec.DateFounded.ValueOrZero().Equal(other.DateFounded.ValueOrZero()) &&
+		ec.Description == other.Description &&
+		ec.FactionID() == other.FactionID() &&
+		ec.HomeStationID() == other.HomeStationID() &&
+		ec.MemberCount == other.MemberCount &&
+		ec.Name == other.Name &&
+		ec.Shares == other.Shares &&
+		math.Abs(float64(ec.TaxRate-other.TaxRate)) < 0.01
 }
 
 // TODO: Add race alliance

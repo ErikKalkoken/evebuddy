@@ -150,34 +150,47 @@ func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Contex
 }
 
 // UpdateAllCorporationsESI updates all known corporations from ESI.
-func (s *EveUniverseService) UpdateAllCorporationsESI(ctx context.Context) error {
+func (s *EveUniverseService) UpdateAllCorporationsESI(ctx context.Context) (set.Set[int32], error) {
+	var changed set.Set[int32]
 	ids, err := s.st.ListEveCorporationIDs(ctx)
 	if err != nil {
-		return err
+		return changed, err
 	}
 	if ids.Size() == 0 {
-		return nil
+		return changed, nil
 	}
+	ids2 := ids.Slice()
+	hasChanged := make([]bool, len(ids2))
 	g := new(errgroup.Group)
-	for id := range ids.All() {
+	for i, id := range ids2 {
 		g.Go(func() error {
-			c, err := s.UpdateOrCreateCorporationFromESI(ctx, id)
+			c1, err := s.GetEveCorporation(ctx, id)
+			if err != nil {
+				return err
+			}
+			c2, err := s.UpdateOrCreateCorporationFromESI(ctx, id)
 			if err != nil {
 				return err
 			}
 			_, err = s.st.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
 				ID:       id,
 				Category: app.EveEntityCorporation,
-				Name:     c.Name,
+				Name:     c2.Name,
 			})
+			hasChanged[i] = !c1.Equal(*c2)
 			return err
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return err
+		return changed, err
 	}
-	slog.Info("Finished updating eve corporations", "count", ids.Size())
-	return nil
+	for i, id := range ids2 {
+		if hasChanged[i] {
+			changed.Add(id)
+		}
+	}
+	slog.Info("Finished updating eve corporations", "count", ids.Size(), "changed", changed)
+	return changed, nil
 }
 
 // RandomizeAllCorporationNames randomizes the names of all characters.

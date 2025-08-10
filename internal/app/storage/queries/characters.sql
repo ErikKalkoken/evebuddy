@@ -17,14 +17,12 @@ VALUES
     (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: DeleteCharacter :exec
-DELETE FROM
-    characters
+DELETE FROM characters
 WHERE
     id = ?;
 
 -- name: DisableAllTrainingWatchers :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     is_training_watched = FALSE;
 
@@ -60,8 +58,8 @@ WHERE
     id = ?;
 
 -- name: ListCharacters :many
-SELECT
-    DISTINCT sqlc.embed(cc),
+SELECT DISTINCT
+    sqlc.embed(cc),
     sqlc.embed(ec),
     sqlc.embed(eec),
     sqlc.embed(er),
@@ -83,14 +81,14 @@ ORDER BY
     ec.name;
 
 -- name: ListCharactersShort :many
-SELECT
-    DISTINCT eve_characters.id,
-    eve_characters.name
+SELECT DISTINCT
+    ec.id,
+    ec.name
 FROM
-    characters
-    JOIN eve_characters ON eve_characters.id = characters.id
+    characters c
+    JOIN eve_characters ec ON ec.id = c.id
 ORDER BY
-    eve_characters.name;
+    ec.name;
 
 -- name: ListCharacterIDs :many
 SELECT
@@ -98,57 +96,59 @@ SELECT
 FROM
     characters;
 
+-- name: ListCharacterCorporations :many
+SELECT
+    ee.id,
+    ee.name
+FROM
+    characters ch
+    JOIN eve_characters ec ON ec.id = ch.id
+    JOIN eve_entities ee ON ee.id = ec.corporation_id;
+
 -- name: UpdateCharacterLastCloneJump :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     last_clone_jump_at = ?
 WHERE
     id = ?;
 
 -- name: UpdateCharacterHomeId :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     home_id = ?
 WHERE
     id = ?;
 
 -- name: UpdateCharacterIsTrainingWatched :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     is_training_watched = ?
 WHERE
     id = ?;
 
 -- name: UpdateCharacterLastLoginAt :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     last_login_at = ?
 WHERE
     id = ?;
 
 -- name: UpdateCharacterLocationID :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     location_id = ?
 WHERE
     id = ?;
 
 -- name: UpdateCharacterShipID :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     ship_id = ?
 WHERE
     id = ?;
 
 -- name: UpdateCharacterSP :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     total_sp = ?,
     unallocated_sp = ?
@@ -156,16 +156,14 @@ WHERE
     id = ?;
 
 -- name: UpdateCharacterWalletBalance :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     wallet_balance = ?
 WHERE
     id = ?;
 
 -- name: UpdateCharacterAssetValue :exec
-UPDATE
-    characters
+UPDATE characters
 SET
     asset_value = ?
 WHERE

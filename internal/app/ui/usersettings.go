@@ -130,20 +130,31 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		getter:       a.u.settings.SysTrayEnabled,
 		onChanged:    a.u.settings.SetSysTrayEnabled,
 	})
-
 	if a.u.isDesktop {
 		items = append(items, sysTray)
 	}
+
 	preferMarketTab := NewSettingItemSwitch(SettingItemSwitch{
 		label:     "Prefer market tab",
 		hint:      "Show market tab first for tradeable items",
 		getter:    a.u.settings.PreferMarketTab,
 		onChanged: a.u.settings.SetPreferMarketTab,
 	})
+	hideLimitedCorporations := NewSettingItemSwitch(SettingItemSwitch{
+		defaultValue: a.u.settings.HideLimitedCorporationsDefault(),
+		label:        "Hide limited corporations",
+		hint:         "Hide corporations with no privileged access, e.g. corporation wallet",
+		getter:       a.u.settings.HideLimitedCorporations,
+		onChanged: func(enabled bool) {
+			a.u.settings.SetHideLimitedCorporations(enabled)
+			a.u.updateStatus()
+		},
+	})
 
 	items = slices.Concat(items, []SettingItem{
 		NewSettingItemHeading("UI"),
 		preferMarketTab,
+		hideLimitedCorporations,
 	})
 
 	colorTheme := NewSettingItemOptions(SettingItemOptions{
@@ -282,6 +293,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 			disableDPIDetection.Reset()
 			fyneScale.Reset()
 			preferMarketTab.Reset()
+			hideLimitedCorporations.Reset()
 			maxMail.Reset()
 			maxWallet.Reset()
 		},
@@ -358,13 +370,13 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 			Action: func() {
 				pg := kxmodal.NewProgressInfinite("Restore names", "Please wait...", func() error {
 					ctx := context.Background()
-					if err := a.u.eus.UpdateAllCharactersESI(ctx); err != nil {
+					if _, err := a.u.eus.UpdateAllCharactersESI(ctx); err != nil {
 						return err
 					}
-					if err := a.u.eus.UpdateAllCorporationsESI(ctx); err != nil {
+					if _, err := a.u.eus.UpdateAllCorporationsESI(ctx); err != nil {
 						return err
 					}
-					if err := a.u.eus.UpdateAllEntitiesESI(ctx); err != nil {
+					if _, err := a.u.eus.UpdateAllEntitiesESI(ctx); err != nil {
 						return err
 					}
 					return nil
