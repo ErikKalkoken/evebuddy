@@ -288,7 +288,7 @@ func (*characterMails) fetchFolders(characterID int32, s services) (iwidget.Tree
 		ObjID:       app.MailLabelUnread,
 		UnreadCount: totalUnreadCount,
 	}
-	tree.MustAdd(iwidget.RootUID, folderUnread)
+	tree.MustAdd(iwidget.TreeRootID, folderUnread)
 
 	// Add default folders
 	defaultFolders := []struct {
@@ -314,7 +314,7 @@ func (*characterMails) fetchFolders(characterID int32, s services) (iwidget.Tree
 			ObjID:       o.labelID,
 			UnreadCount: u,
 		}
-		tree.MustAdd(iwidget.RootUID, n)
+		tree.MustAdd(iwidget.TreeRootID, n)
 	}
 
 	// Add custom labels
@@ -329,7 +329,7 @@ func (*characterMails) fetchFolders(characterID int32, s services) (iwidget.Tree
 			Name:        "Labels",
 			UnreadCount: totalLabelsUnreadCount,
 		}
-		uid := tree.MustAdd(iwidget.RootUID, n)
+		uid := tree.MustAdd(iwidget.TreeRootID, n)
 		for _, l := range labels {
 			u, ok := labelUnreadCounts[l.LabelID]
 			if !ok {
@@ -359,7 +359,7 @@ func (*characterMails) fetchFolders(characterID int32, s services) (iwidget.Tree
 			Name:        "Mailing Lists",
 			UnreadCount: totalListUnreadCount,
 		}
-		uid := tree.MustAdd(iwidget.RootUID, n)
+		uid := tree.MustAdd(iwidget.TreeRootID, n)
 		for _, l := range lists {
 			u, ok := listUnreadCounts[l.ID]
 			if !ok {
@@ -385,7 +385,7 @@ func (*characterMails) fetchFolders(characterID int32, s services) (iwidget.Tree
 		ObjID:       app.MailLabelAll,
 		UnreadCount: totalUnreadCount,
 	}
-	tree.MustAdd(iwidget.RootUID, folderAll)
+	tree.MustAdd(iwidget.TreeRootID, folderAll)
 	return tree, folderAll, nil
 }
 

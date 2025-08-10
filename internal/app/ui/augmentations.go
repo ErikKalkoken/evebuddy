@@ -15,16 +15,20 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
 type characterImplantsNode struct {
-	implantCount           int
-	implantTypeID          int32
-	implantTypeName        string
-	implantTypeDescription string
 	characterID            int32
 	characterName          string
+	implantCount           int
+	implantTypeDescription string
+	implantTypeID          int32
+	implantTypeName        string
+	tags                   set.Set[string]
 }
 
 func (n characterImplantsNode) IsRoot() bool {
@@ -41,9 +45,11 @@ func (n characterImplantsNode) UID() widget.TreeNodeID {
 type augmentations struct {
 	widget.BaseWidget
 
-	top  *widget.Label
-	tree *iwidget.Tree[characterImplantsNode]
-	u    *baseUI
+	selectTag *kxwidget.FilterChipSelect
+	top       *widget.Label
+	treeData  iwidget.TreeData[characterImplantsNode]
+	tree      *iwidget.Tree[characterImplantsNode]
+	u         *baseUI
 }
 
 func newAugmentations(u *baseUI) *augmentations {
@@ -55,11 +61,15 @@ func newAugmentations(u *baseUI) *augmentations {
 	}
 	a.ExtendBaseWidget(a)
 	a.tree = a.makeTree()
+	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
+		a.filterTree()
+	})
 	return a
 }
 
 func (a *augmentations) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(a.top, nil, nil, nil, a.tree)
+	filter := container.NewHScroll(container.NewHBox(a.selectTag))
+	c := container.NewBorder(container.NewVBox(a.top, filter), nil, nil, nil, a.tree)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -119,6 +129,36 @@ func (a *augmentations) makeTree() *iwidget.Tree[characterImplantsNode] {
 	return t
 }
 
+func (a *augmentations) filterTree() {
+	if a.treeData.Size() == 0 {
+		a.tree.Set(a.treeData)
+		return
+	}
+	td := a.treeData.Clone()
+	characters, err := td.Children(iwidget.TreeRootID)
+	if err != nil {
+		panic(err)
+	}
+	if x := a.selectTag.Selected; x != "" {
+		for _, c := range characters {
+			if !c.tags.Contains(x) {
+				err := td.Remove(c.UID())
+				if err != nil {
+					panic("remove failed " + err.Error())
+				}
+			}
+		}
+	}
+	characters, err = td.Children(iwidget.TreeRootID)
+	if err != nil {
+		panic("children failed " + err.Error())
+	}
+	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(characters, func(n characterImplantsNode) set.Set[string] {
+		return n.tags
+	})...).All()))
+	a.tree.Set(td)
+}
+
 func (a *augmentations) update() {
 	td, err := a.updateTreeData()
 	if err != nil {
@@ -131,8 +171,9 @@ func (a *augmentations) update() {
 		})
 		return
 	}
+	a.treeData = td
 	fyne.Do(func() {
-		a.tree.Set(td)
+		a.filterTree()
 		a.top.Hide()
 	})
 }
@@ -166,12 +207,17 @@ func (a *augmentations) updateTreeData() (iwidget.TreeData[characterImplantsNode
 		})
 	}
 	for _, c := range characters {
+		tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
+		if err != nil {
+			return tree, err
+		}
 		n := characterImplantsNode{
 			characterID:   c.ID,
 			characterName: c.Name,
 			implantCount:  len(m[c.ID]),
+			tags:          tags,
 		}
-		uid := tree.MustAdd(iwidget.RootUID, n)
+		uid := tree.MustAdd(iwidget.TreeRootID, n)
 		for _, o := range m[c.ID] {
 			n := characterImplantsNode{
 				implantTypeDescription: o.EveType.DescriptionPlain(),

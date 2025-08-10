@@ -384,7 +384,7 @@ func (a *gameSearch) doSearch2(search string) {
 		}
 		categoriesFound++
 		n := resultNode{category: c, count: len(results[c])}
-		parentUID, err := t.Add(iwidget.RootUID, n)
+		parentUID, err := t.Add(iwidget.TreeRootID, n)
 		if err != nil {
 			slog.Error("game search: adding node", "node", n)
 			continue

@@ -299,7 +299,7 @@ func makeLocationTreeData(locationNodes []assetcollection.LocationNode, characte
 		} else {
 			location.isUnknown = true
 		}
-		locationUID := tree.MustAdd(iwidget.RootUID, location)
+		locationUID := tree.MustAdd(iwidget.TreeRootID, location)
 		topAssets := ln.Nodes()
 		slices.SortFunc(topAssets, func(a, b assetcollection.AssetNode) int {
 			return cmp.Compare(a.Asset.DisplayName(), b.Asset.DisplayName())

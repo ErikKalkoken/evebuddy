@@ -151,7 +151,7 @@ func (a *characterJumpClones) update() {
 			}))
 		})
 	} else {
-		a.refreshTop(td.RootSize())
+		a.refreshTop(td.RootChildrenCount())
 		fyne.Do(func() {
 			a.tree.Set(td)
 		})
@@ -185,7 +185,7 @@ func (a *characterJumpClones) updateTreeData() (iwidget.TreeData[jumpCloneNode],
 			n.locationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
 			n.isUnknown = true
 		}
-		uid := tree.MustAdd(iwidget.RootUID, n)
+		uid := tree.MustAdd(iwidget.TreeRootID, n)
 		for _, i := range c.Implants {
 			n := jumpCloneNode{
 				implantTypeDescription: i.EveType.DescriptionPlain(),
@@ -271,7 +271,7 @@ func (a *characterJumpClones) startUpdateTicker() {
 			<-ticker.C
 			var c int
 			fyne.DoAndWait(func() {
-				c = a.tree.Nodes().RootSize()
+				c = a.tree.Nodes().RootChildrenCount()
 			})
 			a.refreshTop(c)
 		}
