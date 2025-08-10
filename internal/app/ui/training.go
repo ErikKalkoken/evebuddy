@@ -23,7 +23,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -397,9 +396,7 @@ func (*training) fetchRows(s services) ([]trainingRow, error) {
 		if err != nil {
 			return nil, err
 		}
-		r.tags = set.Collect(xiter.MapSlice(tags, func(x *app.CharacterTag) string {
-			return x.Name
-		}))
+		r.tags = tags
 		queue := app.NewCharacterSkillqueue()
 		if err := queue.Update(ctx, s.cs, c.ID); err != nil {
 			return nil, err

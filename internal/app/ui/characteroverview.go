@@ -21,7 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -338,9 +337,7 @@ func (*characterOverview) fetchRows(s services) ([]characterOverviewRow, overvie
 		if err != nil {
 			return nil, totals, err
 		}
-		cc[i].tags = set.Collect(xiter.MapSlice(tags, func(x *app.CharacterTag) string {
-			return x.Name
-		}))
+		cc[i].tags = tags
 	}
 	return cc, totals, nil
 }

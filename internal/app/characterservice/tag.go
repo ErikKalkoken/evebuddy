@@ -6,6 +6,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -57,6 +58,13 @@ func (s *CharacterService) ListCharactersForTag(ctx context.Context, tagID int64
 	return
 }
 
-func (s *CharacterService) ListTagsForCharacter(ctx context.Context, characterID int32) ([]*app.CharacterTag, error) {
-	return s.st.ListCharacterTagsForCharacter(ctx, characterID)
+func (s *CharacterService) ListTagsForCharacter(ctx context.Context, characterID int32) (set.Set[string], error) {
+	oo, err := s.st.ListCharacterTagsForCharacter(ctx, characterID)
+	if err != nil {
+		return set.Set[string]{}, err
+	}
+	tags := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterTag) string {
+		return x.Name
+	}))
+	return tags, nil
 }
