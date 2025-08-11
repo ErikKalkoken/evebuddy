@@ -17,6 +17,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -457,13 +458,15 @@ func (a *training) showTrainingQueueWindow(r trainingRow) {
 			onClosed()
 		}
 		sq.stop()
+		fynetooltip.DestroyWindowToolTipLayer(w.Canvas())
 	})
 	subTitle := fmt.Sprintf("Skill Queue for %s", r.characterName)
 	setDetailWindow(detailWindowParams{
-		title:   subTitle,
-		minSize: fyne.NewSize(800, 450),
-		content: sq,
-		window:  w,
+		content:        sq,
+		enableTooltips: true,
+		minSize:        fyne.NewSize(800, 450),
+		title:          subTitle,
+		window:         w,
 	})
 	w.Show()
 }

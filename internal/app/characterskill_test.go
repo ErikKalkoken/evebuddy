@@ -6,8 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
 func TestCharacterSkillqueue(t *testing.T) {
@@ -54,6 +55,25 @@ func TestCharacterSkillqueue(t *testing.T) {
 		})
 		item1.StartDate = time.Time{}
 		item1.FinishDate = time.Time{}
+		cs := MyCS{items: []*app.CharacterSkillqueueItem{item1}}
+		err := sq.Update(ctx, cs, characterID)
+		if assert.NoError(t, err) {
+			assert.Equal(t, characterID, sq.CharacterID())
+			assert.Equal(t, 1, sq.Size())
+			assert.Nil(t, sq.Active())
+			assert.Equal(t, item1, sq.Item(0))
+			assert.True(t, sq.CompletionP().IsEmpty())
+			assert.False(t, sq.IsActive())
+			assert.True(t, sq.RemainingCount().IsEmpty())
+		}
+	})
+	t.Run("can return information about an completed skill queue", func(t *testing.T) {
+		sq := app.NewCharacterSkillqueue()
+		item1 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
+			QueuePosition: 1,
+			StartDate:     time.Now().Add(-20 * time.Hour),
+			FinishDate:    time.Now().Add(-2 * time.Hour),
+		})
 		cs := MyCS{items: []*app.CharacterSkillqueueItem{item1}}
 		err := sq.Update(ctx, cs, characterID)
 		if assert.NoError(t, err) {

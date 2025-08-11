@@ -122,7 +122,7 @@ func (sq *CharacterSkillqueue) IsActive() bool {
 	sq.mu.RLock()
 	defer sq.mu.RUnlock()
 	for _, qi := range sq.items {
-		if !qi.FinishDate.IsZero() {
+		if qi.FinishDate.After(time.Now().UTC()) {
 			return true
 		}
 	}
@@ -149,18 +149,16 @@ func (sq *CharacterSkillqueue) Size() int {
 
 // RemainingCount returns the number of skills to be trained.
 func (sq *CharacterSkillqueue) RemainingCount() optional.Optional[int] {
+	if !sq.IsActive() {
+		return optional.Optional[int]{}
+	}
 	sq.mu.RLock()
 	defer sq.mu.RUnlock()
 	var count int
-	var isActive bool
 	for _, item := range sq.items {
 		if !item.Remaining().IsEmpty() {
-			isActive = true
 			count++
 		}
-	}
-	if !isActive {
-		return optional.Optional[int]{}
 	}
 	return optional.New(count)
 }
