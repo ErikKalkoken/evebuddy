@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -51,7 +52,7 @@ func (a *characterAugmentations) makeImplantList() *widget.List {
 		func() fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize*1.2))
 			iconInfo := widget.NewIcon(theme.InfoIcon())
-			name := widget.NewLabel("placeholder")
+			name := ttwidget.NewLabel("placeholder")
 			name.Truncation = fyne.TextTruncateEllipsis
 			slot := widget.NewLabel("placeholder")
 			slot.Truncation = fyne.TextTruncateEllipsis
@@ -74,8 +75,9 @@ func (a *characterAugmentations) makeImplantList() *widget.List {
 			o := a.implants[id]
 			row := co.(*fyne.Container).Objects
 			vbox := row[0].(*fyne.Container).Objects
-			name := vbox[0].(*fyne.Container).Objects[0].(*widget.Label)
+			name := vbox[0].(*fyne.Container).Objects[0].(*ttwidget.Label)
 			name.SetText(o.EveType.Name)
+			name.SetToolTip(o.EveType.Description)
 			slot := vbox[1].(*fyne.Container).Objects[0].(*widget.Label)
 			slot.SetText(fmt.Sprintf("Slot %d", o.SlotNum))
 			iconMain := row[1].(*canvas.Image)

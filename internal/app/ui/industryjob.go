@@ -481,9 +481,7 @@ func (a *industryJobs) update() {
 			reportError(err)
 			return
 		}
-		tagsPerCharacter[c.ID] = set.Collect(xiter.MapSlice(tags, func(x *app.CharacterTag) string {
-			return x.Name
-		}))
+		tagsPerCharacter[c.ID] = tags
 	}
 	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort[int32]) int32 {
 		return c.ID

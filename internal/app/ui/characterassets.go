@@ -119,7 +119,7 @@ func (a *characterAssets) makeLocationsTree() *iwidget.Tree[locationNode] {
 			spacer := row[1].(*fyne.Container).Objects[0]
 			prefix := row[1].(*fyne.Container).Objects[1].(*widget.Label)
 			label.SetText(n.displayName())
-			if n.isRoot() {
+			if n.isTop() {
 				if !n.isUnknown {
 					prefix.Text = fmt.Sprintf("%.1f", n.systemSecurityValue)
 					prefix.Importance = n.systemSecurityType.ToImportance()
@@ -194,8 +194,8 @@ func (a *characterAssets) makeAssetGrid() *widget.GridWrap {
 				return
 			}
 			location := a.selectedLocation.ValueOrZero()
-			for _, uid := range a.locations.Nodes().ChildUIDs(location.UID()) {
-				n, ok := a.locations.Nodes().Node(uid)
+			for _, uid := range a.locations.Data().ChildUIDs(location.UID()) {
+				n, ok := a.locations.Data().Node(uid)
 				if !ok {
 					continue
 				}
@@ -258,9 +258,9 @@ func (a *characterAssets) update() {
 	}
 }
 
-func (*characterAssets) fetchData(characterID int32, s services) (assetcollection.AssetCollection, iwidget.TreeNodes[locationNode], error) {
+func (*characterAssets) fetchData(characterID int32, s services) (assetcollection.AssetCollection, iwidget.TreeData[locationNode], error) {
 	var ac assetcollection.AssetCollection
-	var locations iwidget.TreeNodes[locationNode]
+	var locations iwidget.TreeData[locationNode]
 	if characterID == 0 {
 		return ac, locations, nil
 	}
@@ -282,8 +282,8 @@ func (*characterAssets) fetchData(characterID int32, s services) (assetcollectio
 	return ac, locations, nil
 }
 
-func makeLocationTreeData(locationNodes []assetcollection.LocationNode, characterID int32) iwidget.TreeNodes[locationNode] {
-	var tree iwidget.TreeNodes[locationNode]
+func makeLocationTreeData(locationNodes []assetcollection.LocationNode, characterID int32) iwidget.TreeData[locationNode] {
+	var tree iwidget.TreeData[locationNode]
 	for _, ln := range locationNodes {
 		location := locationNode{
 			characterID: characterID,
@@ -299,7 +299,7 @@ func makeLocationTreeData(locationNodes []assetcollection.LocationNode, characte
 		} else {
 			location.isUnknown = true
 		}
-		locationUID := tree.MustAdd(iwidget.RootUID, location)
+		locationUID := tree.MustAdd(iwidget.TreeRootID, location)
 		topAssets := ln.Nodes()
 		slices.SortFunc(topAssets, func(a, b assetcollection.AssetNode) int {
 			return cmp.Compare(a.Asset.DisplayName(), b.Asset.DisplayName())
@@ -503,8 +503,8 @@ func (a *characterAssets) selectLocation(location locationNode) error {
 	a.assetGrid.Refresh()
 	a.selectedLocation.Set(location)
 	selectedUID := location.UID()
-	for _, uid := range a.locations.Nodes().Path(selectedUID) {
-		n, ok := a.locations.Nodes().Node(uid)
+	for _, uid := range a.locations.Data().Path(selectedUID) {
+		n, ok := a.locations.Data().Node(uid)
 		if !ok {
 			continue
 		}
@@ -626,8 +626,8 @@ func (a *characterAssets) selectLocation(location locationNode) error {
 
 func (a *characterAssets) updateLocationPath(location locationNode) {
 	path := make([]locationNode, 0)
-	for _, uid := range a.locations.Nodes().Path(location.UID()) {
-		n, ok := a.locations.Nodes().Node(uid)
+	for _, uid := range a.locations.Data().Path(location.UID()) {
+		n, ok := a.locations.Data().Node(uid)
 		if !ok {
 			continue
 		}
@@ -697,7 +697,8 @@ func (n locationNode) displayName() string {
 	// return fmt.Sprintf("%s - %s Items", n.name, humanize.Comma(int64(n.count)))
 }
 
-func (n locationNode) isRoot() bool {
+// isTop reports whether a node is at the very top of the tree.
+func (n locationNode) isTop() bool {
 	return n.variant == nodeLocation
 }
 

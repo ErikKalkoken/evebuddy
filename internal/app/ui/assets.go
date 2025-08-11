@@ -22,7 +22,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -469,9 +468,7 @@ func (*assets) fetchRows(s services) ([]assetRow, bool, error) {
 		if err != nil {
 			return nil, false, nil
 		}
-		tagsPerCharacter[c.ID] = set.Collect(xiter.MapSlice(tags, func(x *app.CharacterTag) string {
-			return x.Name
-		}))
+		tagsPerCharacter[c.ID] = tags
 	}
 	assets, err := s.cs.ListAllAssets(ctx)
 	if err != nil {

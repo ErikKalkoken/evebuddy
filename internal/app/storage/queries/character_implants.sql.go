@@ -103,6 +103,77 @@ func (q *Queries) GetCharacterImplant(ctx context.Context, arg GetCharacterImpla
 	return i, err
 }
 
+const listAllCharacterImplants = `-- name: ListAllCharacterImplants :many
+SELECT
+    character_implants.id, character_implants.character_id, character_implants.eve_type_id,
+    eve_types.id, eve_types.eve_group_id, eve_types.capacity, eve_types.description, eve_types.graphic_id, eve_types.icon_id, eve_types.is_published, eve_types.market_group_id, eve_types.mass, eve_types.name, eve_types.packaged_volume, eve_types.portion_size, eve_types.radius, eve_types.volume,
+    eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
+    eve_categories.id, eve_categories.name, eve_categories.is_published,
+    eve_type_dogma_attributes.value as slot_num
+FROM character_implants
+JOIN eve_types ON eve_types.id = character_implants.eve_type_id
+JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
+JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
+LEFT JOIN eve_type_dogma_attributes ON eve_type_dogma_attributes.eve_type_id = character_implants.eve_type_id AND eve_type_dogma_attributes.dogma_attribute_id = ?
+`
+
+type ListAllCharacterImplantsRow struct {
+	CharacterImplant CharacterImplant
+	EveType          EveType
+	EveGroup         EveGroup
+	EveCategory      EveCategory
+	SlotNum          sql.NullFloat64
+}
+
+func (q *Queries) ListAllCharacterImplants(ctx context.Context, dogmaAttributeID int64) ([]ListAllCharacterImplantsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllCharacterImplants, dogmaAttributeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllCharacterImplantsRow
+	for rows.Next() {
+		var i ListAllCharacterImplantsRow
+		if err := rows.Scan(
+			&i.CharacterImplant.ID,
+			&i.CharacterImplant.CharacterID,
+			&i.CharacterImplant.EveTypeID,
+			&i.EveType.ID,
+			&i.EveType.EveGroupID,
+			&i.EveType.Capacity,
+			&i.EveType.Description,
+			&i.EveType.GraphicID,
+			&i.EveType.IconID,
+			&i.EveType.IsPublished,
+			&i.EveType.MarketGroupID,
+			&i.EveType.Mass,
+			&i.EveType.Name,
+			&i.EveType.PackagedVolume,
+			&i.EveType.PortionSize,
+			&i.EveType.Radius,
+			&i.EveType.Volume,
+			&i.EveGroup.ID,
+			&i.EveGroup.EveCategoryID,
+			&i.EveGroup.Name,
+			&i.EveGroup.IsPublished,
+			&i.EveCategory.ID,
+			&i.EveCategory.Name,
+			&i.EveCategory.IsPublished,
+			&i.SlotNum,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterImplants = `-- name: ListCharacterImplants :many
 SELECT
     character_implants.id, character_implants.character_id, character_implants.eve_type_id,

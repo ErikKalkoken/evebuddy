@@ -6,9 +6,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 func TestCharacterImplant(t *testing.T) {
@@ -54,20 +56,36 @@ func TestCharacterImplant(t *testing.T) {
 			}
 		}
 	})
-	t.Run("can list implants", func(t *testing.T) {
+	t.Run("can list implants for a character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		x1 := factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: c.ID})
 		x2 := factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: c.ID})
 		// when
 		oo, err := r.ListCharacterImplants(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			got := set.Of[int32]()
-			for _, o := range oo {
-				got.Add(o.EveType.ID)
-			}
+			got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterImplant) int32 {
+				return x.EveType.ID
+			}))
+			want := set.Of(x1.EveType.ID, x2.EveType.ID)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		}
+	})
+
+	t.Run("can list all implants", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		x1 := factory.CreateCharacterImplant()
+		x2 := factory.CreateCharacterImplant()
+		// when
+		oo, err := r.ListAllCharacterImplants(ctx)
+		// then
+		if assert.NoError(t, err) {
+			got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterImplant) int32 {
+				return x.EveType.ID
+			}))
 			want := set.Of(x1.EveType.ID, x2.EveType.ID)
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}

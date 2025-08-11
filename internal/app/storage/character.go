@@ -168,6 +168,7 @@ func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error)
 	return cc, nil
 }
 
+// ListCharactersShort returns all characters in short form and ordered by name.
 func (st *Storage) ListCharactersShort(ctx context.Context) ([]*app.EntityShort[int32], error) {
 	rows, err := st.qRO.ListCharactersShort(ctx)
 	if err != nil {

@@ -101,6 +101,7 @@ type baseUI struct {
 
 	// UI elements
 	assets                  *assets
+	augmentations           *augmentations
 	characterAsset          *characterAssets
 	characterAttributes     *characterAttributes
 	characterAugmentations  *characterAugmentations
@@ -221,37 +222,39 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 		defaultImageScaleMode = canvas.ImageScaleFastest
 	}
 
+	u.assets = newAssets(u)
+	u.augmentations = newAugmentations(u)
 	u.characterAsset = newCharacterAssets(u)
 	u.characterAttributes = newCharacterAttributes(u)
+	u.characterAugmentations = newCharacterAugmentations(u)
 	u.characterBiography = newCharacterBiography(u)
 	u.characterCommunications = newCharacterCommunications(u)
-	u.characterAugmentations = newCharacterAugmentations(u)
-	u.characterJumpClones = newCharacterJumpClones(u)
-	u.characterMail = newCharacterMails(u)
-	u.characterSheet = newCharacterSheet(u)
 	u.characterCorporation = newCorporationSheet(u, false)
+	u.characterJumpClones = newCharacterJumpClones(u)
+	u.characterLocations = newCharacterLocations(u)
+	u.characterMail = newCharacterMails(u)
+	u.characterOverview = newCharacterOverview(u)
+	u.characterSheet = newCharacterSheet(u)
 	u.characterShips = newCharacterFlyableShips(u)
 	u.characterSkillCatalogue = newCharacterSkillCatalogue(u)
 	u.characterSkillQueue = newCharacterSkillQueue(u)
 	u.characterWallet = newCharacterWallet(u)
-	u.corporationSheet = newCorporationSheet(u, true)
+	u.clones = newClones(u)
+	u.colonies = newColonies(u)
+	u.contracts = newContracts(u)
 	u.corporationMember = newCorporationMember(u)
+	u.corporationSheet = newCorporationSheet(u, true)
 	for _, d := range app.Divisions {
 		u.corporationWallets[d] = newCorporationWallet(u, d)
 	}
-	u.contracts = newContracts(u)
 	u.gameSearch = newGameSearch(u)
 	u.industryJobs = newIndustryJobs(u)
 	u.slotsManufacturing = newIndustrySlots(u, app.ManufacturingJob)
 	u.slotsReactions = newIndustrySlots(u, app.ReactionJob)
 	u.slotsResearch = newIndustrySlots(u, app.ScienceJob)
-	u.assets = newAssets(u)
-	u.characterOverview = newCharacterOverview(u)
-	u.clones = newClones(u)
-	u.colonies = newColonies(u)
-	u.characterLocations = newCharacterLocations(u)
 	u.training = newTraining(u)
 	u.wealth = newWealth(u)
+
 	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.MainWindow().SetMaster()
 
@@ -668,7 +671,8 @@ func (u *baseUI) updateHome() {
 
 func (u *baseUI) defineHomeUpdates() map[string]func() {
 	ff := map[string]func(){
-		"assetSearch":        u.assets.update,
+		"assets":             u.assets.update,
+		"augmentations":      u.augmentations.update,
 		"contracts":          u.contracts.update,
 		"cloneSearch":        u.clones.update,
 		"colony":             u.colonies.update,
@@ -1133,8 +1137,11 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			}()
 		}
 	case app.SectionCharacterImplants:
-		if isShown && needsRefresh {
-			u.characterAugmentations.update()
+		if needsRefresh {
+			u.augmentations.update()
+			if isShown {
+				u.characterAugmentations.update()
+			}
 		}
 	case app.SectionCharacterJumpClones:
 		if needsRefresh {
@@ -1549,9 +1556,9 @@ func (u *baseUI) ShowTypeInfoWindow(id int32) {
 	iw.Show(app.EveEntityInventoryType, id)
 }
 
-func (u *baseUI) ShowTypeInfoWindowWithCharacter(entityID, characterID int32) {
+func (u *baseUI) ShowTypeInfoWindowWithCharacter(typeID, characterID int32) {
 	iw := newInfoWindow(u)
-	iw.showWithCharacterID(infoInventoryType, int64(entityID), characterID)
+	iw.showWithCharacterID(infoInventoryType, int64(typeID), characterID)
 }
 
 func (u *baseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {

@@ -615,7 +615,10 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 			"Clones",
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
 			func() {
-				homeNav.Push(iwidget.NewAppBar("Clones", u.clones))
+				homeNav.Push(iwidget.NewAppBar("Clones", container.NewAppTabs(
+					container.NewTabItem("Augmentations", u.augmentations),
+					container.NewTabItem("Jump Clones", u.clones),
+				)))
 			},
 		),
 		navItemContracts,

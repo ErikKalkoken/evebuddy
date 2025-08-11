@@ -27,9 +27,9 @@ appimage: release build-appimage
 loc:
 	gocloc ./internal --by-file --include-lang=Go --not-match="\.sql\.go" --not-match-d="eveicon" --not-match="_test\.go"
 
-deploy-android: check-device make-android install-android
+deploy-android: check-device build-android install-android
 
-make-android:
+build-android:
 	fyne package -os android --release --tags migrated_fynedo
 
 install-android:

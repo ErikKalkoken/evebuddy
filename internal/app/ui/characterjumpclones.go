@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -35,7 +36,7 @@ type jumpCloneNode struct {
 	systemSecurityType     app.SolarSystemSecurityType
 }
 
-func (n jumpCloneNode) IsRoot() bool {
+func (n jumpCloneNode) isTop() bool {
 	return n.implantTypeID == 0
 }
 
@@ -75,7 +76,7 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 	t := iwidget.NewTree(
 		func(branch bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
-			main := widget.NewLabel("Template")
+			main := ttwidget.NewLabel("Template")
 			main.Truncation = fyne.TextTruncateEllipsis
 			iconInfo := widget.NewIcon(theme.InfoIcon())
 			spacer := canvas.NewRectangle(color.Transparent)
@@ -91,13 +92,13 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 		},
 		func(n jumpCloneNode, b bool, co fyne.CanvasObject) {
 			border := co.(*fyne.Container).Objects
-			main := border[0].(*widget.Label)
+			main := border[0].(*ttwidget.Label)
 			hbox := border[1].(*fyne.Container).Objects
 			iconMain := hbox[0].(*canvas.Image)
 			spacer := hbox[1].(*fyne.Container).Objects[0]
 			prefix := hbox[1].(*fyne.Container).Objects[1].(*widget.Label)
 			iconInfo := border[2]
-			if n.IsRoot() {
+			if n.isTop() {
 				iconMain.Resource = eveicon.FromName(eveicon.CloningCenter)
 				iconMain.Refresh()
 				if !n.isUnknown {
@@ -106,6 +107,7 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 					iconInfo.Hide()
 				}
 				main.SetText(n.locationName)
+				main.SetToolTip("")
 				if !n.isUnknown {
 					prefix.Text = fmt.Sprintf("%.1f", n.systemSecurityValue)
 					prefix.Importance = n.systemSecurityType.ToImportance()
@@ -120,6 +122,7 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 					return a.u.eis.InventoryTypeIcon(n.implantTypeID, app.IconPixelSize)
 				})
 				main.SetText(n.implantTypeName)
+				main.SetToolTip(n.implantTypeDescription)
 				prefix.Hide()
 				spacer.Hide()
 			}
@@ -127,7 +130,7 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 	)
 	t.OnSelectedNode = func(n jumpCloneNode) {
 		defer t.UnselectAll()
-		if n.IsRoot() {
+		if n.isTop() {
 			if !n.isUnknown {
 				a.u.ShowLocationInfoWindow(n.locationID)
 			}
@@ -139,7 +142,7 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 }
 
 func (a *characterJumpClones) update() {
-	td, err := a.newTreeData()
+	td, err := a.updateTreeData()
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
 		fyne.Do(func() {
@@ -148,20 +151,16 @@ func (a *characterJumpClones) update() {
 			}))
 		})
 	} else {
-		a.refreshTop(cloneCount(td))
+		n, _ := td.ChildrenCount(iwidget.TreeRootID)
+		a.refreshTop(n)
 		fyne.Do(func() {
 			a.tree.Set(td)
 		})
 	}
 }
 
-func cloneCount(td iwidget.TreeNodes[jumpCloneNode]) int {
-	return len(td.ChildUIDs(""))
-
-}
-
-func (a *characterJumpClones) newTreeData() (iwidget.TreeNodes[jumpCloneNode], error) {
-	var tree iwidget.TreeNodes[jumpCloneNode]
+func (a *characterJumpClones) updateTreeData() (iwidget.TreeData[jumpCloneNode], error) {
+	var tree iwidget.TreeData[jumpCloneNode]
 	if !a.u.hasCharacter() {
 		return tree, nil
 	}
@@ -187,7 +186,7 @@ func (a *characterJumpClones) newTreeData() (iwidget.TreeNodes[jumpCloneNode], e
 			n.locationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
 			n.isUnknown = true
 		}
-		uid := tree.MustAdd(iwidget.RootUID, n)
+		uid := tree.MustAdd(iwidget.TreeRootID, n)
 		for _, i := range c.Implants {
 			n := jumpCloneNode{
 				implantTypeDescription: i.EveType.DescriptionPlain(),
@@ -271,11 +270,11 @@ func (a *characterJumpClones) startUpdateTicker() {
 	go func() {
 		for {
 			<-ticker.C
-			var c int
+			var n int
 			fyne.DoAndWait(func() {
-				c = cloneCount(a.tree.Nodes())
+				n, _ = a.tree.Data().ChildrenCount(iwidget.TreeRootID)
 			})
-			a.refreshTop(c)
+			a.refreshTop(n)
 		}
 	}()
 }

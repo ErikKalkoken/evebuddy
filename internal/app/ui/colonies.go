@@ -16,7 +16,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -344,9 +343,7 @@ func (a *colonies) fetchRows(s services) ([]colonyRow, int, error) {
 		if err != nil {
 			return nil, 0, err
 		}
-		r.tags = set.Collect(xiter.MapSlice(tags, func(x *app.CharacterTag) string {
-			return x.Name
-		}))
+		r.tags = tags
 		rows = append(rows, r)
 		if p.IsExpired() {
 			expired++
