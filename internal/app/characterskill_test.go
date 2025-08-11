@@ -47,12 +47,31 @@ func TestCharacterSkillqueue(t *testing.T) {
 		assert.False(t, sq.IsActive())
 		assert.True(t, sq.RemainingCount().IsEmpty())
 	})
+	t.Run("can return information about an inactive skill queue", func(t *testing.T) {
+		sq := app.NewCharacterSkillqueue()
+		item1 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
+			QueuePosition: 1,
+		})
+		item1.StartDate = time.Time{}
+		item1.FinishDate = time.Time{}
+		cs := MyCS{items: []*app.CharacterSkillqueueItem{item1}}
+		err := sq.Update(ctx, cs, characterID)
+		if assert.NoError(t, err) {
+			assert.Equal(t, characterID, sq.CharacterID())
+			assert.Equal(t, 1, sq.Size())
+			assert.Nil(t, sq.Active())
+			assert.Equal(t, item1, sq.Item(0))
+			assert.True(t, sq.CompletionP().IsEmpty())
+			assert.False(t, sq.IsActive())
+			assert.True(t, sq.RemainingCount().IsEmpty())
+		}
+	})
 }
 
-func TestCharacterSkillqueueRemainingTime(t *testing.T) {
+func TestCharacterSkillqueue_RemainingTime(t *testing.T) {
 	characterID := int32(42)
 	ctx := context.Background()
-	t.Run("can return correct remainaing time for active skill queue 1", func(t *testing.T) {
+	t.Run("can return correct remaining time for active skill queue 1", func(t *testing.T) {
 		sq := app.NewCharacterSkillqueue()
 		item1 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
 			StartDate:     time.Now().Add(-3 * time.Hour),
@@ -102,7 +121,7 @@ func TestCharacterSkillqueueRemainingTime(t *testing.T) {
 	})
 }
 
-func TestSkillqueueItemCompletion(t *testing.T) {
+func TestCharacterSkillqueueItem_CompletionP(t *testing.T) {
 	t.Run("should calculate when started at 0", func(t *testing.T) {
 		now := time.Now()
 		q := app.CharacterSkillqueueItem{
@@ -169,7 +188,7 @@ func TestSkillqueueItemCompletion(t *testing.T) {
 	})
 }
 
-func TestSkillqueueItemDuration(t *testing.T) {
+func TestCharacterSkillqueueItem_Duration(t *testing.T) {
 	t.Run("should return duration when possible", func(t *testing.T) {
 		now := time.Now()
 		q := app.CharacterSkillqueueItem{
@@ -202,7 +221,7 @@ func TestSkillqueueItemDuration(t *testing.T) {
 	})
 }
 
-func TestSkillqueueItemRemaining(t *testing.T) {
+func TestCharacterSkillqueueItem_Remaining(t *testing.T) {
 	t.Run("should return correct value when finish in the future", func(t *testing.T) {
 		now := time.Now()
 		q := makeItem(now, now.Add(time.Hour*+3))

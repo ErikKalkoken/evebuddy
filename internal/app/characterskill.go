@@ -119,11 +119,14 @@ func (sq *CharacterSkillqueue) CompletionP() optional.Optional[float64] {
 
 // IsActive reports whether training is active.
 func (sq *CharacterSkillqueue) IsActive() bool {
-	c := sq.Active()
-	if c == nil {
-		return false
+	sq.mu.RLock()
+	defer sq.mu.RUnlock()
+	for _, qi := range sq.items {
+		if !qi.FinishDate.IsZero() {
+			return true
+		}
 	}
-	return sq.RemainingTime().ValueOrZero() > 0
+	return false
 }
 
 // Item returns the item on position id in the queue.

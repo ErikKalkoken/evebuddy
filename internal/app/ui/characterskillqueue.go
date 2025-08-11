@@ -23,13 +23,13 @@ type characterSkillQueue struct {
 
 	character          *app.Character
 	done               chan bool
+	emptyInfo          *widget.Label
 	isCharacterUpdated bool
 	list               *widget.List
 	signalKey          string
 	sq                 *app.CharacterSkillqueue
 	top                *widget.Label
 	u                  *baseUI
-	updatedKey         string
 }
 
 // newCharacterSkillQueue returns a new characterSkillQueue object with dynamic character.
@@ -39,8 +39,12 @@ func newCharacterSkillQueue(u *baseUI) *characterSkillQueue {
 
 // newCharacterSkillQueue returns a new characterSkillQueue object with static character.
 func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *characterSkillQueue {
+	emptyInfo := widget.NewLabel("Queue is empty")
+	emptyInfo.Importance = widget.LowImportance
+	emptyInfo.Hide()
 	a := &characterSkillQueue{
 		character:          c,
+		emptyInfo:          emptyInfo,
 		done:               make(chan bool),
 		isCharacterUpdated: c == nil,
 		sq:                 app.NewCharacterSkillqueue(),
@@ -53,7 +57,13 @@ func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *character
 }
 
 func (a *characterSkillQueue) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(a.top, nil, nil, nil, a.list)
+	c := container.NewBorder(
+		a.top,
+		nil,
+		nil,
+		nil,
+		container.NewStack(a.emptyInfo, a.list),
+	)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -93,8 +103,8 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 				required = qi.FinishedLevel
 			}
 			level.Set(active, trained, required)
-		})
-
+		},
+	)
 	list.OnSelected = func(id widget.ListItemID) {
 		q := a.sq.Item(id)
 		if q == nil {
@@ -180,6 +190,11 @@ func (a *characterSkillQueue) update() {
 		a.top.Refresh()
 	})
 	fyne.Do(func() {
+		if a.sq.Size() == 0 {
+			a.emptyInfo.Show()
+		} else {
+			a.emptyInfo.Hide()
+		}
 		a.list.Refresh()
 	})
 }
@@ -189,7 +204,7 @@ func (a *characterSkillQueue) makeTopText(total optional.Optional[time.Duration]
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
-	if a.sq.Size() == 0 {
+	if !a.sq.IsActive() {
 		return "Training not active", widget.WarningImportance
 	}
 	t := fmt.Sprintf("Total training time: %s", ihumanize.Optional(total, "?"))

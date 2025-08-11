@@ -158,9 +158,6 @@ func newTraining(u *baseUI) *training {
 			a.columnSorter,
 			a.filterRows,
 			func(_ int, r trainingRow) {
-				if !r.isActive {
-					return
-				}
 				a.showTrainingQueueWindow(r)
 			},
 		)
@@ -277,9 +274,6 @@ func (a *training) makeDataList() *iwidget.StripedList {
 			return
 		}
 		r := a.rowsFiltered[id]
-		if !r.isActive {
-			return
-		}
 		a.showTrainingQueueWindow(r)
 	}
 	return l
