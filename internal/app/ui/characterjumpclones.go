@@ -151,7 +151,8 @@ func (a *characterJumpClones) update() {
 			}))
 		})
 	} else {
-		a.refreshTop(td.RootChildrenCount())
+		n, _ := td.ChildrenCount(iwidget.TreeRootID)
+		a.refreshTop(n)
 		fyne.Do(func() {
 			a.tree.Set(td)
 		})
@@ -269,11 +270,11 @@ func (a *characterJumpClones) startUpdateTicker() {
 	go func() {
 		for {
 			<-ticker.C
-			var c int
+			var n int
 			fyne.DoAndWait(func() {
-				c = a.tree.Nodes().RootChildrenCount()
+				n, _ = a.tree.Data().ChildrenCount(iwidget.TreeRootID)
 			})
-			a.refreshTop(c)
+			a.refreshTop(n)
 		}
 	}()
 }

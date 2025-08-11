@@ -130,7 +130,7 @@ func (a *augmentations) makeTree() *iwidget.Tree[characterImplantsNode] {
 }
 
 func (a *augmentations) filterTree() {
-	if a.treeData.Size() == 0 {
+	if a.treeData.IsEmpty() {
 		a.tree.Set(a.treeData)
 		return
 	}
@@ -142,7 +142,7 @@ func (a *augmentations) filterTree() {
 	if x := a.selectTag.Selected; x != "" {
 		for _, c := range characters {
 			if !c.tags.Contains(x) {
-				err := td.Remove(c.UID())
+				err := td.Delete(c.UID())
 				if err != nil {
 					panic("remove failed " + err.Error())
 				}

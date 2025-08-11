@@ -194,8 +194,8 @@ func (a *characterAssets) makeAssetGrid() *widget.GridWrap {
 				return
 			}
 			location := a.selectedLocation.ValueOrZero()
-			for _, uid := range a.locations.Nodes().ChildUIDs(location.UID()) {
-				n, ok := a.locations.Nodes().Node(uid)
+			for _, uid := range a.locations.Data().ChildUIDs(location.UID()) {
+				n, ok := a.locations.Data().Node(uid)
 				if !ok {
 					continue
 				}
@@ -503,8 +503,8 @@ func (a *characterAssets) selectLocation(location locationNode) error {
 	a.assetGrid.Refresh()
 	a.selectedLocation.Set(location)
 	selectedUID := location.UID()
-	for _, uid := range a.locations.Nodes().Path(selectedUID) {
-		n, ok := a.locations.Nodes().Node(uid)
+	for _, uid := range a.locations.Data().Path(selectedUID) {
+		n, ok := a.locations.Data().Node(uid)
 		if !ok {
 			continue
 		}
@@ -626,8 +626,8 @@ func (a *characterAssets) selectLocation(location locationNode) error {
 
 func (a *characterAssets) updateLocationPath(location locationNode) {
 	path := make([]locationNode, 0)
-	for _, uid := range a.locations.Nodes().Path(location.UID()) {
-		n, ok := a.locations.Nodes().Node(uid)
+	for _, uid := range a.locations.Data().Path(location.UID()) {
+		n, ok := a.locations.Data().Node(uid)
 		if !ok {
 			continue
 		}

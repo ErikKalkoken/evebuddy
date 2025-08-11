@@ -29,7 +29,7 @@ func TestCharacterAssetsMakeLocationTreeData(t *testing.T) {
 		locations := []*app.EveLocation{el}
 		ac := assetcollection.New(assets, locations)
 		tree := makeLocationTreeData(ac.Locations(), 42)
-		assert.Greater(t, tree.Size(), 0)
+		assert.False(t, tree.IsEmpty())
 	})
 	t.Run("can have multiple locations with items in space", func(t *testing.T) {
 		l1 := &app.EveLocation{
@@ -51,7 +51,7 @@ func TestCharacterAssetsMakeLocationTreeData(t *testing.T) {
 		locations := []*app.EveLocation{l1, l2}
 		ac := assetcollection.New(assets, locations)
 		tree := makeLocationTreeData(ac.Locations(), 42)
-		assert.Greater(t, tree.Size(), 0)
+		assert.False(t, tree.IsEmpty())
 	})
 }
 

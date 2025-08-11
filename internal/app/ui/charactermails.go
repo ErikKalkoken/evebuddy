@@ -407,7 +407,7 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 func (a *characterMails) makeFolderMenu() []*fyne.MenuItem {
 	// current := u.MailArea.CurrentFolder.ValueOrZero()
 	items1 := make([]*fyne.MenuItem, 0)
-	for f := range a.folders.Nodes().All() {
+	for f := range a.folders.Data().All() {
 		s := f.Name
 		if f.UnreadCount > 0 {
 			s += fmt.Sprintf(" (%d)", f.UnreadCount)
