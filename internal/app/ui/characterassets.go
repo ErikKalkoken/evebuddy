@@ -119,7 +119,7 @@ func (a *characterAssets) makeLocationsTree() *iwidget.Tree[locationNode] {
 			spacer := row[1].(*fyne.Container).Objects[0]
 			prefix := row[1].(*fyne.Container).Objects[1].(*widget.Label)
 			label.SetText(n.displayName())
-			if n.isRoot() {
+			if n.isTop() {
 				if !n.isUnknown {
 					prefix.Text = fmt.Sprintf("%.1f", n.systemSecurityValue)
 					prefix.Importance = n.systemSecurityType.ToImportance()
@@ -697,7 +697,8 @@ func (n locationNode) displayName() string {
 	// return fmt.Sprintf("%s - %s Items", n.name, humanize.Comma(int64(n.count)))
 }
 
-func (n locationNode) isRoot() bool {
+// isTop reports whether a node is at the very top of the tree.
+func (n locationNode) isTop() bool {
 	return n.variant == nodeLocation
 }
 

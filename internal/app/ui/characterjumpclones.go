@@ -36,7 +36,7 @@ type jumpCloneNode struct {
 	systemSecurityType     app.SolarSystemSecurityType
 }
 
-func (n jumpCloneNode) IsRoot() bool {
+func (n jumpCloneNode) isTop() bool {
 	return n.implantTypeID == 0
 }
 
@@ -98,7 +98,7 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 			spacer := hbox[1].(*fyne.Container).Objects[0]
 			prefix := hbox[1].(*fyne.Container).Objects[1].(*widget.Label)
 			iconInfo := border[2]
-			if n.IsRoot() {
+			if n.isTop() {
 				iconMain.Resource = eveicon.FromName(eveicon.CloningCenter)
 				iconMain.Refresh()
 				if !n.isUnknown {
@@ -130,7 +130,7 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 	)
 	t.OnSelectedNode = func(n jumpCloneNode) {
 		defer t.UnselectAll()
-		if n.IsRoot() {
+		if n.isTop() {
 			if !n.isUnknown {
 				a.u.ShowLocationInfoWindow(n.locationID)
 			}

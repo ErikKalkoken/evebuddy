@@ -42,14 +42,20 @@ func (n characterImplantsNode) UID() widget.TreeNodeID {
 	return fmt.Sprintf("%d-%d", n.characterID, n.implantTypeID)
 }
 
+const (
+	augmentationsImplantsNone = "No implants"
+	augmentationsImplantsSome = "Has implants"
+)
+
 type augmentations struct {
 	widget.BaseWidget
 
-	selectTag *kxwidget.FilterChipSelect
-	top       *widget.Label
-	treeData  iwidget.TreeData[characterImplantsNode]
-	tree      *iwidget.Tree[characterImplantsNode]
-	u         *baseUI
+	selectImplants *kxwidget.FilterChipSelect
+	selectTag      *kxwidget.FilterChipSelect
+	top            *widget.Label
+	treeData       iwidget.TreeData[characterImplantsNode]
+	tree           *iwidget.Tree[characterImplantsNode]
+	u              *baseUI
 }
 
 func newAugmentations(u *baseUI) *augmentations {
@@ -61,6 +67,12 @@ func newAugmentations(u *baseUI) *augmentations {
 	}
 	a.ExtendBaseWidget(a)
 	a.tree = a.makeTree()
+	a.selectImplants = kxwidget.NewFilterChipSelect("Implants", []string{
+		augmentationsImplantsNone,
+		augmentationsImplantsSome,
+	}, func(_ string) {
+		a.filterTree()
+	})
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterTree()
 	})
@@ -68,7 +80,7 @@ func newAugmentations(u *baseUI) *augmentations {
 }
 
 func (a *augmentations) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHScroll(container.NewHBox(a.selectTag))
+	filter := container.NewHScroll(container.NewHBox(a.selectImplants, a.selectTag))
 	c := container.NewBorder(container.NewVBox(a.top, filter), nil, nil, nil, a.tree)
 	return widget.NewSimpleRenderer(c)
 }
@@ -134,25 +146,42 @@ func (a *augmentations) filterTree() {
 		a.tree.Set(a.treeData)
 		return
 	}
-	td := a.treeData.Clone()
-	characters, err := td.Children(iwidget.TreeRootID)
-	if err != nil {
-		panic(err)
-	}
+	var del []func(c characterImplantsNode) bool // f returns true when c is to be deleted
 	if x := a.selectTag.Selected; x != "" {
+		del = append(del, func(c characterImplantsNode) bool {
+			return !c.tags.Contains(x)
+		})
+	}
+	if x := a.selectImplants.Selected; x != "" {
+		switch x {
+		case augmentationsImplantsNone:
+			del = append(del, func(c characterImplantsNode) bool {
+				return c.implantCount != 0
+			})
+		case augmentationsImplantsSome:
+			del = append(del, func(c characterImplantsNode) bool {
+				return c.implantCount == 0
+			})
+		}
+	}
+	td := a.treeData.Clone()
+	if len(del) > 0 {
+		characters, _ := td.Children(iwidget.TreeRootID)
 		for _, c := range characters {
-			if !c.tags.Contains(x) {
-				err := td.Delete(c.UID())
-				if err != nil {
-					panic("remove failed " + err.Error())
-				}
+			var toDelete bool
+			for _, d := range del {
+				toDelete = toDelete || d(c)
+			}
+			if !toDelete {
+				continue
+			}
+			err := td.Delete(c.UID())
+			if err != nil {
+				slog.Error("Failed to remove a character from an augmentations tree", "node", c)
 			}
 		}
 	}
-	characters, err = td.Children(iwidget.TreeRootID)
-	if err != nil {
-		panic("children failed " + err.Error())
-	}
+	characters, _ := td.Children(iwidget.TreeRootID)
 	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(characters, func(n characterImplantsNode) set.Set[string] {
 		return n.tags
 	})...).All()))
