@@ -151,11 +151,6 @@ func TestTrainingWatchers(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c1.ID})
-		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-			CharacterID: c1.ID,
-			Section:     app.SectionCharacterSkillqueue,
-			CompletedAt: time.Now().UTC(),
-		})
 		c2 := factory.CreateCharacterFull()
 		// when
 		err := cs.EnableAllTrainingWatchers(ctx)
@@ -195,11 +190,6 @@ func TestTrainingWatchers(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c1.ID})
-		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-			CharacterID: c1.ID,
-			Section:     app.SectionCharacterSkillqueue,
-			CompletedAt: time.Now().UTC(),
-		})
 		// when
 		err := cs.EnableTrainingWatcher(ctx, c1.ID)
 		// then
@@ -214,11 +204,6 @@ func TestTrainingWatchers(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacterFull()
-		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-			CharacterID: c1.ID,
-			Section:     app.SectionCharacterSkillqueue,
-			CompletedAt: time.Now().UTC(),
-		})
 		// when
 		err := cs.EnableTrainingWatcher(ctx, c1.ID)
 		// then

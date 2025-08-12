@@ -89,7 +89,7 @@ func TruncateTables(dbRW *sql.DB) {
 // DumpTables returns the current content of the given SQL tables as JSON string.
 // When no tables are given all non-empty tables will be dumped.
 func DumpTables(db *sql.DB, tables ...string) string {
-	sql := `SELECT name FROM sqlite_master WHERE type = "table"`
+	sql := `SELECT name FROM sqlite_master WHERE type = "table" AND name NOT IN ("sqlite_sequence")`
 	rows, err := db.Query(sql)
 	if err != nil {
 		panic(err)

@@ -114,12 +114,12 @@ func (s *CharacterService) EnableTrainingWatcher(ctx context.Context, characterI
 	if c.IsTrainingWatched {
 		return nil
 	}
-	t, err := s.TotalTrainingTime(ctx, characterID)
+	isActive, err := s.IsTrainingActive(ctx, characterID)
 	if err != nil {
 		return err
 	}
-	if t.ValueOrZero() == 0 {
-		return nil // no active training
+	if !isActive {
+		return nil
 	}
 	err = s.UpdateIsTrainingWatched(ctx, characterID, true)
 	if err != nil {
@@ -136,11 +136,11 @@ func (s *CharacterService) EnableAllTrainingWatchers(ctx context.Context) error 
 		return err
 	}
 	for id := range ids.All() {
-		t, err := s.TotalTrainingTime(ctx, id)
+		isActive, err := s.IsTrainingActive(ctx, id)
 		if err != nil {
 			return err
 		}
-		if t.IsEmpty() {
+		if !isActive {
 			continue
 		}
 		err = s.UpdateIsTrainingWatched(ctx, id, true)

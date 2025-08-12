@@ -70,7 +70,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 	case app.SectionCharacterShip:
 		f = s.updateShipESI
 	case app.SectionCharacterSkillqueue:
-		f = s.UpdateSkillqueueESI
+		f = s.updateSkillqueueESI
 	case app.SectionCharacterSkills:
 		f = s.updateSkillsESI
 	case app.SectionCharacterWalletBalance:

@@ -88,10 +88,33 @@ func TestCharacterSkillqueue(t *testing.T) {
 	})
 }
 
-func TestCharacterSkillqueue_RemainingTime(t *testing.T) {
-	characterID := int32(42)
+func TestCharacterSkillqueue_Update(t *testing.T) {
+	const characterID = 42
 	ctx := context.Background()
-	t.Run("can return correct remaining time for active skill queue 1", func(t *testing.T) {
+	t.Run("reset items when updated with zero character", func(t *testing.T) {
+		// given
+		sq := app.NewCharacterSkillqueue()
+		cs := MyCS{items: []*app.CharacterSkillqueueItem{makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
+			StartDate:     time.Now().Add(-3 * time.Hour),
+			FinishDate:    time.Now().Add(3 * time.Hour),
+			QueuePosition: 1,
+		})}}
+		if err := sq.Update(ctx, cs, characterID); err != nil {
+			t.Fatal(err)
+		}
+		// when
+		err := sq.Update(ctx, cs, 0)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, 0, sq.Size())
+		}
+	})
+}
+
+func TestCharacterSkillqueue_RemainingTime(t *testing.T) {
+	const characterID = 42
+	ctx := context.Background()
+	t.Run("can return correct remaining time for active skill queue", func(t *testing.T) {
 		sq := app.NewCharacterSkillqueue()
 		item1 := makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
 			StartDate:     time.Now().Add(-3 * time.Hour),
@@ -134,10 +157,22 @@ func TestCharacterSkillqueue_RemainingTime(t *testing.T) {
 			assert.WithinDuration(t, toTime(7*time.Hour), sq.FinishDate().ValueOrZero(), 1*time.Second)
 		}
 	})
-	t.Run("returns empty remainaing time for empty skill queue", func(t *testing.T) {
+	t.Run("should return empty for empty skill queue", func(t *testing.T) {
 		sq := app.NewCharacterSkillqueue()
 		assert.True(t, sq.RemainingTime().IsEmpty())
 		assert.True(t, sq.FinishDate().IsEmpty())
+	})
+	t.Run("should return empty when skills completed", func(t *testing.T) {
+		sq := app.NewCharacterSkillqueue()
+		cs := MyCS{items: []*app.CharacterSkillqueueItem{makeSkillQueueItem(characterID, app.CharacterSkillqueueItem{
+			StartDate:     time.Now().Add(-6 * time.Hour),
+			FinishDate:    time.Now().Add(-3 * time.Hour),
+			QueuePosition: 1,
+		})}}
+		err := sq.Update(ctx, cs, characterID)
+		if assert.NoError(t, err) {
+			assert.True(t, sq.RemainingTime().IsEmpty())
+		}
 	})
 }
 
