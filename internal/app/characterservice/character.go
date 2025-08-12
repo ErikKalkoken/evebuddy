@@ -229,17 +229,17 @@ func (s *CharacterService) HasCharacter(ctx context.Context, id int32) (bool, er
 // UpdateOrCreateCharacterFromSSO creates or updates a character via SSO authentication.
 // The provided context is used for the SSO authentication process only and can be canceled.
 // the setInfo callback is used to update info text in a dialog.
-func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, setInfo func(s string)) (int32, error) {
+func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, setInfo func(s string)) (*app.Character, error) {
 	ssoToken, err := s.sso.Authenticate(ctx, app.Scopes().Slice())
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	slog.Info("Created new SSO token", "characterID", ssoToken.CharacterID, "scopes", ssoToken.Scopes)
 	setInfo("Fetching character from game server. Please wait...")
-	charID := ssoToken.CharacterID
+	characterID := ssoToken.CharacterID
 	token := storage.UpdateOrCreateCharacterTokenParams{
 		AccessToken:  ssoToken.AccessToken,
-		CharacterID:  charID,
+		CharacterID:  characterID,
 		ExpiresAt:    ssoToken.ExpiresAt,
 		RefreshToken: ssoToken.RefreshToken,
 		Scopes:       set.Of(ssoToken.Scopes...),
@@ -248,32 +248,36 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
 	character, err := s.eus.GetOrCreateCharacterESI(ctx, token.CharacterID)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	err = s.st.CreateCharacter(ctx, storage.CreateCharacterParams{ID: token.CharacterID})
 	if err != nil && !errors.Is(err, app.ErrAlreadyExists) {
-		return 0, err
+		return nil, err
 	}
 	if err := s.st.UpdateOrCreateCharacterToken(ctx, token); err != nil {
-		return 0, err
+		return nil, err
 	}
 	if err := s.scs.UpdateCharacters(ctx); err != nil {
-		return 0, err
+		return nil, err
 	}
 	setInfo("Fetching corporation from game server. Please wait...")
 	if _, err := s.eus.GetOrCreateCorporationESI(ctx, character.Corporation.ID); err != nil {
-		return 0, err
+		return nil, err
 	}
 	if x := character.Corporation.IsNPC(); !x.IsEmpty() && !x.ValueOrZero() {
 		if _, err = s.st.GetOrCreateCorporation(ctx, character.Corporation.ID); err != nil {
-			return 0, err
+			return nil, err
 		}
 		if err := s.scs.UpdateCorporations(ctx); err != nil {
-			return 0, err
+			return nil, err
 		}
 	}
+	c, err := s.st.GetCharacter(ctx, characterID)
+	if err != nil {
+		return nil, err
+	}
 	setInfo("Character added successfully")
-	return token.CharacterID, nil
+	return c, nil
 }
 
 func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {

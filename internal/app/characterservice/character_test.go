@@ -91,7 +91,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		})
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, character.ID, got)
+			assert.Equal(t, character.ID, got.ID)
 			ok, err := cs.HasCharacter(ctx, character.ID)
 			if assert.NoError(t, err) {
 				assert.True(t, ok)
@@ -131,7 +131,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		})
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, c.ID, got)
+			assert.Equal(t, c.ID, got.ID)
 			token, err := st.GetCharacterToken(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, token.CharacterID, c.ID)

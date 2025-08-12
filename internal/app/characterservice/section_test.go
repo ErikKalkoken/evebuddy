@@ -26,7 +26,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		et := factory.CreateEveType()
 		httpmock.RegisterResponder(
@@ -49,7 +49,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		data := []int32{100}
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
@@ -83,7 +83,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
@@ -114,7 +114,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
@@ -136,7 +136,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
@@ -167,8 +167,9 @@ func TestUpdateCharacterSection(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacterFull()
-		data := []int32{100}
+		c := factory.CreateCharacter()
+		et := factory.CreateEveType()
+		data := []int32{et.ID}
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section,

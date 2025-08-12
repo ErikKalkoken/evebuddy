@@ -247,11 +247,12 @@ func TestListCharacters(t *testing.T) {
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
-	t.Run("can list character's corporation IDs", func(t *testing.T) {
+	t.Run("can list character's corporations IDs", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacter()
-		c2 := factory.CreateCharacter()
+		factory.CreateCorporation(c1.EveCharacter.Corporation.ID)
+		factory.CreateCharacter()
 		// when
 		cc, err := r.ListCharacterCorporations(ctx)
 		// then
@@ -259,7 +260,7 @@ func TestListCharacters(t *testing.T) {
 			got := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort[int32]) int32 {
 				return x.ID
 			}))
-			want := set.Of(c1.EveCharacter.Corporation.ID, c2.EveCharacter.Corporation.ID)
+			want := set.Of(c1.EveCharacter.Corporation.ID)
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})

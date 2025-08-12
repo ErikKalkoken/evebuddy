@@ -15,19 +15,23 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
-func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, id int32) (*app.EveCharacter, error) {
-	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateCharacterESI-%d", id), func() (any, error) {
-		o, err := s.st.GetEveCharacter(ctx, id)
+func (s *EveUniverseService) GetCharacterESI(ctx context.Context, characterID int32) (*app.EveCharacter, error) {
+	return s.st.GetEveCharacter(ctx, characterID)
+}
+
+func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, characterID int32) (*app.EveCharacter, error) {
+	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateCharacterESI-%d", characterID), func() (any, error) {
+		o, err := s.st.GetEveCharacter(ctx, characterID)
 		if err == nil {
 			return o, err
 		} else if !errors.Is(err, app.ErrNotFound) {
 			return nil, err
 		}
-		r, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, id, nil)
+		r, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, characterID, nil)
 		if err != nil {
 			return nil, err
 		}
-		ids := set.Of(id, r.CorporationId)
+		ids := set.Of(characterID, r.CorporationId)
 		if r.AllianceId != 0 {
 			ids.Add(r.AllianceId)
 		}
@@ -44,7 +48,7 @@ func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, id int
 		}
 		arg := storage.CreateEveCharacterParams{
 			AllianceID:     r.AllianceId,
-			ID:             id,
+			ID:             characterID,
 			Birthday:       r.Birthday,
 			CorporationID:  r.CorporationId,
 			Description:    r.Description,
@@ -58,8 +62,8 @@ func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, id int
 		if err := s.st.CreateEveCharacter(ctx, arg); err != nil {
 			return nil, err
 		}
-		slog.Info("Created eve character", "ID", id)
-		return s.st.GetEveCharacter(ctx, id)
+		slog.Info("Created eve character", "ID", characterID)
+		return s.st.GetEveCharacter(ctx, characterID)
 	})
 	if err != nil {
 		return nil, err

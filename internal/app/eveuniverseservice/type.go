@@ -461,7 +461,7 @@ func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) (set.Set
 				changed.Add(o2.TypeID)
 			}
 		}
-		slog.Info("Updated market prices", "count", len(prices), "changed", changed)
+		slog.Info("Updated market prices", "total", len(prices), "changed", changed.Size())
 		return changed, nil
 	})
 	return x.(set.Set[int32]), err

@@ -23,18 +23,18 @@ import (
 
 // EVE IDs
 const (
-	startIDAlliance      = 99_000_000
-	startIDCelestials    = 40_000_000
-	startIDCharacter     = 90_000_000
-	startIDConstellation = 20_000_000
-	startIDCorporation   = 98_000_000
-	startIDFaction       = 500_000
-	startIDInventoryType = 100
-	startIDOther         = 10_000
-	startIDRegion        = 10_000_000
-	startIDSolarSystem   = 30_000_000
-	startIDStation       = 60_000_000
-	startIDStructure     = 1_000_000_000_000
+	startIDAlliance      = 99_000_001
+	startIDCelestials    = 40_000_001
+	startIDCharacter     = 90_000_001
+	startIDConstellation = 20_000_001
+	startIDCorporation   = 98_000_001
+	startIDFaction       = 500_001
+	startIDInventoryType = 101
+	startIDOther         = 10_001
+	startIDRegion        = 10_000_001
+	startIDSolarSystem   = 30_000_001
+	startIDStation       = 60_000_001
+	startIDStructure     = 1_000_000_000_001
 )
 
 type Factory struct {
