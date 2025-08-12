@@ -251,6 +251,14 @@ func (w *NavBar) Disable(id int) {
 	w.destinations.Objects[id].(*destination).Disable()
 }
 
+// Enabled reports whether a destination is enabled.
+func (w *NavBar) Enabled(id int) bool {
+	if id < 0 || id >= len(w.destinations.Objects) {
+		return false // out of bounds
+	}
+	return !w.destinations.Objects[id].(*destination).Disabled()
+}
+
 // HideBar hides the nav bar, while still showing the rest of the page.
 func (w *NavBar) HideBar() {
 	w.bar.Hide()

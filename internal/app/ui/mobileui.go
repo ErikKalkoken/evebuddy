@@ -425,10 +425,14 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				navBar.Disable(3)
 				navBar.Select(4)
 			} else {
+				wasDisabled := !navBar.Enabled(0)
 				navBar.Enable(0)
 				navBar.Enable(1)
 				navBar.Enable(2)
 				navBar.Enable(3)
+				if wasDisabled {
+					navBar.Select(0)
+				}
 			}
 		})
 	}

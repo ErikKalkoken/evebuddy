@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
@@ -50,6 +51,7 @@ const (
 type augmentations struct {
 	widget.BaseWidget
 
+	collapseAll    *ttwidget.Button
 	selectImplants *kxwidget.FilterChipSelect
 	selectTag      *kxwidget.FilterChipSelect
 	top            *widget.Label
@@ -76,11 +78,15 @@ func newAugmentations(u *baseUI) *augmentations {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterTree()
 	})
+	a.collapseAll = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.CollapseAllOutlineSvg), func() {
+		a.tree.CloseAllBranches()
+	})
+	a.collapseAll.SetToolTip("Collapse branches")
 	return a
 }
 
 func (a *augmentations) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHScroll(container.NewHBox(a.selectImplants, a.selectTag))
+	filter := container.NewHScroll(container.NewHBox(a.selectImplants, a.selectTag, a.collapseAll))
 	c := container.NewBorder(container.NewVBox(a.top, filter), nil, nil, nil, a.tree)
 	return widget.NewSimpleRenderer(c)
 }
