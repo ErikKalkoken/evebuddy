@@ -10,7 +10,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
-	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -273,7 +272,7 @@ type skillQueueItem struct {
 
 	duration *widget.Label
 	isMobile bool
-	name     *ttwidget.Label
+	name     *widget.Label
 	progress *widget.ProgressBar
 }
 
@@ -286,7 +285,7 @@ func newSkillQueueItem() *skillQueueItem {
 		isMobile:    fyne.CurrentDevice().IsMobile(),
 	}
 	w.ExtendBaseWidget(w)
-	w.name = ttwidget.NewLabel(w.Placeholder)
+	w.name = widget.NewLabel(w.Placeholder)
 	w.name.Truncation = fyne.TextTruncateEllipsis
 	pb.Hide()
 	if w.isMobile {
@@ -330,7 +329,6 @@ func (w *skillQueueItem) Set(qi *app.CharacterSkillqueueItem) {
 	w.name.Importance = importance
 	w.name.Text = name
 	w.name.Refresh()
-	w.name.SetToolTip(qi.SkillDescription)
 	w.duration.Text = s
 	w.duration.Importance = importance
 	w.duration.Refresh()
