@@ -247,7 +247,13 @@ func (a *manageCharacters) showAddCharacterDialog() {
 	)
 	a.mcw.u.ModifyShortcutsForDialog(d1, a.mcw.w)
 	d1.SetOnClosed(cancel)
+	fyne.Do(func() {
+		d1.Show()
+	})
 	go func() {
+		defer fyne.Do(func() {
+			d1.Hide()
+		})
 		character, err := func() (*app.Character, error) {
 			c, err := a.mcw.u.cs.UpdateOrCreateCharacterFromSSO(cancelCTX, func(s string) {
 				fyne.Do(func() {
@@ -261,10 +267,10 @@ func (a *manageCharacters) showAddCharacterDialog() {
 			a.update()
 			return c, nil
 		}()
-		fyne.Do(func() {
-			d1.Hide()
-		})
-		if err != nil && !errors.Is(err, app.ErrAborted) {
+		if errors.Is(err, app.ErrAborted) {
+			return
+		}
+		if err != nil {
 			s := "Failed to add a new character"
 			slog.Error(s, "error", err)
 			fyne.Do(func() {
@@ -272,27 +278,21 @@ func (a *manageCharacters) showAddCharacterDialog() {
 			})
 			return
 		}
-		go func() {
-			if !a.mcw.u.hasCharacter() {
-				a.mcw.u.loadCharacter(character.ID)
+		if !a.mcw.u.hasCharacter() {
+			a.mcw.u.loadCharacter(character.ID)
+		}
+		if !a.mcw.u.hasCorporation() {
+			if c := character.EveCharacter.Corporation; !c.IsNPC().ValueOrZero() {
+				a.mcw.u.loadCorporation(c.ID)
 			}
-			if !a.mcw.u.hasCorporation() {
-				if c := character.EveCharacter.Corporation; !c.IsNPC().ValueOrZero() {
-					a.mcw.u.loadCorporation(c.ID)
-				}
-			}
-			a.mcw.u.updateStatus()
-			a.mcw.u.updateHome()
-			if a.mcw.u.isUpdateDisabled {
-				return
-			}
-			go a.mcw.u.updateCharacterAndRefreshIfNeeded(context.Background(), character.ID, true)
-		}()
-
+		}
+		a.mcw.u.updateStatus()
+		a.mcw.u.updateHome()
+		if a.mcw.u.isUpdateDisabled {
+			return
+		}
+		go a.mcw.u.updateCharacterAndRefreshIfNeeded(context.Background(), character.ID, true)
 	}()
-	fyne.Do(func() {
-		d1.Show()
-	})
 }
 
 func (a *manageCharacters) showDeleteDialog(r manageCharacterRow) {
