@@ -2,11 +2,14 @@ package ui
 
 import (
 	"context"
+	"image/color"
 	"log/slog"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
@@ -40,20 +43,24 @@ const (
 type statusBar struct {
 	widget.BaseWidget
 
-	characterCount *statusBarItem
-	eveClock       *statusBarItem
-	eveStatus      *statusBarItem
-	eveStatusError string
-	infoText       *widget.Label
-	u              *DesktopUI
-	updateHint     *updateHint
-	updateStatus   *statusBarItem
+	characterCount    *statusBarItem
+	eveClock          *statusBarItem
+	eveStatus         *statusBarItem
+	eveStatusError    string
+	u                 *DesktopUI
+	updateHint        *updateHint
+	updateStatus      *statusBarItem
+	updatingCount     atomic.Int64
+	updatingIndicator *iwidget.Activity
 }
 
 func newStatusBar(u *DesktopUI) *statusBar {
+	x := iwidget.NewActivity()
+	x.SetToolTip("Updating data from ESI...")
+	x.Stop()
 	a := &statusBar{
-		infoText: widget.NewLabel(""),
-		u:        u,
+		updatingIndicator: x,
+		u:                 u,
 	}
 	a.ExtendBaseWidget(a)
 	a.characterCount = newStatusBarItem(theme.NewThemedResource(icons.GroupSvg), "?", func() {
@@ -78,14 +85,19 @@ func newStatusBar(u *DesktopUI) *statusBar {
 }
 
 func (a *statusBar) CreateRenderer() fyne.WidgetRenderer {
+	spacer := canvas.NewRectangle(color.Transparent)
+	spacer.SetMinSize(a.updatingIndicator.MinSize())
 	c := container.NewVBox(
 		widget.NewSeparator(),
 		container.NewHBox(
-			a.infoText,
 			layout.NewSpacer(),
 			a.updateHint,
 			widget.NewSeparator(),
 			a.updateStatus,
+			container.NewStack(
+				spacer,
+				a.updatingIndicator,
+			),
 			widget.NewSeparator(),
 			a.characterCount,
 			widget.NewSeparator(),
@@ -246,14 +258,21 @@ func (a *statusBar) setEveStatus(status eveStatus, title, errorMessage string) {
 	a.eveStatus.SetText(title)
 }
 
-func (a *statusBar) SetInfo(text string) {
-	a.setInfo(text, widget.MediumImportance)
+func (a *statusBar) ShowUpdating() {
+	c := a.updatingCount.Add(1)
+	if c == 1 {
+		a.updatingIndicator.Start()
+		a.updatingIndicator.Show()
+	}
 }
 
-func (a *statusBar) setInfo(text string, importance widget.Importance) {
-	a.infoText.Text = text
-	a.infoText.Importance = importance
-	a.infoText.Refresh()
+func (a *statusBar) HideUpdating() {
+	c := a.updatingCount.Add(-1)
+	if c > 0 {
+		return
+	}
+	a.updatingIndicator.Hide()
+	a.updatingIndicator.Stop()
 }
 
 // statusBarItem is a widget with a label and an optional icon, which can be tapped.

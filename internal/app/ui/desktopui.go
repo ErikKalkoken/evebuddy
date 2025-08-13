@@ -514,6 +514,16 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			})
 		}()
 	}
+	u.onSectionUpdateStarted = func() {
+		fyne.Do(func() {
+			statusBar.ShowUpdating()
+		})
+	}
+	u.onSectionUpdateCompleted = func() {
+		fyne.Do(func() {
+			statusBar.HideUpdating()
+		})
+	}
 	return u
 }
 

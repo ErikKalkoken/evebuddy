@@ -94,6 +94,8 @@ type baseUI struct {
 	onUpdateCorporation             func(*app.Corporation)
 	onUpdateCorporationWalletTotals func(balance string)
 	onUpdateStatus                  func()
+	onSectionUpdateStarted          func()
+	onSectionUpdateCompleted        func()
 	showMailIndicator               func()
 	showManageCharacters            func()
 
@@ -905,6 +907,10 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 	logErr := func(err error) {
 		slog.Error("Failed to update general section", "section", section, "err", err)
 	}
+	if u.onSectionUpdateStarted != nil && u.onSectionUpdateCompleted != nil {
+		u.onSectionUpdateStarted()
+		defer u.onSectionUpdateCompleted()
+	}
 	changed, err := u.eus.UpdateSection(ctx, section, forceUpdate)
 	if err != nil {
 		logErr(err)
@@ -1068,6 +1074,10 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 // All UI areas showing data based on character sections needs to be included
 // to make sure they are refreshed when data changes.
 func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s app.CharacterSection, forceUpdate bool) {
+	if u.onSectionUpdateStarted != nil && u.onSectionUpdateCompleted != nil {
+		u.onSectionUpdateStarted()
+		defer u.onSectionUpdateCompleted()
+	}
 	updateArg := app.CharacterUpdateSectionParams{
 		CharacterID:           characterID,
 		Section:               s,
@@ -1329,13 +1339,18 @@ func (u *baseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 // All UI areas showing data based on corporation sections needs to be included
 // to make sure they are refreshed when data changes.
 func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context, corporationID int32, s app.CorporationSection, forceUpdate bool) {
+	if u.onSectionUpdateStarted != nil && u.onSectionUpdateCompleted != nil {
+		u.onSectionUpdateStarted()
+		defer u.onSectionUpdateCompleted()
+	}
 	hasChanged, err := u.rs.UpdateSectionIfNeeded(
 		ctx, app.CorporationUpdateSectionParams{
 			CorporationID:         corporationID,
 			ForceUpdate:           forceUpdate,
 			MaxWalletTransactions: u.settings.MaxWalletTransactions(),
 			Section:               s,
-		})
+		},
+	)
 	if err != nil {
 		slog.Error("Failed to update corporation section", "corporationID", corporationID, "section", s, "err", err)
 		return
