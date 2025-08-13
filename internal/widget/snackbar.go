@@ -92,7 +92,9 @@ func (sb *Snackbar) Start() {
 			select {
 			case <-sb.hideC:
 			case <-sb.stopC:
-				sb.popup.Hide()
+				fyne.Do(func() {
+					sb.popup.Hide()
+				})
 				cancel()
 				break L
 			case <-time.After(m.timeout):

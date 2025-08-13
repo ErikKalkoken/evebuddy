@@ -17,13 +17,11 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
-	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 	kxtheme "github.com/ErikKalkoken/fyne-kx/theme"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/maniartech/signals"
@@ -129,6 +127,7 @@ type baseUI struct {
 	slotsReactions          *industrySlots
 	slotsResearch           *industrySlots
 	snackbar                *iwidget.Snackbar
+	progressModal           *iwidget.ProgressModal
 	training                *training
 	wealth                  *wealth
 
@@ -256,6 +255,7 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	u.wealth = newWealth(u)
 
 	u.snackbar = iwidget.NewSnackbar(u.window)
+	u.progressModal = iwidget.NewProgressModal(u.window)
 	u.MainWindow().SetMaster()
 
 	// SetOnStarted is called on initial start,
@@ -276,6 +276,7 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 		u.setColorTheme(u.settings.ColorTheme())
 		u.isForeground.Store(true)
 		u.snackbar.Start()
+		u.progressModal.Start()
 		go func() {
 			u.characterSkillQueue.start()
 			u.initCharacter()
@@ -486,16 +487,14 @@ func (u *baseUI) updateCharacter() {
 	} else {
 		slog.Debug("Updating without character")
 	}
-	runFunctionsWithProgressModal("Loading character", u.defineCharacterUpdates(), func() {
+	u.showModalWhileExecuting("Loading character", u.defineCharacterUpdates(), func() {
 		if u.onUpdateCharacter != nil {
 			u.onUpdateCharacter(c)
 		}
 		if c != nil && !u.isUpdateDisabled {
 			u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
 		}
-	},
-		u.window,
-	)
+	})
 }
 
 func (u *baseUI) defineCharacterUpdates() map[string]func() {
@@ -624,16 +623,14 @@ func (u *baseUI) updateCorporation() {
 	} else {
 		slog.Debug("Updating without corporation")
 	}
-	runFunctionsWithProgressModal("Loading corporation", u.defineCorporationUpdates(), func() {
+	u.showModalWhileExecuting("Loading corporation", u.defineCorporationUpdates(), func() {
 		if c != nil && !u.isUpdateDisabled {
 			u.updateCorporationAndRefreshIfNeeded(context.Background(), c.ID, false)
 		}
 		if u.onUpdateCorporation != nil {
 			u.onUpdateCorporation(c)
 		}
-	},
-		u.window,
-	)
+	})
 }
 
 func (u *baseUI) defineCorporationUpdates() map[string]func() {
@@ -666,7 +663,7 @@ func (u *baseUI) updateCorporationAvatar(id int32, setIcon func(fyne.Resource)) 
 
 // updateHome refreshed all pages that contain information about multiple characters.
 func (u *baseUI) updateHome() {
-	runFunctionsWithProgressModal("Updating home", u.defineHomeUpdates(), u.onRefreshCross, u.window)
+	u.showModalWhileExecuting("Updating home", u.defineHomeUpdates(), u.onRefreshCross)
 }
 
 func (u *baseUI) defineHomeUpdates() map[string]func() {
@@ -696,35 +693,28 @@ func (u *baseUI) UpdateAll() {
 	}
 }
 
-func runFunctionsWithProgressModal(title string, ff map[string]func(), onSuccess func(), w fyne.Window) {
-	fyne.Do(func() {
-		m := kxmodal.NewProgress("Updating", title, func(p binding.Float) error {
-			start := time.Now()
-			myLog := slog.With("title", title)
-			myLog.Debug("started")
-			var wg sync.WaitGroup
-			var completed atomic.Int64
-			for name, f := range ff {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					start2 := time.Now()
-					f()
-					x := completed.Add(1)
-					fyne.Do(func() {
-						if err := p.Set(float64(x)); err != nil {
-							myLog.Warn("failed set progress", "error", err)
-						}
-					})
-					myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
-				}()
-			}
-			wg.Wait()
-			myLog.Debug("completed", "duration", time.Since(start).Milliseconds())
-			return nil
-		}, float64(len(ff)), w)
-		m.OnSuccess = onSuccess
-		m.Start()
+// showModalWhileExecuting shows a modal to the user while the functions ff are being executed.
+// Optionally runs onCompleted after all functions have been run.
+func (u *baseUI) showModalWhileExecuting(title string, ff map[string]func(), onCompleted func()) {
+	u.progressModal.Execute(title, func() {
+		start := time.Now()
+		myLog := slog.With("title", title)
+		myLog.Debug("started")
+		var wg sync.WaitGroup
+		for name, f := range ff {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				start2 := time.Now()
+				f()
+				myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
+			}()
+		}
+		wg.Wait()
+		myLog.Debug("completed", "duration", time.Since(start).Milliseconds())
+		if onCompleted != nil {
+			onCompleted()
+		}
 	})
 }
 
