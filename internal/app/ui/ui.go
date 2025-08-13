@@ -728,7 +728,7 @@ func runFunctionsWithProgressModal(title string, ff map[string]func(), onSuccess
 	})
 }
 
-// updateStatus refreshed all status information pages.
+// updateStatus refreshes all status pages and dynamic menus.
 func (u *baseUI) updateStatus() {
 	if u.onUpdateStatus == nil {
 		return
@@ -1217,6 +1217,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionCharacterRoles:
 		if needsRefresh {
+			u.updateStatus()
 			if isShown {
 				u.characterSheet.update()
 			}
@@ -1227,7 +1228,6 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 				slog.Error("Failed to remove corp data after character role change", "characterID", characterID, "error", err)
 			}
 			u.updateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
-			u.updateStatus()
 		}
 	case app.SectionCharacterSkills:
 		if needsRefresh {

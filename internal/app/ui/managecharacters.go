@@ -238,11 +238,10 @@ func (a *manageCharacters) showAddCharacterDialog() {
 	cancelCTX, cancel := context.WithCancel(context.Background())
 	infoText := widget.NewLabel("Please follow instructions in your browser to add a new character.")
 	activity := widget.NewActivity()
-	content := container.NewHBox(infoText, activity)
 	d1 := dialog.NewCustom(
 		"Add Character",
 		"Cancel",
-		content,
+		container.NewHBox(infoText, activity),
 		a.mcw.w,
 	)
 	a.mcw.u.ModifyShortcutsForDialog(d1, a.mcw.w)

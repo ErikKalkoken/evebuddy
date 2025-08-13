@@ -418,6 +418,10 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			if len(cc) == 0 {
 				fyne.Do(func() {
 					navBar.Disable(2)
+					id, ok := navBar.Selected()
+					if ok && id == 2 {
+						navBar.Select(0)
+					}
 				})
 				return
 			}

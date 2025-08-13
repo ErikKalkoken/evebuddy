@@ -403,3 +403,10 @@ func (s *CharacterService) addMissingEveEntitiesAndLocations(ctx context.Context
 	}
 	return nil
 }
+
+// DumpData returns the current content of the given SQL tables as JSON string.
+// When no tables are given all tables will be included.
+// This is a low-level method meant mainly for debugging.
+func (s *CharacterService) DumpData(tables ...string) string {
+	return s.st.DumpData(tables...)
+}
