@@ -91,7 +91,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		})
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, character.ID, got)
+			assert.Equal(t, character.ID, got.ID)
 			ok, err := cs.HasCharacter(ctx, character.ID)
 			if assert.NoError(t, err) {
 				assert.True(t, ok)
@@ -131,7 +131,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		})
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, c.ID, got)
+			assert.Equal(t, c.ID, got.ID)
 			token, err := st.GetCharacterToken(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, token.CharacterID, c.ID)
@@ -151,11 +151,6 @@ func TestTrainingWatchers(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c1.ID})
-		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-			CharacterID: c1.ID,
-			Section:     app.SectionCharacterSkillqueue,
-			CompletedAt: time.Now().UTC(),
-		})
 		c2 := factory.CreateCharacterFull()
 		// when
 		err := cs.EnableAllTrainingWatchers(ctx)
@@ -195,11 +190,6 @@ func TestTrainingWatchers(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c1.ID})
-		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-			CharacterID: c1.ID,
-			Section:     app.SectionCharacterSkillqueue,
-			CompletedAt: time.Now().UTC(),
-		})
 		// when
 		err := cs.EnableTrainingWatcher(ctx, c1.ID)
 		// then
@@ -214,11 +204,6 @@ func TestTrainingWatchers(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacterFull()
-		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-			CharacterID: c1.ID,
-			Section:     app.SectionCharacterSkillqueue,
-			CompletedAt: time.Now().UTC(),
-		})
 		// when
 		err := cs.EnableTrainingWatcher(ctx, c1.ID)
 		// then

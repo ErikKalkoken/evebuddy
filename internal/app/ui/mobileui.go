@@ -410,6 +410,24 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				characterSelector.SetMenuItems(u.makeCharacterSwitchMenu(characterSelector.Refresh))
 				corpSelector.SetMenuItems(u.makeCorporationSwitchMenu(corpSelector.Refresh))
 			})
+			cc, err := u.ListCorporationsForSelection()
+			if err != nil {
+				slog.Error("Failed to fetch corporations", "error", err)
+				return
+			}
+			if len(cc) == 0 {
+				fyne.Do(func() {
+					navBar.Disable(2)
+					id, ok := navBar.Selected()
+					if ok && id == 2 {
+						navBar.Select(0)
+					}
+				})
+				return
+			}
+			fyne.Do(func() {
+				navBar.Enable(2)
+			})
 		}()
 	}
 	u.onUpdateCharacter = func(c *app.Character) {
@@ -421,26 +439,17 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			if c == nil {
 				navBar.Disable(0)
 				navBar.Disable(1)
-				navBar.Disable(2)
 				navBar.Disable(3)
 				navBar.Select(4)
 			} else {
+				wasDisabled := !navBar.Enabled(0)
 				navBar.Enable(0)
 				navBar.Enable(1)
-				navBar.Enable(2)
 				navBar.Enable(3)
+				if wasDisabled {
+					navBar.Select(0)
+				}
 			}
-		})
-	}
-	u.onUpdateCorporation = func(corporation *app.Corporation) {
-		if corporation == nil {
-			fyne.Do(func() {
-				navBar.Disable(3)
-			})
-			return
-		}
-		fyne.Do(func() {
-			navBar.Enable(3)
 		})
 	}
 	u.onSetCharacter = func(id int32) {

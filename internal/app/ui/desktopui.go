@@ -481,18 +481,6 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		}()
 	}
 
-	u.onUpdateCorporation = func(corporation *app.Corporation) {
-		if corporation == nil {
-			fyne.Do(func() {
-				corporationNav.SelectIndex(0)
-				tabs.DisableItem(corporationTab)
-			})
-			return
-		}
-		fyne.Do(func() {
-			tabs.EnableItem(corporationTab)
-		})
-	}
 	u.onShowAndRun = func() {
 		u.MainWindow().Resize(u.settings.WindowSize())
 	}
@@ -508,6 +496,23 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		go statusBar.update()
 		go characterPageBars.update()
 		go corporationPageBars.update()
+		go func() {
+			cc, err := u.ListCorporationsForSelection()
+			if err != nil {
+				slog.Error("Failed to fetch corporations", "error", err)
+				return
+			}
+			if len(cc) == 0 {
+				fyne.Do(func() {
+					corporationNav.SelectIndex(0)
+					tabs.DisableItem(corporationTab)
+				})
+				return
+			}
+			fyne.Do(func() {
+				tabs.EnableItem(corporationTab)
+			})
+		}()
 	}
 	return u
 }

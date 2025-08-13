@@ -3,16 +3,19 @@ package storage
 import (
 	"database/sql"
 	"embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/url"
+	"slices"
 
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/migrate"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 //go:embed migrations/*.sql
@@ -37,6 +40,72 @@ func New(dbRW *sql.DB, dbRO *sql.DB) *Storage {
 		qRW:                      queries.New(dbRW),
 	}
 	return r
+}
+
+// DumpData returns the current content of the given SQL tables as JSON string.
+// When no tables are given all tables will be included.
+//
+// This is a low-level method meant mainly for debugging and tests.
+func (st *Storage) DumpData(tables ...string) string {
+	sql := `SELECT name FROM sqlite_master WHERE type = "table" AND name NOT IN ("sqlite_sequence")`
+	rows, err := st.dbRO.Query(sql)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+	var allTables set.Set[string]
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			panic(err)
+		}
+		allTables.Add(name)
+	}
+	if len(tables) == 0 {
+		tables = allTables.Slice()
+	} else {
+		for _, x := range tables {
+			if !allTables.Contains(x) {
+				panic("Table not found with name: " + x)
+			}
+		}
+	}
+	slices.Sort(tables)
+	world := make(map[string]any)
+	for _, table := range tables {
+		sql := fmt.Sprintf("SELECT * FROM %s;", table)
+		rows, err := st.dbRO.Query(sql)
+		if err != nil {
+			panic(err)
+		}
+		defer rows.Close()
+		cols, err := rows.Columns()
+		if err != nil {
+			panic(err)
+		}
+		data := make([]any, 0)
+		for rows.Next() {
+			items := make([]any, len(cols))
+			for i := range items {
+				items[i] = new(any)
+			}
+			if err := rows.Scan(items...); err != nil {
+				panic(err)
+			}
+			row := make(map[string]any)
+			for i, v := range items {
+				vv := v.(*any)
+				row[cols[i]] = *vv
+			}
+			data = append(data, row)
+		}
+		world[table] = data
+	}
+	b, err := json.MarshalIndent(world, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+	return (string(b))
 }
 
 // InitDB initializes the database and returns it.

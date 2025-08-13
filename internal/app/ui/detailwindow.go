@@ -7,19 +7,21 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type detailWindowParams struct {
-	content     fyne.CanvasObject
-	imageAction func()
-	imageLoader func() (fyne.Resource, error) // async loader
-	imageSize   float32
-	minSize     fyne.Size
-	title       string
-	window      fyne.Window
+	content        fyne.CanvasObject
+	enableTooltips bool
+	imageAction    func()
+	imageLoader    func() (fyne.Resource, error) // async loader
+	imageSize      float32
+	minSize        fyne.Size
+	title          string
+	window         fyne.Window
 }
 
 // setDetailWindow sets the content of a window to create a "detail window".
@@ -60,13 +62,17 @@ func setDetailWindow(arg detailWindowParams) {
 	t.Truncation = fyne.TextTruncateEllipsis
 	top := container.NewVBox(t, widget.NewSeparator())
 
-	c := container.NewBorder(
+	c := container.NewPadded(container.NewBorder(
 		top,
 		nil,
 		nil,
 		nil,
 		vs,
-	)
+	))
 	c.Refresh()
-	arg.window.SetContent(container.NewPadded(c))
+	if arg.enableTooltips {
+		arg.window.SetContent(fynetooltip.AddWindowToolTipLayer(c, arg.window.Canvas()))
+	} else {
+		arg.window.SetContent(c)
+	}
 }

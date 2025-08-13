@@ -14,7 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
-func TestUIStartEmpty(t *testing.T) {
+func TestUI_StartEmpty(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	httpmock.RegisterNoResponder(httpmock.NewNotFoundResponder(t.Fatal)) // fails on any HTTP request
@@ -35,7 +35,7 @@ func TestUIStartEmpty(t *testing.T) {
 	assert.Equal(t, 0, httpmock.GetTotalCallCount())
 }
 
-func TestUIStartWithCharacter(t *testing.T) {
+func TestUI_StartWithCharacter(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	httpmock.RegisterNoResponder(httpmock.NewNotFoundResponder(t.Fatal)) // fails on any HTTP request
@@ -72,14 +72,14 @@ func TestUIStartWithCharacter(t *testing.T) {
 	assert.Equal(t, 0, httpmock.GetTotalCallCount())
 }
 
-func TestCanUpdateAllEmpty(t *testing.T) {
+func TestUI_CanUpdateAllEmpty(t *testing.T) {
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	bu := ui.NewFakeBaseUI(st, test.NewTempApp(t), true)
 	bu.UpdateAll()
 }
 
-func TestCanUpdateAllWithData(t *testing.T) {
+func TestUI_CanUpdateAllWithData(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	test.ApplyTheme(t, test.Theme())

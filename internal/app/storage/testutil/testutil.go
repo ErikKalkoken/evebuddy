@@ -2,14 +2,11 @@ package testutil
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"path/filepath"
-	"slices"
 	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 // NewDBInMemory creates and returns a database in memory for tests.
@@ -84,73 +81,6 @@ func TruncateTables(dbRW *sql.DB) {
 	if err != nil {
 		panic(err)
 	}
-}
-
-// DumpTables returns the current content of the given SQL tables as JSON string.
-// When no tables are given all non-empty tables will be dumped.
-func DumpTables(db *sql.DB, tables ...string) string {
-	sql := `SELECT name FROM sqlite_master WHERE type = "table"`
-	rows, err := db.Query(sql)
-	if err != nil {
-		panic(err)
-	}
-	defer rows.Close()
-	var allTables set.Set[string]
-	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
-			panic(err)
-		}
-		allTables.Add(name)
-	}
-	if len(tables) == 0 {
-		tables = allTables.Slice()
-	} else {
-		for _, x := range tables {
-			if !allTables.Contains(x) {
-				panic("Table not found with name: " + x)
-			}
-		}
-	}
-	slices.Sort(tables)
-	world := make(map[string]any)
-	for _, table := range tables {
-		sql := fmt.Sprintf("SELECT * FROM %s;", table)
-		rows, err := db.Query(sql)
-		if err != nil {
-			panic(err)
-		}
-		defer rows.Close()
-		cols, err := rows.Columns()
-		if err != nil {
-			panic(err)
-		}
-		data := make([]any, 0)
-		for rows.Next() {
-			items := make([]any, len(cols))
-			for i := range items {
-				items[i] = new(any)
-			}
-			if err := rows.Scan(items...); err != nil {
-				panic(err)
-			}
-			row := make(map[string]any)
-			for i, v := range items {
-				vv := v.(*any)
-				row[cols[i]] = *vv
-			}
-			data = append(data, row)
-		}
-		if len(data) == 0 {
-			continue
-		}
-		world[table] = data
-	}
-	b, err := json.MarshalIndent(world, "", "    ")
-	if err != nil {
-		panic(err)
-	}
-	return (string(b))
 }
 
 // ErrGroupDebug represents a replacement for errgroup.Group with the same API,

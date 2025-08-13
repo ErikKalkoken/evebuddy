@@ -258,7 +258,7 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		changed, err := s.UpdateSkillqueueESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateSkillqueueESI(ctx, app.CharacterUpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterSkillqueue,
 		})

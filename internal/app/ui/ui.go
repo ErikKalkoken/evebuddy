@@ -728,7 +728,7 @@ func runFunctionsWithProgressModal(title string, ff map[string]func(), onSuccess
 	})
 }
 
-// updateStatus refreshed all status information pages.
+// updateStatus refreshes all status pages and dynamic menus.
 func (u *baseUI) updateStatus() {
 	if u.onUpdateStatus == nil {
 		return
@@ -814,13 +814,7 @@ func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 
 func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
 	items := make([]*fyne.MenuItem, 0)
-	var err error
-	var cc []*app.EntityShort[int32]
-	if u.settings.HideLimitedCorporations() {
-		cc, err = u.rs.ListPrivilegedCorporations(context.Background())
-	} else {
-		cc, err = u.cs.ListCharacterCorporations(context.Background())
-	}
+	cc, err := u.ListCorporationsForSelection()
 	if err != nil {
 		slog.Error("Failed to fetch corporations", "error", err)
 		return items
@@ -833,14 +827,14 @@ func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
 	corporations := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort[int32]) int32 {
 		return x.ID
 	}))
-	if !corporations.Contains(u.currentCorporationID()) {
+	currentID := u.currentCorporationID()
+	if currentID != 0 && !corporations.Contains(currentID) {
 		go u.setAnyCorporation()
 	}
 	it := fyne.NewMenuItem("Switch to...", nil)
 	it.Disabled = true
 	items = append(items, it)
 	var wg sync.WaitGroup
-	currentID := u.currentCorporationID()
 	fallbackIcon, _ := fynetools.MakeAvatar(icons.Corporationplaceholder64Png)
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
@@ -872,6 +866,13 @@ func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
 		})
 	}()
 	return items
+}
+
+func (u *baseUI) ListCorporationsForSelection() ([]*app.EntityShort[int32], error) {
+	if u.settings.HideLimitedCorporations() {
+		return u.rs.ListPrivilegedCorporations(context.Background())
+	}
+	return u.cs.ListCharacterCorporations(context.Background())
 }
 
 func (u *baseUI) sendDesktopNotification(title, content string) {
@@ -1216,6 +1217,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionCharacterRoles:
 		if needsRefresh {
+			u.updateStatus()
 			if isShown {
 				u.characterSheet.update()
 			}
@@ -1226,7 +1228,6 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 				slog.Error("Failed to remove corp data after character role change", "characterID", characterID, "error", err)
 			}
 			u.updateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
-			u.updateStatus()
 		}
 	case app.SectionCharacterSkills:
 		if needsRefresh {

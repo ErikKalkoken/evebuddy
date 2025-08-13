@@ -114,12 +114,12 @@ func (s *CharacterService) EnableTrainingWatcher(ctx context.Context, characterI
 	if c.IsTrainingWatched {
 		return nil
 	}
-	t, err := s.TotalTrainingTime(ctx, characterID)
+	isActive, err := s.IsTrainingActive(ctx, characterID)
 	if err != nil {
 		return err
 	}
-	if t.ValueOrZero() == 0 {
-		return nil // no active training
+	if !isActive {
+		return nil
 	}
 	err = s.UpdateIsTrainingWatched(ctx, characterID, true)
 	if err != nil {
@@ -136,11 +136,11 @@ func (s *CharacterService) EnableAllTrainingWatchers(ctx context.Context) error 
 		return err
 	}
 	for id := range ids.All() {
-		t, err := s.TotalTrainingTime(ctx, id)
+		isActive, err := s.IsTrainingActive(ctx, id)
 		if err != nil {
 			return err
 		}
-		if t.IsEmpty() {
+		if !isActive {
 			continue
 		}
 		err = s.UpdateIsTrainingWatched(ctx, id, true)
@@ -229,17 +229,17 @@ func (s *CharacterService) HasCharacter(ctx context.Context, id int32) (bool, er
 // UpdateOrCreateCharacterFromSSO creates or updates a character via SSO authentication.
 // The provided context is used for the SSO authentication process only and can be canceled.
 // the setInfo callback is used to update info text in a dialog.
-func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, setInfo func(s string)) (int32, error) {
+func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, setInfo func(s string)) (*app.Character, error) {
 	ssoToken, err := s.sso.Authenticate(ctx, app.Scopes().Slice())
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	slog.Info("Created new SSO token", "characterID", ssoToken.CharacterID, "scopes", ssoToken.Scopes)
 	setInfo("Fetching character from game server. Please wait...")
-	charID := ssoToken.CharacterID
+	characterID := ssoToken.CharacterID
 	token := storage.UpdateOrCreateCharacterTokenParams{
 		AccessToken:  ssoToken.AccessToken,
-		CharacterID:  charID,
+		CharacterID:  characterID,
 		ExpiresAt:    ssoToken.ExpiresAt,
 		RefreshToken: ssoToken.RefreshToken,
 		Scopes:       set.Of(ssoToken.Scopes...),
@@ -248,32 +248,36 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
 	character, err := s.eus.GetOrCreateCharacterESI(ctx, token.CharacterID)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	err = s.st.CreateCharacter(ctx, storage.CreateCharacterParams{ID: token.CharacterID})
 	if err != nil && !errors.Is(err, app.ErrAlreadyExists) {
-		return 0, err
+		return nil, err
 	}
 	if err := s.st.UpdateOrCreateCharacterToken(ctx, token); err != nil {
-		return 0, err
+		return nil, err
 	}
 	if err := s.scs.UpdateCharacters(ctx); err != nil {
-		return 0, err
+		return nil, err
 	}
 	setInfo("Fetching corporation from game server. Please wait...")
 	if _, err := s.eus.GetOrCreateCorporationESI(ctx, character.Corporation.ID); err != nil {
-		return 0, err
+		return nil, err
 	}
 	if x := character.Corporation.IsNPC(); !x.IsEmpty() && !x.ValueOrZero() {
 		if _, err = s.st.GetOrCreateCorporation(ctx, character.Corporation.ID); err != nil {
-			return 0, err
+			return nil, err
 		}
 		if err := s.scs.UpdateCorporations(ctx); err != nil {
-			return 0, err
+			return nil, err
 		}
 	}
+	c, err := s.st.GetCharacter(ctx, characterID)
+	if err != nil {
+		return nil, err
+	}
 	setInfo("Character added successfully")
-	return token.CharacterID, nil
+	return c, nil
 }
 
 func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
@@ -398,4 +402,11 @@ func (s *CharacterService) addMissingEveEntitiesAndLocations(ctx context.Context
 		return err
 	}
 	return nil
+}
+
+// DumpData returns the current content of the given SQL tables as JSON string.
+// When no tables are given all tables will be included.
+// This is a low-level method meant mainly for debugging.
+func (s *CharacterService) DumpData(tables ...string) string {
+	return s.st.DumpData(tables...)
 }

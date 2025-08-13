@@ -82,6 +82,8 @@ func NewCharacterSkillqueue() *CharacterSkillqueue {
 
 // CharacterID returns the character ID related to a queue.
 func (sq *CharacterSkillqueue) CharacterID() int32 {
+	sq.mu.RLock()
+	defer sq.mu.RUnlock()
 	return sq.characterID
 }
 
@@ -118,12 +120,16 @@ func (sq *CharacterSkillqueue) CompletionP() optional.Optional[float64] {
 }
 
 // IsActive reports whether training is active.
+// An empty queue will be reported as inactive.
 func (sq *CharacterSkillqueue) IsActive() bool {
-	c := sq.Active()
-	if c == nil {
-		return false
+	sq.mu.RLock()
+	defer sq.mu.RUnlock()
+	for _, qi := range sq.items {
+		if qi.FinishDate.After(time.Now().UTC()) {
+			return true
+		}
 	}
-	return sq.RemainingTime().ValueOrZero() > 0
+	return false
 }
 
 // Item returns the item on position id in the queue.
@@ -146,25 +152,23 @@ func (sq *CharacterSkillqueue) Size() int {
 
 // RemainingCount returns the number of skills to be trained.
 func (sq *CharacterSkillqueue) RemainingCount() optional.Optional[int] {
+	if !sq.IsActive() {
+		return optional.Optional[int]{}
+	}
 	sq.mu.RLock()
 	defer sq.mu.RUnlock()
 	var count int
-	var isActive bool
 	for _, item := range sq.items {
 		if !item.Remaining().IsEmpty() {
-			isActive = true
 			count++
 		}
-	}
-	if !isActive {
-		return optional.Optional[int]{}
 	}
 	return optional.New(count)
 }
 
 // RemainingTime returns the total remaining training time of all skills in the queue.
 func (sq *CharacterSkillqueue) RemainingTime() optional.Optional[time.Duration] {
-	zero := optional.Optional[time.Duration]{}
+	var zero optional.Optional[time.Duration]
 	t := sq.FinishDate()
 	if t.IsEmpty() {
 		return zero

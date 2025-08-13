@@ -186,6 +186,7 @@ SELECT
 FROM
     characters ch
     JOIN eve_characters ec ON ec.id = ch.id
+    JOIN corporations ep ON ep.id = ec.corporation_id
     JOIN eve_entities ee ON ee.id = ec.corporation_id
 `
 

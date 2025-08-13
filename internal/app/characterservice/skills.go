@@ -2,13 +2,11 @@ package characterservice
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"maps"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -222,24 +220,13 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 		})
 }
 
-// TotalTrainingTime returns the total remaining training time for a character.
-// It returns 0 when training is inactive.
-// It returns empty when the training status is unknown.
-func (s *CharacterService) TotalTrainingTime(ctx context.Context, characterID int32) (optional.Optional[time.Duration], error) {
-	status, err := s.st.GetCharacterSectionStatus(ctx, characterID, app.SectionCharacterSkillqueue)
-	if errors.Is(err, app.ErrNotFound) {
-		return optional.Optional[time.Duration]{}, nil
-	} else if err != nil {
-		return optional.Optional[time.Duration]{}, err
+// IsTrainingActive reports whether training is active.
+func (s *CharacterService) IsTrainingActive(ctx context.Context, characterID int32) (bool, error) {
+	queue := app.NewCharacterSkillqueue()
+	if err := queue.Update(ctx, s, characterID); err != nil {
+		return false, err
 	}
-	if status.IsMissing() {
-		return optional.Optional[time.Duration]{}, nil
-	}
-	v, err := s.st.GetCharacterTotalTrainingTime(ctx, characterID)
-	if err != nil {
-		return optional.Optional[time.Duration]{}, err
-	}
-	return optional.New(v), nil
+	return queue.IsActive(), nil
 }
 
 func (s *CharacterService) NotifyExpiredTraining(ctx context.Context, characterID int32, notify func(title, content string)) error {
@@ -251,11 +238,11 @@ func (s *CharacterService) NotifyExpiredTraining(ctx context.Context, characterI
 		if !c.IsTrainingWatched {
 			return nil, nil
 		}
-		t, err := s.TotalTrainingTime(ctx, characterID)
+		isActive, err := s.IsTrainingActive(ctx, characterID)
 		if err != nil {
 			return nil, err
 		}
-		if !t.IsEmpty() {
+		if isActive {
 			return nil, nil
 		}
 		title := fmt.Sprintf("%s: No skill in training", c.EveCharacter.Name)
@@ -269,22 +256,14 @@ func (s *CharacterService) NotifyExpiredTraining(ctx context.Context, characterI
 	return nil
 }
 
+// ListSkillqueueItems returns the list of skillqueue items.
 func (s *CharacterService) ListSkillqueueItems(ctx context.Context, characterID int32) ([]*app.CharacterSkillqueueItem, error) {
-	// status, err := s.st.GetCharacterSectionStatus(ctx, characterID, app.SectionSkillqueue)
-	// if errors.Is(err, app.ErrNotFound) {
-	// 	return []*app.CharacterSkillqueueItem{}, nil
-	// } else if err != nil {
-	// 	return nil, err
-	// }
-	// if status.IsMissing() {
-	// 	return []*app.CharacterSkillqueueItem{}, nil
-	// }
 	return s.st.ListCharacterSkillqueueItems(ctx, characterID)
 }
 
-// UpdateSkillqueueESI updates the skillqueue for a character from ESI
+// updateSkillqueueESI updates the skillqueue for a character from ESI
 // and reports whether it has changed.
-func (s *CharacterService) UpdateSkillqueueESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionCharacterSkillqueue {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}

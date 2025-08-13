@@ -238,65 +238,60 @@ func (a *manageCharacters) showAddCharacterDialog() {
 	cancelCTX, cancel := context.WithCancel(context.Background())
 	infoText := widget.NewLabel("Please follow instructions in your browser to add a new character.")
 	activity := widget.NewActivity()
-	content := container.NewHBox(infoText, activity)
 	d1 := dialog.NewCustom(
 		"Add Character",
 		"Cancel",
-		content,
+		container.NewHBox(infoText, activity),
 		a.mcw.w,
 	)
 	a.mcw.u.ModifyShortcutsForDialog(d1, a.mcw.w)
 	d1.SetOnClosed(cancel)
+	fyne.Do(func() {
+		d1.Show()
+	})
 	go func() {
-		characterID, err := func() (int32, error) {
-			characterID, err := a.mcw.u.cs.UpdateOrCreateCharacterFromSSO(cancelCTX, func(s string) {
+		defer fyne.Do(func() {
+			d1.Hide()
+		})
+		character, err := func() (*app.Character, error) {
+			c, err := a.mcw.u.cs.UpdateOrCreateCharacterFromSSO(cancelCTX, func(s string) {
 				fyne.Do(func() {
 					infoText.SetText(s)
 					activity.Start()
 				})
 			})
 			if err != nil {
-				return 0, err
+				return nil, err
 			}
 			a.update()
-			return characterID, nil
+			return c, nil
 		}()
-		fyne.Do(func() {
-			d1.Hide()
-			if err != nil && !errors.Is(err, app.ErrAborted) {
-				s := "Failed to add a new character"
-				slog.Error(s, "error", err)
+		if errors.Is(err, app.ErrAborted) {
+			return
+		}
+		if err != nil {
+			s := "Failed to add a new character"
+			slog.Error(s, "error", err)
+			fyne.Do(func() {
 				a.mcw.u.showErrorDialog(s, err, a.mcw.w)
-				return
+			})
+			return
+		}
+		if !a.mcw.u.hasCharacter() {
+			a.mcw.u.loadCharacter(character.ID)
+		}
+		if !a.mcw.u.hasCorporation() {
+			if c := character.EveCharacter.Corporation; !c.IsNPC().ValueOrZero() {
+				a.mcw.u.loadCorporation(c.ID)
 			}
-			go func() {
-				if !a.mcw.u.hasCharacter() {
-					a.mcw.u.loadCharacter(characterID)
-				}
-				var corporationID int32
-				character := a.mcw.u.currentCharacter()
-				if character != nil {
-					if corp := character.EveCharacter.Corporation; !corp.IsNPC().ValueOrZero() {
-						corporationID = corp.ID
-						a.mcw.u.loadCorporation(corporationID)
-					}
-				}
-				if !a.mcw.u.hasCorporation() && corporationID != 0 {
-					a.mcw.u.loadCorporation(corporationID)
-				}
-				a.mcw.u.updateStatus()
-				a.mcw.u.updateHome()
-				if a.mcw.u.isUpdateDisabled {
-					return
-				}
-				ctx := context.Background()
-				go a.mcw.u.updateCharacterAndRefreshIfNeeded(ctx, characterID, true)
-			}()
-		})
+		}
+		a.mcw.u.updateStatus()
+		a.mcw.u.updateHome()
+		if a.mcw.u.isUpdateDisabled {
+			return
+		}
+		go a.mcw.u.updateCharacterAndRefreshIfNeeded(context.Background(), character.ID, true)
 	}()
-	fyne.Do(func() {
-		d1.Show()
-	})
 }
 
 func (a *manageCharacters) showDeleteDialog(r manageCharacterRow) {
