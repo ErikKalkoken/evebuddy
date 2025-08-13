@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
@@ -481,7 +482,17 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	var hasUpdate bool
 	var hasError bool
 	refreshMoreBadge := func() {
-		navBar.SetBadge(4, hasUpdate || hasError)
+		if hasError || hasUpdate {
+			var importance widget.Importance
+			if hasError {
+				importance = widget.DangerImportance
+			} else if hasUpdate {
+				importance = widget.HighImportance
+			}
+			navBar.ShowBadge(4, importance)
+		} else {
+			navBar.HideBadge(4)
+		}
 	}
 
 	u.onAppFirstStarted = func() {
@@ -491,7 +502,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				var icon fyne.Resource
 				status := u.scs.Summary()
 				if status.Errors > 0 {
-					icon = theme.WarningIcon()
+					icon = theme.NewErrorThemedResource(theme.WarningIcon())
 					hasError = true
 				} else {
 					icon = nil
