@@ -2,12 +2,13 @@ package ui
 
 import (
 	"context"
+	"image/color"
 	"log/slog"
 	"strconv"
-	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
@@ -48,7 +49,7 @@ type statusBar struct {
 	u                 *DesktopUI
 	updateHint        *updateHint
 	updateStatus      *statusBarItem
-	updatingCount     atomic.Int64
+	updatingCount     int // count of currently running updates. serialized with Fyne.Do.
 	updatingIndicator *iwidget.Activity
 }
 
@@ -83,14 +84,20 @@ func newStatusBar(u *DesktopUI) *statusBar {
 }
 
 func (a *statusBar) CreateRenderer() fyne.WidgetRenderer {
+	spacer := canvas.NewRectangle(color.Transparent)
+	spacer.SetMinSize(a.updatingIndicator.MinSize())
+	p := theme.Padding()
 	c := container.NewVBox(
 		widget.NewSeparator(),
 		container.NewHBox(
 			layout.NewSpacer(),
 			a.updateHint,
 			widget.NewSeparator(),
-			a.updateStatus,
-			a.updatingIndicator,
+			container.New(
+				layout.NewCustomPaddedHBoxLayout(-p),
+				a.updateStatus,
+				container.NewStack(spacer, a.updatingIndicator),
+			),
 			widget.NewSeparator(),
 			a.characterCount,
 			widget.NewSeparator(),
@@ -252,20 +259,29 @@ func (a *statusBar) setEveStatus(status eveStatus, title, errorMessage string) {
 }
 
 func (a *statusBar) ShowUpdating() {
-	c := a.updatingCount.Add(1)
-	if c == 1 {
-		a.updatingIndicator.Start()
-		a.updatingIndicator.Show()
-	}
+	fyne.Do(func() {
+		a.updateStatus.Refresh()
+		a.updatingCount++
+		if a.updatingCount == 1 {
+			a.updatingIndicator.Start()
+			a.updatingIndicator.Show()
+		}
+	})
 }
 
 func (a *statusBar) HideUpdating() {
-	c := a.updatingCount.Add(-1)
-	if c > 0 {
-		return
-	}
-	a.updatingIndicator.Hide()
-	a.updatingIndicator.Stop()
+	fyne.Do(func() {
+		a.updateStatus.Refresh()
+		if a.updatingCount == 0 {
+			return
+		}
+		a.updatingCount--
+		if a.updatingCount > 0 {
+			return
+		}
+		a.updatingIndicator.Hide()
+		a.updatingIndicator.Stop()
+	})
 }
 
 // statusBarItem is a widget with a label and an optional icon, which can be tapped.
@@ -344,12 +360,13 @@ func (w *statusBarItem) MouseOut() {
 }
 
 func (w *statusBarItem) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewHBox()
+	p := theme.Padding()
+	c := container.New(layout.NewCustomPaddedHBoxLayout(0))
 	if w.icon != nil {
 		c.Add(w.icon)
 	}
 	c.Add(w.label)
-	return widget.NewSimpleRenderer(c)
+	return widget.NewSimpleRenderer(container.New(layout.NewCustomPaddedLayout(0, 0, p, p), c))
 }
 
 type updateHint struct {

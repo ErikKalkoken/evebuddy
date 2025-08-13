@@ -168,6 +168,8 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 	}
 	key := fmt.Sprintf("update-corporation-section-%s-%d", arg.Section, arg.CorporationID)
 	v, err, _ := s.sfg.Do(key, func() (any, error) {
+		arg.OnUpdateStarted()
+		defer arg.OnUpdateCompleted()
 		return f(ctx, arg)
 	})
 	if err != nil {

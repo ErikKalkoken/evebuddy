@@ -84,6 +84,8 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 	}
 	key := fmt.Sprintf("update-character-section-%s-%d", arg.Section, arg.CharacterID)
 	x, err, _ := s.sfg.Do(key, func() (any, error) {
+		arg.OnUpdateStarted()
+		defer arg.OnUpdateCompleted()
 		return f(ctx, arg)
 	})
 	if err != nil {
