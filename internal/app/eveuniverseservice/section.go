@@ -50,6 +50,10 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, arg app.GeneralU
 	default:
 		slog.Warn("encountered unknown section", "section", arg.Section)
 	}
+	if arg.OnUpdateStarted != nil && arg.OnUpdateCompleted != nil {
+		arg.OnUpdateStarted()
+		defer arg.OnUpdateCompleted()
+	}
 	x, err, _ := s.sfg.Do(fmt.Sprintf("update-general-section-%s", arg.Section), func() (any, error) {
 		slog.Debug("Started updating eveuniverse section", "section", arg.Section)
 		startedAt := optional.New(time.Now())
@@ -61,8 +65,6 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, arg app.GeneralU
 			return false, err
 		}
 		s.scs.SetGeneralSection(o)
-		arg.OnUpdateStarted()
-		defer arg.OnUpdateCompleted()
 		changed, err := f(ctx)
 		slog.Debug("Finished updating general section", "section", arg.Section)
 		return changed, err

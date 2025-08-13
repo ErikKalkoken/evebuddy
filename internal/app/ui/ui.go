@@ -1020,33 +1020,39 @@ func (u *baseUI) makeAboutPage() fyne.CanvasObject {
 	}
 	local := widget.NewLabel(v)
 	latest := widget.NewLabel("?")
-	latest.Hide()
 	spinner := widget.NewActivity()
-	spinner.Start()
-	go func() {
-		var s string
-		var i widget.Importance
-		var isBold bool
-		v, err := u.availableUpdate()
-		if err != nil {
-			slog.Error("fetch github version for about", "error", err)
-			s = "ERROR"
-			i = widget.DangerImportance
-		} else if v.IsRemoteNewer {
-			s = v.Latest
-			isBold = true
-		} else {
-			s = v.Latest
-		}
-		fyne.Do(func() {
-			latest.Text = s
-			latest.TextStyle.Bold = isBold
-			latest.Importance = i
-			latest.Refresh()
-			spinner.Hide()
-			latest.Show()
-		})
-	}()
+	if !u.IsOffline() {
+		latest.Hide()
+		spinner.Start()
+		go func() {
+			var s string
+			var i widget.Importance
+			var isBold bool
+			v, err := u.availableUpdate()
+			if err != nil {
+				slog.Error("fetch github version for about", "error", err)
+				s = "ERROR"
+				i = widget.DangerImportance
+			} else if v.IsRemoteNewer {
+				s = v.Latest
+				isBold = true
+			} else {
+				s = v.Latest
+			}
+			fyne.Do(func() {
+				latest.Text = s
+				latest.TextStyle.Bold = isBold
+				latest.Importance = i
+				latest.Refresh()
+				spinner.Hide()
+				latest.Show()
+			})
+		}()
+	} else {
+		spinner.Hide()
+		latest.SetText("Offline")
+		latest.Importance = widget.LowImportance
+	}
 	title := widget.NewLabel(u.appName())
 	title.SizeName = theme.SizeNameSubHeadingText
 	title.TextStyle.Bold = true
