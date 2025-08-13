@@ -2,11 +2,13 @@ package ui
 
 import (
 	"context"
+	"image/color"
 	"log/slog"
 	"strconv"
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
@@ -40,20 +42,24 @@ const (
 type statusBar struct {
 	widget.BaseWidget
 
-	characterCount *statusBarItem
-	eveClock       *statusBarItem
-	eveStatus      *statusBarItem
-	eveStatusError string
-	infoText       *widget.Label
-	u              *DesktopUI
-	updateHint     *updateHint
-	updateStatus   *statusBarItem
+	characterCount    *statusBarItem
+	eveClock          *statusBarItem
+	eveStatus         *statusBarItem
+	eveStatusError    string
+	u                 *DesktopUI
+	updateHint        *updateHint
+	updateStatus      *statusBarItem
+	updatingCount     int // count of currently running updates. serialized with Fyne.Do.
+	updatingIndicator *iwidget.Activity
 }
 
 func newStatusBar(u *DesktopUI) *statusBar {
+	ac := iwidget.NewActivity()
+	ac.SetToolTip("Synchronizing with game server...")
+	ac.Stop()
 	a := &statusBar{
-		infoText: widget.NewLabel(""),
-		u:        u,
+		updatingIndicator: ac,
+		u:                 u,
 	}
 	a.ExtendBaseWidget(a)
 	a.characterCount = newStatusBarItem(theme.NewThemedResource(icons.GroupSvg), "?", func() {
@@ -78,14 +84,20 @@ func newStatusBar(u *DesktopUI) *statusBar {
 }
 
 func (a *statusBar) CreateRenderer() fyne.WidgetRenderer {
+	spacer := canvas.NewRectangle(color.Transparent)
+	spacer.SetMinSize(a.updatingIndicator.MinSize())
+	p := theme.Padding()
 	c := container.NewVBox(
 		widget.NewSeparator(),
 		container.NewHBox(
-			a.infoText,
 			layout.NewSpacer(),
 			a.updateHint,
 			widget.NewSeparator(),
-			a.updateStatus,
+			container.New(
+				layout.NewCustomPaddedHBoxLayout(-p),
+				a.updateStatus,
+				container.NewStack(spacer, a.updatingIndicator),
+			),
 			widget.NewSeparator(),
 			a.characterCount,
 			widget.NewSeparator(),
@@ -246,14 +258,30 @@ func (a *statusBar) setEveStatus(status eveStatus, title, errorMessage string) {
 	a.eveStatus.SetText(title)
 }
 
-func (a *statusBar) SetInfo(text string) {
-	a.setInfo(text, widget.MediumImportance)
+func (a *statusBar) ShowUpdating() {
+	fyne.Do(func() {
+		a.updateStatus.Refresh()
+		a.updatingCount++
+		if a.updatingCount == 1 {
+			a.updatingIndicator.Start()
+			a.updatingIndicator.Show()
+		}
+	})
 }
 
-func (a *statusBar) setInfo(text string, importance widget.Importance) {
-	a.infoText.Text = text
-	a.infoText.Importance = importance
-	a.infoText.Refresh()
+func (a *statusBar) HideUpdating() {
+	fyne.Do(func() {
+		a.updateStatus.Refresh()
+		if a.updatingCount == 0 {
+			return
+		}
+		a.updatingCount--
+		if a.updatingCount > 0 {
+			return
+		}
+		a.updatingIndicator.Hide()
+		a.updatingIndicator.Stop()
+	})
 }
 
 // statusBarItem is a widget with a label and an optional icon, which can be tapped.
@@ -332,12 +360,13 @@ func (w *statusBarItem) MouseOut() {
 }
 
 func (w *statusBarItem) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewHBox()
+	p := theme.Padding()
+	c := container.New(layout.NewCustomPaddedHBoxLayout(0))
 	if w.icon != nil {
 		c.Add(w.icon)
 	}
 	c.Add(w.label)
-	return widget.NewSimpleRenderer(c)
+	return widget.NewSimpleRenderer(container.New(layout.NewCustomPaddedLayout(0, 0, p, p), c))
 }
 
 type updateHint struct {

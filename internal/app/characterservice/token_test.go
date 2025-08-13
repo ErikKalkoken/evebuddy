@@ -114,7 +114,7 @@ func TestMissingScopes(t *testing.T) {
 	})
 }
 
-func TestValidCharacterTokenForCorporation(t *testing.T) {
+func TestCharacterTokenForCorporation(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	s := characterservice.NewFake(st)
@@ -132,7 +132,7 @@ func TestValidCharacterTokenForCorporation(t *testing.T) {
 			t.Fatal(err)
 		}
 		// when
-		o2, err := s.ValidCharacterTokenForCorporation(ctx, c.EveCharacter.Corporation.ID, set.Of(app.RoleAccountant), set.Set[string]{})
+		o2, err := s.CharacterTokenForCorporation(ctx, c.EveCharacter.Corporation.ID, set.Of(app.RoleAccountant), set.Set[string]{}, false)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, o1.ID, o2.ID)
@@ -150,7 +150,7 @@ func TestValidCharacterTokenForCorporation(t *testing.T) {
 			t.Fatal(err)
 		}
 		// when
-		_, err := s.ValidCharacterTokenForCorporation(ctx, c.EveCharacter.Corporation.ID, set.Of(app.RoleAccountant), set.Set[string]{})
+		_, err := s.CharacterTokenForCorporation(ctx, c.EveCharacter.Corporation.ID, set.Of(app.RoleAccountant), set.Set[string]{}, false)
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})

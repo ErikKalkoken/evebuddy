@@ -423,17 +423,28 @@ func Scopes() set.Set[string] {
 	return scopes
 }
 
+type GeneralUpdateSectionParams struct {
+	ForceUpdate       bool
+	OnUpdateStarted   func()
+	OnUpdateCompleted func()
+	Section           GeneralSection
+}
+
 type CharacterUpdateSectionParams struct {
 	CharacterID           int32
-	Section               CharacterSection
 	ForceUpdate           bool
 	MaxMails              int
 	MaxWalletTransactions int
+	OnUpdateStarted       func()
+	OnUpdateCompleted     func()
+	Section               CharacterSection
 }
 
 type CorporationUpdateSectionParams struct {
 	CorporationID         int32
 	ForceUpdate           bool
 	MaxWalletTransactions int
+	OnUpdateStarted       func()
+	OnUpdateCompleted     func()
 	Section               CorporationSection
 }

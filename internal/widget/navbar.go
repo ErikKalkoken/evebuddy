@@ -1,6 +1,8 @@
 package widget
 
 import (
+	"image/color"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -11,7 +13,6 @@ import (
 
 const (
 	colorIndicator = theme.ColorNameInputBorder
-	colorBadge     = theme.ColorNamePrimary
 )
 
 // A destination represents a fully configured item in a navigation bar.
@@ -19,6 +20,7 @@ type destination struct {
 	widget.DisableableWidget
 
 	badge           *canvas.Circle
+	badgeImportance widget.Importance
 	icon            *canvas.Image
 	iconActive      fyne.Resource
 	iconDisabled    fyne.Resource
@@ -44,7 +46,7 @@ func newDestination(icon fyne.Resource, label string, nb *NavBar, id int, onSele
 	)
 	pill := canvas.NewRectangle(theme.Color(colorIndicator))
 	pill.CornerRadius = 12
-	badge := canvas.NewCircle(theme.Color(colorBadge))
+	badge := canvas.NewCircle(color.Transparent)
 	w := &destination{
 		badge:           badge,
 		icon:            iconImage,
@@ -65,7 +67,22 @@ func newDestination(icon fyne.Resource, label string, nb *NavBar, id int, onSele
 func (w *destination) Refresh() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
-	w.badge.FillColor = th.Color(colorBadge, v)
+	var c color.Color
+	switch w.badgeImportance {
+	case widget.DangerImportance:
+		c = th.Color(theme.ColorNameError, v)
+	case widget.HighImportance:
+		c = th.Color(theme.ColorNamePrimary, v)
+	case widget.LowImportance:
+		c = th.Color(theme.ColorNameDisabled, v)
+	case widget.WarningImportance:
+		c = th.Color(theme.ColorNameWarning, v)
+	case widget.MediumImportance:
+		c = th.Color(theme.ColorNameForeground, v)
+	case widget.SuccessImportance:
+		c = th.Color(theme.ColorNameSuccess, v)
+	}
+	w.badge.FillColor = c
 	if w.isActive {
 		w.label.Color = th.Color(colorPrimary, v)
 		w.label.TextStyle.Bold = true
@@ -119,12 +136,14 @@ func (w *destination) deactivate() {
 	w.Refresh()
 }
 
-func (w *destination) setBadge(show bool) {
-	if show {
-		w.badge.Show()
-	} else {
-		w.badge.Hide()
-	}
+func (w *destination) showBadge(i widget.Importance) {
+	w.badgeImportance = i
+	w.badge.Show()
+	w.Refresh()
+}
+
+func (w *destination) hideBadge() {
+	w.badge.Hide()
 }
 
 func (w *destination) indicatorSize() fyne.Size {
@@ -288,13 +307,22 @@ func (w *NavBar) ShowBar() {
 	w.bar.Show()
 }
 
-// SetBadge shows or hides the badge of a destination.
-func (w *NavBar) SetBadge(id int, show bool) {
+// ShowBadge shows the badge of a destination.
+func (w *NavBar) ShowBadge(id int, importance widget.Importance) {
 	d := w.destination(id)
 	if d == nil {
 		return
 	}
-	d.setBadge(show)
+	d.showBadge(importance)
+}
+
+// HideBadge hides the badge of a destination.
+func (w *NavBar) HideBadge(id int) {
+	d := w.destination(id)
+	if d == nil {
+		return
+	}
+	d.hideBadge()
 }
 
 // destination returns the destination object for a given id.

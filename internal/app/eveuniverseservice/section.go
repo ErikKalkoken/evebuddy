@@ -22,12 +22,12 @@ func (s *EveUniverseService) getSectionStatus(ctx context.Context, section app.G
 }
 
 // UpdateSection updates a section from ESI and returns the IDs of changed objects if there are any.
-func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.GeneralSection, forceUpdate bool) (set.Set[int32], error) {
-	status, err := s.getSectionStatus(ctx, section)
+func (s *EveUniverseService) UpdateSection(ctx context.Context, arg app.GeneralUpdateSectionParams) (set.Set[int32], error) {
+	status, err := s.getSectionStatus(ctx, arg.Section)
 	if err != nil {
 		return set.Set[int32]{}, err
 	}
-	if !forceUpdate && status != nil {
+	if !arg.ForceUpdate && status != nil {
 		if !status.HasError() && !status.IsExpired() {
 			return set.Set[int32]{}, nil
 		}
@@ -36,7 +36,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 		}
 	}
 	var f func(context.Context) (set.Set[int32], error)
-	switch section {
+	switch arg.Section {
 	case app.SectionEveTypes:
 		f = s.updateTypes
 	case app.SectionEveCharacters:
@@ -48,33 +48,35 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	case app.SectionEveEntities:
 		f = s.UpdateAllEntitiesESI
 	default:
-		slog.Warn("encountered unknown section", "section", section)
+		slog.Warn("encountered unknown section", "section", arg.Section)
 	}
-	x, err, _ := s.sfg.Do(fmt.Sprintf("update-general-section-%s", section), func() (any, error) {
-		slog.Debug("Started updating eveuniverse section", "section", section)
+	if arg.OnUpdateStarted != nil && arg.OnUpdateCompleted != nil {
+		arg.OnUpdateStarted()
+		defer arg.OnUpdateCompleted()
+	}
+	x, err, _ := s.sfg.Do(fmt.Sprintf("update-general-section-%s", arg.Section), func() (any, error) {
+		slog.Debug("Started updating eveuniverse section", "section", arg.Section)
 		startedAt := optional.New(time.Now())
-		arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
-			Section:   section,
+		o, err := s.st.UpdateOrCreateGeneralSectionStatus(ctx, storage.UpdateOrCreateGeneralSectionStatusParams{
+			Section:   arg.Section,
 			StartedAt: &startedAt,
-		}
-		o, err := s.st.UpdateOrCreateGeneralSectionStatus(ctx, arg2)
+		})
 		if err != nil {
 			return false, err
 		}
 		s.scs.SetGeneralSection(o)
 		changed, err := f(ctx)
-		slog.Debug("Finished updating eveuniverse section", "section", section)
+		slog.Debug("Finished updating general section", "section", arg.Section)
 		return changed, err
 	})
 	if err != nil {
 		errorMessage := app.ErrorDisplay(err)
 		startedAt := optional.Optional[time.Time]{}
-		arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
-			Section:   section,
+		o, err := s.st.UpdateOrCreateGeneralSectionStatus(ctx, storage.UpdateOrCreateGeneralSectionStatusParams{
 			Error:     &errorMessage,
+			Section:   arg.Section,
 			StartedAt: &startedAt,
-		}
-		o, err := s.st.UpdateOrCreateGeneralSectionStatus(ctx, arg2)
+		})
 		if err != nil {
 			return set.Set[int32]{}, err
 		}
@@ -85,14 +87,12 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	completedAt := storage.NewNullTimeFromTime(time.Now())
 	errorMessage := ""
 	startedAt2 := optional.Optional[time.Time]{}
-	arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
-		Section: section,
-
-		Error:       &errorMessage,
+	o, err := s.st.UpdateOrCreateGeneralSectionStatus(ctx, storage.UpdateOrCreateGeneralSectionStatusParams{
 		CompletedAt: &completedAt,
+		Error:       &errorMessage,
+		Section:     arg.Section,
 		StartedAt:   &startedAt2,
-	}
-	o, err := s.st.UpdateOrCreateGeneralSectionStatus(ctx, arg2)
+	})
 	if err != nil {
 		return set.Set[int32]{}, err
 	}

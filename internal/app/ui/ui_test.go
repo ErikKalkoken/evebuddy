@@ -76,7 +76,7 @@ func TestUI_CanUpdateAllEmpty(t *testing.T) {
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	bu := ui.NewFakeBaseUI(st, test.NewTempApp(t), true)
-	bu.UpdateAll()
+	bu.UpdateAllUI()
 }
 
 func TestUI_CanUpdateAllWithData(t *testing.T) {
@@ -104,7 +104,7 @@ func TestUI_CanUpdateAllWithData(t *testing.T) {
 			Section:     s,
 		})
 	}
-	bu.UpdateAll()
+	bu.UpdateAllUI()
 	u := ui.NewDesktopUI(bu)
 	test.RenderToMarkup(u.MainWindow().Canvas())
 }
