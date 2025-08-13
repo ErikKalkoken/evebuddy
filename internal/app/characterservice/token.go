@@ -32,13 +32,20 @@ func (s *CharacterService) MissingScopes(ctx context.Context, characterID int32,
 	return set.Difference(scopes, t.Scopes), nil
 }
 
-// ValidCharacterTokenForCorporation returns a valid token with a specific scope and from a character with a specific role.
+// CharacterTokenForCorporation returns a token with a specific scope and from a member character with a specific role and matching scope.
 // Will be valid when any of the given roles and scopes match.
+// It can optionally ensure the token is valid by with checkToken.
 // It returns [app.ErrNotFound] if no such token exists.
-func (s *CharacterService) ValidCharacterTokenForCorporation(ctx context.Context, corporationID int32, roles set.Set[app.Role], scopes set.Set[string]) (*app.CharacterToken, error) {
+func (s *CharacterService) CharacterTokenForCorporation(ctx context.Context, corporationID int32, roles set.Set[app.Role], scopes set.Set[string], checkToken bool) (*app.CharacterToken, error) {
 	token, err := s.st.ListCharacterTokenForCorporation(ctx, corporationID, roles, scopes)
 	if err != nil {
 		return nil, err
+	}
+	if len(token) == 0 {
+		return nil, app.ErrNotFound
+	}
+	if !checkToken {
+		return token[0], nil
 	}
 	for _, t := range token {
 		err := s.ensureValidCharacterToken(ctx, t)

@@ -2,14 +2,12 @@ package ui
 
 import (
 	"context"
-	"image/color"
 	"log/slog"
 	"strconv"
 	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
@@ -55,11 +53,11 @@ type statusBar struct {
 }
 
 func newStatusBar(u *DesktopUI) *statusBar {
-	x := iwidget.NewActivity()
-	x.SetToolTip("Updating data from ESI...")
-	x.Stop()
+	ac := iwidget.NewActivity()
+	ac.SetToolTip("Synchronizing with game server...")
+	ac.Stop()
 	a := &statusBar{
-		updatingIndicator: x,
+		updatingIndicator: ac,
 		u:                 u,
 	}
 	a.ExtendBaseWidget(a)
@@ -85,8 +83,6 @@ func newStatusBar(u *DesktopUI) *statusBar {
 }
 
 func (a *statusBar) CreateRenderer() fyne.WidgetRenderer {
-	spacer := canvas.NewRectangle(color.Transparent)
-	spacer.SetMinSize(a.updatingIndicator.MinSize())
 	c := container.NewVBox(
 		widget.NewSeparator(),
 		container.NewHBox(
@@ -94,10 +90,7 @@ func (a *statusBar) CreateRenderer() fyne.WidgetRenderer {
 			a.updateHint,
 			widget.NewSeparator(),
 			a.updateStatus,
-			container.NewStack(
-				spacer,
-				a.updatingIndicator,
-			),
+			a.updatingIndicator,
 			widget.NewSeparator(),
 			a.characterCount,
 			widget.NewSeparator(),

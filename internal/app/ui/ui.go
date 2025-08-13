@@ -489,7 +489,7 @@ func (u *baseUI) updateCharacter() {
 	} else {
 		slog.Debug("Updating without character")
 	}
-	u.showModalWhileExecuting("Loading character", u.defineCharacterUpdates(), func() {
+	u.showModalWhileExecuting("Loading character", u.characterUIUpdates(), func() {
 		if u.onUpdateCharacter != nil {
 			u.onUpdateCharacter(c)
 		}
@@ -499,7 +499,7 @@ func (u *baseUI) updateCharacter() {
 	})
 }
 
-func (u *baseUI) defineCharacterUpdates() map[string]func() {
+func (u *baseUI) characterUIUpdates() map[string]func() {
 	ff := map[string]func(){
 		"assets":               u.characterAsset.update,
 		"attributes":           u.characterAttributes.update,
@@ -625,24 +625,24 @@ func (u *baseUI) updateCorporation() {
 	} else {
 		slog.Debug("Updating without corporation")
 	}
-	u.showModalWhileExecuting("Loading corporation", u.defineCorporationUpdates(), func() {
-		if c != nil && !u.isUpdateDisabled {
-			u.updateCorporationAndRefreshIfNeeded(context.Background(), c.ID, false)
-		}
+	u.showModalWhileExecuting("Loading corporation", u.corporationUIUpdates(), func() {
+		// if c != nil && !u.isUpdateDisabled {
+		// 	u.updateCorporationAndRefreshIfNeeded(context.Background(), c.ID, false)
+		// }
 		if u.onUpdateCorporation != nil {
 			u.onUpdateCorporation(c)
 		}
 	})
 }
 
-func (u *baseUI) defineCorporationUpdates() map[string]func() {
+func (u *baseUI) corporationUIUpdates() map[string]func() {
 	ff := make(map[string]func())
 	ff["corporationSheet"] = u.corporationSheet.update
 	ff["corporationMember"] = u.corporationMember.update
 	ff["corporationWalletTotal"] = u.updateCorporationWalletTotal
-	for id, w := range u.corporationWallets {
-		ff[fmt.Sprintf("walletJournal%d", id)] = w.update
-	}
+	// for id, w := range u.corporationWallets {
+	// 	ff[fmt.Sprintf("walletJournal%d", id)] = w.update
+	// }
 	return ff
 }
 
@@ -689,7 +689,7 @@ func (u *baseUI) defineHomeUpdates() map[string]func() {
 
 // UpdateAll updates all UI elements. This method is usually only called from tests.
 func (u *baseUI) UpdateAll() {
-	updates := slices.Collect(xiter.Chain(maps.Values(u.defineCharacterUpdates()), maps.Values(u.defineHomeUpdates())))
+	updates := slices.Collect(xiter.Chain(maps.Values(u.characterUIUpdates()), maps.Values(u.defineHomeUpdates())))
 	for _, f := range updates {
 		f()
 	}
