@@ -169,21 +169,32 @@ func (t *TreeData[T]) Add(parentUID widget.TreeNodeID, node T) (widget.TreeNodeI
 	if parentUID != TreeRootID {
 		_, found := t.nodes[parentUID]
 		if !found {
-			return TreeRootID, fmt.Errorf("parent node does not exist: %s: %w", parentUID, ErrInvalid)
+			return TreeRootID, fmt.Errorf("parent not found: %s: %w", parentUID, ErrNotFound)
 		}
 	}
 	uid := node.UID()
 	if uid == TreeRootID {
-		return TreeRootID, fmt.Errorf("UID() must not return zero value: %+v: %w", node, ErrInvalid)
+		return TreeRootID, fmt.Errorf("node is root: %+v: %w", node, ErrInvalid)
 	}
 	_, found := t.nodes[uid]
 	if found {
-		return TreeRootID, fmt.Errorf("this node already exists: %+v: %w", node, ErrInvalid)
+		return TreeRootID, fmt.Errorf("node with this ID already exists: %+v: %w", node, ErrInvalid)
 	}
 	t.children[parentUID] = append(t.children[parentUID], uid)
 	t.nodes[uid] = node
 	t.parents[uid] = parentUID
 	return uid, nil
+}
+
+// Replace replaces a node in the tree.
+// Returns [ErrNotFound] if the node does not exist.
+func (t *TreeData[T]) Replace(node T) error {
+	_, found := t.nodes[node.UID()]
+	if !found {
+		return fmt.Errorf("replace node: %+v: %w", node, ErrNotFound)
+	}
+	t.nodes[node.UID()] = node
+	return nil
 }
 
 func (t *TreeData[T]) init() {
@@ -383,7 +394,8 @@ func (t TreeData[T]) print(uid widget.TreeNodeID, indent string, last bool) {
 	if uid == TreeRootID {
 		s = "ROOT"
 	} else {
-		s = uid
+		n, _ := t.Node(uid)
+		s = fmt.Sprint(n)
 	}
 	fmt.Println(indent + "+- " + s)
 	if last {

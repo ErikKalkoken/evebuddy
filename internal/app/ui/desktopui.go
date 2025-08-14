@@ -229,14 +229,14 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	characterMailNav := iwidget.NewNavPage(
 		"Mail",
 		theme.MailComposeIcon(),
-		NewPageBarPage(characterPageBars, "Mail", u.characterMail),
+		NewPageBarPage(characterPageBars, "Mail", u.characterMails),
 	)
-	u.characterMail.onUpdate = func(count int) {
+	u.characterMails.onUpdate = func(count int) {
 		fyne.Do(func() {
 			characterNav.SetItemBadge(characterMailNav, formatBadge(count, 99))
 		})
 	}
-	u.characterMail.onSendMessage = u.showSendMailWindow
+	u.characterMails.onSendMessage = u.showSendMailWindow
 
 	characterCommunicationsNav := iwidget.NewNavPage(
 		"Communications",

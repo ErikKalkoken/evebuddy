@@ -91,12 +91,13 @@ func (w *mailHeaderItem) CreateRenderer() fyne.WidgetRenderer {
 type mailHeader struct {
 	widget.BaseWidget
 
-	showInfo   func(*app.EveEntity)
+	eis        app.EveImageService
 	from       *kxwidget.TappableLabel
 	icon       *kxwidget.TappableImage
 	recipients *fyne.Container
+	to         *widget.Label
+	showInfo   func(*app.EveEntity)
 	timestamp  *widget.Label
-	eis        app.EveImageService
 }
 
 func newMailHeader(eis app.EveImageService, show func(*app.EveEntity)) *mailHeader {
@@ -104,23 +105,24 @@ func newMailHeader(eis app.EveImageService, show func(*app.EveEntity)) *mailHead
 	from.TextStyle.Bold = true
 	p := theme.Padding()
 	w := &mailHeader{
+		eis:        eis,
 		from:       from,
 		recipients: container.New(kxlayout.NewRowWrapLayoutWithCustomPadding(0, -3*p)),
 		showInfo:   show,
 		timestamp:  widget.NewLabel(""),
-		eis:        eis,
+		to:         widget.NewLabel("to"),
 	}
+	w.ExtendBaseWidget(w)
 	w.icon = kxwidget.NewTappableImage(icons.BlankSvg, nil)
 	w.icon.SetFillMode(canvas.ImageFillContain)
 	w.icon.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
-	w.ExtendBaseWidget(w)
+	w.to.Hide()
 	return w
 }
 
 func (w *mailHeader) Set(from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
 	w.timestamp.Text = timestamp.Format(app.DateTimeFormat)
 	w.recipients.RemoveAll()
-	// p := theme.Padding()
 	for _, r := range recipients {
 		x := kxwidget.NewTappableLabel(r.Name, func() {
 			w.showInfo(r)
@@ -134,6 +136,7 @@ func (w *mailHeader) Set(from *app.EveEntity, timestamp time.Time, recipients ..
 	w.icon.OnTapped = func() {
 		w.showInfo(from)
 	}
+	w.to.Show()
 	w.Refresh()
 	go func() {
 		res, err := fetchEveEntityAvatar(w.eis, from, icons.BlankSvg)
@@ -154,6 +157,7 @@ func (w *mailHeader) Clear() {
 	w.timestamp.Text = ""
 	w.icon.SetResource(icons.BlankSvg)
 	w.icon.OnTapped = nil
+	w.to.Hide()
 	w.Refresh()
 }
 
@@ -170,7 +174,13 @@ func (w *mailHeader) CreateRenderer() fyne.WidgetRenderer {
 		layout.NewCustomPaddedLayout(0, -2*p, 0, 0),
 		container.NewHBox(w.from, w.timestamp),
 	)
-	second := container.NewBorder(nil, nil, container.NewVBox(widget.NewLabel("to")), nil, w.recipients)
+	second := container.NewBorder(
+		nil,
+		nil,
+		container.NewVBox(w.to),
+		nil,
+		w.recipients,
+	)
 	main := container.New(layout.NewCustomPaddedVBoxLayout(0), first, second)
 	c := container.NewBorder(nil, nil, container.NewPadded(w.icon), nil, main)
 	return widget.NewSimpleRenderer(c)

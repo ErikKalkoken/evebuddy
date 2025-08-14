@@ -575,3 +575,23 @@ func node[T iwidget.TreeNode](td iwidget.TreeData[T], uid widget.TreeNodeID) T {
 	}
 	return v
 }
+
+func TestTreeData_Replace(t *testing.T) {
+	t.Run("can replace existing node", func(t *testing.T) {
+		var td iwidget.TreeData[MyNode]
+		d1 := MyNode{"1", "Alpha"}
+		id := td.MustAdd(iwidget.TreeRootID, d1)
+		err := td.Replace(MyNode{"1", "Alpha"})
+		if assert.NoError(t, err) {
+			d2, ok := td.Node(id)
+			if assert.True(t, ok) {
+				assert.Equal(t, d1, d2)
+			}
+		}
+	})
+	t.Run("return error when trying to replace non-existing node", func(t *testing.T) {
+		var td iwidget.TreeData[MyNode]
+		err := td.Replace(MyNode{"1", "Alpha"})
+		assert.ErrorIs(t, err, iwidget.ErrNotFound)
+	})
+}

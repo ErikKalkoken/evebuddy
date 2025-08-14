@@ -109,7 +109,7 @@ type baseUI struct {
 	characterCorporation    *corporationSheet
 	characterJumpClones     *characterJumpClones
 	characterLocations      *characterLocations
-	characterMail           *characterMails
+	characterMails          *characterMails
 	characterOverview       *characterOverview
 	characterSheet          *characterSheet
 	characterShips          *characterFlyableShips
@@ -239,7 +239,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.characterCorporation = newCorporationSheet(u, false)
 	u.characterJumpClones = newCharacterJumpClones(u)
 	u.characterLocations = newCharacterLocations(u)
-	u.characterMail = newCharacterMails(u)
+	u.characterMails = newCharacterMails(u)
 	u.characterOverview = newCharacterOverview(u)
 	u.characterSheet = newCharacterSheet(u)
 	u.characterShips = newCharacterFlyableShips(u)
@@ -512,7 +512,7 @@ func (u *baseUI) characterUIUpdates() map[string]func() {
 		"biography":            u.characterBiography.update,
 		"implants":             u.characterAugmentations.update,
 		"jumpClones":           u.characterJumpClones.update,
-		"mail":                 u.characterMail.update,
+		"mail":                 u.characterMails.update,
 		"notifications":        u.characterCommunications.update,
 		"characterSheet":       u.characterSheet.update,
 		"characterCorporation": u.characterCorporation.update,
