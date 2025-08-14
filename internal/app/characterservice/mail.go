@@ -466,7 +466,7 @@ func (s *CharacterService) updateExistingMail(ctx context.Context, characterID i
 }
 
 // UpdateMailRead updates an existing mail as read
-func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mailID int32) error {
+func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mailID int32, isRead bool) error {
 	token, err := s.GetValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return err
@@ -480,12 +480,12 @@ func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mail
 	for i, l := range m.Labels {
 		labelIDs[i] = l.LabelID
 	}
-	contents := esi.PutCharactersCharacterIdMailMailIdContents{Read: true, Labels: labelIDs}
+	contents := esi.PutCharactersCharacterIdMailMailIdContents{Read: isRead, Labels: labelIDs}
 	_, err = s.esiClient.ESI.MailApi.PutCharactersCharacterIdMailMailId(ctx, m.CharacterID, contents, m.MailID, nil)
 	if err != nil {
 		return err
 	}
-	m.IsRead = true
+	m.IsRead = isRead
 	if err := s.st.UpdateCharacterMail(ctx, characterID, m.ID, m.IsRead, labelIDs); err != nil {
 		return err
 	}

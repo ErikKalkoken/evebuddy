@@ -54,7 +54,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	var characterNav *iwidget.Navigator
 	mailMenu := fyne.NewMenu("")
 	communicationsMenu := fyne.NewMenu("")
-	u.characterMail.onSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
+	u.characterMails.onSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 		page := newCharacterSendMail(bu, c, mode, mail)
 		if mode != app.SendMailNew {
 			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
@@ -104,15 +104,15 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		"Mail",
 		theme.MailComposeIcon(),
 		func() {
-			u.characterMail.onSelected = func() {
+			u.characterMails.onSelected = func() {
 				characterNav.PushAndHideNavBar(
 					newCharacterAppBar(
 						"Mail",
-						u.characterMail.Detail,
-						kxwidget.NewIconButton(u.characterMail.MakeReplyAction()),
-						kxwidget.NewIconButton(u.characterMail.MakeReplyAllAction()),
-						kxwidget.NewIconButton(u.characterMail.MakeForwardAction()),
-						kxwidget.NewIconButton(u.characterMail.MakeDeleteAction(func() {
+						u.characterMails.Detail,
+						kxwidget.NewIconButton(u.characterMails.MakeReplyAction()),
+						kxwidget.NewIconButton(u.characterMails.MakeReplyAllAction()),
+						kxwidget.NewIconButton(u.characterMails.MakeForwardAction()),
+						kxwidget.NewIconButton(u.characterMails.MakeDeleteAction(func() {
 							characterNav.Pop()
 						})),
 					),
@@ -121,9 +121,9 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			characterNav.Push(
 				newCharacterAppBar(
 					"Mail",
-					u.characterMail.Headers,
+					u.characterMails.Headers,
 					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
-					kxwidget.NewIconButton(u.characterMail.makeComposeMessageAction()),
+					kxwidget.NewIconButton(u.characterMails.makeComposeMessageAction()),
 				))
 		},
 	)
@@ -183,7 +183,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		})
 	}
 
-	u.characterMail.onUpdate = func(count int) {
+	u.characterMails.onUpdate = func(count int) {
 		s := ""
 		if count > 0 {
 			s = fmt.Sprintf("%s unread", humanize.Comma(int64(count)))
@@ -433,7 +433,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	}
 	u.onUpdateCharacter = func(c *app.Character) {
 		fyne.Do(func() {
-			mailMenu.Items = u.characterMail.makeFolderMenu()
+			mailMenu.Items = u.characterMails.makeFolderMenu()
 			mailMenu.Refresh()
 			communicationsMenu.Items = u.characterCommunications.makeFolderMenu()
 			communicationsMenu.Refresh()
@@ -459,7 +459,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				characterSelector.SetIcon(r)
 			})
 		})
-		u.characterMail.resetCurrentFolder()
+		u.characterMails.resetCurrentFolder()
 		u.characterCommunications.resetCurrentFolder()
 		fyne.Do(func() {
 			characterPage.SetTitle(u.scs.CharacterName(id))

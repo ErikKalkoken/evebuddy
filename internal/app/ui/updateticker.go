@@ -310,7 +310,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		if needsRefresh {
 			u.characterOverview.update()
 			if isShown {
-				u.characterMail.update()
+				u.characterMails.update()
 			}
 		}
 	case app.SectionCharacterMails:
@@ -318,7 +318,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			go u.characterOverview.update()
 			go u.updateMailIndicator()
 			if isShown {
-				u.characterMail.update()
+				u.characterMails.update()
 			}
 		}
 		if u.settings.NotifyMailsEnabled() {
