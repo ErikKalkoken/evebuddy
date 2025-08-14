@@ -36,9 +36,18 @@ var (
 
 // CacheService defines a cache service
 type CacheService interface {
-	Clear()
 	Get(string) ([]byte, bool)
 	Set(string, []byte, time.Duration)
+}
+
+// HTTPError represents a HTTP response with status code >= 400.
+type HTTPError struct {
+	StatusCode int
+	Status     string
+}
+
+func (r HTTPError) Error() string {
+	return fmt.Sprintf("HTTP error: %s", r.Status)
 }
 
 // EveImageService represents a service which provides access to images on the Eve Online image server.
@@ -66,12 +75,6 @@ func New(cache CacheService, httpClient *http.Client, isOffline bool) *EveImageS
 		sfg:        new(singleflight.Group),
 	}
 	return s
-}
-
-// ClearCache clears the images cache and returns the number of deleted entries.
-func (s *EveImageService) ClearCache() error {
-	s.cache.Clear()
-	return nil
 }
 
 // AllianceLogo returns the logo for an alliance.
@@ -178,41 +181,17 @@ func (s *EveImageService) InventoryTypeSKIN(id int32, size int) (fyne.Resource, 
 	return resourceSkinicon64pxPng, nil
 }
 
-// EntityIcon returns the icon for several entity categories.
-func (s *EveImageService) EntityIcon(id int32, category string, size int) (fyne.Resource, error) {
-	var r fyne.Resource
-	var err error
-	switch category {
-	case "character":
-		r, err = s.CharacterPortrait(id, size)
-	case "alliance":
-		r, err = s.AllianceLogo(id, size)
-	case "corporation":
-		r, err = s.CorporationLogo(id, size)
-	case "faction":
-		r, err = s.FactionLogo(id, size)
-	case "inventory_type":
-		r, err = s.InventoryTypeIcon(id, size)
-	default:
-		r, err = nil, fmt.Errorf("unsuported category: %s", category)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("entity icon {id %d, category %s, size %d}: %w", id, category, size, err)
-	}
-	return r, nil
-}
-
 // image returns an Eve image as fyne resource.
 // It returns it from cache or - if not found - will try to fetch it from the Internet.
 func (s *EveImageService) image(url string, timeout time.Duration) (fyne.Resource, error) {
+	if s.isOffline {
+		return resourceQuestionmark32Png, nil
+	}
 	key := "eveimage-" + makeMD5Hash(url)
 	var dat []byte
 	var found bool
 	dat, found = s.cache.Get(key)
 	if !found {
-		if s.isOffline {
-			return resourceQuestionmark32Png, nil
-		}
 		x, err, _ := s.sfg.Do(key, func() (any, error) {
 			byt, err := loadDataFromURL(url, s.httpClient)
 			if err != nil {
@@ -228,15 +207,6 @@ func (s *EveImageService) image(url string, timeout time.Duration) (fyne.Resourc
 	}
 	r := fyne.NewStaticResource(key, dat)
 	return r, nil
-}
-
-type HTTPError struct {
-	StatusCode int
-	Status     string
-}
-
-func (r HTTPError) Error() string {
-	return fmt.Sprintf("HTTP error: %s", r.Status)
 }
 
 func loadDataFromURL(url string, client *http.Client) ([]byte, error) {

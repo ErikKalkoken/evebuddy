@@ -9,38 +9,39 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/test"
+	"github.com/antihax/goesi"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
-	"github.com/antihax/goesi"
-	"github.com/stretchr/testify/assert"
 )
 
-type FakeCache map[string][]byte
+// type FakeCache map[string][]byte
 
-func NewFakeCache() FakeCache {
-	return make(FakeCache)
-}
+// func NewFakeCache() FakeCache {
+// 	return make(FakeCache)
+// }
 
-func (c FakeCache) Get(k string) ([]byte, bool) {
-	v, ok := c[k]
-	return v, ok
-}
+// func (c FakeCache) Get(k string) ([]byte, bool) {
+// 	v, ok := c[k]
+// 	return v, ok
+// }
 
-func (c FakeCache) Set(k string, v []byte, d time.Duration) {
-	c[k] = v
-}
+// func (c FakeCache) Set(k string, v []byte, d time.Duration) {
+// 	c[k] = v
+// }
 
-func (c FakeCache) Clear() {
-	for k := range c {
-		delete(c, k)
-	}
-}
+// func (c FakeCache) Clear() {
+// 	for k := range c {
+// 		delete(c, k)
+// 	}
+// }
 
 // FakeApp is an extension of the Fyne test app which also conforms to the desktop app interface.
 type FakeApp struct {
@@ -131,7 +132,48 @@ func (a *FakeApp) Clipboard() fyne.Clipboard {
 var _ fyne.App = (*FakeApp)(nil)
 var _ desktop.App = (*FakeApp)(nil)
 
-type NewFakeBaseUIParams struct {
+type EveImageServiceFake struct {
+	Alliance    fyne.Resource
+	Character   fyne.Resource
+	Corporation fyne.Resource
+	Err         error
+	Faction     fyne.Resource
+	Type        fyne.Resource
+}
+
+func (s *EveImageServiceFake) AllianceLogo(id int32, size int) (fyne.Resource, error) {
+	return s.Alliance, s.Err
+}
+func (s *EveImageServiceFake) CharacterPortrait(id int32, size int) (fyne.Resource, error) {
+	return s.Character, s.Err
+}
+
+func (s *EveImageServiceFake) CorporationLogo(id int32, size int) (fyne.Resource, error) {
+	return s.Corporation, s.Err
+}
+
+func (s *EveImageServiceFake) FactionLogo(id int32, size int) (fyne.Resource, error) {
+	return s.Faction, s.Err
+}
+
+func (s *EveImageServiceFake) InventoryTypeRender(id int32, size int) (fyne.Resource, error) {
+	return s.Type, s.Err
+}
+
+func (s *EveImageServiceFake) InventoryTypeIcon(id int32, size int) (fyne.Resource, error) {
+	return s.Type, s.Err
+}
+
+func (s *EveImageServiceFake) InventoryTypeBPO(id int32, size int) (fyne.Resource, error) {
+	return s.Type, s.Err
+}
+
+func (s *EveImageServiceFake) InventoryTypeBPC(id int32, size int) (fyne.Resource, error) {
+	return s.Type, s.Err
+}
+
+func (s *EveImageServiceFake) InventoryTypeSKIN(id int32, size int) (fyne.Resource, error) {
+	return s.Type, s.Err
 }
 
 func NewFakeBaseUI(st *storage.Storage, app fyne.App, isDesktop bool) *baseUI {
@@ -146,7 +188,6 @@ func NewFakeBaseUI(st *storage.Storage, app fyne.App, isDesktop bool) *baseUI {
 		StatusCacheService: scs,
 		Storage:            st,
 	})
-	eis := eveimageservice.New(NewFakeCache(), nil, true)
 	cs := characterservice.New(characterservice.Params{
 		EveUniverseService: eus,
 		StatusCacheService: scs,
@@ -164,7 +205,14 @@ func NewFakeBaseUI(st *storage.Storage, app fyne.App, isDesktop bool) *baseUI {
 		CharacterService:   cs,
 		CorporationService: rs,
 		ESIStatusService:   esistatusservice.New(esiClient),
-		EveImageService:    eis,
+		EveImageService: &EveImageServiceFake{
+			Character:   icons.Characterplaceholder64Jpeg,
+			Alliance:    icons.Corporationplaceholder64Png,
+			Corporation: icons.Corporationplaceholder64Png,
+			Err:         nil,
+			Faction:     icons.Factionplaceholder64Png,
+			Type:        icons.Typeplaceholder64Png,
+		},
 		EveUniverseService: eus,
 		MemCache:           cache,
 		StatusCacheService: scs,

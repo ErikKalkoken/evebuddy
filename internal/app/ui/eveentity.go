@@ -19,7 +19,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -35,7 +34,7 @@ type eveEntityEntry struct {
 	Placeholder    string
 	ShowInfoWindow func(*app.EveEntity)
 
-	eis         *eveimageservice.EveImageService
+	eis         app.EveImageService
 	field       *canvas.Rectangle
 	label       fyne.CanvasObject
 	labelWidth  float32
@@ -45,7 +44,7 @@ type eveEntityEntry struct {
 	s           []*app.EveEntity
 }
 
-func newEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis *eveimageservice.EveImageService) *eveEntityEntry {
+func newEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis app.EveImageService) *eveEntityEntry {
 	bg := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
 	bg.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
@@ -218,14 +217,14 @@ type eveEntityBadge struct {
 
 	ee           *app.EveEntity
 	fallbackIcon fyne.Resource
-	eis          *eveimageservice.EveImageService
+	eis          app.EveImageService
 	hovered      bool
 }
 
 var _ fyne.Tappable = (*eveEntityBadge)(nil)
 var _ desktop.Hoverable = (*eveEntityBadge)(nil)
 
-func newEveEntityBadge(ee *app.EveEntity, eis *eveimageservice.EveImageService, onTapped func()) *eveEntityBadge {
+func newEveEntityBadge(ee *app.EveEntity, eis app.EveImageService, onTapped func()) *eveEntityBadge {
 	w := &eveEntityBadge{
 		ee:           ee,
 		eis:          eis,
@@ -315,16 +314,45 @@ func (w *eveEntityBadge) MouseOut() {
 }
 
 // fetchEveEntityAvatar fetches an icon for an EveEntity and returns it in avatar style.
-func fetchEveEntityAvatar(eis *eveimageservice.EveImageService, ee *app.EveEntity, fallback fyne.Resource) (fyne.Resource, error) {
+func fetchEveEntityAvatar(eis app.EveImageService, ee *app.EveEntity, fallback fyne.Resource) (fyne.Resource, error) {
 	if ee == nil {
 		return fallback, nil
 	}
 	if ee.Category == app.EveEntityMailList {
 		return theme.MailComposeIcon(), nil
 	}
-	res, err := eis.EntityIcon(ee.ID, ee.Category.ToEveImage(), defaultIconPixelSize)
+	res, err := EntityIcon(eis, ee, defaultIconPixelSize, fallback)
 	if err != nil {
 		return nil, err
 	}
 	return fynetools.MakeAvatar(res)
+}
+
+// EntityIcon returns an icon form EveImageService for several entity categories.
+// It returns the fallback for unsupported categories.
+func EntityIcon(eis app.EveImageService, ee *app.EveEntity, size int, fallback fyne.Resource) (fyne.Resource, error) {
+	var r fyne.Resource
+	var err error
+	switch ee.Category {
+	case app.EveEntityAlliance:
+		r, err = eis.AllianceLogo(ee.ID, size)
+	case app.EveEntityCharacter:
+		r, err = eis.CharacterPortrait(ee.ID, size)
+	case app.EveEntityCorporation:
+		r, err = eis.CorporationLogo(ee.ID, size)
+	case app.EveEntityFaction:
+		r, err = eis.FactionLogo(ee.ID, size)
+	case app.EveEntityInventoryType:
+		r, err = eis.InventoryTypeIcon(ee.ID, size)
+	default:
+		if fallback != nil {
+			return fallback, nil
+		}
+		slog.Warn("unsupported category. Falling back to default", "entity", ee)
+		return icons.Questionmark32Png, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("entity icon %v %d: %w", ee, size, err)
+	}
+	return r, nil
 }

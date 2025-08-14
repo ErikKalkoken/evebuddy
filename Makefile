@@ -42,3 +42,7 @@ check-device:
 		exit 1;\
 	fi
 	@echo device found
+
+
+interfaces:
+	ifacemaker -f internal/eveimageservice/eveimageservice.go -i EveImageService -p app -s EveImageService > internal/app/eveimageservice.go

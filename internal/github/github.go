@@ -1,4 +1,4 @@
-// package github contains features for accessing repos on Github.
+// Package github contains features for accessing repos on Github.
 package github
 
 import (
@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/go-version"
 )
 
-var ErrHttpError = errors.New("HTTP error")
+var ErrHTTPError = errors.New("HTTP error")
 
 // VersionInfo represents the version information. All versions are normalized.
 type VersionInfo struct {
@@ -78,7 +78,7 @@ func fetchGitHubLatest(owner, repo string) (string, error) {
 		return "", err
 	}
 	if r.StatusCode >= 400 {
-		return "", fmt.Errorf("%s: %w", r.Status, ErrHttpError)
+		return "", fmt.Errorf("%s: %w", r.Status, ErrHTTPError)
 	}
 	var info githubRelease
 	if err := json.Unmarshal(data, &info); err != nil {

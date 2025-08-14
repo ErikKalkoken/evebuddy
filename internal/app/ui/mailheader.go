@@ -15,7 +15,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -24,14 +23,14 @@ type mailHeaderItem struct {
 
 	FallbackIcon fyne.Resource
 
-	eis       *eveimageservice.EveImageService
+	eis       app.EveImageService
 	from      *widget.Label
 	icon      *canvas.Image
 	subject   *widget.Label
 	timestamp *widget.Label
 }
 
-func newMailHeaderItem(eis *eveimageservice.EveImageService) *mailHeaderItem {
+func newMailHeaderItem(eis app.EveImageService) *mailHeaderItem {
 	subject := widget.NewLabel("")
 	subject.SizeName = theme.SizeNameSubHeadingText
 	subject.Truncation = fyne.TextTruncateEllipsis
@@ -97,10 +96,10 @@ type mailHeader struct {
 	icon       *kxwidget.TappableImage
 	recipients *fyne.Container
 	timestamp  *widget.Label
-	eis        *eveimageservice.EveImageService
+	eis        app.EveImageService
 }
 
-func newMailHeader(eis *eveimageservice.EveImageService, show func(*app.EveEntity)) *mailHeader {
+func newMailHeader(eis app.EveImageService, show func(*app.EveEntity)) *mailHeader {
 	from := kxwidget.NewTappableLabel("", nil)
 	from.TextStyle.Bold = true
 	p := theme.Padding()

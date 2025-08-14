@@ -263,5 +263,5 @@ func (a *augmentations) updateTreeData() (iwidget.TreeData[characterImplantsNode
 			tree.MustAdd(uid, n)
 		}
 	}
-	return tree, err
+	return tree, nil
 }
