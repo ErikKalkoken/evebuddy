@@ -74,7 +74,7 @@ func TestFetchGithubLatest(t *testing.T) {
 		httpmock.RegisterResponder("GET", "https://api.github.com/repos/ErikKalkoken/janice/releases/latest",
 			httpmock.NewJsonResponderOrPanic(404, map[string]any{"message": "Not found"}))
 		_, err := fetchGitHubLatest("ErikKalkoken", "janice")
-		assert.ErrorIs(t, err, ErrHttpError)
+		assert.ErrorIs(t, err, ErrHTTPError)
 	})
 	t.Run("should report error when json unmarshaling failed", func(t *testing.T) {
 		httpmock.Reset()

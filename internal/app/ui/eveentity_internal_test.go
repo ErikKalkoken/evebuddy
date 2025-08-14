@@ -1,31 +1,46 @@
 package ui
 
-// func TestEntityIcon(t *testing.T) {
-// 	cases := []struct {
-// 		id        int32
-// 		category  string
-// 		want      []byte
-// 		wantError bool
-// 	}{
-// 		{42, "alliance", alliance, false},
-// 		{42, "character", character, false},
-// 		{42, "corporation", corporation, false},
-// 		{888, "faction", faction, false},
-// 		{42, "inventory_type", typ, false},
-// 		{1, "invalid", nil, true},
-// 	}
-// 	for _, tc := range cases {
-// 		t.Run(tc.category, func(t *testing.T) {
-// 			c.Clear()
-// 			r, err := m.EntityIcon(tc.id, tc.category, 64)
-// 			if !tc.wantError {
-// 				if assert.NoError(t, err) {
-// 					got := r.Content()
-// 					assert.Equal(t, tc.want, got)
-// 				}
-// 			} else {
-// 				assert.Error(t, err)
-// 			}
-// 		})
-// 	}
-// }
+import (
+	"testing"
+
+	"fyne.io/fyne/v2"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestEntityIcon(t *testing.T) {
+	alliance := fyne.NewStaticResource("alliance", []byte("alliance"))
+	character := fyne.NewStaticResource("character", []byte("character"))
+	corporation := fyne.NewStaticResource("corporation", []byte("corporation"))
+	faction := fyne.NewStaticResource("faction", []byte("faction"))
+	inventoryType := fyne.NewStaticResource("inventoryType", []byte("inventoryType"))
+	fallback := icons.BlankSvg
+	eis := &EveImageServiceFake{
+		Alliance:    alliance,
+		Character:   character,
+		Corporation: corporation,
+		Faction:     faction,
+		Type:        inventoryType,
+	}
+	cases := []struct {
+		category app.EveEntityCategory
+		want     fyne.Resource
+	}{
+		{app.EveEntityAlliance, alliance},
+		{app.EveEntityCharacter, character},
+		{app.EveEntityCorporation, corporation},
+		{app.EveEntityFaction, faction},
+		{app.EveEntityInventoryType, inventoryType},
+		{app.EveEntityStation, fallback},
+	}
+	for _, tc := range cases {
+		t.Run(tc.category.String(), func(t *testing.T) {
+			ee := &app.EveEntity{ID: 1, Category: tc.category, Name: "Dummy"}
+			got, err := EntityIcon(eis, ee, 64, fallback)
+			if assert.NoError(t, err) {
+				assert.Equal(t, tc.want, got)
+			}
+		})
+	}
+}

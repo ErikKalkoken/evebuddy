@@ -107,22 +107,3 @@ func (eec EveEntityCategory) String() string {
 		return "?"
 	}
 }
-
-// ToEveImage returns the corresponding category string for the EveImage service.
-// Will return an empty string when category is not supported.
-func (eec EveEntityCategory) ToEveImage() string {
-	switch eec {
-	case EveEntityAlliance:
-		return "alliance"
-	case EveEntityCharacter:
-		return "character"
-	case EveEntityCorporation:
-		return "corporation"
-	case EveEntityFaction:
-		return "faction"
-	case EveEntityInventoryType:
-		return "inventory_type"
-	default:
-		return ""
-	}
-}

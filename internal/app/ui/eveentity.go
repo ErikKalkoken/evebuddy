@@ -321,33 +321,38 @@ func fetchEveEntityAvatar(eis app.EveImageService, ee *app.EveEntity, fallback f
 	if ee.Category == app.EveEntityMailList {
 		return theme.MailComposeIcon(), nil
 	}
-	res, err := EntityIcon(eis, ee.ID, ee.Category.ToEveImage(), defaultIconPixelSize)
+	res, err := EntityIcon(eis, ee, defaultIconPixelSize, fallback)
 	if err != nil {
 		return nil, err
 	}
 	return fynetools.MakeAvatar(res)
 }
 
-// EntityIcon returns an icon for several entity categories.
-func EntityIcon(eis app.EveImageService, id int32, category string, size int) (fyne.Resource, error) {
+// EntityIcon returns an icon form EveImageService for several entity categories.
+// It returns the fallback for unsupported categories.
+func EntityIcon(eis app.EveImageService, ee *app.EveEntity, size int, fallback fyne.Resource) (fyne.Resource, error) {
 	var r fyne.Resource
 	var err error
-	switch category {
-	case "character":
-		r, err = eis.CharacterPortrait(id, size)
-	case "alliance":
-		r, err = eis.AllianceLogo(id, size)
-	case "corporation":
-		r, err = eis.CorporationLogo(id, size)
-	case "faction":
-		r, err = eis.FactionLogo(id, size)
-	case "inventory_type":
-		r, err = eis.InventoryTypeIcon(id, size)
+	switch ee.Category {
+	case app.EveEntityAlliance:
+		r, err = eis.AllianceLogo(ee.ID, size)
+	case app.EveEntityCharacter:
+		r, err = eis.CharacterPortrait(ee.ID, size)
+	case app.EveEntityCorporation:
+		r, err = eis.CorporationLogo(ee.ID, size)
+	case app.EveEntityFaction:
+		r, err = eis.FactionLogo(ee.ID, size)
+	case app.EveEntityInventoryType:
+		r, err = eis.InventoryTypeIcon(ee.ID, size)
 	default:
-		r, err = nil, fmt.Errorf("unsupported category: %s", category)
+		if fallback != nil {
+			return fallback, nil
+		}
+		slog.Warn("unsupported category. Falling back to default", "entity", ee)
+		return icons.Questionmark32Png, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("entity icon {id %d, category %s, size %d}: %w", id, category, size, err)
+		return nil, fmt.Errorf("entity icon %v %d: %w", ee, size, err)
 	}
 	return r, nil
 }

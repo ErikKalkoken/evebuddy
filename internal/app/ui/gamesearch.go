@@ -430,12 +430,6 @@ func (w *searchResult) set(o *app.EveEntity) {
 	}
 	w.name.Importance = i
 	w.name.Refresh()
-	imageCategory := o.Category.ToEveImage()
-	if imageCategory == "" {
-		w.image.Resource = icons.BlankSvg
-		w.image.Refresh()
-		return
-	}
 	go func() {
 		ctx := context.Background()
 		res, err := func() (fyne.Resource, error) {
@@ -454,7 +448,7 @@ func (w *searchResult) set(o *app.EveEntity) {
 					return w.u.eis.InventoryTypeIcon(et.ID, app.IconPixelSize)
 				}
 			default:
-				return EntityIcon(w.u.eis, o.ID, imageCategory, app.IconPixelSize)
+				return EntityIcon(w.u.eis, o, app.IconPixelSize, icons.BlankSvg)
 			}
 		}()
 		if err != nil {
