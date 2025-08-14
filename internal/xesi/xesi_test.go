@@ -69,13 +69,12 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 				},
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
 		// when
-		xx, err := FetchWithPaging(
-			func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
-				arg := &esi.GetCharactersCharacterIdAssetsOpts{
-					Page: esioptional.NewInt32(int32(pageNum)),
-				}
-				return client.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, 99, arg)
-			})
+		xx, err := FetchWithPaging(-1, func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
+			arg := &esi.GetCharactersCharacterIdAssetsOpts{
+				Page: esioptional.NewInt32(int32(pageNum)),
+			}
+			return client.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, 99, arg)
+		})
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, xx, 3)
@@ -107,7 +106,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 				},
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
 		// when
-		xx, err := FetchWithPaging(
+		xx, err := FetchWithPaging(-1,
 			func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 				arg := &esi.GetCharactersCharacterIdAssetsOpts{
 					Page: esioptional.NewInt32(int32(pageNum)),
@@ -138,7 +137,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 				},
 			}))
 		// when
-		xx, err := FetchWithPaging(
+		xx, err := FetchWithPaging(-1,
 			func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 				arg := &esi.GetCharactersCharacterIdAssetsOpts{
 					Page: esioptional.NewInt32(int32(pageNum)),
@@ -154,7 +153,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 		// given
 		myErr := errors.New("error")
 		// when
-		_, err := FetchWithPaging(
+		_, err := FetchWithPaging(-1,
 			func(pageNum int) ([]int, *http.Response, error) {
 				return nil, nil, myErr
 			})
@@ -169,7 +168,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 			"https://esi.evetech.net/v4/characters/99/assets/",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}).HeaderSet(http.Header{"X-Pages": []string{"invalid"}}))
 		// when
-		_, err := FetchWithPaging(
+		_, err := FetchWithPaging(-1,
 			func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 				arg := &esi.GetCharactersCharacterIdAssetsOpts{
 					Page: esioptional.NewInt32(int32(pageNum)),

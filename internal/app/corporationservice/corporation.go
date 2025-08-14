@@ -25,17 +25,19 @@ type CharacterService interface {
 
 // CorporationService provides access to all managed Eve Online corporations both online and from local storage.
 type CorporationService struct {
-	cs         CharacterService
-	esiClient  *goesi.APIClient
-	eus        *eveuniverseservice.EveUniverseService
-	httpClient *http.Client
-	scs        *statuscacheservice.StatusCacheService
-	sfg        *singleflight.Group
-	st         *storage.Storage
+	concurrencyLimit int
+	cs               CharacterService
+	esiClient        *goesi.APIClient
+	eus              *eveuniverseservice.EveUniverseService
+	httpClient       *http.Client
+	scs              *statuscacheservice.StatusCacheService
+	sfg              *singleflight.Group
+	st               *storage.Storage
 }
 
 type Params struct {
 	CharacterService   CharacterService
+	ConcurrencyLimit   int // max number of concurrent Goroutines (per group)
 	EveUniverseService *eveuniverseservice.EveUniverseService
 	StatusCacheService *statuscacheservice.StatusCacheService
 	Storage            *storage.Storage
@@ -46,23 +48,27 @@ type Params struct {
 
 // New creates a new corporation service and returns it.
 // When nil is passed for any parameter a new default instance will be created for it (except for storage).
-func New(args Params) *CorporationService {
+func New(arg Params) *CorporationService {
 	s := &CorporationService{
-		cs:  args.CharacterService,
-		eus: args.EveUniverseService,
-		scs: args.StatusCacheService,
-		st:  args.Storage,
-		sfg: new(singleflight.Group),
+		concurrencyLimit: -1, // Default is no limit
+		cs:               arg.CharacterService,
+		eus:              arg.EveUniverseService,
+		scs:              arg.StatusCacheService,
+		st:               arg.Storage,
+		sfg:              new(singleflight.Group),
 	}
-	if args.HTTPClient == nil {
+	if arg.HTTPClient == nil {
 		s.httpClient = http.DefaultClient
 	} else {
-		s.httpClient = args.HTTPClient
+		s.httpClient = arg.HTTPClient
 	}
-	if args.EsiClient == nil {
+	if arg.EsiClient == nil {
 		s.esiClient = goesi.NewAPIClient(s.httpClient, "")
 	} else {
-		s.esiClient = args.EsiClient
+		s.esiClient = arg.EsiClient
+	}
+	if arg.ConcurrencyLimit > 0 {
+		s.concurrencyLimit = arg.ConcurrencyLimit
 	}
 	return s
 }

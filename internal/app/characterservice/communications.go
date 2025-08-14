@@ -142,6 +142,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 			}
 			args := make([]storage.CreateCharacterNotificationParams, len(newNotifs))
 			g := new(errgroup.Group)
+			g.SetLimit(s.concurrencyLimit)
 			for i, n := range newNotifs {
 				g.Go(func() error {
 					arg := storage.CreateCharacterNotificationParams{

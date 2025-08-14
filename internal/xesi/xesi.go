@@ -11,7 +11,7 @@ import (
 
 // FetchWithPaging returns the combined list of items from all pages of an ESI endpoint.
 // This only works for ESI endpoints which support the X-Pages pattern and return a list.
-func FetchWithPaging[T any](fetch func(int) ([]T, *http.Response, error)) ([]T, error) {
+func FetchWithPaging[T any](concurrencyLimit int, fetch func(int) ([]T, *http.Response, error)) ([]T, error) {
 	result, r, err := fetch(1)
 	if err != nil {
 		return nil, err
@@ -26,6 +26,7 @@ func FetchWithPaging[T any](fetch func(int) ([]T, *http.Response, error)) ([]T, 
 	results := make([][]T, pages)
 	results[0] = result
 	g := new(errgroup.Group)
+	g.SetLimit(concurrencyLimit)
 	for p := 2; p <= pages; p++ {
 		p := p
 		g.Go(func() error {

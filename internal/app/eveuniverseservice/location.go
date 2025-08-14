@@ -182,6 +182,7 @@ func (s *EveUniverseService) AddMissingLocations(ctx context.Context, ids set.Se
 		return err
 	}
 	g := new(errgroup.Group)
+	g.SetLimit(s.concurrencyLimit)
 	for id := range missing.All() {
 		g.Go(func() error {
 			_, err := s.GetOrCreateLocationESI(ctx, id)
@@ -207,6 +208,7 @@ func (s *EveUniverseService) EntityIDsFromLocationsESI(ctx context.Context, ids 
 	}
 	entityIDs := make([]int32, len(ids))
 	g := new(errgroup.Group)
+	g.SetLimit(s.concurrencyLimit)
 	for i, id := range ids {
 		g.Go(func() error {
 			switch app.LocationVariantFromID(id) {

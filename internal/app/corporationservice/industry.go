@@ -45,6 +45,7 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 		ctx, arg,
 		func(ctx context.Context, arg app.CorporationUpdateSectionParams) (any, error) {
 			jobs, err := xesi.FetchWithPaging(
+				s.concurrencyLimit,
 				func(pageNum int) ([]esi.GetCorporationsCorporationIdIndustryJobs200Ok, *http.Response, error) {
 					return s.esiClient.ESI.IndustryApi.GetCorporationsCorporationIdIndustryJobs(
 						ctx, arg.CorporationID, &esi.GetCorporationsCorporationIdIndustryJobsOpts{

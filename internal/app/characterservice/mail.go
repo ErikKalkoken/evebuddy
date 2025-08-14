@@ -404,6 +404,7 @@ func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32
 	}
 	mails := make([]esiMailWrapper, len(headers))
 	g := new(errgroup.Group)
+	g.SetLimit(s.concurrencyLimit)
 	for i, h := range headers {
 		g.Go(func() error {
 			m, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, characterID, h.MailId, nil)

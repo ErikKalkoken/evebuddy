@@ -22,30 +22,36 @@ type EveUniverseService struct {
 	// Now returns the current time in UTC. Can be overwritten for tests.
 	Now func() time.Time
 
-	esiClient *goesi.APIClient
-	scs       *statuscacheservice.StatusCacheService
-	sfg       *singleflight.Group
-	st        *storage.Storage
+	concurrencyLimit int
+	esiClient        *goesi.APIClient
+	scs              *statuscacheservice.StatusCacheService
+	sfg              *singleflight.Group
+	st               *storage.Storage
 }
 
 type Params struct {
+	ConcurrencyLimit   int // max number of concurrent Goroutines (per group)
 	ESIClient          *goesi.APIClient
 	StatusCacheService *statuscacheservice.StatusCacheService
 	Storage            *storage.Storage
 }
 
 // New returns a new instance of an Eve universe service.
-func New(args Params) *EveUniverseService {
-	eu := &EveUniverseService{
-		scs:       args.StatusCacheService,
-		esiClient: args.ESIClient,
-		st:        args.Storage,
-		sfg:       new(singleflight.Group),
+func New(arg Params) *EveUniverseService {
+	s := &EveUniverseService{
+		concurrencyLimit: -1, // Default is no limit
+		esiClient:        arg.ESIClient,
+		scs:              arg.StatusCacheService,
+		sfg:              new(singleflight.Group),
+		st:               arg.Storage,
 		Now: func() time.Time {
 			return time.Now().UTC()
 		},
 	}
-	return eu
+	if arg.ConcurrencyLimit > 0 {
+		s.concurrencyLimit = arg.ConcurrencyLimit
+	}
+	return s
 }
 func (s *EveUniverseService) GetOrCreateRaceESI(ctx context.Context, id int32) (*app.EveRace, error) {
 	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateRaceESI-%d", id), func() (any, error) {

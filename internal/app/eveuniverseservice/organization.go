@@ -162,6 +162,7 @@ func (s *EveUniverseService) UpdateAllCorporationsESI(ctx context.Context) (set.
 	ids2 := ids.Slice()
 	hasChanged := make([]bool, len(ids2))
 	g := new(errgroup.Group)
+	g.SetLimit(s.concurrencyLimit)
 	for i, id := range ids2 {
 		g.Go(func() error {
 			c1, err := s.GetEveCorporation(ctx, id)

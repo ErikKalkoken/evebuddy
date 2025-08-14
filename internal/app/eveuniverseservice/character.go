@@ -108,6 +108,7 @@ func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) (set.Se
 	ids2 := ids.Slice()
 	hasChanged := make([]bool, len(ids2))
 	g := new(errgroup.Group)
+	g.SetLimit(s.concurrencyLimit)
 	for i, id := range ids2 {
 		g.Go(func() error {
 			changed, err := s.updateCharacterESI(ctx, id)

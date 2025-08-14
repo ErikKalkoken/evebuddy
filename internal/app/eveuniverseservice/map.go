@@ -51,6 +51,7 @@ func (s *EveUniverseService) FetchRoute(ctx context.Context, args app.EveRouteHe
 	}
 	systems := make([]*app.EveSolarSystem, len(ids))
 	g := new(errgroup.Group)
+	g.SetLimit(s.concurrencyLimit)
 	for i, id := range ids {
 		g.Go(func() error {
 			system, err := s.GetOrCreateSolarSystemESI(ctx, id)
@@ -71,6 +72,7 @@ func (s *EveUniverseService) FetchRoute(ctx context.Context, args app.EveRouteHe
 func (s *EveUniverseService) FetchRoutes(ctx context.Context, headers []app.EveRouteHeader) (map[app.EveRouteHeader][]*app.EveSolarSystem, error) {
 	results := make([][]*app.EveSolarSystem, len(headers))
 	g := new(errgroup.Group)
+	g.SetLimit(s.concurrencyLimit)
 	for i, h := range headers {
 		g.Go(func() error {
 			route, err := s.FetchRoute(ctx, h)
@@ -94,6 +96,7 @@ func (s *EveUniverseService) FetchRoutes(ctx context.Context, headers []app.EveR
 // GetStargatesSolarSystemsESI fetches and returns the solar systems which relates to given stargates from ESI.
 func (s *EveUniverseService) GetStargatesSolarSystemsESI(ctx context.Context, stargateIDs []int32) ([]*app.EveSolarSystem, error) {
 	g := new(errgroup.Group)
+	g.SetLimit(s.concurrencyLimit)
 	systemIDs := make([]int32, len(stargateIDs))
 	for i, id := range stargateIDs {
 		g.Go(func() error {
@@ -109,6 +112,7 @@ func (s *EveUniverseService) GetStargatesSolarSystemsESI(ctx context.Context, st
 		return nil, err
 	}
 	g = new(errgroup.Group)
+	g.SetLimit(s.concurrencyLimit)
 	systems := make([]*app.EveSolarSystem, len(systemIDs))
 	for i, id := range systemIDs {
 		g.Go(func() error {
@@ -133,6 +137,7 @@ func (s *EveUniverseService) GetStargatesSolarSystemsESI(ctx context.Context, st
 func (s *EveUniverseService) GetSolarSystemPlanets(ctx context.Context, planets []app.EveSolarSystemPlanet) ([]*app.EvePlanet, error) {
 	oo := make([]*app.EvePlanet, len(planets))
 	g := new(errgroup.Group)
+	g.SetLimit(s.concurrencyLimit)
 	for i, p := range planets {
 		g.Go(func() error {
 			st, err := s.GetOrCreatePlanetESI(ctx, p.PlanetID)
@@ -215,6 +220,7 @@ func (s *EveUniverseService) GetConstellationSolarSystemsESI(ctx context.Context
 		return nil, err
 	}
 	g := new(errgroup.Group)
+	g.SetLimit(s.concurrencyLimit)
 	systems := make([]*app.EveSolarSystem, len(o.Systems))
 	for i, id := range o.Systems {
 		g.Go(func() error {
