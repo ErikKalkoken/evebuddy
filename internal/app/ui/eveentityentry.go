@@ -19,7 +19,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -35,7 +34,7 @@ type eveEntityEntry struct {
 	Placeholder    string
 	ShowInfoWindow func(*app.EveEntity)
 
-	eis         *eveimageservice.EveImageService
+	eis         app.EveImageService
 	field       *canvas.Rectangle
 	label       fyne.CanvasObject
 	labelWidth  float32
@@ -45,7 +44,7 @@ type eveEntityEntry struct {
 	s           []*app.EveEntity
 }
 
-func newEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis *eveimageservice.EveImageService) *eveEntityEntry {
+func newEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis app.EveImageService) *eveEntityEntry {
 	bg := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
 	bg.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
@@ -218,14 +217,14 @@ type eveEntityBadge struct {
 
 	ee           *app.EveEntity
 	fallbackIcon fyne.Resource
-	eis          *eveimageservice.EveImageService
+	eis          app.EveImageService
 	hovered      bool
 }
 
 var _ fyne.Tappable = (*eveEntityBadge)(nil)
 var _ desktop.Hoverable = (*eveEntityBadge)(nil)
 
-func newEveEntityBadge(ee *app.EveEntity, eis *eveimageservice.EveImageService, onTapped func()) *eveEntityBadge {
+func newEveEntityBadge(ee *app.EveEntity, eis app.EveImageService, onTapped func()) *eveEntityBadge {
 	w := &eveEntityBadge{
 		ee:           ee,
 		eis:          eis,
@@ -315,7 +314,7 @@ func (w *eveEntityBadge) MouseOut() {
 }
 
 // fetchEveEntityAvatar fetches an icon for an EveEntity and returns it in avatar style.
-func fetchEveEntityAvatar(eis *eveimageservice.EveImageService, ee *app.EveEntity, fallback fyne.Resource) (fyne.Resource, error) {
+func fetchEveEntityAvatar(eis app.EveImageService, ee *app.EveEntity, fallback fyne.Resource) (fyne.Resource, error) {
 	if ee == nil {
 		return fallback, nil
 	}

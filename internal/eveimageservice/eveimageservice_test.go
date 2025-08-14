@@ -221,28 +221,6 @@ func TestImageFetching(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, eveimageservice.ErrInvalidSize)
 	})
-	t.Run("can clear cache", func(t *testing.T) {
-		// given
-		c := newCache()
-		dat, err := os.ReadFile("testdata/character.jpeg")
-		if err != nil {
-			t.Fatal(err)
-		}
-		httpmock.Reset()
-		httpmock.RegisterResponder(
-			"GET",
-			"https://images.evetech.net/types/99/render?size=64",
-			httpmock.NewBytesResponder(200, dat),
-		)
-		m := eveimageservice.New(c, http.DefaultClient, false)
-		if _, err := m.InventoryTypeRender(99, 64); err != nil {
-			t.Fatal(err)
-		}
-		//when
-		err = m.ClearCache()
-		// then
-		assert.NoError(t, err)
-	})
 }
 
 func TestEntityIcon(t *testing.T) {

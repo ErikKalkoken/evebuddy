@@ -21,7 +21,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
@@ -266,10 +265,10 @@ type shipItem struct {
 	fallbackIcon fyne.Resource
 	image        *canvas.Image
 	label        *widget.Label
-	eis          *eveimageservice.EveImageService
+	eis          app.EveImageService
 }
 
-func newShipItem(eis *eveimageservice.EveImageService, cache *memcache.Cache, fallbackIcon fyne.Resource) *shipItem {
+func newShipItem(eis app.EveImageService, cache *memcache.Cache, fallbackIcon fyne.Resource) *shipItem {
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{128, 128}
 	image := canvas.NewImageFromImage(image.NewRGBA(image.Rectangle{upLeft, lowRight}))

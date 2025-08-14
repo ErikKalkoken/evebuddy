@@ -34,7 +34,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -70,7 +69,7 @@ var defaultImageScaleMode canvas.ImageScale
 // services represents a wrapper for passing the main services to functions.
 type services struct {
 	cs  *characterservice.CharacterService
-	eis *eveimageservice.EveImageService
+	eis app.EveImageService
 	eus *eveuniverseservice.EveUniverseService
 	rs  *corporationservice.CorporationService
 	scs *statuscacheservice.StatusCacheService
@@ -139,7 +138,7 @@ type baseUI struct {
 
 	// Services
 	cs       *characterservice.CharacterService
-	eis      *eveimageservice.EveImageService
+	eis      app.EveImageService
 	ess      *esistatusservice.ESIStatusService
 	eus      *eveuniverseservice.EveUniverseService
 	js       *janiceservice.JaniceService
@@ -168,7 +167,7 @@ type BaseUIParams struct {
 	CharacterService   *characterservice.CharacterService
 	CorporationService *corporationservice.CorporationService
 	ESIStatusService   *esistatusservice.ESIStatusService
-	EveImageService    *eveimageservice.EveImageService
+	EveImageService    app.EveImageService
 	EveUniverseService *eveuniverseservice.EveUniverseService
 	JaniceService      *janiceservice.JaniceService
 	MemCache           *memcache.Cache

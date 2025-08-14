@@ -9,38 +9,39 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/test"
+	"github.com/antihax/goesi"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
-	"github.com/antihax/goesi"
-	"github.com/stretchr/testify/assert"
 )
 
-type FakeCache map[string][]byte
+// type FakeCache map[string][]byte
 
-func NewFakeCache() FakeCache {
-	return make(FakeCache)
-}
+// func NewFakeCache() FakeCache {
+// 	return make(FakeCache)
+// }
 
-func (c FakeCache) Get(k string) ([]byte, bool) {
-	v, ok := c[k]
-	return v, ok
-}
+// func (c FakeCache) Get(k string) ([]byte, bool) {
+// 	v, ok := c[k]
+// 	return v, ok
+// }
 
-func (c FakeCache) Set(k string, v []byte, d time.Duration) {
-	c[k] = v
-}
+// func (c FakeCache) Set(k string, v []byte, d time.Duration) {
+// 	c[k] = v
+// }
 
-func (c FakeCache) Clear() {
-	for k := range c {
-		delete(c, k)
-	}
-}
+// func (c FakeCache) Clear() {
+// 	for k := range c {
+// 		delete(c, k)
+// 	}
+// }
 
 // FakeApp is an extension of the Fyne test app which also conforms to the desktop app interface.
 type FakeApp struct {
@@ -131,7 +132,48 @@ func (a *FakeApp) Clipboard() fyne.Clipboard {
 var _ fyne.App = (*FakeApp)(nil)
 var _ desktop.App = (*FakeApp)(nil)
 
-type NewFakeBaseUIParams struct {
+type EveImageServiceFake struct {
+	Resource fyne.Resource
+	Err      error
+}
+
+func (s *EveImageServiceFake) AllianceLogo(id int32, size int) (fyne.Resource, error) {
+	return s.Resource, s.Err
+}
+func (s *EveImageServiceFake) CharacterPortrait(id int32, size int) (fyne.Resource, error) {
+	return s.Resource, s.Err
+}
+
+func (s *EveImageServiceFake) CorporationLogo(id int32, size int) (fyne.Resource, error) {
+	return s.Resource, s.Err
+}
+
+func (s *EveImageServiceFake) FactionLogo(id int32, size int) (fyne.Resource, error) {
+	return s.Resource, s.Err
+}
+
+func (s *EveImageServiceFake) InventoryTypeRender(id int32, size int) (fyne.Resource, error) {
+	return s.Resource, s.Err
+}
+
+func (s *EveImageServiceFake) InventoryTypeIcon(id int32, size int) (fyne.Resource, error) {
+	return s.Resource, s.Err
+}
+
+func (s *EveImageServiceFake) InventoryTypeBPO(id int32, size int) (fyne.Resource, error) {
+	return s.Resource, s.Err
+}
+
+func (s *EveImageServiceFake) InventoryTypeBPC(id int32, size int) (fyne.Resource, error) {
+	return s.Resource, s.Err
+}
+
+func (s *EveImageServiceFake) InventoryTypeSKIN(id int32, size int) (fyne.Resource, error) {
+	return s.Resource, s.Err
+}
+
+func (s *EveImageServiceFake) EntityIcon(id int32, category string, size int) (fyne.Resource, error) {
+	return s.Resource, s.Err
 }
 
 func NewFakeBaseUI(st *storage.Storage, app fyne.App, isDesktop bool) *baseUI {
@@ -146,7 +188,6 @@ func NewFakeBaseUI(st *storage.Storage, app fyne.App, isDesktop bool) *baseUI {
 		StatusCacheService: scs,
 		Storage:            st,
 	})
-	eis := eveimageservice.New(NewFakeCache(), nil, true)
 	cs := characterservice.New(characterservice.Params{
 		EveUniverseService: eus,
 		StatusCacheService: scs,
@@ -164,7 +205,7 @@ func NewFakeBaseUI(st *storage.Storage, app fyne.App, isDesktop bool) *baseUI {
 		CharacterService:   cs,
 		CorporationService: rs,
 		ESIStatusService:   esistatusservice.New(esiClient),
-		EveImageService:    eis,
+		EveImageService:    &EveImageServiceFake{Resource: icons.Characterplaceholder64Jpeg},
 		EveUniverseService: eus,
 		MemCache:           cache,
 		StatusCacheService: scs,
