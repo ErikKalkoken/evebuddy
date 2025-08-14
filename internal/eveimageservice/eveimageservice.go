@@ -181,30 +181,6 @@ func (s *EveImageService) InventoryTypeSKIN(id int32, size int) (fyne.Resource, 
 	return resourceSkinicon64pxPng, nil
 }
 
-// EntityIcon returns the icon for several entity categories.
-func (s *EveImageService) EntityIcon(id int32, category string, size int) (fyne.Resource, error) {
-	var r fyne.Resource
-	var err error
-	switch category {
-	case "character":
-		r, err = s.CharacterPortrait(id, size)
-	case "alliance":
-		r, err = s.AllianceLogo(id, size)
-	case "corporation":
-		r, err = s.CorporationLogo(id, size)
-	case "faction":
-		r, err = s.FactionLogo(id, size)
-	case "inventory_type":
-		r, err = s.InventoryTypeIcon(id, size)
-	default:
-		r, err = nil, fmt.Errorf("unsupported category: %s", category)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("entity icon {id %d, category %s, size %d}: %w", id, category, size, err)
-	}
-	return r, nil
-}
-
 // image returns an Eve image as fyne resource.
 // It returns it from cache or - if not found - will try to fetch it from the Internet.
 func (s *EveImageService) image(url string, timeout time.Duration) (fyne.Resource, error) {

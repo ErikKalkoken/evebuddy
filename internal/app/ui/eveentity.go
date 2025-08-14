@@ -321,9 +321,33 @@ func fetchEveEntityAvatar(eis app.EveImageService, ee *app.EveEntity, fallback f
 	if ee.Category == app.EveEntityMailList {
 		return theme.MailComposeIcon(), nil
 	}
-	res, err := eis.EntityIcon(ee.ID, ee.Category.ToEveImage(), defaultIconPixelSize)
+	res, err := EntityIcon(eis, ee.ID, ee.Category.ToEveImage(), defaultIconPixelSize)
 	if err != nil {
 		return nil, err
 	}
 	return fynetools.MakeAvatar(res)
+}
+
+// EntityIcon returns an icon for several entity categories.
+func EntityIcon(eis app.EveImageService, id int32, category string, size int) (fyne.Resource, error) {
+	var r fyne.Resource
+	var err error
+	switch category {
+	case "character":
+		r, err = eis.CharacterPortrait(id, size)
+	case "alliance":
+		r, err = eis.AllianceLogo(id, size)
+	case "corporation":
+		r, err = eis.CorporationLogo(id, size)
+	case "faction":
+		r, err = eis.FactionLogo(id, size)
+	case "inventory_type":
+		r, err = eis.InventoryTypeIcon(id, size)
+	default:
+		r, err = nil, fmt.Errorf("unsupported category: %s", category)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("entity icon {id %d, category %s, size %d}: %w", id, category, size, err)
+	}
+	return r, nil
 }

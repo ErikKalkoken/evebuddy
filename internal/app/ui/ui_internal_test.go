@@ -133,47 +133,47 @@ var _ fyne.App = (*FakeApp)(nil)
 var _ desktop.App = (*FakeApp)(nil)
 
 type EveImageServiceFake struct {
-	Resource fyne.Resource
-	Err      error
+	Character   fyne.Resource
+	Alliance    fyne.Resource
+	Type        fyne.Resource
+	Corporation fyne.Resource
+	Faction     fyne.Resource
+	Err         error
 }
 
 func (s *EveImageServiceFake) AllianceLogo(id int32, size int) (fyne.Resource, error) {
-	return s.Resource, s.Err
+	return s.Character, s.Err
 }
 func (s *EveImageServiceFake) CharacterPortrait(id int32, size int) (fyne.Resource, error) {
-	return s.Resource, s.Err
+	return s.Character, s.Err
 }
 
 func (s *EveImageServiceFake) CorporationLogo(id int32, size int) (fyne.Resource, error) {
-	return s.Resource, s.Err
+	return s.Character, s.Err
 }
 
 func (s *EveImageServiceFake) FactionLogo(id int32, size int) (fyne.Resource, error) {
-	return s.Resource, s.Err
+	return s.Character, s.Err
 }
 
 func (s *EveImageServiceFake) InventoryTypeRender(id int32, size int) (fyne.Resource, error) {
-	return s.Resource, s.Err
+	return s.Character, s.Err
 }
 
 func (s *EveImageServiceFake) InventoryTypeIcon(id int32, size int) (fyne.Resource, error) {
-	return s.Resource, s.Err
+	return s.Character, s.Err
 }
 
 func (s *EveImageServiceFake) InventoryTypeBPO(id int32, size int) (fyne.Resource, error) {
-	return s.Resource, s.Err
+	return s.Character, s.Err
 }
 
 func (s *EveImageServiceFake) InventoryTypeBPC(id int32, size int) (fyne.Resource, error) {
-	return s.Resource, s.Err
+	return s.Character, s.Err
 }
 
 func (s *EveImageServiceFake) InventoryTypeSKIN(id int32, size int) (fyne.Resource, error) {
-	return s.Resource, s.Err
-}
-
-func (s *EveImageServiceFake) EntityIcon(id int32, category string, size int) (fyne.Resource, error) {
-	return s.Resource, s.Err
+	return s.Character, s.Err
 }
 
 func NewFakeBaseUI(st *storage.Storage, app fyne.App, isDesktop bool) *baseUI {
@@ -205,7 +205,7 @@ func NewFakeBaseUI(st *storage.Storage, app fyne.App, isDesktop bool) *baseUI {
 		CharacterService:   cs,
 		CorporationService: rs,
 		ESIStatusService:   esistatusservice.New(esiClient),
-		EveImageService:    &EveImageServiceFake{Resource: icons.Characterplaceholder64Jpeg},
+		EveImageService:    &EveImageServiceFake{Character: icons.Characterplaceholder64Jpeg},
 		EveUniverseService: eus,
 		MemCache:           cache,
 		StatusCacheService: scs,

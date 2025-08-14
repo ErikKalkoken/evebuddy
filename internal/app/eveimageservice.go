@@ -26,7 +26,5 @@ type EveImageService interface {
 	InventoryTypeBPC(id int32, size int) (fyne.Resource, error)
 	// InventoryTypeSKIN returns the icon for a SKIN type.
 	InventoryTypeSKIN(id int32, size int) (fyne.Resource, error)
-	// EntityIcon returns the icon for several entity categories.
-	EntityIcon(id int32, category string, size int) (fyne.Resource, error)
 }
 
