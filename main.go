@@ -55,8 +55,8 @@ import (
 const (
 	appID               = "io.github.erikkalkoken.evebuddy"
 	appName             = "evebuddy"
-	sourceURL           = "https://github.com/ErikKalkoken/evebuddy"
 	cacheCleanUpTimeout = time.Minute * 30
+	concurrentLimit     = 10 // max concurrent Goroutines per group
 	crashFileName       = "crash.txt"
 	dbFileName          = appName + ".sqlite"
 	logFileName         = appName + ".log"
@@ -67,6 +67,7 @@ const (
 	maxCPUShare         = 0.5
 	mutexDelay          = 100 * time.Millisecond
 	mutexTimeout        = 250 * time.Millisecond
+	sourceURL           = "https://github.com/ErikKalkoken/evebuddy"
 	ssoClientID         = "11ae857fe4d149b2be60d875649c05f1"
 	userAgentEmail      = "kalkoken87@gmail.com"
 )
@@ -288,6 +289,7 @@ func main() {
 	}
 	// Init EveUniverse service
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
+		ConcurrencyLimit:   concurrentLimit,
 		ESIClient:          esiClient,
 		StatusCacheService: scs,
 		Storage:            st,
@@ -297,6 +299,7 @@ func main() {
 	ssoService := sso.New(ssoClientID, rhc.StandardClient())
 	ssoService.OpenURL = fyneApp.OpenURL
 	cs := characterservice.New(characterservice.Params{
+		ConcurrencyLimit:       concurrentLimit,
 		ESIClient:              esiClient,
 		EveNotificationService: evenotification.New(eus),
 		EveUniverseService:     eus,
@@ -309,6 +312,7 @@ func main() {
 	// Init Corporation service
 	rs := corporationservice.New(corporationservice.Params{
 		CharacterService:   cs,
+		ConcurrencyLimit:   concurrentLimit,
 		EsiClient:          esiClient,
 		EveUniverseService: eus,
 		HTTPClient:         rhc.StandardClient(),
@@ -330,7 +334,9 @@ func main() {
 		ClearCacheFunc: func() {
 			pc.Clear()
 			memCache.Clear()
+
 		},
+		ConcurrencyLimit:   concurrentLimit,
 		CorporationService: rs,
 		DataPaths: map[string]string{
 			"db":        dbPath,

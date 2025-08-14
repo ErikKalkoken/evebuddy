@@ -1,4 +1,3 @@
-// Package characterservice contains the EVE character service.
 package characterservice
 
 import (
@@ -6,74 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net/http"
 
 	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
-	"golang.org/x/sync/errgroup"
-	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
-
-type SSOService interface {
-	Authenticate(ctx context.Context, scopes []string) (*app.Token, error)
-	RefreshToken(ctx context.Context, refreshToken string) (*app.Token, error)
-}
-
-// CharacterService provides access to all managed Eve Online characters both online and from local storage.
-type CharacterService struct {
-	ens        *evenotification.EveNotificationService
-	esiClient  *goesi.APIClient
-	eus        *eveuniverseservice.EveUniverseService
-	httpClient *http.Client
-	scs        *statuscacheservice.StatusCacheService
-	sfg        *singleflight.Group
-	sso        SSOService
-	st         *storage.Storage
-}
-
-type Params struct {
-	EveNotificationService *evenotification.EveNotificationService
-	EveUniverseService     *eveuniverseservice.EveUniverseService
-	SSOService             SSOService
-	StatusCacheService     *statuscacheservice.StatusCacheService
-	Storage                *storage.Storage
-	// optional
-	HTTPClient *http.Client
-	ESIClient  *goesi.APIClient
-}
-
-// New creates a new character service and returns it.
-// When nil is passed for any parameter a new default instance will be created for it (except for storage).
-func New(args Params) *CharacterService {
-	s := &CharacterService{
-		ens: args.EveNotificationService,
-		eus: args.EveUniverseService,
-		scs: args.StatusCacheService,
-		sso: args.SSOService,
-		st:  args.Storage,
-		sfg: new(singleflight.Group),
-	}
-	if args.HTTPClient == nil {
-		s.httpClient = http.DefaultClient
-	} else {
-		s.httpClient = args.HTTPClient
-	}
-	if args.ESIClient == nil {
-		s.esiClient = goesi.NewAPIClient(s.httpClient, "")
-	} else {
-		s.esiClient = args.ESIClient
-	}
-	return s
-}
 
 // DeleteCharacter deletes a character and corporations which have become orphaned as a result.
 // It reports whether the related corporation was also deleted.
@@ -383,30 +324,4 @@ func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg app.C
 			}
 			return nil
 		})
-}
-
-func (s *CharacterService) addMissingEveEntitiesAndLocations(ctx context.Context, entityIDs set.Set[int32], locationIDs set.Set[int64]) error {
-	g := new(errgroup.Group)
-	if entityIDs.Size() > 0 {
-		g.Go(func() error {
-			_, err := s.eus.AddMissingEntities(ctx, entityIDs)
-			return err
-		})
-	}
-	if locationIDs.Size() > 0 {
-		g.Go(func() error {
-			return s.eus.AddMissingLocations(ctx, locationIDs)
-		})
-	}
-	if err := g.Wait(); err != nil {
-		return err
-	}
-	return nil
-}
-
-// DumpData returns the current content of the given SQL tables as JSON string.
-// When no tables are given all tables will be included.
-// This is a low-level method meant mainly for debugging.
-func (s *CharacterService) DumpData(tables ...string) string {
-	return s.st.DumpData(tables...)
 }

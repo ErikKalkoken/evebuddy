@@ -210,6 +210,7 @@ func (s *EveUniverseService) AddMissingTypes(ctx context.Context, ids set.Set[in
 	}
 	slog.Debug("Trying to fetch missing EveTypes from ESI", "count", missing.Size())
 	g := new(errgroup.Group)
+	g.SetLimit(s.concurrencyLimit)
 	for id := range missing.All() {
 		g.Go(func() error {
 			_, err := s.GetOrCreateTypeESI(ctx, id)
@@ -231,6 +232,7 @@ func (s *EveUniverseService) UpdateCategoryWithChildrenESI(ctx context.Context, 
 			return nil, err
 		}
 		g := new(errgroup.Group)
+		g.SetLimit(s.concurrencyLimit)
 		for _, id := range category.Groups {
 			g.Go(func() error {
 				_, err := s.GetOrCreateGroupESI(ctx, id)
@@ -242,6 +244,7 @@ func (s *EveUniverseService) UpdateCategoryWithChildrenESI(ctx context.Context, 
 		}
 		groupTypes := make([][]int32, len(category.Groups))
 		g = new(errgroup.Group)
+		g.SetLimit(s.concurrencyLimit)
 		for i, id := range category.Groups {
 			g.Go(func() error {
 				group, _, err := s.esiClient.ESI.UniverseApi.GetUniverseGroupsGroupId(ctx, id, nil)

@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"slices"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -25,6 +24,7 @@ import (
 	kxtheme "github.com/ErikKalkoken/fyne-kx/theme"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/maniartech/signals"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
@@ -147,9 +147,10 @@ type baseUI struct {
 	scs      *statuscacheservice.StatusCacheService
 	settings *settings.Settings
 
-	// UI state
+	// UI state & configuration
 	app                fyne.App
 	character          atomic.Pointer[app.Character]
+	concurrencyLimit   int
 	corporation        atomic.Pointer[app.Corporation]
 	dataPaths          map[string]string      // Paths to user data
 	isDesktop          bool                   // whether the app runs on a desktop. If false we assume it's on mobile.
@@ -174,6 +175,7 @@ type BaseUIParams struct {
 	StatusCacheService *statuscacheservice.StatusCacheService
 	// optional
 	ClearCacheFunc   func()
+	ConcurrencyLimit int
 	DataPaths        map[string]string
 	IsDesktop        bool
 	IsOffline        bool
@@ -183,38 +185,41 @@ type BaseUIParams struct {
 // NewBaseUI constructs and returns a new BaseUI.
 //
 // Note:Types embedding BaseUI should define callbacks instead of overwriting methods.
-func NewBaseUI(args BaseUIParams) *baseUI {
+func NewBaseUI(arg BaseUIParams) *baseUI {
 	u := &baseUI{
-		app:                      args.App,
+		app:                      arg.App,
 		characterChanged:         signals.New[*app.Character](),
 		characterSectionUpdated:  signals.New[app.CharacterUpdateSectionParams](),
+		concurrencyLimit:         -1, // Default is no limit
 		corporationWallets:       make(map[app.Division]*corporationWallet),
-		cs:                       args.CharacterService,
-		eis:                      args.EveImageService,
-		ess:                      args.ESIStatusService,
-		eus:                      args.EveUniverseService,
-		isDesktop:                args.IsDesktop,
-		isOffline:                args.IsOffline,
-		isUpdateDisabled:         args.IsUpdateDisabled,
-		js:                       args.JaniceService,
-		memcache:                 args.MemCache,
-		rs:                       args.CorporationService,
-		scs:                      args.StatusCacheService,
-		settings:                 settings.New(args.App.Preferences()),
-		windows:                  make(map[string]fyne.Window),
-		onSectionUpdateStarted:   func() {},
+		cs:                       arg.CharacterService,
+		eis:                      arg.EveImageService,
+		ess:                      arg.ESIStatusService,
+		eus:                      arg.EveUniverseService,
+		isDesktop:                arg.IsDesktop,
+		isOffline:                arg.IsOffline,
+		isUpdateDisabled:         arg.IsUpdateDisabled,
+		js:                       arg.JaniceService,
+		memcache:                 arg.MemCache,
 		onSectionUpdateCompleted: func() {},
+		onSectionUpdateStarted:   func() {},
+		rs:                       arg.CorporationService,
+		scs:                      arg.StatusCacheService,
+		settings:                 settings.New(arg.App.Preferences()),
+		windows:                  make(map[string]fyne.Window),
 	}
 	u.window = u.app.NewWindow(u.appName())
 
-	if args.ClearCacheFunc != nil {
-		u.clearCache = args.ClearCacheFunc
+	if arg.ClearCacheFunc != nil {
+		u.clearCache = arg.ClearCacheFunc
 	} else {
 		u.clearCache = func() {}
 	}
-
-	if len(args.DataPaths) > 0 {
-		u.dataPaths = args.DataPaths
+	if arg.ConcurrencyLimit > 0 {
+		u.concurrencyLimit = arg.ConcurrencyLimit
+	}
+	if len(arg.DataPaths) > 0 {
+		u.dataPaths = arg.DataPaths
 	} else {
 		u.dataPaths = make(map[string]string)
 	}
@@ -703,17 +708,17 @@ func (u *baseUI) showModalWhileExecuting(title string, ff map[string]func(), onC
 		start := time.Now()
 		myLog := slog.With("title", title)
 		myLog.Debug("started")
-		var wg sync.WaitGroup
+		g := new(errgroup.Group)
+		g.SetLimit(u.concurrencyLimit)
 		for name, f := range ff {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			g.Go(func() error {
 				start2 := time.Now()
 				f()
 				myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
-			}()
+				return nil
+			})
 		}
-		wg.Wait()
+		g.Wait()
 		myLog.Debug("completed", "duration", time.Since(start).Milliseconds())
 		if onCompleted != nil {
 			onCompleted()
@@ -770,7 +775,8 @@ func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 	it := fyne.NewMenuItem("Switch to...", nil)
 	it.Disabled = true
 	items = append(items, it)
-	var wg sync.WaitGroup
+	g := new(errgroup.Group)
+	g.SetLimit(u.concurrencyLimit)
 	currentID := u.currentCharacterID()
 	fallbackIcon, _ := fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)
 	for _, c := range cc {
@@ -786,18 +792,19 @@ func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 			it.Disabled = true
 		} else {
 			it.Icon = fallbackIcon
-			wg.Add(1)
-			go u.updateCharacterAvatar(c.ID, func(r fyne.Resource) {
-				defer wg.Done()
-				fyne.Do(func() {
-					it.Icon = r
+			g.Go(func() error {
+				u.updateCharacterAvatar(c.ID, func(r fyne.Resource) {
+					fyne.Do(func() {
+						it.Icon = r
+					})
 				})
+				return nil
 			})
 		}
 		items = append(items, it)
 	}
 	go func() {
-		wg.Wait()
+		g.Wait()
 		fyne.Do(func() {
 			refresh()
 		})
@@ -827,7 +834,8 @@ func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
 	it := fyne.NewMenuItem("Switch to...", nil)
 	it.Disabled = true
 	items = append(items, it)
-	var wg sync.WaitGroup
+	g := new(errgroup.Group)
+	g.SetLimit(u.concurrencyLimit)
 	fallbackIcon, _ := fynetools.MakeAvatar(icons.Corporationplaceholder64Png)
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
@@ -842,18 +850,19 @@ func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
 			it.Disabled = true
 		} else {
 			it.Icon = fallbackIcon
-			wg.Add(1)
-			go u.updateCorporationAvatar(c.ID, func(r fyne.Resource) {
-				defer wg.Done()
-				fyne.Do(func() {
-					it.Icon = r
+			g.Go(func() error {
+				u.updateCorporationAvatar(c.ID, func(r fyne.Resource) {
+					fyne.Do(func() {
+						it.Icon = r
+					})
 				})
+				return nil
 			})
 		}
 		items = append(items, it)
 	}
 	go func() {
-		wg.Wait()
+		g.Wait()
 		fyne.Do(func() {
 			refresh()
 		})
