@@ -252,14 +252,15 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 	}
 	u.gameSearch = newGameSearch(u)
 	u.industryJobs = newIndustryJobs(u)
+	u.progressModal = iwidget.NewProgressModal(u.window)
+	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.slotsManufacturing = newIndustrySlots(u, app.ManufacturingJob)
 	u.slotsReactions = newIndustrySlots(u, app.ReactionJob)
 	u.slotsResearch = newIndustrySlots(u, app.ScienceJob)
 	u.training = newTraining(u)
 	u.wealth = newWealth(u)
 
-	u.snackbar = iwidget.NewSnackbar(u.window)
-	u.progressModal = iwidget.NewProgressModal(u.window)
+	u.setColorTheme(u.settings.ColorTheme())
 	u.MainWindow().SetMaster()
 
 	// SetOnStarted is called on initial start,
@@ -277,7 +278,6 @@ func NewBaseUI(args BaseUIParams) *baseUI {
 		} else {
 			slog.Info("App started")
 		}
-		u.setColorTheme(u.settings.ColorTheme())
 		u.isForeground.Store(true)
 		u.snackbar.Start()
 		u.progressModal.Start()
