@@ -26,7 +26,7 @@ func TestManagedCharacters_CanRenderWithData(t *testing.T) {
 			Scopes:      app.Scopes(),
 		})
 		test.ApplyTheme(t, test.Theme())
-		ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
+		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 		ui.setCharacter(character)
 		a := newManageCharacters(&manageCharactersWindow{
 			u: ui,

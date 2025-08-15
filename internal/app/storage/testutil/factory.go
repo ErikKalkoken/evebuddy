@@ -1490,10 +1490,11 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *a
 	if arg.Name == "" {
 		arg.Name = fake.FullName()
 	}
-	if arg.CorporationID == 0 {
-		c := f.CreateEveEntityCorporation()
-		arg.CorporationID = c.ID
-	}
+	x := f.GetOrCreateEveEntity(app.EveEntity{
+		ID:       arg.CorporationID,
+		Category: app.EveEntityCorporation,
+	})
+	arg.CorporationID = x.ID
 	if arg.Birthday.IsZero() {
 		arg.Birthday = time.Now().UTC().Add(-time.Duration(rand.IntN(10000)) * time.Hour * 24)
 	}
@@ -1598,11 +1599,29 @@ func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) 
 	return o
 }
 
+func (f Factory) GetOrCreateEveEntity(args ...app.EveEntity) *app.EveEntity {
+	var arg app.EveEntity
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ID != 0 {
+		o, err := f.st.GetEveEntity(context.Background(), arg.ID)
+		if errors.Is(err, app.ErrNotFound) {
+			// continue
+		} else if err != nil {
+			panic(err)
+		} else {
+			return o
+		}
+	}
+	return f.CreateEveEntity(args...)
+}
+
 // TODO: Refactor to use storage.CreateEveEntityParams
 
 func (f Factory) CreateEveEntity(args ...app.EveEntity) *app.EveEntity {
-	var arg app.EveEntity
 	ctx := context.Background()
+	var arg app.EveEntity
 	if len(args) > 0 {
 		arg = args[0]
 	}

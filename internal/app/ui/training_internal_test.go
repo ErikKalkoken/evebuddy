@@ -41,7 +41,7 @@ func TestTraining_CanRenderWithActiveTraining(t *testing.T) {
 		CompletedAt: now,
 	})
 	test.ApplyTheme(t, test.Theme())
-	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
+	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 	w := test.NewWindow(ui.training)
 	defer w.Close()
 	w.Resize(fyne.NewSize(1700, 300))
@@ -69,7 +69,7 @@ func TestTraining_CanRenderWithInActiveTraining(t *testing.T) {
 		CompletedAt: now,
 	})
 	test.ApplyTheme(t, test.Theme())
-	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
+	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 	w := test.NewWindow(ui.training)
 	defer w.Close()
 	w.Resize(fyne.NewSize(1700, 300))
@@ -89,7 +89,7 @@ func TestTraining_CanRenderWithoutData(t *testing.T) {
 		ID: ec.ID,
 	})
 	test.ApplyTheme(t, test.Theme())
-	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
+	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 	w := test.NewWindow(ui.training)
 	defer w.Close()
 	w.Resize(fyne.NewSize(1700, 300))
@@ -138,7 +138,7 @@ func TestTraining_Filter(t *testing.T) {
 	tag := factory.CreateCharacterTag()
 	factory.AddCharacterToTag(tag, character2)
 	factory.CreateCharacterTag()
-	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
+	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 	ui.training.update()
 
 	t.Run("no filter", func(t *testing.T) {

@@ -32,7 +32,7 @@ func TestCharacterAugmentations_CanRenderWithData(t *testing.T) {
 		Section:     app.SectionCharacterImplants,
 	})
 	test.ApplyTheme(t, test.Theme())
-	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
+	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 	ui.setCharacter(character)
 	w := test.NewWindow(ui.characterAugmentations)
 	defer w.Close()

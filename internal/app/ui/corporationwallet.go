@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -58,10 +59,24 @@ func (a *corporationWallet) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *corporationWallet) update() {
-	go a.journal.update()
-	go a.transactions.update()
-	go a.updateBalance()
-	go a.updateName()
+	g := new(errgroup.Group)
+	g.Go(func() error {
+		a.journal.update()
+		return nil
+	})
+	g.Go(func() error {
+		a.transactions.update()
+		return nil
+	})
+	g.Go(func() error {
+		a.updateBalance()
+		return nil
+	})
+	g.Go(func() error {
+		a.updateName()
+		return nil
+	})
+	g.Wait()
 }
 
 func (a *corporationWallet) updateBalance() {

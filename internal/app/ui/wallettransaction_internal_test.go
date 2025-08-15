@@ -57,7 +57,7 @@ func TestWalletTransactions_CanRenderWithData(t *testing.T) {
 			LocationID:  location.ID,
 			IsBuy:       true,
 		})
-		ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
+		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 		ui.setCharacter(character)
 		x := newCharacterWalletTransaction(ui)
 		w := test.NewWindow(x)
@@ -117,7 +117,7 @@ func TestWalletTransactions_CanRenderWithData(t *testing.T) {
 			LocationID:    location.ID,
 			IsBuy:         true,
 		})
-		ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
+		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 		ui.setCorporation(corporation)
 		x := newCorporationWalletTransactions(ui, app.Division1)
 		w := test.NewWindow(x)

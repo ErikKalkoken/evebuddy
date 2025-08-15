@@ -72,7 +72,7 @@ func TestIndustryJob_CanRenderWithData(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			test.ApplyTheme(t, test.Theme())
-			ui := NewFakeBaseUI(st, test.NewTempApp(t), tc.isDesktop)
+			ui := MakeFakeBaseUI(st, test.NewTempApp(t), tc.isDesktop)
 			w := test.NewWindow(ui.industryJobs)
 			defer w.Close()
 			w.Resize(tc.size)
@@ -99,7 +99,7 @@ func TestIndustryJob_CanRenderEmpty(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			test.ApplyTheme(t, test.Theme())
-			ui := NewFakeBaseUI(st, test.NewTempApp(t), tc.isDesktop)
+			ui := MakeFakeBaseUI(st, test.NewTempApp(t), tc.isDesktop)
 			w := test.NewWindow(ui.industryJobs)
 			defer w.Close()
 			w.Resize(tc.size)
@@ -130,7 +130,7 @@ func TestIndustryJob_Filter(t *testing.T) {
 		ActivityID: int32(app.Reactions2),
 		Status:     app.JobReady,
 	})
-	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
+	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 	ui.industryJobs.update()
 
 	t.Run("no filter", func(t *testing.T) {

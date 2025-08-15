@@ -18,7 +18,7 @@ func TestCharacterBiography_CanRenderWithData(t *testing.T) {
 	})
 	character := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: ec.ID})
 	test.ApplyTheme(t, test.Theme())
-	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
+	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 	ui.setCharacter(character)
 	w := test.NewWindow(ui.characterBiography)
 	defer w.Close()
