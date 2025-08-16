@@ -131,7 +131,7 @@ func (cp Role) Display() string {
 	return titler.String(cp.String())
 }
 
-func CorporationRoles() iter.Seq[Role] {
+func RolesAll() iter.Seq[Role] {
 	return maps.Keys(role2String)
 }
 
