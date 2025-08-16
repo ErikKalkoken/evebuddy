@@ -12,6 +12,7 @@ import (
 	"github.com/antihax/goesi"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
@@ -20,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 // type FakeCache map[string][]byte
@@ -176,7 +178,17 @@ func (s *EveImageServiceFake) InventoryTypeSKIN(id int32, size int) (fyne.Resour
 	return s.Type, s.Err
 }
 
-func NewFakeBaseUI(st *storage.Storage, app fyne.App, isDesktop bool) *baseUI {
+type CharacterServiceFake struct {
+	Token          *app.CharacterToken
+	CorporationIDs set.Set[int32]
+	Error          error
+}
+
+func (s *CharacterServiceFake) CharacterTokenForCorporation(ctx context.Context, corporationID int32, roles set.Set[app.Role], scopes set.Set[string], checkToken bool) (*app.CharacterToken, error) {
+	return s.Token, s.Error
+}
+
+func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *baseUI {
 	esiClient := goesi.NewAPIClient(nil, "dummy")
 	cache := memcache.New()
 	scs := statuscacheservice.New(cache, st)
@@ -194,14 +206,16 @@ func NewFakeBaseUI(st *storage.Storage, app fyne.App, isDesktop bool) *baseUI {
 		Storage:            st,
 	})
 	rs := corporationservice.New(corporationservice.Params{
-		CharacterService:   cs,
+		CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}},
 		EsiClient:          esiClient,
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,
 	})
 	bu := NewBaseUI(BaseUIParams{
-		App:                app,
+		App:                fyneApp,
 		CharacterService:   cs,
 		CorporationService: rs,
 		ESIStatusService:   esistatusservice.New(esiClient),

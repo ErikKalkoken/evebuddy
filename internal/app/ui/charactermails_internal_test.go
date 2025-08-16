@@ -22,7 +22,7 @@ func TestCharacterMails_updateUnreadCounts(t *testing.T) {
 			CharacterID: c.ID,
 			LabelID:     app.MailLabelInbox,
 		})
-		ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
+		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 		ui.setCharacter(c)
 		td, _, err := ui.characterMails.fetchFolders(ui.services(), c.ID)
 		if err != nil {
@@ -54,7 +54,7 @@ func TestCharacterMails_updateUnreadCounts(t *testing.T) {
 			CharacterID: c.ID,
 			LabelID:     app.MailLabelInbox,
 		})
-		ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
+		ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 		ui.setCharacter(c)
 		td, _, err := ui.characterMails.fetchFolders(ui.services(), c.ID)
 		if err != nil {

@@ -17,7 +17,7 @@ func (s *CharacterService) ListRoles(ctx context.Context, characterID int32) ([]
 	if err != nil {
 		return nil, err
 	}
-	rolesSorted := slices.SortedFunc(app.CorporationRoles(), func(a, b app.Role) int {
+	rolesSorted := slices.SortedFunc(app.RolesAll(), func(a, b app.Role) int {
 		return strings.Compare(a.String(), b.String())
 	})
 	roles := make([]app.CharacterRole, 0)

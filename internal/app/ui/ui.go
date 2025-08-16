@@ -6,9 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"maps"
 	"net/url"
-	"slices"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -269,43 +267,9 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 
 	// SetOnStarted is called on initial start,
 	// but also when an app is continued after it was temporarily stopped,
-	// which can happen on mobile
+	// which happens regularly on mobile.
 	u.app.Lifecycle().SetOnStarted(func() {
-		wasStarted := !u.wasStarted.CompareAndSwap(false, true)
-		if wasStarted {
-			slog.Info("App continued")
-			return
-		}
-		// First app start
-		if u.isOffline {
-			slog.Info("App started in offline mode")
-		} else {
-			slog.Info("App started")
-		}
-		u.isForeground.Store(true)
-		u.snackbar.Start()
-		u.progressModal.Start()
-		go func() {
-			u.characterSkillQueue.start()
-			u.initCharacter()
-			u.initCorporation()
-			u.updateHome()
-			u.updateStatus()
-			u.isStartupCompleted.Store(true)
-			u.training.startUpdateTicker()
-			u.characterJumpClones.startUpdateTicker()
-			if !u.isOffline && !u.isUpdateDisabled {
-				time.Sleep(5 * time.Second) // Workaround to prevent concurrent updates from happening at startup.
-				u.startUpdateTickerGeneralSections()
-				u.startUpdateTickerCharacters()
-				u.startUpdateTickerCorporations()
-			} else {
-				slog.Info("Update ticker disabled")
-			}
-		}()
-		if u.onAppFirstStarted != nil {
-			u.onAppFirstStarted()
-		}
+		u.Start()
 	})
 	u.app.Lifecycle().SetOnEnteredForeground(func() {
 		slog.Debug("Entered foreground")
@@ -327,6 +291,46 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		}
 	})
 	return u
+}
+
+// Start starts the app and reports whether it was started.
+func (u *baseUI) Start() bool {
+	wasStarted := !u.wasStarted.CompareAndSwap(false, true)
+	if wasStarted {
+		slog.Info("App continued")
+		return false
+	}
+	// First app start
+	if u.isOffline {
+		slog.Info("App started in offline mode")
+	} else {
+		slog.Info("App started")
+	}
+	u.isForeground.Store(true)
+	u.snackbar.Start()
+	u.progressModal.Start()
+	go func() {
+		u.characterSkillQueue.start()
+		u.initCharacter()
+		u.initCorporation()
+		u.updateHome()
+		u.updateStatus()
+		u.isStartupCompleted.Store(true)
+		u.training.startUpdateTicker()
+		u.characterJumpClones.startUpdateTicker()
+		if !u.isOffline && !u.isUpdateDisabled {
+			time.Sleep(5 * time.Second) // Workaround to prevent concurrent updates from happening at startup.
+			u.startUpdateTickerGeneralSections()
+			u.startUpdateTickerCharacters()
+			u.startUpdateTickerCorporations()
+		} else {
+			slog.Info("Update ticker disabled")
+		}
+		if u.onAppFirstStarted != nil {
+			u.onAppFirstStarted()
+		}
+	}()
+	return true
 }
 
 // ShowAndRun shows the UI and runs the Fyne loop (blocking),
@@ -495,18 +499,7 @@ func (u *baseUI) updateCharacter() {
 	} else {
 		slog.Debug("Updating without character")
 	}
-	u.showModalWhileExecuting("Loading character", u.characterUIUpdates(), func() {
-		if u.onUpdateCharacter != nil {
-			u.onUpdateCharacter(c)
-		}
-		if c != nil && !u.isUpdateDisabled {
-			u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
-		}
-	})
-}
-
-func (u *baseUI) characterUIUpdates() map[string]func() {
-	ff := map[string]func(){
+	u.showModalWhileExecuting("Loading character", map[string]func(){
 		"assets":               u.characterAsset.update,
 		"attributes":           u.characterAttributes.update,
 		"biography":            u.characterBiography.update,
@@ -518,10 +511,16 @@ func (u *baseUI) characterUIUpdates() map[string]func() {
 		"characterCorporation": u.characterCorporation.update,
 		"ships":                u.characterShips.update,
 		"skillCatalogue":       u.characterSkillCatalogue.update,
-		// "skillqueue":           u.characterSkillQueue.update,
-		"wallet": u.characterWallet.update,
-	}
-	return ff
+		"skillqueue":           u.characterSkillQueue.update,
+		"wallet":               u.characterWallet.update,
+	}, func() {
+		if u.onUpdateCharacter != nil {
+			u.onUpdateCharacter(c)
+		}
+		// if c != nil && !u.isUpdateDisabled {
+		// 	u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
+		// }
+	})
 }
 
 func (u *baseUI) updateCharacterAvatar(id int32, setIcon func(fyne.Resource)) {
@@ -631,7 +630,14 @@ func (u *baseUI) updateCorporation() {
 	} else {
 		slog.Debug("Updating without corporation")
 	}
-	u.showModalWhileExecuting("Loading corporation", u.corporationUIUpdates(), func() {
+	ff := make(map[string]func())
+	ff["corporationSheet"] = u.corporationSheet.update
+	ff["corporationMember"] = u.corporationMember.update
+	ff["corporationWalletTotal"] = u.updateCorporationWalletTotal
+	for id, w := range u.corporationWallets {
+		ff[fmt.Sprintf("walletJournal%d", id)] = w.update
+	}
+	u.showModalWhileExecuting("Loading corporation", ff, func() {
 		// if c != nil && !u.isUpdateDisabled {
 		// 	u.updateCorporationAndRefreshIfNeeded(context.Background(), c.ID, false)
 		// }
@@ -639,17 +645,6 @@ func (u *baseUI) updateCorporation() {
 			u.onUpdateCorporation(c)
 		}
 	})
-}
-
-func (u *baseUI) corporationUIUpdates() map[string]func() {
-	ff := make(map[string]func())
-	ff["corporationSheet"] = u.corporationSheet.update
-	ff["corporationMember"] = u.corporationMember.update
-	ff["corporationWalletTotal"] = u.updateCorporationWalletTotal
-	// for id, w := range u.corporationWallets {
-	// 	ff[fmt.Sprintf("walletJournal%d", id)] = w.update
-	// }
-	return ff
 }
 
 func (u *baseUI) updateCorporationAvatar(id int32, setIcon func(fyne.Resource)) {
@@ -671,11 +666,7 @@ func (u *baseUI) updateCorporationAvatar(id int32, setIcon func(fyne.Resource)) 
 
 // updateHome refreshed all pages that contain information about multiple characters.
 func (u *baseUI) updateHome() {
-	u.showModalWhileExecuting("Updating home", u.defineHomeUpdates(), u.onRefreshCross)
-}
-
-func (u *baseUI) defineHomeUpdates() map[string]func() {
-	ff := map[string]func(){
+	u.showModalWhileExecuting("Updating home", map[string]func(){
 		"assets":             u.assets.update,
 		"augmentations":      u.augmentations.update,
 		"contracts":          u.contracts.update,
@@ -689,16 +680,7 @@ func (u *baseUI) defineHomeUpdates() map[string]func() {
 		"overview":           u.characterOverview.update,
 		"training":           u.training.update,
 		"wealth":             u.wealth.update,
-	}
-	return ff
-}
-
-// UpdateAllUI updates all UI elements. This method is usually only called from tests.
-func (u *baseUI) UpdateAllUI() {
-	updates := slices.Collect(xiter.Chain(maps.Values(u.characterUIUpdates()), maps.Values(u.defineHomeUpdates())))
-	for _, f := range updates {
-		f()
-	}
+	}, u.onRefreshCross)
 }
 
 // showModalWhileExecuting shows a modal to the user while the functions ff are being executed.

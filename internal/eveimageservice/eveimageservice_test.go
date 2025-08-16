@@ -221,6 +221,23 @@ func TestImageFetching(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, eveimageservice.ErrInvalidSize)
 	})
+	t.Run("should return placeholder and not access network in offline mode", func(t *testing.T) {
+		// given
+		c := newCache()
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://images.evetech.net/alliances/99/logo?size=64",
+			httpmock.NewStringResponder(200, ""))
+		//when
+		m := eveimageservice.New(c, http.DefaultClient, true)
+		r, err := m.AllianceLogo(99, 64)
+		// then
+		if assert.NoError(t, err) {
+			assert.Contains(t, r.Name(), "question")
+			assert.Equal(t, 0, httpmock.GetTotalCallCount())
+		}
+	})
 }
 
 func TestHTTPError(t *testing.T) {
@@ -229,7 +246,7 @@ func TestHTTPError(t *testing.T) {
 	assert.Equal(t, "HTTP error: 200 OK", s)
 }
 
-func TestLive(t *testing.T) {
+func TestOffline(t *testing.T) {
 	s := eveimageservice.New(newCache(), http.DefaultClient, true)
 	x, err := s.CharacterPortrait(123, 64)
 	if assert.NoError(t, err) {

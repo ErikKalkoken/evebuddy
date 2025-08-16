@@ -30,7 +30,7 @@ func TestClones_CanRenderLocationWithoutSystem(t *testing.T) {
 	})
 
 	test.ApplyTheme(t, test.Theme())
-	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
+	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 	w := test.NewWindow(ui.clones)
 	defer w.Close()
 	w.Resize(fyne.NewSize(1700, 300))
@@ -55,7 +55,7 @@ func TestClones_CanRenderEmpty(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			test.ApplyTheme(t, test.Theme())
-			ui := NewFakeBaseUI(st, test.NewTempApp(t), tc.isDesktop)
+			ui := MakeFakeBaseUI(st, test.NewTempApp(t), tc.isDesktop)
 			w := test.NewWindow(ui.clones)
 			defer w.Close()
 			w.Resize(tc.size)
@@ -119,7 +119,7 @@ func TestClones_CanRenderFull(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			test.ApplyTheme(t, test.Theme())
-			ui := NewFakeBaseUI(st, test.NewTempApp(t), tc.isDesktop)
+			ui := MakeFakeBaseUI(st, test.NewTempApp(t), tc.isDesktop)
 			w := test.NewWindow(ui.clones)
 			defer w.Close()
 			w.Resize(tc.size)

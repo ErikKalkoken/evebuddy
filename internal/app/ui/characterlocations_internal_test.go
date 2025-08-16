@@ -34,7 +34,7 @@ func TestLocations_CanRenderWithData(t *testing.T) {
 		ShipID:     optional.New(ship.ID),
 	})
 	test.ApplyTheme(t, test.Theme())
-	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
+	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 	w := test.NewWindow(ui.characterLocations)
 	defer w.Close()
 	w.Resize(fyne.NewSize(1700, 300))
@@ -54,7 +54,7 @@ func TestLocations_CanRenderWithoutData(t *testing.T) {
 		ID: ec.ID,
 	})
 	test.ApplyTheme(t, test.Theme())
-	ui := NewFakeBaseUI(st, test.NewTempApp(t), true)
+	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 	w := test.NewWindow(ui.characterLocations)
 	defer w.Close()
 	w.Resize(fyne.NewSize(1700, 300))

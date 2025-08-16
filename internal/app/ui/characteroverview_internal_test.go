@@ -61,7 +61,7 @@ func TestCharacters_CanRenderWithData(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ui := NewFakeBaseUI(st, test.NewTempApp(t), tc.isDesktop)
+			ui := MakeFakeBaseUI(st, test.NewTempApp(t), tc.isDesktop)
 			w := test.NewWindow(ui.characterOverview)
 			defer w.Close()
 			w.Resize(tc.size)
@@ -102,7 +102,7 @@ func TestCharacters_CanRenderWitoutData(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ui := NewFakeBaseUI(st, test.NewTempApp(t), tc.isDesktop)
+			ui := MakeFakeBaseUI(st, test.NewTempApp(t), tc.isDesktop)
 			w := test.NewWindow(ui.characterOverview)
 			defer w.Close()
 			w.Resize(tc.size)
