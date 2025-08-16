@@ -24,8 +24,8 @@ A multi-platform companion app for Eve Online players available on Windows, Linu
   - [Android](#android)
 - [Updating](#updating)
 - [Uninstalling](#uninstalling)
-- [Logs](#logs)
 - [FAQ](#faq)
+- [External web sites](#external-web-sites)
 - [Credits](#credits)
 
 ## Description
@@ -50,9 +50,6 @@ EVE Buddy is available for Windows, Linux, macOS and Android.
 
 > [!NOTE]
 > Help wanted! We would very much appreciate any contribution. If you like to provide a fix or add a feature please feel free top open a PR. Or if you have any questions please contact us on Discord.
-
-> [!NOTE]
-> EVE Buddy have been mentioned in Eve Online's [Community Beat newsletter 22 November 2024](https://www.eveonline.com/news/view/community-beat-for-22-november).
 
 The following is a detailed list of EVE Buddy's features. Most features are available for both desktop and mobile:
 
@@ -286,22 +283,6 @@ rm evebuddy
 
 On Android you can uninstall the app via Android Settings and it will also remove all data.
 
-## Logs
-
-The app has an application log and a crash file that can help with trouble shooting. You can export both logs from the Settings menu in the General section.
-
-Platform | Path
--- | --
-Android | Export only
-Linux | `/home/{username}/.local/share/evebuddy/log`
-macOS | `/Users/{username}/Library/Application Support/evebuddy/log'`
-Windows | `C:\Users\{username}\AppData\Local\evebuddy\evebuddy\log`
-
-To view the logs on mobile you might want to install another app. While there are many decent apps for viewing log and text files on the Google Play store, we can recommend the following two apps:
-
-- For viewing log files: [LogLog](https://play.google.com/store/apps/details?id=io.github.mthli.loglog&hl=en)
-- For viewing txt files: [Text Viewer](https://play.google.com/store/apps/details?id=com.panagola.app.textviewer&hl=en)
-
 ## FAQ
 
 ### Where can I get support?
@@ -338,6 +319,36 @@ Here is an overview of some limitations:
 #### Structures
 
 A special case are Upwell structures. Access to structures depends on in-game docking rights. Unfortunately, it is not possible to later retrieve the name or location of a structure, which the character no longer has access to. For example character assets might be displayed in an "unknown structure".
+
+### Does EVE buddy has a log and how can I find it?
+
+The app has an application log and a crash file that can help with trouble shooting. The location of the logs follows the standard of each platform:
+
+Platform | Path
+-- | --
+Android | Export only
+Linux | `/home/{username}/.local/share/evebuddy/log`
+macOS | `/Users/{username}/Library/Application Support/evebuddy/log'`
+Windows | `C:\Users\{username}\AppData\Local\evebuddy\evebuddy\log`
+
+On desktop you can view the location of your log files on the User Data dialog, which you find in the main menu.
+
+On both desktop and mobile you can export both logs from the Settings menu in the General section.
+
+To view the exported logs on mobile you might want to install another app. While there are many decent apps for viewing log and text files on the Google Play store, we can recommend the following two apps:
+
+- For viewing log files: [LogLog](https://play.google.com/store/apps/details?id=io.github.mthli.loglog&hl=en)
+- For viewing txt files: [Text Viewer](https://play.google.com/store/apps/details?id=com.panagola.app.textviewer&hl=en)
+
+## External web sites
+
+You can find EVE Buddy mentions on other web sites:
+
+- [EVE Community Beat newsletter 22 November 2024](https://www.eveonline.com/news/view/community-beat-for-22-november).
+- [EVE Forum](https://forums.eveonline.com/t/eve-buddy-a-companion-app-for-desktop-and-mobile-v0-40)
+- [EVE Developer site](https://developers.eveonline.com/docs/community/evebuddy/)
+- [Reddit: Initial](https://www.reddit.com/r/Eve/comments/1go4iee/eve_buddy_a_new_companion_app_for_eve_online/)
+- [Reddit: Update](https://www.reddit.com/r/Eve/comments/1mjwn79/update_eve_buddy_a_companion_app_for_eve_online/)
 
 ## Credits
 
