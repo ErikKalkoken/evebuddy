@@ -184,14 +184,14 @@ func (s *EveImageService) InventoryTypeSKIN(id int32, size int) (fyne.Resource, 
 // image returns an Eve image as fyne resource.
 // It returns it from cache or - if not found - will try to fetch it from the Internet.
 func (s *EveImageService) image(url string, timeout time.Duration) (fyne.Resource, error) {
-	if s.isOffline {
-		return resourceQuestionmark32Png, nil
-	}
 	key := "eveimage-" + makeMD5Hash(url)
 	var dat []byte
 	var found bool
 	dat, found = s.cache.Get(key)
 	if !found {
+		if s.isOffline {
+			return resourceQuestionmark32Png, nil
+		}
 		x, err, _ := s.sfg.Do(key, func() (any, error) {
 			byt, err := loadDataFromURL(url, s.httpClient)
 			if err != nil {

@@ -646,9 +646,9 @@ func (u *baseUI) corporationUIUpdates() map[string]func() {
 	ff["corporationSheet"] = u.corporationSheet.update
 	ff["corporationMember"] = u.corporationMember.update
 	ff["corporationWalletTotal"] = u.updateCorporationWalletTotal
-	// for id, w := range u.corporationWallets {
-	// 	ff[fmt.Sprintf("walletJournal%d", id)] = w.update
-	// }
+	for id, w := range u.corporationWallets {
+		ff[fmt.Sprintf("walletJournal%d", id)] = w.update
+	}
 	return ff
 }
 
@@ -671,10 +671,10 @@ func (u *baseUI) updateCorporationAvatar(id int32, setIcon func(fyne.Resource)) 
 
 // updateHome refreshed all pages that contain information about multiple characters.
 func (u *baseUI) updateHome() {
-	u.showModalWhileExecuting("Updating home", u.defineHomeUpdates(), u.onRefreshCross)
+	u.showModalWhileExecuting("Updating home", u.homeUIUpdates(), u.onRefreshCross)
 }
 
-func (u *baseUI) defineHomeUpdates() map[string]func() {
+func (u *baseUI) homeUIUpdates() map[string]func() {
 	ff := map[string]func(){
 		"assets":             u.assets.update,
 		"augmentations":      u.augmentations.update,
@@ -695,7 +695,11 @@ func (u *baseUI) defineHomeUpdates() map[string]func() {
 
 // UpdateAllUI updates all UI elements. This method is usually only called from tests.
 func (u *baseUI) UpdateAllUI() {
-	updates := slices.Collect(xiter.Chain(maps.Values(u.characterUIUpdates()), maps.Values(u.defineHomeUpdates())))
+	updates := slices.Collect(xiter.Chain(
+		maps.Values(u.characterUIUpdates()),
+		maps.Values(u.corporationUIUpdates()),
+		maps.Values(u.homeUIUpdates()),
+	))
 	for _, f := range updates {
 		f()
 	}
