@@ -178,8 +178,21 @@ func TestType(t *testing.T) {
 		x := evenotification.SovereigntyTCUDamageMsg
 		assert.Equal(t, "Sovereignty TCU Damage Msg", x.Display())
 	})
-	t.Run("can return Group", func(t *testing.T) {
+	t.Run("can return group", func(t *testing.T) {
 		assert.Equal(t, app.GroupStructure, evenotification.StructureDestroyed.Group())
+	})
+}
+
+func TestType_Category(t *testing.T) {
+	t.Run("returns category when known", func(t *testing.T) {
+		c, ok := evenotification.StructureDestroyed.Category()
+		if assert.True(t, ok) {
+			assert.Equal(t, app.EveEntityCorporation, c)
+		}
+	})
+	t.Run("reports when category not known", func(t *testing.T) {
+		_, ok := evenotification.AgentRetiredTrigravian.Category()
+		assert.False(t, ok)
 	})
 }
 

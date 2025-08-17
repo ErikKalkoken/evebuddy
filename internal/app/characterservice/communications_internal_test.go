@@ -13,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func TestUpdateCharacterNotificationsESI(t *testing.T) {
@@ -178,4 +179,109 @@ func TestListCharacterNotifications(t *testing.T) {
 			assert.Len(t, tt, 2)
 		}
 	})
+}
+
+func TestRenderNotificationContent(t *testing.T) {
+	cases := []struct {
+		name        string
+		notif       *app.CharacterNotification
+		character   *app.Character
+		wantTitle   string
+		wantContent string
+	}{
+		{
+			"corporation name for corporation notifs",
+			&app.CharacterNotification{
+				CharacterID: 42,
+				Type:        string(evenotification.StructureDestroyed),
+				Title:       optional.New("Structure destroyed"),
+				Sender:      &app.EveEntity{Name: "Concord"},
+			}, &app.Character{
+				ID: 42,
+				EveCharacter: &app.EveCharacter{
+					Name:        "Bruce Wayne",
+					Corporation: &app.EveEntity{Name: "Wayne Technology"},
+				},
+			},
+			"Wayne Technology: New Communication from Concord",
+			"Structure destroyed",
+		},
+		{
+			"alliance name for alliance notifs",
+			&app.CharacterNotification{
+				CharacterID: 42,
+				Type:        string(evenotification.SovStructureDestroyed),
+				Title:       optional.New("Structure destroyed"),
+				Sender:      &app.EveEntity{Name: "Concord"},
+			}, &app.Character{
+				ID: 42,
+				EveCharacter: &app.EveCharacter{
+					Name:        "Bruce Wayne",
+					Corporation: &app.EveEntity{Name: "Wayne Technology"},
+					Alliance:    &app.EveEntity{Name: "Wayne Inc"},
+				},
+			},
+			"Wayne Inc: New Communication from Concord",
+			"Structure destroyed",
+		},
+		{
+			"character name for character notifs",
+			&app.CharacterNotification{
+				CharacterID: 42,
+				Type:        string(evenotification.StructureItemsDelivered),
+				Title:       optional.New("Items delivered"),
+				Sender:      &app.EveEntity{Name: "Concord"},
+			}, &app.Character{
+				ID: 42,
+				EveCharacter: &app.EveCharacter{
+					Name:        "Bruce Wayne",
+					Corporation: &app.EveEntity{Name: "Wayne Technology"},
+				},
+			},
+			"Bruce Wayne: New Communication from Concord",
+			"Items delivered",
+		},
+		{
+			"corporation for alliance notif as fallback",
+			&app.CharacterNotification{
+				CharacterID: 42,
+				Type:        string(evenotification.SovStructureDestroyed),
+				Title:       optional.New("Structure destroyed"),
+				Sender:      &app.EveEntity{Name: "Concord"},
+			}, &app.Character{
+				ID: 42,
+				EveCharacter: &app.EveCharacter{
+					Name:        "Bruce Wayne",
+					Corporation: &app.EveEntity{Name: "Wayne Technology"},
+				},
+			},
+			"Wayne Technology: New Communication from Concord",
+			"Structure destroyed",
+		},
+		{
+			"character name as fallback for notifs with unknown category",
+			&app.CharacterNotification{
+				CharacterID: 42,
+				Type:        string(evenotification.AgentRetiredTrigravian),
+				Title:       optional.New("Agent retired"),
+				Sender:      &app.EveEntity{Name: "Concord"},
+			}, &app.Character{
+				ID: 42,
+				EveCharacter: &app.EveCharacter{
+					Name:        "Bruce Wayne",
+					Corporation: &app.EveEntity{Name: "Wayne Technology"},
+				},
+			},
+			"Bruce Wayne: New Communication from Concord",
+			"Agent retired",
+		},
+	}
+	s := &CharacterService{}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			title, content := s.RenderNotificationSummary(tc.character, tc.notif)
+			assert.Equal(t, tc.wantTitle, title)
+			assert.Equal(t, tc.wantContent, content)
+		})
+	}
 }

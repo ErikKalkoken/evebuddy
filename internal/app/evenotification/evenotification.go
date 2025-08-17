@@ -258,10 +258,11 @@ const (
 	WarSurrenderOfferMsg                      Type = "WarSurrenderOfferMsg"
 )
 
-// Category returns the entity category this notification refers to,
-// e.g. Character for character notifications.
-func (nt Type) Category() app.EveEntityCategory {
-	return app.EveEntityCharacter
+// Category returns the entity category for supported notifications
+// and reports whether the category is defined.
+func (nt Type) Category() (app.EveEntityCategory, bool) {
+	c, ok := categories[nt]
+	return c, ok
 }
 
 // Display returns a string representation for display.
@@ -287,7 +288,7 @@ func (nt Type) Display() string {
 
 // Group returns the group of a notification.
 func (nt Type) Group() app.NotificationGroup {
-	return type2group[nt]
+	return groups[nt]
 }
 
 // String returns the string representation of a notification type.
@@ -295,70 +296,76 @@ func (nt Type) String() string {
 	return string(nt)
 }
 
+// categories maps supported types to their entity category.
+var categories = map[Type]app.EveEntityCategory{
+	AllWarSurrenderMsg:                        app.EveEntityAlliance,
+	BillOutOfMoneyMsg:                         app.EveEntityCorporation,
+	BillPaidCorpAllMsg:                        app.EveEntityCorporation,
+	CharAppAcceptMsg:                          app.EveEntityCorporation,
+	CharAppRejectMsg:                          app.EveEntityCorporation,
+	CharAppWithdrawMsg:                        app.EveEntityCorporation,
+	CharLeftCorpMsg:                           app.EveEntityCorporation,
+	CorpAllBillMsg:                            app.EveEntityCorporation,
+	CorpAppInvitedMsg:                         app.EveEntityCorporation,
+	CorpAppNewMsg:                             app.EveEntityCorporation,
+	CorpAppRejectCustomMsg:                    app.EveEntityCorporation,
+	CorpWarSurrenderMsg:                       app.EveEntityCorporation,
+	DeclareWar:                                app.EveEntityCorporation,
+	EntosisCaptureStarted:                     app.EveEntityAlliance,
+	IHubDestroyedByBillFailure:                app.EveEntityAlliance,
+	InfrastructureHubBillAboutToExpire:        app.EveEntityAlliance,
+	MoonminingAutomaticFracture:               app.EveEntityCorporation,
+	MoonminingExtractionCancelled:             app.EveEntityCorporation,
+	MoonminingExtractionFinished:              app.EveEntityCorporation,
+	MoonminingExtractionStarted:               app.EveEntityCorporation,
+	MoonminingLaserFired:                      app.EveEntityCorporation,
+	OrbitalAttacked:                           app.EveEntityCorporation,
+	OrbitalReinforced:                         app.EveEntityCorporation,
+	OwnershipTransferred:                      app.EveEntityCorporation,
+	SovAllClaimAcquiredMsg:                    app.EveEntityAlliance,
+	SovAllClaimLostMsg:                        app.EveEntityAlliance,
+	SovCommandNodeEventStarted:                app.EveEntityAlliance,
+	SovStructureDestroyed:                     app.EveEntityAlliance,
+	SovStructureReinforced:                    app.EveEntityAlliance,
+	StructureAnchoring:                        app.EveEntityCorporation,
+	StructureDestroyed:                        app.EveEntityCorporation,
+	StructureFuelAlert:                        app.EveEntityCorporation,
+	StructureImpendingAbandonmentAssetsAtRisk: app.EveEntityCharacter,
+	StructureItemsDelivered:                   app.EveEntityCharacter,
+	StructureItemsMovedToSafety:               app.EveEntityCharacter,
+	StructureLostArmor:                        app.EveEntityCorporation,
+	StructureLostShields:                      app.EveEntityCorporation,
+	StructureOnline:                           app.EveEntityCorporation,
+	StructureServicesOffline:                  app.EveEntityCorporation,
+	StructuresReinforcementChanged:            app.EveEntityCorporation,
+	StructureUnanchoring:                      app.EveEntityCorporation,
+	StructureUnderAttack:                      app.EveEntityCorporation,
+	StructureWentHighPower:                    app.EveEntityCorporation,
+	StructureWentLowPower:                     app.EveEntityCorporation,
+	TowerAlertMsg:                             app.EveEntityCorporation,
+	TowerResourceAlertMsg:                     app.EveEntityCorporation,
+	WarAdopted:                                app.EveEntityCorporation,
+	WarDeclared:                               app.EveEntityCorporation,
+	WarHQRemovedFromSpace:                     app.EveEntityCorporation,
+	WarInherited:                              app.EveEntityCorporation,
+	WarInvalid:                                app.EveEntityCorporation,
+	WarRetractedByConcord:                     app.EveEntityCorporation,
+}
+
 var supportedTypes set.Set[Type]
 
 // SupportedTypes returns all supported notification types.
 func SupportedTypes() set.Set[Type] {
 	if supportedTypes.Size() == 0 {
-		supportedTypes = set.Of(
-			AllWarSurrenderMsg,
-			BillOutOfMoneyMsg,
-			BillPaidCorpAllMsg,
-			CharAppAcceptMsg,
-			CharAppRejectMsg,
-			CharAppWithdrawMsg,
-			CharLeftCorpMsg,
-			CorpAllBillMsg,
-			CorpAppInvitedMsg,
-			CorpAppNewMsg,
-			CorpAppRejectCustomMsg,
-			CorpWarSurrenderMsg,
-			DeclareWar,
-			IHubDestroyedByBillFailure,
-			InfrastructureHubBillAboutToExpire,
-			MoonminingAutomaticFracture,
-			MoonminingExtractionCancelled,
-			MoonminingExtractionFinished,
-			MoonminingExtractionStarted,
-			MoonminingLaserFired,
-			OrbitalAttacked,
-			OrbitalReinforced,
-			OwnershipTransferred,
-			StructureAnchoring,
-			StructureDestroyed,
-			StructureFuelAlert,
-			StructureImpendingAbandonmentAssetsAtRisk,
-			StructureItemsDelivered,
-			StructureItemsMovedToSafety,
-			StructureLostArmor,
-			StructureLostShields,
-			StructureOnline,
-			StructureServicesOffline,
-			StructuresReinforcementChanged,
-			StructureUnanchoring,
-			StructureUnderAttack,
-			StructureWentHighPower,
-			StructureWentLowPower,
-			TowerAlertMsg,
-			TowerResourceAlertMsg,
-			WarAdopted,
-			WarDeclared,
-			WarHQRemovedFromSpace,
-			WarInherited,
-			WarInvalid,
-			WarRetractedByConcord,
-			SovAllClaimAcquiredMsg,
-			SovCommandNodeEventStarted,
-			SovAllClaimLostMsg,
-			EntosisCaptureStarted,
-			SovStructureReinforced,
-			SovStructureDestroyed,
-		)
+		for nt := range categories {
+			supportedTypes.Add(nt)
+		}
 	}
 	return supportedTypes
 }
 
-var type2group = map[Type]app.NotificationGroup{
+// groups maps all known types to their group.
+var groups = map[Type]app.NotificationGroup{
 	AcceptedAlly:                              app.GroupWar,
 	AcceptedSurrender:                         app.GroupWar,
 	AgentRetiredTrigravian:                    app.GroupUnknown,
@@ -601,7 +608,7 @@ var groupTypes map[app.NotificationGroup]set.Set[Type]
 func GroupTypes(g app.NotificationGroup) set.Set[Type] {
 	if groupTypes == nil {
 		groupTypes = make(map[app.NotificationGroup]set.Set[Type])
-		for t, g := range type2group {
+		for t, g := range groups {
 			if g == app.GroupUnknown {
 				g = app.GroupMiscellaneous
 			}

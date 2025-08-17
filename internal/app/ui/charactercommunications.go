@@ -17,6 +17,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -216,6 +217,19 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 			a.u.App().Clipboard().SetContent(a.current.String())
 		}),
 	)
+	if a.u.IsDeveloperMode() {
+		toolbar.Append(widget.NewToolbarAction(theme.NewThemedResource(icons.TeddyBearSvg), func() {
+			if a.current == nil {
+				return
+			}
+			character := a.u.currentCharacter()
+			if character == nil {
+				return
+			}
+			title, content := a.u.cs.RenderNotificationSummary(character, a.current)
+			a.u.app.SendNotification(fyne.NewNotification(title, content))
+		}))
+	}
 	return toolbar
 }
 

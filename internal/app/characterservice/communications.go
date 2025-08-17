@@ -42,7 +42,7 @@ func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID
 		if len(nn) == 0 {
 			return nil, nil
 		}
-		characterName, err := s.getCharacterName(ctx, characterID)
+		character, err := s.st.GetCharacter(ctx, characterID)
 		if err != nil {
 			return nil, err
 		}
@@ -50,8 +50,7 @@ func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID
 			if !typesEnabled.Contains(n.Type) {
 				continue
 			}
-			title := fmt.Sprintf("%s: New Communication from %s", characterName, n.Sender.Name)
-			content := n.Title.ValueOrZero()
+			title, content := s.RenderNotificationSummary(character, n)
 			notify(title, content)
 			if err := s.st.UpdateCharacterNotificationSetProcessed(ctx, n.ID); err != nil {
 				return nil, err
@@ -63,6 +62,32 @@ func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID
 		return fmt.Errorf("NotifyCommunications for character %d: %w", characterID, err)
 	}
 	return nil
+}
+
+// RenderNotificationSummary renders a summary from a character notification.
+// The summary is intended for generating local notifications.
+func (CharacterService) RenderNotificationSummary(character *app.Character, n *app.CharacterNotification) (title, content string) {
+	var name string
+	c, ok := evenotification.Type(n.Type).Category()
+	if !ok {
+		name = character.EveCharacter.Name
+	} else {
+		switch c {
+		case app.EveEntityCorporation:
+			name = character.EveCharacter.Corporation.Name
+		case app.EveEntityAlliance:
+			if !character.EveCharacter.HasAlliance() {
+				name = character.EveCharacter.Corporation.Name // Show corporation name as fallback
+				break
+			}
+			name = character.EveCharacter.AllianceName()
+		default:
+			name = character.EveCharacter.Name
+		}
+	}
+	title = fmt.Sprintf("%s: New Communication from %s", name, n.Sender.Name)
+	content = n.Title.ValueOrZero()
+	return
 }
 
 func (s *CharacterService) ListNotificationsTypes(ctx context.Context, characterID int32, ng app.NotificationGroup) ([]*app.CharacterNotification, error) {
