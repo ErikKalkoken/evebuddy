@@ -462,8 +462,8 @@ func (a *userSettings) showExportFileDialog(path string) {
 func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 	groupsAndTypes := make(map[app.NotificationGroup][]evenotification.Type)
 	for n := range evenotification.SupportedTypes().All() {
-		c := evenotification.Type2group[n]
-		groupsAndTypes[c] = append(groupsAndTypes[c], n)
+		g := n.Group()
+		groupsAndTypes[g] = append(groupsAndTypes[g], n)
 	}
 	groups := make([]app.NotificationGroup, 0)
 	for c := range groupsAndTypes {

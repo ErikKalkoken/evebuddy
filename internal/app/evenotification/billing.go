@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/notification"
 	"github.com/dustin/go-humanize"
 	"gopkg.in/yaml.v3"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 const (

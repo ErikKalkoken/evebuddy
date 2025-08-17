@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi"
@@ -491,21 +490,4 @@ func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mail
 	}
 	return nil
 
-}
-
-func (s *CharacterService) CountNotifications(ctx context.Context, characterID int32) (map[app.NotificationGroup][]int, error) {
-	types, err := s.st.CountCharacterNotifications(ctx, characterID)
-	if err != nil {
-		return nil, err
-	}
-	values := make(map[app.NotificationGroup][]int)
-	for name, v := range types {
-		c := evenotification.Type2group[evenotification.Type(name)]
-		if _, ok := values[c]; !ok {
-			values[c] = make([]int, 2)
-		}
-		values[c][0] += v[0]
-		values[c][1] += v[1]
-	}
-	return values, nil
 }

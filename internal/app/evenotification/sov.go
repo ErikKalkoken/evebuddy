@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/notification"
-	"gopkg.in/yaml.v3"
 )
 
-var eventTypeIDToStructurTypeID = map[int32]int32{
+var eventToStructureTypeID = map[int32]int32{
 	1: app.EveTypeTCU,
 	2: app.EveTypeIHUB,
 }
@@ -165,7 +166,7 @@ func (n sovCommandNodeEventStarted) render(ctx context.Context, text string, tim
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	structureTypeID, ok := eventTypeIDToStructurTypeID[data.CampaignEventType]
+	structureTypeID, ok := eventToStructureTypeID[data.CampaignEventType]
 	var structureTypeName string
 	if ok {
 		ee, err := n.eus.GetOrCreateEntityESI(ctx, structureTypeID)
@@ -252,7 +253,7 @@ func (n sovStructureReinforced) render(ctx context.Context, text string, timesta
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
-	structureTypeID, ok := eventTypeIDToStructurTypeID[data.CampaignEventType]
+	structureTypeID, ok := eventToStructureTypeID[data.CampaignEventType]
 	var structureTypeName string
 	if ok {
 		ee, err := n.eus.GetOrCreateEntityESI(ctx, structureTypeID)

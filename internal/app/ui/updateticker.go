@@ -166,6 +166,45 @@ func (u *baseUI) notifyCharactersIfNeeded(ctx context.Context) error {
 	return nil
 }
 
+func (u *baseUI) notifyExpiredTrainingIfNeeded(ctx context.Context, characterID int32) {
+	if u.settings.NotifyTrainingEnabled() {
+		go func() {
+			// TODO: earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyTrainingEarliest)
+			err := u.cs.NotifyExpiredTraining(ctx, characterID, u.sendDesktopNotification)
+			if err != nil {
+				slog.Error("notify expired training", "error", err)
+			}
+		}()
+	}
+}
+
+func (u *baseUI) notifyExpiredExtractionsIfNeeded(ctx context.Context, characterID int32) {
+	if u.settings.NotifyPIEnabled() {
+		go func() {
+			earliest := u.settings.NotifyPIEarliest()
+			err := u.cs.NotifyExpiredExtractions(ctx, characterID, earliest, u.sendDesktopNotification)
+			if err != nil {
+				slog.Error("notify expired extractions", "characterID", characterID, "error", err)
+			}
+		}()
+	}
+}
+
+func (u *baseUI) notifyNewCommunications(ctx context.Context, characterID int32) {
+	earliest := u.settings.NotifyCommunicationsEarliest()
+	typesEnabled := u.settings.NotificationTypesEnabled()
+	err := u.cs.NotifyCommunications(
+		ctx,
+		characterID,
+		earliest,
+		typesEnabled,
+		u.sendDesktopNotification,
+	)
+	if err != nil {
+		slog.Error("notify communications", "characterID", characterID, "error", err)
+	}
+}
+
 // updateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
 // and refreshes the UI accordingly.
 func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool) {
@@ -334,20 +373,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			u.characterCommunications.update()
 		}
 		if u.settings.NotifyCommunicationsEnabled() {
-			go func() {
-				earliest := u.settings.NotifyCommunicationsEarliest()
-				typesEnabled := u.settings.NotificationTypesEnabled()
-				err := u.cs.NotifyCommunications(
-					ctx,
-					characterID,
-					earliest,
-					typesEnabled,
-					u.sendDesktopNotification,
-				)
-				if err != nil {
-					slog.Error("notify communications", "characterID", characterID, "error", err)
-				}
-			}()
+			go u.notifyNewCommunications(ctx, characterID)
 		}
 	case app.SectionCharacterPlanets:
 		if needsRefresh {
@@ -577,30 +603,6 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 		}
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the refresh ticker: %s", s))
-	}
-}
-
-func (u *baseUI) notifyExpiredTrainingIfNeeded(ctx context.Context, characterID int32) {
-	if u.settings.NotifyTrainingEnabled() {
-		go func() {
-			// TODO: earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyTrainingEarliest)
-			err := u.cs.NotifyExpiredTraining(ctx, characterID, u.sendDesktopNotification)
-			if err != nil {
-				slog.Error("notify expired training", "error", err)
-			}
-		}()
-	}
-}
-
-func (u *baseUI) notifyExpiredExtractionsIfNeeded(ctx context.Context, characterID int32) {
-	if u.settings.NotifyPIEnabled() {
-		go func() {
-			earliest := u.settings.NotifyPIEarliest()
-			err := u.cs.NotifyExpiredExtractions(ctx, characterID, earliest, u.sendDesktopNotification)
-			if err != nil {
-				slog.Error("notify expired extractions", "characterID", characterID, "error", err)
-			}
-		}()
 	}
 }
 

@@ -7,6 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
@@ -14,8 +17,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/jarcoal/httpmock"
-	"github.com/stretchr/testify/assert"
 )
 
 type notification struct {
@@ -166,4 +167,23 @@ func TestEntityIDErrorHandling(t *testing.T) {
 		_, err := en.EntityIDs("", "")
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
+}
+
+func TestType(t *testing.T) {
+	t.Run("can convert to string", func(t *testing.T) {
+		x := evenotification.BountyClaimMsg
+		assert.Equal(t, "BountyClaimMsg", x.String())
+	})
+	t.Run("can convert to display string", func(t *testing.T) {
+		x := evenotification.SovereigntyTCUDamageMsg
+		assert.Equal(t, "Sovereignty TCU Damage Msg", x.Display())
+	})
+	t.Run("can return Group", func(t *testing.T) {
+		assert.Equal(t, app.GroupStructure, evenotification.StructureDestroyed.Group())
+	})
+}
+
+func TestGroupTypes(t *testing.T) {
+	x := evenotification.GroupTypes(app.GroupStructure)
+	assert.True(t, x.Contains(evenotification.StructureDestroyed))
 }

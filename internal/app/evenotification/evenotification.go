@@ -1,4 +1,5 @@
 // Package evenotification contains the business logic for dealing with Eve Online notifications.
+//
 // It defines the notification types and related categories
 // and provides a service for rendering notifications titles and bodies.
 package evenotification
@@ -257,8 +258,10 @@ const (
 	WarSurrenderOfferMsg                      Type = "WarSurrenderOfferMsg"
 )
 
-func (nt Type) String() string {
-	return string(nt)
+// Category returns the entity category this notification refers to,
+// e.g. Character for character notifications.
+func (nt Type) Category() app.EveEntityCategory {
+	return app.EveEntityCharacter
 }
 
 // Display returns a string representation for display.
@@ -282,63 +285,332 @@ func (nt Type) Display() string {
 	return b.String()
 }
 
+// Group returns the group of a notification.
+func (nt Type) Group() app.NotificationGroup {
+	return type2group[nt]
+}
+
+// String returns the string representation of a notification type.
+func (nt Type) String() string {
+	return string(nt)
+}
+
+var supportedTypes set.Set[Type]
+
 // SupportedTypes returns all supported notification types.
 func SupportedTypes() set.Set[Type] {
-	var s = set.Of(
-		AllWarSurrenderMsg,
-		BillOutOfMoneyMsg,
-		BillPaidCorpAllMsg,
-		CharAppAcceptMsg,
-		CharAppRejectMsg,
-		CharAppWithdrawMsg,
-		CharLeftCorpMsg,
-		CorpAllBillMsg,
-		CorpAppInvitedMsg,
-		CorpAppNewMsg,
-		CorpAppRejectCustomMsg,
-		CorpWarSurrenderMsg,
-		DeclareWar,
-		IHubDestroyedByBillFailure,
-		InfrastructureHubBillAboutToExpire,
-		MoonminingAutomaticFracture,
-		MoonminingExtractionCancelled,
-		MoonminingExtractionFinished,
-		MoonminingExtractionStarted,
-		MoonminingLaserFired,
-		OrbitalAttacked,
-		OrbitalReinforced,
-		OwnershipTransferred,
-		StructureAnchoring,
-		StructureDestroyed,
-		StructureFuelAlert,
-		StructureImpendingAbandonmentAssetsAtRisk,
-		StructureItemsDelivered,
-		StructureItemsMovedToSafety,
-		StructureLostArmor,
-		StructureLostShields,
-		StructureOnline,
-		StructureServicesOffline,
-		StructuresReinforcementChanged,
-		StructureUnanchoring,
-		StructureUnderAttack,
-		StructureWentHighPower,
-		StructureWentLowPower,
-		TowerAlertMsg,
-		TowerResourceAlertMsg,
-		WarAdopted,
-		WarDeclared,
-		WarHQRemovedFromSpace,
-		WarInherited,
-		WarInvalid,
-		WarRetractedByConcord,
-		SovAllClaimAcquiredMsg,
-		SovCommandNodeEventStarted,
-		SovAllClaimLostMsg,
-		EntosisCaptureStarted,
-		SovStructureReinforced,
-		SovStructureDestroyed,
-	)
-	return s
+	if supportedTypes.Size() == 0 {
+		supportedTypes = set.Of(
+			AllWarSurrenderMsg,
+			BillOutOfMoneyMsg,
+			BillPaidCorpAllMsg,
+			CharAppAcceptMsg,
+			CharAppRejectMsg,
+			CharAppWithdrawMsg,
+			CharLeftCorpMsg,
+			CorpAllBillMsg,
+			CorpAppInvitedMsg,
+			CorpAppNewMsg,
+			CorpAppRejectCustomMsg,
+			CorpWarSurrenderMsg,
+			DeclareWar,
+			IHubDestroyedByBillFailure,
+			InfrastructureHubBillAboutToExpire,
+			MoonminingAutomaticFracture,
+			MoonminingExtractionCancelled,
+			MoonminingExtractionFinished,
+			MoonminingExtractionStarted,
+			MoonminingLaserFired,
+			OrbitalAttacked,
+			OrbitalReinforced,
+			OwnershipTransferred,
+			StructureAnchoring,
+			StructureDestroyed,
+			StructureFuelAlert,
+			StructureImpendingAbandonmentAssetsAtRisk,
+			StructureItemsDelivered,
+			StructureItemsMovedToSafety,
+			StructureLostArmor,
+			StructureLostShields,
+			StructureOnline,
+			StructureServicesOffline,
+			StructuresReinforcementChanged,
+			StructureUnanchoring,
+			StructureUnderAttack,
+			StructureWentHighPower,
+			StructureWentLowPower,
+			TowerAlertMsg,
+			TowerResourceAlertMsg,
+			WarAdopted,
+			WarDeclared,
+			WarHQRemovedFromSpace,
+			WarInherited,
+			WarInvalid,
+			WarRetractedByConcord,
+			SovAllClaimAcquiredMsg,
+			SovCommandNodeEventStarted,
+			SovAllClaimLostMsg,
+			EntosisCaptureStarted,
+			SovStructureReinforced,
+			SovStructureDestroyed,
+		)
+	}
+	return supportedTypes
+}
+
+var type2group = map[Type]app.NotificationGroup{
+	AcceptedAlly:                              app.GroupWar,
+	AcceptedSurrender:                         app.GroupWar,
+	AgentRetiredTrigravian:                    app.GroupUnknown,
+	AllAnchoringMsg:                           app.GroupSovereignty,
+	AllMaintenanceBillMsg:                     app.GroupBills,
+	AllStructureInvulnerableMsg:               app.GroupStructure,
+	AllStructVulnerableMsg:                    app.GroupStructure,
+	AllWarCorpJoinedAllianceMsg:               app.GroupWar,
+	AllWarDeclaredMsg:                         app.GroupWar,
+	AllWarInvalidatedMsg:                      app.GroupWar,
+	AllWarRetractedMsg:                        app.GroupWar,
+	AllWarSurrenderMsg:                        app.GroupWar,
+	AllianceCapitalChanged:                    app.GroupMiscellaneous,
+	AllianceWarDeclaredV2:                     app.GroupWar,
+	AllyContractCancelled:                     app.GroupWar,
+	AllyJoinedWarAggressorMsg:                 app.GroupWar,
+	AllyJoinedWarAllyMsg:                      app.GroupWar,
+	AllyJoinedWarDefenderMsg:                  app.GroupWar,
+	BattlePunishFriendlyFire:                  app.GroupUnknown,
+	BillOutOfMoneyMsg:                         app.GroupBills,
+	BillPaidCorpAllMsg:                        app.GroupBills,
+	BountyClaimMsg:                            app.GroupUnknown,
+	BountyESSShared:                           app.GroupUnknown,
+	BountyESSTaken:                            app.GroupUnknown,
+	BountyPlacedAlliance:                      app.GroupUnknown,
+	BountyPlacedChar:                          app.GroupUnknown,
+	BountyPlacedCorp:                          app.GroupUnknown,
+	BountyYourBountyClaimed:                   app.GroupUnknown,
+	BuddyConnectContactAdd:                    app.GroupUnknown,
+	CharAppAcceptMsg:                          app.GroupCorporate,
+	CharAppRejectMsg:                          app.GroupCorporate,
+	CharAppWithdrawMsg:                        app.GroupCorporate,
+	CharLeftCorpMsg:                           app.GroupCorporate,
+	CharMedalMsg:                              app.GroupCorporate,
+	CharTerminationMsg:                        app.GroupCorporate,
+	CloneActivationMsg:                        app.GroupUnknown,
+	CloneActivationMsg2:                       app.GroupUnknown,
+	CloneMovedMsg:                             app.GroupUnknown,
+	CloneRevokedMsg1:                          app.GroupUnknown,
+	CloneRevokedMsg2:                          app.GroupUnknown,
+	CombatOperationFinished:                   app.GroupUnknown,
+	ContactAdd:                                app.GroupContacts,
+	ContactEdit:                               app.GroupContacts,
+	ContainerPasswordMsg:                      app.GroupUnknown,
+	ContractRegionChangedToPochven:            app.GroupUnknown,
+	CorpAllBillMsg:                            app.GroupBills,
+	CorpAppAcceptMsg:                          app.GroupCorporate,
+	CorpAppInvitedMsg:                         app.GroupCorporate,
+	CorpAppNewMsg:                             app.GroupCorporate,
+	CorpAppRejectCustomMsg:                    app.GroupCorporate,
+	CorpAppRejectMsg:                          app.GroupCorporate,
+	CorpBecameWarEligible:                     app.GroupCorporate,
+	CorpDividendMsg:                           app.GroupCorporate,
+	CorpFriendlyFireDisableTimerCompleted:     app.GroupCorporate,
+	CorpFriendlyFireDisableTimerStarted:       app.GroupCorporate,
+	CorpFriendlyFireEnableTimerCompleted:      app.GroupCorporate,
+	CorpFriendlyFireEnableTimerStarted:        app.GroupCorporate,
+	CorpKicked:                                app.GroupCorporate,
+	CorpLiquidationMsg:                        app.GroupCorporate,
+	CorpNewCEOMsg:                             app.GroupCorporate,
+	CorpNewsMsg:                               app.GroupCorporate,
+	CorpNoLongerWarEligible:                   app.GroupCorporate,
+	CorpOfficeExpirationMsg:                   app.GroupCorporate,
+	CorpStructLostMsg:                         app.GroupCorporate,
+	CorpTaxChangeMsg:                          app.GroupCorporate,
+	CorpVoteCEORevokedMsg:                     app.GroupCorporate,
+	CorpVoteMsg:                               app.GroupCorporate,
+	CorpWarDeclaredMsg:                        app.GroupWar,
+	CorpWarDeclaredV2:                         app.GroupWar,
+	CorpWarFightingLegalMsg:                   app.GroupWar,
+	CorpWarInvalidatedMsg:                     app.GroupWar,
+	CorpWarRetractedMsg:                       app.GroupWar,
+	CorpWarSurrenderMsg:                       app.GroupWar,
+	CorporationGoalClosed:                     app.GroupCorporate,
+	CorporationGoalCompleted:                  app.GroupCorporate,
+	CorporationGoalCreated:                    app.GroupCorporate,
+	CorporationGoalNameChange:                 app.GroupCorporate,
+	CorporationLeft:                           app.GroupCorporate,
+	CustomsMsg:                                app.GroupMiscellaneous,
+	DeclareWar:                                app.GroupWar,
+	DistrictAttacked:                          app.GroupWar,
+	DustAppAcceptedMsg:                        app.GroupMiscellaneous,
+	ESSMainBankLink:                           app.GroupUnknown,
+	EntosisCaptureStarted:                     app.GroupSovereignty,
+	ExpertSystemExpired:                       app.GroupMiscellaneous,
+	ExpertSystemExpiryImminent:                app.GroupMiscellaneous,
+	FWAllianceKickMsg:                         app.GroupFactionWarfare,
+	FWAllianceWarningMsg:                      app.GroupFactionWarfare,
+	FWCharKickMsg:                             app.GroupFactionWarfare,
+	FWCharRankGainMsg:                         app.GroupFactionWarfare,
+	FWCharRankLossMsg:                         app.GroupFactionWarfare,
+	FWCharWarningMsg:                          app.GroupFactionWarfare,
+	FWCorpJoinMsg:                             app.GroupFactionWarfare,
+	FWCorpKickMsg:                             app.GroupFactionWarfare,
+	FWCorpLeaveMsg:                            app.GroupFactionWarfare,
+	FWCorpWarningMsg:                          app.GroupFactionWarfare,
+	FacWarCorpJoinRequestMsg:                  app.GroupFactionWarfare,
+	FacWarCorpJoinWithdrawMsg:                 app.GroupFactionWarfare,
+	FacWarCorpLeaveRequestMsg:                 app.GroupFactionWarfare,
+	FacWarCorpLeaveWithdrawMsg:                app.GroupFactionWarfare,
+	FacWarLPDisqualifiedEvent:                 app.GroupFactionWarfare,
+	FacWarLPDisqualifiedKill:                  app.GroupFactionWarfare,
+	FacWarLPPayoutEvent:                       app.GroupFactionWarfare,
+	FacWarLPPayoutKill:                        app.GroupFactionWarfare,
+	GameTimeAdded:                             app.GroupUnknown,
+	GameTimeReceived:                          app.GroupUnknown,
+	GameTimeSent:                              app.GroupUnknown,
+	GiftReceived:                              app.GroupUnknown,
+	IHubDestroyedByBillFailure:                app.GroupSovereignty,
+	IncursionCompletedMsg:                     app.GroupUnknown,
+	IndustryOperationFinished:                 app.GroupUnknown,
+	IndustryTeamAuctionLost:                   app.GroupUnknown,
+	IndustryTeamAuctionWon:                    app.GroupUnknown,
+	InfrastructureHubBillAboutToExpire:        app.GroupSovereignty,
+	InsuranceExpirationMsg:                    app.GroupUnknown,
+	InsuranceFirstShipMsg:                     app.GroupUnknown,
+	InsuranceInvalidatedMsg:                   app.GroupUnknown,
+	InsuranceIssuedMsg:                        app.GroupUnknown,
+	InsurancePayoutMsg:                        app.GroupUnknown,
+	InvasionCompletedMsg:                      app.GroupUnknown,
+	InvasionSystemLogin:                       app.GroupUnknown,
+	InvasionSystemStart:                       app.GroupUnknown,
+	JumpCloneDeletedMsg1:                      app.GroupUnknown,
+	JumpCloneDeletedMsg2:                      app.GroupUnknown,
+	KillReportFinalBlow:                       app.GroupUnknown,
+	KillReportVictim:                          app.GroupUnknown,
+	KillRightAvailable:                        app.GroupUnknown,
+	KillRightAvailableOpen:                    app.GroupUnknown,
+	KillRightEarned:                           app.GroupUnknown,
+	KillRightUnavailable:                      app.GroupUnknown,
+	KillRightUnavailableOpen:                  app.GroupUnknown,
+	KillRightUsed:                             app.GroupUnknown,
+	LPAutoRedeemed:                            app.GroupUnknown,
+	LocateCharMsg:                             app.GroupUnknown,
+	MadeWarMutual:                             app.GroupUnknown,
+	MercOfferRetractedMsg:                     app.GroupWar,
+	MercOfferedNegotiationMsg:                 app.GroupWar,
+	MissionCanceledTriglavian:                 app.GroupUnknown,
+	MissionOfferExpirationMsg:                 app.GroupUnknown,
+	MissionTimeoutMsg:                         app.GroupUnknown,
+	MoonminingAutomaticFracture:               app.GroupMoonMining,
+	MoonminingExtractionCancelled:             app.GroupMoonMining,
+	MoonminingExtractionFinished:              app.GroupMoonMining,
+	MoonminingExtractionStarted:               app.GroupMoonMining,
+	MoonminingLaserFired:                      app.GroupMoonMining,
+	MutualWarExpired:                          app.GroupWar,
+	MutualWarInviteAccepted:                   app.GroupWar,
+	MutualWarInviteRejected:                   app.GroupWar,
+	MutualWarInviteSent:                       app.GroupWar,
+	NPCStandingsGained:                        app.GroupUnknown,
+	NPCStandingsLost:                          app.GroupUnknown,
+	OfferToAllyRetracted:                      app.GroupWar,
+	OfferedSurrender:                          app.GroupWar,
+	OfferedToAlly:                             app.GroupWar,
+	OfficeLeaseCanceledInsufficientStandings:  app.GroupCorporate,
+	OldLscMessages:                            app.GroupUnknown,
+	OperationFinished:                         app.GroupUnknown,
+	OrbitalAttacked:                           app.GroupStructure,
+	OrbitalReinforced:                         app.GroupStructure,
+	OwnershipTransferred:                      app.GroupStructure,
+	RaffleCreated:                             app.GroupUnknown,
+	RaffleExpired:                             app.GroupUnknown,
+	RaffleFinished:                            app.GroupUnknown,
+	ReimbursementMsg:                          app.GroupUnknown,
+	ResearchMissionAvailableMsg:               app.GroupUnknown,
+	RetractsWar:                               app.GroupWar,
+	SPAutoRedeemed:                            app.GroupUnknown,
+	SeasonalChallengeCompleted:                app.GroupUnknown,
+	SkinSequencingCompleted:                   app.GroupUnknown,
+	SkyhookDeployed:                           app.GroupStructure,
+	SkyhookDestroyed:                          app.GroupStructure,
+	SkyhookLostShields:                        app.GroupStructure,
+	SkyhookOnline:                             app.GroupStructure,
+	SkyhookUnderAttack:                        app.GroupStructure,
+	SovAllClaimAcquiredMsg:                    app.GroupSovereignty,
+	SovAllClaimLostMsg:                        app.GroupSovereignty,
+	SovCommandNodeEventStarted:                app.GroupSovereignty,
+	SovCorpBillLateMsg:                        app.GroupSovereignty,
+	SovCorpClaimFailMsg:                       app.GroupSovereignty,
+	SovDisruptorMsg:                           app.GroupSovereignty,
+	SovStationEnteredFreeport:                 app.GroupSovereignty,
+	SovStructureDestroyed:                     app.GroupSovereignty,
+	SovStructureReinforced:                    app.GroupSovereignty,
+	SovStructureSelfDestructCancel:            app.GroupSovereignty,
+	SovStructureSelfDestructFinished:          app.GroupSovereignty,
+	SovStructureSelfDestructRequested:         app.GroupSovereignty,
+	SovereigntyIHDamageMsg:                    app.GroupSovereignty,
+	SovereigntySBUDamageMsg:                   app.GroupSovereignty,
+	SovereigntyTCUDamageMsg:                   app.GroupSovereignty,
+	StationAggressionMsg1:                     app.GroupUnknown,
+	StationAggressionMsg2:                     app.GroupUnknown,
+	StationConquerMsg:                         app.GroupUnknown,
+	StationServiceDisabled:                    app.GroupUnknown,
+	StationServiceEnabled:                     app.GroupUnknown,
+	StationStateChangeMsg:                     app.GroupUnknown,
+	StoryLineMissionAvailableMsg:              app.GroupUnknown,
+	StructureAnchoring:                        app.GroupStructure,
+	StructureCourierContractChanged:           app.GroupStructure,
+	StructureDestroyed:                        app.GroupStructure,
+	StructureFuelAlert:                        app.GroupStructure,
+	StructureImpendingAbandonmentAssetsAtRisk: app.GroupStructure,
+	StructureItemsDelivered:                   app.GroupStructure,
+	StructureItemsMovedToSafety:               app.GroupStructure,
+	StructureLostArmor:                        app.GroupStructure,
+	StructureLostShields:                      app.GroupStructure,
+	StructureLowReagentsAlert:                 app.GroupStructure,
+	StructureNoReagentsAlert:                  app.GroupStructure,
+	StructureOnline:                           app.GroupStructure,
+	StructurePaintPurchased:                   app.GroupStructure,
+	StructureServicesOffline:                  app.GroupStructure,
+	StructureUnanchoring:                      app.GroupStructure,
+	StructureUnderAttack:                      app.GroupStructure,
+	StructureWentHighPower:                    app.GroupStructure,
+	StructureWentLowPower:                     app.GroupStructure,
+	StructuresJobsCancelled:                   app.GroupStructure,
+	StructuresJobsPaused:                      app.GroupStructure,
+	StructuresReinforcementChanged:            app.GroupStructure,
+	TowerAlertMsg:                             app.GroupStructure,
+	TowerResourceAlertMsg:                     app.GroupStructure,
+	TransactionReversalMsg:                    app.GroupUnknown,
+	TutorialMsg:                               app.GroupUnknown,
+	WarAdopted:                                app.GroupWar,
+	WarAllyInherited:                          app.GroupWar,
+	WarAllyOfferDeclinedMsg:                   app.GroupWar,
+	WarConcordInvalidates:                     app.GroupWar,
+	WarDeclared:                               app.GroupWar,
+	WarEndedHqSecurityDrop:                    app.GroupWar,
+	WarHQRemovedFromSpace:                     app.GroupWar,
+	WarInherited:                              app.GroupWar,
+	WarInvalid:                                app.GroupWar,
+	WarRetracted:                              app.GroupWar,
+	WarRetractedByConcord:                     app.GroupWar,
+	WarSurrenderDeclinedMsg:                   app.GroupWar,
+	WarSurrenderOfferMsg:                      app.GroupWar,
+}
+
+var groupTypes map[app.NotificationGroup]set.Set[Type]
+
+// GroupTypes returns the types of a [app.NotificationGroup].
+func GroupTypes(g app.NotificationGroup) set.Set[Type] {
+	if groupTypes == nil {
+		groupTypes = make(map[app.NotificationGroup]set.Set[Type])
+		for t, g := range type2group {
+			if g == app.GroupUnknown {
+				g = app.GroupMiscellaneous
+			}
+			x := groupTypes[g]
+			x.Add(t)
+			groupTypes[g] = x
+		}
+	}
+	return groupTypes[g]
 }
 
 // notificationRenderer represents the interface every notification renderer needs to confirm with.
@@ -355,7 +627,7 @@ type notificationRenderer interface {
 //
 // Each notification type has a renderer which can produce the title and string for a notification.
 // In addition the renderer can return the Entity IDs of a notification,
-// which allows refetching Entities for multile notifications in bulk before rendering.
+// which allows refetching Entities for multiple notifications in bulk before rendering.
 //
 // All rendered should embed baseRenderer and implement the render method.
 // Renderers that want to return Entity IDs must also overwrite entityIDs.
@@ -388,7 +660,7 @@ func New(eus *eveuniverseservice.EveUniverseService) *EveNotificationService {
 // This is useful to resolve Entity IDs in bulk for all notifications,
 // before rendering them one by one.
 // Returns an empty set when notification does not use Entity IDs.
-// Returns [app.ErrNotFound] for unsuported notification types.
+// Returns [app.ErrNotFound] for unsupported notification types.
 func (s *EveNotificationService) EntityIDs(type_, text string) (setInt32, error) {
 	if type_ == "" {
 		return setInt32{}, app.ErrNotFound
@@ -401,7 +673,7 @@ func (s *EveNotificationService) EntityIDs(type_, text string) (setInt32, error)
 }
 
 // RenderESI renders title and body for all supported notification types and returns them.
-// Returns [app.ErrNotFound] for unsuported notification types.
+// Returns [app.ErrNotFound] for unsupported notification types.
 func (s *EveNotificationService) RenderESI(ctx context.Context, type_, text string, timestamp time.Time) (title string, body string, err error) {
 	if type_ == "" {
 		return "", "", app.ErrNotFound

@@ -16,6 +16,23 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+func (s *CharacterService) CountNotifications(ctx context.Context, characterID int32) (map[app.NotificationGroup][]int, error) {
+	types, err := s.st.CountCharacterNotifications(ctx, characterID)
+	if err != nil {
+		return nil, err
+	}
+	values := make(map[app.NotificationGroup][]int)
+	for name, v := range types {
+		g := evenotification.Type(name).Group()
+		if _, ok := values[g]; !ok {
+			values[g] = make([]int, 2)
+		}
+		values[g][0] += v[0]
+		values[g][1] += v[1]
+	}
+	return values, nil
+}
+
 func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID int32, earliest time.Time, typesEnabled set.Set[string], notify func(title, content string)) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyCommunications-%d", characterID), func() (any, error) {
 		nn, err := s.st.ListCharacterNotificationsUnprocessed(ctx, characterID, earliest)
@@ -49,10 +66,10 @@ func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID
 }
 
 func (s *CharacterService) ListNotificationsTypes(ctx context.Context, characterID int32, ng app.NotificationGroup) ([]*app.CharacterNotification, error) {
-	types := evenotification.GroupTypes[ng]
-	t2 := make([]string, len(types))
-	for i, v := range types {
-		t2[i] = string(v)
+	types := evenotification.GroupTypes(ng)
+	t2 := make([]string, 0)
+	for v := range types.All() {
+		t2 = append(t2, v.String())
 	}
 	return s.st.ListCharacterNotificationsTypes(ctx, characterID, t2)
 }
