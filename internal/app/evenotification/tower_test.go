@@ -5,13 +5,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
-	"github.com/jarcoal/httpmock"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestTowerNotification(t *testing.T) {
@@ -43,7 +44,7 @@ moonID: 40161465
 shieldValue: 0.3950949076033535
 solarSystemID: 30002537
 typeID: 16213`
-		title, body, err := en.RenderESI(ctx, "TowerAlertMsg", text, time.Now())
+		title, body, err := en.RenderESI(ctx, app.TowerAlertMsg, text, time.Now())
 		if assert.NoError(t, err) {
 
 			assert.Contains(t, title, "is under attack")
@@ -71,7 +72,7 @@ moonID: 40161465
 shieldValue: 0.3950949076033535
 solarSystemID: 30002537
 typeID: 16213`
-		title, body, err := en.RenderESI(ctx, "TowerAlertMsg", text, time.Now())
+		title, body, err := en.RenderESI(ctx, app.TowerAlertMsg, text, time.Now())
 		if assert.NoError(t, err) {
 
 			assert.Contains(t, title, "is under attack")
@@ -99,7 +100,7 @@ moonID: 40161465
 shieldValue: 0.3950949076033535
 solarSystemID: 30002537
 typeID: 16213`
-		title, body, err := en.RenderESI(ctx, "TowerAlertMsg", text, time.Now())
+		title, body, err := en.RenderESI(ctx, app.TowerAlertMsg, text, time.Now())
 		if assert.NoError(t, err) {
 
 			assert.Contains(t, title, "is under attack")

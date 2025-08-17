@@ -9,12 +9,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/antihax/goesi/notification"
+	"gopkg.in/yaml.v3"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/antihax/goesi/notification"
-	"gopkg.in/yaml.v3"
 )
 
 type eveObj struct {

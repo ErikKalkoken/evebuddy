@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 )
 
 func TestMakeStructureBaseText(t *testing.T) {

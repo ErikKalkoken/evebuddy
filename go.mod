@@ -2,6 +2,8 @@ module github.com/ErikKalkoken/evebuddy
 
 go 1.24
 
+tool golang.org/x/tools/cmd/stringer
+
 require (
 	fyne.io/fyne/v2 v2.6.2
 	github.com/ErikKalkoken/fyne-kx v0.6.4
@@ -27,8 +29,8 @@ require (
 	github.com/wcharczuk/go-chart/v2 v2.1.2
 	github.com/yuin/goldmark v1.7.12
 	golang.org/x/exp v0.0.0-20250531010427-b6e5de432a8b
-	golang.org/x/sync v0.14.0
-	golang.org/x/text v0.25.0
+	golang.org/x/sync v0.16.0
+	golang.org/x/text v0.28.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -75,9 +77,11 @@ require (
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
-	golang.org/x/crypto v0.38.0 // indirect
+	golang.org/x/crypto v0.41.0 // indirect
 	golang.org/x/image v0.27.0 // indirect
-	golang.org/x/net v0.40.0 // indirect
+	golang.org/x/mod v0.27.0 // indirect
+	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/tools v0.36.0 // indirect
 )

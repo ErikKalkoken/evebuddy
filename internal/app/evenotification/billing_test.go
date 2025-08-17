@@ -5,12 +5,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
-	"github.com/jarcoal/httpmock"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestBilling(t *testing.T) {
@@ -40,7 +41,7 @@ debtorID: 98267621
 dueDate: 133704743590000000
 externalID: 27
 externalID2: 60003760`
-		title, body, err := en.RenderESI(ctx, "CorpAllBillMsg", text, time.Now())
+		title, body, err := en.RenderESI(ctx, app.CorpAllBillMsg, text, time.Now())
 		if assert.NoError(t, err) {
 			assert.Equal(t, "Bill issued for lease", title)
 			assert.Contains(t, body, creditor.Name)
@@ -64,7 +65,7 @@ debtorID: 98267621
 dueDate: 133704743590000000
 externalID: 0
 externalID2: 0`
-		title, body, err := en.RenderESI(ctx, "CorpAllBillMsg", text, time.Now())
+		title, body, err := en.RenderESI(ctx, app.CorpAllBillMsg, text, time.Now())
 		if assert.NoError(t, err) {
 
 			assert.Equal(t, "Bill issued for lease", title)

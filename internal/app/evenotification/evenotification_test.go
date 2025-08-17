@@ -7,6 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
@@ -14,15 +17,13 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/jarcoal/httpmock"
-	"github.com/stretchr/testify/assert"
 )
 
 type notification struct {
 	NotificationID int       `json:"notification_id"`
-	Type           string    `json:"type"`
 	Text           string    `json:"text"`
 	Timestamp      time.Time `json:"timestamp"`
+	Type           string    `json:"type"`
 }
 
 func TestShouldRenderAllNotifications(t *testing.T) {
@@ -74,16 +75,16 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 	factory.CreateEveEntityWithCategory(app.EveEntityInventoryType, app.EveEntity{ID: 32226}) // TCU
 	factory.CreateEveEntityWithCategory(app.EveEntityInventoryType, app.EveEntity{ID: 27})
 	factory.CreateEveEntity(app.EveEntity{ID: 60003760, Category: app.EveEntityStation})
-	notifTypes := evenotification.SupportedTypes()
-	typeTested := make(map[evenotification.Type]bool)
+	notifTypes := app.NotificationTypesSupported()
+	typeTested := make(map[app.EveNotificationType]bool)
 	for _, n := range notifications {
-		t2 := evenotification.Type(n.Type)
-		if !notifTypes.Contains(t2) {
+		nt, found := st.EveNotificationTypeFromESIString(n.Type)
+		if !found || !notifTypes.Contains(nt) {
 			continue
 		}
 		t.Run("should render notification type "+n.Type, func(t *testing.T) {
-			typeTested[t2] = true
-			title, body, err := ens.RenderESI(ctx, n.Type, n.Text, n.Timestamp)
+			typeTested[nt] = true
+			title, body, err := ens.RenderESI(ctx, nt, n.Text, n.Timestamp)
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, "", title)
 				assert.NotEqual(t, "", body)
@@ -114,7 +115,7 @@ debtorID: 98267621
 dueDate: 133704743590000000
 externalID: 27
 externalID2: 60003760`
-		got, err := en.EntityIDs("CorpAllBillMsg", text)
+		got, err := en.EntityIDs(app.CorpAllBillMsg, text)
 		if assert.NoError(t, err) {
 			want := set.Of[int32](1000023, 98267621, 27, 60003760)
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
@@ -125,11 +126,7 @@ externalID2: 60003760`
 func TestRenderESIErrorHandling(t *testing.T) {
 	en := evenotification.New(nil)
 	t.Run("return error for unsurported", func(t *testing.T) {
-		_, _, err := en.RenderESI(context.Background(), "invalid_type", "", time.Now())
-		assert.ErrorIs(t, err, app.ErrNotFound)
-	})
-	t.Run("return error for empty", func(t *testing.T) {
-		_, _, err := en.RenderESI(context.Background(), "", "", time.Now())
+		_, _, err := en.RenderESI(context.Background(), app.UnknownNotification, "", time.Now())
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }
@@ -143,14 +140,16 @@ func TestEntityIDsSupportedNotifications(t *testing.T) {
 	if err := json.Unmarshal(data, &notifications); err != nil {
 		panic(err)
 	}
-	notifTypes := evenotification.SupportedTypes()
+	st := &storage.Storage{}
+	notifTypes := app.NotificationTypesSupported()
 	en := evenotification.New(nil)
 	for _, n := range notifications {
-		if t2 := evenotification.Type(n.Type); !notifTypes.Contains(t2) {
+		nt, found := st.EveNotificationTypeFromESIString(n.Type)
+		if !found || !notifTypes.Contains(nt) {
 			continue
 		}
 		t.Run("should process notification type "+n.Type, func(t *testing.T) {
-			_, err := en.EntityIDs(n.Type, n.Text)
+			_, err := en.EntityIDs(nt, n.Text)
 			assert.NoError(t, err)
 		})
 	}
@@ -159,11 +158,7 @@ func TestEntityIDsSupportedNotifications(t *testing.T) {
 func TestEntityIDErrorHandling(t *testing.T) {
 	en := evenotification.New(nil)
 	t.Run("return error for unsurported", func(t *testing.T) {
-		_, err := en.EntityIDs("invalid_type", "")
-		assert.ErrorIs(t, err, app.ErrNotFound)
-	})
-	t.Run("return error for empty type", func(t *testing.T) {
-		_, err := en.EntityIDs("", "")
+		_, err := en.EntityIDs(app.UnknownNotification, "")
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }

@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func TestUpdateCharacterNotificationsESI(t *testing.T) {
@@ -36,7 +36,8 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			"sender_type":     "corporation",
 			"text":            "amount: 3731016.4000000004\\nitemID: 1024881021663\\npayout: 1\\n",
 			"timestamp":       "2017-08-16T10:08:00Z",
-			"type":            "InsurancePayoutMsg"}}
+			"type":            "InsurancePayoutMsg",
+		}}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/notifications/", c.ID),
@@ -54,7 +55,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 				assert.True(t, o.IsRead)
 				assert.Equal(t, int64(42), o.NotificationID)
 				assert.Equal(t, sender, o.Sender)
-				assert.Equal(t, "InsurancePayoutMsg", o.Type)
+				assert.Equal(t, app.InsurancePayoutMsg, o.Type)
 				assert.Equal(t, "amount: 3731016.4000000004\\nitemID: 1024881021663\\npayout: 1\\n", o.Text)
 				assert.Equal(t, time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC), o.Timestamp)
 			}
@@ -79,7 +80,8 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			"sender_type":     "corporation",
 			"text":            "amount: 3731016.4000000004\\nitemID: 1024881021663\\npayout: 1\\n",
 			"timestamp":       "2017-08-16T10:08:00Z",
-			"type":            "InsurancePayoutMsg"}}
+			"type":            "InsurancePayoutMsg",
+		}}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/notifications/", c.ID),
@@ -97,7 +99,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 				assert.True(t, o.IsRead)
 				assert.Equal(t, int64(42), o.NotificationID)
 				assert.Equal(t, sender, o.Sender)
-				assert.Equal(t, "InsurancePayoutMsg", o.Type)
+				assert.Equal(t, app.InsurancePayoutMsg, o.Type)
 				assert.Equal(t, "amount: 3731016.4000000004\\nitemID: 1024881021663\\npayout: 1\\n", o.Text)
 				assert.Equal(t, time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC), o.Timestamp)
 			}
@@ -125,7 +127,8 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			"sender_type":     "corporation",
 			"text":            "amount: 3731016.4000000004\\nitemID: 1024881021663\\npayout: 1\\n",
 			"timestamp":       "2017-08-16T10:08:00Z",
-			"type":            "InsurancePayoutMsg"}}
+			"type":            "InsurancePayoutMsg",
+		}}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/notifications/", c.ID),
@@ -161,21 +164,126 @@ func TestListCharacterNotifications(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 			CharacterID: c.ID,
-			Type:        string(evenotification.BillOutOfMoneyMsg),
+			Type:        "StructureDestroyed",
 		})
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 			CharacterID: c.ID,
-			Type:        string(evenotification.BillPaidCorpAllMsg),
+			Type:        "StructureDestroyed",
 		})
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 			CharacterID: c.ID,
 			Type:        "alpha",
 		})
 		// when
-		tt, err := s.ListNotificationsTypes(ctx, c.ID, app.GroupBills)
+		tt, err := s.ListNotificationsForGroup(ctx, c.ID, app.GroupStructure)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, tt, 2)
 		}
 	})
+}
+
+func TestRenderNotificationContent(t *testing.T) {
+	cases := []struct {
+		name        string
+		notif       *app.CharacterNotification
+		character   *app.Character
+		wantTitle   string
+		wantContent string
+	}{
+		{
+			"corporation name for corporation notifs",
+			&app.CharacterNotification{
+				CharacterID: 42,
+				Type:        app.StructureDestroyed,
+				Title:       optional.New("Structure destroyed"),
+				Sender:      &app.EveEntity{Name: "Concord"},
+			}, &app.Character{
+				ID: 42,
+				EveCharacter: &app.EveCharacter{
+					Name:        "Bruce Wayne",
+					Corporation: &app.EveEntity{Name: "Wayne Technology"},
+				},
+			},
+			"Wayne Technology: New Communication from Concord",
+			"Structure destroyed",
+		},
+		{
+			"alliance name for alliance notifs",
+			&app.CharacterNotification{
+				CharacterID: 42,
+				Type:        app.SovStructureDestroyed,
+				Title:       optional.New("Structure destroyed"),
+				Sender:      &app.EveEntity{Name: "Concord"},
+			}, &app.Character{
+				ID: 42,
+				EveCharacter: &app.EveCharacter{
+					Name:        "Bruce Wayne",
+					Corporation: &app.EveEntity{Name: "Wayne Technology"},
+					Alliance:    &app.EveEntity{Name: "Wayne Inc"},
+				},
+			},
+			"Wayne Inc: New Communication from Concord",
+			"Structure destroyed",
+		},
+		{
+			"character name for character notifs",
+			&app.CharacterNotification{
+				CharacterID: 42,
+				Type:        app.StructureItemsDelivered,
+				Title:       optional.New("Items delivered"),
+				Sender:      &app.EveEntity{Name: "Concord"},
+			}, &app.Character{
+				ID: 42,
+				EveCharacter: &app.EveCharacter{
+					Name:        "Bruce Wayne",
+					Corporation: &app.EveEntity{Name: "Wayne Technology"},
+				},
+			},
+			"Bruce Wayne: New Communication from Concord",
+			"Items delivered",
+		},
+		{
+			"corporation for alliance notif as fallback",
+			&app.CharacterNotification{
+				CharacterID: 42,
+				Type:        app.SovStructureDestroyed,
+				Title:       optional.New("Structure destroyed"),
+				Sender:      &app.EveEntity{Name: "Concord"},
+			}, &app.Character{
+				ID: 42,
+				EveCharacter: &app.EveCharacter{
+					Name:        "Bruce Wayne",
+					Corporation: &app.EveEntity{Name: "Wayne Technology"},
+				},
+			},
+			"Wayne Technology: New Communication from Concord",
+			"Structure destroyed",
+		},
+		{
+			"character name as fallback for notifs with unknown category",
+			&app.CharacterNotification{
+				CharacterID: 42,
+				Type:        app.AgentRetiredTrigravian,
+				Title:       optional.New("Agent retired"),
+				Sender:      &app.EveEntity{Name: "Concord"},
+			}, &app.Character{
+				ID: 42,
+				EveCharacter: &app.EveCharacter{
+					Name:        "Bruce Wayne",
+					Corporation: &app.EveEntity{Name: "Wayne Technology"},
+				},
+			},
+			"Bruce Wayne: New Communication from Concord",
+			"Agent retired",
+		},
+	}
+	s := &CharacterService{}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			title, content := s.RenderNotificationSummary(tc.character, tc.notif)
+			assert.Equal(t, tc.wantTitle, title)
+			assert.Equal(t, tc.wantContent, content)
+		})
+	}
 }

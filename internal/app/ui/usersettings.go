@@ -23,7 +23,6 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -460,12 +459,12 @@ func (a *userSettings) showExportFileDialog(path string) {
 }
 
 func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.IconButton) {
-	groupsAndTypes := make(map[app.NotificationGroup][]evenotification.Type)
-	for n := range evenotification.SupportedTypes().All() {
-		c := evenotification.Type2group[n]
-		groupsAndTypes[c] = append(groupsAndTypes[c], n)
+	groupsAndTypes := make(map[app.EveNotificationGroup][]app.EveNotificationType)
+	for n := range app.NotificationTypesSupported().All() {
+		g := n.Group()
+		groupsAndTypes[g] = append(groupsAndTypes[g], n)
 	}
-	groups := make([]app.NotificationGroup, 0)
+	groups := make([]app.EveNotificationGroup, 0)
 	for c := range groupsAndTypes {
 		groups = append(groups, c)
 	}
@@ -581,7 +580,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 		content fyne.CanvasObject
 		actions []settingAction
 	}
-	groupPages := make(map[app.NotificationGroup]groupPage) // for pre-constructing group pages
+	groupPages := make(map[app.EveNotificationGroup]groupPage) // for pre-constructing group pages
 	for _, g := range groups {
 		groupPages[g] = func() groupPage {
 			items2 := make([]SettingItem, 0)
@@ -704,7 +703,7 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 	all := settingAction{
 		Label: "Enable all communication groups",
 		Action: func() {
-			for nt := range evenotification.SupportedTypes().All() {
+			for nt := range app.NotificationTypesSupported().All() {
 				typesEnabled.Add(nt.String())
 			}
 			updateTypes()

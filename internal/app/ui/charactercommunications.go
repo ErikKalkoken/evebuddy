@@ -17,13 +17,14 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type notificationFolder struct {
-	group  app.NotificationGroup
+	group  app.EveNotificationGroup
 	Name   string
 	Unread optional.Optional[int]
 	Total  optional.Optional[int]
@@ -104,7 +105,7 @@ func (a *characterCommunications) makeFolderMenu() []*fyne.MenuItem {
 }
 
 func (a *characterCommunications) makeFolderList() *widget.List {
-	maxGroup := slices.MaxFunc(app.NotificationGroups(), func(a, b app.NotificationGroup) int {
+	maxGroup := slices.MaxFunc(app.NotificationGroups(), func(a, b app.EveNotificationGroup) int {
 		return strings.Compare(a.String(), b.String())
 	})
 	l := widget.NewList(
@@ -216,6 +217,19 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 			a.u.App().Clipboard().SetContent(a.current.String())
 		}),
 	)
+	if a.u.IsDeveloperMode() {
+		toolbar.Append(widget.NewToolbarAction(theme.NewThemedResource(icons.TeddyBearSvg), func() {
+			if a.current == nil {
+				return
+			}
+			character := a.u.currentCharacter()
+			if character == nil {
+				return
+			}
+			title, content := a.u.cs.RenderNotificationSummary(character, a.current)
+			a.u.app.SendNotification(fyne.NewNotification(title, content))
+		}))
+	}
 	return toolbar
 }
 
@@ -288,7 +302,7 @@ func (a *characterCommunications) resetCurrentFolder() {
 	})
 }
 
-func (a *characterCommunications) setCurrentFolder(nc app.NotificationGroup) {
+func (a *characterCommunications) setCurrentFolder(nc app.EveNotificationGroup) {
 	var err error
 	characterID := a.u.currentCharacterID()
 	notifications := make([]*app.CharacterNotification, 0)
@@ -303,7 +317,7 @@ func (a *characterCommunications) setCurrentFolder(nc app.NotificationGroup) {
 		case app.GroupUnread:
 			n, err2 = a.u.cs.ListNotificationsUnread(ctx, characterID)
 		default:
-			n, err2 = a.u.cs.ListNotificationsTypes(ctx, characterID, nc)
+			n, err2 = a.u.cs.ListNotificationsForGroup(ctx, characterID, nc)
 		}
 		if err2 != nil {
 			slog.Error("communications set group", "characterID", characterID, "error", err2)
