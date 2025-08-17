@@ -262,7 +262,10 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.training = newTraining(u)
 	u.wealth = newWealth(u)
 
-	u.setColorTheme(u.settings.ColorTheme())
+	if th := u.settings.ColorTheme(); th != settings.Auto {
+		u.setColorTheme(th)
+	}
+
 	u.MainWindow().SetMaster()
 
 	// SetOnStarted is called on initial start,
