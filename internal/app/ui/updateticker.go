@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
@@ -192,7 +193,15 @@ func (u *baseUI) notifyExpiredExtractionsIfNeeded(ctx context.Context, character
 
 func (u *baseUI) notifyNewCommunications(ctx context.Context, characterID int32) {
 	earliest := u.settings.NotifyCommunicationsEarliest()
-	typesEnabled := u.settings.NotificationTypesEnabled()
+	xx := u.settings.NotificationTypesEnabled()
+	var typesEnabled set.Set[app.EveNotificationType]
+	for s := range xx.All() {
+		nt, found := app.EveNotificationTypeFromString(s)
+		if !found {
+			continue
+		}
+		typesEnabled.Add(nt)
+	}
 	err := u.cs.NotifyCommunications(
 		ctx,
 		characterID,

@@ -5,10 +5,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,7 +31,7 @@ func TestCharacterNotification(t *testing.T) {
 			SenderID:       sender.ID,
 			Text:           "text",
 			Timestamp:      timestamp,
-			Type:           "type",
+			Type:           "StructureDestroyed",
 		}
 		// when
 		err := r.CreateCharacterNotification(ctx, arg)
@@ -43,7 +45,7 @@ func TestCharacterNotification(t *testing.T) {
 				assert.Equal(t, sender, o.Sender)
 				assert.Equal(t, "text", o.Text)
 				assert.Equal(t, timestamp.UTC(), o.Timestamp.UTC())
-				assert.Equal(t, "type", o.Type)
+				assert.Equal(t, app.StructureDestroyed, o.Type)
 			}
 		}
 	})
@@ -62,7 +64,7 @@ func TestCharacterNotification(t *testing.T) {
 			Text:           "text",
 			Timestamp:      timestamp,
 			Title:          optional.New("title"),
-			Type:           "type",
+			Type:           "StructureDestroyed",
 		}
 		// when
 		err := r.CreateCharacterNotification(ctx, arg)
@@ -76,9 +78,34 @@ func TestCharacterNotification(t *testing.T) {
 				assert.Equal(t, sender, o.Sender)
 				assert.Equal(t, "text", o.Text)
 				assert.Equal(t, timestamp.UTC(), o.Timestamp.UTC())
-				assert.Equal(t, "type", o.Type)
+				assert.Equal(t, app.StructureDestroyed, o.Type)
 				assert.Equal(t, "body", o.Body.ValueOrZero())
 				assert.Equal(t, "title", o.Title.ValueOrZero())
+			}
+		}
+	})
+	t.Run("should map unknown notif types", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacterFull()
+		timestamp := time.Now().UTC()
+		sender := factory.CreateEveEntityCharacter()
+		arg := storage.CreateCharacterNotificationParams{
+			CharacterID:    c.ID,
+			IsRead:         true,
+			NotificationID: 42,
+			SenderID:       sender.ID,
+			Text:           "text",
+			Timestamp:      timestamp,
+			Type:           "Invalid",
+		}
+		// when
+		err := r.CreateCharacterNotification(ctx, arg)
+		// then
+		if assert.NoError(t, err) {
+			o, err := r.GetCharacterNotification(ctx, c.ID, 42)
+			if assert.NoError(t, err) {
+				assert.Equal(t, app.UnknownNotification, o.Type)
 			}
 		}
 	})
@@ -101,14 +128,27 @@ func TestCharacterNotification(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "bravo"})
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha"})
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha"})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			Type:        "StructureUnderAttack",
+		})
+		n1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			Type:        "StructureDestroyed",
+		})
+		n2 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			Type:        "StructureDestroyed",
+		})
 		// when
-		ee, err := r.ListCharacterNotificationsTypes(ctx, c.ID, []string{"alpha"})
+		ee, err := r.ListCharacterNotificationsForTypes(ctx, c.ID, set.Of(app.StructureDestroyed))
 		// then
 		if assert.NoError(t, err) {
-			assert.Len(t, ee, 2)
+			want := set.Of(n1.NotificationID, n2.NotificationID)
+			got := set.Collect(xiter.MapSlice(ee, func(x *app.CharacterNotification) int64 {
+				return x.NotificationID
+			}))
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 	t.Run("can updates IsRead 1", func(t *testing.T) {
@@ -197,17 +237,27 @@ func TestCharacterNotification(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "bravo"})
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha"})
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha", IsRead: true})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			Type:        "StructureDestroyed",
+		})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			Type:        "StructureUnderAttack",
+		})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			Type:        "StructureUnderAttack",
+			IsRead:      true,
+		})
 		factory.CreateCharacterNotification()
 		// when
 		x, err := r.CountCharacterNotifications(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			want := map[string][]int{
-				"alpha": {2, 1},
-				"bravo": {1, 1},
+			want := map[app.EveNotificationType][]int{
+				app.StructureUnderAttack: {2, 1},
+				app.StructureDestroyed:   {1, 1},
 			}
 			assert.Equal(t, want, x)
 		}

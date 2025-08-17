@@ -13,16 +13,302 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
-func (st *Storage) CountCharacterNotifications(ctx context.Context, characterID int32) (map[string][]int, error) {
+var notificationTypeFromString = map[string]app.EveNotificationType{
+	"AcceptedAlly":                              app.AcceptedAlly,
+	"AcceptedSurrender":                         app.AcceptedSurrender,
+	"AgentRetiredTrigravian":                    app.AgentRetiredTrigravian,
+	"AllAnchoringMsg":                           app.AllAnchoringMsg,
+	"AllianceCapitalChanged":                    app.AllianceCapitalChanged,
+	"AllianceWarDeclaredV2":                     app.AllianceWarDeclaredV2,
+	"AllMaintenanceBillMsg":                     app.AllMaintenanceBillMsg,
+	"AllStrucInvulnerableMsg":                   app.AllStructureInvulnerableMsg,
+	"AllStructVulnerableMsg":                    app.AllStructVulnerableMsg,
+	"AllWarCorpJoinedAllianceMsg":               app.AllWarCorpJoinedAllianceMsg,
+	"AllWarDeclaredMsg":                         app.AllWarDeclaredMsg,
+	"AllWarInvalidatedMsg":                      app.AllWarInvalidatedMsg,
+	"AllWarRetractedMsg":                        app.AllWarRetractedMsg,
+	"AllWarSurrenderMsg":                        app.AllWarSurrenderMsg,
+	"AllyContractCancelled":                     app.AllyContractCancelled,
+	"AllyJoinedWarAggressorMsg":                 app.AllyJoinedWarAggressorMsg,
+	"AllyJoinedWarAllyMsg":                      app.AllyJoinedWarAllyMsg,
+	"AllyJoinedWarDefenderMsg":                  app.AllyJoinedWarDefenderMsg,
+	"BattlePunishFriendlyFire":                  app.BattlePunishFriendlyFire,
+	"BillOutOfMoneyMsg":                         app.BillOutOfMoneyMsg,
+	"BillPaidCorpAllMsg":                        app.BillPaidCorpAllMsg,
+	"BountyClaimMsg":                            app.BountyClaimMsg,
+	"BountyESSShared":                           app.BountyESSShared,
+	"BountyESSTaken":                            app.BountyESSTaken,
+	"BountyPlacedAlliance":                      app.BountyPlacedAlliance,
+	"BountyPlacedChar":                          app.BountyPlacedChar,
+	"BountyPlacedCorp":                          app.BountyPlacedCorp,
+	"BountyYourBountyClaimed":                   app.BountyYourBountyClaimed,
+	"BuddyConnectContactAdd":                    app.BuddyConnectContactAdd,
+	"CharAppAcceptMsg":                          app.CharAppAcceptMsg,
+	"CharAppRejectMsg":                          app.CharAppRejectMsg,
+	"CharAppWithdrawMsg":                        app.CharAppWithdrawMsg,
+	"CharLeftCorpMsg":                           app.CharLeftCorpMsg,
+	"CharMedalMsg":                              app.CharMedalMsg,
+	"CharTerminationMsg":                        app.CharTerminationMsg,
+	"CloneActivationMsg":                        app.CloneActivationMsg,
+	"CloneActivationMsg2":                       app.CloneActivationMsg2,
+	"CloneMovedMsg":                             app.CloneMovedMsg,
+	"CloneRevokedMsg1":                          app.CloneRevokedMsg1,
+	"CloneRevokedMsg2":                          app.CloneRevokedMsg2,
+	"CombatOperationFinished":                   app.CombatOperationFinished,
+	"ContactAdd":                                app.ContactAdd,
+	"ContactEdit":                               app.ContactEdit,
+	"ContainerPasswordMsg":                      app.ContainerPasswordMsg,
+	"ContractRegionChangedToPochven":            app.ContractRegionChangedToPochven,
+	"CorpAllBillMsg":                            app.CorpAllBillMsg,
+	"CorpAppAcceptMsg":                          app.CorpAppAcceptMsg,
+	"CorpAppInvitedMsg":                         app.CorpAppInvitedMsg,
+	"CorpAppNewMsg":                             app.CorpAppNewMsg,
+	"CorpAppRejectCustomMsg":                    app.CorpAppRejectCustomMsg,
+	"CorpAppRejectMsg":                          app.CorpAppRejectMsg,
+	"CorpBecameWarEligible":                     app.CorpBecameWarEligible,
+	"CorpDividendMsg":                           app.CorpDividendMsg,
+	"CorpFriendlyFireDisableTimerCompleted":     app.CorpFriendlyFireDisableTimerCompleted,
+	"CorpFriendlyFireDisableTimerStarted":       app.CorpFriendlyFireDisableTimerStarted,
+	"CorpFriendlyFireEnableTimerCompleted":      app.CorpFriendlyFireEnableTimerCompleted,
+	"CorpFriendlyFireEnableTimerStarted":        app.CorpFriendlyFireEnableTimerStarted,
+	"CorpKicked":                                app.CorpKicked,
+	"CorpLiquidationMsg":                        app.CorpLiquidationMsg,
+	"CorpNewCEOMsg":                             app.CorpNewCEOMsg,
+	"CorpNewsMsg":                               app.CorpNewsMsg,
+	"CorpNoLongerWarEligible":                   app.CorpNoLongerWarEligible,
+	"CorpOfficeExpirationMsg":                   app.CorpOfficeExpirationMsg,
+	"CorporationGoalClosed":                     app.CorporationGoalClosed,
+	"CorporationGoalCompleted":                  app.CorporationGoalCompleted,
+	"CorporationGoalCreated":                    app.CorporationGoalCreated,
+	"CorporationGoalNameChange":                 app.CorporationGoalNameChange,
+	"CorporationLeft":                           app.CorporationLeft,
+	"CorpStructLostMsg":                         app.CorpStructLostMsg,
+	"CorpTaxChangeMsg":                          app.CorpTaxChangeMsg,
+	"CorpVoteCEORevokedMsg":                     app.CorpVoteCEORevokedMsg,
+	"CorpVoteMsg":                               app.CorpVoteMsg,
+	"CorpWarDeclaredMsg":                        app.CorpWarDeclaredMsg,
+	"CorpWarDeclaredV2":                         app.CorpWarDeclaredV2,
+	"CorpWarFightingLegalMsg":                   app.CorpWarFightingLegalMsg,
+	"CorpWarInvalidatedMsg":                     app.CorpWarInvalidatedMsg,
+	"CorpWarRetractedMsg":                       app.CorpWarRetractedMsg,
+	"CorpWarSurrenderMsg":                       app.CorpWarSurrenderMsg,
+	"CustomsMsg":                                app.CustomsMsg,
+	"DeclareWar":                                app.DeclareWar,
+	"DistrictAttacked":                          app.DistrictAttacked,
+	"DustAppAcceptedMsg":                        app.DustAppAcceptedMsg,
+	"EntosisCaptureStarted":                     app.EntosisCaptureStarted,
+	"ESSMainBankLink":                           app.ESSMainBankLink,
+	"ExpertSystemExpired":                       app.ExpertSystemExpired,
+	"ExpertSystemExpiryImminent":                app.ExpertSystemExpiryImminent,
+	"FacWarCorpJoinRequestMsg":                  app.FacWarCorpJoinRequestMsg,
+	"FacWarCorpJoinWithdrawMsg":                 app.FacWarCorpJoinWithdrawMsg,
+	"FacWarCorpLeaveRequestMsg":                 app.FacWarCorpLeaveRequestMsg,
+	"FacWarCorpLeaveWithdrawMsg":                app.FacWarCorpLeaveWithdrawMsg,
+	"FacWarLPDisqualifiedEvent":                 app.FacWarLPDisqualifiedEvent,
+	"FacWarLPDisqualifiedKill":                  app.FacWarLPDisqualifiedKill,
+	"FacWarLPPayoutEvent":                       app.FacWarLPPayoutEvent,
+	"FacWarLPPayoutKill":                        app.FacWarLPPayoutKill,
+	"FWAllianceKickMsg":                         app.FWAllianceKickMsg,
+	"FWAllianceWarningMsg":                      app.FWAllianceWarningMsg,
+	"FWCharKickMsg":                             app.FWCharKickMsg,
+	"FWCharRankGainMsg":                         app.FWCharRankGainMsg,
+	"FWCharRankLossMsg":                         app.FWCharRankLossMsg,
+	"FWCharWarningMsg":                          app.FWCharWarningMsg,
+	"FWCorpJoinMsg":                             app.FWCorpJoinMsg,
+	"FWCorpKickMsg":                             app.FWCorpKickMsg,
+	"FWCorpLeaveMsg":                            app.FWCorpLeaveMsg,
+	"FWCorpWarningMsg":                          app.FWCorpWarningMsg,
+	"GameTimeAdded":                             app.GameTimeAdded,
+	"GameTimeReceived":                          app.GameTimeReceived,
+	"GameTimeSent":                              app.GameTimeSent,
+	"GiftReceived":                              app.GiftReceived,
+	"IHubDestroyedByBillFailure":                app.IHubDestroyedByBillFailure,
+	"IncursionCompletedMsg":                     app.IncursionCompletedMsg,
+	"IndustryOperationFinished":                 app.IndustryOperationFinished,
+	"IndustryTeamAuctionLost":                   app.IndustryTeamAuctionLost,
+	"IndustryTeamAuctionWon":                    app.IndustryTeamAuctionWon,
+	"InfrastructureHubBillAboutToExpire":        app.InfrastructureHubBillAboutToExpire,
+	"InsuranceExpirationMsg":                    app.InsuranceExpirationMsg,
+	"InsuranceFirstShipMsg":                     app.InsuranceFirstShipMsg,
+	"InsuranceInvalidatedMsg":                   app.InsuranceInvalidatedMsg,
+	"InsuranceIssuedMsg":                        app.InsuranceIssuedMsg,
+	"InsurancePayoutMsg":                        app.InsurancePayoutMsg,
+	"InvasionCompletedMsg":                      app.InvasionCompletedMsg,
+	"InvasionSystemLogin":                       app.InvasionSystemLogin,
+	"InvasionSystemStart":                       app.InvasionSystemStart,
+	"JumpCloneDeletedMsg1":                      app.JumpCloneDeletedMsg1,
+	"JumpCloneDeletedMsg2":                      app.JumpCloneDeletedMsg2,
+	"KillReportFinalBlow":                       app.KillReportFinalBlow,
+	"KillReportVictim":                          app.KillReportVictim,
+	"KillRightAvailable":                        app.KillRightAvailable,
+	"KillRightAvailableOpen":                    app.KillRightAvailableOpen,
+	"KillRightEarned":                           app.KillRightEarned,
+	"KillRightUnavailable":                      app.KillRightUnavailable,
+	"KillRightUnavailableOpen":                  app.KillRightUnavailableOpen,
+	"KillRightUsed":                             app.KillRightUsed,
+	"LocateCharMsg":                             app.LocateCharMsg,
+	"LPAutoRedeemed":                            app.LPAutoRedeemed,
+	"MadeWarMutual":                             app.MadeWarMutual,
+	"MercOfferedNegotiationMsg":                 app.MercOfferedNegotiationMsg,
+	"MercOfferRetractedMsg":                     app.MercOfferRetractedMsg,
+	"MissionCanceledTriglavian":                 app.MissionCanceledTriglavian,
+	"MissionOfferExpirationMsg":                 app.MissionOfferExpirationMsg,
+	"MissionTimeoutMsg":                         app.MissionTimeoutMsg,
+	"MoonminingAutomaticFracture":               app.MoonminingAutomaticFracture,
+	"MoonminingExtractionCancelled":             app.MoonminingExtractionCancelled,
+	"MoonminingExtractionFinished":              app.MoonminingExtractionFinished,
+	"MoonminingExtractionStarted":               app.MoonminingExtractionStarted,
+	"MoonminingLaserFired":                      app.MoonminingLaserFired,
+	"MutualWarExpired":                          app.MutualWarExpired,
+	"MutualWarInviteAccepted":                   app.MutualWarInviteAccepted,
+	"MutualWarInviteRejected":                   app.MutualWarInviteRejected,
+	"MutualWarInviteSent":                       app.MutualWarInviteSent,
+	"NPCStandingsGained":                        app.NPCStandingsGained,
+	"NPCStandingsLost":                          app.NPCStandingsLost,
+	"OfferedSurrender":                          app.OfferedSurrender,
+	"OfferedToAlly":                             app.OfferedToAlly,
+	"OfferToAllyRetracted":                      app.OfferToAllyRetracted,
+	"OfficeLeaseCanceledInsufficientStandings":  app.OfficeLeaseCanceledInsufficientStandings,
+	"OldLscMessages":                            app.OldLscMessages,
+	"OperationFinished":                         app.OperationFinished,
+	"OrbitalAttacked":                           app.OrbitalAttacked,
+	"OrbitalReinforced":                         app.OrbitalReinforced,
+	"OwnershipTransferred":                      app.OwnershipTransferred,
+	"RaffleCreated":                             app.RaffleCreated,
+	"RaffleExpired":                             app.RaffleExpired,
+	"RaffleFinished":                            app.RaffleFinished,
+	"ReimbursementMsg":                          app.ReimbursementMsg,
+	"ResearchMissionAvailableMsg":               app.ResearchMissionAvailableMsg,
+	"RetractsWar":                               app.RetractsWar,
+	"SeasonalChallengeCompleted":                app.SeasonalChallengeCompleted,
+	"SkinSequencingCompleted":                   app.SkinSequencingCompleted,
+	"SkyhookDeployed":                           app.SkyhookDeployed,
+	"SkyhookDestroyed":                          app.SkyhookDestroyed,
+	"SkyhookLostShields":                        app.SkyhookLostShields,
+	"SkyhookOnline":                             app.SkyhookOnline,
+	"SkyhookUnderAttack":                        app.SkyhookUnderAttack,
+	"SovAllClaimAquiredMsg":                     app.SovAllClaimAcquiredMsg,
+	"SovAllClaimLostMsg":                        app.SovAllClaimLostMsg,
+	"SovCommandNodeEventStarted":                app.SovCommandNodeEventStarted,
+	"SovCorpBillLateMsg":                        app.SovCorpBillLateMsg,
+	"SovCorpClaimFailMsg":                       app.SovCorpClaimFailMsg,
+	"SovDisruptorMsg":                           app.SovDisruptorMsg,
+	"SovereigntyIHDamageMsg":                    app.SovereigntyIHDamageMsg,
+	"SovereigntySBUDamageMsg":                   app.SovereigntySBUDamageMsg,
+	"SovereigntyTCUDamageMsg":                   app.SovereigntyTCUDamageMsg,
+	"SovStationEnteredFreeport":                 app.SovStationEnteredFreeport,
+	"SovStructureDestroyed":                     app.SovStructureDestroyed,
+	"SovStructureReinforced":                    app.SovStructureReinforced,
+	"SovStructureSelfDestructCancel":            app.SovStructureSelfDestructCancel,
+	"SovStructureSelfDestructFinished":          app.SovStructureSelfDestructFinished,
+	"SovStructureSelfDestructRequested":         app.SovStructureSelfDestructRequested,
+	"SPAutoRedeemed":                            app.SPAutoRedeemed,
+	"StationAggressionMsg1":                     app.StationAggressionMsg1,
+	"StationAggressionMsg2":                     app.StationAggressionMsg2,
+	"StationConquerMsg":                         app.StationConquerMsg,
+	"StationServiceDisabled":                    app.StationServiceDisabled,
+	"StationServiceEnabled":                     app.StationServiceEnabled,
+	"StationStateChangeMsg":                     app.StationStateChangeMsg,
+	"StoryLineMissionAvailableMsg":              app.StoryLineMissionAvailableMsg,
+	"StructureAnchoring":                        app.StructureAnchoring,
+	"StructureCourierContractChanged":           app.StructureCourierContractChanged,
+	"StructureDestroyed":                        app.StructureDestroyed,
+	"StructureFuelAlert":                        app.StructureFuelAlert,
+	"StructureImpendingAbandonmentAssetsAtRisk": app.StructureImpendingAbandonmentAssetsAtRisk,
+	"StructureItemsDelivered":                   app.StructureItemsDelivered,
+	"StructureItemsMovedToSafety":               app.StructureItemsMovedToSafety,
+	"StructureLostArmor":                        app.StructureLostArmor,
+	"StructureLostShields":                      app.StructureLostShields,
+	"StructureLowReagentsAlert":                 app.StructureLowReagentsAlert,
+	"StructureNoReagentsAlert":                  app.StructureNoReagentsAlert,
+	"StructureOnline":                           app.StructureOnline,
+	"StructurePaintPurchased":                   app.StructurePaintPurchased,
+	"StructureServicesOffline":                  app.StructureServicesOffline,
+	"StructuresJobsCancelled":                   app.StructuresJobsCancelled,
+	"StructuresJobsPaused":                      app.StructuresJobsPaused,
+	"StructuresReinforcementChanged":            app.StructuresReinforcementChanged,
+	"StructureUnanchoring":                      app.StructureUnanchoring,
+	"StructureUnderAttack":                      app.StructureUnderAttack,
+	"StructureWentHighPower":                    app.StructureWentHighPower,
+	"StructureWentLowPower":                     app.StructureWentLowPower,
+	"TowerAlertMsg":                             app.TowerAlertMsg,
+	"TowerResourceAlertMsg":                     app.TowerResourceAlertMsg,
+	"TransactionReversalMsg":                    app.TransactionReversalMsg,
+	"TutorialMsg":                               app.TutorialMsg,
+	"WarAdopted ":                               app.WarAdopted,
+	"WarAllyInherited":                          app.WarAllyInherited,
+	"WarAllyOfferDeclinedMsg":                   app.WarAllyOfferDeclinedMsg,
+	"WarConcordInvalidates":                     app.WarConcordInvalidates,
+	"WarDeclared":                               app.WarDeclared,
+	"WarEndedHqSecurityDrop":                    app.WarEndedHqSecurityDrop,
+	"WarHQRemovedFromSpace":                     app.WarHQRemovedFromSpace,
+	"WarInherited":                              app.WarInherited,
+	"WarInvalid":                                app.WarInvalid,
+	"WarRetracted":                              app.WarRetracted,
+	"WarRetractedByConcord":                     app.WarRetractedByConcord,
+	"WarSurrenderDeclinedMsg":                   app.WarSurrenderDeclinedMsg,
+	"WarSurrenderOfferMsg":                      app.WarSurrenderOfferMsg,
+}
+
+// EveNotificationTypeFromESIString returns a notifications from a matching ESI string
+// or [app.UnknownNotification] if not found.
+func (*Storage) EveNotificationTypeFromESIString(name string) (app.EveNotificationType, bool) {
+	nt, ok := notificationTypeFromString[name]
+	if !ok {
+		return app.UnknownNotification, false
+	}
+	return nt, true
+}
+
+var notificationTypeToString map[app.EveNotificationType]string
+
+// EveNotificationTypeToESIString returns the ESI string for a notification
+// and reports whether it was found.
+func (*Storage) EveNotificationTypeToESIString(nt app.EveNotificationType) (string, bool) {
+	if notificationTypeToString == nil {
+		notificationTypeToString = make(map[app.EveNotificationType]string)
+		for k, v := range notificationTypeFromString {
+			notificationTypeToString[v] = k
+		}
+	}
+	s, ok := notificationTypeToString[nt]
+	if !ok {
+		return "", false
+	}
+	return s, true
+}
+
+func (st *Storage) CountCharacterNotifications(ctx context.Context, characterID int32) (map[app.EveNotificationType][]int, error) {
 	rows, err := st.qRO.CountCharacterNotifications(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("count notifications for character %d: %w", characterID, err)
 	}
-	x := make(map[string][]int)
+	m := make(map[app.EveNotificationType][]int)
 	for _, r := range rows {
-		x[r.Name] = []int{int(r.TotalCount), int(r.UnreadCount.Float64)}
+		nt, found := st.EveNotificationTypeFromESIString(r.Name)
+		if !found {
+			nt = app.UnknownNotification
+		}
+		m[nt] = []int{int(r.TotalCount), int(r.UnreadCount.Float64)}
 	}
-	return x, nil
+	return m, nil
+}
+
+type CreateCharacterNotificationParams struct {
+	Body           optional.Optional[string]
+	CharacterID    int32
+	IsRead         bool
+	IsProcessed    bool
+	NotificationID int64
+	SenderID       int32
+	Text           string
+	Timestamp      time.Time
+	Title          optional.Optional[string]
+	Type           string
+}
+
+func (arg CreateCharacterNotificationParams) isValid() bool {
+	return arg.CharacterID != 0 && arg.NotificationID != 0 && arg.SenderID != 0
 }
 
 func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCharacterNotificationParams) error {
@@ -58,11 +344,20 @@ func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int
 		CharacterID:    int64(characterID),
 		NotificationID: notificationID,
 	}
-	row, err := st.qRO.GetCharacterNotification(ctx, arg)
+	r, err := st.qRO.GetCharacterNotification(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("get character notification %+v: %w", arg, convertGetError(err))
 	}
-	return characterNotificationFromDBModel(row.CharacterNotification, row.EveEntity, row.NotificationType), err
+	nt, found := st.EveNotificationTypeFromESIString(r.NotificationType.Name)
+	if !found {
+		nt = app.UnknownNotification
+	}
+	o := characterNotificationFromDBModel(
+		r.CharacterNotification,
+		r.EveEntity,
+		nt,
+	)
+	return o, err
 }
 
 func (st *Storage) GetOrCreateNotificationType(ctx context.Context, name string) (int64, error) {
@@ -99,18 +394,33 @@ func (st *Storage) ListCharacterNotificationIDs(ctx context.Context, characterID
 	return set.Of(ids...), nil
 }
 
-func (st *Storage) ListCharacterNotificationsTypes(ctx context.Context, characterID int32, types []string) ([]*app.CharacterNotification, error) {
+func (st *Storage) ListCharacterNotificationsForTypes(ctx context.Context, characterID int32, types set.Set[app.EveNotificationType]) ([]*app.CharacterNotification, error) {
+	names := make([]string, 0)
+	for t := range types.All() {
+		s, ok := st.EveNotificationTypeToESIString(t)
+		if !ok {
+			continue
+		}
+		names = append(names, s)
+	}
+	if len(names) == 0 {
+		return []*app.CharacterNotification{}, nil
+	}
 	arg := queries.ListCharacterNotificationsTypesParams{
 		CharacterID: int64(characterID),
-		Names:       types,
+		Names:       names,
 	}
 	rows, err := st.qRO.ListCharacterNotificationsTypes(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("list notification types %+v: %w", arg, err)
 	}
 	ee := make([]*app.CharacterNotification, len(rows))
-	for i, row := range rows {
-		ee[i] = characterNotificationFromDBModel(row.CharacterNotification, row.EveEntity, row.NotificationType)
+	for i, r := range rows {
+		nt, found := st.EveNotificationTypeFromESIString(r.NotificationType.Name)
+		if !found {
+			nt = app.UnknownNotification
+		}
+		ee[i] = characterNotificationFromDBModel(r.CharacterNotification, r.EveEntity, nt)
 	}
 	return ee, nil
 }
@@ -122,7 +432,11 @@ func (st *Storage) ListCharacterNotificationsAll(ctx context.Context, characterI
 	}
 	ee := make([]*app.CharacterNotification, len(rows))
 	for i, r := range rows {
-		ee[i] = characterNotificationFromDBModel(r.CharacterNotification, r.EveEntity, r.NotificationType)
+		nt, found := st.EveNotificationTypeFromESIString(r.NotificationType.Name)
+		if !found {
+			nt = app.UnknownNotification
+		}
+		ee[i] = characterNotificationFromDBModel(r.CharacterNotification, r.EveEntity, nt)
 	}
 	return ee, nil
 }
@@ -133,8 +447,12 @@ func (st *Storage) ListCharacterNotificationsUnread(ctx context.Context, charact
 		return nil, fmt.Errorf("list unread notification for character %d: %w", characterID, err)
 	}
 	ee := make([]*app.CharacterNotification, len(rows))
-	for i, row := range rows {
-		ee[i] = characterNotificationFromDBModel(row.CharacterNotification, row.EveEntity, row.NotificationType)
+	for i, r := range rows {
+		nt, found := st.EveNotificationTypeFromESIString(r.NotificationType.Name)
+		if !found {
+			nt = app.UnknownNotification
+		}
+		ee[i] = characterNotificationFromDBModel(r.CharacterNotification, r.EveEntity, nt)
 	}
 	return ee, nil
 }
@@ -149,27 +467,31 @@ func (st *Storage) ListCharacterNotificationsUnprocessed(ctx context.Context, ch
 		return nil, fmt.Errorf("list unprocessed notifications %+v: %w", arg, err)
 	}
 	ee := make([]*app.CharacterNotification, len(rows))
-	for i, row := range rows {
-		ee[i] = characterNotificationFromDBModel(row.CharacterNotification, row.EveEntity, row.NotificationType)
+	for i, r := range rows {
+		nt, found := st.EveNotificationTypeFromESIString(r.NotificationType.Name)
+		if !found {
+			nt = app.UnknownNotification
+		}
+		ee[i] = characterNotificationFromDBModel(r.CharacterNotification, r.EveEntity, nt)
 	}
 	return ee, nil
 }
 
-type CreateCharacterNotificationParams struct {
-	Body           optional.Optional[string]
-	CharacterID    int32
-	IsRead         bool
-	IsProcessed    bool
-	NotificationID int64
-	SenderID       int32
-	Text           string
-	Timestamp      time.Time
-	Title          optional.Optional[string]
-	Type           string
-}
-
-func (arg CreateCharacterNotificationParams) isValid() bool {
-	return arg.CharacterID != 0 && arg.NotificationID != 0 && arg.SenderID != 0
+func characterNotificationFromDBModel(o queries.CharacterNotification, sender queries.EveEntity, nt app.EveNotificationType) *app.CharacterNotification {
+	o2 := &app.CharacterNotification{
+		ID:             o.ID,
+		Body:           optional.FromNullString(o.Body),
+		CharacterID:    int32(o.CharacterID),
+		IsProcessed:    o.IsProcessed,
+		IsRead:         o.IsRead,
+		NotificationID: o.NotificationID,
+		Sender:         eveEntityFromDBModel(sender),
+		Text:           o.Text,
+		Timestamp:      o.Timestamp,
+		Title:          optional.FromNullString(o.Title),
+		Type:           nt,
+	}
+	return o2
 }
 
 type UpdateCharacterNotificationParams struct {
@@ -200,21 +522,4 @@ func (st *Storage) UpdateCharacterNotificationSetProcessed(ctx context.Context, 
 		return fmt.Errorf("update notification set processed for id %d: %w", id, err)
 	}
 	return nil
-}
-
-func characterNotificationFromDBModel(o queries.CharacterNotification, sender queries.EveEntity, type_ queries.NotificationType) *app.CharacterNotification {
-	o2 := &app.CharacterNotification{
-		ID:             o.ID,
-		Body:           optional.FromNullString(o.Body),
-		CharacterID:    int32(o.CharacterID),
-		IsProcessed:    o.IsProcessed,
-		IsRead:         o.IsRead,
-		NotificationID: o.NotificationID,
-		Sender:         eveEntityFromDBModel(sender),
-		Text:           o.Text,
-		Timestamp:      o.Timestamp,
-		Title:          optional.FromNullString(o.Title),
-		Type:           type_.Name,
-	}
-	return o2
 }

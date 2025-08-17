@@ -9,21 +9,20 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/esi"
 	"golang.org/x/sync/errgroup"
 )
 
-func (s *CharacterService) CountNotifications(ctx context.Context, characterID int32) (map[app.NotificationGroup][]int, error) {
+func (s *CharacterService) CountNotifications(ctx context.Context, characterID int32) (map[app.EveNotificationGroup][]int, error) {
 	types, err := s.st.CountCharacterNotifications(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
-	values := make(map[app.NotificationGroup][]int)
+	values := make(map[app.EveNotificationGroup][]int)
 	for name, v := range types {
-		g := evenotification.Type(name).Group()
+		g := app.EveNotificationType(name).Group()
 		if _, ok := values[g]; !ok {
 			values[g] = make([]int, 2)
 		}
@@ -33,7 +32,7 @@ func (s *CharacterService) CountNotifications(ctx context.Context, characterID i
 	return values, nil
 }
 
-func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID int32, earliest time.Time, typesEnabled set.Set[string], notify func(title, content string)) error {
+func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID int32, earliest time.Time, typesEnabled set.Set[app.EveNotificationType], notify func(title, content string)) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyCommunications-%d", characterID), func() (any, error) {
 		nn, err := s.st.ListCharacterNotificationsUnprocessed(ctx, characterID, earliest)
 		if err != nil {
@@ -68,7 +67,7 @@ func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID
 // The summary is intended for generating local notifications.
 func (CharacterService) RenderNotificationSummary(character *app.Character, n *app.CharacterNotification) (title, content string) {
 	var name string
-	c, ok := evenotification.Type(n.Type).Category()
+	c, ok := app.EveNotificationType(n.Type).Category()
 	if !ok {
 		name = character.EveCharacter.Name
 	} else {
@@ -90,13 +89,8 @@ func (CharacterService) RenderNotificationSummary(character *app.Character, n *a
 	return
 }
 
-func (s *CharacterService) ListNotificationsTypes(ctx context.Context, characterID int32, ng app.NotificationGroup) ([]*app.CharacterNotification, error) {
-	types := evenotification.GroupTypes(ng)
-	t2 := make([]string, 0)
-	for v := range types.All() {
-		t2 = append(t2, v.String())
-	}
-	return s.st.ListCharacterNotificationsTypes(ctx, characterID, t2)
+func (s *CharacterService) ListNotificationsForGroup(ctx context.Context, characterID int32, ng app.EveNotificationGroup) ([]*app.CharacterNotification, error) {
+	return s.st.ListCharacterNotificationsForTypes(ctx, characterID, app.NotificationGroupTypes(ng))
 }
 
 func (s *CharacterService) ListNotificationsAll(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
@@ -156,7 +150,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 					ID:     o.ID,
 					IsRead: n.IsRead,
 				}
-				title, body, err := s.ens.RenderESI(ctx, n.Type_, n.Text, n.Timestamp)
+				title, body, err := s.ens.RenderESI(ctx, o.Type, o.Text, o.Timestamp)
 				if errors.Is(err, app.ErrNotFound) {
 					// do nothing
 				} else if err != nil {
@@ -196,7 +190,11 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 						Timestamp:      n.Timestamp,
 						Type:           n.Type_,
 					}
-					title, body, err := s.ens.RenderESI(ctx, n.Type_, n.Text, n.Timestamp)
+					nt, found := s.st.EveNotificationTypeFromESIString(n.Type_)
+					if !found {
+						nt = app.UnknownNotification
+					}
+					title, body, err := s.ens.RenderESI(ctx, nt, n.Text, n.Timestamp)
 					if errors.Is(err, app.ErrNotFound) {
 						// do nothing
 					} else if err != nil {
@@ -231,10 +229,15 @@ func (s *CharacterService) loadEntitiesForNotifications(ctx context.Context, not
 		if n.SenderId != 0 {
 			ids.Add(n.SenderId)
 		}
-		ids2, err := s.ens.EntityIDs(n.Type_, n.Text)
+		nt, found := s.st.EveNotificationTypeFromESIString(n.Type_)
+		if !found {
+			continue
+		}
+		ids2, err := s.ens.EntityIDs(nt, n.Text)
 		if errors.Is(err, app.ErrNotFound) {
 			continue
-		} else if err != nil {
+		}
+		if err != nil {
 			return err
 		}
 		ids.AddSeq(ids2.All())

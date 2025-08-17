@@ -7,7 +7,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -22,28 +21,29 @@ func TestNotifyCommunications(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now().UTC()
 	earliest := now.Add(-12 * time.Hour)
-	typesEnabled := set.Of(string(evenotification.StructureUnderAttack))
+	typesEnabled := set.Of(app.StructureUnderAttack)
 	cases := []struct {
 		name         string
-		typ          evenotification.Type
+		typ          app.EveNotificationType
 		timestamp    time.Time
 		isProcessed  bool
 		shouldNotify bool
 	}{
-		{"send unprocessed", evenotification.StructureUnderAttack, now, false, true},
-		{"don't send old unprocessed", evenotification.StructureUnderAttack, now.Add(-16 * time.Hour), false, false},
-		{"don't send not enabled types", evenotification.SkyhookOnline, now, false, false},
-		{"don't resend already processed", evenotification.StructureUnderAttack, now, true, false},
+		{"send unprocessed", app.StructureUnderAttack, now, false, true},
+		{"don't send old unprocessed", app.StructureUnderAttack, now.Add(-16 * time.Hour), false, false},
+		{"don't send not enabled types", app.SkyhookOnline, now, false, false},
+		{"don't resend already processed", app.StructureUnderAttack, now, true, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			// given
 			testutil.TruncateTables(db)
+			s, _ := st.EveNotificationTypeToESIString(tc.typ)
 			n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 				IsProcessed: tc.isProcessed,
 				Title:       optional.New("title"),
 				Body:        optional.New("body"),
-				Type:        string(tc.typ),
+				Type:        s,
 				Timestamp:   tc.timestamp,
 			})
 			var sendCount int
@@ -68,22 +68,22 @@ func TestCountNotifications(t *testing.T) {
 	c := factory.CreateCharacterFull()
 	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 		CharacterID: c.ID,
-		Type:        string(evenotification.StructureDestroyed),
+		Type:        "StructureDestroyed",
 	})
 	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 		CharacterID: c.ID,
-		Type:        string(evenotification.MoonminingExtractionStarted),
+		Type:        "MoonminingExtractionStarted",
 	})
 	factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 		CharacterID: c.ID,
-		Type:        string(evenotification.MoonminingExtractionStarted),
+		Type:        "MoonminingExtractionStarted",
 		IsRead:      true,
 	})
 	factory.CreateCharacterNotification()
 	// when
 	got, err := cs.CountNotifications(ctx, c.ID)
 	if assert.NoError(t, err) {
-		want := map[app.NotificationGroup][]int{
+		want := map[app.EveNotificationGroup][]int{
 			app.GroupStructure:  {1, 1},
 			app.GroupMoonMining: {2, 1},
 		}

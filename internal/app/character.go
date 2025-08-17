@@ -1,23 +1,17 @@
 package app
 
 import (
-	"bytes"
-	"fmt"
 	"iter"
-	"log/slog"
 	"maps"
 	"slices"
 	"strings"
 	"time"
-	"unicode"
 
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/yuin/goldmark"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
@@ -220,190 +214,6 @@ type CharacterJumpCloneImplant struct {
 	ID      int64
 	EveType *EveType
 	SlotNum int // 0 = unknown
-}
-
-type SendMailMode uint
-
-const (
-	SendMailNew SendMailMode = iota + 1
-	SendMailReply
-	SendMailReplyAll
-	SendMailForward
-)
-
-// Special mail label IDs
-const (
-	MailLabelAll      = 1<<31 - 1
-	MailLabelUnread   = 1<<31 - 2
-	MailLabelNone     = 0
-	MailLabelInbox    = 1
-	MailLabelSent     = 2
-	MailLabelCorp     = 4
-	MailLabelAlliance = 8
-)
-
-// CharacterMailLabel is a mail label for an EVE mail belonging to a character.
-type CharacterMailLabel struct {
-	ID          int64
-	CharacterID int32
-	Color       string
-	LabelID     int32
-	Name        string
-	UnreadCount int
-}
-
-// CharacterMail is an EVE mail belonging to a character.
-type CharacterMail struct {
-	Body        string
-	CharacterID int32
-	From        *EveEntity
-	Labels      []*CharacterMailLabel
-	IsProcessed bool
-	IsRead      bool
-	ID          int64
-	MailID      int32
-	Recipients  []*EveEntity
-	Subject     string
-	Timestamp   time.Time
-}
-
-// CharacterMailHeader is an EVE mail header belonging to a character.
-type CharacterMailHeader struct {
-	CharacterID int32
-	From        *EveEntity
-	IsRead      bool
-	ID          int64
-	MailID      int32
-	Subject     string
-	Timestamp   time.Time
-}
-
-// BodyPlain returns a mail's body as plain text.
-func (cm CharacterMail) BodyPlain() string {
-	return evehtml.ToPlain(cm.Body)
-}
-
-// String returns a mail's content as string.
-func (cm CharacterMail) String() string {
-	s := fmt.Sprintf("%s\n", cm.Subject) + cm.Header() + "\n\n" + cm.BodyPlain()
-	return s
-}
-
-// Header returns a mail's header as string.
-func (cm CharacterMail) Header() string {
-	var names []string
-	for _, n := range cm.Recipients {
-		names = append(names, n.Name)
-	}
-	header := fmt.Sprintf(
-		"From: %s\n"+
-			"Sent: %s\n"+
-			"To: %s",
-		cm.From.Name,
-		cm.Timestamp.Format(DateTimeFormat),
-		strings.Join(names, ", "),
-	)
-	return header
-}
-
-// RecipientNames returns the names of the recipients.
-func (cm CharacterMail) RecipientNames() []string {
-	ss := make([]string, len(cm.Recipients))
-	for i, r := range cm.Recipients {
-		ss[i] = r.Name
-	}
-	return ss
-}
-
-func (cm CharacterMail) BodyToMarkdown() string {
-	s, err := evehtml.ToMarkdown(cm.Body)
-	if err != nil {
-		slog.Error("Failed to convert mail body to markdown", "characterID", cm.CharacterID, "mailID", cm.MailID, "error", err)
-		return ""
-	}
-	return s
-}
-
-type CharacterNotification struct {
-	ID             int64
-	Body           optional.Optional[string] // generated body text in markdown
-	CharacterID    int32
-	IsProcessed    bool
-	IsRead         bool
-	NotificationID int64
-	RecipientName  string // TODO: Replace with EveEntity
-	Sender         *EveEntity
-	Text           string
-	Timestamp      time.Time
-	Title          optional.Optional[string] // generated title text in markdown
-	Type           string                    // This is a string, so that it can handle unknown types
-}
-
-// TitleDisplay returns the rendered title when it exists or else the fake tile.
-func (cn *CharacterNotification) TitleDisplay() string {
-	if cn.Title.IsEmpty() {
-		return cn.TitleFake()
-	}
-	return cn.Title.ValueOrZero()
-}
-
-// TitleFake returns a title for output made from the name of the type.
-func (cn *CharacterNotification) TitleFake() string {
-	var b strings.Builder
-	var last rune
-	for _, r := range cn.Type {
-		if unicode.IsUpper(r) && unicode.IsLower(last) {
-			b.WriteRune(' ')
-		}
-		b.WriteRune(r)
-		last = r
-	}
-	return b.String()
-}
-
-// Header returns the header of a notification.
-func (cn *CharacterNotification) Header() string {
-	s := fmt.Sprintf(
-		"From: %s\n"+
-			"Sent: %s",
-		cn.Sender.Name,
-		cn.Timestamp.Format(DateTimeFormat),
-	)
-	if cn.RecipientName != "" {
-		s += fmt.Sprintf("\nTo: %s", cn.RecipientName)
-	}
-	return s
-}
-
-// String returns the content of a notification as string.
-func (cn *CharacterNotification) String() string {
-	s := cn.TitleDisplay() + "\n" + cn.Header()
-	b, err := cn.BodyPlain()
-	if err != nil {
-		slog.Error("render notification to string", "id", cn.ID, "error", err)
-		return s
-	}
-	s += "\n\n"
-	if b.IsEmpty() {
-		s += "(no body)"
-	} else {
-		s += b.ValueOrZero()
-	}
-	return s
-}
-
-// BodyPlain returns the body of a notification as plain text.
-func (cn *CharacterNotification) BodyPlain() (optional.Optional[string], error) {
-	var b optional.Optional[string]
-	if cn.Body.IsEmpty() {
-		return b, nil
-	}
-	var buf bytes.Buffer
-	if err := goldmark.Convert([]byte(cn.Body.ValueOrZero()), &buf); err != nil {
-		return b, fmt.Errorf("convert notification body: %w", err)
-	}
-	b.Set(evehtml.Strip(buf.String()))
-	return b, nil
 }
 
 type CharacterPlanet struct {
