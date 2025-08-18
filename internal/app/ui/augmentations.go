@@ -84,7 +84,7 @@ func newAugmentations(u *baseUI) *augmentations {
 	a.collapseAll.SetToolTip("Collapse branches")
 
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if arg.Section == app.SectionCharacterImplants {
+		if arg.section == app.SectionCharacterImplants {
 			a.update()
 		}
 	})

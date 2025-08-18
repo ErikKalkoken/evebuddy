@@ -70,10 +70,10 @@ func newCharacterJumpClones(u *baseUI) *characterJumpClones {
 		a.character = c
 	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.CharacterID {
+		if characterIDOrZero(a.character) != arg.characterID {
 			return
 		}
-		if arg.Section == app.SectionCharacterJumpClones {
+		if arg.section == app.SectionCharacterJumpClones {
 			a.update()
 		}
 	})

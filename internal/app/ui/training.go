@@ -181,7 +181,7 @@ func newTraining(u *baseUI) *training {
 	}, a.u.window)
 
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		switch arg.Section {
+		switch arg.section {
 		case app.SectionCharacterSkills, app.SectionCharacterSkillqueue:
 			a.update()
 		}

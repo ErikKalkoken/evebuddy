@@ -155,6 +155,18 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
+
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		switch arg.section {
+		case app.SectionCharacterIndustryJobs, app.SectionCharacterSkills:
+			a.update()
+		}
+	})
+	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
+		if arg.section == app.SectionCorporationIndustryJobs {
+			a.update()
+		}
+	})
 	return a
 }
 

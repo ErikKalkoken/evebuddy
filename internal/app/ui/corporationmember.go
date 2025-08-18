@@ -30,6 +30,7 @@ type corporationMemberRow struct {
 type corporationMember struct {
 	widget.BaseWidget
 
+	corporation  *app.Corporation
 	rows         []corporationMemberRow
 	rowsFiltered []corporationMemberRow
 	list         *widget.List
@@ -59,6 +60,19 @@ func newCorporationMember(u *baseUI) *corporationMember {
 		a.filterRows()
 		a.list.ScrollToTop()
 	}
+	a.u.corporationExchanged.AddListener(
+		func(_ context.Context, c *app.Corporation) {
+			a.corporation = c
+		},
+	)
+	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
+		if corporationIDOrZero(a.corporation) != arg.corporationID {
+			return
+		}
+		if arg.section == app.SectionCorporationMembers {
+			a.update()
+		}
+	})
 	return a
 }
 
@@ -153,9 +167,9 @@ func (a *corporationMember) filterRows() {
 
 func (a *corporationMember) update() {
 	var corporationID, ceoID int32
-	if c := a.u.currentCorporation(); c != nil {
-		corporationID = c.ID
-		ceoID = c.EveCorporation.Ceo.ID
+	if a.corporation != nil {
+		corporationID = a.corporation.ID
+		ceoID = a.corporation.EveCorporation.Ceo.ID
 	}
 	var rows []corporationMemberRow
 	var err error

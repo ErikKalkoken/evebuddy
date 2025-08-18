@@ -214,12 +214,12 @@ func newAssets(u *baseUI) *assets {
 	}, a.u.window)
 
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if arg.Section == app.SectionCharacterAssets {
+		if arg.section == app.SectionCharacterAssets {
 			a.update()
 		}
 	})
 	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
-		if arg.Section == app.SectionEveMarketPrices {
+		if arg.section == app.SectionEveMarketPrices {
 			a.update()
 		}
 	})

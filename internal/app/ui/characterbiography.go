@@ -37,7 +37,7 @@ func newCharacterBiography(u *baseUI) *characterBiography {
 			if characterID == 0 {
 				return
 			}
-			if arg.Section == app.SectionEveCharacters && arg.Changed.Contains(characterID) {
+			if arg.section == app.SectionEveCharacters && arg.changed.Contains(characterID) {
 				a.update()
 			}
 		},

@@ -53,7 +53,9 @@ type walletJournal struct {
 	widget.BaseWidget
 
 	body         fyne.CanvasObject
+	character    *app.Character
 	columnSorter *columnSorter
+	corporation  *app.Corporation
 	division     app.Division
 	rows         []walletJournalRow
 	rowsFiltered []walletJournalRow
@@ -64,11 +66,37 @@ type walletJournal struct {
 }
 
 func newCharacterWalletJournal(u *baseUI) *walletJournal {
-	return newWalletJournal(u, app.DivisionZero)
+	a := newWalletJournal(u, app.DivisionZero)
+	a.u.characterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+		a.character = c
+	})
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		if characterIDOrZero(a.character) != arg.characterID {
+			return
+		}
+		if arg.section == app.SectionCharacterWalletJournal {
+			a.update()
+		}
+	})
+	return a
 }
 
-func newCorporationWalletJournal(u *baseUI, division app.Division) *walletJournal {
-	return newWalletJournal(u, division)
+func newCorporationWalletJournal(u *baseUI, d app.Division) *walletJournal {
+	a := newWalletJournal(u, d)
+	a.u.corporationExchanged.AddListener(
+		func(_ context.Context, c *app.Corporation) {
+			a.corporation = c
+		},
+	)
+	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
+		if corporationIDOrZero(a.corporation) != arg.corporationID {
+			return
+		}
+		if arg.section == app.CorporationSectionWalletJournal(d) {
+			a.update()
+		}
+	})
+	return a
 }
 
 func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
@@ -251,7 +279,7 @@ func (a *walletJournal) update() {
 func (a *walletJournal) updateCharacter() {
 	var err error
 	rows := make([]walletJournalRow, 0)
-	characterID := a.u.currentCharacterID()
+	characterID := characterIDOrZero(a.character)
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterWalletJournal)
 	if hasData {
 		rows2, err2 := a.fetchCharacterRows(characterID, a.u.services())
@@ -279,7 +307,7 @@ func (a *walletJournal) updateCharacter() {
 func (a *walletJournal) updateCorporation() {
 	var err error
 	rows := make([]walletJournalRow, 0)
-	corporationID := a.u.currentCorporationID()
+	corporationID := corporationIDOrZero(a.corporation)
 	hasData := a.u.scs.HasCorporationSection(corporationID, app.CorporationSectionWalletJournal(a.division))
 	if hasData {
 		rows2, err2 := a.fetchCorporationRows(corporationID, a.division, a.u.services())

@@ -23,6 +23,7 @@ type corporationWallet struct {
 	onNameUpdate    func(name string)
 
 	balance      *widget.Label
+	corporation  *app.Corporation
 	division     app.Division
 	journal      *walletJournal
 	name         *widget.Label
@@ -41,6 +42,22 @@ func newCorporationWallet(u *baseUI, division app.Division) *corporationWallet {
 	}
 	a.name.TextStyle.Italic = true
 	a.ExtendBaseWidget(a)
+	a.u.corporationExchanged.AddListener(
+		func(_ context.Context, c *app.Corporation) {
+			a.corporation = c
+		},
+	)
+	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
+		if corporationIDOrZero(a.corporation) != arg.corporationID {
+			return
+		}
+		switch arg.section {
+		case app.SectionCorporationWalletBalances:
+			a.updateBalance()
+		case app.SectionCorporationDivisions:
+			a.updateName()
+		}
+	})
 	return a
 }
 
@@ -82,7 +99,7 @@ func (a *corporationWallet) update() {
 func (a *corporationWallet) updateBalance() {
 	var err error
 	var balance float64
-	corporationID := a.u.currentCorporationID()
+	corporationID := corporationIDOrZero(a.corporation)
 	hasData := a.u.scs.HasCorporationSection(corporationID, app.SectionCorporationWalletBalances)
 	if hasData {
 		b, err2 := a.u.rs.GetWalletBalance(context.Background(), corporationID, a.division)
@@ -121,7 +138,7 @@ func (a *corporationWallet) updateBalance() {
 func (a *corporationWallet) updateName() {
 	var err error
 	var name string
-	corporationID := a.u.currentCorporationID()
+	corporationID := corporationIDOrZero(a.corporation)
 	hasData := a.u.scs.HasCorporationSection(corporationID, app.SectionCorporationDivisions)
 	if hasData {
 		n, err2 := a.u.rs.GetWalletName(context.Background(), corporationID, a.division)

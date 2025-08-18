@@ -51,10 +51,10 @@ func newCharacterAttributes(u *baseUI) *characterAttributes {
 		a.character = c
 	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.CharacterID {
+		if characterIDOrZero(a.character) != arg.characterID {
 			return
 		}
-		if arg.Section == app.SectionCharacterAttributes {
+		if arg.section == app.SectionCharacterAttributes {
 			a.update()
 		}
 	})

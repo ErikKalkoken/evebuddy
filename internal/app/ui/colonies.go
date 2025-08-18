@@ -145,7 +145,7 @@ func newColonies(u *baseUI) *colonies {
 	}, a.u.window)
 
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if arg.Section == app.SectionCharacterPlanets {
+		if arg.section == app.SectionCharacterPlanets {
 			a.update()
 		}
 	})

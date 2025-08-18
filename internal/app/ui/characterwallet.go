@@ -41,10 +41,10 @@ func newCharacterWallet(u *baseUI) *characterWallet {
 		},
 	)
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.CharacterID {
+		if characterIDOrZero(a.character) != arg.characterID {
 			return
 		}
-		if arg.Section == app.SectionCharacterWalletBalance {
+		if arg.section == app.SectionCharacterWalletBalance {
 			a.updateBalance()
 		}
 	})

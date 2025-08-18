@@ -174,7 +174,7 @@ func newClones(u *baseUI) *clones {
 	}, a.u.window)
 
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if arg.Section == app.SectionCharacterJumpClones {
+		if arg.section == app.SectionCharacterJumpClones {
 			a.update()
 		}
 	})

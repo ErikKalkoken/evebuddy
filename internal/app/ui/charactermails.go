@@ -160,10 +160,10 @@ func newCharacterMails(u *baseUI) *characterMails {
 		},
 	)
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.CharacterID {
+		if characterIDOrZero(a.character) != arg.characterID {
 			return
 		}
-		switch arg.Section {
+		switch arg.section {
 		case app.SectionCharacterMailLabels, app.SectionCharacterMailLists, app.SectionCharacterMails:
 			a.update()
 		}

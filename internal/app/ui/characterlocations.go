@@ -113,7 +113,7 @@ func newCharacterLocations(u *baseUI) *characterLocations {
 	}, a.u.window)
 
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		switch arg.Section {
+		switch arg.section {
 		case app.SectionCharacterLocation, app.SectionCharacterOnline, app.SectionCharacterShip:
 			a.update()
 		}

@@ -88,15 +88,15 @@ func newCharacterAssets(u *baseUI) *characterAssets {
 		},
 	)
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.CharacterID {
+		if characterIDOrZero(a.character) != arg.characterID {
 			return
 		}
-		if arg.Section == app.SectionCharacterAssets {
+		if arg.section == app.SectionCharacterAssets {
 			a.update()
 		}
 	})
 	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
-		if arg.Section == app.SectionEveMarketPrices {
+		if arg.section == app.SectionEveMarketPrices {
 			a.update()
 		}
 	})

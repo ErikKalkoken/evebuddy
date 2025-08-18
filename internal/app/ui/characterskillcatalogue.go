@@ -68,10 +68,10 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 		a.character = c
 	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.CharacterID {
+		if characterIDOrZero(a.character) != arg.characterID {
 			return
 		}
-		if arg.Section == app.SectionCharacterSkills {
+		if arg.section == app.SectionCharacterSkills {
 			a.update()
 		}
 	})
@@ -81,7 +81,7 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 			if characterID == 0 {
 				return
 			}
-			if arg.Section == app.SectionEveTypes {
+			if arg.section == app.SectionEveTypes {
 				a.update()
 			}
 		},

@@ -128,10 +128,10 @@ func (a *characterSkillQueue) start() {
 	}
 	a.u.characterSectionChanged.AddListener(
 		func(_ context.Context, arg characterSectionUpdated) {
-			if characterIDOrZero(a.character) != arg.CharacterID {
+			if characterIDOrZero(a.character) != arg.characterID {
 				return
 			}
-			if arg.Section == app.SectionCharacterSkillqueue {
+			if arg.section == app.SectionCharacterSkillqueue {
 				a.update()
 			}
 		},

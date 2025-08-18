@@ -64,10 +64,10 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 		},
 	)
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.CharacterID {
+		if characterIDOrZero(a.character) != arg.characterID {
 			return
 		}
-		switch arg.Section {
+		switch arg.section {
 		case app.SectionCharacterRoles, app.SectionCharacterAssets:
 			a.update()
 		}
@@ -78,7 +78,7 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 		if characterID == 0 {
 			return
 		}
-		if arg.Section == app.SectionEveCharacters && arg.Changed.Contains(characterID) {
+		if arg.section == app.SectionEveCharacters && arg.changed.Contains(characterID) {
 			a.update()
 		}
 	})

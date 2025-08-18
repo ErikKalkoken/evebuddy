@@ -150,9 +150,9 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 			characterIDs := set.Collect(xiter.MapSlice(a.rows, func(r characterOverviewRow) int32 {
 				return r.characterID
 			}))
-			switch arg.Section {
+			switch arg.section {
 			case app.SectionEveCharacters:
-				if arg.Changed.ContainsAny(characterIDs.All()) {
+				if arg.changed.ContainsAny(characterIDs.All()) {
 					a.update()
 				}
 			case app.SectionEveMarketPrices:
@@ -162,7 +162,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	)
 	a.u.characterSectionChanged.AddListener(
 		func(_ context.Context, arg characterSectionUpdated) {
-			switch arg.Section {
+			switch arg.section {
 			case
 				app.SectionCharacterMails,
 				app.SectionCharacterWalletBalance,
