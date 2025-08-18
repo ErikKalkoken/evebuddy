@@ -143,6 +143,12 @@ func newColonies(u *baseUI) *colonies {
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
+
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		if arg.Section == app.SectionCharacterPlanets {
+			a.update()
+		}
+	})
 	return a
 }
 

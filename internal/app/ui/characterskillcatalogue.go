@@ -38,6 +38,7 @@ type skillTrained struct {
 type characterSkillCatalogue struct {
 	widget.BaseWidget
 
+	character      *app.Character
 	groups         []skillGroupProgress
 	groupsGrid     fyne.CanvasObject
 	levelBlocked   *theme.ErrorThemedResource
@@ -62,6 +63,29 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 	a.ExtendBaseWidget(a)
 	a.groupsGrid = a.makeGroupsGrid()
 	a.skillsGrid = a.makeSkillsGrid()
+
+	a.u.characterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+		a.character = c
+	})
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		if characterIDOrZero(a.character) != arg.CharacterID {
+			return
+		}
+		if arg.Section == app.SectionCharacterSkills {
+			a.update()
+		}
+	})
+	a.u.generalSectionChanged.AddListener(
+		func(_ context.Context, arg generalSectionUpdated) {
+			characterID := characterIDOrZero(a.character)
+			if characterID == 0 {
+				return
+			}
+			if arg.Section == app.SectionEveTypes {
+				a.update()
+			}
+		},
+	)
 	return a
 }
 
@@ -116,12 +140,12 @@ func (a *characterSkillCatalogue) makeGroupsGrid() fyne.CanvasObject {
 				return
 			}
 			group := a.groups[id]
-			if !a.u.hasCharacter() {
+			if a.character == nil {
 				unselectAll()
 				return
 			}
 			oo, err := a.u.cs.ListSkillProgress(
-				context.TODO(), a.u.currentCharacterID(), group.id,
+				context.TODO(), characterIDOrZero(a.character), group.id,
 			)
 			if err != nil {
 				slog.Error("Failed to fetch skill group data", "err", err)
@@ -191,7 +215,7 @@ func (a *characterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 func (a *characterSkillCatalogue) update() {
 	var err error
 	groups := make([]skillGroupProgress, 0)
-	characterID := a.u.currentCharacterID()
+	characterID := characterIDOrZero(a.character)
 	hasData := a.u.scs.HasGeneralSection(app.SectionEveTypes) && a.u.scs.HasCharacterSection(characterID, app.SectionCharacterSkills)
 	if hasData {
 		groups2, err2 := a.updateGroups(characterID, a.u.services())
@@ -203,9 +227,11 @@ func (a *characterSkillCatalogue) update() {
 		}
 	}
 	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
-		character := a.u.currentCharacter()
-		total := ihumanize.Optional(character.TotalSP, "?")
-		unallocated := ihumanize.Optional(character.UnallocatedSP, "?")
+		var total, unallocated string
+		if a.character != nil {
+			total = ihumanize.Optional(a.character.TotalSP, "?")
+			unallocated = ihumanize.Optional(a.character.UnallocatedSP, "?")
+		}
 		return fmt.Sprintf("%s Total Skill Points (%s Unallocated)", total, unallocated), widget.MediumImportance
 	})
 	fyne.Do(func() {

@@ -212,6 +212,17 @@ func newAssets(u *baseUI) *assets {
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
+
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		if arg.Section == app.SectionCharacterAssets {
+			a.update()
+		}
+	})
+	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
+		if arg.Section == app.SectionEveMarketPrices {
+			a.update()
+		}
+	})
 	return a
 }
 

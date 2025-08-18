@@ -21,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -143,6 +144,34 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window, 5, 6, 7, 8, 9)
+
+	a.u.generalSectionChanged.AddListener(
+		func(_ context.Context, arg generalSectionUpdated) {
+			characterIDs := set.Collect(xiter.MapSlice(a.rows, func(r characterOverviewRow) int32 {
+				return r.characterID
+			}))
+			switch arg.Section {
+			case app.SectionEveCharacters:
+				if arg.Changed.ContainsAny(characterIDs.All()) {
+					a.update()
+				}
+			case app.SectionEveMarketPrices:
+				a.update()
+			}
+		},
+	)
+	a.u.characterSectionChanged.AddListener(
+		func(_ context.Context, arg characterSectionUpdated) {
+			switch arg.Section {
+			case
+				app.SectionCharacterMails,
+				app.SectionCharacterWalletBalance,
+				app.SectionCharacterAssets,
+				app.SectionCharacterOnline:
+				a.update()
+			}
+		},
+	)
 	return a
 }
 

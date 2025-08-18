@@ -42,6 +42,19 @@ func newWealth(u *baseUI) *wealth {
 	}
 	a.ExtendBaseWidget(a)
 	a.charts = a.makeCharts()
+
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		switch arg.Section {
+		case app.SectionCharacterAssets, app.SectionCharacterWalletBalance:
+			a.update()
+		}
+	})
+	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
+		if arg.Section == app.SectionEveMarketPrices {
+			a.update()
+		}
+	})
+
 	return a
 }
 

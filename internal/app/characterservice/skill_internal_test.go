@@ -64,7 +64,7 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		changed, err := s.updateAttributesESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateAttributesESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterAttributes,
 		})
@@ -121,7 +121,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		changed, err := s.updateSkillsESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateSkillsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterSkills,
 		})
@@ -179,7 +179,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		changed, err := s.updateSkillsESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateSkillsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterSkills,
 		})
@@ -258,7 +258,7 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		changed, err := s.updateSkillqueueESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateSkillqueueESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterSkillqueue,
 		})

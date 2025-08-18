@@ -37,7 +37,7 @@ func TestUpdateCharacterRolesESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateRolesESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateRolesESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterRoles,
 		})

@@ -66,7 +66,7 @@ func TestUpdateWalletBalancesESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		// when
-		changed, err := s.updateWalletBalancesESI(ctx, app.CorporationUpdateSectionParams{
+		changed, err := s.updateWalletBalancesESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationWalletBalances,
 		})
@@ -142,7 +142,7 @@ func TestUpdateWalletBalancesESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		// when
-		changed, err := s.updateWalletBalancesESI(ctx, app.CorporationUpdateSectionParams{
+		changed, err := s.updateWalletBalancesESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationWalletBalances,
 		})
@@ -202,7 +202,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		changed, err := s.updateWalletJournalESI(ctx, app.CorporationUpdateSectionParams{
+		changed, err := s.updateWalletJournalESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationWalletJournal1,
 		})
@@ -262,7 +262,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		changed, err := s.updateWalletJournalESI(ctx, app.CorporationUpdateSectionParams{
+		changed, err := s.updateWalletJournalESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationWalletJournal1,
 		})
@@ -319,7 +319,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
-		_, err := s.updateWalletJournalESI(ctx, app.CorporationUpdateSectionParams{
+		_, err := s.updateWalletJournalESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationWalletJournal1,
 		})
@@ -390,7 +390,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
 		)
 		// when
-		changed, err := s.updateWalletJournalESI(ctx, app.CorporationUpdateSectionParams{
+		changed, err := s.updateWalletJournalESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationWalletJournal1,
 		})
@@ -493,7 +493,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/wallets/\d+/transactions/`,
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.updateWalletTransactionESI(ctx, app.CorporationUpdateSectionParams{
+		changed, err := s.updateWalletTransactionESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationWalletTransactions1,
 		})
@@ -552,7 +552,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/wallets/\d+/transactions/`,
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.updateWalletTransactionESI(ctx, app.CorporationUpdateSectionParams{
+		changed, err := s.updateWalletTransactionESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationWalletTransactions1,
 		})
@@ -612,7 +612,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/wallets/\d+/transactions/`,
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		_, err := s.updateWalletTransactionESI(ctx, app.CorporationUpdateSectionParams{
+		_, err := s.updateWalletTransactionESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationWalletTransactions1,
 		})
@@ -676,7 +676,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 				},
 			}))
 		// when
-		_, err := s.updateWalletTransactionESI(ctx, app.CorporationUpdateSectionParams{
+		_, err := s.updateWalletTransactionESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationWalletTransactions1,
 		})

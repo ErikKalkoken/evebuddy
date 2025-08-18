@@ -39,6 +39,7 @@ type characterCommunications struct {
 	OnUpdate      func(count optional.Optional[int])
 	Toolbar       *widget.Toolbar
 
+	character        *app.Character
 	current          *app.CharacterNotification
 	folderList       *widget.List
 	folders          []notificationFolder
@@ -64,6 +65,19 @@ func newCharacterCommunications(u *baseUI) *characterCommunications {
 	a.Detail = container.NewVBox()
 	a.notificationList = a.makeNotificationList()
 	a.Notifications = container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList)
+	a.u.characterExchanged.AddListener(
+		func(_ context.Context, c *app.Character) {
+			a.character = c
+		},
+	)
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		if characterIDOrZero(a.character) != arg.CharacterID {
+			return
+		}
+		if arg.Section == app.SectionCharacterNotifications {
+			a.update()
+		}
+	})
 	return a
 }
 
@@ -183,8 +197,11 @@ func (a *characterCommunications) makeNotificationList() *widget.List {
 
 // TODO: Refactor to avoid recreating the container every time
 func (a *characterCommunications) setDetail(n *app.CharacterNotification) {
-	if n.RecipientName == "" && a.u.hasCharacter() {
-		n.RecipientName = a.u.currentCharacter().EveCharacter.Name
+	if a.character == nil {
+		return
+	}
+	if n.RecipientName == "" {
+		n.RecipientName = a.character.EveCharacter.Name
 	}
 	a.Detail.RemoveAll()
 	subject := widget.NewLabel(n.TitleDisplay())
@@ -192,7 +209,7 @@ func (a *characterCommunications) setDetail(n *app.CharacterNotification) {
 	subject.Wrapping = fyne.TextWrapWord
 	a.Detail.Add(subject)
 	h := newMailHeader(a.u.eis, a.u.ShowEveEntityInfoWindow)
-	h.Set(n.Sender, n.Timestamp, a.u.currentCharacter().EveCharacter.ToEveEntity())
+	h.Set(n.Sender, n.Timestamp, a.character.EveCharacter.ToEveEntity())
 	a.Detail.Add(h)
 	s, err := n.BodyPlain() // using markdown blocked by #61
 	if err != nil {
@@ -222,11 +239,10 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 			if a.current == nil {
 				return
 			}
-			character := a.u.currentCharacter()
-			if character == nil {
+			if a.character == nil {
 				return
 			}
-			title, content := a.u.cs.RenderNotificationSummary(character, a.current)
+			title, content := a.u.cs.RenderNotificationSummary(a.character, a.current)
 			a.u.app.SendNotification(fyne.NewNotification(title, content))
 		}))
 	}
@@ -235,8 +251,8 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 
 func (a *characterCommunications) update() {
 	var err error
-	characterID := a.u.currentCharacterID()
-	hasData := a.u.scs.HasCharacterSection(a.u.currentCharacterID(), app.SectionCharacterNotifications)
+	characterID := characterIDOrZero(a.character)
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterNotifications)
 	groups := make([]notificationFolder, 0)
 	var unreadCount, totalCount optional.Optional[int]
 	if characterID != 0 && hasData {
@@ -304,9 +320,9 @@ func (a *characterCommunications) resetCurrentFolder() {
 
 func (a *characterCommunications) setCurrentFolder(nc app.EveNotificationGroup) {
 	var err error
-	characterID := a.u.currentCharacterID()
+	characterID := characterIDOrZero(a.character)
 	notifications := make([]*app.CharacterNotification, 0)
-	hasData := a.u.scs.HasCharacterSection(a.u.currentCharacterID(), app.SectionCharacterNotifications)
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterNotifications)
 	if hasData {
 		var err2 error
 		var n []*app.CharacterNotification

@@ -26,7 +26,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		section := app.SectionCharacterImplants
 		hasUpdated := false
 		accessToken := ""
-		arg := app.CharacterUpdateSectionParams{CharacterID: c.ID, Section: section}
+		arg := app.CharacterSectionUpdateParams{CharacterID: c.ID, Section: section}
 		// when
 		changed, err := s.updateSectionIfChanged(ctx, arg,
 			func(ctx context.Context, characterID int32) (any, error) {
@@ -62,7 +62,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 			CompletedAt:  time.Now().Add(-5 * time.Second),
 		})
 		hasUpdated := false
-		arg := app.CharacterUpdateSectionParams{CharacterID: c.ID, Section: section}
+		arg := app.CharacterSectionUpdateParams{CharacterID: c.ID, Section: section}
 		// when
 		changed, err := s.updateSectionIfChanged(ctx, arg,
 			func(ctx context.Context, characterID int32) (any, error) {
@@ -96,7 +96,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 			CompletedAt: time.Now().Add(-5 * time.Second),
 		})
 		hasUpdated := false
-		arg := app.CharacterUpdateSectionParams{CharacterID: c.ID, Section: section}
+		arg := app.CharacterSectionUpdateParams{CharacterID: c.ID, Section: section}
 		// when
 		changed, err := s.updateSectionIfChanged(ctx, arg,
 			func(ctx context.Context, characterID int32) (any, error) {

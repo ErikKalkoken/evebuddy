@@ -60,7 +60,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			}))
 
 		// when
-		changed, err := s.updateIndustryJobsESI(ctx, app.CorporationUpdateSectionParams{
+		changed, err := s.updateIndustryJobsESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationIndustryJobs,
 		})
@@ -149,7 +149,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateIndustryJobsESI(ctx, app.CorporationUpdateSectionParams{
+		changed, err := s.updateIndustryJobsESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationIndustryJobs,
 		})
@@ -207,7 +207,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			}))
 
 		// when
-		changed, err := s.updateIndustryJobsESI(ctx, app.CorporationUpdateSectionParams{
+		changed, err := s.updateIndustryJobsESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationIndustryJobs,
 		})
@@ -260,7 +260,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			}))
 
 		// when
-		changed, err := s.updateIndustryJobsESI(ctx, app.CorporationUpdateSectionParams{
+		changed, err := s.updateIndustryJobsESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationIndustryJobs,
 		})
@@ -330,7 +330,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, objs))
 
 		// when
-		_, err := s.updateIndustryJobsESI(ctx, app.CorporationUpdateSectionParams{
+		_, err := s.updateIndustryJobsESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationIndustryJobs,
 		})
@@ -408,7 +408,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
 		)
 		// when
-		_, err := s.updateIndustryJobsESI(ctx, app.CorporationUpdateSectionParams{
+		_, err := s.updateIndustryJobsESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationIndustryJobs,
 		})
@@ -478,7 +478,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateIndustryJobsESI(ctx, app.CorporationUpdateSectionParams{
+		changed, err := s.updateIndustryJobsESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationIndustryJobs,
 		})

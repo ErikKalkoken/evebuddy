@@ -110,7 +110,7 @@ func (s *CorporationService) PermittedSection(ctx context.Context, corporationID
 
 // UpdateSectionIfNeeded updates a section from ESI if has expired and changed
 // and reports back if it has changed
-func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.CorporationUpdateSectionParams) (bool, error) {
+func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.CorporationSectionUpdateParams) (bool, error) {
 	if arg.CorporationID == 0 || arg.Section == "" {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
@@ -135,7 +135,7 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 			}
 		}
 	}
-	var f func(context.Context, app.CorporationUpdateSectionParams) (bool, error)
+	var f func(context.Context, app.CorporationSectionUpdateParams) (bool, error)
 	switch arg.Section {
 	case app.SectionCorporationDivisions:
 		f = s.updateDivisionsESI
@@ -199,9 +199,9 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 // and reports whether it has changed
 func (s *CorporationService) updateSectionIfChanged(
 	ctx context.Context,
-	arg app.CorporationUpdateSectionParams,
-	fetch func(ctx context.Context, arg app.CorporationUpdateSectionParams) (any, error),
-	update func(ctx context.Context, arg app.CorporationUpdateSectionParams, data any) error,
+	arg app.CorporationSectionUpdateParams,
+	fetch func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error),
+	update func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error,
 ) (bool, error) {
 	startedAt := optional.New(time.Now())
 	arg2 := storage.UpdateOrCreateCorporationSectionStatusParams{

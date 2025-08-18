@@ -31,7 +31,7 @@ func (s *CharacterService) ListWalletJournalEntries(ctx context.Context, charact
 // TODO: Add limit when fetching wallet journal
 
 // updateWalletJournalEntryESI updates the wallet journal from ESI and reports whether it has changed.
-func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterWalletJournal {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
@@ -120,7 +120,7 @@ func (s *CharacterService) ListWalletTransactions(ctx context.Context, character
 }
 
 // updateWalletTransactionESI updates the wallet journal from ESI and reports whether it has changed.
-func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterWalletTransactions {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}

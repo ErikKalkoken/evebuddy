@@ -179,6 +179,13 @@ func newTraining(u *baseUI) *training {
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
+
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		switch arg.Section {
+		case app.SectionCharacterSkills, app.SectionCharacterSkillqueue:
+			a.update()
+		}
+	})
 	return a
 }
 

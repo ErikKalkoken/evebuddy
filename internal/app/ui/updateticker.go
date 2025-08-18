@@ -48,7 +48,7 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 		u.onSectionUpdateStarted()
 		defer u.onSectionUpdateCompleted()
 	}
-	changed, err := u.eus.UpdateSection(ctx, app.GeneralUpdateSectionParams{
+	changed, err := u.eus.UpdateSection(ctx, app.GeneralSectionUpdateParams{
 		Section:           section,
 		ForceUpdate:       forceUpdate,
 		OnUpdateStarted:   u.onSectionUpdateStarted,
@@ -62,12 +62,28 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 		return
 	}
 	switch section {
+	case app.SectionEveMarketPrices:
+		types, err := u.eus.ListEveTypeIDs(ctx)
+		if err != nil {
+			logErr(err)
+			return
+		}
+		if !changed.ContainsAny(types.All()) {
+			return
+		}
+	}
+	u.generalSectionChanged.Emit(ctx, generalSectionUpdated{
+		Section:      section,
+		ForcedUpdate: forceUpdate,
+		Changed:      changed,
+	})
+
+	switch section {
 	case app.SectionEveEntities:
 		u.updateHome()
 		u.updateCharacter()
 	case app.SectionEveTypes:
-		u.characterShips.update()
-		u.characterSkillCatalogue.update()
+		// nothing to do
 	case app.SectionEveCharacters:
 		if changed.Contains(u.currentCharacterID()) {
 			u.reloadCurrentCharacter()
@@ -78,7 +94,6 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 			return
 		}
 		if characters.ContainsAny(changed.All()) {
-			u.characterOverview.update()
 			u.updateStatus()
 		}
 	case app.SectionEveCorporations:
@@ -103,17 +118,6 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 			u.updateStatus()
 		}
 	case app.SectionEveMarketPrices:
-		types, err := u.eus.ListEveTypeIDs(ctx)
-		if err != nil {
-			logErr(err)
-			return
-		}
-		if !changed.ContainsAny(types.All()) {
-			break
-		}
-		u.characterAsset.update()
-		u.characterOverview.update()
-		u.assets.update()
 		u.reloadCurrentCharacter()
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the update ticker refresh: %s", section))
@@ -262,19 +266,18 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 //
 // All UI areas showing data based on character sections needs to be included
 // to make sure they are refreshed when data changes.
-func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s app.CharacterSection, forceUpdate bool) {
-	updateArg := app.CharacterUpdateSectionParams{
+func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, section app.CharacterSection, forceUpdate bool) {
+	hasChanged, err := u.cs.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
 		CharacterID:           characterID,
-		Section:               s,
+		Section:               section,
 		ForceUpdate:           forceUpdate,
 		MaxMails:              u.settings.MaxMails(),
 		MaxWalletTransactions: u.settings.MaxWalletTransactions(),
 		OnUpdateStarted:       u.onSectionUpdateStarted,
 		OnUpdateCompleted:     u.onSectionUpdateCompleted,
-	}
-	hasChanged, err := u.cs.UpdateSectionIfNeeded(ctx, updateArg)
+	})
 	if err != nil {
-		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
+		slog.Error("Failed to update character section", "characterID", characterID, "section", section, "err", err)
 		return
 	}
 	isShown := characterID == u.currentCharacterID()
@@ -294,28 +297,23 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 
 	needsRefresh := hasChanged || forceUpdate
 	if needsRefresh {
-		u.characterSectionUpdated.Emit(ctx, updateArg)
+		u.characterSectionChanged.Emit(ctx, characterSectionUpdated{
+			CharacterID:  characterID,
+			ForcedUpdate: forceUpdate,
+			Section:      section,
+		})
 	}
 
-	switch s {
+	switch section {
 	case app.SectionCharacterAssets:
-		if needsRefresh {
-			u.assets.update()
-			u.wealth.update()
-			if isShown {
-				u.reloadCurrentCharacter()
-				u.characterAsset.update()
-				u.characterSheet.update()
-			}
+		if needsRefresh && isShown {
+			u.reloadCurrentCharacter()
+			u.characterSheet.update()
+
 		}
 	case app.SectionCharacterAttributes:
-		if isShown && needsRefresh {
-			u.characterAttributes.update()
-		}
+		// nothing to do
 	case app.SectionCharacterContracts:
-		if needsRefresh {
-			u.contracts.update()
-		}
 		if u.settings.NotifyContractsEnabled() {
 			go func() {
 				earliest := u.settings.NotifyContractsEarliest()
@@ -325,20 +323,10 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			}()
 		}
 	case app.SectionCharacterImplants:
-		if needsRefresh {
-			u.augmentations.update()
-			if isShown {
-				u.characterAugmentations.update()
-			}
-		}
+		// nothing to do
 	case app.SectionCharacterJumpClones:
-		if needsRefresh {
-			u.characterOverview.update()
-			u.clones.update()
-			if isShown {
-				u.reloadCurrentCharacter()
-				u.characterJumpClones.update()
-			}
+		if needsRefresh && isShown {
+			u.reloadCurrentCharacter()
 		}
 	case app.SectionCharacterIndustryJobs:
 		if needsRefresh {
@@ -348,26 +336,14 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			u.slotsResearch.update()
 		}
 	case app.SectionCharacterLocation, app.SectionCharacterOnline, app.SectionCharacterShip:
-		if needsRefresh {
-			u.characterLocations.update()
-			if isShown {
-				u.reloadCurrentCharacter()
-			}
+		if needsRefresh && isShown {
+			u.reloadCurrentCharacter()
 		}
 	case app.SectionCharacterMailLabels, app.SectionCharacterMailLists:
-		if needsRefresh {
-			u.characterOverview.update()
-			if isShown {
-				u.characterMails.update()
-			}
-		}
+		// nothing to do
 	case app.SectionCharacterMails:
 		if needsRefresh {
-			go u.characterOverview.update()
 			go u.updateMailIndicator()
-			if isShown {
-				u.characterMails.update()
-			}
 		}
 		if u.settings.NotifyMailsEnabled() {
 			go func() {
@@ -378,15 +354,11 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			}()
 		}
 	case app.SectionCharacterNotifications:
-		if isShown && needsRefresh {
-			u.characterCommunications.update()
-		}
 		if u.settings.NotifyCommunicationsEnabled() {
 			go u.notifyNewCommunications(ctx, characterID)
 		}
 	case app.SectionCharacterPlanets:
 		if needsRefresh {
-			u.colonies.update()
 			u.notifyExpiredExtractionsIfNeeded(ctx, characterID)
 		}
 	case app.SectionCharacterRoles:
@@ -405,26 +377,19 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionCharacterSkills:
 		if needsRefresh {
-			u.training.update()
 			u.slotsManufacturing.update()
 			u.slotsReactions.update()
 			u.slotsResearch.update()
 			if isShown {
 				u.reloadCurrentCharacter()
-				u.characterSkillCatalogue.update()
-				u.characterShips.update()
 			}
 		}
 
 	case app.SectionCharacterSkillqueue:
-		if needsRefresh {
-			u.training.update()
-			u.notifyExpiredTrainingIfNeeded(ctx, characterID)
-			// if isShown {
-			// 	u.characterSkillQueue.update()
-			// }
-		}
 		if u.settings.NotifyTrainingEnabled() {
+			if needsRefresh {
+				u.notifyExpiredTrainingIfNeeded(ctx, characterID)
+			}
 			err := u.cs.EnableTrainingWatcher(ctx, characterID)
 			if err != nil {
 				slog.Error("Failed to enable training watcher", "characterID", characterID, "error", err)
@@ -432,11 +397,8 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 	case app.SectionCharacterWalletBalance:
 		if needsRefresh {
-			u.characterOverview.update()
-			u.wealth.update()
 			if isShown {
 				u.reloadCurrentCharacter()
-				u.characterWallet.update()
 			}
 		}
 	case app.SectionCharacterWalletJournal:
@@ -448,7 +410,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			u.characterWallet.transactions.update()
 		}
 	default:
-		slog.Warn(fmt.Sprintf("section not part of the refresh ticker: %s", s))
+		slog.Warn(fmt.Sprintf("section not part of the refresh ticker: %s", section))
 	}
 }
 
@@ -502,8 +464,8 @@ func (u *baseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 	}
 	sections := app.CorporationSections
 	slog.Debug("Starting to check corporation sections for update", "sections", sections)
-	for _, s := range sections {
-		go u.updateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, s, forceUpdate)
+	for _, section := range sections {
+		go u.updateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, section, forceUpdate)
 	}
 }
 
@@ -512,26 +474,26 @@ func (u *baseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 //
 // All UI areas showing data based on corporation sections needs to be included
 // to make sure they are refreshed when data changes.
-func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context, corporationID int32, s app.CorporationSection, forceUpdate bool) {
+func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context, corporationID int32, section app.CorporationSection, forceUpdate bool) {
 	hasChanged, err := u.rs.UpdateSectionIfNeeded(
-		ctx, app.CorporationUpdateSectionParams{
+		ctx, app.CorporationSectionUpdateParams{
 			CorporationID:         corporationID,
 			ForceUpdate:           forceUpdate,
 			MaxWalletTransactions: u.settings.MaxWalletTransactions(),
-			Section:               s,
+			Section:               section,
 			OnUpdateStarted:       u.onSectionUpdateStarted,
 			OnUpdateCompleted:     u.onSectionUpdateCompleted,
 		},
 	)
 	if err != nil {
-		slog.Error("Failed to update corporation section", "corporationID", corporationID, "section", s, "err", err)
+		slog.Error("Failed to update corporation section", "corporationID", corporationID, "section", section, "err", err)
 		return
 	}
 	if !hasChanged && !forceUpdate {
 		return
 	}
 	isShown := corporationID == u.currentCorporationID()
-	switch s {
+	switch section {
 	case app.SectionCorporationIndustryJobs:
 		u.industryJobs.update()
 		u.slotsManufacturing.update()
@@ -611,7 +573,7 @@ func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context,
 			u.corporationWallets[app.Division7].transactions.update()
 		}
 	default:
-		slog.Warn(fmt.Sprintf("section not part of the refresh ticker: %s", s))
+		slog.Warn(fmt.Sprintf("section not part of the refresh ticker: %s", section))
 	}
 }
 

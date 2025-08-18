@@ -50,9 +50,10 @@ func (n jumpCloneNode) UID() widget.TreeNodeID {
 type characterJumpClones struct {
 	widget.BaseWidget
 
-	top  *iwidget.RichText
-	tree *iwidget.Tree[jumpCloneNode]
-	u    *baseUI
+	character *app.Character
+	top       *iwidget.RichText
+	tree      *iwidget.Tree[jumpCloneNode]
+	u         *baseUI
 }
 
 func newCharacterJumpClones(u *baseUI) *characterJumpClones {
@@ -64,6 +65,18 @@ func newCharacterJumpClones(u *baseUI) *characterJumpClones {
 	}
 	a.ExtendBaseWidget(a)
 	a.tree = a.makeTree()
+
+	a.u.characterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+		a.character = c
+	})
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		if characterIDOrZero(a.character) != arg.CharacterID {
+			return
+		}
+		if arg.Section == app.SectionCharacterJumpClones {
+			a.update()
+		}
+	})
 	return a
 }
 
@@ -161,11 +174,12 @@ func (a *characterJumpClones) update() {
 
 func (a *characterJumpClones) updateTreeData() (iwidget.TreeData[jumpCloneNode], error) {
 	var tree iwidget.TreeData[jumpCloneNode]
-	if !a.u.hasCharacter() {
+	characterID := characterIDOrZero(a.character)
+	if characterID == 0 {
 		return tree, nil
 	}
 	ctx := context.Background()
-	clones, err := a.u.cs.ListJumpClones(ctx, a.u.currentCharacterID())
+	clones, err := a.u.cs.ListJumpClones(ctx, characterID)
 	if err != nil {
 		return tree, err
 	}
@@ -201,7 +215,7 @@ func (a *characterJumpClones) updateTreeData() (iwidget.TreeData[jumpCloneNode],
 }
 
 func (a *characterJumpClones) refreshTop(cloneCount int) {
-	segs := a.makeTopText(cloneCount, a.u.currentCharacter(), a.u.services())
+	segs := a.makeTopText(cloneCount, a.character, a.u.services())
 	fyne.Do(func() {
 		a.top.Set(segs)
 	})

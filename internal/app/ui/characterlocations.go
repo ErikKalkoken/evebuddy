@@ -111,6 +111,13 @@ func newCharacterLocations(u *baseUI) *characterLocations {
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
+
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		switch arg.Section {
+		case app.SectionCharacterLocation, app.SectionCharacterOnline, app.SectionCharacterShip:
+			a.update()
+		}
+	})
 	return a
 }
 

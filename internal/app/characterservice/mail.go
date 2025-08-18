@@ -207,7 +207,7 @@ const (
 
 // updateMailLabelsESI updates the mail labels for a character from ESI
 // and reports whether it has changed.
-func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterMailLabels {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
@@ -243,7 +243,7 @@ func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.Char
 
 // updateMailListsESI updates the mailing lists for a character from ESI
 // and reports whether it has changed.
-func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterMailLists {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
@@ -277,7 +277,7 @@ func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.Chara
 
 // updateMailsESI updates the mails for a character from ESI
 // and reports whether it has changed.
-func (s *CharacterService) updateMailsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateMailsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterMails {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}

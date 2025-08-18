@@ -101,7 +101,7 @@ func (s *CharacterService) ListNotificationsUnread(ctx context.Context, characte
 	return s.st.ListCharacterNotificationsUnread(ctx, characterID)
 }
 
-func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterNotifications {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}

@@ -73,6 +73,18 @@ type services struct {
 	scs *statuscacheservice.StatusCacheService
 }
 
+type characterSectionUpdated struct {
+	CharacterID  int32
+	ForcedUpdate bool
+	Section      app.CharacterSection
+}
+
+type generalSectionUpdated struct {
+	Changed      set.Set[int32]
+	ForcedUpdate bool
+	Section      app.GeneralSection
+}
+
 // baseUI represents the core UI logic and is used by both the desktop and mobile UI.
 type baseUI struct {
 	// Callbacks
@@ -131,8 +143,13 @@ type baseUI struct {
 	wealth                  *wealth
 
 	// Signals
-	characterSectionUpdated signals.Signal[app.CharacterUpdateSectionParams]
-	characterChanged        signals.Signal[*app.Character]
+
+	// The Current character was exchanged with a different character or reset.
+	characterExchanged signals.Signal[*app.Character]
+	// A character section has changed after and update from ESI.
+	characterSectionChanged signals.Signal[characterSectionUpdated]
+	// A general section has changed after and update from ESI.
+	generalSectionChanged signals.Signal[generalSectionUpdated]
 
 	// Services
 	cs       *characterservice.CharacterService
@@ -186,14 +203,15 @@ type BaseUIParams struct {
 func NewBaseUI(arg BaseUIParams) *baseUI {
 	u := &baseUI{
 		app:                      arg.App,
-		characterChanged:         signals.New[*app.Character](),
-		characterSectionUpdated:  signals.New[app.CharacterUpdateSectionParams](),
+		characterExchanged:       signals.New[*app.Character](),
+		characterSectionChanged:  signals.New[characterSectionUpdated](),
 		concurrencyLimit:         -1, // Default is no limit
 		corporationWallets:       make(map[app.Division]*corporationWallet),
 		cs:                       arg.CharacterService,
 		eis:                      arg.EveImageService,
 		ess:                      arg.ESIStatusService,
 		eus:                      arg.EveUniverseService,
+		generalSectionChanged:    signals.New[generalSectionUpdated](),
 		isDesktop:                arg.IsDesktop,
 		isOffline:                arg.IsOffline,
 		isUpdateDisabled:         arg.IsUpdateDisabled,
@@ -321,6 +339,9 @@ func (u *baseUI) Start() bool {
 		u.isStartupCompleted.Store(true)
 		u.training.startUpdateTicker()
 		u.characterJumpClones.startUpdateTicker()
+		if u.onAppFirstStarted != nil {
+			u.onAppFirstStarted()
+		}
 		if !u.isOffline && !u.isUpdateDisabled {
 			time.Sleep(5 * time.Second) // Workaround to prevent concurrent updates from happening at startup.
 			u.startUpdateTickerGeneralSections()
@@ -328,9 +349,6 @@ func (u *baseUI) Start() bool {
 			u.startUpdateTickerCorporations()
 		} else {
 			slog.Info("Update ticker disabled")
-		}
-		if u.onAppFirstStarted != nil {
-			u.onAppFirstStarted()
 		}
 	}()
 	return true
@@ -465,7 +483,7 @@ func (u *baseUI) reloadCurrentCharacter() {
 
 func (u *baseUI) resetCharacter() {
 	u.character.Store(nil)
-	u.characterChanged.Emit(context.Background(), nil)
+	u.characterExchanged.Emit(context.Background(), nil)
 	u.settings.ResetLastCharacterID()
 	u.updateCharacter()
 	u.updateStatus()
@@ -473,7 +491,7 @@ func (u *baseUI) resetCharacter() {
 
 func (u *baseUI) setCharacter(c *app.Character) {
 	u.character.Store(c)
-	u.characterChanged.Emit(context.Background(), c)
+	u.characterExchanged.Emit(context.Background(), c)
 	u.settings.SetLastCharacterID(c.ID)
 	u.updateCharacter()
 	u.updateStatus()

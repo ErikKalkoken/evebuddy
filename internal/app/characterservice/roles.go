@@ -40,7 +40,7 @@ func (s *CharacterService) ListRoles(ctx context.Context, characterID int32) ([]
 }
 
 // Roles
-func (s *CharacterService) updateRolesESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateRolesESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterRoles {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}

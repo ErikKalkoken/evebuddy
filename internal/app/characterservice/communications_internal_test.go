@@ -43,7 +43,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/notifications/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.updateNotificationsESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateNotificationsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterNotifications,
 		})
@@ -87,7 +87,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/notifications/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.updateNotificationsESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateNotificationsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterNotifications,
 		})
@@ -134,7 +134,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/notifications/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.updateNotificationsESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateNotificationsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterNotifications,
 		})

@@ -37,7 +37,7 @@ func TestUpdateCorporationMembersESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		// when
-		changed, err := s.updateMembersESI(ctx, app.CorporationUpdateSectionParams{
+		changed, err := s.updateMembersESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationMembers,
 		})

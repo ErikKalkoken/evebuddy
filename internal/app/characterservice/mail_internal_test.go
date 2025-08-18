@@ -100,7 +100,7 @@ func TestUpdateMailLabel(t *testing.T) {
 			}),
 		)
 		// when
-		_, err := s.updateMailLabelsESI(ctx, app.CharacterUpdateSectionParams{
+		_, err := s.updateMailLabelsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterMailLabels,
 		})
@@ -147,7 +147,7 @@ func TestUpdateMailLabel(t *testing.T) {
 			}),
 		)
 		// when
-		_, err := s.updateMailLabelsESI(ctx, app.CharacterUpdateSectionParams{
+		_, err := s.updateMailLabelsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterMailLabels,
 		})

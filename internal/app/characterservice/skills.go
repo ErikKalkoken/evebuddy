@@ -19,7 +19,7 @@ func (s *CharacterService) GetAttributes(ctx context.Context, characterID int32)
 	return s.st.GetCharacterAttributes(ctx, characterID)
 }
 
-func (s *CharacterService) updateAttributesESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateAttributesESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterAttributes {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
@@ -165,7 +165,7 @@ func (s *CharacterService) ListSkillGroupsProgress(ctx context.Context, characte
 	return s.st.ListCharacterSkillGroupsProgress(ctx, characterID)
 }
 
-func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterSkills {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
@@ -263,7 +263,7 @@ func (s *CharacterService) ListSkillqueueItems(ctx context.Context, characterID 
 
 // updateSkillqueueESI updates the skillqueue for a character from ESI
 // and reports whether it has changed.
-func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterSkillqueue {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}

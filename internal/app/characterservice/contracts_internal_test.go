@@ -78,7 +78,7 @@ func TestUpdateContractESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, itemData),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterContracts,
 		})
@@ -177,7 +177,7 @@ func TestUpdateContractESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, bidData),
 		)
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterContracts,
 		})
@@ -250,7 +250,7 @@ func TestUpdateContractESI(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/contracts/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterContracts,
 		})
@@ -304,7 +304,7 @@ func TestUpdateContractESI(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/contracts/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.updateContractsESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateContractsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterContracts,
 		})
