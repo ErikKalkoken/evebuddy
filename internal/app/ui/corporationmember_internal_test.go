@@ -2,7 +2,6 @@ package ui
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"fyne.io/fyne/v2"
@@ -47,7 +46,6 @@ func TestCorporationMember_CanRenderWithData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(st.DumpData())
 	a.update()
 	test.AssertImageMatches(t, "corporationmembers/master.png", w.Canvas().Capture())
 }
