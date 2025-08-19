@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -94,6 +95,7 @@ func (w *NavDrawer) makeList() *widget.List {
 				container.New(layout.NewCustomPaddedLayout(0, 0, 2*p, 2*p),
 					widget.NewSeparator(),
 				),
+				newhooverThief(),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -103,6 +105,7 @@ func (w *NavDrawer) makeList() *widget.List {
 			it := w.items[id]
 			stack := co.(*fyne.Container).Objects
 			separator := stack[1]
+			thief := stack[2]
 			main := stack[0]
 			if it.variant == navSeparator {
 				separator.Show()
@@ -110,6 +113,11 @@ func (w *NavDrawer) makeList() *widget.List {
 			} else {
 				separator.Hide()
 				main.Show()
+			}
+			if !it.isDisabled && it.variant == navPage {
+				thief.Hide()
+			} else {
+				thief.Show()
 			}
 			border := main.(*fyne.Container).Objects[0].(*fyne.Container).Objects
 			title := border[0].(*widget.Label)
@@ -155,6 +163,7 @@ func (w *NavDrawer) makeList() *widget.List {
 				title.Refresh()
 				showIcon()
 				updateBadge()
+				thief.Hide()
 			case navSectionLabel:
 				title.SizeName = theme.SizeNameScrollBar
 				toUpper := cases.Upper(language.English)
@@ -169,7 +178,7 @@ func (w *NavDrawer) makeList() *widget.List {
 				spacer.Hide()
 				updateBadge()
 			}
-			list.SetItemHeight(id, co.(*fyne.Container).MinSize().Height)
+			list.SetItemHeight(id, co.(*fyne.Container).MinSize().Height) // needed for separators
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {
@@ -371,4 +380,35 @@ func (ni *NavItem) Enable() {
 
 func (ni *NavItem) Disable() {
 	ni.isDisabled = true
+}
+
+// hooverThief is an icon widget, which runs a function when tapped and supports tooltips.
+type hooverThief struct {
+	widget.BaseWidget
+
+	hovered bool
+}
+
+var _ desktop.Hoverable = (*hooverThief)(nil)
+
+func newhooverThief() *hooverThief {
+	w := &hooverThief{}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *hooverThief) CreateRenderer() fyne.WidgetRenderer {
+	r := canvas.NewRectangle(color.Transparent)
+	return widget.NewSimpleRenderer(r)
+}
+
+// MouseIn is a hook that is called if the mouse pointer enters the element.
+func (w *hooverThief) MouseIn(e *desktop.MouseEvent) {
+	w.hovered = true
+}
+
+func (w *hooverThief) MouseMoved(e *desktop.MouseEvent) {}
+
+func (w *hooverThief) MouseOut() {
+	w.hovered = false
 }
