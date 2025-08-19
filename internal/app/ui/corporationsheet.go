@@ -124,7 +124,7 @@ func (a *corporationSheet) update() {
 				a.roles.SetText(roles)
 			})
 			corporationID := character.EveCharacter.Corporation.ID
-			c, err := a.u.eus.GetEveCorporation(ctx, corporationID)
+			c, err := a.u.eus.GetCorporation(ctx, corporationID)
 			if errors.Is(err, app.ErrNotFound) {
 				// ignore
 			} else if err != nil {

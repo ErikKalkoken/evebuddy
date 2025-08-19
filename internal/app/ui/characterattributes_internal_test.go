@@ -1,6 +1,6 @@
 package ui
 
-// FIXME: This test is fakey and therefore disabled for now.
+// FIXME: This test is flakey and therefore disabled for now.
 // See also related Fyne issue: https://github.com/fyne-io/fyne/issues/5847
 
 // func TestCharacterAttributes_CanRenderWithData(t *testing.T) {

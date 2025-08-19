@@ -606,9 +606,13 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 			a.security,
 		),
 	)
-	name := a.iw.u.scs.CharacterName(a.id) // FIXME: Does not work for most chars
-	name = strings.ReplaceAll(name, " ", "_")
 	forums := iwidget.NewTappableIcon(icons.EvelogoPng, func() {
+		ec, err := a.iw.u.eus.GetCharacterESI(context.Background(), a.id)
+		if err != nil {
+			a.iw.u.snackbar.Show("Failed to get character for forum: " + a.iw.u.humanizeError(err))
+			return
+		}
+		name := strings.ReplaceAll(ec.Name, " ", "_")
 		a.iw.openURL(fmt.Sprintf("https://forums.eveonline.com/u/%s/summary", name))
 	})
 	forums.SetToolTip("Show on forums.eveonline.com")

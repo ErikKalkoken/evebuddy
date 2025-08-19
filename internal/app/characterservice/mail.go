@@ -203,8 +203,6 @@ const (
 	maxMailHeadersPerPage = 50 // maximum header objects returned per page
 )
 
-// TODO: Add ability to delete obsolete mail labels
-
 // updateMailLabelsESI updates the mail labels for a character from ESI
 // and reports whether it has changed.
 func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
