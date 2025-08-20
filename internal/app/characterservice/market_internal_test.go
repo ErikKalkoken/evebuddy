@@ -92,15 +92,67 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 				assert.EqualValues(t, true, o.IsBuyOrder)
 				assert.EqualValues(t, true, o.IsCorporation)
 				assert.True(t, issued.Equal(o.Issued), "got %q, wanted %q", issued, o.Issued)
-				assert.EqualValues(t, location1.ID, o.LocationID)
+				assert.EqualValues(t, location1.ID, o.Location.ID)
 				assert.True(t, o.MinVolume.IsEmpty())
 				assert.EqualValues(t, 123.45, o.Price)
 				assert.EqualValues(t, "1", o.Range)
 				assert.EqualValues(t, location1.SolarSystem.Constellation.Region.ID, o.RegionID)
 				assert.EqualValues(t, app.OrderOpen, o.State)
-				assert.EqualValues(t, itemType1.ID, o.TypeID)
+				assert.EqualValues(t, itemType1.ID, o.Type.ID)
 				assert.EqualValues(t, 5, o.VolumeRemains)
 				assert.EqualValues(t, 10, o.VolumeTotal)
+			}
+		}
+	})
+	t.Run("can update existing orders", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+		})
+		remain := o1.VolumeRemains - 1
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/orders/history/`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"duration":       o1.Duration,
+				"is_buy_order":   o1.IsBuyOrder,
+				"is_corporation": o1.IsCorporation,
+				"issued":         o1.Issued.Format(time.RFC3339),
+				"location_id":    o1.Location.ID,
+				"order_id":       o1.OrderID,
+				"price":          o1.Price,
+				"range":          o1.Range,
+				"region_id":      o1.RegionID,
+				"state":          "expired",
+				"type_id":        o1.Type.ID,
+				"volume_remain":  remain,
+				"volume_total":   o1.VolumeTotal,
+			}}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/orders/`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
+		)
+		// when
+		changed, err := s.updateMarketOrdersESI(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMarketOrders,
+		})
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, changed)
+			oo, err := st.ListCharacterMarketOrders(ctx, c.ID)
+			if assert.NoError(t, err) {
+				if assert.Len(t, oo, 1) {
+					o2 := oo[0]
+					assert.Equal(t, app.OrderExpired, o2.State)
+					assert.EqualValues(t, remain, o2.VolumeRemains)
+				}
 			}
 		}
 	})

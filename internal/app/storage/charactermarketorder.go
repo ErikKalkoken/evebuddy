@@ -35,9 +35,27 @@ func (st *Storage) GetCharacterMarketOrder(ctx context.Context, characterID int3
 		return nil, fmt.Errorf("GetCharacterMarketOrder for character %d: %w", characterID, convertGetError(err))
 	}
 	o := characterMarketOrderFromDBModel(characterMarketOrderFromDBModelParams{
-		cmo: r.CharacterMarketOrder,
+		cmo:          r.CharacterMarketOrder,
+		locationName: r.LocationName,
+		typeName:     r.TypeName,
 	})
 	return o, err
+}
+
+func (st *Storage) ListAllCharacterMarketOrders(ctx context.Context) ([]*app.CharacterMarketOrder, error) {
+	rows, err := st.qRO.ListAllCharacterMarketOrders(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("ListAllCharacterMarketOrders: %w", err)
+	}
+	oo := make([]*app.CharacterMarketOrder, len(rows))
+	for i, r := range rows {
+		oo[i] = characterMarketOrderFromDBModel(characterMarketOrderFromDBModelParams{
+			cmo:          r.CharacterMarketOrder,
+			locationName: r.LocationName,
+			typeName:     r.TypeName,
+		})
+	}
+	return oo, nil
 }
 
 func (st *Storage) ListCharacterMarketOrders(ctx context.Context, characterID int32) ([]*app.CharacterMarketOrder, error) {
@@ -48,14 +66,18 @@ func (st *Storage) ListCharacterMarketOrders(ctx context.Context, characterID in
 	oo := make([]*app.CharacterMarketOrder, len(rows))
 	for i, r := range rows {
 		oo[i] = characterMarketOrderFromDBModel(characterMarketOrderFromDBModelParams{
-			cmo: r.CharacterMarketOrder,
+			cmo:          r.CharacterMarketOrder,
+			locationName: r.LocationName,
+			typeName:     r.TypeName,
 		})
 	}
 	return oo, nil
 }
 
 type characterMarketOrderFromDBModelParams struct {
-	cmo queries.CharacterMarketOrder
+	cmo          queries.CharacterMarketOrder
+	locationName string
+	typeName     string
 }
 
 func characterMarketOrderFromDBModel(arg characterMarketOrderFromDBModelParams) *app.CharacterMarketOrder {
@@ -66,14 +88,20 @@ func characterMarketOrderFromDBModel(arg characterMarketOrderFromDBModelParams) 
 		IsBuyOrder:    arg.cmo.IsBuyOrder,
 		IsCorporation: arg.cmo.IsCorporation,
 		Issued:        arg.cmo.Issued,
-		LocationID:    arg.cmo.LocationID,
-		MinVolume:     optional.FromNullInt64ToInteger[int](arg.cmo.MinVolume),
-		OrderID:       arg.cmo.OrderID,
-		Price:         arg.cmo.Price,
-		Range:         arg.cmo.Range,
-		RegionID:      int32(arg.cmo.RegionID),
-		State:         orderStatusFromDBValue[arg.cmo.State],
-		TypeID:        int32(arg.cmo.TypeID),
+		Location: &app.EntityShort[int64]{
+			ID:   arg.cmo.LocationID,
+			Name: arg.locationName,
+		},
+		MinVolume: optional.FromNullInt64ToInteger[int](arg.cmo.MinVolume),
+		OrderID:   arg.cmo.OrderID,
+		Price:     arg.cmo.Price,
+		Range:     arg.cmo.Range,
+		RegionID:  int32(arg.cmo.RegionID),
+		State:     orderStatusFromDBValue[arg.cmo.State],
+		Type: &app.EntityShort[int32]{
+			ID:   int32(arg.cmo.TypeID),
+			Name: arg.typeName,
+		},
 		VolumeRemains: int(arg.cmo.VolumeRemains),
 		VolumeTotal:   int(arg.cmo.VolumeTotal),
 	}

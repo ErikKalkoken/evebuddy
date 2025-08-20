@@ -55,13 +55,15 @@ func TestCharacterMarketOrder(t *testing.T) {
 				assert.EqualValues(t, true, o.IsBuyOrder)
 				assert.EqualValues(t, true, o.IsCorporation)
 				assert.True(t, issued.Equal(o.Issued), "got %q, wanted %q", issued, o.Issued)
-				assert.EqualValues(t, location.ID, o.LocationID)
+				assert.EqualValues(t, location.ID, o.Location.ID)
+				assert.EqualValues(t, location.Name, o.Location.Name)
 				assert.True(t, o.MinVolume.IsEmpty())
 				assert.EqualValues(t, 123.45, o.Price)
 				assert.EqualValues(t, "station", o.Range)
 				assert.EqualValues(t, region.ID, o.RegionID)
 				assert.EqualValues(t, app.OrderOpen, o.State)
-				assert.EqualValues(t, itemType.ID, o.TypeID)
+				assert.EqualValues(t, itemType.ID, o.Type.ID)
+				assert.EqualValues(t, itemType.Name, o.Type.Name)
 				assert.EqualValues(t, 5, o.VolumeRemains)
 				assert.EqualValues(t, 10, o.VolumeTotal)
 			}
@@ -113,11 +115,11 @@ func TestCharacterMarketOrder(t *testing.T) {
 			CharacterID:   cmo.CharacterID,
 			Duration:      cmo.Duration,
 			Issued:        cmo.Issued,
-			LocationID:    cmo.LocationID,
+			LocationID:    cmo.Location.ID,
 			OrderID:       cmo.OrderID,
 			RegionID:      cmo.RegionID,
 			State:         app.OrderExpired,
-			TypeID:        cmo.TypeID,
+			TypeID:        cmo.Type.ID,
 			VolumeRemains: remains,
 			VolumeTotal:   cmo.VolumeTotal,
 		}
@@ -132,14 +134,14 @@ func TestCharacterMarketOrder(t *testing.T) {
 			}
 		}
 	})
-	t.Run("can list jobs for a character", func(t *testing.T) {
+	t.Run("can list for a character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		j1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
 			CharacterID: c.ID,
 		})
-		j2 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+		o2 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
 			CharacterID: c.ID,
 		})
 		factory.CreateCharacterMarketOrder()
@@ -147,12 +149,27 @@ func TestCharacterMarketOrder(t *testing.T) {
 		s, err := st.ListCharacterMarketOrders(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			want := set.Of(j1.OrderID, j2.OrderID)
+			want := set.Of(o1.OrderID, o2.OrderID)
 			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterMarketOrder) int64 {
 				return x.OrderID
 			}))
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
-
+	t.Run("can list all", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		o1 := factory.CreateCharacterMarketOrder()
+		o2 := factory.CreateCharacterMarketOrder()
+		// when
+		s, err := st.ListAllCharacterMarketOrders(ctx)
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of(o1.OrderID, o2.OrderID)
+			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterMarketOrder) int64 {
+				return x.OrderID
+			}))
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		}
+	})
 }

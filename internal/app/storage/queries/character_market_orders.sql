@@ -1,20 +1,37 @@
 -- name: GetCharacterMarketOrder :one
 SELECT
-    sqlc.embed(cmo)
+    sqlc.embed(cmo),
+    et.name AS type_name,
+    el.name AS location_name
 FROM
     character_market_orders cmo
+    JOIN eve_types et ON et.id = cmo.type_id
+    JOIN eve_locations el ON el.id = cmo.location_id
 WHERE
     character_id = ?
     AND order_id = ?;
 
 -- name: ListCharacterMarketOrders :many
 SELECT
-    sqlc.embed(cmo)
+    sqlc.embed(cmo),
+    et.name AS type_name,
+    el.name AS location_name
 FROM
     character_market_orders cmo
+    JOIN eve_types et ON et.id = cmo.type_id
+    JOIN eve_locations el ON el.id = cmo.location_id
 WHERE
     character_id = ?;
 
+-- name: ListAllCharacterMarketOrders :many
+SELECT
+    sqlc.embed(cmo),
+    et.name AS type_name,
+    el.name AS location_name
+FROM
+    character_market_orders cmo
+    JOIN eve_types et ON et.id = cmo.type_id
+    JOIN eve_locations el ON el.id = cmo.location_id;
 
 -- name: UpdateOrCreateCharacterMarketOrder :exec
 INSERT INTO

@@ -23,14 +23,14 @@ type CharacterMarketOrder struct {
 	IsBuyOrder    bool
 	IsCorporation bool
 	Issued        time.Time
-	LocationID    int64
+	Location      *EntityShort[int64]
 	MinVolume     optional.Optional[int]
 	OrderID       int64
 	Price         float64
 	Range         string
 	RegionID      int32
 	State         MarketOrderState
-	TypeID        int32
+	Type          *EntityShort[int32]
 	VolumeRemains int
 	VolumeTotal   int
 }

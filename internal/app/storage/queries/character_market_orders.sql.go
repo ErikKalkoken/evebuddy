@@ -13,9 +13,13 @@ import (
 
 const getCharacterMarketOrder = `-- name: GetCharacterMarketOrder :one
 SELECT
-    cmo.id, cmo.character_id, cmo.duration, cmo.escrow, cmo.is_buy_order, cmo.is_corporation, cmo.issued, cmo.location_id, cmo.min_volume, cmo.order_id, cmo.price, cmo."range", cmo.region_id, cmo.state, cmo.type_id, cmo.volume_remains, cmo.volume_total
+    cmo.id, cmo.character_id, cmo.duration, cmo.escrow, cmo.is_buy_order, cmo.is_corporation, cmo.issued, cmo.location_id, cmo.min_volume, cmo.order_id, cmo.price, cmo."range", cmo.region_id, cmo.state, cmo.type_id, cmo.volume_remains, cmo.volume_total,
+    et.name AS type_name,
+    el.name AS location_name
 FROM
     character_market_orders cmo
+    JOIN eve_types et ON et.id = cmo.type_id
+    JOIN eve_locations el ON el.id = cmo.location_id
 WHERE
     character_id = ?
     AND order_id = ?
@@ -28,6 +32,8 @@ type GetCharacterMarketOrderParams struct {
 
 type GetCharacterMarketOrderRow struct {
 	CharacterMarketOrder CharacterMarketOrder
+	TypeName             string
+	LocationName         string
 }
 
 func (q *Queries) GetCharacterMarketOrder(ctx context.Context, arg GetCharacterMarketOrderParams) (GetCharacterMarketOrderRow, error) {
@@ -51,21 +57,89 @@ func (q *Queries) GetCharacterMarketOrder(ctx context.Context, arg GetCharacterM
 		&i.CharacterMarketOrder.TypeID,
 		&i.CharacterMarketOrder.VolumeRemains,
 		&i.CharacterMarketOrder.VolumeTotal,
+		&i.TypeName,
+		&i.LocationName,
 	)
 	return i, err
 }
 
-const listCharacterMarketOrders = `-- name: ListCharacterMarketOrders :many
+const listAllCharacterMarketOrders = `-- name: ListAllCharacterMarketOrders :many
 SELECT
-    cmo.id, cmo.character_id, cmo.duration, cmo.escrow, cmo.is_buy_order, cmo.is_corporation, cmo.issued, cmo.location_id, cmo.min_volume, cmo.order_id, cmo.price, cmo."range", cmo.region_id, cmo.state, cmo.type_id, cmo.volume_remains, cmo.volume_total
+    cmo.id, cmo.character_id, cmo.duration, cmo.escrow, cmo.is_buy_order, cmo.is_corporation, cmo.issued, cmo.location_id, cmo.min_volume, cmo.order_id, cmo.price, cmo."range", cmo.region_id, cmo.state, cmo.type_id, cmo.volume_remains, cmo.volume_total,
+    et.name AS type_name,
+    el.name AS location_name
 FROM
     character_market_orders cmo
+    JOIN eve_types et ON et.id = cmo.type_id
+    JOIN eve_locations el ON el.id = cmo.location_id
+`
+
+type ListAllCharacterMarketOrdersRow struct {
+	CharacterMarketOrder CharacterMarketOrder
+	TypeName             string
+	LocationName         string
+}
+
+func (q *Queries) ListAllCharacterMarketOrders(ctx context.Context) ([]ListAllCharacterMarketOrdersRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllCharacterMarketOrders)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllCharacterMarketOrdersRow
+	for rows.Next() {
+		var i ListAllCharacterMarketOrdersRow
+		if err := rows.Scan(
+			&i.CharacterMarketOrder.ID,
+			&i.CharacterMarketOrder.CharacterID,
+			&i.CharacterMarketOrder.Duration,
+			&i.CharacterMarketOrder.Escrow,
+			&i.CharacterMarketOrder.IsBuyOrder,
+			&i.CharacterMarketOrder.IsCorporation,
+			&i.CharacterMarketOrder.Issued,
+			&i.CharacterMarketOrder.LocationID,
+			&i.CharacterMarketOrder.MinVolume,
+			&i.CharacterMarketOrder.OrderID,
+			&i.CharacterMarketOrder.Price,
+			&i.CharacterMarketOrder.Range,
+			&i.CharacterMarketOrder.RegionID,
+			&i.CharacterMarketOrder.State,
+			&i.CharacterMarketOrder.TypeID,
+			&i.CharacterMarketOrder.VolumeRemains,
+			&i.CharacterMarketOrder.VolumeTotal,
+			&i.TypeName,
+			&i.LocationName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCharacterMarketOrders = `-- name: ListCharacterMarketOrders :many
+SELECT
+    cmo.id, cmo.character_id, cmo.duration, cmo.escrow, cmo.is_buy_order, cmo.is_corporation, cmo.issued, cmo.location_id, cmo.min_volume, cmo.order_id, cmo.price, cmo."range", cmo.region_id, cmo.state, cmo.type_id, cmo.volume_remains, cmo.volume_total,
+    et.name AS type_name,
+    el.name AS location_name
+FROM
+    character_market_orders cmo
+    JOIN eve_types et ON et.id = cmo.type_id
+    JOIN eve_locations el ON el.id = cmo.location_id
 WHERE
     character_id = ?
 `
 
 type ListCharacterMarketOrdersRow struct {
 	CharacterMarketOrder CharacterMarketOrder
+	TypeName             string
+	LocationName         string
 }
 
 func (q *Queries) ListCharacterMarketOrders(ctx context.Context, characterID int64) ([]ListCharacterMarketOrdersRow, error) {
@@ -95,6 +169,8 @@ func (q *Queries) ListCharacterMarketOrders(ctx context.Context, characterID int
 			&i.CharacterMarketOrder.TypeID,
 			&i.CharacterMarketOrder.VolumeRemains,
 			&i.CharacterMarketOrder.VolumeTotal,
+			&i.TypeName,
+			&i.LocationName,
 		); err != nil {
 			return nil, err
 		}
