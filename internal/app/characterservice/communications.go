@@ -67,7 +67,7 @@ func (s *CharacterService) NotificationRecipient(ctx context.Context, n *app.Cha
 	if err != nil {
 		return nil, err
 	}
-	switch c, _ := app.EveNotificationType(n.Type).Category(); c {
+	switch app.EveNotificationType(n.Type).Category() {
 	case app.EveEntityCorporation:
 		return character.EveCharacter.Corporation, nil
 	case app.EveEntityAlliance:
