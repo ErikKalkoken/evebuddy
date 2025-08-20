@@ -46,3 +46,31 @@ func (q *Queries) GetEveRegion(ctx context.Context, id int64) (EveRegion, error)
 	err := row.Scan(&i.ID, &i.Description, &i.Name)
 	return i, err
 }
+
+const listEveRegionIDs = `-- name: ListEveRegionIDs :many
+SELECT id
+FROM eve_regions
+`
+
+func (q *Queries) ListEveRegionIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listEveRegionIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

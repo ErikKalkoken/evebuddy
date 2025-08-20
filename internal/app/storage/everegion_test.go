@@ -8,10 +8,11 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func TestEveRegion(t *testing.T) {
-	db, r, _ := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -23,13 +24,25 @@ func TestEveRegion(t *testing.T) {
 			Name:        "name",
 		}
 		// when
-		x1, err := r.CreateEveRegion(ctx, arg)
+		x1, err := st.CreateEveRegion(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			x2, err := r.GetEveRegion(ctx, 42)
+			x2, err := st.GetEveRegion(ctx, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
+		}
+	})
+	t.Run("can list IDs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		r1 := factory.CreateEveRegion()
+		r2 := factory.CreateEveRegion()
+		// when
+		got, err := st.ListEveRegionIDs(ctx)
+		if assert.NoError(t, err) {
+			want := set.Of(r1.ID, r2.ID)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 }

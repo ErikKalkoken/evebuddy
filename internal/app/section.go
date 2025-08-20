@@ -32,11 +32,11 @@ func makeSectionDisplayName(cs section) string {
 	return t
 }
 
+// CharacterSection represents a topic of a character that can be updated from ESI.
 type CharacterSection string
 
 var _ section = (*CharacterSection)(nil)
 
-// Updated character sections
 const (
 	SectionCharacterAssets             CharacterSection = "assets"
 	SectionCharacterAttributes         CharacterSection = "attributes"
@@ -48,6 +48,7 @@ const (
 	SectionCharacterMailLabels         CharacterSection = "mail_labels"
 	SectionCharacterMailLists          CharacterSection = "mail_lists"
 	SectionCharacterMails              CharacterSection = "mails"
+	SectionCharacterMarketOrders       CharacterSection = "market_orders"
 	SectionCharacterNotifications      CharacterSection = "notifications"
 	SectionCharacterOnline             CharacterSection = "online"
 	SectionCharacterPlanets            CharacterSection = "planets"
@@ -71,6 +72,7 @@ var CharacterSections = []CharacterSection{
 	SectionCharacterMailLabels,
 	SectionCharacterMailLists,
 	SectionCharacterMails,
+	SectionCharacterMarketOrders,
 	SectionCharacterNotifications,
 	SectionCharacterOnline,
 	SectionCharacterPlanets,
@@ -104,6 +106,7 @@ func (cs CharacterSection) Timeout() time.Duration {
 		SectionCharacterMailLabels:         60 * time.Second,  // minimum 30 seconds
 		SectionCharacterMailLists:          120 * time.Second,
 		SectionCharacterMails:              60 * time.Second, // minimum 30 seconds
+		SectionCharacterMarketOrders:       1200 * time.Second,
 		SectionCharacterNotifications:      600 * time.Second,
 		SectionCharacterOnline:             300 * time.Second, // minimum 30 seconds
 		SectionCharacterPlanets:            600 * time.Second,
@@ -136,6 +139,7 @@ func (cs CharacterSection) Scopes() set.Set[string] {
 		SectionCharacterMailLabels:         {"esi-mail.read_mail.v1"},
 		SectionCharacterMailLists:          {"esi-mail.read_mail.v1"},
 		SectionCharacterMails:              {"esi-mail.organize_mail.v1", "esi-mail.read_mail.v1"},
+		SectionCharacterMarketOrders:       {"esi-markets.read_character_orders.v1"},
 		SectionCharacterNotifications:      {"esi-characters.read_notifications.v1", "esi-universe.read_structures.v1"},
 		SectionCharacterOnline:             {"esi-location.read_online.v1"},
 		SectionCharacterPlanets:            {"esi-planets.manage_planets.v1"},
@@ -155,11 +159,11 @@ func (cs CharacterSection) Scopes() set.Set[string] {
 	return set.Of(scopes...)
 }
 
+// CorporationSection represents a topic of a corporation that can be updated from ESI.
 type CorporationSection string
 
 var _ section = (*CorporationSection)(nil)
 
-// Updated corporation sections
 const (
 	SectionCorporationDivisions           CorporationSection = "divisions"
 	SectionCorporationIndustryJobs        CorporationSection = "industry_jobs"
@@ -356,7 +360,7 @@ func (cs CorporationSection) Scopes() set.Set[string] {
 	return set.Of(scopes...)
 }
 
-// GeneralSection represents a topic that can be updated, e.g. market prices
+// GeneralSection represents a general topic that can be updated, e.g. market prices
 type GeneralSection string
 
 var _ section = (*GeneralSection)(nil)
