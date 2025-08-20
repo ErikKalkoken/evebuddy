@@ -173,7 +173,7 @@ func TestEveLocationToEveEntity(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, tc.in.ToEveEntity())
+			assert.Equal(t, tc.want, tc.in.EveEntity())
 		})
 	}
 }

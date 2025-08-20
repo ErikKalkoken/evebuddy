@@ -35,7 +35,7 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []int32{t1.ID, t2.ID}))
 
 		// when
-		changed, err := s.updateImplantsESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateImplantsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterImplants,
 		})

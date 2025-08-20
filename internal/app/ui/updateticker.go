@@ -2,13 +2,11 @@ package ui
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 // update general sections
@@ -48,7 +46,7 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 		u.onSectionUpdateStarted()
 		defer u.onSectionUpdateCompleted()
 	}
-	changed, err := u.eus.UpdateSection(ctx, app.GeneralUpdateSectionParams{
+	changed, err := u.eus.UpdateSection(ctx, app.GeneralSectionUpdateParams{
 		Section:           section,
 		ForceUpdate:       forceUpdate,
 		OnUpdateStarted:   u.onSectionUpdateStarted,
@@ -62,46 +60,6 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 		return
 	}
 	switch section {
-	case app.SectionEveEntities:
-		u.updateHome()
-		u.updateCharacter()
-	case app.SectionEveTypes:
-		u.characterShips.update()
-		u.characterSkillCatalogue.update()
-	case app.SectionEveCharacters:
-		if changed.Contains(u.currentCharacterID()) {
-			u.reloadCurrentCharacter()
-		}
-		characters, err := u.cs.ListCharacterIDs(ctx)
-		if err != nil {
-			logErr(err)
-			return
-		}
-		if characters.ContainsAny(changed.All()) {
-			u.characterOverview.update()
-			u.updateStatus()
-		}
-	case app.SectionEveCorporations:
-		if changed.Contains(u.currentCorporationID()) {
-			u.corporationSheet.update()
-		}
-		c := u.currentCharacter()
-		if c == nil {
-			break
-		}
-		if changed.Contains(c.EveCharacter.Corporation.ID) {
-			u.characterCorporation.update()
-		}
-		cc, err := u.cs.ListCharacterCorporations(ctx)
-		if err != nil {
-			logErr(err)
-			return
-		}
-		if changed.ContainsAny(xiter.MapSlice(cc, func(x *app.EntityShort[int32]) int32 {
-			return x.ID
-		})) {
-			u.updateStatus()
-		}
 	case app.SectionEveMarketPrices:
 		types, err := u.eus.ListEveTypeIDs(ctx)
 		if err != nil {
@@ -109,15 +67,14 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 			return
 		}
 		if !changed.ContainsAny(types.All()) {
-			break
+			return
 		}
-		u.characterAsset.update()
-		u.characterOverview.update()
-		u.assets.update()
-		u.reloadCurrentCharacter()
-	default:
-		slog.Warn(fmt.Sprintf("section not part of the update ticker refresh: %s", section))
 	}
+	u.generalSectionChanged.Emit(ctx, generalSectionUpdated{
+		section:      section,
+		forcedUpdate: forceUpdate,
+		changed:      changed,
+	})
 }
 
 // update character sections
@@ -262,193 +219,66 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 //
 // All UI areas showing data based on character sections needs to be included
 // to make sure they are refreshed when data changes.
-func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s app.CharacterSection, forceUpdate bool) {
-	updateArg := app.CharacterUpdateSectionParams{
+func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, section app.CharacterSection, forceUpdate bool) {
+	logErr := func(err error) {
+		slog.Error("Failed to process update for character section",
+			"characterID", characterID,
+			"section", section,
+			"forcedUpdate", forceUpdate,
+			"error", err,
+		)
+	}
+	hasChanged, err := u.cs.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
 		CharacterID:           characterID,
-		Section:               s,
+		Section:               section,
 		ForceUpdate:           forceUpdate,
 		MaxMails:              u.settings.MaxMails(),
 		MaxWalletTransactions: u.settings.MaxWalletTransactions(),
 		OnUpdateStarted:       u.onSectionUpdateStarted,
 		OnUpdateCompleted:     u.onSectionUpdateCompleted,
-	}
-	hasChanged, err := u.cs.UpdateSectionIfNeeded(ctx, updateArg)
+	})
 	if err != nil {
-		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
+		logErr(err)
 		return
-	}
-	isShown := characterID == u.currentCharacterID()
-
-	var corporationID int32
-	character := u.currentCharacter()
-	if character != nil {
-		corporationID = character.EveCharacter.Corporation.ID
-		ok, err := u.rs.HasCorporation(ctx, corporationID)
-		if err != nil {
-			slog.Error("Failed to check corporation exists", "error", err)
-		}
-		if !ok {
-			corporationID = 0
-		}
 	}
 
 	needsRefresh := hasChanged || forceUpdate
 	if needsRefresh {
-		u.characterSectionUpdated.Emit(ctx, updateArg)
+		u.characterSectionChanged.Emit(ctx, characterSectionUpdated{
+			characterID:  characterID,
+			forcedUpdate: forceUpdate,
+			section:      section,
+		})
 	}
-
-	switch s {
-	case app.SectionCharacterAssets:
-		if needsRefresh {
-			u.assets.update()
-			u.wealth.update()
-			if isShown {
-				u.reloadCurrentCharacter()
-				u.characterAsset.update()
-				u.characterSheet.update()
+	switch section {
+	case app.SectionCharacterMails:
+		if u.settings.NotifyMailsEnabled() {
+			earliest := u.settings.NotifyMailsEarliest()
+			if err := u.cs.NotifyMails(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
+				logErr(err)
 			}
-		}
-	case app.SectionCharacterAttributes:
-		if isShown && needsRefresh {
-			u.characterAttributes.update()
 		}
 	case app.SectionCharacterContracts:
-		if needsRefresh {
-			u.contracts.update()
-		}
 		if u.settings.NotifyContractsEnabled() {
-			go func() {
-				earliest := u.settings.NotifyContractsEarliest()
-				if err := u.cs.NotifyUpdatedContracts(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
-					slog.Error("notify contract update", "error", err)
-				}
-			}()
-		}
-	case app.SectionCharacterImplants:
-		if needsRefresh {
-			u.augmentations.update()
-			if isShown {
-				u.characterAugmentations.update()
+			earliest := u.settings.NotifyContractsEarliest()
+			if err := u.cs.NotifyUpdatedContracts(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
+				logErr(err)
 			}
-		}
-	case app.SectionCharacterJumpClones:
-		if needsRefresh {
-			u.characterOverview.update()
-			u.clones.update()
-			if isShown {
-				u.reloadCurrentCharacter()
-				u.characterJumpClones.update()
-			}
-		}
-	case app.SectionCharacterIndustryJobs:
-		if needsRefresh {
-			u.industryJobs.update()
-			u.slotsManufacturing.update()
-			u.slotsReactions.update()
-			u.slotsResearch.update()
-		}
-	case app.SectionCharacterLocation, app.SectionCharacterOnline, app.SectionCharacterShip:
-		if needsRefresh {
-			u.characterLocations.update()
-			if isShown {
-				u.reloadCurrentCharacter()
-			}
-		}
-	case app.SectionCharacterMailLabels, app.SectionCharacterMailLists:
-		if needsRefresh {
-			u.characterOverview.update()
-			if isShown {
-				u.characterMails.update()
-			}
-		}
-	case app.SectionCharacterMails:
-		if needsRefresh {
-			go u.characterOverview.update()
-			go u.updateMailIndicator()
-			if isShown {
-				u.characterMails.update()
-			}
-		}
-		if u.settings.NotifyMailsEnabled() {
-			go func() {
-				earliest := u.settings.NotifyMailsEarliest()
-				if err := u.cs.NotifyMails(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
-					slog.Error("notify mails", "characterID", characterID, "error", err)
-				}
-			}()
 		}
 	case app.SectionCharacterNotifications:
-		if isShown && needsRefresh {
-			u.characterCommunications.update()
-		}
 		if u.settings.NotifyCommunicationsEnabled() {
-			go u.notifyNewCommunications(ctx, characterID)
+			u.notifyNewCommunications(ctx, characterID)
 		}
-	case app.SectionCharacterPlanets:
-		if needsRefresh {
-			u.colonies.update()
-			u.notifyExpiredExtractionsIfNeeded(ctx, characterID)
-		}
-	case app.SectionCharacterRoles:
-		if needsRefresh {
-			u.updateStatus()
-			if isShown {
-				u.characterSheet.update()
-			}
-			if corporationID == 0 {
-				return
-			}
-			if err := u.rs.RemoveSectionDataWhenPermissionLost(ctx, corporationID); err != nil {
-				slog.Error("Failed to remove corp data after character role change", "characterID", characterID, "error", err)
-			}
-			u.updateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
-		}
-	case app.SectionCharacterSkills:
-		if needsRefresh {
-			u.training.update()
-			u.slotsManufacturing.update()
-			u.slotsReactions.update()
-			u.slotsResearch.update()
-			if isShown {
-				u.reloadCurrentCharacter()
-				u.characterSkillCatalogue.update()
-				u.characterShips.update()
-			}
-		}
-
 	case app.SectionCharacterSkillqueue:
-		if needsRefresh {
-			u.training.update()
-			u.notifyExpiredTrainingIfNeeded(ctx, characterID)
-			// if isShown {
-			// 	u.characterSkillQueue.update()
-			// }
-		}
 		if u.settings.NotifyTrainingEnabled() {
+			if needsRefresh {
+				u.notifyExpiredTrainingIfNeeded(ctx, characterID)
+			}
 			err := u.cs.EnableTrainingWatcher(ctx, characterID)
 			if err != nil {
-				slog.Error("Failed to enable training watcher", "characterID", characterID, "error", err)
+				logErr(err)
 			}
 		}
-	case app.SectionCharacterWalletBalance:
-		if needsRefresh {
-			u.characterOverview.update()
-			u.wealth.update()
-			if isShown {
-				u.reloadCurrentCharacter()
-				u.characterWallet.update()
-			}
-		}
-	case app.SectionCharacterWalletJournal:
-		if isShown && needsRefresh {
-			u.characterWallet.journal.update()
-		}
-	case app.SectionCharacterWalletTransactions:
-		if isShown && needsRefresh {
-			u.characterWallet.transactions.update()
-		}
-	default:
-		slog.Warn(fmt.Sprintf("section not part of the refresh ticker: %s", s))
 	}
 }
 
@@ -502,8 +332,8 @@ func (u *baseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 	}
 	sections := app.CorporationSections
 	slog.Debug("Starting to check corporation sections for update", "sections", sections)
-	for _, s := range sections {
-		go u.updateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, s, forceUpdate)
+	for _, section := range sections {
+		go u.updateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, section, forceUpdate)
 	}
 }
 
@@ -512,107 +342,29 @@ func (u *baseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 //
 // All UI areas showing data based on corporation sections needs to be included
 // to make sure they are refreshed when data changes.
-func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context, corporationID int32, s app.CorporationSection, forceUpdate bool) {
+func (u *baseUI) updateCorporationSectionAndRefreshIfNeeded(ctx context.Context, corporationID int32, section app.CorporationSection, forceUpdate bool) {
 	hasChanged, err := u.rs.UpdateSectionIfNeeded(
-		ctx, app.CorporationUpdateSectionParams{
+		ctx, app.CorporationSectionUpdateParams{
 			CorporationID:         corporationID,
 			ForceUpdate:           forceUpdate,
 			MaxWalletTransactions: u.settings.MaxWalletTransactions(),
-			Section:               s,
+			Section:               section,
 			OnUpdateStarted:       u.onSectionUpdateStarted,
 			OnUpdateCompleted:     u.onSectionUpdateCompleted,
 		},
 	)
 	if err != nil {
-		slog.Error("Failed to update corporation section", "corporationID", corporationID, "section", s, "err", err)
+		slog.Error("Failed to update corporation section", "corporationID", corporationID, "section", section, "err", err)
 		return
 	}
 	if !hasChanged && !forceUpdate {
 		return
 	}
-	isShown := corporationID == u.currentCorporationID()
-	switch s {
-	case app.SectionCorporationIndustryJobs:
-		u.industryJobs.update()
-		u.slotsManufacturing.update()
-		u.slotsReactions.update()
-		u.slotsResearch.update()
-	case app.SectionCorporationMembers:
-		if isShown {
-			u.corporationMember.update()
-		}
-	case app.SectionCorporationDivisions:
-		if isShown {
-			for _, d := range app.Divisions {
-				u.corporationWallets[d].updateName()
-			}
-		}
-	case app.SectionCorporationWalletBalances:
-		if isShown {
-			for _, d := range app.Divisions {
-				u.corporationWallets[d].updateBalance()
-			}
-			u.updateCorporationWalletTotal()
-		}
-	case app.SectionCorporationWalletJournal1:
-		if isShown {
-			u.corporationWallets[app.Division1].journal.update()
-		}
-	case app.SectionCorporationWalletJournal2:
-		if isShown {
-			u.corporationWallets[app.Division2].journal.update()
-		}
-	case app.SectionCorporationWalletJournal3:
-		if isShown {
-			u.corporationWallets[app.Division3].journal.update()
-		}
-	case app.SectionCorporationWalletJournal4:
-		if isShown {
-			u.corporationWallets[app.Division4].journal.update()
-		}
-	case app.SectionCorporationWalletJournal5:
-		if isShown {
-			u.corporationWallets[app.Division5].journal.update()
-		}
-	case app.SectionCorporationWalletJournal6:
-		if isShown {
-			u.corporationWallets[app.Division6].journal.update()
-		}
-	case app.SectionCorporationWalletJournal7:
-		if isShown {
-			u.corporationWallets[app.Division7].journal.update()
-		}
-	case app.SectionCorporationWalletTransactions1:
-		if isShown {
-			u.corporationWallets[app.Division1].transactions.update()
-		}
-	case app.SectionCorporationWalletTransactions2:
-		if isShown {
-			u.corporationWallets[app.Division2].transactions.update()
-		}
-	case app.SectionCorporationWalletTransactions3:
-		if isShown {
-			u.corporationWallets[app.Division3].transactions.update()
-		}
-	case app.SectionCorporationWalletTransactions4:
-		if isShown {
-			u.corporationWallets[app.Division4].transactions.update()
-		}
-	case app.SectionCorporationWalletTransactions5:
-		if isShown {
-			u.corporationWallets[app.Division5].transactions.update()
-		}
-	case app.SectionCorporationWalletTransactions6:
-		if isShown {
-			u.corporationWallets[app.Division6].transactions.update()
-		}
-	case app.SectionCorporationWalletTransactions7:
-		if isShown {
-			u.corporationWallets[app.Division7].transactions.update()
-		}
-	default:
-		slog.Warn(fmt.Sprintf("section not part of the refresh ticker: %s", s))
-	}
+	u.corporationSectionChanged.Emit(ctx, corporationSectionUpdated{
+		corporationID: corporationID,
+		forcedUpdate:  forceUpdate,
+		section:       section,
+	})
 }
 
 // isNowDailyDowntime reports whether the daily downtime is expected to happen currently.

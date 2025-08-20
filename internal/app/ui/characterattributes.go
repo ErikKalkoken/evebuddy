@@ -33,20 +33,32 @@ type characterAttributes struct {
 	widget.BaseWidget
 
 	attributes []attribute
+	character  *app.Character
 	list       *widget.List
 	top        *widget.Label
 	u          *baseUI
 }
 
 func newCharacterAttributes(u *baseUI) *characterAttributes {
-	w := &characterAttributes{
+	a := &characterAttributes{
 		attributes: make([]attribute, 0),
 		top:        makeTopLabel(),
 		u:          u,
 	}
-	w.list = w.makeAttributeList()
-	w.ExtendBaseWidget(w)
-	return w
+	a.list = a.makeAttributeList()
+	a.ExtendBaseWidget(a)
+	a.u.characterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+		a.character = c
+	})
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		if characterIDOrZero(a.character) != arg.characterID {
+			return
+		}
+		if arg.section == app.SectionCharacterAttributes {
+			a.update()
+		}
+	})
+	return a
 }
 
 func (a *characterAttributes) CreateRenderer() fyne.WidgetRenderer {
@@ -102,10 +114,10 @@ func (a *characterAttributes) update() {
 	var err error
 	var total int
 	attributes := make([]attribute, 0)
-	characterID := a.u.currentCharacterID()
+	characterID := characterIDOrZero(a.character)
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterAttributes)
 	if hasData {
-		total2, attributes2, err2 := a.fetchData(a.u.currentCharacterID(), a.u.services())
+		total2, attributes2, err2 := a.fetchData(characterID, a.u.services())
 		if err2 != nil {
 			slog.Error("Failed to refresh attributes UI", "err", err)
 			err = err2

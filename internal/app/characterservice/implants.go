@@ -18,7 +18,7 @@ func (s *CharacterService) ListAllImplants(ctx context.Context) ([]*app.Characte
 	return s.st.ListAllCharacterImplants(ctx)
 }
 
-func (s *CharacterService) updateImplantsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateImplantsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterImplants {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}

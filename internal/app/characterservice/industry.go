@@ -33,7 +33,7 @@ var jobStatusFromESIValue = map[string]app.IndustryJobStatus{
 	"reverted":  app.JobReverted,
 }
 
-func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterIndustryJobs {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}

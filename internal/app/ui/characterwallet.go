@@ -21,6 +21,7 @@ type characterWallet struct {
 	onUpdate func(balance string)
 
 	balance      *widget.Label
+	character    *app.Character
 	journal      *walletJournal
 	transactions *walletTransactions
 	u            *baseUI
@@ -34,6 +35,19 @@ func newCharacterWallet(u *baseUI) *characterWallet {
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
+	a.u.characterExchanged.AddListener(
+		func(_ context.Context, c *app.Character) {
+			a.character = c
+		},
+	)
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		if characterIDOrZero(a.character) != arg.characterID {
+			return
+		}
+		if arg.section == app.SectionCharacterWalletBalance {
+			a.updateBalance()
+		}
+	})
 	return a
 }
 
@@ -60,7 +74,7 @@ func (a *characterWallet) update() {
 func (a *characterWallet) updateBalance() {
 	var err error
 	var balance float64
-	characterID := a.u.currentCharacterID()
+	characterID := characterIDOrZero(a.character)
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterWalletBalance)
 	if hasData {
 		c, err2 := a.u.cs.GetCharacter(context.Background(), characterID)

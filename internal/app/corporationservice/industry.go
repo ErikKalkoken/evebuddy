@@ -37,13 +37,13 @@ var jobStatusFromESIValue = map[string]app.IndustryJobStatus{
 	"reverted":  app.JobReverted,
 }
 
-func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.CorporationUpdateSectionParams) (bool, error) {
+func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.CorporationSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCorporationIndustryJobs {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, arg app.CorporationUpdateSectionParams) (any, error) {
+		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			jobs, err := xesi.FetchWithPaging(
 				s.concurrencyLimit,
 				func(pageNum int) ([]esi.GetCorporationsCorporationIdIndustryJobs200Ok, *http.Response, error) {
@@ -61,7 +61,7 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 			slog.Debug("Received industry jobs from ESI", "corporationID", arg.CorporationID, "count", len(jobs))
 			return jobs, nil
 		},
-		func(ctx context.Context, arg app.CorporationUpdateSectionParams, data any) error {
+		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
 			jobs := data.([]esi.GetCorporationsCorporationIdIndustryJobs200Ok)
 			entityIDs := set.Of[int32]()
 			typeIDs := set.Of[int32]()

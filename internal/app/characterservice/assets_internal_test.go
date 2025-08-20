@@ -68,7 +68,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 				},
 			}))
 		// when
-		changed, err := s.updateAssetsESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateAssetsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterAssets,
 		})
@@ -147,7 +147,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 				},
 			}))
 		// when
-		changed, err := s.updateAssetsESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateAssetsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterAssets,
 		})
@@ -213,7 +213,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 				},
 			}))
 		// when
-		changed, err := s.updateAssetsESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateAssetsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterAssets,
 		})

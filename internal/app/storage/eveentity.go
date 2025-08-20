@@ -283,19 +283,19 @@ func eveEntityFromDBModel(e queries.EveEntity) *app.EveEntity {
 }
 
 type nullEveEntry struct {
-	ID       sql.NullInt64
-	Category sql.NullString
-	Name     sql.NullString
+	id       sql.NullInt64
+	category sql.NullString
+	name     sql.NullString
 }
 
 func eveEntityFromNullableDBModel(e nullEveEntry) *app.EveEntity {
-	if !e.ID.Valid {
+	if !e.id.Valid {
 		return nil
 	}
-	category := eveEntityCategoryFromDBModel(e.Category.String)
+	category := eveEntityCategoryFromDBModel(e.category.String)
 	return &app.EveEntity{
 		Category: category,
-		ID:       int32(e.ID.Int64),
-		Name:     e.Name.String,
+		ID:       int32(e.id.Int64),
+		Name:     e.name.String,
 	}
 }

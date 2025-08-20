@@ -14,20 +14,20 @@ func (s *CorporationService) ListMembers(ctx context.Context, corporationID int3
 	return s.st.ListCorporationMembers(ctx, corporationID)
 }
 
-func (s *CorporationService) updateMembersESI(ctx context.Context, arg app.CorporationUpdateSectionParams) (bool, error) {
+func (s *CorporationService) updateMembersESI(ctx context.Context, arg app.CorporationSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCorporationMembers {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, arg app.CorporationUpdateSectionParams) (any, error) {
+		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			members, _, err := s.esiClient.ESI.CorporationApi.GetCorporationsCorporationIdMembers(ctx, arg.CorporationID, nil)
 			if err != nil {
 				return false, err
 			}
 			return members, nil
 		},
-		func(ctx context.Context, arg app.CorporationUpdateSectionParams, data any) error {
+		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
 			incoming := set.Of(data.([]int32)...)
 			current, err := s.st.ListCorporationMemberIDs(ctx, arg.CorporationID)
 			if err != nil {

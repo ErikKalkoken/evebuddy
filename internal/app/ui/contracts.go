@@ -142,6 +142,12 @@ func newContracts(u *baseUI) *contracts {
 		a.filterRows(-1)
 	}, a.u.window)
 
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		if arg.section == app.SectionCharacterContracts {
+			a.update()
+		}
+	})
+
 	return a
 }
 

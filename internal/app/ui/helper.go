@@ -130,6 +130,14 @@ func characterIDOrZero(c *app.Character) int32 {
 	return c.ID
 }
 
+// corporationIDOrZero returns the ID of a corporation or 0 if the c does not exist.
+func corporationIDOrZero(c *app.Corporation) int32 {
+	if c == nil {
+		return 0
+	}
+	return c.ID
+}
+
 // generateUniqueID returns a unique ID.
 func generateUniqueID() string {
 	currentTime := time.Now().UnixNano()

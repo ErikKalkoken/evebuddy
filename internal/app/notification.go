@@ -3,7 +3,6 @@ package app
 import (
 	"bytes"
 	"fmt"
-	"log/slog"
 	"strings"
 	"time"
 	"unicode"
@@ -258,11 +257,167 @@ const (
 	WarSurrenderOfferMsg
 )
 
-// Category returns the entity category for supported notifications
-// and reports whether the category is defined.
-func (nt EveNotificationType) Category() (EveEntityCategory, bool) {
+// notificationCategories maps types to their recipient category.
+// The default category is character.
+var notificationCategories = map[EveNotificationType]EveEntityCategory{
+	AcceptedAlly:                             EveEntityCorporation,
+	AcceptedSurrender:                        EveEntityCorporation,
+	AllAnchoringMsg:                          EveEntityAlliance,
+	AllianceCapitalChanged:                   EveEntityAlliance,
+	AllianceWarDeclaredV2:                    EveEntityAlliance,
+	AllMaintenanceBillMsg:                    EveEntityAlliance,
+	AllStructureInvulnerableMsg:              EveEntityAlliance,
+	AllStructVulnerableMsg:                   EveEntityAlliance,
+	AllWarCorpJoinedAllianceMsg:              EveEntityAlliance,
+	AllWarDeclaredMsg:                        EveEntityAlliance,
+	AllWarInvalidatedMsg:                     EveEntityAlliance,
+	AllWarRetractedMsg:                       EveEntityAlliance,
+	AllWarSurrenderMsg:                       EveEntityAlliance,
+	AllyContractCancelled:                    EveEntityCorporation,
+	AllyJoinedWarAggressorMsg:                EveEntityCorporation,
+	AllyJoinedWarAllyMsg:                     EveEntityCorporation,
+	AllyJoinedWarDefenderMsg:                 EveEntityCorporation,
+	BillOutOfMoneyMsg:                        EveEntityCorporation,
+	BillPaidCorpAllMsg:                       EveEntityCorporation,
+	BountyPlacedAlliance:                     EveEntityAlliance,
+	BountyPlacedCorp:                         EveEntityCorporation,
+	CharAppAcceptMsg:                         EveEntityCorporation,
+	CharAppRejectMsg:                         EveEntityCorporation,
+	CharAppWithdrawMsg:                       EveEntityCorporation,
+	CharLeftCorpMsg:                          EveEntityCorporation,
+	CorpAllBillMsg:                           EveEntityCorporation,
+	CorpAppAcceptMsg:                         EveEntityCorporation,
+	CorpAppInvitedMsg:                        EveEntityCorporation,
+	CorpAppNewMsg:                            EveEntityCorporation,
+	CorpAppRejectCustomMsg:                   EveEntityCorporation,
+	CorpAppRejectMsg:                         EveEntityCorporation,
+	CorpBecameWarEligible:                    EveEntityCorporation,
+	CorpDividendMsg:                          EveEntityCorporation,
+	CorpFriendlyFireDisableTimerCompleted:    EveEntityCorporation,
+	CorpFriendlyFireDisableTimerStarted:      EveEntityCorporation,
+	CorpFriendlyFireEnableTimerCompleted:     EveEntityCorporation,
+	CorpFriendlyFireEnableTimerStarted:       EveEntityCorporation,
+	CorpKicked:                               EveEntityCorporation,
+	CorpLiquidationMsg:                       EveEntityCorporation,
+	CorpNewCEOMsg:                            EveEntityCorporation,
+	CorpNewsMsg:                              EveEntityCorporation,
+	CorpNoLongerWarEligible:                  EveEntityCorporation,
+	CorpOfficeExpirationMsg:                  EveEntityCorporation,
+	CorporationGoalClosed:                    EveEntityCorporation,
+	CorporationGoalCompleted:                 EveEntityCorporation,
+	CorporationGoalCreated:                   EveEntityCorporation,
+	CorporationGoalNameChange:                EveEntityCorporation,
+	CorporationLeft:                          EveEntityAlliance,
+	CorpStructLostMsg:                        EveEntityCorporation,
+	CorpTaxChangeMsg:                         EveEntityCorporation,
+	CorpVoteCEORevokedMsg:                    EveEntityCorporation,
+	CorpVoteMsg:                              EveEntityCorporation,
+	CorpWarDeclaredMsg:                       EveEntityCorporation,
+	CorpWarDeclaredV2:                        EveEntityCorporation,
+	CorpWarFightingLegalMsg:                  EveEntityCorporation,
+	CorpWarInvalidatedMsg:                    EveEntityCorporation,
+	CorpWarRetractedMsg:                      EveEntityCorporation,
+	CorpWarSurrenderMsg:                      EveEntityCorporation,
+	DeclareWar:                               EveEntityCorporation,
+	EntosisCaptureStarted:                    EveEntityAlliance,
+	FacWarCorpJoinRequestMsg:                 EveEntityCorporation,
+	FacWarCorpJoinWithdrawMsg:                EveEntityCorporation,
+	FacWarCorpLeaveRequestMsg:                EveEntityCorporation,
+	FacWarCorpLeaveWithdrawMsg:               EveEntityCorporation,
+	FWAllianceKickMsg:                        EveEntityAlliance,
+	FWAllianceWarningMsg:                     EveEntityAlliance,
+	FWCorpJoinMsg:                            EveEntityCorporation,
+	FWCorpKickMsg:                            EveEntityCorporation,
+	FWCorpLeaveMsg:                           EveEntityCorporation,
+	FWCorpWarningMsg:                         EveEntityCorporation,
+	IHubDestroyedByBillFailure:               EveEntityAlliance,
+	InfrastructureHubBillAboutToExpire:       EveEntityAlliance,
+	MercOfferedNegotiationMsg:                EveEntityCorporation,
+	MercOfferRetractedMsg:                    EveEntityCorporation,
+	MoonminingAutomaticFracture:              EveEntityCorporation,
+	MoonminingExtractionCancelled:            EveEntityCorporation,
+	MoonminingExtractionFinished:             EveEntityCorporation,
+	MoonminingExtractionStarted:              EveEntityCorporation,
+	MoonminingLaserFired:                     EveEntityCorporation,
+	MutualWarExpired:                         EveEntityCorporation,
+	MutualWarInviteAccepted:                  EveEntityCorporation,
+	MutualWarInviteRejected:                  EveEntityCorporation,
+	MutualWarInviteSent:                      EveEntityCorporation,
+	OfferedSurrender:                         EveEntityCorporation,
+	OfferedToAlly:                            EveEntityCorporation,
+	OfferToAllyRetracted:                     EveEntityCorporation,
+	OfficeLeaseCanceledInsufficientStandings: EveEntityCorporation,
+	OrbitalAttacked:                          EveEntityCorporation,
+	OrbitalReinforced:                        EveEntityCorporation,
+	OwnershipTransferred:                     EveEntityCorporation,
+	RetractsWar:                              EveEntityCorporation,
+	SkyhookDeployed:                          EveEntityCorporation,
+	SkyhookDestroyed:                         EveEntityCorporation,
+	SkyhookLostShields:                       EveEntityCorporation,
+	SkyhookOnline:                            EveEntityCorporation,
+	SkyhookUnderAttack:                       EveEntityCorporation,
+	SovAllClaimAcquiredMsg:                   EveEntityAlliance,
+	SovAllClaimLostMsg:                       EveEntityAlliance,
+	SovCommandNodeEventStarted:               EveEntityAlliance,
+	SovCorpBillLateMsg:                       EveEntityAlliance,
+	SovCorpClaimFailMsg:                      EveEntityAlliance,
+	SovDisruptorMsg:                          EveEntityAlliance,
+	SovereigntyIHDamageMsg:                   EveEntityAlliance,
+	SovereigntySBUDamageMsg:                  EveEntityAlliance,
+	SovereigntyTCUDamageMsg:                  EveEntityAlliance,
+	SovStationEnteredFreeport:                EveEntityAlliance,
+	SovStructureDestroyed:                    EveEntityAlliance,
+	SovStructureReinforced:                   EveEntityAlliance,
+	SovStructureSelfDestructCancel:           EveEntityAlliance,
+	SovStructureSelfDestructFinished:         EveEntityAlliance,
+	SovStructureSelfDestructRequested:        EveEntityAlliance,
+	StationAggressionMsg1:                    EveEntityAlliance,
+	StationAggressionMsg2:                    EveEntityAlliance,
+	StationConquerMsg:                        EveEntityAlliance,
+	StationServiceDisabled:                   EveEntityAlliance,
+	StationServiceEnabled:                    EveEntityAlliance,
+	StationStateChangeMsg:                    EveEntityAlliance,
+	StructureAnchoring:                       EveEntityCorporation,
+	StructureDestroyed:                       EveEntityCorporation,
+	StructureFuelAlert:                       EveEntityCorporation,
+	StructureLostArmor:                       EveEntityCorporation,
+	StructureLostShields:                     EveEntityCorporation,
+	StructureLowReagentsAlert:                EveEntityCorporation,
+	StructureNoReagentsAlert:                 EveEntityCorporation,
+	StructureOnline:                          EveEntityCorporation,
+	StructurePaintPurchased:                  EveEntityCorporation,
+	StructureServicesOffline:                 EveEntityCorporation,
+	StructuresJobsCancelled:                  EveEntityCorporation,
+	StructuresJobsPaused:                     EveEntityCorporation,
+	StructuresReinforcementChanged:           EveEntityCorporation,
+	StructureUnanchoring:                     EveEntityCorporation,
+	StructureUnderAttack:                     EveEntityCorporation,
+	StructureWentHighPower:                   EveEntityCorporation,
+	StructureWentLowPower:                    EveEntityCorporation,
+	TowerAlertMsg:                            EveEntityCorporation,
+	TowerResourceAlertMsg:                    EveEntityCorporation,
+	WarAdopted:                               EveEntityCorporation,
+	WarAllyInherited:                         EveEntityCorporation,
+	WarAllyOfferDeclinedMsg:                  EveEntityCorporation,
+	WarConcordInvalidates:                    EveEntityCorporation,
+	WarDeclared:                              EveEntityCorporation,
+	WarEndedHqSecurityDrop:                   EveEntityCorporation,
+	WarHQRemovedFromSpace:                    EveEntityCorporation,
+	WarInherited:                             EveEntityCorporation,
+	WarInvalid:                               EveEntityCorporation,
+	WarRetracted:                             EveEntityCorporation,
+	WarRetractedByConcord:                    EveEntityCorporation,
+	WarSurrenderDeclinedMsg:                  EveEntityCorporation,
+	WarSurrenderOfferMsg:                     EveEntityCorporation,
+}
+
+// Category returns the recipient category for a notification type.
+func (nt EveNotificationType) Category() EveEntityCategory {
 	c, ok := notificationCategories[nt]
-	return c, ok
+	if !ok {
+		return EveEntityCharacter
+	}
+	return c
 }
 
 // Display returns a string representation for display.
@@ -291,72 +446,64 @@ func (nt EveNotificationType) Group() EveNotificationGroup {
 	return notificationGroups[nt]
 }
 
-// notificationCategories maps supported types to their entity category.
-var notificationCategories = map[EveNotificationType]EveEntityCategory{
-	AllWarSurrenderMsg:                        EveEntityAlliance,
-	BillOutOfMoneyMsg:                         EveEntityCorporation,
-	BillPaidCorpAllMsg:                        EveEntityCorporation,
-	CharAppAcceptMsg:                          EveEntityCorporation,
-	CharAppRejectMsg:                          EveEntityCorporation,
-	CharAppWithdrawMsg:                        EveEntityCorporation,
-	CharLeftCorpMsg:                           EveEntityCorporation,
-	CorpAllBillMsg:                            EveEntityCorporation,
-	CorpAppInvitedMsg:                         EveEntityCorporation,
-	CorpAppNewMsg:                             EveEntityCorporation,
-	CorpAppRejectCustomMsg:                    EveEntityCorporation,
-	CorpWarSurrenderMsg:                       EveEntityCorporation,
-	DeclareWar:                                EveEntityCorporation,
-	EntosisCaptureStarted:                     EveEntityAlliance,
-	IHubDestroyedByBillFailure:                EveEntityAlliance,
-	InfrastructureHubBillAboutToExpire:        EveEntityAlliance,
-	MoonminingAutomaticFracture:               EveEntityCorporation,
-	MoonminingExtractionCancelled:             EveEntityCorporation,
-	MoonminingExtractionFinished:              EveEntityCorporation,
-	MoonminingExtractionStarted:               EveEntityCorporation,
-	MoonminingLaserFired:                      EveEntityCorporation,
-	OrbitalAttacked:                           EveEntityCorporation,
-	OrbitalReinforced:                         EveEntityCorporation,
-	OwnershipTransferred:                      EveEntityCorporation,
-	SovAllClaimAcquiredMsg:                    EveEntityAlliance,
-	SovAllClaimLostMsg:                        EveEntityAlliance,
-	SovCommandNodeEventStarted:                EveEntityAlliance,
-	SovStructureDestroyed:                     EveEntityAlliance,
-	SovStructureReinforced:                    EveEntityAlliance,
-	StructureAnchoring:                        EveEntityCorporation,
-	StructureDestroyed:                        EveEntityCorporation,
-	StructureFuelAlert:                        EveEntityCorporation,
-	StructureImpendingAbandonmentAssetsAtRisk: EveEntityCharacter,
-	StructureItemsDelivered:                   EveEntityCharacter,
-	StructureItemsMovedToSafety:               EveEntityCharacter,
-	StructureLostArmor:                        EveEntityCorporation,
-	StructureLostShields:                      EveEntityCorporation,
-	StructureOnline:                           EveEntityCorporation,
-	StructureServicesOffline:                  EveEntityCorporation,
-	StructuresReinforcementChanged:            EveEntityCorporation,
-	StructureUnanchoring:                      EveEntityCorporation,
-	StructureUnderAttack:                      EveEntityCorporation,
-	StructureWentHighPower:                    EveEntityCorporation,
-	StructureWentLowPower:                     EveEntityCorporation,
-	TowerAlertMsg:                             EveEntityCorporation,
-	TowerResourceAlertMsg:                     EveEntityCorporation,
-	WarAdopted:                                EveEntityCorporation,
-	WarDeclared:                               EveEntityCorporation,
-	WarHQRemovedFromSpace:                     EveEntityCorporation,
-	WarInherited:                              EveEntityCorporation,
-	WarInvalid:                                EveEntityCorporation,
-	WarRetractedByConcord:                     EveEntityCorporation,
+var supportedTypes = []EveNotificationType{
+	AllWarSurrenderMsg,
+	BillOutOfMoneyMsg,
+	BillPaidCorpAllMsg,
+	CharAppAcceptMsg,
+	CharAppRejectMsg,
+	CharAppWithdrawMsg,
+	CharLeftCorpMsg,
+	CorpAllBillMsg,
+	CorpAppInvitedMsg,
+	CorpAppNewMsg,
+	CorpAppRejectCustomMsg,
+	CorpWarSurrenderMsg,
+	DeclareWar,
+	EntosisCaptureStarted,
+	IHubDestroyedByBillFailure,
+	InfrastructureHubBillAboutToExpire,
+	MoonminingAutomaticFracture,
+	MoonminingExtractionCancelled,
+	MoonminingExtractionFinished,
+	MoonminingExtractionStarted,
+	MoonminingLaserFired,
+	OrbitalAttacked,
+	OrbitalReinforced,
+	OwnershipTransferred,
+	SovAllClaimAcquiredMsg,
+	SovAllClaimLostMsg,
+	SovCommandNodeEventStarted,
+	SovStructureDestroyed,
+	SovStructureReinforced,
+	StructureAnchoring,
+	StructureDestroyed,
+	StructureFuelAlert,
+	StructureImpendingAbandonmentAssetsAtRisk,
+	StructureItemsDelivered,
+	StructureItemsMovedToSafety,
+	StructureLostArmor,
+	StructureLostShields,
+	StructureOnline,
+	StructureServicesOffline,
+	StructuresReinforcementChanged,
+	StructureUnanchoring,
+	StructureUnderAttack,
+	StructureWentHighPower,
+	StructureWentLowPower,
+	TowerAlertMsg,
+	TowerResourceAlertMsg,
+	WarAdopted,
+	WarDeclared,
+	WarHQRemovedFromSpace,
+	WarInherited,
+	WarInvalid,
+	WarRetractedByConcord,
 }
-
-var supportedTypes set.Set[EveNotificationType]
 
 // NotificationTypesSupported returns all supported notification types.
 func NotificationTypesSupported() set.Set[EveNotificationType] {
-	if supportedTypes.Size() == 0 {
-		for nt := range notificationCategories {
-			supportedTypes.Add(nt)
-		}
-	}
-	return supportedTypes
+	return set.Of(supportedTypes...)
 }
 
 // notificationGroups maps all known types to their group.
@@ -702,7 +849,7 @@ type CharacterNotification struct {
 	IsProcessed    bool
 	IsRead         bool
 	NotificationID int64
-	RecipientName  string // TODO: Replace with EveEntity
+	Recipient      *EveEntity // optional
 	Sender         *EveEntity
 	Text           string
 	Timestamp      time.Time
@@ -730,37 +877,6 @@ func (cn *CharacterNotification) TitleFake() string {
 		last = r
 	}
 	return b.String()
-}
-
-// Header returns the header of a notification.
-func (cn *CharacterNotification) Header() string {
-	s := fmt.Sprintf(
-		"From: %s\n"+
-			"Sent: %s",
-		cn.Sender.Name,
-		cn.Timestamp.Format(DateTimeFormat),
-	)
-	if cn.RecipientName != "" {
-		s += fmt.Sprintf("\nTo: %s", cn.RecipientName)
-	}
-	return s
-}
-
-// String returns the content of a notification as string.
-func (cn *CharacterNotification) String() string {
-	s := cn.TitleDisplay() + "\n" + cn.Header()
-	b, err := cn.BodyPlain()
-	if err != nil {
-		slog.Error("render notification to string", "id", cn.ID, "error", err)
-		return s
-	}
-	s += "\n\n"
-	if b.IsEmpty() {
-		s += "(no body)"
-	} else {
-		s += b.ValueOrZero()
-	}
-	return s
 }
 
 // BodyPlain returns the body of a notification as plain text.

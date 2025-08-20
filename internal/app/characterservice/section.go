@@ -18,7 +18,7 @@ import (
 
 // UpdateSectionIfNeeded updates a section from ESI if has expired and changed
 // and reports back if it has changed
-func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.CharacterID == 0 || arg.Section == "" {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
@@ -37,7 +37,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 			}
 		}
 	}
-	var f func(context.Context, app.CharacterUpdateSectionParams) (bool, error)
+	var f func(context.Context, app.CharacterSectionUpdateParams) (bool, error)
 	switch arg.Section {
 	case app.SectionCharacterAssets:
 		f = s.updateAssetsESI
@@ -115,7 +115,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 // and reports whether it has changed
 func (s *CharacterService) updateSectionIfChanged(
 	ctx context.Context,
-	arg app.CharacterUpdateSectionParams,
+	arg app.CharacterSectionUpdateParams,
 	fetch func(ctx context.Context, characterID int32) (any, error),
 	update func(ctx context.Context, characterID int32, data any) error,
 ) (bool, error) {

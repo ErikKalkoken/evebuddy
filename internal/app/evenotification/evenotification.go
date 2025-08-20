@@ -87,73 +87,123 @@ func (s *EveNotificationService) RenderESI(ctx context.Context, nt app.EveNotifi
 	return title, body, nil
 }
 
-var type2renderer = map[app.EveNotificationType]notificationRenderer{
-	// billing
-	app.BillOutOfMoneyMsg:                  &billOutOfMoneyMsg{},
-	app.BillPaidCorpAllMsg:                 &billPaidCorpAllMsg{},
-	app.CorpAllBillMsg:                     &corpAllBillMsg{},
-	app.InfrastructureHubBillAboutToExpire: &infrastructureHubBillAboutToExpire{},
-	app.IHubDestroyedByBillFailure:         &iHubDestroyedByBillFailure{},
-	// corporate
-	app.CharAppAcceptMsg:       &charAppAcceptMsg{},
-	app.CharAppRejectMsg:       &charAppRejectMsg{},
-	app.CharAppWithdrawMsg:     &charAppWithdrawMsg{},
-	app.CharLeftCorpMsg:        &charLeftCorpMsg{},
-	app.CorpAppInvitedMsg:      &corpAppInvitedMsg{},
-	app.CorpAppNewMsg:          &corpAppNewMsg{},
-	app.CorpAppRejectCustomMsg: &corpAppRejectCustomMsg{},
-	// moonmining
-	app.MoonminingAutomaticFracture:   &moonminingAutomaticFracture{},
-	app.MoonminingExtractionCancelled: &moonminingExtractionCancelled{},
-	app.MoonminingExtractionFinished:  &moonminingExtractionFinished{},
-	app.MoonminingExtractionStarted:   &moonminingExtractionStarted{},
-	app.MoonminingLaserFired:          &moonminingLaserFired{},
-	// orbital
-	app.OrbitalAttacked:   &orbitalAttacked{},
-	app.OrbitalReinforced: &orbitalReinforced{},
-	// structures
-	app.OwnershipTransferred:                      &ownershipTransferred{},
-	app.StructureAnchoring:                        &structureAnchoring{},
-	app.StructureDestroyed:                        &structureDestroyed{},
-	app.StructureFuelAlert:                        &structureFuelAlert{},
-	app.StructureImpendingAbandonmentAssetsAtRisk: &structureImpendingAbandonmentAssetsAtRisk{},
-	app.StructureItemsDelivered:                   &structureItemsDelivered{},
-	app.StructureItemsMovedToSafety:               &structureItemsMovedToSafety{},
-	app.StructureLostArmor:                        &structureLostArmor{},
-	app.StructureLostShields:                      &structureLostShields{},
-	app.StructureOnline:                           &structureOnline{},
-	app.StructureServicesOffline:                  &structureServicesOffline{},
-	app.StructuresReinforcementChanged:            &structuresReinforcementChanged{},
-	app.StructureUnanchoring:                      &structureUnanchoring{},
-	app.StructureUnderAttack:                      &structureUnderAttack{},
-	app.StructureWentHighPower:                    &structureWentHighPower{},
-	app.StructureWentLowPower:                     &structureWentLowPower{},
-	// sov
-	app.EntosisCaptureStarted:      &entosisCaptureStarted{},
-	app.SovAllClaimAcquiredMsg:     &sovAllClaimAcquiredMsg{},
-	app.SovAllClaimLostMsg:         &sovAllClaimLostMsg{},
-	app.SovCommandNodeEventStarted: &sovCommandNodeEventStarted{},
-	app.SovStructureDestroyed:      &sovStructureDestroyed{},
-	app.SovStructureReinforced:     &sovStructureReinforced{},
-	// tower
-	app.TowerAlertMsg:         &towerAlertMsg{},
-	app.TowerResourceAlertMsg: &towerResourceAlertMsg{},
-	// war
-	app.AllWarSurrenderMsg:    &allWarSurrenderMsg{},
-	app.CorpWarSurrenderMsg:   &corpWarSurrenderMsg{},
-	app.DeclareWar:            &declareWar{},
-	app.WarAdopted:            &warAdopted{},
-	app.WarDeclared:           &warDeclared{},
-	app.WarHQRemovedFromSpace: &warHQRemovedFromSpace{},
-	app.WarInherited:          &warInherited{},
-	app.WarInvalid:            &warInvalid{},
-	app.WarRetractedByConcord: &warRetractedByConcord{},
-}
-
 func (s *EveNotificationService) makeRenderer(type_ app.EveNotificationType) (notificationRenderer, bool) {
-	r, found := type2renderer[type_]
-	if !found {
-		return nil, found
+	var r notificationRenderer
+	switch type_ {
+	// billing
+	case app.BillOutOfMoneyMsg:
+		r = new(billOutOfMoneyMsg)
+	case app.BillPaidCorpAllMsg:
+		r = new(billPaidCorpAllMsg)
+	case app.CorpAllBillMsg:
+		r = new(corpAllBillMsg)
+	case app.InfrastructureHubBillAboutToExpire:
+		r = new(infrastructureHubBillAboutToExpire)
+	case app.IHubDestroyedByBillFailure:
+		r = new(iHubDestroyedByBillFailure)
+	// corporate
+	case app.CharAppAcceptMsg:
+		r = new(charAppAcceptMsg)
+	case app.CharAppRejectMsg:
+		r = new(charAppRejectMsg)
+	case app.CharAppWithdrawMsg:
+		r = new(charAppWithdrawMsg)
+	case app.CharLeftCorpMsg:
+		r = new(charLeftCorpMsg)
+	case app.CorpAppInvitedMsg:
+		r = new(corpAppInvitedMsg)
+	case app.CorpAppNewMsg:
+		r = new(corpAppNewMsg)
+	case app.CorpAppRejectCustomMsg:
+		r = new(corpAppRejectCustomMsg)
+	// moonmining
+	case app.MoonminingAutomaticFracture:
+		r = new(moonminingAutomaticFracture)
+	case app.MoonminingExtractionCancelled:
+		r = new(moonminingExtractionCancelled)
+	case app.MoonminingExtractionFinished:
+		r = new(moonminingExtractionFinished)
+	case app.MoonminingExtractionStarted:
+		r = new(moonminingExtractionStarted)
+	case app.MoonminingLaserFired:
+		r = new(moonminingLaserFired)
+	// orbital
+	case app.OrbitalAttacked:
+		r = new(orbitalAttacked)
+	case app.OrbitalReinforced:
+		r = new(orbitalReinforced)
+	// structures
+	case app.OwnershipTransferred:
+		r = new(ownershipTransferred)
+	case app.StructureAnchoring:
+		r = new(structureAnchoring)
+	case app.StructureDestroyed:
+		r = new(structureDestroyed)
+	case app.StructureFuelAlert:
+		r = new(structureFuelAlert)
+	case app.StructureImpendingAbandonmentAssetsAtRisk:
+		r = new(structureImpendingAbandonmentAssetsAtRisk)
+	case app.StructureItemsDelivered:
+		r = new(structureItemsDelivered)
+	case app.StructureItemsMovedToSafety:
+		r = new(structureItemsMovedToSafety)
+	case app.StructureLostArmor:
+		r = new(structureLostArmor)
+	case app.StructureLostShields:
+		r = new(structureLostShields)
+	case app.StructureOnline:
+		r = new(structureOnline)
+	case app.StructureServicesOffline:
+		r = new(structureServicesOffline)
+	case app.StructuresReinforcementChanged:
+		r = new(structuresReinforcementChanged)
+	case app.StructureUnanchoring:
+		r = new(structureUnanchoring)
+	case app.StructureUnderAttack:
+		r = new(structureUnderAttack)
+	case app.StructureWentHighPower:
+		r = new(structureWentHighPower)
+	case app.StructureWentLowPower:
+		r = new(structureWentLowPower)
+	// sov
+	case app.EntosisCaptureStarted:
+		r = new(entosisCaptureStarted)
+	case app.SovAllClaimAcquiredMsg:
+		r = new(sovAllClaimAcquiredMsg)
+	case app.SovAllClaimLostMsg:
+		r = new(sovAllClaimLostMsg)
+	case app.SovCommandNodeEventStarted:
+		r = new(sovCommandNodeEventStarted)
+	case app.SovStructureDestroyed:
+		r = new(sovStructureDestroyed)
+	case app.SovStructureReinforced:
+		r = new(sovStructureReinforced)
+	// tower
+	case app.TowerAlertMsg:
+		r = new(towerAlertMsg)
+	case app.TowerResourceAlertMsg:
+		r = new(towerResourceAlertMsg)
+	// war
+	case app.AllWarSurrenderMsg:
+		r = new(allWarSurrenderMsg)
+	case app.CorpWarSurrenderMsg:
+		r = new(corpWarSurrenderMsg)
+	case app.DeclareWar:
+		r = new(declareWar)
+	case app.WarAdopted:
+		r = new(warAdopted)
+	case app.WarDeclared:
+		r = new(warDeclared)
+	case app.WarHQRemovedFromSpace:
+		r = new(warHQRemovedFromSpace)
+	case app.WarInherited:
+		r = new(warInherited)
+	case app.WarInvalid:
+		r = new(warInvalid)
+	case app.WarRetractedByConcord:
+		r = new(warRetractedByConcord)
+	default:
+		return nil, false
 	}
 	r.setEveUniverse(s.eus)
 	return r, true

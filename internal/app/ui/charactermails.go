@@ -100,6 +100,7 @@ type characterMails struct {
 	onSendMessage func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail)
 
 	body          *widget.Label
+	character     *app.Character
 	folders       *iwidget.Tree[mailFolderNode]
 	folderTop     *widget.Label
 	header        *mailHeader
@@ -152,6 +153,21 @@ func newCharacterMails(u *baseUI) *characterMails {
 		nil,
 		container.NewVScroll(a.body),
 	)
+
+	a.u.characterExchanged.AddListener(
+		func(_ context.Context, c *app.Character) {
+			a.character = c
+		},
+	)
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		if characterIDOrZero(a.character) != arg.characterID {
+			return
+		}
+		switch arg.section {
+		case app.SectionCharacterMailLabels, app.SectionCharacterMailLists, app.SectionCharacterMails:
+			a.update()
+		}
+	})
 	return a
 }
 
@@ -232,7 +248,7 @@ func (a *characterMails) makeFolderTree() *iwidget.Tree[mailFolderNode] {
 }
 
 func (a *characterMails) update() {
-	characterID := a.u.currentCharacterID()
+	characterID := characterIDOrZero(a.character)
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterMails)
 	var td iwidget.TreeData[mailFolderNode]
 	folderAll := mailFolderNode{}
@@ -380,7 +396,7 @@ func (*characterMails) fetchFolders(s services, characterID int32) (iwidget.Tree
 
 func (a *characterMails) updateUnreadCounts() {
 	td := a.folders.Data()
-	characterID := a.u.currentCharacterID()
+	characterID := characterIDOrZero(a.character)
 	unread, err := a.updateCountsInTree(a.u.services(), characterID, td)
 	if err != nil {
 		slog.Error("Failed to update unread counts", "characterID", characterID, "error", err)
@@ -482,7 +498,7 @@ func (a *characterMails) makeHeaderList() *widget.List {
 				return
 			}
 			m := a.headers[id]
-			if !a.u.hasCharacter() {
+			if a.character == nil {
 				return
 			}
 			item := co.(*mailHeaderItem)
@@ -537,11 +553,12 @@ func (a *characterMails) headerRefresh() {
 	a.mu.RLock()
 	currentFolder := a.currentFolder
 	a.mu.RUnlock()
-	hasData := a.u.scs.HasCharacterSection(a.u.currentCharacterID(), app.SectionCharacterMails)
+	characterID := characterIDOrZero(a.character)
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterMails)
 	if hasData && !currentFolder.IsEmpty() {
 		headers2, err := a.fetchHeaders(currentFolder.MustValue(), a.u.services())
 		if err != nil {
-			slog.Error("Failed to refresh mail headers UI", "err", err)
+			slog.Error("Failed to refresh mail headers UI", "characterID", characterID, "err", err)
 		} else {
 			headers = headers2
 		}
@@ -593,11 +610,10 @@ func (a *characterMails) doOnSendMessage(mode app.SendMailMode, mail *app.Charac
 	if a.onSendMessage == nil {
 		return
 	}
-	character := a.u.currentCharacter()
-	if character == nil {
+	if a.character == nil {
 		return
 	}
-	a.onSendMessage(character, mode, mail)
+	a.onSendMessage(a.character, mode, mail)
 }
 
 func (a *characterMails) makeComposeMessageAction() (fyne.Resource, func()) {
@@ -682,7 +698,7 @@ func (a *characterMails) clearMail() {
 
 func (a *characterMails) setMail(mailID int32) {
 	ctx := context.TODO()
-	characterID := a.u.currentCharacterID()
+	characterID := characterIDOrZero(a.character)
 	var err error
 	a.mail, err = a.u.cs.GetMail(ctx, characterID, mailID)
 	if err != nil {

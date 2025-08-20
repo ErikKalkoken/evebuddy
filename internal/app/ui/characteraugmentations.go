@@ -21,10 +21,11 @@ import (
 type characterAugmentations struct {
 	widget.BaseWidget
 
-	implants []*app.CharacterImplant
-	list     *widget.List
-	top      *widget.Label
-	u        *baseUI
+	character *app.Character
+	implants  []*app.CharacterImplant
+	list      *widget.List
+	top       *widget.Label
+	u         *baseUI
 }
 
 func newCharacterAugmentations(u *baseUI) *characterAugmentations {
@@ -35,6 +36,22 @@ func newCharacterAugmentations(u *baseUI) *characterAugmentations {
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeImplantList()
+	a.u.characterExchanged.AddListener(
+		func(_ context.Context, c *app.Character) {
+			a.character = c
+			a.update()
+		},
+	)
+	a.u.characterSectionChanged.AddListener(
+		func(_ context.Context, arg characterSectionUpdated) {
+			if characterIDOrZero(a.character) != arg.characterID {
+				return
+			}
+			if arg.section == app.SectionCharacterImplants {
+				a.update()
+			}
+		},
+	)
 	return a
 }
 
@@ -100,7 +117,7 @@ func (a *characterAugmentations) makeImplantList() *widget.List {
 func (a *characterAugmentations) update() {
 	var err error
 	implants := make([]*app.CharacterImplant, 0)
-	characterID := a.u.currentCharacterID()
+	characterID := characterIDOrZero(a.character)
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterImplants)
 	if hasData {
 		implants2, err2 := a.u.cs.ListImplants(context.Background(), characterID)

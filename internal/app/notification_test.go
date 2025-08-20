@@ -24,14 +24,10 @@ func TestType(t *testing.T) {
 
 func TestType_Category(t *testing.T) {
 	t.Run("returns category when known", func(t *testing.T) {
-		c, ok := app.StructureDestroyed.Category()
-		if assert.True(t, ok) {
-			assert.Equal(t, app.EveEntityCorporation, c)
-		}
+		assert.Equal(t, app.EveEntityCorporation, app.StructureDestroyed.Category())
 	})
 	t.Run("reports when category not known", func(t *testing.T) {
-		_, ok := app.AgentRetiredTrigravian.Category()
-		assert.False(t, ok)
+		assert.Equal(t, app.EveEntityCharacter, app.AgentRetiredTrigravian.Category())
 	})
 }
 

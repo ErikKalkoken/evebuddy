@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
+	"time"
 
 	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
@@ -221,7 +223,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 	return c, nil
 }
 
-func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterLocation {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
@@ -256,7 +258,7 @@ func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.Charac
 		})
 }
 
-func (s *CharacterService) updateOnlineESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateOnlineESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterOnline {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
@@ -278,7 +280,7 @@ func (s *CharacterService) updateOnlineESI(ctx context.Context, arg app.Characte
 		})
 }
 
-func (s *CharacterService) updateShipESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateShipESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterShip {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
@@ -304,7 +306,7 @@ func (s *CharacterService) updateShipESI(ctx context.Context, arg app.CharacterU
 		})
 }
 
-func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterWalletBalance {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
@@ -324,4 +326,43 @@ func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg app.C
 			}
 			return nil
 		})
+}
+
+func (s *CharacterService) NotifyExpiredExtractions(ctx context.Context, characterID int32, earliest time.Time, notify func(title, content string)) error {
+	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyExpiredExtractions-%d", characterID), func() (any, error) {
+		planets, err := s.ListPlanets(ctx, characterID)
+		if err != nil {
+			return nil, err
+		}
+		characterName, err := s.getCharacterName(ctx, characterID)
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range planets {
+			expiration := p.ExtractionsExpiryTime()
+			if expiration.IsZero() || expiration.After(time.Now()) || expiration.Before(earliest) {
+				continue
+			}
+			if p.LastNotified.ValueOrZero().Equal(expiration) {
+				continue
+			}
+			title := fmt.Sprintf("%s: PI extraction expired", characterName)
+			extracted := strings.Join(p.ExtractedTypeNames(), ",")
+			content := fmt.Sprintf("Extraction expired at %s for %s", p.EvePlanet.Name, extracted)
+			notify(title, content)
+			arg := storage.UpdateCharacterPlanetLastNotifiedParams{
+				CharacterID:  characterID,
+				EvePlanetID:  p.EvePlanet.ID,
+				LastNotified: expiration,
+			}
+			if err := s.st.UpdateCharacterPlanetLastNotified(ctx, arg); err != nil {
+				return nil, err
+			}
+		}
+		return nil, nil
+	})
+	if err != nil {
+		return fmt.Errorf("NotifyExpiredExtractions for character %d: %w", characterID, err)
+	}
+	return nil
 }

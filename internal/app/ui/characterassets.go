@@ -38,6 +38,7 @@ type characterAssets struct {
 	assetGrid        *widget.GridWrap
 	assets           []*app.CharacterAsset
 	assetsBottom     *widget.Label
+	character        *app.Character
 	infoIcon         *widget.Icon
 	locationPath     *kxwidget.TappableLabel
 	locations        *iwidget.Tree[locationNode]
@@ -81,6 +82,24 @@ func newCharacterAssets(u *baseUI) *characterAssets {
 		nil,
 		a.assetGrid,
 	)
+	a.u.characterExchanged.AddListener(
+		func(_ context.Context, c *app.Character) {
+			a.character = c
+		},
+	)
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		if characterIDOrZero(a.character) != arg.characterID {
+			return
+		}
+		if arg.section == app.SectionCharacterAssets {
+			a.update()
+		}
+	})
+	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
+		if arg.section == app.SectionEveMarketPrices {
+			a.update()
+		}
+	})
 	return a
 }
 

@@ -113,7 +113,7 @@ func LocationVariantFromID(id int64) EveLocationVariant {
 	}
 }
 
-func (el EveLocation) ToEveEntity() *EveEntity {
+func (el EveLocation) EveEntity() *EveEntity {
 	switch el.Variant() {
 	case EveLocationSolarSystem:
 		return &EveEntity{ID: int32(el.ID), Name: el.SolarSystemName(), Category: EveEntitySolarSystem}

@@ -119,17 +119,19 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 func (a *characterSkillQueue) start() {
 	a.signalKey = generateUniqueID()
 	if a.isCharacterUpdated {
-		a.u.characterChanged.AddListener(
+		a.u.characterExchanged.AddListener(
 			func(_ context.Context, c *app.Character) {
 				a.character = c
-				a.update()
 			},
 			a.signalKey,
 		)
 	}
-	a.u.characterSectionUpdated.AddListener(
-		func(_ context.Context, arg app.CharacterUpdateSectionParams) {
-			if arg.Section == app.SectionCharacterSkillqueue && characterIDOrZero(a.character) == a.character.ID {
+	a.u.characterSectionChanged.AddListener(
+		func(_ context.Context, arg characterSectionUpdated) {
+			if characterIDOrZero(a.character) != arg.characterID {
+				return
+			}
+			if arg.section == app.SectionCharacterSkillqueue {
 				a.update()
 			}
 		},
@@ -151,9 +153,9 @@ func (a *characterSkillQueue) start() {
 
 func (a *characterSkillQueue) stop() {
 	if a.isCharacterUpdated {
-		a.u.characterChanged.RemoveListener(a.signalKey)
+		a.u.characterExchanged.RemoveListener(a.signalKey)
 	}
-	a.u.characterSectionUpdated.RemoveListener(a.signalKey)
+	a.u.characterSectionChanged.RemoveListener(a.signalKey)
 	a.done <- true
 }
 

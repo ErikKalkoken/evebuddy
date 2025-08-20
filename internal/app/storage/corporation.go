@@ -85,29 +85,29 @@ func corporationFromDBModel(r queries.GetCorporationRow) *app.Corporation {
 	ec := eveCorporationFromDBModel(eveCorporationFromDBModelParams{
 		corporation: r.EveCorporation,
 		ceo: nullEveEntry{
-			ID:       r.EveCorporation.CeoID,
-			Name:     r.CeoName,
-			Category: r.CeoCategory,
+			id:       r.EveCorporation.CeoID,
+			name:     r.CeoName,
+			category: r.CeoCategory,
 		},
 		creator: nullEveEntry{
-			ID:       r.EveCorporation.CreatorID,
-			Name:     r.CreatorName,
-			Category: r.CreatorCategory,
+			id:       r.EveCorporation.CreatorID,
+			name:     r.CreatorName,
+			category: r.CreatorCategory,
 		},
 		alliance: nullEveEntry{
-			ID:       r.EveCorporation.AllianceID,
-			Name:     r.AllianceName,
-			Category: r.AllianceCategory,
+			id:       r.EveCorporation.AllianceID,
+			name:     r.AllianceName,
+			category: r.AllianceCategory,
 		},
 		faction: nullEveEntry{
-			ID:       r.EveCorporation.FactionID,
-			Name:     r.FactionName,
-			Category: r.FactionCategory,
+			id:       r.EveCorporation.FactionID,
+			name:     r.FactionName,
+			category: r.FactionCategory,
 		},
 		station: nullEveEntry{
-			ID:       r.EveCorporation.HomeStationID,
-			Name:     r.StationName,
-			Category: r.StationCategory,
+			id:       r.EveCorporation.HomeStationID,
+			name:     r.StationName,
+			category: r.StationCategory,
 		},
 	})
 	o := &app.Corporation{

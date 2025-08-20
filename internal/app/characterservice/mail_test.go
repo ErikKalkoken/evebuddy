@@ -112,17 +112,17 @@ func TestUpdateMail(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, dataMailLabel),
 		)
 		// when
-		_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterUpdateSectionParams{
+		_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c1.ID,
 			Section:     app.SectionCharacterMailLabels,
 		})
 		if assert.NoError(t, err) {
-			_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterUpdateSectionParams{
+			_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
 				CharacterID: c1.ID,
 				Section:     app.SectionCharacterMailLists,
 			})
 			if assert.NoError(t, err) {
-				_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterUpdateSectionParams{
+				_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
 					CharacterID: c1.ID,
 					Section:     app.SectionCharacterMails,
 				})
@@ -239,7 +239,7 @@ func TestUpdateMail(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, dataHeader),
 		)
 		// when
-		_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterUpdateSectionParams{
+		_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterMails,
 		})

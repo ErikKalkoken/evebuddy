@@ -8,6 +8,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 type EveAlliance struct {
@@ -21,7 +22,7 @@ type EveAlliance struct {
 	Ticker              string
 }
 
-func (ea EveAlliance) ToEveEntity() *EveEntity {
+func (ea EveAlliance) EveEntity() *EveEntity {
 	return &EveEntity{ID: ea.ID, Name: ea.Name, Category: EveEntityAlliance}
 }
 
@@ -56,6 +57,22 @@ func (ec EveCharacter) AllianceName() string {
 	return ec.Alliance.Name
 }
 
+func (ec EveCharacter) DescriptionPlain() string {
+	return evehtml.ToPlain(ec.Description)
+}
+
+// EntityIDs returns the IDs of all entities for a character.
+func (ec EveCharacter) EntityIDs() set.Set[int32] {
+	s := set.Of(ec.ID, ec.Corporation.ID)
+	if ec.HasAlliance() {
+		s.Add(ec.Alliance.ID)
+	}
+	if ec.HasFaction() {
+		s.Add(ec.Faction.ID)
+	}
+	return s
+}
+
 func (ec EveCharacter) FactionID() int32 {
 	if !ec.HasFaction() {
 		return 0
@@ -80,21 +97,6 @@ func (ec EveCharacter) HasFaction() bool {
 	return ec.Faction != nil
 }
 
-func (ec EveCharacter) DescriptionPlain() string {
-	return evehtml.ToPlain(ec.Description)
-}
-
-func (ec EveCharacter) RaceDescription() string {
-	if ec.Race == nil {
-		return ""
-	}
-	return ec.Race.Description
-}
-
-func (ec EveCharacter) ToEveEntity() *EveEntity {
-	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityCharacter}
-}
-
 // Equal reports whether two characters are equal.
 // Two characters must have the same values in all fields to be equal.
 func (ec EveCharacter) Equal(other EveCharacter) bool {
@@ -109,6 +111,17 @@ func (ec EveCharacter) Equal(other EveCharacter) bool {
 		ec.Race.ID == other.Race.ID &&
 		math.Abs(ec.SecurityStatus-other.SecurityStatus) < 0.01 &&
 		ec.Title == other.Title
+}
+
+func (ec EveCharacter) RaceDescription() string {
+	if ec.Race == nil {
+		return ""
+	}
+	return ec.Race.Description
+}
+
+func (ec EveCharacter) EveEntity() *EveEntity {
+	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityCharacter}
 }
 
 // EveCorporation is a corporation in Eve Online.
@@ -177,7 +190,7 @@ func (ec EveCorporation) DescriptionPlain() string {
 	return evehtml.ToPlain(ec.Description)
 }
 
-func (ec EveCorporation) ToEveEntity() *EveEntity {
+func (ec EveCorporation) EveEntity() *EveEntity {
 	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityCorporation}
 }
 

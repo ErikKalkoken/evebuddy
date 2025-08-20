@@ -160,20 +160,20 @@ func (s *CorporationService) RemoveStaleCorporations(ctx context.Context) (bool,
 	return true, nil
 }
 
-func (s *CorporationService) updateDivisionsESI(ctx context.Context, arg app.CorporationUpdateSectionParams) (bool, error) {
+func (s *CorporationService) updateDivisionsESI(ctx context.Context, arg app.CorporationSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCorporationDivisions {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, arg app.CorporationUpdateSectionParams) (any, error) {
+		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			divisions, _, err := s.esiClient.ESI.CorporationApi.GetCorporationsCorporationIdDivisions(ctx, arg.CorporationID, nil)
 			if err != nil {
 				return false, err
 			}
 			return divisions, nil
 		},
-		func(ctx context.Context, arg app.CorporationUpdateSectionParams, data any) error {
+		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
 			divisions := data.(esi.GetCorporationsCorporationIdDivisionsOk)
 			for _, w := range divisions.Hangar {
 				if err := s.st.UpdateOrCreateCorporationHangarName(ctx, storage.UpdateOrCreateCorporationHangarNameParams{

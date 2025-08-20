@@ -56,7 +56,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterIndustryJobs,
 		})
@@ -140,7 +140,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterIndustryJobs,
 		})
@@ -194,7 +194,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterIndustryJobs,
 		})
@@ -244,7 +244,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterIndustryJobs,
 		})
@@ -309,7 +309,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, objs))
 
 		// when
-		_, err := s.updateIndustryJobsESI(ctx, app.CharacterUpdateSectionParams{
+		_, err := s.updateIndustryJobsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterIndustryJobs,
 		})
@@ -373,7 +373,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			}),
 		)
 		// when
-		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterUpdateSectionParams{
+		changed, err := s.updateIndustryJobsESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterIndustryJobs,
 		})

@@ -606,9 +606,13 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 			a.security,
 		),
 	)
-	name := a.iw.u.scs.CharacterName(a.id) // FIXME: Does not work for most chars
-	name = strings.ReplaceAll(name, " ", "_")
 	forums := iwidget.NewTappableIcon(icons.EvelogoPng, func() {
+		ec, err := a.iw.u.eus.GetCharacterESI(context.Background(), a.id)
+		if err != nil {
+			a.iw.u.snackbar.Show("Failed to get character for forum: " + a.iw.u.humanizeError(err))
+			return
+		}
+		name := strings.ReplaceAll(ec.Name, " ", "_")
 		a.iw.openURL(fmt.Sprintf("https://forums.eveonline.com/u/%s/summary", name))
 	})
 	forums.SetToolTip("Show on forums.eveonline.com")
@@ -773,7 +777,7 @@ func (a *characterInfo) makeAttributes(o *app.EveCharacter) ([]attributeItem, er
 		attributes = append(attributes, newAttributeItem("Faction", o.Faction))
 	}
 	var u any
-	if v := o.ToEveEntity().IsNPC(); v.IsEmpty() {
+	if v := o.EveEntity().IsNPC(); v.IsEmpty() {
 		u = "?"
 	} else {
 		u = v.ValueOrZero()
@@ -901,7 +905,7 @@ func (a *constellationInfo) update() error {
 		a.name.SetText(o.Name)
 		a.region.SetText(o.Region.Name)
 		a.region.OnTapped = func() {
-			a.iw.showEveEntity(o.Region.ToEveEntity())
+			a.iw.showEveEntity(o.Region.EveEntity())
 		}
 
 		if a.iw.u.IsDeveloperMode() {
@@ -1119,7 +1123,7 @@ func (a *corporationInfo) makeAttributes(o *app.EveCorporation) []attributeItem 
 		attributes = append(attributes, newAttributeItem("Faction", o.Faction))
 	}
 	var u any
-	if v := o.ToEveEntity().IsNPC(); v.IsEmpty() {
+	if v := o.EveEntity().IsNPC(); v.IsEmpty() {
 		u = "?"
 	} else {
 		u = v.ValueOrZero()
@@ -1253,7 +1257,7 @@ func (a *locationInfo) update() error {
 			a.name.SetText(o.Name)
 			a.typeInfo.SetText(o.Type.Name)
 			a.typeInfo.OnTapped = func() {
-				a.iw.showEveEntity(o.Type.ToEveEntity())
+				a.iw.showEveEntity(o.Type.EveEntity())
 			}
 			a.owner.SetText(o.Owner.Name)
 			a.owner.OnTapped = func() {
@@ -1283,8 +1287,8 @@ func (a *locationInfo) update() error {
 		}
 		fyne.Do(func() {
 			a.location.set(
-				newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.Region.ToEveEntity(), ""),
-				newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.ToEveEntity(), ""),
+				newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.Region.EveEntity(), ""),
+				newEntityItemFromEveEntityWithText(o.SolarSystem.Constellation.EveEntity(), ""),
 				newEntityItemFromEveSolarSystem(o.SolarSystem),
 			)
 			a.tabs.Refresh()
@@ -1613,11 +1617,11 @@ func (a *solarSystemInfo) update() error {
 			a.name.SetText(o.Name)
 			a.region.SetText(o.Constellation.Region.Name)
 			a.region.OnTapped = func() {
-				a.iw.showEveEntity(o.Constellation.Region.ToEveEntity())
+				a.iw.showEveEntity(o.Constellation.Region.EveEntity())
 			}
 			a.constellation.SetText(o.Constellation.Name)
 			a.constellation.OnTapped = func() {
-				a.iw.showEveEntity(o.Constellation.ToEveEntity())
+				a.iw.showEveEntity(o.Constellation.EveEntity())
 			}
 			a.security.Text = o.SecurityStatusDisplay()
 			a.security.Importance = o.SecurityType().ToImportance()
@@ -2607,7 +2611,7 @@ func newEntityItemFromEvePlanet(o *app.EvePlanet) entityItem {
 }
 
 func newEntityItemFromEveSolarSystem(o *app.EveSolarSystem) entityItem {
-	ee := o.ToEveEntity()
+	ee := o.EveEntity()
 	return entityItem{
 		id:           int64(ee.ID),
 		category:     ee.CategoryDisplay(),

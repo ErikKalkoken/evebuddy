@@ -109,9 +109,9 @@ func (st *Storage) GetCorporationWalletJournalEntry(ctx context.Context, arg Get
 		return nil, wrapErr(convertGetError(err))
 	}
 	o := r.CorporationWalletJournalEntry
-	firstParty := nullEveEntry{ID: o.FirstPartyID, Name: r.FirstName, Category: r.FirstCategory}
-	secondParty := nullEveEntry{ID: o.SecondPartyID, Name: r.SecondName, Category: r.SecondCategory}
-	taxReceiver := nullEveEntry{ID: o.TaxReceiverID, Name: r.TaxName, Category: r.TaxCategory}
+	firstParty := nullEveEntry{id: o.FirstPartyID, name: r.FirstName, category: r.FirstCategory}
+	secondParty := nullEveEntry{id: o.SecondPartyID, name: r.SecondName, category: r.SecondCategory}
+	taxReceiver := nullEveEntry{id: o.TaxReceiverID, name: r.TaxName, category: r.TaxCategory}
 	return corporationWalletJournalEntryFromDBModel(o, firstParty, secondParty, taxReceiver), err
 }
 
@@ -158,9 +158,9 @@ func (st *Storage) ListCorporationWalletJournalEntries(ctx context.Context, arg 
 	ee := make([]*app.CorporationWalletJournalEntry, len(rows))
 	for i, r := range rows {
 		o := r.CorporationWalletJournalEntry
-		firstParty := nullEveEntry{ID: o.FirstPartyID, Name: r.FirstName, Category: r.FirstCategory}
-		secondParty := nullEveEntry{ID: o.SecondPartyID, Name: r.SecondName, Category: r.SecondCategory}
-		taxReceiver := nullEveEntry{ID: o.TaxReceiverID, Name: r.TaxName, Category: r.TaxCategory}
+		firstParty := nullEveEntry{id: o.FirstPartyID, name: r.FirstName, category: r.FirstCategory}
+		secondParty := nullEveEntry{id: o.SecondPartyID, name: r.SecondName, category: r.SecondCategory}
+		taxReceiver := nullEveEntry{id: o.TaxReceiverID, name: r.TaxName, category: r.TaxCategory}
 		ee[i] = corporationWalletJournalEntryFromDBModel(o, firstParty, secondParty, taxReceiver)
 	}
 	return ee, nil

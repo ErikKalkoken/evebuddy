@@ -79,7 +79,7 @@ func TestUpdateDivisionsESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		// when
-		changed, err := s.updateDivisionsESI(ctx, app.CorporationUpdateSectionParams{
+		changed, err := s.updateDivisionsESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationDivisions,
 		})
@@ -159,7 +159,7 @@ func TestUpdateDivisionsESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		// when
-		changed, err := s.updateWalletBalancesESI(ctx, app.CorporationUpdateSectionParams{
+		changed, err := s.updateWalletBalancesESI(ctx, app.CorporationSectionUpdateParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationWalletBalances,
 		})

@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/esi"
 	"golang.org/x/sync/errgroup"
@@ -41,15 +41,11 @@ func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID
 		if len(nn) == 0 {
 			return nil, nil
 		}
-		character, err := s.st.GetCharacter(ctx, characterID)
-		if err != nil {
-			return nil, err
-		}
 		for _, n := range nn {
 			if !typesEnabled.Contains(n.Type) {
 				continue
 			}
-			title, content := s.RenderNotificationSummary(character, n)
+			title, content := s.RenderNotificationSummary(n)
 			notify(title, content)
 			if err := s.st.UpdateCharacterNotificationSetProcessed(ctx, n.ID); err != nil {
 				return nil, err
@@ -63,28 +59,27 @@ func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID
 	return nil
 }
 
-// RenderNotificationSummary renders a summary from a character notification.
-// The summary is intended for generating local notifications.
-func (CharacterService) RenderNotificationSummary(character *app.Character, n *app.CharacterNotification) (title, content string) {
-	var name string
-	c, ok := app.EveNotificationType(n.Type).Category()
-	if !ok {
-		name = character.EveCharacter.Name
-	} else {
-		switch c {
-		case app.EveEntityCorporation:
-			name = character.EveCharacter.Corporation.Name
-		case app.EveEntityAlliance:
-			if !character.EveCharacter.HasAlliance() {
-				name = character.EveCharacter.Corporation.Name // Show corporation name as fallback
-				break
-			}
-			name = character.EveCharacter.AllianceName()
-		default:
-			name = character.EveCharacter.Name
+// NotificationRecipient returns a valid recipient for a notification.
+func (s *CharacterService) NotificationRecipient(cn *app.CharacterNotification) *app.EveEntity {
+	if cn.Recipient == nil {
+		return &app.EveEntity{
+			ID:       cn.CharacterID,
+			Name:     s.scs.CharacterName(cn.CharacterID),
+			Category: app.EveEntityCharacter,
 		}
 	}
-	title = fmt.Sprintf("%s: New Communication from %s", name, n.Sender.Name)
+	return cn.Recipient
+}
+
+// RenderNotificationSummary renders a summary from a character notification.
+func (s *CharacterService) RenderNotificationSummary(n *app.CharacterNotification) (title string, content string) {
+	var recipient string
+	if n.Recipient == nil {
+		recipient = s.scs.CharacterName(n.CharacterID)
+	} else {
+		recipient = n.Recipient.Name
+	}
+	title = fmt.Sprintf("%s: New Communication from %s", recipient, n.Sender.Name)
 	content = n.Title.ValueOrZero()
 	return
 }
@@ -101,7 +96,7 @@ func (s *CharacterService) ListNotificationsUnread(ctx context.Context, characte
 	return s.st.ListCharacterNotificationsUnread(ctx, characterID)
 }
 
-func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.CharacterUpdateSectionParams) (bool, error) {
+func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterNotifications {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
@@ -176,6 +171,13 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 			if err := s.loadEntitiesForNotifications(ctx, newNotifs); err != nil {
 				return err
 			}
+			character, err := s.st.GetCharacter(ctx, characterID)
+			if err != nil {
+				return err
+			}
+			if _, err := s.eus.AddMissingEntities(ctx, character.EveCharacter.EntityIDs()); err != nil {
+				return err
+			}
 			args := make([]storage.CreateCharacterNotificationParams, len(newNotifs))
 			g := new(errgroup.Group)
 			g.SetLimit(s.concurrencyLimit)
@@ -190,10 +192,26 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 						Timestamp:      n.Timestamp,
 						Type:           n.Type_,
 					}
+
 					nt, found := s.st.EveNotificationTypeFromESIString(n.Type_)
 					if !found {
 						nt = app.UnknownNotification
 					}
+					var recipientID int32
+					switch nt.Category() {
+					case app.EveEntityCorporation:
+						recipientID = character.EveCharacter.Corporation.ID
+					case app.EveEntityAlliance:
+						if !character.EveCharacter.HasAlliance() {
+							recipientID = character.EveCharacter.Corporation.ID
+						} else {
+							recipientID = character.EveCharacter.Alliance.ID
+						}
+					default:
+						recipientID = character.ID
+					}
+					arg.RecipientID = optional.New(recipientID)
+
 					title, body, err := s.ens.RenderESI(ctx, nt, n.Text, n.Timestamp)
 					if errors.Is(err, app.ErrNotFound) {
 						// do nothing
@@ -203,6 +221,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 						arg.Title.Set(title)
 						arg.Body.Set(body)
 					}
+
 					args[i] = arg
 					return nil
 				})
@@ -247,45 +266,6 @@ func (s *CharacterService) loadEntitiesForNotifications(ctx context.Context, not
 		if err != nil {
 			return err
 		}
-	}
-	return nil
-}
-
-func (s *CharacterService) NotifyExpiredExtractions(ctx context.Context, characterID int32, earliest time.Time, notify func(title, content string)) error {
-	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyExpiredExtractions-%d", characterID), func() (any, error) {
-		planets, err := s.ListPlanets(ctx, characterID)
-		if err != nil {
-			return nil, err
-		}
-		characterName, err := s.getCharacterName(ctx, characterID)
-		if err != nil {
-			return nil, err
-		}
-		for _, p := range planets {
-			expiration := p.ExtractionsExpiryTime()
-			if expiration.IsZero() || expiration.After(time.Now()) || expiration.Before(earliest) {
-				continue
-			}
-			if p.LastNotified.ValueOrZero().Equal(expiration) {
-				continue
-			}
-			title := fmt.Sprintf("%s: PI extraction expired", characterName)
-			extracted := strings.Join(p.ExtractedTypeNames(), ",")
-			content := fmt.Sprintf("Extraction expired at %s for %s", p.EvePlanet.Name, extracted)
-			notify(title, content)
-			arg := storage.UpdateCharacterPlanetLastNotifiedParams{
-				CharacterID:  characterID,
-				EvePlanetID:  p.EvePlanet.ID,
-				LastNotified: expiration,
-			}
-			if err := s.st.UpdateCharacterPlanetLastNotified(ctx, arg); err != nil {
-				return nil, err
-			}
-		}
-		return nil, nil
-	})
-	if err != nil {
-		return fmt.Errorf("NotifyExpiredExtractions for character %d: %w", characterID, err)
 	}
 	return nil
 }

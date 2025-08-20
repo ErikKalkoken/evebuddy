@@ -33,6 +33,7 @@ const (
 type characterFlyableShips struct {
 	widget.BaseWidget
 
+	character       *app.Character
 	flyableSelect   *kxwidget.FilterChipSelect
 	flyableSelected string
 	grid            *widget.GridWrap
@@ -89,6 +90,30 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 	})
 
 	a.grid = a.makeShipsGrid()
+
+	a.u.characterExchanged.AddListener(
+		func(_ context.Context, c *app.Character) {
+			a.character = c
+		},
+	)
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		if characterIDOrZero(a.character) != arg.characterID {
+			return
+		}
+		if arg.section == app.SectionCharacterSkills {
+			a.update()
+		}
+	},
+	)
+	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
+		characterID := characterIDOrZero(a.character)
+		if characterID == 0 {
+			return
+		}
+		if arg.section == app.SectionEveTypes {
+			a.update()
+		}
+	})
 	return a
 }
 
@@ -176,7 +201,7 @@ func (a *characterFlyableShips) update() {
 }
 
 func (a *characterFlyableShips) updateEntries() error {
-	characterID := a.u.currentCharacterID()
+	characterID := characterIDOrZero(a.character)
 	if characterID == 0 {
 		fyne.Do(func() {
 			a.ships = make([]*app.CharacterShipAbility, 0)
@@ -234,10 +259,10 @@ func (a *characterFlyableShips) updateEntries() error {
 }
 
 func (a *characterFlyableShips) makeTopText() (string, widget.Importance, bool, error) {
-	if !a.u.hasCharacter() {
+	if a.character == nil {
 		return "No character", widget.LowImportance, false, nil
 	}
-	characterID := a.u.currentCharacterID()
+	characterID := characterIDOrZero(a.character)
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterSkills)
 	if !hasData {
 		return "Waiting for skills to be loaded...", widget.WarningImportance, false, nil

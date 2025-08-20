@@ -143,6 +143,12 @@ func newColonies(u *baseUI) *colonies {
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
+
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		if arg.section == app.SectionCharacterPlanets {
+			a.update()
+		}
+	})
 	return a
 }
 
@@ -372,15 +378,15 @@ func (a *colonies) showColonyWindow(r colonyRow) {
 		})),
 		widget.NewFormItem("Planet", widget.NewLabel(cp.EvePlanet.Name)),
 		widget.NewFormItem("Type", makeLinkLabel(cp.EvePlanet.TypeDisplay(), func() {
-			a.u.ShowEveEntityInfoWindow(cp.EvePlanet.Type.ToEveEntity())
+			a.u.ShowEveEntityInfoWindow(cp.EvePlanet.Type.EveEntity())
 		})),
 		widget.NewFormItem("System", makeLinkLabel(cp.EvePlanet.SolarSystem.Name, func() {
-			a.u.ShowEveEntityInfoWindow(cp.EvePlanet.SolarSystem.ToEveEntity())
+			a.u.ShowEveEntityInfoWindow(cp.EvePlanet.SolarSystem.EveEntity())
 		})),
 		widget.NewFormItem("Region", makeLinkLabel(
 			cp.EvePlanet.SolarSystem.Constellation.Region.Name,
 			func() {
-				a.u.ShowEveEntityInfoWindow(cp.EvePlanet.SolarSystem.Constellation.Region.ToEveEntity())
+				a.u.ShowEveEntityInfoWindow(cp.EvePlanet.SolarSystem.Constellation.Region.EveEntity())
 			})),
 		widget.NewFormItem("Installations", widget.NewLabel(fmt.Sprint(len(cp.Pins)))),
 	}
@@ -402,7 +408,7 @@ func (a *colonies) showColonyWindow(r colonyRow) {
 		}
 		icon, _ := pp.ExtractorProductType.Icon()
 		product := makeLinkLabel(pp.ExtractorProductType.Name, func() {
-			a.u.ShowEveEntityInfoWindow(pp.ExtractorProductType.ToEveEntity())
+			a.u.ShowEveEntityInfoWindow(pp.ExtractorProductType.EveEntity())
 		})
 		row := container.NewHBox(
 			container.NewHBox(

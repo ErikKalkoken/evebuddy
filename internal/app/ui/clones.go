@@ -25,10 +25,9 @@ import (
 )
 
 type cloneRow struct {
-	jc       *app.CharacterJumpClone2
-	route    []*app.EveSolarSystem
-	routeErr error // TODO: not used, remove?
-	tags     set.Set[string]
+	jc    *app.CharacterJumpClone2
+	route []*app.EveSolarSystem
+	tags  set.Set[string]
 }
 
 func (r cloneRow) id() string {
@@ -173,6 +172,11 @@ func newClones(u *baseUI) *clones {
 		a.filterRows(-1)
 	}, a.u.window)
 
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		if arg.section == app.SectionCharacterJumpClones {
+			a.update()
+		}
+	})
 	return a
 }
 

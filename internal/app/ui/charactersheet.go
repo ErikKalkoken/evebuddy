@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 
 	"fyne.io/fyne/v2"
@@ -19,6 +20,7 @@ import (
 type characterSheet struct {
 	widget.BaseWidget
 
+	character   *app.Character
 	born        *widget.Label
 	factionLogo *kxwidget.TappableImage
 	home        *widget.Hyperlink
@@ -42,7 +44,7 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 	portrait := kxwidget.NewTappableImage(icons.BlankSvg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
 	portrait.SetMinSize(fyne.NewSquareSize(128))
-	w := &characterSheet{
+	a := &characterSheet{
 		born:        widget.NewLabel("?"),
 		factionLogo: makeLogo(),
 		home:        widget.NewHyperlink("", nil),
@@ -54,12 +56,37 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 		u:           u,
 		wealth:      widget.NewLabel("?"),
 	}
-	w.ExtendBaseWidget(w)
-	return w
+	a.ExtendBaseWidget(a)
+
+	a.u.characterExchanged.AddListener(
+		func(_ context.Context, c *app.Character) {
+			a.character = c
+		},
+	)
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		if characterIDOrZero(a.character) != arg.characterID {
+			return
+		}
+		switch arg.section {
+		case app.SectionCharacterRoles, app.SectionCharacterAssets:
+			a.update()
+		}
+	})
+	// TODO: Add listener for updated of character calculated values
+	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
+		characterID := characterIDOrZero(a.character)
+		if characterID == 0 {
+			return
+		}
+		if arg.section == app.SectionEveCharacters && arg.changed.Contains(characterID) {
+			a.update()
+		}
+	})
+	return a
 }
 
 func (a *characterSheet) update() {
-	c := a.u.currentCharacter()
+	c := a.character
 	if c == nil || c.EveCharacter == nil {
 		fyne.Do(func() {
 			a.name.Text = "No character..."

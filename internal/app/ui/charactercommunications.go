@@ -33,12 +33,13 @@ type notificationFolder struct {
 type characterCommunications struct {
 	widget.BaseWidget
 
-	Detail        *fyne.Container
+	Detail        *communicationDetail
 	Notifications *fyne.Container
 	OnSelected    func()
 	OnUpdate      func(count optional.Optional[int])
 	Toolbar       *widget.Toolbar
 
+	character        *app.Character
 	current          *app.CharacterNotification
 	folderList       *widget.List
 	folders          []notificationFolder
@@ -61,9 +62,22 @@ func newCharacterCommunications(u *baseUI) *characterCommunications {
 	a.Toolbar = a.makeToolbar()
 	a.Toolbar.Hide()
 	a.folderList = a.makeFolderList()
-	a.Detail = container.NewVBox()
+	a.Detail = newCommunicationDetail(a.u.eis, a.u.ShowEveEntityInfoWindow)
 	a.notificationList = a.makeNotificationList()
 	a.Notifications = container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList)
+	a.u.characterExchanged.AddListener(
+		func(_ context.Context, c *app.Character) {
+			a.character = c
+		},
+	)
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		if characterIDOrZero(a.character) != arg.characterID {
+			return
+		}
+		if arg.section == app.SectionCharacterNotifications {
+			a.update()
+		}
+	})
 	return a
 }
 
@@ -181,31 +195,14 @@ func (a *characterCommunications) makeNotificationList() *widget.List {
 	return l
 }
 
-// TODO: Refactor to avoid recreating the container every time
 func (a *characterCommunications) setDetail(n *app.CharacterNotification) {
-	if n.RecipientName == "" && a.u.hasCharacter() {
-		n.RecipientName = a.u.currentCharacter().EveCharacter.Name
+	if a.character == nil {
+		return
 	}
-	a.Detail.RemoveAll()
-	subject := widget.NewLabel(n.TitleDisplay())
-	subject.SizeName = theme.SizeNameSubHeadingText
-	subject.Wrapping = fyne.TextWrapWord
-	a.Detail.Add(subject)
-	h := newMailHeader(a.u.eis, a.u.ShowEveEntityInfoWindow)
-	h.Set(n.Sender, n.Timestamp, a.u.currentCharacter().EveCharacter.ToEveEntity())
-	a.Detail.Add(h)
-	s, err := n.BodyPlain() // using markdown blocked by #61
-	if err != nil {
-		slog.Warn("failed to convert markdown", "notificationID", n.ID, "text", n.Body.ValueOrZero())
-	}
-	body := iwidget.NewRichTextWithText(s.ValueOrZero())
-	body.Wrapping = fyne.TextWrapWord
-	if n.Body.IsEmpty() {
-		body.ParseMarkdown("*This notification type is not fully supported yet*")
-	}
-	a.Detail.Add(body)
+	a.Detail.set(n, a.u.cs.NotificationRecipient(n))
 	a.current = n
 	a.Toolbar.Show()
+	a.Detail.Show()
 }
 
 func (a *characterCommunications) makeToolbar() *widget.Toolbar {
@@ -214,7 +211,34 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 			if a.current == nil {
 				return
 			}
-			a.u.App().Clipboard().SetContent(a.current.String())
+			processErr := func(err error) {
+				a.u.showErrorDialog(
+					"Failed to generated notification for clipboard",
+					err,
+					a.u.MainWindow(),
+				)
+			}
+			cn := a.current
+			recipient := a.u.cs.NotificationRecipient(cn)
+			header := fmt.Sprintf(
+				"From: %s\nSent: %s\nTo: %s",
+				cn.Sender.Name,
+				cn.Timestamp.Format(app.DateTimeFormat),
+				recipient.Name,
+			)
+			s := cn.TitleDisplay() + "\n" + header
+			b, err := cn.BodyPlain()
+			if err != nil {
+				processErr(err)
+				return
+			}
+			s += "\n\n"
+			if b.IsEmpty() {
+				s += "(no body)"
+			} else {
+				s += b.ValueOrZero()
+			}
+			a.u.App().Clipboard().SetContent(s)
 		}),
 	)
 	if a.u.IsDeveloperMode() {
@@ -222,11 +246,10 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 			if a.current == nil {
 				return
 			}
-			character := a.u.currentCharacter()
-			if character == nil {
+			if a.character == nil {
 				return
 			}
-			title, content := a.u.cs.RenderNotificationSummary(character, a.current)
+			title, content := a.u.cs.RenderNotificationSummary(a.current)
 			a.u.app.SendNotification(fyne.NewNotification(title, content))
 		}))
 	}
@@ -235,8 +258,8 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 
 func (a *characterCommunications) update() {
 	var err error
-	characterID := a.u.currentCharacterID()
-	hasData := a.u.scs.HasCharacterSection(a.u.currentCharacterID(), app.SectionCharacterNotifications)
+	characterID := characterIDOrZero(a.character)
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterNotifications)
 	groups := make([]notificationFolder, 0)
 	var unreadCount, totalCount optional.Optional[int]
 	if characterID != 0 && hasData {
@@ -304,9 +327,9 @@ func (a *characterCommunications) resetCurrentFolder() {
 
 func (a *characterCommunications) setCurrentFolder(nc app.EveNotificationGroup) {
 	var err error
-	characterID := a.u.currentCharacterID()
+	characterID := characterIDOrZero(a.character)
 	notifications := make([]*app.CharacterNotification, 0)
-	hasData := a.u.scs.HasCharacterSection(a.u.currentCharacterID(), app.SectionCharacterNotifications)
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterNotifications)
 	if hasData {
 		var err2 error
 		var n []*app.CharacterNotification
@@ -342,7 +365,51 @@ func (a *characterCommunications) setCurrentFolder(nc app.EveNotificationGroup) 
 }
 
 func (a *characterCommunications) clearDetail() {
-	a.Detail.RemoveAll()
+	a.Detail.Hide()
 	a.Toolbar.Hide()
 	a.current = nil
+}
+
+// communicationDetail shows the complete communication for a character.
+type communicationDetail struct {
+	widget.BaseWidget
+
+	body    *iwidget.RichText
+	header  *mailHeader
+	subject *widget.Label
+}
+
+func newCommunicationDetail(eis app.EveImageService, show func(*app.EveEntity)) *communicationDetail {
+	subject := widget.NewLabel("")
+	subject.SizeName = theme.SizeNameSubHeadingText
+	subject.Wrapping = fyne.TextWrapWord
+	body := iwidget.NewRichTextWithText("")
+	body.Wrapping = fyne.TextWrapWord
+	w := &communicationDetail{
+		body:    body,
+		header:  newMailHeader(eis, show),
+		subject: subject,
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *communicationDetail) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewVBox(w.subject, w.header, w.body)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *communicationDetail) set(n *app.CharacterNotification, recipient *app.EveEntity) error {
+	w.subject.SetText(n.TitleDisplay())
+	w.header.Set(n.Sender, n.Timestamp, recipient)
+	s, err := n.BodyPlain() // using markdown blocked by #61
+	if err != nil {
+		slog.Warn("failed to convert markdown", "notificationID", n.ID, "text", n.Body.ValueOrZero())
+	}
+	if n.Body.IsEmpty() {
+		w.body.ParseMarkdown("*This notification type is not fully supported yet*")
+	} else {
+		w.body.SetWithText(s.ValueOrZero())
+	}
+	return nil
 }

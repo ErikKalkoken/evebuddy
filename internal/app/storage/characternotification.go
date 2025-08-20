@@ -297,9 +297,10 @@ func (st *Storage) CountCharacterNotifications(ctx context.Context, characterID 
 type CreateCharacterNotificationParams struct {
 	Body           optional.Optional[string]
 	CharacterID    int32
-	IsRead         bool
 	IsProcessed    bool
+	IsRead         bool
 	NotificationID int64
+	RecipientID    optional.Optional[int32]
 	SenderID       int32
 	Text           string
 	Timestamp      time.Time
@@ -312,29 +313,32 @@ func (arg CreateCharacterNotificationParams) isValid() bool {
 }
 
 func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCharacterNotificationParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CreateCharacterNotification: %+v: %w", arg, err)
+	}
 	if !arg.isValid() {
-		return fmt.Errorf("CreateCharacterNotification: %+v: %w", arg, app.ErrInvalid)
+		return wrapErr(app.ErrInvalid)
 	}
 	typeID, err := st.GetOrCreateNotificationType(ctx, arg.Type)
 	if err != nil {
 		return err
 	}
-	arg2 := queries.CreateCharacterNotificationParams{
+	if err := st.qRW.CreateCharacterNotification(ctx, queries.CreateCharacterNotificationParams{
 		Body:           optional.ToNullString(arg.Body),
 		CharacterID:    int64(arg.CharacterID),
 		IsRead:         arg.IsRead,
 		IsProcessed:    arg.IsProcessed,
 		NotificationID: arg.NotificationID,
+		RecipientID:    optional.ToNullInt64(arg.RecipientID),
 		SenderID:       int64(arg.SenderID),
 		Text:           arg.Text,
 		Timestamp:      arg.Timestamp,
 		Title:          optional.ToNullString(arg.Title),
 		TypeID:         typeID,
-	}
-	if err := st.qRW.CreateCharacterNotification(ctx, arg2); err != nil {
+	}); err != nil {
 		arg.Body.Clear()
 		arg.Text = ""
-		return fmt.Errorf("create character notification %+v: %w", arg, err)
+		return wrapErr(err)
 	}
 	return nil
 }
@@ -352,11 +356,16 @@ func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int
 	if !found {
 		nt = app.UnknownNotification
 	}
-	o := characterNotificationFromDBModel(
-		r.CharacterNotification,
-		r.EveEntity,
-		nt,
-	)
+	o := characterNotificationFromDBModel(characterNotificationFromDBModelParams{
+		cn: r.CharacterNotification,
+		nt: nt,
+		recipient: nullEveEntry{
+			category: r.RecipientCategory,
+			id:       r.CharacterNotification.RecipientID,
+			name:     r.RecipientName,
+		},
+		sender: r.EveEntity,
+	})
 	return o, err
 }
 
@@ -420,7 +429,17 @@ func (st *Storage) ListCharacterNotificationsForTypes(ctx context.Context, chara
 		if !found {
 			nt = app.UnknownNotification
 		}
-		ee[i] = characterNotificationFromDBModel(r.CharacterNotification, r.EveEntity, nt)
+		ee[i] = characterNotificationFromDBModel(characterNotificationFromDBModelParams{
+			cn: r.CharacterNotification,
+			nt: nt,
+			recipient: nullEveEntry{
+				category: r.RecipientCategory,
+				id:       r.CharacterNotification.RecipientID,
+				name:     r.RecipientName,
+			},
+			sender: r.EveEntity,
+		})
+
 	}
 	return ee, nil
 }
@@ -436,7 +455,16 @@ func (st *Storage) ListCharacterNotificationsAll(ctx context.Context, characterI
 		if !found {
 			nt = app.UnknownNotification
 		}
-		ee[i] = characterNotificationFromDBModel(r.CharacterNotification, r.EveEntity, nt)
+		ee[i] = characterNotificationFromDBModel(characterNotificationFromDBModelParams{
+			cn: r.CharacterNotification,
+			nt: nt,
+			recipient: nullEveEntry{
+				category: r.RecipientCategory,
+				id:       r.CharacterNotification.RecipientID,
+				name:     r.RecipientName,
+			},
+			sender: r.EveEntity,
+		})
 	}
 	return ee, nil
 }
@@ -452,7 +480,16 @@ func (st *Storage) ListCharacterNotificationsUnread(ctx context.Context, charact
 		if !found {
 			nt = app.UnknownNotification
 		}
-		ee[i] = characterNotificationFromDBModel(r.CharacterNotification, r.EveEntity, nt)
+		ee[i] = characterNotificationFromDBModel(characterNotificationFromDBModelParams{
+			cn: r.CharacterNotification,
+			nt: nt,
+			recipient: nullEveEntry{
+				category: r.RecipientCategory,
+				id:       r.CharacterNotification.RecipientID,
+				name:     r.RecipientName,
+			},
+			sender: r.EveEntity,
+		})
 	}
 	return ee, nil
 }
@@ -472,24 +509,41 @@ func (st *Storage) ListCharacterNotificationsUnprocessed(ctx context.Context, ch
 		if !found {
 			nt = app.UnknownNotification
 		}
-		ee[i] = characterNotificationFromDBModel(r.CharacterNotification, r.EveEntity, nt)
+		ee[i] = characterNotificationFromDBModel(characterNotificationFromDBModelParams{
+			cn: r.CharacterNotification,
+			nt: nt,
+			recipient: nullEveEntry{
+				category: r.RecipientCategory,
+				id:       r.CharacterNotification.RecipientID,
+				name:     r.RecipientName,
+			},
+			sender: r.EveEntity,
+		})
 	}
 	return ee, nil
 }
 
-func characterNotificationFromDBModel(o queries.CharacterNotification, sender queries.EveEntity, nt app.EveNotificationType) *app.CharacterNotification {
+type characterNotificationFromDBModelParams struct {
+	cn        queries.CharacterNotification
+	sender    queries.EveEntity
+	nt        app.EveNotificationType
+	recipient nullEveEntry
+}
+
+func characterNotificationFromDBModel(arg characterNotificationFromDBModelParams) *app.CharacterNotification {
 	o2 := &app.CharacterNotification{
-		ID:             o.ID,
-		Body:           optional.FromNullString(o.Body),
-		CharacterID:    int32(o.CharacterID),
-		IsProcessed:    o.IsProcessed,
-		IsRead:         o.IsRead,
-		NotificationID: o.NotificationID,
-		Sender:         eveEntityFromDBModel(sender),
-		Text:           o.Text,
-		Timestamp:      o.Timestamp,
-		Title:          optional.FromNullString(o.Title),
-		Type:           nt,
+		ID:             arg.cn.ID,
+		Body:           optional.FromNullString(arg.cn.Body),
+		CharacterID:    int32(arg.cn.CharacterID),
+		IsProcessed:    arg.cn.IsProcessed,
+		IsRead:         arg.cn.IsRead,
+		NotificationID: arg.cn.NotificationID,
+		Recipient:      eveEntityFromNullableDBModel(arg.recipient),
+		Sender:         eveEntityFromDBModel(arg.sender),
+		Text:           arg.cn.Text,
+		Timestamp:      arg.cn.Timestamp,
+		Title:          optional.FromNullString(arg.cn.Title),
+		Type:           arg.nt,
 	}
 	return o2
 }

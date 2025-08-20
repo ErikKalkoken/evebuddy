@@ -92,7 +92,7 @@ func (s *EveUniverseService) RandomizeAllAllianceNames(ctx context.Context) erro
 	return nil
 }
 
-func (s *EveUniverseService) GetEveCorporation(ctx context.Context, corporationID int32) (*app.EveCorporation, error) {
+func (s *EveUniverseService) GetCorporation(ctx context.Context, corporationID int32) (*app.EveCorporation, error) {
 	return s.st.GetEveCorporation(ctx, corporationID)
 }
 
@@ -165,7 +165,7 @@ func (s *EveUniverseService) UpdateAllCorporationsESI(ctx context.Context) (set.
 	g.SetLimit(s.concurrencyLimit)
 	for i, id := range ids2 {
 		g.Go(func() error {
-			c1, err := s.GetEveCorporation(ctx, id)
+			c1, err := s.GetCorporation(ctx, id)
 			if err != nil {
 				return err
 			}
