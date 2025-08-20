@@ -106,7 +106,7 @@ func TestUI_CanUpdateAllWithData(t *testing.T) {
 	er := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{
 		Name: "Wayne Technology",
 	})
-	factory.CreateEveEntityCorporation(*er.ToEveEntity())
+	factory.CreateEveEntityCorporation(*er.EveEntity())
 	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 		Name:          "Bruce Wayne",
 		CorporationID: er.ID,

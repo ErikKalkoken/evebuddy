@@ -1042,6 +1042,10 @@ func (f Factory) CreateCharacterNotification(args ...storage.CreateCharacterNoti
 		x := f.CreateEveEntityCorporation()
 		arg.SenderID = x.ID
 	}
+	if arg.RecipientID.IsEmpty() {
+		x := f.CreateEveEntityCorporation()
+		arg.RecipientID.Set(x.ID)
+	}
 	if arg.Type == "" {
 		arg.Type = "CorpBecameWarEligible" // Type without text
 	}

@@ -71,6 +71,7 @@ INSERT INTO
         is_processed,
         is_read,
         notification_id,
+        recipient_id,
         sender_id,
         text,
         timestamp,
@@ -78,7 +79,7 @@ INSERT INTO
         type_id
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateCharacterNotificationParams struct {
@@ -87,6 +88,7 @@ type CreateCharacterNotificationParams struct {
 	IsProcessed    bool
 	IsRead         bool
 	NotificationID int64
+	RecipientID    sql.NullInt64
 	SenderID       int64
 	Text           string
 	Timestamp      time.Time
@@ -101,6 +103,7 @@ func (q *Queries) CreateCharacterNotification(ctx context.Context, arg CreateCha
 		arg.IsProcessed,
 		arg.IsRead,
 		arg.NotificationID,
+		arg.RecipientID,
 		arg.SenderID,
 		arg.Text,
 		arg.Timestamp,
@@ -126,13 +129,16 @@ func (q *Queries) CreateNotificationType(ctx context.Context, name string) (int6
 
 const getCharacterNotification = `-- name: GetCharacterNotification :one
 SELECT
-    cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id,
-    ee.id, ee.category, ee.name,
-    nt.id, nt.name
+    cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, cn.recipient_id,
+    sender.id, sender.category, sender.name,
+    nt.id, nt.name,
+    recipient.name as recipient_name,
+    recipient.category as recipient_category
 FROM
     character_notifications cn
-    JOIN eve_entities ee ON ee.id = cn.sender_id
+    JOIN eve_entities sender ON sender.id = cn.sender_id
     JOIN notification_types nt ON nt.id = cn.type_id
+    LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
 WHERE
     character_id = ?
     and notification_id = ?
@@ -147,6 +153,8 @@ type GetCharacterNotificationRow struct {
 	CharacterNotification CharacterNotification
 	EveEntity             EveEntity
 	NotificationType      NotificationType
+	RecipientName         sql.NullString
+	RecipientCategory     sql.NullString
 }
 
 func (q *Queries) GetCharacterNotification(ctx context.Context, arg GetCharacterNotificationParams) (GetCharacterNotificationRow, error) {
@@ -164,11 +172,14 @@ func (q *Queries) GetCharacterNotification(ctx context.Context, arg GetCharacter
 		&i.CharacterNotification.Timestamp,
 		&i.CharacterNotification.Title,
 		&i.CharacterNotification.TypeID,
+		&i.CharacterNotification.RecipientID,
 		&i.EveEntity.ID,
 		&i.EveEntity.Category,
 		&i.EveEntity.Name,
 		&i.NotificationType.ID,
 		&i.NotificationType.Name,
+		&i.RecipientName,
+		&i.RecipientCategory,
 	)
 	return i, err
 }
@@ -223,13 +234,16 @@ func (q *Queries) ListCharacterNotificationIDs(ctx context.Context, characterID 
 
 const listCharacterNotificationsAll = `-- name: ListCharacterNotificationsAll :many
 SELECT
-    cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id,
-    ee.id, ee.category, ee.name,
-    nt.id, nt.name
+    cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, cn.recipient_id,
+    sender.id, sender.category, sender.name,
+    nt.id, nt.name,
+    recipient.name as recipient_name,
+    recipient.category as recipient_category
 FROM
     character_notifications cn
-    JOIN eve_entities ee ON ee.id = cn.sender_id
+    JOIN eve_entities sender ON sender.id = cn.sender_id
     JOIN notification_types nt ON nt.id = cn.type_id
+    LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
 WHERE
     character_id = ?
 ORDER BY
@@ -240,6 +254,8 @@ type ListCharacterNotificationsAllRow struct {
 	CharacterNotification CharacterNotification
 	EveEntity             EveEntity
 	NotificationType      NotificationType
+	RecipientName         sql.NullString
+	RecipientCategory     sql.NullString
 }
 
 func (q *Queries) ListCharacterNotificationsAll(ctx context.Context, characterID int64) ([]ListCharacterNotificationsAllRow, error) {
@@ -263,11 +279,14 @@ func (q *Queries) ListCharacterNotificationsAll(ctx context.Context, characterID
 			&i.CharacterNotification.Timestamp,
 			&i.CharacterNotification.Title,
 			&i.CharacterNotification.TypeID,
+			&i.CharacterNotification.RecipientID,
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
 			&i.NotificationType.ID,
 			&i.NotificationType.Name,
+			&i.RecipientName,
+			&i.RecipientCategory,
 		); err != nil {
 			return nil, err
 		}
@@ -284,13 +303,16 @@ func (q *Queries) ListCharacterNotificationsAll(ctx context.Context, characterID
 
 const listCharacterNotificationsTypes = `-- name: ListCharacterNotificationsTypes :many
 SELECT
-    cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id,
-    ee.id, ee.category, ee.name,
-    nt.id, nt.name
+    cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, cn.recipient_id,
+    sender.id, sender.category, sender.name,
+    nt.id, nt.name,
+    recipient.name as recipient_name,
+    recipient.category as recipient_category
 FROM
     character_notifications cn
-    JOIN eve_entities ee ON ee.id = cn.sender_id
+    JOIN eve_entities sender ON sender.id = cn.sender_id
     JOIN notification_types nt ON nt.id = cn.type_id
+    LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
 WHERE
     character_id = ?
     AND nt.name IN (/*SLICE:names*/?)
@@ -307,6 +329,8 @@ type ListCharacterNotificationsTypesRow struct {
 	CharacterNotification CharacterNotification
 	EveEntity             EveEntity
 	NotificationType      NotificationType
+	RecipientName         sql.NullString
+	RecipientCategory     sql.NullString
 }
 
 func (q *Queries) ListCharacterNotificationsTypes(ctx context.Context, arg ListCharacterNotificationsTypesParams) ([]ListCharacterNotificationsTypesRow, error) {
@@ -341,11 +365,14 @@ func (q *Queries) ListCharacterNotificationsTypes(ctx context.Context, arg ListC
 			&i.CharacterNotification.Timestamp,
 			&i.CharacterNotification.Title,
 			&i.CharacterNotification.TypeID,
+			&i.CharacterNotification.RecipientID,
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
 			&i.NotificationType.ID,
 			&i.NotificationType.Name,
+			&i.RecipientName,
+			&i.RecipientCategory,
 		); err != nil {
 			return nil, err
 		}
@@ -362,13 +389,16 @@ func (q *Queries) ListCharacterNotificationsTypes(ctx context.Context, arg ListC
 
 const listCharacterNotificationsUnprocessed = `-- name: ListCharacterNotificationsUnprocessed :many
 SELECT
-    cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id,
-    ee.id, ee.category, ee.name,
-    nt.id, nt.name
+    cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, cn.recipient_id,
+    sender.id, sender.category, sender.name,
+    nt.id, nt.name,
+    recipient.name as recipient_name,
+    recipient.category as recipient_category
 FROM
     character_notifications cn
-    JOIN eve_entities ee ON ee.id = cn.sender_id
+    JOIN eve_entities sender ON sender.id = cn.sender_id
     JOIN notification_types nt ON nt.id = cn.type_id
+    LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
 WHERE
     character_id = ?
     AND cn.is_processed IS FALSE
@@ -388,6 +418,8 @@ type ListCharacterNotificationsUnprocessedRow struct {
 	CharacterNotification CharacterNotification
 	EveEntity             EveEntity
 	NotificationType      NotificationType
+	RecipientName         sql.NullString
+	RecipientCategory     sql.NullString
 }
 
 func (q *Queries) ListCharacterNotificationsUnprocessed(ctx context.Context, arg ListCharacterNotificationsUnprocessedParams) ([]ListCharacterNotificationsUnprocessedRow, error) {
@@ -411,11 +443,14 @@ func (q *Queries) ListCharacterNotificationsUnprocessed(ctx context.Context, arg
 			&i.CharacterNotification.Timestamp,
 			&i.CharacterNotification.Title,
 			&i.CharacterNotification.TypeID,
+			&i.CharacterNotification.RecipientID,
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
 			&i.NotificationType.ID,
 			&i.NotificationType.Name,
+			&i.RecipientName,
+			&i.RecipientCategory,
 		); err != nil {
 			return nil, err
 		}
@@ -432,13 +467,16 @@ func (q *Queries) ListCharacterNotificationsUnprocessed(ctx context.Context, arg
 
 const listCharacterNotificationsUnread = `-- name: ListCharacterNotificationsUnread :many
 SELECT
-    cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id,
-    ee.id, ee.category, ee.name,
-    nt.id, nt.name
+    cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, cn.recipient_id,
+    sender.id, sender.category, sender.name,
+    nt.id, nt.name,
+    recipient.name as recipient_name,
+    recipient.category as recipient_category
 FROM
     character_notifications cn
-    JOIN eve_entities ee ON ee.id = cn.sender_id
+    JOIN eve_entities sender ON sender.id = cn.sender_id
     JOIN notification_types nt ON nt.id = cn.type_id
+    LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
 WHERE
     character_id = ?
     AND cn.is_read IS FALSE
@@ -450,6 +488,8 @@ type ListCharacterNotificationsUnreadRow struct {
 	CharacterNotification CharacterNotification
 	EveEntity             EveEntity
 	NotificationType      NotificationType
+	RecipientName         sql.NullString
+	RecipientCategory     sql.NullString
 }
 
 func (q *Queries) ListCharacterNotificationsUnread(ctx context.Context, characterID int64) ([]ListCharacterNotificationsUnreadRow, error) {
@@ -473,11 +513,14 @@ func (q *Queries) ListCharacterNotificationsUnread(ctx context.Context, characte
 			&i.CharacterNotification.Timestamp,
 			&i.CharacterNotification.Title,
 			&i.CharacterNotification.TypeID,
+			&i.CharacterNotification.RecipientID,
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
 			&i.NotificationType.ID,
 			&i.NotificationType.Name,
+			&i.RecipientName,
+			&i.RecipientCategory,
 		); err != nil {
 			return nil, err
 		}

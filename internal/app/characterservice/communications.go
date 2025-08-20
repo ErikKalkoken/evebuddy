@@ -9,6 +9,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/esi"
 	"golang.org/x/sync/errgroup"
@@ -44,10 +45,7 @@ func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID
 			if !typesEnabled.Contains(n.Type) {
 				continue
 			}
-			title, content, err := s.RenderNotificationSummary(ctx, n)
-			if err != nil {
-				return nil, err
-			}
+			title, content := s.RenderNotificationSummary(n)
 			notify(title, content)
 			if err := s.st.UpdateCharacterNotificationSetProcessed(ctx, n.ID); err != nil {
 				return nil, err
@@ -61,34 +59,29 @@ func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID
 	return nil
 }
 
-// NotificationRecipient returns the recipient for a notification.
-func (s *CharacterService) NotificationRecipient(ctx context.Context, n *app.CharacterNotification) (*app.EveEntity, error) {
-	character, err := s.st.GetCharacter(ctx, n.CharacterID)
-	if err != nil {
-		return nil, err
-	}
-	switch app.EveNotificationType(n.Type).Category() {
-	case app.EveEntityCorporation:
-		return character.EveCharacter.Corporation, nil
-	case app.EveEntityAlliance:
-		if !character.EveCharacter.HasAlliance() {
-			return character.EveCharacter.Corporation, nil
+// NotificationRecipient returns a valid recipient for a notification.
+func (s *CharacterService) NotificationRecipient(cn *app.CharacterNotification) *app.EveEntity {
+	if cn.Recipient == nil {
+		return &app.EveEntity{
+			ID:       cn.CharacterID,
+			Name:     s.scs.CharacterName(cn.CharacterID),
+			Category: app.EveEntityCharacter,
 		}
-		return character.EveCharacter.Alliance, nil
-	default:
-		return character.EveCharacter.ToEveEntity(), nil
 	}
+	return cn.Recipient
 }
 
 // RenderNotificationSummary renders a summary from a character notification.
-func (s *CharacterService) RenderNotificationSummary(ctx context.Context, n *app.CharacterNotification) (string, string, error) {
-	recipient, err := s.NotificationRecipient(ctx, n)
-	if err != nil {
-		return "", "", err
+func (s *CharacterService) RenderNotificationSummary(n *app.CharacterNotification) (title string, content string) {
+	var recipient string
+	if n.Recipient == nil {
+		recipient = s.scs.CharacterName(n.CharacterID)
+	} else {
+		recipient = n.Recipient.Name
 	}
-	title := fmt.Sprintf("%s: New Communication from %s", recipient.Name, n.Sender.Name)
-	content := n.Title.ValueOrZero()
-	return title, content, nil
+	title = fmt.Sprintf("%s: New Communication from %s", recipient, n.Sender.Name)
+	content = n.Title.ValueOrZero()
+	return
 }
 
 func (s *CharacterService) ListNotificationsForGroup(ctx context.Context, characterID int32, ng app.EveNotificationGroup) ([]*app.CharacterNotification, error) {
@@ -178,6 +171,13 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 			if err := s.loadEntitiesForNotifications(ctx, newNotifs); err != nil {
 				return err
 			}
+			character, err := s.st.GetCharacter(ctx, characterID)
+			if err != nil {
+				return err
+			}
+			if _, err := s.eus.AddMissingEntities(ctx, character.EveCharacter.EntityIDs()); err != nil {
+				return err
+			}
 			args := make([]storage.CreateCharacterNotificationParams, len(newNotifs))
 			g := new(errgroup.Group)
 			g.SetLimit(s.concurrencyLimit)
@@ -192,10 +192,26 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 						Timestamp:      n.Timestamp,
 						Type:           n.Type_,
 					}
+
 					nt, found := s.st.EveNotificationTypeFromESIString(n.Type_)
 					if !found {
 						nt = app.UnknownNotification
 					}
+					var recipientID int32
+					switch nt.Category() {
+					case app.EveEntityCorporation:
+						recipientID = character.EveCharacter.Corporation.ID
+					case app.EveEntityAlliance:
+						if !character.EveCharacter.HasAlliance() {
+							recipientID = character.EveCharacter.Corporation.ID
+						} else {
+							recipientID = character.EveCharacter.Alliance.ID
+						}
+					default:
+						recipientID = character.ID
+					}
+					arg.RecipientID = optional.New(recipientID)
+
 					title, body, err := s.ens.RenderESI(ctx, nt, n.Text, n.Timestamp)
 					if errors.Is(err, app.ErrNotFound) {
 						// do nothing
@@ -205,6 +221,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 						arg.Title.Set(title)
 						arg.Body.Set(body)
 					}
+
 					args[i] = arg
 					return nil
 				})

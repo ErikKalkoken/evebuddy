@@ -141,8 +141,8 @@ func (st *Storage) GetCharacterContract(ctx context.Context, characterID, contra
 		return nil, fmt.Errorf("get contract for character %d: %w", characterID, convertGetError(err))
 	}
 	o := r.CharacterContract
-	acceptor := nullEveEntry{ID: o.AcceptorID, Name: r.AcceptorName, Category: r.AcceptorCategory}
-	assignee := nullEveEntry{ID: o.AssigneeID, Name: r.AssigneeName, Category: r.AssigneeCategory}
+	acceptor := nullEveEntry{id: o.AcceptorID, name: r.AcceptorName, category: r.AcceptorCategory}
+	assignee := nullEveEntry{id: o.AssigneeID, name: r.AssigneeName, category: r.AssigneeCategory}
 	o2 := characterContractFromDBModel(
 		o,
 		r.EveEntity,
@@ -178,8 +178,8 @@ func (st *Storage) ListAllCharacterContracts(ctx context.Context) ([]*app.Charac
 	oo := make([]*app.CharacterContract, len(rows))
 	for i, r := range rows {
 		o := r.CharacterContract
-		acceptor := nullEveEntry{ID: o.AcceptorID, Name: r.AcceptorName, Category: r.AcceptorCategory}
-		assignee := nullEveEntry{ID: o.AssigneeID, Name: r.AssigneeName, Category: r.AssigneeCategory}
+		acceptor := nullEveEntry{id: o.AcceptorID, name: r.AcceptorName, category: r.AcceptorCategory}
+		assignee := nullEveEntry{id: o.AssigneeID, name: r.AssigneeName, category: r.AssigneeCategory}
 		oo[i] = characterContractFromDBModel(
 			o,
 			r.EveEntity,
@@ -212,8 +212,8 @@ func (st *Storage) ListCharacterContractsForNotify(ctx context.Context, characte
 	oo := make([]*app.CharacterContract, len(rows))
 	for i, r := range rows {
 		o := r.CharacterContract
-		acceptor := nullEveEntry{ID: o.AcceptorID, Name: r.AcceptorName, Category: r.AcceptorCategory}
-		assignee := nullEveEntry{ID: o.AssigneeID, Name: r.AssigneeName, Category: r.AssigneeCategory}
+		acceptor := nullEveEntry{id: o.AcceptorID, name: r.AcceptorName, category: r.AcceptorCategory}
+		assignee := nullEveEntry{id: o.AssigneeID, name: r.AssigneeName, category: r.AssigneeCategory}
 		oo[i] = characterContractFromDBModel(
 			o,
 			r.EveEntity,

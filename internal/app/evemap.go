@@ -19,7 +19,7 @@ type EveConstellation struct {
 	Region *EveRegion
 }
 
-func (ec EveConstellation) ToEveEntity() *EveEntity {
+func (ec EveConstellation) EveEntity() *EveEntity {
 	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityConstellation}
 }
 
@@ -34,7 +34,7 @@ func (er EveRegion) DescriptionPlain() string {
 	return evehtml.ToPlain(er.Description)
 }
 
-func (er EveRegion) ToEveEntity() *EveEntity {
+func (er EveRegion) EveEntity() *EveEntity {
 	return &EveEntity{ID: er.ID, Name: er.Name, Category: EveEntityRegion}
 }
 
@@ -114,7 +114,7 @@ func (es EveSolarSystem) SecurityStatusRichText() []widget.RichTextSegment {
 	}}
 }
 
-func (es EveSolarSystem) ToEveEntity() *EveEntity {
+func (es EveSolarSystem) EveEntity() *EveEntity {
 	return &EveEntity{ID: es.ID, Name: es.Name, Category: EveEntitySolarSystem}
 }
 

@@ -204,6 +204,7 @@ type CharacterNotification struct {
 	Timestamp      time.Time
 	Title          sql.NullString
 	TypeID         int64
+	RecipientID    sql.NullInt64
 }
 
 type CharacterPlanet struct {

@@ -199,12 +199,7 @@ func (a *characterCommunications) setDetail(n *app.CharacterNotification) {
 	if a.character == nil {
 		return
 	}
-	recipient, err := a.u.cs.NotificationRecipient(context.Background(), n)
-	if err != nil {
-		slog.Error("Failed to fetch recipient for notification", "notif", n, "error", err)
-		recipient = a.character.EveCharacter.ToEveEntity()
-	}
-	a.Detail.set(n, recipient)
+	a.Detail.set(n, a.u.cs.NotificationRecipient(n))
 	a.current = n
 	a.Toolbar.Show()
 	a.Detail.Show()
@@ -224,11 +219,7 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 				)
 			}
 			cn := a.current
-			recipient, err := a.u.cs.NotificationRecipient(context.Background(), cn)
-			if err != nil {
-				processErr(err)
-				return
-			}
+			recipient := a.u.cs.NotificationRecipient(cn)
 			header := fmt.Sprintf(
 				"From: %s\nSent: %s\nTo: %s",
 				cn.Sender.Name,
@@ -258,11 +249,7 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 			if a.character == nil {
 				return
 			}
-			title, content, err := a.u.cs.RenderNotificationSummary(context.Background(), a.current)
-			if err != nil {
-				a.u.showErrorDialog("Failed to render notification", err, a.u.MainWindow())
-				return
-			}
+			title, content := a.u.cs.RenderNotificationSummary(a.current)
 			a.u.app.SendNotification(fyne.NewNotification(title, content))
 		}))
 	}

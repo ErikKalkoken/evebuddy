@@ -46,6 +46,7 @@ func TestCharacterNotification(t *testing.T) {
 				assert.Equal(t, "text", o.Text)
 				assert.Equal(t, timestamp.UTC(), o.Timestamp.UTC())
 				assert.Equal(t, app.StructureDestroyed, o.Type)
+				assert.Nil(t, o.Recipient)
 			}
 		}
 	})
@@ -55,11 +56,13 @@ func TestCharacterNotification(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		timestamp := time.Now().UTC()
 		sender := factory.CreateEveEntityCharacter()
+		recipient := factory.CreateEveEntityAlliance()
 		arg := storage.CreateCharacterNotificationParams{
 			Body:           optional.New("body"),
 			CharacterID:    c.ID,
 			IsRead:         true,
 			NotificationID: 42,
+			RecipientID:    optional.New(recipient.ID),
 			SenderID:       sender.ID,
 			Text:           "text",
 			Timestamp:      timestamp,
@@ -81,6 +84,7 @@ func TestCharacterNotification(t *testing.T) {
 				assert.Equal(t, app.StructureDestroyed, o.Type)
 				assert.Equal(t, "body", o.Body.ValueOrZero())
 				assert.Equal(t, "title", o.Title.ValueOrZero())
+				assert.Equal(t, recipient, o.Recipient)
 			}
 		}
 	})
@@ -107,48 +111,6 @@ func TestCharacterNotification(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, app.UnknownNotification, o.Type)
 			}
-		}
-	})
-	t.Run("can list IDs of existing entries", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		c := factory.CreateCharacterFull()
-		e1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
-		e2 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
-		e3 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
-		// when
-		got, err := r.ListCharacterNotificationIDs(ctx, c.ID)
-		// then
-		if assert.NoError(t, err) {
-			want := set.Of(e1.NotificationID, e2.NotificationID, e3.NotificationID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
-		}
-	})
-	t.Run("can list existing entries", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		c := factory.CreateCharacterFull()
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-			CharacterID: c.ID,
-			Type:        "StructureUnderAttack",
-		})
-		n1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-			CharacterID: c.ID,
-			Type:        "StructureDestroyed",
-		})
-		n2 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-			CharacterID: c.ID,
-			Type:        "StructureDestroyed",
-		})
-		// when
-		ee, err := r.ListCharacterNotificationsForTypes(ctx, c.ID, set.Of(app.StructureDestroyed))
-		// then
-		if assert.NoError(t, err) {
-			want := set.Of(n1.NotificationID, n2.NotificationID)
-			got := set.Collect(xiter.MapSlice(ee, func(x *app.CharacterNotification) int64 {
-				return x.NotificationID
-			}))
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 	t.Run("can updates IsRead 1", func(t *testing.T) {
@@ -260,6 +222,54 @@ func TestCharacterNotification(t *testing.T) {
 				app.StructureDestroyed:   {1, 1},
 			}
 			assert.Equal(t, want, x)
+		}
+	})
+}
+
+func TestCharacterNotification_List(t *testing.T) {
+	db, r, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("can list IDs of existing entries", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacterFull()
+		e1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
+		e2 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
+		e3 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
+		// when
+		got, err := r.ListCharacterNotificationIDs(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of(e1.NotificationID, e2.NotificationID, e3.NotificationID)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		}
+	})
+	t.Run("can list existing entries", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			Type:        "StructureUnderAttack",
+		})
+		n1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			Type:        "StructureDestroyed",
+		})
+		n2 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			Type:        "StructureDestroyed",
+		})
+		// when
+		ee, err := r.ListCharacterNotificationsForTypes(ctx, c.ID, set.Of(app.StructureDestroyed))
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of(n1.NotificationID, n2.NotificationID)
+			got := set.Collect(xiter.MapSlice(ee, func(x *app.CharacterNotification) int64 {
+				return x.NotificationID
+			}))
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
 	t.Run("can list unread notifs", func(t *testing.T) {

@@ -14,7 +14,7 @@ func TestEveAlliance(t *testing.T) {
 		ID:   42,
 		Name: "name",
 	}
-	ee := x.ToEveEntity()
+	ee := x.EveEntity()
 	assert.EqualValues(t, 42, ee.ID)
 	assert.EqualValues(t, "name", ee.Name)
 	assert.EqualValues(t, app.EveEntityAlliance, ee.Category)
@@ -63,7 +63,7 @@ func TestEveCharacter_Race(t *testing.T) {
 
 func TestEveCharacter_EveEntity(t *testing.T) {
 	x1 := &app.EveCharacter{ID: 42, Name: "name"}
-	x2 := x1.ToEveEntity()
+	x2 := x1.EveEntity()
 	assert.EqualValues(t, 42, x2.ID)
 	assert.EqualValues(t, "name", x2.Name)
 	assert.EqualValues(t, app.EveEntityCharacter, x2.Category)
@@ -126,7 +126,7 @@ func TestEveCorporation_Faction(t *testing.T) {
 
 func TestEveCorporation_EveEntity(t *testing.T) {
 	x1 := &app.EveCorporation{ID: 42, Name: "name"}
-	x2 := x1.ToEveEntity()
+	x2 := x1.EveEntity()
 	assert.EqualValues(t, 42, x2.ID)
 	assert.EqualValues(t, "name", x2.Name)
 	assert.EqualValues(t, app.EveEntityCorporation, x2.Category)

@@ -842,10 +842,6 @@ func EveNotificationTypeFromString(s string) (EveNotificationType, bool) {
 	return nt, true
 }
 
-// TODO: Add field Recipient *EveEntity and calculate it when creating the object.
-// Results should be stored in DB, because it can later change.
-// e.g. the corporation at the time of the notification might be different from today
-
 type CharacterNotification struct {
 	ID             int64
 	Body           optional.Optional[string] // generated body text in markdown
@@ -853,6 +849,7 @@ type CharacterNotification struct {
 	IsProcessed    bool
 	IsRead         bool
 	NotificationID int64
+	Recipient      *EveEntity // optional
 	Sender         *EveEntity
 	Text           string
 	Timestamp      time.Time

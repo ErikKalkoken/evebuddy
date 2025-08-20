@@ -21,6 +21,7 @@ INSERT INTO
         is_processed,
         is_read,
         notification_id,
+        recipient_id,
         sender_id,
         text,
         timestamp,
@@ -28,17 +29,20 @@ INSERT INTO
         type_id
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: GetCharacterNotification :one
 SELECT
     sqlc.embed(cn),
-    sqlc.embed(ee),
-    sqlc.embed(nt)
+    sqlc.embed(sender),
+    sqlc.embed(nt),
+    recipient.name as recipient_name,
+    recipient.category as recipient_category
 FROM
     character_notifications cn
-    JOIN eve_entities ee ON ee.id = cn.sender_id
+    JOIN eve_entities sender ON sender.id = cn.sender_id
     JOIN notification_types nt ON nt.id = cn.type_id
+    LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
 WHERE
     character_id = ?
     and notification_id = ?;
@@ -54,12 +58,15 @@ WHERE
 -- name: ListCharacterNotificationsTypes :many
 SELECT
     sqlc.embed(cn),
-    sqlc.embed(ee),
-    sqlc.embed(nt)
+    sqlc.embed(sender),
+    sqlc.embed(nt),
+    recipient.name as recipient_name,
+    recipient.category as recipient_category
 FROM
     character_notifications cn
-    JOIN eve_entities ee ON ee.id = cn.sender_id
+    JOIN eve_entities sender ON sender.id = cn.sender_id
     JOIN notification_types nt ON nt.id = cn.type_id
+    LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
 WHERE
     character_id = ?
     AND nt.name IN (sqlc.slice('names'))
@@ -69,12 +76,15 @@ ORDER BY
 -- name: ListCharacterNotificationsAll :many
 SELECT
     sqlc.embed(cn),
-    sqlc.embed(ee),
-    sqlc.embed(nt)
+    sqlc.embed(sender),
+    sqlc.embed(nt),
+    recipient.name as recipient_name,
+    recipient.category as recipient_category
 FROM
     character_notifications cn
-    JOIN eve_entities ee ON ee.id = cn.sender_id
+    JOIN eve_entities sender ON sender.id = cn.sender_id
     JOIN notification_types nt ON nt.id = cn.type_id
+    LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
 WHERE
     character_id = ?
 ORDER BY
@@ -83,12 +93,15 @@ ORDER BY
 -- name: ListCharacterNotificationsUnread :many
 SELECT
     sqlc.embed(cn),
-    sqlc.embed(ee),
-    sqlc.embed(nt)
+    sqlc.embed(sender),
+    sqlc.embed(nt),
+    recipient.name as recipient_name,
+    recipient.category as recipient_category
 FROM
     character_notifications cn
-    JOIN eve_entities ee ON ee.id = cn.sender_id
+    JOIN eve_entities sender ON sender.id = cn.sender_id
     JOIN notification_types nt ON nt.id = cn.type_id
+    LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
 WHERE
     character_id = ?
     AND cn.is_read IS FALSE
@@ -98,12 +111,15 @@ ORDER BY
 -- name: ListCharacterNotificationsUnprocessed :many
 SELECT
     sqlc.embed(cn),
-    sqlc.embed(ee),
-    sqlc.embed(nt)
+    sqlc.embed(sender),
+    sqlc.embed(nt),
+    recipient.name as recipient_name,
+    recipient.category as recipient_category
 FROM
     character_notifications cn
-    JOIN eve_entities ee ON ee.id = cn.sender_id
+    JOIN eve_entities sender ON sender.id = cn.sender_id
     JOIN notification_types nt ON nt.id = cn.type_id
+    LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
 WHERE
     character_id = ?
     AND cn.is_processed IS FALSE
