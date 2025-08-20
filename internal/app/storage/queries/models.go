@@ -192,6 +192,26 @@ type CharacterMailsRecipient struct {
 	EveEntityID int64
 }
 
+type CharacterMarketOrder struct {
+	ID            int64
+	CharacterID   int64
+	Duration      int64
+	Escrow        sql.NullFloat64
+	IsBuyOrder    bool
+	IsCorporation bool
+	Issued        time.Time
+	LocationID    int64
+	MinVolume     sql.NullInt64
+	OrderID       int64
+	Price         float64
+	Range         string
+	RegionID      int64
+	State         string
+	TypeID        int64
+	VolumeRemains int64
+	VolumeTotal   int64
+}
+
 type CharacterNotification struct {
 	ID             int64
 	Body           sql.NullString

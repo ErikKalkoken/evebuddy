@@ -473,7 +473,7 @@ func (f Factory) CreateCharacterIndustryJob(args ...storage.UpdateOrCreateCharac
 		arg.Runs = rand.Int32N(50)
 	}
 	if arg.Status == 0 {
-		items := []app.IndustryJobStatus{
+		items := []app.IndustryJobState{
 			app.JobActive,
 			app.JobCancelled,
 			app.JobDelivered,
@@ -1021,6 +1021,75 @@ func (f Factory) CreateCharacterWalletTransaction(args ...storage.CreateCharacte
 	return x
 }
 
+func (f Factory) CreateCharacterMarketOrder(args ...storage.UpdateOrCreateCharacterMarketOrderParams) *app.CharacterMarketOrder {
+	ctx := context.Background()
+	var arg storage.UpdateOrCreateCharacterMarketOrderParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CharacterID == 0 {
+		x := f.CreateCharacter()
+		arg.CharacterID = x.ID
+	}
+	if arg.Duration == 0 {
+		arg.Duration = rand.IntN(30) + 1
+	}
+	if arg.Issued.IsZero() {
+		arg.Issued = time.Now().UTC()
+	}
+	if arg.OrderID == 0 {
+		arg.OrderID = f.calcNewIDWithCharacter(
+			"character_market_orders",
+			"order_id",
+			arg.CharacterID,
+		)
+	}
+	if arg.Price == 0 {
+		arg.Price = rand.Float64()*100_000_000 + 1
+	}
+	if arg.Range == "" {
+		arg.Range = "station"
+	}
+	if arg.RegionID == 0 {
+		x := f.CreateEveRegion()
+		arg.RegionID = x.ID
+	}
+	if arg.LocationID == 0 {
+		c := f.CreateEveConstellation(storage.CreateEveConstellationParams{
+			RegionID: arg.RegionID,
+		})
+		s := f.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
+			ConstellationID: c.ID,
+		})
+		x := f.CreateEveLocationStation(storage.UpdateOrCreateLocationParams{
+			SolarSystemID: optional.New(s.ID),
+		})
+		arg.LocationID = x.ID
+	}
+	if arg.State == app.OrderUndefined {
+		arg.State = app.OrderOpen
+	}
+	if arg.TypeID == 0 {
+		x := f.CreateEveType()
+		arg.TypeID = x.ID
+	}
+	if arg.VolumeTotal == 0 {
+		arg.VolumeTotal = rand.IntN(100_000) + 1
+	}
+	if arg.VolumeRemains == 0 {
+		arg.VolumeTotal = max(rand.IntN(arg.VolumeTotal), 1)
+	}
+	err := f.st.UpdateOrCreateCharacterMarketOrder(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	x, err := f.st.GetCharacterMarketOrder(ctx, arg.CharacterID, arg.OrderID)
+	if err != nil {
+		panic(err)
+	}
+	return x
+}
+
 func (f Factory) CreateCharacterNotification(args ...storage.CreateCharacterNotificationParams) *app.CharacterNotification {
 	ctx := context.Background()
 	var arg storage.CreateCharacterNotificationParams
@@ -1204,7 +1273,7 @@ func (f Factory) CreateCorporationIndustryJob(args ...storage.UpdateOrCreateCorp
 		arg.LocationID = x.ID
 	}
 	if arg.Status == 0 {
-		items := []app.IndustryJobStatus{
+		items := []app.IndustryJobState{
 			app.JobActive,
 			app.JobCancelled,
 			app.JobDelivered,

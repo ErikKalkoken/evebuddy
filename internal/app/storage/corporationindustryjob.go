@@ -59,9 +59,9 @@ func (st *Storage) GetCorporationIndustryJob(ctx context.Context, corporationID,
 	}
 	o := corporationIndustryJobFromDBModel(corporationIndustryJobFromDBModelParams{
 		blueprintTypeName:      r.BlueprintTypeName,
+		cij:                    r.CorporationIndustryJob,
 		completedCharacterName: r.CompletedCharacterName,
 		installer:              r.EveEntity,
-		job:                    r.CorporationIndustryJob,
 		locationName:           r.LocationName,
 		locationSecurity:       r.StationSecurity,
 		productTypeName:        r.ProductTypeName,
@@ -83,13 +83,13 @@ func (st *Storage) ListCorporationIndustryJobs(ctx context.Context, corporationI
 	oo := make([]*app.CorporationIndustryJob, len(rows))
 	for i, r := range rows {
 		oo[i] = corporationIndustryJobFromDBModel(corporationIndustryJobFromDBModelParams{
-			job:                    r.CorporationIndustryJob,
-			installer:              r.EveEntity,
 			blueprintTypeName:      r.BlueprintTypeName,
+			cij:                    r.CorporationIndustryJob,
 			completedCharacterName: r.CompletedCharacterName,
-			productTypeName:        r.ProductTypeName,
+			installer:              r.EveEntity,
 			locationName:           r.LocationName,
 			locationSecurity:       r.StationSecurity,
+			productTypeName:        r.ProductTypeName,
 		})
 	}
 	return oo, nil
@@ -103,13 +103,13 @@ func (st *Storage) ListAllCorporationIndustryJobs(ctx context.Context) ([]*app.C
 	oo := make([]*app.CorporationIndustryJob, len(rows))
 	for i, r := range rows {
 		oo[i] = corporationIndustryJobFromDBModel(corporationIndustryJobFromDBModelParams{
-			job:                    r.CorporationIndustryJob,
-			installer:              r.EveEntity,
 			blueprintTypeName:      r.BlueprintTypeName,
+			cij:                    r.CorporationIndustryJob,
 			completedCharacterName: r.CompletedCharacterName,
-			productTypeName:        r.ProductTypeName,
+			installer:              r.EveEntity,
 			locationName:           r.LocationName,
 			locationSecurity:       r.StationSecurity,
+			productTypeName:        r.ProductTypeName,
 		})
 	}
 	return oo, nil
@@ -117,9 +117,9 @@ func (st *Storage) ListAllCorporationIndustryJobs(ctx context.Context) ([]*app.C
 
 type corporationIndustryJobFromDBModelParams struct {
 	blueprintTypeName      string
+	cij                    queries.CorporationIndustryJob
 	completedCharacterName sql.NullString
 	installer              queries.EveEntity
-	job                    queries.CorporationIndustryJob
 	locationName           string
 	locationSecurity       sql.NullFloat64
 	productTypeName        sql.NullString
@@ -127,46 +127,46 @@ type corporationIndustryJobFromDBModelParams struct {
 
 func corporationIndustryJobFromDBModel(arg corporationIndustryJobFromDBModelParams) *app.CorporationIndustryJob {
 	o2 := &app.CorporationIndustryJob{
-		Activity:            app.IndustryActivity(arg.job.ActivityID),
-		BlueprintID:         arg.job.BlueprintID,
-		BlueprintLocationID: arg.job.BlueprintLocationID,
+		Activity:            app.IndustryActivity(arg.cij.ActivityID),
+		BlueprintID:         arg.cij.BlueprintID,
+		BlueprintLocationID: arg.cij.BlueprintLocationID,
 		BlueprintType: &app.EntityShort[int32]{
-			ID:   int32(arg.job.BlueprintTypeID),
+			ID:   int32(arg.cij.BlueprintTypeID),
 			Name: arg.blueprintTypeName,
 		},
-		CorporationID: int32(arg.job.CorporationID),
-		CompletedDate: optional.FromNullTime(arg.job.CompletedDate),
-		Cost:          optional.FromNullFloat64(arg.job.Cost),
-		Duration:      int(arg.job.Duration),
-		EndDate:       arg.job.EndDate,
-		FacilityID:    arg.job.FacilityID,
-		ID:            arg.job.ID,
+		CorporationID: int32(arg.cij.CorporationID),
+		CompletedDate: optional.FromNullTime(arg.cij.CompletedDate),
+		Cost:          optional.FromNullFloat64(arg.cij.Cost),
+		Duration:      int(arg.cij.Duration),
+		EndDate:       arg.cij.EndDate,
+		FacilityID:    arg.cij.FacilityID,
+		ID:            arg.cij.ID,
 		Installer:     eveEntityFromDBModel(arg.installer),
-		JobID:         int32(arg.job.JobID),
-		LicensedRuns:  optional.FromNullInt64ToInteger[int](arg.job.LicensedRuns),
-		PauseDate:     optional.FromNullTime(arg.job.PauseDate),
-		Probability:   optional.FromNullFloat64ToFloat32(arg.job.Probability),
-		Runs:          int(arg.job.Runs),
+		JobID:         int32(arg.cij.JobID),
+		LicensedRuns:  optional.FromNullInt64ToInteger[int](arg.cij.LicensedRuns),
+		PauseDate:     optional.FromNullTime(arg.cij.PauseDate),
+		Probability:   optional.FromNullFloat64ToFloat32(arg.cij.Probability),
+		Runs:          int(arg.cij.Runs),
 		Location: &app.EveLocationShort{
-			ID:             arg.job.LocationID,
+			ID:             arg.cij.LocationID,
 			Name:           optional.New(arg.locationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.locationSecurity),
 		},
-		OutputLocationID: arg.job.OutputLocationID,
-		StartDate:        arg.job.StartDate,
-		Status:           jobStatusFromDBValue[arg.job.Status],
-		SuccessfulRuns:   optional.FromNullInt64ToInteger[int32](arg.job.SuccessfulRuns),
+		OutputLocationID: arg.cij.OutputLocationID,
+		StartDate:        arg.cij.StartDate,
+		Status:           jobStatusFromDBValue[arg.cij.Status],
+		SuccessfulRuns:   optional.FromNullInt64ToInteger[int32](arg.cij.SuccessfulRuns),
 	}
-	if arg.job.CompletedCharacterID.Valid && arg.completedCharacterName.Valid {
+	if arg.cij.CompletedCharacterID.Valid && arg.completedCharacterName.Valid {
 		o2.CompletedCharacter = optional.New(&app.EveEntity{
-			ID:       int32(arg.job.CompletedCharacterID.Int64),
+			ID:       int32(arg.cij.CompletedCharacterID.Int64),
 			Name:     arg.completedCharacterName.String,
 			Category: app.EveEntityCharacter,
 		})
 	}
-	if arg.job.ProductTypeID.Valid && arg.productTypeName.Valid {
+	if arg.cij.ProductTypeID.Valid && arg.productTypeName.Valid {
 		o2.ProductType = optional.New(&app.EntityShort[int32]{
-			ID:   int32(arg.job.ProductTypeID.Int64),
+			ID:   int32(arg.cij.ProductTypeID.Int64),
 			Name: arg.productTypeName.String,
 		})
 	}
@@ -195,15 +195,23 @@ type UpdateOrCreateCorporationIndustryJobParams struct {
 	ProductTypeID        int32     // optional
 	Runs                 int32
 	StartDate            time.Time
-	Status               app.IndustryJobStatus
+	Status               app.IndustryJobState
 	SuccessfulRuns       int32 // optional
 }
 
 func (st *Storage) UpdateOrCreateCorporationIndustryJob(ctx context.Context, arg UpdateOrCreateCorporationIndustryJobParams) error {
-	if arg.CorporationID == 0 || arg.BlueprintTypeID == 0 || arg.BlueprintLocationID == 0 || arg.InstallerID == 0 || arg.OutputLocationID == 0 || arg.LocationID == 0 {
-		return fmt.Errorf("update or create corporation industry job: %+v: invalid parameters", arg)
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateOrCreateCorporationIndustryJob: %+v: %w", arg, err)
 	}
-	arg2 := queries.UpdateOrCreateCorporationIndustryJobsParams{
+	if arg.CorporationID == 0 ||
+		arg.BlueprintTypeID == 0 ||
+		arg.BlueprintLocationID == 0 ||
+		arg.InstallerID == 0 ||
+		arg.OutputLocationID == 0 ||
+		arg.LocationID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	err := st.qRW.UpdateOrCreateCorporationIndustryJobs(ctx, queries.UpdateOrCreateCorporationIndustryJobsParams{
 		ActivityID:           int64(arg.ActivityID),
 		BlueprintID:          arg.BlueprintID,
 		BlueprintLocationID:  arg.BlueprintLocationID,
@@ -227,9 +235,9 @@ func (st *Storage) UpdateOrCreateCorporationIndustryJob(ctx context.Context, arg
 		LocationID:           arg.LocationID,
 		Status:               jobStatusToDBValue[arg.Status],
 		SuccessfulRuns:       NewNullInt64(int64(arg.SuccessfulRuns)),
-	}
-	if err := st.qRW.UpdateOrCreateCorporationIndustryJobs(ctx, arg2); err != nil {
-		return fmt.Errorf("update or create corporation industry job: %+v: %w", arg, err)
+	})
+	if err != nil {
+		return wrapErr(err)
 	}
 	return nil
 }

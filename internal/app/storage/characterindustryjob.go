@@ -13,7 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
-var jobStatusFromDBValue = map[string]app.IndustryJobStatus{
+var jobStatusFromDBValue = map[string]app.IndustryJobState{
 	"":          app.JobUndefined,
 	"active":    app.JobActive,
 	"cancelled": app.JobCancelled,
@@ -23,7 +23,7 @@ var jobStatusFromDBValue = map[string]app.IndustryJobStatus{
 	"reverted":  app.JobReverted,
 }
 
-var jobStatusToDBValue = map[app.IndustryJobStatus]string{}
+var jobStatusToDBValue = map[app.IndustryJobState]string{}
 
 func init() {
 	for k, v := range jobStatusFromDBValue {
@@ -65,11 +65,11 @@ func (st *Storage) GetCharacterIndustryJob(ctx context.Context, characterID, job
 		blueprintLocationName:     r.BlueprintLocationName,
 		blueprintLocationSecurity: r.BlueprintLocationSecurity,
 		blueprintTypeName:         r.BlueprintTypeName,
+		cij:                       r.CharacterIndustryJob,
 		completedCharacterName:    r.CompletedCharacterName,
 		facilityName:              r.FacilityName,
 		facilitySecurity:          r.FacilitySecurity,
 		installer:                 r.EveEntity,
-		job:                       r.CharacterIndustryJob,
 		outputLocationName:        r.OutputLocationName,
 		outputLocationSecurity:    r.OutputLocationSecurity,
 		productTypeName:           r.ProductTypeName,
@@ -90,11 +90,11 @@ func (st *Storage) ListAllCharacterIndustryJob(ctx context.Context) ([]*app.Char
 			blueprintLocationName:     r.BlueprintLocationName,
 			blueprintLocationSecurity: r.BlueprintLocationSecurity,
 			blueprintTypeName:         r.BlueprintTypeName,
+			cij:                       r.CharacterIndustryJob,
 			completedCharacterName:    r.CompletedCharacterName,
 			facilityName:              r.FacilityName,
 			facilitySecurity:          r.FacilitySecurity,
 			installer:                 r.EveEntity,
-			job:                       r.CharacterIndustryJob,
 			outputLocationName:        r.OutputLocationName,
 			outputLocationSecurity:    r.OutputLocationSecurity,
 			productTypeName:           r.ProductTypeName,
@@ -116,11 +116,11 @@ func (st *Storage) ListCharacterIndustryJobs(ctx context.Context, characterID in
 			blueprintLocationName:     r.BlueprintLocationName,
 			blueprintLocationSecurity: r.BlueprintLocationSecurity,
 			blueprintTypeName:         r.BlueprintTypeName,
+			cij:                       r.CharacterIndustryJob,
 			completedCharacterName:    r.CompletedCharacterName,
 			facilityName:              r.FacilityName,
 			facilitySecurity:          r.FacilitySecurity,
 			installer:                 r.EveEntity,
-			job:                       r.CharacterIndustryJob,
 			outputLocationName:        r.OutputLocationName,
 			outputLocationSecurity:    r.OutputLocationSecurity,
 			productTypeName:           r.ProductTypeName,
@@ -131,15 +131,32 @@ func (st *Storage) ListCharacterIndustryJobs(ctx context.Context, characterID in
 	return oo, nil
 }
 
+func (st *Storage) ListAllCharacterIndustryJobActiveCounts(ctx context.Context) ([]app.IndustryJobActivityCount, error) {
+	rows, err := st.qRO.ListAllCharacterIndustryJobActiveCounts(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("ListAllCharacterIndustryJobActiveCounts: %w", err)
+	}
+	result := make([]app.IndustryJobActivityCount, 0)
+	for _, r := range rows {
+		result = append(result, app.IndustryJobActivityCount{
+			Activity:    app.IndustryActivity(r.ActivityID),
+			Count:       int(r.Number),
+			InstallerID: int32(r.InstallerID),
+			Status:      jobStatusFromDBValue[r.Status],
+		})
+	}
+	return result, nil
+}
+
 type characterIndustryJobFromDBModelParams struct {
 	blueprintLocationName     string
 	blueprintLocationSecurity sql.NullFloat64
 	blueprintTypeName         string
+	cij                       queries.CharacterIndustryJob
 	completedCharacterName    sql.NullString
 	facilityName              string
 	facilitySecurity          sql.NullFloat64
 	installer                 queries.EveEntity
-	job                       queries.CharacterIndustryJob
 	outputLocationName        string
 	outputLocationSecurity    sql.NullFloat64
 	productTypeName           sql.NullString
@@ -149,79 +166,62 @@ type characterIndustryJobFromDBModelParams struct {
 
 func characterIndustryJobFromDBModel(arg characterIndustryJobFromDBModelParams) *app.CharacterIndustryJob {
 	o2 := &app.CharacterIndustryJob{
-		Activity:    app.IndustryActivity(arg.job.ActivityID),
-		BlueprintID: arg.job.BlueprintID,
+		Activity:    app.IndustryActivity(arg.cij.ActivityID),
+		BlueprintID: arg.cij.BlueprintID,
 		BlueprintLocation: &app.EveLocationShort{
-			ID:             arg.job.BlueprintLocationID,
+			ID:             arg.cij.BlueprintLocationID,
 			Name:           optional.New(arg.blueprintLocationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.blueprintLocationSecurity),
 		},
 		BlueprintType: &app.EntityShort[int32]{
-			ID:   int32(arg.job.BlueprintTypeID),
+			ID:   int32(arg.cij.BlueprintTypeID),
 			Name: arg.blueprintTypeName,
 		},
-		CharacterID:   int32(arg.job.CharacterID),
-		CompletedDate: optional.FromNullTime(arg.job.CompletedDate),
-		Cost:          optional.FromNullFloat64(arg.job.Cost),
-		Duration:      int(arg.job.Duration),
-		EndDate:       arg.job.EndDate,
+		CharacterID:   int32(arg.cij.CharacterID),
+		CompletedDate: optional.FromNullTime(arg.cij.CompletedDate),
+		Cost:          optional.FromNullFloat64(arg.cij.Cost),
+		Duration:      int(arg.cij.Duration),
+		EndDate:       arg.cij.EndDate,
 		Facility: &app.EveLocationShort{
-			ID:             arg.job.FacilityID,
+			ID:             arg.cij.FacilityID,
 			Name:           optional.New(arg.facilityName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.facilitySecurity),
 		},
-		ID:           arg.job.ID,
+		ID:           arg.cij.ID,
 		Installer:    eveEntityFromDBModel(arg.installer),
-		JobID:        int32(arg.job.JobID),
-		LicensedRuns: optional.FromNullInt64ToInteger[int](arg.job.LicensedRuns),
+		JobID:        int32(arg.cij.JobID),
+		LicensedRuns: optional.FromNullInt64ToInteger[int](arg.cij.LicensedRuns),
 		OutputLocation: &app.EveLocationShort{
-			ID:             arg.job.OutputLocationID,
+			ID:             arg.cij.OutputLocationID,
 			Name:           optional.New(arg.outputLocationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.outputLocationSecurity),
 		},
-		PauseDate:   optional.FromNullTime(arg.job.PauseDate),
-		Probability: optional.FromNullFloat64ToFloat32(arg.job.Probability),
-		Runs:        int(arg.job.Runs),
+		PauseDate:   optional.FromNullTime(arg.cij.PauseDate),
+		Probability: optional.FromNullFloat64ToFloat32(arg.cij.Probability),
+		Runs:        int(arg.cij.Runs),
 		Station: &app.EveLocationShort{
-			ID:             arg.job.StationID,
+			ID:             arg.cij.StationID,
 			Name:           optional.New(arg.stationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.stationSecurity),
 		},
-		StartDate:      arg.job.StartDate,
-		Status:         jobStatusFromDBValue[arg.job.Status],
-		SuccessfulRuns: optional.FromNullInt64ToInteger[int32](arg.job.SuccessfulRuns),
+		StartDate:      arg.cij.StartDate,
+		Status:         jobStatusFromDBValue[arg.cij.Status],
+		SuccessfulRuns: optional.FromNullInt64ToInteger[int32](arg.cij.SuccessfulRuns),
 	}
-	if arg.job.CompletedCharacterID.Valid && arg.completedCharacterName.Valid {
+	if arg.cij.CompletedCharacterID.Valid && arg.completedCharacterName.Valid {
 		o2.CompletedCharacter = optional.New(&app.EveEntity{
-			ID:       int32(arg.job.CompletedCharacterID.Int64),
+			ID:       int32(arg.cij.CompletedCharacterID.Int64),
 			Name:     arg.completedCharacterName.String,
 			Category: app.EveEntityCharacter,
 		})
 	}
-	if arg.job.ProductTypeID.Valid && arg.productTypeName.Valid {
+	if arg.cij.ProductTypeID.Valid && arg.productTypeName.Valid {
 		o2.ProductType = optional.New(&app.EntityShort[int32]{
-			ID:   int32(arg.job.ProductTypeID.Int64),
+			ID:   int32(arg.cij.ProductTypeID.Int64),
 			Name: arg.productTypeName.String,
 		})
 	}
 	return o2
-}
-
-func (st *Storage) ListAllCharacterIndustryJobActiveCounts(ctx context.Context) ([]app.IndustryJobActivityCount, error) {
-	rows, err := st.qRO.ListAllCharacterIndustryJobActiveCounts(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("ListAllCharacterIndustryJobActiveCounts: %w", err)
-	}
-	result := make([]app.IndustryJobActivityCount, 0)
-	for _, r := range rows {
-		result = append(result, app.IndustryJobActivityCount{
-			InstallerID: int32(r.InstallerID),
-			Activity:    app.IndustryActivity(r.ActivityID),
-			Status:      jobStatusFromDBValue[r.Status],
-			Count:       int(r.Number),
-		})
-	}
-	return result, nil
 }
 
 type UpdateOrCreateCharacterIndustryJobParams struct {
@@ -246,15 +246,18 @@ type UpdateOrCreateCharacterIndustryJobParams struct {
 	Runs                 int32
 	StartDate            time.Time
 	StationID            int64
-	Status               app.IndustryJobStatus
+	Status               app.IndustryJobState
 	SuccessfulRuns       int32 // optional
 }
 
 func (st *Storage) UpdateOrCreateCharacterIndustryJob(ctx context.Context, arg UpdateOrCreateCharacterIndustryJobParams) error {
-	if arg.CharacterID == 0 || arg.BlueprintTypeID == 0 || arg.BlueprintLocationID == 0 || arg.InstallerID == 0 || arg.OutputLocationID == 0 || arg.StationID == 0 {
-		return fmt.Errorf("update or create character industry job: %+v: invalid parameters", arg)
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateOrCreateCharacterIndustryJob: %+v: %w", arg, err)
 	}
-	arg2 := queries.UpdateOrCreateCharacterIndustryJobsParams{
+	if arg.CharacterID == 0 || arg.BlueprintTypeID == 0 || arg.BlueprintLocationID == 0 || arg.InstallerID == 0 || arg.OutputLocationID == 0 || arg.StationID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	err := st.qRW.UpdateOrCreateCharacterIndustryJobs(ctx, queries.UpdateOrCreateCharacterIndustryJobsParams{
 		ActivityID:           int64(arg.ActivityID),
 		BlueprintID:          arg.BlueprintID,
 		BlueprintLocationID:  arg.BlueprintLocationID,
@@ -278,9 +281,9 @@ func (st *Storage) UpdateOrCreateCharacterIndustryJob(ctx context.Context, arg U
 		StationID:            arg.StationID,
 		Status:               jobStatusToDBValue[arg.Status],
 		SuccessfulRuns:       NewNullInt64(int64(arg.SuccessfulRuns)),
-	}
-	if err := st.qRW.UpdateOrCreateCharacterIndustryJobs(ctx, arg2); err != nil {
-		return fmt.Errorf("update or create character industry job: %+v: %w", arg, err)
+	})
+	if err != nil {
+		return wrapErr(err)
 	}
 	return nil
 }

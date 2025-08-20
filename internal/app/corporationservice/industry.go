@@ -28,7 +28,7 @@ func (s *CorporationService) ListAllCorporationIndustryJobs(ctx context.Context)
 	return s.st.ListAllCorporationIndustryJobs(ctx)
 }
 
-var jobStatusFromESIValue = map[string]app.IndustryJobStatus{
+var jobStatusFromESIValue = map[string]app.IndustryJobState{
 	"active":    app.JobActive,
 	"cancelled": app.JobCancelled,
 	"delivered": app.JobDelivered,
