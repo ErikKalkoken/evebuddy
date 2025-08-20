@@ -3,7 +3,6 @@ package app
 import (
 	"bytes"
 	"fmt"
-	"log/slog"
 	"strings"
 	"time"
 	"unicode"
@@ -262,6 +261,9 @@ const (
 // and reports whether the category is defined.
 func (nt EveNotificationType) Category() (EveEntityCategory, bool) {
 	c, ok := notificationCategories[nt]
+	if !ok {
+		return EveEntityUndefined, false
+	}
 	return c, ok
 }
 
@@ -702,7 +704,6 @@ type CharacterNotification struct {
 	IsProcessed    bool
 	IsRead         bool
 	NotificationID int64
-	RecipientName  string // TODO: Replace with EveEntity
 	Sender         *EveEntity
 	Text           string
 	Timestamp      time.Time
@@ -730,37 +731,6 @@ func (cn *CharacterNotification) TitleFake() string {
 		last = r
 	}
 	return b.String()
-}
-
-// Header returns the header of a notification.
-func (cn *CharacterNotification) Header() string {
-	s := fmt.Sprintf(
-		"From: %s\n"+
-			"Sent: %s",
-		cn.Sender.Name,
-		cn.Timestamp.Format(DateTimeFormat),
-	)
-	if cn.RecipientName != "" {
-		s += fmt.Sprintf("\nTo: %s", cn.RecipientName)
-	}
-	return s
-}
-
-// String returns the content of a notification as string.
-func (cn *CharacterNotification) String() string {
-	s := cn.TitleDisplay() + "\n" + cn.Header()
-	b, err := cn.BodyPlain()
-	if err != nil {
-		slog.Error("render notification to string", "id", cn.ID, "error", err)
-		return s
-	}
-	s += "\n\n"
-	if b.IsEmpty() {
-		s += "(no body)"
-	} else {
-		s += b.ValueOrZero()
-	}
-	return s
 }
 
 // BodyPlain returns the body of a notification as plain text.

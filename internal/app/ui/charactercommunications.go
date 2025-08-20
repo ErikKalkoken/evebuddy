@@ -200,8 +200,10 @@ func (a *characterCommunications) setDetail(n *app.CharacterNotification) {
 	if a.character == nil {
 		return
 	}
-	if n.RecipientName == "" {
-		n.RecipientName = a.character.EveCharacter.Name
+	recipient, err := a.u.cs.NotificationRecipient(context.Background(), n)
+	if err != nil {
+		slog.Error("Failed to fetch recipient for notification", "notif", n, "error", err)
+		recipient = a.character.EveCharacter.ToEveEntity()
 	}
 	a.Detail.RemoveAll()
 	subject := widget.NewLabel(n.TitleDisplay())
@@ -209,7 +211,7 @@ func (a *characterCommunications) setDetail(n *app.CharacterNotification) {
 	subject.Wrapping = fyne.TextWrapWord
 	a.Detail.Add(subject)
 	h := newMailHeader(a.u.eis, a.u.ShowEveEntityInfoWindow)
-	h.Set(n.Sender, n.Timestamp, a.character.EveCharacter.ToEveEntity())
+	h.Set(n.Sender, n.Timestamp, recipient)
 	a.Detail.Add(h)
 	s, err := n.BodyPlain() // using markdown blocked by #61
 	if err != nil {
@@ -231,7 +233,38 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 			if a.current == nil {
 				return
 			}
-			a.u.App().Clipboard().SetContent(a.current.String())
+			processErr := func(err error) {
+				a.u.showErrorDialog(
+					"Failed to generated notification for clipboard",
+					err,
+					a.u.MainWindow(),
+				)
+			}
+			cn := a.current
+			recipient, err := a.u.cs.NotificationRecipient(context.Background(), cn)
+			if err != nil {
+				processErr(err)
+				return
+			}
+			header := fmt.Sprintf(
+				"From: %s\nSent: %s\nTo: %s",
+				cn.Sender.Name,
+				cn.Timestamp.Format(app.DateTimeFormat),
+				recipient.Name,
+			)
+			s := cn.TitleDisplay() + "\n" + header
+			b, err := cn.BodyPlain()
+			if err != nil {
+				processErr(err)
+				return
+			}
+			s += "\n\n"
+			if b.IsEmpty() {
+				s += "(no body)"
+			} else {
+				s += b.ValueOrZero()
+			}
+			a.u.App().Clipboard().SetContent(s)
 		}),
 	)
 	if a.u.IsDeveloperMode() {
@@ -242,7 +275,11 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 			if a.character == nil {
 				return
 			}
-			title, content := a.u.cs.RenderNotificationSummary(a.character, a.current)
+			title, content, err := a.u.cs.RenderNotificationSummary(context.Background(), a.current)
+			if err != nil {
+				a.u.showErrorDialog("Failed to render notification", err, a.u.MainWindow())
+				return
+			}
 			a.u.app.SendNotification(fyne.NewNotification(title, content))
 		}))
 	}

@@ -183,107 +183,86 @@ func TestListCharacterNotifications(t *testing.T) {
 	})
 }
 
-func TestRenderNotificationContent(t *testing.T) {
+func TestNotificationRecipient(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := NewFake(st)
+	ctx := context.Background()
+
+	c1 := factory.CreateCharacter()
+	character1 := c1.EveCharacter.ToEveEntity()
+	corporation1 := c1.EveCharacter.Corporation
+
+	alliance2 := factory.CreateEveEntityAlliance()
+	ec2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+		AllianceID: alliance2.ID,
+	})
+	c2 := factory.CreateCharacter(storage.CreateCharacterParams{
+		ID: ec2.ID,
+	})
+
 	cases := []struct {
-		name        string
-		notif       *app.CharacterNotification
-		character   *app.Character
-		wantTitle   string
-		wantContent string
+		name  string
+		notif *app.CharacterNotification
+		want  *app.EveEntity
 	}{
 		{
-			"corporation name for corporation notifs",
+			"corporation notifs",
 			&app.CharacterNotification{
-				CharacterID: 42,
+				CharacterID: c1.ID,
 				Type:        app.StructureDestroyed,
 				Title:       optional.New("Structure destroyed"),
 				Sender:      &app.EveEntity{Name: "Concord"},
-			}, &app.Character{
-				ID: 42,
-				EveCharacter: &app.EveCharacter{
-					Name:        "Bruce Wayne",
-					Corporation: &app.EveEntity{Name: "Wayne Technology"},
-				},
 			},
-			"Wayne Technology: New Communication from Concord",
-			"Structure destroyed",
+			corporation1,
 		},
 		{
 			"alliance name for alliance notifs",
 			&app.CharacterNotification{
-				CharacterID: 42,
+				CharacterID: c2.ID,
 				Type:        app.SovStructureDestroyed,
 				Title:       optional.New("Structure destroyed"),
 				Sender:      &app.EveEntity{Name: "Concord"},
-			}, &app.Character{
-				ID: 42,
-				EveCharacter: &app.EveCharacter{
-					Name:        "Bruce Wayne",
-					Corporation: &app.EveEntity{Name: "Wayne Technology"},
-					Alliance:    &app.EveEntity{Name: "Wayne Inc"},
-				},
 			},
-			"Wayne Inc: New Communication from Concord",
-			"Structure destroyed",
+			alliance2,
 		},
 		{
-			"character name for character notifs",
+			"character notifs",
 			&app.CharacterNotification{
-				CharacterID: 42,
+				CharacterID: c1.ID,
 				Type:        app.StructureItemsDelivered,
 				Title:       optional.New("Items delivered"),
 				Sender:      &app.EveEntity{Name: "Concord"},
-			}, &app.Character{
-				ID: 42,
-				EveCharacter: &app.EveCharacter{
-					Name:        "Bruce Wayne",
-					Corporation: &app.EveEntity{Name: "Wayne Technology"},
-				},
 			},
-			"Bruce Wayne: New Communication from Concord",
-			"Items delivered",
+			character1,
 		},
 		{
 			"corporation for alliance notif as fallback",
 			&app.CharacterNotification{
-				CharacterID: 42,
+				CharacterID: c1.ID,
 				Type:        app.SovStructureDestroyed,
 				Title:       optional.New("Structure destroyed"),
 				Sender:      &app.EveEntity{Name: "Concord"},
-			}, &app.Character{
-				ID: 42,
-				EveCharacter: &app.EveCharacter{
-					Name:        "Bruce Wayne",
-					Corporation: &app.EveEntity{Name: "Wayne Technology"},
-				},
 			},
-			"Wayne Technology: New Communication from Concord",
-			"Structure destroyed",
+			corporation1,
 		},
 		{
-			"character name as fallback for notifs with unknown category",
+			"character as fallback for notifs with unknown category",
 			&app.CharacterNotification{
-				CharacterID: 42,
+				CharacterID: c1.ID,
 				Type:        app.AgentRetiredTrigravian,
 				Title:       optional.New("Agent retired"),
 				Sender:      &app.EveEntity{Name: "Concord"},
-			}, &app.Character{
-				ID: 42,
-				EveCharacter: &app.EveCharacter{
-					Name:        "Bruce Wayne",
-					Corporation: &app.EveEntity{Name: "Wayne Technology"},
-				},
 			},
-			"Bruce Wayne: New Communication from Concord",
-			"Agent retired",
+			character1,
 		},
 	}
-	s := &CharacterService{}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			title, content := s.RenderNotificationSummary(tc.character, tc.notif)
-			assert.Equal(t, tc.wantTitle, title)
-			assert.Equal(t, tc.wantContent, content)
+			got, err := s.NotificationRecipient(ctx, tc.notif)
+			if assert.NoError(t, err) {
+				assert.Equal(t, tc.want, got)
+			}
 		})
 	}
 }

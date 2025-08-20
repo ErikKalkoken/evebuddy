@@ -1070,7 +1070,9 @@ func (u *baseUI) NewErrorDialog(message string, err error, parent fyne.Window) d
 	return d
 }
 
+// showErrorDialog shows an error dialog and logs the error.
 func (u *baseUI) showErrorDialog(message string, err error, parent fyne.Window) {
+	slog.Error(message, "error", err)
 	d := u.NewErrorDialog(message, err, parent)
 	d.Show()
 }
