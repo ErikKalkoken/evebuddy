@@ -25,10 +25,9 @@ import (
 )
 
 type cloneRow struct {
-	jc       *app.CharacterJumpClone2
-	route    []*app.EveSolarSystem
-	routeErr error // TODO: not used, remove?
-	tags     set.Set[string]
+	jc    *app.CharacterJumpClone2
+	route []*app.EveSolarSystem
+	tags  set.Set[string]
 }
 
 func (r cloneRow) id() string {
