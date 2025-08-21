@@ -16,6 +16,20 @@ const (
 	OrderOpen
 )
 
+func (mos MarketOrderState) String() string {
+	switch mos {
+	case OrderUndefined:
+		return "undefined"
+	case OrderCancelled:
+		return "cancelled"
+	case OrderExpired:
+		return "expired"
+	case OrderOpen:
+		return "open"
+	}
+	return "?"
+}
+
 type CharacterMarketOrder struct {
 	CharacterID   int32
 	Duration      int
@@ -28,7 +42,7 @@ type CharacterMarketOrder struct {
 	OrderID       int64
 	Price         float64
 	Range         string
-	RegionID      int32
+	Region        *EntityShort[int32]
 	State         MarketOrderState
 	Type          *EntityShort[int32]
 	VolumeRemains int

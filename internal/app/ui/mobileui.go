@@ -645,6 +645,18 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		navItemColonies2,
 		navItemIndustry,
 		iwidget.NewListItemWithIcon(
+			"Market Orders",
+			theme.NewThemedResource(icons.ChartAreasplineSvg),
+			func() {
+				homeNav.Push(iwidget.NewAppBar("Market Orders",
+					container.NewAppTabs(
+						container.NewTabItem("Buy", u.marketOrdersBuy),
+						container.NewTabItem("Sell", u.marketOrdersSell),
+					),
+				))
+			},
+		),
+		iwidget.NewListItemWithIcon(
 			"Character Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),
 			func() {

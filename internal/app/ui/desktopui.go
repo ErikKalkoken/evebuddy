@@ -188,6 +188,16 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			homeNav.SetItemBadge(industry, badge)
 		})
 	}
+
+	marketOrders := iwidget.NewNavPage(
+		"Market Orders",
+		theme.NewThemedResource(icons.ChartAreasplineSvg),
+		makePageWithTitle("Market Orders", container.NewAppTabs(
+			container.NewTabItem("Buy", u.marketOrdersBuy),
+			container.NewTabItem("Sell", u.marketOrdersSell),
+		)),
+	)
+
 	homeNav = iwidget.NewNavDrawer(
 		overview,
 		allAssets,
@@ -202,6 +212,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		contracts,
 		overviewColonies,
 		industry,
+		marketOrders,
 		iwidget.NewNavPage(
 			"Character Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),

@@ -96,7 +96,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 				assert.True(t, o.MinVolume.IsEmpty())
 				assert.EqualValues(t, 123.45, o.Price)
 				assert.EqualValues(t, "1", o.Range)
-				assert.EqualValues(t, location1.SolarSystem.Constellation.Region.ID, o.RegionID)
+				assert.EqualValues(t, location1.SolarSystem.Constellation.Region.ID, o.Region.ID)
 				assert.EqualValues(t, app.OrderOpen, o.State)
 				assert.EqualValues(t, itemType1.ID, o.Type.ID)
 				assert.EqualValues(t, 5, o.VolumeRemains)
@@ -126,7 +126,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 				"order_id":       o1.OrderID,
 				"price":          o1.Price,
 				"range":          o1.Range,
-				"region_id":      o1.RegionID,
+				"region_id":      o1.Region.ID,
 				"state":          "expired",
 				"type_id":        o1.Type.ID,
 				"volume_remain":  remain,

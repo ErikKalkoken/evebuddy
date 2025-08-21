@@ -60,7 +60,8 @@ func TestCharacterMarketOrder(t *testing.T) {
 				assert.True(t, o.MinVolume.IsEmpty())
 				assert.EqualValues(t, 123.45, o.Price)
 				assert.EqualValues(t, "station", o.Range)
-				assert.EqualValues(t, region.ID, o.RegionID)
+				assert.EqualValues(t, region.ID, o.Region.ID)
+				assert.EqualValues(t, region.Name, o.Region.Name)
 				assert.EqualValues(t, app.OrderOpen, o.State)
 				assert.EqualValues(t, itemType.ID, o.Type.ID)
 				assert.EqualValues(t, itemType.Name, o.Type.Name)
@@ -117,7 +118,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 			Issued:        cmo.Issued,
 			LocationID:    cmo.Location.ID,
 			OrderID:       cmo.OrderID,
-			RegionID:      cmo.RegionID,
+			RegionID:      cmo.Region.ID,
 			State:         app.OrderExpired,
 			TypeID:        cmo.Type.ID,
 			VolumeRemains: remains,
@@ -156,13 +157,43 @@ func TestCharacterMarketOrder(t *testing.T) {
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
-	t.Run("can list all", func(t *testing.T) {
+	t.Run("can list all buy orders", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		o1 := factory.CreateCharacterMarketOrder()
-		o2 := factory.CreateCharacterMarketOrder()
+		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			IsBuyOrder: true,
+		})
+		o2 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			IsBuyOrder: true,
+		})
+		factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			IsBuyOrder: false,
+		})
 		// when
-		s, err := st.ListAllCharacterMarketOrders(ctx)
+		s, err := st.ListAllCharacterMarketOrders(ctx, true)
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of(o1.OrderID, o2.OrderID)
+			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterMarketOrder) int64 {
+				return x.OrderID
+			}))
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		}
+	})
+	t.Run("can list all sell orders", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			IsBuyOrder: false,
+		})
+		o2 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			IsBuyOrder: false,
+		})
+		factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			IsBuyOrder: true,
+		})
+		// when
+		s, err := st.ListAllCharacterMarketOrders(ctx, false)
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(o1.OrderID, o2.OrderID)

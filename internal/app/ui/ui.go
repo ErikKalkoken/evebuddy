@@ -141,11 +141,13 @@ type baseUI struct {
 	corporationWallets      map[app.Division]*corporationWallet
 	gameSearch              *gameSearch
 	industryJobs            *industryJobs
+	marketOrdersSell        *marketOrders
+	marketOrdersBuy         *marketOrders
+	progressModal           *iwidget.ProgressModal
 	slotsManufacturing      *industrySlots
 	slotsReactions          *industrySlots
 	slotsResearch           *industrySlots
 	snackbar                *iwidget.Snackbar
-	progressModal           *iwidget.ProgressModal
 	training                *training
 	wealth                  *wealth
 
@@ -389,6 +391,8 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	}
 	u.gameSearch = newGameSearch(u)
 	u.industryJobs = newIndustryJobs(u)
+	u.marketOrdersSell = newMarketOrders(u, false)
+	u.marketOrdersBuy = newMarketOrders(u, true)
 	u.progressModal = iwidget.NewProgressModal(u.window)
 	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.slotsManufacturing = newIndustrySlots(u, app.ManufacturingJob)
@@ -814,6 +818,8 @@ func (u *baseUI) updateHome() {
 		"cloneSearch":        u.clones.update,
 		"colony":             u.colonies.update,
 		"industryJobs":       u.industryJobs.update,
+		"marketOrdersSell":   u.marketOrdersSell.update,
+		"marketOrdersBuy":    u.marketOrdersBuy.update,
 		"slotsManufacturing": u.slotsManufacturing.update,
 		"slotsReactions":     u.slotsReactions.update,
 		"slotsResearch":      u.slotsResearch.update,

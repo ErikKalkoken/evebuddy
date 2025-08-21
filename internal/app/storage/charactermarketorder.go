@@ -37,13 +37,14 @@ func (st *Storage) GetCharacterMarketOrder(ctx context.Context, characterID int3
 	o := characterMarketOrderFromDBModel(characterMarketOrderFromDBModelParams{
 		cmo:          r.CharacterMarketOrder,
 		locationName: r.LocationName,
+		regionName:   r.RegionName,
 		typeName:     r.TypeName,
 	})
 	return o, err
 }
 
-func (st *Storage) ListAllCharacterMarketOrders(ctx context.Context) ([]*app.CharacterMarketOrder, error) {
-	rows, err := st.qRO.ListAllCharacterMarketOrders(ctx)
+func (st *Storage) ListAllCharacterMarketOrders(ctx context.Context, isBuyOrders bool) ([]*app.CharacterMarketOrder, error) {
+	rows, err := st.qRO.ListAllCharacterMarketOrders(ctx, isBuyOrders)
 	if err != nil {
 		return nil, fmt.Errorf("ListAllCharacterMarketOrders: %w", err)
 	}
@@ -52,6 +53,7 @@ func (st *Storage) ListAllCharacterMarketOrders(ctx context.Context) ([]*app.Cha
 		oo[i] = characterMarketOrderFromDBModel(characterMarketOrderFromDBModelParams{
 			cmo:          r.CharacterMarketOrder,
 			locationName: r.LocationName,
+			regionName:   r.RegionName,
 			typeName:     r.TypeName,
 		})
 	}
@@ -68,6 +70,7 @@ func (st *Storage) ListCharacterMarketOrders(ctx context.Context, characterID in
 		oo[i] = characterMarketOrderFromDBModel(characterMarketOrderFromDBModelParams{
 			cmo:          r.CharacterMarketOrder,
 			locationName: r.LocationName,
+			regionName:   r.RegionName,
 			typeName:     r.TypeName,
 		})
 	}
@@ -77,6 +80,7 @@ func (st *Storage) ListCharacterMarketOrders(ctx context.Context, characterID in
 type characterMarketOrderFromDBModelParams struct {
 	cmo          queries.CharacterMarketOrder
 	locationName string
+	regionName   string
 	typeName     string
 }
 
@@ -96,8 +100,11 @@ func characterMarketOrderFromDBModel(arg characterMarketOrderFromDBModelParams) 
 		OrderID:   arg.cmo.OrderID,
 		Price:     arg.cmo.Price,
 		Range:     arg.cmo.Range,
-		RegionID:  int32(arg.cmo.RegionID),
-		State:     orderStatusFromDBValue[arg.cmo.State],
+		Region: &app.EntityShort[int32]{
+			ID:   int32(arg.cmo.RegionID),
+			Name: arg.regionName,
+		},
+		State: orderStatusFromDBValue[arg.cmo.State],
 		Type: &app.EntityShort[int32]{
 			ID:   int32(arg.cmo.TypeID),
 			Name: arg.typeName,

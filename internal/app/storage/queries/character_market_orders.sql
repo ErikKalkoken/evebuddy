@@ -2,11 +2,13 @@
 SELECT
     sqlc.embed(cmo),
     et.name AS type_name,
-    el.name AS location_name
+    el.name AS location_name,
+    er.name AS region_name
 FROM
     character_market_orders cmo
     JOIN eve_types et ON et.id = cmo.type_id
     JOIN eve_locations el ON el.id = cmo.location_id
+    JOIN eve_regions er ON er.id = cmo.region_id
 WHERE
     character_id = ?
     AND order_id = ?;
@@ -15,11 +17,13 @@ WHERE
 SELECT
     sqlc.embed(cmo),
     et.name AS type_name,
-    el.name AS location_name
+    el.name AS location_name,
+    er.name AS region_name
 FROM
     character_market_orders cmo
     JOIN eve_types et ON et.id = cmo.type_id
     JOIN eve_locations el ON el.id = cmo.location_id
+    JOIN eve_regions er ON er.id = cmo.region_id
 WHERE
     character_id = ?;
 
@@ -27,11 +31,14 @@ WHERE
 SELECT
     sqlc.embed(cmo),
     et.name AS type_name,
-    el.name AS location_name
+    el.name AS location_name,
+    er.name AS region_name
 FROM
     character_market_orders cmo
     JOIN eve_types et ON et.id = cmo.type_id
-    JOIN eve_locations el ON el.id = cmo.location_id;
+    JOIN eve_locations el ON el.id = cmo.location_id
+    JOIN eve_regions er ON er.id = cmo.region_id
+WHERE cmo.is_buy_order = ?;
 
 -- name: UpdateOrCreateCharacterMarketOrder :exec
 INSERT INTO

@@ -18,6 +18,10 @@ type characterMarketOrdersResult struct {
 	history []esi.GetCharactersCharacterIdOrdersHistory200Ok
 }
 
+func (s *CharacterService) ListAllMarketOrder(ctx context.Context, isBuyOrders bool) ([]*app.CharacterMarketOrder, error) {
+	return s.st.ListAllCharacterMarketOrders(ctx, isBuyOrders)
+}
+
 func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterMarketOrders {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
