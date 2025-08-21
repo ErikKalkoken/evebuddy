@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"path/filepath"
 	"slices"
-	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -717,20 +716,8 @@ func (u *DesktopUI) ShowAboutDialog() {
 
 func (u *DesktopUI) showUserDataDialog() {
 	f := widget.NewForm()
-	type item struct {
-		name string
-		path string
-	}
-	items := make([]item, 0)
-	for n, p := range u.dataPaths {
-		items = append(items, item{n, p})
-	}
-	items = append(items, item{"settings", u.App().Storage().RootURI().Path()})
-	slices.SortFunc(items, func(a, b item) int {
-		return strings.Compare(a.name, b.name)
-	})
-	for _, it := range items {
-		f.Append(it.name, makePathEntry(u.App().Clipboard(), it.path))
+	for name, path := range u.dataPaths.All() {
+		f.Append(name, makePathEntry(u.App().Clipboard(), path))
 	}
 	d := dialog.NewCustom("User data", "Close", f, u.MainWindow())
 	u.ModifyShortcutsForDialog(d, u.MainWindow())

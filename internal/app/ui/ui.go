@@ -40,6 +40,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 )
 
 // update info
@@ -177,15 +178,15 @@ type baseUI struct {
 	character          atomic.Pointer[app.Character]
 	concurrencyLimit   int
 	corporation        atomic.Pointer[app.Corporation]
-	dataPaths          map[string]string      // Paths to user data
-	isDesktop          bool                   // whether the app runs on a desktop. If false we assume it's on mobile.
-	isForeground       atomic.Bool            // whether the app is currently shown in the foreground
-	isOffline          bool                   // Run the app in offline mode
-	isStartupCompleted atomic.Bool            // whether the app has completed startup (for testing)
-	isUpdateDisabled   bool                   // Whether to disable update tickers (useful for debugging)
-	wasStarted         atomic.Bool            // whether the app has already been started at least once
-	window             fyne.Window            // main window
-	windows            map[string]fyne.Window // child windows
+	dataPaths          xmaps.OrderedMap[string, string] // Paths to user data
+	isDesktop          bool                             // whether the app runs on a desktop. If false we assume it's on mobile.
+	isForeground       atomic.Bool                      // whether the app is currently shown in the foreground
+	isOffline          bool                             // Run the app in offline mode
+	isStartupCompleted atomic.Bool                      // whether the app has completed startup (for testing)
+	isUpdateDisabled   bool                             // Whether to disable update tickers (useful for debugging)
+	wasStarted         atomic.Bool                      // whether the app has already been started at least once
+	window             fyne.Window                      // main window
+	windows            map[string]fyne.Window           // child windows
 }
 
 type BaseUIParams struct {
@@ -249,7 +250,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	if len(arg.DataPaths) > 0 {
 		u.dataPaths = arg.DataPaths
 	} else {
-		u.dataPaths = make(map[string]string)
+		u.dataPaths = make(xmaps.OrderedMap[string, string])
 	}
 
 	if u.isDesktop {

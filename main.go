@@ -16,6 +16,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
@@ -49,6 +50,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/remoteservice"
+	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -89,7 +91,7 @@ var (
 		"Delete user data without asking for confirmation",
 	)
 	developFlag        = flag.Bool("dev", false, "Enable developer features")
-	dirsFlag           = flag.Bool("dirs", false, "Show directories for user data")
+	filesFlag          = flag.Bool("files", false, "Show paths to data files")
 	disableUpdatesFlag = flag.Bool("disable-updates", false, "Disable all periodic updates")
 	logLevelFlag       = flag.String("log-level", "", "Set log level for this session")
 	mobileFlag         = flag.Bool("mobile", false, "Run the app in forced mobile mode")
@@ -135,7 +137,9 @@ func main() {
 		return
 	}
 
-	log.Printf("INFO EVE Buddy version=%s", fyneApp.Metadata().Version)
+	if !*filesFlag && !*versionFlag {
+		log.Printf("INFO EVE Buddy version=%s", fyneApp.Metadata().Version)
+	}
 
 	appSettings := settings.New(fyneApp.Preferences())
 	if *resetUIFlag {
@@ -165,12 +169,6 @@ func main() {
 		}
 	} else {
 		dataDir = fyneApp.Storage().RootURI().Path()
-	}
-
-	if *dirsFlag {
-		fmt.Println(dataDir)
-		fmt.Println(fyneApp.Storage().RootURI().Path())
-		return
 	}
 
 	if *deleteDataNoConfirmFlag {
@@ -259,6 +257,20 @@ func main() {
 	defer dbRO.Close()
 	st := storage.New(dbRW, dbRO)
 
+	// Data paths
+	dataPaths := xmaps.OrderedMap[string, string]{
+		"db":        dbPath,
+		"log":       logFilePath,
+		"crashfile": crashFilePath,
+		"settings":  path.Join(fyneApp.Storage().RootURI().Path(), "preferences.json"),
+	}
+	if *filesFlag {
+		for k, v := range dataPaths.All() {
+			fmt.Printf("%s: %s\n", k, v)
+		}
+		return
+	}
+
 	// Initialize caches
 	memCache := memcache.New()
 	defer memCache.Close()
@@ -338,11 +350,7 @@ func main() {
 		},
 		ConcurrencyLimit:   concurrentLimit,
 		CorporationService: rs,
-		DataPaths: map[string]string{
-			"db":        dbPath,
-			"log":       logFilePath,
-			"crashfile": crashFilePath,
-		},
+		DataPaths:          dataPaths,
 		ESIStatusService:   esistatusservice.New(esiClient),
 		EveImageService:    eveimageservice.New(pc, rhc.StandardClient(), *offlineFlag),
 		EveUniverseService: eus,
