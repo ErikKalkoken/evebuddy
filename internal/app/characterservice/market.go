@@ -15,11 +15,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type characterMarketOrdersResult struct {
-	open    []esi.GetCharactersCharacterIdOrders200Ok
-	history []esi.GetCharactersCharacterIdOrdersHistory200Ok
-}
-
 func (s *CharacterService) ListAllMarketOrder(ctx context.Context, isBuyOrders bool) ([]*app.CharacterMarketOrder, error) {
 	return s.st.ListAllCharacterMarketOrders(ctx, isBuyOrders)
 }
@@ -31,14 +26,17 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			var r characterMarketOrdersResult
+			var (
+				open    []esi.GetCharactersCharacterIdOrders200Ok
+				history []esi.GetCharactersCharacterIdOrdersHistory200Ok
+			)
 			g := new(errgroup.Group)
 			g.Go(func() error {
 				orders, _, err := s.esiClient.ESI.MarketApi.GetCharactersCharacterIdOrders(ctx, characterID, nil)
 				if err != nil {
 					return err
 				}
-				r.open = orders
+				open = orders
 				slog.Debug("Received open orders from ESI", "count", len(orders), "characterID", characterID)
 				return nil
 			})
@@ -47,17 +45,16 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 				if err != nil {
 					return err
 				}
-				r.history = orders
+				history = orders
 				slog.Debug("Received history orders from ESI", "count", len(orders), "characterID", characterID)
 				return nil
 			})
-			err := g.Wait()
-			return r, err
-		},
-		func(ctx context.Context, characterID int32, data any) error {
-			r := data.(characterMarketOrdersResult)
+			if err := g.Wait(); err != nil {
+				return nil, err
+			}
+
 			orders := make(map[int64]esi.GetCharactersCharacterIdOrdersHistory200Ok)
-			for _, o := range r.open {
+			for _, o := range open {
 				orders[o.OrderId] = esi.GetCharactersCharacterIdOrdersHistory200Ok{
 					Duration:      o.Duration,
 					Escrow:        o.Escrow,
@@ -76,15 +73,23 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 					VolumeTotal:   o.VolumeTotal,
 				}
 			}
-			for _, o := range r.history {
+			for _, o := range history {
 				orders[o.OrderId] = o
 			}
+			return orders, nil
+		},
+		func(ctx context.Context, characterID int32, data any) error {
+			orders := data.(map[int64]esi.GetCharactersCharacterIdOrdersHistory200Ok)
 			var locationIDs set.Set[int64]
 			var regionIDs, typeIDs set.Set[int32]
 			for _, o := range orders {
 				locationIDs.Add(o.LocationId)
 				regionIDs.Add(o.RegionId)
 				typeIDs.Add(o.TypeId)
+			}
+			ec, err := s.st.GetEveCharacter(ctx, characterID)
+			if err != nil {
+				return err
 			}
 			g := new(errgroup.Group)
 			g.Go(func() error {
@@ -95,6 +100,10 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 			})
 			g.Go(func() error {
 				return s.eus.AddMissingTypes(ctx, typeIDs)
+			})
+			g.Go(func() error {
+				_, err := s.eus.AddMissingEntities(ctx, set.Of(characterID))
+				return err
 			})
 			if err := g.Wait(); err != nil {
 				return err
@@ -111,6 +120,12 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 				default:
 					state = app.OrderUndefined
 				}
+				var ownerID int32
+				if o.IsCorporation {
+					ownerID = ec.Corporation.ID
+				} else {
+					ownerID = characterID
+				}
 				arg := storage.UpdateOrCreateCharacterMarketOrderParams{
 					CharacterID:   characterID,
 					Duration:      int(o.Duration),
@@ -119,6 +134,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 					Issued:        o.Issued,
 					LocationID:    o.LocationId,
 					OrderID:       o.OrderId,
+					OwnerID:       ownerID,
 					Price:         o.Price,
 					Range:         o.Range_,
 					RegionID:      o.RegionId,
@@ -140,8 +156,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 			slog.Info(
 				"Stored updated market orders",
 				"characterID", characterID,
-				"open", len(r.open),
-				"history", len(r.history),
+				"count", len(orders),
 			)
 
 			incoming := set.Collect(maps.Keys(orders))

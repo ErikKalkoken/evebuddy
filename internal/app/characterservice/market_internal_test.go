@@ -27,6 +27,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
+		factory.CreateEveEntity(app.EveEntity{ID: c.ID})
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		itemType1 := factory.CreateEveType()
 		itemType2 := factory.CreateEveType()

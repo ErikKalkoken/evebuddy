@@ -596,7 +596,7 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 	}
 	activity := fmt.Sprintf("%s (%s)", r.activity.Display(), r.activity.JobType().Display())
 	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeOwnerActionLabel(
+		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			r.owner.ID,
 			r.owner.Name,
 			a.u.ShowEveEntityInfoWindow,

@@ -28,6 +28,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 		location := factory.CreateEveLocationStructure()
 		itemType := factory.CreateEveType()
 		region := factory.CreateEveRegion()
+		owner := factory.CreateEveEntity(app.EveEntity{ID: c.ID})
 		arg := storage.UpdateOrCreateCharacterMarketOrderParams{
 			CharacterID:   c.ID,
 			Duration:      3,
@@ -36,6 +37,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 			Issued:        issued,
 			LocationID:    location.ID,
 			OrderID:       42,
+			OwnerID:       owner.ID,
 			Price:         123.45,
 			Range:         "station",
 			RegionID:      region.ID,
@@ -78,6 +80,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 		location := factory.CreateEveLocationStructure()
 		itemType := factory.CreateEveType()
 		region := factory.CreateEveRegion()
+		owner := factory.CreateEveEntity(app.EveEntity{ID: c.ID})
 		arg := storage.UpdateOrCreateCharacterMarketOrderParams{
 			CharacterID:   c.ID,
 			Duration:      3,
@@ -88,6 +91,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 			LocationID:    location.ID,
 			MinVolume:     optional.New(3),
 			OrderID:       42,
+			OwnerID:       owner.ID,
 			Price:         123.45,
 			Range:         "station",
 			RegionID:      region.ID,
@@ -118,6 +122,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 			Issued:        cmo.Issued,
 			LocationID:    cmo.Location.ID,
 			OrderID:       cmo.OrderID,
+			OwnerID:       cmo.Owner.ID,
 			RegionID:      cmo.Region.ID,
 			State:         app.OrderExpired,
 			TypeID:        cmo.Type.ID,

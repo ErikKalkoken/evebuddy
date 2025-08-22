@@ -543,7 +543,7 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 		region = widget.NewLabel("?")
 	}
 	fi := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeOwnerActionLabel(
+		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			r.characterID,
 			r.characterName,
 			u.ShowEveEntityInfoWindow,

@@ -62,6 +62,7 @@ func (st *Storage) GetCharacterMarketOrder(ctx context.Context, characterID int3
 		cmo:              r.CharacterMarketOrder,
 		locationName:     r.LocationName,
 		locationSecurity: r.LocationSecurity,
+		owner:            r.EveEntity,
 		regionName:       r.RegionName,
 		typeName:         r.TypeName,
 	})
@@ -79,6 +80,7 @@ func (st *Storage) ListAllCharacterMarketOrders(ctx context.Context, isBuyOrders
 			cmo:              r.CharacterMarketOrder,
 			locationName:     r.LocationName,
 			locationSecurity: r.LocationSecurity,
+			owner:            r.EveEntity,
 			regionName:       r.RegionName,
 			typeName:         r.TypeName,
 		})
@@ -105,6 +107,7 @@ func (st *Storage) ListCharacterMarketOrders(ctx context.Context, characterID in
 			cmo:              r.CharacterMarketOrder,
 			locationName:     r.LocationName,
 			locationSecurity: r.LocationSecurity,
+			owner:            r.EveEntity,
 			regionName:       r.RegionName,
 			typeName:         r.TypeName,
 		})
@@ -116,6 +119,7 @@ type characterMarketOrderFromDBModelParams struct {
 	cmo              queries.CharacterMarketOrder
 	locationName     string
 	locationSecurity sql.NullFloat64
+	owner            queries.EveEntity
 	regionName       string
 	typeName         string
 }
@@ -135,6 +139,7 @@ func characterMarketOrderFromDBModel(arg characterMarketOrderFromDBModelParams) 
 		},
 		MinVolume: optional.FromNullInt64ToInteger[int](arg.cmo.MinVolume),
 		OrderID:   arg.cmo.OrderID,
+		Owner:     eveEntityFromDBModel(arg.owner),
 		Price:     arg.cmo.Price,
 		Range:     arg.cmo.Range,
 		Region: &app.EntityShort[int32]{
@@ -162,6 +167,7 @@ type UpdateOrCreateCharacterMarketOrderParams struct {
 	LocationID    int64
 	MinVolume     optional.Optional[int]
 	OrderID       int64
+	OwnerID       int32
 	Price         float64
 	Range         string
 	RegionID      int32
@@ -176,13 +182,12 @@ func (st *Storage) UpdateOrCreateCharacterMarketOrder(ctx context.Context, arg U
 		return fmt.Errorf("UpdateOrCreateCharacterMarketOrder: %+v: %w", arg, err)
 	}
 	if arg.CharacterID == 0 ||
-		arg.Duration == 0 ||
 		arg.Issued.IsZero() ||
 		arg.LocationID == 0 ||
 		arg.OrderID == 0 ||
+		arg.OwnerID == 0 ||
 		arg.RegionID == 0 ||
-		arg.TypeID == 0 ||
-		arg.VolumeTotal == 0 {
+		arg.TypeID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.UpdateOrCreateCharacterMarketOrder(ctx, queries.UpdateOrCreateCharacterMarketOrderParams{
@@ -195,6 +200,7 @@ func (st *Storage) UpdateOrCreateCharacterMarketOrder(ctx context.Context, arg U
 		LocationID:    arg.LocationID,
 		MinVolume:     optional.ToNullInt64(arg.MinVolume),
 		OrderID:       arg.OrderID,
+		OwnerID:       int64(arg.OwnerID),
 		Price:         arg.Price,
 		Range:         arg.Range,
 		RegionID:      int64(arg.RegionID),

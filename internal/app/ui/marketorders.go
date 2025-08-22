@@ -37,12 +37,17 @@ type marketOrderRow struct {
 	expires       time.Time
 	IsBuyOrder    bool
 	isCorporation bool
+	issued        time.Time
 	location      *app.EveLocationShort
 	locationID    int64
 	locationName  string
 	minVolume     optional.Optional[int]
 	orderID       int64
+	ownerID       int32
+	owner         *app.EveEntity
+	ownerName     string
 	price         float64
+	range_        string
 	regionID      int32
 	regionName    string
 	state         app.MarketOrderState
@@ -99,12 +104,16 @@ func (r marketOrderRow) remaining() string {
 	return ihumanize.Duration(time.Until(r.expires))
 }
 
-func (r *marketOrderRow) stateDisplay() string {
+func (r marketOrderRow) stateDisplay() string {
 	if r.stateCorrected() == app.OrderOpen {
 		return r.remaining()
 	}
 	return r.stateCorrectedDisplay()
 
+}
+
+func (r marketOrderRow) volumeDisplay() string {
+	return fmt.Sprintf("%s / %s", ihumanize.Comma(r.volumeRemain), ihumanize.Comma(r.volumeTotal))
 }
 
 type marketOrders struct {
@@ -149,10 +158,13 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		case 0:
 			return iwidget.RichTextSegmentsFromText(r.typeName)
 		case 1:
-			s := fmt.Sprintf("%d/%d", r.volumeRemain, r.volumeTotal)
-			return iwidget.RichTextSegmentsFromText(s)
+			return iwidget.RichTextSegmentsFromText(r.volumeDisplay(), widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+			})
 		case 2:
-			return iwidget.RichTextSegmentsFromText(humanize.FormatFloat(app.FloatFormat, r.price))
+			return iwidget.RichTextSegmentsFromText(humanize.FormatFloat(app.FloatFormat, r.price), widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+			})
 		case 3:
 			return iwidget.RichTextSegmentsFromText(r.stateDisplay(), widget.RichTextStyle{
 				ColorName: r.stateColor(),
@@ -162,7 +174,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		case 5:
 			return iwidget.RichTextSegmentsFromText(r.regionName)
 		case 6:
-			return iwidget.RichTextSegmentsFromText(r.characterName)
+			return iwidget.RichTextSegmentsFromText(r.ownerName)
 		}
 		return iwidget.RichTextSegmentsFromText("?")
 	}
@@ -279,10 +291,10 @@ func (a *marketOrders) makeDataList() *iwidget.StripedList {
 
 			b1 := c[1].(*fyne.Container).Objects
 			b1[0].(*widget.Label).SetText(ihumanize.Number(r.price, 2) + " ISK")
-			b1[1].(*widget.Label).SetText(fmt.Sprintf("%d/%d", r.volumeRemain, r.volumeTotal))
+			b1[1].(*widget.Label).SetText(r.volumeDisplay())
 
 			c[2].(*iwidget.RichText).Set(r.location.DisplayRichText())
-			c[3].(*widget.Label).SetText(r.characterName)
+			c[3].(*widget.Label).SetText(r.ownerName)
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
@@ -348,7 +360,7 @@ func (a *marketOrders) filterRows(sortCol int) {
 			case 5:
 				x = strings.Compare(a.locationName, b.locationName)
 			case 6:
-				x = strings.Compare(a.characterName, b.characterName)
+				x = strings.Compare(a.ownerName, b.ownerName)
 			}
 			if dir == sortAsc {
 				return x
@@ -362,7 +374,7 @@ func (a *marketOrders) filterRows(sortCol int) {
 		return r.regionName
 	}))
 	a.selectOwner.SetOptions(xslices.Map(rows, func(r marketOrderRow) string {
-		return r.characterName
+		return r.ownerName
 	}))
 	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r marketOrderRow) set.Set[string] {
 		return r.tags
@@ -423,14 +435,19 @@ func (*marketOrders) fetchData(s services, isBuyOrders bool) ([]marketOrderRow, 
 			expires:       o.Issued.Add(time.Duration(o.Duration) * time.Hour * 24),
 			IsBuyOrder:    o.IsBuyOrder,
 			isCorporation: o.IsCorporation,
+			issued:        o.Issued,
+			location:      o.Location,
 			locationID:    o.Location.ID,
 			locationName:  o.Location.Name.ValueOrFallback("?"),
-			location:      o.Location,
 			minVolume:     o.MinVolume,
 			orderID:       o.OrderID,
+			ownerID:       o.Owner.ID,
+			owner:         o.Owner,
+			ownerName:     o.Owner.Name,
+			price:         o.Price,
+			range_:        o.Range,
 			regionID:      o.Region.ID,
 			regionName:    o.Region.Name,
-			price:         o.Price,
 			state:         o.State,
 			typeID:        o.Type.ID,
 			typeName:      o.Type.Name,
@@ -482,9 +499,8 @@ func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
 	state := widget.NewLabel(r.stateCorrectedDisplay())
 	state.Importance = r.stateImportance()
 	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeOwnerActionLabel(
-			r.characterID,
-			r.characterName,
+		widget.NewFormItem("Owner", makeEveEntityActionLabel(
+			r.owner,
 			u.ShowEveEntityInfoWindow,
 		)),
 		widget.NewFormItem("Type", item),
@@ -493,19 +509,32 @@ func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
 		widget.NewFormItem("State", state),
 		widget.NewFormItem("Volume Total", widget.NewLabel(ihumanize.Comma(r.volumeTotal))),
 		widget.NewFormItem("Volume Remain", widget.NewLabel(ihumanize.Comma(r.volumeRemain))),
-		widget.NewFormItem("Volume Min", widget.NewLabel(r.minVolume.StringFunc("-", func(v int) string {
-			return ihumanize.Comma(v)
-		}))),
-		widget.NewFormItem("Expires at", widget.NewLabel(expires)),
+		widget.NewFormItem("Issued", widget.NewLabel(r.issued.Format(app.DateTimeFormat))),
+		widget.NewFormItem("Expires", widget.NewLabel(expires)),
 		widget.NewFormItem("Location", makeLocationLabel(r.location, u.ShowLocationInfoWindow)),
 		widget.NewFormItem("Region", region),
-		widget.NewFormItem("For corporation", makeBoolLabel(r.isCorporation)),
 	}
 	if r.IsBuyOrder {
-		items = slices.Insert(items, 8, widget.NewFormItem("Escrow", widget.NewLabel(r.escrow.StringFunc("-", func(v float64) string {
-			return humanize.FormatFloat(app.FloatFormat, v)
-		}))))
+		items = append(items, widget.NewFormItem(
+			"Volume Min",
+			widget.NewLabel(r.minVolume.StringFunc("?", func(v int) string {
+				return ihumanize.Comma(v)
+			})),
+		))
+		items = append(items, widget.NewFormItem(
+			"Escrow",
+			widget.NewLabel(r.escrow.StringFunc("-", func(v float64) string {
+				return humanize.FormatFloat(app.FloatFormat, v)
+			})),
+		))
 	}
+	items = append(items, widget.NewFormItem("Range", widget.NewLabel(stringTitle(r.range_))))
+	items = append(items, widget.NewFormItem("For corporation", makeBoolLabel(r.isCorporation)))
+	items = append(items, widget.NewFormItem("Character", makeCharacterActionLabel(
+		r.characterID,
+		r.characterName,
+		u.ShowEveEntityInfoWindow,
+	)))
 
 	if u.IsDeveloperMode() {
 		items = append(items, widget.NewFormItem("Order ID", u.makeCopyToClipboardLabel(fmt.Sprint(r.orderID))))

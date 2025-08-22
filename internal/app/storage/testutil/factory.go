@@ -1044,6 +1044,17 @@ func (f Factory) CreateCharacterMarketOrder(args ...storage.UpdateOrCreateCharac
 			arg.CharacterID,
 		)
 	}
+	if arg.OwnerID == 0 {
+		x, err := f.st.GetOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
+			ID:       arg.CharacterID,
+			Category: app.EveEntityCharacter,
+			Name:     "PLACEHOLDER",
+		})
+		if err != nil {
+			panic(err)
+		}
+		arg.OwnerID = x.ID
+	}
 	if arg.Price == 0 {
 		arg.Price = rand.Float64()*100_000_000 + 1
 	}

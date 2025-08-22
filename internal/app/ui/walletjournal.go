@@ -496,7 +496,7 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID i
 		}()
 	}
 	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeOwnerActionLabel(
+		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			characterID,
 			u.scs.CharacterName(characterID),
 			u.ShowEveEntityInfoWindow,
@@ -624,7 +624,7 @@ func showCorporationWalletJournalEntryWindow(u *baseUI, corporationID int32, div
 	// 	}()
 	// }
 	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeOwnerActionLabel(
+		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			corporationID,
 			u.scs.CorporationName(corporationID),
 			u.ShowEveEntityInfoWindow,

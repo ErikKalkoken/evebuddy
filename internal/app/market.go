@@ -40,6 +40,7 @@ type CharacterMarketOrder struct {
 	Location      *EveLocationShort
 	MinVolume     optional.Optional[int]
 	OrderID       int64
+	Owner         *EveEntity
 	Price         float64
 	Range         string
 	Region        *EntityShort[int32]

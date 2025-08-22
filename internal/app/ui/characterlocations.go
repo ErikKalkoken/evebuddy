@@ -325,7 +325,7 @@ func showCharacterLocationWindow(u *baseUI, r characterLocationRow) {
 		region = widget.NewLabel(r.regionName)
 	}
 	fi := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeOwnerActionLabel(
+		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			r.characterID,
 			r.characterName,
 			u.ShowEveEntityInfoWindow,

@@ -203,6 +203,7 @@ type CharacterMarketOrder struct {
 	LocationID    int64
 	MinVolume     sql.NullInt64
 	OrderID       int64
+	OwnerID       int64
 	Price         float64
 	Range         string
 	RegionID      int64

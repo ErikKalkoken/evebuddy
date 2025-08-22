@@ -79,7 +79,7 @@ func makeLinkLabel(text string, action func()) *widget.Hyperlink {
 	return x
 }
 
-func makeOwnerActionLabel(id int32, name string, action func(o *app.EveEntity)) fyne.CanvasObject {
+func makeCharacterActionLabel(id int32, name string, action func(o *app.EveEntity)) fyne.CanvasObject {
 	o := &app.EveEntity{
 		ID:       id,
 		Name:     name,

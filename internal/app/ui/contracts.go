@@ -432,7 +432,7 @@ func showContractWindow(u *baseUI, characterID, contractID int32) {
 		availability = availabilityLabel
 	}
 	fi := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeOwnerActionLabel(
+		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			characterID,
 			u.scs.CharacterName(characterID),
 			u.ShowEveEntityInfoWindow,

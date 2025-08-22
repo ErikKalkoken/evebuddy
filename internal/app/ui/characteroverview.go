@@ -386,7 +386,7 @@ func showCharacterOverviewDetailWindow(u *baseUI, r characterOverviewRow) {
 	}
 
 	fi := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeOwnerActionLabel(
+		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			r.characterID,
 			r.characterName,
 			u.ShowEveEntityInfoWindow,

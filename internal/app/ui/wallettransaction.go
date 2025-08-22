@@ -567,7 +567,7 @@ func showCharacterWalletTransactionWindow(u *baseUI, characterID int32, transact
 		activity = "Sell"
 	}
 	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeOwnerActionLabel(
+		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			characterID,
 			u.scs.CharacterName(characterID),
 			u.ShowEveEntityInfoWindow,
@@ -626,7 +626,7 @@ func showCorporationWalletTransactionWindow(u *baseUI, corporationID int32, divi
 	}
 	totalAmount := o.Total()
 	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeOwnerActionLabel(
+		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			corporationID,
 			u.scs.CorporationName(corporationID),
 			u.ShowEveEntityInfoWindow,
