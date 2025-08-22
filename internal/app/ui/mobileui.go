@@ -494,6 +494,12 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			navBar.HideBadge(4)
 		}
 	}
+	u.onShowAndRun = func() {
+		if u.isFakeMobile {
+			u.MainWindow().Resize(fyne.NewSize(340, 700))
+			u.MainWindow().SetFixedSize(true)
+		}
+	}
 
 	u.onAppFirstStarted = func() {
 		tickerUpdateStatus := time.NewTicker(5 * time.Second)

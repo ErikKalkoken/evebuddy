@@ -184,6 +184,7 @@ type baseUI struct {
 	isDesktop          bool                             // whether the app runs on a desktop. If false we assume it's on mobile.
 	isForeground       atomic.Bool                      // whether the app is currently shown in the foreground
 	isOffline          bool                             // Run the app in offline mode
+	isFakeMobile       bool                             // Show mobile variant on a desktop (for development)
 	isStartupCompleted atomic.Bool                      // whether the app has completed startup (for testing)
 	isUpdateDisabled   bool                             // Whether to disable update tickers (useful for debugging)
 	wasStarted         atomic.Bool                      // whether the app has already been started at least once
@@ -206,6 +207,7 @@ type BaseUIParams struct {
 	ConcurrencyLimit int
 	DataPaths        map[string]string
 	IsDesktop        bool
+	IsFakeMobile     bool
 	IsOffline        bool
 	IsUpdateDisabled bool
 }
@@ -218,9 +220,9 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		app:                       arg.App,
 		characterExchanged:        signals.New[*app.Character](),
 		characterSectionChanged:   signals.New[characterSectionUpdated](),
+		concurrencyLimit:          -1, // Default is no limit
 		corporationExchanged:      signals.New[*app.Corporation](),
 		corporationSectionChanged: signals.New[corporationSectionUpdated](),
-		concurrencyLimit:          -1, // Default is no limit
 		corporationWallets:        make(map[app.Division]*corporationWallet),
 		cs:                        arg.CharacterService,
 		eis:                       arg.EveImageService,
@@ -228,6 +230,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		eus:                       arg.EveUniverseService,
 		generalSectionChanged:     signals.New[generalSectionUpdated](),
 		isDesktop:                 arg.IsDesktop,
+		isFakeMobile:              arg.IsFakeMobile,
 		isOffline:                 arg.IsOffline,
 		isUpdateDisabled:          arg.IsUpdateDisabled,
 		js:                        arg.JaniceService,
@@ -1195,6 +1198,12 @@ func (u *baseUI) makeAboutPage() fyne.CanvasObject {
 	title := widget.NewLabel(u.appName())
 	title.SizeName = theme.SizeNameSubHeadingText
 	title.TextStyle.Bold = true
+
+	_, size := u.MainWindow().Canvas().InteractiveArea()
+	x := fmt.Sprintf("%d x %d", int(size.Width), int(size.Height))
+	techInfos := container.New(layout.NewCustomPaddedVBoxLayout(0),
+		container.NewHBox(widget.NewLabel("Main window size:"), layout.NewSpacer(), widget.NewLabel(x)),
+	)
 	c := container.New(
 		layout.NewCustomPaddedVBoxLayout(0),
 		title,
@@ -1202,6 +1211,7 @@ func (u *baseUI) makeAboutPage() fyne.CanvasObject {
 			container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), container.NewStack(spinner, latest)),
 			container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), local),
 		),
+		techInfos,
 		container.NewHBox(
 			widget.NewHyperlink("Website", u.websiteRootURL()),
 			widget.NewHyperlink("Downloads", u.websiteRootURL().JoinPath("releases")),
@@ -1209,6 +1219,9 @@ func (u *baseUI) makeAboutPage() fyne.CanvasObject {
 		widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."),
 		widget.NewLabel("(c) 2024-25 Erik Kalkoken"),
 	)
+	if !u.IsDeveloperMode() {
+		techInfos.Hide()
+	}
 	return c
 }
 

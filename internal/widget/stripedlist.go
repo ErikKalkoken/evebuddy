@@ -11,6 +11,9 @@ import (
 )
 
 // StripedList is List with stripped rows.
+//
+// Note that the stripped effect will disable the hoover effect.
+// This widget is intented to be used on mobile.
 type StripedList struct {
 	widget.List
 	bgColor color.Color

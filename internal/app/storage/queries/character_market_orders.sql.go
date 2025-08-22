@@ -16,12 +16,14 @@ SELECT
     cmo.id, cmo.character_id, cmo.duration, cmo.escrow, cmo.is_buy_order, cmo.is_corporation, cmo.issued, cmo.location_id, cmo.min_volume, cmo.order_id, cmo.price, cmo."range", cmo.region_id, cmo.state, cmo.type_id, cmo.volume_remains, cmo.volume_total,
     et.name AS type_name,
     el.name AS location_name,
-    er.name AS region_name
+    er.name AS region_name,
+    els.security_status as location_security
 FROM
     character_market_orders cmo
     JOIN eve_types et ON et.id = cmo.type_id
     JOIN eve_locations el ON el.id = cmo.location_id
     JOIN eve_regions er ON er.id = cmo.region_id
+    LEFT JOIN eve_solar_systems els ON els.id = el.eve_solar_system_id
 WHERE
     character_id = ?
     AND order_id = ?
@@ -37,6 +39,7 @@ type GetCharacterMarketOrderRow struct {
 	TypeName             string
 	LocationName         string
 	RegionName           string
+	LocationSecurity     sql.NullFloat64
 }
 
 func (q *Queries) GetCharacterMarketOrder(ctx context.Context, arg GetCharacterMarketOrderParams) (GetCharacterMarketOrderRow, error) {
@@ -63,6 +66,7 @@ func (q *Queries) GetCharacterMarketOrder(ctx context.Context, arg GetCharacterM
 		&i.TypeName,
 		&i.LocationName,
 		&i.RegionName,
+		&i.LocationSecurity,
 	)
 	return i, err
 }
@@ -72,13 +76,16 @@ SELECT
     cmo.id, cmo.character_id, cmo.duration, cmo.escrow, cmo.is_buy_order, cmo.is_corporation, cmo.issued, cmo.location_id, cmo.min_volume, cmo.order_id, cmo.price, cmo."range", cmo.region_id, cmo.state, cmo.type_id, cmo.volume_remains, cmo.volume_total,
     et.name AS type_name,
     el.name AS location_name,
-    er.name AS region_name
+    er.name AS region_name,
+    els.security_status as location_security
 FROM
     character_market_orders cmo
     JOIN eve_types et ON et.id = cmo.type_id
     JOIN eve_locations el ON el.id = cmo.location_id
     JOIN eve_regions er ON er.id = cmo.region_id
-WHERE cmo.is_buy_order = ?
+    LEFT JOIN eve_solar_systems els ON els.id = el.eve_solar_system_id
+WHERE
+    cmo.is_buy_order = ?
 `
 
 type ListAllCharacterMarketOrdersRow struct {
@@ -86,6 +93,7 @@ type ListAllCharacterMarketOrdersRow struct {
 	TypeName             string
 	LocationName         string
 	RegionName           string
+	LocationSecurity     sql.NullFloat64
 }
 
 func (q *Queries) ListAllCharacterMarketOrders(ctx context.Context, isBuyOrder bool) ([]ListAllCharacterMarketOrdersRow, error) {
@@ -118,6 +126,7 @@ func (q *Queries) ListAllCharacterMarketOrders(ctx context.Context, isBuyOrder b
 			&i.TypeName,
 			&i.LocationName,
 			&i.RegionName,
+			&i.LocationSecurity,
 		); err != nil {
 			return nil, err
 		}
@@ -137,12 +146,14 @@ SELECT
     cmo.id, cmo.character_id, cmo.duration, cmo.escrow, cmo.is_buy_order, cmo.is_corporation, cmo.issued, cmo.location_id, cmo.min_volume, cmo.order_id, cmo.price, cmo."range", cmo.region_id, cmo.state, cmo.type_id, cmo.volume_remains, cmo.volume_total,
     et.name AS type_name,
     el.name AS location_name,
-    er.name AS region_name
+    er.name AS region_name,
+    els.security_status as location_security
 FROM
     character_market_orders cmo
     JOIN eve_types et ON et.id = cmo.type_id
     JOIN eve_locations el ON el.id = cmo.location_id
     JOIN eve_regions er ON er.id = cmo.region_id
+    LEFT JOIN eve_solar_systems els ON els.id = el.eve_solar_system_id
 WHERE
     character_id = ?
 `
@@ -152,6 +163,7 @@ type ListCharacterMarketOrdersRow struct {
 	TypeName             string
 	LocationName         string
 	RegionName           string
+	LocationSecurity     sql.NullFloat64
 }
 
 func (q *Queries) ListCharacterMarketOrders(ctx context.Context, characterID int64) ([]ListCharacterMarketOrdersRow, error) {
@@ -184,6 +196,7 @@ func (q *Queries) ListCharacterMarketOrders(ctx context.Context, characterID int
 			&i.TypeName,
 			&i.LocationName,
 			&i.RegionName,
+			&i.LocationSecurity,
 		); err != nil {
 			return nil, err
 		}

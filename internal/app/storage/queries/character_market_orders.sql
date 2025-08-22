@@ -3,12 +3,14 @@ SELECT
     sqlc.embed(cmo),
     et.name AS type_name,
     el.name AS location_name,
-    er.name AS region_name
+    er.name AS region_name,
+    els.security_status as location_security
 FROM
     character_market_orders cmo
     JOIN eve_types et ON et.id = cmo.type_id
     JOIN eve_locations el ON el.id = cmo.location_id
     JOIN eve_regions er ON er.id = cmo.region_id
+    LEFT JOIN eve_solar_systems els ON els.id = el.eve_solar_system_id
 WHERE
     character_id = ?
     AND order_id = ?;
@@ -18,12 +20,14 @@ SELECT
     sqlc.embed(cmo),
     et.name AS type_name,
     el.name AS location_name,
-    er.name AS region_name
+    er.name AS region_name,
+    els.security_status as location_security
 FROM
     character_market_orders cmo
     JOIN eve_types et ON et.id = cmo.type_id
     JOIN eve_locations el ON el.id = cmo.location_id
     JOIN eve_regions er ON er.id = cmo.region_id
+    LEFT JOIN eve_solar_systems els ON els.id = el.eve_solar_system_id
 WHERE
     character_id = ?;
 
@@ -32,13 +36,16 @@ SELECT
     sqlc.embed(cmo),
     et.name AS type_name,
     el.name AS location_name,
-    er.name AS region_name
+    er.name AS region_name,
+    els.security_status as location_security
 FROM
     character_market_orders cmo
     JOIN eve_types et ON et.id = cmo.type_id
     JOIN eve_locations el ON el.id = cmo.location_id
     JOIN eve_regions er ON er.id = cmo.region_id
-WHERE cmo.is_buy_order = ?;
+    LEFT JOIN eve_solar_systems els ON els.id = el.eve_solar_system_id
+WHERE
+    cmo.is_buy_order = ?;
 
 -- name: UpdateOrCreateCharacterMarketOrder :exec
 INSERT INTO

@@ -37,7 +37,7 @@ type CharacterMarketOrder struct {
 	IsBuyOrder    bool
 	IsCorporation bool
 	Issued        time.Time
-	Location      *EntityShort[int64]
+	Location      *EveLocationShort
 	MinVolume     optional.Optional[int]
 	OrderID       int64
 	Price         float64

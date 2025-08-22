@@ -11,18 +11,19 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
-
-// [ ] Create detail window
-// [ ] Create custom version for mobile
 
 const (
 	marketOrderStateActive  = "Active"
@@ -32,12 +33,19 @@ const (
 type marketOrderRow struct {
 	characterID   int32
 	characterName string
+	escrow        optional.Optional[float64]
 	expires       time.Time
-	state         app.MarketOrderState
+	IsBuyOrder    bool
+	isCorporation bool
+	location      *app.EveLocationShort
 	locationID    int64
 	locationName  string
+	minVolume     optional.Optional[int]
+	orderID       int64
+	price         float64
 	regionID      int32
 	regionName    string
+	state         app.MarketOrderState
 	tags          set.Set[string]
 	typeID        int32
 	typeName      string
@@ -45,11 +53,46 @@ type marketOrderRow struct {
 	volumeTotal   int
 }
 
+func (r marketOrderRow) isExpired() bool {
+	return time.Until(r.expires) <= 0
+}
+
 func (r marketOrderRow) stateCorrected() app.MarketOrderState {
-	if r.state == app.OrderOpen && time.Until(r.expires) <= 0 {
+	if r.state == app.OrderOpen && r.isExpired() {
 		return app.OrderExpired
 	}
 	return r.state
+}
+
+func (r marketOrderRow) stateCorrectedDisplay() string {
+	return stringTitle(r.stateCorrected().String())
+}
+
+func (r marketOrderRow) stateImportance() widget.Importance {
+	switch r.stateCorrected() {
+	case app.OrderOpen:
+		return widget.SuccessImportance
+	case app.OrderExpired:
+		return widget.DangerImportance
+	case app.OrderCancelled:
+		return widget.LowImportance
+	}
+	return widget.MediumImportance
+}
+
+func (r marketOrderRow) remaining() string {
+	if r.stateCorrected() != app.OrderOpen {
+		return "N/A"
+	}
+	return ihumanize.Duration(time.Until(r.expires))
+}
+
+func (r *marketOrderRow) stateDisplay() string {
+	if r.stateCorrected() == app.OrderOpen {
+		return r.remaining()
+	}
+	return r.stateCorrectedDisplay()
+
 }
 
 type marketOrders struct {
@@ -73,9 +116,10 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 	headers := []headerDef{
 		{label: "Type", width: columnWidthEntity},
 		{label: "Quantity", width: 100},
+		{label: "Price", width: 100},
+		{label: "State", width: 100},
 		{label: "Station", width: columnWidthLocation},
 		{label: "Region", width: columnWidthRegion},
-		{label: "State", width: 100},
 		{label: "Owner", width: columnWidthEntity},
 	}
 	a := &marketOrders{
@@ -95,17 +139,14 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 			s := fmt.Sprintf("%d/%d", r.volumeRemain, r.volumeTotal)
 			return iwidget.RichTextSegmentsFromText(s)
 		case 2:
-			return iwidget.RichTextSegmentsFromText(r.locationName)
+			return iwidget.RichTextSegmentsFromText(humanize.FormatFloat(app.FloatFormat, r.price))
 		case 3:
-			return iwidget.RichTextSegmentsFromText(r.regionName)
+			iwidget.RichTextSegmentsFromText(r.stateDisplay())
 		case 4:
-			s := r.stateCorrected()
-			if s == app.OrderOpen {
-				s := ihumanize.Duration(time.Until(r.expires))
-				return iwidget.RichTextSegmentsFromText(s)
-			}
-			return iwidget.RichTextSegmentsFromText(s.String())
+			return iwidget.RichTextSegmentsFromText(r.locationName)
 		case 5:
+			return iwidget.RichTextSegmentsFromText(r.regionName)
+		case 6:
 			return iwidget.RichTextSegmentsFromText(r.characterName)
 		}
 		return iwidget.RichTextSegmentsFromText("?")
@@ -120,9 +161,10 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 				showMarketOrderWindow(a.u, r)
 			})
 	} else {
-		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, func(r marketOrderRow) {
-			showMarketOrderWindow(u, r)
-		})
+		// a.body = makeDataList(headers, &a.rowsFiltered, makeCell, func(r marketOrderRow) {
+		// 	showMarketOrderWindow(u, r)
+		// })
+		a.body = a.makeDataList()
 	}
 
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
@@ -164,48 +206,66 @@ func (a *marketOrders) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-// func (a *marketOrders) makeDataList() *iwidget.StripedList {
-// 	p := theme.Padding()
-// 	var l *iwidget.StripedList
-// 	l = iwidget.NewStripedList(
-// 		func() int {
-// 			return len(a.rowsFiltered)
-// 		},
-// 		func() fyne.CanvasObject {
-// 			character := widget.NewLabel("Template")
-// 			character.Wrapping = fyne.TextWrapWord
-// 			character.SizeName = theme.SizeNameSubHeadingText
-// 			location := iwidget.NewRichTextWithText("Template")
-// 			location.Wrapping = fyne.TextWrapWord
-// 			ship := widget.NewLabel("Template")
-// 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
-// 				character,
-// 				location,
-// 				ship,
-// 			)
-// 		},
-// 		func(id widget.ListItemID, co fyne.CanvasObject) {
-// 			if id < 0 || id >= len(a.rowsFiltered) {
-// 				return
-// 			}
-// 			r := a.rowsFiltered[id]
-// 			c := co.(*fyne.Container).Objects
-// 			c[0].(*widget.Label).SetText(r.characterName)
-// 			c[1].(*iwidget.RichText).Set(r.locationDisplay)
-// 			c[2].(*widget.Label).SetText(r.typeName)
-// 			l.SetItemHeight(id, co.(*fyne.Container).MinSize().Height)
-// 		},
-// 	)
-// 	l.OnSelected = func(id widget.ListItemID) {
-// 		defer l.UnselectAll()
-// 		if id < 0 || id >= len(a.rowsFiltered) {
-// 			return
-// 		}
-// 		r := a.rowsFiltered[id]
-// 		showMarketOrderWindow(a.u, r)
-// 	}
-// 	return l
-// }
+func (a *marketOrders) makeDataList() *iwidget.StripedList {
+	p := theme.Padding()
+	l := iwidget.NewStripedList(
+		func() int {
+			return len(a.rowsFiltered)
+		},
+		func() fyne.CanvasObject {
+			item := widget.NewLabel("Template")
+			item.Truncation = fyne.TextTruncateClip
+			item.TextStyle.Bold = true
+			state := widget.NewLabel("Template")
+			state.Alignment = fyne.TextAlignTrailing
+			price := widget.NewLabel("Template")
+			price.Truncation = fyne.TextTruncateClip
+			volume := widget.NewLabel("Template")
+			volume.Alignment = fyne.TextAlignTrailing
+			location := iwidget.NewRichText()
+			location.Truncation = fyne.TextTruncateClip
+			owner := widget.NewLabel("Template")
+			owner.Truncation = fyne.TextTruncateClip
+			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
+				container.NewBorder(nil, nil, nil, state, item),
+				container.NewBorder(nil, nil, nil, volume, price),
+				location,
+				owner,
+			)
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id < 0 || id >= len(a.rowsFiltered) {
+				return
+			}
+			r := a.rowsFiltered[id]
+			c := co.(*fyne.Container).Objects
+
+			b0 := c[0].(*fyne.Container).Objects
+			b0[0].(*widget.Label).SetText(r.typeName)
+			state := b0[1].(*widget.Label)
+			state.Text = r.stateDisplay()
+			state.Importance = r.stateImportance()
+			state.Refresh()
+
+			b1 := c[1].(*fyne.Container).Objects
+			b1[0].(*widget.Label).SetText(ihumanize.Number(r.price, 2) + " ISK")
+			b1[1].(*widget.Label).SetText(fmt.Sprintf("%d/%d", r.volumeRemain, r.volumeTotal))
+
+			c[2].(*iwidget.RichText).Set(r.location.DisplayRichText())
+			c[3].(*widget.Label).SetText(r.characterName)
+		},
+	)
+	l.OnSelected = func(id widget.ListItemID) {
+		defer l.UnselectAll()
+		if id < 0 || id >= len(a.rowsFiltered) {
+			return
+		}
+		r := a.rowsFiltered[id]
+		showMarketOrderWindow(a.u, r)
+	}
+	l.HideSeparators = true
+	return l
+}
 
 func (a *marketOrders) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
@@ -245,12 +305,14 @@ func (a *marketOrders) filterRows(sortCol int) {
 			case 1:
 				x = cmp.Compare(a.volumeRemain, b.volumeRemain)
 			case 2:
-				x = strings.Compare(a.regionName, b.regionName)
+				x = cmp.Compare(a.price, b.price)
 			case 3:
-				x = strings.Compare(a.locationName, b.locationName)
-			case 4:
 				x = a.expires.Compare(b.expires)
+			case 4:
+				x = strings.Compare(a.regionName, b.regionName)
 			case 5:
+				x = strings.Compare(a.locationName, b.locationName)
+			case 6:
 				x = strings.Compare(a.characterName, b.characterName)
 			}
 			if dir == sortAsc {
@@ -319,11 +381,18 @@ func (*marketOrders) fetchData(s services, isBuyOrders bool) ([]marketOrderRow, 
 		r := marketOrderRow{
 			characterID:   o.CharacterID,
 			characterName: s.scs.CharacterName(o.CharacterID),
+			escrow:        o.Escrow,
 			expires:       o.Issued.Add(time.Duration(o.Duration) * time.Hour * 24),
+			IsBuyOrder:    o.IsBuyOrder,
+			isCorporation: o.IsCorporation,
 			locationID:    o.Location.ID,
-			locationName:  o.Location.Name,
+			locationName:  o.Location.Name.ValueOrFallback("?"),
+			location:      o.Location,
+			minVolume:     o.MinVolume,
+			orderID:       o.OrderID,
 			regionID:      o.Region.ID,
 			regionName:    o.Region.Name,
+			price:         o.Price,
 			state:         o.State,
 			typeID:        o.Type.ID,
 			typeName:      o.Type.Name,
@@ -342,52 +411,71 @@ func (*marketOrders) fetchData(s services, isBuyOrders bool) ([]marketOrderRow, 
 
 // showMarketOrderWindow shows the location of a character in a new window.
 func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("location-%d", r.characterID), "Character Location", r.characterName)
+	title := fmt.Sprintf("Market Order #%d", r.orderID)
+	w, ok := u.getOrCreateWindow(
+		fmt.Sprintf("market-order-%d-%d", r.characterID, r.orderID),
+		title,
+		r.characterName,
+	)
 	if !ok {
 		w.Show()
 		return
 	}
-	ship := makeLinkLabelWithWrap(r.typeName, func() {
+	item := makeLinkLabelWithWrap(r.typeName, func() {
 		u.ShowTypeInfoWindowWithCharacter(r.typeID, r.characterID)
 	})
-	var location fyne.CanvasObject
-	// if r.location != nil {
-	// 	location = makeLocationLabel(r.location, u.ShowLocationInfoWindow)
-	// } else {
-	// 	location = widget.NewLabel("?")
-	// }
-	var region fyne.CanvasObject
-	if r.regionID != 0 {
-		region = makeLinkLabel(r.regionName, func() {
-			u.ShowInfoWindow(app.EveEntityRegion, r.regionID)
-		})
+	region := makeLinkLabel(r.regionName, func() {
+		u.ShowInfoWindow(app.EveEntityRegion, r.regionID)
+	})
+	var buySell string
+	if r.IsBuyOrder {
+		buySell = "buy"
 	} else {
-		region = widget.NewLabel(r.regionName)
+		buySell = "sell"
 	}
-	fi := []*widget.FormItem{
+
+	state := widget.NewLabel(r.stateCorrectedDisplay())
+	state.Importance = r.stateImportance()
+	items := []*widget.FormItem{
 		widget.NewFormItem("Owner", makeOwnerActionLabel(
 			r.characterID,
 			r.characterName,
 			u.ShowEveEntityInfoWindow,
 		)),
-		widget.NewFormItem("Location", location),
+		widget.NewFormItem("Type", item),
+		widget.NewFormItem("Price", widget.NewLabel(formatISKAmount(r.price))),
+		widget.NewFormItem("Variant", widget.NewLabel(buySell)),
+		widget.NewFormItem("State", state),
+		widget.NewFormItem("Volume Total", widget.NewLabel(ihumanize.Comma(r.volumeTotal))),
+		widget.NewFormItem("Volume Remain", widget.NewLabel(ihumanize.Comma(r.volumeRemain))),
+		widget.NewFormItem("Volume Min", widget.NewLabel(r.minVolume.StringFunc("-", func(v int) string {
+			return ihumanize.Comma(v)
+		}))),
+		widget.NewFormItem("Remaining", widget.NewLabel(r.remaining())),
+		widget.NewFormItem("Location", makeLocationLabel(r.location, u.ShowLocationInfoWindow)),
 		widget.NewFormItem("Region", region),
-		widget.NewFormItem("Ship", ship),
+		widget.NewFormItem("For corporation", makeBoolLabel(r.isCorporation)),
+	}
+	if r.IsBuyOrder {
+		items = slices.Insert(items, 8, widget.NewFormItem("Escrow", widget.NewLabel(r.escrow.StringFunc("-", func(v float64) string {
+			return humanize.FormatFloat(app.FloatFormat, v)
+		}))))
 	}
 
-	f := widget.NewForm(fi...)
+	if u.IsDeveloperMode() {
+		items = append(items, widget.NewFormItem("Order ID", u.makeCopyToClipboardLabel(fmt.Sprint(r.orderID))))
+	}
+	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
-	subTitle := fmt.Sprintf("Location of %s", r.characterName)
 	setDetailWindow(detailWindowParams{
 		content: f,
-		minSize: fyne.NewSize(500, 250),
 		imageAction: func() {
-			u.ShowInfoWindow(app.EveEntityCharacter, r.characterID)
+			u.ShowTypeInfoWindow(r.typeID)
 		},
 		imageLoader: func() (fyne.Resource, error) {
-			return u.eis.CharacterPortrait(r.characterID, 512)
+			return u.eis.InventoryTypeIcon(r.typeID, 256)
 		},
-		title:  subTitle,
+		title:  title,
 		window: w,
 	})
 	w.Show()

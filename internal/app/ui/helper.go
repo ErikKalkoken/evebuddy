@@ -14,6 +14,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/dustin/go-humanize"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
@@ -101,6 +103,17 @@ func makeLabelWithWrap(s string) *widget.Label {
 	return l
 }
 
+func makeBoolLabel(v bool) *widget.Label {
+	if v {
+		l := widget.NewLabel("Yes")
+		l.Importance = widget.SuccessImportance
+		return l
+	}
+	l := widget.NewLabel("No")
+	l.Importance = widget.DangerImportance
+	return l
+}
+
 func makeLocationLabel(o *app.EveLocationShort, show func(int64)) fyne.CanvasObject {
 	if o == nil {
 		return widget.NewLabel("?")
@@ -150,4 +163,9 @@ func timeFormattedOrFallback(t time.Time, layout, fallback string) string {
 		return fallback
 	}
 	return t.Format(layout)
+}
+
+func stringTitle(s string) string {
+	titler := cases.Title(language.English)
+	return titler.String(s)
 }

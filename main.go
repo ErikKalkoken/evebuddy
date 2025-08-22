@@ -355,6 +355,7 @@ func main() {
 		EveImageService:    eveimageservice.New(pc, rhc.StandardClient(), *offlineFlag),
 		EveUniverseService: eus,
 		IsDesktop:          isDesktop,
+		IsFakeMobile:       *mobileFlag,
 		IsOffline:          *offlineFlag,
 		IsUpdateDisabled:   *disableUpdatesFlag,
 		JaniceService:      janiceservice.New(rhc.StandardClient(), key),

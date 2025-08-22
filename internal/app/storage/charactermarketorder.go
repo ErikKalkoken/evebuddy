@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -35,10 +36,11 @@ func (st *Storage) GetCharacterMarketOrder(ctx context.Context, characterID int3
 		return nil, fmt.Errorf("GetCharacterMarketOrder for character %d: %w", characterID, convertGetError(err))
 	}
 	o := characterMarketOrderFromDBModel(characterMarketOrderFromDBModelParams{
-		cmo:          r.CharacterMarketOrder,
-		locationName: r.LocationName,
-		regionName:   r.RegionName,
-		typeName:     r.TypeName,
+		cmo:              r.CharacterMarketOrder,
+		locationName:     r.LocationName,
+		locationSecurity: r.LocationSecurity,
+		regionName:       r.RegionName,
+		typeName:         r.TypeName,
 	})
 	return o, err
 }
@@ -51,10 +53,11 @@ func (st *Storage) ListAllCharacterMarketOrders(ctx context.Context, isBuyOrders
 	oo := make([]*app.CharacterMarketOrder, len(rows))
 	for i, r := range rows {
 		oo[i] = characterMarketOrderFromDBModel(characterMarketOrderFromDBModelParams{
-			cmo:          r.CharacterMarketOrder,
-			locationName: r.LocationName,
-			regionName:   r.RegionName,
-			typeName:     r.TypeName,
+			cmo:              r.CharacterMarketOrder,
+			locationName:     r.LocationName,
+			locationSecurity: r.LocationSecurity,
+			regionName:       r.RegionName,
+			typeName:         r.TypeName,
 		})
 	}
 	return oo, nil
@@ -68,20 +71,22 @@ func (st *Storage) ListCharacterMarketOrders(ctx context.Context, characterID in
 	oo := make([]*app.CharacterMarketOrder, len(rows))
 	for i, r := range rows {
 		oo[i] = characterMarketOrderFromDBModel(characterMarketOrderFromDBModelParams{
-			cmo:          r.CharacterMarketOrder,
-			locationName: r.LocationName,
-			regionName:   r.RegionName,
-			typeName:     r.TypeName,
+			cmo:              r.CharacterMarketOrder,
+			locationName:     r.LocationName,
+			locationSecurity: r.LocationSecurity,
+			regionName:       r.RegionName,
+			typeName:         r.TypeName,
 		})
 	}
 	return oo, nil
 }
 
 type characterMarketOrderFromDBModelParams struct {
-	cmo          queries.CharacterMarketOrder
-	locationName string
-	regionName   string
-	typeName     string
+	cmo              queries.CharacterMarketOrder
+	locationName     string
+	locationSecurity sql.NullFloat64
+	regionName       string
+	typeName         string
 }
 
 func characterMarketOrderFromDBModel(arg characterMarketOrderFromDBModelParams) *app.CharacterMarketOrder {
@@ -92,9 +97,10 @@ func characterMarketOrderFromDBModel(arg characterMarketOrderFromDBModelParams) 
 		IsBuyOrder:    arg.cmo.IsBuyOrder,
 		IsCorporation: arg.cmo.IsCorporation,
 		Issued:        arg.cmo.Issued,
-		Location: &app.EntityShort[int64]{
-			ID:   arg.cmo.LocationID,
-			Name: arg.locationName,
+		Location: &app.EveLocationShort{
+			ID:             arg.cmo.LocationID,
+			Name:           optional.New(arg.locationName),
+			SecurityStatus: optional.FromNullFloat64ToFloat32(arg.locationSecurity),
 		},
 		MinVolume: optional.FromNullInt64ToInteger[int](arg.cmo.MinVolume),
 		OrderID:   arg.cmo.OrderID,
