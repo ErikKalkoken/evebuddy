@@ -8,8 +8,37 @@ package queries
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 )
+
+const deleteCharacterMarketOrder = `-- name: DeleteCharacterMarketOrder :exec
+DELETE FROM character_market_orders
+WHERE
+    character_id = ?
+    AND order_id IN (/*SLICE:order_ids*/?)
+`
+
+type DeleteCharacterMarketOrderParams struct {
+	CharacterID int64
+	OrderIds    []int64
+}
+
+func (q *Queries) DeleteCharacterMarketOrder(ctx context.Context, arg DeleteCharacterMarketOrderParams) error {
+	query := deleteCharacterMarketOrder
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CharacterID)
+	if len(arg.OrderIds) > 0 {
+		for _, v := range arg.OrderIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:order_ids*/?", strings.Repeat(",?", len(arg.OrderIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:order_ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
 
 const getCharacterMarketOrder = `-- name: GetCharacterMarketOrder :one
 SELECT
@@ -131,6 +160,38 @@ func (q *Queries) ListAllCharacterMarketOrders(ctx context.Context, isBuyOrder b
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCharacterMarketOrderIDs = `-- name: ListCharacterMarketOrderIDs :many
+SELECT
+    order_id
+FROM
+    character_market_orders
+WHERE
+    character_id = ?
+`
+
+func (q *Queries) ListCharacterMarketOrderIDs(ctx context.Context, characterID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterMarketOrderIDs, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var order_id int64
+		if err := rows.Scan(&order_id); err != nil {
+			return nil, err
+		}
+		items = append(items, order_id)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

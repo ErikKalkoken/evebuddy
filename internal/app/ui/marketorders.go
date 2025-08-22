@@ -75,9 +75,21 @@ func (r marketOrderRow) stateImportance() widget.Importance {
 	case app.OrderExpired:
 		return widget.DangerImportance
 	case app.OrderCancelled:
-		return widget.LowImportance
+		return widget.MediumImportance
 	}
 	return widget.MediumImportance
+}
+
+func (r marketOrderRow) stateColor() fyne.ThemeColorName {
+	switch r.stateCorrected() {
+	case app.OrderOpen:
+		return theme.ColorNameSuccess
+	case app.OrderExpired:
+		return theme.ColorNameError
+	case app.OrderCancelled:
+		return theme.ColorNameForeground
+	}
+	return theme.ColorNameForeground
 }
 
 func (r marketOrderRow) remaining() string {
@@ -104,6 +116,7 @@ type marketOrders struct {
 	isBuyOrders  bool
 	rows         []marketOrderRow
 	rowsFiltered []marketOrderRow
+	selectOwner  *kxwidget.FilterChipSelect
 	selectRegion *kxwidget.FilterChipSelect
 	selectState  *kxwidget.FilterChipSelect
 	selectTag    *kxwidget.FilterChipSelect
@@ -118,7 +131,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		{label: "Quantity", width: 100},
 		{label: "Price", width: 100},
 		{label: "State", width: 100},
-		{label: "Station", width: columnWidthLocation},
+		{label: "Location", width: columnWidthLocation},
 		{label: "Region", width: columnWidthRegion},
 		{label: "Owner", width: columnWidthEntity},
 	}
@@ -141,7 +154,9 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		case 2:
 			return iwidget.RichTextSegmentsFromText(humanize.FormatFloat(app.FloatFormat, r.price))
 		case 3:
-			iwidget.RichTextSegmentsFromText(r.stateDisplay())
+			return iwidget.RichTextSegmentsFromText(r.stateDisplay(), widget.RichTextStyle{
+				ColorName: r.stateColor(),
+			})
 		case 4:
 			return iwidget.RichTextSegmentsFromText(r.locationName)
 		case 5:
@@ -168,6 +183,9 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 	}
 
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
+		a.filterRows(-1)
+	})
+	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 	a.selectState = kxwidget.NewFilterChipSelect("", []string{
@@ -198,12 +216,24 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 }
 
 func (a *marketOrders) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectType, a.selectState, a.selectRegion, a.selectTag)
+	filter := container.NewHBox(a.selectType, a.selectState, a.selectRegion, a.selectOwner, a.selectTag)
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(container.NewHScroll(filter), a.bottom, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
+}
+
+func (a *marketOrders) startUpdateTicker() {
+	ticker := time.NewTicker(time.Second * 60)
+	go func() {
+		for {
+			<-ticker.C
+			fyne.DoAndWait(func() {
+				a.body.Refresh()
+			})
+		}
+	}()
 }
 
 func (a *marketOrders) makeDataList() *iwidget.StripedList {
@@ -275,6 +305,11 @@ func (a *marketOrders) filterRows(sortCol int) {
 			return r.regionName == x
 		})
 	}
+	if x := a.selectOwner.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r marketOrderRow) bool {
+			return r.characterName == x
+		})
+	}
 	rows = xslices.Filter(rows, func(r marketOrderRow) bool {
 		s := r.stateCorrected()
 		switch a.selectState.Selected {
@@ -323,12 +358,15 @@ func (a *marketOrders) filterRows(sortCol int) {
 		})
 	})
 	// set data & refresh
-	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r marketOrderRow) set.Set[string] {
-		return r.tags
-	})...).All()))
 	a.selectRegion.SetOptions(xslices.Map(rows, func(r marketOrderRow) string {
 		return r.regionName
 	}))
+	a.selectOwner.SetOptions(xslices.Map(rows, func(r marketOrderRow) string {
+		return r.characterName
+	}))
+	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r marketOrderRow) set.Set[string] {
+		return r.tags
+	})...).All()))
 	a.selectType.SetOptions(xslices.Map(rows, func(r marketOrderRow) string {
 		return r.typeName
 	}))
@@ -434,6 +472,13 @@ func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
 		buySell = "sell"
 	}
 
+	var expires string
+	if r.isExpired() {
+		expires = "-"
+	} else {
+		expires = r.expires.Format(app.DateTimeFormat)
+	}
+
 	state := widget.NewLabel(r.stateCorrectedDisplay())
 	state.Importance = r.stateImportance()
 	items := []*widget.FormItem{
@@ -451,7 +496,7 @@ func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
 		widget.NewFormItem("Volume Min", widget.NewLabel(r.minVolume.StringFunc("-", func(v int) string {
 			return ihumanize.Comma(v)
 		}))),
-		widget.NewFormItem("Remaining", widget.NewLabel(r.remaining())),
+		widget.NewFormItem("Expires at", widget.NewLabel(expires)),
 		widget.NewFormItem("Location", makeLocationLabel(r.location, u.ShowLocationInfoWindow)),
 		widget.NewFormItem("Region", region),
 		widget.NewFormItem("For corporation", makeBoolLabel(r.isCorporation)),

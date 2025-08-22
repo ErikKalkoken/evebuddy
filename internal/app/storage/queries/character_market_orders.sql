@@ -1,3 +1,9 @@
+-- name: DeleteCharacterMarketOrder :exec
+DELETE FROM character_market_orders
+WHERE
+    character_id = ?
+    AND order_id IN (sqlc.slice('order_ids'));
+
 -- name: GetCharacterMarketOrder :one
 SELECT
     sqlc.embed(cmo),
@@ -14,6 +20,14 @@ FROM
 WHERE
     character_id = ?
     AND order_id = ?;
+
+-- name: ListCharacterMarketOrderIDs :many
+SELECT
+    order_id
+FROM
+    character_market_orders
+WHERE
+    character_id = ?;
 
 -- name: ListCharacterMarketOrders :many
 SELECT

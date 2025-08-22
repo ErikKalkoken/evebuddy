@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/antihax/goesi/esi"
 	"golang.org/x/sync/errgroup"
 )
@@ -141,6 +143,29 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 				"open", len(r.open),
 				"history", len(r.history),
 			)
+
+			incoming := set.Collect(maps.Keys(orders))
+			current, err := s.st.ListCharacterMarketOrders(ctx, characterID)
+			if err != nil {
+				return err
+			}
+			running := set.Collect(xiter.Map(xiter.FilterSlice(current, func(x *app.CharacterMarketOrder) bool {
+				return x.State == app.OrderOpen
+			}), func(x *app.CharacterMarketOrder) int64 {
+				return x.OrderID
+			}))
+			orphans := set.Difference(running, incoming)
+			if orphans.Size() > 0 {
+				// The ESI response only returns orders from the last 90 days.
+				// It can therefore happen that a long running job vanishes from the response,
+				// without the app having received a final status (e.g. expired or canceled).
+				// Since the status of the job is undetermined we can only delete it.
+				err := s.st.DeleteCharacterMarketOrdersByID(ctx, characterID, orphans)
+				if err != nil {
+					return err
+				}
+				slog.Info("Deleted orphaned market orders", "characterID", characterID, "count", orphans.Size())
+			}
 			return nil
 		})
 }

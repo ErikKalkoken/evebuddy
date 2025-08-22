@@ -56,7 +56,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 				assert.EqualValues(t, true, o.IsCorporation)
 				assert.True(t, issued.Equal(o.Issued), "got %q, wanted %q", issued, o.Issued)
 				assert.EqualValues(t, location.ID, o.Location.ID)
-				assert.EqualValues(t, location.Name, o.Location.Name)
+				assert.EqualValues(t, location.Name, o.Location.Name.ValueOrZero())
 				assert.True(t, o.MinVolume.IsEmpty())
 				assert.EqualValues(t, 123.45, o.Price)
 				assert.EqualValues(t, "station", o.Range)
@@ -135,7 +135,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 			}
 		}
 	})
-	t.Run("can list for a character", func(t *testing.T) {
+	t.Run("can list orders for a character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
@@ -154,6 +154,25 @@ func TestCharacterMarketOrder(t *testing.T) {
 			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterMarketOrder) int64 {
 				return x.OrderID
 			}))
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		}
+	})
+	t.Run("can list order IDs for a character", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+		})
+		o2 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+		})
+		factory.CreateCharacterMarketOrder()
+		// when
+		got, err := st.ListCharacterMarketOrderIDs(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of(o1.OrderID, o2.OrderID)
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
@@ -201,6 +220,27 @@ func TestCharacterMarketOrder(t *testing.T) {
 				return x.OrderID
 			}))
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		}
+	})
+	t.Run("can delete orders for a character by ID", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+		})
+		o2 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+		})
+		// when
+		err := st.DeleteCharacterMarketOrdersByID(ctx, c.ID, set.Of(o2.OrderID))
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of(o1.OrderID)
+			got, err := st.ListCharacterMarketOrderIDs(ctx, c.ID)
+			if assert.NoError(t, err) {
+				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			}
 		}
 	})
 }

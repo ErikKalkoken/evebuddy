@@ -4,11 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 var orderStatusFromDBValue = map[string]app.MarketOrderState{
@@ -24,6 +26,27 @@ func init() {
 	for k, v := range orderStatusFromDBValue {
 		orderStatusToDBValue[v] = k
 	}
+}
+
+func (st *Storage) DeleteCharacterMarketOrdersByID(ctx context.Context, characterID int32, orderIDs set.Set[int64]) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("DeleteCharacterMarketOrdersByID for character %d and job IDs: %v: %w", characterID, orderIDs, err)
+	}
+	if characterID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	if orderIDs.Size() == 0 {
+		return nil
+	}
+	err := st.qRW.DeleteCharacterMarketOrder(ctx, queries.DeleteCharacterMarketOrderParams{
+		CharacterID: int64(characterID),
+		OrderIds:    orderIDs.Slice(),
+	})
+	if err != nil {
+		return wrapErr(err)
+	}
+	slog.Info("Market jobs deleted for character", "characterID", characterID, "jobIDs", orderIDs)
+	return nil
 }
 
 func (st *Storage) GetCharacterMarketOrder(ctx context.Context, characterID int32, orderID int64) (*app.CharacterMarketOrder, error) {
@@ -61,6 +84,14 @@ func (st *Storage) ListAllCharacterMarketOrders(ctx context.Context, isBuyOrders
 		})
 	}
 	return oo, nil
+}
+
+func (st *Storage) ListCharacterMarketOrderIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
+	ids, err := st.qRO.ListCharacterMarketOrderIDs(ctx, int64(characterID))
+	if err != nil {
+		return set.Set[int64]{}, fmt.Errorf("ListCharacterMarketOrderIDs for character %d: %w", characterID, err)
+	}
+	return set.Of(ids...), nil
 }
 
 func (st *Storage) ListCharacterMarketOrders(ctx context.Context, characterID int32) ([]*app.CharacterMarketOrder, error) {

@@ -156,4 +156,55 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can delete orphaned orders", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+		})
+		factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+		})
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/orders/history/`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/orders/`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"duration":       o1.Duration,
+				"is_buy_order":   o1.IsBuyOrder,
+				"is_corporation": o1.IsCorporation,
+				"issued":         o1.Issued.Format(time.RFC3339),
+				"location_id":    o1.Location.ID,
+				"order_id":       o1.OrderID,
+				"price":          o1.Price,
+				"range":          o1.Range,
+				"region_id":      o1.Region.ID,
+				"state":          "open",
+				"type_id":        o1.Type.ID,
+				"volume_remain":  o1.VolumeRemains,
+				"volume_total":   o1.VolumeTotal,
+			}}),
+		)
+		// when
+		changed, err := s.updateMarketOrdersESI(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMarketOrders,
+		})
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, changed)
+			got, err := st.ListCharacterMarketOrderIDs(ctx, c.ID)
+			if assert.NoError(t, err) {
+				want := set.Of(o1.OrderID)
+				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			}
+		}
+	})
 }

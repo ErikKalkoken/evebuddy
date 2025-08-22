@@ -462,6 +462,8 @@ func (u *baseUI) Start() bool {
 		u.updateStatus()
 		u.isStartupCompleted.Store(true)
 		u.training.startUpdateTicker()
+		u.marketOrdersBuy.startUpdateTicker()
+		u.marketOrdersSell.startUpdateTicker()
 		u.characterJumpClones.startUpdateTicker()
 		if u.onAppFirstStarted != nil {
 			u.onAppFirstStarted()
