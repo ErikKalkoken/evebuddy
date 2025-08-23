@@ -302,8 +302,12 @@ func (*characterLocations) fetchData(s services) ([]characterLocationRow, error)
 
 // showCharacterLocationWindow shows the location of a character in a new window.
 func showCharacterLocationWindow(u *baseUI, r characterLocationRow) {
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("location-%d", r.characterID), "Character Location", r.characterName)
-	if !ok {
+	w, created := u.getOrCreateWindow(
+		fmt.Sprintf("location-%d", r.characterID),
+		"Character Location",
+		r.characterName,
+	)
+	if !created {
 		w.Show()
 		return
 	}

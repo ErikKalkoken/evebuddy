@@ -467,12 +467,12 @@ func (*marketOrders) fetchData(s services, isBuyOrders bool) ([]marketOrderRow, 
 // showMarketOrderWindow shows the location of a character in a new window.
 func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
 	title := fmt.Sprintf("Market Order #%d", r.orderID)
-	w, ok := u.getOrCreateWindow(
+	w, created := u.getOrCreateWindow(
 		fmt.Sprintf("market-order-%d-%d", r.characterID, r.orderID),
 		title,
 		r.characterName,
 	)
-	if !ok {
+	if !created {
 		w.Show()
 		return
 	}

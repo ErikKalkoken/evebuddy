@@ -373,8 +373,12 @@ func (*characterOverview) fetchRows(s services) ([]characterOverviewRow, overvie
 
 // showCharacterOverviewDetailWindow shows details for a character overview in a new window.
 func showCharacterOverviewDetailWindow(u *baseUI, r characterOverviewRow) {
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("characteroverview-%d", r.characterID), "Character: Overview", r.characterName)
-	if !ok {
+	w, created := u.getOrCreateWindow(
+		fmt.Sprintf("characteroverview-%d", r.characterID),
+		"Character: Overview",
+		r.characterName,
+	)
+	if !created {
 		w.Show()
 		return
 	}

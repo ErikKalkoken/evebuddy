@@ -524,8 +524,12 @@ func (a *assets) characterCount() int {
 
 // showAssetDetailWindow shows the details for a character assets in a new window.
 func showAssetDetailWindow(u *baseUI, r assetRow) {
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("asset-%d-%d", r.characterID, r.itemID), "Asset: Information", r.characterName)
-	if !ok {
+	w, created := u.getOrCreateWindow(
+		fmt.Sprintf("asset-%d-%d", r.characterID, r.itemID),
+		"Asset: Information",
+		r.characterName,
+	)
+	if !created {
 		w.Show()
 		return
 	}

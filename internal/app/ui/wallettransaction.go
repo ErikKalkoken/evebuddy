@@ -547,8 +547,12 @@ func (a *walletTransactions) fetchCorporationRows(corporationID int32, division 
 // showCharacterWalletTransactionWindow shows the detail of a character wallet transaction in a window.
 func showCharacterWalletTransactionWindow(u *baseUI, characterID int32, transactionID int64) {
 	title := fmt.Sprintf("Character Market Transaction #%d", transactionID)
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("wallettransaction-%d-%d", characterID, transactionID), title, u.scs.CharacterName(characterID))
-	if !ok {
+	w, created := u.getOrCreateWindow(
+		fmt.Sprintf("wallettransaction-%d-%d", characterID, transactionID),
+		title,
+		u.scs.CharacterName(characterID),
+	)
+	if !created {
 		w.Show()
 		return
 	}
@@ -614,8 +618,12 @@ func showCharacterWalletTransactionWindow(u *baseUI, characterID int32, transact
 // showCorporationWalletTransactionWindow shows the detail of a corporation wallet transaction in a window.
 func showCorporationWalletTransactionWindow(u *baseUI, corporationID int32, division app.Division, transactionID int64) {
 	title := fmt.Sprintf("Corporation Market Transaction #%d", transactionID)
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("wallettransaction-%d-%d", corporationID, transactionID), title, u.scs.CorporationName(corporationID))
-	if !ok {
+	w, created := u.getOrCreateWindow(
+		fmt.Sprintf("wallettransaction-%d-%d", corporationID, transactionID),
+		title,
+		u.scs.CorporationName(corporationID),
+	)
+	if !created {
 		w.Show()
 		return
 	}
