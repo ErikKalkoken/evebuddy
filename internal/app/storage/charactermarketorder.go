@@ -210,6 +210,7 @@ func (st *Storage) UpdateOrCreateCharacterMarketOrder(ctx context.Context, arg U
 		return fmt.Errorf("UpdateOrCreateCharacterMarketOrder: %+v: %w", arg, err)
 	}
 	if arg.CharacterID == 0 ||
+		arg.Duration == 0 ||
 		arg.Issued.IsZero() ||
 		arg.LocationID == 0 ||
 		arg.OrderID == 0 ||

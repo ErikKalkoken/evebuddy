@@ -264,4 +264,69 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			}
 		}
 	})
+	t.Run("should ignore invalid orders", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateEveEntity(app.EveEntity{ID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		itemType := factory.CreateEveType()
+		location := factory.CreateEveLocationStation()
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/orders/history/`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"duration":       9,
+					"is_buy_order":   false,
+					"is_corporation": false,
+					"issued":         "2019-07-24T14:15:22Z",
+					"location_id":    location.ID,
+					"order_id":       12,
+					"price":          0.45,
+					"range":          "station",
+					"region_id":      location.SolarSystem.Constellation.Region.ID,
+					"state":          "expired",
+					"type_id":        itemType.ID,
+					"volume_remain":  1,
+					"volume_total":   100,
+				},
+				{
+					"duration":       0, // invalid duration
+					"is_buy_order":   false,
+					"is_corporation": false,
+					"issued":         "2019-07-24T14:15:22Z",
+					"location_id":    location.ID,
+					"order_id":       13,
+					"price":          0.45,
+					"range":          "station",
+					"region_id":      location.SolarSystem.Constellation.Region.ID,
+					"state":          "expired",
+					"type_id":        itemType.ID,
+					"volume_remain":  1,
+					"volume_total":   100,
+				},
+			}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/orders/`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
+		)
+		// when
+		changed, err := s.updateMarketOrdersESI(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMarketOrders,
+		})
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, changed)
+			got, err := st.ListCharacterMarketOrderIDs(ctx, c.ID)
+			if assert.NoError(t, err) {
+				want := set.Of[int64](12)
+				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			}
+		}
+	})
 }

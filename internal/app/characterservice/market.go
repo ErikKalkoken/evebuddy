@@ -57,6 +57,9 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 
 			orders := make(map[int64]esi.GetCharactersCharacterIdOrdersHistory200Ok)
 			for _, o := range open {
+				if o.Duration == 0 {
+					continue
+				}
 				orders[o.OrderId] = esi.GetCharactersCharacterIdOrdersHistory200Ok{
 					Duration:      o.Duration,
 					Escrow:        o.Escrow,
@@ -76,6 +79,9 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 				}
 			}
 			for _, o := range history {
+				if o.Duration == 0 {
+					continue
+				}
 				orders[o.OrderId] = o
 			}
 			return orders, nil
