@@ -396,15 +396,19 @@ func (a *contracts) fetchRows(s services) ([]contractRow, int, error) {
 
 // showContractWindow shows the details of a contract in a window.
 func showContractWindow(u *baseUI, characterID, contractID int32) {
-	title := fmt.Sprintf("Contract #%d", contractID)
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("contract-%d-%d", characterID, contractID), title, u.scs.CharacterName(characterID))
-	if !ok {
-		w.Show()
-		return
-	}
 	o, err := u.cs.GetContract(context.Background(), characterID, contractID)
 	if err != nil {
 		u.showErrorDialog("Failed to show contract", err, u.window)
+		return
+	}
+	title := fmt.Sprintf("Contract #%d", contractID)
+	w, created := u.getOrCreateWindow(
+		fmt.Sprintf("contract-%d-%d", characterID, contractID),
+		title,
+		u.scs.CharacterName(characterID),
+	)
+	if !created {
+		w.Show()
 		return
 	}
 	makeExpiresString := func(c *app.CharacterContract) string {
@@ -432,7 +436,7 @@ func showContractWindow(u *baseUI, characterID, contractID int32) {
 		availability = availabilityLabel
 	}
 	fi := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeOwnerActionLabel(
+		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			characterID,
 			u.scs.CharacterName(characterID),
 			u.ShowEveEntityInfoWindow,

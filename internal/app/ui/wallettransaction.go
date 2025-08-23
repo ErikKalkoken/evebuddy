@@ -546,15 +546,19 @@ func (a *walletTransactions) fetchCorporationRows(corporationID int32, division 
 
 // showCharacterWalletTransactionWindow shows the detail of a character wallet transaction in a window.
 func showCharacterWalletTransactionWindow(u *baseUI, characterID int32, transactionID int64) {
-	title := fmt.Sprintf("Character Market Transaction #%d", transactionID)
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("wallettransaction-%d-%d", characterID, transactionID), title, u.scs.CharacterName(characterID))
-	if !ok {
-		w.Show()
-		return
-	}
 	o, err := u.cs.GetWalletTransactions(context.Background(), characterID, transactionID)
 	if err != nil {
 		u.showErrorDialog("Failed to show market transaction", err, u.window)
+		return
+	}
+	title := fmt.Sprintf("Character Market Transaction #%d", transactionID)
+	w, created := u.getOrCreateWindow(
+		fmt.Sprintf("wallettransaction-%d-%d", characterID, transactionID),
+		title,
+		u.scs.CharacterName(characterID),
+	)
+	if !created {
+		w.Show()
 		return
 	}
 	var activity string
@@ -567,7 +571,7 @@ func showCharacterWalletTransactionWindow(u *baseUI, characterID int32, transact
 		activity = "Sell"
 	}
 	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeOwnerActionLabel(
+		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			characterID,
 			u.scs.CharacterName(characterID),
 			u.ShowEveEntityInfoWindow,
@@ -582,11 +586,11 @@ func showCharacterWalletTransactionWindow(u *baseUI, characterID int32, transact
 		widget.NewFormItem("Total", total),
 		widget.NewFormItem("Client", makeEveEntityActionLabel(o.Client, u.ShowEveEntityInfoWindow)),
 		widget.NewFormItem("Location", makeLocationLabel(o.Location, u.ShowLocationInfoWindow)),
-		widget.NewFormItem("Related Journal Entry", makeLinkLabelWithWrap(
-			fmt.Sprintf("#%d", o.JournalRefID), func() {
-				showCharacterWalletJournalEntryWindow(u, characterID, o.JournalRefID)
-			},
-		)),
+		// widget.NewFormItem("Related Journal Entry", makeLinkLabelWithWrap(
+		// 	fmt.Sprintf("#%d", o.JournalRefID), func() {
+		// 		showCharacterWalletJournalEntryWindow(u, characterID, o.JournalRefID)
+		// 	},
+		// )),
 	}
 
 	if u.IsDeveloperMode() {
@@ -613,20 +617,24 @@ func showCharacterWalletTransactionWindow(u *baseUI, characterID int32, transact
 
 // showCorporationWalletTransactionWindow shows the detail of a corporation wallet transaction in a window.
 func showCorporationWalletTransactionWindow(u *baseUI, corporationID int32, division app.Division, transactionID int64) {
-	title := fmt.Sprintf("Corporation Market Transaction #%d", transactionID)
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("wallettransaction-%d-%d", corporationID, transactionID), title, u.scs.CorporationName(corporationID))
-	if !ok {
-		w.Show()
-		return
-	}
 	o, err := u.rs.GetWalletTransaction(context.Background(), corporationID, division, transactionID)
 	if err != nil {
 		u.showErrorDialog("Failed to show market transaction", err, u.window)
 		return
 	}
+	title := fmt.Sprintf("Corporation Market Transaction #%d", transactionID)
+	w, created := u.getOrCreateWindow(
+		fmt.Sprintf("wallettransaction-%d-%d", corporationID, transactionID),
+		title,
+		u.scs.CorporationName(corporationID),
+	)
+	if !created {
+		w.Show()
+		return
+	}
 	totalAmount := o.Total()
 	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeOwnerActionLabel(
+		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			corporationID,
 			u.scs.CorporationName(corporationID),
 			u.ShowEveEntityInfoWindow,
@@ -640,11 +648,11 @@ func showCorporationWalletTransactionWindow(u *baseUI, corporationID int32, divi
 		widget.NewFormItem("Total", widget.NewLabel(formatISKAmount(totalAmount))),
 		widget.NewFormItem("Client", makeEveEntityActionLabel(o.Client, u.ShowEveEntityInfoWindow)),
 		widget.NewFormItem("Location", makeLocationLabel(o.Location, u.ShowLocationInfoWindow)),
-		widget.NewFormItem("Related Journal Entry", makeLinkLabelWithWrap(
-			fmt.Sprintf("#%d", o.JournalRefID), func() {
-				showCorporationWalletJournalEntryWindow(u, corporationID, division, o.JournalRefID)
-			},
-		)),
+		// widget.NewFormItem("Related Journal Entry", makeLinkLabelWithWrap(
+		// 	fmt.Sprintf("#%d", o.JournalRefID), func() {
+		// 		showCorporationWalletJournalEntryWindow(u, corporationID, division, o.JournalRefID)
+		// 	},
+		// )),
 	}
 
 	if u.IsDeveloperMode() {

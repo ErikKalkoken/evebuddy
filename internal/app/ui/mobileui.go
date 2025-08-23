@@ -494,6 +494,12 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			navBar.HideBadge(4)
 		}
 	}
+	u.onShowAndRun = func() {
+		if u.isFakeMobile {
+			u.MainWindow().Resize(fyne.NewSize(340, 700))
+			u.MainWindow().SetFixedSize(true)
+		}
+	}
 
 	u.onAppFirstStarted = func() {
 		tickerUpdateStatus := time.NewTicker(5 * time.Second)
@@ -644,6 +650,18 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		navItemContracts,
 		navItemColonies2,
 		navItemIndustry,
+		iwidget.NewListItemWithIcon(
+			"Market Orders",
+			theme.NewThemedResource(icons.ChartAreasplineSvg),
+			func() {
+				homeNav.Push(iwidget.NewAppBar("Market Orders",
+					container.NewAppTabs(
+						container.NewTabItem("Buy", u.marketOrdersBuy),
+						container.NewTabItem("Sell", u.marketOrdersSell),
+					),
+				))
+			},
+		),
 		iwidget.NewListItemWithIcon(
 			"Character Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),

@@ -104,10 +104,11 @@ func (a IndustryActivity) JobType() IndustryJobType {
 	return UndefinedJob
 }
 
-type IndustryJobStatus uint
+// IndustryJobState represents the current state of an industry job.
+type IndustryJobState uint
 
 const (
-	JobUndefined IndustryJobStatus = iota
+	JobUndefined IndustryJobState = iota
 	JobActive
 	JobCancelled
 	JobDelivered
@@ -116,8 +117,8 @@ const (
 	JobReverted
 )
 
-func (s IndustryJobStatus) String() string {
-	m := map[IndustryJobStatus]string{
+func (s IndustryJobState) String() string {
+	m := map[IndustryJobState]string{
 		JobUndefined: "undefined",
 		JobActive:    "in progress",
 		JobCancelled: "cancelled",
@@ -133,7 +134,7 @@ func (s IndustryJobStatus) String() string {
 	return x
 }
 
-func (s IndustryJobStatus) IsActive() bool {
+func (s IndustryJobState) IsActive() bool {
 	switch s {
 	case JobActive, JobReady, JobPaused:
 		return true
@@ -141,7 +142,7 @@ func (s IndustryJobStatus) IsActive() bool {
 	return false
 }
 
-func (s IndustryJobStatus) IsHistory() bool {
+func (s IndustryJobState) IsHistory() bool {
 	switch s {
 	case JobDelivered, JobCancelled:
 		return true
@@ -149,13 +150,13 @@ func (s IndustryJobStatus) IsHistory() bool {
 	return false
 }
 
-func (s IndustryJobStatus) Display() string {
+func (s IndustryJobState) Display() string {
 	titler := cases.Title(language.English)
 	return titler.String(s.String())
 }
 
-func (s IndustryJobStatus) Color() fyne.ThemeColorName {
-	m := map[IndustryJobStatus]fyne.ThemeColorName{
+func (s IndustryJobState) Color() fyne.ThemeColorName {
+	m := map[IndustryJobState]fyne.ThemeColorName{
 		JobActive:    theme.ColorNameForeground,
 		JobCancelled: theme.ColorNameError,
 		JobPaused:    theme.ColorNameWarning,
@@ -191,14 +192,14 @@ type CharacterIndustryJob struct {
 	Runs               int
 	StartDate          time.Time
 	Station            *EveLocationShort
-	Status             IndustryJobStatus
+	Status             IndustryJobState
 	SuccessfulRuns     optional.Optional[int32]
 }
 
 type IndustryJobActivityCount struct {
 	InstallerID int32
 	Activity    IndustryActivity
-	Status      IndustryJobStatus
+	Status      IndustryJobState
 	Count       int
 }
 
@@ -225,6 +226,6 @@ type CorporationIndustryJob struct {
 	Runs                int
 	StartDate           time.Time
 	Location            *EveLocationShort
-	Status              IndustryJobStatus
+	Status              IndustryJobState
 	SuccessfulRuns      optional.Optional[int32]
 }

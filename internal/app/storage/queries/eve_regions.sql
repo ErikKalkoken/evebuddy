@@ -13,3 +13,7 @@ RETURNING *;
 SELECT *
 FROM eve_regions
 WHERE id = ?;
+
+-- name: ListEveRegionIDs :many
+SELECT id
+FROM eve_regions;

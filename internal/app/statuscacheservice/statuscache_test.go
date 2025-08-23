@@ -887,7 +887,7 @@ func TestCharacterSectionSummary(t *testing.T) {
 		Current:   1,
 		Errors:    1,
 		IsRunning: true,
-		Total:     20,
+		Total:     len(app.CharacterSections),
 	}
 	assert.Equal(t, want, got)
 }

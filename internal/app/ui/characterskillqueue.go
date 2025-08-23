@@ -215,8 +215,12 @@ func (a *characterSkillQueue) makeTopText(total optional.Optional[time.Duration]
 
 func showSkillInTrainingWindow(u *baseUI, r *app.CharacterSkillqueueItem) {
 	characterName := u.scs.CharacterName(r.CharacterID)
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("skill-%d-%d", r.CharacterID, r.SkillID), "Skill: Information", characterName)
-	if !ok {
+	w, created := u.getOrCreateWindow(
+		fmt.Sprintf("skill-%d-%d", r.CharacterID, r.SkillID),
+		"Skill: Information",
+		characterName,
+	)
+	if !created {
 		w.Show()
 		return
 	}
@@ -233,7 +237,7 @@ func showSkillInTrainingWindow(u *baseUI, r *app.CharacterSkillqueueItem) {
 	items := []*widget.FormItem{
 		widget.NewFormItem(
 			"Owner",
-			makeOwnerActionLabel(r.CharacterID, characterName, u.ShowEveEntityInfoWindow),
+			makeCharacterActionLabel(r.CharacterID, characterName, u.ShowEveEntityInfoWindow),
 		),
 		widget.NewFormItem("Skill", makeLinkLabel(app.SkillDisplayName(r.SkillName, r.FinishedLevel), func() {
 			u.ShowTypeInfoWindowWithCharacter(r.SkillID, r.CharacterID)

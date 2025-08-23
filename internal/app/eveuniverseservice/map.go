@@ -416,3 +416,30 @@ func (s *EveUniverseService) GetStarTypeID(ctx context.Context, id int32) (int32
 	}
 	return x2.TypeId, nil
 }
+
+// AddMissingRegions fetches missing typeIDs from ESI.
+// Invalid IDs (e.g. 0) will be ignored
+func (s *EveUniverseService) AddMissingRegions(ctx context.Context, ids set.Set[int32]) error {
+	ids2 := ids.Clone()
+	ids2.Delete(0) // ignore invalid ID
+	if ids.Size() == 0 {
+		return nil
+	}
+	missing, err := s.st.MissingEveRegions(ctx, ids2)
+	if err != nil {
+		return err
+	}
+	if missing.Size() == 0 {
+		return nil
+	}
+	slog.Debug("Trying to fetch missing EveRegions from ESI", "count", missing.Size())
+	g := new(errgroup.Group)
+	g.SetLimit(s.concurrencyLimit)
+	for id := range missing.All() {
+		g.Go(func() error {
+			_, err := s.GetOrCreateRegionESI(ctx, id)
+			return err
+		})
+	}
+	return g.Wait()
+}

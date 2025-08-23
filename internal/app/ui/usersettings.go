@@ -239,10 +239,29 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		},
 		window: a.w,
 	})
+
+	vMin, vMax, vDef = a.u.settings.MarketOrderRetentionDaysPresets()
+	marketOrdersRetention := NewSettingItemSlider(SettingItemSliderParams{
+		label:        "Market order retention",
+		hint:         "Number of days to keep historic market orders.",
+		minValue:     float64(vMin),
+		maxValue:     float64(vMax),
+		defaultValue: float64(vDef),
+		step:         1,
+		getter: func() float64 {
+			return float64(a.u.settings.MarketOrderRetentionDays())
+		},
+		setter: func(v float64) {
+			a.u.settings.SetMarketOrdersRetentionDay(int(v))
+		},
+		window: a.w,
+	})
+
 	items = slices.Concat(items, []SettingItem{
 		NewSettingItemHeading("Section updates"),
 		maxMail,
 		maxWallet,
+		marketOrdersRetention,
 	})
 
 	list := NewSettingList(items)

@@ -420,18 +420,21 @@ func (*walletJournal) fetchCorporationRows(corporationID int32, division app.Div
 
 // showCharacterWalletJournalEntryWindow shows a wallet journal entry for a character in a new window.
 func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID int64) {
-	title := fmt.Sprintf("Character Wallet Transaction #%d", refID)
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("walletjournalentry-%d-%d", characterID, refID), title, u.scs.CharacterName(characterID))
-	if !ok {
-		w.Show()
-		return
-	}
 	o, err := u.cs.GetWalletJournalEntry(context.Background(), characterID, refID)
 	if err != nil {
 		u.showErrorDialog("Failed to show wallet transaction", err, u.window)
 		return
 	}
-
+	title := fmt.Sprintf("Character Wallet Transaction #%d", refID)
+	w, created := u.getOrCreateWindow(
+		fmt.Sprintf("walletjournalentry-%d-%d", characterID, refID),
+		title,
+		u.scs.CharacterName(characterID),
+	)
+	if !created {
+		w.Show()
+		return
+	}
 	f := widget.NewForm()
 	f.Orientation = widget.Adaptive
 
@@ -496,7 +499,7 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID i
 		}()
 	}
 	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeOwnerActionLabel(
+		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			characterID,
 			u.scs.CharacterName(characterID),
 			u.ShowEveEntityInfoWindow,
@@ -530,7 +533,9 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID i
 			makeEveEntityActionLabel(o.TaxReceiver, u.ShowEveEntityInfoWindow)),
 		)
 	}
-	items = append(items, contextItem)
+	if o.ContextIDType != "" {
+		items = append(items, contextItem)
+	}
 	if u.IsDeveloperMode() {
 		items = append(items, widget.NewFormItem("Ref ID", u.makeCopyToClipboardLabel(fmt.Sprint(refID))))
 	}
@@ -548,15 +553,19 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID i
 
 // showCorporationWalletJournalEntryWindow shows a wallet journal entry for a corporation in a new window.
 func showCorporationWalletJournalEntryWindow(u *baseUI, corporationID int32, division app.Division, refID int64) {
-	title := fmt.Sprintf("Corporation Wallet Transaction #%d", refID)
-	w, ok := u.getOrCreateWindow(fmt.Sprintf("walletjournalentry-%d-%d", corporationID, refID), title, u.scs.CorporationName(corporationID))
-	if !ok {
-		w.Show()
-		return
-	}
 	o, err := u.rs.GetWalletJournalEntry(context.Background(), corporationID, division, refID)
 	if err != nil {
 		u.showErrorDialog("Failed to show wallet transaction", err, u.window)
+		return
+	}
+	title := fmt.Sprintf("Corporation Wallet Transaction #%d", refID)
+	w, created := u.getOrCreateWindow(
+		fmt.Sprintf("walletjournalentry-%d-%d", corporationID, refID),
+		title,
+		u.scs.CorporationName(corporationID),
+	)
+	if !created {
+		w.Show()
 		return
 	}
 
@@ -624,7 +633,7 @@ func showCorporationWalletJournalEntryWindow(u *baseUI, corporationID int32, div
 	// 	}()
 	// }
 	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeOwnerActionLabel(
+		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			corporationID,
 			u.scs.CorporationName(corporationID),
 			u.ShowEveEntityInfoWindow,

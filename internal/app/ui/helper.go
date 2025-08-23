@@ -14,6 +14,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/dustin/go-humanize"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
@@ -77,7 +79,7 @@ func makeLinkLabel(text string, action func()) *widget.Hyperlink {
 	return x
 }
 
-func makeOwnerActionLabel(id int32, name string, action func(o *app.EveEntity)) fyne.CanvasObject {
+func makeCharacterActionLabel(id int32, name string, action func(o *app.EveEntity)) fyne.CanvasObject {
 	o := &app.EveEntity{
 		ID:       id,
 		Name:     name,
@@ -98,6 +100,17 @@ func makeEveEntityActionLabel(o *app.EveEntity, action func(o *app.EveEntity)) f
 func makeLabelWithWrap(s string) *widget.Label {
 	l := widget.NewLabel(s)
 	l.Wrapping = fyne.TextWrapWord
+	return l
+}
+
+func makeBoolLabel(v bool) *widget.Label {
+	if v {
+		l := widget.NewLabel("Yes")
+		l.Importance = widget.SuccessImportance
+		return l
+	}
+	l := widget.NewLabel("No")
+	l.Importance = widget.DangerImportance
 	return l
 }
 
@@ -150,4 +163,9 @@ func timeFormattedOrFallback(t time.Time, layout, fallback string) string {
 		return fallback
 	}
 	return t.Format(layout)
+}
+
+func stringTitle(s string) string {
+	titler := cases.Title(language.English)
+	return titler.String(s)
 }
