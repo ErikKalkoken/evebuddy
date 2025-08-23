@@ -35,6 +35,10 @@ const (
 	settingMaxMailsDefault                    = 1_000
 	settingMaxMailsMax                        = 10_000
 	settingMaxWalletTransactions              = "settingMaxWalletTransactions"
+	settingMarketOrdersRetentionDays          = "settingMarketOrderRetentionDays"
+	settingMarketOrderRetentionDaysMin        = 30
+	settingMarketOrderRetentionDaysDefault    = 90
+	settingMarketOrderRetentionDaysMax        = 360
 	settingMaxWalletTransactionsDefault       = 1_000
 	settingMaxWalletTransactionsMax           = 10_000
 	settingNotificationTypesEnabled           = "settingNotificationsTypesEnabled"
@@ -143,6 +147,21 @@ func (s Settings) MaxMailsPresets() (min int, max int, def int) {
 
 func (s Settings) SetMaxMails(v int) {
 	s.p.SetInt(settingMaxMails, v)
+}
+
+func (s Settings) MarketOrderRetentionDays() int {
+	return s.p.IntWithFallback(settingMarketOrdersRetentionDays, settingMarketOrderRetentionDaysDefault)
+}
+
+func (s Settings) MarketOrderRetentionDaysPresets() (min int, max int, def int) {
+	min = settingMarketOrderRetentionDaysMin
+	max = settingMarketOrderRetentionDaysMax
+	def = settingMarketOrderRetentionDaysDefault
+	return
+}
+
+func (s Settings) SetMarketOrdersRetentionDay(v int) {
+	s.p.SetInt(settingMarketOrdersRetentionDays, v)
 }
 
 func (s Settings) SysTrayEnabled() bool {
