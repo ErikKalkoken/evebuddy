@@ -396,6 +396,11 @@ func (a *contracts) fetchRows(s services) ([]contractRow, int, error) {
 
 // showContractWindow shows the details of a contract in a window.
 func showContractWindow(u *baseUI, characterID, contractID int32) {
+	o, err := u.cs.GetContract(context.Background(), characterID, contractID)
+	if err != nil {
+		u.showErrorDialog("Failed to show contract", err, u.window)
+		return
+	}
 	title := fmt.Sprintf("Contract #%d", contractID)
 	w, created := u.getOrCreateWindow(
 		fmt.Sprintf("contract-%d-%d", characterID, contractID),
@@ -404,11 +409,6 @@ func showContractWindow(u *baseUI, characterID, contractID int32) {
 	)
 	if !created {
 		w.Show()
-		return
-	}
-	o, err := u.cs.GetContract(context.Background(), characterID, contractID)
-	if err != nil {
-		u.showErrorDialog("Failed to show contract", err, u.window)
 		return
 	}
 	makeExpiresString := func(c *app.CharacterContract) string {

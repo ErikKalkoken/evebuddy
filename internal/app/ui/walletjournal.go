@@ -420,6 +420,11 @@ func (*walletJournal) fetchCorporationRows(corporationID int32, division app.Div
 
 // showCharacterWalletJournalEntryWindow shows a wallet journal entry for a character in a new window.
 func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID int64) {
+	o, err := u.cs.GetWalletJournalEntry(context.Background(), characterID, refID)
+	if err != nil {
+		u.showErrorDialog("Failed to show wallet transaction", err, u.window)
+		return
+	}
 	title := fmt.Sprintf("Character Wallet Transaction #%d", refID)
 	w, created := u.getOrCreateWindow(
 		fmt.Sprintf("walletjournalentry-%d-%d", characterID, refID),
@@ -430,12 +435,6 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID i
 		w.Show()
 		return
 	}
-	o, err := u.cs.GetWalletJournalEntry(context.Background(), characterID, refID)
-	if err != nil {
-		u.showErrorDialog("Failed to show wallet transaction", err, u.window)
-		return
-	}
-
 	f := widget.NewForm()
 	f.Orientation = widget.Adaptive
 
@@ -534,7 +533,9 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID i
 			makeEveEntityActionLabel(o.TaxReceiver, u.ShowEveEntityInfoWindow)),
 		)
 	}
-	items = append(items, contextItem)
+	if o.ContextIDType != "" {
+		items = append(items, contextItem)
+	}
 	if u.IsDeveloperMode() {
 		items = append(items, widget.NewFormItem("Ref ID", u.makeCopyToClipboardLabel(fmt.Sprint(refID))))
 	}
@@ -552,6 +553,11 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID i
 
 // showCorporationWalletJournalEntryWindow shows a wallet journal entry for a corporation in a new window.
 func showCorporationWalletJournalEntryWindow(u *baseUI, corporationID int32, division app.Division, refID int64) {
+	o, err := u.rs.GetWalletJournalEntry(context.Background(), corporationID, division, refID)
+	if err != nil {
+		u.showErrorDialog("Failed to show wallet transaction", err, u.window)
+		return
+	}
 	title := fmt.Sprintf("Corporation Wallet Transaction #%d", refID)
 	w, created := u.getOrCreateWindow(
 		fmt.Sprintf("walletjournalentry-%d-%d", corporationID, refID),
@@ -560,11 +566,6 @@ func showCorporationWalletJournalEntryWindow(u *baseUI, corporationID int32, div
 	)
 	if !created {
 		w.Show()
-		return
-	}
-	o, err := u.rs.GetWalletJournalEntry(context.Background(), corporationID, division, refID)
-	if err != nil {
-		u.showErrorDialog("Failed to show wallet transaction", err, u.window)
 		return
 	}
 
