@@ -15,7 +15,8 @@ A multi-platform companion app for Eve Online players available on Windows, Linu
 
 ## Contents
 
-- [Description](#description)
+- [Overview](#overview)
+- [Features](#features)
 - [Highlights](#highlights)
 - [Installing](#installing)
   - [Windows](#windows)
@@ -28,7 +29,7 @@ A multi-platform companion app for Eve Online players available on Windows, Linu
 - [External web sites](#external-web-sites)
 - [Credits](#credits)
 
-## Description
+## Overview
 
 EVE Buddy is a multi-platform companion app for [Eve Online](https://www.eveonline.com/) players. It provides the following key features:
 
@@ -44,12 +45,20 @@ EVE Buddy is a multi-platform companion app for [Eve Online](https://www.eveonli
 
 EVE Buddy is available for Windows, Linux, macOS and Android.
 
-> [!IMPORTANT]
-> This app is in-development and we are constantly adding new features and other improvements. We would very much appreciate your feedback, so we can quickly find and squash potential bugs. If you encounter any problems please feel free to open an issue or chat with us on our [Discord server]((https://discord.gg/tVSCQEVJnJ)) in the support channel **#evebuddy**.<br>
-> Some features may not be fully implemented yet (e.g. some notification types). But if you are missing a feature that would make EVE Buddy more useful for you, please feel free to open a feature request.<br>
+> [!Note]
+> We are proud to have been mentioned twice in Eve Online's official Community Beat newsletter:
+>
+> - [EVE Community Beat newsletter 16 August 2025](https://www.eveonline.com/news/view/community-beat-for-16-august-2025).
+> - [EVE Community Beat newsletter 22 November 2024](https://www.eveonline.com/news/view/community-beat-for-22-november).
 
-> [!NOTE]
+> [!IMPORTANT]
+> We would very much appreciate your feedback. If you encounter any problems or have a question please feel free to open an issue or come chat with us on our [Discord server]((https://discord.gg/tVSCQEVJnJ)) in the support channel **#evebuddy**.<br>
+> EVE Buddy is in-development and we are constantly adding new features and improving the app further. If you are missing a feature that would make EVE Buddy more useful for you, please feel free to open a feature request.
+
+> [!TIP]
 > Help wanted! We would very much appreciate any contribution. If you like to provide a fix or add a feature please feel free top open a PR. Or if you have any questions please contact us on Discord.
+
+## Features
 
 The following is a detailed list of EVE Buddy's features. Most features are available for both desktop and mobile:
 
@@ -344,7 +353,6 @@ To view the exported logs on mobile you might want to install another app. While
 
 You can find EVE Buddy mentions on other web sites:
 
-- [EVE Community Beat newsletter 22 November 2024](https://www.eveonline.com/news/view/community-beat-for-22-november).
 - [EVE Forum](https://forums.eveonline.com/t/eve-buddy-a-companion-app-for-desktop-and-mobile-v0-40)
 - [EVE Developer site](https://developers.eveonline.com/docs/community/evebuddy/)
 - [Reddit: Initial](https://www.reddit.com/r/Eve/comments/1go4iee/eve_buddy_a_new_companion_app_for_eve_online/)
