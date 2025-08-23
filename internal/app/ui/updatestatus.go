@@ -483,6 +483,7 @@ type updateStatusDetail struct {
 
 	completedAt *widget.Label
 	issue       *widget.Label
+	nextUpdate  *widget.Label
 	startedAt   *widget.Label
 	status      *widget.Label
 	timeout     *widget.Label
@@ -497,6 +498,7 @@ func newUpdateStatusDetail() *updateStatusDetail {
 	w := &updateStatusDetail{
 		completedAt: makeLabel(),
 		issue:       makeLabel(),
+		nextUpdate:  makeLabel(),
 		startedAt:   makeLabel(),
 		status:      makeLabel(),
 		timeout:     makeLabel(),
@@ -526,6 +528,7 @@ func (w *updateStatusDetail) set(ss app.CacheSectionStatus) {
 	w.startedAt.SetText(ihumanize.TimeWithFallback(ss.StartedAt, "-"))
 	now := time.Now()
 	w.timeout.SetText(humanize.RelTime(now.Add(ss.Timeout), now, "", ""))
+	w.nextUpdate.SetText(humanize.RelTime(now, ss.CompletedAt.Add(ss.Timeout), "", ""))
 }
 
 func (w *updateStatusDetail) CreateRenderer() fyne.WidgetRenderer {
@@ -536,6 +539,7 @@ func (w *updateStatusDetail) CreateRenderer() fyne.WidgetRenderer {
 		container.New(layout, widget.NewLabel("Started"), w.startedAt),
 		container.New(layout, widget.NewLabel("Completed"), w.completedAt),
 		container.New(layout, widget.NewLabel("Timeout"), w.timeout),
+		container.New(layout, widget.NewLabel("Next update"), w.nextUpdate),
 	)
 	return widget.NewSimpleRenderer(c)
 }
