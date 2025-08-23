@@ -248,4 +248,30 @@ func TestCharacterMarketOrder(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can update order status", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+			State:       app.OrderOpen,
+		})
+		// when
+		err := st.UpdateCharacterMarketOrderState(ctx, storage.UpdateCharacterMarketOrderStateParams{
+			CharacterID: c.ID,
+			OrderIDs:    set.Of(o1.OrderID),
+			State:       app.OrderUnknown,
+		})
+		// then
+		failOnError(t, err)
+		o2, err := st.GetCharacterMarketOrder(ctx, c.ID, o1.OrderID)
+		failOnError(t, err)
+		assert.Equal(t, app.OrderUnknown, o2.State)
+	})
+}
+
+func failOnError(t *testing.T, err error) {
+	if err != nil {
+		t.Fatal("Error occured", err)
+	}
 }

@@ -67,6 +67,14 @@ FROM
 WHERE
     cmo.is_buy_order = ?;
 
+-- name: UpdateCharacterMarketOrderState :exec
+UPDATE character_market_orders
+SET
+    state = ?
+WHERE
+    character_id = ?
+    AND order_id IN (sqlc.slice('order_ids'));
+
 -- name: UpdateOrCreateCharacterMarketOrder :exec
 INSERT INTO
     character_market_orders (

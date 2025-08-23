@@ -18,6 +18,7 @@ var orderStatusFromDBValue = map[string]app.MarketOrderState{
 	"cancelled": app.OrderCancelled,
 	"expired":   app.OrderExpired,
 	"open":      app.OrderOpen,
+	"unknown":   app.OrderUnknown,
 }
 
 var orderStatusToDBValue = map[app.MarketOrderState]string{}
@@ -155,6 +156,33 @@ func characterMarketOrderFromDBModel(arg characterMarketOrderFromDBModelParams) 
 		VolumeTotal:   int(arg.cmo.VolumeTotal),
 	}
 	return o2
+}
+
+type UpdateCharacterMarketOrderStateParams struct {
+	CharacterID int32
+	OrderIDs    set.Set[int64]
+	State       app.MarketOrderState
+}
+
+func (st *Storage) UpdateCharacterMarketOrderState(ctx context.Context, arg UpdateCharacterMarketOrderStateParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateCharacterMarketOrderState %+v: %w", arg, err)
+	}
+	if arg.CharacterID == 0 || arg.OrderIDs.Contains(0) {
+		return wrapErr(app.ErrInvalid)
+	}
+	if arg.OrderIDs.Size() == 0 {
+		return nil
+	}
+	err := st.qRW.UpdateCharacterMarketOrderState(ctx, queries.UpdateCharacterMarketOrderStateParams{
+		CharacterID: int64(arg.CharacterID),
+		OrderIds:    arg.OrderIDs.Slice(),
+		State:       orderStatusToDBValue[arg.State],
+	})
+	if err != nil {
+		return wrapErr(err)
+	}
+	return nil
 }
 
 type UpdateOrCreateCharacterMarketOrderParams struct {

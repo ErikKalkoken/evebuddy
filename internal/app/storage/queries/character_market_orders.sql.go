@@ -293,6 +293,38 @@ func (q *Queries) ListCharacterMarketOrders(ctx context.Context, characterID int
 	return items, nil
 }
 
+const updateCharacterMarketOrderState = `-- name: UpdateCharacterMarketOrderState :exec
+UPDATE character_market_orders
+SET
+    state = ?
+WHERE
+    character_id = ?
+    AND order_id IN (/*SLICE:order_ids*/?)
+`
+
+type UpdateCharacterMarketOrderStateParams struct {
+	State       string
+	CharacterID int64
+	OrderIds    []int64
+}
+
+func (q *Queries) UpdateCharacterMarketOrderState(ctx context.Context, arg UpdateCharacterMarketOrderStateParams) error {
+	query := updateCharacterMarketOrderState
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.State)
+	queryParams = append(queryParams, arg.CharacterID)
+	if len(arg.OrderIds) > 0 {
+		for _, v := range arg.OrderIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:order_ids*/?", strings.Repeat(",?", len(arg.OrderIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:order_ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
+
 const updateOrCreateCharacterMarketOrder = `-- name: UpdateOrCreateCharacterMarketOrder :exec
 INSERT INTO
     character_market_orders (

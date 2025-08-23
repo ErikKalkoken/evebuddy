@@ -157,7 +157,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			}
 		}
 	})
-	t.Run("can delete orphaned orders", func(t *testing.T) {
+	t.Run("should mark orphaned orders with state unknown", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
@@ -165,9 +165,11 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
 			CharacterID: c.ID,
+			State:       app.OrderOpen,
 		})
-		factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+		o2 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
 			CharacterID: c.ID,
+			State:       app.OrderOpen,
 		})
 		httpmock.RegisterResponder(
 			"GET",
@@ -201,10 +203,9 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			got, err := st.ListCharacterMarketOrderIDs(ctx, c.ID)
+			o2a, err := st.GetCharacterMarketOrder(ctx, o2.CharacterID, o2.OrderID)
 			if assert.NoError(t, err) {
-				want := set.Of(o1.OrderID)
-				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+				assert.Equal(t, app.OrderUnknown, o2a.State)
 			}
 		}
 	})

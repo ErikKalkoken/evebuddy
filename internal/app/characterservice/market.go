@@ -171,11 +171,15 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 			}))
 			orphans := set.Difference(running, incoming)
 			if orphans.Size() > 0 {
-				// The ESI response only returns orders from the last 90 days.
-				// It can therefore happen that a long running job vanishes from the response,
-				// without the app having received a final status (e.g. expired or canceled).
-				// Since the status of the job is undetermined we can only delete it.
-				err := s.st.DeleteCharacterMarketOrdersByID(ctx, characterID, orphans)
+				// Orders might disappear from the "order" response,
+				// but not yet appear in the "history" response due to caching.
+				// We mark this with unknown state.
+				// They should be updated later with the correct state once the history cache has expired.
+				err := s.st.UpdateCharacterMarketOrderState(ctx, storage.UpdateCharacterMarketOrderStateParams{
+					CharacterID: characterID,
+					OrderIDs:    orphans,
+					State:       app.OrderUnknown,
+				})
 				if err != nil {
 					return err
 				}

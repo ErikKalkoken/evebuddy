@@ -10,22 +10,25 @@ import (
 type MarketOrderState uint
 
 const (
-	OrderUndefined MarketOrderState = iota
+	OrderUndefined MarketOrderState = iota // zero value
 	OrderCancelled
 	OrderExpired
 	OrderOpen
+	OrderUnknown // status can not be determined
 )
 
 func (mos MarketOrderState) String() string {
 	switch mos {
-	case OrderUndefined:
-		return "undefined"
 	case OrderCancelled:
 		return "cancelled"
 	case OrderExpired:
 		return "expired"
 	case OrderOpen:
 		return "open"
+	case OrderUndefined:
+		return "undefined"
+	case OrderUnknown:
+		return "unknown"
 	}
 	return "?"
 }
