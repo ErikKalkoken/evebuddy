@@ -5,7 +5,6 @@ A multi-platform companion app for Eve Online players available on Windows, Linu
 [![GitHub Release](https://img.shields.io/github/v/release/ErikKalkoken/evebuddy)](https://github.com/ErikKalkoken/evebuddy/releases)
 [![Fyne](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fgithub.com%2FErikKalkoken%2Fevebuddy%2Fblob%2Fmain%2Fgo.mod&search=fyne%5C.io%5C%2Ffyne%5C%2Fv2%20(v%5Cd*%5C.%5Cd*%5C.%5Cd*)&replace=%241&label=Fyne&cacheSeconds=https%3A%2F%2Fgithub.com%2Ffyne-io%2Ffyne)](https://github.com/fyne-io/fyne)
 [![build status](https://github.com/ErikKalkoken/evebuddy/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/ErikKalkoken/evebuddy/actions/workflows/ci-cd.yml)
-[![codecov](https://codecov.io/gh/ErikKalkoken/evebuddy/graph/badge.svg?token=2wG1bixLjo)](https://codecov.io/gh/ErikKalkoken/evebuddy)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ErikKalkoken/evebuddy)](https://goreportcard.com/report/github.com/ErikKalkoken/evebuddy)
 [![GitHub License](https://img.shields.io/github/license/ErikKalkoken/evebuddy)](https://github.com/ErikKalkoken/evebuddy?tab=MIT-1-ov-file#readme)
 [![chat](https://img.shields.io/discord/790364535294132234)](https://discord.gg/tVSCQEVJnJ)
@@ -15,9 +14,9 @@ A multi-platform companion app for Eve Online players available on Windows, Linu
 
 ## Contents
 
-- [Overview](#overview)
+- [Description](#description)
 - [Features](#features)
-- [Highlights](#highlights)
+- [Screenshots](#screenshots)
 - [Installing](#installing)
   - [Windows](#windows)
   - [macOS](#mac-os)
@@ -25,11 +24,12 @@ A multi-platform companion app for Eve Online players available on Windows, Linu
   - [Android](#android)
 - [Updating](#updating)
 - [Uninstalling](#uninstalling)
+- [Support](#support)
 - [FAQ](#faq)
 - [External web sites](#external-web-sites)
 - [Credits](#credits)
 
-## Overview
+## Description
 
 EVE Buddy is a multi-platform companion app for [Eve Online](https://www.eveonline.com/) players. It provides the following key features:
 
@@ -64,7 +64,7 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
 
 - **Overviews**: Keep track of and get unique insights about all your characters and corporations with consolidated views:
   - Assets: Search assets across all characters
-  - Clones: Search nearest available jump clones across all characters
+  - Clones: Overview of all current clones and search nearest available jump clones across all characters
   - Colonies: Browse PI colonies across all characters
   - Contracts: Browse contracts of all characters
   - Industry: Browse industry jobs for all characters and related corporations
@@ -117,7 +117,7 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
   - Color theme: Dark or Light theme
   - UI scaling: Custom scaling of the whole UI (desktop only)
 
-## Highlights
+## Screenshots
 
 ### Asset search across all characters
 
@@ -290,46 +290,29 @@ rm evebuddy
 
 ### Android
 
-On Android you can uninstall the app via Android Settings and it will also remove all data.
+On Android you can uninstall the app via the system's Settings app. This will also remove all data.
 
-## FAQ
+## Support
 
-### Where can I get support?
+> [!IMPORTANT]
+> For bugs and feature requests please open an issue in the GitHub repository.
 
-Fo bugs and feature requests please open an issue in the GitHub repository.
+> [!TIP]
+> For support and any other questions please join us on in our channel #eve-buddy on this [Discord server](https://discord.gg/tVSCQEVJnJ).
 
-For support and any other questions please join us on in our channel #eve-buddy on this [Discord server](https://discord.gg/tVSCQEVJnJ).
+### Common issues
 
-### What safety measures are taken to protect my character data and token?
+The following is an overview of common issues with solutions:
 
-EVE Buddy is designed to protect your character data and token and has implemented the following safety measures:
+#### Android
 
-1. All character data and tokens retrieved from CCP's servers are stored on your local computer only. Your data is therefore safe as long as you prevent any unauthorized access to the data on your computer.
+- [Timeout in browser when trying to add new character on some Android phones](https://github.com/ErikKalkoken/evebuddy/issues/76)
 
-1. EVE Buddy also does not log any tokens (they are replaced with the text `REDACTED`). It is therefore safe to share your logs with maintainers for troubleshooting.
+#### Windows
 
-1. EVE Buddy is fully compliant with the requirements for [OAuth 2.0 for Mobile or Desktop Applications](https://docs.esi.evetech.net/docs/sso/native_sso_flow.html) from CCP.
+- [Issues with application scaling when moving between monitors of different resolutions](https://github.com/ErikKalkoken/evebuddy/issues/209)
 
-1. In case you need to switch computers you can remove your data with the [delete app](#uninstalling).
-
-### Why do I not see all of my character's data in the app?
-
-#### Server limitations
-
-CCP's servers have limitations on how far back some character data can be retrieved.
-
-Here is an overview of some limitations:
-
-- Wallet journal: 30 days, 2.500 entries
-- Wallet transaction: 2.500 entries
-
- However, EVE Buddy will keep all historic data once retrieved. For example: If you allow EVE Buddy to update on a regular basis, it will be able to keep a record of your wallet transactions over many months and years.
-
-#### Structures
-
-A special case are Upwell structures. Access to structures depends on in-game docking rights. Unfortunately, it is not possible to later retrieve the name or location of a structure, which the character no longer has access to. For example character assets might be displayed in an "unknown structure".
-
-### Does EVE buddy has a log and how can I find it?
+### Logs
 
 The app has an application log and a crash file that can help with trouble shooting. The location of the logs follows the standard of each platform:
 
@@ -348,6 +331,39 @@ To view the exported logs on mobile you might want to install another app. While
 
 - For viewing log files: [LogLog](https://play.google.com/store/apps/details?id=io.github.mthli.loglog&hl=en)
 - For viewing txt files: [Text Viewer](https://play.google.com/store/apps/details?id=com.panagola.app.textviewer&hl=en)
+
+## FAQ
+
+### How well is my data protected?
+
+EVE Buddy is designed to protect your data and tokens and has implemented the following safety measures:
+
+1. All data and tokens retrieved from CCP's servers are stored on your local computer only. Your data is therefore safe as long as you prevent any unauthorized access to the data on your computer.
+
+1. EVE Buddy also does not log any tokens (they are replaced with the text `REDACTED`). It is therefore safe to share your logs with maintainers for troubleshooting.
+
+1. EVE Buddy is fully compliant with the requirements for [OAuth 2.0 for Mobile or Desktop Applications](https://docs.esi.evetech.net/docs/sso/native_sso_flow.html) from CCP.
+
+1. In case you need to switch computers you can remove your data with the [delete app](#uninstalling).
+
+### Why do I not see all of my character's data in the app?
+
+Some of your data from the game server might not be visible in EVE Buddy due to technical limitations of the game server API (ESI) or missing permissions.
+
+#### Server limitations
+
+CCP's servers have limitations on how far back some character data can be retrieved.
+
+Here is an overview of some limitations:
+
+- Wallet journal: 30 days, 2.500 entries
+- Wallet transaction: 2.500 entries
+
+ However, EVE Buddy will keep all historic data once retrieved. For example: If you allow EVE Buddy to update on a regular basis, it will be able to keep a record of your wallet transactions over many months and years.
+
+#### Permissions
+
+A special case are Upwell structures. Access to structures depends on in-game docking rights. Unfortunately, it is not possible to later retrieve the name or location of a structure, which the character no longer has access to. For example character assets might be displayed in an "unknown structure".
 
 ## External web sites
 
