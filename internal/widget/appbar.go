@@ -28,16 +28,16 @@ type AppBar struct {
 	title    *widget.Label
 }
 
-// NewAppBar returns a new AppBar.
-func NewAppBar(title string, body fyne.CanvasObject) *AppBar {
-	return NewAppBarWithTrailing(title, body, nil)
-}
-
-// NewAppBarWithTrailing returns a new AppBar.
-func NewAppBarWithTrailing(title string, body fyne.CanvasObject, trailing ...fyne.CanvasObject) *AppBar {
+// NewAppBar returns a new AppBar with a title and a body.
+// It can also have one or several trailing widgets.
+func NewAppBar(title string, body fyne.CanvasObject, trailing ...fyne.CanvasObject) *AppBar {
 	t2 := container.New(layout.NewCustomPaddedHBoxLayout(theme.IconInlineSize()))
-	for _, x := range trailing {
-		t2.Add(x)
+	if len(trailing) > 0 {
+		for _, x := range trailing {
+			t2.Add(x)
+		}
+	} else {
+		t2.Hide()
 	}
 	w := &AppBar{
 		body:     body,

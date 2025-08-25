@@ -46,7 +46,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	characterSelector := kxwidget.NewIconButtonWithMenu(fallbackAvatar, fyne.NewMenu(""))
 	newCharacterAppBar := func(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *iwidget.AppBar {
 		items = append(items, characterSelector)
-		return iwidget.NewAppBarWithTrailing(title, body, makeAppBarIcons(items...)...)
+		return iwidget.NewAppBar(title, body, makeAppBarIcons(items...)...)
 	}
 
 	var characterNav *iwidget.Navigator
@@ -58,7 +58,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
 		}
 		characterNav.PushAndHideNavBar(
-			iwidget.NewAppBarWithTrailing(
+			iwidget.NewAppBar(
 				"Send Mail",
 				page,
 				kxwidget.NewIconButton(theme.MailSendIcon(), func() {
@@ -227,7 +227,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	corpSelector := kxwidget.NewIconButtonWithMenu(fallbackAvatar2, fyne.NewMenu(""))
 	newCorpAppBar := func(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *iwidget.AppBar {
 		items = append(items, corpSelector)
-		return iwidget.NewAppBarWithTrailing(title, body, makeAppBarIcons(items...)...)
+		return iwidget.NewAppBar(title, body, makeAppBarIcons(items...)...)
 	}
 	var corpNav *iwidget.Navigator
 	corpWalletItems := make([]*iwidget.ListItem, 0)
