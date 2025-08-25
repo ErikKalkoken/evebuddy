@@ -9,7 +9,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -34,13 +33,12 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 
 	var navBar *iwidget.NavBar
 
-	makeAppBarIcons := func(items ...*kxwidget.IconButton) fyne.CanvasObject {
-		is := theme.IconInlineSize()
-		icons := container.New(layout.NewCustomPaddedHBoxLayout(is))
+	makeAppBarIcons := func(items ...*kxwidget.IconButton) []fyne.CanvasObject {
+		x := make([]fyne.CanvasObject, 0)
 		for _, ib := range items {
-			icons.Add(ib)
+			x = append(x, ib)
 		}
-		return icons
+		return x
 	}
 
 	// character destination
@@ -48,7 +46,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	characterSelector := kxwidget.NewIconButtonWithMenu(fallbackAvatar, fyne.NewMenu(""))
 	newCharacterAppBar := func(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *iwidget.AppBar {
 		items = append(items, characterSelector)
-		return iwidget.NewAppBarWithTrailing(title, body, makeAppBarIcons(items...))
+		return iwidget.NewAppBar(title, body, makeAppBarIcons(items...)...)
 	}
 
 	var characterNav *iwidget.Navigator
@@ -60,8 +58,8 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
 		}
 		characterNav.PushAndHideNavBar(
-			newCharacterAppBar(
-				"",
+			iwidget.NewAppBar(
+				"Send Mail",
 				page,
 				kxwidget.NewIconButton(theme.MailSendIcon(), func() {
 					if page.SendAction() {
@@ -229,7 +227,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	corpSelector := kxwidget.NewIconButtonWithMenu(fallbackAvatar2, fyne.NewMenu(""))
 	newCorpAppBar := func(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *iwidget.AppBar {
 		items = append(items, corpSelector)
-		return iwidget.NewAppBarWithTrailing(title, body, makeAppBarIcons(items...))
+		return iwidget.NewAppBar(title, body, makeAppBarIcons(items...)...)
 	}
 	var corpNav *iwidget.Navigator
 	corpWalletItems := make([]*iwidget.ListItem, 0)

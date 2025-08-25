@@ -74,7 +74,7 @@ func newSettings(u *baseUI, w fyne.Window) *userSettings {
 
 func (a *userSettings) CreateRenderer() fyne.WidgetRenderer {
 	makeSettingsPage := func(title string, content fyne.CanvasObject, actions fyne.CanvasObject) fyne.CanvasObject {
-		return iwidget.NewAppBarWithTrailing(title, content, actions)
+		return iwidget.NewAppBar(title, content, actions)
 	}
 	generalContent, generalActions := a.makeGeneralPage()
 	notificationContent, notificationActions := a.makeNotificationPage()

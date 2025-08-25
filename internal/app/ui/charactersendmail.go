@@ -135,16 +135,6 @@ func (a *characterSendMail) SendAction() bool {
 	return true
 }
 
-// func MakeSendMailPage(
-// 	u *BaseUI,
-// 	character *app.Character,
-// 	mode app.SendMailMode,
-// 	mail *app.CharacterMail,
-// 	w fyne.Window,
-// ) (fyne.CanvasObject, fyne.Resource, func() bool) {
-
-// }
-
 func showAddDialog(u *baseUI, characterID int32, onSelected func(ee *app.EveEntity), w fyne.Window) {
 	var modal *widget.PopUp
 	results := make([]*app.EveEntity, 0)
