@@ -24,7 +24,7 @@ type AppBar struct {
 	bg       *canvas.Rectangle
 	body     fyne.CanvasObject
 	isMobile bool
-	trailing fyne.CanvasObject
+	trailing *fyne.Container
 	title    *widget.Label
 }
 
@@ -34,17 +34,15 @@ func NewAppBar(title string, body fyne.CanvasObject) *AppBar {
 }
 
 // NewAppBarWithTrailing returns a new AppBar.
-func NewAppBarWithTrailing(title string, body fyne.CanvasObject, trailing fyne.CanvasObject) *AppBar {
-	var trailing2 fyne.CanvasObject
-	if trailing == nil {
-		trailing2 = container.NewHBox()
-	} else {
-		trailing2 = trailing
+func NewAppBarWithTrailing(title string, body fyne.CanvasObject, trailing ...fyne.CanvasObject) *AppBar {
+	t2 := container.New(layout.NewCustomPaddedHBoxLayout(theme.IconInlineSize()))
+	for _, x := range trailing {
+		t2.Add(x)
 	}
 	w := &AppBar{
 		body:     body,
 		isMobile: fyne.CurrentDevice().IsMobile(),
-		trailing: trailing2,
+		trailing: t2,
 	}
 	w.ExtendBaseWidget(w)
 	w.bg = canvas.NewRectangle(theme.Color(colorBarBackground))
