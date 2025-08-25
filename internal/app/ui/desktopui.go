@@ -436,6 +436,8 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	w := u.MainWindow()
 	w.SetContent(fynetooltip.AddWindowToolTipLayer(mainContent, w.Canvas()))
 
+	u.snackbar.Bottom = statusBar.MinSize().Height
+
 	// system tray menu
 	if u.settings.SysTrayEnabled() {
 		name := u.appName()

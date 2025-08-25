@@ -392,6 +392,8 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	corpNav.NavBar = navBar
 	searchNav.NavBar = navBar
 
+	u.snackbar.Bottom = 90
+
 	// initial state
 	navBar.Disable(0)
 	navBar.Disable(1)

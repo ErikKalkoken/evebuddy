@@ -925,6 +925,7 @@ func NewSettingItemOptions(arg SettingItemOptions) SettingItem {
 		},
 		onSelected: func(it SettingItem, refresh func()) {
 			sel := widget.NewRadioGroup(arg.options, arg.setter)
+			sel.Required = true
 			sel.Selected = it.Getter().(string)
 			d := makeSettingDialog(makeSettingDialogParams{
 				setting: sel,

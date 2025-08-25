@@ -32,6 +32,8 @@ type snackbarMessage struct {
 //
 // When a snackbar receives several texts at the same time, it will queue them and display them one after the other.
 type Snackbar struct {
+	Bottom float32 // bottom padding
+
 	button    *kxwidget.IconButton
 	hideC     chan struct{}
 	isRunning atomic.Bool
@@ -124,9 +126,9 @@ func (sb *Snackbar) IsRunning() bool {
 func (sb *Snackbar) show(text string) {
 	sb.label.SetText(text)
 	_, canvasSize := sb.popup.Canvas.InteractiveArea()
-	padding := theme.Padding()
-	bWidth := sb.button.MinSize().Width + 2*padding + shadowWidth
-	maxW := canvasSize.Width - bWidth
+	p := theme.Padding()
+	padding := 10 * p
+	maxW := canvasSize.Width - padding
 	lSize := widget.NewLabel(text).MinSize()
 	var cSize fyne.Size
 	if lSize.Width > maxW {
@@ -138,9 +140,10 @@ func (sb *Snackbar) show(text string) {
 		sb.label.Wrapping = fyne.TextWrapOff
 	}
 	sb.popup.Resize(cSize)
+	contentSize := sb.popup.Content.Size()
 	sb.popup.Move(fyne.NewPos(
-		canvasSize.Width/2-(cSize.Width+shadowWidth)/2,
-		canvasSize.Height-1.4*(cSize.Height+shadowWidth),
+		canvasSize.Width/2-contentSize.Width/2,
+		canvasSize.Height-contentSize.Height-7*p-sb.Bottom,
 	))
 	sb.popup.Show()
 }
