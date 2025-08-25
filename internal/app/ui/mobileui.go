@@ -61,7 +61,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		}
 		characterNav.PushAndHideNavBar(
 			newCharacterAppBar(
-				"",
+				"Send Mail",
 				page,
 				kxwidget.NewIconButton(theme.MailSendIcon(), func() {
 					if page.SendAction() {
