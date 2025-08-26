@@ -119,10 +119,11 @@ func (r marketOrderRow) volumeDisplay() string {
 type marketOrders struct {
 	widget.BaseWidget
 
-	body         fyne.CanvasObject
-	bottom       *widget.Label
 	columnSorter *columnSorter
+	footer       *widget.Label
 	isBuyOrders  bool
+	issue        *widget.Label
+	main         fyne.CanvasObject
 	rows         []marketOrderRow
 	rowsFiltered []marketOrderRow
 	selectOwner  *kxwidget.FilterChipSelect
@@ -145,9 +146,10 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		{label: "Owner", width: columnWidthEntity},
 	}
 	a := &marketOrders{
-		bottom:       makeTopLabel(),
 		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
+		footer:       widget.NewLabel(""),
 		isBuyOrders:  isBuyOrders,
+		issue:        makeTopLabel(),
 		rows:         make([]marketOrderRow, 0),
 		rowsFiltered: make([]marketOrderRow, 0),
 		u:            u,
@@ -179,7 +181,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTable(
+		a.main = makeDataTable(
 			headers,
 			&a.rowsFiltered,
 			makeCell,
@@ -191,7 +193,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		// a.body = makeDataList(headers, &a.rowsFiltered, makeCell, func(r marketOrderRow) {
 		// 	showMarketOrderWindow(u, r)
 		// })
-		a.body = a.makeDataList()
+		a.main = a.makeDataList()
 	}
 
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
@@ -232,7 +234,14 @@ func (a *marketOrders) CreateRenderer() fyne.WidgetRenderer {
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
 	}
-	c := container.NewBorder(container.NewHScroll(filter), a.bottom, nil, nil, a.body)
+	p := theme.Padding()
+	c := container.NewBorder(
+		container.NewVBox(container.NewHScroll(filter), a.issue),
+		container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), a.footer),
+		nil,
+		nil,
+		a.main,
+	)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -242,7 +251,7 @@ func (a *marketOrders) startUpdateTicker() {
 		for {
 			<-ticker.C
 			fyne.DoAndWait(func() {
-				a.body.Refresh()
+				a.main.Refresh()
 			})
 		}
 	}()
@@ -383,7 +392,14 @@ func (a *marketOrders) filterRows(sortCol int) {
 		return r.typeName
 	}))
 	a.rowsFiltered = rows
-	a.body.Refresh()
+	a.main.Refresh()
+	var total optional.Optional[float64]
+	for _, r := range rows {
+		total.Set(total.ValueOrZero() + r.price*float64(r.volumeRemain))
+	}
+	a.footer.SetText(fmt.Sprintf("Orders total: %s ISK", total.StringFunc("?", func(v float64) string {
+		return ihumanize.Number(v, 1)
+	})))
 }
 
 func (a *marketOrders) update() {
@@ -406,12 +422,12 @@ func (a *marketOrders) update() {
 	}
 	fyne.Do(func() {
 		if t != "" {
-			a.bottom.Text = t
-			a.bottom.Importance = i
-			a.bottom.Refresh()
-			a.bottom.Show()
+			a.issue.Text = t
+			a.issue.Importance = i
+			a.issue.Refresh()
+			a.issue.Show()
 		} else {
-			a.bottom.Hide()
+			a.issue.Hide()
 		}
 	})
 	fyne.Do(func() {
