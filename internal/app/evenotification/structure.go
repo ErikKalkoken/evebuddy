@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/antihax/goesi/notification"
-	"gopkg.in/yaml.v3"
+	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
@@ -118,12 +118,12 @@ func (n ownershipTransferred) unmarshal(text string) (notification.OwnershipTran
 		if err := yaml.Unmarshal([]byte(text), &data2); err != nil {
 			return data, setInt32{}, err
 		}
-		data.CharID = int32(data2.CharacterLinkData[2].(int))
-		data.NewOwnerCorpID = int32(data2.ToCorporationLinkData[2].(int))
-		data.OldOwnerCorpID = int32(data2.FromCorporationLinkData[2].(int))
-		data.SolarSystemID = int32(data2.SolarSystemLinkData[2].(int))
-		data.StructureID = int64(data2.StructureLinkData[2].(int))
-		data.StructureTypeID = int32(data2.StructureLinkData[1].(int))
+		data.CharID = int32(data2.CharacterLinkData[2].(uint64))
+		data.NewOwnerCorpID = int32(data2.ToCorporationLinkData[2].(uint64))
+		data.OldOwnerCorpID = int32(data2.FromCorporationLinkData[2].(uint64))
+		data.SolarSystemID = int32(data2.SolarSystemLinkData[2].(uint64))
+		data.StructureID = int64(data2.StructureLinkData[2].(uint64))
+		data.StructureTypeID = int32(data2.StructureLinkData[1].(uint64))
 		data.StructureName = data2.StructureName
 	}
 	ids := set.Of(data.OldOwnerCorpID, data.NewOwnerCorpID, data.CharID)
@@ -467,7 +467,7 @@ func (n structuresReinforcementChanged) unmarshal(text string) (notification.Str
 	}
 	var ids setInt32
 	for _, r := range data.AllStructureInfo {
-		ids.Add(int32(r[2].(int)))
+		ids.Add(int32(r[2].(uint64)))
 	}
 	return data, ids, nil
 }
@@ -486,9 +486,9 @@ func (n structuresReinforcementChanged) render(ctx context.Context, text string,
 	}
 	structures := make([]structureReinforcementInfo, 0)
 	for _, r := range data.AllStructureInfo {
-		typeID := int32(r[2].(int))
+		typeID := int32(r[2].(uint64))
 		s := structureReinforcementInfo{
-			structureID: int64(r[0].(int)),
+			structureID: int64(r[0].(uint64)),
 			name:        r[1].(string),
 			typeID:      typeID,
 		}

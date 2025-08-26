@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/antihax/goesi/notification"
-	"gopkg.in/yaml.v3"
+	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )

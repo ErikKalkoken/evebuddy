@@ -11,7 +11,7 @@ import (
 
 	"github.com/antihax/goesi/notification"
 	"github.com/dustin/go-humanize"
-	"gopkg.in/yaml.v3"
+	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
