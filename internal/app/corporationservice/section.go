@@ -188,7 +188,7 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 			slog.Error("record error for failed section update: %s", "error", err2)
 		}
 		s.scs.SetCorporationSection(o)
-		return false, fmt.Errorf("update corporation section from ESI for %v: %w", arg, err)
+		return false, fmt.Errorf("update corporation section from ESI for %+v: %w", arg, err)
 	}
 	changed := v.(bool)
 	slog.Info("Corporation section update completed", "corporationID", arg.CorporationID, "section", arg.Section, "forced", arg.ForceUpdate, "changed", changed)
