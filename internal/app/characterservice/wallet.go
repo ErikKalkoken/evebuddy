@@ -70,11 +70,11 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 				slog.Info("No new wallet journal entries", "characterID", characterID)
 				return nil
 			}
-			var entityIDs set.Set[int32]
+			var ids set.Set[int32]
 			for _, e := range newEntries {
-				entityIDs.Add(e.FirstPartyId, e.SecondPartyId, e.TaxReceiverId)
+				ids.Add(e.FirstPartyId, e.SecondPartyId, e.TaxReceiverId)
 			}
-			_, err = s.eus.AddMissingEntities(ctx, entityIDs)
+			_, err = s.eus.AddMissingEntities(ctx, ids)
 			if err != nil {
 				return err
 			}
