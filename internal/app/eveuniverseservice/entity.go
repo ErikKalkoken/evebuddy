@@ -81,13 +81,13 @@ func (s *EveUniverseService) ToEntities(ctx context.Context, ids set.Set[int32])
 // AddMissingEntities adds EveEntities from ESI for IDs missing in the database
 // and returns which IDs where indeed missing.
 //
-// Invalid IDs (e.g. 0, 1) will be ignored.
+// ID 0 will be ignored
 func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set[int32]) (set.Set[int32], error) {
-	var bad, missing set.Set[int32]
+	var bad set.Set[int32]
 	ids2 := ids.Clone()
 	ids2.Delete(0) // ignore zero ID
 	if ids2.Size() == 0 {
-		return missing, nil
+		return set.Set[int32]{}, nil
 	}
 	// Filter out known invalid IDs before continuing
 	for _, id := range invalidEveEntityIDs {
@@ -99,40 +99,41 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 	wrapErr := func(err error) error {
 		return fmt.Errorf("AddMissingEntities: %w", err)
 	}
+	var missing set.Set[int32]
 	if ids2.Size() > 0 {
 		// Identify missing IDs
-		var err error
-		missing, err = s.st.MissingEveEntityIDs(ctx, ids2)
+		ids, err := s.st.MissingEveEntityIDs(ctx, ids2)
 		if err != nil {
-			return missing, wrapErr(err)
+			return set.Set[int32]{}, wrapErr(err)
 		}
+		missing.AddSeq(ids.All())
 	}
 	if missing.Size() > 0 {
-		// Call ESI to resolve missing IDs
-		slog.Debug("Trying to resolve EveEntity IDs from ESI", "ids", missing)
+		slog.Debug("Trying to resolve missing EveEntity IDs from ESI", "ids", missing)
 		var ee []esi.PostUniverseNames200Ok
 		for chunk := range slices.Chunk(missing.Slice(), esiPostUniverseNamesMax) {
 			eeChunk, badChunk, err := s.resolveIDsFromESI(ctx, chunk)
 			if err != nil {
-				return missing, wrapErr(err)
+				return set.Set[int32]{}, wrapErr(err)
 			}
 			ee = append(ee, eeChunk...)
 			bad.AddSeq(slices.Values(badChunk))
 		}
 		for _, entity := range ee {
-			_, err := s.st.GetOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
+			_, err := s.st.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
 				ID:       entity.Id,
 				Name:     entity.Name,
 				Category: eveEntityCategoryFromESICategory(entity.Category),
 			})
 			if err != nil {
-				return missing, wrapErr(err)
+				return set.Set[int32]{}, wrapErr(err)
 			}
 		}
 		slog.Info("Stored newly resolved EveEntities", "count", len(ee))
 	}
 	if bad.Size() > 0 {
 		// Mark unresolvable IDs
+		var marked set.Set[int32]
 		for id := range bad.All() {
 			arg := storage.CreateEveEntityParams{
 				ID:       id,
@@ -141,11 +142,13 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 			}
 			if _, err := s.st.GetOrCreateEveEntity(ctx, arg); err != nil {
 				slog.Error("Failed to mark unresolvable EveEntity", "id", id, "error", err)
+				continue
 			}
+			marked.Add(id)
 		}
-		slog.Warn("Marking unresolvable EveEntity IDs as unknown", "ids", bad)
+		slog.Warn("Marked unresolvable EveEntity IDs as unknown", "ids", marked)
 	}
-	return missing, nil
+	return set.Union(missing, bad), nil
 }
 
 func (s *EveUniverseService) resolveIDsFromESI(ctx context.Context, ids []int32) ([]esi.PostUniverseNames200Ok, []int32, error) {

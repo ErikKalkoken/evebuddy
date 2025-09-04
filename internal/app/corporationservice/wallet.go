@@ -253,17 +253,9 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg app
 				)
 				return nil
 			}
-			ids := set.Of[int32]()
+			var ids set.Set[int32]
 			for _, e := range newEntries {
-				if e.FirstPartyId != 0 {
-					ids.Add(e.FirstPartyId)
-				}
-				if e.SecondPartyId != 0 {
-					ids.Add(e.SecondPartyId)
-				}
-				if e.TaxReceiverId != 0 {
-					ids.Add(e.TaxReceiverId)
-				}
+				ids.Add(e.FirstPartyId, e.SecondPartyId, e.TaxReceiverId)
 			}
 			_, err = s.eus.AddMissingEntities(ctx, ids)
 			if err != nil {
