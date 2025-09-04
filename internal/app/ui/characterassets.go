@@ -95,7 +95,7 @@ func newCharacterAssets(u *baseUI) *characterAssets {
 
 func (a *characterAssets) CreateRenderer() fyne.WidgetRenderer {
 	main := container.NewHSplit(a.Locations, a.LocationAssets)
-	main.SetOffset(0.33)
+	main.SetOffset(0.40)
 	p := theme.Padding()
 	c := container.NewBorder(
 		widget.NewSeparator(),
@@ -156,7 +156,6 @@ func (a *characterAssets) makeLocationsTree() *iwidget.Tree[locationNode] {
 	)
 	t.OnSelectedNode = func(n locationNode) {
 		if n.variant == nodeLocation {
-			t.OpenBranch(n.UID())
 			t.UnselectAll()
 			return
 		}
