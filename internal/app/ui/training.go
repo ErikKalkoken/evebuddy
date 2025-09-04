@@ -106,6 +106,7 @@ type training struct {
 func newTraining(u *baseUI) *training {
 	headers := []headerDef{
 		{label: "Name", width: columnWidthEntity},
+		{label: "Tags", width: 150},
 		{label: "Current Skill", width: 250},
 		{label: "Current Remaining", width: 0},
 		{label: "Queued", width: 0},
@@ -126,21 +127,24 @@ func newTraining(u *baseUI) *training {
 		case 0:
 			return iwidget.RichTextSegmentsFromText(r.characterName)
 		case 1:
-			return r.skillDisplay
+			s := strings.Join(slices.Sorted(r.tags.All()), ", ")
+			return iwidget.RichTextSegmentsFromText(s)
 		case 2:
-			return iwidget.RichTextSegmentsFromText(r.currentRemainingTimeString())
+			return r.skillDisplay
 		case 3:
-			return iwidget.RichTextSegmentsFromText(r.totalRemainingCountDisplay)
+			return iwidget.RichTextSegmentsFromText(r.currentRemainingTimeString())
 		case 4:
-			return iwidget.RichTextSegmentsFromText(r.totalRemainingTimeString())
+			return iwidget.RichTextSegmentsFromText(r.totalRemainingCountDisplay)
 		case 5:
+			return iwidget.RichTextSegmentsFromText(r.totalRemainingTimeString())
+		case 6:
 			return iwidget.RichTextSegmentsFromText(
 				r.totalSPDisplay,
 				widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				},
 			)
-		case 6:
+		case 7:
 			return iwidget.RichTextSegmentsFromText(
 				r.unallocatedSPDisplay,
 				widget.RichTextStyle{
@@ -221,17 +225,16 @@ func (a *training) makeDataList() *iwidget.StripedList {
 			totalSP := widget.NewLabel("Template")
 			totalSP.Truncation = fyne.TextTruncateClip
 			unallocatedSP := widget.NewLabel("Template")
-			spacer1 := canvas.NewRectangle(color.Transparent)
-			spacer1.SetMinSize(fyne.NewSize(1, 2*p))
-			spacer2 := canvas.NewRectangle(color.Transparent)
-			spacer2.SetMinSize(fyne.NewSize(1, 4*p))
+			spacer := canvas.NewRectangle(color.Transparent)
+			spacer.SetMinSize(fyne.NewSize(1, 4*p))
+			tags := widget.NewLabel("Template")
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
 				container.NewBorder(nil, nil, nil, status, character),
-				spacer1,
+				tags,
 				newSkillQueueItem(),
 				container.NewBorder(nil, nil, nil, queueRemaining, queueCount),
 				container.NewBorder(nil, nil, nil, unallocatedSP, totalSP),
-				spacer2,
+				spacer,
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -239,21 +242,27 @@ func (a *training) makeDataList() *iwidget.StripedList {
 				return
 			}
 			r := a.rowsFiltered[id]
-			c := co.(*fyne.Container).Objects
+			vbox := co.(*fyne.Container).Objects
 
-			c0 := c[0].(*fyne.Container).Objects
-			c0[0].(*widget.Label).SetText(r.characterName)
-			status := c0[1].(*widget.Label)
+			b0 := vbox[0].(*fyne.Container).Objects
+			b0[0].(*widget.Label).SetText(r.characterName)
+			status := b0[1].(*widget.Label)
 			status.Text = r.statusText
 			status.Importance = r.statusImportance
 			status.Refresh()
 
-			c1 := c[2].(*skillQueueItem)
-			c1.Set(r.skill)
+			s := strings.Join(slices.Sorted(r.tags.All()), ", ")
+			if s == "" {
+				s = "-"
+			}
+			vbox[1].(*widget.Label).SetText(s)
 
-			c2 := c[3].(*fyne.Container).Objects
-			queueCount := c2[0].(*widget.Label)
-			queueRemaining := c2[1].(*widget.Label)
+			b1 := vbox[2].(*skillQueueItem)
+			b1.Set(r.skill)
+
+			b2 := vbox[3].(*fyne.Container).Objects
+			queueCount := b2[0].(*widget.Label)
+			queueRemaining := b2[1].(*widget.Label)
 			if r.totalRemainingCount.IsEmpty() {
 				queueCount.Text = "N/A"
 				queueRemaining.Text = ""
@@ -264,9 +273,9 @@ func (a *training) makeDataList() *iwidget.StripedList {
 			queueCount.Refresh()
 			queueRemaining.Refresh()
 
-			c3 := c[4].(*fyne.Container).Objects
-			c3[0].(*widget.Label).SetText(r.totalSPDisplay + " total SP")
-			unallocated := c3[1].(*widget.Label)
+			b3 := vbox[4].(*fyne.Container).Objects
+			b3[0].(*widget.Label).SetText(r.totalSPDisplay + " total SP")
+			unallocated := b3[1].(*widget.Label)
 			if r.unallocatedSP.ValueOrZero() == 0 {
 				unallocated.Text = ""
 			} else {

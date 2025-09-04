@@ -167,17 +167,18 @@ func TestCharacterTag(t *testing.T) {
 		factory.CreateCharacterTag()
 		character := factory.CreateCharacter()
 		factory.CreateCharacter()
-		// when
 		err := st.CreateCharactersCharacterTag(ctx, storage.CreateCharacterTagParams{
 			CharacterID: character.ID,
 			TagID:       tag.ID,
 		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		// when
+		got, err := st.ListCharacterTagsForCharacter(ctx, character.ID)
 		// then
 		if assert.NoError(t, err) {
-			got, err := st.ListCharacterTagsForCharacter(ctx, character.ID)
-			if assert.NoError(t, err) {
-				assert.Equal(t, []*app.CharacterTag{tag}, got)
-			}
+			assert.Equal(t, []*app.CharacterTag{tag}, got)
 		}
 	})
 }

@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 )
 
 func TestTraining_CanRenderWithActiveTraining(t *testing.T) {
+	test.ApplyTheme(t, test.Theme())
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
@@ -26,6 +28,14 @@ func TestTraining_CanRenderWithActiveTraining(t *testing.T) {
 		TotalSP:       optional.New(10_000_000),
 		UnallocatedSP: optional.New(1_000_000),
 	})
+	tag := factory.CreateCharacterTag("Alpha")
+	err := st.CreateCharactersCharacterTag(context.Background(), storage.CreateCharacterTagParams{
+		CharacterID: character.ID,
+		TagID:       tag.ID,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	now := time.Now().UTC()
 	et := factory.CreateEveType(storage.CreateEveTypeParams{Name: "Dummy Skill"})
 	factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
@@ -40,7 +50,6 @@ func TestTraining_CanRenderWithActiveTraining(t *testing.T) {
 		Section:     app.SectionCharacterSkillqueue,
 		CompletedAt: now,
 	})
-	test.ApplyTheme(t, test.Theme())
 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 	w := test.NewWindow(ui.training)
 	defer w.Close()
@@ -51,7 +60,8 @@ func TestTraining_CanRenderWithActiveTraining(t *testing.T) {
 	test.AssertImageMatches(t, "training/active.png", w.Canvas().Capture())
 }
 
-func TestTraining_CanRenderWithInActiveTraining(t *testing.T) {
+func TestTraining_CanRenderWithInactiveTraining(t *testing.T) {
+	test.ApplyTheme(t, test.Theme())
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
@@ -68,7 +78,14 @@ func TestTraining_CanRenderWithInActiveTraining(t *testing.T) {
 		Section:     app.SectionCharacterSkillqueue,
 		CompletedAt: now,
 	})
-	test.ApplyTheme(t, test.Theme())
+	tag := factory.CreateCharacterTag("Alpha")
+	err := st.CreateCharactersCharacterTag(context.Background(), storage.CreateCharacterTagParams{
+		CharacterID: character.ID,
+		TagID:       tag.ID,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 	w := test.NewWindow(ui.training)
 	defer w.Close()
@@ -80,6 +97,7 @@ func TestTraining_CanRenderWithInActiveTraining(t *testing.T) {
 }
 
 func TestTraining_CanRenderWithoutData(t *testing.T) {
+	test.ApplyTheme(t, test.Theme())
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
@@ -88,7 +106,6 @@ func TestTraining_CanRenderWithoutData(t *testing.T) {
 	factory.CreateCharacter(storage.CreateCharacterParams{
 		ID: ec.ID,
 	})
-	test.ApplyTheme(t, test.Theme())
 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 	w := test.NewWindow(ui.training)
 	defer w.Close()
