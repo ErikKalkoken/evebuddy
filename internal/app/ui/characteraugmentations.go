@@ -68,7 +68,8 @@ func (a *characterAugmentations) makeImplantList() *widget.List {
 		},
 		func() fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize*1.2))
-			iconInfo := widget.NewIcon(theme.InfoIcon())
+			iconInfo := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
+			iconInfo.SetToolTip("Show information")
 			name := ttwidget.NewLabel("placeholder")
 			name.Truncation = fyne.TextTruncateEllipsis
 			slot := widget.NewLabel("placeholder")
@@ -90,25 +91,25 @@ func (a *characterAugmentations) makeImplantList() *widget.List {
 				return
 			}
 			o := a.implants[id]
-			row := co.(*fyne.Container).Objects
-			vbox := row[0].(*fyne.Container).Objects
+			border := co.(*fyne.Container).Objects
+			vbox := border[0].(*fyne.Container).Objects
 			name := vbox[0].(*fyne.Container).Objects[0].(*ttwidget.Label)
 			name.SetText(o.EveType.Name)
 			name.SetToolTip(o.EveType.Description)
 			slot := vbox[1].(*fyne.Container).Objects[0].(*widget.Label)
 			slot.SetText(fmt.Sprintf("Slot %d", o.SlotNum))
-			iconMain := row[1].(*canvas.Image)
+			iconMain := border[1].(*canvas.Image)
 			iwidget.RefreshImageAsync(iconMain, func() (fyne.Resource, error) {
 				return a.u.eis.InventoryTypeIcon(o.EveType.ID, app.IconPixelSize)
 			})
+			info := border[2].(*iwidget.TappableIcon)
+			info.OnTapped = func() {
+				a.u.ShowTypeInfoWindow(a.implants[id].EveType.ID)
+			}
 		})
 
 	l.OnSelected = func(id widget.ListItemID) {
 		defer l.UnselectAll()
-		if id >= len(a.implants) {
-			return
-		}
-		a.u.ShowTypeInfoWindow(a.implants[id].EveType.ID)
 	}
 	l.HideSeparators = true
 	return l
