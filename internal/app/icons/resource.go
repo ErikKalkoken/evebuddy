@@ -35,6 +35,11 @@ var AccountSvg = &fyne.StaticResource{
 	StaticContent: []byte(
 		"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z\" /></svg>"),
 }
+var ArrowCollapseVerticalSvg = &fyne.StaticResource{
+	StaticName: "arrow-collapse-vertical.svg",
+	StaticContent: []byte(
+		"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M4,12H20V14H4V12M4,9H20V11H4V9M16,4L12,8L8,4H11V1H13V4H16M8,19L12,15L16,19H13V22H11V19H8Z\" /></svg>"),
+}
 var ArrowLeftSvg = &fyne.StaticResource{
 	StaticName: "arrow-left.svg",
 	StaticContent: []byte(

@@ -78,7 +78,7 @@ func newAugmentations(u *baseUI) *augmentations {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterTree()
 	})
-	a.collapseAll = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.CollapseAllOutlineSvg), func() {
+	a.collapseAll = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.ArrowCollapseVerticalSvg), func() {
 		a.tree.CloseAllBranches()
 	})
 	a.collapseAll.SetToolTip("Collapse branches")
