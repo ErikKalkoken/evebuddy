@@ -101,22 +101,21 @@ func (a *augmentations) makeTree() *iwidget.Tree[characterImplantsNode] {
 	t := iwidget.NewTree(
 		func(branch bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
-			main := ttwidget.NewLabel("Template")
-			total := widget.NewLabel("9")
+			main := ttwidget.NewRichText()
+			info := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
 			return container.NewBorder(
 				nil,
 				nil,
 				iconMain,
-				nil,
-				container.NewHBox(main, total),
+				info,
+				main,
 			)
 		},
 		func(n characterImplantsNode, b bool, co fyne.CanvasObject) {
 			border := co.(*fyne.Container).Objects
-			hbox := border[0].(*fyne.Container).Objects
-			main := hbox[0].(*ttwidget.Label)
-			total := hbox[1].(*widget.Label)
+			main := border[0].(*ttwidget.RichText)
 			iconMain := border[1].(*canvas.Image)
+			info := border[2].(*iwidget.TappableIcon)
 			if n.IsRoot() {
 				go a.u.updateCharacterAvatar(n.characterID, func(r fyne.Resource) {
 					fyne.Do(func() {
@@ -124,30 +123,42 @@ func (a *augmentations) makeTree() *iwidget.Tree[characterImplantsNode] {
 						iconMain.Refresh()
 					})
 				})
-				main.SetText(n.characterName)
-				main.SetToolTip("")
+				var implants string
 				if n.implantCount > 0 {
-					total.SetText(fmt.Sprint(n.implantCount))
-					total.Show()
-				} else {
-					total.Hide()
+					implants = fmt.Sprintf("   %d implants", n.implantCount)
+				}
+				main.Segments = slices.Concat(
+					iwidget.RichTextSegmentsFromText(n.characterName, widget.RichTextStyle{
+						Inline: true,
+					}),
+					iwidget.RichTextSegmentsFromText(implants, widget.RichTextStyle{
+						TextStyle: fyne.TextStyle{Italic: true},
+					}),
+				)
+				main.Refresh()
+				main.SetToolTip("")
+				info.SetToolTip("Show character")
+				info.OnTapped = func() {
+					a.u.ShowInfoWindow(app.EveEntityCharacter, n.characterID)
 				}
 			} else {
 				iwidget.RefreshImageAsync(iconMain, func() (fyne.Resource, error) {
 					return a.u.eis.InventoryTypeIcon(n.implantTypeID, app.IconPixelSize)
 				})
-				main.SetText(n.implantTypeName)
+				main.Segments = iwidget.RichTextSegmentsFromText(n.implantTypeName)
+				main.Refresh()
 				main.SetToolTip(n.implantTypeDescription)
-				total.Hide()
+				info.SetToolTip("Show implant")
+				info.OnTapped = func() {
+					a.u.ShowTypeInfoWindowWithCharacter(n.implantTypeID, n.characterID)
+				}
 			}
 		},
 	)
 	t.OnSelectedNode = func(n characterImplantsNode) {
 		defer t.UnselectAll()
 		if n.IsRoot() {
-			a.u.ShowInfoWindow(app.EveEntityCharacter, n.characterID)
-		} else {
-			a.u.ShowTypeInfoWindowWithCharacter(n.implantTypeID, n.characterID)
+			t.ToggleBranch(n.UID())
 		}
 	}
 	return t
