@@ -32,7 +32,7 @@ type characterImplantsNode struct {
 	tags                   set.Set[string]
 }
 
-func (n characterImplantsNode) IsRoot() bool {
+func (n characterImplantsNode) IsTop() bool {
 	return n.implantTypeID == 0
 }
 
@@ -114,9 +114,10 @@ func (a *augmentations) makeTree() *iwidget.Tree[characterImplantsNode] {
 		func(n characterImplantsNode, b bool, co fyne.CanvasObject) {
 			border := co.(*fyne.Container).Objects
 			main := border[0].(*ttwidget.RichText)
+			main.Truncation = fyne.TextTruncateEllipsis
 			iconMain := border[1].(*canvas.Image)
 			info := border[2].(*iwidget.TappableIcon)
-			if n.IsRoot() {
+			if n.IsTop() {
 				go a.u.updateCharacterAvatar(n.characterID, func(r fyne.Resource) {
 					fyne.Do(func() {
 						iconMain.Resource = r
@@ -125,7 +126,7 @@ func (a *augmentations) makeTree() *iwidget.Tree[characterImplantsNode] {
 				})
 				var implants string
 				if n.implantCount > 0 {
-					implants = fmt.Sprintf("   %d implants", n.implantCount)
+					implants = fmt.Sprintf("     %d implants", n.implantCount)
 				}
 				main.Segments = slices.Concat(
 					iwidget.RichTextSegmentsFromText(n.characterName, widget.RichTextStyle{
@@ -157,7 +158,7 @@ func (a *augmentations) makeTree() *iwidget.Tree[characterImplantsNode] {
 	)
 	t.OnSelectedNode = func(n characterImplantsNode) {
 		defer t.UnselectAll()
-		if n.IsRoot() {
+		if n.IsTop() {
 			t.ToggleBranch(n.UID())
 		}
 	}

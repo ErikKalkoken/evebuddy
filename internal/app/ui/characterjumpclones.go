@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image/color"
 	"log/slog"
+	"slices"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -89,9 +90,9 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 	t := iwidget.NewTree(
 		func(branch bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
-			main := ttwidget.NewLabel("Template")
+			main := ttwidget.NewRichText()
 			main.Truncation = fyne.TextTruncateEllipsis
-			iconInfo := widget.NewIcon(theme.InfoIcon())
+			iconInfo := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
 			spacer := canvas.NewRectangle(color.Transparent)
 			spacer.SetMinSize(fyne.NewSize(40, 10))
 			prefix := widget.NewLabel("-9.9")
@@ -105,51 +106,66 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 		},
 		func(n jumpCloneNode, b bool, co fyne.CanvasObject) {
 			border := co.(*fyne.Container).Objects
-			main := border[0].(*ttwidget.Label)
+			main := border[0].(*ttwidget.RichText)
 			hbox := border[1].(*fyne.Container).Objects
 			iconMain := hbox[0].(*canvas.Image)
 			spacer := hbox[1].(*fyne.Container).Objects[0]
 			prefix := hbox[1].(*fyne.Container).Objects[1].(*widget.Label)
-			iconInfo := border[2]
+			iconInfo := border[2].(*iwidget.TappableIcon)
 			if n.isTop() {
 				iconMain.Resource = eveicon.FromName(eveicon.CloningCenter)
 				iconMain.Refresh()
 				if !n.isUnknown {
-					iconInfo.Show()
-				} else {
-					iconInfo.Hide()
-				}
-				main.SetText(n.locationName)
-				main.SetToolTip("")
-				if !n.isUnknown {
 					prefix.Text = fmt.Sprintf("%.1f", n.systemSecurityValue)
 					prefix.Importance = n.systemSecurityType.ToImportance()
+					iconInfo.OnTapped = func() {
+						a.u.ShowLocationInfoWindow(n.locationID)
+					}
+					iconInfo.SetToolTip("Show location")
+					iconInfo.Show()
 				} else {
 					prefix.Text = "?"
 					prefix.Importance = widget.LowImportance
+					iconInfo.Hide()
 				}
+				var implants string
+				if n.implantCount > 0 {
+					implants = fmt.Sprintf("     %d implants", n.implantCount)
+				}
+				main.Segments = slices.Concat(
+					iwidget.RichTextSegmentsFromText(n.locationName, widget.RichTextStyle{
+						Inline: true,
+					}),
+					iwidget.RichTextSegmentsFromText(implants, widget.RichTextStyle{
+						TextStyle: fyne.TextStyle{Italic: true},
+					}),
+				)
+				main.Refresh()
+				main.SetToolTip("")
 				prefix.Show()
 				spacer.Show()
 			} else {
 				iwidget.RefreshImageAsync(iconMain, func() (fyne.Resource, error) {
 					return a.u.eis.InventoryTypeIcon(n.implantTypeID, app.IconPixelSize)
 				})
-				main.SetText(n.implantTypeName)
+				main.Segments = iwidget.RichTextSegmentsFromText(n.implantTypeName)
+				main.Refresh()
 				main.SetToolTip(n.implantTypeDescription)
 				prefix.Hide()
 				spacer.Hide()
+				iconInfo.OnTapped = func() {
+					a.u.ShowTypeInfoWindow(n.implantTypeID)
+				}
+				iconInfo.SetToolTip("Show implant")
+				iconInfo.Show()
 			}
 		},
 	)
 	t.OnSelectedNode = func(n jumpCloneNode) {
 		defer t.UnselectAll()
 		if n.isTop() {
-			if !n.isUnknown {
-				a.u.ShowLocationInfoWindow(n.locationID)
-			}
-			return
+			t.ToggleBranch(n.UID())
 		}
-		a.u.ShowTypeInfoWindow(n.implantTypeID)
 	}
 	return t
 }
