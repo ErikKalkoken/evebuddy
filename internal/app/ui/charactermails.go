@@ -239,6 +239,7 @@ func (a *characterMails) makeFolderTree() *iwidget.Tree[mailFolderNode] {
 	tree.OnSelectedNode = func(n mailFolderNode) {
 		if n.isBranch() {
 			tree.UnselectAll()
+			tree.ToggleBranch(n.UID())
 			return
 		}
 		a.lastFolder = n
@@ -346,9 +347,10 @@ func (*characterMails) fetchFolders(s services, characterID int32) (iwidget.Tree
 	}
 	if len(labels) > 0 {
 		uid := td.MustAdd(iwidget.TreeRootID, mailFolderNode{
+			Category:    nodeCategoryBranch,
 			CharacterID: characterID,
-			Type:        folderNodeLabel,
 			Name:        "Labels",
+			Type:        folderNodeLabel,
 		})
 		for _, l := range labels {
 			td.MustAdd(uid, mailFolderNode{
@@ -368,9 +370,10 @@ func (*characterMails) fetchFolders(s services, characterID int32) (iwidget.Tree
 	}
 	if len(lists) > 0 {
 		uid := td.MustAdd(iwidget.TreeRootID, mailFolderNode{
+			Category:    nodeCategoryBranch,
 			CharacterID: characterID,
-			Type:        folderNodeList,
 			Name:        "Mailing Lists",
+			Type:        folderNodeList,
 		})
 		for _, l := range lists {
 			td.MustAdd(uid, mailFolderNode{
