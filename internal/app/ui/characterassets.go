@@ -15,7 +15,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -39,8 +38,7 @@ type characterAssets struct {
 	assets           []*app.CharacterAsset
 	assetsBottom     *widget.Label
 	character        *app.Character
-	infoIcon         *widget.Icon
-	locationPath     *kxwidget.TappableLabel
+	locationPath     *widget.Label
 	locations        *iwidget.Tree[locationNode]
 	locationsTop     *widget.Label
 	selectedLocation optional.Optional[locationNode]
@@ -48,7 +46,7 @@ type characterAssets struct {
 }
 
 func newCharacterAssets(u *baseUI) *characterAssets {
-	lp := kxwidget.NewTappableLabel("", nil)
+	lp := widget.NewLabel("")
 	lp.Wrapping = fyne.TextWrapWord
 	a := &characterAssets{
 		assets:       make([]*app.CharacterAsset, 0),
@@ -58,8 +56,6 @@ func newCharacterAssets(u *baseUI) *characterAssets {
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	a.infoIcon = widget.NewIcon(theme.InfoIcon())
-	a.infoIcon.Hide()
 	a.locations = a.makeLocationsTree()
 	a.Locations = container.NewBorder(
 		a.locationsTop,
@@ -70,13 +66,7 @@ func newCharacterAssets(u *baseUI) *characterAssets {
 	)
 	a.assetGrid = a.makeAssetGrid()
 	a.LocationAssets = container.NewBorder(
-		container.NewBorder(
-			nil,
-			nil,
-			nil,
-			a.infoIcon,
-			a.locationPath,
-		),
+		a.locationPath,
 		a.assetsBottom,
 		nil,
 		nil,
@@ -122,29 +112,37 @@ func (a *characterAssets) makeLocationsTree() *iwidget.Tree[locationNode] {
 		func(isBranch bool) fyne.CanvasObject {
 			main := widget.NewLabel("Location")
 			main.Truncation = fyne.TextTruncateEllipsis
+			info := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
+			info.SetToolTip("Show location")
 			spacer := canvas.NewRectangle(color.Transparent)
 			spacer.SetMinSize(fyne.NewSize(40, 10))
 			return container.NewBorder(
 				nil,
 				nil,
 				container.NewStack(spacer, widget.NewLabel("-9.9")),
-				nil,
+				info,
 				main,
 			)
 		},
 		func(n locationNode, isBranch bool, co fyne.CanvasObject) {
-			row := co.(*fyne.Container).Objects
-			label := row[0].(*widget.Label)
-			spacer := row[1].(*fyne.Container).Objects[0]
-			prefix := row[1].(*fyne.Container).Objects[1].(*widget.Label)
+			border := co.(*fyne.Container).Objects
+			label := border[0].(*widget.Label)
+			spacer := border[1].(*fyne.Container).Objects[0]
+			prefix := border[1].(*fyne.Container).Objects[1].(*widget.Label)
+			info := border[2].(*iwidget.TappableIcon)
 			label.SetText(n.displayName())
 			if n.isTop() {
 				if !n.isUnknown {
 					prefix.Text = fmt.Sprintf("%.1f", n.systemSecurityValue)
 					prefix.Importance = n.systemSecurityType.ToImportance()
+					info.OnTapped = func() {
+						a.u.ShowLocationInfoWindow(n.containerID)
+					}
+					info.Show()
 				} else {
 					prefix.Text = "?"
 					prefix.Importance = widget.LowImportance
+					info.Hide()
 				}
 				prefix.Refresh()
 				prefix.Show()
@@ -152,6 +150,7 @@ func (a *characterAssets) makeLocationsTree() *iwidget.Tree[locationNode] {
 			} else {
 				prefix.Hide()
 				spacer.Hide()
+				info.Hide()
 			}
 		},
 	)
@@ -241,9 +240,7 @@ func (a *characterAssets) update() {
 			a.assets = make([]*app.CharacterAsset, 0)
 			a.assetGrid.Refresh()
 			a.locationPath.SetText("")
-			a.locationPath.OnTapped = nil
 			a.selectedLocation.Clear()
-			a.infoIcon.Hide()
 		})
 		ac, locations, err := a.fetchData(a.u.currentCharacterID(), a.u.services())
 		if err != nil {
@@ -658,13 +655,6 @@ func (a *characterAssets) updateLocationPath(location locationNode) {
 		parts = append(parts, n.name)
 	}
 	a.locationPath.SetText(strings.Join(parts, " ＞ "))
-	a.locationPath.OnTapped = func() {
-		if len(path) == 0 {
-			return
-		}
-		a.u.ShowLocationInfoWindow(path[0].containerID)
-	}
-	a.infoIcon.Show()
 }
 
 type locationNodeVariant uint
