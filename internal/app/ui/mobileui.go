@@ -273,6 +273,14 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		}
 	}
 
+	corpIndustryNav := iwidget.NewListItemWithIcon(
+		"Industry",
+		theme.NewThemedResource(icons.FactorySvg),
+		func() {
+			corpNav.Push(newCorpAppBar("Corporation Sheet", u.corporationIndyJobs))
+		},
+	)
+
 	corpList := iwidget.NewNavList(
 		slices.Concat([]*iwidget.ListItem{
 			iwidget.NewListItemWithIcon(
@@ -289,22 +297,13 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 						))
 				},
 			),
+			corpIndustryNav,
 			corpWalletNav,
 		})...,
 	)
+
 	u.onUpdateCorporationWalletTotals = func(balance string) {
-		sections, err := u.rs.PermittedSections(context.Background(), u.currentCorporationID())
-		if err != nil {
-			slog.Error("Failed to enable corporation tab", "error", err)
-			sections.Clear()
-			balance = ""
-		}
 		fyne.Do(func() {
-			if sections.Contains(app.SectionCorporationWalletBalances) {
-				corpWalletNav.IsDisabled = false
-			} else {
-				corpWalletNav.IsDisabled = true
-			}
 			corpWalletNav.Supporting = balance
 			corpList.Refresh()
 		})
@@ -401,7 +400,29 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	navBar.Disable(3)
 	navBar.Select(4)
 
+	togglePermittedSections := func() {
+		sections, err := u.rs.PermittedSections(context.Background(), u.currentCorporationID())
+		if err != nil {
+			slog.Error("Failed to enable corporation tab", "error", err)
+			sections.Clear()
+		}
+		fyne.Do(func() {
+			if sections.Contains(app.SectionCorporationWalletBalances) {
+				corpWalletNav.IsDisabled = false
+			} else {
+				corpWalletNav.IsDisabled = true
+			}
+			if sections.Contains(app.SectionCorporationIndustryJobs) {
+				corpIndustryNav.IsDisabled = false
+			} else {
+				corpIndustryNav.IsDisabled = true
+			}
+			corpList.Refresh()
+		})
+	}
+
 	u.onUpdateStatus = func() {
+		go togglePermittedSections()
 		go func() {
 			fyne.Do(func() {
 				navItemManageCharacters.Supporting = fmt.Sprintf("%d characters", u.scs.ListCharacterIDs().Size())
@@ -431,6 +452,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			})
 		}()
 	}
+
 	u.onUpdateCharacter = func(c *app.Character) {
 		fyne.Do(func() {
 			mailMenu.Items = u.characterMails.makeFolderMenu()
@@ -466,6 +488,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			characterNav.PopAll()
 		})
 	}
+
 	u.onSetCorporation = func(id int32) {
 		go u.updateCorporationAvatar(id, func(r fyne.Resource) {
 			fyne.Do(func() {
@@ -477,6 +500,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			corpPage.SetTitle(name)
 			corpNav.PopAll()
 		})
+		togglePermittedSections()
 	}
 
 	var hasUpdate bool

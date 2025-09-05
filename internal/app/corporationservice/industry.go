@@ -23,9 +23,14 @@ func (s *CorporationService) GetCorporationIndustryJob(ctx context.Context, corp
 	return s.st.GetCorporationIndustryJob(ctx, corporationID, jobID)
 }
 
-// ListAllCorporationIndustryJobs returns all industry jobs from corporations.
+// ListAllCorporationIndustryJobs returns all industry jobs from all corporations.
 func (s *CorporationService) ListAllCorporationIndustryJobs(ctx context.Context) ([]*app.CorporationIndustryJob, error) {
 	return s.st.ListAllCorporationIndustryJobs(ctx)
+}
+
+// ListCorporationIndustryJobs returns all industry jobs from a corporation.
+func (s *CorporationService) ListCorporationIndustryJobs(ctx context.Context, corporationID int32) ([]*app.CorporationIndustryJob, error) {
+	return s.st.ListCorporationIndustryJobs(ctx, corporationID)
 }
 
 var jobStatusFromESIValue = map[string]app.IndustryJobState{

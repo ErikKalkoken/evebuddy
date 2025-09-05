@@ -124,10 +124,16 @@ func (w *listItem) Refresh() {
 		c := th.Color(theme.ColorNameDisabled, v)
 		w.headline.Color = c
 		w.supporting.Color = c
+		if w.leading != nil {
+			w.leading.Resource = theme.NewDisabledResource(w.leading.Resource)
+		}
 	} else {
 		c := th.Color(theme.ColorNameForeground, v)
 		w.headline.Color = c
 		w.supporting.Color = c
+		if w.leading != nil {
+			w.leading.Resource = theme.NewThemedResource(w.leading.Resource)
+		}
 	}
 
 	w.updateSizes()

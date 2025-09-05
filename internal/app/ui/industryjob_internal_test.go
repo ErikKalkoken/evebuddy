@@ -11,6 +11,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/stretchr/testify/assert"
 )
@@ -159,5 +161,60 @@ func TestIndustryJob_Filter(t *testing.T) {
 		})
 		want := []int32{j3.JobID, j4.JobID}
 		assert.ElementsMatch(t, want, got)
+	})
+}
+
+func TestIndustryJob_FetchJobs(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ec := factory.CreateEveCharacter()
+	character := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
+	corporation := factory.CreateCorporation(ec.Corporation.ID)
+	j1 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+		ActivityID:  int32(app.Manufacturing),
+		CharacterID: character.ID,
+		JobID:       1,
+		Status:      app.JobReady,
+	})
+	j2 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+		ActivityID:    int32(app.Copying),
+		CorporationID: ec.Corporation.ID,
+		JobID:         2,
+		Status:        app.JobDelivered,
+		InstallerID:   character.ID,
+	})
+	c2 := factory.CreateEveEntityCharacter()
+	j3 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+		ActivityID:    int32(app.Copying),
+		CorporationID: ec.Corporation.ID,
+		JobID:         3,
+		Status:        app.JobDelivered,
+		InstallerID:   c2.ID,
+	})
+	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
+	ui.setCorporation(corporation)
+
+	t.Run("can return all character and relevant corporation jobs", func(t *testing.T) {
+		xx, err := ui.industryJobs.fetchCombinedJobs()
+		if !assert.NoError(t, err) {
+			t.Fatal()
+		}
+		want := set.Of(j1.JobID, j2.JobID)
+		got := set.Collect(xiter.MapSlice(xx, func(x industryJobRow) int32 {
+			return x.jobID
+		}))
+		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+	})
+
+	t.Run("can return all jobs for current corporation", func(t *testing.T) {
+		xx, err := ui.corporationIndyJobs.fetchCorporationJobs()
+		if !assert.NoError(t, err) {
+			t.Fatal()
+		}
+		want := set.Of(j2.JobID, j3.JobID)
+		got := set.Collect(xiter.MapSlice(xx, func(x industryJobRow) int32 {
+			return x.jobID
+		}))
+		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 	})
 }

@@ -136,6 +136,7 @@ type baseUI struct {
 	clones                  *clones
 	colonies                *colonies
 	contracts               *contracts
+	corporationIndyJobs     *industryJobs
 	corporationMember       *corporationMember
 	corporationSheet        *corporationSheet
 	corporationWallets      map[app.Division]*corporationWallet
@@ -387,13 +388,14 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.clones = newClones(u)
 	u.colonies = newColonies(u)
 	u.contracts = newContracts(u)
+	u.corporationIndyJobs = newIndustryJobs(u, true)
 	u.corporationMember = newCorporationMember(u)
 	u.corporationSheet = newCorporationSheet(u, true)
 	for _, d := range app.Divisions {
 		u.corporationWallets[d] = newCorporationWallet(u, d)
 	}
 	u.gameSearch = newGameSearch(u)
-	u.industryJobs = newIndustryJobs(u)
+	u.industryJobs = newIndustryJobs(u, false)
 	u.marketOrdersSell = newMarketOrders(u, false)
 	u.marketOrdersBuy = newMarketOrders(u, true)
 	u.progressModal = iwidget.NewProgressModal(u.window)
@@ -782,6 +784,7 @@ func (u *baseUI) updateCorporation() {
 	}
 	ff := make(map[string]func())
 	ff["corporationSheet"] = u.corporationSheet.update
+	ff["corporationIndyJobs"] = u.corporationIndyJobs.update
 	ff["corporationMember"] = u.corporationMember.update
 	ff["corporationWalletTotal"] = u.updateCorporationWalletTotal
 	for id, w := range u.corporationWallets {
