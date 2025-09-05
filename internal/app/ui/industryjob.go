@@ -83,22 +83,24 @@ type industryJobs struct {
 
 	OnUpdate func(count int)
 
-	body            fyne.CanvasObject
-	columnSorter    *columnSorter
-	rows            []industryJobRow
-	rowsFiltered    []industryJobRow
-	search          *widget.Entry
-	selectActivity  *kxwidget.FilterChipSelect
-	selectInstaller *kxwidget.FilterChipSelect
-	selectOwner     *kxwidget.FilterChipSelect
-	selectStatus    *kxwidget.FilterChipSelect
-	selectTag       *kxwidget.FilterChipSelect
-	sortButton      *sortButton
-	bottom          *widget.Label
-	u               *baseUI
+	body              fyne.CanvasObject
+	bottom            *widget.Label
+	columnSorter      *columnSorter
+	corporation       *app.Corporation
+	isCorporationMode bool
+	rows              []industryJobRow
+	rowsFiltered      []industryJobRow
+	search            *widget.Entry
+	selectActivity    *kxwidget.FilterChipSelect
+	selectInstaller   *kxwidget.FilterChipSelect
+	selectOwner       *kxwidget.FilterChipSelect
+	selectStatus      *kxwidget.FilterChipSelect
+	selectTag         *kxwidget.FilterChipSelect
+	sortButton        *sortButton
+	u                 *baseUI
 }
 
-func newIndustryJobs(u *baseUI) *industryJobs {
+func newIndustryJobs(u *baseUI, isCorporationMode bool) *industryJobs {
 	headers := []headerDef{
 		{label: "Blueprint", width: 250},
 		{label: "Status", width: 100, refresh: true},
@@ -110,11 +112,12 @@ func newIndustryJobs(u *baseUI) *industryJobs {
 		{label: "Installer", width: columnWidthEntity},
 	}
 	a := &industryJobs{
-		columnSorter: newColumnSorterWithInit(headers, 4, sortDesc),
-		rows:         make([]industryJobRow, 0),
-		rowsFiltered: make([]industryJobRow, 0),
-		bottom:       makeTopLabel(),
-		u:            u,
+		bottom:            makeTopLabel(),
+		columnSorter:      newColumnSorterWithInit(headers, 4, sortDesc),
+		isCorporationMode: isCorporationMode,
+		rows:              make([]industryJobRow, 0),
+		rowsFiltered:      make([]industryJobRow, 0),
+		u:                 u,
 	}
 	a.ExtendBaseWidget(a)
 	makeCell := func(col int, j industryJobRow) []widget.RichTextSegment {
@@ -197,27 +200,48 @@ func newIndustryJobs(u *baseUI) *industryJobs {
 	}, func(_ string) {
 		a.filterRows(-1)
 	})
-	a.selectInstaller.Selected = industryInstallerMe
 
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window, 6, 7)
 
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if arg.section == app.SectionCharacterIndustryJobs {
-			a.update()
-		}
-	})
-	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
-		if arg.section == app.SectionCorporationIndustryJobs {
-			a.update()
-		}
-	})
+	if isCorporationMode {
+		a.u.corporationExchanged.AddListener(
+			func(_ context.Context, c *app.Corporation) {
+				a.corporation = c
+			},
+		)
+		a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
+			if corporationIDOrZero(a.corporation) != arg.corporationID {
+				return
+			}
+			if arg.section == app.SectionCorporationIndustryJobs {
+				a.update()
+			}
+		})
+	} else {
+		a.selectInstaller.Selected = industryInstallerMe
+		a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+			if arg.section == app.SectionCharacterIndustryJobs {
+				a.update()
+			}
+		})
+		a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
+			if arg.section == app.SectionCorporationIndustryJobs {
+				a.update()
+			}
+		})
+	}
 	return a
 }
 
 func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
-	selections := container.NewHBox(a.selectOwner, a.selectStatus, a.selectActivity, a.selectInstaller, a.selectTag)
+	var selections *fyne.Container
+	if a.isCorporationMode {
+		selections = container.NewHBox(a.selectOwner, a.selectStatus, a.selectActivity, a.selectInstaller)
+	} else {
+		selections = container.NewHBox(a.selectOwner, a.selectStatus, a.selectActivity, a.selectTag)
+	}
 	if !a.u.isDesktop {
 		selections.Add(a.sortButton)
 	}
@@ -448,7 +472,14 @@ func (a *industryJobs) makeDataList() *iwidget.StripedList {
 }
 
 func (a *industryJobs) update() {
-	reportError := func(err error) {
+	var jobs []industryJobRow
+	var err error
+	if a.isCorporationMode {
+		jobs, err = a.fetchCorporationJobs()
+	} else {
+		jobs, err = a.fetchCombinedJobs()
+	}
+	if err != nil {
 		slog.Error("Failed to refresh industry jobs UI", "err", err)
 		fyne.Do(func() {
 			a.bottom.Text = fmt.Sprintf("ERROR: %s", a.u.humanizeError(err))
@@ -457,103 +488,6 @@ func (a *industryJobs) update() {
 			a.bottom.Show()
 		})
 	}
-	ctx := context.Background()
-	cj, err := a.u.cs.ListAllCharacterIndustryJob(ctx)
-	if err != nil {
-		reportError(err)
-		return
-	}
-	rj, err := a.u.rs.ListAllCorporationIndustryJobs(ctx)
-	if err != nil {
-		reportError(err)
-		return
-	}
-	ids1 := set.Collect(xiter.MapSlice(cj, func(x *app.CharacterIndustryJob) int32 {
-		return x.CharacterID
-	}))
-	ids2 := set.Collect(xiter.MapSlice(rj, func(x *app.CorporationIndustryJob) int32 {
-		return x.CorporationID
-	}))
-	ids := set.Union(ids1, ids2)
-	eeMap, err := a.u.eus.ToEntities(ctx, ids)
-	if err != nil {
-		reportError(err)
-		return
-	}
-	cc, err := a.u.cs.ListCharactersShort(ctx)
-	if err != nil {
-		reportError(err)
-		return
-	}
-	tagsPerCharacter := make(map[int32]set.Set[string])
-	for _, c := range cc {
-		tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
-		if err != nil {
-			reportError(err)
-			return
-		}
-		tagsPerCharacter[c.ID] = tags
-	}
-	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort[int32]) int32 {
-		return c.ID
-	})...)
-	characterJobs := xslices.Map(cj, func(cj *app.CharacterIndustryJob) industryJobRow {
-		j := industryJobRow{
-			activity:           cj.Activity,
-			blueprintID:        cj.BlueprintID,
-			blueprintType:      cj.BlueprintType,
-			completedCharacter: cj.CompletedCharacter,
-			completedDate:      cj.CompletedDate,
-			cost:               cj.Cost,
-			duration:           cj.Duration,
-			endDate:            cj.EndDate,
-			installer:          cj.Installer,
-			jobID:              cj.JobID,
-			licensedRuns:       cj.LicensedRuns,
-			location:           cj.Station,
-			owner:              eeMap[cj.CharacterID],
-			pauseDate:          cj.PauseDate,
-			probability:        cj.Probability,
-			productType:        cj.ProductType,
-			runs:               cj.Runs,
-			startDate:          cj.StartDate,
-			status:             cj.Status,
-			successfulRuns:     cj.SuccessfulRuns,
-			isInstallerMe:      true,
-			isOwnerMe:          true,
-			tags:               tagsPerCharacter[cj.Installer.ID],
-		}
-		return j
-	})
-	corporationJobs := xslices.Map(rj, func(rj *app.CorporationIndustryJob) industryJobRow {
-		j := industryJobRow{
-			activity:           rj.Activity,
-			blueprintID:        rj.BlueprintID,
-			blueprintType:      rj.BlueprintType,
-			completedCharacter: rj.CompletedCharacter,
-			completedDate:      rj.CompletedDate,
-			cost:               rj.Cost,
-			duration:           rj.Duration,
-			endDate:            rj.EndDate,
-			installer:          rj.Installer,
-			jobID:              rj.JobID,
-			licensedRuns:       rj.LicensedRuns,
-			location:           rj.Location,
-			owner:              eeMap[rj.CorporationID],
-			pauseDate:          rj.PauseDate,
-			probability:        rj.Probability,
-			productType:        rj.ProductType,
-			runs:               rj.Runs,
-			startDate:          rj.StartDate,
-			status:             rj.Status,
-			successfulRuns:     rj.SuccessfulRuns,
-			isInstallerMe:      myCharacters.Contains(rj.Installer.ID),
-			isOwnerMe:          false,
-			tags:               tagsPerCharacter[rj.Installer.ID],
-		}
-		return j
-	})
-	jobs := slices.Concat(characterJobs, corporationJobs)
 	for i, j := range jobs {
 		remaining := time.Until(j.endDate)
 		var segs []widget.RichTextSegment
@@ -584,6 +518,160 @@ func (a *industryJobs) update() {
 		a.rows = jobs
 		a.filterRows(-1)
 	})
+}
+
+func (a *industryJobs) fetchCombinedJobs() ([]industryJobRow, error) {
+	ctx := context.Background()
+	cj, err := a.u.cs.ListAllCharacterIndustryJob(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rj, err := a.u.rs.ListAllCorporationIndustryJobs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ids1 := set.Collect(xiter.MapSlice(cj, func(x *app.CharacterIndustryJob) int32 {
+		return x.CharacterID
+	}))
+	ids2 := set.Collect(xiter.MapSlice(rj, func(x *app.CorporationIndustryJob) int32 {
+		return x.CorporationID
+	}))
+	ids := set.Union(ids1, ids2)
+	eeMap, err := a.u.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	cc, err := a.u.cs.ListCharactersShort(ctx)
+	if err != nil {
+		return nil, err
+	}
+	tagsPerCharacter := make(map[int32]set.Set[string])
+	for _, c := range cc {
+		tags, err := a.u.cs.ListTagsForCharacter(ctx, c.ID)
+		if err != nil {
+			return nil, err
+		}
+		tagsPerCharacter[c.ID] = tags
+	}
+	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort[int32]) int32 {
+		return c.ID
+	})...)
+	characterJobs := make([]industryJobRow, 0)
+	for _, j := range cj {
+		characterJobs = append(characterJobs, industryJobRow{
+			activity:           j.Activity,
+			blueprintID:        j.BlueprintID,
+			blueprintType:      j.BlueprintType,
+			completedCharacter: j.CompletedCharacter,
+			completedDate:      j.CompletedDate,
+			cost:               j.Cost,
+			duration:           j.Duration,
+			endDate:            j.EndDate,
+			installer:          j.Installer,
+			jobID:              j.JobID,
+			licensedRuns:       j.LicensedRuns,
+			location:           j.Station,
+			owner:              eeMap[j.CharacterID],
+			pauseDate:          j.PauseDate,
+			probability:        j.Probability,
+			productType:        j.ProductType,
+			runs:               j.Runs,
+			startDate:          j.StartDate,
+			status:             j.Status,
+			successfulRuns:     j.SuccessfulRuns,
+			isInstallerMe:      true,
+			isOwnerMe:          true,
+			tags:               tagsPerCharacter[j.Installer.ID],
+		})
+	}
+
+	corporationJobs := make([]industryJobRow, 0)
+	for _, j := range rj {
+		if !myCharacters.Contains(j.Installer.ID) {
+			continue
+		}
+		corporationJobs = append(corporationJobs, industryJobRow{
+			activity:           j.Activity,
+			blueprintID:        j.BlueprintID,
+			blueprintType:      j.BlueprintType,
+			completedCharacter: j.CompletedCharacter,
+			completedDate:      j.CompletedDate,
+			cost:               j.Cost,
+			duration:           j.Duration,
+			endDate:            j.EndDate,
+			installer:          j.Installer,
+			jobID:              j.JobID,
+			licensedRuns:       j.LicensedRuns,
+			location:           j.Location,
+			owner:              eeMap[j.CorporationID],
+			pauseDate:          j.PauseDate,
+			probability:        j.Probability,
+			productType:        j.ProductType,
+			runs:               j.Runs,
+			startDate:          j.StartDate,
+			status:             j.Status,
+			successfulRuns:     j.SuccessfulRuns,
+			isInstallerMe:      myCharacters.Contains(j.Installer.ID),
+			isOwnerMe:          false,
+			tags:               tagsPerCharacter[j.Installer.ID],
+		})
+	}
+	jobs := slices.Concat(characterJobs, corporationJobs)
+	return jobs, nil
+}
+
+func (a *industryJobs) fetchCorporationJobs() ([]industryJobRow, error) {
+	corporationID := corporationIDOrZero(a.corporation)
+	if corporationID == 0 {
+		return []industryJobRow{}, nil
+	}
+	ctx := context.Background()
+	rj, err := a.u.rs.ListCorporationIndustryJobs(ctx, corporationID)
+	if err != nil {
+		return nil, err
+	}
+	ids := set.Collect(xiter.MapSlice(rj, func(x *app.CorporationIndustryJob) int32 {
+		return x.CorporationID
+	}))
+	eeMap, err := a.u.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	cc, err := a.u.cs.ListCharactersShort(ctx)
+	if err != nil {
+		return nil, err
+	}
+	myCharacters := set.Of(xslices.Map(cc, func(c *app.EntityShort[int32]) int32 {
+		return c.ID
+	})...)
+	jobs := make([]industryJobRow, 0)
+	for _, j := range rj {
+		jobs = append(jobs, industryJobRow{
+			activity:           j.Activity,
+			blueprintID:        j.BlueprintID,
+			blueprintType:      j.BlueprintType,
+			completedCharacter: j.CompletedCharacter,
+			completedDate:      j.CompletedDate,
+			cost:               j.Cost,
+			duration:           j.Duration,
+			endDate:            j.EndDate,
+			installer:          j.Installer,
+			jobID:              j.JobID,
+			licensedRuns:       j.LicensedRuns,
+			location:           j.Location,
+			owner:              eeMap[j.CorporationID],
+			pauseDate:          j.PauseDate,
+			probability:        j.Probability,
+			productType:        j.ProductType,
+			runs:               j.Runs,
+			startDate:          j.StartDate,
+			status:             j.Status,
+			successfulRuns:     j.SuccessfulRuns,
+			isInstallerMe:      myCharacters.Contains(j.Installer.ID),
+			isOwnerMe:          false,
+		})
+	}
+	return jobs, nil
 }
 
 // showIndustryJobWindow shows the details of a industry job in a window.
