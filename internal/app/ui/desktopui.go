@@ -509,11 +509,8 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		}()
 	}
 
-	u.onUpdateCorporation = func(c *app.Corporation) {
-		go func() {
-			togglePermittedSections()
-		}()
-	}
+	// u.onUpdateCorporation = func(c *app.Corporation) {
+	// }
 
 	u.onShowAndRun = func() {
 		u.MainWindow().Resize(u.settings.WindowSize())
@@ -530,6 +527,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		go statusBar.update()
 		go characterPageBars.update()
 		go corporationPageBars.update()
+		go togglePermittedSections()
 		go func() {
 			cc, err := u.ListCorporationsForSelection()
 			if err != nil {
@@ -546,6 +544,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			fyne.Do(func() {
 				tabs.EnableItem(corporationTab)
 			})
+
 		}()
 	}
 	u.onSectionUpdateStarted = func() {
