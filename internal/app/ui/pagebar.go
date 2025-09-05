@@ -7,18 +7,16 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type pageBarCollection interface {
-	NewPageBar(title string, buttons ...*widget.Button) *pageBar
+	NewPageBar(title string) *pageBar
 }
 
 type PageBarPage struct {
@@ -28,9 +26,9 @@ type PageBarPage struct {
 	content fyne.CanvasObject
 }
 
-func NewPageBarPage(cpb pageBarCollection, title string, content fyne.CanvasObject, buttons ...*widget.Button) *PageBarPage {
+func NewPageBarPage(cpb pageBarCollection, title string, content fyne.CanvasObject) *PageBarPage {
 	a := &PageBarPage{
-		pb:      cpb.NewPageBar(title, buttons...),
+		pb:      cpb.NewPageBar(title),
 		content: content,
 	}
 	a.ExtendBaseWidget(a)
@@ -55,20 +53,18 @@ func (a *PageBarPage) SetTitle(text string) {
 type pageBar struct {
 	widget.BaseWidget
 
-	buttons []*widget.Button
-	icon    *iwidget.TappableIcon
-	title   *widget.Label
+	icon  *iwidget.TappableIcon
+	title *widget.Label
 }
 
-func newPageBar(title string, icon fyne.Resource, buttons ...*widget.Button) *pageBar {
+func newPageBar(title string, icon fyne.Resource) *pageBar {
 	i := iwidget.NewTappableIconWithMenu(icon, fyne.NewMenu(""))
 	i.SetToolTip("Click to switch")
 	l := widget.NewLabel(title)
 	l.SizeName = theme.SizeNameSubHeadingText
 	w := &pageBar{
-		buttons: buttons,
-		icon:    i,
-		title:   l,
+		icon:  i,
+		title: l,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -87,16 +83,16 @@ func (w *pageBar) SetMenu(items []*fyne.MenuItem) {
 }
 
 func (w *pageBar) CreateRenderer() fyne.WidgetRenderer {
-	box := container.NewHBox(w.title, layout.NewSpacer())
-	if len(w.buttons) > 0 {
-		for _, b := range w.buttons {
-			box.Add(container.NewCenter(b))
-		}
-	}
 	spacer := canvas.NewRectangle(color.Transparent)
-	spacer.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
-	box.Add(container.NewPadded(container.NewCenter(container.NewStack(spacer, w.icon))))
-	return widget.NewSimpleRenderer(box)
+	spacer.SetMinSize(fyne.NewSquareSize(w.title.MinSize().Height - theme.Padding()))
+	c := container.NewBorder(
+		nil,
+		nil,
+		nil,
+		container.NewPadded(container.NewCenter(container.NewStack(spacer, w.icon))),
+		w.title,
+	)
+	return widget.NewSimpleRenderer(c)
 }
 
 type pageBarCollectionForCharacter struct {
@@ -120,8 +116,8 @@ func NewPageBarCollectionForCharacters(u *DesktopUI) *pageBarCollectionForCharac
 	return c
 }
 
-func (pbc *pageBarCollectionForCharacter) NewPageBar(title string, buttons ...*widget.Button) *pageBar {
-	pb := newPageBar(title, pbc.fallbackIcon, buttons...)
+func (pbc *pageBarCollectionForCharacter) NewPageBar(title string) *pageBar {
+	pb := newPageBar(title, pbc.fallbackIcon)
 	pbc.bars = append(pbc.bars, pb)
 	return pb
 }
@@ -177,8 +173,8 @@ func NewPageBarCollectionForCorporations(u *DesktopUI) *pageBarCollectionForCorp
 	return c
 }
 
-func (pbc *pageBarCollectionForCorporation) NewPageBar(title string, buttons ...*widget.Button) *pageBar {
-	pb := newPageBar(title, pbc.fallbackIcon, buttons...)
+func (pbc *pageBarCollectionForCorporation) NewPageBar(title string) *pageBar {
+	pb := newPageBar(title, pbc.fallbackIcon)
 	pbc.bars = append(pbc.bars, pb)
 	return pb
 }
