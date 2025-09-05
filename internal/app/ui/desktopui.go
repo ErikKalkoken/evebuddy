@@ -346,6 +346,11 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		corpWalletItems = append(corpWalletItems, corporationWalletNavs[d])
 	}
 
+	corpIndustryItem := iwidget.NewNavPage(
+		"Industry",
+		theme.NewThemedResource(icons.FactorySvg),
+		NewPageBarPage(corporationPageBars, "Industry", u.corporationIndyJobs),
+	)
 	corporationNav := iwidget.NewNavDrawer(
 		slices.Concat(
 			[]*iwidget.NavItem{
@@ -357,6 +362,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 						container.NewTabItem("Members", u.corporationMember),
 					)),
 				),
+				corpIndustryItem,
 			},
 			corpWalletItems,
 		)...,
@@ -378,22 +384,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		}
 	}
 	u.onUpdateCorporationWalletTotals = func(balance string) {
-		sections, err := u.rs.PermittedSections(context.Background(), u.currentCorporationID())
-		if err != nil {
-			slog.Error("Failed to enable corporation tab", "error", err)
-			sections.Clear()
-			balance = ""
-		}
 		fyne.Do(func() {
-			if sections.Contains(app.SectionCorporationWalletBalances) {
-				for _, it := range corpWalletItems {
-					it.Enable()
-				}
-			} else {
-				for _, it := range corpWalletItems {
-					it.Disable()
-				}
-			}
 			corporationNav.Refresh()
 			corporationNav.SetItemBadge(walletsNav, balance)
 		})
@@ -466,12 +457,37 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		})
 	}
 
+	togglePermittedSections := func() {
+		sections, err := u.rs.PermittedSections(context.Background(), u.currentCorporationID())
+		if err != nil {
+			slog.Error("Failed to identify permitted sections", "error", err)
+			sections.Clear()
+		}
+		fyne.Do(func() {
+			if sections.Contains(app.SectionCorporationWalletBalances) {
+				for _, it := range corpWalletItems {
+					it.Enable()
+				}
+			} else {
+				for _, it := range corpWalletItems {
+					it.Disable()
+				}
+			}
+			if sections.Contains(app.SectionCorporationIndustryJobs) {
+				corpIndustryItem.Enable()
+			} else {
+				corpIndustryItem.Disable()
+			}
+		})
+	}
+
 	u.onSetCorporation = func(id int32) {
 		name := u.scs.CorporationName(id)
 		fyne.Do(func() {
 			corporationNav.SetTitle(name)
 			tabs.Refresh()
 		})
+		togglePermittedSections()
 	}
 
 	u.onUpdateCharacter = func(character *app.Character) {
@@ -490,6 +506,12 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 				homeNav.Enable()
 				toolbar.ToogleSearchBar(true)
 			})
+		}()
+	}
+
+	u.onUpdateCorporation = func(c *app.Corporation) {
+		go func() {
+			togglePermittedSections()
 		}()
 	}
 

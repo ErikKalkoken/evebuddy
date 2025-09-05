@@ -784,6 +784,7 @@ func (u *baseUI) updateCorporation() {
 	}
 	ff := make(map[string]func())
 	ff["corporationSheet"] = u.corporationSheet.update
+	ff["corporationIndyJobs"] = u.corporationIndyJobs.update
 	ff["corporationMember"] = u.corporationMember.update
 	ff["corporationWalletTotal"] = u.updateCorporationWalletTotal
 	for id, w := range u.corporationWallets {

@@ -97,7 +97,7 @@ FROM
     characters;
 
 -- name: ListCharacterCorporations :many
-SELECT
+SELECT DISTINCT
     ee.id,
     ee.name
 FROM
