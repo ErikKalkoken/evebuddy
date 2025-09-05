@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"image/color"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -9,11 +10,11 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type pageBarCollection interface {
@@ -55,14 +56,13 @@ type pageBar struct {
 	widget.BaseWidget
 
 	buttons []*widget.Button
-	icon    *kwidget.TappableImage
+	icon    *iwidget.TappableIcon
 	title   *widget.Label
 }
 
 func newPageBar(title string, icon fyne.Resource, buttons ...*widget.Button) *pageBar {
-	i := kwidget.NewTappableImageWithMenu(icon, fyne.NewMenu(""))
-	i.SetFillMode(canvas.ImageFillContain)
-	i.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
+	i := iwidget.NewTappableIconWithMenu(icon, fyne.NewMenu(""))
+	i.SetToolTip("Click to switch")
 	l := widget.NewLabel(title)
 	l.SizeName = theme.SizeNameSubHeadingText
 	w := &pageBar{
@@ -93,7 +93,9 @@ func (w *pageBar) CreateRenderer() fyne.WidgetRenderer {
 			box.Add(container.NewCenter(b))
 		}
 	}
-	box.Add(container.NewCenter(w.icon))
+	spacer := canvas.NewRectangle(color.Transparent)
+	spacer.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
+	box.Add(container.NewPadded(container.NewCenter(container.NewStack(spacer, w.icon))))
 	return widget.NewSimpleRenderer(box)
 }
 
