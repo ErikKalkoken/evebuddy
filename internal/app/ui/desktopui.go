@@ -31,7 +31,7 @@ import (
 
 const (
 	minNavCharacterWidth = 250
-	pageTitleMarginTop   = 2
+	pageTitleMarginTop   = 1
 )
 
 type shortcutDef struct {
@@ -181,10 +181,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		)),
 	)
 
-	headerHome := iwidget.NewNavDrawerHeader("Home")
-	headerHome.MarginTop = pageTitleMarginTop
 	homeNav = iwidget.NewNavDrawer(
-		headerHome,
 		overview,
 		allAssets,
 		iwidget.NewNavPage(
@@ -278,10 +275,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		theme.NewThemedResource(icons.Inventory2Svg),
 		newContentPage("Assets", u.characterAsset),
 	)
-	characterHeader := iwidget.NewNavDrawerHeaderWithContextButton("Characters", theme.AccountIcon())
-	characterHeader.MarginTop = pageTitleMarginTop
 	characterNav = iwidget.NewNavDrawer(
-		characterHeader,
 		iwidget.NewNavPage(
 			"Character Sheet",
 			theme.NewThemedResource(icons.PortraitSvg),
@@ -333,10 +327,8 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		theme.NewThemedResource(icons.FactorySvg),
 		newContentPage("Industry", u.corporationIndyJobs),
 	)
-	corpHeader := iwidget.NewNavDrawerHeaderWithContextButton("Corporations", theme.NewThemedResource(icons.StarCircleOutlineSvg))
-	corpHeader.MarginTop = pageTitleMarginTop
+
 	corporationNav := iwidget.NewNavDrawer(
-		corpHeader,
 		slices.Concat(
 			[]*iwidget.NavItem{
 				iwidget.NewNavPage(
@@ -375,25 +367,39 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 
 	// Make overall UI
+	makeTabContent := func(header *PageHeader, content fyne.CanvasObject) fyne.CanvasObject {
+		return container.NewBorder(
+			container.NewVBox(header, widget.NewSeparator()),
+			nil,
+			nil,
+			nil,
+			content,
+		)
+	}
 
-	statusBar := newStatusBar(u)
-	toolbar := newToolbar(u)
 	homeTab := container.NewTabItemWithIcon(
 		"Home",
 		theme.NewThemedResource(theme.HomeIcon()),
-		homeNav,
+		makeTabContent(NewPageHeader("Home"), homeNav),
 	)
+
+	characterHeader := NewPageHeaderExtended("Characters", theme.NewThemedResource(icons.SwitchaccountSvg))
 	characterTab := container.NewTabItemWithIcon(
 		"Characters",
 		theme.AccountIcon(),
-		characterNav,
+		makeTabContent(characterHeader, characterNav),
 	)
+
+	corporationHeader := NewPageHeaderExtended("Corporations", theme.NewThemedResource(icons.SwitchaccountSvg))
 	corporationTab := container.NewTabItemWithIcon(
 		"Corporations",
 		theme.NewThemedResource(icons.StarCircleOutlineSvg),
-		corporationNav,
+		makeTabContent(corporationHeader, corporationNav),
 	)
 	tabs := container.NewAppTabs(homeTab, characterTab, corporationTab)
+
+	statusBar := newStatusBar(u)
+	toolbar := newToolbar(u)
 	mainContent := container.NewBorder(
 		toolbar,
 		statusBar,
@@ -436,9 +442,15 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	u.onSetCharacter = func(id int32) {
 		name := u.scs.CharacterName(id)
 		fyne.Do(func() {
-			characterNav.Header.SetTitle(name)
-			tabs.Refresh()
+			characterHeader.SetTitle(name)
 		})
+		go func() {
+			u.updateCharacterAvatar(id, func(r fyne.Resource) {
+				fyne.Do(func() {
+					characterHeader.SetIcon(r)
+				})
+			})
+		}()
 	}
 
 	togglePermittedSections := func() {
@@ -468,9 +480,15 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	u.onSetCorporation = func(id int32) {
 		name := u.scs.CorporationName(id)
 		fyne.Do(func() {
-			corporationNav.Header.SetTitle(name)
-			tabs.Refresh()
+			corporationHeader.SetTitle(name)
 		})
+		go func() {
+			u.updateCorporationAvatar(id, func(r fyne.Resource) {
+				fyne.Do(func() {
+					corporationHeader.SetIcon(r)
+				})
+			})
+		}()
 		togglePermittedSections()
 	}
 
@@ -509,11 +527,11 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 	u.onUpdateStatus = func() {
 		go statusBar.update()
-		go characterNav.Header.SetMenuItems(u.makeCharacterSwitchMenu(func() {
-			characterNav.Header.Refresh()
+		go characterHeader.SetMenuItems(u.makeCharacterSwitchMenu(func() {
+			characterHeader.Refresh()
 		}))
-		go corporationNav.Header.SetMenuItems(u.makeCorporationSwitchMenu(func() {
-			corporationNav.Header.Refresh()
+		go corporationHeader.SetMenuItems(u.makeCorporationSwitchMenu(func() {
+			corporationHeader.Refresh()
 		}))
 		go togglePermittedSections()
 		go func() {
@@ -778,14 +796,79 @@ func (w *contentPage) SetTitle(s string) {
 }
 
 func (w *contentPage) CreateRenderer() fyne.WidgetRenderer {
-	spacer := canvas.NewRectangle(color.Transparent)
-	spacer.SetMinSize(fyne.NewSize(1, pageTitleMarginTop))
 	c := container.NewBorder(
-		container.NewVBox(spacer, w.title),
+		w.title,
 		nil,
 		nil,
 		nil,
 		w.content,
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+type PageHeader struct {
+	widget.BaseWidget
+
+	MarginTop float32
+
+	button *iwidget.ContextMenuButton
+	title  *widget.Label
+	icon   *canvas.Image
+}
+
+func NewPageHeader(s string) *PageHeader {
+	return newPageHeaderWithContextButton(s, nil)
+}
+
+func NewPageHeaderExtended(s string, buttonIcon fyne.Resource) *PageHeader {
+	return newPageHeaderWithContextButton(s, buttonIcon)
+}
+
+func newPageHeaderWithContextButton(s string, buttonIcon fyne.Resource) *PageHeader {
+	title := widget.NewLabel(s)
+	title.SizeName = theme.SizeNameSubHeadingText
+	var button *iwidget.ContextMenuButton
+	icon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
+	if buttonIcon == nil {
+		button = iwidget.NewContextMenuButton("", nil)
+		button.Hide()
+		icon.Hide()
+	} else {
+		button = iwidget.NewContextMenuButtonWithIcon("", buttonIcon, fyne.NewMenu(""))
+	}
+	w := &PageHeader{
+		title:  title,
+		button: button,
+		icon:   icon,
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *PageHeader) SetTitle(s string) {
+	w.title.SetText(s)
+}
+
+func (w *PageHeader) SetIcon(r fyne.Resource) {
+	w.icon.Resource = r
+	w.icon.Refresh()
+}
+
+func (w *PageHeader) SetMenuItems(it []*fyne.MenuItem) {
+	if w.button.Hidden {
+		return // does not have a menu button button
+	}
+	w.button.SetMenuItems(it)
+}
+
+func (w *PageHeader) CreateRenderer() fyne.WidgetRenderer {
+	p := theme.Padding()
+	spacer := canvas.NewRectangle(color.Transparent)
+	spacer.SetMinSize(w.button.MinSize())
+	c := container.NewHBox(
+		container.New(layout.NewCustomPaddedLayout(0, 0, p, 0), w.icon),
+		w.title,
+		container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), container.NewStack(spacer, w.button)),
 	)
 	return widget.NewSimpleRenderer(c)
 }

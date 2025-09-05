@@ -32,7 +32,6 @@ const (
 type NavDrawer struct {
 	widget.DisableableWidget
 
-	Header       *NavDrawerHeader
 	MinWidth     float32        // minimum width of the navigation area
 	OnSelectItem func(*NavItem) // called when an item is selected
 
@@ -42,19 +41,11 @@ type NavDrawer struct {
 	selected int
 }
 
-func NewNavDrawer(header *NavDrawerHeader, items ...*NavItem) *NavDrawer {
-	label := widget.NewLabel("")
-	label.SizeName = theme.SizeNameSubHeadingText
-	if header == nil {
-		header = NewNavDrawerHeader("")
-		header.Hide()
-	}
+func NewNavDrawer(items ...*NavItem) *NavDrawer {
 	w := &NavDrawer{
 		pages:    container.NewStack(),
 		selected: indexUndefined,
-		Header:   header,
 	}
-	label.Hide()
 	w.ExtendBaseWidget(w)
 	w.list = w.makeList()
 	for _, p := range items {
@@ -296,10 +287,6 @@ func (w *NavDrawer) SetItemText(item *NavItem, text string) {
 	w.list.RefreshItem(id)
 }
 
-// func (w *NavDrawer) Refresh() {
-// 	w.list.Refresh()
-// }
-
 func (w *NavDrawer) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	spacer := canvas.NewRectangle(color.Transparent)
@@ -308,16 +295,10 @@ func (w *NavDrawer) CreateRenderer() fyne.WidgetRenderer {
 		container.NewBorder(
 			nil,
 			nil,
-			container.NewHBox(
-				container.NewBorder(
-					w.Header,
-					nil,
-					nil,
-					nil,
-					container.NewStack(spacer, w.list),
-				),
-				widget.NewSeparator(),
-			),
+			container.New(layout.NewCustomPaddedLayout(p, 0, 0, 0),
+				container.NewHBox(
+					container.NewStack(spacer, w.list), widget.NewSeparator(),
+				)),
 			nil,
 			w.pages,
 		))
@@ -398,65 +379,4 @@ func (w *hooverThief) MouseMoved(e *desktop.MouseEvent) {}
 
 func (w *hooverThief) MouseOut() {
 	w.hovered = false
-}
-
-type NavDrawerHeader struct {
-	widget.BaseWidget
-
-	MarginTop float32
-
-	button *ContextMenuButton
-	title  *widget.Label
-}
-
-func NewNavDrawerHeader(s string) *NavDrawerHeader {
-	return newNavDrawerHeader(s, nil)
-}
-
-func NewNavDrawerHeaderWithContextButton(s string, r fyne.Resource) *NavDrawerHeader {
-	return newNavDrawerHeader(s, r)
-}
-
-func newNavDrawerHeader(s string, icon fyne.Resource) *NavDrawerHeader {
-	title := widget.NewLabel(s)
-	title.SizeName = theme.SizeNameSubHeadingText
-	title.Truncation = fyne.TextTruncateEllipsis
-	var button *ContextMenuButton
-	if icon == nil {
-		button = NewContextMenuButton("", nil)
-		button.Hide()
-	} else {
-		button = NewContextMenuButtonWithIcon("", icon, fyne.NewMenu(""))
-	}
-	w := &NavDrawerHeader{
-		title:  title,
-		button: button,
-	}
-	w.ExtendBaseWidget(w)
-	return w
-}
-
-func (w *NavDrawerHeader) SetTitle(s string) {
-	w.title.SetText(s)
-}
-
-func (w *NavDrawerHeader) SetMenuItems(it []*fyne.MenuItem) {
-	if w.button.Hidden {
-		return // does not have a menu button button
-	}
-	w.button.SetMenuItems(it)
-}
-
-func (w *NavDrawerHeader) CreateRenderer() fyne.WidgetRenderer {
-	p := theme.Padding()
-	spacer := canvas.NewRectangle(color.Transparent)
-	spacer.SetMinSize(fyne.NewSize(1, w.MarginTop))
-	c := container.NewBorder(
-		nil,
-		nil,
-		nil,
-		container.New(layout.NewCustomPaddedLayout(2*p, 0, 0, 0), w.button),
-		container.NewVBox(spacer, w.title),
-	)
-	return widget.NewSimpleRenderer(c)
 }
