@@ -18,6 +18,7 @@ type TappableIcon struct {
 
 	hovered  bool
 	disabled bool
+	menu     *fyne.Menu
 	resource fyne.Resource
 }
 
@@ -28,11 +29,12 @@ var _ desktop.Hoverable = (*TappableIcon)(nil)
 // that shows a pop up menu when tapped.
 func NewTappableIconWithMenu(res fyne.Resource, menu *fyne.Menu) *TappableIcon {
 	w := NewTappableIcon(res, nil)
+	w.menu = menu
 	w.OnTapped = func() {
-		if len(menu.Items) == 0 {
+		if len(w.menu.Items) == 0 {
 			return
 		}
-		m := widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(w))
+		m := widget.NewPopUpMenu(w.menu, fyne.CurrentApp().Driver().CanvasForObject(w))
 		m.ShowAtRelativePosition(
 			fyne.NewPos(
 				-m.Size().Width+w.Size().Width,
@@ -67,6 +69,15 @@ func (w *TappableIcon) Enable() {
 	w.disabled = false
 	w.SetResource(w.resource)
 	w.Refresh()
+}
+
+// SetMenuItems replaces the menu items.
+func (w *TappableIcon) SetMenuItems(menuItems []*fyne.MenuItem) {
+	if w.menu == nil {
+		return
+	}
+	w.menu.Items = menuItems
+	w.menu.Refresh()
 }
 
 func (w *TappableIcon) Tapped(_ *fyne.PointEvent) {
