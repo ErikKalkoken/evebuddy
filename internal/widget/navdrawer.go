@@ -403,6 +403,8 @@ func (w *hooverThief) MouseOut() {
 type NavDrawerHeader struct {
 	widget.BaseWidget
 
+	MarginTop float32
+
 	button *ContextMenuButton
 	title  *widget.Label
 }
@@ -447,12 +449,14 @@ func (w *NavDrawerHeader) SetMenuItems(it []*fyne.MenuItem) {
 
 func (w *NavDrawerHeader) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
+	spacer := canvas.NewRectangle(color.Transparent)
+	spacer.SetMinSize(fyne.NewSize(1, w.MarginTop))
 	c := container.NewBorder(
 		nil,
 		nil,
 		nil,
 		container.New(layout.NewCustomPaddedLayout(2*p, 0, 0, 0), w.button),
-		container.NewVBox(layout.NewSpacer(), w.title, layout.NewSpacer()),
+		container.NewVBox(spacer, w.title),
 	)
 	return widget.NewSimpleRenderer(c)
 }

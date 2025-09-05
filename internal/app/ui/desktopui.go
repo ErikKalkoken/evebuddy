@@ -3,12 +3,14 @@ package ui
 import (
 	"context"
 	"fmt"
+	"image/color"
 	"log/slog"
 	"path/filepath"
 	"slices"
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
@@ -29,6 +31,7 @@ import (
 
 const (
 	minNavCharacterWidth = 250
+	pageTitleMarginTop   = 2
 )
 
 type shortcutDef struct {
@@ -73,8 +76,6 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 
 	u.defineShortcuts()
-	characterPageBars := NewPageBarCollectionForCharacters(u)
-	corporationPageBars := NewPageBarCollectionForCorporations(u)
 
 	formatBadge := func(v, mx int) string {
 		if v == 0 {
@@ -87,36 +88,18 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 
 	// Home
-	makePageWithTitle := func(title string, content fyne.CanvasObject, buttons ...*widget.Button) fyne.CanvasObject {
-		l := widget.NewLabel(title)
-		l.SizeName = theme.SizeNameSubHeadingText
-		c := container.NewHBox(l)
-		if len(buttons) > 0 {
-			c.Add(layout.NewSpacer())
-			for _, b := range buttons {
-				c.Add(b)
-			}
-		}
-		return container.NewBorder(
-			c,
-			nil,
-			nil,
-			nil,
-			content,
-		)
-	}
 
 	var homeNav *iwidget.NavDrawer
 	overview := iwidget.NewNavPage(
 		"Character Overview",
 		theme.NewThemedResource(icons.PortraitSvg),
-		makePageWithTitle("Character Overview", u.characterOverview),
+		newContentPage("Character Overview", u.characterOverview),
 	)
 
 	wealth := iwidget.NewNavPage(
 		"Wealth",
 		theme.NewThemedResource(icons.GoldSvg),
-		makePageWithTitle("Wealth", u.wealth),
+		newContentPage("Wealth", u.wealth),
 	)
 	u.wealth.onUpdate = func(wallet, assets float64) {
 		fyne.Do(func() {
@@ -129,7 +112,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	allAssets := iwidget.NewNavPage(
 		assetsTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
-		makePageWithTitle(assetsTitle, u.assets),
+		newContentPage(assetsTitle, u.assets),
 	)
 	u.assets.onUpdate = func(total string) {
 		fyne.Do(func() {
@@ -140,7 +123,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	contracts := iwidget.NewNavPage(
 		"Contracts",
 		theme.NewThemedResource(icons.FileSignSvg),
-		makePageWithTitle("Contracts", u.contracts),
+		newContentPage("Contracts", u.contracts),
 	)
 	u.contracts.OnUpdate = func(count int) {
 		var s string
@@ -155,7 +138,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	overviewColonies := iwidget.NewNavPage(
 		"Colonies",
 		theme.NewThemedResource(icons.EarthSvg),
-		makePageWithTitle("Colonies", u.colonies),
+		newContentPage("Colonies", u.colonies),
 	)
 	u.colonies.OnUpdate = func(_, expired int) {
 		var s string
@@ -170,7 +153,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	industry := iwidget.NewNavPage(
 		"Industry",
 		theme.NewThemedResource(icons.FactorySvg),
-		makePageWithTitle("Industry", container.NewAppTabs(
+		newContentPage("Industry", container.NewAppTabs(
 			container.NewTabItem("Jobs", u.industryJobs),
 			container.NewTabItem("Slots", container.NewAppTabs(
 				container.NewTabItem("Manufacturing", u.slotsManufacturing),
@@ -192,20 +175,22 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	marketOrders := iwidget.NewNavPage(
 		"Market Orders",
 		theme.NewThemedResource(icons.ChartAreasplineSvg),
-		makePageWithTitle("Market Orders", container.NewAppTabs(
+		newContentPage("Market Orders", container.NewAppTabs(
 			container.NewTabItem("Buy", u.marketOrdersBuy),
 			container.NewTabItem("Sell", u.marketOrdersSell),
 		)),
 	)
 
+	headerHome := iwidget.NewNavDrawerHeader("Home")
+	headerHome.MarginTop = pageTitleMarginTop
 	homeNav = iwidget.NewNavDrawer(
-		iwidget.NewNavDrawerHeader("Home"),
+		headerHome,
 		overview,
 		allAssets,
 		iwidget.NewNavPage(
 			"Clones",
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
-			makePageWithTitle("Clones", container.NewAppTabs(
+			newContentPage("Clones", container.NewAppTabs(
 				container.NewTabItem("Augmentations", u.augmentations),
 				container.NewTabItem("Jump Clones", u.clones),
 			)),
@@ -217,12 +202,12 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		iwidget.NewNavPage(
 			"Character Locations",
 			theme.NewThemedResource(icons.MapMarkerSvg),
-			makePageWithTitle("Character Locations", u.characterLocations),
+			newContentPage("Character Locations", u.characterLocations),
 		),
 		iwidget.NewNavPage(
 			"Training",
 			theme.NewThemedResource(icons.SchoolSvg),
-			makePageWithTitle("Training", u.training),
+			newContentPage("Training", u.training),
 		),
 		wealth,
 	)
@@ -239,7 +224,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	characterMailNav := iwidget.NewNavPage(
 		"Mail",
 		theme.MailComposeIcon(),
-		NewPageBarPage(characterPageBars, "Mail", u.characterMails),
+		newContentPage("Mail", u.characterMails),
 	)
 	u.characterMails.onUpdate = func(count int) {
 		fyne.Do(func() {
@@ -251,7 +236,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	characterCommunicationsNav := iwidget.NewNavPage(
 		"Communications",
 		theme.NewThemedResource(icons.MessageSvg),
-		NewPageBarPage(characterPageBars, "Communications", u.characterCommunications),
+		newContentPage("Communications", u.characterCommunications),
 	)
 	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
 		var s string
@@ -268,8 +253,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	characterSkillsNav := iwidget.NewNavPage(
 		"Skills",
 		theme.NewThemedResource(icons.SchoolSvg),
-		NewPageBarPage(
-			characterPageBars,
+		newContentPage(
 			"Skills",
 			container.NewAppTabs(
 				container.NewTabItem("Training Queue", u.characterSkillQueue),
@@ -287,19 +271,21 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 
 	characterWalletNav := iwidget.NewNavPage("Wallet",
 		theme.NewThemedResource(icons.CashSvg),
-		NewPageBarPage(characterPageBars, "Wallet", u.characterWallet),
+		newContentPage("Wallet", u.characterWallet),
 	)
 	characterAssetsNav := iwidget.NewNavPage(
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
-		NewPageBarPage(characterPageBars, "Assets", u.characterAsset),
+		newContentPage("Assets", u.characterAsset),
 	)
+	characterHeader := iwidget.NewNavDrawerHeaderWithContextButton("Characters", theme.AccountIcon())
+	characterHeader.MarginTop = pageTitleMarginTop
 	characterNav = iwidget.NewNavDrawer(
-		iwidget.NewNavDrawerHeaderWithContextButton("Characters", theme.AccountIcon()),
+		characterHeader,
 		iwidget.NewNavPage(
 			"Character Sheet",
 			theme.NewThemedResource(icons.PortraitSvg),
-			NewPageBarPage(characterPageBars, "Character Sheet", container.NewAppTabs(
+			newContentPage("Character Sheet", container.NewAppTabs(
 				container.NewTabItem("Character", u.characterSheet),
 				container.NewTabItem("Corporation", u.characterCorporation),
 				container.NewTabItem("Augmentations", u.characterAugmentations),
@@ -330,14 +316,10 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	walletsNav := iwidget.NewNavSectionLabel("Wallets")
 	corpWalletItems := []*iwidget.NavItem{walletsNav}
 	corporationWalletNavs := make(map[app.Division]*iwidget.NavItem)
-	corporationWalletPages := make(map[app.Division]*PageBarPage)
+	corporationWalletPages := make(map[app.Division]*contentPage)
 	for _, d := range app.Divisions {
 		name := d.DefaultWalletName()
-		corporationWalletPages[d] = NewPageBarPage(
-			corporationPageBars,
-			name,
-			u.corporationWallets[d],
-		)
+		corporationWalletPages[d] = newContentPage(name, u.corporationWallets[d])
 		corporationWalletNavs[d] = iwidget.NewNavPage(
 			name,
 			theme.NewThemedResource(icons.CashSvg),
@@ -349,16 +331,18 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	corpIndustryItem := iwidget.NewNavPage(
 		"Industry",
 		theme.NewThemedResource(icons.FactorySvg),
-		NewPageBarPage(corporationPageBars, "Industry", u.corporationIndyJobs),
+		newContentPage("Industry", u.corporationIndyJobs),
 	)
+	corpHeader := iwidget.NewNavDrawerHeaderWithContextButton("Corporations", theme.NewThemedResource(icons.StarCircleOutlineSvg))
+	corpHeader.MarginTop = pageTitleMarginTop
 	corporationNav := iwidget.NewNavDrawer(
-		iwidget.NewNavDrawerHeaderWithContextButton("Corporations", theme.NewThemedResource(icons.StarCircleOutlineSvg)),
+		corpHeader,
 		slices.Concat(
 			[]*iwidget.NavItem{
 				iwidget.NewNavPage(
 					"Corporation Sheet",
 					theme.NewThemedResource(icons.StarCircleOutlineSvg),
-					NewPageBarPage(corporationPageBars, "Corporation Sheet", container.NewAppTabs(
+					newContentPage("Corporation Sheet", container.NewAppTabs(
 						container.NewTabItem("Corporation", u.corporationSheet),
 						container.NewTabItem("Members", u.corporationMember),
 					)),
@@ -770,4 +754,38 @@ func makePathEntry(cb fyne.Clipboard, path string) *fyne.Container {
 		widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
 			cb.SetContent(p)
 		}))
+}
+
+type contentPage struct {
+	widget.BaseWidget
+
+	title   *widget.Label
+	content fyne.CanvasObject
+}
+
+func newContentPage(title string, content fyne.CanvasObject) *contentPage {
+	l := widget.NewLabel(title)
+	l.SizeName = theme.SizeNameSubHeadingText
+	w := &contentPage{
+		content: content,
+		title:   l,
+	}
+	return w
+}
+
+func (w *contentPage) SetTitle(s string) {
+	w.title.SetText(s)
+}
+
+func (w *contentPage) CreateRenderer() fyne.WidgetRenderer {
+	spacer := canvas.NewRectangle(color.Transparent)
+	spacer.SetMinSize(fyne.NewSize(1, pageTitleMarginTop))
+	c := container.NewBorder(
+		container.NewVBox(spacer, w.title),
+		nil,
+		nil,
+		nil,
+		w.content,
+	)
+	return widget.NewSimpleRenderer(c)
 }
