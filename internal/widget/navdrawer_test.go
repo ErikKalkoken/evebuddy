@@ -16,6 +16,7 @@ func TestNavDrawer_CanCreateBasic(t *testing.T) {
 	test.ApplyTheme(t, test.Theme())
 
 	drawer := iwidget.NewNavDrawer(
+		nil,
 		iwidget.NewNavPage("First", theme.HomeIcon(), widget.NewLabel("PLACEHOLDER 1")),
 	)
 	drawer.MinWidth = 200
@@ -31,6 +32,7 @@ func TestNavDrawer_CanCreateFull(t *testing.T) {
 	test.ApplyTheme(t, test.Theme())
 
 	drawer := iwidget.NewNavDrawer(
+		nil,
 		iwidget.NewNavPage("First", theme.HomeIcon(), widget.NewLabel("PLACEHOLDER 1")),
 		iwidget.NewNavPage("Second", theme.HomeIcon(), widget.NewLabel("PLACEHOLDER 2")),
 		iwidget.NewNavSeparator(),
@@ -38,7 +40,6 @@ func TestNavDrawer_CanCreateFull(t *testing.T) {
 		iwidget.NewNavSectionLabel("Section"),
 		iwidget.NewNavPage("Forth", theme.HomeIcon(), widget.NewLabel("PLACEHOLDER 4")),
 	)
-	drawer.Title = "Title"
 	drawer.MinWidth = 200
 	w := test.NewWindow(drawer)
 	defer w.Close()

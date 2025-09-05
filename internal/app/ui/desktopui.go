@@ -199,6 +199,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	)
 
 	homeNav = iwidget.NewNavDrawer(
+		iwidget.NewNavDrawerHeader("Home"),
 		overview,
 		allAssets,
 		iwidget.NewNavPage(
@@ -225,7 +226,6 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		),
 		wealth,
 	)
-	homeNav.Title = "Home"
 	homeNav.OnSelectItem = func(it *iwidget.NavItem) {
 		if it == allAssets {
 			u.assets.focus()
@@ -295,6 +295,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		NewPageBarPage(characterPageBars, "Assets", u.characterAsset),
 	)
 	characterNav = iwidget.NewNavDrawer(
+		iwidget.NewNavDrawerHeaderWithContextButton("Characters", theme.AccountIcon()),
 		iwidget.NewNavPage(
 			"Character Sheet",
 			theme.NewThemedResource(icons.PortraitSvg),
@@ -313,7 +314,6 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		characterSkillsNav,
 		characterWalletNav,
 	)
-	characterNav.Title = "Characters"
 	characterNav.MinWidth = minNavCharacterWidth
 	u.characterWallet.onUpdate = func(balance string) {
 		fyne.Do(func() {
@@ -352,6 +352,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		NewPageBarPage(corporationPageBars, "Industry", u.corporationIndyJobs),
 	)
 	corporationNav := iwidget.NewNavDrawer(
+		iwidget.NewNavDrawerHeaderWithContextButton("Corporations", theme.NewThemedResource(icons.StarCircleOutlineSvg)),
 		slices.Concat(
 			[]*iwidget.NavItem{
 				iwidget.NewNavPage(
@@ -367,7 +368,6 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			corpWalletItems,
 		)...,
 	)
-	corporationNav.Title = "Corporations"
 	corporationNav.MinWidth = minNavCharacterWidth
 
 	for _, d := range app.Divisions {
@@ -452,7 +452,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	u.onSetCharacter = func(id int32) {
 		name := u.scs.CharacterName(id)
 		fyne.Do(func() {
-			characterNav.SetTitle(name)
+			characterNav.Header.SetTitle(name)
 			tabs.Refresh()
 		})
 	}
@@ -484,7 +484,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	u.onSetCorporation = func(id int32) {
 		name := u.scs.CorporationName(id)
 		fyne.Do(func() {
-			corporationNav.SetTitle(name)
+			corporationNav.Header.SetTitle(name)
 			tabs.Refresh()
 		})
 		togglePermittedSections()
@@ -525,8 +525,12 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 	u.onUpdateStatus = func() {
 		go statusBar.update()
-		go characterPageBars.update()
-		go corporationPageBars.update()
+		go characterNav.Header.SetMenuItems(u.makeCharacterSwitchMenu(func() {
+			characterNav.Header.Refresh()
+		}))
+		go corporationNav.Header.SetMenuItems(u.makeCorporationSwitchMenu(func() {
+			corporationNav.Header.Refresh()
+		}))
 		go togglePermittedSections()
 		go func() {
 			cc, err := u.ListCorporationsForSelection()
