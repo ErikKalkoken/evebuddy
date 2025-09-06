@@ -439,13 +439,13 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 	u.hideMailIndicator() // init system tray icon
 
-	u.onSetCharacter = func(id int32) {
-		name := u.scs.CharacterName(id)
+	u.onSetCharacter = func(c *app.Character) {
+		s := fmt.Sprintf("%s (%s)", c.EveCharacter.Name, c.EveCharacter.Corporation.Name)
 		fyne.Do(func() {
-			characterHeader.SetTitle(name)
+			characterHeader.SetTitle(s)
 		})
 		go func() {
-			u.updateCharacterAvatar(id, func(r fyne.Resource) {
+			u.updateCharacterAvatar(c.ID, func(r fyne.Resource) {
 				fyne.Do(func() {
 					characterHeader.SetIcon(r)
 				})
@@ -477,19 +477,22 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		})
 	}
 
-	u.onSetCorporation = func(id int32) {
-		name := u.scs.CorporationName(id)
+	u.onSetCorporation = func(c *app.Corporation) {
+		s := c.EveCorporation.Name
+		if c.EveCorporation.HasAlliance() {
+			s += fmt.Sprintf(" (%s)", c.EveCorporation.Alliance.Name)
+		}
 		fyne.Do(func() {
-			corporationHeader.SetTitle(name)
+			corporationHeader.SetTitle(s)
 		})
 		go func() {
-			u.updateCorporationAvatar(id, func(r fyne.Resource) {
+			u.updateCorporationAvatar(c.ID, func(r fyne.Resource) {
 				fyne.Do(func() {
 					corporationHeader.SetIcon(r)
 				})
 			})
 		}()
-		togglePermittedSections()
+		go togglePermittedSections()
 	}
 
 	u.onUpdateCharacter = func(character *app.Character) {
@@ -806,6 +809,8 @@ func (w *contentPage) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
+// PageHeader is a widget for rendering the header of a page.
+// Headers contain a title and can also have a leading icon and a trailing button.
 type PageHeader struct {
 	widget.BaseWidget
 
