@@ -254,7 +254,7 @@ func (a *statusBar) setEveStatus(status eveStatus, title, errorMessage string) {
 	case eveStatusUnknown:
 		r2 = theme.NewDisabledResource(r1)
 	}
-	a.eveStatus.SetResource(r2)
+	a.eveStatus.SetIcon(r2)
 	a.eveStatus.SetText(title)
 }
 
@@ -288,38 +288,70 @@ func (a *statusBar) HideUpdating() {
 type statusBarItem struct {
 	ttwidget.ToolTipWidget
 
-	icon  *widget.Icon
-	label *widget.Label
-
 	// The function that is called when the label is tapped.
 	OnTapped func()
 
+	bg      *canvas.Rectangle
 	hovered bool
+	icon    *widget.Icon
+	label   *widget.Label
 }
 
 var _ fyne.Tappable = (*statusBarItem)(nil)
 var _ desktop.Hoverable = (*statusBarItem)(nil)
 
 func newStatusBarItem(res fyne.Resource, text string, tapped func()) *statusBarItem {
-	w := &statusBarItem{OnTapped: tapped, label: widget.NewLabel(text)}
+	icon := widget.NewIcon(icons.BlankSvg)
 	if res != nil {
-		w.icon = widget.NewIcon(res)
+		icon.SetResource(res)
+	} else {
+		icon.Hide()
+	}
+	bg := canvas.NewRectangle(theme.Color(theme.ColorNameHover))
+	bg.Hide()
+	w := &statusBarItem{
+		OnTapped: tapped,
+		label:    widget.NewLabel(text),
+		icon:     icon,
+		bg:       bg,
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
-// SetResource updates the icon's resource
-func (w *statusBarItem) SetResource(icon fyne.Resource) {
+func (w *statusBarItem) CreateRenderer() fyne.WidgetRenderer {
+	p := theme.Padding()
+	c := container.NewStack(
+		w.bg,
+		container.New(layout.NewCustomPaddedLayout(0, 0, p, p),
+			container.New(layout.NewCustomPaddedHBoxLayout(0),
+				w.icon,
+				w.label,
+			)),
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *statusBarItem) Refresh() {
+	th := w.Theme()
+	v := fyne.CurrentApp().Settings().ThemeVariant()
+	w.bg.FillColor = th.Color(theme.ColorNameHover, v)
+	w.bg.Refresh()
+	w.icon.Refresh()
+	w.label.Refresh()
+}
+
+// SetIcon updates the icon.
+func (w *statusBarItem) SetIcon(icon fyne.Resource) {
 	w.icon.SetResource(icon)
 }
 
-// SetText updates the label's text
+// SetText updates the label's text.
 func (w *statusBarItem) SetText(text string) {
 	w.SetTextAndImportance(text, widget.MediumImportance)
 }
 
-// SetText updates the label's text and importance
+// SetText updates the label's text and importance.
 func (w *statusBarItem) SetTextAndImportance(text string, importance widget.Importance) {
 	w.label.Text = text
 	w.label.Importance = importance
@@ -335,7 +367,6 @@ func (w *statusBarItem) Tapped(_ *fyne.PointEvent) {
 func (w *statusBarItem) TappedSecondary(_ *fyne.PointEvent) {
 }
 
-// Cursor returns the cursor type of this widget
 func (w *statusBarItem) Cursor() desktop.Cursor {
 	if w.hovered {
 		return desktop.PointerCursor
@@ -343,30 +374,20 @@ func (w *statusBarItem) Cursor() desktop.Cursor {
 	return desktop.DefaultCursor
 }
 
-// MouseIn is a hook that is called if the mouse pointer enters the element.
 func (w *statusBarItem) MouseIn(e *desktop.MouseEvent) {
 	w.ToolTipWidget.MouseIn(e)
 	w.hovered = true
+	w.bg.Show()
 }
 
 func (w *statusBarItem) MouseMoved(e *desktop.MouseEvent) {
 	w.ToolTipWidget.MouseMoved(e)
 }
 
-// MouseOut is a hook that is called if the mouse pointer leaves the element.
 func (w *statusBarItem) MouseOut() {
 	w.ToolTipWidget.MouseOut()
 	w.hovered = false
-}
-
-func (w *statusBarItem) CreateRenderer() fyne.WidgetRenderer {
-	p := theme.Padding()
-	c := container.New(layout.NewCustomPaddedHBoxLayout(0))
-	if w.icon != nil {
-		c.Add(w.icon)
-	}
-	c.Add(w.label)
-	return widget.NewSimpleRenderer(container.New(layout.NewCustomPaddedLayout(0, 0, p, p), c))
+	w.bg.Hide()
 }
 
 type updateHint struct {

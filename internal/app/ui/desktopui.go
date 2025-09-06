@@ -882,6 +882,9 @@ func (w *PageHeader) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (w *PageHeader) SetIcon(r fyne.Resource) {
+	if r == nil {
+		return
+	}
 	w.icon.Resource = r
 	w.icon.Refresh()
 }
