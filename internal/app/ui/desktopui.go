@@ -306,6 +306,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	}
 
 	// Corporation
+	var corporationNav *iwidget.NavDrawer
 	walletsNav := iwidget.NewNavSectionLabel("Wallets")
 	corpWalletItems := []*iwidget.NavItem{walletsNav}
 	corporationWalletNavs := make(map[app.Division]*iwidget.NavItem)
@@ -326,6 +327,15 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		theme.NewThemedResource(icons.FactorySvg),
 		newContentPage("Industry", u.corporationIndyJobs),
 	)
+	u.corporationIndyJobs.OnUpdate = func(count int) {
+		var badge string
+		if count > 0 {
+			badge = ihumanize.Comma(count)
+		}
+		fyne.Do(func() {
+			corporationNav.SetItemBadge(corpIndustryItem, badge)
+		})
+	}
 
 	corpSheetItem := iwidget.NewNavPage(
 		"Corporation Sheet",
@@ -335,7 +345,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			container.NewTabItem("Members", u.corporationMember),
 		)),
 	)
-	corporationNav := iwidget.NewNavDrawer(slices.Concat(
+	corporationNav = iwidget.NewNavDrawer(slices.Concat(
 		[]*iwidget.NavItem{corpSheetItem, corpIndustryItem},
 		corpWalletItems,
 	)...)
