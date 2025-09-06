@@ -103,8 +103,8 @@ type baseUI struct {
 	onAppStopped                    func()
 	onAppTerminated                 func()
 	onRefreshCross                  func()
-	onSetCharacter                  func(int32)
-	onSetCorporation                func(int32)
+	onSetCharacter                  func(*app.Character)
+	onSetCorporation                func(*app.Corporation)
 	onShowAndRun                    func()
 	onUpdateCharacter               func(*app.Character)
 	onUpdateCorporation             func(*app.Corporation)
@@ -624,7 +624,7 @@ func (u *baseUI) setCharacter(c *app.Character) {
 	u.updateCharacter()
 	u.updateStatus()
 	if u.onSetCharacter != nil {
-		u.onSetCharacter(c.ID)
+		u.onSetCharacter(c)
 	}
 }
 
@@ -757,7 +757,7 @@ func (u *baseUI) setCorporation(c *app.Corporation) {
 	u.updateCorporation()
 	u.updateStatus()
 	if u.onSetCorporation != nil {
-		u.onSetCorporation(c.ID)
+		u.onSetCorporation(c)
 	}
 }
 
@@ -925,7 +925,7 @@ func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 			}
 		})
 		if c.ID == currentID {
-			it.Icon = theme.AccountIcon()
+			it.Icon = theme.NewThemedResource(icons.AccountCircleSvg)
 			it.Disabled = true
 		} else {
 			it.Icon = fallbackIcon
@@ -983,7 +983,7 @@ func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
 			}
 		})
 		if c.ID == currentID {
-			it.Icon = theme.AccountIcon()
+			it.Icon = theme.NewThemedResource(icons.StarCircleOutlineSvg)
 			it.Disabled = true
 		} else {
 			it.Icon = fallbackIcon

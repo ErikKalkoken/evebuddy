@@ -18,7 +18,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
-func TestUI_StartEmpty(t *testing.T) {
+func TestDesktopUI_StartEmpty(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	httpmock.RegisterNoResponder(httpmock.NewNotFoundResponder(t.Fatal)) // fails on any HTTP request
@@ -39,7 +39,7 @@ func TestUI_StartEmpty(t *testing.T) {
 	assert.Equal(t, 0, httpmock.GetTotalCallCount())
 }
 
-func TestUI_StartWithCharacter(t *testing.T) {
+func TestDesktopUI_StartWithCharacter(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	httpmock.RegisterNoResponder(httpmock.NewNotFoundResponder(t.Fatal)) // fails on any HTTP request
@@ -76,7 +76,7 @@ func TestUI_StartWithCharacter(t *testing.T) {
 	assert.Equal(t, 0, httpmock.GetTotalCallCount())
 }
 
-func TestUI_CanUpdateAllEmpty(t *testing.T) {
+func TestDesktopUI_CanUpdateAllEmpty(t *testing.T) {
 	if isCI() {
 		t.Skip("This test fails on CI with: oncurrent map read and map write")
 	}
@@ -97,7 +97,7 @@ func TestUI_CanUpdateAllEmpty(t *testing.T) {
 
 // TODO: Extend test to cover all tabs with data
 
-func TestUI_CanUpdateAllWithData(t *testing.T) {
+func TestDesktopUI_CanUpdateAllWithData(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	test.ApplyTheme(t, test.Theme())

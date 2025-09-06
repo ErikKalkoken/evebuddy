@@ -34,24 +34,18 @@ type NavDrawer struct {
 
 	MinWidth     float32        // minimum width of the navigation area
 	OnSelectItem func(*NavItem) // called when an item is selected
-	Title        string         // Text of a title. Title will not be rendered if left blank.
 
 	items    []*NavItem
 	list     *widget.List
 	pages    *fyne.Container
 	selected int
-	title    *widget.Label
 }
 
 func NewNavDrawer(items ...*NavItem) *NavDrawer {
-	label := widget.NewLabel("")
-	label.SizeName = theme.SizeNameSubHeadingText
 	w := &NavDrawer{
 		pages:    container.NewStack(),
 		selected: indexUndefined,
-		title:    label,
 	}
-	label.Hide()
 	w.ExtendBaseWidget(w)
 	w.list = w.makeList()
 	for _, p := range items {
@@ -95,7 +89,7 @@ func (w *NavDrawer) makeList() *widget.List {
 				container.New(layout.NewCustomPaddedLayout(0, 0, 2*p, 2*p),
 					widget.NewSeparator(),
 				),
-				newhooverThief(),
+				newHooverThief(),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -275,11 +269,6 @@ func (w *NavDrawer) SelectedIndex() int {
 	return w.selected
 }
 
-func (w *NavDrawer) SetTitle(text string) {
-	w.Title = text
-	w.Refresh()
-}
-
 func (w *NavDrawer) SetItemBadge(item *NavItem, text string) {
 	id, ok := w.findItem(item)
 	if !ok {
@@ -298,22 +287,7 @@ func (w *NavDrawer) SetItemText(item *NavItem, text string) {
 	w.list.RefreshItem(id)
 }
 
-func (w *NavDrawer) Refresh() {
-	w.updateTitle()
-	w.list.Refresh()
-}
-
-func (w *NavDrawer) updateTitle() {
-	if w.Title != "" {
-		w.title.SetText(w.Title)
-		w.title.Show()
-	} else {
-		w.title.Hide()
-	}
-}
-
 func (w *NavDrawer) CreateRenderer() fyne.WidgetRenderer {
-	w.updateTitle()
 	p := theme.Padding()
 	spacer := canvas.NewRectangle(color.Transparent)
 	spacer.SetMinSize(fyne.NewSize(w.MinWidth, 1))
@@ -322,11 +296,7 @@ func (w *NavDrawer) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			nil,
 			container.NewHBox(
-				container.NewBorder(
-					w.title,
-					nil,
-					nil,
-					nil,
+				container.New(layout.NewCustomPaddedLayout(p, 0, 0, 0),
 					container.NewStack(spacer, w.list),
 				),
 				widget.NewSeparator(),
@@ -391,7 +361,7 @@ type hooverThief struct {
 
 var _ desktop.Hoverable = (*hooverThief)(nil)
 
-func newhooverThief() *hooverThief {
+func newHooverThief() *hooverThief {
 	w := &hooverThief{}
 	w.ExtendBaseWidget(w)
 	return w

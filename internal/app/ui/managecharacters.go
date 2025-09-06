@@ -184,16 +184,7 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 		})
 
 	l.OnSelected = func(id widget.ListItemID) {
-		if id >= len(a.characters) {
-			return
-		}
-		c := a.characters[id]
-		if err := a.mcw.u.loadCharacter(c.characterID); err != nil {
-			slog.Error("load current character", "char", c, "err", err)
-			return
-		}
-		a.mcw.u.updateStatus()
-		a.mcw.w.Close()
+		l.UnselectAll()
 	}
 	return l
 }

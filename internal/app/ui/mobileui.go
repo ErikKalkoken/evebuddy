@@ -475,8 +475,8 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			}
 		})
 	}
-	u.onSetCharacter = func(id int32) {
-		go u.updateCharacterAvatar(id, func(r fyne.Resource) {
+	u.onSetCharacter = func(c *app.Character) {
+		go u.updateCharacterAvatar(c.ID, func(r fyne.Resource) {
 			fyne.Do(func() {
 				characterSelector.SetIcon(r)
 			})
@@ -484,20 +484,19 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		u.characterMails.resetCurrentFolder()
 		u.characterCommunications.resetCurrentFolder()
 		fyne.Do(func() {
-			characterPage.SetTitle(u.scs.CharacterName(id))
+			characterPage.SetTitle(c.EveCharacter.Name)
 			characterNav.PopAll()
 		})
 	}
 
-	u.onSetCorporation = func(id int32) {
-		go u.updateCorporationAvatar(id, func(r fyne.Resource) {
+	u.onSetCorporation = func(c *app.Corporation) {
+		go u.updateCorporationAvatar(c.ID, func(r fyne.Resource) {
 			fyne.Do(func() {
 				corpSelector.SetIcon(r)
 			})
 		})
-		name := u.scs.CorporationName(id)
 		fyne.Do(func() {
-			corpPage.SetTitle(name)
+			corpPage.SetTitle(c.EveCorporation.Name)
 			corpNav.PopAll()
 		})
 		togglePermittedSections()

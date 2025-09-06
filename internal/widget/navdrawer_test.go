@@ -38,7 +38,6 @@ func TestNavDrawer_CanCreateFull(t *testing.T) {
 		iwidget.NewNavSectionLabel("Section"),
 		iwidget.NewNavPage("Forth", theme.HomeIcon(), widget.NewLabel("PLACEHOLDER 4")),
 	)
-	drawer.Title = "Title"
 	drawer.MinWidth = 200
 	w := test.NewWindow(drawer)
 	defer w.Close()
