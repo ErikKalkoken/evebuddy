@@ -814,10 +814,6 @@ func newContentPage(title string, content fyne.CanvasObject) *contentPage {
 	return w
 }
 
-func (w *contentPage) SetTitle(s string) {
-	w.title.SetText(s)
-}
-
 func (w *contentPage) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
 		w.title,
@@ -827,6 +823,10 @@ func (w *contentPage) CreateRenderer() fyne.WidgetRenderer {
 		w.content,
 	)
 	return widget.NewSimpleRenderer(c)
+}
+
+func (w *contentPage) SetTitle(s string) {
+	w.title.SetText(s)
 }
 
 // PageHeader is a widget for rendering the header on a page.
