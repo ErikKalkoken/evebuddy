@@ -66,9 +66,16 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		showManageCharactersWindow(u.baseUI)
 	})
 	a.characterCount.SetToolTip("Number of characters - click to manage")
-	a.updateStatus = newStatusBarItem(theme.NewThemedResource(icons.UpdateSvg), "?", func() {
-		showUpdateStatusWindow(u.baseUI)
-	})
+
+	spacer := canvas.NewRectangle(color.Transparent)
+	spacer.SetMinSize(a.updatingIndicator.MinSize())
+	a.updateStatus = newStatusBarItemWithTrailing(
+		theme.NewThemedResource(icons.UpdateSvg),
+		container.NewStack(spacer, a.updatingIndicator),
+		"?",
+		func() {
+			showUpdateStatusWindow(u.baseUI)
+		})
 	a.updateStatus.SetToolTip("Current update status - click for details")
 	a.eveClock = newStatusBarItem(
 		theme.NewThemedResource(icons.AccesstimefilledSvg),
@@ -84,20 +91,13 @@ func newStatusBar(u *DesktopUI) *statusBar {
 }
 
 func (a *statusBar) CreateRenderer() fyne.WidgetRenderer {
-	spacer := canvas.NewRectangle(color.Transparent)
-	spacer.SetMinSize(a.updatingIndicator.MinSize())
-	p := theme.Padding()
 	c := container.NewVBox(
 		widget.NewSeparator(),
 		container.NewHBox(
 			layout.NewSpacer(),
 			a.updateHint,
 			widget.NewSeparator(),
-			container.New(
-				layout.NewCustomPaddedHBoxLayout(-p),
-				a.updateStatus,
-				container.NewStack(spacer, a.updatingIndicator),
-			),
+			a.updateStatus,
 			widget.NewSeparator(),
 			a.characterCount,
 			widget.NewSeparator(),
@@ -254,7 +254,7 @@ func (a *statusBar) setEveStatus(status eveStatus, title, errorMessage string) {
 	case eveStatusUnknown:
 		r2 = theme.NewDisabledResource(r1)
 	}
-	a.eveStatus.SetIcon(r2)
+	a.eveStatus.SetLeading(r2)
 	a.eveStatus.SetText(title)
 }
 
@@ -291,29 +291,38 @@ type statusBarItem struct {
 	// The function that is called when the label is tapped.
 	OnTapped func()
 
-	bg      *canvas.Rectangle
-	hovered bool
-	icon    *widget.Icon
-	label   *widget.Label
+	bg       *canvas.Rectangle
+	label    *widget.Label
+	leading  *widget.Icon
+	trailing fyne.CanvasObject
 }
 
 var _ fyne.Tappable = (*statusBarItem)(nil)
 var _ desktop.Hoverable = (*statusBarItem)(nil)
 
-func newStatusBarItem(res fyne.Resource, text string, tapped func()) *statusBarItem {
+func newStatusBarItem(leading fyne.Resource, text string, tapped func()) *statusBarItem {
+	return newStatusBarItemWithTrailing(leading, nil, text, tapped)
+}
+
+func newStatusBarItemWithTrailing(leading fyne.Resource, trailing fyne.CanvasObject, text string, tapped func()) *statusBarItem {
 	icon := widget.NewIcon(icons.BlankSvg)
-	if res != nil {
-		icon.SetResource(res)
+	if leading != nil {
+		icon.SetResource(leading)
 	} else {
 		icon.Hide()
+	}
+	if trailing == nil {
+		trailing = canvas.NewRectangle(color.Transparent)
+		trailing.Hide()
 	}
 	bg := canvas.NewRectangle(theme.Color(theme.ColorNameHover))
 	bg.Hide()
 	w := &statusBarItem{
-		OnTapped: tapped,
-		label:    widget.NewLabel(text),
-		icon:     icon,
 		bg:       bg,
+		label:    widget.NewLabel(text),
+		leading:  icon,
+		OnTapped: tapped,
+		trailing: trailing,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -325,8 +334,9 @@ func (w *statusBarItem) CreateRenderer() fyne.WidgetRenderer {
 		w.bg,
 		container.New(layout.NewCustomPaddedLayout(0, 0, p, p),
 			container.New(layout.NewCustomPaddedHBoxLayout(0),
-				w.icon,
+				w.leading,
 				w.label,
+				w.trailing,
 			)),
 	)
 	return widget.NewSimpleRenderer(c)
@@ -337,13 +347,13 @@ func (w *statusBarItem) Refresh() {
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 	w.bg.FillColor = th.Color(theme.ColorNameHover, v)
 	w.bg.Refresh()
-	w.icon.Refresh()
+	w.leading.Refresh()
 	w.label.Refresh()
 }
 
-// SetIcon updates the icon.
-func (w *statusBarItem) SetIcon(icon fyne.Resource) {
-	w.icon.SetResource(icon)
+// SetLeading updates the leading icon.
+func (w *statusBarItem) SetLeading(icon fyne.Resource) {
+	w.leading.SetResource(icon)
 }
 
 // SetText updates the label's text.
@@ -367,17 +377,18 @@ func (w *statusBarItem) Tapped(_ *fyne.PointEvent) {
 func (w *statusBarItem) TappedSecondary(_ *fyne.PointEvent) {
 }
 
-func (w *statusBarItem) Cursor() desktop.Cursor {
-	if w.hovered {
-		return desktop.PointerCursor
-	}
-	return desktop.DefaultCursor
-}
+// func (w *statusBarItem) Cursor() desktop.Cursor {
+// 	if w.hovered {
+// 		return desktop.PointerCursor
+// 	}
+// 	return desktop.DefaultCursor
+// }
 
 func (w *statusBarItem) MouseIn(e *desktop.MouseEvent) {
 	w.ToolTipWidget.MouseIn(e)
-	w.hovered = true
-	w.bg.Show()
+	if w.OnTapped != nil {
+		w.bg.Show()
+	}
 }
 
 func (w *statusBarItem) MouseMoved(e *desktop.MouseEvent) {
@@ -386,7 +397,6 @@ func (w *statusBarItem) MouseMoved(e *desktop.MouseEvent) {
 
 func (w *statusBarItem) MouseOut() {
 	w.ToolTipWidget.MouseOut()
-	w.hovered = false
 	w.bg.Hide()
 }
 
