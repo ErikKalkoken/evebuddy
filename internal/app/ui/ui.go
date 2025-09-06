@@ -925,7 +925,7 @@ func (u *baseUI) makeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 			}
 		})
 		if c.ID == currentID {
-			it.Icon = theme.AccountIcon()
+			it.Icon = theme.NewThemedResource(icons.AccountCircleSvg)
 			it.Disabled = true
 		} else {
 			it.Icon = fallbackIcon
@@ -983,7 +983,7 @@ func (u *baseUI) makeCorporationSwitchMenu(refresh func()) []*fyne.MenuItem {
 			}
 		})
 		if c.ID == currentID {
-			it.Icon = theme.AccountIcon()
+			it.Icon = theme.NewThemedResource(icons.StarCircleOutlineSvg)
 			it.Disabled = true
 		} else {
 			it.Icon = fallbackIcon

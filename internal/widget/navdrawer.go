@@ -295,10 +295,12 @@ func (w *NavDrawer) CreateRenderer() fyne.WidgetRenderer {
 		container.NewBorder(
 			nil,
 			nil,
-			container.New(layout.NewCustomPaddedLayout(p, 0, 0, 0),
-				container.NewHBox(
-					container.NewStack(spacer, w.list), widget.NewSeparator(),
-				)),
+			container.NewHBox(
+				container.New(layout.NewCustomPaddedLayout(p, 0, 0, 0),
+					container.NewStack(spacer, w.list),
+				),
+				widget.NewSeparator(),
+			),
 			nil,
 			w.pages,
 		))

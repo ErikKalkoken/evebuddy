@@ -9,7 +9,7 @@ import (
 
 // ContextMenuButton is a button that shows a context menu.
 // The button can have a label and a leading icon.
-// It supports tooltips.
+// And it supports tooltips.
 type ContextMenuButton struct {
 	widget.Button
 	ttwidget.ToolTipWidgetExtend
