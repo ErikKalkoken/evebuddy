@@ -2,38 +2,63 @@ package widget
 
 import (
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 )
 
+// ContextMenuButton is a button that shows a context menu.
+// The button can have a label and a leading icon.
+// It supports tooltips.
 type ContextMenuButton struct {
 	widget.Button
+	ttwidget.ToolTipWidgetExtend
+
 	menu *fyne.Menu
 }
 
-// NewContextMenuButton is a button that shows a context menu.
 func NewContextMenuButton(label string, menu *fyne.Menu) *ContextMenuButton {
 	return NewContextMenuButtonWithIcon(label, nil, menu)
 }
 
-// NewContextMenuButtonWithIcon is an icon button that shows a context menu. The label is optional.
 func NewContextMenuButtonWithIcon(label string, icon fyne.Resource, menu *fyne.Menu) *ContextMenuButton {
-	b := &ContextMenuButton{menu: menu}
-	b.ExtendBaseWidget(b)
-	b.Text = label
+	w := &ContextMenuButton{menu: menu}
+	w.ExtendBaseWidget(w)
+	w.SetText(label)
 	if icon != nil {
-		b.Icon = icon
+		w.SetIcon(icon)
 	}
-	return b
+	return w
 }
 
-func (b *ContextMenuButton) Tapped(e *fyne.PointEvent) {
-	widget.ShowPopUpMenuAtPosition(b.menu, fyne.CurrentApp().Driver().CanvasForObject(b), e.AbsolutePosition)
+func (w *ContextMenuButton) ExtendBaseWidget(wid fyne.Widget) {
+	w.ExtendToolTipWidget(wid)
+	w.Button.ExtendBaseWidget(wid)
+}
+
+func (w *ContextMenuButton) Tapped(e *fyne.PointEvent) {
+	widget.ShowPopUpMenuAtPosition(w.menu, fyne.CurrentApp().Driver().CanvasForObject(w), e.AbsolutePosition)
 }
 
 // SetMenuItems replaces the menu items.
-func (b *ContextMenuButton) SetMenuItems(menuItems []*fyne.MenuItem) {
-	b.menu.Items = menuItems
-	b.menu.Refresh()
+func (w *ContextMenuButton) SetMenuItems(menuItems []*fyne.MenuItem) {
+	w.menu.Items = menuItems
+	w.menu.Refresh()
+}
+
+func (w *ContextMenuButton) MouseIn(e *desktop.MouseEvent) {
+	w.ToolTipWidgetExtend.MouseIn(e)
+	w.Button.MouseIn(e)
+}
+
+func (w *ContextMenuButton) MouseOut() {
+	w.ToolTipWidgetExtend.MouseOut()
+	w.Button.MouseOut()
+}
+
+func (w *ContextMenuButton) MouseMoved(e *desktop.MouseEvent) {
+	w.ToolTipWidgetExtend.MouseMoved(e)
+	w.Button.MouseMoved(e)
 }
 
 func ShowContextMenu(o fyne.CanvasObject, menu *fyne.Menu) {

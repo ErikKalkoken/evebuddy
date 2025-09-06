@@ -841,6 +841,7 @@ func newPageHeaderWithContextButton(s string, buttonIcon fyne.Resource) *PageHea
 	} else {
 		button = iwidget.NewContextMenuButtonWithIcon("", buttonIcon, fyne.NewMenu(""))
 	}
+	button.SetToolTip("Click to switch")
 	w := &PageHeader{
 		title:  title,
 		button: button,
