@@ -262,7 +262,7 @@ func (a *statusBar) ShowUpdating() {
 	fyne.Do(func() {
 		a.updateStatus.Refresh()
 		a.updatingCount++
-		if a.updatingCount == 1 {
+		if a.updatingIndicator.Hidden {
 			a.updatingIndicator.Start()
 			a.updatingIndicator.Show()
 		}
