@@ -33,7 +33,7 @@ func (s *CorporationService) ListCorporationIndustryJobs(ctx context.Context, co
 	return s.st.ListCorporationIndustryJobs(ctx, corporationID)
 }
 
-var jobStatusFromESIValue = map[string]app.IndustryJobState{
+var jobStatusFromESIValue = map[string]app.IndustryJobStatus{
 	"active":    app.JobActive,
 	"cancelled": app.JobCancelled,
 	"delivered": app.JobDelivered,
@@ -138,7 +138,7 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 				return err
 			}
 			running := set.Collect(xiter.Map(xiter.FilterSlice(current, func(x *app.CorporationIndustryJob) bool {
-				return !x.Status.IsHistory()
+				return x.Status.IsActive()
 			}), func(x *app.CorporationIndustryJob) int32 {
 				return x.JobID
 			}))
@@ -147,12 +147,16 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 				// The ESI response only returns jobs from the last 90 days.
 				// It can therefore happen that a long running job vanishes from the response,
 				// without the app having received a final status (e.g. delivered or canceled).
-				// Since the status of the job is undetermined we can only delete it.
-				err := s.st.DeleteCorporationIndustryJobsByID(ctx, arg.CorporationID, orphans)
+				// The status of these orphaned job is therefore marked as undefined.
+				err := s.st.UpdateCorporationIndustryJobStatus(ctx, storage.UpdateCorporationIndustryJobStatusParams{
+					CorporationID: arg.CorporationID,
+					JobIDs:        orphans,
+					Status:        app.JobUnknown,
+				})
 				if err != nil {
 					return err
 				}
-				slog.Info("Deleted orphaned industry jobs", "corporationID", arg.CorporationID, "count", orphans.Size())
+				slog.Info("Marked orphaned industry jobs as unknown", "corporationID", arg.CorporationID, "count", orphans.Size())
 			}
 			return nil
 		})

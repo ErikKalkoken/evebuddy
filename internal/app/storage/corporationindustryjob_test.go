@@ -146,70 +146,45 @@ func TestCorporationIndustryJob(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCorporation()
-		now := time.Now().UTC()
-		blueprintType := factory.CreateEveType()
-		endDate := now.Add(12 * time.Hour)
-		installer := factory.CreateEveEntityCharacter()
-		startDate := now.Add(-6 * time.Hour)
-		station := factory.CreateEveLocationStructure()
-		arg := storage.UpdateOrCreateCorporationIndustryJobParams{
-			ActivityID:          int32(app.Manufacturing),
-			BlueprintID:         42,
-			BlueprintLocationID: 11,
-			BlueprintTypeID:     blueprintType.ID,
-			CorporationID:       c.ID,
-			Duration:            123,
-			EndDate:             endDate,
-			FacilityID:          12,
-			InstallerID:         installer.ID,
-			JobID:               1,
-			OutputLocationID:    13,
-			Runs:                7,
-			StartDate:           startDate,
-			Status:              app.JobActive,
-			LocationID:          station.ID,
-		}
-		if err := st.UpdateOrCreateCorporationIndustryJob(ctx, arg); err != nil {
-			t.Fatal(err)
-		}
+		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			Status: app.JobActive,
+		})
+		// when
 		completedCharacter := factory.CreateEveEntityCharacter()
-		completedDate := now
-		pauseDate := now.Add(-3 * time.Hour)
-		endDate2 := now.Add(20 * time.Hour)
-		arg = storage.UpdateOrCreateCorporationIndustryJobParams{
-			ActivityID:           int32(app.Manufacturing),
-			BlueprintID:          42,
-			BlueprintLocationID:  11,
-			BlueprintTypeID:      blueprintType.ID,
-			CorporationID:        c.ID,
+		completedDate := time.Now()
+		pauseDate := completedDate.Add(-3 * time.Hour)
+		endDate2 := completedDate.Add(20 * time.Hour)
+		err := st.UpdateOrCreateCorporationIndustryJob(ctx, storage.UpdateOrCreateCorporationIndustryJobParams{
+			ActivityID:           int32(j1.Activity),
+			BlueprintID:          j1.BlueprintID,
+			BlueprintLocationID:  j1.BlueprintLocationID,
+			BlueprintTypeID:      j1.BlueprintType.ID,
+			CorporationID:        j1.CorporationID,
 			CompletedCharacterID: completedCharacter.ID,
 			CompletedDate:        completedDate,
-			Duration:             123,
+			Duration:             int32(j1.Duration),
 			EndDate:              endDate2,
-			FacilityID:           12,
-			InstallerID:          installer.ID,
-			JobID:                1,
-			OutputLocationID:     13,
+			FacilityID:           j1.FacilityID,
+			InstallerID:          j1.Installer.ID,
+			JobID:                j1.JobID,
+			OutputLocationID:     j1.OutputLocationID,
 			PauseDate:            pauseDate,
-			Runs:                 7,
-			StartDate:            startDate,
+			Runs:                 int32(j1.Runs),
+			StartDate:            j1.StartDate,
 			Status:               app.JobDelivered,
-			LocationID:           station.ID,
+			LocationID:           j1.Location.ID,
 			SuccessfulRuns:       5,
-		}
-		// when
-		err := st.UpdateOrCreateCorporationIndustryJob(ctx, arg)
+		})
 		// then
 		if assert.NoError(t, err) {
-			o, err := st.GetCorporationIndustryJob(ctx, arg.CorporationID, arg.JobID)
+			j2, err := st.GetCorporationIndustryJob(ctx, j1.CorporationID, j1.JobID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, completedCharacter.ID, o.CompletedCharacter.MustValue().ID)
-				assert.Equal(t, completedDate, o.CompletedDate.MustValue())
-				assert.Equal(t, endDate2, o.EndDate)
-				assert.Equal(t, pauseDate, o.PauseDate.MustValue())
-				assert.Equal(t, app.JobDelivered, o.Status)
-				assert.EqualValues(t, 5, o.SuccessfulRuns.MustValue())
+				assert.Equal(t, completedCharacter.ID, j2.CompletedCharacter.MustValue().ID)
+				assert.True(t, j2.CompletedDate.MustValue().Equal(completedDate), "got %q, wanted %q", j2.CompletedDate.MustValue(), completedDate)
+				assert.True(t, j2.EndDate.Equal(endDate2), "got %q, wanted %q", j2.EndDate, endDate2)
+				assert.True(t, j2.PauseDate.MustValue().Equal(pauseDate), "got %q, wanted %q", j2.PauseDate.MustValue(), pauseDate)
+				assert.Equal(t, app.JobDelivered, j2.Status)
+				assert.EqualValues(t, 5, j2.SuccessfulRuns.MustValue())
 			}
 		}
 	})
@@ -325,5 +300,27 @@ func TestCorporationIndustryJob(t *testing.T) {
 				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 			}
 		}
+	})
+	t.Run("can update status", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			Status: app.JobActive,
+		})
+		// when
+		err := st.UpdateCorporationIndustryJobStatus(ctx, storage.UpdateCorporationIndustryJobStatusParams{
+			CorporationID: j1.CorporationID,
+			JobIDs:        set.Of(j1.JobID),
+			Status:        app.JobUnknown,
+		})
+		// then
+		if !assert.NoError(t, err) {
+			t.Fatal(err)
+		}
+		j2, err := st.GetCorporationIndustryJob(ctx, j1.CorporationID, j1.JobID)
+		if !assert.NoError(t, err) {
+			t.Fatal(err)
+		}
+		assert.Equal(t, app.JobUnknown, j2.Status)
 	})
 }

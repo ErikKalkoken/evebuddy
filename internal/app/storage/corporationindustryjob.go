@@ -173,6 +173,33 @@ func corporationIndustryJobFromDBModel(arg corporationIndustryJobFromDBModelPara
 	return o2
 }
 
+type UpdateCorporationIndustryJobStatusParams struct {
+	CorporationID int32
+	JobIDs        set.Set[int32]
+	Status        app.IndustryJobStatus
+}
+
+func (st *Storage) UpdateCorporationIndustryJobStatus(ctx context.Context, arg UpdateCorporationIndustryJobStatusParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateCorporationIndustryJobStatus %+v: %w", arg, err)
+	}
+	if arg.CorporationID == 0 || arg.JobIDs.Contains(0) {
+		return wrapErr(app.ErrInvalid)
+	}
+	if arg.JobIDs.Size() == 0 {
+		return nil
+	}
+	err := st.qRW.UpdateCorporationIndustryJobStatus(ctx, queries.UpdateCorporationIndustryJobStatusParams{
+		CorporationID: int64(arg.CorporationID),
+		JobIds:        convertNumericSlice[int64](arg.JobIDs.Slice()),
+		Status:        jobStatusToDBValue[arg.Status],
+	})
+	if err != nil {
+		return wrapErr(err)
+	}
+	return nil
+}
+
 type UpdateOrCreateCorporationIndustryJobParams struct {
 	ActivityID           int32
 	BlueprintID          int64
@@ -195,7 +222,7 @@ type UpdateOrCreateCorporationIndustryJobParams struct {
 	ProductTypeID        int32     // optional
 	Runs                 int32
 	StartDate            time.Time
-	Status               app.IndustryJobState
+	Status               app.IndustryJobStatus
 	SuccessfulRuns       int32 // optional
 }
 

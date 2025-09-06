@@ -13,7 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
-var jobStatusFromDBValue = map[string]app.IndustryJobState{
+var jobStatusFromDBValue = map[string]app.IndustryJobStatus{
 	"":          app.JobUndefined,
 	"active":    app.JobActive,
 	"cancelled": app.JobCancelled,
@@ -21,9 +21,10 @@ var jobStatusFromDBValue = map[string]app.IndustryJobState{
 	"paused":    app.JobPaused,
 	"ready":     app.JobReady,
 	"reverted":  app.JobReverted,
+	"unknown":   app.JobUnknown,
 }
 
-var jobStatusToDBValue = map[app.IndustryJobState]string{}
+var jobStatusToDBValue = map[app.IndustryJobStatus]string{}
 
 func init() {
 	for k, v := range jobStatusFromDBValue {
@@ -224,6 +225,33 @@ func characterIndustryJobFromDBModel(arg characterIndustryJobFromDBModelParams) 
 	return o2
 }
 
+type UpdateCharacterIndustryJobStatusParams struct {
+	CharacterID int32
+	JobIDs      set.Set[int32]
+	Status      app.IndustryJobStatus
+}
+
+func (st *Storage) UpdateCharacterIndustryJobStatus(ctx context.Context, arg UpdateCharacterIndustryJobStatusParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateCharacterIndustryJobStatus %+v: %w", arg, err)
+	}
+	if arg.CharacterID == 0 || arg.JobIDs.Contains(0) {
+		return wrapErr(app.ErrInvalid)
+	}
+	if arg.JobIDs.Size() == 0 {
+		return nil
+	}
+	err := st.qRW.UpdateCharacterIndustryJobStatus(ctx, queries.UpdateCharacterIndustryJobStatusParams{
+		CharacterID: int64(arg.CharacterID),
+		JobIds:      convertNumericSlice[int64](arg.JobIDs.Slice()),
+		Status:      jobStatusToDBValue[arg.Status],
+	})
+	if err != nil {
+		return wrapErr(err)
+	}
+	return nil
+}
+
 type UpdateOrCreateCharacterIndustryJobParams struct {
 	ActivityID           int32
 	BlueprintID          int64
@@ -246,7 +274,7 @@ type UpdateOrCreateCharacterIndustryJobParams struct {
 	Runs                 int32
 	StartDate            time.Time
 	StationID            int64
-	Status               app.IndustryJobState
+	Status               app.IndustryJobStatus
 	SuccessfulRuns       int32 // optional
 }
 

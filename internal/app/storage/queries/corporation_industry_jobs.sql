@@ -68,6 +68,14 @@ FROM
     LEFT JOIN eve_entities cc ON cc.id = cij.completed_character_id
     LEFT JOIN eve_types pt ON pt.id = cij.product_type_id;
 
+-- name: UpdateCorporationIndustryJobStatus :exec
+UPDATE corporation_industry_jobs
+SET
+    status = ?
+WHERE
+    corporation_id = ?
+    AND job_id IN (sqlc.slice('job_ids'));
+
 -- name: UpdateOrCreateCorporationIndustryJobs :exec
 INSERT INTO
     corporation_industry_jobs (

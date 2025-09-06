@@ -2478,7 +2478,14 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 			value.Truncation = fyne.TextTruncateEllipsis
 			value.Alignment = fyne.TextAlignTrailing
 			label := widget.NewLabel("Label")
-			return container.NewBorder(nil, nil, label, nil, value)
+			icon := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
+			return container.NewBorder(
+				nil,
+				nil,
+				label,
+				container.NewVBox(layout.NewSpacer(), icon, layout.NewSpacer()),
+				value,
+			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(w.items) {
@@ -2486,8 +2493,10 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 			}
 			it := w.items[id]
 			border := co.(*fyne.Container).Objects
+
 			label := border[1].(*widget.Label)
 			label.SetText(it.Label)
+
 			value := border[0].(*widget.Label)
 			var s string
 			var i widget.Importance
@@ -2498,23 +2507,18 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 					break
 				}
 				s = x.Name
-				if supportedCategories.Contains(x.Category) {
-					i = widget.HighImportance
-				}
 			case *app.EveRace:
 				if x == nil {
 					s = "?"
 					break
 				}
 				s = x.Name
-				i = widget.HighImportance
 			case *app.EveLocation:
 				if x == nil {
 					s = "?"
 					break
 				}
 				s = x.DisplayName()
-				i = widget.HighImportance
 			case *url.URL:
 				if x == nil {
 					s = "?"
@@ -2546,6 +2550,35 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 			value.Text = s
 			value.Importance = i
 			value.Refresh()
+
+			var f func()
+			switch x := it.Value.(type) {
+			case *app.EveEntity:
+				if x != nil && supportedCategories.Contains(x.Category) {
+					f = func() {
+						w.iw.showEveEntity(x)
+					}
+				}
+			case *app.EveLocation:
+				if x != nil {
+					f = func() {
+						w.iw.showLocation(x.ID)
+					}
+				}
+			case *app.EveRace:
+				if x != nil {
+					f = func() {
+						w.iw.showRace(x.ID)
+					}
+				}
+			}
+			iconBox := border[2].(*fyne.Container)
+			if f != nil {
+				iconBox.Objects[1].(*iwidget.TappableIcon).OnTapped = f
+				iconBox.Show()
+			} else {
+				iconBox.Hide()
+			}
 		},
 	)
 	l.HideSeparators = true
@@ -2555,28 +2588,16 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 			return
 		}
 		it := w.items[id]
-		switch x := it.Value.(type) {
-		case *app.EveEntity:
-			if x != nil && supportedCategories.Contains(x.Category) {
-				w.iw.showEveEntity(x)
-			}
-		case *app.EveLocation:
-			if x != nil {
-				w.iw.showLocation(x.ID)
-			}
-		case *app.EveRace:
-			if x != nil {
-				w.iw.showRace(x.ID)
-			}
-		case *url.URL:
-			if x != nil {
-				w.openURL(x)
-			}
-			// TODO
-			// if err != nil {
-			// 	a.iw.u.ShowSnackbar(fmt.Sprintf("ERROR: Failed to open URL: %s", a.iw.u.ErrorDisplay(err)))
-			// }
+		x, ok := it.Value.(*url.URL)
+		if ok && x != nil {
+			w.openURL(x)
+			return
 		}
+		// 	// TODO
+		// 	// if err != nil {
+		// 	// 	a.iw.u.ShowSnackbar(fmt.Sprintf("ERROR: Failed to open URL: %s", a.iw.u.ErrorDisplay(err)))
+		// 	// }
+		// }
 		if it.Action != nil {
 			it.Action(it.Value)
 		}
@@ -2675,7 +2696,7 @@ func (w *entityList) CreateRenderer() fyne.WidgetRenderer {
 			category.SizeName = theme.SizeNameCaptionText
 			text := iwidget.NewRichText()
 			text.Truncation = fyne.TextTruncateEllipsis
-			icon := widget.NewIcon(theme.InfoIcon())
+			icon := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
 			p := theme.Padding()
 			return container.NewBorder(
 				nil,
@@ -2695,12 +2716,16 @@ func (w *entityList) CreateRenderer() fyne.WidgetRenderer {
 			it := w.items[id]
 			border1 := co.(*fyne.Container).Objects
 			border2 := border1[0].(*fyne.Container).Objects
-			icon := border1[1].(*fyne.Container).Objects[1]
+			icon := border1[1].(*fyne.Container).Objects[1].(*iwidget.TappableIcon)
 			category := border2[0].(*fyne.Container).Objects[0].(*widget.Label)
 			category.SetText(it.category)
 			if it.infoVariant == infoNotSupported {
 				icon.Hide()
+				icon.OnTapped = nil
 			} else {
+				icon.OnTapped = func() {
+					w.showInfo(it.infoVariant, it.id)
+				}
 				icon.Show()
 			}
 			text := border2[1].(*fyne.Container).Objects[0].(*iwidget.RichText)
@@ -2714,14 +2739,6 @@ func (w *entityList) CreateRenderer() fyne.WidgetRenderer {
 	l.HideSeparators = true
 	l.OnSelected = func(id widget.ListItemID) {
 		defer l.UnselectAll()
-		if id >= len(w.items) {
-			return
-		}
-		it := w.items[id]
-		if it.infoVariant == infoNotSupported {
-			return
-		}
-		w.showInfo(it.infoVariant, it.id)
 	}
 	return widget.NewSimpleRenderer(l)
 }

@@ -300,6 +300,38 @@ func (q *Queries) ListCorporationIndustryJobs(ctx context.Context, corporationID
 	return items, nil
 }
 
+const updateCorporationIndustryJobStatus = `-- name: UpdateCorporationIndustryJobStatus :exec
+UPDATE corporation_industry_jobs
+SET
+    status = ?
+WHERE
+    corporation_id = ?
+    AND job_id IN (/*SLICE:job_ids*/?)
+`
+
+type UpdateCorporationIndustryJobStatusParams struct {
+	Status        string
+	CorporationID int64
+	JobIds        []int64
+}
+
+func (q *Queries) UpdateCorporationIndustryJobStatus(ctx context.Context, arg UpdateCorporationIndustryJobStatusParams) error {
+	query := updateCorporationIndustryJobStatus
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.Status)
+	queryParams = append(queryParams, arg.CorporationID)
+	if len(arg.JobIds) > 0 {
+		for _, v := range arg.JobIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:job_ids*/?", strings.Repeat(",?", len(arg.JobIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:job_ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
+
 const updateOrCreateCorporationIndustryJobs = `-- name: UpdateOrCreateCorporationIndustryJobs :exec
 INSERT INTO
     corporation_industry_jobs (
