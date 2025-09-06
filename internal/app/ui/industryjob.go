@@ -72,7 +72,7 @@ type industryJobRow struct {
 	remaining          time.Duration
 	runs               int
 	startDate          time.Time
-	status             app.IndustryJobState
+	status             app.IndustryJobStatus
 	statusDisplay      []widget.RichTextSegment
 	successfulRuns     optional.Optional[int32]
 	tags               set.Set[string]
@@ -277,7 +277,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 		case industryStatusHalted:
 			return r.status == app.JobPaused
 		case industryStatusHistory:
-			return r.status.IsHistory()
+			return !r.status.IsActive()
 		}
 		return false
 	})
@@ -374,7 +374,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 }
 
 func (a *industryJobs) makeDataList() *iwidget.StripedList {
-	statusMap := map[app.IndustryJobState]fyne.Resource{
+	statusMap := map[app.IndustryJobStatus]fyne.Resource{
 		app.JobDelivered: theme.NewThemedResource(icons.IndydeliveredSvg),
 		app.JobPaused:    theme.NewWarningThemedResource(icons.IndyhaltedSvg),
 		app.JobReady:     theme.NewSuccessThemedResource(icons.IndyreadySvg),

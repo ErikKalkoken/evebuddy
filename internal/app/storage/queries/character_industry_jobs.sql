@@ -132,6 +132,14 @@ GROUP BY
     activity_id,
     status;
 
+-- name: UpdateCharacterIndustryJobStatus :exec
+UPDATE character_industry_jobs
+SET
+    status = ?
+WHERE
+    character_id = ?
+    AND job_id IN (sqlc.slice('job_ids'));
+
 -- name: UpdateOrCreateCharacterIndustryJobs :exec
 INSERT INTO
     character_industry_jobs (

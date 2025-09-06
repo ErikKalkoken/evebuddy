@@ -473,7 +473,7 @@ func (f Factory) CreateCharacterIndustryJob(args ...storage.UpdateOrCreateCharac
 		arg.Runs = rand.Int32N(50)
 	}
 	if arg.Status == 0 {
-		items := []app.IndustryJobState{
+		items := []app.IndustryJobStatus{
 			app.JobActive,
 			app.JobCancelled,
 			app.JobDelivered,
@@ -1284,7 +1284,7 @@ func (f Factory) CreateCorporationIndustryJob(args ...storage.UpdateOrCreateCorp
 		arg.LocationID = x.ID
 	}
 	if arg.Status == 0 {
-		items := []app.IndustryJobState{
+		items := []app.IndustryJobStatus{
 			app.JobActive,
 			app.JobCancelled,
 			app.JobDelivered,

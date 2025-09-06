@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -424,7 +425,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			}
 		}
 	})
-	t.Run("should remove orphaned jobs", func(t *testing.T) {
+	t.Run("should mark orphaned jobs", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
@@ -440,13 +441,13 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			CorporationID: c.ID,
 			Status:        app.JobCancelled,
 		})
-		factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+		j3 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
 			CorporationID: c.ID,
 			Status:        app.JobActive,
 		})
-		factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+		j4 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
 			CorporationID: c.ID,
-			Status:        app.JobReady,
+			Status:        app.JobActive,
 		})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2046})
@@ -466,7 +467,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 					"end_date":              "2014-07-19T15:56:14Z",
 					"facility_id":           12,
 					"installer_id":          498338451,
-					"job_id":                229136101,
+					"job_id":                j3.JobID,
 					"licensed_runs":         200,
 					"location_id":           60006382,
 					"output_location_id":    13,
@@ -487,11 +488,16 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			assert.True(t, changed)
 			oo, err := st.ListAllCorporationIndustryJobs(ctx)
 			if assert.NoError(t, err) {
-				got := set.Of(xslices.Map(oo, func(x *app.CorporationIndustryJob) int32 {
-					return x.JobID
-				})...)
-				want := set.Of(j1.JobID, j2.JobID, 229136101)
-				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+				got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationIndustryJob) (int32, app.IndustryJobStatus) {
+					return x.JobID, x.Status
+				}))
+				want := map[int32]app.IndustryJobStatus{
+					j1.JobID: app.JobDelivered,
+					j2.JobID: app.JobCancelled,
+					j3.JobID: app.JobReady,
+					j4.JobID: app.JobUnknown,
+				}
+				assert.Equal(t, want, got)
 			}
 		}
 	})
