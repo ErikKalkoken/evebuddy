@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -50,9 +51,11 @@ type manageCharacters struct {
 	widget.BaseWidget
 
 	ab         *iwidget.AppBar
+	add        *widget.Button
 	characters []manageCharacterRow
 	list       *widget.List
 	mcw        *manageCharactersWindow
+	addStarted atomic.Bool
 }
 
 func showManageCharactersWindow(u *baseUI) {
@@ -98,16 +101,16 @@ func newManageCharacters(mcw *manageCharactersWindow) *manageCharacters {
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeCharacterList()
-	add := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
+	a.add = widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		a.showAddCharacterDialog()
 	})
-	add.Importance = widget.HighImportance
+	a.add.Importance = widget.HighImportance
 	if a.mcw.u.IsOffline() {
-		add.Disable()
+		a.add.Disable()
 	}
 	a.ab = iwidget.NewAppBar("Characters", container.NewBorder(
 		nil,
-		container.NewVBox(add, newStandardSpacer()),
+		container.NewVBox(a.add, newStandardSpacer()),
 		nil,
 		nil,
 		a.list,
@@ -226,9 +229,15 @@ func (a *manageCharacters) fetchRows() ([]manageCharacterRow, error) {
 }
 
 func (a *manageCharacters) showAddCharacterDialog() {
+	wasStarted := !a.addStarted.CompareAndSwap(false, true) // protect against starting this twice, e.g. with double click on button
+	if wasStarted {
+		return
+	}
+	a.add.Disable()
 	cancelCTX, cancel := context.WithCancel(context.Background())
 	infoText := widget.NewLabel("Please follow instructions in your browser to add a new character.")
 	activity := widget.NewActivity()
+	activity.Start()
 	d1 := dialog.NewCustom(
 		"Add Character",
 		"Cancel",
@@ -236,52 +245,52 @@ func (a *manageCharacters) showAddCharacterDialog() {
 		a.mcw.w,
 	)
 	a.mcw.u.ModifyShortcutsForDialog(d1, a.mcw.w)
-	d1.SetOnClosed(cancel)
-	fyne.Do(func() {
-		d1.Show()
+	d1.SetOnClosed(func() {
+		cancel()
+		a.addStarted.Store(false)
+		a.add.Enable()
 	})
+	d1.Show()
 	go func() {
-		defer fyne.Do(func() {
-			d1.Hide()
-		})
-		character, err := func() (*app.Character, error) {
-			c, err := a.mcw.u.cs.UpdateOrCreateCharacterFromSSO(cancelCTX, func(s string) {
+		err := func() error {
+			character, err := a.mcw.u.cs.UpdateOrCreateCharacterFromSSO(cancelCTX, func(s string) {
 				fyne.Do(func() {
 					infoText.SetText(s)
-					activity.Start()
 				})
 			})
+			if errors.Is(err, app.ErrAborted) {
+				return nil
+			}
 			if err != nil {
-				return nil, err
+				return err
 			}
 			a.update()
-			return c, nil
-		}()
-		if errors.Is(err, app.ErrAborted) {
-			return
-		}
-		if err != nil {
-			s := "Failed to add a new character"
-			slog.Error(s, "error", err)
-			fyne.Do(func() {
-				a.mcw.u.showErrorDialog(s, err, a.mcw.w)
-			})
-			return
-		}
-		if !a.mcw.u.hasCharacter() {
-			a.mcw.u.loadCharacter(character.ID)
-		}
-		if !a.mcw.u.hasCorporation() {
-			if c := character.EveCharacter.Corporation; !c.IsNPC().ValueOrZero() {
-				a.mcw.u.loadCorporation(c.ID)
+			if !a.mcw.u.hasCharacter() {
+				a.mcw.u.loadCharacter(character.ID)
 			}
+			if !a.mcw.u.hasCorporation() {
+				if c := character.EveCharacter.Corporation; !c.IsNPC().ValueOrZero() {
+					a.mcw.u.loadCorporation(c.ID)
+				}
+			}
+			a.mcw.u.updateStatus()
+			a.mcw.u.updateHome()
+			if a.mcw.u.isUpdateDisabled {
+				return nil
+			}
+			go a.mcw.u.updateCharacterAndRefreshIfNeeded(context.Background(), character.ID, true)
+			return nil
+		}()
+		if err != nil {
+			fyne.Do(func() {
+				d1.Hide()
+				a.mcw.u.showErrorDialog("Failed to add a new character", err, a.mcw.w)
+			})
+		} else {
+			fyne.Do(func() {
+				d1.Hide()
+			})
 		}
-		a.mcw.u.updateStatus()
-		a.mcw.u.updateHome()
-		if a.mcw.u.isUpdateDisabled {
-			return
-		}
-		go a.mcw.u.updateCharacterAndRefreshIfNeeded(context.Background(), character.ID, true)
 	}()
 }
 
