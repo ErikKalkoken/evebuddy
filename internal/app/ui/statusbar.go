@@ -334,7 +334,7 @@ func (w *statusBarItem) CreateRenderer() fyne.WidgetRenderer {
 		w.bg,
 		container.New(layout.NewCustomPaddedLayout(0, 0, p, p),
 			container.New(layout.NewCustomPaddedHBoxLayout(0),
-				w.leading,
+				container.New(layout.NewCustomPaddedLayout(0, 0, p, 0), w.leading),
 				w.label,
 				w.trailing,
 			)),
@@ -376,13 +376,6 @@ func (w *statusBarItem) Tapped(_ *fyne.PointEvent) {
 
 func (w *statusBarItem) TappedSecondary(_ *fyne.PointEvent) {
 }
-
-// func (w *statusBarItem) Cursor() desktop.Cursor {
-// 	if w.hovered {
-// 		return desktop.PointerCursor
-// 	}
-// 	return desktop.DefaultCursor
-// }
 
 func (w *statusBarItem) MouseIn(e *desktop.MouseEvent) {
 	w.ToolTipWidget.MouseIn(e)
