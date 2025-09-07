@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -279,8 +280,8 @@ func TestCacheAdapter(t *testing.T) {
 }
 
 func TestSetupCrashFile(t *testing.T) {
-	td := t.TempDir()
-	p, err := setupCrashFile(td)
+	p := filepath.Join(t.TempDir(), crashFileName)
+	err := setupCrashFile(p)
 	if assert.NoError(t, err) {
 		_, err := os.Stat(p)
 		assert.NoError(t, err)
