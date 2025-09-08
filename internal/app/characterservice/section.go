@@ -113,7 +113,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 		"characterID", arg.CharacterID,
 		"section", arg.Section,
 		"forced", arg.ForceUpdate,
-		"changed", hasChanged,
+		"hasChanged", hasChanged,
 	)
 	return hasChanged, err
 }

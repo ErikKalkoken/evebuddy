@@ -171,7 +171,7 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 		defer arg.OnUpdateCompleted()
 	}
 	key := fmt.Sprintf("update-corporation-section-%s-%d", arg.Section, arg.CorporationID)
-	v, err, _ := s.sfg.Do(key, func() (any, error) {
+	x, err, _ := s.sfg.Do(key, func() (any, error) {
 		return f(ctx, arg)
 	})
 	if err != nil {
@@ -189,15 +189,15 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 		s.scs.SetCorporationSection(o)
 		return false, fmt.Errorf("update corporation section from ESI for %+v: %w", arg, err)
 	}
-	changed := v.(bool)
+	hasChanged := x.(bool)
 	slog.Info(
 		"Corporation section update completed",
 		"corporationID", arg.CorporationID,
 		"section", arg.Section,
 		"forced", arg.ForceUpdate,
-		"changed", changed,
+		"changed", hasChanged,
 	)
-	return changed, err
+	return hasChanged, err
 }
 
 // updateSectionIfChanged updates a character section if it has changed
