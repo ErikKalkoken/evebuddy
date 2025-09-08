@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"net/http"
 	"time"
 
@@ -46,7 +47,8 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 	if arg.Section != app.SectionCorporationIndustryJobs {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
-	return s.updateSectionIfChanged(
+	var hasChanged bool
+	_, err := s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			jobs, err := xesi.FetchWithPaging(
@@ -68,96 +70,138 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 		},
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
 			jobs := data.([]esi.GetCorporationsCorporationIdIndustryJobs200Ok)
-			entityIDs := set.Of[int32]()
-			typeIDs := set.Of[int32]()
-			locationIDs := set.Of[int64]()
-			for _, j := range jobs {
-				entityIDs.Add(j.InstallerId, j.CompletedCharacterId)
-				locationIDs.Add(j.LocationId)
-				typeIDs.Add(j.BlueprintTypeId, j.ProductTypeId)
-			}
-			g := new(errgroup.Group)
-			g.Go(func() error {
-				_, err := s.eus.AddMissingEntities(ctx, entityIDs)
-				return err
-			})
-			g.Go(func() error {
-				return s.eus.AddMissingLocations(ctx, locationIDs)
-			})
-			g.Go(func() error {
-				return s.eus.AddMissingTypes(ctx, typeIDs)
-			})
-			if err := g.Wait(); err != nil {
-				return err
-			}
-			for _, j := range jobs {
+
+			statusFromESIJob := func(j esi.GetCorporationsCorporationIdIndustryJobs200Ok) app.IndustryJobStatus {
 				status, ok := jobStatusFromESIValue[j.Status]
 				if !ok {
-					status = app.JobUndefined
+					return app.JobUndefined
 				}
-				if status == app.JobActive && !j.EndDate.IsZero() && j.EndDate.Before(time.Now()) {
-					// Workaround for known bug: https://github.com/esi/esi-issues/issues/752
-					status = app.JobReady
-				}
-				arg := storage.UpdateOrCreateCorporationIndustryJobParams{
-					ActivityID:           j.ActivityId,
-					BlueprintID:          j.BlueprintId,
-					BlueprintLocationID:  j.BlueprintLocationId,
-					BlueprintTypeID:      j.BlueprintTypeId,
-					CompletedCharacterID: j.CompletedCharacterId,
-					CompletedDate:        j.CompletedDate,
-					CorporationID:        arg.CorporationID,
-					Cost:                 j.Cost,
-					Duration:             j.Duration,
-					EndDate:              j.EndDate,
-					FacilityID:           j.FacilityId,
-					InstallerID:          j.InstallerId,
-					JobID:                j.JobId,
-					LicensedRuns:         j.LicensedRuns,
-					LocationID:           j.LocationId,
-					OutputLocationID:     j.OutputLocationId,
-					PauseDate:            j.PauseDate,
-					Probability:          j.Probability,
-					ProductTypeID:        j.ProductTypeId,
-					Runs:                 j.Runs,
-					StartDate:            j.StartDate,
-					Status:               status,
-					SuccessfulRuns:       j.SuccessfulRuns,
-				}
-				if err := s.st.UpdateOrCreateCorporationIndustryJob(ctx, arg); err != nil {
-					return err
+				return status
+			}
+
+			// Fix incorrect status with workaround for known bug: https://github.com/esi/esi-issues/issues/752
+			for i, j := range jobs {
+				if j.Status == "active" && !j.EndDate.IsZero() && j.EndDate.Before(time.Now()) {
+					jobs[i].Status = "ready"
 				}
 			}
-			slog.Info("Updated industry jobs", "corporationID", arg.CorporationID, "count", len(jobs))
 
-			incoming := set.Collect(xiter.MapSlice(jobs, func(x esi.GetCorporationsCorporationIdIndustryJobs200Ok) int32 {
-				return x.JobId
-			}))
-			current, err := s.st.ListCorporationIndustryJobs(ctx, arg.CorporationID)
+			// Identify changed jobs
+			jj, err := s.st.ListCorporationIndustryJobs(ctx, arg.CorporationID)
 			if err != nil {
 				return err
 			}
-			running := set.Collect(xiter.Map(xiter.FilterSlice(current, func(x *app.CorporationIndustryJob) bool {
-				return x.Status.IsActive()
-			}), func(x *app.CorporationIndustryJob) int32 {
-				return x.JobID
+			currentJobs := maps.Collect(xiter.MapSlice2(jj, func(j *app.CorporationIndustryJob) (int32, app.IndustryJobStatus) {
+				return j.JobID, j.Status
 			}))
-			orphans := set.Difference(running, incoming)
-			if orphans.Size() > 0 {
-				// The ESI response only returns jobs from the last 90 days.
-				// It can therefore happen that a long running job vanishes from the response,
-				// without the app having received a final status (e.g. delivered or canceled).
-				// The status of these orphaned job is therefore marked as undefined.
-				err := s.st.UpdateCorporationIndustryJobStatus(ctx, storage.UpdateCorporationIndustryJobStatusParams{
-					CorporationID: arg.CorporationID,
-					JobIDs:        orphans,
-					Status:        app.JobUnknown,
+			changedJobs := make([]esi.GetCorporationsCorporationIdIndustryJobs200Ok, 0)
+			for _, j := range jobs {
+				status, found := currentJobs[j.JobId]
+				if !found {
+					changedJobs = append(changedJobs, j)
+					continue
+				}
+				if statusFromESIJob(j) == status {
+					continue
+				}
+				changedJobs = append(changedJobs, j)
+			}
+
+			// Process changed jobs
+			hasChanged = len(changedJobs) > 0
+			if hasChanged {
+				var entityIDs set.Set[int32]
+				var typeIDs set.Set[int32]
+				var locationIDs set.Set[int64]
+				for _, j := range jobs {
+					entityIDs.Add(j.InstallerId, j.CompletedCharacterId)
+					locationIDs.Add(j.LocationId)
+					typeIDs.Add(j.BlueprintTypeId, j.ProductTypeId)
+				}
+				g := new(errgroup.Group)
+				g.Go(func() error {
+					_, err := s.eus.AddMissingEntities(ctx, entityIDs)
+					return err
 				})
+				g.Go(func() error {
+					return s.eus.AddMissingLocations(ctx, locationIDs)
+				})
+				g.Go(func() error {
+					return s.eus.AddMissingTypes(ctx, typeIDs)
+				})
+				if err := g.Wait(); err != nil {
+					return err
+				}
+				for _, j := range jobs {
+					if err := s.st.UpdateOrCreateCorporationIndustryJob(ctx, storage.UpdateOrCreateCorporationIndustryJobParams{
+						ActivityID:           j.ActivityId,
+						BlueprintID:          j.BlueprintId,
+						BlueprintLocationID:  j.BlueprintLocationId,
+						BlueprintTypeID:      j.BlueprintTypeId,
+						CompletedCharacterID: j.CompletedCharacterId,
+						CompletedDate:        j.CompletedDate,
+						CorporationID:        arg.CorporationID,
+						Cost:                 j.Cost,
+						Duration:             j.Duration,
+						EndDate:              j.EndDate,
+						FacilityID:           j.FacilityId,
+						InstallerID:          j.InstallerId,
+						JobID:                j.JobId,
+						LicensedRuns:         j.LicensedRuns,
+						LocationID:           j.LocationId,
+						OutputLocationID:     j.OutputLocationId,
+						PauseDate:            j.PauseDate,
+						Probability:          j.Probability,
+						ProductTypeID:        j.ProductTypeId,
+						Runs:                 j.Runs,
+						StartDate:            j.StartDate,
+						Status:               statusFromESIJob(j),
+						SuccessfulRuns:       j.SuccessfulRuns,
+					}); err != nil {
+						return err
+					}
+				}
+				slog.Info("Updated industry jobs", "corporationID", arg.CorporationID, "count", len(jobs))
+
+				// Mark orphans
+				incoming := set.Collect(xiter.MapSlice(jobs, func(x esi.GetCorporationsCorporationIdIndustryJobs200Ok) int32 {
+					return x.JobId
+				}))
+				current, err := s.st.ListCorporationIndustryJobs(ctx, arg.CorporationID)
 				if err != nil {
 					return err
 				}
-				slog.Info("Marked orphaned industry jobs as unknown", "corporationID", arg.CorporationID, "count", orphans.Size())
+				running := set.Collect(xiter.Map(xiter.FilterSlice(current, func(x *app.CorporationIndustryJob) bool {
+					return x.Status.IsActive()
+				}), func(x *app.CorporationIndustryJob) int32 {
+					return x.JobID
+				}))
+				orphans := set.Difference(running, incoming)
+				if orphans.Size() > 0 {
+					// The ESI response only returns jobs from the last 90 days.
+					// It can therefore happen that a long running job vanishes from the response,
+					// without the app having received a final status (e.g. delivered or canceled).
+					// The status of these orphaned job is therefore marked as undefined.
+					err := s.st.UpdateCorporationIndustryJobStatus(ctx, storage.UpdateCorporationIndustryJobStatusParams{
+						CorporationID: arg.CorporationID,
+						JobIDs:        orphans,
+						Status:        app.JobUnknown,
+					})
+					if err != nil {
+						return err
+					}
+					slog.Info(
+						"Marked orphaned industry jobs as unknown",
+						"corporationID", arg.CorporationID,
+						"count", orphans.Size(),
+					)
+				}
 			}
 			return nil
-		})
+		},
+	)
+	if err != nil {
+		return false, err
+	}
+	return hasChanged, nil
 }

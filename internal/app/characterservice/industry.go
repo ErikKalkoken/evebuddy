@@ -174,7 +174,11 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 					if err != nil {
 						return err
 					}
-					slog.Info("Marked orphaned industry jobs as unknown", "characterID", characterID, "count", orphans.Size())
+					slog.Info(
+						"Marked orphaned industry jobs as unknown",
+						"characterID", characterID,
+						"count", orphans.Size(),
+					)
 				}
 			}
 			return nil
