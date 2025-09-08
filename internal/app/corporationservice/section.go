@@ -195,7 +195,7 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 		"corporationID", arg.CorporationID,
 		"section", arg.Section,
 		"forced", arg.ForceUpdate,
-		"changed", hasChanged,
+		"hasChanged", hasChanged,
 	)
 	return hasChanged, err
 }
@@ -219,7 +219,7 @@ func (s *CorporationService) updateSectionIfChanged(
 	}
 	s.scs.SetCorporationSection(o)
 	var hash, comment string
-	var hasChanged bool
+	var needsUpdate bool
 	token, err := s.cs.CharacterTokenForCorporation(ctx, arg.CorporationID, arg.Section.Roles(), arg.Section.Scopes(), true)
 	if errors.Is(err, app.ErrNotFound) {
 		comment = fmt.Sprintf(
@@ -247,19 +247,20 @@ func (s *CorporationService) updateSectionIfChanged(
 		}
 		hash = h
 
-		// identify if changed
-		var notFound bool
-		u, err := s.st.GetCorporationSectionStatus(ctx, arg.CorporationID, arg.Section)
-		if errors.Is(err, app.ErrNotFound) {
-			notFound = true
-		} else if err != nil {
-			return false, err
+		// identify whether update is needed
+		if arg.ForceUpdate {
+			needsUpdate = true
+		} else if arg.Section.IsSkippingChangeDetection() {
+			needsUpdate = true
 		} else {
-			hasChanged = u.ContentHash != hash
+			hasChanged, err := s.hasSectionChanged(ctx, arg, hash)
+			if err != nil {
+				return false, err
+			}
+			needsUpdate = hasChanged
 		}
 
-		// update if needed
-		if arg.ForceUpdate || notFound || hasChanged {
+		if needsUpdate {
 			if err := update(ctx, arg, data); err != nil {
 				return false, err
 			}
@@ -287,9 +288,9 @@ func (s *CorporationService) updateSectionIfChanged(
 		"Has section changed",
 		"corporationID", arg.CorporationID,
 		"section", arg.Section,
-		"changed", hasChanged,
+		"needsUpdate", needsUpdate,
 	)
-	return hasChanged, nil
+	return needsUpdate, nil
 }
 
 func (s *CorporationService) hasSectionChanged(ctx context.Context, arg app.CorporationSectionUpdateParams, hash string) (bool, error) {

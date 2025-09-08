@@ -109,35 +109,34 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			}
 		}
 	})
-	// t.Run("should update when data has not changed", func(t *testing.T) {
-	// 	// given
-	// 	testutil.TruncateTables(db)
-	// 	c := factory.CreateCorporation()
-	// 	factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CorporationID: c.ID})
-	// 	section := app.SectionCorporationIndustryJobs
-	// 	factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
-	// 		CorporationID: c.ID,
-	// 		Section:       section,
-	// 		Data:          "old",
-	// 		CompletedAt:   time.Now().Add(-5 * time.Second),
-	// 	})
-	// 	var hasUpdated bool
-	// 	arg := app.CorporationSectionUpdateParams{CorporationID: c.ID, Section: section}
-	// 	// when
-	// 	changed, err := s.updateSectionIfChanged(ctx, arg,
-	// 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
-	// 			return "old", nil
-	// 		},
-	// 		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
-	// 			hasUpdated = true
-	// 			return nil
-	// 		})
-	// 	// then
-	// 	if assert.NoError(t, err) {
-	// 		assert.True(t, changed)
-	// 		assert.True(t, hasUpdated)
-	// 	}
-	// })
+	t.Run("should update when data has not changed", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCorporation()
+		section := app.SectionCorporationIndustryJobs
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: c.ID,
+			Section:       section,
+			Data:          "old",
+			CompletedAt:   time.Now().Add(-5 * time.Second),
+		})
+		var hasUpdated bool
+		arg := app.CorporationSectionUpdateParams{CorporationID: c.ID, Section: section}
+		// when
+		changed, err := s.updateSectionIfChanged(ctx, arg,
+			func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
+				return "old", nil
+			},
+			func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
+				hasUpdated = true
+				return nil
+			})
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, changed)
+			assert.True(t, hasUpdated)
+		}
+	})
 }
 
 func TestHasSectionChanged(t *testing.T) {

@@ -153,6 +153,7 @@ func (s *CharacterService) updateSectionIfChanged(
 		return false, err
 	}
 
+	// identify whether update is needed
 	var needsUpdate bool
 	if arg.ForceUpdate {
 		needsUpdate = true

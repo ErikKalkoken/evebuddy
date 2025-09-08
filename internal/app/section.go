@@ -275,6 +275,10 @@ func (cs CorporationSection) Division() Division {
 }
 
 func (cs CorporationSection) IsSkippingChangeDetection() bool {
+	switch cs {
+	case SectionCorporationIndustryJobs:
+		return true
+	}
 	return false
 }
 
