@@ -1588,7 +1588,7 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *a
 		r := f.CreateEveRace()
 		arg.RaceID = r.ID
 	}
-	err := f.st.CreateEveCharacter(ctx, arg)
+	err := f.st.UpdateOrCreateEveCharacter(ctx, arg)
 	if err != nil {
 		panic(err)
 	}

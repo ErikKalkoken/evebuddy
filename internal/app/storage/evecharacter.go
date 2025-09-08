@@ -24,14 +24,14 @@ type CreateEveCharacterParams struct {
 	Title          string
 }
 
-func (st *Storage) CreateEveCharacter(ctx context.Context, arg CreateEveCharacterParams) error {
+func (st *Storage) UpdateOrCreateEveCharacter(ctx context.Context, arg CreateEveCharacterParams) error {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("CreateEveCharacter: %+v: %w", arg, err)
+		return fmt.Errorf("UpdateOrCreateEveCharacter: %+v: %w", arg, err)
 	}
 	if arg.ID == 0 || arg.CorporationID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	arg2 := queries.CreateEveCharacterParams{
+	err := st.qRW.UpdateOrCreateEveCharacter(ctx, queries.UpdateOrCreateEveCharacterParams{
 		ID:             int64(arg.ID),
 		Birthday:       arg.Birthday,
 		CorporationID:  int64(arg.CorporationID),
@@ -41,16 +41,9 @@ func (st *Storage) CreateEveCharacter(ctx context.Context, arg CreateEveCharacte
 		RaceID:         int64(arg.RaceID),
 		SecurityStatus: arg.SecurityStatus,
 		Title:          arg.Title,
-	}
-	if arg.AllianceID != 0 {
-		arg2.AllianceID.Int64 = int64(arg.AllianceID)
-		arg2.AllianceID.Valid = true
-	}
-	if arg.FactionID != 0 {
-		arg2.FactionID.Int64 = int64(arg.FactionID)
-		arg2.FactionID.Valid = true
-	}
-	err := st.qRW.CreateEveCharacter(ctx, arg2)
+		AllianceID:     NewNullInt64(arg.AllianceID),
+		FactionID:      NewNullInt64(arg.FactionID),
+	})
 	if err != nil {
 		return wrapErr(err)
 	}
@@ -100,29 +93,23 @@ func (st *Storage) ListEveCharacterIDs(ctx context.Context) (set.Set[int32], err
 }
 
 func (st *Storage) UpdateEveCharacter(ctx context.Context, c *app.EveCharacter) error {
-	arg := queries.UpdateEveCharacterParams{
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateEveCharacter: %+v: %w", c, err)
+	}
+	if c.ID == 0 || c.Corporation == nil {
+		return wrapErr(app.ErrInvalid)
+	}
+	err := st.qRW.UpdateEveCharacter(ctx, queries.UpdateEveCharacterParams{
 		ID:             int64(c.ID),
 		CorporationID:  int64(c.Corporation.ID),
 		Description:    c.Description,
 		Name:           c.Name,
 		SecurityStatus: c.SecurityStatus,
 		Title:          c.Title,
-	}
-	if c.HasAlliance() {
-		arg.AllianceID.Int64 = int64(c.Alliance.ID)
-		arg.AllianceID.Valid = true
-	}
-	if c.HasFaction() {
-		arg.FactionID.Int64 = int64(c.Faction.ID)
-		arg.FactionID.Valid = true
-	}
-	wrapErr := func(err error) error {
-		return fmt.Errorf("UpdateEveCharacter: %+v: %w", arg, err)
-	}
-	if arg.ID == 0 || arg.CorporationID == 0 {
-		return wrapErr(app.ErrInvalid)
-	}
-	if err := st.qRW.UpdateEveCharacter(ctx, arg); err != nil {
+		AllianceID:     NewNullInt64(c.AllianceID()),
+		FactionID:      NewNullInt64(c.FactionID()),
+	})
+	if err != nil {
 		return wrapErr(err)
 	}
 	return nil

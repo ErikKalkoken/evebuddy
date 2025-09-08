@@ -101,7 +101,10 @@ func (s *EveUniverseService) GetOrCreateCorporationESI(ctx context.Context, id i
 	if errors.Is(err, app.ErrNotFound) {
 		return s.UpdateOrCreateCorporationFromESI(ctx, id)
 	}
-	return o, err
+	if err != nil {
+		return nil, err
+	}
+	return o, nil
 }
 
 func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Context, id int32) (*app.EveCorporation, error) {

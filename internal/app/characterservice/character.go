@@ -189,7 +189,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 		TokenType:    ssoToken.TokenType,
 	}
 	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
-	character, err := s.eus.GetOrCreateCharacterESI(ctx, token.CharacterID)
+	character, err := s.eus.UpdateOrCreateCharacterESI(ctx, token.CharacterID)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 		return nil, err
 	}
 	setInfo("Fetching corporation from game server. Please wait...")
-	if _, err := s.eus.GetOrCreateCorporationESI(ctx, character.Corporation.ID); err != nil {
+	if _, err := s.eus.UpdateOrCreateCorporationFromESI(ctx, character.Corporation.ID); err != nil {
 		return nil, err
 	}
 	if x := character.Corporation.IsNPC(); !x.IsEmpty() && !x.ValueOrZero() {

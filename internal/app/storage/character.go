@@ -30,7 +30,7 @@ type CreateCharacterParams struct {
 }
 
 func (st *Storage) CreateCharacter(ctx context.Context, arg CreateCharacterParams) error {
-	arg2 := queries.CreateCharacterParams{
+	err := st.qRW.CreateCharacter(ctx, queries.CreateCharacterParams{
 		ID:                int64(arg.ID),
 		AssetValue:        optional.ToNullFloat64(arg.AssetValue),
 		IsTrainingWatched: arg.IsTrainingWatched,
@@ -42,8 +42,8 @@ func (st *Storage) CreateCharacter(ctx context.Context, arg CreateCharacterParam
 		TotalSp:           optional.ToNullInt64(arg.TotalSP),
 		UnallocatedSp:     optional.ToNullInt64(arg.UnallocatedSP),
 		WalletBalance:     optional.ToNullFloat64(arg.WalletBalance),
-	}
-	if err := st.qRW.CreateCharacter(ctx, arg2); err != nil {
+	})
+	if err != nil {
 		if sqliteErr, ok := err.(sqlite3.Error); ok {
 			if sqliteErr.ExtendedCode == sqlite3.ErrConstraintPrimaryKey {
 				err = app.ErrAlreadyExists

@@ -1,4 +1,4 @@
--- name: CreateEveCharacter :exec
+-- name: UpdateOrCreateEveCharacter :exec
 INSERT INTO
     eve_characters (
         id,
@@ -14,7 +14,16 @@ INSERT INTO
         title
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
+ON CONFLICT (id) DO UPDATE
+SET
+    alliance_id = ?2,
+    corporation_id = ?4,
+    description = ?5,
+    faction_id = ?6,
+    name = ?8,
+    security_status = ?10,
+    title = ?11;
 
 -- name: DeleteEveCharacter :exec
 DELETE FROM eve_characters
