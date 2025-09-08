@@ -20,6 +20,7 @@ const (
 	DateTimeFormat            = "2006.01.02 15:04"
 	DateTimeFormatWithSeconds = "2006.01.02 15:04:05"
 	DateFormat                = "2006.01.02"
+	DateTimeFormatESI         = "2006-01-02T15:04:05Z"
 	FloatFormat               = "#,###.##"
 	IconPixelSize             = 64
 	IconUnitSize              = 28

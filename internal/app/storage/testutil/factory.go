@@ -446,7 +446,7 @@ func (f Factory) CreateCharacterIndustryJob(args ...storage.UpdateOrCreateCharac
 		arg.BlueprintTypeID = x.ID
 	}
 	if arg.Duration == 0 {
-		arg.Duration = rand.Int32N(10_000)
+		arg.Duration = rand.Int32N(1_000_000)
 	}
 	if arg.FacilityID == 0 {
 		arg.FacilityID = arg.StationID
@@ -483,12 +483,11 @@ func (f Factory) CreateCharacterIndustryJob(args ...storage.UpdateOrCreateCharac
 		}
 		arg.Status = items[rand.IntN(len(items))]
 	}
-	now := time.Now().UTC()
-	if arg.StartDate.IsZero() {
-		arg.StartDate = now.Add(-time.Duration(rand.IntN(200)+12) * time.Hour)
-	}
 	if arg.EndDate.IsZero() {
-		arg.EndDate = now.Add(time.Duration(rand.IntN(200)+12) * time.Hour)
+		arg.EndDate = time.Now().UTC().Add(time.Duration(rand.IntN(200)+12) * time.Hour)
+	}
+	if arg.StartDate.IsZero() {
+		arg.StartDate = arg.EndDate.Add(-time.Duration(arg.Duration) * time.Second)
 	}
 	err := f.st.UpdateOrCreateCharacterIndustryJob(ctx, arg)
 	if err != nil {
@@ -1589,7 +1588,7 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *a
 		r := f.CreateEveRace()
 		arg.RaceID = r.ID
 	}
-	err := f.st.CreateEveCharacter(ctx, arg)
+	err := f.st.UpdateOrCreateEveCharacter(ctx, arg)
 	if err != nil {
 		panic(err)
 	}

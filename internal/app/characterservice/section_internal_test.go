@@ -5,16 +5,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/antihax/goesi"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
-	"github.com/antihax/goesi"
-	"github.com/stretchr/testify/assert"
 )
 
 // TODO: Add tests for UpdateSectionIfNeeded()
 
-func TestUpdateCharacterSectionIfChanged(t *testing.T) {
+func TestUpdateSectionIfChanged(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	s := NewFake(st)
 	ctx := context.Background()
@@ -24,7 +25,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		token := factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		section := app.SectionCharacterImplants
-		hasUpdated := false
+		var hasUpdated bool
 		accessToken := ""
 		arg := app.CharacterSectionUpdateParams{CharacterID: c.ID, Section: section}
 		// when
@@ -61,7 +62,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 			ErrorMessage: "error",
 			CompletedAt:  time.Now().Add(-5 * time.Second),
 		})
-		hasUpdated := false
+		var hasUpdated bool
 		arg := app.CharacterSectionUpdateParams{CharacterID: c.ID, Section: section}
 		// when
 		changed, err := s.updateSectionIfChanged(ctx, arg,
@@ -116,5 +117,96 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 				assert.False(t, x2.HasError())
 			}
 		}
+	})
+	t.Run("should update when data has not changed", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		section := app.SectionCharacterIndustryJobs
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     section,
+			Data:        "old",
+			CompletedAt: time.Now().Add(-5 * time.Second),
+		})
+		var hasUpdated bool
+		arg := app.CharacterSectionUpdateParams{CharacterID: c.ID, Section: section}
+		// when
+		changed, err := s.updateSectionIfChanged(ctx, arg,
+			func(ctx context.Context, characterID int32) (any, error) {
+				return "old", nil
+			},
+			func(ctx context.Context, characterID int32, data any) error {
+				hasUpdated = true
+				return nil
+			})
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, changed)
+			assert.True(t, hasUpdated)
+		}
+	})
+}
+
+func TestHasSectionChanged(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	s := NewFake(st)
+	ctx := context.Background()
+	t.Run("report true when section has changed", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		})
+		// when
+		got, err := s.hasSectionChanged(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		}, "changed",
+		)
+		// then
+		if !assert.NoError(t, err) {
+			t.Fatal()
+		}
+		assert.True(t, got)
+	})
+	t.Run("report true when section does not exist", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		// when
+		got, err := s.hasSectionChanged(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		}, "changed",
+		)
+		// then
+		if !assert.NoError(t, err) {
+			t.Fatal()
+		}
+		assert.True(t, got)
+	})
+	t.Run("report false when section has not changed", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		status := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		})
+		// when
+		got, err := s.hasSectionChanged(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		}, status.ContentHash,
+		)
+		// then
+		if !assert.NoError(t, err) {
+			t.Fatal()
+		}
+		assert.False(t, got)
 	})
 }

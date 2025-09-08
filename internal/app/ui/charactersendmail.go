@@ -59,6 +59,7 @@ func newCharacterSendMail(u *baseUI, c *app.Character, mode app.SendMailMode, m 
 
 	a.body = widget.NewEntry()
 	a.body.MultiLine = true
+	a.body.Wrapping = fyne.TextWrapWord
 	a.body.SetMinRowsVisible(14)
 	a.body.PlaceHolder = "Compose message"
 

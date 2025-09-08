@@ -137,25 +137,7 @@ func main() {
 		return
 	}
 
-	if !*filesFlag && !*versionFlag {
-		log.Printf("INFO EVE Buddy version=%s", fyneApp.Metadata().Version)
-	}
-
-	appSettings := settings.New(fyneApp.Preferences())
-	if *resetUIFlag {
-		appSettings.ResetUI()
-	}
-
-	// set log level from settings
-	if *logLevelFlag == "" {
-
-		if l := appSettings.LogLevelSlog(); l != logLevelDefault {
-			slog.Info("Setting log level", "level", l)
-			slog.SetLogLoggerLevel(l)
-		}
-	}
-
-	// data dir
+	// File paths
 	var dataDir string
 	var isDesktop bool
 	if !*mobileFlag {
@@ -170,30 +152,43 @@ func main() {
 	} else {
 		dataDir = fyneApp.Storage().RootURI().Path()
 	}
+	dbPath := filepath.Join(dataDir, dbFileName)
+	logDir := filepath.Join(dataDir, logFolderName)
+	logFilePath := filepath.Join(logDir, logFileName)
+	crashFilePath := filepath.Join(logDir, crashFileName)
+	dataPaths := xmaps.OrderedMap[string, string]{
+		"db":        dbPath,
+		"log":       logFilePath,
+		"crashfile": crashFilePath,
+		"settings":  path.Join(fyneApp.Storage().RootURI().Path(), "preferences.json"),
+	}
 
-	if *deleteDataNoConfirmFlag {
-		deleteapp.RemoveSettings(fyneApp)
-		err := deleteapp.RemoveFolders(context.Background(), dataDir, nil)
-		if err != nil {
-			log.Fatal(err)
+	if *filesFlag {
+		for k, v := range dataPaths.All() {
+			fmt.Printf("%s: %s\n", k, v)
 		}
 		return
 	}
 
-	// start uninstall app if requested
-	if isDesktop && *deleteDataFlag {
-		u := deleteapp.NewUI(fyneApp)
-		u.DataDir = dataDir
-		u.ShowAndRun()
-		return
+	log.Printf("INFO EVE Buddy version=%s", fyneApp.Metadata().Version)
+
+	appSettings := settings.New(fyneApp.Preferences())
+	if *resetUIFlag {
+		appSettings.ResetUI()
+	}
+
+	// set log level from settings
+	if *logLevelFlag == "" {
+		if l := appSettings.LogLevelSlog(); l != logLevelDefault {
+			slog.Info("Setting log level", "level", l)
+			slog.SetLogLoggerLevel(l)
+		}
 	}
 
 	// setup logfile for desktop
-	logDir := filepath.Join(dataDir, logFolderName)
 	if err := os.MkdirAll(logDir, os.ModePerm); err != nil {
 		log.Fatal(err)
 	}
-	logFilePath := filepath.Join(logDir, logFileName)
 	logger := &lumberjack.Logger{
 		Filename:   logFilePath,
 		MaxSize:    logMaxSizeMB,
@@ -233,9 +228,26 @@ func main() {
 		slog.Info("Identified as primary instance")
 	}
 
-	crashFilePath, err := setupCrashFile(logDir)
-	if err != nil {
+	// crashfile
+	if err := setupCrashFile(crashFilePath); err != nil {
 		log.Fatalf("Failed to setup crash report file: %s", err)
+	}
+
+	if *deleteDataNoConfirmFlag {
+		deleteapp.RemoveSettings(fyneApp)
+		err := deleteapp.RemoveFolders(context.Background(), dataDir, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
+	// start uninstall app if requested
+	if isDesktop && *deleteDataFlag {
+		u := deleteapp.NewUI(fyneApp)
+		u.DataDir = dataDir
+		u.ShowAndRun()
+		return
 	}
 
 	// start pprof web server
@@ -246,7 +258,6 @@ func main() {
 	}
 
 	// init database
-	dbPath := filepath.Join(dataDir, dbFileName)
 	dsn := "file:///" + filepath.ToSlash(dbPath)
 	dbRW, dbRO, err := storage.InitDB(dsn)
 	if err != nil {
@@ -256,20 +267,6 @@ func main() {
 	defer dbRW.Close()
 	defer dbRO.Close()
 	st := storage.New(dbRW, dbRO)
-
-	// Data paths
-	dataPaths := xmaps.OrderedMap[string, string]{
-		"db":        dbPath,
-		"log":       logFilePath,
-		"crashfile": crashFilePath,
-		"settings":  path.Join(fyneApp.Storage().RootURI().Path(), "preferences.json"),
-	}
-	if *filesFlag {
-		for k, v := range dataPaths.All() {
-			fmt.Printf("%s: %s\n", k, v)
-		}
-		return
-	}
 
 	// Initialize caches
 	memCache := memcache.New()
@@ -424,17 +421,16 @@ func ensureSingleInstance() (mutex.Releaser, error) {
 }
 
 // setupCrashFile create a dedicated file for storing crash reports and returns it's path.
-func setupCrashFile(logDir string) (string, error) {
-	path := filepath.Join(logDir, crashFileName)
+func setupCrashFile(path string) error {
 	crashFile, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
-		return "", err
+		return err
 	}
 	if err := debug.SetCrashOutput(crashFile, debug.CrashOptions{}); err != nil {
-		return "", err
+		return err
 	}
 	crashFile.Close()
-	return path, nil
+	return nil
 }
 
 // logResponse is a callback for retryablehttp.

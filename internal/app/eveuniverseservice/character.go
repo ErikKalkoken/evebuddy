@@ -20,25 +20,23 @@ func (s *EveUniverseService) GetCharacterESI(ctx context.Context, characterID in
 }
 
 func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, characterID int32) (*app.EveCharacter, error) {
-	x, err, _ := s.sfg.Do(fmt.Sprintf("GetOrCreateCharacterESI-%d", characterID), func() (any, error) {
-		o, err := s.st.GetEveCharacter(ctx, characterID)
-		if err == nil {
-			return o, err
-		} else if !errors.Is(err, app.ErrNotFound) {
-			return nil, err
-		}
+	o, err := s.st.GetEveCharacter(ctx, characterID)
+	if errors.Is(err, app.ErrNotFound) {
+		return s.UpdateOrCreateCharacterESI(ctx, characterID)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return o, nil
+}
+
+func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, characterID int32) (*app.EveCharacter, error) {
+	x, err, _ := s.sfg.Do(fmt.Sprintf("UpdateOrCreateCharacterESI-%d", characterID), func() (any, error) {
 		r, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, characterID, nil)
 		if err != nil {
 			return nil, err
 		}
-		ids := set.Of(characterID, r.CorporationId)
-		if r.AllianceId != 0 {
-			ids.Add(r.AllianceId)
-		}
-		if r.FactionId != 0 {
-			ids.Add(r.FactionId)
-		}
-		_, err = s.AddMissingEntities(ctx, ids)
+		_, err = s.AddMissingEntities(ctx, set.Of(characterID, r.CorporationId, r.AllianceId, r.FactionId))
 		if err != nil {
 			return nil, err
 		}
@@ -46,7 +44,7 @@ func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, charac
 		if err != nil {
 			return nil, err
 		}
-		arg := storage.CreateEveCharacterParams{
+		if err := s.st.UpdateOrCreateEveCharacter(ctx, storage.CreateEveCharacterParams{
 			AllianceID:     r.AllianceId,
 			ID:             characterID,
 			Birthday:       r.Birthday,
@@ -58,8 +56,7 @@ func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, charac
 			RaceID:         r.RaceId,
 			SecurityStatus: float64(r.SecurityStatus),
 			Title:          r.Title,
-		}
-		if err := s.st.CreateEveCharacter(ctx, arg); err != nil {
+		}); err != nil {
 			return nil, err
 		}
 		slog.Info("Created eve character", "ID", characterID)

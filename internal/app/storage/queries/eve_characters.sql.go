@@ -11,56 +11,6 @@ import (
 	"time"
 )
 
-const createEveCharacter = `-- name: CreateEveCharacter :exec
-INSERT INTO
-    eve_characters (
-        id,
-        alliance_id,
-        birthday,
-        corporation_id,
-        description,
-        faction_id,
-        gender,
-        name,
-        race_id,
-        security_status,
-        title
-    )
-VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`
-
-type CreateEveCharacterParams struct {
-	ID             int64
-	AllianceID     sql.NullInt64
-	Birthday       time.Time
-	CorporationID  int64
-	Description    string
-	FactionID      sql.NullInt64
-	Gender         string
-	Name           string
-	RaceID         int64
-	SecurityStatus float64
-	Title          string
-}
-
-func (q *Queries) CreateEveCharacter(ctx context.Context, arg CreateEveCharacterParams) error {
-	_, err := q.db.ExecContext(ctx, createEveCharacter,
-		arg.ID,
-		arg.AllianceID,
-		arg.Birthday,
-		arg.CorporationID,
-		arg.Description,
-		arg.FactionID,
-		arg.Gender,
-		arg.Name,
-		arg.RaceID,
-		arg.SecurityStatus,
-		arg.Title,
-	)
-	return err
-}
-
 const deleteEveCharacter = `-- name: DeleteEveCharacter :exec
 DELETE FROM eve_characters
 WHERE
@@ -214,5 +164,64 @@ type UpdateEveCharacterNameParams struct {
 
 func (q *Queries) UpdateEveCharacterName(ctx context.Context, arg UpdateEveCharacterNameParams) error {
 	_, err := q.db.ExecContext(ctx, updateEveCharacterName, arg.Name, arg.ID)
+	return err
+}
+
+const updateOrCreateEveCharacter = `-- name: UpdateOrCreateEveCharacter :exec
+INSERT INTO
+    eve_characters (
+        id,
+        alliance_id,
+        birthday,
+        corporation_id,
+        description,
+        faction_id,
+        gender,
+        name,
+        race_id,
+        security_status,
+        title
+    )
+VALUES
+    (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
+ON CONFLICT (id) DO UPDATE
+SET
+    alliance_id = ?2,
+    corporation_id = ?4,
+    description = ?5,
+    faction_id = ?6,
+    name = ?8,
+    security_status = ?10,
+    title = ?11
+`
+
+type UpdateOrCreateEveCharacterParams struct {
+	ID             int64
+	AllianceID     sql.NullInt64
+	Birthday       time.Time
+	CorporationID  int64
+	Description    string
+	FactionID      sql.NullInt64
+	Gender         string
+	Name           string
+	RaceID         int64
+	SecurityStatus float64
+	Title          string
+}
+
+func (q *Queries) UpdateOrCreateEveCharacter(ctx context.Context, arg UpdateOrCreateEveCharacterParams) error {
+	_, err := q.db.ExecContext(ctx, updateOrCreateEveCharacter,
+		arg.ID,
+		arg.AllianceID,
+		arg.Birthday,
+		arg.CorporationID,
+		arg.Description,
+		arg.FactionID,
+		arg.Gender,
+		arg.Name,
+		arg.RaceID,
+		arg.SecurityStatus,
+		arg.Title,
+	)
 	return err
 }

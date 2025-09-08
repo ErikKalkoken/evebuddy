@@ -171,28 +171,33 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 		defer arg.OnUpdateCompleted()
 	}
 	key := fmt.Sprintf("update-corporation-section-%s-%d", arg.Section, arg.CorporationID)
-	v, err, _ := s.sfg.Do(key, func() (any, error) {
+	x, err, _ := s.sfg.Do(key, func() (any, error) {
 		return f(ctx, arg)
 	})
 	if err != nil {
 		errorMessage := err.Error()
 		startedAt := optional.Optional[time.Time]{}
-		arg2 := storage.UpdateOrCreateCorporationSectionStatusParams{
+		o, err2 := s.st.UpdateOrCreateCorporationSectionStatus(ctx, storage.UpdateOrCreateCorporationSectionStatusParams{
 			CorporationID: arg.CorporationID,
-			Section:       arg.Section,
 			ErrorMessage:  &errorMessage,
+			Section:       arg.Section,
 			StartedAt:     &startedAt,
-		}
-		o, err2 := s.st.UpdateOrCreateCorporationSectionStatus(ctx, arg2)
+		})
 		if err2 != nil {
 			slog.Error("record error for failed section update: %s", "error", err2)
 		}
 		s.scs.SetCorporationSection(o)
 		return false, fmt.Errorf("update corporation section from ESI for %+v: %w", arg, err)
 	}
-	changed := v.(bool)
-	slog.Info("Corporation section update completed", "corporationID", arg.CorporationID, "section", arg.Section, "forced", arg.ForceUpdate, "changed", changed)
-	return changed, err
+	hasChanged := x.(bool)
+	slog.Info(
+		"Corporation section update completed",
+		"corporationID", arg.CorporationID,
+		"section", arg.Section,
+		"forced", arg.ForceUpdate,
+		"hasChanged", hasChanged,
+	)
+	return hasChanged, err
 }
 
 // updateSectionIfChanged updates a character section if it has changed
@@ -204,25 +209,30 @@ func (s *CorporationService) updateSectionIfChanged(
 	update func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error,
 ) (bool, error) {
 	startedAt := optional.New(time.Now())
-	arg2 := storage.UpdateOrCreateCorporationSectionStatusParams{
+	o, err := s.st.UpdateOrCreateCorporationSectionStatus(ctx, storage.UpdateOrCreateCorporationSectionStatusParams{
 		CorporationID: arg.CorporationID,
 		Section:       arg.Section,
 		StartedAt:     &startedAt,
-	}
-	o, err := s.st.UpdateOrCreateCorporationSectionStatus(ctx, arg2)
+	})
 	if err != nil {
 		return false, err
 	}
 	s.scs.SetCorporationSection(o)
 	var hash, comment string
-	var hasChanged bool
+	var needsUpdate bool
 	token, err := s.cs.CharacterTokenForCorporation(ctx, arg.CorporationID, arg.Section.Roles(), arg.Section.Scopes(), true)
 	if errors.Is(err, app.ErrNotFound) {
 		comment = fmt.Sprintf(
 			"update skipped due to missing corporation member with required roles %s and/or missing or invalid token",
 			arg.Section.Roles(),
 		)
-		slog.Info("Section "+comment, "corporationID", arg.CorporationID, "section", arg.Section, "role", arg.Section.Roles(), "scopes", arg.Section.Scopes())
+		slog.Info(
+			"Section "+comment,
+			"corporationID", arg.CorporationID,
+			"section", arg.Section,
+			"role", arg.Section.Roles(),
+			"scopes", arg.Section.Scopes(),
+		)
 	} else if err != nil {
 		return false, err
 	} else {
@@ -237,19 +247,20 @@ func (s *CorporationService) updateSectionIfChanged(
 		}
 		hash = h
 
-		// identify if changed
-		var notFound bool
-		u, err := s.st.GetCorporationSectionStatus(ctx, arg.CorporationID, arg.Section)
-		if errors.Is(err, app.ErrNotFound) {
-			notFound = true
-		} else if err != nil {
-			return false, err
+		// identify whether update is needed
+		if arg.ForceUpdate {
+			needsUpdate = true
+		} else if arg.Section.IsSkippingChangeDetection() {
+			needsUpdate = true
 		} else {
-			hasChanged = u.ContentHash != hash
+			hasChanged, err := s.hasSectionChanged(ctx, arg, hash)
+			if err != nil {
+				return false, err
+			}
+			needsUpdate = hasChanged
 		}
 
-		// update if needed
-		if arg.ForceUpdate || notFound || hasChanged {
+		if needsUpdate {
 			if err := update(ctx, arg, data); err != nil {
 				return false, err
 			}
@@ -260,7 +271,7 @@ func (s *CorporationService) updateSectionIfChanged(
 	completedAt := storage.NewNullTimeFromTime(time.Now())
 	errorMessage := ""
 	startedAt2 := optional.Optional[time.Time]{}
-	arg2 = storage.UpdateOrCreateCorporationSectionStatusParams{
+	o, err = s.st.UpdateOrCreateCorporationSectionStatus(ctx, storage.UpdateOrCreateCorporationSectionStatusParams{
 		Comment:       &comment,
 		CompletedAt:   &completedAt,
 		ContentHash:   &hash,
@@ -268,13 +279,29 @@ func (s *CorporationService) updateSectionIfChanged(
 		ErrorMessage:  &errorMessage,
 		Section:       arg.Section,
 		StartedAt:     &startedAt2,
-	}
-	o, err = s.st.UpdateOrCreateCorporationSectionStatus(ctx, arg2)
+	})
 	if err != nil {
 		return false, err
 	}
 	s.scs.SetCorporationSection(o)
-	slog.Debug("Has section changed", "corporationID", arg.CorporationID, "section", arg.Section, "changed", hasChanged)
+	slog.Debug(
+		"Has section changed",
+		"corporationID", arg.CorporationID,
+		"section", arg.Section,
+		"needsUpdate", needsUpdate,
+	)
+	return needsUpdate, nil
+}
+
+func (s *CorporationService) hasSectionChanged(ctx context.Context, arg app.CorporationSectionUpdateParams, hash string) (bool, error) {
+	status, err := s.st.GetCorporationSectionStatus(ctx, arg.CorporationID, arg.Section)
+	if errors.Is(err, app.ErrNotFound) {
+		return true, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	hasChanged := status.ContentHash != hash
 	return hasChanged, nil
 }
 

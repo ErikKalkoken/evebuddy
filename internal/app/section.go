@@ -18,15 +18,26 @@ const (
 	sectionErrorTimeout              = 120 * time.Second
 )
 
+// section defines the interface for all section types.
 type section interface {
+	// DisplayName returns the output friendly name of a section.
 	DisplayName() string
+
+	// IsSkippingChangeDetection reports whether a section is skipping the change detection.
+	IsSkippingChangeDetection() bool
+
+	// Scopes returns the required scopes for fetching data for a section from ESI.
 	Scopes() set.Set[string]
+
+	// Implements the stringer interface.
 	String() string
+
+	// Timeout returns the time until the data of an update section becomes stale.
 	Timeout() time.Duration
 }
 
-func makeSectionDisplayName(cs section) string {
-	t := strings.ReplaceAll(cs.String(), "_", " ")
+func makeSectionDisplayName(s section) string {
+	t := strings.ReplaceAll(s.String(), "_", " ")
 	c := cases.Title(language.English)
 	t = c.String(t)
 	return t
@@ -89,44 +100,14 @@ func (cs CharacterSection) DisplayName() string {
 	return makeSectionDisplayName(cs)
 }
 
-func (cs CharacterSection) String() string {
-	return string(cs)
+func (cs CharacterSection) IsSkippingChangeDetection() bool {
+	switch cs {
+	case SectionCharacterIndustryJobs:
+		return true
+	}
+	return false
 }
 
-// Timeout returns the time until the data of an update section becomes stale.
-func (cs CharacterSection) Timeout() time.Duration {
-	var m = map[CharacterSection]time.Duration{
-		SectionCharacterAssets:             3600 * time.Second,
-		SectionCharacterAttributes:         120 * time.Second,
-		SectionCharacterContracts:          300 * time.Second,
-		SectionCharacterImplants:           120 * time.Second,
-		SectionCharacterIndustryJobs:       300 * time.Second,
-		SectionCharacterJumpClones:         120 * time.Second,
-		SectionCharacterLocation:           300 * time.Second, // minimum 5 seconds
-		SectionCharacterMailLabels:         60 * time.Second,  // minimum 30 seconds
-		SectionCharacterMailLists:          120 * time.Second,
-		SectionCharacterMails:              60 * time.Second, // minimum 30 seconds
-		SectionCharacterMarketOrders:       1200 * time.Second,
-		SectionCharacterNotifications:      600 * time.Second,
-		SectionCharacterOnline:             300 * time.Second, // minimum 30 seconds
-		SectionCharacterPlanets:            600 * time.Second,
-		SectionCharacterRoles:              3600 * time.Second,
-		SectionCharacterShip:               300 * time.Second, // minimum 5 seconds
-		SectionCharacterSkillqueue:         120 * time.Second,
-		SectionCharacterSkills:             120 * time.Second,
-		SectionCharacterWalletBalance:      120 * time.Second,
-		SectionCharacterWalletJournal:      3600 * time.Second,
-		SectionCharacterWalletTransactions: 3600 * time.Second,
-	}
-	duration, ok := m[cs]
-	if !ok {
-		slog.Warn("Requested duration for unknown section. Using default.", "section", cs)
-		return characterSectionDefaultTimeout
-	}
-	return duration
-}
-
-// Scopes returns the required scopes for fetching data for a section from ESI.
 func (cs CharacterSection) Scopes() set.Set[string] {
 	m := map[CharacterSection][]string{
 		SectionCharacterAssets:             {"esi-assets.read_assets.v1", "esi-universe.read_structures.v1"},
@@ -157,6 +138,42 @@ func (cs CharacterSection) Scopes() set.Set[string] {
 		return set.Of[string]()
 	}
 	return set.Of(scopes...)
+}
+
+func (cs CharacterSection) String() string {
+	return string(cs)
+}
+
+func (cs CharacterSection) Timeout() time.Duration {
+	var m = map[CharacterSection]time.Duration{
+		SectionCharacterAssets:             3600 * time.Second,
+		SectionCharacterAttributes:         120 * time.Second,
+		SectionCharacterContracts:          300 * time.Second,
+		SectionCharacterImplants:           120 * time.Second,
+		SectionCharacterIndustryJobs:       300 * time.Second,
+		SectionCharacterJumpClones:         120 * time.Second,
+		SectionCharacterLocation:           300 * time.Second, // minimum 5 seconds
+		SectionCharacterMailLabels:         60 * time.Second,  // minimum 30 seconds
+		SectionCharacterMailLists:          120 * time.Second,
+		SectionCharacterMails:              60 * time.Second, // minimum 30 seconds
+		SectionCharacterMarketOrders:       1200 * time.Second,
+		SectionCharacterNotifications:      600 * time.Second,
+		SectionCharacterOnline:             300 * time.Second, // minimum 30 seconds
+		SectionCharacterPlanets:            600 * time.Second,
+		SectionCharacterRoles:              3600 * time.Second,
+		SectionCharacterShip:               300 * time.Second, // minimum 5 seconds
+		SectionCharacterSkillqueue:         120 * time.Second,
+		SectionCharacterSkills:             120 * time.Second,
+		SectionCharacterWalletBalance:      120 * time.Second,
+		SectionCharacterWalletJournal:      3600 * time.Second,
+		SectionCharacterWalletTransactions: 3600 * time.Second,
+	}
+	duration, ok := m[cs]
+	if !ok {
+		slog.Warn("Requested duration for unknown section. Using default.", "section", cs)
+		return characterSectionDefaultTimeout
+	}
+	return duration
 }
 
 // CorporationSection represents a topic of a corporation that can be updated from ESI.
@@ -257,11 +274,18 @@ func (cs CorporationSection) Division() Division {
 	return m[cs]
 }
 
+func (cs CorporationSection) IsSkippingChangeDetection() bool {
+	switch cs {
+	case SectionCorporationIndustryJobs:
+		return true
+	}
+	return false
+}
+
 func (cs CorporationSection) String() string {
 	return string(cs)
 }
 
-// Timeout returns the time until the data of an update section becomes stale.
 func (cs CorporationSection) Timeout() time.Duration {
 	const (
 		walletTransactions = 3600 * time.Second
@@ -328,7 +352,6 @@ func (cs CorporationSection) Roles() set.Set[Role] {
 	return set.Of(role...)
 }
 
-// Scopes returns the required scopes for fetching data for a section from ESI.
 func (cs CorporationSection) Scopes() set.Set[string] {
 	journal := []string{"esi-wallet.read_corporation_wallets.v1"}
 	transactions := []string{"esi-wallet.read_corporation_wallets.v1", "esi-universe.read_structures.v1"}
@@ -393,14 +416,8 @@ func (gs GeneralSection) DisplayName() string {
 	return makeSectionDisplayName(gs)
 }
 
-// Timeout returns the time until the data of an update section becomes stale.
-func (gs GeneralSection) Timeout() time.Duration {
-	duration, ok := generalSectionTimeouts[gs]
-	if !ok {
-		slog.Warn("Requested duration for unknown section. Using default.", "section", gs)
-		return generalSectionDefaultTimeout
-	}
-	return duration
+func (gs GeneralSection) IsSkippingChangeDetection() bool {
+	return false
 }
 
 func (gs GeneralSection) Scopes() set.Set[string] {
@@ -409,6 +426,15 @@ func (gs GeneralSection) Scopes() set.Set[string] {
 
 func (gs GeneralSection) String() string {
 	return string(gs)
+}
+
+func (gs GeneralSection) Timeout() time.Duration {
+	duration, ok := generalSectionTimeouts[gs]
+	if !ok {
+		slog.Warn("Requested duration for unknown section. Using default.", "section", gs)
+		return generalSectionDefaultTimeout
+	}
+	return duration
 }
 
 // Scopes returns all required ESI scopes.

@@ -98,52 +98,35 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			AccessToken: "accessToken",
 		}}})
 		c := factory.CreateCorporation()
-		blueprintType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
-		completer := factory.CreateEveEntityCharacter()
-		productType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 2046})
-		installer := factory.CreateEveEntityCharacter(app.EveEntity{ID: 498338451})
-		location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
-		factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
-			ActivityID:          1,
-			BlueprintID:         1015116533326,
-			BlueprintLocationID: location.ID,
-			BlueprintTypeID:     blueprintType.ID,
-			CorporationID:       c.ID,
-			Cost:                118.01,
-			Duration:            548,
-			FacilityID:          location.ID,
-			InstallerID:         installer.ID,
-			JobID:               229136101,
-			LicensedRuns:        200,
-			LocationID:          location.ID,
-			OutputLocationID:    location.ID,
-			ProductTypeID:       productType.ID,
-			Runs:                1,
-			Status:              app.JobActive,
+		completionDate := time.Now().UTC().Add(-2 * time.Hour)
+		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: c.ID,
+			Status:        app.JobActive,
+			EndDate:       completionDate,
 		})
+		completer := factory.CreateEveEntityCharacter()
 		httpmock.RegisterResponder(
 			"GET",
 			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/industry/jobs/\?include_completed=true`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
-					"activity_id":            1,
-					"blueprint_id":           1015116533326,
-					"blueprint_location_id":  11,
-					"blueprint_type_id":      2047,
+					"activity_id":            j1.Activity,
+					"blueprint_id":           j1.BlueprintID,
+					"blueprint_location_id":  j1.BlueprintLocationID,
+					"blueprint_type_id":      j1.BlueprintType.ID,
 					"completed_character_id": completer.ID,
-					"completed_date":         "2014-07-20T15:56:14Z",
-					"cost":                   118.01,
-					"duration":               548,
-					"end_date":               "2014-07-19T15:56:14Z",
-					"facility_id":            12,
-					"installer_id":           498338451,
-					"job_id":                 229136101,
-					"licensed_runs":          200,
-					"location_id":            60006382,
-					"output_location_id":     13,
-					"product_type_id":        2046,
-					"runs":                   1,
-					"start_date":             "2014-07-19T15:47:06Z",
+					"completed_date":         completionDate.Format(app.DateTimeFormatESI),
+					"cost":                   j1.Cost.ValueOrZero(),
+					"duration":               j1.Duration,
+					"end_date":               j1.EndDate.Format(app.DateTimeFormatESI),
+					"facility_id":            j1.FacilityID,
+					"installer_id":           j1.Installer.ID,
+					"job_id":                 j1.JobID,
+					"licensed_runs":          j1.LicensedRuns.ValueOrZero(),
+					"location_id":            j1.Location.ID,
+					"output_location_id":     j1.OutputLocationID,
+					"runs":                   j1.Runs,
+					"start_date":             j1.StartDate.Format(app.DateTimeFormatESI),
 					"status":                 "delivered",
 					"successful_runs":        42,
 				},
@@ -160,17 +143,17 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			xx, err := st.ListAllCorporationIndustryJobs(ctx)
 			if assert.NoError(t, err) {
 				assert.Len(t, xx, 1)
-				x := xx[0]
-				assert.Equal(t, c.ID, x.CorporationID)
-				assert.Equal(t, app.JobDelivered, x.Status)
-				assert.EqualValues(t, 42, x.SuccessfulRuns.MustValue())
-				assert.Equal(t, time.Date(2014, 7, 19, 15, 56, 14, 0, time.UTC), x.EndDate)
-				assert.Equal(t, time.Date(2014, 7, 20, 15, 56, 14, 0, time.UTC), x.CompletedDate.MustValue())
-				assert.EqualValues(t, completer, x.CompletedCharacter.MustValue())
+				j2 := xx[0]
+				assert.Equal(t, c.ID, j2.CorporationID)
+				assert.Equal(t, app.JobDelivered, j2.Status)
+				assert.EqualValues(t, 42, j2.SuccessfulRuns.MustValue())
+				assert.WithinDuration(t, completionDate, j2.EndDate, time.Second)
+				assert.WithinDuration(t, completionDate, j2.CompletedDate.ValueOrZero(), time.Second)
+				assert.EqualValues(t, completer, j2.CompletedCharacter.MustValue())
 			}
 		}
 	})
-	t.Run("should fix incorrect status", func(t *testing.T) {
+	t.Run("should fix incorrect status for new jobs", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
@@ -221,6 +204,60 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			}
 		}
 	})
+	t.Run("should fix incorrect status for existing jobs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
+		c := factory.CreateCorporation()
+		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: c.ID,
+			Status:        app.JobActive,
+			EndDate:       time.Now().UTC().Add(-2 * time.Hour),
+		})
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/industry/jobs/\?include_completed=true`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"activity_id":           j1.Activity,
+					"blueprint_id":          j1.BlueprintID,
+					"blueprint_location_id": j1.BlueprintLocationID,
+					"blueprint_type_id":     j1.BlueprintType.ID,
+					"cost":                  j1.Cost.ValueOrZero(),
+					"duration":              j1.Duration,
+					"end_date":              j1.EndDate.Format(app.DateTimeFormatESI),
+					"facility_id":           j1.FacilityID,
+					"installer_id":          j1.Installer.ID,
+					"job_id":                j1.JobID,
+					"licensed_runs":         j1.LicensedRuns.ValueOrZero(),
+					"location_id":           j1.Location.ID,
+					"output_location_id":    j1.OutputLocationID,
+					"runs":                  j1.Runs,
+					"start_date":            j1.StartDate.Format(app.DateTimeFormatESI),
+					"status":                "active",
+				},
+			}),
+		)
+		// when
+		changed, err := s.updateIndustryJobsESI(ctx, app.CorporationSectionUpdateParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationIndustryJobs,
+		})
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, changed)
+			xx, err := st.ListAllCorporationIndustryJobs(ctx)
+			if assert.NoError(t, err) {
+				assert.Len(t, xx, 1)
+				j2 := xx[0]
+				assert.Equal(t, c.ID, j2.CorporationID)
+				assert.Equal(t, app.JobReady, j2.Status)
+			}
+		}
+	})
 	t.Run("should not fix correct status", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -246,7 +283,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 					"blueprint_type_id":     2047,
 					"cost":                  118.01,
 					"duration":              548,
-					"end_date":              endDate.Format("2006-01-02T15:04:05Z"),
+					"end_date":              endDate.Format(app.DateTimeFormatESI),
 					"facility_id":           12,
 					"installer_id":          498338451,
 					"job_id":                229136101,
@@ -255,7 +292,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 					"output_location_id":    13,
 					"product_type_id":       2046,
 					"runs":                  1,
-					"start_date":            startDate.Format("2006-01-02T15:04:05Z"),
+					"start_date":            startDate.Format(app.DateTimeFormatESI),
 					"status":                "active",
 				},
 			}))
@@ -297,7 +334,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 				"blueprint_type_id":     2047,
 				"cost":                  118.01,
 				"duration":              548,
-				"end_date":              endDate.Format("2006-01-02T15:04:05Z"),
+				"end_date":              endDate.Format(app.DateTimeFormatESI),
 				"facility_id":           12,
 				"installer_id":          498338451,
 				"job_id":                jobID,
@@ -306,7 +343,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 				"output_location_id":    13,
 				"product_type_id":       2046,
 				"runs":                  1,
-				"start_date":            startDate.Format("2006-01-02T15:04:05Z"),
+				"start_date":            startDate.Format(app.DateTimeFormatESI),
 				"status":                "active",
 			}
 			return maps.Clone(template)

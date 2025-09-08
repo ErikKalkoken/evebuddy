@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2/test"
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -70,6 +71,8 @@ func TestGetAnyCharacter(t *testing.T) {
 func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
 	ctx := context.Background()
 	test.NewTempApp(t)
 	t.Run("create new character", func(t *testing.T) {
@@ -77,28 +80,60 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		testutil.TruncateTables(db)
 		corporation := factory.CreateEveCorporation()
 		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: corporation.ID})
-		character := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
+		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 			CorporationID: corporation.ID,
 		})
 		cs := characterservice.NewFake(st, characterservice.Params{
 			SSOService: characterservice.SSOFake{Token: factory.CreateToken(app.Token{
-				CharacterID:   character.ID,
-				CharacterName: character.Name})},
+				CharacterID:   ec.ID,
+				CharacterName: ec.Name}),
+			},
 		})
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/`,
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"birthday":        ec.Birthday.Format(app.DateTimeFormatESI),
+				"bloodline_id":    3,
+				"corporation_id":  ec.Corporation.ID,
+				"gender":          ec.Gender,
+				"name":            ec.Name,
+				"race_id":         ec.Race.ID,
+				"security_status": ec.SecurityStatus,
+				"title":           ec.Title,
+			}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/`,
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"ceo_id":       corporation.Ceo.ID,
+				"creator_id":   corporation.Creator.ID,
+				"date_founded": corporation.DateFounded.ValueOrZero().Format(app.DateTimeFormatESI),
+				"description":  corporation.Description,
+				"member_count": corporation.MemberCount,
+				"name":         corporation.Name,
+				"tax_rate":     corporation.TaxRate,
+				"ticker":       corporation.Ticker,
+				"url":          corporation.URL,
+			}),
+		)
+		// when
 		var info string
 		got, err := cs.UpdateOrCreateCharacterFromSSO(ctx, func(s string) {
 			info = s
 		})
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, character.ID, got.ID)
-			ok, err := cs.HasCharacter(ctx, character.ID)
+			assert.Equal(t, ec.ID, got.ID)
+			ok, err := cs.HasCharacter(ctx, ec.ID)
 			if assert.NoError(t, err) {
 				assert.True(t, ok)
 			}
-			token, err := st.GetCharacterToken(ctx, character.ID)
+			token, err := st.GetCharacterToken(ctx, ec.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, token.CharacterID, character.ID)
+				assert.Equal(t, token.CharacterID, ec.ID)
 			}
 			x, err := st.GetCorporation(ctx, corporation.ID)
 			if assert.NoError(t, err) {
@@ -125,6 +160,37 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 				CharacterID:   c.ID,
 				CharacterName: c.EveCharacter.Name})},
 		})
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/`,
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"birthday":        ec.Birthday.Format(app.DateTimeFormatESI),
+				"bloodline_id":    3,
+				"corporation_id":  ec.Corporation.ID,
+				"gender":          ec.Gender,
+				"name":            ec.Name,
+				"race_id":         ec.Race.ID,
+				"security_status": ec.SecurityStatus,
+				"title":           ec.Title,
+			}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/`,
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"ceo_id":       corporation.Ceo.ID,
+				"creator_id":   corporation.Creator.ID,
+				"date_founded": corporation.DateFounded.ValueOrZero().Format(app.DateTimeFormatESI),
+				"description":  corporation.Description,
+				"member_count": corporation.MemberCount,
+				"name":         corporation.Name,
+				"tax_rate":     corporation.TaxRate,
+				"ticker":       corporation.Ticker,
+				"url":          corporation.URL,
+			}),
+		)
+		// when
 		var info string
 		got, err := cs.UpdateOrCreateCharacterFromSSO(ctx, func(s string) {
 			info = s

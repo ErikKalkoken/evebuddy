@@ -8,11 +8,13 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
+	"github.com/antihax/goesi"
 )
 
 func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 	scs := statuscacheservice.New(memcache.New(), st)
 	eus := eveuniverseservice.New(eveuniverseservice.Params{
+		ESIClient:          goesi.NewAPIClient(nil, ""),
 		StatusCacheService: scs,
 		Storage:            st,
 	})
