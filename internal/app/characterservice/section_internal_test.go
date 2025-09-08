@@ -148,3 +148,65 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 		}
 	})
 }
+
+func TestHasSectionChanged(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	s := NewFake(st)
+	ctx := context.Background()
+	t.Run("report true when section has changed", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		})
+		// when
+		got, err := s.hasSectionChanged(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		}, "changed",
+		)
+		// then
+		if !assert.NoError(t, err) {
+			t.Fatal()
+		}
+		assert.True(t, got)
+	})
+	t.Run("report true when section does not exist", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		// when
+		got, err := s.hasSectionChanged(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		}, "changed",
+		)
+		// then
+		if !assert.NoError(t, err) {
+			t.Fatal()
+		}
+		assert.True(t, got)
+	})
+	t.Run("report false when section has not changed", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		status := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		})
+		// when
+		got, err := s.hasSectionChanged(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		}, status.ContentHash,
+		)
+		// then
+		if !assert.NoError(t, err) {
+			t.Fatal()
+		}
+		assert.False(t, got)
+	})
+}

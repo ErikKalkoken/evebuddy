@@ -108,7 +108,13 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 		return false, fmt.Errorf("update character section from ESI for %+v: %w", arg, err)
 	}
 	hasChanged := x.(bool)
-	slog.Info("Character section update completed", "characterID", arg.CharacterID, "section", arg.Section, "forced", arg.ForceUpdate, "changed", hasChanged)
+	slog.Info(
+		"Character section update completed",
+		"characterID", arg.CharacterID,
+		"section", arg.Section,
+		"forced", arg.ForceUpdate,
+		"changed", hasChanged,
+	)
 	return hasChanged, err
 }
 
@@ -182,7 +188,12 @@ func (s *CharacterService) updateSectionIfChanged(
 		return false, err
 	}
 	s.scs.SetCharacterSection(o)
-	slog.Debug("Has section changed", "characterID", arg.CharacterID, "section", arg.Section, "needsUpdate", needsUpdate)
+	slog.Debug(
+		"Has section changed",
+		"characterID", arg.CharacterID,
+		"section", arg.Section,
+		"needsUpdate", needsUpdate,
+	)
 	return needsUpdate, nil
 }
 
