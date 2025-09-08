@@ -1,8 +1,6 @@
 module github.com/ErikKalkoken/evebuddy
 
-go 1.24
-
-toolchain go1.24
+go 1.24.3
 
 tool golang.org/x/tools/cmd/stringer
 
