@@ -95,22 +95,21 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 	if err != nil {
 		errorMessage := err.Error()
 		startedAt := optional.Optional[time.Time]{}
-		arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
+		o, err2 := s.st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{
 			CharacterID:  arg.CharacterID,
 			Section:      arg.Section,
 			ErrorMessage: &errorMessage,
 			StartedAt:    &startedAt,
-		}
-		o, err2 := s.st.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
+		})
 		if err2 != nil {
 			slog.Error("record error for failed section update: %s", "error", err2)
 		}
 		s.scs.SetCharacterSection(o)
 		return false, fmt.Errorf("update character section from ESI for %+v: %w", arg, err)
 	}
-	changed := x.(bool)
-	slog.Info("Character section update completed", "characterID", arg.CharacterID, "section", arg.Section, "forced", arg.ForceUpdate, "changed", changed)
-	return changed, err
+	hasChanged := x.(bool)
+	slog.Info("Character section update completed", "characterID", arg.CharacterID, "section", arg.Section, "forced", arg.ForceUpdate, "changed", hasChanged)
+	return hasChanged, err
 }
 
 // updateSectionIfChanged updates a character section if it has changed
@@ -122,12 +121,11 @@ func (s *CharacterService) updateSectionIfChanged(
 	update func(ctx context.Context, characterID int32, data any) error,
 ) (bool, error) {
 	startedAt := optional.New(time.Now())
-	arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
+	o, err := s.st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{
 		CharacterID: arg.CharacterID,
 		Section:     arg.Section,
 		StartedAt:   &startedAt,
-	}
-	o, err := s.st.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
+	})
 	if err != nil {
 		return false, err
 	}
@@ -149,19 +147,18 @@ func (s *CharacterService) updateSectionIfChanged(
 		return false, err
 	}
 
-	// identify if changed
-	var notFound, hasChanged bool
-	u, err := s.st.GetCharacterSectionStatus(ctx, arg.CharacterID, arg.Section)
-	if errors.Is(err, app.ErrNotFound) {
-		notFound = true
-	} else if err != nil {
-		return false, err
+	var needsUpdate bool
+	if arg.ForceUpdate {
+		needsUpdate = true
 	} else {
-		hasChanged = u.ContentHash != hash
+		hasChanged, err := s.hasSectionChanged(ctx, arg, hash)
+		if err != nil {
+			return false, err
+		}
+		needsUpdate = hasChanged
 	}
 
-	// update if needed
-	if arg.ForceUpdate || notFound || hasChanged {
+	if needsUpdate {
 		if err := update(ctx, arg.CharacterID, data); err != nil {
 			return false, err
 		}
@@ -171,21 +168,31 @@ func (s *CharacterService) updateSectionIfChanged(
 	completedAt := storage.NewNullTimeFromTime(time.Now())
 	errorMessage := ""
 	startedAt2 := optional.Optional[time.Time]{}
-	arg2 = storage.UpdateOrCreateCharacterSectionStatusParams{
-		CharacterID: arg.CharacterID,
-		Section:     arg.Section,
-
-		ErrorMessage: &errorMessage,
-		ContentHash:  &hash,
+	o, err = s.st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{
+		CharacterID:  arg.CharacterID,
 		CompletedAt:  &completedAt,
+		ContentHash:  &hash,
+		ErrorMessage: &errorMessage,
+		Section:      arg.Section,
 		StartedAt:    &startedAt2,
-	}
-	o, err = s.st.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
+	})
 	if err != nil {
 		return false, err
 	}
 	s.scs.SetCharacterSection(o)
-	slog.Debug("Has section changed", "characterID", arg.CharacterID, "section", arg.Section, "changed", hasChanged)
+	slog.Debug("Has section changed", "characterID", arg.CharacterID, "section", arg.Section, "needsUpdate", needsUpdate)
+	return needsUpdate, nil
+}
+
+func (s *CharacterService) hasSectionChanged(ctx context.Context, arg app.CharacterSectionUpdateParams, hash string) (bool, error) {
+	status, err := s.st.GetCharacterSectionStatus(ctx, arg.CharacterID, arg.Section)
+	if errors.Is(err, app.ErrNotFound) {
+		return true, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	hasChanged := status.ContentHash != hash
 	return hasChanged, nil
 }
 
