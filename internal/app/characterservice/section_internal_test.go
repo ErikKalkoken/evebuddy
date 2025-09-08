@@ -118,33 +118,33 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			}
 		}
 	})
-	// t.Run("should report as unchanged but still update", func(t *testing.T) {
-	// 	// given
-	// 	testutil.TruncateTables(db)
-	// 	c := factory.CreateCharacterFull()
-	// 	factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
-	// 	section := app.SectionCharacterIndustryJobs
-	// 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-	// 		CharacterID: c.ID,
-	// 		Section:     section,
-	// 		Data:        "old",
-	// 		CompletedAt: time.Now().Add(-5 * time.Second),
-	// 	})
-	// 	var hasUpdated bool
-	// 	arg := app.CharacterSectionUpdateParams{CharacterID: c.ID, Section: section}
-	// 	// when
-	// 	changed, err := s.updateSectionIfChanged(ctx, arg,
-	// 		func(ctx context.Context, characterID int32) (any, error) {
-	// 			return "old", nil
-	// 		},
-	// 		func(ctx context.Context, characterID int32, data any) error {
-	// 			hasUpdated = true
-	// 			return nil
-	// 		})
-	// 	// then
-	// 	if assert.NoError(t, err) {
-	// 		assert.False(t, changed)
-	// 		assert.True(t, hasUpdated)
-	// 	}
-	// })
+	t.Run("should update when data has not changed", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		section := app.SectionCharacterIndustryJobs
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     section,
+			Data:        "old",
+			CompletedAt: time.Now().Add(-5 * time.Second),
+		})
+		var hasUpdated bool
+		arg := app.CharacterSectionUpdateParams{CharacterID: c.ID, Section: section}
+		// when
+		changed, err := s.updateSectionIfChanged(ctx, arg,
+			func(ctx context.Context, characterID int32) (any, error) {
+				return "old", nil
+			},
+			func(ctx context.Context, characterID int32, data any) error {
+				hasUpdated = true
+				return nil
+			})
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, changed)
+			assert.True(t, hasUpdated)
+		}
+	})
 }

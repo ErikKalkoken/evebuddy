@@ -150,6 +150,8 @@ func (s *CharacterService) updateSectionIfChanged(
 	var needsUpdate bool
 	if arg.ForceUpdate {
 		needsUpdate = true
+	} else if arg.Section.IsSkippingChangeDetection() {
+		needsUpdate = true
 	} else {
 		hasChanged, err := s.hasSectionChanged(ctx, arg, hash)
 		if err != nil {
