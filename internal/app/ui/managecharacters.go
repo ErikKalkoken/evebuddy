@@ -139,7 +139,7 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 			delete.SetToolTip("Delete character")
 			issueLabel := ttwidget.NewLabel("Missing scopes")
 			issueLabel.Importance = widget.WarningImportance
-			issueIcon := iwidget.NewTappableIcon(theme.NewWarningThemedResource(theme.WarningIcon()), nil)
+			issueIcon := ttwidget.NewIcon(theme.NewWarningThemedResource(theme.WarningIcon()))
 			issueBox := container.New(
 				layout.NewCustomPaddedHBoxLayout(-p),
 				issueIcon,
@@ -168,7 +168,7 @@ func (a *manageCharacters) makeCharacterList() *widget.List {
 			name.SetText(c.characterName)
 
 			issueBox := row[2].(*fyne.Container)
-			issueIcon := issueBox.Objects[0].(*iwidget.TappableIcon)
+			issueIcon := issueBox.Objects[0].(*ttwidget.Icon)
 			issueLabel := issueBox.Objects[1].(*ttwidget.Label)
 			if c.missingScopes.Size() != 0 {
 				x := slices.Sorted(c.missingScopes.All())
