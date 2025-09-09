@@ -143,6 +143,8 @@ func (s *CorporationService) UpdateSectionIfNeeded(ctx context.Context, arg app.
 		f = s.updateIndustryJobsESI
 	case app.SectionCorporationMembers:
 		f = s.updateMembersESI
+	case app.SectionCorporationStructures:
+		f = s.updateStructuresESI
 	case app.SectionCorporationWalletBalances:
 		f = s.updateWalletBalancesESI
 	case

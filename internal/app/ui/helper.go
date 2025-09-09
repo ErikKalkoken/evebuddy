@@ -88,6 +88,15 @@ func makeCharacterActionLabel(id int32, name string, action func(o *app.EveEntit
 	return makeEveEntityActionLabel(o, action)
 }
 
+func makeCorporationActionLabel(id int32, name string, action func(o *app.EveEntity)) fyne.CanvasObject {
+	o := &app.EveEntity{
+		ID:       id,
+		Name:     name,
+		Category: app.EveEntityCorporation,
+	}
+	return makeEveEntityActionLabel(o, action)
+}
+
 func makeEveEntityActionLabel(o *app.EveEntity, action func(o *app.EveEntity)) fyne.CanvasObject {
 	if o == nil {
 		return widget.NewLabel("-")

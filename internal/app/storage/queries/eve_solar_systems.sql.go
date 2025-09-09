@@ -10,15 +10,10 @@ import (
 )
 
 const createEveSolarSystem = `-- name: CreateEveSolarSystem :exec
-INSERT INTO eve_solar_systems (
-    id,
-    eve_constellation_id,
-    name,
-    security_status
-)
-VALUES (
-    ?, ?, ?, ?
-)
+INSERT INTO
+    eve_solar_systems (id, eve_constellation_id, name, security_status)
+VALUES
+    (?, ?, ?, ?)
 `
 
 type CreateEveSolarSystemParams struct {
@@ -39,11 +34,16 @@ func (q *Queries) CreateEveSolarSystem(ctx context.Context, arg CreateEveSolarSy
 }
 
 const getEveSolarSystem = `-- name: GetEveSolarSystem :one
-SELECT eve_solar_systems.id, eve_solar_systems.eve_constellation_id, eve_solar_systems.name, eve_solar_systems.security_status, eve_constellations.id, eve_constellations.eve_region_id, eve_constellations.name, eve_regions.id, eve_regions.description, eve_regions.name
-FROM eve_solar_systems
-JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
-JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
-WHERE eve_solar_systems.id = ?
+SELECT
+    eve_solar_systems.id, eve_solar_systems.eve_constellation_id, eve_solar_systems.name, eve_solar_systems.security_status,
+    eve_constellations.id, eve_constellations.eve_region_id, eve_constellations.name,
+    eve_regions.id, eve_regions.description, eve_regions.name
+FROM
+    eve_solar_systems
+    JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
+    JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
+WHERE
+    eve_solar_systems.id = ?
 `
 
 type GetEveSolarSystemRow struct {
@@ -68,4 +68,34 @@ func (q *Queries) GetEveSolarSystem(ctx context.Context, id int64) (GetEveSolarS
 		&i.EveRegion.Name,
 	)
 	return i, err
+}
+
+const listEveSolarSystemIDs = `-- name: ListEveSolarSystemIDs :many
+SELECT
+    id
+FROM
+    eve_solar_systems
+`
+
+func (q *Queries) ListEveSolarSystemIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listEveSolarSystemIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

@@ -1363,6 +1363,57 @@ func (f Factory) CreateCorporationSectionStatus(args ...CorporationSectionStatus
 	return o
 }
 
+func (f Factory) CreateCorporationStructure(args ...storage.UpdateOrCreateCorporationStructureParams) *app.CorporationStructure {
+	ctx := context.Background()
+	var arg storage.UpdateOrCreateCorporationStructureParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CorporationID == 0 {
+		x := f.CreateCorporation()
+		arg.CorporationID = x.ID
+	}
+	if arg.StructureID == 0 {
+		arg.StructureID = f.calcNewIDWithCorporation(
+			"corporation_structures",
+			"structure_id",
+			arg.CorporationID,
+		)
+	}
+	if arg.State == app.StructureStateUndefined {
+		arg.State = app.StructureStateShieldVulnerable
+	}
+	if arg.ProfileID == 0 {
+		arg.ProfileID = rand.Int64N(10_000_000)
+	}
+	if arg.SystemID == 0 {
+		x := f.CreateEveSolarSystem()
+		arg.SystemID = x.ID
+	}
+	if arg.TypeID == 0 {
+		x := f.CreateEveType()
+		arg.TypeID = x.ID
+	}
+	if arg.Name == "" {
+		arg.Name = fake.City()
+	}
+	if arg.ReinforceHour.IsEmpty() {
+		arg.ReinforceHour.Set(rand.Int64N(24))
+	}
+	if arg.FuelExpires.IsEmpty() {
+		arg.FuelExpires.Set(time.Now().UTC().Add(time.Duration(rand.IntN(1000) * int(time.Hour))))
+	}
+	err := f.st.UpdateOrCreateCorporationStructure(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetCorporationStructure(ctx, arg.CorporationID, arg.StructureID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f Factory) CreateCorporationWalletBalance(args ...storage.UpdateOrCreateCorporationWalletBalanceParams) *app.CorporationWalletBalance {
 	ctx := context.Background()
 	var arg storage.UpdateOrCreateCorporationWalletBalanceParams

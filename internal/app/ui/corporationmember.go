@@ -70,9 +70,10 @@ func newCorporationMember(u *baseUI) *corporationMember {
 		if corporationIDOrZero(a.corporation) != arg.corporationID {
 			return
 		}
-		if arg.section == app.SectionCorporationMembers {
-			a.update()
+		if arg.section != app.SectionCorporationMembers {
+			return
 		}
+		a.update()
 	})
 	return a
 }
