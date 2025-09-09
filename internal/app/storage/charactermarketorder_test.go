@@ -114,15 +114,25 @@ func TestCharacterMarketOrder(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		cmo := factory.CreateCharacterMarketOrder()
+		cmo := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			IsBuyOrder: true,
+		})
 		remains := cmo.VolumeRemains - 1
+		escrow := 1_000_000.12
+		price := 123.45
 		arg := storage.UpdateOrCreateCharacterMarketOrderParams{
 			CharacterID:   cmo.CharacterID,
 			Duration:      cmo.Duration,
+			Escrow:        optional.New(escrow),
+			IsBuyOrder:    cmo.IsBuyOrder,
+			IsCorporation: cmo.IsCorporation,
 			Issued:        cmo.Issued,
 			LocationID:    cmo.Location.ID,
+			MinVolume:     cmo.MinVolume,
 			OrderID:       cmo.OrderID,
 			OwnerID:       cmo.Owner.ID,
+			Price:         price,
+			Range:         cmo.Range,
 			RegionID:      cmo.Region.ID,
 			State:         app.OrderExpired,
 			TypeID:        cmo.Type.ID,
@@ -135,8 +145,10 @@ func TestCharacterMarketOrder(t *testing.T) {
 		if assert.NoError(t, err) {
 			o, err := st.GetCharacterMarketOrder(ctx, arg.CharacterID, arg.OrderID)
 			if assert.NoError(t, err) {
-				assert.EqualValues(t, app.OrderExpired, o.State)
+				assert.EqualValues(t, escrow, o.Escrow.ValueOrZero())
+				assert.EqualValues(t, price, o.Price)
 				assert.EqualValues(t, remains, o.VolumeRemains)
+				assert.EqualValues(t, app.OrderExpired, o.State)
 			}
 		}
 	})

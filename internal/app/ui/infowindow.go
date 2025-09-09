@@ -22,6 +22,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -510,7 +511,7 @@ type characterInfo struct {
 	id              int32
 	isOwned         bool
 	membership      *widget.Label
-	ownedIcon       *iwidget.TappableIcon
+	ownedIcon       *ttwidget.Icon
 	portrait        *kxwidget.TappableImage
 	security        *widget.Label
 	tabs            *container.AppTabs
@@ -531,7 +532,7 @@ func newCharacterInfo(iw *infoWindow, id int32) *characterInfo {
 	bio.Wrapping = fyne.TextWrapWord
 	description := widget.NewLabel("")
 	description.Wrapping = fyne.TextWrapWord
-	ownedIcon := iwidget.NewTappableIcon(theme.NewSuccessThemedResource(icons.CheckDecagramSvg), nil)
+	ownedIcon := ttwidget.NewIcon(theme.NewSuccessThemedResource(icons.CheckDecagramSvg))
 	ownedIcon.SetToolTip("You own this character")
 	a := &characterInfo{
 		alliance:        alliance,
@@ -1737,11 +1738,11 @@ func newInventoryTypeInfo(iw *infoWindow, typeID, characterID int32) *inventoryT
 	a.eveMarketBrowser = container.NewStack(canvas.NewRectangle(theme.Color(theme.ColorNameButton)), emb)
 	a.eveMarketBrowser.Hide()
 
-	j := iwidget.NewTappableIcon(icons.JanicePng, func() {
+	janice := iwidget.NewTappableIcon(icons.JanicePng, func() {
 		a.iw.openURL(fmt.Sprintf("https://janice.e-351.com/i/%d", a.typeID))
 	})
-	j.SetToolTip("Show on janice.e-351.com")
-	a.janice = container.NewStack(canvas.NewRectangle(color.White), j)
+	janice.SetToolTip("Show on janice.e-351.com")
+	a.janice = container.NewStack(canvas.NewRectangle(color.White), janice)
 	a.janice.Hide()
 
 	a.tabs = container.NewAppTabs(container.NewTabItem("Description", container.NewVScroll(a.description)))

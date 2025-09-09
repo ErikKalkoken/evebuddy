@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -98,9 +99,9 @@ func (a *corporationMember) makeList() *widget.List {
 				fyne.NewSquareSize(app.IconUnitSize),
 			)
 			name := widget.NewLabel("Template")
-			owned := iwidget.NewTappableIcon(theme.NewSuccessThemedResource(icons.CheckDecagramSvg), nil)
+			owned := ttwidget.NewIcon(theme.NewSuccessThemedResource(icons.CheckDecagramSvg))
 			owned.SetToolTip("You own this character")
-			ceo := iwidget.NewTappableIcon(theme.NewWarningThemedResource(icons.CrownSvg), nil)
+			ceo := ttwidget.NewIcon(theme.NewWarningThemedResource(icons.CrownSvg))
 			ceo.SetToolTip("CEO of this corporation")
 			return container.NewHBox(portrait, name, owned, ceo)
 		},
