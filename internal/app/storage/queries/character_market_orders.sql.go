@@ -368,6 +368,8 @@ VALUES
     )
 ON CONFLICT (character_id, order_id) DO UPDATE
 SET
+    escrow = ?3,
+    price = ?11,
     state = ?14,
     volume_remains = ?16
 `

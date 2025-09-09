@@ -113,19 +113,23 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
 			CharacterID: c.ID,
+			IsBuyOrder:  true,
 		})
 		remain := o1.VolumeRemains - 1
+		price := 1234.56
+		escrow := 1_000_000.12
 		httpmock.RegisterResponder(
 			"GET",
 			`=~^https://esi\.evetech\.net/v\d+/characters/\d+/orders/history/`,
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"escrow":         escrow,
 				"duration":       o1.Duration,
 				"is_buy_order":   o1.IsBuyOrder,
 				"is_corporation": o1.IsCorporation,
 				"issued":         o1.Issued.Format(time.RFC3339),
 				"location_id":    o1.Location.ID,
 				"order_id":       o1.OrderID,
-				"price":          o1.Price,
+				"price":          price,
 				"range":          o1.Range,
 				"region_id":      o1.Region.ID,
 				"state":          "expired",
@@ -151,8 +155,10 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			if assert.NoError(t, err) {
 				if assert.Len(t, oo, 1) {
 					o2 := oo[0]
-					assert.Equal(t, app.OrderExpired, o2.State)
+					assert.InDelta(t, escrow, o2.Escrow.ValueOrZero(), 0.01)
 					assert.EqualValues(t, remain, o2.VolumeRemains)
+					assert.InDelta(t, price, o2.Price, 0.01)
+					assert.Equal(t, app.OrderExpired, o2.State)
 				}
 			}
 		}
