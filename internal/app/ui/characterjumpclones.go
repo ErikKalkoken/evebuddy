@@ -78,6 +78,13 @@ func newCharacterJumpClones(u *baseUI) *characterJumpClones {
 			a.update()
 		}
 	})
+	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+		var n int
+		fyne.DoAndWait(func() {
+			n, _ = a.tree.Data().ChildrenCount(iwidget.TreeRootID)
+		})
+		a.refreshTop(n)
+	})
 	return a
 }
 
@@ -293,18 +300,4 @@ func (*characterJumpClones) makeTopText(cloneCount int, character *app.Character
 		},
 	}
 	return segs
-}
-
-func (a *characterJumpClones) startUpdateTicker() {
-	ticker := time.NewTicker(time.Second * 15)
-	go func() {
-		for {
-			<-ticker.C
-			var n int
-			fyne.DoAndWait(func() {
-				n, _ = a.tree.Data().ChildrenCount(iwidget.TreeRootID)
-			})
-			a.refreshTop(n)
-		}
-	}()
 }

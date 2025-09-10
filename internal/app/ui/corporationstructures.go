@@ -118,11 +118,9 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		a.filterRows(-1)
 	}, a.u.window)
 
-	a.u.corporationExchanged.AddListener(
-		func(_ context.Context, c *app.Corporation) {
-			a.corporation = c
-		},
-	)
+	a.u.corporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
+		a.corporation = c
+	})
 	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
 		if corporationIDOrZero(a.corporation) != arg.corporationID {
 			return
@@ -131,6 +129,11 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 			return
 		}
 		a.update()
+	})
+	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+		fyne.Do(func() {
+			a.main.Refresh()
+		})
 	})
 	return a
 }
@@ -282,18 +285,6 @@ func (a *corporationStructures) fetchData(corporationID int32) ([]corporationStr
 		})
 	}
 	return rows, nil
-}
-
-func (a *corporationStructures) startUpdateTicker() {
-	ticker := time.NewTicker(time.Second * 60)
-	go func() {
-		for {
-			<-ticker.C
-			fyne.DoAndWait(func() {
-				a.main.Refresh()
-			})
-		}
-	}()
 }
 
 func showCorporationStructureWindow(u *baseUI, corporationID int32, structureID int64) {

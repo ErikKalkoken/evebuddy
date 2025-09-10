@@ -22,7 +22,6 @@ type characterSkillQueue struct {
 	OnUpdate func(statusShort, statusLong string)
 
 	character          *app.Character
-	done               chan bool
 	emptyInfo          *widget.Label
 	isCharacterUpdated bool
 	list               *widget.List
@@ -45,8 +44,8 @@ func newCharacterSkillQueueWithCharacter(u *baseUI, c *app.Character) *character
 	a := &characterSkillQueue{
 		character:          c,
 		emptyInfo:          emptyInfo,
-		done:               make(chan bool),
 		isCharacterUpdated: c == nil,
+		signalKey:          generateUniqueID(),
 		sq:                 app.NewCharacterSkillqueue(),
 		top:                makeTopLabel(),
 		u:                  u,
@@ -117,7 +116,6 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 }
 
 func (a *characterSkillQueue) start() {
-	a.signalKey = generateUniqueID()
 	if a.isCharacterUpdated {
 		a.u.characterExchanged.AddListener(
 			func(_ context.Context, c *app.Character) {
@@ -126,29 +124,19 @@ func (a *characterSkillQueue) start() {
 			a.signalKey,
 		)
 	}
-	a.u.characterSectionChanged.AddListener(
-		func(_ context.Context, arg characterSectionUpdated) {
-			if characterIDOrZero(a.character) != arg.characterID {
-				return
-			}
-			if arg.section == app.SectionCharacterSkillqueue {
-				a.update()
-			}
-		},
-		a.signalKey,
-	)
-	ticker := time.NewTicker(time.Second * 60)
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				a.update()
-			case <-a.done:
-				return
-			}
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		if characterIDOrZero(a.character) != arg.characterID {
+			return
 		}
-	}()
-	ticker.Stop()
+		if arg.section == app.SectionCharacterSkillqueue {
+			a.update()
+		}
+	}, a.signalKey)
+	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+		fyne.Do(func() {
+			a.update()
+		})
+	}, a.signalKey)
 }
 
 func (a *characterSkillQueue) stop() {
@@ -156,7 +144,7 @@ func (a *characterSkillQueue) stop() {
 		a.u.characterExchanged.RemoveListener(a.signalKey)
 	}
 	a.u.characterSectionChanged.RemoveListener(a.signalKey)
-	a.done <- true
+	a.u.refreshTickerExpired.RemoveListener(a.signalKey)
 }
 
 func (a *characterSkillQueue) update() {

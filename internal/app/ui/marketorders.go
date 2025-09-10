@@ -226,6 +226,11 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 			a.update()
 		}
 	})
+	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+		fyne.Do(func() {
+			a.main.Refresh()
+		})
+	})
 	return a
 }
 
@@ -243,18 +248,6 @@ func (a *marketOrders) CreateRenderer() fyne.WidgetRenderer {
 		a.main,
 	)
 	return widget.NewSimpleRenderer(c)
-}
-
-func (a *marketOrders) startUpdateTicker() {
-	ticker := time.NewTicker(time.Second * 60)
-	go func() {
-		for {
-			<-ticker.C
-			fyne.DoAndWait(func() {
-				a.main.Refresh()
-			})
-		}
-	}()
 }
 
 func (a *marketOrders) makeDataList() *iwidget.StripedList {
