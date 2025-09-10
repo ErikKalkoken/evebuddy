@@ -29,7 +29,7 @@ func init() {
 	}
 }
 
-func (st *Storage) DeleteCharacterMarketOrdersByID(ctx context.Context, characterID int32, orderIDs set.Set[int64]) error {
+func (st *Storage) DeleteCharacterMarketOrders(ctx context.Context, characterID int32, orderIDs set.Set[int64]) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("DeleteCharacterMarketOrdersByID for character %d and job IDs: %v: %w", characterID, orderIDs, err)
 	}
@@ -39,14 +39,14 @@ func (st *Storage) DeleteCharacterMarketOrdersByID(ctx context.Context, characte
 	if orderIDs.Size() == 0 {
 		return nil
 	}
-	err := st.qRW.DeleteCharacterMarketOrder(ctx, queries.DeleteCharacterMarketOrderParams{
+	err := st.qRW.DeleteCharacterMarketOrders(ctx, queries.DeleteCharacterMarketOrdersParams{
 		CharacterID: int64(characterID),
 		OrderIds:    orderIDs.Slice(),
 	})
 	if err != nil {
 		return wrapErr(err)
 	}
-	slog.Info("Market jobs deleted for character", "characterID", characterID, "jobIDs", orderIDs)
+	slog.Info("Market jobs deleted", "characterID", characterID, "jobIDs", orderIDs)
 	return nil
 }
 

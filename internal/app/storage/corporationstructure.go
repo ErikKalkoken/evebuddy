@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -36,57 +37,24 @@ func init() {
 	}
 }
 
-type UpdateOrCreateCorporationStructureParams struct {
-	CorporationID      int32
-	FuelExpires        optional.Optional[time.Time]
-	Name               string
-	NextReinforceApply optional.Optional[time.Time]
-	NextReinforceHour  optional.Optional[int64]
-	ProfileID          int64
-	ReinforceHour      optional.Optional[int64]
-	State              app.StructureState
-	StateTimerEnd      optional.Optional[time.Time]
-	StateTimerStart    optional.Optional[time.Time]
-	StructureID        int64
-	SystemID           int32
-	TypeID             int32
-	UnanchorsAt        optional.Optional[time.Time]
-}
-
-func (x UpdateOrCreateCorporationStructureParams) isValid() bool {
-	return x.CorporationID != 0 &&
-		x.StructureID != 0 &&
-		x.SystemID != 0 &&
-		x.TypeID != 0 &&
-		x.State != app.StructureStateUndefined
-}
-
-func (st *Storage) UpdateOrCreateCorporationStructure(ctx context.Context, arg UpdateOrCreateCorporationStructureParams) error {
+func (st *Storage) DeleteCorporationStructures(ctx context.Context, corporationID int32, structureIDs set.Set[int64]) error {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("UpdateOrCreateCorporationStructure %+v: %w", arg, err)
+		return fmt.Errorf("DeleteCorporationStructuresByID for corporation %d and structures IDs: %v: %w", corporationID, structureIDs, err)
 	}
-	if !arg.isValid() {
+	if corporationID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	err := st.qRW.UpdateOrCreateCorporationStructure(ctx, queries.UpdateOrCreateCorporationStructureParams{
-		CorporationID:      int64(arg.CorporationID),
-		FuelExpires:        optional.ToNullTime(arg.FuelExpires),
-		Name:               arg.Name,
-		NextReinforceApply: optional.ToNullTime(arg.NextReinforceApply),
-		NextReinforceHour:  optional.ToNullInt64(arg.NextReinforceHour),
-		ProfileID:          arg.ProfileID,
-		ReinforceHour:      optional.ToNullInt64(arg.ReinforceHour),
-		State:              structureStateToDBValue[arg.State],
-		StateTimerEnd:      optional.ToNullTime(arg.StateTimerEnd),
-		StateTimerStart:    optional.ToNullTime(arg.StateTimerStart),
-		StructureID:        arg.StructureID,
-		SystemID:           int64(arg.SystemID),
-		TypeID:             int64(arg.TypeID),
-		UnanchorsAt:        optional.ToNullTime(arg.UnanchorsAt),
+	if structureIDs.Size() == 0 {
+		return nil
+	}
+	err := st.qRW.DeleteCorporationStructures(ctx, queries.DeleteCorporationStructuresParams{
+		CorporationID: int64(corporationID),
+		StructureIds:  structureIDs.Slice(),
 	})
 	if err != nil {
 		return wrapErr(err)
 	}
+	slog.Info("Corporation structures deleted", "corporationID", corporationID, "jobIDs", structureIDs)
 	return nil
 }
 
@@ -203,4 +171,58 @@ func corporationStructureFromDBModel(arg corporationStructureFromDBModelParams) 
 		UnanchorsAt:        optional.FromNullTime(arg.corporationStructure.UnanchorsAt),
 	}
 	return o2
+}
+
+type UpdateOrCreateCorporationStructureParams struct {
+	CorporationID      int32
+	FuelExpires        optional.Optional[time.Time]
+	Name               string
+	NextReinforceApply optional.Optional[time.Time]
+	NextReinforceHour  optional.Optional[int64]
+	ProfileID          int64
+	ReinforceHour      optional.Optional[int64]
+	State              app.StructureState
+	StateTimerEnd      optional.Optional[time.Time]
+	StateTimerStart    optional.Optional[time.Time]
+	StructureID        int64
+	SystemID           int32
+	TypeID             int32
+	UnanchorsAt        optional.Optional[time.Time]
+}
+
+func (x UpdateOrCreateCorporationStructureParams) isValid() bool {
+	return x.CorporationID != 0 &&
+		x.StructureID != 0 &&
+		x.SystemID != 0 &&
+		x.TypeID != 0 &&
+		x.State != app.StructureStateUndefined
+}
+
+func (st *Storage) UpdateOrCreateCorporationStructure(ctx context.Context, arg UpdateOrCreateCorporationStructureParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateOrCreateCorporationStructure %+v: %w", arg, err)
+	}
+	if !arg.isValid() {
+		return wrapErr(app.ErrInvalid)
+	}
+	err := st.qRW.UpdateOrCreateCorporationStructure(ctx, queries.UpdateOrCreateCorporationStructureParams{
+		CorporationID:      int64(arg.CorporationID),
+		FuelExpires:        optional.ToNullTime(arg.FuelExpires),
+		Name:               arg.Name,
+		NextReinforceApply: optional.ToNullTime(arg.NextReinforceApply),
+		NextReinforceHour:  optional.ToNullInt64(arg.NextReinforceHour),
+		ProfileID:          arg.ProfileID,
+		ReinforceHour:      optional.ToNullInt64(arg.ReinforceHour),
+		State:              structureStateToDBValue[arg.State],
+		StateTimerEnd:      optional.ToNullTime(arg.StateTimerEnd),
+		StateTimerStart:    optional.ToNullTime(arg.StateTimerStart),
+		StructureID:        arg.StructureID,
+		SystemID:           int64(arg.SystemID),
+		TypeID:             int64(arg.TypeID),
+		UnanchorsAt:        optional.ToNullTime(arg.UnanchorsAt),
+	})
+	if err != nil {
+		return wrapErr(err)
+	}
+	return nil
 }

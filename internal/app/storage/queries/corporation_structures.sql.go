@@ -8,7 +8,36 @@ package queries
 import (
 	"context"
 	"database/sql"
+	"strings"
 )
+
+const deleteCorporationStructures = `-- name: DeleteCorporationStructures :exec
+DELETE FROM corporation_structures
+WHERE
+    corporation_id = ?
+    AND structure_id IN (/*SLICE:structure_ids*/?)
+`
+
+type DeleteCorporationStructuresParams struct {
+	CorporationID int64
+	StructureIds  []int64
+}
+
+func (q *Queries) DeleteCorporationStructures(ctx context.Context, arg DeleteCorporationStructuresParams) error {
+	query := deleteCorporationStructures
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CorporationID)
+	if len(arg.StructureIds) > 0 {
+		for _, v := range arg.StructureIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:structure_ids*/?", strings.Repeat(",?", len(arg.StructureIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:structure_ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
 
 const getCorporationStructure = `-- name: GetCorporationStructure :one
 SELECT

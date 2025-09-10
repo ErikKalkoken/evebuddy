@@ -9,7 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func TestUpdateCorporationStructuresESI(t *testing.T) {
@@ -18,12 +20,15 @@ func TestUpdateCorporationStructuresESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	ctx := context.Background()
-	t.Run("should fetch and create full structure from scratch", func(t *testing.T) {
+	t.Run("should fetch and create full structure from scratch and delete stale structure", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
+		factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
+			CorporationID: c.ID,
+		})
 		es := factory.CreateEveSolarSystem()
 		et := factory.CreateEveType()
 		fuelExpires := factory.RandomTime()
@@ -69,23 +74,30 @@ func TestUpdateCorporationStructuresESI(t *testing.T) {
 			t.Fatal()
 		}
 		assert.True(t, changed)
-		got, err := st.GetCorporationStructure(ctx, c.ID, 42)
+		got, err := st.ListCorporationStructureIDs(ctx, c.ID)
 		if !assert.NoError(t, err) {
 			t.Fatal()
 		}
-		assert.EqualValues(t, c.ID, got.CorporationID)
-		assert.EqualValues(t, 42, got.StructureID)
-		assert.EqualValues(t, "Alpha", got.Name)
-		assert.EqualValues(t, 99, got.ProfileID)
-		assert.EqualValues(t, es, got.System)
-		assert.EqualValues(t, et, got.Type)
-		assert.Equal(t, app.StructureStateAnchorVulnerable, got.State)
-		assert.WithinDuration(t, fuelExpires, got.FuelExpires.ValueOrZero(), 1*time.Second)
-		assert.WithinDuration(t, nextReinforceApply, got.NextReinforceApply.ValueOrZero(), 1*time.Second)
-		assert.EqualValues(t, 8, got.NextReinforceHour.ValueOrZero())
-		assert.EqualValues(t, 12, got.ReinforceHour.ValueOrZero())
-		assert.WithinDuration(t, stateTimerEnd, got.StateTimerEnd.ValueOrZero(), 1*time.Second)
-		assert.WithinDuration(t, stateTimerStart, got.StateTimerStart.ValueOrZero(), 1*time.Second)
-		assert.WithinDuration(t, unanchorsAt, got.UnanchorsAt.ValueOrZero(), 1*time.Second)
+		want := set.Of[int64](42)
+		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+
+		x, err := st.GetCorporationStructure(ctx, c.ID, 42)
+		if !assert.NoError(t, err) {
+			t.Fatal()
+		}
+		assert.EqualValues(t, c.ID, x.CorporationID)
+		assert.EqualValues(t, 42, x.StructureID)
+		assert.EqualValues(t, "Alpha", x.Name)
+		assert.EqualValues(t, 99, x.ProfileID)
+		assert.EqualValues(t, es, x.System)
+		assert.EqualValues(t, et, x.Type)
+		assert.Equal(t, app.StructureStateAnchorVulnerable, x.State)
+		assert.WithinDuration(t, fuelExpires, x.FuelExpires.ValueOrZero(), 1*time.Second)
+		assert.WithinDuration(t, nextReinforceApply, x.NextReinforceApply.ValueOrZero(), 1*time.Second)
+		assert.EqualValues(t, 8, x.NextReinforceHour.ValueOrZero())
+		assert.EqualValues(t, 12, x.ReinforceHour.ValueOrZero())
+		assert.WithinDuration(t, stateTimerEnd, x.StateTimerEnd.ValueOrZero(), 1*time.Second)
+		assert.WithinDuration(t, stateTimerStart, x.StateTimerStart.ValueOrZero(), 1*time.Second)
+		assert.WithinDuration(t, unanchorsAt, x.UnanchorsAt.ValueOrZero(), 1*time.Second)
 	})
 }

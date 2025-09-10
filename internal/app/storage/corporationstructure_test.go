@@ -181,4 +181,27 @@ func TestCorporationStructure(t *testing.T) {
 			assert.Equal(t, want, got)
 		}
 	})
+	t.Run("can delete structures for a corporation", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCorporation()
+		o1 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
+			CorporationID: c.ID,
+		})
+		o2 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
+			CorporationID: c.ID,
+		})
+		// when
+		err := r.DeleteCorporationStructures(ctx, c.ID, set.Of(o1.StructureID))
+		// then
+		if !assert.NoError(t, err) {
+			t.Fatal()
+		}
+		got, err := r.ListCorporationStructureIDs(ctx, c.ID)
+		if !assert.NoError(t, err) {
+			t.Fatal()
+		}
+		want := set.Of(o2.StructureID)
+		assert.Equal(t, want, got)
+	})
 }

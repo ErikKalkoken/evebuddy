@@ -1,3 +1,9 @@
+-- name: DeleteCorporationStructures :exec
+DELETE FROM corporation_structures
+WHERE
+    corporation_id = ?
+    AND structure_id IN (sqlc.slice('structure_ids'));
+
 -- name: GetCorporationStructure :one
 SELECT
     sqlc.embed(cs),

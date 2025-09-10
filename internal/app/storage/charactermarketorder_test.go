@@ -250,7 +250,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 			CharacterID: c.ID,
 		})
 		// when
-		err := st.DeleteCharacterMarketOrdersByID(ctx, c.ID, set.Of(o2.OrderID))
+		err := st.DeleteCharacterMarketOrders(ctx, c.ID, set.Of(o2.OrderID))
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(o1.OrderID)

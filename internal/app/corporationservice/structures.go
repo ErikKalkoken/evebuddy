@@ -9,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/antihax/goesi/esi"
 	"golang.org/x/sync/errgroup"
 )
@@ -52,6 +53,24 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 		},
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
 			structures := data.([]esi.GetCorporationsCorporationIdStructures200Ok)
+
+			// Remove vanished structures
+			incoming := set.Collect(xiter.MapSlice(structures, func(x esi.GetCorporationsCorporationIdStructures200Ok) int64 {
+				return x.StructureId
+			}))
+			current, err := s.st.ListCorporationStructureIDs(ctx, arg.CorporationID)
+			if err != nil {
+				return err
+			}
+			removed := set.Difference(current, incoming)
+			if removed.Size() > 0 {
+				if err := s.st.DeleteCorporationStructures(ctx, arg.CorporationID, removed); err != nil {
+					return err
+				}
+				slog.Info("Removed vanished corporation structures", "corporationID", arg.CorporationID, "count", removed.Size())
+			}
+
+			// Update structures
 			var typeIDs, systemIDs set.Set[int32]
 			for _, o := range structures {
 				typeIDs.Add(o.TypeId)
@@ -92,10 +111,7 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 					return err
 				}
 			}
-			// removed := set.Difference(current, incoming)
-			// if err := s.st.DeleteCorporationStructures(ctx, arg.CorporationID, removed); err != nil {
-			// 	return err
-			// }
+
 			slog.Info("Updated corporation structures", "corporationID", arg.CorporationID, "count", len(structures))
 			return nil
 		})
