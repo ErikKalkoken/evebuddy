@@ -10,11 +10,11 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -27,9 +27,9 @@ type corporationStructureRow struct {
 	solarSystemDisplay []widget.RichTextSegment
 	solarSystemID      int32
 	solarSystemName    string
-	stateDisplay       string
-	stateColor         fyne.ThemeColorName
 	stateText          string
+	stateColor         fyne.ThemeColorName
+	stateDisplay       string
 	structureID        int64
 	structureName      string
 	structureNameShort string
@@ -41,7 +41,7 @@ type corporationStructures struct {
 	widget.BaseWidget
 
 	corporation       *app.Corporation
-	body              fyne.CanvasObject
+	main              fyne.CanvasObject
 	columnSorter      *columnSorter
 	rows              []corporationStructureRow
 	rowsFiltered      []corporationStructureRow
@@ -81,14 +81,14 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		case 3:
 			return iwidget.RichTextSegmentsFromText(r.structureNameShort)
 		case 4:
-			return iwidget.RichTextSegmentsFromText(r.stateDisplay, widget.RichTextStyle{
+			return iwidget.RichTextSegmentsFromText(r.stateText, widget.RichTextStyle{
 				ColorName: r.stateColor,
 			})
 		}
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTable(
+		a.main = makeDataTable(
 			headers,
 			&a.rowsFiltered,
 			makeCell,
@@ -97,7 +97,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 				showCorporationStructureWindow(a.u, r.corporationID, r.structureID)
 			})
 	} else {
-		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, func(r corporationStructureRow) {
+		a.main = makeDataList(headers, &a.rowsFiltered, makeCell, func(r corporationStructureRow) {
 			showCorporationStructureWindow(a.u, r.corporationID, r.structureID)
 		})
 	}
@@ -140,7 +140,7 @@ func (a *corporationStructures) CreateRenderer() fyne.WidgetRenderer {
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
 	}
-	c := container.NewBorder(container.NewHScroll(filter), a.bottom, nil, nil, a.body)
+	c := container.NewBorder(container.NewHScroll(filter), a.bottom, nil, nil, a.main)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -164,7 +164,7 @@ func (a *corporationStructures) filterRows(sortCol int) {
 	}
 	if x := a.selectState.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r corporationStructureRow) bool {
-			return r.stateText == x
+			return r.stateDisplay == x
 		})
 	}
 	// sort
@@ -181,7 +181,7 @@ func (a *corporationStructures) filterRows(sortCol int) {
 			case 3:
 				x = strings.Compare(a.structureNameShort, b.structureNameShort)
 			case 4:
-				x = strings.Compare(a.stateText, b.stateText)
+				x = strings.Compare(a.stateDisplay, b.stateDisplay)
 			}
 			if dir == sortAsc {
 				return x
@@ -201,10 +201,10 @@ func (a *corporationStructures) filterRows(sortCol int) {
 		return r.typeName
 	}))
 	a.selectState.SetOptions(xslices.Map(rows, func(r corporationStructureRow) string {
-		return r.stateText
+		return r.stateDisplay
 	}))
 	a.rowsFiltered = rows
-	a.body.Refresh()
+	a.main.Refresh()
 }
 
 func (a *corporationStructures) update() {
@@ -251,18 +251,19 @@ func (a *corporationStructures) fetchData(corporationID int32) ([]corporationStr
 	}
 	rows := make([]corporationStructureRow, 0)
 	for _, s := range structures {
-		region := s.System.Constellation.Region
-		var color fyne.ThemeColorName
-		switch s.State {
-		case app.StructureStateAnchoring, app.StructureStateAnchorVulnerable, app.StructureStateDeployVulnerable:
-			color = theme.ColorNameWarning
-		case app.StructureStateArmorReinforce, app.StructureStateHullReinforce:
-			color = theme.ColorNameError
-		case app.StructureStateShieldVulnerable:
-			color = theme.ColorNameSuccess
-		default:
-			color = theme.ColorNameForeground
+		stateText := s.State.Display()
+		if !s.StateTimerEnd.IsEmpty() {
+			var x string
+			end := s.StateTimerEnd.ValueOrZero()
+			d := time.Until(end)
+			if d >= 0 {
+				x = humanize.Duration(d)
+			} else {
+				x = "EXPIRED"
+			}
+			stateText += " " + x
 		}
+		region := s.System.Constellation.Region
 		rows = append(rows, corporationStructureRow{
 			corporationID:      corporationID,
 			corporationName:    a.u.scs.CorporationName(corporationID),
@@ -271,8 +272,8 @@ func (a *corporationStructures) fetchData(corporationID int32) ([]corporationStr
 			solarSystemDisplay: s.System.DisplayRichText(),
 			solarSystemID:      s.System.ID,
 			solarSystemName:    s.System.Name,
-			stateDisplay:       s.State.Display(),
-			stateColor:         color,
+			stateText:          stateText,
+			stateColor:         s.State.Color(),
 			structureName:      s.Name,
 			structureNameShort: s.NameShort(),
 			typeID:             s.Type.ID,
@@ -281,6 +282,18 @@ func (a *corporationStructures) fetchData(corporationID int32) ([]corporationStr
 		})
 	}
 	return rows, nil
+}
+
+func (a *corporationStructures) startUpdateTicker() {
+	ticker := time.NewTicker(time.Second * 60)
+	go func() {
+		for {
+			<-ticker.C
+			fyne.DoAndWait(func() {
+				a.main.Refresh()
+			})
+		}
+	}()
 }
 
 func showCorporationStructureWindow(u *baseUI, corporationID int32, structureID int64) {
@@ -315,7 +328,9 @@ func showCorporationStructureWindow(u *baseUI, corporationID int32, structureID 
 			u.ShowTypeInfoWindow(s.Type.ID)
 		})),
 		widget.NewFormItem("Name", widget.NewLabel(s.NameShort())),
-		widget.NewFormItem("State", widget.NewLabel(s.State.Display())),
+		widget.NewFormItem("State", widget.NewRichText(iwidget.RichTextSegmentsFromText(s.State.Display(), widget.RichTextStyle{
+			ColorName: s.State.Color(),
+		})...)),
 		widget.NewFormItem("Timer Start", widget.NewLabel(s.StateTimerStart.StringFunc("-", func(v time.Time) string {
 			return v.Format(app.DateTimeFormat)
 		}))),

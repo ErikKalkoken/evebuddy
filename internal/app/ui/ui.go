@@ -465,10 +465,11 @@ func (u *baseUI) Start() bool {
 		u.updateHome()
 		u.updateStatus()
 		u.isStartupCompleted.Store(true)
-		u.training.startUpdateTicker()
+		u.characterJumpClones.startUpdateTicker()
+		u.corporationStructures.startUpdateTicker()
 		u.marketOrdersBuy.startUpdateTicker()
 		u.marketOrdersSell.startUpdateTicker()
-		u.characterJumpClones.startUpdateTicker()
+		u.training.startUpdateTicker()
 		if u.onAppFirstStarted != nil {
 			u.onAppFirstStarted()
 		}

@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/theme"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -61,6 +63,18 @@ func (ss StructureState) String() string {
 func (ss StructureState) Display() string {
 	titler := cases.Title(language.English)
 	return titler.String(ss.String())
+}
+
+func (ss StructureState) Color() fyne.ThemeColorName {
+	switch ss {
+	case StructureStateAnchoring, StructureStateAnchorVulnerable, StructureStateDeployVulnerable:
+		return theme.ColorNameWarning
+	case StructureStateArmorReinforce, StructureStateHullReinforce:
+		return theme.ColorNameError
+	case StructureStateShieldVulnerable:
+		return theme.ColorNameSuccess
+	}
+	return theme.ColorNameForeground
 }
 
 type CorporationStructure struct {
