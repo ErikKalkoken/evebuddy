@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
@@ -10,12 +11,16 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/humanize"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -24,17 +29,22 @@ type corporationStructureRow struct {
 	corporationName    string
 	regionID           int32
 	regionName         string
+	services           set.Set[string]
+	servicesText       string
 	solarSystemDisplay []widget.RichTextSegment
 	solarSystemID      int32
 	solarSystemName    string
-	stateText          string
 	stateColor         fyne.ThemeColorName
 	stateDisplay       string
+	stateText          string
 	structureID        int64
 	structureName      string
 	structureNameShort string
 	typeID             int32
 	typeName           string
+	fuelText           string
+	fuelExpires        optional.Optional[time.Time]
+	fuelSort           time.Time
 }
 
 type corporationStructures struct {
@@ -49,6 +59,7 @@ type corporationStructures struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectType        *kxwidget.FilterChipSelect
 	selectState       *kxwidget.FilterChipSelect
+	selectService     *kxwidget.FilterChipSelect
 	sortButton        *sortButton
 	bottom            *widget.Label
 	u                 *baseUI
@@ -57,10 +68,11 @@ type corporationStructures struct {
 func newCorporationStructures(u *baseUI) *corporationStructures {
 	headers := []headerDef{
 		{label: "System", width: 150},
-		{label: "Region", width: columnWidthRegion},
 		{label: "Type", width: 150},
 		{label: "Name", width: 250},
-		{label: "State", width: 150},
+		{label: "Fuel Expires", width: 150},
+		{label: "State", width: 150, notSortable: true},
+		{label: "Services", width: 200, notSortable: true},
 	}
 	a := &corporationStructures{
 		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
@@ -75,15 +87,28 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		case 0:
 			return r.solarSystemDisplay
 		case 1:
-			return iwidget.RichTextSegmentsFromText(r.regionName)
-		case 2:
 			return iwidget.RichTextSegmentsFromText(r.typeName)
-		case 3:
+		case 2:
 			return iwidget.RichTextSegmentsFromText(r.structureNameShort)
+		case 3:
+			var text string
+			var color fyne.ThemeColorName
+			if r.fuelExpires.IsEmpty() {
+				color = theme.ColorNameWarning
+				text = "Low Power"
+			} else {
+				color = theme.ColorNameForeground
+				text = ihumanize.Duration(time.Until(r.fuelExpires.ValueOrZero()))
+			}
+			return iwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
+				ColorName: color,
+			})
 		case 4:
 			return iwidget.RichTextSegmentsFromText(r.stateText, widget.RichTextStyle{
 				ColorName: r.stateColor,
 			})
+		case 5:
+			return iwidget.RichTextSegmentsFromText(r.servicesText)
 		}
 		return iwidget.RichTextSegmentsFromText("?")
 	}
@@ -102,16 +127,19 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		})
 	}
 
-	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
+	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
 		a.filterRows(-1)
-	}, a.u.window)
-	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
+	})
+	a.selectSolarSystem = kxwidget.NewFilterChipSelect("System", []string{}, func(string) {
 		a.filterRows(-1)
-	}, a.u.window)
+	})
 	a.selectType = kxwidget.NewFilterChipSelect("Type", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 	a.selectState = kxwidget.NewFilterChipSelect("State", []string{}, func(string) {
+		a.filterRows(-1)
+	})
+	a.selectService = kxwidget.NewFilterChipSelect("Service", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
@@ -132,14 +160,14 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 	})
 	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
-			a.main.Refresh()
+			a.update()
 		})
 	})
 	return a
 }
 
 func (a *corporationStructures) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectSolarSystem, a.selectRegion, a.selectType, a.selectState)
+	filter := container.NewHBox(a.selectType, a.selectState, a.selectSolarSystem, a.selectRegion, a.selectService)
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
 	}
@@ -160,14 +188,19 @@ func (a *corporationStructures) filterRows(sortCol int) {
 			return r.solarSystemName == x
 		})
 	}
-	if x := a.selectType.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r corporationStructureRow) bool {
-			return r.typeName == x
-		})
-	}
 	if x := a.selectState.Selected; x != "" {
 		rows = xslices.Filter(rows, func(r corporationStructureRow) bool {
 			return r.stateDisplay == x
+		})
+	}
+	if x := a.selectService.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r corporationStructureRow) bool {
+			return r.services.Contains(x)
+		})
+	}
+	if x := a.selectType.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r corporationStructureRow) bool {
+			return r.typeName == x
 		})
 	}
 	// sort
@@ -178,13 +211,11 @@ func (a *corporationStructures) filterRows(sortCol int) {
 			case 0:
 				x = strings.Compare(a.solarSystemName, b.solarSystemName)
 			case 1:
-				x = strings.Compare(a.regionName, b.regionName)
-			case 2:
 				x = strings.Compare(a.typeName, b.typeName)
-			case 3:
+			case 2:
 				x = strings.Compare(a.structureNameShort, b.structureNameShort)
-			case 4:
-				x = strings.Compare(a.stateDisplay, b.stateDisplay)
+			case 3:
+				x = cmp.Compare(time.Until(a.fuelSort), time.Until(b.fuelSort))
 			}
 			if dir == sortAsc {
 				return x
@@ -200,11 +231,14 @@ func (a *corporationStructures) filterRows(sortCol int) {
 	a.selectSolarSystem.SetOptions(xslices.Map(rows, func(r corporationStructureRow) string {
 		return r.solarSystemName
 	}))
-	a.selectType.SetOptions(xslices.Map(rows, func(r corporationStructureRow) string {
-		return r.typeName
-	}))
 	a.selectState.SetOptions(xslices.Map(rows, func(r corporationStructureRow) string {
 		return r.stateDisplay
+	}))
+	a.selectService.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r corporationStructureRow) set.Set[string] {
+		return r.services
+	})...).All()))
+	a.selectType.SetOptions(xslices.Map(rows, func(r corporationStructureRow) string {
+		return r.typeName
 	}))
 	a.rowsFiltered = rows
 	a.main.Refresh()
@@ -254,34 +288,45 @@ func (a *corporationStructures) fetchData(corporationID int32) ([]corporationStr
 	}
 	rows := make([]corporationStructureRow, 0)
 	for _, s := range structures {
-		stateText := s.State.Display()
+		stateText := s.State.DisplayShort()
 		if !s.StateTimerEnd.IsEmpty() {
 			var x string
 			end := s.StateTimerEnd.ValueOrZero()
 			d := time.Until(end)
 			if d >= 0 {
-				x = humanize.Duration(d)
+				x = ihumanize.Duration(d)
 			} else {
 				x = "EXPIRED"
 			}
-			stateText += " " + x
+			stateText += ": " + x
 		}
+		services := set.Collect(xiter.Map(xiter.FilterSlice(s.Services, func(x *app.StructureService) bool {
+			return x.State == app.StructureServiceStateOnline
+		}), func(x *app.StructureService) string {
+			return x.Name
+		}))
+		servicesText := stringsJoinsOrEmpty(slices.Sorted(services.All()), ", ", "-")
 		region := s.System.Constellation.Region
+
 		rows = append(rows, corporationStructureRow{
 			corporationID:      corporationID,
 			corporationName:    a.u.scs.CorporationName(corporationID),
+			fuelExpires:        s.FuelExpires,
 			regionID:           region.ID,
 			regionName:         region.Name,
+			services:           services,
+			servicesText:       servicesText,
 			solarSystemDisplay: s.System.DisplayRichText(),
 			solarSystemID:      s.System.ID,
 			solarSystemName:    s.System.Name,
-			stateText:          stateText,
 			stateColor:         s.State.Color(),
+			stateDisplay:       s.State.Display(),
+			stateText:          stateText,
+			structureID:        s.StructureID,
 			structureName:      s.Name,
 			structureNameShort: s.NameShort(),
 			typeID:             s.Type.ID,
 			typeName:           s.Type.Name,
-			structureID:        s.StructureID,
 		})
 	}
 	return rows, nil
@@ -297,28 +342,64 @@ func showCorporationStructureWindow(u *baseUI, corporationID int32, structureID 
 	w, created := u.getOrCreateWindow(
 		fmt.Sprintf("corporationstructure-%d-%d", corporationID, structureID),
 		"Corporation Structure",
-		corporationName,
+		s.Name,
 	)
 	if !created {
 		w.Show()
 		return
 	}
+	var services []widget.RichTextSegment
+	if len(s.Services) == 0 {
+		services = iwidget.RichTextSegmentsFromText("-")
+	} else {
+		slices.SortFunc(s.Services, func(a, b *app.StructureService) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+		for _, x := range s.Services {
+			var color fyne.ThemeColorName
+			name := x.Name
+			if x.State == app.StructureServiceStateOnline {
+				color = theme.ColorNameForeground
+			} else {
+				color = theme.ColorNameDisabled
+				name += " [offline]"
+			}
+			services = slices.Concat(services, iwidget.RichTextSegmentsFromText(name, widget.RichTextStyle{
+				ColorName: color,
+			}))
+		}
+	}
+
+	var fuelText string
+	var fuelColor fyne.ThemeColorName
+	if s.FuelExpires.IsEmpty() {
+		fuelColor = theme.ColorNameWarning
+		fuelText = "Low Power"
+	} else {
+		fuelColor = theme.ColorNameForeground
+		fuelText = s.FuelExpires.ValueOrZero().Format(app.DateTimeFormat)
+	}
+
 	fi := []*widget.FormItem{
 		widget.NewFormItem("Owner", makeCorporationActionLabel(
 			corporationID,
 			corporationName,
 			u.ShowEveEntityInfoWindow,
 		)),
+		widget.NewFormItem("Name", widget.NewLabel(s.NameShort())),
+		widget.NewFormItem("Type", makeLinkLabelWithWrap(s.Type.Name, func() {
+			u.ShowTypeInfoWindow(s.Type.ID)
+		})),
 		widget.NewFormItem("System", makeLinkLabel(s.System.Name, func() {
 			u.ShowInfoWindow(app.EveEntitySolarSystem, s.System.ID)
 		})),
 		widget.NewFormItem("Region", makeLinkLabel(s.System.Constellation.Region.Name, func() {
 			u.ShowInfoWindow(app.EveEntityRegion, s.System.Constellation.Region.ID)
 		})),
-		widget.NewFormItem("Type", makeLinkLabelWithWrap(s.Type.Name, func() {
-			u.ShowTypeInfoWindow(s.Type.ID)
-		})),
-		widget.NewFormItem("Name", widget.NewLabel(s.NameShort())),
+		widget.NewFormItem("Services", widget.NewRichText(services...)),
+		widget.NewFormItem("Fuel Expires", widget.NewRichText(iwidget.RichTextSegmentsFromText(fuelText, widget.RichTextStyle{
+			ColorName: fuelColor,
+		})...)),
 		widget.NewFormItem("State", widget.NewRichText(iwidget.RichTextSegmentsFromText(s.State.Display(), widget.RichTextStyle{
 			ColorName: s.State.Color(),
 		})...)),

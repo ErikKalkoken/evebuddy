@@ -190,9 +190,6 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 				showMarketOrderWindow(a.u, r)
 			})
 	} else {
-		// a.body = makeDataList(headers, &a.rowsFiltered, makeCell, func(r marketOrderRow) {
-		// 	showMarketOrderWindow(u, r)
-		// })
 		a.main = a.makeDataList()
 	}
 

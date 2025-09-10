@@ -53,7 +53,7 @@ FROM
 WHERE
     corporation_id = ?;
 
--- name: UpdateOrCreateCorporationStructure :exec
+-- name: UpdateOrCreateCorporationStructure :one
 INSERT INTO
     corporation_structures (
         corporation_id,
@@ -98,4 +98,5 @@ SET
     state = ?8,
     state_timer_end = ?9,
     state_timer_start = ?10,
-    unanchors_at = ?14;
+    unanchors_at = ?14
+    RETURNING id;

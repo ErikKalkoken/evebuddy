@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/antihax/goesi/esi"
 	"golang.org/x/sync/errgroup"
 )
@@ -20,22 +21,6 @@ func (s *CorporationService) GetStructure(ctx context.Context, corporationID int
 
 func (s *CorporationService) ListStructures(ctx context.Context, corporationID int32) ([]*app.CorporationStructure, error) {
 	return s.st.ListCorporationStructures(ctx, corporationID)
-}
-
-var structureStateFromESIValue = map[string]app.StructureState{
-	"anchor_vulnerable":    app.StructureStateAnchorVulnerable,
-	"anchoring":            app.StructureStateAnchoring,
-	"armor_reinforce":      app.StructureStateArmorReinforce,
-	"armor_vulnerable":     app.StructureStateAnchorVulnerable,
-	"deploy_vulnerable":    app.StructureStateDeployVulnerable,
-	"fitting_invulnerable": app.StructureStateFittingInvulnerable,
-	"hull_reinforce":       app.StructureStateHullReinforce,
-	"hull_vulnerable":      app.StructureStateHullVulnerable,
-	"online_deprecated":    app.StructureStateOnlineDeprecated,
-	"onlining_vulnerable":  app.StructureStateOnliningVulnerable,
-	"shield_vulnerable":    app.StructureStateShieldVulnerable,
-	"unanchored":           app.StructureStateUnanchored,
-	"unknown":              app.StructureStateUnknown,
 }
 
 func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.CorporationSectionUpdateParams) (bool, error) {
@@ -53,6 +38,28 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 		},
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
 			structures := data.([]esi.GetCorporationsCorporationIdStructures200Ok)
+
+			structureStateFromESIValue := map[string]app.StructureState{
+				"anchor_vulnerable":    app.StructureStateAnchorVulnerable,
+				"anchoring":            app.StructureStateAnchoring,
+				"armor_reinforce":      app.StructureStateArmorReinforce,
+				"armor_vulnerable":     app.StructureStateAnchorVulnerable,
+				"deploy_vulnerable":    app.StructureStateDeployVulnerable,
+				"fitting_invulnerable": app.StructureStateFittingInvulnerable,
+				"hull_reinforce":       app.StructureStateHullReinforce,
+				"hull_vulnerable":      app.StructureStateHullVulnerable,
+				"online_deprecated":    app.StructureStateOnlineDeprecated,
+				"onlining_vulnerable":  app.StructureStateOnliningVulnerable,
+				"shield_vulnerable":    app.StructureStateShieldVulnerable,
+				"unanchored":           app.StructureStateUnanchored,
+				"unknown":              app.StructureStateUnknown,
+			}
+
+			structureServiceStateFromESIValue := map[string]app.StructureServiceState{
+				"online":  app.StructureServiceStateOnline,
+				"offline": app.StructureServiceStateOffline,
+				"cleanup": app.StructureServiceStateCleanup,
+			}
 
 			// Remove vanished structures
 			incoming := set.Collect(xiter.MapSlice(structures, func(x esi.GetCorporationsCorporationIdStructures200Ok) int64 {
@@ -89,8 +96,14 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 			for _, o := range structures {
 				state, ok := structureStateFromESIValue[o.State]
 				if !ok {
-					state = app.StructureStateUndefined
+					state = app.StructureStateUnknown
 				}
+				services := xslices.Map(o.Services, func(x esi.GetCorporationsCorporationIdStructuresService) storage.StructureServiceParams {
+					return storage.StructureServiceParams{
+						Name:  x.Name,
+						State: structureServiceStateFromESIValue[x.State],
+					}
+				})
 				err := s.st.UpdateOrCreateCorporationStructure(ctx, storage.UpdateOrCreateCorporationStructureParams{
 					CorporationID:      arg.CorporationID,
 					FuelExpires:        optional.FromTimeWithZero(o.FuelExpires),
@@ -99,6 +112,7 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 					NextReinforceHour:  optional.FromIntegerWithZero(int64(o.NextReinforceHour)),
 					ProfileID:          int64(o.ProfileId),
 					ReinforceHour:      optional.FromIntegerWithZero(int64(o.ReinforceHour)),
+					Services:           services,
 					State:              state,
 					StateTimerEnd:      optional.FromTimeWithZero(o.StateTimerEnd),
 					StateTimerStart:    optional.FromTimeWithZero(o.StateTimerStart),
@@ -111,7 +125,6 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 					return err
 				}
 			}
-
 			slog.Info("Updated corporation structures", "corporationID", arg.CorporationID, "count", len(structures))
 			return nil
 		})

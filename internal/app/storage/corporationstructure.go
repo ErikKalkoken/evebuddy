@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 var structureStateFromDBValue = map[string]app.StructureState{
@@ -31,9 +32,21 @@ var structureStateFromDBValue = map[string]app.StructureState{
 
 var structureStateToDBValue = map[app.StructureState]string{}
 
+var structureServiceStateFromDBValue = map[string]app.StructureServiceState{
+	"":        app.StructureServiceStateUndefined,
+	"online":  app.StructureServiceStateOnline,
+	"offline": app.StructureServiceStateOffline,
+	"cleanup": app.StructureServiceStateCleanup,
+}
+
+var structureServiceStateToDBValue = map[app.StructureServiceState]string{}
+
 func init() {
 	for k, v := range structureStateFromDBValue {
 		structureStateToDBValue[v] = k
+	}
+	for k, v := range structureServiceStateFromDBValue {
+		structureServiceStateToDBValue[v] = k
 	}
 }
 
@@ -72,6 +85,10 @@ func (st *Storage) GetCorporationStructure(ctx context.Context, corporationID in
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
+	services, err := st.ListStructureServices(ctx, r.CorporationStructure.ID)
+	if err != nil {
+		return nil, wrapErr(convertGetError(err))
+	}
 	return corporationStructureFromDBModel(corporationStructureFromDBModelParams{
 		corporationStructure: r.CorporationStructure,
 		eveSolarSystem:       r.EveSolarSystem,
@@ -80,28 +97,9 @@ func (st *Storage) GetCorporationStructure(ctx context.Context, corporationID in
 		eveType:              r.EveType,
 		eveGroup:             r.EveGroup,
 		eveCategory:          r.EveCategory,
+		services:             services,
 	}), nil
 }
-
-// func (st *Storage) DeleteCorporationStructures(ctx context.Context, corporationID int32, characterIDs set.Set[int32]) error {
-// 	wrapErr := func(err error) error {
-// 		return fmt.Errorf("DeleteCorporationStructures %d: %w", corporationID, err)
-// 	}
-// 	if corporationID == 0 {
-// 		return wrapErr(app.ErrInvalid)
-// 	}
-// 	if characterIDs.Size() == 0 {
-// 		return nil
-// 	}
-// 	err := st.qRW.DeleteCorporationStructures(ctx, queries.DeleteCorporationStructuresParams{
-// 		CorporationID: int64(corporationID),
-// 		CharacterIds:  convertNumericSlice[int64](characterIDs.Slice()),
-// 	})
-// 	if err != nil {
-// 		return wrapErr(err)
-// 	}
-// 	return nil
-// }
 
 func (st *Storage) ListCorporationStructures(ctx context.Context, corporationID int32) ([]*app.CorporationStructure, error) {
 	wrapErr := func(err error) error {
@@ -116,6 +114,10 @@ func (st *Storage) ListCorporationStructures(ctx context.Context, corporationID 
 	}
 	oo := make([]*app.CorporationStructure, len(rows))
 	for i, r := range rows {
+		services, err := st.ListStructureServices(ctx, r.CorporationStructure.ID)
+		if err != nil {
+			return nil, wrapErr(convertGetError(err))
+		}
 		oo[i] = corporationStructureFromDBModel(corporationStructureFromDBModelParams{
 			corporationStructure: r.CorporationStructure,
 			eveSolarSystem:       r.EveSolarSystem,
@@ -124,6 +126,7 @@ func (st *Storage) ListCorporationStructures(ctx context.Context, corporationID 
 			eveType:              r.EveType,
 			eveGroup:             r.EveGroup,
 			eveCategory:          r.EveCategory,
+			services:             services,
 		})
 	}
 	return oo, nil
@@ -151,17 +154,20 @@ type corporationStructureFromDBModelParams struct {
 	eveType              queries.EveType
 	eveGroup             queries.EveGroup
 	eveCategory          queries.EveCategory
+	services             []*app.StructureService
 }
 
 func corporationStructureFromDBModel(arg corporationStructureFromDBModelParams) *app.CorporationStructure {
 	o2 := &app.CorporationStructure{
 		CorporationID:      int32(arg.corporationStructure.CorporationID),
 		FuelExpires:        optional.FromNullTime(arg.corporationStructure.FuelExpires),
+		ID:                 arg.corporationStructure.ID,
 		Name:               arg.corporationStructure.Name,
 		NextReinforceApply: optional.FromNullTime(arg.corporationStructure.NextReinforceApply),
 		NextReinforceHour:  optional.FromNullInt64(arg.corporationStructure.NextReinforceHour),
 		ProfileID:          arg.corporationStructure.ProfileID,
 		ReinforceHour:      optional.FromNullInt64(arg.corporationStructure.ReinforceHour),
+		Services:           arg.services,
 		State:              structureStateFromDBValue[arg.corporationStructure.State],
 		StateTimerEnd:      optional.FromNullTime(arg.corporationStructure.StateTimerEnd),
 		StateTimerStart:    optional.FromNullTime(arg.corporationStructure.StateTimerStart),
@@ -171,6 +177,11 @@ func corporationStructureFromDBModel(arg corporationStructureFromDBModelParams) 
 		UnanchorsAt:        optional.FromNullTime(arg.corporationStructure.UnanchorsAt),
 	}
 	return o2
+}
+
+type StructureServiceParams struct {
+	Name  string
+	State app.StructureServiceState
 }
 
 type UpdateOrCreateCorporationStructureParams struct {
@@ -188,6 +199,7 @@ type UpdateOrCreateCorporationStructureParams struct {
 	SystemID           int32
 	TypeID             int32
 	UnanchorsAt        optional.Optional[time.Time]
+	Services           []StructureServiceParams
 }
 
 func (x UpdateOrCreateCorporationStructureParams) isValid() bool {
@@ -205,7 +217,7 @@ func (st *Storage) UpdateOrCreateCorporationStructure(ctx context.Context, arg U
 	if !arg.isValid() {
 		return wrapErr(app.ErrInvalid)
 	}
-	err := st.qRW.UpdateOrCreateCorporationStructure(ctx, queries.UpdateOrCreateCorporationStructureParams{
+	id, err := st.qRW.UpdateOrCreateCorporationStructure(ctx, queries.UpdateOrCreateCorporationStructureParams{
 		CorporationID:      int64(arg.CorporationID),
 		FuelExpires:        optional.ToNullTime(arg.FuelExpires),
 		Name:               arg.Name,
@@ -224,5 +236,95 @@ func (st *Storage) UpdateOrCreateCorporationStructure(ctx context.Context, arg U
 	if err != nil {
 		return wrapErr(err)
 	}
+	if err := st.DeleteStructureServices(ctx, id); err != nil {
+		return wrapErr(err)
+	}
+	for _, s := range arg.Services {
+		err := st.CreateStructureService(ctx, CreateStructureServiceParams{
+			CorporationStructureID: id,
+			Name:                   s.Name,
+			State:                  s.State,
+		})
+		if err != nil {
+			return wrapErr(err)
+		}
+	}
 	return nil
+}
+
+type CreateStructureServiceParams struct {
+	CorporationStructureID int64
+	Name                   string
+	State                  app.StructureServiceState
+}
+
+func (st *Storage) CreateStructureService(ctx context.Context, arg CreateStructureServiceParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CreateStructureService: %+v: %w", arg, err)
+	}
+	if arg.CorporationStructureID == 0 || arg.Name == "" || arg.State == app.StructureServiceStateUndefined {
+		return wrapErr(app.ErrInvalid)
+	}
+	err := st.qRW.CreateStructureService(ctx, queries.CreateStructureServiceParams{
+		CorporationStructureID: arg.CorporationStructureID,
+		Name:                   arg.Name,
+		State:                  structureServiceStateToDBValue[arg.State],
+	})
+	if err != nil {
+		return wrapErr(err)
+	}
+	return nil
+}
+
+func (st *Storage) DeleteStructureServices(ctx context.Context, corporationStructureID int64) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("DeleteStructureServices: %d: %w", corporationStructureID, err)
+	}
+	if corporationStructureID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	if err := st.qRW.DeleteStructureServices(ctx, corporationStructureID); err != nil {
+		return wrapErr(err)
+	}
+	return nil
+}
+
+func (st *Storage) GetStructureService(ctx context.Context, corporationStructureID int64, name string) (*app.StructureService, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("GetStructureService: %d %s: %w", corporationStructureID, name, err)
+	}
+	if corporationStructureID == 0 || name == "" {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	r, err := st.qRO.GetStructureService(ctx, queries.GetStructureServiceParams{
+		CorporationStructureID: corporationStructureID,
+		Name:                   name,
+	})
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	return structureServiceFromDBModel(r), nil
+}
+
+func (st *Storage) ListStructureServices(ctx context.Context, corporationStructureID int64) ([]*app.StructureService, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListStructureServices: %d: %w", corporationStructureID, err)
+	}
+	if corporationStructureID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	rows, err := st.qRO.ListStructureServices(ctx, corporationStructureID)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	return xslices.Map(rows, structureServiceFromDBModel), nil
+}
+
+func structureServiceFromDBModel(r queries.CorporationStructureService) *app.StructureService {
+	o := &app.StructureService{
+		CorporationStructureID: r.CorporationStructureID,
+		Name:                   r.Name,
+		State:                  structureServiceStateFromDBValue[r.State],
+	}
+	return o
 }

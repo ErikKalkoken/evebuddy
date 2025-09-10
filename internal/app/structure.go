@@ -8,18 +8,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
-
-// type StructureServiceState uint
-
-// const (
-// 	StructureServiceStateUndefined StructureServiceState = iota
-// 	StructureServiceStateOnline
-// 	StructureServiceStateOffline
-// 	StructureServiceStateCleanup
-// )
 
 type StructureState uint
 
@@ -44,7 +33,7 @@ func (ss StructureState) String() string {
 	m := map[StructureState]string{
 		StructureStateUndefined:           "",
 		StructureStateAnchoring:           "anchoring",
-		StructureStateAnchorVulnerable:    "armor vulnerable",
+		StructureStateAnchorVulnerable:    "anchor vulnerable",
 		StructureStateArmorReinforce:      "armor reinforce",
 		StructureStateArmorVulnerable:     "armor vulnerable",
 		StructureStateDeployVulnerable:    "deploy vulnerable",
@@ -60,9 +49,23 @@ func (ss StructureState) String() string {
 	return m[ss]
 }
 
+func (ss StructureState) IsReinforce() bool {
+	return ss == StructureStateArmorReinforce || ss == StructureStateHullReinforce
+}
+
 func (ss StructureState) Display() string {
-	titler := cases.Title(language.English)
-	return titler.String(ss.String())
+	return stringTitle(ss.String())
+}
+
+func (ss StructureState) DisplayShort() string {
+	var s string
+	if ss.IsReinforce() {
+		s = "reinforced"
+	} else {
+		s = ss.String()
+	}
+	return stringTitle(s)
+
 }
 
 func (ss StructureState) Color() fyne.ThemeColorName {
@@ -80,11 +83,13 @@ func (ss StructureState) Color() fyne.ThemeColorName {
 type CorporationStructure struct {
 	CorporationID      int32
 	FuelExpires        optional.Optional[time.Time]
+	ID                 int64
 	Name               string
 	NextReinforceApply optional.Optional[time.Time]
 	NextReinforceHour  optional.Optional[int64]
 	ProfileID          int64
 	ReinforceHour      optional.Optional[int64]
+	Services           []*StructureService
 	State              StructureState
 	StateTimerEnd      optional.Optional[time.Time]
 	StateTimerStart    optional.Optional[time.Time]
@@ -99,4 +104,19 @@ func (cs CorporationStructure) NameShort() string {
 		return cs.Name
 	}
 	return strings.TrimPrefix(cs.Name, fmt.Sprintf("%s -", cs.System.Name))
+}
+
+type StructureServiceState uint
+
+const (
+	StructureServiceStateUndefined StructureServiceState = iota
+	StructureServiceStateOnline
+	StructureServiceStateOffline
+	StructureServiceStateCleanup
+)
+
+type StructureService struct {
+	CorporationStructureID int64
+	Name                   string
+	State                  StructureServiceState
 }

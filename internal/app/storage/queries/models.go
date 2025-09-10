@@ -411,6 +411,13 @@ type CorporationStructure struct {
 	UnanchorsAt        sql.NullTime
 }
 
+type CorporationStructureService struct {
+	ID                     int64
+	CorporationStructureID int64
+	Name                   string
+	State                  string
+}
+
 type CorporationWalletBalance struct {
 	ID            int64
 	CorporationID int64

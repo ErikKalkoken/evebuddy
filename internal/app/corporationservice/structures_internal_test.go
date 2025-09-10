@@ -99,5 +99,7 @@ func TestUpdateCorporationStructuresESI(t *testing.T) {
 		assert.WithinDuration(t, stateTimerEnd, x.StateTimerEnd.ValueOrZero(), 1*time.Second)
 		assert.WithinDuration(t, stateTimerStart, x.StateTimerStart.ValueOrZero(), 1*time.Second)
 		assert.WithinDuration(t, unanchorsAt, x.UnanchorsAt.ValueOrZero(), 1*time.Second)
+		assert.EqualValues(t, "service1", x.Services[0].Name)
+		assert.EqualValues(t, app.StructureServiceStateOnline, x.Services[0].State)
 	})
 }

@@ -263,7 +263,7 @@ func (q *Queries) ListCorporationStructures(ctx context.Context, corporationID i
 	return items, nil
 }
 
-const updateOrCreateCorporationStructure = `-- name: UpdateOrCreateCorporationStructure :exec
+const updateOrCreateCorporationStructure = `-- name: UpdateOrCreateCorporationStructure :one
 INSERT INTO
     corporation_structures (
         corporation_id,
@@ -309,6 +309,7 @@ SET
     state_timer_end = ?9,
     state_timer_start = ?10,
     unanchors_at = ?14
+    RETURNING id
 `
 
 type UpdateOrCreateCorporationStructureParams struct {
@@ -328,8 +329,8 @@ type UpdateOrCreateCorporationStructureParams struct {
 	UnanchorsAt        sql.NullTime
 }
 
-func (q *Queries) UpdateOrCreateCorporationStructure(ctx context.Context, arg UpdateOrCreateCorporationStructureParams) error {
-	_, err := q.db.ExecContext(ctx, updateOrCreateCorporationStructure,
+func (q *Queries) UpdateOrCreateCorporationStructure(ctx context.Context, arg UpdateOrCreateCorporationStructureParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, updateOrCreateCorporationStructure,
 		arg.CorporationID,
 		arg.FuelExpires,
 		arg.Name,
@@ -345,5 +346,7 @@ func (q *Queries) UpdateOrCreateCorporationStructure(ctx context.Context, arg Up
 		arg.TypeID,
 		arg.UnanchorsAt,
 	)
-	return err
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }

@@ -13,6 +13,8 @@ import (
 
 	"github.com/antihax/goesi/esi"
 	"github.com/mattn/go-sqlite3"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // Default formats and sizes
@@ -118,4 +120,9 @@ func ErrorDisplay(err error) string {
 		return "network error"
 	}
 	return "general error"
+}
+
+func stringTitle(s string) string {
+	titler := cases.Title(language.English)
+	return titler.String(s)
 }

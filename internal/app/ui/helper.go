@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"math"
 	"math/big"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -177,4 +178,11 @@ func timeFormattedOrFallback(t time.Time, layout, fallback string) string {
 func stringTitle(s string) string {
 	titler := cases.Title(language.English)
 	return titler.String(s)
+}
+
+func stringsJoinsOrEmpty(elems []string, sep, empty string) string {
+	if len(elems) == 0 {
+		return empty
+	}
+	return strings.Join(elems, sep)
 }

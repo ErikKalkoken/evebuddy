@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/icrowley/fake"
@@ -804,6 +805,32 @@ func (f Factory) CreateCharacterSkillqueueItem(args ...storage.SkillqueueItemPar
 		panic(err)
 	}
 	return i
+}
+
+func (f Factory) CreateCharacterTag(names ...string) *app.CharacterTag {
+	var name string
+	if len(names) > 0 {
+		name = names[0]
+	}
+	ctx := context.Background()
+	if name == "" {
+		name = fmt.Sprintf("%s #%d", fake.Color(), rand.IntN(1000))
+	}
+	r, err := f.st.CreateTag(ctx, name)
+	if err != nil {
+		panic(err)
+	}
+	return r
+}
+
+func (f Factory) AddCharacterToTag(tag *app.CharacterTag, character *app.Character) {
+	err := f.st.CreateCharactersCharacterTag(context.Background(), storage.CreateCharacterTagParams{
+		CharacterID: character.ID,
+		TagID:       tag.ID,
+	})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (f Factory) CreateCharacterToken(args ...storage.UpdateOrCreateCharacterTokenParams) *app.CharacterToken {
@@ -2303,30 +2330,31 @@ func (f Factory) CreateEveMarketPrice(args ...storage.UpdateOrCreateEveMarketPri
 	return o
 }
 
-func (f Factory) CreateCharacterTag(names ...string) *app.CharacterTag {
-	var name string
-	if len(names) > 0 {
-		name = names[0]
-	}
+func (f Factory) CreateStructureService(args ...storage.CreateStructureServiceParams) *app.StructureService {
 	ctx := context.Background()
-	if name == "" {
-		name = fmt.Sprintf("%s #%d", fake.Color(), rand.IntN(1000))
+	var arg storage.CreateStructureServiceParams
+	if len(args) > 0 {
+		arg = args[0]
 	}
-	r, err := f.st.CreateTag(ctx, name)
+	if arg.CorporationStructureID == 0 {
+		x := f.CreateCorporationStructure()
+		arg.CorporationStructureID = x.ID
+	}
+	if arg.State == app.StructureServiceStateUndefined {
+		arg.State = app.StructureServiceStateOnline
+	}
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("%s #%d", fake.Color(), generateSequenceID())
+	}
+	err := f.st.CreateStructureService(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	return r
-}
-
-func (f Factory) AddCharacterToTag(tag *app.CharacterTag, character *app.Character) {
-	err := f.st.CreateCharactersCharacterTag(context.Background(), storage.CreateCharacterTagParams{
-		CharacterID: character.ID,
-		TagID:       tag.ID,
-	})
+	o, err := f.st.GetStructureService(ctx, arg.CorporationStructureID, arg.Name)
 	if err != nil {
 		panic(err)
 	}
+	return o
 }
 
 func (f *Factory) CreateToken(args ...app.Token) *app.Token {
@@ -2424,4 +2452,18 @@ func calcContentHash(data any) (string, error) {
 	b2 := md5.Sum(b)
 	hash := hex.EncodeToString(b2[:])
 	return hash, nil
+}
+
+// func generateUniqueHash() string {
+// 	currentTime := time.Now().UnixNano()
+// 	s := fmt.Sprintf("%d-%d", currentTime, rand.IntN(1_000_000_000_000))
+// 	b2 := md5.Sum([]byte(s))
+// 	hash := hex.EncodeToString(b2[:])
+// 	return hash
+// }
+
+var uniqueID atomic.Int64
+
+func generateSequenceID() int {
+	return int(uniqueID.Add(1))
 }
