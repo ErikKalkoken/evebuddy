@@ -205,7 +205,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 				return x.OrderID
 			}))
 			if stale.Size() > 0 {
-				err := s.st.DeleteCharacterMarketOrdersByID(ctx, characterID, stale)
+				err := s.st.DeleteCharacterMarketOrders(ctx, characterID, stale)
 				if err != nil {
 					return err
 				}

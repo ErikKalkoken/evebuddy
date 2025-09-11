@@ -393,6 +393,31 @@ type CorporationSectionStatus struct {
 	StartedAt     sql.NullTime
 }
 
+type CorporationStructure struct {
+	ID                 int64
+	CorporationID      int64
+	FuelExpires        sql.NullTime
+	Name               string
+	NextReinforceApply sql.NullTime
+	NextReinforceHour  sql.NullInt64
+	ProfileID          int64
+	ReinforceHour      sql.NullInt64
+	State              string
+	StateTimerEnd      sql.NullTime
+	StateTimerStart    sql.NullTime
+	StructureID        int64
+	SystemID           int64
+	TypeID             int64
+	UnanchorsAt        sql.NullTime
+}
+
+type CorporationStructureService struct {
+	ID                     int64
+	CorporationStructureID int64
+	Name                   string
+	State                  string
+}
+
 type CorporationWalletBalance struct {
 	ID            int64
 	CorporationID int64

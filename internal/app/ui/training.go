@@ -103,7 +103,7 @@ func (r trainingRow) remainingTimeString(d optional.Optional[time.Duration]) str
 type training struct {
 	widget.BaseWidget
 
-	body         fyne.CanvasObject
+	main         fyne.CanvasObject
 	columnSorter *columnSorter
 	rows         []trainingRow
 	rowsFiltered []trainingRow
@@ -166,7 +166,7 @@ func newTraining(u *baseUI) *training {
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTable(
+		a.main = makeDataTable(
 			headers,
 			&a.rowsFiltered,
 			makeCell,
@@ -177,7 +177,7 @@ func newTraining(u *baseUI) *training {
 			},
 		)
 	} else {
-		a.body = a.makeDataList()
+		a.main = a.makeDataList()
 	}
 	a.selectStatus = kxwidget.NewFilterChipSelect(
 		"Status",
@@ -201,6 +201,11 @@ func newTraining(u *baseUI) *training {
 			a.update()
 		}
 	})
+	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+		fyne.Do(func() {
+			a.main.Refresh()
+		})
+	})
 	return a
 }
 
@@ -214,7 +219,7 @@ func (a *training) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		nil,
 		nil,
-		a.body,
+		a.main,
 	)
 	return widget.NewSimpleRenderer(c)
 }
@@ -357,7 +362,7 @@ func (a *training) filterRows(sortCol int) {
 		return r.tags
 	})...).All()))
 	a.rowsFiltered = rows
-	a.body.Refresh()
+	a.main.Refresh()
 }
 
 func (a *training) update() {
@@ -451,18 +456,6 @@ func (*training) fetchRows(s services) ([]trainingRow, error) {
 		rows[i] = r
 	}
 	return rows, nil
-}
-
-func (a *training) startUpdateTicker() {
-	ticker := time.NewTicker(time.Second * 60)
-	go func() {
-		for {
-			<-ticker.C
-			fyne.DoAndWait(func() {
-				a.body.Refresh()
-			})
-		}
-	}()
 }
 
 func (a *training) showTrainingQueueWindow(r trainingRow) {

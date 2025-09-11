@@ -60,6 +60,7 @@ const (
 const (
 	characterSectionsUpdateTicker = 60 * time.Second
 	generalSectionsUpdateTicker   = 300 * time.Second
+	refreshUITicker               = 30 * time.Second
 )
 
 // Default ScaleMode for images
@@ -139,6 +140,7 @@ type baseUI struct {
 	corporationIndyJobs     *industryJobs
 	corporationMember       *corporationMember
 	corporationSheet        *corporationSheet
+	corporationStructures   *corporationStructures
 	corporationWallets      map[app.Division]*corporationWallet
 	gameSearch              *gameSearch
 	industryJobs            *industryJobs
@@ -156,14 +158,16 @@ type baseUI struct {
 
 	// The current character was exchanged with another character or reset.
 	characterExchanged signals.Signal[*app.Character]
-	// A character section has changed after and update from ESI.
+	// A character section has changed after an update from ESI.
 	characterSectionChanged signals.Signal[characterSectionUpdated]
 	// The current corporation was exchanged with another corporation or reset.
 	corporationExchanged signals.Signal[*app.Corporation]
-	// A character section has changed after and update from ESI.
+	// A character section has changed after an update from ESI.
 	corporationSectionChanged signals.Signal[corporationSectionUpdated]
-	// A general section has changed after and update from ESI.
+	// A general section has changed after an update from ESI.
 	generalSectionChanged signals.Signal[generalSectionUpdated]
+	// Ticker for dynamic UI refresh has expired.
+	refreshTickerExpired signals.Signal[struct{}]
 
 	// Services
 	cs       *characterservice.CharacterService
@@ -238,6 +242,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		memcache:                  arg.MemCache,
 		onSectionUpdateCompleted:  func() {},
 		onSectionUpdateStarted:    func() {},
+		refreshTickerExpired:      signals.New[struct{}](),
 		rs:                        arg.CorporationService,
 		scs:                       arg.StatusCacheService,
 		settings:                  settings.New(arg.App.Preferences()),
@@ -390,6 +395,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.contracts = newContracts(u)
 	u.corporationIndyJobs = newIndustryJobs(u, true)
 	u.corporationMember = newCorporationMember(u)
+	u.corporationStructures = newCorporationStructures(u)
 	u.corporationSheet = newCorporationSheet(u, true)
 	for _, d := range app.Divisions {
 		u.corporationWallets[d] = newCorporationWallet(u, d)
@@ -463,10 +469,7 @@ func (u *baseUI) Start() bool {
 		u.updateHome()
 		u.updateStatus()
 		u.isStartupCompleted.Store(true)
-		u.training.startUpdateTicker()
-		u.marketOrdersBuy.startUpdateTicker()
-		u.marketOrdersSell.startUpdateTicker()
-		u.characterJumpClones.startUpdateTicker()
+		u.startRefreshTicker()
 		if u.onAppFirstStarted != nil {
 			u.onAppFirstStarted()
 		}
@@ -480,6 +483,16 @@ func (u *baseUI) Start() bool {
 		}
 	}()
 	return true
+}
+
+func (u *baseUI) startRefreshTicker() {
+	ticker := time.NewTicker(refreshUITicker)
+	go func() {
+		for {
+			<-ticker.C
+			u.refreshTickerExpired.Emit(context.Background(), struct{}{})
+		}
+	}()
 }
 
 // ShowAndRun shows the UI and runs the Fyne loop (blocking),
@@ -786,6 +799,7 @@ func (u *baseUI) updateCorporation() {
 	ff["corporationSheet"] = u.corporationSheet.update
 	ff["corporationIndyJobs"] = u.corporationIndyJobs.update
 	ff["corporationMember"] = u.corporationMember.update
+	ff["corporationStructures"] = u.corporationStructures.update
 	ff["corporationWalletTotal"] = u.updateCorporationWalletTotal
 	for id, w := range u.corporationWallets {
 		ff[fmt.Sprintf("walletJournal%d", id)] = w.update

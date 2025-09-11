@@ -1,4 +1,4 @@
--- name: DeleteCharacterMarketOrder :exec
+-- name: DeleteCharacterMarketOrders :exec
 DELETE FROM character_market_orders
 WHERE
     character_id = ?

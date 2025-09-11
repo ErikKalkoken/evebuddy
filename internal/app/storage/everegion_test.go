@@ -45,4 +45,15 @@ func TestEveRegion(t *testing.T) {
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
+	t.Run("can return missing IDs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		r1 := factory.CreateEveRegion(storage.CreateEveRegionParams{ID: 42})
+		// when
+		got, err := st.MissingEveRegions(ctx, set.Of(r1.ID, 99))
+		if assert.NoError(t, err) {
+			want := set.Of[int32](99)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		}
+	})
 }

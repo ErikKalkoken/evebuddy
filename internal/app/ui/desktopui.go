@@ -337,6 +337,21 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		})
 	}
 
+	corpStructuresItem := iwidget.NewNavPage(
+		"Structures",
+		theme.NewThemedResource(icons.OfficeBuildingSvg),
+		newContentPage("Structures", u.corporationStructures),
+	)
+	u.corporationStructures.OnUpdate = func(count int) {
+		var badge string
+		if count > 0 {
+			badge = ihumanize.Comma(count)
+		}
+		fyne.Do(func() {
+			corporationNav.SetItemBadge(corpStructuresItem, badge)
+		})
+	}
+
 	corpSheetItem := iwidget.NewNavPage(
 		"Corporation Sheet",
 		theme.NewThemedResource(icons.StarCircleOutlineSvg),
@@ -346,7 +361,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		)),
 	)
 	corporationNav = iwidget.NewNavDrawer(slices.Concat(
-		[]*iwidget.NavItem{corpSheetItem, corpIndustryItem},
+		[]*iwidget.NavItem{corpSheetItem, corpIndustryItem, corpStructuresItem},
 		corpWalletItems,
 	)...)
 	corporationNav.MinWidth = navDrawerMinWidth
@@ -492,6 +507,12 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 				corpIndustryItem.Enable()
 			} else {
 				corpIndustryItem.Disable()
+				hasDisabled = true
+			}
+			if sections.Contains(app.SectionCorporationStructures) {
+				corpStructuresItem.Enable()
+			} else {
+				corpStructuresItem.Disable()
 				hasDisabled = true
 			}
 			if hasDisabled {

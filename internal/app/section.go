@@ -185,6 +185,7 @@ const (
 	SectionCorporationDivisions           CorporationSection = "divisions"
 	SectionCorporationIndustryJobs        CorporationSection = "industry_jobs"
 	SectionCorporationMembers             CorporationSection = "members"
+	SectionCorporationStructures          CorporationSection = "structures"
 	SectionCorporationWalletBalances      CorporationSection = "wallet_balances"
 	SectionCorporationWalletJournal1      CorporationSection = "wallet_journal_1"
 	SectionCorporationWalletJournal2      CorporationSection = "wallet_journal_2"
@@ -206,6 +207,7 @@ var CorporationSections = []CorporationSection{
 	SectionCorporationDivisions,
 	SectionCorporationIndustryJobs,
 	SectionCorporationMembers,
+	SectionCorporationStructures,
 	SectionCorporationWalletBalances,
 	SectionCorporationWalletJournal1,
 	SectionCorporationWalletJournal2,
@@ -296,6 +298,7 @@ func (cs CorporationSection) Timeout() time.Duration {
 		SectionCorporationIndustryJobs:        300 * time.Second,
 		SectionCorporationMembers:             3600 * time.Second,
 		SectionCorporationWalletBalances:      300 * time.Second,
+		SectionCorporationStructures:          3600 * time.Second,
 		SectionCorporationWalletJournal1:      walletJournal,
 		SectionCorporationWalletJournal2:      walletJournal,
 		SectionCorporationWalletJournal3:      walletJournal,
@@ -328,6 +331,7 @@ func (cs CorporationSection) Roles() set.Set[Role] {
 		SectionCorporationDivisions:           {RoleDirector},
 		SectionCorporationIndustryJobs:        {RoleFactoryManager},
 		SectionCorporationMembers:             {},
+		SectionCorporationStructures:          {RoleStationManager},
 		SectionCorporationWalletBalances:      anyAccountant,
 		SectionCorporationWalletJournal1:      anyAccountant,
 		SectionCorporationWalletJournal2:      anyAccountant,
@@ -359,6 +363,7 @@ func (cs CorporationSection) Scopes() set.Set[string] {
 		SectionCorporationDivisions:           {"esi-corporations.read_divisions.v1"},
 		SectionCorporationIndustryJobs:        {"esi-industry.read_corporation_jobs.v1"},
 		SectionCorporationMembers:             {"esi-corporations.read_corporation_membership.v1"},
+		SectionCorporationStructures:          {"esi-corporations.read_structures.v1"},
 		SectionCorporationWalletBalances:      {"esi-wallet.read_corporation_wallets.v1"},
 		SectionCorporationWalletJournal1:      journal,
 		SectionCorporationWalletJournal2:      journal,

@@ -6,6 +6,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 type CreateEveSolarSystemParams struct {
@@ -48,4 +49,22 @@ func eveSolarSystemFromDBModel(s queries.EveSolarSystem, c queries.EveConstellat
 		Name:           s.Name,
 		SecurityStatus: float32(s.SecurityStatus),
 	}
+}
+
+func (st *Storage) ListEveSolarSystemIDs(ctx context.Context) (set.Set[int32], error) {
+	ids, err := st.qRO.ListEveSolarSystemIDs(ctx)
+	if err != nil {
+		return set.Set[int32]{}, fmt.Errorf("ListEveSolarSystemIDs: %w", err)
+	}
+	return set.Of(convertNumericSlice[int32](ids)...), nil
+}
+
+func (st *Storage) MissingEveSolarSystems(ctx context.Context, ids set.Set[int32]) (set.Set[int32], error) {
+	currentIDs, err := st.qRO.ListEveSolarSystemIDs(ctx)
+	if err != nil {
+		return set.Set[int32]{}, err
+	}
+	current := set.Of(convertNumericSlice[int32](currentIDs)...)
+	missing := set.Difference(ids, current)
+	return missing, nil
 }

@@ -12,20 +12,20 @@ import (
 	"time"
 )
 
-const deleteCharacterMarketOrder = `-- name: DeleteCharacterMarketOrder :exec
+const deleteCharacterMarketOrders = `-- name: DeleteCharacterMarketOrders :exec
 DELETE FROM character_market_orders
 WHERE
     character_id = ?
     AND order_id IN (/*SLICE:order_ids*/?)
 `
 
-type DeleteCharacterMarketOrderParams struct {
+type DeleteCharacterMarketOrdersParams struct {
 	CharacterID int64
 	OrderIds    []int64
 }
 
-func (q *Queries) DeleteCharacterMarketOrder(ctx context.Context, arg DeleteCharacterMarketOrderParams) error {
-	query := deleteCharacterMarketOrder
+func (q *Queries) DeleteCharacterMarketOrders(ctx context.Context, arg DeleteCharacterMarketOrdersParams) error {
+	query := deleteCharacterMarketOrders
 	var queryParams []interface{}
 	queryParams = append(queryParams, arg.CharacterID)
 	if len(arg.OrderIds) > 0 {

@@ -24,7 +24,7 @@ func (s *CharacterService) ListPlanets(ctx context.Context, characterID int32) (
 	return s.st.ListCharacterPlanets(ctx, characterID)
 }
 
-// TODO: Improve update logic to only update changes
+// TODO: Improve update logic to only update changes to pins
 
 func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterPlanets {
@@ -56,8 +56,11 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 				incoming.Add(p.PlanetId)
 			}
 			obsolete := set.Difference(existing, incoming)
-			if err := s.st.DeleteCharacterPlanet(ctx, characterID, obsolete.Slice()); err != nil {
-				return err
+			if obsolete.Size() > 0 {
+				if err := s.st.DeleteCharacterPlanet(ctx, characterID, obsolete.Slice()); err != nil {
+					return err
+				}
+				slog.Info("Removed obsolete planets", "characterID", characterID, "count", obsolete.Size())
 			}
 			// update or create planet
 			for _, o := range planets {
@@ -65,13 +68,12 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 				if err != nil {
 					return err
 				}
-				arg := storage.UpdateOrCreateCharacterPlanetParams{
+				characterPlanetID, err := s.st.UpdateOrCreateCharacterPlanet(ctx, storage.UpdateOrCreateCharacterPlanetParams{
 					CharacterID:  characterID,
 					EvePlanetID:  o.PlanetId,
 					LastUpdate:   o.LastUpdate,
 					UpgradeLevel: int(o.UpgradeLevel),
-				}
-				characterPlanetID, err := s.st.UpdateOrCreateCharacterPlanet(ctx, arg)
+				})
 				if err != nil {
 					return err
 				}
