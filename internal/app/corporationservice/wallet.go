@@ -303,7 +303,7 @@ func (s *CorporationService) GetWalletTransaction(ctx context.Context, corporati
 		return nil, err
 	}
 	if !enabled {
-		return nil, app.ErrNotFound
+		return nil, fmt.Errorf("section not enabled: %d %d: %w", corporationID, d, app.ErrNotFound)
 	}
 	return s.st.GetCorporationWalletTransaction(ctx, storage.GetCorporationWalletTransactionParams{
 		CorporationID: corporationID,

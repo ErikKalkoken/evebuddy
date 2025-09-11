@@ -166,7 +166,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 			a.filterRows,
 			func(_ int, r walletTransactionRow) {
 				if a.isCorporation() {
-					showCorporationWalletTransactionWindow(a.u, r.characterID, r.division, r.transactionID)
+					showCorporationWalletTransactionWindow(a.u, r.corporationID, r.division, r.transactionID)
 				} else {
 					showCharacterWalletTransactionWindow(a.u, r.characterID, r.transactionID)
 				}
@@ -290,7 +290,7 @@ func (a *walletTransactions) makeDataList() *iwidget.StripedList {
 		}
 		r := a.rowsFiltered[id]
 		if a.isCorporation() {
-			showCorporationWalletTransactionWindow(a.u, r.characterID, r.division, r.transactionID)
+			showCorporationWalletTransactionWindow(a.u, r.corporationID, r.division, r.transactionID)
 		} else {
 			showCharacterWalletTransactionWindow(a.u, r.characterID, r.transactionID)
 		}
@@ -648,11 +648,11 @@ func showCorporationWalletTransactionWindow(u *baseUI, corporationID int32, divi
 		widget.NewFormItem("Total", widget.NewLabel(formatISKAmount(totalAmount))),
 		widget.NewFormItem("Client", makeEveEntityActionLabel(o.Client, u.ShowEveEntityInfoWindow)),
 		widget.NewFormItem("Location", makeLocationLabel(o.Location, u.ShowLocationInfoWindow)),
-		// widget.NewFormItem("Related Journal Entry", makeLinkLabelWithWrap(
-		// 	fmt.Sprintf("#%d", o.JournalRefID), func() {
-		// 		showCorporationWalletJournalEntryWindow(u, corporationID, division, o.JournalRefID)
-		// 	},
-		// )),
+		widget.NewFormItem("Related Journal Entry", makeLinkLabelWithWrap(
+			fmt.Sprintf("#%d", o.JournalRefID), func() {
+				showCorporationWalletJournalEntryWindow(u, corporationID, division, o.JournalRefID)
+			},
+		)),
 	}
 
 	if u.IsDeveloperMode() {

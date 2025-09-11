@@ -81,7 +81,7 @@ func (s *CorporationService) RemoveSectionDataWhenPermissionLost(ctx context.Con
 func (s *CorporationService) PermittedSections(ctx context.Context, corporationID int32) (set.Set[app.CorporationSection], error) {
 	var enabled set.Set[app.CorporationSection]
 	wrapErr := func(err error) error {
-		return fmt.Errorf("CorporationService.EnabledSections %d: %w", corporationID, err)
+		return fmt.Errorf("PermittedSections %d: %w", corporationID, err)
 	}
 	if corporationID == 0 {
 		return enabled, nil
