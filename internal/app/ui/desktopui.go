@@ -342,6 +342,15 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		theme.NewThemedResource(icons.OfficeBuildingSvg),
 		newContentPage("Structures", u.corporationStructures),
 	)
+	u.corporationStructures.OnUpdate = func(count int) {
+		var badge string
+		if count > 0 {
+			badge = ihumanize.Comma(count)
+		}
+		fyne.Do(func() {
+			corporationNav.SetItemBadge(corpStructuresItem, badge)
+		})
+	}
 
 	corpSheetItem := iwidget.NewNavPage(
 		"Corporation Sheet",

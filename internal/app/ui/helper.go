@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"math"
 	"math/big"
+	"slices"
 	"strings"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"golang.org/x/text/language"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 // makeGridOrList makes and returns a GridWrap on desktop and a List on mobile.
@@ -130,6 +132,28 @@ func makeLocationLabel(o *app.EveLocationShort, show func(int64)) fyne.CanvasObj
 	}
 	x := makeLinkLabelWithWrap(o.DisplayName(), func() {
 		show(o.ID)
+	})
+	x.Wrapping = fyne.TextWrapWord
+	return x
+}
+
+func makeSolarSystemLabel(o *app.EveSolarSystem, show func(o *app.EveEntity)) fyne.CanvasObject {
+	if o == nil {
+		return widget.NewLabel("?")
+	}
+	segs := slices.Concat(
+		o.SecurityStatusRichText(),
+		iwidget.RichTextSegmentsFromText(" ", widget.RichTextStyleInline),
+		iwidget.RichTextSegmentsFromText(o.Name, widget.RichTextStyle{
+			ColorName: theme.ColorNamePrimary,
+		}))
+	x := iwidget.NewTappableRichText(segs, func() {
+		o := &app.EveEntity{
+			ID:       o.ID,
+			Name:     o.Name,
+			Category: app.EveEntitySolarSystem,
+		}
+		show(o)
 	})
 	x.Wrapping = fyne.TextWrapWord
 	return x

@@ -277,7 +277,15 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		"Industry",
 		theme.NewThemedResource(icons.FactorySvg),
 		func() {
-			corpNav.Push(newCorpAppBar("Corporation Sheet", u.corporationIndyJobs))
+			corpNav.Push(newCorpAppBar("Industry", u.corporationIndyJobs))
+		},
+	)
+
+	corpStructuresNav := iwidget.NewListItemWithIcon(
+		"Structures",
+		theme.NewThemedResource(icons.OfficeBuildingSvg),
+		func() {
+			corpNav.Push(newCorpAppBar("Structures", u.corporationStructures))
 		},
 	)
 
@@ -298,10 +306,31 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				},
 			),
 			corpIndustryNav,
+			corpStructuresNav,
 			corpWalletNav,
 		})...,
 	)
 
+	u.corporationIndyJobs.OnUpdate = func(count int) {
+		var badge string
+		if count > 0 {
+			badge = fmt.Sprintf("%s jobs ready", ihumanize.Comma(count))
+		}
+		fyne.Do(func() {
+			corpIndustryNav.Supporting = badge
+			corpList.Refresh()
+		})
+	}
+	u.corporationStructures.OnUpdate = func(count int) {
+		var badge string
+		if count > 0 {
+			badge = fmt.Sprintf("%s structures reinforced", ihumanize.Comma(count))
+		}
+		fyne.Do(func() {
+			corpStructuresNav.Supporting = badge
+			corpList.Refresh()
+		})
+	}
 	u.onUpdateCorporationWalletTotals = func(balance string) {
 		fyne.Do(func() {
 			corpWalletNav.Supporting = balance

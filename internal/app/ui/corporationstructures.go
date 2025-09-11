@@ -24,9 +24,19 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
+const (
+	structuresPowerLow  = "Low Power"
+	structuresPowerHigh = "High Power"
+)
+
 type corporationStructureRow struct {
 	corporationID      int32
 	corporationName    string
+	fuelExpires        optional.Optional[time.Time]
+	fuelSort           time.Time
+	fuelText           string
+	isFullPower        bool
+	isReinforced       bool
 	regionID           int32
 	regionName         string
 	services           set.Set[string]
@@ -39,37 +49,43 @@ type corporationStructureRow struct {
 	stateText          string
 	structureID        int64
 	structureName      string
-	structureNameShort string
 	typeID             int32
 	typeName           string
-	fuelText           string
-	fuelExpires        optional.Optional[time.Time]
-	fuelSort           time.Time
 }
 
 type corporationStructures struct {
 	widget.BaseWidget
 
+	OnUpdate func(count int)
+
+	bottom            *widget.Label
+	columnSorter      *columnSorter
 	corporation       *app.Corporation
 	main              fyne.CanvasObject
-	columnSorter      *columnSorter
 	rows              []corporationStructureRow
 	rowsFiltered      []corporationStructureRow
+	selectPower       *kxwidget.FilterChipSelect
 	selectRegion      *kxwidget.FilterChipSelect
-	selectSolarSystem *kxwidget.FilterChipSelect
-	selectType        *kxwidget.FilterChipSelect
-	selectState       *kxwidget.FilterChipSelect
 	selectService     *kxwidget.FilterChipSelect
+	selectSolarSystem *kxwidget.FilterChipSelect
+	selectState       *kxwidget.FilterChipSelect
+	selectType        *kxwidget.FilterChipSelect
 	sortButton        *sortButton
-	bottom            *widget.Label
 	u                 *baseUI
 }
 
+const (
+	structuresColName     = 0
+	structuresColType     = 1
+	structuresColFuel     = 2
+	structuresColState    = 3
+	structuresColServices = 4
+)
+
 func newCorporationStructures(u *baseUI) *corporationStructures {
 	headers := []headerDef{
-		{label: "System", width: 150},
-		{label: "Type", width: 150},
 		{label: "Name", width: 250},
+		{label: "Type", width: 150},
 		{label: "Fuel Expires", width: 150},
 		{label: "State", width: 150, notSortable: true},
 		{label: "Services", width: 200, notSortable: true},
@@ -84,13 +100,11 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 	a.ExtendBaseWidget(a)
 	makeCell := func(col int, r corporationStructureRow) []widget.RichTextSegment {
 		switch col {
-		case 0:
-			return r.solarSystemDisplay
-		case 1:
+		case structuresColType:
 			return iwidget.RichTextSegmentsFromText(r.typeName)
-		case 2:
-			return iwidget.RichTextSegmentsFromText(r.structureNameShort)
-		case 3:
+		case structuresColName:
+			return iwidget.RichTextSegmentsFromText(r.structureName)
+		case structuresColFuel:
 			var text string
 			var color fyne.ThemeColorName
 			if r.fuelExpires.IsEmpty() {
@@ -103,11 +117,11 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 			return iwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
 				ColorName: color,
 			})
-		case 4:
+		case structuresColState:
 			return iwidget.RichTextSegmentsFromText(r.stateText, widget.RichTextStyle{
 				ColorName: r.stateColor,
 			})
-		case 5:
+		case structuresColServices:
 			return iwidget.RichTextSegmentsFromText(r.servicesText)
 		}
 		return iwidget.RichTextSegmentsFromText("?")
@@ -145,6 +159,12 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 	a.sortButton = a.columnSorter.newSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
+	a.selectPower = kxwidget.NewFilterChipSelect("Power", []string{
+		structuresPowerHigh,
+		structuresPowerLow,
+	}, func(_ string) {
+		a.filterRows(-1)
+	})
 
 	a.u.corporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
 		a.corporation = c
@@ -167,7 +187,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 }
 
 func (a *corporationStructures) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectType, a.selectState, a.selectSolarSystem, a.selectRegion, a.selectService)
+	filter := container.NewHBox(a.selectType, a.selectState, a.selectSolarSystem, a.selectRegion, a.selectService, a.selectPower)
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
 	}
@@ -203,18 +223,27 @@ func (a *corporationStructures) filterRows(sortCol int) {
 			return r.typeName == x
 		})
 	}
+	if x := a.selectPower.Selected; x != "" {
+		rows = xslices.Filter(rows, func(r corporationStructureRow) bool {
+			switch x {
+			case structuresPowerHigh:
+				return r.isFullPower
+			case structuresPowerLow:
+				return !r.isFullPower
+			}
+			return false
+		})
+	}
 	// sort
 	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
 		slices.SortFunc(rows, func(a, b corporationStructureRow) int {
 			var x int
 			switch sortCol {
-			case 0:
-				x = strings.Compare(a.solarSystemName, b.solarSystemName)
-			case 1:
+			case structuresColType:
 				x = strings.Compare(a.typeName, b.typeName)
-			case 2:
-				x = strings.Compare(a.structureNameShort, b.structureNameShort)
-			case 3:
+			case structuresColName:
+				x = strings.Compare(a.structureName, b.structureName)
+			case structuresColFuel:
 				x = cmp.Compare(time.Until(a.fuelSort), time.Until(b.fuelSort))
 			}
 			if dir == sortAsc {
@@ -272,6 +301,15 @@ func (a *corporationStructures) update() {
 			a.bottom.Hide()
 		}
 	})
+	if a.OnUpdate != nil {
+		var reinforceCount int
+		for _, r := range rows {
+			if r.isReinforced {
+				reinforceCount++
+			}
+		}
+		a.OnUpdate(reinforceCount)
+	}
 	fyne.Do(func() {
 		a.rows = rows
 		a.filterRows(-1)
@@ -312,6 +350,8 @@ func (a *corporationStructures) fetchData(corporationID int32) ([]corporationStr
 			corporationID:      corporationID,
 			corporationName:    a.u.scs.CorporationName(corporationID),
 			fuelExpires:        s.FuelExpires,
+			isFullPower:        !s.FuelExpires.IsEmpty(),
+			isReinforced:       s.State.IsReinforce(),
 			regionID:           region.ID,
 			regionName:         region.Name,
 			services:           services,
@@ -324,7 +364,6 @@ func (a *corporationStructures) fetchData(corporationID int32) ([]corporationStr
 			stateText:          stateText,
 			structureID:        s.StructureID,
 			structureName:      s.Name,
-			structureNameShort: s.NameShort(),
 			typeID:             s.Type.ID,
 			typeName:           s.Type.Name,
 		})
@@ -370,13 +409,15 @@ func showCorporationStructureWindow(u *baseUI, corporationID int32, structureID 
 		}
 	}
 
-	var fuelText string
-	var fuelColor fyne.ThemeColorName
+	var fuelText, powerText string
+	var powerColor fyne.ThemeColorName
 	if s.FuelExpires.IsEmpty() {
-		fuelColor = theme.ColorNameWarning
-		fuelText = "Low Power"
+		powerText = "Low Power / Abandoned"
+		powerColor = theme.ColorNameWarning
+		fuelText = "N/A"
 	} else {
-		fuelColor = theme.ColorNameForeground
+		powerText = "Full Power"
+		powerColor = theme.ColorNameSuccess
 		fuelText = s.FuelExpires.ValueOrZero().Format(app.DateTimeFormat)
 	}
 
@@ -390,18 +431,19 @@ func showCorporationStructureWindow(u *baseUI, corporationID int32, structureID 
 		widget.NewFormItem("Type", makeLinkLabelWithWrap(s.Type.Name, func() {
 			u.ShowTypeInfoWindow(s.Type.ID)
 		})),
-		widget.NewFormItem("System", makeLinkLabel(s.System.Name, func() {
-			u.ShowInfoWindow(app.EveEntitySolarSystem, s.System.ID)
-		})),
+		widget.NewFormItem("System", makeSolarSystemLabel(s.System, u.ShowEveEntityInfoWindow)),
 		widget.NewFormItem("Region", makeLinkLabel(s.System.Constellation.Region.Name, func() {
 			u.ShowInfoWindow(app.EveEntityRegion, s.System.Constellation.Region.ID)
 		})),
 		widget.NewFormItem("Services", widget.NewRichText(services...)),
 		widget.NewFormItem("Fuel Expires", widget.NewRichText(iwidget.RichTextSegmentsFromText(fuelText, widget.RichTextStyle{
-			ColorName: fuelColor,
+			ColorName: powerColor,
 		})...)),
 		widget.NewFormItem("State", widget.NewRichText(iwidget.RichTextSegmentsFromText(s.State.Display(), widget.RichTextStyle{
 			ColorName: s.State.Color(),
+		})...)),
+		widget.NewFormItem("Power Mode", widget.NewRichText(iwidget.RichTextSegmentsFromText(powerText, widget.RichTextStyle{
+			ColorName: powerColor,
 		})...)),
 		widget.NewFormItem("Timer Start", widget.NewLabel(s.StateTimerStart.StringFunc("-", func(v time.Time) string {
 			return v.Format(app.DateTimeFormat)
