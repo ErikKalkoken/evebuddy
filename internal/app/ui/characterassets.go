@@ -31,7 +31,7 @@ type characterAssets struct {
 	Locations      fyne.CanvasObject // TODO: Refactor into own widget
 	LocationAssets fyne.CanvasObject // TODO: Refactor into own widget
 	OnSelected     func()
-	OnRedraw       func(string)
+	OnUpdate       func(string)
 
 	assetCollection  assetcollection.AssetCollection
 	assetGrid        *widget.GridWrap
@@ -264,11 +264,11 @@ func (a *characterAssets) update() {
 		a.locationsTop.Refresh()
 		a.locations.Refresh()
 	})
-	if a.OnRedraw != nil {
+	if a.OnUpdate != nil {
 		c := a.u.currentCharacter()
 		if c != nil {
 			s := ihumanize.OptionalWithDecimals(c.AssetValue, 1, "?")
-			a.OnRedraw(s)
+			a.OnUpdate(s)
 		}
 	}
 }

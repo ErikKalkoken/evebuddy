@@ -299,7 +299,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			characterNav.SetItemBadge(characterWalletNav, balance)
 		})
 	}
-	u.characterAsset.OnRedraw = func(s string) {
+	u.characterAsset.OnUpdate = func(s string) {
 		fyne.Do(func() {
 			characterNav.SetItemBadge(characterAssetsNav, s)
 		})

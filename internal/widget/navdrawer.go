@@ -151,6 +151,8 @@ func (w *NavDrawer) makeList() *widget.List {
 				title.TextStyle.Bold = it.isSelected
 				if it.isDisabled {
 					title.Importance = widget.LowImportance
+				} else if it.isSelected {
+					title.Importance = widget.HighImportance
 				} else {
 					title.Importance = widget.MediumImportance
 				}
