@@ -31,6 +31,17 @@ const (
 	trainingStatusInActive = "Inactive"
 )
 
+const (
+	trainingColName             = 0
+	trainingColTags             = 1
+	trainingColCurrent          = 2
+	trainingColCurrentRemaining = 3
+	trainingColTotal            = 4
+	trainingColTotalRemaining   = 5
+	trainingColSP               = 6
+	trainingColUnallocated      = 7
+)
+
 type trainingRow struct {
 	characterID                int32
 	characterName              string
@@ -106,7 +117,7 @@ type training struct {
 func newTraining(u *baseUI) *training {
 	headers := []headerDef{
 		{label: "Name", width: columnWidthEntity},
-		{label: "Tags", width: 150},
+		{label: "Tags", width: 150, notSortable: true},
 		{label: "Current Skill", width: 250},
 		{label: "Current Remaining", width: 0},
 		{label: "Queued", width: 0},
@@ -124,27 +135,27 @@ func newTraining(u *baseUI) *training {
 	a.ExtendBaseWidget(a)
 	makeCell := func(col int, r trainingRow) []widget.RichTextSegment {
 		switch col {
-		case 0:
+		case trainingColName:
 			return iwidget.RichTextSegmentsFromText(r.characterName)
-		case 1:
+		case trainingColTags:
 			s := strings.Join(slices.Sorted(r.tags.All()), ", ")
 			return iwidget.RichTextSegmentsFromText(s)
-		case 2:
+		case trainingColCurrent:
 			return r.skillDisplay
-		case 3:
+		case trainingColCurrentRemaining:
 			return iwidget.RichTextSegmentsFromText(r.currentRemainingTimeString())
-		case 4:
+		case trainingColTotal:
 			return iwidget.RichTextSegmentsFromText(r.totalRemainingCountDisplay)
-		case 5:
+		case trainingColTotalRemaining:
 			return iwidget.RichTextSegmentsFromText(r.totalRemainingTimeString())
-		case 6:
+		case trainingColSP:
 			return iwidget.RichTextSegmentsFromText(
 				r.totalSPDisplay,
 				widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				},
 			)
-		case 7:
+		case trainingColUnallocated:
 			return iwidget.RichTextSegmentsFromText(
 				r.unallocatedSPDisplay,
 				widget.RichTextStyle{
@@ -319,19 +330,19 @@ func (a *training) filterRows(sortCol int) {
 		slices.SortFunc(rows, func(a, b trainingRow) int {
 			var x int
 			switch sortCol {
-			case 0:
+			case trainingColName:
 				x = strings.Compare(a.characterName, b.characterName)
-			case 1:
-				x = strings.Compare(a.skillName, b.skillName)
-			case 2:
+			case trainingColCurrentRemaining:
 				x = cmp.Compare(a.currentRemainingTime().ValueOrZero(), b.currentRemainingTime().ValueOrZero())
-			case 3:
+			case trainingColCurrent:
+				x = strings.Compare(a.skillName, b.skillName)
+			case trainingColTotal:
 				x = cmp.Compare(a.totalRemainingCount.ValueOrZero(), b.totalRemainingCount.ValueOrZero())
-			case 4:
+			case trainingColTotalRemaining:
 				x = cmp.Compare(a.totalRemainingTime().ValueOrZero(), b.totalRemainingTime().ValueOrZero())
-			case 5:
+			case trainingColSP:
 				x = cmp.Compare(a.totalSP.ValueOrZero(), b.totalSP.ValueOrZero())
-			case 6:
+			case trainingColUnallocated:
 				x = cmp.Compare(a.unallocatedSP.ValueOrZero(), b.unallocatedSP.ValueOrZero())
 			}
 			if dir == sortAsc {
