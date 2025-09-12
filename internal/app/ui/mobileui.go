@@ -531,13 +531,14 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		togglePermittedSections()
 	}
 
-	var hasUpdate bool
-	var hasError bool
+	var hasUpdate, hasUpdateError, hasScopeError bool
 	refreshMoreBadge := func() {
-		if hasError || hasUpdate {
+		if hasUpdateError || hasUpdate || hasScopeError {
 			var importance widget.Importance
-			if hasError {
+			if hasUpdateError {
 				importance = widget.DangerImportance
+			} else if hasScopeError {
+				importance = widget.WarningImportance
 			} else if hasUpdate {
 				importance = widget.HighImportance
 			}
@@ -561,10 +562,10 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				status := u.scs.Summary()
 				if status.Errors > 0 {
 					icon = theme.NewErrorThemedResource(theme.WarningIcon())
-					hasError = true
+					hasUpdateError = true
 				} else {
 					icon = nil
-					hasError = false
+					hasUpdateError = false
 				}
 				fyne.Do(func() {
 					refreshMoreBadge()
@@ -602,6 +603,20 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				<-tickerNewVersion.C
 			}
 		}()
+	}
+	u.onUpdateCharactersMissingScope = func(characterCount int) {
+		var icon fyne.Resource
+		if characterCount > 0 {
+			icon = theme.NewWarningThemedResource(theme.WarningIcon())
+			hasScopeError = true
+		} else {
+			icon = nil
+			hasScopeError = false
+		}
+		fyne.Do(func() {
+			navItemManageCharacters.Trailing = icon
+			moreList.Refresh()
+		})
 	}
 
 	u.MainWindow().SetContent(navBar)

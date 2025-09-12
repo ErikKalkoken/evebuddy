@@ -275,10 +275,10 @@ func (a *manageCharacters) showAddCharacterDialog() {
 			}
 			a.mcw.u.updateStatus()
 			a.mcw.u.updateHome()
-			if a.mcw.u.isUpdateDisabled {
-				return nil
+			a.mcw.u.characterAdded.Emit(context.Background(), character)
+			if !a.mcw.u.isUpdateDisabled {
+				go a.mcw.u.updateCharacterAndRefreshIfNeeded(context.Background(), character.ID, true)
 			}
-			go a.mcw.u.updateCharacterAndRefreshIfNeeded(context.Background(), character.ID, true)
 			return nil
 		}()
 		if err != nil {
@@ -290,6 +290,7 @@ func (a *manageCharacters) showAddCharacterDialog() {
 			fyne.Do(func() {
 				d1.Hide()
 			})
+
 		}
 	}()
 }
