@@ -135,6 +135,16 @@ type marketOrders struct {
 	u            *baseUI
 }
 
+const (
+	marketOrdersColType     = 0
+	marketOrdersColVolume   = 1
+	marketOrdersColPrice    = 2
+	marketOrdersColState    = 3
+	marketOrdersColLocation = 4
+	marketOrdersColRegion   = 5
+	marketOrdersColOwner    = 6
+)
+
 func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 	headers := []headerDef{
 		{label: "Type", width: columnWidthEntity},
@@ -157,25 +167,25 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 	a.ExtendBaseWidget(a)
 	makeCell := func(col int, r marketOrderRow) []widget.RichTextSegment {
 		switch col {
-		case 0:
+		case marketOrdersColType:
 			return iwidget.RichTextSegmentsFromText(r.typeName)
-		case 1:
+		case marketOrdersColVolume:
 			return iwidget.RichTextSegmentsFromText(r.volumeDisplay(), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 			})
-		case 2:
+		case marketOrdersColPrice:
 			return iwidget.RichTextSegmentsFromText(humanize.FormatFloat(app.FloatFormat, r.price), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 			})
-		case 3:
+		case marketOrdersColState:
 			return iwidget.RichTextSegmentsFromText(r.stateDisplay(), widget.RichTextStyle{
 				ColorName: r.stateColor(),
 			})
-		case 4:
+		case marketOrdersColLocation:
 			return iwidget.RichTextSegmentsFromText(r.locationName)
-		case 5:
+		case marketOrdersColRegion:
 			return iwidget.RichTextSegmentsFromText(r.regionName)
-		case 6:
+		case marketOrdersColOwner:
 			return iwidget.RichTextSegmentsFromText(r.ownerName)
 		}
 		return iwidget.RichTextSegmentsFromText("?")
@@ -346,19 +356,19 @@ func (a *marketOrders) filterRows(sortCol int) {
 		slices.SortFunc(rows, func(a, b marketOrderRow) int {
 			var x int
 			switch sortCol {
-			case 0:
+			case marketOrdersColType:
 				x = strings.Compare(a.typeName, b.typeName)
-			case 1:
+			case marketOrdersColVolume:
 				x = cmp.Compare(a.volumeRemain, b.volumeRemain)
-			case 2:
+			case marketOrdersColPrice:
 				x = cmp.Compare(a.price, b.price)
-			case 3:
+			case marketOrdersColState:
 				x = a.expires.Compare(b.expires)
-			case 4:
+			case marketOrdersColRegion:
 				x = strings.Compare(a.regionName, b.regionName)
-			case 5:
+			case marketOrdersColLocation:
 				x = strings.Compare(a.locationName, b.locationName)
-			case 6:
+			case marketOrdersColOwner:
 				x = strings.Compare(a.ownerName, b.ownerName)
 			}
 			if dir == sortAsc {

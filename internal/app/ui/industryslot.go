@@ -50,6 +50,14 @@ type industrySlots struct {
 	u               *baseUI
 }
 
+const (
+	industrySlotsColCharacter = 0
+	industrySlotsColBusy      = 1
+	industrySlotsColReady     = 2
+	industrySlotsColFree      = 3
+	industrySlotsColTotal     = 4
+)
+
 func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	const columnWidthNumber = 75
 	headers := []headerDef{
@@ -70,19 +78,19 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	a.ExtendBaseWidget(a)
 	makeCell := func(col int, r industrySlotRow) []widget.RichTextSegment {
 		switch col {
-		case 0:
+		case industrySlotsColCharacter:
 			if r.isSummary {
 				return iwidget.RichTextSegmentsFromText("Totals", widget.RichTextStyle{
 					TextStyle: fyne.TextStyle{Bold: true},
 				})
 			}
 			return iwidget.RichTextSegmentsFromText(r.characterName)
-		case 1:
+		case industrySlotsColBusy:
 			var c fyne.ThemeColorName
-			switch {
-			case r.busy == 0:
+			switch r.busy {
+			case 0:
 				c = theme.ColorNameSuccess
-			case r.busy == r.total:
+			case r.total:
 				c = theme.ColorNameError
 			default:
 				c = theme.ColorNameWarning
@@ -92,7 +100,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 				ColorName: c,
 				TextStyle: fyne.TextStyle{Bold: r.isSummary},
 			})
-		case 2:
+		case industrySlotsColReady:
 			var c fyne.ThemeColorName
 			switch {
 			case r.ready > 0:
@@ -107,7 +115,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 				ColorName: c,
 				TextStyle: fyne.TextStyle{Bold: r.isSummary},
 			})
-		case 3:
+		case industrySlotsColFree:
 			var c fyne.ThemeColorName
 			switch {
 			case r.free == r.total:
@@ -122,7 +130,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 				ColorName: c,
 				TextStyle: fyne.TextStyle{Bold: r.isSummary},
 			})
-		case 4:
+		case industrySlotsColTotal:
 			return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.total), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 				TextStyle: fyne.TextStyle{Bold: r.isSummary},
@@ -238,15 +246,15 @@ func (a *industrySlots) filterRows(sortCol int) {
 		slices.SortFunc(rows, func(a, b industrySlotRow) int {
 			var x int
 			switch sortCol {
-			case 0:
+			case industrySlotsColCharacter:
 				x = strings.Compare(a.characterName, b.characterName)
-			case 1:
+			case industrySlotsColBusy:
 				x = cmp.Compare(a.busy, b.busy)
-			case 2:
+			case industrySlotsColReady:
 				x = cmp.Compare(a.ready, b.ready)
-			case 3:
+			case industrySlotsColFree:
 				x = cmp.Compare(a.free, b.free)
-			case 4:
+			case industrySlotsColTotal:
 				x = cmp.Compare(a.total, b.total)
 			}
 			if dir == sortAsc {

@@ -110,6 +110,16 @@ func newCorporationWalletTransactions(u *baseUI, d app.Division) *walletTransact
 	return a
 }
 
+const (
+	walletTransactionColDate     = 0
+	walletTransactionColQuantity = 1
+	walletTransactionColType     = 2
+	walletTransactionColPrice    = 3
+	walletTransactionColTotal    = 4
+	walletTransactionColClient   = 5
+	walletTransactionColLocation = 6
+)
+
 func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 	headers := []headerDef{
 		{label: "Date", width: columnWidthDateTime},
@@ -131,28 +141,28 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 	a.ExtendBaseWidget(a)
 	makeCell := func(col int, r walletTransactionRow) []widget.RichTextSegment {
 		switch col {
-		case 0:
+		case walletTransactionColDate:
 			return iwidget.RichTextSegmentsFromText(r.dateFormatted)
-		case 1:
+		case walletTransactionColQuantity:
 			return iwidget.RichTextSegmentsFromText(r.quantityDisplay,
 				widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				})
-		case 2:
+		case walletTransactionColType:
 			return iwidget.RichTextSegmentsFromText(r.typeName)
-		case 3:
+		case walletTransactionColPrice:
 			return iwidget.RichTextSegmentsFromText(
 				r.unitPriceDisplay,
 				widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				})
-		case 4:
+		case walletTransactionColTotal:
 			return iwidget.RichTextSegmentsFromText(r.totalFormatted, widget.RichTextStyle{
 				ColorName: r.totalColor,
 			})
-		case 5:
+		case walletTransactionColClient:
 			return iwidget.RichTextSegmentsFromText(r.clientName)
-		case 6:
+		case walletTransactionColLocation:
 			return r.locationDisplay
 		}
 		return iwidget.RichTextSegmentsFromText("?")
@@ -343,19 +353,19 @@ func (a *walletTransactions) filterRows(sortCol int) {
 		slices.SortFunc(rows, func(a, b walletTransactionRow) int {
 			var x int
 			switch sortCol {
-			case 0:
+			case walletTransactionColDate:
 				x = a.date.Compare(b.date)
-			case 1:
+			case walletTransactionColQuantity:
 				x = cmp.Compare(a.quantity, b.quantity)
-			case 2:
+			case walletTransactionColType:
 				x = strings.Compare(a.typeName, b.typeName)
-			case 3:
+			case walletTransactionColPrice:
 				x = cmp.Compare(a.unitPrice, b.unitPrice)
-			case 4:
+			case walletTransactionColTotal:
 				x = cmp.Compare(a.total, b.total)
-			case 5:
+			case walletTransactionColClient:
 				x = strings.Compare(a.clientName, b.clientName)
-			case 6:
+			case walletTransactionColLocation:
 				x = strings.Compare(a.locationName, b.locationName)
 			}
 			if dir == sortAsc {

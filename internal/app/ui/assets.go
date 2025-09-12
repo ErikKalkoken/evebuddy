@@ -128,6 +128,15 @@ type assets struct {
 	u              *baseUI
 }
 
+const (
+	assetsColItem     = 0
+	assetsColGroup    = 1
+	assetsColLocation = 2
+	assetsColOwner    = 3
+	assetsColQuantity = 4
+	assetsColTotal    = 5
+)
+
 func newAssets(u *baseUI) *assets {
 	headers := []headerDef{
 		{label: "Item", width: 300},
@@ -161,17 +170,17 @@ func newAssets(u *baseUI) *assets {
 		a.body = makeDataTable(headers, &a.rowsFiltered,
 			func(col int, r assetRow) []widget.RichTextSegment {
 				switch col {
-				case 0:
+				case assetsColItem:
 					return iwidget.RichTextSegmentsFromText(r.typeNameDisplay)
-				case 1:
+				case assetsColGroup:
 					return iwidget.RichTextSegmentsFromText(r.groupName)
-				case 2:
+				case assetsColLocation:
 					return r.locationDisplay
-				case 3:
+				case assetsColOwner:
 					return iwidget.RichTextSegmentsFromText(r.characterName)
-				case 4:
+				case assetsColQuantity:
 					return iwidget.RichTextSegmentsFromText(r.quantityDisplay)
-				case 5:
+				case assetsColTotal:
 					return iwidget.RichTextSegmentsFromText(r.totalDisplay)
 				}
 				return iwidget.RichTextSegmentsFromText("?")
@@ -364,17 +373,17 @@ func (a *assets) filterRows(sortCol int) {
 		slices.SortFunc(rows, func(a, b assetRow) int {
 			var x int
 			switch sortCol {
-			case 0:
+			case assetsColItem:
 				x = cmp.Compare(a.typeNameDisplay, b.typeNameDisplay)
-			case 1:
+			case assetsColGroup:
 				x = cmp.Compare(a.groupName, b.groupName)
-			case 2:
+			case assetsColLocation:
 				x = strings.Compare(a.locationName, b.locationName)
-			case 3:
+			case assetsColOwner:
 				x = cmp.Compare(a.characterName, b.characterName)
-			case 4:
+			case assetsColQuantity:
 				x = cmp.Compare(a.quantity, b.quantity)
-			case 5:
+			case assetsColTotal:
 				x = cmp.Compare(a.total.ValueOrZero(), b.total.ValueOrZero())
 			}
 			if dir == sortAsc {

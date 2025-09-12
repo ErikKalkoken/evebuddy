@@ -99,6 +99,14 @@ func newCorporationWalletJournal(u *baseUI, d app.Division) *walletJournal {
 	return a
 }
 
+const (
+	walletJournalColDate        = 0
+	walletJournalColType        = 1
+	walletJournalColAmount      = 2
+	walletJournalColBalance     = 3
+	walletJournalColDescription = 4
+)
+
 func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 	headers := []headerDef{
 		{label: "Date", width: 150},
@@ -117,20 +125,20 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 	a.ExtendBaseWidget(a)
 	makeCell := func(col int, r walletJournalRow) []widget.RichTextSegment {
 		switch col {
-		case 0:
+		case walletJournalColDate:
 			return iwidget.RichTextSegmentsFromText(r.dateFormatted)
-		case 1:
+		case walletJournalColType:
 			return iwidget.RichTextSegmentsFromText(r.refTypeDisplay)
-		case 2:
+		case walletJournalColAmount:
 			return r.amountDisplay
-		case 3:
+		case walletJournalColBalance:
 			return iwidget.RichTextSegmentsFromText(
 				humanize.FormatFloat(app.FloatFormat, r.balance),
 				widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				},
 			)
-		case 4:
+		case walletJournalColDescription:
 			return iwidget.RichTextSegmentsFromText(r.descriptionWithReason())
 		}
 		return iwidget.RichTextSegmentsFromText("?")
@@ -246,11 +254,11 @@ func (a *walletJournal) filterRows(sortCol int) {
 		slices.SortFunc(rows, func(a, b walletJournalRow) int {
 			var x int
 			switch sortCol {
-			case 0:
+			case walletJournalColDate:
 				x = a.date.Compare(b.date)
-			case 1:
+			case walletJournalColType:
 				x = strings.Compare(a.refType, b.refType)
-			case 2:
+			case walletJournalColAmount:
 				x = cmp.Compare(a.amount, b.amount)
 			}
 			if dir == sortAsc {

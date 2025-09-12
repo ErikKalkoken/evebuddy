@@ -100,6 +100,17 @@ type industryJobs struct {
 	u                 *baseUI
 }
 
+const (
+	industryJobsColBlueprint = 0
+	industryJobsColStatus    = 1
+	industryJobsColRuns      = 2
+	industryJobsColActivity  = 3
+	industryJobsColEndDate   = 4
+	industryJobsColLocation  = 5
+	industryJobsColOwner     = 6
+	industryJobsColInstaller = 7
+)
+
 func newIndustryJobs(u *baseUI, isCorporationMode bool) *industryJobs {
 	headers := []headerDef{
 		{label: "Blueprint", width: 250},
@@ -122,24 +133,24 @@ func newIndustryJobs(u *baseUI, isCorporationMode bool) *industryJobs {
 	a.ExtendBaseWidget(a)
 	makeCell := func(col int, j industryJobRow) []widget.RichTextSegment {
 		switch col {
-		case 0:
+		case industryJobsColBlueprint:
 			return iwidget.RichTextSegmentsFromText(j.blueprintType.Name)
-		case 1:
+		case industryJobsColStatus:
 			return j.statusDisplay
-		case 2:
+		case industryJobsColRuns:
 			return iwidget.RichTextSegmentsFromText(
 				ihumanize.Comma(j.runs),
 				widget.RichTextStyle{Alignment: fyne.TextAlignTrailing},
 			)
-		case 3:
+		case industryJobsColActivity:
 			return iwidget.RichTextSegmentsFromText(j.activity.Display())
-		case 4:
+		case industryJobsColEndDate:
 			return iwidget.RichTextSegmentsFromText(j.endDate.Format(app.DateTimeFormat))
-		case 5:
+		case industryJobsColLocation:
 			return iwidget.RichTextSegmentsFromText(j.location.Name.ValueOrZero())
-		case 6:
+		case industryJobsColOwner:
 			return iwidget.RichTextSegmentsFromText(j.owner.Name)
-		case 7:
+		case industryJobsColInstaller:
 			return iwidget.RichTextSegmentsFromText(j.installer.Name)
 		}
 		return iwidget.RichTextSegmentsFromText("?")
@@ -337,21 +348,21 @@ func (a *industryJobs) filterRows(sortCol int) {
 		slices.SortFunc(rows, func(j, k industryJobRow) int {
 			var c int
 			switch sortCol {
-			case 0:
+			case industryJobsColBlueprint:
 				c = strings.Compare(j.blueprintType.Name, k.blueprintType.Name)
-			case 1:
+			case industryJobsColStatus:
 				c = cmp.Compare(j.remaining, k.remaining)
-			case 2:
+			case industryJobsColRuns:
 				c = cmp.Compare(j.runs, k.runs)
-			case 3:
+			case industryJobsColActivity:
 				c = strings.Compare(j.activity.String(), k.activity.String())
-			case 4:
+			case industryJobsColEndDate:
 				c = j.endDate.Compare(j.endDate)
-			case 5:
+			case industryJobsColLocation:
 				c = strings.Compare(j.location.Name.ValueOrZero(), k.location.Name.ValueOrZero())
-			case 6:
+			case industryJobsColOwner:
 				c = strings.Compare(j.owner.Name, k.owner.Name)
-			case 7:
+			case industryJobsColInstaller:
 				c = strings.Compare(j.installer.Name, k.installer.Name)
 			}
 			if dir == sortAsc {

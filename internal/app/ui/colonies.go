@@ -67,6 +67,16 @@ type colonies struct {
 	u                 *baseUI
 }
 
+const (
+	coloniesColPlanet    = 0
+	coloniesColType      = 1
+	coloniesColExtracing = 2
+	coloniesColDue       = 3
+	coloniesColProducing = 4
+	coloniesColRegion    = 5
+	coloniesColCharacter = 6
+)
+
 func newColonies(u *baseUI) *colonies {
 	headers := []headerDef{
 		{label: "Planet", width: 150},
@@ -88,19 +98,19 @@ func newColonies(u *baseUI) *colonies {
 
 	makeCell := func(col int, r colonyRow) []widget.RichTextSegment {
 		switch col {
-		case 0:
+		case coloniesColPlanet:
 			return r.nameDisplay
-		case 1:
+		case coloniesColType:
 			return iwidget.RichTextSegmentsFromText(r.planetTypeName)
-		case 2:
+		case coloniesColExtracing:
 			return iwidget.RichTextSegmentsFromText(r.extractingText)
-		case 3:
+		case coloniesColDue:
 			return r.dueDisplay
-		case 4:
+		case coloniesColProducing:
 			return iwidget.RichTextSegmentsFromText(r.producingText)
-		case 5:
+		case coloniesColRegion:
 			return iwidget.RichTextSegmentsFromText(r.regionName)
-		case 6:
+		case coloniesColCharacter:
 			return iwidget.RichTextSegmentsFromText(r.ownerName)
 		}
 		return iwidget.RichTextSegmentsFromText("?")
@@ -233,15 +243,15 @@ func (a *colonies) filterRows(sortCol int) {
 		slices.SortFunc(rows, func(a, b colonyRow) int {
 			var x int
 			switch sortCol {
-			case 0:
+			case coloniesColPlanet:
 				x = strings.Compare(a.name, b.name)
-			case 1:
+			case coloniesColType:
 				x = strings.Compare(a.planetTypeName, b.planetTypeName)
-			case 3:
+			case coloniesColDue:
 				x = a.due.Compare(b.due)
-			case 5:
+			case coloniesColRegion:
 				x = strings.Compare(a.regionName, b.regionName)
-			case 6:
+			case coloniesColCharacter:
 				x = strings.Compare(a.ownerName, b.ownerName)
 			}
 			if dir == sortAsc {

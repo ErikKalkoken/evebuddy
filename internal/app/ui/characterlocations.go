@@ -50,6 +50,13 @@ type characterLocations struct {
 	u                 *baseUI
 }
 
+const (
+	locationsColCharacter = 0
+	locationsColLocation  = 1
+	locationsColRegion    = 2
+	locationsColShip      = 3
+)
+
 func newCharacterLocations(u *baseUI) *characterLocations {
 	headers := []headerDef{
 		{label: "Character", width: columnWidthEntity},
@@ -71,19 +78,19 @@ func newCharacterLocations(u *baseUI) *characterLocations {
 			&a.rowsFiltered,
 			func(col int, r characterLocationRow) []widget.RichTextSegment {
 				switch col {
-				case 0:
+				case locationsColCharacter:
 					return iwidget.RichTextSegmentsFromText(r.characterName)
-				case 1:
+				case locationsColLocation:
 					if r.locationID == 0 {
 						r.locationDisplay = iwidget.RichTextSegmentsFromText("?")
 					}
 					return r.locationDisplay
-				case 2:
+				case locationsColRegion:
 					if r.regionName == "" {
 						r.regionName = "?"
 					}
 					return iwidget.RichTextSegmentsFromText(r.regionName)
-				case 3:
+				case locationsColShip:
 					if r.shipName == "" {
 						r.shipName = "?"
 					}
@@ -196,13 +203,13 @@ func (a *characterLocations) filterRows(sortCol int) {
 		slices.SortFunc(rows, func(a, b characterLocationRow) int {
 			var x int
 			switch sortCol {
-			case 0:
+			case locationsColCharacter:
 				x = strings.Compare(a.characterName, b.characterName)
-			case 1:
+			case locationsColLocation:
 				x = strings.Compare(a.locationName, b.locationName)
-			case 2:
+			case locationsColRegion:
 				x = strings.Compare(a.regionName, b.regionName)
-			case 3:
+			case locationsColShip:
 				x = strings.Compare(a.shipName, b.shipName)
 			}
 			if dir == sortAsc {

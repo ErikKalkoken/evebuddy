@@ -71,6 +71,19 @@ type characterOverview struct {
 	u                 *baseUI
 }
 
+const (
+	overviewColCharacter   = 0
+	overviewColCorporation = 1
+	overviewColAlliance    = 2
+	overviewColSecurity    = 3
+	overviewColUnread      = 4
+	overviewColWallet      = 5
+	overviewColAssets      = 6
+	overviewColLastLogin   = 7
+	overviewColHome        = 8
+	overviewColAge         = 9
+)
+
 func newCharacterOverview(u *baseUI) *characterOverview {
 	headers := []headerDef{
 		{label: "Character", width: columnWidthEntity},
@@ -93,39 +106,45 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	a.ExtendBaseWidget(a)
 	makeCell := func(col int, r characterOverviewRow) []widget.RichTextSegment {
 		switch col {
-		case 0:
+		case overviewColCharacter:
 			return iwidget.RichTextSegmentsFromText(r.characterName)
-		case 1:
+		case overviewColCorporation:
 			return iwidget.RichTextSegmentsFromText(r.corporation.Name)
-		case 2:
+		case overviewColAlliance:
 			var s string
 			if r.alliance != nil {
 				s = r.alliance.Name
 			}
 			return iwidget.RichTextSegmentsFromText(s)
-		case 3:
+		case overviewColSecurity:
 			return r.securityDisplay
-		case 4:
+		case overviewColUnread:
 			return iwidget.RichTextSegmentsFromText(ihumanize.Optional(r.unreadCount, "?"))
-		case 5:
+		case overviewColWallet:
 			return iwidget.RichTextSegmentsFromText(ihumanize.OptionalWithDecimals(r.walletBalance, 1, "?"))
-		case 6:
+		case overviewColAssets:
 			return iwidget.RichTextSegmentsFromText(ihumanize.OptionalWithDecimals(r.assetValue, 1, "?"))
-		case 7:
+		case overviewColLastLogin:
 			return iwidget.RichTextSegmentsFromText(ihumanize.Optional(r.lastLoginAt, "?"))
-		case 8:
+		case overviewColHome:
 			if r.home != nil {
 				return r.home.DisplayRichText()
 			}
-		case 9:
+		case overviewColAge:
 			return iwidget.RichTextSegmentsFromText(humanize.RelTime(r.birthday, time.Now(), "", ""))
 		}
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r characterOverviewRow) {
-			showCharacterOverviewDetailWindow(a.u, r)
-		})
+		a.body = makeDataTable(
+			headers,
+			&a.rowsFiltered,
+			makeCell,
+			a.columnSorter,
+			a.filterRows,
+			func(_ int, r characterOverviewRow) {
+				showCharacterOverviewDetailWindow(a.u, r)
+			})
 	} else {
 		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, func(r characterOverviewRow) {
 			showCharacterOverviewDetailWindow(a.u, r)
@@ -213,25 +232,25 @@ func (a *characterOverview) filterRows(sortCol int) {
 		slices.SortFunc(rows, func(a, b characterOverviewRow) int {
 			var x int
 			switch sortCol {
-			case 0:
+			case overviewColCharacter:
 				x = strings.Compare(a.characterName, b.characterName)
-			case 1:
+			case overviewColCorporation:
 				x = strings.Compare(a.CorporationName(), b.CorporationName())
-			case 2:
+			case overviewColAlliance:
 				x = strings.Compare(a.AllianceName(), b.AllianceName())
-			case 3:
+			case overviewColSecurity:
 				x = cmp.Compare(a.security, b.security)
-			case 4:
+			case overviewColUnread:
 				x = cmp.Compare(a.unreadCount.ValueOrZero(), b.unreadCount.ValueOrZero())
-			case 5:
+			case overviewColWallet:
 				x = cmp.Compare(a.walletBalance.ValueOrZero(), b.walletBalance.ValueOrZero())
-			case 6:
+			case overviewColAssets:
 				x = cmp.Compare(a.assetValue.ValueOrZero(), b.assetValue.ValueOrZero())
-			case 7:
+			case overviewColLastLogin:
 				x = a.lastLoginAt.ValueOrZero().Compare(b.lastLoginAt.ValueOrZero())
-			case 8:
+			case overviewColHome:
 				x = strings.Compare(a.home.DisplayName(), b.home.DisplayName())
-			case 9:
+			case overviewColAge:
 				x = a.birthday.Compare(b.birthday)
 			}
 			if dir == sortAsc {

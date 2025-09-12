@@ -85,6 +85,14 @@ type clones struct {
 	u                 *baseUI
 }
 
+const (
+	clonesColLocation  = 0
+	clonesColRegion    = 1
+	clonesColImplants  = 2
+	clonesColCharacter = 3
+	clonesColJumps     = 4
+)
+
 func newClones(u *baseUI) *clones {
 	headers := []headerDef{
 		{label: "Location", width: columnWidthLocation},
@@ -109,15 +117,15 @@ func newClones(u *baseUI) *clones {
 	makeCell := func(col int, r cloneRow) []widget.RichTextSegment {
 		var s []widget.RichTextSegment
 		switch col {
-		case 0:
+		case clonesColLocation:
 			s = r.jc.Location.DisplayRichText()
-		case 1:
+		case clonesColRegion:
 			s = iwidget.RichTextSegmentsFromText(r.jc.Location.RegionName())
-		case 2:
+		case clonesColImplants:
 			s = iwidget.RichTextSegmentsFromText(fmt.Sprint(r.jc.ImplantsCount))
-		case 3:
+		case clonesColCharacter:
 			s = iwidget.RichTextSegmentsFromText(r.jc.Character.Name)
-		case 4:
+		case clonesColJumps:
 			s = iwidget.RichTextSegmentsFromText(r.jumps())
 		}
 		return s
@@ -239,15 +247,15 @@ func (a *clones) filterRows(sortCol int) {
 		slices.SortFunc(rows, func(a, b cloneRow) int {
 			var x int
 			switch sortCol {
-			case 0:
+			case clonesColLocation:
 				x = cmp.Compare(a.jc.Location.DisplayName(), b.jc.Location.DisplayName())
-			case 1:
+			case clonesColRegion:
 				x = cmp.Compare(a.jc.Location.RegionName(), b.jc.Location.RegionName())
-			case 2:
+			case clonesColImplants:
 				x = cmp.Compare(a.jc.ImplantsCount, b.jc.ImplantsCount)
-			case 3:
+			case clonesColCharacter:
 				x = cmp.Compare(a.jc.Character.Name, b.jc.Character.Name)
-			case 4:
+			case clonesColJumps:
 				x = a.compare(b)
 			}
 			if dir == sortAsc {

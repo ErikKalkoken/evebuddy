@@ -31,17 +31,6 @@ const (
 	trainingStatusInActive = "Inactive"
 )
 
-const (
-	trainingColName             = 0
-	trainingColTags             = 1
-	trainingColCurrent          = 2
-	trainingColCurrentRemaining = 3
-	trainingColTotal            = 4
-	trainingColTotalRemaining   = 5
-	trainingColSP               = 6
-	trainingColUnallocated      = 7
-)
-
 type trainingRow struct {
 	characterID                int32
 	characterName              string
@@ -113,6 +102,17 @@ type training struct {
 	bottom       *widget.Label
 	u            *baseUI
 }
+
+const (
+	trainingColName             = 0
+	trainingColTags             = 1
+	trainingColCurrent          = 2
+	trainingColCurrentRemaining = 3
+	trainingColTotal            = 4
+	trainingColTotalRemaining   = 5
+	trainingColSP               = 6
+	trainingColUnallocated      = 7
+)
 
 func newTraining(u *baseUI) *training {
 	headers := []headerDef{
