@@ -85,7 +85,7 @@ type industryJobs struct {
 
 	body              fyne.CanvasObject
 	bottom            *widget.Label
-	columnSorter      *columnSorter
+	columnSorter      *iwidget.ColumnSorter
 	corporation       *app.Corporation
 	isCorporationMode bool
 	rows              []industryJobRow
@@ -96,7 +96,7 @@ type industryJobs struct {
 	selectOwner       *kxwidget.FilterChipSelect
 	selectStatus      *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortButton        *sortButton
+	sortButton        *iwidget.SortButton
 	u                 *baseUI
 }
 
@@ -112,19 +112,19 @@ const (
 )
 
 func newIndustryJobs(u *baseUI, isCorporationMode bool) *industryJobs {
-	headers := []headerDef{
-		{label: "Blueprint", width: 250},
-		{label: "Status", width: 100, refresh: true},
-		{label: "Runs", width: 75},
-		{label: "Activity", width: 200},
-		{label: "End date", width: columnWidthDateTime},
-		{label: "Location", width: columnWidthLocation},
-		{label: "Owner", width: columnWidthEntity},
-		{label: "Installer", width: columnWidthEntity},
-	}
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
+		{Label: "Blueprint", Width: 250},
+		{Label: "Status", Width: 100},
+		{Label: "Runs", Width: 75},
+		{Label: "Activity", Width: 200},
+		{Label: "End date", Width: columnWidthDateTime},
+		{Label: "Location", Width: columnWidthLocation},
+		{Label: "Owner", Width: columnWidthEntity},
+		{Label: "Installer", Width: columnWidthEntity},
+	})
 	a := &industryJobs{
 		bottom:            makeTopLabel(),
-		columnSorter:      newColumnSorterWithInit(headers, 4, sortDesc),
+		columnSorter:      iwidget.NewColumnSorterWithInit(headers, 4, iwidget.SortDesc),
 		isCorporationMode: isCorporationMode,
 		rows:              make([]industryJobRow, 0),
 		rowsFiltered:      make([]industryJobRow, 0),
@@ -157,7 +157,7 @@ func newIndustryJobs(u *baseUI, isCorporationMode bool) *industryJobs {
 	}
 
 	if a.u.isDesktop {
-		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, j industryJobRow) {
+		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, j industryJobRow) {
 			a.showIndustryJobWindow(j)
 		})
 	} else {
@@ -212,7 +212,7 @@ func newIndustryJobs(u *baseUI, isCorporationMode bool) *industryJobs {
 		a.filterRows(-1)
 	})
 
-	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window, 6, 7)
 
@@ -344,7 +344,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 		})
 	}
 	// sort
-	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
 		slices.SortFunc(rows, func(j, k industryJobRow) int {
 			var c int
 			switch sortCol {
@@ -365,7 +365,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 			case industryJobsColInstaller:
 				c = strings.Compare(j.installer.Name, k.installer.Name)
 			}
-			if dir == sortAsc {
+			if dir == iwidget.SortAsc {
 				return c
 			} else {
 				return -1 * c

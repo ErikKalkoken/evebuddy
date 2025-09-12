@@ -1,6 +1,7 @@
-package ui
+package widget
 
 import (
+	"iter"
 	"log/slog"
 	"slices"
 
@@ -16,69 +17,101 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
-// width of common columns in data tables
-const (
-	columnWidthEntity   = 200
-	columnWidthDateTime = 150
-	columnWidthLocation = 350
-	columnWidthRegion   = 150
-)
-
-type sortDir uint
+// SortDir represents the sort direction for a data table.
+type SortDir uint
 
 const (
-	sortNone sortDir = iota
-	sortOff
-	sortAsc
-	sortDesc
+	SortNone SortDir = iota
+	SortOff
+	SortAsc
+	SortDesc
 )
 
-type headerDef struct {
-	label       string
-	notSortable bool
-	refresh     bool
-	width       float32
+// ColumnDef represents the definition for a column in a data table.
+type ColumnDef struct {
+	// Column index starting at 0 (not used yet)
+	Col int
+	// Label of a column displayed to the user. MANDATORY.
+	Label string
+	// Whether a column is sortable
+	NotSortable bool
+	// Width of a column in Fyne units
+	Width float32
 }
 
-func (h headerDef) Width() float32 {
-	if h.width > 0 {
-		return h.width
+func (h ColumnDef) minWidth() float32 {
+	if h.Width > 0 {
+		return h.Width
 	}
-	x := widget.NewLabel(h.label)
+	x := widget.NewLabel(h.Label)
 	return x.MinSize().Width
 }
 
-func maxHeaderWidth(headers []headerDef) float32 {
+// DataTableDef represents the definition for a data table.
+type DataTableDef struct {
+	cols []ColumnDef
+}
+
+func NewDataTableDef(cols []ColumnDef) DataTableDef {
+	for _, c := range cols {
+		if c.Label == "" {
+			panic("label not defined")
+		}
+	}
+	d := DataTableDef{
+		cols: cols,
+	}
+	return d
+}
+
+// maxColumnWidth returns the maximum width of any column.
+func (d DataTableDef) maxColumnWidth() float32 {
 	var m float32
-	for _, h := range headers {
-		l := widget.NewLabel(h.label)
+	for _, c := range d.cols {
+		l := widget.NewLabel(c.Label)
 		m = max(l.MinSize().Width, m)
 	}
 	return m
 }
 
-// makeDataTable returns a table for showing data and which can be sorted.
-func makeDataTable[S ~[]E, E any](
-	headers []headerDef,
+// Column return the definition of a column.
+func (d DataTableDef) Column(n int) ColumnDef {
+	return d.cols[n]
+}
+
+func (d DataTableDef) size() int {
+	return len(d.cols)
+}
+
+func (d DataTableDef) all() iter.Seq2[int, ColumnDef] {
+	return slices.All(d.cols)
+}
+
+func (d DataTableDef) values() iter.Seq[ColumnDef] {
+	return slices.Values(d.cols)
+}
+
+// MakeDataTable returns a data table generated from the definition.
+func MakeDataTable[S ~[]E, E any](
+	def DataTableDef,
 	data *S,
 	makeCell func(int, E) []widget.RichTextSegment,
-	columnSorter *columnSorter,
+	columnSorter *ColumnSorter,
 	filterRows func(int),
 	onSelected func(int, E),
 ) *widget.Table {
 	t := widget.NewTable(
 		func() (rows int, cols int) {
-			return len(*data), len(headers)
+			return len(*data), def.size()
 		},
 		func() fyne.CanvasObject {
-			return iwidget.NewRichText()
+			return NewRichText()
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			cell := co.(*iwidget.RichText)
+			cell := co.(*RichText)
 			if tci.Row >= len(*data) || tci.Row < 0 {
 				return
 			}
@@ -98,13 +131,13 @@ func makeDataTable[S ~[]E, E any](
 		label := widget.NewLabel("Template")
 		return container.NewBorder(nil, nil, nil, icon, container.NewStack(actionLabel, label))
 	}
-	iconMap := map[sortDir]fyne.Resource{
-		sortOff:  iconSortOff,
-		sortAsc:  theme.NewPrimaryThemedResource(icons.SortAscendingSvg),
-		sortDesc: theme.NewPrimaryThemedResource(icons.SortDescendingSvg),
+	iconMap := map[SortDir]fyne.Resource{
+		SortOff:  iconSortOff,
+		SortAsc:  theme.NewPrimaryThemedResource(icons.SortAscendingSvg),
+		SortDesc: theme.NewPrimaryThemedResource(icons.SortDescendingSvg),
 	}
 	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		h := headers[tci.Col]
+		h := def.Column(tci.Col)
 		row := co.(*fyne.Container).Objects
 
 		actionLabel := row[0].(*fyne.Container).Objects[0].(*kxwidget.TappableLabel)
@@ -112,8 +145,8 @@ func makeDataTable[S ~[]E, E any](
 		icon := row[1].(*widget.Icon)
 
 		dir := columnSorter.column(tci.Col)
-		if dir == sortNone {
-			label.SetText(h.label)
+		if dir == SortNone {
+			label.SetText(h.Label)
 			label.Show()
 			actionLabel.Hide()
 			icon.Hide()
@@ -122,7 +155,7 @@ func makeDataTable[S ~[]E, E any](
 		actionLabel.OnTapped = func() {
 			filterRows(tci.Col)
 		}
-		actionLabel.SetText(h.label)
+		actionLabel.SetText(h.Label)
 		actionLabel.Show()
 		icon.Show()
 		label.Hide()
@@ -144,16 +177,16 @@ func makeDataTable[S ~[]E, E any](
 		}
 	}
 	w := theme.Padding() + theme.IconInlineSize()
-	for i, h := range headers {
-		t.SetColumnWidth(i, h.Width()+w)
+	for i, h := range def.cols {
+		t.SetColumnWidth(i, h.minWidth()+w)
 	}
 	return t
 }
 
-// makeDataList returns a list for showing a data table in a generic way.
+// MakeDataList returns a list for showing a data table in a generic way.
 // This is meant for showing table content on mobile.
-func makeDataList[S ~[]E, E any](
-	headers []headerDef,
+func MakeDataList[S ~[]E, E any](
+	def DataTableDef,
 	data *S,
 	makeCell func(int, E) []widget.RichTextSegment,
 	onSelected func(E),
@@ -165,10 +198,10 @@ func makeDataList[S ~[]E, E any](
 		},
 		func() fyne.CanvasObject {
 			p := theme.Padding()
-			rowLayout := kxlayout.NewColumns(maxHeaderWidth(headers) + theme.Padding())
+			rowLayout := kxlayout.NewColumns(def.maxColumnWidth() + theme.Padding())
 			c := container.New(layout.NewCustomPaddedVBoxLayout(0))
-			for _, h := range headers {
-				row := container.New(rowLayout, widget.NewLabel(h.label), iwidget.NewRichText())
+			for _, h := range def.cols {
+				row := container.New(rowLayout, widget.NewLabel(h.Label), NewRichText())
 				bg := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
 				bg.Hide()
 				c.Add(container.NewStack(bg, row))
@@ -182,10 +215,10 @@ func makeDataList[S ~[]E, E any](
 				return
 			}
 			r := (*data)[id]
-			for col := range len(headers) {
+			for col := range def.size() {
 				row := f[col*2].(*fyne.Container).Objects[1].(*fyne.Container).Objects
-				data := row[1].(*iwidget.RichText)
-				data.Segments = iwidget.AlignRichTextSegments(fyne.TextAlignTrailing, makeCell(col, r))
+				data := row[1].(*RichText)
+				data.Segments = AlignRichTextSegments(fyne.TextAlignTrailing, makeCell(col, r))
 				data.Wrapping = fyne.TextWrapWord
 				bg := f[col*2].(*fyne.Container).Objects[0]
 				if col == 0 {
@@ -205,7 +238,7 @@ func makeDataList[S ~[]E, E any](
 				}
 				data.Refresh()
 				divider := f[col*2+1]
-				if col > 0 && col < len(headers)-1 {
+				if col > 0 && col < def.size()-1 {
 					divider.Show()
 				} else {
 					divider.Hide()
@@ -227,72 +260,72 @@ func makeDataList[S ~[]E, E any](
 	return l
 }
 
-// columnSorter represents an ordered list of columns which can be sorted.
-type columnSorter struct {
-	cols       []sortDir
-	headers    []headerDef
-	sortButton *sortButton
+// ColumnSorter represents an ordered list of columns which can be sorted.
+type ColumnSorter struct {
+	cols       []SortDir
+	def        DataTableDef
+	sortButton *SortButton
 	defaultIdx int
-	defaultDir sortDir
+	defaultDir SortDir
 }
 
-func newColumnSorter(headers []headerDef) *columnSorter {
-	cs := &columnSorter{
-		cols:       make([]sortDir, len(headers)),
-		headers:    headers,
+func NewColumnSorter(def DataTableDef) *ColumnSorter {
+	cs := &ColumnSorter{
+		cols:       make([]SortDir, def.size()),
+		def:        def,
 		defaultIdx: -1,
-		defaultDir: sortOff,
+		defaultDir: SortOff,
 	}
 	cs.clear()
 	return cs
 }
 
-func newColumnSorterWithInit(headers []headerDef, idx int, dir sortDir) *columnSorter {
-	cs := newColumnSorter(headers)
+func NewColumnSorterWithInit(def DataTableDef, idx int, dir SortDir) *ColumnSorter {
+	cs := NewColumnSorter(def)
 	cs.defaultIdx = idx
 	cs.defaultDir = dir
-	cs.set(idx, dir)
+	cs.Set(idx, dir)
 	return cs
 }
 
 // column returns the sort direction of a column
-func (cs *columnSorter) column(idx int) sortDir {
+func (cs *ColumnSorter) column(idx int) SortDir {
 	if idx < 0 || idx >= len(cs.cols) {
-		return sortOff
+		return SortOff
 	}
 	return cs.cols[idx]
 }
 
 // current returns which column is currently sorted or -1 if none are sorted.
-func (cs *columnSorter) current() (int, sortDir) {
+func (cs *ColumnSorter) current() (int, SortDir) {
 	for i, v := range cs.cols {
-		if v != sortOff {
+		if v != SortOff {
 			return i, v
 		}
 	}
-	return -1, sortOff
+	return -1, SortOff
 }
 
 // reset sets the columns to their default state.
-func (cs *columnSorter) reset() {
-	cs.set(cs.defaultIdx, cs.defaultDir)
+func (cs *ColumnSorter) reset() {
+	cs.Set(cs.defaultIdx, cs.defaultDir)
 }
 
 // clear removes sorting from all columns.
-func (cs *columnSorter) clear() {
+func (cs *ColumnSorter) clear() {
 	for i := range cs.cols {
-		var dir sortDir
-		if cs.headers[i].notSortable {
-			dir = sortNone
+		var dir SortDir
+		if cs.def.Column(i).NotSortable {
+			dir = SortNone
 		} else {
-			dir = sortOff
+			dir = SortOff
 		}
 		cs.cols[i] = dir
 	}
 }
 
-// set sets the sort direction for a column.
-func (cs *columnSorter) set(idx int, dir sortDir) {
+// Set sets the sort direction for a column.
+func (cs *ColumnSorter) Set(idx int, dir SortDir) {
 	cs.clear()
 	cs.cols[idx] = dir
 	if cs.sortButton != nil {
@@ -301,43 +334,43 @@ func (cs *columnSorter) set(idx int, dir sortDir) {
 }
 
 // current returns which column is currently sorted or -1 if none are sorted.
-func (cs *columnSorter) size() int {
+func (cs *ColumnSorter) size() int {
 	return len(cs.cols)
 }
 
-func (cs *columnSorter) sort(idx int, f func(sortCol int, dir sortDir)) {
-	var dir sortDir
+func (cs *ColumnSorter) Sort(idx int, f func(sortCol int, dir SortDir)) {
+	var dir SortDir
 	if idx >= 0 {
 		dir = cs.cols[idx]
-		if dir == sortNone {
+		if dir == SortNone {
 			return
 		} else {
 			dir++
-			if dir > sortDesc {
-				dir = sortOff
+			if dir > SortDesc {
+				dir = SortOff
 			}
-			cs.set(idx, dir)
+			cs.Set(idx, dir)
 		}
 	} else {
 		idx, dir = cs.current()
 	}
-	if idx >= 0 && dir != sortOff {
+	if idx >= 0 && dir != SortOff {
 		f(idx, dir)
 	}
 }
 
-// newSortButton returns a new sortButton.
-func (cs *columnSorter) newSortButton(headers []headerDef, process func(), window fyne.Window, ignoredColumns ...int) *sortButton {
-	sortColumns := xslices.Map(headers, func(h headerDef) string {
-		return h.label
-	})
-	w := &sortButton{
+// NewSortButton returns a new sortButton.
+func (cs *ColumnSorter) NewSortButton(def DataTableDef, process func(), window fyne.Window, ignoredColumns ...int) *SortButton {
+	sortColumns := slices.Collect(xiter.Map(def.values(), func(h ColumnDef) string {
+		return h.Label
+	}))
+	w := &SortButton{
 		sortColumns: sortColumns,
 	}
 	w.ExtendBaseWidget(w)
 	w.Text = "???"
 	w.Icon = icons.BlankSvg
-	if len(headers) == 0 || cs.size() == 0 || len(ignoredColumns) > len(headers) {
+	if def.size() == 0 || cs.size() == 0 || len(ignoredColumns) > def.size() {
 		slog.Warn("makeSortButton called with invalid parameters")
 		return w // early exit when called without proper data
 	}
@@ -345,9 +378,9 @@ func (cs *columnSorter) newSortButton(headers []headerDef, process func(), windo
 	w.OnTapped = func() {
 		col, dir := cs.current()
 		var fields []string
-		for i, h := range headers {
-			if !h.notSortable && !ignored.Contains(i) {
-				fields = append(fields, h.label)
+		for i, h := range def.all() {
+			if !h.NotSortable && !ignored.Contains(i) {
+				fields = append(fields, h.Label)
 			}
 		}
 		radioCols := widget.NewRadioGroup(fields, nil)
@@ -358,7 +391,7 @@ func (cs *columnSorter) newSortButton(headers []headerDef, process func(), windo
 		}
 		radioDir := widget.NewRadioGroup([]string{"Ascending", "Descending"}, nil)
 		switch dir {
-		case sortDesc:
+		case SortDesc:
 			radioDir.Selected = "Descending"
 		default:
 			radioDir.Selected = "Ascending"
@@ -371,11 +404,11 @@ func (cs *columnSorter) newSortButton(headers []headerDef, process func(), windo
 			}
 			switch radioDir.Selected {
 			case "Ascending":
-				dir = sortAsc
+				dir = SortAsc
 			case "Descending":
-				dir = sortDesc
+				dir = SortDesc
 			}
-			cs.set(col, dir)
+			cs.Set(col, dir)
 			process()
 			w.set(col, dir)
 			d.Hide()
@@ -416,17 +449,17 @@ func (cs *columnSorter) newSortButton(headers []headerDef, process func(), windo
 	return w
 }
 
-type sortButton struct {
+type SortButton struct {
 	widget.Button
 
 	sortColumns []string
 }
 
-func (w *sortButton) set(col int, dir sortDir) {
+func (w *SortButton) set(col int, dir SortDir) {
 	switch dir {
-	case sortAsc:
+	case SortAsc:
 		w.Icon = theme.NewThemedResource(icons.SortAscendingSvg)
-	case sortDesc:
+	case SortDesc:
 		w.Icon = theme.NewThemedResource(icons.SortDescendingSvg)
 	default:
 		w.Icon = theme.NewThemedResource(icons.SortSvg)

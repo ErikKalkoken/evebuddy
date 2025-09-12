@@ -70,7 +70,7 @@ type clones struct {
 
 	body              fyne.CanvasObject
 	changeOrigin      *widget.Button
-	columnSorter      *columnSorter
+	columnSorter      *iwidget.ColumnSorter
 	origin            *app.EveSolarSystem
 	originLabel       *iwidget.RichText
 	routePref         app.EveRoutePreference
@@ -80,7 +80,7 @@ type clones struct {
 	selectRegion      *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortButton        *sortButton
+	sortButton        *iwidget.SortButton
 	top               *widget.Label
 	u                 *baseUI
 }
@@ -94,15 +94,15 @@ const (
 )
 
 func newClones(u *baseUI) *clones {
-	headers := []headerDef{
-		{label: "Location", width: columnWidthLocation},
-		{label: "Region", width: columnWidthRegion, notSortable: true},
-		{label: "Impl.", width: 100},
-		{label: "Character", width: columnWidthEntity},
-		{label: "Jumps", width: 100},
-	}
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
+		{Label: "Location", Width: columnWidthLocation},
+		{Label: "Region", Width: columnWidthRegion, NotSortable: true},
+		{Label: "Impl.", Width: 100},
+		{Label: "Character", Width: columnWidthEntity},
+		{Label: "Jumps", Width: 100},
+	})
 	a := &clones{
-		columnSorter: newColumnSorter(headers),
+		columnSorter: iwidget.NewColumnSorter(headers),
 		originLabel:  iwidget.NewRichTextWithText("(not set)"),
 		rows:         make([]cloneRow, 0),
 		rowsFiltered: make([]cloneRow, 0),
@@ -131,7 +131,7 @@ func newClones(u *baseUI) *clones {
 		return s
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(c int, r cloneRow) {
+		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(c int, r cloneRow) {
 			switch c {
 			case 0:
 				a.u.ShowLocationInfoWindow(r.jc.Location.ID)
@@ -154,7 +154,7 @@ func newClones(u *baseUI) *clones {
 			}
 		})
 	} else {
-		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, func(r cloneRow) {
+		a.body = iwidget.MakeDataList(headers, &a.rowsFiltered, makeCell, func(r cloneRow) {
 			if len(r.route) == 0 {
 				return
 			}
@@ -176,7 +176,7 @@ func newClones(u *baseUI) *clones {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
 
@@ -243,7 +243,7 @@ func (a *clones) filterRows(sortCol int) {
 		})
 	}
 	// sort
-	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
 		slices.SortFunc(rows, func(a, b cloneRow) int {
 			var x int
 			switch sortCol {
@@ -258,7 +258,7 @@ func (a *clones) filterRows(sortCol int) {
 			case clonesColJumps:
 				x = a.compare(b)
 			}
-			if dir == sortAsc {
+			if dir == iwidget.SortAsc {
 				return x
 			} else {
 				return -1 * x
@@ -382,7 +382,7 @@ func (a *clones) updateRoutes() {
 			a.rows[i].route = m[solarSystem.ID]
 		}
 		a.body.Refresh()
-		a.columnSorter.set(4, sortOff)
+		a.columnSorter.Set(4, iwidget.SortOff)
 		a.filterRows(4)
 	})
 }

@@ -1,4 +1,4 @@
-package ui
+package widget
 
 import (
 	"fmt"
@@ -8,7 +8,6 @@ import (
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
 
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,22 +19,22 @@ type myRow struct {
 func TestDataTable_CreateBasic(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
-	headers := []headerDef{
-		{label: "ID", width: 100},
-		{label: "Planet", width: 100},
-	}
+	headers := NewDataTableDef([]ColumnDef{
+		{Label: "ID", Width: 100},
+		{Label: "Planet", Width: 100},
+	})
 	data := []myRow{{3, "Mercury"}, {8, "Venus"}, {42, "Earth"}}
-	x := makeDataTable(
+	x := MakeDataTable(
 		headers, &data, func(col int, r myRow) []widget.RichTextSegment {
 			switch col {
 			case 0:
-				return iwidget.RichTextSegmentsFromText(fmt.Sprint(r.id))
+				return RichTextSegmentsFromText(fmt.Sprint(r.id))
 			case 1:
-				return iwidget.RichTextSegmentsFromText(r.planet)
+				return RichTextSegmentsFromText(r.planet)
 			}
 			panic(fmt.Sprintf("invalid col: %d", col))
 		},
-		newColumnSorterWithInit(headers, 0, sortAsc),
+		NewColumnSorterWithInit(headers, 0, SortAsc),
 		func(i int) {
 
 		},
@@ -49,47 +48,47 @@ func TestDataTable_CreateBasic(t *testing.T) {
 }
 
 func TestSortedColumsColumn(t *testing.T) {
-	headers := []headerDef{
-		{label: "Alpha"},
-		{label: "Bravo"},
-		{label: "Charlie"},
-	}
+	headers := NewDataTableDef([]ColumnDef{
+		{Label: "Alpha"},
+		{Label: "Bravo"},
+		{Label: "Charlie"},
+	})
 	t.Run("return value", func(t *testing.T) {
-		sc := newColumnSorter(headers)
-		sc.set(1, sortDesc)
+		sc := NewColumnSorter(headers)
+		sc.Set(1, SortDesc)
 		got := sc.column(1)
-		assert.Equal(t, sortDesc, got)
+		assert.Equal(t, SortDesc, got)
 	})
 	t.Run("out of bounds returns zero value 1", func(t *testing.T) {
-		sc := newColumnSorter(headers)
+		sc := NewColumnSorter(headers)
 		got := sc.column(4)
-		assert.Equal(t, sortOff, got)
+		assert.Equal(t, SortOff, got)
 	})
 	t.Run("out of bounds returns zero value 2", func(t *testing.T) {
-		sc := newColumnSorter(headers)
+		sc := NewColumnSorter(headers)
 		got := sc.column(-1)
-		assert.Equal(t, sortOff, got)
+		assert.Equal(t, SortOff, got)
 	})
 }
 
 func TestSortedColumsCurrent(t *testing.T) {
-	headers := []headerDef{
-		{label: "Alpha"},
-		{label: "Bravo"},
-		{label: "Charlie"},
-	}
+	headers := NewDataTableDef([]ColumnDef{
+		{Label: "Alpha"},
+		{Label: "Bravo"},
+		{Label: "Charlie"},
+	})
 	t.Run("return currently sorted column", func(t *testing.T) {
-		sc := newColumnSorter(headers)
-		sc.set(1, sortDesc)
+		sc := NewColumnSorter(headers)
+		sc.Set(1, SortDesc)
 		x, y := sc.current()
 		assert.Equal(t, 1, x)
-		assert.Equal(t, sortDesc, y)
+		assert.Equal(t, SortDesc, y)
 	})
 	t.Run("return -1 if nothing set", func(t *testing.T) {
-		sc := newColumnSorter(headers)
+		sc := NewColumnSorter(headers)
 		x, y := sc.current()
 		assert.Equal(t, -1, x)
-		assert.Equal(t, sortOff, y)
+		assert.Equal(t, SortOff, y)
 	})
 }
 

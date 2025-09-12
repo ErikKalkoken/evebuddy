@@ -33,6 +33,14 @@ const (
 	navDrawerMinWidth = 250
 )
 
+// width of common columns in data tables
+const (
+	columnWidthEntity   = 200
+	columnWidthDateTime = 150
+	columnWidthLocation = 350
+	columnWidthRegion   = 150
+)
+
 type shortcutDef struct {
 	shortcut fyne.Shortcut
 	handler  func(shortcut fyne.Shortcut)

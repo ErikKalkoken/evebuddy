@@ -119,7 +119,7 @@ func (r marketOrderRow) volumeDisplay() string {
 type marketOrders struct {
 	widget.BaseWidget
 
-	columnSorter *columnSorter
+	columnSorter *iwidget.ColumnSorter
 	footer       *widget.Label
 	isBuyOrders  bool
 	issue        *widget.Label
@@ -131,7 +131,7 @@ type marketOrders struct {
 	selectState  *kxwidget.FilterChipSelect
 	selectTag    *kxwidget.FilterChipSelect
 	selectType   *kxwidget.FilterChipSelect
-	sortButton   *sortButton
+	sortButton   *iwidget.SortButton
 	u            *baseUI
 }
 
@@ -146,17 +146,17 @@ const (
 )
 
 func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
-	headers := []headerDef{
-		{label: "Type", width: columnWidthEntity},
-		{label: "Quantity", width: 100},
-		{label: "Price", width: 100},
-		{label: "State", width: 100},
-		{label: "Location", width: columnWidthLocation},
-		{label: "Region", width: columnWidthRegion},
-		{label: "Owner", width: columnWidthEntity},
-	}
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
+		{Label: "Type", Width: columnWidthEntity},
+		{Label: "Quantity", Width: 100},
+		{Label: "Price", Width: 100},
+		{Label: "State", Width: 100},
+		{Label: "Location", Width: columnWidthLocation},
+		{Label: "Region", Width: columnWidthRegion},
+		{Label: "Owner", Width: columnWidthEntity},
+	})
 	a := &marketOrders{
-		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
+		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortAsc),
 		footer:       widget.NewLabel(""),
 		isBuyOrders:  isBuyOrders,
 		issue:        makeTopLabel(),
@@ -191,7 +191,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
-		a.main = makeDataTable(
+		a.main = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
 			makeCell,
@@ -223,7 +223,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
 
@@ -352,7 +352,7 @@ func (a *marketOrders) filterRows(sortCol int) {
 		})
 	}
 	// sort
-	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
 		slices.SortFunc(rows, func(a, b marketOrderRow) int {
 			var x int
 			switch sortCol {
@@ -371,7 +371,7 @@ func (a *marketOrders) filterRows(sortCol int) {
 			case marketOrdersColOwner:
 				x = strings.Compare(a.ownerName, b.ownerName)
 			}
-			if dir == sortAsc {
+			if dir == iwidget.SortAsc {
 				return x
 			} else {
 				return -1 * x

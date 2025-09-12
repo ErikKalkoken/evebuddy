@@ -54,13 +54,13 @@ type walletJournal struct {
 
 	body         fyne.CanvasObject
 	character    *app.Character
-	columnSorter *columnSorter
+	columnSorter *iwidget.ColumnSorter
 	corporation  *app.Corporation
 	division     app.Division
 	rows         []walletJournalRow
 	rowsFiltered []walletJournalRow
 	selectType   *kxwidget.FilterChipSelect
-	sortButton   *sortButton
+	sortButton   *iwidget.SortButton
 	top          *widget.Label
 	u            *baseUI
 }
@@ -108,15 +108,15 @@ const (
 )
 
 func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
-	headers := []headerDef{
-		{label: "Date", width: 150},
-		{label: "Type", width: 150},
-		{label: "Amount", width: 200},
-		{label: "Balance", width: 200, notSortable: true},
-		{label: "Description", width: 450, notSortable: true},
-	}
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
+		{Label: "Date", Width: 150},
+		{Label: "Type", Width: 150},
+		{Label: "Amount", Width: 200},
+		{Label: "Balance", Width: 200, NotSortable: true},
+		{Label: "Description", Width: 450, NotSortable: true},
+	})
 	a := &walletJournal{
-		columnSorter: newColumnSorterWithInit(headers, 0, sortDesc),
+		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortDesc),
 		division:     division,
 		rows:         make([]walletJournalRow, 0),
 		top:          makeTopLabel(),
@@ -144,7 +144,7 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r walletJournalRow) {
+		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r walletJournalRow) {
 			if a.isCorporation() {
 				showCorporationWalletJournalEntryWindow(a.u, r.corporationID, r.division, r.refID)
 			} else {
@@ -157,7 +157,7 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
-	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
 	return a
@@ -250,7 +250,7 @@ func (a *walletJournal) filterRows(sortCol int) {
 		})
 	}
 	// sort
-	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
 		slices.SortFunc(rows, func(a, b walletJournalRow) int {
 			var x int
 			switch sortCol {
@@ -261,7 +261,7 @@ func (a *walletJournal) filterRows(sortCol int) {
 			case walletJournalColAmount:
 				x = cmp.Compare(a.amount, b.amount)
 			}
-			if dir == sortAsc {
+			if dir == iwidget.SortAsc {
 				return x
 			} else {
 				return -1 * x

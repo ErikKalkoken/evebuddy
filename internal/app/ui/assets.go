@@ -111,7 +111,7 @@ type assets struct {
 	onUpdate func(total string)
 
 	body           fyne.CanvasObject
-	columnSorter   *columnSorter
+	columnSorter   *iwidget.ColumnSorter
 	entry          *widget.Entry
 	found          *widget.Label
 	rows           []assetRow
@@ -123,7 +123,7 @@ type assets struct {
 	selectRegion   *kxwidget.FilterChipSelect
 	selectTag      *kxwidget.FilterChipSelect
 	selectTotal    *kxwidget.FilterChipSelect
-	sortButton     *sortButton
+	sortButton     *iwidget.SortButton
 	total          *widget.Label
 	u              *baseUI
 }
@@ -138,16 +138,16 @@ const (
 )
 
 func newAssets(u *baseUI) *assets {
-	headers := []headerDef{
-		{label: "Item", width: 300},
-		{label: "Group", width: 200},
-		{label: "Location", width: columnWidthLocation},
-		{label: "Owner", width: columnWidthEntity},
-		{label: "Qty.", width: 75},
-		{label: "Total", width: 100},
-	}
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
+		{Label: "Item", Width: 300},
+		{Label: "Group", Width: 200},
+		{Label: "Location", Width: columnWidthLocation},
+		{Label: "Owner", Width: columnWidthEntity},
+		{Label: "Qty.", Width: 75},
+		{Label: "Total", Width: 100},
+	})
 	a := &assets{
-		columnSorter: newColumnSorter(headers),
+		columnSorter: iwidget.NewColumnSorter(headers),
 		entry:        widget.NewEntry(),
 		found:        widget.NewLabel(""),
 		rowsFiltered: make([]assetRow, 0),
@@ -167,7 +167,7 @@ func newAssets(u *baseUI) *assets {
 	if !a.u.isDesktop {
 		a.body = a.makeDataList()
 	} else {
-		a.body = makeDataTable(headers, &a.rowsFiltered,
+		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered,
 			func(col int, r assetRow) []widget.RichTextSegment {
 				switch col {
 				case assetsColItem:
@@ -218,7 +218,7 @@ func newAssets(u *baseUI) *assets {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
 
@@ -369,7 +369,7 @@ func (a *assets) filterRows(sortCol int) {
 		rows = rows2
 	}
 	// sort
-	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
 		slices.SortFunc(rows, func(a, b assetRow) int {
 			var x int
 			switch sortCol {
@@ -386,7 +386,7 @@ func (a *assets) filterRows(sortCol int) {
 			case assetsColTotal:
 				x = cmp.Compare(a.total.ValueOrZero(), b.total.ValueOrZero())
 			}
-			if dir == sortAsc {
+			if dir == iwidget.SortAsc {
 				return x
 			} else {
 				return -1 * x

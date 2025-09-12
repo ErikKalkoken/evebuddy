@@ -60,13 +60,13 @@ type characterOverview struct {
 	widget.BaseWidget
 
 	body              fyne.CanvasObject
-	columnSorter      *columnSorter
+	columnSorter      *iwidget.ColumnSorter
 	rows              []characterOverviewRow
 	rowsFiltered      []characterOverviewRow
 	selectAlliance    *kxwidget.FilterChipSelect
 	selectCorporation *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortButton        *sortButton
+	sortButton        *iwidget.SortButton
 	top               *widget.Label
 	u                 *baseUI
 }
@@ -85,20 +85,20 @@ const (
 )
 
 func newCharacterOverview(u *baseUI) *characterOverview {
-	headers := []headerDef{
-		{label: "Character", width: columnWidthEntity},
-		{label: "Corporation", width: 250},
-		{label: "Alliance", width: 250},
-		{label: "Sec.", width: 50},
-		{label: "Unread", width: 100},
-		{label: "Wallet", width: 100},
-		{label: "Assets", width: 100},
-		{label: "Last Login", width: 100},
-		{label: "Home", width: columnWidthLocation},
-		{label: "Age", width: 100},
-	}
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
+		{Label: "Character", Width: columnWidthEntity},
+		{Label: "Corporation", Width: 250},
+		{Label: "Alliance", Width: 250},
+		{Label: "Sec.", Width: 50},
+		{Label: "Unread", Width: 100},
+		{Label: "Wallet", Width: 100},
+		{Label: "Assets", Width: 100},
+		{Label: "Last Login", Width: 100},
+		{Label: "Home", Width: columnWidthLocation},
+		{Label: "Age", Width: 100},
+	})
 	a := &characterOverview{
-		columnSorter: newColumnSorter(headers),
+		columnSorter: iwidget.NewColumnSorter(headers),
 		rows:         make([]characterOverviewRow, 0),
 		top:          makeTopLabel(),
 		u:            u,
@@ -136,7 +136,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTable(
+		a.body = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
 			makeCell,
@@ -146,7 +146,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 				showCharacterOverviewDetailWindow(a.u, r)
 			})
 	} else {
-		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, func(r characterOverviewRow) {
+		a.body = iwidget.MakeDataList(headers, &a.rowsFiltered, makeCell, func(r characterOverviewRow) {
 			showCharacterOverviewDetailWindow(a.u, r)
 		})
 	}
@@ -160,7 +160,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window, 5, 6, 7, 8, 9)
 
@@ -228,7 +228,7 @@ func (a *characterOverview) filterRows(sortCol int) {
 		})
 	}
 	// sort
-	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
 		slices.SortFunc(rows, func(a, b characterOverviewRow) int {
 			var x int
 			switch sortCol {
@@ -253,7 +253,7 @@ func (a *characterOverview) filterRows(sortCol int) {
 			case overviewColAge:
 				x = a.birthday.Compare(b.birthday)
 			}
-			if dir == sortAsc {
+			if dir == iwidget.SortAsc {
 				return x
 			} else {
 				return -1 * x

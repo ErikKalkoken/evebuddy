@@ -40,13 +40,13 @@ type industrySlots struct {
 
 	body            fyne.CanvasObject
 	bottom          *widget.Label
-	columnSorter    *columnSorter
+	columnSorter    *iwidget.ColumnSorter
 	rows            []industrySlotRow
 	rowsFiltered    []industrySlotRow
 	selectFreeSlots *kxwidget.FilterChipSelect
 	selectTag       *kxwidget.FilterChipSelect
 	slotType        app.IndustryJobType
-	sortButton      *sortButton
+	sortButton      *iwidget.SortButton
 	u               *baseUI
 }
 
@@ -60,16 +60,16 @@ const (
 
 func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	const columnWidthNumber = 75
-	headers := []headerDef{
-		{label: "Character", width: columnWidthEntity},
-		{label: "Busy", width: columnWidthNumber},
-		{label: "Ready", width: columnWidthNumber},
-		{label: "Free", width: columnWidthNumber},
-		{label: "Total", width: columnWidthNumber},
-	}
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
+		{Label: "Character", Width: columnWidthEntity},
+		{Label: "Busy", Width: columnWidthNumber},
+		{Label: "Ready", Width: columnWidthNumber},
+		{Label: "Free", Width: columnWidthNumber},
+		{Label: "Total", Width: columnWidthNumber},
+	})
 	a := &industrySlots{
 		bottom:       makeTopLabel(),
-		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
+		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortAsc),
 		rows:         make([]industrySlotRow, 0),
 		rowsFiltered: make([]industrySlotRow, 0),
 		slotType:     slotType,
@@ -139,7 +139,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTable(
+		a.body = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
 			makeCell,
@@ -160,7 +160,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
 
@@ -187,7 +187,7 @@ func (a *industrySlots) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *industrySlots) makeDataTable(headers []headerDef, makeCell func(col int, r industrySlotRow) []widget.RichTextSegment) *widget.Table {
+func (a *industrySlots) makeDataTable(headers iwidget.DataTableDef, makeCell func(col int, r industrySlotRow) []widget.RichTextSegment) *widget.Table {
 	w := widget.NewTable(
 		func() (rows int, cols int) {
 			return len(a.rowsFiltered), 4
@@ -209,7 +209,7 @@ func (a *industrySlots) makeDataTable(headers []headerDef, makeCell func(col int
 		return widget.NewLabel("")
 	}
 	w.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		co.(*widget.Label).SetText(headers[tci.Col].label)
+		co.(*widget.Label).SetText(headers.Column(tci.Col).Label)
 	}
 	for id, width := range map[int]float32{
 		0: 175,
@@ -242,7 +242,7 @@ func (a *industrySlots) filterRows(sortCol int) {
 		})
 	}
 	// sort
-	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
 		slices.SortFunc(rows, func(a, b industrySlotRow) int {
 			var x int
 			switch sortCol {
@@ -257,7 +257,7 @@ func (a *industrySlots) filterRows(sortCol int) {
 			case industrySlotsColTotal:
 				x = cmp.Compare(a.total, b.total)
 			}
-			if dir == sortAsc {
+			if dir == iwidget.SortAsc {
 				return x
 			} else {
 				return -1 * x

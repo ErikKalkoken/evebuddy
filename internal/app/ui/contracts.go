@@ -56,7 +56,7 @@ type contracts struct {
 	OnUpdate func(active int)
 
 	body           fyne.CanvasObject
-	columnSorter   *columnSorter
+	columnSorter   *iwidget.ColumnSorter
 	rows           []contractRow
 	rowsFiltered   []contractRow
 	selectAssignee *kxwidget.FilterChipSelect
@@ -64,7 +64,7 @@ type contracts struct {
 	selectStatus   *kxwidget.FilterChipSelect
 	selectTag      *kxwidget.FilterChipSelect
 	selectType     *kxwidget.FilterChipSelect
-	sortButton     *sortButton
+	sortButton     *iwidget.SortButton
 	bottom         *widget.Label
 	u              *baseUI
 }
@@ -80,24 +80,24 @@ const (
 )
 
 func newContracts(u *baseUI) *contracts {
-	headers := []headerDef{
-		{label: "Contract", width: 300},
-		{label: "Type", width: 120},
-		{label: "From", width: 150},
-		{label: "To", width: 150},
-		{label: "Status", width: 100},
-		{label: "Date Issued", width: columnWidthDateTime},
-		{label: "Time Left", width: 100},
-	}
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
+		{Label: "Contract", Width: 300},
+		{Label: "Type", Width: 120},
+		{Label: "From", Width: 150},
+		{Label: "To", Width: 150},
+		{Label: "Status", Width: 100},
+		{Label: "Date Issued", Width: columnWidthDateTime},
+		{Label: "Time Left", Width: 100},
+	})
 	a := &contracts{
-		columnSorter: newColumnSorter(headers),
+		columnSorter: iwidget.NewColumnSorter(headers),
 		rows:         make([]contractRow, 0),
 		bottom:       widget.NewLabel(""),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
 	if a.u.isDesktop {
-		a.body = makeDataTable(headers, &a.rowsFiltered,
+		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered,
 			func(col int, r contractRow) []widget.RichTextSegment {
 				switch col {
 				case contractsColName:
@@ -148,7 +148,7 @@ func newContracts(u *baseUI) *contracts {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
 
@@ -279,7 +279,7 @@ func (a *contracts) filterRows(sortCol int) {
 		})
 	}
 	// sort
-	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
 		slices.SortFunc(rows, func(a, b contractRow) int {
 			var x int
 			switch sortCol {
@@ -298,7 +298,7 @@ func (a *contracts) filterRows(sortCol int) {
 			case contractsColExpiresAt:
 				x = a.dateExpired.Compare(b.dateExpired)
 			}
-			if dir == sortAsc {
+			if dir == iwidget.SortAsc {
 				return x
 			} else {
 				return -1 * x
