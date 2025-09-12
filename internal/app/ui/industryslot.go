@@ -60,13 +60,27 @@ const (
 
 func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	const columnWidthNumber = 75
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
-		{Label: "Character", Width: columnWidthEntity},
-		{Label: "Busy", Width: columnWidthNumber},
-		{Label: "Ready", Width: columnWidthNumber},
-		{Label: "Free", Width: columnWidthNumber},
-		{Label: "Total", Width: columnWidthNumber},
-	})
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   industrySlotsColCharacter,
+		Label: "Character",
+		Width: columnWidthEntity,
+	}, {
+		Col:   industrySlotsColBusy,
+		Label: "Busy",
+		Width: columnWidthNumber,
+	}, {
+		Col:   industrySlotsColReady,
+		Label: "Ready",
+		Width: columnWidthNumber,
+	}, {
+		Col:   industrySlotsColFree,
+		Label: "Free",
+		Width: columnWidthNumber,
+	}, {
+		Col:   industrySlotsColTotal,
+		Label: "Total",
+		Width: columnWidthNumber,
+	}})
 	a := &industrySlots{
 		bottom:       makeTopLabel(),
 		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortAsc),

@@ -138,14 +138,31 @@ const (
 )
 
 func newAssets(u *baseUI) *assets {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
-		{Label: "Item", Width: 300},
-		{Label: "Group", Width: 200},
-		{Label: "Location", Width: columnWidthLocation},
-		{Label: "Owner", Width: columnWidthEntity},
-		{Label: "Qty.", Width: 75},
-		{Label: "Total", Width: 100},
-	})
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   assetsColItem,
+		Label: "Item",
+		Width: 300,
+	}, {
+		Col:   assetsColGroup,
+		Label: "Group",
+		Width: 200,
+	}, {
+		Col:   assetsColLocation,
+		Label: "Location",
+		Width: columnWidthLocation,
+	}, {
+		Col:   assetsColOwner,
+		Label: "Owner",
+		Width: columnWidthEntity,
+	}, {
+		Col:   assetsColQuantity,
+		Label: "Qty.",
+		Width: 75,
+	}, {
+		Col:   assetsColTotal,
+		Label: "Total",
+		Width: 100,
+	}})
 	a := &assets{
 		columnSorter: iwidget.NewColumnSorter(headers),
 		entry:        widget.NewEntry(),

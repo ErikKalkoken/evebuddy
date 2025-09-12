@@ -115,16 +115,40 @@ const (
 )
 
 func newTraining(u *baseUI) *training {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
-		{Label: "Name", Width: columnWidthEntity},
-		{Label: "Tags", Width: 150, NotSortable: true},
-		{Label: "Current Skill", Width: 250},
-		{Label: "Current Remaining", Width: 0},
-		{Label: "Queued", Width: 0},
-		{Label: "Queue Remaining", Width: 0},
-		{Label: "SP", Width: 50},
-		{Label: "Unall.", Width: 50},
-	})
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   trainingColName,
+		Label: "Name",
+		Width: columnWidthEntity,
+	}, {
+		Col:    trainingColTags,
+		Label:  "Tags",
+		Width:  150,
+		NoSort: true,
+	}, {
+		Col:   trainingColCurrent,
+		Label: "Current Skill",
+		Width: 250,
+	}, {
+		Col:   trainingColCurrentRemaining,
+		Label: "Current Remaining",
+		Width: 0,
+	}, {
+		Col:   trainingColTotal,
+		Label: "Queued",
+		Width: 0,
+	}, {
+		Col:   trainingColTotalRemaining,
+		Label: "Queue Remaining",
+		Width: 0,
+	}, {
+		Col:   trainingColSP,
+		Label: "SP",
+		Width: 50,
+	}, {
+		Col:   trainingColUnallocated,
+		Label: "Unall.",
+		Width: 50,
+	}})
 	a := &training{
 		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortAsc),
 		rows:         make([]trainingRow, 0),

@@ -58,12 +58,23 @@ const (
 )
 
 func newCharacterLocations(u *baseUI) *characterLocations {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
-		{Label: "Character", Width: columnWidthEntity},
-		{Label: "Location", Width: columnWidthLocation},
-		{Label: "Region", Width: columnWidthRegion},
-		{Label: "Ship", Width: 150},
-	})
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   locationsColCharacter,
+		Label: "Character",
+		Width: columnWidthEntity,
+	}, {
+		Col:   locationsColLocation,
+		Label: "Location",
+		Width: columnWidthLocation,
+	}, {
+		Col:   locationsColRegion,
+		Label: "Region",
+		Width: columnWidthRegion,
+	}, {
+		Col:   locationsColShip,
+		Label: "Ship",
+		Width: 150,
+	}})
 	a := &characterLocations{
 		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortAsc),
 		rows:         make([]characterLocationRow, 0),

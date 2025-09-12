@@ -80,15 +80,35 @@ const (
 )
 
 func newContracts(u *baseUI) *contracts {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
-		{Label: "Contract", Width: 300},
-		{Label: "Type", Width: 120},
-		{Label: "From", Width: 150},
-		{Label: "To", Width: 150},
-		{Label: "Status", Width: 100},
-		{Label: "Date Issued", Width: columnWidthDateTime},
-		{Label: "Time Left", Width: 100},
-	})
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   contractsColName,
+		Label: "Contract",
+		Width: 300,
+	}, {
+		Col:   contractsColType,
+		Label: "Type",
+		Width: 120,
+	}, {
+		Col:   contractsColIssuer,
+		Label: "From",
+		Width: 150,
+	}, {
+		Col:   contractsColAssignee,
+		Label: "To",
+		Width: 150,
+	}, {
+		Col:   contractsColStatus,
+		Label: "Status",
+		Width: 100,
+	}, {
+		Col:   contractsColIssuedAt,
+		Label: "Date Issued",
+		Width: columnWidthDateTime,
+	}, {
+		Col:   contractsColExpiresAt,
+		Label: "Time Left",
+		Width: 100,
+	}})
 	a := &contracts{
 		columnSorter: iwidget.NewColumnSorter(headers),
 		rows:         make([]contractRow, 0),

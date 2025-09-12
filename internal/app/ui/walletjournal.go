@@ -108,13 +108,29 @@ const (
 )
 
 func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
-		{Label: "Date", Width: 150},
-		{Label: "Type", Width: 150},
-		{Label: "Amount", Width: 200},
-		{Label: "Balance", Width: 200, NotSortable: true},
-		{Label: "Description", Width: 450, NotSortable: true},
-	})
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   walletJournalColDate,
+		Label: "Date",
+		Width: 150,
+	}, {
+		Col:   walletJournalColType,
+		Label: "Type",
+		Width: 150,
+	}, {
+		Col:   walletJournalColAmount,
+		Label: "Amount",
+		Width: 200,
+	}, {
+		Col:    walletJournalColBalance,
+		Label:  "Balance",
+		Width:  200,
+		NoSort: true,
+	}, {
+		Col:    walletJournalColDescription,
+		Label:  "Description",
+		Width:  450,
+		NoSort: true,
+	}})
 	a := &walletJournal{
 		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortDesc),
 		division:     division,

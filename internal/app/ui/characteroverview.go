@@ -85,18 +85,47 @@ const (
 )
 
 func newCharacterOverview(u *baseUI) *characterOverview {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
-		{Label: "Character", Width: columnWidthEntity},
-		{Label: "Corporation", Width: 250},
-		{Label: "Alliance", Width: 250},
-		{Label: "Sec.", Width: 50},
-		{Label: "Unread", Width: 100},
-		{Label: "Wallet", Width: 100},
-		{Label: "Assets", Width: 100},
-		{Label: "Last Login", Width: 100},
-		{Label: "Home", Width: columnWidthLocation},
-		{Label: "Age", Width: 100},
-	})
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   overviewColCharacter,
+		Label: "Character",
+		Width: columnWidthEntity,
+	}, {
+		Col:   overviewColCorporation,
+		Label: "Corporation",
+		Width: 250,
+	}, {
+		Col:   overviewColAlliance,
+		Label: "Alliance",
+		Width: 250,
+	}, {
+		Col:   overviewColSecurity,
+		Label: "Sec.",
+		Width: 50,
+	}, {
+		Col:   overviewColUnread,
+		Label: "Unread",
+		Width: 100,
+	}, {
+		Col:   overviewColWallet,
+		Label: "Wallet",
+		Width: 100,
+	}, {
+		Col:   overviewColAssets,
+		Label: "Assets",
+		Width: 100,
+	}, {
+		Col:   overviewColLastLogin,
+		Label: "Last Login",
+		Width: 100,
+	}, {
+		Col:   overviewColHome,
+		Label: "Home",
+		Width: columnWidthLocation,
+	}, {
+		Col:   overviewColAge,
+		Label: "Age",
+		Width: 100,
+	}})
 	a := &characterOverview{
 		columnSorter: iwidget.NewColumnSorter(headers),
 		rows:         make([]characterOverviewRow, 0),

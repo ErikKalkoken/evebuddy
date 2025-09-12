@@ -146,15 +146,35 @@ const (
 )
 
 func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
-		{Label: "Type", Width: columnWidthEntity},
-		{Label: "Quantity", Width: 100},
-		{Label: "Price", Width: 100},
-		{Label: "State", Width: 100},
-		{Label: "Location", Width: columnWidthLocation},
-		{Label: "Region", Width: columnWidthRegion},
-		{Label: "Owner", Width: columnWidthEntity},
-	})
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   marketOrdersColType,
+		Label: "Type",
+		Width: columnWidthEntity,
+	}, {
+		Col:   marketOrdersColVolume,
+		Label: "Quantity",
+		Width: 100,
+	}, {
+		Col:   marketOrdersColPrice,
+		Label: "Price",
+		Width: 100,
+	}, {
+		Col:   marketOrdersColState,
+		Label: "State",
+		Width: 100,
+	}, {
+		Col:   marketOrdersColLocation,
+		Label: "Location",
+		Width: columnWidthLocation,
+	}, {
+		Col:   marketOrdersColRegion,
+		Label: "Region",
+		Width: columnWidthRegion,
+	}, {
+		Col:   marketOrdersColOwner,
+		Label: "Owner",
+		Width: columnWidthEntity,
+	}})
 	a := &marketOrders{
 		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortAsc),
 		footer:       widget.NewLabel(""),

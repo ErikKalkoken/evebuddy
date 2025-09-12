@@ -78,15 +78,37 @@ const (
 )
 
 func newColonies(u *baseUI) *colonies {
-	def := iwidget.NewDataTableDef([]iwidget.ColumnDef{
-		{Label: "Planet", Width: 150},
-		{Label: "Type", Width: 100},
-		{Label: "Extracting", Width: 200, NotSortable: true},
-		{Label: "Due", Width: columnWidthDateTime},
-		{Label: "Producing", Width: 200, NotSortable: true},
-		{Label: "Region", Width: 150},
-		{Label: "Character", Width: columnWidthEntity},
-	})
+	def := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   coloniesColPlanet,
+		Label: "Planet",
+		Width: 150,
+	}, {
+		Col:   coloniesColType,
+		Label: "Type",
+		Width: 100,
+	}, {
+		Col:    coloniesColExtracting,
+		Label:  "Extracting",
+		Width:  200,
+		NoSort: true,
+	}, {
+		Col:   coloniesColDue,
+		Label: "Due",
+		Width: columnWidthDateTime,
+	}, {
+		Col:    coloniesColProducing,
+		Label:  "Producing",
+		Width:  200,
+		NoSort: true,
+	}, {
+		Col:   coloniesColRegion,
+		Label: "Region",
+		Width: 150,
+	}, {
+		Col:   coloniesColCharacter,
+		Label: "Character",
+		Width: columnWidthEntity,
+	}})
 	a := &colonies{
 		columnSorter: iwidget.NewColumnSorterWithInit(def, 0, iwidget.SortAsc),
 		rows:         make([]colonyRow, 0),

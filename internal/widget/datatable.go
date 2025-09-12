@@ -1,6 +1,8 @@
 package widget
 
 import (
+	"cmp"
+	"fmt"
 	"iter"
 	"log/slog"
 	"slices"
@@ -37,7 +39,7 @@ type ColumnDef struct {
 	// Label of a column displayed to the user. MANDATORY.
 	Label string
 	// Whether a column is sortable
-	NotSortable bool
+	NoSort bool
 	// Width of a column in Fyne units
 	Width float32
 }
@@ -56,13 +58,28 @@ type DataTableDef struct {
 }
 
 func NewDataTableDef(cols []ColumnDef) DataTableDef {
+	var incoming, expected set.Set[int]
+	for i := range len(cols) {
+		expected.Add(i)
+	}
 	for _, c := range cols {
 		if c.Label == "" {
 			panic("label not defined")
 		}
+		if !expected.Contains(c.Col) {
+			panic(fmt.Sprintf("%s: col must be in [%d, %d]", c.Label, 0, len(cols)-1))
+		}
+		if incoming.Contains(c.Col) {
+			panic(fmt.Sprintf("%s: col %d duplicate", c.Label, c.Col))
+		}
+		incoming.Add(c.Col)
 	}
+	cols2 := slices.Clone(cols)
+	slices.SortFunc(cols2, func(a, b ColumnDef) int {
+		return cmp.Compare(a.Col, b.Col)
+	})
 	d := DataTableDef{
-		cols: cols,
+		cols: cols2,
 	}
 	return d
 }
@@ -315,7 +332,7 @@ func (cs *ColumnSorter) reset() {
 func (cs *ColumnSorter) clear() {
 	for i := range cs.cols {
 		var dir SortDir
-		if cs.def.Column(i).NotSortable {
+		if cs.def.Column(i).NoSort {
 			dir = SortNone
 		} else {
 			dir = SortOff
@@ -379,7 +396,7 @@ func (cs *ColumnSorter) NewSortButton(def DataTableDef, process func(), window f
 		col, dir := cs.current()
 		var fields []string
 		for i, h := range def.all() {
-			if !h.NotSortable && !ignored.Contains(i) {
+			if !h.NoSort && !ignored.Contains(i) {
 				fields = append(fields, h.Label)
 			}
 		}

@@ -94,13 +94,28 @@ const (
 )
 
 func newClones(u *baseUI) *clones {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
-		{Label: "Location", Width: columnWidthLocation},
-		{Label: "Region", Width: columnWidthRegion, NotSortable: true},
-		{Label: "Impl.", Width: 100},
-		{Label: "Character", Width: columnWidthEntity},
-		{Label: "Jumps", Width: 100},
-	})
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   clonesColLocation,
+		Label: "Location",
+		Width: columnWidthLocation,
+	}, {
+		Col:    clonesColRegion,
+		Label:  "Region",
+		Width:  columnWidthRegion,
+		NoSort: true,
+	}, {
+		Col:   clonesColImplants,
+		Label: "Impl.",
+		Width: 100,
+	}, {
+		Col:   clonesColCharacter,
+		Label: "Character",
+		Width: columnWidthEntity,
+	}, {
+		Col:   clonesColJumps,
+		Label: "Jumps",
+		Width: 100,
+	}})
 	a := &clones{
 		columnSorter: iwidget.NewColumnSorter(headers),
 		originLabel:  iwidget.NewRichTextWithText("(not set)"),

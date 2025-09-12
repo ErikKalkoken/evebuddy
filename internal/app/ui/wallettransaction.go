@@ -121,15 +121,35 @@ const (
 )
 
 func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
-		{Label: "Date", Width: columnWidthDateTime},
-		{Label: "Qty.", Width: 75},
-		{Label: "Type", Width: 200},
-		{Label: "Unit Price", Width: 150},
-		{Label: "Total", Width: 150},
-		{Label: "Client", Width: columnWidthEntity},
-		{Label: "Where", Width: columnWidthLocation},
-	})
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   walletTransactionColDate,
+		Label: "Date",
+		Width: columnWidthDateTime,
+	}, {
+		Col:   walletTransactionColQuantity,
+		Label: "Qty.",
+		Width: 75,
+	}, {
+		Col:   walletTransactionColType,
+		Label: "Type",
+		Width: 200,
+	}, {
+		Col:   walletTransactionColPrice,
+		Label: "Unit Price",
+		Width: 150,
+	}, {
+		Col:   walletTransactionColTotal,
+		Label: "Total",
+		Width: 150,
+	}, {
+		Col:   walletTransactionColClient,
+		Label: "Client",
+		Width: columnWidthEntity,
+	}, {
+		Col:   walletTransactionColLocation,
+		Label: "Where",
+		Width: columnWidthLocation,
+	}})
 	a := &walletTransactions{
 		bottom:       widget.NewLabel(""),
 		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortDesc),

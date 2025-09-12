@@ -112,16 +112,39 @@ const (
 )
 
 func newIndustryJobs(u *baseUI, isCorporationMode bool) *industryJobs {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
-		{Label: "Blueprint", Width: 250},
-		{Label: "Status", Width: 100},
-		{Label: "Runs", Width: 75},
-		{Label: "Activity", Width: 200},
-		{Label: "End date", Width: columnWidthDateTime},
-		{Label: "Location", Width: columnWidthLocation},
-		{Label: "Owner", Width: columnWidthEntity},
-		{Label: "Installer", Width: columnWidthEntity},
-	})
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   industryJobsColBlueprint,
+		Label: "Blueprint",
+		Width: 250,
+	}, {
+		Col:   industryJobsColStatus,
+		Label: "Status",
+		Width: 100,
+	}, {
+		Col:   industryJobsColRuns,
+		Label: "Runs",
+		Width: 75,
+	}, {
+		Col:   industryJobsColActivity,
+		Label: "Activity",
+		Width: 200,
+	}, {
+		Col:   industryJobsColEndDate,
+		Label: "End date",
+		Width: columnWidthDateTime,
+	}, {
+		Col:   industryJobsColLocation,
+		Label: "Location",
+		Width: columnWidthLocation,
+	}, {
+		Col:   industryJobsColOwner,
+		Label: "Owner",
+		Width: columnWidthEntity,
+	}, {
+		Col:   industryJobsColInstaller,
+		Label: "Installer",
+		Width: columnWidthEntity,
+	}})
 	a := &industryJobs{
 		bottom:            makeTopLabel(),
 		columnSorter:      iwidget.NewColumnSorterWithInit(headers, 4, iwidget.SortDesc),
