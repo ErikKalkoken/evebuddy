@@ -357,7 +357,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 			case industryJobsColActivity:
 				c = strings.Compare(j.activity.String(), k.activity.String())
 			case industryJobsColEndDate:
-				c = j.endDate.Compare(j.endDate)
+				c = j.endDate.Compare(k.endDate)
 			case industryJobsColLocation:
 				c = strings.Compare(j.location.Name.ValueOrZero(), k.location.Name.ValueOrZero())
 			case industryJobsColOwner:
