@@ -17,6 +17,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -140,20 +141,24 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*app.To
 		stateWant := serverCtx.Value(keyState).(string)
 		if stateGot != stateWant {
 			processError(w, http.StatusUnauthorized, fmt.Errorf("invalid state. Want: %s - Got: %s", stateWant, stateGot))
+			return
 		}
 		code := v.Get("code")
 		codeVerifier := serverCtx.Value(keyCodeVerifier).(string)
 		rawToken, err := s.fetchNewToken(code, codeVerifier)
 		if err != nil {
 			processError(w, http.StatusUnauthorized, fmt.Errorf("fetch new token: %w", err))
+			return
 		}
 		jwtToken, err := validateJWT(ctx, s.httpClient, rawToken.AccessToken)
 		if err != nil {
 			processError(w, http.StatusUnauthorized, fmt.Errorf("token validation: %w", err))
+			return
 		}
 		characterID, err := extractCharacterID(jwtToken)
 		if err != nil {
 			processError(w, http.StatusInternalServerError, fmt.Errorf("extract character ID: %w", err))
+			return
 		}
 		characterName := extractCharacterName(jwtToken)
 		scopes := extractScopes(jwtToken)
@@ -163,19 +168,21 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*app.To
 		http.Redirect(w, r, "/authenticated", http.StatusSeeOther)
 	})
 	router.HandleFunc("/authenticated", func(w http.ResponseWriter, r *http.Request) {
-		var name string
+		var name, id string
 		tok := token.Load()
 		if tok != nil {
 			name = tok.CharacterName
+			id = strconv.Itoa(int(tok.CharacterID))
 		} else {
 			name = "?"
+			id = "1"
 		}
 		t, err := template.ParseFS(templFS, "tmpl/authenticated.html")
 		if err != nil {
 			processError(w, http.StatusInternalServerError, err)
 			return
 		}
-		err = t.Execute(w, map[string]string{"Name": name})
+		err = t.Execute(w, map[string]string{"Name": name, "ID": id})
 		if err != nil {
 			processError(w, http.StatusInternalServerError, err)
 			return
