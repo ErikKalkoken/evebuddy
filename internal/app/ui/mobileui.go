@@ -174,7 +174,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		navItemWallet,
 	)
 
-	u.characterAsset.OnRedraw = func(s string) {
+	u.characterAsset.OnUpdate = func(s string) {
 		fyne.Do(func() {
 			navItemAssets.Supporting = "Value: " + s
 			characterList.Refresh()

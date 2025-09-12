@@ -61,7 +61,7 @@ type walletTransactions struct {
 	body           fyne.CanvasObject
 	bottom         *widget.Label
 	character      *app.Character
-	columnSorter   *columnSorter
+	columnSorter   *iwidget.ColumnSorter
 	corporation    *app.Corporation
 	division       app.Division
 	rows           []walletTransactionRow
@@ -72,7 +72,7 @@ type walletTransactions struct {
 	selectLocation *kxwidget.FilterChipSelect
 	selectRegion   *kxwidget.FilterChipSelect
 	selectType     *kxwidget.FilterChipSelect
-	sortButton     *sortButton
+	sortButton     *iwidget.SortButton
 	u              *baseUI
 }
 
@@ -110,19 +110,49 @@ func newCorporationWalletTransactions(u *baseUI, d app.Division) *walletTransact
 	return a
 }
 
+const (
+	walletTransactionColDate     = 0
+	walletTransactionColQuantity = 1
+	walletTransactionColType     = 2
+	walletTransactionColPrice    = 3
+	walletTransactionColTotal    = 4
+	walletTransactionColClient   = 5
+	walletTransactionColLocation = 6
+)
+
 func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
-	headers := []headerDef{
-		{label: "Date", width: columnWidthDateTime},
-		{label: "Qty.", width: 75},
-		{label: "Type", width: 200},
-		{label: "Unit Price", width: 150},
-		{label: "Total", width: 150},
-		{label: "Client", width: columnWidthEntity},
-		{label: "Where", width: columnWidthLocation},
-	}
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   walletTransactionColDate,
+		Label: "Date",
+		Width: columnWidthDateTime,
+	}, {
+		Col:   walletTransactionColQuantity,
+		Label: "Qty.",
+		Width: 75,
+	}, {
+		Col:   walletTransactionColType,
+		Label: "Type",
+		Width: 200,
+	}, {
+		Col:   walletTransactionColPrice,
+		Label: "Unit Price",
+		Width: 150,
+	}, {
+		Col:   walletTransactionColTotal,
+		Label: "Total",
+		Width: 150,
+	}, {
+		Col:   walletTransactionColClient,
+		Label: "Client",
+		Width: columnWidthEntity,
+	}, {
+		Col:   walletTransactionColLocation,
+		Label: "Where",
+		Width: columnWidthLocation,
+	}})
 	a := &walletTransactions{
 		bottom:       widget.NewLabel(""),
-		columnSorter: newColumnSorterWithInit(headers, 0, sortDesc),
+		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortDesc),
 		division:     d,
 		rows:         make([]walletTransactionRow, 0),
 		rowsFiltered: make([]walletTransactionRow, 0),
@@ -131,34 +161,34 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 	a.ExtendBaseWidget(a)
 	makeCell := func(col int, r walletTransactionRow) []widget.RichTextSegment {
 		switch col {
-		case 0:
+		case walletTransactionColDate:
 			return iwidget.RichTextSegmentsFromText(r.dateFormatted)
-		case 1:
+		case walletTransactionColQuantity:
 			return iwidget.RichTextSegmentsFromText(r.quantityDisplay,
 				widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				})
-		case 2:
+		case walletTransactionColType:
 			return iwidget.RichTextSegmentsFromText(r.typeName)
-		case 3:
+		case walletTransactionColPrice:
 			return iwidget.RichTextSegmentsFromText(
 				r.unitPriceDisplay,
 				widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				})
-		case 4:
+		case walletTransactionColTotal:
 			return iwidget.RichTextSegmentsFromText(r.totalFormatted, widget.RichTextStyle{
 				ColorName: r.totalColor,
 			})
-		case 5:
+		case walletTransactionColClient:
 			return iwidget.RichTextSegmentsFromText(r.clientName)
-		case 6:
+		case walletTransactionColLocation:
 			return r.locationDisplay
 		}
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTable(
+		a.body = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
 			makeCell,
@@ -214,7 +244,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 		},
 		a.u.window,
 	)
-	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
 	return a
@@ -339,26 +369,26 @@ func (a *walletTransactions) filterRows(sortCol int) {
 		})
 	}
 	// sort
-	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
 		slices.SortFunc(rows, func(a, b walletTransactionRow) int {
 			var x int
 			switch sortCol {
-			case 0:
+			case walletTransactionColDate:
 				x = a.date.Compare(b.date)
-			case 1:
+			case walletTransactionColQuantity:
 				x = cmp.Compare(a.quantity, b.quantity)
-			case 2:
+			case walletTransactionColType:
 				x = strings.Compare(a.typeName, b.typeName)
-			case 3:
+			case walletTransactionColPrice:
 				x = cmp.Compare(a.unitPrice, b.unitPrice)
-			case 4:
+			case walletTransactionColTotal:
 				x = cmp.Compare(a.total, b.total)
-			case 5:
+			case walletTransactionColClient:
 				x = strings.Compare(a.clientName, b.clientName)
-			case 6:
+			case walletTransactionColLocation:
 				x = strings.Compare(a.locationName, b.locationName)
 			}
-			if dir == sortAsc {
+			if dir == iwidget.SortAsc {
 				return x
 			} else {
 				return -1 * x

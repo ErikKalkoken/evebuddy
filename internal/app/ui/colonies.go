@@ -51,7 +51,7 @@ type colonies struct {
 	OnUpdate func(total, expired int)
 
 	body              fyne.CanvasObject
-	columnSorter      *columnSorter
+	columnSorter      *iwidget.ColumnSorter
 	rows              []colonyRow
 	rowsFiltered      []colonyRow
 	selectStatus      *kxwidget.FilterChipSelect
@@ -62,23 +62,55 @@ type colonies struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectPlanetType  *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortButton        *sortButton
+	sortButton        *iwidget.SortButton
 	top               *widget.Label
 	u                 *baseUI
 }
 
+const (
+	coloniesColPlanet     = 0
+	coloniesColType       = 1
+	coloniesColExtracting = 2
+	coloniesColDue        = 3
+	coloniesColProducing  = 4
+	coloniesColRegion     = 5
+	coloniesColCharacter  = 6
+)
+
 func newColonies(u *baseUI) *colonies {
-	headers := []headerDef{
-		{label: "Planet", width: 150},
-		{label: "Type", width: 100},
-		{label: "Extracting", width: 200, notSortable: true},
-		{label: "Due", width: columnWidthDateTime},
-		{label: "Producing", width: 200, notSortable: true},
-		{label: "Region", width: 150},
-		{label: "Character", width: columnWidthEntity},
-	}
+	def := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   coloniesColPlanet,
+		Label: "Planet",
+		Width: 150,
+	}, {
+		Col:   coloniesColType,
+		Label: "Type",
+		Width: 100,
+	}, {
+		Col:    coloniesColExtracting,
+		Label:  "Extracting",
+		Width:  200,
+		NoSort: true,
+	}, {
+		Col:   coloniesColDue,
+		Label: "Due",
+		Width: columnWidthDateTime,
+	}, {
+		Col:    coloniesColProducing,
+		Label:  "Producing",
+		Width:  200,
+		NoSort: true,
+	}, {
+		Col:   coloniesColRegion,
+		Label: "Region",
+		Width: 150,
+	}, {
+		Col:   coloniesColCharacter,
+		Label: "Character",
+		Width: columnWidthEntity,
+	}})
 	a := &colonies{
-		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
+		columnSorter: iwidget.NewColumnSorterWithInit(def, 0, iwidget.SortAsc),
 		rows:         make([]colonyRow, 0),
 		rowsFiltered: make([]colonyRow, 0),
 		top:          makeTopLabel(),
@@ -88,29 +120,29 @@ func newColonies(u *baseUI) *colonies {
 
 	makeCell := func(col int, r colonyRow) []widget.RichTextSegment {
 		switch col {
-		case 0:
+		case coloniesColPlanet:
 			return r.nameDisplay
-		case 1:
+		case coloniesColType:
 			return iwidget.RichTextSegmentsFromText(r.planetTypeName)
-		case 2:
+		case coloniesColExtracting:
 			return iwidget.RichTextSegmentsFromText(r.extractingText)
-		case 3:
+		case coloniesColDue:
 			return r.dueDisplay
-		case 4:
+		case coloniesColProducing:
 			return iwidget.RichTextSegmentsFromText(r.producingText)
-		case 5:
+		case coloniesColRegion:
 			return iwidget.RichTextSegmentsFromText(r.regionName)
-		case 6:
+		case coloniesColCharacter:
 			return iwidget.RichTextSegmentsFromText(r.ownerName)
 		}
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r colonyRow) {
+		a.body = iwidget.MakeDataTable(def, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r colonyRow) {
 			a.showColonyWindow(r)
 		})
 	} else {
-		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, a.showColonyWindow)
+		a.body = iwidget.MakeDataList(def, &a.rowsFiltered, makeCell, a.showColonyWindow)
 	}
 
 	a.selectExtracting = kxwidget.NewFilterChipSelectWithSearch("Extracted", []string{}, func(string) {
@@ -140,7 +172,7 @@ func newColonies(u *baseUI) *colonies {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(def, func() {
 		a.filterRows(-1)
 	}, a.u.window)
 
@@ -229,22 +261,22 @@ func (a *colonies) filterRows(sortCol int) {
 		})
 	}
 	// sort
-	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
 		slices.SortFunc(rows, func(a, b colonyRow) int {
 			var x int
 			switch sortCol {
-			case 0:
+			case coloniesColPlanet:
 				x = strings.Compare(a.name, b.name)
-			case 1:
+			case coloniesColType:
 				x = strings.Compare(a.planetTypeName, b.planetTypeName)
-			case 3:
+			case coloniesColDue:
 				x = a.due.Compare(b.due)
-			case 5:
+			case coloniesColRegion:
 				x = strings.Compare(a.regionName, b.regionName)
-			case 6:
+			case coloniesColCharacter:
 				x = strings.Compare(a.ownerName, b.ownerName)
 			}
-			if dir == sortAsc {
+			if dir == iwidget.SortAsc {
 				return x
 			} else {
 				return -1 * x

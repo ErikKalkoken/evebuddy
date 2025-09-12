@@ -59,7 +59,7 @@ type corporationStructures struct {
 	OnUpdate func(count int)
 
 	bottom            *widget.Label
-	columnSorter      *columnSorter
+	columnSorter      *iwidget.ColumnSorter
 	corporation       *app.Corporation
 	main              fyne.CanvasObject
 	rows              []corporationStructureRow
@@ -70,7 +70,7 @@ type corporationStructures struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectState       *kxwidget.FilterChipSelect
 	selectType        *kxwidget.FilterChipSelect
-	sortButton        *sortButton
+	sortButton        *iwidget.SortButton
 	u                 *baseUI
 }
 
@@ -83,15 +83,31 @@ const (
 )
 
 func newCorporationStructures(u *baseUI) *corporationStructures {
-	headers := []headerDef{
-		{label: "Name", width: 250},
-		{label: "Type", width: 150},
-		{label: "Fuel Expires", width: 150},
-		{label: "State", width: 150, notSortable: true},
-		{label: "Services", width: 200, notSortable: true},
-	}
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   structuresColName,
+		Label: "Name",
+		Width: 250,
+	}, {
+		Col:   structuresColType,
+		Label: "Type",
+		Width: 150,
+	}, {
+		Col:   structuresColFuel,
+		Label: "Fuel Expires",
+		Width: 150,
+	}, {
+		Col:    structuresColState,
+		Label:  "State",
+		Width:  150,
+		NoSort: true,
+	}, {
+		Col:    structuresColServices,
+		Label:  "Services",
+		Width:  200,
+		NoSort: true,
+	}})
 	a := &corporationStructures{
-		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
+		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortAsc),
 		rows:         make([]corporationStructureRow, 0),
 		rowsFiltered: make([]corporationStructureRow, 0),
 		bottom:       makeTopLabel(),
@@ -127,7 +143,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
-		a.main = makeDataTable(
+		a.main = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
 			makeCell,
@@ -136,7 +152,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 				showCorporationStructureWindow(a.u, r.corporationID, r.structureID)
 			})
 	} else {
-		a.main = makeDataList(headers, &a.rowsFiltered, makeCell, func(r corporationStructureRow) {
+		a.main = iwidget.MakeDataList(headers, &a.rowsFiltered, makeCell, func(r corporationStructureRow) {
 			showCorporationStructureWindow(a.u, r.corporationID, r.structureID)
 		})
 	}
@@ -156,7 +172,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 	a.selectService = kxwidget.NewFilterChipSelect("Service", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
 	a.selectPower = kxwidget.NewFilterChipSelect("Power", []string{
@@ -235,7 +251,7 @@ func (a *corporationStructures) filterRows(sortCol int) {
 		})
 	}
 	// sort
-	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
 		slices.SortFunc(rows, func(a, b corporationStructureRow) int {
 			var x int
 			switch sortCol {
@@ -246,7 +262,7 @@ func (a *corporationStructures) filterRows(sortCol int) {
 			case structuresColFuel:
 				x = cmp.Compare(time.Until(a.fuelSort), time.Until(b.fuelSort))
 			}
-			if dir == sortAsc {
+			if dir == iwidget.SortAsc {
 				return x
 			} else {
 				return -1 * x

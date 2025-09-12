@@ -39,26 +39,44 @@ type characterLocations struct {
 	widget.BaseWidget
 
 	body              fyne.CanvasObject
-	columnSorter      *columnSorter
+	columnSorter      *iwidget.ColumnSorter
 	rows              []characterLocationRow
 	rowsFiltered      []characterLocationRow
 	selectRegion      *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortButton        *sortButton
+	sortButton        *iwidget.SortButton
 	bottom            *widget.Label
 	u                 *baseUI
 }
 
+const (
+	locationsColCharacter = 0
+	locationsColLocation  = 1
+	locationsColRegion    = 2
+	locationsColShip      = 3
+)
+
 func newCharacterLocations(u *baseUI) *characterLocations {
-	headers := []headerDef{
-		{label: "Character", width: columnWidthEntity},
-		{label: "Location", width: columnWidthLocation},
-		{label: "Region", width: columnWidthRegion},
-		{label: "Ship", width: 150},
-	}
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   locationsColCharacter,
+		Label: "Character",
+		Width: columnWidthEntity,
+	}, {
+		Col:   locationsColLocation,
+		Label: "Location",
+		Width: columnWidthLocation,
+	}, {
+		Col:   locationsColRegion,
+		Label: "Region",
+		Width: columnWidthRegion,
+	}, {
+		Col:   locationsColShip,
+		Label: "Ship",
+		Width: 150,
+	}})
 	a := &characterLocations{
-		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
+		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortAsc),
 		rows:         make([]characterLocationRow, 0),
 		rowsFiltered: make([]characterLocationRow, 0),
 		bottom:       makeTopLabel(),
@@ -66,24 +84,24 @@ func newCharacterLocations(u *baseUI) *characterLocations {
 	}
 	a.ExtendBaseWidget(a)
 	if a.u.isDesktop {
-		a.body = makeDataTable(
+		a.body = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
 			func(col int, r characterLocationRow) []widget.RichTextSegment {
 				switch col {
-				case 0:
+				case locationsColCharacter:
 					return iwidget.RichTextSegmentsFromText(r.characterName)
-				case 1:
+				case locationsColLocation:
 					if r.locationID == 0 {
 						r.locationDisplay = iwidget.RichTextSegmentsFromText("?")
 					}
 					return r.locationDisplay
-				case 2:
+				case locationsColRegion:
 					if r.regionName == "" {
 						r.regionName = "?"
 					}
 					return iwidget.RichTextSegmentsFromText(r.regionName)
-				case 3:
+				case locationsColShip:
 					if r.shipName == "" {
 						r.shipName = "?"
 					}
@@ -108,7 +126,7 @@ func newCharacterLocations(u *baseUI) *characterLocations {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
 
@@ -192,20 +210,20 @@ func (a *characterLocations) filterRows(sortCol int) {
 		})
 	}
 	// sort
-	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
 		slices.SortFunc(rows, func(a, b characterLocationRow) int {
 			var x int
 			switch sortCol {
-			case 0:
+			case locationsColCharacter:
 				x = strings.Compare(a.characterName, b.characterName)
-			case 1:
+			case locationsColLocation:
 				x = strings.Compare(a.locationName, b.locationName)
-			case 2:
+			case locationsColRegion:
 				x = strings.Compare(a.regionName, b.regionName)
-			case 3:
+			case locationsColShip:
 				x = strings.Compare(a.shipName, b.shipName)
 			}
-			if dir == sortAsc {
+			if dir == iwidget.SortAsc {
 				return x
 			} else {
 				return -1 * x

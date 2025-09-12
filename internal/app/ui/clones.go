@@ -70,7 +70,7 @@ type clones struct {
 
 	body              fyne.CanvasObject
 	changeOrigin      *widget.Button
-	columnSorter      *columnSorter
+	columnSorter      *iwidget.ColumnSorter
 	origin            *app.EveSolarSystem
 	originLabel       *iwidget.RichText
 	routePref         app.EveRoutePreference
@@ -80,21 +80,44 @@ type clones struct {
 	selectRegion      *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortButton        *sortButton
+	sortButton        *iwidget.SortButton
 	top               *widget.Label
 	u                 *baseUI
 }
 
+const (
+	clonesColLocation  = 0
+	clonesColRegion    = 1
+	clonesColImplants  = 2
+	clonesColCharacter = 3
+	clonesColJumps     = 4
+)
+
 func newClones(u *baseUI) *clones {
-	headers := []headerDef{
-		{label: "Location", width: columnWidthLocation},
-		{label: "Region", width: columnWidthRegion, notSortable: true},
-		{label: "Impl.", width: 100},
-		{label: "Character", width: columnWidthEntity},
-		{label: "Jumps", width: 100},
-	}
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   clonesColLocation,
+		Label: "Location",
+		Width: columnWidthLocation,
+	}, {
+		Col:    clonesColRegion,
+		Label:  "Region",
+		Width:  columnWidthRegion,
+		NoSort: true,
+	}, {
+		Col:   clonesColImplants,
+		Label: "Impl.",
+		Width: 100,
+	}, {
+		Col:   clonesColCharacter,
+		Label: "Character",
+		Width: columnWidthEntity,
+	}, {
+		Col:   clonesColJumps,
+		Label: "Jumps",
+		Width: 100,
+	}})
 	a := &clones{
-		columnSorter: newColumnSorter(headers),
+		columnSorter: iwidget.NewColumnSorter(headers),
 		originLabel:  iwidget.NewRichTextWithText("(not set)"),
 		rows:         make([]cloneRow, 0),
 		rowsFiltered: make([]cloneRow, 0),
@@ -109,21 +132,21 @@ func newClones(u *baseUI) *clones {
 	makeCell := func(col int, r cloneRow) []widget.RichTextSegment {
 		var s []widget.RichTextSegment
 		switch col {
-		case 0:
+		case clonesColLocation:
 			s = r.jc.Location.DisplayRichText()
-		case 1:
+		case clonesColRegion:
 			s = iwidget.RichTextSegmentsFromText(r.jc.Location.RegionName())
-		case 2:
+		case clonesColImplants:
 			s = iwidget.RichTextSegmentsFromText(fmt.Sprint(r.jc.ImplantsCount))
-		case 3:
+		case clonesColCharacter:
 			s = iwidget.RichTextSegmentsFromText(r.jc.Character.Name)
-		case 4:
+		case clonesColJumps:
 			s = iwidget.RichTextSegmentsFromText(r.jumps())
 		}
 		return s
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(c int, r cloneRow) {
+		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(c int, r cloneRow) {
 			switch c {
 			case 0:
 				a.u.ShowLocationInfoWindow(r.jc.Location.ID)
@@ -146,7 +169,7 @@ func newClones(u *baseUI) *clones {
 			}
 		})
 	} else {
-		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, func(r cloneRow) {
+		a.body = iwidget.MakeDataList(headers, &a.rowsFiltered, makeCell, func(r cloneRow) {
 			if len(r.route) == 0 {
 				return
 			}
@@ -168,7 +191,7 @@ func newClones(u *baseUI) *clones {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
 
@@ -235,22 +258,22 @@ func (a *clones) filterRows(sortCol int) {
 		})
 	}
 	// sort
-	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
 		slices.SortFunc(rows, func(a, b cloneRow) int {
 			var x int
 			switch sortCol {
-			case 0:
+			case clonesColLocation:
 				x = cmp.Compare(a.jc.Location.DisplayName(), b.jc.Location.DisplayName())
-			case 1:
+			case clonesColRegion:
 				x = cmp.Compare(a.jc.Location.RegionName(), b.jc.Location.RegionName())
-			case 2:
+			case clonesColImplants:
 				x = cmp.Compare(a.jc.ImplantsCount, b.jc.ImplantsCount)
-			case 3:
+			case clonesColCharacter:
 				x = cmp.Compare(a.jc.Character.Name, b.jc.Character.Name)
-			case 4:
+			case clonesColJumps:
 				x = a.compare(b)
 			}
-			if dir == sortAsc {
+			if dir == iwidget.SortAsc {
 				return x
 			} else {
 				return -1 * x
@@ -374,7 +397,7 @@ func (a *clones) updateRoutes() {
 			a.rows[i].route = m[solarSystem.ID]
 		}
 		a.body.Refresh()
-		a.columnSorter.set(4, sortOff)
+		a.columnSorter.Set(4, iwidget.SortOff)
 		a.filterRows(4)
 	})
 }

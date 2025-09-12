@@ -119,7 +119,7 @@ func (r marketOrderRow) volumeDisplay() string {
 type marketOrders struct {
 	widget.BaseWidget
 
-	columnSorter *columnSorter
+	columnSorter *iwidget.ColumnSorter
 	footer       *widget.Label
 	isBuyOrders  bool
 	issue        *widget.Label
@@ -131,22 +131,52 @@ type marketOrders struct {
 	selectState  *kxwidget.FilterChipSelect
 	selectTag    *kxwidget.FilterChipSelect
 	selectType   *kxwidget.FilterChipSelect
-	sortButton   *sortButton
+	sortButton   *iwidget.SortButton
 	u            *baseUI
 }
 
+const (
+	marketOrdersColType     = 0
+	marketOrdersColVolume   = 1
+	marketOrdersColPrice    = 2
+	marketOrdersColState    = 3
+	marketOrdersColLocation = 4
+	marketOrdersColRegion   = 5
+	marketOrdersColOwner    = 6
+)
+
 func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
-	headers := []headerDef{
-		{label: "Type", width: columnWidthEntity},
-		{label: "Quantity", width: 100},
-		{label: "Price", width: 100},
-		{label: "State", width: 100},
-		{label: "Location", width: columnWidthLocation},
-		{label: "Region", width: columnWidthRegion},
-		{label: "Owner", width: columnWidthEntity},
-	}
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   marketOrdersColType,
+		Label: "Type",
+		Width: columnWidthEntity,
+	}, {
+		Col:   marketOrdersColVolume,
+		Label: "Quantity",
+		Width: 100,
+	}, {
+		Col:   marketOrdersColPrice,
+		Label: "Price",
+		Width: 100,
+	}, {
+		Col:   marketOrdersColState,
+		Label: "State",
+		Width: 100,
+	}, {
+		Col:   marketOrdersColLocation,
+		Label: "Location",
+		Width: columnWidthLocation,
+	}, {
+		Col:   marketOrdersColRegion,
+		Label: "Region",
+		Width: columnWidthRegion,
+	}, {
+		Col:   marketOrdersColOwner,
+		Label: "Owner",
+		Width: columnWidthEntity,
+	}})
 	a := &marketOrders{
-		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
+		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortAsc),
 		footer:       widget.NewLabel(""),
 		isBuyOrders:  isBuyOrders,
 		issue:        makeTopLabel(),
@@ -157,31 +187,31 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 	a.ExtendBaseWidget(a)
 	makeCell := func(col int, r marketOrderRow) []widget.RichTextSegment {
 		switch col {
-		case 0:
+		case marketOrdersColType:
 			return iwidget.RichTextSegmentsFromText(r.typeName)
-		case 1:
+		case marketOrdersColVolume:
 			return iwidget.RichTextSegmentsFromText(r.volumeDisplay(), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 			})
-		case 2:
+		case marketOrdersColPrice:
 			return iwidget.RichTextSegmentsFromText(humanize.FormatFloat(app.FloatFormat, r.price), widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 			})
-		case 3:
+		case marketOrdersColState:
 			return iwidget.RichTextSegmentsFromText(r.stateDisplay(), widget.RichTextStyle{
 				ColorName: r.stateColor(),
 			})
-		case 4:
+		case marketOrdersColLocation:
 			return iwidget.RichTextSegmentsFromText(r.locationName)
-		case 5:
+		case marketOrdersColRegion:
 			return iwidget.RichTextSegmentsFromText(r.regionName)
-		case 6:
+		case marketOrdersColOwner:
 			return iwidget.RichTextSegmentsFromText(r.ownerName)
 		}
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
-		a.main = makeDataTable(
+		a.main = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
 			makeCell,
@@ -213,7 +243,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
 
@@ -342,26 +372,26 @@ func (a *marketOrders) filterRows(sortCol int) {
 		})
 	}
 	// sort
-	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
 		slices.SortFunc(rows, func(a, b marketOrderRow) int {
 			var x int
 			switch sortCol {
-			case 0:
+			case marketOrdersColType:
 				x = strings.Compare(a.typeName, b.typeName)
-			case 1:
+			case marketOrdersColVolume:
 				x = cmp.Compare(a.volumeRemain, b.volumeRemain)
-			case 2:
+			case marketOrdersColPrice:
 				x = cmp.Compare(a.price, b.price)
-			case 3:
+			case marketOrdersColState:
 				x = a.expires.Compare(b.expires)
-			case 4:
+			case marketOrdersColRegion:
 				x = strings.Compare(a.regionName, b.regionName)
-			case 5:
+			case marketOrdersColLocation:
 				x = strings.Compare(a.locationName, b.locationName)
-			case 6:
+			case marketOrdersColOwner:
 				x = strings.Compare(a.ownerName, b.ownerName)
 			}
-			if dir == sortAsc {
+			if dir == iwidget.SortAsc {
 				return x
 			} else {
 				return -1 * x

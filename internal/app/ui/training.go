@@ -31,17 +31,6 @@ const (
 	trainingStatusInActive = "Inactive"
 )
 
-const (
-	trainingColName             = 0
-	trainingColTags             = 1
-	trainingColCurrent          = 2
-	trainingColCurrentRemaining = 3
-	trainingColTotal            = 4
-	trainingColTotalRemaining   = 5
-	trainingColSP               = 6
-	trainingColUnallocated      = 7
-)
-
 type trainingRow struct {
 	characterID                int32
 	characterName              string
@@ -104,29 +93,64 @@ type training struct {
 	widget.BaseWidget
 
 	main         fyne.CanvasObject
-	columnSorter *columnSorter
+	columnSorter *iwidget.ColumnSorter
 	rows         []trainingRow
 	rowsFiltered []trainingRow
 	selectStatus *kxwidget.FilterChipSelect
 	selectTag    *kxwidget.FilterChipSelect
-	sortButton   *sortButton
+	sortButton   *iwidget.SortButton
 	bottom       *widget.Label
 	u            *baseUI
 }
 
+const (
+	trainingColName             = 0
+	trainingColTags             = 1
+	trainingColCurrent          = 2
+	trainingColCurrentRemaining = 3
+	trainingColTotal            = 4
+	trainingColTotalRemaining   = 5
+	trainingColSP               = 6
+	trainingColUnallocated      = 7
+)
+
 func newTraining(u *baseUI) *training {
-	headers := []headerDef{
-		{label: "Name", width: columnWidthEntity},
-		{label: "Tags", width: 150, notSortable: true},
-		{label: "Current Skill", width: 250},
-		{label: "Current Remaining", width: 0},
-		{label: "Queued", width: 0},
-		{label: "Queue Remaining", width: 0},
-		{label: "SP", width: 50},
-		{label: "Unall.", width: 50},
-	}
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   trainingColName,
+		Label: "Name",
+		Width: columnWidthEntity,
+	}, {
+		Col:    trainingColTags,
+		Label:  "Tags",
+		Width:  150,
+		NoSort: true,
+	}, {
+		Col:   trainingColCurrent,
+		Label: "Current Skill",
+		Width: 250,
+	}, {
+		Col:   trainingColCurrentRemaining,
+		Label: "Current Remaining",
+		Width: 0,
+	}, {
+		Col:   trainingColTotal,
+		Label: "Queued",
+		Width: 0,
+	}, {
+		Col:   trainingColTotalRemaining,
+		Label: "Queue Remaining",
+		Width: 0,
+	}, {
+		Col:   trainingColSP,
+		Label: "SP",
+		Width: 50,
+	}, {
+		Col:   trainingColUnallocated,
+		Label: "Unall.",
+		Width: 50,
+	}})
 	a := &training{
-		columnSorter: newColumnSorterWithInit(headers, 0, sortAsc),
+		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortAsc),
 		rows:         make([]trainingRow, 0),
 		rowsFiltered: make([]trainingRow, 0),
 		bottom:       widget.NewLabel(""),
@@ -166,7 +190,7 @@ func newTraining(u *baseUI) *training {
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
-		a.main = makeDataTable(
+		a.main = iwidget.MakeDataTable(
 			headers,
 			&a.rowsFiltered,
 			makeCell,
@@ -191,7 +215,7 @@ func newTraining(u *baseUI) *training {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window)
 
@@ -331,7 +355,7 @@ func (a *training) filterRows(sortCol int) {
 		})
 	}
 	// sort
-	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
 		slices.SortFunc(rows, func(a, b trainingRow) int {
 			var x int
 			switch sortCol {
@@ -350,7 +374,7 @@ func (a *training) filterRows(sortCol int) {
 			case trainingColUnallocated:
 				x = cmp.Compare(a.unallocatedSP.ValueOrZero(), b.unallocatedSP.ValueOrZero())
 			}
-			if dir == sortAsc {
+			if dir == iwidget.SortAsc {
 				return x
 			} else {
 				return -1 * x

@@ -60,32 +60,74 @@ type characterOverview struct {
 	widget.BaseWidget
 
 	body              fyne.CanvasObject
-	columnSorter      *columnSorter
+	columnSorter      *iwidget.ColumnSorter
 	rows              []characterOverviewRow
 	rowsFiltered      []characterOverviewRow
 	selectAlliance    *kxwidget.FilterChipSelect
 	selectCorporation *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortButton        *sortButton
+	sortButton        *iwidget.SortButton
 	top               *widget.Label
 	u                 *baseUI
 }
 
+const (
+	overviewColCharacter   = 0
+	overviewColCorporation = 1
+	overviewColAlliance    = 2
+	overviewColSecurity    = 3
+	overviewColUnread      = 4
+	overviewColWallet      = 5
+	overviewColAssets      = 6
+	overviewColLastLogin   = 7
+	overviewColHome        = 8
+	overviewColAge         = 9
+)
+
 func newCharacterOverview(u *baseUI) *characterOverview {
-	headers := []headerDef{
-		{label: "Character", width: columnWidthEntity},
-		{label: "Corporation", width: 250},
-		{label: "Alliance", width: 250},
-		{label: "Sec.", width: 50},
-		{label: "Unread", width: 100},
-		{label: "Wallet", width: 100},
-		{label: "Assets", width: 100},
-		{label: "Last Login", width: 100},
-		{label: "Home", width: columnWidthLocation},
-		{label: "Age", width: 100},
-	}
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+		Col:   overviewColCharacter,
+		Label: "Character",
+		Width: columnWidthEntity,
+	}, {
+		Col:   overviewColCorporation,
+		Label: "Corporation",
+		Width: 250,
+	}, {
+		Col:   overviewColAlliance,
+		Label: "Alliance",
+		Width: 250,
+	}, {
+		Col:   overviewColSecurity,
+		Label: "Sec.",
+		Width: 50,
+	}, {
+		Col:   overviewColUnread,
+		Label: "Unread",
+		Width: 100,
+	}, {
+		Col:   overviewColWallet,
+		Label: "Wallet",
+		Width: 100,
+	}, {
+		Col:   overviewColAssets,
+		Label: "Assets",
+		Width: 100,
+	}, {
+		Col:   overviewColLastLogin,
+		Label: "Last Login",
+		Width: 100,
+	}, {
+		Col:   overviewColHome,
+		Label: "Home",
+		Width: columnWidthLocation,
+	}, {
+		Col:   overviewColAge,
+		Label: "Age",
+		Width: 100,
+	}})
 	a := &characterOverview{
-		columnSorter: newColumnSorter(headers),
+		columnSorter: iwidget.NewColumnSorter(headers),
 		rows:         make([]characterOverviewRow, 0),
 		top:          makeTopLabel(),
 		u:            u,
@@ -93,41 +135,47 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	a.ExtendBaseWidget(a)
 	makeCell := func(col int, r characterOverviewRow) []widget.RichTextSegment {
 		switch col {
-		case 0:
+		case overviewColCharacter:
 			return iwidget.RichTextSegmentsFromText(r.characterName)
-		case 1:
+		case overviewColCorporation:
 			return iwidget.RichTextSegmentsFromText(r.corporation.Name)
-		case 2:
+		case overviewColAlliance:
 			var s string
 			if r.alliance != nil {
 				s = r.alliance.Name
 			}
 			return iwidget.RichTextSegmentsFromText(s)
-		case 3:
+		case overviewColSecurity:
 			return r.securityDisplay
-		case 4:
+		case overviewColUnread:
 			return iwidget.RichTextSegmentsFromText(ihumanize.Optional(r.unreadCount, "?"))
-		case 5:
+		case overviewColWallet:
 			return iwidget.RichTextSegmentsFromText(ihumanize.OptionalWithDecimals(r.walletBalance, 1, "?"))
-		case 6:
+		case overviewColAssets:
 			return iwidget.RichTextSegmentsFromText(ihumanize.OptionalWithDecimals(r.assetValue, 1, "?"))
-		case 7:
+		case overviewColLastLogin:
 			return iwidget.RichTextSegmentsFromText(ihumanize.Optional(r.lastLoginAt, "?"))
-		case 8:
+		case overviewColHome:
 			if r.home != nil {
 				return r.home.DisplayRichText()
 			}
-		case 9:
+		case overviewColAge:
 			return iwidget.RichTextSegmentsFromText(humanize.RelTime(r.birthday, time.Now(), "", ""))
 		}
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = makeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r characterOverviewRow) {
-			showCharacterOverviewDetailWindow(a.u, r)
-		})
+		a.body = iwidget.MakeDataTable(
+			headers,
+			&a.rowsFiltered,
+			makeCell,
+			a.columnSorter,
+			a.filterRows,
+			func(_ int, r characterOverviewRow) {
+				showCharacterOverviewDetailWindow(a.u, r)
+			})
 	} else {
-		a.body = makeDataList(headers, &a.rowsFiltered, makeCell, func(r characterOverviewRow) {
+		a.body = iwidget.MakeDataList(headers, &a.rowsFiltered, makeCell, func(r characterOverviewRow) {
 			showCharacterOverviewDetailWindow(a.u, r)
 		})
 	}
@@ -141,7 +189,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.newSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
 		a.filterRows(-1)
 	}, a.u.window, 5, 6, 7, 8, 9)
 
@@ -209,32 +257,32 @@ func (a *characterOverview) filterRows(sortCol int) {
 		})
 	}
 	// sort
-	a.columnSorter.sort(sortCol, func(sortCol int, dir sortDir) {
+	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
 		slices.SortFunc(rows, func(a, b characterOverviewRow) int {
 			var x int
 			switch sortCol {
-			case 0:
+			case overviewColCharacter:
 				x = strings.Compare(a.characterName, b.characterName)
-			case 1:
+			case overviewColCorporation:
 				x = strings.Compare(a.CorporationName(), b.CorporationName())
-			case 2:
+			case overviewColAlliance:
 				x = strings.Compare(a.AllianceName(), b.AllianceName())
-			case 3:
+			case overviewColSecurity:
 				x = cmp.Compare(a.security, b.security)
-			case 4:
+			case overviewColUnread:
 				x = cmp.Compare(a.unreadCount.ValueOrZero(), b.unreadCount.ValueOrZero())
-			case 5:
+			case overviewColWallet:
 				x = cmp.Compare(a.walletBalance.ValueOrZero(), b.walletBalance.ValueOrZero())
-			case 6:
+			case overviewColAssets:
 				x = cmp.Compare(a.assetValue.ValueOrZero(), b.assetValue.ValueOrZero())
-			case 7:
+			case overviewColLastLogin:
 				x = a.lastLoginAt.ValueOrZero().Compare(b.lastLoginAt.ValueOrZero())
-			case 8:
+			case overviewColHome:
 				x = strings.Compare(a.home.DisplayName(), b.home.DisplayName())
-			case 9:
+			case overviewColAge:
 				x = a.birthday.Compare(b.birthday)
 			}
-			if dir == sortAsc {
+			if dir == iwidget.SortAsc {
 				return x
 			} else {
 				return -1 * x
