@@ -74,10 +74,14 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		})
 	a.characterCount.SetToolTip("Number of characters - click to manage")
 	a.u.onUpdateCharactersMissingScope = func(characterCount int) {
-		if characterCount > 0 {
-			warningIcon.SetToolTip(fmt.Sprintf("%d character(s) missing scope", characterCount))
-			warningIcon.Show()
-		}
+		fyne.Do(func() {
+			if characterCount > 0 {
+				warningIcon.SetToolTip(fmt.Sprintf("%d character(s) missing scope", characterCount))
+				warningIcon.Show()
+			} else {
+				warningIcon.Hide()
+			}
+		})
 	}
 
 	spacer := canvas.NewRectangle(color.Transparent)

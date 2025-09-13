@@ -616,6 +616,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		fyne.Do(func() {
 			navItemManageCharacters.Trailing = icon
 			moreList.Refresh()
+			refreshMoreBadge()
 		})
 	}
 

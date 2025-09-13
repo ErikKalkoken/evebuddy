@@ -331,6 +331,10 @@ func (a *manageCharacters) showDeleteDialog(r manageCharacterRow) {
 						}
 						a.mcw.u.updateHome()
 						a.mcw.u.updateStatus()
+						a.mcw.u.characterRemoved.Emit(context.Background(), &app.EntityShort[int32]{
+							ID:   r.characterID,
+							Name: r.characterName,
+						})
 						return nil
 					},
 					a.mcw.w,
