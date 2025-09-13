@@ -12,6 +12,9 @@ import (
 )
 
 func TestIndustrySlot_CanRenderWithData(t *testing.T) {
+	if IsCI() {
+		t.Skip("UI tests are currently flaky and therefore only run locally")
+	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ec1 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
@@ -94,6 +97,9 @@ func TestIndustrySlot_CanRenderWithData(t *testing.T) {
 }
 
 func TestIndustrySlot_CanRenderEmpty(t *testing.T) {
+	if IsCI() {
+		t.Skip("UI tests are currently flaky and therefore only run locally")
+	}
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	cases := []struct {

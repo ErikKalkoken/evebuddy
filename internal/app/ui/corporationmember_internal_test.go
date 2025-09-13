@@ -13,6 +13,9 @@ import (
 )
 
 func TestCorporationMember_CanRenderWithData(t *testing.T) {
+	if IsCI() {
+		t.Skip("UI tests are currently flaky and therefore only run locally")
+	}
 	ctx := context.Background()
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()

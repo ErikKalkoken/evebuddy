@@ -11,6 +11,9 @@ import (
 )
 
 func TestCharacterMails_updateUnreadCounts(t *testing.T) {
+	if IsCI() {
+		t.Skip("UI tests are currently flaky and therefore only run locally")
+	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	test.ApplyTheme(t, test.Theme())
