@@ -315,7 +315,7 @@ func makeLocationTreeData(locationNodes []assetcollection.LocationNode, characte
 			location.isUnknown = true
 		}
 		locationUID := tree.MustAdd(iwidget.TreeRootID, location)
-		topAssets := ln.Nodes()
+		topAssets := ln.Children()
 		slices.SortFunc(topAssets, func(a, b assetcollection.AssetNode) int {
 			return cmp.Compare(a.Asset.DisplayName(), b.Asset.DisplayName())
 		})
@@ -372,7 +372,7 @@ func makeLocationTreeData(locationNodes []assetcollection.LocationNode, characte
 			fighters := make([]assetcollection.AssetNode, 0)
 			fuel := make([]assetcollection.AssetNode, 0)
 			other := make([]assetcollection.AssetNode, 0)
-			for _, an2 := range an.Nodes() {
+			for _, an2 := range an.Children() {
 				switch {
 				case an2.Asset.InCargoBay():
 					cargo = append(cargo, an2)

@@ -15,12 +15,12 @@ func TestBaseNode(t *testing.T) {
 	d := &app.CharacterAsset{ItemID: 4, LocationID: 100000}
 	el := &app.EveLocation{ID: 100000, Name: "Alpha"}
 	ln := newLocationNode(el)
-	n1 := ln.Add(a)
-	ln.Add(b)
-	n1.Add(c)
-	n1.Add(d)
+	n1 := ln.add(a)
+	ln.add(b)
+	n1.add(c)
+	n1.add(d)
 	t.Run("can return nodes", func(t *testing.T) {
-		got := ln.Nodes()
+		got := ln.Children()
 		assert.ElementsMatch(t, []int{1, 2}, xslices.Map(got, func(a AssetNode) int {
 			return int(a.Asset.ItemID)
 		}))

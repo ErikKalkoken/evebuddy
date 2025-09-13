@@ -8,7 +8,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
-// AssetCollection is a collection of assets.
+// AssetCollection is a collection of assets and their locations.
 // The assets are structured as one asset tree per location
 // and may contain assets belonging to one or multiple characters.
 type AssetCollection struct {
@@ -16,59 +16,61 @@ type AssetCollection struct {
 	assetParentLocations map[int64]int64
 }
 
-// New returns a new AssetCollection from a slice of character assets.
-func New(assets []*app.CharacterAsset, locations []*app.EveLocation) AssetCollection {
+// New returns a new AssetCollection from assets and locations.
+func New(ca []*app.CharacterAsset, loc []*app.EveLocation) AssetCollection {
+	locations := make(map[int64]*app.EveLocation)
+	for _, loc := range loc {
+		locations[loc.ID] = loc
+	}
 	// initial map of all assets
 	// assets will be removed from this map as they are added to the tree
-	lm := make(map[int64]*app.EveLocation)
-	for _, loc := range locations {
-		lm[loc.ID] = loc
+	assets := make(map[int64]*app.CharacterAsset)
+	for _, ca := range ca {
+		assets[ca.ItemID] = ca
 	}
-	am := make(map[int64]*app.CharacterAsset)
+	locationNodes := make(map[int64]LocationNode)
 	for _, ca := range assets {
-		am[ca.ItemID] = ca
-	}
-	lns := make(map[int64]LocationNode)
-	for _, ca := range am {
-		_, found := am[ca.LocationID]
+		_, found := assets[ca.LocationID]
 		if found {
 			continue
 		}
-		loc, found := lm[ca.LocationID]
+		loc, found := locations[ca.LocationID]
 		if !found {
 			continue
 		}
-		lns[loc.ID] = newLocationNode(loc)
+		locationNodes[loc.ID] = newLocationNode(loc)
 	}
 	// create parent nodes
-	for _, ca := range am {
-		location, found := lns[ca.LocationID]
+	for _, ca := range assets {
+		location, found := locationNodes[ca.LocationID]
 		if !found {
 			continue
 		}
-		location.Add(ca)
-		delete(am, ca.ItemID)
+		location.add(ca)
+		delete(assets, ca.ItemID)
 	}
-	for _, l := range lns {
-		// add child nodes
-		addChildNodes(am, l.nodes)
+	for _, l := range locationNodes {
+		addChildNodes(l.children, assets)
 	}
-	// return parent nodes
-	parentLocations := gatherParentLocations(lns)
-	return AssetCollection{lns: lns, assetParentLocations: parentLocations}
+	ac := AssetCollection{
+		lns:                  locationNodes,
+		assetParentLocations: gatherParentLocations(locationNodes),
+	}
+	return ac
 }
 
-func addChildNodes(m map[int64]*app.CharacterAsset, nodes map[int64]AssetNode) {
-	for _, ca := range m {
-		_, found := nodes[ca.LocationID]
+// addChildNodes adds assets as nodes to parents. Recursive.
+func addChildNodes(parents map[int64]AssetNode, assets map[int64]*app.CharacterAsset) {
+	for _, ca := range assets {
+		_, found := parents[ca.LocationID]
 		if found {
-			nodes[ca.LocationID].Add(ca)
-			delete(m, ca.ItemID)
+			parents[ca.LocationID].add(ca)
+			delete(assets, ca.ItemID)
 		}
 	}
-	for _, n := range nodes {
-		if len(n.nodes) > 0 {
-			addChildNodes(m, n.nodes)
+	for _, n := range parents {
+		if len(n.children) > 0 {
+			addChildNodes(n.children, assets)
 		}
 	}
 }
@@ -78,11 +80,11 @@ func gatherParentLocations(locations map[int64]LocationNode) map[int64]int64 {
 	assetLocations := make(map[int64]int64)
 	// add parents
 	for id, ln := range locations {
-		for _, n := range ln.nodes {
+		for _, n := range ln.children {
 			assetLocations[n.Asset.ItemID] = id
 		}
 		// add children
-		addAssetChildrenLocations(assetLocations, ln.nodes, 0)
+		addAssetChildrenLocations(assetLocations, ln.children, 0)
 	}
 	return assetLocations
 }
@@ -95,11 +97,11 @@ func addAssetChildrenLocations(assets map[int64]int64, nodes map[int64]AssetNode
 		} else {
 			parentLocationID = realParentLocationID
 		}
-		if len(parent.nodes) > 0 {
-			for _, child := range parent.nodes {
+		if len(parent.children) > 0 {
+			for _, child := range parent.children {
 				assets[child.Asset.ItemID] = parentLocationID
 			}
-			addAssetChildrenLocations(assets, parent.nodes, parentLocationID)
+			addAssetChildrenLocations(assets, parent.children, parentLocationID)
 		}
 	}
 }
@@ -125,37 +127,40 @@ func (at AssetCollection) Locations() []LocationNode {
 }
 
 type baseNode struct {
-	nodes map[int64]AssetNode
+	children       map[int64]AssetNode
+	totalItemCount int // item count summary of all nodes
 }
 
 func newBaseNode() baseNode {
-	return baseNode{nodes: make(map[int64]AssetNode)}
+	return baseNode{children: make(map[int64]AssetNode)}
 }
 
-func (bn baseNode) Nodes() []AssetNode {
-	return slices.Collect(maps.Values(bn.nodes))
+// Children returns the child nodes of the current node.
+func (bn baseNode) Children() []AssetNode {
+	return slices.Collect(maps.Values(bn.children))
 }
 
-func (bn baseNode) Add(ca *app.CharacterAsset) AssetNode {
-	x := newAssetNode(ca)
-	bn.nodes[ca.ItemID] = x
-	return x
+func (bn baseNode) add(ca *app.CharacterAsset) AssetNode {
+	n := newAssetNode(ca)
+	bn.children[ca.ItemID] = n
+	return n
 }
 
+// Size returns the size of a sub-tree starting with the node as root.
 func (bn baseNode) Size() int {
 	var counter func(nodes map[int64]AssetNode) int
 	counter = func(nodes map[int64]AssetNode) int {
 		var count int
 		for _, n := range nodes {
-			if len(n.nodes) == 0 {
+			if len(n.children) == 0 {
 				count++
 			} else {
-				count += counter(n.nodes)
+				count += counter(n.children)
 			}
 		}
 		return count
 	}
-	return counter(bn.nodes)
+	return counter(bn.children)
 }
 
 // AssetNode is a node in an asset tree representing an asset, e.g. a ship.

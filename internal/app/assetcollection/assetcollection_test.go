@@ -1,6 +1,7 @@
 package assetcollection_test
 
 import (
+	"sync/atomic"
 	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -8,14 +9,37 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var sequence atomic.Int64
+
+type characterAssetParams struct {
+	locationID int64
+	quantity   int32
+	name       string
+	itemID     int64
+}
+
+func createCharacterAsset(arg characterAssetParams) *app.CharacterAsset {
+	if arg.quantity == 0 {
+		arg.quantity = 1
+	}
+	if arg.itemID == 0 {
+		arg.itemID = sequence.Add(1)
+	}
+	return &app.CharacterAsset{
+		ItemID:     arg.itemID,
+		LocationID: arg.locationID,
+		Quantity:   arg.quantity,
+	}
+}
+
 func TestAssetCollection(t *testing.T) {
-	a1 := &app.CharacterAsset{ItemID: 1, LocationID: 100000}
-	a11 := &app.CharacterAsset{ItemID: 11, LocationID: 1}
-	a111 := &app.CharacterAsset{ItemID: 111, LocationID: 11}
-	a1111 := &app.CharacterAsset{ItemID: 1111, LocationID: 111}
-	a2 := &app.CharacterAsset{ItemID: 2, LocationID: 100000}
-	a3 := &app.CharacterAsset{ItemID: 3, LocationID: 101000}
-	a31 := &app.CharacterAsset{ItemID: 31, LocationID: 3}
+	a1 := createCharacterAsset(characterAssetParams{locationID: 100000})
+	a11 := createCharacterAsset(characterAssetParams{locationID: a1.ItemID})
+	a111 := createCharacterAsset(characterAssetParams{locationID: a11.ItemID})
+	a1111 := createCharacterAsset(characterAssetParams{locationID: a111.ItemID})
+	a2 := createCharacterAsset(characterAssetParams{locationID: 100000})
+	a3 := createCharacterAsset(characterAssetParams{locationID: 101000})
+	a31 := createCharacterAsset(characterAssetParams{locationID: a3.ItemID})
 	assets := []*app.CharacterAsset{a1, a2, a11, a111, a3, a31, a1111}
 	loc1 := &app.EveLocation{ID: 100000, Name: "Alpha"}
 	loc2 := &app.EveLocation{ID: 101000, Name: "Bravo"}
@@ -26,29 +50,29 @@ func TestAssetCollection(t *testing.T) {
 		assert.Len(t, locations, 2)
 		for _, l := range locations {
 			if l.Location.ID == 100000 {
-				nodes := l.Nodes()
+				nodes := l.Children()
 				assert.Len(t, nodes, 2)
 				for _, n := range nodes {
 					if n.Asset.ItemID == a1.ItemID {
-						assert.Len(t, n.Nodes(), 1)
+						assert.Len(t, n.Children(), 1)
 						if n.Asset.ItemID == a1.ItemID {
-							assert.Len(t, n.Nodes(), 1)
-							sub := n.Nodes()[0]
+							assert.Len(t, n.Children(), 1)
+							sub := n.Children()[0]
 							assert.Equal(t, a11.ItemID, sub.Asset.ItemID)
-							assert.Len(t, sub.Nodes(), 1)
+							assert.Len(t, sub.Children(), 1)
 						}
 					}
 					if n.Asset.ItemID == a2.ItemID {
-						assert.Len(t, n.Nodes(), 0)
+						assert.Len(t, n.Children(), 0)
 					}
 				}
 			}
 			if l.Location.ID == 101000 {
-				nodes := l.Nodes()
+				nodes := l.Children()
 				assert.Len(t, nodes, 1)
 				sub := nodes[0]
 				assert.Equal(t, a3.ItemID, sub.Asset.ItemID)
-				sub2 := sub.Nodes()
+				sub2 := sub.Children()
 				assert.Len(t, sub2, 1)
 				assert.Equal(t, a31.ItemID, sub2[0].Asset.ItemID)
 			}
@@ -56,21 +80,21 @@ func TestAssetCollection(t *testing.T) {
 	})
 	t.Run("can return parent location for assets", func(t *testing.T) {
 		cases := []struct {
-			id       int64
+			itemID   int64
 			found    bool
 			location *app.EveLocation
 		}{
-			{1, true, loc1},
-			{2, true, loc1},
-			{11, true, loc1},
-			{111, true, loc1},
-			{1111, true, loc1},
-			{3, true, loc2},
-			{31, true, loc2},
-			{4, false, nil},
+			{a1.ItemID, true, loc1},
+			{a2.ItemID, true, loc1},
+			{a11.ItemID, true, loc1},
+			{a111.ItemID, true, loc1},
+			{a1111.ItemID, true, loc1},
+			{a3.ItemID, true, loc2},
+			{a31.ItemID, true, loc2},
+			{666, false, nil},
 		}
 		for _, tc := range cases {
-			got, found := ac.AssetParentLocation(tc.id)
+			got, found := ac.AssetParentLocation(tc.itemID)
 			if assert.Equal(t, tc.found, found) {
 				assert.Equal(t, tc.location, got)
 			}
