@@ -33,23 +33,27 @@ func createCharacterAsset(arg characterAssetParams) *app.CharacterAsset {
 }
 
 func TestAssetCollection(t *testing.T) {
-	a1 := createCharacterAsset(characterAssetParams{locationID: 100000})
+	const (
+		location1 = 100000
+		location2 = 101000
+	)
+	a1 := createCharacterAsset(characterAssetParams{locationID: location1})
 	a11 := createCharacterAsset(characterAssetParams{locationID: a1.ItemID})
-	a111 := createCharacterAsset(characterAssetParams{locationID: a11.ItemID})
+	a111 := createCharacterAsset(characterAssetParams{locationID: a11.ItemID, quantity: 3})
 	a1111 := createCharacterAsset(characterAssetParams{locationID: a111.ItemID})
-	a2 := createCharacterAsset(characterAssetParams{locationID: 100000})
-	a3 := createCharacterAsset(characterAssetParams{locationID: 101000})
+	a2 := createCharacterAsset(characterAssetParams{locationID: location1})
+	a3 := createCharacterAsset(characterAssetParams{locationID: location2})
 	a31 := createCharacterAsset(characterAssetParams{locationID: a3.ItemID})
 	assets := []*app.CharacterAsset{a1, a2, a11, a111, a3, a31, a1111}
-	loc1 := &app.EveLocation{ID: 100000, Name: "Alpha"}
-	loc2 := &app.EveLocation{ID: 101000, Name: "Bravo"}
+	loc1 := &app.EveLocation{ID: location1, Name: "Alpha"}
+	loc2 := &app.EveLocation{ID: location2, Name: "Bravo"}
 	locations := []*app.EveLocation{loc1, loc2}
 	ac := assetcollection.New(assets, locations)
 	t.Run("can create tree from character assets", func(t *testing.T) {
 		locations := ac.Locations()
 		assert.Len(t, locations, 2)
 		for _, l := range locations {
-			if l.Location.ID == 100000 {
+			if l.Location.ID == location1 {
 				nodes := l.Children()
 				assert.Len(t, nodes, 2)
 				for _, n := range nodes {
@@ -67,7 +71,7 @@ func TestAssetCollection(t *testing.T) {
 					}
 				}
 			}
-			if l.Location.ID == 101000 {
+			if l.Location.ID == location2 {
 				nodes := l.Children()
 				assert.Len(t, nodes, 1)
 				sub := nodes[0]
@@ -99,5 +103,19 @@ func TestAssetCollection(t *testing.T) {
 				assert.Equal(t, tc.location, got)
 			}
 		}
+	})
+	t.Run("can calculate item count for location 1", func(t *testing.T) {
+		ln, found := ac.Location(location1)
+		if !found {
+			t.Fatal("could not find location")
+		}
+		assert.Equal(t, 7, ln.ItemCount())
+	})
+	t.Run("can calculate item count for location 2", func(t *testing.T) {
+		ln, found := ac.Location(location2)
+		if !found {
+			t.Fatal("could not find location")
+		}
+		assert.Equal(t, 2, ln.ItemCount())
 	})
 }

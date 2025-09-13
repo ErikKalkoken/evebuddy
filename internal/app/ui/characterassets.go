@@ -25,6 +25,68 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
+type locationNodeVariant uint
+
+const (
+	nodeAssetSafety locationNodeVariant = iota + 1
+	nodeCargoBay
+	nodeContainer
+	nodeDroneBay
+	nodeFighterBay
+	nodeFitting
+	nodeFrigateEscapeBay
+	nodeFuelBay
+	nodeItemHangar
+	nodeLocation
+	nodeShip
+	nodeShipHangar
+	nodeShipOther
+	nodeInSpace
+)
+
+// locationNode is a node in the location tree.
+type locationNode struct {
+	characterID         int32
+	containerID         int64
+	count               int
+	isUnknown           bool
+	itemsTotal          int
+	name                string
+	systemName          string
+	systemSecurityType  app.SolarSystemSecurityType
+	systemSecurityValue float32
+	variant             locationNodeVariant
+}
+
+func (n locationNode) UID() widget.TreeNodeID {
+	if n.characterID == 0 || n.variant == 0 {
+		panic("locationNode: some IDs are not set")
+	}
+	return fmt.Sprintf("%d-%d-%d", n.characterID, n.containerID, n.variant)
+}
+
+func (n locationNode) displayName() string {
+	return n.name
+
+	// FIXME
+	// if n.count == 0 || n.variant == nodeShipHangar {
+	// 	return n.name
+	// }
+	// return fmt.Sprintf("%s - %s Items", n.name, humanize.Comma(int64(n.count)))
+}
+
+// isLocation reports whether a node is at the very top of the tree.
+func (n locationNode) isLocation() bool {
+	return n.variant == nodeLocation
+}
+
+const (
+	typeIconSize                      = 55
+	sizeLabelText                     = 12
+	colorAssetQuantityBadgeBackground = theme.ColorNameMenuBackground
+	labelMaxCharacters                = 10
+)
+
 type characterAssets struct {
 	widget.BaseWidget
 
@@ -114,13 +176,14 @@ func (a *characterAssets) makeLocationsTree() *iwidget.Tree[locationNode] {
 			main.Truncation = fyne.TextTruncateEllipsis
 			info := iwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
 			info.SetToolTip("Show location")
+			itemCount := widget.NewLabel("9999")
 			spacer := canvas.NewRectangle(color.Transparent)
 			spacer.SetMinSize(fyne.NewSize(40, 10))
 			return container.NewBorder(
 				nil,
 				nil,
 				container.NewStack(spacer, widget.NewLabel("-9.9")),
-				info,
+				container.NewHBox(itemCount, info),
 				main,
 			)
 		},
@@ -129,20 +192,28 @@ func (a *characterAssets) makeLocationsTree() *iwidget.Tree[locationNode] {
 			label := border[0].(*widget.Label)
 			spacer := border[1].(*fyne.Container).Objects[0]
 			prefix := border[1].(*fyne.Container).Objects[1].(*widget.Label)
-			info := border[2].(*iwidget.TappableIcon)
+			infoBox := border[2].(*fyne.Container)
 			label.SetText(n.displayName())
-			if n.isTop() {
+			if n.isLocation() {
 				if !n.isUnknown {
 					prefix.Text = fmt.Sprintf("%.1f", n.systemSecurityValue)
 					prefix.Importance = n.systemSecurityType.ToImportance()
+					count := infoBox.Objects[0].(*widget.Label)
+					if n.itemsTotal > 0 {
+						count.SetText(ihumanize.Comma(n.itemsTotal))
+						count.Show()
+					} else {
+						count.Hide()
+					}
+					info := infoBox.Objects[1].(*iwidget.TappableIcon)
 					info.OnTapped = func() {
 						a.u.ShowLocationInfoWindow(n.containerID)
 					}
-					info.Show()
+					infoBox.Show()
 				} else {
 					prefix.Text = "?"
 					prefix.Importance = widget.LowImportance
-					info.Hide()
+					infoBox.Hide()
 				}
 				prefix.Refresh()
 				prefix.Show()
@@ -150,7 +221,7 @@ func (a *characterAssets) makeLocationsTree() *iwidget.Tree[locationNode] {
 			} else {
 				prefix.Hide()
 				spacer.Hide()
-				info.Hide()
+				infoBox.Hide()
 			}
 		},
 	)
@@ -306,6 +377,7 @@ func makeLocationTreeData(locationNodes []assetcollection.LocationNode, characte
 			variant:     nodeLocation,
 			name:        ln.Location.DisplayName(),
 			count:       ln.Size(),
+			itemsTotal:  ln.ItemCount(),
 		}
 		if ln.Location.SolarSystem != nil {
 			location.systemName = ln.Location.SolarSystem.Name
@@ -655,67 +727,6 @@ func (a *characterAssets) updateLocationPath(location locationNode) {
 	}
 	a.locationPath.SetText(strings.Join(parts, " ＞ "))
 }
-
-type locationNodeVariant uint
-
-const (
-	nodeAssetSafety locationNodeVariant = iota + 1
-	nodeCargoBay
-	nodeContainer
-	nodeDroneBay
-	nodeFighterBay
-	nodeFitting
-	nodeFrigateEscapeBay
-	nodeFuelBay
-	nodeItemHangar
-	nodeLocation
-	nodeShip
-	nodeShipHangar
-	nodeShipOther
-	nodeInSpace
-)
-
-// locationNode is a node in the location tree.
-type locationNode struct {
-	characterID         int32
-	containerID         int64
-	name                string
-	count               int
-	isUnknown           bool
-	systemName          string
-	systemSecurityValue float32
-	systemSecurityType  app.SolarSystemSecurityType
-	variant             locationNodeVariant
-}
-
-func (n locationNode) UID() widget.TreeNodeID {
-	if n.characterID == 0 || n.variant == 0 {
-		panic("locationNode: some IDs are not set")
-	}
-	return fmt.Sprintf("%d-%d-%d", n.characterID, n.containerID, n.variant)
-}
-
-func (n locationNode) displayName() string {
-	return n.name
-
-	// FIXME
-	// if n.count == 0 || n.variant == nodeShipHangar {
-	// 	return n.name
-	// }
-	// return fmt.Sprintf("%s - %s Items", n.name, humanize.Comma(int64(n.count)))
-}
-
-// isTop reports whether a node is at the very top of the tree.
-func (n locationNode) isTop() bool {
-	return n.variant == nodeLocation
-}
-
-const (
-	typeIconSize                      = 55
-	sizeLabelText                     = 12
-	colorAssetQuantityBadgeBackground = theme.ColorNameMenuBackground
-	labelMaxCharacters                = 10
-)
 
 type assetLabel struct {
 	widget.BaseWidget
