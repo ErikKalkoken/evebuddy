@@ -1,8 +1,6 @@
 package ui_test
 
 import (
-	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -19,7 +17,7 @@ import (
 )
 
 func TestDesktopUI_StartEmpty(t *testing.T) {
-	if isCI() {
+	if ui.IsCI() {
 		t.Skip("This test fails on CI with: oncurrent map read and map write")
 	}
 	httpmock.Activate()
@@ -43,7 +41,7 @@ func TestDesktopUI_StartEmpty(t *testing.T) {
 }
 
 func TestDesktopUI_StartWithCharacter(t *testing.T) {
-	if isCI() {
+	if ui.IsCI() {
 		t.Skip("This test fails on CI with: oncurrent map read and map write")
 	}
 	httpmock.Activate()
@@ -83,7 +81,7 @@ func TestDesktopUI_StartWithCharacter(t *testing.T) {
 }
 
 func TestDesktopUI_CanUpdateAllEmpty(t *testing.T) {
-	if isCI() {
+	if ui.IsCI() {
 		t.Skip("This test fails on CI with: oncurrent map read and map write")
 	}
 	db, st, _ := testutil.NewDBOnDisk(t)
@@ -104,7 +102,7 @@ func TestDesktopUI_CanUpdateAllEmpty(t *testing.T) {
 // TODO: Extend test to cover all tabs with data
 
 func TestDesktopUI_CanUpdateAllWithData(t *testing.T) {
-	if isCI() {
+	if ui.IsCI() {
 		t.Skip("This test fails on CI with: oncurrent map read and map write")
 	}
 	db, st, factory := testutil.NewDBOnDisk(t)
@@ -180,8 +178,4 @@ func TestDesktopUI_CanUpdateAllWithData(t *testing.T) {
 	time.Sleep(1 * time.Second)
 	// test.AssertImageMatches(t, "ui/full.png", w.Canvas().Capture())
 	test.RenderToMarkup(du.MainWindow().Canvas())
-}
-
-func isCI() bool {
-	return strings.ToLower(os.Getenv("CI")) == "true"
 }

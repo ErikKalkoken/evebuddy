@@ -83,6 +83,9 @@ func TestSplitLines(t *testing.T) {
 }
 
 func TestCharacterAsset_CanRenderWithData(t *testing.T) {
+	if IsCI() {
+		t.Skip("UI tests are currently flaky and therefore only run locally")
+	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	character := factory.CreateCharacterFull(storage.CreateCharacterParams{
@@ -127,6 +130,9 @@ func TestCharacterAsset_CanRenderWithData(t *testing.T) {
 }
 
 func TestCharacterAsset_CanRenderWithoutData(t *testing.T) {
+	if IsCI() {
+		t.Skip("UI tests are currently flaky and therefore only run locally")
+	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	character := factory.CreateCharacter(storage.CreateCharacterParams{

@@ -20,6 +20,25 @@ func (s *CharacterService) HasTokenWithScopes(ctx context.Context, characterID i
 	return missing.Size() == 0, nil
 }
 
+// CharactersWithMissingScopes returns a list of characters which are missing scopes (if any),
+func (s *CharacterService) CharactersWithMissingScopes(ctx context.Context) ([]*app.EntityShort[int32], error) {
+	var characters []*app.EntityShort[int32]
+	cc, err := s.st.ListCharactersShort(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, c := range cc {
+		missing, err := s.MissingScopes(ctx, c.ID, app.Scopes())
+		if err != nil {
+			return nil, err
+		}
+		if missing.Size() > 0 {
+			characters = append(characters, c)
+		}
+	}
+	return characters, nil
+}
+
 func (s *CharacterService) MissingScopes(ctx context.Context, characterID int32, scopes set.Set[string]) (set.Set[string], error) {
 	var missing set.Set[string]
 	t, err := s.st.GetCharacterToken(ctx, characterID)

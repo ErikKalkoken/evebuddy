@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"fmt"
 	"image/color"
 	"log/slog"
 	"strconv"
@@ -62,10 +63,26 @@ func newStatusBar(u *DesktopUI) *statusBar {
 		u:                 u,
 	}
 	a.ExtendBaseWidget(a)
-	a.characterCount = newStatusBarItem(theme.NewThemedResource(icons.GroupSvg), "?", func() {
-		showManageCharactersWindow(u.baseUI)
-	})
+	warningIcon := ttwidget.NewIcon(theme.NewWarningThemedResource(theme.WarningIcon()))
+	warningIcon.Hide()
+	a.characterCount = newStatusBarItemWithTrailing(
+		theme.NewThemedResource(icons.GroupSvg),
+		warningIcon,
+		"?",
+		func() {
+			showManageCharactersWindow(u.baseUI)
+		})
 	a.characterCount.SetToolTip("Number of characters - click to manage")
+	a.u.onUpdateMissingScope = func(characterCount int) {
+		fyne.Do(func() {
+			if characterCount > 0 {
+				warningIcon.SetToolTip(fmt.Sprintf("%d character(s) missing scope", characterCount))
+				warningIcon.Show()
+			} else {
+				warningIcon.Hide()
+			}
+		})
+	}
 
 	spacer := canvas.NewRectangle(color.Transparent)
 	spacer.SetMinSize(a.updatingIndicator.MinSize())

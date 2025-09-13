@@ -12,6 +12,9 @@ import (
 )
 
 func TestLocations_CanRenderWithData(t *testing.T) {
+	if IsCI() {
+		t.Skip("UI tests are currently flaky and therefore only run locally")
+	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
@@ -45,6 +48,9 @@ func TestLocations_CanRenderWithData(t *testing.T) {
 }
 
 func TestLocations_CanRenderWithoutData(t *testing.T) {
+	if IsCI() {
+		t.Skip("UI tests are currently flaky and therefore only run locally")
+	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{

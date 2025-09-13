@@ -1,25 +1,30 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Authenticated - EVE Buddy</title>
-        <link href="https://login.eveonline.com/css/Site.min.css" rel="stylesheet" type="text/css" />
-        <link href="https://login.eveonline.com/css/themes/default/style.min.css" rel="stylesheet" type="text/css" />
-    </head>
-    <body id="loginbody" class="en">
-        <div id="container">
-            <header>
-                <a href="#" class="logo">
-                    <img src="https://web-cdn.eveonline.com/aws/eveonline/sso/eve-logo.svg" />
-                </a>
-            </header>
-            <section id="main">
-                <h1>Authentication successfull</h1>
-                <p><strong>{{.Name}}</strong> has been authenticated successfully for <strong>EVE Buddy</strong>.</p>
-                <br>
-                <p>You can now close this tab and return to the app.</p>
-            </section>
-        </div>
-    </body>
+   <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Authenticated - EVE Buddy</title>
+      <link rel="stylesheet" href="https://login.eveonline.com/dist/styles-BUk8r1XJ.prod.css" />
+   </head>
+   <body id="loginbody" class="en  " data-page="character-selection">
+      <div class="body-content">
+         <header>
+            <img src="https://web-cdn.eveonline.com/aws/eveonline/sso/eve-logo.svg" alt="EVE Online logo" class="logo"/>
+         </header>
+         <main role="main">
+            <div class="page-content">
+               <div class="main-content-container">
+                  <h1 class="title">Authentication successful</h1>
+                  <div class="character">
+                     <img src="https://image.eveonline.com/Character/{{.ID}}_128.jpg" />
+                     <h2>{{.Name}}</h2>
+                  </div>
+                  <p>Your character has been authenticated successfully for <strong>EVE Buddy</strong>.</p>
+                  <p>You can now close this tab and return to the app.</p>
+               </div>
+            </div>
+         </main>
+         <footer></footer>
+      </div>
+   </body>
 </html>

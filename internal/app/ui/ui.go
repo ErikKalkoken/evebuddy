@@ -110,6 +110,7 @@ type baseUI struct {
 	onUpdateCharacter               func(*app.Character)
 	onUpdateCorporation             func(*app.Corporation)
 	onUpdateCorporationWalletTotals func(balance string)
+	onUpdateMissingScope            func(characterCount int)
 	onUpdateStatus                  func()
 	onSectionUpdateStarted          func()
 	onSectionUpdateCompleted        func()
@@ -156,6 +157,10 @@ type baseUI struct {
 
 	// Signals
 
+	// A character was added.
+	characterAdded signals.Signal[*app.Character]
+	// A character was removed.
+	characterRemoved signals.Signal[*app.EntityShort[int32]]
 	// The current character was exchanged with another character or reset.
 	characterExchanged signals.Signal[*app.Character]
 	// A character section has changed after an update from ESI.
@@ -223,6 +228,8 @@ type BaseUIParams struct {
 func NewBaseUI(arg BaseUIParams) *baseUI {
 	u := &baseUI{
 		app:                       arg.App,
+		characterAdded:            signals.New[*app.Character](),
+		characterRemoved:          signals.New[*app.EntityShort[int32]](),
 		characterExchanged:        signals.New[*app.Character](),
 		characterSectionChanged:   signals.New[characterSectionUpdated](),
 		concurrencyLimit:          -1, // Default is no limit
@@ -468,6 +475,25 @@ func (u *baseUI) Start() bool {
 		u.initCorporation()
 		u.updateHome()
 		u.updateStatus()
+
+		updateCharactersMissingScope := func() {
+			cc, err := u.cs.CharactersWithMissingScopes(context.Background())
+			if err != nil {
+				slog.Error("Failed to fetch characters with missing scopes", "error", err)
+				return
+			}
+			if u.onUpdateMissingScope != nil {
+				u.onUpdateMissingScope(len(cc))
+			}
+		}
+		u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
+			updateCharactersMissingScope()
+		})
+		u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+			updateCharactersMissingScope()
+		})
+		updateCharactersMissingScope()
+
 		u.isStartupCompleted.Store(true)
 		u.startRefreshTicker()
 		if u.onAppFirstStarted != nil {

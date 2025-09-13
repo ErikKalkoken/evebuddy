@@ -58,7 +58,7 @@ func newToolbar(u *DesktopUI) *toolbar {
 		makeMenuItem("Update Status", u.shortcuts["updateStatus"]),
 		fyne.NewMenuItemSeparator(),
 		fyne.NewMenuItem("User Data", u.showUserDataDialog),
-		fyne.NewMenuItem("About", u.ShowAboutDialog),
+		fyne.NewMenuItem("About", u.showAboutDialog),
 		fyne.NewMenuItemSeparator(),
 		close,
 		makeMenuItem("Quit", u.shortcuts["quit"]),
