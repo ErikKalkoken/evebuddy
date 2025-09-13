@@ -73,7 +73,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 			showManageCharactersWindow(u.baseUI)
 		})
 	a.characterCount.SetToolTip("Number of characters - click to manage")
-	a.u.onUpdateCharactersMissingScope = func(characterCount int) {
+	a.u.onUpdateMissingScope = func(characterCount int) {
 		fyne.Do(func() {
 			if characterCount > 0 {
 				warningIcon.SetToolTip(fmt.Sprintf("%d character(s) missing scope", characterCount))

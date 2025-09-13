@@ -97,10 +97,15 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	// Home
 
 	var homeNav *iwidget.NavDrawer
+	// overview := iwidget.NewNavPage(
+	// 	"Character Overview",
+	// 	theme.NewThemedResource(icons.PortraitSvg),
+	// 	newContentPage("Character Overview", u.characterOverview),
+	// )
 	overview := iwidget.NewNavPage(
 		"Character Overview",
 		theme.NewThemedResource(icons.PortraitSvg),
-		newContentPage("Character Overview", u.characterOverview),
+		u.characterOverview,
 	)
 
 	wealth := iwidget.NewNavPage(
@@ -810,7 +815,7 @@ func (u *DesktopUI) disableShortcuts() {
 	}
 }
 
-func (u *DesktopUI) ShowAboutDialog() {
+func (u *DesktopUI) showAboutDialog() {
 	d := dialog.NewCustom("About", "Close", u.makeAboutPage(), u.MainWindow())
 	u.ModifyShortcutsForDialog(d, u.MainWindow())
 	d.Show()
@@ -819,28 +824,26 @@ func (u *DesktopUI) ShowAboutDialog() {
 func (u *DesktopUI) showUserDataDialog() {
 	f := widget.NewForm()
 	for name, path := range u.dataPaths.All() {
-		f.Append(name, makePathEntry(u.App().Clipboard(), path))
+		p := filepath.Clean(path)
+		c := container.NewHBox(
+			widget.NewLabel(p),
+			layout.NewSpacer(),
+			widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
+				u.App().Clipboard().SetContent(p)
+			}),
+		)
+		f.Append(name, c)
 	}
 	d := dialog.NewCustom("User data", "Close", f, u.MainWindow())
 	u.ModifyShortcutsForDialog(d, u.MainWindow())
 	d.Show()
 }
 
-func makePathEntry(cb fyne.Clipboard, path string) *fyne.Container {
-	p := filepath.Clean(path)
-	return container.NewHBox(
-		widget.NewLabel(p),
-		layout.NewSpacer(),
-		widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
-			cb.SetContent(p)
-		}))
-}
-
 type contentPage struct {
 	widget.BaseWidget
 
-	title   *widget.Label
 	content fyne.CanvasObject
+	title   *widget.Label
 }
 
 func newContentPage(title string, content fyne.CanvasObject) *contentPage {
@@ -850,6 +853,7 @@ func newContentPage(title string, content fyne.CanvasObject) *contentPage {
 		content: content,
 		title:   l,
 	}
+	w.ExtendBaseWidget(w)
 	return w
 }
 

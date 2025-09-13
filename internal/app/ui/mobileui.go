@@ -604,7 +604,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			}
 		}()
 	}
-	u.onUpdateCharactersMissingScope = func(characterCount int) {
+	u.onUpdateMissingScope = func(characterCount int) {
 		var icon fyne.Resource
 		if characterCount > 0 {
 			icon = theme.NewWarningThemedResource(theme.WarningIcon())

@@ -110,7 +110,7 @@ type baseUI struct {
 	onUpdateCharacter               func(*app.Character)
 	onUpdateCorporation             func(*app.Corporation)
 	onUpdateCorporationWalletTotals func(balance string)
-	onUpdateCharactersMissingScope  func(issueCount int)
+	onUpdateMissingScope            func(characterCount int)
 	onUpdateStatus                  func()
 	onSectionUpdateStarted          func()
 	onSectionUpdateCompleted        func()
@@ -482,8 +482,8 @@ func (u *baseUI) Start() bool {
 				slog.Error("Failed to fetch characters with missing scopes", "error", err)
 				return
 			}
-			if u.onUpdateCharactersMissingScope != nil {
-				u.onUpdateCharactersMissingScope(len(cc))
+			if u.onUpdateMissingScope != nil {
+				u.onUpdateMissingScope(len(cc))
 			}
 		}
 		u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
