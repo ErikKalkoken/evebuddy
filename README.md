@@ -83,6 +83,7 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
 - **Corporation monitor**: Check current information about each of your corporations: (depending on their roles)
   - Members: List of current corporation members
   - Industry: See running and historic indy jobs
+  - Structures: List of all corporation structures with current fuel status, state and potential timers
   - Wallets: Wallet, market transactions and balances for corporation wallets
 
 - **Notifications**: Get notified on your desktop or mobile about new EVE communications and other important updates:
