@@ -167,3 +167,27 @@ func TestUnique(t *testing.T) {
 	want := []int{1, 2}
 	assert.ElementsMatch(t, want, got)
 }
+
+func TestReduce(t *testing.T) {
+	t.Run("should return result when there are multple items", func(t *testing.T) {
+		s := []int{1, 2, 3, 4}
+		got := xiter.Reduce(slices.Values(s), func(x, y int) int {
+			return x + y
+		})
+		assert.Equal(t, 10, got)
+	})
+	t.Run("should return result when there is one item", func(t *testing.T) {
+		s := []int{1}
+		got := xiter.Reduce(slices.Values(s), func(x, y int) int {
+			return x + y
+		})
+		assert.Equal(t, 1, got)
+	})
+	t.Run("should return zero value when there are no items", func(t *testing.T) {
+		s := []int{}
+		got := xiter.Reduce(slices.Values(s), func(x, y int) int {
+			return x + y
+		})
+		assert.Equal(t, 0, got)
+	})
+}

@@ -62,12 +62,12 @@ func Map[X, Y any](seq iter.Seq[X], f func(X) Y) iter.Seq[Y] {
 	}
 }
 
-// Map returns an iterator that maps each element of slice s to an element Y through applying f.
+// MapSlice returns an iterator that maps each element of slice s to an element Y through applying f.
 func MapSlice[S ~[]X, X any, Y any](s S, f func(X) Y) iter.Seq[Y] {
 	return Map(slices.Values(s), f)
 }
 
-// Map returns an iterator that maps each element of slice s to elements K, V through applying f.
+// MapSlice2 returns an iterator that maps each element of slice s to elements K, V through applying f.
 func MapSlice2[X, K, V any](s []X, f func(X) (K, V)) iter.Seq2[K, V] {
 	return func(yield func(K, V) bool) {
 		for _, v := range s {
@@ -76,6 +76,21 @@ func MapSlice2[X, K, V any](s []X, f func(X) (K, V)) iter.Seq2[K, V] {
 			}
 		}
 	}
+}
+
+// Reduce applies f cumulatively to the elements of seq, from left to right,
+// so as to reduce the sequence to a single value.
+// If seq is empty it will return the zero value of T.
+func Reduce[T any](seq iter.Seq[T], f func(T, T) T) T {
+	var x T
+	for i, v := range Count(seq, 0) {
+		if i == 0 {
+			x = v
+			continue
+		}
+		x = f(x, v)
+	}
+	return x
 }
 
 // Unique returns an iterator over a unique subset of the items of sequence seq.
