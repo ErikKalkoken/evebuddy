@@ -410,9 +410,9 @@ var GeneralSections = []GeneralSection{
 }
 
 var generalSectionTimeouts = map[GeneralSection]time.Duration{
-	SectionEveCharacters:   4 * time.Hour,
-	SectionEveCorporations: 4 * time.Hour,
-	SectionEveEntities:     24 * time.Hour,
+	SectionEveCharacters:   1 * time.Hour,
+	SectionEveCorporations: 1 * time.Hour,
+	SectionEveEntities:     6 * time.Hour,
 	SectionEveMarketPrices: 6 * time.Hour,
 	SectionEveTypes:        24 * time.Hour,
 }
