@@ -12,8 +12,9 @@ import (
 // The assets are structured as one asset tree per location
 // and may contain assets belonging to one or multiple characters.
 type AssetCollection struct {
-	locations            map[int64]LocationNode
 	assetParentLocations map[int64]int64
+	assets               map[int64]*AssetNode
+	locations            map[int64]*LocationNode
 }
 
 // New returns a new AssetCollection from assets and locations.
@@ -28,7 +29,7 @@ func New(ca []*app.CharacterAsset, loc []*app.EveLocation) AssetCollection {
 	for _, ca := range ca {
 		assetMap[ca.ItemID] = ca
 	}
-	locations := make(map[int64]LocationNode)
+	locations := make(map[int64]*LocationNode)
 	for _, ca := range assetMap {
 		_, found := assetMap[ca.LocationID]
 		if found {
@@ -40,43 +41,48 @@ func New(ca []*app.CharacterAsset, loc []*app.EveLocation) AssetCollection {
 		}
 		locations[loc.ID] = newLocationNode(loc)
 	}
-	// create parent nodes
+	// add top assets to locations
+	assets := make(map[int64]*AssetNode)
 	for _, ca := range assetMap {
 		location, found := locations[ca.LocationID]
 		if !found {
 			continue
 		}
-		location.add(ca)
+		an := location.add(ca)
+		assets[ca.ItemID] = an
 		delete(assetMap, ca.ItemID)
 	}
+	// add others assets to locations
 	for _, l := range locations {
-		addChildNodes(l.children, assetMap)
+		addChildNodes(l.children, assetMap, assets)
 	}
 	ac := AssetCollection{
-		locations:            locations,
 		assetParentLocations: gatherParentLocations(locations),
+		assets:               assets,
+		locations:            locations,
 	}
 	return ac
 }
 
 // addChildNodes adds assets as nodes to parents. Recursive.
-func addChildNodes(parents map[int64]AssetNode, assets map[int64]*app.CharacterAsset) {
-	for _, ca := range assets {
+func addChildNodes(parents map[int64]*AssetNode, assetMap map[int64]*app.CharacterAsset, assets map[int64]*AssetNode) {
+	for _, ca := range assetMap {
 		_, found := parents[ca.LocationID]
 		if found {
-			parents[ca.LocationID].add(ca)
-			delete(assets, ca.ItemID)
+			an := parents[ca.LocationID].add(ca)
+			assets[ca.ItemID] = an
+			delete(assetMap, ca.ItemID)
 		}
 	}
 	for _, n := range parents {
 		if len(n.children) > 0 {
-			addChildNodes(n.children, assets)
+			addChildNodes(n.children, assetMap, assets)
 		}
 	}
 }
 
 // gatherParentLocations returns the mapping of asset ID to parent location ID
-func gatherParentLocations(locations map[int64]LocationNode) map[int64]int64 {
+func gatherParentLocations(locations map[int64]*LocationNode) map[int64]int64 {
 	assetLocations := make(map[int64]int64)
 	// add parents
 	for id, ln := range locations {
@@ -89,7 +95,7 @@ func gatherParentLocations(locations map[int64]LocationNode) map[int64]int64 {
 	return assetLocations
 }
 
-func addAssetChildrenLocations(assets map[int64]int64, nodes map[int64]AssetNode, realParentLocationID int64) {
+func addAssetChildrenLocations(assets map[int64]int64, nodes map[int64]*AssetNode, realParentLocationID int64) {
 	for _, parent := range nodes {
 		var parentLocationID int64
 		if realParentLocationID == 0 {
@@ -118,37 +124,57 @@ func (ac AssetCollection) AssetParentLocation(itemID int64) (*app.EveLocation, b
 	return ln.Location, true
 }
 
-func (ac AssetCollection) Locations() []LocationNode {
-	nn := make([]LocationNode, 0)
+// Asset returns the node for an asset and reports whether it was found.
+func (ac AssetCollection) Asset(itemID int64) (*AssetNode, bool) {
+	an, found := ac.assets[itemID]
+	if !found {
+		return nil, false
+	}
+	return an, true
+}
+
+// ItemCountFiltered returns the consolidated count of all items excluding items inside ships containers.
+func (ac AssetCollection) ItemCountFiltered() int {
+	var n int
+	for _, l := range ac.locations {
+		n += l.ItemCountFiltered()
+	}
+	return n
+}
+
+// Locations returns a slice of all location nodes.
+func (ac AssetCollection) Locations() []*LocationNode {
+	nn := make([]*LocationNode, 0)
 	for _, ln := range ac.locations {
 		nn = append(nn, ln)
 	}
 	return nn
 }
 
-func (ac AssetCollection) Location(locationID int64) (LocationNode, bool) {
+// Location returns the node for a location and reports whether it was found.
+func (ac AssetCollection) Location(locationID int64) (*LocationNode, bool) {
 	ln, found := ac.locations[locationID]
 	if !found {
-		return LocationNode{}, false
+		return nil, false
 	}
 	return ln, true
 }
 
 type baseNode struct {
-	children       map[int64]AssetNode
+	children       map[int64]*AssetNode
 	totalItemCount int // item count summary of all nodes
 }
 
 func newBaseNode() baseNode {
-	return baseNode{children: make(map[int64]AssetNode)}
+	return baseNode{children: make(map[int64]*AssetNode)}
 }
 
 // Children returns the child nodes of the current node.
-func (bn baseNode) Children() []AssetNode {
+func (bn baseNode) Children() []*AssetNode {
 	return slices.Collect(maps.Values(bn.children))
 }
 
-func (bn baseNode) add(ca *app.CharacterAsset) AssetNode {
+func (bn baseNode) add(ca *app.CharacterAsset) *AssetNode {
 	n := newAssetNode(ca)
 	bn.children[ca.ItemID] = n
 	return n
@@ -156,8 +182,8 @@ func (bn baseNode) add(ca *app.CharacterAsset) AssetNode {
 
 // Size returns the size of a sub-tree starting with the node as root.
 func (bn baseNode) Size() int {
-	var counter func(nodes map[int64]AssetNode) int
-	counter = func(nodes map[int64]AssetNode) int {
+	var counter func(nodes map[int64]*AssetNode) int
+	counter = func(nodes map[int64]*AssetNode) int {
 		var count int
 		for _, n := range nodes {
 			if len(n.children) == 0 {
@@ -177,14 +203,33 @@ type AssetNode struct {
 	Asset *app.CharacterAsset
 }
 
-func newAssetNode(ca *app.CharacterAsset) AssetNode {
-	return AssetNode{Asset: ca, baseNode: newBaseNode()}
+func newAssetNode(ca *app.CharacterAsset) *AssetNode {
+	return &AssetNode{Asset: ca, baseNode: newBaseNode()}
 }
 
-func (an AssetNode) ItemCount() int {
+// ItemCountFiltered returns the consolidated count of items in this sub tree
+// excluding items that are inside a ship container, e.g. fittings.
+func (an AssetNode) ItemCountFiltered() int {
+	if an.Asset.IsFitted() ||
+		an.Asset.IsInDroneBay() ||
+		an.Asset.IsInFrigateEscapeBay() ||
+		an.Asset.IsInFighterBay() ||
+		an.Asset.IsInFuelBay() ||
+		an.Asset.IsInAnyCargoHold() {
+		return 0
+	}
 	q := int(an.Asset.Quantity)
 	for _, c := range an.Children() {
-		q += c.ItemCount()
+		q += c.ItemCountFiltered()
+	}
+	return q
+}
+
+// ItemCountAny returns the consolidated count of any items in this sub tree.
+func (an AssetNode) ItemCountAny() int {
+	q := int(an.Asset.Quantity)
+	for _, c := range an.Children() {
+		q += c.ItemCountAny()
 	}
 	return q
 }
@@ -195,14 +240,16 @@ type LocationNode struct {
 	Location *app.EveLocation
 }
 
-func newLocationNode(l *app.EveLocation) LocationNode {
-	return LocationNode{Location: l, baseNode: newBaseNode()}
+func newLocationNode(l *app.EveLocation) *LocationNode {
+	return &LocationNode{Location: l, baseNode: newBaseNode()}
 }
 
-func (ln LocationNode) ItemCount() int {
+// ItemCountFiltered returns the consolidated count of items in this location
+// excluding items inside ships containers.
+func (ln LocationNode) ItemCountFiltered() int {
 	var q int
 	for _, c := range ln.Children() {
-		q += c.ItemCount()
+		q += c.ItemCountFiltered()
 	}
 	return q
 }

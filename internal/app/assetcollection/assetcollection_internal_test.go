@@ -21,7 +21,7 @@ func TestBaseNode(t *testing.T) {
 	n1.add(d)
 	t.Run("can return nodes", func(t *testing.T) {
 		got := ln.Children()
-		assert.ElementsMatch(t, []int{1, 2}, xslices.Map(got, func(a AssetNode) int {
+		assert.ElementsMatch(t, []int{1, 2}, xslices.Map(got, func(a *AssetNode) int {
 			return int(a.Asset.ItemID)
 		}))
 	})

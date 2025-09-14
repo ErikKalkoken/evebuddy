@@ -12,10 +12,11 @@ import (
 var sequence atomic.Int64
 
 type characterAssetParams struct {
-	locationID int64
-	quantity   int32
-	name       string
-	itemID     int64
+	locationID   int64
+	quantity     int32
+	name         string
+	itemID       int64
+	locationFlag app.LocationFlag
 }
 
 func createCharacterAsset(arg characterAssetParams) *app.CharacterAsset {
@@ -25,10 +26,14 @@ func createCharacterAsset(arg characterAssetParams) *app.CharacterAsset {
 	if arg.itemID == 0 {
 		arg.itemID = sequence.Add(1)
 	}
+	if arg.locationFlag == app.FlagUndefined {
+		arg.locationFlag = app.FlagHangar
+	}
 	return &app.CharacterAsset{
-		ItemID:     arg.itemID,
-		LocationID: arg.locationID,
-		Quantity:   arg.quantity,
+		ItemID:       arg.itemID,
+		LocationID:   arg.locationID,
+		Quantity:     arg.quantity,
+		LocationFlag: arg.locationFlag,
 	}
 }
 
@@ -104,18 +109,87 @@ func TestAssetCollection(t *testing.T) {
 			}
 		}
 	})
-	t.Run("can calculate item count for location 1", func(t *testing.T) {
+	t.Run("can return asset nodes by item IDs", func(t *testing.T) {
+		cases := []struct {
+			itemID int64
+			found  bool
+		}{
+			{a1.ItemID, true},
+			{a2.ItemID, true},
+			{a11.ItemID, true},
+			{a111.ItemID, true},
+			{a1111.ItemID, true},
+			{a3.ItemID, true},
+			{a31.ItemID, true},
+			{666, false},
+		}
+		for _, tc := range cases {
+			got, found := ac.Asset(tc.itemID)
+			if tc.found {
+				assert.True(t, found)
+				assert.Equal(t, tc.itemID, got.Asset.ItemID)
+			} else {
+				assert.False(t, found)
+				assert.Nil(t, got)
+			}
+		}
+	})
+}
+
+func TestAssetCollection_ReturnEmptyWhenNotInitialized(t *testing.T) {
+	var ac assetcollection.AssetCollection
+	_, x1 := ac.AssetParentLocation(99)
+	assert.False(t, x1)
+	_, x2 := ac.Asset(99)
+	assert.False(t, x2)
+	_, x3 := ac.Location(99)
+	assert.False(t, x3)
+	x4 := ac.Locations()
+	assert.Empty(t, x4)
+}
+
+func TestAssetCollection_ItemCount(t *testing.T) {
+	const location1 = 100000
+	a1 := createCharacterAsset(characterAssetParams{locationID: location1})
+	a11 := createCharacterAsset(characterAssetParams{locationID: a1.ItemID})
+	a111 := createCharacterAsset(characterAssetParams{locationID: a11.ItemID, quantity: 3})
+	a1111 := createCharacterAsset(characterAssetParams{
+		locationID:   a111.ItemID,
+		locationFlag: app.FlagHiSlot0,
+	})
+	a1112 := createCharacterAsset(characterAssetParams{
+		locationID:   a111.ItemID,
+		locationFlag: app.FlagSpecializedFuelBay,
+	})
+	a1113 := createCharacterAsset(characterAssetParams{
+		locationID:   a111.ItemID,
+		locationFlag: app.FlagDroneBay,
+	})
+	a1114 := createCharacterAsset(characterAssetParams{
+		locationID:   a111.ItemID,
+		locationFlag: app.FlagFighterBay,
+	})
+	a1115 := createCharacterAsset(characterAssetParams{
+		locationID:   a111.ItemID,
+		locationFlag: app.FlagCargo,
+	})
+	a2 := createCharacterAsset(characterAssetParams{locationID: location1})
+	assets := []*app.CharacterAsset{a1, a2, a11, a111, a1111, a1112, a1113, a1114, a1115}
+	loc1 := &app.EveLocation{ID: location1, Name: "Alpha"}
+	locations := []*app.EveLocation{loc1}
+	ac := assetcollection.New(assets, locations)
+	t.Run("can calculate item count for a location", func(t *testing.T) {
 		ln, found := ac.Location(location1)
 		if !found {
 			t.Fatal("could not find location")
 		}
-		assert.Equal(t, 7, ln.ItemCount())
+		assert.Equal(t, 6, ln.ItemCountFiltered())
 	})
-	t.Run("can calculate item count for location 2", func(t *testing.T) {
-		ln, found := ac.Location(location2)
-		if !found {
-			t.Fatal("could not find location")
+	t.Run("can calculate item count for an asset", func(t *testing.T) {
+		an, found := ac.Asset(a1.ItemID)
+		if !assert.True(t, found) {
+			t.Fatal()
 		}
-		assert.Equal(t, 2, ln.ItemCount())
+		assert.Equal(t, 5, an.ItemCountFiltered())
 	})
 }

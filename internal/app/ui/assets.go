@@ -572,7 +572,7 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 		location = widget.NewLabel("?")
 		region = widget.NewLabel("?")
 	}
-	fi := []*widget.FormItem{
+	items := []*widget.FormItem{
 		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			r.characterID,
 			r.characterName,
@@ -597,8 +597,11 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 			})),
 		),
 	}
+	if u.IsDeveloperMode() {
+		items = append(items, widget.NewFormItem("Item ID", u.makeCopyToClipboardLabel(fmt.Sprint(r.itemID))))
+	}
 
-	f := widget.NewForm(fi...)
+	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
 	subTitle := fmt.Sprintf("Asset #%d", r.itemID)
 	setDetailWindow(detailWindowParams{
