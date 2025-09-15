@@ -125,6 +125,11 @@ func TestCharacterAsset_CanRenderWithData(t *testing.T) {
 
 	a.update()
 	a.locations.OpenAllBranches()
+	uid, ok := a.containerLocations[loc.ID]
+	if !ok {
+		t.Fail()
+	}
+	a.locations.Select(uid)
 
 	test.AssertImageMatches(t, "characterasset/full.png", w.Canvas().Capture())
 }
