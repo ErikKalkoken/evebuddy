@@ -182,7 +182,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		a.filterRows(-1)
 	})
 
-	a.u.corporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
+	a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
 		a.corporation = c
 	})
 	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {

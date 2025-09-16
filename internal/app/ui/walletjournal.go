@@ -67,7 +67,7 @@ type walletJournal struct {
 
 func newCharacterWalletJournal(u *baseUI) *walletJournal {
 	a := newWalletJournal(u, app.DivisionZero)
-	a.u.characterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		a.character = c
 	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
@@ -83,7 +83,7 @@ func newCharacterWalletJournal(u *baseUI) *walletJournal {
 
 func newCorporationWalletJournal(u *baseUI, d app.Division) *walletJournal {
 	a := newWalletJournal(u, d)
-	a.u.corporationExchanged.AddListener(
+	a.u.currentCorporationExchanged.AddListener(
 		func(_ context.Context, c *app.Corporation) {
 			a.corporation = c
 		},

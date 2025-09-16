@@ -154,7 +154,7 @@ func newCharacterMails(u *baseUI) *characterMails {
 		container.NewVScroll(a.body),
 	)
 
-	a.u.characterExchanged.AddListener(
+	a.u.currentCharacterExchanged.AddListener(
 		func(_ context.Context, c *app.Character) {
 			a.character = c
 		},

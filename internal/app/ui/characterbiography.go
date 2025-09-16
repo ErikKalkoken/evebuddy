@@ -26,7 +26,7 @@ func newCharacterBiography(u *baseUI) *characterBiography {
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)
-	a.u.characterExchanged.AddListener(
+	a.u.currentCharacterExchanged.AddListener(
 		func(_ context.Context, c *app.Character) {
 			a.character = c
 		},

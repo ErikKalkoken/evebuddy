@@ -117,7 +117,7 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 
 func (a *characterSkillQueue) start() {
 	if a.isCharacterUpdated {
-		a.u.characterExchanged.AddListener(
+		a.u.currentCharacterExchanged.AddListener(
 			func(_ context.Context, c *app.Character) {
 				a.character = c
 			},
@@ -141,7 +141,7 @@ func (a *characterSkillQueue) start() {
 
 func (a *characterSkillQueue) stop() {
 	if a.isCharacterUpdated {
-		a.u.characterExchanged.RemoveListener(a.signalKey)
+		a.u.currentCharacterExchanged.RemoveListener(a.signalKey)
 	}
 	a.u.characterSectionChanged.RemoveListener(a.signalKey)
 	a.u.refreshTickerExpired.RemoveListener(a.signalKey)

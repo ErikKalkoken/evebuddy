@@ -67,7 +67,7 @@ func newCharacterJumpClones(u *baseUI) *characterJumpClones {
 	a.ExtendBaseWidget(a)
 	a.tree = a.makeTree()
 
-	a.u.characterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		a.character = c
 	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {

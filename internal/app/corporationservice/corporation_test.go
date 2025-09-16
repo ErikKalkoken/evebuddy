@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCorporation(t *testing.T) {
+func TestCorporation_RemoveStaleCorporations(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ctx := context.Background()

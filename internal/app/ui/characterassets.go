@@ -140,7 +140,7 @@ func newCharacterAssets(u *baseUI) *characterAssets {
 		nil,
 		a.assetGrid,
 	)
-	a.u.characterExchanged.AddListener(
+	a.u.currentCharacterExchanged.AddListener(
 		func(_ context.Context, c *app.Character) {
 			a.character = c
 			a.update()

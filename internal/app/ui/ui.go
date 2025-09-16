@@ -161,12 +161,12 @@ type baseUI struct {
 	characterAdded signals.Signal[*app.Character]
 	// A character was removed.
 	characterRemoved signals.Signal[*app.EntityShort[int32]]
-	// The current character was exchanged with another character or reset.
-	characterExchanged signals.Signal[*app.Character]
 	// A character section has changed after an update from ESI.
 	characterSectionChanged signals.Signal[characterSectionUpdated]
+	// The current character was exchanged with another character or reset.
+	currentCharacterExchanged signals.Signal[*app.Character]
 	// The current corporation was exchanged with another corporation or reset.
-	corporationExchanged signals.Signal[*app.Corporation]
+	currentCorporationExchanged signals.Signal[*app.Corporation]
 	// A character section has changed after an update from ESI.
 	corporationSectionChanged signals.Signal[corporationSectionUpdated]
 	// A general section has changed after an update from ESI.
@@ -227,33 +227,33 @@ type BaseUIParams struct {
 // Note:Types embedding BaseUI should define callbacks instead of overwriting methods.
 func NewBaseUI(arg BaseUIParams) *baseUI {
 	u := &baseUI{
-		app:                       arg.App,
-		characterAdded:            signals.New[*app.Character](),
-		characterRemoved:          signals.New[*app.EntityShort[int32]](),
-		characterExchanged:        signals.New[*app.Character](),
-		characterSectionChanged:   signals.New[characterSectionUpdated](),
-		concurrencyLimit:          -1, // Default is no limit
-		corporationExchanged:      signals.New[*app.Corporation](),
-		corporationSectionChanged: signals.New[corporationSectionUpdated](),
-		corporationWallets:        make(map[app.Division]*corporationWallet),
-		cs:                        arg.CharacterService,
-		eis:                       arg.EveImageService,
-		ess:                       arg.ESIStatusService,
-		eus:                       arg.EveUniverseService,
-		generalSectionChanged:     signals.New[generalSectionUpdated](),
-		isDesktop:                 arg.IsDesktop,
-		isFakeMobile:              arg.IsFakeMobile,
-		isOffline:                 arg.IsOffline,
-		isUpdateDisabled:          arg.IsUpdateDisabled,
-		js:                        arg.JaniceService,
-		memcache:                  arg.MemCache,
-		onSectionUpdateCompleted:  func() {},
-		onSectionUpdateStarted:    func() {},
-		refreshTickerExpired:      signals.New[struct{}](),
-		rs:                        arg.CorporationService,
-		scs:                       arg.StatusCacheService,
-		settings:                  settings.New(arg.App.Preferences()),
-		windows:                   make(map[string]fyne.Window),
+		app:                         arg.App,
+		characterAdded:              signals.New[*app.Character](),
+		characterRemoved:            signals.New[*app.EntityShort[int32]](),
+		currentCharacterExchanged:   signals.New[*app.Character](),
+		characterSectionChanged:     signals.New[characterSectionUpdated](),
+		concurrencyLimit:            -1, // Default is no limit
+		currentCorporationExchanged: signals.New[*app.Corporation](),
+		corporationSectionChanged:   signals.New[corporationSectionUpdated](),
+		corporationWallets:          make(map[app.Division]*corporationWallet),
+		cs:                          arg.CharacterService,
+		eis:                         arg.EveImageService,
+		ess:                         arg.ESIStatusService,
+		eus:                         arg.EveUniverseService,
+		generalSectionChanged:       signals.New[generalSectionUpdated](),
+		isDesktop:                   arg.IsDesktop,
+		isFakeMobile:                arg.IsFakeMobile,
+		isOffline:                   arg.IsOffline,
+		isUpdateDisabled:            arg.IsUpdateDisabled,
+		js:                          arg.JaniceService,
+		memcache:                    arg.MemCache,
+		onSectionUpdateCompleted:    func() {},
+		onSectionUpdateStarted:      func() {},
+		refreshTickerExpired:        signals.New[struct{}](),
+		rs:                          arg.CorporationService,
+		scs:                         arg.StatusCacheService,
+		settings:                    settings.New(arg.App.Preferences()),
+		windows:                     make(map[string]fyne.Window),
 	}
 	u.window = u.app.NewWindow(u.appName())
 
@@ -277,7 +277,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	}
 
 	// Signal logging and base listeners
-	u.characterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+	u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		slog.Debug("Signal: characterExchanged", "characterID", characterIDOrZero(c))
 	})
 	u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
@@ -331,7 +331,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			u.updateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
 		}
 	})
-	u.corporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
+	u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
 		slog.Debug("Signal: corporationExchanged", "corporationID", corporationIDOrZero(c))
 	})
 	u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
@@ -648,7 +648,7 @@ func (u *baseUI) reloadCurrentCharacter() {
 
 func (u *baseUI) resetCharacter() {
 	u.character.Store(nil)
-	u.characterExchanged.Emit(context.Background(), nil)
+	u.currentCharacterExchanged.Emit(context.Background(), nil)
 	u.settings.ResetLastCharacterID()
 	u.updateCharacter()
 	u.updateStatus()
@@ -656,7 +656,7 @@ func (u *baseUI) resetCharacter() {
 
 func (u *baseUI) setCharacter(c *app.Character) {
 	u.character.Store(c)
-	u.characterExchanged.Emit(context.Background(), c)
+	u.currentCharacterExchanged.Emit(context.Background(), c)
 	u.settings.SetLastCharacterID(c.ID)
 	u.updateCharacter()
 	u.updateStatus()
@@ -782,7 +782,7 @@ func (u *baseUI) loadCorporation(id int32) error {
 func (u *baseUI) resetCorporation() {
 	u.corporation.Store(nil)
 	u.settings.ResetLastCorporationID()
-	u.corporationExchanged.Emit(context.Background(), nil)
+	u.currentCorporationExchanged.Emit(context.Background(), nil)
 	u.updateCorporation()
 	u.updateStatus()
 }
@@ -790,7 +790,7 @@ func (u *baseUI) resetCorporation() {
 func (u *baseUI) setCorporation(c *app.Corporation) {
 	u.corporation.Store(c)
 	u.settings.SetLastCorporationID(c.ID)
-	u.corporationExchanged.Emit(context.Background(), c)
+	u.currentCorporationExchanged.Emit(context.Background(), c)
 	u.updateCorporation()
 	u.updateStatus()
 	if u.onSetCorporation != nil {

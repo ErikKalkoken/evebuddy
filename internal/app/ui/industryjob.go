@@ -240,7 +240,7 @@ func newIndustryJobs(u *baseUI, isCorporationMode bool) *industryJobs {
 	}, a.u.window, 6, 7)
 
 	if isCorporationMode {
-		a.u.corporationExchanged.AddListener(
+		a.u.currentCorporationExchanged.AddListener(
 			func(_ context.Context, c *app.Corporation) {
 				a.corporation = c
 			},

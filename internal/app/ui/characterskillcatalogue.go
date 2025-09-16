@@ -64,7 +64,7 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 	a.groupsGrid = a.makeGroupsGrid()
 	a.skillsGrid = a.makeSkillsGrid()
 
-	a.u.characterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		a.character = c
 	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {

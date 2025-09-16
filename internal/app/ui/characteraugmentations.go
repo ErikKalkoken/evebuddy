@@ -36,7 +36,7 @@ func newCharacterAugmentations(u *baseUI) *characterAugmentations {
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeImplantList()
-	a.u.characterExchanged.AddListener(
+	a.u.currentCharacterExchanged.AddListener(
 		func(_ context.Context, c *app.Character) {
 			a.character = c
 			a.update()
