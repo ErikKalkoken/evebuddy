@@ -106,6 +106,14 @@ FROM
     JOIN corporations ep ON ep.id = ec.corporation_id
     JOIN eve_entities ee ON ee.id = ec.corporation_id;
 
+-- name: ListCharacterCorporationIDs :many
+SELECT DISTINCT
+    ec.corporation_id
+FROM
+    characters ch
+    JOIN eve_characters ec ON ec.id = ch.id
+    JOIN eve_entities ee ON ee.id = ec.corporation_id;
+
 -- name: UpdateCharacterLastCloneJump :exec
 UPDATE characters
 SET

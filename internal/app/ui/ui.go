@@ -365,14 +365,12 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			if arg.changed.Contains(c.EveCharacter.Corporation.ID) {
 				u.characterCorporation.update()
 			}
-			cc, err := u.cs.ListCharacterCorporations(ctx)
+			corporationIDs, err := u.cs.ListCharacterCorporationIDs(ctx)
 			if err != nil {
 				slog.Error("Failed to update status", "arg", arg, "err", err)
 				return
 			}
-			if arg.changed.ContainsAny(xiter.MapSlice(cc, func(x *app.EntityShort[int32]) int32 {
-				return x.ID
-			})) {
+			if arg.changed.ContainsAny(corporationIDs.All()) {
 				u.updateStatus()
 			}
 		case app.SectionEveMarketPrices:

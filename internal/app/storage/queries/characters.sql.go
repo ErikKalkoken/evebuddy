@@ -179,6 +179,38 @@ func (q *Queries) GetCharacterAssetValue(ctx context.Context, id int64) (sql.Nul
 	return asset_value, err
 }
 
+const listCharacterCorporationIDs = `-- name: ListCharacterCorporationIDs :many
+SELECT DISTINCT
+    ec.corporation_id
+FROM
+    characters ch
+    JOIN eve_characters ec ON ec.id = ch.id
+    JOIN eve_entities ee ON ee.id = ec.corporation_id
+`
+
+func (q *Queries) ListCharacterCorporationIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterCorporationIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var corporation_id int64
+		if err := rows.Scan(&corporation_id); err != nil {
+			return nil, err
+		}
+		items = append(items, corporation_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterCorporations = `-- name: ListCharacterCorporations :many
 SELECT DISTINCT
     ee.id,

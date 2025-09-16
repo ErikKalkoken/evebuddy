@@ -153,6 +153,12 @@ func (s *CharacterService) ListCharactersShort(ctx context.Context) ([]*app.Enti
 	return s.st.ListCharactersShort(ctx)
 }
 
+// ListCharacterCorporationIDs returns the corporation IDs of the characters.
+func (s *CharacterService) ListCharacterCorporationIDs(ctx context.Context) (set.Set[int32], error) {
+	return s.st.ListCharacterCorporationIDs(ctx)
+}
+
+// ListCharacterCorporations returns the corporations of the characters.
 func (s *CharacterService) ListCharacterCorporations(ctx context.Context) ([]*app.EntityShort[int32], error) {
 	return s.st.ListCharacterCorporations(ctx)
 }

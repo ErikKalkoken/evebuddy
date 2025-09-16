@@ -247,7 +247,7 @@ func TestListCharacters(t *testing.T) {
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
-	t.Run("can list character's corporations IDs", func(t *testing.T) {
+	t.Run("can list character corporations", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		ec1 := factory.CreateEveCharacter()
@@ -264,6 +264,22 @@ func TestListCharacters(t *testing.T) {
 				return x.ID
 			}))
 			want := set.Of(ec1.Corporation.ID)
+			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		}
+	})
+	t.Run("can list character corporation IDs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		ec1 := factory.CreateEveCharacter()
+		c1 := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec1.ID})
+		ec2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec1.Corporation.ID})
+		factory.CreateCharacter(storage.CreateCharacterParams{ID: ec2.ID})
+		c2 := factory.CreateCharacter()
+		// when
+		got, err := r.ListCharacterCorporationIDs(ctx)
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of(c1.EveCharacter.Corporation.ID, c2.EveCharacter.Corporation.ID)
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
