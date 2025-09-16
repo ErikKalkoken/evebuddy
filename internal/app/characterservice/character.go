@@ -195,7 +195,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 		TokenType:    ssoToken.TokenType,
 	}
 	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
-	character, err := s.eus.UpdateOrCreateCharacterESI(ctx, token.CharacterID)
+	character, _, err := s.eus.UpdateOrCreateCharacterESI(ctx, token.CharacterID)
 	if err != nil {
 		return nil, err
 	}

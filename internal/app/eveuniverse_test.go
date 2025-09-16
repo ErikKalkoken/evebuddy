@@ -71,7 +71,7 @@ func TestEveCharacter_EveEntity(t *testing.T) {
 
 func TestEveCharacter_IsIdentical(t *testing.T) {
 	t.Run("should report when same", func(t *testing.T) {
-		x1 := app.EveCharacter{
+		x1 := &app.EveCharacter{
 			Alliance:       &app.EveEntity{ID: 1},
 			Birthday:       time.Now(),
 			Corporation:    &app.EveEntity{ID: 2},
@@ -88,7 +88,7 @@ func TestEveCharacter_IsIdentical(t *testing.T) {
 		assert.True(t, x1.Equal(x2))
 	})
 	t.Run("should report when not same", func(t *testing.T) {
-		x1 := app.EveCharacter{
+		x1 := &app.EveCharacter{
 			Alliance:       &app.EveEntity{ID: 1},
 			Birthday:       time.Now(),
 			Corporation:    &app.EveEntity{ID: 2},
@@ -101,7 +101,7 @@ func TestEveCharacter_IsIdentical(t *testing.T) {
 			SecurityStatus: -4.5,
 			Title:          "def",
 		}
-		x2 := app.EveCharacter{
+		x2 := &app.EveCharacter{
 			ID: 4,
 		}
 		assert.False(t, x1.Equal(x2))

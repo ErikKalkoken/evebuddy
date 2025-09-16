@@ -1,7 +1,11 @@
 package app
 
 import (
+	"crypto/md5"
+	"encoding/hex"
+	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -99,18 +103,40 @@ func (ec EveCharacter) HasFaction() bool {
 
 // Equal reports whether two characters are equal.
 // Two characters must have the same values in all fields to be equal.
-func (ec EveCharacter) Equal(other EveCharacter) bool {
-	return ec.ID == other.ID &&
-		ec.AllianceID() == other.AllianceID() &&
-		ec.Birthday.Equal(other.Birthday) &&
-		ec.Corporation.ID == other.Corporation.ID &&
-		ec.Description == other.Description &&
-		ec.FactionID() == other.FactionID() &&
-		ec.Gender == other.Gender &&
-		ec.Name == other.Name &&
-		ec.Race.ID == other.Race.ID &&
-		math.Abs(ec.SecurityStatus-other.SecurityStatus) < 0.01 &&
-		ec.Title == other.Title
+func (ec EveCharacter) Equal(other *EveCharacter) bool {
+	return ec.ID == other.ID && ec.Hash() == other.Hash()
+}
+
+// Hash returns the hash for this character.
+// It can be used to detect changes between instances.
+func (ec EveCharacter) Hash() string {
+	var corporationID, raceID int32
+	if ec.Corporation != nil {
+		corporationID = ec.Corporation.ID
+	}
+	if ec.Race != nil {
+		raceID = ec.Race.ID
+	}
+	xx := []any{
+		ec.AllianceID(),
+		ec.Birthday,
+		corporationID,
+		ec.Description,
+		ec.FactionID(),
+		ec.Gender,
+		ec.ID,
+		ec.Name,
+		raceID,
+		math.Round(ec.SecurityStatus * 100),
+		ec.Title,
+	}
+	s := make([]string, 0)
+	for _, x := range xx {
+		s = append(s, fmt.Sprint(x))
+	}
+	h1 := md5.Sum([]byte(strings.Join(s, "-")))
+	h2 := hex.EncodeToString(h1[:])
+	return h2
 }
 
 func (ec EveCharacter) RaceDescription() string {

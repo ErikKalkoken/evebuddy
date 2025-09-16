@@ -19,53 +19,92 @@ func (s *EveUniverseService) GetCharacterESI(ctx context.Context, characterID in
 	return s.st.GetEveCharacter(ctx, characterID)
 }
 
-func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, characterID int32) (*app.EveCharacter, error) {
+func (s *EveUniverseService) GetOrCreateCharacterESI(ctx context.Context, characterID int32) (*app.EveCharacter, bool, error) {
 	o, err := s.st.GetEveCharacter(ctx, characterID)
 	if errors.Is(err, app.ErrNotFound) {
 		return s.UpdateOrCreateCharacterESI(ctx, characterID)
 	}
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return o, nil
+	return o, false, nil
 }
 
-func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, characterID int32) (*app.EveCharacter, error) {
+// UpdateOrCreateCharacterESI updates or create a character from ESI.
+// Returns [app.ErrNotFound] when the character does not exist.
+func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, characterID int32) (*app.EveCharacter, bool, error) {
+	c1, err := s.st.GetEveCharacter(ctx, characterID)
+	if errors.Is(err, app.ErrNotFound) {
+		c1 = nil
+	} else if err != nil {
+		return nil, false, err
+	}
 	x, err, _ := s.sfg.Do(fmt.Sprintf("UpdateOrCreateCharacterESI-%d", characterID), func() (any, error) {
-		r, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, characterID, nil)
+		ec, r, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, characterID, nil)
+		if err != nil {
+			if r != nil && r.StatusCode == http.StatusNotFound {
+				return nil, app.ErrNotFound
+			}
+			return nil, err
+		}
+		_, err = s.GetOrCreateRaceESI(ctx, ec.RaceId)
 		if err != nil {
 			return nil, err
 		}
-		_, err = s.AddMissingEntities(ctx, set.Of(characterID, r.CorporationId, r.AllianceId, r.FactionId))
+		affiliations, _, err := s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{characterID}, nil)
 		if err != nil {
-			return nil, err
+			return false, err
 		}
-		_, err = s.GetOrCreateRaceESI(ctx, r.RaceId)
-		if err != nil {
-			return nil, err
+		if len(affiliations) != 1 {
+			return false, fmt.Errorf("affiliations mismatch")
 		}
-		if err := s.st.UpdateOrCreateEveCharacter(ctx, storage.CreateEveCharacterParams{
-			AllianceID:     r.AllianceId,
+		af := affiliations[0]
+		if af.CharacterId != characterID {
+			return false, fmt.Errorf("wrong character %d in affiliations", af.CharacterId)
+		}
+		arg := storage.CreateEveCharacterParams{
+			AllianceID:     af.AllianceId,
+			Birthday:       ec.Birthday,
+			CorporationID:  af.CorporationId,
+			Description:    ec.Description,
+			FactionID:      af.FactionId,
+			Gender:         ec.Gender,
 			ID:             characterID,
-			Birthday:       r.Birthday,
-			CorporationID:  r.CorporationId,
-			Description:    r.Description,
-			FactionID:      r.FactionId,
-			Gender:         r.Gender,
-			Name:           r.Name,
-			RaceID:         r.RaceId,
-			SecurityStatus: float64(r.SecurityStatus),
-			Title:          r.Title,
-		}); err != nil {
+			Name:           ec.Name,
+			RaceID:         ec.RaceId,
+			SecurityStatus: float64(ec.SecurityStatus),
+			Title:          ec.Title,
+		}
+		_, err = s.AddMissingEntities(ctx, set.Of(characterID, arg.CorporationID, arg.AllianceID, arg.FactionID))
+		if err != nil {
 			return nil, err
 		}
-		slog.Info("Created eve character", "ID", characterID)
-		return s.st.GetEveCharacter(ctx, characterID)
+		if err := s.st.UpdateOrCreateEveCharacter(ctx, arg); err != nil {
+			return nil, err
+		}
+		c2, err := s.st.GetEveCharacter(ctx, characterID)
+		if err != nil {
+			return nil, err
+		}
+		return c2, nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, false, fmt.Errorf("UpdateOrCreateCharacterESI %d: %w", characterID, err)
 	}
-	return x.(*app.EveCharacter), nil
+	c2 := x.(*app.EveCharacter)
+	changed := c1 == nil || c1.Hash() != c2.Hash()
+	slog.Info("Updated eve character", "ID", characterID, "changed", changed)
+	if c1 != nil && changed && c1.Name != c2.Name {
+		_, err := s.st.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
+			ID:       characterID,
+			Name:     c2.Name,
+			Category: app.EveEntityCharacter,
+		})
+		if err != nil {
+			return nil, false, err
+		}
+	}
+	return c2, changed, nil
 }
 
 // RandomizeAllCharacterNames randomizes the names of all characters.
@@ -108,7 +147,13 @@ func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) (set.Se
 	g.SetLimit(s.concurrencyLimit)
 	for i, id := range ids2 {
 		g.Go(func() error {
-			changed, err := s.updateCharacterESI(ctx, id)
+			_, changed, err := s.UpdateOrCreateCharacterESI(ctx, id)
+			if errors.Is(err, app.ErrNotFound) {
+				s.st.DeleteEveCharacter(ctx, id)
+				slog.Info("EVE Character no longer exists and was deleted", "characterID", id)
+				hasChanged[i] = true
+				return nil
+			}
 			if err != nil {
 				return err
 			}
@@ -126,73 +171,4 @@ func (s *EveUniverseService) UpdateAllCharactersESI(ctx context.Context) (set.Se
 	}
 	slog.Info("Finished updating eve characters", "count", ids.Size(), "changed", changed)
 	return changed, nil
-}
-
-// updateCharacterESI updates a character from ESI and reports whether it has changed.
-func (s *EveUniverseService) updateCharacterESI(ctx context.Context, characterID int32) (bool, error) {
-	x, err, _ := s.sfg.Do(fmt.Sprintf("updateCharacterESI-%d", characterID), func() (any, error) {
-		c, err := s.st.GetEveCharacter(ctx, characterID)
-		if err != nil {
-			return false, err
-		}
-		old := *c
-		// Fetch character
-		o, r, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, c.ID, nil)
-		if err != nil {
-			if r != nil && r.StatusCode == http.StatusNotFound {
-				s.st.DeleteEveCharacter(ctx, characterID)
-				slog.Info("EVE Character no longer exists and was deleted", "characterID", characterID)
-				return true, nil
-			}
-			return false, err
-		}
-		c.Name = o.Name
-		c.Description = o.Description
-		c.SecurityStatus = float64(o.SecurityStatus)
-		c.Title = o.Title
-		ids := set.Of(c.ID, o.CorporationId, o.AllianceId, o.FactionId)
-		ids.Delete(0)
-		m, err := s.ToEntities(ctx, ids)
-		if err != nil {
-			return false, err
-		}
-		c.Alliance = m[o.AllianceId]
-		c.Corporation = m[o.CorporationId]
-		c.Faction = m[o.FactionId]
-		// Fetch affiliations
-		affiliations, _, err := s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{c.ID}, nil)
-		if err != nil {
-			return false, err
-		}
-		if len(affiliations) > 0 {
-			x := affiliations[0]
-			ids := set.Of(c.ID, x.CorporationId, x.AllianceId, x.FactionId)
-			ids.Delete(0)
-			m, err := s.ToEntities(ctx, ids)
-			if err != nil {
-				return false, err
-			}
-			c.Alliance = m[x.AllianceId]
-			c.Corporation = m[x.CorporationId]
-			c.Faction = m[x.FactionId]
-		}
-		// Update
-		if err := s.st.UpdateEveCharacter(ctx, c); err != nil {
-			return false, err
-		}
-		if _, err := s.st.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
-			Category: app.EveEntityCharacter,
-			ID:       characterID,
-			Name:     c.Name,
-		}); err != nil {
-			return false, err
-		}
-		hasChanged := !old.Equal(*c)
-		slog.Info("Updated eve character from ESI", "characterID", c.ID, "changed", hasChanged)
-		return hasChanged, nil
-	})
-	if err != nil {
-		return false, fmt.Errorf("updateCharacterESI: %w", err)
-	}
-	return x.(bool), nil
 }

@@ -641,7 +641,7 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *characterInfo) update() error {
 	ctx := context.Background()
-	o, err := a.iw.u.eus.GetOrCreateCharacterESI(ctx, a.id)
+	o, _, err := a.iw.u.eus.GetOrCreateCharacterESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
