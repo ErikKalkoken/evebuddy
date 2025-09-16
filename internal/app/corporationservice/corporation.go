@@ -3,6 +3,7 @@ package corporationservice
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -84,7 +85,16 @@ func (s *CorporationService) GetAnyCorporation(ctx context.Context) (*app.Corpor
 	return s.st.GetAnyCorporation(ctx)
 }
 
-func (s *CorporationService) GetOrCreateCorporation(ctx context.Context, corporationID int32) (*app.Corporation, error) {
+// getOrCreateCorporation gets or creates a corporation and returns it.
+// It returns the error [app.ErrNotFound] for NPC corporations
+func (s *CorporationService) getOrCreateCorporation(ctx context.Context, corporationID int32) (*app.Corporation, error) {
+	c, err := s.eus.GetOrCreateCorporationESI(ctx, corporationID)
+	if err != nil {
+		return nil, err
+	}
+	if x := c.EveEntity().IsNPC(); x.IsEmpty() || x.ValueOrZero() {
+		return nil, app.ErrNotFound
+	}
 	o, err := s.st.GetOrCreateCorporation(ctx, corporationID)
 	if err != nil {
 		return nil, err
@@ -126,34 +136,40 @@ func (s *CorporationService) ListCorporationIDs(ctx context.Context) (set.Set[in
 	return s.st.ListCorporationIDs(ctx)
 }
 
-// RemoveStaleCorporations removes all corporations which no longer have a user's character as member.
-// And report whether any corporation was removed.
-func (s *CorporationService) RemoveStaleCorporations(ctx context.Context) (bool, error) {
+// UpdateCorporations removes all corporations which no longer have a user's character as member
+// and creates missing corporations.
+// It reports whether any corporation was removed or added.
+func (s *CorporationService) UpdateCorporations(ctx context.Context) (bool, error) {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("RemoveStaleCorporations: %w", err)
+		return fmt.Errorf("UpdateCorporations: %w", err)
 	}
-	all, err := s.ListCorporationIDs(ctx)
+	current, err := s.ListCorporationIDs(ctx)
 	if err != nil {
 		return false, wrapErr(err)
 	}
-	if all.Size() == 0 {
-		return false, nil
-	}
-	current, err := s.st.ListCharacterCorporationIDs(ctx)
+	valid, err := s.st.ListCharacterCorporationIDs(ctx)
 	if err != nil {
 		return false, wrapErr(err)
 	}
-	stale := set.Difference(all, current)
-	if stale.Size() == 0 {
-		return false, nil
-	}
-	for id := range stale.All() {
+	obsolete := set.Difference(current, valid)
+	for id := range obsolete.All() {
 		if err := s.st.DeleteCorporation(ctx, id); err != nil {
 			return false, wrapErr(err)
 		}
 	}
-	slog.Info("Deleted stale corporations", "corporationIDs", stale)
-	return true, nil
+	slog.Info("Deleted obsolete corporations", "corporationIDs", obsolete)
+	missing := set.Difference(valid, current)
+	for id := range missing.All() {
+		_, err := s.getOrCreateCorporation(ctx, id)
+		if errors.Is(err, app.ErrNotFound) {
+			continue
+		}
+		if err != nil {
+			return false, wrapErr(err)
+		}
+	}
+	slog.Info("Added missing corporations", "corporationIDs", missing)
+	return missing.Size() > 0 || obsolete.Size() > 0, nil
 }
 
 func (s *CorporationService) updateDivisionsESI(ctx context.Context, arg app.CorporationSectionUpdateParams) (bool, error) {

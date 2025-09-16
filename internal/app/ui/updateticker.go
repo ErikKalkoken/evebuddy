@@ -303,11 +303,11 @@ func (u *baseUI) updateCorporationsIfNeeded(ctx context.Context, forceUpdate boo
 		slog.Info("Skipping regular update of corporations during daily downtime")
 		return nil
 	}
-	removed, err := u.rs.RemoveStaleCorporations(ctx)
+	changed, err := u.rs.UpdateCorporations(ctx)
 	if err != nil {
 		return err
 	}
-	if removed {
+	if changed {
 		u.updateStatus()
 	}
 	all, err := u.rs.ListCorporationIDs(ctx)
