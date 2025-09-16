@@ -344,7 +344,6 @@ func (a *gameSearch) doSearch2(search string) {
 	})
 	results, total, err := a.u.cs.SearchESI(
 		context.Background(),
-		a.u.currentCharacterID(),
 		search,
 		categories,
 		a.strict.On,

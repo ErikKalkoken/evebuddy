@@ -247,7 +247,7 @@ func showSkillInTrainingWindow(u *baseUI, r *app.CharacterSkillqueueItem) {
 	setDetailWindow(detailWindowParams{
 		content: f,
 		imageAction: func() {
-			u.ShowTypeInfoWindow(r.SkillID)
+			u.ShowTypeInfoWindowWithCharacter(r.SkillID, r.CharacterID)
 		},
 		imageLoader: func() (fyne.Resource, error) {
 			return u.eis.InventoryTypeIcon(r.SkillID, 256)

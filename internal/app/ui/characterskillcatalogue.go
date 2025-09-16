@@ -206,7 +206,7 @@ func (a *characterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 				return
 			}
 			skill := a.skills[id]
-			a.u.ShowTypeInfoWindow(skill.id)
+			a.u.ShowTypeInfoWindowWithCharacter(skill.id, characterIDOrZero(a.character))
 		}
 	}
 	return makeGridOrList(!a.u.isDesktop, length, makeCreateItem, updateItem, makeOnSelected)

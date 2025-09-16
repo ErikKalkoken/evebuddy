@@ -104,7 +104,7 @@ func (a *characterAugmentations) makeImplantList() *widget.List {
 			})
 			info := border[2].(*iwidget.TappableIcon)
 			info.OnTapped = func() {
-				a.u.ShowTypeInfoWindow(a.implants[id].EveType.ID)
+				a.u.ShowTypeInfoWindowWithCharacter(a.implants[id].EveType.ID, characterIDOrZero(a.character))
 			}
 		})
 

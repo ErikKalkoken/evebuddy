@@ -163,7 +163,7 @@ func (a *characterFlyableShips) makeShipsGrid() *widget.GridWrap {
 			return
 		}
 		o := a.ships[id]
-		a.u.ShowTypeInfoWindow(o.Type.ID)
+		a.u.ShowTypeInfoWindowWithCharacter(o.Type.ID, characterIDOrZero(a.character))
 	}
 	return g
 }

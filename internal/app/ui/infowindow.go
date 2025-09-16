@@ -89,7 +89,7 @@ type infoWidget interface {
 }
 
 func (iw *infoWindow) show(v infoVariant, id int64) {
-	iw.showWithCharacterID(v, id, iw.u.currentCharacterID())
+	iw.showWithCharacterID(v, id, 0)
 }
 
 func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, characterID int32) {

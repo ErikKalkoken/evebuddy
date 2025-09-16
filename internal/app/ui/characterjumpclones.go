@@ -161,7 +161,7 @@ func (a *characterJumpClones) makeTree() *iwidget.Tree[jumpCloneNode] {
 				prefix.Hide()
 				spacer.Hide()
 				iconInfo.OnTapped = func() {
-					a.u.ShowTypeInfoWindow(n.implantTypeID)
+					a.u.ShowTypeInfoWindowWithCharacter(n.implantTypeID, characterIDOrZero(a.character))
 				}
 				iconInfo.SetToolTip("Show implant")
 				iconInfo.Show()
