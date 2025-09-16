@@ -78,14 +78,14 @@ func newAssetRow(ca *app.CharacterAsset, assetCollection assetcollection.AssetCo
 		r.quantityDisplay = humanize.Comma(int64(ca.Quantity))
 		r.quantity = int(ca.Quantity)
 	}
-	location, ok := assetCollection.AssetParentLocation(ca.ItemID)
+	ln, ok := assetCollection.AssetLocation(ca.ItemID)
 	if ok {
-		r.location = location.ToShort()
-		r.locationName = location.DisplayName()
-		r.locationDisplay = location.DisplayRichText()
-		if location.SolarSystem != nil {
-			r.regionName = location.SolarSystem.Constellation.Region.Name
-			r.regionID = location.SolarSystem.Constellation.Region.ID
+		r.location = ln.Location.ToShort()
+		r.locationName = ln.Location.DisplayName()
+		r.locationDisplay = ln.Location.DisplayRichText()
+		if ln.Location.SolarSystem != nil {
+			r.regionName = ln.Location.SolarSystem.Constellation.Region.Name
+			r.regionID = ln.Location.SolarSystem.Constellation.Region.ID
 		}
 	} else {
 		r.locationDisplay = iwidget.RichTextSegmentsFromText("?")
@@ -572,7 +572,7 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 		location = widget.NewLabel("?")
 		region = widget.NewLabel("?")
 	}
-	fi := []*widget.FormItem{
+	items := []*widget.FormItem{
 		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			r.characterID,
 			r.characterName,
@@ -597,8 +597,11 @@ func showAssetDetailWindow(u *baseUI, r assetRow) {
 			})),
 		),
 	}
+	if u.IsDeveloperMode() {
+		items = append(items, widget.NewFormItem("Item ID", u.makeCopyToClipboardLabel(fmt.Sprint(r.itemID))))
+	}
 
-	f := widget.NewForm(fi...)
+	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
 	subTitle := fmt.Sprintf("Asset #%d", r.itemID)
 	setDetailWindow(detailWindowParams{

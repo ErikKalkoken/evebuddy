@@ -168,3 +168,27 @@ func TestCharacterAssetVariant(t *testing.T) {
 		})
 	}
 }
+
+// func TestCharacterAsset_LocationCategory(t *testing.T) {
+// 	cases := []struct {
+// 		locationFlag string
+// 		want         app.LocationFlag
+// 	}{
+// 		{"Cargo", app.LocationCargoBay},
+// 		{"Hangar", app.LocationHangar},
+// 		{"AssetSafety", app.LocationAssetSafety},
+// 		{"DroneBay", app.LocationDroneBay},
+// 		{"FighterBay", app.LocationFighterBay},
+// 		{"FighterTube1", app.LocationFighterBay},
+// 		{"Hangar", app.LocationFitting},
+// 		{"SpecializedFuelBay", app.LocationFuelBay},
+// 		{"FrigateEscapeBay", app.LocationFrigateEscapeBay},
+// 		{"Hangar", app.LocationOther},
+// 	}
+// 	for _, tc := range cases {
+// 		t.Run(tc.locationFlag, func(t *testing.T) {
+// 			ca := &app.CharacterAsset{LocationFlag: tc.locationFlag}
+// 			assert.Equal(t, tc.want, ca.IsInCargoBay())
+// 		})
+// 	}
+// }

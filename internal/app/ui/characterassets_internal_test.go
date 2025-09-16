@@ -28,7 +28,7 @@ func TestCharacterAssetsMakeLocationTreeData(t *testing.T) {
 		assets := []*app.CharacterAsset{a, b, c, d}
 		locations := []*app.EveLocation{el}
 		ac := assetcollection.New(assets, locations)
-		tree := makeLocationTreeData(ac.Locations(), 42)
+		tree := makeLocationTreeData(ac, 42)
 		assert.False(t, tree.IsEmpty())
 	})
 	t.Run("can have multiple locations with items in space", func(t *testing.T) {
@@ -50,7 +50,7 @@ func TestCharacterAssetsMakeLocationTreeData(t *testing.T) {
 		assets := []*app.CharacterAsset{a, b, c, d, e}
 		locations := []*app.EveLocation{l1, l2}
 		ac := assetcollection.New(assets, locations)
-		tree := makeLocationTreeData(ac.Locations(), 42)
+		tree := makeLocationTreeData(ac, 42)
 		assert.False(t, tree.IsEmpty())
 	})
 }
@@ -109,7 +109,7 @@ func TestCharacterAsset_CanRenderWithData(t *testing.T) {
 		Quantity:     10,
 		LocationID:   loc.ID,
 		LocationType: "other",
-		LocationFlag: "Hangar",
+		LocationFlag: app.FlagHangar,
 	})
 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 		CharacterID: character.ID,
@@ -125,6 +125,11 @@ func TestCharacterAsset_CanRenderWithData(t *testing.T) {
 
 	a.update()
 	a.locations.OpenAllBranches()
+	uid, ok := a.containerLocations[loc.ID]
+	if !ok {
+		t.Fail()
+	}
+	a.locations.Select(uid)
 
 	test.AssertImageMatches(t, "characterasset/full.png", w.Canvas().Capture())
 }

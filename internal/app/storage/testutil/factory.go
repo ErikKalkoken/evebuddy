@@ -191,8 +191,8 @@ func (f Factory) CreateCharacterAsset(args ...storage.CreateCharacterAssetParams
 	if arg.ItemID == 0 {
 		arg.ItemID = f.calcNewIDWithCharacter("character_assets", "item_id", arg.CharacterID)
 	}
-	if arg.LocationFlag == "" {
-		arg.LocationFlag = "Hangar"
+	if arg.LocationFlag == app.FlagUndefined {
+		arg.LocationFlag = app.FlagHangar
 	}
 	if arg.LocationID == 0 {
 		x := f.CreateEveLocationStructure()

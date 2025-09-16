@@ -13,7 +13,7 @@ import (
 )
 
 func TestCharacterAsset(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -30,24 +30,24 @@ func TestCharacterAsset(t *testing.T) {
 			IsBlueprintCopy: false,
 			IsSingleton:     true,
 			ItemID:          42,
-			LocationFlag:    "Hangar",
+			LocationFlag:    app.FlagHangar,
 			LocationID:      99,
 			LocationType:    "other",
 			Name:            "Alpha",
 			Quantity:        7,
 		}
 		// when
-		err := r.CreateCharacterAsset(ctx, arg)
+		err := st.CreateCharacterAsset(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetCharacterAsset(ctx, c.ID, 42)
+			x, err := st.GetCharacterAsset(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, eveType.ID, x.Type.ID)
 				assert.Equal(t, eveType.Name, x.Type.Name)
 				assert.False(t, x.IsBlueprintCopy)
 				assert.True(t, x.IsSingleton)
 				assert.Equal(t, int64(42), x.ItemID)
-				assert.Equal(t, "Hangar", x.LocationFlag)
+				assert.Equal(t, app.FlagHangar, x.LocationFlag)
 				assert.Equal(t, int64(99), x.LocationID)
 				assert.Equal(t, "other", x.LocationType)
 				assert.Equal(t, "Alpha", x.Name)
@@ -64,19 +64,19 @@ func TestCharacterAsset(t *testing.T) {
 		arg := storage.UpdateCharacterAssetParams{
 			CharacterID:  c.ID,
 			ItemID:       x1.ItemID,
-			LocationFlag: "Hangar",
+			LocationFlag: app.FlagHangar,
 			LocationID:   99,
 			LocationType: "other",
 			Name:         "Alpha",
 			Quantity:     7,
 		}
 		// when
-		err := r.UpdateCharacterAsset(ctx, arg)
+		err := st.UpdateCharacterAsset(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			x2, err := r.GetCharacterAsset(ctx, c.ID, x1.ItemID)
+			x2, err := st.GetCharacterAsset(ctx, c.ID, x1.ItemID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, "Hangar", x2.LocationFlag)
+				assert.Equal(t, app.FlagHangar, x2.LocationFlag)
 				assert.Equal(t, int64(99), x2.LocationID)
 				assert.Equal(t, "other", x2.LocationType)
 				assert.Equal(t, "Alpha", x2.Name)
@@ -105,7 +105,7 @@ func TestCharacterAsset(t *testing.T) {
 			CharacterID: c.ID,
 		})
 		// when
-		oo, err := r.ListCharacterAssetsInShipHangar(ctx, c.ID, location.ID)
+		oo, err := st.ListCharacterAssetsInShipHangar(ctx, c.ID, location.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, oo, 1)
@@ -119,10 +119,10 @@ func TestCharacterAsset(t *testing.T) {
 		x1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
 		x2 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
 		// when
-		err := r.DeleteCharacterAssets(ctx, c.ID, []int64{x2.ItemID})
+		err := st.DeleteCharacterAssets(ctx, c.ID, []int64{x2.ItemID})
 		// then
 		if assert.NoError(t, err) {
-			got, err := r.ListCharacterAssetIDs(ctx, c.ID)
+			got, err := st.ListCharacterAssetIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				want := set.Of(x1.ItemID)
 				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
@@ -136,7 +136,7 @@ func TestCharacterAsset(t *testing.T) {
 		ca1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
 		ca2 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
 		// when
-		got, err := r.ListCharacterAssets(ctx, c.ID)
+		got, err := st.ListCharacterAssets(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			want := []*app.CharacterAsset{ca1, ca2}
@@ -150,16 +150,16 @@ func TestCharacterAsset(t *testing.T) {
 		location := factory.CreateEveLocationStructure()
 		ca1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
 			CharacterID:  c.ID,
-			LocationFlag: "Hangar",
+			LocationFlag: app.FlagHangar,
 			LocationID:   location.ID,
 		})
 		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
 			CharacterID:  c.ID,
-			LocationFlag: "XXX",
+			LocationFlag: app.FlagUnknown,
 			LocationID:   location.ID,
 		})
 		// when
-		got, err := r.ListCharacterAssetsInItemHangar(ctx, c.ID, ca1.LocationID)
+		got, err := st.ListCharacterAssetsInItemHangar(ctx, c.ID, ca1.LocationID)
 		// then
 		if assert.NoError(t, err) {
 			want := []*app.CharacterAsset{ca1}
@@ -173,7 +173,7 @@ func TestCharacterAsset(t *testing.T) {
 		ca1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
 		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
 		// when
-		got, err := r.ListCharacterAssetsInLocation(ctx, c.ID, ca1.LocationID)
+		got, err := st.ListCharacterAssetsInLocation(ctx, c.ID, ca1.LocationID)
 		// then
 		if assert.NoError(t, err) {
 			want := []*app.CharacterAsset{ca1}
@@ -186,7 +186,7 @@ func TestCharacterAsset(t *testing.T) {
 		ca1 := factory.CreateCharacterAsset()
 		ca2 := factory.CreateCharacterAsset()
 		// when
-		got, err := r.ListAllCharacterAssets(ctx)
+		got, err := st.ListAllCharacterAssets(ctx)
 		// then
 		if assert.NoError(t, err) {
 			want := []*app.CharacterAsset{ca1, ca2}
@@ -214,7 +214,7 @@ func TestCharacterAsset(t *testing.T) {
 			AveragePrice: 200.2,
 		})
 		// when
-		got, err := r.CalculateCharacterAssetTotalValue(ctx, c.ID)
+		got, err := st.CalculateCharacterAssetTotalValue(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.InDelta(t, 500.5, got, 0.1)
@@ -224,7 +224,7 @@ func TestCharacterAsset(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, err := r.GetCharacterAsset(ctx, 1, 2)
+		_, err := st.GetCharacterAsset(ctx, 1, 2)
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})

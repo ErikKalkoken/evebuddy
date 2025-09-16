@@ -48,7 +48,7 @@ func TestAssets_CanRenderWithData(t *testing.T) {
 		Quantity:     10,
 		LocationID:   loc.ID,
 		LocationType: "other",
-		LocationFlag: "Hangar",
+		LocationFlag: app.FlagHangar,
 	})
 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 		CharacterID: character.ID,

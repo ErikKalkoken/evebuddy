@@ -21,10 +21,10 @@ func Map[S ~[]X, X any, Y any](s S, f func(X) Y) []Y {
 	return s2
 }
 
+// Reduce applies f cumulatively to the elements of s, from left to right,
+// so as to reduce the slice to a single value.
+// If the slice is empty it will return the zero value of E.
 func Reduce[S ~[]E, E any](s S, f func(E, E) E) E {
-	if len(s) == 0 {
-		panic("slice can not be empty")
-	}
 	var x E
 	for i, v := range s {
 		if i == 0 {

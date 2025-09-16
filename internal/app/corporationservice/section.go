@@ -238,6 +238,7 @@ func (s *CorporationService) updateSectionIfChanged(
 	} else if err != nil {
 		return false, err
 	} else {
+		slog.Info("Found valid token for updating corporation section", "corporationID", arg.CorporationID, "section", arg.Section, "characterID", token.CharacterID)
 		ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
 		data, err := fetch(ctx, arg)
 		if err != nil {
