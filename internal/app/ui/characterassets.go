@@ -301,7 +301,7 @@ func (a *characterAssets) update() {
 			a.locationPath.RemoveAll()
 			a.selectedLocation.Clear()
 		})
-		ac, locations, err := a.fetchData(a.u.currentCharacterID(), a.u.services())
+		ac, locations, err := a.fetchData(characterIDOrZero(a.character), a.u.services())
 		if err != nil {
 			return "", 0, err
 		}
@@ -330,9 +330,8 @@ func (a *characterAssets) update() {
 		a.locations.Refresh()
 	})
 	if a.OnUpdate != nil {
-		c := a.u.currentCharacter()
-		if c != nil {
-			s := ihumanize.OptionalWithDecimals(c.AssetValue, 1, "?")
+		if a.character != nil {
+			s := ihumanize.OptionalWithDecimals(a.character.AssetValue, 1, "?")
 			a.OnUpdate(s)
 		}
 	}
