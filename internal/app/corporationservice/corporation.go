@@ -152,23 +152,27 @@ func (s *CorporationService) UpdateCorporations(ctx context.Context) (bool, erro
 		return false, wrapErr(err)
 	}
 	obsolete := set.Difference(current, valid)
-	for id := range obsolete.All() {
-		if err := s.st.DeleteCorporation(ctx, id); err != nil {
-			return false, wrapErr(err)
+	if obsolete.Size() > 0 {
+		for id := range obsolete.All() {
+			if err := s.st.DeleteCorporation(ctx, id); err != nil {
+				return false, wrapErr(err)
+			}
 		}
+		slog.Info("Deleted obsolete corporations", "corporationIDs", obsolete)
 	}
-	slog.Info("Deleted obsolete corporations", "corporationIDs", obsolete)
 	missing := set.Difference(valid, current)
-	for id := range missing.All() {
-		_, err := s.getOrCreateCorporation(ctx, id)
-		if errors.Is(err, app.ErrNotFound) {
-			continue
+	if missing.Size() > 0 {
+		for id := range missing.All() {
+			_, err := s.getOrCreateCorporation(ctx, id)
+			if errors.Is(err, app.ErrNotFound) {
+				continue
+			}
+			if err != nil {
+				return false, wrapErr(err)
+			}
 		}
-		if err != nil {
-			return false, wrapErr(err)
-		}
+		slog.Info("Added missing corporations", "corporationIDs", missing)
 	}
-	slog.Info("Added missing corporations", "corporationIDs", missing)
 	return missing.Size() > 0 || obsolete.Size() > 0, nil
 }
 

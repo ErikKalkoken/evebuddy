@@ -24,18 +24,20 @@ import (
 type corporationSheet struct {
 	widget.BaseWidget
 
-	alliance   *widget.Hyperlink
-	ceo        *widget.Hyperlink
-	faction    *widget.Hyperlink
-	home       *widget.Hyperlink
-	isCorpMode bool
-	logo       *kxwidget.TappableImage
-	members    *widget.Label
-	name       *widget.Hyperlink
-	roles      *widget.Label
-	taxRate    *widget.Label
-	ticker     *widget.Label
-	u          *baseUI
+	alliance    *widget.Hyperlink
+	ceo         *widget.Hyperlink
+	character   *app.Character
+	corporation *app.Corporation
+	faction     *widget.Hyperlink
+	home        *widget.Hyperlink
+	isCorpMode  bool
+	logo        *kxwidget.TappableImage
+	members     *widget.Label
+	name        *widget.Hyperlink
+	roles       *widget.Label
+	taxRate     *widget.Label
+	ticker      *widget.Label
+	u           *baseUI
 }
 
 func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
@@ -44,7 +46,7 @@ func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
 	logo := kxwidget.NewTappableImage(icons.BlankSvg, nil)
 	logo.SetFillMode(canvas.ImageFillContain)
 	logo.SetMinSize(fyne.NewSquareSize(128))
-	w := &corporationSheet{
+	a := &corporationSheet{
 		alliance:   widget.NewHyperlink("", nil),
 		ceo:        widget.NewHyperlink("", nil),
 		faction:    widget.NewHyperlink("", nil),
@@ -58,8 +60,37 @@ func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
 		ticker:     widget.NewLabel(""),
 		u:          u,
 	}
-	w.ExtendBaseWidget(w)
-	return w
+	a.ExtendBaseWidget(a)
+
+	if isCorpMode {
+		a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
+			a.corporation = c
+		})
+		a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
+			corporationID := corporationIDOrZero(a.corporation)
+			if corporationID == 0 {
+				return
+			}
+			if arg.section == app.SectionEveCorporations && arg.changed.Contains(corporationID) {
+				a.update()
+			}
+		})
+	} else {
+		a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+			a.character = c
+			a.update()
+		})
+		a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
+			characterID := characterIDOrZero(a.character)
+			if characterID == 0 {
+				return
+			}
+			if arg.section == app.SectionEveCharacters && arg.changed.Contains(characterID) {
+				a.update()
+			}
+		})
+	}
+	return a
 }
 
 func (a *corporationSheet) CreateRenderer() fyne.WidgetRenderer {
@@ -96,15 +127,13 @@ func (a *corporationSheet) update() {
 	var corporation *app.EveCorporation
 	ctx := context.Background()
 	if a.isCorpMode {
-		x := a.u.currentCorporation()
-		if x != nil {
-			corporation = x.EveCorporation
+		if a.corporation != nil {
+			corporation = a.corporation.EveCorporation
 		}
 	} else {
-		character := a.u.currentCharacter()
-		if character != nil && character.EveCharacter != nil {
+		if a.character != nil && a.character.EveCharacter != nil {
 			var roles string
-			oo, err := a.u.cs.ListRoles(ctx, character.ID)
+			oo, err := a.u.cs.ListRoles(ctx, a.character.ID)
 			if err != nil {
 				slog.Error("Failed to fetch roles", "error", err)
 				roles = "?"
@@ -123,7 +152,7 @@ func (a *corporationSheet) update() {
 			fyne.Do(func() {
 				a.roles.SetText(roles)
 			})
-			corporationID := character.EveCharacter.Corporation.ID
+			corporationID := a.character.EveCharacter.Corporation.ID
 			c, err := a.u.eus.GetCorporation(ctx, corporationID)
 			if errors.Is(err, app.ErrNotFound) {
 				// ignore
