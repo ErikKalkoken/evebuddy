@@ -50,12 +50,6 @@ const (
 	fallbackWebsiteURL = "https://github.com/ErikKalkoken/evebuddy"
 )
 
-// daily downtime
-const (
-	downtimeStart    = "11:00"
-	downtimeDuration = 15 * time.Minute
-)
-
 // ticker
 const (
 	characterSectionsUpdateTicker = 60 * time.Second

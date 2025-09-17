@@ -197,22 +197,28 @@ func (a *statusBar) startUpdateTicker() {
 	esiStatusTicker := time.NewTicker(esiStatusUpdateTicker)
 	go func() {
 		for {
-			x, err := a.u.ess.Fetch(context.TODO())
 			var t, errorMessage string
 			var s eveStatus
-			if err != nil {
-				slog.Error("Failed to fetch ESI status", "err", err)
-				errorMessage = a.u.humanizeError(err)
-				s = eveStatusError
-				t = "ERROR"
-			} else if !x.IsOK() {
-				errorMessage = x.ErrorMessage
+			if a.u.ess.IsDailyDowntime() {
 				s = eveStatusOffline
 				t = "OFFLINE"
+				errorMessage = fmt.Sprintf("Offline during planned daily downtime:\n%s", a.u.ess.DailyDowntime())
 			} else {
-				arg := message.NewPrinter(language.English)
-				t = arg.Sprintf("%d players", x.PlayerCount)
-				s = eveStatusOnline
+				x, err := a.u.ess.Fetch(context.Background())
+				if err != nil {
+					slog.Error("Failed to fetch ESI status", "err", err)
+					errorMessage = a.u.humanizeError(err)
+					s = eveStatusError
+					t = "ERROR"
+				} else if !x.IsOK() {
+					errorMessage = x.ErrorMessage
+					s = eveStatusOffline
+					t = "OFFLINE"
+				} else {
+					arg := message.NewPrinter(language.English)
+					t = arg.Sprintf("%d players", x.PlayerCount)
+					s = eveStatusOnline
+				}
 			}
 			fyne.Do(func() {
 				a.setEveStatus(s, t, errorMessage)
@@ -247,13 +253,17 @@ func (a *statusBar) update() {
 }
 
 func (a *statusBar) refreshUpdateStatus() {
-	fyne.Do(func() {
+	var s string
+	var i widget.Importance
+	if a.u.isUpdateDisabled || a.u.ess.IsDailyDowntime() {
+		s = "Off"
+	} else {
 		x := a.u.scs.Summary()
-		status := x.DisplayShort()
-		if a.u.isUpdateDisabled {
-			status += " [disabled]"
-		}
-		a.updateStatus.SetTextAndImportance(status, x.Status().ToImportance())
+		s = x.DisplayShort()
+		i = x.Status().ToImportance()
+	}
+	fyne.Do(func() {
+		a.updateStatus.SetTextAndImportance(s, i)
 	})
 }
 

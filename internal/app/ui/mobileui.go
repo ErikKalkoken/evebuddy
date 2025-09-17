@@ -531,13 +531,13 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		togglePermittedSections()
 	}
 
-	var hasUpdate, hasUpdateError, hasScopeError bool
+	var hasUpdate, hasUpdateError, hasScopeError, isOffline bool
 	refreshMoreBadge := func() {
-		if hasUpdateError || hasUpdate || hasScopeError {
+		if hasUpdateError || hasUpdate || hasScopeError || isOffline {
 			var importance widget.Importance
 			if hasUpdateError {
 				importance = widget.DangerImportance
-			} else if hasScopeError {
+			} else if hasScopeError || isOffline {
 				importance = widget.WarningImportance
 			} else if hasUpdate {
 				importance = widget.HighImportance
@@ -559,17 +559,25 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		go func() {
 			for {
 				var icon fyne.Resource
-				status := u.scs.Summary()
-				if status.Errors > 0 {
-					icon = theme.NewErrorThemedResource(theme.WarningIcon())
-					hasUpdateError = true
+				var s string
+				if u.ess.IsDailyDowntime() {
+					isOffline = true
+					icon = theme.NewWarningThemedResource(theme.WarningIcon())
+					s = fmt.Sprintf("Off during daily downtime: %s", u.ess.DailyDowntime())
 				} else {
-					icon = nil
-					hasUpdateError = false
+					isOffline = false
+					status := u.scs.Summary()
+					if status.Errors > 0 {
+						icon = theme.NewErrorThemedResource(theme.WarningIcon())
+						hasUpdateError = true
+					} else {
+						hasUpdateError = false
+					}
+					s = status.Display()
 				}
 				fyne.Do(func() {
 					refreshMoreBadge()
-					navItemUpdateStatus.Supporting = status.Display()
+					navItemUpdateStatus.Supporting = s
 					navItemUpdateStatus.Trailing = icon
 					moreList.Refresh()
 				})
