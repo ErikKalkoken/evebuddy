@@ -6,15 +6,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-type EveTypeVariant uint
-
-const (
-	VariantRegular EveTypeVariant = iota
-	VariantBPO
-	VariantBPC
-	VariantSKIN
-)
-
+// LocationFlag represents a location flag for assets.
 type LocationFlag uint
 
 const (
@@ -110,6 +102,28 @@ const (
 	FlagUnknown
 )
 
+// LocationType represents a location type for assets.
+type LocationType uint
+
+const (
+	TypeUndefined LocationType = iota
+	TypeItem
+	TypeOther
+	TypeSolarSystem
+	TypeStation
+	TypeUnknown
+)
+
+// InventoryTypeVariant represents a variant of inventory types for asset items.
+type InventoryTypeVariant uint
+
+const (
+	VariantRegular InventoryTypeVariant = iota
+	VariantBPO
+	VariantBPC
+	VariantSKIN
+)
+
 type CharacterAsset struct {
 	CharacterID     int32
 	ID              int64
@@ -118,7 +132,7 @@ type CharacterAsset struct {
 	ItemID          int64
 	LocationFlag    LocationFlag
 	LocationID      int64
-	LocationType    string
+	LocationType    LocationType
 	Name            string
 	Price           optional.Optional[float64]
 	Quantity        int32
@@ -246,7 +260,7 @@ func (ca CharacterAsset) IsInFuelBay() bool {
 }
 
 func (ca CharacterAsset) IsInSpace() bool {
-	return ca.LocationType == "solar_system"
+	return ca.LocationType == TypeSolarSystem
 }
 
 func (ca CharacterAsset) IsInHangar() bool {
@@ -317,12 +331,14 @@ func (ca CharacterAsset) IsShipOther() bool {
 		!ca.IsInFrigateEscapeBay()
 }
 
-func (ca CharacterAsset) Variant() EveTypeVariant {
+func (ca CharacterAsset) Variant() InventoryTypeVariant {
 	if ca.IsSKIN() {
 		return VariantSKIN
-	} else if ca.IsBPO() {
+	}
+	if ca.IsBPO() {
 		return VariantBPO
-	} else if ca.IsBlueprintCopy {
+	}
+	if ca.IsBlueprintCopy {
 		return VariantBPC
 	}
 	return VariantRegular

@@ -106,9 +106,22 @@ var locationFlagFromDBValue = map[string]app.LocationFlag{
 
 var locationFlagToDBValue = map[app.LocationFlag]string{}
 
+var locationTypeFromDBValue = map[string]app.LocationType{
+	"":             app.TypeUndefined,
+	"station":      app.TypeStation,
+	"solar_system": app.TypeSolarSystem,
+	"item":         app.TypeItem,
+	"other":        app.TypeOther,
+}
+
+var locationTypeToDBValue = map[app.LocationType]string{}
+
 func init() {
 	for k, v := range locationFlagFromDBValue {
 		locationFlagToDBValue[v] = k
+	}
+	for k, v := range locationTypeFromDBValue {
+		locationTypeToDBValue[v] = k
 	}
 }
 
@@ -120,7 +133,7 @@ type CreateCharacterAssetParams struct {
 	ItemID          int64
 	LocationFlag    app.LocationFlag
 	LocationID      int64
-	LocationType    string
+	LocationType    app.LocationType
 	Name            string
 	Quantity        int32
 }
@@ -137,7 +150,7 @@ func (st *Storage) CreateCharacterAsset(ctx context.Context, arg CreateCharacter
 		ItemID:          arg.ItemID,
 		LocationFlag:    locationFlagToDBValue[arg.LocationFlag],
 		LocationID:      arg.LocationID,
-		LocationType:    arg.LocationType,
+		LocationType:    locationTypeToDBValue[arg.LocationType],
 		Name:            arg.Name,
 		Quantity:        int64(arg.Quantity),
 	}
@@ -240,7 +253,7 @@ type UpdateCharacterAssetParams struct {
 	ItemID       int64
 	LocationFlag app.LocationFlag
 	LocationID   int64
-	LocationType string
+	LocationType app.LocationType
 	Name         string
 	Quantity     int32
 }
@@ -254,7 +267,7 @@ func (st *Storage) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacter
 		ItemID:       arg.ItemID,
 		LocationFlag: locationFlagToDBValue[arg.LocationFlag],
 		LocationID:   arg.LocationID,
-		LocationType: arg.LocationType,
+		LocationType: locationTypeToDBValue[arg.LocationType],
 		Name:         arg.Name,
 		Quantity:     int64(arg.Quantity),
 	}
@@ -296,6 +309,10 @@ func characterAssetFromDBModel(ca queries.CharacterAsset, t queries.EveType, g q
 	if !found {
 		locationFlag = app.FlagUnknown
 	}
+	locationType, found := locationTypeFromDBValue[ca.LocationType]
+	if !found {
+		locationType = app.TypeUnknown
+	}
 	o := &app.CharacterAsset{
 		ID:              ca.ID,
 		CharacterID:     int32(ca.CharacterID),
@@ -305,7 +322,7 @@ func characterAssetFromDBModel(ca queries.CharacterAsset, t queries.EveType, g q
 		ItemID:          ca.ItemID,
 		LocationFlag:    locationFlag,
 		LocationID:      ca.LocationID,
-		LocationType:    ca.LocationType,
+		LocationType:    locationType,
 		Name:            ca.Name,
 		Quantity:        int32(ca.Quantity),
 		Price:           optional.FromNullFloat64(p),

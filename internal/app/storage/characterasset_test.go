@@ -32,7 +32,7 @@ func TestCharacterAsset(t *testing.T) {
 			ItemID:          42,
 			LocationFlag:    app.FlagHangar,
 			LocationID:      99,
-			LocationType:    "other",
+			LocationType:    app.TypeOther,
 			Name:            "Alpha",
 			Quantity:        7,
 		}
@@ -49,7 +49,7 @@ func TestCharacterAsset(t *testing.T) {
 				assert.Equal(t, int64(42), x.ItemID)
 				assert.Equal(t, app.FlagHangar, x.LocationFlag)
 				assert.Equal(t, int64(99), x.LocationID)
-				assert.Equal(t, "other", x.LocationType)
+				assert.Equal(t, app.TypeOther, x.LocationType)
 				assert.Equal(t, "Alpha", x.Name)
 				assert.Equal(t, int32(7), x.Quantity)
 				assert.Equal(t, 1.24, x.Price.ValueOrZero())
@@ -66,7 +66,7 @@ func TestCharacterAsset(t *testing.T) {
 			ItemID:       x1.ItemID,
 			LocationFlag: app.FlagHangar,
 			LocationID:   99,
-			LocationType: "other",
+			LocationType: app.TypeOther,
 			Name:         "Alpha",
 			Quantity:     7,
 		}
@@ -78,7 +78,7 @@ func TestCharacterAsset(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, app.FlagHangar, x2.LocationFlag)
 				assert.Equal(t, int64(99), x2.LocationID)
-				assert.Equal(t, "other", x2.LocationType)
+				assert.Equal(t, app.TypeOther, x2.LocationType)
 				assert.Equal(t, "Alpha", x2.Name)
 				assert.Equal(t, int32(7), x2.Quantity)
 			}

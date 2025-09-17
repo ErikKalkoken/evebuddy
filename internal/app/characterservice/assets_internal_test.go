@@ -86,7 +86,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 					assert.True(t, x.IsSingleton)
 					assert.Equal(t, app.FlagHangar, x.LocationFlag)
 					assert.Equal(t, location.ID, x.LocationID)
-					assert.Equal(t, "station", x.LocationType)
+					assert.Equal(t, app.TypeStation, x.LocationType)
 					assert.Equal(t, "Awesome Name", x.Name)
 					assert.Equal(t, int32(1), x.Quantity)
 				}
@@ -231,7 +231,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 					assert.True(t, x.IsSingleton)
 					assert.Equal(t, app.FlagHangar, x.LocationFlag)
 					assert.Equal(t, location.ID, x.LocationID)
-					assert.Equal(t, "station", x.LocationType)
+					assert.Equal(t, app.TypeStation, x.LocationType)
 					assert.Equal(t, "Awesome Name", x.Name)
 					assert.Equal(t, int32(1), x.Quantity)
 				}

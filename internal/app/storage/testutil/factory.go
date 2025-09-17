@@ -198,8 +198,8 @@ func (f Factory) CreateCharacterAsset(args ...storage.CreateCharacterAssetParams
 		x := f.CreateEveLocationStructure()
 		arg.LocationID = x.ID
 	}
-	if arg.LocationType == "" {
-		arg.LocationType = "other"
+	if arg.LocationType == app.TypeUndefined {
+		arg.LocationType = app.TypeOther
 	}
 	if arg.IsSingleton && arg.Name == "" {
 		arg.Name = fmt.Sprintf("Asset %d", arg.ItemID)

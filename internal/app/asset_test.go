@@ -114,7 +114,7 @@ func TestCharacterAssetVariant(t *testing.T) {
 	cases := []struct {
 		name string
 		ca   *app.CharacterAsset
-		want app.EveTypeVariant
+		want app.InventoryTypeVariant
 	}{
 		{
 			"bpo",

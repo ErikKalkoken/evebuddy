@@ -86,7 +86,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 			return assetsPlus, nil
 		},
 		func(ctx context.Context, characterID int32, data any) error {
-			var locationFlagFromESIValue = map[string]app.LocationFlag{
+			locationFlagFromESIValue := map[string]app.LocationFlag{
 				"AssetSafety":                         app.FlagAssetSafety,
 				"AutoFit":                             app.FlagAutoFit,
 				"BoosterBay":                          app.FlagBoosterBay,
@@ -176,6 +176,13 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 				"Unlocked":                            app.FlagUnlocked,
 				"Wardrobe":                            app.FlagWardrobe,
 			}
+			locationTypeFromESIValue := map[string]app.LocationType{
+				"":             app.TypeUndefined,
+				"station":      app.TypeStation,
+				"solar_system": app.TypeSolarSystem,
+				"item":         app.TypeItem,
+				"other":        app.TypeOther,
+			}
 			assets := data.([]esiCharacterAssetPlus)
 			incomingIDs := set.Of[int64]()
 			for _, ca := range assets {
@@ -210,13 +217,18 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 					locationFlag = app.FlagUnknown
 					slog.Warn("Unknown location flag encountered", "characterID", characterID, "item", a)
 				}
+				locationType, found := locationTypeFromESIValue[a.LocationType]
+				if !found {
+					locationType = app.TypeUnknown
+					slog.Warn("Unknown location type encountered", "characterID", characterID, "item", a)
+				}
 				if currentIDs.Contains(a.ItemId) {
 					arg := storage.UpdateCharacterAssetParams{
 						CharacterID:  characterID,
 						ItemID:       a.ItemId,
 						LocationFlag: locationFlag,
 						LocationID:   a.LocationId,
-						LocationType: a.LocationType,
+						LocationType: locationType,
 						Name:         a.Name,
 						Quantity:     a.Quantity,
 					}
@@ -233,7 +245,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 						ItemID:          a.ItemId,
 						LocationFlag:    locationFlag,
 						LocationID:      a.LocationId,
-						LocationType:    a.LocationType,
+						LocationType:    locationType,
 						Name:            a.Name,
 						Quantity:        a.Quantity,
 					}
