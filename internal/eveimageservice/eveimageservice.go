@@ -23,7 +23,7 @@ import (
 // cache timeouts per image category
 const (
 	timeoutAlliance    = time.Hour * 24 * 7
-	timeoutCharacter   = time.Hour * 24 * 3
+	timeoutCharacter   = time.Hour * 24 * 1
 	timeoutCorporation = time.Hour * 24 * 3
 	timeoutNeverExpire = 0
 )

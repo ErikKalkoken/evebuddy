@@ -81,11 +81,10 @@ func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
 			a.update()
 		})
 		a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
-			characterID := characterIDOrZero(a.character)
-			if characterID == 0 {
+			if a.character == nil {
 				return
 			}
-			if arg.section == app.SectionEveCharacters && arg.changed.Contains(characterID) {
+			if arg.section == app.SectionEveCorporations && arg.changed.Contains(a.character.EveCharacter.Corporation.ID) {
 				a.update()
 			}
 		})

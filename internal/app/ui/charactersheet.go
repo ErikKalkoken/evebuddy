@@ -68,17 +68,29 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 			return
 		}
 		switch arg.section {
-		case app.SectionCharacterRoles, app.SectionCharacterAssets:
+		case
+			app.SectionCharacterAssets,
+			app.SectionCharacterRoles,
+			app.SectionCharacterSkills,
+			app.SectionCharacterWalletBalance:
 			a.update()
 		}
 	})
-	// TODO: Add listener for updated of character calculated values
 	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
-		characterID := characterIDOrZero(a.character)
-		if characterID == 0 {
+		if a.character == nil {
 			return
 		}
-		if arg.section == app.SectionEveCharacters && arg.changed.Contains(characterID) {
+		characterID := characterIDOrZero(a.character)
+		switch arg.section {
+		case app.SectionEveCharacters:
+			if arg.changed.Contains(characterID) {
+				a.update()
+			}
+		case app.SectionEveCorporations:
+			if arg.changed.Contains(a.character.EveCharacter.Corporation.ID) {
+				a.update()
+			}
+		case app.SectionEveMarketPrices:
 			a.update()
 		}
 	})
