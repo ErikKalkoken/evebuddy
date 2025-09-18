@@ -2591,14 +2591,12 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 		it := w.items[id]
 		x, ok := it.Value.(*url.URL)
 		if ok && x != nil {
-			w.openURL(x)
+			err := w.openURL(x)
+			if err != nil {
+				w.iw.u.ShowSnackbar(fmt.Sprintf("ERROR: Failed to open URL: %s", w.iw.u.humanizeError(err)))
+			}
 			return
 		}
-		// 	// TODO
-		// 	// if err != nil {
-		// 	// 	a.iw.u.ShowSnackbar(fmt.Sprintf("ERROR: Failed to open URL: %s", a.iw.u.ErrorDisplay(err)))
-		// 	// }
-		// }
 		if it.Action != nil {
 			it.Action(it.Value)
 		}

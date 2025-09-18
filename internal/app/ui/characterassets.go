@@ -34,7 +34,6 @@ const (
 )
 
 // TODO: Add ability to view details for singular ships
-// TODO: Add location type as enum
 
 type locationNodeVariant uint
 
