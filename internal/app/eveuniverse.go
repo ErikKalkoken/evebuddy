@@ -222,19 +222,35 @@ func (ec EveCorporation) EveEntity() *EveEntity {
 
 // Equal reports whether two characters are equal.
 // Two characters must have the same values in all fields to be equal.
-func (ec EveCorporation) Equal(other EveCorporation) bool {
-	return ec.ID == other.ID &&
-		ec.AllianceID() == other.AllianceID() &&
-		ec.CeoID() == other.CeoID() &&
-		ec.CreatorID() == other.CreatorID() &&
-		ec.DateFounded.ValueOrZero().Equal(other.DateFounded.ValueOrZero()) &&
-		ec.Description == other.Description &&
-		ec.FactionID() == other.FactionID() &&
-		ec.HomeStationID() == other.HomeStationID() &&
-		ec.MemberCount == other.MemberCount &&
-		ec.Name == other.Name &&
-		ec.Shares == other.Shares &&
-		math.Abs(float64(ec.TaxRate-other.TaxRate)) < 0.01
+func (ec EveCorporation) Equal(other *EveCorporation) bool {
+	return ec.ID == other.ID && ec.Hash() == other.Hash()
+}
+
+func (ec EveCorporation) Hash() string {
+	xx := []any{
+		ec.AllianceID(),
+		ec.CeoID(),
+		ec.CreatorID(),
+		ec.DateFounded.ValueOrZero().UTC(),
+		ec.Description,
+		ec.FactionID(),
+		ec.HomeStationID(),
+		ec.ID,
+		ec.MemberCount,
+		ec.Name,
+		ec.Shares,
+		math.Round(float64(ec.TaxRate) * 100),
+		ec.Ticker,
+		ec.URL,
+		ec.WarEligible,
+	}
+	s := make([]string, 0)
+	for _, x := range xx {
+		s = append(s, fmt.Sprint(x))
+	}
+	h1 := md5.Sum([]byte(strings.Join(s, "-")))
+	h2 := hex.EncodeToString(h1[:])
+	return h2
 }
 
 // TODO: Add race alliance

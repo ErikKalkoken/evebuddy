@@ -134,7 +134,7 @@ func TestEveCorporation_EveEntity(t *testing.T) {
 
 func TestEveCorporation_IsIdentical(t *testing.T) {
 	t.Run("should report when same", func(t *testing.T) {
-		x1 := app.EveCorporation{
+		x1 := &app.EveCorporation{
 			Alliance:    &app.EveEntity{ID: 1},
 			Ceo:         &app.EveEntity{ID: 2},
 			Creator:     &app.EveEntity{ID: 3},
@@ -156,7 +156,7 @@ func TestEveCorporation_IsIdentical(t *testing.T) {
 		assert.True(t, x1.Equal(x2))
 	})
 	t.Run("should report when not same", func(t *testing.T) {
-		x1 := app.EveCorporation{
+		x1 := &app.EveCorporation{
 			Alliance:    &app.EveEntity{ID: 1},
 			Ceo:         &app.EveEntity{ID: 2},
 			Creator:     &app.EveEntity{ID: 3},
@@ -174,7 +174,7 @@ func TestEveCorporation_IsIdentical(t *testing.T) {
 			WarEligible: true,
 			Timestamp:   time.Now(),
 		}
-		x2 := app.EveCorporation{
+		x2 := &app.EveCorporation{
 			ID: 4,
 		}
 		assert.False(t, x1.Equal(x2))

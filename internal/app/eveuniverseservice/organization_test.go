@@ -448,7 +448,6 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 		if assert.NoError(t, err) {
 			want := set.Of[int32]()
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
-
 		}
 	})
 }
