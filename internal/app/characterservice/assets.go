@@ -7,20 +7,21 @@ import (
 	"net/http"
 	"slices"
 
+	"github.com/antihax/goesi/esi"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
-	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
-	"golang.org/x/sync/errgroup"
 )
 
-const (
-	assetNamesMaxIDs = 999
-)
+func (s *CharacterService) AssetTotalValue(ctx context.Context, characterID int32) (optional.Optional[float64], error) {
+	return s.st.GetCharacterAssetValue(ctx, characterID)
+}
 
 func (s *CharacterService) ListAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {
 	return s.st.ListCharacterAssetsInShipHangar(ctx, characterID, locationID)
@@ -51,7 +52,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 	if arg.Section != app.SectionCharacterAssets {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
-	hasChanged, err := s.updateSectionIfChanged(
+	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			assets, err := xesi.FetchWithPaging(
@@ -255,9 +256,6 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 					created++
 				}
 			}
-			if _, err := s.UpdateAssetTotalValue(ctx, characterID); err != nil {
-				return err
-			}
 			slog.Info("Stored character assets", "characterID", characterID, "created", created, "updated", updated)
 			if ids := set.Difference(currentIDs, incomingIDs); ids.Size() > 0 {
 				if err := s.st.DeleteCharacterAssets(ctx, characterID, ids.Slice()); err != nil {
@@ -265,19 +263,16 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 				}
 				slog.Info("Deleted obsolete character assets", "characterID", characterID, "count", ids.Size())
 			}
+			if _, err := s.UpdateAssetTotalValue(ctx, characterID); err != nil {
+				return err
+			}
 			return nil
-		})
-	if err != nil {
-		return false, err
-	}
-	_, err = s.UpdateAssetTotalValue(ctx, arg.CharacterID)
-	if err != nil {
-		slog.Error("Failed to update asset total value", "characterID", arg.CharacterID, "err", err)
-	}
-	return hasChanged, err
+		},
+	)
 }
 
 func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID int32, ids []int64) (map[int64]string, error) {
+	const assetNamesMaxIDs = 999
 	numResults := len(ids) / assetNamesMaxIDs
 	if len(ids)%assetNamesMaxIDs > 0 {
 		numResults++
@@ -309,10 +304,6 @@ func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID i
 		}
 	}
 	return m, nil
-}
-
-func (s *CharacterService) AssetTotalValue(ctx context.Context, characterID int32) (optional.Optional[float64], error) {
-	return s.st.GetCharacterAssetValue(ctx, characterID)
 }
 
 func (s *CharacterService) UpdateAssetTotalValue(ctx context.Context, characterID int32) (float64, error) {

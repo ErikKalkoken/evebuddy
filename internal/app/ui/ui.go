@@ -284,7 +284,6 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		case app.SectionCharacterAssets:
 			if isShown {
 				u.reloadCurrentCharacter()
-				u.characterSheet.update()
 			}
 		case
 			app.SectionCharacterJumpClones,
@@ -368,6 +367,13 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 				u.updateStatus()
 			}
 		case app.SectionEveMarketPrices:
+			for _, c := range u.scs.ListCharacters() {
+				_, err := u.cs.UpdateAssetTotalValue(ctx, c.ID)
+				if err != nil {
+					slog.Error("Failed to update asset value", "characterID", c.ID)
+					continue
+				}
+			}
 			u.reloadCurrentCharacter()
 		}
 	})
