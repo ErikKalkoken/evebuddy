@@ -64,7 +64,7 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 	a.groupsGrid = a.makeGroupsGrid()
 	a.skillsGrid = a.makeSkillsGrid()
 
-	a.u.characterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		a.character = c
 	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
@@ -206,7 +206,7 @@ func (a *characterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 				return
 			}
 			skill := a.skills[id]
-			a.u.ShowTypeInfoWindow(skill.id)
+			a.u.ShowTypeInfoWindowWithCharacter(skill.id, characterIDOrZero(a.character))
 		}
 	}
 	return makeGridOrList(!a.u.isDesktop, length, makeCreateItem, updateItem, makeOnSelected)

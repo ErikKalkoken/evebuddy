@@ -54,7 +54,7 @@ type assetRow struct {
 	typeID          int32
 	typeName        string
 	typeNameDisplay string
-	variant         app.EveTypeVariant
+	variant         app.InventoryTypeVariant
 }
 
 func newAssetRow(ca *app.CharacterAsset, assetCollection assetcollection.AssetCollection, characterName func(int32) string) assetRow {

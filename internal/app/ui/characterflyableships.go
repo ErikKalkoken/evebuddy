@@ -91,7 +91,7 @@ func newCharacterFlyableShips(u *baseUI) *characterFlyableShips {
 
 	a.grid = a.makeShipsGrid()
 
-	a.u.characterExchanged.AddListener(
+	a.u.currentCharacterExchanged.AddListener(
 		func(_ context.Context, c *app.Character) {
 			a.character = c
 		},
@@ -163,7 +163,7 @@ func (a *characterFlyableShips) makeShipsGrid() *widget.GridWrap {
 			return
 		}
 		o := a.ships[id]
-		a.u.ShowTypeInfoWindow(o.Type.ID)
+		a.u.ShowTypeInfoWindowWithCharacter(o.Type.ID, characterIDOrZero(a.character))
 	}
 	return g
 }

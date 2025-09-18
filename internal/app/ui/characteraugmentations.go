@@ -36,7 +36,7 @@ func newCharacterAugmentations(u *baseUI) *characterAugmentations {
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeImplantList()
-	a.u.characterExchanged.AddListener(
+	a.u.currentCharacterExchanged.AddListener(
 		func(_ context.Context, c *app.Character) {
 			a.character = c
 			a.update()
@@ -104,7 +104,7 @@ func (a *characterAugmentations) makeImplantList() *widget.List {
 			})
 			info := border[2].(*iwidget.TappableIcon)
 			info.OnTapped = func() {
-				a.u.ShowTypeInfoWindow(a.implants[id].EveType.ID)
+				a.u.ShowTypeInfoWindowWithCharacter(a.implants[id].EveType.ID, characterIDOrZero(a.character))
 			}
 		})
 

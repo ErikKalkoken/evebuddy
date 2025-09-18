@@ -42,7 +42,7 @@ func newCorporationWallet(u *baseUI, division app.Division) *corporationWallet {
 	}
 	a.name.TextStyle.Italic = true
 	a.ExtendBaseWidget(a)
-	a.u.corporationExchanged.AddListener(
+	a.u.currentCorporationExchanged.AddListener(
 		func(_ context.Context, c *app.Corporation) {
 			a.corporation = c
 		},

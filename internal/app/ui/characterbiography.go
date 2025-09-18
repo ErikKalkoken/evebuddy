@@ -26,7 +26,7 @@ func newCharacterBiography(u *baseUI) *characterBiography {
 		u:    u,
 	}
 	a.ExtendBaseWidget(a)
-	a.u.characterExchanged.AddListener(
+	a.u.currentCharacterExchanged.AddListener(
 		func(_ context.Context, c *app.Character) {
 			a.character = c
 		},
@@ -51,8 +51,7 @@ func (a *characterBiography) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *characterBiography) update() {
-	character := a.u.currentCharacter()
-	if character == nil || character.EveCharacter == nil {
+	if a.character == nil || a.character.EveCharacter == nil {
 		fyne.Do(func() {
 			a.body.Text = "Waiting for character data to be loaded..."
 			a.body.Importance = widget.WarningImportance
@@ -60,7 +59,7 @@ func (a *characterBiography) update() {
 		})
 	} else {
 		fyne.Do(func() {
-			a.body.Text = character.EveCharacter.DescriptionPlain()
+			a.body.Text = a.character.EveCharacter.DescriptionPlain()
 			a.body.Importance = widget.MediumImportance
 			a.body.Refresh()
 		})

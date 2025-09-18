@@ -89,7 +89,7 @@ type infoWidget interface {
 }
 
 func (iw *infoWindow) show(v infoVariant, id int64) {
-	iw.showWithCharacterID(v, id, iw.u.currentCharacterID())
+	iw.showWithCharacterID(v, id, 0)
 }
 
 func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, characterID int32) {
@@ -641,7 +641,7 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *characterInfo) update() error {
 	ctx := context.Background()
-	o, err := a.iw.u.eus.GetOrCreateCharacterESI(ctx, a.id)
+	o, _, err := a.iw.u.eus.GetOrCreateCharacterESI(ctx, a.id)
 	if err != nil {
 		return err
 	}
@@ -2591,14 +2591,12 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 		it := w.items[id]
 		x, ok := it.Value.(*url.URL)
 		if ok && x != nil {
-			w.openURL(x)
+			err := w.openURL(x)
+			if err != nil {
+				w.iw.u.ShowSnackbar(fmt.Sprintf("ERROR: Failed to open URL: %s", w.iw.u.humanizeError(err)))
+			}
 			return
 		}
-		// 	// TODO
-		// 	// if err != nil {
-		// 	// 	a.iw.u.ShowSnackbar(fmt.Sprintf("ERROR: Failed to open URL: %s", a.iw.u.ErrorDisplay(err)))
-		// 	// }
-		// }
 		if it.Action != nil {
 			it.Action(it.Value)
 		}

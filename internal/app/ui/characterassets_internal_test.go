@@ -108,7 +108,7 @@ func TestCharacterAsset_CanRenderWithData(t *testing.T) {
 		EveTypeID:    et.ID,
 		Quantity:     10,
 		LocationID:   loc.ID,
-		LocationType: "other",
+		LocationType: app.TypeOther,
 		LocationFlag: app.FlagHangar,
 	})
 	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{

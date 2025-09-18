@@ -43,8 +43,12 @@ func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, char
 // and returns the results by EveEntity category and sorted by name.
 // It also returns the total number of results.
 // A total of 500 indicates that we exceeded the server limit.
-func (s *CharacterService) SearchESI(ctx context.Context, characterID int32, search string, categories []app.SearchCategory, strict bool) (map[app.SearchCategory][]*app.EveEntity, int, error) {
-	token, err := s.GetValidCharacterToken(ctx, characterID)
+func (s *CharacterService) SearchESI(ctx context.Context, search string, categories []app.SearchCategory, strict bool) (map[app.SearchCategory][]*app.EveEntity, int, error) {
+	c, err := s.GetAnyCharacter(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	token, err := s.GetValidCharacterToken(ctx, c.ID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -55,11 +59,10 @@ func (s *CharacterService) SearchESI(ctx context.Context, characterID int32, sea
 	x, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(
 		ctx,
 		cc,
-		characterID,
+		c.ID,
 		search,
-		&esi.GetCharactersCharacterIdSearchOpts{
-			Strict: esioptional.NewBool(strict),
-		})
+		&esi.GetCharactersCharacterIdSearchOpts{Strict: esioptional.NewBool(strict)},
+	)
 	if err != nil {
 		return nil, 0, err
 	}

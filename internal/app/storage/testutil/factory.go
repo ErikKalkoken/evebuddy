@@ -198,8 +198,8 @@ func (f Factory) CreateCharacterAsset(args ...storage.CreateCharacterAssetParams
 		x := f.CreateEveLocationStructure()
 		arg.LocationID = x.ID
 	}
-	if arg.LocationType == "" {
-		arg.LocationType = "other"
+	if arg.LocationType == app.TypeUndefined {
+		arg.LocationType = app.TypeOther
 	}
 	if arg.IsSingleton && arg.Name == "" {
 		arg.Name = fmt.Sprintf("Asset %d", arg.ItemID)
@@ -1662,9 +1662,15 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *a
 	if arg.Description == "" {
 		arg.Description = fake.Paragraphs()
 	}
+	if arg.Gender == "" {
+		arg.Gender = "male"
+	}
 	if arg.RaceID == 0 {
 		r := f.CreateEveRace()
 		arg.RaceID = r.ID
+	}
+	if arg.Title == "" {
+		arg.Title = fake.JobTitle()
 	}
 	err := f.st.UpdateOrCreateEveCharacter(ctx, arg)
 	if err != nil {

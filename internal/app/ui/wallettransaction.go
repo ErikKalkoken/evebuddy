@@ -78,7 +78,7 @@ type walletTransactions struct {
 
 func newCharacterWalletTransaction(u *baseUI) *walletTransactions {
 	a := newWalletTransaction(u, app.DivisionZero)
-	a.u.characterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		a.character = c
 	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
@@ -94,7 +94,7 @@ func newCharacterWalletTransaction(u *baseUI) *walletTransactions {
 
 func newCorporationWalletTransactions(u *baseUI, d app.Division) *walletTransactions {
 	a := newWalletTransaction(u, d)
-	a.u.corporationExchanged.AddListener(
+	a.u.currentCorporationExchanged.AddListener(
 		func(_ context.Context, c *app.Corporation) {
 			a.corporation = c
 		},

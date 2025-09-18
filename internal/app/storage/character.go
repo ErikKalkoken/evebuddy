@@ -194,6 +194,14 @@ func (st *Storage) ListCharacterCorporations(ctx context.Context) ([]*app.Entity
 	return cc, nil
 }
 
+func (st *Storage) ListCharacterCorporationIDs(ctx context.Context) (set.Set[int32], error) {
+	ids, err := st.qRO.ListCharacterCorporationIDs(ctx)
+	if err != nil {
+		return set.Set[int32]{}, fmt.Errorf("ListCharacterCorporationIDs: %w", err)
+	}
+	return set.Of(convertNumericSlice[int32](ids)...), nil
+}
+
 func (st *Storage) ListCharacterIDs(ctx context.Context) (set.Set[int32], error) {
 	ids, err := st.qRO.ListCharacterIDs(ctx)
 	if err != nil {

@@ -423,8 +423,6 @@ func (s *EveUniverseService) ListTypeDogmaAttributesForType(
 	return s.st.ListEveTypeDogmaAttributesForType(ctx, typeID)
 }
 
-// TODO: Not fully thread safe: Might update for same ID multiple times.
-
 // MarketPrice returns the average market price for a type. Or empty when no price is known for this type.
 func (s *EveUniverseService) MarketPrice(ctx context.Context, typeID int32) (optional.Optional[float64], error) {
 	var v optional.Optional[float64]

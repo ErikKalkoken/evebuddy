@@ -61,7 +61,7 @@ func newCorporationMember(u *baseUI) *corporationMember {
 		a.filterRows()
 		a.list.ScrollToTop()
 	}
-	a.u.corporationExchanged.AddListener(
+	a.u.currentCorporationExchanged.AddListener(
 		func(_ context.Context, c *app.Corporation) {
 			a.corporation = c
 		},

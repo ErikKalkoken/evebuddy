@@ -105,6 +105,15 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			}),
 		)
 		httpmock.RegisterResponder(
+			"POST",
+			`=~^https://esi\.evetech\.net/v\d+/characters/affiliation/`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"character_id":   ec.ID,
+					"corporation_id": ec.Corporation.ID,
+				}}),
+		)
+		httpmock.RegisterResponder(
 			"GET",
 			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/`,
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
@@ -174,6 +183,15 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 				"security_status": ec.SecurityStatus,
 				"title":           ec.Title,
 			}),
+		)
+		httpmock.RegisterResponder(
+			"POST",
+			`=~^https://esi\.evetech\.net/v\d+/characters/affiliation/`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"character_id":   ec.ID,
+					"corporation_id": ec.Corporation.ID,
+				}}),
 		)
 		httpmock.RegisterResponder(
 			"GET",

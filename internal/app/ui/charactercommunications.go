@@ -65,7 +65,7 @@ func newCharacterCommunications(u *baseUI) *characterCommunications {
 	a.Detail = newCommunicationDetail(a.u.eis, a.u.ShowEveEntityInfoWindow)
 	a.notificationList = a.makeNotificationList()
 	a.Notifications = container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList)
-	a.u.characterExchanged.AddListener(
+	a.u.currentCharacterExchanged.AddListener(
 		func(_ context.Context, c *app.Character) {
 			a.character = c
 		},

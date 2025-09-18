@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/url"
 	"testing"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
@@ -234,30 +233,6 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		IsDesktop:          isDesktop,
 	})
 	return bu
-}
-
-func TestIsTimeWithinRange(t *testing.T) {
-	start := "11:00"
-	duration := 15 * time.Minute
-	cases := []struct {
-		name string
-		t    time.Time
-		want bool
-	}{
-
-		{"in range", time.Date(2025, 1, 1, 11, 3, 0, 0, time.UTC), true},
-		{"equal start", time.Date(2025, 1, 1, 11, 0, 0, 0, time.UTC), true},
-		{"equal end", time.Date(2025, 1, 1, 11, 15, 0, 0, time.UTC), true},
-		{"after 1", time.Date(2025, 1, 1, 11, 16, 0, 0, time.UTC), false},
-		{"after 2", time.Date(2025, 1, 1, 12, 10, 0, 0, time.UTC), false},
-		{"before", time.Date(2025, 1, 1, 10, 16, 0, 0, time.UTC), false},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := isTimeWithinRange(start, duration, tc.t)
-			assert.Equal(t, tc.want, got)
-		})
-	}
 }
 
 func TestMakeOrFindWindow(t *testing.T) {
