@@ -107,7 +107,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		NoSort: true,
 	}})
 	a := &corporationStructures{
-		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(headers, structuresColName, iwidget.SortAsc),
 		rows:         make([]corporationStructureRow, 0),
 		rowsFiltered: make([]corporationStructureRow, 0),
 		bottom:       makeTopLabel(),

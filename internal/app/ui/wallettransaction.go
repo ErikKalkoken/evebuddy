@@ -152,7 +152,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 	}})
 	a := &walletTransactions{
 		bottom:       widget.NewLabel(""),
-		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortDesc),
+		columnSorter: iwidget.NewColumnSorter(headers, walletTransactionColDate, iwidget.SortDesc),
 		division:     d,
 		rows:         make([]walletTransactionRow, 0),
 		rowsFiltered: make([]walletTransactionRow, 0),

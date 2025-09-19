@@ -110,7 +110,7 @@ func newColonies(u *baseUI) *colonies {
 		Width: columnWidthEntity,
 	}})
 	a := &colonies{
-		columnSorter: iwidget.NewColumnSorterWithInit(def, 0, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(def, coloniesColPlanet, iwidget.SortAsc),
 		rows:         make([]colonyRow, 0),
 		rowsFiltered: make([]colonyRow, 0),
 		top:          makeTopLabel(),

@@ -39,7 +39,7 @@ func TestDataTable_CreateBasic(t *testing.T) {
 			}
 			panic(fmt.Sprintf("invalid col: %d", col))
 		},
-		iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortAsc),
+		iwidget.NewColumnSorter(headers, 0, iwidget.SortAsc),
 		func(i int) {
 
 		},

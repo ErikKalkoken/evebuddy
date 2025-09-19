@@ -99,10 +99,9 @@ func newClones(u *baseUI) *clones {
 		Label: "Location",
 		Width: columnWidthLocation,
 	}, {
-		Col:    clonesColRegion,
-		Label:  "Region",
-		Width:  columnWidthRegion,
-		NoSort: true,
+		Col:   clonesColRegion,
+		Label: "Region",
+		Width: columnWidthRegion,
 	}, {
 		Col:   clonesColImplants,
 		Label: "Impl.",
@@ -117,7 +116,7 @@ func newClones(u *baseUI) *clones {
 		Width: 100,
 	}})
 	a := &clones{
-		columnSorter: iwidget.NewColumnSorter(headers),
+		columnSorter: iwidget.NewColumnSorter(headers, clonesColLocation, iwidget.SortAsc),
 		originLabel:  iwidget.NewRichTextWithText("(not set)"),
 		rows:         make([]cloneRow, 0),
 		rowsFiltered: make([]cloneRow, 0),

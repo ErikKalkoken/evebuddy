@@ -282,25 +282,21 @@ type ColumnSorter struct {
 	cols       []SortDir
 	def        DataTableDef
 	sortButton *SortButton
-	defaultIdx int
-	defaultDir SortDir
+	initialIdx int
+	initialDir SortDir
 }
 
-func NewColumnSorter(def DataTableDef) *ColumnSorter {
+func NewColumnSorter(def DataTableDef, idx int, dir SortDir) *ColumnSorter {
+	if idx < 0 || idx >= def.size() {
+		panic(fmt.Sprintf("invalid idx. Allowed range: [0, %d]", def.size()-1))
+	}
 	cs := &ColumnSorter{
 		cols:       make([]SortDir, def.size()),
 		def:        def,
-		defaultIdx: -1,
-		defaultDir: SortOff,
+		initialIdx: idx,
+		initialDir: dir,
 	}
 	cs.clear()
-	return cs
-}
-
-func NewColumnSorterWithInit(def DataTableDef, idx int, dir SortDir) *ColumnSorter {
-	cs := NewColumnSorter(def)
-	cs.defaultIdx = idx
-	cs.defaultDir = dir
 	cs.Set(idx, dir)
 	return cs
 }
@@ -323,9 +319,9 @@ func (cs *ColumnSorter) current() (int, SortDir) {
 	return -1, SortOff
 }
 
-// reset sets the columns to their default state.
+// reset sets the columns to their initial state.
 func (cs *ColumnSorter) reset() {
-	cs.Set(cs.defaultIdx, cs.defaultDir)
+	cs.Set(cs.initialIdx, cs.initialDir)
 }
 
 // clear removes sorting from all columns.
@@ -364,7 +360,7 @@ func (cs *ColumnSorter) Sort(idx int, f func(sortCol int, dir SortDir)) {
 		} else {
 			dir++
 			if dir > SortDesc {
-				dir = SortOff
+				dir = SortAsc
 			}
 			cs.Set(idx, dir)
 		}

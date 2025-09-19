@@ -76,7 +76,7 @@ func newCharacterLocations(u *baseUI) *characterLocations {
 		Width: 150,
 	}})
 	a := &characterLocations{
-		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(headers, locationsColCharacter, iwidget.SortAsc),
 		rows:         make([]characterLocationRow, 0),
 		rowsFiltered: make([]characterLocationRow, 0),
 		bottom:       makeTopLabel(),

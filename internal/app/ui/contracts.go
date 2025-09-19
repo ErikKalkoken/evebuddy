@@ -110,7 +110,7 @@ func newContracts(u *baseUI) *contracts {
 		Width: 100,
 	}})
 	a := &contracts{
-		columnSorter: iwidget.NewColumnSorter(headers),
+		columnSorter: iwidget.NewColumnSorter(headers, contractsColIssuedAt, iwidget.SortDesc),
 		rows:         make([]contractRow, 0),
 		bottom:       widget.NewLabel(""),
 		u:            u,

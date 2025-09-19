@@ -83,7 +83,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	}})
 	a := &industrySlots{
 		bottom:       makeTopLabel(),
-		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(headers, industrySlotsColCharacter, iwidget.SortAsc),
 		rows:         make([]industrySlotRow, 0),
 		rowsFiltered: make([]industrySlotRow, 0),
 		slotType:     slotType,

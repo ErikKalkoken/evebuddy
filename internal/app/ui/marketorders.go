@@ -176,7 +176,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		Width: columnWidthEntity,
 	}})
 	a := &marketOrders{
-		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(headers, marketOrdersColType, iwidget.SortAsc),
 		footer:       widget.NewLabel(""),
 		isBuyOrders:  isBuyOrders,
 		issue:        makeTopLabel(),

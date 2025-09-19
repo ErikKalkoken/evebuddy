@@ -132,7 +132,7 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 		NoSort: true,
 	}})
 	a := &walletJournal{
-		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortDesc),
+		columnSorter: iwidget.NewColumnSorter(headers, walletJournalColDate, iwidget.SortDesc),
 		division:     division,
 		rows:         make([]walletJournalRow, 0),
 		top:          makeTopLabel(),

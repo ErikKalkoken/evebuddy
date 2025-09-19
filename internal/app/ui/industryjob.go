@@ -147,7 +147,7 @@ func newIndustryJobs(u *baseUI, isCorporationMode bool) *industryJobs {
 	}})
 	a := &industryJobs{
 		bottom:            makeTopLabel(),
-		columnSorter:      iwidget.NewColumnSorterWithInit(headers, 4, iwidget.SortDesc),
+		columnSorter:      iwidget.NewColumnSorter(headers, industryJobsColEndDate, iwidget.SortDesc),
 		isCorporationMode: isCorporationMode,
 		rows:              make([]industryJobRow, 0),
 		rowsFiltered:      make([]industryJobRow, 0),

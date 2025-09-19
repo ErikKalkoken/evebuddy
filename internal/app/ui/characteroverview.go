@@ -127,7 +127,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 		Width: 100,
 	}})
 	a := &characterOverview{
-		columnSorter: iwidget.NewColumnSorter(headers),
+		columnSorter: iwidget.NewColumnSorter(headers, overviewColCharacter, iwidget.SortAsc),
 		rows:         make([]characterOverviewRow, 0),
 		top:          makeTopLabel(),
 		u:            u,

@@ -164,7 +164,7 @@ func newAssets(u *baseUI) *assets {
 		Width: 100,
 	}})
 	a := &assets{
-		columnSorter: iwidget.NewColumnSorter(headers),
+		columnSorter: iwidget.NewColumnSorter(headers, assetsColItem, iwidget.SortAsc),
 		entry:        widget.NewEntry(),
 		found:        widget.NewLabel(""),
 		rowsFiltered: make([]assetRow, 0),

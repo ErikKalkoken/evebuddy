@@ -150,7 +150,7 @@ func newTraining(u *baseUI) *training {
 		Width: 50,
 	}})
 	a := &training{
-		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortAsc),
+		columnSorter: iwidget.NewColumnSorter(headers, trainingColName, iwidget.SortAsc),
 		rows:         make([]trainingRow, 0),
 		rowsFiltered: make([]trainingRow, 0),
 		bottom:       widget.NewLabel(""),
