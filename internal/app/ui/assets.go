@@ -164,7 +164,7 @@ func newAssets(u *baseUI) *assets {
 		Width: 100,
 	}})
 	a := &assets{
-		columnSorter: iwidget.NewColumnSorter(headers, assetsColItem, iwidget.SortAsc),
+		columnSorter: headers.NewColumnSorter(assetsColItem, iwidget.SortAsc),
 		entry:        widget.NewEntry(),
 		found:        widget.NewLabel(""),
 		rowsFiltered: make([]assetRow, 0),
@@ -235,7 +235,7 @@ func newAssets(u *baseUI) *assets {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRows(-1)
 	}, a.u.window)
 

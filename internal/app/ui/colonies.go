@@ -78,7 +78,7 @@ const (
 )
 
 func newColonies(u *baseUI) *colonies {
-	def := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
 		Col:   coloniesColPlanet,
 		Label: "Planet",
 		Width: 150,
@@ -110,7 +110,7 @@ func newColonies(u *baseUI) *colonies {
 		Width: columnWidthEntity,
 	}})
 	a := &colonies{
-		columnSorter: iwidget.NewColumnSorter(def, coloniesColPlanet, iwidget.SortAsc),
+		columnSorter: headers.NewColumnSorter(coloniesColPlanet, iwidget.SortAsc),
 		rows:         make([]colonyRow, 0),
 		rowsFiltered: make([]colonyRow, 0),
 		top:          makeTopLabel(),
@@ -138,11 +138,11 @@ func newColonies(u *baseUI) *colonies {
 		return iwidget.RichTextSegmentsFromText("?")
 	}
 	if a.u.isDesktop {
-		a.body = iwidget.MakeDataTable(def, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r colonyRow) {
+		a.body = iwidget.MakeDataTable(headers, &a.rowsFiltered, makeCell, a.columnSorter, a.filterRows, func(_ int, r colonyRow) {
 			a.showColonyWindow(r)
 		})
 	} else {
-		a.body = iwidget.MakeDataList(def, &a.rowsFiltered, makeCell, a.showColonyWindow)
+		a.body = iwidget.MakeDataList(headers, &a.rowsFiltered, makeCell, a.showColonyWindow)
 	}
 
 	a.selectExtracting = kxwidget.NewFilterChipSelectWithSearch("Extracted", []string{}, func(string) {
@@ -172,7 +172,7 @@ func newColonies(u *baseUI) *colonies {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.NewSortButton(def, func() {
+	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRows(-1)
 	}, a.u.window)
 

@@ -150,7 +150,7 @@ func newTraining(u *baseUI) *training {
 		Width: 50,
 	}})
 	a := &training{
-		columnSorter: iwidget.NewColumnSorter(headers, trainingColName, iwidget.SortAsc),
+		columnSorter: headers.NewColumnSorter(trainingColName, iwidget.SortAsc),
 		rows:         make([]trainingRow, 0),
 		rowsFiltered: make([]trainingRow, 0),
 		bottom:       widget.NewLabel(""),
@@ -215,7 +215,7 @@ func newTraining(u *baseUI) *training {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRows(-1)
 	}, a.u.window)
 

@@ -176,7 +176,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 		Width: columnWidthEntity,
 	}})
 	a := &marketOrders{
-		columnSorter: iwidget.NewColumnSorter(headers, marketOrdersColType, iwidget.SortAsc),
+		columnSorter: headers.NewColumnSorter(marketOrdersColType, iwidget.SortAsc),
 		footer:       widget.NewLabel(""),
 		isBuyOrders:  isBuyOrders,
 		issue:        makeTopLabel(),
@@ -243,7 +243,7 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRows(-1)
 	}, a.u.window)
 

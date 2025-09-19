@@ -76,7 +76,7 @@ func newCharacterLocations(u *baseUI) *characterLocations {
 		Width: 150,
 	}})
 	a := &characterLocations{
-		columnSorter: iwidget.NewColumnSorter(headers, locationsColCharacter, iwidget.SortAsc),
+		columnSorter: headers.NewColumnSorter(locationsColCharacter, iwidget.SortAsc),
 		rows:         make([]characterLocationRow, 0),
 		rowsFiltered: make([]characterLocationRow, 0),
 		bottom:       makeTopLabel(),
@@ -126,7 +126,7 @@ func newCharacterLocations(u *baseUI) *characterLocations {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRows(-1)
 	}, a.u.window)
 
