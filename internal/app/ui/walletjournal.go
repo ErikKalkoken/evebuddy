@@ -132,7 +132,7 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 		NoSort: true,
 	}})
 	a := &walletJournal{
-		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortDesc),
+		columnSorter: headers.NewColumnSorter(walletJournalColDate, iwidget.SortDesc),
 		division:     division,
 		rows:         make([]walletJournalRow, 0),
 		top:          makeTopLabel(),
@@ -173,7 +173,7 @@ func newWalletJournal(u *baseUI, division app.Division) *walletJournal {
 	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
 		a.filterRows(-1)
 	}, a.u.window)
-	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRows(-1)
 	}, a.u.window)
 	return a

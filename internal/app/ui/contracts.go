@@ -110,7 +110,7 @@ func newContracts(u *baseUI) *contracts {
 		Width: 100,
 	}})
 	a := &contracts{
-		columnSorter: iwidget.NewColumnSorter(headers),
+		columnSorter: headers.NewColumnSorter(contractsColIssuedAt, iwidget.SortDesc),
 		rows:         make([]contractRow, 0),
 		bottom:       widget.NewLabel(""),
 		u:            u,
@@ -168,7 +168,7 @@ func newContracts(u *baseUI) *contracts {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRows(-1)
 	}, a.u.window)
 

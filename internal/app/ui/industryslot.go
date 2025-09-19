@@ -83,7 +83,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	}})
 	a := &industrySlots{
 		bottom:       makeTopLabel(),
-		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortAsc),
+		columnSorter: headers.NewColumnSorter(industrySlotsColCharacter, iwidget.SortAsc),
 		rows:         make([]industrySlotRow, 0),
 		rowsFiltered: make([]industrySlotRow, 0),
 		slotType:     slotType,
@@ -174,7 +174,7 @@ func newIndustrySlots(u *baseUI, slotType app.IndustryJobType) *industrySlots {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRows(-1)
 	}, a.u.window)
 

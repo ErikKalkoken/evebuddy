@@ -99,10 +99,9 @@ func newClones(u *baseUI) *clones {
 		Label: "Location",
 		Width: columnWidthLocation,
 	}, {
-		Col:    clonesColRegion,
-		Label:  "Region",
-		Width:  columnWidthRegion,
-		NoSort: true,
+		Col:   clonesColRegion,
+		Label: "Region",
+		Width: columnWidthRegion,
 	}, {
 		Col:   clonesColImplants,
 		Label: "Impl.",
@@ -117,7 +116,7 @@ func newClones(u *baseUI) *clones {
 		Width: 100,
 	}})
 	a := &clones{
-		columnSorter: iwidget.NewColumnSorter(headers),
+		columnSorter: headers.NewColumnSorter(clonesColLocation, iwidget.SortAsc),
 		originLabel:  iwidget.NewRichTextWithText("(not set)"),
 		rows:         make([]cloneRow, 0),
 		rowsFiltered: make([]cloneRow, 0),
@@ -191,7 +190,7 @@ func newClones(u *baseUI) *clones {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRows(-1)
 	}, a.u.window)
 

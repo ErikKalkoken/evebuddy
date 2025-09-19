@@ -152,7 +152,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 	}})
 	a := &walletTransactions{
 		bottom:       widget.NewLabel(""),
-		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortDesc),
+		columnSorter: headers.NewColumnSorter(walletTransactionColDate, iwidget.SortDesc),
 		division:     d,
 		rows:         make([]walletTransactionRow, 0),
 		rowsFiltered: make([]walletTransactionRow, 0),
@@ -244,7 +244,7 @@ func newWalletTransaction(u *baseUI, d app.Division) *walletTransactions {
 		},
 		a.u.window,
 	)
-	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRows(-1)
 	}, a.u.window)
 	return a

@@ -107,7 +107,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		NoSort: true,
 	}})
 	a := &corporationStructures{
-		columnSorter: iwidget.NewColumnSorterWithInit(headers, 0, iwidget.SortAsc),
+		columnSorter: headers.NewColumnSorter(structuresColName, iwidget.SortAsc),
 		rows:         make([]corporationStructureRow, 0),
 		rowsFiltered: make([]corporationStructureRow, 0),
 		bottom:       makeTopLabel(),
@@ -172,7 +172,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 	a.selectService = kxwidget.NewFilterChipSelect("Service", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRows(-1)
 	}, a.u.window)
 	a.selectPower = kxwidget.NewFilterChipSelect("Power", []string{

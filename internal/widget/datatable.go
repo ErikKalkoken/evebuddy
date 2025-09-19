@@ -26,23 +26,47 @@ import (
 type SortDir uint
 
 const (
-	SortNone SortDir = iota
+	sortNone SortDir = iota
 	SortOff
 	SortAsc
 	SortDesc
 )
 
-// ColumnDef represents the definition for a column in a data table.
-type ColumnDef struct {
-	// Column index starting at 0 (not used yet)
-	Col int
-	// Label of a column displayed to the user. MANDATORY.
-	Label string
-	// Whether a column is sortable
-	NoSort bool
-	// Width of a column in Fyne units
-	Width float32
-}
+type (
+	// ColumnDef represents the definition for a column in a data table.
+	ColumnDef struct {
+		// Column index starting at 0. MANDATORY.
+		Col int
+		// Label of a column displayed to the user. MANDATORY.
+		Label string
+		// Whether a column is sortable.
+		NoSort bool
+		// Width of a column in Fyne units. Will try to autosize when zero.
+		Width float32
+	}
+
+	// DataTableDef represents the definition for a data table.
+	DataTableDef struct {
+		cols []ColumnDef
+	}
+
+	// ColumnSorter represents an ordered list of columns which can be sorted.
+	ColumnSorter struct {
+		cols       []SortDir
+		def        DataTableDef
+		sortButton *SortButton
+		initialIdx int
+		initialDir SortDir
+	}
+
+	// A SortButton represents a button for sorting a data table.
+	// It is supposed to be used in mobile views.
+	SortButton struct {
+		widget.Button
+
+		sortColumns []string
+	}
+)
 
 func (h ColumnDef) minWidth() float32 {
 	if h.Width > 0 {
@@ -52,11 +76,7 @@ func (h ColumnDef) minWidth() float32 {
 	return x.MinSize().Width
 }
 
-// DataTableDef represents the definition for a data table.
-type DataTableDef struct {
-	cols []ColumnDef
-}
-
+// NewDataTableDef creates and returns a [DataTableDef].
 func NewDataTableDef(cols []ColumnDef) DataTableDef {
 	var incoming, expected set.Set[int]
 	for i := range len(cols) {
@@ -84,6 +104,15 @@ func NewDataTableDef(cols []ColumnDef) DataTableDef {
 	return d
 }
 
+// Column return the definition of a column.
+func (d DataTableDef) Column(n int) ColumnDef {
+	return d.cols[n]
+}
+
+func (d DataTableDef) all() iter.Seq2[int, ColumnDef] {
+	return slices.All(d.cols)
+}
+
 // maxColumnWidth returns the maximum width of any column.
 func (d DataTableDef) maxColumnWidth() float32 {
 	var m float32
@@ -94,21 +123,207 @@ func (d DataTableDef) maxColumnWidth() float32 {
 	return m
 }
 
-// Column return the definition of a column.
-func (d DataTableDef) Column(n int) ColumnDef {
-	return d.cols[n]
-}
-
 func (d DataTableDef) size() int {
 	return len(d.cols)
 }
 
-func (d DataTableDef) all() iter.Seq2[int, ColumnDef] {
-	return slices.All(d.cols)
-}
-
 func (d DataTableDef) values() iter.Seq[ColumnDef] {
 	return slices.Values(d.cols)
+}
+
+// NewColumnSorter creates and returns a new [ColumSorter].
+// idx and dir defines the initially sorted column.
+func (d DataTableDef) NewColumnSorter(idx int, dir SortDir) *ColumnSorter {
+	if idx < 0 || idx >= d.size() {
+		panic(fmt.Sprintf("invalid idx. Allowed range: [0, %d]", d.size()-1))
+	}
+	cs := &ColumnSorter{
+		cols:       make([]SortDir, d.size()),
+		def:        d,
+		initialIdx: idx,
+		initialDir: dir,
+	}
+	cs.clear()
+	cs.Set(idx, dir)
+	return cs
+}
+
+// column returns the sort direction of a column
+func (cs *ColumnSorter) column(idx int) SortDir {
+	if idx < 0 || idx >= len(cs.cols) {
+		return SortOff
+	}
+	return cs.cols[idx]
+}
+
+// current returns which column is currently sorted or -1 if none are sorted.
+func (cs *ColumnSorter) current() (int, SortDir) {
+	for i, v := range cs.cols {
+		if v != SortOff {
+			return i, v
+		}
+	}
+	return -1, SortOff
+}
+
+// reset sets the columns to their initial state.
+func (cs *ColumnSorter) reset() {
+	cs.Set(cs.initialIdx, cs.initialDir)
+}
+
+// clear removes sorting from all columns.
+func (cs *ColumnSorter) clear() {
+	for i := range cs.cols {
+		var dir SortDir
+		if cs.def.Column(i).NoSort {
+			dir = sortNone
+		} else {
+			dir = SortOff
+		}
+		cs.cols[i] = dir
+	}
+}
+
+// Set sets the sort direction for a column.
+func (cs *ColumnSorter) Set(idx int, dir SortDir) {
+	cs.clear()
+	cs.cols[idx] = dir
+	if cs.sortButton != nil {
+		cs.sortButton.set(idx, dir)
+	}
+}
+
+// current returns which column is currently sorted or -1 if none are sorted.
+func (cs *ColumnSorter) size() int {
+	return len(cs.cols)
+}
+
+func (cs *ColumnSorter) Sort(idx int, f func(sortCol int, dir SortDir)) {
+	var dir SortDir
+	if idx >= 0 {
+		dir = cs.cols[idx]
+		if dir == sortNone {
+			return
+		} else {
+			dir++
+			if dir > SortDesc {
+				dir = SortAsc
+			}
+			cs.Set(idx, dir)
+		}
+	} else {
+		idx, dir = cs.current()
+	}
+	if idx >= 0 && dir != SortOff {
+		f(idx, dir)
+	}
+}
+
+// NewSortButton returns a new sortButton.
+func (cs *ColumnSorter) NewSortButton(process func(), window fyne.Window, ignoredColumns ...int) *SortButton {
+	sortColumns := slices.Collect(xiter.Map(cs.def.values(), func(h ColumnDef) string {
+		return h.Label
+	}))
+	w := &SortButton{
+		sortColumns: sortColumns,
+	}
+	w.ExtendBaseWidget(w)
+	w.Text = "???"
+	w.Icon = icons.BlankSvg
+	if cs.def.size() == 0 || cs.size() == 0 || len(ignoredColumns) > cs.def.size() {
+		slog.Warn("makeSortButton called with invalid parameters")
+		return w // early exit when called without proper data
+	}
+	ignored := set.Of(ignoredColumns...)
+	w.OnTapped = func() {
+		col, dir := cs.current()
+		var fields []string
+		for i, h := range cs.def.all() {
+			if !h.NoSort && !ignored.Contains(i) {
+				fields = append(fields, h.Label)
+			}
+		}
+		radioCols := widget.NewRadioGroup(fields, nil)
+		if col != -1 {
+			radioCols.Selected = sortColumns[col]
+		} else {
+			radioCols.Selected = sortColumns[0] // default to first column
+		}
+		radioDir := widget.NewRadioGroup([]string{"Ascending", "Descending"}, nil)
+		switch dir {
+		case SortDesc:
+			radioDir.Selected = "Descending"
+		default:
+			radioDir.Selected = "Ascending"
+		}
+		var d dialog.Dialog
+		okButton := widget.NewButtonWithIcon("Sort", theme.ConfirmIcon(), func() {
+			col := slices.Index(sortColumns, radioCols.Selected)
+			if col == -1 {
+				return
+			}
+			switch radioDir.Selected {
+			case "Ascending":
+				dir = SortAsc
+			case "Descending":
+				dir = SortDesc
+			}
+			cs.Set(col, dir)
+			process()
+			w.set(col, dir)
+			d.Hide()
+		})
+		okButton.Importance = widget.HighImportance
+		p := theme.Padding()
+		c := container.NewBorder(
+			nil,
+			container.New(layout.NewCustomPaddedLayout(3*p, 0, p, p), container.NewHBox(
+				layout.NewSpacer(),
+				widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
+					d.Hide()
+				}),
+				widget.NewButtonWithIcon("Reset", theme.DeleteIcon(), func() {
+					cs.reset()
+					process()
+					d.Hide()
+				}),
+				okButton,
+				layout.NewSpacer(),
+			)),
+			nil,
+			nil,
+			container.NewVBox(
+				widget.NewLabel("Field"),
+				radioCols,
+				widget.NewLabel("Direction"),
+				radioDir,
+			),
+		)
+		d = dialog.NewCustomWithoutButtons("Sort By", c, window)
+		_, s := window.Canvas().InteractiveArea()
+		d.Resize(fyne.NewSize(s.Width, s.Height*0.8))
+		d.Show()
+	}
+	w.set(cs.current())
+	cs.sortButton = w
+	return w
+}
+
+func (w *SortButton) set(col int, dir SortDir) {
+	switch dir {
+	case SortAsc:
+		w.Icon = theme.NewThemedResource(icons.SortAscendingSvg)
+	case SortDesc:
+		w.Icon = theme.NewThemedResource(icons.SortDescendingSvg)
+	default:
+		w.Icon = theme.NewThemedResource(icons.SortSvg)
+	}
+	if col != -1 {
+		w.Text = w.sortColumns[col]
+	} else {
+		w.Text = "Sort"
+	}
+	w.Refresh()
 }
 
 // MakeDataTable returns a data table generated from the definition.
@@ -162,7 +377,7 @@ func MakeDataTable[S ~[]E, E any](
 		icon := row[1].(*widget.Icon)
 
 		dir := columnSorter.column(tci.Col)
-		if dir == SortNone {
+		if dir == sortNone {
 			label.SetText(h.Label)
 			label.Show()
 			actionLabel.Hide()
@@ -275,216 +490,4 @@ func MakeDataList[S ~[]E, E any](
 		}
 	}
 	return l
-}
-
-// ColumnSorter represents an ordered list of columns which can be sorted.
-type ColumnSorter struct {
-	cols       []SortDir
-	def        DataTableDef
-	sortButton *SortButton
-	defaultIdx int
-	defaultDir SortDir
-}
-
-func NewColumnSorter(def DataTableDef) *ColumnSorter {
-	cs := &ColumnSorter{
-		cols:       make([]SortDir, def.size()),
-		def:        def,
-		defaultIdx: -1,
-		defaultDir: SortOff,
-	}
-	cs.clear()
-	return cs
-}
-
-func NewColumnSorterWithInit(def DataTableDef, idx int, dir SortDir) *ColumnSorter {
-	cs := NewColumnSorter(def)
-	cs.defaultIdx = idx
-	cs.defaultDir = dir
-	cs.Set(idx, dir)
-	return cs
-}
-
-// column returns the sort direction of a column
-func (cs *ColumnSorter) column(idx int) SortDir {
-	if idx < 0 || idx >= len(cs.cols) {
-		return SortOff
-	}
-	return cs.cols[idx]
-}
-
-// current returns which column is currently sorted or -1 if none are sorted.
-func (cs *ColumnSorter) current() (int, SortDir) {
-	for i, v := range cs.cols {
-		if v != SortOff {
-			return i, v
-		}
-	}
-	return -1, SortOff
-}
-
-// reset sets the columns to their default state.
-func (cs *ColumnSorter) reset() {
-	cs.Set(cs.defaultIdx, cs.defaultDir)
-}
-
-// clear removes sorting from all columns.
-func (cs *ColumnSorter) clear() {
-	for i := range cs.cols {
-		var dir SortDir
-		if cs.def.Column(i).NoSort {
-			dir = SortNone
-		} else {
-			dir = SortOff
-		}
-		cs.cols[i] = dir
-	}
-}
-
-// Set sets the sort direction for a column.
-func (cs *ColumnSorter) Set(idx int, dir SortDir) {
-	cs.clear()
-	cs.cols[idx] = dir
-	if cs.sortButton != nil {
-		cs.sortButton.set(idx, dir)
-	}
-}
-
-// current returns which column is currently sorted or -1 if none are sorted.
-func (cs *ColumnSorter) size() int {
-	return len(cs.cols)
-}
-
-func (cs *ColumnSorter) Sort(idx int, f func(sortCol int, dir SortDir)) {
-	var dir SortDir
-	if idx >= 0 {
-		dir = cs.cols[idx]
-		if dir == SortNone {
-			return
-		} else {
-			dir++
-			if dir > SortDesc {
-				dir = SortOff
-			}
-			cs.Set(idx, dir)
-		}
-	} else {
-		idx, dir = cs.current()
-	}
-	if idx >= 0 && dir != SortOff {
-		f(idx, dir)
-	}
-}
-
-// NewSortButton returns a new sortButton.
-func (cs *ColumnSorter) NewSortButton(def DataTableDef, process func(), window fyne.Window, ignoredColumns ...int) *SortButton {
-	sortColumns := slices.Collect(xiter.Map(def.values(), func(h ColumnDef) string {
-		return h.Label
-	}))
-	w := &SortButton{
-		sortColumns: sortColumns,
-	}
-	w.ExtendBaseWidget(w)
-	w.Text = "???"
-	w.Icon = icons.BlankSvg
-	if def.size() == 0 || cs.size() == 0 || len(ignoredColumns) > def.size() {
-		slog.Warn("makeSortButton called with invalid parameters")
-		return w // early exit when called without proper data
-	}
-	ignored := set.Of(ignoredColumns...)
-	w.OnTapped = func() {
-		col, dir := cs.current()
-		var fields []string
-		for i, h := range def.all() {
-			if !h.NoSort && !ignored.Contains(i) {
-				fields = append(fields, h.Label)
-			}
-		}
-		radioCols := widget.NewRadioGroup(fields, nil)
-		if col != -1 {
-			radioCols.Selected = sortColumns[col]
-		} else {
-			radioCols.Selected = sortColumns[0] // default to first column
-		}
-		radioDir := widget.NewRadioGroup([]string{"Ascending", "Descending"}, nil)
-		switch dir {
-		case SortDesc:
-			radioDir.Selected = "Descending"
-		default:
-			radioDir.Selected = "Ascending"
-		}
-		var d dialog.Dialog
-		okButton := widget.NewButtonWithIcon("Sort", theme.ConfirmIcon(), func() {
-			col := slices.Index(sortColumns, radioCols.Selected)
-			if col == -1 {
-				return
-			}
-			switch radioDir.Selected {
-			case "Ascending":
-				dir = SortAsc
-			case "Descending":
-				dir = SortDesc
-			}
-			cs.Set(col, dir)
-			process()
-			w.set(col, dir)
-			d.Hide()
-		})
-		okButton.Importance = widget.HighImportance
-		p := theme.Padding()
-		c := container.NewBorder(
-			nil,
-			container.New(layout.NewCustomPaddedLayout(3*p, 0, p, p), container.NewHBox(
-				layout.NewSpacer(),
-				widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
-					d.Hide()
-				}),
-				widget.NewButtonWithIcon("Reset", theme.DeleteIcon(), func() {
-					cs.reset()
-					process()
-					d.Hide()
-				}),
-				okButton,
-				layout.NewSpacer(),
-			)),
-			nil,
-			nil,
-			container.NewVBox(
-				widget.NewLabel("Field"),
-				radioCols,
-				widget.NewLabel("Direction"),
-				radioDir,
-			),
-		)
-		d = dialog.NewCustomWithoutButtons("Sort By", c, window)
-		_, s := window.Canvas().InteractiveArea()
-		d.Resize(fyne.NewSize(s.Width, s.Height*0.8))
-		d.Show()
-	}
-	w.set(cs.current())
-	cs.sortButton = w
-	return w
-}
-
-type SortButton struct {
-	widget.Button
-
-	sortColumns []string
-}
-
-func (w *SortButton) set(col int, dir SortDir) {
-	switch dir {
-	case SortAsc:
-		w.Icon = theme.NewThemedResource(icons.SortAscendingSvg)
-	case SortDesc:
-		w.Icon = theme.NewThemedResource(icons.SortDescendingSvg)
-	default:
-		w.Icon = theme.NewThemedResource(icons.SortSvg)
-	}
-	if col != -1 {
-		w.Text = w.sortColumns[col]
-	} else {
-		w.Text = "Sort"
-	}
-	w.Refresh()
 }

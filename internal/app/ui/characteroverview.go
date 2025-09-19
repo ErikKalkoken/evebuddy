@@ -127,7 +127,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 		Width: 100,
 	}})
 	a := &characterOverview{
-		columnSorter: iwidget.NewColumnSorter(headers),
+		columnSorter: headers.NewColumnSorter(overviewColCharacter, iwidget.SortAsc),
 		rows:         make([]characterOverviewRow, 0),
 		top:          makeTopLabel(),
 		u:            u,
@@ -189,7 +189,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRows(-1)
 	})
-	a.sortButton = a.columnSorter.NewSortButton(headers, func() {
+	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRows(-1)
 	}, a.u.window, 5, 6, 7, 8, 9)
 
