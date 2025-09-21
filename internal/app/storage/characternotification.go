@@ -149,6 +149,8 @@ var notificationTypeFromString = map[string]app.EveNotificationType{
 	"LocateCharMsg":                             app.LocateCharMsg,
 	"LPAutoRedeemed":                            app.LPAutoRedeemed,
 	"MadeWarMutual":                             app.MadeWarMutual,
+	"MercenaryDenAttacked":                      app.MercenaryDenAttacked,
+	"MercenaryDenReinforced":                    app.MercenaryDenReinforced,
 	"MercOfferedNegotiationMsg":                 app.MercOfferedNegotiationMsg,
 	"MercOfferRetractedMsg":                     app.MercOfferRetractedMsg,
 	"MissionCanceledTriglavian":                 app.MissionCanceledTriglavian,

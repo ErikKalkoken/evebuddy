@@ -133,6 +133,10 @@ func (s *EveNotificationService) makeRenderer(type_ app.EveNotificationType) (no
 	case app.OrbitalReinforced:
 		r = new(orbitalReinforced)
 	// structures
+	case app.MercenaryDenAttacked:
+		r = new(mercenaryDenAttacked)
+	case app.MercenaryDenReinforced:
+		r = new(mercenaryDenReinforced)
 	case app.OwnershipTransferred:
 		r = new(ownershipTransferred)
 	case app.StructureAnchoring:
@@ -272,22 +276,22 @@ func makeEveWhoCharacterURL(id int32) string {
 	return fmt.Sprintf("https://evewho.com/character/%d", id)
 }
 
-func makeEveEntityProfileLink(e *app.EveEntity) string {
-	if e == nil {
-		return ""
+func makeEveEntityProfileLink(o *app.EveEntity) string {
+	if o == nil {
+		return "?"
 	}
 	var url string
-	switch e.Category {
+	switch o.Category {
 	case app.EveEntityAlliance:
-		url = makeDotLanProfileURL(e.Name, dotlanAlliance)
+		url = makeDotLanProfileURL(o.Name, dotlanAlliance)
 	case app.EveEntityCharacter:
-		url = makeEveWhoCharacterURL(e.ID)
+		url = makeEveWhoCharacterURL(o.ID)
 	case app.EveEntityCorporation:
-		url = makeDotLanProfileURL(e.Name, dotlanCorporation)
+		url = makeDotLanProfileURL(o.Name, dotlanCorporation)
 	default:
-		return e.Name
+		return o.Name
 	}
-	return makeMarkDownLink(e.Name, url)
+	return makeMarkDownLink(o.Name, url)
 }
 
 func makeMarkDownLink(label, url string) string {

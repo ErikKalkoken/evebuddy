@@ -80,7 +80,7 @@
         "sender_id": 2901,
         "sender_type": "corporation",
         "timestamp": "2019-07-07T01:37:00Z",
-        "text": "moonID: 40161465\noreVolumeByType:\n  46300: 1928443.0826145012\n  46301: 3308839.521195312\n  46302: 1780056.9386565287\nsolarSystemID: 30002537\nstructureID: 1000000000002\nstructureLink: <a href=\"showinfo:35835\/\/1000000000002\">2-X0PF - Tasmin<\/a>\nstructureName: Dummy\nstructureTypeID: 35835\n",
+        "text": "moonID: 40161465\noreVolumeByType:\n  46300: 1928443.0826145012\n  46301: 3308839.521195312\n  46302: 1780056.9386565287\nsolarSystemID: 30002537\nstructureID: 1000000000002\nstructureLink: <a href=\"showinfo:35835\/\/1000000000002\">Home<\/a>\nstructureName: Dummy\nstructureTypeID: 35835\n",
         "is_read": false
     },
     {
@@ -586,7 +586,7 @@
         "sender_id": 2902,
         "sender_type": "corporation",
         "timestamp": "2019-11-18T20:00:00Z",
-        "text": "againstID: 3011\ndeclaredByID: 2001\ntimeDeclared: 133330953000000000\nwarHQ: Ikuchi - Hisec Loves You",
+        "text": "againstID: 3011\ndeclaredByID: 2001\ntimeDeclared: 133330953000000000\nwarHQ: Home",
         "is_read": false,
         "is_sent": false
     },
@@ -709,6 +709,24 @@
         "text": "amount: 1\ndueDate: 132936019800000000\n",
         "is_read": false,
         "is_sent": false
+    },
+    {
+        "is_read": true,
+        "notification_id": 1000001120,
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "text": "aggressorAllianceName: <a href=\"showinfo:16159//3011\">Bad Alliance</a>\naggressorCharacterID: 1011\naggressorCorporationName: <a href=\"showinfo:2//2011\">Bad Corp</a>\narmorPercentage: 99.80894397163446\nhullPercentage: 100.0\nitemID: &id001 1000000000099\nmercenaryDenShowInfoData:\n- showinfo\n- 85230\n- *id001\nplanetID: 40161469\nplanetShowInfoData:\n- showinfo\n- 11\n- 40161469\nshieldPercentage: 0.20538218240797407\nsolarsystemID: 30002537\ntypeID: 85230\n",
+        "timestamp": "2025-09-19T03:39:00Z",
+        "type": "MercenaryDenAttacked"
+    },
+    {
+        "is_read": true,
+        "notification_id": 1000001121,
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "text": "aggressorAllianceName: <a href=\"showinfo:16159//3011\">Bad Alliance</a>\naggressorCharacterID: 1011\naggressorCorporationName: <a href=\"showinfo:2//2011\">Bad Corp</a>\nitemID: &id001 1000000000099\nmercenaryDenShowInfoData:\n- showinfo\n- 85230\n- *id001\nplanetID: 40161469\nplanetShowInfoData:\n- showinfo\n- 11\n- 40161469\nsolarsystemID: 30002537\ntimestampEntered: 134026459143594820\ntimestampExited: 134027264983594820\ntypeID: 85230\n",
+        "timestamp": "2025-09-18T05:12:00Z",
+        "type": "MercenaryDenReinforced"
     },
     {
         "notification_id": 1999999999,
