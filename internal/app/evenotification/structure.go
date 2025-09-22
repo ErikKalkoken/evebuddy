@@ -5,15 +5,18 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/antihax/goesi/notification"
 	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification/notification2"
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
@@ -31,7 +34,7 @@ type structureInfo struct {
 	solarSystem eveObj
 }
 
-func makeStructureBaseText(ctx context.Context, typeID, systemID int32, structureID int64, structureName string, eus *eveuniverseservice.EveUniverseService) (structureInfo, error) {
+func makeStructureBaseText(ctx context.Context, typeID, systemID int32, structureID int64, structureName string, eus EveUniverseService) (structureInfo, error) {
 	var eveType *app.EveType
 	var err error
 	if typeID != 0 {
@@ -60,6 +63,14 @@ func makeStructureBaseText(ctx context.Context, typeID, systemID int32, structur
 			}
 		}
 	}
+	if structureName == "" {
+		if eveType != nil {
+			structureName = eveType.Name
+		} else {
+			structureName = "???"
+		}
+	}
+
 	var name string
 	if eveType != nil {
 		isOrbital := eveType.Group.Category.ID == app.EveCategoryOrbitals
@@ -73,7 +84,7 @@ func makeStructureBaseText(ctx context.Context, typeID, systemID int32, structur
 	} else if structureName != "" {
 		name = structureName
 	} else {
-		name = "unknown structure"
+		name = "unknown"
 	}
 	text := fmt.Sprintf("The %s in %s", name, makeSolarSystemLink(system))
 	if ownerLink != "" {
@@ -307,16 +318,17 @@ func (n structureItemsDelivered) render(ctx context.Context, text string, timest
 	} else {
 		location = fmt.Sprintf("a %s", makeEveEntityProfileLink(entities[data.StructureTypeID]))
 	}
-	b := fmt.Sprintf(
+	body = fmt.Sprintf(
 		"%s has delivered the following items to %s in %s:\n\n",
 		makeEveEntityProfileLink(entities[data.CharID]),
 		location,
 		makeSolarSystemLink(solarSystem),
 	)
+	p := make([]string, 0)
 	for _, r := range data.ListOfTypesAndQty {
-		b += fmt.Sprintf("%dx %s\n\n", r[0], entities[r[1]].Name)
+		p = append(p, fmt.Sprintf("%dx %s", r[0], entities[r[1]].Name))
 	}
-	body = b
+	body += strings.Join(p, "\n\n")
 	return title, body, nil
 }
 
@@ -638,15 +650,15 @@ func (n structureUnderAttack) render(ctx context.Context, text string, timestamp
 		return title, body, err
 	}
 	t := fmt.Sprintf("%s is under attack.\n\n"+
-		"Attacking Character: %s\n\n"+
-		"Attacking Corporation: %s",
+		"Aggressing Pilot: %s\n\n"+
+		"Aggressing Pilot's Corporation: %s",
 		o.intro,
 		makeEveEntityProfileLink(attackChar),
 		makeCorporationLink(data.CorpName),
 	)
 	if data.AllianceName != "" {
 		t += fmt.Sprintf(
-			"\n\nAttacking Alliance: %s",
+			"\n\nAggressing Pilot's Alliance: %s",
 			makeAllianceLink(data.AllianceName),
 		)
 	}
@@ -690,4 +702,191 @@ func (n structureWentLowPower) render(ctx context.Context, text string, timestam
 	title = fmt.Sprintf("%s is now running on Low Power", o.name)
 	body = fmt.Sprintf("%s went to low power mode.", o.intro)
 	return title, body, nil
+}
+
+type mercenaryDenAttacked struct {
+	baseRenderer
+}
+
+func (n mercenaryDenAttacked) entityIDs(text string) (setInt32, error) {
+	_, ids, err := n.unmarshal(text)
+	if err != nil {
+		return setInt32{}, err
+	}
+	return ids, nil
+}
+
+func (n mercenaryDenAttacked) unmarshal(text string) (notification2.MercenaryDenAttacked, setInt32, error) {
+	var data notification2.MercenaryDenAttacked
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, setInt32{}, err
+	}
+	ids := set.Of(data.AggressorCharacterID)
+	return data, ids, nil
+}
+
+func (n mercenaryDenAttacked) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return title, body, err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return title, body, err
+	}
+	corporation, err := eveEntityFromHTMLLink(data.AggressorCorporationName)
+	if err != nil {
+		return title, body, err
+	}
+	o, err := makeOrbitalBaseText(ctx, data.PlanetID, data.TypeID, n.eus)
+	if err != nil {
+		return title, body, err
+	}
+	title = fmt.Sprintf(
+		"Report: %s at %s is under attack",
+		o.structureType.Name,
+		o.planet.Name,
+	)
+	t := fmt.Sprintf("%s is under attack.\n\n"+
+		"Current Shield Level: %0.1f%%\n"+
+		"Current Armor Integrity: %0.1f%%\n"+
+		"Current Hull Integrity: %0.1f%%\n"+
+		"Aggressing Pilot: %s\n\n"+
+		"Aggressing Pilot's Corporation: %s",
+		o.intro,
+		data.ShieldPercentage,
+		data.ArmorPercentage,
+		data.HullPercentage,
+		makeEveEntityProfileLink(entities[data.AggressorCharacterID]),
+		makeEveEntityProfileLink(corporation),
+	)
+	if data.AggressorAllianceName != "" {
+		alliance, err := eveEntityFromHTMLLink(data.AggressorAllianceName)
+		if err != nil {
+			return title, body, err
+		}
+		t += fmt.Sprintf(
+			"\n\nAggressing Pilot's Alliance: %s",
+			makeEveEntityProfileLink(alliance),
+		)
+	}
+	body = t
+	return title, body, nil
+}
+
+type mercenaryDenReinforced struct {
+	baseRenderer
+}
+
+func (n mercenaryDenReinforced) entityIDs(text string) (setInt32, error) {
+	_, ids, err := n.unmarshal(text)
+	if err != nil {
+		return setInt32{}, err
+	}
+	return ids, nil
+}
+
+func (n mercenaryDenReinforced) unmarshal(text string) (notification2.MercenaryDenReinforced, setInt32, error) {
+	var data notification2.MercenaryDenReinforced
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return data, setInt32{}, err
+	}
+	ids := set.Of(data.AggressorCharacterID)
+	return data, ids, nil
+}
+
+func (n mercenaryDenReinforced) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
+	var title, body string
+	data, ids, err := n.unmarshal(text)
+	if err != nil {
+		return title, body, err
+	}
+	entities, err := n.eus.ToEntities(ctx, ids)
+	if err != nil {
+		return title, body, err
+	}
+	corporation, err := eveEntityFromHTMLLink(data.AggressorCorporationName)
+	if err != nil {
+		return title, body, err
+	}
+	o, err := makeOrbitalBaseText(ctx, data.PlanetID, data.TypeID, n.eus)
+	if err != nil {
+		return title, body, err
+	}
+	title = fmt.Sprintf(
+		"Report: %s at %s has entered reinforcement",
+		o.structureType.Name,
+		o.planet.Name,
+	)
+	b := fmt.Sprintf("%s has entered reinforcement at %s and will remain in reinforcement until %s.\n\n"+
+		"Aggressing Pilot: %s\n\n"+
+		"Aggressing Pilot's Corporation: %s",
+		o.intro,
+		fromLDAPTime(data.TimestampEntered).Format(app.DateTimeFormat),
+		fromLDAPTime(data.TimestampExited).Format(app.DateTimeFormat),
+		makeEveEntityProfileLink(entities[data.AggressorCharacterID]),
+		makeEveEntityProfileLink(corporation),
+	)
+	if data.AggressorAllianceName != "" {
+		alliance, err := eveEntityFromHTMLLink(data.AggressorAllianceName)
+		if err != nil {
+			return title, body, err
+		}
+		b += fmt.Sprintf(
+			"\n\nAggressing Pilots' Alliance: %s",
+			makeEveEntityProfileLink(alliance),
+		)
+	}
+	body = b
+	return title, body, nil
+}
+
+func eveEntityFromHTMLLink(html string) (*app.EveEntity, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("parseEveEntityLink: %s: %w", html, err)
+	}
+	if html == "" {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	a := doc.Find("a")
+	href, ok := a.Attr("href")
+	if !ok {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	u, err := url.Parse(href)
+	if err != nil {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	if u.Scheme != "showinfo" {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	var c app.EveEntityCategory
+	p := strings.Split(u.Opaque, "//")
+	switch p[0] {
+	case "1376":
+		c = app.EveEntityCharacter
+	case "2":
+		c = app.EveEntityCorporation
+	case "16159":
+		c = app.EveEntityAlliance
+	case "5":
+		c = app.EveEntitySolarSystem
+	default:
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	id, err := strconv.Atoi(p[1])
+	if err != nil {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	o := &app.EveEntity{
+		ID:       int32(id),
+		Category: c,
+		Name:     a.Text(),
+	}
+	return o, nil
 }

@@ -216,13 +216,13 @@ func (n corpAppRejectCustomMsg) render(ctx context.Context, text string, timesta
 	}
 	title = fmt.Sprintf("Application from %s rejected", entities[data.CharID].Name)
 	out := fmt.Sprintf(
-		"%s has rejected application from %s:\n\n>%s",
+		"%s has rejected application from %s:\n\n> %s",
 		makeEveEntityProfileLink(entities[data.CorpID]),
 		makeEveEntityProfileLink(entities[data.CharID]),
 		data.ApplicationText,
 	)
 	if data.CustomMessage != "" {
-		out += fmt.Sprintf("\n\nReply:\n\n>%s", data.CustomMessage)
+		out += fmt.Sprintf("\n\nReply:\n\n> %s", data.CustomMessage)
 	}
 	body = out
 	return title, body, nil

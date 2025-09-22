@@ -14,7 +14,6 @@ import (
 	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
@@ -23,7 +22,7 @@ type moonMiningInfo struct {
 	text string
 }
 
-func makeMoonMiningBaseText(ctx context.Context, moonID int32, structureName string, eus *eveuniverseservice.EveUniverseService) (moonMiningInfo, error) {
+func makeMoonMiningBaseText(ctx context.Context, moonID int32, structureName string, eus EveUniverseService) (moonMiningInfo, error) {
 	moon, err := eus.GetOrCreateMoonESI(ctx, moonID)
 	if err != nil {
 		return moonMiningInfo{}, err
@@ -47,7 +46,7 @@ type oreItem struct {
 	volume float64
 }
 
-func makeOreText(ctx context.Context, ores map[int32]float64, eus *eveuniverseservice.EveUniverseService) (string, error) {
+func makeOreText(ctx context.Context, ores map[int32]float64, eus EveUniverseService) (string, error) {
 	ids := set.Collect(maps.Keys(ores))
 	entities, err := eus.ToEntities(ctx, ids)
 	if err != nil {

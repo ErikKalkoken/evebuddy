@@ -11,9 +11,18 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
+
+type EveUniverseService interface {
+	GetOrCreateEntityESI(ctx context.Context, id int32) (*app.EveEntity, error)
+	GetOrCreateLocationESI(ctx context.Context, id int64) (*app.EveLocation, error)
+	GetOrCreateMoonESI(ctx context.Context, id int32) (*app.EveMoon, error)
+	GetOrCreatePlanetESI(ctx context.Context, id int32) (*app.EvePlanet, error)
+	GetOrCreateSolarSystemESI(ctx context.Context, id int32) (*app.EveSolarSystem, error)
+	GetOrCreateTypeESI(ctx context.Context, id int32) (*app.EveType, error)
+	ToEntities(ctx context.Context, ids set.Set[int32]) (map[int32]*app.EveEntity, error)
+}
 
 type setInt32 = set.Set[int32]
 
@@ -24,7 +33,7 @@ type notificationRenderer interface {
 	// render returns the rendered title and body for a notification.
 	render(ctx context.Context, text string, timestamp time.Time) (string, string, error)
 	// setEveUniverse initialized access to the EveUniverseService service and must be called before render().
-	setEveUniverse(*eveuniverseservice.EveUniverseService)
+	setEveUniverse(EveUniverseService)
 }
 
 // baseRenderer represents the base renderer for all notification types.
@@ -36,10 +45,10 @@ type notificationRenderer interface {
 // All rendered should embed baseRenderer and implement the render method.
 // Renderers that want to return Entity IDs must also overwrite entityIDs.
 type baseRenderer struct {
-	eus *eveuniverseservice.EveUniverseService
+	eus EveUniverseService
 }
 
-func (br *baseRenderer) setEveUniverse(eus *eveuniverseservice.EveUniverseService) {
+func (br *baseRenderer) setEveUniverse(eus EveUniverseService) {
 	br.eus = eus
 }
 
@@ -52,10 +61,10 @@ func (br baseRenderer) entityIDs(_ string) (setInt32, error) {
 
 // EveNotificationService is a service for rendering notifications.
 type EveNotificationService struct {
-	eus *eveuniverseservice.EveUniverseService
+	eus EveUniverseService
 }
 
-func New(eus *eveuniverseservice.EveUniverseService) *EveNotificationService {
+func New(eus EveUniverseService) *EveNotificationService {
 	s := &EveNotificationService{eus: eus}
 	return s
 }
@@ -133,6 +142,10 @@ func (s *EveNotificationService) makeRenderer(type_ app.EveNotificationType) (no
 	case app.OrbitalReinforced:
 		r = new(orbitalReinforced)
 	// structures
+	case app.MercenaryDenAttacked:
+		r = new(mercenaryDenAttacked)
+	case app.MercenaryDenReinforced:
+		r = new(mercenaryDenReinforced)
 	case app.OwnershipTransferred:
 		r = new(ownershipTransferred)
 	case app.StructureAnchoring:
@@ -272,22 +285,22 @@ func makeEveWhoCharacterURL(id int32) string {
 	return fmt.Sprintf("https://evewho.com/character/%d", id)
 }
 
-func makeEveEntityProfileLink(e *app.EveEntity) string {
-	if e == nil {
-		return ""
+func makeEveEntityProfileLink(o *app.EveEntity) string {
+	if o == nil {
+		return "?"
 	}
 	var url string
-	switch e.Category {
+	switch o.Category {
 	case app.EveEntityAlliance:
-		url = makeDotLanProfileURL(e.Name, dotlanAlliance)
+		url = makeDotLanProfileURL(o.Name, dotlanAlliance)
 	case app.EveEntityCharacter:
-		url = makeEveWhoCharacterURL(e.ID)
+		url = makeEveWhoCharacterURL(o.ID)
 	case app.EveEntityCorporation:
-		url = makeDotLanProfileURL(e.Name, dotlanCorporation)
+		url = makeDotLanProfileURL(o.Name, dotlanCorporation)
 	default:
-		return e.Name
+		return o.Name
 	}
-	return makeMarkDownLink(e.Name, url)
+	return makeMarkDownLink(o.Name, url)
 }
 
 func makeMarkDownLink(label, url string) string {

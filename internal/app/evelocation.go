@@ -92,13 +92,13 @@ func (el EveLocation) Variant() EveLocationVariant {
 }
 
 const (
-	unknownLocationID     = 888 // custom ID to signify a location that is not known
+	UnknownLocationID     = 888 // custom ID to signify a location that is not known
 	assetSafetyLocationID = 2004
 )
 
 func LocationVariantFromID(id int64) EveLocationVariant {
 	switch {
-	case id == unknownLocationID:
+	case id == UnknownLocationID:
 		return EveLocationUnknown
 	case id == assetSafetyLocationID:
 		return EveLocationAssetSafety

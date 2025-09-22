@@ -156,6 +156,8 @@ const (
 	LPAutoRedeemed
 	LocateCharMsg
 	MadeWarMutual
+	MercenaryDenAttacked
+	MercenaryDenReinforced
 	MercOfferRetractedMsg
 	MercOfferedNegotiationMsg
 	MissionCanceledTriglavian
@@ -332,6 +334,8 @@ var notificationCategories = map[EveNotificationType]EveEntityCategory{
 	FWCorpWarningMsg:                         EveEntityCorporation,
 	IHubDestroyedByBillFailure:               EveEntityAlliance,
 	InfrastructureHubBillAboutToExpire:       EveEntityAlliance,
+	MercenaryDenAttacked:                     EveEntityCorporation,
+	MercenaryDenReinforced:                   EveEntityCorporation,
 	MercOfferedNegotiationMsg:                EveEntityCorporation,
 	MercOfferRetractedMsg:                    EveEntityCorporation,
 	MoonminingAutomaticFracture:              EveEntityCorporation,
@@ -463,6 +467,8 @@ var supportedTypes = []EveNotificationType{
 	EntosisCaptureStarted,
 	IHubDestroyedByBillFailure,
 	InfrastructureHubBillAboutToExpire,
+	MercenaryDenAttacked,
+	MercenaryDenReinforced,
 	MoonminingAutomaticFracture,
 	MoonminingExtractionCancelled,
 	MoonminingExtractionFinished,
@@ -643,6 +649,8 @@ var notificationGroups = map[EveNotificationType]EveNotificationGroup{
 	LPAutoRedeemed:                            GroupUnknown,
 	LocateCharMsg:                             GroupUnknown,
 	MadeWarMutual:                             GroupUnknown,
+	MercenaryDenAttacked:                      GroupStructure,
+	MercenaryDenReinforced:                    GroupStructure,
 	MercOfferRetractedMsg:                     GroupWar,
 	MercOfferedNegotiationMsg:                 GroupWar,
 	MissionCanceledTriglavian:                 GroupUnknown,

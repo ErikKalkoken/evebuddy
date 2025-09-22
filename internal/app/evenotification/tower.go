@@ -10,7 +10,6 @@ import (
 	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
@@ -20,7 +19,7 @@ type towerInfo struct {
 	intro string
 }
 
-func makeTowerBaseText(ctx context.Context, moonID, typeID int32, eus *eveuniverseservice.EveUniverseService) (towerInfo, error) {
+func makeTowerBaseText(ctx context.Context, moonID, typeID int32, eus EveUniverseService) (towerInfo, error) {
 	structureType, err := eus.GetOrCreateTypeESI(ctx, typeID)
 	if err != nil {
 		return towerInfo{}, err
@@ -76,15 +75,15 @@ func (n towerAlertMsg) render(ctx context.Context, text string, timestamp time.T
 	title = fmt.Sprintf("Starbase at %s is under attack", o.moon.Name)
 	b := fmt.Sprintf(
 		"%s is under attack.\n\n"+
-			"Attacking Character: %s\n\n"+
-			"Attacking Corporation: %s",
+			"Aggressing Pilot: %s\n\n"+
+			"Aggressing Pilot's Corporation: %s",
 		o.intro,
 		makeEveEntityProfileLink(entities[data.AggressorID]),
 		makeEveEntityProfileLink(entities[data.AggressorCorpID]),
 	)
 	if data.AggressorAllianceID != 0 {
 		b += fmt.Sprintf(
-			"\n\nAttacking Alliance: %s",
+			"\n\nAggressing Pilot's Alliance: %s",
 			makeEveEntityProfileLink(entities[data.AggressorAllianceID]),
 		)
 	}

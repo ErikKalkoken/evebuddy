@@ -9,7 +9,6 @@ import (
 	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
@@ -50,19 +49,19 @@ func (n orbitalAttacked) render(ctx context.Context, text string, timestamp time
 	}
 	title = fmt.Sprintf(
 		"%s at %s is under attack",
-		o.type_.Name,
+		o.structureType.Name,
 		o.planet.Name,
 	)
 	t := fmt.Sprintf("%s is under attack.\n\n"+
-		"Attacking Character: %s\n\n"+
-		"Attacking Corporation: %s",
+		"Aggressing Pilot: %s\n\n"+
+		"Aggressing Pilot's Corporation: %s",
 		o.intro,
 		makeEveEntityProfileLink(entities[data.AggressorID]),
 		makeEveEntityProfileLink(entities[data.AggressorCorpID]),
 	)
 	if data.AggressorAllianceID != 0 {
 		t += fmt.Sprintf(
-			"\n\nAttacking Alliance: %s",
+			"\n\nAggressing Pilot's Alliance: %s",
 			makeEveEntityProfileLink(entities[data.AggressorAllianceID]),
 		)
 	}
@@ -107,19 +106,19 @@ func (n orbitalReinforced) render(ctx context.Context, text string, timestamp ti
 	}
 	title = fmt.Sprintf(
 		"%s at %s has been reinforced",
-		o.type_.Name,
+		o.structureType.Name,
 		o.planet.Name,
 	)
 	t := fmt.Sprintf("has been reinforced and will come out at %s.\n\n"+
-		"Attacking Character: %s\n\n"+
-		"Attacking Corporation: %s",
+		"Aggressing Pilot: %s\n\n"+
+		"Aggressing Pilot's Corporation: %s",
 		fromLDAPTime(data.ReinforceExitTime).Format(app.DateTimeFormat),
 		makeEveEntityProfileLink(entities[data.AggressorID]),
 		makeEveEntityProfileLink(entities[data.AggressorCorpID]),
 	)
 	if data.AggressorAllianceID != 0 {
 		t += fmt.Sprintf(
-			"\n\nAttacking Alliance: %s",
+			"\n\nAggressing Pilot's Alliance: %s",
 			makeEveEntityProfileLink(entities[data.AggressorAllianceID]),
 		)
 	}
@@ -128,12 +127,12 @@ func (n orbitalReinforced) render(ctx context.Context, text string, timestamp ti
 }
 
 type orbitalInfo struct {
-	type_  *app.EveType
-	planet *app.EvePlanet
-	intro  string
+	structureType *app.EveType
+	planet        *app.EvePlanet
+	intro         string
 }
 
-func makeOrbitalBaseText(ctx context.Context, planetID, typeID int32, eus *eveuniverseservice.EveUniverseService) (orbitalInfo, error) {
+func makeOrbitalBaseText(ctx context.Context, planetID, typeID int32, eus EveUniverseService) (orbitalInfo, error) {
 	structureType, err := eus.GetOrCreateTypeESI(ctx, typeID)
 	if err != nil {
 		return orbitalInfo{}, err
@@ -142,16 +141,16 @@ func makeOrbitalBaseText(ctx context.Context, planetID, typeID int32, eus *eveun
 	if err != nil {
 		return orbitalInfo{}, err
 	}
-	into := fmt.Sprintf(
-		"The %s at %s in %s ",
+	intro := fmt.Sprintf(
+		"The %s at %s in %s",
 		structureType.Name,
 		planet.Name,
 		makeSolarSystemLink(planet.SolarSystem),
 	)
 	x := orbitalInfo{
-		type_:  structureType,
-		planet: planet,
-		intro:  into,
+		structureType: structureType,
+		planet:        planet,
+		intro:         intro,
 	}
 	return x, nil
 }

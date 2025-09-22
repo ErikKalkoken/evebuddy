@@ -149,6 +149,8 @@ var notificationTypeFromString = map[string]app.EveNotificationType{
 	"LocateCharMsg":                             app.LocateCharMsg,
 	"LPAutoRedeemed":                            app.LPAutoRedeemed,
 	"MadeWarMutual":                             app.MadeWarMutual,
+	"MercenaryDenAttacked":                      app.MercenaryDenAttacked,
+	"MercenaryDenReinforced":                    app.MercenaryDenReinforced,
 	"MercOfferedNegotiationMsg":                 app.MercOfferedNegotiationMsg,
 	"MercOfferRetractedMsg":                     app.MercOfferRetractedMsg,
 	"MissionCanceledTriglavian":                 app.MissionCanceledTriglavian,
@@ -252,7 +254,7 @@ var notificationTypeFromString = map[string]app.EveNotificationType{
 
 // EveNotificationTypeFromESIString returns a notifications from a matching ESI string
 // or [app.UnknownNotification] if not found.
-func (*Storage) EveNotificationTypeFromESIString(name string) (app.EveNotificationType, bool) {
+func EveNotificationTypeFromESIString(name string) (app.EveNotificationType, bool) {
 	nt, ok := notificationTypeFromString[name]
 	if !ok {
 		return app.UnknownNotification, false
@@ -285,7 +287,7 @@ func (st *Storage) CountCharacterNotifications(ctx context.Context, characterID 
 	}
 	m := make(map[app.EveNotificationType][]int)
 	for _, r := range rows {
-		nt, found := st.EveNotificationTypeFromESIString(r.Name)
+		nt, found := EveNotificationTypeFromESIString(r.Name)
 		if !found {
 			nt = app.UnknownNotification
 		}
@@ -352,7 +354,7 @@ func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int
 	if err != nil {
 		return nil, fmt.Errorf("get character notification %+v: %w", arg, convertGetError(err))
 	}
-	nt, found := st.EveNotificationTypeFromESIString(r.NotificationType.Name)
+	nt, found := EveNotificationTypeFromESIString(r.NotificationType.Name)
 	if !found {
 		nt = app.UnknownNotification
 	}
@@ -425,7 +427,7 @@ func (st *Storage) ListCharacterNotificationsForTypes(ctx context.Context, chara
 	}
 	ee := make([]*app.CharacterNotification, len(rows))
 	for i, r := range rows {
-		nt, found := st.EveNotificationTypeFromESIString(r.NotificationType.Name)
+		nt, found := EveNotificationTypeFromESIString(r.NotificationType.Name)
 		if !found {
 			nt = app.UnknownNotification
 		}
@@ -451,7 +453,7 @@ func (st *Storage) ListCharacterNotificationsAll(ctx context.Context, characterI
 	}
 	ee := make([]*app.CharacterNotification, len(rows))
 	for i, r := range rows {
-		nt, found := st.EveNotificationTypeFromESIString(r.NotificationType.Name)
+		nt, found := EveNotificationTypeFromESIString(r.NotificationType.Name)
 		if !found {
 			nt = app.UnknownNotification
 		}
@@ -476,7 +478,7 @@ func (st *Storage) ListCharacterNotificationsUnread(ctx context.Context, charact
 	}
 	ee := make([]*app.CharacterNotification, len(rows))
 	for i, r := range rows {
-		nt, found := st.EveNotificationTypeFromESIString(r.NotificationType.Name)
+		nt, found := EveNotificationTypeFromESIString(r.NotificationType.Name)
 		if !found {
 			nt = app.UnknownNotification
 		}
@@ -505,7 +507,7 @@ func (st *Storage) ListCharacterNotificationsUnprocessed(ctx context.Context, ch
 	}
 	ee := make([]*app.CharacterNotification, len(rows))
 	for i, r := range rows {
-		nt, found := st.EveNotificationTypeFromESIString(r.NotificationType.Name)
+		nt, found := EveNotificationTypeFromESIString(r.NotificationType.Name)
 		if !found {
 			nt = app.UnknownNotification
 		}

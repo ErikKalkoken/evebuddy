@@ -62,8 +62,9 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 	factory.CreateEveEntityAlliance(app.EveEntity{ID: 3002})
 	factory.CreateEveEntityAlliance(app.EveEntity{ID: 3011})
 	factory.CreateEveType(storage.CreateEveTypeParams{ID: 2233})
-	factory.CreateEveType(storage.CreateEveTypeParams{ID: 32458})
 	factory.CreateEveType(storage.CreateEveTypeParams{ID: 16213})
+	factory.CreateEveType(storage.CreateEveTypeParams{ID: 32458})
+	factory.CreateEveType(storage.CreateEveTypeParams{ID: 85230})
 	factory.CreateEvePlanet(storage.CreateEvePlanetParams{ID: 40161469})
 	factory.CreateEveMoon(storage.CreateEveMoonParams{ID: 40161465})
 	factory.CreateEveEntityWithCategory(app.EveEntityInventoryType, app.EveEntity{ID: 46300})
@@ -78,7 +79,7 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 	notifTypes := app.NotificationTypesSupported()
 	typeTested := make(map[app.EveNotificationType]bool)
 	for _, n := range notifications {
-		nt, found := st.EveNotificationTypeFromESIString(n.Type)
+		nt, found := storage.EveNotificationTypeFromESIString(n.Type)
 		if !found || !notifTypes.Contains(nt) {
 			continue
 		}
@@ -140,11 +141,10 @@ func TestEntityIDsSupportedNotifications(t *testing.T) {
 	if err := json.Unmarshal(data, &notifications); err != nil {
 		panic(err)
 	}
-	st := &storage.Storage{}
 	notifTypes := app.NotificationTypesSupported()
 	en := evenotification.New(nil)
 	for _, n := range notifications {
-		nt, found := st.EveNotificationTypeFromESIString(n.Type)
+		nt, found := storage.EveNotificationTypeFromESIString(n.Type)
 		if !found || !notifTypes.Contains(nt) {
 			continue
 		}
