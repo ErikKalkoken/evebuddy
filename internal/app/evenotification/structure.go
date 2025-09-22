@@ -17,7 +17,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification/notification2"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
@@ -35,7 +34,7 @@ type structureInfo struct {
 	solarSystem eveObj
 }
 
-func makeStructureBaseText(ctx context.Context, typeID, systemID int32, structureID int64, structureName string, eus *eveuniverseservice.EveUniverseService) (structureInfo, error) {
+func makeStructureBaseText(ctx context.Context, typeID, systemID int32, structureID int64, structureName string, eus EveUniverseService) (structureInfo, error) {
 	var eveType *app.EveType
 	var err error
 	if typeID != 0 {

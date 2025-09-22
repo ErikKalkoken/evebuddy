@@ -10,7 +10,6 @@ import (
 	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
@@ -20,7 +19,7 @@ type towerInfo struct {
 	intro string
 }
 
-func makeTowerBaseText(ctx context.Context, moonID, typeID int32, eus *eveuniverseservice.EveUniverseService) (towerInfo, error) {
+func makeTowerBaseText(ctx context.Context, moonID, typeID int32, eus EveUniverseService) (towerInfo, error) {
 	structureType, err := eus.GetOrCreateTypeESI(ctx, typeID)
 	if err != nil {
 		return towerInfo{}, err

@@ -79,7 +79,7 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 	notifTypes := app.NotificationTypesSupported()
 	typeTested := make(map[app.EveNotificationType]bool)
 	for _, n := range notifications {
-		nt, found := st.EveNotificationTypeFromESIString(n.Type)
+		nt, found := storage.EveNotificationTypeFromESIString(n.Type)
 		if !found || !notifTypes.Contains(nt) {
 			continue
 		}
@@ -141,11 +141,10 @@ func TestEntityIDsSupportedNotifications(t *testing.T) {
 	if err := json.Unmarshal(data, &notifications); err != nil {
 		panic(err)
 	}
-	st := &storage.Storage{}
 	notifTypes := app.NotificationTypesSupported()
 	en := evenotification.New(nil)
 	for _, n := range notifications {
-		nt, found := st.EveNotificationTypeFromESIString(n.Type)
+		nt, found := storage.EveNotificationTypeFromESIString(n.Type)
 		if !found || !notifTypes.Contains(nt) {
 			continue
 		}

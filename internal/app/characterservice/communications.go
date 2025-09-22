@@ -193,7 +193,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 						Type:           n.Type_,
 					}
 
-					nt, found := s.st.EveNotificationTypeFromESIString(n.Type_)
+					nt, found := storage.EveNotificationTypeFromESIString(n.Type_)
 					if !found {
 						nt = app.UnknownNotification
 					}
@@ -248,7 +248,7 @@ func (s *CharacterService) loadEntitiesForNotifications(ctx context.Context, not
 		if n.SenderId != 0 {
 			ids.Add(n.SenderId)
 		}
-		nt, found := s.st.EveNotificationTypeFromESIString(n.Type_)
+		nt, found := storage.EveNotificationTypeFromESIString(n.Type_)
 		if !found {
 			continue
 		}

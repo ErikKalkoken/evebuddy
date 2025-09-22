@@ -10,13 +10,13 @@ import (
 func TestNotificationHelpers(t *testing.T) {
 	st := &Storage{}
 	t.Run("can convert valid name to type", func(t *testing.T) {
-		got, found := st.EveNotificationTypeFromESIString("StructureDestroyed")
+		got, found := EveNotificationTypeFromESIString("StructureDestroyed")
 		if assert.True(t, found) {
 			assert.Equal(t, app.StructureDestroyed, got)
 		}
 	})
 	t.Run("should report when string can not be matched", func(t *testing.T) {
-		_, found := st.EveNotificationTypeFromESIString("InvalidType")
+		_, found := EveNotificationTypeFromESIString("InvalidType")
 		assert.False(t, found)
 	})
 	t.Run("can convert regular type to string", func(t *testing.T) {

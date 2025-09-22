@@ -9,7 +9,6 @@ import (
 	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
@@ -133,7 +132,7 @@ type orbitalInfo struct {
 	intro         string
 }
 
-func makeOrbitalBaseText(ctx context.Context, planetID, typeID int32, eus *eveuniverseservice.EveUniverseService) (orbitalInfo, error) {
+func makeOrbitalBaseText(ctx context.Context, planetID, typeID int32, eus EveUniverseService) (orbitalInfo, error) {
 	structureType, err := eus.GetOrCreateTypeESI(ctx, typeID)
 	if err != nil {
 		return orbitalInfo{}, err
