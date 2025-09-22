@@ -740,15 +740,15 @@ func (n mercenaryDenAttacked) render(ctx context.Context, text string, timestamp
 		o.planet.Name,
 	)
 	t := fmt.Sprintf("%s is under attack.\n\n"+
-		"Current Shield Level: %d%%\n"+
-		"Current Armor Integrity: %d%%\n"+
-		"Current Hull Integrity: %d%%\n"+
+		"Current Shield Level: %0.1f%%\n"+
+		"Current Armor Integrity: %0.1f%%\n"+
+		"Current Hull Integrity: %0.1f%%\n"+
 		"Aggressing Pilot: %s\n\n"+
 		"Aggressing Pilot's Corporation: %s",
 		o.intro,
-		int(data.ShieldPercentage*100),
-		int(data.ArmorPercentage*100),
-		int(data.HullPercentage*100),
+		data.ShieldPercentage,
+		data.ArmorPercentage,
+		data.HullPercentage,
 		makeEveEntityProfileLink(entities[data.AggressorCharacterID]),
 		makeEveEntityProfileLink(corporation),
 	)
@@ -810,9 +810,10 @@ func (n mercenaryDenReinforced) render(ctx context.Context, text string, timesta
 		o.structureType.Name,
 		o.planet.Name,
 	)
-	b := fmt.Sprintf("has entered reinforcement at %s and will remain in reinforcement until %s.\n\n"+
+	b := fmt.Sprintf("%s has entered reinforcement at %s and will remain in reinforcement until %s.\n\n"+
 		"Aggressing Pilot: %s\n\n"+
 		"Aggressing Pilot's Corporation: %s",
+		o.intro,
 		fromLDAPTime(data.TimestampEntered).Format(app.DateTimeFormat),
 		fromLDAPTime(data.TimestampExited).Format(app.DateTimeFormat),
 		makeEveEntityProfileLink(entities[data.AggressorCharacterID]),

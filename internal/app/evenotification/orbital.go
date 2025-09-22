@@ -142,7 +142,7 @@ func makeOrbitalBaseText(ctx context.Context, planetID, typeID int32, eus EveUni
 		return orbitalInfo{}, err
 	}
 	intro := fmt.Sprintf(
-		"The %s at %s in %s ",
+		"The %s at %s in %s",
 		structureType.Name,
 		planet.Name,
 		makeSolarSystemLink(planet.SolarSystem),
