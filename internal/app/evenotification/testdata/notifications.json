@@ -656,7 +656,7 @@
         "sender_id": 2902,
         "sender_type": "corporation",
         "timestamp": "2019-11-18T20:00:00Z",
-        "text": "applicationText: ''\ncharID: 1011\ncorpID: 2001",
+        "text": "applicationText: 'I am not worthy'\ncharID: 1011\ncorpID: 2001",
         "is_read": false,
         "is_sent": false
     },

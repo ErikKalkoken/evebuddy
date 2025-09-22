@@ -46,7 +46,7 @@ func TestMakeStructureBaseText(t *testing.T) {
 		x, err := makeStructureBaseText(ctx, 0, es.ID, 1_000_000_000_000, "", eus)
 		// then
 		if assert.NoError(t, err) {
-			assert.Empty(t, x.name)
+			assert.Equal(t, "???", x.name)
 			assert.Equal(t, es.Name, x.solarSystem.Name)
 			assert.Empty(t, x.eveType)
 			assert.Empty(t, x.owner)

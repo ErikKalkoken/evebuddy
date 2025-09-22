@@ -63,6 +63,14 @@ func makeStructureBaseText(ctx context.Context, typeID, systemID int32, structur
 			}
 		}
 	}
+	if structureName == "" {
+		if eveType != nil {
+			structureName = eveType.Name
+		} else {
+			structureName = "???"
+		}
+	}
+
 	var name string
 	if eveType != nil {
 		isOrbital := eveType.Group.Category.ID == app.EveCategoryOrbitals
@@ -76,7 +84,7 @@ func makeStructureBaseText(ctx context.Context, typeID, systemID int32, structur
 	} else if structureName != "" {
 		name = structureName
 	} else {
-		name = "unknown structure"
+		name = "unknown"
 	}
 	text := fmt.Sprintf("The %s in %s", name, makeSolarSystemLink(system))
 	if ownerLink != "" {
@@ -310,16 +318,17 @@ func (n structureItemsDelivered) render(ctx context.Context, text string, timest
 	} else {
 		location = fmt.Sprintf("a %s", makeEveEntityProfileLink(entities[data.StructureTypeID]))
 	}
-	b := fmt.Sprintf(
+	body = fmt.Sprintf(
 		"%s has delivered the following items to %s in %s:\n\n",
 		makeEveEntityProfileLink(entities[data.CharID]),
 		location,
 		makeSolarSystemLink(solarSystem),
 	)
+	p := make([]string, 0)
 	for _, r := range data.ListOfTypesAndQty {
-		b += fmt.Sprintf("%dx %s\n\n", r[0], entities[r[1]].Name)
+		p = append(p, fmt.Sprintf("%dx %s", r[0], entities[r[1]].Name))
 	}
-	body = b
+	body += strings.Join(p, "\n\n")
 	return title, body, nil
 }
 
@@ -641,15 +650,15 @@ func (n structureUnderAttack) render(ctx context.Context, text string, timestamp
 		return title, body, err
 	}
 	t := fmt.Sprintf("%s is under attack.\n\n"+
-		"Attacking Character: %s\n\n"+
-		"Attacking Corporation: %s",
+		"Aggressing Pilot: %s\n\n"+
+		"Aggressing Pilot's Corporation: %s",
 		o.intro,
 		makeEveEntityProfileLink(attackChar),
 		makeCorporationLink(data.CorpName),
 	)
 	if data.AllianceName != "" {
 		t += fmt.Sprintf(
-			"\n\nAttacking Alliance: %s",
+			"\n\nAggressing Pilot's Alliance: %s",
 			makeAllianceLink(data.AllianceName),
 		)
 	}

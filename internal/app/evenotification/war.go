@@ -34,28 +34,26 @@ func (n allWarSurrenderMsg) unmarshal(text string) (notification.AllWarSurrender
 }
 
 func (n allWarSurrenderMsg) render(ctx context.Context, text string, timestamp time.Time) (string, string, error) {
-	var title, body string
 	data, ids, err := n.unmarshal(text)
 	if err != nil {
-		return title, body, err
+		return "", "", err
 	}
 	entities, err := n.eus.ToEntities(ctx, ids)
 	if err != nil {
-		return title, body, err
+		return "", "", err
 	}
-	title = fmt.Sprintf(
+	title := fmt.Sprintf(
 		"%s has surrendered in the war against %s",
 		entities[data.DeclaredByID].Name,
 		entities[data.AgainstID].Name,
 	)
-	out := fmt.Sprintf(
+	body := fmt.Sprintf(
 		"%s has surrendered in the war against %s.\n\n"+
 			"The war will be declared as being over after approximately %d hours.",
 		makeEveEntityProfileLink(entities[data.DeclaredByID]),
 		makeEveEntityProfileLink(entities[data.AgainstID]),
 		data.DelayHours,
 	)
-	body = out
 	return title, body, nil
 }
 
@@ -430,7 +428,7 @@ func (n warRetractedByConcord) render(ctx context.Context, text string, timestam
 	title = "CONCORD retracts war"
 	out := fmt.Sprintf(
 		"The war between %s and %s "+
-			"has been retracted by CONCORD. \n\n"+
+			"has been retracted by CONCORD.\n\n"+
 			"After %s CONCORD will again respond to any hostilities "+
 			"between those involved with full force.",
 		makeEveEntityProfileLink(entities[data.DeclaredByID]),
