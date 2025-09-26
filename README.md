@@ -195,7 +195,7 @@ You find the latest packages for download on the [releases page](https://github.
 1. Unzip the file into a directory of your choice and run the .exe file to start the app.
 
 > [!TIP]
-> Windows defender may report EVE Buddy incorrectly as containing a trojan. This is a [known issue](https://github.com/microsoft/go/issues/1255) with programs made with the Go programming language. Also, each EVE Buddy release is build from scratch on a fresh Windows container on Github, so it is highly unlikely to be infected. If this happens to you, please exclude EVE Buddy's executable from Windows defender to proceed.
+> Windows defender (and similar programs) may report EVE Buddy incorrectly as containing a trojan. This is usually a false positive and caused by a [known issue](https://github.com/microsoft/go/issues/1255) with programs made with the Go programming language. Each EVE Buddy release is build from scratch on a fresh Windows container provided by Github, so it is highly unlikely to be infected. If this happens to you, please exclude EVE Buddy's executable from Windows defender (and similar programs) to proceed.
 
 ### Mac OS
 
