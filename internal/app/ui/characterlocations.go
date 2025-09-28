@@ -215,7 +215,7 @@ func (a *characterLocations) filterRows(sortCol int) {
 			var x int
 			switch sortCol {
 			case locationsColCharacter:
-				x = strings.Compare(a.characterName, b.characterName)
+				x = stringsCompareNoCase(a.characterName, b.characterName)
 			case locationsColLocation:
 				x = strings.Compare(a.locationName, b.locationName)
 			case locationsColRegion:

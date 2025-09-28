@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -261,7 +260,7 @@ func (a *industrySlots) filterRows(sortCol int) {
 			var x int
 			switch sortCol {
 			case industrySlotsColCharacter:
-				x = strings.Compare(a.characterName, b.characterName)
+				x = stringsCompareNoCase(a.characterName, b.characterName)
 			case industrySlotsColBusy:
 				x = cmp.Compare(a.busy, b.busy)
 			case industrySlotsColReady:

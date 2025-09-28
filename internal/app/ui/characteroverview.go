@@ -262,11 +262,11 @@ func (a *characterOverview) filterRows(sortCol int) {
 			var x int
 			switch sortCol {
 			case overviewColCharacter:
-				x = strings.Compare(a.characterName, b.characterName)
+				x = stringsCompareNoCase(a.characterName, b.characterName)
 			case overviewColCorporation:
-				x = strings.Compare(a.CorporationName(), b.CorporationName())
+				x = stringsCompareNoCase(a.CorporationName(), b.CorporationName())
 			case overviewColAlliance:
-				x = strings.Compare(a.AllianceName(), b.AllianceName())
+				x = stringsCompareNoCase(a.AllianceName(), b.AllianceName())
 			case overviewColSecurity:
 				x = cmp.Compare(a.security, b.security)
 			case overviewColUnread:

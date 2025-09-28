@@ -360,7 +360,7 @@ func (a *training) filterRows(sortCol int) {
 			var x int
 			switch sortCol {
 			case trainingColName:
-				x = strings.Compare(a.characterName, b.characterName)
+				x = stringsCompareNoCase(a.characterName, b.characterName)
 			case trainingColCurrentRemaining:
 				x = cmp.Compare(a.currentRemainingTime().ValueOrZero(), b.currentRemainingTime().ValueOrZero())
 			case trainingColCurrent:

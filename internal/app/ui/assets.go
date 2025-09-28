@@ -391,13 +391,13 @@ func (a *assets) filterRows(sortCol int) {
 			var x int
 			switch sortCol {
 			case assetsColItem:
-				x = cmp.Compare(a.typeNameDisplay, b.typeNameDisplay)
+				x = strings.Compare(a.typeNameDisplay, b.typeNameDisplay)
 			case assetsColGroup:
-				x = cmp.Compare(a.groupName, b.groupName)
+				x = strings.Compare(a.groupName, b.groupName)
 			case assetsColLocation:
 				x = strings.Compare(a.locationName, b.locationName)
 			case assetsColOwner:
-				x = cmp.Compare(a.characterName, b.characterName)
+				x = stringsCompareNoCase(a.characterName, b.characterName)
 			case assetsColQuantity:
 				x = cmp.Compare(a.quantity, b.quantity)
 			case assetsColTotal:

@@ -210,3 +210,7 @@ func stringsJoinsOrEmpty(elems []string, sep, empty string) string {
 	}
 	return strings.Join(elems, sep)
 }
+
+func stringsCompareNoCase(a, b string) int {
+	return strings.Compare(strings.ToLower(a), strings.ToLower(b))
+}

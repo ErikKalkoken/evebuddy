@@ -274,7 +274,7 @@ func (a *colonies) filterRows(sortCol int) {
 			case coloniesColRegion:
 				x = strings.Compare(a.regionName, b.regionName)
 			case coloniesColCharacter:
-				x = strings.Compare(a.ownerName, b.ownerName)
+				x = stringsCompareNoCase(a.ownerName, b.ownerName)
 			}
 			if dir == iwidget.SortAsc {
 				return x

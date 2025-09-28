@@ -308,9 +308,9 @@ func (a *contracts) filterRows(sortCol int) {
 			case contractsColType:
 				x = strings.Compare(a.typeName, b.typeName)
 			case contractsColIssuer:
-				x = strings.Compare(a.issuerName, b.issuerName)
+				x = stringsCompareNoCase(a.issuerName, b.issuerName)
 			case contractsColAssignee:
-				x = strings.Compare(a.assigneeName, b.assigneeName)
+				x = stringsCompareNoCase(a.assigneeName, b.assigneeName)
 			case contractsColStatus:
 				x = strings.Compare(a.statusText, b.statusText)
 			case contractsColIssuedAt:
