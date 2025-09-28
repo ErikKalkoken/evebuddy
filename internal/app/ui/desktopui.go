@@ -416,23 +416,30 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	homeTab := container.NewTabItemWithIcon(
 		"Home",
 		theme.NewThemedResource(theme.HomeIcon()),
-		makeTabContent(NewPageHeader("Home"), homeNav),
+		makeTabContent(NewPageHeader(NewPageHeaderParams{Title: "Home"}), homeNav),
 	)
 
-	characterHeader := NewPageHeaderExtended("Characters")
-	characterHeader.ButtonIcon = theme.NewThemedResource(icons.SwitchaccountSvg)
-	characterHeader.ButtonTooltip = "Switch character"
-	characterHeader.TitleTooltip = "Show character information"
+	characterHeader := NewPageHeader(NewPageHeaderParams{
+		ButtonIcon:    theme.NewThemedResource(icons.SwitchaccountSvg),
+		ButtonTooltip: "Switch character",
+		IconFallback:  icons.Characterplaceholder64Jpeg,
+		Title:         "Characters",
+		TitleTooltip:  "Show character information",
+	})
 	characterTab := container.NewTabItemWithIcon(
 		"Characters",
 		theme.AccountIcon(),
 		makeTabContent(characterHeader, characterNav),
 	)
 
-	corporationHeader := NewPageHeaderExtended("Corporations")
-	corporationHeader.ButtonIcon = theme.NewThemedResource(icons.SwitchaccountSvg)
-	corporationHeader.ButtonTooltip = "Switch corporation"
-	corporationHeader.TitleTooltip = "Show corporation information"
+	corporationHeader := NewPageHeader(NewPageHeaderParams{
+		ButtonIcon:    theme.NewThemedResource(icons.SwitchaccountSvg),
+		ButtonTooltip: "Switch corporation",
+		IconFallback:  icons.Corporationplaceholder64Png,
+		Title:         "Corporations",
+		TitleTooltip:  "Show corporation information",
+	})
+
 	corporationTab := container.NewTabItemWithIcon(
 		"Corporations",
 		theme.NewThemedResource(icons.StarCircleOutlineSvg),
@@ -877,36 +884,41 @@ func (w *contentPage) SetTitle(s string) {
 type PageHeader struct {
 	widget.BaseWidget
 
+	button        *iwidget.ContextMenuButton
+	buttonIcon    fyne.Resource
+	buttonTooltip string
+	icon          *canvas.Image
+	title         *iwidget.TappableLabel
+	titleTooltip  string
+}
+
+type NewPageHeaderParams struct {
 	ButtonIcon    fyne.Resource
 	ButtonTooltip string
+	IconFallback  fyne.Resource
+	Title         string
 	TitleTooltip  string
-
-	button *iwidget.ContextMenuButton
-	title  *iwidget.TappableLabel
-	icon   *canvas.Image
 }
 
-func NewPageHeader(title string) *PageHeader {
-	return newPageHeader(title, false)
-}
-
-func NewPageHeaderExtended(title string) *PageHeader {
-	return newPageHeader(title, true)
-}
-
-func newPageHeader(title string, isExtended bool) *PageHeader {
-	title2 := iwidget.NewTappableLabel(title, nil)
+func NewPageHeader(arg NewPageHeaderParams) *PageHeader {
+	title2 := iwidget.NewTappableLabel(arg.Title, nil)
 	title2.SizeName = theme.SizeNameSubHeadingText
-	icon := iwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(app.IconUnitSize))
+	if arg.IconFallback == nil {
+		arg.IconFallback = icons.BlankSvg
+	}
+	icon := iwidget.NewImageFromResource(arg.IconFallback, fyne.NewSquareSize(app.IconUnitSize))
 	button := iwidget.NewContextMenuButtonWithIcon("", icons.BlankSvg, fyne.NewMenu(""))
-	if !isExtended {
+	if arg.ButtonIcon == nil {
 		icon.Hide()
 		button.Hide()
 	}
 	w := &PageHeader{
-		title:  title2,
-		button: button,
-		icon:   icon,
+		title:         title2,
+		button:        button,
+		icon:          icon,
+		buttonIcon:    arg.ButtonIcon,
+		buttonTooltip: arg.ButtonTooltip,
+		titleTooltip:  arg.TitleTooltip,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -933,15 +945,18 @@ func (w *PageHeader) SetIcon(r fyne.Resource) {
 }
 
 func (w *PageHeader) SetButtonMenu(it []*fyne.MenuItem) {
+	if it == nil {
+		return
+	}
 	if w.button.Hidden {
 		return // does not have a menu button button
 	}
 	w.button.SetMenuItems(it)
-	if w.ButtonIcon != nil {
-		w.button.SetIcon(w.ButtonIcon)
+	if w.buttonIcon != nil {
+		w.button.SetIcon(w.buttonIcon)
 	}
-	if w.ButtonTooltip != "" {
-		w.button.SetToolTip(w.ButtonTooltip)
+	if w.buttonTooltip != "" {
+		w.button.SetToolTip(w.buttonTooltip)
 	}
 }
 
@@ -951,7 +966,7 @@ func (w *PageHeader) SetTitle(s string) {
 
 func (w *PageHeader) SetTitleAction(f func()) {
 	w.title.OnTapped = f
-	if w.TitleTooltip != "" {
-		w.title.SetToolTip(w.TitleTooltip)
+	if w.titleTooltip != "" {
+		w.title.SetToolTip(w.titleTooltip)
 	}
 }
