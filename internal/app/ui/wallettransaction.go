@@ -384,7 +384,7 @@ func (a *walletTransactions) filterRows(sortCol int) {
 			case walletTransactionColTotal:
 				x = cmp.Compare(a.total, b.total)
 			case walletTransactionColClient:
-				x = strings.Compare(a.clientName, b.clientName)
+				x = stringsCompareNoCase(a.clientName, b.clientName)
 			case walletTransactionColLocation:
 				x = strings.Compare(a.locationName, b.locationName)
 			}

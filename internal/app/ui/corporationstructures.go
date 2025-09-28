@@ -258,7 +258,7 @@ func (a *corporationStructures) filterRows(sortCol int) {
 			case structuresColType:
 				x = strings.Compare(a.typeName, b.typeName)
 			case structuresColName:
-				x = strings.Compare(a.structureName, b.structureName)
+				x = stringsCompareNoCase(a.structureName, b.structureName)
 			case structuresColFuel:
 				x = cmp.Compare(time.Until(a.fuelSort), time.Until(b.fuelSort))
 			}

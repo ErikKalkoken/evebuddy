@@ -389,7 +389,7 @@ func (a *marketOrders) filterRows(sortCol int) {
 			case marketOrdersColLocation:
 				x = strings.Compare(a.locationName, b.locationName)
 			case marketOrdersColOwner:
-				x = strings.Compare(a.ownerName, b.ownerName)
+				x = stringsCompareNoCase(a.ownerName, b.ownerName)
 			}
 			if dir == iwidget.SortAsc {
 				return x
