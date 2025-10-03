@@ -27,6 +27,7 @@ require (
 	github.com/maniartech/signals v1.3.1
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/microcosm-cc/bluemonday v1.0.27
+	github.com/s-daehling/fyne-charts v0.0.0-20250929185202-4568d7a1ac8c
 	github.com/stretchr/testify v1.11.1
 	github.com/wcharczuk/go-chart/v2 v2.1.2
 	github.com/yuin/goldmark v1.7.13
@@ -45,6 +46,7 @@ require (
 	github.com/corpix/uarand v0.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0 // indirect
+	github.com/disintegration/imaging v1.6.2 // indirect
 	github.com/fredbi/uri v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fyne-io/gl-js v0.2.0 // indirect
