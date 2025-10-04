@@ -100,7 +100,7 @@ func newAssetRow(ca *app.CharacterAsset, assetCollection assetcollection.AssetCo
 		r.total.Set(ca.Price.ValueOrZero() * float64(ca.Quantity))
 	}
 	r.totalDisplay = r.total.StringFunc("?", func(v float64) string {
-		return ihumanize.Number(v, 1)
+		return humanize.FormatFloat(app.FloatFormat, v)
 	})
 	return r
 }
@@ -157,11 +157,11 @@ func newAssets(u *baseUI) *assets {
 	}, {
 		Col:   assetsColQuantity,
 		Label: "Qty.",
-		Width: 75,
+		Width: 100,
 	}, {
 		Col:   assetsColTotal,
 		Label: "Total",
-		Width: 100,
+		Width: 150,
 	}})
 	a := &assets{
 		columnSorter: headers.NewColumnSorter(assetsColItem, iwidget.SortAsc),
@@ -196,9 +196,13 @@ func newAssets(u *baseUI) *assets {
 				case assetsColOwner:
 					return iwidget.RichTextSegmentsFromText(r.characterName)
 				case assetsColQuantity:
-					return iwidget.RichTextSegmentsFromText(r.quantityDisplay)
+					return iwidget.RichTextSegmentsFromText(r.quantityDisplay, widget.RichTextStyle{
+						Alignment: fyne.TextAlignTrailing,
+					})
 				case assetsColTotal:
-					return iwidget.RichTextSegmentsFromText(r.totalDisplay)
+					return iwidget.RichTextSegmentsFromText(r.totalDisplay, widget.RichTextStyle{
+						Alignment: fyne.TextAlignTrailing,
+					})
 				}
 				return iwidget.RichTextSegmentsFromText("?")
 			},
@@ -447,27 +451,20 @@ func (a *assets) update() {
 	var t string
 	var i widget.Importance
 	characterCount := a.characterCount()
-	assets, hasData, err := a.fetchRows(a.u.services())
+	assets, quantity, total, err := a.fetchRows(a.u.services())
 	if err != nil {
 		slog.Error("Failed to refresh asset search data", "err", err)
 		t = "ERROR: " + a.u.humanizeError(err)
 		i = widget.DangerImportance
-	} else if !hasData {
-		t = "No data"
-		i = widget.LowImportance
 	} else if characterCount == 0 {
 		t = "No characters"
 		i = widget.LowImportance
 	} else {
-		t = fmt.Sprintf("%d characters • %s items", characterCount, ihumanize.Comma(len(assets)))
+		t = fmt.Sprintf("%d characters • %s items", characterCount, ihumanize.Comma(quantity))
 	}
 	if a.onUpdate != nil {
 		var s string
-		if hasData && err == nil {
-			var total float64
-			for _, a := range assets {
-				total += a.total.ValueOrZero()
-			}
+		if err == nil {
 			s = ihumanize.Number(total, 1)
 		}
 		a.onUpdate(s)
@@ -486,14 +483,14 @@ func (a *assets) update() {
 	})
 }
 
-func (*assets) fetchRows(s services) ([]assetRow, bool, error) {
+func (*assets) fetchRows(s services) ([]assetRow, int, float64, error) {
 	ctx := context.Background()
 	cc, err := s.cs.ListCharactersShort(ctx)
 	if err != nil {
-		return nil, false, err
+		return nil, 0, 0, err
 	}
 	if len(cc) == 0 {
-		return nil, false, nil
+		return nil, 0, 0, nil
 	}
 	characterNames := make(map[int32]string)
 	for _, o := range cc {
@@ -503,20 +500,22 @@ func (*assets) fetchRows(s services) ([]assetRow, bool, error) {
 	for _, c := range cc {
 		tags, err := s.cs.ListTagsForCharacter(ctx, c.ID)
 		if err != nil {
-			return nil, false, nil
+			return nil, 0, 0, nil
 		}
 		tagsPerCharacter[c.ID] = tags
 	}
 	assets, err := s.cs.ListAllAssets(ctx)
 	if err != nil {
-		return nil, false, err
+		return nil, 0, 0, err
 	}
 	locations, err := s.eus.ListLocations(ctx)
 	if err != nil {
-		return nil, false, err
+		return nil, 0, 0, err
 	}
 	assetCollection := assetcollection.New(assets, locations)
 	rows := make([]assetRow, len(assets))
+	var totalQuantity int
+	var totalPrice float64
 	for i, ca := range assets {
 		r := newAssetRow(ca, assetCollection, func(id int32) string {
 			return characterNames[id]
@@ -524,13 +523,20 @@ func (*assets) fetchRows(s services) ([]assetRow, bool, error) {
 		r.searchTarget = strings.ToLower(r.typeNameDisplay)
 		r.tags = tagsPerCharacter[ca.CharacterID]
 		rows[i] = r
+		totalQuantity += r.quantity
+		totalPrice += r.total.ValueOrZero()
 	}
-	return rows, true, nil
+	return rows, totalQuantity, totalPrice, nil
 }
 
 func (a *assets) updateFoundInfo() {
-	if c := len(a.rowsFiltered); c < len(a.rows) {
-		a.found.SetText(fmt.Sprintf("%s found", ihumanize.Comma(c)))
+	if len(a.rowsFiltered) < len(a.rows) {
+		var quantity int
+		for _, r := range a.rowsFiltered {
+			quantity += r.quantity
+		}
+		s := fmt.Sprintf("%s found", ihumanize.Comma(quantity))
+		a.found.SetText(s)
 		a.found.Show()
 	} else {
 		a.found.Hide()
