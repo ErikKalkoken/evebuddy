@@ -207,3 +207,101 @@ SET
     updated_at = ?
 WHERE
     id = ?;
+
+-- name: CreateCharacterContractBid :exec
+INSERT INTO
+    character_contract_bids (
+        contract_id,
+        amount,
+        bid_id,
+        bidder_id,
+        date_bid
+    )
+VALUES
+    (
+        ?,
+        ?,
+        ?,
+        ?,
+        ?
+    );
+
+-- name: GetCharacterContractBid :one
+SELECT
+    sqlc.embed(ccb),
+    sqlc.embed(ee)
+FROM
+    character_contract_bids ccb
+    JOIN eve_entities ee ON ee.id = ccb.bidder_id
+WHERE
+    contract_id = ?
+    AND bid_id = ?;
+
+-- name: ListCharacterContractBids :many
+SELECT
+    sqlc.embed(ccb),
+    sqlc.embed(ee)
+FROM
+    character_contract_bids ccb
+    JOIN eve_entities ee ON ee.id = ccb.bidder_id
+WHERE
+    contract_id = ?;
+
+-- name: ListCharacterContractBidIDs :many
+SELECT
+    bid_id
+FROM
+    character_contract_bids
+WHERE
+    contract_id = ?;
+
+-- name: CreateCharacterContractItem :exec
+INSERT INTO
+    character_contract_items (
+        contract_id,
+        is_included,
+        is_singleton,
+        quantity,
+        raw_quantity,
+        record_id,
+        type_id
+    )
+VALUES
+    (
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?
+    );
+
+-- name: GetCharacterContractItem :one
+SELECT
+    sqlc.embed(cci),
+    sqlc.embed(et),
+    sqlc.embed(eg),
+    sqlc.embed(ec)
+FROM
+    character_contract_items cci
+    JOIN eve_types et ON et.id = cci.type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ec ON ec.id = eg.eve_category_id
+WHERE
+    contract_id = ?
+    AND record_id = ?;
+
+-- name: ListCharacterContractItems :many
+SELECT
+    sqlc.embed(cci),
+    sqlc.embed(et),
+    sqlc.embed(eg),
+    sqlc.embed(ec)
+FROM
+    character_contract_items cci
+    JOIN eve_types et ON et.id = cci.type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ec ON ec.id = eg.eve_category_id
+WHERE
+    contract_id = ?;

@@ -131,6 +131,90 @@ func (q *Queries) CreateCharacterContract(ctx context.Context, arg CreateCharact
 	return id, err
 }
 
+const createCharacterContractBid = `-- name: CreateCharacterContractBid :exec
+INSERT INTO
+    character_contract_bids (
+        contract_id,
+        amount,
+        bid_id,
+        bidder_id,
+        date_bid
+    )
+VALUES
+    (
+        ?,
+        ?,
+        ?,
+        ?,
+        ?
+    )
+`
+
+type CreateCharacterContractBidParams struct {
+	ContractID int64
+	Amount     float64
+	BidID      int64
+	BidderID   int64
+	DateBid    time.Time
+}
+
+func (q *Queries) CreateCharacterContractBid(ctx context.Context, arg CreateCharacterContractBidParams) error {
+	_, err := q.db.ExecContext(ctx, createCharacterContractBid,
+		arg.ContractID,
+		arg.Amount,
+		arg.BidID,
+		arg.BidderID,
+		arg.DateBid,
+	)
+	return err
+}
+
+const createCharacterContractItem = `-- name: CreateCharacterContractItem :exec
+INSERT INTO
+    character_contract_items (
+        contract_id,
+        is_included,
+        is_singleton,
+        quantity,
+        raw_quantity,
+        record_id,
+        type_id
+    )
+VALUES
+    (
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?
+    )
+`
+
+type CreateCharacterContractItemParams struct {
+	ContractID  int64
+	IsIncluded  bool
+	IsSingleton bool
+	Quantity    int64
+	RawQuantity int64
+	RecordID    int64
+	TypeID      int64
+}
+
+func (q *Queries) CreateCharacterContractItem(ctx context.Context, arg CreateCharacterContractItemParams) error {
+	_, err := q.db.ExecContext(ctx, createCharacterContractItem,
+		arg.ContractID,
+		arg.IsIncluded,
+		arg.IsSingleton,
+		arg.Quantity,
+		arg.RawQuantity,
+		arg.RecordID,
+		arg.TypeID,
+	)
+	return err
+}
+
 const getCharacterContract = `-- name: GetCharacterContract :one
 SELECT
     cc.id, cc.acceptor_id, cc.assignee_id, cc.availability, cc.buyout, cc.character_id, cc.collateral, cc.contract_id, cc.date_accepted, cc.date_completed, cc.date_expired, cc.date_issued, cc.days_to_complete, cc.end_location_id, cc.for_corporation, cc.issuer_corporation_id, cc.issuer_id, cc.price, cc.reward, cc.start_location_id, cc.status, cc.status_notified, cc.title, cc.type, cc.updated_at, cc.volume,
@@ -245,6 +329,110 @@ func (q *Queries) GetCharacterContract(ctx context.Context, arg GetCharacterCont
 		&i.StartSolarSystemName,
 		&i.StartSolarSystemSecurityStatus,
 		&i.Items,
+	)
+	return i, err
+}
+
+const getCharacterContractBid = `-- name: GetCharacterContractBid :one
+SELECT
+    ccb.id, ccb.contract_id, ccb.amount, ccb.bid_id, ccb.bidder_id, ccb.date_bid,
+    ee.id, ee.category, ee.name
+FROM
+    character_contract_bids ccb
+    JOIN eve_entities ee ON ee.id = ccb.bidder_id
+WHERE
+    contract_id = ?
+    AND bid_id = ?
+`
+
+type GetCharacterContractBidParams struct {
+	ContractID int64
+	BidID      int64
+}
+
+type GetCharacterContractBidRow struct {
+	CharacterContractBid CharacterContractBid
+	EveEntity            EveEntity
+}
+
+func (q *Queries) GetCharacterContractBid(ctx context.Context, arg GetCharacterContractBidParams) (GetCharacterContractBidRow, error) {
+	row := q.db.QueryRowContext(ctx, getCharacterContractBid, arg.ContractID, arg.BidID)
+	var i GetCharacterContractBidRow
+	err := row.Scan(
+		&i.CharacterContractBid.ID,
+		&i.CharacterContractBid.ContractID,
+		&i.CharacterContractBid.Amount,
+		&i.CharacterContractBid.BidID,
+		&i.CharacterContractBid.BidderID,
+		&i.CharacterContractBid.DateBid,
+		&i.EveEntity.ID,
+		&i.EveEntity.Category,
+		&i.EveEntity.Name,
+	)
+	return i, err
+}
+
+const getCharacterContractItem = `-- name: GetCharacterContractItem :one
+SELECT
+    cci.id, cci.contract_id, cci.is_included, cci.is_singleton, cci.quantity, cci.raw_quantity, cci.record_id, cci.type_id,
+    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
+    eg.id, eg.eve_category_id, eg.name, eg.is_published,
+    ec.id, ec.name, ec.is_published
+FROM
+    character_contract_items cci
+    JOIN eve_types et ON et.id = cci.type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ec ON ec.id = eg.eve_category_id
+WHERE
+    contract_id = ?
+    AND record_id = ?
+`
+
+type GetCharacterContractItemParams struct {
+	ContractID int64
+	RecordID   int64
+}
+
+type GetCharacterContractItemRow struct {
+	CharacterContractItem CharacterContractItem
+	EveType               EveType
+	EveGroup              EveGroup
+	EveCategory           EveCategory
+}
+
+func (q *Queries) GetCharacterContractItem(ctx context.Context, arg GetCharacterContractItemParams) (GetCharacterContractItemRow, error) {
+	row := q.db.QueryRowContext(ctx, getCharacterContractItem, arg.ContractID, arg.RecordID)
+	var i GetCharacterContractItemRow
+	err := row.Scan(
+		&i.CharacterContractItem.ID,
+		&i.CharacterContractItem.ContractID,
+		&i.CharacterContractItem.IsIncluded,
+		&i.CharacterContractItem.IsSingleton,
+		&i.CharacterContractItem.Quantity,
+		&i.CharacterContractItem.RawQuantity,
+		&i.CharacterContractItem.RecordID,
+		&i.CharacterContractItem.TypeID,
+		&i.EveType.ID,
+		&i.EveType.EveGroupID,
+		&i.EveType.Capacity,
+		&i.EveType.Description,
+		&i.EveType.GraphicID,
+		&i.EveType.IconID,
+		&i.EveType.IsPublished,
+		&i.EveType.MarketGroupID,
+		&i.EveType.Mass,
+		&i.EveType.Name,
+		&i.EveType.PackagedVolume,
+		&i.EveType.PortionSize,
+		&i.EveType.Radius,
+		&i.EveType.Volume,
+		&i.EveGroup.ID,
+		&i.EveGroup.EveCategoryID,
+		&i.EveGroup.Name,
+		&i.EveGroup.IsPublished,
+		&i.EveCategory.ID,
+		&i.EveCategory.Name,
+		&i.EveCategory.IsPublished,
 	)
 	return i, err
 }
@@ -379,6 +567,87 @@ func (q *Queries) ListAllCharacterContracts(ctx context.Context) ([]ListAllChara
 	return items, nil
 }
 
+const listCharacterContractBidIDs = `-- name: ListCharacterContractBidIDs :many
+SELECT
+    bid_id
+FROM
+    character_contract_bids
+WHERE
+    contract_id = ?
+`
+
+func (q *Queries) ListCharacterContractBidIDs(ctx context.Context, contractID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterContractBidIDs, contractID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var bid_id int64
+		if err := rows.Scan(&bid_id); err != nil {
+			return nil, err
+		}
+		items = append(items, bid_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCharacterContractBids = `-- name: ListCharacterContractBids :many
+SELECT
+    ccb.id, ccb.contract_id, ccb.amount, ccb.bid_id, ccb.bidder_id, ccb.date_bid,
+    ee.id, ee.category, ee.name
+FROM
+    character_contract_bids ccb
+    JOIN eve_entities ee ON ee.id = ccb.bidder_id
+WHERE
+    contract_id = ?
+`
+
+type ListCharacterContractBidsRow struct {
+	CharacterContractBid CharacterContractBid
+	EveEntity            EveEntity
+}
+
+func (q *Queries) ListCharacterContractBids(ctx context.Context, contractID int64) ([]ListCharacterContractBidsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterContractBids, contractID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterContractBidsRow
+	for rows.Next() {
+		var i ListCharacterContractBidsRow
+		if err := rows.Scan(
+			&i.CharacterContractBid.ID,
+			&i.CharacterContractBid.ContractID,
+			&i.CharacterContractBid.Amount,
+			&i.CharacterContractBid.BidID,
+			&i.CharacterContractBid.BidderID,
+			&i.CharacterContractBid.DateBid,
+			&i.EveEntity.ID,
+			&i.EveEntity.Category,
+			&i.EveEntity.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterContractIDs = `-- name: ListCharacterContractIDs :many
 SELECT
     contract_id
@@ -401,6 +670,81 @@ func (q *Queries) ListCharacterContractIDs(ctx context.Context, characterID int6
 			return nil, err
 		}
 		items = append(items, contract_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCharacterContractItems = `-- name: ListCharacterContractItems :many
+SELECT
+    cci.id, cci.contract_id, cci.is_included, cci.is_singleton, cci.quantity, cci.raw_quantity, cci.record_id, cci.type_id,
+    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
+    eg.id, eg.eve_category_id, eg.name, eg.is_published,
+    ec.id, ec.name, ec.is_published
+FROM
+    character_contract_items cci
+    JOIN eve_types et ON et.id = cci.type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ec ON ec.id = eg.eve_category_id
+WHERE
+    contract_id = ?
+`
+
+type ListCharacterContractItemsRow struct {
+	CharacterContractItem CharacterContractItem
+	EveType               EveType
+	EveGroup              EveGroup
+	EveCategory           EveCategory
+}
+
+func (q *Queries) ListCharacterContractItems(ctx context.Context, contractID int64) ([]ListCharacterContractItemsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterContractItems, contractID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterContractItemsRow
+	for rows.Next() {
+		var i ListCharacterContractItemsRow
+		if err := rows.Scan(
+			&i.CharacterContractItem.ID,
+			&i.CharacterContractItem.ContractID,
+			&i.CharacterContractItem.IsIncluded,
+			&i.CharacterContractItem.IsSingleton,
+			&i.CharacterContractItem.Quantity,
+			&i.CharacterContractItem.RawQuantity,
+			&i.CharacterContractItem.RecordID,
+			&i.CharacterContractItem.TypeID,
+			&i.EveType.ID,
+			&i.EveType.EveGroupID,
+			&i.EveType.Capacity,
+			&i.EveType.Description,
+			&i.EveType.GraphicID,
+			&i.EveType.IconID,
+			&i.EveType.IsPublished,
+			&i.EveType.MarketGroupID,
+			&i.EveType.Mass,
+			&i.EveType.Name,
+			&i.EveType.PackagedVolume,
+			&i.EveType.PortionSize,
+			&i.EveType.Radius,
+			&i.EveType.Volume,
+			&i.EveGroup.ID,
+			&i.EveGroup.EveCategoryID,
+			&i.EveGroup.Name,
+			&i.EveGroup.IsPublished,
+			&i.EveCategory.ID,
+			&i.EveCategory.Name,
+			&i.EveCategory.IsPublished,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
