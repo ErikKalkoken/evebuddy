@@ -9,12 +9,11 @@ import (
 
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 // Character is an Eve Online character owned by the user.
@@ -121,8 +120,7 @@ func (cp Role) String() string {
 }
 
 func (cp Role) Display() string {
-	titler := cases.Title(language.English)
-	return titler.String(cp.String())
+	return xstrings.Title(cp.String())
 }
 
 func RolesAll() iter.Seq[Role] {
@@ -366,8 +364,7 @@ type CharacterWalletJournalEntry struct {
 }
 
 func (we CharacterWalletJournalEntry) RefTypeDisplay() string {
-	titler := cases.Title(language.English)
-	return titler.String(strings.ReplaceAll(we.RefType, "_", " "))
+	return xstrings.Title(strings.ReplaceAll(we.RefType, "_", " "))
 }
 
 type CharacterWalletTransaction struct {
@@ -410,8 +407,7 @@ const (
 )
 
 func (x SearchCategory) String() string {
-	titler := cases.Title(language.English)
-	return titler.String(strings.ReplaceAll(string(x), "_", " "))
+	return xstrings.Title(strings.ReplaceAll(string(x), "_", " "))
 }
 
 // SearchCategories returns all available search categories

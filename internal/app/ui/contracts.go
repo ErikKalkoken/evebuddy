@@ -21,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 const (
@@ -308,9 +309,9 @@ func (a *contracts) filterRows(sortCol int) {
 			case contractsColType:
 				x = strings.Compare(a.typeName, b.typeName)
 			case contractsColIssuer:
-				x = stringsCompareNoCase(a.issuerName, b.issuerName)
+				x = xstrings.CompareIgnoreCase(a.issuerName, b.issuerName)
 			case contractsColAssignee:
-				x = stringsCompareNoCase(a.assigneeName, b.assigneeName)
+				x = xstrings.CompareIgnoreCase(a.assigneeName, b.assigneeName)
 			case contractsColStatus:
 				x = strings.Compare(a.statusText, b.statusText)
 			case contractsColIssuedAt:
@@ -388,7 +389,7 @@ func (a *contracts) fetchRows(s services) ([]contractRow, int, error) {
 			typeName:     c.TypeDisplay(),
 			issuerName:   c.IssuerEffective().Name,
 			assigneeName: c.AssigneeName(),
-			statusText:   c.StatusDisplay(),
+			statusText:   c.Status.Display(),
 			status:       c.Status,
 			dateIssued:   c.DateIssued,
 			dateExpired:  c.DateExpired,
@@ -482,7 +483,7 @@ func showContractWindow(u *baseUI, characterID, contractID int32) {
 	if o.Type == app.ContractTypeCourier {
 		fi = append(fi, widget.NewFormItem("Contractor", widget.NewLabel(o.AcceptorDisplay())))
 	}
-	fi = append(fi, widget.NewFormItem("Status", iwidget.NewRichText(o.StatusDisplayRichText()...)))
+	fi = append(fi, widget.NewFormItem("Status", iwidget.NewRichText(o.Status.DisplayRichText()...)))
 	fi = append(fi, widget.NewFormItem("Location", makeLocationLabel(o.StartLocation, u.ShowLocationInfoWindow)))
 
 	if o.Type == app.ContractTypeCourier || o.Type == app.ContractTypeItemExchange {

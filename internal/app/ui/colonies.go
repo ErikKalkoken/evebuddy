@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 const (
@@ -274,7 +275,7 @@ func (a *colonies) filterRows(sortCol int) {
 			case coloniesColRegion:
 				x = strings.Compare(a.regionName, b.regionName)
 			case coloniesColCharacter:
-				x = stringsCompareNoCase(a.ownerName, b.ownerName)
+				x = xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
 			}
 			if dir == iwidget.SortAsc {
 				return x

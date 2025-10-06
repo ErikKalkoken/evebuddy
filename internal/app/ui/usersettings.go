@@ -19,12 +19,11 @@ import (
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 type settingAction struct {
@@ -435,8 +434,7 @@ func (a *userSettings) showDeleteFileDialog(name, path string) {
 				slog.Error("delete "+name, "path", path, "error", err)
 				a.sb.Show("ERROR: Failed to delete " + name)
 			} else {
-				titler := cases.Title(language.English)
-				a.sb.Show(titler.String(name) + " deleted")
+				a.sb.Show(xstrings.Title(name) + " deleted")
 			}
 		}, a.w)
 }

@@ -7,11 +7,10 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 type ContractAvailability uint
@@ -88,8 +87,7 @@ func (cs ContractStatus) String() string {
 }
 
 func (cs ContractStatus) Display() string {
-	caser := cases.Title(language.English)
-	return caser.String(cs.String())
+	return xstrings.Title(cs.String())
 }
 
 func (cs ContractStatus) DisplayRichText() []widget.RichTextSegment {
@@ -159,6 +157,10 @@ func (cct ContractType) String() string {
 	return s
 }
 
+func (cct ContractType) Display() string {
+	return xstrings.Title(cct.String())
+}
+
 type CharacterContract struct {
 	ID                int64
 	Acceptor          *EveEntity
@@ -199,8 +201,7 @@ func (cc CharacterContract) AssigneeName() string {
 }
 
 func (cc CharacterContract) AvailabilityDisplay() string {
-	titler := cases.Title(language.English)
-	s := titler.String(cc.Availability.String())
+	s := xstrings.Title(cc.Availability.String())
 	return s
 }
 
@@ -267,14 +268,6 @@ func (cc CharacterContract) NameDisplay() string {
 	return "?"
 }
 
-func (cc CharacterContract) StatusDisplay() string {
-	return cc.Status.Display()
-}
-
-func (cc CharacterContract) StatusDisplayRichText() []widget.RichTextSegment {
-	return cc.Status.DisplayRichText()
-}
-
 func (cc CharacterContract) TitleDisplay() string {
 	if cc.Title == "" {
 		return "-"
@@ -283,8 +276,7 @@ func (cc CharacterContract) TitleDisplay() string {
 }
 
 func (cc CharacterContract) TypeDisplay() string {
-	caser := cases.Title(language.English)
-	return caser.String(cc.Type.String())
+	return xstrings.Title(cc.Type.String())
 }
 
 type CharacterContractBid struct {

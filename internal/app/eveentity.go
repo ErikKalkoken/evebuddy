@@ -4,8 +4,7 @@ import (
 	"cmp"
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 const (
@@ -23,8 +22,7 @@ type EveEntity struct {
 }
 
 func (ee EveEntity) CategoryDisplay() string {
-	titler := cases.Title(language.English)
-	return titler.String(ee.Category.String())
+	return xstrings.Title(ee.Category.String())
 }
 
 // IsValid reports whether an entity is valid.

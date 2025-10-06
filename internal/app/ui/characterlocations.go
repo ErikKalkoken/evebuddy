@@ -18,6 +18,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 type characterLocationRow struct {
@@ -215,7 +216,7 @@ func (a *characterLocations) filterRows(sortCol int) {
 			var x int
 			switch sortCol {
 			case locationsColCharacter:
-				x = stringsCompareNoCase(a.characterName, b.characterName)
+				x = xstrings.CompareIgnoreCase(a.characterName, b.characterName)
 			case locationsColLocation:
 				x = strings.Compare(a.locationName, b.locationName)
 			case locationsColRegion:

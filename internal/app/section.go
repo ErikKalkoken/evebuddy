@@ -5,10 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 const (
@@ -38,8 +36,7 @@ type section interface {
 
 func makeSectionDisplayName(s section) string {
 	t := strings.ReplaceAll(s.String(), "_", " ")
-	c := cases.Title(language.English)
-	t = c.String(t)
+	t = xstrings.Title(t)
 	return t
 }
 

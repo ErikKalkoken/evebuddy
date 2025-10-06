@@ -4,8 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 // Division represents a division in an EVE Online corporation.
@@ -101,8 +100,7 @@ type CorporationWalletJournalEntry struct {
 }
 
 func (we CorporationWalletJournalEntry) RefTypeDisplay() string {
-	titler := cases.Title(language.English)
-	return titler.String(strings.ReplaceAll(we.RefType, "_", " "))
+	return xstrings.Title(strings.ReplaceAll(we.RefType, "_", " "))
 }
 
 type CorporationWalletTransaction struct {

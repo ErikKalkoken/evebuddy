@@ -23,6 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 const (
@@ -401,7 +402,7 @@ func (a *assets) filterRows(sortCol int) {
 			case assetsColLocation:
 				x = strings.Compare(a.locationName, b.locationName)
 			case assetsColOwner:
-				x = stringsCompareNoCase(a.characterName, b.characterName)
+				x = xstrings.CompareIgnoreCase(a.characterName, b.characterName)
 			case assetsColQuantity:
 				x = cmp.Compare(a.quantity, b.quantity)
 			case assetsColTotal:

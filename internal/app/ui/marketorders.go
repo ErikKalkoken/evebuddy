@@ -23,6 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 const (
@@ -70,7 +71,7 @@ func (r marketOrderRow) stateCorrected() app.MarketOrderState {
 }
 
 func (r marketOrderRow) stateCorrectedDisplay() string {
-	return stringTitle(r.stateCorrected().String())
+	return xstrings.Title(r.stateCorrected().String())
 }
 
 func (r marketOrderRow) stateImportance() widget.Importance {
@@ -389,7 +390,7 @@ func (a *marketOrders) filterRows(sortCol int) {
 			case marketOrdersColLocation:
 				x = strings.Compare(a.locationName, b.locationName)
 			case marketOrdersColOwner:
-				x = stringsCompareNoCase(a.ownerName, b.ownerName)
+				x = xstrings.CompareIgnoreCase(a.ownerName, b.ownerName)
 			}
 			if dir == iwidget.SortAsc {
 				return x
@@ -564,7 +565,7 @@ func showMarketOrderWindow(u *baseUI, r marketOrderRow) {
 			})),
 		))
 	}
-	items = append(items, widget.NewFormItem("Range", widget.NewLabel(stringTitle(r.range_))))
+	items = append(items, widget.NewFormItem("Range", widget.NewLabel(xstrings.Title(r.range_))))
 	items = append(items, widget.NewFormItem("For corporation", makeBoolLabel(r.isCorporation)))
 	items = append(items, widget.NewFormItem("Character", makeCharacterActionLabel(
 		r.characterID,
