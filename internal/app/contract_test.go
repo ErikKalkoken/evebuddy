@@ -11,24 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAssigneeName(t *testing.T) {
-	x1 := &app.CharacterContract{
-		Assignee: &app.EveEntity{Name: "name"},
-	}
-	assert.Equal(t, "name", x1.AssigneeName())
-	x2 := &app.CharacterContract{}
-	assert.Equal(t, "", x2.AssigneeName())
-}
-
-func TestAcceptorDisplay(t *testing.T) {
-	x1 := &app.CharacterContract{
-		Acceptor: &app.EveEntity{Name: "name"},
-	}
-	assert.Equal(t, "name", x1.AcceptorDisplay())
-	x2 := &app.CharacterContract{}
-	assert.Equal(t, "(None)", x2.AcceptorDisplay())
-}
-
 func TestContractStatusString(t *testing.T) {
 	assert.Equal(t, "cancelled", app.ContractStatusCancelled.String())
 }
@@ -67,19 +49,7 @@ func TestContractType(t *testing.T) {
 }
 
 func TestContractAvailabilityDisplay(t *testing.T) {
-	x := &app.CharacterContract{Availability: app.ContractAvailabilityPrivate}
-	assert.Equal(t, "Private", x.AvailabilityDisplay())
-}
-
-func TestContractTitleDisplay(t *testing.T) {
-	t.Run("normal", func(t *testing.T) {
-		x := &app.CharacterContract{Title: "jupiter"}
-		assert.Equal(t, "jupiter", x.TitleDisplay())
-	})
-	t.Run("missing", func(t *testing.T) {
-		x := &app.CharacterContract{Title: ""}
-		assert.Equal(t, "-", x.TitleDisplay())
-	})
+	assert.Equal(t, "Private", app.ContractAvailabilityPrivate.Display())
 }
 
 func TestContractNameDisplay(t *testing.T) {

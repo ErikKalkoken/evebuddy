@@ -37,6 +37,10 @@ func (cca ContractAvailability) String() string {
 	return s
 }
 
+func (cca ContractAvailability) Display() string {
+	return xstrings.Title(cca.String())
+}
+
 // contractConsolidatedStatus represents a consolidated status of a contract based on the original contract.
 type contractConsolidatedStatus uint
 
@@ -84,6 +88,18 @@ func (cs ContractStatus) String() string {
 		return "?"
 	}
 	return s
+}
+
+func (cs ContractStatus) IsActive() bool {
+	switch cs.consolidated() {
+	case contractConsolidatedInProgress, contractConsolidatedOutstanding:
+		return true
+	}
+	return false
+}
+
+func (cs ContractStatus) IsCompleted() bool {
+	return cs.consolidated() == contractConsolidatedHistory
 }
 
 func (cs ContractStatus) Display() string {
@@ -149,16 +165,16 @@ var cct2String = map[ContractType]string{
 	ContractTypeUnknown:      "unknown",
 }
 
+func (cct ContractType) Display() string {
+	return xstrings.Title(cct.String())
+}
+
 func (cct ContractType) String() string {
 	s, ok := cct2String[cct]
 	if !ok {
 		return "?"
 	}
 	return s
-}
-
-func (cct ContractType) Display() string {
-	return xstrings.Title(cct.String())
 }
 
 type CharacterContract struct {
@@ -193,90 +209,61 @@ type CharacterContract struct {
 	Volume            float64
 }
 
-func (cc CharacterContract) AssigneeName() string {
-	if cc.Assignee == nil {
-		return ""
+func (cs CharacterContract) HasIssue() bool {
+	return contractHasIssue(cs.Status, cs.DateExpired)
+}
+
+func (cs CharacterContract) IsExpired() bool {
+	return contractIsExpired(cs.DateExpired)
+}
+
+func (cs CharacterContract) IssuerEffective() *EveEntity {
+	if cs.ForCorporation {
+		return cs.IssuerCorporation
 	}
-	return cc.Assignee.Name
+	return cs.Issuer
 }
 
-func (cc CharacterContract) AvailabilityDisplay() string {
-	s := xstrings.Title(cc.Availability.String())
-	return s
+func (cs CharacterContract) NameDisplay() string {
+	return contractNameDisplay(cs.Type, cs.StartSolarSystem, cs.EndSolarSystem, cs.Volume, cs.Items)
 }
 
-func (cc CharacterContract) AcceptorDisplay() string {
-	if cc.Acceptor == nil {
-		return "(None)"
-	}
-	return cc.Acceptor.Name
+func contractHasIssue(status ContractStatus, expired time.Time) bool {
+	statusIssue := status.consolidated() == contractConsolidatedHasIssue
+	expiredButStillActive := (contractIsExpired(expired) && status.IsActive())
+	return statusIssue || expiredButStillActive
 }
 
-func (cc CharacterContract) HasIssue() bool {
-	return cc.Status.consolidated() == contractConsolidatedHasIssue || (cc.IsExpired() && cc.IsActive())
+func contractIsExpired(expired time.Time) bool {
+	return expired.Before(time.Now())
 }
-
-func (cc CharacterContract) IsExpired() bool {
-	return cc.DateExpired.Before(time.Now())
-}
-
-func (cc CharacterContract) IsActive() bool {
-	switch cc.Status.consolidated() {
-	case contractConsolidatedInProgress, contractConsolidatedOutstanding:
-		return true
-	}
-	return false
-}
-
-func (cc CharacterContract) IsCompleted() bool {
-	return cc.Status.consolidated() == contractConsolidatedHistory
-}
-
-func (cc CharacterContract) IssuerEffective() *EveEntity {
-	if cc.ForCorporation {
-		return cc.IssuerCorporation
-	}
-	return cc.Issuer
-}
-
-func (cc CharacterContract) NameDisplay() string {
-	if cc.Type == ContractTypeCourier {
-		var start, end string
-		if cc.StartSolarSystem != nil {
-			start = cc.StartSolarSystem.Name
+func contractNameDisplay(ct ContractType, start1, end1 *EntityShort[int32], volume float64, items []string) string {
+	if ct == ContractTypeCourier {
+		var startName, endName string
+		if start1 != nil {
+			startName = start1.Name
 		} else {
-			start = "?"
+			startName = "?"
 		}
-		if cc.EndSolarSystem != nil {
-			end = cc.EndSolarSystem.Name
+		if end1 != nil {
+			endName = end1.Name
 		} else {
-			end = "?"
+			endName = "?"
 		}
 		return fmt.Sprintf(
 			"%s >> %s (%.0f m3)",
-			start,
-			end,
-			cc.Volume,
+			startName,
+			endName,
+			volume,
 		)
 	}
-	if len(cc.Items) > 1 {
+	if len(items) > 1 {
 		return "[Multiple Items]"
 	}
-	if len(cc.Items) == 1 {
-		return cc.Items[0]
+	if len(items) == 1 {
+		return items[0]
 	}
 	return "?"
-}
-
-func (cc CharacterContract) TitleDisplay() string {
-	if cc.Title == "" {
-		return "-"
-	}
-	return cc.Title
-}
-
-func (cc CharacterContract) TypeDisplay() string {
-	return xstrings.Title(cc.Type.String())
 }
 
 type CharacterContractBid struct {
