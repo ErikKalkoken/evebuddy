@@ -386,9 +386,9 @@ func (a *contracts) fetchRows(s services) ([]contractRow, int, error) {
 	for _, c := range contracts {
 		r := contractRow{
 			name:         c.NameDisplay(),
-			typeName:     c.TypeDisplay(),
+			typeName:     c.Type.Display(),
 			issuerName:   c.IssuerEffective().Name,
-			assigneeName: c.AssigneeName(),
+			assigneeName: entityNameOrFallback(c.Assignee, ""),
 			statusText:   c.Status.Display(),
 			status:       c.Status,
 			dateIssued:   c.DateIssued,
@@ -396,8 +396,8 @@ func (a *contracts) fetchRows(s services) ([]contractRow, int, error) {
 			isExpired:    c.IsExpired(),
 			characterID:  c.CharacterID,
 			contractID:   c.ContractID,
-			isActive:     c.IsActive(),
-			isHistory:    c.IsCompleted(),
+			isActive:     c.Status.IsActive(),
+			isHistory:    c.Status.IsCompleted(),
 			hasIssue:     c.HasIssue(),
 		}
 		var text string
@@ -418,7 +418,7 @@ func (a *contracts) fetchRows(s services) ([]contractRow, int, error) {
 		}
 		r.tags = tags
 		rows = append(rows, r)
-		if c.IsActive() {
+		if c.Status.IsActive() {
 			activeCount++
 		}
 	}
@@ -454,7 +454,7 @@ func showContractWindow(u *baseUI, characterID, contractID int32) {
 	}
 
 	var availability fyne.CanvasObject
-	availabilityLabel := widget.NewLabel(o.AvailabilityDisplay())
+	availabilityLabel := widget.NewLabel(o.Availability.Display())
 	if o.Assignee != nil {
 		availability = container.NewBorder(
 			nil,
@@ -472,8 +472,8 @@ func showContractWindow(u *baseUI, characterID, contractID int32) {
 			u.scs.CharacterName(characterID),
 			u.ShowEveEntityInfoWindow,
 		)),
-		widget.NewFormItem("Info by issuer", widget.NewLabel(o.TitleDisplay())),
-		widget.NewFormItem("Type", widget.NewLabel(o.TypeDisplay())),
+		widget.NewFormItem("Info by issuer", widget.NewLabel(o.Title)),
+		widget.NewFormItem("Type", widget.NewLabel(o.Type.Display())),
 		widget.NewFormItem("Issued By", makeEveEntityActionLabel(o.IssuerEffective(), u.ShowEveEntityInfoWindow)),
 		widget.NewFormItem("Availability", availability),
 	}
@@ -481,7 +481,7 @@ func showContractWindow(u *baseUI, characterID, contractID int32) {
 		fi = append(fi, widget.NewFormItem("Contract ID", u.makeCopyToClipboardLabel(fmt.Sprint(o.ContractID))))
 	}
 	if o.Type == app.ContractTypeCourier {
-		fi = append(fi, widget.NewFormItem("Contractor", widget.NewLabel(o.AcceptorDisplay())))
+		fi = append(fi, widget.NewFormItem("Contractor", widget.NewLabel(entityNameOrFallback(o.Acceptor, "(none)"))))
 	}
 	fi = append(fi, widget.NewFormItem("Status", iwidget.NewRichText(o.Status.DisplayRichText()...)))
 	fi = append(fi, widget.NewFormItem("Location", makeLocationLabel(o.StartLocation, u.ShowLocationInfoWindow)))
@@ -594,7 +594,7 @@ func showContractWindow(u *baseUI, characterID, contractID int32) {
 		return vb, nil
 	}
 
-	subTitle := fmt.Sprintf("%s (%s)", o.NameDisplay(), o.TypeDisplay())
+	subTitle := fmt.Sprintf("%s (%s)", o.NameDisplay(), o.Type.Display())
 	f := widget.NewForm(fi...)
 	f.Orientation = widget.Adaptive
 	main := container.NewVBox(f)

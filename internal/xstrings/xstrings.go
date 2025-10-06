@@ -8,9 +8,9 @@ import (
 	"golang.org/x/text/language"
 )
 
-// Title returns the a string with it's first letter upper cased.
-func Title(s string) string {
-	return cases.Title(language.English).String(s)
+// CompareIgnoreCase works like [strings.Compare], but is case insensitive.
+func CompareIgnoreCase(a, b string) int {
+	return strings.Compare(strings.ToLower(a), strings.ToLower(b))
 }
 
 // JoinsOrEmpty joins strings together like [strings.Join],
@@ -22,7 +22,7 @@ func JoinsOrEmpty(elems []string, sep, empty string) string {
 	return strings.Join(elems, sep)
 }
 
-// CompareIgnoreCase works like [strings.Compare], but is case insensitive.
-func CompareIgnoreCase(a, b string) int {
-	return strings.Compare(strings.ToLower(a), strings.ToLower(b))
+// Title returns the a string with it's first letter upper cased.
+func Title(s string) string {
+	return cases.Title(language.English).String(s)
 }

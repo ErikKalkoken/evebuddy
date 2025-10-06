@@ -66,21 +66,27 @@ func (s *CharacterService) NotifyUpdatedContracts(ctx context.Context, character
 				continue // ignore status changed caused by the current character
 			}
 			var content string
+			var acceptorName string
 			name := "'" + c.NameDisplay() + "'"
+			if c.Acceptor != nil {
+				acceptorName = c.Acceptor.Name
+			} else {
+				acceptorName = "?"
+			}
 			switch c.Type {
 			case app.ContractTypeCourier:
 				switch c.Status {
 				case app.ContractStatusInProgress:
-					content = fmt.Sprintf("Contract %s has been accepted by %s", name, c.AcceptorDisplay())
+					content = fmt.Sprintf("Contract %s has been accepted by %s", name, acceptorName)
 				case app.ContractStatusFinished:
 					content = fmt.Sprintf("Contract %s has been delivered", name)
 				case app.ContractStatusFailed:
-					content = fmt.Sprintf("Contract %s has been failed by %s", name, c.AcceptorDisplay())
+					content = fmt.Sprintf("Contract %s has been failed by %s", name, acceptorName)
 				}
 			case app.ContractTypeItemExchange:
 				switch c.Status {
 				case app.ContractStatusFinished:
-					content = fmt.Sprintf("Contract %s has been accepted by %s", name, c.AcceptorDisplay())
+					content = fmt.Sprintf("Contract %s has been accepted by %s", name, acceptorName)
 				}
 			}
 			if content == "" {

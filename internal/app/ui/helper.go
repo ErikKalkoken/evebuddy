@@ -195,3 +195,10 @@ func timeFormattedOrFallback(t time.Time, layout, fallback string) string {
 	}
 	return t.Format(layout)
 }
+
+func entityNameOrFallback(o *app.EveEntity, fallback string) string {
+	if o == nil {
+		return fallback
+	}
+	return o.Name
+}
