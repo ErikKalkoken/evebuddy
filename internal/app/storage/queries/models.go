@@ -340,6 +340,55 @@ type Corporation struct {
 	CreatedAt time.Time
 }
 
+type CorporationContract struct {
+	ID                  int64
+	AcceptorID          sql.NullInt64
+	AssigneeID          sql.NullInt64
+	Availability        string
+	Buyout              float64
+	CorporationID       int64
+	Collateral          float64
+	ContractID          int64
+	DateAccepted        sql.NullTime
+	DateCompleted       sql.NullTime
+	DateExpired         time.Time
+	DateIssued          time.Time
+	DaysToComplete      int64
+	EndLocationID       sql.NullInt64
+	ForCorporation      bool
+	IssuerCorporationID int64
+	IssuerID            int64
+	Price               float64
+	Reward              float64
+	StartLocationID     sql.NullInt64
+	Status              string
+	StatusNotified      string
+	Title               string
+	Type                string
+	UpdatedAt           time.Time
+	Volume              float64
+}
+
+type CorporationContractBid struct {
+	ID         int64
+	ContractID int64
+	Amount     float64
+	BidID      int64
+	BidderID   int64
+	DateBid    time.Time
+}
+
+type CorporationContractItem struct {
+	ID          int64
+	ContractID  int64
+	IsIncluded  bool
+	IsSingleton bool
+	Quantity    int64
+	RawQuantity int64
+	RecordID    int64
+	TypeID      int64
+}
+
 type CorporationHangarName struct {
 	ID            int64
 	CorporationID int64
