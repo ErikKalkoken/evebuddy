@@ -25,8 +25,6 @@ import (
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	"golang.org/x/sync/errgroup"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -35,6 +33,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 const (
@@ -1314,8 +1313,7 @@ func (a *locationInfo) update() error {
 		}
 		items := xslices.Map(ss, func(s string) entityItem {
 			s2 := strings.ReplaceAll(s, "-", " ")
-			titler := cases.Title(language.English)
-			name := titler.String(s2)
+			name := xstrings.Title(s2)
 			return newEntityItem(0, "Service", name, infoNotSupported)
 		})
 		fyne.Do(func() {
@@ -1965,8 +1963,7 @@ func (a *inventoryTypeInfo) makeAttributeTab(ctx context.Context, dogmaAttribute
 type attributeGroup string
 
 func (ag attributeGroup) DisplayName() string {
-	titler := cases.Title(language.English)
-	return titler.String(string(ag))
+	return xstrings.Title(string(ag))
 }
 
 const (

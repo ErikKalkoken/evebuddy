@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 type StructureState uint
@@ -54,7 +55,7 @@ func (ss StructureState) IsReinforce() bool {
 }
 
 func (ss StructureState) Display() string {
-	return stringTitle(ss.String())
+	return xstrings.Title(ss.String())
 }
 
 func (ss StructureState) DisplayShort() string {
@@ -64,7 +65,7 @@ func (ss StructureState) DisplayShort() string {
 	} else {
 		s = ss.String()
 	}
-	return stringTitle(s)
+	return xstrings.Title(s)
 
 }
 

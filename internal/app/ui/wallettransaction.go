@@ -19,6 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
@@ -384,7 +385,7 @@ func (a *walletTransactions) filterRows(sortCol int) {
 			case walletTransactionColTotal:
 				x = cmp.Compare(a.total, b.total)
 			case walletTransactionColClient:
-				x = stringsCompareNoCase(a.clientName, b.clientName)
+				x = xstrings.CompareIgnoreCase(a.clientName, b.clientName)
 			case walletTransactionColLocation:
 				x = strings.Compare(a.locationName, b.locationName)
 			}

@@ -7,7 +7,6 @@ import (
 	"math"
 	"math/big"
 	"slices"
-	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -16,8 +15,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/dustin/go-humanize"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -197,20 +194,4 @@ func timeFormattedOrFallback(t time.Time, layout, fallback string) string {
 		return fallback
 	}
 	return t.Format(layout)
-}
-
-func stringTitle(s string) string {
-	titler := cases.Title(language.English)
-	return titler.String(s)
-}
-
-func stringsJoinsOrEmpty(elems []string, sep, empty string) string {
-	if len(elems) == 0 {
-		return empty
-	}
-	return strings.Join(elems, sep)
-}
-
-func stringsCompareNoCase(a, b string) int {
-	return strings.Compare(strings.ToLower(a), strings.ToLower(b))
 }

@@ -22,6 +22,7 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 const (
@@ -258,7 +259,7 @@ func (a *corporationStructures) filterRows(sortCol int) {
 			case structuresColType:
 				x = strings.Compare(a.typeName, b.typeName)
 			case structuresColName:
-				x = stringsCompareNoCase(a.structureName, b.structureName)
+				x = xstrings.CompareIgnoreCase(a.structureName, b.structureName)
 			case structuresColFuel:
 				x = cmp.Compare(time.Until(a.fuelSort), time.Until(b.fuelSort))
 			}
@@ -359,7 +360,7 @@ func (a *corporationStructures) fetchData(corporationID int32) ([]corporationStr
 		}), func(x *app.StructureService) string {
 			return x.Name
 		}))
-		servicesText := stringsJoinsOrEmpty(slices.Sorted(services.All()), ", ", "-")
+		servicesText := xstrings.JoinsOrEmpty(slices.Sorted(services.All()), ", ", "-")
 		region := s.System.Constellation.Region
 
 		rows = append(rows, corporationStructureRow{

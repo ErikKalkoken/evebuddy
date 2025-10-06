@@ -23,6 +23,7 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 type characterOverviewRow struct {
@@ -262,11 +263,11 @@ func (a *characterOverview) filterRows(sortCol int) {
 			var x int
 			switch sortCol {
 			case overviewColCharacter:
-				x = stringsCompareNoCase(a.characterName, b.characterName)
+				x = xstrings.CompareIgnoreCase(a.characterName, b.characterName)
 			case overviewColCorporation:
-				x = stringsCompareNoCase(a.CorporationName(), b.CorporationName())
+				x = xstrings.CompareIgnoreCase(a.CorporationName(), b.CorporationName())
 			case overviewColAlliance:
-				x = stringsCompareNoCase(a.AllianceName(), b.AllianceName())
+				x = xstrings.CompareIgnoreCase(a.AllianceName(), b.AllianceName())
 			case overviewColSecurity:
 				x = cmp.Compare(a.security, b.security)
 			case overviewColUnread:
