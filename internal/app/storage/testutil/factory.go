@@ -1196,6 +1196,164 @@ func (f Factory) CreateCorporation(corporationID ...int32) *app.Corporation {
 	return c
 }
 
+func (f Factory) CreateCorporationContract(args ...storage.CreateCorporationContractParams) *app.CorporationContract {
+	ctx := context.Background()
+	var arg storage.CreateCorporationContractParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.Availability == app.ContractAvailabilityUndefined {
+		arg.Availability = app.ContractAvailabilityPublic
+	}
+	if arg.CorporationID == 0 {
+		x := f.CreateCorporation()
+		arg.CorporationID = x.ID
+	}
+	if arg.ContractID == 0 {
+		arg.ContractID = int32(f.calcNewIDWithCorporation(
+			"corporation_contracts",
+			"contract_id",
+			arg.CorporationID,
+		))
+	}
+	if arg.DateIssued.IsZero() {
+		arg.DateIssued = time.Now().UTC()
+	}
+	if arg.DateExpired.IsZero() {
+		arg.DateExpired = arg.DateIssued.Add(time.Duration(rand.IntN(200)+12) * time.Hour)
+	}
+	if arg.IssuerID == 0 {
+		c, err := f.st.GetCorporation(ctx, arg.CorporationID)
+		if err != nil {
+			panic(err)
+		}
+		arg2 := storage.CreateEveEntityParams{
+			ID:       c.ID,
+			Name:     c.EveCorporation.Name,
+			Category: app.EveEntityCorporation,
+		}
+		_, err = f.st.GetOrCreateEveEntity(ctx, arg2)
+		if err != nil {
+			panic(err)
+		}
+		arg.IssuerID = c.ID
+	}
+	if arg.IssuerCorporationID == 0 {
+		c, err := f.st.GetCorporation(ctx, arg.CorporationID)
+		if err != nil {
+			panic(err)
+		}
+		arg.IssuerCorporationID = c.EveCorporation.ID
+	}
+	if arg.Status == app.ContractStatusUndefined {
+		arg.Status = app.ContractStatusOutstanding
+	}
+	switch arg.Type {
+	case app.ContractTypeCourier:
+		if arg.EndLocationID == 0 {
+			x := f.CreateEveLocationStructure()
+			arg.EndLocationID = x.ID
+		}
+		if arg.StartLocationID == 0 {
+			x := f.CreateEveLocationStructure()
+			arg.StartLocationID = x.ID
+		}
+	case app.ContractTypeUndefined:
+		arg.Type = app.ContractTypeItemExchange
+	}
+	_, err := f.st.CreateCorporationContract(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetCorporationContract(ctx, arg.CorporationID, arg.ContractID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
+func (f Factory) CreateCorporationContractCourier(args ...storage.CreateCorporationContractParams) *app.CorporationContract {
+	var arg storage.CreateCorporationContractParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	arg.Type = app.ContractTypeCourier
+	return f.CreateCorporationContract(arg)
+}
+
+func (f Factory) CreateCorporationContractBid(args ...storage.CreateCorporationContractBidParams) *app.CorporationContractBid {
+	ctx := context.Background()
+	var arg storage.CreateCorporationContractBidParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ContractID == 0 {
+		c := f.CreateCorporationContract()
+		arg.ContractID = c.ID
+	}
+	if arg.BidID == 0 {
+		arg.BidID = int32(f.calcNewIDWithParam(
+			"corporation_contract_bids",
+			"bid_id",
+			"contract_id",
+			arg.ContractID,
+		))
+	}
+	if arg.Amount == 0 {
+		arg.Amount = rand.Float32() * 100_000_000
+	}
+	if arg.BidderID == 0 {
+		x := f.CreateEveEntityCorporation()
+		arg.BidderID = x.ID
+	}
+	if arg.DateBid.IsZero() {
+		arg.DateBid = time.Now().UTC()
+	}
+	if err := f.st.CreateCorporationContractBid(ctx, arg); err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetCorporationContractBid(ctx, arg.ContractID, arg.BidID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
+func (f Factory) CreateCorporationContractItem(args ...storage.CreateCorporationContractItemParams) *app.CorporationContractItem {
+	ctx := context.Background()
+	var arg storage.CreateCorporationContractItemParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ContractID == 0 {
+		c := f.CreateCorporationContract()
+		arg.ContractID = c.ID
+	}
+	if arg.RecordID == 0 {
+		arg.RecordID = f.calcNewIDWithParam(
+			"corporation_contract_items",
+			"record_id",
+			"contract_id",
+			arg.ContractID,
+		)
+	}
+	if arg.Quantity == 0 {
+		arg.Quantity = int32(rand.IntN(10_000))
+	}
+	if arg.TypeID == 0 {
+		x := f.CreateEveType()
+		arg.TypeID = x.ID
+	}
+	if err := f.st.CreateCorporationContractItem(ctx, arg); err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetCorporationContractItem(ctx, arg.ContractID, arg.RecordID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f Factory) CreateCorporationHangarName(args ...storage.UpdateOrCreateCorporationHangarNameParams) *app.CorporationHangarName {
 	ctx := context.Background()
 	var arg storage.UpdateOrCreateCorporationHangarNameParams

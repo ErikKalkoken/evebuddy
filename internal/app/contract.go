@@ -228,6 +228,93 @@ func (cs CharacterContract) NameDisplay() string {
 	return contractNameDisplay(cs.Type, cs.StartSolarSystem, cs.EndSolarSystem, cs.Volume, cs.Items)
 }
 
+type CharacterContractBid struct {
+	ContractID int64
+	Amount     float32
+	BidID      int32
+	Bidder     *EveEntity
+	DateBid    time.Time
+}
+
+type CharacterContractItem struct {
+	ContractID  int64
+	IsIncluded  bool
+	IsSingleton bool
+	Quantity    int
+	RawQuantity int
+	RecordID    int64
+	Type        *EveType
+}
+
+type CorporationContract struct {
+	ID                int64
+	Acceptor          *EveEntity
+	Assignee          *EveEntity
+	Availability      ContractAvailability
+	Buyout            float64
+	CorporationID     int32
+	Collateral        float64
+	ContractID        int32
+	DateAccepted      optional.Optional[time.Time]
+	DateCompleted     optional.Optional[time.Time]
+	DateExpired       time.Time
+	DateIssued        time.Time
+	DaysToComplete    int32
+	EndLocation       *EveLocationShort
+	EndSolarSystem    *EntityShort[int32]
+	ForCorporation    bool
+	Issuer            *EveEntity
+	IssuerCorporation *EveEntity
+	Items             []string
+	Price             float64
+	Reward            float64
+	StartLocation     *EveLocationShort
+	StartSolarSystem  *EntityShort[int32]
+	Status            ContractStatus
+	StatusNotified    ContractStatus
+	Title             string
+	Type              ContractType
+	UpdatedAt         time.Time
+	Volume            float64
+}
+
+func (cs CorporationContract) HasIssue() bool {
+	return contractHasIssue(cs.Status, cs.DateExpired)
+}
+
+func (cs CorporationContract) IsExpired() bool {
+	return contractIsExpired(cs.DateExpired)
+}
+
+func (cs CorporationContract) IssuerEffective() *EveEntity {
+	if cs.ForCorporation {
+		return cs.IssuerCorporation
+	}
+	return cs.Issuer
+}
+
+func (cs CorporationContract) NameDisplay() string {
+	return contractNameDisplay(cs.Type, cs.StartSolarSystem, cs.EndSolarSystem, cs.Volume, cs.Items)
+}
+
+type CorporationContractBid struct {
+	ContractID int64
+	Amount     float32
+	BidID      int32
+	Bidder     *EveEntity
+	DateBid    time.Time
+}
+
+type CorporationContractItem struct {
+	ContractID  int64
+	IsIncluded  bool
+	IsSingleton bool
+	Quantity    int
+	RawQuantity int
+	RecordID    int64
+	Type        *EveType
+}
+
 func contractHasIssue(status ContractStatus, expired time.Time) bool {
 	statusIssue := status.consolidated() == contractConsolidatedHasIssue
 	expiredButStillActive := (contractIsExpired(expired) && status.IsActive())
@@ -264,22 +351,4 @@ func contractNameDisplay(ct ContractType, start1, end1 *EntityShort[int32], volu
 		return items[0]
 	}
 	return "?"
-}
-
-type CharacterContractBid struct {
-	ContractID int64
-	Amount     float32
-	BidID      int32
-	Bidder     *EveEntity
-	DateBid    time.Time
-}
-
-type CharacterContractItem struct {
-	ContractID  int64
-	IsIncluded  bool
-	IsSingleton bool
-	Quantity    int
-	RawQuantity int
-	RecordID    int64
-	Type        *EveType
 }
