@@ -32,6 +32,10 @@ const (
 	SortDesc
 )
 
+func (s SortDir) isSorting() bool {
+	return s == SortAsc || s == SortDesc
+}
+
 type (
 	// ColumnDef represents the definition for a column in a data table.
 	ColumnDef struct {
@@ -41,7 +45,7 @@ type (
 		Label string
 		// Whether a column is sortable.
 		NoSort bool
-		// Width of a column in Fyne units. Will try to autosize when zero.
+		// Width of a column in Fyne units. Will try to auto size when zero.
 		Width float32
 	}
 
@@ -159,7 +163,7 @@ func (cs *ColumnSorter) column(idx int) SortDir {
 // current returns which column is currently sorted or -1 if none are sorted.
 func (cs *ColumnSorter) current() (int, SortDir) {
 	for i, v := range cs.cols {
-		if v != SortOff {
+		if v.isSorting() {
 			return i, v
 		}
 	}
@@ -198,24 +202,26 @@ func (cs *ColumnSorter) size() int {
 	return len(cs.cols)
 }
 
+// Sort sorts colums idx by applying function f.
+// It will re-apply the previous sort when idx is -1.
 func (cs *ColumnSorter) Sort(idx int, f func(sortCol int, dir SortDir)) {
 	var dir SortDir
 	if idx >= 0 {
 		dir = cs.cols[idx]
 		if dir == sortNone {
 			return
-		} else {
-			dir++
-			if dir > SortDesc {
-				dir = SortAsc
-			}
-			cs.Set(idx, dir)
 		}
+		dir++
+		if dir > SortDesc {
+			dir = SortAsc
+		}
+		cs.Set(idx, dir)
 	} else {
 		idx, dir = cs.current()
 	}
-	if idx >= 0 && dir != SortOff {
+	if idx >= 0 && dir.isSorting() {
 		f(idx, dir)
+		slog.Warn("Sorted", "idx", idx, "dir", dir)
 	}
 }
 
