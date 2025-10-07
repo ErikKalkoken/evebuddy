@@ -60,17 +60,25 @@ func TestSortedColums_Current(t *testing.T) {
 		Col:   0,
 		Label: "Alpha",
 	}, {
-		Col:   1,
-		Label: "Bravo",
+		Col:    1,
+		Label:  "Bravo",
+		NoSort: true,
 	}, {
 		Col:   2,
 		Label: "Charlie",
 	}})
 	t.Run("return currently sorted column", func(t *testing.T) {
 		sc := def.NewColumnSorter(0, SortOff)
-		sc.Set(1, SortDesc)
+		sc.Set(0, SortDesc)
 		x, y := sc.current()
-		assert.Equal(t, 1, x)
+		assert.Equal(t, 0, x)
+		assert.Equal(t, SortDesc, y)
+	})
+	t.Run("return currently sorted column 2", func(t *testing.T) {
+		sc := def.NewColumnSorter(0, SortOff)
+		sc.Set(2, SortDesc)
+		x, y := sc.current()
+		assert.Equal(t, 2, x)
 		assert.Equal(t, SortDesc, y)
 	})
 	t.Run("return -1 if nothing set", func(t *testing.T) {
