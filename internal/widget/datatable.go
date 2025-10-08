@@ -221,7 +221,6 @@ func (cs *ColumnSorter) Sort(idx int, f func(sortCol int, dir SortDir)) {
 	}
 	if idx >= 0 && dir.isSorting() {
 		f(idx, dir)
-		slog.Warn("Sorted", "idx", idx, "dir", dir)
 	}
 }
 

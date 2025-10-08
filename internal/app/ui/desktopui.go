@@ -823,7 +823,7 @@ func (u *DesktopUI) disableShortcuts() {
 }
 
 func (u *DesktopUI) showAboutDialog() {
-	d := dialog.NewCustom("About", "Close", u.makeAboutPage(), u.MainWindow())
+	d := dialog.NewCustom("About", "Close", makeAboutPage(u.baseUI), u.MainWindow())
 	u.ModifyShortcutsForDialog(d, u.MainWindow())
 	d.Show()
 }
