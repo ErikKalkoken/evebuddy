@@ -368,7 +368,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		"About",
 		theme.InfoIcon(),
 		func() {
-			moreNav.Push(iwidget.NewAppBar("About", u.makeAboutPage()))
+			moreNav.Push(iwidget.NewAppBar("About", makeAboutPage(u.baseUI)))
 		},
 	)
 	moreList := iwidget.NewNavList(
