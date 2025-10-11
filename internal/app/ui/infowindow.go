@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/mobile"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -168,6 +169,13 @@ func (iw *infoWindow) showWithCharacterID(v infoVariant, entityID int64, charact
 				f()
 			}
 		})
+		if fyne.CurrentDevice().IsMobile() {
+			w.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
+				if ev.Name == mobile.KeyBack {
+					iw.nav.Pop()
+				}
+			})
+		}
 		w.Show()
 	} else {
 		iw.nav.Push(ab)

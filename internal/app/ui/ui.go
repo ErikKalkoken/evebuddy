@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/driver/mobile"
 
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -1217,6 +1218,14 @@ func (u *baseUI) getOrCreateWindowWithOnClosed(id string, titles ...string) (win
 	}
 	w = u.App().NewWindow(u.makeWindowTitle(titles...))
 	u.windows[id] = w
+	if fyne.CurrentDevice().IsMobile() {
+		w.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
+			if ev.Name != mobile.KeyBack {
+				return
+			}
+			// Back gesture does nothing
+		})
+	}
 	f := func() {
 		delete(u.windows, id)
 	}
