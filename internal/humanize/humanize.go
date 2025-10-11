@@ -66,15 +66,11 @@ func Duration(duration time.Duration) string {
 		return "<1m"
 	}
 	m := int(math.Round(mRaw))
-	w := m / 60 / 24 / 7
-	m -= w * 60 * 24 * 7
 	d := m / 60 / 24
 	m -= d * 60 * 24
 	h := m / 60
 	m -= h * 60
-	if w > 0 {
-		return fmt.Sprintf("%dw %dd %dh", w, d, h)
-	} else if d > 0 {
+	if d > 0 {
 		return fmt.Sprintf("%dd %dh", d, h)
 	}
 	return fmt.Sprintf("%dh %dm", h, m)
