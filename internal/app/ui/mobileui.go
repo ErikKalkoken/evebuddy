@@ -9,6 +9,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/mobile"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -421,6 +422,29 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 	searchNav.NavBar = navBar
 
 	u.snackbar.Bottom = 90
+
+	w := u.MainWindow()
+	w.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
+		if ev.Name != mobile.KeyBack {
+			return
+		}
+		id, ok := navBar.Selected()
+		if !ok {
+			return
+		}
+		switch id {
+		case 0:
+			homeNav.Pop()
+		case 1:
+			characterNav.Pop()
+		case 2:
+			corpNav.Pop()
+		case 3:
+			searchNav.Pop()
+		case 4:
+			moreNav.Pop()
+		}
+	})
 
 	// initial state
 	navBar.Disable(0)
