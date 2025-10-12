@@ -242,6 +242,12 @@ To uninstall the app again run either: `make user-uninstall` or `sudo make unins
 > [!NOTE]
 > Please note that the app can currently be only installed from the release page and is currently not available in any of the Android app stores.
 
+> [!IMPORTANT]
+> EVE Buddy needs unrestricted background usage in order to function probably. The reason is that Android otherwise  automatically suspends apps when you switch to another app. Then you can no longer add new characters, because it requires you to switch to your browser app, but EVE Buddy needs to keep running for the process to work. Also EVE Buddy needs to keep running in order to pick up events for notifications.
+Please also make sure you do not have Power saving mode enabled (e.g. on Samsung Galaxy), which would also restrict background app usage.
+
+Here is how to install EVE Buddy on your Android phone:
+
 1. Make sure you have enabled in settings that you can install from your web browser (For detailed instructions please see [How to install Unknown Sources applications in Android](https://www.appaloosa.io/blog/guides/how-to-install-apps-from-unknown-sources-in-android))
 1. Navigate to the github releases page in your mobile browser
 1. Select to download the latest EVE_Buddy.apk file from the release page (this can take a minute)
@@ -249,8 +255,10 @@ To uninstall the app again run either: `make user-uninstall` or `sudo make unins
 1. In case you get a security warning from Google Play Protect:
    1. Select "More details"
    1. Select "Install anyway"
-1. Enable unrestricted background usage for EVE Buddy in settings. For a guide please see [How to prevent apps from 'sleeping' in the background on Android](https://www.androidpolice.com/prevent-apps-from-sleeping-in-the-background-on-android/)
-1. Select "Unrestricted" under "App battery usage" / "App background usage"
+1. Enable unrestricted background usage for EVE Buddy in the Android Settings app. See below for a step-by-step guide.
+1. Optional: Enable notifications for EVE BUddy. See below for a guide on how to enable it.
+
+#### Enabling Notifications
 
 To enable notifications:
 
@@ -260,9 +268,22 @@ To enable notifications:
 
 You should now see a test notification.
 
-> [!IMPORTANT]
-> EVE Buddy needs unrestricted background usage in order to function probably. The reason is that Android otherwise  automatically suspends apps when you switch to another app. Then you can no longer add new characters, because it requires you to switch to your browser app, but EVE Buddy needs to keep running for the process to work. Also EVE Buddy needs to keep running in order to pick up events for notifications.
-Please also make sure you do not have Power saving mode enabled (e.g. on Samsung Galaxy), which would also restrict background app usage.
+### Guide: Enabling unrestricted background usage
+
+Here is a step-by-step guide on how to enable this setting:
+
+Open the Settings app.
+
+1. Go to Apps and choose EVE Buddy. You should now see a screen like this:
+<img width="432" height="960" alt="evebuddy_setttings_1" src="https://github.com/user-attachments/assets/5b72a8ec-d1f1-4ee3-86cf-616bdb3df6de" />
+
+2. Choose "App battery usage". You should now see a screen like this:
+<img width="432" height="960" alt="evebuddy_setttings_2" src="https://github.com/user-attachments/assets/499f8c26-215a-406d-9999-53d9cd2b9f29" />
+
+3. Click on "Allow background usage". You should now see a screen like this:
+<img width="432" height="960" alt="evebuddy_setttings_3" src="https://github.com/user-attachments/assets/d87bf311-4349-4b1f-b88f-4a43f4abd69f" />
+
+4. Make sure the "Unrestricted" option is selected. That's it.
 
 ## Updating
 
