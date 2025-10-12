@@ -255,12 +255,12 @@ Here is how to install EVE Buddy on your Android phone:
 1. In case you get a security warning from Google Play Protect:
    1. Select "More details"
    1. Select "Install anyway"
-1. Enable unrestricted background usage for EVE Buddy in the Android Settings app. See below for a step-by-step guide.
-1. Optional: Enable notifications for EVE BUddy. See below for a guide on how to enable it.
+1. Enable unrestricted background usage for EVE Buddy in the Android Settings app. Please see [here](#how-to-enable-unrestricted-background-usage) for a step-by-step guide.
+1. Optional: Enable notifications for EVE BUddy. Please see [here](#how-to-enable-notifications) for a step-by-step guide.
 
-#### Enabling Notifications
+#### How to enable notifications
 
-To enable notifications:
+Here is how to enable notifications for EVE Buddy on your Android phone:
 
 1. Go to settings and enable what kind of notifications you want to receive (e.g. mails)
 1. Send a test notification (via menu in settings)
@@ -268,22 +268,22 @@ To enable notifications:
 
 You should now see a test notification.
 
-### Guide: Enabling unrestricted background usage
+#### How to enable unrestricted background usage
 
-Here is a step-by-step guide on how to enable this setting:
+Here is how to enable unrestricted background usage for EVE Buddy on your Android phone:
 
-Open the Settings app.
+1. Open the Settings app.
 
-1. Go to Apps and choose EVE Buddy. You should now see a screen like this:
+2. Go to Apps and choose EVE Buddy. You should now see a screen like this:
 <img width="432" height="960" alt="evebuddy_setttings_1" src="https://github.com/user-attachments/assets/5b72a8ec-d1f1-4ee3-86cf-616bdb3df6de" />
 
-2. Choose "App battery usage". You should now see a screen like this:
+3. Choose "App battery usage". You should now see a screen like this:
 <img width="432" height="960" alt="evebuddy_setttings_2" src="https://github.com/user-attachments/assets/499f8c26-215a-406d-9999-53d9cd2b9f29" />
 
-3. Click on "Allow background usage". You should now see a screen like this:
+4. Click on "Allow background usage". You should now see a screen like this:
 <img width="432" height="960" alt="evebuddy_setttings_3" src="https://github.com/user-attachments/assets/d87bf311-4349-4b1f-b88f-4a43f4abd69f" />
 
-4. Make sure the "Unrestricted" option is selected. That's it.
+5. Make sure the "Unrestricted" option is selected. That's it.
 
 ## Updating
 
