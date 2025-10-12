@@ -352,6 +352,10 @@ EVE Buddy is designed to protect your data and tokens and has implemented the fo
 
 Some of your data from the game server might not be visible in EVE Buddy due to technical limitations of the game server API (ESI) or missing permissions.
 
+### When I try to add a character the app redirect to localhost. Should it not redirect to an CCP server?
+
+No, the redirect to locahost is correct. This connects to EVE Buddy's own web server, which is needed for implementing CCP's authorization process called SSO. For more information please see the [EVE Developer Documentation / SSO](https://developers.eveonline.com/docs/services/sso/).
+
 #### Server limitations
 
 CCP's servers have limitations on how far back some character data can be retrieved.
