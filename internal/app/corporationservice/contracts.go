@@ -1,11 +1,10 @@
-package characterservice
+package corporationservice
 
 import (
 	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
@@ -18,20 +17,20 @@ import (
 )
 
 // GetContract fetches and returns a contract from the database.
-func (s *CharacterService) GetContract(ctx context.Context, characterID, contractID int32) (*app.CharacterContract, error) {
-	return s.st.GetCharacterContract(ctx, characterID, contractID)
+func (s *CorporationService) GetContract(ctx context.Context, corporationID, contractID int32) (*app.CorporationContract, error) {
+	return s.st.GetCorporationContract(ctx, corporationID, contractID)
 }
 
-func (s *CharacterService) CountContractBids(ctx context.Context, contractID int64) (int, error) {
-	x, err := s.st.ListCharacterContractBidIDs(ctx, contractID)
+func (s *CorporationService) CountContractBids(ctx context.Context, contractID int64) (int, error) {
+	x, err := s.st.ListCorporationContractBidIDs(ctx, contractID)
 	if err != nil {
 		return 0, err
 	}
 	return x.Size(), nil
 }
 
-func (s *CharacterService) GetContractTopBid(ctx context.Context, contractID int64) (*app.CharacterContractBid, error) {
-	bids, err := s.st.ListCharacterContractBids(ctx, contractID)
+func (s *CorporationService) GetContractTopBid(ctx context.Context, contractID int64) (*app.CorporationContractBid, error) {
+	bids, err := s.st.ListCorporationContractBids(ctx, contractID)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +38,7 @@ func (s *CharacterService) GetContractTopBid(ctx context.Context, contractID int
 		return nil, app.ErrNotFound
 	}
 	var max float32
-	var top *app.CharacterContractBid
+	var top *app.CorporationContractBid
 	for _, b := range bids {
 		if top == nil || b.Amount > max {
 			top = b
@@ -48,70 +47,12 @@ func (s *CharacterService) GetContractTopBid(ctx context.Context, contractID int
 	return top, nil
 }
 
-func (s *CharacterService) NotifyUpdatedContracts(ctx context.Context, characterID int32, earliest time.Time, notify func(title, content string)) error {
-	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyUpdatedContracts-%d", characterID), func() (any, error) {
-		cc, err := s.st.ListCharacterContractsForNotify(ctx, characterID, earliest)
-		if err != nil {
-			return nil, err
-		}
-		characterName, err := s.getCharacterName(ctx, characterID)
-		if err != nil {
-			return nil, err
-		}
-		for _, c := range cc {
-			if c.Status == c.StatusNotified {
-				continue
-			}
-			if c.Acceptor != nil && c.Acceptor.ID == characterID {
-				continue // ignore status changed caused by the current character
-			}
-			var content string
-			var acceptorName string
-			name := "'" + c.NameDisplay() + "'"
-			if c.Acceptor != nil {
-				acceptorName = c.Acceptor.Name
-			} else {
-				acceptorName = "?"
-			}
-			switch c.Type {
-			case app.ContractTypeCourier:
-				switch c.Status {
-				case app.ContractStatusInProgress:
-					content = fmt.Sprintf("Contract %s has been accepted by %s", name, acceptorName)
-				case app.ContractStatusFinished:
-					content = fmt.Sprintf("Contract %s has been delivered", name)
-				case app.ContractStatusFailed:
-					content = fmt.Sprintf("Contract %s has been failed by %s", name, acceptorName)
-				}
-			case app.ContractTypeItemExchange:
-				switch c.Status {
-				case app.ContractStatusFinished:
-					content = fmt.Sprintf("Contract %s has been accepted by %s", name, acceptorName)
-				}
-			}
-			if content == "" {
-				continue
-			}
-			title := fmt.Sprintf("%s: Contract updated", characterName)
-			notify(title, content)
-			if err := s.st.UpdateCharacterContractNotified(ctx, c.ID, c.Status); err != nil {
-				return nil, err
-			}
-		}
-		return nil, nil
-	})
-	if err != nil {
-		return fmt.Errorf("NotifyUpdatedContracts for character %d: %w", characterID, err)
-	}
-	return nil
+func (s *CorporationService) ListAllContracts(ctx context.Context) ([]*app.CorporationContract, error) {
+	return s.st.ListAllCorporationContracts(ctx)
 }
 
-func (s *CharacterService) ListAllContracts(ctx context.Context) ([]*app.CharacterContract, error) {
-	return s.st.ListAllCharacterContracts(ctx)
-}
-
-func (s *CharacterService) ListContractItems(ctx context.Context, contractID int64) ([]*app.CharacterContractItem, error) {
-	return s.st.ListCharacterContractItems(ctx, contractID)
+func (s *CorporationService) ListContractItems(ctx context.Context, contractID int64) ([]*app.CorporationContractItem, error) {
+	return s.st.ListCorporationContractItems(ctx, contractID)
 }
 
 var contractAvailabilityFromESIValue = map[string]app.ContractAvailability{
@@ -143,18 +84,18 @@ var contractTypeFromESIValue = map[string]app.ContractType{
 }
 
 // updateContractsESI updates the wallet journal from ESI and reports whether it has changed.
-func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterContracts {
+func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.CorporationSectionUpdateParams) (bool, error) {
+	if arg.Section != app.SectionCorporationContracts {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
-		func(ctx context.Context, characterID int32) (any, error) {
+		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			contracts, err := xesi.FetchWithPaging(
 				s.concurrencyLimit,
-				func(pageNum int) ([]esi.GetCharactersCharacterIdContracts200Ok, *http.Response, error) {
-					return s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContracts(
-						ctx, characterID, &esi.GetCharactersCharacterIdContractsOpts{
+				func(pageNum int) ([]esi.GetCorporationsCorporationIdContracts200Ok, *http.Response, error) {
+					return s.esiClient.ESI.ContractsApi.GetCorporationsCorporationIdContracts(
+						ctx, arg.CorporationID, &esi.GetCorporationsCorporationIdContractsOpts{
 							Page: esioptional.NewInt32(int32(pageNum)),
 						},
 					)
@@ -163,11 +104,11 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 			if err != nil {
 				return false, err
 			}
-			slog.Debug("Received contracts from ESI", "characterID", characterID, "count", len(contracts))
+			slog.Debug("Received contracts from ESI", "corporationID", arg.CorporationID, "count", len(contracts))
 			return contracts, nil
 		},
-		func(ctx context.Context, characterID int32, data any) error {
-			contracts := data.([]esi.GetCharactersCharacterIdContracts200Ok)
+		func(ctx context.Context, arg app.CorporationSectionUpdateParams, data any) error {
+			contracts := data.([]esi.GetCorporationsCorporationIdContracts200Ok)
 			// fetch missing eve entities
 			var entityIDs set.Set[int32]
 			var locationIDs set.Set[int64]
@@ -180,12 +121,12 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 				return err
 			}
 			// identify new contracts
-			ii, err := s.st.ListCharacterContractIDs(ctx, characterID)
+			ii, err := s.st.ListCorporationContractIDs(ctx, arg.CorporationID)
 			if err != nil {
 				return err
 			}
 			existingIDs := set.Of(ii...)
-			var existingContracts, newContracts []esi.GetCharactersCharacterIdContracts200Ok
+			var existingContracts, newContracts []esi.GetCorporationsCorporationIdContracts200Ok
 			for _, c := range contracts {
 				if existingIDs.Contains(c.ContractId) {
 					existingContracts = append(existingContracts, c)
@@ -198,33 +139,33 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 			if len(newContracts) > 0 {
 				var count int
 				for _, c := range newContracts {
-					if err := s.createNewContract(ctx, characterID, c); err != nil {
+					if err := s.createNewContract(ctx, arg.CorporationID, c); err != nil {
 						slog.Error("create contract", "contract", c, "error", err)
 						continue
 					} else {
 						count++
 					}
 				}
-				slog.Info("Stored new contracts", "characterID", characterID, "count", count)
+				slog.Info("Stored new contracts", "corporationID", arg.CorporationID, "count", count)
 			}
 			if len(existingContracts) > 0 {
 				var count int
 				for _, c := range existingContracts {
-					if err := s.updateContract(ctx, characterID, c); err != nil {
+					if err := s.updateContract(ctx, arg.CorporationID, c); err != nil {
 						slog.Error("update contract", "contract", c, "error", err)
 						continue
 					} else {
 						count++
 					}
 				}
-				slog.Info("Updated contracts", "characterID", characterID, "count", count)
+				slog.Info("Updated contracts", "corporationID", arg.CorporationID, "count", count)
 			}
 			// add new bids for auctions
 			for _, c := range contracts {
 				if c.Type_ != "auction" {
 					continue
 				}
-				err := s.updateContractBids(ctx, characterID, c.ContractId)
+				err := s.updateContractBids(ctx, arg.CorporationID, c.ContractId)
 				if err != nil {
 					slog.Error("update contract bids", "contract", c, "error", err)
 					continue
@@ -234,7 +175,7 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 		})
 }
 
-func (s *CharacterService) createNewContract(ctx context.Context, characterID int32, c esi.GetCharactersCharacterIdContracts200Ok) error {
+func (s *CorporationService) createNewContract(ctx context.Context, corporationID int32, c esi.GetCorporationsCorporationIdContracts200Ok) error {
 	// Ensuring again all related objects are created to prevent occasional FK constraint error
 	entityIDs := set.Of(c.AcceptorId, c.AssigneeId, c.IssuerId, c.IssuerCorporationId)
 	locationIDs := set.Of(c.StartLocationId, c.EndLocationId)
@@ -254,12 +195,12 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 	if !ok {
 		return fmt.Errorf("unknown type: %s", c.Type_)
 	}
-	arg := storage.CreateCharacterContractParams{
+	arg := storage.CreateCorporationContractParams{
 		AcceptorID:          c.AcceptorId,
 		AssigneeID:          c.AssigneeId,
 		Availability:        availability,
 		Buyout:              c.Buyout,
-		CharacterID:         characterID,
+		CorporationID:       corporationID,
 		Collateral:          c.Collateral,
 		ContractID:          c.ContractId,
 		DateAccepted:        c.DateAccepted,
@@ -279,15 +220,15 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 		Type:                typ,
 		Volume:              c.Volume,
 	}
-	id, err := s.st.CreateCharacterContract(ctx, arg)
+	id, err := s.st.CreateCorporationContract(ctx, arg)
 	if err != nil {
 		return err
 	}
-	items, _, err := s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContractsContractIdItems(ctx, characterID, c.ContractId, nil)
+	items, _, err := s.esiClient.ESI.ContractsApi.GetCorporationsCorporationIdContractsContractIdItems(ctx, c.ContractId, corporationID, nil)
 	if err != nil {
 		return err
 	}
-	typeIDs := set.Of(xslices.Map(items, func(x esi.GetCharactersCharacterIdContractsContractIdItems200Ok) int32 {
+	typeIDs := set.Of(xslices.Map(items, func(x esi.GetCorporationsCorporationIdContractsContractIdItems200Ok) int32 {
 		return x.TypeId
 
 	})...)
@@ -295,7 +236,7 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 		return err
 	}
 	for _, it := range items {
-		arg := storage.CreateCharacterContractItemParams{
+		arg := storage.CreateCorporationContractItemParams{
 			ContractID:  id,
 			IsIncluded:  it.IsIncluded,
 			IsSingleton: it.IsSingleton,
@@ -304,19 +245,19 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 			RecordID:    it.RecordId,
 			TypeID:      it.TypeId,
 		}
-		if err := s.st.CreateCharacterContractItem(ctx, arg); err != nil {
+		if err := s.st.CreateCorporationContractItem(ctx, arg); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *CharacterService) updateContract(ctx context.Context, characterID int32, c esi.GetCharactersCharacterIdContracts200Ok) error {
+func (s *CorporationService) updateContract(ctx context.Context, corporationID int32, c esi.GetCorporationsCorporationIdContracts200Ok) error {
 	status, ok := contractStatusFromESIValue[c.Status]
 	if !ok {
 		return fmt.Errorf("unknown status: %s", c.Status)
 	}
-	o, err := s.st.GetCharacterContract(ctx, characterID, c.ContractId)
+	o, err := s.st.GetCorporationContract(ctx, corporationID, c.ContractId)
 	if err != nil {
 		return err
 	}
@@ -330,34 +271,34 @@ func (s *CharacterService) updateContract(ctx context.Context, characterID int32
 		o.Status == contractStatusFromESIValue[c.Status] {
 		return nil
 	}
-	arg := storage.UpdateCharacterContractParams{
+	arg := storage.UpdateCorporationContractParams{
 		AcceptorID:    c.AcceptorId,
 		DateAccepted:  c.DateAccepted,
 		DateCompleted: c.DateCompleted,
-		CharacterID:   characterID,
+		CorporationID: corporationID,
 		ContractID:    c.ContractId,
 		Status:        status,
 	}
-	if err := s.st.UpdateCharacterContract(ctx, arg); err != nil {
+	if err := s.st.UpdateCorporationContract(ctx, arg); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *CharacterService) updateContractBids(ctx context.Context, characterID, contractID int32) error {
-	c, err := s.st.GetCharacterContract(ctx, characterID, contractID)
+func (s *CorporationService) updateContractBids(ctx context.Context, corporationID, contractID int32) error {
+	c, err := s.st.GetCorporationContract(ctx, corporationID, contractID)
 	if err != nil {
 		return err
 	}
-	existingBidIDs, err := s.st.ListCharacterContractBidIDs(ctx, c.ID)
+	existingBidIDs, err := s.st.ListCorporationContractBidIDs(ctx, c.ID)
 	if err != nil {
 		return err
 	}
-	bids, _, err := s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContractsContractIdBids(ctx, characterID, contractID, nil)
+	bids, _, err := s.esiClient.ESI.ContractsApi.GetCorporationsCorporationIdContractsContractIdBids(ctx, contractID, corporationID, nil)
 	if err != nil {
 		return err
 	}
-	newBids := make([]esi.GetCharactersCharacterIdContractsContractIdBids200Ok, 0)
+	newBids := make([]esi.GetCorporationsCorporationIdContractsContractIdBids200Ok, 0)
 	for _, b := range bids {
 		if !existingBidIDs.Contains(b.BidId) {
 			newBids = append(newBids, b)
@@ -378,17 +319,17 @@ func (s *CharacterService) updateContractBids(ctx context.Context, characterID, 
 		}
 	}
 	for _, b := range newBids {
-		arg := storage.CreateCharacterContractBidParams{
+		arg := storage.CreateCorporationContractBidParams{
 			ContractID: c.ID,
 			Amount:     b.Amount,
 			BidID:      b.BidId,
 			BidderID:   b.BidderId,
 			DateBid:    b.DateBid,
 		}
-		if err := s.st.CreateCharacterContractBid(ctx, arg); err != nil {
+		if err := s.st.CreateCorporationContractBid(ctx, arg); err != nil {
 			return err
 		}
 	}
-	slog.Info("created contract bids", "characterID", characterID, "contract", contractID, "count", len(newBids))
+	slog.Info("created contract bids", "corporationID", corporationID, "contract", contractID, "count", len(newBids))
 	return nil
 }
