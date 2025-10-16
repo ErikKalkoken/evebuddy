@@ -172,43 +172,10 @@ func (st *Storage) ListCorporationContractIDs(ctx context.Context, corporationID
 	return convertNumericSlice[int32](ids), nil
 }
 
-func (st *Storage) ListAllCorporationContracts(ctx context.Context) ([]*app.CorporationContract, error) {
-	rows, err := st.qRO.ListAllCorporationContracts(ctx)
+func (st *Storage) ListCorporationContracts(ctx context.Context, corporationID int32) ([]*app.CorporationContract, error) {
+	rows, err := st.qRO.ListCorporationContracts(ctx, int64(corporationID))
 	if err != nil {
-		return nil, fmt.Errorf("list corporation contracts: %w", err)
-	}
-	oo := make([]*app.CorporationContract, len(rows))
-	for i, r := range rows {
-		c := r.CorporationContract
-		acceptor := nullEveEntry{id: c.AcceptorID, name: r.AcceptorName, category: r.AcceptorCategory}
-		assignee := nullEveEntry{id: c.AssigneeID, name: r.AssigneeName, category: r.AssigneeCategory}
-		oo[i] = corporationContractFromDBModel(corporationContractFromDBModelParams{
-			acceptor:                 acceptor,
-			assignee:                 assignee,
-			contract:                 c,
-			endLocationName:          r.EndLocationName,
-			endSolarSystemID:         r.EndSolarSystemID,
-			endSolarSystemName:       r.EndSolarSystemName,
-			endSolarSystemSecurity:   r.EndSolarSystemSecurityStatus,
-			issuer:                   r.EveEntity_2,
-			issuerCorporation:        r.EveEntity,
-			items:                    r.Items,
-			startLocationName:        r.StartLocationName,
-			startSolarSystemID:       r.StartSolarSystemID,
-			startSolarSystemName:     r.StartSolarSystemName,
-			startSolarSystemSecurity: r.StartSolarSystemSecurityStatus,
-		})
-	}
-	return oo, nil
-}
-
-func (st *Storage) ListCorporationContractsForNotify(ctx context.Context, corporationID int32, earliest time.Time) ([]*app.CorporationContract, error) {
-	rows, err := st.qRO.ListCorporationContractsForNotify(ctx, queries.ListCorporationContractsForNotifyParams{
-		CorporationID: int64(corporationID),
-		UpdatedAt:     earliest,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("list contracts to notify for corporation %d: %w", corporationID, err)
+		return nil, fmt.Errorf("ListCorporationContracts: %w", err)
 	}
 	oo := make([]*app.CorporationContract, len(rows))
 	for i, r := range rows {

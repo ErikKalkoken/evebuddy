@@ -161,41 +161,22 @@ func TestCorporationContract(t *testing.T) {
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
-	t.Run("can list contracts for multiple corporations", func(t *testing.T) {
+	t.Run("can list contracts for a corporation", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		corporation1 := factory.CreateCorporation()
-		c1 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: corporation1.ID})
-		c2 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: corporation1.ID})
-		corporation2 := factory.CreateCorporation()
-		c3 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: corporation2.ID})
+		c := factory.CreateCorporation()
+		o1 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		o2 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		factory.CreateCorporationContract()
 		// when
-		oo, err := st.ListAllCorporationContracts(ctx)
+		oo, err := st.ListCorporationContracts(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			want := set.Of(c1.ID, c2.ID, c3.ID)
+			want := set.Of(o1.ID, o2.ID)
 			got := set.Of(xslices.Map(oo, func(x *app.CorporationContract) int64 {
 				return x.ID
 			})...)
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
-		}
-	})
-	t.Run("can list existing contracts for notify", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		now := time.Now().UTC()
-		c := factory.CreateCorporation()
-		o := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
-		factory.CreateCorporationContract(storage.CreateCorporationContractParams{
-			CorporationID: c.ID,
-			UpdatedAt:     now.Add(-12 * time.Hour),
-		})
-		// when
-		oo, err := st.ListCorporationContractsForNotify(ctx, c.ID, now.Add(-10*time.Hour))
-		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, oo, 1)
-			assert.Equal(t, o.ID, oo[0].ID)
 		}
 	})
 }

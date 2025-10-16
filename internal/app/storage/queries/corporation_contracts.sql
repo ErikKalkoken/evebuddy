@@ -96,48 +96,7 @@ WHERE
     corporation_id = ?
     AND cc.contract_id = ?;
 
--- name: ListAllCorporationContracts :many
-SELECT
-    sqlc.embed(cc),
-    sqlc.embed(issuer_corporation),
-    sqlc.embed(issuer),
-    acceptor.name as acceptor_name,
-    acceptor.category as acceptor_category,
-    assignee.name as assignee_name,
-    assignee.category as assignee_category,
-    end_locations.name as end_location_name,
-    start_locations.name as start_location_name,
-    end_solar_systems.id as end_solar_system_id,
-    end_solar_systems.name as end_solar_system_name,
-    end_solar_systems.security_status as end_solar_system_security_status,
-    start_solar_systems.id as start_solar_system_id,
-    start_solar_systems.name as start_solar_system_name,
-    start_solar_systems.security_status as start_solar_system_security_status,
-    (
-        SELECT
-            IFNULL(GROUP_CONCAT(name || " x " || quantity), "")
-        FROM
-            corporation_contract_items cci
-            LEFT JOIN eve_types et ON et.id = cci.type_id
-        WHERE
-            cci.contract_id = cc.id
-    ) as items
-FROM
-    corporation_contracts cc
-    JOIN eve_entities AS issuer_corporation ON issuer_corporation.id = cc.issuer_corporation_id
-    JOIN eve_entities AS issuer ON issuer.id = cc.issuer_id
-    LEFT JOIN eve_entities AS acceptor ON acceptor.id = cc.acceptor_id
-    LEFT JOIN eve_entities AS assignee ON assignee.id = cc.assignee_id
-    LEFT JOIN eve_locations AS end_locations ON end_locations.id = cc.end_location_id
-    LEFT JOIN eve_locations AS start_locations ON start_locations.id = cc.start_location_id
-    LEFT JOIN eve_solar_systems AS end_solar_systems ON end_solar_systems.id = end_locations.eve_solar_system_id
-    LEFT JOIN eve_solar_systems AS start_solar_systems ON start_solar_systems.id = start_locations.eve_solar_system_id
-GROUP BY
-    corporation_id, contract_id
-ORDER BY
-    date_issued DESC;
-
--- name: ListCorporationContractsForNotify :many
+-- name: ListCorporationContracts :many
 SELECT
     sqlc.embed(cc),
     sqlc.embed(issuer_corporation),
@@ -175,8 +134,10 @@ FROM
     LEFT JOIN eve_solar_systems AS start_solar_systems ON start_solar_systems.id = start_locations.eve_solar_system_id
 WHERE
     corporation_id = ?
-    AND status <> "deleted"
-    AND cc.updated_at > ?;
+GROUP BY
+    corporation_id, contract_id
+ORDER BY
+    date_issued DESC;
 
 -- name: ListCorporationContractIDs :many
 SELECT

@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	shadowWidth            = 8 // from Fyne source
 	snackbarTimeoutDefault = 3 * time.Second
 )
 

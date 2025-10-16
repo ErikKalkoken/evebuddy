@@ -47,8 +47,8 @@ func (s *CorporationService) GetContractTopBid(ctx context.Context, contractID i
 	return top, nil
 }
 
-func (s *CorporationService) ListAllContracts(ctx context.Context) ([]*app.CorporationContract, error) {
-	return s.st.ListAllCorporationContracts(ctx)
+func (s *CorporationService) ListCorporationContracts(ctx context.Context, corporationID int32) ([]*app.CorporationContract, error) {
+	return s.st.ListCorporationContracts(ctx, corporationID)
 }
 
 func (s *CorporationService) ListContractItems(ctx context.Context, contractID int64) ([]*app.CorporationContractItem, error) {

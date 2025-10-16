@@ -437,136 +437,6 @@ func (q *Queries) GetCorporationContractItem(ctx context.Context, arg GetCorpora
 	return i, err
 }
 
-const listAllCorporationContracts = `-- name: ListAllCorporationContracts :many
-SELECT
-    cc.id, cc.acceptor_id, cc.assignee_id, cc.availability, cc.buyout, cc.corporation_id, cc.collateral, cc.contract_id, cc.date_accepted, cc.date_completed, cc.date_expired, cc.date_issued, cc.days_to_complete, cc.end_location_id, cc.for_corporation, cc.issuer_corporation_id, cc.issuer_id, cc.price, cc.reward, cc.start_location_id, cc.status, cc.status_notified, cc.title, cc.type, cc.updated_at, cc.volume,
-    issuer_corporation.id, issuer_corporation.category, issuer_corporation.name,
-    issuer.id, issuer.category, issuer.name,
-    acceptor.name as acceptor_name,
-    acceptor.category as acceptor_category,
-    assignee.name as assignee_name,
-    assignee.category as assignee_category,
-    end_locations.name as end_location_name,
-    start_locations.name as start_location_name,
-    end_solar_systems.id as end_solar_system_id,
-    end_solar_systems.name as end_solar_system_name,
-    end_solar_systems.security_status as end_solar_system_security_status,
-    start_solar_systems.id as start_solar_system_id,
-    start_solar_systems.name as start_solar_system_name,
-    start_solar_systems.security_status as start_solar_system_security_status,
-    (
-        SELECT
-            IFNULL(GROUP_CONCAT(name || " x " || quantity), "")
-        FROM
-            corporation_contract_items cci
-            LEFT JOIN eve_types et ON et.id = cci.type_id
-        WHERE
-            cci.contract_id = cc.id
-    ) as items
-FROM
-    corporation_contracts cc
-    JOIN eve_entities AS issuer_corporation ON issuer_corporation.id = cc.issuer_corporation_id
-    JOIN eve_entities AS issuer ON issuer.id = cc.issuer_id
-    LEFT JOIN eve_entities AS acceptor ON acceptor.id = cc.acceptor_id
-    LEFT JOIN eve_entities AS assignee ON assignee.id = cc.assignee_id
-    LEFT JOIN eve_locations AS end_locations ON end_locations.id = cc.end_location_id
-    LEFT JOIN eve_locations AS start_locations ON start_locations.id = cc.start_location_id
-    LEFT JOIN eve_solar_systems AS end_solar_systems ON end_solar_systems.id = end_locations.eve_solar_system_id
-    LEFT JOIN eve_solar_systems AS start_solar_systems ON start_solar_systems.id = start_locations.eve_solar_system_id
-GROUP BY
-    corporation_id, contract_id
-ORDER BY
-    date_issued DESC
-`
-
-type ListAllCorporationContractsRow struct {
-	CorporationContract            CorporationContract
-	EveEntity                      EveEntity
-	EveEntity_2                    EveEntity
-	AcceptorName                   sql.NullString
-	AcceptorCategory               sql.NullString
-	AssigneeName                   sql.NullString
-	AssigneeCategory               sql.NullString
-	EndLocationName                sql.NullString
-	StartLocationName              sql.NullString
-	EndSolarSystemID               sql.NullInt64
-	EndSolarSystemName             sql.NullString
-	EndSolarSystemSecurityStatus   sql.NullFloat64
-	StartSolarSystemID             sql.NullInt64
-	StartSolarSystemName           sql.NullString
-	StartSolarSystemSecurityStatus sql.NullFloat64
-	Items                          interface{}
-}
-
-func (q *Queries) ListAllCorporationContracts(ctx context.Context) ([]ListAllCorporationContractsRow, error) {
-	rows, err := q.db.QueryContext(ctx, listAllCorporationContracts)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListAllCorporationContractsRow
-	for rows.Next() {
-		var i ListAllCorporationContractsRow
-		if err := rows.Scan(
-			&i.CorporationContract.ID,
-			&i.CorporationContract.AcceptorID,
-			&i.CorporationContract.AssigneeID,
-			&i.CorporationContract.Availability,
-			&i.CorporationContract.Buyout,
-			&i.CorporationContract.CorporationID,
-			&i.CorporationContract.Collateral,
-			&i.CorporationContract.ContractID,
-			&i.CorporationContract.DateAccepted,
-			&i.CorporationContract.DateCompleted,
-			&i.CorporationContract.DateExpired,
-			&i.CorporationContract.DateIssued,
-			&i.CorporationContract.DaysToComplete,
-			&i.CorporationContract.EndLocationID,
-			&i.CorporationContract.ForCorporation,
-			&i.CorporationContract.IssuerCorporationID,
-			&i.CorporationContract.IssuerID,
-			&i.CorporationContract.Price,
-			&i.CorporationContract.Reward,
-			&i.CorporationContract.StartLocationID,
-			&i.CorporationContract.Status,
-			&i.CorporationContract.StatusNotified,
-			&i.CorporationContract.Title,
-			&i.CorporationContract.Type,
-			&i.CorporationContract.UpdatedAt,
-			&i.CorporationContract.Volume,
-			&i.EveEntity.ID,
-			&i.EveEntity.Category,
-			&i.EveEntity.Name,
-			&i.EveEntity_2.ID,
-			&i.EveEntity_2.Category,
-			&i.EveEntity_2.Name,
-			&i.AcceptorName,
-			&i.AcceptorCategory,
-			&i.AssigneeName,
-			&i.AssigneeCategory,
-			&i.EndLocationName,
-			&i.StartLocationName,
-			&i.EndSolarSystemID,
-			&i.EndSolarSystemName,
-			&i.EndSolarSystemSecurityStatus,
-			&i.StartSolarSystemID,
-			&i.StartSolarSystemName,
-			&i.StartSolarSystemSecurityStatus,
-			&i.Items,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listCorporationContractBidIDs = `-- name: ListCorporationContractBidIDs :many
 SELECT
     bid_id
@@ -755,7 +625,7 @@ func (q *Queries) ListCorporationContractItems(ctx context.Context, contractID i
 	return items, nil
 }
 
-const listCorporationContractsForNotify = `-- name: ListCorporationContractsForNotify :many
+const listCorporationContracts = `-- name: ListCorporationContracts :many
 SELECT
     cc.id, cc.acceptor_id, cc.assignee_id, cc.availability, cc.buyout, cc.corporation_id, cc.collateral, cc.contract_id, cc.date_accepted, cc.date_completed, cc.date_expired, cc.date_issued, cc.days_to_complete, cc.end_location_id, cc.for_corporation, cc.issuer_corporation_id, cc.issuer_id, cc.price, cc.reward, cc.start_location_id, cc.status, cc.status_notified, cc.title, cc.type, cc.updated_at, cc.volume,
     issuer_corporation.id, issuer_corporation.category, issuer_corporation.name,
@@ -793,16 +663,13 @@ FROM
     LEFT JOIN eve_solar_systems AS start_solar_systems ON start_solar_systems.id = start_locations.eve_solar_system_id
 WHERE
     corporation_id = ?
-    AND status <> "deleted"
-    AND cc.updated_at > ?
+GROUP BY
+    corporation_id, contract_id
+ORDER BY
+    date_issued DESC
 `
 
-type ListCorporationContractsForNotifyParams struct {
-	CorporationID int64
-	UpdatedAt     time.Time
-}
-
-type ListCorporationContractsForNotifyRow struct {
+type ListCorporationContractsRow struct {
 	CorporationContract            CorporationContract
 	EveEntity                      EveEntity
 	EveEntity_2                    EveEntity
@@ -821,15 +688,15 @@ type ListCorporationContractsForNotifyRow struct {
 	Items                          interface{}
 }
 
-func (q *Queries) ListCorporationContractsForNotify(ctx context.Context, arg ListCorporationContractsForNotifyParams) ([]ListCorporationContractsForNotifyRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCorporationContractsForNotify, arg.CorporationID, arg.UpdatedAt)
+func (q *Queries) ListCorporationContracts(ctx context.Context, corporationID int64) ([]ListCorporationContractsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCorporationContracts, corporationID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListCorporationContractsForNotifyRow
+	var items []ListCorporationContractsRow
 	for rows.Next() {
-		var i ListCorporationContractsForNotifyRow
+		var i ListCorporationContractsRow
 		if err := rows.Scan(
 			&i.CorporationContract.ID,
 			&i.CorporationContract.AcceptorID,

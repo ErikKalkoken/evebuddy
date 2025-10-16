@@ -83,21 +83,21 @@ type industryJobs struct {
 
 	OnUpdate func(count int)
 
-	body              fyne.CanvasObject
-	bottom            *widget.Label
-	columnSorter      *iwidget.ColumnSorter
-	corporation       *app.Corporation
-	isCorporationMode bool
-	rows              []industryJobRow
-	rowsFiltered      []industryJobRow
-	search            *widget.Entry
-	selectActivity    *kxwidget.FilterChipSelect
-	selectInstaller   *kxwidget.FilterChipSelect
-	selectOwner       *kxwidget.FilterChipSelect
-	selectStatus      *kxwidget.FilterChipSelect
-	selectTag         *kxwidget.FilterChipSelect
-	sortButton        *iwidget.SortButton
-	u                 *baseUI
+	body            fyne.CanvasObject
+	bottom          *widget.Label
+	columnSorter    *iwidget.ColumnSorter
+	corporation     *app.Corporation
+	forCorporation  bool
+	rows            []industryJobRow
+	rowsFiltered    []industryJobRow
+	search          *widget.Entry
+	selectActivity  *kxwidget.FilterChipSelect
+	selectInstaller *kxwidget.FilterChipSelect
+	selectOwner     *kxwidget.FilterChipSelect
+	selectStatus    *kxwidget.FilterChipSelect
+	selectTag       *kxwidget.FilterChipSelect
+	sortButton      *iwidget.SortButton
+	u               *baseUI
 }
 
 const (
@@ -111,7 +111,15 @@ const (
 	industryJobsColInstaller = 7
 )
 
-func newIndustryJobs(u *baseUI, isCorporationMode bool) *industryJobs {
+func newIndustryJobsForOverview(u *baseUI) *industryJobs {
+	return newIndustryJobs(u, false)
+}
+
+func newIndustryJobsForCorporation(u *baseUI) *industryJobs {
+	return newIndustryJobs(u, true)
+}
+
+func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
 		Col:   industryJobsColBlueprint,
 		Label: "Blueprint",
@@ -146,12 +154,12 @@ func newIndustryJobs(u *baseUI, isCorporationMode bool) *industryJobs {
 		Width: columnWidthEntity,
 	}})
 	a := &industryJobs{
-		bottom:            makeTopLabel(),
-		columnSorter:      headers.NewColumnSorter(industryJobsColEndDate, iwidget.SortDesc),
-		isCorporationMode: isCorporationMode,
-		rows:              make([]industryJobRow, 0),
-		rowsFiltered:      make([]industryJobRow, 0),
-		u:                 u,
+		bottom:         makeTopLabel(),
+		columnSorter:   headers.NewColumnSorter(industryJobsColEndDate, iwidget.SortDesc),
+		forCorporation: forCorporation,
+		rows:           make([]industryJobRow, 0),
+		rowsFiltered:   make([]industryJobRow, 0),
+		u:              u,
 	}
 	a.ExtendBaseWidget(a)
 	makeCell := func(col int, j industryJobRow) []widget.RichTextSegment {
@@ -239,7 +247,7 @@ func newIndustryJobs(u *baseUI, isCorporationMode bool) *industryJobs {
 		a.filterRows(-1)
 	}, a.u.window, 6, 7)
 
-	if isCorporationMode {
+	if forCorporation {
 		a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
 			a.corporation = c
 		})
@@ -269,7 +277,7 @@ func newIndustryJobs(u *baseUI, isCorporationMode bool) *industryJobs {
 
 func (a *industryJobs) CreateRenderer() fyne.WidgetRenderer {
 	var selections *fyne.Container
-	if a.isCorporationMode {
+	if a.forCorporation {
 		selections = container.NewHBox(a.selectOwner, a.selectStatus, a.selectActivity, a.selectInstaller)
 	} else {
 		selections = container.NewHBox(a.selectOwner, a.selectStatus, a.selectActivity, a.selectTag)
@@ -506,7 +514,7 @@ func (a *industryJobs) makeDataList() *iwidget.StripedList {
 func (a *industryJobs) update() {
 	var jobs []industryJobRow
 	var err error
-	if a.isCorporationMode {
+	if a.forCorporation {
 		jobs, err = a.fetchCorporationJobs()
 	} else {
 		jobs, err = a.fetchCombinedJobs()
