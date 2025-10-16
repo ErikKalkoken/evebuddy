@@ -16,21 +16,21 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-func TestCharacterContract(t *testing.T) {
+func TestCorporationContract(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
-		issuer := factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
-		issuerCorporation := c.EveCharacter.Corporation
+		c := factory.CreateCorporation()
+		issuer := factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
+		issuerCorporation := c.EveCorporation
 		dateExpired := time.Now().Add(12 * time.Hour).UTC()
 		dateIssued := time.Now().UTC()
-		arg := storage.CreateCharacterContractParams{
+		arg := storage.CreateCorporationContractParams{
 			Availability:        app.ContractAvailabilityPrivate,
-			CharacterID:         c.ID,
+			CorporationID:       c.ID,
 			ContractID:          42,
 			DateExpired:         dateExpired,
 			DateIssued:          dateIssued,
@@ -40,10 +40,10 @@ func TestCharacterContract(t *testing.T) {
 			Type:                app.ContractTypeCourier,
 		}
 		// when
-		id, err := st.CreateCharacterContract(ctx, arg)
+		id, err := st.CreateCorporationContract(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			o, err := st.GetCharacterContract(ctx, c.ID, 42)
+			o, err := st.GetCorporationContract(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, id, o.ID)
 				assert.Equal(t, issuer, o.Issuer)
@@ -58,16 +58,16 @@ func TestCharacterContract(t *testing.T) {
 	t.Run("can create new full", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
-		issuer := factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
-		issuerCorporation := c.EveCharacter.Corporation
+		c := factory.CreateCorporation()
+		issuer := factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
+		issuerCorporation := c.EveCorporation
 		dateExpired := time.Now().Add(12 * time.Hour).UTC()
 		dateIssued := time.Now().UTC()
 		startLocation := factory.CreateEveLocationStructure()
 		endLocation := factory.CreateEveLocationStructure()
-		arg := storage.CreateCharacterContractParams{
+		arg := storage.CreateCorporationContractParams{
 			Availability:        app.ContractAvailabilityPrivate,
-			CharacterID:         c.ID,
+			CorporationID:       c.ID,
 			ContractID:          42,
 			DateExpired:         dateExpired,
 			DateIssued:          dateIssued,
@@ -79,10 +79,10 @@ func TestCharacterContract(t *testing.T) {
 			StartLocationID:     startLocation.ID,
 		}
 		// when
-		id, err := st.CreateCharacterContract(ctx, arg)
+		id, err := st.CreateCorporationContract(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			o, err := st.GetCharacterContract(ctx, c.ID, 42)
+			o, err := st.GetCorporationContract(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, id, o.ID)
 				assert.Equal(t, issuer, o.Issuer)
@@ -103,23 +103,23 @@ func TestCharacterContract(t *testing.T) {
 	t.Run("can update contract", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		o1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+		o1 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
 			UpdatedAt: time.Now().UTC().Add(-5 * time.Second),
 		})
 		dateAccepted := time.Now().UTC()
 		dateCompleted := time.Now().UTC()
-		arg2 := storage.UpdateCharacterContractParams{
-			CharacterID:   o1.CharacterID,
+		arg2 := storage.UpdateCorporationContractParams{
+			CorporationID: o1.CorporationID,
 			ContractID:    o1.ContractID,
 			DateAccepted:  dateAccepted,
 			DateCompleted: dateCompleted,
 			Status:        app.ContractStatusFinished,
 		}
 		// when
-		err := st.UpdateCharacterContract(ctx, arg2)
+		err := st.UpdateCorporationContract(ctx, arg2)
 		// then
 		if assert.NoError(t, err) {
-			o2, err := st.GetCharacterContract(ctx, o1.CharacterID, o1.ContractID)
+			o2, err := st.GetCorporationContract(ctx, o1.CorporationID, o1.ContractID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, app.ContractStatusFinished, o2.Status)
 				assert.Equal(t, optional.New(dateAccepted), o2.DateAccepted)
@@ -131,14 +131,14 @@ func TestCharacterContract(t *testing.T) {
 	t.Run("can update notified", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		o1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+		o1 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
 			UpdatedAt: time.Now().UTC().Add(-5 * time.Second),
 		})
 		// when
-		err := st.UpdateCharacterContractNotified(ctx, o1.ID, app.ContractStatusInProgress)
+		err := st.UpdateCorporationContractNotified(ctx, o1.ID, app.ContractStatusInProgress)
 		// then
 		if assert.NoError(t, err) {
-			o2, err := st.GetCharacterContract(ctx, o1.CharacterID, o1.ContractID)
+			o2, err := st.GetCorporationContract(ctx, o1.CorporationID, o1.ContractID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, app.ContractStatusInProgress, o2.StatusNotified)
 				assert.Less(t, o1.UpdatedAt, o2.UpdatedAt)
@@ -148,12 +148,12 @@ func TestCharacterContract(t *testing.T) {
 	t.Run("can list IDs of existing entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
-		e1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
-		e2 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
-		e3 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
+		c := factory.CreateCorporation()
+		e1 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		e2 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		e3 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
 		// when
-		ids, err := st.ListCharacterContractIDs(ctx, c.ID)
+		ids, err := st.ListCorporationContractIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			got := set.Of(ids...)
@@ -161,60 +161,41 @@ func TestCharacterContract(t *testing.T) {
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
-	t.Run("can list contracts for multiple characters", func(t *testing.T) {
+	t.Run("can list contracts for a corporation", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		character1 := factory.CreateCharacter()
-		c1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: character1.ID})
-		c2 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: character1.ID})
-		character2 := factory.CreateCharacter()
-		c3 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: character2.ID})
+		c := factory.CreateCorporation()
+		o1 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		o2 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
+		factory.CreateCorporationContract()
 		// when
-		oo, err := st.ListAllCharacterContracts(ctx)
+		oo, err := st.ListCorporationContracts(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			want := set.Of(c1.ID, c2.ID, c3.ID)
-			got := set.Of(xslices.Map(oo, func(x *app.CharacterContract) int64 {
+			want := set.Of(o1.ID, o2.ID)
+			got := set.Of(xslices.Map(oo, func(x *app.CorporationContract) int64 {
 				return x.ID
 			})...)
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 		}
 	})
-	t.Run("can list existing contracts for notify", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		now := time.Now().UTC()
-		c := factory.CreateCharacter()
-		o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
-		factory.CreateCharacterContract(storage.CreateCharacterContractParams{
-			CharacterID: c.ID,
-			UpdatedAt:   now.Add(-12 * time.Hour),
-		})
-		// when
-		oo, err := st.ListCharacterContractsForNotify(ctx, c.ID, now.Add(-10*time.Hour))
-		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, oo, 1)
-			assert.Equal(t, o.ID, oo[0].ID)
-		}
-	})
 }
 
-func TestCharacterContractBid(t *testing.T) {
+func TestCorporationContractBid(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterContract()
-		bidder := factory.CreateEveEntityCharacter()
+		c := factory.CreateCorporationContract()
+		bidder := factory.CreateEveEntityCorporation()
 		const (
 			amount = 123.45
 			bidID  = 12345
 		)
 		dateBid := time.Now().UTC()
-		arg := storage.CreateCharacterContractBidParams{
+		arg := storage.CreateCorporationContractBidParams{
 			ContractID: c.ID,
 			Amount:     amount,
 			BidID:      bidID,
@@ -222,10 +203,10 @@ func TestCharacterContractBid(t *testing.T) {
 			DateBid:    dateBid,
 		}
 		// when
-		err := st.CreateCharacterContractBid(ctx, arg)
+		err := st.CreateCorporationContractBid(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			o, err := st.GetCharacterContractBid(ctx, c.ID, bidID)
+			o, err := st.GetCorporationContractBid(ctx, c.ID, bidID)
 			if assert.NoError(t, err) {
 				assert.InDelta(t, amount, o.Amount, 0.1)
 				assert.Equal(t, bidder, o.Bidder)
@@ -236,14 +217,14 @@ func TestCharacterContractBid(t *testing.T) {
 	t.Run("can list existing bids", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterContract()
-		b1 := factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: c.ID})
-		b2 := factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: c.ID})
+		c := factory.CreateCorporationContract()
+		b1 := factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
+		b2 := factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
 		// when
-		oo, err := st.ListCharacterContractBids(ctx, c.ID)
+		oo, err := st.ListCorporationContractBids(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterContractBid) int32 {
+			got := set.Collect(xiter.MapSlice(oo, func(x *app.CorporationContractBid) int32 {
 				return x.BidID
 			}))
 			want := set.Of(b1.BidID, b2.BidID)
@@ -253,11 +234,11 @@ func TestCharacterContractBid(t *testing.T) {
 	t.Run("can list bid IDs", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterContract()
-		b1 := factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: c.ID})
-		b2 := factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: c.ID})
+		c := factory.CreateCorporationContract()
+		b1 := factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
+		b2 := factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
 		// when
-		got, err := st.ListCharacterContractBidIDs(ctx, c.ID)
+		got, err := st.ListCorporationContractBidIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(b1.BidID, b2.BidID)
@@ -266,16 +247,16 @@ func TestCharacterContractBid(t *testing.T) {
 	})
 }
 
-func TestCharacterContractItem(t *testing.T) {
+func TestCorporationContractItem(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterContract()
+		c := factory.CreateCorporationContract()
 		et := factory.CreateEveType()
-		arg := storage.CreateCharacterContractItemParams{
+		arg := storage.CreateCorporationContractItemParams{
 			ContractID:  c.ID,
 			IsIncluded:  true,
 			IsSingleton: true,
@@ -285,10 +266,10 @@ func TestCharacterContractItem(t *testing.T) {
 			TypeID:      et.ID,
 		}
 		// when
-		err := st.CreateCharacterContractItem(ctx, arg)
+		err := st.CreateCorporationContractItem(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			o, err := st.GetCharacterContractItem(ctx, c.ID, 42)
+			o, err := st.GetCorporationContractItem(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
 				assert.True(t, o.IsIncluded)
 				assert.True(t, o.IsSingleton)
@@ -301,14 +282,14 @@ func TestCharacterContractItem(t *testing.T) {
 	t.Run("can list existing items", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterContract()
-		i1 := factory.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{ContractID: c.ID})
-		i2 := factory.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{ContractID: c.ID})
+		c := factory.CreateCorporationContract()
+		i1 := factory.CreateCorporationContractItem(storage.CreateCorporationContractItemParams{ContractID: c.ID})
+		i2 := factory.CreateCorporationContractItem(storage.CreateCorporationContractItemParams{ContractID: c.ID})
 		// when
-		oo, err := st.ListCharacterContractItems(ctx, c.ID)
+		oo, err := st.ListCorporationContractItems(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterContractItem) int64 {
+			got := set.Collect(xiter.MapSlice(oo, func(x *app.CorporationContractItem) int64 {
 				return x.RecordID
 			}))
 			want := set.Of(i1.RecordID, i2.RecordID)

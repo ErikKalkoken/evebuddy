@@ -21,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 const (
@@ -34,6 +35,7 @@ const (
 type contractRow struct {
 	assigneeName       string
 	characterID        int32
+	corporationID      int32
 	contractID         int32
 	dateExpired        time.Time
 	dateExpiredDisplay []widget.RichTextSegment
@@ -56,7 +58,10 @@ type contracts struct {
 	OnUpdate func(active int)
 
 	body           fyne.CanvasObject
+	bottom         *widget.Label
 	columnSorter   *iwidget.ColumnSorter
+	corporation    *app.Corporation
+	forCorporation bool // run in corporation mode when true, else in overview mode
 	rows           []contractRow
 	rowsFiltered   []contractRow
 	selectAssignee *kxwidget.FilterChipSelect
@@ -65,7 +70,6 @@ type contracts struct {
 	selectTag      *kxwidget.FilterChipSelect
 	selectType     *kxwidget.FilterChipSelect
 	sortButton     *iwidget.SortButton
-	bottom         *widget.Label
 	u              *baseUI
 }
 
@@ -79,7 +83,15 @@ const (
 	contractsColExpiresAt = 6
 )
 
-func newContracts(u *baseUI) *contracts {
+func newContractsForCorporation(u *baseUI) *contracts {
+	return newContracts(u, true)
+}
+
+func newContractsForOverview(u *baseUI) *contracts {
+	return newContracts(u, false)
+}
+
+func newContracts(u *baseUI, forCorporation bool) *contracts {
 	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
 		Col:   contractsColName,
 		Label: "Contract",
@@ -110,10 +122,11 @@ func newContracts(u *baseUI) *contracts {
 		Width: 100,
 	}})
 	a := &contracts{
-		columnSorter: headers.NewColumnSorter(contractsColIssuedAt, iwidget.SortDesc),
-		rows:         make([]contractRow, 0),
-		bottom:       widget.NewLabel(""),
-		u:            u,
+		forCorporation: forCorporation,
+		columnSorter:   headers.NewColumnSorter(contractsColIssuedAt, iwidget.SortDesc),
+		rows:           make([]contractRow, 0),
+		bottom:         widget.NewLabel(""),
+		u:              u,
 	}
 	a.ExtendBaseWidget(a)
 	if a.u.isDesktop {
@@ -137,7 +150,11 @@ func newContracts(u *baseUI) *contracts {
 				}
 				return iwidget.RichTextSegmentsFromText("?")
 			}, a.columnSorter, a.filterRows, func(column int, r contractRow) {
-				showContractWindow(a.u, r.characterID, r.contractID)
+				if a.forCorporation {
+					showCorporationContractWindow(a.u, r.corporationID, r.contractID)
+				} else {
+					showCharacterContractWindow(a.u, r.characterID, r.contractID)
+				}
 			},
 		)
 	} else {
@@ -172,12 +189,28 @@ func newContracts(u *baseUI) *contracts {
 		a.filterRows(-1)
 	}, a.u.window)
 
-	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if arg.section == app.SectionCharacterContracts {
+	if a.forCorporation {
+		a.u.currentCorporationExchanged.AddListener(
+			func(_ context.Context, c *app.Corporation) {
+				a.corporation = c
+			},
+		)
+		a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
+			if corporationIDOrZero(a.corporation) != arg.corporationID {
+				return
+			}
+			if arg.section != app.SectionCorporationContracts {
+				return
+			}
 			a.update()
-		}
-	})
-
+		})
+	} else {
+		a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+			if arg.section == app.SectionCharacterContracts {
+				a.update()
+			}
+		})
+	}
 	return a
 }
 
@@ -187,8 +220,10 @@ func (a *contracts) CreateRenderer() fyne.WidgetRenderer {
 		a.selectIssuer,
 		a.selectAssignee,
 		a.selectStatus,
-		a.selectTag,
 	)
+	if !a.forCorporation {
+		filter.Add(a.selectTag)
+	}
 	if !a.u.isDesktop {
 		filter.Add(a.sortButton)
 	}
@@ -255,7 +290,11 @@ func (a *contracts) makeDataList() *iwidget.StripedList {
 			return
 		}
 		r := a.rowsFiltered[id]
-		showContractWindow(a.u, r.characterID, r.contractID)
+		if a.forCorporation {
+			showCorporationContractWindow(a.u, r.corporationID, r.contractID)
+		} else {
+			showCharacterContractWindow(a.u, r.characterID, r.contractID)
+		}
 	}
 	return l
 }
@@ -308,9 +347,9 @@ func (a *contracts) filterRows(sortCol int) {
 			case contractsColType:
 				x = strings.Compare(a.typeName, b.typeName)
 			case contractsColIssuer:
-				x = stringsCompareNoCase(a.issuerName, b.issuerName)
+				x = xstrings.CompareIgnoreCase(a.issuerName, b.issuerName)
 			case contractsColAssignee:
-				x = stringsCompareNoCase(a.assigneeName, b.assigneeName)
+				x = xstrings.CompareIgnoreCase(a.assigneeName, b.assigneeName)
 			case contractsColStatus:
 				x = strings.Compare(a.statusText, b.statusText)
 			case contractsColIssuedAt:
@@ -343,7 +382,14 @@ func (a *contracts) filterRows(sortCol int) {
 }
 
 func (a *contracts) update() {
-	rows, activeCount, err := a.fetchRows(a.u.services())
+	var activeCount int
+	var err error
+	var rows []contractRow
+	if a.forCorporation {
+		rows, activeCount, err = a.fetchRowsCorporation()
+	} else {
+		rows, activeCount, err = a.fetchRowsOverview()
+	}
 	if err != nil {
 		slog.Error("Failed to refresh contracts UI", "err", err)
 		fyne.Do(func() {
@@ -364,14 +410,63 @@ func (a *contracts) update() {
 	}
 }
 
-func (a *contracts) fetchRows(s services) ([]contractRow, int, error) {
+func (a *contracts) fetchRowsCorporation() ([]contractRow, int, error) {
+	corporationID := corporationIDOrZero(a.corporation)
+	if corporationID == 0 {
+		return []contractRow{}, 0, nil
+	}
 	ctx := context.Background()
-	oo, err := s.cs.ListAllContracts(ctx)
+	oo, err := a.u.rs.ListCorporationContracts(ctx, corporationID)
 	if err != nil {
 		return nil, 0, err
 	}
-	// Remove duplicate contracts between the user's own characters
-	contracts := slices.CompactFunc(oo, func(a, b *app.CharacterContract) bool {
+	rows := make([]contractRow, 0)
+	var activeCount int
+	for _, c := range oo {
+		r := contractRow{
+			name:          c.NameDisplay(),
+			typeName:      c.Type.Display(),
+			issuerName:    c.IssuerEffective().Name,
+			assigneeName:  entityNameOrFallback(c.Assignee, ""),
+			statusText:    c.Status.Display(),
+			status:        c.Status,
+			dateIssued:    c.DateIssued,
+			dateExpired:   c.DateExpired,
+			isExpired:     c.IsExpired(),
+			corporationID: c.CorporationID,
+			contractID:    c.ContractID,
+			isActive:      c.Status.IsActive(),
+			isHistory:     c.Status.IsCompleted(),
+			hasIssue:      c.HasIssue(),
+		}
+		var text string
+		var color fyne.ThemeColorName
+		if r.isExpired {
+			text = "EXPIRED"
+			color = theme.ColorNameError
+		} else {
+			text = ihumanize.RelTime(r.dateExpired)
+			color = theme.ColorNameForeground
+		}
+		r.dateExpiredDisplay = iwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
+			ColorName: color,
+		})
+		rows = append(rows, r)
+		if c.Status.IsActive() {
+			activeCount++
+		}
+	}
+	return rows, activeCount, nil
+}
+
+func (a *contracts) fetchRowsOverview() ([]contractRow, int, error) {
+	ctx := context.Background()
+	oo, err := a.u.cs.ListAllContracts(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	// Remove duplicate oo2 between the user's own characters
+	oo2 := slices.CompactFunc(oo, func(a, b *app.CharacterContract) bool {
 		return a.Assignee != nil &&
 			b.Assignee != nil &&
 			a.ContractID == b.ContractID &&
@@ -382,21 +477,21 @@ func (a *contracts) fetchRows(s services) ([]contractRow, int, error) {
 	})
 	rows := make([]contractRow, 0)
 	var activeCount int
-	for _, c := range contracts {
+	for _, c := range oo2 {
 		r := contractRow{
 			name:         c.NameDisplay(),
-			typeName:     c.TypeDisplay(),
+			typeName:     c.Type.Display(),
 			issuerName:   c.IssuerEffective().Name,
-			assigneeName: c.AssigneeName(),
-			statusText:   c.StatusDisplay(),
+			assigneeName: entityNameOrFallback(c.Assignee, ""),
+			statusText:   c.Status.Display(),
 			status:       c.Status,
 			dateIssued:   c.DateIssued,
 			dateExpired:  c.DateExpired,
 			isExpired:    c.IsExpired(),
 			characterID:  c.CharacterID,
 			contractID:   c.ContractID,
-			isActive:     c.IsActive(),
-			isHistory:    c.IsCompleted(),
+			isActive:     c.Status.IsActive(),
+			isHistory:    c.Status.IsCompleted(),
 			hasIssue:     c.HasIssue(),
 		}
 		var text string
@@ -411,49 +506,41 @@ func (a *contracts) fetchRows(s services) ([]contractRow, int, error) {
 		r.dateExpiredDisplay = iwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
 			ColorName: color,
 		})
-		tags, err := s.cs.ListTagsForCharacter(ctx, c.CharacterID)
+		tags, err := a.u.cs.ListTagsForCharacter(ctx, c.CharacterID)
 		if err != nil {
 			return nil, 0, err
 		}
 		r.tags = tags
 		rows = append(rows, r)
-		if c.IsActive() {
+		if c.Status.IsActive() {
 			activeCount++
 		}
 	}
 	return rows, activeCount, nil
 }
 
-// showContractWindow shows the details of a contract in a window.
-func showContractWindow(u *baseUI, characterID, contractID int32) {
-	o, err := u.cs.GetContract(context.Background(), characterID, contractID)
+// showCharacterContractWindow shows the details of a character contract in a window.
+func showCharacterContractWindow(u *baseUI, characterID, contractID int32) {
+	ctx := context.Background()
+	o, err := u.cs.GetContract(ctx, characterID, contractID)
 	if err != nil {
 		u.showErrorDialog("Failed to show contract", err, u.window)
 		return
 	}
 	title := fmt.Sprintf("Contract #%d", contractID)
+	characterName := u.scs.CharacterName(characterID)
 	w, created := u.getOrCreateWindow(
-		fmt.Sprintf("contract-%d-%d", characterID, contractID),
+		fmt.Sprintf("character-contract-%d-%d", characterID, contractID),
 		title,
-		u.scs.CharacterName(characterID),
+		characterName,
 	)
 	if !created {
 		w.Show()
 		return
 	}
-	makeExpiresString := func(c *app.CharacterContract) string {
-		ts := c.DateExpired.Format(app.DateTimeFormat)
-		var ds string
-		if c.IsExpired() {
-			ds = "EXPIRED"
-		} else {
-			ds = ihumanize.RelTime(c.DateExpired)
-		}
-		return fmt.Sprintf("%s (%s)", ts, ds)
-	}
 
 	var availability fyne.CanvasObject
-	availabilityLabel := widget.NewLabel(o.AvailabilityDisplay())
+	availabilityLabel := widget.NewLabel(o.Availability.Display())
 	if o.Assignee != nil {
 		availability = container.NewBorder(
 			nil,
@@ -468,11 +555,11 @@ func showContractWindow(u *baseUI, characterID, contractID int32) {
 	fi := []*widget.FormItem{
 		widget.NewFormItem("Owner", makeCharacterActionLabel(
 			characterID,
-			u.scs.CharacterName(characterID),
+			characterName,
 			u.ShowEveEntityInfoWindow,
 		)),
-		widget.NewFormItem("Info by issuer", widget.NewLabel(o.TitleDisplay())),
-		widget.NewFormItem("Type", widget.NewLabel(o.TypeDisplay())),
+		widget.NewFormItem("Info by issuer", widget.NewLabel(o.Title)),
+		widget.NewFormItem("Type", widget.NewLabel(o.Type.Display())),
 		widget.NewFormItem("Issued By", makeEveEntityActionLabel(o.IssuerEffective(), u.ShowEveEntityInfoWindow)),
 		widget.NewFormItem("Availability", availability),
 	}
@@ -480,9 +567,9 @@ func showContractWindow(u *baseUI, characterID, contractID int32) {
 		fi = append(fi, widget.NewFormItem("Contract ID", u.makeCopyToClipboardLabel(fmt.Sprint(o.ContractID))))
 	}
 	if o.Type == app.ContractTypeCourier {
-		fi = append(fi, widget.NewFormItem("Contractor", widget.NewLabel(o.AcceptorDisplay())))
+		fi = append(fi, widget.NewFormItem("Contractor", widget.NewLabel(entityNameOrFallback(o.Acceptor, "(none)"))))
 	}
-	fi = append(fi, widget.NewFormItem("Status", iwidget.NewRichText(o.StatusDisplayRichText()...)))
+	fi = append(fi, widget.NewFormItem("Status", iwidget.NewRichText(o.Status.DisplayRichText()...)))
 	fi = append(fi, widget.NewFormItem("Location", makeLocationLabel(o.StartLocation, u.ShowLocationInfoWindow)))
 
 	if o.Type == app.ContractTypeCourier || o.Type == app.ContractTypeItemExchange {
@@ -490,7 +577,7 @@ func showContractWindow(u *baseUI, characterID, contractID int32) {
 		fi = append(fi, widget.NewFormItem("Date Accepted", widget.NewLabel(o.DateAccepted.StringFunc("", func(v time.Time) string {
 			return v.Format(app.DateTimeFormat)
 		}))))
-		fi = append(fi, widget.NewFormItem("Date Expired", widget.NewLabel(makeExpiresString(o))))
+		fi = append(fi, widget.NewFormItem("Date Expired", widget.NewLabel(makeContractExpiresString(o.DateExpired, o.IsExpired()))))
 		fi = append(fi, widget.NewFormItem("Date Completed", widget.NewLabel(o.DateCompleted.StringFunc("", func(v time.Time) string {
 			return v.Format(app.DateTimeFormat)
 		}))))
@@ -522,7 +609,6 @@ func showContractWindow(u *baseUI, characterID, contractID int32) {
 			fi = append(fi, widget.NewFormItem("Buyer Will Get", x))
 		}
 	case app.ContractTypeAuction:
-		ctx := context.TODO()
 		total, err := u.cs.CountContractBids(ctx, o.ID)
 		if err != nil {
 			u.showErrorDialog("Failed to show contract bids", err, u.window)
@@ -543,13 +629,13 @@ func showContractWindow(u *baseUI, characterID, contractID int32) {
 			{Text: "Starting Bid", Widget: widget.NewLabel(formatISKAmount(o.Price))},
 			{Text: "Buyout Price", Widget: widget.NewLabel(formatISKAmount(o.Buyout))},
 			{Text: "Current Bid", Widget: widget.NewLabel(currentBid)},
-			{Text: "Expires", Widget: widget.NewLabel(makeExpiresString(o))},
+			{Text: "Expires", Widget: widget.NewLabel(makeContractExpiresString(o.DateExpired, o.IsExpired()))},
 		})
 	}
 
 	makeItemsInfo := func(c *app.CharacterContract) (fyne.CanvasObject, error) {
 		vb := container.NewVBox()
-		items, err := u.cs.ListContractItems(context.TODO(), c.ID)
+		items, err := u.cs.ListContractItems(ctx, c.ID)
 		if err != nil {
 			return nil, err
 
@@ -593,7 +679,7 @@ func showContractWindow(u *baseUI, characterID, contractID int32) {
 		return vb, nil
 	}
 
-	subTitle := fmt.Sprintf("%s (%s)", o.NameDisplay(), o.TypeDisplay())
+	subTitle := fmt.Sprintf("%s (%s)", o.NameDisplay(), o.Type.Display())
 	f := widget.NewForm(fi...)
 	f.Orientation = widget.Adaptive
 	main := container.NewVBox(f)
@@ -612,4 +698,196 @@ func showContractWindow(u *baseUI, characterID, contractID int32) {
 		window:  w,
 	})
 	w.Show()
+}
+
+// showCorporationContractWindow shows the details of a corporation contract in a window.
+func showCorporationContractWindow(u *baseUI, corporationID, contractID int32) {
+	ctx := context.Background()
+	o, err := u.rs.GetContract(ctx, corporationID, contractID)
+	if err != nil {
+		u.showErrorDialog("Failed to show contract", err, u.window)
+		return
+	}
+	title := fmt.Sprintf("Contract #%d", contractID)
+	corporationName := u.scs.CorporationName(corporationID)
+	w, created := u.getOrCreateWindow(
+		fmt.Sprintf("corporation-contract-%d-%d", corporationID, contractID),
+		title,
+		corporationName,
+	)
+	if !created {
+		w.Show()
+		return
+	}
+
+	var availability fyne.CanvasObject
+	availabilityLabel := widget.NewLabel(o.Availability.Display())
+	if o.Assignee != nil {
+		availability = container.NewBorder(
+			nil,
+			nil,
+			availabilityLabel,
+			nil,
+			makeEveEntityActionLabel(o.Assignee, u.ShowEveEntityInfoWindow),
+		)
+	} else {
+		availability = availabilityLabel
+	}
+	fi := []*widget.FormItem{
+		widget.NewFormItem("Owner", makeCharacterActionLabel(
+			corporationID,
+			corporationName,
+			u.ShowEveEntityInfoWindow,
+		)),
+		widget.NewFormItem("Info by issuer", widget.NewLabel(o.Title)),
+		widget.NewFormItem("Type", widget.NewLabel(o.Type.Display())),
+		widget.NewFormItem("Issued By", makeEveEntityActionLabel(o.IssuerEffective(), u.ShowEveEntityInfoWindow)),
+		widget.NewFormItem("Availability", availability),
+	}
+	if u.IsDeveloperMode() {
+		fi = append(fi, widget.NewFormItem("Contract ID", u.makeCopyToClipboardLabel(fmt.Sprint(o.ContractID))))
+	}
+	if o.Type == app.ContractTypeCourier {
+		fi = append(fi, widget.NewFormItem("Contractor", widget.NewLabel(entityNameOrFallback(o.Acceptor, "(none)"))))
+	}
+	fi = append(fi, widget.NewFormItem("Status", iwidget.NewRichText(o.Status.DisplayRichText()...)))
+	fi = append(fi, widget.NewFormItem("Location", makeLocationLabel(o.StartLocation, u.ShowLocationInfoWindow)))
+
+	if o.Type == app.ContractTypeCourier || o.Type == app.ContractTypeItemExchange {
+		fi = append(fi, widget.NewFormItem("Date Issued", widget.NewLabel(o.DateIssued.Format(app.DateTimeFormat))))
+		fi = append(fi, widget.NewFormItem("Date Accepted", widget.NewLabel(o.DateAccepted.StringFunc("", func(v time.Time) string {
+			return v.Format(app.DateTimeFormat)
+		}))))
+		fi = append(fi, widget.NewFormItem("Date Expired", widget.NewLabel(makeContractExpiresString(o.DateExpired, o.IsExpired()))))
+		fi = append(fi, widget.NewFormItem("Date Completed", widget.NewLabel(o.DateCompleted.StringFunc("", func(v time.Time) string {
+			return v.Format(app.DateTimeFormat)
+		}))))
+	}
+
+	switch o.Type {
+	case app.ContractTypeCourier:
+		var collateral string
+		if o.Collateral == 0 {
+			collateral = "(None)"
+		} else {
+			collateral = formatISKAmount(o.Collateral)
+		}
+		fi = slices.Concat(fi, []*widget.FormItem{
+			{Text: "Complete In", Widget: widget.NewLabel(fmt.Sprintf("%d days", o.DaysToComplete))},
+			{Text: "Volume", Widget: widget.NewLabel(fmt.Sprintf("%f m3", o.Volume))},
+			{Text: "Reward", Widget: widget.NewLabel(formatISKAmount(o.Reward))},
+			{Text: "Collateral", Widget: widget.NewLabel(collateral)},
+			{Text: "Destination", Widget: makeLocationLabel(o.EndLocation, u.ShowLocationInfoWindow)},
+		})
+	case app.ContractTypeItemExchange:
+		if o.Price > 0 {
+			x := widget.NewLabel(formatISKAmount(o.Price))
+			x.Importance = widget.DangerImportance
+			fi = append(fi, widget.NewFormItem("Buyer Will Pay", x))
+		} else {
+			x := widget.NewLabel(formatISKAmount(o.Reward))
+			x.Importance = widget.SuccessImportance
+			fi = append(fi, widget.NewFormItem("Buyer Will Get", x))
+		}
+	case app.ContractTypeAuction:
+		total, err := u.cs.CountContractBids(ctx, o.ID)
+		if err != nil {
+			u.showErrorDialog("Failed to show contract bids", err, u.window)
+			return
+		}
+		var currentBid string
+		if total == 0 {
+			currentBid = "(None)"
+		} else {
+			top, err := u.cs.GetContractTopBid(ctx, o.ID)
+			if err != nil {
+				u.showErrorDialog("Failed to show contract top bid", err, u.window)
+				return
+			}
+			currentBid = fmt.Sprintf("%s (%d bids so far)", formatISKAmount(float64(top.Amount)), total)
+		}
+		fi = slices.Concat(fi, []*widget.FormItem{
+			{Text: "Starting Bid", Widget: widget.NewLabel(formatISKAmount(o.Price))},
+			{Text: "Buyout Price", Widget: widget.NewLabel(formatISKAmount(o.Buyout))},
+			{Text: "Current Bid", Widget: widget.NewLabel(currentBid)},
+			{Text: "Expires", Widget: widget.NewLabel(makeContractExpiresString(o.DateExpired, o.IsExpired()))},
+		})
+	}
+
+	makeItemsInfo := func(c *app.CorporationContract) (fyne.CanvasObject, error) {
+		vb := container.NewVBox()
+		items, err := u.rs.ListContractItems(ctx, c.ID)
+		if err != nil {
+			return nil, err
+
+		}
+		var itemsIncluded, itemsRequested []*app.CorporationContractItem
+		for _, it := range items {
+			if it.IsIncluded {
+				itemsIncluded = append(itemsIncluded, it)
+			} else {
+				itemsRequested = append(itemsRequested, it)
+			}
+		}
+		makeItem := func(it *app.CorporationContractItem) fyne.CanvasObject {
+			c := container.NewHBox(
+				makeLinkLabel(it.Type.Name, func() {
+					u.ShowTypeInfoWindow(it.Type.ID)
+				}),
+				widget.NewLabel(fmt.Sprintf("(%s)", it.Type.Group.Name)),
+				widget.NewLabel(fmt.Sprintf("x %s ", humanize.Comma(int64(it.Quantity)))),
+			)
+			return c
+		}
+		// included items
+		if len(itemsIncluded) > 0 {
+			t := widget.NewLabel("Buyer Will Get")
+			t.Importance = widget.SuccessImportance
+			vb.Add(t)
+			for _, it := range itemsIncluded {
+				vb.Add(makeItem(it))
+			}
+		}
+		// requested items
+		if len(itemsRequested) > 0 {
+			t := widget.NewLabel("Buyer Will Provide")
+			t.Importance = widget.DangerImportance
+			vb.Add(t)
+			for _, it := range itemsRequested {
+				vb.Add(makeItem(it))
+			}
+		}
+		return vb, nil
+	}
+
+	subTitle := fmt.Sprintf("%s (%s)", o.NameDisplay(), o.Type.Display())
+	f := widget.NewForm(fi...)
+	f.Orientation = widget.Adaptive
+	main := container.NewVBox(f)
+	if o.Type == app.ContractTypeItemExchange || o.Type == app.ContractTypeAuction {
+		main.Add(widget.NewSeparator())
+		x, err := makeItemsInfo(o)
+		if err != nil {
+			u.showErrorDialog("Failed to show contract items", err, u.window)
+			return
+		}
+		main.Add(x)
+	}
+	setDetailWindow(detailWindowParams{
+		title:   subTitle,
+		content: main,
+		window:  w,
+	})
+	w.Show()
+}
+
+func makeContractExpiresString(dateExpired time.Time, isExpired bool) string {
+	ts := dateExpired.Format(app.DateTimeFormat)
+	var ds string
+	if isExpired {
+		ds = "EXPIRED"
+	} else {
+		ds = ihumanize.RelTime(dateExpired)
+	}
+	return fmt.Sprintf("%s (%s)", ts, ds)
 }

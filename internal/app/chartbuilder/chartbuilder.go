@@ -17,12 +17,11 @@ import (
 	"github.com/golang/freetype/truetype"
 	"github.com/wcharczuk/go-chart/v2"
 	"github.com/wcharczuk/go-chart/v2/drawing"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 type ChartType uint
@@ -137,8 +136,7 @@ func (cb ChartBuilder) render(ct ChartType, size fyne.Size, title string, values
 }
 
 func makeFileName(title string) string {
-	c := cases.Title(language.English)
-	fn := c.String(title)
+	fn := xstrings.Title(title)
 	fn = strings.ReplaceAll(fn, " ", "")
 	fn = fmt.Sprintf("%s.png", fn)
 	return fn

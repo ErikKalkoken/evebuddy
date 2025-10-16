@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 const (
@@ -260,7 +261,7 @@ func (a *industrySlots) filterRows(sortCol int) {
 			var x int
 			switch sortCol {
 			case industrySlotsColCharacter:
-				x = stringsCompareNoCase(a.characterName, b.characterName)
+				x = xstrings.CompareIgnoreCase(a.characterName, b.characterName)
 			case industrySlotsColBusy:
 				x = cmp.Compare(a.busy, b.busy)
 			case industrySlotsColReady:

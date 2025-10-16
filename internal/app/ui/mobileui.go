@@ -274,6 +274,14 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		}
 	}
 
+	corpContractsNav := iwidget.NewListItemWithIcon(
+		"Contracts",
+		theme.NewThemedResource(icons.FileSignSvg),
+		func() {
+			corpNav.Push(newCorpAppBar("Contracts", u.corporationContracts))
+		},
+	)
+
 	corpIndustryNav := iwidget.NewListItemWithIcon(
 		"Industry",
 		theme.NewThemedResource(icons.FactorySvg),
@@ -306,12 +314,22 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 						))
 				},
 			),
+			corpContractsNav,
 			corpIndustryNav,
 			corpStructuresNav,
 			corpWalletNav,
 		})...,
 	)
-
+	u.corporationContracts.OnUpdate = func(count int) {
+		var badge string
+		if count > 0 {
+			badge = fmt.Sprintf("%d contracts active", count)
+		}
+		fyne.Do(func() {
+			corpContractsNav.Supporting = badge
+			corpList.Refresh()
+		})
+	}
 	u.corporationIndyJobs.OnUpdate = func(count int) {
 		var badge string
 		if count > 0 {
@@ -779,12 +797,12 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		navItemWealth,
 	)
 	u.contracts.OnUpdate = func(count int) {
-		s := "Active"
+		var badge string
 		if count > 0 {
-			s += fmt.Sprintf(" (%d)", count)
+			badge = fmt.Sprintf("%d contracts active", count)
 		}
 		fyne.Do(func() {
-			navItemContracts.Supporting = s
+			navItemContracts.Supporting = badge
 			homeList.Refresh()
 		})
 	}

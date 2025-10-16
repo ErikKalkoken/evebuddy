@@ -497,7 +497,7 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID i
 		}
 		contextItem.Text = "Related contract"
 		contextItem.Widget = makeLinkLabelWithWrap(c.NameDisplay(), func() {
-			showContractWindow(u, c.CharacterID, c.ContractID)
+			showCharacterContractWindow(u, c.CharacterID, c.ContractID)
 		})
 	case "market_transaction_id":
 		contextItem.Text = "Related market transaction"

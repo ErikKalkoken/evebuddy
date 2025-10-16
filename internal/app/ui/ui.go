@@ -133,6 +133,7 @@ type baseUI struct {
 	clones                  *clones
 	colonies                *colonies
 	contracts               *contracts
+	corporationContracts    *contracts
 	corporationIndyJobs     *industryJobs
 	corporationMember       *corporationMember
 	corporationSheet        *corporationSheet
@@ -398,8 +399,9 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.characterWallet = newCharacterWallet(u)
 	u.clones = newClones(u)
 	u.colonies = newColonies(u)
-	u.contracts = newContracts(u)
-	u.corporationIndyJobs = newIndustryJobs(u, true)
+	u.contracts = newContractsForOverview(u)
+	u.corporationContracts = newContractsForCorporation(u)
+	u.corporationIndyJobs = newIndustryJobsForCorporation(u)
 	u.corporationMember = newCorporationMember(u)
 	u.corporationStructures = newCorporationStructures(u)
 	u.corporationSheet = newCorporationSheet(u, true)
@@ -407,7 +409,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		u.corporationWallets[d] = newCorporationWallet(u, d)
 	}
 	u.gameSearch = newGameSearch(u)
-	u.industryJobs = newIndustryJobs(u, false)
+	u.industryJobs = newIndustryJobsForOverview(u)
 	u.marketOrdersSell = newMarketOrders(u, false)
 	u.marketOrdersBuy = newMarketOrders(u, true)
 	u.progressModal = iwidget.NewProgressModal(u.window)
@@ -821,9 +823,10 @@ func (u *baseUI) updateCorporation() {
 		slog.Debug("Updating without corporation")
 	}
 	ff := make(map[string]func())
-	ff["corporationSheet"] = u.corporationSheet.update
+	ff["corporationContracts"] = u.corporationContracts.update
 	ff["corporationIndyJobs"] = u.corporationIndyJobs.update
 	ff["corporationMember"] = u.corporationMember.update
+	ff["corporationSheet"] = u.corporationSheet.update
 	ff["corporationStructures"] = u.corporationStructures.update
 	ff["corporationWalletTotal"] = u.updateCorporationWalletTotal
 	for id, w := range u.corporationWallets {

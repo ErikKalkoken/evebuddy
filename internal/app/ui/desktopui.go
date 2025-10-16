@@ -335,6 +335,21 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		corpWalletItems = append(corpWalletItems, corporationWalletNavs[d])
 	}
 
+	corpContractsItem := iwidget.NewNavPage(
+		"Contracts",
+		theme.NewThemedResource(icons.FileSignSvg),
+		newContentPage("Contracts", u.corporationContracts),
+	)
+	u.corporationContracts.OnUpdate = func(count int) {
+		var badge string
+		if count > 0 {
+			badge = ihumanize.Comma(count)
+		}
+		fyne.Do(func() {
+			corporationNav.SetItemBadge(corpContractsItem, badge)
+		})
+	}
+
 	corpIndustryItem := iwidget.NewNavPage(
 		"Industry",
 		theme.NewThemedResource(icons.FactorySvg),
@@ -374,7 +389,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		)),
 	)
 	corporationNav = iwidget.NewNavDrawer(slices.Concat(
-		[]*iwidget.NavItem{corpSheetItem, corpIndustryItem, corpStructuresItem},
+		[]*iwidget.NavItem{corpSheetItem, corpContractsItem, corpIndustryItem, corpStructuresItem},
 		corpWalletItems,
 	)...)
 	corporationNav.MinWidth = navDrawerMinWidth

@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/antihax/goesi"
-	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -14,7 +13,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 type SSOService interface {
@@ -80,23 +78,4 @@ func New(arg Params) *CharacterService {
 // This is a low-level method meant mainly for debugging.
 func (s *CharacterService) DumpData(tables ...string) string {
 	return s.st.DumpData(tables...)
-}
-
-func (s *CharacterService) addMissingEveEntitiesAndLocations(ctx context.Context, entityIDs set.Set[int32], locationIDs set.Set[int64]) error {
-	g := new(errgroup.Group)
-	if entityIDs.Size() > 0 {
-		g.Go(func() error {
-			_, err := s.eus.AddMissingEntities(ctx, entityIDs)
-			return err
-		})
-	}
-	if locationIDs.Size() > 0 {
-		g.Go(func() error {
-			return s.eus.AddMissingLocations(ctx, locationIDs)
-		})
-	}
-	if err := g.Wait(); err != nil {
-		return err
-	}
-	return nil
 }

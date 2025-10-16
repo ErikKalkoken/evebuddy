@@ -10,11 +10,13 @@ import (
 	"time"
 
 	"github.com/antihax/goesi"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 // EveUniverseService provides access to Eve Online models with on-demand loading from ESI and persistent local caching.
@@ -116,4 +118,23 @@ func (s *EveUniverseService) GetOrCreateSchematicESI(ctx context.Context, id int
 		return nil, err
 	}
 	return x.(*app.EveSchematic), nil
+}
+
+func (s *EveUniverseService) AddMissingEveEntitiesAndLocations(ctx context.Context, entityIDs set.Set[int32], locationIDs set.Set[int64]) error {
+	g := new(errgroup.Group)
+	if entityIDs.Size() > 0 {
+		g.Go(func() error {
+			_, err := s.AddMissingEntities(ctx, entityIDs)
+			return err
+		})
+	}
+	if locationIDs.Size() > 0 {
+		g.Go(func() error {
+			return s.AddMissingLocations(ctx, locationIDs)
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return err
+	}
+	return nil
 }

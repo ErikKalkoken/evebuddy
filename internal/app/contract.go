@@ -7,11 +7,10 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 type ContractAvailability uint
@@ -36,6 +35,10 @@ func (cca ContractAvailability) String() string {
 		return "?"
 	}
 	return s
+}
+
+func (cca ContractAvailability) Display() string {
+	return xstrings.Title(cca.String())
 }
 
 // contractConsolidatedStatus represents a consolidated status of a contract based on the original contract.
@@ -87,9 +90,20 @@ func (cs ContractStatus) String() string {
 	return s
 }
 
+func (cs ContractStatus) IsActive() bool {
+	switch cs.consolidated() {
+	case contractConsolidatedInProgress, contractConsolidatedOutstanding:
+		return true
+	}
+	return false
+}
+
+func (cs ContractStatus) IsCompleted() bool {
+	return cs.consolidated() == contractConsolidatedHistory
+}
+
 func (cs ContractStatus) Display() string {
-	caser := cases.Title(language.English)
-	return caser.String(cs.String())
+	return xstrings.Title(cs.String())
 }
 
 func (cs ContractStatus) DisplayRichText() []widget.RichTextSegment {
@@ -151,6 +165,10 @@ var cct2String = map[ContractType]string{
 	ContractTypeUnknown:      "unknown",
 }
 
+func (cct ContractType) Display() string {
+	return xstrings.Title(cct.String())
+}
+
 func (cct ContractType) String() string {
 	s, ok := cct2String[cct]
 	if !ok {
@@ -191,100 +209,23 @@ type CharacterContract struct {
 	Volume            float64
 }
 
-func (cc CharacterContract) AssigneeName() string {
-	if cc.Assignee == nil {
-		return ""
+func (cs CharacterContract) HasIssue() bool {
+	return contractHasIssue(cs.Status, cs.DateExpired)
+}
+
+func (cs CharacterContract) IsExpired() bool {
+	return contractIsExpired(cs.DateExpired)
+}
+
+func (cs CharacterContract) IssuerEffective() *EveEntity {
+	if cs.ForCorporation {
+		return cs.IssuerCorporation
 	}
-	return cc.Assignee.Name
+	return cs.Issuer
 }
 
-func (cc CharacterContract) AvailabilityDisplay() string {
-	titler := cases.Title(language.English)
-	s := titler.String(cc.Availability.String())
-	return s
-}
-
-func (cc CharacterContract) AcceptorDisplay() string {
-	if cc.Acceptor == nil {
-		return "(None)"
-	}
-	return cc.Acceptor.Name
-}
-
-func (cc CharacterContract) HasIssue() bool {
-	return cc.Status.consolidated() == contractConsolidatedHasIssue || (cc.IsExpired() && cc.IsActive())
-}
-
-func (cc CharacterContract) IsExpired() bool {
-	return cc.DateExpired.Before(time.Now())
-}
-
-func (cc CharacterContract) IsActive() bool {
-	switch cc.Status.consolidated() {
-	case contractConsolidatedInProgress, contractConsolidatedOutstanding:
-		return true
-	}
-	return false
-}
-
-func (cc CharacterContract) IsCompleted() bool {
-	return cc.Status.consolidated() == contractConsolidatedHistory
-}
-
-func (cc CharacterContract) IssuerEffective() *EveEntity {
-	if cc.ForCorporation {
-		return cc.IssuerCorporation
-	}
-	return cc.Issuer
-}
-
-func (cc CharacterContract) NameDisplay() string {
-	if cc.Type == ContractTypeCourier {
-		var start, end string
-		if cc.StartSolarSystem != nil {
-			start = cc.StartSolarSystem.Name
-		} else {
-			start = "?"
-		}
-		if cc.EndSolarSystem != nil {
-			end = cc.EndSolarSystem.Name
-		} else {
-			end = "?"
-		}
-		return fmt.Sprintf(
-			"%s >> %s (%.0f m3)",
-			start,
-			end,
-			cc.Volume,
-		)
-	}
-	if len(cc.Items) > 1 {
-		return "[Multiple Items]"
-	}
-	if len(cc.Items) == 1 {
-		return cc.Items[0]
-	}
-	return "?"
-}
-
-func (cc CharacterContract) StatusDisplay() string {
-	return cc.Status.Display()
-}
-
-func (cc CharacterContract) StatusDisplayRichText() []widget.RichTextSegment {
-	return cc.Status.DisplayRichText()
-}
-
-func (cc CharacterContract) TitleDisplay() string {
-	if cc.Title == "" {
-		return "-"
-	}
-	return cc.Title
-}
-
-func (cc CharacterContract) TypeDisplay() string {
-	caser := cases.Title(language.English)
-	return caser.String(cc.Type.String())
+func (cs CharacterContract) NameDisplay() string {
+	return contractNameDisplay(cs.Type, cs.StartSolarSystem, cs.EndSolarSystem, cs.Volume, cs.Items)
 }
 
 type CharacterContractBid struct {
@@ -303,4 +244,111 @@ type CharacterContractItem struct {
 	RawQuantity int
 	RecordID    int64
 	Type        *EveType
+}
+
+type CorporationContract struct {
+	ID                int64
+	Acceptor          *EveEntity
+	Assignee          *EveEntity
+	Availability      ContractAvailability
+	Buyout            float64
+	CorporationID     int32
+	Collateral        float64
+	ContractID        int32
+	DateAccepted      optional.Optional[time.Time]
+	DateCompleted     optional.Optional[time.Time]
+	DateExpired       time.Time
+	DateIssued        time.Time
+	DaysToComplete    int32
+	EndLocation       *EveLocationShort
+	EndSolarSystem    *EntityShort[int32]
+	ForCorporation    bool
+	Issuer            *EveEntity
+	IssuerCorporation *EveEntity
+	Items             []string
+	Price             float64
+	Reward            float64
+	StartLocation     *EveLocationShort
+	StartSolarSystem  *EntityShort[int32]
+	Status            ContractStatus
+	StatusNotified    ContractStatus
+	Title             string
+	Type              ContractType
+	UpdatedAt         time.Time
+	Volume            float64
+}
+
+func (cs CorporationContract) HasIssue() bool {
+	return contractHasIssue(cs.Status, cs.DateExpired)
+}
+
+func (cs CorporationContract) IsExpired() bool {
+	return contractIsExpired(cs.DateExpired)
+}
+
+func (cs CorporationContract) IssuerEffective() *EveEntity {
+	if cs.ForCorporation {
+		return cs.IssuerCorporation
+	}
+	return cs.Issuer
+}
+
+func (cs CorporationContract) NameDisplay() string {
+	return contractNameDisplay(cs.Type, cs.StartSolarSystem, cs.EndSolarSystem, cs.Volume, cs.Items)
+}
+
+type CorporationContractBid struct {
+	ContractID int64
+	Amount     float32
+	BidID      int32
+	Bidder     *EveEntity
+	DateBid    time.Time
+}
+
+type CorporationContractItem struct {
+	ContractID  int64
+	IsIncluded  bool
+	IsSingleton bool
+	Quantity    int
+	RawQuantity int
+	RecordID    int64
+	Type        *EveType
+}
+
+func contractHasIssue(status ContractStatus, expired time.Time) bool {
+	statusIssue := status.consolidated() == contractConsolidatedHasIssue
+	expiredButStillActive := (contractIsExpired(expired) && status.IsActive())
+	return statusIssue || expiredButStillActive
+}
+
+func contractIsExpired(expired time.Time) bool {
+	return expired.Before(time.Now())
+}
+func contractNameDisplay(ct ContractType, start1, end1 *EntityShort[int32], volume float64, items []string) string {
+	if ct == ContractTypeCourier {
+		var startName, endName string
+		if start1 != nil {
+			startName = start1.Name
+		} else {
+			startName = "?"
+		}
+		if end1 != nil {
+			endName = end1.Name
+		} else {
+			endName = "?"
+		}
+		return fmt.Sprintf(
+			"%s >> %s (%.0f m3)",
+			startName,
+			endName,
+			volume,
+		)
+	}
+	if len(items) > 1 {
+		return "[Multiple Items]"
+	}
+	if len(items) == 1 {
+		return items[0]
+	}
+	return "?"
 }

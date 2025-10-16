@@ -24,6 +24,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 const (
@@ -360,7 +361,7 @@ func (a *training) filterRows(sortCol int) {
 			var x int
 			switch sortCol {
 			case trainingColName:
-				x = stringsCompareNoCase(a.characterName, b.characterName)
+				x = xstrings.CompareIgnoreCase(a.characterName, b.characterName)
 			case trainingColCurrentRemaining:
 				x = cmp.Compare(a.currentRemainingTime().ValueOrZero(), b.currentRemainingTime().ValueOrZero())
 			case trainingColCurrent:

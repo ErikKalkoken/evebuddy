@@ -7,8 +7,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 // IndustryJobType represents the type of industry jobs and defines which slots are utilized.
@@ -42,8 +41,7 @@ func (jt IndustryJobType) String() string {
 }
 
 func (jt IndustryJobType) Display() string {
-	titler := cases.Title(language.English)
-	return titler.String(jt.String())
+	return xstrings.Title(jt.String())
 }
 
 // CharacterIndustrySlots represents counts of industry slots for a character.
@@ -91,8 +89,7 @@ func (a IndustryActivity) String() string {
 }
 
 func (a IndustryActivity) Display() string {
-	titler := cases.Title(language.English)
-	return titler.String(a.String())
+	return xstrings.Title(a.String())
 }
 
 func (a IndustryActivity) JobType() IndustryJobType {
@@ -145,8 +142,7 @@ func (s IndustryJobStatus) IsActive() bool {
 }
 
 func (s IndustryJobStatus) Display() string {
-	titler := cases.Title(language.English)
-	return titler.String(s.String())
+	return xstrings.Title(s.String())
 }
 
 func (s IndustryJobStatus) Color() fyne.ThemeColorName {
