@@ -5,9 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"slices"
-	"strings"
-	"time"
 
 	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
@@ -333,47 +330,4 @@ func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg app.C
 			}
 			return nil
 		})
-}
-
-// NotifyExpiredExtractions sends notifications for expired extractions of a character.
-// Expired notifications are notified once only.
-// It will sent one notification covering all currently expired extractions.
-func (s *CharacterService) NotifyExpiredExtractions(ctx context.Context, characterID int32, earliest time.Time, notify func(title, content string)) error {
-	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyExpiredExtractions-%d", characterID), func() (any, error) {
-		planets, err := s.ListPlanets(ctx, characterID)
-		if err != nil {
-			return nil, err
-		}
-		characterName, err := s.getCharacterName(ctx, characterID)
-		if err != nil {
-			return nil, err
-		}
-		var expired []string
-		for _, p := range planets {
-			expiration := p.ExtractionsExpiryTime()
-			if expiration.IsZero() || expiration.After(time.Now()) || expiration.Before(earliest) {
-				continue
-			}
-			if p.LastNotified.ValueOrZero().Equal(expiration) {
-				continue
-			}
-			expired = append(expired, p.EvePlanet.Name)
-			err := s.st.UpdateCharacterPlanetLastNotified(ctx, storage.UpdateCharacterPlanetLastNotifiedParams{
-				CharacterID:  characterID,
-				EvePlanetID:  p.EvePlanet.ID,
-				LastNotified: expiration,
-			})
-			if err != nil {
-				return nil, err
-			}
-		}
-		if len(expired) > 0 {
-			slices.Sort(expired)
-			title := fmt.Sprintf("%s: PI extraction expired at %d planet(s)", characterName, len(expired))
-			content := fmt.Sprintf("Extraction expired at %s", strings.Join(expired, ", "))
-			notify(title, content)
-		}
-		return nil, nil
-	})
-	return err
 }
