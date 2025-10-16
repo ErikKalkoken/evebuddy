@@ -3,7 +3,6 @@ package characterservice_test
 import (
 	"context"
 	"testing"
-	"time"
 
 	"fyne.io/fyne/v2/test"
 	"github.com/jarcoal/httpmock"
@@ -13,7 +12,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func TestGetCharacter(t *testing.T) {
@@ -298,60 +296,6 @@ func TestTrainingWatchers(t *testing.T) {
 			}
 		}
 	})
-}
-
-func TestNotifyExpiredExtractions(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
-	defer db.Close()
-	cs := characterservice.NewFake(st)
-	ctx := context.Background()
-	now := time.Now().UTC()
-	earliest := now.Add(-24 * time.Hour)
-	cases := []struct {
-		name         string
-		isExtractor  bool
-		expiryTime   time.Time
-		lastNotified time.Time
-		shouldNotify bool
-	}{
-		{"extraction expired and not yet notified", true, now.Add(-3 * time.Hour), time.Time{}, true},
-		{"extraction expired and already notified", true, now.Add(-3 * time.Hour), now.Add(-3 * time.Hour), false},
-		{"extraction not expired", true, now.Add(3 * time.Hour), time.Time{}, false},
-		{"extraction expired old", true, now.Add(-48 * time.Hour), time.Time{}, false},
-		{"no expiration date", true, time.Time{}, time.Time{}, false},
-		{"non extractor expired", false, now.Add(-3 * time.Hour), time.Time{}, false},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			// given
-			testutil.TruncateTables(db)
-			product := factory.CreateEveType()
-			p := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{
-				LastNotified: tc.lastNotified,
-			})
-			if tc.isExtractor {
-				factory.CreatePlanetPinExtractor(storage.CreatePlanetPinParams{
-					CharacterPlanetID:      p.ID,
-					ExpiryTime:             tc.expiryTime,
-					ExtractorProductTypeID: optional.New(product.ID),
-				})
-			} else {
-				factory.CreatePlanetPin(storage.CreatePlanetPinParams{
-					CharacterPlanetID: p.ID,
-					ExpiryTime:        tc.expiryTime,
-				})
-			}
-			var sendCount int
-			// when
-			err := cs.NotifyExpiredExtractions(ctx, p.CharacterID, earliest, func(title string, content string) {
-				sendCount++
-			})
-			// then
-			if assert.NoError(t, err) {
-				assert.Equal(t, tc.shouldNotify, sendCount == 1)
-			}
-		})
-	}
 }
 
 func TestDeleteCharacter(t *testing.T) {

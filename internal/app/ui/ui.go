@@ -299,8 +299,6 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			}
 		case app.SectionCharacterMails:
 			u.updateMailIndicator()
-		case app.SectionCharacterPlanets:
-			u.notifyExpiredExtractionsIfNeeded(ctx, arg.characterID)
 		case app.SectionCharacterRoles:
 			u.updateStatus()
 			if isShown {

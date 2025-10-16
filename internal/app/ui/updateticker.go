@@ -117,7 +117,6 @@ func (u *baseUI) notifyCharactersIfNeeded(ctx context.Context) error {
 		return err
 	}
 	for _, c := range cc {
-		go u.notifyExpiredExtractionsIfNeeded(ctx, c.ID)
 		go u.notifyExpiredTrainingIfNeeded(ctx, c.ID)
 	}
 	slog.Debug("started notify characters")
@@ -131,18 +130,6 @@ func (u *baseUI) notifyExpiredTrainingIfNeeded(ctx context.Context, characterID 
 			err := u.cs.NotifyExpiredTraining(ctx, characterID, u.sendDesktopNotification)
 			if err != nil {
 				slog.Error("notify expired training", "error", err)
-			}
-		}()
-	}
-}
-
-func (u *baseUI) notifyExpiredExtractionsIfNeeded(ctx context.Context, characterID int32) {
-	if u.settings.NotifyPIEnabled() {
-		go func() {
-			earliest := u.settings.NotifyPIEarliest()
-			err := u.cs.NotifyExpiredExtractions(ctx, characterID, earliest, u.sendDesktopNotification)
-			if err != nil {
-				slog.Error("notify expired extractions", "characterID", characterID, "error", err)
 			}
 		}()
 	}
@@ -269,6 +256,13 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	case app.SectionCharacterNotifications:
 		if u.settings.NotifyCommunicationsEnabled() {
 			u.notifyNewCommunications(ctx, characterID)
+		}
+	case app.SectionCharacterPlanets:
+		if u.settings.NotifyPIEnabled() {
+			earliest := u.settings.NotifyPIEarliest()
+			if err := u.cs.NotifyExpiredExtractions(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
+				logErr(err)
+			}
 		}
 	case app.SectionCharacterSkillqueue:
 		if u.settings.NotifyTrainingEnabled() {
