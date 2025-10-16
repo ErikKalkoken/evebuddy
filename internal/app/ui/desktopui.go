@@ -918,22 +918,26 @@ type NewPageHeaderParams struct {
 func NewPageHeader(arg NewPageHeaderParams) *PageHeader {
 	title2 := iwidget.NewTappableLabel(arg.Title, nil)
 	title2.SizeName = theme.SizeNameSubHeadingText
-	if arg.IconFallback == nil {
-		arg.IconFallback = icons.BlankSvg
+	var fb fyne.Resource
+	if arg.IconFallback != nil {
+		fb = arg.IconFallback
+	} else {
+		fb = icons.BlankSvg
 	}
-	icon := iwidget.NewImageFromResource(arg.IconFallback, fyne.NewSquareSize(app.IconUnitSize))
+	icon := iwidget.NewImageFromResource(fb, fyne.NewSquareSize(app.IconUnitSize))
 	button := iwidget.NewContextMenuButtonWithIcon("", icons.BlankSvg, fyne.NewMenu(""))
-	if arg.ButtonIcon == nil {
-		icon.Hide()
-		button.Hide()
-	}
 	w := &PageHeader{
 		title:         title2,
 		button:        button,
 		icon:          icon,
-		buttonIcon:    arg.ButtonIcon,
 		buttonTooltip: arg.ButtonTooltip,
 		titleTooltip:  arg.TitleTooltip,
+	}
+	if arg.ButtonIcon != nil {
+		w.buttonIcon = arg.ButtonIcon
+	} else {
+		icon.Hide()
+		button.Hide()
 	}
 	w.ExtendBaseWidget(w)
 	return w

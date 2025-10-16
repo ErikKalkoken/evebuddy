@@ -354,6 +354,53 @@ func TestNotifyExpiredExtractions(t *testing.T) {
 	}
 }
 
+func TestNotifyExpiredExtractions_ShouldNoifyOnceForMultipleExpired(t *testing.T) {
+	// given
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	cs := characterservice.NewFake(st)
+	ctx := context.Background()
+	now := time.Now().UTC()
+	earliest := now.Add(-24 * time.Hour)
+	testutil.TruncateTables(db)
+	product := factory.CreateEveType()
+	c := factory.CreateCharacter()
+	p1 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{
+		CharacterID:  c.ID,
+		LastNotified: time.Time{},
+	})
+	factory.CreatePlanetPinExtractor(storage.CreatePlanetPinParams{
+		CharacterPlanetID:      p1.ID,
+		ExpiryTime:             now.Add(-3 * time.Hour),
+		ExtractorProductTypeID: optional.New(product.ID),
+	})
+	p2 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{
+		CharacterID:  c.ID,
+		LastNotified: time.Time{},
+	})
+	factory.CreatePlanetPinExtractor(storage.CreatePlanetPinParams{
+		CharacterPlanetID:      p2.ID,
+		ExpiryTime:             now.Add(-3 * time.Hour),
+		ExtractorProductTypeID: optional.New(product.ID),
+	})
+	// when
+	var sendCount int
+	var title, content string
+	err := cs.NotifyExpiredExtractions(ctx, c.ID, earliest, func(t string, c string) {
+		title = t
+		content = c
+		sendCount++
+	})
+	// then
+	if !assert.NoError(t, err) {
+		t.Fatal(err)
+	}
+	assert.Equal(t, 1, sendCount)
+	assert.Contains(t, content, p1.EvePlanet.Name)
+	assert.Contains(t, content, p2.EvePlanet.Name)
+	assert.Contains(t, title, "2")
+}
+
 func TestDeleteCharacter(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()

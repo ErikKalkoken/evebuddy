@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
@@ -334,6 +335,9 @@ func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg app.C
 		})
 }
 
+// NotifyExpiredExtractions sends notifications for expired extractions of a character.
+// Expired notifications are notified once only.
+// It will sent one notification covering all currently expired extractions.
 func (s *CharacterService) NotifyExpiredExtractions(ctx context.Context, characterID int32, earliest time.Time, notify func(title, content string)) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyExpiredExtractions-%d", characterID), func() (any, error) {
 		planets, err := s.ListPlanets(ctx, characterID)
@@ -344,6 +348,7 @@ func (s *CharacterService) NotifyExpiredExtractions(ctx context.Context, charact
 		if err != nil {
 			return nil, err
 		}
+		var expired []string
 		for _, p := range planets {
 			expiration := p.ExtractionsExpiryTime()
 			if expiration.IsZero() || expiration.After(time.Now()) || expiration.Before(earliest) {
@@ -352,23 +357,23 @@ func (s *CharacterService) NotifyExpiredExtractions(ctx context.Context, charact
 			if p.LastNotified.ValueOrZero().Equal(expiration) {
 				continue
 			}
-			title := fmt.Sprintf("%s: PI extraction expired", characterName)
-			extracted := strings.Join(p.ExtractedTypeNames(), ",")
-			content := fmt.Sprintf("Extraction expired at %s for %s", p.EvePlanet.Name, extracted)
-			notify(title, content)
-			arg := storage.UpdateCharacterPlanetLastNotifiedParams{
+			expired = append(expired, p.EvePlanet.Name)
+			err := s.st.UpdateCharacterPlanetLastNotified(ctx, storage.UpdateCharacterPlanetLastNotifiedParams{
 				CharacterID:  characterID,
 				EvePlanetID:  p.EvePlanet.ID,
 				LastNotified: expiration,
-			}
-			if err := s.st.UpdateCharacterPlanetLastNotified(ctx, arg); err != nil {
+			})
+			if err != nil {
 				return nil, err
 			}
 		}
+		if len(expired) > 0 {
+			slices.Sort(expired)
+			title := fmt.Sprintf("%s: PI extraction expired at %d planet(s)", characterName, len(expired))
+			content := fmt.Sprintf("Extraction expired at %s", strings.Join(expired, ", "))
+			notify(title, content)
+		}
 		return nil, nil
 	})
-	if err != nil {
-		return fmt.Errorf("NotifyExpiredExtractions for character %d: %w", characterID, err)
-	}
-	return nil
+	return err
 }
