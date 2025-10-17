@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 type CharacterService interface {
@@ -151,6 +152,9 @@ func (s *CorporationService) UpdateCorporations(ctx context.Context) (bool, erro
 	if err != nil {
 		return false, wrapErr(err)
 	}
+	valid = set.Collect(xiter.Filter(valid.All(), func(id int32) bool {
+		return !app.IsNPCCorporation(id)
+	}))
 	obsolete := set.Difference(current, valid)
 	if obsolete.Size() > 0 {
 		for id := range obsolete.All() {

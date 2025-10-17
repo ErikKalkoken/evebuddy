@@ -41,9 +41,9 @@ func (ee EveEntity) IsCharacter() bool {
 func (ee EveEntity) IsNPC() optional.Optional[bool] {
 	switch ee.Category {
 	case EveEntityCharacter:
-		return optional.New(ee.ID >= npcCharacterIDBegin && ee.ID < npcCharacterIDEnd)
+		return optional.New(IsNPCCharacter(ee.ID))
 	case EveEntityCorporation:
-		return optional.New(ee.ID >= npcCorporationIDBegin && ee.ID < npcCorporationIDEnd)
+		return optional.New(IsNPCCorporation(ee.ID))
 	}
 	return optional.Optional[bool]{}
 }
@@ -104,4 +104,20 @@ func (eec EveEntityCategory) String() string {
 	default:
 		return "?"
 	}
+}
+
+// IsNPCCharacter reports whether an entity ID represents a NPC character.
+func IsNPCCharacter(id int32) bool {
+	if id >= npcCharacterIDBegin && id < npcCharacterIDEnd {
+		return true
+	}
+	return false
+}
+
+// IsNPCCorporation reports whether an entity ID represents a NPC corporation.
+func IsNPCCorporation(id int32) bool {
+	if id >= npcCorporationIDBegin && id < npcCorporationIDEnd {
+		return true
+	}
+	return false
 }
