@@ -1,75 +1,12 @@
 /*
 * CSS styles for EVE Online SSO pages.
 *
-* Slightly modified copy of public version for local use by Erik Kalkoken:
-* - Background image removed and added to HTML page
-* - Formatted
+* Slightly modified variant of CCP's SSO styles  by Erik Kalkoken:
+* - Setting background image property moved to HTML page
+* - Removed all commercial fonts and replaced with default Arial font family
 *
 * (C) CCP hf.
 */
-@font-face {
-    font-display: swap;
-    font-family: Shentox;
-    font-style: normal;
-    font-weight: 600;
-    src: url(https://web.ccpgamescdn.com/aws/webfonts/shentox/webfonts-2.0/Shentox-SemiBold.woff2) format("woff2")
-}
-
-@font-face {
-    font-display: swap;
-    font-family: Shentox;
-    font-style: normal;
-    font-weight: 500;
-    src: url(https://web.ccpgamescdn.com/aws/webfonts/shentox/webfonts-2.0/Shentox-Medium.woff2) format("woff2")
-}
-
-@font-face {
-    font-display: swap;
-    font-family: Shentox;
-    font-style: normal;
-    font-weight: 400;
-    src: url(https://web.ccpgamescdn.com/aws/webfonts/shentox/webfonts-2.0/Shentox-Regular.woff2) format("woff2")
-}
-
-@font-face {
-    font-display: swap;
-    font-family: Shentox;
-    font-style: normal;
-    font-weight: 300;
-    src: url(https://web.ccpgamescdn.com/aws/webfonts/shentox/webfonts-2.0/Shentox-Light.woff2) format("woff2")
-}
-
-@font-face {
-    font-display: swap;
-    font-family: Rogan;
-    font-style: normal;
-    font-weight: 600;
-    src: url(https://web.ccpgamescdn.com/aws/webfonts/shentox/webfonts-2.0/Rogan-SemiBold.woff2) format("woff2")
-}
-
-@font-face {
-    font-display: swap;
-    font-family: Rogan;
-    font-style: normal;
-    font-weight: 300;
-    src: url(https://web.ccpgamescdn.com/aws/webfonts/shentox/webfonts-2.0/Rogan-Light.woff2) format("woff2")
-}
-
-@font-face {
-    font-display: swap;
-    font-family: Rogan;
-    font-style: normal;
-    font-weight: 500;
-    src: url(https://web.ccpgamescdn.com/aws/webfonts/shentox/webfonts-2.0/Rogan-Medium.woff2) format("woff2")
-}
-
-@font-face {
-    font-display: swap;
-    font-family: Rogan;
-    font-style: normal;
-    font-weight: 400;
-    src: url(https://web.ccpgamescdn.com/aws/webfonts/shentox/webfonts-2.0/Rogan-Regular.woff2) format("woff2")
-}
 
 :root {
     --color-primary: #5ccbcb;
@@ -102,8 +39,8 @@
     --rich-black: #12121e;
     --checkbox-bg-color: #272727;
     --checkbox-border-color: #474746;
-    --font-family-main: "Shentox", sans-serif;
-    --font-family-input: "Shentox", sans-serif;
+    --font-family-main: "Arial", sans-serif;
+    --font-family-input: "Arial", sans-serif;
     --font-size-main-title: 2.6rem;
     --line-height-base: 1.42857143;
     --font-size-input: 1.6rem;
@@ -423,7 +360,7 @@ body {
     background-repeat: no-repeat;
     background-size: cover;
     color: #fff;
-    font-family: Shentox, sans-serif;
+    font-family: Arial, sans-serif;
     font-family: var(--font-family-main);
     line-height: 1.42857143;
     line-height: var(--line-height-base)
@@ -477,7 +414,7 @@ textarea {
     border: 1px solid #474746;
     border: 1px solid var(--color-input-border);
     color: var(--input-text-color);
-    font-family: Shentox, sans-serif;
+    font-family: Arial, sans-serif;
     font-family: var(--font-family-input);
     font-style: normal;
     font-weight: 400;
