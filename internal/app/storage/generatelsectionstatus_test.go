@@ -12,7 +12,7 @@ import (
 )
 
 func TestGeneralSectionStatus(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can list", func(t *testing.T) {
@@ -25,7 +25,7 @@ func TestGeneralSectionStatus(t *testing.T) {
 			Section: app.SectionEveCharacters,
 		})
 		// when
-		oo, err := r.ListGeneralSectionStatus(ctx)
+		oo, err := st.ListGeneralSectionStatus(ctx)
 		// then
 		if assert.NoError(t, err) {
 			assert.ElementsMatch(t, []*app.GeneralSectionStatus{s1, s2}, oo)
@@ -40,7 +40,7 @@ func TestGeneralSectionStatus(t *testing.T) {
 			Section: app.SectionEveTypes,
 			Error:   &error,
 		}
-		x1, err := r.UpdateOrCreateGeneralSectionStatus(ctx, arg)
+		x1, err := st.UpdateOrCreateGeneralSectionStatus(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			if assert.NoError(t, err) {
@@ -48,7 +48,7 @@ func TestGeneralSectionStatus(t *testing.T) {
 				assert.Equal(t, "error", x1.ErrorMessage)
 				assert.True(t, x1.CompletedAt.IsZero())
 			}
-			x2, err := r.GetGeneralSectionStatus(ctx, app.SectionEveTypes)
+			x2, err := st.GetGeneralSectionStatus(ctx, app.SectionEveTypes)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -66,14 +66,14 @@ func TestGeneralSectionStatus(t *testing.T) {
 			Section: app.SectionEveTypes,
 			Error:   &error,
 		}
-		x1, err := r.UpdateOrCreateGeneralSectionStatus(ctx, arg)
+		x1, err := st.UpdateOrCreateGeneralSectionStatus(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, x.ContentHash, x1.ContentHash)
 			assert.Equal(t, "error", x1.ErrorMessage)
 			assert.Equal(t, x.CompletedAt, x1.CompletedAt)
 			assert.Equal(t, x.StartedAt, x1.StartedAt)
-			x2, err := r.GetGeneralSectionStatus(ctx, app.SectionEveTypes)
+			x2, err := st.GetGeneralSectionStatus(ctx, app.SectionEveTypes)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}

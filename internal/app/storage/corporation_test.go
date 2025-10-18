@@ -168,7 +168,7 @@ func TestListOrphanedCorporationIDs(t *testing.T) {
 }
 
 func TestGetAnyCorporation(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("should return a character", func(t *testing.T) {
@@ -177,7 +177,7 @@ func TestGetAnyCorporation(t *testing.T) {
 		c1 := factory.CreateCorporation()
 		c2 := factory.CreateCorporation()
 		// when
-		c, err := r.GetAnyCorporation(ctx)
+		c, err := st.GetAnyCorporation(ctx)
 		// then
 		if assert.NoError(t, err) {
 			assert.Contains(t, []int32{c1.ID, c2.ID}, c.ID)
@@ -187,7 +187,7 @@ func TestGetAnyCorporation(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, err := r.GetAnyCorporation(ctx)
+		_, err := st.GetAnyCorporation(ctx)
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})

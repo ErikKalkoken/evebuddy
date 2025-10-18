@@ -23,7 +23,7 @@ INSERT INTO
         notification_id,
         recipient_id,
         sender_id,
-        text,
+        TEXT,
         timestamp,
         title,
         type_id
@@ -121,17 +121,25 @@ FROM
     JOIN notification_types nt ON nt.id = cn.type_id
     LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
 WHERE
-    character_id = ?
+    cn.character_id = ?
     AND cn.is_processed IS FALSE
-    AND title IS NOT NULL
-    AND body IS NOT NULL
-    AND timestamp > ?
+    AND cn.title IS NOT NULL
+    AND cn.body IS NOT NULL
+    AND cn.timestamp > ?
+    AND notification_id NOT IN (
+        SELECT
+            cn2.notification_id
+        FROM
+            character_notifications cn2
+        WHERE
+            cn2.is_processed IS TRUE
+            AND cn2.timestamp > ?
+    )
 ORDER BY
     timestamp;
 
 -- name: UpdateCharacterNotification :exec
-UPDATE
-    character_notifications
+UPDATE character_notifications
 SET
     body = ?2,
     is_read = ?3,
@@ -139,19 +147,20 @@ SET
 WHERE
     id = ?1;
 
--- name: UpdateCharacterNotificationSetProcessed :exec
-UPDATE
-    character_notifications
+-- name: UpdateCharacterNotificationsSetProcessed :exec
+UPDATE character_notifications
 SET
     is_processed = TRUE
 WHERE
-    id = ?1;
+    notification_id = ?;
 
 -- name: CreateNotificationType :one
 INSERT INTO
     notification_types (name)
 VALUES
-    (?) RETURNING id;
+    (?)
+RETURNING
+    id;
 
 -- name: GetNotificationTypeID :one
 SELECT

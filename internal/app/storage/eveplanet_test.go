@@ -11,7 +11,7 @@ import (
 )
 
 func TestEvePlanet(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -26,10 +26,10 @@ func TestEvePlanet(t *testing.T) {
 			TypeID:        type_.ID,
 		}
 		// when
-		err := r.CreateEvePlanet(ctx, arg)
+		err := st.CreateEvePlanet(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			o, err := r.GetEvePlanet(ctx, 42)
+			o, err := st.GetEvePlanet(ctx, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, int32(42), o.ID)
 				assert.Equal(t, "name", o.Name)

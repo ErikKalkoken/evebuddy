@@ -496,6 +496,9 @@ func (st *Storage) ListCharacterNotificationsUnread(ctx context.Context, charact
 	return ee, nil
 }
 
+// ListCharacterNotificationsUnprocessed returns all unprocessed notifications for character characterID.
+// Notifications older then earliest are ignored or which have no body or title are ignored.
+// Notifications which are duplicates of already processed ones are ignored too.
 func (st *Storage) ListCharacterNotificationsUnprocessed(ctx context.Context, characterID int32, earliest time.Time) ([]*app.CharacterNotification, error) {
 	arg := queries.ListCharacterNotificationsUnprocessedParams{
 		CharacterID: int64(characterID),
@@ -573,9 +576,10 @@ func (st *Storage) UpdateCharacterNotification(ctx context.Context, arg UpdateCh
 	return nil
 }
 
-func (st *Storage) UpdateCharacterNotificationSetProcessed(ctx context.Context, id int64) error {
-	if err := st.qRW.UpdateCharacterNotificationSetProcessed(ctx, id); err != nil {
-		return fmt.Errorf("update notification set processed for id %d: %w", id, err)
+// UpdateCharacterNotificationsSetProcessed marks all notifications with the same notificationID as processed.
+func (st *Storage) UpdateCharacterNotificationsSetProcessed(ctx context.Context, notificationID int64) error {
+	if err := st.qRW.UpdateCharacterNotificationsSetProcessed(ctx, notificationID); err != nil {
+		return fmt.Errorf("UpdateCharacterNotificationsSetProcessed for notification ID %d: %w", notificationID, err)
 	}
 	return nil
 }

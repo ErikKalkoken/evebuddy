@@ -47,7 +47,7 @@ func (s *CharacterService) NotifyCommunications(ctx context.Context, characterID
 			}
 			title, content := s.RenderNotificationSummary(n)
 			notify(title, content)
-			if err := s.st.UpdateCharacterNotificationSetProcessed(ctx, n.ID); err != nil {
+			if err := s.st.UpdateCharacterNotificationsSetProcessed(ctx, n.NotificationID); err != nil {
 				return nil, err
 			}
 		}

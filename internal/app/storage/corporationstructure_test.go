@@ -15,7 +15,7 @@ import (
 )
 
 func TestCorporationStructure(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create minimal from scratch", func(t *testing.T) {
@@ -34,12 +34,12 @@ func TestCorporationStructure(t *testing.T) {
 			SystemID:      system.ID,
 			TypeID:        typ.ID,
 		}
-		err := r.UpdateOrCreateCorporationStructure(ctx, arg)
+		err := st.UpdateOrCreateCorporationStructure(ctx, arg)
 		// then
 		if !assert.NoError(t, err) {
 			t.Fatal()
 		}
-		got, err := r.GetCorporationStructure(ctx, arg.CorporationID, arg.StructureID)
+		got, err := st.GetCorporationStructure(ctx, arg.CorporationID, arg.StructureID)
 		if assert.NoError(t, err) {
 			assert.EqualValues(t, c.ID, got.CorporationID)
 			assert.EqualValues(t, arg.Name, got.Name)
@@ -80,12 +80,12 @@ func TestCorporationStructure(t *testing.T) {
 				},
 			},
 		}
-		err := r.UpdateOrCreateCorporationStructure(ctx, arg)
+		err := st.UpdateOrCreateCorporationStructure(ctx, arg)
 		// then
 		if !assert.NoError(t, err) {
 			t.Fatal()
 		}
-		got, err := r.GetCorporationStructure(ctx, arg.CorporationID, arg.StructureID)
+		got, err := st.GetCorporationStructure(ctx, arg.CorporationID, arg.StructureID)
 		if assert.NoError(t, err) {
 			assert.EqualValues(t, c.ID, got.CorporationID)
 			assert.EqualValues(t, arg.FuelExpires.ValueOrZero(), got.FuelExpires.ValueOrZero())
@@ -142,12 +142,12 @@ func TestCorporationStructure(t *testing.T) {
 				},
 			},
 		}
-		err := r.UpdateOrCreateCorporationStructure(ctx, arg)
+		err := st.UpdateOrCreateCorporationStructure(ctx, arg)
 		// then
 		if !assert.NoError(t, err) {
 			t.Fatal()
 		}
-		got, err := r.GetCorporationStructure(ctx, x1.CorporationID, x1.StructureID)
+		got, err := st.GetCorporationStructure(ctx, x1.CorporationID, x1.StructureID)
 		if assert.NoError(t, err) {
 			assert.EqualValues(t, c.ID, got.CorporationID)
 			assert.EqualValues(t, arg.FuelExpires.ValueOrZero(), got.FuelExpires.ValueOrZero())
@@ -175,7 +175,7 @@ func TestCorporationStructure(t *testing.T) {
 		})
 		factory.CreateCorporationStructure()
 		// when
-		got, err := r.ListCorporationStructureIDs(ctx, c.ID)
+		got, err := st.ListCorporationStructureIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(o1.StructureID, o2.StructureID)
@@ -194,7 +194,7 @@ func TestCorporationStructure(t *testing.T) {
 		})
 		factory.CreateCorporationStructure()
 		// when
-		xx, err := r.ListCorporationStructures(ctx, c.ID)
+		xx, err := st.ListCorporationStructures(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			got := set.Collect(xiter.MapSlice(xx, func(x *app.CorporationStructure) int64 {
@@ -215,12 +215,12 @@ func TestCorporationStructure(t *testing.T) {
 			CorporationID: c.ID,
 		})
 		// when
-		err := r.DeleteCorporationStructures(ctx, c.ID, set.Of(o1.StructureID))
+		err := st.DeleteCorporationStructures(ctx, c.ID, set.Of(o1.StructureID))
 		// then
 		if !assert.NoError(t, err) {
 			t.Fatal()
 		}
-		got, err := r.ListCorporationStructureIDs(ctx, c.ID)
+		got, err := st.ListCorporationStructureIDs(ctx, c.ID)
 		if !assert.NoError(t, err) {
 			t.Fatal()
 		}

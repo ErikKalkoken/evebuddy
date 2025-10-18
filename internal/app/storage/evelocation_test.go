@@ -16,7 +16,7 @@ import (
 )
 
 func TestLocation(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create minimal", func(t *testing.T) {
@@ -29,10 +29,10 @@ func TestLocation(t *testing.T) {
 			UpdatedAt: updatedAt,
 		}
 		// when
-		err := r.UpdateOrCreateEveLocation(ctx, arg)
+		err := st.UpdateOrCreateEveLocation(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetLocation(ctx, 42)
+			x, err := st.GetLocation(ctx, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "Alpha", x.Name)
 				assert.Equal(t, updatedAt.UTC(), x.UpdatedAt.UTC())
@@ -55,10 +55,10 @@ func TestLocation(t *testing.T) {
 			UpdatedAt:     updatedAt,
 		}
 		// when
-		err := r.UpdateOrCreateEveLocation(ctx, arg)
+		err := st.UpdateOrCreateEveLocation(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetLocation(ctx, 42)
+			x, err := st.GetLocation(ctx, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "Alpha", x.Name)
 				assert.Equal(t, owner, x.Owner)
@@ -73,7 +73,7 @@ func TestLocation(t *testing.T) {
 		testutil.TruncateTables(db)
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 42, Name: "Alpha"})
 		// when
-		x, err := r.GetLocation(ctx, 42)
+		x, err := st.GetLocation(ctx, 42)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, "Alpha", x.Name)
@@ -96,10 +96,10 @@ func TestLocation(t *testing.T) {
 			UpdatedAt:     updatedAt,
 		}
 		// when
-		err := r.UpdateOrCreateEveLocation(ctx, arg)
+		err := st.UpdateOrCreateEveLocation(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetLocation(ctx, 42)
+			x, err := st.GetLocation(ctx, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "Alpha", x.Name)
 				assert.Equal(t, owner, x.Owner)
@@ -115,7 +115,7 @@ func TestLocation(t *testing.T) {
 		l1 := factory.CreateEveLocationStructure()
 		l2 := factory.CreateEveLocationStructure()
 		// when
-		got, err := r.ListEveLocation(ctx)
+		got, err := st.ListEveLocation(ctx)
 		if assert.NoError(t, err) {
 			want := []*app.EveLocation{l1, l2}
 			assert.Equal(t, want, got)
@@ -127,7 +127,7 @@ func TestLocation(t *testing.T) {
 		l1 := factory.CreateEveLocationStructure()
 		l2 := factory.CreateEveLocationStructure()
 		// when
-		got, err := r.ListEveLocationIDs(ctx)
+		got, err := st.ListEveLocationIDs(ctx)
 		if assert.NoError(t, err) {
 			want := set.Of(l1.ID, l2.ID)
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
@@ -141,7 +141,7 @@ func TestLocation(t *testing.T) {
 		l2 := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{SolarSystemID: optional.New(s.ID)})
 		factory.CreateEveLocationStructure()
 		// when
-		got, err := r.ListEveLocationInSolarSystem(ctx, s.ID)
+		got, err := st.ListEveLocationInSolarSystem(ctx, s.ID)
 		if assert.NoError(t, err) {
 			gotIDs := xslices.Map(got, func(x *app.EveLocation) int64 {
 				return x.ID
@@ -156,7 +156,7 @@ func TestLocation(t *testing.T) {
 			ID: 42,
 		})
 		// when
-		got, err := r.MissingEveLocations(ctx, set.Of[int64](42, 99))
+		got, err := st.MissingEveLocations(ctx, set.Of[int64](42, 99))
 		if assert.NoError(t, err) {
 			want := set.Of[int64](99)
 			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)

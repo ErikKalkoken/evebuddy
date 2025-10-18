@@ -12,7 +12,7 @@ import (
 )
 
 func TestCharacterRole(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can update roles from scratch", func(t *testing.T) {
@@ -21,10 +21,10 @@ func TestCharacterRole(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		r1 := set.Of(app.RoleAccountant, app.RoleAuditor)
 		// when
-		err := r.UpdateCharacterRoles(ctx, c.ID, r1)
+		err := st.UpdateCharacterRoles(ctx, c.ID, r1)
 		// then
 		if assert.NoError(t, err) {
-			r2, err := r.ListCharacterRoles(ctx, c.ID)
+			r2, err := st.ListCharacterRoles(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, r1, r2)
 			}
@@ -34,15 +34,15 @@ func TestCharacterRole(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
-		if err := r.UpdateCharacterRoles(ctx, c.ID, set.Of(app.RoleBrandManager)); err != nil {
+		if err := st.UpdateCharacterRoles(ctx, c.ID, set.Of(app.RoleBrandManager)); err != nil {
 			panic(err)
 		}
 		want := set.Of(app.RoleDiplomat, app.RoleBrandManager)
 		// when
-		err := r.UpdateCharacterRoles(ctx, c.ID, want)
+		err := st.UpdateCharacterRoles(ctx, c.ID, want)
 		// then
 		if assert.NoError(t, err) {
-			got, err := r.ListCharacterRoles(ctx, c.ID)
+			got, err := st.ListCharacterRoles(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 			}
@@ -52,15 +52,15 @@ func TestCharacterRole(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
-		if err := r.UpdateCharacterRoles(ctx, c.ID, set.Of(app.RoleDiplomat, app.RoleBrandManager)); err != nil {
+		if err := st.UpdateCharacterRoles(ctx, c.ID, set.Of(app.RoleDiplomat, app.RoleBrandManager)); err != nil {
 			panic(err)
 		}
 		want := set.Of(app.RoleDiplomat)
 		// when
-		err := r.UpdateCharacterRoles(ctx, c.ID, want)
+		err := st.UpdateCharacterRoles(ctx, c.ID, want)
 		// then
 		if assert.NoError(t, err) {
-			got, err := r.ListCharacterRoles(ctx, c.ID)
+			got, err := st.ListCharacterRoles(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 			}

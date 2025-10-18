@@ -126,7 +126,7 @@ func TestCharacterMail(t *testing.T) {
 }
 
 func TestFetchUnreadCounts(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can get mail label unread counts", func(t *testing.T) {
@@ -142,7 +142,7 @@ func TestFetchUnreadCounts(t *testing.T) {
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{corp.LabelID}, IsRead: false})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
 		// when
-		r, err := r.GetCharacterMailLabelUnreadCounts(ctx, c.ID)
+		r, err := st.GetCharacterMailLabelUnreadCounts(ctx, c.ID)
 		if assert.NoError(t, err) {
 			assert.Equal(t, map[int32]int{app.MailLabelCorp: 2, app.MailLabelInbox: 1}, r)
 		}
@@ -165,7 +165,7 @@ func TestFetchUnreadCounts(t *testing.T) {
 		})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
 		// when
-		r, err := r.GetCharacterMailListUnreadCounts(ctx, c.ID)
+		r, err := st.GetCharacterMailListUnreadCounts(ctx, c.ID)
 		if assert.NoError(t, err) {
 			assert.Equal(t, map[int32]int{l1.ID: 1}, r)
 		}
@@ -174,7 +174,7 @@ func TestFetchUnreadCounts(t *testing.T) {
 }
 
 func TestUnreadMailCounts(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("should return correct unread count when mails exists", func(t *testing.T) {
@@ -203,7 +203,7 @@ func TestUnreadMailCounts(t *testing.T) {
 		})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
 		// when
-		r, err := r.GetCharacterMailUnreadCount(ctx, c.ID)
+		r, err := st.GetCharacterMailUnreadCount(ctx, c.ID)
 		if assert.NoError(t, err) {
 			assert.Equal(t, 6, r)
 		}
@@ -213,7 +213,7 @@ func TestUnreadMailCounts(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
 		// when
-		r, err := r.GetCharacterMailUnreadCount(ctx, c.ID)
+		r, err := st.GetCharacterMailUnreadCount(ctx, c.ID)
 		if assert.NoError(t, err) {
 			assert.Equal(t, 0, r)
 		}
@@ -247,7 +247,7 @@ func TestUnreadMailCounts(t *testing.T) {
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: character2.ID, IsRead: false})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: character2.ID, IsRead: true})
 		// when
-		got, err := r.GetAllCharactersMailUnreadCount(ctx)
+		got, err := st.GetAllCharactersMailUnreadCount(ctx)
 		if assert.NoError(t, err) {
 			assert.Equal(t, 7, got)
 		}
@@ -255,7 +255,7 @@ func TestUnreadMailCounts(t *testing.T) {
 }
 
 func TestMailCounts(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("character has mail", func(t *testing.T) {
@@ -266,7 +266,7 @@ func TestMailCounts(t *testing.T) {
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: character.ID, IsRead: true})
 		factory.CreateCharacterMail()
 		// when
-		got, err := r.GetCharacterMailCount(ctx, character.ID)
+		got, err := st.GetCharacterMailCount(ctx, character.ID)
 		if assert.NoError(t, err) {
 			assert.Equal(t, 2, got)
 		}
@@ -277,7 +277,7 @@ func TestMailCounts(t *testing.T) {
 		character := factory.CreateCharacterFull()
 		factory.CreateCharacterMail()
 		// when
-		got, err := r.GetCharacterMailCount(ctx, character.ID)
+		got, err := st.GetCharacterMailCount(ctx, character.ID)
 		if assert.NoError(t, err) {
 			assert.Equal(t, 0, got)
 		}

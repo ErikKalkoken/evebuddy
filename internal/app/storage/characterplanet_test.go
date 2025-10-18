@@ -11,7 +11,7 @@ import (
 )
 
 func TestPlanet(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -27,10 +27,10 @@ func TestPlanet(t *testing.T) {
 			UpgradeLevel: 3,
 		}
 		// when
-		_, err := r.UpdateOrCreateCharacterPlanet(ctx, arg)
+		_, err := st.UpdateOrCreateCharacterPlanet(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			i, err := r.GetCharacterPlanet(ctx, c.ID, evePlanet.ID)
+			i, err := st.GetCharacterPlanet(ctx, c.ID, evePlanet.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, c.ID, i.CharacterID)
 				assert.Equal(t, evePlanet, i.EvePlanet)
@@ -60,10 +60,10 @@ func TestPlanet(t *testing.T) {
 			UpgradeLevel: 3,
 		}
 		// when
-		_, err := r.UpdateOrCreateCharacterPlanet(ctx, arg)
+		_, err := st.UpdateOrCreateCharacterPlanet(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			i, err := r.GetCharacterPlanet(ctx, c.ID, evePlanet.ID)
+			i, err := st.GetCharacterPlanet(ctx, c.ID, evePlanet.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, c.ID, i.CharacterID)
 				assert.Equal(t, evePlanet, i.EvePlanet)
@@ -81,7 +81,7 @@ func TestPlanet(t *testing.T) {
 		p2 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
 		p3 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
 		// when
-		oo, err := r.ListCharacterPlanets(ctx, c.ID)
+		oo, err := st.ListCharacterPlanets(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, oo, 3)
@@ -100,10 +100,10 @@ func TestPlanet(t *testing.T) {
 		p2 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
 		p3 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
 		// when
-		err := r.DeleteCharacterPlanet(ctx, c.ID, []int32{p1.EvePlanet.ID, p2.EvePlanet.ID})
+		err := st.DeleteCharacterPlanet(ctx, c.ID, []int32{p1.EvePlanet.ID, p2.EvePlanet.ID})
 		// then
 		if assert.NoError(t, err) {
-			oo, err := r.ListCharacterPlanets(ctx, c.ID)
+			oo, err := st.ListCharacterPlanets(ctx, c.ID)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -122,10 +122,10 @@ func TestPlanet(t *testing.T) {
 			LastNotified: lastNotified,
 		}
 		// when
-		err := r.UpdateCharacterPlanetLastNotified(ctx, arg)
+		err := st.UpdateCharacterPlanetLastNotified(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			i, err := r.GetCharacterPlanet(ctx, planet.CharacterID, planet.EvePlanet.ID)
+			i, err := st.GetCharacterPlanet(ctx, planet.CharacterID, planet.EvePlanet.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, lastNotified, i.LastNotified.ValueOrZero())
 			}
@@ -140,7 +140,7 @@ func TestPlanet(t *testing.T) {
 		c2 := factory.CreateCharacterFull()
 		p3 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c2.ID})
 		// when
-		oo, err := r.ListAllCharacterPlanets(ctx)
+		oo, err := st.ListAllCharacterPlanets(ctx)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, oo, 3)

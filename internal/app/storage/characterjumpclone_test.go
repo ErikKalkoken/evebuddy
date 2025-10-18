@@ -13,7 +13,7 @@ import (
 )
 
 func TestCharacterJumpClone(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new empty clone", func(t *testing.T) {
@@ -28,10 +28,10 @@ func TestCharacterJumpClone(t *testing.T) {
 			Name:        "dummy",
 		}
 		// when
-		err := r.CreateCharacterJumpClone(ctx, arg)
+		err := st.CreateCharacterJumpClone(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetCharacterJumpClone(ctx, c.ID, 5)
+			x, err := st.GetCharacterJumpClone(ctx, c.ID, 5)
 			if assert.NoError(t, err) {
 				assert.Equal(t, int32(5), x.CloneID)
 				assert.Equal(t, "dummy", x.Name)
@@ -55,10 +55,10 @@ func TestCharacterJumpClone(t *testing.T) {
 			Name:        "dummy",
 		}
 		// when
-		err := r.CreateCharacterJumpClone(ctx, arg)
+		err := st.CreateCharacterJumpClone(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetCharacterJumpClone(ctx, c.ID, 5)
+			x, err := st.GetCharacterJumpClone(ctx, c.ID, 5)
 			if assert.NoError(t, err) {
 				assert.Equal(t, location.ID, x.Location.ID)
 				if assert.NotEmpty(t, x.Implants) {
@@ -85,10 +85,10 @@ func TestCharacterJumpClone(t *testing.T) {
 			Name:        "dummy",
 		}
 		// when
-		err := r.ReplaceCharacterJumpClones(ctx, c.ID, []storage.CreateCharacterJumpCloneParams{arg})
+		err := st.ReplaceCharacterJumpClones(ctx, c.ID, []storage.CreateCharacterJumpCloneParams{arg})
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetCharacterJumpClone(ctx, c.ID, 5)
+			x, err := st.GetCharacterJumpClone(ctx, c.ID, 5)
 			if assert.NoError(t, err) {
 				assert.Equal(t, location.ID, x.Location.ID)
 				assert.Equal(t, "dummy", x.Name)
@@ -110,7 +110,7 @@ func TestCharacterJumpClone(t *testing.T) {
 			CharacterID: c.ID,
 		})
 		// when
-		oo, err := r.ListCharacterJumpClones(ctx, c.ID)
+		oo, err := st.ListCharacterJumpClones(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			ids := xslices.Map(oo, func(a *app.CharacterJumpClone) int32 {
@@ -128,7 +128,7 @@ func TestCharacterJumpClone(t *testing.T) {
 			Implants: []int32{eveType.ID},
 		})
 		// when
-		oo, err := r.ListAllCharacterJumpClones(ctx)
+		oo, err := st.ListAllCharacterJumpClones(ctx)
 		// then
 		if assert.NoError(t, err) {
 			ids := xslices.Map(oo, func(a *app.CharacterJumpClone2) int32 {

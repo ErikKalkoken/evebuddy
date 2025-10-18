@@ -1128,13 +1128,12 @@ func (f Factory) CreateCharacterMarketOrder(args ...storage.UpdateOrCreateCharac
 }
 
 func (f Factory) CreateCharacterNotification(args ...storage.CreateCharacterNotificationParams) *app.CharacterNotification {
-	ctx := context.Background()
 	var arg storage.CreateCharacterNotificationParams
 	if len(args) > 0 {
 		arg = args[0]
 	}
 	if arg.CharacterID == 0 {
-		x := f.CreateCharacterFull()
+		x := f.CreateCharacter()
 		arg.CharacterID = x.ID
 	}
 	if arg.NotificationID == 0 {
@@ -1158,6 +1157,7 @@ func (f Factory) CreateCharacterNotification(args ...storage.CreateCharacterNoti
 	if arg.Timestamp.IsZero() {
 		arg.Timestamp = time.Now().UTC()
 	}
+	ctx := context.Background()
 	err := f.st.CreateCharacterNotification(ctx, arg)
 	if err != nil {
 		panic(err)

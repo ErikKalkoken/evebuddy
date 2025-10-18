@@ -14,7 +14,7 @@ import (
 )
 
 func TestCorporationWalletName(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create from scratch", func(t *testing.T) {
@@ -22,14 +22,14 @@ func TestCorporationWalletName(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCorporation()
 		// when
-		err := r.UpdateOrCreateCorporationWalletName(ctx, storage.UpdateOrCreateCorporationWalletNameParams{
+		err := st.UpdateOrCreateCorporationWalletName(ctx, storage.UpdateOrCreateCorporationWalletNameParams{
 			CorporationID: c.ID,
 			DivisionID:    3,
 			Name:          "Alpha",
 		})
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetCorporationWalletName(ctx, storage.CorporationDivision{
+			x, err := st.GetCorporationWalletName(ctx, storage.CorporationDivision{
 				CorporationID: c.ID,
 				DivisionID:    3,
 			})
@@ -45,14 +45,14 @@ func TestCorporationWalletName(t *testing.T) {
 		testutil.TruncateTables(db)
 		x1 := factory.CreateCorporationWalletName()
 		// when
-		err := r.UpdateOrCreateCorporationWalletName(ctx, storage.UpdateOrCreateCorporationWalletNameParams{
+		err := st.UpdateOrCreateCorporationWalletName(ctx, storage.UpdateOrCreateCorporationWalletNameParams{
 			CorporationID: x1.CorporationID,
 			DivisionID:    x1.DivisionID,
 			Name:          "Alpha",
 		})
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetCorporationWalletName(ctx, storage.CorporationDivision{
+			x, err := st.GetCorporationWalletName(ctx, storage.CorporationDivision{
 				CorporationID: x1.CorporationID,
 				DivisionID:    x1.DivisionID,
 			})
@@ -75,7 +75,7 @@ func TestCorporationWalletName(t *testing.T) {
 		})
 		factory.CreateCorporationWalletName()
 		// when
-		oo, err := r.ListCorporationWalletNames(ctx, c.ID)
+		oo, err := st.ListCorporationWalletNames(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletName) (int32, string) {

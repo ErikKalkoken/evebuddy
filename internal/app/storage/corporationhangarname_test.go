@@ -14,7 +14,7 @@ import (
 )
 
 func TestCorporationHangarName(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create from scratch", func(t *testing.T) {
@@ -22,14 +22,14 @@ func TestCorporationHangarName(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCorporation()
 		// when
-		err := r.UpdateOrCreateCorporationHangarName(ctx, storage.UpdateOrCreateCorporationHangarNameParams{
+		err := st.UpdateOrCreateCorporationHangarName(ctx, storage.UpdateOrCreateCorporationHangarNameParams{
 			CorporationID: c.ID,
 			DivisionID:    3,
 			Name:          "Alpha",
 		})
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetCorporationHangarName(ctx, storage.CorporationDivision{
+			x, err := st.GetCorporationHangarName(ctx, storage.CorporationDivision{
 				CorporationID: c.ID,
 				DivisionID:    3,
 			})
@@ -45,14 +45,14 @@ func TestCorporationHangarName(t *testing.T) {
 		testutil.TruncateTables(db)
 		x1 := factory.CreateCorporationHangarName()
 		// when
-		err := r.UpdateOrCreateCorporationHangarName(ctx, storage.UpdateOrCreateCorporationHangarNameParams{
+		err := st.UpdateOrCreateCorporationHangarName(ctx, storage.UpdateOrCreateCorporationHangarNameParams{
 			CorporationID: x1.CorporationID,
 			DivisionID:    x1.DivisionID,
 			Name:          "Alpha",
 		})
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetCorporationHangarName(ctx, storage.CorporationDivision{
+			x, err := st.GetCorporationHangarName(ctx, storage.CorporationDivision{
 				CorporationID: x1.CorporationID,
 				DivisionID:    x1.DivisionID,
 			})
@@ -75,7 +75,7 @@ func TestCorporationHangarName(t *testing.T) {
 		})
 		factory.CreateCorporationHangarName()
 		// when
-		oo, err := r.ListCorporationHangarNames(ctx, c.ID)
+		oo, err := st.ListCorporationHangarNames(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationHangarName) (int32, string) {
