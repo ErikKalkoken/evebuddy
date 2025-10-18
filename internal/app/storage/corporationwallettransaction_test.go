@@ -16,7 +16,7 @@ import (
 )
 
 func TestCorporationWalletTransaction(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
@@ -41,11 +41,11 @@ func TestCorporationWalletTransaction(t *testing.T) {
 			TransactionID: 42,
 		}
 		// when
-		err := r.CreateCorporationWalletTransaction(ctx, arg)
+		err := st.CreateCorporationWalletTransaction(ctx, arg)
 		// then
 		region := location.SolarSystem.Constellation.Region
 		if assert.NoError(t, err) {
-			i, err := r.GetCorporationWalletTransaction(ctx, storage.GetCorporationWalletTransactionParams{
+			i, err := st.GetCorporationWalletTransaction(ctx, storage.GetCorporationWalletTransactionParams{
 				CorporationID: c.ID,
 				DivisionID:    1,
 				TransactionID: 42,
@@ -98,7 +98,7 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		})
 		factory.CreateCorporationWalletTransaction()
 		// when
-		got, err := r.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
+		got, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
 			DivisionID:    1,
 		})
@@ -126,7 +126,7 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		})
 		factory.CreateCorporationWalletTransaction()
 		// when
-		oo, err := r.ListCorporationWalletTransactions(ctx, storage.CorporationDivision{
+		oo, err := st.ListCorporationWalletTransactions(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
 			DivisionID:    1,
 		})
@@ -145,17 +145,17 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		e1 := factory.CreateCorporationWalletTransaction()
 		e2 := factory.CreateCorporationWalletTransaction()
 		// when
-		err := r.DeleteCorporationWalletTransactions(ctx, e1.CorporationID, app.Division(e1.DivisionID))
+		err := st.DeleteCorporationWalletTransactions(ctx, e1.CorporationID, app.Division(e1.DivisionID))
 		// then
 		if assert.NoError(t, err) {
-			x1, err := r.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
+			x1, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 				CorporationID: e1.CorporationID,
 				DivisionID:    e1.DivisionID,
 			})
 			if assert.NoError(t, err) {
 				assert.Equal(t, 0, x1.Size())
 			}
-			x2, err := r.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
+			x2, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 				CorporationID: e2.CorporationID,
 				DivisionID:    e2.DivisionID,
 			})

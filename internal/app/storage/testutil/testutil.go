@@ -24,9 +24,9 @@ func NewDBInMemory() (*sql.DB, *storage.Storage, Factory) {
 	if err := storage.ApplyMigrations(db); err != nil {
 		panic(err)
 	}
-	r := storage.New(db, db)
-	factory := NewFactory(r, db)
-	return db, r, factory
+	st := storage.New(db, db)
+	factory := NewFactory(st, db)
+	return db, st, factory
 }
 
 // NewDBOnDisk creates and returns a new temporary database on disk for tests.

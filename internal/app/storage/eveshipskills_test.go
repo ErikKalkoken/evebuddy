@@ -12,7 +12,7 @@ import (
 )
 
 func TestEveShipSkills(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -34,10 +34,10 @@ func TestEveShipSkills(t *testing.T) {
 			SkillLevel:  3,
 		}
 		// when
-		err := r.CreateEveShipSkill(ctx, arg)
+		err := st.CreateEveShipSkill(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetEveShipSkill(ctx, ship.ID, 2)
+			x, err := st.GetEveShipSkill(ctx, ship.ID, 2)
 			if assert.NoError(t, err) {
 				assert.Equal(t, skill.ID, x.SkillTypeID)
 				assert.Equal(t, uint(3), x.SkillLevel)
@@ -173,10 +173,10 @@ func TestEveShipSkills(t *testing.T) {
 			Value:            float32(3),
 		})
 		// when
-		err := r.UpdateEveShipSkills(ctx)
+		err := st.UpdateEveShipSkills(ctx)
 		// then
 		if assert.NoError(t, err) {
-			xx, err := r.ListEveShipSkills(ctx, ship1.ID)
+			xx, err := st.ListEveShipSkills(ctx, ship1.ID)
 			if assert.NoError(t, err) {
 				if assert.Len(t, xx, 1) {
 					x := xx[0]
@@ -185,7 +185,7 @@ func TestEveShipSkills(t *testing.T) {
 					assert.Equal(t, uint(1), x.SkillLevel)
 				}
 			}
-			xx, err = r.ListEveShipSkills(ctx, ship2.ID)
+			xx, err = st.ListEveShipSkills(ctx, ship2.ID)
 			if assert.NoError(t, err) {
 				if assert.Len(t, xx, 6) {
 					x := xx[0]

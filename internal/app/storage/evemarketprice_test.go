@@ -11,7 +11,7 @@ import (
 )
 
 func TestEveMarketPrice(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -23,7 +23,7 @@ func TestEveMarketPrice(t *testing.T) {
 			AveragePrice:  4.56,
 		}
 		// when
-		x, err := r.UpdateOrCreateEveMarketPrice(ctx, arg)
+		x, err := st.UpdateOrCreateEveMarketPrice(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(42), x.TypeID)
@@ -45,7 +45,7 @@ func TestEveMarketPrice(t *testing.T) {
 			AveragePrice:  4.56,
 		}
 		// when
-		x, err := r.UpdateOrCreateEveMarketPrice(ctx, arg)
+		x, err := st.UpdateOrCreateEveMarketPrice(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(42), x.TypeID)

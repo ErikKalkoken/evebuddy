@@ -11,7 +11,7 @@ import (
 )
 
 func TestEveTypeDogmaEffect(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -24,10 +24,10 @@ func TestEveTypeDogmaEffect(t *testing.T) {
 			IsDefault:     true,
 		}
 		// when
-		err := r.CreateEveTypeDogmaEffect(ctx, arg)
+		err := st.CreateEveTypeDogmaEffect(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			v, err := r.GetEveTypeDogmaEffect(ctx, x.ID, 42)
+			v, err := st.GetEveTypeDogmaEffect(ctx, x.ID, 42)
 			if assert.NoError(t, err) {
 				assert.True(t, v)
 			}

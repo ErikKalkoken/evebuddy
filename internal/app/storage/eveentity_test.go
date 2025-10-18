@@ -15,7 +15,7 @@ import (
 )
 
 func TestEveEntityUpdateOrCreate(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can update existing", func(t *testing.T) {
@@ -29,14 +29,14 @@ func TestEveEntityUpdateOrCreate(t *testing.T) {
 				Category: app.EveEntityCharacter,
 			})
 		// when
-		_, err := r.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
+		_, err := st.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
 			ID:       e1.ID,
 			Name:     "Erik",
 			Category: app.EveEntityCorporation,
 		})
 		// then
 		if assert.NoError(t, err) {
-			e2, err := r.GetEveEntity(ctx, e1.ID)
+			e2, err := st.GetEveEntity(ctx, e1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, e1.ID, e2.ID)
 				assert.Equal(t, "Erik", e2.Name)
@@ -48,7 +48,7 @@ func TestEveEntityUpdateOrCreate(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, err := r.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
+		_, err := st.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
 			ID:       0,
 			Name:     "Dummy",
 			Category: app.EveEntityAlliance,
@@ -59,7 +59,7 @@ func TestEveEntityUpdateOrCreate(t *testing.T) {
 }
 
 func TestUpdateEveEntity(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can update existing", func(t *testing.T) {
@@ -73,10 +73,10 @@ func TestUpdateEveEntity(t *testing.T) {
 				Category: app.EveEntityCharacter,
 			})
 		// when
-		err := r.UpdateEveEntity(ctx, e1.ID, "Erik")
+		err := st.UpdateEveEntity(ctx, e1.ID, "Erik")
 		// then
 		if assert.NoError(t, err) {
-			e2, err := r.GetEveEntity(ctx, e1.ID)
+			e2, err := st.GetEveEntity(ctx, e1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, e1.ID, e2.ID)
 				assert.Equal(t, "Erik", e2.Name)
@@ -267,7 +267,7 @@ func TestListEveEntities(t *testing.T) {
 }
 
 func TestEveEntityGetOrCreate(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("should create new when not exist", func(t *testing.T) {
@@ -279,10 +279,10 @@ func TestEveEntityGetOrCreate(t *testing.T) {
 			Category: app.EveEntityAlliance,
 		}
 		// when
-		_, err := r.GetOrCreateEveEntity(ctx, arg)
+		_, err := st.GetOrCreateEveEntity(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			e, err := r.GetEveEntity(ctx, 42)
+			e, err := st.GetEveEntity(ctx, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, e.ID, int32(42))
 				assert.Equal(t, e.Name, "Dummy")
@@ -306,7 +306,7 @@ func TestEveEntityGetOrCreate(t *testing.T) {
 			Category: app.EveEntityCorporation,
 		}
 		// when
-		e, err := r.GetOrCreateEveEntity(ctx, arg)
+		e, err := st.GetOrCreateEveEntity(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(42), e.ID)
@@ -317,7 +317,7 @@ func TestEveEntityGetOrCreate(t *testing.T) {
 }
 
 func TestEveEntityIDs(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("should list existing entity IDs", func(t *testing.T) {
@@ -326,7 +326,7 @@ func TestEveEntityIDs(t *testing.T) {
 		factory.CreateEveEntity(app.EveEntity{ID: 5})
 		factory.CreateEveEntity(app.EveEntity{ID: 42})
 		// when
-		got, err := r.ListEveEntityIDs(ctx)
+		got, err := st.ListEveEntityIDs(ctx)
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int32](5, 42)
@@ -338,7 +338,7 @@ func TestEveEntityIDs(t *testing.T) {
 		testutil.TruncateTables(db)
 		factory.CreateEveEntity(app.EveEntity{ID: 42})
 		// when
-		got, err := r.MissingEveEntityIDs(ctx, set.Of[int32](42, 5, 0))
+		got, err := st.MissingEveEntityIDs(ctx, set.Of[int32](42, 5, 0))
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int32](5)
@@ -348,7 +348,7 @@ func TestEveEntityIDs(t *testing.T) {
 }
 
 func TestEveEntityCanCreateAllCategories(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	testutil.TruncateTables(db)
@@ -370,7 +370,7 @@ func TestEveEntityCanCreateAllCategories(t *testing.T) {
 			// when
 			e1 := factory.CreateEveEntity(app.EveEntity{Category: c})
 			// then
-			e2, err := r.GetEveEntity(ctx, e1.ID)
+			e2, err := st.GetEveEntity(ctx, e1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, e2.Category, c)
 			}

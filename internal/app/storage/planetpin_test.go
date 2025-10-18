@@ -13,7 +13,7 @@ import (
 )
 
 func TestPlanetPin(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can get and create minimal", func(t *testing.T) {
@@ -27,10 +27,10 @@ func TestPlanetPin(t *testing.T) {
 			PinID:             42,
 		}
 		// when
-		err := r.CreatePlanetPin(ctx, arg)
+		err := st.CreatePlanetPin(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetPlanetPin(ctx, planet.ID, 42)
+			c2, err := st.GetPlanetPin(ctx, planet.ID, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, input, c2.Type)
 			}
@@ -59,10 +59,10 @@ func TestPlanetPin(t *testing.T) {
 			TypeID:                 pinType.ID,
 		}
 		// when
-		err := r.CreatePlanetPin(ctx, arg)
+		err := st.CreatePlanetPin(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetPlanetPin(ctx, planet.ID, 42)
+			c2, err := st.GetPlanetPin(ctx, planet.ID, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, pinType, c2.Type)
 				assert.Equal(t, productType, c2.ExtractorProductType)
@@ -81,7 +81,7 @@ func TestPlanetPin(t *testing.T) {
 		x1 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p.ID})
 		x2 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p.ID})
 		// when
-		oo, err := r.ListPlanetPins(ctx, p.ID)
+		oo, err := st.ListPlanetPins(ctx, p.ID)
 		// then
 		if assert.NoError(t, err) {
 			got := set.Of[int64]()
@@ -101,15 +101,15 @@ func TestPlanetPin(t *testing.T) {
 		planet2 := factory.CreateCharacterPlanet()
 		factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: planet2.ID})
 		// when
-		err := r.DeletePlanetPins(ctx, planet1.ID)
+		err := st.DeletePlanetPins(ctx, planet1.ID)
 		// then
 		if assert.NoError(t, err) {
-			oo1, err := r.ListPlanetPins(ctx, planet1.ID)
+			oo1, err := st.ListPlanetPins(ctx, planet1.ID)
 			if err != nil {
 				t.Fatal(err)
 			}
 			assert.Len(t, oo1, 0)
-			oo2, err := r.ListPlanetPins(ctx, planet2.ID)
+			oo2, err := st.ListPlanetPins(ctx, planet2.ID)
 			if err != nil {
 				t.Fatal(err)
 			}

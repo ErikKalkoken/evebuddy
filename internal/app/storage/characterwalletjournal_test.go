@@ -12,7 +12,7 @@ import (
 )
 
 func TestCharacterWalletJournalEntry(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
@@ -34,10 +34,10 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 			Tax:           0.12,
 		}
 		// when
-		err := r.CreateCharacterWalletJournalEntry(ctx, arg)
+		err := st.CreateCharacterWalletJournalEntry(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			i, err := r.GetCharacterWalletJournalEntry(ctx, storage.GetCharacterWalletJournalEntryParams{
+			i, err := st.GetCharacterWalletJournalEntry(ctx, storage.GetCharacterWalletJournalEntryParams{
 				CharacterID: c.ID,
 				RefID:       4,
 			})
@@ -79,10 +79,10 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 			TaxReceiverID: e3.ID,
 		}
 		// when
-		err := r.CreateCharacterWalletJournalEntry(ctx, arg)
+		err := st.CreateCharacterWalletJournalEntry(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			i, err := r.GetCharacterWalletJournalEntry(ctx, storage.GetCharacterWalletJournalEntryParams{
+			i, err := st.GetCharacterWalletJournalEntry(ctx, storage.GetCharacterWalletJournalEntryParams{
 				CharacterID: c.ID,
 				RefID:       4,
 			})
@@ -110,7 +110,7 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 		e2 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		e3 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		// when
-		got, err := r.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
+		got, err := st.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(e1.RefID, e2.RefID, e3.RefID)
@@ -125,7 +125,7 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		// when
-		ee, err := r.ListCharacterWalletJournalEntries(ctx, c.ID)
+		ee, err := st.ListCharacterWalletJournalEntries(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, ee, 3)

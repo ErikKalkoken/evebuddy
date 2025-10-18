@@ -15,7 +15,7 @@ import (
 )
 
 func TestCharacterNotification(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
@@ -34,10 +34,10 @@ func TestCharacterNotification(t *testing.T) {
 			Type:           "StructureDestroyed",
 		}
 		// when
-		err := r.CreateCharacterNotification(ctx, arg)
+		err := st.CreateCharacterNotification(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			o, err := r.GetCharacterNotification(ctx, c.ID, 42)
+			o, err := st.GetCharacterNotification(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, c.ID, o.CharacterID)
 				assert.True(t, o.IsRead)
@@ -70,10 +70,10 @@ func TestCharacterNotification(t *testing.T) {
 			Type:           "StructureDestroyed",
 		}
 		// when
-		err := r.CreateCharacterNotification(ctx, arg)
+		err := st.CreateCharacterNotification(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			o, err := r.GetCharacterNotification(ctx, c.ID, 42)
+			o, err := st.GetCharacterNotification(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, c.ID, o.CharacterID)
 				assert.True(t, o.IsRead)
@@ -104,10 +104,10 @@ func TestCharacterNotification(t *testing.T) {
 			Type:           "Invalid",
 		}
 		// when
-		err := r.CreateCharacterNotification(ctx, arg)
+		err := st.CreateCharacterNotification(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			o, err := r.GetCharacterNotification(ctx, c.ID, 42)
+			o, err := st.GetCharacterNotification(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, app.UnknownNotification, o.Type)
 			}
@@ -118,13 +118,13 @@ func TestCharacterNotification(t *testing.T) {
 		testutil.TruncateTables(db)
 		n := factory.CreateCharacterNotification()
 		// when
-		err := r.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{
+		err := st.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{
 			ID:     n.ID,
 			IsRead: true,
 		})
 		// then
 		if assert.NoError(t, err) {
-			o, err := r.GetCharacterNotification(ctx, n.CharacterID, n.ID)
+			o, err := st.GetCharacterNotification(ctx, n.CharacterID, n.ID)
 			if assert.NoError(t, err) {
 				assert.True(t, o.IsRead)
 			}
@@ -135,13 +135,13 @@ func TestCharacterNotification(t *testing.T) {
 		testutil.TruncateTables(db)
 		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{IsRead: true})
 		// when
-		err := r.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{
+		err := st.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{
 			ID:     n.ID,
 			IsRead: false,
 		})
 		// then
 		if assert.NoError(t, err) {
-			o, err := r.GetCharacterNotification(ctx, n.CharacterID, n.ID)
+			o, err := st.GetCharacterNotification(ctx, n.CharacterID, n.ID)
 			if assert.NoError(t, err) {
 				assert.False(t, o.IsRead)
 			}
@@ -152,13 +152,13 @@ func TestCharacterNotification(t *testing.T) {
 		testutil.TruncateTables(db)
 		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{})
 		// when
-		err := r.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{
+		err := st.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{
 			ID:    n.ID,
 			Title: optional.New("title"),
 		})
 		// then
 		if assert.NoError(t, err) {
-			o, err := r.GetCharacterNotification(ctx, n.CharacterID, n.ID)
+			o, err := st.GetCharacterNotification(ctx, n.CharacterID, n.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "title", o.Title.ValueOrZero())
 			}
@@ -169,13 +169,13 @@ func TestCharacterNotification(t *testing.T) {
 		testutil.TruncateTables(db)
 		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{})
 		// when
-		err := r.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{
+		err := st.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{
 			ID:   n.ID,
 			Body: optional.New("body"),
 		})
 		// then
 		if assert.NoError(t, err) {
-			o, err := r.GetCharacterNotification(ctx, n.CharacterID, n.ID)
+			o, err := st.GetCharacterNotification(ctx, n.CharacterID, n.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "body", o.Body.ValueOrZero())
 			}
@@ -186,10 +186,10 @@ func TestCharacterNotification(t *testing.T) {
 		testutil.TruncateTables(db)
 		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{})
 		// when
-		err := r.UpdateCharacterNotificationSetProcessed(ctx, n.ID)
+		err := st.UpdateCharacterNotificationSetProcessed(ctx, n.ID)
 		// then
 		if assert.NoError(t, err) {
-			o, err := r.GetCharacterNotification(ctx, n.CharacterID, n.ID)
+			o, err := st.GetCharacterNotification(ctx, n.CharacterID, n.ID)
 			if assert.NoError(t, err) {
 				assert.True(t, o.IsProcessed)
 			}
@@ -214,7 +214,7 @@ func TestCharacterNotification(t *testing.T) {
 		})
 		factory.CreateCharacterNotification()
 		// when
-		x, err := r.CountCharacterNotifications(ctx, c.ID)
+		x, err := st.CountCharacterNotifications(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			want := map[app.EveNotificationType][]int{
@@ -227,7 +227,7 @@ func TestCharacterNotification(t *testing.T) {
 }
 
 func TestCharacterNotification_List(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can list IDs of existing entries", func(t *testing.T) {
@@ -238,7 +238,7 @@ func TestCharacterNotification_List(t *testing.T) {
 		e2 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
 		e3 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
 		// when
-		got, err := r.ListCharacterNotificationIDs(ctx, c.ID)
+		got, err := st.ListCharacterNotificationIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(e1.NotificationID, e2.NotificationID, e3.NotificationID)
@@ -262,7 +262,7 @@ func TestCharacterNotification_List(t *testing.T) {
 			Type:        "StructureDestroyed",
 		})
 		// when
-		ee, err := r.ListCharacterNotificationsForTypes(ctx, c.ID, set.Of(app.StructureDestroyed))
+		ee, err := st.ListCharacterNotificationsForTypes(ctx, c.ID, set.Of(app.StructureDestroyed))
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(n1.NotificationID, n2.NotificationID)
@@ -290,7 +290,7 @@ func TestCharacterNotification_List(t *testing.T) {
 			IsRead:      true,
 		})
 		// when
-		ee, err := r.ListCharacterNotificationsUnread(ctx, c.ID)
+		ee, err := st.ListCharacterNotificationsUnread(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, ee, 2)
@@ -329,7 +329,7 @@ func TestCharacterNotification_List(t *testing.T) {
 			Title:       optional.New("title"),
 		})
 		// when
-		ee, err := r.ListCharacterNotificationsUnprocessed(ctx, c.ID, now.Add(-24*time.Hour))
+		ee, err := st.ListCharacterNotificationsUnprocessed(ctx, c.ID, now.Add(-24*time.Hour))
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, ee, 1)

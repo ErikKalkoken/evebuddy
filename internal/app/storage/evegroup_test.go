@@ -11,7 +11,7 @@ import (
 )
 
 func TestEveGroup(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new and get", func(t *testing.T) {
@@ -25,10 +25,10 @@ func TestEveGroup(t *testing.T) {
 			IsPublished: true,
 		}
 		// when
-		err := r.CreateEveGroup(ctx, arg)
+		err := st.CreateEveGroup(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			g, err := r.GetEveGroup(ctx, 42)
+			g, err := st.GetEveGroup(ctx, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, int32(42), g.ID)
 				assert.Equal(t, "name", g.Name)
@@ -42,7 +42,7 @@ func TestEveGroup(t *testing.T) {
 		testutil.TruncateTables(db)
 		g := factory.CreateEveGroup()
 		// when
-		got, err := r.GetOrCreateEveGroup(ctx, storage.CreateEveGroupParams{
+		got, err := st.GetOrCreateEveGroup(ctx, storage.CreateEveGroupParams{
 			ID: g.ID,
 		})
 		// then
@@ -58,7 +58,7 @@ func TestEveGroup(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateEveCategory()
 		// when
-		got, err := r.GetOrCreateEveGroup(ctx, storage.CreateEveGroupParams{
+		got, err := st.GetOrCreateEveGroup(ctx, storage.CreateEveGroupParams{
 			ID:          42,
 			Name:        "Alpha",
 			CategoryID:  c.ID,

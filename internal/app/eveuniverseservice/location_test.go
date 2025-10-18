@@ -22,11 +22,11 @@ const (
 )
 
 func TestEveLocation(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(r)
+	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("should create location for a station", func(t *testing.T) {
 		// given
@@ -79,7 +79,7 @@ func TestEveLocation(t *testing.T) {
 			assert.Equal(t, owner, x1.Owner)
 			assert.Equal(t, system, x1.SolarSystem)
 			assert.Equal(t, myType, x1.Type)
-			x2, err := r.GetLocation(ctx, stationID)
+			x2, err := st.GetLocation(ctx, stationID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -100,7 +100,7 @@ func TestEveLocation(t *testing.T) {
 			assert.Nil(t, x1.Owner)
 			assert.Equal(t, system, x1.SolarSystem)
 			assert.Equal(t, myType, x1.Type)
-			x2, err := r.GetLocation(ctx, int64(system.ID))
+			x2, err := st.GetLocation(ctx, int64(system.ID))
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -116,7 +116,7 @@ func TestEveLocation(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, myType, x1.Type)
-			x2, err := r.GetLocation(ctx, x1.ID)
+			x2, err := st.GetLocation(ctx, x1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -132,7 +132,7 @@ func TestEveLocation(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, myType, x1.Type)
-			x2, err := r.GetLocation(ctx, x1.ID)
+			x2, err := st.GetLocation(ctx, x1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -141,11 +141,11 @@ func TestEveLocation(t *testing.T) {
 }
 
 func TestLocationStructures(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := eveuniverseservice.NewTestService(r)
+	s := eveuniverseservice.NewTestService(st)
 	t.Run("should return existing structure", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -189,7 +189,7 @@ func TestLocationStructures(t *testing.T) {
 			assert.Equal(t, owner, x1.Owner)
 			assert.Equal(t, system, x1.SolarSystem)
 			assert.Equal(t, myType, x1.Type)
-			x2, err := r.GetLocation(ctx, structureID)
+			x2, err := st.GetLocation(ctx, structureID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -225,7 +225,7 @@ func TestLocationStructures(t *testing.T) {
 			assert.Nil(t, x1.Owner)
 			assert.Nil(t, x1.SolarSystem)
 			assert.Nil(t, x1.Type)
-			x2, err := r.GetLocation(ctx, structureID)
+			x2, err := st.GetLocation(ctx, structureID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}

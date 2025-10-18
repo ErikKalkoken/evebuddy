@@ -13,7 +13,7 @@ import (
 )
 
 func TestCharacterAttributes(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create from scratch", func(t *testing.T) {
@@ -32,10 +32,10 @@ func TestCharacterAttributes(t *testing.T) {
 			Willpower:     24,
 		}
 		// when
-		err := r.UpdateOrCreateCharacterAttributes(ctx, arg)
+		err := st.UpdateOrCreateCharacterAttributes(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetCharacterAttributes(ctx, c.ID)
+			x, err := st.GetCharacterAttributes(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, 20, x.Charisma)
 				assert.Equal(t, 21, x.Intelligence)
@@ -66,10 +66,10 @@ func TestCharacterAttributes(t *testing.T) {
 			Willpower:     24,
 		}
 		// when
-		err := r.UpdateOrCreateCharacterAttributes(ctx, arg)
+		err := st.UpdateOrCreateCharacterAttributes(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetCharacterAttributes(ctx, c.ID)
+			x, err := st.GetCharacterAttributes(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, 20, x.Charisma)
 				assert.Equal(t, 21, x.Intelligence)
@@ -85,7 +85,7 @@ func TestCharacterAttributes(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, err := r.GetCharacterAttributes(ctx, 1)
+		_, err := st.GetCharacterAttributes(ctx, 1)
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})

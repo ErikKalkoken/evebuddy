@@ -12,7 +12,7 @@ import (
 )
 
 func TestMailLabel(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -27,10 +27,10 @@ func TestMailLabel(t *testing.T) {
 			UnreadCount: 99,
 		}
 		// when
-		_, err := r.UpdateOrCreateCharacterMailLabel(ctx, arg)
+		_, err := st.UpdateOrCreateCharacterMailLabel(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			l, err := r.GetCharacterMailLabel(ctx, c.ID, 42)
+			l, err := st.GetCharacterMailLabel(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "Dummy", l.Name)
 				assert.Equal(t, "xyz", l.Color)
@@ -51,10 +51,10 @@ func TestMailLabel(t *testing.T) {
 			UnreadCount: 99,
 		}
 		// when
-		_, err := r.UpdateOrCreateCharacterMailLabel(ctx, arg)
+		_, err := st.UpdateOrCreateCharacterMailLabel(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			l, err := r.GetCharacterMailLabel(ctx, c.ID, 42)
+			l, err := st.GetCharacterMailLabel(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "Dummy", l.Name)
 				assert.Equal(t, "xyz", l.Color)
@@ -75,10 +75,10 @@ func TestMailLabel(t *testing.T) {
 			UnreadCount: 99,
 		}
 		// when
-		_, err := r.GetOrCreateCharacterMailLabel(ctx, arg)
+		_, err := st.GetOrCreateCharacterMailLabel(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			l, err := r.GetCharacterMailLabel(ctx, c.ID, 42)
+			l, err := st.GetCharacterMailLabel(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "Dummy", l.Name)
 			}
@@ -96,10 +96,10 @@ func TestMailLabel(t *testing.T) {
 			UnreadCount: 99,
 		}
 		// when
-		_, err := r.GetOrCreateCharacterMailLabel(ctx, arg)
+		_, err := st.GetOrCreateCharacterMailLabel(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			l, err := r.GetCharacterMailLabel(ctx, c.ID, 42)
+			l, err := st.GetCharacterMailLabel(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "Johnny", l.Name)
 			}
@@ -113,7 +113,7 @@ func TestMailLabel(t *testing.T) {
 		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, Name: "alpha"})
 		factory.CreateCharacterMailLabel()
 		// when
-		got, err := r.ListCharacterMailLabelsOrdered(ctx, c.ID)
+		got, err := st.ListCharacterMailLabelsOrdered(ctx, c.ID)
 		if assert.NoError(t, err) {
 			want := []*app.CharacterMailLabel{l2, l1}
 			assert.Equal(t, want, got)
@@ -127,7 +127,7 @@ func TestMailLabel(t *testing.T) {
 		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, Name: "alpha"})
 		factory.CreateCharacterMailLabel()
 		// when
-		got, err := r.ListCharacterMailLabelsOrdered(ctx, c.ID)
+		got, err := st.ListCharacterMailLabelsOrdered(ctx, c.ID)
 		if assert.NoError(t, err) {
 			want := []*app.CharacterMailLabel{l2, l1}
 			assert.Equal(t, want, got)
@@ -139,7 +139,7 @@ func TestMailLabel(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterMailLabel()
 		// when
-		labels, err := r.ListCharacterMailLabelsOrdered(ctx, c.ID)
+		labels, err := st.ListCharacterMailLabelsOrdered(ctx, c.ID)
 		if assert.NoError(t, err) {
 			assert.Len(t, labels, 0)
 		}
@@ -147,7 +147,7 @@ func TestMailLabel(t *testing.T) {
 }
 
 func TestDeleteObsoleteMailLabels(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can delete obsolete mail labels for a character", func(t *testing.T) {
@@ -161,14 +161,14 @@ func TestDeleteObsoleteMailLabels(t *testing.T) {
 		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c2.ID})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c2.ID, LabelIDs: []int32{l2.LabelID}})
 		// when
-		err := r.DeleteObsoleteCharacterMailLabels(ctx, c1.ID)
+		err := st.DeleteObsoleteCharacterMailLabels(ctx, c1.ID)
 		if assert.NoError(t, err) {
-			ids1, err := r.ListCharacterMailLabelsOrdered(ctx, c1.ID)
+			ids1, err := st.ListCharacterMailLabelsOrdered(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ids1, 1)
 				assert.Equal(t, l1.LabelID, ids1[0].LabelID)
 			}
-			ids2, err := r.ListCharacterMailLabelsOrdered(ctx, c2.ID)
+			ids2, err := st.ListCharacterMailLabelsOrdered(ctx, c2.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ids2, 1)
 				assert.Equal(t, l2.LabelID, ids2[0].LabelID)

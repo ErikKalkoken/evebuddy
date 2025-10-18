@@ -14,7 +14,7 @@ import (
 )
 
 func TestCharacterImplant(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -27,10 +27,10 @@ func TestCharacterImplant(t *testing.T) {
 			CharacterID: c.ID,
 		}
 		// when
-		err := r.CreateCharacterImplant(ctx, arg)
+		err := st.CreateCharacterImplant(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetCharacterImplant(ctx, c.ID, arg.EveTypeID)
+			x, err := st.GetCharacterImplant(ctx, c.ID, arg.EveTypeID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, eveType, x.EveType)
 			}
@@ -47,10 +47,10 @@ func TestCharacterImplant(t *testing.T) {
 			CharacterID: c.ID,
 		}
 		// when
-		err := r.ReplaceCharacterImplants(ctx, c.ID, []storage.CreateCharacterImplantParams{arg})
+		err := st.ReplaceCharacterImplants(ctx, c.ID, []storage.CreateCharacterImplantParams{arg})
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetCharacterImplant(ctx, c.ID, arg.EveTypeID)
+			x, err := st.GetCharacterImplant(ctx, c.ID, arg.EveTypeID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, eveType, x.EveType)
 			}
@@ -63,7 +63,7 @@ func TestCharacterImplant(t *testing.T) {
 		x1 := factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: c.ID})
 		x2 := factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: c.ID})
 		// when
-		oo, err := r.ListCharacterImplants(ctx, c.ID)
+		oo, err := st.ListCharacterImplants(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterImplant) int32 {
@@ -80,7 +80,7 @@ func TestCharacterImplant(t *testing.T) {
 		x1 := factory.CreateCharacterImplant()
 		x2 := factory.CreateCharacterImplant()
 		// when
-		oo, err := r.ListAllCharacterImplants(ctx)
+		oo, err := st.ListAllCharacterImplants(ctx)
 		// then
 		if assert.NoError(t, err) {
 			got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterImplant) int32 {

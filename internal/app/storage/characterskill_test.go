@@ -12,7 +12,7 @@ import (
 )
 
 func TestCharacterSkill(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -28,10 +28,10 @@ func TestCharacterSkill(t *testing.T) {
 			TrainedSkillLevel:  5,
 		}
 		// when
-		err := r.UpdateOrCreateCharacterSkill(ctx, arg)
+		err := st.UpdateOrCreateCharacterSkill(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetCharacterSkill(ctx, c.ID, arg.EveTypeID)
+			x, err := st.GetCharacterSkill(ctx, c.ID, arg.EveTypeID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, 3, x.ActiveSkillLevel)
 				assert.Equal(t, eveType, x.EveType)
@@ -58,10 +58,10 @@ func TestCharacterSkill(t *testing.T) {
 			SkillPointsInSkill: 99,
 		}
 		// when
-		err := r.UpdateOrCreateCharacterSkill(ctx, arg)
+		err := st.UpdateOrCreateCharacterSkill(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			o2, err := r.GetCharacterSkill(ctx, c.ID, o1.EveType.ID)
+			o2, err := st.GetCharacterSkill(ctx, c.ID, o1.EveType.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, 4, o2.ActiveSkillLevel)
 				assert.Equal(t, 4, o2.TrainedSkillLevel)
@@ -80,7 +80,7 @@ func TestCharacterSkill(t *testing.T) {
 			CharacterID: c.ID,
 		})
 		// when
-		ids, err := r.ListCharacterSkillIDs(ctx, c.ID)
+		ids, err := st.ListCharacterSkillIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.ElementsMatch(t, []int32{o1.EveType.ID, o2.EveType.ID}, ids.Slice())
@@ -93,10 +93,10 @@ func TestCharacterSkill(t *testing.T) {
 		x1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
 		x2 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
 		// when
-		err := r.DeleteCharacterSkills(ctx, c.ID, []int32{x2.EveType.ID})
+		err := st.DeleteCharacterSkills(ctx, c.ID, []int32{x2.EveType.ID})
 		// then
 		if assert.NoError(t, err) {
-			ids, err := r.ListCharacterSkillIDs(ctx, c.ID)
+			ids, err := st.ListCharacterSkillIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.ElementsMatch(t, []int32{x1.EveType.ID}, ids.Slice())
 			}
@@ -105,7 +105,7 @@ func TestCharacterSkill(t *testing.T) {
 }
 
 func TestCharacterSkillLists(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("should return list of skill groups with progress", func(t *testing.T) {
@@ -121,7 +121,7 @@ func TestCharacterSkillLists(t *testing.T) {
 			TrainedSkillLevel: 5,
 		})
 		// when
-		xx, err := r.ListCharacterSkillGroupsProgress(ctx, c.ID)
+		xx, err := st.ListCharacterSkillGroupsProgress(ctx, c.ID)
 		if assert.NoError(t, err) {
 			assert.Len(t, xx, 1)
 		}
@@ -139,7 +139,7 @@ func TestCharacterSkillLists(t *testing.T) {
 			TrainedSkillLevel: 5,
 		})
 		// when
-		xx, err := r.ListCharacterSkillProgress(ctx, c.ID, group.ID)
+		xx, err := st.ListCharacterSkillProgress(ctx, c.ID, group.ID)
 		if assert.NoError(t, err) {
 			assert.Len(t, xx, 1)
 		}
@@ -147,7 +147,7 @@ func TestCharacterSkillLists(t *testing.T) {
 }
 
 func TestListCharactersActiveSkillLevels(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("returns skill level", func(t *testing.T) {
@@ -177,7 +177,7 @@ func TestListCharactersActiveSkillLevels(t *testing.T) {
 			TrainedSkillLevel: 5,
 		})
 		// when
-		got, err := r.ListAllCharactersActiveSkillLevels(ctx, skill1.ID)
+		got, err := st.ListAllCharactersActiveSkillLevels(ctx, skill1.ID)
 		if assert.NoError(t, err) {
 			want := []app.CharacterActiveSkillLevel{
 				{

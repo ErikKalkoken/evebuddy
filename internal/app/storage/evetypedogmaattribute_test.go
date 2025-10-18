@@ -12,7 +12,7 @@ import (
 )
 
 func TestEveTypeDogmaAttribute(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -26,10 +26,10 @@ func TestEveTypeDogmaAttribute(t *testing.T) {
 			Value:            123.45,
 		}
 		// when
-		err := r.CreateEveTypeDogmaAttribute(ctx, arg)
+		err := st.CreateEveTypeDogmaAttribute(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			v, err := r.GetEveTypeDogmaAttribute(ctx, et.ID, eda.ID)
+			v, err := st.GetEveTypeDogmaAttribute(ctx, et.ID, eda.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, float32(123.45), v)
 			}
@@ -47,7 +47,7 @@ func TestEveTypeDogmaAttribute(t *testing.T) {
 		})
 		factory.CreateEveTypeDogmaAttribute()
 		// when
-		oo, err := r.ListEveTypeDogmaAttributesForType(ctx, et.ID)
+		oo, err := st.ListEveTypeDogmaAttributesForType(ctx, et.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.ElementsMatch(t, []*app.EveTypeDogmaAttribute{o1, o2}, oo)

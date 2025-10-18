@@ -17,7 +17,7 @@ import (
 )
 
 func TestCharacter(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can get with all dependencies", func(t *testing.T) {
@@ -28,7 +28,7 @@ func TestCharacter(t *testing.T) {
 		eveC := factory.CreateEveCharacter(storage.CreateEveCharacterParams{AllianceID: a.ID, FactionID: f.ID})
 		c1 := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: eveC.ID})
 		// when
-		c2, err := r.GetCharacter(ctx, c1.ID)
+		c2, err := st.GetCharacter(ctx, c1.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c1.ID, c2.ID)
@@ -50,10 +50,10 @@ func TestCharacter(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterFull()
 		// when
-		err := r.DeleteCharacter(ctx, c.ID)
+		err := st.DeleteCharacter(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			_, err := r.GetCharacter(ctx, c.ID)
+			_, err := st.GetCharacter(ctx, c.ID)
 			assert.ErrorIs(t, err, app.ErrNotFound)
 		}
 	})
@@ -61,7 +61,7 @@ func TestCharacter(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, err := r.GetCharacter(ctx, 99)
+		_, err := st.GetCharacter(ctx, 99)
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
@@ -70,7 +70,7 @@ func TestCharacter(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		// when
-		c2, err := r.GetCharacter(ctx, c1.ID)
+		c2, err := st.GetCharacter(ctx, c1.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c1.ID, c2.ID)
@@ -80,7 +80,7 @@ func TestCharacter(t *testing.T) {
 }
 
 func TestGetAnyCharacter(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("should return a character", func(t *testing.T) {
@@ -89,7 +89,7 @@ func TestGetAnyCharacter(t *testing.T) {
 		c1 := factory.CreateCharacterFull()
 		c2 := factory.CreateCharacterFull()
 		// when
-		c, err := r.GetAnyCharacter(ctx)
+		c, err := st.GetAnyCharacter(ctx)
 		// then
 		if assert.NoError(t, err) {
 			assert.Contains(t, []int32{c1.ID, c2.ID}, c.ID)
@@ -99,14 +99,14 @@ func TestGetAnyCharacter(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, err := r.GetAnyCharacter(ctx)
+		_, err := st.GetAnyCharacter(ctx)
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }
 
 func TestCharacterCreate(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
@@ -117,10 +117,10 @@ func TestCharacterCreate(t *testing.T) {
 			ID: character.ID,
 		}
 		// when
-		err := r.CreateCharacter(ctx, arg)
+		err := st.CreateCharacter(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			r, err := r.GetCharacter(ctx, arg.ID)
+			r, err := st.GetCharacter(ctx, arg.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, character.ID, r.ID)
 			}
@@ -147,10 +147,10 @@ func TestCharacterCreate(t *testing.T) {
 			WalletBalance:   optional.New(1.2),
 		}
 		// when
-		err := r.CreateCharacter(ctx, arg)
+		err := st.CreateCharacter(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			r, err := r.GetCharacter(ctx, arg.ID)
+			r, err := st.GetCharacter(ctx, arg.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, home, r.Home)
 				assert.Equal(t, cloneJump.UTC(), r.LastCloneJumpAt.ValueOrZero().UTC())
@@ -169,14 +169,14 @@ func TestCharacterCreate(t *testing.T) {
 		c1 := factory.CreateCharacterFull()
 		arg := storage.CreateCharacterParams{ID: c1.ID}
 		// when
-		err := r.CreateCharacter(ctx, arg)
+		err := st.CreateCharacter(ctx, arg)
 		// then
 		assert.ErrorIs(t, err, app.ErrAlreadyExists)
 	})
 }
 
 func TestListCharactersShort(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("listed characters have all fields populated", func(t *testing.T) {
@@ -184,7 +184,7 @@ func TestListCharactersShort(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		// when
-		cc, err := r.ListCharactersShort(ctx)
+		cc, err := st.ListCharactersShort(ctx)
 		// then
 		if assert.NoError(t, err) {
 			c2 := cc[0]
@@ -198,7 +198,7 @@ func TestListCharactersShort(t *testing.T) {
 		factory.CreateCharacterFull()
 		factory.CreateCharacterFull()
 		// when
-		cc, err := r.ListCharactersShort(ctx)
+		cc, err := st.ListCharactersShort(ctx)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, cc, 2)
@@ -208,7 +208,7 @@ func TestListCharactersShort(t *testing.T) {
 }
 
 func TestListCharacters(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("listed characters have all fields populated", func(t *testing.T) {
@@ -216,7 +216,7 @@ func TestListCharacters(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		// when
-		cc, err := r.ListCharacters(ctx)
+		cc, err := st.ListCharacters(ctx)
 		// then
 		if assert.NoError(t, err) {
 			c2 := cc[0]
@@ -240,7 +240,7 @@ func TestListCharacters(t *testing.T) {
 		c1 := factory.CreateCharacter()
 		c2 := factory.CreateCharacter()
 		// when
-		got, err := r.ListCharacterIDs(ctx)
+		got, err := st.ListCharacterIDs(ctx)
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(c1.ID, c2.ID)
@@ -257,7 +257,7 @@ func TestListCharacters(t *testing.T) {
 		factory.CreateCharacter(storage.CreateCharacterParams{ID: ec2.ID})
 		factory.CreateCharacter()
 		// when
-		cc, err := r.ListCharacterCorporations(ctx)
+		cc, err := st.ListCharacterCorporations(ctx)
 		// then
 		if assert.NoError(t, err) {
 			got := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort[int32]) int32 {
@@ -276,7 +276,7 @@ func TestListCharacters(t *testing.T) {
 		factory.CreateCharacter(storage.CreateCharacterParams{ID: ec2.ID})
 		c2 := factory.CreateCharacter()
 		// when
-		got, err := r.ListCharacterCorporationIDs(ctx)
+		got, err := st.ListCharacterCorporationIDs(ctx)
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(c1.EveCharacter.Corporation.ID, c2.EveCharacter.Corporation.ID)
@@ -286,7 +286,7 @@ func TestListCharacters(t *testing.T) {
 }
 
 func TestUpdateCharacterFields(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can update home", func(t *testing.T) {
@@ -295,10 +295,10 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacterFull()
 		home := factory.CreateEveLocationStructure()
 		// when
-		err := r.UpdateCharacterHome(ctx, c1.ID, optional.New(home.ID))
+		err := st.UpdateCharacterHome(ctx, c1.ID, optional.New(home.ID))
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetCharacter(ctx, c1.ID)
+			c2, err := st.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, home, c2.Home)
 			}
@@ -311,10 +311,10 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacterFull()
 		x := time.Now().Add(1 * time.Hour)
 		// when
-		err := r.UpdateCharacterLastCloneJump(ctx, c1.ID, optional.New(x))
+		err := st.UpdateCharacterLastCloneJump(ctx, c1.ID, optional.New(x))
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetCharacter(ctx, c1.ID)
+			c2, err := st.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x.UTC(), c2.LastCloneJumpAt.ValueOrZero().UTC())
 			}
@@ -326,10 +326,10 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacterFull()
 		x := time.Time{}
 		// when
-		err := r.UpdateCharacterLastCloneJump(ctx, c1.ID, optional.New(x))
+		err := st.UpdateCharacterLastCloneJump(ctx, c1.ID, optional.New(x))
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetCharacter(ctx, c1.ID)
+			c2, err := st.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x, c2.LastCloneJumpAt.MustValue())
 			}
@@ -340,7 +340,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacter()
 		// when
-		c2, err := r.GetCharacter(ctx, c1.ID)
+		c2, err := st.GetCharacter(ctx, c1.ID)
 		if assert.NoError(t, err) {
 			assert.True(t, c2.LastCloneJumpAt.IsEmpty())
 		}
@@ -351,10 +351,10 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacterFull()
 		x := time.Now().Add(1 * time.Hour)
 		// when
-		err := r.UpdateCharacterLastLoginAt(ctx, c1.ID, optional.New(x))
+		err := st.UpdateCharacterLastLoginAt(ctx, c1.ID, optional.New(x))
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetCharacter(ctx, c1.ID)
+			c2, err := st.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x.UTC(), c2.LastLoginAt.ValueOrZero().UTC())
 			}
@@ -366,10 +366,10 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacterFull()
 		location := factory.CreateEveLocationStructure()
 		// when
-		err := r.UpdateCharacterLocation(ctx, c1.ID, optional.New(location.ID))
+		err := st.UpdateCharacterLocation(ctx, c1.ID, optional.New(location.ID))
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetCharacter(ctx, c1.ID)
+			c2, err := st.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, location, c2.Location)
 			}
@@ -381,10 +381,10 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacterFull()
 		x := factory.CreateEveType()
 		// when
-		err := r.UpdateCharacterShip(ctx, c1.ID, optional.New(x.ID))
+		err := st.UpdateCharacterShip(ctx, c1.ID, optional.New(x.ID))
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetCharacter(ctx, c1.ID)
+			c2, err := st.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x, c2.Ship)
 			}
@@ -395,10 +395,10 @@ func TestUpdateCharacterFields(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		// when
-		err := r.UpdateCharacterIsTrainingWatched(ctx, c1.ID, true)
+		err := st.UpdateCharacterIsTrainingWatched(ctx, c1.ID, true)
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetCharacter(ctx, c1.ID)
+			c2, err := st.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.True(t, c2.IsTrainingWatched)
 			}
@@ -408,15 +408,15 @@ func TestUpdateCharacterFields(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
-		c2, err := r.GetCharacter(ctx, c1.ID)
+		c2, err := st.GetCharacter(ctx, c1.ID)
 		if assert.NoError(t, err) {
 			assert.True(t, c2.IsTrainingWatched)
 		}
 		// when
-		err = r.UpdateCharacterIsTrainingWatched(ctx, c1.ID, false)
+		err = st.UpdateCharacterIsTrainingWatched(ctx, c1.ID, false)
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetCharacter(ctx, c1.ID)
+			c2, err := st.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.False(t, c2.IsTrainingWatched)
 			}
@@ -429,10 +429,10 @@ func TestUpdateCharacterFields(t *testing.T) {
 		// when
 		totalSP := optional.New(rand.IntN(100_000_000))
 		unallocatedSP := optional.New(rand.IntN(10_000_000))
-		err := r.UpdateCharacterSkillPoints(ctx, c1.ID, totalSP, unallocatedSP)
+		err := st.UpdateCharacterSkillPoints(ctx, c1.ID, totalSP, unallocatedSP)
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetCharacter(ctx, c1.ID)
+			c2, err := st.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, totalSP, c2.TotalSP)
 				assert.Equal(t, unallocatedSP, c2.UnallocatedSP)
@@ -445,10 +445,10 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacterFull()
 		x := rand.Float64() * 100_000_000
 		// when
-		err := r.UpdateCharacterWalletBalance(ctx, c1.ID, optional.New(x))
+		err := st.UpdateCharacterWalletBalance(ctx, c1.ID, optional.New(x))
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetCharacter(ctx, c1.ID)
+			c2, err := st.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x, c2.WalletBalance.ValueOrZero())
 			}
@@ -464,14 +464,14 @@ func TestUpdateCharacterFields(t *testing.T) {
 			IsTrainingWatched: true,
 		})
 		// when
-		err := r.DisableAllTrainingWatchers(ctx)
+		err := st.DisableAllTrainingWatchers(ctx)
 		// then
 		if assert.NoError(t, err) {
-			c1, err := r.GetCharacter(ctx, c1.ID)
+			c1, err := st.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.False(t, c1.IsTrainingWatched)
 			}
-			c2, err := r.GetCharacter(ctx, c2.ID)
+			c2, err := st.GetCharacter(ctx, c2.ID)
 			if assert.NoError(t, err) {
 				assert.False(t, c2.IsTrainingWatched)
 			}
@@ -480,7 +480,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 }
 
 func TestCharacterAssetValue(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can update", func(t *testing.T) {
@@ -491,10 +491,10 @@ func TestCharacterAssetValue(t *testing.T) {
 		})
 		v := 1234.6
 		// when
-		err := r.UpdateCharacterAssetValue(ctx, c1.ID, optional.New(v))
+		err := st.UpdateCharacterAssetValue(ctx, c1.ID, optional.New(v))
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetCharacter(ctx, c1.ID)
+			c2, err := st.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, v, c2.AssetValue.ValueOrZero())
 			}
@@ -507,10 +507,10 @@ func TestCharacterAssetValue(t *testing.T) {
 			AssetValue: optional.New(1.23),
 		})
 		// when
-		err := r.UpdateCharacterAssetValue(ctx, c1.ID, optional.Optional[float64]{})
+		err := st.UpdateCharacterAssetValue(ctx, c1.ID, optional.Optional[float64]{})
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetCharacter(ctx, c1.ID)
+			c2, err := st.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.True(t, c2.AssetValue.IsEmpty())
 			}
@@ -524,7 +524,7 @@ func TestCharacterAssetValue(t *testing.T) {
 			AssetValue: optional.New(v),
 		})
 		// when
-		got, err := r.GetCharacterAssetValue(ctx, c1.ID)
+		got, err := st.GetCharacterAssetValue(ctx, c1.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, v, got.ValueOrZero())
@@ -534,11 +534,11 @@ func TestCharacterAssetValue(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacterFull()
-		if err := r.UpdateCharacterAssetValue(ctx, c1.ID, optional.Optional[float64]{}); err != nil {
+		if err := st.UpdateCharacterAssetValue(ctx, c1.ID, optional.Optional[float64]{}); err != nil {
 			t.Fatal(err)
 		}
 		// when
-		got, err := r.GetCharacterAssetValue(ctx, c1.ID)
+		got, err := st.GetCharacterAssetValue(ctx, c1.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, got.IsEmpty())

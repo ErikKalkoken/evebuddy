@@ -11,7 +11,7 @@ import (
 )
 
 func TestEveConstellation(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -24,10 +24,10 @@ func TestEveConstellation(t *testing.T) {
 			Name:     "name",
 		}
 		// when
-		err := r.CreateEveConstellation(ctx, arg)
+		err := st.CreateEveConstellation(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			o, err := r.GetEveConstellation(ctx, 42)
+			o, err := st.GetEveConstellation(ctx, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, int32(42), o.ID)
 				assert.Equal(t, "name", o.Name)

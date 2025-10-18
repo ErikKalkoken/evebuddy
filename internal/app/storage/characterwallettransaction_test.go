@@ -15,7 +15,7 @@ import (
 )
 
 func TestCharacterWalletTransaction(t *testing.T) {
-	db, r, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
@@ -40,11 +40,11 @@ func TestCharacterWalletTransaction(t *testing.T) {
 			TransactionID: 42,
 		}
 		// when
-		err := r.CreateCharacterWalletTransaction(ctx, arg)
+		err := st.CreateCharacterWalletTransaction(ctx, arg)
 		// then
 		region := location.SolarSystem.Constellation.Region
 		if assert.NoError(t, err) {
-			i, err := r.GetCharacterWalletTransaction(ctx, storage.GetCharacterWalletTransactionParams{
+			i, err := st.GetCharacterWalletTransaction(ctx, storage.GetCharacterWalletTransactionParams{
 				CharacterID:   c.ID,
 				TransactionID: 42,
 			})
@@ -87,7 +87,7 @@ func TestCharacterWalletTransaction(t *testing.T) {
 		e2 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		factory.CreateCharacterWalletTransaction()
 		// when
-		got, err := r.ListCharacterWalletTransactionIDs(ctx, c.ID)
+		got, err := st.ListCharacterWalletTransactionIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(e1.TransactionID, e2.TransactionID)
@@ -102,7 +102,7 @@ func TestCharacterWalletTransaction(t *testing.T) {
 		t2 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		factory.CreateCharacterWalletTransaction()
 		// when
-		oo, err := r.ListCharacterWalletTransactions(ctx, c.ID)
+		oo, err := st.ListCharacterWalletTransactions(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			got := set.Of(xslices.Map(oo, func(x *app.CharacterWalletTransaction) int64 {
