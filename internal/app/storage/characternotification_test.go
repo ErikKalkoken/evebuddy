@@ -188,20 +188,37 @@ func TestCharacterNotification(t *testing.T) {
 			assert.Equal(t, "body", o.Body.ValueOrZero())
 		}
 	})
-	t.Run("can set processed", func(t *testing.T) {
+	t.Run("can mark notifs as processed", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{})
+		c1 := factory.CreateCharacter()
+		n1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c1.ID,
+			Body:        optional.New("Body"),
+			Title:       optional.New("Title"),
+		})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID:    c1.ID,
+			NotificationID: 42,
+		})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			NotificationID: 42,
+		})
 		// when
-		err := st.UpdateCharacterNotificationSetProcessed(ctx, n.ID)
+		err := st.UpdateCharacterNotificationsSetProcessed(ctx, 42)
 		// then
 		if !assert.NoError(t, err) {
 			t.Fatal(err)
 		}
-		o, err := st.GetCharacterNotification(ctx, n.CharacterID, n.ID)
-		if assert.NoError(t, err) {
-			assert.True(t, o.IsProcessed)
+		ee, err := st.ListCharacterNotificationsUnprocessed(ctx, c1.ID, time.Now().Add(-24*time.Hour))
+		if !assert.NoError(t, err) {
+			t.Fatal(err)
 		}
+		got := set.Collect(xiter.MapSlice(ee, func(x *app.CharacterNotification) int64 {
+			return x.ID
+		}))
+		want := set.Of(n1.ID)
+		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 	})
 	t.Run("can calculate counts", func(t *testing.T) {
 		// given
@@ -404,6 +421,46 @@ func TestCharacterNotification_ListUnprocessed(t *testing.T) {
 			CharacterID: c.ID,
 			Type:        "bravo",
 			Timestamp:   now,
+		})
+		// when
+		ee, err := st.ListCharacterNotificationsUnprocessed(ctx, c.ID, now.Add(-24*time.Hour))
+		// then
+		if !assert.NoError(t, err) {
+			t.Fatal(err)
+		}
+		got := set.Collect(xiter.MapSlice(ee, func(x *app.CharacterNotification) int64 {
+			return x.ID
+		}))
+		want := set.Of(n1.ID)
+		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+	})
+	t.Run("should not return duplicates of processed notifs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		now := time.Now().UTC()
+		n1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			Body:        optional.New("body"),
+			CharacterID: c.ID,
+			Type:        "bravo",
+			Timestamp:   now,
+			Title:       optional.New("title"),
+		})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			Body:           optional.New("body"),
+			CharacterID:    c.ID,
+			NotificationID: 42,
+			Type:           "bravo",
+			Timestamp:      now,
+			Title:          optional.New("title"),
+		})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			Body:           optional.New("body"),
+			NotificationID: 42,
+			IsProcessed:    true,
+			Type:           "bravo",
+			Timestamp:      now,
+			Title:          optional.New("title"),
 		})
 		// when
 		ee, err := st.ListCharacterNotificationsUnprocessed(ctx, c.ID, now.Add(-24*time.Hour))

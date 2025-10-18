@@ -73,7 +73,7 @@ INSERT INTO
         notification_id,
         recipient_id,
         sender_id,
-        text,
+        TEXT,
         timestamp,
         title,
         type_id
@@ -117,7 +117,9 @@ const createNotificationType = `-- name: CreateNotificationType :one
 INSERT INTO
     notification_types (name)
 VALUES
-    (?) RETURNING id
+    (?)
+RETURNING
+    id
 `
 
 func (q *Queries) CreateNotificationType(ctx context.Context, name string) (int64, error) {
@@ -400,11 +402,20 @@ FROM
     JOIN notification_types nt ON nt.id = cn.type_id
     LEFT JOIN eve_entities recipient ON recipient.id = cn.recipient_id
 WHERE
-    character_id = ?
+    cn.character_id = ?
     AND cn.is_processed IS FALSE
-    AND title IS NOT NULL
-    AND body IS NOT NULL
-    AND timestamp > ?
+    AND cn.title IS NOT NULL
+    AND cn.body IS NOT NULL
+    AND cn.timestamp > ?
+    AND notification_id NOT IN (
+        SELECT
+            cn2.notification_id
+        FROM
+            character_notifications cn2
+        WHERE
+            cn2.is_processed IS TRUE
+            AND cn2.timestamp > ?
+    )
 ORDER BY
     timestamp
 `
@@ -412,6 +423,7 @@ ORDER BY
 type ListCharacterNotificationsUnprocessedParams struct {
 	CharacterID int64
 	Timestamp   time.Time
+	Timestamp_2 time.Time
 }
 
 type ListCharacterNotificationsUnprocessedRow struct {
@@ -423,7 +435,7 @@ type ListCharacterNotificationsUnprocessedRow struct {
 }
 
 func (q *Queries) ListCharacterNotificationsUnprocessed(ctx context.Context, arg ListCharacterNotificationsUnprocessedParams) ([]ListCharacterNotificationsUnprocessedRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterNotificationsUnprocessed, arg.CharacterID, arg.Timestamp)
+	rows, err := q.db.QueryContext(ctx, listCharacterNotificationsUnprocessed, arg.CharacterID, arg.Timestamp, arg.Timestamp_2)
 	if err != nil {
 		return nil, err
 	}
@@ -536,8 +548,7 @@ func (q *Queries) ListCharacterNotificationsUnread(ctx context.Context, characte
 }
 
 const updateCharacterNotification = `-- name: UpdateCharacterNotification :exec
-UPDATE
-    character_notifications
+UPDATE character_notifications
 SET
     body = ?2,
     is_read = ?3,
@@ -563,16 +574,15 @@ func (q *Queries) UpdateCharacterNotification(ctx context.Context, arg UpdateCha
 	return err
 }
 
-const updateCharacterNotificationSetProcessed = `-- name: UpdateCharacterNotificationSetProcessed :exec
-UPDATE
-    character_notifications
+const updateCharacterNotificationsSetProcessed = `-- name: UpdateCharacterNotificationsSetProcessed :exec
+UPDATE character_notifications
 SET
     is_processed = TRUE
 WHERE
-    id = ?1
+    notification_id = ?
 `
 
-func (q *Queries) UpdateCharacterNotificationSetProcessed(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, updateCharacterNotificationSetProcessed, id)
+func (q *Queries) UpdateCharacterNotificationsSetProcessed(ctx context.Context, notificationID int64) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterNotificationsSetProcessed, notificationID)
 	return err
 }
