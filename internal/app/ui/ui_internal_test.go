@@ -58,6 +58,10 @@ func (a *FakeApp) NewWindow(title string) fyne.Window {
 	return a.app.NewWindow(title)
 }
 
+func (a *FakeApp) Clipboard() fyne.Clipboard {
+	return a.app.Clipboard()
+}
+
 func (a *FakeApp) OpenURL(url *url.URL) error {
 	return a.app.OpenURL(url)
 }
@@ -126,8 +130,8 @@ func (a *FakeApp) SetSystemTrayIcon(_ fyne.Resource) {
 	// noop
 }
 
-func (a *FakeApp) Clipboard() fyne.Clipboard {
-	return a.app.Clipboard()
+func (a *FakeApp) SetSystemTrayWindow(fyne.Window) {
+	// noop
 }
 
 var _ fyne.App = (*FakeApp)(nil)
