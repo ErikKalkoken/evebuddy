@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
@@ -76,11 +75,11 @@ type corporationStructures struct {
 }
 
 const (
-	structuresColName     = 0
-	structuresColType     = 1
-	structuresColFuel     = 2
-	structuresColState    = 3
-	structuresColServices = 4
+	structuresColName        = 0
+	structuresColType        = 1
+	structuresColFuelExpires = 2
+	structuresColState       = 3
+	structuresColServices    = 4
 )
 
 func newCorporationStructures(u *baseUI) *corporationStructures {
@@ -93,7 +92,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 		Label: "Type",
 		Width: 150,
 	}, {
-		Col:   structuresColFuel,
+		Col:   structuresColFuelExpires,
 		Label: "Fuel Expires",
 		Width: 150,
 	}, {
@@ -121,7 +120,7 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 			return iwidget.RichTextSegmentsFromText(r.typeName)
 		case structuresColName:
 			return iwidget.RichTextSegmentsFromText(r.structureName)
-		case structuresColFuel:
+		case structuresColFuelExpires:
 			var text string
 			var color fyne.ThemeColorName
 			if r.fuelExpires.IsEmpty() {
@@ -260,8 +259,8 @@ func (a *corporationStructures) filterRows(sortCol int) {
 				x = strings.Compare(a.typeName, b.typeName)
 			case structuresColName:
 				x = xstrings.CompareIgnoreCase(a.structureName, b.structureName)
-			case structuresColFuel:
-				x = cmp.Compare(time.Until(a.fuelSort), time.Until(b.fuelSort))
+			case structuresColFuelExpires:
+				x = a.fuelSort.Compare(b.fuelSort)
 			}
 			if dir == iwidget.SortAsc {
 				return x
@@ -367,6 +366,7 @@ func (a *corporationStructures) fetchData(corporationID int32) ([]corporationStr
 			corporationID:      corporationID,
 			corporationName:    a.u.scs.CorporationName(corporationID),
 			fuelExpires:        s.FuelExpires,
+			fuelSort:           s.FuelExpires.ValueOrZero(),
 			isFullPower:        !s.FuelExpires.IsEmpty(),
 			isReinforced:       s.State.IsReinforce(),
 			regionID:           region.ID,
