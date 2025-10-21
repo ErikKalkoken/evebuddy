@@ -1,3 +1,4 @@
+// Package fynetools contains tools for working with Fyne elements.
 package fynetools
 
 import (

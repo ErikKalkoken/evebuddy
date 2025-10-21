@@ -497,6 +497,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			}),
 		)
 		deskApp.SetSystemTrayMenu(m)
+		deskApp.SetSystemTrayWindow(u.MainWindow())
 		u.MainWindow().SetCloseIntercept(func() {
 			u.MainWindow().Hide()
 		})

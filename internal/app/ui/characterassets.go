@@ -15,7 +15,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -116,7 +115,7 @@ func newCharacterAssets(u *baseUI) *characterAssets {
 	a := &characterAssets{
 		assets:             make([]*app.CharacterAsset, 0),
 		assetsBottom:       widget.NewLabel(""),
-		locationPath:       container.New(kxlayout.NewRowWrapLayoutWithCustomPadding(0, 0)),
+		locationPath:       container.New(layout.NewRowWrapLayoutWithCustomPadding(0, 0)),
 		locationsTop:       makeTopLabel(),
 		locationInfoIcon:   infoIcon,
 		containerLocations: make(map[int64]widget.TreeNodeID),
