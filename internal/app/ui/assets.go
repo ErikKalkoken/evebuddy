@@ -113,10 +113,10 @@ type assets struct {
 
 	body           fyne.CanvasObject
 	columnSorter   *iwidget.ColumnSorter
-	entry          *widget.Entry
 	found          *widget.Label
 	rows           []assetRow
 	rowsFiltered   []assetRow
+	search         *widget.Entry
 	selectCategory *kxwidget.FilterChipSelect
 	selectGroup    *kxwidget.FilterChipSelect
 	selectLocation *kxwidget.FilterChipSelect
@@ -166,20 +166,21 @@ func newAssets(u *baseUI) *assets {
 	}})
 	a := &assets{
 		columnSorter: headers.NewColumnSorter(assetsColItem, iwidget.SortAsc),
-		entry:        widget.NewEntry(),
+		search:       widget.NewEntry(),
 		found:        widget.NewLabel(""),
 		rowsFiltered: make([]assetRow, 0),
 		total:        makeTopLabel(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	a.entry.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.resetSearch()
+	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
+		a.search.SetText("")
+		a.filterRows(-1)
 	})
-	a.entry.OnChanged = func(s string) {
+	a.search.OnChanged = func(s string) {
 		a.filterRows(-1)
 	}
-	a.entry.PlaceHolder = "Search items"
+	a.search.PlaceHolder = "Search items"
 	a.found.Hide()
 
 	if !a.u.isDesktop {
@@ -272,7 +273,7 @@ func (a *assets) CreateRenderer() fyne.WidgetRenderer {
 	}
 	topBox := container.NewVBox(
 		container.NewBorder(nil, nil, nil, a.found, a.total),
-		a.entry,
+		a.search,
 		container.NewHScroll(filters),
 	)
 	c := container.NewBorder(topBox, nil, nil, nil, a.body)
@@ -327,7 +328,7 @@ func (a *assets) makeDataList() *iwidget.StripedList {
 }
 
 func (a *assets) focus() {
-	a.u.MainWindow().Canvas().Focus(a.entry)
+	a.u.MainWindow().Canvas().Focus(a.search)
 }
 
 func (a *assets) filterRows(sortCol int) {
@@ -375,7 +376,7 @@ func (a *assets) filterRows(sortCol int) {
 		})
 	}
 	// search filter
-	if search := strings.ToLower(a.entry.Text); search != "" {
+	if search := strings.ToLower(a.search.Text); search != "" {
 		rows2 := make([]assetRow, 0)
 		for _, r := range rows {
 			var matches bool
@@ -441,11 +442,6 @@ func (a *assets) filterRows(sortCol int) {
 	case *widget.Table:
 		x.ScrollToTop()
 	}
-}
-
-func (a *assets) resetSearch() {
-	a.entry.SetText("")
-	a.filterRows(-1)
 }
 
 func (a *assets) update() {
