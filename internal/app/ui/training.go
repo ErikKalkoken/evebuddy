@@ -17,6 +17,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -107,12 +108,12 @@ type training struct {
 const (
 	trainingColName             = 0
 	trainingColTags             = 1
-	trainingColCurrent          = 2
+	trainingColCurrentSkill     = 2
 	trainingColCurrentRemaining = 3
-	trainingColTotal            = 4
-	trainingColTotalRemaining   = 5
-	trainingColSP               = 6
-	trainingColUnallocated      = 7
+	trainingColQueuedCount      = 4
+	trainingColQueuedRemaining  = 5
+	trainingColSkillpoints      = 6
+	trainingColUnallocatedSP    = 7
 )
 
 func newTraining(u *baseUI) *training {
@@ -126,29 +127,26 @@ func newTraining(u *baseUI) *training {
 		Width:  150,
 		NoSort: true,
 	}, {
-		Col:   trainingColCurrent,
+		Col:   trainingColCurrentSkill,
 		Label: "Current Skill",
 		Width: 250,
 	}, {
 		Col:   trainingColCurrentRemaining,
-		Label: "Current Remaining",
-		Width: 0,
+		Label: "Current Time",
 	}, {
-		Col:   trainingColTotal,
+		Col:   trainingColQueuedCount,
 		Label: "Queued",
-		Width: 0,
 	}, {
-		Col:   trainingColTotalRemaining,
-		Label: "Queue Remaining",
-		Width: 0,
+		Col:   trainingColQueuedRemaining,
+		Label: "Queue Time",
 	}, {
-		Col:   trainingColSP,
+		Col:   trainingColSkillpoints,
 		Label: "SP",
-		Width: 50,
+		Width: 100,
 	}, {
-		Col:   trainingColUnallocated,
+		Col:   trainingColUnallocatedSP,
 		Label: "Unall.",
-		Width: 50,
+		Width: 100,
 	}})
 	a := &training{
 		columnSorter: headers.NewColumnSorter(trainingColName, iwidget.SortAsc),
@@ -165,22 +163,22 @@ func newTraining(u *baseUI) *training {
 		case trainingColTags:
 			s := strings.Join(slices.Sorted(r.tags.All()), ", ")
 			return iwidget.RichTextSegmentsFromText(s)
-		case trainingColCurrent:
+		case trainingColCurrentSkill:
 			return r.skillDisplay
 		case trainingColCurrentRemaining:
 			return iwidget.RichTextSegmentsFromText(r.currentRemainingTimeString())
-		case trainingColTotal:
+		case trainingColQueuedCount:
 			return iwidget.RichTextSegmentsFromText(r.totalRemainingCountDisplay)
-		case trainingColTotalRemaining:
+		case trainingColQueuedRemaining:
 			return iwidget.RichTextSegmentsFromText(r.totalRemainingTimeString())
-		case trainingColSP:
+		case trainingColSkillpoints:
 			return iwidget.RichTextSegmentsFromText(
 				r.totalSPDisplay,
 				widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 				},
 			)
-		case trainingColUnallocated:
+		case trainingColUnallocatedSP:
 			return iwidget.RichTextSegmentsFromText(
 				r.unallocatedSPDisplay,
 				widget.RichTextStyle{
@@ -315,12 +313,12 @@ func (a *training) makeDataList() *iwidget.StripedList {
 			queueRemaining.Refresh()
 
 			b3 := vbox[4].(*fyne.Container).Objects
-			b3[0].(*widget.Label).SetText(r.totalSPDisplay + " total SP")
+			b3[0].(*widget.Label).SetText(r.totalSPDisplay + " SP")
 			unallocated := b3[1].(*widget.Label)
 			if r.unallocatedSP.ValueOrZero() == 0 {
 				unallocated.Text = ""
 			} else {
-				unallocated.Text = r.unallocatedSPDisplay + " unallocated SP"
+				unallocated.Text = fmt.Sprintf("unalloc: %s SP", r.unallocatedSPDisplay)
 			}
 			unallocated.Refresh()
 		},
@@ -364,15 +362,15 @@ func (a *training) filterRows(sortCol int) {
 				x = xstrings.CompareIgnoreCase(a.characterName, b.characterName)
 			case trainingColCurrentRemaining:
 				x = cmp.Compare(a.currentRemainingTime().ValueOrZero(), b.currentRemainingTime().ValueOrZero())
-			case trainingColCurrent:
+			case trainingColCurrentSkill:
 				x = strings.Compare(a.skillName, b.skillName)
-			case trainingColTotal:
+			case trainingColQueuedCount:
 				x = cmp.Compare(a.totalRemainingCount.ValueOrZero(), b.totalRemainingCount.ValueOrZero())
-			case trainingColTotalRemaining:
+			case trainingColQueuedRemaining:
 				x = cmp.Compare(a.totalRemainingTime().ValueOrZero(), b.totalRemainingTime().ValueOrZero())
-			case trainingColSP:
+			case trainingColSkillpoints:
 				x = cmp.Compare(a.totalSP.ValueOrZero(), b.totalSP.ValueOrZero())
-			case trainingColUnallocated:
+			case trainingColUnallocatedSP:
 				x = cmp.Compare(a.unallocatedSP.ValueOrZero(), b.unallocatedSP.ValueOrZero())
 			}
 			if dir == iwidget.SortAsc {
@@ -436,12 +434,16 @@ func (*training) fetchRows(s services) ([]trainingRow, error) {
 			continue
 		}
 		r := trainingRow{
-			characterID:          c.ID,
-			characterName:        c.EveCharacter.Name,
-			totalSP:              c.TotalSP,
-			totalSPDisplay:       ihumanize.Optional(c.TotalSP, "?"),
-			unallocatedSP:        c.UnallocatedSP,
-			unallocatedSPDisplay: ihumanize.Optional(c.UnallocatedSP, "?"),
+			characterID:   c.ID,
+			characterName: c.EveCharacter.Name,
+			totalSP:       c.TotalSP,
+			totalSPDisplay: c.TotalSP.StringFunc("?", func(v int) string {
+				return humanize.Comma(int64(v))
+			}),
+			unallocatedSP: c.UnallocatedSP,
+			unallocatedSPDisplay: c.UnallocatedSP.StringFunc("?", func(v int) string {
+				return humanize.Comma(int64(v))
+			}),
 		}
 		tags, err := s.cs.ListTagsForCharacter(ctx, c.ID)
 		if err != nil {
