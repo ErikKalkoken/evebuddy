@@ -37,6 +37,7 @@ type trainingRow struct {
 	characterID                int32
 	characterName              string
 	isActive                   bool
+	searchTarget               string
 	skill                      *app.CharacterSkillqueueItem
 	skillDisplay               []widget.RichTextSegment
 	skillFinishDate            optional.Optional[time.Time]
@@ -94,14 +95,15 @@ func (r trainingRow) remainingTimeString(d optional.Optional[time.Duration]) str
 type training struct {
 	widget.BaseWidget
 
-	main         fyne.CanvasObject
+	bottom       *widget.Label
 	columnSorter *iwidget.ColumnSorter
+	main         fyne.CanvasObject
 	rows         []trainingRow
 	rowsFiltered []trainingRow
+	search       *widget.Entry
 	selectStatus *kxwidget.FilterChipSelect
 	selectTag    *kxwidget.FilterChipSelect
 	sortButton   *iwidget.SortButton
-	bottom       *widget.Label
 	u            *baseUI
 }
 
@@ -149,13 +151,22 @@ func newTraining(u *baseUI) *training {
 		Width: 100,
 	}})
 	a := &training{
+		bottom:       widget.NewLabel(""),
 		columnSorter: headers.NewColumnSorter(trainingColName, iwidget.SortAsc),
 		rows:         make([]trainingRow, 0),
 		rowsFiltered: make([]trainingRow, 0),
-		bottom:       widget.NewLabel(""),
+		search:       widget.NewEntry(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
+	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
+		a.search.SetText("")
+		a.filterRows(-1)
+	})
+	a.search.OnChanged = func(s string) {
+		a.filterRows(-1)
+	}
+	a.search.PlaceHolder = "Search characters"
 	makeCell := func(col int, r trainingRow) []widget.RichTextSegment {
 		switch col {
 		case trainingColName:
@@ -238,7 +249,10 @@ func (a *training) CreateRenderer() fyne.WidgetRenderer {
 		filter.Add(a.sortButton)
 	}
 	c := container.NewBorder(
-		container.NewHScroll(filter),
+		container.NewVBox(
+			a.search,
+			container.NewHScroll(filter),
+		),
 		nil,
 		nil,
 		nil,
@@ -353,6 +367,22 @@ func (a *training) filterRows(sortCol int) {
 			return r.tags.Contains(x)
 		})
 	}
+	// search filter
+	if search := strings.ToLower(a.search.Text); search != "" {
+		rows2 := make([]trainingRow, 0)
+		for _, r := range rows {
+			var matches bool
+			if search == "" {
+				matches = true
+			} else {
+				matches = strings.Contains(r.searchTarget, search)
+			}
+			if matches {
+				rows2 = append(rows2, r)
+			}
+		}
+		rows = rows2
+	}
 	// sort
 	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {
 		slices.SortFunc(rows, func(a, b trainingRow) int {
@@ -436,6 +466,7 @@ func (*training) fetchRows(s services) ([]trainingRow, error) {
 		r := trainingRow{
 			characterID:   c.ID,
 			characterName: c.EveCharacter.Name,
+			searchTarget:  strings.ToLower(c.EveCharacter.Name),
 			totalSP:       c.TotalSP,
 			totalSPDisplay: c.TotalSP.StringFunc("?", func(v int) string {
 				return humanize.Comma(int64(v))
