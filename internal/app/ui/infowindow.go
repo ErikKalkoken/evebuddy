@@ -1701,7 +1701,6 @@ type inventoryTypeInfo struct {
 	widget.BaseWidget
 	baseInfo
 
-	setTitle         func(string) // for setting the title during update
 	characterIcon    *canvas.Image
 	characterID      int32
 	characterName    *widget.Hyperlink
@@ -1709,6 +1708,7 @@ type inventoryTypeInfo struct {
 	description      *widget.Label
 	eveMarketBrowser *fyne.Container
 	janice           *fyne.Container
+	setTitle         func(string) // for setting the title during update
 	tabs             *container.AppTabs
 	typeIcon         *kxwidget.TappableImage
 	typeID           int32
@@ -2079,7 +2079,7 @@ var attributeGroupsMap = map[attributeGroup][]int32{
 		app.EveDogmaAttributeHighSlots,
 		app.EveDogmaAttributeMediumSlots,
 		app.EveDogmaAttributeLowSlots,
-		app.EveDogmaAttributeRigSlots,
+		app.EveDogmaAttributeServiceSlots,
 	},
 	attributeGroupMiscellaneous: {
 		app.EveDogmaAttributeImplantSlot,

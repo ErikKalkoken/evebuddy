@@ -97,6 +97,7 @@ func makeCorporationActionLabel(id int32, name string, action func(o *app.EveEnt
 	return makeEveEntityActionLabel(o, action)
 }
 
+// makeEveEntityActionLabel returns a Hyperlink for existing entities or a placeholder label otherwise.
 func makeEveEntityActionLabel(o *app.EveEntity, action func(o *app.EveEntity)) fyne.CanvasObject {
 	if o == nil {
 		return widget.NewLabel("-")

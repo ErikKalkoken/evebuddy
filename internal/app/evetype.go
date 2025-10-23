@@ -235,6 +235,7 @@ const (
 	EveDogmaAttributeReprocessingSkillType               = 790
 	EveDogmaAttributeRequiredSkill1                      = 182
 	EveDogmaAttributeRigSlots                            = 1154
+	EveDogmaAttributeServiceSlots                        = 2056
 	EveDogmaAttributeScanResolution                      = 564
 	EveDogmaAttributeSecondaryAttribute                  = 181
 	EveDogmaAttributeSecondarySkillID                    = 183
