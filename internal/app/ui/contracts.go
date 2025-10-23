@@ -567,7 +567,7 @@ func showCharacterContractWindow(u *baseUI, characterID, contractID int32) {
 		fi = append(fi, widget.NewFormItem("Contract ID", u.makeCopyToClipboardLabel(fmt.Sprint(o.ContractID))))
 	}
 	if o.Type == app.ContractTypeCourier {
-		fi = append(fi, widget.NewFormItem("Contractor", widget.NewLabel(entityNameOrFallback(o.Acceptor, "(none)"))))
+		fi = append(fi, widget.NewFormItem("Contractor", makeEveEntityActionLabel(o.Acceptor, u.ShowEveEntityInfoWindow)))
 	}
 	fi = append(fi, widget.NewFormItem("Status", iwidget.NewRichText(o.Status.DisplayRichText()...)))
 	fi = append(fi, widget.NewFormItem("Location", makeLocationLabel(o.StartLocation, u.ShowLocationInfoWindow)))
@@ -748,7 +748,7 @@ func showCorporationContractWindow(u *baseUI, corporationID, contractID int32) {
 		fi = append(fi, widget.NewFormItem("Contract ID", u.makeCopyToClipboardLabel(fmt.Sprint(o.ContractID))))
 	}
 	if o.Type == app.ContractTypeCourier {
-		fi = append(fi, widget.NewFormItem("Contractor", widget.NewLabel(entityNameOrFallback(o.Acceptor, "(none)"))))
+		fi = append(fi, widget.NewFormItem("Contractor", makeEveEntityActionLabel(o.Acceptor, u.ShowEveEntityInfoWindow)))
 	}
 	fi = append(fi, widget.NewFormItem("Status", iwidget.NewRichText(o.Status.DisplayRichText()...)))
 	fi = append(fi, widget.NewFormItem("Location", makeLocationLabel(o.StartLocation, u.ShowLocationInfoWindow)))
