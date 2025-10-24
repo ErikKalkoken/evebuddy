@@ -21,7 +21,7 @@ func TestWalletTransactions_CanRenderWithData(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	t.Run("can show transactions for characters", func(t *testing.T) {
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		character := factory.CreateCharacter()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: character.ID,
@@ -72,7 +72,7 @@ func TestWalletTransactions_CanRenderWithData(t *testing.T) {
 		test.AssertImageMatches(t, "wallettransactions/character.png", w.Canvas().Capture())
 	})
 	t.Run("can show transactions for corporations", func(t *testing.T) {
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		character := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
 			CharacterID: character.ID,

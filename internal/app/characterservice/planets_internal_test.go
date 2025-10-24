@@ -23,7 +23,7 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should update planets from scratch (minimal)", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -105,7 +105,7 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 	})
 	t.Run("should update planets from scratch (all field)", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -216,7 +216,7 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 	})
 	t.Run("should update planets and remove obsoletes", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})

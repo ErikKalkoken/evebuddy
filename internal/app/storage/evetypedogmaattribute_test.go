@@ -17,7 +17,7 @@ func TestEveTypeDogmaAttribute(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		et := factory.CreateEveType()
 		eda := factory.CreateEveDogmaAttribute()
 		arg := storage.CreateEveTypeDogmaAttributeParams{
@@ -37,7 +37,7 @@ func TestEveTypeDogmaAttribute(t *testing.T) {
 	})
 	t.Run("can list", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		et := factory.CreateEveType()
 		o1 := factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID: et.ID,

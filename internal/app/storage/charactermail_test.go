@@ -19,7 +19,7 @@ func TestCharacterMail(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		f := factory.CreateEveEntity()
 		recipient := factory.CreateEveEntity()
@@ -54,7 +54,7 @@ func TestCharacterMail(t *testing.T) {
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
 			CharacterID: c.ID,
@@ -73,7 +73,7 @@ func TestCharacterMail(t *testing.T) {
 	})
 	t.Run("can set processed", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		m := factory.CreateCharacterMail()
 		// when
 		err := st.UpdateCharacterMailSetProcessed(ctx, m.ID)
@@ -87,7 +87,7 @@ func TestCharacterMail(t *testing.T) {
 	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		// when
 		_, err := st.GetCharacterMail(ctx, c.ID, 99)
@@ -96,7 +96,7 @@ func TestCharacterMail(t *testing.T) {
 	})
 	t.Run("can list mail IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		for i := range 3 {
 			factory.CreateCharacterMail(storage.CreateCharacterMailParams{
@@ -113,7 +113,7 @@ func TestCharacterMail(t *testing.T) {
 	})
 	t.Run("can delete existing mail", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		m := factory.CreateCharacterMail()
 		// when
 		err := st.DeleteCharacterMail(ctx, m.CharacterID, m.MailID)
@@ -131,7 +131,7 @@ func TestFetchUnreadCounts(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can get mail label unread counts", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		corp := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelCorp})
 		inbox := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelInbox})
@@ -149,7 +149,7 @@ func TestFetchUnreadCounts(t *testing.T) {
 	})
 	t.Run("can get mail list unread counts", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		l1 := factory.CreateCharacterMailList(c.ID)
 		factory.CreateCharacterMailList(c.ID)
@@ -179,7 +179,7 @@ func TestUnreadMailCounts(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return correct unread count when mails exists", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		corp := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelCorp})
 		inbox := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelInbox})
@@ -210,7 +210,7 @@ func TestUnreadMailCounts(t *testing.T) {
 	})
 	t.Run("should return null when no mail exists", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		// when
 		r, err := st.GetCharacterMailUnreadCount(ctx, c.ID)
@@ -220,7 +220,7 @@ func TestUnreadMailCounts(t *testing.T) {
 	})
 	t.Run("unread count for all characters", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		character1 := factory.CreateCharacterFull()
 		corp := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: character1.ID, LabelID: app.MailLabelCorp})
 		inbox := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: character1.ID, LabelID: app.MailLabelInbox})
@@ -260,7 +260,7 @@ func TestMailCounts(t *testing.T) {
 	ctx := context.Background()
 	t.Run("character has mail", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		character := factory.CreateCharacterFull()
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: character.ID, IsRead: false})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: character.ID, IsRead: true})
@@ -273,7 +273,7 @@ func TestMailCounts(t *testing.T) {
 	})
 	t.Run("character has no mail", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		character := factory.CreateCharacterFull()
 		factory.CreateCharacterMail()
 		// when

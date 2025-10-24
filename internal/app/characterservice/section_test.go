@@ -24,7 +24,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should report true when changed", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -47,7 +47,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 	})
 	t.Run("should not update and report false when not changed", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		data := []int32{100}
@@ -81,7 +81,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 	})
 	t.Run("should not fetch or update when not expired and report false", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
@@ -112,7 +112,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 	})
 	t.Run("should record when update failed", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -134,7 +134,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 	})
 	t.Run("should fetch and update when not expired and force update requested", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
@@ -165,7 +165,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 	})
 	t.Run("should update when not changed and force update requested", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		et := factory.CreateEveType()
@@ -203,7 +203,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 	})
 	t.Run("should update when last update failed and error has timed out", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		et := factory.CreateEveType()
@@ -242,7 +242,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 	})
 	t.Run("should not update when last update failed but below error timeout", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		et := factory.CreateEveType()

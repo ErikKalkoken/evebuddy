@@ -22,7 +22,7 @@ func TestCorporationIndustryJob(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		now := time.Now().UTC()
 		blueprintType := factory.CreateEveType()
@@ -77,7 +77,7 @@ func TestCorporationIndustryJob(t *testing.T) {
 	})
 	t.Run("can create new full", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		now := time.Now().UTC()
 		installer := factory.CreateEveEntityCharacter()
@@ -145,7 +145,7 @@ func TestCorporationIndustryJob(t *testing.T) {
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
 			Status: app.JobActive,
 		})
@@ -190,7 +190,7 @@ func TestCorporationIndustryJob(t *testing.T) {
 	})
 	t.Run("can list jobs for a corporations", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
 			CorporationID: c.ID,
@@ -212,7 +212,7 @@ func TestCorporationIndustryJob(t *testing.T) {
 	})
 	t.Run("can list jobs for all corporations", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		j1 := factory.CreateCorporationIndustryJob()
 		j2 := factory.CreateCorporationIndustryJob()
 		// when
@@ -228,7 +228,7 @@ func TestCorporationIndustryJob(t *testing.T) {
 	})
 	t.Run("can get jobs with incomplete locations", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		el := factory.CreateEveLocationEmptyStructure()
 		j := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
 			LocationID: el.ID,
@@ -242,7 +242,7 @@ func TestCorporationIndustryJob(t *testing.T) {
 	})
 	t.Run("can list jobs with incomplete locations", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		el := factory.CreateEveLocationEmptyStructure()
 		factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
 			LocationID: el.ID,
@@ -256,7 +256,7 @@ func TestCorporationIndustryJob(t *testing.T) {
 	})
 	t.Run("can delete all jobs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		j1 := factory.CreateCorporationIndustryJob()
 		j2 := factory.CreateCorporationIndustryJob()
 		// when
@@ -275,7 +275,7 @@ func TestCorporationIndustryJob(t *testing.T) {
 	})
 	t.Run("can delete selected jobs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
 			CorporationID: c.ID,
@@ -303,7 +303,7 @@ func TestCorporationIndustryJob(t *testing.T) {
 	})
 	t.Run("can update status", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
 			Status: app.JobActive,
 		})

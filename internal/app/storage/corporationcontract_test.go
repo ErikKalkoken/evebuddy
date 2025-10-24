@@ -22,7 +22,7 @@ func TestCorporationContract(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		issuer := factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
 		issuerCorporation := c.EveCorporation
@@ -57,7 +57,7 @@ func TestCorporationContract(t *testing.T) {
 	})
 	t.Run("can create new full", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		issuer := factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
 		issuerCorporation := c.EveCorporation
@@ -102,7 +102,7 @@ func TestCorporationContract(t *testing.T) {
 	})
 	t.Run("can update contract", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		o1 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
 			UpdatedAt: time.Now().UTC().Add(-5 * time.Second),
 		})
@@ -130,7 +130,7 @@ func TestCorporationContract(t *testing.T) {
 	})
 	t.Run("can update notified", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		o1 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
 			UpdatedAt: time.Now().UTC().Add(-5 * time.Second),
 		})
@@ -147,7 +147,7 @@ func TestCorporationContract(t *testing.T) {
 	})
 	t.Run("can list IDs of existing entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		e1 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
 		e2 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
@@ -163,7 +163,7 @@ func TestCorporationContract(t *testing.T) {
 	})
 	t.Run("can list contracts for a corporation", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		o1 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
 		o2 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
@@ -187,7 +187,7 @@ func TestCorporationContractBid(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporationContract()
 		bidder := factory.CreateEveEntityCorporation()
 		const (
@@ -216,7 +216,7 @@ func TestCorporationContractBid(t *testing.T) {
 	})
 	t.Run("can list existing bids", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporationContract()
 		b1 := factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
 		b2 := factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
@@ -233,7 +233,7 @@ func TestCorporationContractBid(t *testing.T) {
 	})
 	t.Run("can list bid IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporationContract()
 		b1 := factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
 		b2 := factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
@@ -253,7 +253,7 @@ func TestCorporationContractItem(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporationContract()
 		et := factory.CreateEveType()
 		arg := storage.CreateCorporationContractItemParams{
@@ -281,7 +281,7 @@ func TestCorporationContractItem(t *testing.T) {
 	})
 	t.Run("can list existing items", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporationContract()
 		i1 := factory.CreateCorporationContractItem(storage.CreateCorporationContractItemParams{ContractID: c.ID})
 		i2 := factory.CreateCorporationContractItem(storage.CreateCorporationContractItemParams{ContractID: c.ID})

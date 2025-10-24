@@ -23,7 +23,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create new job from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -84,7 +84,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 	})
 	t.Run("should update existing job", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -145,7 +145,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 	})
 	t.Run("should fix incorrect status for new jobs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -193,7 +193,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 	})
 	t.Run("should fix incorrect status for existing jobs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -245,7 +245,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 	})
 	t.Run("should not fix status when correct", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -294,7 +294,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 	})
 	t.Run("should support all activity IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -360,7 +360,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 	})
 	t.Run("should mark orphaned jobs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})

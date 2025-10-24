@@ -24,7 +24,7 @@ func TestUpdateMail(t *testing.T) {
 	ctx := context.Background()
 	t.Run("Can fetch new mail", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c1 := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c1.ID})
@@ -156,7 +156,7 @@ func TestUpdateMail(t *testing.T) {
 	})
 	t.Run("Can update existing mail", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -286,7 +286,7 @@ func TestNotifyMails(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			// given
-			testutil.TruncateTables(db)
+			testutil.MustTruncateTables(db)
 			n := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
 				IsProcessed: tc.isProcessed,
 				Timestamp:   tc.timestamp,
@@ -313,7 +313,7 @@ func TestSendMail(t *testing.T) {
 	s := characterservice.NewFake(st)
 	t.Run("Can send mail", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})

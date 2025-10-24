@@ -17,7 +17,7 @@ func TestCharacterRole(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can update roles from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		r1 := set.Of(app.RoleAccountant, app.RoleAuditor)
 		// when
@@ -32,7 +32,7 @@ func TestCharacterRole(t *testing.T) {
 	})
 	t.Run("can add roles", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		if err := st.UpdateCharacterRoles(ctx, c.ID, set.Of(app.RoleBrandManager)); err != nil {
 			panic(err)
@@ -50,7 +50,7 @@ func TestCharacterRole(t *testing.T) {
 	})
 	t.Run("can remove roles", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		if err := st.UpdateCharacterRoles(ctx, c.ID, set.Of(app.RoleDiplomat, app.RoleBrandManager)); err != nil {
 			panic(err)

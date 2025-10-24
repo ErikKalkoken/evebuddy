@@ -19,7 +19,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can list", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: c.ID,
@@ -34,7 +34,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 	})
 	t.Run("can set from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		// when
 		error := "error"
@@ -60,7 +60,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 	})
 	t.Run("can set existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		x := factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: c.ID,
@@ -89,7 +89,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 	})
 	t.Run("can set all fields", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		x := factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: c.ID,
@@ -127,7 +127,7 @@ func TestCorporationSectionStatus(t *testing.T) {
 	})
 	t.Run("can reset content hash", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		x := factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: c.ID,

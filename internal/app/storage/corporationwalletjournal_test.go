@@ -19,7 +19,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		date := time.Now()
 		arg := storage.CreateCorporationWalletJournalEntryParams{
@@ -60,7 +60,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 	})
 	t.Run("can create new full", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		firstParty := factory.CreateEveEntity()
 		secondParty := factory.CreateEveEntity()
@@ -110,7 +110,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 	})
 	t.Run("can list IDs of existing entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		e1 := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
@@ -138,7 +138,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 	})
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		e1 := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
@@ -169,7 +169,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 	})
 	t.Run("can store multiple", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		date := time.Now()
 		arg := storage.CreateCorporationWalletJournalEntryParams{
@@ -205,7 +205,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 	})
 	t.Run("can delete journal", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		e1 := factory.CreateCorporationWalletJournalEntry()
 		e2 := factory.CreateCorporationWalletJournalEntry()
 		// when

@@ -23,7 +23,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create new assets from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -99,7 +99,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 	})
 	t.Run("should remove obsolete items", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -162,7 +162,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 	})
 	t.Run("should fetch multiple pages", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})

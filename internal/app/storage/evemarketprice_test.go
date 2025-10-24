@@ -16,7 +16,7 @@ func TestEveMarketPrice(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		arg := storage.UpdateOrCreateEveMarketPriceParams{
 			TypeID:        42,
 			AdjustedPrice: 1.23,
@@ -33,7 +33,7 @@ func TestEveMarketPrice(t *testing.T) {
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
 			TypeID:        42,
 			AdjustedPrice: 4,

@@ -20,7 +20,7 @@ func TestGetOrCreateEveSchematicESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return existing schematic", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		x1 := factory.CreateEveSchematic()
 		// when
@@ -32,7 +32,7 @@ func TestGetOrCreateEveSchematicESI(t *testing.T) {
 	})
 	t.Run("should fetch schematic from ESI and create it", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",

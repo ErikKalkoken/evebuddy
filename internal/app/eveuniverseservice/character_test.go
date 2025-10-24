@@ -30,7 +30,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 	const invalidID = 666
 	t.Run("should return existing character", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateEveCharacter()
 		// when
@@ -44,7 +44,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 	})
 	t.Run("should fetch minimal character from ESI and create it", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		const characterID = 95465499
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: characterID})
 		corporation := factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
@@ -98,7 +98,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 	})
 	t.Run("should fetch full character from ESI and create it", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		characterID := int32(95465499)
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: characterID})
 		alliance := factory.CreateEveEntityCorporation(app.EveEntity{ID: 434243723})
@@ -173,7 +173,7 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 	const invalidID = 666
 	t.Run("should fetch character from ESI and create it", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		characterID := int32(95465499)
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: characterID})
 		corporation := factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
@@ -227,7 +227,7 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 	})
 	t.Run("should update existing character from ESI", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		character := factory.CreateEveCharacter()
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: character.ID})
 		alliance := factory.CreateEveEntityAlliance()
@@ -279,7 +279,7 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 	})
 	t.Run("should report when character was not changed", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		character := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 			SecurityStatus: -4.12,
 		})
@@ -343,7 +343,7 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should update character from ESI", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		const characterID = 95465499
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: characterID})
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{ID: characterID})
@@ -404,7 +404,7 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 	})
 	t.Run("should delete character which no longer exist on ESI", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		const characterID = 95465499
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: characterID})
 		factory.CreateEveCharacter(storage.CreateEveCharacterParams{ID: characterID})

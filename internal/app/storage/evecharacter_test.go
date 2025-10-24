@@ -17,7 +17,7 @@ func TestEveCharacter(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		corp := factory.CreateEveEntityCorporation()
 		race := factory.CreateEveRace()
 		arg := storage.CreateEveCharacterParams{ID: 1, Name: "Erik", CorporationID: corp.ID, RaceID: race.ID}
@@ -33,7 +33,7 @@ func TestEveCharacter(t *testing.T) {
 	})
 	t.Run("can update existing 1", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateEveCharacter()
 		alliance2 := factory.CreateEveEntityAlliance()
 		faction2 := factory.CreateEveEntityWithCategory(app.EveEntityFaction)
@@ -66,7 +66,7 @@ func TestEveCharacter(t *testing.T) {
 	})
 	t.Run("can update existing 2", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateEveCharacter()
 		// when
 		c1.Name = "Erik"
@@ -81,7 +81,7 @@ func TestEveCharacter(t *testing.T) {
 	})
 	t.Run("can delete", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateEveCharacter()
 		// when
 		err := st.DeleteEveCharacter(ctx, c.ID)
@@ -93,7 +93,7 @@ func TestEveCharacter(t *testing.T) {
 	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		_, err := st.GetEveCharacter(ctx, 99)
 		// then
@@ -101,7 +101,7 @@ func TestEveCharacter(t *testing.T) {
 	})
 	t.Run("can fetch character by ID with minimal fields populated only", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateEveCharacter()
 		// when
 		c2, err := st.GetEveCharacter(ctx, c1.ID)
@@ -122,7 +122,7 @@ func TestEveCharacter(t *testing.T) {
 	})
 	t.Run("can fetch character by ID with all fields populated", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveCharacter()
 		alliance := factory.CreateEveEntityAlliance()
 		faction := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityFaction})
@@ -143,7 +143,7 @@ func TestEveCharacter(t *testing.T) {
 	})
 	t.Run("can update name", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateEveCharacter()
 		// when
 		err := st.UpdateEveCharacterName(ctx, c1.ID, "Erik")

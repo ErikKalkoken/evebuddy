@@ -21,7 +21,7 @@ func TestCorporationWalletTransaction(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		date := time.Now()
 		client := factory.CreateEveEntityCorporation()
@@ -82,7 +82,7 @@ func TestCorporationWalletTransaction(t *testing.T) {
 	})
 	t.Run("can list IDs of existing entries for a corporation", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		t1 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
@@ -110,7 +110,7 @@ func TestCorporationWalletTransaction(t *testing.T) {
 	})
 	t.Run("can list existing entries for a corporation", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		t1 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
@@ -141,7 +141,7 @@ func TestCorporationWalletTransaction(t *testing.T) {
 	})
 	t.Run("can delete transactions", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		e1 := factory.CreateCorporationWalletTransaction()
 		e2 := factory.CreateCorporationWalletTransaction()
 		// when

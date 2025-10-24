@@ -26,7 +26,7 @@ func TestUpdateWalletBalancesESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create new entries from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
@@ -93,7 +93,7 @@ func TestUpdateWalletBalancesESI(t *testing.T) {
 	})
 	t.Run("should update existing balances", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",
@@ -177,7 +177,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create new entry from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
@@ -236,7 +236,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 	})
 	t.Run("should add new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
@@ -288,7 +288,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 	})
 	t.Run("should ignore existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
@@ -344,7 +344,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 	})
 	t.Run("should fetch multiple pages", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",
@@ -432,7 +432,7 @@ func TestListWalletJournalEntries(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		e1 := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
@@ -468,7 +468,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create new transaction from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
@@ -526,7 +526,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 	})
 	t.Run("should add new transaction", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
@@ -585,7 +585,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 	})
 	t.Run("should ignore when transaction already exists", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
@@ -630,7 +630,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 	})
 	t.Run("should fetch multiple pages", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
@@ -700,7 +700,7 @@ func TestListWalletTransactions(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		t1 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,

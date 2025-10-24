@@ -42,7 +42,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	}
 	t.Run("do nothing when all entities already exist", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
 			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
@@ -59,7 +59,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	})
 	t.Run("can resolve missing entities", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
 			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
@@ -81,7 +81,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	})
 	t.Run("can report normal error correctly", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
 			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
@@ -94,7 +94,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	})
 	t.Run("can resolve mix of missing and non-missing entities", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		e1 := factory.CreateEveEntityAlliance()
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
@@ -111,7 +111,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	})
 	t.Run("can resolve more then 1000 IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		const count = 1001
 		ids := make([]int32, count)
 		data := make([]map[string]any, count)
@@ -146,7 +146,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	})
 	t.Run("should store unresolvable IDs accordingly", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
 			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
@@ -168,7 +168,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	})
 	t.Run("should not call API with known invalid IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
 			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
@@ -190,7 +190,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	})
 	t.Run("should do nothing with ID 0", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
 			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
@@ -212,7 +212,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	})
 	t.Run("can deal with a mix of resolveable and unresolveable IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
@@ -238,7 +238,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	})
 	t.Run("can deal with a mix of resolveable and invalid IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
@@ -264,7 +264,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	})
 	t.Run("should do nothing when no ids passed", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder("POST",
 			`=~^https://esi\.evetech\.net/v\d+/universe/names/`,
@@ -295,7 +295,7 @@ func TestGetOrCreateEntityESI(t *testing.T) {
 	s := eveuniverseservice.NewTestService(st)
 	t.Run("return existing entity", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		x1 := factory.CreateEveEntityCharacter()
 		// when
@@ -308,7 +308,7 @@ func TestGetOrCreateEntityESI(t *testing.T) {
 	})
 	t.Run("create entity from ESI", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
@@ -338,7 +338,7 @@ func TestToEveEntities(t *testing.T) {
 	s := eveuniverseservice.NewTestService(st)
 	t.Run("should resolve normal IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		e1 := factory.CreateEveEntity()
 		e2 := factory.CreateEveEntity()
@@ -351,7 +351,7 @@ func TestToEveEntities(t *testing.T) {
 	})
 	t.Run("should map unknown IDs to empty objects", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		// when
 		oo, err := s.ToEntities(ctx, set.Of[int32](0, 1))
@@ -371,7 +371,7 @@ func TestUpdateAllEntityESI(t *testing.T) {
 	defer httpmock.DeactivateAndReset()
 	s := eveuniverseservice.NewTestService(st)
 	t.Run("should update existing entity", func(t *testing.T) {
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 42})
 		httpmock.RegisterResponder(
 			"POST",
@@ -395,7 +395,7 @@ func TestUpdateAllEntityESI(t *testing.T) {
 		}
 	})
 	t.Run("should detect when not changed", func(t *testing.T) {
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveEntityCharacter(app.EveEntity{
 			ID:   42,
 			Name: "Erik",

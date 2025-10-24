@@ -44,7 +44,7 @@ func TestWalletBalancesTotal(t *testing.T) {
 	ctx := context.Background()
 	t.Run("return existing balance", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		s := corporationservice.NewFake(st, corporationservice.Params{
 			CharacterService: &corporationservice.CharacterServiceFake{
 				Token: &app.CharacterToken{AccessToken: "accessToken"},
@@ -70,7 +70,7 @@ func TestWalletBalancesTotal(t *testing.T) {
 	})
 	t.Run("return empty when no balances found", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		s := corporationservice.NewFake(st, corporationservice.Params{
 			CharacterService: &corporationservice.CharacterServiceFake{
 				Token: &app.CharacterToken{AccessToken: "accessToken"},

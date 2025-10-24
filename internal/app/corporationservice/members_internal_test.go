@@ -21,7 +21,7 @@ func TestUpdateCorporationMembersESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should add new members and remove stale members", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()

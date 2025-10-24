@@ -17,7 +17,7 @@ func TestManagedCharacters_CanRenderWithData(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	t.Run("normal", func(t *testing.T) {
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 			Name: "Bruce Wayne",
 		})

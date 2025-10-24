@@ -22,7 +22,7 @@ func TestUpdateCharacterRolesESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should update roles", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})

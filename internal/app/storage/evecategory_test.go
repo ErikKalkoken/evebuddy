@@ -16,7 +16,7 @@ func TestEveCategory(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		arg := storage.CreateEveCategoryParams{
 			ID:          42,
 			Name:        "Alpha",
@@ -33,7 +33,7 @@ func TestEveCategory(t *testing.T) {
 	})
 	t.Run("can get", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateEveCategory()
 		// when
 		c2, err := st.GetEveCategory(ctx, c1.ID)
@@ -44,7 +44,7 @@ func TestEveCategory(t *testing.T) {
 	})
 	t.Run("can get already existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateEveCategory()
 		// when
 		c2, err := st.GetOrCreateEveCategory(ctx, storage.CreateEveCategoryParams{
@@ -57,7 +57,7 @@ func TestEveCategory(t *testing.T) {
 	})
 	t.Run("can create when not existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		c, err := st.GetOrCreateEveCategory(ctx, storage.CreateEveCategoryParams{
 			ID:          42,

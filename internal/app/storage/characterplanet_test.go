@@ -16,7 +16,7 @@ func TestPlanet(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		lastUpdate := time.Now().UTC()
 		evePlanet := factory.CreateEvePlanet()
@@ -41,7 +41,7 @@ func TestPlanet(t *testing.T) {
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		evePlanet := factory.CreateEvePlanet()
 		lastNotified := time.Now().Add(-5 * time.Minute).UTC()
@@ -75,7 +75,7 @@ func TestPlanet(t *testing.T) {
 	})
 	t.Run("can list planets", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		p1 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
 		p2 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
@@ -94,7 +94,7 @@ func TestPlanet(t *testing.T) {
 	})
 	t.Run("can delete planets", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		p1 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
 		p2 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
@@ -113,7 +113,7 @@ func TestPlanet(t *testing.T) {
 	})
 	t.Run("can update last notified", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		planet := factory.CreateCharacterPlanet()
 		lastNotified := factory.RandomTime()
 		arg := storage.UpdateCharacterPlanetLastNotifiedParams{
@@ -133,7 +133,7 @@ func TestPlanet(t *testing.T) {
 	})
 	t.Run("can list planets from all characters", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		p1 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c1.ID})
 		p2 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c1.ID})

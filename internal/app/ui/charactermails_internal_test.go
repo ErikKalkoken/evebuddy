@@ -19,7 +19,7 @@ func TestCharacterMails_updateUnreadCounts(t *testing.T) {
 	test.ApplyTheme(t, test.Theme())
 	t.Run("can update counts from zero", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		factory.CreateCharacterMailLabel(app.CharacterMailLabel{
 			CharacterID: c.ID,
@@ -51,7 +51,7 @@ func TestCharacterMails_updateUnreadCounts(t *testing.T) {
 	})
 	t.Run("can reset counts to zero", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		factory.CreateCharacterMailLabel(app.CharacterMailLabel{
 			CharacterID: c.ID,
