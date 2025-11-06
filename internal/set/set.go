@@ -32,6 +32,7 @@
 package set
 
 import (
+	"cmp"
 	"fmt"
 	"iter"
 	"maps"
@@ -249,6 +250,35 @@ L:
 		r.Add(v)
 	}
 	return r
+}
+
+type comparableAndOrderable interface {
+	cmp.Ordered
+	comparable
+}
+
+// Max returns the maximal value in s. It panics if s is empty.
+func Max[E comparableAndOrderable](s Set[E]) E {
+	return slices.Max(s.Slice())
+}
+
+// MaxFunc returns the maximal value in s, using cmp to compare elements.
+// It panics if x is empty.
+// If there is more than one maximal element according to the cmp function, MaxFunc returns the first one.
+func MaxFunc[E comparable](s Set[E], cmp func(a, b E) int) E {
+	return slices.MaxFunc(s.Slice(), cmp)
+}
+
+// Min returns the minimal value in s. It panics if s is empty.
+func Min[E comparableAndOrderable](s Set[E]) E {
+	return slices.Min(s.Slice())
+}
+
+// MinFunc returns the minimal value in s, using cmp to compare elements.
+// It panics if x is empty.
+// If there is more than one minimal element according to the cmp function, MinFunc returns the first one.
+func MinFunc[E comparable](s Set[E], cmp func(a, b E) int) E {
+	return slices.MinFunc(s.Slice(), cmp)
 }
 
 // Union returns a new [Set] with the elements of all sets.
