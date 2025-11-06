@@ -150,7 +150,7 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			contracts, err := xesi.FetchWithPaging(
+			contracts, err := xesi.FetchPages(
 				s.concurrencyLimit,
 				func(pageNum int) ([]esi.GetCharactersCharacterIdContracts200Ok, *http.Response, error) {
 					return s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContracts(

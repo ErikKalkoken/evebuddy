@@ -38,7 +38,7 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			entries, err := xesi.FetchWithPaging(
+			entries, err := xesi.FetchPages(
 				s.concurrencyLimit,
 				func(pageNum int) ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
 					arg := &esi.GetCharactersCharacterIdWalletJournalOpts{
