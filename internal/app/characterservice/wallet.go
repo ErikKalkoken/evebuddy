@@ -38,13 +38,22 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			entries, err := xesi.FetchPages(
-				s.concurrencyLimit,
-				func(pageNum int) ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
+			ids, err := s.st.ListCharacterWalletJournalEntryIDs(ctx, arg.CharacterID)
+			if err != nil {
+				return nil, err
+			}
+			var maxID int64
+			if ids.Size() > 0 {
+				maxID = set.Max(ids)
+			}
+			entries, err := xesi.FetchPagesWithExit(
+				func(page int) ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
 					arg := &esi.GetCharactersCharacterIdWalletJournalOpts{
-						Page: esioptional.NewInt32(int32(pageNum)),
+						Page: esioptional.NewInt32(int32(page)),
 					}
 					return s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWalletJournal(ctx, characterID, arg)
+				}, func(x esi.GetCharactersCharacterIdWalletJournal200Ok) bool {
+					return maxID != 0 && x.Id == maxID
 				})
 			if err != nil {
 				return false, err
