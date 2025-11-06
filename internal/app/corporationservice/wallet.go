@@ -188,6 +188,8 @@ func (s *CorporationService) ListWalletJournalEntries(ctx context.Context, corpo
 	})
 }
 
+// TODO: Only read pages with unknown journal IDs
+
 func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg app.CorporationSectionUpdateParams) (bool, error) {
 	sections := set.Of(
 		app.SectionCorporationWalletJournal1,
@@ -204,7 +206,7 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg app
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
-			entries, err := xesi.FetchWithPaging(
+			entries, err := xesi.FetchPages(
 				s.concurrencyLimit,
 				func(pageNum int) ([]esi.GetCorporationsCorporationIdWalletsDivisionJournal200Ok, *http.Response, error) {
 					opts := &esi.GetCorporationsCorporationIdWalletsDivisionJournalOpts{
