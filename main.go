@@ -304,6 +304,7 @@ func main() {
 	ssoService := sso.New(ssoClientID, rhc.StandardClient())
 	ssoService.OpenURL = fyneApp.OpenURL
 	cs := characterservice.New(characterservice.Params{
+		Cache:                  pc,
 		ConcurrencyLimit:       concurrentLimit,
 		ESIClient:              esiClient,
 		EveNotificationService: evenotification.New(eus),

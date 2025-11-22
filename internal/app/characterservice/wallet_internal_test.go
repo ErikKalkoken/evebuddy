@@ -24,6 +24,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 	t.Run("should create new entry from scratch", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
+		s.cache.Clear()
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -79,6 +80,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 	t.Run("should add new", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
+		s.cache.Clear()
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
@@ -129,6 +131,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 	t.Run("should ignore existing", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
+		s.cache.Clear()
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
@@ -183,6 +186,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 	t.Run("should fetch multiple pages", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
+		s.cache.Clear()
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -257,13 +261,10 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 	})
 	t.Run("should stop fetching subsequent pages once known items are found", func(t *testing.T) {
 		// given
+		s.cache.Clear()
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
-			CharacterID: c.ID,
-			RefID:       90,
-		})
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 2112625428})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
@@ -300,22 +301,23 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 				"second_party_id": 1000132,
 			}}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
 		)
-		// when
-		changed, err := s.updateWalletJournalEntryESI(ctx, app.CharacterSectionUpdateParams{
+		_, err1 := s.updateWalletJournalEntryESI(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
 			Section:     app.SectionCharacterWalletJournal,
-		})
+		}) // first run will store the last id in cache
+		if !assert.NoError(t, err1) {
+			t.Fatal(err1)
+		}
+		// when
+		_, err := s.updateWalletJournalEntryESI(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterWalletJournal,
+		}) // second run should only fetch first page
 		// then
 		if !assert.NoError(t, err) {
 			t.Fatal(err)
 		}
-		assert.True(t, changed)
-		assert.Equal(t, 1, httpmock.GetTotalCallCount())
-		ids, err := st.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
-		if !assert.NoError(t, err) {
-			t.Fatal(err)
-		}
-		assert.Equal(t, 1, ids.Size())
+		assert.Equal(t, 3, httpmock.GetTotalCallCount())
 	})
 }
 

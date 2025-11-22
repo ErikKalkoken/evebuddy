@@ -15,7 +15,7 @@ import (
 )
 
 // PCache is a persistent cache.
-// It stores all items in the provided storage and also keeps a copy in a synced memory cache for faster retrival.
+// It stores all items in the provided storage and also keeps a copy in a synced memory cache for faster retrieval.
 type PCache struct {
 	closeC chan struct{}
 	mc     *memcache.Cache

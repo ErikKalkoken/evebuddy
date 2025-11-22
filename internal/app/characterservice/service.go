@@ -16,6 +16,13 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
+// CacheService defines a cache service
+type CacheService interface {
+	Clear()
+	Get(string) ([]byte, bool)
+	Set(string, []byte, time.Duration)
+}
+
 type SSOService interface {
 	Authenticate(ctx context.Context, scopes []string) (*app.Token, error)
 	RefreshToken(ctx context.Context, refreshToken string) (*app.Token, error)
@@ -30,11 +37,12 @@ type Ticker interface {
 
 // CharacterService provides access to all managed Eve Online characters both online and from local storage.
 type CharacterService struct {
+	cache            CacheService
+	concurrencyLimit int
 	ens              *evenotification.EveNotificationService
 	esiClient        *goesi.APIClient
 	eus              *eveuniverseservice.EveUniverseService
 	httpClient       *http.Client
-	concurrencyLimit int
 	scs              *statuscacheservice.StatusCacheService
 	sfg              *singleflight.Group
 	sso              SSOService
@@ -53,19 +61,21 @@ type Params struct {
 	// optional
 	HTTPClient *http.Client
 	ESIClient  *goesi.APIClient
+	Cache      CacheService
 }
 
 // New creates a new character service and returns it.
 // When nil is passed for any parameter a new default instance will be created for it (except for storage).
 func New(arg Params) *CharacterService {
 	s := &CharacterService{
+		cache:            arg.Cache,
 		concurrencyLimit: -1, // Default is no limit
 		ens:              arg.EveNotificationService,
 		eus:              arg.EveUniverseService,
 		scs:              arg.StatusCacheService,
+		sfg:              new(singleflight.Group),
 		sso:              arg.SSOService,
 		st:               arg.Storage,
-		sfg:              new(singleflight.Group),
 		ticker:           arg.TickerSource,
 	}
 	if arg.HTTPClient == nil {

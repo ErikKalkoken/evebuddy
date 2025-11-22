@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
+	"strconv"
 
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
@@ -32,19 +33,22 @@ func (s *CharacterService) ListWalletJournalEntries(ctx context.Context, charact
 
 // updateWalletJournalEntryESI updates the wallet journal from ESI and reports whether it has changed.
 func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
+	const lastIDKey = "character-walletjournal-lastid"
 	if arg.Section != app.SectionCharacterWalletJournal {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			ids, err := s.st.ListCharacterWalletJournalEntryIDs(ctx, arg.CharacterID)
-			if err != nil {
-				return nil, err
-			}
 			var maxID int64
-			if ids.Size() > 0 {
-				maxID = set.Max(ids)
+			x, ok := s.cache.Get(lastIDKey)
+			if ok {
+				id, err := strconv.ParseInt(string(x), 10, 64)
+				if err != nil {
+					slog.Warn("Failed to parse last ID for wallet journal", "characterID", arg.CharacterID, "value", x)
+				} else {
+					maxID = id
+				}
 			}
 			entries, err := xesi.FetchPagesWithExit(
 				func(page int) ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
@@ -87,6 +91,7 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 			if err != nil {
 				return err
 			}
+			var refIDs set.Set[int64]
 			for _, o := range newEntries {
 				arg := storage.CreateCharacterWalletJournalEntryParams{
 					Amount:        o.Amount,
@@ -107,7 +112,9 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 				if err := s.st.CreateCharacterWalletJournalEntry(ctx, arg); err != nil {
 					return err
 				}
+				refIDs.Add(o.Id)
 			}
+			s.cache.Set(lastIDKey, []byte(strconv.FormatInt(set.Max(refIDs), 10)), 0)
 			slog.Info("Stored new wallet journal entries", "characterID", characterID, "entries", len(newEntries))
 			return nil
 		})
