@@ -5,12 +5,12 @@ import "time"
 // A SectionStatus represents the latest status of an update from ESI for a section.
 // This type contains the shared functionality among all kinds of section status.
 type SectionStatus struct {
-	CompletedAt  time.Time
+	CompletedAt  time.Time // last successful completion of an update
 	ContentHash  string
 	ErrorMessage string
 	Section      section
-	StartedAt    time.Time
-	UpdatedAt    time.Time
+	StartedAt    time.Time // last time an update was started
+	UpdatedAt    time.Time // timestamp of last update of this object
 }
 
 // HasContent reports whether a section has data.
@@ -32,6 +32,11 @@ func (s SectionStatus) WasUpdatedWithinErrorTimedOut() bool {
 // IsMissing reports whether this section has ever been successfully updated.
 func (s SectionStatus) IsMissing() bool {
 	return s.CompletedAt.IsZero()
+}
+
+// IsCompleted reports whether the previous update for this section was completed.
+func (s SectionStatus) IsCompleted() bool {
+	return !s.CompletedAt.IsZero()
 }
 
 func (s SectionStatus) IsExpired() bool {

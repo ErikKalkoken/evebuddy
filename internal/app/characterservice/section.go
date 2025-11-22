@@ -37,50 +37,50 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 			}
 		}
 	}
-	var f func(context.Context, app.CharacterSectionUpdateParams) (bool, error)
+	var updateFunc func(context.Context, app.CharacterSectionUpdateParams) (bool, error)
 	switch arg.Section {
 	case app.SectionCharacterAssets:
-		f = s.updateAssetsESI
+		updateFunc = s.updateAssetsESI
 	case app.SectionCharacterAttributes:
-		f = s.updateAttributesESI
+		updateFunc = s.updateAttributesESI
 	case app.SectionCharacterContracts:
-		f = s.updateContractsESI
+		updateFunc = s.updateContractsESI
 	case app.SectionCharacterImplants:
-		f = s.updateImplantsESI
+		updateFunc = s.updateImplantsESI
 	case app.SectionCharacterIndustryJobs:
-		f = s.updateIndustryJobsESI
+		updateFunc = s.updateIndustryJobsESI
 	case app.SectionCharacterJumpClones:
-		f = s.updateJumpClonesESI
+		updateFunc = s.updateJumpClonesESI
 	case app.SectionCharacterLocation:
-		f = s.updateLocationESI
+		updateFunc = s.updateLocationESI
 	case app.SectionCharacterMails:
-		f = s.updateMailsESI
+		updateFunc = s.updateMailsESI
 	case app.SectionCharacterMarketOrders:
-		f = s.updateMarketOrdersESI
+		updateFunc = s.updateMarketOrdersESI
 	case app.SectionCharacterMailLabels:
-		f = s.updateMailLabelsESI
+		updateFunc = s.updateMailLabelsESI
 	case app.SectionCharacterMailLists:
-		f = s.updateMailListsESI
+		updateFunc = s.updateMailListsESI
 	case app.SectionCharacterNotifications:
-		f = s.updateNotificationsESI
+		updateFunc = s.updateNotificationsESI
 	case app.SectionCharacterOnline:
-		f = s.updateOnlineESI
+		updateFunc = s.updateOnlineESI
 	case app.SectionCharacterRoles:
-		f = s.updateRolesESI
+		updateFunc = s.updateRolesESI
 	case app.SectionCharacterPlanets:
-		f = s.updatePlanetsESI
+		updateFunc = s.updatePlanetsESI
 	case app.SectionCharacterShip:
-		f = s.updateShipESI
+		updateFunc = s.updateShipESI
 	case app.SectionCharacterSkillqueue:
-		f = s.updateSkillqueueESI
+		updateFunc = s.updateSkillqueueESI
 	case app.SectionCharacterSkills:
-		f = s.updateSkillsESI
+		updateFunc = s.updateSkillsESI
 	case app.SectionCharacterWalletBalance:
-		f = s.updateWalletBalanceESI
+		updateFunc = s.updateWalletBalanceESI
 	case app.SectionCharacterWalletJournal:
-		f = s.updateWalletJournalEntryESI
+		updateFunc = s.updateWalletJournalEntryESI
 	case app.SectionCharacterWalletTransactions:
-		f = s.updateWalletTransactionESI
+		updateFunc = s.updateWalletTransactionESI
 	default:
 		return false, fmt.Errorf("update section: unknown section: %s", arg.Section)
 	}
@@ -90,7 +90,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 	}
 	key := fmt.Sprintf("update-character-section-%s-%d", arg.Section, arg.CharacterID)
 	x, err, _ := s.sfg.Do(key, func() (any, error) {
-		return f(ctx, arg)
+		return updateFunc(ctx, arg)
 	})
 	if err != nil {
 		errorMessage := err.Error()

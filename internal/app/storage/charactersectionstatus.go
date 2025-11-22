@@ -64,6 +64,8 @@ type UpdateOrCreateCharacterSectionStatusParams struct {
 	UpdatedAt    *time.Time
 }
 
+// UpdateOrCreateCharacterSectionStatus updates or creates a character section.
+// Fields given as pointers are optional and will only be updated if specified.
 func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg UpdateOrCreateCharacterSectionStatusParams) (*app.CharacterSectionStatus, error) {
 	if arg.CharacterID == 0 || arg.Section == "" {
 		return nil, fmt.Errorf("UpdateOrCreateCharacterSectionStatus: %+v: %w", arg, app.ErrInvalid)
@@ -75,32 +77,24 @@ func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg
 		}
 		defer tx.Rollback()
 		qtx := st.qRW.WithTx(tx)
-		var arg2 queries.UpdateOrCreateCharacterSectionStatusParams
+		arg2 := queries.UpdateOrCreateCharacterSectionStatusParams{
+			CharacterID: int64(arg.CharacterID),
+			SectionID:   arg.Section.String(),
+		}
 		old, err := qtx.GetCharacterSectionStatus(ctx, queries.GetCharacterSectionStatusParams{
 			CharacterID: int64(arg.CharacterID),
 			SectionID:   arg.Section.String(),
 		})
 		if errors.Is(err, sql.ErrNoRows) {
-			arg2 = queries.UpdateOrCreateCharacterSectionStatusParams{
-				CharacterID: int64(arg.CharacterID),
-				SectionID:   arg.Section.String(),
-			}
+			// continue
 		} else if err != nil {
 			return nil, err
 		} else {
-			arg2 = queries.UpdateOrCreateCharacterSectionStatusParams{
-				CharacterID: int64(arg.CharacterID),
-				SectionID:   arg.Section.String(),
-				CompletedAt: old.CompletedAt,
-				ContentHash: old.ContentHash,
-				Error:       old.Error,
-				StartedAt:   old.StartedAt,
-			}
-		}
-		if arg.UpdatedAt != nil {
-			arg2.UpdatedAt = *arg.UpdatedAt
-		} else {
-			arg2.UpdatedAt = time.Now().UTC()
+			// initialize with values from current object
+			arg2.CompletedAt = old.CompletedAt
+			arg2.ContentHash = old.ContentHash
+			arg2.Error = old.Error
+			arg2.StartedAt = old.StartedAt
 		}
 		if arg.CompletedAt != nil {
 			arg2.CompletedAt = *arg.CompletedAt
@@ -113,6 +107,11 @@ func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg
 		}
 		if arg.StartedAt != nil {
 			arg2.StartedAt = optional.ToNullTime(*arg.StartedAt)
+		}
+		if arg.UpdatedAt != nil {
+			arg2.UpdatedAt = *arg.UpdatedAt
+		} else {
+			arg2.UpdatedAt = time.Now().UTC()
 		}
 		o, err := qtx.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
 		if err != nil {
