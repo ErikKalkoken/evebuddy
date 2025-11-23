@@ -21,7 +21,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create new objects from ESI", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -48,7 +48,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 	})
 	t.Run("should update existing objects from ESI", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
 			TypeID:        32772,
 			AdjustedPrice: 2,
@@ -80,7 +80,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 	})
 	t.Run("should detect when object has not changed", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
 			TypeID:        32772,
 			AdjustedPrice: 306988.09,

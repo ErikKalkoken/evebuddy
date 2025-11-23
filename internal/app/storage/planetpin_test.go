@@ -18,7 +18,7 @@ func TestPlanetPin(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can get and create minimal", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		planet := factory.CreateCharacterPlanet()
 		input := factory.CreateEveType()
 		arg := storage.CreatePlanetPinParams{
@@ -38,7 +38,7 @@ func TestPlanetPin(t *testing.T) {
 	})
 	t.Run("can get and create complete", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		planet := factory.CreateCharacterPlanet()
 		pinType := factory.CreateEveType()
 		productType := factory.CreateEveType()
@@ -76,7 +76,7 @@ func TestPlanetPin(t *testing.T) {
 	})
 	t.Run("can list pins", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		p := factory.CreateCharacterPlanet()
 		x1 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p.ID})
 		x2 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p.ID})
@@ -94,7 +94,7 @@ func TestPlanetPin(t *testing.T) {
 	})
 	t.Run("can delete pins", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		planet1 := factory.CreateCharacterPlanet()
 		factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: planet1.ID})
 		factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: planet1.ID})

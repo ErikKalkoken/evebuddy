@@ -21,7 +21,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		now := time.Now().UTC()
 		blueprintLocation := factory.CreateEveLocationStructure()
@@ -100,7 +100,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 	})
 	t.Run("can create new full", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		now := time.Now().UTC()
 		installer := factory.CreateEveEntityCharacter()
@@ -171,7 +171,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		j1 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			Status: app.JobActive,
 		})
@@ -216,7 +216,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 	})
 	t.Run("can list jobs for a character", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		j1 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: c.ID,
@@ -238,7 +238,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 	})
 	t.Run("can list jobs for all characters", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		j1 := factory.CreateCharacterIndustryJob()
 		j2 := factory.CreateCharacterIndustryJob()
 		// when
@@ -254,7 +254,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 	})
 	t.Run("can get jobs with incomplete locations", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		el := factory.CreateEveLocationEmptyStructure()
 		j := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			BlueprintLocationID: el.ID,
@@ -274,7 +274,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 	})
 	t.Run("can list jobs with incomplete locations", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		el := factory.CreateEveLocationEmptyStructure()
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			BlueprintLocationID: el.ID,
@@ -291,7 +291,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 	})
 	t.Run("can list jobs activity counts", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		character1 := factory.CreateCharacterFull()
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: character1.ID,
@@ -344,7 +344,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 	})
 	t.Run("can delete selected jobs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		j1 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: c.ID,
@@ -373,7 +373,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 	})
 	t.Run("can update job status", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		j1 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			Status: app.JobActive,
 		})

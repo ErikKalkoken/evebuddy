@@ -20,7 +20,7 @@ func TestEveCorporation(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		arg := storage.UpdateOrCreateEveCorporationParams{
 			Description: "description",
 			ID:          42,
@@ -55,7 +55,7 @@ func TestEveCorporation(t *testing.T) {
 	})
 	t.Run("can create new full", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		alliance := factory.CreateEveEntityAlliance()
 		faction := factory.CreateEveEntity()
 		station := factory.CreateEveEntity()
@@ -105,7 +105,7 @@ func TestEveCorporation(t *testing.T) {
 	})
 	t.Run("can update existing full", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{
 			ID: 42,
 		})
@@ -154,7 +154,7 @@ func TestEveCorporation(t *testing.T) {
 	})
 	t.Run("can fetch by ID with minimal fields populated only", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateEveCorporation()
 		// when
 		c2, err := st.GetEveCorporation(ctx, c1.ID)
@@ -165,7 +165,7 @@ func TestEveCorporation(t *testing.T) {
 	})
 	t.Run("can fetch character by ID with all fields populated", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveCharacter()
 		alliance := factory.CreateEveEntityAlliance()
 		ceo := factory.CreateEveEntityCharacter()
@@ -212,7 +212,7 @@ func TestEveCorporation(t *testing.T) {
 	})
 	t.Run("list corporation IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateEveCorporation()
 		c2 := factory.CreateEveCorporation()
 		// when
@@ -225,7 +225,7 @@ func TestEveCorporation(t *testing.T) {
 	})
 	t.Run("can update name", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateEveCorporation()
 		// when
 		err := st.UpdateEveCorporationName(ctx, c1.ID, "Alpha")

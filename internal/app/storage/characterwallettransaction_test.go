@@ -20,7 +20,7 @@ func TestCharacterWalletTransaction(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		date := time.Now()
 		client := factory.CreateEveEntityCharacter()
@@ -81,7 +81,7 @@ func TestCharacterWalletTransaction(t *testing.T) {
 	})
 	t.Run("can list IDs of existing entries for a character", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		e1 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		e2 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
@@ -96,7 +96,7 @@ func TestCharacterWalletTransaction(t *testing.T) {
 	})
 	t.Run("can list existing entries for a character", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		t1 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		t2 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})

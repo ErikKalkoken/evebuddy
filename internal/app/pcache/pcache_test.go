@@ -14,7 +14,7 @@ func TestPCache(t *testing.T) {
 	defer db.Close()
 	t.Run("can set and get a cache entry", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := pcache.New(st, 0)
 		defer c.Close()
 		value := []byte("value")
@@ -28,7 +28,7 @@ func TestPCache(t *testing.T) {
 	})
 	t.Run("should create immortal cache", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := pcache.New(st, 0)
 		defer c.Close()
 		value := []byte("value")
@@ -43,7 +43,7 @@ func TestPCache(t *testing.T) {
 	})
 	t.Run("can check key existance 1", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := pcache.New(st, 0)
 		defer c.Close()
 		c.Set("key", []byte("dummy"), 0)
@@ -52,7 +52,7 @@ func TestPCache(t *testing.T) {
 	})
 	t.Run("can check key existance 2", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := pcache.New(st, 0)
 		defer c.Close()
 		// when
@@ -60,7 +60,7 @@ func TestPCache(t *testing.T) {
 	})
 	t.Run("can delete entry", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := pcache.New(st, 0)
 		defer c.Close()
 		c.Set("key", []byte("dummy"), 0)
@@ -71,7 +71,7 @@ func TestPCache(t *testing.T) {
 	})
 	t.Run("can clear all entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := pcache.New(st, 0)
 		defer c.Close()
 		c.Set("k1", []byte("dummy"), 0)
@@ -84,7 +84,7 @@ func TestPCache(t *testing.T) {
 	})
 	t.Run("can clear expired entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := pcache.New(st, 0)
 		defer c.Close()
 		c.Set("k1", []byte("dummy"), time.Millisecond)
@@ -99,7 +99,7 @@ func TestPCache(t *testing.T) {
 	})
 	t.Run("can start with cleanup", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		c := pcache.New(st, 10*time.Minute)
 		defer c.Close()

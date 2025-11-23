@@ -23,7 +23,7 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create new implants from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})

@@ -74,7 +74,7 @@ func TestUpdateMailLabel(t *testing.T) {
 	s := NewFake(st)
 	t.Run("should create new mail labels", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -114,7 +114,7 @@ func TestUpdateMailLabel(t *testing.T) {
 	})
 	t.Run("should update existing mail labels", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})

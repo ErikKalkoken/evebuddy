@@ -17,7 +17,7 @@ func TestEveRegion(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		arg := storage.CreateEveRegionParams{
 			ID:          42,
 			Description: "description",
@@ -35,7 +35,7 @@ func TestEveRegion(t *testing.T) {
 	})
 	t.Run("can list IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		r1 := factory.CreateEveRegion()
 		r2 := factory.CreateEveRegion()
 		// when
@@ -47,7 +47,7 @@ func TestEveRegion(t *testing.T) {
 	})
 	t.Run("can return missing IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		r1 := factory.CreateEveRegion(storage.CreateEveRegionParams{ID: 42})
 		// when
 		got, err := st.MissingEveRegions(ctx, set.Of(r1.ID, 99))

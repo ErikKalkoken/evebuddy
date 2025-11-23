@@ -17,7 +17,7 @@ func TestCacheGet(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can get and existing entry", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		key := "key"
 		value := []byte("value")
 		expiresAt := time.Now().Add(time.Minute)
@@ -37,7 +37,7 @@ func TestCacheGet(t *testing.T) {
 	})
 	t.Run("should treat expired entries as non existent for get", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		key := "key"
 		value := []byte("value")
 		expiresAt := time.Now().Add(-time.Minute)
@@ -56,7 +56,7 @@ func TestCacheGet(t *testing.T) {
 	})
 	t.Run("should return entries with get which never expiry", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		key := "key"
 		value := []byte("value")
 		err := r.CacheSet(ctx, storage.CacheSetParams{
@@ -76,7 +76,7 @@ func TestCacheGet(t *testing.T) {
 	})
 	t.Run("should return error when key is empty", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		_, err := r.CacheGet(ctx, "")
 		assert.ErrorIs(t, err, app.ErrInvalid)
@@ -89,7 +89,7 @@ func TestCacheExists(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return true when entry exists", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		key := "key"
 		value := []byte("value")
 		expiresAt := time.Now().Add(time.Minute)
@@ -109,7 +109,7 @@ func TestCacheExists(t *testing.T) {
 	})
 	t.Run("should return false when entry expired", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		key := "key"
 		value := []byte("value")
 		expiresAt := time.Now().Add(-time.Minute)
@@ -129,7 +129,7 @@ func TestCacheExists(t *testing.T) {
 	})
 	t.Run("should report false when entry does not exist", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		key := "key"
 		value := []byte("value")
 		expiresAt := time.Now().Add(time.Minute)
@@ -149,7 +149,7 @@ func TestCacheExists(t *testing.T) {
 	})
 	t.Run("should return true when entry has no expiration date", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		key := "key"
 		value := []byte("value")
 		err := r.CacheSet(ctx, storage.CacheSetParams{
@@ -168,7 +168,7 @@ func TestCacheExists(t *testing.T) {
 	})
 	t.Run("should return error when key is empty", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		_, err := r.CacheExists(ctx, "")
 		assert.ErrorIs(t, err, app.ErrInvalid)
@@ -181,7 +181,7 @@ func TestCacheSet(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can update existing entry", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		key := "key"
 		err := r.CacheSet(ctx, storage.CacheSetParams{
 			Key:       key,
@@ -209,7 +209,7 @@ func TestCacheSet(t *testing.T) {
 	})
 	t.Run("should return error when key is empty", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		err := r.CacheSet(ctx, storage.CacheSetParams{})
 		assert.ErrorIs(t, err, app.ErrInvalid)
@@ -222,7 +222,7 @@ func TestCacheOther(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can delete entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		key := "key"
 		value := []byte("value")
 		expiresAt := time.Now().Add(time.Minute)
@@ -246,14 +246,14 @@ func TestCacheOther(t *testing.T) {
 	})
 	t.Run("should return error when delete and key is empty", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		err := r.CacheDelete(ctx, "")
 		assert.ErrorIs(t, err, app.ErrInvalid)
 	})
 	t.Run("can clear cache", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		key := "key"
 		value := []byte("value")
 		expiresAt := time.Now().Add(time.Minute)
@@ -277,7 +277,7 @@ func TestCacheOther(t *testing.T) {
 	})
 	t.Run("can remove all expired entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		now := time.Now()
 		if err := r.CacheSet(ctx, storage.CacheSetParams{
 			Key:       "k1",

@@ -19,7 +19,7 @@ func TestGetAttributes(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return own error when object not found", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		_, err := cs.GetAttributes(ctx, 42)
 		// then
@@ -27,7 +27,7 @@ func TestGetAttributes(t *testing.T) {
 	})
 	t.Run("should return obj when found", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		x1 := factory.CreateCharacterAttributes()
 		// when
 		x2, err := cs.GetAttributes(ctx, x1.CharacterID)
@@ -47,7 +47,7 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create attributes from ESI response", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -92,7 +92,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should update skills from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -148,7 +148,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 	})
 	t.Run("should delete skills not returned from ESI", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -224,7 +224,7 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create new queue", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})

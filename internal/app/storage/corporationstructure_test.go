@@ -20,7 +20,7 @@ func TestCorporationStructure(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create minimal from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		system := factory.CreateEveSolarSystem()
 		typ := factory.CreateEveType()
@@ -53,7 +53,7 @@ func TestCorporationStructure(t *testing.T) {
 	})
 	t.Run("can create full from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		system := factory.CreateEveSolarSystem()
 		typ := factory.CreateEveType()
@@ -107,7 +107,7 @@ func TestCorporationStructure(t *testing.T) {
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		x1 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
 			CorporationID: c.ID,
@@ -165,7 +165,7 @@ func TestCorporationStructure(t *testing.T) {
 	})
 	t.Run("can list structure IDs for corporation", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		o1 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
 			CorporationID: c.ID,
@@ -184,7 +184,7 @@ func TestCorporationStructure(t *testing.T) {
 	})
 	t.Run("can list structures for corporation", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		o1 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
 			CorporationID: c.ID,
@@ -206,7 +206,7 @@ func TestCorporationStructure(t *testing.T) {
 	})
 	t.Run("can delete structures for a corporation", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		o1 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
 			CorporationID: c.ID,
@@ -235,7 +235,7 @@ func TestStructureService(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can get and create minimal", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		structure := factory.CreateCorporationStructure()
 		arg := storage.CreateStructureServiceParams{
 			CorporationStructureID: structure.ID,
@@ -257,7 +257,7 @@ func TestStructureService(t *testing.T) {
 	})
 	t.Run("can list services", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		s := factory.CreateCorporationStructure()
 		x1 := factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: s.ID})
 		x2 := factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: s.ID})
@@ -275,7 +275,7 @@ func TestStructureService(t *testing.T) {
 	})
 	t.Run("can delete services", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		structure := factory.CreateCorporationStructure()
 		factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: structure.ID})
 		factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: structure.ID})

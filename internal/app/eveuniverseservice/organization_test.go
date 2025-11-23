@@ -102,7 +102,7 @@ func TestFetchAllianceCorporations(t *testing.T) {
 	t.Run("should return corporations", func(t *testing.T) {
 		// given
 		const allianceID = 42
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveEntityAlliance(app.EveEntity{ID: allianceID})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 101})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 102, Name: "Bravo"})
@@ -127,7 +127,7 @@ func TestFetchAllianceCorporations(t *testing.T) {
 	t.Run("should return empty list when there are no corporations", func(t *testing.T) {
 		// given
 		const allianceID = 42
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveEntityAlliance(app.EveEntity{ID: allianceID})
 		httpmock.Reset()
 		httpmock.RegisterResponder(
@@ -152,7 +152,7 @@ func TestGetOrCreateEveCorporationESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create new corporation", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
 		alliance := factory.CreateEveEntityAlliance(app.EveEntity{ID: 434243723})
 		faction := factory.CreateEveEntity(app.EveEntity{ID: 123, Category: app.EveEntityFaction})
@@ -199,7 +199,7 @@ func TestGetOrCreateEveCorporationESI(t *testing.T) {
 	t.Run("can handle no CEO and no creator", func(t *testing.T) {
 		// given
 		const corporationID = 666
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: corporationID})
 		httpmock.Reset()
 		httpmock.RegisterResponder(
@@ -243,7 +243,7 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create new corporation", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
 		alliance := factory.CreateEveEntityAlliance(app.EveEntity{ID: 434243723})
 		faction := factory.CreateEveEntity(app.EveEntity{ID: 123, Category: app.EveEntityFaction})
@@ -289,7 +289,7 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 	})
 	t.Run("should update existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		orig := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{ID: 109299958})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
 		alliance := factory.CreateEveEntityAlliance(app.EveEntity{ID: 434243723})
@@ -344,7 +344,7 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("can update from ESI and report changed IDs", func(t *testing.T) {
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		orig := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{ID: 109299958})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
 		alliance := factory.CreateEveEntityAlliance(app.EveEntity{ID: 434243723})
@@ -400,7 +400,7 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 		}
 	})
 	t.Run("can report when not changed", func(t *testing.T) {
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
 		alliance := factory.CreateEveEntityAlliance(app.EveEntity{ID: 434243723})
 		faction := factory.CreateEveEntity(app.EveEntity{ID: 123, Category: app.EveEntityFaction})

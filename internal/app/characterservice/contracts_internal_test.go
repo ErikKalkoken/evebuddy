@@ -23,7 +23,7 @@ func TestUpdateContractESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create new courier contract from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
@@ -108,7 +108,7 @@ func TestUpdateContractESI(t *testing.T) {
 	})
 	t.Run("should create new auction contract from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
@@ -211,7 +211,7 @@ func TestUpdateContractESI(t *testing.T) {
 	})
 	t.Run("should update existing contract", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
@@ -270,7 +270,7 @@ func TestUpdateContractESI(t *testing.T) {
 	})
 	t.Run("should not update unchanged contract", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})

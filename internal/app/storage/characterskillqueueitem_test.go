@@ -16,7 +16,7 @@ func TestSkillqueueItems(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		eveType := factory.CreateEveType()
 		arg := storage.SkillqueueItemParams{
@@ -39,7 +39,7 @@ func TestSkillqueueItems(t *testing.T) {
 	})
 	t.Run("can list items", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
@@ -53,7 +53,7 @@ func TestSkillqueueItems(t *testing.T) {
 	})
 	t.Run("can replace items", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
@@ -87,7 +87,7 @@ func TestSkillqueueItemsCalculateTrainingTime(t *testing.T) {
 	t.Run("can calculate total training time", func(t *testing.T) {
 		// given
 		now := time.Now()
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
 			CharacterID: c.ID,
@@ -109,7 +109,7 @@ func TestSkillqueueItemsCalculateTrainingTime(t *testing.T) {
 	t.Run("should return 0 when training is not active", func(t *testing.T) {
 		// given
 		now := time.Now()
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
 			CharacterID: c.ID,

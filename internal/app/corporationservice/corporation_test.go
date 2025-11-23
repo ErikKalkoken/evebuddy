@@ -18,7 +18,7 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 	ctx := context.Background()
 	s := corporationservice.NewFake(st)
 	t.Run("can delete corporations with no member character", func(t *testing.T) {
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		character := factory.CreateCharacter()
 		corp := factory.CreateCorporation(character.EveCharacter.Corporation.ID)
 		factory.CreateCorporation()
@@ -35,7 +35,7 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 	})
 	t.Run("report false when nothing deleted", func(t *testing.T) {
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		character := factory.CreateCharacter()
 		corp := factory.CreateCorporation(character.EveCharacter.Corporation.ID)
 		changed, err := s.UpdateCorporations(ctx)
@@ -52,7 +52,7 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 	})
 	t.Run("report false when no corporations", func(t *testing.T) {
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		changed, err := s.UpdateCorporations(ctx)
 		if !assert.NoError(t, err) {
 			t.Fatal()
@@ -66,7 +66,7 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 	})
 	t.Run("can add missing corporations", func(t *testing.T) {
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		character := factory.CreateCharacter()
 		factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{
 			ID: character.EveCharacter.Corporation.ID,
@@ -84,7 +84,7 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 	})
 	t.Run("should not add missing NPC corp", func(t *testing.T) {
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		cc := factory.CreateEveEntityCorporation(app.EveEntity{
 			ID: 1000115,
 		})

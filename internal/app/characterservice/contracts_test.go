@@ -43,7 +43,7 @@ func TestNotifyUpdatedContracts(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			// given
-			testutil.TruncateTables(db)
+			testutil.MustTruncateTables(db)
 			if tc.acceptorID != 0 {
 				factory.CreateEveEntityCharacter(app.EveEntity{ID: tc.acceptorID})
 			}

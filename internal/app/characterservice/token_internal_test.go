@@ -18,7 +18,7 @@ func TestEnsureValidToken(t *testing.T) {
 	ctx := context.Background()
 	t.Run("do nothing if token is still valid", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		character := factory.CreateCharacter()
 		token := factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
 			AccessToken:  "access-old",
@@ -41,7 +41,7 @@ func TestEnsureValidToken(t *testing.T) {
 	})
 	t.Run("do refresh token if no longer valid", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		character := factory.CreateCharacter()
 		token := factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
 			AccessToken:  "access-old",

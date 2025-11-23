@@ -17,7 +17,7 @@ func TestCharacterSkill(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		eveType := factory.CreateEveType()
 		arg := storage.UpdateOrCreateCharacterSkillParams{
@@ -42,7 +42,7 @@ func TestCharacterSkill(t *testing.T) {
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		o1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:        c.ID,
@@ -71,7 +71,7 @@ func TestCharacterSkill(t *testing.T) {
 	})
 	t.Run("can list skill IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		o1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID: c.ID,
@@ -88,7 +88,7 @@ func TestCharacterSkill(t *testing.T) {
 	})
 	t.Run("can delete excluded skills", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		x1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
 		x2 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
@@ -110,7 +110,7 @@ func TestCharacterSkillLists(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return list of skill groups with progress", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategorySkill})
 		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: true})
@@ -128,7 +128,7 @@ func TestCharacterSkillLists(t *testing.T) {
 	})
 	t.Run("should return list of skill groups with progress", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategorySkill})
 		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: true})
@@ -152,7 +152,7 @@ func TestListCharactersActiveSkillLevels(t *testing.T) {
 	ctx := context.Background()
 	t.Run("returns skill level", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		c2 := factory.CreateCharacterFull()
 		c3 := factory.CreateCharacterFull()

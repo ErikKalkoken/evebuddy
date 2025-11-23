@@ -21,7 +21,7 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should report as changed and run update when new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		token := factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		section := app.SectionCharacterImplants
@@ -52,7 +52,7 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 	})
 	t.Run("should report as changed and run update when data has changed and store update and reset error", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		section := app.SectionCharacterImplants
@@ -86,7 +86,7 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 	})
 	t.Run("should report as unchanged and not run update when data has not changed", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		section := app.SectionCharacterImplants
@@ -120,7 +120,7 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 	})
 	t.Run("should update when data has not changed", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		section := app.SectionCharacterIndustryJobs
@@ -155,7 +155,7 @@ func TestHasSectionChanged(t *testing.T) {
 	ctx := context.Background()
 	t.Run("report true when section has changed", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
@@ -175,7 +175,7 @@ func TestHasSectionChanged(t *testing.T) {
 	})
 	t.Run("report true when section does not exist", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
 		got, err := s.hasSectionChanged(ctx, app.CharacterSectionUpdateParams{
@@ -191,7 +191,7 @@ func TestHasSectionChanged(t *testing.T) {
 	})
 	t.Run("report false when section has not changed", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		status := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,

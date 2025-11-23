@@ -53,7 +53,7 @@ func TestUpdateDivisionsESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create new entries from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{
 			Token: &app.CharacterToken{AccessToken: "accessToken"},
@@ -112,7 +112,7 @@ func TestUpdateDivisionsESI(t *testing.T) {
 	})
 	t.Run("should update existing balances", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()

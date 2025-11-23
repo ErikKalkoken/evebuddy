@@ -22,7 +22,7 @@ func TestUpdateContractESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create new courier contract from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",
@@ -108,7 +108,7 @@ func TestUpdateContractESI(t *testing.T) {
 	})
 	t.Run("should create new auction contract from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",
@@ -213,7 +213,7 @@ func TestUpdateContractESI(t *testing.T) {
 	})
 	t.Run("should update existing contract", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",
@@ -274,7 +274,7 @@ func TestUpdateContractESI(t *testing.T) {
 	})
 	t.Run("should not update unchanged contract", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",

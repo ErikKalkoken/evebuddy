@@ -17,7 +17,7 @@ func TestEveSolarSystem(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateEveConstellation()
 		arg := storage.CreateEveSolarSystemParams{
 			ID:              42,
@@ -40,7 +40,7 @@ func TestEveSolarSystem(t *testing.T) {
 	})
 	t.Run("can list IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		o1 := factory.CreateEveSolarSystem()
 		o2 := factory.CreateEveSolarSystem()
 		// when
@@ -52,7 +52,7 @@ func TestEveSolarSystem(t *testing.T) {
 	})
 	t.Run("can return missing IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		r1 := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 42})
 		// when
 		got, err := st.MissingEveSolarSystems(ctx, set.Of(r1.ID, 99))

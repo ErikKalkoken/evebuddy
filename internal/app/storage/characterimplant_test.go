@@ -19,7 +19,7 @@ func TestCharacterImplant(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		eveType := factory.CreateEveType()
 		arg := storage.CreateCharacterImplantParams{
@@ -38,7 +38,7 @@ func TestCharacterImplant(t *testing.T) {
 	})
 	t.Run("can replace implants", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: c.ID})
 		eveType := factory.CreateEveType()
@@ -58,7 +58,7 @@ func TestCharacterImplant(t *testing.T) {
 	})
 	t.Run("can list implants for a character", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		x1 := factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: c.ID})
 		x2 := factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: c.ID})
@@ -76,7 +76,7 @@ func TestCharacterImplant(t *testing.T) {
 
 	t.Run("can list all implants", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		x1 := factory.CreateCharacterImplant()
 		x2 := factory.CreateCharacterImplant()
 		// when

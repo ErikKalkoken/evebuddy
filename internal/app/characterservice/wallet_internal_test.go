@@ -23,7 +23,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create new entry from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -78,7 +78,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 	})
 	t.Run("should add new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
@@ -126,7 +126,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 	})
 	t.Run("should ignore existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
@@ -177,7 +177,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 	})
 	t.Run("should fetch multiple pages", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -256,7 +256,7 @@ func TestListWalletJournalEntries(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
@@ -279,7 +279,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create new transaction from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -334,7 +334,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 	})
 	t.Run("should add new transaction", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
@@ -390,7 +390,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 	})
 	t.Run("should ignore when transaction already exists", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{
@@ -430,7 +430,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 	})
 	t.Run("should fetch multiple pages", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -496,7 +496,7 @@ func TestListWalletTransactions(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})

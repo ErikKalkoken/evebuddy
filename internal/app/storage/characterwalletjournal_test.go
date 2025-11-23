@@ -17,7 +17,7 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		date := time.Now()
 		arg := storage.CreateCharacterWalletJournalEntryParams{
@@ -56,7 +56,7 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 	})
 	t.Run("can create new full", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		e1 := factory.CreateEveEntity()
 		e2 := factory.CreateEveEntity()
@@ -104,7 +104,7 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 	})
 	t.Run("can list IDs of existing entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		e1 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		e2 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
@@ -119,7 +119,7 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 	})
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})

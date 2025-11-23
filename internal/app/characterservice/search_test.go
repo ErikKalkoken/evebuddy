@@ -23,7 +23,7 @@ func TestSearchESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return search results", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})

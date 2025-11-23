@@ -16,7 +16,7 @@ func TestEveConstellation(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		region := factory.CreateEveRegion()
 		arg := storage.CreateEveConstellationParams{
 			ID:       42,

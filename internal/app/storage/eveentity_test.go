@@ -20,7 +20,7 @@ func TestEveEntityUpdateOrCreate(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can update existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// given
 		e1 := factory.CreateEveEntity(
 			app.EveEntity{
@@ -46,7 +46,7 @@ func TestEveEntityUpdateOrCreate(t *testing.T) {
 	})
 	t.Run("should not store with invalid ID 3", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		_, err := st.UpdateOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
 			ID:       0,
@@ -64,7 +64,7 @@ func TestUpdateEveEntity(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can update existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// given
 		e1 := factory.CreateEveEntity(
 			app.EveEntity{
@@ -92,7 +92,7 @@ func TestEveEntity(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		_, err := st.CreateEveEntity(ctx, storage.CreateEveEntityParams{42, "Dummy", app.EveEntityAlliance})
 		// then
@@ -107,7 +107,7 @@ func TestEveEntity(t *testing.T) {
 	})
 	t.Run("can fetch existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// given
 		e1 := factory.CreateEveEntity(
 			app.EveEntity{
@@ -130,7 +130,7 @@ func TestEveEntity(t *testing.T) {
 	})
 	t.Run("should return objs with matching names in order", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveEntityCharacter(app.EveEntity{Name: "Y_alpha2"})
 		factory.CreateEveEntityAlliance(app.EveEntity{Name: "X_alpha1"})
 		factory.CreateEveEntityCharacter(app.EveEntity{Name: "charlie"})
@@ -149,7 +149,7 @@ func TestEveEntity(t *testing.T) {
 	})
 	t.Run("should not store with invalid ID 1", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		_, err := st.CreateEveEntity(ctx, storage.CreateEveEntityParams{0, "Dummy", app.EveEntityAlliance})
 		// then
@@ -157,7 +157,7 @@ func TestEveEntity(t *testing.T) {
 	})
 	t.Run("should not store with invalid ID 2", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		arg := storage.CreateEveEntityParams{
 			ID:       0,
@@ -176,7 +176,7 @@ func TestListEveEntitiesForIDs(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return objs with matching ids in requested order", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveEntity(app.EveEntity{ID: 1})
 		factory.CreateEveEntity(app.EveEntity{ID: 2})
 		factory.CreateEveEntity(app.EveEntity{ID: 3})
@@ -194,7 +194,7 @@ func TestListEveEntitiesForIDs(t *testing.T) {
 	})
 	t.Run("should return objs with matching ids in requested order", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveEntity(app.EveEntity{ID: 1})
 		factory.CreateEveEntity(app.EveEntity{ID: 2})
 		factory.CreateEveEntity(app.EveEntity{ID: 3})
@@ -217,7 +217,7 @@ func TestListEveEntitiesForIDs(t *testing.T) {
 		defer func() {
 			st.MaxListEveEntitiesForIDs = old
 		}()
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveEntity(app.EveEntity{ID: 1})
 		factory.CreateEveEntity(app.EveEntity{ID: 2})
 		factory.CreateEveEntity(app.EveEntity{ID: 3})
@@ -235,7 +235,7 @@ func TestListEveEntitiesForIDs(t *testing.T) {
 	})
 	t.Run("should return error when one object can not be found", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveEntity(app.EveEntity{ID: 1})
 		// when
 		_, err := st.ListEveEntitiesForIDs(ctx, []int32{1, 2})
@@ -250,7 +250,7 @@ func TestListEveEntities(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return objs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		o1 := factory.CreateEveEntity()
 		o2 := factory.CreateEveEntity()
 		// when
@@ -272,7 +272,7 @@ func TestEveEntityGetOrCreate(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create new when not exist", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		arg := storage.CreateEveEntityParams{
 			ID:       42,
 			Name:     "Dummy",
@@ -292,7 +292,7 @@ func TestEveEntityGetOrCreate(t *testing.T) {
 	})
 	t.Run("should get when exists", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// given
 		factory.CreateEveEntity(
 			app.EveEntity{
@@ -322,7 +322,7 @@ func TestEveEntityIDs(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should list existing entity IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveEntity(app.EveEntity{ID: 5})
 		factory.CreateEveEntity(app.EveEntity{ID: 42})
 		// when
@@ -335,7 +335,7 @@ func TestEveEntityIDs(t *testing.T) {
 	})
 	t.Run("should return missing IDs and ignore IDs with zero value", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveEntity(app.EveEntity{ID: 42})
 		// when
 		got, err := st.MissingEveEntityIDs(ctx, set.Of[int32](42, 5, 0))
@@ -351,7 +351,7 @@ func TestEveEntityCanCreateAllCategories(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
-	testutil.TruncateTables(db)
+	testutil.MustTruncateTables(db)
 	var categories = []app.EveEntityCategory{
 		app.EveEntityAlliance,
 		app.EveEntityCharacter,

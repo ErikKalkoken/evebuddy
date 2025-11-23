@@ -36,7 +36,7 @@ func TestNotifyExpiredExtractions(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			// given
-			testutil.TruncateTables(db)
+			testutil.MustTruncateTables(db)
 			product := factory.CreateEveType()
 			p := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{
 				LastNotified: tc.lastNotified,
@@ -74,7 +74,7 @@ func TestNotifyExpiredExtractions_ShouldNoifyOnceForMultipleExpired(t *testing.T
 	ctx := context.Background()
 	now := time.Now().UTC()
 	earliest := now.Add(-24 * time.Hour)
-	testutil.TruncateTables(db)
+	testutil.MustTruncateTables(db)
 	product := factory.CreateEveType()
 	c := factory.CreateCharacter()
 	p1 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{

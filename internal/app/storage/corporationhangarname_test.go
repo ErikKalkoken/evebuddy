@@ -19,7 +19,7 @@ func TestCorporationHangarName(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		// when
 		err := st.UpdateOrCreateCorporationHangarName(ctx, storage.UpdateOrCreateCorporationHangarNameParams{
@@ -42,7 +42,7 @@ func TestCorporationHangarName(t *testing.T) {
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		x1 := factory.CreateCorporationHangarName()
 		// when
 		err := st.UpdateOrCreateCorporationHangarName(ctx, storage.UpdateOrCreateCorporationHangarNameParams{
@@ -63,7 +63,7 @@ func TestCorporationHangarName(t *testing.T) {
 	})
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		e1 := factory.CreateCorporationHangarName(storage.UpdateOrCreateCorporationHangarNameParams{
 			CorporationID: c.ID,

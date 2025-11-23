@@ -16,7 +16,7 @@ func TestEveGroup(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new and get", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateEveCategory()
 		arg := storage.CreateEveGroupParams{
 			ID:          42,
@@ -39,7 +39,7 @@ func TestEveGroup(t *testing.T) {
 	})
 	t.Run("can get already existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		g := factory.CreateEveGroup()
 		// when
 		got, err := st.GetOrCreateEveGroup(ctx, storage.CreateEveGroupParams{
@@ -55,7 +55,7 @@ func TestEveGroup(t *testing.T) {
 	})
 	t.Run("can create new when not existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateEveCategory()
 		// when
 		got, err := st.GetOrCreateEveGroup(ctx, storage.CreateEveGroupParams{

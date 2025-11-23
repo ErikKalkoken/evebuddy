@@ -17,7 +17,7 @@ func TestGeneralSectionStatus(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can list", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		s1 := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 			Section: app.SectionEveTypes,
 		})
@@ -33,7 +33,7 @@ func TestGeneralSectionStatus(t *testing.T) {
 	})
 	t.Run("can set from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		error := "error"
 		arg := storage.UpdateOrCreateGeneralSectionStatusParams{
@@ -56,7 +56,7 @@ func TestGeneralSectionStatus(t *testing.T) {
 	})
 	t.Run("can set existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		x := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 			Section: app.SectionEveTypes,
 		})

@@ -22,7 +22,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		issued := time.Now().UTC()
 		location := factory.CreateEveLocationStructure()
@@ -74,7 +74,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 	})
 	t.Run("can create new full", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		issued := time.Now().UTC()
 		location := factory.CreateEveLocationStructure()
@@ -113,7 +113,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		cmo := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
 			IsBuyOrder: true,
 		})
@@ -154,7 +154,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 	})
 	t.Run("can list orders for a character", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
 			CharacterID: c.ID,
@@ -176,7 +176,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 	})
 	t.Run("can list order IDs for a character", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
 			CharacterID: c.ID,
@@ -195,7 +195,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 	})
 	t.Run("can list all buy orders", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
 			IsBuyOrder: true,
 		})
@@ -218,7 +218,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 	})
 	t.Run("can list all sell orders", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
 			IsBuyOrder: false,
 		})
@@ -241,7 +241,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 	})
 	t.Run("can delete orders for a character by ID", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
 			CharacterID: c.ID,
@@ -262,7 +262,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 	})
 	t.Run("can update order status", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
 			CharacterID: c.ID,

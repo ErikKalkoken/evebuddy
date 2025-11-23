@@ -19,7 +19,7 @@ func TestCorporationWalletBalance(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		// when
 		err := st.UpdateOrCreateCorporationWalletBalance(ctx, storage.UpdateOrCreateCorporationWalletBalanceParams{
@@ -42,7 +42,7 @@ func TestCorporationWalletBalance(t *testing.T) {
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		x1 := factory.CreateCorporationWalletBalance()
 		// when
 		err := st.UpdateOrCreateCorporationWalletBalance(ctx, storage.UpdateOrCreateCorporationWalletBalanceParams{
@@ -63,7 +63,7 @@ func TestCorporationWalletBalance(t *testing.T) {
 	})
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		e1 := factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
@@ -90,7 +90,7 @@ func TestCorporationWalletBalance(t *testing.T) {
 	})
 	t.Run("can delete entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		e1 := factory.CreateCorporationWalletBalance()
 		e2 := factory.CreateCorporationWalletBalance()
 		// when

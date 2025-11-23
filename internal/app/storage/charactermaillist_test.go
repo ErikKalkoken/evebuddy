@@ -18,7 +18,7 @@ func TestMailList(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		l := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList})
 		// when
@@ -28,7 +28,7 @@ func TestMailList(t *testing.T) {
 	})
 	t.Run("can fetch all mail lists for a character", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		e1 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList, Name: "alpha"})
 		assert.NoError(t, st.CreateCharacterMailList(ctx, c.ID, e1.ID))
@@ -45,7 +45,7 @@ func TestMailList(t *testing.T) {
 	})
 	t.Run("can delete obsolete mail lists for a character", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		e1 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList})
 		if err := st.CreateCharacterMailList(ctx, c1.ID, e1.ID); err != nil {

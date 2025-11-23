@@ -22,7 +22,7 @@ func TestCharacter(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can get with all dependencies", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		a := factory.CreateEveEntityAlliance()
 		f := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityFaction})
 		eveC := factory.CreateEveCharacter(storage.CreateEveCharacterParams{AllianceID: a.ID, FactionID: f.ID})
@@ -47,7 +47,7 @@ func TestCharacter(t *testing.T) {
 	})
 	t.Run("can delete", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		// when
 		err := st.DeleteCharacter(ctx, c.ID)
@@ -59,7 +59,7 @@ func TestCharacter(t *testing.T) {
 	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		_, err := st.GetCharacter(ctx, 99)
 		// then
@@ -67,7 +67,7 @@ func TestCharacter(t *testing.T) {
 	})
 	t.Run("can fetch character by ID with minimal fields populated only", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		// when
 		c2, err := st.GetCharacter(ctx, c1.ID)
@@ -85,7 +85,7 @@ func TestGetAnyCharacter(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return a character", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		c2 := factory.CreateCharacterFull()
 		// when
@@ -97,7 +97,7 @@ func TestGetAnyCharacter(t *testing.T) {
 	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		_, err := st.GetAnyCharacter(ctx)
 		// then
@@ -111,7 +111,7 @@ func TestCharacterCreate(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		character := factory.CreateEveCharacter()
 		arg := storage.CreateCharacterParams{
 			ID: character.ID,
@@ -128,7 +128,7 @@ func TestCharacterCreate(t *testing.T) {
 	})
 	t.Run("can create new full", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		character := factory.CreateEveCharacter()
 		home := factory.CreateEveLocationStructure()
 		location := factory.CreateEveLocationStructure()
@@ -165,7 +165,7 @@ func TestCharacterCreate(t *testing.T) {
 	})
 	t.Run("report error when character already exists", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		arg := storage.CreateCharacterParams{ID: c1.ID}
 		// when
@@ -181,7 +181,7 @@ func TestListCharactersShort(t *testing.T) {
 	ctx := context.Background()
 	t.Run("listed characters have all fields populated", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		// when
 		cc, err := st.ListCharactersShort(ctx)
@@ -194,7 +194,7 @@ func TestListCharactersShort(t *testing.T) {
 	})
 	t.Run("can list characters", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateCharacterFull()
 		factory.CreateCharacterFull()
 		// when
@@ -213,7 +213,7 @@ func TestListCharacters(t *testing.T) {
 	ctx := context.Background()
 	t.Run("listed characters have all fields populated", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		// when
 		cc, err := st.ListCharacters(ctx)
@@ -236,7 +236,7 @@ func TestListCharacters(t *testing.T) {
 	})
 	t.Run("can list character IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacter()
 		c2 := factory.CreateCharacter()
 		// when
@@ -249,7 +249,7 @@ func TestListCharacters(t *testing.T) {
 	})
 	t.Run("can list character corporations", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		ec1 := factory.CreateEveCharacter()
 		factory.CreateCharacter(storage.CreateCharacterParams{ID: ec1.ID})
 		factory.CreateCorporation(ec1.Corporation.ID)
@@ -269,7 +269,7 @@ func TestListCharacters(t *testing.T) {
 	})
 	t.Run("can list character corporation IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		ec1 := factory.CreateEveCharacter()
 		c1 := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec1.ID})
 		ec2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec1.Corporation.ID})
@@ -291,7 +291,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can update home", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		home := factory.CreateEveLocationStructure()
 		// when
@@ -307,7 +307,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 	})
 	t.Run("can update last clone jump with a time", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		x := time.Now().Add(1 * time.Hour)
 		// when
@@ -322,7 +322,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 	})
 	t.Run("can update last clone jump with zero time", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		x := time.Time{}
 		// when
@@ -337,7 +337,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 	})
 	t.Run("should return empty when last clone jump not updated", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacter()
 		// when
 		c2, err := st.GetCharacter(ctx, c1.ID)
@@ -347,7 +347,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 	})
 	t.Run("can update last login", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		x := time.Now().Add(1 * time.Hour)
 		// when
@@ -362,7 +362,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 	})
 	t.Run("can update location", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		location := factory.CreateEveLocationStructure()
 		// when
@@ -377,7 +377,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 	})
 	t.Run("can update ship", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		x := factory.CreateEveType()
 		// when
@@ -392,7 +392,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 	})
 	t.Run("can update is training watched", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		// when
 		err := st.UpdateCharacterIsTrainingWatched(ctx, c1.ID, true)
@@ -406,7 +406,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 	})
 	t.Run("can update is training watched 2", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
 		c2, err := st.GetCharacter(ctx, c1.ID)
 		if assert.NoError(t, err) {
@@ -424,7 +424,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 	})
 	t.Run("can update skill points", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		// when
 		totalSP := optional.New(rand.IntN(100_000_000))
@@ -441,7 +441,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 	})
 	t.Run("can update wallet balance", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		x := rand.Float64() * 100_000_000
 		// when
@@ -456,7 +456,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 	})
 	t.Run("can disable all training watchers", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull(storage.CreateCharacterParams{
 			IsTrainingWatched: true,
 		})
@@ -485,7 +485,7 @@ func TestCharacterAssetValue(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can update", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull(storage.CreateCharacterParams{
 			AssetValue: optional.New(1.23),
 		})
@@ -502,7 +502,7 @@ func TestCharacterAssetValue(t *testing.T) {
 	})
 	t.Run("can reset", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull(storage.CreateCharacterParams{
 			AssetValue: optional.New(1.23),
 		})
@@ -518,7 +518,7 @@ func TestCharacterAssetValue(t *testing.T) {
 	})
 	t.Run("can get set value", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		v := 1234.6
 		c1 := factory.CreateCharacterFull(storage.CreateCharacterParams{
 			AssetValue: optional.New(v),
@@ -532,7 +532,7 @@ func TestCharacterAssetValue(t *testing.T) {
 	})
 	t.Run("can get empty value", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		if err := st.UpdateCharacterAssetValue(ctx, c1.ID, optional.Optional[float64]{}); err != nil {
 			t.Fatal(err)

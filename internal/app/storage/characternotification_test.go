@@ -21,7 +21,7 @@ func TestCharacterNotification(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		timestamp := time.Now().UTC()
 		sender := factory.CreateEveEntityCharacter()
@@ -54,7 +54,7 @@ func TestCharacterNotification(t *testing.T) {
 	})
 	t.Run("can create new full", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		timestamp := time.Now().UTC()
 		sender := factory.CreateEveEntityCharacter()
@@ -92,7 +92,7 @@ func TestCharacterNotification(t *testing.T) {
 	})
 	t.Run("should map unknown notif types", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		timestamp := time.Now().UTC()
 		sender := factory.CreateEveEntityCharacter()
@@ -118,7 +118,7 @@ func TestCharacterNotification(t *testing.T) {
 	})
 	t.Run("can updates IsRead 1", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		n := factory.CreateCharacterNotification()
 		// when
 		err := st.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{
@@ -136,7 +136,7 @@ func TestCharacterNotification(t *testing.T) {
 	})
 	t.Run("can updates IsRead 2", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{IsRead: true})
 		// when
 		err := st.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{
@@ -154,7 +154,7 @@ func TestCharacterNotification(t *testing.T) {
 	})
 	t.Run("can update title", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{})
 		// when
 		err := st.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{
@@ -172,7 +172,7 @@ func TestCharacterNotification(t *testing.T) {
 	})
 	t.Run("can update body", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{})
 		// when
 		err := st.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{
@@ -190,7 +190,7 @@ func TestCharacterNotification(t *testing.T) {
 	})
 	t.Run("can mark notifs as processed", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacter()
 		n1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 			CharacterID: c1.ID,
@@ -222,7 +222,7 @@ func TestCharacterNotification(t *testing.T) {
 	})
 	t.Run("can calculate counts", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 			CharacterID: c.ID,
@@ -258,7 +258,7 @@ func TestCharacterNotification_List(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can list IDs of existing entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		e1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
 		e2 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
@@ -274,7 +274,7 @@ func TestCharacterNotification_List(t *testing.T) {
 	})
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 			CharacterID: c.ID,
@@ -302,7 +302,7 @@ func TestCharacterNotification_List(t *testing.T) {
 	})
 	t.Run("can list unread notifs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		n1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 			CharacterID: c.ID,
@@ -337,7 +337,7 @@ func TestCharacterNotification_ListUnprocessed(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should not return already processed", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		now := time.Now().UTC()
 		n1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
@@ -369,7 +369,7 @@ func TestCharacterNotification_ListUnprocessed(t *testing.T) {
 	})
 	t.Run("should not return stale notifs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		now := time.Now().UTC()
 		n1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
@@ -400,7 +400,7 @@ func TestCharacterNotification_ListUnprocessed(t *testing.T) {
 	})
 	t.Run("should not return notifs which have no title or body", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		now := time.Now().UTC()
 		n1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
@@ -436,7 +436,7 @@ func TestCharacterNotification_ListUnprocessed(t *testing.T) {
 	})
 	t.Run("should not return duplicates of processed notifs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		now := time.Now().UTC()
 		n1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
@@ -482,7 +482,7 @@ func TestNotificationType(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		x, err := st.GetOrCreateNotificationType(ctx, "alpha")
 		// then
@@ -493,7 +493,7 @@ func TestNotificationType(t *testing.T) {
 	})
 	t.Run("can get existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		x1, err := st.GetOrCreateNotificationType(ctx, "alpha")
 		if err != nil {
 			t.Fatal(err)

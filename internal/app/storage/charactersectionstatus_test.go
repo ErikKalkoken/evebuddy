@@ -18,7 +18,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can list", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
@@ -37,7 +37,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 	})
 	t.Run("can set from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		// when
 		error := "error"
@@ -63,7 +63,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 	})
 	t.Run("can set existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		x := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
@@ -92,7 +92,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 	})
 	t.Run("can set udpated at", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		x := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,

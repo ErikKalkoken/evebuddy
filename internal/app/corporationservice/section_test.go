@@ -18,7 +18,7 @@ func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should do nothing when permission exists", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		corporation := factory.CreateCorporation()
 		s := corporationservice.NewFake(st, corporationservice.Params{
 			CharacterService: &corporationservice.CharacterServiceFake{
@@ -52,7 +52,7 @@ func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 	})
 	t.Run("should delete secion when permission does not exit", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		corporation := factory.CreateCorporation()
 		s := corporationservice.NewFake(st, corporationservice.Params{
 			CharacterService: &corporationservice.CharacterServiceFake{

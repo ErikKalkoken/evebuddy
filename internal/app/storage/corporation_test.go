@@ -19,7 +19,7 @@ func TestCorporation(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		ec := factory.CreateEveCorporation()
 		// when
 		err := st.CreateCorporation(ctx, ec.ID)
@@ -33,7 +33,7 @@ func TestCorporation(t *testing.T) {
 	})
 	t.Run("raise specfic error when tyring to re-create existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		// when
 		err := st.CreateCorporation(ctx, c.ID)
@@ -42,7 +42,7 @@ func TestCorporation(t *testing.T) {
 	})
 	t.Run("can fetch by ID with minimal fields populated only", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCorporation()
 		// when
 		c2, err := st.GetEveCorporation(ctx, c1.ID)
@@ -53,7 +53,7 @@ func TestCorporation(t *testing.T) {
 	})
 	t.Run("can create when not exists", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		ec := factory.CreateEveCorporation()
 		// when
 		c, err := st.GetOrCreateCorporation(ctx, ec.ID)
@@ -64,7 +64,7 @@ func TestCorporation(t *testing.T) {
 	})
 	t.Run("can get when exists", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCorporation()
 		// when
 		c2, err := st.GetOrCreateCorporation(ctx, c1.ID)
@@ -81,7 +81,7 @@ func TestListCorporations(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can list corporation IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCorporation()
 		c2 := factory.CreateCorporation()
 		// when
@@ -94,7 +94,7 @@ func TestListCorporations(t *testing.T) {
 	})
 	t.Run("can list corporations in short form", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCorporation()
 		c2 := factory.CreateCorporation()
 		// when
@@ -110,7 +110,7 @@ func TestListCorporations(t *testing.T) {
 	})
 	t.Run("can list priviledged corporations", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		corp1 := factory.CreateCorporation(c.EveCharacter.Corporation.ID)
 		factory.SetCharacterRoles(c.ID, set.Of(app.RoleBrandManager))
@@ -134,7 +134,7 @@ func TestListOrphanedCorporationIDs(t *testing.T) {
 	ctx := context.Background()
 	t.Run("orphaned corporation exists", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		ec := factory.CreateEveCorporation()
 		factory.CreateCorporation(ec.ID)
 		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
@@ -151,7 +151,7 @@ func TestListOrphanedCorporationIDs(t *testing.T) {
 	})
 	t.Run("orphaned corporation does not exist", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		ec := factory.CreateEveCorporation()
 		factory.CreateCorporation(ec.ID)
 		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
@@ -173,7 +173,7 @@ func TestGetAnyCorporation(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return a character", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCorporation()
 		c2 := factory.CreateCorporation()
 		// when
@@ -185,7 +185,7 @@ func TestGetAnyCorporation(t *testing.T) {
 	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		_, err := st.GetAnyCorporation(ctx)
 		// then

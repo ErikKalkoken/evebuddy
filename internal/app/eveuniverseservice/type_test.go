@@ -22,7 +22,7 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return existing category", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: 6})
 		// when
@@ -34,7 +34,7 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 	})
 	t.Run("should fetch category from ESI and create it", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -70,7 +70,7 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return existing group", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		factory.CreateEveGroup(storage.CreateEveGroupParams{ID: 25})
 		// when
@@ -82,7 +82,7 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 	})
 	t.Run("should fetch group from ESI and create it", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: 6})
 		httpmock.RegisterResponder(
@@ -121,7 +121,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return existing type", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
 		// when
@@ -133,7 +133,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 	})
 	t.Run("should fetch type from ESI and create it", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		factory.CreateEveGroup(storage.CreateEveGroupParams{ID: 25})
 		factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{ID: 161})
@@ -194,7 +194,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 	})
 	t.Run("should fetch group from ESI and create it (integration)", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -253,7 +253,7 @@ func TestAddMissingEveTypes(t *testing.T) {
 	s := eveuniverseservice.NewTestService(st)
 	t.Run("do nothing when all types already exist", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		x1 := factory.CreateEveType()
 		// when
@@ -265,7 +265,7 @@ func TestAddMissingEveTypes(t *testing.T) {
 	})
 	t.Run("ignore invalid IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		x1 := factory.CreateEveType()
 		// when
@@ -286,7 +286,7 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return existing race", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		x1 := factory.CreateEveRace(app.EveRace{ID: 7})
 		// when
@@ -298,7 +298,7 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 	})
 	t.Run("should create race from ESI when it does not exit in DB", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -326,7 +326,7 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 	})
 	t.Run("should return specific error when race ID is invalid", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -356,7 +356,7 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return existing object", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		x1 := factory.CreateEveDogmaAttribute()
 		// when
@@ -368,7 +368,7 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 	})
 	t.Run("should create new object from ESI when it does not exist", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -412,7 +412,7 @@ func TestMarketPrice(t *testing.T) {
 	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("return price when it exists", func(t *testing.T) {
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		o := factory.CreateEveType()
 		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
 			TypeID:       o.ID,
@@ -424,7 +424,7 @@ func TestMarketPrice(t *testing.T) {
 		}
 	})
 	t.Run("return empty when no price exists", func(t *testing.T) {
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		o := factory.CreateEveType()
 		x, err := s.MarketPrice(ctx, o.ID)
 		if assert.NoError(t, err) {

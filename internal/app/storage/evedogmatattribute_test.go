@@ -17,7 +17,7 @@ func TestEveDogmaAttribute(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		unit := app.EveUnitID(99)
 		arg := storage.CreateEveDogmaAttributeParams{
 			ID:           42,
