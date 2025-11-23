@@ -10,7 +10,6 @@ import (
 	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -292,12 +291,29 @@ func (s *CharacterService) updateMailsESI(ctx context.Context, arg app.Character
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			headers := data.([]esi.GetCharactersCharacterIdMail200Ok)
-			newHeaders, existingHeaders, err := s.determineNewMail(ctx, characterID, headers)
+			existingIDs, err := s.st.ListCharacterMailIDs(ctx, characterID)
 			if err != nil {
 				return err
 			}
+			newHeaders := make([]esi.GetCharactersCharacterIdMail200Ok, 0)
+			existingHeaders := make([]esi.GetCharactersCharacterIdMail200Ok, 0)
+			for _, h := range headers {
+				if existingIDs.Contains(h.MailId) {
+					existingHeaders = append(existingHeaders, h)
+				} else {
+					newHeaders = append(newHeaders, h)
+				}
+			}
 			if len(newHeaders) > 0 {
-				if err := s.resolveMailEntities(ctx, newHeaders); err != nil {
+				var entityIDs set.Set[int32]
+				for _, m := range newHeaders {
+					entityIDs.Add(m.From)
+					for _, r := range m.Recipients {
+						entityIDs.Add(r.RecipientId)
+					}
+				}
+				_, err := s.eus.AddMissingEntities(ctx, entityIDs)
+				if err != nil {
 					return err
 				}
 				if err := s.addNewMailsESI(ctx, characterID, newHeaders); err != nil {
@@ -350,95 +366,32 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 	return oo2, nil
 }
 
-func (s *CharacterService) determineNewMail(ctx context.Context, characterID int32, mm []esi.GetCharactersCharacterIdMail200Ok) ([]esi.GetCharactersCharacterIdMail200Ok, []esi.GetCharactersCharacterIdMail200Ok, error) {
-	newMail := make([]esi.GetCharactersCharacterIdMail200Ok, 0, len(mm))
-	existingMail := make([]esi.GetCharactersCharacterIdMail200Ok, 0, len(mm))
-	existingIDs, _, err := s.determineMailIDs(ctx, characterID, mm)
-	if err != nil {
-		return newMail, existingMail, err
-	}
-	for _, h := range mm {
-		if existingIDs.Contains(h.MailId) {
-			existingMail = append(existingMail, h)
-		} else {
-			newMail = append(newMail, h)
-		}
-	}
-	return newMail, existingMail, nil
-}
-
-func (s *CharacterService) determineMailIDs(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) (set.Set[int32], set.Set[int32], error) {
-	existingIDs, err := s.st.ListCharacterMailIDs(ctx, characterID)
-	if err != nil {
-		return set.Of[int32](), set.Of[int32](), err
-	}
-	incomingIDs := set.Of[int32]()
-	for _, h := range headers {
-		incomingIDs.Add(h.MailId)
-	}
-	missingIDs := set.Difference(incomingIDs, existingIDs)
-	return existingIDs, missingIDs, nil
-}
-
-func (s *CharacterService) resolveMailEntities(ctx context.Context, mm []esi.GetCharactersCharacterIdMail200Ok) error {
-	entityIDs := set.Of[int32]()
-	for _, m := range mm {
-		entityIDs.Add(m.From)
-		for _, r := range m.Recipients {
-			entityIDs.Add(r.RecipientId)
-		}
-	}
-	_, err := s.eus.AddMissingEntities(ctx, entityIDs)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
-	type esiMailWrapper struct {
-		mail esi.GetCharactersCharacterIdMailMailIdOk
-		id   int32
-	}
-	mails := make([]esiMailWrapper, len(headers))
-	g := new(errgroup.Group)
-	g.SetLimit(s.concurrencyLimit)
-	for i, h := range headers {
-		g.Go(func() error {
-			m, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, characterID, h.MailId, nil)
-			if err != nil {
-				return err
-			}
-			mails[i].mail = m
-			mails[i].id = h.MailId
-			return nil
-		})
-	}
-	if err := g.Wait(); err != nil {
-		return err
-	}
-	for _, m := range mails {
-		recipientIDs := make([]int32, len(m.mail.Recipients))
-		for i, r := range m.mail.Recipients {
-			recipientIDs[i] = r.RecipientId
-		}
-		arg := storage.CreateCharacterMailParams{
-			Body:         m.mail.Body,
-			CharacterID:  characterID,
-			FromID:       m.mail.From,
-			IsRead:       m.mail.Read,
-			LabelIDs:     m.mail.Labels,
-			MailID:       m.id,
-			RecipientIDs: recipientIDs,
-			Subject:      m.mail.Subject,
-			Timestamp:    m.mail.Timestamp,
-		}
-		_, err := s.st.CreateCharacterMail(ctx, arg)
+	for _, h := range headers {
+		mail, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, characterID, h.MailId, nil)
 		if err != nil {
 			return err
 		}
+		recipientIDs := make([]int32, len(mail.Recipients))
+		for i, r := range mail.Recipients {
+			recipientIDs[i] = r.RecipientId
+		}
+		arg := storage.CreateCharacterMailParams{
+			Body:         mail.Body,
+			CharacterID:  characterID,
+			FromID:       mail.From,
+			IsRead:       mail.Read,
+			LabelIDs:     mail.Labels,
+			MailID:       h.MailId,
+			RecipientIDs: recipientIDs,
+			Subject:      mail.Subject,
+			Timestamp:    mail.Timestamp,
+		}
+		if _, err := s.st.CreateCharacterMail(ctx, arg); err != nil {
+			return err
+		}
+		slog.Info("Stored new mail", "characterID", characterID, "mailID", h.MailId)
 	}
-	slog.Info("Stored new mail", "characterID", characterID, "count", len(mails))
 	return nil
 }
 
