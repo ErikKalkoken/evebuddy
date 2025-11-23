@@ -21,7 +21,7 @@ func TestGetCharacter(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return own error when object not found", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		_, err := cs.GetCharacter(ctx, 42)
 		// then
@@ -29,7 +29,7 @@ func TestGetCharacter(t *testing.T) {
 	})
 	t.Run("should return obj when found", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		x1 := factory.CreateCharacterFull()
 		// when
 		x2, err := cs.GetCharacter(ctx, x1.ID)
@@ -47,7 +47,7 @@ func TestGetAnyCharacter(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return own error when object not found", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		_, err := cs.GetAnyCharacter(ctx)
 		// then
@@ -55,7 +55,7 @@ func TestGetAnyCharacter(t *testing.T) {
 	})
 	t.Run("should return obj when found", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		x1 := factory.CreateCharacterFull()
 		// when
 		x2, err := cs.GetAnyCharacter(ctx)
@@ -75,7 +75,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 	test.NewTempApp(t)
 	t.Run("create new character", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		corporation := factory.CreateEveCorporation()
 		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: corporation.ID})
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
@@ -151,7 +151,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 	})
 	t.Run("update existing character", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		corporation := factory.CreateEveCorporation()
 		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: corporation.ID})
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
@@ -230,7 +230,7 @@ func TestTrainingWatchers(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should enable watchers for characters with active queues only", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c1.ID})
 		c2 := factory.CreateCharacterFull()
@@ -250,7 +250,7 @@ func TestTrainingWatchers(t *testing.T) {
 	})
 	t.Run("should disable all training watchers", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
 		c2 := factory.CreateCharacterFull()
 		// when
@@ -269,7 +269,7 @@ func TestTrainingWatchers(t *testing.T) {
 	})
 	t.Run("should enable watchers for character with active queues", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c1.ID})
 		// when
@@ -284,7 +284,7 @@ func TestTrainingWatchers(t *testing.T) {
 	})
 	t.Run("should not enable watchers for character without active queues", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		// when
 		err := cs.EnableTrainingWatcher(ctx, c1.ID)
@@ -305,7 +305,7 @@ func TestDeleteCharacter(t *testing.T) {
 	ctx := context.Background()
 	t.Run("delete character and delete corporation when it has no members anymore", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		ec := factory.CreateEveCorporation()
 		corporation := factory.CreateCorporation(ec.ID)
 		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
@@ -324,7 +324,7 @@ func TestDeleteCharacter(t *testing.T) {
 	})
 	t.Run("delete character and keep corporation when it still has members", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		ec := factory.CreateEveCorporation()
 		corporation := factory.CreateCorporation(ec.ID)
 		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})

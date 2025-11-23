@@ -22,7 +22,7 @@ func TestUpdateCorporationStructuresESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should fetch and create full structure from scratch and delete stale structure", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()

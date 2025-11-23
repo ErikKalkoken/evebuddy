@@ -27,7 +27,7 @@ func TestTowerNotification(t *testing.T) {
 	ctx := context.Background()
 	t.Run("TowerAlertMsg full data", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		aggressorAlliance := factory.CreateEveEntityAlliance(app.EveEntity{ID: 3011})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 2011})
@@ -55,7 +55,7 @@ typeID: 16213`
 	})
 	t.Run("TowerAlertMsg partial data 1", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		aggressorAlliance := factory.CreateEveEntityAlliance(app.EveEntity{ID: 3011})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 2011})
@@ -83,7 +83,7 @@ typeID: 16213`
 	})
 	t.Run("TowerAlertMsg partial data 1", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		aggressorAlliance := factory.CreateEveEntityAlliance(app.EveEntity{ID: 3011})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 2011})

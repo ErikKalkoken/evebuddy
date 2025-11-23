@@ -23,7 +23,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create new notification from scratch 1", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateEveEntityCharacter(*c.EveCharacter.EveEntity())
@@ -113,7 +113,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 	// })
 	t.Run("should add new notification", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateEveEntityCharacter(*c.EveCharacter.EveEntity())
@@ -158,7 +158,7 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 	})
 	t.Run("should update isRead for existing notification", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateEveEntityCharacter(*c.EveCharacter.EveEntity())
@@ -208,7 +208,7 @@ func TestListCharacterNotifications(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 			CharacterID: c.ID,

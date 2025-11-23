@@ -22,7 +22,7 @@ func TestCharacterContract(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		issuer := factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		issuerCorporation := c.EveCharacter.Corporation
@@ -57,7 +57,7 @@ func TestCharacterContract(t *testing.T) {
 	})
 	t.Run("can create new full", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		issuer := factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		issuerCorporation := c.EveCharacter.Corporation
@@ -102,7 +102,7 @@ func TestCharacterContract(t *testing.T) {
 	})
 	t.Run("can update contract", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		o1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
 			UpdatedAt: time.Now().UTC().Add(-5 * time.Second),
 		})
@@ -130,7 +130,7 @@ func TestCharacterContract(t *testing.T) {
 	})
 	t.Run("can update notified", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		o1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
 			UpdatedAt: time.Now().UTC().Add(-5 * time.Second),
 		})
@@ -147,7 +147,7 @@ func TestCharacterContract(t *testing.T) {
 	})
 	t.Run("can list IDs of existing entries", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		e1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
 		e2 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
@@ -163,7 +163,7 @@ func TestCharacterContract(t *testing.T) {
 	})
 	t.Run("can list contracts for multiple characters", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		character1 := factory.CreateCharacter()
 		c1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: character1.ID})
 		c2 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: character1.ID})
@@ -182,7 +182,7 @@ func TestCharacterContract(t *testing.T) {
 	})
 	t.Run("can list existing contracts for notify", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		now := time.Now().UTC()
 		c := factory.CreateCharacter()
 		o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
@@ -206,7 +206,7 @@ func TestCharacterContractBid(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterContract()
 		bidder := factory.CreateEveEntityCharacter()
 		const (
@@ -235,7 +235,7 @@ func TestCharacterContractBid(t *testing.T) {
 	})
 	t.Run("can list existing bids", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterContract()
 		b1 := factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: c.ID})
 		b2 := factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: c.ID})
@@ -252,7 +252,7 @@ func TestCharacterContractBid(t *testing.T) {
 	})
 	t.Run("can list bid IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterContract()
 		b1 := factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: c.ID})
 		b2 := factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: c.ID})
@@ -272,7 +272,7 @@ func TestCharacterContractItem(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterContract()
 		et := factory.CreateEveType()
 		arg := storage.CreateCharacterContractItemParams{
@@ -300,7 +300,7 @@ func TestCharacterContractItem(t *testing.T) {
 	})
 	t.Run("can list existing items", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterContract()
 		i1 := factory.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{ContractID: c.ID})
 		i2 := factory.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{ContractID: c.ID})

@@ -19,7 +19,7 @@ func TestCorporationMember(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create members", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		member := factory.CreateEveEntityCharacter()
 		// when
@@ -41,7 +41,7 @@ func TestCorporationMember(t *testing.T) {
 	})
 	t.Run("can list members", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		e1 := factory.CreateCorporationMember(storage.CorporationMemberParams{
 			CorporationID: c.ID,
@@ -63,7 +63,7 @@ func TestCorporationMember(t *testing.T) {
 	})
 	t.Run("can list member IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		e1 := factory.CreateCorporationMember(storage.CorporationMemberParams{
 			CorporationID: c.ID,
@@ -82,7 +82,7 @@ func TestCorporationMember(t *testing.T) {
 	})
 	t.Run("can delete members", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		e1 := factory.CreateCorporationMember(storage.CorporationMemberParams{
 			CorporationID: c.ID,

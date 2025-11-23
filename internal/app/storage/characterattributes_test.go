@@ -18,7 +18,7 @@ func TestCharacterAttributes(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		lastRemapDate := time.Now().UTC()
 		arg := storage.UpdateOrCreateCharacterAttributesParams{
@@ -49,7 +49,7 @@ func TestCharacterAttributes(t *testing.T) {
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterAttributes(storage.UpdateOrCreateCharacterAttributesParams{
 			CharacterID: c.ID,
@@ -83,7 +83,7 @@ func TestCharacterAttributes(t *testing.T) {
 	})
 	t.Run("returns not found error", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		_, err := st.GetCharacterAttributes(ctx, 1)
 		// then

@@ -47,44 +47,53 @@ func NewDBOnDisk(t testing.TB) (*sql.DB, *storage.Storage, Factory) {
 
 // }
 
-// TruncateTables will purge data from all tables. This is meant for tests.
-func TruncateTables(dbRW *sql.DB) {
+// MustTruncateTables is like [TruncateTables] but will panic on any error.
+func MustTruncateTables(dbRW *sql.DB) {
+	err := TruncateTables(dbRW)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// TruncateTables will purge data from all data tables. This is meant for tests.
+func TruncateTables(dbRW *sql.DB) error {
 	_, err := dbRW.Exec("PRAGMA foreign_keys = 0")
 	if err != nil {
-		panic(err)
+		return err
 	}
-	sql := `SELECT name FROM sqlite_master WHERE type = "table"`
+	sql := `SELECT name FROM sqlite_master WHERE type = "table" and name != "migrations"`
 	rows, err := dbRW.Query(sql)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer rows.Close()
-	var tables []string
+	var tables set.Set[string]
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {
-			panic(err)
+			return err
 		}
-		tables = append(tables, name)
+		tables.Add(name)
 	}
-	for _, n := range tables {
+	for n := range tables.All() {
 		sql := fmt.Sprintf("DELETE FROM %s;", n)
 		_, err := dbRW.Exec(sql)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
-	for _, n := range tables {
+	for n := range tables.All() {
 		sql := fmt.Sprintf("DELETE FROM SQLITE_SEQUENCE WHERE name='%s'", n)
 		_, err := dbRW.Exec(sql)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 	_, err = dbRW.Exec("PRAGMA foreign_keys = 1")
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
 // ErrGroupDebug represents a replacement for errgroup.Group with the same API,

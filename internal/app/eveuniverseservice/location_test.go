@@ -30,7 +30,7 @@ func TestEveLocation(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create location for a station", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		owner := factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000003})
 		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000148})
@@ -87,7 +87,7 @@ func TestEveLocation(t *testing.T) {
 	})
 	t.Run("should create location for a solar system", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeSolarSystem})
 		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000148})
@@ -108,7 +108,7 @@ func TestEveLocation(t *testing.T) {
 	})
 	t.Run("can create unknown location", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeSolarSystem})
 		// when
@@ -124,7 +124,7 @@ func TestEveLocation(t *testing.T) {
 	})
 	t.Run("can create asset safety location", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeAssetSafetyWrap})
 		// when
@@ -148,7 +148,7 @@ func TestLocationStructures(t *testing.T) {
 	s := eveuniverseservice.NewTestService(st)
 	t.Run("should return existing structure", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: structureID, Name: "Alpha"})
 		// when
@@ -160,7 +160,7 @@ func TestLocationStructures(t *testing.T) {
 	})
 	t.Run("should fetch structure from ESI and create it", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		owner := factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
 		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000142})
@@ -197,7 +197,7 @@ func TestLocationStructures(t *testing.T) {
 	})
 	t.Run("should return error when trying to fetch structure without token", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		// when
 		_, err := s.GetOrCreateLocationESI(context.Background(), structureID)
@@ -206,7 +206,7 @@ func TestLocationStructures(t *testing.T) {
 	})
 	t.Run("should create empty structure from ESI when no access", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -233,7 +233,7 @@ func TestLocationStructures(t *testing.T) {
 	})
 	t.Run("should return error when other http error occurs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -303,7 +303,7 @@ func TestAddMissingLocations(t *testing.T) {
 	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	t.Run("does nothing when given no ids", func(t *testing.T) {
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		err := s.AddMissingLocations(ctx, set.Set[int64]{})
 		if assert.NoError(t, err) {
 			ids, err := st.ListEveLocationIDs(ctx)
@@ -313,7 +313,7 @@ func TestAddMissingLocations(t *testing.T) {
 		}
 	})
 	t.Run("can create missing location from scratch", func(t *testing.T) {
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeAssetSafetyWrap})
 		err := s.AddMissingLocations(ctx, set.Of[int64](2004))
 		if assert.NoError(t, err) {
@@ -325,7 +325,7 @@ func TestAddMissingLocations(t *testing.T) {
 		}
 	})
 	t.Run("ignores invalid location IDs", func(t *testing.T) {
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeAssetSafetyWrap})
 		err := s.AddMissingLocations(ctx, set.Of[int64](2004, 0))
 		if assert.NoError(t, err) {
@@ -337,7 +337,7 @@ func TestAddMissingLocations(t *testing.T) {
 		}
 	})
 	t.Run("can create missing locations only", func(t *testing.T) {
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeAssetSafetyWrap})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeSolarSystem})
 		_, err := s.GetOrCreateLocationESI(ctx, 888)

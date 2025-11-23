@@ -24,7 +24,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new order from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateEveEntity(app.EveEntity{ID: c.ID})
@@ -107,7 +107,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 	})
 	t.Run("can update existing orders", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -165,7 +165,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 	})
 	t.Run("should mark orphaned orders with state unknown", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -217,7 +217,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 	})
 	t.Run("should delete stale orders", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -272,7 +272,7 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 	})
 	t.Run("should ignore invalid orders", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateEveEntity(app.EveEntity{ID: c.ID})

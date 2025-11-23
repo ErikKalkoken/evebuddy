@@ -13,7 +13,7 @@ func TestPCache(t *testing.T) {
 	defer db.Close()
 	t.Run("should create immortal cache on disk", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := New(st, 0)
 		defer c.Close()
 		key := "key"

@@ -37,7 +37,7 @@ func TestNotifyCommunications(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			// given
-			testutil.TruncateTables(db)
+			testutil.MustTruncateTables(db)
 			s, _ := st.EveNotificationTypeToESIString(tc.typ)
 			n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 				IsProcessed: tc.isProcessed,

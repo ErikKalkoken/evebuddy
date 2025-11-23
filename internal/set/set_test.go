@@ -1,15 +1,17 @@
 package set_test
 
 import (
+	"cmp"
 	"iter"
 	"reflect"
 	"slices"
 	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestAdd(t *testing.T) {
+func TestSet_Add(t *testing.T) {
 	cases := []struct {
 		name string
 		s    set.Set[int]
@@ -33,7 +35,7 @@ func TestAdd(t *testing.T) {
 	}
 }
 
-func TestAddSeq(t *testing.T) {
+func TestSet_AddSeq(t *testing.T) {
 	cases := []struct {
 		name string
 		s    set.Set[int]
@@ -57,7 +59,7 @@ func TestAddSeq(t *testing.T) {
 	}
 }
 
-func TestAll(t *testing.T) {
+func TestSet_All(t *testing.T) {
 	cases := []struct {
 		name string
 		s    set.Set[int]
@@ -79,7 +81,7 @@ func TestAll(t *testing.T) {
 	}
 }
 
-func TestClone(t *testing.T) {
+func TestSet_Clone(t *testing.T) {
 	cases := []struct {
 		name string
 		s    set.Set[int]
@@ -99,7 +101,7 @@ func TestClone(t *testing.T) {
 	}
 }
 
-func TestContains(t *testing.T) {
+func TestSet_Contains(t *testing.T) {
 	cases := []struct {
 		name string
 		s    set.Set[int]
@@ -121,7 +123,7 @@ func TestContains(t *testing.T) {
 	}
 }
 
-func TestContainsAny(t *testing.T) {
+func TestSet_ContainsAny(t *testing.T) {
 	cases := []struct {
 		name string
 		s    set.Set[int]
@@ -147,7 +149,7 @@ func TestContainsAny(t *testing.T) {
 	}
 }
 
-func TestContainsAll(t *testing.T) {
+func TestSet_ContainsAll(t *testing.T) {
 	cases := []struct {
 		name string
 		s    set.Set[int]
@@ -173,7 +175,7 @@ func TestContainsAll(t *testing.T) {
 	}
 }
 
-func TestContainsFunc(t *testing.T) {
+func TestSet_ContainsFunc(t *testing.T) {
 	f := func(i int) bool {
 		return i%2 == 0
 	}
@@ -200,7 +202,7 @@ func TestContainsFunc(t *testing.T) {
 	}
 }
 
-func TestEqual(t *testing.T) {
+func TestSet_Equal(t *testing.T) {
 	cases := []struct {
 		name string
 		a    set.Set[int]
@@ -226,7 +228,7 @@ func TestEqual(t *testing.T) {
 	}
 }
 
-func TestClear(t *testing.T) {
+func TestSet_Clear(t *testing.T) {
 	cases := []struct {
 		name string
 		s    set.Set[int]
@@ -246,7 +248,7 @@ func TestClear(t *testing.T) {
 	}
 }
 
-func TestDelete(t *testing.T) {
+func TestSet_Delete(t *testing.T) {
 	cases := []struct {
 		name     string
 		s        set.Set[int]
@@ -273,7 +275,7 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-func TestDeleteFunc(t *testing.T) {
+func TestSet_DeleteFunc(t *testing.T) {
 	f := func(i int) bool {
 		return i%2 == 0
 	}
@@ -304,7 +306,7 @@ func TestDeleteFunc(t *testing.T) {
 	}
 }
 
-func TestDeleteSeq(t *testing.T) {
+func TestSet_DeleteSeq(t *testing.T) {
 	cases := []struct {
 		name      string
 		s         set.Set[int]
@@ -334,26 +336,7 @@ func TestDeleteSeq(t *testing.T) {
 	}
 }
 
-func TestOf(t *testing.T) {
-	cases := []struct {
-		name string
-		vals []int
-		want set.Set[int]
-	}{
-		{"create empty", []int{}, set.Of[int]()},
-		{"create non-empty", []int{1, 2}, set.Of(1, 2)},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := set.Of(tc.vals...)
-			if !got.Equal(tc.want) {
-				t.Errorf("got %q, wanted %q", got, tc.want)
-			}
-		})
-	}
-}
-
-func TestSize(t *testing.T) {
+func TestSet_Size(t *testing.T) {
 	cases := []struct {
 		name string
 		s    set.Set[int]
@@ -374,7 +357,7 @@ func TestSize(t *testing.T) {
 	}
 }
 
-func TestString(t *testing.T) {
+func TestSet_String(t *testing.T) {
 	cases := []struct {
 		name string
 		s    set.Set[int]
@@ -395,7 +378,7 @@ func TestString(t *testing.T) {
 	}
 }
 
-func TestSlice2(t *testing.T) {
+func TestSet_Slice(t *testing.T) {
 	var nilSlice []int
 	cases := []struct {
 		name string
@@ -416,7 +399,26 @@ func TestSlice2(t *testing.T) {
 	}
 }
 
-func TestTestCollect2(t *testing.T) {
+func TestOf(t *testing.T) {
+	cases := []struct {
+		name string
+		vals []int
+		want set.Set[int]
+	}{
+		{"create empty", []int{}, set.Of[int]()},
+		{"create non-empty", []int{1, 2}, set.Of(1, 2)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := set.Of(tc.vals...)
+			if !got.Equal(tc.want) {
+				t.Errorf("got %q, wanted %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestCollect(t *testing.T) {
 	cases := []struct {
 		name string
 		seq  iter.Seq[int]
@@ -484,6 +486,126 @@ func TestIntersection(t *testing.T) {
 			got := set.Intersection(tc.sets...)
 			if !got.Equal(tc.want) {
 				t.Errorf("got %q, wanted %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestMax(t *testing.T) {
+	cases := []struct {
+		name        string
+		s           set.Set[int]
+		want        int
+		shouldPanic bool
+	}{
+		{"several items", set.Of(1, 3), 3, false},
+		{"one item", set.Of(1), 1, false},
+		{"empty", set.Of[int](), 0, true},
+		{"zero", set.Set[int]{}, 0, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.shouldPanic {
+				assert.Panics(t, func() {
+					set.Max(tc.s)
+				})
+			} else {
+				got := set.Max(tc.s)
+				if got != tc.want {
+					t.Errorf("got %v, wanted %v", got, tc.want)
+				}
+			}
+		})
+	}
+}
+
+func TestMaxFunc(t *testing.T) {
+	cases := []struct {
+		name        string
+		s           set.Set[int]
+		want        int
+		shouldPanic bool
+	}{
+		{"several items", set.Of(1, 3), 3, false},
+		{"one item", set.Of(1), 1, false},
+		{"empty", set.Of[int](), 0, true},
+		{"zero", set.Set[int]{}, 0, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.shouldPanic {
+				assert.Panics(t, func() {
+					set.MaxFunc(tc.s, func(a, b int) int {
+						return cmp.Compare(a, b)
+					})
+				})
+			} else {
+				got := set.MaxFunc(tc.s, func(a, b int) int {
+					return cmp.Compare(a, b)
+				})
+				if got != tc.want {
+					t.Errorf("got %v, wanted %v", got, tc.want)
+				}
+			}
+		})
+	}
+}
+
+func TestMin(t *testing.T) {
+	cases := []struct {
+		name        string
+		s           set.Set[int]
+		want        int
+		shouldPanic bool
+	}{
+		{"several items", set.Of(1, 3), 1, false},
+		{"one item", set.Of(1), 1, false},
+		{"empty", set.Of[int](), 0, true},
+		{"zero", set.Set[int]{}, 0, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.shouldPanic {
+				assert.Panics(t, func() {
+					set.Min(tc.s)
+				})
+			} else {
+				got := set.Min(tc.s)
+				if got != tc.want {
+					t.Errorf("got %v, wanted %v", got, tc.want)
+				}
+			}
+		})
+	}
+}
+
+func TestMinFunc(t *testing.T) {
+	cases := []struct {
+		name        string
+		s           set.Set[int]
+		want        int
+		shouldPanic bool
+	}{
+		{"several items", set.Of(1, 3), 1, false},
+		{"one item", set.Of(1), 1, false},
+		{"empty", set.Of[int](), 0, true},
+		{"zero", set.Set[int]{}, 0, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.shouldPanic {
+				assert.Panics(t, func() {
+					set.MinFunc(tc.s, func(a, b int) int {
+						return cmp.Compare(a, b)
+					})
+				})
+			} else {
+				got := set.MinFunc(tc.s, func(a, b int) int {
+					return cmp.Compare(a, b)
+				})
+				if got != tc.want {
+					t.Errorf("got %v, wanted %v", got, tc.want)
+				}
 			}
 		})
 	}

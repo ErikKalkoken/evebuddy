@@ -23,7 +23,7 @@ func TestMakeStructureBaseText(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create base text from complete input data", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		o := factory.CreateEveLocationStructure()
 		// when
@@ -39,7 +39,7 @@ func TestMakeStructureBaseText(t *testing.T) {
 	})
 	t.Run("can create base text from minimal input data", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		es := factory.CreateEveSolarSystem()
 		// when

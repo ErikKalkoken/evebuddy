@@ -9,9 +9,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// FetchWithPaging returns the combined list of items from all pages of an ESI endpoint.
-// This only works for ESI endpoints which support the X-Pages pattern and return a list.
-func FetchWithPaging[T any](concurrencyLimit int, fetch func(int) ([]T, *http.Response, error)) ([]T, error) {
+// FetchPages fetches and returns the combined list of items
+// from all pages of an ESI endpoint that supports paging with X-Pages.
+// Subsequent pages are fetched concurrently.
+func FetchPages[T any](concurrencyLimit int, fetch func(page int) ([]T, *http.Response, error)) ([]T, error) {
 	result, r, err := fetch(1)
 	if err != nil {
 		return nil, err
@@ -46,6 +47,41 @@ func FetchWithPaging[T any](concurrencyLimit int, fetch func(int) ([]T, *http.Re
 		combined = slices.Concat(combined, result)
 	}
 	return combined, nil
+}
+
+// FetchPagesWithExit fetches and returns the combined list of items
+// from all pages of an ESI endpoint that supports paging with X-Pages.
+// Will stop fetching subsequent pages when a page returns an item for which the found function returns true.
+// If found is nil it will be ignored.
+func FetchPagesWithExit[T any](fetch func(page int) ([]T, *http.Response, error), found func(x T) bool) ([]T, error) {
+	exit := func(s []T) bool {
+		if found == nil {
+			return false
+		}
+		return slices.ContainsFunc(s, found)
+	}
+	items, r, err := fetch(1)
+	if err != nil {
+		return nil, err
+	}
+	pages, err := extractPageCount(r)
+	if err != nil {
+		return nil, err
+	}
+	if pages < 2 || exit(items) {
+		return items, nil
+	}
+	for p := 2; p <= pages; p++ {
+		it, _, err := fetch(p)
+		if err != nil {
+			return nil, err
+		}
+		items = slices.Concat(items, it)
+		if exit(it) {
+			break
+		}
+	}
+	return items, nil
 }
 
 func extractPageCount(r *http.Response) (int, error) {

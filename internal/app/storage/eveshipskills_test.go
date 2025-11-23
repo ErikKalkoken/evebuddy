@@ -17,7 +17,7 @@ func TestEveShipSkills(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategoryShip})
 		group := factory.CreateEveGroup(storage.CreateEveGroupParams{
 			CategoryID: category.ID,
@@ -46,7 +46,7 @@ func TestEveShipSkills(t *testing.T) {
 	})
 	t.Run("can replace and create complete skill ship table", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategoryShip})
 		group := factory.CreateEveGroup(storage.CreateEveGroupParams{
 			CategoryID: category.ID,

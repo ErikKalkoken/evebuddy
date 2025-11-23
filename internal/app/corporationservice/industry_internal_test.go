@@ -25,7 +25,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should create new job from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",
@@ -92,7 +92,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 	})
 	t.Run("should update existing job", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",
@@ -155,7 +155,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 	})
 	t.Run("should fix incorrect status for new jobs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",
@@ -206,7 +206,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 	})
 	t.Run("should fix incorrect status for existing jobs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",
@@ -260,7 +260,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 	})
 	t.Run("should not fix correct status", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",
@@ -313,7 +313,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 	})
 	t.Run("should support all activity IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",
@@ -384,7 +384,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 	})
 	t.Run("can fetch jobs from multiple pages", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",
@@ -464,7 +464,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 	})
 	t.Run("should mark orphaned jobs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",

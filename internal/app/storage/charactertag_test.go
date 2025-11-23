@@ -18,7 +18,7 @@ func TestTag(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		// when
 		got, err := st.CreateTag(ctx, "name")
 		// then
@@ -29,7 +29,7 @@ func TestTag(t *testing.T) {
 	})
 	t.Run("can get by ID", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		t1 := factory.CreateCharacterTag()
 		// when
 		t2, err := st.GetTag(ctx, t1.ID)
@@ -40,7 +40,7 @@ func TestTag(t *testing.T) {
 	})
 	t.Run("can list ordered by name", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		t1 := factory.CreateCharacterTag("Charlie")
 		t2 := factory.CreateCharacterTag("Alpha")
 		// when
@@ -56,7 +56,7 @@ func TestTag(t *testing.T) {
 	})
 	t.Run("raise specfic error when tyring to create new with existing name", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		tag := factory.CreateCharacterTag()
 		// when
 		_, err := st.CreateTag(ctx, tag.Name)
@@ -65,7 +65,7 @@ func TestTag(t *testing.T) {
 	})
 	t.Run("can update name", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		t1 := factory.CreateCharacterTag()
 		// when
 		err := st.UpdateTagName(ctx, t1.ID, "alpha")
@@ -79,7 +79,7 @@ func TestTag(t *testing.T) {
 	})
 	t.Run("can delete tag", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		t1 := factory.CreateCharacterTag()
 		// when
 		err := st.DeleteTag(ctx, t1.ID)
@@ -97,7 +97,7 @@ func TestCharacterTag(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can add tag to character", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		tag := factory.CreateCharacterTag()
 		character1 := factory.CreateCharacter()
 		factory.CreateCharacter()
@@ -125,7 +125,7 @@ func TestCharacterTag(t *testing.T) {
 	})
 	t.Run("can remove tag from character", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		tag := factory.CreateCharacterTag()
 		character1 := factory.CreateCharacter()
 		err := st.CreateCharactersCharacterTag(ctx, storage.CreateCharacterTagParams{
@@ -162,7 +162,7 @@ func TestCharacterTag(t *testing.T) {
 	})
 	t.Run("can list tags for character", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		tag := factory.CreateCharacterTag()
 		factory.CreateCharacterTag()
 		character := factory.CreateCharacter()

@@ -17,7 +17,7 @@ func TestEveType(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		g := factory.CreateEveGroup()
 		arg := storage.CreateEveTypeParams{
 			ID:             42,
@@ -58,7 +58,7 @@ func TestEveType(t *testing.T) {
 	})
 	t.Run("can get existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		want := factory.CreateEveType()
 		// when
 		got, err := st.GetOrCreateEveType(ctx, storage.CreateEveTypeParams{
@@ -71,7 +71,7 @@ func TestEveType(t *testing.T) {
 	})
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		g := factory.CreateEveGroup()
 		arg := storage.CreateEveTypeParams{
 			ID:             42,
@@ -113,7 +113,7 @@ func TestEveType(t *testing.T) {
 	})
 	t.Run("can list IDs", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		x1 := factory.CreateEveType()
 		x2 := factory.CreateEveType()
 		// when
@@ -126,7 +126,7 @@ func TestEveType(t *testing.T) {
 	})
 	t.Run("can identify missing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 7})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 8})
 		// when

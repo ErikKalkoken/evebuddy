@@ -16,7 +16,7 @@ func TestEvePlanet(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		solarSystem := factory.CreateEveSolarSystem()
 		type_ := factory.CreateEveType()
 		arg := storage.CreateEvePlanetParams{

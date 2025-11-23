@@ -19,7 +19,7 @@ func TestToken(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		now := time.Now()
 		arg := storage.UpdateOrCreateCharacterTokenParams{
@@ -46,7 +46,7 @@ func TestToken(t *testing.T) {
 	})
 	t.Run("can fetch existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterToken()
 		// when
 		r, err := st.GetCharacterToken(ctx, c.CharacterID)
@@ -61,7 +61,7 @@ func TestToken(t *testing.T) {
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		o1 := factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		arg := storage.UpdateOrCreateCharacterTokenParamsFromToken(o1)
@@ -83,7 +83,7 @@ func TestToken(t *testing.T) {
 
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
 		_, err := st.GetCharacterToken(ctx, c.ID)
@@ -98,7 +98,7 @@ func TestListCharacterTokenForCorporation(t *testing.T) {
 	ctx := context.Background()
 	t.Run("return matching token only", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		corp1 := factory.CreateEveEntityCorporation()
 		corp2 := factory.CreateEveEntityCorporation()
 
@@ -149,7 +149,7 @@ func TestListCharacterTokenForCorporation(t *testing.T) {
 	})
 	t.Run("matches any when no roles", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateEveEntityCorporation()
 
 		// token with no role
@@ -181,7 +181,7 @@ func TestListCharacterTokenForCorporation(t *testing.T) {
 		}
 	})
 	t.Run("list for corporation returns not found error when no token", func(t *testing.T) {
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		corp := factory.CreateCorporation()
 		_, err := st.ListCharacterTokenForCorporation(ctx, corp.ID, set.Of(app.RoleFactoryManager), set.Of("alpha"))
 		assert.Error(t, err, app.ErrNotFound)

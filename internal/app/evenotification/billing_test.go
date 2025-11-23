@@ -26,7 +26,7 @@ func TestBilling(t *testing.T) {
 	ctx := context.Background()
 	t.Run("CorpAllBillMsg full data", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		creditor := factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000023})
 		debtor := factory.CreateEveEntityCorporation(app.EveEntity{ID: 98267621})
@@ -52,7 +52,7 @@ externalID2: 60003760`
 	})
 	t.Run("CorpAllBillMsg partial data", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		creditor := factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000023})
 		debtor := factory.CreateEveEntityCorporation(app.EveEntity{ID: 98267621})

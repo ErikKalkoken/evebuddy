@@ -24,7 +24,7 @@ func TestGetOrCreateEveRegionESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return existing region", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		factory.CreateEveRegion(storage.CreateEveRegionParams{ID: 6})
 		// when
@@ -36,7 +36,7 @@ func TestGetOrCreateEveRegionESI(t *testing.T) {
 	})
 	t.Run("should fetch region from ESI and create it", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -71,7 +71,7 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return existing constellation", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		factory.CreateEveConstellation(storage.CreateEveConstellationParams{ID: 25})
 		// when
@@ -83,7 +83,7 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 	})
 	t.Run("should fetch constellation from ESI and create it", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		factory.CreateEveRegion(storage.CreateEveRegionParams{ID: 10000001})
 		httpmock.RegisterResponder(
@@ -125,7 +125,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return existing solar system", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 587})
 		// when
@@ -137,7 +137,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 	})
 	t.Run("should fetch solar system from ESI and create it", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		factory.CreateEveConstellation(storage.CreateEveConstellationParams{ID: 20000001})
 		httpmock.RegisterResponder(
@@ -182,7 +182,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 	})
 	t.Run("should fetch solar system from ESI and create it (integration)", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -288,7 +288,7 @@ func TestGetOrCreateEvePlanetESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return existing planet", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		factory.CreateEvePlanet(storage.CreateEvePlanetParams{ID: 25})
 		// when
@@ -300,7 +300,7 @@ func TestGetOrCreateEvePlanetESI(t *testing.T) {
 	})
 	t.Run("should fetch planet from ESI and create it", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		solarSystem := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000003})
 		type_ := factory.CreateEveType(storage.CreateEveTypeParams{ID: 13})
@@ -340,7 +340,7 @@ func TestGetOrCreateEveMoonESI(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return existing moon", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		factory.CreateEveMoon(storage.CreateEveMoonParams{ID: 25})
 		// when
@@ -352,7 +352,7 @@ func TestGetOrCreateEveMoonESI(t *testing.T) {
 	})
 	t.Run("should fetch moon from ESI and create it", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		solarSystem := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000003})
 		data := map[string]any{
@@ -389,7 +389,7 @@ func TestFetchRoute(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return route when valid", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		s1 := factory.CreateEveSolarSystem()
 		s2 := factory.CreateEveSolarSystem()
 		s3 := factory.CreateEveSolarSystem()
@@ -412,7 +412,7 @@ func TestFetchRoute(t *testing.T) {
 	})
 	t.Run("should return short route when origin and dest the same", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		o := factory.CreateEveSolarSystem()
 		// when
@@ -429,7 +429,7 @@ func TestFetchRoute(t *testing.T) {
 	})
 	t.Run("should return invalid route when origin in WH space", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		orig := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 31000001})
 		dest := factory.CreateEveSolarSystem()
@@ -446,7 +446,7 @@ func TestFetchRoute(t *testing.T) {
 	})
 	t.Run("should return error when called with invalid systems", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		// when
 		_, err := s.FetchRoute(ctx, app.EveRouteHeader{
@@ -459,7 +459,7 @@ func TestFetchRoute(t *testing.T) {
 	})
 	t.Run("should return error when called with invalid systems", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		x := factory.CreateEveSolarSystem()
 		// when
@@ -474,7 +474,7 @@ func TestFetchRoute(t *testing.T) {
 	})
 	t.Run("return empty slice when no route found", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		s1 := factory.CreateEveSolarSystem()
 		s2 := factory.CreateEveSolarSystem()
 		httpmock.Reset()
@@ -505,7 +505,7 @@ func TestFetchRoutes(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return routes", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		a1 := factory.CreateEveSolarSystem()
 		a2 := factory.CreateEveSolarSystem()
@@ -553,7 +553,7 @@ func TestMembershipHistory(t *testing.T) {
 	t.Run("should return corporation membership history", func(t *testing.T) {
 		// given
 		s.Now = func() time.Time { return time.Date(2016, 7, 30, 20, 0, 0, 0, time.UTC) }
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c1 := factory.CreateEveEntityCorporation(app.EveEntity{ID: 90000001})
 		c2 := factory.CreateEveEntityCorporation(app.EveEntity{ID: 90000002})
@@ -599,7 +599,7 @@ func TestMembershipHistory(t *testing.T) {
 	t.Run("should return alliance membership history", func(t *testing.T) {
 		// given
 		s.Now = func() time.Time { return time.Date(2016, 10, 30, 20, 0, 0, 0, time.UTC) }
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c1 := factory.CreateEveEntityAlliance(app.EveEntity{ID: 99000006})
 		httpmock.RegisterResponder(
@@ -648,7 +648,7 @@ func TestGetStarTypeID(t *testing.T) {
 	s := eveuniverseservice.NewTestService(st)
 	ctx := context.Background()
 	// given
-	testutil.TruncateTables(db)
+	testutil.MustTruncateTables(db)
 	httpmock.Reset()
 	httpmock.RegisterResponder(
 		"GET",

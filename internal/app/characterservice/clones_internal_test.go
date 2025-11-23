@@ -39,7 +39,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 	}
 	t.Run("should create new clones from scratch", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -73,7 +73,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 	})
 	t.Run("should update existing clone", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
@@ -122,7 +122,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return time of next available jump with skill", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		now := time.Now().UTC()
 		c := factory.CreateCharacterFull(storage.CreateCharacterParams{
 			LastCloneJumpAt: optional.New(now.Add(-6 * time.Hour)),
@@ -140,7 +140,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 	})
 	t.Run("should return time of next available jump without skill", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		now := time.Now().UTC()
 		c := factory.CreateCharacterFull(storage.CreateCharacterParams{
 			LastCloneJumpAt: optional.New(now.Add(-6 * time.Hour)),
@@ -152,7 +152,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 	})
 	t.Run("should return time of next available jump without skill and never jumped before", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull(storage.CreateCharacterParams{
 			LastCloneJumpAt: optional.New(time.Time{}),
 		})
@@ -163,7 +163,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 	})
 	t.Run("should return zero time when next jump available now", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		now := time.Now().UTC()
 		c := factory.CreateCharacterFull(storage.CreateCharacterParams{
 			LastCloneJumpAt: optional.New(now.Add(-20 * time.Hour)),
@@ -181,7 +181,7 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 	})
 	t.Run("should return empty time when last jump not found", func(t *testing.T) {
 		// given
-		testutil.TruncateTables(db)
+		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeInfomorphSynchronizing})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
