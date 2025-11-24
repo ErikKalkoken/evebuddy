@@ -3,7 +3,6 @@ package characterservice
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"testing"
 	"time"
 
@@ -162,70 +161,4 @@ func TestUpdateMailLabel(t *testing.T) {
 			}
 		}
 	})
-}
-
-func TestExtractRetryAfter(t *testing.T) {
-	tests := []struct {
-		name             string
-		headers          http.Header
-		expectError      bool
-		expectedBase     time.Duration
-		expectedGroup    string
-		expectedErrorMsg string
-	}{
-		{
-			name:             "Missing Header",
-			headers:          http.Header{},
-			expectError:      true,
-			expectedBase:     0,
-			expectedGroup:    "",
-			expectedErrorMsg: "Retry-After header missing",
-		},
-		{
-			name:             "Invalid Float Value",
-			headers:          http.Header{"Retry-After": []string{"not-a-number"}},
-			expectError:      true,
-			expectedBase:     0,
-			expectedGroup:    "",
-			expectedErrorMsg: "invalid syntax",
-		},
-		{
-			name:          "Valid Float with No Group",
-			headers:       http.Header{"Retry-After": []string{"5.5"}},
-			expectError:   false,
-			expectedBase:  5500 * time.Millisecond,
-			expectedGroup: "",
-		},
-		{
-			name:          "Valid Integer with Group",
-			headers:       http.Header{"Retry-After": []string{"10"}, "X-Ratelimit-Group": []string{"api-v2"}},
-			expectError:   false,
-			expectedBase:  10 * time.Second,
-			expectedGroup: "api-v2",
-		},
-		{
-			name:          "Valid Large Float",
-			headers:       http.Header{"Retry-After": []string{"120.75"}},
-			expectError:   false,
-			expectedBase:  120750 * time.Millisecond,
-			expectedGroup: "",
-		},
-	}
-	const maxJitter = 999 * time.Millisecond
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			countdown, group, err := extractRetryAfter(tt.headers)
-			if tt.expectError {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.expectedErrorMsg)
-				return
-			}
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedGroup, group)
-			minCountdown := tt.expectedBase
-			maxCountdown := tt.expectedBase + maxJitter
-			assert.True(t, countdown >= minCountdown, "Countdown %v is less than expected minimum %v", countdown, minCountdown)
-			assert.True(t, countdown <= maxCountdown, "Countdown %v is greater than expected maximum %v", countdown, maxCountdown)
-		})
-	}
 }

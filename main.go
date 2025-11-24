@@ -264,7 +264,7 @@ func main() {
 	defer pc.Close()
 
 	// Initialize shared HTTP client
-	// Automatically retries on connection and most server errors
+	// Automatically retries on connection errors, most server errors and 429s
 	// Logs requests on debug level and all HTTP error responses as warnings
 	rhc := retryablehttp.NewClient()
 	rhc.HTTPClient.Transport = &httpcache.Transport{

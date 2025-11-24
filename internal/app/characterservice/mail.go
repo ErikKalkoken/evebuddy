@@ -4,10 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"math/rand/v2"
-	"net/http"
 	"slices"
-	"strconv"
 	"time"
 
 	"github.com/antihax/goesi"
@@ -370,21 +367,11 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 }
 
 func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
-	const defaultRetryAfter = 600 * time.Second
-	ticker := time.NewTicker(3500 * time.Millisecond) // workaround to comply with rate limit of max 300/15min
+	ticker := time.NewTicker(3500 * time.Millisecond) // comply with rate limit of max 300 requests / 15min
 	for _, h := range headers {
 		<-ticker.C
-		mail, r, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, characterID, h.MailId, nil)
+		mail, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, characterID, h.MailId, nil)
 		if err != nil {
-			if r.StatusCode == http.StatusTooManyRequests {
-				countdown, group, err := extractRetryAfter(r.Header)
-				if err != nil {
-					slog.Warn("Failed to parse header for rate limits. Using default.", "header", r.Header, "error", err)
-					countdown = defaultRetryAfter
-				}
-				slog.Info("Rate limit exceeded. Waiting for reset.", "characterID", characterID, "group", group, "seconds", countdown.Seconds())
-				time.Sleep(countdown)
-			}
 			return err
 		}
 		recipientIDs := make([]int32, len(mail.Recipients))
@@ -408,24 +395,6 @@ func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32
 		slog.Info("Stored new mail", "characterID", characterID, "mailID", h.MailId)
 	}
 	return nil
-}
-
-// extractRetryAfter extracts from the header when requests can be retried
-// and which rate limit group was affected. The duration includes jitter.
-func extractRetryAfter(h http.Header) (time.Duration, string, error) {
-	x := h.Get("Retry-After")
-	if x == "" {
-		return 0, "", fmt.Errorf("Retry-After header missing")
-	}
-	x2, err := strconv.ParseFloat(x, 64)
-	if err != nil {
-		return 0, "", err
-	}
-	retryAfter := time.Duration(x2 * float64(time.Second))
-	jitter := time.Duration(rand.IntN(1000) * int(time.Millisecond))
-	countdown := retryAfter + jitter
-	group := h.Get("X-Ratelimit-Group")
-	return countdown, group, nil
 }
 
 func (s *CharacterService) updateExistingMail(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
