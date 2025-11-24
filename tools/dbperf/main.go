@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 )
 
 const objectsCount = int32(10_000)

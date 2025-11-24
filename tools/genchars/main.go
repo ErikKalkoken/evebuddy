@@ -7,7 +7,7 @@ import (
 	"math/rand/v2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 )
 
 var factorFlag = flag.Int("f", 1, "factor to apply to default quantities")

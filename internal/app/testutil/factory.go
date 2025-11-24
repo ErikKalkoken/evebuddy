@@ -1,4 +1,3 @@
-// Package testutil contains factories for creating test objects in the repository
 package testutil
 
 import (

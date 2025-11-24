@@ -91,6 +91,13 @@ var (
 	ssoDemoFlag        = flag.Bool("sso-demo", false, "Start SSO serer in demo mode")
 )
 
+// RealTicker provides a real ticker from the standard library.
+type RealTicker struct{}
+
+func (RealTicker) Tick(d time.Duration) <-chan time.Time {
+	return time.Tick(d)
+}
+
 func main() {
 	// init log & flags
 	slog.SetLogLoggerLevel(logLevelDefault)
@@ -264,7 +271,7 @@ func main() {
 	defer pc.Close()
 
 	// Initialize shared HTTP client
-	// Automatically retries on connection and most server errors
+	// Automatically retries on connection errors, most server errors and 429s
 	// Logs requests on debug level and all HTTP error responses as warnings
 	rhc := retryablehttp.NewClient()
 	rhc.HTTPClient.Transport = &httpcache.Transport{
@@ -305,6 +312,7 @@ func main() {
 		SSOService:             ssoService,
 		StatusCacheService:     scs,
 		Storage:                st,
+		TickerSource:           &RealTicker{},
 	})
 
 	// Init Corporation service

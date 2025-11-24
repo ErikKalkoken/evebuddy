@@ -7,6 +7,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/antihax/goesi"
 )
@@ -22,6 +23,7 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,
+		TickerSource:       &testutil.FakeTicker{},
 	}
 	if len(args) > 0 {
 		a := args[0]

@@ -32,7 +32,7 @@ const (
 	settingLogLevel                           = "logLevel"
 	settingLogLevelDefault                    = "info"
 	settingMaxMails                           = "settingMaxMails"
-	settingMaxMailsDefault                    = 1_000
+	settingMaxMailsDefault                    = 250
 	settingMaxMailsMax                        = 10_000
 	settingMaxWalletTransactions              = "settingMaxWalletTransactions"
 	settingMarketOrdersRetentionDays          = "settingMarketOrderRetentionDays"

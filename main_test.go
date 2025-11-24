@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/stretchr/testify/assert"
 )
 

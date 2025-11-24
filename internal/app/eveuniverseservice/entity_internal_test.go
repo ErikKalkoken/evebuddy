@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )

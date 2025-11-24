@@ -4,6 +4,7 @@ package characterservice
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
@@ -20,6 +21,13 @@ type SSOService interface {
 	RefreshToken(ctx context.Context, refreshToken string) (*app.Token, error)
 }
 
+// Ticker is the abstraction for obtaining a ticker.
+// This allows disabling tickers in tests.
+type Ticker interface {
+	// Tick returns a read-only channel that delivers the time after the specified duration.
+	Tick(d time.Duration) <-chan time.Time
+}
+
 // CharacterService provides access to all managed Eve Online characters both online and from local storage.
 type CharacterService struct {
 	ens              *evenotification.EveNotificationService
@@ -31,6 +39,7 @@ type CharacterService struct {
 	sfg              *singleflight.Group
 	sso              SSOService
 	st               *storage.Storage
+	ticker           Ticker
 }
 
 type Params struct {
@@ -40,6 +49,7 @@ type Params struct {
 	SSOService             SSOService
 	StatusCacheService     *statuscacheservice.StatusCacheService
 	Storage                *storage.Storage
+	TickerSource           Ticker
 	// optional
 	HTTPClient *http.Client
 	ESIClient  *goesi.APIClient
@@ -56,6 +66,7 @@ func New(arg Params) *CharacterService {
 		sso:              arg.SSOService,
 		st:               arg.Storage,
 		sfg:              new(singleflight.Group),
+		ticker:           arg.TickerSource,
 	}
 	if arg.HTTPClient == nil {
 		s.httpClient = http.DefaultClient
