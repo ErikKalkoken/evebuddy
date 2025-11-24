@@ -2,24 +2,15 @@ package characterservice
 
 import (
 	"context"
-	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/antihax/goesi"
 )
-
-// FakeTicker provides a fake ticker that always completes without delay.
-type FakeTicker struct{}
-
-func (m *FakeTicker) Tick(_ time.Duration) <-chan time.Time {
-	x := make(chan time.Time)
-	close(x)
-	return x
-}
 
 func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 	scs := statuscacheservice.New(memcache.New(), st)
@@ -32,7 +23,7 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,
-		TickerSource:       &FakeTicker{},
+		TickerSource:       &testutil.FakeTicker{},
 	}
 	if len(args) > 0 {
 		a := args[0]

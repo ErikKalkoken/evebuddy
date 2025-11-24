@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/url"
 	"testing"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
@@ -20,6 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
@@ -192,15 +192,6 @@ func (s *CharacterServiceFake) CharacterTokenForCorporation(ctx context.Context,
 	return s.Token, s.Error
 }
 
-// FakeTicker provides a fake ticker that always completes without delay.
-type FakeTicker struct{}
-
-func (m *FakeTicker) Tick(_ time.Duration) <-chan time.Time {
-	x := make(chan time.Time)
-	close(x)
-	return x
-}
-
 func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *baseUI {
 	esiClient := goesi.NewAPIClient(nil, "dummy")
 	cache := memcache.New()
@@ -217,7 +208,7 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,
-		TickerSource:       &FakeTicker{},
+		TickerSource:       &testutil.FakeTicker{},
 	})
 	rs := corporationservice.New(corporationservice.Params{
 		CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{

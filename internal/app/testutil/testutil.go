@@ -218,3 +218,12 @@ func (s *EveUniverseServiceFake) ToEntities(ctx context.Context, ids set.Set[int
 	}
 	return m, nil
 }
+
+// FakeTicker provides a fake ticker that always completes without delay.
+type FakeTicker struct{}
+
+func (m *FakeTicker) Tick(_ time.Duration) <-chan time.Time {
+	x := make(chan time.Time)
+	close(x)
+	return x
+}
