@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	DiscordServerURL = "https://discord.gg/tVSCQEVJnJ"
+	discordServerURL = "https://discord.gg/tVSCQEVJnJ"
 )
 
 func makeAboutPage(u *baseUI) fyne.CanvasObject {
@@ -36,14 +36,31 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 	techInfos := container.New(layout.NewCustomPaddedVBoxLayout(0),
 		container.NewHBox(widget.NewLabel("Main window size:"), layout.NewSpacer(), widget.NewLabel(x)),
 	)
-
-	discordURL, _ := url.Parse(DiscordServerURL)
+	if !u.IsDeveloperMode() {
+		techInfos.Hide()
+	}
+	discordURL, _ := url.Parse(discordServerURL)
 	support := widget.NewLabel("For support please open an issue on our web site or join our Discord server.")
 	support.Wrapping = fyne.TextWrapWord
+	updateAvailable := widget.NewHyperlink("Update available", u.websiteRootURL().JoinPath("releases"))
+	updateAvailable.Hide()
+	go func() {
+		v, err := u.availableUpdate()
+		if err != nil {
+			slog.Error("Failed to fetch available updates")
+			return
+		}
+		if !v.IsRemoteNewer {
+			return
+		}
+		updateAvailable.URL = u.websiteRootURL().JoinPath("releases", "tag", "v"+v.Latest)
+		updateAvailable.Show()
+	}()
 	c := container.New(
 		layout.NewCustomPaddedVBoxLayout(0),
 		title,
 		container.NewHBox(currentVersion, releaseNotes),
+		updateAvailable,
 		techInfos,
 		support,
 		container.NewHBox(
@@ -54,8 +71,5 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 		widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."),
 		widget.NewLabel("(c) 2024-25 Erik Kalkoken"),
 	)
-	if !u.IsDeveloperMode() {
-		techInfos.Hide()
-	}
 	return c
 }
