@@ -91,6 +91,12 @@ var (
 	ssoDemoFlag        = flag.Bool("sso-demo", false, "Start SSO serer in demo mode")
 )
 
+type RealTickerSource struct{}
+
+func (RealTickerSource) Tick(d time.Duration) <-chan time.Time {
+	return time.Tick(d)
+}
+
 func main() {
 	// init log & flags
 	slog.SetLogLoggerLevel(logLevelDefault)
@@ -305,6 +311,7 @@ func main() {
 		SSOService:             ssoService,
 		StatusCacheService:     scs,
 		Storage:                st,
+		TickerSource:           &RealTickerSource{},
 	})
 
 	// Init Corporation service

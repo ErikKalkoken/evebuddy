@@ -2,6 +2,7 @@ package characterservice
 
 import (
 	"context"
+	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
@@ -10,6 +11,15 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/antihax/goesi"
 )
+
+type MockTickerSource struct{}
+
+func (m *MockTickerSource) Tick(_ time.Duration) <-chan time.Time {
+	// Tick completes without delay
+	x := make(chan time.Time)
+	close(x)
+	return x
+}
 
 func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 	scs := statuscacheservice.New(memcache.New(), st)
@@ -22,6 +32,7 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,
+		TickerSource:       &MockTickerSource{},
 	}
 	if len(args) > 0 {
 		a := args[0]

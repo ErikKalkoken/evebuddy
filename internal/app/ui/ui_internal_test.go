@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 	"testing"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
@@ -191,6 +192,14 @@ func (s *CharacterServiceFake) CharacterTokenForCorporation(ctx context.Context,
 	return s.Token, s.Error
 }
 
+type MockTickerSource struct{}
+
+func (m *MockTickerSource) Tick(_ time.Duration) <-chan time.Time {
+	x := make(chan time.Time)
+	close(x)
+	return x
+}
+
 func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *baseUI {
 	esiClient := goesi.NewAPIClient(nil, "dummy")
 	cache := memcache.New()
@@ -207,6 +216,7 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,
+		TickerSource:       &MockTickerSource{},
 	})
 	rs := corporationservice.New(corporationservice.Params{
 		CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{

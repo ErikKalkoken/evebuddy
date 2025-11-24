@@ -14,6 +14,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+)
+
+const (
+	mailRateLimitDelay = 3300 * time.Millisecond // Delay to comply with rate limit of max. 300 requests / 15min
 )
 
 // DeleteMail deletes a mail both on ESI and in the database.
@@ -129,13 +134,18 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int32, subj
 	if err != nil {
 		return 0, err
 	}
-	esiMail := esi.PostCharactersCharacterIdMailMail{
+	select {
+	case <-s.tickerSource.Tick(mailRateLimitDelay):
+	case <-ctx.Done():
+		return 0, ctx.Err()
+	}
+	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+	mailID, _, err := s.esiClient.ESI.MailApi.PostCharactersCharacterIdMail(ctx, characterID, esi.PostCharactersCharacterIdMailMail{
 		Body:       body,
 		Subject:    subject,
 		Recipients: rr,
-	}
-	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
-	mailID, _, err := s.esiClient.ESI.MailApi.PostCharactersCharacterIdMail(ctx, characterID, esiMail, nil)
+	}, nil,
+	)
 	if err != nil {
 		return 0, err
 	}
@@ -212,9 +222,14 @@ func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.Char
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
+			select {
+			case <-s.tickerSource.Tick(mailRateLimitDelay):
+			case <-ctx.Done():
+				return esi.GetCharactersCharacterIdMailLabelsOk{}, ctx.Err()
+			}
 			ll, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLabels(ctx, characterID, nil)
 			if err != nil {
-				return false, err
+				return ll, err
 			}
 			slog.Debug("Received mail labels from ESI", "characterID", characterID, "count", len(ll.Labels))
 			return ll, nil
@@ -248,9 +263,14 @@ func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.Chara
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
+			select {
+			case <-s.tickerSource.Tick(mailRateLimitDelay):
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
 			lists, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLists(ctx, characterID, nil)
 			if err != nil {
-				return false, err
+				return nil, err
 			}
 			return lists, nil
 		},
@@ -341,6 +361,11 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 	var oo2 []esi.GetCharactersCharacterIdMail200Ok
 	lastMailID := int32(0)
 	for {
+		select {
+		case <-s.tickerSource.Tick(mailRateLimitDelay):
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
 		var opts *esi.GetCharactersCharacterIdMailOpts
 		if lastMailID > 0 {
 			opts = &esi.GetCharactersCharacterIdMailOpts{LastMailId: esioptional.NewInt32(lastMailID)}
@@ -367,9 +392,12 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 }
 
 func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
-	ticker := time.NewTicker(3500 * time.Millisecond) // comply with rate limit of max 300 requests / 15min
 	for _, h := range headers {
-		<-ticker.C
+		select {
+		case <-s.tickerSource.Tick(mailRateLimitDelay):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 		mail, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, characterID, h.MailId, nil)
 		if err != nil {
 			return err
@@ -429,11 +457,13 @@ func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mail
 	if err != nil {
 		return err
 	}
-	labelIDs := make([]int32, len(m.Labels))
-	for i, l := range m.Labels {
-		labelIDs[i] = l.LabelID
+	labelIDs := xslices.Map(m.Labels, func(x *app.CharacterMailLabel) int32 {
+		return x.LabelID
+	})
+	contents := esi.PutCharactersCharacterIdMailMailIdContents{
+		Read:   isRead,
+		Labels: labelIDs,
 	}
-	contents := esi.PutCharactersCharacterIdMailMailIdContents{Read: isRead, Labels: labelIDs}
 	_, err = s.esiClient.ESI.MailApi.PutCharactersCharacterIdMailMailId(ctx, m.CharacterID, contents, m.MailID, nil)
 	if err != nil {
 		return err
