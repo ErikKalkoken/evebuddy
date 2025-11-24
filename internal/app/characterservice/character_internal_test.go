@@ -12,10 +12,10 @@ import (
 	"github.com/antihax/goesi"
 )
 
-type MockTickerSource struct{}
+// FakeTicker provides a fake ticker that always completes without delay.
+type FakeTicker struct{}
 
-func (m *MockTickerSource) Tick(_ time.Duration) <-chan time.Time {
-	// Tick completes without delay
+func (m *FakeTicker) Tick(_ time.Duration) <-chan time.Time {
 	x := make(chan time.Time)
 	close(x)
 	return x
@@ -32,7 +32,7 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,
-		TickerSource:       &MockTickerSource{},
+		TickerSource:       &FakeTicker{},
 	}
 	if len(args) > 0 {
 		a := args[0]

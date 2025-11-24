@@ -91,9 +91,10 @@ var (
 	ssoDemoFlag        = flag.Bool("sso-demo", false, "Start SSO serer in demo mode")
 )
 
-type RealTickerSource struct{}
+// RealTicker provides a real ticker from the standard library.
+type RealTicker struct{}
 
-func (RealTickerSource) Tick(d time.Duration) <-chan time.Time {
+func (RealTicker) Tick(d time.Duration) <-chan time.Time {
 	return time.Tick(d)
 }
 
@@ -311,7 +312,7 @@ func main() {
 		SSOService:             ssoService,
 		StatusCacheService:     scs,
 		Storage:                st,
-		TickerSource:           &RealTickerSource{},
+		TickerSource:           &RealTicker{},
 	})
 
 	// Init Corporation service

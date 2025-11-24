@@ -21,8 +21,9 @@ type SSOService interface {
 	RefreshToken(ctx context.Context, refreshToken string) (*app.Token, error)
 }
 
-// TickerSource is the abstraction for obtaining time channels.
-type TickerSource interface {
+// Ticker is the abstraction for obtaining a ticker.
+// This allows disabling tickers in tests.
+type Ticker interface {
 	// Tick returns a read-only channel that delivers the time after the specified duration.
 	Tick(d time.Duration) <-chan time.Time
 }
@@ -38,7 +39,7 @@ type CharacterService struct {
 	sfg              *singleflight.Group
 	sso              SSOService
 	st               *storage.Storage
-	tickerSource     TickerSource
+	ticker           Ticker
 }
 
 type Params struct {
@@ -48,7 +49,7 @@ type Params struct {
 	SSOService             SSOService
 	StatusCacheService     *statuscacheservice.StatusCacheService
 	Storage                *storage.Storage
-	TickerSource           TickerSource
+	TickerSource           Ticker
 	// optional
 	HTTPClient *http.Client
 	ESIClient  *goesi.APIClient
@@ -65,7 +66,7 @@ func New(arg Params) *CharacterService {
 		sso:              arg.SSOService,
 		st:               arg.Storage,
 		sfg:              new(singleflight.Group),
-		tickerSource:     arg.TickerSource,
+		ticker:           arg.TickerSource,
 	}
 	if arg.HTTPClient == nil {
 		s.httpClient = http.DefaultClient

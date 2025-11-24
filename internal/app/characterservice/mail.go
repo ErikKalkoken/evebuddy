@@ -135,7 +135,7 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int32, subj
 		return 0, err
 	}
 	select {
-	case <-s.tickerSource.Tick(mailRateLimitDelay):
+	case <-s.ticker.Tick(mailRateLimitDelay):
 	case <-ctx.Done():
 		return 0, ctx.Err()
 	}
@@ -223,7 +223,7 @@ func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.Char
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			select {
-			case <-s.tickerSource.Tick(mailRateLimitDelay):
+			case <-s.ticker.Tick(mailRateLimitDelay):
 			case <-ctx.Done():
 				return esi.GetCharactersCharacterIdMailLabelsOk{}, ctx.Err()
 			}
@@ -264,7 +264,7 @@ func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.Chara
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			select {
-			case <-s.tickerSource.Tick(mailRateLimitDelay):
+			case <-s.ticker.Tick(mailRateLimitDelay):
 			case <-ctx.Done():
 				return nil, ctx.Err()
 			}
@@ -362,7 +362,7 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 	lastMailID := int32(0)
 	for {
 		select {
-		case <-s.tickerSource.Tick(mailRateLimitDelay):
+		case <-s.ticker.Tick(mailRateLimitDelay):
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		}
@@ -392,9 +392,10 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 }
 
 func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
+	slog.Info("Started fetching new mail from ESI", "characterID", characterID, "count", len(headers))
 	for _, h := range headers {
 		select {
-		case <-s.tickerSource.Tick(mailRateLimitDelay):
+		case <-s.ticker.Tick(mailRateLimitDelay):
 		case <-ctx.Done():
 			return ctx.Err()
 		}
@@ -422,6 +423,7 @@ func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32
 		}
 		slog.Info("Stored new mail", "characterID", characterID, "mailID", h.MailId)
 	}
+	slog.Info("Completed fetching new mail from ESI", "characterID", characterID, "count", len(headers))
 	return nil
 }
 

@@ -192,9 +192,10 @@ func (s *CharacterServiceFake) CharacterTokenForCorporation(ctx context.Context,
 	return s.Token, s.Error
 }
 
-type MockTickerSource struct{}
+// FakeTicker provides a fake ticker that always completes without delay.
+type FakeTicker struct{}
 
-func (m *MockTickerSource) Tick(_ time.Duration) <-chan time.Time {
+func (m *FakeTicker) Tick(_ time.Duration) <-chan time.Time {
 	x := make(chan time.Time)
 	close(x)
 	return x
@@ -216,7 +217,7 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,
-		TickerSource:       &MockTickerSource{},
+		TickerSource:       &FakeTicker{},
 	})
 	rs := corporationservice.New(corporationservice.Params{
 		CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
