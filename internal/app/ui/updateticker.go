@@ -164,31 +164,31 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	if u.isOffline {
 		return
 	}
-	var sections []app.CharacterSection
+	var sections set.Set[app.CharacterSection]
 	if !u.isDesktop && !u.isForeground.Load() {
 		// only update what is needed for notifications on mobile when running in background to save battery
 		if u.settings.NotifyCommunicationsEnabled() {
-			sections = append(sections, app.SectionCharacterNotifications)
+			sections.Add(app.SectionCharacterNotifications)
 		}
 		if u.settings.NotifyContractsEnabled() {
-			sections = append(sections, app.SectionCharacterContracts)
+			sections.Add(app.SectionCharacterContracts)
 		}
 		if u.settings.NotifyMailsEnabled() {
-			sections = append(sections, app.SectionCharacterMailLabels)
-			sections = append(sections, app.SectionCharacterMailLists)
-			sections = append(sections, app.SectionCharacterMails)
+			sections.Add(app.SectionCharacterMailLabels)
+			sections.Add(app.SectionCharacterMailLists)
+			sections.Add(app.SectionCharacterMails)
 		}
 		if u.settings.NotifyPIEnabled() {
-			sections = append(sections, app.SectionCharacterPlanets)
+			sections.Add(app.SectionCharacterPlanets)
 		}
 		if u.settings.NotifyTrainingEnabled() {
-			sections = append(sections, app.SectionCharacterSkillqueue)
-			sections = append(sections, app.SectionCharacterSkills)
+			sections.Add(app.SectionCharacterSkillqueue)
+			sections.Add(app.SectionCharacterSkills)
 		}
 	} else {
-		sections = app.CharacterSections
+		sections = set.Of(app.CharacterSections...)
 	}
-	if len(sections) == 0 {
+	if sections.Size() == 0 {
 		return
 	}
 	slog.Debug("Starting to check character sections for update", "sections", sections)
@@ -196,7 +196,7 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	if err != nil {
 		slog.Error("Failed to refresh token for update", "characterID", characterID, "error", err)
 	}
-	for _, s := range sections {
+	for s := range sections.All() {
 		go u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
 	}
 }
