@@ -1,6 +1,7 @@
 package characterservice
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
@@ -18,7 +19,7 @@ import (
 )
 
 const (
-	mailRateLimitDelay = 3300 * time.Millisecond // Delay to comply with rate limit of max. 300 requests / 15min
+	mailRateLimitDelay = 3300 * time.Millisecond // Rate limit of max. 300 requests / 15 min incl. contingency
 )
 
 // DeleteMail deletes a mail both on ESI and in the database.
@@ -356,10 +357,12 @@ func (s *CharacterService) updateMailsESI(ctx context.Context, arg app.Character
 		})
 }
 
-// fetchMailHeadersESI fetched mail headers from ESI with paging and returns them.
+// fetchMailHeadersESI fetches and returns a slice of mail headers for a character from ESI.
+// The headers are garanteered to be in descending order by mailID.
+// It will at most return (maxMail + page size) headers.
 func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID int32, maxMails int) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
-	var oo2 []esi.GetCharactersCharacterIdMail200Ok
-	lastMailID := int32(0)
+	mails := make([]esi.GetCharactersCharacterIdMail200Ok, 0)
+	var lastMailID int32
 	for {
 		select {
 		case <-s.ticker.Tick(mailRateLimitDelay):
@@ -376,19 +379,20 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 		if err != nil {
 			return nil, err
 		}
-		oo2 = slices.Concat(oo2, oo)
-		isLimitExceeded := (maxMails != 0 && len(oo2)+maxMailHeadersPerPage > maxMails)
+		mails = slices.Concat(mails, oo)
+		isLimitExceeded := (maxMails != 0 && len(mails)+maxMailHeadersPerPage > maxMails)
 		if len(oo) < maxMailHeadersPerPage || isLimitExceeded {
 			break
 		}
-		ids := make([]int32, len(oo))
-		for i, o := range oo {
-			ids[i] = o.MailId
-		}
-		lastMailID = slices.Min(ids)
+		lastMailID = slices.Min(xslices.Map(oo, func(x esi.GetCharactersCharacterIdMail200Ok) int32 {
+			return x.MailId
+		}))
 	}
-	slog.Debug("Received mail headers", "characterID", characterID, "count", len(oo2))
-	return oo2, nil
+	slices.SortFunc(mails, func(a, b esi.GetCharactersCharacterIdMail200Ok) int {
+		return cmp.Compare(b.MailId, a.MailId) // descending order
+	})
+	slog.Debug("Received mail headers", "characterID", characterID, "count", len(mails))
+	return mails, nil
 }
 
 func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
