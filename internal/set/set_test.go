@@ -250,26 +250,28 @@ func TestSet_Clear(t *testing.T) {
 
 func TestSet_Delete(t *testing.T) {
 	cases := []struct {
-		name     string
-		s        set.Set[int]
-		v        int
-		wantSet  set.Set[int]
-		wantBool bool
+		name       string
+		s          set.Set[int]
+		v          []int
+		wantSet    set.Set[int]
+		wantResult int
 	}{
-		{"element exists", set.Of(1, 2), 1, set.Of(2), true},
-		{"element does not exist", set.Of(1, 2), 3, set.Of(1, 2), false},
-		{"removing last element", set.Of(1), 1, set.Of[int](), true},
-		{"empty set", set.Of[int](), 1, set.Of[int](), false},
-		{"zero set", set.Set[int]{}, 1, set.Set[int]{}, false},
+		{"element exists", set.Of(1, 2), []int{1}, set.Of(2), 1},
+		{"multiple existing elements", set.Of(1, 2, 3), []int{1, 3}, set.Of(2), 2},
+		{"element does not exist", set.Of(1, 2), []int{3}, set.Of(1, 2), 0},
+		{"some existing elements", set.Of(1, 2, 3), []int{1, 4}, set.Of(2, 3), 1},
+		{"removing last element", set.Of(1), []int{1}, set.Of[int](), 1},
+		{"empty set", set.Of[int](), []int{1}, set.Of[int](), 0},
+		{"zero set", set.Set[int]{}, []int{1}, set.Set[int]{}, 0},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := tc.s.Delete(tc.v)
+			got := tc.s.Delete(tc.v...)
 			if !tc.s.Equal(tc.wantSet) {
 				t.Errorf("got %q, wanted %q", tc.s, tc.wantSet)
 			}
-			if got != tc.wantBool {
-				t.Errorf("got %v, wanted %v", got, tc.wantBool)
+			if got != tc.wantResult {
+				t.Errorf("got %v, wanted %v", got, tc.wantResult)
 			}
 		})
 	}
