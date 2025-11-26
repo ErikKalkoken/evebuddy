@@ -56,7 +56,6 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			assets, err := xesi.FetchPages(
-				s.concurrencyLimit,
 				func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 					arg := &esi.GetCharactersCharacterIdAssetsOpts{
 						Page: esioptional.NewInt32(int32(pageNum)),

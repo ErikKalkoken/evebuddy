@@ -39,7 +39,6 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			entries, err := xesi.FetchPages(
-				s.concurrencyLimit,
 				func(pageNum int) ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
 					arg := &esi.GetCharactersCharacterIdWalletJournalOpts{
 						Page: esioptional.NewInt32(int32(pageNum)),

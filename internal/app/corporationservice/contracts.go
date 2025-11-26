@@ -92,7 +92,6 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.Cor
 		ctx, arg,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			contracts, err := xesi.FetchPages(
-				s.concurrencyLimit,
 				func(pageNum int) ([]esi.GetCorporationsCorporationIdContracts200Ok, *http.Response, error) {
 					return s.esiClient.ESI.ContractsApi.GetCorporationsCorporationIdContracts(
 						ctx, arg.CorporationID, &esi.GetCorporationsCorporationIdContractsOpts{

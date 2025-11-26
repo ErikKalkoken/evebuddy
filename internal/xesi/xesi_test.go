@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFetchPages(t *testing.T) {
+func TestFetchPagesConcurrently(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
@@ -72,7 +72,7 @@ func TestFetchPages(t *testing.T) {
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
 		)
 		// when
-		xx, err := FetchPages(-1, func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
+		xx, err := FetchPagesConcurrently(-1, func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 			arg := &esi.GetCharactersCharacterIdAssetsOpts{
 				Page: esioptional.NewInt32(int32(pageNum)),
 			}
@@ -109,7 +109,7 @@ func TestFetchPages(t *testing.T) {
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
 		)
 		// when
-		xx, err := FetchPages(-1,
+		xx, err := FetchPagesConcurrently(-1,
 			func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 				arg := &esi.GetCharactersCharacterIdAssetsOpts{
 					Page: esioptional.NewInt32(int32(pageNum)),
@@ -141,7 +141,7 @@ func TestFetchPages(t *testing.T) {
 			}),
 		)
 		// when
-		xx, err := FetchPages(-1,
+		xx, err := FetchPagesConcurrently(-1,
 			func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 				arg := &esi.GetCharactersCharacterIdAssetsOpts{
 					Page: esioptional.NewInt32(int32(pageNum)),
@@ -157,7 +157,7 @@ func TestFetchPages(t *testing.T) {
 		// given
 		myErr := errors.New("error")
 		// when
-		_, err := FetchPages(-1,
+		_, err := FetchPagesConcurrently(-1,
 			func(pageNum int) ([]int, *http.Response, error) {
 				return nil, nil, myErr
 			})
@@ -172,7 +172,7 @@ func TestFetchPages(t *testing.T) {
 			"https://esi.evetech.net/v4/characters/99/assets/",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}).HeaderSet(http.Header{"X-Pages": []string{"invalid"}}))
 		// when
-		_, err := FetchPages(-1,
+		_, err := FetchPagesConcurrently(-1,
 			func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 				arg := &esi.GetCharactersCharacterIdAssetsOpts{
 					Page: esioptional.NewInt32(int32(pageNum)),

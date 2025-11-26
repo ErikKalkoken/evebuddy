@@ -207,7 +207,6 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg app
 		ctx, arg,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
 			entries, err := xesi.FetchPages(
-				s.concurrencyLimit,
 				func(pageNum int) ([]esi.GetCorporationsCorporationIdWalletsDivisionJournal200Ok, *http.Response, error) {
 					opts := &esi.GetCorporationsCorporationIdWalletsDivisionJournalOpts{
 						Page: esioptional.NewInt32(int32(pageNum)),

@@ -151,7 +151,6 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			contracts, err := xesi.FetchPages(
-				s.concurrencyLimit,
 				func(pageNum int) ([]esi.GetCharactersCharacterIdContracts200Ok, *http.Response, error) {
 					return s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContracts(
 						ctx, characterID, &esi.GetCharactersCharacterIdContractsOpts{

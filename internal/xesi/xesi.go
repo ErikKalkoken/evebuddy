@@ -9,10 +9,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// FetchPages fetches and returns the combined list of items
+// FetchPagesConcurrently fetches and returns the combined list of items
 // from all pages of an ESI endpoint that supports paging with X-Pages.
 // Subsequent pages are fetched concurrently.
-func FetchPages[T any](concurrencyLimit int, fetch func(page int) ([]T, *http.Response, error)) ([]T, error) {
+func FetchPagesConcurrently[T any](concurrencyLimit int, fetch func(page int) ([]T, *http.Response, error)) ([]T, error) {
 	result, r, err := fetch(1)
 	if err != nil {
 		return nil, err
@@ -47,6 +47,12 @@ func FetchPages[T any](concurrencyLimit int, fetch func(page int) ([]T, *http.Re
 		combined = slices.Concat(combined, result)
 	}
 	return combined, nil
+}
+
+// FetchPages fetches and returns the combined list of items
+// from all pages of an ESI endpoint that supports paging with X-Pages.
+func FetchPages[T any](fetch func(page int) ([]T, *http.Response, error)) ([]T, error) {
+	return FetchPagesWithExit(fetch, nil)
 }
 
 // FetchPagesWithExit fetches and returns the combined list of items
