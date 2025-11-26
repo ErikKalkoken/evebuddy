@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"slices"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/antihax/goesi/esi"
 )
 
@@ -80,7 +82,9 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			planets, _, err := s.esiClient.ESI.PlanetaryInteractionApi.GetCharactersCharacterIdPlanets(ctx, characterID, nil)
+			planets, _, err := xesi.RateLimited("GetCharactersCharacterIdPlanets", characterID, func() ([]esi.GetCharactersCharacterIdPlanets200Ok, *http.Response, error) {
+				return s.esiClient.ESI.PlanetaryInteractionApi.GetCharactersCharacterIdPlanets(ctx, characterID, nil)
+			})
 			if err != nil {
 				return false, err
 			}
@@ -124,7 +128,9 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 				if err != nil {
 					return err
 				}
-				planet, _, err := s.esiClient.ESI.PlanetaryInteractionApi.GetCharactersCharacterIdPlanetsPlanetId(ctx, characterID, o.PlanetId, nil)
+				planet, _, err := xesi.RateLimited("GetCharactersCharacterIdPlanetsPlanetId", characterID, func() (esi.GetCharactersCharacterIdPlanetsPlanetIdOk, *http.Response, error) {
+					return s.esiClient.ESI.PlanetaryInteractionApi.GetCharactersCharacterIdPlanetsPlanetId(ctx, characterID, o.PlanetId, nil)
+				})
 				if err != nil {
 					return err
 				}

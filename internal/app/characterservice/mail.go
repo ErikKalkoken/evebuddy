@@ -27,6 +27,7 @@ func (s *CharacterService) DeleteMail(ctx context.Context, characterID, mailID i
 		return err
 	}
 	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+	// FIXME: Need special rate limiter
 	_, err = s.esiClient.ESI.MailApi.DeleteCharactersCharacterIdMailMailId(ctx, characterID, mailID, nil)
 	if err != nil {
 		return err
@@ -453,6 +454,7 @@ func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mail
 		Read:   isRead,
 		Labels: labelIDs,
 	}
+	// FIXME: Need special rate limiter
 	_, err = s.esiClient.ESI.MailApi.PutCharactersCharacterIdMailMailId(ctx, m.CharacterID, contents, m.MailID, nil)
 	if err != nil {
 		return err

@@ -15,7 +15,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xesi"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	esioptional "github.com/antihax/goesi/optional"
 )
 
@@ -279,30 +278,23 @@ func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID i
 	if len(ids)%assetNamesMaxIDs > 0 {
 		numResults++
 	}
-	results := make([][]esi.PostCharactersCharacterIdAssetsNames200Ok, numResults)
-	g := new(errgroup.Group)
-	g.SetLimit(s.concurrencyLimit)
-	for num, chunk := range xiter.Count(slices.Chunk(ids, assetNamesMaxIDs), 0) {
-		g.Go(func() error {
-			names, _, err := s.esiClient.ESI.AssetsApi.PostCharactersCharacterIdAssetsNames(ctx, characterID, chunk, nil)
-			if err != nil {
-				return err
-			}
-			results[num] = names
-			return nil
+	results := make([]esi.PostCharactersCharacterIdAssetsNames200Ok, 0)
+	for chunk := range slices.Chunk(ids, assetNamesMaxIDs) {
+		names, _, err := xesi.RateLimited("PostCharactersCharacterIdAssetsNames", characterID, func() ([]esi.PostCharactersCharacterIdAssetsNames200Ok, *http.Response, error) {
+			return s.esiClient.ESI.AssetsApi.PostCharactersCharacterIdAssetsNames(ctx, characterID, chunk, nil)
 		})
-	}
-	if err := g.Wait(); err != nil {
-		// We can live temporarily without asset names and will try again to fetch them next time
-		// If some of the requests have succeeded we will use those names
-		slog.Warn("Failed to fetch asset names", "characterID", characterID, "err", err)
+		if err != nil {
+			// We can live temporarily without asset names and will try again to fetch them next time
+			// If some of the requests have succeeded we will use those names
+			slog.Warn("Failed to fetch asset names", "characterID", characterID, "err", err)
+			continue
+		}
+		results = slices.Concat(results, names)
 	}
 	m := make(map[int64]string)
-	for _, names := range results {
-		for _, n := range names {
-			if n.Name != "None" {
-				m[n.ItemId] = n.Name
-			}
+	for _, n := range results {
+		if n.Name != "None" {
+			m[n.ItemId] = n.Name
 		}
 	}
 	return m, nil

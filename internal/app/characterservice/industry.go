@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"log/slog"
 	"maps"
+	"net/http"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
@@ -42,8 +44,10 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 	_, err := s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			jobs, _, err := s.esiClient.ESI.IndustryApi.GetCharactersCharacterIdIndustryJobs(ctx, characterID, &esi.GetCharactersCharacterIdIndustryJobsOpts{
-				IncludeCompleted: esioptional.NewBool(true),
+			jobs, _, err := xesi.RateLimited("GetCharactersCharacterIdIndustryJobs", characterID, func() ([]esi.GetCharactersCharacterIdIndustryJobs200Ok, *http.Response, error) {
+				return s.esiClient.ESI.IndustryApi.GetCharactersCharacterIdIndustryJobs(ctx, characterID, &esi.GetCharactersCharacterIdIndustryJobsOpts{
+					IncludeCompleted: esioptional.NewBool(true),
+				})
 			})
 			if err != nil {
 				return false, err

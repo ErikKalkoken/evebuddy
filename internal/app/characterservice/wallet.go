@@ -207,7 +207,9 @@ func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, chara
 		} else {
 			opts = nil
 		}
-		oo, _, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWalletTransactions(ctx, characterID, opts)
+		oo, _, err := xesi.RateLimited("GetCharactersCharacterIdWalletTransactions", characterID, func() ([]esi.GetCharactersCharacterIdWalletTransactions200Ok, *http.Response, error) {
+			return s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWalletTransactions(ctx, characterID, opts)
+		})
 		if err != nil {
 			return nil, err
 		}

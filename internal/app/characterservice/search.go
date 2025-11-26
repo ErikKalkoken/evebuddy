@@ -3,10 +3,12 @@ package characterservice
 import (
 	"context"
 	"log/slog"
+	"net/http"
 	"slices"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
@@ -26,7 +28,9 @@ func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, char
 		"alliance",
 	}
 	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
-	r, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(ctx, categories, characterID, search, nil)
+	r, _, err := xesi.RateLimited("GetCharactersCharacterIdSearch", characterID, func() (esi.GetCharactersCharacterIdSearchOk, *http.Response, error) {
+		return s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(ctx, categories, characterID, search, nil)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -56,13 +60,16 @@ func (s *CharacterService) SearchESI(ctx context.Context, search string, categor
 	cc := xslices.Map(categories, func(a app.SearchCategory) string {
 		return string(a)
 	})
-	x, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(
-		ctx,
-		cc,
-		c.ID,
-		search,
-		&esi.GetCharactersCharacterIdSearchOpts{Strict: esioptional.NewBool(strict)},
-	)
+	x, _, err := xesi.RateLimited("GetCharactersCharacterIdSearch", c.ID, func() (esi.GetCharactersCharacterIdSearchOk, *http.Response, error) {
+		return s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(
+			ctx,
+			cc,
+			c.ID,
+			search,
+			&esi.GetCharactersCharacterIdSearchOpts{Strict: esioptional.NewBool(strict)},
+		)
+	})
+
 	if err != nil {
 		return nil, 0, err
 	}

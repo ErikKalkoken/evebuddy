@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"slices"
 	"strings"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/antihax/goesi/esi"
 )
 
@@ -104,7 +106,9 @@ func (s *CharacterService) updateRolesESI(ctx context.Context, arg app.Character
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			roles, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterIdRoles(ctx, characterID, nil)
+			roles, _, err := xesi.RateLimited("GetCharactersCharacterIdRoles", characterID, func() (esi.GetCharactersCharacterIdRolesOk, *http.Response, error) {
+				return s.esiClient.ESI.CharacterApi.GetCharactersCharacterIdRoles(ctx, characterID, nil)
+			})
 			if err != nil {
 				return false, err
 			}

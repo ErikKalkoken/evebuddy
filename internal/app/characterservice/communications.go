@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/antihax/goesi/esi"
 	"golang.org/x/sync/errgroup"
 )
@@ -103,7 +105,9 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			notifications, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterIdNotifications(ctx, characterID, nil)
+			notifications, _, err := xesi.RateLimited("GetCharactersCharacterIdNotifications", characterID, func() ([]esi.GetCharactersCharacterIdNotifications200Ok, *http.Response, error) {
+				return s.esiClient.ESI.CharacterApi.GetCharactersCharacterIdNotifications(ctx, characterID, nil)
+			})
 			if err != nil {
 				return false, err
 			}

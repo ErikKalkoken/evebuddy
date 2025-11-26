@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 
 	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
@@ -13,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
@@ -234,9 +236,11 @@ func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.Charac
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			location, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, characterID, nil)
+			location, _, err := xesi.RateLimited("GetCharactersCharacterIdLocation", characterID, func() (esi.GetCharactersCharacterIdLocationOk, *http.Response, error) {
+				return s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, characterID, nil)
+			})
 			if err != nil {
-				return false, err
+				return esi.GetCharactersCharacterIdLocationOk{}, err
 			}
 			return location, nil
 		},
@@ -269,9 +273,11 @@ func (s *CharacterService) updateOnlineESI(ctx context.Context, arg app.Characte
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			online, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdOnline(ctx, characterID, nil)
+			online, _, err := xesi.RateLimited("GetCharactersCharacterIdOnline", characterID, func() (esi.GetCharactersCharacterIdOnlineOk, *http.Response, error) {
+				return s.esiClient.ESI.LocationApi.GetCharactersCharacterIdOnline(ctx, characterID, nil)
+			})
 			if err != nil {
-				return false, err
+				return esi.GetCharactersCharacterIdOnlineOk{}, err
 			}
 			return online, nil
 		},
@@ -291,9 +297,11 @@ func (s *CharacterService) updateShipESI(ctx context.Context, arg app.CharacterS
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			ship, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdShip(ctx, characterID, nil)
+			ship, _, err := xesi.RateLimited("GetCharactersCharacterIdShip", characterID, func() (esi.GetCharactersCharacterIdShipOk, *http.Response, error) {
+				return s.esiClient.ESI.LocationApi.GetCharactersCharacterIdShip(ctx, characterID, nil)
+			})
 			if err != nil {
-				return false, err
+				return esi.GetCharactersCharacterIdShipOk{}, err
 			}
 			return ship, nil
 		},
@@ -317,9 +325,11 @@ func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg app.C
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			balance, _, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx, characterID, nil)
+			balance, _, err := xesi.RateLimited("GetCharactersCharacterIdWallet", characterID, func() (float64, *http.Response, error) {
+				return s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx, characterID, nil)
+			})
 			if err != nil {
-				return false, err
+				return 0, err
 			}
 			return balance, nil
 		},

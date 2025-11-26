@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 )
 
 func (s *CharacterService) ListImplants(ctx context.Context, characterID int32) ([]*app.CharacterImplant, error) {
@@ -25,7 +27,9 @@ func (s *CharacterService) updateImplantsESI(ctx context.Context, arg app.Charac
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			implants, _, err := s.esiClient.ESI.ClonesApi.GetCharactersCharacterIdImplants(ctx, characterID, nil)
+			implants, _, err := xesi.RateLimited("GetCharactersCharacterIdImplants", characterID, func() ([]int32, *http.Response, error) {
+				return s.esiClient.ESI.ClonesApi.GetCharactersCharacterIdImplants(ctx, characterID, nil)
+			})
 			if err != nil {
 				return false, err
 			}

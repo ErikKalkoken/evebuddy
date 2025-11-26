@@ -152,11 +152,13 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 		func(ctx context.Context, characterID int32) (any, error) {
 			contracts, err := xesi.FetchPages(
 				func(pageNum int) ([]esi.GetCharactersCharacterIdContracts200Ok, *http.Response, error) {
-					return s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContracts(
-						ctx, characterID, &esi.GetCharactersCharacterIdContractsOpts{
-							Page: esioptional.NewInt32(int32(pageNum)),
-						},
-					)
+					return xesi.RateLimited("GetCharactersCharacterIdContracts", characterID, func() ([]esi.GetCharactersCharacterIdContracts200Ok, *http.Response, error) {
+						return s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContracts(
+							ctx, characterID, &esi.GetCharactersCharacterIdContractsOpts{
+								Page: esioptional.NewInt32(int32(pageNum)),
+							},
+						)
+					})
 				},
 			)
 			if err != nil {
@@ -282,7 +284,9 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 	if err != nil {
 		return err
 	}
-	items, _, err := s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContractsContractIdItems(ctx, characterID, c.ContractId, nil)
+	items, _, err := xesi.RateLimited("GetCharactersCharacterIdContractsContractIdItems", characterID, func() ([]esi.GetCharactersCharacterIdContractsContractIdItems200Ok, *http.Response, error) {
+		return s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContractsContractIdItems(ctx, characterID, c.ContractId, nil)
+	})
 	if err != nil {
 		return err
 	}
@@ -352,7 +356,9 @@ func (s *CharacterService) updateContractBids(ctx context.Context, characterID, 
 	if err != nil {
 		return err
 	}
-	bids, _, err := s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContractsContractIdBids(ctx, characterID, contractID, nil)
+	bids, _, err := xesi.RateLimited("GetCharactersCharacterIdContractsContractIdBids", characterID, func() ([]esi.GetCharactersCharacterIdContractsContractIdBids200Ok, *http.Response, error) {
+		return s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContractsContractIdBids(ctx, characterID, contractID, nil)
+	})
 	if err != nil {
 		return err
 	}
