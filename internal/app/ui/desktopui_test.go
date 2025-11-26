@@ -14,12 +14,15 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 )
 
 func TestDesktopUI_StartEmpty(t *testing.T) {
 	if ui.IsCI() {
 		t.Skip("This test fails on CI with: oncurrent map read and map write")
 	}
+	xesi.ActivateRateLimiterMock()
+	defer xesi.DeactivateRateLimiterMock()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	httpmock.RegisterNoResponder(httpmock.NewNotFoundResponder(t.Fatal)) // fails on any HTTP request
@@ -44,6 +47,8 @@ func TestDesktopUI_StartWithCharacter(t *testing.T) {
 	if ui.IsCI() {
 		t.Skip("This test fails on CI with: oncurrent map read and map write")
 	}
+	xesi.ActivateRateLimiterMock()
+	defer xesi.DeactivateRateLimiterMock()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	httpmock.RegisterNoResponder(httpmock.NewNotFoundResponder(t.Fatal)) // fails on any HTTP request

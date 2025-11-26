@@ -9,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/antihax/goesi/esi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -19,6 +20,8 @@ func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 	db, st, _ := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
+	xesi.ActivateRateLimiterMock()
+	defer xesi.DeactivateRateLimiterMock()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := NewFake(st)
@@ -68,6 +71,8 @@ func TestUpdateMailLabel(t *testing.T) {
 	// given
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
+	xesi.ActivateRateLimiterMock()
+	defer xesi.DeactivateRateLimiterMock()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	ctx := context.Background()

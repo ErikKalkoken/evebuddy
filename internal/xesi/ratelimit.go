@@ -14,15 +14,27 @@ type rateLimitGroup struct {
 	windowSize time.Duration
 }
 
+var sleep = time.Sleep
+
 // RateLimited is a wrapper that adds rate limit support to an ESI call.
 func RateLimited[T any](operationID string, fetch func() (T, *http.Response, error)) (T, *http.Response, error) {
-	// var z T
-	// delay, err := rateLimitDelayForOperation(operationID)
-	// if err != nil {
-	// 	return z, nil, err
-	// }
-	// time.Sleep(delay)
+	var z T
+	delay, err := rateLimitDelayForOperation(operationID)
+	if err != nil {
+		return z, nil, err
+	}
+	sleep(delay)
 	return fetch()
+}
+
+// ActivateRateLimiterMock mocks all time delays so that tests can run faster.
+func ActivateRateLimiterMock() {
+	sleep = func(d time.Duration) {}
+}
+
+// DeactivateRateLimiterMock deactivates the time delay mocks.
+func DeactivateRateLimiterMock() {
+	sleep = time.Sleep
 }
 
 // rateLimitDelayForOperation returns the delay to ensure an average request rate

@@ -16,12 +16,15 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func TestFetchAlliance(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
+	xesi.ActivateRateLimiterMock()
+	defer xesi.DeactivateRateLimiterMock()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := eveuniverseservice.New(eveuniverseservice.Params{
@@ -92,6 +95,8 @@ func TestFetchAlliance(t *testing.T) {
 func TestFetchAllianceCorporations(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
+	xesi.ActivateRateLimiterMock()
+	defer xesi.DeactivateRateLimiterMock()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := eveuniverseservice.New(eveuniverseservice.Params{
@@ -146,6 +151,8 @@ func TestFetchAllianceCorporations(t *testing.T) {
 func TestGetOrCreateEveCorporationESI(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
+	xesi.ActivateRateLimiterMock()
+	defer xesi.DeactivateRateLimiterMock()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := eveuniverseservice.NewTestService(st)
@@ -237,6 +244,8 @@ func TestGetOrCreateEveCorporationESI(t *testing.T) {
 func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
+	xesi.ActivateRateLimiterMock()
+	defer xesi.DeactivateRateLimiterMock()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := eveuniverseservice.NewTestService(st)
@@ -339,6 +348,8 @@ func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 func TestUpdateAllEveCorporationESI(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
+	xesi.ActivateRateLimiterMock()
+	defer xesi.DeactivateRateLimiterMock()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := eveuniverseservice.NewTestService(st)

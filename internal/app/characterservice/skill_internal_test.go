@@ -8,6 +8,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -41,6 +42,8 @@ func TestGetAttributes(t *testing.T) {
 func TestUpdateCharacterAttributesESI(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
+	xesi.ActivateRateLimiterMock()
+	defer xesi.DeactivateRateLimiterMock()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := NewFake(st)
@@ -86,6 +89,8 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 func TestUpdateCharacterSkillsESI(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
+	xesi.ActivateRateLimiterMock()
+	defer xesi.DeactivateRateLimiterMock()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := NewFake(st)
@@ -218,6 +223,8 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 func TestUpdateSkillqueueESI(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
+	xesi.ActivateRateLimiterMock()
+	defer xesi.DeactivateRateLimiterMock()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := NewFake(st)

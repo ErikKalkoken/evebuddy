@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -17,6 +18,8 @@ import (
 func TestUpdateWalletJournalEntryESI(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
+	xesi.ActivateRateLimiterMock()
+	defer xesi.DeactivateRateLimiterMock()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := NewFake(st)
@@ -273,6 +276,8 @@ func TestListWalletJournalEntries(t *testing.T) {
 func TestUpdateWalletTransactionESI(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
+	xesi.ActivateRateLimiterMock()
+	defer xesi.DeactivateRateLimiterMock()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := NewFake(st)

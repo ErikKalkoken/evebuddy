@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 )
 
 func TestGetCharacter(t *testing.T) {
@@ -69,6 +70,8 @@ func TestGetAnyCharacter(t *testing.T) {
 func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
+	xesi.ActivateRateLimiterMock()
+	defer xesi.DeactivateRateLimiterMock()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	ctx := context.Background()

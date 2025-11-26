@@ -15,11 +15,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 )
 
 func TestGetOrCreateEveCharacterESI(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
+	xesi.ActivateRateLimiterMock()
+	defer xesi.DeactivateRateLimiterMock()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := eveuniverseservice.New(eveuniverseservice.Params{
@@ -163,6 +166,8 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
+	xesi.ActivateRateLimiterMock()
+	defer xesi.DeactivateRateLimiterMock()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := eveuniverseservice.New(eveuniverseservice.Params{
@@ -337,6 +342,8 @@ func TestUpdateOrCreateEveCharacterESI(t *testing.T) {
 func TestUpdateAllEveCharactersESI(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
+	xesi.ActivateRateLimiterMock()
+	defer xesi.DeactivateRateLimiterMock()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := eveuniverseservice.NewTestService(st)
