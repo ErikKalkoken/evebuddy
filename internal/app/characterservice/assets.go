@@ -60,7 +60,10 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 					arg := &esi.GetCharactersCharacterIdAssetsOpts{
 						Page: esioptional.NewInt32(int32(pageNum)),
 					}
-					return s.esiClient.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, characterID, arg)
+					return xesi.RateLimited("GetCharactersCharacterIdAssets", func() ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
+						return s.esiClient.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, characterID, arg)
+					})
+
 				})
 			if err != nil {
 				return false, err

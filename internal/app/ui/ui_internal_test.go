@@ -19,7 +19,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
@@ -208,7 +207,6 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,
-		TickerSource:       &testutil.FakeTicker{},
 	})
 	rs := corporationservice.New(corporationservice.Params{
 		CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{

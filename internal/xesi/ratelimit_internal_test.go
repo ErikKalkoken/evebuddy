@@ -1,12 +1,10 @@
-package xesi_test
+package xesi
 
 import (
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 )
 
 func TestRateLimitDelayForOperation(t *testing.T) {
@@ -44,7 +42,7 @@ func TestRateLimitDelayForOperation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotDelay, gotErr := xesi.RateLimitDelayForOperation(tt.operationID)
+			gotDelay, gotErr := rateLimitDelayForOperation(tt.operationID)
 			if tt.wantErr {
 				assert.Error(t, gotErr)
 			} else {

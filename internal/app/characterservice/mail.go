@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"slices"
 	"time"
 
@@ -133,21 +134,14 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int32, subj
 		return 0, err
 	}
 	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
-	delay, err := xesi.RateLimitDelayForOperation("PostCharactersCharacterIdMail")
-	if err != nil {
-		return 0, err
-	}
-	select {
-	case <-s.ticker.Tick(delay):
-	case <-ctx.Done():
-		return 0, ctx.Err()
-	}
-	mailID, _, err := s.esiClient.ESI.MailApi.PostCharactersCharacterIdMail(ctx, characterID, esi.PostCharactersCharacterIdMailMail{
-		Body:       body,
-		Subject:    subject,
-		Recipients: rr,
-	}, nil,
-	)
+
+	mailID, _, err := xesi.RateLimited("PostCharactersCharacterIdMail", func() (int32, *http.Response, error) {
+		return s.esiClient.ESI.MailApi.PostCharactersCharacterIdMail(ctx, characterID, esi.PostCharactersCharacterIdMailMail{
+			Body:       body,
+			Subject:    subject,
+			Recipients: rr,
+		}, nil)
+	})
 	if err != nil {
 		return 0, err
 	}
@@ -224,16 +218,9 @@ func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.Char
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			delay, err := xesi.RateLimitDelayForOperation("GetCharactersCharacterIdMailLabels")
-			if err != nil {
-				return esi.GetCharactersCharacterIdMailLabelsOk{}, err
-			}
-			select {
-			case <-s.ticker.Tick(delay):
-			case <-ctx.Done():
-				return esi.GetCharactersCharacterIdMailLabelsOk{}, ctx.Err()
-			}
-			ll, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLabels(ctx, characterID, nil)
+			ll, _, err := xesi.RateLimited("GetCharactersCharacterIdMailLabels", func() (esi.GetCharactersCharacterIdMailLabelsOk, *http.Response, error) {
+				return s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLabels(ctx, characterID, nil)
+			})
 			if err != nil {
 				return ll, err
 			}
@@ -269,16 +256,9 @@ func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.Chara
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			delay, err := xesi.RateLimitDelayForOperation("GetCharactersCharacterIdMailLists")
-			if err != nil {
-				return nil, err
-			}
-			select {
-			case <-s.ticker.Tick(delay):
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			}
-			lists, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLists(ctx, characterID, nil)
+			lists, _, err := xesi.RateLimited("GetCharactersCharacterIdMailLists", func() ([]esi.GetCharactersCharacterIdMailLists200Ok, *http.Response, error) {
+				return s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLists(ctx, characterID, nil)
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -372,23 +352,16 @@ func (s *CharacterService) updateMailsESI(ctx context.Context, arg app.Character
 func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID int32, maxMails int) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
 	mails := make([]esi.GetCharactersCharacterIdMail200Ok, 0)
 	var lastMailID int32
-	delay, err := xesi.RateLimitDelayForOperation("GetCharactersCharacterIdMail")
-	if err != nil {
-		return nil, err
-	}
 	for {
-		select {
-		case <-s.ticker.Tick(delay):
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		}
 		var opts *esi.GetCharactersCharacterIdMailOpts
 		if lastMailID > 0 {
 			opts = &esi.GetCharactersCharacterIdMailOpts{LastMailId: esioptional.NewInt32(lastMailID)}
 		} else {
 			opts = nil
 		}
-		oo, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMail(ctx, characterID, opts)
+		oo, _, err := xesi.RateLimited("GetCharactersCharacterIdMail", func() ([]esi.GetCharactersCharacterIdMail200Ok, *http.Response, error) {
+			return s.esiClient.ESI.MailApi.GetCharactersCharacterIdMail(ctx, characterID, opts)
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -409,18 +382,11 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 }
 
 func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
-	delay, err := xesi.RateLimitDelayForOperation("GetCharactersCharacterIdMailMailId")
-	if err != nil {
-		return err
-	}
 	slog.Info("Started fetching new mail from ESI", "characterID", characterID, "count", len(headers))
 	for _, h := range headers {
-		select {
-		case <-s.ticker.Tick(delay):
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-		mail, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, characterID, h.MailId, nil)
+		mail, _, err := xesi.RateLimited("GetCharactersCharacterIdMailMailId", func() (esi.GetCharactersCharacterIdMailMailIdOk, *http.Response, error) {
+			return s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, characterID, h.MailId, nil)
+		})
 		if err != nil {
 			return err
 		}
