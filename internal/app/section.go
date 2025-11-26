@@ -46,27 +46,27 @@ type CharacterSection string
 var _ section = (*CharacterSection)(nil)
 
 const (
-	SectionCharacterAssets             CharacterSection = "assets"
-	SectionCharacterAttributes         CharacterSection = "attributes"
-	SectionCharacterContracts          CharacterSection = "contracts"
-	SectionCharacterImplants           CharacterSection = "implants"
-	SectionCharacterIndustryJobs       CharacterSection = "industry_jobs"
-	SectionCharacterJumpClones         CharacterSection = "jump_clones"
-	SectionCharacterLocation           CharacterSection = "location"
-	SectionCharacterMailLabels         CharacterSection = "mail_labels"
-	SectionCharacterMailLists          CharacterSection = "mail_lists"
-	SectionCharacterMails              CharacterSection = "mails"
-	SectionCharacterMarketOrders       CharacterSection = "market_orders"
-	SectionCharacterNotifications      CharacterSection = "notifications"
-	SectionCharacterOnline             CharacterSection = "online"
-	SectionCharacterPlanets            CharacterSection = "planets"
-	SectionCharacterRoles              CharacterSection = "roles"
-	SectionCharacterShip               CharacterSection = "ship"
-	SectionCharacterSkillqueue         CharacterSection = "skillqueue"
-	SectionCharacterSkills             CharacterSection = "skills"
-	SectionCharacterWalletBalance      CharacterSection = "wallet_balance"
-	SectionCharacterWalletJournal      CharacterSection = "wallet_journal"
-	SectionCharacterWalletTransactions CharacterSection = "wallet_transactions"
+	SectionCharacterAssets             CharacterSection = "assets"              // char-asset
+	SectionCharacterAttributes         CharacterSection = "attributes"          // char-social
+	SectionCharacterContracts          CharacterSection = "contracts"           // char-contract
+	SectionCharacterImplants           CharacterSection = "implants"            // char-detail
+	SectionCharacterIndustryJobs       CharacterSection = "industry_jobs"       // char-industry
+	SectionCharacterJumpClones         CharacterSection = "jump_clones"         // char-location
+	SectionCharacterLocation           CharacterSection = "location"            // char-location
+	SectionCharacterMailLabels         CharacterSection = "mail_labels"         // char-social
+	SectionCharacterMailLists          CharacterSection = "mail_lists"          // char-social
+	SectionCharacterMails              CharacterSection = "mails"               // char-social
+	SectionCharacterMarketOrders       CharacterSection = "market_orders"       // char-market
+	SectionCharacterNotifications      CharacterSection = "notifications"       // char-social
+	SectionCharacterOnline             CharacterSection = "online"              // char-location
+	SectionCharacterPlanets            CharacterSection = "planets"             // char-industry
+	SectionCharacterRoles              CharacterSection = "roles"               // char-detail
+	SectionCharacterShip               CharacterSection = "ship"                // char-location
+	SectionCharacterSkillqueue         CharacterSection = "skillqueue"          // char-detail
+	SectionCharacterSkills             CharacterSection = "skills"              // char-detail
+	SectionCharacterWalletBalance      CharacterSection = "wallet_balance"      // char-wallet
+	SectionCharacterWalletJournal      CharacterSection = "wallet_journal"      // char-wallet
+	SectionCharacterWalletTransactions CharacterSection = "wallet_transactions" // char-wallet
 )
 
 var CharacterSections = []CharacterSection{
@@ -179,26 +179,26 @@ type CorporationSection string
 var _ section = (*CorporationSection)(nil)
 
 const (
-	SectionCorporationContracts           CorporationSection = "contracts"
-	SectionCorporationDivisions           CorporationSection = "divisions"
-	SectionCorporationIndustryJobs        CorporationSection = "industry_jobs"
-	SectionCorporationMembers             CorporationSection = "members"
-	SectionCorporationStructures          CorporationSection = "structures"
-	SectionCorporationWalletBalances      CorporationSection = "wallet_balances"
-	SectionCorporationWalletJournal1      CorporationSection = "wallet_journal_1"
-	SectionCorporationWalletJournal2      CorporationSection = "wallet_journal_2"
-	SectionCorporationWalletJournal3      CorporationSection = "wallet_journal_3"
-	SectionCorporationWalletJournal4      CorporationSection = "wallet_journal_4"
-	SectionCorporationWalletJournal5      CorporationSection = "wallet_journal_5"
-	SectionCorporationWalletJournal6      CorporationSection = "wallet_journal_6"
-	SectionCorporationWalletJournal7      CorporationSection = "wallet_journal_7"
-	SectionCorporationWalletTransactions1 CorporationSection = "wallet_transactions_1"
-	SectionCorporationWalletTransactions2 CorporationSection = "wallet_transactions_2"
-	SectionCorporationWalletTransactions3 CorporationSection = "wallet_transactions_3"
-	SectionCorporationWalletTransactions4 CorporationSection = "wallet_transactions_4"
-	SectionCorporationWalletTransactions5 CorporationSection = "wallet_transactions_5"
-	SectionCorporationWalletTransactions6 CorporationSection = "wallet_transactions_6"
-	SectionCorporationWalletTransactions7 CorporationSection = "wallet_transactions_7"
+	SectionCorporationContracts           CorporationSection = "contracts"             // corp-contract
+	SectionCorporationDivisions           CorporationSection = "divisions"             // corp-wallet
+	SectionCorporationIndustryJobs        CorporationSection = "industry_jobs"         // corp-industry
+	SectionCorporationMembers             CorporationSection = "members"               // corp-member
+	SectionCorporationStructures          CorporationSection = "structures"            // corp-asset
+	SectionCorporationWalletBalances      CorporationSection = "wallet_balances"       // corp-wallet
+	SectionCorporationWalletJournal1      CorporationSection = "wallet_journal_1"      // corp-wallet
+	SectionCorporationWalletJournal2      CorporationSection = "wallet_journal_2"      // corp-wallet
+	SectionCorporationWalletJournal3      CorporationSection = "wallet_journal_3"      // corp-wallet
+	SectionCorporationWalletJournal4      CorporationSection = "wallet_journal_4"      // corp-wallet
+	SectionCorporationWalletJournal5      CorporationSection = "wallet_journal_5"      // corp-wallet
+	SectionCorporationWalletJournal6      CorporationSection = "wallet_journal_6"      // corp-wallet
+	SectionCorporationWalletJournal7      CorporationSection = "wallet_journal_7"      // corp-wallet
+	SectionCorporationWalletTransactions1 CorporationSection = "wallet_transactions_1" // corp-wallet
+	SectionCorporationWalletTransactions2 CorporationSection = "wallet_transactions_2" // corp-wallet
+	SectionCorporationWalletTransactions3 CorporationSection = "wallet_transactions_3" // corp-wallet
+	SectionCorporationWalletTransactions4 CorporationSection = "wallet_transactions_4" // corp-wallet
+	SectionCorporationWalletTransactions5 CorporationSection = "wallet_transactions_5" // corp-wallet
+	SectionCorporationWalletTransactions6 CorporationSection = "wallet_transactions_6" // corp-wallet
+	SectionCorporationWalletTransactions7 CorporationSection = "wallet_transactions_7" // corp-wallet
 )
 
 var CorporationSections = []CorporationSection{
@@ -396,11 +396,11 @@ type GeneralSection string
 var _ section = (*GeneralSection)(nil)
 
 const (
-	SectionEveCharacters   GeneralSection = "characters"
-	SectionEveCorporations GeneralSection = "corporations"
-	SectionEveEntities     GeneralSection = "entities"
-	SectionEveMarketPrices GeneralSection = "market_prices"
-	SectionEveTypes        GeneralSection = "types"
+	SectionEveCharacters   GeneralSection = "characters"    // character
+	SectionEveCorporations GeneralSection = "corporations"  // corporation
+	SectionEveEntities     GeneralSection = "entities"      // static-data
+	SectionEveMarketPrices GeneralSection = "market_prices" // market
+	SectionEveTypes        GeneralSection = "types"         // static-data
 )
 
 var GeneralSections = []GeneralSection{

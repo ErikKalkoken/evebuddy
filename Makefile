@@ -12,6 +12,7 @@ mapping:
 	gofmt -s -w internal/eveicon/mapping.go
 	go run ./tools/genschematicids/ -p eveicon > internal/eveicon/schematic.go
 	gofmt -s -w internal/eveicon/schematic.go
+	go run ./tools/genratelimit/ -p xesi > internal/xesi/ratelimit_gen.go
 
 queries:
 	sqlc generate

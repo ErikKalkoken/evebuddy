@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -164,7 +165,7 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	if u.isOffline {
 		return
 	}
-	var sections set.Set[app.CharacterSection]
+	var sections set.Set[app.CharacterSection] // sections registered for update
 	if !u.isDesktop && !u.isForeground.Load() {
 		// only update what is needed for notifications on mobile when running in background to save battery
 		if u.settings.NotifyCommunicationsEnabled() {
@@ -191,11 +192,47 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	if sections.Size() == 0 {
 		return
 	}
+
 	slog.Debug("Starting to check character sections for update", "sections", sections)
 	_, err := u.cs.GetValidCharacterToken(ctx, characterID)
 	if err != nil {
 		slog.Error("Failed to refresh token for update", "characterID", characterID, "error", err)
 	}
+
+	// updateGroup starts a sequential update of group and removes them from sections.
+	// It skips all updates for group if one of the group's sections has not been registered for update.
+	updateGroup := func(group []app.CharacterSection) {
+		if sections.ContainsAll(slices.Values(group)) {
+			go func() {
+				for _, s := range group {
+					u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
+				}
+			}()
+		}
+		sections.DeleteSeq(slices.Values(group))
+	}
+
+	// Rate limit group: char-social
+	updateGroup([]app.CharacterSection{
+		app.SectionCharacterMailLabels,
+		app.SectionCharacterMailLists,
+		app.SectionCharacterMails,
+	})
+
+	// Rate limit group: char-detail
+	updateGroup([]app.CharacterSection{
+		app.SectionCharacterSkills,
+		app.SectionCharacterSkillqueue,
+	})
+
+	// Wallet
+	updateGroup([]app.CharacterSection{
+		app.SectionCharacterWalletBalance,
+		app.SectionCharacterWalletJournal,
+		app.SectionCharacterWalletTransactions,
+	})
+
+	// Other sections
 	for s := range sections.All() {
 		go u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
 	}

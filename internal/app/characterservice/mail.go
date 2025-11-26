@@ -15,11 +15,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
-)
-
-const (
-	mailRateLimitDelay = 3300 * time.Millisecond // Rate limit of max. 300 requests / 15 min incl. contingency
 )
 
 // DeleteMail deletes a mail both on ESI and in the database.
@@ -135,12 +132,16 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int32, subj
 	if err != nil {
 		return 0, err
 	}
+	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+	delay, err := xesi.RateLimitDelayForOperation("PostCharactersCharacterIdMail")
+	if err != nil {
+		return 0, err
+	}
 	select {
-	case <-s.ticker.Tick(mailRateLimitDelay):
+	case <-s.ticker.Tick(delay):
 	case <-ctx.Done():
 		return 0, ctx.Err()
 	}
-	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
 	mailID, _, err := s.esiClient.ESI.MailApi.PostCharactersCharacterIdMail(ctx, characterID, esi.PostCharactersCharacterIdMailMail{
 		Body:       body,
 		Subject:    subject,
@@ -223,8 +224,12 @@ func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.Char
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
+			delay, err := xesi.RateLimitDelayForOperation("GetCharactersCharacterIdMailLabels")
+			if err != nil {
+				return esi.GetCharactersCharacterIdMailLabelsOk{}, err
+			}
 			select {
-			case <-s.ticker.Tick(mailRateLimitDelay):
+			case <-s.ticker.Tick(delay):
 			case <-ctx.Done():
 				return esi.GetCharactersCharacterIdMailLabelsOk{}, ctx.Err()
 			}
@@ -264,8 +269,12 @@ func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.Chara
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
+			delay, err := xesi.RateLimitDelayForOperation("GetCharactersCharacterIdMailLists")
+			if err != nil {
+				return nil, err
+			}
 			select {
-			case <-s.ticker.Tick(mailRateLimitDelay):
+			case <-s.ticker.Tick(delay):
 			case <-ctx.Done():
 				return nil, ctx.Err()
 			}
@@ -358,14 +367,18 @@ func (s *CharacterService) updateMailsESI(ctx context.Context, arg app.Character
 }
 
 // fetchMailHeadersESI fetches and returns a slice of mail headers for a character from ESI.
-// The headers are garanteered to be in descending order by mailID.
+// The headers are guaranteed to be in descending order by mailID.
 // It will at most return (maxMail + page size) headers.
 func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID int32, maxMails int) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
 	mails := make([]esi.GetCharactersCharacterIdMail200Ok, 0)
 	var lastMailID int32
+	delay, err := xesi.RateLimitDelayForOperation("GetCharactersCharacterIdMail")
+	if err != nil {
+		return nil, err
+	}
 	for {
 		select {
-		case <-s.ticker.Tick(mailRateLimitDelay):
+		case <-s.ticker.Tick(delay):
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		}
@@ -396,10 +409,14 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 }
 
 func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
+	delay, err := xesi.RateLimitDelayForOperation("GetCharactersCharacterIdMailMailId")
+	if err != nil {
+		return err
+	}
 	slog.Info("Started fetching new mail from ESI", "characterID", characterID, "count", len(headers))
 	for _, h := range headers {
 		select {
-		case <-s.ticker.Tick(mailRateLimitDelay):
+		case <-s.ticker.Tick(delay):
 		case <-ctx.Done():
 			return ctx.Err()
 		}
