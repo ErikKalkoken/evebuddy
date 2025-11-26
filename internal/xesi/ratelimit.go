@@ -17,7 +17,7 @@ type rateLimitGroup struct {
 var sleep = time.Sleep
 
 // RateLimited is a wrapper that adds rate limit support to an ESI call.
-func RateLimited[T any](operationID string, fetch func() (T, *http.Response, error)) (T, *http.Response, error) {
+func RateLimited[T any](operationID string, characterID int32, fetch func() (T, *http.Response, error)) (T, *http.Response, error) {
 	var z T
 	delay, err := rateLimitDelayForOperation(operationID)
 	if err != nil {

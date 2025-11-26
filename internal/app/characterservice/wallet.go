@@ -43,7 +43,7 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 					arg := &esi.GetCharactersCharacterIdWalletJournalOpts{
 						Page: esioptional.NewInt32(int32(pageNum)),
 					}
-					return xesi.RateLimited("GetCharactersCharacterIdWalletJournal", func() ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
+					return xesi.RateLimited("GetCharactersCharacterIdWalletJournal", characterID, func() ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
 						return s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWalletJournal(ctx, characterID, arg)
 					})
 				})
