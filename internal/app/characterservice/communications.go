@@ -105,7 +105,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg app.C
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			notifications, _, err := xesi.RateLimited("GetCharactersCharacterIdNotifications", characterID, func() ([]esi.GetCharactersCharacterIdNotifications200Ok, *http.Response, error) {
+			notifications, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdNotifications", func() ([]esi.GetCharactersCharacterIdNotifications200Ok, *http.Response, error) {
 				return s.esiClient.ESI.CharacterApi.GetCharactersCharacterIdNotifications(ctx, characterID, nil)
 			})
 			if err != nil {

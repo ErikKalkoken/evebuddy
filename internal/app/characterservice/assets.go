@@ -59,7 +59,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 					arg := &esi.GetCharactersCharacterIdAssetsOpts{
 						Page: esioptional.NewInt32(int32(pageNum)),
 					}
-					return xesi.RateLimited("GetCharactersCharacterIdAssets", characterID, func() ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
+					return xesi.RateLimited(ctx, "GetCharactersCharacterIdAssets", func() ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 						return s.esiClient.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, characterID, arg)
 					})
 
@@ -280,7 +280,7 @@ func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID i
 	}
 	results := make([]esi.PostCharactersCharacterIdAssetsNames200Ok, 0)
 	for chunk := range slices.Chunk(ids, assetNamesMaxIDs) {
-		names, _, err := xesi.RateLimited("PostCharactersCharacterIdAssetsNames", characterID, func() ([]esi.PostCharactersCharacterIdAssetsNames200Ok, *http.Response, error) {
+		names, _, err := xesi.RateLimited(ctx, "PostCharactersCharacterIdAssetsNames", func() ([]esi.PostCharactersCharacterIdAssetsNames200Ok, *http.Response, error) {
 			return s.esiClient.ESI.AssetsApi.PostCharactersCharacterIdAssetsNames(ctx, characterID, chunk, nil)
 		})
 		if err != nil {

@@ -236,7 +236,7 @@ func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.Charac
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			location, _, err := xesi.RateLimited("GetCharactersCharacterIdLocation", characterID, func() (esi.GetCharactersCharacterIdLocationOk, *http.Response, error) {
+			location, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdLocation", func() (esi.GetCharactersCharacterIdLocationOk, *http.Response, error) {
 				return s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, characterID, nil)
 			})
 			if err != nil {
@@ -273,7 +273,7 @@ func (s *CharacterService) updateOnlineESI(ctx context.Context, arg app.Characte
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			online, _, err := xesi.RateLimited("GetCharactersCharacterIdOnline", characterID, func() (esi.GetCharactersCharacterIdOnlineOk, *http.Response, error) {
+			online, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdOnline", func() (esi.GetCharactersCharacterIdOnlineOk, *http.Response, error) {
 				return s.esiClient.ESI.LocationApi.GetCharactersCharacterIdOnline(ctx, characterID, nil)
 			})
 			if err != nil {
@@ -297,7 +297,7 @@ func (s *CharacterService) updateShipESI(ctx context.Context, arg app.CharacterS
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			ship, _, err := xesi.RateLimited("GetCharactersCharacterIdShip", characterID, func() (esi.GetCharactersCharacterIdShipOk, *http.Response, error) {
+			ship, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdShip", func() (esi.GetCharactersCharacterIdShipOk, *http.Response, error) {
 				return s.esiClient.ESI.LocationApi.GetCharactersCharacterIdShip(ctx, characterID, nil)
 			})
 			if err != nil {
@@ -325,7 +325,7 @@ func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg app.C
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			balance, _, err := xesi.RateLimited("GetCharactersCharacterIdWallet", characterID, func() (float64, *http.Response, error) {
+			balance, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdWallet", func() (float64, *http.Response, error) {
 				return s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx, characterID, nil)
 			})
 			if err != nil {

@@ -30,6 +30,7 @@ func TestSearchESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		ctx = xesi.NewContextWithCharacterID(ctx, c.ID)
 		x1 := factory.CreateEveEntityCharacter()
 		httpmock.RegisterResponder(
 			"GET",

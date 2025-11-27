@@ -44,7 +44,7 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 	_, err := s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			jobs, _, err := xesi.RateLimited("GetCharactersCharacterIdIndustryJobs", characterID, func() ([]esi.GetCharactersCharacterIdIndustryJobs200Ok, *http.Response, error) {
+			jobs, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdIndustryJobs", func() ([]esi.GetCharactersCharacterIdIndustryJobs200Ok, *http.Response, error) {
 				return s.esiClient.ESI.IndustryApi.GetCharactersCharacterIdIndustryJobs(ctx, characterID, &esi.GetCharactersCharacterIdIndustryJobsOpts{
 					IncludeCompleted: esioptional.NewBool(true),
 				})

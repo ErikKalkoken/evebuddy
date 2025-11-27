@@ -106,7 +106,7 @@ func (s *CharacterService) updateRolesESI(ctx context.Context, arg app.Character
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			roles, _, err := xesi.RateLimited("GetCharactersCharacterIdRoles", characterID, func() (esi.GetCharactersCharacterIdRolesOk, *http.Response, error) {
+			roles, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdRoles", func() (esi.GetCharactersCharacterIdRolesOk, *http.Response, error) {
 				return s.esiClient.ESI.CharacterApi.GetCharactersCharacterIdRoles(ctx, characterID, nil)
 			})
 			if err != nil {

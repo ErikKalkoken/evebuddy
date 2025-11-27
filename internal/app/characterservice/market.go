@@ -30,14 +30,14 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			open, _, err := xesi.RateLimited("GetCharactersCharacterIdOrders", characterID, func() ([]esi.GetCharactersCharacterIdOrders200Ok, *http.Response, error) {
+			open, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdOrders", func() ([]esi.GetCharactersCharacterIdOrders200Ok, *http.Response, error) {
 				return s.esiClient.ESI.MarketApi.GetCharactersCharacterIdOrders(ctx, characterID, nil)
 			})
 			if err != nil {
 				return nil, err
 			}
 			slog.Debug("Received open orders from ESI", "count", len(open), "characterID", characterID)
-			history, _, err := xesi.RateLimited("GetCharactersCharacterIdOrdersHistory", characterID, func() ([]esi.GetCharactersCharacterIdOrdersHistory200Ok, *http.Response, error) {
+			history, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdOrdersHistory", func() ([]esi.GetCharactersCharacterIdOrdersHistory200Ok, *http.Response, error) {
 				return s.esiClient.ESI.MarketApi.GetCharactersCharacterIdOrdersHistory(ctx, characterID, nil)
 			})
 			if err != nil {

@@ -117,11 +117,7 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 			if !xesi.ContextHasAccessToken(ctx) {
 				return nil, fmt.Errorf("eve location: token not set for fetching structure: %d", id)
 			}
-			characterID, found := xesi.CharacterIDFromContext(ctx)
-			if !found {
-				return nil, fmt.Errorf("eve location: character ID not set for fetching structure: %d", id)
-			}
-			structure, r, err := xesi.RateLimited("GetUniverseStructuresStructureId", characterID, func() (esi.GetUniverseStructuresStructureIdOk, *http.Response, error) {
+			structure, r, err := xesi.RateLimited(ctx, "GetUniverseStructuresStructureId", func() (esi.GetUniverseStructuresStructureIdOk, *http.Response, error) {
 				return s.esiClient.ESI.UniverseApi.GetUniverseStructuresStructureId(ctx, id, nil)
 			})
 			if err != nil {

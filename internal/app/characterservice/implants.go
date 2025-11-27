@@ -27,7 +27,7 @@ func (s *CharacterService) updateImplantsESI(ctx context.Context, arg app.Charac
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			implants, _, err := xesi.RateLimited("GetCharactersCharacterIdImplants", characterID, func() ([]int32, *http.Response, error) {
+			implants, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdImplants", func() ([]int32, *http.Response, error) {
 				return s.esiClient.ESI.ClonesApi.GetCharactersCharacterIdImplants(ctx, characterID, nil)
 			})
 			if err != nil {

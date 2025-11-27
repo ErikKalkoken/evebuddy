@@ -50,7 +50,7 @@ func TestRateLimited(t *testing.T) {
 			sleep = func(d time.Duration) {
 				gotDelay = d
 			}
-			x, _, gotErr := RateLimited(tt.operationID, 42, func() (string, *http.Response, error) {
+			x, _, gotErr := rateLimited(tt.operationID, 42, func() (string, *http.Response, error) {
 				return "done", nil, nil
 			})
 			if tt.wantErr {

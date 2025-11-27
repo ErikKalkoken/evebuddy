@@ -325,6 +325,7 @@ func TestSendMail(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		ctx = xesi.NewContextWithCharacterID(ctx, c.ID)
 		r := factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		httpmock.Reset()
 		httpmock.RegisterResponder(

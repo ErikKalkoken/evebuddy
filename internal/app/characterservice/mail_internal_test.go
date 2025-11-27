@@ -19,7 +19,7 @@ func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 	// given
 	db, st, _ := testutil.NewDBInMemory()
 	defer db.Close()
-	ctx := context.Background()
+	ctx := xesi.NewContextWithCharacterID(context.Background(), 42)
 	xesi.ActivateRateLimiterMock()
 	defer xesi.DeactivateRateLimiterMock()
 	httpmock.Activate()

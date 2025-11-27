@@ -82,7 +82,7 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			planets, _, err := xesi.RateLimited("GetCharactersCharacterIdPlanets", characterID, func() ([]esi.GetCharactersCharacterIdPlanets200Ok, *http.Response, error) {
+			planets, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdPlanets", func() ([]esi.GetCharactersCharacterIdPlanets200Ok, *http.Response, error) {
 				return s.esiClient.ESI.PlanetaryInteractionApi.GetCharactersCharacterIdPlanets(ctx, characterID, nil)
 			})
 			if err != nil {
@@ -128,7 +128,7 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 				if err != nil {
 					return err
 				}
-				planet, _, err := xesi.RateLimited("GetCharactersCharacterIdPlanetsPlanetId", characterID, func() (esi.GetCharactersCharacterIdPlanetsPlanetIdOk, *http.Response, error) {
+				planet, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdPlanetsPlanetId", func() (esi.GetCharactersCharacterIdPlanetsPlanetIdOk, *http.Response, error) {
 					return s.esiClient.ESI.PlanetaryInteractionApi.GetCharactersCharacterIdPlanetsPlanetId(ctx, characterID, o.PlanetId, nil)
 				})
 				if err != nil {

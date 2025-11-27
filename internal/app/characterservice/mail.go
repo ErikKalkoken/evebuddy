@@ -134,7 +134,7 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int32, subj
 		return 0, err
 	}
 	ctx = xesi.NewContextWithAccessToken(ctx, token.AccessToken)
-	mailID, _, err := xesi.RateLimited("PostCharactersCharacterIdMail", token.CharacterID, func() (int32, *http.Response, error) {
+	mailID, _, err := xesi.RateLimited(ctx, "PostCharactersCharacterIdMail", func() (int32, *http.Response, error) {
 		return s.esiClient.ESI.MailApi.PostCharactersCharacterIdMail(ctx, characterID, esi.PostCharactersCharacterIdMailMail{
 			Body:       body,
 			Subject:    subject,
@@ -217,7 +217,7 @@ func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.Char
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			ll, _, err := xesi.RateLimited("GetCharactersCharacterIdMailLabels", characterID, func() (esi.GetCharactersCharacterIdMailLabelsOk, *http.Response, error) {
+			ll, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdMailLabels", func() (esi.GetCharactersCharacterIdMailLabelsOk, *http.Response, error) {
 				return s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLabels(ctx, characterID, nil)
 			})
 			if err != nil {
@@ -255,7 +255,7 @@ func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.Chara
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			lists, _, err := xesi.RateLimited("GetCharactersCharacterIdMailLists", characterID, func() ([]esi.GetCharactersCharacterIdMailLists200Ok, *http.Response, error) {
+			lists, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdMailLists", func() ([]esi.GetCharactersCharacterIdMailLists200Ok, *http.Response, error) {
 				return s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLists(ctx, characterID, nil)
 			})
 			if err != nil {
@@ -358,7 +358,7 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 		} else {
 			opts = nil
 		}
-		oo, _, err := xesi.RateLimited("GetCharactersCharacterIdMail", characterID, func() ([]esi.GetCharactersCharacterIdMail200Ok, *http.Response, error) {
+		oo, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdMail", func() ([]esi.GetCharactersCharacterIdMail200Ok, *http.Response, error) {
 			return s.esiClient.ESI.MailApi.GetCharactersCharacterIdMail(ctx, characterID, opts)
 		})
 		if err != nil {
@@ -383,7 +383,7 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
 	slog.Info("Started fetching new mail from ESI", "characterID", characterID, "count", len(headers))
 	for _, h := range headers {
-		mail, _, err := xesi.RateLimited("GetCharactersCharacterIdMailMailId", characterID, func() (esi.GetCharactersCharacterIdMailMailIdOk, *http.Response, error) {
+		mail, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdMailMailId", func() (esi.GetCharactersCharacterIdMailMailIdOk, *http.Response, error) {
 			return s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, characterID, h.MailId, nil)
 		})
 		if err != nil {

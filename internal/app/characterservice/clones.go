@@ -67,7 +67,7 @@ func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.Char
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			clones, _, err := xesi.RateLimited("GetCharactersCharacterIdClones", characterID, func() (esi.GetCharactersCharacterIdClonesOk, *http.Response, error) {
+			clones, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdClones", func() (esi.GetCharactersCharacterIdClonesOk, *http.Response, error) {
 				return s.esiClient.ESI.ClonesApi.GetCharactersCharacterIdClones(ctx, characterID, nil)
 			})
 			if err != nil {

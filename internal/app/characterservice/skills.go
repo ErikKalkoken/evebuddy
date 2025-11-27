@@ -28,7 +28,7 @@ func (s *CharacterService) updateAttributesESI(ctx context.Context, arg app.Char
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			attributes, _, err := xesi.RateLimited("GetCharactersCharacterIdAttributes", characterID, func() (esi.GetCharactersCharacterIdAttributesOk, *http.Response, error) {
+			attributes, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdAttributes", func() (esi.GetCharactersCharacterIdAttributesOk, *http.Response, error) {
 				return s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdAttributes(ctx, characterID, nil)
 			})
 			if err != nil {
@@ -176,7 +176,7 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			skills, _, err := xesi.RateLimited("GetCharactersCharacterIdSkills", characterID, func() (esi.GetCharactersCharacterIdSkillsOk, *http.Response, error) {
+			skills, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdSkills", func() (esi.GetCharactersCharacterIdSkillsOk, *http.Response, error) {
 				return s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, characterID, nil)
 			})
 			if err != nil {
@@ -276,7 +276,7 @@ func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg app.Char
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			items, _, err := xesi.RateLimited("GetCharactersCharacterIdSkillqueue", characterID, func() ([]esi.GetCharactersCharacterIdSkillqueue200Ok, *http.Response, error) {
+			items, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdSkillqueue", func() ([]esi.GetCharactersCharacterIdSkillqueue200Ok, *http.Response, error) {
 				return s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkillqueue(ctx, characterID, nil)
 			})
 			if err != nil {

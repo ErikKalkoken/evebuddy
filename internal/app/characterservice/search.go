@@ -27,7 +27,7 @@ func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, char
 		"alliance",
 	}
 	ctx = xesi.NewContextWithAccessToken(ctx, token.AccessToken)
-	r, _, err := xesi.RateLimited("GetCharactersCharacterIdSearch", token.CharacterID, func() (esi.GetCharactersCharacterIdSearchOk, *http.Response, error) {
+	r, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdSearch", func() (esi.GetCharactersCharacterIdSearchOk, *http.Response, error) {
 		return s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(ctx, categories, characterID, search, nil)
 	})
 	if err != nil {
@@ -59,7 +59,7 @@ func (s *CharacterService) SearchESI(ctx context.Context, search string, categor
 	cc := xslices.Map(categories, func(a app.SearchCategory) string {
 		return string(a)
 	})
-	x, _, err := xesi.RateLimited("GetCharactersCharacterIdSearch", token.CharacterID, func() (esi.GetCharactersCharacterIdSearchOk, *http.Response, error) {
+	x, _, err := xesi.RateLimited(ctx, "GetCharactersCharacterIdSearch", func() (esi.GetCharactersCharacterIdSearchOk, *http.Response, error) {
 		return s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(
 			ctx,
 			cc,
