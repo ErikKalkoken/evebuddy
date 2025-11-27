@@ -15,7 +15,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
-	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
 	"golang.org/x/sync/errgroup"
 )
@@ -115,11 +114,14 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 				arg.OwnerID = optional.New(station.Owner)
 			}
 		case app.EveLocationStructure:
-			if ctx.Value(goesi.ContextAccessToken) == nil {
+			if !xesi.ContextHasAccessToken(ctx) {
 				return nil, fmt.Errorf("eve location: token not set for fetching structure: %d", id)
 			}
-			// FIXME: Add character ID from token
-			structure, r, err := xesi.RateLimited("GetUniverseStructuresStructureId", 0, func() (esi.GetUniverseStructuresStructureIdOk, *http.Response, error) {
+			characterID, found := xesi.CharacterIDFromContext(ctx)
+			if !found {
+				return nil, fmt.Errorf("eve location: character ID not set for fetching structure: %d", id)
+			}
+			structure, r, err := xesi.RateLimited("GetUniverseStructuresStructureId", characterID, func() (esi.GetUniverseStructuresStructureIdOk, *http.Response, error) {
 				return s.esiClient.ESI.UniverseApi.GetUniverseStructuresStructureId(ctx, id, nil)
 			})
 			if err != nil {
@@ -207,7 +209,7 @@ func (s *EveUniverseService) EntityIDsFromLocationsESI(ctx context.Context, ids 
 	}
 	for _, id := range ids {
 		if app.LocationVariantFromID(id) == app.EveLocationStructure {
-			if ctx.Value(goesi.ContextAccessToken) == nil {
+			if !xesi.ContextHasAccessToken(ctx) {
 				return set.Set[int32]{}, fmt.Errorf("EntityIDsFromLocationsESI: token not set for location ID %d: %w", id, app.ErrInvalid)
 			}
 			break

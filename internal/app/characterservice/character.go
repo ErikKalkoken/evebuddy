@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -194,7 +193,8 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 		Scopes:       set.Of(ssoToken.Scopes...),
 		TokenType:    ssoToken.TokenType,
 	}
-	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+	ctx = xesi.NewContextWithAccessToken(ctx, token.AccessToken)
+	ctx = xesi.NewContextWithCharacterID(ctx, token.CharacterID)
 	character, _, err := s.eus.UpdateOrCreateCharacterESI(ctx, token.CharacterID)
 	if err != nil {
 		return nil, err

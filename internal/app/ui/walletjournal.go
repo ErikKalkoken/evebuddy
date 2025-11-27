@@ -15,11 +15,11 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-	"github.com/antihax/goesi"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -512,7 +512,8 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID i
 				reportError(o, err)
 				return
 			}
-			ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+			ctx = xesi.NewContextWithAccessToken(ctx, token.AccessToken)
+			ctx = xesi.NewContextWithCharacterID(ctx, token.CharacterID)
 			el, err := u.eus.GetOrCreateLocationESI(ctx, o.ContextID)
 			if err != nil {
 				reportError(o, err)
@@ -646,7 +647,7 @@ func showCorporationWalletJournalEntryWindow(u *baseUI, corporationID int32, div
 	// 			reportError(o, err)
 	// 			return
 	// 		}
-	// 		ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+	// 		ctx = xesi.NewContextWithAccessToken(ctx, token.AccessToken)
 	// 		el, err := u.eus.GetOrCreateLocationESI(ctx, o.ContextID)
 	// 		if err != nil {
 	// 			reportError(o, err)

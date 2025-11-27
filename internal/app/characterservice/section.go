@@ -13,7 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/antihax/goesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 )
 
 // UpdateSectionIfNeeded updates a section from ESI if has expired and changed
@@ -143,7 +143,8 @@ func (s *CharacterService) updateSectionIfChanged(
 	if !token.HasScopes(arg.Section.Scopes()) {
 		return false, app.ErrNotFound
 	}
-	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+	ctx = xesi.NewContextWithAccessToken(ctx, token.AccessToken)
+	ctx = xesi.NewContextWithCharacterID(ctx, token.CharacterID)
 	data, err := fetch(ctx, arg.CharacterID)
 	if err != nil {
 		return false, err

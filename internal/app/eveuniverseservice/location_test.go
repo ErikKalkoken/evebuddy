@@ -12,7 +12,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xesi"
-	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -184,7 +183,8 @@ func TestLocationStructures(t *testing.T) {
 					"z": 3.3,
 				}}),
 		)
-		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
+		ctx := xesi.NewContextWithAccessToken(context.Background(), "DUMMY")
+		ctx = xesi.NewContextWithCharacterID(ctx, int32(42))
 		// when
 		x1, err := s.GetOrCreateLocationESI(ctx, structureID)
 		// then
@@ -220,7 +220,8 @@ func TestLocationStructures(t *testing.T) {
 				"error": "forbidden",
 			}),
 		)
-		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
+		ctx := xesi.NewContextWithAccessToken(context.Background(), "DUMMY")
+		ctx = xesi.NewContextWithCharacterID(ctx, int32(42))
 		// when
 		x1, err := s.GetOrCreateLocationESI(ctx, structureID)
 		// then
@@ -247,7 +248,8 @@ func TestLocationStructures(t *testing.T) {
 				"error": "xxx",
 			}),
 		)
-		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
+		ctx := xesi.NewContextWithAccessToken(context.Background(), "DUMMY")
+		ctx = xesi.NewContextWithCharacterID(ctx, int32(42))
 		// when
 		_, err := s.GetOrCreateLocationESI(ctx, structureID)
 		// then
@@ -434,7 +436,8 @@ func TestEntityIDsFromLocationsESI(t *testing.T) {
 					"z": 3.3,
 				}}),
 		)
-		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
+		ctx := xesi.NewContextWithAccessToken(context.Background(), "DUMMY")
+		ctx = xesi.NewContextWithCharacterID(ctx, int32(42))
 		// when
 		got, err := s.EntityIDsFromLocationsESI(ctx, []int64{structureID})
 		// then
@@ -471,7 +474,8 @@ func TestEntityIDsFromLocationsESI(t *testing.T) {
 						"z": 3.3,
 					}}),
 			)
-			ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
+			ctx := xesi.NewContextWithAccessToken(context.Background(), "DUMMY")
+			ctx = xesi.NewContextWithCharacterID(ctx, int32(42))
 			got, err := s.EntityIDsFromLocationsESI(ctx, []int64{structureID})
 			if assert.NoError(t, err) {
 				assert.Equal(t, 0, got.Size())
@@ -488,7 +492,8 @@ func TestEntityIDsFromLocationsESI(t *testing.T) {
 				"error": "no access",
 			}),
 		)
-		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
+		ctx := xesi.NewContextWithAccessToken(context.Background(), "DUMMY")
+		ctx = xesi.NewContextWithCharacterID(ctx, int32(42))
 		// when
 		got, err := s.EntityIDsFromLocationsESI(ctx, []int64{structureID})
 		// then

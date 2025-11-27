@@ -9,7 +9,6 @@ import (
 	"slices"
 	"time"
 
-	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
 
@@ -26,7 +25,7 @@ func (s *CharacterService) DeleteMail(ctx context.Context, characterID, mailID i
 	if err != nil {
 		return err
 	}
-	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+	ctx = xesi.NewContextWithAccessToken(ctx, token.AccessToken)
 	// FIXME: Need special rate limiter
 	_, err = s.esiClient.ESI.MailApi.DeleteCharactersCharacterIdMailMailId(ctx, characterID, mailID, nil)
 	if err != nil {
@@ -134,9 +133,8 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int32, subj
 	if err != nil {
 		return 0, err
 	}
-	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
-
-	mailID, _, err := xesi.RateLimited("PostCharactersCharacterIdMail", characterID, func() (int32, *http.Response, error) {
+	ctx = xesi.NewContextWithAccessToken(ctx, token.AccessToken)
+	mailID, _, err := xesi.RateLimited("PostCharactersCharacterIdMail", token.CharacterID, func() (int32, *http.Response, error) {
 		return s.esiClient.ESI.MailApi.PostCharactersCharacterIdMail(ctx, characterID, esi.PostCharactersCharacterIdMailMail{
 			Body:       body,
 			Subject:    subject,
@@ -442,7 +440,7 @@ func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mail
 	if err != nil {
 		return err
 	}
-	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+	ctx = xesi.NewContextWithAccessToken(ctx, token.AccessToken)
 	m, err := s.st.GetCharacterMail(ctx, characterID, mailID)
 	if err != nil {
 		return err
