@@ -6,22 +6,30 @@ import (
 	"flag"
 	"html/template"
 	"log"
+	"math"
 	"os"
 	"time"
 )
 
-//go:embed target.go.template
-var tmpl string
+//go:embed target.go.tmpl
+var tmplGo string
+
+//go:embed target.md.tmpl
+var tmplMD string
 
 //go:embed openapi.json
 var specFile []byte
 
-var packageFlag = flag.String("p", "main", "package name")
+var (
+	packageFlag = flag.String("p", "main", "package name")
+	formatFlat  = flag.String("f", "go", "format of generated output")
+)
 
 type rateLimitGroup struct {
-	Name       string
-	MaxTokens  int
-	WindowSize int // seconds
+	Name        string
+	MaxTokens   int
+	WindowSize  int     // seconds
+	AverageRate float64 // requests per second
 }
 
 func main() {
@@ -31,8 +39,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	groups := make(map[string]rateLimitGroup)
-	operations := make(map[string]string)
 
 	x1 := data["components"].(map[string]any)
 	x2 := x1["parameters"].(map[string]any)
@@ -41,27 +47,38 @@ func main() {
 	x5 := x4["enum"].([]any)
 	compatibilityDate := x5[0].(string)
 
-	paths := data["paths"].(map[string]any)
-	for _, v := range paths {
-		method := v.(map[string]any)
-		for _, v := range method {
+	groups := make(map[string]rateLimitGroup)
+	operations := make(map[string]string)
+	tags := make(map[string]map[string]string)
+
+	for _, v := range data["paths"].(map[string]any) {
+		for _, v := range v.(map[string]any) {
 			route := v.(map[string]any)
 			operationID := route["operationId"].(string)
+			tag := route["tags"].([]any)[0].(string)
+			_, ok := tags[tag]
+			if !ok {
+				tags[tag] = make(map[string]string)
+			}
 			x2, ok := route["x-rate-limit"]
 			if !ok {
+				tags[tag][operationID] = ""
 				operations[operationID] = ""
 				continue
 			}
 			rateLimit := x2.(map[string]any)
 			var rl rateLimitGroup
 			rl.Name = rateLimit["group"].(string)
-			rl.MaxTokens = int(rateLimit["max-tokens"].(float64))
+			maxTokens := rateLimit["max-tokens"].(float64)
+			rl.MaxTokens = int(maxTokens)
 			x3 := rateLimit["window-size"].(string)
 			d, err := time.ParseDuration(x3)
 			if err != nil {
 				log.Fatal(err)
 			}
 			rl.WindowSize = int(d.Seconds())
+			rl.AverageRate = math.Round(maxTokens/float64(d.Seconds())*100) / 100
+			tags[tag][operationID] = rl.Name
 			operations[operationID] = rl.Name
 			_, found := groups[rl.Name]
 			if found {
@@ -71,17 +88,34 @@ func main() {
 		}
 	}
 
-	tmpl, err := template.New("").Parse(tmpl)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = tmpl.Execute(os.Stdout, map[string]any{
-		"Package":           *packageFlag,
-		"Operations":        operations,
-		"Groups":            groups,
-		"CompatibilityDate": compatibilityDate,
-	})
-	if err != nil {
-		log.Fatal(err)
+	switch *formatFlat {
+	case "md":
+		tmpl, err := template.New("").Parse(tmplMD)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = tmpl.Execute(os.Stdout, map[string]any{
+			"CompatibilityDate": compatibilityDate,
+			"Groups":            groups,
+			"Operations":        operations,
+			"Tags":              tags,
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+	default:
+		tmpl, err := template.New("").Parse(tmplGo)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = tmpl.Execute(os.Stdout, map[string]any{
+			"CompatibilityDate": compatibilityDate,
+			"Groups":            groups,
+			"Operations":        operations,
+			"Package":           *packageFlag,
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
