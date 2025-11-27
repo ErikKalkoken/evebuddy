@@ -27,7 +27,7 @@ import (
 
 // FetchAlliance fetches an alliance from ESI and returns it.
 func (s *EveUniverseService) FetchAlliance(ctx context.Context, allianceID int32) (*app.EveAlliance, error) {
-	a, _, err := xesi.RateLimited("GetAlliancesAllianceId", 0, func() (esi.GetAlliancesAllianceIdOk, *http.Response, error) {
+	a, _, err := xesi.RateLimitedNonAuth("GetAlliancesAllianceId", func() (esi.GetAlliancesAllianceIdOk, *http.Response, error) {
 		return s.esiClient.ESI.AllianceApi.GetAlliancesAllianceId(ctx, allianceID, nil)
 	})
 	if err != nil {
@@ -59,7 +59,7 @@ func (s *EveUniverseService) FetchAlliance(ctx context.Context, allianceID int32
 
 // FetchAllianceCorporations fetches the corporations for an alliance from ESI and returns them.
 func (s *EveUniverseService) FetchAllianceCorporations(ctx context.Context, allianceID int32) ([]*app.EveEntity, error) {
-	ids, _, err := xesi.RateLimited("GetAlliancesAllianceIdCorporations", 0, func() ([]int32, *http.Response, error) {
+	ids, _, err := xesi.RateLimitedNonAuth("GetAlliancesAllianceIdCorporations", func() ([]int32, *http.Response, error) {
 		return s.esiClient.ESI.AllianceApi.GetAlliancesAllianceIdCorporations(ctx, allianceID, nil)
 	})
 	if err != nil {
@@ -115,7 +115,7 @@ func (s *EveUniverseService) GetOrCreateCorporationESI(ctx context.Context, id i
 
 func (s *EveUniverseService) UpdateOrCreateCorporationFromESI(ctx context.Context, id int32) (*app.EveCorporation, error) {
 	x, err, _ := s.sfg.Do(fmt.Sprintf("UpdateOrCreateCorporationFromESI-%d", id), func() (any, error) {
-		r, _, err := xesi.RateLimited("GetCorporationsCorporationId", 0, func() (esi.GetCorporationsCorporationIdOk, *http.Response, error) {
+		r, _, err := xesi.RateLimitedNonAuth("GetCorporationsCorporationId", func() (esi.GetCorporationsCorporationIdOk, *http.Response, error) {
 			return s.esiClient.ESI.CorporationApi.GetCorporationsCorporationId(ctx, id, nil)
 		})
 		if err != nil {
@@ -231,7 +231,7 @@ func (s *EveUniverseService) RandomizeAllCorporationNames(ctx context.Context) e
 
 // FetchCharacterCorporationHistory returns a list of all the corporations a character has been a member of in descending order.
 func (s *EveUniverseService) FetchCharacterCorporationHistory(ctx context.Context, characterID int32) ([]app.MembershipHistoryItem, error) {
-	items, _, err := xesi.RateLimited("GetCharactersCharacterIdCorporationhistory", 0, func() ([]esi.GetCharactersCharacterIdCorporationhistory200Ok, *http.Response, error) {
+	items, _, err := xesi.RateLimitedNonAuth("GetCharactersCharacterIdCorporationhistory", func() ([]esi.GetCharactersCharacterIdCorporationhistory200Ok, *http.Response, error) {
 		return s.esiClient.ESI.CharacterApi.GetCharactersCharacterIdCorporationhistory(ctx, characterID, nil)
 	})
 	if err != nil {
@@ -251,7 +251,7 @@ func (s *EveUniverseService) FetchCharacterCorporationHistory(ctx context.Contex
 
 // FetchCorporationAllianceHistory returns a list of all the alliances a corporation has been a member of in descending order.
 func (s *EveUniverseService) FetchCorporationAllianceHistory(ctx context.Context, corporationID int32) ([]app.MembershipHistoryItem, error) {
-	items, _, err := xesi.RateLimited("GetCorporationsCorporationIdAlliancehistory", 0, func() ([]esi.GetCorporationsCorporationIdAlliancehistory200Ok, *http.Response, error) {
+	items, _, err := xesi.RateLimitedNonAuth("GetCorporationsCorporationIdAlliancehistory", func() ([]esi.GetCorporationsCorporationIdAlliancehistory200Ok, *http.Response, error) {
 		return s.esiClient.ESI.CorporationApi.GetCorporationsCorporationIdAlliancehistory(ctx, corporationID, nil)
 	})
 	if err != nil {

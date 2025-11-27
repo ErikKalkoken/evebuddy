@@ -85,7 +85,7 @@ func (s *EveUniverseService) UpdateOrCreateLocationESI(ctx context.Context, id i
 				SolarSystemID: optional.New(es.ID),
 			}
 		case app.EveLocationStation:
-			station, _, err := xesi.RateLimited("GetUniverseStationsStationId", 0, func() (esi.GetUniverseStationsStationIdOk, *http.Response, error) {
+			station, _, err := xesi.RateLimitedNonAuth("GetUniverseStationsStationId", func() (esi.GetUniverseStationsStationIdOk, *http.Response, error) {
 				return s.esiClient.ESI.UniverseApi.GetUniverseStationsStationId(ctx, int32(id), nil)
 			})
 			if err != nil {
@@ -222,7 +222,7 @@ func (s *EveUniverseService) EntityIDsFromLocationsESI(ctx context.Context, ids 
 		g.Go(func() error {
 			switch app.LocationVariantFromID(id) {
 			case app.EveLocationStation:
-				station, _, err := xesi.RateLimited("GetUniverseStationsStationId", 0, func() (esi.GetUniverseStationsStationIdOk, *http.Response, error) {
+				station, _, err := xesi.RateLimitedNonAuth("GetUniverseStationsStationId", func() (esi.GetUniverseStationsStationIdOk, *http.Response, error) {
 					return s.esiClient.ESI.UniverseApi.GetUniverseStationsStationId(ctx, int32(id), nil)
 				})
 				if err != nil {
@@ -233,7 +233,7 @@ func (s *EveUniverseService) EntityIDsFromLocationsESI(ctx context.Context, ids 
 				}
 			case app.EveLocationStructure:
 				// FIXME: Add character ID
-				structure, r, err := xesi.RateLimited("GetUniverseStructuresStructureId", 0, func() (esi.GetUniverseStructuresStructureIdOk, *http.Response, error) {
+				structure, r, err := xesi.RateLimitedNonAuth("GetUniverseStructuresStructureId", func() (esi.GetUniverseStructuresStructureIdOk, *http.Response, error) {
 					return s.esiClient.ESI.UniverseApi.GetUniverseStructuresStructureId(ctx, id, nil)
 				})
 				if err != nil {
@@ -258,7 +258,7 @@ func (s *EveUniverseService) EntityIDsFromLocationsESI(ctx context.Context, ids 
 
 // GetStationServicesESI fetches and returns the services of a station from ESI.
 func (s *EveUniverseService) GetStationServicesESI(ctx context.Context, id int32) ([]string, error) {
-	o, _, err := xesi.RateLimited("GetUniverseStationsStationId", 0, func() (esi.GetUniverseStationsStationIdOk, *http.Response, error) {
+	o, _, err := xesi.RateLimitedNonAuth("GetUniverseStationsStationId", func() (esi.GetUniverseStationsStationIdOk, *http.Response, error) {
 		return s.esiClient.ESI.UniverseApi.GetUniverseStationsStationId(ctx, id, nil)
 	})
 	if err != nil {

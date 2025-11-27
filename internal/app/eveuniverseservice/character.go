@@ -42,7 +42,7 @@ func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 		return nil, false, err
 	}
 	x, err, _ := s.sfg.Do(fmt.Sprintf("UpdateOrCreateCharacterESI-%d", characterID), func() (any, error) {
-		ec, r, err := xesi.RateLimited("GetCharactersCharacterId", 0, func() (esi.GetCharactersCharacterIdOk, *http.Response, error) {
+		ec, r, err := xesi.RateLimitedNonAuth("GetCharactersCharacterId", func() (esi.GetCharactersCharacterIdOk, *http.Response, error) {
 			return s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, characterID, nil)
 		})
 		if err != nil {
@@ -55,7 +55,7 @@ func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 		if err != nil {
 			return nil, err
 		}
-		affiliations, _, err := xesi.RateLimited("PostCharactersAffiliation", 0, func() ([]esi.PostCharactersAffiliation200Ok, *http.Response, error) {
+		affiliations, _, err := xesi.RateLimitedNonAuth("PostCharactersAffiliation", func() ([]esi.PostCharactersAffiliation200Ok, *http.Response, error) {
 			return s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{characterID}, nil)
 		})
 		if err != nil {

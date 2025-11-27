@@ -1,13 +1,14 @@
 package xesi
 
 import (
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRateLimitDelayForOperation(t *testing.T) {
+func TestRateLimited(t *testing.T) {
 	tests := []struct {
 		name        string
 		operationID string
@@ -39,13 +40,24 @@ func TestRateLimitDelayForOperation(t *testing.T) {
 			wantErr:     true,
 		},
 	}
-
+	original := sleep
+	defer func() {
+		sleep = original
+	}()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotDelay, gotErr := rateLimitDelayForOperation(tt.operationID)
+			var gotDelay time.Duration
+			sleep = func(d time.Duration) {
+				gotDelay = d
+			}
+			x, _, gotErr := RateLimited(tt.operationID, 42, func() (string, *http.Response, error) {
+				return "done", nil, nil
+			})
 			if tt.wantErr {
 				assert.Error(t, gotErr)
 			} else {
+				assert.NoError(t, gotErr)
+				assert.Equal(t, "done", x)
 				assert.Equal(t, tt.wantDelay, gotDelay)
 			}
 		})

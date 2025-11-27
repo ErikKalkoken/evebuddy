@@ -102,7 +102,7 @@ func (s *EveUniverseService) GetStargatesSolarSystemsESI(ctx context.Context, st
 	systemIDs := make([]int32, len(stargateIDs))
 	for i, id := range stargateIDs {
 		g.Go(func() error {
-			x, _, err := xesi.RateLimited("GetUniverseStargatesStargateId", 0, func() (esi.GetUniverseStargatesStargateIdOk, *http.Response, error) {
+			x, _, err := xesi.RateLimitedNonAuth("GetUniverseStargatesStargateId", func() (esi.GetUniverseStargatesStargateIdOk, *http.Response, error) {
 				return s.esiClient.ESI.UniverseApi.GetUniverseStargatesStargateId(ctx, id, nil)
 			})
 			if err != nil {
@@ -163,7 +163,7 @@ func (s *EveUniverseService) GetSolarSystemPlanets(ctx context.Context, planets 
 
 // GetSolarSystemInfoESI fetches and returns details about a solar system from ESI.
 func (s *EveUniverseService) GetSolarSystemInfoESI(ctx context.Context, solarSystemID int32) (starID int32, planets []app.EveSolarSystemPlanet, stargateIDs []int32, stations []*app.EveEntity, structures []*app.EveLocation, err error) {
-	x, _, err := xesi.RateLimited("GetUniverseSystemsSystemId", 0, func() (esi.GetUniverseSystemsSystemIdOk, *http.Response, error) {
+	x, _, err := xesi.RateLimitedNonAuth("GetUniverseSystemsSystemId", func() (esi.GetUniverseSystemsSystemIdOk, *http.Response, error) {
 		return s.esiClient.ESI.UniverseApi.GetUniverseSystemsSystemId(ctx, solarSystemID, nil)
 	})
 	if err != nil {
@@ -204,7 +204,7 @@ func (s *EveUniverseService) GetSolarSystemInfoESI(ctx context.Context, solarSys
 
 // GetRegionConstellationsESI fetches and returns the constellations for a region.
 func (s *EveUniverseService) GetRegionConstellationsESI(ctx context.Context, id int32) ([]*app.EveEntity, error) {
-	region, _, err := xesi.RateLimited("GetUniverseRegionsRegionId", 0, func() (esi.GetUniverseRegionsRegionIdOk, *http.Response, error) {
+	region, _, err := xesi.RateLimitedNonAuth("GetUniverseRegionsRegionId", func() (esi.GetUniverseRegionsRegionIdOk, *http.Response, error) {
 		return s.esiClient.ESI.UniverseApi.GetUniverseRegionsRegionId(ctx, id, nil)
 	})
 	if err != nil {
@@ -223,7 +223,7 @@ func (s *EveUniverseService) GetRegionConstellationsESI(ctx context.Context, id 
 
 // GetConstellationSolarSystemsESI fetches and returns the solar systems for a constellations from ESI.
 func (s *EveUniverseService) GetConstellationSolarSystemsESI(ctx context.Context, id int32) ([]*app.EveSolarSystem, error) {
-	o, _, err := xesi.RateLimited("GetUniverseConstellationsConstellationId", 0, func() (esi.GetUniverseConstellationsConstellationIdOk, *http.Response, error) {
+	o, _, err := xesi.RateLimitedNonAuth("GetUniverseConstellationsConstellationId", func() (esi.GetUniverseConstellationsConstellationIdOk, *http.Response, error) {
 		return s.esiClient.ESI.UniverseApi.GetUniverseConstellationsConstellationId(ctx, id, nil)
 	})
 	if err != nil {
@@ -259,7 +259,7 @@ func (s *EveUniverseService) GetOrCreateRegionESI(ctx context.Context, id int32)
 		} else if !errors.Is(err, app.ErrNotFound) {
 			return nil, err
 		}
-		region, _, err := xesi.RateLimited("GetUniverseRegionsRegionId", 0, func() (esi.GetUniverseRegionsRegionIdOk, *http.Response, error) {
+		region, _, err := xesi.RateLimitedNonAuth("GetUniverseRegionsRegionId", func() (esi.GetUniverseRegionsRegionIdOk, *http.Response, error) {
 			return s.esiClient.ESI.UniverseApi.GetUniverseRegionsRegionId(ctx, id, nil)
 		})
 		if err != nil {
@@ -291,7 +291,7 @@ func (s *EveUniverseService) GetOrCreateConstellationESI(ctx context.Context, id
 		} else if !errors.Is(err, app.ErrNotFound) {
 			return nil, err
 		}
-		constellation, _, err := xesi.RateLimited("GetUniverseConstellationsConstellationId", 0, func() (esi.GetUniverseConstellationsConstellationIdOk, *http.Response, error) {
+		constellation, _, err := xesi.RateLimitedNonAuth("GetUniverseConstellationsConstellationId", func() (esi.GetUniverseConstellationsConstellationIdOk, *http.Response, error) {
 			return s.esiClient.ESI.UniverseApi.GetUniverseConstellationsConstellationId(ctx, id, nil)
 		})
 		if err != nil {
@@ -326,7 +326,7 @@ func (s *EveUniverseService) GetOrCreateSolarSystemESI(ctx context.Context, id i
 		} else if !errors.Is(err, app.ErrNotFound) {
 			return nil, err
 		}
-		system, _, err := xesi.RateLimited("GetUniverseSystemsSystemId", 0, func() (esi.GetUniverseSystemsSystemIdOk, *http.Response, error) {
+		system, _, err := xesi.RateLimitedNonAuth("GetUniverseSystemsSystemId", func() (esi.GetUniverseSystemsSystemIdOk, *http.Response, error) {
 			return s.esiClient.ESI.UniverseApi.GetUniverseSystemsSystemId(ctx, id, nil)
 		})
 		if err != nil {
@@ -362,7 +362,7 @@ func (s *EveUniverseService) GetOrCreatePlanetESI(ctx context.Context, id int32)
 		} else if !errors.Is(err, app.ErrNotFound) {
 			return nil, err
 		}
-		planet, _, err := xesi.RateLimited("GetUniversePlanetsPlanetId", 0, func() (esi.GetUniversePlanetsPlanetIdOk, *http.Response, error) {
+		planet, _, err := xesi.RateLimitedNonAuth("GetUniversePlanetsPlanetId", func() (esi.GetUniversePlanetsPlanetIdOk, *http.Response, error) {
 			return s.esiClient.ESI.UniverseApi.GetUniversePlanetsPlanetId(ctx, id, nil)
 		})
 		if err != nil {
@@ -402,7 +402,7 @@ func (s *EveUniverseService) GetOrCreateMoonESI(ctx context.Context, id int32) (
 		} else if !errors.Is(err, app.ErrNotFound) {
 			return nil, err
 		}
-		moon, _, err := xesi.RateLimited("GetUniverseMoonsMoonId", 0, func() (esi.GetUniverseMoonsMoonIdOk, *http.Response, error) {
+		moon, _, err := xesi.RateLimitedNonAuth("GetUniverseMoonsMoonId", func() (esi.GetUniverseMoonsMoonIdOk, *http.Response, error) {
 			return s.esiClient.ESI.UniverseApi.GetUniverseMoonsMoonId(ctx, id, nil)
 		})
 		if err != nil {
@@ -430,7 +430,7 @@ func (s *EveUniverseService) GetOrCreateMoonESI(ctx context.Context, id int32) (
 }
 
 func (s *EveUniverseService) GetStarTypeID(ctx context.Context, id int32) (int32, error) {
-	x2, _, err := xesi.RateLimited("GetUniverseStarsStarId", 0, func() (esi.GetUniverseStarsStarIdOk, *http.Response, error) {
+	x2, _, err := xesi.RateLimitedNonAuth("GetUniverseStarsStarId", func() (esi.GetUniverseStarsStarIdOk, *http.Response, error) {
 		return s.esiClient.ESI.UniverseApi.GetUniverseStarsStarId(ctx, id, nil)
 	})
 	if err != nil {

@@ -66,7 +66,7 @@ func (s *EveUniverseService) GetOrCreateRaceESI(ctx context.Context, id int32) (
 		} else if !errors.Is(err, app.ErrNotFound) {
 			return nil, err
 		}
-		races, _, err := xesi.RateLimited("GetUniverseRaces", 0, func() ([]esi.GetUniverseRaces200Ok, *http.Response, error) {
+		races, _, err := xesi.RateLimitedNonAuth("GetUniverseRaces", func() ([]esi.GetUniverseRaces200Ok, *http.Response, error) {
 			return s.esiClient.ESI.UniverseApi.GetUniverseRaces(ctx, nil)
 		})
 		if err != nil {
@@ -103,7 +103,7 @@ func (s *EveUniverseService) GetOrCreateSchematicESI(ctx context.Context, id int
 		} else if !errors.Is(err, app.ErrNotFound) {
 			return nil, err
 		}
-		d, _, err := xesi.RateLimited("GetUniverseSchematicsSchematicId", 0, func() (esi.GetUniverseSchematicsSchematicIdOk, *http.Response, error) {
+		d, _, err := xesi.RateLimitedNonAuth("GetUniverseSchematicsSchematicId", func() (esi.GetUniverseSchematicsSchematicIdOk, *http.Response, error) {
 			return s.esiClient.ESI.PlanetaryInteractionApi.GetUniverseSchematicsSchematicId(ctx, id, nil)
 		})
 		if err != nil {

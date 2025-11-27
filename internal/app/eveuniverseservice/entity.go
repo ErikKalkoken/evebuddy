@@ -155,7 +155,7 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 
 func (s *EveUniverseService) resolveIDsFromESI(ctx context.Context, ids []int32) ([]esi.PostUniverseNames200Ok, []int32, error) {
 	slog.Debug("Trying to resolve IDs from ESI", "count", len(ids))
-	ee, resp, err := xesi.RateLimited("PostUniverseNames", 0, func() ([]esi.PostUniverseNames200Ok, *http.Response, error) {
+	ee, resp, err := xesi.RateLimitedNonAuth("PostUniverseNames", func() ([]esi.PostUniverseNames200Ok, *http.Response, error) {
 		return s.esiClient.ESI.UniverseApi.PostUniverseNames(ctx, ids, nil)
 	})
 	if err != nil {
