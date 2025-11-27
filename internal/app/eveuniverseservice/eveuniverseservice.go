@@ -6,10 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 
 	"time"
 
 	"github.com/antihax/goesi"
+	"github.com/antihax/goesi/esi"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/singleflight"
 
@@ -17,6 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 )
 
 // EveUniverseService provides access to Eve Online models with on-demand loading from ESI and persistent local caching.
@@ -63,7 +66,9 @@ func (s *EveUniverseService) GetOrCreateRaceESI(ctx context.Context, id int32) (
 		} else if !errors.Is(err, app.ErrNotFound) {
 			return nil, err
 		}
-		races, _, err := s.esiClient.ESI.UniverseApi.GetUniverseRaces(ctx, nil)
+		races, _, err := xesi.RateLimited("GetUniverseRaces", 0, func() ([]esi.GetUniverseRaces200Ok, *http.Response, error) {
+			return s.esiClient.ESI.UniverseApi.GetUniverseRaces(ctx, nil)
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -98,7 +103,9 @@ func (s *EveUniverseService) GetOrCreateSchematicESI(ctx context.Context, id int
 		} else if !errors.Is(err, app.ErrNotFound) {
 			return nil, err
 		}
-		d, _, err := s.esiClient.ESI.PlanetaryInteractionApi.GetUniverseSchematicsSchematicId(ctx, id, nil)
+		d, _, err := xesi.RateLimited("GetUniverseSchematicsSchematicId", 0, func() (esi.GetUniverseSchematicsSchematicIdOk, *http.Response, error) {
+			return s.esiClient.ESI.PlanetaryInteractionApi.GetUniverseSchematicsSchematicId(ctx, id, nil)
+		})
 		if err != nil {
 			return nil, err
 		}

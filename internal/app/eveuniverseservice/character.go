@@ -7,12 +7,14 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/antihax/goesi/esi"
 	"github.com/icrowley/fake"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 )
 
 func (s *EveUniverseService) GetCharacterESI(ctx context.Context, characterID int32) (*app.EveCharacter, error) {
@@ -40,7 +42,9 @@ func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 		return nil, false, err
 	}
 	x, err, _ := s.sfg.Do(fmt.Sprintf("UpdateOrCreateCharacterESI-%d", characterID), func() (any, error) {
-		ec, r, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, characterID, nil)
+		ec, r, err := xesi.RateLimited("GetCharactersCharacterId", 0, func() (esi.GetCharactersCharacterIdOk, *http.Response, error) {
+			return s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, characterID, nil)
+		})
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
 				return nil, app.ErrNotFound
@@ -51,7 +55,9 @@ func (s *EveUniverseService) UpdateOrCreateCharacterESI(ctx context.Context, cha
 		if err != nil {
 			return nil, err
 		}
-		affiliations, _, err := s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{characterID}, nil)
+		affiliations, _, err := xesi.RateLimited("PostCharactersAffiliation", 0, func() ([]esi.PostCharactersAffiliation200Ok, *http.Response, error) {
+			return s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{characterID}, nil)
+		})
 		if err != nil {
 			return false, err
 		}

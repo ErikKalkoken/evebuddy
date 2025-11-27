@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"slices"
 	"strings"
 	"time"
@@ -13,6 +14,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
+	"github.com/antihax/goesi/esi"
 	"github.com/dustin/go-humanize"
 	"golang.org/x/sync/errgroup"
 )
@@ -49,7 +52,9 @@ func (s *EveUniverseService) GetOrCreateCategoryESI(ctx context.Context, id int3
 		} else if !errors.Is(err, app.ErrNotFound) {
 			return nil, err
 		}
-		r, _, err := s.esiClient.ESI.UniverseApi.GetUniverseCategoriesCategoryId(ctx, id, nil)
+		r, _, err := xesi.RateLimited("GetUniverseCategoriesCategoryId", 0, func() (esi.GetUniverseCategoriesCategoryIdOk, *http.Response, error) {
+			return s.esiClient.ESI.UniverseApi.GetUniverseCategoriesCategoryId(ctx, id, nil)
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -79,7 +84,9 @@ func (s *EveUniverseService) GetOrCreateGroupESI(ctx context.Context, id int32) 
 		} else if !errors.Is(err, app.ErrNotFound) {
 			return nil, err
 		}
-		group, _, err := s.esiClient.ESI.UniverseApi.GetUniverseGroupsGroupId(ctx, id, nil)
+		group, _, err := xesi.RateLimited("GetUniverseGroupsGroupId", 0, func() (esi.GetUniverseGroupsGroupIdOk, *http.Response, error) {
+			return s.esiClient.ESI.UniverseApi.GetUniverseGroupsGroupId(ctx, id, nil)
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -113,7 +120,9 @@ func (s *EveUniverseService) GetOrCreateTypeESI(ctx context.Context, id int32) (
 		} else if !errors.Is(err, app.ErrNotFound) {
 			return nil, err
 		}
-		t, _, err := s.esiClient.ESI.UniverseApi.GetUniverseTypesTypeId(ctx, id, nil)
+		t, _, err := xesi.RateLimited("GetUniverseTypesTypeId", 0, func() (esi.GetUniverseTypesTypeIdOk, *http.Response, error) {
+			return s.esiClient.ESI.UniverseApi.GetUniverseTypesTypeId(ctx, id, nil)
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -227,7 +236,9 @@ func (s *EveUniverseService) UpdateCategoryWithChildrenESI(ctx context.Context, 
 		if err != nil {
 			return nil, err
 		}
-		category, _, err := s.esiClient.ESI.UniverseApi.GetUniverseCategoriesCategoryId(ctx, categoryID, nil)
+		category, _, err := xesi.RateLimited("GetUniverseCategoriesCategoryId", 0, func() (esi.GetUniverseCategoriesCategoryIdOk, *http.Response, error) {
+			return s.esiClient.ESI.UniverseApi.GetUniverseCategoriesCategoryId(ctx, categoryID, nil)
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -247,7 +258,9 @@ func (s *EveUniverseService) UpdateCategoryWithChildrenESI(ctx context.Context, 
 		g.SetLimit(s.concurrencyLimit)
 		for i, id := range category.Groups {
 			g.Go(func() error {
-				group, _, err := s.esiClient.ESI.UniverseApi.GetUniverseGroupsGroupId(ctx, id, nil)
+				group, _, err := xesi.RateLimited("GetUniverseGroupsGroupId", 0, func() (esi.GetUniverseGroupsGroupIdOk, *http.Response, error) {
+					return s.esiClient.ESI.UniverseApi.GetUniverseGroupsGroupId(ctx, id, nil)
+				})
 				if err != nil {
 					return err
 				}
@@ -285,7 +298,9 @@ func (s *EveUniverseService) GetOrCreateDogmaAttributeESI(ctx context.Context, i
 		} else if !errors.Is(err, app.ErrNotFound) {
 			return nil, err
 		}
-		d, _, err := s.esiClient.ESI.DogmaApi.GetDogmaAttributesAttributeId(ctx, id, nil)
+		d, _, err := xesi.RateLimited("GetDogmaAttributesAttributeId", 0, func() (esi.GetDogmaAttributesAttributeIdOk, *http.Response, error) {
+			return s.esiClient.ESI.DogmaApi.GetDogmaAttributesAttributeId(ctx, id, nil)
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -440,7 +455,9 @@ func (s *EveUniverseService) MarketPrice(ctx context.Context, typeID int32) (opt
 func (s *EveUniverseService) updateMarketPricesESI(ctx context.Context) (set.Set[int32], error) {
 	x, err, _ := s.sfg.Do("updateMarketPricesESI", func() (any, error) {
 		var changed set.Set[int32]
-		prices, _, err := s.esiClient.ESI.MarketApi.GetMarketsPrices(ctx, nil)
+		prices, _, err := xesi.RateLimited("GetMarketsPrices", 0, func() ([]esi.GetMarketsPrices200Ok, *http.Response, error) {
+			return s.esiClient.ESI.MarketApi.GetMarketsPrices(ctx, nil)
+		})
 		if err != nil {
 			return changed, err
 		}
