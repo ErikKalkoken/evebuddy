@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/antihax/goesi/esi"
 	"golang.org/x/sync/errgroup"
@@ -28,33 +29,18 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			var (
-				open    []esi.GetCharactersCharacterIdOrders200Ok
-				history []esi.GetCharactersCharacterIdOrdersHistory200Ok
-			)
-			g := new(errgroup.Group)
-			g.Go(func() error {
-				orders, _, err := s.esiClient.ESI.MarketApi.GetCharactersCharacterIdOrders(ctx, characterID, nil)
-				if err != nil {
-					return err
-				}
-				open = orders
-				slog.Debug("Received open orders from ESI", "count", len(orders), "characterID", characterID)
-				return nil
-			})
-			g.Go(func() error {
-				orders, _, err := s.esiClient.ESI.MarketApi.GetCharactersCharacterIdOrdersHistory(ctx, characterID, nil)
-				if err != nil {
-					return err
-				}
-				history = orders
-				slog.Debug("Received history orders from ESI", "count", len(orders), "characterID", characterID)
-				return nil
-			})
-			if err := g.Wait(); err != nil {
+			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdOrders")
+			open, _, err := s.esiClient.ESI.MarketApi.GetCharactersCharacterIdOrders(ctx, characterID, nil)
+			if err != nil {
 				return nil, err
 			}
-
+			slog.Debug("Received open orders from ESI", "count", len(open), "characterID", characterID)
+			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdOrdersHistory")
+			history, _, err := s.esiClient.ESI.MarketApi.GetCharactersCharacterIdOrdersHistory(ctx, characterID, nil)
+			if err != nil {
+				return nil, err
+			}
+			slog.Debug("Received history orders from ESI", "count", len(history), "characterID", characterID)
 			orders := make(map[int64]esi.GetCharactersCharacterIdOrdersHistory200Ok)
 			for _, o := range open {
 				if o.Duration == 0 {

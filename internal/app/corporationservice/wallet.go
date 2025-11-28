@@ -137,6 +137,7 @@ func (s *CorporationService) updateWalletBalancesESI(ctx context.Context, arg ap
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
+			ctx = xesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWallets")
 			wallets, _, err := s.esiClient.ESI.WalletApi.GetCorporationsCorporationIdWallets(ctx, arg.CorporationID, nil)
 			if err != nil {
 				return false, err
@@ -206,6 +207,7 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg app
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
+			ctx = xesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWalletsDivisionJournal")
 			entries, err := xesi.FetchPages(
 				func(pageNum int) ([]esi.GetCorporationsCorporationIdWalletsDivisionJournal200Ok, *http.Response, error) {
 					opts := &esi.GetCorporationsCorporationIdWalletsDivisionJournalOpts{
@@ -427,7 +429,8 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 // fetchWalletTransactionsESI fetches wallet transactions from ESI with paging and returns them.
 func (s *CorporationService) fetchWalletTransactionsESI(ctx context.Context, arg app.CorporationSectionUpdateParams) ([]esi.GetCorporationsCorporationIdWalletsDivisionTransactions200Ok, error) {
 	var oo2 []esi.GetCorporationsCorporationIdWalletsDivisionTransactions200Ok
-	lastID := int64(0)
+	var lastID int64
+	ctx = xesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWalletsDivisionTransactions")
 	for {
 		var opts *esi.GetCorporationsCorporationIdWalletsDivisionTransactionsOpts
 		if lastID > 0 {

@@ -150,6 +150,7 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
+			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdContracts")
 			contracts, err := xesi.FetchPages(
 				func(pageNum int) ([]esi.GetCharactersCharacterIdContracts200Ok, *http.Response, error) {
 					return s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContracts(
@@ -282,6 +283,7 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 	if err != nil {
 		return err
 	}
+	ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdContractsContractIdItems")
 	items, _, err := s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContractsContractIdItems(ctx, characterID, c.ContractId, nil)
 	if err != nil {
 		return err

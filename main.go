@@ -48,6 +48,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/remoteservice"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 )
 
@@ -73,6 +74,7 @@ const (
 
 // define flags
 var (
+	clearCacheFlag          = flag.Bool("clear-cache", false, "Clear the cache")
 	deleteDataFlag          = flag.Bool("delete-data", false, "Delete user data")
 	deleteDataNoConfirmFlag = flag.Bool(
 		"delete-data-no-confirm",
@@ -80,15 +82,15 @@ var (
 		"Delete user data without asking for confirmation",
 	)
 	developFlag        = flag.Bool("dev", false, "Enable developer features")
-	filesFlag          = flag.Bool("files", false, "Show paths to data files")
 	disableUpdatesFlag = flag.Bool("disable-updates", false, "Disable all periodic updates")
+	filesFlag          = flag.Bool("files", false, "Show paths to data files")
 	logLevelFlag       = flag.String("log-level", "", "Set log level for this session")
 	mobileFlag         = flag.Bool("mobile", false, "Run the app in forced mobile mode")
 	offlineFlag        = flag.Bool("offline", false, "Start app in offline mode")
 	pprofFlag          = flag.Bool("pprof", false, "Enable pprof web server")
 	resetUIFlag        = flag.Bool("reset-ui", false, "Resets UI settings to defaults")
-	versionFlag        = flag.Bool("v", false, "Show version")
 	ssoDemoFlag        = flag.Bool("sso-demo", false, "Start SSO serer in demo mode")
+	versionFlag        = flag.Bool("v", false, "Show version")
 )
 
 // RealTicker provides a real ticker from the standard library.
@@ -264,29 +266,43 @@ func main() {
 	defer dbRO.Close()
 	st := storage.New(dbRW, dbRO)
 
-	// Initialize caches
-	memCache := memcache.New()
-	defer memCache.Close()
+	// Initialize persistent cache
 	pc := pcache.New(st, cacheCleanUpTimeout)
 	defer pc.Close()
 
-	// Initialize shared HTTP client
+	if *clearCacheFlag {
+		pc.Clear()
+		slog.Info("cache cleared")
+	}
+
+	// Shared ESI client
 	// Automatically retries on connection errors, most server errors and 429s
 	// Logs requests on debug level and all HTTP error responses as warnings
-	rhc := retryablehttp.NewClient()
-	rhc.HTTPClient.Transport = &httpcache.Transport{
+	// Has ESI specific rate limiter
+	rhc1 := retryablehttp.NewClient()
+	rhc1.HTTPClient.Transport = &httpcache.Transport{
+		Cache:               newCacheAdapter(pc, "esicache-", 24*time.Hour),
+		MarkCachedResponses: true,
+		Transport:           xesi.NewRateLimiter(),
+	}
+	rhc1.Logger = slog.Default()
+	rhc1.ResponseLogHook = logResponse
+	userAgent := fmt.Sprintf("%s/%s (%s; +%s)", appName, fyneApp.Metadata().Version, userAgentEmail, sourceURL)
+	esiClient := goesi.NewAPIClient(rhc1.StandardClient(), userAgent)
+	slog.Info("user agent", "str", userAgent)
+
+	// HTTP client for SSO and EVE image server
+	rhc2 := retryablehttp.NewClient()
+	rhc2.HTTPClient.Transport = &httpcache.Transport{
 		Cache:               newCacheAdapter(pc, "httpcache-", 24*time.Hour),
 		MarkCachedResponses: true,
 	}
-	rhc.Logger = slog.Default()
-	rhc.ResponseLogHook = logResponse
-
-	// Initialize shared ESI client
-	userAgent := fmt.Sprintf("%s/%s (%s; +%s)", appName, fyneApp.Metadata().Version, userAgentEmail, sourceURL)
-	esiClient := goesi.NewAPIClient(rhc.StandardClient(), userAgent)
-	slog.Info("user agent", "str", userAgent)
+	rhc2.Logger = slog.Default()
+	rhc2.ResponseLogHook = logResponse
 
 	// Init StatusCache service
+	memCache := memcache.New()
+	defer memCache.Close()
 	scs := statuscacheservice.New(memCache, st)
 	if err := scs.InitCache(context.Background()); err != nil {
 		slog.Error("Failed to init cache", "error", err)
@@ -301,14 +317,14 @@ func main() {
 	})
 
 	// Init Character service
-	ssoService := sso.New(ssoClientID, rhc.StandardClient())
+	ssoService := sso.New(ssoClientID, rhc2.StandardClient())
 	ssoService.OpenURL = fyneApp.OpenURL
 	cs := characterservice.New(characterservice.Params{
 		ConcurrencyLimit:       concurrentLimit,
 		ESIClient:              esiClient,
 		EveNotificationService: evenotification.New(eus),
 		EveUniverseService:     eus,
-		HTTPClient:             rhc.StandardClient(),
+		HTTPClient:             rhc1.StandardClient(),
 		SSOService:             ssoService,
 		StatusCacheService:     scs,
 		Storage:                st,
@@ -321,7 +337,7 @@ func main() {
 		ConcurrencyLimit:   concurrentLimit,
 		EsiClient:          esiClient,
 		EveUniverseService: eus,
-		HTTPClient:         rhc.StandardClient(),
+		HTTPClient:         rhc1.StandardClient(),
 		StatusCacheService: scs,
 		Storage:            st,
 	})
@@ -346,13 +362,13 @@ func main() {
 		CorporationService: rs,
 		DataPaths:          dataPaths,
 		ESIStatusService:   esistatusservice.New(esiClient),
-		EveImageService:    eveimageservice.New(pc, rhc.StandardClient(), *offlineFlag),
+		EveImageService:    eveimageservice.New(pc, rhc2.StandardClient(), *offlineFlag),
 		EveUniverseService: eus,
 		IsDesktop:          isDesktop,
 		IsFakeMobile:       *mobileFlag,
 		IsOffline:          *offlineFlag,
 		IsUpdateDisabled:   *disableUpdatesFlag,
-		JaniceService:      janiceservice.New(rhc.StandardClient(), key),
+		JaniceService:      janiceservice.New(rhc1.StandardClient(), key),
 		MemCache:           memCache,
 		StatusCacheService: scs,
 	})

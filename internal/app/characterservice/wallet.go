@@ -38,6 +38,7 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
+			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWalletJournal")
 			entries, err := xesi.FetchPages(
 				func(pageNum int) ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
 					arg := &esi.GetCharactersCharacterIdWalletJournalOpts{
@@ -197,7 +198,8 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg a
 // fetchWalletTransactionsESI fetches wallet transactions from ESI with paging and returns them.
 func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, characterID int32, maxTransactions int) ([]esi.GetCharactersCharacterIdWalletTransactions200Ok, error) {
 	var oo2 []esi.GetCharactersCharacterIdWalletTransactions200Ok
-	lastID := int64(0)
+	var lastID int64
+	ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWalletTransactions")
 	for {
 		var opts *esi.GetCharactersCharacterIdWalletTransactionsOpts
 		if lastID > 0 {

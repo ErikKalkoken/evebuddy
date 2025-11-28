@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/antihax/goesi/esi"
 	"golang.org/x/sync/errgroup"
 )
@@ -65,6 +66,7 @@ func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg app.Char
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
+			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdClones")
 			clones, _, err := s.esiClient.ESI.ClonesApi.GetCharactersCharacterIdClones(ctx, characterID, nil)
 			if err != nil {
 				return false, err

@@ -10,12 +10,11 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/antihax/goesi"
-
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 )
 
 // RemoveSectionDataWhenPermissionLost removes all data related to a corporation section after the permission was lost.
@@ -241,7 +240,7 @@ func (s *CorporationService) updateSectionIfChanged(
 		return false, err
 	} else {
 		slog.Info("Found valid token for updating corporation section", "corporationID", arg.CorporationID, "section", arg.Section, "characterID", token.CharacterID)
-		ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+		ctx = xesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
 		data, err := fetch(ctx, arg)
 		if err != nil {
 			return false, err
