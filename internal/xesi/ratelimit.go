@@ -139,6 +139,6 @@ func determineRateLimit(ctx context.Context) (string, rateLimitGroup, bool, erro
 		return "", rateLimitGroup{}, false, fmt.Errorf("ratelimiter: %s: unknown rate limit group %s", operationID, group)
 	}
 	bucket := fmt.Sprintf("%s-%d", group, characterID)
-	slog.Info("ratelimiter: identified rate limit", "operationID", operationID, "rateLimitGroup", rlg.name, "bucket", bucket) // FIXME: Downgrade to DEBUG for release
+	slog.Debug("ratelimiter: identified rate limit", "operationID", operationID, "rateLimitGroup", rlg.name, "bucket", bucket)
 	return bucket, rlg, true, nil
 }

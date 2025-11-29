@@ -1,6 +1,21 @@
 // Package xslices contains helper functions for slices.
 package xslices
 
+// Deduplicate returns a new slice where all duplicate elements have been removed.
+// The order of the elements is not changed, but the new slice can be shorter.
+func Deduplicate[S ~[]E, E comparable](s S) []E {
+	seen := make(map[E]bool)
+	s2 := make([]E, 0)
+	for _, v := range s {
+		if seen[v] {
+			continue
+		}
+		s2 = append(s2, v)
+		seen[v] = true
+	}
+	return s2
+}
+
 // Filter returns a new slice containing the elements where applied function f returned true.
 func Filter[S ~[]E, E any](s S, f func(E) bool) []E {
 	s2 := make([]E, 0)
@@ -21,6 +36,18 @@ func Map[S ~[]X, X any, Y any](s S, f func(X) Y) []Y {
 	return s2
 }
 
+// Pop returns and removes the last element of a slice s and reports whether an element was returned.
+func Pop[T any](s *[]T) (T, bool) {
+	if s == nil || len(*s) == 0 {
+		var zero T
+		return zero, false
+	}
+	lastIndex := len(*s) - 1
+	value := (*s)[lastIndex]
+	*s = (*s)[:lastIndex]
+	return value, true
+}
+
 // Reduce applies f cumulatively to the elements of s, from left to right,
 // so as to reduce the slice to a single value.
 // If the slice is empty it will return the zero value of E.
@@ -34,19 +61,4 @@ func Reduce[S ~[]E, E any](s S, f func(E, E) E) E {
 		x = f(x, v)
 	}
 	return x
-}
-
-// Deduplicate returns a new slice where all duplicate elements have been removed.
-// The order of the elements is not changed, but the new slice can be shorter.
-func Deduplicate[S ~[]E, E comparable](s S) []E {
-	seen := make(map[E]bool)
-	s2 := make([]E, 0)
-	for _, v := range s {
-		if seen[v] {
-			continue
-		}
-		s2 = append(s2, v)
-		seen[v] = true
-	}
-	return s2
 }
