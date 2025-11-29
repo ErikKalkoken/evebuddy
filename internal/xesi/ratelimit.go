@@ -12,9 +12,10 @@ import (
 	"golang.org/x/time/rate"
 )
 
-// TODO: Add tests
 // TODO: Do thorough play tests
+// TODO: Add protection against repeated 429s
 // TODO: Consider moving the request logger into own transport to avoid logging cached requests
+// TODO: Add protection against repeated 420s
 
 type contextKey string
 

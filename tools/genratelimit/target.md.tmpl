@@ -1,50 +1,41 @@
 # ESI rate limits
 
-This document shows the current rate limits for the ESI API
-and was generated from openAPI 3.1 spec with the compatibility date: {{ .CompatibilityDate }}.
+This document shows the current rate limits of the EVE Online API (ESI).
+It was generated on **{{ .Today }}** from the [OpenAPI 3.1 specification](https://esi.evetech.net/meta/openapi.json?compatibility_date={{ .CompatibilityDate }}) with the compatibility date: **{{ .CompatibilityDate }}**.
 
-## Contents
-
-- [Rate limit groups](#rate-limit-groups)
-- [Operations by tag](#operations-by-tag)
-- [Operations flat](#operations-flat)
+For a comprehensive description on how rate limiting is implementing in ESI please see [EVE Developer Documentation / Rate Limiting](https://developers.eveonline.com/docs/services/esi/rate-limiting/).
 
 ## Rate limit groups
 
 This section shows the current configuration of all active rate limit groups.
 
-Group | Max tokens | Windows size | Average rate
--- | -- | -- | --
-{{- range $key, $group := .Groups}}
-{{$group.Name}} | {{$group.MaxTokens}} | {{$group.WindowSize}} | {{$group.AverageRate}}
+Group | Max tokens | Windows size | Average delay | Average rate
+--- | ---: | ---: | ---: | ---:
+{{- range $key, $g := .Groups }}
+<span id="{{ $g.Name }}">{{ $g.Name }}</span> | {{ $g.MaxTokens }} | {{ $g.WindowSize }} | {{ $g.AverageDelay }} | {{ printf "%.2f" $g.AverageRate }}
 {{- end }}
 
-The windows size is given in seconds. The average rate is given in requests per second.
+The windows size and average delay is given in seconds. The average rate is given in requests per second.
 
-## Operations by tag
+## Operations
 
-This section shows the active rate limit group for all ESI operations.
-An empty group entry means that the rate limit group for that operation has not yet been activated.
-The operations are structured by tags.
+This section shows the active rate limit group for all ESI operations ordered by tags.
 
-{{- range $key1, $value1 := .Tags }}
+A missing group means that there currently is no rate limit active for that operation
+and instead the classic error rate limit is active.
 
-### {{ $key1 }}
+### Tags
+{{ range $tag, $operation := .Tags }}
+- [{{ $tag }}](#{{ toAnchor $tag }})
+{{- end }}
+
+{{- range $tag, $operation := .Tags }}
+
+### {{ $tag }}
 
 Operation ID | Rate limit Group
 -- | --
-{{- range $key2, $value2 := $value1 }}
-{{ $key2 }} | {{if $value2}}{{$value2}}{{else}}-{{end}}
+{{- range $id, $group := $operation }}
+{{ $id }} | {{if $group }}[{{ $group }}](#{{ $group }}){{ else }}-{{ end }}
 {{- end }}
-{{- end }}
-
-## Operations flat
-
-This section shows the active rate limit group for all ESI operations.
-An empty group entry means that the rate limit group for that operation has not yet been activated.
-
-Operation ID | Rate limit Group
--- | --
-{{- range $key, $value := .Operations }}
-{{ $key }} | {{if $value}}{{$value}}{{else}}-{{end}}
 {{- end }}

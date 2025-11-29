@@ -6,8 +6,8 @@ import (
 	"flag"
 	"html/template"
 	"log"
-	"math"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -26,10 +26,11 @@ var (
 )
 
 type rateLimitGroup struct {
-	Name        string
-	MaxTokens   int
-	WindowSize  int     // seconds
-	AverageRate float64 // requests per second
+	Name         string
+	MaxTokens    int
+	WindowSize   int     // seconds
+	AverageRate  float64 // requests per second
+	AverageDelay float64 // seconds
 }
 
 func main() {
@@ -77,7 +78,8 @@ func main() {
 				log.Fatal(err)
 			}
 			rl.WindowSize = int(d.Seconds())
-			rl.AverageRate = math.Round(maxTokens/float64(d.Seconds())*100) / 100
+			rl.AverageDelay = d.Seconds() / (maxTokens / 2)
+			rl.AverageRate = 1 / rl.AverageDelay
 			tags[tag][operationID] = rl.Name
 			operations[operationID] = rl.Name
 			_, found := groups[rl.Name]
@@ -90,11 +92,14 @@ func main() {
 
 	switch *formatFlat {
 	case "md":
-		tmpl, err := template.New("").Parse(tmplMD)
+		tmpl, err := template.New("").Funcs(template.FuncMap{
+			"toAnchor": toAnchor,
+		}).Parse(tmplMD)
 		if err != nil {
 			log.Fatal(err)
 		}
 		err = tmpl.Execute(os.Stdout, map[string]any{
+			"Today":             time.Now().UTC().Format(time.DateOnly),
 			"CompatibilityDate": compatibilityDate,
 			"Groups":            groups,
 			"Operations":        operations,
@@ -118,4 +123,10 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+}
+
+func toAnchor(s string) string {
+	s = strings.ToLower(s)
+	s = strings.ReplaceAll(s, " ", "-")
+	return s
 }
