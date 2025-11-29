@@ -16,6 +16,7 @@ import (
 
 func TestRateLimiter(t *testing.T) {
 	t.Run("should complete normal request", func(t *testing.T) {
+		t.Parallel()
 		mockHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, "Hello, Mock Server!")
@@ -36,6 +37,7 @@ func TestRateLimiter(t *testing.T) {
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 	t.Run("should fail when authed and characterID is missing", func(t *testing.T) {
+		t.Parallel()
 		mockHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, "Hello, Mock Server!")
@@ -55,6 +57,7 @@ func TestRateLimiter(t *testing.T) {
 		assert.Error(t, gotErr)
 	})
 	t.Run("should fail when operationID is unknown", func(t *testing.T) {
+		t.Parallel()
 		mockHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, "Hello, Mock Server!")
@@ -74,6 +77,7 @@ func TestRateLimiter(t *testing.T) {
 		assert.Error(t, gotErr)
 	})
 	t.Run("should limit subsequent requests", func(t *testing.T) {
+		t.Parallel()
 		mockHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, "Hello, Mock Server!")
@@ -101,6 +105,7 @@ func TestRateLimiter(t *testing.T) {
 		assert.Greater(t, end, 1500*time.Millisecond)
 	})
 	t.Run("should limit concurrent requests", func(t *testing.T) {
+		t.Parallel()
 		mockHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, "Hello, Mock Server!")

@@ -79,8 +79,16 @@ func (rl *RateLimiter) RoundTrip(req *http.Request) (*http.Response, error) {
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
-	if err := rl.wait(req.Context()); err != nil {
+	ctx := req.Context()
+	bucket, rlg, hasRateLimit, err := determineRateLimit(ctx)
+	if err != nil {
 		return nil, err
+	}
+	if hasRateLimit {
+		err := rl.wait(ctx, bucket, rlg)
+		if err != nil {
+			return nil, err
+		}
 	}
 	resp, err := transport.RoundTrip(req)
 	if err != nil {
@@ -91,44 +99,46 @@ func (rl *RateLimiter) RoundTrip(req *http.Request) (*http.Response, error) {
 
 // wait will wait until the next request can be made to implement a steady request rate
 // in accordance with the effective rate limit for the API operation.
-//
-// It will do nothing when no rate limit is active for the current operation.
-func (rl *RateLimiter) wait(ctx context.Context) error {
-	isAuth := ContextHasAccessToken(ctx)
-	operationID, found := ctx.Value(contextOperationID).(string)
-	if !found {
-		return nil
-	}
-	characterID, found := ctx.Value(contextCharacterID).(int32)
-	if isAuth && !found {
-		return fmt.Errorf("ratelimiter: %s: missing character ID for authed request", operationID)
-	}
-	group, found := operationID2RateGroupName[operationID]
-	if !found {
-		return fmt.Errorf("ratelimiter: %s: unknown operation", operationID)
-	}
-	if group == "" {
-		return nil
-	}
-	rlg, found := rateLimitGroups[group]
-	if !found {
-		return fmt.Errorf("ratelimiter: %s: unknown rate limit group %s", operationID, group)
-	}
-	key := fmt.Sprintf("%s-%d", group, characterID)
+func (rl *RateLimiter) wait(ctx context.Context, bucket string, rlg rateLimitGroup) error {
 	rl.mu.Lock()
-	lim, ok := rl.limiterBuckets[key]
+	lim, ok := rl.limiterBuckets[bucket]
 	if !ok {
 		// calculate the duration to wait for a steady rate assuming each request consumes 2 tokens
 		d := rlg.windowSize / (time.Duration(rlg.maxTokens) / 2)
 		// add contingency to cover potentially occurring 50x errors which consume additional tokens
 		d = time.Duration(float64(d) * (1.1))
 		lim = rate.NewLimiter(rate.Every(d), 1)
-		rl.limiterBuckets[key] = lim
+		rl.limiterBuckets[bucket] = lim
 	}
 	rl.mu.Unlock()
-	slog.Info("ratelimiter", "operationID", operationID, "rateLimitGroup", rlg.name, "key", key) // FIXME: Remove for release
 	if err := lim.Wait(ctx); err != nil {
 		return err
 	}
 	return nil
+}
+
+func determineRateLimit(ctx context.Context) (string, rateLimitGroup, bool, error) {
+	isAuth := ContextHasAccessToken(ctx)
+	operationID, found := ctx.Value(contextOperationID).(string)
+	if !found {
+		return "", rateLimitGroup{}, false, nil
+	}
+	characterID, found := ctx.Value(contextCharacterID).(int32)
+	if isAuth && !found {
+		return "", rateLimitGroup{}, false, fmt.Errorf("ratelimiter: %s: missing character ID for authed request", operationID)
+	}
+	group, found := operationID2RateGroupName[operationID]
+	if !found {
+		return "", rateLimitGroup{}, false, fmt.Errorf("ratelimiter: %s: unknown operation", operationID)
+	}
+	if group == "" {
+		return "", rateLimitGroup{}, false, nil
+	}
+	rlg, found := rateLimitGroups[group]
+	if !found {
+		return "", rateLimitGroup{}, false, fmt.Errorf("ratelimiter: %s: unknown rate limit group %s", operationID, group)
+	}
+	bucket := fmt.Sprintf("%s-%d", group, characterID)
+	slog.Info("ratelimiter: identified rate limit", "operationID", operationID, "rateLimitGroup", rlg.name, "bucket", bucket) // FIXME: Downgrade to DEBUG for release
+	return bucket, rlg, true, nil
 }
