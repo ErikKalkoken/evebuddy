@@ -11,42 +11,8 @@ import (
 
 // FetchPages fetches and returns the combined list of items
 // from all pages of an ESI endpoint that supports paging with X-Pages.
-// Subsequent pages are fetched concurrently.
-func FetchPages[T any](concurrencyLimit int, fetch func(page int) ([]T, *http.Response, error)) ([]T, error) {
-	result, r, err := fetch(1)
-	if err != nil {
-		return nil, err
-	}
-	pages, err := extractPageCount(r)
-	if err != nil {
-		return nil, err
-	}
-	if pages < 2 {
-		return result, nil
-	}
-	results := make([][]T, pages)
-	results[0] = result
-	g := new(errgroup.Group)
-	g.SetLimit(concurrencyLimit)
-	for p := 2; p <= pages; p++ {
-		p := p
-		g.Go(func() error {
-			result, _, err := fetch(p)
-			if err != nil {
-				return err
-			}
-			results[p-1] = result
-			return nil
-		})
-	}
-	if err := g.Wait(); err != nil {
-		return nil, err
-	}
-	combined := make([]T, 0)
-	for _, result := range results {
-		combined = slices.Concat(combined, result)
-	}
-	return combined, nil
+func FetchPages[T any](fetch func(page int) ([]T, *http.Response, error)) ([]T, error) {
+	return FetchPagesWithExit(fetch, nil)
 }
 
 // FetchPagesWithExit fetches and returns the combined list of items
@@ -82,6 +48,46 @@ func FetchPagesWithExit[T any](fetch func(page int) ([]T, *http.Response, error)
 		}
 	}
 	return items, nil
+}
+
+// FetchPagesConcurrently fetches and returns the combined list of items
+// from all pages of an ESI endpoint that supports paging with X-Pages.
+// Subsequent pages are fetched concurrently.
+func FetchPagesConcurrently[T any](concurrencyLimit int, fetch func(page int) ([]T, *http.Response, error)) ([]T, error) {
+	result, r, err := fetch(1)
+	if err != nil {
+		return nil, err
+	}
+	pages, err := extractPageCount(r)
+	if err != nil {
+		return nil, err
+	}
+	if pages < 2 {
+		return result, nil
+	}
+	results := make([][]T, pages)
+	results[0] = result
+	g := new(errgroup.Group)
+	g.SetLimit(concurrencyLimit)
+	for p := 2; p <= pages; p++ {
+		p := p
+		g.Go(func() error {
+			result, _, err := fetch(p)
+			if err != nil {
+				return err
+			}
+			results[p-1] = result
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	combined := make([]T, 0)
+	for _, result := range results {
+		combined = slices.Concat(combined, result)
+	}
+	return combined, nil
 }
 
 func extractPageCount(r *http.Response) (int, error) {

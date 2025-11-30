@@ -8,6 +8,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 )
 
 func (s *CorporationService) ListMembers(ctx context.Context, corporationID int32) ([]*app.CorporationMember, error) {
@@ -21,6 +22,7 @@ func (s *CorporationService) updateMembersESI(ctx context.Context, arg app.Corpo
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
+			ctx = xesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdMembers")
 			members, _, err := s.esiClient.ESI.CorporationApi.GetCorporationsCorporationIdMembers(ctx, arg.CorporationID, nil)
 			if err != nil {
 				return false, err

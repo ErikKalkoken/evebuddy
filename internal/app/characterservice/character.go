@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
@@ -192,7 +192,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 		Scopes:       set.Of(ssoToken.Scopes...),
 		TokenType:    ssoToken.TokenType,
 	}
-	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+	ctx = xesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
 	character, _, err := s.eus.UpdateOrCreateCharacterESI(ctx, token.CharacterID)
 	if err != nil {
 		return nil, err
@@ -234,6 +234,7 @@ func (s *CharacterService) updateLocationESI(ctx context.Context, arg app.Charac
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
+			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
 			location, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, characterID, nil)
 			if err != nil {
 				return false, err
@@ -269,6 +270,7 @@ func (s *CharacterService) updateOnlineESI(ctx context.Context, arg app.Characte
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
+			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdOnline")
 			online, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdOnline(ctx, characterID, nil)
 			if err != nil {
 				return false, err
@@ -291,6 +293,7 @@ func (s *CharacterService) updateShipESI(ctx context.Context, arg app.CharacterS
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
+			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdShip")
 			ship, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdShip(ctx, characterID, nil)
 			if err != nil {
 				return false, err
@@ -317,6 +320,7 @@ func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg app.C
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
+			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWallet")
 			balance, _, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx, characterID, nil)
 			if err != nil {
 				return false, err

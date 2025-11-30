@@ -1,24 +1,21 @@
 package characterservice
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
 	"slices"
 	"time"
 
-	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
-)
-
-const (
-	mailRateLimitDelay = 3300 * time.Millisecond // Delay to comply with rate limit of max. 300 requests / 15min
 )
 
 // DeleteMail deletes a mail both on ESI and in the database.
@@ -27,7 +24,8 @@ func (s *CharacterService) DeleteMail(ctx context.Context, characterID, mailID i
 	if err != nil {
 		return err
 	}
-	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+	ctx = xesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
+	ctx = xesi.NewContextWithOperationID(ctx, "DeleteCharactersCharacterIdMailMailId")
 	_, err = s.esiClient.ESI.MailApi.DeleteCharactersCharacterIdMailMailId(ctx, characterID, mailID, nil)
 	if err != nil {
 		return err
@@ -134,12 +132,8 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int32, subj
 	if err != nil {
 		return 0, err
 	}
-	select {
-	case <-s.ticker.Tick(mailRateLimitDelay):
-	case <-ctx.Done():
-		return 0, ctx.Err()
-	}
-	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+	ctx = xesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
+	ctx = xesi.NewContextWithOperationID(ctx, "PostCharactersCharacterIdMail")
 	mailID, _, err := s.esiClient.ESI.MailApi.PostCharactersCharacterIdMail(ctx, characterID, esi.PostCharactersCharacterIdMailMail{
 		Body:       body,
 		Subject:    subject,
@@ -222,11 +216,7 @@ func (s *CharacterService) updateMailLabelsESI(ctx context.Context, arg app.Char
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			select {
-			case <-s.ticker.Tick(mailRateLimitDelay):
-			case <-ctx.Done():
-				return esi.GetCharactersCharacterIdMailLabelsOk{}, ctx.Err()
-			}
+			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdMailLabels")
 			ll, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLabels(ctx, characterID, nil)
 			if err != nil {
 				return ll, err
@@ -263,11 +253,7 @@ func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.Chara
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			select {
-			case <-s.ticker.Tick(mailRateLimitDelay):
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			}
+			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdMailLists")
 			lists, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLists(ctx, characterID, nil)
 			if err != nil {
 				return nil, err
@@ -356,16 +342,14 @@ func (s *CharacterService) updateMailsESI(ctx context.Context, arg app.Character
 		})
 }
 
-// fetchMailHeadersESI fetched mail headers from ESI with paging and returns them.
+// fetchMailHeadersESI fetches and returns a slice of mail headers for a character from ESI.
+// The headers are guaranteed to be in descending order by mailID.
+// It will at most return (maxMail + page size) headers.
 func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID int32, maxMails int) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
-	var oo2 []esi.GetCharactersCharacterIdMail200Ok
-	lastMailID := int32(0)
+	mails := make([]esi.GetCharactersCharacterIdMail200Ok, 0)
+	var lastMailID int32
+	ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdMail")
 	for {
-		select {
-		case <-s.ticker.Tick(mailRateLimitDelay):
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		}
 		var opts *esi.GetCharactersCharacterIdMailOpts
 		if lastMailID > 0 {
 			opts = &esi.GetCharactersCharacterIdMailOpts{LastMailId: esioptional.NewInt32(lastMailID)}
@@ -376,29 +360,26 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 		if err != nil {
 			return nil, err
 		}
-		oo2 = slices.Concat(oo2, oo)
-		isLimitExceeded := (maxMails != 0 && len(oo2)+maxMailHeadersPerPage > maxMails)
+		mails = slices.Concat(mails, oo)
+		isLimitExceeded := (maxMails != 0 && len(mails)+maxMailHeadersPerPage > maxMails)
 		if len(oo) < maxMailHeadersPerPage || isLimitExceeded {
 			break
 		}
-		ids := make([]int32, len(oo))
-		for i, o := range oo {
-			ids[i] = o.MailId
-		}
-		lastMailID = slices.Min(ids)
+		lastMailID = slices.Min(xslices.Map(oo, func(x esi.GetCharactersCharacterIdMail200Ok) int32 {
+			return x.MailId
+		}))
 	}
-	slog.Debug("Received mail headers", "characterID", characterID, "count", len(oo2))
-	return oo2, nil
+	slices.SortFunc(mails, func(a, b esi.GetCharactersCharacterIdMail200Ok) int {
+		return cmp.Compare(b.MailId, a.MailId) // descending order
+	})
+	slog.Debug("Received mail headers", "characterID", characterID, "count", len(mails))
+	return mails, nil
 }
 
 func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
+	ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdMailMailId")
 	slog.Info("Started fetching new mail from ESI", "characterID", characterID, "count", len(headers))
 	for _, h := range headers {
-		select {
-		case <-s.ticker.Tick(mailRateLimitDelay):
-		case <-ctx.Done():
-			return ctx.Err()
-		}
 		mail, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, characterID, h.MailId, nil)
 		if err != nil {
 			return err
@@ -454,7 +435,8 @@ func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mail
 	if err != nil {
 		return err
 	}
-	ctx = context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+	ctx = xesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
+	ctx = xesi.NewContextWithOperationID(ctx, "PutCharactersCharacterIdMailMailId")
 	m, err := s.st.GetCharacterMail(ctx, characterID, mailID)
 	if err != nil {
 		return err

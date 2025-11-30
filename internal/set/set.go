@@ -122,13 +122,15 @@ func (s *Set[E]) ContainsFunc(f func(E) bool) bool {
 	return false
 }
 
-// Delete removes element v from set s.
-// It reports whether the element was in the set.
-// It does nothing when the set does not contain the element.
-func (s Set[E]) Delete(v E) bool {
+// Delete removes elements v from set s.
+// It returns the number of deleted elements.
+// Elements that are not found in the set are ignored.
+func (s Set[E]) Delete(v ...E) int {
 	ln := len(s.m)
-	delete(s.m, v)
-	return len(s.m) < ln
+	for _, w := range v {
+		delete(s.m, w)
+	}
+	return ln - len(s.m)
 }
 
 // DeleteFunc deletes the elements in s for which del returns true.
@@ -137,14 +139,13 @@ func (s *Set[E]) DeleteFunc(del func(E) bool) int {
 	if del == nil {
 		return 0
 	}
-	var c int
+	ln := len(s.m)
 	for v := range s.m {
 		if del(v) {
 			delete(s.m, v)
-			c++
 		}
 	}
-	return c
+	return ln - len(s.m)
 }
 
 // DeleteSeq deletes the elements in seq from s.

@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/antihax/goesi/esi"
 )
 
@@ -80,6 +81,7 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
+			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdPlanets")
 			planets, _, err := s.esiClient.ESI.PlanetaryInteractionApi.GetCharactersCharacterIdPlanets(ctx, characterID, nil)
 			if err != nil {
 				return false, err
@@ -124,6 +126,7 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 				if err != nil {
 					return err
 				}
+				ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdPlanetsPlanetId")
 				planet, _, err := s.esiClient.ESI.PlanetaryInteractionApi.GetCharactersCharacterIdPlanetsPlanetId(ctx, characterID, o.PlanetId, nil)
 				if err != nil {
 					return err

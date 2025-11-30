@@ -16,7 +16,7 @@ import (
 
 func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 	// given
-	db, st, _ := testutil.NewDBOnDisk(t)
+	db, st, _ := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
 	httpmock.Activate()

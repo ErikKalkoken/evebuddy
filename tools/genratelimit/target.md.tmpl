@@ -1,0 +1,41 @@
+# ESI rate limits
+
+This document shows the current rate limits of the EVE Online API (ESI).
+It was generated on **{{ .Today }}** from the [OpenAPI 3.1 specification](https://esi.evetech.net/meta/openapi.json?compatibility_date={{ .CompatibilityDate }}) with the compatibility date: **{{ .CompatibilityDate }}**.
+
+For a comprehensive description on how rate limiting is implementing in ESI please see [EVE Developer Documentation / Rate Limiting](https://developers.eveonline.com/docs/services/esi/rate-limiting/).
+
+## Rate limit groups
+
+This section shows the current configuration of all active rate limit groups.
+
+Group | Max tokens | Windows size | Average delay | Average rate
+--- | ---: | ---: | ---: | ---:
+{{- range $key, $g := .Groups }}
+<span id="{{ $g.Name }}">{{ $g.Name }}</span> | {{ $g.MaxTokens }} | {{ $g.WindowSize }} | {{ $g.AverageDelay }} | {{ printf "%.2f" $g.AverageRate }}
+{{- end }}
+
+The windows size and average delay is given in seconds. The average rate is given in requests per second.
+
+## Operations
+
+This section shows the active rate limit group for all ESI operations ordered by tags.
+
+A missing group means that there currently is no rate limit active for that operation
+and instead the classic error rate limit is active.
+
+### Tags
+{{ range $tag, $operation := .Tags }}
+- [{{ $tag }}](#{{ toAnchor $tag }})
+{{- end }}
+
+{{- range $tag, $operation := .Tags }}
+
+### {{ $tag }}
+
+Operation ID | Rate limit Group
+-- | --
+{{- range $id, $group := $operation }}
+{{ $id }} | {{if $group }}[{{ $group }}](#{{ $group }}){{ else }}-{{ end }}
+{{- end }}
+{{- end }}

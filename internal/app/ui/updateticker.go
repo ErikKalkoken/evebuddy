@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -164,39 +165,70 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	if u.isOffline {
 		return
 	}
-	var sections []app.CharacterSection
+	var sections set.Set[app.CharacterSection] // sections registered for update
 	if !u.isDesktop && !u.isForeground.Load() {
 		// only update what is needed for notifications on mobile when running in background to save battery
 		if u.settings.NotifyCommunicationsEnabled() {
-			sections = append(sections, app.SectionCharacterNotifications)
+			sections.Add(app.SectionCharacterNotifications)
 		}
 		if u.settings.NotifyContractsEnabled() {
-			sections = append(sections, app.SectionCharacterContracts)
+			sections.Add(app.SectionCharacterContracts)
 		}
 		if u.settings.NotifyMailsEnabled() {
-			sections = append(sections, app.SectionCharacterMailLabels)
-			sections = append(sections, app.SectionCharacterMailLists)
-			sections = append(sections, app.SectionCharacterMails)
+			sections.Add(app.SectionCharacterMailLabels)
+			sections.Add(app.SectionCharacterMailLists)
+			sections.Add(app.SectionCharacterMails)
 		}
 		if u.settings.NotifyPIEnabled() {
-			sections = append(sections, app.SectionCharacterPlanets)
+			sections.Add(app.SectionCharacterPlanets)
 		}
 		if u.settings.NotifyTrainingEnabled() {
-			sections = append(sections, app.SectionCharacterSkillqueue)
-			sections = append(sections, app.SectionCharacterSkills)
+			sections.Add(app.SectionCharacterSkillqueue)
+			sections.Add(app.SectionCharacterSkills)
 		}
 	} else {
-		sections = app.CharacterSections
+		sections = set.Of(app.CharacterSections...)
 	}
-	if len(sections) == 0 {
+	if sections.Size() == 0 {
 		return
 	}
+
 	slog.Debug("Starting to check character sections for update", "sections", sections)
 	_, err := u.cs.GetValidCharacterToken(ctx, characterID)
 	if err != nil {
 		slog.Error("Failed to refresh token for update", "characterID", characterID, "error", err)
 	}
-	for _, s := range sections {
+
+	// updateGroup starts a sequential update of group and removes them from sections.
+	// It skips all updates for group if one of the group's sections has not been registered for update.
+	updateGroup := func(group []app.CharacterSection) {
+		if sections.ContainsAll(slices.Values(group)) {
+			go func() {
+				for _, s := range group {
+					u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
+				}
+			}()
+		}
+		sections.Delete(group...)
+	}
+
+	// Some sections are fetched sequentially.
+	// This is done in part for to prioritize some sections that would
+	// and in part to ensure sections that others logically depend on are fetched first.
+
+	updateGroup([]app.CharacterSection{
+		app.SectionCharacterMailLabels,
+		app.SectionCharacterMailLists,
+		app.SectionCharacterMails,
+	})
+
+	updateGroup([]app.CharacterSection{
+		app.SectionCharacterSkills,
+		app.SectionCharacterSkillqueue,
+	})
+
+	// Other sections
+	for s := range sections.All() {
 		go u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
 	}
 }
@@ -325,10 +357,11 @@ func (u *baseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 		// nothing to update
 		return
 	}
-	sections := app.CorporationSections
-	slog.Debug("Starting to check corporation sections for update", "sections", sections)
-	for _, section := range sections {
-		go u.updateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, section, forceUpdate)
+	sections := set.Of(app.CorporationSections...)
+	slog.Debug("Starting to check corporation sections for update", "corporationID", corporationID, "sections", sections)
+
+	for s := range sections.All() {
+		go u.updateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, s, forceUpdate)
 	}
 }
 

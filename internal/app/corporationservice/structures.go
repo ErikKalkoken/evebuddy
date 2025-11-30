@@ -9,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/antihax/goesi/esi"
@@ -30,6 +31,7 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg app.Co
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
+			ctx = xesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdStructures")
 			structures, _, err := s.esiClient.ESI.CorporationApi.GetCorporationsCorporationIdStructures(ctx, arg.CorporationID, nil)
 			if err != nil {
 				return false, err
