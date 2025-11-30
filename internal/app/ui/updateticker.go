@@ -32,18 +32,7 @@ func (u *baseUI) updateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate 
 		slog.Info("Skipping regular update of general sections during daily downtime")
 		return
 	}
-
-	sections := set.Of(app.GeneralSections...)
-
-	// rate limit group: static-data
-	go func() {
-		u.updateGeneralSectionAndRefreshIfNeeded(ctx, app.SectionEveEntities, forceUpdate)
-		u.updateGeneralSectionAndRefreshIfNeeded(ctx, app.SectionEveTypes, forceUpdate)
-	}()
-	sections.Delete(app.SectionEveEntities, app.SectionEveTypes)
-
-	// other sections
-	for s := range sections.All() {
+	for _, s := range app.GeneralSections {
 		go func() {
 			u.updateGeneralSectionAndRefreshIfNeeded(ctx, s, forceUpdate)
 		}()
@@ -223,47 +212,19 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 		sections.Delete(group...)
 	}
 
-	// sections that belong to the same rate limit group are fetches sequentially
-	// to reduce potential rate limit breaches.
-	// this is a workaround and planned to be replaced once the app migrates
-	// to an ESI client which has rate limit support.
+	// Some sections are fetched sequentially.
+	// This is done in part for to prioritize some sections that would
+	// and in part to ensure sections that others logically depend on are fetched first.
 
-	// Rate limit group: char-social
 	updateGroup([]app.CharacterSection{
-		app.SectionCharacterNotifications,
 		app.SectionCharacterMailLabels,
 		app.SectionCharacterMailLists,
 		app.SectionCharacterMails,
-		app.SectionCharacterAttributes,
 	})
 
-	// Rate limit group: char-detail
 	updateGroup([]app.CharacterSection{
-		app.SectionCharacterRoles,
 		app.SectionCharacterSkills,
 		app.SectionCharacterSkillqueue,
-		app.SectionCharacterImplants,
-	})
-
-	// Rate limit group: char-industry
-	updateGroup([]app.CharacterSection{
-		app.SectionCharacterIndustryJobs,
-		app.SectionCharacterPlanets,
-	})
-
-	// Rate limit group: char-location
-	updateGroup([]app.CharacterSection{
-		app.SectionCharacterJumpClones,
-		app.SectionCharacterLocation,
-		app.SectionCharacterOnline,
-		app.SectionCharacterShip,
-	})
-
-	// Rate limit group: char-wallet
-	updateGroup([]app.CharacterSection{
-		app.SectionCharacterWalletBalance,
-		app.SectionCharacterWalletJournal,
-		app.SectionCharacterWalletTransactions,
 	})
 
 	// Other sections
@@ -398,32 +359,6 @@ func (u *baseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 	}
 	sections := set.Of(app.CorporationSections...)
 	slog.Debug("Starting to check corporation sections for update", "corporationID", corporationID, "sections", sections)
-
-	// rate limit group: corp-wallet
-	// these sections are updates sequentially to limit the risk of exceeding the rate limit
-	walletSections := []app.CorporationSection{
-		app.SectionCorporationWalletBalances,
-		app.SectionCorporationWalletJournal1,
-		app.SectionCorporationWalletJournal2,
-		app.SectionCorporationWalletJournal3,
-		app.SectionCorporationWalletJournal4,
-		app.SectionCorporationWalletJournal5,
-		app.SectionCorporationWalletJournal6,
-		app.SectionCorporationWalletJournal7,
-		app.SectionCorporationWalletTransactions1,
-		app.SectionCorporationWalletTransactions2,
-		app.SectionCorporationWalletTransactions3,
-		app.SectionCorporationWalletTransactions4,
-		app.SectionCorporationWalletTransactions5,
-		app.SectionCorporationWalletTransactions6,
-		app.SectionCorporationWalletTransactions7,
-	}
-	go func() {
-		for _, s := range walletSections {
-			u.updateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, s, forceUpdate)
-		}
-	}()
-	sections.Delete(walletSections...)
 
 	for s := range sections.All() {
 		go u.updateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, s, forceUpdate)
