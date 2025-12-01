@@ -285,7 +285,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	characterAssetsNav := iwidget.NewNavPage(
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
-		newContentPage("Assets", u.characterAsset),
+		newContentPage("Assets", u.characterAssets),
 	)
 	characterNav = iwidget.NewNavDrawer(
 		iwidget.NewNavPage(
@@ -312,7 +312,7 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 			characterNav.SetItemBadge(characterWalletNav, balance)
 		})
 	}
-	u.characterAsset.OnUpdate = func(s string) {
+	u.characterAssets.OnUpdate = func(s string) {
 		fyne.Do(func() {
 			characterNav.SetItemBadge(characterAssetsNav, s)
 		})

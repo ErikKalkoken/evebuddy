@@ -12,7 +12,7 @@ mapping:
 	gofmt -s -w internal/eveicon/mapping.go
 	go run ./tools/genschematicids/ -p eveicon > internal/eveicon/schematic.go
 	gofmt -s -w internal/eveicon/schematic.go
-	go run ./tools/genratelimit/ -p xesi > internal/xesi/ratelimit_gen.go
+	go run ./tools/genratelimit/ -p xgoesi > internal/xgoesi/ratelimit_gen.go
 
 queries:
 	sqlc generate
@@ -54,3 +54,6 @@ test_races:
 
 build:
 	fyne build --tags migrated_fynedo
+
+ratelimitdoc:
+	go run ./tools/genratelimit/ -f md  > ratelimits.md

@@ -19,7 +19,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/xesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -512,7 +512,7 @@ func showCharacterWalletJournalEntryWindow(u *baseUI, characterID int32, refID i
 				reportError(o, err)
 				return
 			}
-			ctx = xesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
+			ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
 			el, err := u.eus.GetOrCreateLocationESI(ctx, o.ContextID)
 			if err != nil {
 				reportError(o, err)

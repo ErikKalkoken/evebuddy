@@ -329,7 +329,12 @@ func (a *characterAssets) update() {
 	})
 	if a.OnUpdate != nil {
 		if a.character != nil {
-			s := ihumanize.OptionalWithDecimals(a.character.AssetValue, 1, "?")
+			v, err := a.u.cs.AssetTotalValue(context.Background(), a.character.ID)
+			if err != nil {
+				slog.Error("Failed to fetch asset value", "error", err)
+				return
+			}
+			s := ihumanize.OptionalWithDecimals(v, 1, "?")
 			a.OnUpdate(s)
 		}
 	}

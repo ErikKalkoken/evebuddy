@@ -11,7 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/ErikKalkoken/evebuddy/internal/xesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/antihax/goesi/esi"
 	"golang.org/x/sync/errgroup"
@@ -29,13 +29,13 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg app.Ch
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdOrders")
+			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdOrders")
 			open, _, err := s.esiClient.ESI.MarketApi.GetCharactersCharacterIdOrders(ctx, characterID, nil)
 			if err != nil {
 				return nil, err
 			}
 			slog.Debug("Received open orders from ESI", "count", len(open), "characterID", characterID)
-			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdOrdersHistory")
+			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdOrdersHistory")
 			history, _, err := s.esiClient.ESI.MarketApi.GetCharactersCharacterIdOrdersHistory(ctx, characterID, nil)
 			if err != nil {
 				return nil, err

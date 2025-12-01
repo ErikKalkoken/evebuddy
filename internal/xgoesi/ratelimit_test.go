@@ -1,4 +1,4 @@
-package xesi_test
+package xgoesi_test
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/xesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/antihax/goesi"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,7 +24,7 @@ func TestRateLimiter(t *testing.T) {
 		ts := httptest.NewServer(mockHandler)
 		defer ts.Close()
 		client := &http.Client{
-			Transport: xesi.NewRateLimiter(),
+			Transport: xgoesi.NewRateLimiter(),
 		}
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, ts.URL, nil)
 		if !assert.NoError(t, err) {
@@ -45,10 +45,10 @@ func TestRateLimiter(t *testing.T) {
 		ts := httptest.NewServer(mockHandler)
 		defer ts.Close()
 		client := &http.Client{
-			Transport: xesi.NewRateLimiter(),
+			Transport: xgoesi.NewRateLimiter(),
 		}
 		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "token")
-		ctx = xesi.NewContextWithOperationID(ctx, "op")
+		ctx = xgoesi.NewContextWithOperationID(ctx, "op")
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
 		if !assert.NoError(t, err) {
 			t.Fatal(err)
@@ -65,10 +65,10 @@ func TestRateLimiter(t *testing.T) {
 		ts := httptest.NewServer(mockHandler)
 		defer ts.Close()
 		client := &http.Client{
-			Transport: xesi.NewRateLimiter(),
+			Transport: xgoesi.NewRateLimiter(),
 		}
-		ctx := xesi.NewContextWithAuth(context.Background(), 42, "token")
-		ctx = xesi.NewContextWithOperationID(ctx, "op")
+		ctx := xgoesi.NewContextWithAuth(context.Background(), 42, "token")
+		ctx = xgoesi.NewContextWithOperationID(ctx, "op")
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
 		if !assert.NoError(t, err) {
 			t.Fatal(err)
@@ -85,10 +85,10 @@ func TestRateLimiter(t *testing.T) {
 		ts := httptest.NewServer(mockHandler)
 		defer ts.Close()
 		client := &http.Client{
-			Transport: xesi.NewRateLimiter(),
+			Transport: xgoesi.NewRateLimiter(),
 		}
-		ctx := xesi.NewContextWithAuth(context.Background(), 42, "token")
-		ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
+		ctx := xgoesi.NewContextWithAuth(context.Background(), 42, "token")
+		ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
 		if !assert.NoError(t, err) {
 			t.Fatal(err)
@@ -113,10 +113,10 @@ func TestRateLimiter(t *testing.T) {
 		ts := httptest.NewServer(mockHandler)
 		defer ts.Close()
 		client := &http.Client{
-			Transport: xesi.NewRateLimiter(),
+			Transport: xgoesi.NewRateLimiter(),
 		}
-		ctx := xesi.NewContextWithAuth(context.Background(), 42, "token")
-		ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
+		ctx := xgoesi.NewContextWithAuth(context.Background(), 42, "token")
+		ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
 		if !assert.NoError(t, err) {
 			t.Fatal(err)
@@ -145,13 +145,13 @@ func TestRateLimiter(t *testing.T) {
 		ts := httptest.NewServer(mockHandler)
 		defer ts.Close()
 		client := &http.Client{
-			Transport: xesi.NewRateLimiter(),
+			Transport: xgoesi.NewRateLimiter(),
 		}
 		var wg sync.WaitGroup
 		for _, characterID := range []int32{42, 43} {
 			wg.Go(func() {
-				ctx := xesi.NewContextWithAuth(context.Background(), characterID, "token")
-				ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
+				ctx := xgoesi.NewContextWithAuth(context.Background(), characterID, "token")
+				ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
 				req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
 				if !assert.NoError(t, err) {
 					t.Fatal(err)
@@ -177,13 +177,13 @@ func TestRateLimiter(t *testing.T) {
 		ts := httptest.NewServer(mockHandler)
 		defer ts.Close()
 		client := &http.Client{
-			Transport: xesi.NewRateLimiter(),
+			Transport: xgoesi.NewRateLimiter(),
 		}
 		var wg sync.WaitGroup
 		for _, operationID := range []string{"GetCharactersCharacterIdLocation", "GetCharactersCharacterIdNotifications"} {
 			wg.Go(func() {
-				ctx := xesi.NewContextWithAuth(context.Background(), 42, "token")
-				ctx = xesi.NewContextWithOperationID(ctx, operationID)
+				ctx := xgoesi.NewContextWithAuth(context.Background(), 42, "token")
+				ctx = xgoesi.NewContextWithOperationID(ctx, operationID)
 				req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
 				if !assert.NoError(t, err) {
 					t.Fatal(err)

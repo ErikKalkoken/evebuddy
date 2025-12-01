@@ -9,7 +9,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/ErikKalkoken/evebuddy/internal/xesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/antihax/goesi/esi"
 )
 
@@ -105,7 +105,7 @@ func (s *CharacterService) updateRolesESI(ctx context.Context, arg app.Character
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdRoles")
+			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdRoles")
 			roles, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterIdRoles(ctx, characterID, nil)
 			if err != nil {
 				return false, err

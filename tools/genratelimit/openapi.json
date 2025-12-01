@@ -14330,7 +14330,12 @@
                     "Assets"
                 ],
                 "x-cache-age": 3600,
-                "x-compatibility-date": "2020-01-01"
+                "x-compatibility-date": "2020-01-01",
+                "x-rate-limit": {
+                    "group": "char-asset",
+                    "max-tokens": 1800,
+                    "window-size": "15m"
+                }
             }
         },
         "/characters/{character_id}/assets/locations": {
@@ -14422,7 +14427,12 @@
                 "tags": [
                     "Assets"
                 ],
-                "x-compatibility-date": "2020-01-01"
+                "x-compatibility-date": "2020-01-01",
+                "x-rate-limit": {
+                    "group": "char-asset",
+                    "max-tokens": 1800,
+                    "window-size": "15m"
+                }
             }
         },
         "/characters/{character_id}/assets/names": {
@@ -14514,7 +14524,12 @@
                 "tags": [
                     "Assets"
                 ],
-                "x-compatibility-date": "2020-01-01"
+                "x-compatibility-date": "2020-01-01",
+                "x-rate-limit": {
+                    "group": "char-asset",
+                    "max-tokens": 1800,
+                    "window-size": "15m"
+                }
             }
         },
         "/characters/{character_id}/attributes": {
@@ -20550,6 +20565,11 @@
                 ],
                 "x-cache-age": 3600,
                 "x-compatibility-date": "2020-01-01",
+                "x-rate-limit": {
+                    "group": "corp-asset",
+                    "max-tokens": 1800,
+                    "window-size": "15m"
+                },
                 "x-required-roles": [
                     "Director"
                 ]
@@ -20645,6 +20665,11 @@
                     "Assets"
                 ],
                 "x-compatibility-date": "2020-01-01",
+                "x-rate-limit": {
+                    "group": "corp-asset",
+                    "max-tokens": 1800,
+                    "window-size": "15m"
+                },
                 "x-required-roles": [
                     "Director"
                 ]
@@ -20740,6 +20765,11 @@
                     "Assets"
                 ],
                 "x-compatibility-date": "2020-01-01",
+                "x-rate-limit": {
+                    "group": "corp-asset",
+                    "max-tokens": 1800,
+                    "window-size": "15m"
+                },
                 "x-required-roles": [
                     "Director"
                 ]

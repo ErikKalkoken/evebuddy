@@ -14,7 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/ErikKalkoken/evebuddy/internal/xesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	esioptional "github.com/antihax/goesi/optional"
 )
 
@@ -54,8 +54,8 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdAssets")
-			assets, err := xesi.FetchPages(
+			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdAssets")
+			assets, err := xgoesi.FetchPages(
 				func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 					arg := &esi.GetCharactersCharacterIdAssetsOpts{
 						Page: esioptional.NewInt32(int32(pageNum)),
@@ -273,7 +273,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg app.Characte
 func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID int32, ids []int64) (map[int64]string, error) {
 	const assetNamesMaxIDs = 999
 	results := make([][]esi.PostCharactersCharacterIdAssetsNames200Ok, 0)
-	ctx = xesi.NewContextWithOperationID(ctx, "PostCharactersCharacterIdAssetsNames")
+	ctx = xgoesi.NewContextWithOperationID(ctx, "PostCharactersCharacterIdAssetsNames")
 	for chunk := range slices.Chunk(ids, assetNamesMaxIDs) {
 		names, _, err := s.esiClient.ESI.AssetsApi.PostCharactersCharacterIdAssetsNames(ctx, characterID, chunk, nil)
 		if err != nil {

@@ -118,7 +118,7 @@ func TestCharacterAsset_CanRenderWithData(t *testing.T) {
 	test.ApplyTheme(t, test.Theme())
 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 	ui.setCharacter(character)
-	a := ui.characterAsset
+	a := ui.characterAssets
 	w := test.NewWindow(a)
 	defer w.Close()
 	w.Resize(fyne.NewSize(1700, 300))
@@ -150,7 +150,7 @@ func TestCharacterAsset_CanRenderWithoutData(t *testing.T) {
 	test.ApplyTheme(t, test.Theme())
 	ui := MakeFakeBaseUI(st, test.NewTempApp(t), true)
 	ui.setCharacter(character)
-	a := ui.characterAsset
+	a := ui.characterAssets
 	w := test.NewWindow(a)
 	defer w.Close()
 	w.Resize(fyne.NewSize(1700, 300))
