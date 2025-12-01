@@ -115,7 +115,7 @@ type baseUI struct {
 	// UI elements
 	assets                  *assets
 	augmentations           *augmentations
-	characterAsset          *characterAssets
+	characterAssets         *characterAssets
 	characterAttributes     *characterAttributes
 	characterAugmentations  *characterAugmentations
 	characterBiography      *characterBiography
@@ -380,7 +380,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 
 	u.assets = newAssets(u)
 	u.augmentations = newAugmentations(u)
-	u.characterAsset = newCharacterAssets(u)
+	u.characterAssets = newCharacterAssets(u)
 	u.characterAttributes = newCharacterAttributes(u)
 	u.characterAugmentations = newCharacterAugmentations(u)
 	u.characterBiography = newCharacterBiography(u)
@@ -687,7 +687,7 @@ func (u *baseUI) updateCharacter() {
 		slog.Debug("Updating without character")
 	}
 	u.showModalWhileExecuting("Loading character", map[string]func(){
-		"assets":               u.characterAsset.update,
+		"assets":               u.characterAssets.update,
 		"attributes":           u.characterAttributes.update,
 		"biography":            u.characterBiography.update,
 		"implants":             u.characterAugmentations.update,

@@ -75,10 +75,10 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		assetsTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
-			u.characterAsset.OnSelected = func() {
-				characterNav.PushAndHideNavBar(newCharacterAppBar(assetsTitle, u.characterAsset.LocationAssets))
+			u.characterAssets.OnSelected = func() {
+				characterNav.PushAndHideNavBar(newCharacterAppBar(assetsTitle, u.characterAssets.LocationAssets))
 			}
-			characterNav.Push(newCharacterAppBar(assetsTitle, container.NewHScroll(u.characterAsset.Locations)))
+			characterNav.Push(newCharacterAppBar(assetsTitle, container.NewHScroll(u.characterAssets.Locations)))
 		},
 	)
 	navItemCommunications := iwidget.NewListItemWithIcon(
@@ -175,7 +175,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		navItemWallet,
 	)
 
-	u.characterAsset.OnUpdate = func(s string) {
+	u.characterAssets.OnUpdate = func(s string) {
 		fyne.Do(func() {
 			navItemAssets.Supporting = "Value: " + s
 			characterList.Refresh()

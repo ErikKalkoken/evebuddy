@@ -18,3 +18,4 @@ EVE Buddy.exe
 playground/
 **/testdata/failed
 test.db
+ratelimits.md
