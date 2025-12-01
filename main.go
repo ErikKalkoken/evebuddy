@@ -48,7 +48,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/remoteservice"
-	"github.com/ErikKalkoken/evebuddy/internal/xesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 )
 
@@ -283,7 +283,7 @@ func main() {
 	rhc1.HTTPClient.Transport = &httpcache.Transport{
 		Cache:               newCacheAdapter(pc, "esicache-", 24*time.Hour),
 		MarkCachedResponses: true,
-		Transport:           xesi.NewRateLimiter(),
+		Transport:           xgoesi.NewRateLimiter(),
 	}
 	rhc1.Logger = slog.Default()
 	rhc1.ResponseLogHook = logResponse

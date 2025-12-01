@@ -13,7 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/ErikKalkoken/evebuddy/internal/xesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -150,8 +150,8 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg app.Chara
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdContracts")
-			contracts, err := xesi.FetchPages(
+			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdContracts")
+			contracts, err := xgoesi.FetchPages(
 				func(pageNum int) ([]esi.GetCharactersCharacterIdContracts200Ok, *http.Response, error) {
 					return s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContracts(
 						ctx, characterID, &esi.GetCharactersCharacterIdContractsOpts{
@@ -283,7 +283,7 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 	if err != nil {
 		return err
 	}
-	ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdContractsContractIdItems")
+	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdContractsContractIdItems")
 	items, _, err := s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContractsContractIdItems(ctx, characterID, c.ContractId, nil)
 	if err != nil {
 		return err

@@ -14,7 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/ErikKalkoken/evebuddy/internal/xesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
 func (s *CharacterService) GetWalletJournalEntry(ctx context.Context, characterID int32, refID int64) (*app.CharacterWalletJournalEntry, error) {
@@ -38,8 +38,8 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWalletJournal")
-			entries, err := xesi.FetchPages(
+			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWalletJournal")
+			entries, err := xgoesi.FetchPages(
 				func(pageNum int) ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
 					arg := &esi.GetCharactersCharacterIdWalletJournalOpts{
 						Page: esioptional.NewInt32(int32(pageNum)),
@@ -199,7 +199,7 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg a
 func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, characterID int32, maxTransactions int) ([]esi.GetCharactersCharacterIdWalletTransactions200Ok, error) {
 	var oo2 []esi.GetCharactersCharacterIdWalletTransactions200Ok
 	var lastID int64
-	ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWalletTransactions")
+	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWalletTransactions")
 	for {
 		var opts *esi.GetCharactersCharacterIdWalletTransactionsOpts
 		if lastID > 0 {

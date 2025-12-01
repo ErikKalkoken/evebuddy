@@ -10,7 +10,7 @@ import (
 	"github.com/antihax/goesi/esi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/xesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
 // daily downtime
@@ -31,7 +31,7 @@ func New(client *goesi.APIClient) *ESIStatusService {
 }
 
 func (ess *ESIStatusService) Fetch(ctx context.Context) (*app.ESIStatus, error) {
-	ctx = xesi.NewContextWithOperationID(ctx, "GetStatus")
+	ctx = xgoesi.NewContextWithOperationID(ctx, "GetStatus")
 	status, _, err := ess.esiClient.ESI.StatusApi.GetStatus(ctx, nil)
 	if err != nil {
 		swaggerErr, ok := err.(esi.GenericSwaggerError)

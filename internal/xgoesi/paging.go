@@ -1,5 +1,4 @@
-// Package xesi contains extensions to the esi package.
-package xesi
+package xgoesi
 
 import (
 	"net/http"

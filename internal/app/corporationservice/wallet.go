@@ -17,7 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/ErikKalkoken/evebuddy/internal/xesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
 func (s *CorporationService) GetWalletName(ctx context.Context, corporationID int32, division app.Division) (string, error) {
@@ -137,7 +137,7 @@ func (s *CorporationService) updateWalletBalancesESI(ctx context.Context, arg ap
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
-			ctx = xesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWallets")
+			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWallets")
 			wallets, _, err := s.esiClient.ESI.WalletApi.GetCorporationsCorporationIdWallets(ctx, arg.CorporationID, nil)
 			if err != nil {
 				return false, err
@@ -207,8 +207,8 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg app
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
-			ctx = xesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWalletsDivisionJournal")
-			entries, err := xesi.FetchPages(
+			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWalletsDivisionJournal")
+			entries, err := xgoesi.FetchPages(
 				func(pageNum int) ([]esi.GetCorporationsCorporationIdWalletsDivisionJournal200Ok, *http.Response, error) {
 					opts := &esi.GetCorporationsCorporationIdWalletsDivisionJournalOpts{
 						Page: esioptional.NewInt32(int32(pageNum)),
@@ -430,7 +430,7 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 func (s *CorporationService) fetchWalletTransactionsESI(ctx context.Context, arg app.CorporationSectionUpdateParams) ([]esi.GetCorporationsCorporationIdWalletsDivisionTransactions200Ok, error) {
 	var oo2 []esi.GetCorporationsCorporationIdWalletsDivisionTransactions200Ok
 	var lastID int64
-	ctx = xesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWalletsDivisionTransactions")
+	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWalletsDivisionTransactions")
 	for {
 		var opts *esi.GetCorporationsCorporationIdWalletsDivisionTransactionsOpts
 		if lastID > 0 {

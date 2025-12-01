@@ -12,7 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/ErikKalkoken/evebuddy/internal/xesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/antihax/goesi/esi"
 )
 
@@ -27,7 +27,7 @@ func (s *CharacterService) updateAttributesESI(ctx context.Context, arg app.Char
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdAttributes")
+			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdAttributes")
 			attributes, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdAttributes(ctx, characterID, nil)
 			if err != nil {
 				return false, err
@@ -174,7 +174,7 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSkills")
+			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSkills")
 			skills, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, characterID, nil)
 			if err != nil {
 				return false, err
@@ -273,7 +273,7 @@ func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg app.Char
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSkillqueue")
+			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSkillqueue")
 			items, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkillqueue(ctx, characterID, nil)
 			if err != nil {
 				return false, err

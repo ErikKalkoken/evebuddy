@@ -12,7 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/ErikKalkoken/evebuddy/internal/xesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -91,8 +91,8 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg app.Cor
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
-			ctx = xesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdContracts")
-			contracts, err := xesi.FetchPages(
+			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdContracts")
+			contracts, err := xgoesi.FetchPages(
 				func(pageNum int) ([]esi.GetCorporationsCorporationIdContracts200Ok, *http.Response, error) {
 					return s.esiClient.ESI.ContractsApi.GetCorporationsCorporationIdContracts(
 						ctx, arg.CorporationID, &esi.GetCorporationsCorporationIdContractsOpts{
@@ -224,7 +224,7 @@ func (s *CorporationService) createNewContract(ctx context.Context, corporationI
 	if err != nil {
 		return err
 	}
-	ctx = xesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdContractsContractIdItems")
+	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdContractsContractIdItems")
 	items, _, err := s.esiClient.ESI.ContractsApi.GetCorporationsCorporationIdContractsContractIdItems(ctx, c.ContractId, corporationID, nil)
 	if err != nil {
 		return err
@@ -295,7 +295,7 @@ func (s *CorporationService) updateContractBids(ctx context.Context, corporation
 	if err != nil {
 		return err
 	}
-	ctx = xesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdContractsContractIdBids")
+	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdContractsContractIdBids")
 	bids, _, err := s.esiClient.ESI.ContractsApi.GetCorporationsCorporationIdContractsContractIdBids(ctx, contractID, corporationID, nil)
 	if err != nil {
 		return err

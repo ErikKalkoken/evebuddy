@@ -7,7 +7,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/ErikKalkoken/evebuddy/internal/xesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
@@ -25,8 +25,8 @@ func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, char
 		"character",
 		"alliance",
 	}
-	ctx = xesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
-	ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSearch")
+	ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
+	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSearch")
 	r, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(ctx, categories, characterID, search, nil)
 	if err != nil {
 		return nil, err
@@ -56,8 +56,8 @@ func (s *CharacterService) SearchESI(ctx context.Context, search string, categor
 	cc := xslices.Map(categories, func(a app.SearchCategory) string {
 		return string(a)
 	})
-	ctx = xesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
-	ctx = xesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSearch")
+	ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
+	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSearch")
 	x, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(
 		ctx,
 		cc,

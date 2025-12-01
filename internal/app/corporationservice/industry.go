@@ -15,7 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/ErikKalkoken/evebuddy/internal/xesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
@@ -51,8 +51,8 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 	_, err := s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, arg app.CorporationSectionUpdateParams) (any, error) {
-			ctx = xesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdIndustryJobs")
-			jobs, err := xesi.FetchPages(
+			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdIndustryJobs")
+			jobs, err := xgoesi.FetchPages(
 				func(pageNum int) ([]esi.GetCorporationsCorporationIdIndustryJobs200Ok, *http.Response, error) {
 					return s.esiClient.ESI.IndustryApi.GetCorporationsCorporationIdIndustryJobs(
 						ctx, arg.CorporationID, &esi.GetCorporationsCorporationIdIndustryJobsOpts{
