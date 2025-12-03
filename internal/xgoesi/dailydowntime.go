@@ -2,7 +2,11 @@ package xgoesi
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
+	"net/http"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -59,4 +63,54 @@ func calcTimePeriod(day time.Time, start string, finish string) (time.Time, time
 	}
 	finish2 := day2.Add(d2)
 	return start2, finish2, nil
+}
+
+// DowntimeBlocker is a HTTP transport that blocks all requests during the planned daily downtime.
+//
+// When blocking it returns a response with the status "503 Service Unavailable"
+// and a retry after header which points to the end of the planned downtime.
+//
+// This transport helps to prevends generating errors on the ESI servers
+// when trying to access ESI during the daily downtime.
+type DowntimeBlocker struct {
+	// The RoundTripper interface actually used to make requests
+	// If nil, http.DefaultTransport is used
+	Transport http.RoundTripper
+}
+
+var _ http.RoundTripper = (*DowntimeBlocker)(nil)
+
+func (rl *DowntimeBlocker) RoundTrip(req *http.Request) (*http.Response, error) {
+	transport := rl.Transport
+	if transport == nil {
+		transport = http.DefaultTransport
+	}
+	start, finish := DailyDowntime()
+	now := TimeNow()
+	if isInPeriod(now, start, finish) {
+		retryAfterSeconds := int(finish.Sub(now).Seconds()) + 1
+		retryAfterValue := strconv.Itoa(retryAfterSeconds)
+		const message = `{"error": "requests are blocked during daily downtime"}`
+		resp := &http.Response{
+			Status:     "503 Service Unavailable",
+			StatusCode: http.StatusServiceUnavailable,
+			Proto:      "HTTP/1.1",
+			ProtoMajor: 1,
+			ProtoMinor: 1,
+			Body:       io.NopCloser(strings.NewReader(message)),
+			Header: map[string][]string{
+				"Retry-After":     {retryAfterValue},
+				"X-Origin-Server": {"downtime-blocker-transport"},
+			},
+			ContentLength: int64(len(message)),
+			Request:       req,
+		}
+		resp.Header.Set("Content-Type", "application/json")
+		return resp, nil
+	}
+	resp, err := transport.RoundTrip(req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
