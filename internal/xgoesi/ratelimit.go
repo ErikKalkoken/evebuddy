@@ -15,7 +15,6 @@ import (
 )
 
 // TODO: Add better protection against repeated 429s
-// TODO: Add protection against repeated 420s
 
 var (
 	TimeAfter = time.After
