@@ -1,6 +1,6 @@
-// Package sso provides the ability to authenticate characters with the Eve Online SSO API for desktop apps.
+// Package evesso provides the ability to authenticate characters with the Eve Online SSO API for desktop apps.
 // It implements OAuth 2.0 with the PKCE protocol.
-package sso
+package evesso
 
 import (
 	"context"

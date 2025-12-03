@@ -36,10 +36,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
+	"github.com/ErikKalkoken/evebuddy/internal/app/evesso"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -202,7 +202,7 @@ func main() {
 	log.SetOutput(logWriter)
 
 	if *ssoDemoFlag {
-		sso := sso.New("", http.DefaultClient)
+		sso := evesso.New("", http.DefaultClient)
 		sso.DemoMode = true
 		sso.Authenticate(context.Background(), []string{})
 		return
@@ -317,7 +317,7 @@ func main() {
 	})
 
 	// Init Character service
-	ssoService := sso.New(ssoClientID, rhc2.StandardClient())
+	ssoService := evesso.New(ssoClientID, rhc2.StandardClient())
 	ssoService.OpenURL = fyneApp.OpenURL
 	cs := characterservice.New(characterservice.Params{
 		ConcurrencyLimit:       concurrentLimit,
