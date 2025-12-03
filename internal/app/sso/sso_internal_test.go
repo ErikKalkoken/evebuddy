@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/stretchr/testify/assert"
@@ -403,7 +402,7 @@ func TestSSOFetchNewToken(t *testing.T) {
 		// when
 		_, err := s.fetchNewToken("code", "codeVerifier")
 		// then
-		assert.ErrorIs(t, err, app.ErrTokenError)
+		assert.ErrorIs(t, err, ErrTokenError)
 	})
 }
 
@@ -470,6 +469,6 @@ func TestSSOFetchRefreshedToken(t *testing.T) {
 		// when
 		_, err := s.fetchRefreshedToken("refreshToken")
 		// then
-		assert.ErrorIs(t, err, app.ErrTokenError)
+		assert.ErrorIs(t, err, ErrTokenError)
 	})
 }

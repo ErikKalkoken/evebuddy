@@ -97,26 +97,26 @@ func (s *CharacterService) GetValidCharacterToken(ctx context.Context, character
 }
 
 // ensureValidCharacterToken will automatically try to refresh a token that is already or about to become invalid.
-func (s *CharacterService) ensureValidCharacterToken(ctx context.Context, t *app.CharacterToken) error {
-	if t.RemainsValid(time.Second * 60) {
+func (s *CharacterService) ensureValidCharacterToken(ctx context.Context, token *app.CharacterToken) error {
+	if token.RemainsValid(time.Second * 60) {
 		return nil
 	}
-	slog.Debug("Need to refresh token", "characterID", t.CharacterID)
-	rawToken, err := s.sso.RefreshToken(ctx, t.RefreshToken)
+	slog.Debug("Need to refresh token", "characterID", token.CharacterID)
+	token2, err := s.sso.RefreshToken(ctx, token.RefreshToken)
 	if err != nil {
 		return err
 	}
-	arg := storage.UpdateOrCreateCharacterTokenParamsFromToken(t)
-	arg.AccessToken = rawToken.AccessToken
-	arg.RefreshToken = rawToken.RefreshToken
-	arg.ExpiresAt = rawToken.ExpiresAt
+	arg := storage.UpdateOrCreateCharacterTokenParamsFromToken(token)
+	arg.AccessToken = token2.AccessToken
+	arg.RefreshToken = token2.RefreshToken
+	arg.ExpiresAt = token2.ExpiresAt
 	err = s.st.UpdateOrCreateCharacterToken(ctx, arg)
 	if err != nil {
 		return err
 	}
-	t.AccessToken = rawToken.AccessToken
-	t.RefreshToken = rawToken.RefreshToken
-	t.ExpiresAt = rawToken.ExpiresAt
-	slog.Info("Token refreshed", "characterID", t.CharacterID)
+	token.AccessToken = token2.AccessToken
+	token.RefreshToken = token2.RefreshToken
+	token.ExpiresAt = token2.ExpiresAt
+	slog.Info("Token refreshed", "characterID", token.CharacterID)
 	return nil
 }

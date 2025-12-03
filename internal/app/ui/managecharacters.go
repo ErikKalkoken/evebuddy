@@ -23,6 +23,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -258,7 +259,7 @@ func (a *manageCharacters) showAddCharacterDialog() {
 					infoText.SetText(s)
 				})
 			})
-			if errors.Is(err, app.ErrAborted) {
+			if errors.Is(err, sso.ErrAborted) {
 				return nil
 			}
 			if err != nil {

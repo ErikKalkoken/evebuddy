@@ -2,9 +2,11 @@ package characterservice
 
 import (
 	"context"
+	"slices"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
@@ -40,10 +42,22 @@ type SSOFake struct {
 	Err   error
 }
 
-func (s SSOFake) Authenticate(ctx context.Context, scopes []string) (*app.Token, error) {
-	return s.Token, s.Err
+func (s SSOFake) Authenticate(ctx context.Context, scopes []string) (*sso.Token, error) {
+	return ssoTokenFromApp(s.Token), s.Err
 }
 
-func (s SSOFake) RefreshToken(ctx context.Context, refreshToken string) (*app.Token, error) {
-	return s.Token, s.Err
+func (s SSOFake) RefreshToken(ctx context.Context, refreshToken string) (*sso.Token, error) {
+	return ssoTokenFromApp(s.Token), s.Err
+}
+
+func ssoTokenFromApp(x *app.Token) *sso.Token {
+	return &sso.Token{
+		AccessToken:   x.AccessToken,
+		CharacterID:   x.CharacterID,
+		CharacterName: x.CharacterName,
+		ExpiresAt:     x.ExpiresAt,
+		RefreshToken:  x.RefreshToken,
+		Scopes:        slices.Clone(x.Scopes),
+		TokenType:     x.TokenType,
+	}
 }

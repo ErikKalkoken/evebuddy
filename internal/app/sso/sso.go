@@ -21,8 +21,6 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
-
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
 type contextKey int
@@ -49,6 +47,22 @@ var templFS embed.FS
 var (
 	errMissingRefreshToken = errors.New("missing refresh token")
 )
+
+var (
+	ErrAborted    = errors.New("process aborted prematurely")
+	ErrTokenError = errors.New("token error")
+)
+
+// Token represents an OAuth token for a character in Eve Online.
+type Token struct {
+	AccessToken   string
+	CharacterID   int32
+	CharacterName string
+	ExpiresAt     time.Time
+	RefreshToken  string
+	Scopes        []string
+	TokenType     string
+}
 
 // SSOService is a service for authentication Eve Online characters.
 type SSOService struct {
@@ -98,7 +112,7 @@ func new(
 // Authenticate authenticates an Eve Online character via OAuth 2.0 PKCE and returns the new SSO token.
 //
 // Will open a new browser tab on the desktop and run a web server for the OAuth process.
-func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*app.Token, error) {
+func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token, error) {
 	codeVerifier, err := generateRandomStringBase64(32)
 	if err != nil {
 		return nil, err
@@ -115,7 +129,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*app.To
 	// result variables. These are returned to caller.
 	var (
 		errValue atomic.Value
-		token    atomic.Pointer[app.Token]
+		token    atomic.Pointer[Token]
 	)
 
 	processError := func(w http.ResponseWriter, status int, err error) {
@@ -255,14 +269,14 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*app.To
 
 	t := token.Load()
 	if t == nil {
-		return nil, app.ErrAborted
+		return nil, ErrAborted
 	}
 	return t, nil
 }
 
-// makeToken creates e new [app.Token] from a [rawToken] and returns it.
-func makeToken(rawToken *tokenPayload, characterID int, characterName string, scopes []string) *app.Token {
-	t := &app.Token{
+// makeToken creates e new [Token] from a [rawToken] and returns it.
+func makeToken(rawToken *tokenPayload, characterID int, characterName string, scopes []string) *Token {
+	t := &Token{
 		AccessToken:   rawToken.AccessToken,
 		CharacterID:   int32(characterID),
 		CharacterName: characterName,
@@ -357,7 +371,7 @@ func (s *SSOService) fetchNewToken(code, codeVerifier string) (*tokenPayload, er
 		err := fmt.Errorf(
 			"SSO new token: token payload has error: %s, %s: %w",
 			token.Error, token.ErrorDescription,
-			app.ErrTokenError,
+			ErrTokenError,
 		)
 		return nil, err
 	}
@@ -365,7 +379,7 @@ func (s *SSOService) fetchNewToken(code, codeVerifier string) (*tokenPayload, er
 }
 
 // RefreshToken fetches and returns a refreshed token from SSO API.
-func (s *SSOService) RefreshToken(ctx context.Context, refreshToken string) (*app.Token, error) {
+func (s *SSOService) RefreshToken(ctx context.Context, refreshToken string) (*Token, error) {
 	if refreshToken == "" {
 		return nil, errMissingRefreshToken
 	}
@@ -377,7 +391,7 @@ func (s *SSOService) RefreshToken(ctx context.Context, refreshToken string) (*ap
 	if err != nil {
 		return nil, err
 	}
-	token := app.Token{
+	token := Token{
 		AccessToken:  rawToken.AccessToken,
 		RefreshToken: rawToken.RefreshToken,
 		ExpiresAt:    rawToken.expiresAt(),
@@ -417,7 +431,7 @@ func (s *SSOService) fetchRefreshedToken(refreshToken string) (*tokenPayload, er
 			"SSO refresh token: token payload has error: %s, %s: %w",
 			token.Error,
 			token.ErrorDescription,
-			app.ErrTokenError,
+			ErrTokenError,
 		)
 		return nil, err
 	}

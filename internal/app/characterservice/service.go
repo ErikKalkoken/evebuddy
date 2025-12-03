@@ -9,16 +9,16 @@ import (
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
 type SSOService interface {
-	Authenticate(ctx context.Context, scopes []string) (*app.Token, error)
-	RefreshToken(ctx context.Context, refreshToken string) (*app.Token, error)
+	Authenticate(ctx context.Context, scopes []string) (*sso.Token, error)
+	RefreshToken(ctx context.Context, refreshToken string) (*sso.Token, error)
 }
 
 // Ticker is the abstraction for obtaining a ticker.
