@@ -18,7 +18,7 @@ import (
 
 type SSOService interface {
 	Authenticate(ctx context.Context, scopes []string) (*evesso.Token, error)
-	RefreshToken(ctx context.Context, refreshToken string) (*evesso.Token, error)
+	RefreshToken(ctx context.Context, token *evesso.Token) error
 }
 
 // Ticker is the abstraction for obtaining a ticker.

@@ -82,7 +82,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			CorporationID: corporation.ID,
 		})
 		cs := characterservice.NewFake(st, characterservice.Params{
-			SSOService: characterservice.SSOFake{Token: factory.CreateToken(app.Token{
+			SSOService: characterservice.SSOServiceFake{Token: factory.CreateToken(app.Token{
 				CharacterID:   ec.ID,
 				CharacterName: ec.Name}),
 			},
@@ -163,7 +163,7 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			CharacterID: c.ID,
 		})
 		cs := characterservice.NewFake(st, characterservice.Params{
-			SSOService: characterservice.SSOFake{Token: factory.CreateToken(app.Token{
+			SSOService: characterservice.SSOServiceFake{Token: factory.CreateToken(app.Token{
 				CharacterID:   c.ID,
 				CharacterName: c.EveCharacter.Name})},
 		})

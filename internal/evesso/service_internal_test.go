@@ -14,6 +14,7 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type fakeToken struct {
@@ -68,7 +69,7 @@ var jwkSetData = map[string]any{
 	"SkipUnresolvedJsonWebKeys": true,
 }
 
-func TestSSOEnd2End(t *testing.T) {
+func TestSSO_End2End(t *testing.T) {
 	ctx := context.Background()
 	// monkey patching 3rd party packages
 	jwkFetchOrig := jwkFetch
@@ -76,7 +77,9 @@ func TestSSOEnd2End(t *testing.T) {
 		x := &fakeJWKSet{}
 		return x, nil
 	}
-	defer func() { jwkFetch = jwkFetchOrig }()
+	defer func() {
+		jwkFetch = jwkFetchOrig
+	}()
 	jwkParseStringOrig := jwkParseString
 	jwkParseString = func(_ string, _ ...jwt.ParseOption) (jwt.Token, error) {
 		t := newFakeToken()
@@ -126,13 +129,9 @@ func TestSSOEnd2End(t *testing.T) {
 		http.Error(w, "not found", http.StatusNotFound)
 		t.Fatal("unexpected URL: ", req.URL)
 	}
-	ssoNew := func(clientID string, client *http.Client, callbackPath string, port int, authorizeURL, tokenURL string) *SSOService {
-		s := new(clientID, client, callbackPath, port, authorizeURL, tokenURL)
-		s.OpenURL = func(u *url.URL) error {
-			_, err := http.Get(u.String())
-			return err
-		}
-		return s
+	openURL := func(u *url.URL) error {
+		_, err := http.Get(u.String())
+		return err
 	}
 	t.Run("can create new token", func(t *testing.T) {
 		// given
@@ -143,17 +142,25 @@ func TestSSOEnd2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s := ssoNew("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
+		s, err := New(Config{
+			AuthorizeURL: server.URL + "/authorize",
+			CallbackPath: "callback",
+			ClientID:     "client-id",
+			Port:         8000,
+			TokenURL:     server.URL + "/token",
+			OpenURL:      openURL,
+			IsDemoMode:   false,
+		})
+		require.NoError(t, err)
 		// when
 		token, err := s.Authenticate(ctx, []string{"alpha"})
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, "access_token", token.AccessToken)
-			assert.Equal(t, "refresh_token", token.RefreshToken)
-			assert.Equal(t, int32(1234567), token.CharacterID)
-			assert.Equal(t, "Bruce Wayne", token.CharacterName)
-			assert.WithinDuration(t, time.Now().UTC().Add(1199*time.Second), token.ExpiresAt, time.Second*5)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, "access_token", token.AccessToken)
+		assert.Equal(t, "refresh_token", token.RefreshToken)
+		assert.Equal(t, int32(1234567), token.CharacterID)
+		assert.Equal(t, "Bruce Wayne", token.CharacterName)
+		assert.WithinDuration(t, time.Now().UTC().Add(1199*time.Second), token.ExpiresAt, time.Second*5)
 	})
 	t.Run("should return error when state is invalid for new token", func(t *testing.T) {
 		// given
@@ -171,9 +178,18 @@ func TestSSOEnd2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s := ssoNew("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
+		s, err := New(Config{
+			AuthorizeURL: server.URL + "/authorize",
+			CallbackPath: "callback",
+			ClientID:     "client-id",
+			Port:         8000,
+			TokenURL:     server.URL + "/token",
+			OpenURL:      openURL,
+			IsDemoMode:   false,
+		})
+		require.NoError(t, err)
 		// when
-		_, err := s.Authenticate(ctx, []string{"alpha"})
+		_, err = s.Authenticate(ctx, []string{"alpha"})
 		// then
 		assert.Error(t, err)
 	})
@@ -186,9 +202,18 @@ func TestSSOEnd2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s := ssoNew("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
+		s, err := New(Config{
+			AuthorizeURL: server.URL + "/authorize",
+			CallbackPath: "callback",
+			ClientID:     "client-id",
+			Port:         8000,
+			TokenURL:     server.URL + "/token",
+			OpenURL:      openURL,
+			IsDemoMode:   false,
+		})
+		require.NoError(t, err)
 		// when
-		_, err := s.Authenticate(ctx, []string{"alpha"})
+		_, err = s.Authenticate(ctx, []string{"alpha"})
 		// then
 		assert.Error(t, err)
 	})
@@ -201,14 +226,23 @@ func TestSSOEnd2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s := ssoNew("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
+		s, err := New(Config{
+			AuthorizeURL: server.URL + "/authorize",
+			CallbackPath: "callback",
+			ClientID:     "client-id",
+			Port:         8000,
+			TokenURL:     server.URL + "/token",
+			OpenURL:      openURL,
+			IsDemoMode:   false,
+		})
+		require.NoError(t, err)
 		originalPatch := jwkFetch
 		jwkFetch = func(_ context.Context, _ string, _ ...jwk.FetchOption) (jwk.Set, error) {
 			return nil, fmt.Errorf("failed")
 		}
 		defer func() { jwkFetch = originalPatch }()
 		// when
-		_, err := s.Authenticate(ctx, []string{"alpha"})
+		_, err = s.Authenticate(ctx, []string{"alpha"})
 		// then
 		assert.Error(t, err)
 	})
@@ -221,14 +255,23 @@ func TestSSOEnd2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s := ssoNew("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
+		s, err := New(Config{
+			AuthorizeURL: server.URL + "/authorize",
+			CallbackPath: "callback",
+			ClientID:     "client-id",
+			Port:         8000,
+			TokenURL:     server.URL + "/token",
+			OpenURL:      openURL,
+			IsDemoMode:   false,
+		})
+		require.NoError(t, err)
 		originalPatch := jwkParseString
 		jwkParseString = func(s string, options ...jwt.ParseOption) (jwt.Token, error) {
 			return nil, fmt.Errorf("failed")
 		}
 		defer func() { jwkParseString = originalPatch }()
 		// when
-		_, err := s.Authenticate(ctx, []string{"alpha"})
+		_, err = s.Authenticate(ctx, []string{"alpha"})
 		// then
 		assert.Error(t, err)
 	})
@@ -240,9 +283,21 @@ func TestSSOEnd2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s := ssoNew("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
+		s, err := New(Config{
+			AuthorizeURL: server.URL + "/authorize",
+			CallbackPath: "callback",
+			ClientID:     "client-id",
+			Port:         8000,
+			TokenURL:     server.URL + "/token",
+			OpenURL:      openURL,
+			IsDemoMode:   false,
+		})
+		require.NoError(t, err)
+		token := &Token{
+			RefreshToken: "refreshToken-old",
+		}
 		// when
-		token, err := s.RefreshToken(ctx, "refreshToken")
+		err = s.RefreshToken(ctx, token)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, "access_token", token.AccessToken)
@@ -250,7 +305,7 @@ func TestSSOEnd2End(t *testing.T) {
 			assert.WithinDuration(t, time.Now().UTC().Add(1199*time.Second), token.ExpiresAt, time.Second*5)
 		}
 	})
-	t.Run("should return error when no refresh token provided for refresh", func(t *testing.T) {
+	t.Run("should return error when no refresh token provided", func(t *testing.T) {
 		router := http.NewServeMux()
 		router.HandleFunc("/authorize/", authorizeHandler)
 		router.HandleFunc("/token/", tokenHandler)
@@ -258,9 +313,19 @@ func TestSSOEnd2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s := ssoNew("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
+		s, err := New(Config{
+			AuthorizeURL: server.URL + "/authorize",
+			CallbackPath: "callback",
+			ClientID:     "client-id",
+			Port:         8000,
+			TokenURL:     server.URL + "/token",
+			OpenURL:      openURL,
+			IsDemoMode:   false,
+		})
+		require.NoError(t, err)
+		token := &Token{}
 		// when
-		_, err := s.RefreshToken(ctx, "")
+		err = s.RefreshToken(ctx, token)
 		// then
 		assert.Error(t, err)
 	})
@@ -272,9 +337,21 @@ func TestSSOEnd2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s := ssoNew("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
+		s, err := New(Config{
+			AuthorizeURL: server.URL + "/authorize",
+			CallbackPath: "callback",
+			ClientID:     "client-id",
+			Port:         8000,
+			TokenURL:     server.URL + "/token",
+			OpenURL:      openURL,
+			IsDemoMode:   false,
+		})
+		require.NoError(t, err)
+		token := &Token{
+			RefreshToken: "refreshToken-old",
+		}
 		// when
-		_, err := s.RefreshToken(ctx, "refreshToken")
+		err = s.RefreshToken(ctx, token)
 		// then
 		assert.Error(t, err)
 	})
@@ -286,59 +363,85 @@ func TestSSOEnd2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s := ssoNew("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
+		s, err := New(Config{
+			AuthorizeURL: server.URL + "/authorize",
+			CallbackPath: "callback",
+			ClientID:     "client-id",
+			Port:         8000,
+			TokenURL:     server.URL + "/token",
+			OpenURL:      openURL,
+			IsDemoMode:   false,
+		})
+		require.NoError(t, err)
+
 		originalPatch := jwkParseString
 		jwkParseString = func(s string, options ...jwt.ParseOption) (jwt.Token, error) {
 			return nil, fmt.Errorf("failed")
 		}
-		defer func() { jwkParseString = originalPatch }()
+		defer func() {
+			jwkParseString = originalPatch
+		}()
+		token := &Token{
+			RefreshToken: "refreshToken-old",
+		}
 		// when
-		_, err := s.RefreshToken(ctx, "refreshToken")
-		// then
+		err = s.RefreshToken(ctx, token) // then
 		assert.Error(t, err)
 	})
 }
 
-func TestSSO(t *testing.T) {
-	t.Run("can create a new service with correct defaults", func(t *testing.T) {
-		s := New("clientID", http.DefaultClient)
-		assert.Equal(t, s.address(), "localhost:30123")
-		assert.Equal(t, s.redirectURI(), "http://localhost:30123/callback")
+func TestSSO_New(t *testing.T) {
+	openURL := func(u *url.URL) error {
+		return nil
+	}
+	t.Run("can create a new service with defaults", func(t *testing.T) {
+		var isCalled bool
+		s, err := New(Config{
+			ClientID: "clientID",
+			OpenURL: func(_ *url.URL) error {
+				isCalled = true
+				return nil
+			},
+			Port: 8000,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, s.authorizeURL, authorizeURLDefault)
+		assert.Equal(t, s.callbackPath, callbackPathDefault)
+		assert.Equal(t, s.clientID, "clientID")
+		assert.Equal(t, s.httpClient, http.DefaultClient)
+		assert.Equal(t, s.isDemoMode, false)
+		assert.Equal(t, s.port, 8000)
+		assert.Equal(t, s.tokenURL, tokenURLDefault)
+		s.openURL(nil)
+		assert.True(t, isCalled)
 	})
-	t.Run("can generate a correct start URL", func(t *testing.T) {
-		// given
-		s := New("clientID", http.DefaultClient)
-		// when
-		got := s.makeStartURL("challenge", "state", []string{"esi-characters.read_blueprints.v1"})
-		// then
-		want := "https://login.eveonline.com/v2/oauth/authorize/?client_id=clientID&code_challenge=challenge&code_challenge_method=S256&redirect_uri=http%3A%2F%2Flocalhost%3A30123%2Fcallback&response_type=code&scope=esi-characters.read_blueprints.v1&state=state"
-		u1, _ := url.Parse(got)
-		u2, _ := url.Parse(want)
-		assert.Equal(t, u2.Host, u1.Host)
-		assert.Equal(t, u2.Path, u1.Path)
-		q1, _ := url.ParseQuery(u1.RawQuery)
-		q2, _ := url.ParseQuery(u2.RawQuery)
-		assert.Equal(t, q2, q1)
+	t.Run("should return error when client ID is not configured", func(t *testing.T) {
+		_, err := New(Config{
+			OpenURL: openURL,
+			Port:    8000,
+		})
+		assert.ErrorIs(t, err, ErrInvalid)
 	})
-	t.Run("can generate code challenge", func(t *testing.T) {
-		got, _ := calcCodeChallenge("abc")
-		want := "ungWv48Bz-pBQUDeXa4iI7ADYaOWF3qctBD_YfIAFa0"
-		assert.Equal(t, want, got)
+	t.Run("should return error when port is not configured", func(t *testing.T) {
+		_, err := New(Config{
+			ClientID: "DEMO",
+			OpenURL:  openURL,
+		})
+		assert.ErrorIs(t, err, ErrInvalid)
 	})
-	t.Run("can generate random string", func(t *testing.T) {
-		s1, err := generateRandomStringBase64(16)
-		if assert.NoError(t, err) {
-			assert.Greater(t, len(s1), 0)
-			s2, err := generateRandomStringBase64(16)
-			if assert.NoError(t, err) {
-				assert.Greater(t, len(s2), 0)
-			}
-			assert.NotEqual(t, s2, s1)
-		}
+	t.Run("should return error when openURL is not configured", func(t *testing.T) {
+		_, err := New(Config{
+			ClientID: "DEMO",
+			Port:     8000,
+		})
+		assert.ErrorIs(t, err, ErrInvalid)
 	})
 }
 
-func TestSSOFetchNewToken(t *testing.T) {
+func TestSSO_FetchNewToken(t *testing.T) {
+	openURL := func(u *url.URL) error {
+		return nil
+	}
 	t.Run("can fetch new token from API", func(t *testing.T) {
 		// given
 		var actualRequestBody []byte
@@ -362,7 +465,9 @@ func TestSSOFetchNewToken(t *testing.T) {
 			actualRequestHeader = req.Header.Clone()
 		}))
 		defer server.Close()
-		s := New("abc", http.DefaultClient)
+		s, err := New(Config{ClientID: "abc", OpenURL: openURL, Port: 8000})
+		require.NoError(t, err)
+
 		s.tokenURL = server.URL
 		// when
 		x, err := s.fetchNewToken("code", "codeVerifier")
@@ -397,16 +502,21 @@ func TestSSOFetchNewToken(t *testing.T) {
 			}
 		}))
 		defer server.Close()
-		s := New("abc", http.DefaultClient)
+		s, err := New(Config{ClientID: "abc", OpenURL: openURL, Port: 8000})
+		require.NoError(t, err)
+
 		s.tokenURL = server.URL
 		// when
-		_, err := s.fetchNewToken("code", "codeVerifier")
+		_, err = s.fetchNewToken("code", "codeVerifier")
 		// then
 		assert.ErrorIs(t, err, ErrTokenError)
 	})
 }
 
-func TestSSOFetchRefreshedToken(t *testing.T) {
+func TestSSO_FetchRefreshedToken(t *testing.T) {
+	openURL := func(u *url.URL) error {
+		return nil
+	}
 	t.Run("can retrieve refreshed token from SSO", func(t *testing.T) {
 		// given
 		var actualRequestBody []byte
@@ -430,7 +540,8 @@ func TestSSOFetchRefreshedToken(t *testing.T) {
 			actualRequestHeader = req.Header.Clone()
 		}))
 		defer server.Close()
-		s := New("abc", http.DefaultClient)
+		s, err := New(Config{ClientID: "abc", OpenURL: openURL, Port: 8000})
+		require.NoError(t, err)
 		s.tokenURL = server.URL
 		// when
 		x, err := s.fetchRefreshedToken("refreshToken")
@@ -464,11 +575,63 @@ func TestSSOFetchRefreshedToken(t *testing.T) {
 			}
 		}))
 		defer server.Close()
-		s := New("abc", http.DefaultClient)
+		s, err := New(Config{ClientID: "abc", OpenURL: openURL, Port: 8000})
+		require.NoError(t, err)
+
 		s.tokenURL = server.URL
 		// when
-		_, err := s.fetchRefreshedToken("refreshToken")
+		_, err = s.fetchRefreshedToken("refreshToken")
 		// then
 		assert.ErrorIs(t, err, ErrTokenError)
+	})
+}
+
+func TestMakeStartURL(t *testing.T) {
+	t.Run("can generate a correct start URL", func(t *testing.T) {
+		// given
+		s, err := New(Config{
+			ClientID: "clientID",
+			OpenURL:  func(_ *url.URL) error { return nil },
+			Port:     30123,
+		})
+		require.NoError(t, err)
+		// when
+		got, err := s.makeStartURL("challenge", "state", []string{"esi-characters.read_blueprints.v1"})
+		// then
+		require.NoError(t, err)
+		want := "https://login.eveonline.com/v2/oauth/authorize/?client_id=clientID&code_challenge=challenge&code_challenge_method=S256&redirect_uri=http%3A%2F%2Flocalhost%3A30123%2Fcallback&response_type=code&scope=esi-characters.read_blueprints.v1&state=state"
+		u1, err := url.Parse(got)
+		require.NoError(t, err)
+		u2, err := url.Parse(want)
+		require.NoError(t, err)
+		assert.Equal(t, u2.Host, u1.Host)
+		assert.Equal(t, u2.Path, u1.Path)
+		q1, err := url.ParseQuery(u1.RawQuery)
+		require.NoError(t, err)
+		q2, err := url.ParseQuery(u2.RawQuery)
+		require.NoError(t, err)
+		assert.Equal(t, q2, q1)
+	})
+}
+
+func TestCalcCodeChallenge(t *testing.T) {
+	t.Run("can generate code challenge", func(t *testing.T) {
+		got, _ := calcCodeChallenge("abc")
+		want := "ungWv48Bz-pBQUDeXa4iI7ADYaOWF3qctBD_YfIAFa0"
+		assert.Equal(t, want, got)
+	})
+}
+
+func TestGenerateRandomStringBase64(t *testing.T) {
+	t.Run("can generate random string", func(t *testing.T) {
+		s1, err := generateRandomStringBase64(16)
+		if assert.NoError(t, err) {
+			assert.Greater(t, len(s1), 0)
+			s2, err := generateRandomStringBase64(16)
+			if assert.NoError(t, err) {
+				assert.Greater(t, len(s2), 0)
+			}
+			assert.NotEqual(t, s2, s1)
+		}
 	})
 }

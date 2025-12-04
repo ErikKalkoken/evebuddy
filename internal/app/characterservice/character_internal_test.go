@@ -37,17 +37,21 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 	return s
 }
 
-type SSOFake struct {
+type SSOServiceFake struct {
 	Token *app.Token
 	Err   error
 }
 
-func (s SSOFake) Authenticate(ctx context.Context, scopes []string) (*evesso.Token, error) {
+func (s SSOServiceFake) Authenticate(ctx context.Context, scopes []string) (*evesso.Token, error) {
 	return ssoTokenFromApp(s.Token), s.Err
 }
 
-func (s SSOFake) RefreshToken(ctx context.Context, refreshToken string) (*evesso.Token, error) {
-	return ssoTokenFromApp(s.Token), s.Err
+func (s SSOServiceFake) RefreshToken(ctx context.Context, token *evesso.Token) error {
+	t2 := ssoTokenFromApp(s.Token)
+	token.AccessToken = t2.AccessToken
+	token.RefreshToken = t2.RefreshToken
+	token.ExpiresAt = t2.ExpiresAt
+	return nil
 }
 
 func ssoTokenFromApp(x *app.Token) *evesso.Token {

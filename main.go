@@ -69,6 +69,7 @@ const (
 	mutexTimeout        = 250 * time.Millisecond
 	sourceURL           = "https://github.com/ErikKalkoken/evebuddy"
 	ssoClientID         = "11ae857fe4d149b2be60d875649c05f1"
+	ssoPort             = 30123
 	userAgentEmail      = "kalkoken87@gmail.com"
 )
 
@@ -202,8 +203,15 @@ func main() {
 	log.SetOutput(logWriter)
 
 	if *ssoDemoFlag {
-		sso := evesso.New("", http.DefaultClient)
-		sso.DemoMode = true
+		sso, err := evesso.New(evesso.Config{
+			ClientID:   "DEMO",
+			IsDemoMode: true,
+			OpenURL:    fyneApp.OpenURL,
+			Port:       ssoPort,
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
 		sso.Authenticate(context.Background(), []string{})
 		return
 	}
@@ -317,8 +325,15 @@ func main() {
 	})
 
 	// Init Character service
-	ssoService := evesso.New(ssoClientID, rhc2.StandardClient())
-	ssoService.OpenURL = fyneApp.OpenURL
+	ssoService, err := evesso.New(evesso.Config{
+		ClientID:   ssoClientID,
+		HTTPClient: rhc2.StandardClient(),
+		OpenURL:    fyneApp.OpenURL,
+		Port:       ssoPort,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 	cs := characterservice.New(characterservice.Params{
 		ConcurrencyLimit:       concurrentLimit,
 		ESIClient:              esiClient,
