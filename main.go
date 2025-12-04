@@ -203,7 +203,7 @@ func main() {
 	log.SetOutput(logWriter)
 
 	if *ssoDemoFlag {
-		sso, err := evesso.New(evesso.Config{
+		sso, err := evesso.NewClient(evesso.Config{
 			ClientID:   "DEMO",
 			IsDemoMode: true,
 			OpenURL:    fyneApp.OpenURL,
@@ -325,7 +325,7 @@ func main() {
 	})
 
 	// Init Character service
-	ssoService, err := evesso.New(evesso.Config{
+	ssoService, err := evesso.NewClient(evesso.Config{
 		ClientID:   ssoClientID,
 		HTTPClient: rhc2.StandardClient(),
 		OpenURL:    fyneApp.OpenURL,

@@ -142,7 +142,7 @@ func TestSSO_End2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s, err := New(Config{
+		s, err := NewClient(Config{
 			AuthorizeURL: server.URL + "/authorize",
 			CallbackPath: "callback",
 			ClientID:     "client-id",
@@ -178,7 +178,7 @@ func TestSSO_End2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s, err := New(Config{
+		s, err := NewClient(Config{
 			AuthorizeURL: server.URL + "/authorize",
 			CallbackPath: "callback",
 			ClientID:     "client-id",
@@ -202,7 +202,7 @@ func TestSSO_End2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s, err := New(Config{
+		s, err := NewClient(Config{
 			AuthorizeURL: server.URL + "/authorize",
 			CallbackPath: "callback",
 			ClientID:     "client-id",
@@ -226,7 +226,7 @@ func TestSSO_End2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s, err := New(Config{
+		s, err := NewClient(Config{
 			AuthorizeURL: server.URL + "/authorize",
 			CallbackPath: "callback",
 			ClientID:     "client-id",
@@ -255,7 +255,7 @@ func TestSSO_End2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s, err := New(Config{
+		s, err := NewClient(Config{
 			AuthorizeURL: server.URL + "/authorize",
 			CallbackPath: "callback",
 			ClientID:     "client-id",
@@ -283,7 +283,7 @@ func TestSSO_End2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s, err := New(Config{
+		s, err := NewClient(Config{
 			AuthorizeURL: server.URL + "/authorize",
 			CallbackPath: "callback",
 			ClientID:     "client-id",
@@ -313,7 +313,7 @@ func TestSSO_End2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s, err := New(Config{
+		s, err := NewClient(Config{
 			AuthorizeURL: server.URL + "/authorize",
 			CallbackPath: "callback",
 			ClientID:     "client-id",
@@ -337,7 +337,7 @@ func TestSSO_End2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s, err := New(Config{
+		s, err := NewClient(Config{
 			AuthorizeURL: server.URL + "/authorize",
 			CallbackPath: "callback",
 			ClientID:     "client-id",
@@ -363,7 +363,7 @@ func TestSSO_End2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s, err := New(Config{
+		s, err := NewClient(Config{
 			AuthorizeURL: server.URL + "/authorize",
 			CallbackPath: "callback",
 			ClientID:     "client-id",
@@ -396,7 +396,7 @@ func TestSSO_New(t *testing.T) {
 	}
 	t.Run("can create a new service with defaults", func(t *testing.T) {
 		var isCalled bool
-		s, err := New(Config{
+		s, err := NewClient(Config{
 			ClientID: "clientID",
 			OpenURL: func(_ *url.URL) error {
 				isCalled = true
@@ -416,21 +416,21 @@ func TestSSO_New(t *testing.T) {
 		assert.True(t, isCalled)
 	})
 	t.Run("should return error when client ID is not configured", func(t *testing.T) {
-		_, err := New(Config{
+		_, err := NewClient(Config{
 			OpenURL: openURL,
 			Port:    8000,
 		})
 		assert.ErrorIs(t, err, ErrInvalid)
 	})
 	t.Run("should return error when port is not configured", func(t *testing.T) {
-		_, err := New(Config{
+		_, err := NewClient(Config{
 			ClientID: "DEMO",
 			OpenURL:  openURL,
 		})
 		assert.ErrorIs(t, err, ErrInvalid)
 	})
 	t.Run("should return error when openURL is not configured", func(t *testing.T) {
-		_, err := New(Config{
+		_, err := NewClient(Config{
 			ClientID: "DEMO",
 			Port:     8000,
 		})
@@ -465,7 +465,7 @@ func TestSSO_FetchNewToken(t *testing.T) {
 			actualRequestHeader = req.Header.Clone()
 		}))
 		defer server.Close()
-		s, err := New(Config{ClientID: "abc", OpenURL: openURL, Port: 8000})
+		s, err := NewClient(Config{ClientID: "abc", OpenURL: openURL, Port: 8000})
 		require.NoError(t, err)
 
 		s.tokenURL = server.URL
@@ -502,7 +502,7 @@ func TestSSO_FetchNewToken(t *testing.T) {
 			}
 		}))
 		defer server.Close()
-		s, err := New(Config{ClientID: "abc", OpenURL: openURL, Port: 8000})
+		s, err := NewClient(Config{ClientID: "abc", OpenURL: openURL, Port: 8000})
 		require.NoError(t, err)
 
 		s.tokenURL = server.URL
@@ -540,7 +540,7 @@ func TestSSO_FetchRefreshedToken(t *testing.T) {
 			actualRequestHeader = req.Header.Clone()
 		}))
 		defer server.Close()
-		s, err := New(Config{ClientID: "abc", OpenURL: openURL, Port: 8000})
+		s, err := NewClient(Config{ClientID: "abc", OpenURL: openURL, Port: 8000})
 		require.NoError(t, err)
 		s.tokenURL = server.URL
 		// when
@@ -575,7 +575,7 @@ func TestSSO_FetchRefreshedToken(t *testing.T) {
 			}
 		}))
 		defer server.Close()
-		s, err := New(Config{ClientID: "abc", OpenURL: openURL, Port: 8000})
+		s, err := NewClient(Config{ClientID: "abc", OpenURL: openURL, Port: 8000})
 		require.NoError(t, err)
 
 		s.tokenURL = server.URL
@@ -589,7 +589,7 @@ func TestSSO_FetchRefreshedToken(t *testing.T) {
 func TestMakeStartURL(t *testing.T) {
 	t.Run("can generate a correct start URL", func(t *testing.T) {
 		// given
-		s, err := New(Config{
+		s, err := NewClient(Config{
 			ClientID: "clientID",
 			OpenURL:  func(_ *url.URL) error { return nil },
 			Port:     30123,

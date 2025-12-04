@@ -77,7 +77,7 @@ func newToken(rawToken *tokenPayload, characterID int, characterName string, sco
 	return t
 }
 
-// Config represents the configuration for a SSO service.
+// Config represents the configuration for a client.
 type Config struct {
 	// The SSO client ID of the Eve Online app. This field is required.
 	ClientID string
@@ -109,10 +109,12 @@ type Config struct {
 	TokenURL string
 }
 
-// service is a service for authenticating Eve Online characters with the SSO API.
+// client represents a client for authenticating Eve Online characters with the SSO service.
 // It is designed for desktop and mobile apps
-// and implements OAuth2 with the PKCE protocol.
-type service struct {
+// and implements OAuth 2.0 with the PKCE protocol.
+//
+// A client instance is re-usable and applications usually only need to hold one instance.
+type client struct {
 	authorizeURL     string
 	callbackPath     string
 	clientID         string
@@ -125,14 +127,14 @@ type service struct {
 	tokenURL         string
 }
 
-// New returns a new SSO service.
+// NewClient returns a new client for authenticating characters.
 //
-// A service needs to be configured with config.
-// New will return an error if the configuration is invalid.
+// A client needs to be configured with config.
+// NewClient will return an error if the configuration is invalid.
 //
 // The callback URL is generated from the configuration and might look like this:
 // http://localhost:8000/callback
-func New(config Config) (*service, error) {
+func NewClient(config Config) (*client, error) {
 	if config.ClientID == "" {
 		return nil, fmt.Errorf("must specify client ID: %w", ErrInvalid)
 	}
@@ -142,7 +144,7 @@ func New(config Config) (*service, error) {
 	if config.Port == 0 {
 		return nil, fmt.Errorf("must specify port: %w", ErrInvalid)
 	}
-	s := &service{
+	s := &client{
 		authorizeURL: authorizeURLDefault,
 		callbackPath: callbackPathDefault,
 		clientID:     config.ClientID,
@@ -186,7 +188,7 @@ func New(config Config) (*service, error) {
 // Trying to run another instance will return [ErrAlreadyRunning].
 //
 // Authenticate will temporarily run a local web server with logging enabled.
-func (s *service) Authenticate(ctx context.Context, scopes []string) (*Token, error) {
+func (s *client) Authenticate(ctx context.Context, scopes []string) (*Token, error) {
 	if !s.isAuthenticating.CompareAndSwap(false, true) {
 		return nil, fmt.Errorf("sso-authenticate: %w", ErrAlreadyRunning)
 	}
@@ -368,12 +370,12 @@ func generateRandomStringBase64(length int) (string, error) {
 	return s, nil
 }
 
-func (s *service) address() string {
+func (s *client) address() string {
 	return fmt.Sprintf("localhost:%d", s.port)
 }
 
 // Open browser and show character selection for SSO.
-func (s *service) startSSO(state string, codeVerifier string, scopes []string) error {
+func (s *client) startSSO(state string, codeVerifier string, scopes []string) error {
 	challenge, err := calcCodeChallenge(codeVerifier)
 	if err != nil {
 		return err
@@ -398,7 +400,7 @@ func calcCodeChallenge(codeVerifier string) (string, error) {
 	return challenge, nil
 }
 
-func (s *service) makeStartURL(challenge, state string, scopes []string) (string, error) {
+func (s *client) makeStartURL(challenge, state string, scopes []string) (string, error) {
 	uri, err := url.JoinPath(protocol+s.address(), s.callbackPath)
 	if err != nil {
 		return "", err
@@ -431,7 +433,7 @@ func (t *tokenPayload) expiresAt() time.Time {
 }
 
 // fetchNewToken returns a new token from SSO API.
-func (s *service) fetchNewToken(code, codeVerifier string) (*tokenPayload, error) {
+func (s *client) fetchNewToken(code, codeVerifier string) (*tokenPayload, error) {
 	form := url.Values{
 		"client_id":     {s.clientID},
 		"code_verifier": {codeVerifier},
@@ -472,7 +474,7 @@ func (s *service) fetchNewToken(code, codeVerifier string) (*tokenPayload, error
 
 // RefreshToken refreshes token when successful
 // or returns an error when the refresh has failed.
-func (s *service) RefreshToken(ctx context.Context, token *Token) error {
+func (s *client) RefreshToken(ctx context.Context, token *Token) error {
 	if token == nil || token.RefreshToken == "" {
 		return fmt.Errorf("sso-refresh: missing refresh token: %w", ErrTokenError)
 	}
@@ -490,7 +492,7 @@ func (s *service) RefreshToken(ctx context.Context, token *Token) error {
 	return nil
 }
 
-func (s *service) fetchRefreshedToken(refreshToken string) (*tokenPayload, error) {
+func (s *client) fetchRefreshedToken(refreshToken string) (*tokenPayload, error) {
 	form := url.Values{
 		"client_id":     {s.clientID},
 		"grant_type":    {"refresh_token"},
