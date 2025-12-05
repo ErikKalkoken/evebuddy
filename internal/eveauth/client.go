@@ -1,9 +1,9 @@
-// Package evesso provides users the ability to authenticate characters
+// Package eveauth provides users the ability to authenticate characters
 // with the Eve Online Single Sign-On (SSO) service.
 //
 // It implements OAuth 2.0 with the PKCS authorization flow
 // and is designed primarily for desktop and mobile applications.
-package evesso
+package eveauth
 
 import (
 	"context"
@@ -38,7 +38,7 @@ const (
 	callbackPathDefault = "callback"
 	pingTimeout         = 5 * time.Second
 	protocol            = "http://"
-	ssoHost             = "login.eveonline.com"
+	resourceHost        = "login.eveonline.com"
 	tokenURLDefault     = "https://login.eveonline.com/v2/oauth/token"
 )
 
@@ -445,7 +445,7 @@ func (s *client) fetchNewToken(code, codeVerifier string) (*tokenPayload, error)
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("Host", ssoHost)
+	req.Header.Add("Host", resourceHost)
 
 	s.logger.Info("Sending auth request to SSO API")
 	resp, err := s.httpClient.Do(req)
@@ -503,7 +503,7 @@ func (s *client) fetchRefreshedToken(refreshToken string) (*tokenPayload, error)
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("Host", ssoHost)
+	req.Header.Add("Host", resourceHost)
 	s.logger.Debug("Requesting token from SSO API", "grant_type", form.Get("grant_type"), "url", s.tokenURL)
 
 	resp, err := s.httpClient.Do(req)

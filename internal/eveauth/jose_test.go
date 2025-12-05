@@ -1,4 +1,4 @@
-package evesso
+package eveauth
 
 import (
 	"testing"

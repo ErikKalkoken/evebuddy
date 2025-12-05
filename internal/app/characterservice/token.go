@@ -8,7 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/evesso"
+	"github.com/ErikKalkoken/evebuddy/internal/eveauth"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
@@ -103,7 +103,7 @@ func (s *CharacterService) ensureValidCharacterToken(ctx context.Context, token 
 		return nil
 	}
 	slog.Debug("Need to refresh token", "characterID", token.CharacterID)
-	token2 := &evesso.Token{
+	token2 := &eveauth.Token{
 		AccessToken:  token.AccessToken,
 		CharacterID:  token.CharacterID,
 		ExpiresAt:    token.ExpiresAt,
@@ -111,7 +111,7 @@ func (s *CharacterService) ensureValidCharacterToken(ctx context.Context, token 
 		Scopes:       token.Scopes.Slice(),
 		TokenType:    token.TokenType,
 	}
-	err := s.sso.RefreshToken(ctx, token2)
+	err := s.authClient.RefreshToken(ctx, token2)
 	if err != nil {
 		return err
 	}

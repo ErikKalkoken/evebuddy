@@ -9,7 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/evesso"
+	"github.com/ErikKalkoken/evebuddy/internal/eveauth"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/antihax/goesi"
 )
@@ -29,8 +29,8 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 	}
 	if len(args) > 0 {
 		a := args[0]
-		if a.SSOService != nil {
-			arg.SSOService = a.SSOService
+		if a.AuthClient != nil {
+			arg.AuthClient = a.AuthClient
 		}
 	}
 	s := New(arg)
@@ -42,11 +42,11 @@ type SSOServiceFake struct {
 	Err   error
 }
 
-func (s SSOServiceFake) Authenticate(ctx context.Context, scopes []string) (*evesso.Token, error) {
+func (s SSOServiceFake) Authenticate(ctx context.Context, scopes []string) (*eveauth.Token, error) {
 	return ssoTokenFromApp(s.Token), s.Err
 }
 
-func (s SSOServiceFake) RefreshToken(ctx context.Context, token *evesso.Token) error {
+func (s SSOServiceFake) RefreshToken(ctx context.Context, token *eveauth.Token) error {
 	t2 := ssoTokenFromApp(s.Token)
 	token.AccessToken = t2.AccessToken
 	token.RefreshToken = t2.RefreshToken
@@ -54,8 +54,8 @@ func (s SSOServiceFake) RefreshToken(ctx context.Context, token *evesso.Token) e
 	return nil
 }
 
-func ssoTokenFromApp(x *app.Token) *evesso.Token {
-	return &evesso.Token{
+func ssoTokenFromApp(x *app.Token) *eveauth.Token {
+	return &eveauth.Token{
 		AccessToken:   x.AccessToken,
 		CharacterID:   x.CharacterID,
 		CharacterName: x.CharacterName,
