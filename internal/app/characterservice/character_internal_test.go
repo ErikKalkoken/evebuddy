@@ -4,14 +4,15 @@ import (
 	"context"
 	"slices"
 
+	"github.com/ErikKalkoken/eveauth"
+	"github.com/antihax/goesi"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/eveauth"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
-	"github.com/antihax/goesi"
 )
 
 func NewFake(st *storage.Storage, args ...Params) *CharacterService {
@@ -42,7 +43,7 @@ type SSOServiceFake struct {
 	Err   error
 }
 
-func (s SSOServiceFake) Authenticate(ctx context.Context, scopes []string) (*eveauth.Token, error) {
+func (s SSOServiceFake) Authorize(ctx context.Context, scopes []string) (*eveauth.Token, error) {
 	return ssoTokenFromApp(s.Token), s.Err
 }
 

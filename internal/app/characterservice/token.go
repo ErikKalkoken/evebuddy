@@ -6,9 +6,10 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/ErikKalkoken/eveauth"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/eveauth"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
