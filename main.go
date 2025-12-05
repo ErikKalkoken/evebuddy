@@ -39,11 +39,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
+	"github.com/ErikKalkoken/evebuddy/internal/eveauth"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
@@ -55,6 +55,8 @@ import (
 const (
 	appID               = "io.github.erikkalkoken.evebuddy"
 	appName             = "evebuddy"
+	authClientID        = "11ae857fe4d149b2be60d875649c05f1"
+	authPort            = 30123
 	cacheCleanUpTimeout = time.Minute * 30
 	concurrentLimit     = 10 // max concurrent Goroutines per group
 	crashFileName       = "crash.txt"
@@ -68,7 +70,6 @@ const (
 	mutexDelay          = 100 * time.Millisecond
 	mutexTimeout        = 250 * time.Millisecond
 	sourceURL           = "https://github.com/ErikKalkoken/evebuddy"
-	ssoClientID         = "11ae857fe4d149b2be60d875649c05f1"
 	userAgentEmail      = "kalkoken87@gmail.com"
 )
 
@@ -202,9 +203,16 @@ func main() {
 	log.SetOutput(logWriter)
 
 	if *ssoDemoFlag {
-		sso := sso.New("", http.DefaultClient)
-		sso.DemoMode = true
-		sso.Authenticate(context.Background(), []string{})
+		client, err := eveauth.NewClient(eveauth.Config{
+			ClientID:   authClientID,
+			IsDemoMode: true,
+			OpenURL:    fyneApp.OpenURL,
+			Port:       authPort,
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+		client.Authenticate(context.Background(), []string{})
 		return
 	}
 
@@ -317,15 +325,22 @@ func main() {
 	})
 
 	// Init Character service
-	ssoService := sso.New(ssoClientID, rhc2.StandardClient())
-	ssoService.OpenURL = fyneApp.OpenURL
+	authClient, err := eveauth.NewClient(eveauth.Config{
+		ClientID:   authClientID,
+		HTTPClient: rhc2.StandardClient(),
+		OpenURL:    fyneApp.OpenURL,
+		Port:       authPort,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 	cs := characterservice.New(characterservice.Params{
 		ConcurrencyLimit:       concurrentLimit,
 		ESIClient:              esiClient,
 		EveNotificationService: evenotification.New(eus),
 		EveUniverseService:     eus,
 		HTTPClient:             rhc1.StandardClient(),
-		SSOService:             ssoService,
+		AuthClient:             authClient,
 		StatusCacheService:     scs,
 		Storage:                st,
 		TickerSource:           &RealTicker{},

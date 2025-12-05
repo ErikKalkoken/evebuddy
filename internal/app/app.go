@@ -41,7 +41,6 @@ type Position struct {
 
 // App errors
 var (
-	ErrAborted       = errors.New("process aborted prematurely")
 	ErrAlreadyExists = errors.New("object already exists")
 	ErrInvalid       = errors.New("invalid parameters")
 	ErrNotFound      = errors.New("object not found")

@@ -9,16 +9,16 @@ import (
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/eveauth"
 )
 
-type SSOService interface {
-	Authenticate(ctx context.Context, scopes []string) (*app.Token, error)
-	RefreshToken(ctx context.Context, refreshToken string) (*app.Token, error)
+type AuthClient interface {
+	Authenticate(ctx context.Context, scopes []string) (*eveauth.Token, error)
+	RefreshToken(ctx context.Context, token *eveauth.Token) error
 }
 
 // Ticker is the abstraction for obtaining a ticker.
@@ -37,7 +37,7 @@ type CharacterService struct {
 	concurrencyLimit int
 	scs              *statuscacheservice.StatusCacheService
 	sfg              *singleflight.Group
-	sso              SSOService
+	authClient       AuthClient
 	st               *storage.Storage
 	ticker           Ticker
 }
@@ -46,7 +46,7 @@ type Params struct {
 	ConcurrencyLimit       int // max number of concurrent Goroutines (per group)
 	EveNotificationService *evenotification.EveNotificationService
 	EveUniverseService     *eveuniverseservice.EveUniverseService
-	SSOService             SSOService
+	AuthClient             AuthClient
 	StatusCacheService     *statuscacheservice.StatusCacheService
 	Storage                *storage.Storage
 	TickerSource           Ticker
@@ -59,13 +59,13 @@ type Params struct {
 // When nil is passed for any parameter a new default instance will be created for it (except for storage).
 func New(arg Params) *CharacterService {
 	s := &CharacterService{
+		authClient:       arg.AuthClient,
 		concurrencyLimit: -1, // Default is no limit
 		ens:              arg.EveNotificationService,
 		eus:              arg.EveUniverseService,
 		scs:              arg.StatusCacheService,
-		sso:              arg.SSOService,
-		st:               arg.Storage,
 		sfg:              new(singleflight.Group),
+		st:               arg.Storage,
 		ticker:           arg.TickerSource,
 	}
 	if arg.HTTPClient == nil {
