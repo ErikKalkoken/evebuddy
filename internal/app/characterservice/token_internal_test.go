@@ -25,7 +25,7 @@ func TestEnsureValidToken(t *testing.T) {
 			CharacterID:  character.ID,
 			RefreshToken: "refresh-old",
 		})
-		cs := NewFake(st, Params{AuthClient: SSOServiceFake{Token: factory.CreateToken(app.Token{
+		cs := NewFake(st, Params{AuthClient: AuthClientFake{Token: factory.CreateToken(app.Token{
 			AccessToken:   "access-new",
 			CharacterID:   character.ID,
 			CharacterName: character.EveCharacter.Name,
@@ -49,7 +49,7 @@ func TestEnsureValidToken(t *testing.T) {
 			ExpiresAt:    time.Now().UTC().Add(-10 * time.Second),
 			RefreshToken: "refresh-old",
 		})
-		cs := NewFake(st, Params{AuthClient: SSOServiceFake{Token: factory.CreateToken(app.Token{
+		cs := NewFake(st, Params{AuthClient: AuthClientFake{Token: factory.CreateToken(app.Token{
 			AccessToken:   "access-new",
 			CharacterID:   character.ID,
 			CharacterName: character.EveCharacter.Name,

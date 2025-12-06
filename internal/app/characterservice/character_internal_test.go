@@ -4,14 +4,15 @@ import (
 	"context"
 	"slices"
 
+	"github.com/ErikKalkoken/eveauth"
+	"github.com/antihax/goesi"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/eveauth"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
-	"github.com/antihax/goesi"
 )
 
 func NewFake(st *storage.Storage, args ...Params) *CharacterService {
@@ -37,16 +38,16 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 	return s
 }
 
-type SSOServiceFake struct {
+type AuthClientFake struct {
 	Token *app.Token
 	Err   error
 }
 
-func (s SSOServiceFake) Authenticate(ctx context.Context, scopes []string) (*eveauth.Token, error) {
+func (s AuthClientFake) Authorize(ctx context.Context, scopes []string) (*eveauth.Token, error) {
 	return ssoTokenFromApp(s.Token), s.Err
 }
 
-func (s SSOServiceFake) RefreshToken(ctx context.Context, token *eveauth.Token) error {
+func (s AuthClientFake) RefreshToken(ctx context.Context, token *eveauth.Token) error {
 	t2 := ssoTokenFromApp(s.Token)
 	token.AccessToken = t2.AccessToken
 	token.RefreshToken = t2.RefreshToken

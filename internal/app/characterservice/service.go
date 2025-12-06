@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ErikKalkoken/eveauth"
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
 
@@ -13,11 +14,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/eveauth"
 )
 
 type AuthClient interface {
-	Authenticate(ctx context.Context, scopes []string) (*eveauth.Token, error)
+	Authorize(ctx context.Context, scopes []string) (*eveauth.Token, error)
 	RefreshToken(ctx context.Context, token *eveauth.Token) error
 }
 

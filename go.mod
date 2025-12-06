@@ -6,6 +6,7 @@ tool golang.org/x/tools/cmd/stringer
 
 require (
 	fyne.io/fyne/v2 v2.7.1
+	github.com/ErikKalkoken/eveauth v0.1.0
 	github.com/ErikKalkoken/fyne-kx v0.6.4
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/PuerkitoBio/goquery v1.11.0
@@ -22,7 +23,6 @@ require (
 	github.com/icrowley/fake v0.0.0-20240710202011-f797eb4a99c0
 	github.com/jarcoal/httpmock v1.4.1
 	github.com/juju/mutex/v2 v2.0.0
-	github.com/lestrrat-go/jwx/v2 v2.1.6
 	github.com/maniartech/signals v1.3.1
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/microcosm-cc/bluemonday v1.0.27
@@ -69,6 +69,7 @@ require (
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect
 	github.com/lestrrat-go/httprc v1.0.6 // indirect
 	github.com/lestrrat-go/iter v1.0.2 // indirect
+	github.com/lestrrat-go/jwx/v2 v2.1.6 // indirect
 	github.com/lestrrat-go/option v1.0.1 // indirect
 	github.com/mailru/easyjson v0.9.1 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
@@ -78,6 +79,7 @@ require (
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
+	github.com/toqueteos/webbrowser v1.2.1 // indirect
 	golang.org/x/crypto v0.45.0 // indirect
 	golang.org/x/image v0.33.0 // indirect
 	golang.org/x/mod v0.30.0 // indirect

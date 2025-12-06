@@ -177,7 +177,7 @@ func (s *CharacterService) HasCharacter(ctx context.Context, id int32) (bool, er
 // The provided context is used for the SSO authentication process only and can be canceled.
 // the setInfo callback is used to update info text in a dialog.
 func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, setInfo func(s string)) (*app.Character, error) {
-	ssoToken, err := s.authClient.Authenticate(ctx, app.Scopes().Slice())
+	ssoToken, err := s.authClient.Authorize(ctx, app.Scopes().Slice())
 	if err != nil {
 		return nil, err
 	}

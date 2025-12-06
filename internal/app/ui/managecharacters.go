@@ -17,13 +17,13 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/eveauth"
 	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/eveauth"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -229,6 +229,9 @@ func (a *manageCharacters) fetchRows() ([]manageCharacterRow, error) {
 	return rows, nil
 }
 
+// TODO: Can we explicitly wait on updateOrCreate once cancel fires?
+// TODO: Stop showing a cancel button once the SSO process is done (nothing to cancel anymore)
+
 func (a *manageCharacters) showAddCharacterDialog() {
 	wasStarted := !a.addStarted.CompareAndSwap(false, true) // protect against starting this twice, e.g. with double click on button
 	if wasStarted {
@@ -248,12 +251,16 @@ func (a *manageCharacters) showAddCharacterDialog() {
 	a.mcw.u.ModifyShortcutsForDialog(d1, a.mcw.w)
 	d1.SetOnClosed(func() {
 		cancel()
-		a.addStarted.Store(false)
-		a.add.Enable()
+		// TODO: We should wait here for UpdateOrCreateCharacterFromSSO() to complete
+		// Then the addStarted mechanism might even be obsolete
 	})
 	d1.Show()
 	go func() {
 		err := func() error {
+			defer func() {
+				a.addStarted.Store(false)
+				a.add.Enable()
+			}()
 			character, err := a.mcw.u.cs.UpdateOrCreateCharacterFromSSO(cancelCTX, func(s string) {
 				fyne.Do(func() {
 					infoText.SetText(s)

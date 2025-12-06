@@ -13,6 +13,7 @@ import (
 	"math"
 	"net/http"
 	_ "net/http/pprof"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -25,6 +26,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/driver/desktop"
+	"github.com/ErikKalkoken/eveauth"
 	"github.com/antihax/goesi"
 	"github.com/chasinglogic/appdirs"
 	"github.com/gohugoio/httpcache"
@@ -43,7 +45,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
-	"github.com/ErikKalkoken/evebuddy/internal/eveauth"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
@@ -206,13 +207,12 @@ func main() {
 		client, err := eveauth.NewClient(eveauth.Config{
 			ClientID:   authClientID,
 			IsDemoMode: true,
-			OpenURL:    fyneApp.OpenURL,
 			Port:       authPort,
 		})
 		if err != nil {
 			log.Fatal(err)
 		}
-		client.Authenticate(context.Background(), []string{})
+		client.Authorize(context.Background(), []string{})
 		return
 	}
 
@@ -328,8 +328,17 @@ func main() {
 	authClient, err := eveauth.NewClient(eveauth.Config{
 		ClientID:   authClientID,
 		HTTPClient: rhc2.StandardClient(),
-		OpenURL:    fyneApp.OpenURL,
 		Port:       authPort,
+		OpenURL: func(u string) error {
+			u2, err := url.ParseRequestURI(u)
+			if err != nil {
+				return err
+			}
+			if err := fyneApp.OpenURL(u2); err != nil {
+				return err
+			}
+			return nil
+		},
 	})
 	if err != nil {
 		log.Fatal(err)
