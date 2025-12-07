@@ -177,12 +177,12 @@ func (s *CharacterService) HasCharacter(ctx context.Context, id int32) (bool, er
 // The provided context is used for the SSO authentication process only and can be canceled.
 // the setInfo callback is used to update info text in a dialog.
 func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, setInfo func(s string)) (*app.Character, error) {
-	ssoToken, err := s.authClient.Authenticate(ctx, app.Scopes().Slice())
+	ssoToken, err := s.authClient.Authorize(ctx, app.Scopes().Slice())
 	if err != nil {
 		return nil, err
 	}
 	slog.Info("Created new SSO token", "characterID", ssoToken.CharacterID, "scopes", ssoToken.Scopes)
-	setInfo("Fetching character from game server. Please wait...")
+	setInfo("Fetching character from game server...")
 	characterID := ssoToken.CharacterID
 	token := storage.UpdateOrCreateCharacterTokenParams{
 		AccessToken:  ssoToken.AccessToken,
@@ -207,7 +207,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 	if err := s.scs.UpdateCharacters(ctx); err != nil {
 		return nil, err
 	}
-	setInfo("Fetching corporation from game server. Please wait...")
+	setInfo("Fetching corporation from game server...")
 	if _, err := s.eus.UpdateOrCreateCorporationFromESI(ctx, character.Corporation.ID); err != nil {
 		return nil, err
 	}
@@ -223,7 +223,6 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 	if err != nil {
 		return nil, err
 	}
-	setInfo("Character added successfully")
 	return c, nil
 }
 

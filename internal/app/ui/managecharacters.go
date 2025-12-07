@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
-	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -17,13 +16,13 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/eveauth"
 	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/eveauth"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -52,11 +51,9 @@ type manageCharacters struct {
 	widget.BaseWidget
 
 	ab         *iwidget.AppBar
-	add        *widget.Button
 	characters []manageCharacterRow
 	list       *widget.List
 	mcw        *manageCharactersWindow
-	addStarted atomic.Bool
 }
 
 func showManageCharactersWindow(u *baseUI) {
@@ -102,16 +99,16 @@ func newManageCharacters(mcw *manageCharactersWindow) *manageCharacters {
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeCharacterList()
-	a.add = widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
+	add := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		a.showAddCharacterDialog()
 	})
-	a.add.Importance = widget.HighImportance
+	add.Importance = widget.HighImportance
 	if a.mcw.u.IsOffline() {
-		a.add.Disable()
+		add.Disable()
 	}
 	a.ab = iwidget.NewAppBar("Characters", container.NewBorder(
 		nil,
-		container.NewVBox(a.add, newStandardSpacer()),
+		container.NewVBox(add, newStandardSpacer()),
 		nil,
 		nil,
 		a.list,
@@ -230,26 +227,31 @@ func (a *manageCharacters) fetchRows() ([]manageCharacterRow, error) {
 }
 
 func (a *manageCharacters) showAddCharacterDialog() {
-	wasStarted := !a.addStarted.CompareAndSwap(false, true) // protect against starting this twice, e.g. with double click on button
-	if wasStarted {
-		return
-	}
-	a.add.Disable()
 	cancelCTX, cancel := context.WithCancel(context.Background())
-	infoText := widget.NewLabel("Please follow instructions in your browser to add a new character.")
-	activity := widget.NewActivity()
-	activity.Start()
-	d1 := dialog.NewCustom(
+	infoText := widget.NewLabel(
+		"Please follow instructions in your\nbrowser to add a new character.",
+	)
+	infoText.Alignment = fyne.TextAlignCenter
+	var d1 dialog.Dialog
+	closeButton := widget.NewButton("Cancel", func() {
+		d1.Hide()
+	})
+	d1 = dialog.NewCustomWithoutButtons(
 		"Add Character",
-		"Cancel",
-		container.NewHBox(infoText, activity),
+		container.NewBorder(
+			nil,
+			container.NewCenter(closeButton),
+			nil,
+			nil,
+			infoText,
+		),
 		a.mcw.w,
 	)
 	a.mcw.u.ModifyShortcutsForDialog(d1, a.mcw.w)
+	done := make(chan struct{})
 	d1.SetOnClosed(func() {
 		cancel()
-		a.addStarted.Store(false)
-		a.add.Enable()
+		<-done
 	})
 	d1.Show()
 	go func() {
@@ -257,6 +259,7 @@ func (a *manageCharacters) showAddCharacterDialog() {
 			character, err := a.mcw.u.cs.UpdateOrCreateCharacterFromSSO(cancelCTX, func(s string) {
 				fyne.Do(func() {
 					infoText.SetText(s)
+					closeButton.Hide()
 				})
 			})
 			if errors.Is(err, eveauth.ErrAborted) {
@@ -265,6 +268,9 @@ func (a *manageCharacters) showAddCharacterDialog() {
 			if err != nil {
 				return err
 			}
+			fyne.Do(func() {
+				infoText.SetText("Adding new character...")
+			})
 			a.update()
 			if !a.mcw.u.hasCharacter() {
 				a.mcw.u.loadCharacter(character.ID)
@@ -293,6 +299,7 @@ func (a *manageCharacters) showAddCharacterDialog() {
 			})
 
 		}
+		close(done)
 	}()
 }
 
