@@ -39,23 +39,22 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 }
 
 type AuthClientFake struct {
-	Token *app.Token
+	Token *eveauth.Token
 	Err   error
 }
 
 func (s AuthClientFake) Authorize(ctx context.Context, scopes []string) (*eveauth.Token, error) {
-	return ssoTokenFromApp(s.Token), s.Err
+	return s.Token, s.Err
 }
 
 func (s AuthClientFake) RefreshToken(ctx context.Context, token *eveauth.Token) error {
-	t2 := ssoTokenFromApp(s.Token)
-	token.AccessToken = t2.AccessToken
-	token.RefreshToken = t2.RefreshToken
-	token.ExpiresAt = t2.ExpiresAt
+	token.AccessToken = s.Token.AccessToken
+	token.RefreshToken = s.Token.RefreshToken
+	token.ExpiresAt = s.Token.ExpiresAt
 	return nil
 }
 
-func ssoTokenFromApp(x *app.Token) *eveauth.Token {
+func AuthTokenFromAppToken(x *app.Token) *eveauth.Token {
 	return &eveauth.Token{
 		AccessToken:   x.AccessToken,
 		CharacterID:   x.CharacterID,

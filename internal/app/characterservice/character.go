@@ -182,7 +182,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 		return nil, err
 	}
 	slog.Info("Created new SSO token", "characterID", ssoToken.CharacterID, "scopes", ssoToken.Scopes)
-	setInfo("Fetching character from game server. Please wait...")
+	setInfo("Fetching character from game server...")
 	characterID := ssoToken.CharacterID
 	token := storage.UpdateOrCreateCharacterTokenParams{
 		AccessToken:  ssoToken.AccessToken,
@@ -207,7 +207,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 	if err := s.scs.UpdateCharacters(ctx); err != nil {
 		return nil, err
 	}
-	setInfo("Fetching corporation from game server. Please wait...")
+	setInfo("Fetching corporation from game server...")
 	if _, err := s.eus.UpdateOrCreateCorporationFromESI(ctx, character.Corporation.ID); err != nil {
 		return nil, err
 	}
@@ -223,7 +223,6 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 	if err != nil {
 		return nil, err
 	}
-	setInfo("Character added successfully")
 	return c, nil
 }
 

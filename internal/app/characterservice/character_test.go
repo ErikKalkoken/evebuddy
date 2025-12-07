@@ -81,11 +81,12 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{
 			CorporationID: corporation.ID,
 		})
+		token := factory.CreateToken(app.Token{
+			CharacterID:   ec.ID,
+			CharacterName: ec.Name,
+		})
 		cs := characterservice.NewFake(st, characterservice.Params{
-			AuthClient: characterservice.AuthClientFake{Token: factory.CreateToken(app.Token{
-				CharacterID:   ec.ID,
-				CharacterName: ec.Name}),
-			},
+			AuthClient: characterservice.AuthClientFake{Token: characterservice.AuthTokenFromAppToken(token)},
 		})
 		httpmock.Reset()
 		httpmock.RegisterResponder(
@@ -162,10 +163,12 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 			AccessToken: "oldToken",
 			CharacterID: c.ID,
 		})
+		token2 := factory.CreateToken(app.Token{
+			CharacterID:   c.ID,
+			CharacterName: c.EveCharacter.Name,
+		})
 		cs := characterservice.NewFake(st, characterservice.Params{
-			AuthClient: characterservice.AuthClientFake{Token: factory.CreateToken(app.Token{
-				CharacterID:   c.ID,
-				CharacterName: c.EveCharacter.Name})},
+			AuthClient: characterservice.AuthClientFake{Token: characterservice.AuthTokenFromAppToken(token2)},
 		})
 		httpmock.Reset()
 		httpmock.RegisterResponder(
