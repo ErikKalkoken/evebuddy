@@ -158,6 +158,7 @@ func (u *baseUI) notifyNewCommunications(ctx context.Context, characterID int32)
 // updateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
 // and refreshes the UI accordingly.
 func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool) {
+	slog.Info("updateCharacterAndRefreshIfNeeded: started", "characterID", characterID, "forceUpdate", forceUpdate)
 	if u.isOffline {
 		return
 	}
