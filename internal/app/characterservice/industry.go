@@ -7,14 +7,15 @@ import (
 	"maps"
 	"time"
 
+	"github.com/antihax/goesi/esi"
+	esioptional "github.com/antihax/goesi/optional"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
-	"github.com/antihax/goesi/esi"
-	esioptional "github.com/antihax/goesi/optional"
-	"golang.org/x/sync/errgroup"
 )
 
 func (s *CharacterService) GetCharacterIndustryJob(ctx context.Context, characterID, jobID int32) (*app.CharacterIndustryJob, error) {
@@ -50,6 +51,12 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 			if err != nil {
 				return false, err
 			}
+			// Fix incorrect status for known bug: https://github.com/esi/esi-issues/issues/752
+			for i, j := range jobs {
+				if j.Status == "active" && !j.EndDate.IsZero() && j.EndDate.Before(time.Now()) {
+					jobs[i].Status = "ready"
+				}
+			}
 			slog.Debug("Received industry jobs from ESI", "characterID", characterID, "count", len(jobs))
 			return jobs, nil
 		},
@@ -62,13 +69,6 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg app.Ch
 					return app.JobUndefined
 				}
 				return status
-			}
-
-			// Fix incorrect status with workaround for known bug: https://github.com/esi/esi-issues/issues/752
-			for i, j := range jobs {
-				if j.Status == "active" && !j.EndDate.IsZero() && j.EndDate.Before(time.Now()) {
-					jobs[i].Status = "ready"
-				}
 			}
 
 			// Identify changed jobs
