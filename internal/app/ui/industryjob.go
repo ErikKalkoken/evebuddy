@@ -69,13 +69,35 @@ type industryJobRow struct {
 	pauseDate          optional.Optional[time.Time]
 	probability        optional.Optional[float32]
 	productType        optional.Optional[*app.EntityShort[int32]]
-	remaining          time.Duration
 	runs               int
 	startDate          time.Time
 	status             app.IndustryJobStatus
-	statusDisplay      []widget.RichTextSegment
 	successfulRuns     optional.Optional[int32]
 	tags               set.Set[string]
+}
+
+func (j industryJobRow) remaining() time.Duration {
+	return time.Until(j.endDate)
+}
+
+// statusCalculated returns the status as ready when the timer has elapsed.
+func (j industryJobRow) statusCalculated() app.IndustryJobStatus {
+	if j.status == app.JobActive && !j.endDate.IsZero() && j.endDate.Before(time.Now()) {
+		return app.JobReady
+	}
+	return j.status
+}
+
+func (j industryJobRow) statusDisplay() []widget.RichTextSegment {
+	status := j.statusCalculated()
+	if status == app.JobActive {
+		return iwidget.RichTextSegmentsFromText(ihumanize.Duration(j.remaining()), widget.RichTextStyle{
+			ColorName: theme.ColorNameForeground,
+		})
+	}
+	return iwidget.RichTextSegmentsFromText(status.Display(), widget.RichTextStyle{
+		ColorName: status.Color(),
+	})
 }
 
 type industryJobs struct {
@@ -167,7 +189,7 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 		case industryJobsColBlueprint:
 			return iwidget.RichTextSegmentsFromText(j.blueprintType.Name)
 		case industryJobsColStatus:
-			return j.statusDisplay
+			return j.statusDisplay()
 		case industryJobsColRuns:
 			return iwidget.RichTextSegmentsFromText(
 				ihumanize.Comma(j.runs),
@@ -272,6 +294,11 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 			}
 		})
 	}
+	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+		fyne.Do(func() {
+			a.body.Refresh()
+		})
+	})
 	return a
 }
 
@@ -307,17 +334,18 @@ func (a *industryJobs) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
 	rows = xslices.Filter(rows, func(r industryJobRow) bool {
+		status := r.statusCalculated()
 		switch a.selectStatus.Selected {
 		case industryStatusActive:
-			return r.status.IsActive()
+			return status.IsActive()
 		case industryStatusInProgress:
-			return r.status == app.JobActive
+			return status == app.JobActive
 		case industryStatusReady:
-			return r.status == app.JobReady
+			return status == app.JobReady
 		case industryStatusHalted:
-			return r.status == app.JobPaused
+			return status == app.JobPaused
 		case industryStatusHistory:
-			return !r.status.IsActive()
+			return !status.IsActive()
 		}
 		return false
 	})
@@ -380,7 +408,7 @@ func (a *industryJobs) filterRows(sortCol int) {
 			case industryJobsColBlueprint:
 				c = strings.Compare(j.blueprintType.Name, k.blueprintType.Name)
 			case industryJobsColStatus:
-				c = cmp.Compare(j.remaining, k.remaining)
+				c = cmp.Compare(j.remaining(), k.remaining())
 			case industryJobsColRuns:
 				c = cmp.Compare(j.runs, k.runs)
 			case industryJobsColActivity:
@@ -476,12 +504,13 @@ func (a *industryJobs) makeDataList() *iwidget.StripedList {
 			c1[1].(*fyne.Container).Objects[1].(*widget.Icon).SetResource(r)
 
 			statusStack := c1[2].(*fyne.Container).Objects
-			if j.status == app.JobActive {
-				statusStack[0].(*iwidget.RichText).Set(j.statusDisplay)
+			status := j.statusCalculated()
+			if status == app.JobActive {
+				statusStack[0].(*iwidget.RichText).Set(j.statusDisplay())
 				statusStack[0].Show()
 				statusStack[1].Hide()
 			} else {
-				r, ok := statusMap[j.status]
+				r, ok := statusMap[status]
 				if !ok {
 					r = theme.NewThemedResource(icons.QuestionmarkSvg)
 				}
@@ -491,7 +520,7 @@ func (a *industryJobs) makeDataList() *iwidget.StripedList {
 			}
 
 			completed := c2[2].(*widget.Label)
-			if j.status == app.JobDelivered {
+			if status == app.JobDelivered {
 				completed.SetText(humanize.Time(j.endDate))
 				completed.Show()
 			} else {
@@ -527,21 +556,6 @@ func (a *industryJobs) update() {
 			a.bottom.Refresh()
 			a.bottom.Show()
 		})
-	}
-	for i, j := range jobs {
-		remaining := time.Until(j.endDate)
-		var segs []widget.RichTextSegment
-		if j.status == app.JobActive {
-			segs = iwidget.RichTextSegmentsFromText(ihumanize.Duration(remaining), widget.RichTextStyle{
-				ColorName: theme.ColorNameForeground,
-			})
-		} else {
-			segs = iwidget.RichTextSegmentsFromText(j.status.Display(), widget.RichTextStyle{
-				ColorName: j.status.Color(),
-			})
-		}
-		jobs[i].statusDisplay = segs
-		jobs[i].remaining = remaining
 	}
 	var readyCount int
 	for _, j := range jobs {
@@ -717,7 +731,8 @@ func (a *industryJobs) fetchCorporationJobs() ([]industryJobRow, error) {
 // showIndustryJobWindow shows the details of a industry job in a window.
 func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 	title := fmt.Sprintf("Industry Job #%d", r.jobID)
-	w, ok := a.u.getOrCreateWindow(fmt.Sprintf("industryjob-%d-%d", r.owner.ID, r.jobID), title, r.owner.Name)
+	key := fmt.Sprintf("industryjob-%d-%d", r.owner.ID, r.jobID)
+	w, ok, onClosed := a.u.getOrCreateWindowWithOnClosed(key, title, r.owner.Name)
 	if !ok {
 		w.Show()
 		return
@@ -743,8 +758,9 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 			}),
 		))
 	}
+	status := iwidget.NewRichText(r.statusDisplay()...)
 	items = slices.Concat(items, []*widget.FormItem{
-		widget.NewFormItem("Status", iwidget.NewRichText(r.statusDisplay...)),
+		widget.NewFormItem("Status", status),
 		widget.NewFormItem("Runs", widget.NewLabel(ihumanize.Comma(r.runs))),
 	})
 
@@ -798,6 +814,17 @@ func (a *industryJobs) showIndustryJobWindow(r industryJobRow) {
 	}
 	f := widget.NewForm(items...)
 	f.Orientation = widget.Adaptive
+	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+		fyne.Do(func() {
+			status.Set(r.statusDisplay())
+		})
+	}, key)
+	w.SetOnClosed(func() {
+		if onClosed != nil {
+			onClosed()
+		}
+		a.u.refreshTickerExpired.RemoveListener(key)
+	})
 	setDetailWindow(detailWindowParams{
 		content: f,
 		imageAction: func() {

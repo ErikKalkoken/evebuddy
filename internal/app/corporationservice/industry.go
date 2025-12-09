@@ -65,6 +65,12 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 			if err != nil {
 				return false, err
 			}
+			// Fix incorrect status for known bug: https://github.com/esi/esi-issues/issues/752
+			for i, j := range jobs {
+				if j.Status == "active" && !j.EndDate.IsZero() && j.EndDate.Before(time.Now()) {
+					jobs[i].Status = "ready"
+				}
+			}
 			slog.Debug("Received industry jobs from ESI", "corporationID", arg.CorporationID, "count", len(jobs))
 			return jobs, nil
 		},
@@ -77,13 +83,6 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg app.
 					return app.JobUndefined
 				}
 				return status
-			}
-
-			// Fix incorrect status with workaround for known bug: https://github.com/esi/esi-issues/issues/752
-			for i, j := range jobs {
-				if j.Status == "active" && !j.EndDate.IsZero() && j.EndDate.Before(time.Now()) {
-					jobs[i].Status = "ready"
-				}
 			}
 
 			// Identify changed jobs
