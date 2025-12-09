@@ -2330,6 +2330,7 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 			currencySuffix = " ISK"
 		)
 		ticker := time.NewTicker(60 * time.Second)
+		defer ticker.Stop()
 	L:
 		for {
 			var items []attributeItem

@@ -457,6 +457,9 @@ func (u *baseUI) Start() bool {
 	wasStarted := !u.wasStarted.CompareAndSwap(false, true)
 	if wasStarted {
 		slog.Info("App continued")
+		// When the app is restarted (e.g. on Android) the UI must be
+		// refreshed immediately to avoid showing stale data (e.g. timers) to users
+		u.refreshTickerExpired.Emit(context.Background(), struct{}{})
 		return false
 	}
 	// First app start
@@ -511,10 +514,8 @@ func (u *baseUI) Start() bool {
 }
 
 func (u *baseUI) startRefreshTicker() {
-	ticker := time.NewTicker(refreshUITicker)
 	go func() {
-		for {
-			<-ticker.C
+		for range time.Tick(refreshUITicker) {
 			u.refreshTickerExpired.Emit(context.Background(), struct{}{})
 		}
 	}()

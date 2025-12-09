@@ -13,12 +13,10 @@ import (
 // update general sections
 
 func (u *baseUI) startUpdateTickerGeneralSections() {
-	ticker := time.NewTicker(generalSectionsUpdateTicker)
 	go func() {
-		for {
+		for range time.Tick(generalSectionsUpdateTicker) {
 			ctx := context.Background()
 			u.updateGeneralSectionsIfNeeded(ctx, false)
-			<-ticker.C
 		}
 	}()
 }
@@ -81,9 +79,8 @@ func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 // update character sections
 
 func (u *baseUI) startUpdateTickerCharacters() {
-	ticker := time.NewTicker(characterSectionsUpdateTicker)
 	go func() {
-		for {
+		for range time.Tick(characterSectionsUpdateTicker) {
 			ctx := context.Background()
 			if err := u.updateCharactersIfNeeded(ctx, false); err != nil {
 				slog.Error("Failed to update characters", "error", err)
@@ -91,7 +88,6 @@ func (u *baseUI) startUpdateTickerCharacters() {
 			if err := u.notifyCharactersIfNeeded(ctx); err != nil {
 				slog.Error("Failed to notify characters", "error", err)
 			}
-			<-ticker.C
 		}
 	}()
 }
@@ -312,14 +308,11 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 // update corporation sections
 
 func (u *baseUI) startUpdateTickerCorporations() {
-	ticker := time.NewTicker(characterSectionsUpdateTicker)
-	ctx := context.Background()
 	go func() {
-		for {
-			if err := u.updateCorporationsIfNeeded(ctx, false); err != nil {
+		for range time.Tick(characterSectionsUpdateTicker) {
+			if err := u.updateCorporationsIfNeeded(context.Background(), false); err != nil {
 				slog.Error("Failed to update corporations", "error", err)
 			}
-			<-ticker.C
 		}
 	}()
 }
