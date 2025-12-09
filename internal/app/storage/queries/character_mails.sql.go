@@ -23,7 +23,9 @@ INSERT INTO
         timestamp
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, body, character_id, from_id, is_processed, is_read, mail_id, subject, timestamp
+    (?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING
+    id, body, character_id, from_id, is_processed, is_read, mail_id, subject, timestamp
 `
 
 type CreateMailParams struct {
@@ -65,10 +67,7 @@ func (q *Queries) CreateMail(ctx context.Context, arg CreateMailParams) (Charact
 
 const createMailCharacterMailLabel = `-- name: CreateMailCharacterMailLabel :exec
 INSERT INTO
-    character_mail_mail_labels (
-        character_mail_label_id,
-        character_mail_id
-    )
+    character_mail_mail_labels (character_mail_label_id, character_mail_id)
 VALUES
     (?, ?)
 `
@@ -101,8 +100,7 @@ func (q *Queries) CreateMailRecipient(ctx context.Context, arg CreateMailRecipie
 }
 
 const deleteMail = `-- name: DeleteMail :exec
-DELETE FROM
-    character_mails
+DELETE FROM character_mails
 WHERE
     character_mails.character_id = ?
     AND character_mails.mail_id = ?
@@ -119,8 +117,7 @@ func (q *Queries) DeleteMail(ctx context.Context, arg DeleteMailParams) error {
 }
 
 const deleteMailCharacterMailLabels = `-- name: DeleteMailCharacterMailLabels :exec
-DELETE FROM
-    character_mail_mail_labels
+DELETE FROM character_mail_mail_labels
 WHERE
     character_mail_mail_labels.character_mail_id = ?
 `
@@ -770,31 +767,49 @@ func (q *Queries) ListMailsUnreadOrdered(ctx context.Context, characterID int64)
 }
 
 const updateCharacterMailIsRead = `-- name: UpdateCharacterMailIsRead :exec
-UPDATE
-    character_mails
+UPDATE character_mails
 SET
-    is_read = ?2
+    is_read = ?
 WHERE
-    id = ?1
+    id = ?
 `
 
 type UpdateCharacterMailIsReadParams struct {
-	ID     int64
 	IsRead bool
+	ID     int64
 }
 
 func (q *Queries) UpdateCharacterMailIsRead(ctx context.Context, arg UpdateCharacterMailIsReadParams) error {
-	_, err := q.db.ExecContext(ctx, updateCharacterMailIsRead, arg.ID, arg.IsRead)
+	_, err := q.db.ExecContext(ctx, updateCharacterMailIsRead, arg.IsRead, arg.ID)
+	return err
+}
+
+const updateCharacterMailSetBody = `-- name: UpdateCharacterMailSetBody :exec
+UPDATE character_mails
+SET
+    body = ?
+WHERE
+    character_id = ?
+    AND mail_id = ?
+`
+
+type UpdateCharacterMailSetBodyParams struct {
+	Body        string
+	CharacterID int64
+	MailID      int64
+}
+
+func (q *Queries) UpdateCharacterMailSetBody(ctx context.Context, arg UpdateCharacterMailSetBodyParams) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterMailSetBody, arg.Body, arg.CharacterID, arg.MailID)
 	return err
 }
 
 const updateCharacterMailSetProcessed = `-- name: UpdateCharacterMailSetProcessed :exec
-UPDATE
-    character_mails
+UPDATE character_mails
 SET
     is_processed = TRUE
 WHERE
-    id = ?1
+    id = ?
 `
 
 func (q *Queries) UpdateCharacterMailSetProcessed(ctx context.Context, id int64) error {

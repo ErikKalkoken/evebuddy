@@ -20,7 +20,7 @@ import (
 
 // DeleteMail deletes a mail both on ESI and in the database.
 func (s *CharacterService) DeleteMail(ctx context.Context, characterID, mailID int32) error {
-	token, err := s.GetValidCharacterToken(ctx, characterID)
+	token, err := s.GetValidCharacterTokenWithScopes(ctx, characterID, app.SectionCharacterMails.Scopes())
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int32, subj
 	if err != nil {
 		return 0, err
 	}
-	token, err := s.GetValidCharacterToken(ctx, characterID)
+	token, err := s.GetValidCharacterTokenWithScopes(ctx, characterID, app.SectionCharacterMails.Scopes())
 	if err != nil {
 		return 0, err
 	}
@@ -180,6 +180,62 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int32, subj
 	return mailID, nil
 }
 
+func (s *CharacterService) UpdateMailBody(ctx context.Context, characterID int32, mailID int32) (string, error) {
+	x, err, _ := s.sfg.Do(fmt.Sprintf("UpdateMailBody-%d-%d", characterID, mailID), func() (any, error) {
+		token, err := s.GetValidCharacterTokenWithScopes(ctx, characterID, app.SectionCharacterMails.Scopes())
+		if err != nil {
+			return "", err
+		}
+		ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
+		ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdMailMailId")
+		mail, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, characterID, mailID, nil)
+		if err != nil {
+			return "", err
+		}
+		err = s.st.UpdateCharacterMailSetBody(ctx, characterID, mailID, mail.Body)
+		if err != nil {
+			return "", err
+		}
+		return mail.Body, nil
+	})
+	if err != nil {
+		return "", nil
+	}
+	return x.(string), nil
+}
+
+// UpdateMailRead updates an existing mail as read
+func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mailID int32, isRead bool) error {
+	_, err, _ := s.sfg.Do(fmt.Sprintf("UpdateMailRead-%d-%d", characterID, mailID), func() (any, error) {
+		token, err := s.GetValidCharacterTokenWithScopes(ctx, characterID, app.SectionCharacterMails.Scopes())
+		if err != nil {
+			return nil, err
+		}
+		ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
+		ctx = xgoesi.NewContextWithOperationID(ctx, "PutCharactersCharacterIdMailMailId")
+		m, err := s.st.GetCharacterMail(ctx, characterID, mailID)
+		if err != nil {
+			return nil, err
+		}
+		contents := esi.PutCharactersCharacterIdMailMailIdContents{
+			Labels: m.LabelIDs(),
+			Read:   isRead,
+		}
+		_, err = s.esiClient.ESI.MailApi.PutCharactersCharacterIdMailMailId(ctx, m.CharacterID, contents, m.MailID, nil)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.st.UpdateCharacterMailSetIsRead(ctx, characterID, m.ID, isRead); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 var eveEntityCategory2MailRecipientType = map[app.EveEntityCategory]string{
 	app.EveEntityAlliance:    "alliance",
 	app.EveEntityCharacter:   "character",
@@ -201,11 +257,6 @@ func eveEntitiesToESIMailRecipients(ee []*app.EveEntity) ([]esi.PostCharactersCh
 	}
 	return rr, nil
 }
-
-const (
-	// maxMails              = 1000
-	maxMailHeadersPerPage = 50 // maximum header objects returned per page
-)
 
 // updateMailLabelsESI updates the mail labels for a character from ESI
 // and reports whether it has changed.
@@ -311,17 +362,6 @@ func (s *CharacterService) updateMailsESI(ctx context.Context, arg app.Character
 				}
 			}
 			if len(newHeaders) > 0 {
-				var entityIDs set.Set[int32]
-				for _, m := range newHeaders {
-					entityIDs.Add(m.From)
-					for _, r := range m.Recipients {
-						entityIDs.Add(r.RecipientId)
-					}
-				}
-				_, err := s.eus.AddMissingEntities(ctx, entityIDs)
-				if err != nil {
-					return err
-				}
 				if err := s.addNewMailsESI(ctx, characterID, newHeaders); err != nil {
 					return err
 				}
@@ -346,6 +386,7 @@ func (s *CharacterService) updateMailsESI(ctx context.Context, arg app.Character
 // The headers are guaranteed to be in descending order by mailID.
 // It will at most return (maxMail + page size) headers.
 func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID int32, maxMails int) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
+	const maxMailHeadersPerPage = 50 // maximum header objects returned per page
 	mails := make([]esi.GetCharactersCharacterIdMail200Ok, 0)
 	var lastMailID int32
 	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdMail")
@@ -377,34 +418,35 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 }
 
 func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
-	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdMailMailId")
-	slog.Info("Started fetching new mail from ESI", "characterID", characterID, "count", len(headers))
+	var entityIDs set.Set[int32]
+	for _, m := range headers {
+		entityIDs.Add(m.From)
+		for _, r := range m.Recipients {
+			entityIDs.Add(r.RecipientId)
+		}
+	}
+	_, err := s.eus.AddMissingEntities(ctx, entityIDs)
+	if err != nil {
+		return err
+	}
 	for _, h := range headers {
-		mail, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, characterID, h.MailId, nil)
+		recipientIDs := xslices.Map(h.Recipients, func(x esi.GetCharactersCharacterIdMailRecipient) int32 {
+			return x.RecipientId
+		})
+		_, err := s.st.CreateCharacterMail(ctx, storage.CreateCharacterMailParams{
+			CharacterID:  characterID,
+			FromID:       h.From,
+			IsRead:       h.IsRead,
+			LabelIDs:     h.Labels,
+			MailID:       h.MailId,
+			RecipientIDs: recipientIDs,
+			Subject:      h.Subject,
+			Timestamp:    h.Timestamp,
+		})
 		if err != nil {
 			return err
 		}
-		recipientIDs := make([]int32, len(mail.Recipients))
-		for i, r := range mail.Recipients {
-			recipientIDs[i] = r.RecipientId
-		}
-		arg := storage.CreateCharacterMailParams{
-			Body:         mail.Body,
-			CharacterID:  characterID,
-			FromID:       mail.From,
-			IsRead:       mail.Read,
-			LabelIDs:     mail.Labels,
-			MailID:       h.MailId,
-			RecipientIDs: recipientIDs,
-			Subject:      mail.Subject,
-			Timestamp:    mail.Timestamp,
-		}
-		if _, err := s.st.CreateCharacterMail(ctx, arg); err != nil {
-			return err
-		}
-		slog.Info("Stored new mail", "characterID", characterID, "mailID", h.MailId)
 	}
-	slog.Info("Completed fetching new mail from ESI", "characterID", characterID, "count", len(headers))
 	return nil
 }
 
@@ -416,7 +458,14 @@ func (s *CharacterService) updateExistingMail(ctx context.Context, characterID i
 			return err
 		}
 		if m.IsRead != h.IsRead {
-			err := s.st.UpdateCharacterMail(ctx, characterID, m.ID, h.IsRead, h.Labels)
+			err := s.st.UpdateCharacterMailSetIsRead(ctx, characterID, m.ID, h.IsRead)
+			if err != nil {
+				return err
+			}
+			updated++
+		}
+		if !set.Of(h.Labels...).Equal(set.Of(m.LabelIDs()...)) {
+			err := s.st.UpdateCharacterMailSetLabels(ctx, characterID, m.ID, h.Labels)
 			if err != nil {
 				return err
 			}
@@ -427,35 +476,4 @@ func (s *CharacterService) updateExistingMail(ctx context.Context, characterID i
 		slog.Info("Updated mail", "characterID", characterID, "count", updated)
 	}
 	return nil
-}
-
-// UpdateMailRead updates an existing mail as read
-func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mailID int32, isRead bool) error {
-	token, err := s.GetValidCharacterToken(ctx, characterID)
-	if err != nil {
-		return err
-	}
-	ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
-	ctx = xgoesi.NewContextWithOperationID(ctx, "PutCharactersCharacterIdMailMailId")
-	m, err := s.st.GetCharacterMail(ctx, characterID, mailID)
-	if err != nil {
-		return err
-	}
-	labelIDs := xslices.Map(m.Labels, func(x *app.CharacterMailLabel) int32 {
-		return x.LabelID
-	})
-	contents := esi.PutCharactersCharacterIdMailMailIdContents{
-		Read:   isRead,
-		Labels: labelIDs,
-	}
-	_, err = s.esiClient.ESI.MailApi.PutCharactersCharacterIdMailMailId(ctx, m.CharacterID, contents, m.MailID, nil)
-	if err != nil {
-		return err
-	}
-	m.IsRead = isRead
-	if err := s.st.UpdateCharacterMail(ctx, characterID, m.ID, m.IsRead, labelIDs); err != nil {
-		return err
-	}
-	return nil
-
 }

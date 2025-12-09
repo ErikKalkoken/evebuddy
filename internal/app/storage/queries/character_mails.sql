@@ -11,7 +11,9 @@ INSERT INTO
         timestamp
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?) RETURNING *;
+    (?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING
+    *;
 
 -- name: CreateMailRecipient :exec
 INSERT INTO
@@ -21,23 +23,18 @@ VALUES
 
 -- name: CreateMailCharacterMailLabel :exec
 INSERT INTO
-    character_mail_mail_labels (
-        character_mail_label_id,
-        character_mail_id
-    )
+    character_mail_mail_labels (character_mail_label_id, character_mail_id)
 VALUES
     (?, ?);
 
 -- name: DeleteMail :exec
-DELETE FROM
-    character_mails
+DELETE FROM character_mails
 WHERE
     character_mails.character_id = ?
     AND character_mails.mail_id = ?;
 
 -- name: DeleteMailCharacterMailLabels :exec
-DELETE FROM
-    character_mail_mail_labels
+DELETE FROM character_mail_mail_labels
 WHERE
     character_mail_mail_labels.character_mail_id = ?;
 
@@ -221,17 +218,23 @@ ORDER BY
     timestamp ASC;
 
 -- name: UpdateCharacterMailIsRead :exec
-UPDATE
-    character_mails
+UPDATE character_mails
 SET
-    is_read = ?2
+    is_read = ?
 WHERE
-    id = ?1;
+    id = ?;
 
 -- name: UpdateCharacterMailSetProcessed :exec
-UPDATE
-    character_mails
+UPDATE character_mails
 SET
     is_processed = TRUE
 WHERE
-    id = ?1;
+    id = ?;
+
+-- name: UpdateCharacterMailSetBody :exec
+UPDATE character_mails
+SET
+    body = ?
+WHERE
+    character_id = ?
+    AND mail_id = ?;

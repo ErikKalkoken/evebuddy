@@ -31,7 +31,7 @@ func TestCharacterMails_updateUnreadCounts(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 			LabelIDs:    []int32{app.MailLabelInbox},
 			CharacterID: c.ID,
 			IsRead:      false,

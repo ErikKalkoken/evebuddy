@@ -51,7 +51,7 @@ func TestMailList(t *testing.T) {
 		if err := st.CreateCharacterMailList(ctx, c1.ID, e1.ID); err != nil {
 			t.Fatal(err)
 		}
-		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c1.ID, RecipientIDs: []int32{e1.ID}})
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c1.ID, RecipientIDs: []int32{e1.ID}})
 		e2 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList})
 		if err := st.CreateCharacterMailList(ctx, c1.ID, e2.ID); err != nil {
 			t.Fatal(err)

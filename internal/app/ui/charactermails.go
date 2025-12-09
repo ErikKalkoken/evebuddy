@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strconv"
 	"sync"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -93,17 +94,15 @@ var emptyFolder = mailFolderNode{}
 type characterMails struct {
 	widget.BaseWidget
 
-	Detail        fyne.CanvasObject
+	Detail        *mailDetail
 	Headers       fyne.CanvasObject
 	onSelected    func()
 	onUpdate      func(count int)
 	onSendMessage func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail)
 
-	body          *widget.Label
 	character     *app.Character
 	folders       *iwidget.Tree[mailFolderNode]
 	folderTop     *widget.Label
-	header        *mailHeader
 	headerList    *widget.List
 	headers       []*app.CharacterMailHeader
 	headerTop     *widget.Label
@@ -111,7 +110,6 @@ type characterMails struct {
 	lastSelected  widget.ListItemID
 	lastFolder    mailFolderNode
 	mail          *app.CharacterMail
-	subject       *widget.Label
 	toolbar       *widget.Toolbar
 	u             *baseUI
 
@@ -120,15 +118,12 @@ type characterMails struct {
 }
 
 func newCharacterMails(u *baseUI) *characterMails {
-	subject := widget.NewLabel("")
-	subject.SizeName = theme.SizeNameSubHeadingText
+
 	a := &characterMails{
-		body:      widget.NewLabel(""),
-		header:    newMailHeader(u.eis, u.ShowEveEntityInfoWindow),
+		Detail:    newMailDetail(u),
+		folderTop: makeTopLabel(),
 		headers:   make([]*app.CharacterMailHeader, 0),
 		headerTop: makeTopLabel(),
-		folderTop: makeTopLabel(),
-		subject:   subject,
 		u:         u,
 	}
 	a.ExtendBaseWidget(a)
@@ -144,15 +139,6 @@ func newCharacterMails(u *baseUI) *characterMails {
 	// Detail
 	a.toolbar = a.makeToolbar()
 	a.toolbar.Hide()
-	a.subject.Truncation = fyne.TextTruncateClip
-	a.body.Wrapping = fyne.TextWrapWord
-	a.Detail = container.NewBorder(
-		container.NewVBox(a.subject, a.header),
-		nil,
-		nil,
-		nil,
-		container.NewVScroll(a.body),
-	)
 
 	a.u.currentCharacterExchanged.AddListener(
 		func(_ context.Context, c *app.Character) {
@@ -512,7 +498,7 @@ func (a *characterMails) makeHeaderList() *widget.List {
 			return
 		}
 		r := a.headers[id]
-		a.setMail(r.MailID)
+		a.loadMail(r.MailID)
 		a.lastSelected = id
 		if a.onSelected != nil {
 			a.onSelected()
@@ -693,13 +679,11 @@ func (a *characterMails) makeToolbar() *widget.Toolbar {
 }
 
 func (a *characterMails) clearMail() {
-	a.subject.SetText("")
-	a.header.Clear()
-	a.body.SetText("")
+	a.Detail.clear()
 	a.toolbar.Hide()
 }
 
-func (a *characterMails) setMail(mailID int32) {
+func (a *characterMails) loadMail(mailID int32) {
 	ctx := context.TODO()
 	characterID := characterIDOrZero(a.character)
 	var err error
@@ -709,25 +693,114 @@ func (a *characterMails) setMail(mailID int32) {
 		a.u.ShowSnackbar("ERROR: Failed to fetch mail")
 		return
 	}
-	if !a.u.IsOffline() && !a.mail.IsRead {
-		go func() {
-			err = a.u.cs.UpdateMailRead(ctx, characterID, a.mail.MailID, true)
-			if err != nil {
-				slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", a.mail.MailID, "error", err)
-				a.u.ShowSnackbar("ERROR: Failed to mark mail as read: " + a.mail.Subject)
-				return
-			}
-			a.updateUnreadCounts()
-			a.headerRefresh()
-			a.u.characterOverview.update()
-			a.u.updateMailIndicator()
-			fyne.Do(func() {
-				a.setMail(mailID)
-			})
-		}()
+	if !a.u.IsOffline() {
+		if a.mail.Body == "" {
+			go func() {
+				a.u.sig.Do(fmt.Sprintf("charactermails-load-mail-%d-%d", characterID, mailID), func() (any, error) {
+					body, err := a.u.cs.UpdateMailBody(ctx, characterID, a.mail.MailID)
+					if err != nil {
+						slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", a.mail.MailID, "error", err)
+						a.u.ShowSnackbar("ERROR: Failed to load mail: " + a.mail.Subject)
+						return nil, nil
+					}
+					fyne.Do(func() {
+						if a.mail.CharacterID != characterID || a.mail.MailID != mailID {
+							return
+						}
+						a.mail.Body = body
+						a.Detail.SetBody(a.mail.BodyPlain())
+					})
+					return nil, nil
+				})
+			}()
+		}
+		if !a.mail.IsRead {
+			go func() {
+				a.u.sig.Do(fmt.Sprintf("charactermails-set-read-%d-%d", characterID, mailID), func() (any, error) {
+					err := a.u.cs.UpdateMailRead(ctx, characterID, a.mail.MailID, true)
+					if err != nil {
+						slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", a.mail.MailID, "error", err)
+						a.u.ShowSnackbar("ERROR: Failed to mark mail as read: " + a.mail.Subject)
+						return nil, nil
+					}
+					a.updateUnreadCounts()
+					a.headerRefresh()
+					a.u.characterOverview.update()
+					a.u.updateMailIndicator()
+					fyne.Do(func() {
+						if a.mail.CharacterID != characterID || a.mail.MailID != mailID {
+							return
+						}
+						a.mail.IsRead = true
+					})
+					return nil, nil
+				})
+			}()
+		}
 	}
-	a.subject.SetText(a.mail.Subject)
-	a.header.Set(a.mail.From, a.mail.Timestamp, a.mail.Recipients...)
-	a.body.SetText(a.mail.BodyPlain())
+	a.Detail.SetMail(a.mail)
 	a.toolbar.Show()
+}
+
+type mailDetail struct {
+	widget.BaseWidget
+
+	body    *widget.Label
+	header  *mailHeader
+	subject *widget.Label
+}
+
+func newMailDetail(u *baseUI) *mailDetail {
+	w := &mailDetail{
+		body:    widget.NewLabel(""),
+		header:  newMailHeader(u.eis, u.ShowEveEntityInfoWindow),
+		subject: widget.NewLabel(""),
+	}
+	w.subject.SizeName = theme.SizeNameSubHeadingText
+	w.subject.Truncation = fyne.TextTruncateClip
+	w.body.Wrapping = fyne.TextWrapWord
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *mailDetail) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewBorder(
+		container.NewVBox(w.subject, w.header),
+		nil,
+		nil,
+		nil,
+		container.NewVScroll(w.body),
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *mailDetail) clear() {
+	w.subject.SetText("")
+	w.header.Clear()
+	w.body.SetText("")
+}
+
+func (w *mailDetail) SetMail(m *app.CharacterMail) {
+	w.SetSubject(m.Subject)
+	w.SetBody(m.BodyPlain())
+	w.SetHeader(m.From, m.Timestamp, m.Recipients...)
+}
+
+func (w *mailDetail) SetBody(s string) {
+	var i widget.Importance
+	if s == "" {
+		i = widget.LowImportance
+		s = "Loading..."
+	}
+	w.body.Importance = i
+	w.body.Text = s
+	w.body.Refresh()
+}
+
+func (w *mailDetail) SetSubject(s string) {
+	w.subject.SetText(s)
+}
+
+func (w *mailDetail) SetHeader(from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
+	w.header.Set(from, timestamp, recipients...)
 }

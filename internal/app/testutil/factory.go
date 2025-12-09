@@ -539,7 +539,15 @@ func (f Factory) CreateCharacterJumpClone(args ...storage.CreateCharacterJumpClo
 	return o
 }
 
+func (f Factory) CreateCharacterMailWithBody(args ...storage.CreateCharacterMailParams) *app.CharacterMail {
+	return f.createCharacterMail(true, args...)
+}
+
 func (f Factory) CreateCharacterMail(args ...storage.CreateCharacterMailParams) *app.CharacterMail {
+	return f.createCharacterMail(false, args...)
+}
+
+func (f Factory) createCharacterMail(hasBody bool, args ...storage.CreateCharacterMailParams) *app.CharacterMail {
 	var arg storage.CreateCharacterMailParams
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -560,7 +568,7 @@ func (f Factory) CreateCharacterMail(args ...storage.CreateCharacterMailParams) 
 			arg.CharacterID,
 		))
 	}
-	if arg.Body == "" {
+	if hasBody && arg.Body == "" {
 		arg.Body = fake.Paragraph()
 	}
 	if arg.Subject == "" {

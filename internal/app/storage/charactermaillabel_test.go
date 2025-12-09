@@ -156,10 +156,10 @@ func TestDeleteObsoleteMailLabels(t *testing.T) {
 		c1 := factory.CreateCharacterFull()
 		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c1.ID})
 		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c1.ID}) // to delete
-		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c1.ID, LabelIDs: []int32{l1.LabelID}})
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c1.ID, LabelIDs: []int32{l1.LabelID}})
 		c2 := factory.CreateCharacterFull()
 		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c2.ID})
-		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c2.ID, LabelIDs: []int32{l2.LabelID}})
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c2.ID, LabelIDs: []int32{l2.LabelID}})
 		// when
 		err := st.DeleteObsoleteCharacterMailLabels(ctx, c1.ID)
 		if assert.NoError(t, err) {

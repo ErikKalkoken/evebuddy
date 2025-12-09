@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type SendMailMode uint
@@ -52,6 +53,13 @@ type CharacterMail struct {
 	Recipients  []*EveEntity
 	Subject     string
 	Timestamp   time.Time
+}
+
+func (cm CharacterMail) LabelIDs() []int32 {
+	ids := xslices.Map(cm.Labels, func(x *CharacterMailLabel) int32 {
+		return x.LabelID
+	})
+	return ids
 }
 
 // CharacterMailHeader is an EVE mail header belonging to a character.
