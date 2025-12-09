@@ -95,13 +95,6 @@ var (
 	versionFlag        = flag.Bool("v", false, "Show version")
 )
 
-// RealTicker provides a real ticker from the standard library.
-type RealTicker struct{}
-
-func (RealTicker) Tick(d time.Duration) <-chan time.Time {
-	return time.Tick(d)
-}
-
 func main() {
 	// init log & flags
 	slog.SetLogLoggerLevel(logLevelDefault)
@@ -352,7 +345,6 @@ func main() {
 		AuthClient:             authClient,
 		StatusCacheService:     scs,
 		Storage:                st,
-		TickerSource:           &RealTicker{},
 	})
 
 	// Init Corporation service

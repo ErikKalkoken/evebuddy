@@ -4,7 +4,6 @@ package characterservice
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"github.com/ErikKalkoken/eveauth"
 	"github.com/antihax/goesi"
@@ -21,13 +20,6 @@ type AuthClient interface {
 	RefreshToken(ctx context.Context, token *eveauth.Token) error
 }
 
-// Ticker is the abstraction for obtaining a ticker.
-// This allows disabling tickers in tests.
-type Ticker interface {
-	// Tick returns a read-only channel that delivers the time after the specified duration.
-	Tick(d time.Duration) <-chan time.Time
-}
-
 // CharacterService provides access to all managed Eve Online characters both online and from local storage.
 type CharacterService struct {
 	ens              *evenotification.EveNotificationService
@@ -39,7 +31,6 @@ type CharacterService struct {
 	sfg              *singleflight.Group
 	authClient       AuthClient
 	st               *storage.Storage
-	ticker           Ticker
 }
 
 type Params struct {
@@ -49,7 +40,6 @@ type Params struct {
 	AuthClient             AuthClient
 	StatusCacheService     *statuscacheservice.StatusCacheService
 	Storage                *storage.Storage
-	TickerSource           Ticker
 	// optional
 	HTTPClient *http.Client
 	ESIClient  *goesi.APIClient
@@ -66,7 +56,6 @@ func New(arg Params) *CharacterService {
 		scs:              arg.StatusCacheService,
 		sfg:              new(singleflight.Group),
 		st:               arg.Storage,
-		ticker:           arg.TickerSource,
 	}
 	if arg.HTTPClient == nil {
 		s.httpClient = http.DefaultClient
