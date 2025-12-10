@@ -300,7 +300,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			if isShown {
 				u.reloadCurrentCharacter()
 			}
-		case app.SectionCharacterMails:
+		case app.SectionCharacterMailHeaders:
 			u.updateMailIndicator()
 		case app.SectionCharacterRoles:
 			u.updateStatus()
@@ -437,9 +437,9 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		slog.Debug("Entered foreground")
 		u.isForeground.Store(true)
 		if !u.isOffline && !u.isUpdateDisabled {
-			u.updateCharactersIfNeeded(context.Background(), false)
-			u.updateCorporationsIfNeeded(context.Background(), false)
-			u.updateGeneralSectionsIfNeeded(context.Background(), false)
+			go u.updateCharactersIfNeeded(context.Background(), false)
+			go u.updateCorporationsIfNeeded(context.Background(), false)
+			go u.updateGeneralSectionsIfNeeded(context.Background(), false)
 		}
 	})
 	u.app.Lifecycle().SetOnExitedForeground(func() {

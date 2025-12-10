@@ -160,6 +160,14 @@ func (st *Storage) ListCharacterMailIDs(ctx context.Context, characterID int32) 
 	return set.Of(convertNumericSlice[int32](ids)...), nil
 }
 
+func (st *Storage) ListCharacterMailsWithoutBody(ctx context.Context, characterID int32) (set.Set[int32], error) {
+	ids, err := st.qRO.ListMailsWithoutBody(ctx, int64(characterID))
+	if err != nil {
+		return set.Set[int32]{}, fmt.Errorf("list mail IDs for character %d: %w", characterID, err)
+	}
+	return set.Of(convertNumericSlice[int32](ids)...), nil
+}
+
 func (st *Storage) ListCharacterMailListsOrdered(ctx context.Context, characterID int32) ([]*app.EveEntity, error) {
 	ll, err := st.qRO.ListCharacterMailListsOrdered(ctx, int64(characterID))
 	if err != nil {

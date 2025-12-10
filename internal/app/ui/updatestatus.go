@@ -147,13 +147,13 @@ func newUpdateStatus(u *baseUI) *updateStatus {
 func (a *updateStatus) CreateRenderer() fyne.WidgetRenderer {
 	updateMenu := fyne.NewMenu("",
 		fyne.NewMenuItem("Update all characters", func() {
-			a.u.updateCharactersIfNeeded(context.Background(), true)
+			go a.u.updateCharactersIfNeeded(context.Background(), true)
 		}),
 		fyne.NewMenuItem("Update all corporations", func() {
-			a.u.updateCorporationsIfNeeded(context.Background(), true)
+			go a.u.updateCorporationsIfNeeded(context.Background(), true)
 		}),
 		fyne.NewMenuItem("Update all general topics", func() {
-			a.u.updateGeneralSectionsIfNeeded(context.Background(), true)
+			go a.u.updateGeneralSectionsIfNeeded(context.Background(), true)
 		}),
 	)
 	updateEntities := iwidget.NewContextMenuButton("Force update all entities", updateMenu)
@@ -278,11 +278,11 @@ func (a *updateStatus) makeUpdateAllAction() func() {
 		c := a.sectionEntities[a.selectedEntityID]
 		switch c.category {
 		case sectionGeneral:
-			a.u.updateGeneralSectionsIfNeeded(ctx, true)
+			go a.u.updateGeneralSectionsIfNeeded(ctx, true)
 		case sectionCharacter:
-			a.u.updateCharacterAndRefreshIfNeeded(ctx, c.id, true)
+			go a.u.updateCharacterAndRefreshIfNeeded(ctx, c.id, true)
 		case sectionCorporation:
-			a.u.updateCorporationAndRefreshIfNeeded(ctx, c.id, true)
+			go a.u.updateCorporationAndRefreshIfNeeded(ctx, c.id, true)
 		default:
 			slog.Error("makeUpdateAllAction: Undefined category", "entity", c)
 		}

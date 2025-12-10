@@ -150,7 +150,7 @@ func newCharacterMails(u *baseUI) *characterMails {
 			return
 		}
 		switch arg.section {
-		case app.SectionCharacterMailLabels, app.SectionCharacterMailLists, app.SectionCharacterMails:
+		case app.SectionCharacterMailLabels, app.SectionCharacterMailLists, app.SectionCharacterMailHeaders:
 			a.update()
 		}
 	})
@@ -236,7 +236,7 @@ func (a *characterMails) makeFolderTree() *iwidget.Tree[mailFolderNode] {
 
 func (a *characterMails) update() {
 	characterID := characterIDOrZero(a.character)
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterMails)
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterMailHeaders)
 	var td iwidget.TreeData[mailFolderNode]
 	folderAll := mailFolderNode{}
 	var err error
@@ -543,7 +543,7 @@ func (a *characterMails) headerRefresh() {
 	currentFolder := a.currentFolder
 	a.mu.RUnlock()
 	characterID := characterIDOrZero(a.character)
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterMails)
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterMailHeaders)
 	if hasData && !currentFolder.IsEmpty() {
 		headers2, err := a.fetchHeaders(currentFolder.MustValue(), a.u.services())
 		if err != nil {
@@ -700,7 +700,9 @@ func (a *characterMails) loadMail(mailID int32) {
 					body, err := a.u.cs.UpdateMailBody(ctx, characterID, a.mail.MailID)
 					if err != nil {
 						slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", a.mail.MailID, "error", err)
-						a.u.ShowSnackbar("ERROR: Failed to load mail: " + a.mail.Subject)
+						fyne.Do(func() {
+							a.Detail.SetBody(a.u.humanizeError(err))
+						})
 						return nil, nil
 					}
 					fyne.Do(func() {
@@ -793,6 +795,12 @@ func (w *mailDetail) SetBody(s string) {
 		s = "Loading..."
 	}
 	w.body.Importance = i
+	w.body.Text = s
+	w.body.Refresh()
+}
+
+func (w *mailDetail) SetError(s string) {
+	w.body.Importance = widget.DangerImportance
 	w.body.Text = s
 	w.body.Refresh()
 }

@@ -213,7 +213,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 		func(_ context.Context, arg characterSectionUpdated) {
 			switch arg.section {
 			case
-				app.SectionCharacterMails,
+				app.SectionCharacterMailHeaders,
 				app.SectionCharacterWalletBalance,
 				app.SectionCharacterAssets,
 				app.SectionCharacterOnline:

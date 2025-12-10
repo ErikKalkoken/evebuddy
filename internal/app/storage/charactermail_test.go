@@ -136,6 +136,26 @@ func TestCharacterMail(t *testing.T) {
 		want := set.Of([]int32{10, 11, 12}...)
 		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 	})
+	t.Run("can list IDs for mails withtout bodies", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		mailIDs := set.Of[int32](10, 11, 12)
+		for i := range mailIDs.All() {
+			factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+				CharacterID: c.ID,
+				MailID:      i,
+			})
+		}
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+		})
+		// when
+		got, err := st.ListCharacterMailsWithoutBody(ctx, c.ID)
+		// then
+		assert.NoError(t, err)
+		assert.True(t, got.Equal(mailIDs), "got %q, wanted %q", got, mailIDs)
+	})
 	t.Run("can delete existing mail", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

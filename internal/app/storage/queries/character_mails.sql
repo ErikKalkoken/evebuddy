@@ -129,6 +129,15 @@ FROM
 WHERE
     character_id = ?;
 
+-- name: ListMailsWithoutBody :many
+SELECT
+    mail_id
+FROM
+    character_mails
+WHERE
+    character_id = ?
+    AND body = "";
+
 -- name: ListMailsOrdered :many
 SELECT
     sqlc.embed(cm),

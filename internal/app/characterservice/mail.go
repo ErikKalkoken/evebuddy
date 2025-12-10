@@ -20,7 +20,7 @@ import (
 
 // DeleteMail deletes a mail both on ESI and in the database.
 func (s *CharacterService) DeleteMail(ctx context.Context, characterID, mailID int32) error {
-	token, err := s.GetValidCharacterTokenWithScopes(ctx, characterID, app.SectionCharacterMails.Scopes())
+	token, err := s.GetValidCharacterTokenWithScopes(ctx, characterID, app.SectionCharacterMailHeaders.Scopes())
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int32, subj
 	if err != nil {
 		return 0, err
 	}
-	token, err := s.GetValidCharacterTokenWithScopes(ctx, characterID, app.SectionCharacterMails.Scopes())
+	token, err := s.GetValidCharacterTokenWithScopes(ctx, characterID, app.SectionCharacterMailHeaders.Scopes())
 	if err != nil {
 		return 0, err
 	}
@@ -182,7 +182,7 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int32, subj
 
 func (s *CharacterService) UpdateMailBody(ctx context.Context, characterID int32, mailID int32) (string, error) {
 	x, err, _ := s.sfg.Do(fmt.Sprintf("UpdateMailBody-%d-%d", characterID, mailID), func() (any, error) {
-		token, err := s.GetValidCharacterTokenWithScopes(ctx, characterID, app.SectionCharacterMails.Scopes())
+		token, err := s.GetValidCharacterTokenWithScopes(ctx, characterID, app.SectionCharacterMailHeaders.Scopes())
 		if err != nil {
 			return "", err
 		}
@@ -201,13 +201,14 @@ func (s *CharacterService) UpdateMailBody(ctx context.Context, characterID int32
 	if err != nil {
 		return "", nil
 	}
+	slog.Info("mail body updated", "characterID", characterID, "mailID", mailID)
 	return x.(string), nil
 }
 
 // UpdateMailRead updates an existing mail as read
 func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mailID int32, isRead bool) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("UpdateMailRead-%d-%d", characterID, mailID), func() (any, error) {
-		token, err := s.GetValidCharacterTokenWithScopes(ctx, characterID, app.SectionCharacterMails.Scopes())
+		token, err := s.GetValidCharacterTokenWithScopes(ctx, characterID, app.SectionCharacterMailHeaders.Scopes())
 		if err != nil {
 			return nil, err
 		}
@@ -330,10 +331,10 @@ func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.Chara
 		})
 }
 
-// updateMailsESI updates the mails for a character from ESI
+// updateMailHeadersESI updates the mails for a character from ESI
 // and reports whether it has changed.
-func (s *CharacterService) updateMailsESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterMails {
+func (s *CharacterService) updateMailHeadersESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
+	if arg.Section != app.SectionCharacterMailHeaders {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
@@ -476,4 +477,35 @@ func (s *CharacterService) updateExistingMail(ctx context.Context, characterID i
 		slog.Info("Updated mail", "characterID", characterID, "count", updated)
 	}
 	return nil
+}
+
+// updateMailBodiesESI updates the mail bodies for a character from ESI
+// and reports whether they have changed.
+func (s *CharacterService) updateMailBodiesESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
+	if arg.Section != app.SectionCharacterMailBodies {
+		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
+	}
+	err := s.recordUpdateStarted(ctx, arg)
+	if err != nil {
+		return false, err
+	}
+	ids, err := s.st.ListCharacterMailsWithoutBody(ctx, arg.CharacterID)
+	if err != nil {
+		return false, err
+	}
+	if ids.Size() == 0 {
+		s.recordUpdateSuccessful(ctx, arg, "")
+		return false, nil
+	}
+	ids2 := slices.SortedFunc(ids.All(), func(a, b int32) int {
+		return cmp.Compare(b, a) // process mails from newest to oldest
+	})
+	for _, id := range ids2 {
+		_, err := s.UpdateMailBody(ctx, arg.CharacterID, id)
+		if err != nil {
+			return false, err
+		}
+	}
+	s.recordUpdateSuccessful(ctx, arg, "")
+	return true, nil
 }

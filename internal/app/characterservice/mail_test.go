@@ -121,7 +121,7 @@ func TestUpdateMail(t *testing.T) {
 		require.NoError(t, err)
 		_, err = s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c1.ID,
-			Section:     app.SectionCharacterMails,
+			Section:     app.SectionCharacterMailHeaders,
 		})
 		// then
 		require.NoError(t, err)
@@ -229,7 +229,7 @@ func TestUpdateMail(t *testing.T) {
 		// when
 		_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
-			Section:     app.SectionCharacterMails,
+			Section:     app.SectionCharacterMailHeaders,
 		})
 		// then
 		require.NoError(t, err)

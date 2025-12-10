@@ -766,6 +766,39 @@ func (q *Queries) ListMailsUnreadOrdered(ctx context.Context, characterID int64)
 	return items, nil
 }
 
+const listMailsWithoutBody = `-- name: ListMailsWithoutBody :many
+SELECT
+    mail_id
+FROM
+    character_mails
+WHERE
+    character_id = ?
+    AND body = ""
+`
+
+func (q *Queries) ListMailsWithoutBody(ctx context.Context, characterID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listMailsWithoutBody, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var mail_id int64
+		if err := rows.Scan(&mail_id); err != nil {
+			return nil, err
+		}
+		items = append(items, mail_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateCharacterMailIsRead = `-- name: UpdateCharacterMailIsRead :exec
 UPDATE character_mails
 SET
