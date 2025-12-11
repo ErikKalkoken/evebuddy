@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
@@ -105,6 +106,7 @@ type characterMails struct {
 	headers       []*app.CharacterMailHeader
 	headerStatus  *widget.Label
 	headerTop     *widget.Label
+	headerTop2    *ttwidget.Label
 	lastFolder    mailFolderNode
 	lastSelected  widget.ListItemID
 	mail          *app.CharacterMail
@@ -124,7 +126,8 @@ func newCharacterMails(u *baseUI) *characterMails {
 		folderTop:    makeTopLabel(),
 		headers:      make([]*app.CharacterMailHeader, 0),
 		headerStatus: widget.NewLabel(""),
-		headerTop:    makeTopLabel(),
+		headerTop:    widget.NewLabel(""),
+		headerTop2:   ttwidget.NewLabel(""),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -137,8 +140,11 @@ func newCharacterMails(u *baseUI) *characterMails {
 	a.headerStatus.Hide()
 	a.headerList = a.makeHeaderList()
 	a.Headers = container.NewBorder(
-		a.headerTop,
-		a.headerStatus,
+		container.NewVBox(
+			container.NewHBox(a.headerTop, layout.NewSpacer(), a.headerTop2),
+			a.headerStatus,
+		),
+		nil,
 		nil,
 		nil,
 		a.headerList,
@@ -161,6 +167,9 @@ func newCharacterMails(u *baseUI) *characterMails {
 		case app.SectionCharacterMailLabels, app.SectionCharacterMailLists, app.SectionCharacterMailHeaders:
 			a.update()
 		}
+	})
+	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+		a.updateDownloaded()
 	})
 	return a
 }
@@ -597,6 +606,37 @@ func (a *characterMails) headerRefresh() {
 		a.headerList.Refresh()
 		a.clearMail()
 	})
+	a.updateDownloaded()
+}
+
+func (a *characterMails) updateDownloaded() {
+	var s, hint string
+	defer func() {
+		fyne.Do(func() {
+			if s == "" {
+				a.headerTop2.Hide()
+				return
+			}
+			a.headerTop2.SetText(s)
+			a.headerTop2.SetToolTip(hint)
+			a.headerTop2.Show()
+		})
+	}()
+	characterID := characterIDOrZero(a.character)
+	if characterID == 0 {
+		return
+	}
+	total, missing, err := a.u.cs.DownloadedBodiesPercentage(context.Background(), characterID)
+	if err != nil {
+		slog.Error("updateDownloaded", "error", err)
+		s = "ERROR"
+		return
+	}
+	if total == 0 || missing == 0 {
+		return
+	}
+	s = fmt.Sprintf("%.0f%% downloaded", (1-float64(missing)/float64(total))*100)
+	hint = fmt.Sprintf("%d / %d missing", missing, total)
 }
 
 func (*characterMails) fetchHeaders(folder mailFolderNode, s services) ([]*app.CharacterMailHeader, error) {
