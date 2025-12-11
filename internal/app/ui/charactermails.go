@@ -94,22 +94,23 @@ var emptyFolder = mailFolderNode{}
 type characterMails struct {
 	widget.BaseWidget
 
-	Detail        *mailDetail
-	Headers       fyne.CanvasObject
-	onSelected    func()
-	onUpdate      func(count int)
-	onSendMessage func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail)
+	Detail  *mailDetail
+	Headers *fyne.Container
 
 	character     *app.Character
+	folderDefault mailFolderNode
 	folders       *iwidget.Tree[mailFolderNode]
 	folderTop     *widget.Label
 	headerList    *widget.List
 	headers       []*app.CharacterMailHeader
+	headerStatus  *widget.Label
 	headerTop     *widget.Label
-	folderDefault mailFolderNode
-	lastSelected  widget.ListItemID
 	lastFolder    mailFolderNode
+	lastSelected  widget.ListItemID
 	mail          *app.CharacterMail
+	onSelected    func()
+	onSendMessage func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail)
+	onUpdate      func(count int)
 	toolbar       *widget.Toolbar
 	u             *baseUI
 
@@ -118,13 +119,13 @@ type characterMails struct {
 }
 
 func newCharacterMails(u *baseUI) *characterMails {
-
 	a := &characterMails{
-		Detail:    newMailDetail(u),
-		folderTop: makeTopLabel(),
-		headers:   make([]*app.CharacterMailHeader, 0),
-		headerTop: makeTopLabel(),
-		u:         u,
+		Detail:       newMailDetail(u),
+		folderTop:    makeTopLabel(),
+		headers:      make([]*app.CharacterMailHeader, 0),
+		headerStatus: widget.NewLabel(""),
+		headerTop:    makeTopLabel(),
+		u:            u,
 	}
 	a.ExtendBaseWidget(a)
 
@@ -133,8 +134,15 @@ func newCharacterMails(u *baseUI) *characterMails {
 	a.folderTop.Hide()
 
 	// Headers
+	a.headerStatus.Hide()
 	a.headerList = a.makeHeaderList()
-	a.Headers = container.NewBorder(a.headerTop, nil, nil, nil, a.headerList)
+	a.Headers = container.NewBorder(
+		a.headerTop,
+		a.headerStatus,
+		nil,
+		nil,
+		a.headerList,
+	)
 
 	// Detail
 	a.toolbar = a.makeToolbar()
@@ -537,44 +545,62 @@ func (a *characterMails) clearFolder() {
 }
 
 func (a *characterMails) headerRefresh() {
-	var err error
-	headers := make([]*app.CharacterMailHeader, 0)
+	clearHeaders := func() {
+		fyne.Do(func() {
+			a.headers = make([]*app.CharacterMailHeader, 0)
+			a.headerList.Refresh()
+			a.headerTop.SetText("")
+			a.clearMail()
+		})
+	}
+	setStatus := func(s string, i widget.Importance) {
+		fyne.Do(func() {
+			a.headerStatus.Text = s
+			a.headerStatus.Importance = i
+			a.headerStatus.Refresh()
+			a.headerStatus.Show()
+		})
+	}
+	fyne.Do(func() {
+	})
 	a.mu.RLock()
 	currentFolder := a.currentFolder
 	a.mu.RUnlock()
+	if currentFolder.IsEmpty() {
+		clearHeaders()
+		return
+	}
+
 	characterID := characterIDOrZero(a.character)
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterMailHeaders)
-	if hasData && !currentFolder.IsEmpty() {
-		headers2, err := a.fetchHeaders(currentFolder.MustValue(), a.u.services())
-		if err != nil {
-			slog.Error("Failed to refresh mail headers UI", "characterID", characterID, "err", err)
-		} else {
-			headers = headers2
-		}
+	if !hasData {
+		setStatus("Data not yet loaded", widget.WarningImportance)
+		clearHeaders()
+		return
+	}
+
+	headers, err := a.fetchHeaders(currentFolder.MustValue(), a.u.services())
+	if err != nil {
+		slog.Error("Failed to refresh mail headers UI", "characterID", characterID, "err", err)
+		setStatus("Failed to load: "+a.u.humanizeError(err), widget.DangerImportance)
+		clearHeaders()
+		return
 	}
 
 	f := currentFolder.ValueOrZero()
-	t, i := a.u.makeTopText(f.CharacterID, hasData, err, func() (string, widget.Importance) {
-		p := message.NewPrinter(language.English)
-		s := p.Sprintf("%s • %d mails", f.Name, len(headers))
-		return s, widget.MediumImportance
-	})
-
+	p := message.NewPrinter(language.English)
+	s := p.Sprintf("%s • %d mails", f.Name, len(headers))
 	fyne.Do(func() {
-		a.headerTop.Text = t
-		a.headerTop.Importance = i
-		a.headerTop.Refresh()
-	})
-	fyne.Do(func() {
+		a.headerStatus.Hide()
+		a.headerTop.SetText(s)
 		a.headers = headers
 		a.headerList.Refresh()
-		if len(headers) == 0 {
-			a.clearMail()
-		}
+		a.clearMail()
 	})
 }
 
 func (*characterMails) fetchHeaders(folder mailFolderNode, s services) ([]*app.CharacterMailHeader, error) {
+	// return nil, app.ErrNotFound
 	ctx := context.Background()
 	var headers []*app.CharacterMailHeader
 	var err error
