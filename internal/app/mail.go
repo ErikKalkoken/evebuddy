@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -42,7 +43,7 @@ type CharacterMailLabel struct {
 
 // CharacterMail is an EVE mail belonging to a character.
 type CharacterMail struct {
-	Body        string
+	Body        optional.Optional[string]
 	CharacterID int32
 	From        *EveEntity
 	Labels      []*CharacterMailLabel
@@ -75,7 +76,7 @@ type CharacterMailHeader struct {
 
 // BodyPlain returns a mail's body as plain text.
 func (cm CharacterMail) BodyPlain() string {
-	return evehtml.ToPlain(cm.Body)
+	return evehtml.ToPlain(cm.Body.ValueOrZero())
 }
 
 // String returns a mail's content as string.
@@ -111,7 +112,7 @@ func (cm CharacterMail) RecipientNames() []string {
 }
 
 func (cm CharacterMail) BodyToMarkdown() string {
-	s, err := evehtml.ToMarkdown(cm.Body)
+	s, err := evehtml.ToMarkdown(cm.Body.ValueOrZero())
 	if err != nil {
 		slog.Error("Failed to convert mail body to markdown", "characterID", cm.CharacterID, "mailID", cm.MailID, "error", err)
 		return ""

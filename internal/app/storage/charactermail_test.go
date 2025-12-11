@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
@@ -26,7 +27,7 @@ func TestCharacterMail(t *testing.T) {
 		label := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
 		// when
 		arg := storage.CreateCharacterMailParams{
-			Body:         "body",
+			Body:         optional.New("body"),
 			CharacterID:  c.ID,
 			FromID:       f.ID,
 			IsRead:       false,
@@ -42,7 +43,7 @@ func TestCharacterMail(t *testing.T) {
 			m, err := st.GetCharacterMail(ctx, c.ID, 42)
 			assert.NoError(t, err)
 			assert.Equal(t, int32(42), m.MailID)
-			assert.Equal(t, "body", m.Body)
+			assert.Equal(t, "body", m.Body.ValueOrZero())
 			assert.Equal(t, f, m.From)
 			assert.Equal(t, c.ID, m.CharacterID)
 			assert.Equal(t, "subject", m.Subject)
@@ -88,12 +89,12 @@ func TestCharacterMail(t *testing.T) {
 			IsRead: false,
 		})
 		// when
-		err := st.UpdateCharacterMailSetBody(ctx, m.CharacterID, m.MailID, "alpha")
+		err := st.UpdateCharacterMailSetBody(ctx, m.CharacterID, m.MailID, optional.New("alpha"))
 		// then
 		if assert.NoError(t, err) {
 			got, err := st.GetCharacterMail(ctx, m.CharacterID, m.MailID)
 			assert.NoError(t, err)
-			assert.Equal(t, "alpha", got.Body)
+			assert.Equal(t, "alpha", got.Body.ValueOrZero())
 		}
 	})
 	t.Run("can set processed", func(t *testing.T) {

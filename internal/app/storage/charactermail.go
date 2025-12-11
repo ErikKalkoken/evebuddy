@@ -8,11 +8,12 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 type CreateCharacterMailParams struct {
-	Body         string
+	Body         optional.Optional[string]
 	CharacterID  int32
 	FromID       int32
 	LabelIDs     []int32
@@ -37,7 +38,7 @@ func (st *Storage) CreateCharacterMail(ctx context.Context, arg CreateCharacterM
 		return 0, wrapErr(err)
 	}
 	mailParams := queries.CreateMailParams{
-		Body:        arg.Body,
+		Body2:       optional.ToNullString(arg.Body),
 		CharacterID: characterID2,
 		FromID:      int64(from.ID),
 		MailID:      int64(arg.MailID),
@@ -180,7 +181,7 @@ func (st *Storage) ListCharacterMailListsOrdered(ctx context.Context, characterI
 	return ee, nil
 }
 
-func (st *Storage) UpdateCharacterMailSetBody(ctx context.Context, characterID int32, mailID int32, body string) error {
+func (st *Storage) UpdateCharacterMailSetBody(ctx context.Context, characterID int32, mailID int32, body optional.Optional[string]) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("UpdateCharacterMailBody: %d %d: %w", characterID, mailID, err)
 	}
@@ -190,7 +191,7 @@ func (st *Storage) UpdateCharacterMailSetBody(ctx context.Context, characterID i
 	err := st.qRW.UpdateCharacterMailSetBody(ctx, queries.UpdateCharacterMailSetBodyParams{
 		CharacterID: int64(characterID),
 		MailID:      int64(mailID),
-		Body:        body,
+		Body2:       optional.ToNullString(body),
 	})
 	if err != nil {
 		return wrapErr(err)
@@ -271,7 +272,7 @@ func characterMailFromDBModel(
 		rr = append(rr, eveEntityFromDBModel(r))
 	}
 	m := app.CharacterMail{
-		Body:        mail.Body,
+		Body:        optional.FromNullString(mail.Body2),
 		CharacterID: int32(mail.CharacterID),
 		From:        eveEntityFromDBModel(from),
 		IsProcessed: mail.IsProcessed,

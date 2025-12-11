@@ -568,8 +568,8 @@ func (f Factory) createCharacterMail(hasBody bool, args ...storage.CreateCharact
 			arg.CharacterID,
 		))
 	}
-	if hasBody && arg.Body == "" {
-		arg.Body = fake.Paragraph()
+	if hasBody && arg.Body.IsEmpty() {
+		arg.Body.Set(fake.Paragraph())
 	}
 	if arg.Subject == "" {
 		arg.Subject = fake.Sentence()

@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -161,7 +162,7 @@ func TestUpdateMail(t *testing.T) {
 		timestamp, _ := time.Parse("2006-01-02T15:04:05.999MST", "2015-09-30T16:07:00Z")
 		mailID := int32(7)
 		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
-			Body:         "blah blah blah",
+			Body:         optional.New("blah blah blah"),
 			CharacterID:  c.ID,
 			FromID:       e1.ID,
 			LabelIDs:     []int32{16},
@@ -235,7 +236,7 @@ func TestUpdateMail(t *testing.T) {
 		require.NoError(t, err)
 		m, err := s.GetMail(ctx, c.ID, mailID)
 		require.NoError(t, err)
-		assert.Equal(t, "blah blah blah", m.Body)
+		assert.Equal(t, "blah blah blah", m.Body.ValueOrZero())
 		assert.True(t, m.IsRead)
 		assert.Len(t, m.Labels, 1)
 		assert.Equal(t, int32(32), m.Labels[0].LabelID)
@@ -267,7 +268,7 @@ func TestUpdateMailBodies(t *testing.T) {
 			recipients = append(recipients, x)
 		}
 		data := map[string]any{
-			"body":       m.Body,
+			"body":       m.Body.MustValue(),
 			"from":       m.From,
 			"labels":     m.LabelIDs(),
 			"read":       true,
@@ -282,7 +283,7 @@ func TestUpdateMailBodies(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		mail := factory.CreateCharacterMailWithBody()
-		mail.Body = "body"
+		mail.Body.Set("body")
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/%d/", mail.CharacterID, mail.MailID),
@@ -295,7 +296,7 @@ func TestUpdateMailBodies(t *testing.T) {
 		assert.Equal(t, "body", body)
 		mail2, err := s.GetMail(ctx, mail.CharacterID, mail.MailID)
 		require.NoError(t, err)
-		assert.Equal(t, "body", mail2.Body)
+		assert.Equal(t, "body", mail2.Body.ValueOrZero())
 	})
 	t.Run("Can download missing mail bodies", func(t *testing.T) {
 		// given
@@ -304,9 +305,9 @@ func TestUpdateMailBodies(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		mail1a := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
-		mail1a.Body = "body1"
+		mail1a.Body.Set("body1")
 		mail2a := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
-		mail2a.Body = "body2"
+		mail2a.Body.Set("body2")
 		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
 		httpmock.RegisterResponder(
 			"GET",
@@ -324,10 +325,10 @@ func TestUpdateMailBodies(t *testing.T) {
 		require.False(t, aborted)
 		mail1b, err := s.GetMail(ctx, c.ID, mail1a.MailID)
 		require.NoError(t, err)
-		assert.Equal(t, "body1", mail1b.Body)
+		assert.Equal(t, "body1", mail1b.Body.ValueOrZero())
 		mail2b, err := s.GetMail(ctx, c.ID, mail2a.MailID)
 		require.NoError(t, err)
-		assert.Equal(t, "body2", mail2b.Body)
+		assert.Equal(t, "body2", mail2b.Body.ValueOrZero())
 	})
 }
 
@@ -394,6 +395,6 @@ func TestSendMail(t *testing.T) {
 		require.NoError(t, err)
 		m, err := s.GetMail(ctx, c.ID, mailID)
 		require.NoError(t, err)
-		assert.Equal(t, "body", m.Body)
+		assert.Equal(t, "body", m.Body.ValueOrZero())
 	})
 }

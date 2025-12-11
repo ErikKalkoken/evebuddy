@@ -760,7 +760,7 @@ func (a *characterMails) loadMail(mailID int32) {
 		return
 	}
 	if !a.u.IsOffline() {
-		if a.mail.Body == "" {
+		if a.mail.Body.IsEmpty() {
 			go func() {
 				a.u.sig.Do(fmt.Sprintf("charactermails-load-mail-%d-%d", characterID, mailID), func() (any, error) {
 					body, err := a.u.cs.UpdateMailBodyESI(ctx, characterID, a.mail.MailID)
@@ -775,7 +775,7 @@ func (a *characterMails) loadMail(mailID int32) {
 						if a.mail.CharacterID != characterID || a.mail.MailID != mailID {
 							return
 						}
-						a.mail.Body = body
+						a.mail.Body.Set(body)
 						a.Detail.SetBody(a.mail.BodyPlain())
 					})
 					return nil, nil

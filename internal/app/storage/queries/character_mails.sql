@@ -1,17 +1,18 @@
 -- name: CreateMail :one
 INSERT INTO
     character_mails (
-        body,
+        body_2,
         character_id,
         from_id,
         is_processed,
         is_read,
         mail_id,
         subject,
-        timestamp
+        timestamp,
+        body
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?)
+    (?, ?, ?, ?, ?, ?, ?, ?, "")
 RETURNING
     *;
 
@@ -136,7 +137,7 @@ FROM
     character_mails
 WHERE
     character_id = ?
-    AND body = "";
+    AND body_2 IS NULL;
 
 -- name: ListMailsOrdered :many
 SELECT
@@ -243,7 +244,7 @@ WHERE
 -- name: UpdateCharacterMailSetBody :exec
 UPDATE character_mails
 SET
-    body = ?
+    body_2 = ?
 WHERE
     character_id = ?
     AND mail_id = ?;

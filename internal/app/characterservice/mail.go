@@ -13,6 +13,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -162,7 +163,7 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int32, subj
 		return 0, err
 	}
 	arg2 := storage.CreateCharacterMailParams{
-		Body:         body,
+		Body:         optional.New(body),
 		CharacterID:  characterID,
 		FromID:       characterID,
 		IsRead:       true,
@@ -234,7 +235,7 @@ func (s *CharacterService) updateMailBodyESI(ctx context.Context, characterID in
 		if err != nil {
 			return "", err
 		}
-		err = s.st.UpdateCharacterMailSetBody(ctx, characterID, mailID, mail.Body)
+		err = s.st.UpdateCharacterMailSetBody(ctx, characterID, mailID, optional.New(mail.Body))
 		if err != nil {
 			return "", err
 		}
