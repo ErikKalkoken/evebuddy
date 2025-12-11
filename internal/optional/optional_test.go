@@ -7,9 +7,10 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestOptional(t *testing.T) {
+func TestOptional_New(t *testing.T) {
 	t.Run("can create new optional with value", func(t *testing.T) {
 		x := optional.New(55)
 		assert.Equal(t, 55, x.MustValue())
@@ -19,6 +20,22 @@ func TestOptional(t *testing.T) {
 		x := optional.Optional[int]{}
 		assert.True(t, x.IsEmpty())
 	})
+}
+
+func TestOptional_Clear(t *testing.T) {
+	t.Run("can clear a set value", func(t *testing.T) {
+		x := optional.New(12)
+		x.Clear()
+		assert.True(t, x.IsEmpty())
+	})
+	t.Run("can clear an empty value", func(t *testing.T) {
+		var x optional.Optional[int]
+		x.Clear()
+		assert.True(t, x.IsEmpty())
+	})
+}
+
+func TestOptional_Set(t *testing.T) {
 	t.Run("can update an empty optional", func(t *testing.T) {
 		x := optional.Optional[int]{}
 		x.Set(45)
@@ -29,11 +46,9 @@ func TestOptional(t *testing.T) {
 		x.Set(45)
 		assert.Equal(t, 45, x.MustValue())
 	})
-	t.Run("can make a value to none", func(t *testing.T) {
-		x := optional.New(12)
-		x.Clear()
-		assert.True(t, x.IsEmpty())
-	})
+}
+
+func TestOptional_Print(t *testing.T) {
 	t.Run("can print a value", func(t *testing.T) {
 		x := optional.New(12)
 		s := fmt.Sprint(x)
@@ -44,6 +59,9 @@ func TestOptional(t *testing.T) {
 		s := fmt.Sprint(x)
 		assert.Equal(t, "<empty>", s)
 	})
+}
+
+func TestOptional_ValueOrFallback(t *testing.T) {
 	t.Run("should return value when set", func(t *testing.T) {
 		x := optional.New(12)
 		got := x.ValueOrFallback(4)
@@ -54,17 +72,13 @@ func TestOptional(t *testing.T) {
 		got := x.ValueOrFallback(4)
 		assert.Equal(t, 4, got)
 	})
-	t.Run("should return value when set", func(t *testing.T) {
+}
+
+func TestOptional_MustValue(t *testing.T) {
+	t.Run("should return value when set and not panic", func(t *testing.T) {
 		x := optional.New(12)
-		got, err := x.Value()
-		if assert.NoError(t, err) {
-			assert.Equal(t, 12, got)
-		}
-	})
-	t.Run("should return error when empty", func(t *testing.T) {
-		x := optional.Optional[int]{}
-		_, err := x.Value()
-		assert.ErrorIs(t, err, optional.ErrIsEmpty)
+		got := x.MustValue()
+		assert.Equal(t, 12, got)
 	})
 	t.Run("should panic when empty", func(t *testing.T) {
 		x := optional.Optional[int]{}
@@ -72,10 +86,19 @@ func TestOptional(t *testing.T) {
 			x.MustValue()
 		})
 	})
-	t.Run("should return value when set and not panic", func(t *testing.T) {
+}
+
+func TestOptional_Value(t *testing.T) {
+	t.Run("should return value when set", func(t *testing.T) {
 		x := optional.New(12)
-		got := x.MustValue()
+		got, ok := x.Value()
+		require.True(t, ok)
 		assert.Equal(t, 12, got)
+	})
+	t.Run("should return error when empty", func(t *testing.T) {
+		x := optional.Optional[int]{}
+		_, ok := x.Value()
+		assert.False(t, ok)
 	})
 }
 
