@@ -155,7 +155,7 @@ func (u *baseUI) notifyNewCommunications(ctx context.Context, characterID int32)
 // updateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
 // and refreshes the UI accordingly.
 func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool) {
-	slog.Info("updateCharacterAndRefreshIfNeeded: started", "characterID", characterID, "forceUpdate", forceUpdate)
+	slog.Debug("updateCharacterAndRefreshIfNeeded: started", "characterID", characterID, "forceUpdate", forceUpdate)
 	if u.isOffline {
 		return
 	}
@@ -218,7 +218,6 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 		app.SectionCharacterMailLabels,
 		app.SectionCharacterMailLists,
 		app.SectionCharacterMailHeaders,
-		app.SectionCharacterMailBodies,
 	})
 
 	updateGroup([]app.CharacterSection{
@@ -271,6 +270,12 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	}
 	switch section {
 	case app.SectionCharacterMailHeaders:
+		go func() {
+			_, err := u.cs.DownloadMissingMailBodies(ctx, characterID)
+			if err != nil {
+				slog.Warn("DownloadMissingMailBodies", "characterID", characterID, "error", err)
+			}
+		}()
 		if u.settings.NotifyMailsEnabled() {
 			earliest := u.settings.NotifyMailsEarliest()
 			if err := u.cs.NotifyMails(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {

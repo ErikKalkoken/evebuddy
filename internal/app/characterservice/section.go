@@ -53,8 +53,6 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 		f = s.updateJumpClonesESI
 	case app.SectionCharacterLocation:
 		f = s.updateLocationESI
-	case app.SectionCharacterMailBodies:
-		f = s.updateMailBodiesESI
 	case app.SectionCharacterMailHeaders:
 		f = s.updateMailHeadersESI
 	case app.SectionCharacterMailLabels:

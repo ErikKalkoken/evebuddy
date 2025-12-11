@@ -150,6 +150,7 @@ func TestCharacterMail(t *testing.T) {
 		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 			CharacterID: c.ID,
 		})
+		factory.CreateCharacterMail()
 		// when
 		got, err := st.ListCharacterMailsWithoutBody(ctx, c.ID)
 		// then

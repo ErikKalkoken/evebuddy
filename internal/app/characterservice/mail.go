@@ -180,31 +180,6 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int32, subj
 	return mailID, nil
 }
 
-func (s *CharacterService) UpdateMailBody(ctx context.Context, characterID int32, mailID int32) (string, error) {
-	x, err, _ := s.sfg.Do(fmt.Sprintf("UpdateMailBody-%d-%d", characterID, mailID), func() (any, error) {
-		token, err := s.GetValidCharacterTokenWithScopes(ctx, characterID, app.SectionCharacterMailHeaders.Scopes())
-		if err != nil {
-			return "", err
-		}
-		ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
-		ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdMailMailId")
-		mail, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, characterID, mailID, nil)
-		if err != nil {
-			return "", err
-		}
-		err = s.st.UpdateCharacterMailSetBody(ctx, characterID, mailID, mail.Body)
-		if err != nil {
-			return "", err
-		}
-		return mail.Body, nil
-	})
-	if err != nil {
-		return "", nil
-	}
-	slog.Info("mail body updated", "characterID", characterID, "mailID", mailID)
-	return x.(string), nil
-}
-
 // UpdateMailRead updates an existing mail as read
 func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mailID int32, isRead bool) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("UpdateMailRead-%d-%d", characterID, mailID), func() (any, error) {
@@ -235,6 +210,79 @@ func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mail
 		return err
 	}
 	return nil
+}
+
+// UpdateMailBodyESI updates the body of a mail from ESI.
+func (s *CharacterService) UpdateMailBodyESI(ctx context.Context, characterID int32, mailID int32) (string, error) {
+	b, err := s.updateMailBodyESI(ctx, characterID, mailID)
+	if err != nil {
+		return "", err
+	}
+	slog.Info("Mail body updated", "characterID", characterID, "mailID", mailID)
+	return b, err
+}
+
+func (s *CharacterService) updateMailBodyESI(ctx context.Context, characterID int32, mailID int32) (string, error) {
+	x, err, _ := s.sfg.Do(fmt.Sprintf("UpdateMailBodyESI-%d-%d", characterID, mailID), func() (any, error) {
+		token, err := s.GetValidCharacterTokenWithScopes(ctx, characterID, app.SectionCharacterMailHeaders.Scopes())
+		if err != nil {
+			return "", err
+		}
+		ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
+		ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdMailMailId")
+		mail, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, characterID, mailID, nil)
+		if err != nil {
+			return "", err
+		}
+		err = s.st.UpdateCharacterMailSetBody(ctx, characterID, mailID, mail.Body)
+		if err != nil {
+			return "", err
+		}
+		return mail.Body, nil
+	})
+	if err != nil {
+		return "", err
+	}
+	return x.(string), nil
+}
+
+// DownloadMissingMailBodies downloads missing mail bodies for a character
+// and reports whether the function was aborted.
+// Only one instance per character will run at a time and additional calls will be aborted.
+func (s *CharacterService) DownloadMissingMailBodies(ctx context.Context, characterID int32) (bool, error) {
+	_, err, aborted := s.sig.Do(fmt.Sprintf("DownloadMissingMailBodies-%d", characterID), func() (any, error) {
+		ids, err := s.st.ListCharacterMailsWithoutBody(ctx, characterID)
+		if err != nil {
+			return nil, err
+		}
+		if ids.Size() == 0 {
+			return nil, nil
+		}
+		ids2 := slices.SortedFunc(ids.All(), func(a, b int32) int {
+			return cmp.Compare(b, a)
+		})
+		slog.Info("Started downloading mail bodies", "characterID", characterID, "count", len(ids2))
+		remaining := len(ids2)
+		for _, mailID := range ids2 {
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			default:
+				// needed for non-blocking
+			}
+			if _, err := s.updateMailBodyESI(ctx, characterID, mailID); err != nil {
+				return nil, err
+			}
+			remaining--
+			slog.Info("Mail body downloaded", "characterID", characterID, "mailID", mailID, "remaining", remaining)
+		}
+		slog.Info("Finished downloading mail bodies", "characterID", characterID, "count", len(ids2))
+		return nil, nil
+	})
+	if err != nil {
+		return false, err
+	}
+	return aborted, nil
 }
 
 var eveEntityCategory2MailRecipientType = map[app.EveEntityCategory]string{
@@ -477,35 +525,4 @@ func (s *CharacterService) updateExistingMail(ctx context.Context, characterID i
 		slog.Info("Updated mail", "characterID", characterID, "count", updated)
 	}
 	return nil
-}
-
-// updateMailBodiesESI updates the mail bodies for a character from ESI
-// and reports whether they have changed.
-func (s *CharacterService) updateMailBodiesESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
-	if arg.Section != app.SectionCharacterMailBodies {
-		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
-	}
-	err := s.recordUpdateStarted(ctx, arg)
-	if err != nil {
-		return false, err
-	}
-	ids, err := s.st.ListCharacterMailsWithoutBody(ctx, arg.CharacterID)
-	if err != nil {
-		return false, err
-	}
-	if ids.Size() == 0 {
-		s.recordUpdateSuccessful(ctx, arg, "")
-		return false, nil
-	}
-	ids2 := slices.SortedFunc(ids.All(), func(a, b int32) int {
-		return cmp.Compare(b, a) // process mails from newest to oldest
-	})
-	for _, id := range ids2 {
-		_, err := s.UpdateMailBody(ctx, arg.CharacterID, id)
-		if err != nil {
-			return false, err
-		}
-	}
-	s.recordUpdateSuccessful(ctx, arg, "")
-	return true, nil
 }

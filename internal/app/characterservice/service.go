@@ -13,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 )
 
 type AuthClient interface {
@@ -22,14 +23,15 @@ type AuthClient interface {
 
 // CharacterService provides access to all managed Eve Online characters both online and from local storage.
 type CharacterService struct {
+	authClient       AuthClient
+	concurrencyLimit int
 	ens              *evenotification.EveNotificationService
 	esiClient        *goesi.APIClient
 	eus              *eveuniverseservice.EveUniverseService
 	httpClient       *http.Client
-	concurrencyLimit int
 	scs              *statuscacheservice.StatusCacheService
 	sfg              *singleflight.Group
-	authClient       AuthClient
+	sig              *singleinstance.Group
 	st               *storage.Storage
 }
 
@@ -55,6 +57,7 @@ func New(arg Params) *CharacterService {
 		eus:              arg.EveUniverseService,
 		scs:              arg.StatusCacheService,
 		sfg:              new(singleflight.Group),
+		sig:              singleinstance.NewGroup(),
 		st:               arg.Storage,
 	}
 	if arg.HTTPClient == nil {

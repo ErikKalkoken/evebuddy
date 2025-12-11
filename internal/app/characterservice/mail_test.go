@@ -249,39 +249,85 @@ func TestUpdateMail(t *testing.T) {
 		want := set.Of[int32](16, 32)
 		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
 	})
-	t.Run("Can update mail body", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		httpmock.Reset()
-		mail := factory.CreateCharacterMail()
+}
+
+func TestUpdateMailBodies(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := characterservice.NewFake(st)
+	ctx := context.Background()
+	makeMailData := func(m *app.CharacterMail) map[string]any {
 		recipients := make([]map[string]any, 0)
-		for _, r := range mail.Recipients {
+		for _, r := range m.Recipients {
 			x := make(map[string]any)
 			x["recipient_id"] = r.ID
 			x["recipient_type"] = r.Category.String()
 			recipients = append(recipients, x)
 		}
+		data := map[string]any{
+			"body":       m.Body,
+			"from":       m.From,
+			"labels":     m.LabelIDs(),
+			"read":       true,
+			"recipients": recipients,
+			"subject":    m.Subject,
+			"timestamp":  m.Timestamp.Format(app.DateTimeFormatESI),
+		}
+		return data
+	}
+	t.Run("Can update mail body", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		mail := factory.CreateCharacterMailWithBody()
+		mail.Body = "body"
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/%d/", mail.CharacterID, mail.MailID),
-			httpmock.NewJsonResponderOrPanic(200, map[string]any{
-				"body":       "body",
-				"from":       mail.From,
-				"labels":     mail.LabelIDs(),
-				"read":       true,
-				"recipients": recipients,
-				"subject":    "test",
-				"timestamp":  mail.Timestamp.Format(app.DateTimeFormatESI),
-			}),
+			httpmock.NewJsonResponderOrPanic(200, makeMailData(mail)),
 		)
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: mail.CharacterID})
 		// when
-		body, err := s.UpdateMailBody(ctx, mail.CharacterID, mail.MailID)
+		body, err := s.UpdateMailBodyESI(ctx, mail.CharacterID, mail.MailID)
 		require.NoError(t, err)
 		assert.Equal(t, "body", body)
 		mail2, err := s.GetMail(ctx, mail.CharacterID, mail.MailID)
 		require.NoError(t, err)
 		assert.Equal(t, "body", mail2.Body)
+	})
+	t.Run("Can download missing mail bodies", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		mail1a := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
+		mail1a.Body = "body1"
+		mail2a := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
+		mail2a.Body = "body2"
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/%d/", c.ID, mail1a.MailID),
+			httpmock.NewJsonResponderOrPanic(200, makeMailData(mail1a)),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/%d/", c.ID, mail2a.MailID),
+			httpmock.NewJsonResponderOrPanic(200, makeMailData(mail2a)),
+		)
+		// when
+		aborted, err := s.DownloadMissingMailBodies(ctx, c.ID)
+		require.NoError(t, err)
+		require.False(t, aborted)
+		mail1b, err := s.GetMail(ctx, c.ID, mail1a.MailID)
+		require.NoError(t, err)
+		assert.Equal(t, "body1", mail1b.Body)
+		mail2b, err := s.GetMail(ctx, c.ID, mail2a.MailID)
+		require.NoError(t, err)
+		assert.Equal(t, "body2", mail2b.Body)
 	})
 }
 

@@ -56,7 +56,6 @@ const (
 	SectionCharacterMailLabels         CharacterSection = "mail_labels"         // char-social
 	SectionCharacterMailLists          CharacterSection = "mail_lists"          // char-social
 	SectionCharacterMailHeaders        CharacterSection = "mail_headers"        // char-social
-	SectionCharacterMailBodies         CharacterSection = "mail_bodies"         // char-social
 	SectionCharacterMarketOrders       CharacterSection = "market_orders"       // char-market
 	SectionCharacterNotifications      CharacterSection = "notifications"       // char-social
 	SectionCharacterOnline             CharacterSection = "online"              // char-location
@@ -78,7 +77,6 @@ var CharacterSections = []CharacterSection{
 	SectionCharacterIndustryJobs,
 	SectionCharacterJumpClones,
 	SectionCharacterLocation,
-	SectionCharacterMailBodies,
 	SectionCharacterMailHeaders,
 	SectionCharacterMailLabels,
 	SectionCharacterMailLists,
@@ -116,7 +114,6 @@ func (cs CharacterSection) Scopes() set.Set[string] {
 		SectionCharacterIndustryJobs:       {"esi-industry.read_character_jobs.v1", "esi-universe.read_structures.v1"},
 		SectionCharacterJumpClones:         {"esi-clones.read_clones.v1", "esi-universe.read_structures.v1"},
 		SectionCharacterLocation:           {"esi-location.read_location.v1", "esi-universe.read_structures.v1"},
-		SectionCharacterMailBodies:         {"esi-mail.read_mail.v1"},
 		SectionCharacterMailHeaders:        {"esi-mail.organize_mail.v1", "esi-mail.read_mail.v1"},
 		SectionCharacterMailLabels:         {"esi-mail.read_mail.v1"},
 		SectionCharacterMailLists:          {"esi-mail.read_mail.v1"},
@@ -156,7 +153,6 @@ func (cs CharacterSection) Timeout() time.Duration {
 		SectionCharacterMailLabels:         60 * time.Second,  // minimum 30 seconds
 		SectionCharacterMailLists:          120 * time.Second,
 		SectionCharacterMailHeaders:        3600 * time.Second, // minimum 30 seconds
-		SectionCharacterMailBodies:         60 * time.Second,   // minimum 30 seconds
 		SectionCharacterMarketOrders:       1200 * time.Second,
 		SectionCharacterNotifications:      600 * time.Second,
 		SectionCharacterOnline:             300 * time.Second, // minimum 30 seconds

@@ -697,11 +697,11 @@ func (a *characterMails) loadMail(mailID int32) {
 		if a.mail.Body == "" {
 			go func() {
 				a.u.sig.Do(fmt.Sprintf("charactermails-load-mail-%d-%d", characterID, mailID), func() (any, error) {
-					body, err := a.u.cs.UpdateMailBody(ctx, characterID, a.mail.MailID)
+					body, err := a.u.cs.UpdateMailBodyESI(ctx, characterID, a.mail.MailID)
 					if err != nil {
-						slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", a.mail.MailID, "error", err)
+						slog.Error("Failed to update mail body", "characterID", characterID, "mailID", a.mail.MailID, "error", err)
 						fyne.Do(func() {
-							a.Detail.SetBody(a.u.humanizeError(err))
+							a.Detail.SetBody("Failed to load: " + a.u.humanizeError(err))
 						})
 						return nil, nil
 					}
