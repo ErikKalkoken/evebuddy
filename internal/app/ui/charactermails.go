@@ -98,23 +98,24 @@ type characterMails struct {
 	Detail  *mailDetail
 	Headers *fyne.Container
 
-	character     *app.Character
-	folderDefault mailFolderNode
-	folders       *iwidget.Tree[mailFolderNode]
-	folderTop     *widget.Label
-	headerList    *widget.List
-	headers       []*app.CharacterMailHeader
-	headerStatus  *widget.Label
-	headerTop     *widget.Label
-	headerTop2    *ttwidget.Label
-	lastFolder    mailFolderNode
-	lastSelected  widget.ListItemID
-	mail          *app.CharacterMail
-	onSelected    func()
-	onSendMessage func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail)
-	onUpdate      func(count int)
-	toolbar       *widget.Toolbar
-	u             *baseUI
+	character        *app.Character
+	folderDefault    mailFolderNode
+	folderDownloaded *ttwidget.Label
+	folders          *iwidget.Tree[mailFolderNode]
+	folderStatus     *widget.Label
+	folderTotal      *widget.Label
+	headerList       *widget.List
+	headers          []*app.CharacterMailHeader
+	headerStatus     *widget.Label
+	headerTop        *widget.Label
+	lastFolder       mailFolderNode
+	lastSelected     widget.ListItemID
+	mail             *app.CharacterMail
+	onSelected       func()
+	onSendMessage    func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail)
+	onUpdate         func(count int)
+	toolbar          *widget.Toolbar
+	u                *baseUI
 
 	mu            sync.RWMutex
 	currentFolder optional.Optional[mailFolderNode]
@@ -122,26 +123,27 @@ type characterMails struct {
 
 func newCharacterMails(u *baseUI) *characterMails {
 	a := &characterMails{
-		Detail:       newMailDetail(u),
-		folderTop:    makeTopLabel(),
-		headers:      make([]*app.CharacterMailHeader, 0),
-		headerStatus: widget.NewLabel(""),
-		headerTop:    widget.NewLabel(""),
-		headerTop2:   ttwidget.NewLabel(""),
-		u:            u,
+		Detail:           newMailDetail(u),
+		folderDownloaded: ttwidget.NewLabel(""),
+		folderStatus:     widget.NewLabel(""),
+		folderTotal:      widget.NewLabel("?"),
+		headers:          make([]*app.CharacterMailHeader, 0),
+		headerStatus:     widget.NewLabel(""),
+		headerTop:        widget.NewLabel(""),
+		u:                u,
 	}
 	a.ExtendBaseWidget(a)
 
 	// Folders
 	a.folders = a.makeFolderTree()
-	a.folderTop.Hide()
+	a.folderStatus.Hide()
 
 	// Headers
 	a.headerStatus.Hide()
 	a.headerList = a.makeHeaderList()
 	a.Headers = container.NewBorder(
 		container.NewVBox(
-			container.NewHBox(a.headerTop, layout.NewSpacer(), a.headerTop2),
+			a.headerTop,
 			a.headerStatus,
 		),
 		nil,
@@ -185,20 +187,14 @@ func (a *characterMails) CreateRenderer() fyne.WidgetRenderer {
 	compose := widget.NewButtonWithIcon("Compose", r, f)
 	compose.Importance = widget.HighImportance
 
-	split2 := container.NewHSplit(container.NewBorder(
-		container.NewVBox(
-			layout.NewSpacer(),
-			container.NewPadded(compose),
-			a.folderTop,
-			layout.NewSpacer(),
-		),
-		nil,
+	folders := container.NewBorder(
+		container.NewVBox(container.NewPadded(compose), a.folderStatus),
+		container.NewHBox(a.folderTotal, layout.NewSpacer(), a.folderDownloaded),
 		nil,
 		nil,
 		a.folders,
-	),
-		split1,
 	)
+	split2 := container.NewHSplit(folders, split1)
 	split2.SetOffset(0.15)
 	p := theme.Padding()
 	c := container.NewBorder(
@@ -252,50 +248,53 @@ func (a *characterMails) makeFolderTree() *iwidget.Tree[mailFolderNode] {
 }
 
 func (a *characterMails) update() {
-	characterID := characterIDOrZero(a.character)
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterMailHeaders)
-	var td iwidget.TreeData[mailFolderNode]
-	folderAll := mailFolderNode{}
-	var err error
-	if hasData {
-		td2, f, err2 := a.fetchFolders(a.u.services(), characterID)
-		if err2 != nil {
-			slog.Error("Failed to build mail tree", "character", characterID, "error", err2)
-		} else {
-			td = td2
-			folderAll = f
-			err = err2
-		}
-		total, err3 := a.updateCountsInTree(a.u.services(), characterID, td)
-		if err3 != nil {
-			slog.Error("Failed to update mail counts", "character", characterID, "error", err3)
-		} else {
-			folderAll.UnreadCount = total
-		}
+	clearAll := func() {
+		fyne.Do(func() {
+			a.folders.Clear()
+			a.currentFolder = optional.Optional[mailFolderNode]{}
+			a.headers = make([]*app.CharacterMailHeader, 0)
+			a.headerList.Refresh()
+			a.headerTop.SetText("")
+			a.clearMail()
+			a.folderTotal.SetText("?")
+			a.folderDownloaded.SetText("")
+		})
 	}
-	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
-		return "", widget.MediumImportance
-	})
+	setStatus := func(s string, i widget.Importance) {
+		fyne.Do(func() {
+			a.folderStatus.Text = s
+			a.folderStatus.Importance = i
+			a.folderStatus.Refresh()
+			a.folderStatus.Show()
+		})
+	}
+	characterID := characterIDOrZero(a.character)
+	if characterID == 0 {
+		clearAll()
+		setStatus("No character", widget.LowImportance)
+		return
+	}
+	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterMailHeaders)
+	if !hasData {
+		clearAll()
+		setStatus("Data not fully loaded yet", widget.WarningImportance)
+		return
+	}
+	td, folderAll, err := a.fetchFolders(a.u.services(), characterID)
+	if err != nil {
+		slog.Error("Failed to build mail tree", "character", characterID, "error", err)
+		setStatus("Error: "+a.u.humanizeError(err), widget.DangerImportance)
+		return
+	}
+	unread, err := a.updateCountsInTree(a.u.services(), characterID, td)
+	if err != nil {
+		slog.Error("Failed to update mail counts", "character", characterID, "error", err)
+	} else {
+		folderAll.UnreadCount = unread
+	}
 	fyne.Do(func() {
-		if t != "" {
-			a.folderTop.Text, a.folderTop.Importance = t, i
-			a.folderTop.Refresh()
-			a.folderTop.Show()
-		} else {
-			a.folderTop.Hide()
-		}
-	})
-	fyne.Do(func() {
-		if !folderAll.IsEmpty() {
-			a.folderDefault = folderAll
-		}
+		a.folderStatus.Hide()
 		a.folders.Set(td)
-	})
-	fyne.Do(func() {
-		if folderAll.IsEmpty() {
-			a.clearFolder()
-			return
-		}
 		a.folders.UnselectAll()
 		a.folders.ScrollToTop()
 		a.folders.Select(folderAll.UID())
@@ -304,6 +303,42 @@ func (a *characterMails) update() {
 	if a.onUpdate != nil {
 		a.onUpdate(folderAll.UnreadCount)
 	}
+	a.updateDownloaded()
+}
+
+func (a *characterMails) updateDownloaded() {
+	var total2, downloaded, hint string
+	defer func() {
+		fyne.Do(func() {
+			a.folderTotal.SetText(total2)
+			if downloaded == "" {
+				a.folderDownloaded.Hide()
+				return
+			}
+			a.folderDownloaded.SetText(downloaded)
+			a.folderDownloaded.SetToolTip(hint)
+			a.folderDownloaded.Show()
+		})
+	}()
+	a.mu.RLock()
+	characterID := characterIDOrZero(a.character)
+	a.mu.RUnlock()
+	if characterID == 0 {
+		return
+	}
+	total, missing, err := a.u.cs.DownloadedBodiesPercentage(context.Background(), characterID)
+	if err != nil {
+		slog.Error("updateDownloaded", "error", err)
+		total2 = "ERROR"
+		return
+	}
+	p := message.NewPrinter(language.English)
+	total2 = p.Sprintf("%d total", total)
+	if total == 0 || missing == 0 {
+		return
+	}
+	downloaded = fmt.Sprintf("%.0f%% downloaded", (1-float64(missing)/float64(total))*100)
+	hint = p.Sprintf("%d missing", missing)
 }
 
 func (*characterMails) fetchFolders(s services, characterID int32) (iwidget.TreeData[mailFolderNode], mailFolderNode, error) {
@@ -534,7 +569,7 @@ func (a *characterMails) setCurrentFolder(folder mailFolderNode) {
 	a.currentFolder = optional.New(folder)
 	a.mu.Unlock()
 
-	a.headerRefresh()
+	a.headerUpdate()
 	fyne.Do(func() {
 		a.headerList.ScrollToTop()
 		a.headerList.UnselectAll()
@@ -542,18 +577,7 @@ func (a *characterMails) setCurrentFolder(folder mailFolderNode) {
 	})
 }
 
-func (a *characterMails) clearFolder() {
-	a.mu.Lock()
-	a.currentFolder = optional.Optional[mailFolderNode]{}
-	a.mu.Unlock()
-
-	a.headers = make([]*app.CharacterMailHeader, 0)
-	a.headerList.Refresh()
-	a.headerTop.SetText("")
-	a.clearMail()
-}
-
-func (a *characterMails) headerRefresh() {
+func (a *characterMails) headerUpdate() {
 	clearHeaders := func() {
 		fyne.Do(func() {
 			a.headers = make([]*app.CharacterMailHeader, 0)
@@ -570,35 +594,30 @@ func (a *characterMails) headerRefresh() {
 			a.headerStatus.Show()
 		})
 	}
-	fyne.Do(func() {
-	})
 	a.mu.RLock()
-	currentFolder := a.currentFolder
+	folder, ok := a.currentFolder.Value()
 	a.mu.RUnlock()
-	if currentFolder.IsEmpty() {
+	if !ok {
 		clearHeaders()
 		return
 	}
-
-	characterID := characterIDOrZero(a.character)
-	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterMailHeaders)
+	hasData := a.u.scs.HasCharacterSection(folder.CharacterID, app.SectionCharacterMailHeaders)
 	if !hasData {
 		setStatus("Data not yet loaded", widget.WarningImportance)
 		clearHeaders()
 		return
 	}
 
-	headers, err := a.fetchHeaders(currentFolder.MustValue(), a.u.services())
+	headers, err := a.fetchHeaders(folder, a.u.services())
 	if err != nil {
-		slog.Error("Failed to refresh mail headers UI", "characterID", characterID, "err", err)
+		slog.Error("Failed to refresh mail headers UI", "characterID", folder.CharacterID, "folder", folder.Name, "err", err)
 		setStatus("Failed to load: "+a.u.humanizeError(err), widget.DangerImportance)
 		clearHeaders()
 		return
 	}
 
-	f := currentFolder.ValueOrZero()
 	p := message.NewPrinter(language.English)
-	s := p.Sprintf("%s • %d mails", f.Name, len(headers))
+	s := p.Sprintf("%s • %d mails", folder.Name, len(headers))
 	fyne.Do(func() {
 		a.headerStatus.Hide()
 		a.headerTop.SetText(s)
@@ -606,59 +625,19 @@ func (a *characterMails) headerRefresh() {
 		a.headerList.Refresh()
 		a.clearMail()
 	})
-	a.updateDownloaded()
 }
 
-func (a *characterMails) updateDownloaded() {
-	var s, hint string
-	defer func() {
-		fyne.Do(func() {
-			if s == "" {
-				a.headerTop2.Hide()
-				return
-			}
-			a.headerTop2.SetText(s)
-			a.headerTop2.SetToolTip(hint)
-			a.headerTop2.Show()
-		})
-	}()
-	characterID := characterIDOrZero(a.character)
-	if characterID == 0 {
-		return
-	}
-	total, missing, err := a.u.cs.DownloadedBodiesPercentage(context.Background(), characterID)
-	if err != nil {
-		slog.Error("updateDownloaded", "error", err)
-		s = "ERROR"
-		return
-	}
-	if total == 0 || missing == 0 {
-		return
-	}
-	s = fmt.Sprintf("%.0f%% downloaded", (1-float64(missing)/float64(total))*100)
-	hint = fmt.Sprintf("%d / %d missing", missing, total)
-}
-
-func (*characterMails) fetchHeaders(folder mailFolderNode, s services) ([]*app.CharacterMailHeader, error) {
-	// return nil, app.ErrNotFound
+func (*characterMails) fetchHeaders(f mailFolderNode, s services) ([]*app.CharacterMailHeader, error) {
 	ctx := context.Background()
-	var headers []*app.CharacterMailHeader
+	var h []*app.CharacterMailHeader
 	var err error
-	switch folder.Category {
+	switch f.Category {
 	case nodeCategoryLabel:
-		headers, err = s.cs.ListMailHeadersForLabelOrdered(
-			ctx,
-			folder.CharacterID,
-			folder.ObjID,
-		)
+		h, err = s.cs.ListMailHeadersForLabelOrdered(ctx, f.CharacterID, f.ObjID)
 	case nodeCategoryList:
-		headers, err = s.cs.ListMailHeadersForListOrdered(
-			ctx,
-			folder.CharacterID,
-			folder.ObjID,
-		)
+		h, err = s.cs.ListMailHeadersForListOrdered(ctx, f.CharacterID, f.ObjID)
 	}
-	return headers, err
+	return h, err
 }
 
 func (a *characterMails) doOnSendMessage(mode app.SendMailMode, mail *app.CharacterMail) {
@@ -696,7 +675,7 @@ func (a *characterMails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func
 					a.u.MainWindow(),
 				)
 				m.OnSuccess = func() {
-					a.headerRefresh()
+					a.headerUpdate()
 					if onSuccess != nil {
 						onSuccess()
 					}
@@ -792,7 +771,7 @@ func (a *characterMails) loadMail(mailID int32) {
 						return nil, nil
 					}
 					a.updateUnreadCounts()
-					a.headerRefresh()
+					a.headerUpdate()
 					a.u.characterOverview.update()
 					a.u.updateMailIndicator()
 					fyne.Do(func() {
