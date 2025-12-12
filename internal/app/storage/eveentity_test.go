@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -330,7 +331,7 @@ func TestEveEntityIDs(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int32](5, 42)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("should return missing IDs and ignore IDs with zero value", func(t *testing.T) {
@@ -342,7 +343,7 @@ func TestEveEntityIDs(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int32](5)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 }

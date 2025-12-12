@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/stretchr/testify/assert"
@@ -209,7 +210,7 @@ func TestIndustryJob_FetchJobs(t *testing.T) {
 		got := set.Collect(xiter.MapSlice(xx, func(x industryJobRow) int32 {
 			return x.jobID
 		}))
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 	})
 
 	t.Run("can return all jobs for current corporation", func(t *testing.T) {
@@ -221,6 +222,6 @@ func TestIndustryJob_FetchJobs(t *testing.T) {
 		got := set.Collect(xiter.MapSlice(xx, func(x industryJobRow) int32 {
 			return x.jobID
 		}))
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 	})
 }

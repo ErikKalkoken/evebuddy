@@ -7,8 +7,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestCharacterSkillqueue(t *testing.T) {
@@ -128,10 +130,9 @@ func TestCharacterSkillqueue_RemainingTime(t *testing.T) {
 		})
 		cs := MyCS{items: []*app.CharacterSkillqueueItem{item1, item2}}
 		err := sq.Update(ctx, cs, characterID)
-		if assert.NoError(t, err) {
-			assert.WithinDuration(t, toTime(7*time.Hour), toTime(sq.RemainingTime().ValueOrZero()), 1*time.Second)
-			assert.WithinDuration(t, toTime(7*time.Hour), sq.FinishDate().ValueOrZero(), 1*time.Second)
-		}
+		require.NoError(t, err)
+		xassert.EqualDuration(t, 7*time.Hour, sq.RemainingTime().ValueOrZero(), 1*time.Second)
+		assert.WithinDuration(t, toTime(7*time.Hour), sq.FinishDate().ValueOrZero(), 1*time.Second)
 	})
 	t.Run("should ignore finished skills in caluclation", func(t *testing.T) {
 		sq := app.NewCharacterSkillqueue()
@@ -152,10 +153,9 @@ func TestCharacterSkillqueue_RemainingTime(t *testing.T) {
 		})
 		cs := MyCS{items: []*app.CharacterSkillqueueItem{item0, item1, item2}}
 		err := sq.Update(ctx, cs, characterID)
-		if assert.NoError(t, err) {
-			assert.WithinDuration(t, toTime(7*time.Hour), toTime(sq.RemainingTime().ValueOrZero()), 1*time.Second)
-			assert.WithinDuration(t, toTime(7*time.Hour), sq.FinishDate().ValueOrZero(), 1*time.Second)
-		}
+		require.NoError(t, err)
+		xassert.EqualDuration(t, 7*time.Hour, sq.RemainingTime().ValueOrZero(), 1*time.Second)
+		assert.WithinDuration(t, toTime(7*time.Hour), sq.FinishDate().ValueOrZero(), 1*time.Second)
 	})
 	t.Run("should return empty for empty skill queue", func(t *testing.T) {
 		sq := app.NewCharacterSkillqueue()
@@ -281,13 +281,13 @@ func TestCharacterSkillqueueItem_Remaining(t *testing.T) {
 		now := time.Now()
 		q := makeItem(now, now.Add(time.Hour*+3))
 		d := q.Remaining()
-		assert.InDelta(t, 3*time.Hour, d.MustValue(), 10000)
+		xassert.EqualDuration(t, 3*time.Hour, d.MustValue(), time.Second)
 	})
 	t.Run("should return correct value when start and finish in the future", func(t *testing.T) {
 		now := time.Now()
 		q := makeItem(now.Add(time.Hour*+1), now.Add(time.Hour*+3))
 		d := q.Remaining()
-		assert.InDelta(t, 2*time.Hour, d.MustValue(), 10000)
+		xassert.EqualDuration(t, 2*time.Hour, d.MustValue(), time.Second)
 	})
 	t.Run("should return 0 remaining when completed", func(t *testing.T) {
 		now := time.Now()

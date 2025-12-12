@@ -281,10 +281,12 @@ func main() {
 	// Logs requests on debug level and all HTTP error responses as warnings
 	// Has ESI specific rate limiter
 	rhc1 := retryablehttp.NewClient()
+	rateLimiter := xgoesi.NewRateLimiter()
+	rateLimiter.Transport = &xgoesi.DowntimeBlocker{}
 	rhc1.HTTPClient.Transport = &httpcache.Transport{
 		Cache:               newCacheAdapter(pc, "esicache-", 24*time.Hour),
 		MarkCachedResponses: true,
-		Transport:           xgoesi.NewRateLimiter(),
+		Transport:           rateLimiter,
 	}
 	rhc1.Logger = slog.Default()
 	rhc1.ResponseLogHook = logResponse

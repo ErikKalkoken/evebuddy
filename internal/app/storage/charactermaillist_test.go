@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestMailList(t *testing.T) {
@@ -72,7 +73,7 @@ func TestMailList(t *testing.T) {
 					got.Add(l.ID)
 				}
 				want := set.Of([]int32{e1.ID}...)
-				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+				xassert.EqualSet(t, want, got)
 			}
 			lists, err = st.ListCharacterMailListsOrdered(ctx, c2.ID)
 			if assert.NoError(t, err) {
@@ -81,7 +82,7 @@ func TestMailList(t *testing.T) {
 					got.Add(l.ID)
 				}
 				want := set.Of(e3.ID)
-				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+				xassert.EqualSet(t, want, got)
 			}
 		}
 	})

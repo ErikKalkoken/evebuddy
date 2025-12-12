@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -385,7 +386,7 @@ func TestUpdateAllEntityESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int32](42)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 			o2, err := st.GetEveEntity(ctx, 42)
 			if assert.NoError(t, err) {
 				assert.EqualValues(t, 42, o2.ID)
@@ -412,7 +413,7 @@ func TestUpdateAllEntityESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int32]()
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestEveRegion(t *testing.T) {
@@ -42,7 +43,7 @@ func TestEveRegion(t *testing.T) {
 		got, err := st.ListEveRegionIDs(ctx)
 		if assert.NoError(t, err) {
 			want := set.Of(r1.ID, r2.ID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can return missing IDs", func(t *testing.T) {
@@ -53,7 +54,7 @@ func TestEveRegion(t *testing.T) {
 		got, err := st.MissingEveRegions(ctx, set.Of(r1.ID, 99))
 		if assert.NoError(t, err) {
 			want := set.Of[int32](99)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 }

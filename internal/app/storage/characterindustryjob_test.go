@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/stretchr/testify/assert"
 )
@@ -233,7 +234,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterIndustryJob) int32 {
 				return x.JobID
 			}))
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can list jobs for all characters", func(t *testing.T) {
@@ -249,7 +250,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterIndustryJob) int32 {
 				return x.JobID
 			}))
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can get jobs with incomplete locations", func(t *testing.T) {
@@ -368,7 +369,7 @@ func TestCharacterIndustryJob(t *testing.T) {
 				return x.ID
 			}))
 			want := set.Of(j3.ID, j4.ID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can update job status", func(t *testing.T) {

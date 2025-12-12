@@ -8,6 +8,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -38,7 +39,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int32](32772)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 			o, err := st.GetEveMarketPrice(ctx, 32772)
 			if assert.NoError(t, err) {
 				assert.Equal(t, 306988.09, o.AdjustedPrice)
@@ -70,7 +71,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int32](32772)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 			o, err := st.GetEveMarketPrice(ctx, 32772)
 			if assert.NoError(t, err) {
 				assert.Equal(t, 306988.09, o.AdjustedPrice)
@@ -102,7 +103,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int32]()
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 }

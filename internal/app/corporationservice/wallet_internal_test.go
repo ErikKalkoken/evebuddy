@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/jarcoal/httpmock"
@@ -455,7 +456,7 @@ func TestListWalletJournalEntries(t *testing.T) {
 				return x.RefID
 			})...)
 			want := set.Of(e1.RefID, e2.RefID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 }
@@ -624,7 +625,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			})
 			if assert.NoError(t, err) {
 				want := set.Of[int64](1234567890)
-				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+				xassert.EqualSet(t, want, got)
 			}
 		}
 	})
@@ -723,7 +724,7 @@ func TestListWalletTransactions(t *testing.T) {
 				return x.TransactionID
 			})...)
 			want := set.Of(t1.TransactionID, t2.TransactionID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestInit(t *testing.T) {
@@ -567,7 +568,7 @@ func TestCharacter(t *testing.T) {
 		got := sc.ListCharacterIDs()
 		// then
 		want := set.Of(c1.ID, c2.ID)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 	})
 }
 
@@ -663,7 +664,7 @@ func TestCharacterSections(t *testing.T) {
 		}
 		got := set.Collect(maps.Keys(m))
 		want := set.Of(app.CharacterSections...)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 		assert.False(t, m[app.SectionCharacterAssets].IsMissing())
 		assert.True(t, m[app.SectionCharacterImplants].IsMissing())
 	})
@@ -684,7 +685,7 @@ func TestCharacterSections(t *testing.T) {
 		}
 		got := set.Collect(maps.Keys(m))
 		want := set.Of(app.CharacterSections...)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 		assert.True(t, m[app.SectionCharacterImplants].IsMissing())
 	})
 }
@@ -756,7 +757,7 @@ func TestCorporationSections(t *testing.T) {
 		}
 		got := set.Collect(maps.Keys(m))
 		want := set.Of(app.CorporationSections...)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 		assert.False(t, m[app.SectionCorporationIndustryJobs].IsMissing())
 	})
 	t.Run("list corporation sections all empty", func(t *testing.T) {
@@ -776,7 +777,7 @@ func TestCorporationSections(t *testing.T) {
 		}
 		got := set.Collect(maps.Keys(m))
 		want := set.Of(app.CorporationSections...)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 		assert.True(t, m[app.SectionCorporationIndustryJobs].IsMissing())
 	})
 }
@@ -845,7 +846,7 @@ func TestGeneralSections(t *testing.T) {
 		}
 		got := set.Collect(maps.Keys(m))
 		want := set.Of(app.GeneralSections...)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 		assert.False(t, m[app.SectionEveTypes].IsMissing())
 		assert.True(t, m[app.SectionEveCharacters].IsMissing())
 	})

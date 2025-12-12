@@ -13,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
@@ -244,7 +245,7 @@ func TestListCharacters(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(c1.ID, c2.ID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can list character corporations", func(t *testing.T) {
@@ -264,7 +265,7 @@ func TestListCharacters(t *testing.T) {
 				return x.ID
 			}))
 			want := set.Of(ec1.Corporation.ID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can list character corporation IDs", func(t *testing.T) {
@@ -280,7 +281,7 @@ func TestListCharacters(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(c1.EveCharacter.Corporation.ID, c2.EveCharacter.Corporation.ID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 }

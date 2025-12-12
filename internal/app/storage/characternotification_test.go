@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
@@ -218,7 +219,7 @@ func TestCharacterNotification(t *testing.T) {
 			return x.ID
 		}))
 		want := set.Of(n1.ID)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 	})
 	t.Run("can calculate counts", func(t *testing.T) {
 		// given
@@ -270,7 +271,7 @@ func TestCharacterNotification_List(t *testing.T) {
 			t.Fatal(err)
 		}
 		want := set.Of(e1.NotificationID, e2.NotificationID, e3.NotificationID)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 	})
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
@@ -298,7 +299,7 @@ func TestCharacterNotification_List(t *testing.T) {
 		got := set.Collect(xiter.MapSlice(ee, func(x *app.CharacterNotification) int64 {
 			return x.NotificationID
 		}))
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 	})
 	t.Run("can list unread notifs", func(t *testing.T) {
 		// given
@@ -327,7 +328,7 @@ func TestCharacterNotification_List(t *testing.T) {
 			return x.ID
 		}))
 		want := set.Of(n1.ID, n2.ID)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 	})
 }
 
@@ -365,7 +366,7 @@ func TestCharacterNotification_ListUnprocessed(t *testing.T) {
 			return x.ID
 		}))
 		want := set.Of(n1.ID)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 	})
 	t.Run("should not return stale notifs", func(t *testing.T) {
 		// given
@@ -396,7 +397,7 @@ func TestCharacterNotification_ListUnprocessed(t *testing.T) {
 			return x.ID
 		}))
 		want := set.Of(n1.ID)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 	})
 	t.Run("should not return notifs which have no title or body", func(t *testing.T) {
 		// given
@@ -432,7 +433,7 @@ func TestCharacterNotification_ListUnprocessed(t *testing.T) {
 			return x.ID
 		}))
 		want := set.Of(n1.ID)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 	})
 	t.Run("should not return duplicates of processed notifs", func(t *testing.T) {
 		// given
@@ -472,7 +473,7 @@ func TestCharacterNotification_ListUnprocessed(t *testing.T) {
 			return x.ID
 		}))
 		want := set.Of(n1.ID)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 	})
 }
 

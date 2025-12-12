@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestGetOrCreateEveCharacterESI(t *testing.T) {
@@ -384,7 +385,7 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 			t.Fatal()
 		}
 		want := set.Of[int32](characterID)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 		ec2, err := st.GetEveCharacter(ctx, characterID)
 		if !assert.NoError(t, err) {
 			t.Fatal()
@@ -423,7 +424,7 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 			t.Fatal()
 		}
 		want := set.Of[int32](characterID)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 		_, err2 := st.GetEveCharacter(ctx, characterID)
 		assert.ErrorIs(t, err2, app.ErrNotFound)
 	})

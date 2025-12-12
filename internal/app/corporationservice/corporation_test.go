@@ -9,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,7 +33,7 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 		if !assert.NoError(t, err) {
 			t.Fatal()
 		}
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 	})
 	t.Run("report false when nothing deleted", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -49,7 +50,7 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 		if !assert.NoError(t, err) {
 			t.Fatal()
 		}
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 	})
 	t.Run("report false when no corporations", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -63,7 +64,7 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 		if !assert.NoError(t, err) {
 			t.Fatal()
 		}
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 	})
 	t.Run("can add missing corporations", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -81,7 +82,7 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 			t.Fatal()
 		}
 		want := set.Of(character.EveCharacter.Corporation.ID)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 	})
 	t.Run("should not add missing NPC corp", func(t *testing.T) {
 		testutil.MustTruncateTables(db)

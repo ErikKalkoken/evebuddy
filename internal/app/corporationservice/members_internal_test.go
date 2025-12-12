@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestUpdateCorporationMembersESI(t *testing.T) {
@@ -47,7 +48,7 @@ func TestUpdateCorporationMembersESI(t *testing.T) {
 			got, err := st.ListCorporationMemberIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				want := set.Of(data...)
-				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+				xassert.EqualSet(t, want, got)
 			}
 		}
 	})

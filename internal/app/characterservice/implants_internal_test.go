@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestUpdateCharacterImplantsESI(t *testing.T) {
@@ -49,7 +50,7 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 					got.Add(o.EveType.ID)
 				}
 				want := set.Of(t1.ID, t2.ID)
-				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+				xassert.EqualSet(t, want, got)
 			}
 		}
 	})
