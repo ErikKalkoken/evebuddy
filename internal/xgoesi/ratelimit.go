@@ -28,7 +28,7 @@ var (
 )
 
 func (c contextKey) String() string {
-	return "xesi " + string(c)
+	return "xgoesi-" + string(c)
 }
 
 // NewContextWithAuth returns a new context with a characterID and an access token.
@@ -99,57 +99,68 @@ func (rl *rateLimiter) RoundTrip(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 	if !hasRateLimit {
-		rl.muRetry420.RLock()
-		retryAfter := time.Until(rl.retryAt420)
-		rl.muRetry420.RUnlock()
-		if retryAfter > 0 {
-			retryAfter = addJitter(retryAfter, time.Second)
-			slog.Warn("ESI Error limit block active. Waiting for retry", "url", req.URL, "retryAfter", retryAfter)
-			select {
-			case <-TimeAfter(retryAfter):
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			}
-		}
-		var resp *http.Response
-		for i := 0; ; i++ {
-			var shouldRetry bool
-			resp, err = transport.RoundTrip(req)
-			if err != nil {
-				return nil, err
-			}
-			if resp.StatusCode == StatusTooManyErrors {
-				retryAfter, ok := parseHeaderForErrorReset(resp)
-				if !ok {
-					slog.Warn("Failed to parse error limit header. Falling back to default.")
-				}
-				rl.muRetry420.Lock()
-				rl.retryAt420 = time.Now().Add(retryAfter)
-				rl.muRetry420.Unlock()
-				if i < rl.MaxRetries {
-					retryAfter = addJitter(retryAfter, time.Second)
-					slog.Warn("ESI Error limit exceeded. Waiting for retry", "url", req.URL, "retryAfter", retryAfter, "retryNum", i+1)
-					select {
-					case <-TimeAfter(retryAfter):
-					case <-ctx.Done():
-						return nil, ctx.Err()
-					}
-					shouldRetry = true
-				}
-			}
-			if shouldRetry {
-				continue
-			}
-			break
+		resp, err := rl.roundTripErrorRateLimit(ctx, transport, req)
+		if err != nil {
+			return nil, err
 		}
 		return resp, nil
 	}
-	if err := rl.wait(ctx, bucket, rlg); err != nil {
+	if err := rl.waitRateLimit(ctx, bucket, rlg); err != nil {
 		return nil, err
 	}
 	resp, err := transport.RoundTrip(req)
 	if err != nil {
 		return nil, err
+	}
+	return resp, nil
+}
+
+func (rl *rateLimiter) roundTripErrorRateLimit(ctx context.Context, transport http.RoundTripper, req *http.Request) (*http.Response, error) {
+	// block when 420 ban active
+	rl.muRetry420.RLock()
+	retryAfter := time.Until(rl.retryAt420)
+	rl.muRetry420.RUnlock()
+	if retryAfter > 0 {
+		retryAfter = addJitter(retryAfter, time.Second)
+		slog.Warn("ESI Error limit block active. Waiting for retry", "url", req.URL, "retryAfter", retryAfter)
+		select {
+		case <-TimeAfter(retryAfter):
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+	// make request and retry when encountering 420
+	var err error
+	var resp *http.Response
+	for i := 0; ; i++ {
+		var shouldRetry bool
+		resp, err = transport.RoundTrip(req)
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode == StatusTooManyErrors {
+			retryAfter, ok := parseHeaderForErrorReset(resp)
+			if !ok {
+				slog.Warn("Failed to parse error limit header. Falling back to default.", "url", req.URL)
+			}
+			rl.muRetry420.Lock()
+			rl.retryAt420 = time.Now().Add(retryAfter)
+			rl.muRetry420.Unlock()
+			if i < rl.MaxRetries {
+				retryAfter = addJitter(retryAfter, time.Second)
+				slog.Warn("ESI Error limit exceeded. Waiting for retry", "url", req.URL, "retryAfter", retryAfter, "retryNum", i+1)
+				select {
+				case <-TimeAfter(retryAfter):
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				}
+				shouldRetry = true
+			}
+		}
+		if shouldRetry {
+			continue
+		}
+		break
 	}
 	return resp, nil
 }
@@ -172,9 +183,9 @@ func addJitter(d time.Duration, max time.Duration) time.Duration {
 	return d + time.Duration(rand.Float64()*float64(max))
 }
 
-// wait will wait until the next request can be made to implement a steady request rate
+// waitRateLimit will wait until the next request can be made to implement a steady request rate
 // in accordance with the effective rate limit for the API operation.
-func (rl *rateLimiter) wait(ctx context.Context, bucket string, rlg rateLimitGroup) error {
+func (rl *rateLimiter) waitRateLimit(ctx context.Context, bucket string, rlg rateLimitGroup) error {
 	rl.muLimiter.Lock()
 	lim, ok := rl.limiterBuckets[bucket]
 	if !ok {
