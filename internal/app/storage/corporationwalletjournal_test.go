@@ -9,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/stretchr/testify/assert"
 )
@@ -133,7 +134,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(e1.RefID, e2.RefID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can list existing entries", func(t *testing.T) {
@@ -164,7 +165,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 				return x.RefID
 			})...)
 			want := set.Of(e1.RefID, e2.RefID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can store multiple", func(t *testing.T) {
@@ -198,7 +199,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 				})
 				if assert.NoError(t, err) {
 					want := set.Of[int64](4, 5)
-					assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+					xassert.EqualSet(t, want, got)
 				}
 			}
 		}

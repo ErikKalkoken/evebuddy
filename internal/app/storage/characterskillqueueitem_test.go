@@ -7,7 +7,9 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSkillqueueItems(t *testing.T) {
@@ -102,9 +104,8 @@ func TestSkillqueueItemsCalculateTrainingTime(t *testing.T) {
 		// when
 		v, err := st.GetCharacterTotalTrainingTime(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			assert.InDelta(t, 3*time.Hour, v, float64(time.Second*1))
-		}
+		require.NoError(t, err)
+		xassert.EqualDuration(t, 3*time.Hour, v, time.Second)
 	})
 	t.Run("should return 0 when training is not active", func(t *testing.T) {
 		// given

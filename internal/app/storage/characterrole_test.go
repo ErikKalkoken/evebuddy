@@ -9,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestCharacterRole(t *testing.T) {
@@ -44,7 +45,7 @@ func TestCharacterRole(t *testing.T) {
 		if assert.NoError(t, err) {
 			got, err := st.ListCharacterRoles(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+				xassert.EqualSet(t, want, got)
 			}
 		}
 	})
@@ -62,7 +63,7 @@ func TestCharacterRole(t *testing.T) {
 		if assert.NoError(t, err) {
 			got, err := st.ListCharacterRoles(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+				xassert.EqualSet(t, want, got)
 			}
 		}
 	})

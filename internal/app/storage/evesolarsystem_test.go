@@ -9,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestEveSolarSystem(t *testing.T) {
@@ -47,7 +48,7 @@ func TestEveSolarSystem(t *testing.T) {
 		got, err := st.ListEveSolarSystemIDs(ctx)
 		if assert.NoError(t, err) {
 			want := set.Of(o1.ID, o2.ID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can return missing IDs", func(t *testing.T) {
@@ -58,7 +59,7 @@ func TestEveSolarSystem(t *testing.T) {
 		got, err := st.MissingEveSolarSystems(ctx, set.Of(r1.ID, 99))
 		if assert.NoError(t, err) {
 			want := set.Of[int32](99)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 }

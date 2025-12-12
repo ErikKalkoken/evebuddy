@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -158,7 +159,7 @@ func TestCharacterContract(t *testing.T) {
 		if assert.NoError(t, err) {
 			got := set.Of(ids...)
 			want := set.Of([]int32{e1.ContractID, e2.ContractID, e3.ContractID}...)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can list contracts for multiple characters", func(t *testing.T) {
@@ -177,7 +178,7 @@ func TestCharacterContract(t *testing.T) {
 			got := set.Of(xslices.Map(oo, func(x *app.CharacterContract) int64 {
 				return x.ID
 			})...)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can list existing contracts for notify", func(t *testing.T) {
@@ -247,7 +248,7 @@ func TestCharacterContractBid(t *testing.T) {
 				return x.BidID
 			}))
 			want := set.Of(b1.BidID, b2.BidID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can list bid IDs", func(t *testing.T) {
@@ -261,7 +262,7 @@ func TestCharacterContractBid(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(b1.BidID, b2.BidID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 }
@@ -312,7 +313,7 @@ func TestCharacterContractItem(t *testing.T) {
 				return x.RecordID
 			}))
 			want := set.Of(i1.RecordID, i2.RecordID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 }

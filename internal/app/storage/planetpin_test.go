@@ -9,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -89,7 +90,7 @@ func TestPlanetPin(t *testing.T) {
 				got.Add(o.ID)
 			}
 			want := set.Of(x1.ID, x2.ID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can delete pins", func(t *testing.T) {

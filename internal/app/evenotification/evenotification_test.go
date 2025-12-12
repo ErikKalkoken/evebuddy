@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 type notification struct {
@@ -119,7 +120,7 @@ externalID2: 60003760`
 		got, err := en.EntityIDs(app.CorpAllBillMsg, text)
 		if assert.NoError(t, err) {
 			want := set.Of[int32](1000023, 98267621, 27, 60003760)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -376,7 +377,7 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int32](109299958)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 			ec, err := st.GetEveCorporation(ctx, 109299958)
 			if assert.NoError(t, err) {
 				assert.Equal(t, alliance, ec.Alliance)
@@ -447,7 +448,7 @@ func TestUpdateAllEveCorporationESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int32]()
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 }

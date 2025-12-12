@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,7 +40,7 @@ func TestSettings(t *testing.T) {
 		got := set.Of([]string{"alpha", "bravo"}...)
 		s.SetNotificationTypesEnabled(got)
 		want := s.NotificationTypesEnabled()
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 	})
 }
 

@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -136,7 +137,7 @@ func TestUpdateMail(t *testing.T) {
 			got.Add(l.LabelID)
 		}
 		want := set.Of(labelIDs...)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 
 		lists, err := st.ListCharacterMailListsOrdered(ctx, c2.ID)
 		require.NoError(t, err)
@@ -145,8 +146,7 @@ func TestUpdateMail(t *testing.T) {
 			got2.Add(l.ID)
 		}
 		want2 := set.Of(m2.ID)
-		assert.True(t, got2.Equal(want2), "got %q, wanted %q", got2, want2)
-
+		xassert.EqualSet(t, want2, got2)
 	})
 	t.Run("Can update existing mail", func(t *testing.T) {
 		// given
@@ -248,7 +248,7 @@ func TestUpdateMail(t *testing.T) {
 			got.Add(l.LabelID)
 		}
 		want := set.Of[int32](16, 32)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 	})
 }
 

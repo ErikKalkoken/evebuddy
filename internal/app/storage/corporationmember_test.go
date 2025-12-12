@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -77,7 +78,7 @@ func TestCorporationMember(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(e1.Character.ID, e2.Character.ID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can delete members", func(t *testing.T) {

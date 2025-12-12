@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -105,7 +106,7 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(t1.TransactionID, t2.TransactionID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can list existing entries for a corporation", func(t *testing.T) {
@@ -136,7 +137,7 @@ func TestCorporationWalletTransaction(t *testing.T) {
 				return x.TransactionID
 			})...)
 			want := set.Of(t1.TransactionID, t2.TransactionID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can delete transactions", func(t *testing.T) {

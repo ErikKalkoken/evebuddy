@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -130,7 +131,7 @@ func TestLocation(t *testing.T) {
 		got, err := st.ListEveLocationIDs(ctx)
 		if assert.NoError(t, err) {
 			want := set.Of(l1.ID, l2.ID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can list locations in solar system", func(t *testing.T) {
@@ -159,7 +160,7 @@ func TestLocation(t *testing.T) {
 		got, err := st.MissingEveLocations(ctx, set.Of[int64](42, 99))
 		if assert.NoError(t, err) {
 			want := set.Of[int64](99)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 }

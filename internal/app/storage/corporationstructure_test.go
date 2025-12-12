@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
@@ -271,7 +272,7 @@ func TestStructureService(t *testing.T) {
 			return x.Name
 		}))
 		want := set.Of(x1.Name, x2.Name)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 	})
 	t.Run("can delete services", func(t *testing.T) {
 		// given

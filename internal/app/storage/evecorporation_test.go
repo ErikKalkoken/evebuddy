@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestEveCorporation(t *testing.T) {
@@ -220,7 +221,7 @@ func TestEveCorporation(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(c1.ID, c2.ID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can update name", func(t *testing.T) {

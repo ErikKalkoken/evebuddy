@@ -13,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
@@ -171,7 +172,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterMarketOrder) int64 {
 				return x.OrderID
 			}))
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can list order IDs for a character", func(t *testing.T) {
@@ -190,7 +191,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of(o1.OrderID, o2.OrderID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can list all buy orders", func(t *testing.T) {
@@ -213,7 +214,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterMarketOrder) int64 {
 				return x.OrderID
 			}))
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can list all sell orders", func(t *testing.T) {
@@ -236,7 +237,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CharacterMarketOrder) int64 {
 				return x.OrderID
 			}))
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can delete orders for a character by ID", func(t *testing.T) {
@@ -256,7 +257,7 @@ func TestCharacterMarketOrder(t *testing.T) {
 			want := set.Of(o1.OrderID)
 			got, err := st.ListCharacterMarketOrderIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+				xassert.EqualSet(t, want, got)
 			}
 		}
 	})

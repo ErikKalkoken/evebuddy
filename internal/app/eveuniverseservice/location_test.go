@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -320,7 +321,7 @@ func TestAddMissingLocations(t *testing.T) {
 			got, err := st.ListEveLocationIDs(ctx)
 			if assert.NoError(t, err) {
 				want := set.Of[int64](2004)
-				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+				xassert.EqualSet(t, want, got)
 			}
 		}
 	})
@@ -332,7 +333,7 @@ func TestAddMissingLocations(t *testing.T) {
 			got, err := st.ListEveLocationIDs(ctx)
 			if assert.NoError(t, err) {
 				want := set.Of[int64](2004)
-				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+				xassert.EqualSet(t, want, got)
 			}
 		}
 	})
@@ -349,7 +350,7 @@ func TestAddMissingLocations(t *testing.T) {
 			got, err := st.ListEveLocationIDs(ctx)
 			if assert.NoError(t, err) {
 				want := set.Of[int64](2004, 888)
-				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+				xassert.EqualSet(t, want, got)
 			}
 		}
 	})
@@ -403,7 +404,7 @@ func TestEntityIDsFromLocationsESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int32](1000003)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("can return owner of a structure", func(t *testing.T) {
@@ -429,7 +430,7 @@ func TestEntityIDsFromLocationsESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := set.Of[int32](109299958)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 	t.Run("should return error when structure and no token", func(t *testing.T) {

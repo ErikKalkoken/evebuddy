@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestUpdateCorporationStructuresESI(t *testing.T) {
@@ -79,7 +80,7 @@ func TestUpdateCorporationStructuresESI(t *testing.T) {
 			t.Fatal()
 		}
 		want := set.Of[int64](42)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 
 		x, err := st.GetCorporationStructure(ctx, c.ID, 42)
 		if !assert.NoError(t, err) {

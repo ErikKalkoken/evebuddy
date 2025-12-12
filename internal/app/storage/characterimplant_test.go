@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
@@ -70,7 +71,7 @@ func TestCharacterImplant(t *testing.T) {
 				return x.EveType.ID
 			}))
 			want := set.Of(x1.EveType.ID, x2.EveType.ID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 
@@ -87,7 +88,7 @@ func TestCharacterImplant(t *testing.T) {
 				return x.EveType.ID
 			}))
 			want := set.Of(x1.EveType.ID, x2.EveType.ID)
-			assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+			xassert.EqualSet(t, want, got)
 		}
 	})
 }

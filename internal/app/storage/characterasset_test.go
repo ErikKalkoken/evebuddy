@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestCharacterAsset(t *testing.T) {
@@ -125,7 +126,7 @@ func TestCharacterAsset(t *testing.T) {
 			got, err := st.ListCharacterAssetIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				want := set.Of(x1.ItemID)
-				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+				xassert.EqualSet(t, want, got)
 			}
 		}
 	})

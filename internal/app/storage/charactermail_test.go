@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestCharacterMail(t *testing.T) {
@@ -135,7 +136,7 @@ func TestCharacterMail(t *testing.T) {
 		// then
 		assert.NoError(t, err)
 		want := set.Of([]int32{10, 11, 12}...)
-		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+		xassert.EqualSet(t, want, got)
 	})
 	t.Run("can list IDs for mails withtout bodies", func(t *testing.T) {
 		// given
@@ -156,7 +157,7 @@ func TestCharacterMail(t *testing.T) {
 		got, err := st.ListCharacterMailsWithoutBody(ctx, c.ID)
 		// then
 		assert.NoError(t, err)
-		assert.True(t, got.Equal(mailIDs), "got %q, wanted %q", got, mailIDs)
+		xassert.EqualSet(t, mailIDs, got)
 	})
 	t.Run("can delete existing mail", func(t *testing.T) {
 		// given
