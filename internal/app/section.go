@@ -152,7 +152,7 @@ func (cs CharacterSection) Timeout() time.Duration {
 		SectionCharacterLocation:           300 * time.Second, // minimum 5 seconds
 		SectionCharacterMailLabels:         60 * time.Second,  // minimum 30 seconds
 		SectionCharacterMailLists:          120 * time.Second,
-		SectionCharacterMailHeaders:        3600 * time.Second, // minimum 30 seconds
+		SectionCharacterMailHeaders:        60 * time.Second, // minimum 30 seconds
 		SectionCharacterMarketOrders:       1200 * time.Second,
 		SectionCharacterNotifications:      600 * time.Second,
 		SectionCharacterOnline:             300 * time.Second, // minimum 30 seconds

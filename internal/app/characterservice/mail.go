@@ -394,8 +394,8 @@ func (s *CharacterService) updateMailListsESI(ctx context.Context, arg app.Chara
 		})
 }
 
-// updateMailHeadersESI updates the mails for a character from ESI
-// and reports whether it has changed.
+// updateMailHeadersESI updates the mail headers for a character from ESI
+// and reports whether they have changed.
 func (s *CharacterService) updateMailHeadersESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterMailHeaders {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.Section, app.ErrInvalid)
