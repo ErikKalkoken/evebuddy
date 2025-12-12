@@ -56,8 +56,7 @@ type rateLimitGroup struct {
 	windowSize time.Duration
 }
 
-// rateLimiter represents a transport that ensures that the maximum rate of API requests
-// complies with the rate limit of the respective operation.
+// rateLimiter represents a transport that adds support for rate limits and error rate limits.
 //
 // For this feature to work a client must add the operationID of the request
 // and the token's character ID to the context.
@@ -75,6 +74,7 @@ type rateLimiter struct {
 
 	muLimiter      sync.Mutex
 	limiterBuckets map[string]*rate.Limiter
+	retryAtBuckets map[string]time.Time
 }
 
 var _ http.RoundTripper = (*rateLimiter)(nil)
