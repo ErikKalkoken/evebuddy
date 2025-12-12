@@ -235,9 +235,9 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		theme.MailComposeIcon(),
 		newContentPage("Mail", u.characterMails),
 	)
-	u.characterMails.onUpdate = func(count int) {
+	u.characterMails.onUpdate = func(unread, _ int) {
 		fyne.Do(func() {
-			characterNav.SetItemBadge(characterMailNav, formatBadge(count, 99))
+			characterNav.SetItemBadge(characterMailNav, formatBadge(unread, 99))
 		})
 	}
 	u.characterMails.onSendMessage = u.showSendMailWindow

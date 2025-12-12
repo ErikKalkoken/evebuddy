@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -187,13 +188,16 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		})
 	}
 
-	u.characterMails.onUpdate = func(count int) {
-		s := ""
-		if count > 0 {
-			s = fmt.Sprintf("%s unread", humanize.Comma(int64(count)))
+	u.characterMails.onUpdate = func(unread, missing int) {
+		s := make([]string, 0)
+		if unread > 0 {
+			s = append(s, fmt.Sprintf("%s unread", humanize.Comma(int64(unread))))
+		}
+		if missing > 0 {
+			s = append(s, fmt.Sprintf("%d%% downloaded", 100-missing))
 		}
 		fyne.Do(func() {
-			navItemMail.Supporting = s
+			navItemMail.Supporting = strings.Join(s, " • ")
 			characterList.Refresh()
 		})
 	}

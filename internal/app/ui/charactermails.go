@@ -98,6 +98,7 @@ type characterMails struct {
 	Detail  *mailDetail
 	Headers *fyne.Container
 
+	compose          *widget.Button
 	character        *app.Character
 	folderDefault    mailFolderNode
 	folderDownloaded *ttwidget.Label
@@ -113,12 +114,14 @@ type characterMails struct {
 	mail             *app.CharacterMail
 	onSelected       func()
 	onSendMessage    func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail)
-	onUpdate         func(count int)
+	onUpdate         func(unread, missing int)
 	toolbar          *widget.Toolbar
 	u                *baseUI
 
-	mu            sync.RWMutex
-	currentFolder optional.Optional[mailFolderNode]
+	currentFolder  optional.Optional[mailFolderNode]
+	missingPercent int
+	mu             sync.RWMutex
+	unreadCount    int
 }
 
 func newCharacterMails(u *baseUI) *characterMails {
@@ -137,6 +140,10 @@ func newCharacterMails(u *baseUI) *characterMails {
 	// Folders
 	a.folders = a.makeFolderTree()
 	a.folderStatus.Hide()
+	r, f := a.makeComposeMessageAction()
+	a.compose = widget.NewButtonWithIcon("Compose", r, f)
+	a.compose.Importance = widget.HighImportance
+	a.compose.Disable()
 
 	// Headers
 	a.headerStatus.Hide()
@@ -183,12 +190,8 @@ func (a *characterMails) CreateRenderer() fyne.WidgetRenderer {
 	)
 	split1.SetOffset(0.35)
 
-	r, f := a.makeComposeMessageAction()
-	compose := widget.NewButtonWithIcon("Compose", r, f)
-	compose.Importance = widget.HighImportance
-
 	folders := container.NewBorder(
-		container.NewVBox(container.NewPadded(compose), a.folderStatus),
+		container.NewVBox(container.NewPadded(a.compose), a.folderStatus),
 		container.NewHBox(a.folderTotal, layout.NewSpacer(), a.folderDownloaded),
 		nil,
 		nil,
@@ -272,20 +275,24 @@ func (a *characterMails) update() {
 	if characterID == 0 {
 		clearAll()
 		setStatus("No character", widget.LowImportance)
+		a.compose.Disable()
 		return
 	}
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterMailHeaders)
 	if !hasData {
 		clearAll()
 		setStatus("Data not fully loaded yet", widget.WarningImportance)
+		a.compose.Disable()
 		return
 	}
 	td, folderAll, err := a.fetchFolders(a.u.services(), characterID)
 	if err != nil {
 		slog.Error("Failed to build mail tree", "character", characterID, "error", err)
 		setStatus("Error: "+a.u.humanizeError(err), widget.DangerImportance)
+		a.compose.Disable()
 		return
 	}
+	a.compose.Enable()
 	unread, err := a.updateCountsInTree(a.u.services(), characterID, td)
 	if err != nil {
 		slog.Error("Failed to update mail counts", "character", characterID, "error", err)
@@ -300,45 +307,64 @@ func (a *characterMails) update() {
 		a.folders.Select(folderAll.UID())
 		a.setCurrentFolder(folderAll)
 	})
-	if a.onUpdate != nil {
-		a.onUpdate(folderAll.UnreadCount)
-	}
+	a.mu.Lock()
+	a.unreadCount = folderAll.UnreadCount
+	a.mu.Unlock()
 	a.updateDownloaded()
+	a.callOnUpdate()
+}
+
+func (a *characterMails) callOnUpdate() {
+	if a.onUpdate == nil {
+		return
+	}
+	a.mu.RLock()
+	unread := a.unreadCount
+	missing := a.missingPercent
+	a.mu.RUnlock()
+	a.onUpdate(unread, missing)
 }
 
 func (a *characterMails) updateDownloaded() {
 	var total2, downloaded, hint string
-	defer func() {
-		fyne.Do(func() {
-			a.folderTotal.SetText(total2)
-			if downloaded == "" {
-				a.folderDownloaded.Hide()
-				return
-			}
-			a.folderDownloaded.SetText(downloaded)
-			a.folderDownloaded.SetToolTip(hint)
-			a.folderDownloaded.Show()
-		})
+	var missingPercent int
+	func() {
+		a.mu.RLock()
+		characterID := characterIDOrZero(a.character)
+		a.mu.RUnlock()
+		if characterID == 0 {
+			return
+		}
+		total, missing, err := a.u.cs.DownloadedBodiesPercentage(context.Background(), characterID)
+		if err != nil {
+			slog.Error("updateDownloaded", "error", err)
+			total2 = "ERROR"
+			return
+		}
+		p := message.NewPrinter(language.English)
+		total2 = p.Sprintf("%d total", total)
+		if total == 0 || missing == 0 {
+			return
+		}
+
+		missingPercent = int(float64(missing) / float64(total) * 100)
+		downloaded = fmt.Sprintf("%d%% downloaded", 100-missingPercent)
+		hint = p.Sprintf("%d missing", missing)
 	}()
-	a.mu.RLock()
-	characterID := characterIDOrZero(a.character)
-	a.mu.RUnlock()
-	if characterID == 0 {
-		return
-	}
-	total, missing, err := a.u.cs.DownloadedBodiesPercentage(context.Background(), characterID)
-	if err != nil {
-		slog.Error("updateDownloaded", "error", err)
-		total2 = "ERROR"
-		return
-	}
-	p := message.NewPrinter(language.English)
-	total2 = p.Sprintf("%d total", total)
-	if total == 0 || missing == 0 {
-		return
-	}
-	downloaded = fmt.Sprintf("%.0f%% downloaded", (1-float64(missing)/float64(total))*100)
-	hint = p.Sprintf("%d missing", missing)
+	a.mu.Lock()
+	a.missingPercent = missingPercent
+	a.mu.Unlock()
+	fyne.Do(func() {
+		a.folderTotal.SetText(total2)
+		if downloaded == "" {
+			a.folderDownloaded.Hide()
+			return
+		}
+		a.folderDownloaded.SetText(downloaded)
+		a.folderDownloaded.SetToolTip(hint)
+		a.folderDownloaded.Show()
+	})
+	a.callOnUpdate()
 }
 
 func (*characterMails) fetchFolders(s services, characterID int32) (iwidget.TreeData[mailFolderNode], mailFolderNode, error) {
@@ -445,10 +471,12 @@ func (a *characterMails) updateUnreadCounts() {
 	}
 	fyne.Do(func() {
 		a.folders.Set(td)
+		a.unreadCount = unread
 	})
-	if a.onUpdate != nil {
-		a.onUpdate(unread)
-	}
+	a.mu.Lock()
+	a.unreadCount = unread
+	a.mu.Unlock()
+	a.callOnUpdate()
 }
 
 func (*characterMails) updateCountsInTree(s services, characterID int32, td iwidget.TreeData[mailFolderNode]) (int, error) {
