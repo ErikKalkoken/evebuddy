@@ -1,4 +1,4 @@
-// Package syncqueue provides queues for cuncurrent use.
+// Package syncqueue provides queues for concurrent use.
 package syncqueue
 
 import (
@@ -42,14 +42,14 @@ func (q *SyncQueue[T]) GetNoWait() (T, error) {
 // Get returns an item from the queue or waits until an item is available.
 // The operation will be aborted when the provided context is canceled.
 //
-// If there are multiple goroutines waiting it is undefined which one retrives a new item.
+// If there are multiple goroutines waiting it is undefined which one retrieves a new item.
 func (q *SyncQueue[T]) Get(ctx context.Context) (T, error) {
-	stopf := context.AfterFunc(ctx, func() {
+	stop := context.AfterFunc(ctx, func() {
 		q.cond.L.Lock()
 		defer q.cond.L.Unlock()
 		q.cond.Broadcast()
 	})
-	defer stopf()
+	defer stop()
 
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()

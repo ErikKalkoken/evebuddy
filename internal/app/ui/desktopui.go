@@ -235,9 +235,9 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		theme.MailComposeIcon(),
 		newContentPage("Mail", u.characterMails),
 	)
-	u.characterMails.onUpdate = func(count int) {
+	u.characterMails.onUpdate = func(unread, _ int) {
 		fyne.Do(func() {
-			characterNav.SetItemBadge(characterMailNav, formatBadge(count, 99))
+			characterNav.SetItemBadge(characterMailNav, formatBadge(unread, 99))
 		})
 	}
 	u.characterMails.onSendMessage = u.showSendMailWindow
@@ -665,10 +665,17 @@ func (u *DesktopUI) showSendMailWindow(c *app.Character, mode app.SendMailMode, 
 	w := u.App().NewWindow(u.makeWindowTitle(title))
 	page := newCharacterSendMail(u.baseUI, c, mode, mail)
 	page.SetWindow(w)
-	send := widget.NewButtonWithIcon("Send", theme.MailSendIcon(), func() {
-		if page.SendAction() {
-			w.Hide()
-		}
+	var send *widget.Button
+	key := fmt.Sprintf("send-%d-%s", c.ID, time.Now())
+	send = widget.NewButtonWithIcon("Send", theme.MailSendIcon(), func() {
+		u.sig.Do(key, func() (any, error) {
+			send.Disable()
+			defer send.Enable()
+			if page.SendAction() {
+				w.Hide()
+			}
+			return nil, nil
+		})
 	})
 	send.Importance = widget.HighImportance
 	p := theme.Padding()

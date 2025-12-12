@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -49,27 +50,8 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		items = append(items, characterSelector)
 		return iwidget.NewAppBar(title, body, makeAppBarIcons(items...)...)
 	}
-
 	var characterNav *iwidget.Navigator
-	mailMenu := fyne.NewMenu("")
-	communicationsMenu := fyne.NewMenu("")
-	u.characterMails.onSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
-		page := newCharacterSendMail(bu, c, mode, mail)
-		if mode != app.SendMailNew {
-			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
-		}
-		characterNav.PushAndHideNavBar(
-			iwidget.NewAppBar(
-				"Send Mail",
-				page,
-				kxwidget.NewIconButton(theme.MailSendIcon(), func() {
-					if page.SendAction() {
-						characterNav.Pop()
-					}
-				}),
-			),
-		)
-	}
+
 	const assetsTitle = "Character Assets"
 	navItemAssets := iwidget.NewListItemWithIcon(
 		assetsTitle,
@@ -81,6 +63,8 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			characterNav.Push(newCharacterAppBar(assetsTitle, container.NewHScroll(u.characterAssets.Locations)))
 		},
 	)
+
+	communicationsMenu := fyne.NewMenu("")
 	navItemCommunications := iwidget.NewListItemWithIcon(
 		"Communications",
 		theme.NewThemedResource(icons.MessageSvg),
@@ -99,6 +83,25 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			)
 		},
 	)
+
+	mailMenu := fyne.NewMenu("")
+	u.characterMails.onSendMessage = func(c *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
+		page := newCharacterSendMail(bu, c, mode, mail)
+		if mode != app.SendMailNew {
+			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
+		}
+		characterNav.PushAndHideNavBar(
+			iwidget.NewAppBar(
+				"Send Mail",
+				page,
+				kxwidget.NewIconButton(theme.MailSendIcon(), func() {
+					if page.SendAction() {
+						characterNav.Pop()
+					}
+				}),
+			),
+		)
+	}
 	navItemMail := iwidget.NewListItemWithIcon(
 		"Mail",
 		theme.MailComposeIcon(),
@@ -126,6 +129,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				))
 		},
 	)
+
 	navItemSkills := iwidget.NewListItemWithIcon(
 		"Skills",
 		theme.NewThemedResource(icons.SchoolSvg),
@@ -141,6 +145,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				))
 		},
 	)
+
 	navItemWallet := iwidget.NewListItemWithIcon(
 		"Wallet",
 		theme.NewThemedResource(icons.AttachmoneySvg),
@@ -149,6 +154,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				newCharacterAppBar("Wallet", u.characterWallet))
 		},
 	)
+
 	characterList := iwidget.NewNavList(
 		iwidget.NewListItemWithIcon(
 			"Character Sheet",
@@ -182,13 +188,16 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		})
 	}
 
-	u.characterMails.onUpdate = func(count int) {
-		s := ""
-		if count > 0 {
-			s = fmt.Sprintf("%s unread", humanize.Comma(int64(count)))
+	u.characterMails.onUpdate = func(unread, missing int) {
+		s := make([]string, 0)
+		if unread > 0 {
+			s = append(s, fmt.Sprintf("%s unread", humanize.Comma(int64(unread))))
+		}
+		if missing > 0 {
+			s = append(s, fmt.Sprintf("%d%% downloaded", 100-missing))
 		}
 		fyne.Do(func() {
-			navItemMail.Supporting = s
+			navItemMail.Supporting = strings.Join(s, " • ")
 			characterList.Refresh()
 		})
 	}

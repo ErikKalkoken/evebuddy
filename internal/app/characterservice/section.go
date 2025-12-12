@@ -53,14 +53,14 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 		f = s.updateJumpClonesESI
 	case app.SectionCharacterLocation:
 		f = s.updateLocationESI
-	case app.SectionCharacterMails:
-		f = s.updateMailsESI
-	case app.SectionCharacterMarketOrders:
-		f = s.updateMarketOrdersESI
+	case app.SectionCharacterMailHeaders:
+		f = s.updateMailHeadersESI
 	case app.SectionCharacterMailLabels:
 		f = s.updateMailLabelsESI
 	case app.SectionCharacterMailLists:
 		f = s.updateMailListsESI
+	case app.SectionCharacterMarketOrders:
+		f = s.updateMarketOrdersESI
 	case app.SectionCharacterNotifications:
 		f = s.updateNotificationsESI
 	case app.SectionCharacterOnline:
@@ -93,18 +93,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg app.Ch
 		return f(ctx, arg)
 	})
 	if err != nil {
-		errorMessage := err.Error()
-		startedAt := optional.Optional[time.Time]{}
-		o, err2 := s.st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{
-			CharacterID:  arg.CharacterID,
-			Section:      arg.Section,
-			ErrorMessage: &errorMessage,
-			StartedAt:    &startedAt,
-		})
-		if err2 != nil {
-			slog.Error("record error for failed section update: %s", "error", err2)
-		}
-		s.scs.SetCharacterSection(o)
+		s.recordUpdateFailed(ctx, arg, err)
 		return false, fmt.Errorf("update character section from ESI for %+v: %w", arg, err)
 	}
 	hasChanged := x.(bool)
@@ -126,22 +115,13 @@ func (s *CharacterService) updateSectionIfChanged(
 	fetch func(ctx context.Context, characterID int32) (any, error),
 	update func(ctx context.Context, characterID int32, data any) error,
 ) (bool, error) {
-	startedAt := optional.New(time.Now())
-	o, err := s.st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{
-		CharacterID: arg.CharacterID,
-		Section:     arg.Section,
-		StartedAt:   &startedAt,
-	})
+	err := s.recordUpdateStarted(ctx, arg)
 	if err != nil {
 		return false, err
 	}
-	s.scs.SetCharacterSection(o)
-	token, err := s.GetValidCharacterToken(ctx, arg.CharacterID)
+	token, err := s.GetValidCharacterTokenWithScopes(ctx, arg.CharacterID, arg.Section.Scopes())
 	if err != nil {
 		return false, err
-	}
-	if !token.HasScopes(arg.Section.Scopes()) {
-		return false, app.ErrNotFound
 	}
 	ctx = xgoesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
 	data, err := fetch(ctx, arg.CharacterID)
@@ -172,12 +152,37 @@ func (s *CharacterService) updateSectionIfChanged(
 			return false, err
 		}
 	}
+	if err := s.recordUpdateSuccessful(ctx, arg, hash); err != nil {
+		return false, err
+	}
+	slog.Debug(
+		"Has section changed",
+		"characterID", arg.CharacterID,
+		"section", arg.Section,
+		"needsUpdate", needsUpdate,
+	)
+	return needsUpdate, nil
+}
 
-	// record successful completion
+func (s *CharacterService) recordUpdateStarted(ctx context.Context, arg app.CharacterSectionUpdateParams) error {
+	startedAt := optional.New(time.Now())
+	o, err := s.st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{
+		CharacterID: arg.CharacterID,
+		Section:     arg.Section,
+		StartedAt:   &startedAt,
+	})
+	if err != nil {
+		return err
+	}
+	s.scs.SetCharacterSection(o)
+	return nil
+}
+
+func (s *CharacterService) recordUpdateSuccessful(ctx context.Context, arg app.CharacterSectionUpdateParams, hash string) error {
 	completedAt := storage.NewNullTimeFromTime(time.Now())
 	errorMessage := ""
 	startedAt2 := optional.Optional[time.Time]{}
-	o, err = s.st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{
+	o, err := s.st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{
 		CharacterID:  arg.CharacterID,
 		CompletedAt:  &completedAt,
 		ContentHash:  &hash,
@@ -186,16 +191,26 @@ func (s *CharacterService) updateSectionIfChanged(
 		StartedAt:    &startedAt2,
 	})
 	if err != nil {
-		return false, err
+		return err
 	}
 	s.scs.SetCharacterSection(o)
-	slog.Debug(
-		"Has section changed",
-		"characterID", arg.CharacterID,
-		"section", arg.Section,
-		"needsUpdate", needsUpdate,
-	)
-	return needsUpdate, nil
+	return nil
+}
+
+func (s *CharacterService) recordUpdateFailed(ctx context.Context, arg app.CharacterSectionUpdateParams, err error) {
+	errorMessage := err.Error()
+	startedAt := optional.Optional[time.Time]{}
+	o, err2 := s.st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{
+		CharacterID:  arg.CharacterID,
+		Section:      arg.Section,
+		ErrorMessage: &errorMessage,
+		StartedAt:    &startedAt,
+	})
+	if err2 != nil {
+		slog.Error("record error for failed section update: %s", "characterID", arg.CharacterID, "error", err2)
+	} else {
+		s.scs.SetCharacterSection(o)
+	}
 }
 
 func (s *CharacterService) hasSectionChanged(ctx context.Context, arg app.CharacterSectionUpdateParams, hash string) (bool, error) {

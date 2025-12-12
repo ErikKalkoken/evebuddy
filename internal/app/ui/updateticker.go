@@ -3,7 +3,6 @@ package ui
 import (
 	"context"
 	"log/slog"
-	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -31,9 +30,7 @@ func (u *baseUI) updateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate 
 		return
 	}
 	for _, s := range app.GeneralSections {
-		go func() {
-			u.updateGeneralSectionAndRefreshIfNeeded(ctx, s, forceUpdate)
-		}()
+		u.updateGeneralSectionAndRefreshIfNeeded(ctx, s, forceUpdate)
 	}
 }
 
@@ -158,6 +155,7 @@ func (u *baseUI) notifyNewCommunications(ctx context.Context, characterID int32)
 // updateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
 // and refreshes the UI accordingly.
 func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool) {
+	slog.Debug("updateCharacterAndRefreshIfNeeded: started", "characterID", characterID, "forceUpdate", forceUpdate)
 	if u.isOffline {
 		return
 	}
@@ -173,7 +171,7 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 		if u.settings.NotifyMailsEnabled() {
 			sections.Add(app.SectionCharacterMailLabels)
 			sections.Add(app.SectionCharacterMailLists)
-			sections.Add(app.SectionCharacterMails)
+			sections.Add(app.SectionCharacterMailHeaders)
 		}
 		if u.settings.NotifyPIEnabled() {
 			sections.Add(app.SectionCharacterPlanets)
@@ -198,9 +196,13 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	// updateGroup starts a sequential update of group and removes them from sections.
 	// It skips all updates for group if one of the group's sections has not been registered for update.
 	updateGroup := func(group []app.CharacterSection) {
-		if sections.ContainsAll(slices.Values(group)) {
+		mySections := set.Intersection(sections, set.Of(group...))
+		if mySections.Size() > 0 {
 			go func() {
 				for _, s := range group {
+					if !mySections.Contains(s) {
+						continue
+					}
 					u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
 				}
 			}()
@@ -215,7 +217,7 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	updateGroup([]app.CharacterSection{
 		app.SectionCharacterMailLabels,
 		app.SectionCharacterMailLists,
-		app.SectionCharacterMails,
+		app.SectionCharacterMailHeaders,
 	})
 
 	updateGroup([]app.CharacterSection{
@@ -267,7 +269,13 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		})
 	}
 	switch section {
-	case app.SectionCharacterMails:
+	case app.SectionCharacterMailHeaders:
+		go func() {
+			_, err := u.cs.DownloadMissingMailBodies(ctx, characterID)
+			if err != nil {
+				slog.Warn("DownloadMissingMailBodies", "characterID", characterID, "error", err)
+			}
+		}()
 		if u.settings.NotifyMailsEnabled() {
 			earliest := u.settings.NotifyMailsEarliest()
 			if err := u.cs.NotifyMails(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {

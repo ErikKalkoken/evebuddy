@@ -163,6 +163,7 @@ type CharacterMail struct {
 	MailID      int64
 	Subject     string
 	Timestamp   time.Time
+	Body2       sql.NullString
 }
 
 type CharacterMailLabel struct {

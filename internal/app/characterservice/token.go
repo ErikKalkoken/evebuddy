@@ -88,14 +88,25 @@ func (s *CharacterService) CharacterTokenForCorporation(ctx context.Context, cor
 // GetValidCharacterToken returns a valid token for a character.
 // Will automatically try to refresh a token if needed.
 func (s *CharacterService) GetValidCharacterToken(ctx context.Context, characterID int32) (*app.CharacterToken, error) {
-	t, err := s.st.GetCharacterToken(ctx, characterID)
+	token, err := s.st.GetCharacterToken(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.ensureValidCharacterToken(ctx, t); err != nil {
+	if err := s.ensureValidCharacterToken(ctx, token); err != nil {
 		return nil, err
 	}
-	return t, nil
+	return token, nil
+}
+
+func (s *CharacterService) GetValidCharacterTokenWithScopes(ctx context.Context, characterID int32, scopes set.Set[string]) (*app.CharacterToken, error) {
+	token, err := s.GetValidCharacterToken(ctx, characterID)
+	if err != nil {
+		return nil, err
+	}
+	if !token.HasScopes(scopes) {
+		return nil, app.ErrNotFound
+	}
+	return token, nil
 }
 
 // ensureValidCharacterToken will automatically try to refresh a token that is already or about to become invalid.

@@ -7,27 +7,31 @@ package queries
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
 
 const createMail = `-- name: CreateMail :one
 INSERT INTO
     character_mails (
-        body,
+        body_2,
         character_id,
         from_id,
         is_processed,
         is_read,
         mail_id,
         subject,
-        timestamp
+        timestamp,
+        body
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, body, character_id, from_id, is_processed, is_read, mail_id, subject, timestamp
+    (?, ?, ?, ?, ?, ?, ?, ?, "")
+RETURNING
+    id, body, character_id, from_id, is_processed, is_read, mail_id, subject, timestamp, body_2
 `
 
 type CreateMailParams struct {
-	Body        string
+	Body2       sql.NullString
 	CharacterID int64
 	FromID      int64
 	IsProcessed bool
@@ -39,7 +43,7 @@ type CreateMailParams struct {
 
 func (q *Queries) CreateMail(ctx context.Context, arg CreateMailParams) (CharacterMail, error) {
 	row := q.db.QueryRowContext(ctx, createMail,
-		arg.Body,
+		arg.Body2,
 		arg.CharacterID,
 		arg.FromID,
 		arg.IsProcessed,
@@ -59,16 +63,14 @@ func (q *Queries) CreateMail(ctx context.Context, arg CreateMailParams) (Charact
 		&i.MailID,
 		&i.Subject,
 		&i.Timestamp,
+		&i.Body2,
 	)
 	return i, err
 }
 
 const createMailCharacterMailLabel = `-- name: CreateMailCharacterMailLabel :exec
 INSERT INTO
-    character_mail_mail_labels (
-        character_mail_label_id,
-        character_mail_id
-    )
+    character_mail_mail_labels (character_mail_label_id, character_mail_id)
 VALUES
     (?, ?)
 `
@@ -101,8 +103,7 @@ func (q *Queries) CreateMailRecipient(ctx context.Context, arg CreateMailRecipie
 }
 
 const deleteMail = `-- name: DeleteMail :exec
-DELETE FROM
-    character_mails
+DELETE FROM character_mails
 WHERE
     character_mails.character_id = ?
     AND character_mails.mail_id = ?
@@ -119,8 +120,7 @@ func (q *Queries) DeleteMail(ctx context.Context, arg DeleteMailParams) error {
 }
 
 const deleteMailCharacterMailLabels = `-- name: DeleteMailCharacterMailLabels :exec
-DELETE FROM
-    character_mail_mail_labels
+DELETE FROM character_mail_mail_labels
 WHERE
     character_mail_mail_labels.character_mail_id = ?
 `
@@ -275,7 +275,7 @@ func (q *Queries) GetCharacterMailListUnreadCounts(ctx context.Context, characte
 
 const getMail = `-- name: GetMail :one
 SELECT
-    cm.id, cm.body, cm.character_id, cm.from_id, cm.is_processed, cm.is_read, cm.mail_id, cm.subject, cm.timestamp,
+    cm.id, cm.body, cm.character_id, cm.from_id, cm.is_processed, cm.is_read, cm.mail_id, cm.subject, cm.timestamp, cm.body_2,
     ee.id, ee.category, ee.name
 FROM
     character_mails cm
@@ -308,6 +308,7 @@ func (q *Queries) GetMail(ctx context.Context, arg GetMailParams) (GetMailRow, e
 		&i.CharacterMail.MailID,
 		&i.CharacterMail.Subject,
 		&i.CharacterMail.Timestamp,
+		&i.CharacterMail.Body2,
 		&i.EveEntity.ID,
 		&i.EveEntity.Category,
 		&i.EveEntity.Name,
@@ -415,7 +416,7 @@ func (q *Queries) ListMailIDs(ctx context.Context, characterID int64) ([]int64, 
 
 const listMailsForLabelOrdered = `-- name: ListMailsForLabelOrdered :many
 SELECT
-    cm.id, cm.body, cm.character_id, cm.from_id, cm.is_processed, cm.is_read, cm.mail_id, cm.subject, cm.timestamp,
+    cm.id, cm.body, cm.character_id, cm.from_id, cm.is_processed, cm.is_read, cm.mail_id, cm.subject, cm.timestamp, cm.body_2,
     ee.id, ee.category, ee.name
 FROM
     character_mails cm
@@ -458,6 +459,7 @@ func (q *Queries) ListMailsForLabelOrdered(ctx context.Context, arg ListMailsFor
 			&i.CharacterMail.MailID,
 			&i.CharacterMail.Subject,
 			&i.CharacterMail.Timestamp,
+			&i.CharacterMail.Body2,
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
@@ -477,7 +479,7 @@ func (q *Queries) ListMailsForLabelOrdered(ctx context.Context, arg ListMailsFor
 
 const listMailsForListOrdered = `-- name: ListMailsForListOrdered :many
 SELECT
-    cm.id, cm.body, cm.character_id, cm.from_id, cm.is_processed, cm.is_read, cm.mail_id, cm.subject, cm.timestamp,
+    cm.id, cm.body, cm.character_id, cm.from_id, cm.is_processed, cm.is_read, cm.mail_id, cm.subject, cm.timestamp, cm.body_2,
     ee.id, ee.category, ee.name
 FROM
     character_mails cm
@@ -519,6 +521,7 @@ func (q *Queries) ListMailsForListOrdered(ctx context.Context, arg ListMailsForL
 			&i.CharacterMail.MailID,
 			&i.CharacterMail.Subject,
 			&i.CharacterMail.Timestamp,
+			&i.CharacterMail.Body2,
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
@@ -538,7 +541,7 @@ func (q *Queries) ListMailsForListOrdered(ctx context.Context, arg ListMailsForL
 
 const listMailsNoLabelOrdered = `-- name: ListMailsNoLabelOrdered :many
 SELECT
-    cm.id, cm.body, cm.character_id, cm.from_id, cm.is_processed, cm.is_read, cm.mail_id, cm.subject, cm.timestamp,
+    cm.id, cm.body, cm.character_id, cm.from_id, cm.is_processed, cm.is_read, cm.mail_id, cm.subject, cm.timestamp, cm.body_2,
     ee.id, ee.category, ee.name
 FROM
     character_mails cm
@@ -575,6 +578,7 @@ func (q *Queries) ListMailsNoLabelOrdered(ctx context.Context, characterID int64
 			&i.CharacterMail.MailID,
 			&i.CharacterMail.Subject,
 			&i.CharacterMail.Timestamp,
+			&i.CharacterMail.Body2,
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
@@ -594,7 +598,7 @@ func (q *Queries) ListMailsNoLabelOrdered(ctx context.Context, characterID int64
 
 const listMailsOrdered = `-- name: ListMailsOrdered :many
 SELECT
-    cm.id, cm.body, cm.character_id, cm.from_id, cm.is_processed, cm.is_read, cm.mail_id, cm.subject, cm.timestamp,
+    cm.id, cm.body, cm.character_id, cm.from_id, cm.is_processed, cm.is_read, cm.mail_id, cm.subject, cm.timestamp, cm.body_2,
     ee.id, ee.category, ee.name
 FROM
     character_mails cm
@@ -629,6 +633,7 @@ func (q *Queries) ListMailsOrdered(ctx context.Context, characterID int64) ([]Li
 			&i.CharacterMail.MailID,
 			&i.CharacterMail.Subject,
 			&i.CharacterMail.Timestamp,
+			&i.CharacterMail.Body2,
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
@@ -648,7 +653,7 @@ func (q *Queries) ListMailsOrdered(ctx context.Context, characterID int64) ([]Li
 
 const listMailsUnprocessed = `-- name: ListMailsUnprocessed :many
 SELECT
-    cm.id, cm.body, cm.character_id, cm.from_id, cm.is_processed, cm.is_read, cm.mail_id, cm.subject, cm.timestamp,
+    cm.id, cm.body, cm.character_id, cm.from_id, cm.is_processed, cm.is_read, cm.mail_id, cm.subject, cm.timestamp, cm.body_2,
     ee.id, ee.category, ee.name
 FROM
     character_mails cm
@@ -697,6 +702,7 @@ func (q *Queries) ListMailsUnprocessed(ctx context.Context, arg ListMailsUnproce
 			&i.CharacterMail.MailID,
 			&i.CharacterMail.Subject,
 			&i.CharacterMail.Timestamp,
+			&i.CharacterMail.Body2,
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
@@ -716,7 +722,7 @@ func (q *Queries) ListMailsUnprocessed(ctx context.Context, arg ListMailsUnproce
 
 const listMailsUnreadOrdered = `-- name: ListMailsUnreadOrdered :many
 SELECT
-    cm.id, cm.body, cm.character_id, cm.from_id, cm.is_processed, cm.is_read, cm.mail_id, cm.subject, cm.timestamp,
+    cm.id, cm.body, cm.character_id, cm.from_id, cm.is_processed, cm.is_read, cm.mail_id, cm.subject, cm.timestamp, cm.body_2,
     ee.id, ee.category, ee.name
 FROM
     character_mails cm
@@ -752,6 +758,7 @@ func (q *Queries) ListMailsUnreadOrdered(ctx context.Context, characterID int64)
 			&i.CharacterMail.MailID,
 			&i.CharacterMail.Subject,
 			&i.CharacterMail.Timestamp,
+			&i.CharacterMail.Body2,
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
@@ -769,32 +776,83 @@ func (q *Queries) ListMailsUnreadOrdered(ctx context.Context, characterID int64)
 	return items, nil
 }
 
-const updateCharacterMailIsRead = `-- name: UpdateCharacterMailIsRead :exec
-UPDATE
+const listMailsWithoutBody = `-- name: ListMailsWithoutBody :many
+SELECT
+    mail_id
+FROM
     character_mails
-SET
-    is_read = ?2
 WHERE
-    id = ?1
+    character_id = ?
+    AND body_2 IS NULL
+`
+
+func (q *Queries) ListMailsWithoutBody(ctx context.Context, characterID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listMailsWithoutBody, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var mail_id int64
+		if err := rows.Scan(&mail_id); err != nil {
+			return nil, err
+		}
+		items = append(items, mail_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateCharacterMailIsRead = `-- name: UpdateCharacterMailIsRead :exec
+UPDATE character_mails
+SET
+    is_read = ?
+WHERE
+    id = ?
 `
 
 type UpdateCharacterMailIsReadParams struct {
-	ID     int64
 	IsRead bool
+	ID     int64
 }
 
 func (q *Queries) UpdateCharacterMailIsRead(ctx context.Context, arg UpdateCharacterMailIsReadParams) error {
-	_, err := q.db.ExecContext(ctx, updateCharacterMailIsRead, arg.ID, arg.IsRead)
+	_, err := q.db.ExecContext(ctx, updateCharacterMailIsRead, arg.IsRead, arg.ID)
+	return err
+}
+
+const updateCharacterMailSetBody = `-- name: UpdateCharacterMailSetBody :exec
+UPDATE character_mails
+SET
+    body_2 = ?
+WHERE
+    character_id = ?
+    AND mail_id = ?
+`
+
+type UpdateCharacterMailSetBodyParams struct {
+	Body2       sql.NullString
+	CharacterID int64
+	MailID      int64
+}
+
+func (q *Queries) UpdateCharacterMailSetBody(ctx context.Context, arg UpdateCharacterMailSetBodyParams) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterMailSetBody, arg.Body2, arg.CharacterID, arg.MailID)
 	return err
 }
 
 const updateCharacterMailSetProcessed = `-- name: UpdateCharacterMailSetProcessed :exec
-UPDATE
-    character_mails
+UPDATE character_mails
 SET
     is_processed = TRUE
 WHERE
-    id = ?1
+    id = ?
 `
 
 func (q *Queries) UpdateCharacterMailSetProcessed(ctx context.Context, id int64) error {

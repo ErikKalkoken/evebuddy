@@ -10,9 +10,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUpdateMail(t *testing.T) {
@@ -26,13 +28,13 @@ func TestUpdateMail(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		c1 := factory.CreateCharacterFull()
+		c1 := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c1.ID})
 		e1 := factory.CreateEveEntityCharacter()
 		e2 := factory.CreateEveEntityCharacter()
 		m1 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList})
 		factory.CreateCharacterMailList(c1.ID) // obsolete
-		c2 := factory.CreateCharacterFull()
+		c2 := factory.CreateCharacter()
 		m2 := factory.CreateCharacterMailList(c2.ID) // not obsolete
 		recipients := []map[string]any{
 			{
@@ -44,121 +46,113 @@ func TestUpdateMail(t *testing.T) {
 				"recipient_type": "mail_list",
 			},
 		}
-		mailID := 7
+		mailID := int32(7)
 		labelIDs := []int32{16, 32}
 		timestamp := "2015-09-30T16:07:00Z"
 		subject := "test"
-		dataHeader := []map[string]any{
-			{
-				"from":       e1.ID,
-				"is_read":    true,
-				"labels":     labelIDs,
-				"mail_id":    mailID,
-				"recipients": recipients,
-				"subject":    subject,
-				"timestamp":  timestamp,
-			},
-		}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/", c1.ID),
-			httpmock.NewJsonResponderOrPanic(200, dataHeader),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"from":       e1.ID,
+					"is_read":    true,
+					"labels":     labelIDs,
+					"mail_id":    mailID,
+					"recipients": recipients,
+					"subject":    subject,
+					"timestamp":  timestamp,
+				},
+			}),
 		)
-		dataMail := map[string]any{
-			"body":       "blah blah blah",
-			"from":       e1.ID,
-			"labels":     labelIDs,
-			"read":       true,
-			"recipients": recipients,
-			"subject":    "test",
-			"timestamp":  timestamp,
-		}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/%d/", c1.ID, mailID),
-			httpmock.NewJsonResponderOrPanic(200, dataMail),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"body":       "blah blah blah",
+				"from":       e1.ID,
+				"labels":     labelIDs,
+				"read":       true,
+				"recipients": recipients,
+				"subject":    "test",
+				"timestamp":  timestamp,
+			}),
 		)
-		dataMailList := []map[string]any{
-			{
-				"mailing_list_id": m1.ID,
-				"name":            "test_mailing_list",
-			},
-		}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/lists/", c1.ID),
-			httpmock.NewJsonResponderOrPanic(200, dataMailList),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"mailing_list_id": m1.ID,
+					"name":            "test_mailing_list",
+				},
+			}),
 		)
-		dataMailLabel := map[string]any{
-			"labels": []map[string]any{
-				{
-					"color":        "#660066",
-					"label_id":     16,
-					"name":         "PINK",
-					"unread_count": 4,
-				},
-				{
-					"color":        "#FFFFFF",
-					"label_id":     32,
-					"name":         "WHITE",
-					"unread_count": 0,
-				},
-			},
-			"total_unread_count": 4,
-		}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/mail/labels/", c1.ID),
-			httpmock.NewJsonResponderOrPanic(200, dataMailLabel),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"labels": []map[string]any{
+					{
+						"color":        "#660066",
+						"label_id":     16,
+						"name":         "PINK",
+						"unread_count": 4,
+					},
+					{
+						"color":        "#FFFFFF",
+						"label_id":     32,
+						"name":         "WHITE",
+						"unread_count": 0,
+					},
+				},
+				"total_unread_count": 4,
+			}),
 		)
 		// when
 		_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c1.ID,
 			Section:     app.SectionCharacterMailLabels,
 		})
-		if assert.NoError(t, err) {
-			_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
-				CharacterID: c1.ID,
-				Section:     app.SectionCharacterMailLists,
-			})
-			if assert.NoError(t, err) {
-				_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
-					CharacterID: c1.ID,
-					Section:     app.SectionCharacterMails,
-				})
-				// then
-				if assert.NoError(t, err) {
-					m, err := s.GetMail(ctx, c1.ID, int32(mailID))
-					if assert.NoError(t, err) {
-						assert.Equal(t, "blah blah blah", m.Body)
-					}
-					labels, err := st.ListCharacterMailLabelsOrdered(ctx, c1.ID)
-					if assert.NoError(t, err) {
-						got := set.Of[int32]()
-						for _, l := range labels {
-							got.Add(l.LabelID)
-						}
-						want := set.Of(labelIDs...)
-						assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
-					}
-					lists, err := st.ListCharacterMailListsOrdered(ctx, c2.ID)
-					if assert.NoError(t, err) {
-						got := set.Of[int32]()
-						for _, l := range lists {
-							got.Add(l.ID)
-						}
-						want := set.Of(m2.ID)
-						assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
-					}
-				}
-			}
+		require.NoError(t, err)
+		_, err = s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c1.ID,
+			Section:     app.SectionCharacterMailLists,
+		})
+		require.NoError(t, err)
+		_, err = s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
+			CharacterID: c1.ID,
+			Section:     app.SectionCharacterMailHeaders,
+		})
+		// then
+		require.NoError(t, err)
+		m, err := s.GetMail(ctx, c1.ID, mailID)
+		require.NoError(t, err)
+		assert.Equal(t, subject, m.Subject)
+		labels, err := st.ListCharacterMailLabelsOrdered(ctx, c1.ID)
+		require.NoError(t, err)
+		got := set.Of[int32]()
+		for _, l := range labels {
+			got.Add(l.LabelID)
 		}
+		want := set.Of(labelIDs...)
+		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+
+		lists, err := st.ListCharacterMailListsOrdered(ctx, c2.ID)
+		require.NoError(t, err)
+		got2 := set.Of[int32]()
+		for _, l := range lists {
+			got2.Add(l.ID)
+		}
+		want2 := set.Of(m2.ID)
+		assert.True(t, got2.Equal(want2), "got %q, wanted %q", got2, want2)
+
 	})
 	t.Run("Can update existing mail", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		e1 := factory.CreateEveEntityCharacter()
 		e2 := factory.CreateEveEntityCharacter()
@@ -167,8 +161,8 @@ func TestUpdateMail(t *testing.T) {
 		m1 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList})
 		timestamp, _ := time.Parse("2006-01-02T15:04:05.999MST", "2015-09-30T16:07:00Z")
 		mailID := int32(7)
-		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
-			Body:         "blah blah blah",
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			Body:         optional.New("blah blah blah"),
 			CharacterID:  c.ID,
 			FromID:       e1.ID,
 			LabelIDs:     []int32{16},
@@ -178,91 +172,163 @@ func TestUpdateMail(t *testing.T) {
 			Subject:      "test",
 			Timestamp:    timestamp,
 		})
-
-		dataMailList := []map[string]any{
-			{
-				"mailing_list_id": m1.ID,
-				"name":            "test_mailing_list",
-			},
-		}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/lists/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, dataMailList),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"mailing_list_id": m1.ID,
+					"name":            "test_mailing_list",
+				},
+			}),
 		)
-		dataMailLabel := map[string]any{
-			"labels": []map[string]any{
-				{
-					"color":        "#660066",
-					"label_id":     16,
-					"name":         "PINK",
-					"unread_count": 4,
-				},
-				{
-					"color":        "#FFFFFF",
-					"label_id":     32,
-					"name":         "WHITE",
-					"unread_count": 0,
-				},
-			},
-			"total_unread_count": 4,
-		}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/mail/labels/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, dataMailLabel),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"labels": []map[string]any{
+					{
+						"color":        "#660066",
+						"label_id":     16,
+						"name":         "PINK",
+						"unread_count": 4,
+					},
+					{
+						"color":        "#FFFFFF",
+						"label_id":     32,
+						"name":         "WHITE",
+						"unread_count": 0,
+					},
+				},
+				"total_unread_count": 4,
+			}),
 		)
-		recipients := []map[string]any{
-			{
-				"recipient_id":   e2.ID,
-				"recipient_type": "character",
-			},
-			{
-				"recipient_id":   m1.ID,
-				"recipient_type": "mail_list",
-			},
-		}
-		dataHeader := []map[string]any{
-			{
-				"from":       e1.ID,
-				"is_read":    true,
-				"labels":     []int{32},
-				"mail_id":    mailID,
-				"recipients": recipients,
-				"subject":    "test",
-				"timestamp":  "2015-09-30T16:07:00Z",
-			},
-		}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, dataHeader),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"from":    e1.ID,
+					"is_read": true,
+					"labels":  []int{32},
+					"mail_id": mailID,
+					"recipients": []map[string]any{
+						{
+							"recipient_id":   e2.ID,
+							"recipient_type": "character",
+						},
+						{
+							"recipient_id":   m1.ID,
+							"recipient_type": "mail_list",
+						},
+					},
+					"subject":   "test",
+					"timestamp": "2015-09-30T16:07:00Z",
+				},
+			}),
 		)
 		// when
 		_, err := s.UpdateSectionIfNeeded(ctx, app.CharacterSectionUpdateParams{
 			CharacterID: c.ID,
-			Section:     app.SectionCharacterMails,
+			Section:     app.SectionCharacterMailHeaders,
 		})
 		// then
-		if assert.NoError(t, err) {
-			m, err := s.GetMail(ctx, c.ID, mailID)
-			if assert.NoError(t, err) {
-				assert.Equal(t, "blah blah blah", m.Body)
-				assert.True(t, m.IsRead)
-				assert.Len(t, m.Labels, 1)
-				assert.Equal(t, int32(32), m.Labels[0].LabelID)
-				assert.Len(t, m.Recipients, 2)
-			}
-			labels, err := st.ListCharacterMailLabelsOrdered(ctx, c.ID)
-			if assert.NoError(t, err) {
-				got := set.Of[int32]()
-				for _, l := range labels {
-					got.Add(l.LabelID)
-				}
-				want := set.Of[int32](16, 32)
-				assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
-			}
+		require.NoError(t, err)
+		m, err := s.GetMail(ctx, c.ID, mailID)
+		require.NoError(t, err)
+		assert.Equal(t, "blah blah blah", m.Body.ValueOrZero())
+		assert.True(t, m.IsRead)
+		assert.Len(t, m.Labels, 1)
+		assert.Equal(t, int32(32), m.Labels[0].LabelID)
+		assert.Len(t, m.Recipients, 2)
+		labels, err := st.ListCharacterMailLabelsOrdered(ctx, c.ID)
+		require.NoError(t, err)
+		got := set.Of[int32]()
+		for _, l := range labels {
+			got.Add(l.LabelID)
 		}
+		want := set.Of[int32](16, 32)
+		assert.True(t, got.Equal(want), "got %q, wanted %q", got, want)
+	})
+}
+
+func TestUpdateMailBodies(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := characterservice.NewFake(st)
+	ctx := context.Background()
+	makeMailData := func(m *app.CharacterMail) map[string]any {
+		recipients := make([]map[string]any, 0)
+		for _, r := range m.Recipients {
+			x := make(map[string]any)
+			x["recipient_id"] = r.ID
+			x["recipient_type"] = r.Category.String()
+			recipients = append(recipients, x)
+		}
+		data := map[string]any{
+			"body":       m.Body.MustValue(),
+			"from":       m.From,
+			"labels":     m.LabelIDs(),
+			"read":       true,
+			"recipients": recipients,
+			"subject":    m.Subject,
+			"timestamp":  m.Timestamp.Format(app.DateTimeFormatESI),
+		}
+		return data
+	}
+	t.Run("Can update mail body", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		mail := factory.CreateCharacterMailWithBody()
+		mail.Body.Set("body")
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/%d/", mail.CharacterID, mail.MailID),
+			httpmock.NewJsonResponderOrPanic(200, makeMailData(mail)),
+		)
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: mail.CharacterID})
+		// when
+		body, err := s.UpdateMailBodyESI(ctx, mail.CharacterID, mail.MailID)
+		require.NoError(t, err)
+		assert.Equal(t, "body", body)
+		mail2, err := s.GetMail(ctx, mail.CharacterID, mail.MailID)
+		require.NoError(t, err)
+		assert.Equal(t, "body", mail2.Body.ValueOrZero())
+	})
+	t.Run("Can download missing mail bodies", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		mail1a := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
+		mail1a.Body.Set("body1")
+		mail2a := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
+		mail2a.Body.Set("body2")
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/%d/", c.ID, mail1a.MailID),
+			httpmock.NewJsonResponderOrPanic(200, makeMailData(mail1a)),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/%d/", c.ID, mail2a.MailID),
+			httpmock.NewJsonResponderOrPanic(200, makeMailData(mail2a)),
+		)
+		// when
+		aborted, err := s.DownloadMissingMailBodies(ctx, c.ID)
+		require.NoError(t, err)
+		require.False(t, aborted)
+		mail1b, err := s.GetMail(ctx, c.ID, mail1a.MailID)
+		require.NoError(t, err)
+		assert.Equal(t, "body1", mail1b.Body.ValueOrZero())
+		mail2b, err := s.GetMail(ctx, c.ID, mail2a.MailID)
+		require.NoError(t, err)
+		assert.Equal(t, "body2", mail2b.Body.ValueOrZero())
 	})
 }
 
@@ -287,7 +353,7 @@ func TestNotifyMails(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// given
 			testutil.MustTruncateTables(db)
-			n := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+			n := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 				IsProcessed: tc.isProcessed,
 				Timestamp:   tc.timestamp,
 			})
@@ -297,9 +363,8 @@ func TestNotifyMails(t *testing.T) {
 				sendCount++
 			})
 			// then
-			if assert.NoError(t, err) {
-				assert.Equal(t, tc.shouldNotify, sendCount == 1)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.shouldNotify, sendCount == 1)
 		})
 	}
 }
@@ -315,7 +380,7 @@ func TestSendMail(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacterFull()
+		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		r := factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		httpmock.Reset()
@@ -327,11 +392,9 @@ func TestSendMail(t *testing.T) {
 		// when
 		mailID, err := s.SendMail(ctx, c.ID, "subject", []*app.EveEntity{r}, "body")
 		// then
-		if assert.NoError(t, err) {
-			m, err := s.GetMail(ctx, c.ID, mailID)
-			if assert.NoError(t, err) {
-				assert.Equal(t, "body", m.Body)
-			}
-		}
+		require.NoError(t, err)
+		m, err := s.GetMail(ctx, c.ID, mailID)
+		require.NoError(t, err)
+		assert.Equal(t, "body", m.Body.ValueOrZero())
 	})
 }

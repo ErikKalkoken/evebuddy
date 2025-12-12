@@ -48,7 +48,7 @@ func TestCharacters_CanRenderWithData(t *testing.T) {
 		WalletBalance: optional.New(23_000_000.0),
 		LastLoginAt:   optional.New(time.Now().Add(-24 * 7 * 2 * time.Hour)),
 	})
-	factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+	factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 		CharacterID: character.ID,
 		IsRead:      false,
 	})

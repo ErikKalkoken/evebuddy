@@ -21,9 +21,9 @@ func TestListMailHeaders(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
 		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
-		m1 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -120)})
-		m2 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -60)})
-		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l2.LabelID}})
+		m1 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -120)})
+		m2 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -60)})
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l2.LabelID}})
 		// when
 		xx, err := st.ListCharacterMailHeadersForLabelOrdered(ctx, c.ID, l1.LabelID)
 		// then
@@ -40,10 +40,10 @@ func TestListMailHeaders(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
 		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
-		m1 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -120)})
-		m2 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -60)})
-		m3 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l2.LabelID}, Timestamp: time.Now().Add(time.Second * -240)})
-		m4 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, Timestamp: time.Now().Add(time.Second * -360)})
+		m1 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -120)})
+		m2 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -60)})
+		m3 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l2.LabelID}, Timestamp: time.Now().Add(time.Second * -240)})
+		m4 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID, Timestamp: time.Now().Add(time.Second * -360)})
 		// when
 		xx, err := st.ListCharacterMailHeadersForLabelOrdered(ctx, c.ID, app.MailLabelAll)
 		// then
@@ -58,12 +58,12 @@ func TestListMailHeaders(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		l := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
-		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 			CharacterID: c.ID,
 			LabelIDs:    []int32{l.LabelID},
 			Timestamp:   time.Now().Add(time.Second * -120),
 		})
-		m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
+		m := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
 		// when
 		xx, err := st.ListCharacterMailHeadersForLabelOrdered(ctx, c.ID, app.MailLabelNone)
 		// then
@@ -89,14 +89,14 @@ func TestListMailHeaders(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c1 := factory.CreateCharacterFull()
 		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c1.ID, LabelID: 1})
-		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 			CharacterID: c1.ID,
 			LabelIDs:    []int32{l1.LabelID},
 		})
 		c2 := factory.CreateCharacterFull()
 		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c2.ID, LabelID: 1})
 		from := factory.CreateEveEntity()
-		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 			FromID:      from.ID,
 			CharacterID: c2.ID,
 			LabelIDs:    []int32{l2.LabelID},
@@ -112,16 +112,16 @@ func TestListMailHeaders(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		l1 := factory.CreateCharacterMailList(c.ID)
-		m1 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+		m1 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 			CharacterID:  c.ID,
 			RecipientIDs: []int32{l1.ID},
 		})
 		l2 := factory.CreateCharacterMailList(c.ID)
-		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 			CharacterID:  c.ID,
 			RecipientIDs: []int32{l2.ID},
 		})
-		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
 		// when
 		xx, err := st.ListCharacterMailHeadersForListOrdered(ctx, c.ID, l1.ID)
 		// then
@@ -136,26 +136,26 @@ func TestListMailHeaders(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		now := time.Now().UTC()
 		c := factory.CreateCharacterFull()
-		m1 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+		m1 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 			CharacterID: c.ID,
 			IsProcessed: false,
 		})
-		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 			CharacterID: c.ID,
 			IsProcessed: true,
 		})
 		l := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelSent})
-		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 			CharacterID: c.ID,
 			IsProcessed: false,
 			LabelIDs:    []int32{l.LabelID},
 		})
-		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 			CharacterID: c.ID,
 			IsProcessed: false,
 			Timestamp:   now.Add(-10 * time.Hour),
 		})
-		factory.CreateCharacterMail()
+		factory.CreateCharacterMailWithBody()
 		// when
 		xx, err := st.ListCharacterMailHeadersForUnprocessed(ctx, c.ID, now.Add(-5*time.Hour))
 		// then

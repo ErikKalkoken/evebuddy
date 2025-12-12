@@ -39,6 +39,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
@@ -188,14 +189,15 @@ type baseUI struct {
 	corporation        atomic.Pointer[app.Corporation]
 	dataPaths          xmaps.OrderedMap[string, string] // Paths to user data
 	isDesktop          bool                             // whether the app runs on a desktop. If false we assume it's on mobile.
+	isFakeMobile       bool                             // Show mobile variant on a desktop (for development)
 	isForeground       atomic.Bool                      // whether the app is currently shown in the foreground
 	isOffline          bool                             // Run the app in offline mode
-	isFakeMobile       bool                             // Show mobile variant on a desktop (for development)
 	isStartupCompleted atomic.Bool                      // whether the app has completed startup (for testing)
 	isUpdateDisabled   bool                             // Whether to disable update tickers (useful for debugging)
-	wasStarted         atomic.Bool                      // whether the app has already been started at least once
-	window             fyne.Window                      // main window
-	windows            map[string]fyne.Window           // child windows
+	sig                *singleinstance.Group
+	wasStarted         atomic.Bool            // whether the app has already been started at least once
+	window             fyne.Window            // main window
+	windows            map[string]fyne.Window // child windows
 }
 
 type BaseUIParams struct {
@@ -226,13 +228,13 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		app:                         arg.App,
 		characterAdded:              signals.New[*app.Character](),
 		characterRemoved:            signals.New[*app.EntityShort[int32]](),
-		currentCharacterExchanged:   signals.New[*app.Character](),
 		characterSectionChanged:     signals.New[characterSectionUpdated](),
 		concurrencyLimit:            -1, // Default is no limit
-		currentCorporationExchanged: signals.New[*app.Corporation](),
 		corporationSectionChanged:   signals.New[corporationSectionUpdated](),
 		corporationWallets:          make(map[app.Division]*corporationWallet),
 		cs:                          arg.CharacterService,
+		currentCharacterExchanged:   signals.New[*app.Character](),
+		currentCorporationExchanged: signals.New[*app.Corporation](),
 		eis:                         arg.EveImageService,
 		ess:                         arg.ESIStatusService,
 		eus:                         arg.EveUniverseService,
@@ -249,6 +251,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		rs:                          arg.CorporationService,
 		scs:                         arg.StatusCacheService,
 		settings:                    settings.New(arg.App.Preferences()),
+		sig:                         singleinstance.NewGroup(),
 		windows:                     make(map[string]fyne.Window),
 	}
 	u.window = u.app.NewWindow(u.appName())
@@ -297,7 +300,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			if isShown {
 				u.reloadCurrentCharacter()
 			}
-		case app.SectionCharacterMails:
+		case app.SectionCharacterMailHeaders:
 			u.updateMailIndicator()
 		case app.SectionCharacterRoles:
 			u.updateStatus()
@@ -434,9 +437,9 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		slog.Debug("Entered foreground")
 		u.isForeground.Store(true)
 		if !u.isOffline && !u.isUpdateDisabled {
-			u.updateCharactersIfNeeded(context.Background(), false)
-			u.updateCorporationsIfNeeded(context.Background(), false)
-			u.updateGeneralSectionsIfNeeded(context.Background(), false)
+			go u.updateCharactersIfNeeded(context.Background(), false)
+			go u.updateCorporationsIfNeeded(context.Background(), false)
+			go u.updateGeneralSectionsIfNeeded(context.Background(), false)
 		}
 	})
 	u.app.Lifecycle().SetOnExitedForeground(func() {

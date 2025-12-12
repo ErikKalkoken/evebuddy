@@ -263,7 +263,7 @@ func (b *CharacterBuilder) createMail() {
 				IsRead:       isRead,
 			}
 		}
-		b.f.CreateCharacterMail(mail)
+		b.f.CreateCharacterMailWithBody(mail)
 		printProgress("mails", mails*b.Factor, i)
 	}
 	printSummary("mails", mails*b.Factor)

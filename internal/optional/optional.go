@@ -74,13 +74,13 @@ func (o Optional[T]) StringFunc(fallback string, convert func(v T) string) strin
 	return convert(o.ValueOrZero())
 }
 
-// Value returns the value of an Optional.
-func (o Optional[T]) Value() (T, error) {
+// Value returns the value of an Optional and reports whether the value exists.
+func (o Optional[T]) Value() (T, bool) {
 	var z T
 	if o.IsEmpty() {
-		return z, ErrIsEmpty
+		return z, false
 	}
-	return o.value, nil
+	return o.value, true
 }
 
 // ValueOrFallback returns the value of an Optional or a fallback if it is empty.
