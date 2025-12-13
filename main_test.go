@@ -75,7 +75,7 @@ func TestSetupCrashFile(t *testing.T) {
 	}
 }
 
-func TestRetryOn420s(t *testing.T) {
+func TestShouldRetryOn420s(t *testing.T) {
 	responses := []struct {
 		statusCode int
 		remain     int
@@ -103,6 +103,48 @@ func TestRetryOn420s(t *testing.T) {
 		}
 		w.Header().Set("X-ESI-Error-Limit-Remain", strconv.Itoa(resp.remain))
 		w.Header().Set("X-ESI-Error-Limit-Reset", strconv.Itoa(resp.reset))
+		w.WriteHeader(resp.statusCode)
+		fmt.Fprint(w, resp.body)
+		callCount++
+	}))
+	defer ts.Close()
+	client := retryablehttp.NewClient()
+	client.RetryMax = 1
+	client.CheckRetry = customCheckRetry
+	client.Backoff = customBackoff
+	client.HTTPClient.Transport = &xgoesi.RateLimiter{}
+	resp, err := client.Get(ts.URL)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, 2, callCount)
+}
+
+func TestShouldRetryOn429s(t *testing.T) {
+	responses := []struct {
+		statusCode int
+		retryAfter int
+		body       string
+	}{
+		{
+			http.StatusOK,
+			0,
+			"dummy",
+		},
+		{
+			http.StatusTooManyRequests,
+			1,
+			"dummy",
+		},
+	}
+	var callCount int
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp, ok := xslices.Pop(&responses)
+		if !ok {
+			t.Fatal("out of test reponses")
+		}
+		if resp.retryAfter > 0 {
+			w.Header().Set("Retry-After", strconv.Itoa(resp.retryAfter))
+		}
 		w.WriteHeader(resp.statusCode)
 		fmt.Fprint(w, resp.body)
 		callCount++

@@ -81,3 +81,59 @@ func TestParseHeaderForErrorReset(t *testing.T) {
 		})
 	}
 }
+
+func TestParseRetryAfterHeader(t *testing.T) {
+	tests := []struct {
+		name        string
+		headerValue string
+		expectedDur time.Duration
+		expectedOK  bool
+	}{
+		{
+			name:        "Success_ValidInteger",
+			headerValue: "120",
+			expectedDur: time.Second * 120,
+			expectedOK:  true,
+		},
+		{
+			name:        "Success_ZeroValue",
+			headerValue: "0",
+			expectedDur: time.Duration(0),
+			expectedOK:  true,
+		},
+		{
+			name:        "Failure_MissingHeader",
+			headerValue: "",
+			expectedDur: 0,
+			expectedOK:  false,
+		},
+		{
+			name:        "Failure_InvalidFormat",
+			headerValue: "invalid-duration",
+			expectedDur: 0,
+			expectedOK:  false,
+		},
+		{
+			name:        "Failure_NegativeDuration",
+			headerValue: "-10",
+			expectedDur: 0,
+			expectedOK:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp := &http.Response{
+				Header: make(http.Header),
+			}
+			if tt.headerValue != "" {
+				resp.Header.Set("Retry-After", tt.headerValue)
+			}
+
+			actualDur, actualBool := parseRetryAfterHeader(resp)
+
+			assert.Equal(t, tt.expectedDur, actualDur, "Returned duration mismatch")
+			assert.Equal(t, tt.expectedOK, actualBool, "Returned success boolean mismatch")
+		})
+	}
+}

@@ -28,7 +28,7 @@ import (
 const (
 	characterUpdateStatusTicker = 2 * time.Second
 	clockUpdateTicker           = 2 * time.Second
-	esiStatusUpdateTicker       = 60 * time.Second
+	esiStatusUpdateTicker       = 10 * time.Second
 )
 
 type eveStatus uint

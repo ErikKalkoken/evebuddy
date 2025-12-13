@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,51 +18,38 @@ func Test_createErrorResponse(t *testing.T) {
 	tests := []struct {
 		name              string
 		statusCode        int
-		retryAfterSeconds int
 		message           string
 		req               *http.Request
 		expectError       bool
 		expectedErrSubstr string
 	}{
 		{
-			name:              "Success_400_BadRequest",
-			statusCode:        http.StatusBadRequest,
-			retryAfterSeconds: 5,
-			message:           "Invalid input parameters",
-			req:               mockReq,
-			expectError:       false,
+			name:        "Success_400_BadRequest",
+			statusCode:  http.StatusBadRequest,
+			message:     "Invalid input parameters",
+			req:         mockReq,
+			expectError: false,
 		},
 		{
-			name:              "Success_503_ServiceUnavailable",
-			statusCode:        http.StatusServiceUnavailable,
-			retryAfterSeconds: 60,
-			message:           "Server overloaded, try again later",
-			req:               mockReq,
-			expectError:       false,
+			name:        "Success_503_ServiceUnavailable",
+			statusCode:  http.StatusServiceUnavailable,
+			message:     "Server overloaded, try again later",
+			req:         mockReq,
+			expectError: false,
 		},
 		{
 			name:              "Failure_StatusCode_TooLow",
 			statusCode:        http.StatusOK,
-			retryAfterSeconds: 10,
 			message:           "Should not matter",
 			req:               mockReq,
 			expectError:       true,
 			expectedErrSubstr: "statusCode must be >=400",
 		},
-		{
-			name:              "Failure_RetryAfter_TooLow",
-			statusCode:        http.StatusTooManyRequests,
-			retryAfterSeconds: 0,
-			message:           "Should not matter",
-			req:               mockReq,
-			expectError:       true,
-			expectedErrSubstr: "retryAfterSeconds must be >0",
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := createErrorResponse(tt.req, tt.statusCode, tt.retryAfterSeconds, tt.message)
+			resp, err := createErrorResponse(tt.req, tt.statusCode, tt.message)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -83,7 +69,6 @@ func Test_createErrorResponse(t *testing.T) {
 				assert.Equal(t, 1, resp.ProtoMinor)
 				assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
 
-				assert.Equal(t, strconv.Itoa(tt.retryAfterSeconds), resp.Header.Get("Retry-After"))
 				assert.Equal(t, "localhost", resp.Header.Get("X-Origin-Server"))
 
 				bodyBytes, readErr := io.ReadAll(resp.Body)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -85,11 +86,14 @@ func (rl *DowntimeBlocker) RoundTrip(req *http.Request) (*http.Response, error) 
 	start, finish := DailyDowntime()
 	now := TimeNow()
 	if isInPeriod(now, start, finish) {
-		retryAfter := int(finish.Sub(now).Seconds()) + 1
-		resp, err := createErrorResponse(req, http.StatusServiceUnavailable, retryAfter, "ESI requests are blocked during daily downtime")
+		d := finish.Sub(now)
+		m := fmt.Sprintf("Daily downtime timeout active: %s", d)
+		timeout := int(d.Seconds()) + 1
+		resp, err := createErrorResponse(req, http.StatusServiceUnavailable, m)
 		if err != nil {
 			return nil, err
 		}
+		resp.Header.Set(headerRetryAfter, strconv.Itoa(timeout))
 		return resp, nil
 	}
 	resp, err := transport.RoundTrip(req)

@@ -19,25 +19,8 @@ import (
 )
 
 func TestRateLimiter_RateLimited(t *testing.T) {
-	t.Run("should fail when operation has rate limit and is authed and characterID is missing", func(t *testing.T) {
-		t.Parallel()
-		mockHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, "Hello, Mock Server!")
-		})
-		ts := httptest.NewServer(mockHandler)
-		defer ts.Close()
-		client := &http.Client{
-			Transport: &xgoesi.RateLimiter{},
-		}
-		ctx := context.WithValue(t.Context(), goesi.ContextAccessToken, "token")
-		ctx = xgoesi.NewContextWithOperationID(ctx, "op")
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
-		require.NoError(t, err)
-		_, gotErr := client.Do(req)
-		assert.Error(t, gotErr)
-	})
-	t.Run("should fail when operationID is unknown", func(t *testing.T) {
+	const headerRetryAfter = "Retry-After"
+	t.Run("should not limit initial request", func(t *testing.T) {
 		t.Parallel()
 		mockHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -49,11 +32,14 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 			Transport: &xgoesi.RateLimiter{},
 		}
 		ctx := xgoesi.NewContextWithAuth(t.Context(), 42, "token")
-		ctx = xgoesi.NewContextWithOperationID(ctx, "op")
+		ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
 		require.NoError(t, err)
-		_, gotErr := client.Do(req)
-		assert.Error(t, gotErr)
+		resp, err := client.Do(req)
+		if !assert.NoError(t, err) {
+			t.Fatal(err)
+		}
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 	t.Run("should limit subsequent requests to the same bucket", func(t *testing.T) {
 		t.Parallel()
@@ -175,6 +161,90 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 		end := time.Since(start)
 		assert.Less(t, end, 500*time.Millisecond)
 	})
+	t.Run("should fail when operation has rate limit and is authed and characterID is missing", func(t *testing.T) {
+		t.Parallel()
+		mockHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, "Hello, Mock Server!")
+		})
+		ts := httptest.NewServer(mockHandler)
+		defer ts.Close()
+		client := &http.Client{
+			Transport: &xgoesi.RateLimiter{},
+		}
+		ctx := context.WithValue(t.Context(), goesi.ContextAccessToken, "token")
+		ctx = xgoesi.NewContextWithOperationID(ctx, "op")
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
+		require.NoError(t, err)
+		_, gotErr := client.Do(req)
+		assert.Error(t, gotErr)
+	})
+	t.Run("should fail when operationID is unknown", func(t *testing.T) {
+		t.Parallel()
+		mockHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, "Hello, Mock Server!")
+		})
+		ts := httptest.NewServer(mockHandler)
+		defer ts.Close()
+		client := &http.Client{
+			Transport: &xgoesi.RateLimiter{},
+		}
+		ctx := xgoesi.NewContextWithAuth(t.Context(), 42, "token")
+		ctx = xgoesi.NewContextWithOperationID(ctx, "op")
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
+		require.NoError(t, err)
+		_, gotErr := client.Do(req)
+		assert.Error(t, gotErr)
+	})
+	t.Run("should block subsequent requests after 429", func(t *testing.T) {
+		responses := []struct {
+			statusCode int
+			retryAfter int
+			body       string
+		}{
+			{
+				http.StatusOK,
+				0,
+				"dummy",
+			},
+			{
+				http.StatusTooManyRequests,
+				30,
+				"dummy",
+			},
+		}
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			resp, ok := xslices.Pop(&responses)
+			if !ok {
+				t.Fatal("out of test reponses")
+			}
+			if resp.retryAfter > 0 {
+				w.Header().Set(headerRetryAfter, strconv.Itoa(resp.retryAfter))
+			}
+			w.WriteHeader(resp.statusCode)
+			fmt.Fprint(w, resp.body)
+		}))
+		defer ts.Close()
+		// first request will set the timeout
+		client := &http.Client{
+			Transport: &xgoesi.RateLimiter{},
+		}
+		ctx := xgoesi.NewContextWithAuth(t.Context(), 42, "token")
+		ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
+		require.NoError(t, err)
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusTooManyRequests, resp.StatusCode)
+		// second request will return synthetic 429
+		resp, err = client.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusTooManyRequests, resp.StatusCode)
+		reset, err := strconv.Atoi(resp.Header.Get(headerRetryAfter))
+		require.NoError(t, err)
+		assert.Equal(t, reset, 30)
+	})
 }
 
 func TestRateLimiter_ErrorLimited(t *testing.T) {
@@ -212,7 +282,7 @@ func TestRateLimiter_ErrorLimited(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, xgoesi.StatusTooManyErrors, resp.StatusCode)
 	})
-	t.Run("should respond with synthetic 420 when timeout still active", func(t *testing.T) {
+	t.Run("should block subsequent requests after 420", func(t *testing.T) {
 		responses := []struct {
 			statusCode int
 			remain     int
@@ -261,7 +331,7 @@ func TestRateLimiter_ErrorLimited(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, remain, 0)
 	})
-	t.Run("should block subsequent request in the current window when error threshold reached", func(t *testing.T) {
+	t.Run("should block subsequent requests when error threshold exceeded", func(t *testing.T) {
 		responses := []struct {
 			statusCode int
 			remain     int

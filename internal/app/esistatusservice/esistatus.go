@@ -7,6 +7,7 @@ import (
 
 	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
+	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
@@ -15,29 +16,37 @@ import (
 // ESIStatusService provides information about the current status of the ESI API.
 type ESIStatusService struct {
 	esiClient *goesi.APIClient
+	sfg       *singleflight.Group
 }
 
 // New creates and returns a new instance of an ESI service.
 func New(client *goesi.APIClient) *ESIStatusService {
-	ess := &ESIStatusService{esiClient: client}
+	ess := &ESIStatusService{
+		esiClient: client,
+		sfg:       new(singleflight.Group),
+	}
 	return ess
 }
 
 func (ess *ESIStatusService) Fetch(ctx context.Context) (*app.ESIStatus, error) {
-	ctx = xgoesi.NewContextWithOperationID(ctx, "GetStatus")
-	status, _, err := ess.esiClient.ESI.StatusApi.GetStatus(ctx, nil)
-	if err != nil {
-		swaggerErr, ok := err.(esi.GenericSwaggerError)
-		if ok {
-			error := extractErrorMessage(swaggerErr)
-			x := &app.ESIStatus{ErrorMessage: error}
-			return x, nil
-		} else {
+	x, err, _ := ess.sfg.Do("Fetch", func() (any, error) {
+		ctx = xgoesi.NewContextWithOperationID(ctx, "GetStatus")
+		status, _, err := ess.esiClient.ESI.StatusApi.GetStatus(ctx, nil)
+		if err != nil {
+			if swaggerErr, ok := err.(esi.GenericSwaggerError); ok {
+				error := extractErrorMessage(swaggerErr)
+				x := &app.ESIStatus{ErrorMessage: error}
+				return x, nil
+			}
 			return nil, err
 		}
+		es := &app.ESIStatus{PlayerCount: int(status.Players)}
+		return es, nil
+	})
+	if err != nil {
+		return nil, err
 	}
-	es := &app.ESIStatus{PlayerCount: int(status.Players)}
-	return es, nil
+	return x.(*app.ESIStatus), nil
 }
 
 func extractErrorMessage(err esi.GenericSwaggerError) string {
