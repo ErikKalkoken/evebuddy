@@ -207,7 +207,7 @@ func (s *CharacterService) recordUpdateFailed(ctx context.Context, arg app.Chara
 		StartedAt:    &startedAt,
 	})
 	if err2 != nil {
-		slog.Error("record error for failed section update: %s", "characterID", arg.CharacterID, "error", err2)
+		slog.Error("record error for failed section update", "characterID", arg.CharacterID, "error", err2)
 	} else {
 		s.scs.SetCharacterSection(o)
 	}
