@@ -1,13 +1,20 @@
 package main
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestObfuscate(t *testing.T) {
@@ -67,41 +74,42 @@ func TestSetupCrashFile(t *testing.T) {
 	}
 }
 
-// func TestRetryOn420s(t *testing.T) {
-// 	t.Run("should retry on 420s", func(t *testing.T) {
-// 		responses := []struct {
-// 			statusCode int
-// 			reset      string
-// 			body       string
-// 		}{
-// 			{
-// 				http.StatusOK,
-// 				"",
-// 				"dummy",
-// 			},
-// 			{
-// 				xgoesi.StatusTooManyErrors,
-// 				"55",
-// 				"dummy",
-// 			},
-// 		}
-// 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 			resp, ok := xslices.Pop(&responses)
-// 			if !ok {
-// 				t.Fatal("out of test reponses")
-// 			}
-// 			w.Header().Set("X-ESI-Error-Limit-Reset", resp.reset)
-// 			w.WriteHeader(resp.statusCode)
-// 			fmt.Fprint(w, resp.body)
-// 		}))
-// 		defer ts.Close()
-// 		client := retryablehttp.NewClient()
-// 		client.RetryMax = 1
-// 		client.CheckRetry = customCheckRetry
-// 		client.Backoff = customBackoff
-// 		client.HTTPClient.Transport = xgoesi.NewRateLimiter()
-// 		resp, err := client.Get(ts.URL)
-// 		require.NoError(t, err)
-// 		assert.Equal(t, http.StatusOK, resp.StatusCode)
-// 	})
-// }
+func TestRetryOn420s(t *testing.T) {
+	responses := []struct {
+		statusCode int
+		reset      string
+		body       string
+	}{
+		{
+			http.StatusOK,
+			"60",
+			"dummy",
+		},
+		{
+			xgoesi.StatusTooManyErrors,
+			"1",
+			"dummy",
+		},
+	}
+	var callCount int
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp, ok := xslices.Pop(&responses)
+		if !ok {
+			t.Fatal("out of test reponses")
+		}
+		w.Header().Set("X-ESI-Error-Limit-Reset", resp.reset)
+		w.WriteHeader(resp.statusCode)
+		fmt.Fprint(w, resp.body)
+		callCount++
+	}))
+	defer ts.Close()
+	client := retryablehttp.NewClient()
+	client.RetryMax = 1
+	client.CheckRetry = customCheckRetry
+	client.Backoff = customBackoff
+	client.HTTPClient.Transport = xgoesi.NewRateLimiter()
+	resp, err := client.Get(ts.URL)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, 2, callCount)
+}

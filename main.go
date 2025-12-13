@@ -501,6 +501,8 @@ func (ca *cacheAdapter) makeKey(key string) string {
 	return ca.prefix + key
 }
 
+// customCheckRetry is a custom retry policy for a retryablehttp client
+// that adds retry for 420s.
 func customCheckRetry(ctx context.Context, resp *http.Response, err error) (bool, error) {
 	shouldRetry, checkErr := retryablehttp.DefaultRetryPolicy(ctx, resp, err)
 	if checkErr != nil {
@@ -515,6 +517,8 @@ func customCheckRetry(ctx context.Context, resp *http.Response, err error) (bool
 	return false, nil
 }
 
+// customBackoff is a custom backoff policy for a retryablehttp client
+// that adds backoff for 420s.
 func customBackoff(min time.Duration, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
 	if resp != nil && resp.StatusCode == xgoesi.StatusTooManyErrors {
 		if sleep, ok := xgoesi.ParseErrorLimitResetHeader(resp); ok {

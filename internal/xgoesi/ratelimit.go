@@ -57,21 +57,28 @@ type rateLimitGroup struct {
 
 // rateLimiter represents a transport that adds support for rate limits and error rate limits.
 //
-// For this feature to work a client must add the operationID of the request
-// and the token's character ID to the context.
-// It is further assumed that authenticated requests have an access token in the context.
-//
 // A rateLimiter must be initialized with [NewRateLimiter] before use.
+//
+// For the rate limit group detection to work HTTP clients must add the operation ID
+// from ESI's OpenAPI spec through [NewContextWithOperationID]
+// and the token's character ID and access token through [NewContextWithAuth] to the context.
+// Requests without an operation ID will be assumed to have error rate limiting.
+//
+// Rate limiting is implemented by ensuring requests belonging to the same bucket
+// do not exceed the average rate.
+//
+// Error rate limiting is implemented by blocking subsequent request
+// during the reset period after a 420 is received.
 type rateLimiter struct {
 	// The RoundTripper interface actually used to make requests
 	// If nil, http.DefaultTransport is used
 	Transport  http.RoundTripper
 	MaxRetries int
 
-	muRetry420 sync.RWMutex
-	retryAt420 time.Time
+	muErrors      sync.RWMutex
+	retryAtErrors time.Time
 
-	muLimiter      sync.Mutex
+	muBuckets      sync.Mutex
 	limiterBuckets map[string]*rate.Limiter
 	retryAtBuckets map[string]time.Time
 }
@@ -116,9 +123,9 @@ func (rl *rateLimiter) RoundTrip(req *http.Request) (*http.Response, error) {
 
 func (rl *rateLimiter) roundTripErrorRateLimit(transport http.RoundTripper, req *http.Request) (*http.Response, error) {
 	// block when 420 ban active
-	rl.muRetry420.RLock()
-	retryAfter := time.Until(rl.retryAt420)
-	rl.muRetry420.RUnlock()
+	rl.muErrors.RLock()
+	retryAfter := time.Until(rl.retryAtErrors)
+	rl.muErrors.RUnlock()
 	if retryAfter > 0 {
 		retryAfterSeconds := int(retryAfter.Seconds() + 1)
 		slog.Warn("ESI Error limit timeout active", "url", req.URL, "retryAfter", retryAfterSeconds)
@@ -140,9 +147,9 @@ func (rl *rateLimiter) roundTripErrorRateLimit(transport http.RoundTripper, req 
 			slog.Warn("Failed to parse error limit header. Using fallback.", "url", req.URL)
 			retryAfter = ErrorLimitResetFallback
 		}
-		rl.muRetry420.Lock()
-		rl.retryAt420 = time.Now().Add(retryAfter)
-		rl.muRetry420.Unlock()
+		rl.muErrors.Lock()
+		rl.retryAtErrors = time.Now().Add(retryAfter)
+		rl.muErrors.Unlock()
 		retryAfterSeconds := int(retryAfter.Seconds() + 1)
 		slog.Warn("ESI Error limit exceeded", "url", req.URL, "retryAfter", retryAfterSeconds)
 		resp.Header.Set("Retry-After", strconv.Itoa(retryAfterSeconds))
@@ -170,7 +177,7 @@ func ParseErrorLimitResetHeader(resp *http.Response) (time.Duration, bool) {
 // waitRateLimit will wait until the next request can be made to implement a steady request rate
 // in accordance with the effective rate limit for the API operation.
 func (rl *rateLimiter) waitRateLimit(ctx context.Context, bucket string, rlg rateLimitGroup) error {
-	rl.muLimiter.Lock()
+	rl.muBuckets.Lock()
 	lim, ok := rl.limiterBuckets[bucket]
 	if !ok {
 		// calculate the duration to wait for a steady rate assuming each request consumes 2 tokens
@@ -180,7 +187,7 @@ func (rl *rateLimiter) waitRateLimit(ctx context.Context, bucket string, rlg rat
 		lim = rate.NewLimiter(rate.Every(d), 1)
 		rl.limiterBuckets[bucket] = lim
 	}
-	rl.muLimiter.Unlock()
+	rl.muBuckets.Unlock()
 	if err := lim.Wait(ctx); err != nil {
 		return err
 	}
