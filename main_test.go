@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
@@ -77,17 +78,20 @@ func TestSetupCrashFile(t *testing.T) {
 func TestRetryOn420s(t *testing.T) {
 	responses := []struct {
 		statusCode int
-		reset      string
+		remain     int
+		reset      int
 		body       string
 	}{
 		{
 			http.StatusOK,
-			"60",
+			100,
+			60,
 			"dummy",
 		},
 		{
 			xgoesi.StatusTooManyErrors,
-			"1",
+			0,
+			1,
 			"dummy",
 		},
 	}
@@ -97,7 +101,8 @@ func TestRetryOn420s(t *testing.T) {
 		if !ok {
 			t.Fatal("out of test reponses")
 		}
-		w.Header().Set("X-ESI-Error-Limit-Reset", resp.reset)
+		w.Header().Set("X-ESI-Error-Limit-Remain", strconv.Itoa(resp.remain))
+		w.Header().Set("X-ESI-Error-Limit-Reset", strconv.Itoa(resp.reset))
 		w.WriteHeader(resp.statusCode)
 		fmt.Fprint(w, resp.body)
 		callCount++
@@ -107,7 +112,7 @@ func TestRetryOn420s(t *testing.T) {
 	client.RetryMax = 1
 	client.CheckRetry = customCheckRetry
 	client.Backoff = customBackoff
-	client.HTTPClient.Transport = xgoesi.NewRateLimiter()
+	client.HTTPClient.Transport = &xgoesi.RateLimiter{}
 	resp, err := client.Get(ts.URL)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)

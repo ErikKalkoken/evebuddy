@@ -28,7 +28,7 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 		ts := httptest.NewServer(mockHandler)
 		defer ts.Close()
 		client := &http.Client{
-			Transport: xgoesi.NewRateLimiter(),
+			Transport: &xgoesi.RateLimiter{},
 		}
 		ctx := context.WithValue(t.Context(), goesi.ContextAccessToken, "token")
 		ctx = xgoesi.NewContextWithOperationID(ctx, "op")
@@ -46,7 +46,7 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 		ts := httptest.NewServer(mockHandler)
 		defer ts.Close()
 		client := &http.Client{
-			Transport: xgoesi.NewRateLimiter(),
+			Transport: &xgoesi.RateLimiter{},
 		}
 		ctx := xgoesi.NewContextWithAuth(t.Context(), 42, "token")
 		ctx = xgoesi.NewContextWithOperationID(ctx, "op")
@@ -64,7 +64,7 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 		ts := httptest.NewServer(mockHandler)
 		defer ts.Close()
 		client := &http.Client{
-			Transport: xgoesi.NewRateLimiter(),
+			Transport: &xgoesi.RateLimiter{},
 		}
 		ctx := xgoesi.NewContextWithAuth(t.Context(), 42, "token")
 		ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
@@ -90,7 +90,7 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 		ts := httptest.NewServer(mockHandler)
 		defer ts.Close()
 		client := &http.Client{
-			Transport: xgoesi.NewRateLimiter(),
+			Transport: &xgoesi.RateLimiter{},
 		}
 		ctx := xgoesi.NewContextWithAuth(t.Context(), 42, "token")
 		ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
@@ -120,7 +120,7 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 		ts := httptest.NewServer(mockHandler)
 		defer ts.Close()
 		client := &http.Client{
-			Transport: xgoesi.NewRateLimiter(),
+			Transport: &xgoesi.RateLimiter{},
 		}
 		var wg sync.WaitGroup
 		for _, characterID := range []int32{42, 43} {
@@ -152,7 +152,7 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 		ts := httptest.NewServer(mockHandler)
 		defer ts.Close()
 		client := &http.Client{
-			Transport: xgoesi.NewRateLimiter(),
+			Transport: &xgoesi.RateLimiter{},
 		}
 		var wg sync.WaitGroup
 		for _, operationID := range []string{"GetCharactersCharacterIdLocation", "GetCharactersCharacterIdNotifications"} {
@@ -178,50 +178,53 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 }
 
 func TestRateLimiter_ErrorLimited(t *testing.T) {
-	t.Run("should pass through request for operation with no rate limit", func(t *testing.T) {
+	t.Run("should pass through request when error limit is not exceeded", func(t *testing.T) {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("X-ESI-Error-Limit-Remain", "100")
+			w.Header().Set("X-ESI-Error-Limit-Reset", "55")
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, "Hello, Mock Server!")
 		}))
 		defer ts.Close()
 		client := &http.Client{
-			Transport: xgoesi.NewRateLimiter(),
+			Transport: &xgoesi.RateLimiter{},
 		}
 		resp, err := client.Get(ts.URL)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
-	t.Run("should add retry-header to response when 420 is received", func(t *testing.T) {
+	t.Run("should passs through 420 response", func(t *testing.T) {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("X-ESI-Error-Limit-Remain", "0")
 			w.Header().Set("X-ESI-Error-Limit-Reset", "55")
 			w.WriteHeader(xgoesi.StatusTooManyErrors)
 			fmt.Fprint(w, "dummy")
 		}))
 		defer ts.Close()
 		client := &http.Client{
-			Transport: xgoesi.NewRateLimiter(),
+			Transport: &xgoesi.RateLimiter{},
 		}
 		resp, err := client.Get(ts.URL)
 		require.NoError(t, err)
 		assert.Equal(t, xgoesi.StatusTooManyErrors, resp.StatusCode)
-		x2, err := strconv.Atoi(resp.Header.Get("Retry-After"))
-		require.NoError(t, err)
-		assert.GreaterOrEqual(t, x2, 55)
 	})
-	t.Run("should reponse with synthetic 420 when timeout still ongoing", func(t *testing.T) {
+	t.Run("should respond with synthetic 420 when timeout still active", func(t *testing.T) {
 		responses := []struct {
 			statusCode int
-			reset      string
+			remain     int
+			reset      int
 			body       string
 		}{
 			{
 				http.StatusOK,
-				"",
+				100,
+				55,
 				"dummy",
 			},
 			{
 				xgoesi.StatusTooManyErrors,
-				"55",
+				0,
+				55,
 				"dummy",
 			},
 		}
@@ -230,26 +233,24 @@ func TestRateLimiter_ErrorLimited(t *testing.T) {
 			if !ok {
 				t.Fatal("out of test reponses")
 			}
-			w.Header().Set("X-ESI-Error-Limit-Reset", resp.reset)
+			w.Header().Set("X-ESI-Error-Limit-Remain", strconv.Itoa(resp.remain))
+			w.Header().Set("X-ESI-Error-Limit-Reset", strconv.Itoa(resp.reset))
 			w.WriteHeader(resp.statusCode)
 			fmt.Fprint(w, resp.body)
 		}))
 		defer ts.Close()
 		// first request will set the 420 ban
 		client := &http.Client{
-			Transport: xgoesi.NewRateLimiter(),
+			Transport: &xgoesi.RateLimiter{},
 		}
 		resp, err := client.Get(ts.URL)
 		require.NoError(t, err)
 		assert.Equal(t, xgoesi.StatusTooManyErrors, resp.StatusCode)
-		x2, err := strconv.Atoi(resp.Header.Get("Retry-After"))
-		require.NoError(t, err)
-		assert.GreaterOrEqual(t, x2, 55)
-		// second request will return 420 from active block
+		// second request will return synthetic 420 during active timeout
 		resp, err = client.Get(ts.URL)
 		require.NoError(t, err)
 		assert.Equal(t, xgoesi.StatusTooManyErrors, resp.StatusCode)
-		x2, err = strconv.Atoi(resp.Header.Get("Retry-After"))
+		x2, err := strconv.Atoi(resp.Header.Get("X-ESI-Error-Limit-Reset"))
 		require.NoError(t, err)
 		assert.GreaterOrEqual(t, x2, 55)
 	})

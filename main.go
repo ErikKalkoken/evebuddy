@@ -283,12 +283,12 @@ func main() {
 	rhc1.RetryMax = 3
 	rhc1.CheckRetry = customCheckRetry // also retry on 420s
 	rhc1.Backoff = customBackoff       // also retry on 420s
-	rateLimiter := xgoesi.NewRateLimiter()
-	rateLimiter.Transport = &xgoesi.DowntimeBlocker{}
 	rhc1.HTTPClient.Transport = &httpcache.Transport{
 		Cache:               newCacheAdapter(pc, "esicache-", 24*time.Hour),
 		MarkCachedResponses: true,
-		Transport:           rateLimiter,
+		Transport: &xgoesi.RateLimiter{
+			Transport: &xgoesi.DowntimeBlocker{},
+		},
 	}
 	rhc1.Logger = slog.Default()
 	rhc1.ResponseLogHook = logResponse
