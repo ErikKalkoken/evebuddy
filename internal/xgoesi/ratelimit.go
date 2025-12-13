@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"math/rand/v2"
 	"net/http"
 	"strconv"
 	"sync"
@@ -15,10 +14,6 @@ import (
 )
 
 // TODO: Add better protection against repeated 429s
-
-var (
-	TimeAfter = time.After
-)
 
 type contextKey string
 
@@ -48,6 +43,10 @@ func NewContextWithOperationID(ctx context.Context, operationID string) context.
 	ctx = context.WithValue(ctx, contextOperationID, operationID)
 	return ctx
 }
+
+const (
+	ErrorLimitResetFallback = time.Second * 60
+)
 
 // rateLimitGroup represents a rate limit group in ESI.
 type rateLimitGroup struct {
@@ -99,7 +98,7 @@ func (rl *rateLimiter) RoundTrip(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 	if !hasRateLimit {
-		resp, err := rl.roundTripErrorRateLimit(ctx, transport, req)
+		resp, err := rl.roundTripErrorRateLimit(transport, req)
 		if err != nil {
 			return nil, err
 		}
@@ -115,72 +114,57 @@ func (rl *rateLimiter) RoundTrip(req *http.Request) (*http.Response, error) {
 	return resp, nil
 }
 
-func (rl *rateLimiter) roundTripErrorRateLimit(ctx context.Context, transport http.RoundTripper, req *http.Request) (*http.Response, error) {
+func (rl *rateLimiter) roundTripErrorRateLimit(transport http.RoundTripper, req *http.Request) (*http.Response, error) {
 	// block when 420 ban active
 	rl.muRetry420.RLock()
 	retryAfter := time.Until(rl.retryAt420)
 	rl.muRetry420.RUnlock()
 	if retryAfter > 0 {
-		retryAfter = addJitter(retryAfter, time.Second)
-		slog.Warn("ESI Error limit block active. Waiting for retry", "url", req.URL, "retryAfter", retryAfter)
-		select {
-		case <-TimeAfter(retryAfter):
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		}
-	}
-	// make request and retry when encountering 420
-	var err error
-	var resp *http.Response
-	for i := 0; ; i++ {
-		var shouldRetry bool
-		resp, err = transport.RoundTrip(req)
+		retryAfterSeconds := int(retryAfter.Seconds() + 1)
+		slog.Warn("ESI Error limit timeout active", "url", req.URL, "retryAfter", retryAfterSeconds)
+		resp, err := createErrorResponse(req, StatusTooManyErrors, retryAfterSeconds, "Too many errors ban still active")
 		if err != nil {
 			return nil, err
 		}
-		if resp.StatusCode == StatusTooManyErrors {
-			retryAfter, ok := parseHeaderForErrorReset(resp)
-			if !ok {
-				slog.Warn("Failed to parse error limit header. Falling back to default.", "url", req.URL)
-			}
-			rl.muRetry420.Lock()
-			rl.retryAt420 = time.Now().Add(retryAfter)
-			rl.muRetry420.Unlock()
-			if i < rl.MaxRetries {
-				retryAfter = addJitter(retryAfter, time.Second)
-				slog.Warn("ESI Error limit exceeded. Waiting for retry", "url", req.URL, "retryAfter", retryAfter, "retryNum", i+1)
-				select {
-				case <-TimeAfter(retryAfter):
-				case <-ctx.Done():
-					return nil, ctx.Err()
-				}
-				shouldRetry = true
-			}
+		return resp, nil
+	}
+	// forward request
+	resp, err := transport.RoundTrip(req)
+	if err != nil {
+		return nil, err
+	}
+	// handle TooManyErrors response
+	if resp.StatusCode == StatusTooManyErrors {
+		retryAfter, ok := ParseErrorLimitResetHeader(resp)
+		if !ok {
+			slog.Warn("Failed to parse error limit header. Using fallback.", "url", req.URL)
+			retryAfter = ErrorLimitResetFallback
 		}
-		if shouldRetry {
-			continue
-		}
-		break
+		rl.muRetry420.Lock()
+		rl.retryAt420 = time.Now().Add(retryAfter)
+		rl.muRetry420.Unlock()
+		retryAfterSeconds := int(retryAfter.Seconds() + 1)
+		slog.Warn("ESI Error limit exceeded", "url", req.URL, "retryAfter", retryAfterSeconds)
+		resp.Header.Set("Retry-After", strconv.Itoa(retryAfterSeconds))
 	}
 	return resp, nil
 }
 
-func parseHeaderForErrorReset(resp *http.Response) (time.Duration, bool) {
-	const retryAfterFallback = time.Second * 60
-	x := resp.Header.Get("X-ESI-Error-Limit-Reset")
-	if x == "" {
-		return retryAfterFallback, false
+// ParseErrorLimitResetHeader tries to return the value of a ESI error limit reset header
+// and reports if it was successful.
+func ParseErrorLimitResetHeader(resp *http.Response) (time.Duration, bool) {
+	header := resp.Header.Get("X-ESI-Error-Limit-Reset")
+	if header == "" {
+		return 0, false
 	}
-	seconds, err := strconv.ParseFloat(x, 64)
+	seconds, err := strconv.ParseInt(header, 10, 64)
 	if err != nil {
-		return retryAfterFallback, false
+		return 0, false
 	}
-	retryAfter := time.Duration(float64(time.Second) * seconds)
-	return retryAfter, true
-}
-
-func addJitter(d time.Duration, max time.Duration) time.Duration {
-	return d + time.Duration(rand.Float64()*float64(max))
+	if seconds < 0 { // a negative sleep doesn't make sense
+		return 0, false
+	}
+	return time.Second * time.Duration(seconds), true
 }
 
 // waitRateLimit will wait until the next request can be made to implement a steady request rate

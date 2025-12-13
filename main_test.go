@@ -66,3 +66,42 @@ func TestSetupCrashFile(t *testing.T) {
 		assert.NoError(t, err)
 	}
 }
+
+// func TestRetryOn420s(t *testing.T) {
+// 	t.Run("should retry on 420s", func(t *testing.T) {
+// 		responses := []struct {
+// 			statusCode int
+// 			reset      string
+// 			body       string
+// 		}{
+// 			{
+// 				http.StatusOK,
+// 				"",
+// 				"dummy",
+// 			},
+// 			{
+// 				xgoesi.StatusTooManyErrors,
+// 				"55",
+// 				"dummy",
+// 			},
+// 		}
+// 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 			resp, ok := xslices.Pop(&responses)
+// 			if !ok {
+// 				t.Fatal("out of test reponses")
+// 			}
+// 			w.Header().Set("X-ESI-Error-Limit-Reset", resp.reset)
+// 			w.WriteHeader(resp.statusCode)
+// 			fmt.Fprint(w, resp.body)
+// 		}))
+// 		defer ts.Close()
+// 		client := retryablehttp.NewClient()
+// 		client.RetryMax = 1
+// 		client.CheckRetry = customCheckRetry
+// 		client.Backoff = customBackoff
+// 		client.HTTPClient.Transport = xgoesi.NewRateLimiter()
+// 		resp, err := client.Get(ts.URL)
+// 		require.NoError(t, err)
+// 		assert.Equal(t, http.StatusOK, resp.StatusCode)
+// 	})
+// }
