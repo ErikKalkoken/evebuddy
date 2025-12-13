@@ -21,8 +21,14 @@ func createErrorResponse(req *http.Request, statusCode int, retryAfterSeconds in
 	if err != nil {
 		return nil, err
 	}
+	var statusText string
+	if statusCode == 420 {
+		statusText = "Too Many Errors"
+	} else {
+		statusText = http.StatusText(statusCode)
+	}
 	resp := &http.Response{
-		Status:     fmt.Sprintf("%d %s", statusCode, http.StatusText(statusCode)),
+		Status:     fmt.Sprintf("%d %s", statusCode, statusText),
 		StatusCode: statusCode,
 		Proto:      "HTTP/1.1",
 		ProtoMajor: 1,

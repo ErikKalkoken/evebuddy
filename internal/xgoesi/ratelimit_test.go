@@ -178,10 +178,14 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 }
 
 func TestRateLimiter_ErrorLimited(t *testing.T) {
+	const (
+		headerErrorLimitRemain = "X-ESI-Error-Limit-Remain"
+		headerErrorLimitReset  = "X-ESI-Error-Limit-Reset"
+	)
 	t.Run("should pass through request when error limit is not exceeded", func(t *testing.T) {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("X-ESI-Error-Limit-Remain", "100")
-			w.Header().Set("X-ESI-Error-Limit-Reset", "55")
+			w.Header().Set(headerErrorLimitRemain, "100")
+			w.Header().Set(headerErrorLimitReset, "55")
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, "Hello, Mock Server!")
 		}))
@@ -195,8 +199,8 @@ func TestRateLimiter_ErrorLimited(t *testing.T) {
 	})
 	t.Run("should passs through 420 response", func(t *testing.T) {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("X-ESI-Error-Limit-Remain", "0")
-			w.Header().Set("X-ESI-Error-Limit-Reset", "55")
+			w.Header().Set(headerErrorLimitRemain, "0")
+			w.Header().Set(headerErrorLimitReset, "55")
 			w.WriteHeader(xgoesi.StatusTooManyErrors)
 			fmt.Fprint(w, "dummy")
 		}))
@@ -233,8 +237,8 @@ func TestRateLimiter_ErrorLimited(t *testing.T) {
 			if !ok {
 				t.Fatal("out of test reponses")
 			}
-			w.Header().Set("X-ESI-Error-Limit-Remain", strconv.Itoa(resp.remain))
-			w.Header().Set("X-ESI-Error-Limit-Reset", strconv.Itoa(resp.reset))
+			w.Header().Set(headerErrorLimitRemain, strconv.Itoa(resp.remain))
+			w.Header().Set(headerErrorLimitReset, strconv.Itoa(resp.reset))
 			w.WriteHeader(resp.statusCode)
 			fmt.Fprint(w, resp.body)
 		}))
@@ -250,8 +254,60 @@ func TestRateLimiter_ErrorLimited(t *testing.T) {
 		resp, err = client.Get(ts.URL)
 		require.NoError(t, err)
 		assert.Equal(t, xgoesi.StatusTooManyErrors, resp.StatusCode)
-		x2, err := strconv.Atoi(resp.Header.Get("X-ESI-Error-Limit-Reset"))
+		reset, err := strconv.Atoi(resp.Header.Get(headerErrorLimitReset))
 		require.NoError(t, err)
-		assert.GreaterOrEqual(t, x2, 55)
+		assert.Equal(t, reset, 55)
+		remain, err := strconv.Atoi(resp.Header.Get(headerErrorLimitRemain))
+		require.NoError(t, err)
+		assert.Equal(t, remain, 0)
+	})
+	t.Run("should block subsequent request in the current window when error threshold reached", func(t *testing.T) {
+		responses := []struct {
+			statusCode int
+			remain     int
+			reset      int
+			body       string
+		}{
+			{
+				http.StatusOK,
+				100,
+				55,
+				"dummy",
+			},
+			{
+				http.StatusOK,
+				5,
+				55,
+				"dummy",
+			},
+		}
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			resp, ok := xslices.Pop(&responses)
+			if !ok {
+				t.Fatal("out of test reponses")
+			}
+			w.Header().Set(headerErrorLimitRemain, strconv.Itoa(resp.remain))
+			w.Header().Set(headerErrorLimitReset, strconv.Itoa(resp.reset))
+			w.WriteHeader(resp.statusCode)
+			fmt.Fprint(w, resp.body)
+		}))
+		defer ts.Close()
+		// first request will set the 420 timeout
+		client := &http.Client{
+			Transport: &xgoesi.RateLimiter{},
+		}
+		resp, err := client.Get(ts.URL)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		// second request will return synthetic 420 during active timeout
+		resp, err = client.Get(ts.URL)
+		require.NoError(t, err)
+		assert.Equal(t, xgoesi.StatusTooManyErrors, resp.StatusCode)
+		reset, err := strconv.Atoi(resp.Header.Get(headerErrorLimitReset))
+		require.NoError(t, err)
+		assert.Equal(t, reset, 55)
+		remain, err := strconv.Atoi(resp.Header.Get(headerErrorLimitRemain))
+		require.NoError(t, err)
+		assert.Equal(t, remain, 0)
 	})
 }

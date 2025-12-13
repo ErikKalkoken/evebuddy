@@ -46,7 +46,9 @@ func NewContextWithOperationID(ctx context.Context, operationID string) context.
 
 const (
 	ErrorLimitResetFallback = time.Second * 60
+	headerErrorLimitRemain  = "X-ESI-Error-Limit-Remain"
 	headerErrorLimitReset   = "X-ESI-Error-Limit-Reset"
+	minErrorsRemainDefault  = 5
 )
 
 // rateLimitGroup represents a rate limit group in ESI.
@@ -64,10 +66,11 @@ type rateLimitGroup struct {
 // Requests without an operation ID will be assumed to have error rate limiting.
 //
 // Rate limiting is implemented by ensuring requests belonging to the same bucket
-// do not exceed the average rate.
+// are not exceeding the average rate of that rate limit group.
 //
-// Error rate limiting is implemented by blocking subsequent request
-// during the reset period after a 420 is received.
+// Error rate limiting is implemented by blocking subsequent requests
+// during the current window after a threshold is reached
+// or after receiving a 420 status from the server.
 //
 // The zero value is a valid transporter.
 // This type is designed to be used concurrently.
@@ -75,6 +78,10 @@ type RateLimiter struct {
 	// The RoundTripper interface actually used to make requests
 	// If nil, http.DefaultTransport is used
 	Transport http.RoundTripper
+
+	// Minimum number of remaining errors in the current error limit window
+	// before blocking subsequent requests.
+	MinErrorsRemain int
 
 	muErrors      sync.RWMutex
 	retryAtErrors time.Time
@@ -120,11 +127,12 @@ func (rl *RateLimiter) roundTripErrorRateLimit(transport http.RoundTripper, req 
 	if retryAfter > 0 {
 		retryAfterSeconds := int(retryAfter.Seconds() + 1)
 		slog.Warn("ESI Error limit timeout active", "url", req.URL, "retryAfter", retryAfterSeconds)
-		resp, err := createErrorResponse(req, StatusTooManyErrors, retryAfterSeconds, "Too many errors ban still active")
+		resp, err := createErrorResponse(req, StatusTooManyErrors, retryAfterSeconds, "Too many errors timeout active")
 		if err != nil {
 			return nil, err
 		}
 		resp.Header.Set(headerErrorLimitReset, strconv.Itoa(retryAfterSeconds))
+		resp.Header.Set(headerErrorLimitRemain, "0")
 		return resp, nil
 	}
 	// forward request
@@ -132,8 +140,9 @@ func (rl *RateLimiter) roundTripErrorRateLimit(transport http.RoundTripper, req 
 	if err != nil {
 		return nil, err
 	}
-	// handle TooManyErrors response
-	if resp.StatusCode == StatusTooManyErrors {
+	switch resp.StatusCode {
+	case StatusTooManyErrors:
+		// Block subsequent requests in the current window when 429 received
 		retryAfter, ok := ParseErrorLimitResetHeader(resp)
 		if !ok {
 			slog.Warn("Failed to parse error limit header. Using fallback.", "url", req.URL)
@@ -142,26 +151,62 @@ func (rl *RateLimiter) roundTripErrorRateLimit(transport http.RoundTripper, req 
 		rl.muErrors.Lock()
 		rl.retryAtErrors = time.Now().Add(retryAfter)
 		rl.muErrors.Unlock()
-		slog.Warn("ESI Error limit exceeded", "url", req.URL, "retryAfter", retryAfter)
+		slog.Warn("ESI error limit breached", "url", req.URL, "retryAfter", retryAfter)
+	default:
+		// Block subsequent requests in the current window when error threshold reached
+		minErrorsRemain := rl.MinErrorsRemain
+		if minErrorsRemain <= 0 || minErrorsRemain >= 100 {
+			minErrorsRemain = minErrorsRemainDefault
+		}
+		if remain, ok := parseErrorLimitRemainHeader(resp); ok {
+			if remain <= minErrorsRemain {
+				retryAfter, ok := ParseErrorLimitResetHeader(resp)
+				if !ok {
+					slog.Warn("Failed to parse error limit header. Using fallback.", "url", req.URL)
+					retryAfter = ErrorLimitResetFallback
+				}
+				rl.muErrors.Lock()
+				rl.retryAtErrors = time.Now().Add(retryAfter)
+				rl.muErrors.Unlock()
+				slog.Warn("ESI error threshold reached", "url", req.URL, "remain", remain, "retryAfter", retryAfter)
+			}
+		}
 	}
 	return resp, nil
 }
 
 // ParseErrorLimitResetHeader tries to return the value of a ESI error limit reset header
-// and reports if it was successful.
+// and reports whether it was successful.
 func ParseErrorLimitResetHeader(resp *http.Response) (time.Duration, bool) {
 	header := resp.Header.Get(headerErrorLimitReset)
 	if header == "" {
 		return 0, false
 	}
-	seconds, err := strconv.ParseInt(header, 10, 64)
+	v, err := strconv.ParseInt(header, 10, 64)
 	if err != nil {
 		return 0, false
 	}
-	if seconds < 0 { // a negative sleep doesn't make sense
+	if v < 0 { // a negative value doesn't make sense
 		return 0, false
 	}
-	return time.Second * time.Duration(seconds), true
+	return time.Second * time.Duration(v), true
+}
+
+// parseErrorLimitRemainHeader tries to return the value of a ESI error limit remain header
+// and reports whether it was successful.
+func parseErrorLimitRemainHeader(resp *http.Response) (int, bool) {
+	header := resp.Header.Get(headerErrorLimitRemain)
+	if header == "" {
+		return 0, false
+	}
+	v, err := strconv.ParseInt(header, 10, 64)
+	if err != nil {
+		return 0, false
+	}
+	if v < 0 { // a negative value doesn't make sense
+		return 0, false
+	}
+	return int(v), true
 }
 
 // waitRateLimit will wait until the next request can be made to implement a steady request rate
