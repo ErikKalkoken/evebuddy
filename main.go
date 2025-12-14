@@ -276,17 +276,19 @@ func main() {
 		slog.Info("cache cleared")
 	}
 
-	// Shared ESI client
-	// Automatically retries on connection errors, most server errors and 429s
-	// Logs requests on debug level and all HTTP error responses as warnings
-	// Has ESI specific rate limiter
+	// HTTP client for ESI with automatic retries, HTTP caching, rate limit support,
+	// error limit support, blocking during daily downtime period and response logging.
 	rhc1 := retryablehttp.NewClient()
-	rateLimiter := xgoesi.NewRateLimiter()
-	rateLimiter.Transport = &xgoesi.DowntimeBlocker{}
+	rhc1.RetryWaitMax = 30 * time.Second // overruled by retry-after and error-reset header
+	rhc1.RetryMax = 3
+	rhc1.CheckRetry = customCheckRetry // also retry on 420s
+	rhc1.Backoff = customBackoff       // also retry on 420s
 	rhc1.HTTPClient.Transport = &httpcache.Transport{
 		Cache:               newCacheAdapter(pc, "esicache-", 24*time.Hour),
 		MarkCachedResponses: true,
-		Transport:           rateLimiter,
+		Transport: &xgoesi.RateLimiter{
+			Transport: &xgoesi.DowntimeBlocker{},
+		},
 	}
 	rhc1.Logger = slog.Default()
 	rhc1.ResponseLogHook = logResponse
@@ -294,8 +296,10 @@ func main() {
 	esiClient := goesi.NewAPIClient(rhc1.StandardClient(), userAgent)
 	slog.Info("user agent", "str", userAgent)
 
-	// HTTP client for SSO and EVE image server
+	// HTTP client for SSO and EVE image server with HTTP caching and response logging.
 	rhc2 := retryablehttp.NewClient()
+	rhc2.RetryWaitMax = 30 * time.Second
+	rhc2.RetryMax = 4
 	rhc2.HTTPClient.Transport = &httpcache.Transport{
 		Cache:               newCacheAdapter(pc, "httpcache-", 24*time.Hour),
 		MarkCachedResponses: true,
@@ -495,4 +499,32 @@ func (ca *cacheAdapter) Delete(key string) {
 
 func (ca *cacheAdapter) makeKey(key string) string {
 	return ca.prefix + key
+}
+
+// customCheckRetry is a custom retry policy for a retryablehttp client
+// that adds retry for 420s.
+func customCheckRetry(ctx context.Context, resp *http.Response, err error) (bool, error) {
+	shouldRetry, checkErr := retryablehttp.DefaultRetryPolicy(ctx, resp, err)
+	if checkErr != nil {
+		return false, checkErr
+	}
+	if shouldRetry {
+		return true, nil
+	}
+	if resp != nil && resp.StatusCode == xgoesi.StatusTooManyErrors {
+		return true, nil // Retry on 420
+	}
+	return false, nil
+}
+
+// customBackoff is a custom backoff policy for a retryablehttp client
+// that adds backoff for 420s.
+func customBackoff(min time.Duration, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
+	if resp != nil && resp.StatusCode == xgoesi.StatusTooManyErrors {
+		if sleep, ok := xgoesi.ParseErrorLimitResetHeader(resp); ok {
+			return sleep
+		}
+		return xgoesi.ErrorLimitResetFallback
+	}
+	return retryablehttp.DefaultBackoff(min, max, attemptNum, resp)
 }
