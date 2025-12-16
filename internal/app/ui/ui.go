@@ -900,7 +900,7 @@ func (u *baseUI) showModalWhileExecuting(title string, ff map[string]func(), onC
 			})
 		}
 		g.Wait()
-		myLog.Debug("completed", "duration", time.Since(start).Milliseconds())
+		myLog.Debug("Completed", "duration", time.Since(start).Milliseconds())
 		if onCompleted != nil {
 			onCompleted()
 		}
