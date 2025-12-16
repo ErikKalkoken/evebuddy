@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestSet_Add(t *testing.T) {
@@ -508,9 +507,12 @@ func TestMax(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.shouldPanic {
-				assert.Panics(t, func() {
-					set.Max(tc.s)
-				})
+				defer func() {
+					if r := recover(); r == nil {
+						t.Errorf("The code did not panic when it was expected to")
+					}
+				}()
+				set.Max(tc.s)
 			} else {
 				got := set.Max(tc.s)
 				if got != tc.want {
@@ -536,10 +538,13 @@ func TestMaxFunc(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.shouldPanic {
-				assert.Panics(t, func() {
-					set.MaxFunc(tc.s, func(a, b int) int {
-						return cmp.Compare(a, b)
-					})
+				defer func() {
+					if r := recover(); r == nil {
+						t.Errorf("The code did not panic when it was expected to")
+					}
+				}()
+				set.MaxFunc(tc.s, func(a, b int) int {
+					return cmp.Compare(a, b)
 				})
 			} else {
 				got := set.MaxFunc(tc.s, func(a, b int) int {
@@ -568,9 +573,12 @@ func TestMin(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.shouldPanic {
-				assert.Panics(t, func() {
-					set.Min(tc.s)
-				})
+				defer func() {
+					if r := recover(); r == nil {
+						t.Errorf("The code did not panic when it was expected to")
+					}
+				}()
+				set.Min(tc.s)
 			} else {
 				got := set.Min(tc.s)
 				if got != tc.want {
@@ -596,10 +604,13 @@ func TestMinFunc(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.shouldPanic {
-				assert.Panics(t, func() {
-					set.MinFunc(tc.s, func(a, b int) int {
-						return cmp.Compare(a, b)
-					})
+				defer func() {
+					if r := recover(); r == nil {
+						t.Errorf("The code did not panic when it was expected to")
+					}
+				}()
+				set.MinFunc(tc.s, func(a, b int) int {
+					return cmp.Compare(a, b)
 				})
 			} else {
 				got := set.MinFunc(tc.s, func(a, b int) int {

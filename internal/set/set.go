@@ -56,6 +56,13 @@ func Of[E comparable](v ...E) Set[E] {
 	return s
 }
 
+// All returns on iterator over all elements of set s.
+//
+// Note that the order of elements is undefined.
+func (s Set[E]) All() iter.Seq[E] {
+	return maps.Keys(s.m)
+}
+
 // Add adds elements v to set s.
 func (s *Set[E]) Add(v ...E) {
 	if s.m == nil {
@@ -74,7 +81,7 @@ func (s *Set[E]) AddSeq(seq iter.Seq[E]) {
 }
 
 // Clear removes all elements from set s.
-func (s *Set[E]) Clear() {
+func (s Set[E]) Clear() {
 	clear(s.m)
 }
 
@@ -90,7 +97,7 @@ func (s Set[E]) Contains(v E) bool {
 }
 
 // ContainsAny reports whether any of the elements in seq are in s.
-func (s *Set[E]) ContainsAny(seq iter.Seq[E]) bool {
+func (s Set[E]) ContainsAny(seq iter.Seq[E]) bool {
 	for v := range seq {
 		if _, ok := s.m[v]; ok {
 			return true
@@ -100,7 +107,7 @@ func (s *Set[E]) ContainsAny(seq iter.Seq[E]) bool {
 }
 
 // ContainsAll reports whether all of the elements in seq are in s.
-func (s *Set[E]) ContainsAll(seq iter.Seq[E]) bool {
+func (s Set[E]) ContainsAll(seq iter.Seq[E]) bool {
 	for v := range seq {
 		if _, ok := s.m[v]; !ok {
 			return false
@@ -110,7 +117,7 @@ func (s *Set[E]) ContainsAll(seq iter.Seq[E]) bool {
 }
 
 // ContainsFunc reports whether at least one element e of s satisfies f(e).
-func (s *Set[E]) ContainsFunc(f func(E) bool) bool {
+func (s Set[E]) ContainsFunc(f func(E) bool) bool {
 	if f == nil || len(s.m) == 0 {
 		return false
 	}
@@ -135,7 +142,7 @@ func (s Set[E]) Delete(v ...E) int {
 
 // DeleteFunc deletes the elements in s for which del returns true.
 // It returns the number of deleted elements.
-func (s *Set[E]) DeleteFunc(del func(E) bool) int {
+func (s Set[E]) DeleteFunc(del func(E) bool) int {
 	if del == nil {
 		return 0
 	}
@@ -151,7 +158,7 @@ func (s *Set[E]) DeleteFunc(del func(E) bool) int {
 // DeleteSeq deletes the elements in seq from s.
 // Elements that are not present are ignored.
 // It returns the number of deleted elements.
-func (s *Set[E]) DeleteSeq(seq iter.Seq[E]) int {
+func (s Set[E]) DeleteSeq(seq iter.Seq[E]) int {
 	var c int
 	for v := range seq {
 		_, ok := s.m[v]
@@ -202,14 +209,8 @@ func (s Set[E]) Slice() []E {
 	return slices.Collect(s.All())
 }
 
-// All returns on iterator over all elements of set s.
-//
-// Note that the order of elements is undefined.
-func (s Set[E]) All() iter.Seq[E] {
-	return maps.Keys(s.m)
-}
-
-// Collect returns a new [Set] created from the elements of iterable seq.
+// Collect collects values from seq into a new set and returns it.
+// If seq is empty, the result is an empty set.
 func Collect[E comparable](seq iter.Seq[E]) Set[E] {
 	var r Set[E]
 	for v := range seq {
