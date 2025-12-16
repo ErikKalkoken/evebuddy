@@ -2,7 +2,9 @@ package ui
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -186,26 +188,36 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	if sections.Size() == 0 {
 		return
 	}
-
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	key := fmt.Sprintf("updateCharacterAndRefreshIfNeeded-cancel-%d", characterID)
+	u.characterRemoved.AddListener(func(_ context.Context, c *app.EntityShort[int32]) {
+		if c != nil && c.ID == characterID {
+			cancel() // abort updates when the character is removed
+		}
+	}, key)
+	defer func() {
+		u.characterRemoved.RemoveListener(key)
+	}()
 	slog.Debug("Starting to check character sections for update", "sections", sections)
 	_, err := u.cs.GetValidCharacterToken(ctx, characterID)
 	if err != nil {
 		slog.Error("Failed to refresh token for update", "characterID", characterID, "error", err)
 	}
-
+	var wg sync.WaitGroup
 	// updateGroup starts a sequential update of group and removes them from sections.
 	// It skips all updates for group if one of the group's sections has not been registered for update.
 	updateGroup := func(group []app.CharacterSection) {
 		mySections := set.Intersection(sections, set.Of(group...))
 		if mySections.Size() > 0 {
-			go func() {
+			wg.Go(func() {
 				for _, s := range group {
 					if !mySections.Contains(s) {
 						continue
 					}
 					u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
 				}
-			}()
+			})
 		}
 		sections.Delete(group...)
 	}
@@ -227,8 +239,12 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 
 	// Other sections
 	for s := range sections.All() {
-		go u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
+		wg.Go(func() {
+			u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
+		})
 	}
+	wg.Wait()
+	slog.Info("Completed updating character", "characterID", characterID, "forceUpdate", forceUpdate)
 }
 
 // updateCharacterSectionAndRefreshIfNeeded runs update for a character section if needed
@@ -271,6 +287,17 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	switch section {
 	case app.SectionCharacterMailHeaders:
 		go func() {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			key := fmt.Sprintf("cancel-DownloadMissingMailBodies-%d", characterID)
+			u.characterRemoved.AddListener(func(_ context.Context, c *app.EntityShort[int32]) {
+				if c != nil && c.ID == characterID {
+					cancel() // abort updates when the character is removed
+				}
+			}, key)
+			defer func() {
+				u.characterRemoved.RemoveListener(key)
+			}()
 			_, err := u.cs.DownloadMissingMailBodies(ctx, characterID)
 			if err != nil {
 				slog.Warn("DownloadMissingMailBodies", "characterID", characterID, "error", err)
