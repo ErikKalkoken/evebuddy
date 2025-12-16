@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -133,6 +134,13 @@ func (a *gameSearch) init() {
 		return
 	}
 	ee, err := a.u.eus.ListEntitiesForIDs(context.Background(), ids)
+	if errors.Is(err, app.ErrNotFound) {
+		ee = make([]*app.EveEntity, 0)
+		fyne.Do(func() {
+			a.setRecentItems(ee)
+		})
+		return
+	}
 	if err != nil {
 		slog.Error("failed to load recent items from settings", "error", err)
 		return

@@ -2,7 +2,9 @@ package ui
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -14,8 +16,11 @@ import (
 func (u *baseUI) startUpdateTickerGeneralSections() {
 	go func() {
 		for range time.Tick(generalSectionsUpdateTicker) {
-			ctx := context.Background()
-			u.updateGeneralSectionsIfNeeded(ctx, false)
+			if u.ess.IsDailyDowntime() {
+				slog.Info("Skipping regular update of general sections during daily downtime")
+				continue
+			}
+			u.updateGeneralSectionsIfNeeded(context.Background(), false)
 		}
 	}()
 }
@@ -25,13 +30,16 @@ func (u *baseUI) updateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate 
 		slog.Debug("Skipping general sections update while in background")
 		return
 	}
-	if !forceUpdate && u.ess.IsDailyDowntime() {
-		slog.Info("Skipping regular update of general sections during daily downtime")
-		return
+	sections := set.Of(app.GeneralSections...)
+	var wg sync.WaitGroup
+	for s := range sections.All() {
+		wg.Go(func() {
+			u.updateGeneralSectionAndRefreshIfNeeded(ctx, s, forceUpdate)
+		})
 	}
-	for _, s := range app.GeneralSections {
-		u.updateGeneralSectionAndRefreshIfNeeded(ctx, s, forceUpdate)
-	}
+	slog.Debug("Started updating general sections", "sections", sections, "forceUpdate", forceUpdate)
+	wg.Wait()
+	slog.Info("Finished updating general sections", "sections", sections, "forceUpdate", forceUpdate)
 }
 
 func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
@@ -79,53 +87,65 @@ func (u *baseUI) startUpdateTickerCharacters() {
 	go func() {
 		for range time.Tick(characterSectionsUpdateTicker) {
 			ctx := context.Background()
-			if err := u.updateCharactersIfNeeded(ctx, false); err != nil {
-				slog.Error("Failed to update characters", "error", err)
+			go func() {
+				if err := u.notifyCharactersIfNeeded(ctx); err != nil {
+					slog.Error("Failed to notify characters", "error", err)
+				}
+			}()
+			if u.ess.IsDailyDowntime() {
+				slog.Info("Skipping regular update of characters during daily downtime")
+				continue
 			}
-			if err := u.notifyCharactersIfNeeded(ctx); err != nil {
-				slog.Error("Failed to notify characters", "error", err)
-			}
+			go func() {
+				if err := u.updateCharactersIfNeeded(ctx, false); err != nil {
+					slog.Error("Failed to update characters", "error", err)
+				}
+			}()
 		}
 	}()
 }
 
 func (u *baseUI) updateCharactersIfNeeded(ctx context.Context, forceUpdate bool) error {
-	if !forceUpdate && u.ess.IsDailyDowntime() {
-		slog.Info("Skipping regular update of characters during daily downtime")
-		return nil
-	}
-	cc, err := u.cs.ListCharactersShort(ctx)
+	characters, err := u.cs.ListCharacterIDs(ctx)
 	if err != nil {
 		return err
 	}
-	for _, c := range cc {
-		go u.updateCharacterAndRefreshIfNeeded(ctx, c.ID, forceUpdate)
+	var wg sync.WaitGroup
+	for c := range characters.All() {
+		wg.Go(func() {
+			u.updateCharacterAndRefreshIfNeeded(ctx, c, forceUpdate)
+		})
 	}
-	slog.Debug("started update status characters")
+	slog.Debug("Started updating characters", "characters", characters, "forceUpdate", forceUpdate)
+	wg.Wait()
+	slog.Info("Finished updating characters", "characters", characters, "forceUpdate", forceUpdate)
 	return nil
 }
 
 func (u *baseUI) notifyCharactersIfNeeded(ctx context.Context) error {
-	cc, err := u.cs.ListCharactersShort(ctx)
+	characters, err := u.cs.ListCharacterIDs(ctx)
 	if err != nil {
 		return err
 	}
-	for _, c := range cc {
-		go u.notifyExpiredTrainingIfNeeded(ctx, c.ID)
+	var wg sync.WaitGroup
+	for c := range characters.All() {
+		wg.Go(func() {
+			u.notifyExpiredTrainingIfNeeded(ctx, c)
+		})
 	}
-	slog.Debug("started notify characters")
+	slog.Debug("Started notifying characters", "characters", characters)
+	wg.Wait()
+	slog.Info("Finished notifying characters", "characters", characters)
 	return nil
 }
 
 func (u *baseUI) notifyExpiredTrainingIfNeeded(ctx context.Context, characterID int32) {
 	if u.settings.NotifyTrainingEnabled() {
-		go func() {
-			// TODO: earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyTrainingEarliest)
-			err := u.cs.NotifyExpiredTraining(ctx, characterID, u.sendDesktopNotification)
-			if err != nil {
-				slog.Error("notify expired training", "error", err)
-			}
-		}()
+		// TODO: earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyTrainingEarliest)
+		err := u.cs.NotifyExpiredTraining(ctx, characterID, u.sendDesktopNotification)
+		if err != nil {
+			slog.Error("Notify expired training", "characterID", characterID, "error", err)
+		}
 	}
 }
 
@@ -148,14 +168,13 @@ func (u *baseUI) notifyNewCommunications(ctx context.Context, characterID int32)
 		u.sendDesktopNotification,
 	)
 	if err != nil {
-		slog.Error("notify communications", "characterID", characterID, "error", err)
+		slog.Error("Notify communications", "characterID", characterID, "error", err)
 	}
 }
 
 // updateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
 // and refreshes the UI accordingly.
 func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool) {
-	slog.Debug("updateCharacterAndRefreshIfNeeded: started", "characterID", characterID, "forceUpdate", forceUpdate)
 	if u.isOffline {
 		return
 	}
@@ -186,26 +205,36 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	if sections.Size() == 0 {
 		return
 	}
-
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	key := fmt.Sprintf("updateCharacterAndRefreshIfNeeded-cancel-%d", characterID)
+	u.characterRemoved.AddListener(func(_ context.Context, c *app.EntityShort[int32]) {
+		if c != nil && c.ID == characterID {
+			cancel() // abort updates when the character is removed
+		}
+	}, key)
+	defer func() {
+		u.characterRemoved.RemoveListener(key)
+	}()
 	slog.Debug("Starting to check character sections for update", "sections", sections)
 	_, err := u.cs.GetValidCharacterToken(ctx, characterID)
 	if err != nil {
 		slog.Error("Failed to refresh token for update", "characterID", characterID, "error", err)
 	}
-
+	var wg sync.WaitGroup
 	// updateGroup starts a sequential update of group and removes them from sections.
 	// It skips all updates for group if one of the group's sections has not been registered for update.
 	updateGroup := func(group []app.CharacterSection) {
 		mySections := set.Intersection(sections, set.Of(group...))
 		if mySections.Size() > 0 {
-			go func() {
+			wg.Go(func() {
 				for _, s := range group {
 					if !mySections.Contains(s) {
 						continue
 					}
 					u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
 				}
-			}()
+			})
 		}
 		sections.Delete(group...)
 	}
@@ -227,8 +256,13 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 
 	// Other sections
 	for s := range sections.All() {
-		go u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
+		wg.Go(func() {
+			u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
+		})
 	}
+	slog.Debug("Started updating character", "characterID", characterID, "sections", sections, "forceUpdate", forceUpdate)
+	wg.Wait()
+	slog.Info("Finished updating character", "characterID", characterID, "sections", sections, "forceUpdate", forceUpdate)
 }
 
 // updateCharacterSectionAndRefreshIfNeeded runs update for a character section if needed
@@ -271,6 +305,17 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	switch section {
 	case app.SectionCharacterMailHeaders:
 		go func() {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			key := fmt.Sprintf("cancel-DownloadMissingMailBodies-%d", characterID)
+			u.characterRemoved.AddListener(func(_ context.Context, c *app.EntityShort[int32]) {
+				if c != nil && c.ID == characterID {
+					cancel() // abort updates when the character is removed
+				}
+			}, key)
+			defer func() {
+				u.characterRemoved.RemoveListener(key)
+			}()
 			_, err := u.cs.DownloadMissingMailBodies(ctx, characterID)
 			if err != nil {
 				slog.Warn("DownloadMissingMailBodies", "characterID", characterID, "error", err)
@@ -303,7 +348,7 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	case app.SectionCharacterSkillqueue:
 		if u.settings.NotifyTrainingEnabled() {
 			if needsRefresh {
-				u.notifyExpiredTrainingIfNeeded(ctx, characterID)
+				go u.notifyExpiredTrainingIfNeeded(ctx, characterID)
 			}
 			err := u.cs.EnableTrainingWatcher(ctx, characterID)
 			if err != nil {
@@ -318,18 +363,20 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 func (u *baseUI) startUpdateTickerCorporations() {
 	go func() {
 		for range time.Tick(characterSectionsUpdateTicker) {
-			if err := u.updateCorporationsIfNeeded(context.Background(), false); err != nil {
-				slog.Error("Failed to update corporations", "error", err)
+			if u.ess.IsDailyDowntime() {
+				slog.Info("Skipping regular update of corporations during daily downtime")
+				continue
 			}
+			go func() {
+				if err := u.updateCorporationsIfNeeded(context.Background(), false); err != nil {
+					slog.Error("Failed to update corporations", "error", err)
+				}
+			}()
 		}
 	}()
 }
 
 func (u *baseUI) updateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error {
-	if !forceUpdate && u.ess.IsDailyDowntime() {
-		slog.Info("Skipping regular update of corporations during daily downtime")
-		return nil
-	}
 	changed, err := u.rs.UpdateCorporations(ctx)
 	if err != nil {
 		return err
@@ -337,14 +384,19 @@ func (u *baseUI) updateCorporationsIfNeeded(ctx context.Context, forceUpdate boo
 	if changed {
 		u.updateStatus()
 	}
-	all, err := u.rs.ListCorporationIDs(ctx)
+	corporations, err := u.rs.ListCorporationIDs(ctx)
 	if err != nil {
 		return err
 	}
-	for id := range all.All() {
-		go u.updateCorporationAndRefreshIfNeeded(ctx, id, forceUpdate)
+	var wg sync.WaitGroup
+	for id := range corporations.All() {
+		wg.Go(func() {
+			u.updateCorporationAndRefreshIfNeeded(ctx, id, forceUpdate)
+		})
 	}
-	slog.Debug("started update status corporations")
+	slog.Debug("Started updating corporations", "corporations", corporations, "forceUpdate", forceUpdate)
+	wg.Wait()
+	slog.Info("Finished updating corporations", "corporations", corporations, "forceUpdate", forceUpdate)
 	return nil
 }
 
@@ -359,11 +411,15 @@ func (u *baseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 		return
 	}
 	sections := set.Of(app.CorporationSections...)
-	slog.Debug("Starting to check corporation sections for update", "corporationID", corporationID, "sections", sections)
-
+	var wg sync.WaitGroup
 	for s := range sections.All() {
-		go u.updateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, s, forceUpdate)
+		wg.Go(func() {
+			u.updateCorporationSectionAndRefreshIfNeeded(ctx, corporationID, s, forceUpdate)
+		})
 	}
+	slog.Debug("Started updating corporation", "corporationID", corporationID, "sections", sections, "forceUpdate", forceUpdate)
+	wg.Wait()
+	slog.Info("Finished updating corporation", "corporationID", corporationID, "sections", sections, "forceUpdate", forceUpdate)
 }
 
 // updateCorporationSectionAndRefreshIfNeeded runs update for a corporation section if needed
