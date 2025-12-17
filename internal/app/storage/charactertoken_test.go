@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ErikKalkoken/kx/set"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func TestToken(t *testing.T) {

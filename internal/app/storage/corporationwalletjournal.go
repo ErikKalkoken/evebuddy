@@ -6,9 +6,10 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/ErikKalkoken/kx/set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 type CreateCorporationWalletJournalEntryParams struct {

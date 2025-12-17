@@ -16,10 +16,10 @@ import (
 	"fyne.io/fyne/v2/widget"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/ErikKalkoken/kx/set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )

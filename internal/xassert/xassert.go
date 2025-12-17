@@ -5,9 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ErikKalkoken/kx/set"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 // EqualDuration asserts that got is almost equal to want.

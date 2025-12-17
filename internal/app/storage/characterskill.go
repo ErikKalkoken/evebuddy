@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ErikKalkoken/kx/set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func (st *Storage) DeleteCharacterSkills(ctx context.Context, characterID int32, eveTypeIDs []int32) error {

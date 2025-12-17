@@ -7,14 +7,15 @@ import (
 	"maps"
 	"time"
 
+	"github.com/ErikKalkoken/kx/set"
+	"github.com/antihax/goesi/esi"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
-	"github.com/antihax/goesi/esi"
-	"golang.org/x/sync/errgroup"
 )
 
 func (s *CharacterService) ListAllMarketOrder(ctx context.Context, isBuyOrders bool) ([]*app.CharacterMarketOrder, error) {

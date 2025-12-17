@@ -17,12 +17,12 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/ErikKalkoken/kx/set"
 	"github.com/anthonynsimon/bild/effect"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 const (

@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/ErikKalkoken/kx/set"
+	"github.com/antihax/goesi/esi"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
-	"github.com/antihax/goesi/esi"
-	"golang.org/x/sync/errgroup"
 )
 
 func (s *CorporationService) GetStructure(ctx context.Context, corporationID int32, structureID int64) (*app.CorporationStructure, error) {

@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/test"
+	"github.com/ErikKalkoken/kx/set"
 	"github.com/antihax/goesi"
 	"github.com/stretchr/testify/assert"
 
@@ -20,7 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 // type FakeCache map[string][]byte

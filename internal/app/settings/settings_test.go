@@ -5,10 +5,11 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2"
-	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/ErikKalkoken/evebuddy/internal/xassert"
+	"github.com/ErikKalkoken/kx/set"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestSettings(t *testing.T) {

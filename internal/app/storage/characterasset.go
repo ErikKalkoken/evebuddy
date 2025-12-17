@@ -5,10 +5,11 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/ErikKalkoken/kx/set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 var locationFlagFromDBValue = map[string]app.LocationFlag{

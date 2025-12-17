@@ -5,7 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/kx/set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 

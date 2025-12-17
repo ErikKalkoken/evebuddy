@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ErikKalkoken/kx/set"
+	"github.com/antihax/goesi/notification"
 	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/antihax/goesi/notification"
 )
 
 var eventToStructureTypeID = map[int32]int32{

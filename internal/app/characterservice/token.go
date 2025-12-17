@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/eveauth"
+	"github.com/ErikKalkoken/kx/set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 // HasTokenWithScopes reports whether a character's token has the requested scopes.

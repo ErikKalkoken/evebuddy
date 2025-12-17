@@ -8,13 +8,14 @@ import (
 	"slices"
 	"time"
 
+	"github.com/ErikKalkoken/kx/set"
+	"github.com/antihax/goesi/esi"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
-	"github.com/antihax/goesi/esi"
-	"golang.org/x/sync/errgroup"
 )
 
 func (s *CharacterService) GetJumpClone(ctx context.Context, characterID, cloneID int32) (*app.CharacterJumpClone, error) {

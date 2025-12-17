@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ErikKalkoken/kx/set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func (st *Storage) GetEveCorporation(ctx context.Context, corporationID int32) (*app.EveCorporation, error) {

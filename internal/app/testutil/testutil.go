@@ -9,9 +9,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ErikKalkoken/kx/set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 // NewDBInMemory creates and returns a database in memory for tests.

@@ -7,11 +7,11 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/ErikKalkoken/kx/set"
 	"github.com/yuin/goldmark"
 
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 //go:generate go tool stringer -type=EveNotificationType
