@@ -7,8 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ErikKalkoken/kx/set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 // update general sections

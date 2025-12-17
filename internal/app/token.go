@@ -3,7 +3,7 @@ package app
 import (
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/kx/set"
 )
 
 // CharacterToken is a SSO token belonging to a character in Eve Online.

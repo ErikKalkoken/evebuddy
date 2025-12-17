@@ -11,9 +11,10 @@ import (
 	esioptional "github.com/antihax/goesi/optional"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/ErikKalkoken/kx/set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )

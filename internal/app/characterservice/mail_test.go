@@ -6,16 +6,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ErikKalkoken/kx/set"
+	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
-	"github.com/jarcoal/httpmock"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestUpdateMail(t *testing.T) {

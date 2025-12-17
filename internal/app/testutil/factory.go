@@ -13,12 +13,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ErikKalkoken/kx/set"
 	"github.com/icrowley/fake"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 // EVE IDs

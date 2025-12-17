@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-
 	"time"
 
+	"github.com/ErikKalkoken/kx/set"
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/singleflight"
@@ -16,7 +16,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 // EveUniverseService provides access to Eve Online models with on-demand loading from ESI and persistent local caching.

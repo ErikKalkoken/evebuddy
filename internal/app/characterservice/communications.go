@@ -7,13 +7,14 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/ErikKalkoken/kx/set"
+	"github.com/antihax/goesi/esi"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
-	"github.com/antihax/goesi/esi"
-	"golang.org/x/sync/errgroup"
 )
 
 func (s *CharacterService) CountNotifications(ctx context.Context, characterID int32) (map[app.EveNotificationGroup][]int, error) {

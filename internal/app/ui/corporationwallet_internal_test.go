@@ -7,11 +7,11 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+	"github.com/ErikKalkoken/kx/set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func TestCorporationWallet_CanRenderWithData(t *testing.T) {

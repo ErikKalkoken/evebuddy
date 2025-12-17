@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ErikKalkoken/kx/set"
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )

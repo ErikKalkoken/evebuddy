@@ -7,12 +7,12 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/ErikKalkoken/kx/set"
 	"github.com/icrowley/fake"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func (s *EveUniverseService) GetCharacterESI(ctx context.Context, characterID int32) (*app.EveCharacter, error) {

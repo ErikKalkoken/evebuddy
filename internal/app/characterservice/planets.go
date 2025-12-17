@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ErikKalkoken/kx/set"
+	"github.com/antihax/goesi/esi"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
-	"github.com/antihax/goesi/esi"
 )
 
 func (s *CharacterService) GetPlanet(ctx context.Context, characterID, planetID int32) (*app.CharacterPlanet, error) {

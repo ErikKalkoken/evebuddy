@@ -4,9 +4,10 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/ErikKalkoken/evebuddy/internal/migrate"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/kx/set"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/migrate"
 )
 
 func TestMigrate(t *testing.T) {

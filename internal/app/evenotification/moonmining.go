@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ErikKalkoken/kx/set"
 	"github.com/antihax/goesi/notification"
 	"github.com/dustin/go-humanize"
 	"github.com/goccy/go-yaml"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 type moonMiningInfo struct {

@@ -14,9 +14,9 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/kx/set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 var ErrCancel = errors.New("user aborted")

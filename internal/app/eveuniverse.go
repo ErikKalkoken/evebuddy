@@ -9,10 +9,11 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"github.com/ErikKalkoken/kx/set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 type EveAlliance struct {

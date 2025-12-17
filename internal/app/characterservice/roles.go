@@ -7,10 +7,11 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
+	"github.com/ErikKalkoken/kx/set"
 	"github.com/antihax/goesi/esi"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
 func (s *CharacterService) ListRoles(ctx context.Context, characterID int32) ([]app.CharacterRole, error) {

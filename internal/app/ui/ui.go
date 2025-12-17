@@ -22,6 +22,7 @@ import (
 	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	kxtheme "github.com/ErikKalkoken/fyne-kx/theme"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/ErikKalkoken/kx/set"
 	"github.com/maniartech/signals"
 	"golang.org/x/sync/errgroup"
 
@@ -38,7 +39,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"

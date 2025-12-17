@@ -9,13 +9,14 @@ import (
 	"slices"
 	"time"
 
+	"github.com/ErikKalkoken/kx/set"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
-	"golang.org/x/sync/errgroup"
 )
 
 func (s *EveUniverseService) GetLocation(ctx context.Context, id int64) (*app.EveLocation, error) {

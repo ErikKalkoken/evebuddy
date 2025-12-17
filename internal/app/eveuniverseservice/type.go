@@ -9,12 +9,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ErikKalkoken/kx/set"
+	"github.com/dustin/go-humanize"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/dustin/go-humanize"
-	"golang.org/x/sync/errgroup"
 )
 
 func eveEntityCategoryFromESICategory(c string) app.EveEntityCategory {

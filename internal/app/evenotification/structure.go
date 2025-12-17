@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ErikKalkoken/kx/set"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/antihax/goesi/notification"
 	"github.com/goccy/go-yaml"
@@ -18,7 +19,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification/notification2"
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 type eveObj struct {
