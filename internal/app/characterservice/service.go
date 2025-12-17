@@ -4,6 +4,7 @@ package characterservice
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/ErikKalkoken/eveauth"
 	"github.com/antihax/goesi"
@@ -21,9 +22,16 @@ type AuthClient interface {
 	RefreshToken(ctx context.Context, token *eveauth.Token) error
 }
 
+// CacheService defines a cache service
+type CacheService interface {
+	Get(string) ([]byte, bool)
+	Set(string, []byte, time.Duration)
+}
+
 // CharacterService provides access to all managed Eve Online characters both online and from local storage.
 type CharacterService struct {
 	authClient       AuthClient
+	cache            CacheService
 	concurrencyLimit int
 	ens              *evenotification.EveNotificationService
 	esiClient        *goesi.APIClient
@@ -37,6 +45,7 @@ type CharacterService struct {
 
 type Params struct {
 	ConcurrencyLimit       int // max number of concurrent Goroutines (per group)
+	Cache                  CacheService
 	EveNotificationService *evenotification.EveNotificationService
 	EveUniverseService     *eveuniverseservice.EveUniverseService
 	AuthClient             AuthClient
@@ -52,6 +61,7 @@ type Params struct {
 func New(arg Params) *CharacterService {
 	s := &CharacterService{
 		authClient:       arg.AuthClient,
+		cache:            arg.Cache,
 		concurrencyLimit: -1, // Default is no limit
 		ens:              arg.EveNotificationService,
 		eus:              arg.EveUniverseService,

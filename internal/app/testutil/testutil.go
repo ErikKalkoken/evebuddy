@@ -219,3 +219,24 @@ func (s *EveUniverseServiceFake) ToEntities(ctx context.Context, ids set.Set[int
 	}
 	return m, nil
 }
+
+type CacheFake map[string][]byte
+
+func NewCacheFake() CacheFake {
+	return make(CacheFake)
+}
+
+func (c CacheFake) Get(k string) ([]byte, bool) {
+	v, ok := c[k]
+	return v, ok
+}
+
+func (c CacheFake) Set(k string, v []byte, d time.Duration) {
+	c[k] = v
+}
+
+func (c CacheFake) Clear() {
+	for k := range c {
+		delete(c, k)
+	}
+}

@@ -242,7 +242,7 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
 		)
 		// when
-		xx, err := FetchPagesWithExit(func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
+		xx, err := FetchPagesWithStop(func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 			arg := &esi.GetCharactersCharacterIdAssetsOpts{
 				Page: esioptional.NewInt32(int32(pageNum)),
 			}
@@ -279,7 +279,7 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
 		)
 		// when
-		xx, err := FetchPagesWithExit(func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
+		xx, err := FetchPagesWithStop(func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 			arg := &esi.GetCharactersCharacterIdAssetsOpts{
 				Page: esioptional.NewInt32(int32(pageNum)),
 			}
@@ -310,7 +310,7 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 			}),
 		)
 		// when
-		xx, err := FetchPagesWithExit(func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
+		xx, err := FetchPagesWithStop(func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 			arg := &esi.GetCharactersCharacterIdAssetsOpts{
 				Page: esioptional.NewInt32(int32(pageNum)),
 			}
@@ -325,7 +325,7 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 		// given
 		myErr := errors.New("error")
 		// when
-		_, err := FetchPagesWithExit(func(pageNum int) ([]int, *http.Response, error) {
+		_, err := FetchPagesWithStop(func(pageNum int) ([]int, *http.Response, error) {
 			return nil, nil, myErr
 		}, nil)
 		// then
@@ -339,7 +339,7 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 			"https://esi.evetech.net/v4/characters/99/assets/",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}).HeaderSet(http.Header{"X-Pages": []string{"invalid"}}))
 		// when
-		_, err := FetchPagesWithExit(func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
+		_, err := FetchPagesWithStop(func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 			arg := &esi.GetCharactersCharacterIdAssetsOpts{
 				Page: esioptional.NewInt32(int32(pageNum)),
 			}
@@ -401,7 +401,7 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
 		)
 		// when
-		xx, err := FetchPagesWithExit(func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
+		xx, err := FetchPagesWithStop(func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 			arg := &esi.GetCharactersCharacterIdAssetsOpts{
 				Page: esioptional.NewInt32(int32(pageNum)),
 			}
@@ -472,7 +472,7 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
 		)
 		// when
-		xx, err := FetchPagesWithExit(func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
+		xx, err := FetchPagesWithStop(func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 			arg := &esi.GetCharactersCharacterIdAssetsOpts{
 				Page: esioptional.NewInt32(int32(pageNum)),
 			}

@@ -2,6 +2,7 @@ package characterservice
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func (s *CharacterService) GetWalletJournalEntry(ctx context.Context, characterID int32, refID int64) (*app.CharacterWalletJournalEntry, error) {
@@ -28,8 +30,6 @@ func (s *CharacterService) ListWalletJournalEntries(ctx context.Context, charact
 	return s.st.ListCharacterWalletJournalEntries(ctx, characterID)
 }
 
-// TODO: Add limit when fetching wallet journal
-
 // updateWalletJournalEntryESI updates the wallet journal from ESI and reports whether it has changed.
 func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterWalletJournal {
@@ -38,16 +38,43 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
+			var entries []esi.GetCharactersCharacterIdWalletJournal200Ok
+			var err error
+			cacheKey := fmt.Sprintf("wallet-journal-last-id-character-%d", characterID)
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWalletJournal")
-			entries, err := xgoesi.FetchPages(
-				func(pageNum int) ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
-					arg := &esi.GetCharactersCharacterIdWalletJournalOpts{
-						Page: esioptional.NewInt32(int32(pageNum)),
-					}
-					return s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWalletJournal(ctx, characterID, arg)
-				})
-			if err != nil {
-				return false, err
+			if lastID, ok := loadCacheInt64(s.cache, cacheKey); ok {
+				entries, err = xgoesi.FetchPagesWithStop(
+					func(pageNum int) ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
+						arg := &esi.GetCharactersCharacterIdWalletJournalOpts{
+							Page: esioptional.NewInt32(int32(pageNum)),
+						}
+						return s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWalletJournal(ctx, characterID, arg)
+					}, func(x esi.GetCharactersCharacterIdWalletJournal200Ok) bool {
+						return x.Id <= lastID
+					})
+				if err != nil {
+					return false, err
+				}
+			} else {
+				entries, err = xgoesi.FetchPages(
+					func(pageNum int) ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
+						arg := &esi.GetCharactersCharacterIdWalletJournalOpts{
+							Page: esioptional.NewInt32(int32(pageNum)),
+						}
+						return s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWalletJournal(ctx, characterID, arg)
+					})
+				if err != nil {
+					return false, err
+				}
+			}
+			ids := xslices.Map(entries, func(x esi.GetCharactersCharacterIdWalletJournal200Ok) int64 {
+				return x.Id
+			})
+			if len(ids) > 0 {
+				lastID := slices.Max(ids)
+				if err := storeCacheInt64(s.cache, cacheKey, lastID); err != nil {
+					slog.Warn("Failed to store last ID for wallet journal", "characterID", characterID, "lastID", lastID)
+				}
 			}
 			slog.Debug("Received wallet journal from ESI", "entries", len(entries), "characterID", characterID)
 			return entries, nil
@@ -127,9 +154,23 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg a
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			transactions, err := s.fetchWalletTransactionsESI(ctx, characterID, arg.MaxWalletTransactions)
+			cacheKey := fmt.Sprintf("wallet-transactions-last-id-character-%d", characterID)
+			var lastID int64
+			if x, ok := loadCacheInt64(s.cache, cacheKey); ok {
+				lastID = x
+			}
+			transactions, err := s.fetchWalletTransactionsESI(ctx, characterID, arg.MaxWalletTransactions, lastID)
 			if err != nil {
 				return false, err
+			}
+			ids := xslices.Map(transactions, func(x esi.GetCharactersCharacterIdWalletTransactions200Ok) int64 {
+				return x.TransactionId
+			})
+			if len(ids) > 0 {
+				lastID := slices.Max(ids)
+				if err := storeCacheInt64(s.cache, cacheKey, lastID); err != nil {
+					slog.Warn("Failed to store last ID for wallet transactions", "characterID", characterID, "lastID", lastID)
+				}
 			}
 			return transactions, nil
 		},
@@ -196,14 +237,14 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg a
 }
 
 // fetchWalletTransactionsESI fetches wallet transactions from ESI with paging and returns them.
-func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, characterID int32, maxTransactions int) ([]esi.GetCharactersCharacterIdWalletTransactions200Ok, error) {
-	var oo2 []esi.GetCharactersCharacterIdWalletTransactions200Ok
-	var lastID int64
+func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, characterID int32, maxTransactions int, lastID int64) ([]esi.GetCharactersCharacterIdWalletTransactions200Ok, error) {
+	var tx []esi.GetCharactersCharacterIdWalletTransactions200Ok
+	var fromID int64
 	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWalletTransactions")
 	for {
 		var opts *esi.GetCharactersCharacterIdWalletTransactionsOpts
-		if lastID > 0 {
-			opts = &esi.GetCharactersCharacterIdWalletTransactionsOpts{FromId: esioptional.NewInt64(lastID)}
+		if fromID > 0 {
+			opts = &esi.GetCharactersCharacterIdWalletTransactionsOpts{FromId: esioptional.NewInt64(fromID)}
 		} else {
 			opts = nil
 		}
@@ -211,17 +252,43 @@ func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, chara
 		if err != nil {
 			return nil, err
 		}
-		oo2 = slices.Concat(oo2, oo)
-		isLimitExceeded := (maxTransactions != 0 && len(oo2)+maxTransactionsPerPage > maxTransactions)
+		tx = slices.Concat(tx, oo)
+		isLimitExceeded := (maxTransactions != 0 && len(tx)+maxTransactionsPerPage > maxTransactions)
 		if len(oo) < maxTransactionsPerPage || isLimitExceeded {
 			break
 		}
-		ids := make([]int64, len(oo))
-		for i, o := range oo {
-			ids[i] = o.TransactionId
+		ids := xslices.Map(oo, func(x esi.GetCharactersCharacterIdWalletTransactions200Ok) int64 {
+			return x.TransactionId
+		})
+		if slices.Contains(ids, lastID) {
+			break // stop reading once a known ID is found
 		}
-		lastID = slices.Min(ids)
+		fromID = slices.Min(ids)
 	}
-	slog.Debug("Received wallet transactions", "characterID", characterID, "count", len(oo2))
-	return oo2, nil
+	slog.Debug("Received wallet transactions", "characterID", characterID, "count", len(tx))
+	return tx, nil
+}
+
+func loadCacheInt64(cache CacheService, key string) (int64, bool) {
+	var v int64
+	b, ok := cache.Get(key)
+	if !ok {
+		return 0, false
+	}
+	err := json.Unmarshal(b, &v)
+	if err != nil {
+		slog.Error("Failed to unmarshal cache value", "value", b, "error", err)
+		return 0, false
+	}
+	return v, true
+}
+
+func storeCacheInt64(cache CacheService, key string, v int64) error {
+	b, err := json.Marshal(&v)
+	if err != nil {
+		return err
+
+	}
+	cache.Set(key, b, 0)
+	return nil
 }

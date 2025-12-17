@@ -4,40 +4,20 @@ import (
 	"net/http"
 	"os"
 	"testing"
-	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/eveimageservice"
 )
-
-type cache map[string][]byte
-
-func newCache() cache {
-	return make(cache)
-}
-
-func (c cache) Get(k string) ([]byte, bool) {
-	v, ok := c[k]
-	return v, ok
-}
-
-func (c cache) Set(k string, v []byte, d time.Duration) {
-	c[k] = v
-}
-
-func (c cache) Clear() {
-	for k := range c {
-		delete(c, k)
-	}
-}
 
 func TestImageFetching(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	t.Run("can fetch an alliance logo from the image server", func(t *testing.T) {
 		// given
-		c := newCache()
+		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/alliance.png")
 		if err != nil {
 			t.Fatal(err)
@@ -57,7 +37,7 @@ func TestImageFetching(t *testing.T) {
 	})
 	t.Run("can fetch a character portrait from the image server", func(t *testing.T) {
 		// given
-		c := newCache()
+		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/character.jpeg")
 		if err != nil {
 			t.Fatal(err)
@@ -78,7 +58,7 @@ func TestImageFetching(t *testing.T) {
 	})
 	t.Run("can fetch a corporation logo from the image server", func(t *testing.T) {
 		// given
-		c := newCache()
+		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/corporation.png")
 		if err != nil {
 			t.Fatal(err)
@@ -99,7 +79,7 @@ func TestImageFetching(t *testing.T) {
 	})
 	t.Run("can fetch a faction logo from the image server", func(t *testing.T) {
 		// given
-		c := newCache()
+		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/faction.png")
 		if err != nil {
 			t.Fatal(err)
@@ -120,7 +100,7 @@ func TestImageFetching(t *testing.T) {
 	})
 	t.Run("can fetch a type icon from the image server", func(t *testing.T) {
 		// given
-		c := newCache()
+		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/type.jpeg")
 		if err != nil {
 			t.Fatal(err)
@@ -141,7 +121,7 @@ func TestImageFetching(t *testing.T) {
 	})
 	t.Run("can fetch a type render from the image server", func(t *testing.T) {
 		// given
-		c := newCache()
+		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/type.jpeg")
 		if err != nil {
 			t.Fatal(err)
@@ -162,7 +142,7 @@ func TestImageFetching(t *testing.T) {
 	})
 	t.Run("can fetch a type BPO from the image server", func(t *testing.T) {
 		// given
-		c := newCache()
+		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/type.jpeg")
 		if err != nil {
 			t.Fatal(err)
@@ -183,7 +163,7 @@ func TestImageFetching(t *testing.T) {
 	})
 	t.Run("can fetch a type BPC from the image server", func(t *testing.T) {
 		// given
-		c := newCache()
+		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/type.jpeg")
 		if err != nil {
 			t.Fatal(err)
@@ -204,7 +184,7 @@ func TestImageFetching(t *testing.T) {
 	})
 	t.Run("should convert images size errors", func(t *testing.T) {
 		// given
-		c := newCache()
+		c := testutil.NewCacheFake()
 		dat, err := os.ReadFile("testdata/character.jpeg")
 		if err != nil {
 			t.Fatal(err)
@@ -223,7 +203,7 @@ func TestImageFetching(t *testing.T) {
 	})
 	t.Run("should return placeholder and not access network in offline mode", func(t *testing.T) {
 		// given
-		c := newCache()
+		c := testutil.NewCacheFake()
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -247,7 +227,8 @@ func TestHTTPError(t *testing.T) {
 }
 
 func TestOffline(t *testing.T) {
-	s := eveimageservice.New(newCache(), http.DefaultClient, true)
+	c := testutil.NewCacheFake()
+	s := eveimageservice.New(c, http.DefaultClient, true)
 	x, err := s.CharacterPortrait(123, 64)
 	if assert.NoError(t, err) {
 		assert.NotEmpty(t, x.Content())

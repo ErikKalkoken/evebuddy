@@ -20,6 +20,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 )
 
@@ -203,7 +204,9 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		StatusCacheService: scs,
 		Storage:            st,
 	})
+	pc := testutil.NewCacheFake()
 	cs := characterservice.New(characterservice.Params{
+		Cache:              pc,
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,

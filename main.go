@@ -343,6 +343,7 @@ func main() {
 		log.Fatal(err)
 	}
 	cs := characterservice.New(characterservice.Params{
+		Cache:                  pc,
 		ConcurrencyLimit:       concurrentLimit,
 		ESIClient:              esiClient,
 		EveNotificationService: evenotification.New(eus),
