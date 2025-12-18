@@ -204,9 +204,8 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		StatusCacheService: scs,
 		Storage:            st,
 	})
-	pc := testutil.NewCacheFake()
 	cs := characterservice.New(characterservice.Params{
-		Cache:              pc,
+		Cache:              testutil.NewCacheFake2(),
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,

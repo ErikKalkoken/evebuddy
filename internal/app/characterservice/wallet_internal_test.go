@@ -2,7 +2,6 @@ package characterservice
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"testing"
@@ -655,39 +654,39 @@ func TestListWalletTransactions(t *testing.T) {
 	})
 }
 
-func TestLoadCacheInt64(t *testing.T) {
-	t.Run("returns value when key exists and is valid", func(t *testing.T) {
-		cache := testutil.NewCacheFake()
-		key := "session_id"
-		val := int64(12345)
+// func TestLoadCacheInt64(t *testing.T) {
+// 	t.Run("returns value when key exists and is valid", func(t *testing.T) {
+// 		cache := testutil.NewCacheFake()
+// 		key := "session_id"
+// 		val := int64(12345)
 
-		// Manually prime the fake
-		data, _ := json.Marshal(val)
-		cache.Set(key, data, 0)
+// 		// Manually prime the fake
+// 		data, _ := json.Marshal(val)
+// 		cache.Set(key, data, 0)
 
-		result, ok := loadCacheInt64(cache, key)
+// 		result, ok := loadCacheInt64(cache, key)
 
-		assert.True(t, ok)
-		assert.Equal(t, val, result)
-	})
+// 		assert.True(t, ok)
+// 		assert.Equal(t, val, result)
+// 	})
 
-	t.Run("returns false when key does not exist", func(t *testing.T) {
-		cache := testutil.NewCacheFake()
+// 	t.Run("returns false when key does not exist", func(t *testing.T) {
+// 		cache := testutil.NewCacheFake()
 
-		result, ok := loadCacheInt64(cache, "missing_key")
+// 		result, ok := loadCacheInt64(cache, "missing_key")
 
-		assert.False(t, ok)
-		assert.Zero(t, result)
-	})
+// 		assert.False(t, ok)
+// 		assert.Zero(t, result)
+// 	})
 
-	t.Run("returns false and logs error on invalid JSON", func(t *testing.T) {
-		cache := testutil.NewCacheFake()
-		key := "bad_data"
-		cache.Set(key, []byte("not-an-integer"), 0)
+// 	t.Run("returns false and logs error on invalid JSON", func(t *testing.T) {
+// 		cache := testutil.NewCacheFake()
+// 		key := "bad_data"
+// 		cache.Set(key, []byte("not-an-integer"), 0)
 
-		result, ok := loadCacheInt64(cache, key)
+// 		result, ok := loadCacheInt64(cache, key)
 
-		assert.False(t, ok)
-		assert.Zero(t, result)
-	})
-}
+// 		assert.False(t, ok)
+// 		assert.Zero(t, result)
+// 	})
+// }

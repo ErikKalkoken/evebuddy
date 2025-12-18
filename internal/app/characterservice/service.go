@@ -24,8 +24,8 @@ type AuthClient interface {
 
 // CacheService defines a cache service
 type CacheService interface {
-	Get(string) ([]byte, bool)
-	Set(string, []byte, time.Duration)
+	GetInt64(string) (int64, bool)
+	SetInt64(string, int64, time.Duration)
 }
 
 // CharacterService provides access to all managed Eve Online characters both online and from local storage.

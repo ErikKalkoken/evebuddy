@@ -240,3 +240,21 @@ func (c CacheFake) Clear() {
 		delete(c, k)
 	}
 }
+
+type CacheFake2 map[string]any
+
+func NewCacheFake2() CacheFake2 {
+	return make(CacheFake2)
+}
+
+func (c CacheFake2) GetInt64(k string) (int64, bool) {
+	v, ok := c[k]
+	if !ok {
+		return 0, false
+	}
+	return v.(int64), true
+}
+
+func (c CacheFake2) SetInt64(k string, v int64, d time.Duration) {
+	c[k] = v
+}
