@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"slices"
 
-	"github.com/ErikKalkoken/kx/set"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
 

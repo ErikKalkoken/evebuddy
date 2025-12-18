@@ -22,7 +22,7 @@ import (
 	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	kxtheme "github.com/ErikKalkoken/fyne-kx/theme"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-	"github.com/ErikKalkoken/kx/set"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/maniartech/signals"
 	"golang.org/x/sync/errgroup"
 

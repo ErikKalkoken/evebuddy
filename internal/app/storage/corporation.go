@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ErikKalkoken/kx/set"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/mattn/go-sqlite3"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"

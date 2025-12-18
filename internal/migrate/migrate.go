@@ -13,7 +13,7 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
-	"github.com/ErikKalkoken/kx/set"
+	"github.com/ErikKalkoken/go-set"
 )
 
 type MigrateFS interface {

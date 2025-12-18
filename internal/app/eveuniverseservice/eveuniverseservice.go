@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/ErikKalkoken/kx/set"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/singleflight"

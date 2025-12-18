@@ -21,7 +21,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-	"github.com/ErikKalkoken/kx/set"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/dustin/go-humanize"
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"

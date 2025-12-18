@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/kx/set"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"

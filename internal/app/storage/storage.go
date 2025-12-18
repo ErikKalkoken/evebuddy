@@ -12,10 +12,11 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
+	"github.com/ErikKalkoken/go-set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/migrate"
-	"github.com/ErikKalkoken/kx/set"
 )
 
 //go:embed migrations/*.sql

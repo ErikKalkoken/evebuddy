@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ErikKalkoken/kx/set"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/antihax/goesi/esi"
 	"github.com/icrowley/fake"
 	"golang.org/x/sync/errgroup"

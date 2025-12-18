@@ -13,7 +13,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-	"github.com/ErikKalkoken/kx/set"
+	"github.com/ErikKalkoken/go-set"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"

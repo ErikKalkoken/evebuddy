@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/ErikKalkoken/kx/set"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
