@@ -37,34 +37,21 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			var entries []esi.GetCharactersCharacterIdWalletJournal200Ok
-			var err error
-			cacheKey := fmt.Sprintf("wallet-journal-last-id-%d", characterID)
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWalletJournal")
-			if lastID, ok := s.cache.GetInt64(cacheKey); ok {
-				entries, err = xgoesi.FetchPagesWithStop(
-					func(pageNum int) ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
-						arg := &esi.GetCharactersCharacterIdWalletJournalOpts{
-							Page: esioptional.NewInt32(int32(pageNum)),
-						}
-						return s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWalletJournal(ctx, characterID, arg)
-					}, func(x esi.GetCharactersCharacterIdWalletJournal200Ok) bool {
-						return x.Id <= lastID
-					})
-				if err != nil {
-					return false, err
-				}
-			} else {
-				entries, err = xgoesi.FetchPages(
-					func(pageNum int) ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
-						arg := &esi.GetCharactersCharacterIdWalletJournalOpts{
-							Page: esioptional.NewInt32(int32(pageNum)),
-						}
-						return s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWalletJournal(ctx, characterID, arg)
-					})
-				if err != nil {
-					return false, err
-				}
+			cacheKey := fmt.Sprintf("wallet-journal-last-id-%d", characterID)
+			lastID, found := s.cache.GetInt64(cacheKey)
+			checkLastID := found && !arg.ForceUpdate
+			entries, err := xgoesi.FetchPagesWithStop(
+				func(pageNum int) ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
+					arg := &esi.GetCharactersCharacterIdWalletJournalOpts{
+						Page: esioptional.NewInt32(int32(pageNum)),
+					}
+					return s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWalletJournal(ctx, characterID, arg)
+				}, func(x esi.GetCharactersCharacterIdWalletJournal200Ok) bool {
+					return checkLastID && x.Id <= lastID
+				})
+			if err != nil {
+				return false, err
 			}
 			ids := xslices.Map(entries, func(x esi.GetCharactersCharacterIdWalletJournal200Ok) int64 {
 				return x.Id
@@ -150,12 +137,10 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg a
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			cacheKey := fmt.Sprintf("wallet-transactions-last-id-character-%d", characterID)
-			var lastID int64
-			if x, ok := s.cache.GetInt64(cacheKey); ok {
-				lastID = x
-			}
-			transactions, err := s.fetchWalletTransactionsESI(ctx, characterID, arg.MaxWalletTransactions, lastID)
+			cacheKey := fmt.Sprintf("wallet-transactions-last-id-%d", characterID)
+			lastID, found := s.cache.GetInt64(cacheKey)
+			checkLastID := found && !arg.ForceUpdate
+			transactions, err := s.fetchWalletTransactionsESI(ctx, characterID, arg.MaxWalletTransactions, lastID, checkLastID)
 			if err != nil {
 				return false, err
 			}
@@ -230,8 +215,8 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg a
 }
 
 // fetchWalletTransactionsESI fetches wallet transactions from ESI with paging and returns them.
-func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, characterID int32, maxTransactions int, lastID int64) ([]esi.GetCharactersCharacterIdWalletTransactions200Ok, error) {
-	var tx []esi.GetCharactersCharacterIdWalletTransactions200Ok
+func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, characterID int32, maxTransactions int, lastID int64, checkLastID bool) ([]esi.GetCharactersCharacterIdWalletTransactions200Ok, error) {
+	var transactions []esi.GetCharactersCharacterIdWalletTransactions200Ok
 	var fromID int64
 	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWalletTransactions")
 	for {
@@ -245,19 +230,19 @@ func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, chara
 		if err != nil {
 			return nil, err
 		}
-		tx = slices.Concat(tx, oo)
-		isLimitExceeded := (maxTransactions != 0 && len(tx)+maxTransactionsPerPage > maxTransactions)
+		transactions = slices.Concat(transactions, oo)
+		isLimitExceeded := (maxTransactions != 0 && len(transactions)+maxTransactionsPerPage > maxTransactions)
 		if len(oo) < maxTransactionsPerPage || isLimitExceeded {
 			break
 		}
 		ids := xslices.Map(oo, func(x esi.GetCharactersCharacterIdWalletTransactions200Ok) int64 {
 			return x.TransactionId
 		})
-		if slices.Contains(ids, lastID) {
+		if checkLastID && slices.Contains(ids, lastID) {
 			break // stop reading once a known ID is found
 		}
 		fromID = slices.Min(ids)
 	}
-	slog.Debug("Received wallet transactions", "characterID", characterID, "count", len(tx))
-	return tx, nil
+	slog.Debug("Received wallet transactions", "characterID", characterID, "count", len(transactions))
+	return transactions, nil
 }

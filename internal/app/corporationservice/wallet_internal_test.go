@@ -219,7 +219,6 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		assert.Equal(t, firstParty.ID, e.FirstParty.ID)
 		assert.Equal(t, "contract_deposit", e.RefType)
 		assert.Equal(t, secondParty.ID, e.SecondParty.ID)
-
 		ids, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
 			DivisionID:    1,
@@ -327,6 +326,32 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 1, ids.Size())
 	})
+	t.Run("should handle empty response", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		c := factory.CreateCorporation()
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/wallets/\d+/journal/`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
+		)
+		// when
+		changed, err := s.updateWalletJournalESI(ctx, app.CorporationSectionUpdateParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletJournal1,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		ids, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, 0, ids.Size())
+	})
 	t.Run("should fetch multiple pages", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -341,38 +366,34 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v3/corporations/%d/wallets/%d/journal/", c.ID, 1),
-			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
-				{
-					"amount":          -100000,
-					"balance":         500000.4316,
-					"context_id":      4,
-					"context_id_type": "contract_id",
-					"date":            "2018-02-23T14:31:32Z",
-					"description":     "First",
-					"first_party_id":  2112625428,
-					"id":              89,
-					"ref_type":        "contract_deposit",
-					"second_party_id": 1000132,
-				},
-			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"amount":          -100000,
+				"balance":         500000.4316,
+				"context_id":      4,
+				"context_id_type": "contract_id",
+				"date":            "2018-02-23T14:31:32Z",
+				"description":     "First",
+				"first_party_id":  2112625428,
+				"id":              89,
+				"ref_type":        "contract_deposit",
+				"second_party_id": 1000132,
+			}}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
 		)
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v3/corporations/%d/wallets/%d/journal/?page=2", c.ID, 1),
-			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
-				{
-					"amount":          -110000,
-					"balance":         500000.4316,
-					"context_id":      4,
-					"context_id_type": "contract_id",
-					"date":            "2018-02-23T15:31:32Z",
-					"description":     "Second",
-					"first_party_id":  2112625428,
-					"id":              90,
-					"ref_type":        "contract_deposit",
-					"second_party_id": 1000132,
-				},
-			}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"amount":          -110000,
+				"balance":         500000.4316,
+				"context_id":      4,
+				"context_id_type": "contract_id",
+				"date":            "2018-02-23T15:31:32Z",
+				"description":     "Second",
+				"first_party_id":  2112625428,
+				"id":              90,
+				"ref_type":        "contract_deposit",
+				"second_party_id": 1000132,
+			}}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
 		)
 		// when
 		changed, err := s.updateWalletJournalESI(ctx, app.CorporationSectionUpdateParams{
@@ -395,7 +416,6 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			})
 			require.NoError(t, err)
 			assert.Equal(t, "First", x1.Description)
-
 			x2, err := st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
 				CorporationID: c.ID,
 				DivisionID:    1,
@@ -403,7 +423,127 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			})
 			require.NoError(t, err)
 			assert.Equal(t, "Second", x2.Description)
+			assert.Equal(t, 2, httpmock.GetTotalCallCount())
 		}
+	})
+	t.Run("should fetch first page only when entries already fetched previouly", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
+		c := factory.CreateCorporation()
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: 2112625428})
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
+		pages := "2"
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v3/corporations/%d/wallets/%d/journal/", c.ID, 1),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"amount":          -100000,
+				"balance":         500000.4316,
+				"context_id":      4,
+				"context_id_type": "contract_id",
+				"date":            "2018-02-23T14:31:32Z",
+				"description":     "First",
+				"first_party_id":  2112625428,
+				"id":              89,
+				"ref_type":        "contract_deposit",
+				"second_party_id": 1000132,
+			}}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v3/corporations/%d/wallets/%d/journal/?page=2", c.ID, 1),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"amount":          -110000,
+				"balance":         500000.4316,
+				"context_id":      4,
+				"context_id_type": "contract_id",
+				"date":            "2018-02-23T15:31:32Z",
+				"description":     "Second",
+				"first_party_id":  2112625428,
+				"id":              90,
+				"ref_type":        "contract_deposit",
+				"second_party_id": 1000132,
+			}}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
+		)
+		_, err := s.updateWalletJournalESI(ctx, app.CorporationSectionUpdateParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletJournal1,
+		})
+		require.NoError(t, err)
+		httpmock.ZeroCallCounters()
+		// when
+		changed, err := s.updateWalletJournalESI(ctx, app.CorporationSectionUpdateParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletJournal1,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+	})
+	t.Run("should fetch all pages when forced", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
+		c := factory.CreateCorporation()
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: 2112625428})
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
+		pages := "2"
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v3/corporations/%d/wallets/%d/journal/", c.ID, 1),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"amount":          -100000,
+				"balance":         500000.4316,
+				"context_id":      4,
+				"context_id_type": "contract_id",
+				"date":            "2018-02-23T14:31:32Z",
+				"description":     "First",
+				"first_party_id":  2112625428,
+				"id":              89,
+				"ref_type":        "contract_deposit",
+				"second_party_id": 1000132,
+			}}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v3/corporations/%d/wallets/%d/journal/?page=2", c.ID, 1),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"amount":          -110000,
+				"balance":         500000.4316,
+				"context_id":      4,
+				"context_id_type": "contract_id",
+				"date":            "2018-02-23T15:31:32Z",
+				"description":     "Second",
+				"first_party_id":  2112625428,
+				"id":              90,
+				"ref_type":        "contract_deposit",
+				"second_party_id": 1000132,
+			}}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
+		)
+		_, err := s.updateWalletJournalESI(ctx, app.CorporationSectionUpdateParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletJournal1,
+		})
+		require.NoError(t, err)
+		httpmock.ZeroCallCounters()
+		// when
+		changed, err := s.updateWalletJournalESI(ctx, app.CorporationSectionUpdateParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletJournal1,
+			ForceUpdate:   true,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		assert.Equal(t, 2, httpmock.GetTotalCallCount())
 	})
 }
 
@@ -494,7 +634,6 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		assert.Equal(t, int32(1), e.Quantity)
 		assert.Equal(t, eveType.ID, e.Type.ID)
 		assert.Equal(t, 1.23, e.UnitPrice)
-
 		ids, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
 			DivisionID:    1,
@@ -599,6 +738,32 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		want := set.Of[int64](1234567890)
 		xassert.EqualSet(t, want, got)
 	})
+	t.Run("should handle empty response", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		c := factory.CreateCorporation()
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi\.evetech\.net/v\d+/corporations/\d+/wallets/\d+/transactions/`,
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
+		)
+		// when
+		changed, err := s.updateWalletTransactionESI(ctx, app.CorporationSectionUpdateParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletTransactions1,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		ids, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, 0, ids.Size())
+	})
 	t.Run("should fetch multiple pages", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -658,6 +823,132 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		})
 		require.NoError(t, err)
 		assert.Equal(t, 2501, ids.Size())
+		assert.Equal(t, 2, httpmock.GetTotalCallCount())
+	})
+	t.Run("should fetch only first page when transactions already fetched previously", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		c := factory.CreateCorporation()
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: 54321})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
+		data := make([]map[string]any, 0)
+		for i := range 2500 {
+			data = append(data, map[string]any{
+				"client_id":      54321,
+				"date":           "2016-10-24T09:00:00Z",
+				"is_buy":         true,
+				"is_personal":    true,
+				"journal_ref_id": 67890,
+				"location_id":    60014719,
+				"quantity":       1,
+				"transaction_id": 1000002500 - i,
+				"type_id":        587,
+				"unit_price":     1.23,
+			})
+		}
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/wallets/%d/transactions/", c.ID, 1),
+			httpmock.NewJsonResponderOrPanic(200, data),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/wallets/%d/transactions/?from_id=1000000001", c.ID, 1),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"client_id":      54321,
+					"date":           "2016-10-24T08:00:00Z",
+					"is_buy":         true,
+					"is_personal":    true,
+					"journal_ref_id": 67891,
+					"location_id":    60014719,
+					"quantity":       1,
+					"transaction_id": 1000000000,
+					"type_id":        587,
+					"unit_price":     9.23,
+				},
+			}),
+		)
+		_, err := s.updateWalletTransactionESI(ctx, app.CorporationSectionUpdateParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletTransactions1,
+		})
+		require.NoError(t, err)
+		httpmock.ZeroCallCounters()
+		// when
+		_, err = s.updateWalletTransactionESI(ctx, app.CorporationSectionUpdateParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletTransactions1,
+		})
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+	})
+	t.Run("should fetch all pages when forced", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(st, Params{CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		c := factory.CreateCorporation()
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: 54321})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
+		data := make([]map[string]any, 0)
+		for i := range 2500 {
+			data = append(data, map[string]any{
+				"client_id":      54321,
+				"date":           "2016-10-24T09:00:00Z",
+				"is_buy":         true,
+				"is_personal":    true,
+				"journal_ref_id": 67890,
+				"location_id":    60014719,
+				"quantity":       1,
+				"transaction_id": 1000002500 - i,
+				"type_id":        587,
+				"unit_price":     1.23,
+			})
+		}
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/wallets/%d/transactions/", c.ID, 1),
+			httpmock.NewJsonResponderOrPanic(200, data),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/corporations/%d/wallets/%d/transactions/?from_id=1000000001", c.ID, 1),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"client_id":      54321,
+					"date":           "2016-10-24T08:00:00Z",
+					"is_buy":         true,
+					"is_personal":    true,
+					"journal_ref_id": 67891,
+					"location_id":    60014719,
+					"quantity":       1,
+					"transaction_id": 1000000000,
+					"type_id":        587,
+					"unit_price":     9.23,
+				},
+			}),
+		)
+		_, err := s.updateWalletTransactionESI(ctx, app.CorporationSectionUpdateParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletTransactions1,
+		})
+		require.NoError(t, err)
+		httpmock.ZeroCallCounters()
+		// when
+		_, err = s.updateWalletTransactionESI(ctx, app.CorporationSectionUpdateParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletTransactions1,
+			ForceUpdate:   true,
+		})
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 2, httpmock.GetTotalCallCount())
 	})
 }
 

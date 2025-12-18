@@ -40,7 +40,7 @@ func (u *baseUI) updateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate 
 	}
 	slog.Debug("Started updating general sections", "sections", sections, "forceUpdate", forceUpdate)
 	wg.Wait()
-	slog.Info("Finished updating general sections", "sections", sections, "forceUpdate", forceUpdate)
+	slog.Debug("Finished updating general sections", "sections", sections, "forceUpdate", forceUpdate)
 }
 
 func (u *baseUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
@@ -119,7 +119,7 @@ func (u *baseUI) updateCharactersIfNeeded(ctx context.Context, forceUpdate bool)
 	}
 	slog.Debug("Started updating characters", "characters", characters, "forceUpdate", forceUpdate)
 	wg.Wait()
-	slog.Info("Finished updating characters", "characters", characters, "forceUpdate", forceUpdate)
+	slog.Debug("Finished updating characters", "characters", characters, "forceUpdate", forceUpdate)
 	return nil
 }
 
@@ -136,7 +136,7 @@ func (u *baseUI) notifyCharactersIfNeeded(ctx context.Context) error {
 	}
 	slog.Debug("Started notifying characters", "characters", characters)
 	wg.Wait()
-	slog.Info("Finished notifying characters", "characters", characters)
+	slog.Debug("Finished notifying characters", "characters", characters)
 	return nil
 }
 
@@ -263,7 +263,7 @@ func (u *baseUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	}
 	slog.Debug("Started updating character", "characterID", characterID, "sections", sections, "forceUpdate", forceUpdate)
 	wg.Wait()
-	slog.Info("Finished updating character", "characterID", characterID, "sections", sections, "forceUpdate", forceUpdate)
+	slog.Debug("Finished updating character", "characterID", characterID, "sections", sections, "forceUpdate", forceUpdate)
 }
 
 // updateCharacterSectionAndRefreshIfNeeded runs update for a character section if needed
@@ -397,7 +397,7 @@ func (u *baseUI) updateCorporationsIfNeeded(ctx context.Context, forceUpdate boo
 	}
 	slog.Debug("Started updating corporations", "corporations", corporations, "forceUpdate", forceUpdate)
 	wg.Wait()
-	slog.Info("Finished updating corporations", "corporations", corporations, "forceUpdate", forceUpdate)
+	slog.Debug("Finished updating corporations", "corporations", corporations, "forceUpdate", forceUpdate)
 	return nil
 }
 
@@ -420,7 +420,7 @@ func (u *baseUI) updateCorporationAndRefreshIfNeeded(ctx context.Context, corpor
 	}
 	slog.Debug("Started updating corporation", "corporationID", corporationID, "sections", sections, "forceUpdate", forceUpdate)
 	wg.Wait()
-	slog.Info("Finished updating corporation", "corporationID", corporationID, "sections", sections, "forceUpdate", forceUpdate)
+	slog.Debug("Finished updating corporation", "corporationID", corporationID, "sections", sections, "forceUpdate", forceUpdate)
 }
 
 // updateCorporationSectionAndRefreshIfNeeded runs update for a corporation section if needed

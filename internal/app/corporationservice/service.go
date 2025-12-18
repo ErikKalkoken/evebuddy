@@ -3,6 +3,7 @@ package corporationservice
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/ErikKalkoken/kx/set"
 	"github.com/antihax/goesi"
@@ -18,8 +19,15 @@ type CharacterService interface {
 	CharacterTokenForCorporation(ctx context.Context, corporationID int32, roles set.Set[app.Role], scopes set.Set[string], checkToken bool) (*app.CharacterToken, error)
 }
 
+// Cache defines a cache.
+type Cache interface {
+	GetInt64(string) (int64, bool)
+	SetInt64(string, int64, time.Duration)
+}
+
 // CorporationService provides access to all managed Eve Online corporations both online and from local storage.
 type CorporationService struct {
+	cache            Cache
 	concurrencyLimit int
 	cs               CharacterService
 	esiClient        *goesi.APIClient
@@ -31,6 +39,7 @@ type CorporationService struct {
 }
 
 type Params struct {
+	Cache              Cache
 	CharacterService   CharacterService
 	ConcurrencyLimit   int // max number of concurrent Goroutines (per group)
 	EveUniverseService *eveuniverseservice.EveUniverseService
@@ -45,6 +54,7 @@ type Params struct {
 // When nil is passed for any parameter a new default instance will be created for it (except for storage).
 func New(arg Params) *CorporationService {
 	s := &CorporationService{
+		cache:            arg.Cache,
 		concurrencyLimit: -1, // Default is no limit
 		cs:               arg.CharacterService,
 		eus:              arg.EveUniverseService,

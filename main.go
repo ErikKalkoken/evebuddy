@@ -3,7 +3,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/binary"
 	"errors"
 	"flag"
 	"fmt"
@@ -357,6 +357,7 @@ func main() {
 
 	// Init Corporation service
 	rs := corporationservice.New(corporationservice.Params{
+		Cache:              newServiceCacheAdapter(pc, "corporationservice-"),
 		CharacterService:   cs,
 		ConcurrencyLimit:   concurrentLimit,
 		EsiClient:          esiClient,
@@ -518,25 +519,17 @@ func newServiceCacheAdapter(c *pcache.PCache, prefix string) *serviceCacheAdapte
 }
 
 func (a *serviceCacheAdapter) GetInt64(key string) (int64, bool) {
-	var v int64
 	b, ok := a.cache.Get(key)
 	if !ok {
 		return 0, false
 	}
-	err := json.Unmarshal(b, &v)
-	if err != nil {
-		slog.Error("Failed to unmarshal cache value", "data", b, "error", err)
-		return 0, false
-	}
+	v := int64(binary.BigEndian.Uint64(b))
 	return v, true
 }
 
 func (a *serviceCacheAdapter) SetInt64(key string, v int64, timeout time.Duration) {
-	b, err := json.Marshal(&v)
-	if err != nil {
-		slog.Error("Failed to marshal cache value", "value", v, "error", err)
-		return
-	}
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, uint64(v))
 	a.cache.Set(key, b, timeout)
 }
 

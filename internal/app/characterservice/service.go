@@ -22,8 +22,8 @@ type AuthClient interface {
 	RefreshToken(ctx context.Context, token *eveauth.Token) error
 }
 
-// CacheService defines a cache service
-type CacheService interface {
+// Cache defines a cache.
+type Cache interface {
 	GetInt64(string) (int64, bool)
 	SetInt64(string, int64, time.Duration)
 }
@@ -31,7 +31,7 @@ type CacheService interface {
 // CharacterService provides access to all managed Eve Online characters both online and from local storage.
 type CharacterService struct {
 	authClient       AuthClient
-	cache            CacheService
+	cache            Cache
 	concurrencyLimit int
 	ens              *evenotification.EveNotificationService
 	esiClient        *goesi.APIClient
@@ -45,7 +45,7 @@ type CharacterService struct {
 
 type Params struct {
 	ConcurrencyLimit       int // max number of concurrent Goroutines (per group)
-	Cache                  CacheService
+	Cache                  Cache
 	EveNotificationService *evenotification.EveNotificationService
 	EveUniverseService     *eveuniverseservice.EveUniverseService
 	AuthClient             AuthClient

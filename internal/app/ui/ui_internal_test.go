@@ -211,6 +211,7 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, isDesktop bool) *base
 		Storage:            st,
 	})
 	rs := corporationservice.New(corporationservice.Params{
+		Cache: testutil.NewCacheFake2(),
 		CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 			AccessToken: "accessToken",
 		}},
