@@ -35,6 +35,7 @@ func NewFake(st *storage.Storage, args ...Params) *CorporationService {
 		Storage:            st,
 	})
 	arg := Params{
+		Cache:              testutil.NewCacheFake2(),
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,

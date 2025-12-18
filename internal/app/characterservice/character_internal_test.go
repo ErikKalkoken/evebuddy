@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscacheservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 )
 
@@ -22,6 +23,7 @@ func NewFake(st *storage.Storage, args ...Params) *CharacterService {
 		Storage:            st,
 	})
 	arg := Params{
+		Cache:              testutil.NewCacheFake2(),
 		EveUniverseService: eus,
 		StatusCacheService: scs,
 		Storage:            st,

@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func (s *CharacterService) GetWalletJournalEntry(ctx context.Context, characterID int32, refID int64) (*app.CharacterWalletJournalEntry, error) {
@@ -28,8 +29,6 @@ func (s *CharacterService) ListWalletJournalEntries(ctx context.Context, charact
 	return s.st.ListCharacterWalletJournalEntries(ctx, characterID)
 }
 
-// TODO: Add limit when fetching wallet journal
-
 // updateWalletJournalEntryESI updates the wallet journal from ESI and reports whether it has changed.
 func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg app.CharacterSectionUpdateParams) (bool, error) {
 	if arg.Section != app.SectionCharacterWalletJournal {
@@ -39,15 +38,26 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWalletJournal")
-			entries, err := xgoesi.FetchPages(
+			cacheKey := fmt.Sprintf("wallet-journal-last-id-%d", characterID)
+			lastID, found := s.cache.GetInt64(cacheKey)
+			checkLastID := found && !arg.ForceUpdate
+			entries, err := xgoesi.FetchPagesWithStop(
 				func(pageNum int) ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
 					arg := &esi.GetCharactersCharacterIdWalletJournalOpts{
 						Page: esioptional.NewInt32(int32(pageNum)),
 					}
 					return s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWalletJournal(ctx, characterID, arg)
+				}, func(x esi.GetCharactersCharacterIdWalletJournal200Ok) bool {
+					return checkLastID && x.Id <= lastID
 				})
 			if err != nil {
 				return false, err
+			}
+			ids := xslices.Map(entries, func(x esi.GetCharactersCharacterIdWalletJournal200Ok) int64 {
+				return x.Id
+			})
+			if len(ids) > 0 {
+				s.cache.SetInt64(cacheKey, slices.Max(ids), 0)
 			}
 			slog.Debug("Received wallet journal from ESI", "entries", len(entries), "characterID", characterID)
 			return entries, nil
@@ -127,9 +137,18 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg a
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			transactions, err := s.fetchWalletTransactionsESI(ctx, characterID, arg.MaxWalletTransactions)
+			cacheKey := fmt.Sprintf("wallet-transactions-last-id-%d", characterID)
+			lastID, found := s.cache.GetInt64(cacheKey)
+			checkLastID := found && !arg.ForceUpdate
+			transactions, err := s.fetchWalletTransactionsESI(ctx, characterID, arg.MaxWalletTransactions, lastID, checkLastID)
 			if err != nil {
 				return false, err
+			}
+			ids := xslices.Map(transactions, func(x esi.GetCharactersCharacterIdWalletTransactions200Ok) int64 {
+				return x.TransactionId
+			})
+			if len(ids) > 0 {
+				s.cache.SetInt64(cacheKey, slices.Max(ids), 0)
 			}
 			return transactions, nil
 		},
@@ -196,14 +215,14 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg a
 }
 
 // fetchWalletTransactionsESI fetches wallet transactions from ESI with paging and returns them.
-func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, characterID int32, maxTransactions int) ([]esi.GetCharactersCharacterIdWalletTransactions200Ok, error) {
-	var oo2 []esi.GetCharactersCharacterIdWalletTransactions200Ok
-	var lastID int64
+func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, characterID int32, maxTransactions int, lastID int64, checkLastID bool) ([]esi.GetCharactersCharacterIdWalletTransactions200Ok, error) {
+	var transactions []esi.GetCharactersCharacterIdWalletTransactions200Ok
+	var fromID int64
 	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWalletTransactions")
 	for {
 		var opts *esi.GetCharactersCharacterIdWalletTransactionsOpts
-		if lastID > 0 {
-			opts = &esi.GetCharactersCharacterIdWalletTransactionsOpts{FromId: esioptional.NewInt64(lastID)}
+		if fromID > 0 {
+			opts = &esi.GetCharactersCharacterIdWalletTransactionsOpts{FromId: esioptional.NewInt64(fromID)}
 		} else {
 			opts = nil
 		}
@@ -211,17 +230,19 @@ func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, chara
 		if err != nil {
 			return nil, err
 		}
-		oo2 = slices.Concat(oo2, oo)
-		isLimitExceeded := (maxTransactions != 0 && len(oo2)+maxTransactionsPerPage > maxTransactions)
+		transactions = slices.Concat(transactions, oo)
+		isLimitExceeded := (maxTransactions != 0 && len(transactions)+maxTransactionsPerPage > maxTransactions)
 		if len(oo) < maxTransactionsPerPage || isLimitExceeded {
 			break
 		}
-		ids := make([]int64, len(oo))
-		for i, o := range oo {
-			ids[i] = o.TransactionId
+		ids := xslices.Map(oo, func(x esi.GetCharactersCharacterIdWalletTransactions200Ok) int64 {
+			return x.TransactionId
+		})
+		if checkLastID && slices.Contains(ids, lastID) {
+			break // stop reading once a known ID is found
 		}
-		lastID = slices.Min(ids)
+		fromID = slices.Min(ids)
 	}
-	slog.Debug("Received wallet transactions", "characterID", characterID, "count", len(oo2))
-	return oo2, nil
+	slog.Debug("Received wallet transactions", "characterID", characterID, "count", len(transactions))
+	return transactions, nil
 }

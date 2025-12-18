@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"flag"
 	"fmt"
@@ -284,7 +285,7 @@ func main() {
 	rhc1.CheckRetry = customCheckRetry // also retry on 420s
 	rhc1.Backoff = customBackoff       // also retry on 420s
 	rhc1.HTTPClient.Transport = &httpcache.Transport{
-		Cache:               newCacheAdapter(pc, "esicache-", 24*time.Hour),
+		Cache:               newHTTPCacheAdapter(pc, "esicache-", 24*time.Hour),
 		MarkCachedResponses: true,
 		Transport: &xgoesi.RateLimiter{
 			Transport: &xgoesi.DowntimeBlocker{},
@@ -301,7 +302,7 @@ func main() {
 	rhc2.RetryWaitMax = 30 * time.Second
 	rhc2.RetryMax = 4
 	rhc2.HTTPClient.Transport = &httpcache.Transport{
-		Cache:               newCacheAdapter(pc, "httpcache-", 24*time.Hour),
+		Cache:               newHTTPCacheAdapter(pc, "httpcache-", 24*time.Hour),
 		MarkCachedResponses: true,
 	}
 	rhc2.Logger = slog.Default()
@@ -343,6 +344,7 @@ func main() {
 		log.Fatal(err)
 	}
 	cs := characterservice.New(characterservice.Params{
+		Cache:                  newServiceCacheAdapter(pc, "characterservice-"),
 		ConcurrencyLimit:       concurrentLimit,
 		ESIClient:              esiClient,
 		EveNotificationService: evenotification.New(eus),
@@ -355,6 +357,7 @@ func main() {
 
 	// Init Corporation service
 	rs := corporationservice.New(corporationservice.Params{
+		Cache:              newServiceCacheAdapter(pc, "corporationservice-"),
 		CharacterService:   cs,
 		ConcurrencyLimit:   concurrentLimit,
 		EsiClient:          esiClient,
@@ -468,37 +471,66 @@ func setupCrashFile(path string) error {
 	return nil
 }
 
-// cacheAdapter adopts pcache to be used with httpcache.
-type cacheAdapter struct {
+// httpCacheAdapter adopts pcache to be used with httpcache.
+type httpCacheAdapter struct {
 	c       *pcache.PCache
 	prefix  string
 	timeout time.Duration
 }
 
-var _ httpcache.Cache = (*cacheAdapter)(nil)
+var _ httpcache.Cache = (*httpCacheAdapter)(nil)
 
-// newCacheAdapter returns a new cacheAdapter.
+// newHTTPCacheAdapter returns a new cacheAdapter.
 // The prefix is added to all cache keys to prevent conflicts.
 // Keys are stored with the given cache timeout. A timeout of 0 means that keys never expire.
-func newCacheAdapter(c *pcache.PCache, prefix string, timeout time.Duration) *cacheAdapter {
-	ca := &cacheAdapter{c: c, prefix: prefix, timeout: timeout}
+func newHTTPCacheAdapter(c *pcache.PCache, prefix string, timeout time.Duration) *httpCacheAdapter {
+	ca := &httpCacheAdapter{c: c, prefix: prefix, timeout: timeout}
 	return ca
 }
 
-func (ca *cacheAdapter) Get(key string) ([]byte, bool) {
+func (ca *httpCacheAdapter) Get(key string) ([]byte, bool) {
 	return ca.c.Get(ca.makeKey(key))
 }
 
-func (ca *cacheAdapter) Set(key string, b []byte) {
+func (ca *httpCacheAdapter) Set(key string, b []byte) {
 	ca.c.Set(ca.makeKey(key), b, ca.timeout)
 }
 
-func (ca *cacheAdapter) Delete(key string) {
+func (ca *httpCacheAdapter) Delete(key string) {
 	ca.c.Delete(ca.makeKey(key))
 }
 
-func (ca *cacheAdapter) makeKey(key string) string {
+func (ca *httpCacheAdapter) makeKey(key string) string {
 	return ca.prefix + key
+}
+
+// serviceCacheAdapter adopts pcache to be used with services.
+type serviceCacheAdapter struct {
+	cache   *pcache.PCache
+	prefix  string
+	timeout time.Duration
+}
+
+// newServiceCacheAdapter returns a new cacheAdapter2.
+// The prefix is added to all cache keys to prevent conflicts.
+func newServiceCacheAdapter(c *pcache.PCache, prefix string) *serviceCacheAdapter {
+	a := &serviceCacheAdapter{cache: c, prefix: prefix}
+	return a
+}
+
+func (a *serviceCacheAdapter) GetInt64(key string) (int64, bool) {
+	b, ok := a.cache.Get(key)
+	if !ok {
+		return 0, false
+	}
+	v := int64(binary.BigEndian.Uint64(b))
+	return v, true
+}
+
+func (a *serviceCacheAdapter) SetInt64(key string, v int64, timeout time.Duration) {
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, uint64(v))
+	a.cache.Set(key, b, timeout)
 }
 
 // customCheckRetry is a custom retry policy for a retryablehttp client

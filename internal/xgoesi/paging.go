@@ -11,19 +11,19 @@ import (
 // FetchPages fetches and returns the combined list of items
 // from all pages of an ESI endpoint that supports paging with X-Pages.
 func FetchPages[T any](fetch func(page int) ([]T, *http.Response, error)) ([]T, error) {
-	return FetchPagesWithExit(fetch, nil)
+	return FetchPagesWithStop(fetch, nil)
 }
 
-// FetchPagesWithExit fetches and returns the combined list of items
+// FetchPagesWithStop fetches and returns the combined list of items
 // from all pages of an ESI endpoint that supports paging with X-Pages.
-// Will stop fetching subsequent pages when a page returns an item for which the found function returns true.
+// Will stop fetching subsequent pages when a page returns an item for which the stop function returns true.
 // If found is nil it will be ignored.
-func FetchPagesWithExit[T any](fetch func(page int) ([]T, *http.Response, error), found func(x T) bool) ([]T, error) {
+func FetchPagesWithStop[T any](fetch func(page int) ([]T, *http.Response, error), stop func(x T) bool) ([]T, error) {
 	exit := func(s []T) bool {
-		if found == nil {
+		if stop == nil {
 			return false
 		}
-		return slices.ContainsFunc(s, found)
+		return slices.ContainsFunc(s, stop)
 	}
 	items, r, err := fetch(1)
 	if err != nil {
