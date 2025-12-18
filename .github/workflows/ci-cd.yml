@@ -66,7 +66,7 @@ jobs:
 
       - name: Package Fyne app
         run: |
-          fyne package --os linux --release --tags migrated_fynedo --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
+          fyne package --os linux --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
           mv '${{ env.FULLNAME }}.tar.xz' ${{ env.NAME }}-${{ env.VERSION }}-linux-amd64.tar.xz
 
       - name: Inspect
@@ -100,7 +100,7 @@ jobs:
         run: go install fyne.io/tools/cmd/fyne@latest
 
       - name: Package Fyne app
-        run: fyne package --os linux --release --tags migrated_fynedo --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
+        run: fyne package --os linux --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
 
       - name: Inspect
         run: ls -R
@@ -149,7 +149,7 @@ jobs:
         run: go install fyne.io/tools/cmd/fyne@latest
 
       - name: Package
-        run: fyne package --os windows --release --tags migrated_fynedo --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
+        run: fyne package --os windows --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
 
       - name: Inspect
         run: ls -R
@@ -191,7 +191,7 @@ jobs:
         run: go install fyne.io/tools/cmd/fyne@latest
 
       - name: Package app bundles
-        run: fyne package --os darwin --release --tags migrated_fynedo --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
+        run: fyne package --os darwin --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
 
       - name: Inspect
         run: ls -R
@@ -233,7 +233,7 @@ jobs:
         run: go install fyne.io/tools/cmd/fyne@latest
 
       - name: Package app bundles
-        run: fyne package --os darwin --release --tags migrated_fynedo --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
+        run: fyne package --os darwin --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
 
       - name: Inspect
         run: ls -R
@@ -282,7 +282,7 @@ jobs:
       - name: Package Fyne app
         run: |
           export ANDROID_NDK_HOME="$PWD/android-ndk-r27c"
-          fyne package --os android --release --tags migrated_fynedo --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
+          fyne package --os android --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
           ls
 
       - uses: actions/upload-artifact@v4
