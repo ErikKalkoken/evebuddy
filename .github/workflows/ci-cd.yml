@@ -99,16 +99,16 @@ jobs:
       - name: Install Fyne tool
         run: go install fyne.io/tools/cmd/fyne@latest
 
+      - name: Set version
+        run: |
+          VERSION=${{ github.ref_name }}
+          echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
+
       - name: Package Fyne app
         run: fyne package --os linux --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
 
       - name: Inspect
         run: ls -R
-
-      - name: Set version
-        run: |
-          VERSION=${{ github.ref_name }}
-          echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
       - name: Build AppImage
         run: tools/build_appimage.sh
@@ -148,16 +148,16 @@ jobs:
       - name: Install Fyne tool
         run: go install fyne.io/tools/cmd/fyne@latest
 
+      - name: Set version
+        run: |
+          VERSION=${{ github.ref_name }}
+          echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
+
       - name: Package
         run: fyne package --os windows --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
 
       - name: Inspect
         run: ls -R
-
-      - name: Set version
-        run: |
-          VERSION=${{ github.ref_name }}
-          echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
       - name: ZIP package
         run: zip -j ${{ env.NAME }}-${{ env.VERSION }}-windows-x64.zip "${{ env.FULLNAME }}.exe"
@@ -190,16 +190,16 @@ jobs:
       - name: Install Fyne tool
         run: go install fyne.io/tools/cmd/fyne@latest
 
+      - name: Set version
+        run: |
+          VERSION=${{ github.ref_name }}
+          echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
+
       - name: Package app bundles
         run: fyne package --os darwin --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
 
       - name: Inspect
         run: ls -R
-
-      - name: Set version
-        run: |
-          VERSION=${{ github.ref_name }}
-          echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
       - name: ZIP app bundle
         run: zip --symlinks -r ${{ env.NAME }}-${{ env.VERSION }}-darwin-arm64.zip "${{ env.FULLNAME }}.app/"
@@ -232,16 +232,16 @@ jobs:
       - name: Install Fyne tool
         run: go install fyne.io/tools/cmd/fyne@latest
 
+      - name: Set version
+        run: |
+          VERSION=${{ github.ref_name }}
+          echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
+
       - name: Package app bundles
         run: fyne package --os darwin --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
 
       - name: Inspect
         run: ls -R
-
-      - name: Set version
-        run: |
-          VERSION=${{ github.ref_name }}
-          echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
       - name: ZIP app bundle
         run: zip --symlinks -r ${{ env.NAME }}-${{ env.VERSION }}-darwin-intel64.zip "${{ env.FULLNAME }}.app/"
@@ -278,6 +278,11 @@ jobs:
 
       - name: Install Fyne tool
         run: go install fyne.io/tools/cmd/fyne@latest
+
+      - name: Set version
+        run: |
+          VERSION=${{ github.ref_name }}
+          echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
       - name: Package Fyne app
         run: |
