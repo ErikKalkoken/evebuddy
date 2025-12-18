@@ -8,7 +8,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/ErikKalkoken/kx/set"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/antihax/goesi/esi"
 	"golang.org/x/sync/errgroup"
 

@@ -13,7 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ErikKalkoken/kx/set"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/icrowley/fake"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"

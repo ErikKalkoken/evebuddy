@@ -43,12 +43,10 @@ github.com/ErikKalkoken/eveauth v0.1.0 h1:sK/wJK2puqbgZy20zYBkpC963CkSUQkz8uAlBc
 github.com/ErikKalkoken/eveauth v0.1.0/go.mod h1:MyD3zTCQrWeg9nnnK7EjstiQ1Wc2xJTMl8ZFkOXfuY8=
 github.com/ErikKalkoken/fyne-kx v0.6.4 h1:maAd3GEVaT6SeOumhnVkSNGnq/XG5xJc17mClZW+orA=
 github.com/ErikKalkoken/fyne-kx v0.6.4/go.mod h1:yRxTow1yH6mWQigWVE8HLl++kKHvtgy8PIucH7hOlOc=
-github.com/ErikKalkoken/kx v0.0.0-20251217000244-0ebdb4f13b0b h1:SGBlKnQcN3V1UxGPy0xIuwHuNZlF2UHZLdeANKj0eKg=
-github.com/ErikKalkoken/kx v0.0.0-20251217000244-0ebdb4f13b0b/go.mod h1:oB/VGdPugo05oAMh743KWy36Qv/biiB273scYIl3txc=
-github.com/ErikKalkoken/kx v0.0.0-20251217014637-51f14768bcd4 h1:x7ASip9S7ZVDbkzhpYE9gls9ynWbNx8+vNP6YYrQnJM=
-github.com/ErikKalkoken/kx v0.0.0-20251217014637-51f14768bcd4/go.mod h1:oB/VGdPugo05oAMh743KWy36Qv/biiB273scYIl3txc=
-github.com/ErikKalkoken/kx v0.1.0 h1:ew0h8bdF21VcEZ/S88TuElJSnvof1+4nJ3tkoZgOp40=
-github.com/ErikKalkoken/kx v0.1.0/go.mod h1:oB/VGdPugo05oAMh743KWy36Qv/biiB273scYIl3txc=
+github.com/ErikKalkoken/go-set v0.0.0-20251218130435-a0521ce135e4 h1:sylpjAZjPybdz1Sc5Ne6GVFNacSPbQVQUJHLqioqOls=
+github.com/ErikKalkoken/go-set v0.0.0-20251218130435-a0521ce135e4/go.mod h1:8hyYMuo2dqGaCGf32C/CILHMTVRJ9CV2vlcIPGOBe5I=
+github.com/ErikKalkoken/go-set v0.1.0 h1:oPQH/4oOMFMFyGRGHloo+Ey5/jepYIfFsnhK2W7Smb0=
+github.com/ErikKalkoken/go-set v0.1.0/go.mod h1:8hyYMuo2dqGaCGf32C/CILHMTVRJ9CV2vlcIPGOBe5I=
 github.com/JohannesKaufmann/html-to-markdown v1.6.0 h1:04VXMiE50YYfCfLboJCLcgqF5x+rHJnb1ssNmqpLH/k=
 github.com/JohannesKaufmann/html-to-markdown v1.6.0/go.mod h1:NUI78lGg/a7vpEJTz/0uOcYMaibytE4BUOQS8k78yPQ=
 github.com/PuerkitoBio/goquery v1.9.2/go.mod h1:GHPCaP0ODyyxqcNoFGYlAprUFH81NuRPd0GX3Zu2Mvk=

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ErikKalkoken/kx/set"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/dustin/go-humanize"
 	"golang.org/x/sync/errgroup"
 

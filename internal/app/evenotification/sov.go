@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ErikKalkoken/kx/set"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/antihax/goesi/notification"
 	"github.com/goccy/go-yaml"
 

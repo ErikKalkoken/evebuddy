@@ -18,7 +18,7 @@ import (
 
 	"github.com/ErikKalkoken/eveauth"
 	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
-	"github.com/ErikKalkoken/kx/set"
+	"github.com/ErikKalkoken/go-set"
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
