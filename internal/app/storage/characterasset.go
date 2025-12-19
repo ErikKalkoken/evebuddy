@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"slices"
 
 	"github.com/ErikKalkoken/go-set"
 
@@ -161,10 +162,10 @@ func (st *Storage) CreateCharacterAsset(ctx context.Context, arg CreateCharacter
 	return nil
 }
 
-func (st *Storage) DeleteCharacterAssets(ctx context.Context, characterID int32, itemIDs []int64) error {
+func (st *Storage) DeleteCharacterAssets(ctx context.Context, characterID int32, itemIDs set.Set[int64]) error {
 	arg := queries.DeleteCharacterAssetsParams{
 		CharacterID: int64(characterID),
-		ItemIds:     itemIDs,
+		ItemIds:     slices.Collect(itemIDs.All()),
 	}
 	return st.qRW.DeleteCharacterAssets(ctx, arg)
 }

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ErikKalkoken/go-set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -36,10 +38,10 @@ func (st *Storage) CreateCharacterPlanet(ctx context.Context, arg CreateCharacte
 	return id, nil
 }
 
-func (st *Storage) DeleteCharacterPlanet(ctx context.Context, characterID int32, planetIDs []int32) error {
+func (st *Storage) DeleteCharacterPlanet(ctx context.Context, characterID int32, planetIDs set.Set[int32]) error {
 	arg := queries.DeleteCharacterPlanetsParams{
 		CharacterID:  int64(characterID),
-		EvePlanetIds: convertNumericSlice[int64](planetIDs),
+		EvePlanetIds: convertNumericSet[int64](planetIDs),
 	}
 	if err := st.qRW.DeleteCharacterPlanets(ctx, arg); err != nil {
 		return fmt.Errorf("delete character planets: %+v: %w", arg, err)

@@ -65,7 +65,7 @@ func (st *Storage) DeleteCorporationMembers(ctx context.Context, corporationID i
 	}
 	err := st.qRW.DeleteCorporationMembers(ctx, queries.DeleteCorporationMembersParams{
 		CorporationID: int64(corporationID),
-		CharacterIds:  convertNumericSlice[int64](characterIDs.Slice()),
+		CharacterIds:  convertNumericSet[int64](characterIDs),
 	})
 	if err != nil {
 		return wrapErr(err)

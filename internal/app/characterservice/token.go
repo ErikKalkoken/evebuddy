@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/eveauth"
@@ -120,7 +121,7 @@ func (s *CharacterService) ensureValidCharacterToken(ctx context.Context, token 
 		CharacterID:  token.CharacterID,
 		ExpiresAt:    token.ExpiresAt,
 		RefreshToken: token.RefreshToken,
-		Scopes:       token.Scopes.Slice(),
+		Scopes:       slices.Collect(token.Scopes.All()),
 		TokenType:    token.TokenType,
 	}
 	err := s.authClient.RefreshToken(ctx, token2)

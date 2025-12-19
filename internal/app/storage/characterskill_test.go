@@ -6,9 +6,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ErikKalkoken/go-set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestCharacterSkill(t *testing.T) {
@@ -83,7 +86,7 @@ func TestCharacterSkill(t *testing.T) {
 		ids, err := st.ListCharacterSkillIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.ElementsMatch(t, []int32{o1.EveType.ID, o2.EveType.ID}, ids.Slice())
+			xassert.EqualSet(t, set.Of(o1.EveType.ID, o2.EveType.ID), ids)
 		}
 	})
 	t.Run("can delete excluded skills", func(t *testing.T) {
@@ -93,12 +96,12 @@ func TestCharacterSkill(t *testing.T) {
 		x1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
 		x2 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
 		// when
-		err := st.DeleteCharacterSkills(ctx, c.ID, []int32{x2.EveType.ID})
+		err := st.DeleteCharacterSkills(ctx, c.ID, set.Of(x2.EveType.ID))
 		// then
 		if assert.NoError(t, err) {
 			ids, err := st.ListCharacterSkillIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.ElementsMatch(t, []int32{x1.EveType.ID}, ids.Slice())
+				xassert.EqualSet(t, set.Of(x1.EveType.ID), ids)
 			}
 		}
 	})

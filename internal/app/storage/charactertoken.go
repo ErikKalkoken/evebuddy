@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -139,7 +140,7 @@ func (st *Storage) ListCharacterTokenForCorporation(ctx context.Context, corpora
 	} else {
 		arg := queries.ListCharacterTokenForCorporationWithRolesParams{
 			CorporationID: int64(corporationID),
-			Roles:         roles2names(roles).Slice(),
+			Roles:         slices.Collect(roles2names(roles).All()),
 		}
 		rows, err = st.qRO.ListCharacterTokenForCorporationWithRoles(ctx, arg)
 		if err != nil {

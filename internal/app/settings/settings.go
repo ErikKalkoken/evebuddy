@@ -272,7 +272,7 @@ func (s Settings) ResetNotificationTypesEnabled() {
 }
 
 func (s Settings) SetNotificationTypesEnabled(v set.Set[string]) {
-	s.p.SetStringList(settingNotificationTypesEnabled, v.Slice())
+	s.p.SetStringList(settingNotificationTypesEnabled, slices.Collect(v.All()))
 }
 
 func (s Settings) NotifyCommunicationsEarliest() time.Time {

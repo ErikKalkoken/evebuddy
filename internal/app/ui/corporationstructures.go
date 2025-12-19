@@ -30,11 +30,11 @@ const (
 )
 
 type corporationStructureRow struct {
-	corporationID      int32
-	corporationName    string
-	fuelExpires        optional.Optional[time.Time]
-	fuelSort           time.Time
-	fuelText           string
+	corporationID   int32
+	corporationName string
+	fuelExpires     optional.Optional[time.Time]
+	fuelSort        time.Time
+	// fuelText           string
 	isFullPower        bool
 	isReinforced       bool
 	regionID           int32

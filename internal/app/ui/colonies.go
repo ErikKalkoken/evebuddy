@@ -305,8 +305,8 @@ func (a *colonies) filterRows(sortCol int) {
 		extracting.AddSeq(r.extracting.All())
 		producing.AddSeq(r.producing.All())
 	}
-	a.selectExtracting.SetOptions(extracting.Slice())
-	a.selectProducing.SetOptions(producing.Slice())
+	a.selectExtracting.SetOptions(slices.Collect(extracting.All()))
+	a.selectProducing.SetOptions(slices.Collect(producing.All()))
 	a.rowsFiltered = rows
 	a.body.Refresh()
 }

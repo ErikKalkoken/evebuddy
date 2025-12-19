@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -63,7 +64,7 @@ func (st *Storage) DeleteCorporationStructures(ctx context.Context, corporationI
 	}
 	err := st.qRW.DeleteCorporationStructures(ctx, queries.DeleteCorporationStructuresParams{
 		CorporationID: int64(corporationID),
-		StructureIds:  structureIDs.Slice(),
+		StructureIds:  slices.Collect(structureIDs.All()),
 	})
 	if err != nil {
 		return wrapErr(err)

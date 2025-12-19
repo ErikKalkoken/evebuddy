@@ -9,9 +9,12 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ErikKalkoken/go-set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestUpdateCharacterAssetsESI(t *testing.T) {
@@ -156,7 +159,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 			assert.True(t, changed)
 			ids, err := st.ListCharacterAssetIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.ElementsMatch(t, []int64{1000000016835, 1000000016836}, ids.Slice())
+				xassert.EqualSet(t, set.Of[int64](1000000016835, 1000000016836), ids)
 			}
 		}
 	})

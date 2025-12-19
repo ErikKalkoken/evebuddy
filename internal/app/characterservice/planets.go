@@ -107,7 +107,7 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg app.Charact
 			}
 			obsolete := set.Difference(existing, incoming)
 			if obsolete.Size() > 0 {
-				if err := s.st.DeleteCharacterPlanet(ctx, characterID, obsolete.Slice()); err != nil {
+				if err := s.st.DeleteCharacterPlanet(ctx, characterID, obsolete); err != nil {
 					return err
 				}
 				slog.Info("Removed obsolete planets", "characterID", characterID, "count", obsolete.Size())

@@ -5,9 +5,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ErikKalkoken/go-set"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestPlanet(t *testing.T) {
@@ -100,7 +102,7 @@ func TestPlanet(t *testing.T) {
 		p2 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
 		p3 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
 		// when
-		err := st.DeleteCharacterPlanet(ctx, c.ID, []int32{p1.EvePlanet.ID, p2.EvePlanet.ID})
+		err := st.DeleteCharacterPlanet(ctx, c.ID, set.Of(p1.EvePlanet.ID, p2.EvePlanet.ID))
 		// then
 		if assert.NoError(t, err) {
 			oo, err := st.ListCharacterPlanets(ctx, c.ID)
