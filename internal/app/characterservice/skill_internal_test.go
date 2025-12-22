@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/ErikKalkoken/go-set"
+	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/jarcoal/httpmock"
-	"github.com/stretchr/testify/assert"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestGetAttributes(t *testing.T) {
@@ -188,7 +191,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 			assert.True(t, changed)
 			ids, err := st.ListCharacterSkillIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.ElementsMatch(t, []int32{41}, ids.Slice())
+				xassert.EqualSet(t, set.Of[int32](41), ids)
 			}
 		}
 	})

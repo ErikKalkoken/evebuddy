@@ -230,7 +230,7 @@ func showAddDialog(u *baseUI, characterID int32, onSelected func(ee *app.EveEnti
 				})
 				return
 			}
-			if len(missingIDs) == 0 {
+			if missingIDs.Size() == 0 {
 				return // no need to update when not changed
 			}
 			results, err = u.eus.ListEntitiesByPartialName(ctx, search)

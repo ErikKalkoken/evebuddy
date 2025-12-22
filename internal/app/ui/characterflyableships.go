@@ -243,9 +243,9 @@ func (a *characterFlyableShips) updateEntries() error {
 			f.Add(flyableCanNot)
 		}
 	}
-	groups := g.Slice()
+	groups := slices.Collect(g.All())
 	slices.Sort(groups)
-	flyable := f.Slice()
+	flyable := slices.Collect(f.All())
 	slices.Sort(flyable)
 	a.ships = ships
 	fyne.Do(func() {

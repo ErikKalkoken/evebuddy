@@ -63,7 +63,7 @@ func (s *EveUniverseService) ToEntities(ctx context.Context, ids set.Set[int32])
 	if _, err := s.AddMissingEntities(ctx, ids2); err != nil {
 		return nil, err
 	}
-	oo, err := s.st.ListEveEntitiesForIDs(ctx, ids2.Slice())
+	oo, err := s.st.ListEveEntitiesForIDs(ctx, slices.Collect(ids2.All()))
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (s *EveUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 	if missing.Size() > 0 {
 		slog.Debug("Trying to resolve missing EveEntity IDs from ESI", "ids", missing)
 		var ee []esi.PostUniverseNames200Ok
-		for chunk := range slices.Chunk(missing.Slice(), esiPostUniverseNamesMax) {
+		for chunk := range slices.Chunk(slices.Collect(missing.All()), esiPostUniverseNamesMax) {
 			eeChunk, badChunk, err := s.resolveIDsFromESI(ctx, chunk)
 			if err != nil {
 				return set.Set[int32]{}, wrapErr(err)

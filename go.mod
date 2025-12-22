@@ -8,7 +8,7 @@ require (
 	fyne.io/fyne/v2 v2.7.1
 	github.com/ErikKalkoken/eveauth v0.1.0
 	github.com/ErikKalkoken/fyne-kx v0.6.4
-	github.com/ErikKalkoken/go-set v0.1.0
+	github.com/ErikKalkoken/go-set v0.2.0
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/PuerkitoBio/goquery v1.11.0
 	github.com/anthonynsimon/bild v0.14.0

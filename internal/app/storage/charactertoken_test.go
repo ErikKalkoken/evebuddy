@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestToken(t *testing.T) {
@@ -76,7 +77,7 @@ func TestToken(t *testing.T) {
 			assert.Equal(t, "changed", o2.AccessToken)
 			assert.Equal(t, c.ID, o2.CharacterID)
 			assert.Equal(t, o1.ExpiresAt.UTC(), o2.ExpiresAt.UTC())
-			assert.ElementsMatch(t, []string{"alpha", "bravo"}, o2.Scopes.Slice())
+			xassert.EqualSet(t, set.Of("alpha", "bravo"), o2.Scopes)
 			assert.Equal(t, o1.TokenType, o2.TokenType)
 		}
 	})

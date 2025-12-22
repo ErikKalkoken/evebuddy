@@ -120,7 +120,7 @@ func TestCharacterAsset(t *testing.T) {
 		x1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
 		x2 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
 		// when
-		err := st.DeleteCharacterAssets(ctx, c.ID, []int64{x2.ItemID})
+		err := st.DeleteCharacterAssets(ctx, c.ID, set.Of(x2.ItemID))
 		// then
 		if assert.NoError(t, err) {
 			got, err := st.ListCharacterAssetIDs(ctx, c.ID)

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -188,7 +189,7 @@ func (st *Storage) ListCorporationsShort(ctx context.Context) ([]*app.EntityShor
 // ListPrivilegedCorporationsShort returns a list of corporations
 // where a user has at least one character exist with a role from requiredRoles.
 func (st *Storage) ListPrivilegedCorporationsShort(ctx context.Context, requiredRoles set.Set[app.Role]) ([]*app.EntityShort[int32], error) {
-	rows, err := st.qRO.ListPrivilegedCorporationsShort(ctx, roles2names(requiredRoles).Slice())
+	rows, err := st.qRO.ListPrivilegedCorporationsShort(ctx, slices.Collect(roles2names(requiredRoles).All()))
 	if err != nil {
 		return nil, fmt.Errorf("ListPrivilegedCorporationsShort: %w", err)
 

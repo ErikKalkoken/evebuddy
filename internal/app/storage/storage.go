@@ -63,7 +63,7 @@ func (st *Storage) DumpData(tables ...string) string {
 		allTables.Add(name)
 	}
 	if len(tables) == 0 {
-		tables = allTables.Slice()
+		tables = slices.Collect(allTables.All())
 	} else {
 		for _, x := range tables {
 			if !allTables.Contains(x) {

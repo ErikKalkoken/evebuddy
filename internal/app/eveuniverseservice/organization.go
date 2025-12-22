@@ -162,7 +162,7 @@ func (s *EveUniverseService) UpdateAllCorporationsESI(ctx context.Context) (set.
 	if ids.Size() == 0 {
 		return changed, nil
 	}
-	ids2 := ids.Slice()
+	ids2 := slices.Collect(ids.All())
 	hasChanged := make([]bool, len(ids2))
 	g := new(errgroup.Group)
 	g.SetLimit(s.concurrencyLimit)

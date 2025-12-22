@@ -176,7 +176,7 @@ func (s *EveUniverseService) AddMissingLocations(ctx context.Context, ids set.Se
 	if missing.Size() == 0 {
 		return nil
 	}
-	entities, err := s.EntityIDsFromLocationsESI(ctx, missing.Slice())
+	entities, err := s.EntityIDsFromLocationsESI(ctx, slices.Collect(missing.All()))
 	if err != nil {
 		return err
 	}

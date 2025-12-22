@@ -215,7 +215,7 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg app.Characte
 			}
 			slog.Info("Stored updated character skills", "characterID", characterID, "count", len(skills.Skills))
 			if ids := set.Difference(currentSkillIDs, incomingSkillIDs); ids.Size() > 0 {
-				if err := s.st.DeleteCharacterSkills(ctx, characterID, ids.Slice()); err != nil {
+				if err := s.st.DeleteCharacterSkills(ctx, characterID, ids); err != nil {
 					return err
 				}
 				slog.Info("Deleted obsolete character skills", "characterID", characterID, "count", ids.Size())

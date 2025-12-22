@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -42,7 +43,7 @@ func (st *Storage) DeleteCharacterMarketOrders(ctx context.Context, characterID 
 	}
 	err := st.qRW.DeleteCharacterMarketOrders(ctx, queries.DeleteCharacterMarketOrdersParams{
 		CharacterID: int64(characterID),
-		OrderIds:    orderIDs.Slice(),
+		OrderIds:    slices.Collect(orderIDs.All()),
 	})
 	if err != nil {
 		return wrapErr(err)
@@ -177,7 +178,7 @@ func (st *Storage) UpdateCharacterMarketOrderState(ctx context.Context, arg Upda
 	}
 	err := st.qRW.UpdateCharacterMarketOrderState(ctx, queries.UpdateCharacterMarketOrderStateParams{
 		CharacterID: int64(arg.CharacterID),
-		OrderIds:    arg.OrderIDs.Slice(),
+		OrderIds:    slices.Collect(arg.OrderIDs.All()),
 		State:       orderStatusToDBValue[arg.State],
 	})
 	if err != nil {

@@ -41,7 +41,7 @@ func (st *Storage) DeleteCorporationIndustryJobsByID(ctx context.Context, corpor
 	}
 	err := st.qRW.DeleteCorporationIndustryJobsByID(ctx, queries.DeleteCorporationIndustryJobsByIDParams{
 		CorporationID: int64(corporationID),
-		JobIds:        convertNumericSlice[int64](jobIDs.Slice()),
+		JobIds:        convertNumericSet[int64](jobIDs),
 	})
 	if err != nil {
 		return wrapErr(err)
@@ -192,7 +192,7 @@ func (st *Storage) UpdateCorporationIndustryJobStatus(ctx context.Context, arg U
 	}
 	err := st.qRW.UpdateCorporationIndustryJobStatus(ctx, queries.UpdateCorporationIndustryJobStatusParams{
 		CorporationID: int64(arg.CorporationID),
-		JobIds:        convertNumericSlice[int64](arg.JobIDs.Slice()),
+		JobIds:        convertNumericSet[int64](arg.JobIDs),
 		Status:        jobStatusToDBValue[arg.Status],
 	})
 	if err != nil {

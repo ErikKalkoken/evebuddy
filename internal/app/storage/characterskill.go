@@ -10,10 +10,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 )
 
-func (st *Storage) DeleteCharacterSkills(ctx context.Context, characterID int32, eveTypeIDs []int32) error {
+func (st *Storage) DeleteCharacterSkills(ctx context.Context, characterID int32, eveTypeIDs set.Set[int32]) error {
 	arg := queries.DeleteCharacterSkillsParams{
 		CharacterID: int64(characterID),
-		EveTypeIds:  convertNumericSlice[int64](eveTypeIDs),
+		EveTypeIds:  convertNumericSet[int64](eveTypeIDs),
 	}
 	err := st.qRW.DeleteCharacterSkills(ctx, arg)
 	if err != nil {
