@@ -1,12 +1,12 @@
 package ui
 
 import (
-	"cmp"
 	"context"
 	"fmt"
 	"image/color"
 	"log/slog"
 	"slices"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -246,7 +246,7 @@ func (*wealth) compileData(s services) ([]dataRow, int, error) {
 		data = append(data, r)
 	}
 	slices.SortFunc(data, func(a, b dataRow) int {
-		return cmp.Compare(a.total, b.total) * -1
+		return strings.Compare(a.label, b.label)
 	})
 	return data, len(selected), nil
 }
@@ -260,15 +260,17 @@ func newColorWheel() colorWheel {
 	w := colorWheel{
 		colors: make([]color.Color, 0),
 	}
-	colorNames := []fyne.ThemeColorName{
-		theme.ColorNameSuccess,
-		theme.ColorNameError,
-		theme.ColorNameWarning,
-		theme.ColorNamePrimary,
-		theme.ColorNameDisabled,
-	}
-	for _, n := range colorNames {
-		w.colors = append(w.colors, theme.Color(n))
+	w.colors = []color.Color{
+		theme.Color(theme.ColorNameSuccess),
+		theme.Color(theme.ColorNameError),
+		theme.Color(theme.ColorNamePrimary),
+		theme.Color(theme.ColorNameWarning),
+		theme.Color(colorNameInfo),
+		theme.Color(colorNameCreative),
+		theme.Color(colorNameSystem),
+		theme.Color(colorNameAttention),
+		theme.Color(theme.ColorNamePlaceHolder),
+		theme.Color(theme.ColorNameDisabled),
 	}
 	return w
 }

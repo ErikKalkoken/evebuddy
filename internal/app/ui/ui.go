@@ -20,7 +20,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
-	kxtheme "github.com/ErikKalkoken/fyne-kx/theme"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/maniartech/signals"
@@ -421,10 +420,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.training = newTraining(u)
 	u.wealth = newWealth(u)
 
-	if th := u.settings.ColorTheme(); th != settings.Auto {
-		u.setColorTheme(th)
-	}
-
+	u.setColorTheme(u.settings.ColorTheme())
 	u.MainWindow().SetMaster()
 
 	// SetOnStarted is called on initial start,
@@ -916,14 +912,7 @@ func (u *baseUI) updateStatus() {
 }
 
 func (u *baseUI) setColorTheme(s settings.ColorTheme) {
-	switch s {
-	case settings.Light:
-		u.app.Settings().SetTheme(kxtheme.DefaultWithFixedVariant(theme.VariantLight))
-	case settings.Dark:
-		u.app.Settings().SetTheme(kxtheme.DefaultWithFixedVariant(theme.VariantDark))
-	default:
-		u.app.Settings().SetTheme(theme.DefaultTheme())
-	}
+	u.app.Settings().SetTheme(myTheme{s})
 }
 
 func (u *baseUI) updateMailIndicator() {
