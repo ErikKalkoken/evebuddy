@@ -12,17 +12,12 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/s-daehling/fyne-charts/pkg/chart"
+	"github.com/s-daehling/fyne-charts/pkg/coord"
 	chartData "github.com/s-daehling/fyne-charts/pkg/data"
+	"github.com/s-daehling/fyne-charts/pkg/prop"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-)
-
-const (
-	chartBaseSize = 440
-	chartWidth    = chartBaseSize
-	chartHeight   = chartBaseSize / 1.618
 )
 
 type wealth struct {
@@ -30,24 +25,25 @@ type wealth struct {
 
 	onUpdate func(wallet, assets float64)
 
-	assets     *chart.CartesianCategoricalChart
-	characters *chart.PolarProportionalChart
+	breakdown  *coord.CartesianCategoricalChart
+	characters *prop.PieChart
 	top        *widget.Label
-	types      *chart.PolarProportionalChart
+	types      *prop.PieChart
 	u          *baseUI
-	wallets    *chart.CartesianCategoricalChart
 }
 
 func newWealth(u *baseUI) *wealth {
 	a := &wealth{
-		assets:     chart.NewCartesianCategoricalChart(),
-		characters: chart.NewPolarProportionalChart(),
+		breakdown:  coord.NewCartesianCategoricalChart("Wealth Breakdown By Character in B ISK"),
+		characters: prop.NewPieChart("Total Wealth By Character in B ISK"),
 		top:        makeTopLabel(),
-		types:      chart.NewPolarProportionalChart(),
+		types:      prop.NewPieChart("Total Wealth By Type"),
 		u:          u,
-		wallets:    chart.NewCartesianCategoricalChart(),
 	}
 	a.ExtendBaseWidget(a)
+	a.breakdown.SetTitleStyle(theme.SizeNameSubHeadingText, theme.ColorNameForeground)
+	a.characters.SetTitleStyle(theme.SizeNameSubHeadingText, theme.ColorNameForeground)
+	a.types.SetTitleStyle(theme.SizeNameSubHeadingText, theme.ColorNameForeground)
 
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
 		switch arg.section {
@@ -65,22 +61,16 @@ func newWealth(u *baseUI) *wealth {
 }
 
 func (a *wealth) CreateRenderer() fyne.WidgetRenderer {
-	var charts *fyne.Container
+	var total *fyne.Container
 	if a.u.isDesktop {
-		charts = container.NewGridWithColumns(2,
-			a.types,
-			a.characters,
-			a.wallets,
-			a.assets,
-		)
+		total = container.NewGridWithColumns(2, a.types, a.characters)
 	} else {
-		charts = container.NewVBox(
-			a.types,
-			a.characters,
-			a.wallets,
-			a.assets,
-		)
+		total = container.NewAdaptiveGrid(2, a.types, a.characters)
 	}
+	charts := container.NewAppTabs(
+		container.NewTabItem("Total", total),
+		container.NewTabItem("Breakdown", a.breakdown),
+	)
 	c := container.NewBorder(
 		a.top,
 		nil,
@@ -118,7 +108,7 @@ func (a *wealth) update() {
 		totalAssets += r.assets
 		totalWallet += r.wallet
 	}
-	d1 := []chartData.ProportionalDataPoint{{
+	s1, err := prop.NewSeries("Type", []chartData.ProportionalPoint{{
 		C:   "Assets",
 		Val: totalAssets,
 		Col: colors.next(),
@@ -126,11 +116,13 @@ func (a *wealth) update() {
 		C:   "Wallets",
 		Val: totalWallet,
 		Col: colors.next(),
-	}}
+	}})
+	if err != nil {
+		panic(err)
+	}
 	fyne.Do(func() {
-		a.types.DeleteSeries("Type")
-		a.types.SetTitle("Total Wealth By Type")
-		_, err = a.types.AddProportionalSeries("Type", d1)
+		a.types.RemoveSeries("Type")
+		err = a.types.AddSeries(s1)
 		if err != nil {
 			panic(err)
 		}
@@ -138,65 +130,59 @@ func (a *wealth) update() {
 
 	// characters
 	colors.reset()
-	d2 := make([]chartData.ProportionalDataPoint, 0)
+	d1 := make([]chartData.ProportionalPoint, 0)
 	for _, r := range data {
-		d2 = append(d2, chartData.ProportionalDataPoint{
+		d1 = append(d1, chartData.ProportionalPoint{
 			C:   r.label,
 			Val: r.total,
 			Col: colors.next(),
 		})
 	}
+	s2, err := prop.NewSeries("Characters", d1)
 	fyne.Do(func() {
-		a.characters.DeleteSeries("Characters")
-		a.characters.SetTitle("Total Wealth By Character in B ISK")
-		_, err = a.characters.AddProportionalSeries("Characters", d2)
+		a.characters.RemoveSeries("Characters")
+		err = a.characters.AddSeries(s2)
 		if err != nil {
 			panic(err)
 		}
 	})
 
-	// Assets
-	var m3 float64
-	d3 := make([]chartData.CategoricalDataPoint, 0)
+	// Breakdown
+	d3 := make([]chartData.CategoricalPoint, 0)
 	for _, r := range data {
-		d3 = append(d3, chartData.CategoricalDataPoint{
+		d3 = append(d3, chartData.CategoricalPoint{
 			C:   r.label,
 			Val: r.assets,
 		})
-		m3 = max(m3, r.assets)
 	}
-	fyne.Do(func() {
-		a.assets.DeleteSeries("Characters")
-		_, err = a.assets.AddBarSeries("Characters", d3, theme.Color(theme.ColorNameSuccess))
-		if err != nil {
-			panic(err)
-		}
-		a.assets.SetTitle("Assets Value By Character")
-		a.assets.SetYRange(0, m3)
-		a.assets.SetYAxisLabel("B ISK")
-		a.assets.HideLegend()
-	})
-
-	// Wallets
-	var m4 float64
-	d4 := make([]chartData.CategoricalDataPoint, 0)
+	s3, err := coord.NewCategoricalPointSeries("Assets", theme.Color(theme.ColorNameSuccess), d3)
+	if err != nil {
+		panic(err)
+	}
+	d4 := make([]chartData.CategoricalPoint, 0)
 	for _, r := range data {
-		d4 = append(d4, chartData.CategoricalDataPoint{
+		d4 = append(d4, chartData.CategoricalPoint{
 			C:   r.label,
 			Val: r.wallet,
 		})
-		m4 = max(m4, r.wallet)
 	}
+	s4, err := coord.NewCategoricalPointSeries("Wallets", theme.Color(theme.ColorNameError), d4)
+	if err != nil {
+		panic(err)
+	}
+
 	fyne.Do(func() {
-		a.wallets.DeleteSeries("Characters")
-		_, err = a.wallets.AddBarSeries("Characters", d4, theme.Color(theme.ColorNameSuccess))
+		a.breakdown.RemoveSeries("Assets")
+		a.breakdown.RemoveSeries("Wallets")
+		err = a.breakdown.AddBarSeries(s3)
 		if err != nil {
 			panic(err)
 		}
-		a.wallets.SetTitle("Wallet Balance By Character")
-		a.wallets.SetYRange(0, m4)
-		a.wallets.SetYAxisLabel("B ISK")
-		a.wallets.HideLegend()
+		err = a.breakdown.AddBarSeries(s4)
+		if err != nil {
+			panic(err)
+		}
+		a.breakdown.SetYAxisLabel("B ISK")
 	})
 
 	var total float64
@@ -289,7 +275,7 @@ func newColorWheel() colorWheel {
 
 func (w *colorWheel) next() color.Color {
 	c := w.colors[w.n]
-	if w.n < len(w.colors) {
+	if w.n < len(w.colors)-1 {
 		w.n++
 	} else {
 		w.n = 0
