@@ -18,7 +18,6 @@ require (
 	github.com/dweymouth/fyne-tooltip v0.4.0
 	github.com/goccy/go-yaml v1.18.0
 	github.com/gohugoio/httpcache v0.8.0
-	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/hashicorp/go-version v1.7.0
 	github.com/icrowley/fake v0.0.0-20240710202011-f797eb4a99c0
@@ -27,8 +26,8 @@ require (
 	github.com/maniartech/signals v1.3.1
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/microcosm-cc/bluemonday v1.0.27
+	github.com/s-daehling/fyne-charts v0.0.0-20251223123406-e9d1bc6e925e
 	github.com/stretchr/testify v1.11.1
-	github.com/wcharczuk/go-chart/v2 v2.1.2
 	github.com/yuin/goldmark v1.7.13
 	golang.org/x/exp v0.0.0-20251113190631-e25ba8c21ef6
 	golang.org/x/sync v0.18.0
@@ -45,6 +44,7 @@ require (
 	github.com/corpix/uarand v0.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0 // indirect
+	github.com/disintegration/imaging v1.6.2 // indirect
 	github.com/fredbi/uri v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fyne-io/gl-js v0.2.0 // indirect

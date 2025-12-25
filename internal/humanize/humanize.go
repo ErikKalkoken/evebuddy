@@ -38,17 +38,17 @@ func Number(value float64, decimals int) string {
 	var f string
 	switch {
 	case decimals == 3:
-		f = "%.3f"
+		f = "%.3f%s"
 	case decimals == 2:
-		f = "%.2f"
+		f = "%.2f%s"
 	case decimals == 1:
-		f = "%.1f"
+		f = "%.1f%s"
 	case decimals == 0:
-		f = "%.0f"
+		f = "%.0f%s"
 	default:
 		panic(fmt.Sprintf("Undefined decimals: %d", decimals))
 	}
-	r := fmt.Sprintf(f, x) + a
+	r := fmt.Sprintf(f, x, a)
 	return r
 }
 

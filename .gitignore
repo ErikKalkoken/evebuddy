@@ -19,3 +19,4 @@ playground/
 **/testdata/failed
 test.db
 ratelimits.md
+**/temp.*/
