@@ -35,12 +35,26 @@ var themeColors = map[fyne.ThemeColorName][]color.Color{
 	},
 }
 
-type myTheme struct {
-	mode settings.ColorTheme
+// customTheme represents a custom Fyne theme.
+// It adds colors to the default theme
+// and allows setting a fixed theme variant.
+type customTheme struct {
+	defaultTheme fyne.Theme
+	mode         settings.ColorTheme
 }
 
-func (ct myTheme) Color(c fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
-	switch ct.mode {
+// newCustomTheme returns a new custom theme.
+// Must be called after the app has started.
+func newCustomTheme(mode settings.ColorTheme) *customTheme {
+	th := &customTheme{
+		defaultTheme: fyne.CurrentApp().Settings().Theme(),
+		mode:         mode,
+	}
+	return th
+}
+
+func (th customTheme) Color(c fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
+	switch th.mode {
 	case settings.Dark:
 		v = theme.VariantDark
 	case settings.Light:
@@ -50,18 +64,18 @@ func (ct myTheme) Color(c fyne.ThemeColorName, v fyne.ThemeVariant) color.Color 
 	case colorNameInfo, colorNameCreative, colorNameSystem, colorNameAttention:
 		return themeColors[c][v]
 	default:
-		return theme.DefaultTheme().Color(c, v)
+		return th.defaultTheme.Color(c, v)
 	}
 }
 
-func (myTheme) Font(style fyne.TextStyle) fyne.Resource {
-	return theme.DefaultTheme().Font(style)
+func (th customTheme) Font(style fyne.TextStyle) fyne.Resource {
+	return th.defaultTheme.Font(style)
 }
 
-func (myTheme) Icon(n fyne.ThemeIconName) fyne.Resource {
-	return theme.DefaultTheme().Icon(n)
+func (th customTheme) Icon(n fyne.ThemeIconName) fyne.Resource {
+	return th.defaultTheme.Icon(n)
 }
 
-func (myTheme) Size(s fyne.ThemeSizeName) float32 {
-	return theme.DefaultTheme().Size(s)
+func (th customTheme) Size(s fyne.ThemeSizeName) float32 {
+	return th.defaultTheme.Size(s)
 }

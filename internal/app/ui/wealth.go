@@ -58,10 +58,12 @@ func newWealth(u *baseUI) *wealth {
 	color := theme.ColorNameForeground
 	a.assetDetail.SetTitleStyle(size, color)
 	a.assetDetail.HideLegend()
+	a.assetDetail.SetYAxisLabel("B ISK")
 	a.assetSplit.SetTitleStyle(size, color)
 	a.walletSplit.SetTitleStyle(size, color)
 	a.walletDetail.SetTitleStyle(size, color)
 	a.walletDetail.HideLegend()
+	a.walletDetail.SetYAxisLabel("B ISK")
 	a.totalSplit.SetTitleStyle(size, color)
 	a.characterSplit.SetTitleStyle(size, color)
 
@@ -132,15 +134,99 @@ func (a *wealth) update() {
 		totalAssets += r.assets
 		totalWallet += r.wallet
 	}
-	colors := newColorWheel()
-
 	// totals
 	if a.onUpdate != nil {
 		a.onUpdate(totalWallet*wealthMultiplier, totalAssets*wealthMultiplier)
 	}
 
-	// total
-	s5, err := prop.NewSeries("", []chartData.ProportionalPoint{
+	a.updateAssetDetail(data, totalAssets)
+	a.updateAssetSplit(data, totalAssets)
+	a.updateCharacterSplit(data, totalAssets, totalWallet)
+	a.updateTotalSplit(totalAssets, totalWallet)
+	a.updateWalletDetail(data, totalWallet)
+	a.updateWalletSplit(data, totalWallet)
+}
+
+func (a *wealth) updateAssetDetail(data []dataRow, totalAssets float64) {
+	colors := newColorWheel()
+	d := xslices.Map(data, func(r dataRow) chartData.CategoricalPoint {
+		return chartData.CategoricalPoint{
+			C:   r.label,
+			Val: r.assets,
+		}
+	})
+	d = reduceCategoricalPoints(d, wealthMaxCharacters)
+	s, err := coord.NewCategoricalPointSeries("Characters", colors.next(), d)
+	if err != nil {
+		slog.Error("wealth: asset details", "error", err)
+		return
+	}
+	fyne.Do(func() {
+		a.assetDetail.RemoveSeries("Characters")
+		err = a.assetDetail.AddBarSeries(s)
+		if err != nil {
+			slog.Error("wealth: asset details", "error", err)
+			return
+		}
+		a.assetDetail.SetTitle(fmt.Sprintf("Assets By Character - Total: %.1f B ISK", totalAssets))
+	})
+}
+
+func (a *wealth) updateAssetSplit(data []dataRow, totalAssets float64) {
+	colors := newColorWheel()
+	d := xslices.Map(data, func(r dataRow) chartData.ProportionalPoint {
+		return chartData.ProportionalPoint{
+			C:   r.label,
+			Val: r.assets,
+			Col: colors.next(),
+		}
+	})
+	d = reduceProportionalPoints(d, wealthMaxCharacters)
+	s, err := prop.NewSeries("Characters", d)
+	if err != nil {
+		slog.Error("wealth: asset split", "error", err)
+		return
+	}
+	fyne.Do(func() {
+		a.assetSplit.RemoveSeries("Characters")
+		err = a.assetSplit.AddSeries(s)
+		if err != nil {
+			slog.Error("wealth: asset split", "error", err)
+			return
+		}
+		a.assetSplit.SetTitle(fmt.Sprintf("Assets By Character - Total: %.1f B ISK", totalAssets))
+	})
+}
+
+func (a *wealth) updateCharacterSplit(data []dataRow, totalAssets float64, totalWallet float64) {
+	colors := newColorWheel()
+	d := xslices.Map(data, func(r dataRow) chartData.ProportionalPoint {
+		return chartData.ProportionalPoint{
+			C:   r.label,
+			Val: r.assets,
+			Col: colors.next(),
+		}
+	})
+	d = reduceProportionalPoints(d, wealthMaxCharacters)
+	s, err := prop.NewSeries("Characters", d)
+	if err != nil {
+		slog.Error("wealth: character split", "error", err)
+		return
+	}
+	fyne.Do(func() {
+		a.characterSplit.RemoveSeries("Characters")
+		err = a.characterSplit.AddSeries(s)
+		if err != nil {
+			slog.Error("wealth: character split", "error", err)
+			return
+		}
+		a.characterSplit.SetTitle(fmt.Sprintf("Wealth By Character - Total: %.1f B ISK", totalAssets+totalWallet))
+	})
+}
+
+func (a *wealth) updateTotalSplit(totalAssets float64, totalWallet float64) {
+	colors := newColorWheel()
+	s, err := prop.NewSeries("", []chartData.ProportionalPoint{
 		{
 			C:   "Assets combined",
 			Val: totalAssets,
@@ -154,124 +240,64 @@ func (a *wealth) update() {
 	})
 	fyne.Do(func() {
 		a.totalSplit.RemoveSeries("")
-		err = a.totalSplit.AddSeries(s5)
+		err = a.totalSplit.AddSeries(s)
 		if err != nil {
-			panic(err)
+			slog.Error("wealth: total split", "error", err)
+			return
 		}
 		a.totalSplit.SetTitle(fmt.Sprintf("Wealth By Source - Total: %.1f B ISK", totalWallet+totalAssets))
 	})
+}
 
-	// Total split
-	d6 := xslices.Map(data, func(r dataRow) chartData.ProportionalPoint {
-		return chartData.ProportionalPoint{
-			C:   r.label,
-			Val: r.assets,
-			Col: colors.next(),
-		}
-	})
-	d6 = reduceProportionalPoints(d6, wealthMaxCharacters)
-	s6, err := prop.NewSeries("Characters", d6)
-	if err != nil {
-		panic(err)
-	}
-	fyne.Do(func() {
-		a.characterSplit.RemoveSeries("Characters")
-		err = a.characterSplit.AddSeries(s6)
-		if err != nil {
-			panic(err)
-		}
-		a.characterSplit.SetTitle(fmt.Sprintf("Wealth By Character - Total: %.1f B ISK", totalAssets+totalWallet))
-	})
-
-	// Asset split
-	d1 := xslices.Map(data, func(r dataRow) chartData.ProportionalPoint {
-		return chartData.ProportionalPoint{
-			C:   r.label,
-			Val: r.assets,
-			Col: colors.next(),
-		}
-	})
-	d1 = reduceProportionalPoints(d1, wealthMaxCharacters)
-	s1, err := prop.NewSeries("Characters", d1)
-	if err != nil {
-		panic(err)
-	}
-	fyne.Do(func() {
-		a.assetSplit.RemoveSeries("Characters")
-		err = a.assetSplit.AddSeries(s1)
-		if err != nil {
-			panic(err)
-		}
-		a.assetSplit.SetTitle(fmt.Sprintf("Assets By Character - Total: %.1f B ISK", totalAssets))
-	})
-
-	// Wallet split
-	colors.reset()
-	d2 := xslices.Map(data, func(r dataRow) chartData.ProportionalPoint {
-		return chartData.ProportionalPoint{
-			C:   r.label,
-			Val: r.wallet,
-			Col: colors.next(),
-		}
-	})
-	d2 = reduceProportionalPoints(d2, wealthMaxCharacters)
-	s2, err := prop.NewSeries("Characters", d2)
-	if err != nil {
-		panic(err)
-	}
-	fyne.Do(func() {
-		a.walletSplit.RemoveSeries("Characters")
-		err = a.walletSplit.AddSeries(s2)
-		if err != nil {
-			panic(err)
-		}
-		a.walletSplit.SetTitle(fmt.Sprintf("Wallets By Character - Total: %.1f B ISK", totalWallet))
-	})
-
-	// Assets detail
-	colors.reset()
-	d4 := xslices.Map(data, func(r dataRow) chartData.CategoricalPoint {
-		return chartData.CategoricalPoint{
-			C:   r.label,
-			Val: r.assets,
-		}
-	})
-	d4 = reduceCategoricalPoints(d4, wealthMaxCharacters)
-	s4, err := coord.NewCategoricalPointSeries("Characters", colors.next(), d4)
-	if err != nil {
-		panic(err)
-	}
-	fyne.Do(func() {
-		a.assetDetail.RemoveSeries("Characters")
-		err = a.assetDetail.AddBarSeries(s4)
-		if err != nil {
-			panic(err)
-		}
-		a.assetDetail.SetTitle(fmt.Sprintf("Assets By Character - Total: %.1f B ISK", totalAssets))
-	})
-
-	// Wallet details
-	colors.reset()
-	d3 := xslices.Map(data, func(r dataRow) chartData.CategoricalPoint {
+func (a *wealth) updateWalletDetail(data []dataRow, totalWallet float64) {
+	colors := newColorWheel()
+	d := xslices.Map(data, func(r dataRow) chartData.CategoricalPoint {
 		return chartData.CategoricalPoint{
 			C:   r.label,
 			Val: r.wallet,
 		}
 	})
-	d3 = reduceCategoricalPoints(d3, wealthMaxCharacters)
-	s3, err := coord.NewCategoricalPointSeries("Characters", colors.next(), d3)
+	d = reduceCategoricalPoints(d, wealthMaxCharacters)
+	s, err := coord.NewCategoricalPointSeries("Characters", colors.next(), d)
 	if err != nil {
-		panic(err)
+		slog.Error("wealth: wallet details", "error", err)
+		return
 	}
 	fyne.Do(func() {
 		a.walletDetail.RemoveSeries("Characters")
-		err = a.walletDetail.AddBarSeries(s3)
+		err = a.walletDetail.AddBarSeries(s)
 		if err != nil {
-			panic(err)
+			slog.Error("wealth: wallet details", "error", err)
+			return
 		}
 		a.walletDetail.SetTitle(fmt.Sprintf("Wallets By Character - Total: %.1f B ISK", totalWallet))
 	})
+}
 
+func (a *wealth) updateWalletSplit(data []dataRow, totalWallet float64) {
+	colors := newColorWheel()
+	d := xslices.Map(data, func(r dataRow) chartData.ProportionalPoint {
+		return chartData.ProportionalPoint{
+			C:   r.label,
+			Val: r.wallet,
+			Col: colors.next(),
+		}
+	})
+	d = reduceProportionalPoints(d, wealthMaxCharacters)
+	s, err := prop.NewSeries("Characters", d)
+	if err != nil {
+		slog.Error("wealth: wallet split", "error", err)
+		return
+	}
+	fyne.Do(func() {
+		a.walletSplit.RemoveSeries("Characters")
+		err = a.walletSplit.AddSeries(s)
+		if err != nil {
+			slog.Error("wealth: wallet split", "error", err)
+			return
+		}
+		a.walletSplit.SetTitle(fmt.Sprintf("Wallets By Character - Total: %.1f B ISK", totalWallet))
+	})
 }
 
 func reduceProportionalPoints(data []chartData.ProportionalPoint, m int) []chartData.ProportionalPoint {
@@ -382,14 +408,14 @@ func newColorWheel() colorWheel {
 		colors: make([]color.Color, 0),
 	}
 	w.colors = []color.Color{
-		theme.Color(theme.ColorNameSuccess),
-		theme.Color(theme.ColorNameError),
 		theme.Color(theme.ColorNamePrimary),
 		theme.Color(theme.ColorNameWarning),
+		theme.Color(theme.ColorNameSuccess),
+		theme.Color(theme.ColorNameError),
 		theme.Color(colorNameInfo),
+		theme.Color(colorNameAttention),
 		theme.Color(colorNameCreative),
 		theme.Color(colorNameSystem),
-		theme.Color(colorNameAttention),
 		theme.Color(theme.ColorNamePlaceHolder),
 	}
 	return w
@@ -405,6 +431,6 @@ func (w *colorWheel) next() color.Color {
 	return c
 }
 
-func (w *colorWheel) reset() {
-	w.n = 0
-}
+// func (w *colorWheel) reset() {
+// 	w.n = 0
+// }

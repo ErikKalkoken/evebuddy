@@ -420,7 +420,6 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.training = newTraining(u)
 	u.wealth = newWealth(u)
 
-	u.setColorTheme(u.settings.ColorTheme())
 	u.MainWindow().SetMaster()
 
 	// SetOnStarted is called on initial start,
@@ -462,6 +461,7 @@ func (u *baseUI) Start() bool {
 		return false
 	}
 	// First app start
+	u.setColorTheme(u.settings.ColorTheme())
 	if u.isOffline {
 		slog.Info("App started in offline mode")
 	} else {
@@ -912,7 +912,7 @@ func (u *baseUI) updateStatus() {
 }
 
 func (u *baseUI) setColorTheme(s settings.ColorTheme) {
-	u.app.Settings().SetTheme(myTheme{s})
+	u.app.Settings().SetTheme(newCustomTheme(s))
 }
 
 func (u *baseUI) updateMailIndicator() {
