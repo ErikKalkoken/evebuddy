@@ -734,13 +734,24 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 			homeNav.Push(iwidget.NewAppBar("Contracts", u.contracts))
 		},
 	)
+
 	navItemWealth := iwidget.NewListItemWithIcon(
 		"Wealth",
 		theme.NewThemedResource(icons.GoldSvg),
 		func() {
-			homeNav.Push(iwidget.NewAppBar("Wealth", u.wealth))
+			w := u.app.NewWindow("Wealth")
+			w.SetContent(u.wealth)
+			w.Show()
 		},
 	)
+	u.wealth.onUpdate = func(wallet, assets float64) {
+		fyne.Do(func() {
+			s := fmt.Sprintf("Wallet: %s • Assets: %s", ihumanize.Number(wallet, 1), ihumanize.Number(assets, 1))
+			navItemWealth.Supporting = s
+			homeList.Refresh()
+		})
+	}
+
 	navItemAssets := iwidget.NewListItemWithIcon(
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
@@ -749,12 +760,7 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 			u.assets.focus()
 		},
 	)
-	u.assets.onUpdate = func(total string) {
-		fyne.Do(func() {
-			navItemAssets.Supporting = fmt.Sprintf("Value: %s", total)
-			homeList.Refresh()
-		})
-	}
+
 	homeList = iwidget.NewNavList(
 		iwidget.NewListItemWithIcon(
 			"Character Overview",
@@ -805,6 +811,12 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 		),
 		navItemWealth,
 	)
+	u.assets.onUpdate = func(total string) {
+		fyne.Do(func() {
+			navItemAssets.Supporting = fmt.Sprintf("Value: %s", total)
+			homeList.Refresh()
+		})
+	}
 	u.contracts.OnUpdate = func(count int) {
 		var badge string
 		if count > 0 {
@@ -822,16 +834,7 @@ func makeHomeNav(u *MobileUI) *iwidget.Navigator {
 			homeList.Refresh()
 		})
 	}
-	u.wealth.onUpdate = func(wallet, assets float64) {
-		fyne.Do(func() {
-			navItemWealth.Supporting = fmt.Sprintf(
-				"Wallet: %s • Assets: %s",
-				ihumanize.Number(wallet, 1),
-				ihumanize.Number(assets, 1),
-			)
-			homeList.Refresh()
-		})
-	}
+
 	homeNav = iwidget.NewNavigatorWithAppBar(iwidget.NewAppBar("Home", homeList))
 	return homeNav
 }
