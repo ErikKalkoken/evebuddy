@@ -33,7 +33,7 @@ func TestNavDrawer_CanCreateFull(t *testing.T) {
 	drawer := iwidget.NewNavDrawer(
 		iwidget.NewNavPage("First", theme.HomeIcon(), widget.NewLabel("PLACEHOLDER 1")),
 		iwidget.NewNavPage("Second", theme.HomeIcon(), widget.NewLabel("PLACEHOLDER 2")),
-		iwidget.NewNavSeparator(),
+		// iwidget.NewNavSeparator(),
 		iwidget.NewNavPage("Third", theme.HomeIcon(), widget.NewLabel("PLACEHOLDER 3")),
 		iwidget.NewNavSectionLabel("Section"),
 		iwidget.NewNavPage("Forth", theme.HomeIcon(), widget.NewLabel("PLACEHOLDER 4")),

@@ -122,3 +122,54 @@ func TestReduceCategoricalPoints(t *testing.T) {
 		})
 	}
 }
+
+func TestTruncateWithSuffix(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		limit     int
+		suffixLen int
+		expected  string
+	}{
+		{
+			name:      "Standard truncation",
+			input:     "november",
+			limit:     7,
+			suffixLen: 1,
+			expected:  "nov...r",
+		},
+		{
+			name:      "Trailing space removal",
+			input:     "november ",
+			limit:     8,
+			suffixLen: 1,
+			expected:  "november",
+		},
+		{
+			name:      "Suffix ends in space",
+			input:     "open space ",
+			limit:     9,
+			suffixLen: 2,           // "e "
+			expected:  "open...ce", // Space trimmed
+		},
+		{
+			name:      "String within limit",
+			input:     "hello",
+			limit:     10,
+			suffixLen: 2,
+			expected:  "hello",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := TruncateWithSuffix(tt.input, tt.limit, tt.suffixLen)
+			assert.Equal(t, tt.expected, result)
+
+			// Verify length constraint (unless it was shorter than limit)
+			if len([]rune(tt.input)) > tt.limit {
+				assert.LessOrEqual(t, len(result), tt.limit)
+			}
+		})
+	}
+}
