@@ -187,12 +187,13 @@ type baseUI struct {
 	concurrencyLimit   int
 	corporation        atomic.Pointer[app.Corporation]
 	dataPaths          xmaps.OrderedMap[string, string] // Paths to user data
-	isDesktop          bool                             // whether the app runs on a desktop. If false we assume it's on mobile.
-	isFakeMobile       bool                             // Show mobile variant on a desktop (for development)
-	isForeground       atomic.Bool                      // whether the app is currently shown in the foreground
-	isOffline          bool                             // Run the app in offline mode
-	isStartupCompleted atomic.Bool                      // whether the app has completed startup (for testing)
-	isUpdateDisabled   bool                             // Whether to disable update tickers (useful for debugging)
+	defaultTheme       fyne.Theme
+	isDesktop          bool        // whether the app runs on a desktop. If false we assume it's on mobile.
+	isFakeMobile       bool        // Show mobile variant on a desktop (for development)
+	isForeground       atomic.Bool // whether the app is currently shown in the foreground
+	isOffline          bool        // Run the app in offline mode
+	isStartupCompleted atomic.Bool // whether the app has completed startup (for testing)
+	isUpdateDisabled   bool        // Whether to disable update tickers (useful for debugging)
 	sig                *singleinstance.Group
 	wasStarted         atomic.Bool            // whether the app has already been started at least once
 	window             fyne.Window            // main window
@@ -461,6 +462,7 @@ func (u *baseUI) Start() bool {
 		return false
 	}
 	// First app start
+	u.defaultTheme = theme.Current()
 	u.setColorTheme(u.settings.ColorTheme())
 	if u.isOffline {
 		slog.Info("App started in offline mode")
@@ -912,7 +914,7 @@ func (u *baseUI) updateStatus() {
 }
 
 func (u *baseUI) setColorTheme(s settings.ColorTheme) {
-	u.app.Settings().SetTheme(newCustomTheme(s))
+	u.app.Settings().SetTheme(newCustomTheme(u.defaultTheme, s))
 }
 
 func (u *baseUI) updateMailIndicator() {

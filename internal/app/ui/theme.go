@@ -45,9 +45,9 @@ type customTheme struct {
 
 // newCustomTheme returns a new custom theme.
 // Must be called after the app has started.
-func newCustomTheme(mode settings.ColorTheme) *customTheme {
+func newCustomTheme(defaultTheme fyne.Theme, mode settings.ColorTheme) *customTheme {
 	th := &customTheme{
-		defaultTheme: fyne.CurrentApp().Settings().Theme(),
+		defaultTheme: defaultTheme,
 		mode:         mode,
 	}
 	return th
