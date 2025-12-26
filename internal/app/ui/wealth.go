@@ -14,7 +14,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/s-daehling/fyne-charts/pkg/coord"
-	chartData "github.com/s-daehling/fyne-charts/pkg/data"
+	"github.com/s-daehling/fyne-charts/pkg/data"
 	"github.com/s-daehling/fyne-charts/pkg/prop"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -104,7 +104,7 @@ func (a *wealth) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *wealth) update() {
-	data, characters, err := a.compileData(a.u.services())
+	rows, characters, err := a.compileData(a.u.services())
 	if err != nil {
 		slog.Error("Failed to fetch data for charts", "err", err)
 		fyne.Do(func() {
@@ -130,7 +130,7 @@ func (a *wealth) update() {
 	})
 
 	var totalWallet, totalAssets float64
-	for _, r := range data {
+	for _, r := range rows {
 		totalAssets += r.assets
 		totalWallet += r.wallet
 	}
@@ -139,19 +139,19 @@ func (a *wealth) update() {
 		a.onUpdate(totalWallet*wealthMultiplier, totalAssets*wealthMultiplier)
 	}
 
-	a.updateAssetDetail(data, totalAssets)
-	a.updateAssetSplit(data, totalAssets)
-	a.updateCharacterSplit(data, totalAssets, totalWallet)
+	a.updateAssetDetail(rows, totalAssets)
+	a.updateAssetSplit(rows, totalAssets)
+	a.updateCharacterSplit(rows, totalAssets, totalWallet)
 	a.updateTotalSplit(totalAssets, totalWallet)
-	a.updateWalletDetail(data, totalWallet)
-	a.updateWalletSplit(data, totalWallet)
+	a.updateWalletDetail(rows, totalWallet)
+	a.updateWalletSplit(rows, totalWallet)
 }
 
-func (a *wealth) updateAssetDetail(data []dataRow, totalAssets float64) {
+func (a *wealth) updateAssetDetail(rows []wealthRow, totalAssets float64) {
 	colors := newColorWheel()
-	d := xslices.Map(data, func(r dataRow) chartData.CategoricalPoint {
-		return chartData.CategoricalPoint{
-			C:   r.label,
+	d := xslices.Map(rows, func(r wealthRow) data.CategoricalPoint {
+		return data.CategoricalPoint{
+			C:   r.character,
 			Val: r.assets,
 		}
 	})
@@ -172,11 +172,11 @@ func (a *wealth) updateAssetDetail(data []dataRow, totalAssets float64) {
 	})
 }
 
-func (a *wealth) updateAssetSplit(data []dataRow, totalAssets float64) {
+func (a *wealth) updateAssetSplit(rows []wealthRow, totalAssets float64) {
 	colors := newColorWheel()
-	d := xslices.Map(data, func(r dataRow) chartData.ProportionalPoint {
-		return chartData.ProportionalPoint{
-			C:   r.label,
+	d := xslices.Map(rows, func(r wealthRow) data.ProportionalPoint {
+		return data.ProportionalPoint{
+			C:   r.character,
 			Val: r.assets,
 			Col: colors.next(),
 		}
@@ -198,11 +198,11 @@ func (a *wealth) updateAssetSplit(data []dataRow, totalAssets float64) {
 	})
 }
 
-func (a *wealth) updateCharacterSplit(data []dataRow, totalAssets float64, totalWallet float64) {
+func (a *wealth) updateCharacterSplit(rows []wealthRow, totalAssets float64, totalWallet float64) {
 	colors := newColorWheel()
-	d := xslices.Map(data, func(r dataRow) chartData.ProportionalPoint {
-		return chartData.ProportionalPoint{
-			C:   r.label,
+	d := xslices.Map(rows, func(r wealthRow) data.ProportionalPoint {
+		return data.ProportionalPoint{
+			C:   r.character,
 			Val: r.assets,
 			Col: colors.next(),
 		}
@@ -226,7 +226,7 @@ func (a *wealth) updateCharacterSplit(data []dataRow, totalAssets float64, total
 
 func (a *wealth) updateTotalSplit(totalAssets float64, totalWallet float64) {
 	colors := newColorWheel()
-	s, err := prop.NewSeries("", []chartData.ProportionalPoint{
+	s, err := prop.NewSeries("", []data.ProportionalPoint{
 		{
 			C:   "Assets combined",
 			Val: totalAssets,
@@ -249,11 +249,11 @@ func (a *wealth) updateTotalSplit(totalAssets float64, totalWallet float64) {
 	})
 }
 
-func (a *wealth) updateWalletDetail(data []dataRow, totalWallet float64) {
+func (a *wealth) updateWalletDetail(rows []wealthRow, totalWallet float64) {
 	colors := newColorWheel()
-	d := xslices.Map(data, func(r dataRow) chartData.CategoricalPoint {
-		return chartData.CategoricalPoint{
-			C:   r.label,
+	d := xslices.Map(rows, func(r wealthRow) data.CategoricalPoint {
+		return data.CategoricalPoint{
+			C:   r.character,
 			Val: r.wallet,
 		}
 	})
@@ -274,11 +274,11 @@ func (a *wealth) updateWalletDetail(data []dataRow, totalWallet float64) {
 	})
 }
 
-func (a *wealth) updateWalletSplit(data []dataRow, totalWallet float64) {
+func (a *wealth) updateWalletSplit(rows []wealthRow, totalWallet float64) {
 	colors := newColorWheel()
-	d := xslices.Map(data, func(r dataRow) chartData.ProportionalPoint {
-		return chartData.ProportionalPoint{
-			C:   r.label,
+	d := xslices.Map(rows, func(r wealthRow) data.ProportionalPoint {
+		return data.ProportionalPoint{
+			C:   r.character,
 			Val: r.wallet,
 			Col: colors.next(),
 		}
@@ -300,65 +300,65 @@ func (a *wealth) updateWalletSplit(data []dataRow, totalWallet float64) {
 	})
 }
 
-func reduceProportionalPoints(data []chartData.ProportionalPoint, m int) []chartData.ProportionalPoint {
-	if len(data) <= m {
-		return data
+func reduceProportionalPoints(rows []data.ProportionalPoint, m int) []data.ProportionalPoint {
+	if len(rows) <= m {
+		return rows
 	}
-	slices.SortFunc(data, func(a, b chartData.ProportionalPoint) int {
+	slices.SortFunc(rows, func(a, b data.ProportionalPoint) int {
 		return cmp.Compare(b.Val, a.Val)
 	})
-	others := data[m].Val
-	if len(data) > m {
-		for _, x := range data[m+1:] {
+	others := rows[m].Val
+	if len(rows) > m {
+		for _, x := range rows[m+1:] {
 			others += x.Val
 		}
 	}
-	data = data[:m]
-	slices.SortFunc(data, func(a, b chartData.ProportionalPoint) int {
+	rows = rows[:m]
+	slices.SortFunc(rows, func(a, b data.ProportionalPoint) int {
 		return strings.Compare(a.C, b.C)
 	})
-	data = append(data,
-		chartData.ProportionalPoint{
+	rows = append(rows,
+		data.ProportionalPoint{
 			C:   "Others",
 			Val: others,
 			Col: theme.Color(theme.ColorNameDisabled),
 		})
-	return data
+	return rows
 }
 
-func reduceCategoricalPoints(data []chartData.CategoricalPoint, m int) []chartData.CategoricalPoint {
-	if len(data) <= m {
-		return data
+func reduceCategoricalPoints(rows []data.CategoricalPoint, m int) []data.CategoricalPoint {
+	if len(rows) <= m {
+		return rows
 	}
-	slices.SortFunc(data, func(a, b chartData.CategoricalPoint) int {
+	slices.SortFunc(rows, func(a, b data.CategoricalPoint) int {
 		return cmp.Compare(b.Val, a.Val)
 	})
-	others := data[m].Val
-	if len(data) > m {
-		for _, x := range data[m+1:] {
+	others := rows[m].Val
+	if len(rows) > m {
+		for _, x := range rows[m+1:] {
 			others += x.Val
 		}
 	}
-	data = data[:m]
-	slices.SortFunc(data, func(a, b chartData.CategoricalPoint) int {
+	rows = rows[:m]
+	slices.SortFunc(rows, func(a, b data.CategoricalPoint) int {
 		return strings.Compare(a.C, b.C)
 	})
-	data = append(data,
-		chartData.CategoricalPoint{
+	rows = append(rows,
+		data.CategoricalPoint{
 			C:   "Others",
 			Val: others,
 		})
-	return data
+	return rows
 }
 
-type dataRow struct {
-	label  string
-	wallet float64
-	assets float64
-	total  float64
+type wealthRow struct {
+	character string
+	wallet    float64
+	assets    float64
+	total     float64
 }
 
-func (*wealth) compileData(s services) ([]dataRow, int, error) {
+func (*wealth) compileData(s services) ([]wealthRow, int, error) {
 	ctx := context.Background()
 	cc, err := s.cs.ListCharacters(ctx)
 	if err != nil {
@@ -372,7 +372,7 @@ func (*wealth) compileData(s services) ([]dataRow, int, error) {
 			selected = append(selected, c)
 		}
 	}
-	data := make([]dataRow, 0)
+	rows := make([]wealthRow, 0)
 	for _, c := range selected {
 		assetTotal, err := s.cs.AssetTotalValue(ctx, c.ID)
 		if err != nil {
@@ -383,19 +383,18 @@ func (*wealth) compileData(s services) ([]dataRow, int, error) {
 		}
 		wallet := c.WalletBalance.ValueOrZero() / wealthMultiplier
 		assets := assetTotal.ValueOrZero() / wealthMultiplier
-		label := c.EveCharacter.Name
-		r := dataRow{
-			label:  label,
-			assets: assets,
-			wallet: wallet,
-			total:  assets + wallet,
+		r := wealthRow{
+			character: c.EveCharacter.Name,
+			assets:    assets,
+			wallet:    wallet,
+			total:     assets + wallet,
 		}
-		data = append(data, r)
+		rows = append(rows, r)
 	}
-	slices.SortFunc(data, func(a, b dataRow) int {
-		return strings.Compare(a.label, b.label)
+	slices.SortFunc(rows, func(a, b wealthRow) int {
+		return strings.Compare(a.character, b.character)
 	})
-	return data, len(selected), nil
+	return rows, len(selected), nil
 }
 
 type colorWheel struct {
