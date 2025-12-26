@@ -22,8 +22,10 @@ import (
 )
 
 const (
-	wealthMultiplier    = 1_000_000_000
-	wealthMaxCharacters = 7
+	wealthMultiplier           = 1_000_000_000
+	wealthMaxCharacters        = 7
+	wealthNameTruncationLimit  = 16
+	wealthNameTruncationSuffix = 2
 )
 
 type wealth struct {
@@ -381,10 +383,11 @@ func (*wealth) compileData(s services) ([]wealthRow, int, error) {
 		if c.WalletBalance.IsEmpty() && assetTotal.IsEmpty() {
 			continue
 		}
+		character := TruncateWithSuffix(c.EveCharacter.Name, wealthNameTruncationLimit, wealthNameTruncationSuffix)
 		wallet := c.WalletBalance.ValueOrZero() / wealthMultiplier
 		assets := assetTotal.ValueOrZero() / wealthMultiplier
 		r := wealthRow{
-			character: c.EveCharacter.Name,
+			character: character,
 			assets:    assets,
 			wallet:    wallet,
 			total:     assets + wallet,
@@ -433,3 +436,22 @@ func (w *colorWheel) next() color.Color {
 // func (w *colorWheel) reset() {
 // 	w.n = 0
 // }
+
+// TruncateWithSuffix shortens a string to exactly 'limit' length.
+// It keeps a prefix, adds "...", and ends with 'suffixLen' characters.
+func TruncateWithSuffix(s string, limit int, suffixLen int) string {
+	runes := []rune(strings.TrimRight(s, " "))
+	if len(runes) <= limit {
+		return string(runes)
+	}
+
+	prefixLen := limit - 3 - suffixLen
+	if prefixLen < 0 {
+		prefixLen = 0 // Fallback if limit is very small
+	}
+
+	prefix := runes[:prefixLen]
+	suffix := runes[len(runes)-suffixLen:]
+	strSuffix := strings.TrimRight(string(suffix), " ")
+	return string(prefix) + "..." + strSuffix
+}

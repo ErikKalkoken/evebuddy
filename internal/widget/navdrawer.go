@@ -174,7 +174,10 @@ func (w *NavDrawer) makeList() *widget.List {
 				spacer.Hide()
 				updateBadge()
 			}
-			list.SetItemHeight(id, co.(*fyne.Container).MinSize().Height) // needed for separators
+			fyne.Do(func() {
+				// TODO: Maybe remove?
+				list.SetItemHeight(id, co.(*fyne.Container).MinSize().Height) // needed for separators
+			})
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {
