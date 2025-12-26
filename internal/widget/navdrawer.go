@@ -24,7 +24,7 @@ type navItemVariant uint
 const (
 	navUndefined navItemVariant = iota
 	navPage
-	navSectionLabel
+	navSectionLabel // TODO: Maybe remove when no longer used?
 	navSeparator
 )
 
@@ -70,8 +70,7 @@ func (w *NavDrawer) ScrollToTop() {
 
 func (w *NavDrawer) makeList() *widget.List {
 	p := w.Theme().Size(theme.SizeNamePadding)
-	var list *widget.List
-	list = widget.NewList(
+	list := widget.NewList(
 		func() int {
 			return len(w.items)
 		},
@@ -174,10 +173,10 @@ func (w *NavDrawer) makeList() *widget.List {
 				spacer.Hide()
 				updateBadge()
 			}
-			fyne.Do(func() {
-				// TODO: Maybe remove?
-				list.SetItemHeight(id, co.(*fyne.Container).MinSize().Height) // needed for separators
-			})
+			// fyne.Do(func() {
+			// 	// TODO: Maybe remove?
+			// 	list.SetItemHeight(id, co.(*fyne.Container).MinSize().Height) // needed for separators
+			// })
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {
@@ -337,9 +336,9 @@ func NewNavSectionLabel(text string) *NavItem {
 	return it
 }
 
-func NewNavSeparator() *NavItem {
-	return newNavItem(navSeparator)
-}
+// func NewNavSeparator() *NavItem {
+// 	return newNavItem(navSeparator)
+// }
 
 func newNavItem(variant navItemVariant) *NavItem {
 	it := &NavItem{
