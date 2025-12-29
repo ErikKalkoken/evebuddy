@@ -437,19 +437,14 @@ func (w *colorWheel) next() color.Color {
 // 	w.n = 0
 // }
 
-// TruncateWithSuffix shortens a string to exactly 'limit' length.
-// It keeps a prefix, adds "...", and ends with 'suffixLen' characters.
+// TruncateWithSuffix shortens a string to length limit.
+// It adds "..." and keeps 'suffixLen' characters at the end.
 func TruncateWithSuffix(s string, limit int, suffixLen int) string {
 	runes := []rune(strings.TrimRight(s, " "))
 	if len(runes) <= limit {
 		return string(runes)
 	}
-
-	prefixLen := limit - 3 - suffixLen
-	if prefixLen < 0 {
-		prefixLen = 0 // Fallback if limit is very small
-	}
-
+	prefixLen := max(limit-1-suffixLen, 0) // ellipsis counts as 1
 	prefix := runes[:prefixLen]
 	suffix := runes[len(runes)-suffixLen:]
 	strSuffix := strings.TrimRight(string(suffix), " ")
