@@ -8,7 +8,7 @@ require (
 	fyne.io/fyne/v2 v2.7.1
 	github.com/ErikKalkoken/eveauth v0.1.0
 	github.com/ErikKalkoken/fyne-kx v0.6.4
-	github.com/ErikKalkoken/go-set v0.2.0
+	github.com/ErikKalkoken/go-set v0.3.0
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/PuerkitoBio/goquery v1.11.0
 	github.com/anthonynsimon/bild v0.14.0
@@ -26,7 +26,7 @@ require (
 	github.com/maniartech/signals v1.3.1
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/microcosm-cc/bluemonday v1.0.27
-	github.com/s-daehling/fyne-charts v0.0.0-20251223123406-e9d1bc6e925e
+	github.com/s-daehling/fyne-charts v0.0.0-20251227165118-196292e3799e
 	github.com/stretchr/testify v1.11.1
 	github.com/yuin/goldmark v1.7.13
 	golang.org/x/exp v0.0.0-20251113190631-e25ba8c21ef6
