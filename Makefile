@@ -2,10 +2,7 @@
 generate: bundle queries mapping
 
 bundle:
-	fyne bundle --package icons --prefix "" resources/app > internal/app/icons/resource.go
-	fyne bundle --package widget --prefix icon resources/widget > internal/widget/resource.go
-	fyne bundle --package eveimageservice resources/eveimageservice > internal/eveimageservice/resource.go
-	fyne bundle --package eveicon resources/eveicon > internal/eveicon/resource.go
+	go generate ./...
 
 mapping:
 	go run ./tools/geneveicons/ -p eveicon > internal/eveicon/mapping.go
