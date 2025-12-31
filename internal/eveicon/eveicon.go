@@ -5,7 +5,7 @@ import (
 	"fyne.io/fyne/v2"
 )
 
-// An icon name
+// Name represents the name of a named icon.
 type Name uint
 
 // Named icons

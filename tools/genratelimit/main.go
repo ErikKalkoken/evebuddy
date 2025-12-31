@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"html/template"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -23,6 +24,7 @@ var specFile []byte
 var (
 	packageFlag = flag.String("p", "main", "package name")
 	formatFlat  = flag.String("f", "go", "format of generated output")
+	output      = flag.String("out", "", "writes to given file when specified")
 )
 
 type rateLimitGroup struct {
@@ -90,6 +92,18 @@ func main() {
 		}
 	}
 
+	var out io.Writer
+	if *output == "" {
+		out = os.Stdout
+	} else {
+		f, err := os.Create(*output)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer f.Close()
+		out = f
+	}
+
 	switch *formatFlat {
 	case "md":
 		tmpl, err := template.New("").Funcs(template.FuncMap{
@@ -98,7 +112,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		err = tmpl.Execute(os.Stdout, map[string]any{
+		err = tmpl.Execute(out, map[string]any{
 			"Today":             time.Now().UTC().Format(time.DateOnly),
 			"CompatibilityDate": compatibilityDate,
 			"Groups":            groups,
@@ -113,7 +127,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		err = tmpl.Execute(os.Stdout, map[string]any{
+		err = tmpl.Execute(out, map[string]any{
 			"CompatibilityDate": compatibilityDate,
 			"Groups":            groups,
 			"Operations":        operations,

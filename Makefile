@@ -2,17 +2,13 @@
 generate: bundle queries mapping
 
 bundle:
-	fyne bundle --package icons --prefix "" resources/app > internal/app/icons/resource.go
-	fyne bundle --package widget --prefix icon resources/widget > internal/widget/resource.go
-	fyne bundle --package eveimageservice resources/eveimageservice > internal/eveimageservice/resource.go
-	fyne bundle --package eveicon resources/eveicon > internal/eveicon/resource.go
+	go generate ./internal/eveicon ;
+	go generate ./internal/eveimageservice ;
+	go generate ./internal/app/icons ;
 
 mapping:
-	go run ./tools/geneveicons/ -p eveicon > internal/eveicon/mapping.go
-	gofmt -s -w internal/eveicon/mapping.go
-	go run ./tools/genschematicids/ -p eveicon > internal/eveicon/schematic.go
-	gofmt -s -w internal/eveicon/schematic.go
-	go run ./tools/genratelimit/ -p xgoesi > internal/xgoesi/ratelimit_gen.go
+	go generate ./internal/eveicon ;
+	go generate ./internal/xgoesi ;
 
 queries:
 	sqlc generate
