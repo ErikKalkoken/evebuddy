@@ -41,10 +41,8 @@ github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/ErikKalkoken/eveauth v0.1.0 h1:sK/wJK2puqbgZy20zYBkpC963CkSUQkz8uAlBcSLaus=
 github.com/ErikKalkoken/eveauth v0.1.0/go.mod h1:MyD3zTCQrWeg9nnnK7EjstiQ1Wc2xJTMl8ZFkOXfuY8=
-github.com/ErikKalkoken/fyne-kx v0.6.4 h1:maAd3GEVaT6SeOumhnVkSNGnq/XG5xJc17mClZW+orA=
-github.com/ErikKalkoken/fyne-kx v0.6.4/go.mod h1:yRxTow1yH6mWQigWVE8HLl++kKHvtgy8PIucH7hOlOc=
-github.com/ErikKalkoken/go-set v0.2.0 h1:qbeuoupUMuwnbHzGwXTeFXXC9m/WLAPeoDakyP6rLnw=
-github.com/ErikKalkoken/go-set v0.2.0/go.mod h1:8hyYMuo2dqGaCGf32C/CILHMTVRJ9CV2vlcIPGOBe5I=
+github.com/ErikKalkoken/fyne-kx v0.7.0 h1:L2fvduPvGMuLj1q6BZAmA/16Wn5VPkUFUE4byEmEZwc=
+github.com/ErikKalkoken/fyne-kx v0.7.0/go.mod h1:d8dJ1hhvwfgZZ3n/zSKhtjhNC+qGFqsn/EcUaaREpDU=
 github.com/ErikKalkoken/go-set v0.3.0 h1:yJxMD/7UfVB4+wEJ9PD0A+pODy0vreyo72szy1UcgZQ=
 github.com/ErikKalkoken/go-set v0.3.0/go.mod h1:8hyYMuo2dqGaCGf32C/CILHMTVRJ9CV2vlcIPGOBe5I=
 github.com/JohannesKaufmann/html-to-markdown v1.6.0 h1:04VXMiE50YYfCfLboJCLcgqF5x+rHJnb1ssNmqpLH/k=
@@ -281,10 +279,6 @@ github.com/rogpeppe/go-internal v1.9.0 h1:73kH8U+JUqXU8lRuOHeVHaa/SZPifC7BkcraZV
 github.com/rogpeppe/go-internal v1.9.0/go.mod h1:WtVeX8xhTBvf0smdhujwtBcq4Qrzq/fJaraNFVN+nFs=
 github.com/rymdport/portal v0.4.2 h1:7jKRSemwlTyVHHrTGgQg7gmNPJs88xkbKcIL3NlcmSU=
 github.com/rymdport/portal v0.4.2/go.mod h1:kFF4jslnJ8pD5uCi17brj/ODlfIidOxlgUDTO5ncnC4=
-github.com/s-daehling/fyne-charts v0.0.0-20251223123406-e9d1bc6e925e h1:WEoJbRceextSbiiMQvoN6mkEiJ9GDLNqm6jckPxBzJA=
-github.com/s-daehling/fyne-charts v0.0.0-20251223123406-e9d1bc6e925e/go.mod h1:2Rqw/+P+IlFt/+KmHQYTfPK8qqTkvafhXiN8pg5MTIg=
-github.com/s-daehling/fyne-charts v0.0.0-20251226130856-a9897318c5b6 h1:dbNhNdu8oauDarC8poWAD+XLbecH7+sHU5ydduFznBg=
-github.com/s-daehling/fyne-charts v0.0.0-20251226130856-a9897318c5b6/go.mod h1:2Rqw/+P+IlFt/+KmHQYTfPK8qqTkvafhXiN8pg5MTIg=
 github.com/s-daehling/fyne-charts v0.0.0-20251227165118-196292e3799e h1:N6JG18Nfb07YMwpQEseD9JWjx/JUAs79NgPC1pF5izc=
 github.com/s-daehling/fyne-charts v0.0.0-20251227165118-196292e3799e/go.mod h1:2Rqw/+P+IlFt/+KmHQYTfPK8qqTkvafhXiN8pg5MTIg=
 github.com/sebdah/goldie/v2 v2.5.3 h1:9ES/mNN+HNUbNWpVAlrzuZ7jE+Nrczbj8uFRjM7624Y=
