@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"html/template"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -22,7 +23,10 @@ type row struct {
 	Res string
 }
 
-var packageFlag = flag.String("p", "main", "package name")
+var (
+	packageFlag = flag.String("p", "main", "package name")
+	output      = flag.String("out", "", "writes to given file when specified")
+)
 
 // Icon IDs to ignore, e.g. because we have no image file for it
 var blacklistedIds = map[int]bool{21934: true}
@@ -51,7 +55,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = tmpl.Execute(os.Stdout, map[string]any{
+	var w io.Writer
+	if *output == "" {
+		w = os.Stdout
+	} else {
+		f, err := os.Create(*output)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer f.Close()
+		w = f
+	}
+	err = tmpl.Execute(w, map[string]any{
 		"Package":  *packageFlag,
 		"Values":   values,
 		"Variable": "id2fileMap",

@@ -2,11 +2,12 @@
 generate: bundle queries mapping
 
 bundle:
-	go generate ./...
+	go generate ./internal/eveicon ;
+	go generate ./internal/eveimageservice ;
+	go generate ./internal/app/icons ;
 
 mapping:
-	go run ./tools/geneveicons/ -p eveicon > internal/eveicon/mapping.go
-	gofmt -s -w internal/eveicon/mapping.go
+	go generate ./internal/eveicon ;
 	go run ./tools/genschematicids/ -p eveicon > internal/eveicon/schematic.go
 	gofmt -s -w internal/eveicon/schematic.go
 	go run ./tools/genratelimit/ -p xgoesi > internal/xgoesi/ratelimit_gen.go
