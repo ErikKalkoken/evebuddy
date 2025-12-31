@@ -8,9 +8,7 @@ bundle:
 
 mapping:
 	go generate ./internal/eveicon ;
-	go run ./tools/genschematicids/ -p eveicon > internal/eveicon/schematic.go
-	gofmt -s -w internal/eveicon/schematic.go
-	go run ./tools/genratelimit/ -p xgoesi > internal/xgoesi/ratelimit_gen.go
+	go generate ./internal/xgoesi ;
 
 queries:
 	sqlc generate

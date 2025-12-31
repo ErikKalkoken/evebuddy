@@ -55,18 +55,19 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	var w io.Writer
+
+	var out io.Writer
 	if *output == "" {
-		w = os.Stdout
+		out = os.Stdout
 	} else {
 		f, err := os.Create(*output)
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer f.Close()
-		w = f
+		out = f
 	}
-	err = tmpl.Execute(w, map[string]any{
+	err = tmpl.Execute(out, map[string]any{
 		"Package":  *packageFlag,
 		"Values":   values,
 		"Variable": "id2fileMap",
