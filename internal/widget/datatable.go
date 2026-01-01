@@ -58,9 +58,10 @@ type (
 	ColumnSorter struct {
 		cols       []SortDir
 		def        DataTableDef
-		sortButton *SortButton
-		initialIdx int
 		initialDir SortDir
+		initialIdx int
+		isMobile   bool
+		sortButton *SortButton
 	}
 
 	// A SortButton represents a button for sorting a data table.
@@ -144,8 +145,9 @@ func (d DataTableDef) NewColumnSorter(idx int, dir SortDir) *ColumnSorter {
 	cs := &ColumnSorter{
 		cols:       make([]SortDir, d.size()),
 		def:        d,
-		initialIdx: idx,
 		initialDir: dir,
+		initialIdx: idx,
+		isMobile:   fyne.CurrentDevice().IsMobile(),
 	}
 	cs.clear()
 	cs.Set(idx, dir)
@@ -202,7 +204,7 @@ func (cs *ColumnSorter) size() int {
 	return len(cs.cols)
 }
 
-// Sort sorts colums idx by applying function f.
+// Sort sorts columns idx by applying function f.
 // It will re-apply the previous sort when idx is -1.
 func (cs *ColumnSorter) Sort(idx int, f func(sortCol int, dir SortDir)) {
 	var dir SortDir
@@ -305,8 +307,10 @@ func (cs *ColumnSorter) NewSortButton(process func(), window fyne.Window, ignore
 			),
 		)
 		d = dialog.NewCustomWithoutButtons("Sort By", c, window)
-		_, s := window.Canvas().InteractiveArea()
-		d.Resize(fyne.NewSize(s.Width, s.Height*0.8))
+		if cs.isMobile {
+			_, s := window.Canvas().InteractiveArea()
+			d.Resize(fyne.NewSize(s.Width, s.Height*0.8))
+		}
 		d.Show()
 	}
 	w.set(cs.current())

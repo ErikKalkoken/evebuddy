@@ -100,6 +100,7 @@ type baseUI struct {
 	onAppTerminated                 func()
 	onRefreshCross                  func()
 	onSetCharacter                  func(*app.Character)
+	onShowCharacter                 func()
 	onSetCorporation                func(*app.Corporation)
 	onShowAndRun                    func()
 	onUpdateCharacter               func(*app.Character)
@@ -474,9 +475,9 @@ func (u *baseUI) Start() bool {
 	u.progressModal.Start()
 	go func() {
 		u.characterSkillQueue.start()
+		u.updateHome()
 		u.initCharacter()
 		u.initCorporation()
-		u.updateHome()
 		u.updateStatus()
 
 		updateCharactersMissingScope := func() {
@@ -689,6 +690,7 @@ func (u *baseUI) updateCharacter() {
 		slog.Debug("Updating without character")
 	}
 	u.showModalWhileExecuting("Loading character", map[string]func(){
+		"characterSheet":       u.characterSheet.update,
 		"assets":               u.characterAssets.update,
 		"attributes":           u.characterAttributes.update,
 		"biography":            u.characterBiography.update,
@@ -696,7 +698,6 @@ func (u *baseUI) updateCharacter() {
 		"jumpClones":           u.characterJumpClones.update,
 		"mail":                 u.characterMails.update,
 		"notifications":        u.characterCommunications.update,
-		"characterSheet":       u.characterSheet.update,
 		"characterCorporation": u.characterCorporation.update,
 		"ships":                u.characterShips.update,
 		"skillCatalogue":       u.characterSkillCatalogue.update,
@@ -862,6 +863,7 @@ func (u *baseUI) updateCorporationAvatar(id int32, setIcon func(fyne.Resource)) 
 // updateHome refreshed all pages that contain information about multiple characters.
 func (u *baseUI) updateHome() {
 	u.showModalWhileExecuting("Updating home", map[string]func(){
+		"overview":           u.characterOverview.update,
 		"assets":             u.assets.update,
 		"augmentations":      u.augmentations.update,
 		"contracts":          u.contracts.update,
@@ -874,7 +876,6 @@ func (u *baseUI) updateHome() {
 		"slotsReactions":     u.slotsReactions.update,
 		"slotsResearch":      u.slotsResearch.update,
 		"locations":          u.characterLocations.update,
-		"overview":           u.characterOverview.update,
 		"training":           u.training.update,
 		"wealth":             u.wealth.update,
 	}, u.onRefreshCross)

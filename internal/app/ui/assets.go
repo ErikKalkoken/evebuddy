@@ -166,9 +166,9 @@ func newAssets(u *baseUI) *assets {
 	}})
 	a := &assets{
 		columnSorter: headers.NewColumnSorter(assetsColItem, iwidget.SortAsc),
-		search:       widget.NewEntry(),
 		found:        widget.NewLabel(""),
 		rowsFiltered: make([]assetRow, 0),
+		search:       widget.NewEntry(),
 		total:        makeTopLabel(),
 		u:            u,
 	}
@@ -377,19 +377,9 @@ func (a *assets) filterRows(sortCol int) {
 	}
 	// search filter
 	if search := strings.ToLower(a.search.Text); search != "" {
-		rows2 := make([]assetRow, 0)
-		for _, r := range rows {
-			var matches bool
-			if search == "" {
-				matches = true
-			} else {
-				matches = strings.Contains(r.searchTarget, search)
-			}
-			if matches {
-				rows2 = append(rows2, r)
-			}
-		}
-		rows = rows2
+		rows = slices.DeleteFunc(rows, func(r assetRow) bool {
+			return !strings.Contains(r.searchTarget, search)
+		})
 	}
 	// sort
 	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {

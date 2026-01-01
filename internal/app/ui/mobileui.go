@@ -568,6 +568,9 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 			characterNav.PopAll()
 		})
 	}
+	u.onShowCharacter = func() {
+		navBar.Select(1)
+	}
 
 	u.onSetCorporation = func(c *app.Corporation) {
 		go u.updateCorporationAvatar(c.ID, func(r fyne.Resource) {

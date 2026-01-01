@@ -369,19 +369,9 @@ func (a *training) filterRows(sortCol int) {
 	}
 	// search filter
 	if search := strings.ToLower(a.search.Text); search != "" {
-		rows2 := make([]trainingRow, 0)
-		for _, r := range rows {
-			var matches bool
-			if search == "" {
-				matches = true
-			} else {
-				matches = strings.Contains(r.searchTarget, search)
-			}
-			if matches {
-				rows2 = append(rows2, r)
-			}
-		}
-		rows = rows2
+		rows = slices.DeleteFunc(rows, func(r trainingRow) bool {
+			return !strings.Contains(r.searchTarget, search)
+		})
 	}
 	// sort
 	a.columnSorter.Sort(sortCol, func(sortCol int, dir iwidget.SortDir) {

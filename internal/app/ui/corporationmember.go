@@ -146,19 +146,9 @@ func (a *corporationMember) filterRows() {
 	rows := slices.Clone(a.rows)
 	// search filter
 	if search := strings.ToLower(a.searchBox.Text); search != "" {
-		rows2 := make([]corporationMemberRow, 0)
-		for _, r := range rows {
-			var matches bool
-			if search == "" {
-				matches = true
-			} else {
-				matches = strings.Contains(r.searchTarget, search)
-			}
-			if matches {
-				rows2 = append(rows2, r)
-			}
-		}
-		rows = rows2
+		rows = slices.DeleteFunc(rows, func(r corporationMemberRow) bool {
+			return !strings.Contains(r.searchTarget, search)
+		})
 	}
 	slices.SortFunc(rows, func(a, b corporationMemberRow) int {
 		return strings.Compare(a.name, b.name)

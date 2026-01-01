@@ -4,13 +4,16 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"image/color"
 	"log/slog"
 	"slices"
 	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -18,6 +21,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -36,8 +40,14 @@ type characterOverviewRow struct {
 	faction         *app.EveEntity
 	home            *app.EveLocation
 	lastLoginAt     optional.Optional[time.Time]
+	location        *app.EveLocation
+	regionName      string
+	searchTarget    string
 	security        float64
 	securityDisplay []widget.RichTextSegment
+	ship            *app.EveType
+	skillpoints     optional.Optional[int]
+	solarSystemName string
 	tags            set.Set[string]
 	unreadCount     optional.Optional[int]
 	walletBalance   optional.Optional[float64]
@@ -64,8 +74,11 @@ type characterOverview struct {
 	columnSorter      *iwidget.ColumnSorter
 	rows              []characterOverviewRow
 	rowsFiltered      []characterOverviewRow
+	search            *widget.Entry
 	selectAlliance    *kxwidget.FilterChipSelect
 	selectCorporation *kxwidget.FilterChipSelect
+	selectRegion      *kxwidget.FilterChipSelect
+	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
 	sortButton        *iwidget.SortButton
 	top               *widget.Label
@@ -73,118 +86,83 @@ type characterOverview struct {
 }
 
 const (
-	overviewColCharacter   = 0
-	overviewColCorporation = 1
-	overviewColAlliance    = 2
-	overviewColSecurity    = 3
-	overviewColUnread      = 4
-	overviewColWallet      = 5
-	overviewColAssets      = 6
-	overviewColLastLogin   = 7
-	overviewColHome        = 8
-	overviewColAge         = 9
+	overviewColAlliance = iota
+	overviewColCharacter
+	overviewColCorporation
+	overviewColMail
+	overviewColRegion
+	overviewColSolarSystem
+	overviewColSkillpoints
+	overviewColWallet
 )
 
 func newCharacterOverview(u *baseUI) *characterOverview {
-	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{{
-		Col:   overviewColCharacter,
-		Label: "Character",
-		Width: columnWidthEntity,
-	}, {
-		Col:   overviewColCorporation,
-		Label: "Corporation",
-		Width: 250,
-	}, {
-		Col:   overviewColAlliance,
-		Label: "Alliance",
-		Width: 250,
-	}, {
-		Col:   overviewColSecurity,
-		Label: "Sec.",
-		Width: 50,
-	}, {
-		Col:   overviewColUnread,
-		Label: "Unread",
-		Width: 100,
-	}, {
-		Col:   overviewColWallet,
-		Label: "Wallet",
-		Width: 100,
-	}, {
-		Col:   overviewColAssets,
-		Label: "Assets",
-		Width: 100,
-	}, {
-		Col:   overviewColLastLogin,
-		Label: "Last Login",
-		Width: 100,
-	}, {
-		Col:   overviewColHome,
-		Label: "Home",
-		Width: columnWidthLocation,
-	}, {
-		Col:   overviewColAge,
-		Label: "Age",
-		Width: 100,
-	}})
+	headers := iwidget.NewDataTableDef([]iwidget.ColumnDef{
+		{
+			Col:   overviewColAlliance,
+			Label: "Alliance",
+		},
+		{
+			Col:   overviewColCharacter,
+			Label: "Character",
+		},
+		{
+			Col:   overviewColCorporation,
+			Label: "Corporation",
+		},
+		{
+			Col:   overviewColMail,
+			Label: "Unread",
+		},
+		{
+			Col:   overviewColRegion,
+			Label: "Region",
+		},
+		{
+			Col:   overviewColSkillpoints,
+			Label: "Skillpoints",
+		},
+		{
+			Col:   overviewColSolarSystem,
+			Label: "System",
+		},
+		{
+			Col:   overviewColWallet,
+			Label: "Wallet",
+		},
+	})
 	a := &characterOverview{
 		columnSorter: headers.NewColumnSorter(overviewColCharacter, iwidget.SortAsc),
 		rows:         make([]characterOverviewRow, 0),
+		rowsFiltered: make([]characterOverviewRow, 0),
+		search:       widget.NewEntry(),
 		top:          makeTopLabel(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
-	makeCell := func(col int, r characterOverviewRow) []widget.RichTextSegment {
-		switch col {
-		case overviewColCharacter:
-			return iwidget.RichTextSegmentsFromText(r.characterName)
-		case overviewColCorporation:
-			return iwidget.RichTextSegmentsFromText(r.corporation.Name)
-		case overviewColAlliance:
-			var s string
-			if r.alliance != nil {
-				s = r.alliance.Name
-			}
-			return iwidget.RichTextSegmentsFromText(s)
-		case overviewColSecurity:
-			return r.securityDisplay
-		case overviewColUnread:
-			return iwidget.RichTextSegmentsFromText(ihumanize.Optional(r.unreadCount, "?"))
-		case overviewColWallet:
-			return iwidget.RichTextSegmentsFromText(ihumanize.OptionalWithDecimals(r.walletBalance, 1, "?"))
-		case overviewColAssets:
-			return iwidget.RichTextSegmentsFromText(ihumanize.OptionalWithDecimals(r.assetValue, 1, "?"))
-		case overviewColLastLogin:
-			return iwidget.RichTextSegmentsFromText(ihumanize.Optional(r.lastLoginAt, "?"))
-		case overviewColHome:
-			if r.home != nil {
-				return r.home.DisplayRichText()
-			}
-		case overviewColAge:
-			return iwidget.RichTextSegmentsFromText(humanize.RelTime(r.birthday, time.Now(), "", ""))
-		}
-		return iwidget.RichTextSegmentsFromText("?")
+	a.search.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
+		a.search.SetText("")
+		a.filterRows(-1)
+	})
+	a.search.OnChanged = func(s string) {
+		a.filterRows(-1)
 	}
+	a.search.PlaceHolder = "Search character names"
 	if a.u.isDesktop {
-		a.body = iwidget.MakeDataTable(
-			headers,
-			&a.rowsFiltered,
-			makeCell,
-			a.columnSorter,
-			a.filterRows,
-			func(_ int, r characterOverviewRow) {
-				showCharacterOverviewDetailWindow(a.u, r)
-			})
+		a.body = a.makeGrid()
 	} else {
-		a.body = iwidget.MakeDataList(headers, &a.rowsFiltered, makeCell, func(r characterOverviewRow) {
-			showCharacterOverviewDetailWindow(a.u, r)
-		})
+		a.body = a.makeList()
 	}
-
 	a.selectAlliance = kxwidget.NewFilterChipSelect("Alliance", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 	a.selectCorporation = kxwidget.NewFilterChipSelect("Corporation", []string{}, func(string) {
+		a.filterRows(-1)
+	})
+	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
+		a.filterRows(-1)
+	})
+	a.selectSolarSystem = kxwidget.NewFilterChipSelect("System", []string{}, func(string) {
 		a.filterRows(-1)
 	})
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
@@ -192,7 +170,7 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 	})
 	a.sortButton = a.columnSorter.NewSortButton(func() {
 		a.filterRows(-1)
-	}, a.u.window, 5, 6, 7, 8, 9)
+	}, a.u.window)
 
 	a.u.generalSectionChanged.AddListener(
 		func(_ context.Context, arg generalSectionUpdated) {
@@ -204,8 +182,6 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 				if arg.changed.ContainsAny(characterIDs.All()) {
 					a.update()
 				}
-			case app.SectionEveMarketPrices:
-				a.update()
 			}
 		},
 	)
@@ -213,10 +189,10 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 		func(_ context.Context, arg characterSectionUpdated) {
 			switch arg.section {
 			case
+				app.SectionCharacterLocation,
 				app.SectionCharacterMailHeaders,
-				app.SectionCharacterWalletBalance,
-				app.SectionCharacterAssets,
-				app.SectionCharacterOnline:
+				app.SectionCharacterSkills,
+				app.SectionCharacterWalletBalance:
 				a.update()
 			}
 		},
@@ -225,12 +201,20 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 }
 
 func (a *characterOverview) CreateRenderer() fyne.WidgetRenderer {
-	filters := container.NewHBox(a.selectAlliance, a.selectCorporation, a.selectTag)
-	if !a.u.isDesktop {
-		filters.Add(a.sortButton)
-	}
+	filters := container.NewHBox(
+		a.selectAlliance,
+		a.selectCorporation,
+		a.selectRegion,
+		a.selectSolarSystem,
+		a.selectTag,
+		a.sortButton,
+	)
 	c := container.NewBorder(
-		container.NewVBox(a.top, container.NewHScroll(filters)),
+		container.NewVBox(
+			a.top,
+			a.search,
+			container.NewHScroll(filters),
+		),
 		nil,
 		nil,
 		nil,
@@ -239,22 +223,119 @@ func (a *characterOverview) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
+func (a *characterOverview) makeGrid() *widget.GridWrap {
+	g := widget.NewGridWrap(
+		func() int {
+			return len(a.rowsFiltered)
+		},
+		func() fyne.CanvasObject {
+			return newCharacterCard(a.u.eis)
+		},
+		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
+			if id >= len(a.rowsFiltered) {
+				return
+			}
+			r := a.rowsFiltered[id]
+			co.(*characterCard).set(r)
+		},
+	)
+	g.OnSelected = func(id widget.GridWrapItemID) {
+		defer g.UnselectAll()
+		if id >= len(a.rowsFiltered) {
+			return
+		}
+		r := a.rowsFiltered[id]
+		if a.u.onShowCharacter != nil {
+			a.u.onShowCharacter()
+		}
+		if a.u.currentCharacterID() == r.characterID {
+			return
+		}
+		go func() {
+			err := a.u.loadCharacter(r.characterID)
+			if err != nil {
+				slog.Error("Failed to load character", "characterID", r.characterID, "error", err)
+				a.u.ShowSnackbar(fmt.Sprintf("Failed to load character: %s", a.u.humanizeError(err)))
+				return
+			}
+		}()
+	}
+	return g
+}
+
+func (a *characterOverview) makeList() *widget.List {
+	l := widget.NewList(
+		func() int {
+			return len(a.rowsFiltered)
+		},
+		func() fyne.CanvasObject {
+			return newCharacterRow(a.u.eis)
+		},
+		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
+			if id >= len(a.rowsFiltered) {
+				return
+			}
+			r := a.rowsFiltered[id]
+			co.(*characterRow).set(r)
+		},
+	)
+	l.HideSeparators = true
+	l.OnSelected = func(id widget.GridWrapItemID) {
+		defer l.UnselectAll()
+		if id >= len(a.rowsFiltered) {
+			return
+		}
+		r := a.rowsFiltered[id]
+		if a.u.onShowCharacter != nil {
+			a.u.onShowCharacter()
+		}
+		if a.u.currentCharacterID() == r.characterID {
+			return
+		}
+		go func() {
+			err := a.u.loadCharacter(r.characterID)
+			if err != nil {
+				slog.Error("Failed to load character", "characterID", r.characterID, "error", err)
+				a.u.ShowSnackbar(fmt.Sprintf("Failed to load character: %s", a.u.humanizeError(err)))
+				return
+			}
+		}()
+	}
+	return l
+}
+
 func (a *characterOverview) filterRows(sortCol int) {
 	rows := slices.Clone(a.rows)
 	// filter
 	if x := a.selectAlliance.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r characterOverviewRow) bool {
-			return r.AllianceName() == x
+		rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
+			return r.AllianceName() != x
 		})
 	}
 	if x := a.selectCorporation.Selected; x != "" {
-		rows = xslices.Filter(rows, func(r characterOverviewRow) bool {
-			return r.CorporationName() == x
+		rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
+			return r.CorporationName() != x
+		})
+	}
+	if x := a.selectRegion.Selected; x != "" {
+		rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
+			return r.regionName != x
+		})
+	}
+	if x := a.selectSolarSystem.Selected; x != "" {
+		rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
+			return r.solarSystemName != x
 		})
 	}
 	if x := a.selectTag.Selected; x != "" {
-		rows = xslices.Filter(rows, func(o characterOverviewRow) bool {
-			return o.tags.Contains(x)
+		rows = slices.DeleteFunc(rows, func(o characterOverviewRow) bool {
+			return !o.tags.Contains(x)
+		})
+	}
+	// search filter
+	if search := strings.ToLower(a.search.Text); search != "" {
+		rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
+			return !strings.Contains(r.searchTarget, search)
 		})
 	}
 	// sort
@@ -262,26 +343,22 @@ func (a *characterOverview) filterRows(sortCol int) {
 		slices.SortFunc(rows, func(a, b characterOverviewRow) int {
 			var x int
 			switch sortCol {
+			case overviewColAlliance:
+				x = xstrings.CompareIgnoreCase(a.AllianceName(), b.AllianceName())
 			case overviewColCharacter:
 				x = xstrings.CompareIgnoreCase(a.characterName, b.characterName)
 			case overviewColCorporation:
 				x = xstrings.CompareIgnoreCase(a.CorporationName(), b.CorporationName())
-			case overviewColAlliance:
-				x = xstrings.CompareIgnoreCase(a.AllianceName(), b.AllianceName())
-			case overviewColSecurity:
-				x = cmp.Compare(a.security, b.security)
-			case overviewColUnread:
+			case overviewColMail:
 				x = cmp.Compare(a.unreadCount.ValueOrZero(), b.unreadCount.ValueOrZero())
+			case overviewColRegion:
+				x = strings.Compare(a.regionName, b.regionName)
+			case overviewColSkillpoints:
+				x = cmp.Compare(a.skillpoints.ValueOrZero(), b.skillpoints.ValueOrZero())
+			case overviewColSolarSystem:
+				x = strings.Compare(a.solarSystemName, b.solarSystemName)
 			case overviewColWallet:
 				x = cmp.Compare(a.walletBalance.ValueOrZero(), b.walletBalance.ValueOrZero())
-			case overviewColAssets:
-				x = cmp.Compare(a.assetValue.ValueOrZero(), b.assetValue.ValueOrZero())
-			case overviewColLastLogin:
-				x = a.lastLoginAt.ValueOrZero().Compare(b.lastLoginAt.ValueOrZero())
-			case overviewColHome:
-				x = strings.Compare(a.home.DisplayName(), b.home.DisplayName())
-			case overviewColAge:
-				x = a.birthday.Compare(b.birthday)
 			}
 			if dir == iwidget.SortAsc {
 				return x
@@ -296,7 +373,12 @@ func (a *characterOverview) filterRows(sortCol int) {
 	a.selectCorporation.SetOptions(xslices.Map(rows, func(r characterOverviewRow) string {
 		return r.CorporationName()
 	}))
-
+	a.selectRegion.SetOptions(xslices.Map(rows, func(r characterOverviewRow) string {
+		return r.regionName
+	}))
+	a.selectSolarSystem.SetOptions(xslices.Map(rows, func(r characterOverviewRow) string {
+		return r.solarSystemName
+	}))
 	a.selectTag.SetOptions(slices.Sorted(set.Union(xslices.Map(rows, func(r characterOverviewRow) set.Set[string] {
 		return r.tags
 	})...).All()))
@@ -316,13 +398,13 @@ func (a *characterOverview) update() {
 		}
 		rows = cc
 		walletText := ihumanize.OptionalWithDecimals(totals.wallet, 1, "?")
-		assetsText := ihumanize.OptionalWithDecimals(totals.assets, 1, "?")
 		unreadText := ihumanize.Optional(totals.unread, "?")
+		skillpointsText := ihumanize.Optional(totals.skillpoints, "?")
 		s := fmt.Sprintf(
-			"%d characters • %s ISK wallet • %s ISK assets • %s unread",
+			"%d characters • %s skillpoints • %s ISK wallet • %s unread",
 			len(cc),
+			skillpointsText,
 			walletText,
-			assetsText,
 			unreadText,
 		)
 		return s, widget.MediumImportance, nil
@@ -344,9 +426,9 @@ func (a *characterOverview) update() {
 }
 
 type overviewTotals struct {
-	unread optional.Optional[int]
-	wallet optional.Optional[float64]
-	assets optional.Optional[float64]
+	skillpoints optional.Optional[int]
+	unread      optional.Optional[int]
+	wallet      optional.Optional[float64]
 }
 
 func (*characterOverview) fetchRows(s services) ([]characterOverviewRow, overviewTotals, error) {
@@ -356,18 +438,26 @@ func (*characterOverview) fetchRows(s services) ([]characterOverviewRow, overvie
 	if err != nil {
 		return nil, totals, err
 	}
-	cc := xslices.Map(characters, func(m *app.Character) characterOverviewRow {
+	cc := xslices.Map(characters, func(c *app.Character) characterOverviewRow {
 		r := characterOverviewRow{
-			alliance:      m.EveCharacter.Alliance,
-			birthday:      m.EveCharacter.Birthday,
-			characterID:   m.ID,
-			characterName: m.EveCharacter.Name,
-			corporation:   m.EveCharacter.Corporation,
-			faction:       m.EveCharacter.Faction,
-			home:          m.Home,
-			lastLoginAt:   m.LastLoginAt,
-			security:      m.EveCharacter.SecurityStatus,
-			walletBalance: m.WalletBalance,
+			alliance:      c.EveCharacter.Alliance,
+			birthday:      c.EveCharacter.Birthday,
+			characterID:   c.ID,
+			characterName: c.EveCharacter.Name,
+			corporation:   c.EveCharacter.Corporation,
+			faction:       c.EveCharacter.Faction,
+			home:          c.Home,
+			lastLoginAt:   c.LastLoginAt,
+			location:      c.Location,
+			searchTarget:  strings.ToLower(c.EveCharacter.Name),
+			security:      c.EveCharacter.SecurityStatus,
+			ship:          c.Ship,
+			skillpoints:   c.TotalSP,
+			walletBalance: c.WalletBalance,
+		}
+		if c.Location != nil && c.Location.SolarSystem != nil {
+			r.regionName = c.Location.SolarSystem.Constellation.Region.Name
+			r.solarSystemName = c.Location.SolarSystem.Name
 		}
 		var color fyne.ThemeColorName
 		text := fmt.Sprintf("%.1f", r.security)
@@ -406,8 +496,8 @@ func (*characterOverview) fetchRows(s services) ([]characterOverviewRow, overvie
 		if !c.walletBalance.IsEmpty() {
 			totals.wallet.Set(totals.wallet.ValueOrZero() + c.walletBalance.ValueOrZero())
 		}
-		if !c.assetValue.IsEmpty() {
-			totals.assets.Set(totals.assets.ValueOrZero() + c.assetValue.ValueOrZero())
+		if !c.skillpoints.IsEmpty() {
+			totals.skillpoints.Set(totals.skillpoints.ValueOrZero() + c.skillpoints.ValueOrZero())
 		}
 	}
 	for i, c := range cc {
@@ -420,60 +510,367 @@ func (*characterOverview) fetchRows(s services) ([]characterOverviewRow, overvie
 	return cc, totals, nil
 }
 
-// showCharacterOverviewDetailWindow shows details for a character overview in a new window.
-func showCharacterOverviewDetailWindow(u *baseUI, r characterOverviewRow) {
-	w, created := u.getOrCreateWindow(
-		fmt.Sprintf("characteroverview-%d", r.characterID),
-		"Character: Overview",
-		r.characterName,
+type characterOverviewEIS interface {
+	AllianceLogo(id int32, size int) (fyne.Resource, error)
+	CharacterPortrait(id int32, size int) (fyne.Resource, error)
+	CorporationLogo(id int32, size int) (fyne.Resource, error)
+}
+
+type characterCard struct {
+	widget.BaseWidget
+
+	allianceLogo    *canvas.Image
+	border          *canvas.Rectangle
+	characterName   *widget.Label
+	corporationLogo *canvas.Image
+	eis             characterOverviewEIS
+	location        *widget.Label
+	mails           *widget.Label
+	portrait        *canvas.Image
+	ship            *widget.Label
+	skillpoints     *widget.Label
+	solarSystem     *iwidget.RichText
+	wallet          *widget.Label
+}
+
+func newCharacterCard(eis characterOverviewEIS) *characterCard {
+	const numberTemplate = "9.999.999.999"
+	makeLabel := func(s string) *widget.Label {
+		l := widget.NewLabel(s)
+		l.Alignment = fyne.TextAlignTrailing
+		l.Truncation = fyne.TextTruncateEllipsis
+		return l
+	}
+	w := &characterCard{
+		border:        canvas.NewRectangle(color.Transparent),
+		characterName: widget.NewLabel("Veronica Blomquist"),
+		eis:           eis,
+		location:      widget.NewLabel("Veronica Blomquist"),
+		mails:         makeLabel(numberTemplate),
+		ship:          makeLabel("Merlin"),
+		skillpoints:   makeLabel(numberTemplate),
+		solarSystem:   iwidget.NewRichText(),
+		wallet:        makeLabel(numberTemplate + " ISK"),
+		allianceLogo: iwidget.NewImageFromResource(
+			icons.Corporationplaceholder64Png,
+			fyne.NewSquareSize(40),
+		),
+		corporationLogo: iwidget.NewImageFromResource(
+			icons.Corporationplaceholder64Png,
+			fyne.NewSquareSize(40),
+		),
+		portrait: iwidget.NewImageFromResource(
+			icons.Characterplaceholder64Jpeg,
+			fyne.NewSquareSize(200),
+		),
+	}
+	w.ExtendBaseWidget(w)
+	w.characterName.TextStyle.Bold = true
+	w.characterName.Truncation = fyne.TextTruncateEllipsis
+	w.border.StrokeColor = theme.Color(theme.ColorNameInputBorder)
+	w.border.StrokeWidth = 1
+	w.border.CornerRadius = theme.Size(theme.SizeNameInputRadius)
+	w.location.Alignment = fyne.TextAlignCenter
+	w.location.Truncation = fyne.TextTruncateEllipsis
+	return w
+}
+
+func (w *characterCard) CreateRenderer() fyne.WidgetRenderer {
+	p := theme.Padding()
+	logoBorder := &layout.CustomPaddedLayout{
+		TopPadding:    2 * p,
+		BottomPadding: 2 * p,
+		LeftPadding:   2 * p,
+		RightPadding:  2 * p,
+	}
+	c := container.NewBorder(
+		container.New(layout.NewCustomPaddedLayout(0, 0, -p, -p), w.characterName),
+		container.New(
+			layout.NewCustomPaddedVBoxLayout(-2*p),
+			container.NewBorder(
+				nil,
+				nil,
+				widget.NewIcon(theme.NewThemedResource(icons.SchoolSvg)),
+				nil,
+				w.skillpoints,
+			),
+			container.NewBorder(
+				nil,
+				nil,
+				widget.NewIcon(theme.NewThemedResource(icons.CashSvg)),
+				nil,
+				w.wallet,
+			),
+			container.NewBorder(
+				nil,
+				nil,
+				widget.NewIcon(theme.MailComposeIcon()),
+				nil,
+				w.mails,
+			),
+			container.NewBorder(
+				nil,
+				nil,
+				widget.NewIcon(theme.NewThemedResource(icons.ShipWheelSvg)),
+				nil,
+				w.ship,
+			),
+			container.NewBorder(
+				nil,
+				nil,
+				widget.NewIcon(theme.NewThemedResource(icons.MapMarkerSvg)),
+				nil,
+				w.solarSystem,
+			),
+		),
+		nil,
+		nil,
+		container.NewStack(
+			w.portrait,
+			container.New(
+				&bottomLeftLayout{},
+				container.New(logoBorder, w.corporationLogo),
+			),
+			container.New(
+				&bottomRightLayout{},
+				container.New(logoBorder, w.allianceLogo),
+			),
+		),
 	)
-	if !created {
-		w.Show()
-		return
-	}
-	var home fyne.CanvasObject
-	if r.home != nil {
-		home = makeLocationLabel(r.home.ToShort(), u.ShowLocationInfoWindow)
-	} else {
-		home = widget.NewLabel("?")
-	}
+	r := container.NewStack(
+		container.New(layout.NewCustomPaddedLayout(p, p, 2*p, 2*p), c),
+		w.border,
+	)
+	return widget.NewSimpleRenderer(r)
+}
 
-	fi := []*widget.FormItem{
-		widget.NewFormItem("Owner", makeCharacterActionLabel(
-			r.characterID,
-			r.characterName,
-			u.ShowEveEntityInfoWindow,
-		)),
-		widget.NewFormItem("Corporation", makeEveEntityActionLabel(r.corporation, u.ShowEveEntityInfoWindow)),
-		widget.NewFormItem("Alliance", makeEveEntityActionLabel(r.alliance, u.ShowEveEntityInfoWindow)),
-		widget.NewFormItem("Faction", makeEveEntityActionLabel(r.faction, u.ShowEveEntityInfoWindow)),
-		widget.NewFormItem("Security Status", widget.NewRichText(r.securityDisplay...)),
-		widget.NewFormItem("Unread Mails", widget.NewLabel(ihumanize.Optional(r.unreadCount, "?"))),
-		widget.NewFormItem("Wallet", widget.NewLabel(r.walletBalance.StringFunc("?", func(v float64) string {
-			return formatISKAmount(v)
-		}))),
-		widget.NewFormItem("Assets", widget.NewLabel(r.assetValue.StringFunc("?", func(v float64) string {
-			return formatISKAmount(v)
-		}))),
-		widget.NewFormItem("Last Login", widget.NewLabel(ihumanize.Optional(r.lastLoginAt, "?"))),
-		widget.NewFormItem("Home", home),
-		widget.NewFormItem("Age", widget.NewLabel(humanize.RelTime(r.birthday, time.Now(), "", ""))),
-	}
+func (w *characterCard) Refresh() {
+	th := w.Theme()
+	v := fyne.CurrentApp().Settings().ThemeVariant()
+	w.border.StrokeColor = th.Color(theme.ColorNameInputBorder, v)
+	w.BaseWidget.Refresh()
+}
 
-	f := widget.NewForm(fi...)
-	f.Orientation = widget.Adaptive
-	subTitle := fmt.Sprintf("Overview of %s", r.characterName)
-	setDetailWindow(detailWindowParams{
-		content: f,
-		imageLoader: func() (fyne.Resource, error) {
-			return u.eis.CharacterPortrait(r.characterID, 256)
-		},
-		imageAction: func() {
-			u.ShowInfoWindow(app.EveEntityCharacter, r.characterID)
-		},
-		minSize: fyne.NewSize(500, 450),
-		title:   subTitle,
-		window:  w,
+func (w *characterCard) set(r characterOverviewRow) {
+	iwidget.RefreshImageAsync(w.portrait, func() (fyne.Resource, error) {
+		return w.eis.CharacterPortrait(r.characterID, 512)
 	})
-	w.Show()
+	iwidget.RefreshImageAsync(w.corporationLogo, func() (fyne.Resource, error) {
+		return w.eis.CorporationLogo(r.corporation.ID, 64)
+	})
+	if r.alliance != nil {
+		iwidget.RefreshImageAsync(w.allianceLogo, func() (fyne.Resource, error) {
+			defer w.allianceLogo.Show()
+			return w.eis.AllianceLogo(r.alliance.ID, 64)
+		})
+	} else {
+		w.allianceLogo.Hide()
+	}
+	w.characterName.SetText(r.characterName)
+	w.mails.SetText(r.unreadCount.StringFunc("?", func(v int) string {
+		if v == 0 {
+			return "-"
+		}
+		return humanize.Comma(int64(v))
+	}))
+	w.skillpoints.SetText(r.skillpoints.StringFunc("?", func(v int) string {
+		return humanize.Comma(int64(v))
+	}))
+	s := r.walletBalance.StringFunc("?", func(v float64) string {
+		return humanize.Comma(int64(v))
+	})
+	w.wallet.SetText(s + " ISK")
+	w.ship.SetText(r.ship.Name)
+	var rt []widget.RichTextSegment
+	var location string
+	if r.location != nil && r.location.SolarSystem != nil {
+		rt = r.location.SolarSystem.DisplayRichText()
+		location = r.location.DisplayName2()
+	} else {
+		rt = iwidget.RichTextSegmentsFromText("?")
+		location = "?"
+	}
+	rt = iwidget.AlignRichTextSegments(fyne.TextAlignTrailing, rt)
+	w.solarSystem.Set(rt)
+	w.location.SetText(location)
+}
+
+type characterRow struct {
+	widget.BaseWidget
+
+	allianceLogo    *canvas.Image
+	border          *canvas.Rectangle
+	characterName   *widget.Label
+	corporationLogo *canvas.Image
+	eis             characterOverviewEIS
+	location        *widget.Label
+	mails           *widget.Label
+	portrait        *canvas.Image
+	ship            *widget.Label
+	skillpoints     *widget.Label
+	solarSystem     *iwidget.RichText
+	wallet          *widget.Label
+}
+
+func newCharacterRow(eis characterOverviewEIS) *characterRow {
+	const numberTemplate = "9.999.999.999"
+	makeInfoLabel := func(s string) *widget.Label {
+		l := widget.NewLabel(s)
+		l.Alignment = fyne.TextAlignTrailing
+		l.Truncation = fyne.TextTruncateEllipsis
+		return l
+	}
+	w := &characterRow{
+		border:        canvas.NewRectangle(color.Transparent),
+		characterName: widget.NewLabel("Veronica Blomquist"),
+		eis:           eis,
+		location:      widget.NewLabel("Veronica Blomquist"),
+		mails:         makeInfoLabel(numberTemplate),
+		ship:          makeInfoLabel("Merlin"),
+		skillpoints:   makeInfoLabel(numberTemplate),
+		solarSystem:   iwidget.NewRichText(),
+		wallet:        makeInfoLabel(numberTemplate + " ISK"),
+		allianceLogo: iwidget.NewImageFromResource(
+			icons.Corporationplaceholder64Png,
+			fyne.NewSquareSize(app.IconUnitSize),
+		),
+		corporationLogo: iwidget.NewImageFromResource(
+			icons.Corporationplaceholder64Png,
+			fyne.NewSquareSize(app.IconUnitSize),
+		),
+		portrait: iwidget.NewImageFromResource(
+			icons.Characterplaceholder64Jpeg,
+			fyne.NewSquareSize(88),
+		),
+	}
+	w.ExtendBaseWidget(w)
+	w.characterName.TextStyle.Bold = true
+	w.characterName.Truncation = fyne.TextTruncateEllipsis
+	w.border.StrokeColor = theme.Color(theme.ColorNameInputBorder)
+	w.border.StrokeWidth = 1
+	w.border.CornerRadius = theme.Size(theme.SizeNameInputRadius)
+	w.location.Alignment = fyne.TextAlignCenter
+	w.location.Truncation = fyne.TextTruncateEllipsis
+	return w
+}
+
+func (w *characterRow) CreateRenderer() fyne.WidgetRenderer {
+	p := theme.Padding()
+	logoBorder := &layout.CustomPaddedLayout{
+		TopPadding:    p,
+		BottomPadding: 2 * p,
+		LeftPadding:   0,
+		RightPadding:  0,
+	}
+	c := container.NewBorder(
+		w.characterName,
+		nil,
+		container.New(layout.NewCustomPaddedLayout(0, 0, p, 6*p),
+			container.NewVBox(
+				w.portrait,
+				layout.NewSpacer(),
+				container.NewHBox(
+					container.New(logoBorder, w.corporationLogo),
+					layout.NewSpacer(),
+					container.New(logoBorder, w.allianceLogo),
+				),
+			),
+		),
+		nil,
+		container.New(layout.NewCustomPaddedLayout(-2*p, 0, 0, 0),
+			container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
+				container.NewBorder(
+					nil,
+					nil,
+					widget.NewIcon(theme.NewThemedResource(icons.SchoolSvg)),
+					nil,
+					w.skillpoints,
+				),
+				container.NewBorder(
+					nil,
+					nil,
+					widget.NewIcon(theme.NewThemedResource(icons.CashSvg)),
+					nil,
+					w.wallet,
+				),
+				container.NewBorder(
+					nil,
+					nil,
+					widget.NewIcon(theme.MailComposeIcon()),
+					nil,
+					w.mails,
+				),
+				container.NewBorder(
+					nil,
+					nil,
+					widget.NewIcon(theme.NewThemedResource(icons.ShipWheelSvg)),
+					nil,
+					w.ship,
+				),
+				container.NewBorder(
+					nil,
+					nil,
+					widget.NewIcon(theme.NewThemedResource(icons.MapMarkerSvg)),
+					nil,
+					w.solarSystem,
+				),
+			),
+		),
+	)
+	r := container.NewStack(
+		container.New(layout.NewCustomPaddedLayout(0, 0, p, p), c),
+		w.border,
+	)
+	return widget.NewSimpleRenderer(r)
+}
+
+func (w *characterRow) Refresh() {
+	th := w.Theme()
+	v := fyne.CurrentApp().Settings().ThemeVariant()
+	w.border.StrokeColor = th.Color(theme.ColorNameInputBorder, v)
+	w.BaseWidget.Refresh()
+}
+
+func (w *characterRow) set(r characterOverviewRow) {
+	iwidget.RefreshImageAsync(w.portrait, func() (fyne.Resource, error) {
+		return w.eis.CharacterPortrait(r.characterID, 512)
+	})
+	iwidget.RefreshImageAsync(w.corporationLogo, func() (fyne.Resource, error) {
+		return w.eis.CorporationLogo(r.corporation.ID, 64)
+	})
+	if r.alliance != nil {
+		iwidget.RefreshImageAsync(w.allianceLogo, func() (fyne.Resource, error) {
+			defer w.allianceLogo.Show()
+			return w.eis.AllianceLogo(r.alliance.ID, 64)
+		})
+	} else {
+		w.allianceLogo.Hide()
+	}
+	w.characterName.SetText(r.characterName)
+	w.mails.SetText(r.unreadCount.StringFunc("?", func(v int) string {
+		if v == 0 {
+			return "-"
+		}
+		return humanize.Comma(int64(v))
+	}))
+	w.skillpoints.SetText(r.skillpoints.StringFunc("?", func(v int) string {
+		return humanize.Comma(int64(v))
+	}))
+	s := r.walletBalance.StringFunc("?", func(v float64) string {
+		return humanize.Comma(int64(v))
+	})
+	w.wallet.SetText(s + " ISK")
+	w.ship.SetText(r.ship.Name)
+	var rt []widget.RichTextSegment
+	var location string
+	if r.location != nil && r.location.SolarSystem != nil {
+		rt = r.location.SolarSystem.DisplayRichText()
+		location = r.location.DisplayName2()
+	} else {
+		rt = iwidget.RichTextSegmentsFromText("?")
+		location = "?"
+	}
+	rt = iwidget.AlignRichTextSegments(fyne.TextAlignTrailing, rt)
+	w.solarSystem.Set(rt)
+	w.location.SetText(location)
 }

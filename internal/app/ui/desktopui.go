@@ -97,15 +97,10 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 	// Home
 
 	var homeNav *iwidget.NavDrawer
-	// overview := iwidget.NewNavPage(
-	// 	"Character Overview",
-	// 	theme.NewThemedResource(icons.PortraitSvg),
-	// 	newContentPage("Character Overview", u.characterOverview),
-	// )
 	overview := iwidget.NewNavPage(
 		"Character Overview",
 		theme.NewThemedResource(icons.PortraitSvg),
-		u.characterOverview,
+		newContentPage("Character Overview", u.characterOverview),
 	)
 
 	wealth := iwidget.NewNavPage(
@@ -519,6 +514,9 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 				})
 			})
 		}()
+	}
+	u.onShowCharacter = func() {
+		tabs.Select(characterTab)
 	}
 
 	togglePermittedSections := func() {

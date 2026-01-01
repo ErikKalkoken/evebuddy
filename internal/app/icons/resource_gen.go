@@ -463,6 +463,13 @@ var ScriptTextSvg = &fyne.StaticResource{
 	StaticContent: ScriptTextSvgData,
 }
 
+//go:embed resources/ship-wheel.svg
+var ShipWheelSvgData []byte
+var ShipWheelSvg = &fyne.StaticResource{
+	StaticName:    "resources/ship-wheel.svg",
+	StaticContent: ShipWheelSvgData,
+}
+
 //go:embed resources/sort-ascending.svg
 var SortAscendingSvgData []byte
 var SortAscendingSvg = &fyne.StaticResource{
