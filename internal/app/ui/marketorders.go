@@ -254,6 +254,15 @@ func newMarketOrders(u *baseUI, isBuyOrders bool) *marketOrders {
 			a.update()
 		}
 	})
+	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
+		a.update()
+	})
+	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+		a.update()
+	})
+	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+		a.update()
+	})
 	a.u.refreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.main.Refresh()

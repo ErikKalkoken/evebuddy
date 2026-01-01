@@ -9,8 +9,9 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/dustin/go-humanize"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
@@ -66,6 +67,7 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 
 	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		a.character = c
+		a.update()
 	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
 		if characterIDOrZero(a.character) != arg.characterID {

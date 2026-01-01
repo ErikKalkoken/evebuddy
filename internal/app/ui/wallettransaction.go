@@ -16,11 +16,12 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
 // Options for industry job select widgets
@@ -81,6 +82,7 @@ func newCharacterWalletTransaction(u *baseUI) *walletTransactions {
 	a := newWalletTransaction(u, app.DivisionZero)
 	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		a.character = c
+		a.update()
 	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
 		if characterIDOrZero(a.character) != arg.characterID {

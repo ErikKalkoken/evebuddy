@@ -62,9 +62,16 @@ func (r characterOverviewRow) AllianceName() string {
 
 func (r characterOverviewRow) CorporationName() string {
 	if r.corporation == nil {
-		return ""
+		return "?"
 	}
 	return r.corporation.Name
+}
+
+func (r characterOverviewRow) shipName() string {
+	if r.ship == nil {
+		return "?"
+	}
+	return r.ship.Name
 }
 
 type characterOverview struct {
@@ -172,31 +179,36 @@ func newCharacterOverview(u *baseUI) *characterOverview {
 		a.filterRows(-1)
 	}, a.u.window)
 
-	a.u.generalSectionChanged.AddListener(
-		func(_ context.Context, arg generalSectionUpdated) {
-			characterIDs := set.Collect(xiter.MapSlice(a.rows, func(r characterOverviewRow) int32 {
-				return r.characterID
-			}))
-			switch arg.section {
-			case app.SectionEveCharacters:
-				if arg.changed.ContainsAny(characterIDs.All()) {
-					a.update()
-				}
-			}
-		},
-	)
-	a.u.characterSectionChanged.AddListener(
-		func(_ context.Context, arg characterSectionUpdated) {
-			switch arg.section {
-			case
-				app.SectionCharacterLocation,
-				app.SectionCharacterMailHeaders,
-				app.SectionCharacterSkills,
-				app.SectionCharacterWalletBalance:
+	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
+		characterIDs := set.Collect(xiter.MapSlice(a.rows, func(r characterOverviewRow) int32 {
+			return r.characterID
+		}))
+		switch arg.section {
+		case app.SectionEveCharacters:
+			if arg.changed.ContainsAny(characterIDs.All()) {
 				a.update()
 			}
-		},
-	)
+		}
+	})
+	a.u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
+		a.update()
+	})
+	a.u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+		a.update()
+	})
+	a.u.tagsChanged.AddListener(func(ctx context.Context, s struct{}) {
+		a.update()
+	})
+	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
+		switch arg.section {
+		case
+			app.SectionCharacterLocation,
+			app.SectionCharacterMailHeaders,
+			app.SectionCharacterSkills,
+			app.SectionCharacterWalletBalance:
+			a.update()
+		}
+	})
 	return a
 }
 
@@ -680,7 +692,7 @@ func (w *characterCard) set(r characterOverviewRow) {
 		return humanize.Comma(int64(v))
 	})
 	w.wallet.SetText(s + " ISK")
-	w.ship.SetText(r.ship.Name)
+	w.ship.SetText(r.shipName())
 	var rt []widget.RichTextSegment
 	var location string
 	if r.location != nil && r.location.SolarSystem != nil {
@@ -860,7 +872,7 @@ func (w *characterRow) set(r characterOverviewRow) {
 		return humanize.Comma(int64(v))
 	})
 	w.wallet.SetText(s + " ISK")
-	w.ship.SetText(r.ship.Name)
+	w.ship.SetText(r.shipName())
 	var rt []widget.RichTextSegment
 	var location string
 	if r.location != nil && r.location.SolarSystem != nil {

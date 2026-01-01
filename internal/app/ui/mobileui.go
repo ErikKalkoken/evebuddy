@@ -533,7 +533,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 		}()
 	}
 
-	u.onUpdateCharacter = func(c *app.Character) {
+	u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		fyne.Do(func() {
 			mailMenu.Items = u.characterMails.makeFolderMenu()
 			mailMenu.Refresh()
@@ -554,7 +554,7 @@ func NewMobileUI(bu *baseUI) *MobileUI {
 				}
 			}
 		})
-	}
+	})
 	u.onSetCharacter = func(c *app.Character) {
 		go u.updateCharacterAvatar(c.ID, func(r fyne.Resource) {
 			fyne.Do(func() {

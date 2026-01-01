@@ -145,7 +145,7 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 		getter:       a.u.settings.HideLimitedCorporations,
 		onChanged: func(enabled bool) {
 			a.u.settings.SetHideLimitedCorporations(enabled)
-			a.u.updateStatus()
+			a.u.corporationsChanged.Emit(context.Background(), struct{}{})
 		},
 	})
 
@@ -354,55 +354,6 @@ func (a *userSettings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButto
 			Label: "Show snackbar test",
 			Action: func() {
 				a.sb.Show("This is a test")
-			},
-		})
-		actions = append(actions, settingAction{
-			Label: "Randomize names",
-			Action: func() {
-				pg := kxmodal.NewProgressInfinite("Randomize names", "Please wait...", func() error {
-					ctx := context.Background()
-					if err := a.u.eus.RandomizeAllCharacterNames(ctx); err != nil {
-						return err
-					}
-					if err := a.u.eus.RandomizeAllCorporationNames(ctx); err != nil {
-						return err
-					}
-					if err := a.u.eus.RandomizeAllAllianceNames(ctx); err != nil {
-						return err
-					}
-					return nil
-				}, a.w)
-				pg.OnError = func(err error) {
-					a.reportError("Failed to randomize names", err)
-				}
-				pg.OnSuccess = func() {
-					a.u.updateHome()
-					a.u.updateCharacter()
-				}
-				pg.Start()
-			},
-		})
-		actions = append(actions, settingAction{
-			Label: "Restore names",
-			Action: func() {
-				pg := kxmodal.NewProgressInfinite("Restore names", "Please wait...", func() error {
-					ctx := context.Background()
-					if _, err := a.u.eus.UpdateAllCharactersESI(ctx); err != nil {
-						return err
-					}
-					if _, err := a.u.eus.UpdateAllCorporationsESI(ctx); err != nil {
-						return err
-					}
-					if _, err := a.u.eus.UpdateAllEntitiesESI(ctx); err != nil {
-						return err
-					}
-					return nil
-				}, a.w)
-				pg.OnSuccess = func() {
-					a.u.updateHome()
-					a.u.updateCharacter()
-				}
-				pg.Start()
 			},
 		})
 	}
@@ -736,10 +687,10 @@ func (a *userSettings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.Icon
 	return list, makeIconButtonFromActions([]settingAction{reset, all, none, send})
 }
 
-func (a *userSettings) reportError(text string, err error) {
-	slog.Error(text, "error", err)
-	a.sb.Show(fmt.Sprintf("ERROR: %s: %s", text, err))
-}
+// func (a *userSettings) reportError(text string, err error) {
+// 	slog.Error(text, "error", err)
+// 	a.sb.Show(fmt.Sprintf("ERROR: %s: %s", text, err))
+// }
 
 func makeIconButtonFromActions(actions []settingAction) *kxwidget.IconButton {
 	items := make([]*fyne.MenuItem, 0)

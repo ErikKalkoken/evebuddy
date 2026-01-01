@@ -117,10 +117,10 @@ func (a *characterSkillQueue) makeSkillQueue() *widget.List {
 
 func (a *characterSkillQueue) start() {
 	if a.isCharacterUpdated {
-		a.u.currentCharacterExchanged.AddListener(
-			func(_ context.Context, c *app.Character) {
-				a.character = c
-			},
+		a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+			a.character = c
+			a.update()
+		},
 			a.signalKey,
 		)
 	}

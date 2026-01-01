@@ -383,7 +383,7 @@ func (u *baseUI) updateCorporationsIfNeeded(ctx context.Context, forceUpdate boo
 		return err
 	}
 	if changed {
-		u.updateStatus()
+		u.corporationsChanged.Emit(ctx, struct{}{})
 	}
 	corporations, err := u.rs.ListCorporationIDs(ctx)
 	if err != nil {

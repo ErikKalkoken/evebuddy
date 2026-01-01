@@ -104,8 +104,6 @@ type baseUI struct {
 	onShowCharacter                 func()
 	onSetCorporation                func(*app.Corporation)
 	onShowAndRun                    func()
-	onUpdateCharacter               func(*app.Character)
-	onUpdateCorporation             func(*app.Corporation)
 	onUpdateCorporationWalletTotals func(balance string)
 	onUpdateMissingScope            func(characterCount int)
 	onUpdateStatus                  func()
@@ -165,12 +163,16 @@ type baseUI struct {
 	currentCharacterExchanged signals.Signal[*app.Character]
 	// The current corporation was exchanged with another corporation or reset.
 	currentCorporationExchanged signals.Signal[*app.Corporation]
+	// A corporation has been added or removed.
+	corporationsChanged signals.Signal[struct{}]
 	// A character section has changed after an update from ESI.
 	corporationSectionChanged signals.Signal[corporationSectionUpdated]
 	// A general section has changed after an update from ESI.
 	generalSectionChanged signals.Signal[generalSectionUpdated]
 	// Ticker for dynamic UI refresh has expired.
 	refreshTickerExpired signals.Signal[struct{}]
+	// A tag as been added, removed or renamed.
+	tagsChanged signals.Signal[struct{}]
 
 	// Services
 	cs       *characterservice.CharacterService
@@ -232,6 +234,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		characterRemoved:            signals.New[*app.EntityShort[int32]](),
 		characterSectionChanged:     signals.New[characterSectionUpdated](),
 		concurrencyLimit:            -1, // Default is no limit
+		corporationsChanged:         signals.New[struct{}](),
 		corporationSectionChanged:   signals.New[corporationSectionUpdated](),
 		corporationWallets:          make(map[app.Division]*corporationWallet),
 		cs:                          arg.CharacterService,
@@ -254,8 +257,9 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		scs:                         arg.StatusCacheService,
 		settings:                    settings.New(arg.App.Preferences()),
 		sig:                         singleinstance.NewGroup(),
-		windows:                     make(map[string]fyne.Window),
 		statusText:                  NewStatusText(),
+		tagsChanged:                 signals.New[struct{}](),
+		windows:                     make(map[string]fyne.Window),
 	}
 	u.window = u.app.NewWindow(u.appName())
 
@@ -278,9 +282,18 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		defaultImageScaleMode = canvas.ImageScaleFastest
 	}
 
+	// updateStatus refreshes all status pages and dynamic menus.
+	updateStatus := func() {
+		if u.onUpdateStatus == nil {
+			return
+		}
+		u.onUpdateStatus()
+	}
+
 	// Signal logging and base listeners
 	u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		slog.Debug("Signal: characterExchanged", "characterID", characterIDOrZero(c))
+		updateStatus()
 	})
 	u.characterSectionChanged.AddListener(func(ctx context.Context, arg characterSectionUpdated) {
 		slog.Debug("Signal: characterSectionChanged", "arg", arg)
@@ -306,7 +319,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		case app.SectionCharacterMailHeaders:
 			u.updateMailIndicator()
 		case app.SectionCharacterRoles:
-			u.updateStatus()
+			updateStatus()
 			if isShown {
 				go u.characterSheet.update()
 			}
@@ -330,8 +343,18 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			u.updateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
 		}
 	})
+	u.characterAdded.AddListener(func(_ context.Context, _ *app.Character) {
+		updateStatus()
+	})
+	u.characterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort[int32]) {
+		updateStatus()
+	})
+	u.corporationsChanged.AddListener(func(_ context.Context, _ struct{}) {
+		updateStatus()
+	})
 	u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
 		slog.Debug("Signal: corporationExchanged", "corporationID", corporationIDOrZero(c))
+		updateStatus()
 	})
 	u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
 		slog.Debug("Signal: corporationSectionChanged", "arg", arg)
@@ -351,7 +374,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 			}
 			characters := u.scs.ListCharacterIDs()
 			if characters.ContainsAny(arg.changed.All()) {
-				u.updateStatus()
+				updateStatus()
 			}
 		case app.SectionEveCorporations:
 			if arg.changed.Contains(u.currentCorporationID()) {
@@ -370,7 +393,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 				return
 			}
 			if arg.changed.ContainsAny(corporationIDs.All()) {
-				u.updateStatus()
+				updateStatus()
 			}
 		case app.SectionEveMarketPrices:
 			for _, c := range u.scs.ListCharacters() {
@@ -476,11 +499,10 @@ func (u *baseUI) Start() bool {
 	go func() {
 		u.characterSkillQueue.start()
 		var wg sync.WaitGroup
-		wg.Go(u.updateHome)
+		wg.Go(u.initHome)
 		wg.Go(u.initCharacter)
 		wg.Go(u.initCorporation)
 		wg.Wait()
-		u.updateStatus()
 
 		updateCharactersMissingScope := func() {
 			cc, err := u.cs.CharactersWithMissingScopes(context.Background())
@@ -656,16 +678,12 @@ func (u *baseUI) resetCharacter() {
 	u.character.Store(nil)
 	u.currentCharacterExchanged.Emit(context.Background(), nil)
 	u.settings.ResetLastCharacterID()
-	u.updateCharacter()
-	u.updateStatus()
 }
 
 func (u *baseUI) setCharacter(c *app.Character) {
 	u.character.Store(c)
 	u.currentCharacterExchanged.Emit(context.Background(), c)
 	u.settings.SetLastCharacterID(c.ID)
-	u.updateCharacter()
-	u.updateStatus()
 	if u.onSetCharacter != nil {
 		u.onSetCharacter(c)
 	}
@@ -683,37 +701,37 @@ func (u *baseUI) setAnyCharacter() error {
 	return nil
 }
 
-// updateCharacter updates all pages for the current character.
-func (u *baseUI) updateCharacter() {
-	c := u.currentCharacter()
-	if c != nil {
-		slog.Debug("Updating character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
-	} else {
-		slog.Debug("Updating without character")
-	}
-	u.showInfoWhileExecuting("Loading character", map[string]func(){
-		"characterSheet":       u.characterSheet.update,
-		"assets":               u.characterAssets.update,
-		"attributes":           u.characterAttributes.update,
-		"biography":            u.characterBiography.update,
-		"implants":             u.characterAugmentations.update,
-		"jumpClones":           u.characterJumpClones.update,
-		"mail":                 u.characterMails.update,
-		"notifications":        u.characterCommunications.update,
-		"characterCorporation": u.characterCorporation.update,
-		"ships":                u.characterShips.update,
-		"skillCatalogue":       u.characterSkillCatalogue.update,
-		"skillqueue":           u.characterSkillQueue.update,
-		"wallet":               u.characterWallet.update,
-	}, func() {
-		if u.onUpdateCharacter != nil {
-			u.onUpdateCharacter(c)
-		}
-		// if c != nil && !u.isUpdateDisabled {
-		// 	u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
-		// }
-	})
-}
+// // updateCharacter updates all pages for the current character.
+// func (u *baseUI) updateCharacter() {
+// 	c := u.currentCharacter()
+// 	if c != nil {
+// 		slog.Debug("Updating character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
+// 	} else {
+// 		slog.Debug("Updating without character")
+// 	}
+// 	u.showInfoWhileExecuting("Loading character", map[string]func(){
+// 		"characterSheet":       u.characterSheet.update,
+// 		"assets":               u.characterAssets.update,
+// 		"attributes":           u.characterAttributes.update,
+// 		"biography":            u.characterBiography.update,
+// 		"implants":             u.characterAugmentations.update,
+// 		"jumpClones":           u.characterJumpClones.update,
+// 		"mail":                 u.characterMails.update,
+// 		"notifications":        u.characterCommunications.update,
+// 		"characterCorporation": u.characterCorporation.update,
+// 		"ships":                u.characterShips.update,
+// 		"skillCatalogue":       u.characterSkillCatalogue.update,
+// 		"skillqueue":           u.characterSkillQueue.update,
+// 		"wallet":               u.characterWallet.update,
+// 	}, func() {
+// 		if u.onUpdateCharacter != nil {
+// 			u.onUpdateCharacter(c)
+// 		}
+// 		// if c != nil && !u.isUpdateDisabled {
+// 		// 	u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
+// 		// }
+// 	})
+// }
 
 func (u *baseUI) updateCharacterAvatar(id int32, setIcon func(fyne.Resource)) {
 	r, err := u.eis.CharacterPortrait(id, app.IconPixelSize)
@@ -790,7 +808,6 @@ func (u *baseUI) resetCorporation() {
 	u.settings.ResetLastCorporationID()
 	u.currentCorporationExchanged.Emit(context.Background(), nil)
 	u.updateCorporation()
-	u.updateStatus()
 }
 
 func (u *baseUI) setCorporation(c *app.Corporation) {
@@ -798,7 +815,6 @@ func (u *baseUI) setCorporation(c *app.Corporation) {
 	u.settings.SetLastCorporationID(c.ID)
 	u.currentCorporationExchanged.Emit(context.Background(), c)
 	u.updateCorporation()
-	u.updateStatus()
 	if u.onSetCorporation != nil {
 		u.onSetCorporation(c)
 	}
@@ -839,9 +855,6 @@ func (u *baseUI) updateCorporation() {
 		// if c != nil && !u.isUpdateDisabled {
 		// 	u.updateCorporationAndRefreshIfNeeded(context.Background(), c.ID, false)
 		// }
-		if u.onUpdateCorporation != nil {
-			u.onUpdateCorporation(c)
-		}
 	})
 }
 
@@ -862,8 +875,8 @@ func (u *baseUI) updateCorporationAvatar(id int32, setIcon func(fyne.Resource)) 
 //////////////////
 // Home
 
-// updateHome refreshed all pages that contain information about multiple characters.
-func (u *baseUI) updateHome() {
+// initHome performs an initial load of all pages under the home tab.
+func (u *baseUI) initHome() {
 	u.showInfoWhileExecuting("Updating home", map[string]func(){
 		"overview":           u.characterOverview.update,
 		"assets":             u.assets.update,
@@ -911,14 +924,6 @@ func (u *baseUI) showInfoWhileExecuting(title string, ff map[string]func(), onCo
 			u.statusText.hide(key)
 		})
 	}()
-}
-
-// updateStatus refreshes all status pages and dynamic menus.
-func (u *baseUI) updateStatus() {
-	if u.onUpdateStatus == nil {
-		return
-	}
-	u.onUpdateStatus()
 }
 
 func (u *baseUI) setColorTheme(s settings.ColorTheme) {

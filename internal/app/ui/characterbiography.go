@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
@@ -29,6 +30,7 @@ func newCharacterBiography(u *baseUI) *characterBiography {
 	a.u.currentCharacterExchanged.AddListener(
 		func(_ context.Context, c *app.Character) {
 			a.character = c
+			a.update()
 		},
 	)
 	a.u.generalSectionChanged.AddListener(

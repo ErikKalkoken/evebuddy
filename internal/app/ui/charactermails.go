@@ -163,11 +163,10 @@ func newCharacterMails(u *baseUI) *characterMails {
 	a.toolbar = a.makeToolbar()
 	a.toolbar.Hide()
 
-	a.u.currentCharacterExchanged.AddListener(
-		func(_ context.Context, c *app.Character) {
-			a.character = c
-		},
-	)
+	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
+		a.character = c
+		a.update()
+	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
 		if characterIDOrZero(a.character) != arg.characterID {
 			return

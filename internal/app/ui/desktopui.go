@@ -576,27 +576,22 @@ func NewDesktopUI(bu *baseUI) *DesktopUI {
 		go togglePermittedSections()
 	}
 
-	u.onUpdateCharacter = func(character *app.Character) {
-		go func() {
-			if character == nil {
-				fyne.Do(func() {
-					tabs.DisableItem(characterTab)
-					homeNav.Disable()
-					toolbar.ToogleSearchBar(false)
-					characterNav.SelectIndex(0)
-				})
-				return
-			}
+	u.currentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+		if c == nil {
 			fyne.Do(func() {
-				tabs.EnableItem(characterTab)
-				homeNav.Enable()
-				toolbar.ToogleSearchBar(true)
+				tabs.DisableItem(characterTab)
+				homeNav.Disable()
+				toolbar.ToogleSearchBar(false)
+				characterNav.SelectIndex(0)
 			})
-		}()
-	}
-
-	// u.onUpdateCorporation = func(c *app.Corporation) {
-	// }
+			return
+		}
+		fyne.Do(func() {
+			tabs.EnableItem(characterTab)
+			homeNav.Enable()
+			toolbar.ToogleSearchBar(true)
+		})
+	})
 
 	u.onShowAndRun = func() {
 		u.MainWindow().Resize(u.settings.WindowSize())
