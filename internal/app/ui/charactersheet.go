@@ -3,6 +3,10 @@ package ui
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"slices"
+	"strings"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -28,9 +32,14 @@ type characterSheet struct {
 	portrait    *kxwidget.TappableImage
 	race        *widget.Hyperlink
 	security    *widget.Label
-	sp          *widget.Label
+	skillpoints *widget.Label
 	u           *baseUI
 	wealth      *widget.Label
+
+	lastLoginAt *widget.Label
+	location    *widget.Hyperlink
+	ship        *widget.Hyperlink
+	tags        *widget.Label
 }
 
 func newCharacterSheet(u *baseUI) *characterSheet {
@@ -48,11 +57,15 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 		born:        widget.NewLabel("?"),
 		factionLogo: makeLogo(),
 		home:        widget.NewHyperlink("", nil),
+		lastLoginAt: widget.NewLabel("?"),
+		location:    widget.NewHyperlink("", nil),
 		name:        widget.NewHyperlink("", nil),
 		portrait:    portrait,
 		race:        widget.NewHyperlink("", nil),
 		security:    widget.NewLabel("?"),
-		sp:          widget.NewLabel("?"),
+		ship:        widget.NewHyperlink("", nil),
+		skillpoints: widget.NewLabel("?"),
+		tags:        widget.NewLabel("?"),
 		u:           u,
 		wealth:      widget.NewLabel("?"),
 	}
@@ -120,9 +133,35 @@ func (a *characterSheet) update() {
 
 		a.born.SetText(c.EveCharacter.Birthday.Format(app.DateTimeFormat))
 		a.security.SetText(fmt.Sprintf("%.1f", c.EveCharacter.SecurityStatus))
+
+		a.lastLoginAt.SetText(c.LastLoginAt.StringFunc("?", func(v time.Time) string {
+			return v.Format(app.DateTimeFormat)
+		}))
 	})
 	iwidget.RefreshTappableImageAsync(a.portrait, func() (fyne.Resource, error) {
 		return a.u.eis.CharacterPortrait(c.ID, 512)
+	})
+	fyne.Do(func() {
+		if c.Location == nil {
+			a.location.SetText("?")
+			a.location.OnTapped = nil
+			return
+		}
+		a.location.SetText(c.Location.DisplayName())
+		a.location.OnTapped = func() {
+			a.u.ShowLocationInfoWindow(c.Location.ID)
+		}
+	})
+	fyne.Do(func() {
+		if c.Ship == nil {
+			a.ship.SetText("?")
+			a.ship.OnTapped = nil
+			return
+		}
+		a.ship.SetText(c.Ship.Name)
+		a.ship.OnTapped = func() {
+			a.u.ShowInfoWindow(app.EveEntityInventoryType, c.Ship.ID)
+		}
 	})
 	fyne.Do(func() {
 		if c.Home == nil {
@@ -134,10 +173,9 @@ func (a *characterSheet) update() {
 		a.home.OnTapped = func() {
 			a.u.ShowLocationInfoWindow(c.Home.ID)
 		}
-		a.home.Refresh()
 	})
 	fyne.Do(func() {
-		a.sp.SetText(ihumanize.OptionalWithComma(c.TotalSP, "?"))
+		a.skillpoints.SetText(ihumanize.OptionalWithComma(c.TotalSP, "?"))
 		if c.AssetValue.IsEmpty() || c.WalletBalance.IsEmpty() {
 			a.wealth.SetText("?")
 			return
@@ -160,6 +198,19 @@ func (a *characterSheet) update() {
 			return a.u.eis.FactionLogo(c.EveCharacter.Faction.ID, app.IconPixelSize)
 		})
 	}
+	var s string
+	tags, err := a.u.cs.ListTagsForCharacter(context.Background(), c.ID)
+	if err != nil {
+		slog.Error("character sheet: update", "characterID", c.ID, "error", "err")
+		s = "?"
+	} else {
+		if tags.Size() == 0 {
+			s = "-"
+		} else {
+			s = strings.Join(slices.Sorted(tags.All()), ", ")
+		}
+	}
+	a.tags.SetText(s)
 }
 
 func (a *characterSheet) CreateRenderer() fyne.WidgetRenderer {
@@ -170,7 +221,11 @@ func (a *characterSheet) CreateRenderer() fyne.WidgetRenderer {
 		widget.NewFormItem("Wealth", a.wealth),
 		widget.NewFormItem("Security Status", a.security),
 		widget.NewFormItem("Home Station", a.home),
-		widget.NewFormItem("Total Skill Points", a.sp),
+		widget.NewFormItem("Total Skill Points", a.skillpoints),
+		widget.NewFormItem("Last Login", a.lastLoginAt),
+		widget.NewFormItem("Ship", a.ship),
+		widget.NewFormItem("Location", a.location),
+		widget.NewFormItem("Tags", a.tags),
 	)
 	main.Orientation = widget.Adaptive
 

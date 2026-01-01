@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -32,19 +31,13 @@ import (
 
 type characterOverviewRow struct {
 	alliance        *app.EveEntity
-	assetValue      optional.Optional[float64]
-	birthday        time.Time
 	characterID     int32
 	characterName   string
 	corporation     *app.EveEntity
 	faction         *app.EveEntity
-	home            *app.EveLocation
-	lastLoginAt     optional.Optional[time.Time]
 	location        *app.EveLocation
 	regionName      string
 	searchTarget    string
-	security        float64
-	securityDisplay []widget.RichTextSegment
 	ship            *app.EveType
 	skillpoints     optional.Optional[int]
 	solarSystemName string
@@ -453,16 +446,12 @@ func (*characterOverview) fetchRows(s services) ([]characterOverviewRow, overvie
 	cc := xslices.Map(characters, func(c *app.Character) characterOverviewRow {
 		r := characterOverviewRow{
 			alliance:      c.EveCharacter.Alliance,
-			birthday:      c.EveCharacter.Birthday,
 			characterID:   c.ID,
 			characterName: c.EveCharacter.Name,
 			corporation:   c.EveCharacter.Corporation,
 			faction:       c.EveCharacter.Faction,
-			home:          c.Home,
-			lastLoginAt:   c.LastLoginAt,
 			location:      c.Location,
 			searchTarget:  strings.ToLower(c.EveCharacter.Name),
-			security:      c.EveCharacter.SecurityStatus,
 			ship:          c.Ship,
 			skillpoints:   c.TotalSP,
 			walletBalance: c.WalletBalance,
@@ -471,18 +460,6 @@ func (*characterOverview) fetchRows(s services) ([]characterOverviewRow, overvie
 			r.regionName = c.Location.SolarSystem.Constellation.Region.Name
 			r.solarSystemName = c.Location.SolarSystem.Name
 		}
-		var color fyne.ThemeColorName
-		text := fmt.Sprintf("%.1f", r.security)
-		if r.security > 0 {
-			color = theme.ColorNameSuccess
-		} else if r.security < 0 {
-			color = theme.ColorNameError
-		} else {
-			color = theme.ColorNameForeground
-		}
-		r.securityDisplay = iwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
-			ColorName: color,
-		})
 		return r
 	})
 	for i, c := range cc {
@@ -493,13 +470,6 @@ func (*characterOverview) fetchRows(s services) ([]characterOverviewRow, overvie
 		if total > 0 {
 			cc[i].unreadCount = optional.New(unread)
 		}
-	}
-	for i, c := range cc {
-		v, err := s.cs.AssetTotalValue(ctx, c.characterID)
-		if err != nil {
-			return nil, totals, err
-		}
-		cc[i].assetValue = v
 	}
 	for _, c := range cc {
 		if !c.unreadCount.IsEmpty() {
@@ -577,7 +547,7 @@ func newCharacterCard(eis characterOverviewEIS) *characterCard {
 		),
 	}
 	w.ExtendBaseWidget(w)
-	w.characterName.TextStyle.Bold = true
+	w.characterName.SizeName = theme.SizeNameSubHeadingText
 	w.characterName.Truncation = fyne.TextTruncateEllipsis
 	w.border.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	w.border.StrokeWidth = 1
@@ -715,7 +685,6 @@ type characterRow struct {
 	characterName   *widget.Label
 	corporationLogo *canvas.Image
 	eis             characterOverviewEIS
-	location        *widget.Label
 	mails           *widget.Label
 	portrait        *canvas.Image
 	ship            *widget.Label
@@ -728,7 +697,7 @@ func newCharacterRow(eis characterOverviewEIS) *characterRow {
 	const numberTemplate = "9.999.999.999"
 	makeInfoLabel := func(s string) *widget.Label {
 		l := widget.NewLabel(s)
-		l.Alignment = fyne.TextAlignTrailing
+		l.Alignment = fyne.TextAlignLeading
 		l.Truncation = fyne.TextTruncateEllipsis
 		return l
 	}
@@ -736,7 +705,6 @@ func newCharacterRow(eis characterOverviewEIS) *characterRow {
 		border:        canvas.NewRectangle(color.Transparent),
 		characterName: widget.NewLabel("Veronica Blomquist"),
 		eis:           eis,
-		location:      widget.NewLabel("Veronica Blomquist"),
 		mails:         makeInfoLabel(numberTemplate),
 		ship:          makeInfoLabel("Merlin"),
 		skillpoints:   makeInfoLabel(numberTemplate),
@@ -756,76 +724,67 @@ func newCharacterRow(eis characterOverviewEIS) *characterRow {
 		),
 	}
 	w.ExtendBaseWidget(w)
-	w.characterName.TextStyle.Bold = true
+	w.characterName.SizeName = theme.SizeNameSubHeadingText
 	w.characterName.Truncation = fyne.TextTruncateEllipsis
 	w.border.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	w.border.StrokeWidth = 1
 	w.border.CornerRadius = theme.Size(theme.SizeNameInputRadius)
-	w.location.Alignment = fyne.TextAlignCenter
-	w.location.Truncation = fyne.TextTruncateEllipsis
 	return w
 }
 
 func (w *characterRow) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
-	logoBorder := &layout.CustomPaddedLayout{
-		TopPadding:    p,
-		BottomPadding: 2 * p,
-		LeftPadding:   0,
-		RightPadding:  0,
-	}
 	c := container.NewBorder(
-		w.characterName,
 		nil,
-		container.New(layout.NewCustomPaddedLayout(0, 0, p, 6*p),
+		nil,
+		container.New(layout.NewCustomPaddedLayout(3*p, 2*p, p, 4*p),
 			container.NewVBox(
 				w.portrait,
-				layout.NewSpacer(),
-				container.NewHBox(
-					container.New(logoBorder, w.corporationLogo),
-					layout.NewSpacer(),
-					container.New(logoBorder, w.allianceLogo),
-				),
-			),
+				container.New(layout.NewCustomPaddedLayout(p/2, 0, 0, 0),
+					container.NewHBox(
+						w.corporationLogo,
+						layout.NewSpacer(),
+						w.allianceLogo,
+					),
+				)),
 		),
 		nil,
-		container.New(layout.NewCustomPaddedLayout(-2*p, 0, 0, 0),
-			container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
-				container.NewBorder(
-					nil,
-					nil,
-					widget.NewIcon(theme.NewThemedResource(icons.SchoolSvg)),
-					nil,
-					w.skillpoints,
-				),
-				container.NewBorder(
-					nil,
-					nil,
-					widget.NewIcon(theme.NewThemedResource(icons.CashSvg)),
-					nil,
-					w.wallet,
-				),
-				container.NewBorder(
-					nil,
-					nil,
-					widget.NewIcon(theme.MailComposeIcon()),
-					nil,
-					w.mails,
-				),
-				container.NewBorder(
-					nil,
-					nil,
-					widget.NewIcon(theme.NewThemedResource(icons.ShipWheelSvg)),
-					nil,
-					w.ship,
-				),
-				container.NewBorder(
-					nil,
-					nil,
-					widget.NewIcon(theme.NewThemedResource(icons.MapMarkerSvg)),
-					nil,
-					w.solarSystem,
-				),
+		container.New(layout.NewCustomPaddedVBoxLayout(-3*p),
+			container.New(layout.NewCustomPaddedLayout(0, p, -2*p, 0), w.characterName),
+			container.NewBorder(
+				nil,
+				nil,
+				widget.NewIcon(theme.NewThemedResource(icons.SchoolSvg)),
+				nil,
+				w.skillpoints,
+			),
+			container.NewBorder(
+				nil,
+				nil,
+				widget.NewIcon(theme.NewThemedResource(icons.CashSvg)),
+				nil,
+				w.wallet,
+			),
+			// container.NewBorder(
+			// 	nil,
+			// 	nil,
+			// 	widget.NewIcon(theme.MailComposeIcon()),
+			// 	nil,
+			// 	w.mails,
+			// ),
+			container.NewBorder(
+				nil,
+				nil,
+				widget.NewIcon(theme.NewThemedResource(icons.ShipWheelSvg)),
+				nil,
+				w.ship,
+			),
+			container.NewBorder(
+				nil,
+				nil,
+				widget.NewIcon(theme.NewThemedResource(icons.MapMarkerSvg)),
+				nil,
+				w.solarSystem,
 			),
 		),
 	)
@@ -874,15 +833,10 @@ func (w *characterRow) set(r characterOverviewRow) {
 	w.wallet.SetText(s + " ISK")
 	w.ship.SetText(r.shipName())
 	var rt []widget.RichTextSegment
-	var location string
 	if r.location != nil && r.location.SolarSystem != nil {
 		rt = r.location.SolarSystem.DisplayRichText()
-		location = r.location.DisplayName2()
 	} else {
 		rt = iwidget.RichTextSegmentsFromText("?")
-		location = "?"
 	}
-	rt = iwidget.AlignRichTextSegments(fyne.TextAlignTrailing, rt)
 	w.solarSystem.Set(rt)
-	w.location.SetText(location)
 }
