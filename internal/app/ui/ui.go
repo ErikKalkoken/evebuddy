@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/url"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -144,13 +145,13 @@ type baseUI struct {
 	industryJobs            *industryJobs
 	marketOrdersSell        *marketOrders
 	marketOrdersBuy         *marketOrders
-	progressModal           *iwidget.ProgressModal
 	slotsManufacturing      *industrySlots
 	slotsReactions          *industrySlots
 	slotsResearch           *industrySlots
 	snackbar                *iwidget.Snackbar
 	training                *training
 	wealth                  *wealth
+	statusText              *statusText
 
 	// Signals
 
@@ -254,6 +255,7 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		settings:                    settings.New(arg.App.Preferences()),
 		sig:                         singleinstance.NewGroup(),
 		windows:                     make(map[string]fyne.Window),
+		statusText:                  NewStatusText(),
 	}
 	u.window = u.app.NewWindow(u.appName())
 
@@ -414,7 +416,6 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 	u.industryJobs = newIndustryJobsForOverview(u)
 	u.marketOrdersSell = newMarketOrders(u, false)
 	u.marketOrdersBuy = newMarketOrders(u, true)
-	u.progressModal = iwidget.NewProgressModal(u.window)
 	u.snackbar = iwidget.NewSnackbar(u.window)
 	u.slotsManufacturing = newIndustrySlots(u, app.ManufacturingJob)
 	u.slotsReactions = newIndustrySlots(u, app.ReactionJob)
@@ -472,12 +473,13 @@ func (u *baseUI) Start() bool {
 	}
 	u.isForeground.Store(true)
 	u.snackbar.Start()
-	u.progressModal.Start()
 	go func() {
 		u.characterSkillQueue.start()
-		u.updateHome()
-		u.initCharacter()
-		u.initCorporation()
+		var wg sync.WaitGroup
+		wg.Go(u.updateHome)
+		wg.Go(u.initCharacter)
+		wg.Go(u.initCorporation)
+		wg.Wait()
 		u.updateStatus()
 
 		updateCharactersMissingScope := func() {
@@ -689,7 +691,7 @@ func (u *baseUI) updateCharacter() {
 	} else {
 		slog.Debug("Updating without character")
 	}
-	u.showModalWhileExecuting("Loading character", map[string]func(){
+	u.showInfoWhileExecuting("Loading character", map[string]func(){
 		"characterSheet":       u.characterSheet.update,
 		"assets":               u.characterAssets.update,
 		"attributes":           u.characterAttributes.update,
@@ -833,7 +835,7 @@ func (u *baseUI) updateCorporation() {
 	for id, w := range u.corporationWallets {
 		ff[fmt.Sprintf("walletJournal%d", id)] = w.update
 	}
-	u.showModalWhileExecuting("Loading corporation", ff, func() {
+	u.showInfoWhileExecuting("Loading corporation", ff, func() {
 		// if c != nil && !u.isUpdateDisabled {
 		// 	u.updateCorporationAndRefreshIfNeeded(context.Background(), c.ID, false)
 		// }
@@ -862,7 +864,7 @@ func (u *baseUI) updateCorporationAvatar(id int32, setIcon func(fyne.Resource)) 
 
 // updateHome refreshed all pages that contain information about multiple characters.
 func (u *baseUI) updateHome() {
-	u.showModalWhileExecuting("Updating home", map[string]func(){
+	u.showInfoWhileExecuting("Updating home", map[string]func(){
 		"overview":           u.characterOverview.update,
 		"assets":             u.assets.update,
 		"augmentations":      u.augmentations.update,
@@ -881,13 +883,16 @@ func (u *baseUI) updateHome() {
 	}, u.onRefreshCross)
 }
 
-// showModalWhileExecuting shows a modal to the user while the functions ff are being executed.
+// showInfoWhileExecuting shows a modal to the user while the functions ff are being executed.
 // Optionally runs onCompleted after all functions have been run.
-func (u *baseUI) showModalWhileExecuting(title string, ff map[string]func(), onCompleted func()) {
-	u.progressModal.Execute(title, func() {
-		start := time.Now()
+func (u *baseUI) showInfoWhileExecuting(title string, ff map[string]func(), onCompleted func()) {
+	go func() {
 		myLog := slog.With("title", title)
 		myLog.Debug("started")
+		key := fmt.Sprintf("%s-%d", title, time.Now().UnixMicro())
+		fyne.Do(func() {
+			u.statusText.show(key, title)
+		})
 		g := new(errgroup.Group)
 		g.SetLimit(u.concurrencyLimit)
 		for name, f := range ff {
@@ -899,11 +904,13 @@ func (u *baseUI) showModalWhileExecuting(title string, ff map[string]func(), onC
 			})
 		}
 		g.Wait()
-		myLog.Debug("Completed", "duration", time.Since(start).Milliseconds())
 		if onCompleted != nil {
 			onCompleted()
 		}
-	})
+		fyne.Do(func() {
+			u.statusText.hide(key)
+		})
+	}()
 }
 
 // updateStatus refreshes all status pages and dynamic menus.
@@ -1261,4 +1268,56 @@ func (u *baseUI) makeTopText(characterID int32, hasData bool, err error, make fu
 		return "", widget.MediumImportance
 	}
 	return make()
+}
+
+// statusText is a widget that can show/hide multiple status texts with a spinner.
+type statusText struct {
+	widget.BaseWidget
+
+	label    *widget.Label
+	messages map[string]string
+	spinner  *widget.Activity
+}
+
+func NewStatusText() *statusText {
+	w := &statusText{
+		messages: make(map[string]string),
+		label:    widget.NewLabel(""),
+		spinner:  widget.NewActivity(),
+	}
+	w.label.Hide()
+	w.spinner.Hide()
+	w.spinner.Stop()
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *statusText) CreateRenderer() fyne.WidgetRenderer {
+	c := container.NewHBox(w.label, w.spinner)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *statusText) show(key, text string) {
+	w.messages[key] = text
+	if w.label.Hidden {
+		w.label.SetText(text)
+		w.spinner.Start()
+		w.label.Show()
+		w.spinner.Show()
+	}
+}
+
+func (w *statusText) hide(key string) {
+	delete(w.messages, key)
+	if len(w.messages) == 0 {
+		w.label.Hide()
+		w.spinner.Hide()
+		w.spinner.Stop()
+	}
+	var text string
+	for _, s := range w.messages {
+		text = s
+		break
+	}
+	w.label.SetText(text)
 }
