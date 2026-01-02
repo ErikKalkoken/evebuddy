@@ -234,14 +234,14 @@ func (a *characterOverview) makeGrid() *widget.GridWrap {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newCharacterCard(a.u.eis, a.u.ShowInfoWindow)
+			return newCharacterCardLarge(a.u.eis, a.u.ShowInfoWindow)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
 				return
 			}
 			r := a.rowsFiltered[id]
-			co.(*characterCard).set(r)
+			co.(*characterCardLarge).set(r)
 		},
 	)
 	g.OnSelected = func(id widget.GridWrapItemID) {
@@ -274,14 +274,14 @@ func (a *characterOverview) makeList() *widget.List {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newCharacterRow(a.u.eis)
+			return newCharacterCardSmall(a.u.eis)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
 				return
 			}
 			r := a.rowsFiltered[id]
-			co.(*characterRow).set(r)
+			co.(*characterCardSmall).set(r)
 		},
 	)
 	l.HideSeparators = true
@@ -492,31 +492,33 @@ func (*characterOverview) fetchRows(s services) ([]characterOverviewRow, overvie
 	return cc, totals, nil
 }
 
-type characterOverviewEIS interface {
+type characterCardEIS interface {
 	AllianceLogo(id int32, size int) (fyne.Resource, error)
 	CharacterPortrait(id int32, size int) (fyne.Resource, error)
 	CorporationLogo(id int32, size int) (fyne.Resource, error)
 }
 
-type characterCard struct {
+// characterCardLarge is a widget that shows a card for a character.
+// This version is designed for desktops.
+type characterCardLarge struct {
 	widget.BaseWidget
 
 	allianceLogo    *iwidget.TappableImage
 	border          *canvas.Rectangle
 	characterName   *widget.Label
 	corporationLogo *iwidget.TappableImage
-	eis             characterOverviewEIS
+	eis             characterCardEIS
 	location        *widget.Label
 	mails           *widget.Label
 	portrait        *canvas.Image
 	ship            *widget.Label
+	showInfoWindow  func(c app.EveEntityCategory, id int32)
 	skillpoints     *widget.Label
 	solarSystem     *iwidget.RichText
 	wallet          *widget.Label
-	showInfoWindow  func(c app.EveEntityCategory, id int32)
 }
 
-func newCharacterCard(eis characterOverviewEIS, showInfoWindow func(c app.EveEntityCategory, id int32)) *characterCard {
+func newCharacterCardLarge(eis characterCardEIS, showInfoWindow func(c app.EveEntityCategory, id int32)) *characterCardLarge {
 	const numberTemplate = "9.999.999.999"
 	makeLabel := func(s string) *widget.Label {
 		l := widget.NewLabel(s)
@@ -528,7 +530,7 @@ func newCharacterCard(eis characterOverviewEIS, showInfoWindow func(c app.EveEnt
 		icons.Characterplaceholder64Jpeg,
 		fyne.NewSquareSize(200),
 	)
-	w := &characterCard{
+	w := &characterCardLarge{
 		allianceLogo:    iwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
 		border:          canvas.NewRectangle(color.Transparent),
 		characterName:   widget.NewLabel("Veronica Blomquist"),
@@ -566,7 +568,7 @@ func newCharacterCard(eis characterOverviewEIS, showInfoWindow func(c app.EveEnt
 	return w
 }
 
-func (w *characterCard) CreateRenderer() fyne.WidgetRenderer {
+func (w *characterCardLarge) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	logoBorder := &layout.CustomPaddedLayout{
 		TopPadding:    1 * p,
@@ -635,14 +637,14 @@ func (w *characterCard) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(r)
 }
 
-func (w *characterCard) Refresh() {
+func (w *characterCardLarge) Refresh() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 	w.border.StrokeColor = th.Color(theme.ColorNameInputBorder, v)
 	w.BaseWidget.Refresh()
 }
 
-func (w *characterCard) set(r characterOverviewRow) {
+func (w *characterCardLarge) set(r characterOverviewRow) {
 	iwidget.RefreshImageAsync(w.portrait, func() (fyne.Resource, error) {
 		return w.eis.CharacterPortrait(r.characterID, 512)
 	})
@@ -693,14 +695,17 @@ func (w *characterCard) set(r characterOverviewRow) {
 	w.location.SetText(location)
 }
 
-type characterRow struct {
+// characterCardSmall is a widget that shows a card for a character.
+// This version is designed for mobiles.
+type characterCardSmall struct {
 	widget.BaseWidget
 
 	allianceLogo    *canvas.Image
 	border          *canvas.Rectangle
+	background      *canvas.Rectangle
 	characterName   *widget.Label
 	corporationLogo *canvas.Image
-	eis             characterOverviewEIS
+	eis             characterCardEIS
 	mails           *widget.Label
 	portrait        *canvas.Image
 	ship            *widget.Label
@@ -709,7 +714,7 @@ type characterRow struct {
 	wallet          *widget.Label
 }
 
-func newCharacterRow(eis characterOverviewEIS) *characterRow {
+func newCharacterCardSmall(eis characterCardEIS) *characterCardSmall {
 	const numberTemplate = "9.999.999.999"
 	makeInfoLabel := func(s string) *widget.Label {
 		l := widget.NewLabel(s)
@@ -717,7 +722,8 @@ func newCharacterRow(eis characterOverviewEIS) *characterRow {
 		l.Truncation = fyne.TextTruncateEllipsis
 		return l
 	}
-	w := &characterRow{
+	w := &characterCardSmall{
+		background:    canvas.NewRectangle(theme.Color(theme.ColorNameHover)),
 		border:        canvas.NewRectangle(color.Transparent),
 		characterName: widget.NewLabel("Veronica Blomquist"),
 		eis:           eis,
@@ -740,29 +746,40 @@ func newCharacterRow(eis characterOverviewEIS) *characterRow {
 		),
 	}
 	w.ExtendBaseWidget(w)
-	w.characterName.SizeName = theme.SizeNameSubHeadingText
-	w.characterName.Truncation = fyne.TextTruncateEllipsis
+
+	w.background.CornerRadius = theme.InputRadiusSize()
+
 	w.border.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	w.border.StrokeWidth = 1
 	w.border.CornerRadius = theme.Size(theme.SizeNameInputRadius)
+
+	w.characterName.SizeName = theme.SizeNameSubHeadingText
+	w.characterName.Truncation = fyne.TextTruncateEllipsis
 	return w
 }
 
-func (w *characterRow) CreateRenderer() fyne.WidgetRenderer {
+func (w *characterCardSmall) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
+
 	c := container.NewBorder(
 		nil,
 		nil,
-		container.New(layout.NewCustomPaddedLayout(3*p, 2*p, p, 4*p),
-			container.NewVBox(
-				w.portrait,
-				container.New(layout.NewCustomPaddedLayout(p/2, 0, 0, 0),
-					container.NewHBox(
-						w.corporationLogo,
-						layout.NewSpacer(),
-						w.allianceLogo,
+		container.New(layout.NewCustomPaddedLayout(0, 0, 0, 2*p),
+			container.NewStack(
+				w.background,
+				container.New(layout.NewCustomPaddedLayout(2*p, 2*p, 3*p, 3*p),
+					container.NewVBox(
+						w.portrait,
+						container.New(layout.NewCustomPaddedLayout(p/2, 0, 0, 0),
+							container.NewHBox(
+								w.corporationLogo,
+								layout.NewSpacer(),
+								w.allianceLogo,
+							),
+						),
 					),
-				)),
+				),
+			),
 		),
 		nil,
 		container.New(layout.NewCustomPaddedVBoxLayout(-3*p),
@@ -804,21 +821,19 @@ func (w *characterRow) CreateRenderer() fyne.WidgetRenderer {
 			),
 		),
 	)
-	r := container.NewStack(
-		container.New(layout.NewCustomPaddedLayout(0, 0, p, p), c),
-		w.border,
-	)
+	r := container.New(layout.NewCustomPaddedLayout(p, p, p, p), container.NewStack(c, w.border))
 	return widget.NewSimpleRenderer(r)
 }
 
-func (w *characterRow) Refresh() {
+func (w *characterCardSmall) Refresh() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
+	w.background.FillColor = th.Color(theme.ColorNameHover, v)
 	w.border.StrokeColor = th.Color(theme.ColorNameInputBorder, v)
 	w.BaseWidget.Refresh()
 }
 
-func (w *characterRow) set(r characterOverviewRow) {
+func (w *characterCardSmall) set(r characterOverviewRow) {
 	iwidget.RefreshImageAsync(w.portrait, func() (fyne.Resource, error) {
 		return w.eis.CharacterPortrait(r.characterID, 512)
 	})
