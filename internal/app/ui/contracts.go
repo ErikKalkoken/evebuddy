@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -60,7 +61,7 @@ type contracts struct {
 	body           fyne.CanvasObject
 	bottom         *widget.Label
 	columnSorter   *iwidget.ColumnSorter
-	corporation    *app.Corporation
+	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool // run in corporation mode when true, else in overview mode
 	rows           []contractRow
 	rowsFiltered   []contractRow
@@ -192,11 +193,11 @@ func newContracts(u *baseUI, forCorporation bool) *contracts {
 	if a.forCorporation {
 		a.u.currentCorporationExchanged.AddListener(
 			func(_ context.Context, c *app.Corporation) {
-				a.corporation = c
+				a.corporation.Store(c)
 			},
 		)
 		a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
-			if corporationIDOrZero(a.corporation) != arg.corporationID {
+			if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 				return
 			}
 			if arg.section != app.SectionCorporationContracts {
@@ -420,7 +421,7 @@ func (a *contracts) update() {
 }
 
 func (a *contracts) fetchRowsCorporation() ([]contractRow, int, error) {
-	corporationID := corporationIDOrZero(a.corporation)
+	corporationID := corporationIDOrZero(a.corporation.Load())
 	if corporationID == 0 {
 		return []contractRow{}, 0, nil
 	}

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -25,8 +26,8 @@ type corporationSheet struct {
 
 	alliance    *widget.Hyperlink
 	ceo         *widget.Hyperlink
-	character   *app.Character
-	corporation *app.Corporation
+	character   atomic.Pointer[app.Character]
+	corporation atomic.Pointer[app.Corporation]
 	faction     *widget.Hyperlink
 	home        *widget.Hyperlink
 	isCorpMode  bool
@@ -63,10 +64,10 @@ func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
 
 	if isCorpMode {
 		a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
-			a.corporation = c
+			a.corporation.Store(c)
 		})
 		a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
-			corporationID := corporationIDOrZero(a.corporation)
+			corporationID := corporationIDOrZero(a.corporation.Load())
 			if corporationID == 0 {
 				return
 			}
@@ -76,14 +77,15 @@ func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
 		})
 	} else {
 		a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
-			a.character = c
+			a.character.Store(c)
 			a.update()
 		})
 		a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
-			if a.character == nil {
+			c := a.character.Load()
+			if c == nil {
 				return
 			}
-			if arg.section == app.SectionEveCorporations && arg.changed.Contains(a.character.EveCharacter.Corporation.ID) {
+			if arg.section == app.SectionEveCorporations && arg.changed.Contains(c.EveCharacter.Corporation.ID) {
 				a.update()
 			}
 		})
@@ -125,13 +127,14 @@ func (a *corporationSheet) update() {
 	var corporation *app.EveCorporation
 	ctx := context.Background()
 	if a.isCorpMode {
-		if a.corporation != nil {
-			corporation = a.corporation.EveCorporation
+		if c := a.corporation.Load(); c != nil {
+			corporation = c.EveCorporation
 		}
 	} else {
-		if a.character != nil && a.character.EveCharacter != nil {
+		character := a.character.Load()
+		if character != nil && character.EveCharacter != nil {
 			var roles string
-			oo, err := a.u.cs.ListRoles(ctx, a.character.ID)
+			oo, err := a.u.cs.ListRoles(ctx, character.ID)
 			if err != nil {
 				slog.Error("Failed to fetch roles", "error", err)
 				roles = "?"
@@ -150,7 +153,7 @@ func (a *corporationSheet) update() {
 			fyne.Do(func() {
 				a.roles.SetText(roles)
 			})
-			corporationID := a.character.EveCharacter.Corporation.ID
+			corporationID := character.EveCharacter.Corporation.ID
 			c, err := a.u.eus.GetCorporation(ctx, corporationID)
 			if errors.Is(err, app.ErrNotFound) {
 				// ignore

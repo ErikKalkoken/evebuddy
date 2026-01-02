@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -60,7 +61,7 @@ type corporationStructures struct {
 
 	bottom            *widget.Label
 	columnSorter      *iwidget.ColumnSorter
-	corporation       *app.Corporation
+	corporation      atomic.Pointer[app.Corporation]
 	main              fyne.CanvasObject
 	rows              []corporationStructureRow
 	rowsFiltered      []corporationStructureRow
@@ -183,10 +184,10 @@ func newCorporationStructures(u *baseUI) *corporationStructures {
 	})
 
 	a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
-		a.corporation = c
+		a.corporation.Store(c)
 	})
 	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
-		if corporationIDOrZero(a.corporation) != arg.corporationID {
+		if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 			return
 		}
 		if arg.section != app.SectionCorporationStructures {
@@ -292,7 +293,7 @@ func (a *corporationStructures) filterRows(sortCol int) {
 func (a *corporationStructures) update() {
 	rows := make([]corporationStructureRow, 0)
 	t, i, err := func() (string, widget.Importance, error) {
-		cc, err := a.fetchData(corporationIDOrZero(a.corporation))
+		cc, err := a.fetchData(corporationIDOrZero(a.corporation.Load()))
 		if err != nil {
 			return "", 0, err
 		}

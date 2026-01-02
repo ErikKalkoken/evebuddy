@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -21,7 +22,7 @@ import (
 type characterAugmentations struct {
 	widget.BaseWidget
 
-	character *app.Character
+	character      atomic.Pointer[app.Character]
 	implants  []*app.CharacterImplant
 	list      *widget.List
 	top       *widget.Label
@@ -38,13 +39,13 @@ func newCharacterAugmentations(u *baseUI) *characterAugmentations {
 	a.list = a.makeImplantList()
 	a.u.currentCharacterExchanged.AddListener(
 		func(_ context.Context, c *app.Character) {
-			a.character = c
+			a.character.Store(c)
 			a.update()
 		},
 	)
 	a.u.characterSectionChanged.AddListener(
 		func(_ context.Context, arg characterSectionUpdated) {
-			if characterIDOrZero(a.character) != arg.characterID {
+			if characterIDOrZero(a.character.Load()) != arg.characterID {
 				return
 			}
 			if arg.section == app.SectionCharacterImplants {
@@ -104,7 +105,7 @@ func (a *characterAugmentations) makeImplantList() *widget.List {
 			})
 			info := border[2].(*iwidget.TappableIcon)
 			info.OnTapped = func() {
-				a.u.ShowTypeInfoWindowWithCharacter(a.implants[id].EveType.ID, characterIDOrZero(a.character))
+				a.u.ShowTypeInfoWindowWithCharacter(a.implants[id].EveType.ID, characterIDOrZero(a.character.Load()))
 			}
 		})
 
@@ -118,7 +119,7 @@ func (a *characterAugmentations) makeImplantList() *widget.List {
 func (a *characterAugmentations) update() {
 	var err error
 	implants := make([]*app.CharacterImplant, 0)
-	characterID := characterIDOrZero(a.character)
+	characterID := characterIDOrZero(a.character.Load())
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterImplants)
 	if hasData {
 		implants2, err2 := a.u.cs.ListImplants(context.Background(), characterID)

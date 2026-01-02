@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strconv"
 	"sync"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -98,7 +99,7 @@ type characterMails struct {
 	Headers *fyne.Container
 
 	compose          *widget.Button
-	character        *app.Character
+	character        atomic.Pointer[app.Character]
 	folderDefault    mailFolderNode
 	folderDownloaded *ttwidget.Label
 	folders          *iwidget.Tree[mailFolderNode]
@@ -163,11 +164,11 @@ func newCharacterMails(u *baseUI) *characterMails {
 	a.toolbar.Hide()
 
 	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
-		a.character = c
+		a.character.Store(c)
 		a.update()
 	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.characterID {
+		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		switch arg.section {
@@ -269,7 +270,7 @@ func (a *characterMails) update() {
 			a.folderStatus.Show()
 		})
 	}
-	characterID := characterIDOrZero(a.character)
+	characterID := characterIDOrZero(a.character.Load())
 	if characterID == 0 {
 		clearAll()
 		setStatus("No character", widget.LowImportance)
@@ -328,7 +329,7 @@ func (a *characterMails) updateDownloaded() {
 	var missingPercent int
 	func() {
 		a.mu.RLock()
-		characterID := characterIDOrZero(a.character)
+		characterID := characterIDOrZero(a.character.Load())
 		a.mu.RUnlock()
 		if characterID == 0 {
 			return
@@ -461,7 +462,7 @@ func (*characterMails) fetchFolders(s services, characterID int32) (iwidget.Tree
 
 func (a *characterMails) updateUnreadCounts() {
 	td := a.folders.Data()
-	characterID := characterIDOrZero(a.character)
+	characterID := characterIDOrZero(a.character.Load())
 	unread, err := a.updateCountsInTree(a.u.services(), characterID, td)
 	if err != nil {
 		slog.Error("Failed to update unread counts", "characterID", characterID, "error", err)
@@ -565,11 +566,11 @@ func (a *characterMails) makeHeaderList() *widget.List {
 				return
 			}
 			m := a.headers[id]
-			if a.character == nil {
+			if a.character.Load() == nil {
 				return
 			}
 			item := co.(*mailHeaderItem)
-			item.Set(characterIDOrZero(a.character), m.From, m.Subject, m.Timestamp, m.IsRead)
+			item.Set(characterIDOrZero(a.character.Load()), m.From, m.Subject, m.Timestamp, m.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		if id >= len(a.headers) {
@@ -670,10 +671,11 @@ func (a *characterMails) doOnSendMessage(mode app.SendMailMode, mail *app.Charac
 	if a.onSendMessage == nil {
 		return
 	}
-	if a.character == nil {
+	c := a.character.Load()
+	if c == nil {
 		return
 	}
-	a.onSendMessage(a.character, mode, mail)
+	a.onSendMessage(c, mode, mail)
 }
 
 func (a *characterMails) makeComposeMessageAction() (fyne.Resource, func()) {
@@ -756,7 +758,7 @@ func (a *characterMails) clearMail() {
 
 func (a *characterMails) loadMail(mailID int32) {
 	ctx := context.TODO()
-	characterID := characterIDOrZero(a.character)
+	characterID := characterIDOrZero(a.character.Load())
 	var err error
 	a.mail, err = a.u.cs.GetMail(ctx, characterID, mailID)
 	if err != nil {

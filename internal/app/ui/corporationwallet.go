@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -23,7 +24,7 @@ type corporationWallet struct {
 	onNameUpdate    func(name string)
 
 	balance      *widget.Label
-	corporation  *app.Corporation
+	corporation      atomic.Pointer[app.Corporation]
 	division     app.Division
 	journal      *walletJournal
 	name         *widget.Label
@@ -44,11 +45,11 @@ func newCorporationWallet(u *baseUI, division app.Division) *corporationWallet {
 	a.ExtendBaseWidget(a)
 	a.u.currentCorporationExchanged.AddListener(
 		func(_ context.Context, c *app.Corporation) {
-			a.corporation = c
+			a.corporation.Store(c)
 		},
 	)
 	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
-		if corporationIDOrZero(a.corporation) != arg.corporationID {
+		if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 			return
 		}
 		switch arg.section {
@@ -99,7 +100,7 @@ func (a *corporationWallet) update() {
 func (a *corporationWallet) updateBalance() {
 	var err error
 	var balance float64
-	corporationID := corporationIDOrZero(a.corporation)
+	corporationID := corporationIDOrZero(a.corporation.Load())
 	hasData := a.u.scs.HasCorporationSection(corporationID, app.SectionCorporationWalletBalances)
 	if hasData {
 		b, err2 := a.u.rs.GetWalletBalance(context.Background(), corporationID, a.division)
@@ -138,7 +139,7 @@ func (a *corporationWallet) updateBalance() {
 func (a *corporationWallet) updateName() {
 	var err error
 	var name string
-	corporationID := corporationIDOrZero(a.corporation)
+	corporationID := corporationIDOrZero(a.corporation.Load())
 	hasData := a.u.scs.HasCorporationSection(corporationID, app.SectionCorporationDivisions)
 	if hasData {
 		n, err2 := a.u.rs.GetWalletName(context.Background(), corporationID, a.division)

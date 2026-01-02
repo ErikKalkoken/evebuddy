@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -108,7 +109,7 @@ type industryJobs struct {
 	body            fyne.CanvasObject
 	bottom          *widget.Label
 	columnSorter    *iwidget.ColumnSorter
-	corporation     *app.Corporation
+	corporation      atomic.Pointer[app.Corporation]
 	forCorporation  bool
 	rows            []industryJobRow
 	rowsFiltered    []industryJobRow
@@ -271,10 +272,10 @@ func newIndustryJobs(u *baseUI, forCorporation bool) *industryJobs {
 
 	if forCorporation {
 		a.u.currentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
-			a.corporation = c
+			a.corporation.Store(c)
 		})
 		a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
-			if corporationIDOrZero(a.corporation) != arg.corporationID {
+			if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 				return
 			}
 			if arg.section == app.SectionCorporationIndustryJobs {
@@ -684,7 +685,7 @@ func (a *industryJobs) fetchCombinedJobs() ([]industryJobRow, error) {
 }
 
 func (a *industryJobs) fetchCorporationJobs() ([]industryJobRow, error) {
-	corporationID := corporationIDOrZero(a.corporation)
+	corporationID := corporationIDOrZero(a.corporation.Load())
 	if corporationID == 0 {
 		return []industryJobRow{}, nil
 	}

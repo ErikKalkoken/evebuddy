@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -39,7 +40,7 @@ type skillTrained struct {
 type characterSkillCatalogue struct {
 	widget.BaseWidget
 
-	character      *app.Character
+	character      atomic.Pointer[app.Character]
 	groups         []skillGroupProgress
 	groupsGrid     fyne.CanvasObject
 	levelBlocked   *theme.ErrorThemedResource
@@ -66,11 +67,11 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 	a.skillsGrid = a.makeSkillsGrid()
 
 	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
-		a.character = c
+		a.character.Store(c)
 		a.update()
 	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.characterID {
+		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterSkills {
@@ -79,7 +80,7 @@ func newCharacterSkillCatalogue(u *baseUI) *characterSkillCatalogue {
 	})
 	a.u.generalSectionChanged.AddListener(
 		func(_ context.Context, arg generalSectionUpdated) {
-			characterID := characterIDOrZero(a.character)
+			characterID := characterIDOrZero(a.character.Load())
 			if characterID == 0 {
 				return
 			}
@@ -142,12 +143,12 @@ func (a *characterSkillCatalogue) makeGroupsGrid() fyne.CanvasObject {
 				return
 			}
 			group := a.groups[id]
-			if a.character == nil {
+			if a.character.Load() == nil {
 				unselectAll()
 				return
 			}
 			oo, err := a.u.cs.ListSkillProgress(
-				context.TODO(), characterIDOrZero(a.character), group.id,
+				context.TODO(), characterIDOrZero(a.character.Load()), group.id,
 			)
 			if err != nil {
 				slog.Error("Failed to fetch skill group data", "err", err)
@@ -208,7 +209,7 @@ func (a *characterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 				return
 			}
 			skill := a.skills[id]
-			a.u.ShowTypeInfoWindowWithCharacter(skill.id, characterIDOrZero(a.character))
+			a.u.ShowTypeInfoWindowWithCharacter(skill.id, characterIDOrZero(a.character.Load()))
 		}
 	}
 	return makeGridOrList(!a.u.isDesktop, length, makeCreateItem, updateItem, makeOnSelected)
@@ -217,7 +218,8 @@ func (a *characterSkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 func (a *characterSkillCatalogue) update() {
 	var err error
 	groups := make([]skillGroupProgress, 0)
-	characterID := characterIDOrZero(a.character)
+	c := a.character.Load()
+	characterID := characterIDOrZero(c)
 	hasData := a.u.scs.HasGeneralSection(app.SectionEveTypes) && a.u.scs.HasCharacterSection(characterID, app.SectionCharacterSkills)
 	if hasData {
 		groups2, err2 := a.updateGroups(characterID, a.u.services())
@@ -230,9 +232,9 @@ func (a *characterSkillCatalogue) update() {
 	}
 	t, i := a.u.makeTopText(characterID, hasData, err, func() (string, widget.Importance) {
 		var total, unallocated string
-		if a.character != nil {
-			total = ihumanize.Optional(a.character.TotalSP, "?")
-			unallocated = ihumanize.Optional(a.character.UnallocatedSP, "?")
+		if c != nil {
+			total = ihumanize.Optional(c.TotalSP, "?")
+			unallocated = ihumanize.Optional(c.UnallocatedSP, "?")
 		}
 		return fmt.Sprintf("%s Total Skill Points (%s Unallocated)", total, unallocated), widget.MediumImportance
 	})

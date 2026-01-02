@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -39,7 +40,7 @@ type characterCommunications struct {
 	OnUpdate      func(count optional.Optional[int])
 	Toolbar       *widget.Toolbar
 
-	character        *app.Character
+	character        atomic.Pointer[app.Character]
 	current          *app.CharacterNotification
 	folderList       *widget.List
 	folders          []notificationFolder
@@ -67,12 +68,12 @@ func newCharacterCommunications(u *baseUI) *characterCommunications {
 	a.Notifications = container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList)
 	a.u.currentCharacterExchanged.AddListener(
 		func(_ context.Context, c *app.Character) {
-			a.character = c
+			a.character.Store(c)
 			a.update()
 		},
 	)
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.characterID {
+		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterNotifications {
@@ -179,7 +180,7 @@ func (a *characterCommunications) makeNotificationList() *widget.List {
 			}
 			n := a.notifications[id]
 			item := co.(*mailHeaderItem)
-			item.Set(characterIDOrZero(a.character), n.Sender, n.TitleDisplay(), n.Timestamp, n.IsRead)
+			item.Set(characterIDOrZero(a.character.Load()), n.Sender, n.TitleDisplay(), n.Timestamp, n.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		a.clearDetail()
@@ -197,7 +198,7 @@ func (a *characterCommunications) makeNotificationList() *widget.List {
 }
 
 func (a *characterCommunications) setDetail(n *app.CharacterNotification) {
-	if a.character == nil {
+	if a.character.Load() == nil {
 		return
 	}
 	err := a.Detail.set(n, a.u.cs.NotificationRecipient(n))
@@ -251,7 +252,7 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 			if a.current == nil {
 				return
 			}
-			if a.character == nil {
+			if a.character.Load() == nil {
 				return
 			}
 			title, content := a.u.cs.RenderNotificationSummary(a.current)
@@ -263,7 +264,7 @@ func (a *characterCommunications) makeToolbar() *widget.Toolbar {
 
 func (a *characterCommunications) update() {
 	var err error
-	characterID := characterIDOrZero(a.character)
+	characterID := characterIDOrZero(a.character.Load())
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterNotifications)
 	groups := make([]notificationFolder, 0)
 	var unreadCount, totalCount optional.Optional[int]
@@ -332,7 +333,7 @@ func (a *characterCommunications) resetCurrentFolder() {
 
 func (a *characterCommunications) setCurrentFolder(nc app.EveNotificationGroup) {
 	var err error
-	characterID := characterIDOrZero(a.character)
+	characterID := characterIDOrZero(a.character.Load())
 	notifications := make([]*app.CharacterNotification, 0)
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterNotifications)
 	if hasData {
@@ -363,20 +364,20 @@ func (a *characterCommunications) setCurrentFolder(nc app.EveNotificationGroup) 
 		a.notificationsTop.Refresh()
 	})
 	// Replace generic corporations && alliances in notifications
-	if a.character != nil {
+	if c := a.character.Load(); c != nil {
 		for _, n := range notifications {
 			if n.Sender == nil {
 				continue
 			}
 			switch n.Sender.ID {
 			case app.EveTypeAlliance:
-				if a.character.EveCharacter.Alliance != nil {
-					n.Sender = a.character.EveCharacter.Alliance
+				if c.EveCharacter.Alliance != nil {
+					n.Sender = c.EveCharacter.Alliance
 				} else {
 					n.Sender = &app.EveEntity{ID: 1, Name: "Unknown", Category: app.EveEntityCorporation}
 				}
 			case app.EveTypeCorporation:
-				n.Sender = a.character.EveCharacter.Corporation
+				n.Sender = c.EveCharacter.Corporation
 			}
 		}
 	}

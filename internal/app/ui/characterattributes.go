@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -33,7 +34,7 @@ type characterAttributes struct {
 	widget.BaseWidget
 
 	attributes []attribute
-	character  *app.Character
+	character      atomic.Pointer[app.Character]
 	list       *widget.List
 	top        *widget.Label
 	u          *baseUI
@@ -48,11 +49,11 @@ func newCharacterAttributes(u *baseUI) *characterAttributes {
 	a.list = a.makeAttributeList()
 	a.ExtendBaseWidget(a)
 	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
-		a.character = c
+		a.character.Store(c)
 		a.update()
 	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.characterID {
+		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterAttributes {
@@ -115,7 +116,7 @@ func (a *characterAttributes) update() {
 	var err error
 	var total int
 	attributes := make([]attribute, 0)
-	characterID := characterIDOrZero(a.character)
+	characterID := characterIDOrZero(a.character.Load())
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterAttributes)
 	if hasData {
 		total2, attributes2, err2 := a.fetchData(characterID, a.u.services())

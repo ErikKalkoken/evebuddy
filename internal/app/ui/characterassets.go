@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -96,7 +97,7 @@ type characterAssets struct {
 	assetGrid          *widget.GridWrap
 	assets             []*app.CharacterAsset
 	assetsBottom       *widget.Label
-	character          *app.Character
+	character          atomic.Pointer[app.Character]
 	locationPath       *fyne.Container
 	locationInfoIcon   *iwidget.TappableIcon
 	locations          *iwidget.Tree[locationNode]
@@ -140,12 +141,12 @@ func newCharacterAssets(u *baseUI) *characterAssets {
 	)
 	a.u.currentCharacterExchanged.AddListener(
 		func(_ context.Context, c *app.Character) {
-			a.character = c
+			a.character.Store(c)
 			a.update()
 		},
 	)
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.characterID {
+		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterAssets {
@@ -299,7 +300,7 @@ func (a *characterAssets) update() {
 			a.locationPath.RemoveAll()
 			a.selectedLocation.Clear()
 		})
-		ac, locations, err := a.fetchData(characterIDOrZero(a.character), a.u.services())
+		ac, locations, err := a.fetchData(characterIDOrZero(a.character.Load()), a.u.services())
 		if err != nil {
 			return "", 0, err
 		}
@@ -328,8 +329,8 @@ func (a *characterAssets) update() {
 		a.locations.Refresh()
 	})
 	if a.OnUpdate != nil {
-		if a.character != nil {
-			v, err := a.u.cs.AssetTotalValue(context.Background(), a.character.ID)
+		if c := a.character.Load(); c != nil {
+			v, err := a.u.cs.AssetTotalValue(context.Background(), c.ID)
 			if err != nil {
 				slog.Error("Failed to fetch asset value", "error", err)
 				return
@@ -582,7 +583,7 @@ func makeLocationTreeData(ac assetcollection.AssetCollection, characterID int32)
 }
 
 func (a *characterAssets) makeTopText() (string, widget.Importance) {
-	c := a.character
+	c := a.character.Load()
 	if c == nil {
 		return "No character", widget.LowImportance
 	}

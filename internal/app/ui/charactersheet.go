@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -24,7 +25,7 @@ type characterSheet struct {
 	widget.BaseWidget
 
 	born        *widget.Label
-	character   *app.Character
+	character   atomic.Pointer[app.Character]
 	faction     *widget.Hyperlink
 	home        *widget.Hyperlink
 	lastLoginAt *widget.Label
@@ -70,11 +71,11 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 	a.ExtendBaseWidget(a)
 
 	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
-		a.character = c
+		a.character.Store(c)
 		a.update()
 	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.characterID {
+		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		switch arg.section {
@@ -87,17 +88,18 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 		}
 	})
 	a.u.generalSectionChanged.AddListener(func(_ context.Context, arg generalSectionUpdated) {
-		if a.character == nil {
+		c := a.character.Load()
+		if c == nil {
 			return
 		}
-		characterID := characterIDOrZero(a.character)
+		characterID := characterIDOrZero(c)
 		switch arg.section {
 		case app.SectionEveCharacters:
 			if arg.changed.Contains(characterID) {
 				a.update()
 			}
 		case app.SectionEveCorporations:
-			if arg.changed.Contains(a.character.EveCharacter.Corporation.ID) {
+			if arg.changed.Contains(c.EveCharacter.Corporation.ID) {
 				a.update()
 			}
 		case app.SectionEveMarketPrices:
@@ -143,7 +145,7 @@ func (a *characterSheet) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *characterSheet) update() {
-	c := a.character
+	c := a.character.Load()
 	if c == nil || c.EveCharacter == nil {
 		fyne.Do(func() {
 			a.name.Text = "No character..."

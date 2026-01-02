@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -53,9 +54,9 @@ type walletJournal struct {
 	widget.BaseWidget
 
 	body         fyne.CanvasObject
-	character    *app.Character
+	character    atomic.Pointer[app.Character]
 	columnSorter *iwidget.ColumnSorter
-	corporation  *app.Corporation
+	corporation  atomic.Pointer[app.Corporation]
 	division     app.Division
 	rows         []walletJournalRow
 	rowsFiltered []walletJournalRow
@@ -68,11 +69,11 @@ type walletJournal struct {
 func newCharacterWalletJournal(u *baseUI) *walletJournal {
 	a := newWalletJournal(u, app.DivisionZero)
 	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
-		a.character = c
+		a.character.Store(c)
 		a.update()
 	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.characterID {
+		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterWalletJournal {
@@ -86,11 +87,11 @@ func newCorporationWalletJournal(u *baseUI, d app.Division) *walletJournal {
 	a := newWalletJournal(u, d)
 	a.u.currentCorporationExchanged.AddListener(
 		func(_ context.Context, c *app.Corporation) {
-			a.corporation = c
+			a.corporation.Store(c)
 		},
 	)
 	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
-		if corporationIDOrZero(a.corporation) != arg.corporationID {
+		if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 			return
 		}
 		if arg.section == app.CorporationSectionWalletJournal(d) {
@@ -304,7 +305,7 @@ func (a *walletJournal) update() {
 func (a *walletJournal) updateCharacter() {
 	var err error
 	rows := make([]walletJournalRow, 0)
-	characterID := characterIDOrZero(a.character)
+	characterID := characterIDOrZero(a.character.Load())
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterWalletJournal)
 	if hasData {
 		rows2, err2 := a.fetchCharacterRows(characterID, a.u.services())
@@ -332,7 +333,7 @@ func (a *walletJournal) updateCharacter() {
 func (a *walletJournal) updateCorporation() {
 	var err error
 	rows := make([]walletJournalRow, 0)
-	corporationID := corporationIDOrZero(a.corporation)
+	corporationID := corporationIDOrZero(a.corporation.Load())
 	hasData := a.u.scs.HasCorporationSection(corporationID, app.CorporationSectionWalletJournal(a.division))
 	if hasData {
 		rows2, err2 := a.fetchCorporationRows(corporationID, a.division, a.u.services())

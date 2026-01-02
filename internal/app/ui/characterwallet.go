@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -21,7 +22,7 @@ type characterWallet struct {
 	onUpdate func(balance string)
 
 	balance      *widget.Label
-	character    *app.Character
+	character      atomic.Pointer[app.Character]
 	journal      *walletJournal
 	transactions *walletTransactions
 	u            *baseUI
@@ -36,11 +37,11 @@ func newCharacterWallet(u *baseUI) *characterWallet {
 	}
 	a.ExtendBaseWidget(a)
 	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
-		a.character = c
+		a.character.Store(c)
 		a.update()
 	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.characterID {
+		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterWalletBalance {
@@ -73,7 +74,7 @@ func (a *characterWallet) update() {
 func (a *characterWallet) updateBalance() {
 	var err error
 	var balance float64
-	characterID := characterIDOrZero(a.character)
+	characterID := characterIDOrZero(a.character.Load())
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterWalletBalance)
 	if hasData {
 		c, err2 := a.u.cs.GetCharacter(context.Background(), characterID)

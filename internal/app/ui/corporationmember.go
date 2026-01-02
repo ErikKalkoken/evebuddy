@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -31,7 +32,7 @@ type corporationMemberRow struct {
 type corporationMember struct {
 	widget.BaseWidget
 
-	corporation  *app.Corporation
+	corporation  atomic.Pointer[app.Corporation]
 	rows         []corporationMemberRow
 	rowsFiltered []corporationMemberRow
 	list         *widget.List
@@ -63,11 +64,11 @@ func newCorporationMember(u *baseUI) *corporationMember {
 	}
 	a.u.currentCorporationExchanged.AddListener(
 		func(_ context.Context, c *app.Corporation) {
-			a.corporation = c
+			a.corporation.Store(c)
 		},
 	)
 	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
-		if corporationIDOrZero(a.corporation) != arg.corporationID {
+		if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 			return
 		}
 		if arg.section != app.SectionCorporationMembers {
@@ -159,9 +160,9 @@ func (a *corporationMember) filterRows() {
 
 func (a *corporationMember) update() {
 	var corporationID, ceoID int32
-	if a.corporation != nil {
-		corporationID = a.corporation.ID
-		ceoID = a.corporation.EveCorporation.Ceo.ID
+	if c := a.corporation.Load(); c != nil {
+		corporationID = c.ID
+		ceoID = c.EveCorporation.Ceo.ID
 	}
 	var rows []corporationMemberRow
 	var err error

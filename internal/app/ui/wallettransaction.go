@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -62,9 +63,9 @@ type walletTransactions struct {
 
 	body           fyne.CanvasObject
 	bottom         *widget.Label
-	character      *app.Character
+	character      atomic.Pointer[app.Character]
 	columnSorter   *iwidget.ColumnSorter
-	corporation    *app.Corporation
+	corporation      atomic.Pointer[app.Corporation]
 	division       app.Division
 	rows           []walletTransactionRow
 	rowsFiltered   []walletTransactionRow
@@ -81,11 +82,11 @@ type walletTransactions struct {
 func newCharacterWalletTransaction(u *baseUI) *walletTransactions {
 	a := newWalletTransaction(u, app.DivisionZero)
 	a.u.currentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
-		a.character = c
+		a.character.Store(c)
 		a.update()
 	})
 	a.u.characterSectionChanged.AddListener(func(_ context.Context, arg characterSectionUpdated) {
-		if characterIDOrZero(a.character) != arg.characterID {
+		if characterIDOrZero(a.character.Load()) != arg.characterID {
 			return
 		}
 		if arg.section == app.SectionCharacterWalletTransactions {
@@ -99,11 +100,11 @@ func newCorporationWalletTransactions(u *baseUI, d app.Division) *walletTransact
 	a := newWalletTransaction(u, d)
 	a.u.currentCorporationExchanged.AddListener(
 		func(_ context.Context, c *app.Corporation) {
-			a.corporation = c
+			a.corporation.Store(c)
 		},
 	)
 	a.u.corporationSectionChanged.AddListener(func(_ context.Context, arg corporationSectionUpdated) {
-		if corporationIDOrZero(a.corporation) != arg.corporationID {
+		if corporationIDOrZero(a.corporation.Load()) != arg.corporationID {
 			return
 		}
 		if arg.section == app.CorporationSectionWalletTransactions(d) {
@@ -429,7 +430,7 @@ func (a *walletTransactions) update() {
 func (a *walletTransactions) updateCharacter() {
 	var err error
 	rows := make([]walletTransactionRow, 0)
-	characterID := characterIDOrZero(a.character)
+	characterID := characterIDOrZero(a.character.Load())
 	hasData := a.u.scs.HasCharacterSection(characterID, app.SectionCharacterWalletTransactions)
 	if hasData {
 		rows2, err2 := a.fetchCharacterRows(characterID, a.u.services())
@@ -504,7 +505,7 @@ func (a *walletTransactions) fetchCharacterRows(characterID int32, s services) (
 func (a *walletTransactions) updateCorporation() {
 	var err error
 	rows := make([]walletTransactionRow, 0)
-	corporationID := corporationIDOrZero(a.corporation)
+	corporationID := corporationIDOrZero(a.corporation.Load())
 	hasData := a.u.scs.HasCorporationSection(corporationID, app.CorporationSectionWalletTransactions(a.division))
 	if hasData {
 		rows2, err2 := a.fetchCorporationRows(corporationID, a.division, a.u.services())

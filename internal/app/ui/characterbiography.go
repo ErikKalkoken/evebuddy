@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -15,7 +16,7 @@ type characterBiography struct {
 	widget.BaseWidget
 
 	body      *widget.Label
-	character *app.Character
+	character atomic.Pointer[app.Character]
 	u         *baseUI
 }
 
@@ -29,13 +30,13 @@ func newCharacterBiography(u *baseUI) *characterBiography {
 	a.ExtendBaseWidget(a)
 	a.u.currentCharacterExchanged.AddListener(
 		func(_ context.Context, c *app.Character) {
-			a.character = c
+			a.character.Store(c)
 			a.update()
 		},
 	)
 	a.u.generalSectionChanged.AddListener(
 		func(_ context.Context, arg generalSectionUpdated) {
-			characterID := characterIDOrZero(a.character)
+			characterID := characterIDOrZero(a.character.Load())
 			if characterID == 0 {
 				return
 			}
@@ -53,17 +54,18 @@ func (a *characterBiography) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *characterBiography) update() {
-	if a.character == nil || a.character.EveCharacter == nil {
+	c := a.character.Load()
+	if c == nil || c.EveCharacter == nil {
 		fyne.Do(func() {
 			a.body.Text = "Waiting for character data to be loaded..."
 			a.body.Importance = widget.WarningImportance
 			a.body.Refresh()
 		})
-	} else {
-		fyne.Do(func() {
-			a.body.Text = a.character.EveCharacter.DescriptionPlain()
-			a.body.Importance = widget.MediumImportance
-			a.body.Refresh()
-		})
+		return
 	}
+	fyne.Do(func() {
+		a.body.Text = c.EveCharacter.DescriptionPlain()
+		a.body.Importance = widget.MediumImportance
+		a.body.Refresh()
+	})
 }
