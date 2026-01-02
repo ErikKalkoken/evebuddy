@@ -239,5 +239,7 @@ func (a *characterSheet) update() {
 			s = strings.Join(slices.Sorted(tags.All()), ", ")
 		}
 	}
-	a.tags.SetText(s)
+	fyne.Do(func() {
+		a.tags.SetText(s)
+	})
 }

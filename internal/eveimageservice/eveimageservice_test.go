@@ -199,7 +199,7 @@ func TestImageFetching(t *testing.T) {
 		// when
 		_, err = m.CharacterPortrait(93330670, 0)
 		// then
-		assert.ErrorIs(t, err, eveimageservice.ErrInvalidSize)
+		assert.ErrorIs(t, err, eveimageservice.ErrInvalid)
 	})
 	t.Run("should return placeholder and not access network in offline mode", func(t *testing.T) {
 		// given

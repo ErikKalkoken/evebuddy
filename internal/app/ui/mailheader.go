@@ -47,7 +47,7 @@ func newMailHeaderItem(eis app.EveImageService) *mailHeaderItem {
 	return w
 }
 
-func (w *mailHeaderItem) Set(from *app.EveEntity, subject string, timestamp time.Time, isRead bool) {
+func (w *mailHeaderItem) Set(characterID int32, from *app.EveEntity, subject string, timestamp time.Time, isRead bool) {
 	w.from.Text = from.Name
 	w.from.TextStyle = fyne.TextStyle{Bold: !isRead}
 	w.timestamp.Text = timestamp.Format(app.VariableDateFormat(timestamp))
@@ -58,7 +58,7 @@ func (w *mailHeaderItem) Set(from *app.EveEntity, subject string, timestamp time
 	go func() {
 		res, err := fetchEveEntityAvatar(w.eis, from, w.FallbackIcon)
 		if err != nil {
-			slog.Error("fetch eve entity avatar", "from", from, "subject", subject, "error", err)
+			slog.Error("fetch eve entity avatar", "characterID", characterID, "from", from, "timestamp", timestamp, "error", err)
 			res = w.FallbackIcon
 		}
 		fyne.Do(func() {
@@ -119,7 +119,7 @@ func newMailHeader(eis app.EveImageService, show func(*app.EveEntity)) *mailHead
 	return w
 }
 
-func (w *mailHeader) Set(from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
+func (w *mailHeader) Set(characterID int32, from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
 	w.timestamp.Text = timestamp.Format(app.DateTimeFormat)
 	w.recipients.RemoveAll()
 	for _, r := range recipients {
@@ -140,7 +140,7 @@ func (w *mailHeader) Set(from *app.EveEntity, timestamp time.Time, recipients ..
 	go func() {
 		res, err := fetchEveEntityAvatar(w.eis, from, icons.BlankSvg)
 		if err != nil {
-			slog.Error("fetch eve entity avatar", "from", from, "recipients", recipients, "error", err)
+			slog.Error("fetch eve entity avatar", "characterID", characterID, "from", from, "timestamp", timestamp, "error", err)
 			res = icons.Questionmark32Png
 		}
 		fyne.Do(func() {

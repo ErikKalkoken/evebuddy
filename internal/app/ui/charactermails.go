@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"strconv"
 	"sync"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -570,7 +569,7 @@ func (a *characterMails) makeHeaderList() *widget.List {
 				return
 			}
 			item := co.(*mailHeaderItem)
-			item.Set(m.From, m.Subject, m.Timestamp, m.IsRead)
+			item.Set(characterIDOrZero(a.character), m.From, m.Subject, m.Timestamp, m.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		if id >= len(a.headers) {
@@ -855,9 +854,9 @@ func (w *mailDetail) clear() {
 }
 
 func (w *mailDetail) SetMail(m *app.CharacterMail) {
-	w.SetSubject(m.Subject)
+	w.subject.SetText(m.Subject)
 	w.SetBody(m.BodyPlain())
-	w.SetHeader(m.From, m.Timestamp, m.Recipients...)
+	w.header.Set(m.CharacterID, m.From, m.Timestamp, m.Recipients...)
 }
 
 func (w *mailDetail) SetBody(s string) {
@@ -875,12 +874,4 @@ func (w *mailDetail) SetError(s string) {
 	w.body.Importance = widget.DangerImportance
 	w.body.Text = s
 	w.body.Refresh()
-}
-
-func (w *mailDetail) SetSubject(s string) {
-	w.subject.SetText(s)
-}
-
-func (w *mailDetail) SetHeader(from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
-	w.header.Set(from, timestamp, recipients...)
 }
