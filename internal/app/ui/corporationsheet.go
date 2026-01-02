@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icons"
@@ -31,7 +30,7 @@ type corporationSheet struct {
 	faction     *widget.Hyperlink
 	home        *widget.Hyperlink
 	isCorpMode  bool
-	logo        *kxwidget.TappableImage
+	logo        *iwidget.TappableImage
 	members     *widget.Label
 	name        *widget.Hyperlink
 	roles       *widget.Label
@@ -43,7 +42,7 @@ type corporationSheet struct {
 func newCorporationSheet(u *baseUI, isCorpMode bool) *corporationSheet {
 	roles := widget.NewLabel("")
 	roles.Truncation = fyne.TextTruncateEllipsis
-	logo := kxwidget.NewTappableImage(icons.BlankSvg, nil)
+	logo := iwidget.NewTappableImage(icons.BlankSvg, nil)
 	logo.SetFillMode(canvas.ImageFillContain)
 	logo.SetMinSize(fyne.NewSquareSize(128))
 	a := &corporationSheet{

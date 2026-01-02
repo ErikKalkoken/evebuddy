@@ -519,7 +519,7 @@ type characterInfo struct {
 	isOwned         bool
 	membership      *widget.Label
 	ownedIcon       *ttwidget.Icon
-	portrait        *kxwidget.TappableImage
+	portrait        *iwidget.TappableImage
 	security        *widget.Label
 	tabs            *container.AppTabs
 	title           *widget.Label
@@ -530,7 +530,7 @@ func newCharacterInfo(iw *infoWindow, id int32) *characterInfo {
 	alliance.Wrapping = fyne.TextWrapWord
 	corporation := widget.NewHyperlink("", nil)
 	corporation.Wrapping = fyne.TextWrapWord
-	portrait := kxwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)
+	portrait := iwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
 	portrait.SetMinSize(iw.renderIconSize())
 	title := widget.NewLabel("")
@@ -1175,7 +1175,7 @@ type locationInfo struct {
 	ownerLogo   *canvas.Image
 	services    *entityList
 	tabs        *container.AppTabs
-	typeImage   *kxwidget.TappableImage
+	typeImage   *iwidget.TappableImage
 	typeInfo    *widget.Hyperlink
 }
 
@@ -1186,7 +1186,7 @@ func newLocationInfo(iw *infoWindow, id int64) *locationInfo {
 	owner.Wrapping = fyne.TextWrapWord
 	description := widget.NewLabel("")
 	description.Wrapping = fyne.TextWrapWord
-	typeImage := kxwidget.NewTappableImage(icons.BlankSvg, nil)
+	typeImage := iwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeImage.SetFillMode(canvas.ImageFillContain)
 	typeImage.SetMinSize(iw.renderIconSize())
 	a := &locationInfo{
@@ -1710,14 +1710,14 @@ type inventoryTypeInfo struct {
 	janice           *fyne.Container
 	setTitle         func(string) // for setting the title during update
 	tabs             *container.AppTabs
-	typeIcon         *kxwidget.TappableImage
+	typeIcon         *iwidget.TappableImage
 	typeID           int32
 }
 
 func newInventoryTypeInfo(iw *infoWindow, typeID, characterID int32) *inventoryTypeInfo {
 	description := widget.NewLabel("")
 	description.Wrapping = fyne.TextWrapWord
-	typeIcon := kxwidget.NewTappableImage(icons.BlankSvg, nil)
+	typeIcon := iwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeIcon.SetFillMode(canvas.ImageFillContain)
 	typeIcon.SetMinSize(fyne.NewSquareSize(logoUnitSize))
 	a := &inventoryTypeInfo{

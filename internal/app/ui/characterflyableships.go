@@ -300,6 +300,7 @@ func newShipItem(eis app.EveImageService, cache *memcache.Cache, fallbackIcon fy
 	image := canvas.NewImageFromImage(image.NewRGBA(image.Rectangle{upLeft, lowRight}))
 	image.FillMode = canvas.ImageFillContain
 	image.ScaleMode = defaultImageScaleMode
+	image.CornerRadius = theme.InputRadiusSize()
 	image.SetMinSize(fyne.NewSquareSize(128))
 	w := &shipItem{
 		image:        image,

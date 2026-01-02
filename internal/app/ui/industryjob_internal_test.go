@@ -172,7 +172,7 @@ func TestIndustryJob_Filter(t *testing.T) {
 }
 
 func TestIndustryJob_FetchJobs(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ec := factory.CreateEveCharacter()
 	character := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})

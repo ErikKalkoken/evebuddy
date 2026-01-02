@@ -6,7 +6,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/theme"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
 // DefaultImageScaleMode for images
@@ -17,6 +16,7 @@ func NewImageFromResource(res fyne.Resource, minSize fyne.Size) *canvas.Image {
 	x := canvas.NewImageFromResource(res)
 	x.FillMode = canvas.ImageFillContain
 	x.ScaleMode = DefaultImageScaleMode
+	x.CornerRadius = theme.InputRadiusSize()
 	x.SetMinSize(minSize)
 	return x
 }
@@ -46,7 +46,7 @@ func RefreshImageAsync(image *canvas.Image, loader func() (fyne.Resource, error)
 
 // RefreshTappableImageAsync refreshes the resource of an image asynchronously.
 // This prevents fyne to wait with rendering an image until a resource is fully loaded from a web server.
-func RefreshTappableImageAsync(image *kxwidget.TappableImage, loader func() (fyne.Resource, error)) {
+func RefreshTappableImageAsync(image *TappableImage, loader func() (fyne.Resource, error)) {
 	go func() {
 		r, err := loader()
 		if err != nil {

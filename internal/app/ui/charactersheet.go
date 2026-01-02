@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -24,50 +23,48 @@ import (
 type characterSheet struct {
 	widget.BaseWidget
 
-	character   *app.Character
 	born        *widget.Label
-	factionLogo *kxwidget.TappableImage
+	character   *app.Character
+	faction     *widget.Hyperlink
 	home        *widget.Hyperlink
-	name        *widget.Hyperlink
-	portrait    *kxwidget.TappableImage
-	race        *widget.Hyperlink
-	security    *widget.Label
-	skillpoints *widget.Label
-	u           *baseUI
-	wealth      *widget.Label
-
 	lastLoginAt *widget.Label
 	location    *widget.Hyperlink
+	name        *widget.Hyperlink
+	portrait    *iwidget.TappableImage
+	race        *widget.Hyperlink
+	security    *widget.Label
 	ship        *widget.Hyperlink
+	skillpoints *widget.Label
 	tags        *widget.Label
+	u           *baseUI
+	wealth      *widget.Label
 }
 
 func newCharacterSheet(u *baseUI) *characterSheet {
-	makeLogo := func() *kxwidget.TappableImage {
-		ti := kxwidget.NewTappableImage(icons.BlankSvg, nil)
-		ti.SetFillMode(canvas.ImageFillContain)
-		ti.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
-		return ti
+	makeHyperLink := func() *widget.Hyperlink {
+		return widget.NewHyperlink("?", nil)
 	}
-
-	portrait := kxwidget.NewTappableImage(icons.BlankSvg, nil)
+	makeLabel := func() *widget.Label {
+		return widget.NewLabel("?")
+	}
+	portrait := iwidget.NewTappableImage(icons.BlankSvg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
 	portrait.SetMinSize(fyne.NewSquareSize(128))
 	a := &characterSheet{
-		born:        widget.NewLabel("?"),
-		factionLogo: makeLogo(),
-		home:        widget.NewHyperlink("", nil),
-		lastLoginAt: widget.NewLabel("?"),
-		location:    widget.NewHyperlink("", nil),
-		name:        widget.NewHyperlink("", nil),
+		born:        makeLabel(),
+		faction:     makeHyperLink(),
+		home:        makeHyperLink(),
+		lastLoginAt: makeLabel(),
+		location:    makeHyperLink(),
+		name:        makeHyperLink(),
 		portrait:    portrait,
-		race:        widget.NewHyperlink("", nil),
-		security:    widget.NewLabel("?"),
-		ship:        widget.NewHyperlink("", nil),
-		skillpoints: widget.NewLabel("?"),
-		tags:        widget.NewLabel("?"),
+		race:        makeHyperLink(),
+		security:    makeLabel(),
+		ship:        makeHyperLink(),
+		skillpoints: makeLabel(),
+		tags:        makeLabel(),
 		u:           u,
-		wealth:      widget.NewLabel("?"),
+		wealth:      makeLabel(),
 	}
 	a.ExtendBaseWidget(a)
 
@@ -107,6 +104,41 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 		}
 	})
 	return a
+}
+
+// TODO: Group information
+
+func (a *characterSheet) CreateRenderer() fyne.WidgetRenderer {
+	main := widget.NewForm(
+		widget.NewFormItem("Name", a.name),
+		widget.NewFormItem("Born", a.born),
+		widget.NewFormItem("Race", a.race),
+		widget.NewFormItem("Faction", a.faction),
+		widget.NewFormItem("Home Station", a.home),
+		widget.NewFormItem("Security Status", a.security),
+		widget.NewFormItem("Wealth", a.wealth),
+		widget.NewFormItem("Total Skill Points", a.skillpoints),
+		widget.NewFormItem("Ship", a.ship),
+		widget.NewFormItem("Location", a.location),
+		widget.NewFormItem("Last Login", a.lastLoginAt),
+		widget.NewFormItem("Tags", a.tags),
+	)
+	main.Orientation = widget.Adaptive
+
+	portrait := container.NewVBox(
+		container.NewPadded(a.portrait),
+	)
+	c := container.NewBorder(
+		nil,
+		nil,
+		nil,
+		portrait,
+		container.NewVScroll(main),
+	)
+	if !a.u.isDesktop {
+		portrait.Hide()
+	}
+	return widget.NewSimpleRenderer(c)
 }
 
 func (a *characterSheet) update() {
@@ -185,19 +217,15 @@ func (a *characterSheet) update() {
 	})
 	fyne.Do(func() {
 		if c.EveCharacter.Faction == nil {
-			a.factionLogo.Hide()
+			a.faction.SetText("")
 			return
 		}
-		a.factionLogo.Show()
-		a.factionLogo.OnTapped = func() {
+		a.faction.SetText(c.EveCharacter.FactionName())
+		a.faction.OnTapped = func() {
 			a.u.ShowInfoWindow(app.EveEntityFaction, c.EveCharacter.Faction.ID)
 		}
 	})
-	if c.EveCharacter.Faction != nil {
-		iwidget.RefreshTappableImageAsync(a.factionLogo, func() (fyne.Resource, error) {
-			return a.u.eis.FactionLogo(c.EveCharacter.Faction.ID, app.IconPixelSize)
-		})
-	}
+
 	var s string
 	tags, err := a.u.cs.ListTagsForCharacter(context.Background(), c.ID)
 	if err != nil {
@@ -211,38 +239,4 @@ func (a *characterSheet) update() {
 		}
 	}
 	a.tags.SetText(s)
-}
-
-func (a *characterSheet) CreateRenderer() fyne.WidgetRenderer {
-	main := widget.NewForm(
-		widget.NewFormItem("Name", a.name),
-		widget.NewFormItem("Born", a.born),
-		widget.NewFormItem("Race", a.race),
-		widget.NewFormItem("Wealth", a.wealth),
-		widget.NewFormItem("Security Status", a.security),
-		widget.NewFormItem("Home Station", a.home),
-		widget.NewFormItem("Total Skill Points", a.skillpoints),
-		widget.NewFormItem("Last Login", a.lastLoginAt),
-		widget.NewFormItem("Ship", a.ship),
-		widget.NewFormItem("Location", a.location),
-		widget.NewFormItem("Tags", a.tags),
-	)
-	main.Orientation = widget.Adaptive
-
-	portraitDesktop := container.NewVBox(container.NewPadded(a.portrait))
-	c := container.NewBorder(
-		nil,
-		nil,
-		nil,
-		portraitDesktop,
-		container.NewVBox(
-			main,
-			container.NewHBox(
-				container.NewPadded(a.factionLogo)),
-		),
-	)
-	if !a.u.isDesktop {
-		portraitDesktop.Hide()
-	}
-	return widget.NewSimpleRenderer(c)
 }

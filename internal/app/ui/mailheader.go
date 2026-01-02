@@ -92,7 +92,7 @@ type mailHeader struct {
 
 	eis        app.EveImageService
 	from       *kxwidget.TappableLabel
-	icon       *kxwidget.TappableImage
+	icon       *iwidget.TappableImage
 	recipients *fyne.Container
 	to         *widget.Label
 	showInfo   func(*app.EveEntity)
@@ -112,7 +112,7 @@ func newMailHeader(eis app.EveImageService, show func(*app.EveEntity)) *mailHead
 		to:         widget.NewLabel("to"),
 	}
 	w.ExtendBaseWidget(w)
-	w.icon = kxwidget.NewTappableImage(icons.BlankSvg, nil)
+	w.icon = iwidget.NewTappableImage(icons.BlankSvg, nil)
 	w.icon.SetFillMode(canvas.ImageFillContain)
 	w.icon.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
 	w.to.Hide()

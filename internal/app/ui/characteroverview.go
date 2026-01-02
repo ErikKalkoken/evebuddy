@@ -658,10 +658,9 @@ func (w *characterCard) set(r characterOverviewRow) {
 	w.skillpoints.SetText(r.skillpoints.StringFunc("?", func(v int) string {
 		return humanize.Comma(int64(v))
 	}))
-	s := r.walletBalance.StringFunc("?", func(v float64) string {
-		return humanize.Comma(int64(v))
-	})
-	w.wallet.SetText(s + " ISK")
+	w.wallet.SetText(r.walletBalance.StringFunc("?", func(v float64) string {
+		return humanize.Comma(int64(v)) + " ISK"
+	}))
 	w.ship.SetText(r.shipName())
 	var rt []widget.RichTextSegment
 	var location string
@@ -827,10 +826,9 @@ func (w *characterRow) set(r characterOverviewRow) {
 	w.skillpoints.SetText(r.skillpoints.StringFunc("?", func(v int) string {
 		return humanize.Comma(int64(v))
 	}))
-	s := r.walletBalance.StringFunc("?", func(v float64) string {
-		return humanize.Comma(int64(v))
-	})
-	w.wallet.SetText(s + " ISK")
+	w.wallet.SetText(r.walletBalance.StringFunc("?", func(v float64) string {
+		return humanize.Comma(int64(v)) + " ISK"
+	}))
 	w.ship.SetText(r.shipName())
 	var rt []widget.RichTextSegment
 	if r.location != nil && r.location.SolarSystem != nil {

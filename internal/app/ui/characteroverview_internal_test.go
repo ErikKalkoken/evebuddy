@@ -36,18 +36,23 @@ func TestCharacters_CanRenderWithData(t *testing.T) {
 	})
 	homeSystem := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{
 		SecurityStatus: 0.3,
+		Name:           "Abune",
 	})
-	home := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{
+	location := factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{
 		Name:          "Batcave",
 		SolarSystemID: optional.New(homeSystem.ID),
 	})
+	ship := factory.CreateEveType(storage.CreateEveTypeParams{
+		Name: "Merlin",
+	})
 	character := factory.CreateCharacterFull(storage.CreateCharacterParams{
 		AssetValue:    optional.New(12_000_000_000.0),
-		HomeID:        optional.New(home.ID),
+		LocationID:    optional.New(location.ID),
 		ID:            ec.ID,
 		WalletBalance: optional.New(23_000_000.0),
 		LastLoginAt:   optional.New(time.Now().Add(-24 * 7 * 2 * time.Hour)),
 		TotalSP:       optional.New(100_000),
+		ShipID:        optional.New(ship.ID),
 	})
 	factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
 		CharacterID: character.ID,
@@ -60,7 +65,7 @@ func TestCharacters_CanRenderWithData(t *testing.T) {
 		filename  string
 		size      fyne.Size
 	}{
-		{"desktop", true, "desktop_full", fyne.NewSize(1700, 300)},
+		{"desktop", true, "desktop_full", fyne.NewSize(1000, 600)},
 		{"mobile", false, "mobile_full", fyne.NewSize(500, 800)},
 	}
 	for _, tc := range cases {
@@ -104,7 +109,7 @@ func TestCharacters_CanRenderWitoutData(t *testing.T) {
 		filename  string
 		size      fyne.Size
 	}{
-		{"desktop", true, "desktop_minimal", fyne.NewSize(1700, 300)},
+		{"desktop", true, "desktop_minimal", fyne.NewSize(1000, 600)},
 		{"mobile", false, "mobile_minimal", fyne.NewSize(500, 800)},
 	}
 	for _, tc := range cases {
