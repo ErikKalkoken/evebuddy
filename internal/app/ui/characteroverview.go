@@ -46,14 +46,14 @@ type characterOverviewRow struct {
 	walletBalance   optional.Optional[float64]
 }
 
-func (r characterOverviewRow) AllianceName() string {
+func (r characterOverviewRow) allianceName() string {
 	if r.alliance == nil {
 		return ""
 	}
 	return r.alliance.Name
 }
 
-func (r characterOverviewRow) CorporationName() string {
+func (r characterOverviewRow) corporationName() string {
 	if r.corporation == nil {
 		return "?"
 	}
@@ -234,7 +234,7 @@ func (a *characterOverview) makeGrid() *widget.GridWrap {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newCharacterCard(a.u.eis)
+			return newCharacterCard(a.u.eis, a.u.ShowInfoWindow)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
@@ -314,12 +314,12 @@ func (a *characterOverview) filterRows(sortCol int) {
 	// filter
 	if x := a.selectAlliance.Selected; x != "" {
 		rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
-			return r.AllianceName() != x
+			return r.allianceName() != x
 		})
 	}
 	if x := a.selectCorporation.Selected; x != "" {
 		rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
-			return r.CorporationName() != x
+			return r.corporationName() != x
 		})
 	}
 	if x := a.selectRegion.Selected; x != "" {
@@ -349,11 +349,11 @@ func (a *characterOverview) filterRows(sortCol int) {
 			var x int
 			switch sortCol {
 			case overviewColAlliance:
-				x = xstrings.CompareIgnoreCase(a.AllianceName(), b.AllianceName())
+				x = xstrings.CompareIgnoreCase(a.allianceName(), b.allianceName())
 			case overviewColCharacter:
 				x = xstrings.CompareIgnoreCase(a.characterName, b.characterName)
 			case overviewColCorporation:
-				x = xstrings.CompareIgnoreCase(a.CorporationName(), b.CorporationName())
+				x = xstrings.CompareIgnoreCase(a.corporationName(), b.corporationName())
 			case overviewColMail:
 				x = cmp.Compare(a.unreadCount.ValueOrZero(), b.unreadCount.ValueOrZero())
 			case overviewColRegion:
@@ -373,10 +373,10 @@ func (a *characterOverview) filterRows(sortCol int) {
 		})
 	})
 	a.selectAlliance.SetOptions(xslices.Map(rows, func(r characterOverviewRow) string {
-		return r.AllianceName()
+		return r.allianceName()
 	}))
 	a.selectCorporation.SetOptions(xslices.Map(rows, func(r characterOverviewRow) string {
-		return r.CorporationName()
+		return r.corporationName()
 	}))
 	a.selectRegion.SetOptions(xslices.Map(rows, func(r characterOverviewRow) string {
 		return r.regionName
@@ -501,10 +501,10 @@ type characterOverviewEIS interface {
 type characterCard struct {
 	widget.BaseWidget
 
-	allianceLogo    *canvas.Image
+	allianceLogo    *iwidget.TappableImage
 	border          *canvas.Rectangle
 	characterName   *widget.Label
-	corporationLogo *canvas.Image
+	corporationLogo *iwidget.TappableImage
 	eis             characterOverviewEIS
 	location        *widget.Label
 	mails           *widget.Label
@@ -513,9 +513,10 @@ type characterCard struct {
 	skillpoints     *widget.Label
 	solarSystem     *iwidget.RichText
 	wallet          *widget.Label
+	showInfoWindow  func(c app.EveEntityCategory, id int32)
 }
 
-func newCharacterCard(eis characterOverviewEIS) *characterCard {
+func newCharacterCard(eis characterOverviewEIS, showInfoWindow func(c app.EveEntityCategory, id int32)) *characterCard {
 	const numberTemplate = "9.999.999.999"
 	makeLabel := func(s string) *widget.Label {
 		l := widget.NewLabel(s)
@@ -523,47 +524,55 @@ func newCharacterCard(eis characterOverviewEIS) *characterCard {
 		l.Truncation = fyne.TextTruncateEllipsis
 		return l
 	}
+	portrait := iwidget.NewImageFromResource(
+		icons.Characterplaceholder64Jpeg,
+		fyne.NewSquareSize(200),
+	)
 	w := &characterCard{
-		border:        canvas.NewRectangle(color.Transparent),
-		characterName: widget.NewLabel("Veronica Blomquist"),
-		eis:           eis,
-		location:      widget.NewLabel("Veronica Blomquist"),
-		mails:         makeLabel(numberTemplate),
-		ship:          makeLabel("Merlin"),
-		skillpoints:   makeLabel(numberTemplate),
-		solarSystem:   iwidget.NewRichText(),
-		wallet:        makeLabel(numberTemplate + " ISK"),
-		allianceLogo: iwidget.NewImageFromResource(
-			icons.Corporationplaceholder64Png,
-			fyne.NewSquareSize(40),
-		),
-		corporationLogo: iwidget.NewImageFromResource(
-			icons.Corporationplaceholder64Png,
-			fyne.NewSquareSize(40),
-		),
-		portrait: iwidget.NewImageFromResource(
-			icons.Characterplaceholder64Jpeg,
-			fyne.NewSquareSize(200),
-		),
+		allianceLogo:    iwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
+		border:          canvas.NewRectangle(color.Transparent),
+		characterName:   widget.NewLabel("Veronica Blomquist"),
+		corporationLogo: iwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
+		eis:             eis,
+		location:        widget.NewLabel("Veronica Blomquist"),
+		mails:           makeLabel(numberTemplate),
+		portrait:        portrait,
+		ship:            makeLabel("Merlin"),
+		showInfoWindow:  showInfoWindow,
+		skillpoints:     makeLabel(numberTemplate),
+		solarSystem:     iwidget.NewRichText(),
+		wallet:          makeLabel(numberTemplate + " ISK"),
 	}
 	w.ExtendBaseWidget(w)
+
+	w.allianceLogo.SetFillMode(canvas.ImageFillContain)
+	w.allianceLogo.SetMinSize(fyne.NewSquareSize(40))
+	w.allianceLogo.SetCornerRadius(theme.InputRadiusSize())
+
+	w.corporationLogo.SetFillMode(canvas.ImageFillContain)
+	w.corporationLogo.SetMinSize(fyne.NewSquareSize(40))
+	w.corporationLogo.SetCornerRadius(theme.InputRadiusSize())
+
 	w.characterName.SizeName = theme.SizeNameSubHeadingText
 	w.characterName.Truncation = fyne.TextTruncateEllipsis
+
 	w.border.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	w.border.StrokeWidth = 1
 	w.border.CornerRadius = theme.Size(theme.SizeNameInputRadius)
+
 	w.location.Alignment = fyne.TextAlignCenter
 	w.location.Truncation = fyne.TextTruncateEllipsis
+
 	return w
 }
 
 func (w *characterCard) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	logoBorder := &layout.CustomPaddedLayout{
-		TopPadding:    2 * p,
-		BottomPadding: 2 * p,
-		LeftPadding:   2 * p,
-		RightPadding:  2 * p,
+		TopPadding:    1 * p,
+		BottomPadding: 1 * p,
+		LeftPadding:   1 * p,
+		RightPadding:  1 * p,
 	}
 	c := container.NewBorder(
 		container.New(layout.NewCustomPaddedLayout(0, 0, -p, -p), w.characterName),
@@ -637,11 +646,19 @@ func (w *characterCard) set(r characterOverviewRow) {
 	iwidget.RefreshImageAsync(w.portrait, func() (fyne.Resource, error) {
 		return w.eis.CharacterPortrait(r.characterID, 512)
 	})
-	iwidget.RefreshImageAsync(w.corporationLogo, func() (fyne.Resource, error) {
+	w.corporationLogo.OnTapped = func() {
+		w.showInfoWindow(app.EveEntityCorporation, r.corporation.ID)
+	}
+	w.corporationLogo.SetToolTip(r.corporationName())
+	iwidget.RefreshTappableImageAsync(w.corporationLogo, func() (fyne.Resource, error) {
 		return w.eis.CorporationLogo(r.corporation.ID, 64)
 	})
 	if r.alliance != nil {
-		iwidget.RefreshImageAsync(w.allianceLogo, func() (fyne.Resource, error) {
+		w.allianceLogo.OnTapped = func() {
+			w.showInfoWindow(app.EveEntityAlliance, r.alliance.ID)
+		}
+		w.allianceLogo.SetToolTip(r.allianceName())
+		iwidget.RefreshTappableImageAsync(w.allianceLogo, func() (fyne.Resource, error) {
 			defer w.allianceLogo.Show()
 			return w.eis.AllianceLogo(r.alliance.ID, 64)
 		})

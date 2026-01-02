@@ -7,17 +7,19 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 )
 
 // TappableImage is widget which shows an image and runs a function when tapped.
 type TappableImage struct {
 	widget.BaseWidget
+	ttwidget.ToolTipWidgetExtend
 
 	// The function that is called when the label is tapped.
 	OnTapped func()
 
-	image   *canvas.Image
 	hovered bool
+	image   *canvas.Image
 	menu    *fyne.Menu
 	pos     fyne.Position // current mouse position
 }
@@ -46,10 +48,15 @@ func NewTappableImage(res fyne.Resource, tapped func()) *TappableImage {
 }
 
 func newTappableImage(res fyne.Resource, tapped func()) *TappableImage {
-	ti := &TappableImage{OnTapped: tapped, image: canvas.NewImageFromResource(res)}
-	ti.image.CornerRadius = theme.InputRadiusSize()
-	ti.ExtendBaseWidget(ti)
-	return ti
+	w := &TappableImage{OnTapped: tapped, image: canvas.NewImageFromResource(res)}
+	w.image.CornerRadius = theme.InputRadiusSize()
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *TappableImage) ExtendBaseWidget(wid fyne.Widget) {
+	w.ExtendToolTipWidget(wid)
+	w.BaseWidget.ExtendBaseWidget(wid)
 }
 
 // SetCornerRadius sets corner radius.
@@ -94,7 +101,7 @@ func (w *TappableImage) TappedSecondary(_ *fyne.PointEvent) {
 
 // Cursor returns the cursor type of this widget
 func (w *TappableImage) Cursor() desktop.Cursor {
-	if w.hovered {
+	if w.OnTapped != nil && w.hovered {
 		return desktop.PointerCursor
 	}
 	return desktop.DefaultCursor
@@ -102,15 +109,21 @@ func (w *TappableImage) Cursor() desktop.Cursor {
 
 // MouseIn is a hook that is called if the mouse pointer enters the element.
 func (w *TappableImage) MouseIn(e *desktop.MouseEvent) {
+	w.ToolTipWidgetExtend.MouseIn(e)
+	if w.OnTapped == nil {
+		return
+	}
 	w.hovered = true
 }
 
-func (w *TappableImage) MouseMoved(me *desktop.MouseEvent) {
-	w.pos = me.AbsolutePosition
+func (w *TappableImage) MouseMoved(e *desktop.MouseEvent) {
+	w.ToolTipWidgetExtend.MouseMoved(e)
+	w.pos = e.AbsolutePosition
 }
 
 // MouseOut is a hook that is called if the mouse pointer leaves the element.
 func (w *TappableImage) MouseOut() {
+	w.ToolTipWidgetExtend.MouseOut()
 	w.hovered = false
 }
 

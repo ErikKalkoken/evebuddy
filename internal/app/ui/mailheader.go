@@ -58,7 +58,7 @@ func (w *mailHeaderItem) Set(from *app.EveEntity, subject string, timestamp time
 	go func() {
 		res, err := fetchEveEntityAvatar(w.eis, from, w.FallbackIcon)
 		if err != nil {
-			slog.Error("fetch eve entity avatar", "error", err)
+			slog.Error("fetch eve entity avatar", "from", from, "subject", subject, "error", err)
 			res = w.FallbackIcon
 		}
 		fyne.Do(func() {
@@ -140,7 +140,7 @@ func (w *mailHeader) Set(from *app.EveEntity, timestamp time.Time, recipients ..
 	go func() {
 		res, err := fetchEveEntityAvatar(w.eis, from, icons.BlankSvg)
 		if err != nil {
-			slog.Error("fetch eve entity avatar", "error", err)
+			slog.Error("fetch eve entity avatar", "from", from, "recipients", recipients, "error", err)
 			res = icons.Questionmark32Png
 		}
 		fyne.Do(func() {

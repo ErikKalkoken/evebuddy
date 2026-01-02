@@ -458,6 +458,8 @@ func NewBaseUI(arg BaseUIParams) *baseUI {
 		slog.Debug("Entered foreground")
 		u.isForeground.Store(true)
 		if !u.isOffline && !u.isUpdateDisabled {
+			time.Sleep(3 * time.Second)                     // allow app to fully load before updating
+			slog.Info("EnteredForeground: Starting update") // FIXME
 			go u.updateCharactersIfNeeded(context.Background(), false)
 			go u.updateCorporationsIfNeeded(context.Background(), false)
 			go u.updateGeneralSectionsIfNeeded(context.Background(), false)
@@ -523,12 +525,16 @@ func (u *baseUI) Start() bool {
 		updateCharactersMissingScope()
 
 		u.isStartupCompleted.Store(true)
-		u.startRefreshTicker()
+		go func() {
+			for range time.Tick(refreshUITicker) {
+				u.refreshTickerExpired.Emit(context.Background(), struct{}{})
+			}
+		}()
 		if u.onAppFirstStarted != nil {
 			u.onAppFirstStarted()
 		}
 		if !u.isOffline && !u.isUpdateDisabled {
-			time.Sleep(5 * time.Second) // Workaround to prevent concurrent updates from happening at startup.
+			slog.Info("Starting update ticker")
 			u.startUpdateTickerGeneralSections()
 			u.startUpdateTickerCharacters()
 			u.startUpdateTickerCorporations()
@@ -537,14 +543,6 @@ func (u *baseUI) Start() bool {
 		}
 	}()
 	return true
-}
-
-func (u *baseUI) startRefreshTicker() {
-	go func() {
-		for range time.Tick(refreshUITicker) {
-			u.refreshTickerExpired.Emit(context.Background(), struct{}{})
-		}
-	}()
 }
 
 // ShowAndRun shows the UI and runs the Fyne loop (blocking),

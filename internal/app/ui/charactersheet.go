@@ -47,9 +47,10 @@ func newCharacterSheet(u *baseUI) *characterSheet {
 	makeLabel := func() *widget.Label {
 		return widget.NewLabel("?")
 	}
-	portrait := iwidget.NewTappableImage(icons.BlankSvg, nil)
+	portrait := iwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
 	portrait.SetMinSize(fyne.NewSquareSize(128))
+	portrait.SetToolTip("Show details")
 	a := &characterSheet{
 		born:        makeLabel(),
 		faction:     makeHyperLink(),

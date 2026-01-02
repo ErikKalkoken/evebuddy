@@ -17,16 +17,16 @@ import (
 func (u *baseUI) startUpdateTickerGeneralSections() {
 	go func() {
 		for range time.Tick(generalSectionsUpdateTicker) {
-			if u.ess.IsDailyDowntime() {
-				slog.Info("Skipping regular update of general sections during daily downtime")
-				continue
-			}
-			u.updateGeneralSectionsIfNeeded(context.Background(), false)
+			go u.updateGeneralSectionsIfNeeded(context.Background(), false)
 		}
 	}()
 }
 
 func (u *baseUI) updateGeneralSectionsIfNeeded(ctx context.Context, forceUpdate bool) {
+	if !forceUpdate && u.ess.IsDailyDowntime() {
+		slog.Info("Skipping regular update of general sections during daily downtime")
+		return
+	}
 	if !forceUpdate && !u.isDesktop && !u.isForeground.Load() {
 		slog.Debug("Skipping general sections update while in background")
 		return
@@ -93,10 +93,7 @@ func (u *baseUI) startUpdateTickerCharacters() {
 					slog.Error("Failed to notify characters", "error", err)
 				}
 			}()
-			if u.ess.IsDailyDowntime() {
-				slog.Info("Skipping regular update of characters during daily downtime")
-				continue
-			}
+
 			go func() {
 				if err := u.updateCharactersIfNeeded(ctx, false); err != nil {
 					slog.Error("Failed to update characters", "error", err)
@@ -107,6 +104,10 @@ func (u *baseUI) startUpdateTickerCharacters() {
 }
 
 func (u *baseUI) updateCharactersIfNeeded(ctx context.Context, forceUpdate bool) error {
+	if !forceUpdate && u.ess.IsDailyDowntime() {
+		slog.Info("Skipping regular update of characters during daily downtime")
+		return nil
+	}
 	characters, err := u.cs.ListCharacterIDs(ctx)
 	if err != nil {
 		return err
@@ -364,10 +365,6 @@ func (u *baseUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 func (u *baseUI) startUpdateTickerCorporations() {
 	go func() {
 		for range time.Tick(characterSectionsUpdateTicker) {
-			if u.ess.IsDailyDowntime() {
-				slog.Info("Skipping regular update of corporations during daily downtime")
-				continue
-			}
 			go func() {
 				if err := u.updateCorporationsIfNeeded(context.Background(), false); err != nil {
 					slog.Error("Failed to update corporations", "error", err)
@@ -378,6 +375,10 @@ func (u *baseUI) startUpdateTickerCorporations() {
 }
 
 func (u *baseUI) updateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error {
+	if !forceUpdate && u.ess.IsDailyDowntime() {
+		slog.Info("Skipping regular update of corporations during daily downtime")
+		return nil
+	}
 	changed, err := u.rs.UpdateCorporations(ctx)
 	if err != nil {
 		return err
